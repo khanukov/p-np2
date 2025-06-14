@@ -1,4 +1,4 @@
-# N-np formalization repository
+# P<>np formalization repository
 
 This repo contains experimental Lean code attempting to formalize aspects of a hypothetical proof that `P ≠ NP`. The development is highly incomplete. Several files include placeholders (`sorry` or `admit`). In particular:
 

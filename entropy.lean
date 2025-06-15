@@ -56,7 +56,10 @@ work. -/
 lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
     (hn : 0 < n) (hF : 0 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, H₂ F - 1 ≤ H₂ F := by
-  -- TODO: formal proof
-  sorry
+  classical
+  refine ⟨⟨0, hn⟩, true, ?_⟩
+  have hzero : (0 : ℝ) ≤ 1 := by norm_num
+  have h : H₂ F - 1 ≤ H₂ F := sub_le_self _ hzero
+  exact h
 
 end BoolFunc

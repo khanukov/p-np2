@@ -26,6 +26,16 @@ The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑2
 
 `examples.lean` can be executed with `lean --run examples.lean` after the dependencies are set up.
 
+## Experiments
+
+The `experiments/` directory contains Python scripts that enumerate small
+Boolean circuits to collect data for Lemma B.  Invoke them with Python 3:
+
+```bash
+python3 experiments/lemma_b_search.py     # exhaustive search of small circuits
+python3 experiments/single_gate_count.py  # list functions from a single gate
+```
+
 ## Status
 
 This is a research prototype.  Many modules contain `sorry` placeholders and only partial proofs.  The repository is intended for exploration and does not constitute a finished argument.

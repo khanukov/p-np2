@@ -10,18 +10,19 @@
 The script enumerates all Boolean functions computable by circuits with a
 bounded number of AND/OR/NOT gates on ``n`` inputs.  For each possible split of
 the truth table into ``k`` left bits and ``n-k`` right bits, it reports the
-number of distinct left and right halves.  This gives a rough upper bound on the
-size of a rectangular cover for the family of functions under consideration.
+  number of distinct left and right halves.
+  This gives a rough upper bound on the size of a rectangular cover for the
+  family of functions under consideration.
 
 The original prototype had parameters ``n`` and ``max_gates`` hard-coded.  This
 version accepts them via command-line options so that different settings can be
 explored without editing the file.
 """
 
-from itertools import product
 import argparse
 
 # encode a boolean function on n inputs as an integer with 2**n bits
+
 
 def variables(n):
     """Return list of truth tables for variables x0..x_{n-1}."""
@@ -65,7 +66,8 @@ def all_functions(n, max_gates):
 
 
 def function_counts(n, max_gates):
-    """Return a mapping of truth tables to the number of circuits computing them."""
+    """Return a mapping of truth tables to the number of circuits computing
+    them."""
     from collections import Counter
 
     base = Counter()
@@ -91,7 +93,8 @@ def function_counts(n, max_gates):
 
 
 def split_tables(funcs, n, k):
-    """Split each table into left/right halves of ``2^k`` and ``2^(n-k)`` bits."""
+    """Split each table into left and right halves of ``2^k`` and
+    ``2^(n-k)`` bits."""
     left_len = 1 << k
     left_mask = (1 << left_len) - 1
     left_set = set()

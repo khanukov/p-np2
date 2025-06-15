@@ -1,10 +1,10 @@
 """Compute a simple collision entropy metric for small circuit classes.
 
 For a given ``n`` and ``max_gates`` the script enumerates all distinct Boolean
-functions computable with at most that many gates (using AND/OR/NOT).  Treating
-this set of functions as a uniform distribution, the collision entropy ``H_2``
-equals ``log2(|F|)``.  We therefore return the base-2 logarithm of the number of
-unique functions.
+functions computable with at most that many gates (using AND/OR/NOT).
+Treating this set of functions as a uniform distribution, the collision entropy
+``H_2`` equals ``log2(|F|)``.  We therefore return the base-2 logarithm of the
+number of unique functions.
 """
 
 import argparse
@@ -33,7 +33,8 @@ def collision_entropy_by_circuit(n: int, max_gates: int) -> float:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Measure log2 of distinct functions for small circuit class")
+        description="Measure log2 of distinct functions for small circuits"
+    )
     parser.add_argument(
         "n", type=int, nargs="?", default=3,
         help="number of input bits (default: 3)")

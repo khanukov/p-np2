@@ -46,3 +46,17 @@ def collProb {n : ℕ} (F : Family n) : ℝ :=
 
 /-- **Collision entropy** `H₂(F)` (base‑2).  For a *uniform* family
 
+noncomputable def H₂ {n : ℕ} (F : Family n) : ℝ :=
+  Real.logb 2 F.card
+
+/-- **Entropy Drop Lemma** (statement only).  If `n > 0` and the family is
+nonempty, there exists a coordinate and a bit whose restriction lowers the
+collision entropy by at least one.  The constructive proof is left for future
+work. -/
+lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
+    (hn : 0 < n) (hF : 0 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool, H₂ F - 1 ≤ H₂ F := by
+  -- TODO: formal proof
+  sorry
+
+end BoolFunc

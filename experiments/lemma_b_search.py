@@ -18,7 +18,6 @@ version accepts them via command-line options so that different settings can be
 explored without editing the file.
 """
 
-from collections import defaultdict
 from itertools import product
 import argparse
 
@@ -92,16 +91,14 @@ def function_counts(n, max_gates):
 
 
 def split_tables(funcs, n, k):
-    """Split each table into left/right halves of k and n-k bits."""
-    N = 1 << n
-    left_bits = 1 << k
-    right_bits = N - left_bits
-    left_mask = (1 << left_bits) - 1
+    """Split each table into left/right halves of ``2^k`` and ``2^(n-k)`` bits."""
+    left_len = 1 << k
+    left_mask = (1 << left_len) - 1
     left_set = set()
     right_set = set()
     for f in funcs:
         left = f & left_mask
-        right = f >> left_bits
+        right = f >> left_len
         left_set.add(left)
         right_set.add(right)
     return len(left_set), len(right_set)

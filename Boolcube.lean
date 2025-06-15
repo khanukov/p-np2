@@ -37,7 +37,23 @@ namespace Subcube
 
 /‑ Fix exactly one coordinate. -/ @[simp] def fixOne (i : Fin n) (b : Bool) : Subcube n := ⟨fun j ↦ if h : j = i then some b else none⟩
 
-@[simp] lemma mem_fixOne_iff {i b x} : (fixOne (n:=n) i b).Mem x ↔ x i = b := by constructor · intro h; simpa using h i · intro h j; by_cases hj : j = i · cases hj; simp [fixOne, h] · simp [fixOne, hj]
+@[simp] lemma mem_fixOne_iff {i b x} :
+  (fixOne (n := n) i b).Mem x ↔ x i = b := by
+  constructor
+  · intro h; simpa using h i
+  · intro h j; by_cases hj : j = i
+    · cases hj; simp [fixOne, h]
+    · simp [fixOne, hj]
+
+@[simp] lemma dim_full (n : ℕ) :
+  (Subcube.full : Subcube n).dim = n := by
+  classical
+  simp [Subcube.dim, Subcube.support]
+
+@[simp] lemma dim_point (x : Point n) :
+  (Subcube.point (n := n) x).dim = 0 := by
+  classical
+  simp [Subcube.dim, Subcube.support]
 
 end Subcube
 

@@ -1,8 +1,30 @@
-# P<>np formalization repository
+# P≠NP formalization repository
 
-This repo contains experimental Lean code attempting to formalize aspects of a hypothetical proof that `P ≠ NP`. The development is highly incomplete. Several files include placeholders (`sorry` or `admit`). In particular:
+This repository collects experimental Lean files that sketch a formal proof of the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma aims to cover families of Boolean functions with a subexponential number of monochromatic subcubes and is a building block for a potential proof that `P ≠ NP`.
 
-- `Boolcube.lean` defines basic structures and begins a construction for rectangle covers. The major lemmas rely on unproven assumptions.  It now also provides helper lemmas `dim_full` and `dim_point` describing trivial subcube dimensions.
-- `family_entropy_cover.lean` and `merge_low_sens.lean` previously declared axioms. They now contain theorem statements with proof holes marked by `sorry`.
+The code is **not** a complete proof: many declarations end with `sorry`.  The goal is to document interfaces and provide a sandbox for future formalisation.
 
-The repository is mainly a research sketch rather than a working proof. See `experiments/` for a small Python script exploring combinatorial data.
+## Layout
+
+* `bool_func.lean` – basic types for Boolean functions, points and subcubes (fully proved).
+* `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
+* `entropy.lean` – collision entropy framework (proof of `EntropyDrop` still marked `sorry`).
+* `sunflower.lean` – minimal sunflower lemma used downstream.
+* `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
+* `cover.lean` – skeleton of the covering algorithm.
+* `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
+* `family_entropy_cover.lean` – placeholder for the family version of the cover.
+* `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
+* `examples.lean` – runnable examples illustrating the definitions.
+* `experiments/` – small Python script `lemma_b_search.py` exploring rectangle covers.
+* `Task description`, `fce lemma proof` – research notes explaining the FCE‑Lemma project.
+
+## Building
+
+The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑20).  The repository does not include a `lakefile`; to experiment, create a Lean project that depends on mathlib and add these files, or invoke `lean` directly once mathlib is available.
+
+`examples.lean` can be executed with `lean --run examples.lean` after the dependencies are set up.
+
+## Status
+
+This is a research prototype.  Many modules contain `sorry` placeholders and only partial proofs.  The repository is intended for exploration and does not constitute a finished argument.

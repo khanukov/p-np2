@@ -83,11 +83,13 @@ corollary sunflower_exists_of_fixedSize
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
     (h_size : (∀ A ∈ 𝓢, A.card = w))
     (h_big  : 𝓢.card > (p - 1).factorial * w ^ p) :
-    HasSunflower 𝓢 w p :=
-  sunflower_exists 𝓢 w p hw hp h_size (by
-    -- Rearrange strict inequality direction to match bound in lemma
-    have : (p - 1).factorial * w ^ p < 𝓢.card := by
-      simpa [lt_iff_le_and_ne, h_big.ne] using h_big
-    exact this)
+    HasSunflower 𝓢 w p := by
+  classical
+  -- Just package the bound to match the main lemma's signature.
+  refine sunflower_exists 𝓢 w p hw hp h_size ?bound
+  -- Rearrange strict inequality direction to match the lemma's argument order.
+  have : (p - 1).factorial * w ^ p < 𝓢.card := by
+    simpa [lt_iff_le_and_ne, h_big.ne] using h_big
+  exact this
 
 end Sunflower

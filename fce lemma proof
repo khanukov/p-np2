@@ -87,6 +87,17 @@ Modules in Lean 4:
 * `cover.lean`: main recursive algorithm.
 * `bound.lean`: size bound proof.
 * `examples.lean`: auto-tests.
+### Updated Formalisation Plan (2025-06-25)
+The modules above serve as milestones. Our immediate goals are:
+
+1. Complete the proof of `EntropyDrop` in `entropy.lean`.
+2. Add a classical sunflower lemma in `sunflower.lean`.
+3. Formalise the `CoreAgreement` lemma in `agreement.lean`.
+4. Implement the recursive covering algorithm in `cover.lean`.
+5. Prove the size bound in `bound.lean`.
+6. Provide small test instances in `examples.lean`.
+
+The parameter $h$ is treated as a fixed constant (or $o(n)$) when establishing the bound.
 
 ## References
 

@@ -18,7 +18,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `examples.lean` – runnable examples illustrating the definitions.
 * `experiments/` – small Python script `lemma_b_search.py` exploring rectangle covers.
 * `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the current roadmap for the ACC⁰∘MCSP subexponential SAT approach.
-* `Task description`, `fce lemma proof` – original research notes explaining the FCE‑Lemma project.
+* `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 
 ## Building
 

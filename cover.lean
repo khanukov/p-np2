@@ -124,18 +124,30 @@ def coverFamily
     {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R, R ∈ coverFamily (n := _) (h := h) F hH →
       (Subcube.monochromaticForFamily R F) := by
-  -- Follows from `cover_exists`; proof deferred.
-  sorry
+  classical
+  -- Extract the witness and its specification from `cover_exists`.
+  rcases Classical.choose_spec (cover_exists (F := F) (h := h) hH) with
+    ⟨hmono, hcover, hbound⟩
+  intro R hR
+  exact hmono R hR
 
 @[simp] lemma coverFamily_spec_cover
     {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ f, f ∈ F → ∀ x, f x = true →
       ∃ R, R ∈ coverFamily (n := _) (h := h) F hH ∧ (x ∈ₛ R) := by
-  sorry
+  classical
+  -- The covering property is the second part of `cover_exists`.
+  rcases Classical.choose_spec (cover_exists (F := F) (h := h) hH) with
+    ⟨hmono, hcover, hbound⟩
+  exact hcover
 
 @[simp] lemma coverFamily_card_bound
     {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (coverFamily (n := _) (h := h) F hH).card ≤ mBound n h := by
-  sorry
+  classical
+  -- The cardinality bound follows immediately from `cover_exists`.
+  rcases Classical.choose_spec (cover_exists (F := F) (h := h) hH) with
+    ⟨hmono, hcover, hbound⟩
+  exact hbound
 
 end Cover

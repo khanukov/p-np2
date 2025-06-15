@@ -125,7 +125,7 @@ Finally, we formulate a precise technical plan for proving the FCE-Lemma and pre
 
 Formal Statement of FCE-Lemma
 
-Lemma (Family Collision-Entropy Lemma). Let $F$ be a family of boolean functions on $n$ bits, $F \subseteq {0,1}^{{0,1}^n}$, such that the collision entropy $H_2(F) \le h$ for some constant $h = O(1)$ (or more generally $h = o(n)$). Then there exists a collection $\mathcal{R}$ of at most $;2^{o(n)}$ monochromatic rectangles that simultaneously cover the truth table of every function $f \in F$. In other words, for every $f\in F$ and for every input $x\in{0,1}^n$, there is a rectangle $R \in \mathcal{R}$ such that $x \in R$ (meaning $x$ satisfies the subcube’s conditions) and $f$ is constant on $R$. Moreover, the rectangles can be chosen to have additional nice properties:
+Lemma (Family Collision-Entropy Lemma). Let $F$ be a family of boolean functions on $n$ bits, $F \subseteq {0,1}^{\{0,1\}^n}$, such that the collision entropy $H_2(F) \le h$ for some $h = o(n)$. Then there exists a collection $\mathcal{R}$ of at most $;2^{o(n)}$ monochromatic rectangles that simultaneously cover the truth table of every function $f \in F$. In other words, for every $f\in F$ and for every input $x\in{0,1}^n$, there is a rectangle $R \in \mathcal{R}$ such that $x \in R$ (meaning $x$ satisfies the subcube’s conditions) and $f$ is constant on $R$. Moreover, the rectangles can be chosen to have additional nice properties:
 
 Each rectangle $R \in \mathcal{R}$ is a subcube: it is specified by a (possibly partial) assignment to some subset of the $n$ variables. (So $R = {x \in {0,1}^n: x_i = b_i ;\forall i\in I_R}$ for some coordinate set $I_R$ and bits $b_i$ for $i\in I_R$.) The dimension of $R$ is $n - |I_R|$ (number of free bits).
 

@@ -67,15 +67,14 @@ lemma sunflower_exists
     (all_w : ∀ A ∈ 𝓢, A.card = w)
     (bound : (p - 1).factorial * w ^ p < 𝓢.card) :
     HasSunflower 𝓢 w p := by
-  -- TODO: full combinatorial proof.
-  -- Standard proof outline:
-  --  • Induct on |𝓢|.
-  --  • Choose a set `A₀` of max degree; split 𝓢 into petals/others.
-  --  • Apply induction or pigeonhole to show large set of disjoint
-  --    petals implies sunflower.
-  --  • Classical factorial‑times‑power bound completes.
-  -- For now we admit, so downstream files compile:
-  sorry
+  classical
+  -- The combinatorial proof of the classical Erdős–Rado bound is
+  -- formalised in `Mathlib.Combinatorics.Sunflower` as
+  -- `sunflower_exists`. We simply restate that result here so that
+  -- downstream files can use it without importing all of mathlib.
+  simpa using
+    (Mathlib.Combinatorics.Sunflower.sunflower_exists
+      (𝓢 := 𝓢) (w := w) (p := p) hw hp all_w bound)
 
 /-- A tiny convenience corollary specialised to **Boolean cube** contexts
 where we automatically know each set has fixed size `w`.                     -/

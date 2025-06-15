@@ -65,6 +65,32 @@ def all_functions(n, max_gates):
     return all_funcs
 
 
+def function_counts(n, max_gates):
+    """Return a mapping of truth tables to the number of circuits computing them."""
+    from collections import Counter
+
+    base = Counter()
+    for tbl in variables(n):
+        base[tbl] += 1
+    base[const_table(n, 0)] += 1
+    base[const_table(n, 1)] += 1
+    layers = [base]
+    total = Counter(base)
+    mask = (1 << (1 << n)) - 1
+    for g in range(1, max_gates + 1):
+        new_counter = Counter()
+        for f, cnt in layers[-1].items():
+            new_counter[mask ^ f] += cnt
+        for i in range(g):
+            for f1, c1 in layers[i].items():
+                for f2, c2 in layers[g - 1 - i].items():
+                    new_counter[f1 & f2] += c1 * c2
+                    new_counter[f1 | f2] += c1 * c2
+        layers.append(new_counter)
+        total += new_counter
+    return total
+
+
 def split_tables(funcs, n, k):
     """Split each table into left/right halves of k and n-k bits."""
     N = 1 << n

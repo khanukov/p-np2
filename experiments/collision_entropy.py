@@ -9,7 +9,7 @@ unique functions.
 
 import argparse
 from math import log2
-from lemma_b_search import all_functions
+from lemma_b_search import all_functions, function_counts
 
 
 def log2_unique_functions(n: int, max_gates: int) -> float:
@@ -21,6 +21,16 @@ def log2_unique_functions(n: int, max_gates: int) -> float:
     return log2(total)
 
 
+def collision_entropy_by_circuit(n: int, max_gates: int) -> float:
+    """Compute collision entropy weighting each circuit equally."""
+    counts = function_counts(n, max_gates)
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0
+    sum_sq = sum(c * c for c in counts.values())
+    return -log2(sum_sq / (total * total))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Measure log2 of distinct functions for small circuit class")
@@ -30,6 +40,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "max_gates", type=int, nargs="?", default=2,
         help="maximum number of gates (default: 2)")
+    parser.add_argument(
+        "--circuits", action="store_true",
+        help="weight entropy by individual circuits")
     args = parser.parse_args()
-    h2 = log2_unique_functions(args.n, args.max_gates)
+    if args.circuits:
+        h2 = collision_entropy_by_circuit(args.n, args.max_gates)
+    else:
+        h2 = log2_unique_functions(args.n, args.max_gates)
     print(f"n={args.n}, gates<={args.max_gates}, H2={h2:.4f}")

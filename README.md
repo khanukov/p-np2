@@ -17,7 +17,8 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `examples.lean` – runnable examples illustrating the definitions.
 * `experiments/` – small Python script `lemma_b_search.py` exploring rectangle covers.
-* `Task description`, `fce lemma proof` – research notes explaining the FCE‑Lemma project.
+* `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the current roadmap for the ACC⁰∘MCSP subexponential SAT approach.
+* `Task description`, `fce lemma proof` – original research notes explaining the FCE‑Lemma project.
 
 ## Building
 

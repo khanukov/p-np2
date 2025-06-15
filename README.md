@@ -16,15 +16,25 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `family_entropy_cover.lean` – placeholder for the family version of the cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `examples.lean` – runnable examples illustrating the definitions.
-* `experiments/` – small Python script `lemma_b_search.py` exploring rectangle covers.
+* `experiments/` – small Python tools exploring rectangle covers, including `lemma_b_search.py` and `single_gate_count.py`.
 * `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the current roadmap for the ACC⁰∘MCSP subexponential SAT approach.
-* `Task description`, `fce lemma proof` – original research notes explaining the FCE‑Lemma project.
+* `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 
 ## Building
 
 The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑20).  The repository does not include a `lakefile`; to experiment, create a Lean project that depends on mathlib and add these files, or invoke `lean` directly once mathlib is available.
 
 `examples.lean` can be executed with `lean --run examples.lean` after the dependencies are set up.
+
+## Experiments
+
+The `experiments/` directory contains Python scripts that enumerate small
+Boolean circuits to collect data for Lemma B.  Invoke them with Python 3:
+
+```bash
+python3 experiments/lemma_b_search.py     # exhaustive search of small circuits
+python3 experiments/single_gate_count.py  # list functions from a single gate
+```
 
 ## Status
 

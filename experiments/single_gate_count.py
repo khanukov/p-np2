@@ -1,4 +1,6 @@
-from itertools import product
+"""Enumerate Boolean functions computed by a single gate."""
+
+import argparse
 
 def truth_tables_single_gate(n):
     var_tables = []
@@ -27,8 +29,13 @@ def truth_tables_single_gate(n):
     return tables
 
 if __name__ == "__main__":
-    n = 3
-    tables = truth_tables_single_gate(n)
+    parser = argparse.ArgumentParser(
+        description="Enumerate one-gate Boolean functions")
+    parser.add_argument(
+        "n", type=int, nargs="?", default=3,
+        help="number of input bits (default: 3)")
+    args = parser.parse_args()
+    tables = truth_tables_single_gate(args.n)
     print("unique functions", len(tables))
     print("all tables as bitstrings")
     for tbl in sorted(tables):

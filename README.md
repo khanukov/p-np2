@@ -16,7 +16,8 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `family_entropy_cover.lean` – placeholder for the family version of the cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `examples.lean` – runnable examples illustrating the definitions.
-* `experiments/` – small Python tools exploring rectangle covers, including `lemma_b_search.py` and `single_gate_count.py`.
+* `experiments/` – small Python tools exploring rectangle covers, including
+  `lemma_b_search.py`, `single_gate_count.py`, and `collision_entropy.py`.
 * `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the current roadmap for the ACC⁰∘MCSP subexponential SAT approach.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 
@@ -34,6 +35,8 @@ Boolean circuits to collect data for Lemma B.  Invoke them with Python 3:
 ```bash
 python3 experiments/lemma_b_search.py     # exhaustive search of small circuits
 python3 experiments/single_gate_count.py  # list functions from a single gate
+python3 experiments/collision_entropy.py 3 1         # log2 of unique functions
+python3 experiments/collision_entropy.py 3 1 --circuits  # weight by circuit count
 ```
 
 ## Status

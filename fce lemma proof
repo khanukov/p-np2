@@ -22,7 +22,7 @@ Let $\{0,1\}^n$ denote the Boolean cube, and let $f: \{0,1\}^n \to \{0,1\}$ be a
 
 ## 3. The FCE-Lemma (Main Theorem)
 
-**Theorem.** Let $F$ be a family of Boolean functions on $n$ bits with $H_2(F) \le h$, where $h = O(1)$ or $o(n)$. Then there exists a collection $\mathcal{R} = \{ R_1, \dots, R_m \}$ of monochromatic subcubes such that:
+**Theorem.** Let $F$ be a family of Boolean functions on $n$ bits with $H_2(F) \le h$, where $h = o(n)$. Then there exists a collection $\mathcal{R} = \{ R_1, \dots, R_m \}$ of monochromatic subcubes such that:
 
 1. Each $R \in \mathcal{R}$ is monochromatic for all $f \in F$;
 2. For every $f \in F$, the union of $\{ R \in \mathcal{R} : f(x) = 1 \text{ on } R \}$ covers all 1-points of $f$;

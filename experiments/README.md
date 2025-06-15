@@ -8,10 +8,13 @@ The goal is to gather data for small `n` and small gate budgets to see whether t
 
 ## Running the experiment
 
-Run the script with Python 3:
+Run the script with Python 3.  It accepts two optional positional parameters: the
+number of input bits ``n`` and the maximum number of gates ``max_gates``.  If
+omitted, ``n`` defaults to ``3`` and ``max_gates`` to ``2``.
 
 ```bash
-python3 lemma_b_search.py
+python3 lemma_b_search.py          # use defaults n=3, max_gates=2
+python3 lemma_b_search.py 4 1      # four inputs, at most one gate
 ```
 
-The default parameters explore circuits on `n=3` input bits with up to 2 gates.  Feel free to adjust `n` and `max_gates` in `lemma_b_search.py` to try other values, but note that the enumeration grows rapidly.
+Note that the enumeration grows rapidly with both ``n`` and ``max_gates``.

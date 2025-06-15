@@ -5,8 +5,22 @@
 # "left" and "right" halves when the truth table is split at position k.
 # This is a toy experiment to gather data about possible rectangle covers.
 
+"""Small enumeration tool used for Lemma B experiments.
+
+The script enumerates all Boolean functions computable by circuits with a
+bounded number of AND/OR/NOT gates on ``n`` inputs.  For each possible split of
+the truth table into ``k`` left bits and ``n-k`` right bits, it reports the
+number of distinct left and right halves.  This gives a rough upper bound on the
+size of a rectangular cover for the family of functions under consideration.
+
+The original prototype had parameters ``n`` and ``max_gates`` hard-coded.  This
+version accepts them via command-line options so that different settings can be
+explored without editing the file.
+"""
+
 from collections import defaultdict
 from itertools import product
+import argparse
 
 # encode a boolean function on n inputs as an integer with 2**n bits
 
@@ -76,4 +90,10 @@ def experiment(n, max_gates):
 
 
 if __name__ == "__main__":
-    experiment(n=3, max_gates=2)
+    parser = argparse.ArgumentParser(description="Enumerate small circuits")
+    parser.add_argument("n", type=int, nargs="?", default=3,
+                        help="number of input bits (default: 3)")
+    parser.add_argument("max_gates", type=int, nargs="?", default=2,
+                        help="maximum number of gates (default: 2)")
+    args = parser.parse_args()
+    experiment(n=args.n, max_gates=args.max_gates)

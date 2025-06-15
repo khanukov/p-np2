@@ -2,13 +2,13 @@
 
 ## Abstract
 
-We prove the **Family Collision-Entropy Lemma (FCE-Lemma)**: for any family $F$ of Boolean functions on $n$ input bits with collision entropy $H_2(F) \le h$, there exists a collection $\mathcal{R}$ of at most $n(h+2)2^{10h} < 2^{n/100}$ monochromatic subcubes that simultaneously cover the truth tables of all $f \in F$. The proof combines entropy-drop arguments with sunflower-based combinatorial decomposition and is designed for full formalisation in Lean/Coq. The lemma closes the last open step in a reduction framework for proving $P \neq NP$ via communication complexity.
+We outline a strategy for the **Family Collision-Entropy Lemma (FCE-Lemma)**: for any family $F$ of Boolean functions on $n$ input bits with collision entropy $H_2(F) \le h$, there should exist a collection $\mathcal{R}$ of at most $n(h+2)2^{10h} < 2^{n/100}$ monochromatic subcubes that simultaneously cover the truth tables of all $f \in F$. The argument combines entropy-drop heuristics with sunflower-based combinatorial decomposition and is intended for eventual formalisation in Lean/Coq. Establishing this lemma would close the last open step in a reduction framework for proving $P \neq NP$ via communication complexity.
 
 ---
 
 ## 1. Introduction
 
-We consider the problem of covering Boolean function families with low collision entropy using few monochromatic rectangles (subcubes). The **Family Collision-Entropy Lemma** plays a central role in proof strategies aiming to separate $P$ from $NP$. This work constructs a covering with size $2^{o(n)}$ and proves it rigorously and formally.
+We consider the problem of covering Boolean function families with low collision entropy using few monochromatic rectangles (subcubes). The **Family Collision-Entropy Lemma** plays a central role in proof strategies aiming to separate $P$ from $NP$. This note sketches how one might construct a covering of size $2^{o(n)}$ and outlines the ingredients needed for a future rigorous proof.
 
 ## 2. Notation and Definitions
 

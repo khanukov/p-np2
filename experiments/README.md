@@ -21,7 +21,7 @@ on ``n`` inputs (optional, default ``n=3``).
 python3 lemma_b_search.py          # use defaults n=3, max_gates=2
 python3 lemma_b_search.py 4 1      # four inputs, at most one gate
 python3 single_gate_count.py       # tables from one gate on three inputs
-python3 collision_entropy.py       # compute log2 of distinct functions
+python3 collision_entropy.py 3 1   # log2 of unique functions for n=3
 ```
 
 Note that the enumeration grows rapidly with both ``n`` and ``max_gates``.

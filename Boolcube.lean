@@ -19,7 +19,7 @@ variable {n : ℕ}
 
 abbrev Point (n : ℕ) := Fin n → Bool
 
-structure Subcube (n : ℕ) where fix : Fin n → Option Bool    -- none ⇒ «координата свободна»
+structure Subcube (n : ℕ) where fix : Fin n → Option Bool    -- none ⇒ "coordinate is free"
 
 namespace Subcube
 
@@ -79,7 +79,7 @@ open Entropy
 
 namespace Boolcube
 
-/-- A finite family of labeled cubes that jointly cover все 1‑точки каждой функции из F.  (Покрывать 0‑точки тривиально: возьмём «всё остальное».) -/ structure Cover {n : ℕ} (F : Family n) where cubes   : Finset (LabeledCube n F) cover₁  : ∀ f ∈ F, coversOnes cubes f
+/-- A finite family of labeled cubes that jointly cover all 1-points of every function in `F`. (Covering 0-points is trivial: take "everything else".) -/ structure Cover {n : ℕ} (F : Family n) where cubes   : Finset (LabeledCube n F) cover₁  : ∀ f ∈ F, coversOnes cubes f
 
 /-- Sunflower step: if the family is large and entropy no longer drops, we find a common monochromatic subcube of dimension at least one.  This follows from the classical Erdős–Rado sunflower lemma. -/
 lemma sunflower_exists
@@ -92,12 +92,11 @@ lemma sunflower_exists
   -- family of supports of ones of functions in `F` and fixing the core.
   admit
 
-/-- Главный конструктор покрытия
-Работает по простой рекурсии: если F пусто или n = 0, берём пустое множество кубов; иначе пытаемся применить sunflower, а если он не найден –– используем координатный спуск энтропии.  Для terminate используем меру F.card, поскольку каждый шаг либо уменьшает card, либо (при sunflower) накрывает хотя бы все 1‑точки одной функции целиком, после чего эта функция удаляется из семейства.
+/-- Main cover constructor
+It works by a simple recursion: if `F` is empty or `n = 0`, we take the empty set of cubes; otherwise we try to apply the sunflower lemma, and if it fails we use a coordinate entropy descent.  For termination we use the measure `F.card`, since each step either decreases the cardinality or (in the sunflower case) covers all 1-points of some function entirely, after which that function is removed from the family.
 
-**NB:** Алгоритм зависит от аксиомы `sunflower_exists`; когда она
-будет доказана, код останется без изменений. -/
+**NB:** The algorithm depends on the axiom `sunflower_exists`; once it is proven, no code changes will be needed. -/
 
-noncomputable def buildCover : ∀ {n : ℕ}, (F : Family n) → Cover F | 0,    F => { cubes  := ∅, cover₁ := by intro f hf x hfx; exfalso -- в нулевой размерности Point 0 – единственное значение, -- но тогда f константна ⇒ 1‑точек нет. cases hfx } | (Nat.succ n), F => by by_cases hF : F.card = 0 · -- Пустое семейство – пустое покрытие. refine { cubes := ∅, cover₁ := ?_ } intro f hf; have : (f : BoolFun (Nat.succ n)) ∈ (∅ : Finset _ ) := by simpa [hF] using hf · -- Непустое семейство, n.succ > 0. have hn : 0 < Nat.succ n := Nat.succ_pos _ -- Попробуем sunflower. by_cases hSun : (∃ (C : Subcube (Nat.succ n)) (b : Bool), (∀ f ∈ F, ∀ x, C.Mem x → f x = b) ∧ 1 ≤ C.dim) · rcases hSun with ⟨C,b,hmono,hdim⟩ -- Сформируем соответствующий LabeledCube. let L : LabeledCube (Nat.succ n) F := { C     := C, color := b, mono  := by intro f hf x hx; exact hmono f hf x hx } -- Удаляем функции, которые полностью покрыты этим кубом (их 1‑точки закрыты). let F' : Family (Nat.succ n) := F.filter fun f ↦ ∀ x, C.Mem x → ¬ (f x = b) -- card уменьшилось ⇒ рекурсия по card. have hcard_lt : F'.card < F.card := by -- По крайней мере одна функция (та, для которой C монохромен = b) ушла. -- Формальная проверка: … упрощённо применяем Finset.card_lt_card. admit have Rec := buildCover F' exact { cubes  := Rec.cubes ∪ {L}, cover₁ := by intro f hf x hfx by_cases hC : C.Mem x · -- точка х лежит в C → сразу попали в L. refine ?_ have : L.C.Mem x := hC; exact ⟨L, by simp, this, rfl⟩ · -- иначе используем рекурсивное покрытие (f∈F'). have hf' : (f : BoolFun (Nat.succ n)) ∈ F' := by simp [F', hC, hfx] at hf have := Rec.cover₁ f hf' x hfx rcases this with ⟨L0, hL0, hmem, hcol⟩ exact ⟨L0, by simp[hL0], hmem, hcol⟩ }
-· -- Нет sunflower ⇒ применяем координатный энтропийный спад. have hFpos : 0 < F.card := Nat.pos_of_ne_zero hF obtain ⟨i, b, hdrop⟩ := exists_coord_entropy_drop (F:=F) hn hFpos -- Сужаем семейство, фиксируя i=b. let Cfix := Subcube.fixOne i b let F'   : Family n := (F.filter fun f ↦ ∃ x : Point (Nat.succ n), x i = b).map ⟨fun f => fun x ↦ f (fun j ↦ if h : (j : ℕ) < n.succ then if hji : j = i then b else (x ⟨j, by simpa using h⟩) else False, sorry⟩ ?_ -- Из‑за объёма кода и кастов этот кусок опустим: Lean‑реализация -- требует явного equiv между точками меньшего куба и сечением. admit
+noncomputable def buildCover : ∀ {n : ℕ}, (F : Family n) → Cover F | 0,    F => { cubes  := ∅, cover₁ := by intro f hf x hfx; exfalso -- in zero dimension Point 0 – единственное значение, -- но тогда f константна ⇒ 1‑точек нет. cases hfx } | (Nat.succ n), F => by by_cases hF : F.card = 0 · -- Пустое семейство – пустое покрытие. refine { cubes := ∅, cover₁ := ?_ } intro f hf; have : (f : BoolFun (Nat.succ n)) ∈ (∅ : Finset _ ) := by simpa [hF] using hf · -- Непустое семейство, n.succ > 0. have hn : 0 < Nat.succ n := Nat.succ_pos _ -- Попробуем sunflower. by_cases hSun : (∃ (C : Subcube (Nat.succ n)) (b : Bool), (∀ f ∈ F, ∀ x, C.Mem x → f x = b) ∧ 1 ≤ C.dim) · rcases hSun with ⟨C,b,hmono,hdim⟩ -- Сформируем соответствующий LabeledCube. let L : LabeledCube (Nat.succ n) F := { C     := C, color := b, mono  := by intro f hf x hx; exact hmono f hf x hx } -- Удаляем функции, которые полностью покрыты этим кубом (их 1‑точки закрыты). let F' : Family (Nat.succ n) := F.filter fun f ↦ ∀ x, C.Mem x → ¬ (f x = b) -- card уменьшилось ⇒ рекурсия по card. have hcard_lt : F'.card < F.card := by -- По крайней мере одна функция (та, для которой C монохромен = b) ушла. -- Формальная проверка: … упрощённо применяем Finset.card_lt_card. admit have Rec := buildCover F' exact { cubes  := Rec.cubes ∪ {L}, cover₁ := by intro f hf x hfx by_cases hC : C.Mem x · -- точка х лежит в C → сразу попали в L. refine ?_ have : L.C.Mem x := hC; exact ⟨L, by simp, this, rfl⟩ · -- иначе используем рекурсивное покрытие (f∈F'). have hf' : (f : BoolFun (Nat.succ n)) ∈ F' := by simp [F', hC, hfx] at hf have := Rec.cover₁ f hf' x hfx rcases this with ⟨L0, hL0, hmem, hcol⟩ exact ⟨L0, by simp[hL0], hmem, hcol⟩ }
+· -- No sunflower ⇒ apply coordinate entropy descent. have hFpos : 0 < F.card := Nat.pos_of_ne_zero hF obtain ⟨i, b, hdrop⟩ := exists_coord_entropy_drop (F:=F) hn hFpos -- We restrict the family by fixing `i = b`. let Cfix := Subcube.fixOne i b let F'   : Family n := (F.filter fun f ↦ ∃ x : Point (Nat.succ n), x i = b).map ⟨fun f => fun x ↦ f (fun j ↦ if h : (j : ℕ) < n.succ then if hji : j = i then b else (x ⟨j, by simpa using h⟩) else False, sorry⟩ ?_ -- Omitted due to code volume and casts: the Lean proof would require an explicit equivalence between points of the smaller cube and the section. admit
 

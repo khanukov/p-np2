@@ -1,52 +1,52 @@
-# Дорожная карта задачи E1
+# Task E1 Roadmap
 
-Ниже приведена модифицированная схема действий для получения субэкспоненциального SAT‑алгоритма для `ACC⁰∘MCSP`. Текст основан на обсуждении в проекте и разделён на ключевые направления.
-
----
-
-## 1. Отправные факты и терминология
-
-* Схема `C ∈ ACC⁰_d`, её размер — `poly(N)`, глубина `d = O(1)`.
-* `T` — truth‑таблица предполагаемо «малой» схемы. Пусть `N = 2^n`, а порог сложности `s(n)=n^c`.
-* `csize(T)` обозначает сложность функции `T`.
-* Цель: за время `2^{N - N^{\delta}}` (для некоторого `\delta>0`) решить вопрос выполнимости `\Phi(T)` при ограничении `csize(T) \le s(n)`.
+Below is a modified plan for obtaining a subexponential SAT algorithm for `ACC⁰∘MCSP`. The text is based on project discussions and is divided into key directions.
 
 ---
 
-## 2. Общая стратегия
+## 1. Initial facts and terminology
 
-1. **Многочленное представление.** По теоремам Разборова–Смоленского каждая `ACC⁰`‑схема эквивалентна многочлену степени `d' = O(\log^{O(1)}N)` над подходящим полем.
-2. **Разделение входов.** Записываем `N = k + \ell` и представляем сумму по допустимым `T` как двумерную свёртку по левым и правым частям таблицы.
-3. **Структурная лемма B.** Требуется покрыть множество `\mathcal{S}_n = \{T : csize(T) \le n^c\}` не более чем `2^{N - N^{\delta}}` прямоугольниками `A_i \times B_i`, каждый из которых можно перечислять относительно быстро.
-4. **Meet‑in‑the‑middle.** Для каждого прямоугольника вычисляем частичные суммы `\Sigma_{a\in A_i} (-1)^{Q_{\rm left}(a)}` и `\Sigma_{b\in B_i} (-1)^{Q_{\rm right}(b)}`, затем перемножаем. Благодаря ограничению на число прямоугольников и быстрому перебору получаем субэкспоненциальную сложность.
-
----
-
-## 3. Подзадачи для доказательства Леммы B
-
-### B‑1. Канонизация схем
-Показать, что всякая схема размера `\le n^c` имеет каноническое описание длины `O(n^c\log n)`.
-
-### B‑2. Локальность таблиц
-Доказать, что truth‑таблица малой схемы зависит только от локальных фрагментов адреса.
-
-### B‑3. Ограничение мощности
-Оценить число канонических описаний, зависящих от первых `k` бит, и показать предел `\le 2^{(1-\alpha)k}`.
-
-### B‑4. Быстрый перебор
-Обосновать перебор элементов `A_i` и `B_i` за время `2^{(1-\alpha)k}` и `2^{(1-\alpha)\ell}` соответственно.
-
-### B‑5. Построение покрытия
-Построить прямоугольное покрытие множества `\mathcal{S}_n` размера `M \le 2^{N - N^{\delta}}`.
+* Circuit `C ∈ ACC⁰_d` of size `poly(N)` and depth `d = O(1)`.
+* `T` is the truth table of a purported “small” circuit. Let `N = 2^n`, and set the complexity threshold `s(n) = n^c`.
+* `csize(T)` denotes the complexity of the function `T`.
+* Goal: decide satisfiability of `\Phi(T)` in time `2^{N - N^{\delta}}` (for some `\delta > 0`) under the constraint `csize(T) \le s(n)`.
 
 ---
 
-## 4. Развитие и дальнейшие шаги
+## 2. Overall strategy
 
-* **Теоретический блок.** Углубить исследования пунктов B‑1 – B‑3, включая связи с существующими результатами по каноническим формам и ограничению описаний.
-* **Алгоритмический блок.** Реализовать meet‑in‑the-middle и быстрый перебор (B‑4) на малых значениях `n`.
-* **Комбинаторный блок.** Разработать метод покрытия (B‑5) через представление «адрес‑данные» или похожие конструкции.
+1. **Polynomial representation.** By the Razborov–Smolensky theorems every `ACC⁰` circuit is equivalent to a polynomial of degree `d' = O(\log^{O(1)} N)` over a suitable field.
+2. **Input splitting.** Write `N = k + \ell` and express the sum over admissible `T` as a two-dimensional convolution over the left and right parts of the table.
+3. **Structural Lemma B.** Cover the set `\mathcal{S}_n = \{T : csize(T) \le n^c\}` with at most `2^{N - N^{\delta}}` rectangles `A_i \times B_i`, each of which can be enumerated quickly.
+4. **Meet-in-the-middle.** For each rectangle compute the partial sums `\Sigma_{a\in A_i} (-1)^{Q_{\rm left}(a)}` and `\Sigma_{b\in B_i} (-1)^{Q_{\rm right}(b)}`, then multiply them. The bound on the number of rectangles and fast enumeration yield subexponential complexity.
 
 ---
 
-Этот план остаётся основой для получения субэкспоненциального SAT‑алгоритма и является ключевым шагом на пути к доказательству `P ≠ NP`.
+## 3. Subtasks for proving Lemma B
+
+### B‑1. Canonical circuits
+Show that every circuit of size `\le n^c` has a canonical description of length `O(n^c\log n)`.
+
+### B‑2. Table locality
+Prove that the truth table of a small circuit depends only on local address fragments.
+
+### B‑3. Bounding the capacity
+Estimate the number of canonical descriptions depending on the first `k` bits and show a bound `\le 2^{(1-\alpha)k}`.
+
+### B‑4. Fast enumeration
+Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alpha)\ell}` respectively.
+
+### B‑5. Constructing the cover
+Build a rectangular cover of `\mathcal{S}_n` of size `M \le 2^{N - N^{\delta}}`.
+
+---
+
+## 4. Development and further steps
+
+* **Theory block.** Deepen the study of items B‑1–B‑3, including connections to existing results on canonical forms and description bounds.
+* **Algorithm block.** Implement meet-in-the-middle and fast enumeration (B‑4) for small values of `n`.
+* **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
+
+---
+
+This plan remains the basis for obtaining a subexponential SAT algorithm and is a key step toward proving `P ≠ NP`.

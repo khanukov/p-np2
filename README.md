@@ -20,6 +20,8 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `examples.lean` – runnable examples illustrating the definitions.
 * `experiments/` – small Python tools exploring rectangle covers, including
   `lemma_b_search.py`, `single_gate_count.py`, and `collision_entropy.py`.
+  The directory also contains enumeration logs such as
+  `results_n2_n3.md`, `results_n4_n5.md`, and `results_n6.md`.
 * `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the current roadmap for the ACC⁰∘MCSP subexponential SAT approach.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 

@@ -15,6 +15,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `family_entropy_cover.lean` – placeholder for the family version of the cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
+* `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `examples.lean` – runnable examples illustrating the definitions.
 * `experiments/` – small Python tools exploring rectangle covers, including
   `lemma_b_search.py`, `single_gate_count.py`, and `collision_entropy.py`.

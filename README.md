@@ -6,7 +6,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Layout
 
-* `bool_func.lean` – basic types for Boolean functions, points and subcubes (fully proved).
+* `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully proved).
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
 * `entropy.lean` – collision entropy framework (proof of `EntropyDrop` still marked `sorry`).
 * `sunflower.lean` – minimal sunflower lemma used downstream.

@@ -6,7 +6,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Layout
 
-* `bool_func.lean` – basic types for Boolean functions, points and subcubes (fully proved).
+* `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully proved).
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
 * `entropy.lean` – collision entropy framework (proof of `EntropyDrop` still marked `sorry`).
 * `sunflower.lean` – minimal sunflower lemma used downstream.
@@ -15,9 +15,13 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `family_entropy_cover.lean` – placeholder for the family version of the cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
+* `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
+* `table_locality.lean` – statement of the table locality lemma (roadmap B‑2).
 * `examples.lean` – runnable examples illustrating the definitions.
 * `experiments/` – small Python tools exploring rectangle covers, including
   `lemma_b_search.py`, `single_gate_count.py`, and `collision_entropy.py`.
+  The directory also contains enumeration logs such as
+  `results_n2_n3.md`, `results_n4_n5.md`, and `results_n6.md`.
 * `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the current roadmap for the ACC⁰∘MCSP subexponential SAT approach.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 

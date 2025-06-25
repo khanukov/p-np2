@@ -63,9 +63,21 @@ noncomputable def evalCanon {n : ℕ} : Canon n → Point n → Bool
 /-- Canonicalisation preserves semantics. -/
 theorem eval_canonical {n : ℕ} (c : Circuit n) (x : Point n) :
     eval c x = evalCanon (canonical c) x := by
-  -- Proof is by straightforward recursion on `c`.
-  -- Implementation omitted.
-  sorry
+  induction c generalizing x with
+  | var i =>
+      rfl
+  | const b =>
+      rfl
+  | not c ih =>
+      simp [Circuit.eval, evalCanon, canonical, ih]
+  | and c₁ c₂ ih₁ ih₂ =>
+      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
+      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h]
+      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h, Bool.and_comm]
+  | or c₁ c₂ ih₁ ih₂ =>
+      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
+      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h]
+      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h, Bool.or_comm]
 
 /-- Two circuits have the same canonical form iff they compute the same function. -/
 theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
@@ -73,9 +85,14 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     (∀ x, eval c₁ x = eval c₂ x) := by
   -- This follows from `eval_canonical` for both circuits.
   intro h x
-  have := congrArg (fun c => evalCanon c x) h
-  -- rest of proof omitted
-  sorry
+  have hcanon := congrArg (fun c => evalCanon c x) h
+  have hc₁ := eval_canonical (c := c₁) (x := x)
+  have hc₂ := eval_canonical (c := c₂) (x := x)
+  calc
+    eval c₁ x
+        = evalCanon (canonical c₁) x := hc₁
+    _ = evalCanon (canonical c₂) x := by simpa using hcanon
+    _ = eval c₂ x := hc₂.symm
 
 end Circuit
 

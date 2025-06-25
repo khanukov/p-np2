@@ -41,6 +41,9 @@ python3 experiments/lemma_b_search.py     # exhaustive search of small circuits
 python3 experiments/single_gate_count.py  # list functions from a single gate
 python3 experiments/collision_entropy.py 3 1         # log2 of unique functions
 python3 experiments/collision_entropy.py 3 1 --circuits  # weight by circuit count
+python3 experiments/collision_entropy.py 3 1 --list-counts  # table counts
+python3 experiments/collision_entropy.py 3 1 --list-counts --descending
+python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 ```
 
 ## Status

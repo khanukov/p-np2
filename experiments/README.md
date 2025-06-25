@@ -23,6 +23,9 @@ python3 lemma_b_search.py 4 1      # four inputs, at most one gate
 python3 single_gate_count.py       # tables from one gate on three inputs
 python3 collision_entropy.py 3 1         # log2 of unique functions for n=3
 python3 collision_entropy.py 3 1 --circuits  # weight by circuit count
+python3 collision_entropy.py 3 1 --list-counts  # print truth table counts
+python3 collision_entropy.py 3 1 --list-counts --descending
+python3 collision_entropy.py 3 1 --list-counts --top 5
 ```
 
 Note that the enumeration grows rapidly with both ``n`` and ``max_gates``.

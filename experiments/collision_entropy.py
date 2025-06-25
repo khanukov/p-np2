@@ -3,8 +3,10 @@
 For a given ``n`` and ``max_gates`` the script enumerates all distinct Boolean
 functions computable with at most that many gates (using AND/OR/NOT).
 Treating this set of functions as a uniform distribution, the collision entropy
-``H_2`` equals ``log2(|F|)``.  We therefore return the base-2 logarithm of the
-number of unique functions.
+``H_2`` equals ``log2(|F|)``.  Optionally the script can list the number of
+circuits computing each truth table instead of printing the entropy.  Use
+``--list-counts`` to output counts, ``--descending`` to sort by frequency, and
+``--top`` to limit the number of rows printed.
 """
 
 import argparse
@@ -44,9 +46,33 @@ if __name__ == "__main__":
     parser.add_argument(
         "--circuits", action="store_true",
         help="weight entropy by individual circuits")
+    parser.add_argument(
+        "--list-counts", action="store_true",
+        help="print table counts instead of entropy")
+    parser.add_argument(
+        "--descending", action="store_true",
+        help="sort counts from largest to smallest")
+    parser.add_argument(
+        "--top", type=int, default=0,
+        help="limit output to the first N rows when listing counts")
     args = parser.parse_args()
-    if args.circuits:
-        h2 = collision_entropy_by_circuit(args.n, args.max_gates)
+
+    if args.list_counts:
+        counts = function_counts(args.n, args.max_gates)
+        width = 1 << args.n
+        items = list(counts.items())
+        if args.descending:
+            items = sorted(items, key=lambda x: (-x[1], x[0]))
+        else:
+            items = sorted(items)
+        if args.top:
+            items = items[: args.top]
+        for tbl, cnt in items:
+            bits = format(tbl, f"0{width}b")
+            print(f"{bits} {cnt}")
     else:
-        h2 = log2_unique_functions(args.n, args.max_gates)
-    print(f"n={args.n}, gates<={args.max_gates}, H2={h2:.4f}")
+        if args.circuits:
+            h2 = collision_entropy_by_circuit(args.n, args.max_gates)
+        else:
+            h2 = log2_unique_functions(args.n, args.max_gates)
+        print(f"n={args.n}, gates<={args.max_gates}, H2={h2:.4f}")

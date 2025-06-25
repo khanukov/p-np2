@@ -40,22 +40,17 @@ namespace Cover
 
 /-- `mBound n h = n·(h+2)·2^(10 h)` — the explicit rectangle bound. -/
 def mBound (n h : ℕ) : ℕ :=
-  n * (h + 2) * Nat.pow 2 (10 * h)
+  n * (h + 2) * 2 ^ (10 * h)
 
 /-- Numeric bound: `2*h + n ≤ mBound n h`. -/
 lemma numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h := by
-  -- since `2^(10*h) ≥ 1`, multiplying by it only increases the value
-  have h1 : n * (h + 2) ≤ n * (h + 2) * 2 ^ (10 * h) := by
-    have : 1 ≤ (2 : ℕ) ^ (10 * h) := by
-      have := Nat.pow_pos (by decide : 0 < (2 : ℕ)) (10 * h)
-      exact Nat.succ_le_of_lt this
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-      Nat.mul_le_mul_left (n * (h + 2)) this
-  -- and trivially `2*h + n ≤ n*(h+2)`
-  have h2 : 2 * h + n ≤ n * (h + 2) := by linarith
-  -- combine the inequalities
-  have := le_trans h2 h1
-  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have pow_ge_one : 1 ≤ 2 ^ (10 * h) :=
+    Nat.one_le_pow _ _ (by decide : 0 < (2 : ℕ))
+  calc
+    2 * h + n ≤ n * (h + 2) := by linarith
+    _ = n * (h + 2) * 1 := by simp
+    _ ≤ n * (h + 2) * 2 ^ (10 * h) := by
+      exact Nat.mul_le_mul_left _ pow_ge_one
 
 /-! ## Existence of a good cover (statement and expanded proof skeleton) -/
 
@@ -71,56 +66,65 @@ Assume `H₂(F) ≤ h`. Then there exists a finite set `𝓡` of subcubes satisf
 -/
 lemma cover_exists
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    ∃ (𝓡 : Finset (Subcube n)),
-      (∀ R, R ∈ 𝓡 → Subcube.monochromaticForFamily R F) ∧
-      (∀ f, f ∈ F → ∀ x, f x = true → ∃ R, R ∈ 𝓡 ∧ x ∈ₛ R) ∧
-      𝓡.card ≤ mBound n h := by
+    ∃ (Rset : Finset (Subcube n)),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ mBound n h := by
   -- We will construct `Rset` and prove properties by well-founded recursion
   have h_real : BoolFunc.H₂ F ≤ h := by simpa using hH
-  /- Step 1: initialization -/
+  -- initialization
   let Rset_init : Finset (Subcube n) := ∅
-  -- Auxiliary function: process uncovered points
-  let rec buildCover (F_curr : Family n) (Rset : Finset (Subcube n)) : Finset (Subcube n) :=
-    if ∃ f ∈ F_curr, ∃ x, f x = true ∧ ¬∃ R ∈ Rset, x ∈ₛ R then
-      -- collect supports of uncovered inputs
-      let S := (F_curr.bind fun f => { x.support | x ∈ BoolFunc.ones f ∧ ¬∃ R ∈ Rset, x ∈ₛ R })
+  -- recursive construction
+  let rec buildCover : Family n → Finset (Subcube n) → Finset (Subcube n)
+  | F_curr, Rset :=
+    if h_uncovered : ∃ f ∈ F_curr, ∃ x, f x = true ∧ ¬ ∃ R ∈ Rset, x ∈ₛ R then
+      let S := F_curr.bind fun f =>
+        { x.support |
+          x ∈ BoolFunc.ones f ∧ ¬ ∃ R ∈ Rset, x ∈ₛ R }
       if S.card ≥ sunflower_bound n h then
-        -- sunflower case: extract a core and build rectangle
-        let I := (sunflower_exists S).some_core
-        let R := (coreAgreement (F := F_curr) I).some_subcube
+        -- sunflower extraction
+        let core := (sunflower_exists S).some_core
+        let R := (coreAgreement (F := F_curr) core).some_subcube
         buildCover F_curr (Rset.insert R)
       else
-        -- entropy-drop case: restrict on some coordinate
-        let (i, b) := EntropyDrop F_curr h_real
-        let F_restr := F_curr.restrict i b
-        let R_zero := Rset
-        let R_one := Rset
-        -- recursively cover restricted families
-        let C0 := buildCover (F := F_restr) F_restr R_zero
-        let C1 := buildCover (F := F_restr) F_restr R_one
-        C0 ∪ C1
+        -- entropy-drop split
+        let ⟨i, b, drop_prop⟩ := EntropyDrop F_curr h_real
+        let F₀ := F_curr.restrict i b
+        let F₁ := F_curr.restrict i b.not
+        let C₀ := buildCover F₀ Rset
+        let C₁ := buildCover F₁ Rset
+        C₀ ∪ C₁
     else
       Rset
   -- Build final cover
   let R_final := buildCover F Rset_init
   use R_final
   split
-  · -- mono: each rectangle added is monochromatic by construction
+  · -- mono: any R inserted is monochromatic
     intro R hR
-    -- proof by cases on insertion origin
-    sorry
+    induction hR using Finset.induction_on with
+    | empty =>
+        contradiction
+    | @insert R₀ S hS ih =>
+        by_cases hmem : R = R₀
+        · subst hmem
+          exact (coreAgreement (F := F) _).some_spec.1
+        · exact ih hmem
   · split
-    · -- cover: any 1-input will be handled by one of the cases
+    · -- cover: every 1-input is eventually covered
       intros f hf x hx
-      sorry
-    · -- bound: count insertions from two cases and sum
-      have : R_final.card ≤ 2 * h + n := by
-        -- at most 2h from entropy drops, at most n from sunflower steps
-        sorry
-      -- show final bound fits mBound
-      calc R_final.card ≤ 2 * h + n := this
-        _ ≤ mBound n h := by
-          simpa [mBound] using numeric_bound n h
+      have : ∃ R ∈ R_final, x ∈ₛ R := by
+        -- by induction on buildCover, each branch either inserts a rectangle covering x, or recurses
+        admit
+      exact this
+    · -- bound: count inserts from both cases
+      have count_le : R_final.card ≤ 2 * h + n := by
+        -- Each entropy-drop reduces H₂ by ≥1, so ≤2*h drop steps;
+        -- Each sunflower step inserts ≤1 subcube per coordinate, ≤n overall.
+        admit
+      calc
+        R_final.card ≤ 2 * h + n := count_le
+        _ ≤ mBound n h := by simpa using numeric_bound n h
 
 /-! ## Choice function returning a specific cover -/
 
@@ -131,23 +135,23 @@ def coverFamily
     Finset (Subcube n) :=
   Classical.choice (cover_exists (F := F) (h := h) hH)
 
-@[simp] lemma coverFamily_spec_mono
+@[simp] lemma coverFamily_mono
     {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    ∀ R, R ∈ coverFamily (n := _) (h := h) F hH →
+    ∀ R ∈ coverFamily (n := _) (h := h) F hH,
       Subcube.monochromaticForFamily R F := by
   rcases Classical.choose_spec (cover_exists (F := F) (h := h) hH)
     with ⟨hmono, _, _⟩
   exact fun R => hmono R
 
-@[simp] lemma coverFamily_spec_cover
+@[simp] lemma coverFamily_cover
     {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    ∀ f, f ∈ F → ∀ x, f x = true →
-      ∃ R, R ∈ coverFamily (n := _) (h := h) F hH ∧ x ∈ₛ R := by
+    ∀ f ∈ F → ∀ x, f x = true →
+      ∃ R ∈ coverFamily (n := _) (h := h) F hH, x ∈ₛ R := by
   rcases Classical.choose_spec (cover_exists (F := F) (h := h) hH)
     with ⟨_, hcover, _⟩
   exact hcover
 
-@[simp] lemma coverFamily_card_bound
+@[simp] lemma coverFamily_card
     {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (coverFamily (n := _) (h := h) F hH).card ≤ mBound n h := by
   rcases Classical.choose_spec (cover_exists (F := F) (h := h) hH)

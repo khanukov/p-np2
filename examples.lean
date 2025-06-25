@@ -89,9 +89,8 @@ directly `#eval` a `Real` expression, but we can *prove* useful facts.
 -/
 example : BoolFunc.H₂ F₃ ≤ (3 : ℝ) := by
   -- `3` is a silly loose upper bound, but easy to prove:
-  have h₁ : 0 < F₃.card := by decide
   have h₂ : BoolFunc.H₂ F₃ = Real.logb 2 (F₃.card) := by
-    simpa using BoolFunc.H₂_eq_log_card (n := 3) (F := F₃) h₁
+    simpa using BoolFunc.H₂_eq_log_card (n := 3) (F := F₃)
   have : Real.logb 2 (F₃.card) ≤ 3 := by
     -- `F₃.card = 3`, and `log₂ 3 ≤ 2`; we relax to `≤ 3`.
     have : (F₃.card : ℝ) = 3 := by simp
@@ -140,9 +139,8 @@ lemma h₀_ok : BoolFunc.H₂ F₃ ≤ (h₀ : ℝ) := by
   have : BoolFunc.H₂ F₃ ≤ (3 : ℝ) := by
     simpa using (by
       -- Re‑use previous example; compact proof
-      have h₁ : 0 < F₃.card := by decide
       have h₂ : BoolFunc.H₂ F₃ = Real.logb 2 (F₃.card) := by
-        simpa using BoolFunc.H₂_eq_log_card (n := 3) (F := F₃) h₁
+        simpa using BoolFunc.H₂_eq_log_card (n := 3) (F := F₃)
       have : Real.logb 2 3 ≤ 3 := by
         have : (Real.logb 2 3) ≤ 2 := by
           have : (Real.logb 2 4) = 2 := by

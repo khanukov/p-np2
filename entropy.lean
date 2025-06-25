@@ -44,10 +44,54 @@ def collProb {n : ℕ} (F : Family n) : ℝ :=
     collProb F = (F.card : ℝ)⁻¹ := by
   simp [collProb, h.ne', h]
 
+@[simp] lemma collProb_zero {n : ℕ} {F : Family n} (h : F.card = 0) :
+    collProb F = 0 := by
+  simp [collProb, h]
+
+lemma collProb_nonneg {n : ℕ} (F : Family n) :
+    0 ≤ collProb F := by
+  classical
+  by_cases h : F.card = 0
+  · simp [collProb, h]
+  · have hpos : 0 < F.card := Nat.pos_of_ne_zero h
+    have hpos_real : 0 ≤ (F.card : ℝ) := by exact_mod_cast (le_of_lt hpos)
+    have := inv_nonneg.mpr hpos_real
+    simpa [collProb, h, hpos] using this
+
+lemma collProb_le_one {n : ℕ} (F : Family n) :
+    collProb F ≤ 1 := by
+  classical
+  by_cases h : F.card = 0
+  · have hzero : collProb F = 0 := by simp [collProb, h]
+    simpa [hzero] using (show (0 : ℝ) ≤ (1 : ℝ) from by norm_num)
+  · have hpos : 0 < F.card := Nat.pos_of_ne_zero h
+    have hge : (1 : ℝ) ≤ F.card := by exact_mod_cast Nat.succ_le_of_lt hpos
+    have hpos_real : 0 < (F.card : ℝ) := by exact_mod_cast hpos
+    have := inv_le_one hpos_real hge
+    simpa [collProb, h] using this
+
+@[simp] lemma collProb_card_one {n : ℕ} {F : Family n} (h : F.card = 1) :
+    collProb F = 1 := by
+  simp [collProb, h]
+
+lemma collProb_ne_zero_of_pos {n : ℕ} {F : Family n} (h : 0 < F.card) :
+    collProb F ≠ 0 := by
+  classical
+  have hne : (F.card : ℝ) ≠ 0 := by exact_mod_cast h.ne'
+  simpa [collProb, h] using inv_ne_zero hne
+
 /-- **Collision entropy** `H₂(F)` (base‑2).  For a *uniform* family
 
 noncomputable def H₂ {n : ℕ} (F : Family n) : ℝ :=
   Real.logb 2 F.card
+
+@[simp] lemma H₂_eq_log_card {n : ℕ} (F : Family n) :
+    H₂ F = Real.logb 2 F.card := by
+  rfl
+
+@[simp] lemma H₂_card_one {n : ℕ} (F : Family n) (h : F.card = 1) :
+    H₂ F = 0 := by
+  simp [H₂, h]
 
 /-- **Entropy Drop Lemma** (statement only).  If `n > 0` and the family is
 nonempty, there exists a coordinate and a bit whose restriction lowers the

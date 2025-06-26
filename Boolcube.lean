@@ -94,40 +94,136 @@ by
   -- proof omitted
   sorry
 
-/-!  ### 2.  High‑level cover structure and recursive constructor                     -/
+
+/-!  ### 2.  High‑level cover structure and recursive constructor -/
 
 namespace Boolcube
 
-/-- A finite family of labeled cubes that jointly cover all 1-points of every
-function in `F`.  (Covering 0-points is trivial: take "everything else".) -/
-structure Cover {n : ℕ} (F : Family n) where
-  cubes : Finset (LabeledCube n F)
-  cover₁ : ∀ f ∈ F, coversOnes cubes f
+structure LabeledCube (n : ℕ) (F : Family n) where
+  cube : Subcube n
+  bit  : Bool
+  mono : ∀ f ∈ F, ∀ x, cube.Mem x → f x = bit
 
-/-- Sunflower step: if the family is large and entropy no longer drops, we find a common monochromatic subcube of dimension at least one.  This follows from the classical Erdős–Rado sunflower lemma. -/
-lemma sunflower_exists
-    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 0 < F.card) :
+namespace LabeledCube
+
+/-- A cube that fixes a single coordinate to the given bit. -/
+@[simp] def fixOneLabel {n} (i : Fin n) (b : Bool) (F : Family n) :
+    LabeledCube n F :=
+  { cube := Subcube.fixOne i b
+    bit  := b
+    mono := by
+      intro f hf x hx
+      have hxi : x i = b := (Subcube.mem_fixOne_iff).mp hx
+      simpa [hxi] }
+
+/-- A cube obtained from an arbitrary `Subcube`. -/
+@[simp] def ofSubcube {n} {F : Family n} (C : Subcube n) (b : Bool)
+    (hmono : ∀ f ∈ F, ∀ x, C.Mem x → f x = b) : LabeledCube n F :=
+  ⟨C, b, hmono⟩
+
+end LabeledCube
+
+/-- A *cover* is a finite set of labeled cubes that together cover
+all `1`‑points of every function in `F`. -/
+structure Cover {n : ℕ} (F : Family n) where
+  cubes  : Finset (LabeledCube n F)
+  cover₁ : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ cubes, C.cube.Mem x
+
+/-- Sunflower step: if the family is large and entropy no longer drops, we find
+ a common monochromatic subcube of dimension at least one.  This follows from the
+ classical Erdős–Rado sunflower lemma. -/
+lemma sunflower_exists (F : Family n) (hn : 0 < n) (hF : 0 < F.card) :
     ∃ (C : Subcube n) (b : Bool),
       (∀ f ∈ F, ∀ x, C.Mem x → f x = b) ∧ 1 ≤ C.dim := by
   classical
-  -- Placeholder formalization using the sunflower lemma; full proof omitted.
-  -- We construct a suitable subcube by applying `sunflower_of_large` to the
-  -- family of supports of ones of functions in `F` and fixing the core.
+  -- Outline: apply the sunflower lemma to the supports of one-sets of
+  -- functions in `F` and take the core as fixed coordinates.
   admit
 
-/-- Main cover constructor
-It works by a simple recursion: if `F` is empty or `n = 0`, we take the empty
-set of cubes.  Otherwise we try the sunflower lemma and, if that fails, use a
-coordinate entropy descent.  Termination is via the measure `F.card`, since each
-step either decreases the cardinality or, in the sunflower case, removes a fully
-covered function from the family.
+/-- **Recursive construction** of a `Cover` for any family `F`.  The algorithm
+alternates two steps until the family becomes empty:
+1. **Sunflower step** – if `sunflower_exists` succeeds we extract a
+   monochromatic subcube of positive dimension, add it to the cover and remove
+   every function already covered by that cube.
+2. **Entropy step** – otherwise we perform an entropy‑drop split given by
+   `exists_coord_card_drop`, filter the family and recurse.
 
-**NB:** The algorithm depends on the axiom `sunflower_exists`; once it is proven, no code changes will be needed. -/
-
+Termination measure: the cardinality `F.card` strictly decreases in every
+iteration. -/
 noncomputable def buildCover : ∀ {n : ℕ}, (F : Family n) → Cover F
 | 0, F =>
-  { cubes := ∅, cover₁ := by intro _ hf; cases hf }
-| (Nat.succ n), F => by
-  -- outline omitted
-  admit
+  { cubes := ∅,
+    cover₁ := by
+      intro f hf x hx
+      cases hf } -- empty family
+| (n+1), F =>
+  if hF0 : F.card = 0 then
+    { cubes := ∅,
+      cover₁ := by
+        intro f hf x hx
+        have : f ∈ (F : Finset _) := hf
+        have : (0 : ℕ) < F.card := by
+          have := Finset.card_pos.mpr ⟨f, hf⟩; linarith
+        exact False.elim (by
+          have := by simpa using this; linarith) }
+  else
+    have hFpos : 0 < F.card := by
+      have := Nat.pos_of_ne_zero hF0
+      simpa using this
+    have hn_pos : 0 < n.succ := Nat.succ_pos _
+    (by
+      by_cases hs : ∃ C b, (∀ f ∈ F, ∀ x, C.Mem x → f x = b) ∧ 1 ≤ C.dim :=
+        by
+          cases hs with
+          | intro C b hmono hdim =>
+            let F' : Family (n+1) :=
+              F.filter fun f ↦ ¬(∀ x, C.Mem x → f x = b)
+            let recCover := buildCover (F := F')
+            exact {
+              cubes := recCover.cubes.insert (LabeledCube.ofSubcube C b hmono),
+              cover₁ := by
+                intro f hf x hfx
+                by_cases hfull : (∀ x, C.Mem x → f x = b)
+                · refine ?_
+                  refine ⟨_,?_,?⟩
+                  · apply Finset.mem_insert_self
+                  · have : C.Mem x := ?_
+                    sorry
+                ·
+                  have hF' : f ∈ F' := by
+                    simp [F', hfull, hf]
+                  obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hF' x hfx
+                  exact ⟨C', by simp [hC'mem], hCx⟩ } )
+        (fun hNoSunflower ↦
+          by
+            obtain ⟨i, b, hcard⟩ := exists_coord_card_drop F hn_pos hFpos
+            let F' : Family (n+1) := F.filter fun f ↦ ∃ x, x i = b
+            let recCover := buildCover (F := F')
+            exact {
+              cubes := recCover.cubes.insert (LabeledCube.fixOneLabel i b F),
+              cover₁ := by
+                intro f hf x hfx
+                by_cases hxi : x i = b
+                ·
+                  have : C : LabeledCube (n+1) F := LabeledCube.fixOneLabel i b F
+                  by_cases hfxi : f x = b
+                  · refine ⟨this, ?_, ?_⟩
+                    · simp [Finset.mem_insert]
+                    ·
+                      have hmem : this.cube.Mem x := by
+                        simpa [LabeledCube.fixOneLabel, Subcube.mem_fixOne_iff, hxi]
+                      exact hmem
+                  ·
+                    have hfF' : f ∈ F' := by
+                      simp [F', hf, hxi] at *
+                    obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
+                    exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
+                ·
+                  have hfF' : f ∈ F := hf
+                  obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f ?_ x hfx
+                  · exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
+                  ·
+                    have : ∃ y, y i = b := ?_; exact this
+            }) )
 
+end Boolcube

@@ -27,9 +27,20 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Building
 
-The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑20).  The repository does not include a `lakefile`; to experiment, create a Lean project that depends on mathlib and add these files, or invoke `lean` directly once mathlib is available.
+The code was tested with the toolchain `leanprover/lean4:nightly` and
+**mathlib4** (≥ 2025‑05‑20).  This repository does not include a `lakefile`;
+place the Lean files in your own Lake project and build with:
 
-`examples.lean` can be executed with `lean --run examples.lean` after the dependencies are set up.
+```bash
+lake exe cache get    # optional, to download precompiled oleans
+lake build
+```
+
+Run the example file with:
+
+```bash
+lake env lean --run examples.lean
+```
 
 ## Experiments
 

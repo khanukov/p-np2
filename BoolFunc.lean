@@ -161,6 +161,21 @@ def BFunc.restrictCoord (f : BFunc n) (j : Fin n) (b : Bool) : BFunc n :=
 
 end Restrict
 
+/-- The set of inputs on which a Boolean function outputs `true`. -/
+noncomputable
+def ones {n : ℕ} (f : BFunc n) : Finset (Point n) :=
+  Finset.univ.filter fun x => f x = true
+
+@[simp] lemma mem_ones {n : ℕ} {f : BFunc n} {x : Point n} :
+    x ∈ ones f ↔ f x = true := by
+  classical
+  simp [ones]
+
+/-- Restrict every function in a family by fixing the `i`‑th input bit to `b`. -/
+noncomputable
+def Family.restrict {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) : Family n :=
+  F.image fun f x => f (Point.update x i b)
+
 /-! ## Re‑exports to avoid long qualified names downstream -/
 export Subcube (mem dimension monochromaticFor monochromaticForFamily)
 export Point (update)

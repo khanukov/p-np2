@@ -158,4 +158,9 @@ def coverFamily
     with ⟨_, _, hbound⟩
   exact hbound
 
+lemma coverFamily_card_bound
+    {F : Family n} {h : ℕ} (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (n := n) (h := h) F hH).card ≤ mBound n h :=
+  coverFamily_card (F := F) (h := h) hH
+
 end Cover

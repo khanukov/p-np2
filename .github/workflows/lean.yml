@@ -1,0 +1,19 @@
+name: CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup elan
+        uses: Julian/setup-lean@v1
+        with:
+          default-toolchain: nightly
+      - name: Get mathlib cache
+        run: lake exe cache get
+      - name: Build project
+        run: lake build

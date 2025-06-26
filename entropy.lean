@@ -98,12 +98,16 @@ nonempty, there exists a coordinate and a bit whose restriction lowers the
 collision entropy by at least one.  The constructive proof is left for future
 work. -/
 lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
-    (hn : 0 < n) (hF : 0 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool, H₂ F - 1 ≤ H₂ F := by
+    (hn : 0 < n) (hF : 1 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool,
+      H₂ (F.restrict i b) ≤ H₂ F - 1 := by
   classical
-  refine ⟨⟨0, hn⟩, true, ?_⟩
-  have hzero : (0 : ℝ) ≤ 1 := by norm_num
-  have h : H₂ F - 1 ≤ H₂ F := sub_le_self _ hzero
-  exact h
+  -- We sketch the classical argument: choose two distinct functions `f₀`, `f₁`
+  -- from `F`.  They differ on some input `x`, hence on some coordinate `i` of
+  -- `x`.  Restricting all functions in `F` to that coordinate and the value
+  -- `x i` collapses `f₀` and `f₁`, so the cardinality drops by at least `1`.
+  -- Taking logarithms yields the claimed entropy decrease.
+  -- Full details remain to be formalised.
+  admit
 
 end BoolFunc

@@ -27,9 +27,16 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Building
 
-The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑20).  A
-`lakefile.lean` and `lean-toolchain` are included.  After installing `lake`
-and `elan`, fetch the cached dependencies and build the project with:
+The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑20).
+A minimal `lakefile.lean` and `lean-toolchain` are included.  Install `elan`
+(which also provides the `lake` tool) and run
+
+```bash
+elan toolchain install $(cat lean-toolchain)
+```
+
+to set up the compiler.  Then fetch the cached dependencies and build the
+project with:
 
 ```bash
 lake exe cache get

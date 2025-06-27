@@ -91,8 +91,11 @@ Modules in Lean 4:
 The modules above serve as milestones. Our immediate goals are:
 
 1. Complete the proof of `EntropyDrop` in `entropy.lean`.  The helper
-   lemma `exists_restrict_half` has been formalised to show that some
-   input bit reduces a family to at most half its size.
+   lemma `exists_restrict_half` shows that some input bit reduces a
+   family to at most half its size.  Its real-valued form
+   `exists_restrict_half_real` lets us reason about logarithms, and
+   `exists_coord_entropy_drop` formalises the resulting one‑bit entropy
+   reduction.
 2. Add a classical sunflower lemma in `sunflower.lean`.
 3. Formalise the `CoreAgreement` lemma in `agreement.lean`.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A

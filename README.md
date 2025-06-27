@@ -10,8 +10,11 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The
-  auxiliary lemma `exists_restrict_half` now shows that some input bit
-  restricts a family to at most half its size.
+  auxiliary lemma `exists_restrict_half` shows that some input bit
+  restricts a family to at most half its size.  Its real-valued
+  variant `exists_restrict_half_real` provides the bridge to
+  analytic bounds, and `exists_coord_entropy_drop` turns this into a
+  one‑bit drop of collision entropy.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
 * `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
 * `cover.lean` – experimental cover builder that keeps track of the
@@ -46,6 +49,10 @@ project with:
 lake exe cache get
 lake build
 ```
+
+If the cache download fails due to network restrictions, simply run
+`lake build` again to compile Mathlib from source. This may take a
+few minutes the first time.
 
 `examples.lean` can also be executed directly with `lean --run examples.lean` once
 the dependencies have been downloaded.

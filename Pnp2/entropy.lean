@@ -90,10 +90,9 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
-  -- We obtain the real-valued inequality and cast back to `ℕ`.
-  obtain ⟨i, b, h⟩ := exists_restrict_half_real (F := F) hn hF
+  -- Obtain the inequality in ℝ and cast back to `ℕ`.
+  obtain ⟨i, b, h⟩ := exists_restrict_half_real_aux (F := F) hn hF
   refine ⟨i, b, ?_⟩
-  -- `exact_mod_cast` bridges the gap between naturals and reals.
   exact_mod_cast h
 
 -- The above arithmetic on naturals is tedious; a simpler *real* argument will
@@ -103,10 +102,9 @@ lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.car
 /-- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
 ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof.
 -/
-lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
+lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 :=
-by
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
   -- We prove the contrapositive: if **no** coordinate yields a half-size
   -- restriction, then we derive a contradiction. Assume every coordinate `i` and
@@ -158,6 +156,15 @@ by
   have := lt_of_le_of_lt log_ineq sum_log
   -- We get Real.logb 2 F.card < 2 * Real.logb 2 F.card - 2, i.e. Real.logb 2 F.card > 2.
   linarith
+
+/-- **Existence of a halving restriction (ℝ version)** – deduced from the
+integer statement. -/
+lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
+    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+  obtain ⟨i, b, hhalf⟩ := exists_restrict_half (F := F) hn hF
+  refine ⟨i, b, ?_⟩
+  exact_mod_cast hhalf
 
 /-- **Entropy‑Drop Lemma.**  There exists a coordinate / bit whose
 restriction lowers collision entropy by ≥ 1 bit. -/

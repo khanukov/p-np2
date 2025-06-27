@@ -50,6 +50,9 @@ The file `cover.lean` now keeps track of uncovered inputs and recurses via
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
   The initial Lean code for the recursive cover lives in `cover.lean` and needs
   completeness proofs.
+* **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
+  shows that some coordinate always cuts collision entropy by at least one bit,
+  paving the way for a robust splitting strategy.
 
 ---
 

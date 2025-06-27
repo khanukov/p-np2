@@ -30,6 +30,26 @@ description bits; derive a counting bound for each fixed `k`.
 3. Check the bound experimentally for small `n` to guide the choice of
    `α`.
 
+Recent discussions suggest a more explicit counting argument.
+By ordering gates topologically and lexicographically we eliminate
+redundant subcircuits, obtaining a canonical description for every
+size‑`m` circuit.  The proof of `canonical_desc_length` then yields at
+most `2^{O(m \log n)}` canonical circuits, which for `m = n^c` becomes
+`2^{O(n^{c+1})}`.  Fixing the first `k` bits of a truth table pins down
+`2^k` evaluations.  Treating these answers as constants reduces the
+number of relevant variables to `n - k`, so at most
+`2^{O(n^c (n - k))}` canonical circuits remain compatible with the
+prefix.  Choosing `k` about `C n^{c+1}` (for large enough `C`) forces
+this quantity to be `\le 2^{(1-\alpha)k}` for some `\alpha > 0`.  In
+other words, long prefixes drastically shrink the space of small
+circuits and establish the desired capacity bound.
+
+A corresponding Lemma `count_canonical_bounded` is stated in
+`canonical_circuit.lean`.  Together with the helper function
+`encodeCanon`, which turns canonical circuits into explicit bitstrings,
+it packages the code-length estimate into an explicit counting bound.
+Proving this lemma will complete the “canonical” block (B‑1/B‑3).
+
 ## B‑5. Constructing the cover
 
 *Statement.*  Show that all functions computed by circuits of size at

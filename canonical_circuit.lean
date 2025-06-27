@@ -149,6 +149,54 @@ theorem canonical_desc_length {n : ℕ} (c : Circuit n) :
       by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
       <;> simp [canonical, codeLen, ih₁, ih₂, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
+/-!
+## Counting canonical circuits
+
+The next bound packages `canonical_desc_length` into a cardinality estimate.
+Every canonical circuit of size ≤ `m` has description length at most
+`m * (Nat.log n + 1) + 1`; therefore there can be no more than
+`2^(m * (Nat.log n + 1) + 1)` distinct canonical circuits.  This lemma is a
+stub used by the roadmap item **B‑3** and will be proven by explicitly
+encoding circuits as bitstrings.
+-/
+
+open Classical
+
+/-! ### Encoding canonical circuits
+
+The following auxiliary function encodes a canonical circuit as a list
+of bits.  Each constructor contributes a constant number of control
+bits plus the binary representation of variable indices.  The exact
+format is irrelevant for now; we only rely on the length bound provided
+by `codeLen`.  The corresponding decoding function and proof of
+correctness are left for future work.
+-/
+
+-- | Encode a canonical circuit as a `List` of bits.
+def encodeCanon {n : ℕ} : Canon n → List Bool
+  | Canon.var i       => List.replicate (Nat.log n + 1) false  -- placeholder
+  | Canon.const b     => [b]
+  | Canon.not c       => false :: encodeCanon c
+  | Canon.and c₁ c₂   => true :: encodeCanon c₁ ++ encodeCanon c₂
+  | Canon.or c₁ c₂    => true :: encodeCanon c₁ ++ encodeCanon c₂
+
+lemma encodeCanon_length {n : ℕ} (c : Canon n) :
+    (encodeCanon c).length ≤ codeLen c := by
+  -- Proof postponed.  The encoding above is only schematic.
+  admit
+
+/-- The set of circuits on `n` inputs whose size does not exceed `m`. -/
+def circuitsUpTo (n m : ℕ) : Set (Circuit n) := {c | sizeOf c ≤ m}
+
+/-- Upper bound on the number of canonical circuits of size at most `m`.
+    The proof is deferred. -/
+lemma count_canonical_bounded (n m : ℕ) :
+    (circuitsUpTo n m).Finite ∧
+      (circuitsUpTo n m).toFinset.card ≤ 2 ^ (m * (Nat.log n + 1) + 1) := by
+  classical
+  -- TODO: encode canonical circuits and derive the bound from `canonical_desc_length`.
+  admit
+
 end Circuit
 
 end Boolcube

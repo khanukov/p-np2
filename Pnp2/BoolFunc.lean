@@ -188,6 +188,44 @@ noncomputable
 def Family.restrict {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) : Family n :=
   F.image fun f x => f (Point.update x i b)
 
+/-! ### Essential coordinate support -/
+
+/-- Set of coordinates on which `f` depends essentially.  A coordinate `i`
+belongs to `support f` if flipping the `i`‑th bit of some input changes the
+output. -/
+noncomputable
+def support {n : ℕ} (f : BFunc n) : Finset (Fin n) :=
+  Finset.univ.filter fun i => ∃ x : Point n, f x ≠ f (Point.update x i (!x i))
+
+@[simp] lemma mem_support_iff {n : ℕ} {f : BFunc n} {i : Fin n} :
+    i ∈ support f ↔ ∃ x : Point n, f x ≠ f (Point.update x i (!x i)) := by
+  classical
+  simp [support]
+
+/-! ### Families of supports -/
+
+namespace Family
+
+variable {n : ℕ}
+
+/-/ The collection of essential supports of all functions in the family. -/
+noncomputable
+def supports (F : Family n) : Finset (Finset (Fin n)) :=
+  F.image support
+
+@[simp] lemma mem_supports {F : Family n} {s : Finset (Fin n)} :
+    s ∈ supports F ↔ ∃ f ∈ F, support f = s := by
+  classical
+  unfold supports
+  constructor
+  · intro hs
+    rcases Finset.mem_image.mp hs with ⟨f, hf, hfs⟩
+    exact ⟨f, hf, hfs⟩
+  · rintro ⟨f, hf, rfl⟩
+    exact Finset.mem_image.mpr ⟨f, hf, rfl⟩
+
+end Family
+
 /-! ## Re‑exports to avoid long qualified names downstream -/
 export Subcube (mem dimension monochromaticFor monochromaticForFamily)
 export Point (update)

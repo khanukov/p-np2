@@ -17,7 +17,7 @@ and `coverFamily`.  All non‑trivial proofs are left as `sorry` (milestone
 documentation or tests.
 -/
 
-import Cover
+import Pnp2.Cover
 import Mathlib.Data.Real.Log
 import Mathlib.Data.Nat.Pow
 import Mathlib.Tactic

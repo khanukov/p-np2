@@ -9,7 +9,7 @@ notion of locality will require substantial further work; here we
 record the intended interface so that other files may depend on it.
 -/
 
-import Boolcube
+import Pnp2.Boolcube
 
 namespace Boolcube
 

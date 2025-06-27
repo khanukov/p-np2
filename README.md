@@ -67,6 +67,7 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 This is a research prototype.  Many modules contain `sorry` placeholders and only
 partial proofs.  The `cover.lean` file now constructs covers by recursively
-searching for the first uncovered input.  Only two branches—sunflower extraction
-and entropy split—remain incomplete.  The repository is intended for exploration
-and does not constitute a finished argument.
+searching for the first uncovered input.  The sunflower extraction and entropy
+split steps are still represented by placeholders in `cover.lean`.  The
+repository is intended for exploration and does not constitute a finished
+argument.

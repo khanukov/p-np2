@@ -59,19 +59,17 @@ enumerable in time `2^{(1-α)k}` on the left and `2^{(1-α)ℓ}` on the
 right (`k + ℓ = n`).
 
 *Current status.*  Low-sensitivity functions can already be compressed via
-the Impagliazzo–Moshkovitz–Oliveira method.  The new `cover.lean` module
-records uncovered inputs explicitly and splits on them, but the
-sunflower and entropy steps are still placeholders.  Collision‑entropy
-techniques for biased functions have yet to be adapted to families.
+the Impagliazzo–Moshkovitz–Oliveira method.  The updated `cover.lean` module
+records uncovered inputs explicitly and splits on them, but the sunflower
+extraction and entropy steps are still placeholders.  Adapting the
+collision‑entropy technique to entire families remains an open task.
 
 *Next steps.*
 
-1. Adapt the collision‑entropy argument to a distribution over small
-   circuits rather than a single function.
-2. Combine this with the canonical description bound from B‑3 to produce
-   a uniform cover for the family.
-3. Provide a Lean formalisation tying the entropy estimate to the final
-   rectangle count `M`.
+1. Tune the numeric constants and integrate the canonical description bound
+   from B‑3.
+2. Optimise the enumeration procedures and clean up the formal proofs of the
+   entropy bounds.
 
 ---
 ### Entropy branch
@@ -82,7 +80,7 @@ Then there are at most $2^{k-\Delta}$ distinct left halves among the functions o
 
 An entropy-reduction lemma lets us pick a subset $A'_i \subseteq A_i$ of size $\approx 2^{k-\Delta}$ that contains most of the probability mass of $A$.  The rectangle $A'_i \times B_i$ still covers almost all of $\mathcal{F}$ and has size $2^{N-\Delta}$.  Iterating the argument until $\Delta = N^{\delta}$ produces a covering rectangle of size $2^{N-N^{\delta}}$.  After removing the covered portion we repeat the search for a sunflower or another entropy drop until the family is exhausted.
 
-These clarifications do not close Lemma B, but they chart a concrete
+These clarifications do not yet close **Lemma B**, but they chart a concrete
 route for completing the proof and for incorporating the results into
 subsequent SAT algorithms.
 

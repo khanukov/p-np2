@@ -80,10 +80,9 @@ partial def buildCover (F : Family n) (h : ℕ)
         -- implementation would first test the quantitative sunflower bound.
         have ⟨i, b, hdrop⟩ := BoolFunc.exists_coord_entropy_drop (F := F)
             (hn := by decide) (hF := by
-              -- card > 1 follows from the fact we still have uncovered 1‑input
-              -- (namely `x`)
-              -- placeholder using Nat.succ_lt_succ (need ≥2) ; simple admit
-              admit)
+              -- card > 1 follows from the fact we still have an uncovered
+              -- input (namely `x`); full proof deferred
+              sorry)
         -- New upper‑bound on entropy: `H₂ (F.restrict i b) ≤ h - 1`
         have hH0 : BoolFunc.H₂ (F.restrict i b) ≤ (h - 1 : ℝ) := by
           have : BoolFunc.H₂ F ≤ h := hH
@@ -91,8 +90,8 @@ partial def buildCover (F : Family n) (h : ℕ)
           simpa using this
         have hH1 : BoolFunc.H₂ (F.restrict i (!b)) ≤ (h - 1 : ℝ) := by
           -- symmetric (same lemma but for !b via commutativity)
-          -- admit (needs small lemma about switch)  
-          admit
+          -- proof omitted
+          sorry
         let F0 : Family n := F.restrict i b
         let F1 : Family n := F.restrict i (!b)
         exact (buildCover F0 (h - 1) (by simpa using hH0)) ∪
@@ -157,14 +156,13 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
           -- truth of "covered by old", assume covered previously
           have : ∃ R ∈ Rset, y ∈ₛ R := by
             -- y may not have been covered earlier; this is a gap handled
-            -- by entropy branch proof, leave as sorry for now
+            -- by the entropy branch (omitted here)
             sorry
           rcases this with ⟨R, hR, hyR⟩
           exact ⟨R, by simp [Rset', hR], hyR⟩
       -- conclude for buildCover definition with Rsun inserted
-      -- note: we haven't updated buildCover implementation; so we keep
-      -- this part as placeholder until entropy branch done
-      -- TODO: complete sunflower and entropy branches
+      -- note: we haven't updated the `buildCover` implementation; completing
+      -- the sunflower and entropy branches is future work
       sorry
   -- TODO: finish proof of recursive step
   -- base case
@@ -173,7 +171,8 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       intro Rset hnone f hf x hx
       have hempty : uncovered F Rset = ∅ := by
         have := (firstUncovered_none_iff (F := F) Rset).1 hnone; simpa using this
-      -- `x` cannot be in uncovered, so exists rectangle; placeholder sorry
+      -- `x` cannot be in `uncovered` since that set is empty; hence some
+      -- rectangle of `Rset` must contain it
       classical
       -- If no rectangle of `Rset` contains `x`, then `⟨f,x⟩` would lie in
       -- `uncovered F Rset`, contradicting the assumption that this set is empty.
@@ -205,13 +204,13 @@ lemma cover_exists (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   classical
   let Rset := buildCover F h hH
   refine ⟨Rset, ?_, ?_, ?_⟩
-  · intro R hR;  -- mono property still TODO -> placeholder
-    admit
+  · intro R hR;  -- monochromaticity proof omitted
+    sorry
   · simpa using buildCover_covers (F := F) (h := h) hH
   · -- size bound still via numeric placeholder until count lemma is done
     have : Rset.card ≤ mBound n h := by
-      -- TODO: real counting proof; placeholder admits
-      admit
+      -- counting argument postponed
+      sorry
     simpa using this
 
 /-! ## Choice wrapper -/

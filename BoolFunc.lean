@@ -31,9 +31,13 @@ helper facts that the later files rely on (all proofs are by `simp` /
 `aesop`‑style automation).
 -/
 
-import Std.Data.Fin.Basic
-import Std.Data.Finset
-import Std.Logic
+import Mathlib.Data.Fin.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Bool.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Basic
+
+noncomputable section
 
 open Classical
 open Finset
@@ -88,25 +92,26 @@ variable {n : ℕ}
 def mem (R : Subcube n) (x : Point n) : Prop :=
   ∀ (i : Fin n) (h : i ∈ R.idx), x i = R.val i h
 
-notation x " ∈ₛ " R => R.mem x
+-- local notation for subcube membership
+notation x " ∈ₛ " R => Subcube.mem R x
 
 /-- The *dimension* of a subcube = number of *free* coordinates. -/
 def dimension (R : Subcube n) : ℕ :=
   n - R.idx.card
 
 @[simp] lemma mem_of_not_fixed {R : Subcube n} {x : Point n} {i : Fin n}
-    (h : i ∉ R.idx) : (x ∈ₛ R) → True := by
+    (h : i ∉ R.idx) : R.mem x → True := by
   intro _; trivial
 
 /-- **Monochromaticity for a single function**:
 `R` is monochromatic for `f` if `f` is constant on `R`. -/
 def monochromaticFor (R : Subcube n) (f : BFunc n) : Prop :=
-  ∃ b : Bool, ∀ {x : Point n}, x ∈ₛ R → f x = b
+  ∃ b : Bool, ∀ {x : Point n}, R.mem x → f x = b
 
 /-- **Monochromaticity for a family**: `R` has one fixed colour
 shared by *all* functions in `F`. -/
 def monochromaticForFamily (R : Subcube n) (F : Family n) : Prop :=
-  ∃ b : Bool, ∀ f, f ∈ F → ∀ {x : Point n}, x ∈ₛ R → f x = b
+  ∃ b : Bool, ∀ f, f ∈ F → ∀ {x : Point n}, R.mem x → f x = b
 
 end Subcube
 
@@ -128,6 +133,13 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
     (Point.update x i b) j = x j := by
   simp [Point.update, h, decide]
 
+@[simp] lemma Point.update_idem (x : Point n) (i : Fin n) (b : Bool) :
+    Point.update (Point.update x i b) i b = Point.update x i b := by
+  funext k
+  by_cases hk : k = i
+  · subst hk; simp [Point.update]
+  · simp [Point.update, hk]
+
 end PointOps
 
 section Restrict
@@ -146,7 +158,7 @@ def BFunc.restrictCoord (f : BFunc n) (j : Fin n) (b : Bool) : BFunc n :=
 @[simp] lemma restrictCoord_fixed {f : BFunc n} {j : Fin n} {b : Bool}
     {x : Point n} :
     (BFunc.restrictCoord f j b) (Point.update x j b) = f (Point.update x j b) := by
-  rfl
+  simp [BFunc.restrictCoord]
 
 @[simp] lemma restrictCoord_agrees
     {f : BFunc n} {j : Fin n} {b : Bool} {x : Point n}
@@ -163,10 +175,10 @@ end Restrict
 
 /-- The set of inputs on which a Boolean function outputs `true`. -/
 noncomputable
-def ones {n : ℕ} (f : BFunc n) : Finset (Point n) :=
+def ones {n : ℕ} [Fintype (Point n)] (f : BFunc n) : Finset (Point n) :=
   Finset.univ.filter fun x => f x = true
 
-@[simp] lemma mem_ones {n : ℕ} {f : BFunc n} {x : Point n} :
+@[simp] lemma mem_ones {n : ℕ} [Fintype (Point n)] {f : BFunc n} {x : Point n} :
     x ∈ ones f ↔ f x = true := by
   classical
   simp [ones]
@@ -181,3 +193,5 @@ export Subcube (mem dimension monochromaticFor monochromaticForFamily)
 export Point (update)
 
 end BoolFunc
+
+end

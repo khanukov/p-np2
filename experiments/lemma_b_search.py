@@ -20,6 +20,8 @@ explored without editing the file.
 """
 
 import argparse
+from collections import Counter
+from math import log2
 
 # encode a boolean function on n inputs as an integer with 2**n bits
 
@@ -68,7 +70,6 @@ def all_functions(n, max_gates):
 def function_counts(n, max_gates):
     """Return a mapping of truth tables to the number of circuits computing
     them."""
-    from collections import Counter
 
     base = Counter()
     for tbl in variables(n):
@@ -107,19 +108,85 @@ def split_tables(funcs, n, k):
     return len(left_set), len(right_set)
 
 
-def experiment(n, max_gates):
+def _entropy(counts: Counter, total: int) -> float:
+    """Shannon entropy of a discrete distribution with given counts."""
+    h = 0.0
+    for c in counts.values():
+        p = c / total
+        if p > 0:
+            h -= p * log2(p)
+    return h
+
+
+def split_entropies(funcs, n, k):
+    """Return ``H(A)`` and ``H(B)`` for the left/right halves of the tables."""
+    left_len = 1 << k
+    left_mask = (1 << left_len) - 1
+    left_counts: Counter[int] = Counter()
+    right_counts: Counter[int] = Counter()
+    for f in funcs:
+        left = f & left_mask
+        right = f >> left_len
+        left_counts[left] += 1
+        right_counts[right] += 1
+    total = len(funcs)
+    return _entropy(left_counts, total), _entropy(right_counts, total)
+
+
+def _entropy_drop(funcs, n, k):
+    """Return ``k - H(A)`` and ``ℓ - H(B)`` for split ``k``.
+
+    Here ``H`` denotes the Shannon entropy in bits and ``ℓ = n - k``.  The
+    returned pair measures how far the left and right halves are from being
+    uniformly distributed.  A large value suggests a useful split.
+    """
+    ha, hb = split_entropies(funcs, n, k)
+    return k - ha, (n - k) - hb
+
+
+def experiment(n, max_gates, show_entropy=False, suggest_split=False):
     funcs = all_functions(n, max_gates)
     print(f"n={n}, gates<={max_gates}, total functions: {len(funcs)}")
+    best = None
+    best_score = -1.0
     for k in range(1, n):
         a, b = split_tables(funcs, n, k)
-        print(f"  split k={k}: |A|={a}, |B|={b}, rectangles={a*b}")
+        line = f"  split k={k}: |A|={a}, |B|={b}, rectangles={a*b}"
+        ha = hb = None
+        if show_entropy or suggest_split:
+            ha, hb = split_entropies(funcs, n, k)
+            if show_entropy:
+                line += f", H(A)={ha:.2f}, H(B)={hb:.2f}"
+        if suggest_split:
+            da, db = k - ha, (n - k) - hb
+            score = max(da, db)
+            if score > best_score:
+                best_score = score
+                best = k
+            line += f", ΔA={da:.2f}, ΔB={db:.2f}"
+        print(line)
+    if suggest_split and best is not None:
+        print(f"Suggested split: k={best} with entropy drop {best_score:.2f}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enumerate small circuits")
-    parser.add_argument("n", type=int, nargs="?", default=3,
-                        help="number of input bits (default: 3)")
-    parser.add_argument("max_gates", type=int, nargs="?", default=2,
-                        help="maximum number of gates (default: 2)")
+    parser.add_argument(
+        "n", type=int, nargs="?", default=3,
+        help="number of input bits (default: 3)")
+    parser.add_argument(
+        "max_gates", type=int, nargs="?", default=2,
+        help="maximum number of gates (default: 2)")
+    parser.add_argument(
+        "--entropy", action="store_true",
+        help="display Shannon entropies for each split")
+    parser.add_argument(
+        "--suggest", action="store_true",
+        help="print recommended split based on entropy drop")
     args = parser.parse_args()
-    experiment(n=args.n, max_gates=args.max_gates)
+    experiment(
+        n=args.n,
+        max_gates=args.max_gates,
+        show_entropy=args.entropy,
+        suggest_split=args.suggest,
+    )

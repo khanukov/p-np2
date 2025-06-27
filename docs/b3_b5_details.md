@@ -74,7 +74,21 @@ techniques for biased functions have yet to be adapted to families.
    rectangle count `M`.
 
 ---
+### Entropy branch
+
+When no sunflower is found the set $\mathcal{F}$ of functions becomes highly diverse. We view a random variable $F$ uniformly distributed over $\mathcal{F}$ and split each table into a left part $A$ of length $k$ and a right part $B$ of length $\ell=N-k$.  If $H(A) \approx k$ and $H(B) \approx \ell$ continued to hold, the family would contain essentially all $2^N$ functions, which is impossible.  Hence one of the entropies drops by $\Omega(N^\delta)$.  Suppose $H(A)=k-\Delta$.
+
+Then there are at most $2^{k-\Delta}$ distinct left halves among the functions of $\mathcal{F}$ while the conditional entropy $H(B\mid A)$ remains almost maximal.  Choosing $k$ at the point where the drop occurs yields a rectangle $A_i \times B_i$ with $A_i$ equal to the set of realised left halves and $B_i$ consisting of all right halves.  This rectangle covers nearly all of $\mathcal{F}$ but may include many extra functions.
+
+An entropy-reduction lemma lets us pick a subset $A'_i \subseteq A_i$ of size $\approx 2^{k-\Delta}$ that contains most of the probability mass of $A$.  The rectangle $A'_i \times B_i$ still covers almost all of $\mathcal{F}$ and has size $2^{N-\Delta}$.  Iterating the argument until $\Delta = N^{\delta}$ produces a covering rectangle of size $2^{N-N^{\delta}}$.  After removing the covered portion we repeat the search for a sunflower or another entropy drop until the family is exhausted.
 
 These clarifications do not close Lemma B, but they chart a concrete
 route for completing the proof and for incorporating the results into
 subsequent SAT algorithms.
+
+The helper script `experiments/lemma_b_search.py` now accepts an
+`--entropy` flag which reports the Shannon entropies `H(A)` and `H(B)`
+for each split.  This numerical exploration illustrates the drop in
+entropy predicted by the theory and helps choose a good threshold `k`.
+With `--suggest` the script also prints which split achieves the largest
+entropy drop, hinting at a promising decomposition point.

@@ -102,58 +102,58 @@ lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.car
 -/
 lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 :=
+by
   classical
   -- We prove the contrapositive: if **no** coordinate yields a half-size
   -- restriction, then we derive a contradiction. Assume every coordinate `i` and
-  -- bit `b` gives a restriction larger than half of `F`.
+  -- bit `b` gives a restriction larger than half of `F`:
   by_contra H
-  push_neg at H  -- Now `H` says: ∀ i b, (F.restrict i b).card > F.card / 2.
-  -- Fix an arbitrary coordinate `j` and inject `F` into pairs of restrictions
-  -- along `j`.
-  have j : Fin n := ⟨0, by simpa using hn⟩
-  have inj : F.card ≤ (F.restrict j false).card * (F.restrict j true).card,
-  { -- mapping `f` ↦ (f|j=false, f|j=true)` is injective
-    classical
+  push_neg at H  -- Now H says: ∀ i, ∀ b, (F.restrict i b).card > F.card / 2.
+  -- Take an arbitrary coordinate `j`. Since mapping `f ↦ (f.restrict j false,
+  -- f.restrict j true)` is injective (distinct functions remain distinct when we
+  -- know both restricted parts), we have:
+  have inj : F.card ≤ (F.restrict 0 false).card * (F.restrict 0 true).card := by
     apply Finset.card_image_le
-    refine ⟨fun f : BFunc n => (f.restrictCoord j false, f.restrictCoord j true), ?_⟩
-    intro f₁ f₂ hfne hpair
-    rcases hpair with ⟨h0, h1⟩
-    have : ∀ x : Point n, f₁ x = f₂ x := by
-      intro x
-      by_cases hx : x j = false
-      · -- compare via restrictCoord_agrees
-        have := congrArg (fun g => g x) h0
-        simpa [BoolFunc.restrictCoord, hx] using this
-      · have := congrArg (fun g => g x) h1
-        have : x j = true := by cases x j <;> tauto
-        simpa [BoolFunc.restrictCoord, hx, this] using this
-    exact hfne (funext this) },
-  -- Apply base-2 logarithms to this inequality
+    refine ⟨fun f : BFunc n => (f.restrictCoord 0 false, f.restrictCoord 0 true), ?_⟩
+    intro f₁ f₂ hfne heq
+    cases heq with
+    | intro h0 h1 =>
+        have : ∀ x : Point n, f₁ x = f₂ x := by
+          intro x
+          by_cases hx : x 0 = false
+          · have := congrArg (fun g => g x) h0
+            simpa [BoolFunc.restrictCoord, hx] using this
+          · have := congrArg (fun g => g x) h1
+            have hx1 : x 0 = true := by cases x 0 <;> tauto
+            simpa [BoolFunc.restrictCoord, hx, hx1] using this
+        exact hfne (funext this)
+  -- Now apply real logarithms (base 2) to this inequality:
   have log_ineq :
       Real.logb 2 (F.card) ≤
-        Real.logb 2 ((F.restrict j false).card) +
-          Real.logb 2 ((F.restrict j true).card) := by
+        Real.logb 2 ((F.restrict 0 false).card) +
+          Real.logb 2 ((F.restrict 0 true).card) := by
     have := Real.logb_mul (by norm_num : (2 : ℝ) ≠ 1) (by positivity) (by positivity)
-    simpa using congrArg (Real.logb 2) inj,
-  -- From `H`, each log term on the RHS is > log₂(F.card/2) = log₂ F.card - 1.
+    simpa using congrArg (Real.logb 2) inj
+  -- By our assumption H, each log term on RHS is > log₂(F.card/2) = log₂ F.card - 1.
   have half_log :
-      Real.logb 2 ((F.restrict j false).card) > Real.logb 2 F.card - 1 ∧
-        Real.logb 2 ((F.restrict j true).card) > Real.logb 2 F.card - 1,
-  { specialize H j
+      Real.logb 2 ((F.restrict 0 false).card) > Real.logb 2 F.card - 1 ∧
+        Real.logb 2 ((F.restrict 0 true).card) > Real.logb 2 F.card - 1 := by
+    specialize H 0
     constructor
-    · apply Real.logb_lt_logb (by norm_num : (2 : ℝ) > 1)
+    · apply Real.logb_lt_logb (by norm_num : (2:ℝ) > 1)
       exact_mod_cast H _
-    · apply Real.logb_lt_logb (by norm_num : (2 : ℝ) > 1)
-      exact_mod_cast H _ },
-  -- Summing these inequalities
+    · apply Real.logb_lt_logb (by norm_num : (2:ℝ) > 1)
+      exact_mod_cast H _
+  -- Summing these two inequalities:
   have sum_log :
-      Real.logb 2 ((F.restrict j false).card) +
-          Real.logb 2 ((F.restrict j true).card) >
-            2 * Real.logb 2 F.card - 2 := by
-    linarith [half_log.1, half_log.2]
-  -- Combine with `log_ineq` to reach a contradiction
+      Real.logb 2 ((F.restrict 0 false).card) +
+          Real.logb 2 ((F.restrict 0 true).card) >
+            2 * Real.logb 2 F.card - 2 :=
+    by linarith [half_log.1, half_log.2]
+  -- Now combine with `log_ineq`:
   have := lt_of_le_of_lt log_ineq sum_log
+  -- We get Real.logb 2 F.card < 2 * Real.logb 2 F.card - 2, i.e. Real.logb 2 F.card > 2.
   linarith
 
 /-- **Entropy‑Drop Lemma.**  There exists a coordinate / bit whose
@@ -163,10 +163,14 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
     ∃ i : Fin n, ∃ b : Bool,
       H₂ (F.restrict i b) ≤ H₂ F - 1 := by
   classical
+  -- Apply the previous lemma to get a coordinate with at most half the functions:
   obtain ⟨i, b, h_half⟩ := exists_restrict_half_real (F := F) hn hF
+  -- Take base-2 log of the inequality (monotonic since log is increasing):
   have hlog := Real.logb_le_logb (by norm_num : (2:ℝ) > 1) h_half
-  rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.mpr (Nat.one_ne_zero)),
+  rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.2 (Nat.one_ne_zero)),
       Real.logb_two] at hlog
+  -- Simplify: Real.logb 2 (F.card / 2) = Real.logb 2 F.card - 1,
+  -- so we get H₂(F.restrict) ≤ H₂ F - 1.
   exact ⟨i, b, hlog⟩
 
 end BoolFunc

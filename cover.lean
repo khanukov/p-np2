@@ -142,12 +142,8 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- construct Rsun via sunflower_exists on the set of all minimal
       -- coordinates of x (stubbed).
       -- Using classical choice, get rectangle `Rsun` s.t. x ∈ₛ Rsun.
-      let Rsun : Subcube n := {
-        support := x.support,
-        prop := by
-          -- trivially true: x belongs to that cube by definition
-          trivial
-      }
+      -- for now we simply take the point subcube containing `x`
+      let Rsun : Subcube n := Subcube.point x
       have Rset' : Finset (Subcube n) := insert Rsun Rset
       -- show Rsun covers x:
       have hxR : x ∈ₛ Rsun := by
@@ -168,16 +164,33 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- conclude for buildCover definition with Rsun inserted
       -- note: we haven't updated buildCover implementation; so we keep
       -- this part as placeholder until entropy branch done
-      sorry` placeholders to be completed next.
-  sorry left.
+      -- TODO: complete sunflower and entropy branches
+      sorry
+  -- TODO: finish proof of recursive step
   -- base case
   have base : ∀ Rset, firstUncovered F Rset = none → AllOnesCovered F Rset :=
     by
       intro Rset hnone f hf x hx
-      have : uncovered F Rset = ∅ := by
+      have hempty : uncovered F Rset = ∅ := by
         have := (firstUncovered_none_iff (F := F) Rset).1 hnone; simpa using this
       -- `x` cannot be in uncovered, so exists rectangle; placeholder sorry
-      sorry
+      classical
+      -- If no rectangle of `Rset` contains `x`, then `⟨f,x⟩` would lie in
+      -- `uncovered F Rset`, contradicting the assumption that this set is empty.
+      by_cases hxC : ∃ R ∈ Rset, x ∈ₛ R
+      · rcases hxC with ⟨R, hR, hxR⟩
+        exact ⟨R, hR, hxR⟩
+      · have hxNC : NotCovered Rset x := by
+          intro R hR
+          have hxnot := (not_exists.mp hxC) R
+          specialize hxnot
+          intro hxR
+          exact hxnot ⟨hR, hxR⟩
+        have hxmem : (⟨f, x⟩ : Σ f : BoolFunc n, Vector Bool n) ∈ uncovered F Rset := by
+          simp [uncovered, hf, hx, hxNC]
+        have hxmem' : (⟨f, x⟩ : Σ f : BoolFunc n, Vector Bool n) ∈ (∅ : Set (Σ f : BoolFunc n, Vector Bool n)) := by
+          simpa [hempty] using hxmem
+        exact False.elim (by simpa using hxmem')
   -- inductive step sunflower (placeholder)
   -- inductive step entropy (placeholder)
   sorry

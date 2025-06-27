@@ -8,11 +8,13 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 * `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully proved).
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
-* `entropy.lean` – collision entropy framework (proof of `EntropyDrop` still marked `sorry`).
+* `entropy.lean` – collision entropy framework with basic lemmas proven
+  (e.g. `collProb_le_one`); the main `EntropyDrop` statement remains `sorry`.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
 * `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
-* `cover.lean` – partial implementation of the covering algorithm using
-  well‑founded recursion; several proof steps remain as `admit`.
+* `cover.lean` – experimental cover builder that keeps track of the
+  set of uncovered inputs via `firstUncovered`; only the sunflower and
+  entropy branches still contain `sorry`.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `family_entropy_cover.lean` – placeholder for the family version of the cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
@@ -64,7 +66,7 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 ## Status
 
 This is a research prototype.  Many modules contain `sorry` placeholders and only
-partial proofs.  The `cover.lean` algorithm now has a recursive skeleton but
-still relies on `admit` for the coverage argument and the final size bound.  The
-repository is intended for exploration and does not constitute a finished
-argument.
+partial proofs.  The `cover.lean` file now constructs covers by recursively
+searching for the first uncovered input.  Only two branches—sunflower extraction
+and entropy split—remain incomplete.  The repository is intended for exploration
+and does not constitute a finished argument.

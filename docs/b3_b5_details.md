@@ -36,11 +36,11 @@ most `2^{N - N^δ}` rectangles (`N = 2^n`).  Each rectangle should be
 enumerable in time `2^{(1-α)k}` on the left and `2^{(1-α)ℓ}` on the
 right (`k + ℓ = n`).
 
-*Current status.*  Low-sensitivity functions can already be compressed
-via the Impagliazzo–Moshkovitz–Oliveira method.  Collision-entropy
-techniques by Hollo–Lovett handle single functions with biased output,
-but the extension to an entire family of circuits has not been carried
-out.
+*Current status.*  Low-sensitivity functions can already be compressed via
+the Impagliazzo–Moshkovitz–Oliveira method.  The new `cover.lean` module
+records uncovered inputs explicitly and splits on them, but the
+sunflower and entropy steps are still placeholders.  Collision‑entropy
+techniques for biased functions have yet to be adapted to families.
 
 *Next steps.*
 

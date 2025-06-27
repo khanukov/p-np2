@@ -41,8 +41,21 @@ lemma collProb_nonneg {n : ℕ} (F : Family n) :
 
 lemma collProb_le_one {n : ℕ} (F : Family n) :
     collProb F ≤ 1 := by
-  -- Proof currently omitted.
-  sorry
+  classical
+  by_cases h : F.card = 0
+  · -- empty family: collision probability is zero
+    simp [collProb, h]
+  · have hpos : 0 < (F.card : ℝ) := by
+      exact_mod_cast Nat.pos_of_ne_zero h
+    -- rewrite in terms of division
+    have hcoll : collProb F = 1 / (F.card : ℝ) := by
+      simp [collProb, h]
+    have hge : (1 : ℝ) ≤ (F.card : ℝ) := by
+      exact_mod_cast Nat.succ_le_of_lt (Nat.pos_of_ne_zero h)
+    have hbound : 1 / (F.card : ℝ) ≤ 1 := by
+      have := (div_le_iff hpos).mpr hge
+      simpa using this
+    simpa [hcoll] using hbound
 
 @[simp] lemma collProb_card_one {n : ℕ} {F : Family n} (h : F.card = 1) :
     collProb F = 1 := by simp [collProb, h]

@@ -63,6 +63,9 @@ the Impagliazzo–Moshkovitz–Oliveira method.  The updated `cover.lean` module
 records uncovered inputs explicitly and splits on them, but the sunflower
 extraction and entropy steps are still placeholders.  Adapting the
 collision‑entropy technique to entire families remains an open task.
+An auxiliary lemma `exists_restrict_half` in `entropy.lean` now proves that
+some input bit restricts a family to at most half its size, setting the stage
+for a cleaner entropy argument.
 
 *Next steps.*
 

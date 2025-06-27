@@ -90,7 +90,9 @@ Modules in Lean 4:
 ### Updated Formalisation Plan (2025-06-25)
 The modules above serve as milestones. Our immediate goals are:
 
-1. Complete the proof of `EntropyDrop` in `entropy.lean`.
+1. Complete the proof of `EntropyDrop` in `entropy.lean`.  The helper
+   lemma `exists_restrict_half` has been formalised to show that some
+   input bit reduces a family to at most half its size.
 2. Add a classical sunflower lemma in `sunflower.lean`.
 3. Formalise the `CoreAgreement` lemma in `agreement.lean`.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A

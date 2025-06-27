@@ -9,7 +9,9 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully proved).
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
-  lemma proven alongside basic tools such as `collProb_le_one`.
+  lemma proven alongside basic tools such as `collProb_le_one`.  The
+  auxiliary lemma `exists_restrict_half` now shows that some input bit
+  restricts a family to at most half its size.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
 * `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
 * `cover.lean` – experimental cover builder that keeps track of the

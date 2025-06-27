@@ -8,8 +8,8 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 * `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully proved).
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
-* `entropy.lean` – collision entropy framework with basic lemmas proven
-  (e.g. `collProb_le_one`); the main `EntropyDrop` statement remains `sorry`.
+* `entropy.lean` – collision entropy framework with the full `EntropyDrop`
+  lemma proven alongside basic tools such as `collProb_le_one`.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
 * `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
 * `cover.lean` – experimental cover builder that keeps track of the

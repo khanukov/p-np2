@@ -38,8 +38,8 @@ Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alp
 
 ### B‑5. Constructing the cover
 Build a rectangular cover of `\mathcal{S}_n` of size `M \le 2^{N - N^{\delta}}`.
-An initial recursive skeleton is implemented in `cover.lean`,
-but the detailed bounds remain to be formalised.
+The file `cover.lean` now keeps track of uncovered inputs and recurses via
+`firstUncovered`, leaving only the sunflower and entropy steps unfinished.
 
 ---
 

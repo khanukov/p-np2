@@ -77,15 +77,15 @@ noncomputable def H₂ {n : ℕ} (F : Family n) : ℝ :=
     H₂ F = 0 := by simp [H₂, h]
 
 /-!
-`Family.restrict i b` keeps only those functions in `F` whose value on the
-coordinate `i` equals the Boolean bit `b`.  The next two helper lemmas are
-straightforward bookkeeping about cardinals and need no additional imports.
+`Family.restrict i b` applies `BFunc.restrictCoord` to every function in `F`, fixing the `i`-th input bit to `b`.  This may identify previously distinct functions, so the resulting family can have smaller cardinality.  The next two helper lemmas are straightforward bookkeeping about these cardinalities and need no additional imports.
 -/
 
-lemma card_partition_restrict {n : ℕ} (F : Family n) (i : Fin n) :
-    (F.restrict i true).card + (F.restrict i false).card = F.card := by
-  -- Placeholder proof pending library facts.
-  sorry
+lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
+    (F.restrict i b).card ≤ F.card := by
+  classical
+  -- `restrict` uses `Finset.image`, hence the size can only shrink.
+  simpa [Family.restrict] using
+    (Finset.card_image_le (f := fun f : BFunc n => fun x => f (Point.update x i b)) F)
 
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by

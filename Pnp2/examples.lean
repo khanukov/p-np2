@@ -19,12 +19,12 @@ already follow from the (still partial!) library.
 > witnesses rather than concrete data dumps.
 -/
 
-import BoolFunc
-import Entropy
-import Sunflower
-import Agreement
-import Cover
-import Bound
+import Pnp2.BoolFunc
+import Pnp2.Entropy
+import Pnp2.Sunflower
+import Pnp2.Agreement
+import Pnp2.Cover
+import Pnp2.Bound
 import Mathlib.Data.Finset
 
 open Classical

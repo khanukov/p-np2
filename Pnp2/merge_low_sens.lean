@@ -1,4 +1,4 @@
-import Boolcube
+import Pnp2.Boolcube
 
 namespace Boolcube
 

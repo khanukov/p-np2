@@ -8,7 +8,7 @@ other files.
 -/
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic
-import BoolFunc
+import Pnp2.BoolFunc
 
 open Classical
 open Real

@@ -31,7 +31,7 @@ rely only on its statement, not on the proof term.
 import Mathlib.Data.Nat.Factorial
 import Mathlib.Tactic
 import Std.Data.Finset
-import BoolFunc
+import Pnp2.BoolFunc
 
 open Classical
 open Finset

@@ -23,7 +23,7 @@ and use `sorry`, so that downstream files compile and the interface is
 stable.
 -/
 
-import BoolFunc
+import Pnp2.BoolFunc
 import Std.Data.Finset
 
 open Classical
@@ -57,6 +57,11 @@ def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
     {x : Point n} {I : Finset (Fin n)} {y : Point n} :
     (y ∈ₛ Subcube.fromPoint x I) ↔
       ∀ i : Fin n, i ∈ I → y i = x i := by
+  rfl
+
+@[simp] lemma dimension_fromPoint
+    {x : Point n} {I : Finset (Fin n)} :
+    (Subcube.fromPoint x I).dimension = n - I.card := by
   rfl
 
 /-! ### Core‑agreement lemma with CoreClosed assumption -/

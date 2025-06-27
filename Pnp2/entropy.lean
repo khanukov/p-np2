@@ -89,9 +89,12 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
 
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
-  -- Proof omitted.
   classical
-  sorry
+  -- We obtain the real-valued inequality and cast back to `ℕ`.
+  obtain ⟨i, b, h⟩ := exists_restrict_half_real (F := F) hn hF
+  refine ⟨i, b, ?_⟩
+  -- `exact_mod_cast` bridges the gap between naturals and reals.
+  exact_mod_cast h
 
 -- The above arithmetic on naturals is tedious; a simpler *real* argument will
 -- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on

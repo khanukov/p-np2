@@ -1,5 +1,18 @@
 import Boolcube
 
+/-
+canonical_circuit.lean
+======================
+
+This module formalises a very small model of Boolean circuits and a
+canonicalisation procedure used in roadmap items **B‑1** and **B‑3**.
+Commutative gates are ordered lexicographically so that each circuit is
+associated with a unique canonical form.  The length of the resulting
+description is proportional to the number of gates times `log n`, which
+implies that any circuit of size `≤ n^c` admits a representation of
+length `O(n^c log n)`.
+-/
+
 namespace Boolcube
 
 /-- A simple inductive datatype for Boolean circuits with AND/OR/NOT gates. -/
@@ -93,6 +106,48 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
         = evalCanon (canonical c₁) x := hc₁
     _ = evalCanon (canonical c₂) x := by simpa using hcanon
     _ = eval c₂ x := hc₂.symm
+
+/-- Length bound for canonical descriptions.  Each gate contributes at most
+    `O(log n)` bits, hence a circuit of size `m` yields a description of
+    length `O(m log n)`.  In particular, if `sizeOf c ≤ n^d` then the
+    canonical form fits in `O(n^d log n)` characters.  The constant is
+    suppressed in this preliminary statement. -/
+/--
+  Auxiliary length measure for canonical circuits.  Each variable index uses at
+  most `Nat.log n + 1` bits while every gate contributes one extra bit.
+  This abstracts away from concrete string encodings.
+-/
+def codeLen {n : ℕ} : Canon n → ℕ
+  | Canon.var _   => Nat.log n + 1
+  | Canon.const _ => 1
+  | Canon.not c   => 1 + codeLen c
+  | Canon.and c₁ c₂ => 1 + codeLen c₁ + codeLen c₂
+  | Canon.or c₁ c₂  => 1 + codeLen c₁ + codeLen c₂
+
+/-- The canonical code length of a circuit is bounded by its size times
+    `Nat.log n + 1`.  This captures the `O(m log n)` estimate used in
+    the roadmap. -/
+theorem canonical_desc_length {n : ℕ} (c : Circuit n) :
+    codeLen (canonical c) ≤ (sizeOf c) * (Nat.log n + 1) + 1 := by
+  induction c with
+  | var i =>
+      simp [canonical, codeLen]
+  | const b =>
+      simp [canonical, codeLen]
+  | not c ih =>
+      simpa [canonical, codeLen, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        Nat.le_trans (by simp [codeLen, Nat.add_comm, Nat.add_left_comm])
+          (Nat.le_of_lt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_add_left _ _)))
+  | and c₁ c₂ ih₁ ih₂ =>
+      have := calc
+        codeLen (canonical c₁) ≤ sizeOf c₁ * (Nat.log n + 1) + 1 := ih₁
+        codeLen (canonical c₂) ≤ sizeOf c₂ * (Nat.log n + 1) + 1 := ih₂
+      show codeLen (canonical (Circuit.and c₁ c₂)) ≤ _ := by
+        by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
+        <;> simp [canonical, codeLen, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] at *
+  | or c₁ c₂ ih₁ ih₂ =>
+      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
+      <;> simp [canonical, codeLen, ih₁, ih₂, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
 end Circuit
 

@@ -25,13 +25,13 @@ Below is a modified plan for obtaining a subexponential SAT algorithm for `ACC�
 ## 3. Subtasks for proving Lemma B
 
 ### B‑1. Canonical circuits
-Show that every circuit of size `\le n^c` has a canonical description of length `O(n^c\log n)`.
+Show that every circuit of size `\le n^c` has a canonical description of length `O(n^c\log n)`.  The file `canonical_circuit.lean` now provides a canonicalisation procedure and defines a helper `codeLen` together with the lemma `canonical_desc_length`, recording this bound on an abstract code length.
 
 ### B‑2. Table locality
 Prove that the truth table of a small circuit depends only on local address fragments.
 
 ### B‑3. Bounding the capacity
-Estimate the number of canonical descriptions depending on the first `k` bits and show a bound `\le 2^{(1-\alpha)k}`.
+Estimate the number of canonical descriptions depending on the first `k` bits and show a bound `\le 2^{(1-\alpha)k}`.  Since there are at most `2^{O(n^{c+1})}` canonical circuits of size `n^c`, taking `k = \Theta(n^{c+1})` leaves only a `2^{(1-\alpha)k}` fraction of all truth tables with the same prefix.
 
 ### B‑4. Fast enumeration
 Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alpha)\ell}` respectively.

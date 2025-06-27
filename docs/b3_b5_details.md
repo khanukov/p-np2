@@ -13,11 +13,13 @@ those `k` bits should be bounded by `2^{(1-α)k}` for some
 `α > 0`.  Intuitively, most small circuits cannot encode many distinct
 left halves of a truth table.
 
-*Current status.*  Canonical circuit forms from recent work by
-Kumar–Grewal give a description length `O(n^c log n)`, but an explicit
-bound on the dependence on the first `k` bits is missing.  Partial
-experiments with `lemma_b_search.py` suggest a submultiplicative growth
-pattern, yet the asymptotic argument has not been written down.
+*Current status.*  The file `canonical_circuit.lean` defines a
+canonicalisation procedure together with the helper `codeLen` and the lemma
+`canonical_desc_length`, stating that size‑`n^c` circuits admit
+descriptions of length `O(n^c log n)`.  This implies an upper bound of
+`2^{O(n^{c+1})}` on the number of distinct canonical circuits.  Partial
+experiments with `lemma_b_search.py` confirm the predicted drop in
+counts but the full asymptotic proof is still missing.
 
 *Next steps.*
 

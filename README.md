@@ -22,7 +22,9 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
   uses `exists_coord_entropy_drop`, leaving only the sunflower branch
   unfinished.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
-* `family_entropy_cover.lean` – placeholder for the family version of the cover.
+* `family_entropy_cover.lean` – wrappers for the family cover existence lemma.
+  Defines a `FamilyCover` record bundling rectangles with proofs and
+  provides `familyEntropyCover` to construct such a cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `table_locality.lean` – statement of the table locality lemma (roadmap B‑2).

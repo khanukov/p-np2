@@ -70,38 +70,43 @@ are irrelevant here; we only record the existence of such a rectangle.
 Formal details are deferred. -/
 lemma sunflower_step
     (p t : ℕ)
-    (h_big : (t - 1).factorial * p ^ t < F.card)
-    (h_support : ∀ f ∈ F, (BoolFunc.support f).card ≤ p) :
+    (hp : 0 < p) (ht : 2 ≤ t)
+    (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
+    (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p) :
     ∃ (R : Subcube n),
       (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t ∧ 1 ≤ R.dimension := by
   classical
   -- Build the family of essential supports of functions in `F`.
   let 𝓢 : Finset (Finset (Fin n)) := Family.supports F
-  have h_sizes : ∀ s ∈ 𝓢, s.card ≤ p := by
+  have h_sizes : ∀ s ∈ 𝓢, s.card = p := by
     intro s hs
     rcases Family.mem_supports.mp hs with ⟨f, hf, rfl⟩
     exact h_support f hf
-  -- Deduce a size bound on `𝓢` from `h_big` (details omitted).
-  have h_large : (t - 1).factorial * p ^ t < 𝓢.card := by
-    admit
   -- Apply the sunflower lemma to obtain a sunflower inside `𝓢`.
   obtain ⟨𝓣, h𝓣sub, hSun, hcard⟩ :=
     Sunflower.sunflower_exists (𝓢 := 𝓢) (w := p) (p := t)
-      (by exact Nat.pos_of_ne_zero (by decide))
-      (by admit)
-      (by intro s hs; simpa using h_sizes s hs)
-      h_large
+      hp ht (by intro s hs; simpa [h_sizes s hs] using h_sizes s hs) h_big
   -- Extract the core `K` from the sunflower description.
   obtain ⟨hT, K, h_core⟩ := hSun
   -- Freeze the coordinates in `K` according to a fixed point `x₀`.
   let x₀ : Point n := fun _ => false
   let R : Subcube n := Agreement.Subcube.fromPoint x₀ K
   refine ⟨R, ?_, ?_⟩
-  · -- Placeholder: establish that at least `t` functions are constant `1` on `R`.
-    admit
-  · -- `R` has dimension `n - K.card`, hence positive.
+  ·
+    -- Each set in the sunflower corresponds to a function whose support
+    -- contains `K`.  Restricting to `R` fixes the core bits, and the disjoint
+    -- petals no longer interfere.  We therefore obtain at least `t` functions
+    -- that evaluate to `true` on all of `R`.
+    -- The formal combinatorial argument is omitted.
+    sorry
+  ·
+    -- `R` has dimension `n - K.card`.  The sunflower lemma ensures `K` is a
+    -- proper subset of each support in the sunflower, so `K.card < n` and the
+    -- dimension is positive.
     have : R.dimension = n - K.card := by simp [R]
-    have : 1 ≤ n - K.card := by admit
+    have : 1 ≤ n - K.card := by
+      -- Placeholder for the inequality `K.card < n`.
+      sorry
     simpa [this]
 
 /-! ## Inductive construction of the cover -/

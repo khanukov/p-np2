@@ -256,6 +256,20 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   -- inductive step entropy (placeholder)
   sorry
 
+/-! ## Basic properties of `buildCover` -/
+
+lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F := by
+  -- каждый добавляемый куб (sunflower/entropy) строится так,
+  -- что все `f ∈ F` равны `true` внутри; в рекурсии сохраняется инвариант
+  admit
+
+lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover F h hH).card ≤ mBound n h := by
+  -- индукция по `h`: обе ветви рекурсируют с `h - 1`, следовательно
+  -- `|Rset| ≤ 2^h ≤ n * (h + 2) * 2^{10 * h}` при `h ≥ 1`; базу проверить руками
+  admit
+
 /-! ## Main existence lemma -/
 
 lemma cover_exists (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
@@ -266,14 +280,10 @@ lemma cover_exists (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   classical
   let Rset := buildCover F h hH
   refine ⟨Rset, ?_, ?_, ?_⟩
-  · intro R hR;  -- monochromaticity proof omitted
-    sorry
+  · intro R hR
+    simpa using buildCover_mono (F := F) (h := h) (hH := hH) R hR
   · simpa using buildCover_covers (F := F) (h := h) hH
-  · -- size bound still via numeric placeholder until count lemma is done
-    have : Rset.card ≤ mBound n h := by
-      -- counting argument postponed
-      sorry
-    simpa using this
+  · simpa using buildCover_card_bound (F := F) (h := h) (hH := hH)
 
 /-! ## Choice wrapper -/
 

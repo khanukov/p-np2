@@ -105,13 +105,22 @@ lemma dist_le_of_compl_subset
     (h_size : n - ℓ ≤ I.card)
     (h_mem : y ∈ₛ Subcube.fromPoint x I) :
     HammingDist x y ≤ ℓ := by
-  -- number of differing coordinates ≤ |Fin n \ I| = n - |I|
-  have : HammingDist x y ≤ (Finset.univ.eraseSub I).card :=
-    HammingDist.le_card_diff_univ_erase
-  calc
-    HammingDist x y ≤ (Finset.univ.eraseSub I).card := this
-    _ = n - I.card := by simp [eraseSub_card]
-    _ ≤ ℓ := by linarith [h_size]
+  -- расстояние = кардинальность множества отличающихся координат
+  have h_diff : HammingDist x y = ((Finset.univ.eraseSub I).filter fun i ↦ x i ≠ y i).card := by
+    simpa [HammingDist, Agreement.fromPoint_mem] using congrArg _ rfl
+  -- максимум отличий ≤ |Fin \ I|
+  have h_le : ((Finset.univ.eraseSub I).filter fun i ↦ x i ≠ y i).card ≤ (Finset.univ.eraseSub I).card :=
+    card_filter_le _ _
+  -- а |Fin \ I| = n - |I|
+  have := calc
+    HammingDist x y = ((Finset.univ.eraseSub I).filter _).card := by
+            simpa [h_diff]
+    _ ≤ (Finset.univ.eraseSub I).card := h_le
+    _ = n - I.card := by
+            simp [eraseSub_card]
+    _ ≤ ℓ := by
+            have := Nat.sub_le_sub_right h_size 0; simpa using this
+  simpa using this
 
 end Agreement
 

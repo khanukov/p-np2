@@ -102,11 +102,21 @@ lemma sunflower_step
     -- `R` has dimension `n - K.card`.  The sunflower lemma ensures `K` is a
     -- proper subset of each support in the sunflower, so `K.card < n` and the
     -- dimension is positive.
-    have : R.dimension = n - K.card := by simp [R]
-    have : 1 ≤ n - K.card := by
-      -- Placeholder for the inequality `K.card < n`.
-      sorry
-    simpa [this]
+    have h_dim : 1 ≤ n - K.card := by
+      -- From the sunflower lemma we know `K ⊂ A` for some `A ∈ 𝓣`.
+      -- In particular `K.card < n` since every support lies in `Fin n`.
+      have h_lt : K.card < n := by
+        obtain ⟨A, hA𝓣, hKA⟩ := hT
+        have hlt : K.card < A.card := Finset.card_lt_card hKA
+        have hA_le : A.card ≤ n := by
+          have : A ⊆ Finset.univ := by
+            intro i hi; exact Finset.mem_univ _
+          exact Finset.card_le_of_subset this
+        exact hlt.trans_le hA_le
+      -- `Nat.sub_pos_of_lt` then gives `0 < n - K.card` and so `1 ≤ n - K.card`.
+      have : 0 < n - K.card := Nat.sub_pos_of_lt h_lt
+      exact Nat.succ_le_of_lt this
+    simpa [R, Subcube.dimension_fromPoint] using h_dim
 
 /-! ## Inductive construction of the cover -/
 

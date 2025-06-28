@@ -100,7 +100,7 @@ def dimension (R : Subcube n) : ℕ :=
   n - R.idx.card
 
 @[simp] lemma mem_of_not_fixed {R : Subcube n} {x : Point n} {i : Fin n}
-    (h : i ∉ R.idx) : R.mem x → True := by
+    (_ : i ∉ R.idx) : R.mem x → True := by
   intro _; trivial
 
 /-- **Monochromaticity for a single function**:
@@ -123,7 +123,7 @@ variable {n : ℕ}
 
 /-- **Update** a single coordinate of a point. -/
 def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
-  fun j => if h : j = i then b else x j
+  fun j => if j = i then b else x j
 
 @[simp] lemma Point.update_eq (x : Point n) (i : Fin n) (b : Bool) :
     (Point.update x i b) i = b := by

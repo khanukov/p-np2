@@ -6,15 +6,19 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Layout
 
-* `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully proved).
+* `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully
+  proved).  The module now also defines simple probability utilities
+  (`prob`, `prob_restrict_false`, `prob_restrict_true`) for measuring how often
+  a function outputs `true` under various restrictions.
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The
   auxiliary lemma `exists_restrict_half` shows that some input bit
   restricts a family to at most half its size.  Its real-valued
-  variant `exists_restrict_half_real` provides the bridge to
-  analytic bounds, and `exists_coord_entropy_drop` turns this into a
-  one‑bit drop of collision entropy.
+  variant `exists_restrict_half_real` and the probability version
+  `exists_restrict_half_real_prob` provide the bridge to analytic
+  bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
+  of collision entropy.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
 * `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
 * `cover.lean` – experimental cover builder that keeps track of the

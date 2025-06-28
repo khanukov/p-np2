@@ -87,6 +87,16 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   simpa [Family.restrict] using
     (Finset.card_image_le (f := fun f : BFunc n => fun x => f (Point.update x i b)) F)
 
+/-- Discrete halving lemma for a single Boolean function: one of the two
+restrictions fixes at most half of the `true` inputs. -/
+lemma exists_restrict_half_prob {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
+    ∃ i : Fin n,
+      (ones (BFunc.restrictCoord f i false)).card ≤ (ones f).card / 2 ∨
+      (ones (BFunc.restrictCoord f i true)).card ≤ (ones f).card / 2 := by
+  classical
+  -- Proof omitted
+  sorry
+
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
@@ -182,5 +192,40 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
   -- Simplify: Real.logb 2 (F.card / 2) = Real.logb 2 F.card - 1,
   -- so we get H₂(F.restrict) ≤ H₂ F - 1.
   exact ⟨i, b, hlog⟩
+
+/-- Auxiliary lemma translating a discrete cardinal bound for a restricted
+function into a real-valued probability bound. -/
+lemma discrete_to_real_bound {n : ℕ} [Fintype (Point n)]
+    (f : BFunc n) (i : Fin n) (ε : ℝ) :
+    (ones (BFunc.restrictCoord f i false)).card ≤ (ones f).card / 2 →
+    ε > 0 →
+    prob_restrict_false f i ≤ (1 - ε) / 2 := by
+  intro h_discrete hε
+  -- Proof omitted
+  sorry
+
+/-- **Existence of a halving restriction (probability version).**  There exists
+a coordinate whose conditional probability of outputting `true` is at most
+`(1 - ε) / 2`. -/
+lemma exists_restrict_half_real_prob {n : ℕ} [Fintype (Point n)]
+    (f : BFunc n) (ε : ℝ) (hε : ε > 0) :
+    ∃ i : Fin n,
+      prob_restrict_false f i ≤ (1 - ε) / 2 ∨
+      prob_restrict_true f i ≤ (1 - ε) / 2 := by
+  classical
+  have h_discrete := exists_restrict_half_prob (f := f)
+  obtain ⟨i, hi⟩ := h_discrete
+  refine ⟨i, ?_⟩
+  cases hi with
+  | inl h_false =>
+      left
+      rw [prob_restrict_false_eq_discrete]
+      exact discrete_to_real_bound (f := f) (i := i) (ε := ε) h_false hε
+  | inr h_true =>
+      right
+      rw [prob_restrict_true_eq_discrete]
+      -- symmetric case
+      have := discrete_to_real_bound (f := f) (i := i) (ε := ε) h_true hε
+      simpa using this
 
 end BoolFunc

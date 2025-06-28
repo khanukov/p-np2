@@ -36,6 +36,8 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Bool.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Real.Basic
 
 noncomputable section
 
@@ -182,6 +184,37 @@ def ones {n : ℕ} [Fintype (Point n)] (f : BFunc n) : Finset (Point n) :=
     x ∈ ones f ↔ f x = true := by
   classical
   simp [ones]
+
+/-! ### Basic probability on the Boolean cube -/
+
+/-- Probability that a Boolean function outputs `true` under the uniform
+distribution. -/
+noncomputable def prob {n : ℕ} [Fintype (Point n)] (f : BFunc n) : ℝ :=
+  ((ones f).card : ℝ) / (Fintype.card (Point n))
+
+/-- Probability that `f` evaluates to `true` when the `i`-th input bit is fixed
+to `false`. -/
+noncomputable def prob_restrict_false {n : ℕ} [Fintype (Point n)]
+    (f : BFunc n) (i : Fin n) : ℝ :=
+  prob (BFunc.restrictCoord f i false)
+
+/-- Probability that `f` evaluates to `true` when the `i`-th input bit is fixed
+to `true`. -/
+noncomputable def prob_restrict_true {n : ℕ} [Fintype (Point n)]
+    (f : BFunc n) (i : Fin n) : ℝ :=
+  prob (BFunc.restrictCoord f i true)
+
+@[simp] lemma prob_restrict_false_eq_discrete {n : ℕ} [Fintype (Point n)]
+    (f : BFunc n) (i : Fin n) :
+    prob_restrict_false f i =
+      ((ones (BFunc.restrictCoord f i false)).card : ℝ) /
+        (Fintype.card (Point n)) := rfl
+
+@[simp] lemma prob_restrict_true_eq_discrete {n : ℕ} [Fintype (Point n)]
+    (f : BFunc n) (i : Fin n) :
+    prob_restrict_true f i =
+      ((ones (BFunc.restrictCoord f i true)).card : ℝ) /
+        (Fintype.card (Point n)) := rfl
 
 /-- Restrict every function in a family by fixing the `i`‑th input bit to `b`. -/
 noncomputable

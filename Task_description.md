@@ -253,7 +253,9 @@ Each component’s verification will be reviewed and optimized. Since the final 
 Updated checklist (June 2025)
 
 - `bool_func.lean`: basic types (completed).
-- `entropy.lean`: finish `EntropyDrop` proof.
+- `entropy.lean`: finish `EntropyDrop` proof and formalise the probability
+  lemma `exists_restrict_half_real_prob` connecting discrete counts with
+  analytic bounds.
 - `sunflower.lean`: add classical sunflower lemma.
 - `agreement.lean`: prove `CoreAgreement`.
 - `cover.lean`: implement covering algorithm.

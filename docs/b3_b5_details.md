@@ -75,7 +75,8 @@ arguments to entire families remains an open task.
   family; this follows by induction on the construction of the cover.
   An auxiliary lemma `exists_restrict_half` in `entropy.lean` shows that
   some input bit restricts a family to at most half its size.  Its
-  real-valued sibling `exists_restrict_half_real` eases analytic bounds.
+  real-valued sibling `exists_restrict_half_real` and the probability
+  variant `exists_restrict_half_real_prob` ease analytic bounds.
   The strengthened `exists_coord_entropy_drop` lemma then guarantees a
   one‑bit decrease of collision entropy, setting the stage for a cleaner
   argument.

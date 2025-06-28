@@ -125,9 +125,17 @@ partial def buildCover (F : Family n) (h : ℕ)
         -- implementation would first test the quantitative sunflower bound.
         have ⟨i, b, hdrop⟩ := BoolFunc.exists_coord_entropy_drop (F := F)
             (hn := by decide) (hF := by
-              -- card > 1 follows from the fact we still have an uncovered
-              -- input (namely `x`); full proof deferred
-              sorry)
+              -- `firstUncovered` yielded `⟨f,x⟩`, so `F` is nonempty
+              classical
+              have hx : (⟨f, x⟩ : Σ f : BoolFunc n, Vector Bool n) ∈ uncovered F Rset := by
+                simpa [firstUncovered] using Set.choose?_mem (S := uncovered F Rset) hfu
+              have hf : f ∈ F :=
+                (by
+                  rcases (by
+                    simpa [uncovered] using hx
+                  ) with ⟨hf, -, -⟩
+                  exact hf)
+              exact Finset.card_pos.mpr ⟨f, hf⟩)
         -- New upper‑bound on entropy: `H₂ (F.restrict i b) ≤ h - 1`
         have hH0 : BoolFunc.H₂ (F.restrict i b) ≤ (h - 1 : ℝ) := by
           have : BoolFunc.H₂ F ≤ h := hH

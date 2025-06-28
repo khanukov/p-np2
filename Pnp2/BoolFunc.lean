@@ -224,6 +224,12 @@ def supports (F : Family n) : Finset (Finset (Fin n)) :=
   · rintro ⟨f, hf, rfl⟩
     exact Finset.mem_image.mpr ⟨f, hf, rfl⟩
 
+@[simp] lemma supports_card_le (F : Family n) :
+    (supports F).card ≤ F.card := by
+  classical
+  simpa [supports] using
+    (Finset.card_image_le (s := F) (f := support))
+
 end Family
 
 /-! ## Re‑exports to avoid long qualified names downstream -/

@@ -44,10 +44,31 @@ lemma mBound_lt_subexp
     mBound n h < Nat.pow 2 (n / 100) := by
   /-  **Intended proof idea**
 
-      •  Expand `mBound n h = n·(h+2)·2^(10 h)`.  
-      •  Compare with `2^{n/100}` via logs:  
-           `log₂(n·…) ≤ log₂ n + …`.  
+      •  Expand `mBound n h = n·(h+2)·2^(10 h)`.
+      •  Compare with `2^{n/100}` via logs:
+           `log₂(n·…) ≤ log₂ n + …`.
       •  For `n ≥ 10000·…` the RHS < `n/100`. -/
+  /-!
+  ### Proof Sketch
+
+  Taking base-2 logarithms gives
+  `logb 2 (mBound n h)` = `logb 2 n + logb 2 (h + 2) + 10 * h`.
+  The assumption `hn : n ≥ n₀ h` rewrites to
+  `n ≥ 10000 * (h + 2) * 2 ^ (10 * h)`.  From monotonicity of `logb` we
+  deduce
+
+  `logb 2 n ≥ logb 2 (10000) + logb 2 (h + 2) + 10 * h`.
+
+  Rearranging shows
+
+  `logb 2 (mBound n h)` ≤ `logb 2 n + logb 2 (h + 2) + 10 * h` < `n / 100`,
+
+  which implies the desired inequality
+
+  `mBound n h < 2 ^ (n / 100)`
+  by the monotonicity of `Real.logb` and exponentiation.
+  Formalizing the numeric constants is routine but tedious, so it is
+  deferred to future work. -/
   -- Formal (arith) proof still to be written.
   sorry
 

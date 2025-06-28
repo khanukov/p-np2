@@ -42,7 +42,9 @@ The file `cover.lean` now keeps track of uncovered inputs and recurses via
 `firstUncovered`.  A new lemma `sunflower_step` applies the classical
 sunflower lemma—assuming enough **distinct supports** remain—to extract a
 positive-dimensional subcube covering at least a fixed number of functions.
-The entropy branch is still a placeholder.
+The entropy branch now uses `exists_coord_entropy_drop` to split on a
+coordinate that decreases collision entropy, though the numeric counting
+argument is not yet complete.
 
 ---
 

@@ -25,6 +25,7 @@ stable.
 
 import Pnp2.BoolFunc
 import Std.Data.Finset
+import Mathlib.Data.Set.Function
 
 open Classical
 open BoolFunc
@@ -113,3 +114,7 @@ lemma dist_le_of_compl_subset
     _ ≤ ℓ := by linarith [h_size]
 
 end Agreement
+
+lemma agree_on_refl {α β : Type _} (f : α → β) (s : Set α) : Set.EqOn f f s :=
+  fun x hx => rfl
+

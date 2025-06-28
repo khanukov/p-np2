@@ -60,8 +60,10 @@ right (`k + ℓ = n`).
 
 *Current status.*  Low-sensitivity functions can already be compressed via
 the Impagliazzo–Moshkovitz–Oliveira method.  The updated `cover.lean` module
-records uncovered inputs explicitly and splits on them, but the sunflower
-extraction and entropy steps are still placeholders.  Adapting the
+records uncovered inputs explicitly and splits on them.  A new lemma
+`sunflower_step` extracts a monochromatic subcube whenever a large set of
+small-support functions with **distinct supports** remains uncovered,
+while the entropy step is still a placeholder.  Adapting the
  collision‑entropy technique to entire families remains an open task.
   An auxiliary lemma `exists_restrict_half` in `entropy.lean` shows that
   some input bit restricts a family to at most half its size.  Its

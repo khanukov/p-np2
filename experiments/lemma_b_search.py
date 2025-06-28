@@ -20,6 +20,7 @@ explored without editing the file.
 """
 
 import argparse
+import csv
 from collections import Counter
 from math import log2
 
@@ -144,11 +145,28 @@ def _entropy_drop(funcs, n, k):
     return k - ha, (n - k) - hb
 
 
-def experiment(n, max_gates, show_entropy=False, suggest_split=False):
+def experiment(
+    n,
+    max_gates,
+    show_entropy=False,
+    suggest_split=False,
+    csv_path=None,
+):
+    """Run the enumeration experiment and optionally write CSV output."""
     funcs = all_functions(n, max_gates)
     print(f"n={n}, gates<={max_gates}, total functions: {len(funcs)}")
     best = None
     best_score = -1.0
+    writer = None
+    if csv_path:
+        csv_file = open(csv_path, "w", newline="")
+        writer = csv.writer(csv_file)
+        header = ["k", "A", "B", "rectangles"]
+        if show_entropy or suggest_split:
+            header += ["H_A", "H_B"]
+        if suggest_split:
+            header += ["delta_A", "delta_B"]
+        writer.writerow(header)
     for k in range(1, n):
         a, b = split_tables(funcs, n, k)
         line = f"  split k={k}: |A|={a}, |B|={b}, rectangles={a*b}"
@@ -165,6 +183,15 @@ def experiment(n, max_gates, show_entropy=False, suggest_split=False):
                 best = k
             line += f", ΔA={da:.2f}, ΔB={db:.2f}"
         print(line)
+        if writer:
+            row = [k, a, b, a * b]
+            if show_entropy or suggest_split:
+                row += [ha, hb]
+            if suggest_split:
+                row += [da, db]
+            writer.writerow(row)
+    if writer:
+        csv_file.close()
     if suggest_split and best is not None:
         print(f"Suggested split: k={best} with entropy drop {best_score:.2f}")
 
@@ -183,10 +210,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--suggest", action="store_true",
         help="print recommended split based on entropy drop")
+    parser.add_argument(
+        "--csv", type=str, default=None,
+        help="write per-split results to a CSV file")
     args = parser.parse_args()
     experiment(
         n=args.n,
         max_gates=args.max_gates,
         show_entropy=args.entropy,
         suggest_split=args.suggest,
+        csv_path=args.csv,
     )

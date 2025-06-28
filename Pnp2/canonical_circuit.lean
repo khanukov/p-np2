@@ -182,8 +182,22 @@ def encodeCanon {n : ℕ} : Canon n → List Bool
 
 lemma encodeCanon_length {n : ℕ} (c : Canon n) :
     (encodeCanon c).length ≤ codeLen c := by
-  -- Proof postponed.  The encoding above is only schematic.
-  admit
+  induction c with
+  | var i =>
+      simp [encodeCanon, codeLen]
+  | const b =>
+      simp [encodeCanon, codeLen]
+  | not c ih =>
+      simpa [encodeCanon, codeLen] using
+        Nat.succ_le_succ ih
+  | and c₁ c₂ ih₁ ih₂ =>
+      have := Nat.add_le_add ih₁ ih₂
+      simpa [encodeCanon, codeLen, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        Nat.succ_le_succ this
+  | or c₁ c₂ ih₁ ih₂ =>
+      have := Nat.add_le_add ih₁ ih₂
+      simpa [encodeCanon, codeLen, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        Nat.succ_le_succ this
 
 /-- The set of circuits on `n` inputs whose size does not exceed `m`. -/
 def circuitsUpTo (n m : ℕ) : Set (Circuit n) := {c | sizeOf c ≤ m}

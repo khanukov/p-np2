@@ -18,8 +18,9 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 * `sunflower.lean` – minimal sunflower lemma used downstream.
 * `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
 * `cover.lean` – experimental cover builder that keeps track of the
-  set of uncovered inputs via `firstUncovered`; only the sunflower and
-  entropy branches still contain `sorry`.
+  set of uncovered inputs via `firstUncovered`.  The entropy split now
+  uses `exists_coord_entropy_drop`, leaving only the sunflower branch
+  unfinished.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `family_entropy_cover.lean` – placeholder for the family version of the cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
@@ -76,7 +77,10 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 This is a research prototype.  Many modules contain `sorry` placeholders and only
 partial proofs.  The `cover.lean` file now constructs covers by recursively
-searching for the first uncovered input.  The sunflower extraction and entropy
-split steps are still represented by placeholders in `cover.lean`.  The
-repository is intended for exploration and does not constitute a finished
-argument.
+searching for the first uncovered input.  The entropy branch uses the
+`exists_coord_entropy_drop` lemma to split the family, whereas the
+sunflower extraction step remains a placeholder.  Whenever this entropy
+split occurs both resulting subfamilies have strictly smaller collision
+entropy, ensuring termination.  The rectangles produced at the leaves
+are proven to be monochromatic for the entire family.  The repository is
+intended for exploration and does not constitute a finished argument.

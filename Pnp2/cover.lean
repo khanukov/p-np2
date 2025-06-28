@@ -142,9 +142,8 @@ partial def buildCover (F : Family n) (h : ℕ)
           have := hdrop.trans (by linarith)
           simpa using this
         have hH1 : BoolFunc.H₂ (F.restrict i (!b)) ≤ (h - 1 : ℝ) := by
-          -- symmetric (same lemma but for !b via commutativity)
-          -- proof omitted
-          sorry
+          have h_symm := hdrop
+          simpa [Bool.not_not] using h_symm
         let F0 : Family n := F.restrict i b
         let F1 : Family n := F.restrict i (!b)
         exact (buildCover F0 (h - 1) (by simpa using hH0)) ∪

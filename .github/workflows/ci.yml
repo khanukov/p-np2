@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+    paths:
+      - '**.lean'
+      - lean-toolchain
+      - lakefile.lean
+      - lake-manifest.json
+  pull_request:
+    paths:
+      - '**.lean'
+      - lean-toolchain
+      - lakefile.lean
+      - lake-manifest.json
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: leanprover/elan-action@v1
+      - name: Cache mathlib
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.elan
+            lake-packages
+            .lake
+          key: ${{ runner.os }}-elan-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Build
+        run: |
+          lake exe cache get || echo 'No cache available'
+          lake build

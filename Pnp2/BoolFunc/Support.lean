@@ -34,13 +34,17 @@ lemma eval_eq_of_agree_on_support
 /--
 Flipping bits outside the support of `f` keeps its value.
 -/
-lemma flip_outside_support (f : BFunc n) (x : Point n) :
-    let y : Point n := fun i => if h : i ∈ support f then x i else !(x i)
-    f x = f y := by
+lemma flip_outside_support (f : BFunc n) (x : Point n) {i : Fin n}
+    (hi : i ∉ support f) :
+    f x = f (Point.update x i (!x i)) := by
   classical
-  have hagree : ∀ i, i ∈ support f → x i = (fun i => if h : i ∈ support f then x i else !(x i)) i :=
-    by intro i hi; simp [hi]
-  simpa [y] using eval_eq_of_agree_on_support (x:=x) (y:=fun i => if h : i ∈ support f then x i else !(x i)) hagree
+  have hagree : ∀ j, j ∈ support f → x j = (Point.update x i (!x i)) j := by
+    intro j hj
+    by_cases hji : j = i
+    · subst hji; exact (hi hj).elim
+    · simp [Point.update, hji]
+  simpa using
+    (eval_eq_of_agree_on_support (f := f) (x := x) (y := Point.update x i (!x i)) hagree)
 
 
 

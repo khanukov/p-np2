@@ -113,18 +113,17 @@ to the subcube obtained from `x₀` by freezing `K`.
 lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     x ∈ₛ Subcube.fromPoint x₀ K := by
-  classical
-  -- Proof omitted
-  sorry
+  intro i hi
+  exact h i hi
 
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/
 lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
-  classical
-  -- Proof omitted
-  sorry
+  cases x₀
+  cases x
+  simp [Subcube.fromPoint, h, Function.funext_iff]
 
 end Agreement
 

@@ -24,6 +24,7 @@ stable.
 -/
 
 import Pnp2.BoolFunc
+import Pnp2.BoolFunc.Support   -- new helper lemmas
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Function
 import Mathlib.InformationTheory.Hamming
@@ -31,6 +32,7 @@ import Mathlib.InformationTheory.Hamming
 open Classical
 open BoolFunc
 open Finset
+open BigOperators
 
 namespace Agreement
 
@@ -101,8 +103,29 @@ lemma dist_le_of_compl_subset
     (h_mem : y ∈ₛ Subcube.fromPoint x I) :
     hammingDist x y ≤ ℓ := by
   classical
-  -- Proof omitted
-  sorry
+  -- The coordinates where `x` and `y` differ lie outside `I`.
+  have h_subset : (Finset.univ.filter fun i => x i ≠ y i) ⊆ Iᶜ := by
+    intro i hi
+    have hne : x i ≠ y i := (Finset.mem_filter.mp hi).2
+    by_cases hI : i ∈ I
+    · have : x i = y i := h_mem i hI
+      exact False.elim (hne this)
+    · simpa [Finset.mem_compl, hI]
+  have h_card_diff_le :
+      (Finset.univ.filter fun i => x i ≠ y i).card ≤ (Iᶜ : Finset (Fin n)).card :=
+    Finset.card_le_of_subset h_subset
+  have h_compl : (Finset.univ.filter fun i => x i ≠ y i).card ≤ n - I.card := by
+    classical
+    simpa [Finset.card_compl] using h_card_diff_le
+  have h_bound : (Finset.univ.filter fun i => x i ≠ y i).card ≤ ℓ := by
+    have h_le : n - I.card ≤ ℓ := by
+      have hsize' : (n : ℤ) - ℓ ≤ I.card := by exact_mod_cast h_size
+      have hIc_le : (I.card : ℤ) ≤ n := by
+        exact_mod_cast (Finset.card_le_univ (s := I))
+      have : (n : ℤ) - I.card ≤ ℓ := by nlinarith
+      exact_mod_cast this
+    exact h_compl.trans h_le
+  simpa [hammingDist_eq_card_filter] using h_bound
 
 open Finset
 
@@ -113,17 +136,15 @@ to the subcube obtained from `x₀` by freezing `K`.
 lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     x ∈ₛ Subcube.fromPoint x₀ K := by
-  intro i hi
-  exact h i hi
+  simpa using h
 
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/
 lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
-  cases x₀
-  cases x
-  simp [Subcube.fromPoint, h, Function.funext_iff]
+  ext i hi
+  simp [Subcube.fromPoint, h i hi]
 
 end Agreement
 

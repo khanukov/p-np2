@@ -10,6 +10,8 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
   proved).  The module now also defines simple probability utilities
   (`prob`, `prob_restrict_false`, `prob_restrict_true`) for measuring how often
   a function outputs `true` under various restrictions.
+* `BoolFunc/Support.lean` – helper lemmas about the coordinate support of
+  Boolean functions, e.g. `eval_eq_of_agree_on_support`.
 * `Boolcube.lean` – extended definitions together with a proved entropy‑drop lemma.
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The
@@ -68,7 +70,7 @@ dependencies have been downloaded.  A minimal smoke test is provided in
 ```bash
 lake env lean --run scripts/smoke.lean
 ```
-which simply checks that the main modules compile without `sorry`.
+which simply checks that the base definitions compile successfully.
 
 ## Experiments
 

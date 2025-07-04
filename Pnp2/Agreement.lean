@@ -24,6 +24,7 @@ stable.
 -/
 
 import Pnp2.BoolFunc
+import Pnp2.BoolFunc.Support   -- new helper lemmas
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Function
 import Mathlib.InformationTheory.Hamming
@@ -31,6 +32,7 @@ import Mathlib.InformationTheory.Hamming
 open Classical
 open BoolFunc
 open Finset
+open BigOperators
 
 namespace Agreement
 
@@ -101,8 +103,23 @@ lemma dist_le_of_compl_subset
     (h_mem : y ∈ₛ Subcube.fromPoint x I) :
     hammingDist x y ≤ ℓ := by
   classical
-  -- Proof omitted
-  sorry
+  -- mismatching coordinates lie outside `I`
+  have h_subset : (Finset.univ.filter fun i => x i ≠ y i) ⊆ Iᶜ := by
+    intro i hi
+    have hxne : x i ≠ y i := (Finset.mem_filter.mp hi).2
+    by_cases hiI : i ∈ I
+    · have := h_mem i hiI
+      have : x i = y i := by simpa [Subcube.fromPoint] using this.symm
+      exact False.elim (hxne this)
+    · simpa [Finset.mem_compl] using hiI
+  -- count mismatching coordinates using the complement of `I`
+  have h_card := Finset.card_le_of_subset h_subset
+  have h_bound : (Finset.univ.filter fun i => x i ≠ y i).card ≤ n - I.card := by
+    simpa [Finset.card_compl] using h_card
+  -- conclude using the assumption on `|I|`
+  have h_le : (Finset.univ.filter fun i => x i ≠ y i).card ≤ ℓ :=
+    h_bound.trans <| by simpa [Nat.sub_le_iff_le_add] using h_size
+  simpa [hammingDist_eq_card_filter] using h_le
 
 open Finset
 
@@ -113,17 +130,15 @@ to the subcube obtained from `x₀` by freezing `K`.
 lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     x ∈ₛ Subcube.fromPoint x₀ K := by
-  intro i hi
-  exact h i hi
+  simp [Subcube.fromPoint, h]
 
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/
 lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
-  cases x₀
-  cases x
-  simp [Subcube.fromPoint, h, Function.funext_iff]
+  ext i hi
+  simp [Subcube.fromPoint, h i hi]
 
 end Agreement
 

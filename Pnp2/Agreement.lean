@@ -24,7 +24,6 @@ stable.
 -/
 
 import Pnp2.BoolFunc
-import Pnp2.BoolFunc.Support   -- new helper lemmas
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Function
 import Mathlib.InformationTheory.Hamming

@@ -1,6 +1,7 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic
 import Pnp2.BoolFunc
+import Pnp2.Agreement
 
 open Finset
 
@@ -58,4 +59,44 @@ lemma eval_eq_of_agree_on_superset {f : BFunc n} {S : Finset (Fin n)}
     f x = f y :=
   eval_eq_of_agree_on_support (x:=x) (y:=y) (fun i hi => h i (hSup hi))
 
+/-
+  A non-constant Boolean function takes the value `true` somewhere.
+-/
+lemma exists_point_true (f : BFunc n) (h : support f ≠ ∅) :
+    ∃ x : Point n, f x = true := by
+  classical
+  by_contra hfalse
+  push_neg at hfalse
+  have hsupp : support f = ∅ := by
+    ext i; constructor
+    · intro hi
+      rcases mem_support_iff.mp hi with ⟨x, hx⟩
+      have hx1 := hfalse x
+      have hx2 := hfalse (Point.update x i (!x i))
+      simp [hx1, hx2] at hx
+    · intro hi; cases hi
+  exact h hsupp
+
+/--
+  If `K ⊆ support f` then fixing the coordinates in `K`
+  leaves `f` *constant* on the resulting subcube.
+-/
+lemma constant_on_subcube (f : BFunc n)
+    {K : Finset (Fin n)} (hK : K ⊆ support f) :
+    ∀ {x₀ : Point n} {x y : Point n},
+      x ∈ Agreement.Subcube.fromPoint x₀ K →
+      y ∈ Agreement.Subcube.fromPoint x₀ K →
+      f x = f y := by
+  intro x₀ x y hx hy
+  classical
+  apply eval_eq_of_agree_on_support (f := f) (x := x) (y := y)
+  intro i hi
+  have hiK : i ∈ K := hK hi
+  have hx_i : x i = x₀ i := hx i hiK
+  have hy_i : y i = x₀ i := hy i hiK
+  simpa [Agreement.Subcube.fromPoint, hx_i, hy_i] using congrArg id (show x i = y i from by
+    trans x₀ i <;> assumption)
+
 end BoolFunc
+
+export BoolFunc (exists_point_true constant_on_subcube)

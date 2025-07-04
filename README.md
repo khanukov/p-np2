@@ -42,7 +42,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Building
 
-The Lean files require **Lean 4** together with **mathlib4** (version ≥ 4.8.0).
+The Lean files require **Lean 4** together with **mathlib4** (version ≥ 4.22.0).
 A minimal `lakefile.lean` and `lean-toolchain` are included.  Install `elan` (which also provides the `lake` tool, e.g. via `sudo apt-get install elan`) and run
 
 ```bash

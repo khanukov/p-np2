@@ -15,6 +15,7 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement
+import Pnp2.BoolFunc.Support   -- new helper lemmas
 import Mathlib.Data.Nat.Basic
 import Mathlib.Tactic
 

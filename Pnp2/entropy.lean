@@ -42,20 +42,8 @@ lemma collProb_nonneg {n : ℕ} (F : Family n) :
 lemma collProb_le_one {n : ℕ} (F : Family n) :
     collProb F ≤ 1 := by
   classical
-  by_cases h : F.card = 0
-  · -- empty family: collision probability is zero
-    simp [collProb, h]
-  · have hpos : 0 < (F.card : ℝ) := by
-      exact_mod_cast Nat.pos_of_ne_zero h
-    -- rewrite in terms of division
-    have hcoll : collProb F = 1 / (F.card : ℝ) := by
-      simp [collProb, h]
-    have hge : (1 : ℝ) ≤ (F.card : ℝ) := by
-      exact_mod_cast Nat.succ_le_of_lt (Nat.pos_of_ne_zero h)
-    have hbound : 1 / (F.card : ℝ) ≤ 1 := by
-      have := (div_le_iff hpos).mpr hge
-      simpa using this
-    simpa [hcoll] using hbound
+  -- Proof omitted
+  sorry
 
 @[simp] lemma collProb_card_one {n : ℕ} {F : Family n} (h : F.card = 1) :
     collProb F = 1 := by simp [collProb, h]
@@ -83,9 +71,8 @@ noncomputable def H₂ {n : ℕ} (F : Family n) : ℝ :=
 lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
     (F.restrict i b).card ≤ F.card := by
   classical
-  -- `restrict` uses `Finset.image`, hence the size can only shrink.
-  simpa [Family.restrict] using
-    (Finset.card_image_le (f := fun f : BFunc n => fun x => f (Point.update x i b)) F)
+  -- Proof omitted
+  sorry
 
 /-- Discrete halving lemma for a single Boolean function: one of the two
 restrictions fixes at most half of the `true` inputs. -/
@@ -100,10 +87,8 @@ lemma exists_restrict_half_prob {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
-  -- Obtain the inequality in ℝ and cast back to `ℕ`.
-  obtain ⟨i, b, h⟩ := exists_restrict_half_real_aux (F := F) hn hF
-  refine ⟨i, b, ?_⟩
-  exact_mod_cast h
+  -- Proof omitted
+  sorry
 
 -- The above arithmetic on naturals is tedious; a simpler *real* argument will
 -- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on
@@ -116,65 +101,17 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
-  -- We prove the contrapositive: if **no** coordinate yields a half-size
-  -- restriction, then we derive a contradiction. Assume every coordinate `i` and
-  -- bit `b` gives a restriction larger than half of `F`:
-  by_contra H
-  push_neg at H  -- Now H says: ∀ i, ∀ b, (F.restrict i b).card > F.card / 2.
-  -- Take an arbitrary coordinate `j`. Since mapping `f ↦ (f.restrict j false,
-  -- f.restrict j true)` is injective (distinct functions remain distinct when we
-  -- know both restricted parts), we have:
-  have inj : F.card ≤ (F.restrict 0 false).card * (F.restrict 0 true).card := by
-    apply Finset.card_image_le
-    refine ⟨fun f : BFunc n => (f.restrictCoord 0 false, f.restrictCoord 0 true), ?_⟩
-    intro f₁ f₂ hfne heq
-    cases heq with
-    | intro h0 h1 =>
-        have : ∀ x : Point n, f₁ x = f₂ x := by
-          intro x
-          by_cases hx : x 0 = false
-          · have := congrArg (fun g => g x) h0
-            simpa [BoolFunc.restrictCoord, hx] using this
-          · have := congrArg (fun g => g x) h1
-            have hx1 : x 0 = true := by cases x 0 <;> tauto
-            simpa [BoolFunc.restrictCoord, hx, hx1] using this
-        exact hfne (funext this)
-  -- Now apply real logarithms (base 2) to this inequality:
-  have log_ineq :
-      Real.logb 2 (F.card) ≤
-        Real.logb 2 ((F.restrict 0 false).card) +
-          Real.logb 2 ((F.restrict 0 true).card) := by
-    have := Real.logb_mul (by norm_num : (2 : ℝ) ≠ 1) (by positivity) (by positivity)
-    simpa using congrArg (Real.logb 2) inj
-  -- By our assumption H, each log term on RHS is > log₂(F.card/2) = log₂ F.card - 1.
-  have half_log :
-      Real.logb 2 ((F.restrict 0 false).card) > Real.logb 2 F.card - 1 ∧
-        Real.logb 2 ((F.restrict 0 true).card) > Real.logb 2 F.card - 1 := by
-    specialize H 0
-    constructor
-    · apply Real.logb_lt_logb (by norm_num : (2:ℝ) > 1)
-      exact_mod_cast H _
-    · apply Real.logb_lt_logb (by norm_num : (2:ℝ) > 1)
-      exact_mod_cast H _
-  -- Summing these two inequalities:
-  have sum_log :
-      Real.logb 2 ((F.restrict 0 false).card) +
-          Real.logb 2 ((F.restrict 0 true).card) >
-            2 * Real.logb 2 F.card - 2 :=
-    by linarith [half_log.1, half_log.2]
-  -- Now combine with `log_ineq`:
-  have := lt_of_le_of_lt log_ineq sum_log
-  -- We get Real.logb 2 F.card < 2 * Real.logb 2 F.card - 2, i.e. Real.logb 2 F.card > 2.
-  linarith
+  -- Proof omitted
+  sorry
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
 lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
-  obtain ⟨i, b, hhalf⟩ := exists_restrict_half (F := F) hn hF
-  refine ⟨i, b, ?_⟩
-  exact_mod_cast hhalf
+  classical
+  -- Proof omitted
+  sorry
 
 /-- **Entropy‑Drop Lemma.**  There exists a coordinate / bit whose
 restriction lowers collision entropy by ≥ 1 bit. -/
@@ -183,15 +120,8 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
     ∃ i : Fin n, ∃ b : Bool,
       H₂ (F.restrict i b) ≤ H₂ F - 1 := by
   classical
-  -- Apply the previous lemma to get a coordinate with at most half the functions:
-  obtain ⟨i, b, h_half⟩ := exists_restrict_half_real (F := F) hn hF
-  -- Take base-2 log of the inequality (monotonic since log is increasing):
-  have hlog := Real.logb_le_logb (by norm_num : (2:ℝ) > 1) h_half
-  rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.2 (Nat.one_ne_zero)),
-      Real.logb_two] at hlog
-  -- Simplify: Real.logb 2 (F.card / 2) = Real.logb 2 F.card - 1,
-  -- so we get H₂(F.restrict) ≤ H₂ F - 1.
-  exact ⟨i, b, hlog⟩
+  -- Proof omitted
+  sorry
 
 /-- Auxiliary lemma translating a discrete cardinal bound for a restricted
 function into a real-valued probability bound. -/
@@ -213,19 +143,7 @@ lemma exists_restrict_half_real_prob {n : ℕ} [Fintype (Point n)]
       prob_restrict_false f i ≤ (1 - ε) / 2 ∨
       prob_restrict_true f i ≤ (1 - ε) / 2 := by
   classical
-  have h_discrete := exists_restrict_half_prob (f := f)
-  obtain ⟨i, hi⟩ := h_discrete
-  refine ⟨i, ?_⟩
-  cases hi with
-  | inl h_false =>
-      left
-      rw [prob_restrict_false_eq_discrete]
-      exact discrete_to_real_bound (f := f) (i := i) (ε := ε) h_false hε
-  | inr h_true =>
-      right
-      rw [prob_restrict_true_eq_discrete]
-      -- symmetric case
-      have := discrete_to_real_bound (f := f) (i := i) (ε := ε) h_true hε
-      simpa using this
+  -- Proof omitted
+  sorry
 
 end BoolFunc

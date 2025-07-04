@@ -1,5 +1,5 @@
 import Pnp2.Boolcube
-import Pnp2.Cover
+import Pnp2.cover
 
 namespace Boolcube
 

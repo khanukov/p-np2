@@ -123,13 +123,15 @@ lemma dist_le_of_compl_subset
 open Finset
 
 /--
-If two points coincide on the set `K`, then both belong
-to the subcube obtained from `x₀` by freezing `K`.
+Если `x` и `y` совпадают на всех координатах `K`,
+то оба принадлежат подкубу `fromPoint x K`.
 -/
-lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
-    (h : ∀ i, i ∈ K → x i = x₀ i) :
-    x ∈ₛ Subcube.fromPoint x₀ K := by
-  simp [Subcube.fromPoint, h]
+lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)}
+    {x y : Point n}
+    (h : ∀ i, i ∈ K → x i = y i) :
+    y ∈ Subcube.fromPoint x K := by
+  intro i hi
+  simpa [h i hi] using h i hi
 
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/

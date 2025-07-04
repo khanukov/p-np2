@@ -20,11 +20,11 @@ already follow from the (still partial!) library.
 -/
 
 import Pnp2.BoolFunc
-import Pnp2.Entropy
-import Pnp2.Sunflower
+import Pnp2.entropy
+import Pnp2.sunflower
 import Pnp2.Agreement
-import Pnp2.Cover
-import Pnp2.Bound
+import Pnp2.cover
+import Pnp2.bound
 import Mathlib.Data.Finset
 
 open Classical

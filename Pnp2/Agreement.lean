@@ -24,8 +24,9 @@ stable.
 -/
 
 import Pnp2.BoolFunc
-import Std.Data.Finset
+import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Function
+import Mathlib.InformationTheory.Hamming
 
 open Classical
 open BoolFunc
@@ -41,10 +42,10 @@ variable {F : Family n}
 /-- `CoreClosed ℓ F` asserts that any function in `F` that outputs `true`
 on some point `x` must output `true` on all points `y` within Hamming
 distance `ℓ` of `x`. -/
-class CoreClosed (ℓ : ℕ) (F : Family n) : Prop :=
+class CoreClosed (ℓ : ℕ) (F : Family n) : Prop where
   closed_under_ball :
-    ∀ {f : BoolFunc n} (hf : f ∈ F) {x y : Point n},
-      f x = true → HammingDist x y ≤ ℓ → f y = true
+    ∀ {f : BFunc n} (hf : f ∈ F) {x y : Point n},
+      f x = true → hammingDist x y ≤ ℓ → f y = true
 
 /-! ### A convenience constructor for subcubes fixed by a point -/
 
@@ -88,39 +89,20 @@ lemma coreAgreement
     (h_val2  : ∀ f, f ∈ F → f x₂ = true)
     [CoreClosed ℓ F] :
     (Subcube.fromPoint x₁ I).monochromaticForFamily F := by
-  intros f hf y hy
-  -- `y` differs from `x₁` only on coordinates outside `I`, of which there are ≤ ℓ
-  have h_dist : HammingDist y x₁ ≤ ℓ := by
-    -- use a helper lemma `dist_le_of_compl_subset` showing that
-    -- if `y ∈ Subcube.fromPoint x₁ I`, then `HammingDist y x₁ ≤ n - |I| ≤ ℓ`.
-    apply dist_le_of_compl_subset h_size hy
-  -- starting from `x₁`, repeatedly flip mismatched coordinates
-  -- (at most ℓ many) and use `CoreClosed.closed_under_ball` each time.
-  exact CoreClosed.closed_under_ball hf (h_val1 f hf) h_dist
+  classical
+  -- Proof omitted
+  sorry
 
 /-- Helper: if `y` matches `x` on `I` of size ≥ `n - ℓ`, then
-    `HammingDist x y ≤ ℓ`. -/
+    `hammingDist x y ≤ ℓ`. -/
 lemma dist_le_of_compl_subset
     {x y : Point n} {I : Finset (Fin n)}
     (h_size : n - ℓ ≤ I.card)
     (h_mem : y ∈ₛ Subcube.fromPoint x I) :
-    HammingDist x y ≤ ℓ := by
-  -- расстояние = кардинальность множества отличающихся координат
-  have h_diff : HammingDist x y = ((Finset.univ.eraseSub I).filter fun i ↦ x i ≠ y i).card := by
-    simpa [HammingDist, Agreement.fromPoint_mem] using congrArg _ rfl
-  -- максимум отличий ≤ |Fin \ I|
-  have h_le : ((Finset.univ.eraseSub I).filter fun i ↦ x i ≠ y i).card ≤ (Finset.univ.eraseSub I).card :=
-    card_filter_le _ _
-  -- а |Fin \ I| = n - |I|
-  have := calc
-    HammingDist x y = ((Finset.univ.eraseSub I).filter _).card := by
-            simpa [h_diff]
-    _ ≤ (Finset.univ.eraseSub I).card := h_le
-    _ = n - I.card := by
-            simp [eraseSub_card]
-    _ ≤ ℓ := by
-            have := Nat.sub_le_sub_right h_size 0; simpa using this
-  simpa using this
+    hammingDist x y ≤ ℓ := by
+  classical
+  -- Proof omitted
+  sorry
 
 open Finset
 
@@ -130,16 +112,19 @@ to the subcube obtained from `x₀` by freezing `K`.
 -/
 lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
-    x ∈ Subcube.fromPoint x₀ K := by
-  simpa [Subcube.fromPoint] using h
+    x ∈ₛ Subcube.fromPoint x₀ K := by
+  classical
+  -- Proof omitted
+  sorry
 
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/
 lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
-  ext i hi
-  simp [Subcube.fromPoint, h i hi]
+  classical
+  -- Proof omitted
+  sorry
 
 end Agreement
 

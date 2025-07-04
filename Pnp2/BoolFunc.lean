@@ -38,7 +38,6 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Real.Basic
-import Pnp2.BoolFunc.Support
 
 noncomputable section
 

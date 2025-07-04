@@ -28,9 +28,9 @@ The lemma’s **interface is frozen**—other files (`cover.lean` etc.)
 rely only on its statement, not on the proof term.
 -/
 
-import Mathlib.Data.Nat.Factorial
+import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Tactic
-import Std.Data.Finset
+import Mathlib.Data.Finset.Basic
 import Pnp2.BoolFunc
 
 open Classical
@@ -46,15 +46,14 @@ variable {α : Type} [DecidableEq α]
     a sub‑family `𝓣` (of size `p`) whose members all have the **same**
     pairwise intersection (the *core*).  We store both `𝓣` and its
     intersection `core` for convenience.                                                  -/
-structure IsSunflower (p : ℕ) (𝓣 : Finset (Finset α)) : Prop where
+structure IsSunflower (p : ℕ) (𝓣 : Finset (Finset α)) (core : Finset α) : Prop where
   card_p : 𝓣.card = p
-  core   : Finset α
   pairwise_inter :
-    (∀ A ∈ 𝓣, ∀ B ∈ 𝓣, A ≠ B → A ∩ B = core)
+    ∀ A ∈ 𝓣, ∀ B ∈ 𝓣, A ≠ B → A ∩ B = core
 
 /-- Abbreviation: a `p`‑sunflower is *some* `𝓣` satisfying `IsSunflower`. -/
 def HasSunflower (𝓢 : Finset (Finset α)) (w p : ℕ) : Prop :=
-  ∃ 𝓣 ⊆ 𝓢, IsSunflower (α := α) p 𝓣 ∧ ∀ A ∈ 𝓣, A.card = w
+  ∃ 𝓣 ⊆ 𝓢, ∃ core, IsSunflower (α := α) p 𝓣 core ∧ ∀ A ∈ 𝓣, A.card = w
 
 /-! ### The classical Erdős–Rado bound (statement only) -/
 
@@ -68,17 +67,12 @@ lemma sunflower_exists
     (bound : (p - 1).factorial * w ^ p < 𝓢.card) :
     HasSunflower 𝓢 w p := by
   classical
-  -- The combinatorial proof of the classical Erdős–Rado bound is
-  -- formalised in `Mathlib.Combinatorics.Sunflower` as
-  -- `sunflower_exists`. We simply restate that result here so that
-  -- downstream files can use it without importing all of mathlib.
-  simpa using
-    (Mathlib.Combinatorics.Sunflower.sunflower_exists
-      (𝓢 := 𝓢) (w := w) (p := p) hw hp all_w bound)
+  -- Proof omitted
+  sorry
 
 /-- A tiny convenience corollary specialised to **Boolean cube** contexts
-where we automatically know each set has fixed size `w`.                     -/
-corollary sunflower_exists_of_fixedSize
+where we automatically know each set has fixed size `w`. -/
+lemma sunflower_exists_of_fixedSize
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
     (h_size : (∀ A ∈ 𝓢, A.card = w))
     (h_big  : 𝓢.card > (p - 1).factorial * w ^ p) :

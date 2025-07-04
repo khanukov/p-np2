@@ -6,6 +6,3 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: leanprover/lean-action@v1
-      with:
-        lean-version: "leanprover/lean4:v4.8.0"
-        mathlib: true

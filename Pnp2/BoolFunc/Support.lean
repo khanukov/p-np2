@@ -6,7 +6,7 @@ open Finset
 namespace BoolFunc
 variable {n : ℕ}
 
-/-- Если `x,y` совпадают на `support f`, то `f x = f y`. —/
+/-- Если `x,y` совпадают на `support f`, то `f x = f y`. -/
 lemma eval_eq_of_agree_on_support
     {f : BFunc n} {x y : Point n}
     (h : ∀ i, i ∈ support f → x i = y i) :
@@ -25,7 +25,7 @@ lemma eval_eq_of_agree_on_support
   have : x i = y i := h i hisupp
   exact hi this
 
-/-- Всякая нетривиальная функция принимает `true` где‑то. —/
+/-- Всякая нетривиальная функция принимает `true` где‑то. -/
 lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
     ∃ x, f x = true := by
   classical

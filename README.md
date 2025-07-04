@@ -68,7 +68,7 @@ dependencies have been downloaded.  A minimal smoke test is provided in
 ```bash
 lake env lean --run scripts/smoke.lean
 ```
-which simply checks that the main modules compile without `sorry`.
+which simply checks that the base definitions compile successfully.
 
 ## Experiments
 

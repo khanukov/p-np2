@@ -87,7 +87,7 @@ Modules in Lean 4:
 * `cover.lean`: main recursive algorithm.
 * `bound.lean`: size bound proof.
 * `examples.lean`: auto-tests.
-### Updated Formalisation Plan (2025-06-25)
+### Updated Formalisation Plan (2025-07-04)
 The modules above serve as milestones. Our immediate goals are:
 
 1. Complete the proof of `EntropyDrop` in `entropy.lean`.  The helper
@@ -104,6 +104,14 @@ The modules above serve as milestones. Our immediate goals are:
    proofs still use `admit`.
 5. Prove the size bound in `bound.lean`.
 6. Provide small test instances in `examples.lean`.
+
+### Status Update (July 2025)
+
+The Lean codebase now includes the full statement and proof of
+`exists_coord_entropy_drop` and a working recursive cover builder.  Several
+auxiliary lemmas—most notably the probabilistic halving bound and the classical
+sunflower lemma—are still proved using `sorry`.  Completing these pieces, along
+with the counting argument and example scripts, remains the next milestone.
 
 The parameter $h$ is treated as a fixed constant (or $o(n)$) when establishing the bound.
 

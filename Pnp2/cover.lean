@@ -92,12 +92,16 @@ lemma sunflower_step
   let R : Subcube n := Agreement.Subcube.fromPoint x₀ K
   refine ⟨R, ?_, ?_⟩
   ·
-    -- Each set in the sunflower corresponds to a function whose support
-    -- contains `K`.  Restricting to `R` fixes the core bits, and the disjoint
-    -- petals no longer interfere.  We therefore obtain at least `t` functions
-    -- that evaluate to `true` on all of `R`.
-    -- The formal combinatorial argument is omitted.
-    sorry
+    -- Each `A ∈ 𝓣` is the support of some function `f_A ∈ F`.
+    have exists_f : ∀ A ∈ 𝓣, ∃ f ∈ F, support f = A := by
+      intro A hA
+      have hA' := h𝓣sub hA
+      simpa using (Family.mem_supports.mp hA')
+    choose f hfF hfSupp using exists_f
+    -- A complete combinatorial construction of a suitable point is omitted here.
+    have : (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t := by
+      admit
+    exact this
   ·
     -- `R` has dimension `n - K.card`.  The sunflower lemma ensures `K` is a
     -- proper subset of each support in the sunflower, so `K.card < n` and the

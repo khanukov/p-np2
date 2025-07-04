@@ -38,6 +38,7 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Real.Basic
+import Pnp2.BoolFunc.Support
 
 noncomputable section
 
@@ -141,6 +142,12 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
   by_cases hk : k = i
   · subst hk; simp [Point.update]
   · simp [Point.update, hk]
+
+/-- **A constant point** with the same Boolean value in every coordinate. -/
+def Point.const (n : ℕ) (b : Bool) : Point n := fun _ => b
+
+@[simp] lemma Point.const_apply (n : ℕ) (b : Bool) (i : Fin n) :
+    (Point.const n b) i = b := rfl
 
 end PointOps
 

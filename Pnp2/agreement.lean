@@ -122,6 +122,17 @@ lemma dist_le_of_compl_subset
             have := Nat.sub_le_sub_right h_size 0; simpa using this
   simpa using this
 
+open Finset
+
+/--
+If two points coincide on the set `K`, then both belong
+to the subcube obtained from `x₀` by freezing `K`.
+-/
+lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
+    (h : ∀ i, i ∈ K → x i = x₀ i) :
+    x ∈ Subcube.fromPoint x₀ K := by
+  simpa [Subcube.fromPoint] using h
+
 end Agreement
 
 lemma agree_on_refl {α β : Type _} (f : α → β) (s : Set α) : Set.EqOn f f s :=

@@ -133,6 +133,14 @@ lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     x ∈ Subcube.fromPoint x₀ K := by
   simpa [Subcube.fromPoint] using h
 
+/-- If two points agree on all coordinates in `K`, then the subcubes
+obtained by freezing `K` according to these points coincide. -/
+lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
+    (h : ∀ i, i ∈ K → x i = x₀ i) :
+    Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
+  ext i hi
+  simp [Subcube.fromPoint, h i hi]
+
 end Agreement
 
 lemma agree_on_refl {α β : Type _} (f : α → β) (s : Set α) : Set.EqOn f f s :=

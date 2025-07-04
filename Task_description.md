@@ -257,7 +257,7 @@ Updated checklist (June 2025)
   lemma `exists_restrict_half_real_prob` connecting discrete counts with
   analytic bounds.
 - `sunflower.lean`: add classical sunflower lemma.
-- `agreement.lean`: prove `CoreAgreement`.
+- `Agreement.lean`: prove `CoreAgreement`.
 - `cover.lean`: implement covering algorithm.
 - `bound.lean`: finalize counting argument.
 - `examples.lean`: small tests for the algorithm.

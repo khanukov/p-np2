@@ -12,10 +12,10 @@ the final numeric bound remain open.
 -/
 
 import Pnp2.BoolFunc
-import Pnp2.Entropy
-import Pnp2.Sunflower
+import Pnp2.entropy
+import Pnp2.sunflower
 import Pnp2.Agreement
-import Mathlib.Data.Nat.Pow
+import Mathlib.Data.Nat.Basic
 import Mathlib.Tactic
 
 open Classical

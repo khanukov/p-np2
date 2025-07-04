@@ -21,6 +21,7 @@ import Mathlib.Tactic
 open Classical
 open BoolFunc
 open Finset
+open Agreement
 
 namespace Cover
 

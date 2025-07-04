@@ -20,7 +20,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
-* `agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
+* `Agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, leaving only the sunflower branch
@@ -42,7 +42,7 @@ The code is **not** a complete proof: many declarations end with `sorry`.  The g
 
 ## Building
 
-The Lean files require **Lean 4** together with **mathlib4** (≥ 2025‑05‑20).
+The Lean files require **Lean 4** together with **mathlib4** (version ≥ 4.8.0).
 A minimal `lakefile.lean` and `lean-toolchain` are included.  Install `elan` (which also provides the `lake` tool, e.g. via `sudo apt-get install elan`) and run
 
 ```bash
@@ -61,8 +61,14 @@ If the cache download fails due to network restrictions, simply run
 `lake build` again to compile Mathlib from source. This may take a
 few minutes the first time.
 
-`examples.lean` can also be executed directly with `lean --run examples.lean` once
-the dependencies have been downloaded.
+`examples.lean` can be run directly with `lean --run examples.lean` once the
+dependencies have been downloaded.  A minimal smoke test is provided in
+`scripts/smoke.lean`:
+
+```bash
+lake env lean --run scripts/smoke.lean
+```
+which simply checks that the main modules compile without `sorry`.
 
 ## Experiments
 

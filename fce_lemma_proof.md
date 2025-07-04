@@ -83,7 +83,7 @@ Modules in Lean 4:
 * `bool_func.lean`: types for points, subcubes, Boolean functions.
 * `entropy.lean`: entropy-drop lemma.
 * `sunflower.lean`: sunflower extraction.
-* `agreement.lean`: core agreement.
+* `Agreement.lean`: core agreement.
 * `cover.lean`: main recursive algorithm.
 * `bound.lean`: size bound proof.
 * `examples.lean`: auto-tests.
@@ -98,7 +98,7 @@ The modules above serve as milestones. Our immediate goals are:
    `exists_coord_entropy_drop` formalises the resulting one‑bit entropy
    reduction.
 2. Add a classical sunflower lemma in `sunflower.lean`.
-3. Formalise the `CoreAgreement` lemma in `agreement.lean`.
+3. Formalise the `CoreAgreement` lemma in `Agreement.lean`.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A
    well‑founded implementation is present, but the coverage and bound
    proofs still use `admit`.

@@ -2,7 +2,9 @@
 
 This repository collects experimental Lean files that sketch a formal proof of the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma aims to cover families of Boolean functions with a subexponential number of monochromatic subcubes and is a building block for a potential proof that `P ≠ NP`.
 
-The code is **not** a complete proof: many declarations end with `sorry`.  The goal is to document interfaces and provide a sandbox for future formalisation.
+The project is **not** yet a complete proof: several declarations still end with
+`sorry`.  Many basic lemmas have now been formalised, so the repository also
+serves as a record of ongoing progress towards a full argument.
 
 ## Layout
 
@@ -89,12 +91,12 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is a research prototype.  Many modules contain `sorry` placeholders and only
-partial proofs.  The `cover.lean` file now constructs covers by recursively
-searching for the first uncovered input.  The entropy branch uses the
-`exists_coord_entropy_drop` lemma to split the family, whereas the
-sunflower extraction step remains a placeholder.  Whenever this entropy
-split occurs both resulting subfamilies have strictly smaller collision
-entropy, ensuring termination.  The rectangles produced at the leaves
-are proven to be monochromatic for the entire family.  The repository is
-intended for exploration and does not constitute a finished argument.
+This is still a research prototype.  Several modules continue to carry `sorry`
+placeholders, but more of the core theory has been filled in.  The
+`cover.lean` file constructs covers by recursively searching for the first
+uncovered input.  The entropy branch relies on
+`exists_coord_entropy_drop`, while the sunflower extraction step is the main
+remaining gap.  Each split decreases collision entropy, ensuring termination of
+the search tree.  Leaves are proven to be monochromatic rectangles for the whole
+family.  The repository documents these partial results and does not yet
+constitute a finished argument.

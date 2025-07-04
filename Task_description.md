@@ -250,16 +250,15 @@ Finally, prove by induction that the algorithm always produces a valid cover and
 
 Each component’s verification will be reviewed and optimized. Since the final goal is significant (P ≠ NP proof), we will also document each formal lemma clearly, so it can be human-checked against the literature for trustworthiness. The plan emphasizes modularity (each lemma proven separately) and correspondence with known arguments, which reduces the risk of logical errors. By the end, we expect to have a certified proof of FCE-Lemma, and thus have removed the final barrier to a formal proof that P ≠ NP under the proposed framework.
 
-Updated checklist (June 2025)
+Updated checklist (July 2025)
 
-- `bool_func.lean`: basic types (completed).
-- `entropy.lean`: finish `EntropyDrop` proof and formalise the probability
-  lemma `exists_restrict_half_real_prob` connecting discrete counts with
-  analytic bounds.
-- `sunflower.lean`: add classical sunflower lemma.
-- `Agreement.lean`: prove `CoreAgreement`.
-- `cover.lean`: implement covering algorithm.
-- `bound.lean`: finalize counting argument.
-- `examples.lean`: small tests for the algorithm.
+- [x] `bool_func.lean`: basic types.
+- [ ] `entropy.lean`: `EntropyDrop` lemma in place; auxiliary probability lemmas
+  still contain `sorry`.
+- [ ] `sunflower.lean`: classical sunflower lemma stated, proof pending.
+- [ ] `Agreement.lean`: `CoreAgreement` remains a stub.
+- [ ] `cover.lean`: recursive covering implemented, sunflower branch unfinished.
+- [ ] `bound.lean`: counting argument not yet formalised.
+- [ ] `examples.lean`: small tests to be written.
 
 

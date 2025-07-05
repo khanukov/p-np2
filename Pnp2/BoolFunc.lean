@@ -198,6 +198,29 @@ distribution. -/
 noncomputable def prob {n : ℕ} [Fintype (Point n)] (f : BFunc n) : ℝ :=
   ((ones f).card : ℝ) / (Fintype.card (Point n))
 
+lemma prob_nonneg {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
+    0 ≤ prob f := by
+  classical
+  have hpos : (0 : ℝ) < (Fintype.card (Point n)) := by
+    exact_mod_cast (Fintype.card_pos_iff.mpr inferInstance)
+  have hnum : 0 ≤ ((ones f).card : ℝ) := by exact_mod_cast Nat.zero_le _
+  have hden : 0 ≤ (Fintype.card (Point n) : ℝ) := le_of_lt hpos
+  simpa [prob] using div_nonneg hnum hden
+
+lemma prob_le_one {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
+    prob f ≤ 1 := by
+  classical
+  have hpos : (0 : ℝ) < (Fintype.card (Point n)) := by
+    exact_mod_cast (Fintype.card_pos_iff.mpr inferInstance)
+  have hsubset : (ones f).card ≤ Fintype.card (Point n) := by
+    exact Finset.card_le_univ
+  have hnum := Nat.cast_le.mpr hsubset
+  have hden : 0 ≤ (Fintype.card (Point n) : ℝ) := le_of_lt hpos
+  have h := div_le_div_of_le_of_nonneg hnum hden
+  have h1 : ((Fintype.card (Point n) : ℝ) / (Fintype.card (Point n))) = (1 : ℝ) :=
+    by field_simp [hpos.ne']
+  simpa [prob, h1] using h
+
 /-- Probability that `f` evaluates to `true` when the `i`-th input bit is fixed
 to `false`. -/
 noncomputable def prob_restrict_false {n : ℕ} [Fintype (Point n)]

@@ -43,6 +43,22 @@ If $\mathcal{S}$ is a family of size-$w$ sets with $|\mathcal{S}| > (p-1)! w^p$,
 
 If $x^{(1)}, x^{(2)} \in \{0,1\}^n$ agree on $n - \ell$ bits and $f(x^{(1)}) = f(x^{(2)}) = 1$ for all $f \in F$, then the subcube fixing those bits is monochromatic 1 for all $f \in F$.
 
+### Lemma 4: Sunflower Step
+
+Given a set of uncovered 1-inputs `Pts` common to every function of $F$, assume
+each collection of `t` points from `Pts` intersects in fewer than `w`
+coordinates.  If `|\text{Pts}| > (t-1)!\,w^t`, the classical sunflower lemma
+produces a non-empty intersection `I` of some `t` points.  Fixing the bits in `I`
+to their common values yields a subcube on which all functions of $F` evaluate to
+1.  At least `t` of the original points lie in this subcube.
+
+### Lemma 5: Merge Low Sensitivity
+
+If every $f \in F$ has sensitivity at most $s$, then there exists a constant $C`
+such that the union of at most $2^{C s \log n}` monochromatic subcubes covers all
+1-points of all functions in $F`.  The proof uses decision-tree representations
+for low-sensitivity functions and merges the resulting covers.
+
 ## 5. Constructive Algorithm
 
 We recursively define $\text{Cover}(F)$ as:

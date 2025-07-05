@@ -23,16 +23,14 @@ serves as a record of ongoing progress towards a full argument.
   `exists_restrict_half_real_prob` provide the bridge to analytic
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
-* `sunflower.lean` – minimal sunflower lemma used downstream.
+* `sunflower.lean` – simplified sunflower lemma `sunflower_exists_easy` now implemented.
+* `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`) and a monotonicity lemma.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
-  uses `exists_coord_entropy_drop`, leaving only the sunflower branch
-  unfinished.
+  uses `exists_coord_entropy_drop`, and the sunflower step relies on
+  `sunflower_exists_easy`; the numeric counting bound remains open.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
-* `family_entropy_cover.lean` – wrappers for the family cover existence lemma.
-  Defines a `FamilyCover` record bundling rectangles with proofs and
-  provides `familyEntropyCover` to construct such a cover.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `table_locality.lean` – statement of the table locality lemma (roadmap B‑2).
@@ -91,13 +89,4 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype.  Most modules now have full proofs,
-including the previously missing core‑agreement lemma.  A handful of
-placeholders remain, but more of the core theory has been filled in.  The
-`cover.lean` file constructs covers by recursively searching for the first
-uncovered input.  The entropy branch relies on
-`exists_coord_entropy_drop`, while the sunflower extraction step is the main
-remaining gap.  Each split decreases collision entropy, ensuring termination of
-the search tree.  Leaves are proven to be monochromatic rectangles for the whole
-family.  The repository documents these partial results and does not yet
-constitute a finished argument.
+This is still a research prototype.  Most modules now have full proofs, including the formerly missing core-agreement lemma.  Some placeholders remain, chiefly in the numeric counting for the cover.  The sunflower step now relies on `sunflower_exists_easy`, and each split decreases collision entropy, ensuring termination.  Leaves are proven to be monochromatic rectangles for the whole family.  The repository documents these partial results and does not yet constitute a finished argument.

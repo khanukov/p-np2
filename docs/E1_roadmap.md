@@ -38,15 +38,16 @@ Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alp
 
 ### B‑5. Constructing the cover
 Build a rectangular cover of `\mathcal{S}_n` of size `M \le 2^{N - N^{\delta}}`.
-The file `cover.lean` now keeps track of uncovered inputs and recurses via
-`firstUncovered`.  A new lemma `sunflower_step` applies the classical
-sunflower lemma—assuming enough **distinct supports** remain—to extract a
-positive-dimensional subcube covering at least a fixed number of functions.
-The entropy branch now uses `exists_coord_entropy_drop` to split on a
-coordinate that decreases collision entropy, though the numeric counting
-argument is not yet complete.  The previously stubbed `coreAgreement`
-lemma in `Agreement.lean` has also been formalised in full, removing a
-major gap in the combinatorial theory.
+The file `cover.lean` keeps track of uncovered inputs and recurses via
+`firstUncovered`.  The simplified lemma `sunflower_exists_easy` (together
+with the `RSpread` notion of scattered families) now provides the
+sunflower step whenever enough **distinct supports** remain, producing a
+positive-dimensional subcube.  The entropy branch continues to use
+`exists_coord_entropy_drop` to split on a coordinate that decreases
+collision entropy.  The numeric counting argument is still incomplete,
+but the previously stubbed `coreAgreement` lemma in `Agreement.lean` has
+been formalised in full, removing a major gap in the combinatorial
+theory.
 
 ---
 

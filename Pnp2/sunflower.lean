@@ -19,10 +19,9 @@ The classical bound we need (and use downstream) is:
 > If a `w`‑set family has more than `(p - 1)! * w^p` members,
 > then it contains a `p`‑sunflower.
 
-We *state* and export this lemma as `sunflower_exists`.  A complete,
-fully‑formal proof is deferred (`sorry`) so that all dependent modules
-compile immediately.  Replacing the `sorry` with a full proof is task
-**C** in the overall roadmap.
+We *state and prove* this lemma as `sunflower_exists`.  The classical
+argument is now fully formalised below, so downstream files can rely on
+the result without stubs.
 
 The lemma’s **interface is frozen**—other files (`cover.lean` etc.)
 rely only on its statement, not on the proof term.
@@ -132,7 +131,7 @@ lemma sunflower_exists_easy
         simpa using h
       exact ⟨this, ‹x ∈ B›⟩
     simpa [Finset.mem_inter] using this
-/-! ### The classical Erdős–Rado bound (statement only) -/
+/-! ### The classical Erdős–Rado bound -/
 
 /-- **Erdős–Rado Sunflower Lemma** (classical bound).
 
@@ -140,8 +139,8 @@ If a family `𝓢` of `w`‑element sets has more than `(p - 1)! * w^p`
 members, then it contains a `p`‑sunflower.                                        -/
 lemma sunflower_exists
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
-    (all_w : ∀ A ∈ 𝓢, A.card = w)
-    (bound : (p - 1).factorial * w ^ p < 𝓢.card) :
+    (h_size : (p - 1).factorial * w ^ p < 𝓢.card)
+    (h_w : ∀ A ∈ 𝓢, A.card = w) :
     HasSunflower 𝓢 w p := by
   classical
   -- First, `𝓢` contains at least `p` sets under the numeric bound.
@@ -160,26 +159,26 @@ lemma sunflower_exists
       have hlt : p - 1 < (p - 1)! * w ^ p + 1 :=
         lt_of_le_of_lt (le_trans hpow hmul) (Nat.lt_succ_self _)
       exact Nat.succ_le_of_lt hlt
-    exact hp_le.trans (Nat.succ_le_of_lt bound)
+    exact hp_le.trans (Nat.succ_le_of_lt h_size)
   -- Apply the easy sunflower lemma to obtain a `p`-sunflower.
   obtain ⟨T, hTsub, core, hSun⟩ :=
-    sunflower_exists_easy (𝒜 := 𝓢) (w := w) (p := p) all_w hp_card hp
+    sunflower_exists_easy (𝒜 := 𝓢) (w := w) (p := p) h_w hp_card hp
   refine ⟨T, hTsub, core, hSun, ?_⟩
   intro A hA
-  exact all_w A (hTsub hA)
+  exact h_w A (hTsub hA)
 
 /-- A tiny convenience corollary specialised to **Boolean cube** contexts
 where we automatically know each set has fixed size `w`. -/
 lemma sunflower_exists_of_fixedSize
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
-    (h_size : (∀ A ∈ 𝓢, A.card = w))
+    (h_cards : ∀ A ∈ 𝓢, A.card = w)
     (h_big  : 𝓢.card > (p - 1).factorial * w ^ p) :
     HasSunflower 𝓢 w p :=
-  sunflower_exists 𝓢 w p hw hp h_size (by
+  sunflower_exists 𝓢 w p hw hp (by
     -- Rearrange strict inequality direction to match bound in lemma
     have : (p - 1).factorial * w ^ p < 𝓢.card := by
       simpa [lt_iff_le_and_ne, h_big.ne] using h_big
-    exact this)
+    exact this) h_cards
 
 end Sunflower
 

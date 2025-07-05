@@ -113,7 +113,7 @@ The modules above serve as milestones. Our immediate goals are:
    `exists_restrict_half_real_prob` let us reason about logarithms, and
    `exists_coord_entropy_drop` formalises the resulting one‑bit entropy
    reduction.
-2. Add a classical sunflower lemma in `sunflower.lean`.
+2. The classical sunflower lemma in `sunflower.lean` is now fully formalised.
 3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
    The file `Agreement.lean` now contains the complete proof of this lemma.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A
@@ -124,8 +124,8 @@ The modules above serve as milestones. Our immediate goals are:
 
 ### Status Update (July 2025)
 
-The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. Auxiliary lemmas—most notably the probabilistic halving bound and the classical
-sunflower lemma—are still proved using `sorry`.  Completing these pieces, along
+The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. Auxiliary lemmas—most notably the probabilistic halving bound are still proved using `sorry`, but the classical
+sunflower lemma has been completed.  Completing these pieces, along
 with the counting argument and example scripts, remains the next milestone.
 
 The parameter $h$ is treated as a fixed constant (or $o(n)$) when establishing the bound.

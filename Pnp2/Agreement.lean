@@ -82,17 +82,8 @@ Assuming `CoreClosed ℓ F`, the subcube obtained by fixing the coordinates in `
 to their shared values is **monochromatic** of colour `1` for the entire family.
 
 This is exactly Lemma 4.3 of the formal specification. -/
-lemma coreAgreement
-    {x₁ x₂ : Point n} (I : Finset (Fin n))
-    (h_size  : n - ℓ ≤ I.card)
-    (h_agree : ∀ i : Fin n, i ∈ I → x₁ i = x₂ i)
-    (h_val1  : ∀ f, f ∈ F → f x₁ = true)
-    (h_val2  : ∀ f, f ∈ F → f x₂ = true)
-    [CoreClosed ℓ F] :
-    (Subcube.fromPoint x₁ I).monochromaticForFamily F := by
-  classical
-  -- Proof omitted
-  sorry
+-- We move the statement of the core agreement lemma below, after proving a
+-- helper about the Hamming distance of points that agree on many coordinates.
 
 /-- Helper: if `y` matches `x` on `I` of size ≥ `n - ℓ`, then
     `hammingDist x y ≤ ℓ`. -/
@@ -119,6 +110,38 @@ lemma dist_le_of_compl_subset
   have h_le : (Finset.univ.filter fun i => x i ≠ y i).card ≤ ℓ :=
     h_bound.trans <| by simpa [Nat.sub_le_iff_le_add] using h_size
   simpa [hammingDist_eq_card_filter] using h_le
+
+/-! ### Core-agreement lemma with CoreClosed assumption -/
+
+/--
+**Core-Agreement Lemma**
+
+Let `x₁, x₂ : Point n` be two inputs such that
+
+* There exists a set of coordinates `I` with
+  `I.card ≥ n - ℓ` **and** `x₁ i = x₂ i` for every `i ∈ I`;
+* Every function `f ∈ F` outputs `1` on *both* `x₁` and `x₂`.
+
+Assuming `CoreClosed ℓ F`, the subcube obtained by fixing the coordinates in `I`
+to their shared values is **monochromatic** of colour `1` for the entire family.
+
+This is exactly Lemma 4.3 of the formal specification. -/
+lemma coreAgreement
+    {x₁ x₂ : Point n} (I : Finset (Fin n))
+    (h_size  : n - ℓ ≤ I.card)
+    (h_agree : ∀ i : Fin n, i ∈ I → x₁ i = x₂ i)
+    (h_val1  : ∀ f, f ∈ F → f x₁ = true)
+    (h_val2  : ∀ f, f ∈ F → f x₂ = true)
+    [CoreClosed ℓ F] :
+    (Subcube.fromPoint x₁ I).monochromaticForFamily F := by
+  classical
+  refine ⟨true, ?_⟩
+  intro f hf y hy
+  have hx₁ : f x₁ = true := h_val1 f hf
+  have hdist : hammingDist x₁ y ≤ ℓ :=
+    dist_le_of_compl_subset (n := n) (ℓ := ℓ) (x := x₁) (y := y)
+      (I := I) h_size hy
+  exact CoreClosed.closed_under_ball (f := f) (hf := hf) hx₁ hdist
 
 open Finset
 

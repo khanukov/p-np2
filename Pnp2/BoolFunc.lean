@@ -38,6 +38,8 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Real.Basic
+import Mathlib.Tactic.FieldSimp
+import Mathlib.Algebra.Order.GroupWithZero.Unbundled.Basic
 
 noncomputable section
 
@@ -197,6 +199,27 @@ def ones {n : ℕ} [Fintype (Point n)] (f : BFunc n) : Finset (Point n) :=
 distribution. -/
 noncomputable def prob {n : ℕ} [Fintype (Point n)] (f : BFunc n) : ℝ :=
   ((ones f).card : ℝ) / (Fintype.card (Point n))
+
+lemma prob_nonneg {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
+    0 ≤ prob f := by
+  classical
+  have hpos : (0 : ℝ) < (Fintype.card (Point n)) := by
+    exact_mod_cast (Fintype.card_pos_iff.mpr inferInstance)
+  have hnum : 0 ≤ ((ones f).card : ℝ) := by exact_mod_cast Nat.zero_le _
+  have hden : 0 ≤ (Fintype.card (Point n) : ℝ) := le_of_lt hpos
+  simpa [prob] using div_nonneg hnum hden
+
+lemma prob_le_one {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
+    prob f ≤ 1 := by
+  classical
+  have hsubset : (ones f).card ≤ Fintype.card (Point n) := by
+    simpa using (Finset.card_le_univ (s := ones f))
+  have hnum : ((ones f).card : ℝ) ≤ (Fintype.card (Point n) : ℝ) := by
+    exact_mod_cast hsubset
+  have hden : 0 ≤ (Fintype.card (Point n) : ℝ) := by
+    exact_mod_cast Nat.zero_le (Fintype.card (Point n))
+  have h := div_le_one_of_le₀ hnum hden
+  simpa [prob] using h
 
 /-- Probability that `f` evaluates to `true` when the `i`-th input bit is fixed
 to `false`. -/

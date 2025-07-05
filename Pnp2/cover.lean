@@ -16,7 +16,7 @@ import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement
 import Pnp2.BoolFunc.Support   -- new helper lemmas
-import Pnp2.Sunflower.RSpread   -- новое определение рассеянности
+import Pnp2.Sunflower.RSpread   -- definition of scattered families
 import Mathlib.Data.Nat.Basic
 import Mathlib.Tactic
 
@@ -102,27 +102,26 @@ lemma sunflower_step
       simpa using (Family.mem_supports.mp hA')
     choose f hfF hfSupp using exists_f
   ·
-    -- (а) главное счётное неравенство
+    -- (a) main counting inequality
     have h_filter_ge : (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t := by
-      -- множества в `hT` имеют размер t и попарочно различны, а для
-      -- каждого A∈hT мы выбрали уникальную функцию f_A.
+      -- the sets in `hT` have size `t` and are pairwise distinct, and for
+      -- each `A ∈ hT` we chose a unique function `f_A`.
       have h_inj : (Finset.image (fun A : Finset (Fin n) => f A (by
           have : A ∈ hT := by
-            -- A принадлежит T ⇒ A принадлежит исходной семье
+            -- from `A ∈ T` we know it belongs to the original family
             have : A ∈ (Family.supports F) := hsub (by
               have : A ∈ hT := by
-                -- доказать напрямую:
-                -- из перечисления мы знаем, что A ∈ hT
+                -- direct from the enumeration we know `A ∈ hT`
                 exact ‹A ∈ hT›)
             simpa using this
         ) hT).card = t := by
-        -- поскольку supports у различных функций различны, отображение
-        -- inj; card сохраняется
+        -- supports of distinct functions are disjoint, hence the image is
+        -- injective and the cardinality is preserved
         have h_inj_aux :
             Function.Injective (fun A : Finset (Fin n) =>
               f A (by
                 have : A ∈ hT := by
-                  -- см. выше
+                  -- see above
                   exact ‹A ∈ hT›))
           := by
             intro A1 A2 h_eq
@@ -133,7 +132,7 @@ lemma sunflower_step
             simpa [hfSupp _ _ _, hfSupp _ _ _] using this
         simpa [Finset.card_image] using
           (Finset.card_image_of_injective _ h_inj_aux)
-      -- теперь покажем, что каждый выбранный f_A проходит фильтр
+      -- now show that every chosen `f_A` passes the filter
       have h_sub :
           (Finset.image (fun A : Finset (Fin n) => f A _) hT)
             ⊆ F.filter (fun f ↦ ∀ x, x ∈ₛ R → f x = true) := by
@@ -142,22 +141,23 @@ lemma sunflower_step
         have hgF : f A _ ∈ F := hfF _ hA
         have htrue : ∀ x, x ∈ₛ R → (f A _) x = true := by
           intro x hx
-          -- на ядре K значения `x` фиксированы как в x₀,
-          -- а за пределами ядра A не содержит координат x₀,
-          -- поэтому support ⊆ K ∪ (petal) и функция = true.
-          -- (деталь формализации: в проекте уже есть Subcube.monochromaticForSupport)
+          -- on the core `K` the values of `x` are fixed as in `x₀`, while
+          -- outside the core the set `A` contains no coordinates of `x₀`.
+          -- Therefore `support ⊆ K ∪ (petal)` and the function evaluates to
+          -- true.  (The project already has
+          -- `Subcube.monochromaticForSupport`.)
           have : x.restrict (support (f A _)) = x₀.restrict _ := by
-            -- поскольку support f_A = A, а K ⊆ A,
-            -- обе точки совпадают на support
+            -- since `support f_A = A` and `K ⊆ A`, the two points agree on the
+            -- support
             ext i hi
             by_cases hKi : i ∈ K
-            · -- i ∈ ядре ⇒ по определению x₀ i = false = x i
+            · -- `i ∈ K` ⇒ by definition `x₀ i = false = x i`
               simp [x₀, hKi] at *
-            · -- i в пепале ⇒ координата отсутствует в K
+            · -- `i` in the petal ⇒ the coordinate is not in `K`
               have : i ∈ A := by
-                -- из hi и support f = A
+                -- from `hi` and `support f = A`
                 simpa [hfSupp _ _ _] using hi
-              -- координату можно оставить произвольной, но f всё равно true
+              -- the coordinate can be arbitrary, yet the function is still true
               simpa using rfl
           have : (f A _) x = (f A _) x₀ := by
             have := (BoolFunc.eval_eq_of_agree_on_support (f:=f A _) (x:=x) (y:=x₀))
@@ -168,7 +168,7 @@ lemma sunflower_step
           simpa [Agreement.Subcube.fromPoint, hx] using
             by
               have : (f A _) x₀ = true := by
-                -- выбираем точку на поддержке ⇒ функция true
+                -- choose a point on the support ⇒ the function is true
                 have h_some := BoolFunc.exists_true_on_support
                   (f:=f A _) (by
                     simp [hfSupp _ _ _])

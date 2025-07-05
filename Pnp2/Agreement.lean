@@ -145,8 +145,8 @@ lemma coreAgreement
 open Finset
 
 /--
-Если `x` и `y` совпадают на всех координатах `K`,
-то оба принадлежат подкубу `fromPoint x K`.
+If `x` and `y` agree on every coordinate in `K`, then both belong to the
+subcube `fromPoint x K`.
 -/
 lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)}
     {x y : Point n}

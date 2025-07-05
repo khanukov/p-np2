@@ -56,22 +56,21 @@ def HasSunflower (𝓢 : Finset (Finset α)) (w p : ℕ) : Prop :=
   ∃ 𝓣 ⊆ 𝓢, ∃ core, IsSunflower (α := α) p 𝓣 core ∧ ∀ A ∈ 𝓣, A.card = w
 
 
-/-- **Короткая версия** sunflower‑леммы:  
-    если семья `𝒜` содержит хотя бы `p` попарочно *различных* `w`‑множеств,
-    то существует подсемейство `T : Finset (Finset α)` размера `p`
-    и некоторое его пересечение `core` (возможно, пустое)
-    такие, что `IsSunflower p T core`.
-    (Мы не доказываем оптимальную оценку, нам достаточно факта существования.) -/
+/-- **Short sunflower lemma.**
+If a family `𝒜` contains at least `p` pairwise *distinct* sets of size `w`,
+then there exists a subfamily `T : Finset (Finset α)` of cardinality `p` and an
+intersection `core` (possibly empty) such that `IsSunflower p T core` holds.  We
+do not prove the optimal bound, only existence. -/
 lemma sunflower_exists_easy
     (𝒜 : Finset (Finset α)) (w p : ℕ) (hw : ∀ A ∈ 𝒜, A.card = w)
     (hcard : p ≤ 𝒜.card) (hp : 2 ≤ p) :
     ∃ T ⊆ 𝒜, ∃ core, IsSunflower (α:=α) p T core := by
   classical
-  -- возьмём любые p разных множеств
+  -- pick any `p` distinct sets
   obtain ⟨T, hsub, hcardT⟩ :=
     (Finset.exists_subset_card_eq p).2 (by
       simpa using hcard)
-  -- у пересечения всех множеств T будет нужное свойство
+  -- the intersection of all sets in `T` will serve as the core
   let core : Finset α :=
     (Finset.interFinset T).getD (Finset.card_pos.2 (by
       have : T.Nonempty := by
@@ -84,7 +83,7 @@ lemma sunflower_exists_easy
   intro A hA B hB hAB
   have hA_in : A ∈ T := hA
   have hB_in : B ∈ T := hB
-  -- по определению `core` – пересечение всех множеств из T
+  -- by definition `core` is the intersection of all sets in `T`
   have hcoreA : core ⊆ A := by
     intro x hx
     have : x ∈ ⋂₀ (T : Set (Finset α)) := by
@@ -97,7 +96,7 @@ lemma sunflower_exists_easy
       change x ∈ (Finset.interFinset T)
       simpa using hx
     simpa using this
-  -- покажем равенства множеств
+  -- show equality of sets
   ext x
   constructor
   · intro hx

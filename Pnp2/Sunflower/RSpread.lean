@@ -5,10 +5,10 @@ open Finset
 
 variable {α : Type} [DecidableEq α]
 
-/--  Семейство `A` рассеяно (`R`‑spread), если
-     для любой фиксированной подсемьи `S` вероятность
-     `S ⊆ Aᵢ` не превосходит `R^{-|S|}`.  Здесь вероятность
-     задаётся равномерной мерой на конечном индексе. -/
+/--  A family `A` is `R`‑spread if for every fixed subfamily `S`
+the probability that `S ⊆ Aᵢ` is at most `R^{-|S|}`.  The
+probability is taken with respect to the uniform measure on the
+finite index. -/
 def RSpread (R : ℝ) (A : Finset (Finset α)) : Prop :=
   A.Nonempty ∧
   ∀ S : Finset α,

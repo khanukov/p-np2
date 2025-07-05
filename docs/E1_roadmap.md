@@ -39,9 +39,9 @@ Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alp
 ### B‑5. Constructing the cover
 Build a rectangular cover of `\mathcal{S}_n` of size `M \le 2^{N - N^{\delta}}`.
 The file `cover.lean` keeps track of uncovered inputs and recurses via
-`firstUncovered`.  The simplified lemma `sunflower_exists_easy` (together
-with the `RSpread` notion of scattered families) now provides the
-sunflower step whenever enough **distinct supports** remain, producing a
+`firstUncovered`.  The classical lemma `sunflower_exists` (together with
+the `RSpread` notion of scattered families) now provides the sunflower
+step whenever enough **distinct supports** remain, producing a
 positive-dimensional subcube.  The entropy branch continues to use
 `exists_coord_entropy_drop` to split on a coordinate that decreases
 collision entropy.  The numeric counting argument is still incomplete,

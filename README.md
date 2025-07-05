@@ -23,13 +23,13 @@ serves as a record of ongoing progress towards a full argument.
   `exists_restrict_half_real_prob` provide the bridge to analytic
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
-* `sunflower.lean` – simplified sunflower lemma `sunflower_exists_easy` now implemented.
+* `sunflower.lean` – full classical sunflower lemma `sunflower_exists` now formalised.
 * `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`) and a monotonicity lemma.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
-  `sunflower_exists_easy`; the numeric counting bound remains open.
+  `sunflower_exists`; the numeric counting bound remains open.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.

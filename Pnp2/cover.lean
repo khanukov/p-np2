@@ -87,7 +87,7 @@ lemma sunflower_step
   -- Apply the sunflower lemma to obtain a sunflower inside `𝓢`.
   obtain ⟨𝓣, h𝓣sub, hSun, hcard⟩ :=
     Sunflower.sunflower_exists (𝓢 := 𝓢) (w := p) (p := t)
-      hp ht (by intro s hs; simpa [h_sizes s hs] using h_sizes s hs) h_big
+      hp ht h_big (by intro s hs; simpa [h_sizes s hs] using h_sizes s hs)
   -- Extract the core `K` from the sunflower description.
   obtain ⟨hT, K, h_core⟩ := hSun
   -- Freeze the coordinates in `K` according to a fixed point `x₀`.

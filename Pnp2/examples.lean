@@ -25,7 +25,7 @@ import Pnp2.sunflower
 import Pnp2.Agreement
 import Pnp2.cover
 import Pnp2.bound
-import Mathlib.Data.Finset
+import Mathlib.Data.Finset.Basic
 
 open Classical
 open BoolFunc

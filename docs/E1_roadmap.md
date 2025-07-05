@@ -60,8 +60,7 @@ theory.
 * **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
   shows that some coordinate always cuts collision entropy by at least one bit,
   paving the way for a robust splitting strategy.
-  A complementary lemma `exists_restrict_half_real_prob` bridges the discrete
-  halving argument with analytic probability bounds.  A lemma `low_sensitivity_cover` describes how smooth families can be compressed, and the stub `acc_mcsp_sat.lean` sketches the final SAT reduction.
+  A lemma `low_sensitivity_cover` describes how smooth families can be compressed, and the stub `acc_mcsp_sat.lean` sketches the final SAT reduction.
 
 ---
 

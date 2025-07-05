@@ -11,7 +11,7 @@ already follow from the (still partial!) library.
 
 > **Important**  
 > Many of the theorems we rely on (`EntropyDrop`, `sunflower_exists`,
-> `coreAgreement`, `cover_exists`, …) are currently backed by `sorry`
+> `cover_exists`, …) are currently backed by `sorry`
 > placeholders.  Consequently, any *computational* content that depends on
 > them is *opaque* — Lean knows *some* object exists but cannot reveal or
 > evaluate it.  Examples below that invoke such lemmas are marked

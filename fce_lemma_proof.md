@@ -98,7 +98,8 @@ The modules above serve as milestones. Our immediate goals are:
    `exists_coord_entropy_drop` formalises the resulting one‑bit entropy
    reduction.
 2. Add a classical sunflower lemma in `sunflower.lean`.
-3. Formalise the `CoreAgreement` lemma in `Agreement.lean`.
+3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
+   The file `Agreement.lean` now contains the complete proof of this lemma.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A
    well‑founded implementation is present, but the coverage and bound
    proofs still use `admit`.
@@ -109,6 +110,7 @@ The modules above serve as milestones. Our immediate goals are:
 
 The Lean codebase now includes the full statement and proof of
 `exists_coord_entropy_drop` and a working recursive cover builder.  Several
+The core agreement lemma has also been formalised in full.  Several
 auxiliary lemmas—most notably the probabilistic halving bound and the classical
 sunflower lemma—are still proved using `sorry`.  Completing these pieces, along
 with the counting argument and example scripts, remains the next milestone.

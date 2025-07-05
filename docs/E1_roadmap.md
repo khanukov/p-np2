@@ -44,7 +44,9 @@ sunflower lemma—assuming enough **distinct supports** remain—to extract a
 positive-dimensional subcube covering at least a fixed number of functions.
 The entropy branch now uses `exists_coord_entropy_drop` to split on a
 coordinate that decreases collision entropy, though the numeric counting
-argument is not yet complete.
+argument is not yet complete.  The previously stubbed `coreAgreement`
+lemma in `Agreement.lean` has also been formalised in full, removing a
+major gap in the combinatorial theory.
 
 ---
 

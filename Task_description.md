@@ -256,7 +256,7 @@ Updated checklist (July 2025)
 - [ ] `entropy.lean`: `EntropyDrop` lemma in place; auxiliary probability lemmas
   still contain `sorry`.
 - [ ] `sunflower.lean`: classical sunflower lemma stated, proof pending.
-- [ ] `Agreement.lean`: `CoreAgreement` remains a stub.
+- [x] `Agreement.lean`: `CoreAgreement` now fully proven.
 - [ ] `cover.lean`: recursive covering implemented, sunflower branch unfinished.
 - [ ] `bound.lean`: counting argument not yet formalised.
 - [ ] `examples.lean`: small tests to be written.

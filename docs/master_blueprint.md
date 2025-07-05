@@ -58,7 +58,9 @@ maintain a public repository with Lean scripts and accompanying notes.
 Much of the foundational material (Step 0) is available in print but only partly
 formalised.  Steps 1–3 are active research; the key missing piece is proving a
 rectangular cover of `ACC⁰ ∘ MCSP` tables of size at most `2^{N - N^{\delta}}`.
-Later steps depend on this breakthrough.
+The `coreAgreement` lemma, which underpins the combinatorial part of
+the cover construction, has recently been formalised in Lean.  Later
+steps depend on this breakthrough.
 
 This document records the plan for future reference and serves as a pointer for
 contributors interested in the overarching project.

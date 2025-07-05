@@ -88,6 +88,42 @@ arguments to entire families remains an open task.
 2. Optimise the enumeration procedures and clean up the formal proofs of the
    entropy bounds.
 
+### Explicit lemma statements
+
+Two auxiliary lemmas remain missing from the formalisation.  Writing down
+their intended form clarifies how the cover construction should proceed.
+
+```lean
+/-- If we have a family `F` and at least `m` distinct 1-inputs that are
+    common to all `f ∈ F`, and every set of `t` such points has an
+    intersection on fewer than `w` coordinates, then some nontrivial subcube
+    is monochromatic for many of these points. -/
+lemma sunflower_step (F : Family n) (Pts : Finset (Point n)) (m t w : ℕ)
+  (Hpts : ∀ f ∈ F, ∀ x ∈ Pts, f x = true)
+  (Huge : Pts.card ≥ (t - 1)! * w^t)
+  (BoundInt : ∀ P ⊆ Pts, P.card = t → (⋂ x ∈ P, support x).card < w) :
+  ∃ (I : Finset (Fin n)) (val : ∀ i ∈ I, Bool),
+    I.Nonempty ∧
+    (∀ x ∈ Pts, (∀ i ∈ I, x i = val i) →
+       ∃ P ⊆ Pts, P.card = t ∧ ∀ y ∈ P, ∀ i ∈ I, y i = val i) ∧
+    (∃ b : Bool, ∀ f ∈ F, ∀ x, (∀ i ∈ I, x i = val i) → f x = b)
+```
+
+```lean
+/-- If every `f ∈ F` has sensitivity at most `s`, then all 1-inputs of the
+    family can be covered by `2^{O(s \log n)}` subcubes. -/
+lemma low_sensitivity_cover (F : Family n) (s : ℕ)
+  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
+  ∃ Rset : Finset (Subcube n),
+    Rset.card ≤ 2 ^ (C * s * log n) ∧
+      ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R ∧ ∀ y ∈ R, f y = true
+```
+
+Here `C` denotes an absolute constant.  The second lemma packages the
+decision-tree bound for low-sensitivity functions from Gopalan et al.
+In both cases the proofs would reuse the previously established
+core-agreement lemmas and the classical sunflower lemma.
+
 ---
 ### Entropy branch
 

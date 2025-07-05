@@ -144,8 +144,29 @@ lemma sunflower_exists
     (bound : (p - 1).factorial * w ^ p < 𝓢.card) :
     HasSunflower 𝓢 w p := by
   classical
-  -- Proof omitted
-  sorry
+  -- First, `𝓢` contains at least `p` sets under the numeric bound.
+  have hp_card : p ≤ 𝓢.card := by
+    -- Compare with `(p - 1)! * w ^ p + 1` via `self_le_factorial`.
+    have hfac : p - 1 ≤ (p - 1)! := by
+      simpa using (Nat.self_le_factorial (p - 1))
+    have hwp : 1 ≤ w ^ p := by
+      have hpos : 0 < w ^ p := pow_pos hw _
+      exact Nat.succ_le_of_lt hpos
+    have hpow : p - 1 ≤ (p - 1) * w ^ p := by
+      simpa using (Nat.mul_le_mul_left (p - 1) hwp)
+    have hmul : (p - 1) * w ^ p ≤ (p - 1)! * w ^ p :=
+      Nat.mul_le_mul_right _ hfac
+    have hp_le : p ≤ (p - 1)! * w ^ p + 1 := by
+      have hlt : p - 1 < (p - 1)! * w ^ p + 1 :=
+        lt_of_le_of_lt (le_trans hpow hmul) (Nat.lt_succ_self _)
+      exact Nat.succ_le_of_lt hlt
+    exact hp_le.trans (Nat.succ_le_of_lt bound)
+  -- Apply the easy sunflower lemma to obtain a `p`-sunflower.
+  obtain ⟨T, hTsub, core, hSun⟩ :=
+    sunflower_exists_easy (𝒜 := 𝓢) (w := w) (p := p) all_w hp_card hp
+  refine ⟨T, hTsub, core, hSun, ?_⟩
+  intro A hA
+  exact all_w A (hTsub hA)
 
 /-- A tiny convenience corollary specialised to **Boolean cube** contexts
 where we automatically know each set has fixed size `w`. -/

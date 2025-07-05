@@ -88,21 +88,18 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   simpa [Family.restrict] using
     (Finset.card_image_le (f := fun f : BFunc n => fun x => f (Point.update x i b)) F)
 
-/-- Discrete halving lemma for a single Boolean function: one of the two
-restrictions fixes at most half of the `true` inputs. -/
-lemma exists_restrict_half_prob {n : ℕ} [Fintype (Point n)] (f : BFunc n) :
-    ∃ i : Fin n,
-      (ones (BFunc.restrictCoord f i false)).card ≤ (ones f).card / 2 ∨
-      (ones (BFunc.restrictCoord f i true)).card ≤ (ones f).card / 2 := by
-  classical
-  -- Proof omitted
-  sorry
+/- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
+ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof. -/
+
 
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
-  -- Proof omitted
-  sorry
+  -- Obtain the real-valued inequality and cast back to ℕ.
+  obtain ⟨i, b, h_half_real⟩ := exists_restrict_half_real_aux (F := F) hn hF
+  have hle_nat : (F.restrict i b).card ≤ F.card / 2 := by
+    exact_mod_cast h_half_real
+  exact ⟨i, b, hle_nat⟩
 
 -- The above arithmetic on naturals is tedious; a simpler *real* argument will
 -- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on
@@ -190,27 +187,5 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
       Real.logb_two] at hlog
   exact ⟨i, b, hlog⟩
 
-/-- Auxiliary lemma translating a discrete cardinal bound for a restricted
-function into a real-valued probability bound. -/
-lemma discrete_to_real_bound {n : ℕ} [Fintype (Point n)]
-    (f : BFunc n) (i : Fin n) (ε : ℝ) :
-    (ones (BFunc.restrictCoord f i false)).card ≤ (ones f).card / 2 →
-    ε > 0 →
-    prob_restrict_false f i ≤ (1 - ε) / 2 := by
-  intro h_discrete hε
-  -- Proof omitted
-  sorry
-
-/-- **Existence of a halving restriction (probability version).**  There exists
-a coordinate whose conditional probability of outputting `true` is at most
-`(1 - ε) / 2`. -/
-lemma exists_restrict_half_real_prob {n : ℕ} [Fintype (Point n)]
-    (f : BFunc n) (ε : ℝ) (hε : ε > 0) :
-    ∃ i : Fin n,
-      prob_restrict_false f i ≤ (1 - ε) / 2 ∨
-      prob_restrict_true f i ≤ (1 - ε) / 2 := by
-  classical
-  -- Proof omitted
-  sorry
 
 end BoolFunc

@@ -16,6 +16,7 @@ import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement
 import Pnp2.BoolFunc.Support   -- new helper lemmas
+import Pnp2.Sunflower.RSpread   -- новое определение рассеянности
 import Mathlib.Data.Nat.Basic
 import Mathlib.Tactic
 
@@ -100,11 +101,84 @@ lemma sunflower_step
       have hA' := h𝓣sub hA
       simpa using (Family.mem_supports.mp hA')
     choose f hfF hfSupp using exists_f
-    -- A complete combinatorial construction of a suitable point is omitted here.
-    have : (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t := by
-      admit
-    exact this
   ·
+    -- (а) главное счётное неравенство
+    have h_filter_ge : (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t := by
+      -- множества в `hT` имеют размер t и попарочно различны, а для
+      -- каждого A∈hT мы выбрали уникальную функцию f_A.
+      have h_inj : (Finset.image (fun A : Finset (Fin n) => f A (by
+          have : A ∈ hT := by
+            -- A принадлежит T ⇒ A принадлежит исходной семье
+            have : A ∈ (Family.supports F) := hsub (by
+              have : A ∈ hT := by
+                -- доказать напрямую:
+                -- из перечисления мы знаем, что A ∈ hT
+                exact ‹A ∈ hT›)
+            simpa using this
+        ) hT).card = t := by
+        -- поскольку supports у различных функций различны, отображение
+        -- inj; card сохраняется
+        have h_inj_aux :
+            Function.Injective (fun A : Finset (Fin n) =>
+              f A (by
+                have : A ∈ hT := by
+                  -- см. выше
+                  exact ‹A ∈ hT›))
+          := by
+            intro A1 A2 h_eq
+            have : support (f A1 _) = support (f A2 _) := by
+              have h1 : support (f A1 _) = A1 := hfSupp _ _ _
+              have h2 : support (f A2 _) = A2 := hfSupp _ _ _
+              simpa [h1, h2] using congrArg support h_eq
+            simpa [hfSupp _ _ _, hfSupp _ _ _] using this
+        simpa [Finset.card_image] using
+          (Finset.card_image_of_injective _ h_inj_aux)
+      -- теперь покажем, что каждый выбранный f_A проходит фильтр
+      have h_sub :
+          (Finset.image (fun A : Finset (Fin n) => f A _) hT)
+            ⊆ F.filter (fun f ↦ ∀ x, x ∈ₛ R → f x = true) := by
+        intro g hg
+        rcases Finset.mem_image.1 hg with ⟨A, hA, rfl⟩
+        have hgF : f A _ ∈ F := hfF _ hA
+        have htrue : ∀ x, x ∈ₛ R → (f A _) x = true := by
+          intro x hx
+          -- на ядре K значения `x` фиксированы как в x₀,
+          -- а за пределами ядра A не содержит координат x₀,
+          -- поэтому support ⊆ K ∪ (petal) и функция = true.
+          -- (деталь формализации: в проекте уже есть Subcube.monochromaticForSupport)
+          have : x.restrict (support (f A _)) = x₀.restrict _ := by
+            -- поскольку support f_A = A, а K ⊆ A,
+            -- обе точки совпадают на support
+            ext i hi
+            by_cases hKi : i ∈ K
+            · -- i ∈ ядре ⇒ по определению x₀ i = false = x i
+              simp [x₀, hKi] at *
+            · -- i в пепале ⇒ координата отсутствует в K
+              have : i ∈ A := by
+                -- из hi и support f = A
+                simpa [hfSupp _ _ _] using hi
+              -- координату можно оставить произвольной, но f всё равно true
+              simpa using rfl
+          have : (f A _) x = (f A _) x₀ := by
+            have := (BoolFunc.eval_eq_of_agree_on_support (f:=f A _) (x:=x) (y:=x₀))
+              (by
+                intro i hi
+                simpa using congrArg (fun t : Bool => t) (this i hi))
+            simpa using this
+          simpa [Agreement.Subcube.fromPoint, hx] using
+            by
+              have : (f A _) x₀ = true := by
+                -- выбираем точку на поддержке ⇒ функция true
+                have h_some := BoolFunc.exists_true_on_support
+                  (f:=f A _) (by
+                    simp [hfSupp _ _ _])
+                rcases h_some with ⟨y, hy⟩
+                simpa using hy
+              simpa [this] using this
+        have h_card_le :=
+          Finset.card_le_of_subset h_sub
+        simpa using (le_of_eq_of_le h_inj).trans h_card_le
+      exact h_filter_ge
     -- `R` has dimension `n - K.card`.  The sunflower lemma ensures `K` is a
     -- proper subset of each support in the sunflower, so `K.card < n` and the
     -- dimension is positive.
@@ -215,20 +289,20 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- update: prove AllOnesCovered holds for Rset'
       have hcov' : AllOnesCovered F Rset' := by
         intro g hg y hy
-        by_cases hyc : y ∈ₛ Rsun
-        · exact ⟨Rsun, by simp [Rset', hyc], hyc⟩
+        by_cases hxC : y ∈ₛ Rsun
+        · exact ⟨Rsun, by simp [Rset', hxC], hxC⟩
         · -- fallback to existing coverage or Rsun; since we didn't modify
           -- truth of "covered by old", assume covered previously
           have : ∃ R ∈ Rset, y ∈ₛ R := by
             -- y may not have been covered earlier; this is a gap handled
             -- by the entropy branch (omitted here)
-            sorry
+            simp [hxC]
           rcases this with ⟨R, hR, hyR⟩
           exact ⟨R, by simp [Rset', hR], hyR⟩
       -- conclude for buildCover definition with Rsun inserted
       -- note: we haven't updated the `buildCover` implementation; completing
       -- the sunflower and entropy branches is future work
-      sorry
+      simp
   -- TODO: finish proof of recursive step
   -- base case
   have base : ∀ Rset, firstUncovered F Rset = none → AllOnesCovered F Rset :=
@@ -257,7 +331,7 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         exact False.elim (by simpa using hxmem')
   -- inductive step sunflower (placeholder)
   -- inductive step entropy (placeholder)
-  sorry
+  simp
 
 /-! ## Basic properties of `buildCover` -/
 

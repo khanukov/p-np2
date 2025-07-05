@@ -1,14 +1,11 @@
 -- boolcube.lean  – all fundamental definitions plus a fully‑proved -- entropy‑drop lemma (no sorry).  Requires mathlib4 ≥ 2025‑05‑20.
 
 import Mathlib.Data.Fin.Basic
-import Mathlib.Data.Finset
+import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic
-import Mathlib.Algebra.BigOperators.Basic
 import Mathlib.Data.Real.Basic
-import Mathlib.Tactic.Nlinarith
-import Mathlib.Combinatorics.Sunflower
+import Pnp2.sunflower
 
-open BigOperators
 open Sunflower
 
 namespace Boolcube

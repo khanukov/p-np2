@@ -56,13 +56,12 @@ theory.
 * **Theory block.** Deepen the study of items B‑1–B‑3, including connections to existing results on canonical forms and description bounds.
 * **Algorithm block.** Implement meet-in-the-middle and fast enumeration (B‑4) for small values of `n`.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
-  The initial Lean code for the recursive cover lives in `cover.lean` and needs
-  completeness proofs.
+  The Lean code now defines `buildCover` in `cover.lean`, tracking uncovered inputs and applying either `sunflower_step` or `exists_coord_entropy_drop`.  Completeness proofs and precise counts are still pending.
 * **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
   shows that some coordinate always cuts collision entropy by at least one bit,
   paving the way for a robust splitting strategy.
   A complementary lemma `exists_restrict_half_real_prob` bridges the discrete
-  halving argument with analytic probability bounds.
+  halving argument with analytic probability bounds.  A lemma `low_sensitivity_cover` describes how smooth families can be compressed, and the stub `acc_mcsp_sat.lean` sketches the final SAT reduction.
 
 ---
 

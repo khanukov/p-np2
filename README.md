@@ -89,4 +89,4 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype.  Most modules now have full proofs, including the formerly missing core-agreement lemma.  Some placeholders remain, chiefly in the numeric counting for the cover.  The sunflower step now relies on `sunflower_exists_easy`, and each split decreases collision entropy, ensuring termination.  Leaves are proven to be monochromatic rectangles for the whole family.  The repository documents these partial results and does not yet constitute a finished argument.
+This is still a research prototype. The core-agreement lemma is fully proven, and `buildCover` now splits on uncovered inputs via `sunflower_step` or an entropy drop. A statement of `low_sensitivity_cover` and a stub `acc_mcsp_sat.lean` link the cover to a SAT algorithm. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.

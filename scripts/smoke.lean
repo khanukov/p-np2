@@ -1,3 +1,5 @@
 import Pnp2
 
-#eval "base definitions compiled!"
+/-- Simple smoke test that prints a message when `Pnp2` builds. -/
+def main : IO Unit :=
+  IO.println "base definitions compiled!"

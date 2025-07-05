@@ -18,11 +18,13 @@ documentation or tests.
 -/
 
 import Pnp2.cover
+import Pnp2.family_entropy_cover
 import Mathlib.Data.Real.Log
 import Mathlib.Tactic
 
 open Classical
 open Cover
+open Boolcube
 
 namespace Bound
 
@@ -100,5 +102,27 @@ theorem FCE_lemma
   have h2 :=
     mBound_lt_subexp (h := h) (n := n) hn
   exact lt_of_le_of_lt h1 h2
+
+/--
+**Family Collision‑Entropy Lemma.**
+
+Assuming `H₂(F) ≤ h` and `n ≥ n₀(h)`, there exists a finite set of
+subcubes that is jointly monochromatic for the entire family and covers
+all `1`‑inputs of every `f ∈ F`.  The construction is the
+`familyEntropyCover` from `family_entropy_cover.lean`, and the numeric
+bound below shows that the cover has at most `2^{n/100}` rectangles. -/
+theorem family_collision_entropy_lemma
+    (hH : H₂ F ≤ (h : ℝ))
+    (hn : n ≥ n₀ h) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (n / 100) := by
+  classical
+  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH
+  have hlt : FC.rects.card < Nat.pow 2 (n / 100) :=
+    lt_of_le_of_lt FC.bound (mBound_lt_subexp (h := h) (n := n) hn)
+  have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
+  refine ⟨FC.rects, FC.mono, FC.covers, hle⟩
 
 end Bound

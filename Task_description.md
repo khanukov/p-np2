@@ -257,8 +257,9 @@ Updated checklist (July 2025)
   still contain `sorry`.
 - [ ] `sunflower.lean`: classical sunflower lemma stated, proof pending.
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.
-- [ ] `cover.lean`: recursive covering implemented, sunflower branch unfinished.
+- [ ] `cover.lean`: recursive covering uses `sunflower_step` and entropy split; counting proofs still missing.
 - [ ] `bound.lean`: counting argument not yet formalised.
 - [ ] `examples.lean`: small tests to be written.
+- [ ] `acc_mcsp_sat.lean`: skeleton SAT reduction with placeholders.
 
 

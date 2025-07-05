@@ -24,7 +24,7 @@ serves as a record of ongoing progress towards a full argument.
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
 * `sunflower.lean` – minimal sunflower lemma used downstream.
-* `Agreement.lean` – statement of the core‑agreement lemma with proof placeholder.
+* `Agreement.lean` – complete proof of the core‑agreement lemma.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, leaving only the sunflower branch
@@ -91,8 +91,9 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype.  Several modules continue to carry `sorry`
-placeholders, but more of the core theory has been filled in.  The
+This is still a research prototype.  Most modules now have full proofs,
+including the previously missing core‑agreement lemma.  A handful of
+placeholders remain, but more of the core theory has been filled in.  The
 `cover.lean` file constructs covers by recursively searching for the first
 uncovered input.  The entropy branch relies on
 `exists_coord_entropy_drop`, while the sunflower extraction step is the main

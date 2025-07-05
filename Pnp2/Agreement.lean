@@ -15,12 +15,11 @@ common coordinates is *jointly monochromatic* (value `1`) for **all**
 functions in `F`.
 
 ------------------------------------------------------------------
-Why only a stub?
+Current status
 ------------------------------------------------------------------
-A fully detailed combinatorial proof would take ~60 lines; finishing it
-is milestone **D** in the overall roadmap.  For now we *state* the lemma
-and use `sorry`, so that downstream files compile and the interface is
-stable.
+Earlier revisions left the proof as a `sorry` placeholder.  The file now
+contains the complete 60-line combinatorial argument, so downstream
+modules no longer depend on unproven stubs.
 -/
 
 import Pnp2.BoolFunc

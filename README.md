@@ -36,6 +36,8 @@ serves as a record of ongoing progress towards a full argument.
   `sunflower_exists`; the numeric counting bound remains open.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
+* `DecisionTree.lean` – placeholder decision-tree API for future low-sensitivity proofs.
+* `low_sensitivity_cover.lean` – lemma skeletons using these trees.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `table_locality.lean` – defines the locality property and proves a
   basic version of the table locality lemma (roadmap B‑2) with the
@@ -95,7 +97,7 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`. The older variant in `Boolcube.lean` still uses `sorry`. `buildCover` now splits on uncovered inputs via `sunflower_step` or an entropy drop. A formal definition of sensitivity together with the lemma statement `low_sensitivity_cover` has been added, and `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
+This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`. The older variant in `Boolcube.lean` still uses `sorry`. `buildCover` now splits on uncovered inputs via `sunflower_step` or an entropy drop. A formal definition of sensitivity together with the lemma statement `low_sensitivity_cover` has been added. A placeholder `DecisionTree` module and the lemma `low_sensitivity_cover_single` outline the decision-tree approach. `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
 ## Development plan
 

@@ -9,7 +9,7 @@
 \geometry{margin=1in}
 \newcommand{\PHNC}{\textup{PHNC}}
 
-\title{Outline of a Proof that $P \neq NP$ via the Family Collision-Entropy Lemma\thanks{A preliminary sketch; full formalization in progress at \url{https://github.com/khanukov/p-np2}, commit \texttt{35b520f}.}}
+\title{Outline of a Proof that $P \neq NP$ via the Family Collision-Entropy Lemma}
 \author{Dmitry Khanukov\\Independent researcher\\\texttt{thelaprok@gmail.com}\\\emph{Preprint, work in progress}}
 \date{July 2025}
 
@@ -22,9 +22,6 @@
 \begin{abstract}
 We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The lemma's proof is ongoing and our Lean development still contains several placeholders. This draft summarizes the approach and current formalization progress.
 \end{abstract}
-
-\keywords{Computational complexity, P vs NP, circuit lower bounds, sunflower lemma, entropy methods}
-\mscclass{68Q15, 68Q17}
 
 \section{Introduction}
 
@@ -94,7 +91,7 @@ If the FCE-Lemma can be proved, one could connect it to circuit complexity as fo
     \item Finally, to jump from non-uniform to uniform complexity, we use a classic result: the \textbf{Karp--Lipton theorem}. Karp--Lipton (1980) \cite{KL80} proved that if NP is contained in P/poly (i.e. if NP problems have polynomial-size non-uniform circuits), then the polynomial hierarchy (PH) collapses to its second level. Equivalently, if PH does \textbf{not} collapse, then NP is \textbf{not} contained in P/poly. It is widely believed that PH does not collapse (we abbreviate this assumption as \PHNC). Thus from the previous step we conclude \textbf{$P \neq NP$}. More explicitly: since we showed $NP \not\subseteq P/\mathrm{poly}$ (unless \PHNC\ fails), by \textbf{contraposition of Karp--Lipton, $P \neq NP$}. We assume PHNC is a safe complexity assumption.
 \end{itemize}
 
-\section{Conditional Implications for $P$ vs.\ $NP$}
+\section{Conditional Implications for P vs.NP}
 
 We summarize the logical flow as a list of implications (each established by either our work or a known theorem):
 

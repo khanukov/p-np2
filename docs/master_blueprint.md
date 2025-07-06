@@ -58,7 +58,7 @@ maintain a public repository with Lean scripts and accompanying notes.
 Much of the foundational material (Step 0) is available in print but only partly
 formalised.  Steps 1–3 are active research; the key missing piece is proving a
 rectangular cover of `ACC⁰ ∘ MCSP` tables of size at most `2^{N - N^{\delta}}`.
-Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_drop`. Lemma statements for `low_sensitivity_cover` are in place, and `acc_mcsp_sat.lean` outlines the SAT reduction. The next steps depend on this breakthrough.
+Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_drop`. Definitions of sensitivity now reside in `BoolFunc/Sensitivity.lean` together with a lemma statement `low_sensitivity_cover`. The file `acc_mcsp_sat.lean` sketches the SAT reduction. The next steps depend on this breakthrough.
 
 This document records the plan for future reference and serves as a pointer for
 contributors interested in the overarching project.

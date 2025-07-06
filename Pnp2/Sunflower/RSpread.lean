@@ -1,5 +1,5 @@
-import Mathlib.Probability
 import Mathlib.Data.Finset.Card
+import Mathlib.Data.Real.Basic
 
 open Finset
 

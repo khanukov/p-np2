@@ -33,7 +33,9 @@ serves as a record of ongoing progress towards a full argument.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
-* `table_locality.lean` – statement of the table locality lemma (roadmap B‑2).
+* `table_locality.lean` – defines the locality property and proves a
+  basic version of the table locality lemma (roadmap B‑2) with the
+  trivial bound `k = n`.
 * `examples.lean` – runnable examples illustrating the definitions.
 * `experiments/` – small Python tools exploring rectangle covers, including
   `lemma_b_search.py`, `single_gate_count.py`, and `collision_entropy.py`.

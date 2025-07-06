@@ -253,9 +253,8 @@ Each component’s verification will be reviewed and optimized. Since the final 
 Updated checklist (July 2025)
 
 - [x] `bool_func.lean`: basic types.
-- [ ] `entropy.lean`: `EntropyDrop` lemma in place; auxiliary probability lemmas
-  still contain `sorry`.
-- [ ] `sunflower.lean`: classical sunflower lemma stated, proof pending.
+- [x] `entropy.lean`: full `EntropyDrop` lemma and helper results.
+- [x] `sunflower.lean`: classical sunflower lemma fully formalised.
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.
 - [ ] `cover.lean`: recursive covering uses `sunflower_step` and entropy split; counting proofs still missing.
 - [ ] `bound.lean`: counting argument not yet formalised.

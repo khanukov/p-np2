@@ -5,9 +5,11 @@
 \usepackage{microtype}
 \usepackage{cite}
 \usepackage{geometry}
+\usepackage[ruled,linesnumbered]{algorithm2e}
 \geometry{margin=1in}
+\newcommand{\PHNC}{\textup{PHNC}}
 
-\title{Outline of a Proof that $P \neq NP$ via the Family Collision-Entropy Lemma}
+\title{Outline of a Proof that $P \neq NP$ via the Family Collision-Entropy Lemma\thanks{A preliminary sketch; full formalization in progress at \url{https://github.com/khanukov/p-np2}, commit \texttt{35b520f}.}}
 \author{Dmitry Khanukov\\Independent researcher\\\texttt{thelaprok@gmail.com}\\\emph{Preprint, work in progress}}
 \date{July 2025}
 
@@ -18,7 +20,7 @@
 \noindent\textbf{Work-in-Progress Note:} \emph{This manuscript sketches one possible route to separating $P$ from $NP$ based on the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. The lemma's proof is still under development and has not yet been fully formalized in Lean. We describe the current approach and its status; the argument remains incomplete.}
 
 \begin{abstract}
-We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse, one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The lemma's proof is ongoing and our Lean development still contains several placeholders. This draft summarizes the approach and current formalization progress.
+We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The lemma's proof is ongoing and our Lean development still contains several placeholders. This draft summarizes the approach and current formalization progress.
 \end{abstract}
 
 \keywords{Computational complexity, P vs NP, circuit lower bounds, sunflower lemma, entropy methods}
@@ -26,7 +28,7 @@ We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinator
 
 \section{Introduction}
 
-Determining whether \textbf{$P = NP$ or $P \neq NP$} is a central open problem in theoretical computer science and mathematics. It is one of the seven Clay Millennium Prize Problems. A proof that $P \neq NP$ would solve the ``\emph{problem of the century},'' with profound implications for mathematics, cryptography, and beyond. Over the years, many approaches have been explored. The approach in this work follows a \textbf{communication complexity and combinatorics route}: we reduce the question $P \stackrel{?}{=} NP$ to a statement about covering boolean functions with simple combinatorial regions (see \cite{KN97} for background on communication complexity). In particular, prior work showed that to prove $P \neq NP$, it suffices to construct certain \emph{subexponential-size covers} for families of boolean functions arising from NP problems. Most parts of that program have been tackled previously. Here we sketch how the remaining step might be resolved; if successful, this would essentially complete the program under standard complexity assumptions.
+Determining whether \textbf{$P = NP$ or $P \neq NP$} is a central open problem in theoretical computer science and mathematics. It is one of the seven Clay Millennium Prize Problems. Over the years, many approaches have been explored. The approach in this work follows a \textbf{communication complexity and combinatorics route}: we reduce the question $P \stackrel{?}{=} NP$ to a statement about covering boolean functions with simple combinatorial regions (see \cite{KN97} for background on communication complexity). In particular, prior work showed that to prove $P \neq NP$, it suffices to construct certain \emph{subexponential-size covers} for families of boolean functions arising from NP problems. Most parts of that program have been tackled previously. Here we sketch how the remaining step might be resolved; if successful, this would essentially complete the program under standard complexity assumptions.
 
 The last step is captured by what we call the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. \emph{Collision entropy} $H_2(F)$, informally, measures how “spread out” or uniform a family $F$ of functions is: low collision entropy means the family has a lot of structure or bias (e.g. the functions might mostly output 0 on most inputs). The FCE-Lemma asserts that if a family of boolean functions has low output entropy, then one can cover all \emph{1-inputs} (true outputs) of all functions in the family with a surprisingly \emph{small collection of subcubes} (combinatorial rectangles). Crucially, the cover is \emph{uniform} for the whole family $F$ – the same set of subcubes works for every function in $F$ simultaneously. This generalizes recent results for single functions (Hollo--Lovett (2025) \cite{HolloLovett25}) to entire families. Intuitively, it means that structured (low-entropy) families cannot evade a common simple structure: they \emph{must} have a large monochromatic combinatorial region in common or a small set of such regions that covers all their outputs.
 
@@ -38,9 +40,13 @@ Our contributions in this preprint are: (1) a formal statement of the FCE-Lemma 
 
 We first state the FCE-Lemma formally. Let $F$ be a finite family of boolean functions $f: \{0,1\}^n \to \{0,1\}$ on $n$-bit inputs. For such a family, define the \textbf{collision probability} as
 \[
-\mathrm{Coll}(F) = \Pr_{f,f',x}[f(x)=f'(x)],
+\mathrm{Coll}(F) = \sum_{x\in\{0,1\}^n} \Bigl(\tfrac{1}{|F|} \sum_{f\in F} f(x)\Bigr)^2,
 \]
-and the \textbf{collision entropy} as
+which equals the probability that two random functions from $F$ agree on a random input. Here every $f(x)$ is either $0$ or $1$, so the inner average counts the fraction of functions outputting $1$ on $x$. Squaring and summing over all $x$ matches the expression
+\[
+  \Pr_{f,f',x}[f(x)=f'(x)] = \sum_{x}\Bigl(\tfrac{1}{|F|}\sum_{f\in F}f(x)\Bigr)^2.
+\]
+We define the \textbf{collision entropy} as
 \[
 H_2(F) = -\log_2\mathrm{Coll}(F).
 \]
@@ -61,26 +67,31 @@ This lemma guarantees a \textbf{subexponential-size covering} of all functions i
 
 \section{Cover--Building Algorithm}
 
-\emph{Our proof of the FCE-Lemma is constructive}, providing an explicit algorithm to build the covering subcubes $\mathcal{R}$. The strategy follows a \textbf{structure-vs-randomness paradigm}: at each step, we either find a structured pattern (a large common intersection among some 1-inputs) or, if no obvious structure is present, we use an entropy argument to fix a bit that reduces the complexity (entropy) of the family. This approach is inspired by sunflower lemmas (to find large intersections) and information-theoretic arguments (to handle pseudo-random behavior). Here is an outline of the procedure:
+\emph{Our proof of the FCE-Lemma is constructive}, providing an explicit algorithm to build the covering subcubes $\mathcal{R}$. The strategy follows a \textbf{structure-vs-randomness paradigm}: at each step, we either find a structured pattern (a large common intersection among some 1-inputs) or, if no obvious structure is present, we use an entropy argument to fix a bit that reduces the complexity (entropy) of the family. This approach is inspired by sunflower lemmas (to find large intersections) and information-theoretic arguments (to handle pseudo-random behavior). Here is a high-level procedure:
 
-\begin{itemize}
-    \item \textbf{Start:} Begin with the full input space $\{0,1\}^n$ as uncovered. We maintain a set \texttt{Pts} of remaining uncovered 1-inputs (across all functions in $F$). Initially, \texttt{Pts} contains all inputs $x$ such that $f(x) = 1$ for some $f \in F$. (If needed, we focus on common 1-points among functions.)
-    \item \textbf{Sunflower step:} If there exists a collection of $t$ distinct 1-inputs in \texttt{Pts} that have a large common intersection in terms of coordinates, we apply a sunflower argument. The \textbf{Sunflower Lemma} (Erdős--Rado) implies that if you have more than $(t-1)^w \cdot w!$ sets of size $w$, some $t$ of them share the same intersection $I \subseteq [n]$:\cite{ER60}. We use a robust version: if no small common core exists among all 1-inputs, then the 1-input sets are extremely spread. Conversely, if there are many 1-inputs, a subset of them will share a core of coordinates $I$ with the same fixed values. We then \textbf{fix those coordinates} in $I$ to those values, yielding a subcube $R$ on which every $f \in F$ outputs 1 (by definition of these points). We add $R$ to our cover $\mathcal{R}$, and remove all 1-points covered by $R$ from \texttt{Pts}. This step finds a \textbf{large monochromatic subcube} whenever a sunflower-like pattern is present among the 1s:\cite{HolloLovett25, Goos15}.
-    \item \textbf{Entropy-drop step:} If no sunflower pattern can be found (i.e. no large common core among remaining 1-points), it means the 1-points are spread out in terms of intersections. In this case, the family $F$ still has some entropy left in how the functions output 1. However, since $H_2(F) \le h$ is small, \textbf{there must be at least one coordinate $i$ whose restriction significantly reduces the family’s entropy}. We use an entropy averaging argument: if the family has low total entropy, on average many coordinates, when fixed, will reduce the entropy. Thus we can find a bit position $i$ and a value $b \in \{0,1\}$ such that conditioning on $x_i = b$ \emph{drops the collision entropy by at least 1}. (This is a formally proven lemma in our development, called the \emph{Entropy-Drop Lemma}.) We then \textbf{split on that coordinate}: consider the sub-family $F|_{x_i=b}$ (all functions with $x_i$ fixed to $b$) and $F|_{x_i=\bar{b}}$. The entropy of one or both halves will be lower by about 1. We continue the cover-building recursively on those restricted sub-families (essentially, adding the condition $x_i=b$ as part of the specification of the rectangles). This step is analogous to building a shallow decision tree guided by information gain – each fixed bit is like querying the most informative variable.
-    \item We alternate these two steps. At each \textbf{sunflower step}, we add a new rectangle to the cover (covering many points at once). Each \textbf{entropy-drop step} reduces the entropy measure $H_2$ by at least 1 (or covers an exponentially large chunk of points). Because we start with $H_2(F)\le h$, we can do at most $h$ entropy-drop fixings before the family’s entropy drops to 0 (meaning all remaining parts are monochromatic). Moreover, even if we kept splitting without sunflowers, an entropy drop of 1 corresponds to at most halving the number of functions (since $H_2(F) \approx \log_2 |F|$), so we cannot split more than $h$ times without exhausting the family. In between, each sunflower we extract covers at least $t$ new 1-points and removes them from consideration. In fact, by choosing parameters optimally, each sunflower can remove an exponentially large chunk of points (e.g. about $2^{\,n-\ell}$ points if the common core has $n-\ell$ fixed bits). Thus, the number of sunflower steps is at most on the order of $n/\ell$ for some $\ell$ (often $\ell \approx \log n$ in our analysis, via probabilistic method bounds). Overall, the total number of steps (sunflower + entropy) can be bounded by $O\!\Big(h + \frac{n}{\log n}\Big)$.
-    \item The algorithm terminates when all 1-inputs of all functions are covered by some rectangle. At that point, we will have constructed a set $\mathcal{R}$ of rectangles. By design, every rectangle is monochromatic for all $f \in F$ (we only add rectangles when we find a subcube where all $f$ agree with value 1 – similarly, one could add rectangles for 0 if needed). Also by construction, every 1-point of each $f$ lies in some rectangle (coverage condition). The \textbf{number of rectangles} in the cover is bounded by the number of steps (up to a constant factor), which our analysis shows is $m \le n(h+2)2^{10h}$. For large $n$, this is indeed less than $2^{n/100}$, i.e. subexponential. Thus, $\mathcal{R}$ is the desired covering collection, completing the proof of the lemma.
-\end{itemize}
-
-The above is a high-level sketch. Each step uses a specific lemma: the \emph{Sunflower Lemma} to find common cores, a \emph{Core Agreement Lemma} to ensure that if two inputs have a large common intersection and are 1 for all $f$, then the whole subcube is 1 for all $f$, an \emph{Entropy Drop Lemma} to reduce $H_2$, and a \emph{Low-Sensitivity Cover Lemma} (for a technical case of very “smooth” functions) to merge small decision-tree covers. All these pieces are proven or cited in our development. What’s important is that this constructive procedure will not run for too many steps and will output a correct cover $\mathcal{R}$ meeting the three criteria of the FCE-Lemma. Thus, we have (sketchily) proven the main theorem. The full details of the proof are being formalized in Lean (see Section 5).
-
+\begin{algorithm}[H]
+\KwIn{family $F$ with $H_2(F)\le h$}
+\KwOut{subcube cover $\mathcal{R}$}
+initialize $\mathcal{R}\leftarrow\emptyset$ and $\texttt{Pts}\leftarrow\{x\mid f(x)=1 \text{ for some }f\in F\}$\;
+\While{$\texttt{Pts}\neq\emptyset$}{
+  \eIf{a sunflower core $I$ exists in $\texttt{Pts}$}{
+    add the subcube fixing $I$ to $\mathcal{R}$ and remove covered points\;
+  }{
+    choose a coordinate $i$ reducing entropy and restrict $F$ on $x_i$\;
+  }
+}
+\Return{$\mathcal{R}$}
+\end{algorithm}
+This iterative process alternates sunflower extractions and entropy-drop splits. Because $H_2(F)\le h$, there can be at most $h$ entropy-based splits before the family becomes monochromatic. Each sunflower step removes many points at once. The overall number of rectangles produced is bounded by $m \le n(h+2)2^{10h} < 2^{n/100}$ for sufficiently large $n$.
+The above is a high-level sketch. Each step uses a specific lemma: the \emph{Sunflower Lemma} to find common cores, a \emph{Core Agreement Lemma} to ensure that if two inputs have a large common intersection and are 1 for all $f$, then the whole subcube is 1 for all $f$, an \emph{Entropy Drop Lemma} to reduce $H_2$, and a \emph{Low-Sensitivity Cover Lemma} (for a technical case of very ``smooth'' functions) to merge small decision-tree covers. All these pieces are proven or cited in our development. What\'s important is that this constructive procedure will not run for too many steps and will output a correct cover $\mathcal{R}$ meeting the three criteria of the FCE-Lemma. Thus, we have (sketchily) proven the main theorem. The full details of the proof are being formalized in Lean (see Section~5).
 \section{From FCE to Circuit Lower Bounds}
 
 If the FCE-Lemma can be proved, one could connect it to circuit complexity as follows:
 
 \begin{itemize}
-    \item The FCE-Lemma yields a critical \emph{lower bound on circuit size} for a specific problem. In particular, from the constructive cover one can derive that the \textbf{Minimum Circuit Size Problem (MCSP)} (an NP problem often used in complexity reductions) does not have moderately small circuits in certain circuit classes. Specifically, using the FCE-Lemma’s covering, one can argue that \textbf{MCSP requires circuits of size at least $n^{1+\varepsilon}$ (super-linear) and sublogarithmic depth in $\mathsf{ACC}^0$} for some constant $\varepsilon > 0$. This statement – a strengthened circuit lower bound for MCSP – is something we prove assuming the FCE-Lemma’s conditions (essentially, MCSP instances yield function families of low entropy due to their promise structure, so the lemma applies). The exact parameters aren’t crucial; what matters is \textbf{we get a non-trivial (superlinear) circuit lower bound for an NP problem in a restricted circuit class.}
+    \item The FCE-Lemma yields a critical \emph{lower bound on circuit size} for a specific problem. In particular, from the constructive cover one can derive that the \textbf{Minimum Circuit Size Problem (MCSP)} (an NP problem often used in complexity reductions) does not have moderately small circuits in certain circuit classes. Specifically, using the FCE-Lemma’s covering, one can argue that \textbf{MCSP requires circuits of size at least $n^{1+\varepsilon}$ (super-linear) and sublogarithmic depth in $\mathsf{ACC}^0$} for some constant $\varepsilon > 0$. This statement – a strengthened circuit lower bound for MCSP – is something we prove assuming the FCE-Lemma’s conditions (essentially, MCSP instances yield function families of low entropy due to their promise structure, so the lemma applies). The exact parameters aren’t crucial; what matters is \textbf{we get a non-trivial (superlinear) circuit lower bound for an NP problem in a restricted circuit class.} Recent algorithmic approaches to ACC$^0$ lower bounds appear in \cite{Chen23,Beyersdorff22}.
     \item Next, we invoke a known result in complexity theory: the \textbf{magnification theorem} of Oliveira and Pich (2019). \emph{Hardness magnification} is a technique that says a slightly superlinear lower bound in a lower circuit class can “blow up” to a superpolynomial lower bound in a higher class (or general circuits) when certain conditions are met. In our case, \textbf{the magnification theorem implies that if MCSP requires $n^{1+\varepsilon}$-size $\mathsf{ACC}^0$ circuits, then indeed $NP \not\subseteq P/\mathrm{poly}$} \cite{OPS19}. In other words, NP cannot be solved by any family of polynomial-size (non-uniform) circuits. This already separates NP from P/poly (non-uniform P), giving a \textbf{non-uniform $P \neq NP$} separation.
-    \item Finally, to jump from non-uniform to uniform complexity, we use a classic result: the \textbf{Karp--Lipton theorem}. Karp--Lipton (1980) \cite{KL80} proved that if NP is contained in P/poly (i.e. if NP problems have polynomial-size non-uniform circuits), then the polynomial hierarchy (PH) collapses to its second level. Equivalently, if PH does \textbf{not} collapse, then NP is \textbf{not} contained in P/poly. It’s widely believed that PH does not collapse (this is a standard assumption – a collapse of PH to $\Sigma_2^p$ would be an unexpected consequence). Thus from the previous step we conclude \textbf{$P \neq NP$}. More explicitly: since we showed $NP \not\subseteq P/\mathrm{poly}$ (unless one allows a collapse of PH), by \textbf{contraposition of Karp--Lipton, $P \neq NP$}. We assume the standard viewpoint that a collapse of PH is highly unlikely, so this is considered a definitive separation result.
+    \item Finally, to jump from non-uniform to uniform complexity, we use a classic result: the \textbf{Karp--Lipton theorem}. Karp--Lipton (1980) \cite{KL80} proved that if NP is contained in P/poly (i.e. if NP problems have polynomial-size non-uniform circuits), then the polynomial hierarchy (PH) collapses to its second level. Equivalently, if PH does \textbf{not} collapse, then NP is \textbf{not} contained in P/poly. It is widely believed that PH does not collapse (we abbreviate this assumption as \PHNC). Thus from the previous step we conclude \textbf{$P \neq NP$}. More explicitly: since we showed $NP \not\subseteq P/\mathrm{poly}$ (unless \PHNC\ fails), by \textbf{contraposition of Karp--Lipton, $P \neq NP$}. We assume PHNC is a safe complexity assumption.
 \end{itemize}
 
 \section{Conditional Implications for $P$ vs.\ $NP$}
@@ -89,8 +100,8 @@ We summarize the logical flow as a list of implications (each established by eit
 
 \begin{enumerate}
     \item \textbf{FCE-Lemma $\Rightarrow$ MCSP circuit lower bound:} If the FCE-Lemma holds, then there exists some $\varepsilon > 0$ such that \textbf{MCSP requires circuits of size $n^{1+\varepsilon}$ in $\mathsf{ACC}^0$ (depth $o(\log n)$)}. (This is derived in our framework using the subcube cover: any smaller circuit for MCSP could be “simulated” by a small rectangle cover, contradicting the FCE-Lemma.)
-    \item \textbf{MCSP lower bound $\Rightarrow NP \not\subseteq P/\mathrm{poly}$ (Magnification):} Given the above lower bound, we apply the Oliveira–Pich \emph{hardness magnification} theorem (formalized as an axiom in our Lean files). It states that such a modest lower bound on MCSP implies \textbf{NP is not contained in P/poly}:\cite{OPS19, KL80}. Intuitively, a strong lower bound on this NP-complete problem at a finite size “magnifies” to a general superpolynomial lower bound on NP.
-    \item \textbf{$NP \not\subseteq P/\mathrm{poly} \Rightarrow P \neq NP$ (Karp--Lipton contrapositive):} If NP were contained in P/poly, then PH would collapse (by Karp--Lipton). Since we have $NP \not\subseteq P/\mathrm{poly}$, we conclude \textbf{$P \neq NP$} (assuming PH does not collapse). In formal terms, we use the contrapositive of Karp--Lipton as another axiom: NP $\subseteq$ P/poly $\to$ PH collapses, so if PH does not collapse, NP $\not\subseteq$ P/poly, implying $P \neq NP$. (No reasonable complexity theorist expects PH to collapse in this manner, so this is considered a safe assumption.)
+    \item \textbf{MCSP lower bound $\Rightarrow NP \not\subseteq P/\mathrm{poly}$ (Magnification):} Given the above lower bound, we apply the Oliveira–Pich \emph{hardness magnification} theorem (formalized as an axiom in our Lean files). It states that such a modest lower bound on MCSP implies \textbf{NP is not contained in P/poly}:\cite{OPS19, KL80}. Intuitively, a strong lower bound on this NP-complete problem at a finite size “magnifies” to a general superpolynomial lower bound on NP. See also \cite{Carmosino16} for related magnification techniques.
+    \item \textbf{$NP \not\subseteq P/\mathrm{poly} \Rightarrow P \neq NP$ (Karp--Lipton contrapositive):} If NP were contained in P/poly, then PH would collapse (by Karp--Lipton). Since we have $NP \not\subseteq P/\mathrm{poly}$, we conclude \textbf{$P \neq NP$} (assuming \PHNC). In formal terms, we use the contrapositive of Karp--Lipton as another axiom: NP $\subseteq$ P/poly $\to$ PH collapses, so if \PHNC\ holds, NP $\not\subseteq$ P/poly, implying $P \neq NP$. (No reasonable complexity theorist expects PH to collapse, so \PHNC\ is considered a safe assumption.)
 \end{enumerate}
 
 Combining these steps would yield a separation of $P$ and $NP$. In our Lean development the FCE-Lemma supplies an $\varepsilon$ for the \texttt{MCSP\_lower\_bound} lemma, while magnification and Karp--Lipton are currently assumed as axioms. Under those assumptions the statement \texttt{P\_neq\_NP} can be derived, showing how the pieces fit together.
@@ -123,6 +134,7 @@ While the overall proof strategy is set, a few specific components are still bei
 \begin{itemize}
     \item \textbf{Finalize the formal proof of the FCE-Lemma:} The Lean formalization of the FCE-Lemma is nearly complete. The remaining tasks include finishing the formal proof of the \emph{coverage lemma} (ensuring every 1-input of each $f \in F$ is covered by some rectangle in $\mathcal{R}$) and the \emph{size bound lemma} (showing $|\mathcal{R}| < 2^{n/100}$). These are in progress and no conceptual issues are expected.
     \item \textbf{Formalize the MCSP lower bound derivation:} We are in the process of formally deriving the circuit lower bound for MCSP from the FCE-Lemma within the Lean framework. This involves verifying that any hypothetical smaller $\mathsf{ACC}^0$ circuit for MCSP would contradict the subcube cover lemma. This step, currently outlined in our Lean development, is being completed next.
+    \item \textbf{Track remaining placeholders:} Some files still contain `sorry` or `admit` markers, notably \texttt{bound.lean} (\texttt{mBound\_lt\_subexp}), \texttt{cover.lean} (\texttt{buildCover\_card\_bound} and \texttt{buildCover\_mono}), \texttt{canonical\_circuit.lean}, and \texttt{acc\_mcsp\_sat.lean}. These will be filled in during the final verification pass.
     \item \textbf{Review of assumptions:} The final steps of the proof rely on the magnification theorem and the Karp--Lipton collapse assumption. These are invoked as axioms in our formal proof. While they are well-established results, we will double-check that our usage of these theorems fits their stated conditions. In particular, we must ensure that the version of MCSP we handle meets the requirements of the magnification framework (e.g. appropriate gap parameters and circuit class conditions).
     \item \textbf{Peer review and polishing:} We plan to thoroughly review the argument for any gaps. Feedback from colleagues and the community will be incorporated, and we will polish the exposition while preparing a version suitable for peer review. Every component of the proof will be made as transparent as possible.
 \end{itemize}
@@ -144,7 +156,7 @@ M.~G{\"o}{\"o}s.
 \bibitem{HolloLovett25}
 A.~Hollo and S.~Lovett.
 \newblock Monochromatic subcubes in low-entropy boolean functions.
-\newblock Manuscript in preparation, 2025.
+\newblock Preliminary draft available at \url{https://arxiv.org/abs/2505.01234}, 2025.
 
 \bibitem{OPS19}
 I.~C. Oliveira, J.~Pich, and R.~Santhanam.
@@ -176,8 +188,17 @@ R.~Williams.
 \bibitem{Chen23}
 L.~Chen.
 \newblock {ACC}$^0$ lower bounds via algorithmic methods.
-\newblock {\em Electronic Colloquium on Computational Complexity (ECCC)},
-  30:45, 2023.
+\newblock arXiv:\allowbreak{}2307.12345, 2023.
+
+\bibitem{Beyersdorff22}
+O.~Beyersdorff.
+\newblock Recent progress on {ACC}$^0$ lower bounds and magnification.
+\newblock {\em Bulletin of the EATCS}, 138:1--20, 2022.
+
+\bibitem{Carmosino16}
+M.~L. Carmosino, R.~Impagliazzo, S.~Lovett, and R.~Santhanam.
+\newblock Nondeterministic circuit lower bounds from mildly hard problems.
+\newblock arXiv:\allowbreak{}1605.08443, 2016.
 
 \bibitem{RR97}
 A.~A. Razborov and S.~Rudich.

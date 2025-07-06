@@ -86,7 +86,7 @@ The above is a high-level sketch. Each step uses a specific lemma: the \emph{Sun
 If the FCE-Lemma can be proved, one could connect it to circuit complexity as follows:
 
 \begin{itemize}
-    \item The FCE-Lemma yields a critical \emph{lower bound on circuit size} for a specific problem. In particular, from the constructive cover one can derive that the \textbf{Minimum Circuit Size Problem (MCSP)} (an NP problem often used in complexity reductions) does not have moderately small circuits in certain circuit classes. Specifically, using the FCE-Lemma’s covering, one can argue that \textbf{MCSP requires circuits of size at least $n^{1+\varepsilon}$ (super-linear) and sublogarithmic depth in $\mathsf{ACC}^0$} for some constant $\varepsilon > 0$. This statement – a strengthened circuit lower bound for MCSP – is something we prove assuming the FCE-Lemma’s conditions (essentially, MCSP instances yield function families of low entropy due to their promise structure, so the lemma applies). The exact parameters aren’t crucial; what matters is \textbf{we get a non-trivial (superlinear) circuit lower bound for an NP problem in a restricted circuit class.} Recent algorithmic approaches to ACC$^0$ lower bounds appear in \cite{Chen23,Beyersdorff22}.
+\item The FCE-Lemma yields a critical \emph{lower bound on circuit size} for a specific problem. In particular, from the constructive cover one can derive that the \textbf{Minimum Circuit Size Problem (MCSP)} (an NP problem often used in complexity reductions) does not have moderately small circuits in certain circuit classes. Specifically, using the FCE-Lemma’s covering, one can argue that \textbf{MCSP requires circuits of size at least $n^{1+\varepsilon}$ (super-linear) and sublogarithmic depth in $\mathsf{ACC}^0$} for some constant $\varepsilon > 0$. This statement – a strengthened circuit lower bound for MCSP – is something we prove assuming the FCE-Lemma’s conditions (essentially, MCSP instances yield function families of low entropy due to their promise structure, so the lemma applies). The exact parameters aren’t crucial; what matters is \textbf{we get a non-trivial (superlinear) circuit lower bound for an NP problem in a restricted circuit class.}
     \item Next, we invoke a known result in complexity theory: the \textbf{magnification theorem} of Oliveira and Pich (2019). \emph{Hardness magnification} is a technique that says a slightly superlinear lower bound in a lower circuit class can “blow up” to a superpolynomial lower bound in a higher class (or general circuits) when certain conditions are met. In our case, \textbf{the magnification theorem implies that if MCSP requires $n^{1+\varepsilon}$-size $\mathsf{ACC}^0$ circuits, then indeed $NP \not\subseteq P/\mathrm{poly}$} \cite{OPS19}. In other words, NP cannot be solved by any family of polynomial-size (non-uniform) circuits. This already separates NP from P/poly (non-uniform P), giving a \textbf{non-uniform $P \neq NP$} separation.
     \item Finally, to jump from non-uniform to uniform complexity, we use a classic result: the \textbf{Karp--Lipton theorem}. Karp--Lipton (1980) \cite{KL80} proved that if NP is contained in P/poly (i.e. if NP problems have polynomial-size non-uniform circuits), then the polynomial hierarchy (PH) collapses to its second level. Equivalently, if PH does \textbf{not} collapse, then NP is \textbf{not} contained in P/poly. It is widely believed that PH does not collapse (we abbreviate this assumption as \PHNC). Thus from the previous step we conclude \textbf{$P \neq NP$}. More explicitly: since we showed $NP \not\subseteq P/\mathrm{poly}$ (unless \PHNC\ fails), by \textbf{contraposition of Karp--Lipton, $P \neq NP$}. We assume PHNC is a safe complexity assumption.
 \end{itemize}
@@ -97,7 +97,7 @@ We summarize the logical flow as a list of implications (each established by eit
 
 \begin{enumerate}
     \item \textbf{FCE-Lemma $\Rightarrow$ MCSP circuit lower bound:} If the FCE-Lemma holds, then there exists some $\varepsilon > 0$ such that \textbf{MCSP requires circuits of size $n^{1+\varepsilon}$ in $\mathsf{ACC}^0$ (depth $o(\log n)$)}. (This is derived in our framework using the subcube cover: any smaller circuit for MCSP could be “simulated” by a small rectangle cover, contradicting the FCE-Lemma.)
-    \item \textbf{MCSP lower bound $\Rightarrow NP \not\subseteq P/\mathrm{poly}$ (Magnification):} Given the above lower bound, we apply the Oliveira–Pich \emph{hardness magnification} theorem (formalized as an axiom in our Lean files). It states that such a modest lower bound on MCSP implies \textbf{NP is not contained in P/poly}:\cite{OPS19, KL80}. Intuitively, a strong lower bound on this NP-complete problem at a finite size “magnifies” to a general superpolynomial lower bound on NP. See also \cite{Carmosino16} for related magnification techniques.
+\item \textbf{MCSP lower bound $\Rightarrow NP \not\subseteq P/\mathrm{poly}$ (Magnification):} Given the above lower bound, we apply the Oliveira–Pich \emph{hardness magnification} theorem (formalized as an axiom in our Lean files). It states that such a modest lower bound on MCSP implies \textbf{NP is not contained in P/poly}:\cite{OPS19, KL80}. Intuitively, a strong lower bound on this NP-complete problem at a finite size “magnifies” to a general superpolynomial lower bound on NP.
     \item \textbf{$NP \not\subseteq P/\mathrm{poly} \Rightarrow P \neq NP$ (Karp--Lipton contrapositive):} If NP were contained in P/poly, then PH would collapse (by Karp--Lipton). Since we have $NP \not\subseteq P/\mathrm{poly}$, we conclude \textbf{$P \neq NP$} (assuming \PHNC). In formal terms, we use the contrapositive of Karp--Lipton as another axiom: NP $\subseteq$ P/poly $\to$ PH collapses, so if \PHNC\ holds, NP $\not\subseteq$ P/poly, implying $P \neq NP$. (No reasonable complexity theorist expects PH to collapse, so \PHNC\ is considered a safe assumption.)
 \end{enumerate}
 
@@ -182,31 +182,10 @@ R.~Williams.
 \newblock In {\em Proc.~42nd ACM Symposium on Theory of Computing (STOC 2010)},
   2010.
 
-\bibitem{Chen23}
-L.~Chen.
-\newblock {ACC}$^0$ lower bounds via algorithmic methods.
-\newblock arXiv:\allowbreak{}2307.12345, 2023.
-
-\bibitem{Beyersdorff22}
-O.~Beyersdorff.
-\newblock Recent progress on {ACC}$^0$ lower bounds and magnification.
-\newblock {\em Bulletin of the EATCS}, 138:1--20, 2022.
-
-\bibitem{Carmosino16}
-M.~L. Carmosino, R.~Impagliazzo, S.~Lovett, and R.~Santhanam.
-\newblock Nondeterministic circuit lower bounds from mildly hard problems.
-\newblock arXiv:\allowbreak{}1605.08443, 2016.
-
 \bibitem{RR97}
-A.~A. Razborov and S.~Rudich.
-\newblock Natural proofs.
-\newblock {\em J.~Computer and System Sciences}, 55(1):24--35, 1997.
-
-\bibitem{Hirahara21}
-S.~Hirahara.
-\newblock Non-black-box polynomial identity testing and circuit lower bounds.
-\newblock In {\em Proc.~53rd ACM Symposium on Theory of Computing (STOC 2021)},
-  2021.
+  A.~A. Razborov and S.~Rudich.
+  \newblock Natural proofs.
+  \newblock {\em J.~Computer and System Sciences}, 55(1):24--35, 1997.
 
 \end{thebibliography}
 

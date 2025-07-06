@@ -1,4 +1,6 @@
--- boolcube.lean  – all fundamental definitions plus a fully‑proved -- entropy‑drop lemma (no sorry).  Requires mathlib4 ≥ 2025‑05‑20.
+-- boolcube.lean – fundamental definitions.
+-- Some older proofs still use `sorry`; the modern entropy‑drop lemma is
+-- available fully proved in `entropy.lean`.  Requires mathlib4 ≥ 2025‑05‑20.
 
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Basic

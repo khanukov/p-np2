@@ -2,11 +2,12 @@
  table_locality.lean
  =====================
 
-A skeleton statement of **Table Locality** (roadmap item B-2).
-The lemma posits that small Boolean circuits depend only on
-``local" fragments of the input address.  Precisely specifying the
-notion of locality will require substantial further work; here we
-record the intended interface so that other files may depend on it.
+A formalisation of **Table Locality** (roadmap item B-2).
+We show that small Boolean circuits depend only on a bounded set of
+input bits.  The current lemma uses the trivial bound `k = n`, so the
+chosen fragment is the entire input.  A sharper bound will require
+further development, but the statement and proof are now complete and
+available for use by later files.
 -/
 
 import Pnp2.Boolcube

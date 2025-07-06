@@ -93,12 +93,11 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype. The core-agreement lemma is fully proven, and `buildCover` now splits on uncovered inputs via `sunflower_step` or an entropy drop. A formal definition of sensitivity together with the lemma statement `low_sensitivity_cover` has been added, and `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
+This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` also has a complete proof.  `buildCover` now splits on uncovered inputs via `sunflower_step` or an entropy drop.  A formal definition of sensitivity together with the lemma statement `low_sensitivity_cover` has been added, and `acc_mcsp_sat.lean` sketches the SAT connection.  Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
 ## Development plan
 
 The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key missing components are:
-1. `exists_coord_card_drop` and `exists_coord_entropy_drop` to formalise the entropy step.
-2. `sunflower_step` to extract a common subcube once entropy can no longer drop.
-3. `buildCover` proofs showing coverage and the final bound `mBound_lt_subexp`.
-Once these are proven the lemma `FCE_lemma` will follow.
+1. `exists_coord_card_drop` to complement the proven entropy step.
+2. final `buildCover` proofs showing coverage and the bound `mBound_lt_subexp`.
+Once these are established the lemma `FCE_lemma` will follow.

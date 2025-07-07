@@ -134,7 +134,7 @@ The parameter $h$ is treated as a fixed constant (or $o(n)$) when establishing t
 
 1. Erdős & Rado (1960), intersection theorems.
 2. Alweiss–Lovett–Wu–Zhang (2021), improved sunflower bounds.
-3. Low entropy implies few rectangles for a single boolean function.
+3. Hollo & Lovett (2025), low entropy implies few rectangles.
 4. Göös et al. (2020), robust sunflowers and communication complexity.
 5. Hegyvári (2024), additive energy and subcube partitions.
 6. Terence Tao (2020), [The Sunflower Lemma via Shannon entropy](https://terrytao.wordpress.com/2020/07/20/the-sunflower-lemma-via-shannon-entropy/).

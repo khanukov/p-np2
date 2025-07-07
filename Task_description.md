@@ -4,13 +4,13 @@ Formal Proof Plan for the Family Collision-Entropy Lemma (FCE-Lemma)
 
 Background and Significance
 
-The Family Collision-Entropy Lemma (FCE-Lemma) is a combinatorial statement proposed as the last crucial step in a potential proof that P ≠ NP. In essence, it asserts that if we have a class $F$ of boolean functions on $n$ inputs whose collision entropy $H_2(F)$ is bounded by a small constant $h$, then one can cover the truth tables of all functions in $F$ by a subexponential number of simple combinatorial regions (rectangles/subcubes) under certain constraints. Here collision entropy $H_2(F)$ intuitively measures how “spread out” or “uniform” the family $F$ is – a low $H_2$ means the family has significant structure or bias (e.g. each function might be very biased towards 0 or 1). The lemma generalizes a recent result by Hollo–Lovett (2025) (unpublished) which handled the special case of a single boolean function: they showed that if a single boolean function has small collision entropy (i.e. highly biased outputs), then its truth table can be covered by a subexponential number of monochromatic rectangles. The FCE-Lemma extends this to an entire family of functions $F \subseteq {0,1}^{{0,1}^n}$ with $H_2(F)\le h$, requiring a unified cover that works for every function in $F$.
+The Family Collision-Entropy Lemma (FCE-Lemma) is a combinatorial statement proposed as the last crucial step in a potential proof that P ≠ NP. In essence, it asserts that if we have a class $F$ of boolean functions on $n$ inputs whose collision entropy $H_2(F)$ is bounded by a small constant $h$, then one can cover the truth tables of all functions in $F$ by a subexponential number of simple combinatorial regions (rectangles/subcubes) under certain constraints. Here collision entropy $H_2(F)$ intuitively measures how “spread out” or “uniform” the family $F$ is – a low $H_2$ means the family has significant structure or bias (e.g. each function might be very biased towards 0 or 1). The lemma generalizes earlier results that handled the special case of a single boolean function, showing that if such a function has small collision entropy it can be covered by a subexponential number of monochromatic rectangles. The FCE-Lemma extends this to an entire family of functions $F \subseteq {0,1}^{{0,1}^n}$ with $H_2(F)\le h$, requiring a unified cover that works for every function in $F$.
 
 Proving the FCE-Lemma in full generality is challenging and requires synthesizing techniques from combinatorics (sunflower lemmas, additive structure theory), Boolean function analysis (juntas, sensitivity), and communication complexity (rectangle covering arguments). A successful proof (especially one amenable to formalization in Lean/Coq) would not only finalize the P ≠ NP proof strategy but also push the boundaries of formal verification in complexity theory. Below we review relevant research results from 2020–2025, identify promising proof approaches, and outline a technical plan for a rigorous and formalizable proof of the FCE-Lemma.
 
 Relevant Research (2020–2025) on Covering Boolean Functions
 
-1. Single-Function Covering with Low Collision Entropy: Hollo & Lovett (2025) reportedly show that any single boolean function $f:{0,1}^n\to{0,1}$ with sufficiently small collision entropy can have its truth table covered by $\exp(o(n))$ monochromatic rectangles. Intuitively, if $f$ is highly biased (say $f$ outputs 0 on almost all inputs, so the collision entropy of the output distribution is low), then the few 1-inputs can be grouped into relatively few structured blocks. This result aligns with known intuition: a boolean function with output probability $p\ll 0.5$ (hence low $H_2$) can be covered by a small DNF that picks out its 1s. This builds on classical results like Chernoff bounds and partitions and formalizes them into a covering number bound. While the Hollo–Lovett result is specialized to one function, it provides a baseline: it shows collision entropy is a useful complexity measure for covers, and it achieves subexponential (though not polynomial) cover size, which is exactly the regime needed for separating NP from P.
+1. Single-Function Covering with Low Collision Entropy: Previous work shows that any single boolean function $f:{0,1}^n\to{0,1}$ with sufficiently small collision entropy can have its truth table covered by $\exp(o(n))$ monochromatic rectangles. Intuitively, if $f$ is highly biased (say $f$ outputs 0 on almost all inputs, so the collision entropy of the output distribution is low), then the few 1-inputs can be grouped into relatively few structured blocks. This result aligns with known intuition: a boolean function with output probability $p\ll 0.5$ (hence low $H_2$) can be covered by a small DNF that picks out its 1s. This builds on classical results like Chernoff bounds and partitions and formalizes them into a covering number bound. While this result is specialized to one function, it provides a baseline: it shows collision entropy is a useful complexity measure for covers, and it achieves subexponential (though not polynomial) cover size, which is exactly the regime needed for separating NP from P.
 
 2. Weaker Forms for Special Function Classes: Several recent works have established FCE-like statements for restricted classes of boolean functions, lending evidence that the general lemma is true:
 
@@ -28,7 +28,6 @@ Additive combinatorics & partial structure: Very relevant is the work by Hegyvá
 
 In conclusion, research in 2020–2025 has built a toolkit of relevant results:
 
-Hollo–Lovett: low entropy → few rectangles (single $f$),
 
 Smooth functions: few rectangles (via shallow circuits),
 
@@ -153,14 +152,14 @@ The proof (to be formalized) will proceed by constructive induction on the input
 
 1. 
 
-Base case (small $n$ or trivial family): If $n=0$ (no input bits) or $|F|=1$ (only one function in the family), the lemma is trivial. With no input bits, the function outputs a constant, so one rectangle (the full space) suffices. With one function in $F$, the assumption $H_2(F)\le h$ is also trivial and any known cover for that function works (by Hollo–Lovett, for instance). We can formalize these base cases easily.
+Base case (small $n$ or trivial family): If $n=0$ (no input bits) or $|F|=1$ (only one function in the family), the lemma is trivial. With no input bits, the function outputs a constant, so one rectangle (the full space) suffices. With one function in $F$, the assumption $H_2(F)\le h$ is also trivial and any known cover for that function works by existing results. We can formalize these base cases easily.
 
 2. 
 
 Inductive / iterative step: Assume $n>0$ and $|F|>1$. We attempt to find a monochromatic subcube $R$ that will be part of the cover:
 
 
-Compute the collision entropy $H_2(F)$. If $H_2(F)$ is extremely low (say 0 or very close to 0), it means all functions in $F$ are identical on almost all inputs. In fact, $H_2=0$ would mean all $f\in F$ are identical (so $F$ behaves like one function). In that extreme, we can just cover that one function’s truth table (via Hollo–Lovett’s result or any formula for it) and we are done. So assume $0 < H_2(F) \le h$.
+Compute the collision entropy $H_2(F)$. If $H_2(F)$ is extremely low (say 0 or very close to 0), it means all functions in $F$ are identical on almost all inputs. In fact, $H_2=0$ would mean all $f\in F$ are identical (so $F$ behaves like one function). In that extreme, we can just cover that one function’s truth table using known single-function covering results, and we are done. So assume $0 < H_2(F) \le h$.
 
 
 Find an influential coordinate or sunflower: We look at either the influences of bits or patterns in 1s:
@@ -215,7 +214,7 @@ The PCP theorem formalization efforts might have formalized some covering argume
 We will rely on the community – perhaps reach out to see if someone formalized the sensitivity theorem or junta theorem; otherwise, plan to formalize relevant special cases ourselves.
 
 
-Publications guiding the proof: We will heavily cite the intuitive results from Hollo–Lovett (for single functions), Gopalan et al. (for sensitivity), Friedgut, Alweiss–Lovett et al., Göös et al., and Hegyvári as discussed. These will not be assumed as black-box truth in the formal proof; rather, they inspire our lemmas and we will prove the necessary instances within the proof assistant. However, their presence in literature gives high confidence that each step of our plan is grounded in known mathematics. We will structure our formal proof to mirror these results (for clarity, and possibly to allow cross-verification by reading their proofs and ensuring ours match logically).
+Publications guiding the proof: We will heavily cite intuitive results from the literature on collision entropy, sensitivity, and additive combinatorics (notably Gopalan et al. for sensitivity, Friedgut, Alweiss–Lovett et al., Göös et al., and Hegyvári). These will not be assumed as black-box truth in the formal proof; rather, they inspire our lemmas and we will prove the necessary instances within the proof assistant. However, their presence in literature gives high confidence that each step of our plan is grounded in known mathematics. We will structure our formal proof to mirror these results (for clarity, and possibly to allow cross-verification by reading their proofs and ensuring ours match logically).
 
 
 Potential Subtleties and Verification Plan

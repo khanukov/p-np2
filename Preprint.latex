@@ -10,7 +10,7 @@
 \newcommand{\PHNC}{\textup{PHNC}}
 
 \title{Outline of a Proof that $P \neq NP$ via the Family Collision-Entropy Lemma}
-\author{Dmitry Khanukov\\Independent researcher\\\texttt{thelaprok@gmail.com}\\\emph{Preprint, work in progress}}
+\author{Dmitry Khanukov\\\texttt{thelaprok@gmail.com}\\\emph{Preprint, work in progress}}
 \date{July 2025}
 
 \begin{document}

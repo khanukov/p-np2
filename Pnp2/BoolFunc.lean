@@ -87,6 +87,7 @@ All other coordinates are *free*. -/
 structure Subcube (n : ℕ) where
   idx : Finset (Fin n)
   val : (i : Fin n) → (h : i ∈ idx) → Bool
+  deriving DecidableEq
 
 namespace Subcube
 

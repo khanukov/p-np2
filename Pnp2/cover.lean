@@ -275,6 +275,13 @@ partial def buildCover (F : Family n) (h : ℕ)
 def AllOnesCovered (F : Family n) (Rset : Finset (Subcube n)) : Prop :=
   ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R
 
+lemma AllOnesCovered.superset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : AllOnesCovered F R₁) (hsub : R₁ ⊆ R₂) :
+    AllOnesCovered F R₂ := by
+  intro f hf x hx
+  rcases h₁ f hf x hx with ⟨R, hR, hxR⟩
+  exact ⟨R, hsub hR, hxR⟩
+
 
 lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered F (buildCover F h hH) := by
@@ -316,15 +323,16 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- Low-sensitivity case: use the `low_sensitivity_cover` lemma to cover all 1-inputs at once
       obtain ⟨R_ls, Hmono, Hcover, Hsize⟩ := BoolFunc.low_sensitivity_cover (F := F) s Hsens
       -- Here `Hcover` states: ∀ f ∈ F, ∀ y, f y = true → ∃ R ∈ R_ls, y ∈ₛ R
-      intro g hg y hy
-      by_cases hyRset : ∃ R ∈ Rset, y ∈ₛ R
-      · rcases hyRset with ⟨R, hRset, hyR⟩
-        exact ⟨R, by simp [Finset.mem_union.mpr (Or.inl hRset)], hyR⟩
-      · -- If y was not already covered by Rset, the low-sensitivity cover provides a cover in R_ls
-        obtain ⟨R, hR_ls, hyR⟩ := Hcover g hg y hy
-        exact ⟨R, by simp [Finset.mem_union.mpr (Or.inr hR_ls)], hyR⟩
-      -- Conclude for this branch: buildCover returns `Rset ∪ R_ls`
-      simpa [buildCover, hfu, hs_small] using Finset.union_subset_union_left Rset Hcover
+      -- Combine the existing coverage of `Rset` with the low-sensitivity cover `R_ls`.
+      have hcov_union : AllOnesCovered F (Rset ∪ R_ls) := by
+        intro g hg y hy
+        by_cases hyRset : ∃ R ∈ Rset, y ∈ₛ R
+        · rcases hyRset with ⟨R, hRset, hyR⟩
+          exact ⟨R, by simp [Finset.mem_union.mpr (Or.inl hRset)], hyR⟩
+        · obtain ⟨R, hR_ls, hyR⟩ := Hcover g hg y hy
+          exact ⟨R, by simp [Finset.mem_union.mpr (Or.inr hR_ls)], hyR⟩
+      -- Conclude for this branch: buildCover returns `Rset ∪ R_ls`.
+      simpa [buildCover, hfu, hs_small] using hcov_union
     | inr hs_large =>
       -- (2) Sunflower branch or (3) Entropy branch
       by_cases hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card ≥ p0)

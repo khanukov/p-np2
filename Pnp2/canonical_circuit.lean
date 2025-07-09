@@ -208,8 +208,61 @@ lemma count_canonical_bounded (n m : ℕ) :
     (circuitsUpTo n m).Finite ∧
       (circuitsUpTo n m).toFinset.card ≤ 2 ^ (m * (Nat.log n + 1) + 1) := by
   classical
-  -- TODO: encode canonical circuits and derive the bound from `canonical_desc_length`.
-  admit
+  set L := m * (Nat.log n + 1) + 1
+  -- **Step 1:** Define an encoding of circuits as L-bit strings (padded with zeros on the right).
+  -- We'll show this encoding is injective on `circuitsUpTo n m`.
+  def encodeBits (c : Circuit n) : List Bool :=
+    let bits := (canonical_desc_length c).elim (fun _ => []) id
+    bits
+  def padToL (bits : List Bool) : List Bool :=
+    bits ++ List.replicate (L - bits.length) false
+  def encodePad (c : Circuit n) : Finₓ (2^L) :=
+    Finₓ.ofNat (bitsToNat (padToL (encodeBits c)))
+
+  -- **Step 2:** Prove that for any `c` in our set, `encodeBits c` has length ≤ L.
+  have len_le_L : ∀ {c : Circuit n}, c ∈ circuitsUpTo n m → (encodeBits c).length ≤ L := by
+    intro c hc
+    have code_len := canonical_desc_length c
+    calc
+      (encodeBits c).length = _ ≤ sizeOf c * (Nat.log n + 1) + 1 := by
+            exact code_len
+      _ ≤ m * (Nat.log n + 1) + 1 := by
+            apply Nat.add_le_add_right
+            exact Nat.mul_le_mul_right (Nat.log n + 1) hc
+
+  -- **Step 3:** Prove that the padded encoding is injective on `circuitsUpTo n m`.
+  have inj_encode : ∀ {c₁ c₂ : Circuit n}, c₁ ∈ circuitsUpTo n m → c₂ ∈ circuitsUpTo n m →
+                   encodePad c₁ = encodePad c₂ → c₁ = c₂ := by
+    intro c₁ c₂ h₁ h₂ heq
+    simp only [encodePad, Finₓ.ofNat_eq_coe, Finₓ.ext_iff, bitsToNat_inj] at heq
+    have eq_padded := heq
+    suffices encodeBits c₁ = encodeBits c₂ by
+      exact (canonical_inj (by rw [this])).mp (fun _ => rfl)
+    apply List.append_right_cancel eq_padded
+    · rw [List.replicate_length, ← List.length_append, padToL, List.length_append,
+          List.length_replicate, Nat.add_sub_cancel' (len_le_L h₁)]
+    · rw [List.replicate_length, ← List.length_append, padToL, List.length_append,
+          List.length_replicate, Nat.add_sub_cancel' (len_le_L h₂)]
+
+  -- **Step 4:** Construct a finite set by mapping circuits to `Fin (2^L)` via the encoding.
+  let encImage := (univ : Finset (Finₓ (2^L))).filter (λ w => ∃ c ∈ circuitsUpTo n m, encodePad c = w)
+  have fin_encImage : encImage.Finite := Finset.finite_toSet encImage
+  have image_cover : ∀ c ∈ circuitsUpTo n m, encodePad c ∈ encImage := by
+    intro c hc
+    simp only [encImage, mem_filter, mem_univ, true_and]
+    exact ⟨c, hc, rfl⟩
+  have card_bound : (circuitsUpTo n m).toFinset.card ≤ encImage.card := by
+    apply Finset.card_le_of_inj_on _ image_cover
+    intro x hx y hy hxy
+    rcases hx with ⟨x', hx', rfl⟩
+    rcases hy with ⟨y', hy', rfl⟩
+    exact inj_encode hx' hy' hxy
+
+  -- **Step 5:** Simplify the cardinality of `encImage`. It's a subset of `Fin (2^L)`, so at most `2^L`.
+  have encImage_card_le : encImage.card ≤ 2^L := by
+    apply Finset.card_le_univ
+  exact ⟨Finite.of_finite_image encImage fin_encImage image_cover,
+        card_bound.trans encImage_card_le⟩
 
 end Circuit
 

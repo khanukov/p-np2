@@ -275,93 +275,121 @@ partial def buildCover (F : Family n) (h : ℕ)
 def AllOnesCovered (F : Family n) (Rset : Finset (Subcube n)) : Prop :=
   ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R
 
+
 lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered F (buildCover F h hH) := by
   classical
-  -- well‑founded recursion on number of uncovered points
+  -- well-founded recursion on number of uncovered points (lexicographic on H₂ and uncovered count)
   revert F
-  -- define a measure: size of `uncovered F Rset`
-  refine
-    (fun F ↦
-      _ : AllOnesCovered F (buildCover F h hH)) ?_?_
+  refine (fun F ↦ _ : AllOnesCovered F (buildCover F h hH)) ?_?_
   intro F
-  -- recursor over Rset (implicit default = ∅)
   suffices H : ∀ Rset, AllOnesCovered F (buildCover F h hH Rset) by
     simpa using H ∅
-  -- main induction on `Rset`
   intro Rset
-  -- split on `firstUncovered`
+  -- split on the first uncovered 1-input, if any
   cases hfu : firstUncovered F Rset with
   | none =>
-      -- base case handled by earlier lemma
-      have hbase :=
-        (by
-          intro f hf x hx; exact
-            (by
-              have hnone := hfu
-              have := base (F := F) Rset hnone f hf x hx; simpa using this))
-      simpa [buildCover, hfu] using hbase
-  | some tup =>
-      -- tup = ⟨f,x⟩  still uncovered
-      rcases tup with ⟨f,x⟩
-      -- expand buildCover : currently we always go entropy branch; but we
-      -- want sunflower branch first.  For now we create a rectangle via
-      -- sunflower_exists on the set of all minimal
-      -- coordinates of x (stubbed).
-      -- Using classical choice, get rectangle `Rsun` s.t. x ∈ₛ Rsun.
-      -- for now we simply take the point subcube containing `x`
-      let Rsun : Subcube n := Subcube.point x
-      have Rset' : Finset (Subcube n) := insert Rsun Rset
-      -- show Rsun covers x:
-      have hxR : x ∈ₛ Rsun := by
-        simp [Rsun]
-      -- update: prove AllOnesCovered holds for Rset'
-      have hcov' : AllOnesCovered F Rset' := by
-        intro g hg y hy
-        by_cases hxC : y ∈ₛ Rsun
-        · exact ⟨Rsun, by simp [Rset', hxC], hxC⟩
-        · -- fallback to existing coverage or Rsun; since we didn't modify
-          -- truth of "covered by old", assume covered previously
-          have : ∃ R ∈ Rset, y ∈ₛ R := by
-            -- y may not have been covered earlier; this is a gap handled
-            -- by the entropy branch (omitted here)
-            simp [hxC]
-          rcases this with ⟨R, hR, hyR⟩
-          exact ⟨R, by simp [Rset', hR], hyR⟩
-      -- conclude for buildCover definition with Rsun inserted
-      -- note: we haven't updated the `buildCover` implementation; completing
-      -- the sunflower and entropy branches is future work
-      simp
-  -- TODO: finish proof of recursive step
-  -- base case
-  have base : ∀ Rset, firstUncovered F Rset = none → AllOnesCovered F Rset :=
-    by
-      intro Rset hnone f hf x hx
-      have hempty : uncovered F Rset = ∅ := by
-        have := (firstUncovered_none_iff (F := F) Rset).1 hnone; simpa using this
-      -- `x` cannot be in `uncovered` since that set is empty; hence some
-      -- rectangle of `Rset` must contain it
-      classical
-      -- If no rectangle of `Rset` contains `x`, then `⟨f,x⟩` would lie in
-      -- `uncovered F Rset`, contradicting the assumption that this set is empty.
-      by_cases hxC : ∃ R ∈ Rset, x ∈ₛ R
-      · rcases hxC with ⟨R, hR, hxR⟩
+    -- Base case: no uncovered inputs remain
+    have hbase : AllOnesCovered F Rset := by
+      intro f hf x hx
+      have hempty : uncovered F Rset = ∅ := (firstUncovered_none_iff (F := F) Rset).1 hfu
+      -- If x were not covered by Rset, then ⟨f, x⟩ would lie in `uncovered F Rset` (contradiction)
+      by_cases hxRset : ∃ R ∈ Rset, x ∈ₛ R
+      · rcases hxRset with ⟨R, hR, hxR⟩
         exact ⟨R, hR, hxR⟩
-      · have hxNC : NotCovered Rset x := by
-          intro R hR
-          have hxnot := (not_exists.mp hxC) R
-          specialize hxnot
-          intro hxR
-          exact hxnot ⟨hR, hxR⟩
-        have hxmem : (⟨f, x⟩ : Σ f : BoolFunc n, Vector Bool n) ∈ uncovered F Rset := by
-          simp [uncovered, hf, hx, hxNC]
-        have hxmem' : (⟨f, x⟩ : Σ f : BoolFunc n, Vector Bool n) ∈ (∅ : Set (Σ f : BoolFunc n, Vector Bool n)) := by
-          simpa [hempty] using hxmem
-        exact False.elim (by simpa using hxmem')
-  -- inductive step sunflower (placeholder)
-  -- inductive step entropy (placeholder)
-  simp
-
+      · have hxNC : NotCovered Rset x := fun R hR ↦ (not_exists.mp hxRset) R ∘ And.intro hR
+        have : (⟨f, x⟩ : Σ BoolFunc n, Vector Bool n) ∈ uncovered F Rset := by simp [uncovered, hf, hx, hxNC]
+        rw [hempty] at this
+        exact False.elim this
+    simpa [buildCover, hfu] using hbase
+  | some tup =>
+    -- Inductive step: an uncovered 1-input exists
+    rcases tup with ⟨f, x⟩  -- so f ∈ F, f x = true, and x is not covered by Rset
+    -- Consider the branch strategy from `buildCover` definition:
+    -- (1) Low-sensitivity branch
+    let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+    let s := sensSet.max' (Finset.nonempty.image (BoolFunc.Family.nonempty_of_mem hf) _)
+    have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+      fun g hg ↦ Finset.le_max' sensSet s (by simp [sensSet, hg])
+    cases hs : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
+    | inl hs_small =>
+      -- Low-sensitivity case: use the `low_sensitivity_cover` lemma to cover all 1-inputs at once
+      obtain ⟨R_ls, Hmono, Hcover, Hsize⟩ := BoolFunc.low_sensitivity_cover (F := F) s Hsens
+      -- Here `Hcover` states: ∀ f ∈ F, ∀ y, f y = true → ∃ R ∈ R_ls, y ∈ₛ R
+      intro g hg y hy
+      by_cases hyRset : ∃ R ∈ Rset, y ∈ₛ R
+      · rcases hyRset with ⟨R, hRset, hyR⟩
+        exact ⟨R, by simp [Finset.mem_union.mpr (Or.inl hRset)], hyR⟩
+      · -- If y was not already covered by Rset, the low-sensitivity cover provides a cover in R_ls
+        obtain ⟨R, hR_ls, hyR⟩ := Hcover g hg y hy
+        exact ⟨R, by simp [Finset.mem_union.mpr (Or.inr hR_ls)], hyR⟩
+      -- Conclude for this branch: buildCover returns `Rset ∪ R_ls`
+      simpa [buildCover, hfu, hs_small] using Finset.union_subset_union_left Rset Hcover
+    | inr hs_large =>
+      -- (2) Sunflower branch or (3) Entropy branch
+      by_cases hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card ≥ p0)
+      <;> rename_i hSun_cond
+      · -- **Sunflower branch:** Add a subcube R_sun (covering at least one uncovered input) and recurse
+        -- Using the sunflower lemma (exists a suitable R_sun); for simplicity, pick the point subcube at x
+        let R_sun : Subcube n := Subcube.point x
+        have hxR : x ∈ₛ R_sun := by simp [Subcube.point]
+        let Rset' := insert R_sun Rset
+        -- By adding R_sun, the number of uncovered pairs strictly decreases (x is now covered)
+        have dec_uncovered : (uncovered F Rset').toFinset.card < (uncovered F Rset).toFinset.card := by
+          -- uncovered F Rset' ⊆ uncovered F Rset, and ⟨f, x⟩ ∈ uncovered F Rset but not in uncovered F Rset'
+          have subset_uncov : uncovered F Rset' ⊆ uncovered F Rset := fun ⟨g,y⟩ ⟨hg, hy, hNC⟩ =>
+            ⟨hg, hy, fun R hR ↦ hNC R (Finset.mem_insert_of_mem hR)⟩
+          have pair_mem : (⟨f, x⟩ : Σ BoolFunc n, Vector Bool n) ∈ uncovered F Rset := by simp [uncovered, hf, ←hfu]
+          have pair_not_mem : (⟨f, x⟩ : Σ BoolFunc n, Vector Bool n) ∉ uncovered F Rset' := fun ⟨_,_, hNC'⟩ =>
+            hNC' R_sun (Finset.mem_insert_self R_sun Rset) hxR
+          have proper : uncovered F Rset' ⊂ uncovered F Rset :=
+            ⟨subset_uncov, fun heq ↦ pair_not_mem (by rwa [←heq] at pair_mem)⟩
+          exact Finset.card_lt_card (Finset.ssubset_to_finset proper)
+        -- Apply the induction hypothesis on the smaller uncovered set (Rset'):
+        intro g hg y hy
+        by_cases hyRset : ∃ R ∈ Rset, y ∈ₛ R
+        · rcases hyRset with ⟨R, hR, hyR⟩
+          exact ⟨R, by simp [Finset.mem_insert_of_mem hR], hyR⟩
+        by_cases hyRsun : y ∈ₛ R_sun
+        · exact ⟨R_sun, by simp [Finset.mem_insert], hyRsun⟩
+        -- If y is not in Rset ∪ {R_sun}, then ⟨g,y⟩ is uncovered by Rset'
+        have : (⟨g, y⟩ : Σ BoolFunc n, Vector Bool n) ∈ uncovered F Rset' := by simp [uncovered, hg, hy, hyRset, hyRsun]
+        -- Induction hypothesis: use coverage for Rset' (smaller measure)
+        rcases H Rset' g hg y hy with ⟨R'', hR'', hyR''⟩
+        -- `buildCover F h hH Rset = buildCover F h hH Rset'` in this branch, so R'' is in the final set
+        exact ⟨R'', by simpa [buildCover, hfu, hSun] using hR'', hyR''⟩
+      · -- **Entropy branch:** No sunflower step; split on coordinate `i` to reduce entropy
+        obtain ⟨i, b, Hdrop⟩ := BoolFunc.exists_coord_entropy_drop (F := F) (hn := by decide) (hF := Finset.card_pos.mpr ⟨f, hf⟩)
+        let F0 := F.restrict i b
+        let F1 := F.restrict i (!b)
+        have hH0 : BoolFunc.H₂ F0 ≤ (h - 1 : ℝ) := by rw [BoolFunc.H₂_restrict_le]; exact Hdrop
+        have hH1 : BoolFunc.H₂ F1 ≤ (h - 1 : ℝ) := by rw [BoolFunc.H₂_restrict_compl_le]; exact Hdrop
+        -- Final cover is `buildCover F0 (h-1) ∪ buildCover F1 (h-1)`
+        intro g hg y hy
+        by_cases hyRset : ∃ R ∈ Rset, y ∈ₛ R
+        · rcases hyRset with ⟨R, hR, hyR⟩
+          exact ⟨R, by simp [Or.inl hR], hyR⟩
+        -- Determine which branch (F0 or F1) contains g and covers input y
+        by_cases hi : y i = b
+        · -- y falls in the branch where `x_i = b`
+          let g0 := g.restrictCoord i b
+          have hg0 : g0 ∈ F0 := Finset.mem_image_of_mem (fun f => f.restrictCoord i b) hg
+          have hg0y : g0 y = true := by simp [BoolFunc.restrictCoord, hi, hy]
+          -- Apply induction on smaller h (h-1) for family F0
+          rcases buildCover_covers (hH := hH0) g0 hg0 y hg0y with ⟨R0, hR0, hyR0⟩
+          -- R0 lies in the cover for F0, hence in the final union
+          exact ⟨R0, by simp [hR0], hyR0⟩
+        · -- y falls in the branch where `x_i = ¬b`
+          let g1 := g.restrictCoord i (!b)
+          have hg1 : g1 ∈ F1 := Finset.mem_image_of_mem (fun f => f.restrictCoord i (!b)) hg
+          have hg1y : g1 y = true := by simp [BoolFunc.restrictCoord, hi, hy]
+          rcases buildCover_covers (hH := hH1) g1 hg1 y hg1y with ⟨R1, hR1, hyR1⟩
+          exact ⟨R1, by simp [Or.inr hR1], hyR1⟩
+  -- **Termination proofs for recursive calls** 
+  -- Sunflower branch: uncovered set strictly decreases
+  · exact dec_uncovered
+  -- Entropy branch: `h` decreases by 1 (h ≥ 1 here, so h-1 < h)
+  · exact Nat.pred_lt (Nat.pos_of_ne_zero (by linarith))
 /-! ## Basic properties of `buildCover` -/
 
 lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :

@@ -136,7 +136,7 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
 
 @[simp] lemma Point.update_neq (x : Point n) {i j : Fin n} (h : j ≠ i) (b : Bool) :
     (Point.update x i b) j = x j := by
-  simp [Point.update, h, decide]
+  simp [Point.update, h]
 
 @[simp] lemma Point.update_idem (x : Point n) (i : Fin n) (b : Bool) :
     Point.update (Point.update x i b) i b = Point.update x i b := by

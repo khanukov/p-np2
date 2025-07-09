@@ -59,9 +59,14 @@ Much of the foundational material (Step 0) is available in print but only partl
 formalised.  Steps 1–3 are active research; the key missing piece is proving a
 rectangular cover of `ACC⁰ ∘ MCSP` tables of size at most `2^{N - N^{\delta}}`.
 Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_drop`. Lemma statements for `low_sensitivity_cover` are in place, and `acc_mcsp_sat.lean` outlines the SAT reduction. The next steps depend on this breakthrough.
-A small `DecisionTree` module with evaluation and size utilities, together with
-the lemma `low_sensitivity_cover_single`, now sketches the decision-tree
-argument for covering smooth functions.
+A small `DecisionTree` module with evaluation and size utilities now also
+provides path handling via `subcube_of_path` and the lemmas
+`path_to_leaf_length_le_depth` and a leaf-count bound `leaf_count_le_pow_depth`.
+Alongside the lemma `low_sensitivity_cover_single`,
+this sketches the decision-tree argument for covering smooth functions.
+Additional modules `collentropy.lean` and `family_entropy_cover.lean` provide
+single-function entropy tools and a bundled `FamilyCover` record extracted from
+`cover.lean`.
 
 This document records the plan for future reference and serves as a pointer for
 contributors interested in the overarching project.

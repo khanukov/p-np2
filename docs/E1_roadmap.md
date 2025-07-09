@@ -64,8 +64,15 @@ theory.
   shows that some coordinate always cuts collision entropy by at least one bit,
   paving the way for a robust splitting strategy.
   A lemma `low_sensitivity_cover` describes how smooth families can be compressed, and the stub `acc_mcsp_sat.lean` sketches the final SAT reduction.
-  A minimal `DecisionTree` API with depth and evaluation utilities together with the lemma `low_sensitivity_cover_single`
-  now outline a decision-tree approach to this cover.
+  A minimal `DecisionTree` API with depth and evaluation utilities now also
+  includes path extraction with `subcube_of_path` and the lemmas
+  `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
+  controlling path lengths and leaf counts.
+  Together with `low_sensitivity_cover_single` this outlines a decision-tree
+  approach to the cover.
+* **Utilities.**  The new files `collentropy.lean` and `family_entropy_cover.lean`
+  collect single-function entropy facts and package the cover from
+  `cover.lean` as a reusable record.
 
 ---
 

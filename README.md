@@ -35,8 +35,15 @@ serves as a record of ongoing progress towards a full argument.
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
   `sunflower_exists`; the numeric counting bound remains open.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
+* `collentropy.lean` – collision entropy of a single Boolean function with
+  basic lemmas such as `H₂Fun_le_one`.
+* `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
+  record extracted from `cover.lean`.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
-* `DecisionTree.lean` – minimal decision-tree datatype with depth, leaf-count and evaluation functions.
+* `DecisionTree.lean` – minimal decision-tree datatype with depth, leaf-count,
+  path extraction, a `subcube_of_path` helper and lemmas
+  `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
+  bounding recorded paths and leaf count.
 * `low_sensitivity_cover.lean` – lemma skeletons using these trees.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `table_locality.lean` – defines the locality property and proves a
@@ -104,12 +111,16 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`. The older variant in `Boolcube.lean` still uses `sorry`. `buildCover` now splits on uncovered inputs via `sunflower_step` or an entropy drop. A formal definition of sensitivity together with the lemma statement `low_sensitivity_cover` has been added. A small `DecisionTree` module now implements a tree datatype with depth, leaf counting and evaluation, and the lemma `low_sensitivity_cover_single` sketches the tree-based approach. `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
+This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  Collision entropy for a single function lives in `collentropy.lean`.  The older variant in `Boolcube.lean` still uses `sorry`.  `buildCover` now splits on uncovered inputs via `sunflower_step` or the entropy drop and `family_entropy_cover.lean` packages the resulting rectangles as a `FamilyCover`.  A formal definition of sensitivity together with the lemma statement `low_sensitivity_cover` has been added.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
 ## Development plan
 
 The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key tasks are:
-1. implement `exists_coord_card_drop` to complement the entropy drop,
-2. finish the `buildCover` correctness proof and the bound `mBound_lt_subexp`,
-3. integrate the decision-tree cover into `low_sensitivity_cover`.
+1. finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
+   complement the proved entropy drop,
+2. complete the `buildCover` correctness proof and establish the bound
+   `mBound_lt_subexp`,
+3. integrate the decision-tree cover into `low_sensitivity_cover`,
+4. expose `FamilyCover` and single-function entropy utilities throughout the
+   codebase.
 Once these are done the lemma `FCE_lemma` will follow.

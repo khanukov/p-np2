@@ -6,4 +6,7 @@ Short list of development tasks reflecting the current repository status.
 - [ ] Complete `buildCover` proofs and show `mBound_lt_subexp`.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
 - [ ] Expand numeric bounds in `bound.lean`.
-- [ ] Provide more decision-tree utilities (leaf subcubes, path handling).
+- [x] Provide more decision-tree utilities (leaf subcubes, path handling).
+- [x] Formalise path length bounds like `path_to_leaf_length_le_depth`.
+- [x] Prove basic leaf-count bound `leaf_count_le_pow_depth`.
+- [ ] Use `collentropy.lean` and `family_entropy_cover.lean` across modules.

@@ -80,6 +80,13 @@ lake env lean --run scripts/smoke.lean
 ```
 which simply checks that the base definitions compile successfully.
 
+For a full consistency check that builds the entire project and runs the smoke
+test in one go, you can use:
+
+```bash
+./scripts/check.sh
+```
+
 ## Experiments
 
 The `experiments/` directory contains Python scripts that enumerate small

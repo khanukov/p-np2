@@ -7,8 +7,10 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic
 import Mathlib.Data.Real.Basic
 import Pnp2.sunflower
+import Pnp2.entropy
 
 open Sunflower
+open BoolFunc
 
 namespace Boolcube
 
@@ -85,13 +87,12 @@ by
 -- Entropy version.  From the cardinal drop we derive a quantitative decrease of
 -- `H₂`.  Using `log₂ (1 - 1/n) ≤ -1 / (n * ln 2)`.
 lemma exists_coord_entropy_drop
-    (F : Family n) (hn : 0 < n) (hF : 0 < F.card) :
+    (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool,
-      H₂ (F.filter fun f ↦ ∃ x : Point n, x i = b) ≤
-        H₂ F - 1 / (n * Real.log 2) :=
-by
-  -- proof omitted
-  sorry
+      H₂ (F.restrict i b) ≤ H₂ F - 1 := by
+  classical
+  simpa using
+    (BoolFunc.exists_coord_entropy_drop (F := F) (hn := hn) (hF := hF))
 
 
 /-!  ### 2.  High‑level cover structure and recursive constructor -/

@@ -225,12 +225,22 @@ noncomputable def sunflowerSubcube {n : ℕ}
   val := fun i _ => x i,
   sound := by intro i hi; simp }
 
+-- Points whose supports contain `C` automatically lie in `sunflowerSubcube C x`
 lemma sunflowerSubcube_subset {n : ℕ} {C : Petal n} {x : Point n}
-    {pts : Finset (Point n)} (hpts : ∀ p ∈ pts, C ⊆ Boolcube.support p) :
+    {pts : Finset (Point n)}
+    (hpts : ∀ p ∈ pts, C ⊆ Boolcube.support p)
+    (hx : ∀ i ∈ C, x i = true) :
     pts ⊆ (sunflowerSubcube C x).toSubcube := by
   classical
   intro p hp
-  simp [sunflowerSubcube] at hp
+  have hpC : ∀ i ∈ C, p i = true := by
+    intro i hi
+    have : i ∈ Boolcube.support p := hpts p hp hi
+    simpa [Boolcube.support, Finset.mem_filter] using this
+  intro i hi
+  have := hpC i hi
+  have hx := hx i hi
+  simp [sunflowerSubcube, this, hx]
 
 namespace BuildCoverStep
 

@@ -1,12 +1,12 @@
 /-
-  src/low_sensitivity.lean
+  Pnp2/low_sensitivity.lean
   Доказательство покрытия семейства низкой чувствительности (скелет).
 
   This file sketches an alternative approach to covering a low sensitivity
   family by a small set of subcubes.  It mirrors the high level discussion
   from the accompanying notes but leaves the core arguments as `sorry`.
 -/
-import Mathlib.Data.Finset
+import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Tactic
 import Pnp2.DecisionTree

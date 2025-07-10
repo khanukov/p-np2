@@ -71,13 +71,16 @@ uncovered functions is large, the classical sunflower lemma yields a
 subcube covering a positive fraction of them.  The precise constants
 are irrelevant here; we only record the existence of such a rectangle.
 Formal details are deferred. -/
+-- This lemma implements step A-3 of the `buildCover` algorithm,
+-- extracting a subcube that simultaneously covers many functions.
+
 lemma sunflower_step
     (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p) :
-    ∃ (R : Subcube n),
-      (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t ∧ 1 ≤ R.dimension := by
+  ∃ (R : Subcube n),
+    (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t ∧ 1 ≤ R.dimension := by
   classical
   -- Build the family of essential supports of functions in `F`.
   let 𝓢 : Finset (Finset (Fin n)) := Family.supports F
@@ -102,40 +105,29 @@ lemma sunflower_step
       have hA' := h𝓣sub hA
       simpa using (Family.mem_supports.mp hA')
     choose f hfF hfSupp using exists_f
-  ·
     -- (a) main counting inequality
     have h_filter_ge : (F.filter fun f ↦ ∀ x, x ∈ₛ R → f x = true).card ≥ t := by
-      -- the sets in `hT` have size `t` and are pairwise distinct, and for
-      -- each `A ∈ hT` we chose a unique function `f_A`.
-      have h_inj : (Finset.image (fun A : Finset (Fin n) => f A (by
-          have : A ∈ hT := by
-            -- from `A ∈ T` we know it belongs to the original family
-            have : A ∈ (Family.supports F) := hsub (by
-              have : A ∈ hT := by
-                -- direct from the enumeration we know `A ∈ hT`
-                exact ‹A ∈ hT›)
-            simpa using this
-        ) hT).card = t := by
-        -- supports of distinct functions are disjoint, hence the image is
-        -- injective and the cardinality is preserved
+      -- the sets in `𝓣` have size `t` and are pairwise distinct, and for each
+      -- `A ∈ 𝓣` we chose a unique function `f_A`.
+      have h_inj :
+          (Finset.image (fun A : Finset (Fin n) => f A (by
+            have : A ∈ 𝓣 := by exact ‹A ∈ 𝓣›)
+            ) 𝓣).card = t := by
         have h_inj_aux :
             Function.Injective (fun A : Finset (Fin n) =>
-              f A (by
-                have : A ∈ hT := by
-                  -- see above
-                  exact ‹A ∈ hT›))
-          := by
-            intro A1 A2 h_eq
-            have : support (f A1 _) = support (f A2 _) := by
-              have h1 : support (f A1 _) = A1 := hfSupp _ _ _
-              have h2 : support (f A2 _) = A2 := hfSupp _ _ _
-              simpa [h1, h2] using congrArg support h_eq
-            simpa [hfSupp _ _ _, hfSupp _ _ _] using this
+              f A (by exact ‹A ∈ 𝓣›)) := by
+          intro A1 A2 h_eq
+          have : support (f A1 _) = support (f A2 _) := by
+            have h1 : support (f A1 _) = A1 := hfSupp _ (by exact ‹A1 ∈ 𝓣›)
+            have h2 : support (f A2 _) = A2 := hfSupp _ (by exact ‹A2 ∈ 𝓣›)
+            simpa [h1, h2] using congrArg support h_eq
+          simpa [hfSupp _ (by exact ‹A1 ∈ 𝓣›), hfSupp _ (by exact ‹A2 ∈ 𝓣›)]
+            using this
         simpa [Finset.card_image] using
           (Finset.card_image_of_injective _ h_inj_aux)
       -- now show that every chosen `f_A` passes the filter
       have h_sub :
-          (Finset.image (fun A : Finset (Fin n) => f A _) hT)
+          (Finset.image (fun A : Finset (Fin n) => f A _) 𝓣)
             ⊆ F.filter (fun f ↦ ∀ x, x ∈ₛ R → f x = true) := by
         intro g hg
         rcases Finset.mem_image.1 hg with ⟨A, hA, rfl⟩
@@ -144,57 +136,35 @@ lemma sunflower_step
           intro x hx
           -- on the core `K` the values of `x` are fixed as in `x₀`, while
           -- outside the core the set `A` contains no coordinates of `x₀`.
-          -- Therefore `support ⊆ K ∪ (petal)` and the function evaluates to
-          -- true.  (The project already has
-          -- `Subcube.monochromaticForSupport`.)
-          have : x.restrict (support (f A _)) = x₀.restrict _ := by
-            -- since `support f_A = A` and `K ⊆ A`, the two points agree on the
-            -- support
+          have : x.restrict (support (f A _)) = x₀.restrict := by
             ext i hi
             by_cases hKi : i ∈ K
-            · -- `i ∈ K` ⇒ by definition `x₀ i = false = x i`
-              simp [x₀, hKi] at *
-            · -- `i` in the petal ⇒ the coordinate is not in `K`
-              have : i ∈ A := by
-                -- from `hi` and `support f = A`
-                simpa [hfSupp _ _ _] using hi
-              -- the coordinate can be arbitrary, yet the function is still true
+            · simp [x₀, hKi] at hx
+            · have : i ∈ A := by simpa [hfSupp _ hA] using hi
               simpa using rfl
-          have : (f A _) x = (f A _) x₀ := by
-            have := (BoolFunc.eval_eq_of_agree_on_support (f:=f A _) (x:=x) (y:=x₀))
-              (by
-                intro i hi
-                simpa using congrArg (fun t : Bool => t) (this i hi))
-            simpa using this
-          simpa [Agreement.Subcube.fromPoint, hx] using
-            by
-              have : (f A _) x₀ = true := by
-                -- choose a point on the support ⇒ the function is true
-                have h_some := BoolFunc.exists_true_on_support
-                  (f:=f A _) (by
-                    simp [hfSupp _ _ _])
-                rcases h_some with ⟨y, hy⟩
-                simpa using hy
-              simpa [this] using this
-        have h_card_le :=
-          Finset.card_le_of_subset h_sub
+          have : (f A _) x = (f A _) x₀ :=
+            BoolFunc.eval_eq_of_agree_on_support (f := f A _) (x := x) (y := x₀)
+              (by intro i hi; simpa using congrArg (fun t => t) (this i hi))
+          have hx0 : (f A _) x₀ = true := by
+            obtain ⟨y, hy⟩ := BoolFunc.exists_true_on_support
+              (f := f A _) (by simpa [hfSupp _ hA])
+            simpa using hy
+          simpa [Agreement.Subcube.fromPoint, hx, this] using hx0
+        have h_card_le := Finset.card_le_of_subset h_sub
         simpa using (le_of_eq_of_le h_inj).trans h_card_le
       exact h_filter_ge
+  ·
     -- `R` has dimension `n - K.card`.  The sunflower lemma ensures `K` is a
     -- proper subset of each support in the sunflower, so `K.card < n` and the
     -- dimension is positive.
     have h_dim : 1 ≤ n - K.card := by
-      -- From the sunflower lemma we know `K ⊂ A` for some `A ∈ 𝓣`.
-      -- In particular `K.card < n` since every support lies in `Fin n`.
       have h_lt : K.card < n := by
         obtain ⟨A, hA𝓣, hKA⟩ := hT
         have hlt : K.card < A.card := Finset.card_lt_card hKA
         have hA_le : A.card ≤ n := by
-          have : A ⊆ Finset.univ := by
-            intro i hi; exact Finset.mem_univ _
+          have : A ⊆ Finset.univ := by intro i hi; exact Finset.mem_univ _
           exact Finset.card_le_of_subset this
         exact hlt.trans_le hA_le
-      -- `Nat.sub_pos_of_lt` then gives `0 < n - K.card` and so `1 ≤ n - K.card`.
       have : 0 < n - K.card := Nat.sub_pos_of_lt h_lt
       exact Nat.succ_le_of_lt this
     simpa [R, Subcube.dimension_fromPoint] using h_dim

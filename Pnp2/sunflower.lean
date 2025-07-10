@@ -183,3 +183,98 @@ lemma sunflower_exists_of_fixedSize
 end Sunflower
 
 
+
+/-! ### Additional constructions for the cover algorithm -/
+
+open Boolcube
+
+abbrev Petal (n : ℕ) := Finset (Fin n)
+
+structure SunflowerFam (n t : ℕ) where
+  petals : Finset (Petal n)
+  tsize  : petals.card = t
+  core   : Petal n
+  sub_core : ∀ P ∈ petals, core ⊆ P
+  pairwise_core :
+    ∀ P₁ ∈ petals, ∀ P₂ ∈ petals, P₁ ≠ P₂ → P₁ ∩ P₂ = core
+
+namespace SunflowerFam
+
+variable {n w t : ℕ}
+
+/-- Existence of a sunflower family, wrapping the Mathlib lemma. -/
+lemma exists_of_large_family
+    {F : Finset (Petal n)}
+    (hcard : ∀ S ∈ F, S.card = w)
+    (hbig : t ≥ 2 → F.card > Nat.factorial (t-1) * w ^ t) :
+    ∃ S : SunflowerFam n t, S.petals ⊆ F := by
+  classical
+  have := Finset.exists_sunflower_of_large_card (s:=F) (by intro; exact hcard _ ‹_›)
+    (by intro ht; exact hbig ht)
+  rcases this with ⟨pet, hsub, core, hsize, hpair, hsubcore⟩
+  refine ⟨⟨pet, hsize, core, ?_, ?_⟩, hsub⟩
+  · intro P hP; exact hsubcore P hP
+  · intro P₁ h₁ P₂ h₂ hne; exact hpair P₁ h₁ P₂ h₂ hne
+
+end SunflowerFam
+
+/-- Fix the coordinates of `C` to match `x`. -/
+noncomputable def sunflowerSubcube {n : ℕ}
+    (C : Petal n) (x : Point n) : Subcube n :=
+{ coords := C,
+  val := fun i _ => x i,
+  sound := by intro i hi; simp }
+
+-- Points whose supports contain `C` automatically lie in `sunflowerSubcube C x`
+lemma sunflowerSubcube_subset {n : ℕ} {C : Petal n} {x : Point n}
+    {pts : Finset (Point n)}
+    (hpts : ∀ p ∈ pts, C ⊆ Boolcube.support p)
+    (hx : ∀ i ∈ C, x i = true) :
+    pts ⊆ (sunflowerSubcube C x).toSubcube := by
+  classical
+  intro p hp
+  have hpC : ∀ i ∈ C, p i = true := by
+    intro i hi
+    have : i ∈ Boolcube.support p := hpts p hp hi
+    simpa [Boolcube.support, Finset.mem_filter] using this
+  intro i hi
+  have := hpC i hi
+  have hx := hx i hi
+  simp [sunflowerSubcube, this, hx]
+
+namespace BuildCoverStep
+
+open Boolcube
+
+variable {n w t : ℕ}
+variable (U : Finset (Point n))
+variable (F : Finset (Point n → Bool))
+variable (hw : ∀ f ∈ F, (Boolcube.support f).card = w)
+variable (hu : U.card > Nat.factorial (t-1) * w ^ t)
+
+/-- Perform one sunflower step, returning the core and the subcube. -/
+noncomputable def sunflowerStep : Σ' (C : Petal n), Subcube n := by
+  classical
+  let fam : Finset (Petal n) :=
+    U.image fun x => Boolcube.support (F.choose x (by
+      have : F.Nonempty := by classical; simpa using F.nonempty
+      simpa))
+  have hcard : ∀ S ∈ fam, S.card = w := by
+    intro S hS
+    rcases Finset.mem_image.1 hS with ⟨x, hx, rfl⟩
+    have hxF : (F.choose x _) ∈ F := by classical simpa
+    simpa using hw _ hxF
+  have hbig : t ≥ 2 → fam.card > Nat.factorial (t-1) * w ^ t := by
+    intro ht
+    have hle : fam.card ≥ U.card := Finset.card_image_le
+    have := lt_of_le_of_lt hle hu
+    exact this
+  classical
+  obtain ⟨S, hsub⟩ := SunflowerFam.exists_of_large_family (n:=n) (w:=w) (t:=t) hcard hbig
+  refine ⟨S.core, sunflowerSubcube S.core (U.choose ?_ ?_)⟩
+  · simpa using U.nonempty_of_card_ne_zero (ne_of_gt hu.ne')
+  · simpa using U.nonempty_of_card_ne_zero (ne_of_gt hu.ne')
+
+end BuildCoverStep
+
+

@@ -239,7 +239,9 @@ partial def buildCover (F : Family n) (h : ℕ)
           -- **(2) Sunflower branch:** check if a sunflower-based step can remove a large fraction of inputs.
           if hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card ≥ p0) then
             /- *Placeholder:* In a real implementation, `someBound` and `p0` would be chosen
-               to satisfy the classical sunflower threshold. If so, we extract a subcube covering ≥ t uncovered points. -/
+               to satisfy the classical sunflower threshold.  Here we would
+               call `BuildCoverStep.sunflowerStep` to obtain a subcube covering
+               many uncovered points.  -/
             let ⟨R_sun, hCoverFrac, hDim⟩ :=
               sunflower_step (F := F) p0 t h_p0_pos h_t_ge2 h_sun_cond h_support_eq_p0
             /- `sunflower_step` guarantees:

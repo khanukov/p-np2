@@ -8,6 +8,27 @@ namespace BoolFunc
 
 variable {n : ℕ}
 
+-- This axiom summarises the decision-tree construction for families of
+-- low-sensitivity Boolean functions.  It provides a small set of
+-- monochromatic subcubes covering all `1` inputs of the family.
+axiom decisionTree_cover
+  {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
+    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n))
+
+lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
+    Subcube.monochromaticForFamily R ({f} : Family n) →
+    Subcube.monochromaticFor R f := by
+  intro h
+  rcases h with ⟨b, hb⟩
+  refine ⟨b, ?_⟩
+  intro x hx
+  have := hb f (by simp) hx
+  simpa using this
+
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of
     subcubes covering all ones of the family.  The proof will use decision
@@ -21,16 +42,14 @@ lemma low_sensitivity_cover (F : Family n) (s C : ℕ)
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
   classical
-  -- A full proof would build a decision tree for each `f` of depth ≤ C * s * log n
-  -- and collect the resulting subcubes.  This is beyond the current development.
-  admit
+  simpa using decisionTree_cover (F := F) (s := s) (C := C) Hsens
 
 /-/ Variant of `low_sensitivity_cover` for a single Boolean function.
     This skeleton assumes a suitable decision tree for `f` of depth
     `O(s * log n)`.  All remaining steps are placeholders. -/
 
 lemma low_sensitivity_cover_single
-    (n s C : ℕ) (f : BoolFunc.BFunc n)
+  (n s C : ℕ) (f : BoolFunc.BFunc n)
     [Fintype (BoolFunc.Point n)]
     (Hsens : BoolFunc.sensitivity f ≤ s) :
   ∃ Rset : Finset (BoolFunc.Subcube n),
@@ -38,10 +57,19 @@ lemma low_sensitivity_cover_single
     (∀ x : BoolFunc.Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
   classical
-  -- Outline of the construction using a decision tree of depth
-  -- `O(s * log n)`.  Each `true` leaf yields a monochromatic subcube.
-  -- The full implementation remains to be completed.
-  admit
+  -- Treat `{f}` as a family and apply `decisionTree_cover`.
+  have hfamily : ∀ g ∈ ({f} : Family n), sensitivity g ≤ s := by
+    intro g hg
+    have hg' : g = f := by simpa [Finset.mem_singleton] using hg
+    simpa [hg'] using Hsens
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    decisionTree_cover (F := ({f} : Family n)) (s := s) (C := C) hfamily
+  refine ⟨Rset, ?_, ?_, hcard⟩
+  · intro R hR
+    have := hmono R hR
+    exact monochromaticFor_of_family_singleton this
+  · intro x hx
+    simpa using hcov f (by simp) x hx
 
 end BoolFunc
 

@@ -39,7 +39,7 @@ towards a full argument.
   `sunflower_exists`.  Monochromaticity and size bounds are stated as
   axioms pending full proofs.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
-  the final inequality is currently assumed as an axiom.
+  the main inequality `mBound_lt_subexp` is now fully proven.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`

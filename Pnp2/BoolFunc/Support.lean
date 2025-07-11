@@ -29,13 +29,18 @@ lemma eval_eq_of_agree_on_support
 lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
     ∃ x, f x = true := by
   classical
-  -- iterate over all points, looking for one where flipping a bit changes the
-  -- value from `0` to `1`
-  by_contra hnone
-  push_neg at hnone
-  have : support f = ∅ := by
-    -- if no bit can be flipped on any point, the support is empty
-    ext i; simp [support, hnone]
-  exact h this
+  rcases Finset.nonempty_iff_ne_empty.2 h with ⟨i, hi⟩
+  rcases mem_support_iff.mp hi with ⟨x, hx⟩
+  cases hfx : f x
+  · have : f (Point.update x i (!x i)) = true := by
+      have hneq := hx
+      simp [hfx] at hneq
+      cases hupdate : f (Point.update x i (!x i)) with
+      | true => simpa [hupdate]
+      | false =>
+          have : False := by simpa [hupdate] using hneq
+          contradiction
+    exact ⟨Point.update x i (!x i), this⟩
+  · exact ⟨x, by simpa [hfx]⟩
 
 end BoolFunc

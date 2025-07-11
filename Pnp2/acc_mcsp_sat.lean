@@ -5,8 +5,7 @@
 -- This module gathers a few definitions and lemma stubs that would
 -- connect the cover from the Family Collision–Entropy Lemma
 -- (Lemma B) with a subexponential SAT algorithm.
--- All statements are currently placeholders; the proofs are
--- omitted with `sorry`.
+-- All statements are currently placeholders and the proofs are omitted.
 
 import Pnp2.BoolFunc
 import Pnp2.canonical_circuit

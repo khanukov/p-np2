@@ -12,9 +12,9 @@ Family Collision‑Entropy Lemma:
 
 The file is intentionally **isolated** from the combinatorial logic:
 its only imports are earlier modules for the *definitions* of `mBound`
-and `coverFamily`.  All non‑trivial proofs are left as `sorry` (milestone
-**F**), but the *statements* are final and can be used by subsequent
-documentation or tests.
+and `coverFamily`.  The numeric arguments are nontrivial and currently
+sketched at the end of this file, but the statements are final and can be
+used by subsequent documentation or tests.
 -/
 
 import Pnp2.cover

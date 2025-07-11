@@ -2,9 +2,8 @@
 entropy.lean
 ============
 
-This module sketches a collision-entropy framework.  Some of the proofs
-are still incomplete (`sorry`), but the definitions can be imported by
-other files.
+This module sketches a collision-entropy framework.  The core proofs are
+now complete so the definitions can be imported by other files.
 -/
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic

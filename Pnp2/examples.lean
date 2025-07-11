@@ -9,14 +9,13 @@ we illustrate every core definition (`Point`, `BFunc`, `Subcube`, …),
 show how to build tiny test families, and demonstrate automatic facts that
 already follow from the (still partial!) library.
 
-> **Important**  
-> Many of the theorems we rely on (`EntropyDrop`, `sunflower_exists`,
-> `cover_exists`, …) are currently backed by `sorry`
-> placeholders.  Consequently, any *computational* content that depends on
-> them is *opaque* — Lean knows *some* object exists but cannot reveal or
-> evaluate it.  Examples below that invoke such lemmas are marked
-> `/- non‑computable demo -/` and serve purely as *type‑checking*
-> witnesses rather than concrete data dumps.
+> **Important**
+> Several key lemmas (`EntropyDrop`, `sunflower_exists`, `cover_exists`, …)
+> are still assumed as axioms rather than proved constructively.
+> Consequently any computation depending on them is *opaque* — Lean knows
+> that some object exists but cannot reduce it.  Examples invoking such
+> lemmas are marked `/- non‑computable demo -/` and serve purely as
+> *type‑checking* witnesses rather than concrete data dumps.
 -/
 
 import Pnp2.BoolFunc
@@ -125,10 +124,10 @@ end Subcubes
 section CoverDemo
 
 /-
-`coverFamily` is **non‑computable** (depends on `classical.choice`
-applied to an existential proven via a `sorry`).  We therefore cannot
-`#eval` the actual set of rectangles, but we *can* ask Lean to confirm
-that the *type‑level guarantees* hold.
+`coverFamily` is **non‑computable** because it relies on `classical.choice`
+and several axiomatic lemmas.  We therefore cannot `#eval` the actual set
+of rectangles, but we *can* ask Lean to confirm that the type‑level
+guarantees hold.
 
 Take `h = 5` (any `h ≥ 2` suffices since `H₂(F₃) < 2`).                     -/
 def h₀ : ℕ := 5
@@ -247,7 +246,7 @@ end SunflowerCheck
 * “Opaque” objects (rectangles from `coverFamily`, cores from the
   sunflower lemma, …) behave exactly as promised by their respective
   spec lemmas, even though we cannot inspect them yet.
-* Once the `sorry` placeholders are replaced by full proofs,
+* Once the axiomatic lemmas are fully proved,
   **no change** in this file will be required:
   all `#eval` lines will still work (possibly printing concrete data
   instead of `?m_123`), and the logical examples will remain valid.

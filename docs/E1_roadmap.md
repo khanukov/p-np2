@@ -45,7 +45,10 @@ The file `cover.lean` keeps track of uncovered inputs and recurses via
 `firstUncovered`.  The classical lemma `sunflower_exists` (together with
 the `RSpread` notion of scattered families) now provides the sunflower
 step whenever enough **distinct supports** remain, producing a
-positive-dimensional subcube.  The entropy branch continues to use
+positive-dimensional subcube.  A corrected monotonicity lemma for
+`RSpread` states that larger parameters imply smaller ones when the base
+is positive, and new helper lemmas reformulate the bounds and cover the
+trivial case `R = 1`.  The entropy branch continues to use
 `exists_coord_entropy_drop` to split on a coordinate that decreases
 collision entropy.  The numeric counting argument is still incomplete,
 but the previously stubbed `coreAgreement` lemma in `Agreement.lean` has

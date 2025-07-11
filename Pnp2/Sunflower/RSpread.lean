@@ -16,18 +16,67 @@ def RSpread (R : ℝ) (A : Finset (Finset α)) : Prop :=
     ((A.filter fun T ↦ S ⊆ T).card : ℝ) / A.card ≤
       Real.rpow R (-(S.card : ℝ))
 
-lemma RSpread.mono  {R₁ R₂ : ℝ} {A : Finset (Finset α)}
-    (h : RSpread R₁ A) (hRR : R₁ ≤ R₂) : RSpread R₂ A := by
+lemma RSpread.mono {R₁ R₂ : ℝ} {A : Finset (Finset α)}
+    (h : RSpread R₁ A) (hRR : R₂ ≤ R₁) (hpos : 0 < R₂) : RSpread R₂ A := by
   rcases h with ⟨hA, hcond⟩
   refine ⟨hA, ?_⟩
   intro S
-  have := hcond S
-  calc
-    ((A.filter _).card : ℝ) / A.card ≤ Real.rpow R₁ (-(S.card : ℝ)) := this
-    _ ≤ Real.rpow R₂ (-(S.card : ℝ)) := by
-      have hpow : (-(S.card : ℝ)) ≤ 0 := by
-        have : 0 ≤ (S.card : ℝ) := by exact_mod_cast (Nat.zero_le _)
-        linarith
-      gcongr
-      exact hRR
+  have hprob := hcond S
+  have hz : (-(S.card : ℝ)) ≤ 0 := by
+    have : 0 ≤ (S.card : ℝ) := by exact_mod_cast (Nat.zero_le _)
+    linarith
+  have hmono :=
+    (Real.rpow_le_rpow_of_nonpos (hx := hpos) (hxy := hRR) (hz := hz))
+  exact hprob.trans hmono
+
+
+lemma RSpread.card_bound {R : ℝ} {A : Finset (Finset α)}
+    (h : RSpread R A) :
+    ∀ S : Finset α,
+      ((A.filter fun T ↦ S ⊆ T).card : ℝ) ≤
+        Real.rpow R (-(S.card : ℝ)) * A.card := by
+  classical
+  intro S
+  have hpos : (0 : ℝ) < A.card := by
+    have : 0 < A.card := Finset.card_pos.mpr h.1
+    exact_mod_cast this
+  have hcond := h.2 S
+  have := (div_le_iff hpos).mp hcond
+  simpa [mul_comm] using this
+
+lemma RSpread.one_of_nonempty {A : Finset (Finset α)}
+    (hA : A.Nonempty) :
+    RSpread (R:=1) A := by
+  refine ⟨hA, ?_⟩
+  intro S
+  have hsubset : (A.filter fun T ↦ S ⊆ T) ⊆ A := by
+    exact Finset.filter_subset _
+  have hle_nat : (A.filter fun T ↦ S ⊆ T).card ≤ A.card :=
+    Finset.card_le_of_subset hsubset
+  have hpos_nat : 0 < A.card := Finset.card_pos.mpr hA
+  have hpos : 0 < (A.card : ℝ) := by exact_mod_cast hpos_nat
+  have hle_real : ((A.filter fun T ↦ S ⊆ T).card : ℝ) ≤ A.card := by
+    exact_mod_cast hle_nat
+  have hdiv_le :
+      ((A.filter fun T ↦ S ⊆ T).card : ℝ) / A.card ≤ A.card / A.card := by
+    have hnonneg : 0 ≤ (A.card : ℝ) := le_of_lt hpos
+    exact div_le_div_of_le_of_nonneg hle_real hnonneg
+  have hcard_div : (A.card : ℝ) / A.card = 1 := by
+    have hne : (A.card : ℝ) ≠ 0 := by exact_mod_cast (ne_of_gt hpos_nat)
+    field_simp [hne]
+  have hprob_le_one : ((A.filter fun T ↦ S ⊆ T).card : ℝ) / A.card ≤ 1 := by
+    simpa [hcard_div] using hdiv_le
+  simpa using hprob_le_one
+
+lemma RSpread.card_filter_le {R : ℝ} {A : Finset (Finset α)}
+    (h : RSpread R A) (S : Finset α) :
+    ((A.filter fun T ↦ S ⊆ T).card : ℝ) ≤
+      A.card * Real.rpow R (-(S.card : ℝ)) := by
+  classical
+  have hpos : 0 < (A.card : ℝ) := by
+    have hc : 0 < A.card := Finset.card_pos.mpr h.1
+    exact_mod_cast hc
+  have hbound := h.2 S
+  have := (div_le_iff hpos).1 hbound
+  simpa [mul_comm] using this
 

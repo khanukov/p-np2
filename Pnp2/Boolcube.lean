@@ -56,6 +56,13 @@ namespace Subcube
   classical
   simp [Subcube.dim, Subcube.support]
 
+@[simp] lemma monochromatic_point (x : Point n) (f : BoolFun n) :
+    Subcube.monochromaticFor (Subcube.point (n := n) x) f := by
+  refine ⟨f x, ?_⟩
+  intro y hy
+  have hy' : y = x := (Subcube.mem_point_iff (x := x) (y := y)).1 hy
+  simpa [hy']
+
 end Subcube
 
 abbrev BoolFun (n : ℕ) := Point n → Bool abbrev Family  (n : ℕ) := Finset (BoolFun n)

@@ -425,4 +425,26 @@ noncomputable
 def coverFamily (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
   Classical.choice (cover_exists (F := F) (h := h) hH)
 
+lemma coverFamily_spec (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (∀ R ∈ coverFamily (F := F) (h := h) hH,
+        Subcube.monochromaticForFamily R F) ∧
+      AllOnesCovered F (coverFamily (F := F) (h := h) hH) ∧
+      (coverFamily (F := F) (h := h) hH).card ≤ mBound n h := by
+  classical
+  simpa [coverFamily] using
+    Classical.choose_spec (cover_exists (F := F) (h := h) hH)
+
+lemma coverFamily_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ coverFamily (F := F) (h := h) hH,
+      Subcube.monochromaticForFamily R F :=
+  (coverFamily_spec (F := F) (h := h) hH).1
+
+lemma coverFamily_spec_cover (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    AllOnesCovered F (coverFamily (F := F) (h := h) hH) :=
+  (coverFamily_spec (F := F) (h := h) hH).2.1
+
+lemma coverFamily_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (F := F) (h := h) hH).card ≤ mBound n h :=
+  (coverFamily_spec (F := F) (h := h) hH).2.2
+
 end Cover

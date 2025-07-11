@@ -59,7 +59,9 @@ theory.
 * **Theory block.** Deepen the study of items B‑1–B‑3, including connections to existing results on canonical forms and description bounds.
 * **Algorithm block.** Implement meet-in-the-middle and fast enumeration (B‑4) for small values of `n`.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
-  The Lean code now defines `buildCover` in `cover.lean`, tracking uncovered inputs and applying either `sunflower_step` or `exists_coord_entropy_drop`.  Completeness proofs and precise counts are still pending.
+  The Lean code now defines `buildCover` in `cover.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
+  The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
+  Preliminary proofs `buildCover_mono` and `buildCover_card_bound` record the recursion invariants.  Completeness proofs and precise counts are still pending.
 * **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
   shows that some coordinate always cuts collision entropy by at least one bit,
   paving the way for a robust splitting strategy.

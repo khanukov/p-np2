@@ -112,7 +112,16 @@ Given the historical difficulty of the $P \neq NP$ problem, we have been \textbf
 \begin{itemize}
     \item We have formalized key components of the proof. For example, the \emph{Entropy-Drop Lemma} (\texttt{exists\_coord\_entropy\_drop}) has been fully proven in Lean, meaning Lean has verified that some input bit can always be found that reduces the family’s entropy by at least 1. The classical \emph{Sunflower Lemma} has also been formalized in our development:\cite{ER60, Juk12}. The \emph{Core Agreement Lemma} (ensuring that large intersections yielding subcubes are monochromatic) is proven as well. We have implemented a recursive procedure for the cover construction in Lean (\texttt{cover.lean}) and proven it terminates (using well-founded recursion).
     \item Some parts of the proof are still marked with placeholders (\texttt{sorry} or admitted lemmas) in the Lean files, but these are being actively completed. In particular, the final verification that the constructed cover indeed has size $\le 2^{n/100}$ (the \emph{size bound lemma} in \texttt{bound.lean}) and that it covers all 1-points for \emph{every} $f \in F$ (the \emph{coverage lemma}) are outlined but awaiting full formal proofs. These are technical but straightforward given the earlier lemmas. Additionally, the connection of the FCE-Lemma to the MCSP lower bound is sketched in a Lean file (\texttt{acc\_mcsp\_sat.lean}) and is next on the agenda to formalize fully.
-    \item A recent \emph{status update (July 2025)} in our project notes that \emph{“the Lean codebase now includes the full proof of \texttt{exists\_coord\_entropy\_drop}, a \texttt{sunflower\_step} lemma for extracting subcubes, and a working recursive cover builder... The core agreement lemma has also been formalized in full... The classical sunflower lemma has been completed. Completing the remaining pieces, along with the counting argument, remains the next milestone.”} In other words, no insurmountable obstacles remain; it’s now a matter of finishing the formal proofs for the last few steps.
+    \item A recent \emph{status update (July 2025)} in our project notes states
+    that \emph{“the Lean codebase now includes proofs of
+    \texttt{exists\_coord\_entropy\_drop} and its cardinal analogue
+    \texttt{exists\_coord\_card\_drop}, a tested \texttt{sunflower\_step}
+    for extracting subcubes, and a working recursive cover builder with
+    preliminary lemmas \texttt{buildCover\_mono} and
+    \texttt{buildCover\_card\_bound}.  The core agreement lemma and the
+    classical sunflower lemma are complete.  Finishing the remaining bounds
+    is the next milestone.”} In other words, no insurmountable obstacles remain;
+    it’s now a matter of finishing the formal proofs for the last few steps.
 \end{itemize}
 
 The formalization effort not only bolsters confidence in the result but also sets a precedent – it demonstrates that \textbf{complexity theory proofs can be tackled with proof assistants}. This is significant because such proofs often involve combinatorial arguments that span multiple domains (information theory, combinatorics, algebra). Our work shows these can be modularized and verified mechanically. Looking forward, once the formal proof is 100% complete, we plan to release the Lean proof scripts alongside the paper.

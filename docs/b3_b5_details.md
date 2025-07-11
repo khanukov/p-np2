@@ -64,8 +64,11 @@ records uncovered inputs explicitly and splits on them.  A new lemma
 `sunflower_step` extracts a monochromatic subcube whenever a large set of
 small-support functions with **distinct supports** remains uncovered,
 while the entropy step now splits on a coordinate whose restriction
-reduces entropy by one bit.  Adapting the remaining counting
-arguments to entire families remains an open task.
+reduces entropy by one bit.  The cardinal lemma `exists_coord_card_drop`
+has been proved, and tests for `sunflower_step` ensure its behaviour.
+Preliminary proofs `buildCover_mono` and `buildCover_card_bound` outline
+the recursion invariants.  Adapting the remaining counting arguments to
+entire families remains an open task.
   Whenever an uncovered pair is found the family must contain at least
   two functions, so the entropy split is well-defined.  The opposite
   branch of the split also satisfies the same entropy bound because

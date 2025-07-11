@@ -12,4 +12,5 @@ Short list of development tasks reflecting the current repository status.
 - [x] Prove basic leaf-count bound `leaf_count_le_pow_depth`.
 - [x] Remove outdated sunflower branch placeholder in `Boolcube.buildCover`.
 - [x] Drop obsolete note about `sorry` usage in `Boolcube.lean`.
+- [x] Add `AllOnesCovered.union` helper lemma to simplify coverage proofs.
 - [ ] Use `collentropy.lean` and `family_entropy_cover.lean` across modules.

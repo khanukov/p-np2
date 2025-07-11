@@ -41,7 +41,8 @@ towards a full argument.
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
   `sunflower_exists`.  Monochromaticity and size bounds are stated as
-  axioms pending full proofs.
+  axioms pending full proofs.  A helper lemma `AllOnesCovered.union`
+  now abstracts the union step in the coverage proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is now fully proven.
 * `collentropy.lean` – collision entropy of a single Boolean function with

@@ -257,6 +257,16 @@ lemma AllOnesCovered.superset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   rcases h₁ f hf x hx with ⟨R, hR, hxR⟩
   exact ⟨R, hsub hR, hxR⟩
 
+lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : AllOnesCovered F R₁) (h₂ : AllOnesCovered F R₂) :
+    AllOnesCovered F (R₁ ∪ R₂) := by
+  intro f hf x hx
+  by_cases hx1 : ∃ R ∈ R₁, x ∈ₛ R
+  · rcases hx1 with ⟨R, hR, hxR⟩
+    exact ⟨R, by simpa [Finset.mem_union] using Or.inl hR, hxR⟩
+  · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
+    exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
+
 
 lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered F (buildCover F h hH) := by

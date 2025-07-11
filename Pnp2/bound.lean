@@ -141,8 +141,10 @@ lemma mBound_lt_subexp
     have : Real.logb 2 (mBound n h : ℝ) < (n : ℝ) / 100 := by
       have := add_lt_add_right hgrow (Real.logb 2 (n : ℝ))
       have := add_lt_add this (by linarith)
-      -- final numeric simplification left for future work
-      sorry
+      -- numeric constants are small enough for `linarith` to solve the goal
+      have := add_lt_add_right this (Real.logb 2 (h + 2 : ℝ))
+      have := add_lt_add_right this (10 * h)
+      simpa [hlog] using this
     exact (Real.logb_lt_iff_lt_rpow hb).1 this
   exact_mod_cast this
 

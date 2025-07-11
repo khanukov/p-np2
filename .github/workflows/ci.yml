@@ -1,10 +1,41 @@
-name: lake-build
+name: CI
+
 on: [push, pull_request]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: leanprover/lean-action@v1
-    - name: Run smoke test
-      run: lake env lean --run scripts/smoke.lean
+      # 1. Checkout code
+      - uses: actions/checkout@v4
+
+      # 2. Setup Lean 4
+      - name: Setup Lean
+        uses: Julian/setup-lean@v1
+        with:
+          default-toolchain: leanprover/lean4:v4.22.0-rc2
+
+      # 3. Update mathlib и подтягиваем его кеш
+      - name: lake update mathlib
+        run: lake update mathlib
+
+      - name: Get prebuilt mathlib cache
+        run: lake exe cache get
+
+      # 4. Кешируем .lake между прогонками
+      - uses: actions/cache@v3
+        with:
+          path: .lake
+          key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean') }}
+
+      # 5. Сборка проекта
+      - name: Build project
+        run: lake build
+
+      # 6. Запуск smoke‐теста
+      - name: Run smoke test
+        run: lake env lean --run scripts/smoke.lean
+
+      # 7. Запуск всех тестов
+      - name: Run all tests
+        run: lake test

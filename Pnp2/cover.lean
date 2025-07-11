@@ -207,17 +207,20 @@ partial def buildCover (F : Family n) (h : ℕ)
           exact Rset ∪ R_ls
       | inr hs_large =>
           -- **(2) Sunflower branch:** check if a sunflower-based step can remove a large fraction of inputs.
-          if hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card ≥ p0) then
-            /- *Placeholder:* In a real implementation, `someBound` and `p0` would be chosen
-               to satisfy the classical sunflower threshold.  Here we would
-               call `BuildCoverStep.sunflowerStep` to obtain a subcube covering
-               many uncovered points.  -/
-            let ⟨R_sun, hCoverFrac, hDim⟩ :=
-              sunflower_step (F := F) p0 t h_p0_pos h_t_ge2 h_sun_cond h_support_eq_p0
-            /- `sunflower_step` guarantees:
-                 R_sun is a subcube (dimension ≥ 1) on which **all** f ∈ F output 1,
-                 and at least `t` uncovered points lie in R_sun. -/
-            -- Add R_sun to the cover and continue covering the rest (uncovered part shrinks by ≥ t points).
+          let p0 := (Family.supports F).min' (by
+            classical
+            rcases Set.choose?_mem (S := uncovered F Rset) hfu with ⟨hf, -, -⟩
+            exact ⟨support f, by simpa using Family.mem_supports.mpr ⟨f, hf, rfl⟩⟩)
+          let someBound := p0 * p0
+          if hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card = p0) ∧ 0 < p0 then
+            have p0_pos : 0 < p0 := hSun.2.2
+            have ht : 2 ≤ (2 : ℕ) := by decide
+            have hbig : (2 - 1).factorial * p0 ^ 2 < (Family.supports F).card := by
+              simpa [someBound, Nat.factorial_one, one_mul] using hSun.1
+            have hsizes : ∀ g ∈ F, (support g).card = p0 := hSun.2.1
+            obtain ⟨R_sun, hCover, hDim⟩ :=
+              sunflower_step (F := F) p0 2 p0_pos ht hbig hsizes
+            -- Add `R_sun` to the cover and continue recursion on the uncovered set.
             exact buildCover F h hH (Rset := insert R_sun Rset)
           else
             -- **(3) Entropy branch:** default case – apply one-bit entropy drop and recurse on two sub-families.
@@ -307,7 +310,11 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       simpa [buildCover, hfu, hs_small] using hcov_union
     | inr hs_large =>
       -- (2) Sunflower branch or (3) Entropy branch
-      by_cases hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card ≥ p0)
+      let p0 := (Family.supports F).min' (by
+        classical
+        exact ⟨support f, by simpa using Family.mem_supports.mpr ⟨f, hf, rfl⟩⟩)
+      let someBound := p0 * p0
+      by_cases hSun : (Family.supports F).card > someBound ∧ (∀ g ∈ F, (support g).card = p0) ∧ 0 < p0
       <;> rename_i hSun_cond
       · -- **Sunflower branch:** Add a subcube R_sun (covering at least one uncovered input) and recurse
         -- Using the sunflower lemma (exists a suitable R_sun); for simplicity, pick the point subcube at x

@@ -5,7 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: leanprover/elan-action@v1
+    - name: Setup Lean
+      uses: Julian/setup-lean@v1
+      with:
+        default-toolchain: leanprover/lean4:v4.22.0-rc2
     - name: Get mathlib cache
       run: lake exe cache get
     - uses: leanprover/lean-action@v1

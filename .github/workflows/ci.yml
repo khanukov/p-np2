@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Get mathlib cache
+      run: lake exe cache get
     - uses: leanprover/lean-action@v1
     - name: Run smoke test
       run: lake env lean --run scripts/smoke.lean

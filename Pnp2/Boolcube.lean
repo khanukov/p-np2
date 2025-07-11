@@ -183,16 +183,10 @@ structure Cover {n : ℕ} (F : Family n) where
   cubes  : Finset (LabeledCube n F)
   cover₁ : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ cubes, C.cube.Mem x
 
-/-- Sunflower step: if the family is large and entropy no longer drops, we find
- a common monochromatic subcube of dimension at least one.  This follows from the
- classical Erdős–Rado sunflower lemma. -/
-lemma sunflower_exists (F : Family n) (hn : 0 < n) (hF : 0 < F.card) :
-    ∃ (C : Subcube n) (b : Bool),
-      (∀ f ∈ F, ∀ x, C.Mem x → f x = b) ∧ 1 ≤ C.dim := by
-  classical
-  -- Outline: apply the sunflower lemma to the supports of one-sets of
-  -- functions in `F` and take the core as fixed coordinates.
-  admit
+/- Sunflower step lemma from early drafts (deprecated).
+-- The current development in `cover.lean` relies directly on the fully
+-- formalised `Sunflower.sunflower_exists` from `sunflower.lean`, so this
+-- placeholder proof has been removed.
 
 /-- **Recursive construction** of a `Cover` for any family `F`.  The algorithm
 alternates two steps until the family becomes empty:
@@ -273,11 +267,13 @@ noncomputable def buildCover : ∀ {n : ℕ}, (F : Family n) → Cover F
                     obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
                     exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
                 ·
-                  have hfF' : f ∈ F := hf
-                  obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f ?_ x hfx
-                  · exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
-                  ·
-                    have : ∃ y, y i = b := ?_; exact this
+                  classical
+                  have hy : ∃ y, y i = b :=
+                    ⟨fun _ => b, by simp⟩
+                  have hfF' : f ∈ F' := by
+                    simpa [F', hy, hf] using (show f ∈ F ∧ (∃ y, y i = b) from ⟨hf, hy⟩)
+                  obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
+                  exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
             }) )
 
 end Boolcube

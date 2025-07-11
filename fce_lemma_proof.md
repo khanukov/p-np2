@@ -117,9 +117,10 @@ The modules above serve as milestones. Our immediate goals are:
 3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
    The file `Agreement.lean` now contains the complete proof of this lemma.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A
-   well‑founded implementation is present, but the coverage and bound
-   proofs still use `admit`.
-5. Prove the size bound in `bound.lean`.
+   well‑founded implementation is present, but some coverage and bound
+   lemmas remain stated as axioms.
+5. ~~Prove the size bound in `bound.lean`.~~  The inequality
+   `mBound_lt_subexp` is now fully formalised.
 6. Provide small test instances in `examples.lean`.
 
 ### Status Update (July 2025)

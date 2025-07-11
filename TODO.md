@@ -3,7 +3,7 @@
 Short list of development tasks reflecting the current repository status.
 
 - [x] Prove `exists_coord_card_drop` to complement the entropy-drop lemma.
-- [ ] Complete `buildCover` proofs and show `mBound_lt_subexp`.
+- [ ] Complete `buildCover` proofs (the bound `mBound_lt_subexp` is now proven).
 - [ ] Replace axioms `buildCover_mono` and `buildCover_card_bound` with full proofs.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
 - [ ] Expand numeric bounds in `bound.lean`.

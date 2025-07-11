@@ -61,7 +61,7 @@ theory.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
   The Lean code now defines `buildCover` in `cover.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
   The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
-  Preliminary proofs `buildCover_mono` and `buildCover_card_bound` record the recursion invariants.  Completeness proofs and precise counts are still pending.
+  The statements `buildCover_mono` and `buildCover_card_bound` are currently axioms summarising the recursion invariants.  Completeness proofs and precise counts are still pending.
 * **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
   shows that some coordinate always cuts collision entropy by at least one bit,
   paving the way for a robust splitting strategy.

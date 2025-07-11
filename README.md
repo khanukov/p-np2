@@ -16,9 +16,9 @@ serves as a record of ongoing progress towards a full argument.
   Boolean functions, e.g. `eval_eq_of_agree_on_support`.
 * `BoolFunc/Sensitivity.lean` – defines sensitivity and basic lemmas used by the
   low-sensitivity cover.
-* `Boolcube.lean` – extended definitions.  Some proofs remain incomplete
-  (`sorry`), including an older entropy‑drop lemma that has since been
-  superseded by the version in `entropy.lean`.
+* `Boolcube.lean` – extended definitions.  The old sunflower branch of
+  `buildCover` has been removed, leaving a simplified entropy-based
+  construction without remaining `sorry`s.
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The
   auxiliary lemma `exists_restrict_half` shows that some input bit

@@ -18,7 +18,9 @@ serves as a record of ongoing progress towards a full argument.
   low-sensitivity cover.
 * `Boolcube.lean` – extended definitions.  The old sunflower branch of
   `buildCover` has been removed, leaving a simplified entropy-based
-  construction without remaining `sorry`s.
+  construction without remaining `sorry`s.  A new lemma
+  `monochromatic_point` shows that single-point subcubes are automatically
+  monochromatic for any Boolean function.
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The
   auxiliary lemma `exists_restrict_half` shows that some input bit

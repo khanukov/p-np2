@@ -124,7 +124,7 @@ The modules above serve as milestones. Our immediate goals are:
 
 ### Status Update (July 2025)
 
-The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. Auxiliary lemmas—most notably the probabilistic halving bound are still proved using `sorry`, but the classical
+The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. A few auxiliary lemmas—most notably the probabilistic halving bound—are currently assumed as axioms, but the classical
 sunflower lemma has been completed.  Completing these pieces, along
 with the counting argument and example scripts, remains the next milestone.
 

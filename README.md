@@ -2,9 +2,10 @@
 
 This repository collects experimental Lean files that sketch a formal proof of the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma aims to cover families of Boolean functions with a subexponential number of monochromatic subcubes and is a building block for a potential proof that `P ≠ NP`.
 
-The project is **not** yet a complete proof: several declarations still end with
-`sorry`.  Many basic lemmas have now been formalised, so the repository also
-serves as a record of ongoing progress towards a full argument.
+The project is **not** yet a complete proof: several key statements are
+currently provided as axioms without proof.  Many basic lemmas have now been
+formalised, so the repository also serves as a record of ongoing progress
+towards a full argument.
 
 ## Layout
 
@@ -18,9 +19,9 @@ serves as a record of ongoing progress towards a full argument.
   low-sensitivity cover.
 * `Boolcube.lean` – extended definitions.  The old sunflower branch of
   `buildCover` has been removed, leaving a simplified entropy-based
-  construction without remaining `sorry`s.  A new lemma
-  `monochromatic_point` shows that single-point subcubes are automatically
-  monochromatic for any Boolean function.
+  construction. A new lemma `monochromatic_point` shows that single-point subcubes are automatically
+  monochromatic for any Boolean function. Monotonicity and counting bounds are currently axioms.
+
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The
   auxiliary lemma `exists_restrict_half` shows that some input bit
@@ -35,8 +36,10 @@ serves as a record of ongoing progress towards a full argument.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
-  `sunflower_exists`; the numeric counting bound remains open.
-* `bound.lean` – arithmetic bounds deriving the subexponential size estimate.
+  `sunflower_exists`.  Monochromaticity and size bounds are stated as
+  axioms pending full proofs.
+* `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
+  the final inequality is currently assumed as an axiom.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`

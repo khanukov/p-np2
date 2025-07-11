@@ -64,7 +64,19 @@ namespace Entropy
 
 /‑ Collision entropy (uniform measure) – we keep only the logarithmic form. -/ @[simp] def H₂ {n} (F : Family n) : ℝ := Real.logb 2 (F.card)
 
-lemma H₂_nonneg {F : Family n} : 0 ≤ H₂ F := by have : (0 : ℝ) < 2 := by norm_num have hcard : (0 : ℝ) < F.card := by have : 0 < (F.card : ℕ) := by have h := F.card_pos.mpr ?_; exact h exact_mod_cast this have := Real.logb_nonneg_iff.mpr ⟨this, hcard⟩ simpa using this
+lemma H₂_nonneg {F : Family n} : 0 ≤ H₂ F := by
+  classical
+  unfold H₂
+  by_cases hF : F.card = 0
+  · -- `logb` of zero is zero by definition
+    simp [hF]
+  ·
+    have hb : (1 : ℝ) < 2 := by norm_num
+    have hx : 1 ≤ (F.card : ℝ) := by
+      have hpos : 0 < F.card := Nat.pos_of_ne_zero hF
+      exact_mod_cast Nat.succ_le_of_lt hpos
+    have := Real.logb_nonneg (b := 2) hb hx
+    simpa using this
 
 end Entropy
 

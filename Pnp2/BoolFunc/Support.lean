@@ -15,9 +15,13 @@ lemma eval_eq_of_agree_on_support
   -- Otherwise there exists a coordinate where the values differ.
   by_contra hneq
   obtain ⟨i, hi⟩ : ∃ i : Fin n, x i ≠ y i := by
+    classical
     by_cases hxy : x = y
     · simpa [hxy] using hneq
-    · push_neg at hxy; exact hxy
+    · -- if the points are distinct, they differ in some coordinate
+      have : ¬∀ j, x j = y j := by
+        intro hall; apply hxy; funext j; exact hall j
+      simpa using this
   have hisupp : i ∈ support f := by
     -- use the definition of `support`
     unfold support

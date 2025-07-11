@@ -24,6 +24,7 @@ modules no longer depend on unproven stubs.
 
 import Pnp2.BoolFunc
 import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
 import Mathlib.Data.Set.Function
 import Mathlib.InformationTheory.Hamming
 
@@ -69,18 +70,18 @@ def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
 /-! ### Core‑agreement lemma with CoreClosed assumption -/
 
 /--
-**Core‑Agreement Lemma**  
+**Core-Agreement Lemma**
 
 Let `x₁, x₂ : Point n` be two inputs such that
 
-* There exists a set of coordinates `I` with  
-  `I.card ≥ n - ℓ` **and** `x₁ i = x₂ i` for every `i ∈ I`;
-* Every function `f ∈ F` outputs `1` on *both* `x₁` and `x₂`.
+* There exists a set of coordinates `I` with
+  `I.card ≥ n - ℓ` and `x₁ i = x₂ i` for every `i ∈ I`;
+* Every function `f ∈ F` outputs `1` on both `x₁` and `x₂`.
 
 Assuming `CoreClosed ℓ F`, the subcube obtained by fixing the coordinates in `I`
-to their shared values is **monochromatic** of colour `1` for the entire family.
+to their shared values is monochromatic of colour `1` for the entire family.
 
-This is exactly Lemma 4.3 of the formal specification. -/
+This is exactly Lemma 4.3 of the formal specification. -/
 -- We move the statement of the core agreement lemma below, after proving a
 -- helper about the Hamming distance of points that agree on many coordinates.
 

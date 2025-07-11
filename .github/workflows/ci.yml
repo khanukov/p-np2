@@ -4,13 +4,29 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup Lean
-      uses: Julian/setup-lean@v1
-      with:
-        default-toolchain: leanprover/lean4:v4.22.0-rc2
-    - name: Get mathlib cache
-      run: lake exe cache get
-    - uses: leanprover/lean-action@v1
-    - name: Run smoke test
-      run: lake env lean --run scripts/smoke.lean
+      - uses: actions/checkout@v4
+
+      - name: Setup Lean
+        uses: Julian/setup-lean@v1
+        with:
+          default-toolchain: leanprover/lean4:v4.22.0-rc2
+
+      - name: Lake update mathlib
+        run: lake update mathlib
+
+      - name: Copy mathlib lean-toolchain
+        run: cp .lake/packages/mathlib/lean-toolchain lean-toolchain
+
+      - name: Get mathlib cache
+        run: lake exe cache get
+
+      - uses: actions/cache@v3
+        with:
+          path: .lake
+          key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean') }}
+
+      - name: Build project
+        run: lake build --no-link
+
+      - name: Run smoke test
+        run: lake env lean --run scripts/smoke.lean

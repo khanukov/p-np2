@@ -31,7 +31,11 @@ towards a full argument.
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
 * `sunflower.lean` – full classical sunflower lemma `sunflower_exists` now formalised.
-* `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`) and a monotonicity lemma.
+* `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`).
+  The lemma `RSpread.mono` now shows that a larger spread parameter implies
+  a smaller one when `0 < R₂ ≤ R₁`.  Additional helper lemmas
+  (`RSpread.card_bound`, `RSpread.one_of_nonempty`, `RSpread.card_filter_le`)
+  rephrase the definition and handle the trivial case `R = 1`.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now

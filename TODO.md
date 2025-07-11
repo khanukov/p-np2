@@ -13,3 +13,4 @@ Short list of development tasks reflecting the current repository status.
 - [x] Remove outdated sunflower branch placeholder in `Boolcube.buildCover`.
 - [x] Drop obsolete note about `sorry` usage in `Boolcube.lean`.
 - [ ] Use `collentropy.lean` and `family_entropy_cover.lean` across modules.
+- [x] Remove outdated standalone file `src/entropy_drop.lean` (lemma now lives in `Boolcube.lean`).

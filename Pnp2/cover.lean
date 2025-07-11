@@ -379,19 +379,30 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   · exact Nat.pred_lt (Nat.pos_of_ne_zero (by linarith))
 /-! ## Basic properties of `buildCover` -/
 
+/--
+`buildCover_mono` states that every subcube produced by `buildCover` is
+monochromatic for the whole family.  The full proof proceeds by well-founded
+induction on the recursion tree.  The low-sensitivity branch inserts cubes
+from `low_sensitivity_cover`, the sunflower branch inserts one monochromatic
+cube and recurses on fewer uncovered pairs, and the entropy branch applies the
+induction hypothesis to the restricted families.
+-
 lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F := by
-  -- each added subcube (sunflower/entropy) is constructed so that
-  -- every `f ∈ F` evaluates to `true` inside; the recursion preserves
-  -- this invariant
-  admit
+  classical
+  -- TODO: fill in the induction proof.
+  sorry
 
+/--
+`buildCover_card_bound` bounds the size of the cover returned by
+`buildCover` in terms of the entropy budget `h`.  A double induction on `h` and the number of uncovered pairs shows that at most `2^h` cubes are produced.
+The argument follows the same branch analysis as `buildCover_mono` and repeatedly applies the induction hypotheses.  We outline the reasoning here and leave a full proof to future work.
+-/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
-  -- induction on `h`: both branches recurse with `h - 1`, hence
-  -- `|Rset| ≤ 2^h ≤ n * (h + 2) * 2^{10 * h}` for `h ≥ 1`; the base case is
-  -- easy to check manually
-  admit
+  classical
+  -- TODO: prove the bound using the double induction.
+  sorry
 
 /-! ## Main existence lemma -/
 

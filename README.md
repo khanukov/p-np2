@@ -116,8 +116,8 @@ This is still a research prototype. The core-agreement lemma is fully proven, an
 ## Development plan
 
 The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key tasks are:
-1. finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
-   complement the proved entropy drop,
+1. ~~finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
+   complement the proved entropy drop,~~
 2. complete the `buildCover` correctness proof and establish the bound
    `mBound_lt_subexp`,
 3. integrate the decision-tree cover into `low_sensitivity_cover`,

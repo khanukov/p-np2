@@ -72,17 +72,71 @@ end Entropy
 
 open Entropy
 
--- Coordinate‑entropy drop (cardinal version).  If `F` is nonempty and `n ≥ 1`,
--- there exists a coordinate `i` and bit `b` such that restricting to the
--- subfamily that outputs `b` on points with `x i = b` reduces the size by at
--- least `|F| / n`.
-lemma exists_coord_card_drop
-    (F : Family n) (hn : 0 < n) (hF : 0 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool,
-      (F.filter fun f ↦ ∃ x : Point n, x i = b).card ≤ F.card - (F.card / n) :=
-by
+-- Coordinate‑entropy drop (cardinal version).  For a nonempty family of
+-- points and `n ≥ 2`, there exists a coordinate `i` and bit `b` such that
+-- fixing that bit drops the family size by at least `|F| / n`.
+/-- Subfamily of `F` consisting of points whose value at `i` equals `b`. -/
+def coordSlice (i : Fin n) (b : Bool) (F : Finset (Point n)) :
+    Finset (Point n) :=
+  F.filter (fun x ↦ x i = b)
+
+namespace coordSlice
+
+@[simp] lemma card_le (i : Fin n) (b : Bool) (F : Finset (Point n)) :
+    (coordSlice i b F).card ≤ F.card :=
+  card_filter_le _ _
+
+@[simp] lemma disj (i : Fin n) (F : Finset (Point n)) :
+    Disjoint (coordSlice i true F) (coordSlice i false F) := by
+  intro x hxT hxF
+  simp [coordSlice] at hxT hxF
+  cases hxT.2.trans hxF.2
+
+lemma partition (i : Fin n) (F : Finset (Point n)) :
+    (coordSlice i true F).card + (coordSlice i false F).card = F.card := by
   classical
-  admit
+  have hdisj := disj i F
+  have hunion : (coordSlice i true F) ∪ (coordSlice i false F) = F := by
+    ext x; simp [coordSlice, Bool.decEq_true, Bool.decEq_false]
+  simpa [hunion] using card_union_of_disjoint (s := coordSlice i true F)
+    (t := coordSlice i false F) hdisj
+
+end coordSlice
+
+open coordSlice
+
+lemma exists_coord_card_drop
+    (hn : 2 ≤ n)
+    {F : Finset (Point n)} (hF : F.Nonempty) :
+    ∃ i : Fin n, ∃ b : Bool,
+      (coordSlice i b F).card ≤ F.card - F.card / n := by
+  classical
+  by_contra h
+  push_neg at h
+  have hsum (i : Fin n) :
+      (coordSlice i true F).card > F.card - F.card / n ∧
+      (coordSlice i false F).card > F.card - F.card / n := h i
+  have hlt : (coordSlice 0 true F).card + (coordSlice 0 false F).card
+                > 2 * (F.card - F.card / n) := by
+    have hi := hsum 0
+    have hadd := add_lt_add_of_lt_of_lt hi.1 hi.2
+    simpa [two_mul] using hadd
+  have hEq : (coordSlice 0 true F).card + (coordSlice 0 false F).card = F.card :=
+    partition 0 F
+  have : (F.card : ℝ) > 2 * (F.card - F.card / n) := by
+    have hEq' := congrArg (fun k : ℕ => (k : ℝ)) hEq
+    have hlt' : ((coordSlice 0 true F).card + (coordSlice 0 false F).card : ℝ)
+        > 2 * ((F.card - F.card / n) : ℝ) := by exact_mod_cast hlt
+    simpa [hEq'] using hlt'
+  have rhs_le : 2 * (F.card - F.card / n) ≤ (F.card : ℝ) := by
+    have : (n : ℝ) ≥ 2 := by exact_mod_cast hn
+    have hdiv : (F.card : ℝ) / n ≤ (F.card : ℝ) / 1 := by
+      have : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+      have hpos : (0 : ℝ) ≤ (F.card : ℝ) := by exact_mod_cast (Nat.zero_le _)
+      exact div_le_div_of_le_of_nonneg hpos this
+    nlinarith
+  have hcontr := lt_of_lt_of_le this rhs_le
+  exact lt_irrefl _ hcontr
 
 -- Entropy version.  From the cardinal drop we derive a quantitative decrease of
 -- `H₂`.  Using `log₂ (1 - 1/n) ≤ -1 / (n * ln 2)`.

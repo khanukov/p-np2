@@ -1,6 +1,6 @@
 -- boolcube.lean – fundamental definitions.
--- Some older proofs still use `sorry`; the modern entropy‑drop lemma is
--- available fully proved in `entropy.lean`.  Requires mathlib4 ≥ 2025‑05‑20.
+-- The modern entropy‑drop lemma is available fully proved in `entropy.lean`.
+-- Requires mathlib4 ≥ 2025‑05‑20.
 
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Basic
@@ -232,60 +232,36 @@ noncomputable def buildCover : ∀ {n : ℕ}, (F : Family n) → Cover F
       simpa using this
     have hn_pos : 0 < n.succ := Nat.succ_pos _
     (by
-      by_cases hs : ∃ C b, (∀ f ∈ F, ∀ x, C.Mem x → f x = b) ∧ 1 ≤ C.dim :=
-        by
-          cases hs with
-          | intro C b hmono hdim =>
-            let F' : Family (n+1) :=
-              F.filter fun f ↦ ¬(∀ x, C.Mem x → f x = b)
-            let recCover := buildCover (F := F')
-            exact {
-              cubes := recCover.cubes.insert (LabeledCube.ofSubcube C b hmono),
-              cover₁ := by
-                intro f hf x hfx
-                by_cases hfull : (∀ x, C.Mem x → f x = b)
-                · refine ?_
-                  refine ⟨_,?_,?⟩
-                  · apply Finset.mem_insert_self
-                  · have : C.Mem x := ?_
-                    sorry
-                ·
-                  have hF' : f ∈ F' := by
-                    simp [F', hfull, hf]
-                  obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hF' x hfx
-                  exact ⟨C', by simp [hC'mem], hCx⟩ } )
-        (fun hNoSunflower ↦
-          by
-            obtain ⟨i, b, hcard⟩ := exists_coord_card_drop F hn_pos hFpos
-            let F' : Family (n+1) := F.filter fun f ↦ ∃ x, x i = b
-            let recCover := buildCover (F := F')
-            exact {
-              cubes := recCover.cubes.insert (LabeledCube.fixOneLabel i b F),
-              cover₁ := by
-                intro f hf x hfx
-                by_cases hxi : x i = b
-                ·
-                  have : C : LabeledCube (n+1) F := LabeledCube.fixOneLabel i b F
-                  by_cases hfxi : f x = b
-                  · refine ⟨this, ?_, ?_⟩
-                    · simp [Finset.mem_insert]
-                    ·
-                      have hmem : this.cube.Mem x := by
-                        simpa [LabeledCube.fixOneLabel, Subcube.mem_fixOne_iff, hxi]
-                      exact hmem
-                  ·
-                    have hfF' : f ∈ F' := by
-                      simp [F', hf, hxi] at *
-                    obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
-                    exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
-                ·
-                  classical
-                  have hy : ∃ y, y i = b :=
-                    ⟨fun _ => b, by simp⟩
-                  have hfF' : f ∈ F' := by
-                    simpa [F', hy, hf] using (show f ∈ F ∧ (∃ y, y i = b) from ⟨hf, hy⟩)
-                  obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
-                  exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
-            }) )
+      obtain ⟨i, b, hcard⟩ := exists_coord_card_drop F hn_pos hFpos
+      let F' : Family (n+1) := F.filter fun f ↦ ∃ x, x i = b
+      let recCover := buildCover (F := F')
+      exact {
+        cubes := recCover.cubes.insert (LabeledCube.fixOneLabel i b F),
+        cover₁ := by
+          intro f hf x hfx
+          by_cases hxi : x i = b
+          ·
+            have thisCube : LabeledCube (n+1) F := LabeledCube.fixOneLabel i b F
+            by_cases hfxi : f x = b
+            · refine ⟨thisCube, ?_, ?_⟩
+              · simp [Finset.mem_insert]
+              ·
+                have hmem : thisCube.cube.Mem x := by
+                  simpa [LabeledCube.fixOneLabel, Subcube.mem_fixOne_iff, hxi]
+                exact hmem
+            ·
+              have hfF' : f ∈ F' := by
+                simp [F', hf, hxi] at *
+              obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
+              exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
+          ·
+            classical
+            have hy : ∃ y, y i = b :=
+              ⟨fun _ => b, by simp⟩
+            have hfF' : f ∈ F' := by
+              simpa [F', hy, hf] using (show f ∈ F ∧ (∃ y, y i = b) from ⟨hf, hy⟩)
+            obtain ⟨C', hC'mem, hCx⟩ := recCover.cover₁ f hfF' x hfx
+            exact ⟨C', by simp [Finset.mem_insert, hC'mem], hCx⟩
+      })
 
 end Boolcube

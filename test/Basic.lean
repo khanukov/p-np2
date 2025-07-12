@@ -18,6 +18,6 @@ example (x : Point 2) (b : Bool) :
   classical
   let f : BFunc 2 := fun y => y 0
   have hneq : (0 : Fin 2) ≠ 1 := by decide
-  simp [f, Point.update, hneq]
+  simp [Point.update, hneq]
 
 end BasicTests

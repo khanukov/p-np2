@@ -78,8 +78,8 @@ example (n : ℕ) :
 example (F : Family 0) :
     0 ≤ collProb F ∧ collProb F ≤ 1 := by
   constructor
-  · simpa using BoolFunc.collProb_nonneg (F := F)
-  · simpa using BoolFunc.collProb_le_one (F := F)
+  · simp [BoolFunc.collProb_nonneg (F := F)]
+  · simp [BoolFunc.collProb_le_one (F := F)]
 
 -- A single-point subcube is monochromatic for any function.
 example {n : ℕ} (x : Point n) (f : BFunc n) :

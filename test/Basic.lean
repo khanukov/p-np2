@@ -1,4 +1,5 @@
 import Pnp.BoolFunc
+import Pnp.BoolFunc.Support
 
 open BoolFunc
 
@@ -19,5 +20,18 @@ example (x : Point 2) (b : Bool) :
   let f : BFunc 2 := fun y => y 0
   have hneq : (0 : Fin 2) ≠ 1 := by decide
   simp [Point.update, hneq]
+
+-- `eval_update_not_support` automatically shows that modifying a
+-- non-essential coordinate leaves a function unchanged.
+example (x : Point 2) (b : Bool) :
+    (fun y : Point 2 => y 0) x = (fun y : Point 2 => y 0) (Point.update x 1 b) :=
+by
+  classical
+  have hi : (1 : Fin 2) ∉ support (fun y : Point 2 => y 0) := by
+    simp [support]
+  simpa using
+    (BoolFunc.eval_update_not_support (f := fun y : Point 2 => y 0) (i := 1)
+      hi x b)
+
 
 end BasicTests

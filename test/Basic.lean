@@ -65,4 +65,10 @@ example :
     simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
+-- A single-point subcube is monochromatic for any function.
+example {n : ℕ} (x : Point n) (f : BFunc n) :
+    (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
+  classical
+  exact Agreement.Subcube.monochromatic_point (x := x) (f := f)
+
 end BasicTests

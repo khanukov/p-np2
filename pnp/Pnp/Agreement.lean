@@ -42,6 +42,20 @@ def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
     (Subcube.fromPoint x I).dimension = n - I.card := by
   rfl
 
+@[simp] lemma Subcube.monochromatic_point
+    {x : Point n} {f : BFunc n} :
+    (Subcube.fromPoint x (Finset.univ : Finset (Fin n))).monochromaticFor f := by
+  classical
+  refine ⟨f x, ?_⟩
+  intro y hy
+  have hy_eq : y = x := by
+    ext i
+    have h :=
+      (fromPoint_mem (x := x) (I := (Finset.univ : Finset (Fin n))) (y := y)).1
+        hy i (by simp)
+    exact h
+  simp [hy_eq]
+
 /-- Helper: if `y` matches `x` on `I` of size ≥ `n - ℓ`, then
     `hammingDist x y ≤ ℓ`. -/
 lemma dist_le_of_compl_subset

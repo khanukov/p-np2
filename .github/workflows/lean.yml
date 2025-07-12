@@ -12,7 +12,7 @@ jobs:
       - name: Setup elan
         uses: Julian/setup-lean@v1
         with:
-          default-toolchain: nightly
+          default-toolchain: leanprover/lean4:v4.22.0-rc2
       - name: Get mathlib cache
         run: lake exe cache get
       - name: Build project

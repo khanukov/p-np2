@@ -20,5 +20,5 @@ lean_exe tests where
 
 @[test_driver]
 lean_lib Tests where
-  globs := #[`Basic]
+  globs := #[`Basic, `DecisionTree]
   srcDir := "test"

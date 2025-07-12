@@ -46,6 +46,17 @@ lemma H₂Fun_const_true :
   unfold H₂Fun collProbFun prob ones
   simp
 
+lemma collProbFun_ge_half (f : BFunc n) :
+    (1 / 2 : ℝ) ≤ collProbFun f := by
+  classical
+  have h : collProbFun f = (1 / 2 : ℝ) + 2 * (prob f - 1 / 2) ^ 2 := by
+    unfold collProbFun
+    ring
+  have hx : 0 ≤ 2 * (prob f - 1 / 2) ^ 2 := by positivity
+  have hx' : (1 / 2 : ℝ) ≤ (1 / 2 : ℝ) + 2 * (prob f - 1 / 2) ^ 2 :=
+    le_add_of_nonneg_right hx
+  exact le_of_le_of_eq hx' h.symm
+
 end
 
 end BoolFunc

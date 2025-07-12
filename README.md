@@ -132,7 +132,9 @@ This is still a research prototype. The core-agreement lemma is fully proven, an
 The project is currently undergoing a major refactoring.  All modules are being
 relocated from the historical `Pnp2` namespace to the new `pnp` directory under
 `Pnp`.  Each file is migrated together with dedicated tests to ensure that the
-statements still compile and the existing proofs remain valid.  Only once this
+statements still compile and the existing proofs remain valid.  Several modules
+have already been ported, including `BoolFunc`, `DecisionTree`, `Agreement`,
+`Boolcube`, `Collentropy`, `Entropy` and `LowSensitivityCover`. Only once this
 move is complete will new lemmas and theorems be added.
 
 ## Development plan

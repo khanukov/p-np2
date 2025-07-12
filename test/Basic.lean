@@ -90,7 +90,13 @@ example (n : ℕ) :
   classical
   simpa using BoolFunc.collProbFun_const_false (n := n)
 
--- A single-point subcube is monochromatic for any function.
+-- Collision probability is bounded below by one half.
+example (n : ℕ) (f : BFunc n) :
+    (1 / 2 : ℝ) ≤ BoolFunc.collProbFun f := by
+  classical
+  simpa using BoolFunc.collProbFun_ge_half (f := f)
+
+  -- A single-point subcube is monochromatic for any function.
   example {n : ℕ} (x : Point n) (f : BFunc n) :
       (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
     classical

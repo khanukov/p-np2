@@ -43,4 +43,19 @@ example :
       (t := (DecisionTree.leaf true : DecisionTree 1))
   exact hx
 
+-- There exists a point where a non-trivial function evaluates to `true`.
+example :
+    ∃ x, (fun y : Point 1 => y 0) x = true := by
+  classical
+  have hmem : (0 : Fin 1) ∈ support (fun y : Point 1 => y 0) := by
+    classical
+    have hx : (fun y : Point 1 => y 0) (fun _ => false) ≠
+        (fun y : Point 1 => y 0) (Point.update (fun _ => false) 0 true) := by
+      simp [Point.update]
+    exact mem_support_iff.mpr ⟨fun _ => false, hx⟩
+  have hsupp : support (fun y : Point 1 => y 0) ≠ (∅ : Finset (Fin 1)) := by
+    intro hempty
+    simpa [hempty] using hmem
+  exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
+
 end BasicTests

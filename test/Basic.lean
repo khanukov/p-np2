@@ -79,8 +79,8 @@ example (n : ℕ) :
 example (F : Family 0) :
     0 ≤ collProb F ∧ collProb F ≤ 1 := by
   constructor
-  · simpa using BoolFunc.collProb_nonneg (F := F)
-  · simpa using BoolFunc.collProb_le_one (F := F)
+  · simp [BoolFunc.collProb_nonneg (F := F)]
+  · simp [BoolFunc.collProb_le_one (F := F)]
 
 -- Collision probability of a constant function is one.
 example (n : ℕ) :

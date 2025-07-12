@@ -2,6 +2,7 @@ import Pnp.BoolFunc
 import Pnp.BoolFunc.Support
 import Pnp.DecisionTree
 import Pnp.Agreement
+import Pnp.Boolcube
 
 open BoolFunc
 
@@ -64,5 +65,12 @@ example :
     intro hempty
     simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
+
+-- Basic lemmas from `Boolcube`
+example (n : ℕ) :
+    (Boolcube.Subcube.full : Boolcube.Subcube n).dim = n := by
+  classical
+  simpa using Boolcube.Subcube.dim_full (n := n)
+
 
 end BasicTests

@@ -6,6 +6,7 @@ import Pnp.Boolcube
 import Pnp.Entropy
 import Pnp.Collentropy
 import Pnp.LowSensitivityCover
+import Pnp.ComplexityClasses
 
 open BoolFunc
 
@@ -131,6 +132,12 @@ example (n : ℕ) :
       BoolFunc.exists_coord_entropy_drop
         (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)})
         hn hF
+
+-- A trivial language with a constant false decider lies in `P`.
+example : polyTimeDecider (fun _ _ => false) := by
+  refine ⟨{ runTime := fun _ => 0, accepts := fun _ _ => false }, 1, ?time, ?acc⟩
+  · intro n; simp
+  · intro n x; rfl
 
 
 end BasicTests

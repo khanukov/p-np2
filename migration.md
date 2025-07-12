@@ -8,13 +8,13 @@ The project is undergoing a gradual move from the historical `Pnp2` namespace to
 - `DecisionTree.lean`.
 - `Agreement.lean`.
 - `Pnp.lean` acting as the root module.
+- `ComplexityClasses.lean`.
 
 ## Remaining to migrate
 
 The following modules are still located under `Pnp2` and need to be copied into `pnp` while keeping the tests in sync:
 
 - `Boolcube.lean`
-- `ComplexityClasses.lean`
 - `NP_separation.lean`
 - `Sunflower/RSpread.lean`
 - `acc_mcsp_sat.lean`

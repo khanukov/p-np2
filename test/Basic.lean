@@ -2,6 +2,7 @@ import Pnp.BoolFunc
 import Pnp.BoolFunc.Support
 import Pnp.DecisionTree
 import Pnp.Agreement
+import Pnp.Entropy
 
 open BoolFunc
 
@@ -65,10 +66,18 @@ example :
     simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
+-- Basic bounds on collision probability.
+example (F : Family 0) :
+    0 ≤ collProb F ∧ collProb F ≤ 1 := by
+  constructor
+  · simpa using BoolFunc.collProb_nonneg (F := F)
+  · simpa using BoolFunc.collProb_le_one (F := F)
+
 -- A single-point subcube is monochromatic for any function.
 example {n : ℕ} (x : Point n) (f : BFunc n) :
     (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
   classical
   exact Agreement.Subcube.monochromatic_point (x := x) (f := f)
+
 
 end BasicTests

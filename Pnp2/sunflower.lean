@@ -67,8 +67,7 @@ lemma sunflower_exists_easy
   classical
   -- pick any `p` distinct sets
   obtain ⟨T, hsub, hcardT⟩ :=
-    (Finset.exists_subset_card_eq p).2 (by
-      simpa using hcard)
+    Finset.exists_subset_card_eq (s := 𝒜) (n := p) (by simpa using hcard)
   -- the intersection of all sets in `T` will serve as the core
   let core : Finset α :=
     (Finset.interFinset T).getD (Finset.card_pos.2 (by
@@ -209,9 +208,9 @@ lemma exists_of_large_family
     (hbig : t ≥ 2 → F.card > Nat.factorial (t-1) * w ^ t) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F := by
   classical
-  have := Finset.exists_sunflower_of_large_card (s:=F) (by intro; exact hcard _ ‹_›)
-    (by intro ht; exact hbig ht)
-  rcases this with ⟨pet, hsub, core, hsize, hpair, hsubcore⟩
+  rcases sunflower_exists (𝓢 := F) (w := w) (p := t)
+      (by simpa [hcard]) (by intro ht; exact hbig ht) with
+    ⟨pet, hsub, core, hpair, hsize, hsubcore⟩
   refine ⟨⟨pet, hsize, core, ?_, ?_⟩, hsub⟩
   · intro P hP; exact hsubcore P hP
   · intro P₁ h₁ P₂ h₂ hne; exact hpair P₁ h₁ P₂ h₂ hne
@@ -221,22 +220,21 @@ end SunflowerFam
 /-- Fix the coordinates of `C` to match `x`. -/
 noncomputable def sunflowerSubcube {n : ℕ}
     (C : Petal n) (x : Point n) : Subcube n :=
-{ coords := C,
-  val := fun i _ => x i,
-  sound := by intro i hi; simp }
+{ idx := C,
+  val := fun i hi => x i }
 
 -- Points whose supports contain `C` automatically lie in `sunflowerSubcube C x`
 lemma sunflowerSubcube_subset {n : ℕ} {C : Petal n} {x : Point n}
     {pts : Finset (Point n)}
-    (hpts : ∀ p ∈ pts, C ⊆ Boolcube.support p)
+    (hpts : ∀ p ∈ pts, C ⊆ supportPt p)
     (hx : ∀ i ∈ C, x i = true) :
-    pts ⊆ (sunflowerSubcube C x).toSubcube := by
+    pts ⊆ (sunflowerSubcube C x) := by
   classical
   intro p hp
   have hpC : ∀ i ∈ C, p i = true := by
     intro i hi
-    have : i ∈ Boolcube.support p := hpts p hp hi
-    simpa [Boolcube.support, Finset.mem_filter] using this
+    have : i ∈ supportPt p := hpts p hp hi
+    simpa [supportPt, Finset.mem_filter] using this
   intro i hi
   have := hpC i hi
   have hx := hx i hi
@@ -249,14 +247,14 @@ open Boolcube
 variable {n w t : ℕ}
 variable (U : Finset (Point n))
 variable (F : Finset (Point n → Bool))
-variable (hw : ∀ f ∈ F, (Boolcube.support f).card = w)
+variable (hw : ∀ f ∈ F, (support f).card = w)
 variable (hu : U.card > Nat.factorial (t-1) * w ^ t)
 
 /-- Perform one sunflower step, returning the core and the subcube. -/
 noncomputable def sunflowerStep : Σ' (C : Petal n), Subcube n := by
   classical
   let fam : Finset (Petal n) :=
-    U.image fun x => Boolcube.support (F.choose x (by
+    U.image fun x => support (F.choose x (by
       have : F.Nonempty := by classical; simpa using F.nonempty
       simpa))
   have hcard : ∀ S ∈ fam, S.card = w := by

@@ -41,18 +41,21 @@ lemma RSpread.card_bound {R : ℝ} {A : Finset (Finset α)}
     have : 0 < A.card := Finset.card_pos.mpr h.1
     exact_mod_cast this
   have hcond := h.2 S
-  have := (div_le_iff hpos).mp hcond
+  have := (div_le_iff₀ hpos).1 hcond
   simpa [mul_comm] using this
 
 lemma RSpread.one_of_nonempty {A : Finset (Finset α)}
     (hA : A.Nonempty) :
     RSpread (R:=1) A := by
+  classical
   refine ⟨hA, ?_⟩
   intro S
+  classical
   have hsubset : (A.filter fun T ↦ S ⊆ T) ⊆ A := by
-    exact Finset.filter_subset _
+    intro T hT
+    exact (Finset.mem_filter.mp hT).1
   have hle_nat : (A.filter fun T ↦ S ⊆ T).card ≤ A.card :=
-    Finset.card_le_of_subset hsubset
+    Finset.card_mono hsubset
   have hpos_nat : 0 < A.card := Finset.card_pos.mpr hA
   have hpos : 0 < (A.card : ℝ) := by exact_mod_cast hpos_nat
   have hle_real : ((A.filter fun T ↦ S ⊆ T).card : ℝ) ≤ A.card := by
@@ -60,7 +63,7 @@ lemma RSpread.one_of_nonempty {A : Finset (Finset α)}
   have hdiv_le :
       ((A.filter fun T ↦ S ⊆ T).card : ℝ) / A.card ≤ A.card / A.card := by
     have hnonneg : 0 ≤ (A.card : ℝ) := le_of_lt hpos
-    exact div_le_div_of_le_of_nonneg hle_real hnonneg
+    exact div_le_div_of_nonneg_right hle_real hnonneg
   have hcard_div : (A.card : ℝ) / A.card = 1 := by
     have hne : (A.card : ℝ) ≠ 0 := by exact_mod_cast (ne_of_gt hpos_nat)
     field_simp [hne]
@@ -77,6 +80,6 @@ lemma RSpread.card_filter_le {R : ℝ} {A : Finset (Finset α)}
     have hc : 0 < A.card := Finset.card_pos.mpr h.1
     exact_mod_cast hc
   have hbound := h.2 S
-  have := (div_le_iff hpos).1 hbound
+  have := (div_le_iff₀ hpos).1 hbound
   simpa [mul_comm] using this
 

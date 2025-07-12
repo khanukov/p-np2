@@ -8,7 +8,7 @@ now complete so the definitions can be imported by other files.
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic
 import Mathlib.Algebra.Order.Field.Basic
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 
 open Classical
 open Real

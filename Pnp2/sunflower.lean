@@ -30,7 +30,7 @@ rely only on its statement, not on the proof term.
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Tactic
 import Mathlib.Data.Finset.Basic
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 
 open Classical
 open Finset

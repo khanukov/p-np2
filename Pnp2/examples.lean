@@ -18,7 +18,7 @@ already follow from the (still partial!) library.
 > *type‑checking* witnesses rather than concrete data dumps.
 -/
 
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement

@@ -1,5 +1,5 @@
 import Pnp2.cover
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 
 open BoolFunc
 open Classical

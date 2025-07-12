@@ -1,4 +1,4 @@
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Lattice.Fold

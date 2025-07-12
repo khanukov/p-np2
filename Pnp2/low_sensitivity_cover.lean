@@ -1,6 +1,6 @@
-import Pnp2.BoolFunc.Sensitivity
-import Pnp2.BoolFunc
-import Pnp2.DecisionTree
+import Pnp.BoolFunc.Sensitivity
+import Pnp.BoolFunc
+import Pnp.DecisionTree
 
 open BoolFunc
 

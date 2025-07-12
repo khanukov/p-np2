@@ -1,5 +1,5 @@
 import Mathlib.Data.Finset.Basic
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 
 open Finset
 

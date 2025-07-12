@@ -7,7 +7,7 @@
 -- (Lemma B) with a subexponential SAT algorithm.
 -- All statements are currently placeholders and the proofs are omitted.
 
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 import Pnp2.canonical_circuit
 
 open Classical

@@ -9,7 +9,7 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Tactic
-import Pnp2.DecisionTree
+import Pnp.DecisionTree
 import Pnp2.Boolcube
 
 open Boolcube BoolFunc

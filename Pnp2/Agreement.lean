@@ -22,7 +22,7 @@ contains the complete 60-line combinatorial argument, so downstream
 modules no longer depend on unproven stubs.
 -/
 
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Function
 import Mathlib.InformationTheory.Hamming

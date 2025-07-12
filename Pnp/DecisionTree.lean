@@ -1,4 +1,4 @@
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
 
 namespace BoolFunc

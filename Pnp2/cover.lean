@@ -11,11 +11,11 @@ the chosen branch and in its complement.  Only the sunflower branch and
 the final numeric bound remain open.
 -/
 
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement
-import Pnp2.BoolFunc.Support   -- new helper lemmas
+import Pnp.BoolFunc.Support   -- new helper lemmas
 import Pnp2.Sunflower.RSpread   -- definition of scattered families
 import Pnp2.low_sensitivity_cover
 import Mathlib.Data.Nat.Basic

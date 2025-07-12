@@ -13,7 +13,7 @@ zero collision entropy.
 -/
 
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Pnp2.BoolFunc
+import Pnp.BoolFunc
 
 open Classical
 open Real

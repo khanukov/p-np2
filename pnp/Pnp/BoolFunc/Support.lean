@@ -13,7 +13,8 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     f x = f (Point.update x i b) := by
   classical
   have hxall : ∀ z : Point n, f z = f (Point.update z i (!z i)) := by
-    simpa [mem_support_iff] using hi
+    simp [mem_support_iff] at hi
+    exact hi
   have hx := hxall x
   by_cases hb : b = x i
   · subst hb
@@ -22,7 +23,8 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     simp [hupdate]
   · have hb' : b = !x i := by
       cases hxi : x i <;> cases hbv : b <;> simp [hxi, hbv] at *
-    simpa [hb'] using hx
+    simp [hb'.symm] at hx
+    exact hx
 
 /-- Every non-trivial function evaluates to `true` at some point. -/
 lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
@@ -34,8 +36,9 @@ lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
   · exact ⟨x, hfx⟩
   · have hxne : f (Point.update x i (!x i)) ≠ f x := by simpa using hx.symm
     cases hupdate : f (Point.update x i (!x i))
-    · have : False := by simpa [hfx, hupdate] using hx
+    · have : False := by
+        simp [hfx, hupdate] at hx
       contradiction
-    · exact ⟨Point.update x i (!x i), by simpa [hupdate]⟩
+    · exact ⟨Point.update x i (!x i), by simp [hupdate]⟩
 
 end BoolFunc

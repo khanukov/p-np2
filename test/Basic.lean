@@ -1,4 +1,5 @@
 import Pnp.BoolFunc
+import Pnp.DecisionTree
 
 open BoolFunc
 
@@ -19,5 +20,13 @@ example (x : Point 2) (b : Bool) :
   let f : BFunc 2 := fun y => y 0
   have hneq : (0 : Fin 2) ≠ 1 := by decide
   simp [Point.update, hneq]
+
+-- A trivial decision tree has at most `2 ^ depth` leaves.
+example :
+    (DecisionTree.leaf true : DecisionTree 1).leaf_count ≤
+      2 ^ (DecisionTree.depth (DecisionTree.leaf true : DecisionTree 1)) := by
+  simpa using
+    (DecisionTree.leaf_count_le_pow_depth
+      (t := (DecisionTree.leaf true : DecisionTree 1)))
 
 end BasicTests

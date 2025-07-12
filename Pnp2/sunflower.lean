@@ -67,7 +67,7 @@ lemma sunflower_exists_easy
   classical
   -- pick any `p` distinct sets
   obtain ⟨T, hsub, hcardT⟩ :=
-    Finset.exists_subset_card_eq (s := 𝒜) (k := p) (by simpa using hcard)
+    Finset.exists_subset_card_eq (s := 𝒜) (n := p) (by simpa using hcard)
   -- the intersection of all sets in `T` will serve as the core
   let core : Finset α :=
     (Finset.interFinset T).getD (Finset.card_pos.2 (by

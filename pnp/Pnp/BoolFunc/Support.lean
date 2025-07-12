@@ -24,4 +24,18 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
       cases hxi : x i <;> cases hbv : b <;> simp [hxi, hbv] at *
     simpa [hb'] using hx
 
+/-- Every non-trivial function evaluates to `true` at some point. -/
+lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
+    ∃ x, f x = true := by
+  classical
+  obtain ⟨i, hi⟩ := Finset.nonempty_iff_ne_empty.2 h
+  obtain ⟨x, hx⟩ := mem_support_iff.mp hi
+  by_cases hfx : f x = true
+  · exact ⟨x, hfx⟩
+  · have hxne : f (Point.update x i (!x i)) ≠ f x := by simpa using hx.symm
+    cases hupdate : f (Point.update x i (!x i))
+    · have : False := by simpa [hfx, hupdate] using hx
+      contradiction
+    · exact ⟨Point.update x i (!x i), by simpa [hupdate]⟩
+
 end BoolFunc

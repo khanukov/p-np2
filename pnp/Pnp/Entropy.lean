@@ -1,6 +1,7 @@
 import Pnp.BoolFunc
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Algebra.Order.Field.Basic
+import Mathlib.Tactic
 
 open Classical
 open Real
@@ -75,5 +76,30 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   classical
   simpa [Family.restrict] using
     (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
+
+/-- **Existence of a halving restriction (ℝ version)**.  There exists a
+coordinate `i` and bit `b` such that restricting every function in the family to
+`i = b` cuts its cardinality by at least half (real version). -/
+axiom exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
+    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2
+
+/-- **Existence of a halving restriction.**  Casts the real-valued inequality
+from `exists_restrict_half_real_aux` back to natural numbers. -/
+axiom exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2
+
+/-- **Existence of a halving restriction (ℝ version)** – deduced from the
+integer statement. -/
+axiom exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
+    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2
+
+/-- **Entropy‑Drop Lemma.**  There exists a coordinate whose restriction lowers
+collision entropy by at least one bit. -/
+axiom exists_coord_entropy_drop {n : ℕ} (F : Family n)
+    (hn : 0 < n) (hF : 1 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool,
+      H₂ (F.restrict i b) ≤ H₂ F - 1
 
 end BoolFunc

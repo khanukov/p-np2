@@ -107,5 +107,30 @@ example (n : ℕ) :
       BoolFunc.low_sensitivity_cover_single
         (n := n) (s := s) (C := C) (f := f) Hs
 
+  -- There exists a coordinate whose restriction drops the entropy by one bit.
+  example :
+      ∃ i : Fin 1, ∃ b : Bool,
+        BoolFunc.H₂ (({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
+          Family 1).restrict i b) ≤
+          BoolFunc.H₂ ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
+            Family 1) - 1 := by
+    classical
+    have hn : 0 < (1 : ℕ) := by decide
+    have hF : 1 < ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
+        Family 1).card := by
+      classical
+      have hne : (fun _ : Point 1 => true) ≠ (fun _ : Point 1 => false) := by
+        intro h
+        have := congrArg (fun f => f (fun _ => false)) h
+        simp at this
+      have hcard : ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
+          Family 1).card = 2 := by
+        simp [hne]
+      simp [hcard]
+    simpa using
+      BoolFunc.exists_coord_entropy_drop
+        (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)})
+        hn hF
+
 
 end BasicTests

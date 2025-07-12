@@ -34,6 +34,18 @@ lemma collProbFun_const_true : collProbFun (fun _ => true : BFunc n) = 1 := by
   unfold collProbFun prob ones
   simp
 
+lemma H₂Fun_const_false :
+    H₂Fun (fun _ => false : BFunc n) = 0 := by
+  classical
+  unfold H₂Fun collProbFun prob ones
+  simp
+
+lemma H₂Fun_const_true :
+    H₂Fun (fun _ => true : BFunc n) = 0 := by
+  classical
+  unfold H₂Fun collProbFun prob ones
+  simp
+
 end
 
 end BoolFunc

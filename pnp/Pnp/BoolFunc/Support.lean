@@ -22,8 +22,7 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     simp [hupdate]
   · have hb' : b = !x i := by
       cases hxi : x i <;> cases hbv : b <;> simp [hxi, hbv] at *
-    simp [hb'] at hx
-    exact hx
+    simpa [hb'] using hx
 
 /-- Every non-trivial function evaluates to `true` at some point. -/
 lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
@@ -33,9 +32,10 @@ lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
   obtain ⟨x, hx⟩ := mem_support_iff.mp hi
   by_cases hfx : f x = true
   · exact ⟨x, hfx⟩
-  · cases hupd : f (Point.update x i (!x i))
-    · simp [hfx, hupd] at hx
+  · have hxne : f (Point.update x i (!x i)) ≠ f x := by simpa using hx.symm
+    cases hupdate : f (Point.update x i (!x i))
+    · have : False := by simpa [hfx, hupdate] using hx
       contradiction
-    · exact ⟨Point.update x i (!x i), hupd⟩
+    · exact ⟨Point.update x i (!x i), by simpa [hupdate]⟩
 
 end BoolFunc

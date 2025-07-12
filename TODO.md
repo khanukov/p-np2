@@ -3,6 +3,8 @@
 Short list of development tasks reflecting the current repository status.
 
 - [x] Prove `exists_coord_card_drop` to complement the entropy-drop lemma.
+- [ ] Move all modules from `Pnp2` into the `pnp` directory and add extensive
+      tests for the migrated code.
 - [ ] Complete `buildCover` proofs (the bound `mBound_lt_subexp` is now proven).
 - [ ] Replace axioms `buildCover_mono` and `buildCover_card_bound` with full proofs.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.

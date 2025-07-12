@@ -129,14 +129,23 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now implemented directly in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop, and preliminary proofs of its properties (`buildCover_mono` and `buildCover_card_bound`) have been added. The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
+The project is currently undergoing a major refactoring.  All modules are being
+relocated from the historical `Pnp2` namespace to the new `pnp` directory under
+`Pnp`.  Each file is migrated together with dedicated tests to ensure that the
+statements still compile and the existing proofs remain valid.  Only once this
+move is complete will new lemmas and theorems be added.
+
 ## Development plan
 
-The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key tasks are:
+The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key
+tasks are:
 1. ~~finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
    complement the proved entropy drop,~~
-2. complete the `buildCover` correctness proof and establish the bound
+2. move all modules from `Pnp2` into the `pnp` directory and extend the test
+   suite to cover the migrated code,
+3. complete the `buildCover` correctness proof and establish the bound
    `mBound_lt_subexp`,
-3. integrate the decision-tree cover into `low_sensitivity_cover`,
-4. expose `FamilyCover` and single-function entropy utilities throughout the
+4. integrate the decision-tree cover into `low_sensitivity_cover`,
+5. expose `FamilyCover` and single-function entropy utilities throughout the
    codebase.
 Once these are done the lemma `FCE_lemma` will follow.

@@ -14,7 +14,7 @@ namespace BoolFunc
 We work in `ℝ` so that later analytic lemmas can apply. -/
 noncomputable
 def collProb {n : ℕ} (F : Family n) : ℝ :=
-  if h : F.card = 0 then 0 else (F.card : ℝ)⁻¹
+  if F.card = 0 then 0 else (F.card : ℝ)⁻¹
 
 @[simp] lemma collProb_pos {n : ℕ} {F : Family n} (h : 0 < F.card) :
     collProb F = (F.card : ℝ)⁻¹ := by
@@ -29,7 +29,7 @@ lemma collProb_nonneg {n : ℕ} (F : Family n) :
   by_cases h : F.card = 0
   · simp [collProb, h]
   · have : 0 < (F.card : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero h
-    simpa [collProb, h] using inv_nonneg.mpr (le_of_lt this)
+    simp [collProb, h, inv_nonneg.mpr (le_of_lt this)]
 
 lemma collProb_le_one {n : ℕ} (F : Family n) :
     collProb F ≤ 1 := by

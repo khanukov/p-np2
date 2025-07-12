@@ -1,6 +1,7 @@
 import Pnp.BoolFunc
 import Pnp.BoolFunc.Support
 import Pnp.DecisionTree
+import Pnp.Agreement
 
 open BoolFunc
 
@@ -42,5 +43,12 @@ example :
     DecisionTree.leaf_count_le_pow_depth
       (t := (DecisionTree.leaf true : DecisionTree 1))
   exact hx
+
+-- A point always belongs to the subcube fixed by itself.
+example {n : ℕ} (x : Point n) :
+    x ∈ₛ Agreement.Subcube.fromPoint (n := n) x Finset.univ := by
+  classical
+  intro i hi
+  simp [Agreement.Subcube.fromPoint]
 
 end BasicTests

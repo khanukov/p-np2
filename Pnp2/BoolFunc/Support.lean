@@ -12,16 +12,20 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     (hi : i ∉ support f) (x : Point n) (b : Bool) :
     f x = f (Point.update x i b) := by
   classical
-  have hxall : ∀ z : Point n, f z = f (Point.update z i (!z i)) := by
-    have hxne := not_exists.mp (by simpa [mem_support_iff] using hi)
-    intro z
-    by_contra hx
-    exact hxne z hx
+  have hxne : ¬ ∃ z, f z ≠ f (Point.update z i (! z i)) := by
+    simp [mem_support_iff] at hi
+    exact hi
+  have hxall : ∀ z : Point n, f z = f (Point.update z i (! z i)) :=
+    not_exists.mp hxne
   have hx := hxall x
   by_cases hb : b = x i
   · subst hb; simp
-  · have hb' : b = !x i := by
-      cases x i <;> cases b <;> simp [hb] at *
+  · have hb' : b = ! x i := by
+      cases x i <;> cases b
+      · contradiction
+      · simp [hb]
+      · simp [hb]
+      · contradiction
     simpa [hb'] using hx
 
 /-/-- If `x` and `y` agree on `support f`, then `f x = f y`. -/

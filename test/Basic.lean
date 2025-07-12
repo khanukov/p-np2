@@ -62,7 +62,7 @@ example :
     exact mem_support_iff.mpr ⟨fun _ => false, hx⟩
   have hsupp : support (fun y : Point 1 => y 0) ≠ (∅ : Finset (Fin 1)) := by
     intro hempty
-    simpa [hempty] using hmem
+    simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
 end BasicTests

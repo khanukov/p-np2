@@ -10,6 +10,9 @@ lean_lib Pnp2 where
   -- Source files live at the repository root.
   srcDir := "."
 
+lean_lib Pnp where
+  srcDir := "pnp"
+
 @[test_driver]
 lean_exe tests where
   root := `Main
@@ -17,5 +20,5 @@ lean_exe tests where
   supportInterpreter := true
 
 lean_lib Tests where
-  globs := #[`SunflowerStep]
+  globs := #[`Basic]
   srcDir := "test"

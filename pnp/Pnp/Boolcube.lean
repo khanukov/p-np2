@@ -67,6 +67,41 @@ end Subcube
 abbrev BoolFun (n : ℕ) := Point n → Bool
 abbrev Family  (n : ℕ) := Finset (BoolFun n)
 
+/-! ### Slicing families by a coordinate -/
+
+def coordSlice (i : Fin n) (b : Bool) (F : Finset (Point n)) :
+    Finset (Point n) :=
+  F.filter fun x => x i = b
+
+namespace coordSlice
+
+@[simp] lemma card_le (i : Fin n) (b : Bool) (F : Finset (Point n)) :
+    (coordSlice i b F).card ≤ F.card :=
+  Finset.card_filter_le _ _
+
+@[simp] lemma disj (i : Fin n) (F : Finset (Point n)) :
+    Disjoint (coordSlice i true F) (coordSlice i false F) := by
+  classical
+  refine Finset.disjoint_left.mpr ?_
+  intro x hxT hxF
+  simp [coordSlice] at hxT hxF
+  cases hxT.2.symm.trans hxF.2
+
+lemma partition (i : Fin n) (F : Finset (Point n)) :
+    (coordSlice i true F).card + (coordSlice i false F).card = F.card := by
+  classical
+  have hdisj := disj i F
+  have hunion : (coordSlice i true F) ∪ (coordSlice i false F) = F := by
+    classical
+    ext x; cases hx : x i <;> simp [coordSlice, hx]
+  simpa [hunion] using
+    (Finset.card_union_of_disjoint (s := coordSlice i true F)
+      (t := coordSlice i false F) hdisj).symm
+
+end coordSlice
+
+open coordSlice
+
 namespace Entropy
 
 /-- Collision entropy (uniform measure) – we keep only the logarithmic form. -/
@@ -89,4 +124,3 @@ lemma H₂_nonneg {F : Family n} : 0 ≤ H₂ F := by
 end Entropy
 
 end Boolcube
-

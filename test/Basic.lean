@@ -5,6 +5,7 @@ import Pnp.Agreement
 import Pnp.Boolcube
 import Pnp.Entropy
 import Pnp.Collentropy
+import Pnp.LowSensitivityCover
 
 open BoolFunc
 
@@ -73,7 +74,7 @@ example :
 example (n : ℕ) :
     (Boolcube.Subcube.full : Boolcube.Subcube n).dim = n := by
   classical
-  simpa using Boolcube.Subcube.dim_full (n := n)
+  simp
 
 -- Basic bounds on collision probability.
 example (F : Family 0) :
@@ -89,10 +90,22 @@ example (n : ℕ) :
   simpa using BoolFunc.collProbFun_const_false (n := n)
 
 -- A single-point subcube is monochromatic for any function.
-example {n : ℕ} (x : Point n) (f : BFunc n) :
-    (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
-  classical
-  exact Agreement.Subcube.monochromatic_point (x := x) (f := f)
+  example {n : ℕ} (x : Point n) (f : BFunc n) :
+      (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
+    classical
+    exact Agreement.Subcube.monochromatic_point (x := x) (f := f)
+
+  -- The low-sensitivity cover for a single function follows from `decisionTree_cover`.
+  example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
+      (Hs : sensitivity f ≤ s) :
+      ∃ Rset : Finset (Subcube n),
+        (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+    classical
+    simpa using
+      BoolFunc.low_sensitivity_cover_single
+        (n := n) (s := s) (C := C) (f := f) Hs
 
 
 end BasicTests

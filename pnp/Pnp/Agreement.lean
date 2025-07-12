@@ -20,7 +20,7 @@ variable {F : Family n}
     distance `ℓ` of `x`. -/
 class CoreClosed (ℓ : ℕ) (F : Family n) : Prop where
   closed_under_ball :
-    ∀ {f : BFunc n} (hf : f ∈ F) {x y : Point n},
+    ∀ {f : BFunc n} (_hf : f ∈ F) {x y : Point n},
       f x = true → hammingDist x y ≤ ℓ → f y = true
 
 /-! ### A convenience constructor for subcubes fixed by a point -/
@@ -29,7 +29,7 @@ class CoreClosed (ℓ : ℕ) (F : Family n) : Prop where
 `I ⊆ Fin n` to the values they take in the point `x`. -/
 def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
   idx := I
-  val := fun i h => x i
+  val := fun i _ => x i
 
 @[simp] lemma fromPoint_mem
     {x : Point n} {I : Finset (Fin n)} {y : Point n} :
@@ -82,19 +82,17 @@ to their shared values is **monochromatic** of colour `1` for the entire family.
 lemma coreAgreement
     {x₁ x₂ : Point n} (I : Finset (Fin n))
     (h_size  : n - ℓ ≤ I.card)
-    (h_agree : ∀ i : Fin n, i ∈ I → x₁ i = x₂ i)
+    (_h_agree : ∀ i : Fin n, i ∈ I → x₁ i = x₂ i)
     (h_val1  : ∀ f, f ∈ F → f x₁ = true)
-    (h_val2  : ∀ f, f ∈ F → f x₂ = true)
+    (_h_val2 : ∀ f, f ∈ F → f x₂ = true)
     [CoreClosed ℓ F] :
     (Subcube.fromPoint x₁ I).monochromaticForFamily F := by
   classical
   refine ⟨true, ?_⟩
   intro f hf y hy
-  have hx₁ : f x₁ = true := h_val1 f hf
-  have hdist : hammingDist x₁ y ≤ ℓ :=
-    dist_le_of_compl_subset (n := n) (ℓ := ℓ) (x := x₁) (y := y)
-      (I := I) h_size hy
-  exact CoreClosed.closed_under_ball (f := f) (hf := hf) hx₁ hdist
+  have hx₁ := h_val1 f hf
+  have hdist := dist_le_of_compl_subset h_size hy
+  exact CoreClosed.closed_under_ball (_hf := hf) hx₁ hdist
 
 open Finset
 
@@ -114,10 +112,10 @@ lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
   have hval : (fun i (hi : i ∈ K) => x i) = (fun i (hi : i ∈ K) => x₀ i) := by
-    funext i hi; simpa [h i hi]
+    funext i hi; simp [h i hi]
   simp [Subcube.fromPoint, hval]
 
 end Agreement
 
 lemma agree_on_refl {α β : Type _} (f : α → β) (s : Set α) : Set.EqOn f f s :=
-  fun x hx => rfl
+  fun _ _ => rfl

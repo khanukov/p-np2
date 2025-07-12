@@ -6,6 +6,7 @@ This module sketches a collision-entropy framework.  The core proofs are
 now complete so the definitions can be imported by other files.
 -/
 import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Tactic
 import Pnp2.BoolFunc
 
@@ -85,7 +86,59 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   -- `restrict` is implemented via `Finset.image`, hence the cardinality can
   -- only drop.
   simpa [Family.restrict] using
-    (Finset.card_image_le (f := fun f : BFunc n => fun x => f (Point.update x i b)) F)
+    (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
+
+/-- **Existence of a halving restriction (ℝ version)** – a cleaner proof in ℝ.
+It avoids delicate natural-number arithmetic. -/
+lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
+    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+  classical
+  haveI : NeZero n := ⟨Nat.ne_of_gt (by exact hn)⟩
+  -- We prove the contrapositive: if every coordinate keeps > half, impossible.
+  by_contra h
+  push_neg at h
+  have inj : F.card ≤ (F.restrict 0 false).card * (F.restrict 0 true).card := by
+    apply Finset.card_image_le
+    refine ⟨fun f : BFunc n => (f.restrictCoord 0 false, f.restrictCoord 0 true), ?_⟩
+    intro f₁ f₂ hf heq
+    cases heq with
+    | intro h0 h1 =>
+        have : ∀ x : Point n, f₁ x = f₂ x := by
+          intro x
+          by_cases hx : x 0 = false
+          · have := congrArg (fun g => g x) h0
+            simpa [BoolFunc.restrictCoord, hx] using this
+          · have := congrArg (fun g => g x) h1
+            have hx1 : x 0 = true := by cases x 0 <;> tauto
+            simpa [BoolFunc.restrictCoord, hx, hx1] using this
+        exact hf (funext this)
+  have two_ne_one : (2 : ℝ) ≠ 1 := by norm_num
+  have two_pos : (2 : ℝ) > 0 := by norm_num
+  have log_ineq :
+      Real.logb 2 (F.card) ≤
+        Real.logb 2 ((F.restrict 0 false).card) +
+          Real.logb 2 ((F.restrict 0 true).card) := by
+    have hmul := congrArg (Real.logb 2) inj
+    have a_pos : 0 < ((F.restrict 0 false).card : ℝ) := by positivity
+    have b_pos : 0 < ((F.restrict 0 true).card : ℝ) := by positivity
+    simpa [Real.logb_mul two_ne_one two_pos a_pos b_pos] using hmul
+  have half_log :
+      Real.logb 2 ((F.restrict 0 false).card) > Real.logb 2 F.card - 1 ∧
+        Real.logb 2 ((F.restrict 0 true).card) > Real.logb 2 F.card - 1 := by
+    specialize h 0
+    constructor
+    · apply Real.logb_lt_logb two_pos (by positivity)
+      exact_mod_cast h _
+    · apply Real.logb_lt_logb two_pos (by positivity)
+      exact_mod_cast h _
+  have sum_log :
+      Real.logb 2 ((F.restrict 0 false).card) +
+          Real.logb 2 ((F.restrict 0 true).card) >
+            2 * Real.logb 2 F.card - 2 := by
+    linarith [half_log.1, half_log.2]
+  have := lt_of_le_of_lt log_ineq sum_log
+  linarith
 
 /- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
 ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof. -/
@@ -107,57 +160,6 @@ lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.car
 /-- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
 ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof.
 -/
-lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
-  classical
-  -- We prove the contrapositive. Assume every coordinate / bit keeps more than
-  -- half of the family. This leads to a contradiction via a logarithmic
-  -- inequality.
-  by_contra h
-  push_neg at h
-  -- Pick an arbitrary coordinate and consider the pair of restrictions.
-  have inj : F.card ≤ (F.restrict 0 false).card * (F.restrict 0 true).card := by
-    apply Finset.card_image_le
-    refine ⟨fun f : BFunc n => (f.restrictCoord 0 false, f.restrictCoord 0 true), ?_⟩
-    intro f₁ f₂ hf heq
-    cases heq with
-    | intro h0 h1 =>
-        have : ∀ x : Point n, f₁ x = f₂ x := by
-          intro x
-          by_cases hx : x 0 = false
-          · have := congrArg (fun g => g x) h0
-            simpa [BoolFunc.restrictCoord, hx] using this
-          · have := congrArg (fun g => g x) h1
-            have hx1 : x 0 = true := by cases x 0 <;> tauto
-            simpa [BoolFunc.restrictCoord, hx, hx1] using this
-        exact hf (funext this)
-  -- Apply logarithms to this inequality.
-  have log_ineq :
-      Real.logb 2 (F.card) ≤
-        Real.logb 2 ((F.restrict 0 false).card) +
-          Real.logb 2 ((F.restrict 0 true).card) := by
-    have := Real.logb_mul (by norm_num : (2 : ℝ) ≠ 1) (by positivity) (by positivity)
-    simpa using congrArg (Real.logb 2) inj
-  -- Each restriction is assumed > F.card / 2, hence its log is > log₂(F.card/2).
-  have half_log :
-      Real.logb 2 ((F.restrict 0 false).card) > Real.logb 2 F.card - 1 ∧
-        Real.logb 2 ((F.restrict 0 true).card) > Real.logb 2 F.card - 1 := by
-    specialize h 0
-    constructor
-    · apply Real.logb_lt_logb (by norm_num : (2:ℝ) > 1)
-      exact_mod_cast h _
-    · apply Real.logb_lt_logb (by norm_num : (2:ℝ) > 1)
-      exact_mod_cast h _
-  -- Summing the two inequalities yields a contradiction with `log_ineq`.
-  have sum_log :
-      Real.logb 2 ((F.restrict 0 false).card) +
-          Real.logb 2 ((F.restrict 0 true).card) >
-            2 * Real.logb 2 F.card - 2 := by
-    linarith [half_log.1, half_log.2]
-  have := lt_of_le_of_lt log_ineq sum_log
-  -- Obtain `Real.logb 2 F.card < 2 * Real.logb 2 F.card - 2`, impossible.
-  linarith
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
@@ -180,7 +182,8 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
   obtain ⟨i, b, h_half⟩ := exists_restrict_half_real (F := F) hn hF
   -- Take logarithms (base 2) of the cardinality inequality. Monotonicity of
   -- log ensures the desired drop by one bit.
-  have hlog := Real.logb_le_logb (by norm_num : (2:ℝ) > 1) h_half
+  have two_pos : (2:ℝ) > 0 := by norm_num
+  have hlog := Real.logb_le_logb two_pos (by positivity) (by positivity) h_half
   -- `logb` of division simplifies via the standard identity.
   rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.2 (Nat.one_ne_zero)),
       Real.logb_two] at hlog

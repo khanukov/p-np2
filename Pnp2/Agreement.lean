@@ -68,19 +68,14 @@ def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
 
 /-! ### Core‑agreement lemma with CoreClosed assumption -/
 
-/--
-**Core‑Agreement Lemma**  
+/-
+  ### Core-Agreement Lemma
 
-Let `x₁, x₂ : Point n` be two inputs such that
-
-* There exists a set of coordinates `I` with  
-  `I.card ≥ n - ℓ` **and** `x₁ i = x₂ i` for every `i ∈ I`;
-* Every function `f ∈ F` outputs `1` on *both* `x₁` and `x₂`.
-
-Assuming `CoreClosed ℓ F`, the subcube obtained by fixing the coordinates in `I`
-to their shared values is **monochromatic** of colour `1` for the entire family.
-
-This is exactly Lemma 4.3 of the formal specification. -/
+  If two points `x₁` and `x₂` agree on at least `n - ℓ` coordinates and every
+  function in `F` evaluates to `true` on both points, then freezing those
+  coordinates yields a subcube on which all functions in `F` are constantly
+  `true`.
+-/
 -- We move the statement of the core agreement lemma below, after proving a
 -- helper about the Hamming distance of points that agree on many coordinates.
 
@@ -102,13 +97,17 @@ lemma dist_le_of_compl_subset
       exact False.elim (hxne this)
     · simpa [Finset.mem_compl] using hiI
   -- count mismatching coordinates using the complement of `I`
-  have h_card := Finset.card_le_of_subset h_subset
+  have h_card := Finset.card_le_card h_subset
   have h_bound : (Finset.univ.filter fun i => x i ≠ y i).card ≤ n - I.card := by
     simpa [Finset.card_compl] using h_card
   -- conclude using the assumption on `|I|`
+  have h_le_sub : n - I.card ≤ ℓ := by
+    have := (Nat.sub_le_iff_le_add.mp h_size)
+    have : n ≤ ℓ + I.card := by simpa [Nat.add_comm] using this
+    exact Nat.sub_le_iff_le_add.mpr this
   have h_le : (Finset.univ.filter fun i => x i ≠ y i).card ≤ ℓ :=
-    h_bound.trans <| by simpa [Nat.sub_le_iff_le_add] using h_size
-  simpa [hammingDist_eq_card_filter] using h_le
+    h_bound.trans h_le_sub
+  simpa [hammingDist] using h_le
 
 /-! ### Core-agreement lemma with CoreClosed assumption -/
 
@@ -151,17 +150,18 @@ subcube `fromPoint x K`.
 lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)}
     {x y : Point n}
     (h : ∀ i, i ∈ K → x i = y i) :
-    y ∈ Subcube.fromPoint x K := by
+    y ∈ₛ Subcube.fromPoint x K := by
   intro i hi
-  simpa [h i hi] using h i hi
+  simpa [Subcube.fromPoint] using (h i hi).symm
 
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/
 lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
-  ext i hi
-  simp [Subcube.fromPoint, h i hi]
+  have hval : (fun i (hi : i ∈ K) => x i) = (fun i (hi : i ∈ K) => x₀ i) := by
+    funext i hi; simpa [h i hi]
+  simp [Subcube.fromPoint, hval]
 
 end Agreement
 

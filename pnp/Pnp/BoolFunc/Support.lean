@@ -36,8 +36,9 @@ lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
   · exact ⟨x, hfx⟩
   · have hxne : f (Point.update x i (!x i)) ≠ f x := by simpa using hx.symm
     cases hupdate : f (Point.update x i (!x i))
-    · have : False := by simpa [hfx, hupdate] using hx
+    · have : False := by
+        simp [hfx, hupdate] at hx
       contradiction
-    · exact ⟨Point.update x i (!x i), by simpa [hupdate]⟩
+    · exact ⟨Point.update x i (!x i), by simp [hupdate]⟩
 
 end BoolFunc

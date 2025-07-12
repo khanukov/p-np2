@@ -126,7 +126,7 @@ example (n : ℕ) :
       have hcard : ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
           Family 1).card = 2 := by
         simp [hne]
-      simpa [hcard] using (by decide : 1 < (2 : ℕ))
+      simp [hcard]
     simpa using
       BoolFunc.exists_coord_entropy_drop
         (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)})

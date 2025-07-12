@@ -4,6 +4,7 @@ import Pnp.DecisionTree
 import Pnp.Agreement
 import Pnp.Boolcube
 import Pnp.Entropy
+import Pnp.Collentropy
 
 open BoolFunc
 
@@ -80,6 +81,12 @@ example (F : Family 0) :
   constructor
   · simpa using BoolFunc.collProb_nonneg (F := F)
   · simpa using BoolFunc.collProb_le_one (F := F)
+
+-- Collision probability of a constant function is one.
+example (n : ℕ) :
+    BoolFunc.collProbFun (fun _ : Point n => false) = 1 := by
+  classical
+  simpa using BoolFunc.collProbFun_const_false (n := n)
 
 -- A single-point subcube is monochromatic for any function.
 example {n : ℕ} (x : Point n) (f : BFunc n) :

@@ -4,3 +4,4 @@ import Pnp.DecisionTree
 import Pnp.Agreement
 import Pnp.Boolcube
 import Pnp.Entropy
+import Pnp.Collentropy

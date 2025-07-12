@@ -12,8 +12,11 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     (hi : i ∉ support f) (x : Point n) (b : Bool) :
     f x = f (Point.update x i b) := by
   classical
+  -- Unfolding the definition of `support`, `hi` tells us that flipping the
+  -- `i`-th bit never changes the value of `f`.
   have hxall : ∀ z : Point n, f z = f (Point.update z i (!z i)) := by
-    simpa [mem_support_iff] using hi
+    simp [mem_support_iff] at hi
+    exact hi
   have hx := hxall x
   by_cases hb : b = x i
   · subst hb
@@ -22,7 +25,9 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     simp [hupdate]
   · have hb' : b = !x i := by
       cases hxi : x i <;> cases hbv : b <;> simp [hxi, hbv] at *
-    simpa [hb'] using hx
+    -- Rewrite `hx` using the reverse orientation of `hb'` before finishing.
+    simp [hb'.symm] at hx
+    exact hx
 
 /-- Every non-trivial function evaluates to `true` at some point. -/
 lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :

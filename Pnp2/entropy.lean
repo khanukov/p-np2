@@ -6,6 +6,7 @@ This module sketches a collision-entropy framework.  The core proofs are
 now complete so the definitions can be imported by other files.
 -/
 import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Tactic
 import Pnp2.BoolFunc
 
@@ -85,25 +86,10 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   -- `restrict` is implemented via `Finset.image`, hence the cardinality can
   -- only drop.
   simpa [Family.restrict] using
-    (Finset.card_image_le (f := fun f : BFunc n => fun x => f (Point.update x i b)) F)
+    (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
 
 /- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
 ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof. -/
-
-
-lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
-  classical
-  -- Obtain the real-valued inequality and cast back to ℕ.
-  obtain ⟨i, b, h_half_real⟩ := exists_restrict_half_real_aux (F := F) hn hF
-  have hle_nat : (F.restrict i b).card ≤ F.card / 2 := by
-    exact_mod_cast h_half_real
-  exact ⟨i, b, hle_nat⟩
-
--- The above arithmetic on naturals is tedious; a simpler *real* argument will
--- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on
--- `exists_restrict_half` proven below with reals.
-
 /-- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
 ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof.
 -/
@@ -111,6 +97,7 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
+  haveI : NeZero n := ⟨Nat.ne_of_gt (by exact hn)⟩
   -- We prove the contrapositive. Assume every coordinate / bit keeps more than
   -- half of the family. This leads to a contradiction via a logarithmic
   -- inequality.
@@ -137,7 +124,11 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
       Real.logb 2 (F.card) ≤
         Real.logb 2 ((F.restrict 0 false).card) +
           Real.logb 2 ((F.restrict 0 true).card) := by
-    have := Real.logb_mul (by norm_num : (2 : ℝ) ≠ 1) (by positivity) (by positivity)
+    have two_ne_one : (2 : ℝ) ≠ 1 := by norm_num
+    have two_pos : (2 : ℝ) > 0 := by norm_num
+    have hpos1 : 0 < ((F.restrict 0 false).card : ℝ) := by positivity
+    have hpos2 : 0 < ((F.restrict 0 true).card : ℝ) := by positivity
+    have := Real.logb_mul two_ne_one two_pos hpos1 hpos2
     simpa using congrArg (Real.logb 2) inj
   -- Each restriction is assumed > F.card / 2, hence its log is > log₂(F.card/2).
   have half_log :
@@ -158,6 +149,21 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
   have := lt_of_le_of_lt log_ineq sum_log
   -- Obtain `Real.logb 2 F.card < 2 * Real.logb 2 F.card - 2`, impossible.
   linarith
+
+
+
+lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
+  classical
+  -- Obtain the real-valued inequality and cast back to ℕ.
+  obtain ⟨i, b, h_half_real⟩ := exists_restrict_half_real_aux (F := F) hn hF
+  have hle_nat : (F.restrict i b).card ≤ F.card / 2 := by
+    exact_mod_cast h_half_real
+  exact ⟨i, b, hle_nat⟩
+
+-- The above arithmetic on naturals is tedious; a simpler *real* argument will
+-- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on
+-- `exists_restrict_half` proven below with reals.
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
@@ -180,7 +186,10 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
   obtain ⟨i, b, h_half⟩ := exists_restrict_half_real (F := F) hn hF
   -- Take logarithms (base 2) of the cardinality inequality. Monotonicity of
   -- log ensures the desired drop by one bit.
-  have hlog := Real.logb_le_logb (by norm_num : (2:ℝ) > 1) h_half
+  have two_pos : (2:ℝ) > 1 := by norm_num
+  have hpos_a : 0 < ((F.restrict i b).card : ℝ) := by positivity
+  have hpos_b : 0 < (F.card : ℝ) / 2 := by positivity
+  have hlog := Real.logb_le_logb two_pos hpos_a hpos_b h_half
   -- `logb` of division simplifies via the standard identity.
   rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.2 (Nat.one_ne_zero)),
       Real.logb_two] at hlog

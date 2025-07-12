@@ -15,13 +15,16 @@ lemma eval_eq_of_agree_on_support
   -- Otherwise there exists a coordinate where the values differ.
   by_contra hneq
   obtain ⟨i, hi⟩ : ∃ i : Fin n, x i ≠ y i := by
-    by_cases hxy : x = y
-    · simpa [hxy] using hneq
-    · push_neg at hxy; exact hxy
+    -- контрапозиция: из ¬(x = y) получаем ¬∀ i, x i = y i
+    have hxy' : ¬ ∀ i, x i = y i := by
+      intro H; apply hneq; funext i; exact H i
+    -- из этого выводим ∃ i, x i ≠ y i
+    contrapose! hxy'
+    intro ⟨i, hi⟩; exact hi
+  -- развернуть определение support
   have hisupp : i ∈ support f := by
-    -- use the definition of `support`
     unfold support
-    simp [hi, Finset.mem_filter]
+    simp [Finset.mem_filter] at *
   have : x i = y i := h i hisupp
   exact hi this
 

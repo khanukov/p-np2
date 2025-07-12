@@ -72,7 +72,7 @@ example :
 example (n : ℕ) :
     (Boolcube.Subcube.full : Boolcube.Subcube n).dim = n := by
   classical
-  simp [Boolcube.Subcube.dim_full (n := n)]
+  simp
 
 -- Basic bounds on collision probability.
 example (F : Family 0) :

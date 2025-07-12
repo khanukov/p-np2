@@ -44,11 +44,25 @@ example :
       (t := (DecisionTree.leaf true : DecisionTree 1))
   exact hx
 
--- A point always belongs to the subcube fixed by itself.
 example {n : ℕ} (x : Point n) :
     x ∈ₛ Agreement.Subcube.fromPoint (n := n) x Finset.univ := by
   classical
   intro i hi
   simp [Agreement.Subcube.fromPoint]
+
+-- There exists a point where a non-trivial function evaluates to `true`.
+example :
+    ∃ x, (fun y : Point 1 => y 0) x = true := by
+  classical
+  have hmem : (0 : Fin 1) ∈ support (fun y : Point 1 => y 0) := by
+    classical
+    have hx : (fun y : Point 1 => y 0) (fun _ => false) ≠
+        (fun y : Point 1 => y 0) (Point.update (fun _ => false) 0 true) := by
+      simp [Point.update]
+    exact mem_support_iff.mpr ⟨fun _ => false, hx⟩
+  have hsupp : support (fun y : Point 1 => y 0) ≠ (∅ : Finset (Fin 1)) := by
+    intro hempty
+    simpa [hempty] using hmem
+  exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
 end BasicTests

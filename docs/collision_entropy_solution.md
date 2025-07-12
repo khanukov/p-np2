@@ -2,7 +2,7 @@
 
 This note summarises the definition of **collision entropy** for a
 single Boolean function and shows how it is formalised in Lean.  The
-implementation can be found in `Pnp2/collentropy.lean`.
+implementation can be found in `pnp/Pnp/Collentropy.lean`.
 
 ## Definition
 
@@ -66,7 +66,7 @@ These facts provide the basic groundwork for further entropy arguments.
 To compile the `collentropy` module run:
 ```bash
 lake exe cache get
-lake build Pnp2.collentropy
+lake build Pnp.Collentropy
 ```
 The first command downloads pre-built Mathlib binaries. If the download fails or is skipped, the build step may take a long time as it compiles Mathlib from source.
 

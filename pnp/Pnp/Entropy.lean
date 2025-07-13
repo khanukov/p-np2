@@ -91,9 +91,13 @@ axiom exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.car
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
-axiom exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
+lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+  classical
+  obtain ⟨i, b, hhalf⟩ := exists_restrict_half (F := F) hn hF
+  refine ⟨i, b, ?_⟩
+  exact_mod_cast hhalf
 
 /-- **Entropy‑Drop Lemma.**  There exists a coordinate whose restriction lowers
 collision entropy by at least one bit. -/

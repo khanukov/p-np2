@@ -106,6 +106,19 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     _ = evalCanon (canonical c₂) x := by simpa using hcanon
     _ = eval c₂ x := hc₂.symm
 
+/-- ### Encoding length for canonical circuits
+
+The following helper function measures the length of a canonical circuit in
+bits.  Each variable index contributes `Nat.log2 n + 1` bits while every gate
+adds a single bit.  This rough accounting is sufficient for subsequent
+cardinality bounds. -/
+def codeLen {n : ℕ} : Canon n → ℕ
+  | Canon.var _   => Nat.log2 n + 1
+  | Canon.const _ => 1
+  | Canon.not c   => 1 + codeLen c
+  | Canon.and c₁ c₂ => 1 + codeLen c₁ + codeLen c₂
+  | Canon.or c₁ c₂  => 1 + codeLen c₁ + codeLen c₂
+
 end Circuit
 
 end Boolcube

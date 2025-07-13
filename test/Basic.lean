@@ -214,7 +214,8 @@ example {n s : ℕ} (F : Finset (BoolFunc.Point n → Bool))
     (hF : F.Nonempty) :
     ∃ R : List (BoolFunc.Subcube n),
       R.length ≤ F.card * 2 ^ (4 * s * Nat.log2 (Nat.succ n)) := by
-  simpa using LowSensitivity.low_sensitivity_cover (F := F) (s := s) hF
+  obtain ⟨R, -, hlen⟩ := LowSensitivity.low_sensitivity_cover (F := F) (s := s) hF
+  exact ⟨R, hlen⟩
 
 -- Wrapper for entropy-based cover construction.
 noncomputable example {n : ℕ} (F : Family n) (h : ℕ) (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :

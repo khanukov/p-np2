@@ -37,9 +37,9 @@ lemma numeric_bound (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h := by
       have hpow : (2 : ℕ) ≤ 2 ^ (10 * (h + 1)) := by
         have hbase : (2 : ℕ) ≤ 2 ^ 10 := by decide
         have hexp : 10 ≤ 10 * (h + 1) := by
-          have : (1 : ℕ) ≤ h + 1 := Nat.succ_le_succ (Nat.zero_le _)
-          simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-            Nat.mul_le_mul_left 10 this
+          have hx : (1 : ℕ) ≤ h + 1 := Nat.succ_le_succ (Nat.zero_le _)
+          have hx' : (10 : ℕ) * 1 ≤ 10 * (h + 1) := Nat.mul_le_mul_left 10 hx
+          simpa [Nat.mul_one] using hx'
         exact hbase.trans (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hexp)
       -- Putting everything together
       have :

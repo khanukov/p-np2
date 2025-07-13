@@ -5,6 +5,7 @@ import Pnp.Agreement
 import Pnp.Boolcube
 import Pnp.CanonicalCircuit
 import Pnp.ComplexityClasses
+import Pnp.NPSeparation
 import Pnp.Entropy
 import Pnp.Collentropy
 import Pnp.LowSensitivityCover

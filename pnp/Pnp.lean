@@ -9,4 +9,5 @@ import Pnp.Sunflower.RSpread
 import Pnp.Sunflower.Sunflower
 import Pnp.CanonicalCircuit
 import Pnp.ComplexityClasses
+import Pnp.NPSeparation
 import Pnp.Cover

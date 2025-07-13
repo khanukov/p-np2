@@ -8,6 +8,7 @@ import Pnp.ComplexityClasses
 import Pnp.Entropy
 import Pnp.Collentropy
 import Pnp.LowSensitivityCover
+import Pnp.AccMcspSat
 
 open BoolFunc
 
@@ -176,6 +177,11 @@ example : polyTimeDecider (fun _ _ => false) := by
   refine ⟨constFalseTM, 1, ?h_run, ?h_accept⟩
   · intro n; simp [constFalseTM]
   · intro n x; rfl
+
+-- Splitting a small vector using `leftBits`.
+example (x : Fin 3 → Bool) :
+    ACCSAT.leftBits (N := 3) (k := 1) (ℓ := 2) rfl x ⟨0, by decide⟩ = x 0 := by
+  rfl
 
 
 end BasicTests

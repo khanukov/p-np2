@@ -156,6 +156,15 @@ roadmap.  The detailed proof is omitted here. -/
 axiom canonical_desc_length {n : ℕ} (c : Circuit n) :
     codeLen (canonical c) ≤ (sizeOf c) * (Nat.log2 n + 1) + 1
 
+/-- The set of circuits on `n` inputs whose size does not exceed `m`. -/
+def circuitsUpTo (n m : ℕ) : Set (Circuit n) := {c | sizeOf c ≤ m}
+
+/-- Upper bound on the number of canonical circuits of size at most `m`.
+    The detailed proof is omitted. -/
+axiom count_canonical_bounded (n m : ℕ) :
+  ∃ h : (circuitsUpTo n m).Finite,
+    h.toFinset.card ≤ 2 ^ (m * (Nat.log2 n + 1) + 1)
+
 end Circuit
 
 end Boolcube

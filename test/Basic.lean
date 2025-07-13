@@ -262,7 +262,8 @@ noncomputable example {n : ℕ} (F : Family n) (h : ℕ) (hH : BoolFunc.H₂ F �
 -- Table locality reduces to `k = n` for the placeholder version.
 example : ∃ k ≤ 1, True := by
   classical
-  simpa using Boolcube.tableLocal (n := 1) 1 (by decide)
+  obtain ⟨k, hk, _⟩ := Boolcube.tableLocal (n := 1) (c := 1)
+  exact ⟨k, hk, trivial⟩
 
 -- Numeric bound on cover size is trivial to verify for small parameters.
 example : 2 * 0 + 1 ≤ Cover.mBound 1 0 := by

@@ -203,6 +203,11 @@ example (h : ℕ) : 0 < Bound.n₀ h := by
   dsimp [Bound.n₀]
   exact hpos
 
+-- `aux_growth` bounds the linear term by the exponential one.
+example (h : ℕ) :
+    (18 + 22 * h : ℝ) < 100 * (h + 2) * 2 ^ (10 * h) := by
+  simpa using Bound.aux_growth h
+
 -- Entropy-based numeric bound on cover size.
 example {N Nδ : ℕ} (F : Family N)
     (h₂ : BoolFunc.H₂ F ≤ N - Nδ) :

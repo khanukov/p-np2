@@ -10,6 +10,7 @@ import Pnp.Entropy
 import Pnp.Collentropy
 import Pnp.LowSensitivityCover
 import Pnp.AccMcspSat
+import Pnp.Bound
 
 open BoolFunc
 
@@ -183,6 +184,13 @@ example : polyTimeDecider (fun _ _ => false) := by
 example (x : Fin 3 → Bool) :
     ACCSAT.leftBits (N := 3) (k := 1) (ℓ := 2) rfl x ⟨0, by decide⟩ = x 0 := by
   rfl
+
+-- The convenience bound `n₀` is positive for every `h`.
+example (h : ℕ) : 0 < Bound.n₀ h := by
+  have : 0 < 10000 * (h + 2) * Nat.pow 2 (10 * h) := by
+    have hpow : 0 < Nat.pow 2 (10 * h) := pow_pos (by decide) _
+    exact mul_pos (mul_pos (by decide) (Nat.succ_pos _)) hpow
+  simpa [Bound.n₀] using this
 
 
 end BasicTests

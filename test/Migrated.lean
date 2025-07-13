@@ -12,7 +12,8 @@ example :
       ∃ R : List (BoolFunc.Subcube 1),
         R.length ≤ F.card * 2 ^ (4 * 0 * Nat.log2 (Nat.succ 1)) := by
   intro F hF
-  simpa using LowSensitivity.low_sensitivity_cover (F := F) (s := 0) hF
+  obtain ⟨R, -, hlen⟩ := LowSensitivity.low_sensitivity_cover (F := F) (s := 0) hF
+  exact ⟨R, hlen⟩
 
 -- Table locality specializes to k = n.
 example : ∃ k ≤ 1, True := by

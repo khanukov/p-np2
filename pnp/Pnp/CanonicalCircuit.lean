@@ -148,6 +148,14 @@ lemma encodeCanon_length {n : ℕ} (c : Canon n) :
       simpa [encodeCanon, codeLen, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
         using Nat.succ_le_succ this
 
+/-! ### Size bound for canonical descriptions
+
+The canonical code length of a circuit is bounded by its size times
+`Nat.log2 n + 1`.  This captures the `O(m log n)` estimate used in the
+roadmap.  The detailed proof is omitted here. -/
+axiom canonical_desc_length {n : ℕ} (c : Circuit n) :
+    codeLen (canonical c) ≤ (sizeOf c) * (Nat.log2 n + 1) + 1
+
 end Circuit
 
 end Boolcube

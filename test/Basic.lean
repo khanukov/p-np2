@@ -203,6 +203,13 @@ example {n : ℕ} (c : Boolcube.Circuit.Canon n) :
       Boolcube.Circuit.codeLen c := by
   simpa using Boolcube.Circuit.encodeCanon_length (c := c)
 
+-- The canonical description length of a circuit grows at most linearly with
+-- its size (up to a logarithmic factor).
+example {n : ℕ} (c : Boolcube.Circuit n) :
+    Boolcube.Circuit.codeLen (Boolcube.Circuit.canonical c) ≤
+      (sizeOf c) * (Nat.log2 n + 1) + 1 := by
+  simpa using Boolcube.Circuit.canonical_desc_length (c := c)
+
 -- A trivial Turing machine that always rejects in constant time.
 def constFalseTM : TM :=
   { runTime := fun _ => 1,

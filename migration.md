@@ -1,38 +1,51 @@
 # Migration progress from Pnp2 to pnp
 
-The project is undergoing a gradual move from the historical `Pnp2` namespace to the new `pnp` directory. This file tracks which modules have already been transferred and which remain.
+The project has mostly completed the move from the historical `Pnp2` namespace
+to the new `pnp` directory.  Every file now has a counterpart under
+`pnp/Pnp/` and compiles in the new namespace.  The old `Pnp2` directory
+remains in the repository for reference because several modules were only
+ported as skeletons.
 
-## Already migrated
+## Modules now in `pnp/Pnp/`
 
-The following modules now live under `pnp/Pnp/` and compile in the new
-namespace:
+- `BoolFunc.lean` together with the subdirectory `BoolFunc/` (`Support.lean`,
+  `Sensitivity.lean`)
+- `DecisionTree.lean`
+- `Agreement.lean`
+- `Boolcube.lean`
+- `Collentropy.lean`
+- `Entropy.lean`
+- `LowSensitivityCover.lean`
+- `Cover.lean`
+- `Bound.lean`
+- `ComplexityClasses.lean`
+- `NPSeparation.lean`
+- `AccMcspSat.lean`
+- `CanonicalCircuit.lean`
+- `FamilyEntropyCover.lean`
+- `Sunflower/` containing `RSpread.lean` and `Sunflower.lean`
+- `CoverNumeric.lean`
+- `Examples.lean`
+- `LowSensitivity.lean`
+- `MergeLowSens.lean`
+- `TableLocality.lean`
+- `Pnp.lean` acting as the root module
 
- - `BoolFunc.lean` together with the subdirectory `BoolFunc/` (including
-   `Support.lean` and `Sensitivity.lean`).
- - `DecisionTree.lean`.
- - `Agreement.lean`.
- - `Boolcube.lean`.
- - `Collentropy.lean`.
- - `Entropy.lean`.
- - `LowSensitivityCover.lean`.
-- `Cover.lean`.
-- `Bound.lean`.
-- `ComplexityClasses.lean`.
- - `NPSeparation.lean`.
- - `AccMcspSat.lean`.
- - `CanonicalCircuit.lean`.
- - `FamilyEntropyCover.lean`.
- - `Sunflower/` containing `RSpread.lean` and `Sunflower.lean`.
- - `Pnp.lean` acting as the root module.
+## Outstanding work
 
-## Remaining to migrate
+The implementations from `Pnp2` still contain complete statements and proofs
+that have been replaced by placeholders in `pnp`.  The following parts are
+missing and should be ported:
 
-The following modules are still located under `Pnp2` and need to be copied into `pnp` while keeping the tests in sync:
+- the proofs of `aux_growth` and `mBound_lt_subexp` in `Bound.lean`
+- the full definition of `mergeLowSensitivityCover` in `MergeLowSens.lean`
+- the `low_sensitivity_cover` construction and helper lemmas from
+  `LowSensitivity.lean`
+- the example-driven code in `Examples.lean`
+- the SAT outline in `AccMcspSat.lean`
+- the separation lemma `P_ne_NP_of_MCSP_bound` from `NPSeparation.lean`
+- numeric cover bounds in `CoverNumeric.lean`
+- tests exercising these modules
 
- - `cover_numeric.lean`
- - `examples.lean`
- - `low_sensitivity.lean`
- - `merge_low_sens.lean`
- - `table_locality.lean`
-
-Once all these files have been ported and compile successfully under the `pnp` namespace, the old `Pnp2` directory can be removed.
+Once these proofs and tests have been migrated, the `Pnp2` directory can be
+removed entirely.

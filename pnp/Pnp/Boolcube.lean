@@ -102,6 +102,36 @@ end coordSlice
 
 open coordSlice
 
+/-- If a finite set of points contains at least two distinct elements, then some
+coordinate splits it into nonempty `true` and `false` slices. -/
+lemma exists_coord_slice_both_nonempty (S : Finset (Point n))
+    (hS : 1 < S.card) :
+    ∃ i : Fin n,
+      (coordSlice i true S).Nonempty ∧ (coordSlice i false S).Nonempty := by
+  classical
+  obtain ⟨x, y, hx, hy, hxy⟩ := (Finset.one_lt_card_iff).mp hS
+  have hdiff : ∃ i : Fin n, x i ≠ y i := by
+    by_contra h
+    have hxyeq : x = y := by
+      funext i
+      have hi := (not_exists.mp h) i
+      simpa using hi
+    exact hxy hxyeq
+  obtain ⟨i, hi⟩ := hdiff
+  cases hx_val : x i <;> cases hy_val : y i
+  case true.true =>
+    have : x i = y i := by simp [hx_val, hy_val]
+    exact (hi this).elim
+  case true.false =>
+    exact ⟨i, ⟨x, by simp [coordSlice, hx, hx_val]⟩,
+              ⟨y, by simp [coordSlice, hy, hy_val]⟩⟩
+  case false.true =>
+    exact ⟨i, ⟨y, by simp [coordSlice, hy, hy_val]⟩,
+              ⟨x, by simp [coordSlice, hx, hx_val]⟩⟩
+  case false.false =>
+    have : x i = y i := by simp [hx_val, hy_val]
+    exact (hi this).elim
+
 namespace Entropy
 
 /-- Collision entropy (uniform measure) – we keep only the logarithmic form. -/

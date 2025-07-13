@@ -1,5 +1,6 @@
 import Pnp.LowSensitivity
 import Pnp.TableLocality
+import Pnp.NPSeparation
 
 open Boolcube
 
@@ -20,6 +21,12 @@ example : ∃ k ≤ 1, True := by
   classical
   obtain ⟨k, hk, _⟩ := tableLocal (n := 1) (c := 1)
   exact ⟨k, hk, trivial⟩
+
+-- The non-uniform separation lemma can be applied once a suitable lower
+-- bound on `MCSP` is assumed.
+example (h : ∃ ε > 0, MCSP_lower_bound ε) :
+    P ≠ NP := by
+  exact P_ne_NP_of_MCSP_bound h
 
 end MigratedTests
 

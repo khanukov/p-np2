@@ -290,5 +290,12 @@ example :
     simp [Bound.n₀]
   exact Bound.mBound_lt_subexp (h := 0) (n := 20000) h0
 
+-- Another numeric instance for `mBound_lt_subexp` with `h = 1`.
+example :
+    Bound.mBound 30720000 1 < Nat.pow 2 (30720000 / 100) := by
+  have h0 : (30720000 : ℕ) ≥ Bound.n₀ 1 := by
+    simp [Bound.n₀]
+  exact Bound.mBound_lt_subexp (h := 1) (n := 30720000) h0
+
 
 end BasicTests

@@ -220,5 +220,16 @@ example : ∃ k ≤ 1, True := by
   classical
   simpa using Boolcube.tableLocal (n := 1) 1 (by decide)
 
+-- Numeric bound on cover size is trivial to verify for small parameters.
+example : 2 * 0 + 1 ≤ Cover.mBound 1 0 := by
+  have hn : 0 < (1 : ℕ) := by decide
+  exact Cover.numeric_bound (n := 1) (h := 0) hn
+
+-- When no functions and no rectangles are present, there is no uncovered point.
+example :
+    Cover.firstUncovered (F := (∅ : BoolFunc.Family 1)) (Rset := (∅ : Finset (BoolFunc.Subcube 1))) = none := by
+  classical
+  simp [Cover.firstUncovered, Cover.uncovered, Cover.NotCovered]
+
 
 end BasicTests

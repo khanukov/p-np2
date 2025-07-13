@@ -6,6 +6,7 @@ Short list of development tasks reflecting the current repository status.
 - [x] Move all modules from `Pnp2` into the `pnp` directory and add extensive
       tests for the migrated code.
 - [ ] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
+- [ ] Port `Bound.mBound_lt_subexp` proof and related lemmas (in progress).
 - [ ] Complete `buildCover` proofs (the bound `mBound_lt_subexp` is now proven).
 - [ ] Replace axioms `buildCover_mono` and `buildCover_card_bound` with full proofs.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.

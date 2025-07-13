@@ -287,7 +287,7 @@ example :
     Bound.mBound 20000 0 < Nat.pow 2 (20000 / 100) := by
   have h0 : (20000 : ℕ) ≥ Bound.n₀ 0 := by
     simp [Bound.n₀]
-  simpa using Bound.mBound_lt_subexp (h := 0) (n := 20000) h0
+  exact Bound.mBound_lt_subexp (h := 0) (n := 20000) h0
 
 
 end BasicTests

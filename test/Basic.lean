@@ -218,7 +218,7 @@ example {n s : ℕ} (F : Finset (BoolFunc.Point n → Bool))
 
 -- Wrapper for entropy-based cover construction.
 noncomputable example {n : ℕ} (F : Family n) (h : ℕ) (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    Finset (Boolcube.Subcube n) :=
+    Finset (BoolFunc.Subcube n) :=
   Boolcube.mergeLowSensitivityCover F h hH
 
 -- Table locality reduces to `k = n` for the placeholder version.

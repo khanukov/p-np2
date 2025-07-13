@@ -17,6 +17,7 @@ import Pnp.MergeLowSens
 import Pnp.TableLocality
 
 open BoolFunc
+open Bound
 
 namespace BasicTests
 
@@ -280,6 +281,13 @@ example {n h : ℕ} (F : Family n) (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card <
       Nat.pow 2 (n / 100) := by
   simpa using Bound.FCE_lemma (F := F) (h := h) hH hn
+
+-- A concrete instance of the sub-exponential bound.
+example :
+    Bound.mBound 20000 0 < Nat.pow 2 (20000 / 100) := by
+  have h0 : (20000 : ℕ) ≥ Bound.n₀ 0 := by
+    simp [Bound.n₀]
+  simpa using Bound.mBound_lt_subexp (h := 0) (n := 20000) h0
 
 
 end BasicTests

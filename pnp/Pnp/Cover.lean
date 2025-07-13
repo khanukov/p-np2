@@ -39,4 +39,12 @@ def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) : Option ((BFunc n
   else
     none
 
+set_option linter.unusedSimpArgs false in
+@[simp] lemma firstUncovered_none_iff (R : Finset (Subcube n)) :
+    firstUncovered (F := F) R = none ↔ uncovered (F := F) R = ∅ := by
+  classical
+  by_cases h : (uncovered (F := F) (Rset := R)).Nonempty
+  · simp [firstUncovered, h, Set.nonempty_iff_ne_empty]
+  · simp [firstUncovered, h, Set.nonempty_iff_ne_empty]
+
 end Cover

@@ -243,5 +243,12 @@ example :
   classical
   simp [Cover.firstUncovered, Cover.uncovered, Cover.NotCovered]
 
+-- The Family Collision-Entropy Lemma bounds the size of the entropy cover.
+example {n h : ℕ} (F : Family n) (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hn : n ≥ Bound.n₀ h) :
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card <
+      Nat.pow 2 (n / 100) := by
+  simpa using Bound.FCE_lemma (F := F) (h := h) hH hn
+
 
 end BasicTests

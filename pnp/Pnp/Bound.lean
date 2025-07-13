@@ -19,6 +19,8 @@ used by subsequent documentation or tests.
 
 import Mathlib.Tactic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Pnp.Entropy
+import Pnp.FamilyEntropyCover
 
 open Classical
 
@@ -59,5 +61,41 @@ lemma aux_growth (h : ℕ) :
 axiom mBound_lt_subexp
     (h : ℕ) (n : ℕ) (hn : n ≥ n₀ h) :
     mBound n h < Nat.pow 2 (n / 100)
+
+open BoolFunc
+
+variable {n h : ℕ} (F : Family n)
+
+/-- **Family Collision-Entropy Lemma (β-version).**
+    The rectangles returned by `familyEntropyCover` obey the
+    sub-exponential bound once `n ≥ n₀(h)`. -/
+theorem FCE_lemma
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hn : n ≥ n₀ h) :
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card <
+      Nat.pow 2 (n / 100) := by
+  have h1 :=
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH).bound
+  have h2 :=
+    mBound_lt_subexp (h := h) (n := n) hn
+  exact lt_of_le_of_lt h1 h2
+
+/-- **Family Collision-Entropy Lemma.**
+    There exists a finite set of subcubes covering all `1`-inputs of
+    every function in the family such that the number of rectangles is
+    bounded by `2^{n/100}`. -/
+theorem family_collision_entropy_lemma
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hn : n ≥ n₀ h) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (n / 100) := by
+  classical
+  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH
+  have hlt : FC.rects.card < Nat.pow 2 (n / 100) :=
+    FCE_lemma (F := F) (h := h) (hH := hH) (hn := hn)
+  have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
+  exact ⟨FC.rects, FC.mono, FC.covers, hle⟩
 
 end Bound

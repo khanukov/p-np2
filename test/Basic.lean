@@ -3,6 +3,8 @@ import Pnp.BoolFunc.Support
 import Pnp.DecisionTree
 import Pnp.Agreement
 import Pnp.Boolcube
+import Pnp.CanonicalCircuit
+import Pnp.ComplexityClasses
 import Pnp.Entropy
 import Pnp.Collentropy
 import Pnp.LowSensitivityCover
@@ -137,6 +139,29 @@ example (n : ℕ) (f : BFunc n) :
       BoolFunc.exists_coord_entropy_drop
         (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)})
         hn hF
+
+-- Evaluate a simple Boolean circuit.
+example (x : Point 2) :
+    Boolcube.Circuit.eval
+      (Boolcube.Circuit.or
+        (Boolcube.Circuit.and (Boolcube.Circuit.var 0)
+                               (Boolcube.Circuit.not (Boolcube.Circuit.var 1)))
+        (Boolcube.Circuit.var 1))
+      x =
+    (x 0 && !x 1) || x 1 := by
+  classical
+  cases hx : x 0 <;> cases hy : x 1 <;> simp [Boolcube.Circuit.eval, hx, hy]
+
+-- A trivial Turing machine that always rejects in constant time.
+def constFalseTM : TM :=
+  { runTime := fun _ => 1,
+    accepts := fun _ _ => false }
+
+-- This machine decides the constantly false language in polynomial time.
+example : polyTimeDecider (fun _ _ => false) := by
+  refine ⟨constFalseTM, 1, ?h_run, ?h_accept⟩
+  · intro n; simp [constFalseTM]
+  · intro n x; rfl
 
 
 end BasicTests

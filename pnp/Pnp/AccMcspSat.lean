@@ -11,15 +11,15 @@ open Classical
 namespace ACCSAT
 
 /-! Placeholder type for polynomials over `F_2` in `n` variables. -/
-def AccPolynomial (n : ℕ) : Type := Unit
+def AccPolynomial (_n : ℕ) : Type := Unit
 def polyDefault {n : ℕ} : AccPolynomial n := ()
 
 /-- Razborov–Smolensky: every `ACC^0` circuit can be expressed as a low-degree
 polynomial over `F_2`.  The bound on the degree is schematic and stated in
 big-O form. -/
-lemma acc_circuit_poly {n d : ℕ} (C : Boolcube.Circuit n)
-    (hdepth : True := by trivial) :
-    ∃ P : AccPolynomial n, True :=
+lemma acc_circuit_poly {n _d : ℕ} (_C : Boolcube.Circuit n)
+    (_hdepth : True := by trivial) :
+    ∃ _ : AccPolynomial n, True :=
   ⟨polyDefault, trivial⟩
 
 /-- Split an `N`-bit vector into `k` left bits and `ℓ` right bits
@@ -39,8 +39,8 @@ MCSP truth tables. The algorithm loops over the rectangles and computes partial
 sums on the left and right halves. Whenever a non-zero product is detected the
 circuit is satisfiable. This stub merely returns `false`. -/
 noncomputable def SATViaCover {N : ℕ}
-    (Φ : Boolcube.Circuit N)
-    (cover : Finset (Finset (Fin N) × Finset (Fin N))) : Bool :=
+    (_Φ : Boolcube.Circuit N)
+    (_cover : Finset (Finset (Fin N) × Finset (Fin N))) : Bool :=
   false
 
 end ACCSAT

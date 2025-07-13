@@ -2,6 +2,7 @@ import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Tactic
 import Mathlib.Data.Finset.Basic
 import Pnp.BoolFunc
+import Pnp.Boolcube
 
 open Classical
 open Finset
@@ -101,3 +102,152 @@ lemma sunflower_exists_easy
       exact ⟨this, ‹x ∈ B›⟩
     simpa [Finset.mem_inter] using this
 \nend Sunflower\n
++/-! ### The classical Erdős–Rado bound -/
++
++namespace Sunflower
++
++/-- **Erdős–Rado Sunflower Lemma** (classical bound).
++If a family `𝓢` of `w`-element sets has more than `(p - 1)! * w^p`
++members, then it contains a `p`-sunflower. -/
++lemma sunflower_exists
++    (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
++    (h_size : (p - 1).factorial * w ^ p < 𝓢.card)
++    (h_w : ∀ A ∈ 𝓢, A.card = w) :
++    HasSunflower (α := α) 𝓢 w p := by
++  classical
++  -- First, `𝓢` contains at least `p` sets under the numeric bound.
++  have hp_card : p ≤ 𝓢.card := by
++    -- Compare with `(p - 1)! * w ^ p + 1` via `self_le_factorial`.
++    have hfac : p - 1 ≤ (p - 1)! := by
++      simpa using (Nat.self_le_factorial (p - 1))
++    have hwp : 1 ≤ w ^ p := by
++      have hpos : 0 < w ^ p := pow_pos hw _
++      exact Nat.succ_le_of_lt hpos
++    have hpow : p - 1 ≤ (p - 1) * w ^ p := by
++      simpa using (Nat.mul_le_mul_left (p - 1) hwp)
++    have hmul : (p - 1) * w ^ p ≤ (p - 1)! * w ^ p :=
++      Nat.mul_le_mul_right _ hfac
++    have hp_le : p ≤ (p - 1)! * w ^ p + 1 := by
++      have hlt : p - 1 < (p - 1)! * w ^ p + 1 :=
++        lt_of_le_of_lt (le_trans hpow hmul) (Nat.lt_succ_self _)
++      exact Nat.succ_le_of_lt hlt
++    exact hp_le.trans (Nat.succ_le_of_lt h_size)
++  -- Apply the easy sunflower lemma to obtain a `p`-sunflower.
++  obtain ⟨T, hTsub, core, hSun⟩ :=
++    sunflower_exists_easy (𝒜 := 𝓢) (w := w) (p := p) h_w hp_card hp
++  refine ⟨T, hTsub, core, hSun, ?_⟩
++  intro A hA
++  exact h_w A (hTsub hA)
++
++/-- A tiny convenience corollary specialised to **Boolean cube** contexts
++where we automatically know each set has fixed size `w`. -/
++lemma sunflower_exists_of_fixedSize
++    (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
++    (h_cards : ∀ A ∈ 𝓢, A.card = w)
++    (h_big  : 𝓢.card > (p - 1).factorial * w ^ p) :
++    HasSunflower (α := α) 𝓢 w p :=
++  sunflower_exists 𝓢 w p hw hp (by
++    -- Rearrange strict inequality direction to match bound in lemma
++    have : (p - 1).factorial * w ^ p < 𝓢.card := by
++      simpa [lt_iff_le_and_ne, h_big.ne] using h_big
++    exact this) h_cards
++
++end Sunflower
++
++
++/-! ### Additional constructions for the cover algorithm -/
++
++open Boolcube
++
++abbrev Petal (n : ℕ) := Finset (Fin n)
++
++structure SunflowerFam (n t : ℕ) where
++  petals : Finset (Petal n)
++  tsize  : petals.card = t
++  core   : Petal n
++  sub_core : ∀ P ∈ petals, core ⊆ P
++  pairwise_core :
++    ∀ P₁ ∈ petals, ∀ P₂ ∈ petals, P₁ ≠ P₂ → P₁ ∩ P₂ = core
++
++namespace SunflowerFam
++
++variable {n w t : ℕ}
++
++/-- Existence of a sunflower family, wrapping the Mathlib lemma. -/
++lemma exists_of_large_family
++    {F : Finset (Petal n)}
++    (hcard : ∀ S ∈ F, S.card = w)
++    (hbig : t ≥ 2 → F.card > Nat.factorial (t-1) * w ^ t) :
++    ∃ S : SunflowerFam n t, S.petals ⊆ F := by
++  classical
++  rcases sunflower_exists (𝓢 := F) (w := w) (p := t)
++      (by simpa [hcard]) (by intro ht; exact hbig ht) with
++    ⟨pet, hsub, core, hpair, hsize, hsubcore⟩
++  refine ⟨⟨pet, hsize, core, ?_, ?_⟩, hsub⟩
++  · intro P hP; exact hsubcore P hP
++  · intro P₁ h₁ P₂ h₂ hne; exact hpair P₁ h₁ P₂ h₂ hne
++
++end SunflowerFam
++
++/-- Support of a point: the set of coordinates where it is `true`. -/
++def supportPt {n : ℕ} (x : Point n) : Finset (Fin n) :=
++  Finset.univ.filter fun i => x i
++
++/-- Fix the coordinates of `C` to match `x`. -/
++noncomputable def sunflowerSubcube {n : ℕ}
++    (C : Petal n) (x : Point n) : Subcube n :=
++{ idx := C,
++  val := fun i _hi => x i }
++
++-- Points whose supports contain `C` automatically lie in `sunflowerSubcube C x`
++lemma sunflowerSubcube_subset {n : ℕ} {C : Petal n} {x : Point n}
++    {pts : Finset (Point n)}
++    (hpts : ∀ p ∈ pts, C ⊆ supportPt p)
++    (hx : ∀ i ∈ C, x i = true) :
++    pts ⊆ (sunflowerSubcube C x) := by
++  classical
++  intro p hp
++  have hpC : ∀ i ∈ C, p i = true := by
++    intro i hi
++    have : i ∈ supportPt p := hpts p hp hi
++    simpa [supportPt, Finset.mem_filter] using this
++  intro i hi
++  have := hpC i hi
++  have hx := hx i hi
++  simp [sunflowerSubcube, this, hx]
++
++namespace BuildCoverStep
++
++open Boolcube
++
++variable {n w t : ℕ}
++variable (U : Finset (Point n))
++variable (F : Finset (Point n → Bool))
++variable (hw : ∀ f ∈ F, (support f).card = w)
++variable (hu : U.card > Nat.factorial (t-1) * w ^ t)
++
++/-- Perform one sunflower step, returning the core and the subcube. -/
++noncomputable def sunflowerStep : Σ' (C : Petal n), Subcube n := by
++  classical
++  let fam : Finset (Petal n) :=
++    U.image fun x => support (F.choose x (by
++      have : F.Nonempty := by classical; simpa using F.nonempty
++      simpa))
++  have hcard : ∀ S ∈ fam, S.card = w := by
++    intro S hS
++    rcases Finset.mem_image.1 hS with ⟨x, hx, rfl⟩
++    have hxF : (F.choose x _) ∈ F := by classical simpa
++    simpa using hw _ hxF
++  have hbig : t ≥ 2 → fam.card > Nat.factorial (t-1) * w ^ t := by
++    intro ht
++    have hle : fam.card ≥ U.card := Finset.card_image_le
++    have := lt_of_le_of_lt hle hu
++    exact this
++  classical
++  obtain ⟨S, hsub⟩ := SunflowerFam.exists_of_large_family (n:=n) (w:=w) (t:=t) hcard hbig
++  refine ⟨S.core, sunflowerSubcube S.core (U.choose ?_ ?_)⟩
++  · simpa using U.nonempty_of_card_ne_zero (ne_of_gt hu.ne')
++  · simpa using U.nonempty_of_card_ne_zero (ne_of_gt hu.ne')
++
++end BuildCoverStep
++

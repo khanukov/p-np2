@@ -102,6 +102,39 @@ end coordSlice
 
 open coordSlice
 
+lemma exists_coord_card_drop
+    (hn : 2 ≤ n)
+    {F : Finset (Point n)} (hF : F.Nonempty) :
+    ∃ i : Fin n, ∃ b : Bool,
+      (coordSlice i b F).card ≤ F.card - F.card / n := by
+  classical
+  by_contra h
+  push_neg at h
+  have hsum (i : Fin n) :
+      (coordSlice i true F).card > F.card - F.card / n ∧
+      (coordSlice i false F).card > F.card - F.card / n := h i
+  have hlt : (coordSlice 0 true F).card + (coordSlice 0 false F).card
+                > 2 * (F.card - F.card / n) := by
+    have hi := hsum 0
+    have hadd := add_lt_add_of_lt_of_lt hi.1 hi.2
+    simpa [two_mul] using hadd
+  have hEq : (coordSlice 0 true F).card + (coordSlice 0 false F).card = F.card :=
+    partition 0 F
+  have : (F.card : ℝ) > 2 * (F.card - F.card / n) := by
+    have hEq' := congrArg (fun k : ℕ => (k : ℝ)) hEq
+    have hlt' : ((coordSlice 0 true F).card + (coordSlice 0 false F).card : ℝ)
+        > 2 * ((F.card - F.card / n) : ℝ) := by exact_mod_cast hlt
+    simpa [hEq'] using hlt'
+  have rhs_le : 2 * (F.card - F.card / n) ≤ (F.card : ℝ) := by
+    have : (n : ℝ) ≥ 2 := by exact_mod_cast hn
+    have hdiv : (F.card : ℝ) / n ≤ (F.card : ℝ) / 1 := by
+      have : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+      have hpos : (0 : ℝ) ≤ (F.card : ℝ) := by exact_mod_cast (Nat.zero_le _)
+      exact div_le_div_of_le_of_nonneg hpos this
+    nlinarith
+  have hcontr := lt_of_lt_of_le this rhs_le
+  exact lt_irrefl _ hcontr
+
 namespace Entropy
 
 /-- Collision entropy (uniform measure) – we keep only the logarithmic form. -/

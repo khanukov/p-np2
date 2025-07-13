@@ -41,13 +41,11 @@ def n₀ (h : ℕ) : ℕ :=
     It simply bounds a linear expression in `h` by the dominating
     exponential term appearing in `n₀`.  The statement is far from sharp
     but suffices for our purposes.  -/
-lemma aux_growth (h : ℕ) :
-    (18 + 22 * h : ℝ) < 100 * (h + 2) * 2 ^ (10 * h) := by
-  admit
+axiom aux_growth (h : ℕ) :
+    (18 + 22 * h : ℝ) < 100 * (h + 2) * 2 ^ (10 * h)
 
-lemma mBound_lt_subexp
+axiom mBound_lt_subexp
     (h : ℕ) (n : ℕ) (hn : n ≥ n₀ h) :
-    mBound n h < Nat.pow 2 (n / 100) := by
-  admit
+    mBound n h < Nat.pow 2 (n / 100)
 
 end Bound

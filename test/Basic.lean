@@ -11,6 +11,10 @@ import Pnp.Collentropy
 import Pnp.LowSensitivityCover
 import Pnp.AccMcspSat
 import Pnp.Bound
+import Pnp.CoverNumeric
+import Pnp.LowSensitivity
+import Pnp.MergeLowSens
+import Pnp.TableLocality
 
 open BoolFunc
 
@@ -187,10 +191,34 @@ example (x : Fin 3 → Bool) :
 
 -- The convenience bound `n₀` is positive for every `h`.
 example (h : ℕ) : 0 < Bound.n₀ h := by
-  have : 0 < 10000 * (h + 2) * Nat.pow 2 (10 * h) := by
-    have hpow : 0 < Nat.pow 2 (10 * h) := pow_pos (by decide) _
-    exact mul_pos (mul_pos (by decide) (Nat.succ_pos _)) hpow
-  simpa [Bound.n₀] using this
+  have hpow : 0 < Nat.pow 2 (10 * h) := pow_pos (by decide) _
+  have hpos : 0 < 10000 * (h + 2) * Nat.pow 2 (10 * h) :=
+    mul_pos (mul_pos (by decide) (Nat.succ_pos _)) hpow
+  dsimp [Bound.n₀]
+  exact hpos
+
+-- Entropy-based numeric bound on cover size.
+example {N Nδ : ℕ} (F : Family N)
+    (h₂ : BoolFunc.H₂ F ≤ N - Nδ) :
+    CoverNumeric.minCoverSize F ≤ 2 ^ (N - Nδ) := by
+  simpa using CoverNumeric.numeric_bound (F := F) (Nδ := Nδ) h₂
+
+-- Existence of a low-sensitivity cover for a finite set of functions.
+example {n s : ℕ} (F : Finset (BoolFunc.Point n → Bool))
+    (hF : F.Nonempty) :
+    ∃ R : List (BoolFunc.Subcube n),
+      R.length ≤ F.card * 2 ^ (4 * s * Nat.log2 (Nat.succ n)) := by
+  simpa using LowSensitivity.low_sensitivity_cover (F := F) (s := s) hF
+
+-- Wrapper for entropy-based cover construction.
+noncomputable example {n : ℕ} (F : Family n) (h : ℕ) (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    Finset (Boolcube.Subcube n) :=
+  Boolcube.mergeLowSensitivityCover F h hH
+
+-- Table locality reduces to `k = n` for the placeholder version.
+example : ∃ k ≤ 1, True := by
+  classical
+  simpa using Boolcube.tableLocal (n := 1) 1 (by decide)
 
 
 end BasicTests

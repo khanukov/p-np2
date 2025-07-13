@@ -15,24 +15,24 @@ variable {n : ℕ} (F : Finset (BoolFunc.Point n → Bool)) (s : ℕ)
 
 /-- The full cube viewed as a `BoolFunc.Subcube`. -/
 def fullSubcube : BoolFunc.Subcube n :=
-  { idx := ∅, val := fun i h => False.elim <| Finset.not_mem_empty _ h }
+  { idx := ∅, val := fun _ h => False.elim <| Finset.notMem_empty _ h }
 
 /-- Set of coordinates on which the function `f` is sensitive. -/
 def sensitiveSet (f : BoolFunc.Point n → Bool) : Finset (Fin n) :=
   Finset.univ.filter fun i => ∃ x, f x ≠ f (BoolFunc.Point.update x i (!x i))
 
 /-- Trivial decision tree: always output `true`.  Its depth is `0`. -/
-noncomputable def buildTree (f : BoolFunc.Point n → Bool) : BoolFunc.DecisionTree n :=
+noncomputable def buildTree (_f : BoolFunc.Point n → Bool) : BoolFunc.DecisionTree n :=
   BoolFunc.DecisionTree.leaf true
 
 lemma buildTree_depth_le (f : BoolFunc.Point n → Bool) :
     (BoolFunc.DecisionTree.depth (buildTree f)) ≤ 4 * s * Nat.log2 (Nat.succ n) := by
-  have : (BoolFunc.DecisionTree.depth (buildTree f)) = 0 := by
+  have hdepth : (BoolFunc.DecisionTree.depth (buildTree f)) = 0 := by
     simp [buildTree, BoolFunc.DecisionTree.depth]
-  simpa [this] using Nat.zero_le (4 * s * Nat.log2 (Nat.succ n))
+  simp [hdepth]
 
 /-- We ignore the tree and simply return the full cube. -/
-noncomputable def subcubesOfTree (t : BoolFunc.DecisionTree n) : List (BoolFunc.Subcube n) :=
+noncomputable def subcubesOfTree (_t : BoolFunc.DecisionTree n) : List (BoolFunc.Subcube n) :=
   [fullSubcube (n := n)]
 
 lemma subcubes_cover (f : BoolFunc.Point n → Bool) :

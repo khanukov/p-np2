@@ -152,6 +152,20 @@ example (x : Point 2) :
   classical
   cases hx : x 0 <;> cases hy : x 1 <;> simp [Boolcube.Circuit.eval, hx, hy]
 
+-- Canonicalisation preserves evaluation.
+example (n : ℕ) (c : Boolcube.Circuit n) (x : Boolcube.Point n) :
+    Boolcube.Circuit.eval c x =
+      Boolcube.Circuit.evalCanon (Boolcube.Circuit.canonical c) x := by
+  simpa using Boolcube.Circuit.eval_canonical (c := c) (x := x)
+
+-- Circuits with the same canonical form are extensionally equal.
+example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
+    (h : Boolcube.Circuit.canonical c₁ = Boolcube.Circuit.canonical c₂)
+    (x : Boolcube.Point n) :
+    Boolcube.Circuit.eval c₁ x = Boolcube.Circuit.eval c₂ x := by
+  have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
+  simpa using hfun x
+
 -- A trivial Turing machine that always rejects in constant time.
 def constFalseTM : TM :=
   { runTime := fun _ => 1,

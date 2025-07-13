@@ -18,7 +18,8 @@ example :
 -- Table locality specializes to k = n.
 example : ∃ k ≤ 1, True := by
   classical
-  simpa using tableLocal (n := 1) 1 (by decide)
+  obtain ⟨k, hk, _⟩ := tableLocal (n := 1) (c := 1)
+  exact ⟨k, hk, trivial⟩
 
 end MigratedTests
 

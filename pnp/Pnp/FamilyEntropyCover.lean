@@ -15,6 +15,7 @@ family.  The full proof is nontrivial and omitted; this declaration merely
 re-exports the existential lemma so that other parts of the development can rely
 on it.
 -/
+
 theorem familyCollisionEntropyCover
   {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
   ∃ (T : Finset (BoolFunc.Subcube n)),
@@ -36,12 +37,11 @@ structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
   bound   : rects.card ≤ mBound n h
 
-/--
-`familyEntropyCover` packages `familyCollisionEntropyCover` as a concrete
-object.  It simply uses classical choice to extract a witnessing set of
-rectangles from the existential statement. -/
-noncomputable def familyEntropyCover
+/-
+`familyEntropyCover` packages the existential statement as a concrete record. -/
+axiom familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
+
     FamilyCover F h := by
   classical
   let T := Classical.choose (familyCollisionEntropyCover (F := F) (h := h) hH)

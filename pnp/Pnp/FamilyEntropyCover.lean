@@ -15,11 +15,11 @@ family.  The full proof is nontrivial and omitted; this declaration merely
 re-exports the existential lemma so that other parts of the development can rely
 on it.
 -/
- theorem familyCollisionEntropyCover
+theorem familyCollisionEntropyCover
   {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
-  ∃ (T : Finset (Subcube n)),
-    (∀ C ∈ T, Subcube.monochromaticForFamily C F) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) ∧
+  ∃ (T : Finset (BoolFunc.Subcube n)),
+    (∀ C ∈ T, BoolFunc.Subcube.monochromaticForFamily C F) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ BoolFunc.Subcube.mem C x) ∧
     T.card ≤ mBound n h := by
   classical
   simpa using Cover.cover_exists (F := F) (h := h) hH
@@ -31,8 +31,8 @@ is monochromatic for the whole family, that the rectangles cover all
 `1`-inputs, and that their number is bounded by `mBound`.
 -/
 structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
-  rects   : Finset (Subcube n)
-  mono    : ∀ C ∈ rects, Subcube.monochromaticForFamily C F
+  rects   : Finset (BoolFunc.Subcube n)
+  mono    : ∀ C ∈ rects, BoolFunc.Subcube.monochromaticForFamily C F
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
   bound   : rects.card ≤ mBound n h
 
@@ -44,8 +44,9 @@ noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
     FamilyCover F h := by
   classical
-  obtain ⟨T, hmono, hcov, hcard⟩ :=
-    familyCollisionEntropyCover (F := F) (h := h) hH
+  let T := Classical.choose (familyCollisionEntropyCover (F := F) (h := h) hH)
+  have hspec := Classical.choose_spec (familyCollisionEntropyCover (F := F) (h := h) hH)
+  rcases hspec with ⟨hmono, hcov, hcard⟩
   refine ⟨T, hmono, ?_, hcard⟩
   intro f hf x hx
   rcases hcov f hf x hx with ⟨C, hC, hxC⟩

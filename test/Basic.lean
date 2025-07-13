@@ -283,6 +283,17 @@ example {n h : ℕ} (F : Family n) (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       Nat.pow 2 (n / 100) := by
   simpa using Bound.FCE_lemma (F := F) (h := h) hH hn
 
+-- The packaged Family Collision-Entropy Lemma provides the full cover.
+example {n h : ℕ} (F : Family n) (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hn : n ≥ Bound.n₀ h) :
+    ∃ Rset : Finset (BoolFunc.Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (n / 100) := by
+  classical
+  simpa using
+    Bound.family_collision_entropy_lemma (F := F) (h := h) hH hn
+
 -- A concrete instance of the sub-exponential bound.
 example :
     Bound.mBound 20000 0 < Nat.pow 2 (20000 / 100) := by

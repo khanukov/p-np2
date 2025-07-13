@@ -50,8 +50,8 @@ lemma numeric_bound (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h := by
             ring
           _ ≤ (n * (h + 1 + 2)) * 2 ^ (10 * (h + 1)) := by
             exact Nat.mul_le_mul_left _ hpow
-      simpa [mBound, Nat.succ_eq_add_one, two_mul, Nat.mul_comm, Nat.mul_left_comm,
-        Nat.mul_assoc] using this
+      simp at this
+      exact this
 
 /-! ## Auxiliary predicates -/
 

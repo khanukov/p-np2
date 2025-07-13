@@ -47,10 +47,4 @@ noncomputable
 def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) : Option (Σ f : BoolFunc n, Vector Bool n) :=
   (uncovered (F := F) Rset).choose?  -- `choose?` from Mathlib (classical choice on sets)
 
-@[simp]
-lemma firstUncovered_none_iff (R : Finset (Subcube n)) :
-    firstUncovered (F := F) R = none ↔ uncovered (F := F) R = ∅ := by
-  classical
-  simp [firstUncovered, Set.choose?_eq_none]
-
 end Cover

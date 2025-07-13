@@ -15,8 +15,9 @@ namespace:
  - `Collentropy.lean`.
  - `Entropy.lean`.
  - `LowSensitivityCover.lean`.
- - `Cover.lean`.
- - `ComplexityClasses.lean`.
+- `Cover.lean`.
+- `Bound.lean`.
+- `ComplexityClasses.lean`.
  - `NPSeparation.lean`.
  - `AccMcspSat.lean`.
  - `CanonicalCircuit.lean`.
@@ -28,7 +29,6 @@ namespace:
 
 The following modules are still located under `Pnp2` and need to be copied into `pnp` while keeping the tests in sync:
 
- - `bound.lean`
  - `cover_numeric.lean`
  - `examples.lean`
  - `low_sensitivity.lean`

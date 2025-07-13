@@ -173,6 +173,12 @@ example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
   have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
   simpa using hfun x
 
+-- Encoding length of a canonical circuit is bounded by `codeLen`.
+example {n : ℕ} (c : Boolcube.Circuit.Canon n) :
+    (Boolcube.Circuit.encodeCanon c).length ≤
+      Boolcube.Circuit.codeLen c := by
+  simpa using Boolcube.Circuit.encodeCanon_length (c := c)
+
 -- A trivial Turing machine that always rejects in constant time.
 def constFalseTM : TM :=
   { runTime := fun _ => 1,

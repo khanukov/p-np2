@@ -119,6 +119,35 @@ def codeLen {n : ℕ} : Canon n → ℕ
   | Canon.and c₁ c₂ => 1 + codeLen c₁ + codeLen c₂
   | Canon.or c₁ c₂  => 1 + codeLen c₁ + codeLen c₂
 
+/-/ Encode a canonical circuit as a list of bits.  The exact format is
+irrelevant, we merely track the length for a later bound. -/
+def encodeCanon {n : ℕ} : Canon n → List Bool
+  | Canon.var _       => List.replicate (Nat.log2 n + 1) false
+  | Canon.const b     => [b]
+  | Canon.not c       => false :: encodeCanon c
+  | Canon.and c₁ c₂   => true :: encodeCanon c₁ ++ encodeCanon c₂
+  | Canon.or c₁ c₂    => true :: encodeCanon c₁ ++ encodeCanon c₂
+
+lemma encodeCanon_length {n : ℕ} (c : Canon n) :
+    (encodeCanon c).length ≤ codeLen c := by
+  induction c with
+  | var _ =>
+      simp [encodeCanon, codeLen]
+  | const b =>
+      simp [encodeCanon, codeLen]
+  | not c ih =>
+      have h := Nat.succ_le_succ ih
+      simpa [encodeCanon, codeLen, Nat.succ_eq_add_one, Nat.add_comm,
+        Nat.add_left_comm, Nat.add_assoc] using h
+  | and c₁ c₂ ih₁ ih₂ =>
+      have := Nat.add_le_add ih₁ ih₂
+      simpa [encodeCanon, codeLen, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+        using Nat.succ_le_succ this
+  | or c₁ c₂ ih₁ ih₂ =>
+      have := Nat.add_le_add ih₁ ih₂
+      simpa [encodeCanon, codeLen, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+        using Nat.succ_le_succ this
+
 end Circuit
 
 end Boolcube

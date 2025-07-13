@@ -9,6 +9,8 @@
 
 import Pnp2.BoolFunc
 import Pnp2.canonical_circuit
+import Mathlib.Data.MvPolynomial
+import Mathlib.Data.ZMod.Basic
 
 open Classical
 
@@ -18,18 +20,18 @@ namespace ACCSAT
 -- In a finished development this would be replaced by the
 -- actual `Polynomial` type from `Mathlib` instantiated with
 -- the finite field `𝔽₂`.
-constant Polynomial (n : ℕ) : Type
+/-- Polynomials in `n` variables over `𝔽₂`. -/
+abbrev Polynomial (n : ℕ) := MvPolynomial (Fin n) (ZMod 2)
 
 /-- Razborov–Smolensky: every `ACC⁰` circuit can be expressed as a
     low-degree polynomial over `𝔽₂`.  The bound on the degree is
     schematic and stated in big‑O form. -/
 lemma acc_circuit_poly {n d : ℕ} (C : Boolcube.Circuit n)
     (hdepth : True := by trivial) :
-    ∃ P : Polynomial n, True :=
-by
+    ∃ P : Polynomial n, True := by
   -- A real proof would translate `C` into a polynomial and
-  -- bound the degree.  We merely postulate existence here.
-  refine ⟨Classical.choice (Classical.decEq _), ?_⟩
+  -- bound the degree.  We merely return the zero polynomial.
+  refine ⟨0, ?_⟩
   trivial
 
 /-- Split an `N`‑bit vector into `k` left bits and `ℓ` right bits

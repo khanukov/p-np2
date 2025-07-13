@@ -152,9 +152,31 @@ lemma encodeCanon_length {n : ℕ} (c : Canon n) :
 
 The canonical code length of a circuit is bounded by its size times
 `Nat.log2 n + 1`.  This captures the `O(m log n)` estimate used in the
-roadmap.  The detailed proof is omitted here. -/
-axiom canonical_desc_length {n : ℕ} (c : Circuit n) :
-    codeLen (canonical c) ≤ (sizeOf c) * (Nat.log2 n + 1) + 1
+roadmap. -/
+theorem canonical_desc_length {n : ℕ} (c : Circuit n) :
+    codeLen (canonical c) ≤ (sizeOf c) * (Nat.log2 n + 1) + 1 := by
+  induction c with
+  | var i =>
+      simp [canonical, codeLen]
+  | const b =>
+      simp [canonical, codeLen]
+  | not c ih =>
+      simpa [canonical, codeLen, Nat.mul_add, Nat.add_assoc, Nat.add_comm,
+        Nat.add_left_comm] using
+        Nat.le_trans (by simp [codeLen, Nat.add_comm, Nat.add_left_comm])
+          (Nat.le_of_lt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_add_left _ _)))
+  | and c₁ c₂ ih₁ ih₂ =>
+      have := calc
+        codeLen (canonical c₁) ≤ sizeOf c₁ * (Nat.log2 n + 1) + 1 := ih₁
+        codeLen (canonical c₂) ≤ sizeOf c₂ * (Nat.log2 n + 1) + 1 := ih₂
+      show codeLen (canonical (Circuit.and c₁ c₂)) ≤ _ := by
+        by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
+        <;> simp [canonical, codeLen, h, Nat.mul_add, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] at *
+  | or c₁ c₂ ih₁ ih₂ =>
+      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
+      <;> simp [canonical, codeLen, ih₁, ih₂, h, Nat.mul_add, Nat.add_assoc,
+        Nat.add_comm, Nat.add_left_comm]
 
 end Circuit
 

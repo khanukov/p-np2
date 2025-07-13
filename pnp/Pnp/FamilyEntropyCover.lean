@@ -28,11 +28,20 @@ structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
   bound   : rects.card ≤ mBound n h
 
-/-
-`familyEntropyCover` packages the existential statement as a concrete record. -/
-axiom familyEntropyCover
+/--
+`familyEntropyCover` packages `familyCollisionEntropyCover` as a concrete
+object.  It simply uses classical choice to extract a witnessing set of
+rectangles from the existential statement. -/
+noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
-    FamilyCover F h
+    FamilyCover F h := by
+  classical
+  obtain ⟨T, hmono, hcov, hcard⟩ :=
+    Cover.cover_exists (F := F) (h := h) hH
+  refine ⟨T, hmono, ?_, hcard⟩
+  intro f hf x hx
+  rcases hcov f hf x hx with ⟨C, hC, hxC⟩
+  exact ⟨C, hC, hxC⟩
 
 /-- ### Existence of a small jointly monochromatic cover. -/
 theorem familyCollisionEntropyCover

@@ -2,6 +2,7 @@ import Pnp.BoolFunc
 import Pnp.Boolcube
 import Pnp.Agreement
 import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Set.Lattice
 import Mathlib.Tactic
 
 open Classical
@@ -32,7 +33,10 @@ def uncovered (F : Family n) (Rset : Finset (Subcube n)) : Set ((BFunc n) × Poi
 
 /-- Optionally returns the *first* uncovered ⟨f, x⟩. -/
 noncomputable
-def firstUncovered (_F : Family n) (_Rset : Finset (Subcube n)) : Option ((BFunc n) × Point n) :=
-  none
+def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) : Option ((BFunc n) × Point n) :=
+  if h : (uncovered (F := F) (Rset := Rset)).Nonempty then
+    some h.some
+  else
+    none
 
 end Cover

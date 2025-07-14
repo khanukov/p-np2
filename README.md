@@ -44,7 +44,9 @@ towards a full argument.
   axioms pending full proofs.  A helper lemma `AllOnesCovered.union`
   now abstracts the union step in the coverage proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
-  the main inequality `mBound_lt_subexp` is now fully proven.
+  the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
+  `pnp` namespace.  A complete proof remains available in
+  `Pnp2/bound.lean` and still needs to be ported.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`

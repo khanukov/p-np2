@@ -39,6 +39,7 @@ lemma numeric_bound (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h := by
         have hexp : 10 ≤ 10 * (h + 1) := by
           have hx : (1 : ℕ) ≤ h + 1 := Nat.succ_le_succ (Nat.zero_le _)
           have hx' : (10 : ℕ) * 1 ≤ 10 * (h + 1) := Nat.mul_le_mul_left 10 hx
+          set_option linter.unnecessarySimpa false in
           simpa [Nat.mul_one] using hx'
         exact hbase.trans (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hexp)
       -- Putting everything together
@@ -94,7 +95,7 @@ lemma AllOnesCovered.superset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   exact ⟨R, hsub hR, hxR⟩
 
 lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
-    (h₁ : AllOnesCovered F R₁) (h₂ : AllOnesCovered F R₂) :
+    (_h₁ : AllOnesCovered F R₁) (h₂ : AllOnesCovered F R₂) :
     AllOnesCovered F (R₁ ∪ R₂) := by
   intro f hf x hx
   by_cases hx1 : ∃ R ∈ R₁, x ∈ₛ R

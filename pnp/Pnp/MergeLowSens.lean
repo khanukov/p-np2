@@ -45,4 +45,24 @@ lemma mergeLowSensitivityCover_bound
   have := (familyEntropyCover (F := F) (h := h) hH).bound
   simpa [mergeLowSensitivityCover] using this
 
+/-- Choose the smaller of a low-sensitivity cover and an entropy-based cover. -/
+noncomputable def merge_cover
+    {n : ℕ} {F : Family n} {h : ℕ}
+    (low_sens_cover : FamilyCover F h) (entropy_cover : FamilyCover F h) :
+    FamilyCover F h :=
+  if h_le : low_sens_cover.rects.card ≤ entropy_cover.rects.card then
+    low_sens_cover
+  else
+    entropy_cover
+
+lemma merge_correct
+    {n : ℕ} {F : Family n} {h : ℕ}
+    (low_sens_cover : FamilyCover F h) (entropy_cover : FamilyCover F h) :
+    AllOnesCovered F (merge_cover low_sens_cover entropy_cover).rects := by
+  classical
+  unfold merge_cover
+  by_cases h_le : low_sens_cover.rects.card ≤ entropy_cover.rects.card
+  · simpa [merge_cover, h_le] using low_sens_cover.covers
+  · simpa [merge_cover, h_le] using entropy_cover.covers
+
 end Boolcube

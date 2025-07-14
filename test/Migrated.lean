@@ -42,5 +42,10 @@ example {n : ℕ} (f : BoolFunc.BFunc n) [Fintype (BoolFunc.Point n)] :
     0 < BoolFunc.collProbFun (n := n) f := by
   simpa using BoolFunc.collProbFun_pos (f := f)
 
+-- Collision probability does not exceed 1.
+example {n : ℕ} (f : BoolFunc.BFunc n) [Fintype (BoolFunc.Point n)] :
+    BoolFunc.collProbFun (n := n) f ≤ 1 := by
+  simpa using BoolFunc.collProbFun_le_one (f := f)
+
 end MigratedTests
 

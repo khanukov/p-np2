@@ -57,6 +57,12 @@ lemma collProbFun_ge_half (f : BFunc n) :
     le_add_of_nonneg_right hx
   exact le_of_le_of_eq hx' h.symm
 
+lemma collProbFun_pos (f : BFunc n) :
+    0 < collProbFun f := by
+  have h := collProbFun_ge_half (f := f)
+  have : (0 : ℝ) < (1 / 2 : ℝ) := by norm_num
+  exact lt_of_lt_of_le this h
+
 end
 
 end BoolFunc

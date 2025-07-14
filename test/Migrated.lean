@@ -1,6 +1,8 @@
 import Pnp.LowSensitivity
 import Pnp.TableLocality
 import Pnp.NPSeparation
+import Pnp.Entropy
+import Pnp.Collentropy
 
 open Boolcube
 
@@ -27,6 +29,18 @@ example : ∃ k ≤ 1, True := by
 example (h : ∃ ε > 0, MCSP_lower_bound ε) :
     P ≠ NP := by
   exact P_ne_NP_of_MCSP_bound h
+
+-- The halving lemma provides a coordinate that cuts the family size in half.
+example {n : ℕ} (F : BoolFunc.Family n) (hn : 0 < n) (hF : 1 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool,
+      ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+  simpa using
+    BoolFunc.exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+
+-- Collision probability is always positive.
+example {n : ℕ} (f : BoolFunc.BFunc n) [Fintype (BoolFunc.Point n)] :
+    0 < BoolFunc.collProbFun (n := n) f := by
+  simpa using BoolFunc.collProbFun_pos (f := f)
 
 end MigratedTests
 

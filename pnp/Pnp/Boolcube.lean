@@ -132,6 +132,14 @@ lemma exists_coord_slice_both_nonempty (S : Finset (Point n))
     have : x i = y i := by simp [hx_val, hy_val]
     exact (hi this).elim
 
+/-! ### Cardinal halving for point sets (axiom) -/
+
+axiom exists_coord_card_drop
+    (hn : 2 ≤ n)
+    {F : Finset (Point n)} (hF : F.Nonempty) :
+    ∃ i : Fin n, ∃ b : Bool,
+      (coordSlice i b F).card ≤ F.card - F.card / n
+
 namespace Entropy
 
 /-- Collision entropy (uniform measure) – we keep only the logarithmic form. -/

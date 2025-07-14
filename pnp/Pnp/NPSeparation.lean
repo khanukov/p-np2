@@ -46,8 +46,10 @@ theorem P_ne_NP_of_MCSP_bound :
 
 section Examples
 example : ¬ (∃ ε > 0, MCSP_lower_bound ε) ∨ P ≠ NP := by
-  -- Either there is no such lower bound or P and NP are separated.
-  sorry
+  classical
+  by_cases h : ∃ ε > 0, MCSP_lower_bound ε
+  · exact Or.inr (P_ne_NP_of_MCSP_bound h)
+  · exact Or.inl h
 end Examples
 
 /-!

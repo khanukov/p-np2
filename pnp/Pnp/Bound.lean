@@ -11,8 +11,8 @@ Family Collision‑Entropy Lemma:
 > `n·(h+2)·2^(10 h) < 2^{n / 100}`.
 
 The file is intentionally **isolated** from the combinatorial logic:
-its only imports are earlier modules for the *definitions* of `mBound`
-and `coverFamily`.  The numeric arguments are nontrivial and currently
+it only uses the `Cover.mBound` constant and the `FamilyCover` record
+from earlier modules.  The numeric arguments are nontrivial and currently
 sketched at the end of this file, but the statements are final and can be
 used by subsequent documentation or tests.
 -/
@@ -21,12 +21,14 @@ import Mathlib.Tactic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Pnp.Entropy
 import Pnp.FamilyEntropyCover
+import Pnp.Cover
 
 open Classical
+open Cover
 
 namespace Bound
 
-@[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
+abbrev mBound (n h : ℕ) : ℕ := Cover.mBound n h
 
 /-! ## Elementary growth estimates -/
 

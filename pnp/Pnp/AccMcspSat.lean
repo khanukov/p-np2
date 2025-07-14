@@ -8,8 +8,10 @@
 -- All statements are currently placeholders and the proofs are omitted.
 import Pnp.BoolFunc
 import Pnp.CanonicalCircuit
+import Pnp.ComplexityClasses
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Computability.Reduce
 
 open Classical
 
@@ -51,5 +53,17 @@ noncomputable def SATViaCover {N : ℕ}
     (_Φ : Boolcube.Circuit N)
     (_cover : Finset (Finset (Fin N) × Finset (Fin N))) : Bool :=
   false
+
+/-- Placeholder reduction lemma connecting SAT for an `ACC^0` circuit to a
+decision procedure based on `SATViaCover`.  The actual proof would express the
+circuit as a low-degree polynomial and invoke a rectangular cover from the
+Family Collision–Entropy Lemma. -/
+lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
+    (hdepth : True := by trivial) :
+    ∃ cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by
+  -- A real implementation would build `cover` using the polynomial representation
+  -- of `Φ` and the cover guaranteed by the FCE Lemma.  We simply return the
+  -- empty cover as a placeholder.
+  exact ⟨∅, trivial⟩
 
 end ACCSAT

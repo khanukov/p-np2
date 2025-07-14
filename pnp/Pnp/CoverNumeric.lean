@@ -1,8 +1,10 @@
 import Pnp.FamilyEntropyCover
 import Pnp.Entropy
 import Pnp.Bound
+import Mathlib.Analysis.Asymptotics.SpecificAsymptotics
 
 open BoolFunc
+open Asymptotics
 
 namespace CoverNumeric
 
@@ -79,5 +81,17 @@ lemma numeric_bound
     (hn : N ≥ Bound.n₀ (N - Nδ)) :
     minCoverSize F ≤ 2 ^ (N - Nδ) := by
   simpa using buildCover_size_bound (F := F) (Nδ := Nδ) h₀ hn
+
+/-!  `buildCover_card n` denotes the size of the cover returned by the
+experimental algorithm on families of dimension `n`.  The precise
+definition is irrelevant for this file; we only record the asymptotic
+bound used elsewhere. -/
+
+axiom buildCover_card (n : ℕ) : ℕ
+
+/--  The cover size grows at most like `(2 / √3)^n`.
+    This wraps the analytic estimate in `big-O` notation.  -/
+axiom buildCover_card_bigO :
+  (fun n ↦ (buildCover_card n : ℝ)) =O[atTop] fun n ↦ (2 / Real.sqrt 3) ^ n
 
 end CoverNumeric

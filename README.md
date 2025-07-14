@@ -149,4 +149,5 @@ tasks are:
 5. expose `FamilyCover` and single-function entropy utilities throughout the
    codebase.
 Once these are done the lemma `FCE_lemma` will follow.
-\nAdded note about numeric_bound proof origin.
+
+Added note about `numeric_bound` proof origin from `Pnp2.cover_numeric`.

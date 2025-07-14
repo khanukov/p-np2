@@ -29,6 +29,11 @@ lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
   have := hb f (by simp) hx
   simpa using this
 
+/-- A decision tree with depth `d` has at most `2 ^ d` leaf subcubes. -/
+lemma tree_depth_bound (t : DecisionTree n) :
+    (DecisionTree.leaves_as_subcubes t).card ≤ 2 ^ DecisionTree.depth t := by
+  simpa using DecisionTree.leaves_as_subcubes_card_le_pow_depth (t := t)
+
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of
     subcubes covering all ones of the family.  The proof will use decision

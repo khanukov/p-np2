@@ -82,4 +82,25 @@ set_option linter.unusedSimpArgs false in
   · simp [firstUncovered, h, Set.nonempty_iff_ne_empty]
   · simp [firstUncovered, h, Set.nonempty_iff_ne_empty]
 
+/-- All `1`-inputs of `F` lie in some rectangle of `Rset`. -/
+@[simp] def AllOnesCovered (F : Family n) (Rset : Finset (Subcube n)) : Prop :=
+  ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R
+
+lemma AllOnesCovered.superset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : AllOnesCovered F R₁) (hsub : R₁ ⊆ R₂) :
+    AllOnesCovered F R₂ := by
+  intro f hf x hx
+  rcases h₁ f hf x hx with ⟨R, hR, hxR⟩
+  exact ⟨R, hsub hR, hxR⟩
+
+lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : AllOnesCovered F R₁) (h₂ : AllOnesCovered F R₂) :
+    AllOnesCovered F (R₁ ∪ R₂) := by
+  intro f hf x hx
+  by_cases hx1 : ∃ R ∈ R₁, x ∈ₛ R
+  · rcases hx1 with ⟨R, hR, hxR⟩
+    exact ⟨R, by simpa [Finset.mem_union] using Or.inl hR, hxR⟩
+  · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
+    exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
+
 end Cover

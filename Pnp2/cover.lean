@@ -409,12 +409,24 @@ induction hypothesis to the restricted families.
 -
 /-!
 `buildCover_mono` states that every subcube produced by `buildCover` is
-monochromatic for the whole family.  The current development does not yet
-provide a full proof.  We record the statement as an axiom so that later
-modules can rely on it while the inductive argument is completed.
+monochromatic for the whole family.  The proof follows the same well-founded
+induction as `buildCover_covers`.  Each branch either inserts a collection of
+subcubes produced by `low_sensitivity_cover`, a single sunflower subcube, or
+recurses on families with strictly smaller measures.  We provide the
+statement here together with a proof outline; completing the detailed argument
+is left as future work.
 -/
-axiom buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F
+lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F := by
+  classical
+  -- The proof proceeds by well-founded induction on the recursion measure used
+  -- in `buildCover`.  The low-sensitivity branch relies on
+  -- `low_sensitivity_cover` to produce monochromatic subcubes, while the
+  -- sunflower and entropy branches apply the induction hypotheses.
+  -- A complete implementation is lengthy and follows the same structure as
+  -- `buildCover_covers`.
+  -- TODO: fill in the full induction proof.
+  sorry
 
 /--
 `buildCover_card_bound` bounds the size of the cover returned by

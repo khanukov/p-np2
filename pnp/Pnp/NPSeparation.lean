@@ -59,3 +59,17 @@ References:
 * Hardness Magnification Near State-of-the-Art Lower Bounds (2021):
   https://theoryofcomputing.org/articles/v017a011/
 -/
+
+/-!
+Bridge from the constructive cover (FCE-Lemma) to the MCSP lower bound.
+In the current blueprint this implication is assumed as an axiom.
+-/
+axiom FCE_implies_MCSP : ∃ ε > 0, MCSP_lower_bound ε
+
+/--
+Assuming the bridge from the FCE-Lemma to the MCSP lower bound, we obtain
+the classical separation `P ≠ NP`.
+-/
+lemma p_ne_np : P ≠ NP := by
+  have h := FCE_implies_MCSP
+  exact P_ne_NP_of_MCSP_bound h

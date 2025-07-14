@@ -1,10 +1,13 @@
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
 import Mathlib.Tactic
 import Mathlib.Data.Real.Basic
 import Pnp.BoolFunc
 
 open BoolFunc
+open Classical
+open Finset
 
 namespace Boolcube
 
@@ -60,6 +63,30 @@ namespace Subcube
     (Subcube.point (n := n) x).dim = 0 := by
   classical
   simp [Subcube.dim, Subcube.support]
+
+/-! ### Enumerating the points of a subcube -/
+
+noncomputable def toFinset (C : Subcube n) : Finset (Point n) := by
+  classical
+  exact Finset.univ.filter fun x => C.Mem x
+
+@[simp] lemma mem_toFinset {C : Subcube n} {x : Point n} :
+    x ∈ toFinset (n := n) C ↔ C.Mem x := by
+  classical
+  simp [toFinset]
+
+noncomputable def size (C : Subcube n) : ℕ := (toFinset (n := n) C).card
+
+lemma monotonicity {C D : Subcube n}
+    (h : ∀ {x : Point n}, C.Mem x → D.Mem x) :
+    size (n := n) C ≤ size (n := n) D := by
+  classical
+  have hsubset : toFinset (n := n) C ⊆ toFinset (n := n) D := by
+    intro x hx
+    have hxC : C.Mem x := (mem_toFinset (C := C) (x := x)).1 hx
+    have hxD : D.Mem x := h hxC
+    exact (mem_toFinset (C := D) (x := x)).2 hxD
+  simpa [size] using Finset.card_le_card hsubset
 
 
 end Subcube

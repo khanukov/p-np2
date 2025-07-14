@@ -13,18 +13,16 @@ circuits of size at least `N^{1 + ε}`. Formal details are omitted; see
 Theorem 1.4 of "Hardness Magnification Near State-of-the-Art Lower
 Bounds" (2021).
 -/
-def MCSP_lower_bound (ε : ℝ) : Prop := False
+axiom MCSP_lower_bound : ℝ → Prop
 
 axiom magnification_AC0_MCSP :
   (∃ ε > 0, MCSP_lower_bound ε) → ¬ NP ⊆ Ppoly
 
 axiom PH_collapse : Prop
 
-/-- Karp-Lipton theorem: NP ⊆ P/poly implies a collapse of PH. -/
-theorem karp_lipton : (NP ⊆ Ppoly) → PH_collapse := by
-  intro h
-  -- Standard argument using non-uniform advice
-  sorry
+/-- Karp-Lipton theorem: `NP ⊆ P/poly` implies a collapse of the polynomial
+hierarchy.  The proof is assumed as an axiom in this development. -/
+axiom karp_lipton : (NP ⊆ Ppoly) → PH_collapse
 
 /--
 If there exists an ε > 0 with an MCSP lower bound, then P ≠ NP.  The proof

@@ -20,6 +20,7 @@ import Pnp2.Sunflower.RSpread   -- definition of scattered families
 import Pnp2.low_sensitivity_cover
 import Mathlib.Data.Nat.Basic
 import Mathlib.Tactic
+import Mathlib.Data.Fintype.Card
 
 open Classical
 open BoolFunc
@@ -41,6 +42,15 @@ lemma numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h := by
     simpa [mul_comm, mul_left_comm, mul_assoc] using
       Nat.mul_le_mul_left (n * (h + 2)) (Nat.succ_le_iff.mpr this)
   simpa [mBound] using this
+
+/-! ### Counting bound for arbitrary covers -/
+
+@[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card
+
+lemma cover_size_bound {n : ℕ} (Rset : Finset (Subcube n)) :
+    size Rset ≤ Fintype.card (Subcube n) := by
+  classical
+  simpa [size] using (Finset.card_le_univ (s := Rset))
 
 /-! ## Auxiliary predicates -/
 

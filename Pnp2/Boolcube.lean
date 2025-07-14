@@ -20,7 +20,9 @@ variable {n : ℕ}
 
 abbrev Point (n : ℕ) := Fin n → Bool
 
-structure Subcube (n : ℕ) where fix : Fin n → Option Bool    -- none ⇒ "coordinate is free"
+structure Subcube (n : ℕ) where
+  fix : Fin n → Option Bool    -- none ⇒ "coordinate is free"
+  deriving DecidableEq, Fintype
 
 namespace Subcube
 

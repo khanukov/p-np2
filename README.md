@@ -7,6 +7,12 @@ currently provided as axioms without proof.  Many basic lemmas have now been
 formalised, so the repository also serves as a record of ongoing progress
 towards a full argument.
 
+The current active development happens in the `pnp` namespace.  Most modules
+have been ported from the historical `Pnp2` directory, though some proofs were
+temporarily replaced by placeholders during the move.  The old files remain
+for reference and contain several finished arguments that still need to be
+integrated back into `pnp`.
+
 ## Layout
 
 * `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully
@@ -131,11 +137,27 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now implemented directly in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop, and preliminary proofs of its properties (`buildCover_mono` and `buildCover_card_bound`) have been added. The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
+Within `pnp` the overall structure of the FCE argument is now visible: entropy
+lemmas, cover builders and decision-tree tools all compile, but the final
+subexponential bound is still axiomatic.  The next steps are porting the
+remaining numeric estimates and reconnecting the SAT outline to recover the full
+`P ≠ NP` implication.
+
 The migration to the new `pnp` namespace is largely complete.  Every module has
 been copied from the historical `Pnp2` directory and now compiles under the new
 hierarchy.  The old files remain for reference because several of the migrated
 modules are only skeletons.  See `migration.md` for a list of missing proofs and
 tests that still need to be ported.
+
+### pnp vs Pnp2
+
+The `pnp` directory is the main code base.  It focuses on a clean hierarchy and
+modern Lean style, but some proofs have been stubbed out during the migration.
+The legacy `Pnp2` directory retains older files with more complete proofs.  In
+particular, the arithmetic bounds in `Pnp2/bound.lean` and the example-driven
+modules still contain finished arguments that are waiting to be re‑integrated.
+Progress is tracked in `migration.md`, and eventually all features will live in
+`pnp` only.
 
 ## Development plan
 

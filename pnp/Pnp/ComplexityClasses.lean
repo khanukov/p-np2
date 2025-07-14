@@ -55,3 +55,4 @@ structure InPpoly (L : Language) where
 /-- The non-uniform class `P/poly`. -/
 def Ppoly : Set Language := { L | ∃ _ : InPpoly L, True }
 
+axiom P_subset_Ppoly : P ⊆ Ppoly

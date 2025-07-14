@@ -2,9 +2,9 @@
 
 The project has mostly completed the move from the historical `Pnp2` namespace
 to the new `pnp` directory.  Every file now has a counterpart under
-`pnp/Pnp/` and compiles in the new namespace.  The old `Pnp2` directory
-remains in the repository for reference because several modules were only
-ported as skeletons.
+`pnp/Pnp/` and compiles in the new namespace.  The `lakefile` no longer
+builds the old sources.  The `Pnp2` directory remains in the repository for
+reference because several modules were only ported as skeletons.
 
 ## Modules now in `pnp/Pnp/`
 

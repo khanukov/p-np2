@@ -5,6 +5,8 @@ Short list of development tasks reflecting the current repository status.
 - [x] Prove `exists_coord_card_drop` to complement the entropy-drop lemma.
 - [x] Move all modules from `Pnp2` into the `pnp` directory and add extensive
       tests for the migrated code.
+- [x] Remove the `Pnp2` library from `lakefile.lean`; the directory is now kept
+      only for reference.
 - [ ] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
 - [ ] Port `Bound.mBound_lt_subexp` proof and related lemmas (in progress).
 - [ ] Port halving lemmas `exists_restrict_half_real_aux` and `exists_restrict_half` from `entropy.lean`.

@@ -6,7 +6,6 @@ import Pnp.Boolcube
 import Pnp.Entropy
 import Pnp.Collentropy
 import Pnp.Sunflower.RSpread
-import Pnp.Sunflower.Sunflower
 import Pnp.CanonicalCircuit
 import Pnp.ComplexityClasses
 import Pnp.NPSeparation

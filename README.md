@@ -7,11 +7,10 @@ currently provided as axioms without proof.  Many basic lemmas have now been
 formalised, so the repository also serves as a record of ongoing progress
 towards a full argument.
 
-The current active development happens in the `pnp` namespace.  Most modules
-have been ported from the historical `Pnp2` directory, though some proofs were
-temporarily replaced by placeholders during the move.  The old files remain
-for reference and contain several finished arguments that still need to be
-integrated back into `pnp`.
+The current active development happens in the `pnp` namespace.  The historical
+`Pnp2` directory is still present as an archive of earlier work.  Some proofs in
+that directory have not yet been ported, so you may find additional lemmas
+there, but it is no longer built by default.
 
 ## Layout
 
@@ -145,19 +144,19 @@ remaining numeric estimates and reconnecting the SAT outline to recover the full
 
 The migration to the new `pnp` namespace is largely complete.  Every module has
 been copied from the historical `Pnp2` directory and now compiles under the new
-hierarchy.  The old files remain for reference because several of the migrated
-modules are only skeletons.  See `migration.md` for a list of missing proofs and
+hierarchy.  The `lakefile` no longer builds any code from `Pnp2`; the directory
+remains only for reference.  See `migration.md` for a list of missing proofs and
 tests that still need to be ported.
 
 ### pnp vs Pnp2
 
 The `pnp` directory is the main code base.  It focuses on a clean hierarchy and
 modern Lean style, but some proofs have been stubbed out during the migration.
-The legacy `Pnp2` directory retains older files with more complete proofs.  In
-particular, the arithmetic bounds in `Pnp2/bound.lean` and the example-driven
-modules still contain finished arguments that are waiting to be re‑integrated.
-Progress is tracked in `migration.md`, and eventually all features will live in
-`pnp` only.
+The legacy `Pnp2` directory retains older files with more complete proofs.  It
+is no longer part of the build, but it does contain the finished arithmetic
+bounds (`Pnp2/bound.lean`) and several example-driven modules that have yet to
+be re‑integrated.  Progress is tracked in `migration.md`, and eventually all
+features will live in `pnp` only.
 
 ## Development plan
 

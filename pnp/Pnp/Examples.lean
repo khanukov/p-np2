@@ -20,7 +20,6 @@ already follow from the (still partial!) library.
 
 import Pnp.BoolFunc
 import Pnp.Entropy
-import Pnp.Sunflower.Sunflower
 import Pnp.Agreement
 import Pnp.Cover
 import Pnp.Bound

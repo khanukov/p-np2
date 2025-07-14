@@ -24,9 +24,9 @@ abbrev Polynomial (n : ℕ) := MvPolynomial (Fin n) (ZMod 2)
 /-- Razborov–Smolensky: every `ACC^0` circuit can be expressed as a low-degree
 polynomial over `F_2`.  The bound on the degree is schematic and stated in
 big-O form. -/
-lemma acc_circuit_poly {n d : ℕ} (C : Boolcube.Circuit n)
-    (hdepth : True := by trivial) :
-    ∃ P : Polynomial n, True := by
+lemma acc_circuit_poly {n _d : ℕ} (_C : Boolcube.Circuit n)
+    (_hdepth : True := by trivial) :
+    ∃ _P : Polynomial n, True := by
   -- A real proof would translate `C` into a polynomial and
   -- bound the degree.  We merely return the zero polynomial.
   refine ⟨0, ?_⟩
@@ -58,9 +58,9 @@ noncomputable def SATViaCover {N : ℕ}
 decision procedure based on `SATViaCover`.  The actual proof would express the
 circuit as a low-degree polynomial and invoke a rectangular cover from the
 Family Collision–Entropy Lemma. -/
-lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
-    (hdepth : True := by trivial) :
-    ∃ cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by
+lemma sat_reduction {N : ℕ} (_Φ : Boolcube.Circuit N)
+    (_hdepth : True := by trivial) :
+    ∃ _cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by
   -- A real implementation would build `cover` using the polynomial representation
   -- of `Φ` and the cover guaranteed by the FCE Lemma.  We simply return the
   -- empty cover as a placeholder.

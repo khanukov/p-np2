@@ -50,7 +50,7 @@ noncomputable def merge_cover
     {n : ℕ} {F : Family n} {h : ℕ}
     (low_sens_cover : FamilyCover F h) (entropy_cover : FamilyCover F h) :
     FamilyCover F h :=
-  if h_le : low_sens_cover.rects.card ≤ entropy_cover.rects.card then
+  if low_sens_cover.rects.card ≤ entropy_cover.rects.card then
     low_sens_cover
   else
     entropy_cover

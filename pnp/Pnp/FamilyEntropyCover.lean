@@ -1,5 +1,5 @@
 import Pnp.Boolcube
-import Pnp.Cover
+import Pnp2.cover
 
 namespace Boolcube
 
@@ -30,9 +30,22 @@ structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
 
 /-
 `familyEntropyCover` packages the existential statement as a concrete record. -/
-axiom familyEntropyCover
+noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
-    FamilyCover F h
+    FamilyCover F h := by
+  classical
+  let Rset := Cover.coverFamily (F := F) (h := h) hH
+  refine {
+    rects := Rset
+    mono := ?mono
+    covers := ?covers
+    bound := ?bound }
+  · intro C hC
+    simpa using Cover.coverFamily_mono (F := F) (h := h) (hH := hH) C hC
+  · intro f hf x hx
+    simpa using
+      Cover.coverFamily_spec_cover (F := F) (h := h) (hH := hH) f hf x hx
+  · simpa using Cover.coverFamily_card_bound (F := F) (h := h) (hH := hH)
 
 /-- ### Existence of a small jointly monochromatic cover. -/
 theorem familyCollisionEntropyCover

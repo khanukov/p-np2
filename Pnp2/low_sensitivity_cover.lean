@@ -9,8 +9,13 @@ namespace BoolFunc
 variable {n : ℕ}
 
 -- This axiom summarises the decision-tree construction for families of
--- low-sensitivity Boolean functions.  It provides a small set of
--- monochromatic subcubes covering all `1` inputs of the family.
+-- low-sensitivity Boolean functions.  The underlying combinatorial result
+-- (due to Gopalan--Moshkovitz--Oliveira) shows that a single decision tree of
+-- depth `O(s * log n)` suffices to compute every function in the family.
+-- Each leaf of that tree corresponds to a rectangular subcube on which all
+-- functions agree.  The number of such subcubes is therefore bounded by an
+-- exponential in `s * log₂ (n + 1)`.  We assume this theorem as an axiom in
+-- the current development.
 axiom decisionTree_cover
   {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :

@@ -57,6 +57,27 @@ lemma collProbFun_ge_half (f : BFunc n) :
     le_add_of_nonneg_right hx
   exact le_of_le_of_eq hx' h.symm
 
+lemma collProbFun_le_one (f : BFunc n) :
+    collProbFun f ≤ 1 := by
+  classical
+  have hp0 := prob_nonneg (f := f)
+  have hp1 := prob_le_one (f := f)
+  have h1 : (prob f) ^ 2 ≤ prob f := by
+    have := mul_le_mul_of_nonneg_left hp1 hp0
+    simpa [pow_two] using this
+  have h2 : (1 - prob f) ^ 2 ≤ 1 - prob f := by
+    have hle : (1 - prob f) ≤ (1 : ℝ) := by
+      have := sub_le_self (a := (1 : ℝ)) (b := prob f) hp0
+      simpa using this
+    have hpos : 0 ≤ 1 - prob f := by
+      have := sub_le_sub_right hp1 (prob f)
+      simpa using this
+    have := mul_le_mul_of_nonneg_left hle hpos
+    simpa [pow_two] using this
+  have := add_le_add h1 h2
+  simpa [collProbFun, pow_two, sub_eq_add_neg, add_comm, add_left_comm,
+    add_assoc] using this.trans_eq (by ring)
+
 lemma collProbFun_pos (f : BFunc n) :
     0 < collProbFun f := by
   have h := collProbFun_ge_half (f := f)

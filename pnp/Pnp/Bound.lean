@@ -82,7 +82,7 @@ lemma mBound_lt_subexp
     -- Expand the logarithm of `mBound`.
     have hlog : Real.logb 2 (mBound n h : ℝ) =
         Real.logb 2 (n : ℝ) + Real.logb 2 (h + 2 : ℝ) + 10 * h := by
-      simp [mBound, Real.logb_mul, npos.ne', hpos.ne', Real.logb_pow hb]
+      simp [mBound, Real.logb_mul, npos.ne', hpos.ne', Real.logb_pow]
     -- Use the lower bound on `n` given by `hn`.
     have hbase : Real.logb 2 (n : ℝ) ≥
         Real.logb 2 (10000 * (h + 2) * (2 : ℝ) ^ (10 * h)) := by
@@ -91,21 +91,32 @@ lemma mBound_lt_subexp
         exact_mod_cast hn
       simpa [pow_mul, Real.rpow_nat_cast] using this hn'
     -- Elementary estimate comparing linear and exponential terms.
-    have hgrow : (18 + 22 * h : ℝ) < (n : ℝ) / 100 := by
-      have hn' : (100 * (h + 2) * 2 ^ (10 * h) : ℝ) ≤ (n : ℝ) / 100 := by
+    have hgrow : (18 + 22 * h : ℝ) < (n / 100 : ℝ) := by
+      have hn' : (100 * (h + 2) * 2 ^ (10 * h) : ℝ) ≤ (n / 100 : ℝ) := by
         have : (100 * (h + 2) * 2 ^ (10 * h) * 100 : ℝ) ≤ n := by
           simpa [n₀, mul_comm, mul_left_comm, mul_assoc] using hn
         exact (le_div_iff_mul_le (by norm_num : (0 : ℝ) < 100)).mpr this
       have haux := aux_growth h
-      linarith
+      exact lt_of_lt_of_le haux hn'
     -- Putting everything together and using monotonicity of `Real.logb`.
-    have : Real.logb 2 (mBound n h : ℝ) < (n : ℝ) / 100 := by
+    have : Real.logb 2 (mBound n h : ℝ) < (n / 100 : ℝ) := by
       have := add_lt_add_right hgrow (Real.logb 2 (n : ℝ))
       have := add_lt_add this (by linarith)
       have := add_lt_add_right this (Real.logb 2 (h + 2 : ℝ))
       have := add_lt_add_right this (10 * h)
       simpa [hlog] using this
-    exact (Real.logb_lt_iff_lt_rpow hb).1 this
+    -- The monotonicity of `Real.logb` yields the final bound.
+    have hmb_pos : 0 < (mBound n h : ℝ) := by
+      have : 0 < mBound n h := by
+        have hp1 : 0 < n := n_pos
+        have hp2 : 0 < h + 2 := Nat.succ_pos _
+        have hp3 : 0 < Nat.pow 2 (10 * h) := pow_pos (by decide) _
+        simpa [mBound] using mul_pos (mul_pos hp1 hp2) hp3
+      exact_mod_cast this
+    have hpow := (Real.logb_lt_iff_lt_rpow (hb := hb) hmb_pos).1 this
+    have hpow' : (mBound n h : ℝ) < (Nat.pow 2 (n / 100) : ℝ) := by
+      simpa [Real.rpow_natCast, Nat.cast_pow] using hpow
+    exact_mod_cast hpow'
   exact_mod_cast this
 
 open BoolFunc

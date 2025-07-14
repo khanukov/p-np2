@@ -2,7 +2,7 @@
 
 Short list of development tasks reflecting the current repository status.
 
-- [x] Prove `exists_coord_card_drop` to complement the entropy-drop lemma.
+- [ ] Prove `exists_coord_card_drop` to complement the entropy-drop lemma (currently an axiom).
 - [x] Move all modules from `Pnp2` into the `pnp` directory and add extensive
       tests for the migrated code.
 - [x] Remove the `Pnp2` library from `lakefile.lean`; the directory is now kept

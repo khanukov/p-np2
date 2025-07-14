@@ -106,6 +106,34 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     _ = evalCanon (canonical c₂) x := by simpa using hcanon
     _ = eval c₂ x := hc₂.symm
 
+/-! ### Canonical form of Boolean functions -/
+
+open BoolFunc
+
+/-- A literal testing input bit `i` against the value `b`. -/
+def literal {n : ℕ} (i : Fin n) (b : Bool) : Circuit n :=
+  if b then var i else not (var i)
+
+/-- Conjunction describing a single input assignment. -/
+noncomputable def minterm {n : ℕ} (x : Point n) : Circuit n :=
+  (List.finRange n).foldl (fun c i => and c (literal i (x i))) (const true)
+
+/-- Disjunctive normal form enumerating all satisfying assignments of `f`. -/
+noncomputable def dnf {n : ℕ} [Fintype (Point n)] (f : BFunc n) : Circuit n :=
+  (ones f).toList.foldl (fun c x => or c (minterm x)) (const false)
+
+/-- Canonical circuit representing the Boolean function `f`. -/
+noncomputable def canonicalForm {n : ℕ} [Fintype (Point n)] (f : BFunc n) : Canon n :=
+  canonical (dnf f)
+
+axiom canonical_unique {n : ℕ} [Fintype (Point n)] (f : BFunc n) {c : Circuit n} :
+  (∀ x, eval c x = f x) → canonical c = canonicalForm f
+
+lemma eval_literal {n : ℕ} (i : Fin n) (b : Bool) (x : Point n) :
+    eval (literal (n:=n) i b) x = (if b then x i else !x i) := by
+  classical
+  cases b <;> simp [literal, eval]
+
 /-- ### Encoding length for canonical circuits
 
 The following helper function measures the length of a canonical circuit in

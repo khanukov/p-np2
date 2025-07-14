@@ -480,6 +480,7 @@ lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     -- Placeholders for well-founded recursion arguments.
     admit
 
+
 /--
 `buildCover_card_bound` bounds the size of the cover returned by
 `buildCover` in terms of the entropy budget `h`.  A double induction on `h` and the number of uncovered pairs shows that at most `2^h` cubes are produced.

@@ -36,9 +36,11 @@ theorem P_ne_NP_of_MCSP_bound :
   -- If `P = NP`, then `NP ⊆ Ppoly` trivially, contradicting `h₁`.
   by_contra hPNP
   have : NP ⊆ Ppoly := by
-    -- Placeholder: a standard argument uses `hPNP` to derive this inclusion.
-    -- The details are omitted here.
-    sorry
+    -- From `hPNP : P = NP` we obtain `NP ⊆ P` by rewriting,
+    -- and `P ⊆ Ppoly` is available as the axiom `P_subset_Ppoly`.
+    intro L hL
+    have hL_P : L ∈ P := by simpa [hPNP] using hL
+    exact P_subset_Ppoly hL_P
   have := h₁ this
   contradiction
 

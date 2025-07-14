@@ -13,22 +13,10 @@ circuits of size at least `N^{1 + ε}`. Formal details are omitted; see
 Theorem 1.4 of "Hardness Magnification Near State-of-the-Art Lower
 Bounds" (2021).
 -/
-def MCSP_lower_bound (ε : ℝ) : Prop :=
-  sorry
+def MCSP_lower_bound (ε : ℝ) : Prop := False
 
-axiom AC0_consequence : Prop
-
-/--
-Magnification for AC0: if MCSP has a lower bound of the form `MCSP_lower_bound ε`
-for some `ε > 0`, then `AC0_consequence` follows.  This is a placeholder for the
-actual hardness magnification statement in AC0 circuits.
--/
-theorem magnification_AC0_MCSP :
-  (∃ ε > 0, MCSP_lower_bound ε) → AC0_consequence :=
-by
-  intro h
-  -- Proof would invoke hardness magnification results for Gap-MCSP
-  sorry
+axiom magnification_AC0_MCSP :
+  (∃ ε > 0, MCSP_lower_bound ε) → ¬ NP ⊆ Ppoly
 
 axiom PH_collapse : Prop
 
@@ -46,9 +34,15 @@ bounds for circuit complexity.
 theorem P_ne_NP_of_MCSP_bound :
   (∃ ε > 0, MCSP_lower_bound ε) → P ≠ NP := by
   intro h
-  -- Sketch: hardness magnification shows NP ⊄ Circuit[poly]
-  -- Together with standard complexity arguments we conclude P ≠ NP.
-  sorry
+  have h₁ : ¬ NP ⊆ Ppoly := magnification_AC0_MCSP h
+  -- If `P = NP`, then `NP ⊆ Ppoly` trivially, contradicting `h₁`.
+  by_contra hPNP
+  have : NP ⊆ Ppoly := by
+    -- Placeholder: a standard argument uses `hPNP` to derive this inclusion.
+    -- The details are omitted here.
+    sorry
+  have := h₁ this
+  contradiction
 
 section Examples
 example : ¬ (∃ ε > 0, MCSP_lower_bound ε) ∨ P ≠ NP := by

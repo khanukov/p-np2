@@ -419,14 +419,67 @@ is left as future work.
 lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F := by
   classical
-  -- The proof proceeds by well-founded induction on the recursion measure used
-  -- in `buildCover`.  The low-sensitivity branch relies on
-  -- `low_sensitivity_cover` to produce monochromatic subcubes, while the
-  -- sunflower and entropy branches apply the induction hypotheses.
-  -- A complete implementation is lengthy and follows the same structure as
-  -- `buildCover_covers`.
-  -- TODO: fill in the full induction proof.
-  sorry
+  -- We prove a slightly stronger statement where the recursion parameter `Rset`
+  -- already consists of monochromatic subcubes.  This allows a clean base case
+  -- when `buildCover` terminates immediately.
+  revert F
+  refine
+    (fun F ↦ _ : ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F)
+      ?_ ?_
+  · intro F
+    -- Strengthened induction statement: every recursive call preserves
+    -- monochromaticity of the accumulating set `Rset`.
+    suffices
+      H : ∀ Rset,
+            (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) →
+            ∀ R ∈ buildCover F h hH Rset,
+              Subcube.monochromaticForFamily R F
+      by
+        have hbase : ∀ R ∈ (∅ : Finset (Subcube n)),
+            Subcube.monochromaticForFamily R F := by
+          intro R hR; cases hR
+        simpa using H ∅ hbase
+    intro Rset hmono
+    -- Split on whether there is an uncovered input with respect to `Rset`.
+    cases hfu : firstUncovered F Rset with
+    | none =>
+        -- Base case: `buildCover` simply returns `Rset`.
+        simpa [buildCover, hfu] using hmono
+    | some tup =>
+        rcases tup with ⟨f, x⟩
+        -- Establish non-emptiness of `F` for the sensitivity bound below.
+        have F_nonempty : F.Nonempty := by
+          rcases Set.choose?_mem (S := uncovered F Rset) hfu with ⟨hf, -, -⟩
+          exact ⟨f, hf⟩
+        -- Compute the maximum sensitivity of functions in `F`.
+        let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+        let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+        have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+          fun g hg ↦ Finset.le_max' sensSet s (by simpa [sensSet] using hg)
+        -- First branch: all functions have small sensitivity.
+        cases hs : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
+        | inl hs_small =>
+            obtain ⟨R_ls, Hmono_ls, -, -⟩ :=
+              BoolFunc.low_sensitivity_cover (F := F) s Hsens
+            -- Monochromaticity is preserved after inserting `R_ls`.
+            have hmono_union :
+                ∀ R ∈ Rset ∪ R_ls, Subcube.monochromaticForFamily R F := by
+              intro R hR
+              rcases Finset.mem_union.mp hR with hR | hR
+              · exact hmono _ hR
+              · exact Hmono_ls _ hR
+            -- `buildCover` returns `Rset ∪ R_ls` in this branch.
+            simpa [buildCover, hfu, hs_small] using
+              hmono_union
+        | inr hs_large =>
+            -- Remaining branches (sunflower and entropy) follow the structure of
+            -- `buildCover_covers` and use the induction hypothesis on smaller
+            -- measures.  Their detailed implementation is omitted here.
+            sorry
+  all_goals
+    -- Placeholders for well-founded recursion arguments.
+    admit
+
 
 /--
 `buildCover_card_bound` bounds the size of the cover returned by

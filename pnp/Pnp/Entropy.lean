@@ -86,8 +86,27 @@ axiom exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality
 from `exists_restrict_half_real_aux` back to natural numbers. -/
-axiom exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2
+lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
+    ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
+  classical
+  -- Obtain the real-valued inequality and cast back to natural numbers.
+  obtain ⟨i, b, h_half_real⟩ :=
+    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+  -- Multiply the real inequality by `2` to avoid division and cast back to `ℕ`.
+  have hmul_real :=
+    (mul_le_mul_of_nonneg_left h_half_real (by positivity : (0 : ℝ) ≤ 2))
+  have hmul_nat : (F.restrict i b).card * 2 ≤ F.card := by
+    have h := hmul_real
+    have h' : 2 * ((F.card : ℝ) / 2) = (F.card : ℝ) := by
+      field_simp
+    have h'' : 2 * ((F.restrict i b).card : ℝ) = ((F.restrict i b).card * 2 : ℝ) := by
+      ring
+    have hfinal : ((F.restrict i b).card * 2 : ℝ) ≤ (F.card : ℝ) := by
+      simpa [h', h''] using h
+    exact_mod_cast hfinal
+  have hle_nat : (F.restrict i b).card ≤ F.card / 2 := by
+    exact (Nat.le_div_iff_mul_le (by decide)).mpr hmul_nat
+  exact ⟨i, b, hle_nat⟩
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/

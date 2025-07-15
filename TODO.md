@@ -2,7 +2,7 @@
 
 Short list of development tasks reflecting the current repository status.
 
-- [ ] Prove `exists_coord_card_drop` to complement the entropy-drop lemma (currently an axiom).
+- [x] Prove `exists_coord_card_drop` to complement the entropy-drop lemma.
 - [x] Move all modules from `Pnp2` into the `pnp` directory and add extensive
       tests for the migrated code.
 - [x] Remove the `Pnp2` library from `lakefile.lean`; the directory is now kept
@@ -10,7 +10,7 @@ Short list of development tasks reflecting the current repository status.
 - [ ] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
 - [ ] Port `Bound.mBound_lt_subexp` proof and related lemmas (in progress).
 - [ ] Port halving lemmas `exists_restrict_half_real_aux` and `exists_restrict_half` from `entropy.lean`.
-- [ ] Complete `buildCover` proofs (the bound `mBound_lt_subexp` is now proven).
+- [ ] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
 - [ ] Replace axioms `buildCover_mono` and `buildCover_card_bound` with full proofs.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
 - [ ] Expand numeric bounds in `bound.lean`.

@@ -128,18 +128,31 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
   have image_in_prod :
       (F.image pair) ⊆
         (F.restrict ⟨0, hn⟩ false).product (F.restrict ⟨0, hn⟩ true) := by
-    intro p hp
-    rcases Finset.mem_image.mp hp with ⟨g, hg, rfl⟩
-    -- proof will be filled in future steps
-    sorry
+    rintro ⟨f₁, f₂⟩ hp
+    rcases Finset.mem_image.mp hp with ⟨g, hg, hfg⟩
+    dsimp [pair] at hfg
+    rcases hfg
+    have hf : g.restrictCoord ⟨0, hn⟩ false ∈ F.restrict ⟨0, hn⟩ false :=
+      Finset.mem_image.mpr ⟨g, hg, rfl⟩
+    have ht : g.restrictCoord ⟨0, hn⟩ true ∈ F.restrict ⟨0, hn⟩ true :=
+      Finset.mem_image.mpr ⟨g, hg, rfl⟩
+    exact Finset.mem_product.mpr ⟨hf, ht⟩
   -- Step 5: deduce the cardinality inequality for the product.
   have card_prod :=
     Finset.card_product (F.restrict ⟨0, hn⟩ false) (F.restrict ⟨0, hn⟩ true)
   have card_ineq :
       F.card ≤
         (F.restrict ⟨0, hn⟩ false).card * (F.restrict ⟨0, hn⟩ true).card := by
-    -- details filled later
-    sorry
+    have hle := Finset.card_le_card image_in_prod
+    have hle' :
+        (F.image pair).card ≤
+          (F.restrict ⟨0, hn⟩ false).card * (F.restrict ⟨0, hn⟩ true).card := by
+      simpa [Finset.card_product] using hle
+    have himage : (F.image pair).card = F.card := by
+      classical
+      simpa using
+        (Finset.card_image_of_injective (s := F) (f := pair) inj_pair)
+    simpa [himage] using hle'
   -- Step 6: turn the inequality into the real domain and apply logarithms.
   have pos_card : 0 < (F.card : ℝ) := by
     exact_mod_cast Nat.lt_trans Nat.zero_lt_one hF
@@ -147,8 +160,7 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
       (F.card : ℝ) ≤
         ((F.restrict ⟨0, hn⟩ false).card *
             (F.restrict ⟨0, hn⟩ true).card : ℝ) := by
-    -- details will be completed later
-    sorry
+    exact_mod_cast card_ineq
   have log_ineq :=
     Real.logb_le_logb_of_le (b := 2) (by norm_num) pos_card inj_real
   -- Step 7: combine with the bounds from `h` to obtain a contradiction.

@@ -96,8 +96,32 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (f.restrictCoord ⟨0, hn⟩ false, f.restrictCoord ⟨0, hn⟩ true)
   have inj_pair : Function.Injective pair := by
     intro f₁ f₂ hpair
-    -- details will be filled later
-    sorry
+    have hfalse := congr_arg Prod.fst hpair
+    have htrue := congr_arg Prod.snd hpair
+    ext x
+    by_cases hx : x ⟨0, hn⟩ = false
+    · have eqfalse := congr_arg (fun g => g x) hfalse
+      have hxupdate : Point.update x ⟨0, hn⟩ false = x := by
+        funext k
+        by_cases hk : k = ⟨0, hn⟩
+        · subst hk; simp [Point.update, hx]
+        · simp [Point.update, hk]
+      simp [pair, BFunc.restrictCoord, hxupdate] at eqfalse
+      simpa using eqfalse
+    · have hx1 : x ⟨0, hn⟩ = true := by
+        cases h : x ⟨0, hn⟩ with
+        | false =>
+            exfalso; exact hx (by simpa [h])
+        | true =>
+            simpa [h]
+      have eqtrue := congr_arg (fun g => g x) htrue
+      have hxupdate : Point.update x ⟨0, hn⟩ true = x := by
+        funext k
+        by_cases hk : k = ⟨0, hn⟩
+        · subst hk; simp [Point.update, hx1]
+        · simp [Point.update, hk]
+      simp [pair, BFunc.restrictCoord, hxupdate] at eqtrue
+      simpa using eqtrue
   -- Step 3: compute the size of the image of `pair` on `F`.
   have card_image_le := Finset.card_image_le (s := F) (f := pair)
   -- Step 4: show the image lies in the product of the two restricted families.

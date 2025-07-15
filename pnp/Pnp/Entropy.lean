@@ -91,7 +91,44 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
   push_neg at h
   have h0false := h ⟨0, hn⟩ false
   have h0true  := h ⟨0, hn⟩ true
-  -- Proof to be completed.
+  -- Step 2: define the pairing map and state its injectivity (to be proved).
+  let pair : BFunc n → BFunc n × BFunc n := fun f =>
+    (f.restrictCoord ⟨0, hn⟩ false, f.restrictCoord ⟨0, hn⟩ true)
+  have inj_pair : Function.Injective pair := by
+    intro f₁ f₂ hpair
+    -- details will be filled later
+    sorry
+  -- Step 3: compute the size of the image of `pair` on `F`.
+  have card_image_le := Finset.card_image_le (s := F) (f := pair)
+  -- Step 4: show the image lies in the product of the two restricted families.
+  have image_in_prod :
+      (F.image pair) ⊆
+        (F.restrict ⟨0, hn⟩ false).product (F.restrict ⟨0, hn⟩ true) := by
+    intro p hp
+    rcases Finset.mem_image.mp hp with ⟨g, hg, rfl⟩
+    -- proof will be filled in future steps
+    sorry
+  -- Step 5: deduce the cardinality inequality for the product.
+  have card_prod :=
+    Finset.card_product (F.restrict ⟨0, hn⟩ false) (F.restrict ⟨0, hn⟩ true)
+  have card_ineq :
+      F.card ≤
+        (F.restrict ⟨0, hn⟩ false).card * (F.restrict ⟨0, hn⟩ true).card := by
+    -- details filled later
+    sorry
+  -- Step 6: turn the inequality into the real domain and apply logarithms.
+  have pos_card : 0 < (F.card : ℝ) := by
+    exact_mod_cast Nat.lt_trans Nat.zero_lt_one hF
+  have inj_real :
+      (F.card : ℝ) ≤
+        ((F.restrict ⟨0, hn⟩ false).card *
+            (F.restrict ⟨0, hn⟩ true).card : ℝ) := by
+    -- details will be completed later
+    sorry
+  have log_ineq :=
+    Real.logb_le_logb_of_le (b := 2) (by norm_num) pos_card inj_real
+  -- Step 7: combine with the bounds from `h` to obtain a contradiction.
+  -- details postponed for now.
   sorry
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality

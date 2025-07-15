@@ -159,13 +159,63 @@ lemma exists_coord_slice_both_nonempty (S : Finset (Point n))
     have : x i = y i := by simp [hx_val, hy_val]
     exact (hi this).elim
 
-/-! ### Cardinal halving for point sets (axiom) -/
+/-! ### Cardinal halving for point sets -/
 
-axiom exists_coord_card_drop
+lemma min_slice_le_half {i : Fin n} (F : Finset (Point n)) :
+    ∃ b, (coordSlice i b F).card ≤ F.card / 2 := by
+  classical
+  set ct := (coordSlice i true F).card
+  set cf := (coordSlice i false F).card
+  have hsum : ct + cf = F.card := coordSlice.partition i F
+  have h2min_le : 2 * Nat.min ct cf ≤ F.card := by
+    have hmin_le : Nat.min ct cf + Nat.min ct cf ≤ ct + cf :=
+      add_le_add (Nat.min_le_left _ _) (Nat.min_le_right _ _)
+    have h2min_le_sum : 2 * Nat.min ct cf ≤ ct + cf := by
+      simpa [two_mul] using hmin_le
+    simpa [ct, cf, hsum, two_mul] using h2min_le_sum
+  have hmin_half : Nat.min ct cf ≤ F.card / 2 := by
+    have h2min_le' : Nat.min ct cf * 2 ≤ F.card := by
+      simpa [two_mul, mul_comm] using h2min_le
+    exact (Nat.le_div_iff_mul_le Nat.two_pos).mpr h2min_le'
+  by_cases hct_le : ct ≤ cf
+  · refine ⟨true, ?_⟩
+    have hmin : Nat.min ct cf = ct := Nat.min_eq_left hct_le
+    simpa [ct, hmin] using hmin_half
+  · refine ⟨false, ?_⟩
+    have hcf_le : cf ≤ ct := le_of_not_ge hct_le
+    have hmin : Nat.min ct cf = cf := Nat.min_eq_right hcf_le
+    simpa [cf, hmin] using hmin_half
+
+lemma half_le_bound (c n : ℕ) (hn : 2 ≤ n) :
+    c / 2 ≤ c - c / n := by
+  have hdiv_le : c / n ≤ c / 2 := by
+    have hmul_le : (c / n) * 2 ≤ c := by
+      have hmul := Nat.mul_div_le c n
+      have hmul' : (c / n) * n ≤ c := by simpa [mul_comm] using hmul
+      have hle : (c / n) * 2 ≤ (c / n) * n := by
+        have := Nat.mul_le_mul_left (c / n) hn
+        simpa [two_mul] using this
+      exact le_trans hle hmul'
+    exact (Nat.le_div_iff_mul_le Nat.two_pos).mpr hmul_le
+  have hsum : c / 2 + c / n ≤ c := by
+    have htmp := Nat.add_le_add_left hdiv_le (c / 2)
+    have hhalf : c / 2 + c / 2 ≤ c := by
+      simpa [two_mul] using Nat.mul_div_le c 2
+    exact htmp.trans hhalf
+  exact (Nat.le_sub_iff_add_le (Nat.div_le_self _ _)).mpr hsum
+
+lemma exists_coord_card_drop
     (hn : 2 ≤ n)
     {F : Finset (Point n)} (hF : F.Nonempty) :
     ∃ i : Fin n, ∃ b : Bool,
-      (coordSlice i b F).card ≤ F.card - F.card / n
+      (coordSlice i b F).card ≤ F.card - F.card / n := by
+  classical
+  have hcard_pos : 0 < F.card := Finset.card_pos.mpr hF
+  have hn_pos : 0 < n := lt_of_lt_of_le (Nat.succ_pos 1) hn
+  let i : Fin n := ⟨0, hn_pos⟩
+  obtain ⟨b, hb⟩ := min_slice_le_half (n := n) (F := F) (i := i)
+  have hbound := half_le_bound F.card n hn
+  exact ⟨i, b, hb.trans hbound⟩
 
 namespace Entropy
 

@@ -79,10 +79,20 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
 
 /-- **Existence of a halving restriction (ℝ version)**.  There exists a
 coordinate `i` and bit `b` such that restricting every function in the family to
-`i = b` cuts its cardinality by at least half (real version). -/
-axiom exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
+`i = b` cuts its cardinality by at least half (real version).  The full proof is
+provided in later steps. -/
+lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+  classical
+  -- We start by assuming the contrary and extracting the consequences for the
+  -- zero coordinate.  The remaining argument will be filled in future commits.
+  by_contra h
+  push_neg at h
+  have h0false := h ⟨0, hn⟩ false
+  have h0true  := h ⟨0, hn⟩ true
+  -- Proof to be completed.
+  sorry
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality
 from `exists_restrict_half_real_aux` back to natural numbers. -/

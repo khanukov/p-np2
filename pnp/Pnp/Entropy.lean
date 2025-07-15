@@ -77,104 +77,29 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   simpa [Family.restrict] using
     (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
 
-/-- **Existence of a halving restriction (ℝ version)**.  There exists a
-coordinate `i` and bit `b` such that restricting every function in the family to
-`i = b` cuts its cardinality by at least half (real version).  The full proof is
-provided in later steps. -/
-lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
+/-- **Halving lemma (ℝ version).**
+If the family contains *at most one constant function*, then
+some coordinate halves its size. -/
+lemma exists_restrict_half_real_aux
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
+    (hconst : ¬(∃ b, (fun _ : Point n ↦ b) ∈ F
+                   ∧ (fun _ : Point n ↦ !b) ∈ F)) :
+  ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
-  -- We start by assuming the contrary and extracting the consequences for the
-  -- zero coordinate.  The remaining argument will be filled in future commits.
-  by_contra h
-  push_neg at h
-  have h0false := h ⟨0, hn⟩ false
-  have h0true  := h ⟨0, hn⟩ true
-  -- Step 2: define the pairing map and state its injectivity (to be proved).
-  let pair : BFunc n → BFunc n × BFunc n := fun f =>
-    (f.restrictCoord ⟨0, hn⟩ false, f.restrictCoord ⟨0, hn⟩ true)
-  have inj_pair : Function.Injective pair := by
-    intro f₁ f₂ hpair
-    have hfalse := congr_arg Prod.fst hpair
-    have htrue := congr_arg Prod.snd hpair
-    ext x
-    by_cases hx : x ⟨0, hn⟩ = false
-    · have eqfalse := congr_arg (fun g => g x) hfalse
-      have hxupdate : Point.update x ⟨0, hn⟩ false = x := by
-        funext k
-        by_cases hk : k = ⟨0, hn⟩
-        · subst hk; simp [Point.update, hx]
-        · simp [Point.update, hk]
-      simp [pair, BFunc.restrictCoord, hxupdate] at eqfalse
-      simpa using eqfalse
-    · have hx1 : x ⟨0, hn⟩ = true := by
-        cases h : x ⟨0, hn⟩ with
-        | false =>
-            exfalso; exact hx (by simpa [h])
-        | true =>
-            simpa [h]
-      have eqtrue := congr_arg (fun g => g x) htrue
-      have hxupdate : Point.update x ⟨0, hn⟩ true = x := by
-        funext k
-        by_cases hk : k = ⟨0, hn⟩
-        · subst hk; simp [Point.update, hx1]
-        · simp [Point.update, hk]
-      simp [pair, BFunc.restrictCoord, hxupdate] at eqtrue
-      simpa using eqtrue
-  -- Step 3: compute the size of the image of `pair` on `F`.
-  have card_image_le := Finset.card_image_le (s := F) (f := pair)
-  -- Step 4: show the image lies in the product of the two restricted families.
-  have image_in_prod :
-      (F.image pair) ⊆
-        (F.restrict ⟨0, hn⟩ false).product (F.restrict ⟨0, hn⟩ true) := by
-    rintro ⟨f₁, f₂⟩ hp
-    rcases Finset.mem_image.mp hp with ⟨g, hg, hfg⟩
-    dsimp [pair] at hfg
-    rcases hfg
-    have hf : g.restrictCoord ⟨0, hn⟩ false ∈ F.restrict ⟨0, hn⟩ false :=
-      Finset.mem_image.mpr ⟨g, hg, rfl⟩
-    have ht : g.restrictCoord ⟨0, hn⟩ true ∈ F.restrict ⟨0, hn⟩ true :=
-      Finset.mem_image.mpr ⟨g, hg, rfl⟩
-    exact Finset.mem_product.mpr ⟨hf, ht⟩
-  -- Step 5: deduce the cardinality inequality for the product.
-  have card_prod :=
-    Finset.card_product (F.restrict ⟨0, hn⟩ false) (F.restrict ⟨0, hn⟩ true)
-  have card_ineq :
-      F.card ≤
-        (F.restrict ⟨0, hn⟩ false).card * (F.restrict ⟨0, hn⟩ true).card := by
-    have hle := Finset.card_le_card image_in_prod
-    have hle' :
-        (F.image pair).card ≤
-          (F.restrict ⟨0, hn⟩ false).card * (F.restrict ⟨0, hn⟩ true).card := by
-      simpa [Finset.card_product] using hle
-    have himage : (F.image pair).card = F.card := by
-      classical
-      simpa using
-        (Finset.card_image_of_injective (s := F) (f := pair) inj_pair)
-    simpa [himage] using hle'
-  -- Step 6: turn the inequality into the real domain and apply logarithms.
-  have pos_card : 0 < (F.card : ℝ) := by
-    exact_mod_cast Nat.lt_trans Nat.zero_lt_one hF
-  have inj_real :
-      (F.card : ℝ) ≤
-        ((F.restrict ⟨0, hn⟩ false).card *
-            (F.restrict ⟨0, hn⟩ true).card : ℝ) := by
-    exact_mod_cast card_ineq
-  have log_ineq :=
-    Real.logb_le_logb_of_le (b := 2) (by norm_num) pos_card inj_real
-  -- Step 7: combine with the bounds from `h` to obtain a contradiction.
-  -- details postponed for now.
+  -- Полный доказательственный код будет добавлен позже
+  -- здесь остаётся лишь комбинаторный подсчёт мощностей
   sorry
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality
 from `exists_restrict_half_real_aux` back to natural numbers. -/
-lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
+lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
+    (hconst : ¬(∃ b, (fun _ : Point n ↦ b) ∈ F ∧ (fun _ : Point n ↦ !b) ∈ F)) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
   -- Obtain the real-valued inequality and cast back to natural numbers.
   obtain ⟨i, b, h_half_real⟩ :=
-    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF) (hconst := hconst)
   -- Multiply the real inequality by `2` to avoid division and cast back to `ℕ`.
   have hmul_real :=
     (mul_le_mul_of_nonneg_left h_half_real (by positivity : (0 : ℝ) ≤ 2))
@@ -194,10 +119,13 @@ lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.car
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
 lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
+    (hF : 1 < F.card)
+    (hconst : ¬(∃ b, (fun _ : Point n ↦ b) ∈ F ∧ (fun _ : Point n ↦ !b) ∈ F)) :
+    ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
-  obtain ⟨i, b, hle⟩ := exists_restrict_half (F := F) (hn := hn) (hF := hF)
+  obtain ⟨i, b, hle⟩ :=
+    exists_restrict_half (F := F) (hn := hn) (hF := hF) (hconst := hconst)
   have hle_real' : ((F.restrict i b).card : ℝ) ≤ ((F.card / 2 : ℕ) : ℝ) := by
     exact_mod_cast hle
   have hle_cast_div : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by

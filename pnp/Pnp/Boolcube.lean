@@ -159,13 +159,60 @@ lemma exists_coord_slice_both_nonempty (S : Finset (Point n))
     have : x i = y i := by simp [hx_val, hy_val]
     exact (hi this).elim
 
-/-! ### Cardinal halving for point sets (axiom) -/
+/-! ### Cardinal halving for point sets -/
 
-axiom exists_coord_card_drop
+lemma exists_coord_card_drop
     (hn : 2 ≤ n)
     {F : Finset (Point n)} (hF : F.Nonempty) :
     ∃ i : Fin n, ∃ b : Bool,
-      (coordSlice i b F).card ≤ F.card - F.card / n
+      (coordSlice i b F).card ≤ F.card - F.card / n := by
+  classical
+  have hpos : 0 < n := lt_of_lt_of_le (Nat.succ_pos 1) hn
+  -- choose a coordinate
+  let i : Fin n := ⟨0, hpos⟩
+  -- slice cardinalities
+  set ct := (coordSlice i true F).card
+  set cf := (coordSlice i false F).card
+  have hsum : ct + cf = F.card := by
+    simpa [ct, cf] using partition (i := i) (F := F)
+  -- bound the smaller slice by half of the total
+  have hmin_half : min ct cf ≤ F.card / 2 := by
+    have hct : min ct cf ≤ ct := Nat.min_le_left _ _
+    have hcf : min ct cf ≤ cf := Nat.min_le_right _ _
+    have hadd : min ct cf + min ct cf ≤ ct + cf := add_le_add hct hcf
+    have htwo : min ct cf * 2 ≤ F.card := by
+      simpa [two_mul, Nat.mul_comm, hsum] using hadd
+    exact (Nat.le_div_iff_mul_le (by decide)).mpr htwo
+  -- show `F.card / 2` is at most `F.card - F.card / n`
+  have hdiv_le_half : F.card / n ≤ F.card / 2 := by
+    have hmul₁ : (F.card / n) * 2 ≤ (F.card / n) * n :=
+      Nat.mul_le_mul_left _ hn
+    have hmul₂ : (F.card / n) * n ≤ F.card := by
+      simpa [Nat.mul_comm] using Nat.mul_div_le F.card n
+    have hmul : (F.card / n) * 2 ≤ F.card := le_trans hmul₁ hmul₂
+    exact (Nat.le_div_iff_mul_le (by decide)).mpr hmul
+  have hhalf_le_sub : F.card / 2 ≤ F.card - F.card / n := by
+    have hsum_le : F.card / 2 + F.card / n ≤ F.card := by
+      have hle : F.card / 2 + F.card / n ≤ F.card / 2 + F.card / 2 :=
+        add_le_add_left hdiv_le_half _
+      have hhalf : (F.card / 2) * 2 ≤ F.card := by
+        simpa [Nat.mul_comm] using Nat.mul_div_le F.card 2
+      have hhalf' : F.card / 2 + F.card / 2 ≤ F.card := by
+        simpa [two_mul, Nat.mul_comm] using hhalf
+      exact le_trans hle hhalf'
+    have hdiv_self : F.card / n ≤ F.card := Nat.div_le_self _ _
+    exact (Nat.le_sub_iff_add_le hdiv_self).2 hsum_le
+  -- pick the appropriate slice
+  by_cases hct_le_cf : ct ≤ cf
+  · refine ⟨i, true, ?_⟩
+    have hct_le : ct ≤ F.card / 2 := by
+      simpa [ct, cf, Nat.min_eq_left hct_le_cf] using hmin_half
+    exact le_trans hct_le hhalf_le_sub
+  · refine ⟨i, false, ?_⟩
+    have hcf_le_ct : cf ≤ ct := le_of_not_le hct_le_cf
+    have hcf_le : cf ≤ F.card / 2 := by
+      simpa [ct, cf, Nat.min_eq_right hcf_le_ct] using hmin_half
+    exact le_trans hcf_le hhalf_le_sub
 
 namespace Entropy
 

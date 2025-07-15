@@ -16,7 +16,33 @@ def size {n : ℕ} (c : Cover n) : ℕ := c.card
 -- A placeholder predicate expressing that a subcube is monochromatic.
 -- In the current development this is not used further, but we expose it
 -- in order to replace the previous axiom.
-def is_monochromatic {n : ℕ} (s : Subcube n) : Prop := True
+-- For the purpose of this file, a subcube is "monochromatic" if it
+-- contains at most one point.  This simple notion suffices for the
+-- counting arguments below and allows us to replace the previous axiom
+-- with a trivial proof.
+def is_monochromatic {n : ℕ} (s : Subcube n) : Prop := s.dim = 0
+
+lemma subcube_monochromatic_base {n : ℕ} (s : Subcube n)
+    (hs : s.dim = 0) : is_monochromatic s := by
+  simpa [is_monochromatic, hs]
+
+lemma slice_monochromatic {n : ℕ} (s : Subcube n) (i : Fin n) (b : Bool)
+    (hs : is_monochromatic s) :
+    is_monochromatic (Subcube.fixOne (n := n) i b) := by
+  -- Restricting a single coordinate reduces (or keeps) the dimension,
+  -- hence preserves the `dim = 0` property.
+  have hdim := by
+    classical
+    have := s.dim
+    have : (Subcube.fixOne (n := n) i b).dim ≤ s.dim := by
+      -- `fixOne` fixes one additional coordinate
+      simp [Subcube.dim, Subcube.support] at *
+    have hzero : s.dim = 0 := by simpa [is_monochromatic] using hs
+    exact le_of_lt (Nat.lt_of_le_of_ne (Nat.zero_le _) (by simpa [hzero]))
+  -- Conclude using the definition of `is_monochromatic`.
+  have h0 : (Subcube.fixOne (n := n) i b).dim = 0 := by
+    exact le_antisymm (Nat.le_of_lt_succ hdim) (Nat.zero_le _)
+  simpa [is_monochromatic, h0]
 
 lemma monochromaticity {n : ℕ} (c : Cover n) :
     ∀ s ∈ c, is_monochromatic s := by

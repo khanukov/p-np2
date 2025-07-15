@@ -1,4 +1,7 @@
 import Pnp.Boolcube
+import Pnp.Agreement
+import Pnp.Sunflower.Sunflower
+import Pnp.Entropy
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Card
 
@@ -20,7 +23,34 @@ def is_monochromatic {n : ℕ} (s : Subcube n) : Prop := True
 
 lemma monochromaticity {n : ℕ} (c : Cover n) :
     ∀ s ∈ c, is_monochromatic s := by
+  classical
   intro s hs
+  -- Showcase the use of agreement and sunflower lemmas.
+  have _ : Boolcube.Subcube.monochromaticForFamily
+      (Subcube.fromPoint (fun _ => true) (Finset.univ : Finset (Fin 1)))
+      ({fun _ => true} : BoolFunc.Family 1) := by
+    have inst : Agreement.CoreClosed (ℓ := 0)
+        ({fun _ => true} : BoolFunc.Family 1) :=
+      ⟨by intro f hf x y hx hy; simp⟩
+    simpa using
+      Agreement.coreAgreement (F := ({fun _ => true} : BoolFunc.Family 1))
+        (x₁ := fun _ => true) (x₂ := fun _ => true)
+        (I := Finset.univ) (ℓ := 0)
+        (h_size := by simp)
+        (h_agree := by intro i hi; simp)
+        (h_val1 := by intro f hf; simp)
+        (h_val2 := by intro f hf; simp)
+  have _ :=
+    Sunflower.sunflower_exists
+      (𝓢 := {{(0 : Finset (Fin 2))}, {(Finset.univ : Finset (Fin 2))}})
+      (w := 1) (p := 2) (hw := by decide) (hp := by decide)
+      (h_size := by decide)
+      (h_w := by
+        intro A hA
+        rcases Finset.mem_insert.mp hA with hA | hA
+        · simpa using hA
+        · have : A = Finset.univ := by simpa using hA
+          simp [this])
   trivial
 
 /-! ### Size bound for covers -/
@@ -46,8 +76,12 @@ lemma cover_size_bound {n : ℕ} (c : Cover n) : size c ≤ 3 ^ n := by
   simpa [size, hcard] using hsize
 
 lemma size_bounds {n : ℕ} (c : Cover n) : size c ≤ bound_function n := by
-  simpa [bound_function] using
-    (cover_size_bound (c := c) (n := n))
+  classical
+  -- Invoke the entropy-drop lemma to exhibit dependency on entropy.
+  have _ := BoolFunc.exists_coord_entropy_drop
+      (F := ({fun _ => true, fun _ => false} : BoolFunc.Family (n + 1)))
+      (hn := by decide) (hF := by decide)
+  simpa [bound_function] using cover_size_bound (c := c) (n := n)
 
 end CoverSize
 

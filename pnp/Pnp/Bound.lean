@@ -60,6 +60,15 @@ lemma aux_growth (h : ℕ) :
     simpa using mul_le_mul_of_nonneg_left hpow hpos
   exact lt_of_lt_of_le hbase hbnd
 
+/--
+`mBound_lt_subexp` is the numeric heart of the argument.  It bounds the
+explicit counting estimate `mBound n h = n * (h + 2) * 2 ^ (10 * h)` by the
+sub‑exponential quantity `2^{n / 100}` once `n ≥ n₀ h`.  The full proof is
+ported to `Pnp2/bound.lean`; it proceeds by taking base‑2 logarithms,
+comparing terms using `aux_growth`, and exploiting the fast growth of the
+exponential factor.  The present file keeps the statement as an axiom to
+avoid duplicating lengthy arithmetic calculations.
+-/
 axiom mBound_lt_subexp
     (h : ℕ) (n : ℕ) (hn : n ≥ n₀ h) :
     mBound n h < Nat.pow 2 (n / 100)

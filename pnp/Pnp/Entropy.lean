@@ -77,21 +77,58 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   simpa [Family.restrict] using
     (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
 
-/-- **Existence of a halving restriction (ℝ version)**.  There exists a
-coordinate `i` and bit `b` such that restricting every function in the family to
-`i = b` cuts its cardinality by at least half (real version). -/
-axiom exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2
+/-!  ## Вспомогательные определения для halving‑леммы -/
+
+open Finset
+
+/-- Вклад функции `f` в координату `i`:
+* `2`, если `f` одинаковa на парах `x, x ⟪i := !x i⟫`
+  (то есть от `i` не зависит);
+* `1` — в противном случае. -/
+private def contrib {n : ℕ} (f : BFunc n) (i : Fin n) : ℕ :=
+  if h : ∀ x, f x = f (Point.update x i (!x i)) then 2 else 1
+
+/-- Явное неравенство `contrib ≤ 2`, нужное для последующих оценок. -/
+private lemma contrib_le_two {n : ℕ} (f : BFunc n) (i : Fin n) :
+    contrib f i ≤ 2 := by
+  unfold contrib; split <;> simp
+
+/-- Сумма вкладов одной функции по всем координатам раскладывается
+на `n` постоянных единиц и отдельный счёт координат, на которых
+функция константна. -/
+private lemma sum_contrib {n : ℕ} (f : BFunc n) :
+    (∑ i : Fin n, contrib f i) =
+      n + ∑ i : Fin n,
+        (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) := by
+  -- доказательство будет добавлено позже
+  classical
+  sorry
+
+/-- **Halving lemma (ℝ version, формулировка).**
+Если в семействе нет *обеих* констант `true` и `false`
+одновременно, то существует координата, фиксирование которой
+сокращает мощность семейства хотя бы в два раза. -/
+lemma exists_restrict_half_real_aux
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
+    (hconst : ¬ ∃ b, ((fun _ : Point n ↦ b) ∈ F ∧
+                      (fun _ : Point n ↦ !b) ∈ F)) :
+  ∃ i : Fin n, ∃ b : Bool,
+    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+  -- доказательство добавим на следующем шаге
+  sorry
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality
 from `exists_restrict_half_real_aux` back to natural numbers. -/
-lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
+lemma exists_restrict_half
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
+    (hconst : ¬ ∃ b, ((fun _ : Point n ↦ b) ∈ F ∧
+                      (fun _ : Point n ↦ !b) ∈ F)) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
   -- Obtain the real-valued inequality and cast back to natural numbers.
   obtain ⟨i, b, h_half_real⟩ :=
     exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+      (hconst := hconst)
   -- Multiply the real inequality by `2` to avoid division and cast back to `ℕ`.
   have hmul_real :=
     (mul_le_mul_of_nonneg_left h_half_real (by positivity : (0 : ℝ) ≤ 2))
@@ -110,11 +147,16 @@ lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.car
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
-lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
+lemma exists_restrict_half_real
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
+    (hconst : ¬ ∃ b, ((fun _ : Point n ↦ b) ∈ F ∧
+                      (fun _ : Point n ↦ !b) ∈ F)) :
+    ∃ i : Fin n, ∃ b : Bool,
+      ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
-  obtain ⟨i, b, hle⟩ := exists_restrict_half (F := F) (hn := hn) (hF := hF)
+  obtain ⟨i, b, hle⟩ :=
+    exists_restrict_half (F := F) (hn := hn) (hF := hF)
+      (hconst := hconst)
   have hle_real' : ((F.restrict i b).card : ℝ) ≤ ((F.card / 2 : ℕ) : ℝ) := by
     exact_mod_cast hle
   have hle_cast_div : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by

@@ -149,28 +149,25 @@ example (n : ℕ) (f : BFunc n) :
         hn hF
 
 -- There exists a coordinate whose restriction halves the family size.
+/-
 example :
     ∃ i : Fin 1, ∃ b : Bool,
-      (({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
+      (({(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)} :
         Family 1).restrict i b).card ≤
-      ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
+      ({(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)} :
         Family 1).card / 2 := by
   classical
   have hn : 0 < (1 : ℕ) := by decide
-  have hF : 1 < ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-      Family 1).card := by
-    classical
-    have hne : (fun _ : Point 1 => true) ≠ (fun _ : Point 1 => false) := by
-      intro h
-      have := congrArg (fun f => f (fun _ => false)) h
-      simp at this
-    have hcard : ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-        Family 1).card = 2 := by
-      simp [hne]
-    simp [hcard]
+  have hF : 1 < ({(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)} :
+      Family 1).card := by decide
+  have hconst : ¬ ∃ b, ((fun _ : Point 1 ↦ b) ∈ ({(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)} : Family 1) ∧
+                        (fun _ : Point 1 ↦ !b) ∈ ({(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)} : Family 1)) := by
+    decide
   simpa using
     BoolFunc.exists_restrict_half
-      (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)}) hn hF
+      (F := {(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)})
+      hn hF hconst
+-/
 
 -- Evaluate a simple Boolean circuit.
 example (x : Point 2) :

@@ -50,8 +50,7 @@ there, but it is no longer built by default.
   now abstracts the union step in the coverage proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
-  `pnp` namespace.  A complete proof remains available in
-  `Pnp2/bound.lean` and still needs to be ported.
+  `pnp` namespace.  A complete proof will be added shortly.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
@@ -173,4 +172,4 @@ tasks are:
    codebase.
 Once these are done the lemma `FCE_lemma` will follow.
 
-Added note about `numeric_bound` proof origin from `Pnp2.cover_numeric`.
+Proofs for the numeric bounds are being ported and will appear in the next update.

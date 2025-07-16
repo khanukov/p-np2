@@ -13,15 +13,19 @@ circuits of size at least `N^{1 + ε}`. Formal details are omitted; see
 Theorem 1.4 of "Hardness Magnification Near State-of-the-Art Lower
 Bounds" (2021).
 -/
+-- TODO: keep as external assumption until the magnification result is formalised.
 axiom MCSP_lower_bound : ℝ → Prop
 
+-- TODO: this magnification result remains as an external axiom.
 axiom magnification_AC0_MCSP :
   (∃ ε > 0, MCSP_lower_bound ε) → ¬ NP ⊆ Ppoly
 
+-- TODO: external complexity-theoretic result.
 axiom PH_collapse : Prop
 
 /-- Karp-Lipton theorem: `NP ⊆ P/poly` implies a collapse of the polynomial
 hierarchy.  The proof is assumed as an axiom in this development. -/
+-- TODO: replace with a formal proof of Karp-Lipton.
 axiom karp_lipton : (NP ⊆ Ppoly) → PH_collapse
 
 /--
@@ -64,6 +68,7 @@ References:
 Bridge from the constructive cover (FCE-Lemma) to the MCSP lower bound.
 In the current blueprint this implication is assumed as an axiom.
 -/
+-- TODO: bridge from the constructive lemma to MCSP lower bounds.
 axiom FCE_implies_MCSP : ∃ ε > 0, MCSP_lower_bound ε
 
 /--

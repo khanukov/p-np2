@@ -37,14 +37,14 @@ The implementations from `Pnp2` still contain complete statements and proofs
 that have been replaced by placeholders in `pnp`.  The following parts are
 missing and should be ported:
 
-- the proofs of `aux_growth` and `mBound_lt_subexp` in `Bound.lean`
+- the proofs of `aux_growth` and `mBound_lt_subexp` in `Bound.lean` (proof incoming in next commit)
 - the full definition of `mergeLowSensitivityCover` in `MergeLowSens.lean`
 - the `low_sensitivity_cover` construction and helper lemmas from
   `LowSensitivity.lean`
 - the example-driven code in `Examples.lean`
 - the SAT outline in `AccMcspSat.lean`
 - the separation lemma `P_ne_NP_of_MCSP_bound` from `NPSeparation.lean`
-- numeric cover bounds in `CoverNumeric.lean`
+- numeric cover bounds in `CoverNumeric.lean` (proof incoming in next commit)
 - tests exercising these modules
 
 Once these proofs and tests have been migrated, the `Pnp2` directory can be

@@ -100,9 +100,43 @@ private lemma sum_contrib {n : ℕ} (f : BFunc n) :
     (∑ i : Fin n, contrib f i) =
       n + ∑ i : Fin n,
         (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) := by
-  -- доказательство будет добавлено позже
   classical
-  sorry
+  -- сначала перепишем каждое `contrib` как `1 + …`
+  have h_single :
+      ∀ i : Fin n,
+        contrib f i =
+          1 +
+            (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) := by
+    intro i
+    by_cases h : ∀ x, f x = f (Point.update x i (!x i))
+    · have hc : contrib f i = 2 := by
+        unfold contrib
+        exact if_pos h
+      have ho :
+          (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) = 1 :=
+        if_pos h
+      have hsum : 1 + (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) = 2 := by
+        simpa [ho]
+      simpa [hc, ho] using hsum
+    · have hc : contrib f i = 1 := by
+        unfold contrib
+        exact if_neg h
+      have ho :
+          (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) = 0 :=
+        if_neg h
+      have hsum : 1 + (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) = 1 := by
+        simpa [ho]
+      simpa [hc, ho] using hsum
+  have h_sum :
+      (∑ i : Fin n, contrib f i) =
+        ∑ i : Fin n,
+          (1 +
+            (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0)) := by
+    refine Finset.sum_congr rfl ?_
+    intro i _
+    simpa [h_single i] using h_single i
+  -- теперь `∑ (1 + …) = n + ∑ …`
+  simpa [Finset.sum_add_distrib, Finset.card_fin] using h_sum
 
 /-- **Halving lemma (ℝ version, формулировка).**
 Если в семействе нет *обеих* констант `true` и `false`

@@ -31,14 +31,11 @@ example (h : ∃ ε > 0, MCSP_lower_bound ε) :
   exact P_ne_NP_of_MCSP_bound h
 
 -- The halving lemma provides a coordinate that cuts the family size in half.
-example {n : ℕ} (F : BoolFunc.Family n) (hn : 0 < n) (hF : 1 < F.card)
-    (hconst : ¬ ∃ b, ((fun _ : BoolFunc.Point n ↦ b) ∈ F ∧
-                      (fun _ : BoolFunc.Point n ↦ !b) ∈ F)) :
+example {n : ℕ} (F : BoolFunc.Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool,
       ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   simpa using
     BoolFunc.exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
-      (hconst := hconst)
 
 -- Collision probability is always positive.
 example {n : ℕ} (f : BoolFunc.BFunc n) [Fintype (BoolFunc.Point n)] :

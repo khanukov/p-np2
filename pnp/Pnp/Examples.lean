@@ -159,13 +159,13 @@ Now we can *instantiate* the cover (Lean is happy even though it cannot
 display the actual rectangles). -/
 noncomputable
 def Rcover : Finset (Subcube 3) :=
-  coverFamily (n := 3) (h := h₀) F₃ h₀_ok
+  (Boolcube.familyEntropyCover (F := F₃) (h := h₀) h₀_ok).rects
 
 /-- Cardinality upper‑bound *proven automatically*. -/
 #eval Rcover.card   -- Lean can *not* compute this (opaque), but type‑checks.
 
 example : Rcover.card ≤ mBound 3 h₀ :=
-  Cover.coverFamily_card_bound (n := 3) (h := h₀) F₃ h₀_ok
+  (Boolcube.familyEntropyCover (F := F₃) (h := h₀) h₀_ok).bound
 
 /-
 Similarly, every *1‑input* of every function is covered:
@@ -173,7 +173,7 @@ Similarly, every *1‑input* of every function is covered:
 -/
 example (x : Point 3) (h : f_and x = true) :
     ∃ R, R ∈ Rcover ∧ (x ∈ₛ R) :=
-  Cover.coverFamily_spec_cover (n := 3) (h := h₀) F₃ h₀_ok
+  (Boolcube.familyEntropyCover (F := F₃) (h := h₀) h₀_ok).covers
     f_and
     (by
       -- `f_and ∈ F₃`

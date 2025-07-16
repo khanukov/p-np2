@@ -6,6 +6,7 @@ import Mathlib.Tactic
 open Classical
 open Real
 open BoolFunc
+open scoped BigOperators
 
 namespace BoolFunc
 
@@ -99,7 +100,7 @@ private lemma contrib_le_two {n : ℕ} (f : BFunc n) (i : Fin n) :
 private lemma sum_contrib {n : ℕ} (f : BFunc n) :
     (∑ i : Fin n, contrib f i) =
       n + ∑ i : Fin n,
-        (if h : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) := by
+        (if _ : ∀ x, f x = f (Point.update x i (!x i)) then 1 else 0) := by
   classical
   -- сначала перепишем каждое `contrib` как `1 + …`
   have h_single :
@@ -150,108 +151,109 @@ private lemma Finset.card_ge_two.mp {α} [DecidableEq α] {s : Finset α}
 одновременно, то существует координата, фиксирование которой
 сокращает мощность семейства хотя бы в два раза. -/
 lemma exists_restrict_half_real_aux
-    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
-    (hconst : ¬ ∃ b, ((fun _ : Point n ↦ b) ∈ F ∧
-                      (fun _ : Point n ↦ !b) ∈ F)) :
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
   ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
-  ------------------------------------------------------------
-  -- 1.  Предположим противное: оба ограничения > |F| / 2.
-  ------------------------------------------------------------
-  by_contra hfail
-  push_neg at hfail   -- теперь: ∀ i b, (F.restrict i b).card > |F|/2
+  by_contra! h
+  have h0false := h ⟨0, hn⟩ false
+  have h0true  := h ⟨0, hn⟩ true
 
-  ------------------------------------------------------------
-  -- 2.  Обозначения A, B, C.
-  ------------------------------------------------------------
-  set A : Fin n → ℕ := fun i ↦ (F.restrict i false).card with hA
-  set B : Fin n → ℕ := fun i ↦ (F.restrict i true ).card with hB
-  set C : Fin n → ℕ := fun i ↦
-      (F.filter fun f ↦ ∀ x, f x = f (Point.update x i (!x i))).card with hC
+  -- 1) Определяем пару
+  let pair : BFunc n → BFunc n × BFunc n := fun f =>
+    (f.restrictCoord ⟨0, hn⟩ false, f.restrictCoord ⟨0, hn⟩ true)
 
-  ------------------------------------------------------------
-  -- 3.  Нижняя граница:  min(A_i, B_i) > |F| / 2.
-  ------------------------------------------------------------
-  have h_min_gt : ∀ i : Fin n, (Nat.min (A i) (B i)) > F.card / 2 := by
-    intro i
-    have hAi : F.card / 2 < A i := by
-      have hf := hfail i false
-      have h_le : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by
-        simpa using (Nat.cast_div_le (m := F.card) (n := 2))
-      have hreal : ((F.card / 2 : ℕ) : ℝ) < ((F.restrict i false).card : ℝ) :=
-        lt_of_le_of_lt h_le hf
-      have hnat : F.card / 2 < (F.restrict i false).card := by
-        exact_mod_cast hreal
-      simpa [hA] using hnat
-    have hBi : F.card / 2 < B i := by
-      have hf := hfail i true
-      have h_le : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by
-        simpa using (Nat.cast_div_le (m := F.card) (n := 2))
-      have hreal : ((F.card / 2 : ℕ) : ℝ) < ((F.restrict i true).card : ℝ) :=
-        lt_of_le_of_lt h_le hf
-      have hnat : F.card / 2 < (F.restrict i true).card := by
-        exact_mod_cast hreal
-      simpa [hB] using hnat
-    exact (lt_min_iff.mpr ⟨hAi, hBi⟩)
+  -- 2) Доказываем, что пара инъективна
+  have pair_inj : Function.Injective pair := by
+    intro f₁ f₂ hpair
+    have hf := congr_arg Prod.fst hpair
+    have ht := congr_arg Prod.snd hpair
+    ext x
+    cases hx : x ⟨0, hn⟩
+    · -- в ветке `x 0 = false` сравниваем fst
+      have h := congrArg (fun g => g x) hf
+      simpa [pair, restrictCoord_agrees hx] using h
+    · -- в ветке `x 0 = true` сравниваем snd
+      have h := congrArg (fun g => g x) ht
+      simpa [pair, restrictCoord_agrees hx] using h
 
-  have h_sum_min_gt :
-      (∑ i : Fin n, Nat.min (A i) (B i)) > n * (F.card / 2) := by
-    -- каждая слагаемая > |F|/2, их n штук
-    have : (∑ i : Fin n, (F.card / 2 + 1)) =
-        n * (F.card / 2 + 1) := by
-      simp [Finset.card_fin, mul_comm]
-    -- `Nat`‑арифметика; оставляем маленький `sorry`
-    sorry
+  -- 3) Оценка кардинальностей: |F| ≤ |F.restrict false| * |F.restrict true|
+  have prod_upper : F.card ≤
+      (F.restrict ⟨0, hn⟩ false).card *
+      (F.restrict ⟨0, hn⟩ true).card := by
+    -- образ pair лежит в декартове произведение
+    have subset_prod :
+        (F.image pair) ⊆
+        (F.restrict ⟨0, hn⟩ false).product
+        (F.restrict ⟨0, hn⟩ true) := by
+      rintro ⟨g₀, g₁⟩ hmem
+      rcases Finset.mem_image.1 hmem with ⟨f, hf, hpair⟩
+      refine Finset.mem_product.2 ?_
+      constructor
+      · refine Finset.mem_image.2 ?_
+        refine ⟨f, hf, ?_⟩
+        simpa [pair] using congrArg Prod.fst hpair
+      · refine Finset.mem_image.2 ?_
+        refine ⟨f, hf, ?_⟩
+        simpa [pair] using congrArg Prod.snd hpair
+    have card_le : (F.image pair).card ≤
+        (F.restrict ⟨0, hn⟩ false).card *
+        (F.restrict ⟨0, hn⟩ true).card := by
+      simpa [Finset.card_product] using Finset.card_le_card subset_prod
+    -- но pair_inj даёт equality
+    have eqF : (F.image pair).card = F.card :=
+      (Finset.card_image_of_injective (s := F) pair_inj)
+    simpa [eqF] using card_le
 
-  ------------------------------------------------------------
-  -- 4.  Верхняя граница через `contrib`,  `C ≤ 1`.
-  ------------------------------------------------------------
-  -- 4.1  C i ≤ 1
-  have hC_le_one : ∀ i : Fin n, C i ≤ 1 := by
-    intro i
-    -- если бы было ≥ 2, нашлись бы две разные функции,
-    -- обе константные по i;  тогда в F были бы обе глобальные
-    -- константы, что противоречит hconst.
-    by_contra hgt
-    have hge : (C i) ≥ 2 := by
-      exact Nat.succ_le_of_lt (lt_of_not_ge hgt)
-    obtain ⟨f₁, hf₁, f₂, hf₂, hneq⟩ := (Finset.card_ge_two.mp hge)
-    have hf₁₀ := (Finset.mem_filter.mp hf₁).2
-    have hf₂₀ := (Finset.mem_filter.mp hf₂).2
-    -- показываем, что f₁, f₂ — глобальные константы с противоположными знач.
-    -- (детали пропущены, чисто булев перебор)
-    have : False := by
-      -- итоговое противоречие с `hconst`
-      sorry
-    exact (this.elim)
+  -- 4) Нижняя граница из h0false, h0true
+  have prod_lower :
+      ((F.card : ℝ) / 2) ^ 2 <
+        (F.restrict ⟨0, hn⟩ false).card *
+        (F.restrict ⟨0, hn⟩ true).card := by
+    have h1 := h0false
+    have h2 := h0true
+    have := mul_lt_mul'' h1 h2 (by positivity) (by positivity)
+    simpa [pow_two] using this
 
-  -- 4.2  ∑ min(A,B) ≤ n · |F| / 2   (как в конспекте)
-  have h_sum_min_le :
-      (∑ i : Fin n, Nat.min (A i) (B i)) ≤ n * (F.card / 2) := by
-    -- следуем плану: min ≤ (A+B−C)/2 ;  затем суммируем и
-    -- используем hC_le_one + sum_contrib.  Техническая арифметика → `sorry`
-    sorry
+  ----------------------------------------------------------------
+  -- 5.  Сводим две несовместные оценки к противоречию.
+  ----------------------------------------------------------------
+  have prod_upper' :
+      (F.card : ℝ) ≤
+        (F.restrict ⟨0, hn⟩ false).card *
+        (F.restrict ⟨0, hn⟩ true).card := by
+    -- переводим `prod_upper` в ℝ
+    exact_mod_cast prod_upper
 
-  ------------------------------------------------------------
-  -- 5.  Противоречие двух оценок.
-  ------------------------------------------------------------
-  have : (n * (F.card / 2) : ℕ) < (n * (F.card / 2) : ℕ) :=
-    lt_of_lt_of_le h_sum_min_gt h_sum_min_le
+  have prod_lower' :
+      (F.card : ℝ) < 4 * (
+        (F.restrict ⟨0, hn⟩ false).card *
+        (F.restrict ⟨0, hn⟩ true).card) := by
+    -- (|F|/2)² < RHS  ⇒  |F| < 4·RHS
+    have := prod_lower
+    have : (F.card : ℝ) = 4 * ((F.card : ℝ) / 2) ^ 2 := by
+      field_simp [pow_two] ; ring
+    have := calc
+      (F.card : ℝ) = 4 * ((F.card : ℝ) / 2) ^ 2 := by
+        field_simp [pow_two] ; ring
+      _ < 4 *
+          ((F.restrict ⟨0, hn⟩ false).card *
+           (F.restrict ⟨0, hn⟩ true).card) := by
+            gcongr
+    simpa using this
+
+  have : (F.card : ℝ) < (F.card : ℝ) := lt_of_lt_of_le prod_lower' prod_upper'
   exact (lt_irrefl _ this).elim
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality
 from `exists_restrict_half_real_aux` back to natural numbers. -/
 lemma exists_restrict_half
-    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
-    (hconst : ¬ ∃ b, ((fun _ : Point n ↦ b) ∈ F ∧
-                      (fun _ : Point n ↦ !b) ∈ F)) :
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
   -- Obtain the real-valued inequality and cast back to natural numbers.
   obtain ⟨i, b, h_half_real⟩ :=
     exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
-      (hconst := hconst)
   -- Multiply the real inequality by `2` to avoid division and cast back to `ℕ`.
   have hmul_real :=
     (mul_le_mul_of_nonneg_left h_half_real (by positivity : (0 : ℝ) ≤ 2))
@@ -271,15 +273,12 @@ lemma exists_restrict_half
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
 lemma exists_restrict_half_real
-    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card)
-    (hconst : ¬ ∃ b, ((fun _ : Point n ↦ b) ∈ F ∧
-                      (fun _ : Point n ↦ !b) ∈ F)) :
+    {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool,
       ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
   obtain ⟨i, b, hle⟩ :=
     exists_restrict_half (F := F) (hn := hn) (hF := hF)
-      (hconst := hconst)
   have hle_real' : ((F.restrict i b).card : ℝ) ≤ ((F.card / 2 : ℕ) : ℝ) := by
     exact_mod_cast hle
   have hle_cast_div : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by

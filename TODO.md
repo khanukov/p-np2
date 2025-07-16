@@ -22,3 +22,21 @@ Short list of development tasks reflecting the current repository status.
 - [x] Add `AllOnesCovered.union` helper lemma to simplify coverage proofs.
 - [ ] Use `collentropy.lean` and `family_entropy_cover.lean` across modules.
 - [x] Remove outdated standalone file `src/entropy_drop.lean` (lemma now lives in `Boolcube.lean`).
+
+## Remaining axioms (as of 2025-07-16)
+- `Bound.mBound_lt_subexp`
+- `LowSensitivityCover.decisionTree_cover` (external)
+- `CoverNumeric.minCoverSize`
+- `CoverNumeric.buildCover_size_bound`
+- `CoverNumeric.buildCover_card`
+- `CoverNumeric.buildCover_card_bigO`
+- `ComplexityClasses.P_subset_Ppoly` (external)
+- `NPSeparation.MCSP_lower_bound` (external)
+- `NPSeparation.magnification_AC0_MCSP` (external)
+- `NPSeparation.PH_collapse` (external)
+- `NPSeparation.karp_lipton` (external)
+- `NPSeparation.FCE_implies_MCSP`
+- `Entropy.exists_restrict_half_real_aux`
+
+The complexity-theoretic axioms are expected to remain long‑term.
+The numeric bounds and halving lemma will be replaced by actual proofs in future commits.

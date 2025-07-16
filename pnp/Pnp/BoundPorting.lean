@@ -23,13 +23,12 @@ import Pnp.Entropy
 import Pnp.FamilyEntropyCover
 import Pnp.Cover
 
-set_option maxHeartbeats 400000
+set_option maxHeartbeats 400000 in
+namespace Bound
 
 open Classical
 open Cover
 open Boolcube
-
-namespace Bound
 
 /-! ## Elementary growth estimates -/
 

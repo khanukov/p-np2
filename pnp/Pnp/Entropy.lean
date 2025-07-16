@@ -80,6 +80,7 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
 /-- **Existence of a halving restriction (ℝ version)**.  There exists a
 coordinate `i` and bit `b` such that restricting every function in the family to
 `i = b` cuts its cardinality by at least half (real version). -/
+-- TODO: port the analytic halving lemma from the original development.
 axiom exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2

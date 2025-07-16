@@ -17,6 +17,7 @@ variable {n : ℕ}
 -- number of such subcubes is therefore at most an exponential in
 -- `s * log₂ (n + 1)`.  We keep the statement as an axiom here and rely on
 -- the external combinatorial argument.
+-- TODO: replace this axiom with the formal decision-tree construction.
 axiom decisionTree_cover
   {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :

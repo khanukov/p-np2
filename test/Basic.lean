@@ -166,7 +166,7 @@ example :
   simpa using
     BoolFunc.exists_restrict_half
       (F := {(fun x : Point 1 => x 0), (fun x : Point 1 => !x 0)})
-      hn hF hconst
+      hn hF
 -/
 
 -- Evaluate a simple Boolean circuit.

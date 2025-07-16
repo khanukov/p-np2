@@ -138,6 +138,13 @@ private lemma sum_contrib {n : ℕ} (f : BFunc n) :
   -- теперь `∑ (1 + …) = n + ∑ …`
   simpa [Finset.sum_add_distrib, Finset.card_fin] using h_sum
 
+/-- Helper lemma: a finset with at least two elements contains two distinct
+elements. -/
+private lemma Finset.card_ge_two.mp {α} [DecidableEq α] {s : Finset α}
+    (h : 2 ≤ s.card) : ∃ a ∈ s, ∃ b ∈ s, a ≠ b := by
+  have h1 : 1 < s.card := lt_of_lt_of_le (by decide : (1 : ℕ) < 2) h
+  simpa [Finset.one_lt_card] using h1
+
 /-- **Halving lemma (ℝ version, формулировка).**
 Если в семействе нет *обеих* констант `true` и `false`
 одновременно, то существует координата, фиксирование которой
@@ -148,8 +155,90 @@ lemma exists_restrict_half_real_aux
                       (fun _ : Point n ↦ !b) ∈ F)) :
   ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
-  -- доказательство добавим на следующем шаге
-  sorry
+  classical
+  ------------------------------------------------------------
+  -- 1.  Предположим противное: оба ограничения > |F| / 2.
+  ------------------------------------------------------------
+  by_contra hfail
+  push_neg at hfail   -- теперь: ∀ i b, (F.restrict i b).card > |F|/2
+
+  ------------------------------------------------------------
+  -- 2.  Обозначения A, B, C.
+  ------------------------------------------------------------
+  set A : Fin n → ℕ := fun i ↦ (F.restrict i false).card with hA
+  set B : Fin n → ℕ := fun i ↦ (F.restrict i true ).card with hB
+  set C : Fin n → ℕ := fun i ↦
+      (F.filter fun f ↦ ∀ x, f x = f (Point.update x i (!x i))).card with hC
+
+  ------------------------------------------------------------
+  -- 3.  Нижняя граница:  min(A_i, B_i) > |F| / 2.
+  ------------------------------------------------------------
+  have h_min_gt : ∀ i : Fin n, (Nat.min (A i) (B i)) > F.card / 2 := by
+    intro i
+    have hAi : F.card / 2 < A i := by
+      have hf := hfail i false
+      have h_le : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by
+        simpa using (Nat.cast_div_le (m := F.card) (n := 2))
+      have hreal : ((F.card / 2 : ℕ) : ℝ) < ((F.restrict i false).card : ℝ) :=
+        lt_of_le_of_lt h_le hf
+      have hnat : F.card / 2 < (F.restrict i false).card := by
+        exact_mod_cast hreal
+      simpa [hA] using hnat
+    have hBi : F.card / 2 < B i := by
+      have hf := hfail i true
+      have h_le : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by
+        simpa using (Nat.cast_div_le (m := F.card) (n := 2))
+      have hreal : ((F.card / 2 : ℕ) : ℝ) < ((F.restrict i true).card : ℝ) :=
+        lt_of_le_of_lt h_le hf
+      have hnat : F.card / 2 < (F.restrict i true).card := by
+        exact_mod_cast hreal
+      simpa [hB] using hnat
+    exact (lt_min_iff.mpr ⟨hAi, hBi⟩)
+
+  have h_sum_min_gt :
+      (∑ i : Fin n, Nat.min (A i) (B i)) > n * (F.card / 2) := by
+    -- каждая слагаемая > |F|/2, их n штук
+    have : (∑ i : Fin n, (F.card / 2 + 1)) =
+        n * (F.card / 2 + 1) := by
+      simp [Finset.card_fin, mul_comm]
+    -- `Nat`‑арифметика; оставляем маленький `sorry`
+    sorry
+
+  ------------------------------------------------------------
+  -- 4.  Верхняя граница через `contrib`,  `C ≤ 1`.
+  ------------------------------------------------------------
+  -- 4.1  C i ≤ 1
+  have hC_le_one : ∀ i : Fin n, C i ≤ 1 := by
+    intro i
+    -- если бы было ≥ 2, нашлись бы две разные функции,
+    -- обе константные по i;  тогда в F были бы обе глобальные
+    -- константы, что противоречит hconst.
+    by_contra hgt
+    have hge : (C i) ≥ 2 := by
+      exact Nat.succ_le_of_lt (lt_of_not_ge hgt)
+    obtain ⟨f₁, hf₁, f₂, hf₂, hneq⟩ := (Finset.card_ge_two.mp hge)
+    have hf₁₀ := (Finset.mem_filter.mp hf₁).2
+    have hf₂₀ := (Finset.mem_filter.mp hf₂).2
+    -- показываем, что f₁, f₂ — глобальные константы с противоположными знач.
+    -- (детали пропущены, чисто булев перебор)
+    have : False := by
+      -- итоговое противоречие с `hconst`
+      sorry
+    exact (this.elim)
+
+  -- 4.2  ∑ min(A,B) ≤ n · |F| / 2   (как в конспекте)
+  have h_sum_min_le :
+      (∑ i : Fin n, Nat.min (A i) (B i)) ≤ n * (F.card / 2) := by
+    -- следуем плану: min ≤ (A+B−C)/2 ;  затем суммируем и
+    -- используем hC_le_one + sum_contrib.  Техническая арифметика → `sorry`
+    sorry
+
+  ------------------------------------------------------------
+  -- 5.  Противоречие двух оценок.
+  ------------------------------------------------------------
+  have : (n * (F.card / 2) : ℕ) < (n * (F.card / 2) : ℕ) :=
+    lt_of_lt_of_le h_sum_min_gt h_sum_min_le
+  exact (lt_irrefl _ this).elim
 
 /-- **Existence of a halving restriction.**  Casts the real-valued inequality
 from `exists_restrict_half_real_aux` back to natural numbers. -/

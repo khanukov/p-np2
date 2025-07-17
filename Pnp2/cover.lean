@@ -372,6 +372,17 @@ lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · exact h₁ R h
   · exact h₂ R h
 
+@[simp] lemma AllOnesCovered.empty {F : Family n} :
+    AllOnesCovered (F := F) (∅ : Finset (Subcube n)) ↔
+      ∀ f ∈ F, ∀ x, f x = true → False := by
+  classical
+  constructor
+  · intro h f hf x hx
+    rcases h f hf x hx with ⟨R, hR, _hxR⟩
+    simp at hR
+  · intro h f hf x hx
+    exact False.elim (h f hf x hx)
+
 
 /-! ### Lifting monochromaticity from restricted families
 

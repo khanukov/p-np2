@@ -65,7 +65,8 @@ def NotCovered (Rset : Finset (Subcube n)) (x : Point n) : Prop :=
 @[simp] lemma notCovered_empty (x : Point n) :
     NotCovered (Rset := (∅ : Finset (Subcube n))) x := by
   intro R hR
-  simpa using hR
+  -- `hR` is impossible since the set is empty
+  simp at hR
 
 lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂)
     {x : Point n} (hx : NotCovered (Rset := R₂) x) :

@@ -44,7 +44,7 @@ on some point `x` must output `true` on all points `y` within Hamming
 distance `ℓ` of `x`. -/
 class CoreClosed (ℓ : ℕ) (F : Family n) : Prop where
   closed_under_ball :
-    ∀ {f : BFunc n} (hf : f ∈ F) {x y : Point n},
+    ∀ {f : BFunc n} (_hf : f ∈ F) {x y : Point n},
       f x = true → hammingDist x y ≤ ℓ → f y = true
 
 /-! ### A convenience constructor for subcubes fixed by a point -/
@@ -53,7 +53,7 @@ class CoreClosed (ℓ : ℕ) (F : Family n) : Prop where
 `I ⊆ Fin n` to the values they take in the point `x`. -/
 def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
   idx := I
-  val := fun i h => x i
+  val := fun i _ => x i
 
 @[simp] lemma fromPoint_mem
     {x : Point n} {I : Finset (Fin n)} {y : Point n} :
@@ -109,6 +109,17 @@ lemma dist_le_of_compl_subset
     h_bound.trans h_le_sub
   simpa [hammingDist] using h_le
 
+/-
+If `x` and `y` agree on every coordinate in `K`, then both belong to the
+subcube `fromPoint x K`.
+-/
+lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)}
+    {x y : Point n}
+    (h : ∀ i, i ∈ K → x i = y i) :
+    y ∈ₛ Subcube.fromPoint x K := by
+  intro i hi
+  simpa [Subcube.fromPoint] using (h i hi).symm
+
 /-! ### Core-agreement lemma with CoreClosed assumption -/
 
 /--
@@ -129,42 +140,38 @@ lemma coreAgreement
     (h_size  : n - ℓ ≤ I.card)
     (h_agree : ∀ i : Fin n, i ∈ I → x₁ i = x₂ i)
     (h_val1  : ∀ f, f ∈ F → f x₁ = true)
-    (h_val2  : ∀ f, f ∈ F → f x₂ = true)
     [CoreClosed ℓ F] :
     (Subcube.fromPoint x₁ I).monochromaticForFamily F := by
   classical
   refine ⟨true, ?_⟩
   intro f hf y hy
   have hx₁ : f x₁ = true := h_val1 f hf
-  have hdist : hammingDist x₁ y ≤ ℓ :=
+  -- `x₂` also lies in the frozen subcube because the points agree on `I`.
+  have hx₂_mem : x₂ ∈ₛ Subcube.fromPoint x₁ I :=
+    mem_fromPoint_of_agree (K := I) (x := x₁) (y := x₂) h_agree
+  -- Hence the distance between `x₁` and `x₂` is at most `ℓ`.
+  have hx₂_dist : hammingDist x₁ x₂ ≤ ℓ :=
+    dist_le_of_compl_subset (n := n) (ℓ := ℓ) (x := x₁) (y := x₂)
+      (I := I) h_size hx₂_mem
+  -- Any point of the subcube is within `ℓ` of `x₁` as well.
+  have hy_dist : hammingDist x₁ y ≤ ℓ :=
     dist_le_of_compl_subset (n := n) (ℓ := ℓ) (x := x₁) (y := y)
       (I := I) h_size hy
-  exact CoreClosed.closed_under_ball (f := f) (hf := hf) hx₁ hdist
-
-open Finset
-
-/--
-If `x` and `y` agree on every coordinate in `K`, then both belong to the
-subcube `fromPoint x K`.
--/
-lemma mem_fromPoint_of_agree {n : ℕ} {K : Finset (Fin n)}
-    {x y : Point n}
-    (h : ∀ i, i ∈ K → x i = y i) :
-    y ∈ₛ Subcube.fromPoint x K := by
-  intro i hi
-  simpa [Subcube.fromPoint] using (h i hi).symm
-
+  -- Apply the core-closed property to conclude.
+  exact
+    CoreClosed.closed_under_ball (f := f) (_hf := hf) (x := x₁) (y := y) hx₁
+      hy_dist
 /-- If two points agree on all coordinates in `K`, then the subcubes
 obtained by freezing `K` according to these points coincide. -/
 lemma Subcube.point_eq_core {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
     (h : ∀ i, i ∈ K → x i = x₀ i) :
     Subcube.fromPoint x K = Subcube.fromPoint x₀ K := by
   have hval : (fun i (hi : i ∈ K) => x i) = (fun i (hi : i ∈ K) => x₀ i) := by
-    funext i hi; simpa [h i hi]
+    funext i hi; simp [h i hi]
   simp [Subcube.fromPoint, hval]
 
 end Agreement
 
 lemma agree_on_refl {α β : Type _} (f : α → β) (s : Set α) : Set.EqOn f f s :=
-  fun x hx => rfl
+  fun _ _ => rfl
 

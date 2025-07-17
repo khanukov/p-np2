@@ -12,7 +12,7 @@ We provide the basic definition and show that constant functions have
 zero collision entropy.
 -/
 
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Pnp2.BoolFunc
 
 open Classical
@@ -108,9 +108,19 @@ lemma H₂Fun_le_one (f : BFunc n) :
 lemma H₂Fun_prob_half (f : BFunc n) (h : prob f = 1 / 2) :
     H₂Fun f = 1 := by
   classical
-  have : collProbFun f = 1 / 2 := by
+  have hcp : collProbFun f = 1 / 2 := by
     simp [collProbFun, h, pow_two]
-  simp [H₂Fun, this]
+  have hbase : -Real.logb 2 (1 / 2 : ℝ) = 1 := by
+    have hb : (1 : ℝ) < 2 := by norm_num
+    have hself : Real.logb 2 2 = 1 := by simpa using Real.logb_self_eq_one (b := 2) hb
+    have h2inv : (2 : ℝ)⁻¹ = (1 / 2 : ℝ) := by norm_num
+    have hlogb : Real.logb 2 (1 / 2 : ℝ) = -1 := by
+      simpa [h2inv, hself] using Real.logb_inv (2 : ℝ) 2
+    simpa [hlogb]
+  calc
+    H₂Fun f = -Real.logb 2 (collProbFun f) := rfl
+    _ = -Real.logb 2 (1 / 2 : ℝ) := by simpa [hcp]
+    _ = 1 := hbase
 
 end
 

@@ -79,6 +79,52 @@ example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
     BoolFunc.low_sensitivity_cover_single
       (n := n) (s := s) (C := C) (f := f) Hs
 
+/-- Dimension of a subcube freezes exactly the chosen coordinates. -/
+example {n : ℕ} (x : Point n) (I : Finset (Fin n)) :
+    (Agreement.Subcube.fromPoint (n := n) x I).dimension = n - I.card := by
+  simpa using Agreement.dimension_fromPoint (x := x) (I := I)
+
+/-- A full subcube is monochromatic for any function. -/
+example {n : ℕ} (x : Point n) (f : BFunc n) :
+    (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
+  classical
+  simpa using Agreement.Subcube.monochromatic_point (x := x) (f := f)
+
+/-- Freezing the same coordinates according to matching points yields the same subcube. -/
+example {n : ℕ} {K : Finset (Fin n)} {x₀ x : Point n}
+    (h : ∀ i, i ∈ K → x i = x₀ i) :
+    Agreement.Subcube.fromPoint (n := n) x K =
+      Agreement.Subcube.fromPoint (n := n) x₀ K := by
+  simpa using Agreement.Subcube.point_eq_core (K := K) (x₀ := x₀) (x := x) h
+
+/-- Core-agreement for the trivial family containing only the constantly true function. -/
+example {n ℓ : ℕ} (x : Point n) :
+    Agreement.Subcube.fromPoint (n := n) x Finset.univ |>.monochromaticForFamily
+      ({fun _ : Point n => true} : Family n) := by
+  classical
+  haveI : Agreement.CoreClosed ℓ ({fun _ : Point n => true} : Family n) :=
+    { closed_under_ball := by
+        intro f hf x y hx hy
+        have hf' : f = (fun _ => true) := by
+          simpa [Finset.mem_singleton] using hf
+        simpa [hf', hx] }
+  simpa using
+    Agreement.coreAgreement (n := n) (ℓ := ℓ)
+      (F := ({fun _ : Point n => true} : Family n))
+      (x₁ := x) (x₂ := x) (I := Finset.univ)
+      (h_size := by simp)
+      (_h_agree := by intro i hi; rfl)
+      (h_val1 := by
+        intro f hf
+        have hf' : f = (fun _ => true) := by
+          simpa [Finset.mem_singleton] using hf
+        simp [hf'] )
+      (_h_val2 := by
+        intro f hf
+        have hf' : f = (fun _ => true) := by
+          simpa [Finset.mem_singleton] using hf
+        simp [hf'] )
+
 
 
 end Pnp2Tests

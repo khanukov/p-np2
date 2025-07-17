@@ -254,9 +254,10 @@ variable (hu : U.card > Nat.factorial (t-1) * w ^ t)
 noncomputable def sunflowerStep : Σ' (C : Petal n), Subcube n := by
   classical
   let fam : Finset (Petal n) :=
-    U.image fun x => support (F.choose x (by
-      have : F.Nonempty := by classical; simpa using F.nonempty
-      simpa))
+    U.image fun x =>
+      support (F.choose x (by
+        classical
+        simpa using F.nonempty))
   have hcard : ∀ S ∈ fam, S.card = w := by
     intro S hS
     rcases Finset.mem_image.1 hS with ⟨x, hx, rfl⟩

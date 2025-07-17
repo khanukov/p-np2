@@ -312,6 +312,22 @@ lemma lift_mono_of_restrict
   simpa [BFunc.restrictCoord, hxib] using this
 
 
+lemma lift_mono_of_restrict_fixOne
+    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
+    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
+    Subcube.monochromaticForFamily (Subcube.fixOne i b ⊓ R) F := by
+  classical
+  have hfix : ∀ x, (Subcube.fixOne i b ⊓ R).Mem x → x i = b := by
+    intro x hx
+    exact (Subcube.mem_fixOne_iff).1 hx.1
+  have hmono' : Subcube.monochromaticForFamily (Subcube.fixOne i b ⊓ R) (F.restrict i b) := by
+    rcases hmono with ⟨c, hc⟩
+    refine ⟨c, ?_⟩
+    intro f hf x hx
+    exact hc f hf x hx.2
+  exact lift_mono_of_restrict (F := F) (i := i) (b := b) (R := Subcube.fixOne i b ⊓ R) hfix hmono'
+
+
 lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered F (buildCover F h hH) := by
   classical

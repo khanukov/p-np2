@@ -87,6 +87,53 @@ def leaves_as_subcubes : DecisionTree n → Finset (Subcube n)
   | node _ t0 t1 => leaves_as_subcubes t0 ∪ leaves_as_subcubes t1
 
 /--
+The number of leaf subcubes is bounded by `2 ^ depth`. This follows from
+`leaf_count_le_pow_depth` by unfolding the `leaves_as_subcubes` definition
+and showing that the number of leaves coincides with the number of trivial
+subcubes produced from them. The proof mirrors the version in `pnp` and is
+included here so that the legacy `Pnp2` library exposes the same API as the
+modern code.
+-/
+lemma leaves_as_subcubes_card_le_pow_depth (t : DecisionTree n) :
+    (leaves_as_subcubes t).card ≤ 2 ^ depth t := by
+  induction t with
+  | leaf b =>
+      simp [leaves_as_subcubes, depth]
+  | node i t0 t1 ih0 ih1 =>
+      have hunion :
+          (leaves_as_subcubes t0 ∪ leaves_as_subcubes t1).card ≤
+            (leaves_as_subcubes t0).card + (leaves_as_subcubes t1).card := by
+        simpa using
+          (Finset.card_union_le (s := leaves_as_subcubes t0)
+            (t := leaves_as_subcubes t1))
+      have hsum : (leaves_as_subcubes t0).card + (leaves_as_subcubes t1).card ≤
+          2 ^ depth t0 + 2 ^ depth t1 := Nat.add_le_add ih0 ih1
+      have h0 : 2 ^ depth t0 ≤ 2 ^ max (depth t0) (depth t1) := by
+        have : depth t0 ≤ max (depth t0) (depth t1) := le_max_left _ _
+        exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) this
+      have h1 : 2 ^ depth t1 ≤ 2 ^ max (depth t0) (depth t1) := by
+        have : depth t1 ≤ max (depth t0) (depth t1) := le_max_right _ _
+        exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) this
+      have hsum2 : 2 ^ depth t0 + 2 ^ depth t1 ≤ 2 * 2 ^ max (depth t0) (depth t1) := by
+        have := Nat.add_le_add h0 h1
+        simpa [two_mul] using this
+      have h : (leaves_as_subcubes t0 ∪ leaves_as_subcubes t1).card ≤ 2 * 2 ^ max (depth t0) (depth t1) :=
+        le_trans hunion (le_trans hsum hsum2)
+      have hpow : 2 * 2 ^ max (depth t0) (depth t1) =
+          2 ^ (Nat.succ (max (depth t0) (depth t1))) := by
+        simp [Nat.pow_succ, Nat.mul_comm]
+      simpa [leaves_as_subcubes, depth, hpow] using h
+
+/--
+A convenient alias for `leaves_as_subcubes_card_le_pow_depth` matching the
+modern `pnp` library. It states the depth bound using the short name
+`tree_depth_bound`.
+-/
+lemma tree_depth_bound (t : DecisionTree n) :
+    (leaves_as_subcubes t).card ≤ 2 ^ depth t :=
+  leaves_as_subcubes_card_le_pow_depth (t := t)
+
+/--
 Subcube corresponding to a recorded path.  Each pair `(i, b)` fixes
 coordinate `i` to the Boolean value `b`.
 Later occurrences overwrite earlier ones. -/

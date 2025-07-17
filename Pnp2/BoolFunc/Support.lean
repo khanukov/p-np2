@@ -13,55 +13,32 @@ lemma eval_update_not_support {f : BFunc n} {i : Fin n}
     f x = f (Point.update x i b) := by
   classical
   have hxall : ∀ z : Point n, f z = f (Point.update z i (!z i)) := by
-    have hxne := not_exists.mp (by simpa [mem_support_iff] using hi)
-    intro z
-    by_contra hx
-    exact hxne z hx
+    simp [mem_support_iff] at hi
+    exact hi
   have hx := hxall x
   by_cases hb : b = x i
-  · subst hb; simp
+  · subst hb
+    have hupdate : Point.update x i (x i) = x := by
+      funext j; by_cases hj : j = i <;> simp [Point.update, hj]
+    simp [hupdate]
   · have hb' : b = !x i := by
-      cases x i <;> cases b <;> simp [hb] at *
-    simpa [hb'] using hx
+      cases hxi : x i <;> cases hbv : b <;> simp [hxi, hbv] at *
+    simp [hb'.symm] at hx
+    exact hx
 
-/-/-- If `x` and `y` agree on `support f`, then `f x = f y`. -/
-lemma eval_eq_of_agree_on_support
-    {f : BFunc n} {x y : Point n}
-    (h : ∀ i, i ∈ support f → x i = y i) :
-    f x = f y := by
-  classical
-  -- Otherwise there exists a coordinate where the values differ.
-  by_contra hneq
-  obtain ⟨i, hi⟩ : ∃ i : Fin n, x i ≠ y i := by
-    classical
-    have hxy' : ¬ ∀ j, x j = y j := by
-      intro hxy
-      apply hneq
-      funext j; exact hxy j
-    simpa [not_forall] using hxy'
-  have hisupp : i ∈ support f := by
-    -- use the definition of `support`
-    unfold support
-    simp [Finset.mem_filter] at *
-  have : x i = y i := h i hisupp
-  exact hi this
-
-/-/-- Every non-trivial function evaluates to `true` at some point. -/
+/-- Every non-trivial function evaluates to `true` at some point. -/
 lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
     ∃ x, f x = true := by
   classical
-  rcases Finset.nonempty_iff_ne_empty.2 h with ⟨i, hi⟩
-  rcases mem_support_iff.mp hi with ⟨x, hx⟩
-  cases hfx : f x
-  · have : f (Point.update x i (!x i)) = true := by
-      have hneq := hx
-      simp [hfx] at hneq
-      cases hupdate : f (Point.update x i (!x i)) with
-      | true => simpa [hupdate]
-      | false =>
-          have : False := by simpa [hupdate] using hneq
-          contradiction
-    exact ⟨Point.update x i (!x i), this⟩
-  · exact ⟨x, by simpa [hfx]⟩
+  obtain ⟨i, hi⟩ := Finset.nonempty_iff_ne_empty.2 h
+  obtain ⟨x, hx⟩ := mem_support_iff.mp hi
+  by_cases hfx : f x = true
+  · exact ⟨x, hfx⟩
+  · have hxne : f (Point.update x i (!x i)) ≠ f x := by simpa using hx.symm
+    cases hupdate : f (Point.update x i (!x i))
+    · have : False := by
+        simp [hfx, hupdate] at hx
+      contradiction
+    · exact ⟨Point.update x i (!x i), by simp [hupdate]⟩
 
 end BoolFunc

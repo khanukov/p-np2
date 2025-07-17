@@ -356,6 +356,22 @@ lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
   have hcard := Finset.card_le_of_subset hsubF
   -- Combine with the definition of `mu`.
   simpa [mu] using add_le_add_left hcard (2 * h)
+
+lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
+    mu F h (R₁ ∪ R₂) ≤ mu F h R₁ := by
+  classical
+  refine Finset.induction_on R₂ ?base ?step
+  · simp [mu]
+  · intro R S hR hIH
+    have hstep := mu_union_singleton_le (F := F) (Rset := R₁ ∪ S) (R := R)
+      (h := h)
+    have hcomb := le_trans hstep hIH
+    -- `Finset.insert` ensures `R ∉ S`, so unions simplify.
+    have : R₁ ∪ insert R S = (R₁ ∪ S) ∪ {R} := by
+      ext x; by_cases hx : x = R
+      · subst hx; simp [hR]
+      · simp [Finset.mem_insert, hx]
+    simpa [this, Finset.union_assoc] using hcomb
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

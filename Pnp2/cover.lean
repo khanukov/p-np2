@@ -289,6 +289,28 @@ lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
 
+/-! ### Lifting monochromaticity from restricted families
+
+If a subcube `R` fixes the `i`-th coordinate to `b`, then a family that is
+monochromatic on the restricted version of `F` is also monochromatic on `F`
+itself.  This simple helper lemma is used in the entropy branch of the cover
+construction. -/
+
+lemma lift_mono_of_restrict
+    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
+    (hfix : ∀ x, R.Mem x → x i = b)
+    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
+    Subcube.monochromaticForFamily R F := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro f hf x hx
+  have hf0 : f.restrictCoord i b ∈ F.restrict i b := by
+    simpa [Family.restrict, hf]
+  have : (f.restrictCoord i b) x = c := hc (f.restrictCoord i b) hf0 x hx
+  have hxib : x i = b := hfix x hx
+  simpa [BFunc.restrictCoord, hxib] using this
+
 
 lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered F (buildCover F h hH) := by

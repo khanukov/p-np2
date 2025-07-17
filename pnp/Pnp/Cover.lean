@@ -115,4 +115,15 @@ lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
 
+@[simp] lemma AllOnesCovered.empty {F : Family n} :
+    AllOnesCovered (F := F) (∅ : Finset (Subcube n)) ↔
+      ∀ f ∈ F, ∀ x, f x = true → False := by
+  classical
+  constructor
+  · intro h f hf x hx
+    rcases h f hf x hx with ⟨R, hR, _hxR⟩
+    simp at hR
+  · intro h f hf x hx
+    exact False.elim (h f hf x hx)
+
 end Cover

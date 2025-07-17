@@ -289,6 +289,39 @@ lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
 
+/-! ### Uncovered pairs and a simple measure
+
+The recursion for `buildCover` will track the number of still-uncovered
+`1`‑inputs together with an entropy budget.  It is therefore convenient to
+express when no uncovered points remain and to define a lightweight numeric
+measure used in termination arguments. -/
+
+lemma uncovered_eq_empty_of_allCovered {F : Family n} {Rset : Finset (Subcube n)}
+    (hcov : AllOnesCovered F Rset) :
+    uncovered F Rset = ∅ := by
+  classical
+  ext p; constructor
+  · intro hp
+    rcases hp with ⟨hf, hx, hnc⟩
+    rcases hcov p.1 hf p.2 hx with ⟨R, hR, hxR⟩
+    have : p.2 ∉ₛ R := hnc R hR
+    exact False.elim (this hxR)
+  · intro hp
+    simp [hp]
+
+/-- A very coarse termination measure for the recursion.  The first component
+tracks the available entropy budget `h`, while the second counts currently
+uncovered `1`‑inputs.  Each branch of `buildCover` will strictly decrease this
+sum. -/
+def mu (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) : ℕ :=
+  2 * h + (uncovered F Rset).toFinset.card
+
+lemma mu_of_allCovered {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
+    (hcov : AllOnesCovered F Rset) :
+    mu F h Rset = 2 * h := by
+  have hzero : uncovered F Rset = ∅ := uncovered_eq_empty_of_allCovered (F := F) hcov
+  simp [mu, hzero]
+
 /-! ### Lifting monochromaticity from restricted families
 
 If a subcube `R` fixes the `i`-th coordinate to `b`, then a family that is

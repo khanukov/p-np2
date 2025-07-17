@@ -53,7 +53,7 @@ lemma collProb_le_one {n : ℕ} (F : Family n) :
     have hge : (1 : ℝ) ≤ (F.card : ℝ) := by
       exact_mod_cast Nat.succ_le_of_lt (Nat.pos_of_ne_zero h)
     have hbound : 1 / (F.card : ℝ) ≤ 1 := by
-      have := (div_le_iff hpos).mpr hge
+      have := (div_le_one (hb := hpos)).mpr hge
       simpa using this
     simpa [hcoll] using hbound
 
@@ -88,8 +88,11 @@ lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   simpa [Family.restrict] using
     (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
 
-/-- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
-ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof. -/
+/-- **Existence of a halving restriction (ℝ version)** –
+provides a coordinate `i` and bit `b` such that restricting every
+function in the family to `i = b` cuts its cardinality by at least half
+(real version).  The proof works with reals to avoid delicate `Nat`
+arithmetic. -/
 lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
@@ -142,19 +145,28 @@ lemma exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
 lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
   classical
-  -- Obtain the real-valued inequality and cast back to ℕ.
-  obtain ⟨i, b, h_half_real⟩ := exists_restrict_half_real_aux (F := F) hn hF
+  -- Obtain the real-valued inequality and cast back to natural numbers.
+  obtain ⟨i, b, h_half_real⟩ :=
+    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+  -- Multiply the real inequality by `2` to avoid division and cast back.
+  have hmul_real := (mul_le_mul_of_nonneg_left h_half_real (by positivity : (0 : ℝ) ≤ 2))
+  have hmul_nat : (F.restrict i b).card * 2 ≤ F.card := by
+    have h := hmul_real
+    have h' : 2 * ((F.card : ℝ) / 2) = (F.card : ℝ) := by
+      field_simp
+    have h'' : 2 * ((F.restrict i b).card : ℝ) = ((F.restrict i b).card * 2 : ℝ) := by
+      ring
+    have hfinal : ((F.restrict i b).card * 2 : ℝ) ≤ (F.card : ℝ) := by
+      simpa [h', h''] using h
+    exact_mod_cast hfinal
   have hle_nat : (F.restrict i b).card ≤ F.card / 2 := by
-    exact_mod_cast h_half_real
+    exact (Nat.le_div_iff_mul_le (by decide)).mpr hmul_nat
   exact ⟨i, b, hle_nat⟩
 
 -- The above arithmetic on naturals is tedious; a simpler *real* argument will
 -- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on
 -- `exists_restrict_half` proven below with reals.
 
-/-- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
-ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof.
--/
 
 /-- **Existence of a halving restriction (ℝ version)** – deduced from the
 integer statement. -/
@@ -162,12 +174,18 @@ lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
     (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
     ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
   classical
-  obtain ⟨i, b, hhalf⟩ := exists_restrict_half (F := F) hn hF
-  refine ⟨i, b, ?_⟩
-  exact_mod_cast hhalf
+  obtain ⟨i, b, hle⟩ := exists_restrict_half (F := F) (hn := hn) (hF := hF)
+  have hle_real' : ((F.restrict i b).card : ℝ) ≤ ((F.card / 2 : ℕ) : ℝ) := by
+    exact_mod_cast hle
+  have hle_cast_div : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by
+    simpa using (Nat.cast_div_le (m := F.card) (n := 2) :
+      ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2)
+  have hle_real : ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 :=
+    hle_real'.trans hle_cast_div
+  exact ⟨i, b, hle_real⟩
 
 /-- **Entropy‑Drop Lemma.**  There exists a coordinate / bit whose
-restriction lowers collision entropy by ≥ 1 bit. -/
+restriction lowers collision entropy by at least one bit. -/
 lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
     (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool,
@@ -175,8 +193,8 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
   classical
   -- Apply the previous lemma to obtain a restriction cutting the family in half
   obtain ⟨i, b, h_half⟩ := exists_restrict_half_real (F := F) hn hF
-  -- Take logarithms (base 2) of the cardinality inequality. Monotonicity of
-  -- log ensures the desired drop by one bit.
+  -- Take logarithms (base 2) of the cardinality inequality.
+  -- Monotonicity of `log` ensures the desired drop by one bit.
   have hlog := Real.logb_le_logb (by norm_num : (2:ℝ) > 1) h_half
   -- `logb` of division simplifies via the standard identity.
   rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.2 (Nat.one_ne_zero)),

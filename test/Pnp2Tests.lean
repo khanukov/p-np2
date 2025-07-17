@@ -3,6 +3,7 @@ import Pnp2.BoolFunc
 import Pnp2.BoolFunc.Support
 import Pnp2.DecisionTree
 import Pnp2.low_sensitivity_cover
+-- `collentropy` is not imported to keep the legacy library lightweight
 
 open BoolFunc
 open Agreement
@@ -57,6 +58,15 @@ example (t : DecisionTree 2) :
 by
   simpa using DecisionTree.tree_depth_bound (t := t)
 
+/-- A trivial decision tree has at most `2 ^ depth` leaves. -/
+example :
+    (DecisionTree.leaf true : DecisionTree 1).leaf_count ≤
+      2 ^ (DecisionTree.depth (DecisionTree.leaf true : DecisionTree 1)) := by
+  have hx :=
+    DecisionTree.leaf_count_le_pow_depth
+      (t := (DecisionTree.leaf true : DecisionTree 1))
+  exact hx
+
 /-- The low-sensitivity cover for a single function exists. -/
 example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
     (Hs : sensitivity f ≤ s) :
@@ -68,5 +78,7 @@ example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
   simpa using
     BoolFunc.low_sensitivity_cover_single
       (n := n) (s := s) (C := C) (f := f) Hs
+
+
 
 end Pnp2Tests

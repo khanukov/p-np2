@@ -89,7 +89,7 @@ example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
 /-- Dimension of a subcube freezes exactly the chosen coordinates. -/
 example {n : ℕ} (x : Point n) (I : Finset (Fin n)) :
     (Agreement.Subcube.fromPoint (n := n) x I).dimension = n - I.card := by
-  simpa using Agreement.dimension_fromPoint (x := x) (I := I)
+  simp [Agreement.dimension_fromPoint (x := x) (I := I)]
 
 /-- A full subcube is monochromatic for any function. -/
 example {n : ℕ} (x : Point n) (f : BFunc n) :
@@ -105,7 +105,7 @@ example {n : ℕ} (x : Point n) (f : BFunc n) :
   -- Hence `f y` evaluates to the same value as `f x`.
   have : y = x := by
     funext i; simpa using (h_eq i)
-  simpa [this]
+  simp [this]
 
 /-- Core-agreement for the trivial family containing only the constantly true function. -/
 example {n ℓ : ℕ} (x : Point n) :
@@ -117,7 +117,7 @@ example {n ℓ : ℕ} (x : Point n) :
         intro f hf x y hx hy
         have hf' : f = (fun _ => true) := by
           simpa [Finset.mem_singleton] using hf
-        simpa [hf', hx] }
+        simp [hf'] }
   simpa using
     Agreement.coreAgreement (n := n) (ℓ := ℓ)
       (F := ({fun _ : Point n => true} : Family n))

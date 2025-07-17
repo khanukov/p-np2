@@ -23,5 +23,5 @@ lean_exe tests where
 @[test_driver]
 lean_lib Tests where
 
-  globs := #[`Basic, `CoverExtra, `Migrated, `Pnp2Legacy]
+  globs := #[`Basic, `CoverExtra, `Migrated, `Pnp2Legacy, `Pnp2Extra]
   srcDir := "test"

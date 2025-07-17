@@ -429,9 +429,28 @@ is left as future work.
 -/
 /--
 `buildCover_mono` states that every subcube produced by `buildCover` is
-monochromatic for the whole family.  The full inductive proof mirrors
-`buildCover_covers` and is omitted here.  We record the expected
-statement as an axiom so that other lemmas can depend on it. -/
+monochromatic for the whole family.  The intended proof mirrors the
+well‑founded recursion used in `buildCover_covers`.  One performs induction
+on the lexicographic measure
+
+```
+  μ(F, Rset) = 2 * h + (uncovered F Rset).toFinset.card,
+```
+
+where `h` bounds the entropy of the current family and `uncovered` counts
+the remaining uncovered `1`‑inputs.  Each branch strictly decreases this
+measure:
+
+* **Low‑sensitivity branch.**  When all functions have small sensitivity,
+  `low_sensitivity_cover` yields monochromatic subcubes covering the
+  outstanding points, dropping the second component of `μ` to zero.
+* **Entropy branch.**  Otherwise a coordinate split reduces the entropy
+  budget.  The recursion applies the induction hypothesis to both
+  restrictions and lifts the resulting cubes back via
+  `lift_mono_of_restrict_fixOne`.
+
+Formalising this argument is nontrivial and left for future work.  We keep
+the expected statement as an axiom so that other lemmas can depend on it. -/
 axiom buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F
 

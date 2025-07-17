@@ -22,7 +22,7 @@ example (x : Point 2) (b : Bool) :
   classical
   have hi : (1 : Fin 2) ∉ support (fun y : Point 2 => y 0) := by
     simp [support]
-  simpa using
+  exact
     BoolFunc.eval_update_not_support
       (f := fun y : Point 2 => y 0) (i := 1) hi x b
 
@@ -31,6 +31,13 @@ example {n : ℕ} {K : Finset (Fin n)} {x y : Point n}
     (h : ∀ i, i ∈ K → x i = y i) :
     y ∈ₛ Subcube.fromPoint x K := by
   simpa using Agreement.mem_fromPoint_of_agree (K := K) (x := x) (y := y) h
+
+/-- If two points agree on `K`, the frozen subcubes coincide. -/
+example {n : ℕ} {K : Finset (Fin n)} {x y : Point n}
+    (h : ∀ i, i ∈ K → x i = y i) :
+    Subcube.fromPoint x K = Subcube.fromPoint y K := by
+  simpa using
+    Agreement.Subcube.point_eq_core (K := K) (x := x) (x₀ := y) h
 
 /-- Every non-trivial function evaluates to `true` somewhere on its support. -/
 example :
@@ -78,6 +85,50 @@ example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
   simpa using
     BoolFunc.low_sensitivity_cover_single
       (n := n) (s := s) (C := C) (f := f) Hs
+
+/-- Dimension of a subcube freezes exactly the chosen coordinates. -/
+example {n : ℕ} (x : Point n) (I : Finset (Fin n)) :
+    (Agreement.Subcube.fromPoint (n := n) x I).dimension = n - I.card := by
+  simpa using Agreement.dimension_fromPoint (x := x) (I := I)
+
+/-- A full subcube is monochromatic for any function. -/
+example {n : ℕ} (x : Point n) (f : BFunc n) :
+    (Agreement.Subcube.fromPoint (n := n) x Finset.univ).monochromaticFor f := by
+  classical
+  refine ⟨f x, ?_⟩
+  intro y hy
+  -- Membership in the fully frozen cube implies equality with `x`.
+  have h_eq : ∀ i : Fin n, y i = x i := by
+    have hmem := (Agreement.fromPoint_mem (x := x) (I := Finset.univ) (y := y)).1 hy
+    intro i; have := hmem i (by simp)
+    simpa using this
+  -- Hence `f y` evaluates to the same value as `f x`.
+  have : y = x := by
+    funext i; simpa using (h_eq i)
+  simpa [this]
+
+/-- Core-agreement for the trivial family containing only the constantly true function. -/
+example {n ℓ : ℕ} (x : Point n) :
+    Agreement.Subcube.fromPoint (n := n) x Finset.univ |>.monochromaticForFamily
+      ({fun _ : Point n => true} : Family n) := by
+  classical
+  haveI : Agreement.CoreClosed ℓ ({fun _ : Point n => true} : Family n) :=
+    { closed_under_ball := by
+        intro f hf x y hx hy
+        have hf' : f = (fun _ => true) := by
+          simpa [Finset.mem_singleton] using hf
+        simpa [hf', hx] }
+  simpa using
+    Agreement.coreAgreement (n := n) (ℓ := ℓ)
+      (F := ({fun _ : Point n => true} : Family n))
+      (x₁ := x) (x₂ := x) (I := Finset.univ)
+      (h_size := by simp)
+      (h_agree := by intro i hi; rfl)
+      (h_val1 := by
+        intro f hf
+        have hf' : f = (fun _ : Point n => true) := by
+          simpa [Finset.mem_singleton] using hf
+        simp [hf'] )
 
 
 

@@ -372,6 +372,30 @@ lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
       · subst hx; simp [hR]
       · simp [Finset.mem_insert, hx]
     simpa [this, Finset.union_assoc] using hcomb
+
+lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
+    (hsub : R₁ ⊆ R₂) :
+    mu F h R₂ ≤ mu F h R₁ := by
+  classical
+  -- Express `R₂` as `R₁ ∪ (R₂ \ R₁)` and apply `mu_union_le`.
+  have hunion : R₂ = R₁ ∪ (R₂ \ R₁) := by
+    ext x; by_cases hx : x ∈ R₁
+    · constructor
+      · intro hxR2
+        exact Finset.mem_union.mpr <| Or.inl hx
+      · intro hunion
+        exact hx
+    · constructor
+      · intro hxR2
+        have hxRdiff : x ∈ R₂ \ R₁ := by
+          exact ⟨hxR2, by simpa [hx]⟩
+        exact Finset.mem_union.mpr <| Or.inr hxRdiff
+      · intro hunion
+        rcases Finset.mem_union.mp hunion with hx₁ | hx₂
+        · exact hsub hx₁
+        · exact hx₂.1
+  have := mu_union_le (F := F) (h := h) (R₁ := R₁) (R₂ := R₂ \ R₁)
+  simpa [hunion] using this
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

@@ -322,6 +322,40 @@ lemma mu_of_allCovered {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
     mu F h Rset = 2 * h := by
   have hzero : uncovered F Rset = ∅ := uncovered_eq_empty_of_allCovered (F := F) hcov
   simp [mu, hzero]
+
+/-!
+`uncovered` is monotone with respect to the set of rectangles: adding
+a new rectangle can only remove uncovered pairs.  The next lemma
+formalises this simple observation and will be handy when reasoning
+about the termination measure `mu`.
+-/
+lemma uncovered_subset_of_union_singleton {F : Family n}
+    {Rset : Finset (Subcube n)} {R : Subcube n} :
+    uncovered F (Rset ∪ {R}) ⊆ uncovered F Rset := by
+  classical
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  -- `p.2` is not covered by any rectangle in `Rset ∪ {R}`,
+  -- hence in particular by any rectangle of `Rset` alone.
+  intro S hS
+  exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
+lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ} :
+    mu F h (Rset ∪ {R}) ≤ mu F h Rset := by
+  classical
+  -- The uncovered set can only shrink when adding a rectangle.
+  have hsub : uncovered F (Rset ∪ {R}) ⊆ uncovered F Rset :=
+    uncovered_subset_of_union_singleton (F := F) (Rset := Rset) (R := R)
+  have hsubF : (uncovered F (Rset ∪ {R})).toFinset ⊆ (uncovered F Rset).toFinset := by
+    intro x hx
+    have hx' : x ∈ uncovered F (Rset ∪ {R}) := by simpa using hx
+    have hx'' : x ∈ uncovered F Rset := hsub hx'
+    simpa using hx''
+  have hcard := Finset.card_le_of_subset hsubF
+  -- Combine with the definition of `mu`.
+  simpa [mu] using add_le_add_left hcard (2 * h)
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

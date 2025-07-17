@@ -289,6 +289,7 @@ lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
 
+
 /-! ### Uncovered pairs and a simple measure
 
 The recursion for `buildCover` will track the number of still-uncovered
@@ -321,6 +322,22 @@ lemma mu_of_allCovered {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
     mu F h Rset = 2 * h := by
   have hzero : uncovered F Rset = ∅ := uncovered_eq_empty_of_allCovered (F := F) hcov
   simp [mu, hzero]
+  
+lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :
+    ∀ R ∈ R₂, Subcube.monochromaticForFamily R F := by
+  intro R hR
+  exact h₁ R (hsub hR)
+
+lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F)
+    (h₂ : ∀ R ∈ R₂, Subcube.monochromaticForFamily R F) :
+    ∀ R ∈ R₁ ∪ R₂, Subcube.monochromaticForFamily R F := by
+  intro R hR
+  rcases Finset.mem_union.mp hR with h | h
+  · exact h₁ R h
+  · exact h₂ R h
+
 
 /-! ### Lifting monochromaticity from restricted families
 

@@ -357,6 +357,33 @@ lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
   -- Combine with the definition of `mu`.
   simpa [mu] using add_le_add_left hcard (2 * h)
 
+lemma mu_union_singleton_lt {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    (hx : ∃ p ∈ uncovered F Rset, p.2 ∈ₛ R) :
+    mu F h (Rset ∪ {R}) < mu F h Rset := by
+  classical
+  rcases hx with ⟨p, hpU, hpR⟩
+  have hp_not : p ∉ uncovered F (Rset ∪ {R}) := by
+    rcases hpU with ⟨hf, hx, hnc⟩
+    intro hp'
+    rcases hp' with ⟨hf', hx', hnc'⟩
+    have := hnc' R (by simp) hpR
+    exact this
+  have hsub : (uncovered F (Rset ∪ {R})).toFinset ⊆ (uncovered F Rset).toFinset := by
+    intro x hx
+    have hx' : x ∈ uncovered F (Rset ∪ {R}) := by simpa using hx
+    have hx'' : x ∈ uncovered F Rset :=
+      uncovered_subset_of_union_singleton (F := F) (Rset := Rset) (R := R) hx'
+    simpa using hx''
+  have hproper : ¬( (uncovered F Rset).toFinset ⊆ (uncovered F (Rset ∪ {R})).toFinset ) := by
+    intro hsubset
+    have hpFin : p ∈ (uncovered F Rset).toFinset := by simpa using hpU
+    have := hsubset hpFin
+    exact hp_not this
+  have hcard := Finset.card_lt_of_subset hsub hproper
+  -- Add `2*h` to both sides.
+  simpa [mu] using Nat.add_lt_add_left hcard (2 * h)
+
 lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
     mu F h (R₁ ∪ R₂) ≤ mu F h R₁ := by
   classical

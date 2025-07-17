@@ -435,6 +435,18 @@ statement as an axiom so that other lemmas can depend on it. -/
 axiom buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F
 
+--/!
+/- The full inductive proof should proceed by well-founded recursion on the
+  measure `μ(F,Rset) = 2 * BoolFunc.H₂ F + card {⟨f,x⟩ | f ∈ F ∧ f x = true ∧ x ∉ ⋃ Rset}`.
+  Each branch of `buildCover` strictly decreases this measure:
+  * the low-sensitivity branch inserts cubes guaranteed to be monochromatic by
+    `low_sensitivity_cover` and terminates;
+  * the entropy branch fixes one coordinate and recurses on the restricted
+    families, then lifts the monochromaticity back via
+    `lift_mono_of_restrict_fixOne`.
+  This outline remains to be formalised.
+/!
+
 
 /--
 `buildCover_card_bound` bounds the size of the cover returned by

@@ -43,6 +43,39 @@ lemma numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h := by
       Nat.mul_le_mul_left (n * (h + 2)) (Nat.succ_le_iff.mpr this)
   simpa [mBound] using this
 
+/-! ### Improved bound with positivity assumption
+The development in `pnp` strengthens `numeric_bound` by assuming
+`0 < n`.  This version follows the newer proof and will be useful for
+compatibility with migrated lemmas. -/
+
+lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
+    2 * h + n ≤ mBound n h := by
+  classical
+  cases h with
+  | zero =>
+      have h0 : 2 * 0 + n ≤ mBound n 0 := by
+        have hmul := Nat.mul_le_mul_left n (show (1 : ℕ) ≤ 2 from by decide)
+        simpa [mBound, two_mul, Nat.mul_comm, one_mul] using hmul
+      simpa using h0
+  | succ h =>
+      have hlinear : (2 * (h + 1) + n : ℕ) ≤ 2 * n * (h + 1 + 2) := by
+        nlinarith [hn]
+      have hpow : (2 : ℕ) ≤ 2 ^ (10 * (h + 1)) := by
+        have hbase : (2 : ℕ) ≤ 2 ^ 10 := by decide
+        have hexp : 10 ≤ 10 * (h + 1) := by
+          have hx : (1 : ℕ) ≤ h + 1 := Nat.succ_le_succ (Nat.zero_le _)
+          have hx' : (10 : ℕ) * 1 ≤ 10 * (h + 1) := Nat.mul_le_mul_left 10 hx
+          set_option linter.unnecessarySimpa false in
+          simpa [Nat.mul_one] using hx'
+        exact hbase.trans (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hexp)
+      have : 2 * (h + 1) + n ≤ n * (h + 1 + 2) * 2 ^ (10 * (h + 1)) := by
+        calc
+          2 * (h + 1) + n ≤ 2 * n * (h + 1 + 2) := hlinear
+          _ = (n * (h + 1 + 2)) * 2 := by ring
+          _ ≤ (n * (h + 1 + 2)) * 2 ^ (10 * (h + 1)) :=
+            Nat.mul_le_mul_left _ hpow
+      simpa [mBound] using this
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

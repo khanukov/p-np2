@@ -109,6 +109,13 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
               · exact hj
             exact R.val j hjR }
 
+/-! ### Basic lemmas about `subcube_of_path` -/
+
+@[simp] lemma mem_subcube_of_path_nil (x : Point n) :
+    (subcube_of_path (n := n) []).mem x := by
+  intro i hi
+  exact False.elim (Finset.notMem_empty _ hi)
+
 /-- The number of leaf subcubes is bounded by `2 ^ depth`. -/
 lemma leaves_as_subcubes_card_le_pow_depth (t : DecisionTree n) :
     (leaves_as_subcubes t).card ≤ 2 ^ depth t := by

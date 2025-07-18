@@ -116,6 +116,14 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
   intro i hi
   exact False.elim (Finset.notMem_empty _ hi)
 
+@[simp] lemma subcube_of_path_nil_idx :
+    (subcube_of_path (n := n) ([] : List (Fin n × Bool))).idx = ({} : Finset (Fin n)) :=
+  rfl
+
+@[simp] lemma subcube_of_path_cons_idx (i : Fin n) (b : Bool) (p : List (Fin n × Bool)) :
+    (subcube_of_path ((i, b) :: p)).idx = insert i (subcube_of_path p).idx :=
+  rfl
+
 /-- The number of leaf subcubes is bounded by `2 ^ depth`. -/
 lemma leaves_as_subcubes_card_le_pow_depth (t : DecisionTree n) :
     (leaves_as_subcubes t).card ≤ 2 ^ depth t := by

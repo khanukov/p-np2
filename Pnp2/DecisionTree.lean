@@ -156,6 +156,14 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
               · exact hj
             exact R.val j hjR }
 
+@[simp] lemma subcube_of_path_nil_idx :
+    (subcube_of_path (n := n) ([] : List (Fin n × Bool))).idx = ({} : Finset (Fin n)) :=
+  rfl
+
+@[simp] lemma subcube_of_path_cons_idx (i : Fin n) (b : Bool) (p : List (Fin n × Bool)) :
+    (subcube_of_path ((i, b) :: p)).idx = insert i (subcube_of_path p).idx :=
+  rfl
+
 end DecisionTree
 
 end BoolFunc

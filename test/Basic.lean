@@ -79,6 +79,14 @@ example :
     simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
+-- Swapping updates to two different coordinates yields the same result.
+example (x : Point 3) :
+    Point.update (Point.update x 0 true) 1 false =
+      Point.update (Point.update x 1 false) 0 true := by
+  have h : (0 : Fin 3) ≠ 1 := by decide
+  simpa using Point.update_swap (x := x) (i := (0 : Fin 3)) (j := (1 : Fin 3)) h
+      true false
+
 
 -- Basic lemmas from `Boolcube`
 example (n : ℕ) :

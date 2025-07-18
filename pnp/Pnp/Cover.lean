@@ -164,6 +164,31 @@ lemma uncovered_subset_of_union_singleton {F : Family n}
   intro S hS
   exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
 
+/-! ### Lifting monochromaticity from restricted families
+
+If a subcube `R` fixes the `i`-th coordinate to `b`,
+and `F.restrict i b` is monochromatic on `R`, then so is `F` itself.
+This helper lemma mirrors the version from the legacy `Pnp2` library
+and will be useful in the inductive cover construction. -/
+
+lemma lift_mono_of_restrict
+    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
+    (hfix : ∀ x, R.mem x → x i = b)
+    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
+    Subcube.monochromaticForFamily R F := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro f hf x hx
+  have hf0 : f.restrictCoord i b ∈ F.restrict i b := by
+    classical
+    unfold Family.restrict
+    exact Finset.mem_image.mpr ⟨f, hf, rfl⟩
+  have hval : (f.restrictCoord i b) x = c := by
+    simpa using hc (f.restrictCoord i b) hf0 (x := x) hx
+  have hxib : x i = b := hfix x hx
+  simpa [BoolFunc.restrictCoord_agrees (f := f) (j := i) (b := b) (x := x) hxib] using hval
+
 
 
 end Cover

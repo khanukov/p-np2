@@ -265,6 +265,22 @@ noncomputable
 def Family.restrict {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) : Family n :=
   F.image fun f x => f (Point.update x i b)
 
+/-!
+`Family.restrict i b` applies `BFunc.restrictCoord` to every function in `F`.
+This helper lemma shows that low sensitivity is preserved under this
+restriction: if every `f ∈ F` has sensitivity at most `s`, then every
+restricted function has sensitivity at most `s` as well.
+-/
+lemma Family.sensitivity_restrict_le {n s : ℕ} (F : Family n) (i : Fin n)
+    (b : Bool) (Hs : ∀ f ∈ F, sensitivity f ≤ s) :
+    ∀ g ∈ F.restrict i b, sensitivity g ≤ s := by
+  classical
+  intro g hg
+  rcases Finset.mem_image.mp hg with ⟨f, hf, rfl⟩
+  have hf' := Hs f hf
+  have hres := sensitivity_restrictCoord_le (f := f) (j := i) (b := b)
+  exact le_trans hres hf'
+
 /-! ### Essential coordinate support -/
 
 /-- Set of coordinates on which `f` depends essentially.  A coordinate `i`

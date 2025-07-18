@@ -196,6 +196,13 @@ def BFunc.restrictCoord (f : BFunc n) (j : Fin n) (b : Bool) : BFunc n :=
     · simp [Point.update, hk]
   simp [BFunc.restrictCoord, this]
 
+@[simp] lemma restrictCoord_idem
+    {f : BFunc n} (i : Fin n) (b : Bool) :
+    BFunc.restrictCoord (BFunc.restrictCoord f i b) i b =
+      BFunc.restrictCoord f i b := by
+  funext x
+  simp [BFunc.restrictCoord, Point.update_idem]
+
 end Restrict
 
 /-- The set of inputs on which a Boolean function outputs `true`. -/

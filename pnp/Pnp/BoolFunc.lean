@@ -108,6 +108,22 @@ def dimension (R : Subcube n) : ℕ :=
     (_ : i ∉ R.idx) : R.mem x → True := by
   intro _; trivial
 
+/-- Fix an additional coordinate `i` of subcube `R` to the Boolean value `b`. -/
+def fixCoord (R : Subcube n) (i : Fin n) (b : Bool) : Subcube n :=
+  { idx := insert i R.idx,
+    val := by
+      intro j hj
+      by_cases hji : j = i
+      · subst hji; exact b
+      · have hjR : j ∈ R.idx := by
+          rcases Finset.mem_insert.mp hj with hj | hj
+          · exact False.elim <| hji hj
+          · exact hj
+        exact R.val j hjR }
+
+@[simp] lemma fixCoord_idx (R : Subcube n) (i : Fin n) (b : Bool) :
+    (fixCoord R i b).idx = insert i R.idx := rfl
+
 /-- **Monochromaticity for a single function**:
 `R` is monochromatic for `f` if `f` is constant on `R`. -/
 def monochromaticFor (R : Subcube n) (f : BFunc n) : Prop :=

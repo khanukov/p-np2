@@ -156,6 +156,11 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
               · exact hj
             exact R.val j hjR }
 
+@[simp] lemma mem_subcube_of_path_nil (x : Point n) :
+    (subcube_of_path (n := n) []).mem x := by
+  intro i hi
+  exact False.elim (Finset.notMem_empty _ hi)
+
 @[simp] lemma subcube_of_path_nil_idx :
     (subcube_of_path (n := n) ([] : List (Fin n × Bool))).idx = ({} : Finset (Fin n)) :=
   rfl

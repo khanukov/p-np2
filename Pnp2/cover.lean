@@ -679,6 +679,32 @@ lemma buildCover_mono_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       have hR_ls : R ∈ R_ls := by simpa [hres] using hR
       exact hmono_ls R hR_ls
 
+/--
+`buildCover_mono` states that every rectangle produced by the recursive
+procedure `buildCover` is monochromatic for the entire family.  The present
+code base still treats this statement as an axiom.  A full proof is expected
+to follow the same well-founded recursion on the measure `μ` used in
+`buildCover_covers`.
+
+In outline one strengthens the induction hypothesis to assume that the set of
+rectangles accumulated so far is already monochromatic.  The recursion then
+proceeds as follows.
+
+* **Base case.**  When `firstUncovered` returns `none` the algorithm simply
+  returns the current set.  Monochromaticity is immediate.
+* **Low-sensitivity branch.**  If all functions of `F` have sensitivity below
+  the logarithmic threshold, `low_sensitivity_cover` provides a collection of
+  monochromatic subcubes covering all remaining points.  Their union with the
+  current set remains monochromatic.
+* **Entropy branch.**  Otherwise one fixes a coordinate which decreases the
+  entropy budget and recurses on the two restricted families.  By lifting the
+  induction hypotheses via `lift_mono_of_restrict_fixOne` the resulting
+  subcubes are monochromatic for the original family.
+
+In each branch the lexicographic measure on the entropy budget and the number
+of uncovered pairs strictly decreases, ensuring termination.  Implementing
+this reasoning will eliminate the following axiom.
+-/
 axiom buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F
 

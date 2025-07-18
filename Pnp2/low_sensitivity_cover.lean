@@ -24,6 +24,45 @@ axiom decisionTree_cover
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n))
 
+/-- Trivial base case: if all functions in the family are constant on the full
+cube, we can cover all ones with just that cube.  This lemma acts as a base case
+for the eventual recursive construction of `decisionTree_cover`. -/
+lemma decisionTree_cover_of_constant
+  {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
+  (Hsens : ∀ f ∈ F, sensitivity f ≤ s)
+  (hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  rcases hconst with ⟨b, hb⟩
+  -- The full cube represented as a subcube.
+  let R : Subcube n :=
+    { idx := ∅,
+      val := by
+        intro i hi
+        exact False.elim <| Finset.notMem_empty _ hi }
+  have hmem : ∀ x : Point n, x ∈ₛ R := by
+    intro x i hi; cases hi
+  have hmono : Subcube.monochromaticForFamily R F := by
+    refine ⟨b, ?_⟩
+    intro f hf x hx
+    simpa using hb f hf x
+  refine ⟨{R}, ?_, ?_, ?_⟩
+  · intro R' hR'
+    have hR : R' = R := by simpa using Finset.mem_singleton.mp hR'
+    simpa [hR] using hmono
+  · intro f hf x hx
+    refine ⟨R, by simp, ?_⟩
+    simpa using hmem x
+  · have hcard : ({R} : Finset (Subcube n)).card = 1 := by simp
+    have hpos : 0 < Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) :=
+      pow_pos (by decide) _
+    have : 1 ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) :=
+      Nat.succ_le_of_lt hpos
+    simpa [hcard] using this
+
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →
     Subcube.monochromaticFor R f := by

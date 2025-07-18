@@ -169,6 +169,31 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
     (subcube_of_path ((i, b) :: p)).idx = insert i (subcube_of_path p).idx :=
   rfl
 
-end DecisionTree
+/-!
+The following helper collects the subcube associated with each leaf together
+with its Boolean label.  This mirrors the modern `pnp` library and will be
+useful when transforming a decision tree into an explicit rectangle cover.
+-/
 
+/-- Auxiliary recursion accumulating the path to the current node.  The list `p`
+stores the coordinate decisions made so far. -/
+def coloredSubcubesAux : DecisionTree n → List (Fin n × Bool) →
+    Finset (Bool × Subcube n)
+  | leaf b, p => {⟨b, subcube_of_path p⟩}
+  | node i t0 t1, p =>
+      coloredSubcubesAux t0 ((i, false) :: p) ∪
+        coloredSubcubesAux t1 ((i, true) :: p)
+
+/-- All coloured subcubes of a decision tree. -/
+def coloredSubcubes (t : DecisionTree n) : Finset (Bool × Subcube n) :=
+  coloredSubcubesAux t []
+
+@[simp] lemma coloredSubcubesAux_leaf (b : Bool) (p : List (Fin n × Bool)) :
+    coloredSubcubesAux (n := n) (leaf b) p = {⟨b, subcube_of_path p⟩} := by
+  simp [coloredSubcubesAux]
+
+@[simp] lemma coloredSubcubes_leaf (b : Bool) :
+    coloredSubcubes (n := n) (leaf b) = {⟨b, subcube_of_path (n := n) []⟩} := by
+  simp [coloredSubcubes]
+end DecisionTree
 end BoolFunc

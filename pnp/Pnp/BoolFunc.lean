@@ -156,7 +156,10 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
   · subst hk
     simp [Point.update, h]
   · by_cases hjk : k = j
-    · subst hjk; simp [Point.update, hk, h]
+    · subst hjk
+      -- `hk` ensures that `j ≠ i`, so the inner update on `i` is untouched
+      -- and the outer update simply writes `b2` at position `j`.
+      simp [Point.update, hk]
     · simp [Point.update, hk, hjk]
 
 /-- **A constant point** with the same Boolean value in every coordinate. -/

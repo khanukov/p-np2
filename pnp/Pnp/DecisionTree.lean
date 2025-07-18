@@ -1,5 +1,6 @@
 import Pnp.BoolFunc
 import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
+import Mathlib.Data.Finset.Card
 
 namespace BoolFunc
 
@@ -186,6 +187,92 @@ def coloredSubcubes (t : DecisionTree n) : Finset (Bool × Subcube n) :=
 @[simp] lemma coloredSubcubes_leaf (b : Bool) :
     coloredSubcubes (n := n) (leaf b) = {⟨b, subcube_of_path (n := n) []⟩} := by
   simp [coloredSubcubes]
+
+/-!
+Collect only those subcubes that are labelled `true` in a decision tree.
+This helper will eventually feed into the low-sensitivity cover, where we
+only care about the `true` leaves.  Duplicates are removed automatically
+by `Finset.image`.
+-/
+def trueSubcubes (t : DecisionTree n) : Finset (Subcube n) :=
+  ((coloredSubcubes t).filter fun x => x.fst).image Prod.snd
+
+@[simp] lemma mem_trueSubcubes {t : DecisionTree n} {R : Subcube n} :
+    R ∈ trueSubcubes (n := n) t ↔ (true, R) ∈ coloredSubcubes t := by
+  classical
+  unfold trueSubcubes
+  constructor
+  · intro h
+    rcases Finset.mem_image.mp h with ⟨x, hx, hxR⟩
+    rcases x with ⟨b, S⟩
+    simp only at hxR
+    subst hxR
+    have hb : b = true := by
+      have := (Finset.mem_filter.mp hx).2
+      simpa using this
+    subst hb
+    simpa using (Finset.mem_filter.mp hx).1
+  · intro h
+    refine Finset.mem_image.mpr ?_
+    refine ⟨(true, R), ?_, rfl⟩
+    exact Finset.mem_filter.mpr ⟨h, by simp⟩
+
+/-!
+The number of `true` subcubes is at most the total number of coloured leaves,
+which in turn is bounded by `2 ^ depth`.  This gives a convenient size bound
+needed for the cover construction.
+-/
+lemma trueSubcubes_card_le_pow_depth (t : DecisionTree n) :
+    (trueSubcubes (n := n) t).card ≤ 2 ^ depth t := by
+  classical
+  unfold trueSubcubes
+  have hfilter : ((coloredSubcubes t).filter fun x => x.fst).card ≤
+      (coloredSubcubes t).card :=
+    Finset.card_le_card (Finset.filter_subset (s := coloredSubcubes t) _)
+  have himage : (((coloredSubcubes t).filter fun x => x.fst).image Prod.snd).card ≤
+      ((coloredSubcubes t).filter fun x => x.fst).card := Finset.card_image_le
+  have hcolor : (coloredSubcubes t).card ≤ 2 ^ depth t := by
+    -- We prove the bound for `coloredSubcubesAux t p` by induction on `t`.
+    have haux : ∀ t p, (coloredSubcubesAux (n := n) t p).card ≤ 2 ^ DecisionTree.depth t := by
+      intro t
+      induction t with
+      | leaf b =>
+          intro p; simp [coloredSubcubesAux, DecisionTree.depth]
+      | node i t0 t1 ih0 ih1 =>
+          intro p
+          have hunion :
+              (coloredSubcubesAux t0 ((i, false) :: p) ∪
+                coloredSubcubesAux t1 ((i, true) :: p)).card ≤
+                (coloredSubcubesAux t0 ((i, false) :: p)).card +
+                  (coloredSubcubesAux t1 ((i, true) :: p)).card :=
+            Finset.card_union_le (s := coloredSubcubesAux t0 ((i, false) :: p))
+              (t := coloredSubcubesAux t1 ((i, true) :: p))
+          have hsum : (coloredSubcubesAux t0 ((i, false) :: p)).card +
+              (coloredSubcubesAux t1 ((i, true) :: p)).card ≤
+              2 ^ depth t0 + 2 ^ depth t1 := by
+            have h0 := ih0 ((i, false) :: p)
+            have h1 := ih1 ((i, true) :: p)
+            exact Nat.add_le_add h0 h1
+          have h0 : 2 ^ depth t0 ≤ 2 ^ max (depth t0) (depth t1) := by
+            have : depth t0 ≤ max (depth t0) (depth t1) := le_max_left _ _
+            exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) this
+          have h1 : 2 ^ depth t1 ≤ 2 ^ max (depth t0) (depth t1) := by
+            have : depth t1 ≤ max (depth t0) (depth t1) := le_max_right _ _
+            exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) this
+          have hsum2 : 2 ^ depth t0 + 2 ^ depth t1 ≤ 2 * 2 ^ max (depth t0) (depth t1) := by
+            have := Nat.add_le_add h0 h1
+            simpa [two_mul] using this
+          have h :
+              (coloredSubcubesAux t0 ((i, false) :: p) ∪
+                coloredSubcubesAux t1 ((i, true) :: p)).card ≤
+                  2 * 2 ^ max (depth t0) (depth t1) :=
+            le_trans hunion (le_trans hsum hsum2)
+          have hpow : 2 * 2 ^ max (depth t0) (depth t1) =
+              2 ^ (Nat.succ (max (depth t0) (depth t1))) := by
+            simp [Nat.pow_succ, Nat.mul_comm]
+          simpa [DecisionTree.depth, hpow, coloredSubcubesAux] using h
+    simpa [coloredSubcubes] using haux t []
+  exact le_trans (le_trans himage hfilter) hcolor
 
 end DecisionTree
 

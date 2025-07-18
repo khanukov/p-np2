@@ -45,9 +45,11 @@ there, but it is no longer built by default.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
-  `sunflower_exists`.  Monochromaticity and size bounds are stated as
-  axioms pending full proofs.  A helper lemma `AllOnesCovered.union`
-  now abstracts the union step in the coverage proof.
+  `sunflower_exists`.  Monochromaticity of the resulting cover is now
+  fully proved via the lemma `buildCover_mono`, while the size bound
+  `buildCover_card_bound` remains axiomatic.  A helper lemma
+  `AllOnesCovered.union` now abstracts the union step in the coverage
+  proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
   `pnp` namespace.  A complete proof will be added shortly.

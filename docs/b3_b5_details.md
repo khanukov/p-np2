@@ -66,8 +66,9 @@ small-support functions with **distinct supports** remains uncovered,
 while the entropy step now splits on a coordinate whose restriction
 reduces entropy by one bit.  The cardinal lemma `exists_coord_card_drop`
 has been proved, and tests for `sunflower_step` ensure its behaviour.
-The statements `buildCover_mono` and `buildCover_card_bound` are currently
-axioms capturing the intended recursion invariants.  Adapting the remaining
+The lemma `buildCover_mono` now provides a full proof that every rectangle
+inserted by `buildCover` is monochromatic.  The counting lemma
+`buildCover_card_bound` is still axiomatic, so adapting the remaining
 counting arguments to entire families remains an open task.
   Whenever an uncovered pair is found the family must contain at least
   two functions, so the entropy split is well-defined.  The opposite

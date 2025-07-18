@@ -76,5 +76,24 @@ lemma sensitivity_restrictCoord_le (f : BFunc n) (j : Fin n) (b : Bool) :
   have hx' := sensitivityAt_le (f := f) (x := Point.update x j b)
   exact le_trans (sensitivityAt_restrict_le (f := f) (j := j) (b := b) (x := x)) hx'
 
+/-!
+Fixing one coordinate of every function in a family cannot increase
+sensitivity.  This convenience lemma will be useful for the recursive
+construction of a decision tree: restricting the family to `i = b`
+keeps all sensitivities below the original bound.
+ -/
+lemma sensitivity_family_restrict_le (F : Family n) (i : Fin n) (b : Bool)
+    {s : ℕ} (hF : ∀ f ∈ F, sensitivity f ≤ s) :
+    ∀ g ∈ F.restrict i b, sensitivity g ≤ s := by
+  intro g hg
+  classical
+  -- Unfold membership in the restricted family.  It is implemented via
+  -- `Finset.image`, so we obtain an original function `f ∈ F` with
+  -- `g = f.restrictCoord i b`.
+  rcases Finset.mem_image.mp hg with ⟨f, hfF, rfl⟩
+  -- Apply the single-function lemma and the assumption `hF`.
+  exact le_trans (sensitivity_restrictCoord_le (f := f) (j := i) (b := b))
+    (hF f hfF)
+
 end BoolFunc
 

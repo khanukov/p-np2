@@ -3,6 +3,7 @@ import Pnp.Boolcube
 import Pnp.Agreement
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Set.Lattice
+import Mathlib.Data.Finset.Card
 import Mathlib.Tactic
 
 open Classical
@@ -141,5 +142,28 @@ lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     simp at hR
   · intro h f hf x hx
     exact False.elim (h f hf x hx)
+
+/-! ### Uncovered inputs and a simple measure
+
+The following lemmas are ports of helper results from the legacy
+development.  They will be useful for the inductive analysis of the
+cover construction. -/
+
+
+/-- A coarse termination measure used in the cover recursion.  The
+first component tracks the remaining entropy budget `h`, while the
+second counts currently uncovered `1`-inputs. -/
+
+lemma uncovered_subset_of_union_singleton {F : Family n}
+    {Rset : Finset (Subcube n)} {R : Subcube n} :
+    uncovered F (Rset ∪ {R}) ⊆ uncovered F Rset := by
+  classical
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  intro S hS
+  exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
+
 
 end Cover

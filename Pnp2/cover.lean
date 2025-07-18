@@ -323,6 +323,14 @@ lemma mu_of_allCovered {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
   have hzero : uncovered F Rset = ∅ := uncovered_eq_empty_of_allCovered (F := F) hcov
   simp [mu, hzero]
 
+lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    0 ≤ mu F h Rset := by
+  exact Nat.zero_le _
+
+lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    2 * h ≤ mu F h Rset := by
+  simpa [mu] using Nat.le_add_right (2 * h) ((uncovered F Rset).toFinset.card)
+
 /-!
 `uncovered` is monotone with respect to the set of rectangles: adding
 a new rectangle can only remove uncovered pairs.  The next lemma

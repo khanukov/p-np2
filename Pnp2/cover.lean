@@ -701,26 +701,85 @@ proceeds as follows.
   induction hypotheses via `lift_mono_of_restrict_fixOne` the resulting
   subcubes are monochromatic for the original family.
 
-In each branch the lexicographic measure on the entropy budget and the number
-of uncovered pairs strictly decreases, ensuring termination.  Implementing
-this reasoning will eliminate the following axiom.
--/
-axiom buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F
-
---/!
-/- The full inductive proof should proceed by well-founded recursion on the
-  measure `μ(F,Rset) = 2 * BoolFunc.H₂ F + card {⟨f,x⟩ | f ∈ F ∧ f x = true ∧ x ∉ ⋃ Rset}`.
-  Each branch of `buildCover` strictly decreases this measure:
-  * the low-sensitivity branch inserts cubes guaranteed to be monochromatic by
-    `low_sensitivity_cover` and terminates;
-  * the entropy branch fixes one coordinate and recurses on the restricted
-    families, then lifts the monochromaticity back via
-    `lift_mono_of_restrict_fixOne`.
-  This outline remains to be formalised.
-/!
 
 
+lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F := by
+  classical
+  revert F
+  refine (fun F ↦ _ : ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F) ?_?_
+  intro F
+  suffices
+    H : ∀ Rset,
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) →
+        ∀ R ∈ buildCover F h hH Rset, Subcube.monochromaticForFamily R F
+    by
+      have hmono_empty : ∀ R ∈ (∅ : Finset (Subcube n)),
+          Subcube.monochromaticForFamily R F := by intro R h; simpa using h
+      simpa using H ∅ hmono_empty
+  intro Rset hmonoR
+  cases hfu : firstUncovered F Rset with
+  | none =>
+      intro R hR
+      have hRset : R ∈ Rset := by simpa [buildCover, hfu] using hR
+      exact hmonoR R hRset
+  | some tup =>
+      rcases tup with ⟨f, x⟩
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F Rset) hfu with ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      cases hs : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
+      | inl hs_small =>
+          obtain ⟨R_ls, hmono_ls, -, -⟩ :=
+            BoolFunc.low_sensitivity_cover (F := F) s Hsens
+          have hres : buildCover F h hH Rset = Rset ∪ R_ls := by
+            simp [buildCover, hfu, hs_small]
+          have hmono_union := mono_union hmonoR hmono_ls
+          intro R hR
+          have hR' : R ∈ Rset ∪ R_ls := by simpa [hres] using hR
+          exact hmono_union R hR'
+      | inr hs_large =>
+          obtain ⟨i, b, Hdrop⟩ :=
+            BoolFunc.exists_coord_entropy_drop (F := F)
+              (hn := by decide)
+              (hF := Finset.card_pos.mpr F_nonempty)
+          let F0 := F.restrict i b
+          let F1 := F.restrict i (!b)
+          have hH0 : BoolFunc.H₂ F0 ≤ (h - 1 : ℝ) := by
+            simpa using
+              (BoolFunc.H₂_restrict_le (F := F) (i := i) (b := b)).trans Hdrop
+          have hH1 : BoolFunc.H₂ F1 ≤ (h - 1 : ℝ) := by
+            simpa using
+              (BoolFunc.H₂_restrict_compl_le (F := F) (i := i) (b := b)).trans Hdrop
+          have hmono0 := buildCover_mono (F := F0) (h := h - 1) (hH := hH0)
+          have hmono1 := buildCover_mono (F := F1) (h := h - 1) (hH := hH1)
+          have hmono0_lift :
+              ∀ R ∈ buildCover F0 (h - 1) hH0,
+                Subcube.monochromaticForFamily R F :=
+            by
+              intro R hR
+              exact lift_mono_of_restrict_fixOne
+                (F := F) (i := i) (b := b) (R := R) (hmono0 R hR)
+          have hmono1_lift :
+              ∀ R ∈ buildCover F1 (h - 1) hH1,
+                Subcube.monochromaticForFamily R F :=
+            by
+              intro R hR
+              exact lift_mono_of_restrict_fixOne
+                (F := F) (i := i) (b := !b) (R := R) (hmono1 R hR)
+          have hmono_union := mono_union hmono0_lift hmono1_lift
+          have hres : buildCover F h hH Rset =
+              buildCover F0 (h - 1) hH0 ∪ buildCover F1 (h - 1) hH1 := by
+            simp [buildCover, hfu, hs_large]
+          intro R hR
+          have hR' : R ∈ buildCover F0 (h - 1) hH0 ∪ buildCover F1 (h - 1) hH1 :=
+            by simpa [hres] using hR
+          exact hmono_union R hR'
+  · exact Nat.pred_lt (Nat.pos_of_ne_zero (by linarith))
 /--
 `buildCover_card_bound` bounds the size of the cover returned by
 `buildCover` in terms of the entropy budget `h`.  A double induction on `h` and the number of uncovered pairs shows that at most `2^h` cubes are produced.

@@ -145,6 +145,20 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
   · subst hk; simp [Point.update]
   · simp [Point.update, hk]
 
+/-! ### Additional point update lemmas -/
+
+@[simp] lemma Point.update_swap (x : Point n) {i j : Fin n} (h : i ≠ j)
+    (b1 b2 : Bool) :
+    Point.update (Point.update x i b1) j b2 =
+      Point.update (Point.update x j b2) i b1 := by
+  funext k
+  by_cases hk : k = i
+  · subst hk
+    simp [Point.update, h]
+  · by_cases hjk : k = j
+    · subst hjk; simp [Point.update, hk, h]
+    · simp [Point.update, hk, hjk]
+
 /-- **A constant point** with the same Boolean value in every coordinate. -/
 def Point.const (n : ℕ) (b : Bool) : Point n := fun _ => b
 
@@ -181,6 +195,13 @@ def BFunc.restrictCoord (f : BFunc n) (j : Fin n) (b : Bool) : BFunc n :=
     · subst hk; simp [Point.update, h]
     · simp [Point.update, hk]
   simp [BFunc.restrictCoord, this]
+
+@[simp] lemma restrictCoord_idem
+    {f : BFunc n} (i : Fin n) (b : Bool) :
+    BFunc.restrictCoord (BFunc.restrictCoord f i b) i b =
+      BFunc.restrictCoord f i b := by
+  funext x
+  simp [BFunc.restrictCoord, Point.update_idem]
 
 end Restrict
 

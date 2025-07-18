@@ -613,6 +613,64 @@ measure:
 
 Formalising this argument is nontrivial and left for future work.  We keep
 the expected statement as an axiom so that other lemmas can depend on it. -/
+
+/-! ### Monochromaticity in the low‑sensitivity case
+
+The next lemma handles the special situation where all functions in the family
+have sensitivity strictly below `log₂ (n + 1)`.  In this regime the recursive
+construction `buildCover` immediately takes the low‑sensitivity branch and
+returns the rectangles provided by `low_sensitivity_cover`.  We can therefore
+establish monochromaticity directly.  The general statement is left as an axiom
+below. -/
+
+lemma buildCover_mono_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, sensitivity f < Nat.log2 (Nat.succ n)) :
+    ∀ R ∈ buildCover (F := F) (h := h) hH,
+      Subcube.monochromaticForFamily R F := by
+  classical
+  -- Expand the recursion once at the top level.
+  dsimp [buildCover]
+  -- Split on whether an uncovered pair exists.
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      intro R hR
+      simpa [hfu] using hR
+  | some tup =>
+      rcases tup with ⟨f, x⟩
+      -- Obtain a witness that `F` is nonempty for `max'`.
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F (∅ : Finset (Subcube n))) hfu with
+          ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      -- Maximum sensitivity over the family.
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      -- Show that `s` itself is below the threshold.
+      have hs_lt : s < Nat.log2 (Nat.succ n) := by
+        have hle : s ≤ Nat.log2 (Nat.succ n) - 1 := by
+          refine Finset.max'_le ?_?
+          intro t ht
+          rcases Finset.mem_image.mp ht with ⟨g, hg, rfl⟩
+          exact Nat.le_pred_of_lt (hs g hg)
+        have hpos : 0 < Nat.log2 (Nat.succ n) := by
+          have : (1 : ℕ) < Nat.succ n := Nat.succ_lt_succ (Nat.zero_lt_succ _)
+          exact Nat.log2_pos this
+        have : s.succ ≤ Nat.log2 (Nat.succ n) := by
+          simpa [Nat.succ_pred_eq_of_pos hpos] using Nat.succ_le_succ hle
+        exact Nat.lt_of_succ_le this
+      -- The pattern match in `buildCover` therefore selects the low-sensitivity branch.
+      have hs_case : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) := Or.inl hs_lt
+      obtain ⟨R_ls, hmono_ls, -, -⟩ :=
+        BoolFunc.low_sensitivity_cover (F := F) s Hsens
+      -- The result of `buildCover` is precisely `R_ls`.
+      have hres : buildCover (F := F) (h := h) hH = R_ls := by
+        simp [buildCover, hfu, hs_case]
+      intro R hR
+      have hR_ls : R ∈ R_ls := by simpa [hres] using hR
+      exact hmono_ls R hR_ls
+
 axiom buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F
 

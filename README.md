@@ -149,6 +149,11 @@ hierarchy.  The `lakefile` no longer builds any code from `Pnp2`; the directory
 remains only for reference.  See `migration.md` for a list of missing proofs and
 tests that still need to be ported.
 
+Work is ongoing on the decision-tree construction for low-sensitivity families.
+The lemma `decisionTree_cover` is currently axiomatic, but the repository
+includes helper definitions (`DecisionTree`, `subcube_of_path`) and leaf-count
+bounds that will support a full proof in future commits.
+
 ### pnp vs Pnp2
 
 The `pnp` directory is the main code base.  It focuses on a clean hierarchy and

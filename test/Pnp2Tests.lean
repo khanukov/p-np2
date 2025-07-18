@@ -53,6 +53,13 @@ example :
     simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
+/-- `Point.update` operations on distinct coordinates commute. -/
+example (n : ℕ) (x : Point n) (i j : Fin n) (h : i ≠ j) (b₁ b₂ : Bool) :
+    Point.update (Point.update x i b₁) j b₂ =
+      Point.update (Point.update x j b₂) i b₁ := by
+  classical
+  simpa using Point.update_swap (x := x) (i := i) (j := j) h b₁ b₂
+
 /-- A trivial tree has depth zero and one leaf subcube. -/
 example :
     (DecisionTree.leaves_as_subcubes (DecisionTree.leaf true : DecisionTree 1)).card = 0 :=

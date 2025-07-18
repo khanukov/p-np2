@@ -145,6 +145,21 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
   · subst hk; simp [Point.update]
   · simp [Point.update, hk]
 
+/-! ### Additional point update lemmas -/
+
+/-- Updating two different coordinates can be done in either order. -/
+@[simp] lemma Point.update_swap (x : Point n) {i j : Fin n} (h : i ≠ j)
+    (b1 b2 : Bool) :
+    Point.update (Point.update x i b1) j b2 =
+      Point.update (Point.update x j b2) i b1 := by
+  funext k
+  by_cases hk : k = i
+  · subst hk
+    simp [Point.update, h]
+  · by_cases hjk : k = j
+    · subst hjk; simp [Point.update, hk, h]
+    · simp [Point.update, hk, hjk]
+
 /-- **A constant point** with the same Boolean value in every coordinate. -/
 def Point.const (n : ℕ) (b : Bool) : Point n := fun _ => b
 

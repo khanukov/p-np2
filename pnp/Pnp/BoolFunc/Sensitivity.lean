@@ -95,5 +95,35 @@ lemma sensitivity_family_restrict_le (F : Family n) (i : Fin n) (b : Bool)
   exact le_trans (sensitivity_restrictCoord_le (f := f) (j := i) (b := b))
     (hF f hfF)
 
+/--
+If a Boolean function has positive sensitivity, then there exists a coordinate
+whose value change flips the function on some input.  This lemma extracts such
+a witness and will be useful for constructing decision trees.
+-/
+lemma exists_sensitive_coord (f : BFunc n) (hpos : 0 < sensitivity f) :
+    ∃ i : Fin n, ∃ x : Point n, f x ≠ f (Point.update x i (!x i)) := by
+  classical
+  -- Unfold the definition of sensitivity.  The assumption `hpos` says that the
+  -- supremum over all points is positive, hence some specific point must have a
+  -- positive `sensitivityAt` value.
+  have h :=
+    (Finset.lt_sup_iff (s := (Finset.univ : Finset (Point n)))
+      (f := fun x => sensitivityAt f x) (a := 0)).1
+      (by simpa [sensitivity] using hpos)
+  rcases h with ⟨x, -, hxpos⟩
+  -- A positive `sensitivityAt` means that the set of sensitive coordinates is
+  -- nonempty, so pick one such coordinate.
+  -- Turn the positive cardinality statement into an explicit index `i`.
+  have hxpos' :
+      0 < (Finset.univ.filter fun i => f (Point.update x i (!x i)) ≠ f x).card :=
+    by simpa [sensitivityAt] using hxpos
+  have hxnonempty :
+      (Finset.univ.filter fun i => f (Point.update x i (!x i)) ≠ f x).Nonempty :=
+    Finset.card_pos.mp hxpos'
+  rcases hxnonempty with ⟨i, hi⟩
+  -- `hi` certifies that flipping the `i`-th bit changes the output of `f`.
+  refine ⟨i, x, ?_⟩
+  simpa using ((Finset.mem_filter.mp hi).2).symm
+
 end BoolFunc
 

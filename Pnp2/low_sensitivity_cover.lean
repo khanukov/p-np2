@@ -24,6 +24,13 @@ axiom decisionTree_cover
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n))
 
+/-!
+The lemma states that a family of low-sensitivity Boolean functions admits a
+compact cover by monochromatic subcubes.  Its proof is expected to recursively
+build a decision tree, branching on sensitive coordinates until each leaf is
+constant.  Formalising this construction is ongoing work, so we keep the result
+as an axiom and document the intended approach here. -/
+
 /-- Trivial base case: if all functions in the family are constant on the full
 cube, we can cover all ones with just that cube.  This lemma acts as a base case
 for the eventual recursive construction of `decisionTree_cover`. -/

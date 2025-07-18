@@ -92,6 +92,18 @@ variable {n h : ℕ} (F : Family n)
 def NotCovered (Rset : Finset (Subcube n)) (x : Vector Bool n) : Prop :=
   ∀ R ∈ Rset, x ∉ₛ R
 
+@[simp] lemma notCovered_empty (x : Vector Bool n) :
+    NotCovered (Rset := (∅ : Finset (Subcube n))) x := by
+  intro R hR
+  -- `hR` is impossible since the set is empty
+  exact False.elim (by simpa using hR)
+
+lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂)
+    {x : Vector Bool n} (hx : NotCovered (Rset := R₂) x) :
+    NotCovered (Rset := R₁) x := by
+  intro R hR
+  exact hx R (hsub hR)
+
 /-- The set of all uncovered 1-inputs (together with their functions). -/
 @[simp]
 def uncovered (F : Family n) (Rset : Finset (Subcube n)) : Set (Σ f : BoolFunc n, Vector Bool n) :=

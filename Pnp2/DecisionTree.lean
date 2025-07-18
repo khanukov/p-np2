@@ -169,6 +169,57 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
     (subcube_of_path ((i, b) :: p)).idx = insert i (subcube_of_path p).idx :=
   rfl
 
+/-! ### Membership lemmas for `subcube_of_path`
+These helper lemmas will be convenient when reasoning about
+paths extracted from a decision tree.  They mirror the structure
+of the path and show how membership in the corresponding subcube
+is checked coordinatewise. -/
+
+@[simp] lemma mem_subcube_of_path_cons {x : Point n} {i : Fin n}
+    {b : Bool} {p : List (Fin n × Bool)} :
+    (subcube_of_path ((i, b) :: p)).mem x ↔ x i = b ∧ (subcube_of_path p).mem x := by
+  constructor
+  · intro hx
+    constructor
+    · -- The head constraint forces coordinate `i` to equal `b`.
+      have hmem : i ∈ insert i (subcube_of_path p).idx := by simp
+      simpa using hx i hmem
+    · -- Remaining coordinates satisfy the tail subcube.
+      have hp : (subcube_of_path p).mem x := by
+        intro j hj
+        have hmem : j ∈ insert i (subcube_of_path p).idx := by
+          exact Finset.mem_insert.mpr (Or.inr hj)
+        have hxj := hx j hmem
+        by_cases hji : j = i
+        · subst hji
+          have hmemi : i ∈ insert i (subcube_of_path p).idx := by simp
+          simpa using hx i hmemi
+        · simpa [subcube_of_path, hji, hj] using hxj
+      exact hp
+  · intro hx
+    rcases hx with ⟨hi, hp⟩
+    intro j hj
+    rcases Finset.mem_insert.mp hj with hji | hjp
+    · subst hji; simpa using hi
+    · have hxj := hp j hjp
+      simpa [subcube_of_path, hjp] using hxj
+
+/-! The recorded path from `path_to_leaf` indeed describes a subcube
+containing the original input. -/
+lemma mem_subcube_path_to_leaf (t : DecisionTree n) (x : Point n) :
+    (subcube_of_path (path_to_leaf t x)).mem x := by
+  induction t generalizing x with
+  | leaf b =>
+      simp [path_to_leaf, subcube_of_path]
+  | node i t0 t1 ih0 ih1 =>
+      by_cases h : x i
+      · have := ih1 x
+        simp [path_to_leaf, subcube_of_path, h] at this
+        exact this
+      · have := ih0 x
+        simp [path_to_leaf, subcube_of_path, h] at this
+        exact this
+
 end DecisionTree
 
 end BoolFunc

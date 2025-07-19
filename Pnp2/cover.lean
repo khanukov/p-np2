@@ -539,6 +539,29 @@ lemma mu_buildCover_lt_start (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       (2 * h) < 2 * h + (uncovered F (∅ : Finset (Subcube n))).toFinset.card :=
     Nat.lt_add_of_pos_right hpos
   simpa [hmu, hmu0] using hgt
+
+/-!
+`mu_buildCover_le_start` is a weak version of `mu_buildCover_lt_start`
+that holds unconditionally.  If the family already has no uncovered
+inputs then `buildCover` immediately returns the empty set and the two
+measures coincide.  Otherwise `mu_buildCover_lt_start` yields a strict
+inequality.  In both cases the result after running `buildCover` has
+measure at most the starting value.-/
+
+lemma mu_buildCover_le_start (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    mu F h (buildCover F h hH) ≤ mu F h (∅ : Finset (Subcube n)) := by
+  classical
+  -- Either an uncovered input exists or not.
+  by_cases hfu : firstUncovered F (∅ : Finset (Subcube n)) = none
+  · -- Immediate termination: both measures collapse to `2*h`.
+    have hmu := buildCover_mu (F := F) (h := h) (hH := hH)
+    have hmu0 := mu_of_firstUncovered_none (F := F)
+      (R := (∅ : Finset (Subcube n))) (h := h) hfu
+    simpa [hfu, hmu0] using hmu.le
+  · -- Otherwise we invoke the strict inequality lemma.
+    have hlt := mu_buildCover_lt_start (F := F) (h := h) (hH := hH)
+      (by simpa using hfu)
+    exact hlt.le
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

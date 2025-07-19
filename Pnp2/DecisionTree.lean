@@ -312,6 +312,26 @@ lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
     · subst hji; simp [subcube_of_path, hxi]
     · simp [subcube_of_path, hji, hxj]
 
+/-!
+If `x` lies in the subcube obtained by extending `p` with the decision
+`(i, b)`, then `x` also lies in the original subcube for `p` and its
+`i`-th coordinate agrees with the chosen bit `b`.  This is the converse
+direction of `mem_subcube_of_path_cons_of_mem` and is convenient when
+reasoning about recorded paths.
+-/
+/-!
+Membership in an extended path subcube in particular enforces the
+value chosen at the new coordinate.  This helper lemma extracts that
+fact without making any claims about the remaining path.
+-/
+lemma mem_subcube_of_path_cons_fixed (x : Point n) (p : List (Fin n × Bool))
+    (i : Fin n) (b : Bool)
+    (hx : (subcube_of_path ((i, b) :: p)).mem x) :
+    x i = b := by
+  -- Evaluate the membership condition at the newly inserted index.
+  have := hx i (by simp)
+  simpa [subcube_of_path] using this
+
 /-- Every input lies in the subcube described by its path to a leaf. -/
 lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
     (subcube_of_path (path_to_leaf t x)).mem x := by

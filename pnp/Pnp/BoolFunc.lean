@@ -219,6 +219,54 @@ def BFunc.restrictCoord (f : BFunc n) (j : Fin n) (b : Bool) : BFunc n :=
   funext x
   simp [BFunc.restrictCoord, Point.update_idem]
 
+/-!
+Fixing several coordinates at once will be convenient when restricting
+functions to a subcube.  The helper `Subcube.fixPoint` overwrites the
+coordinates of a point according to the subcube description. -/
+
+def Subcube.fixPoint (R : Subcube n) (x : Point n) : Point n :=
+  fun i => by
+    classical
+    by_cases h : i ∈ R.idx
+    · exact R.val i h
+    · exact x i
+
+@[simp] lemma Subcube.fixPoint_fixed (R : Subcube n) (x : Point n)
+    {i : Fin n} (h : i ∈ R.idx) :
+    Subcube.fixPoint R x i = R.val i h := by
+  classical
+  simp [Subcube.fixPoint, h]
+
+@[simp] lemma Subcube.fixPoint_not_fixed (R : Subcube n) (x : Point n)
+    {i : Fin n} (h : i ∉ R.idx) :
+    Subcube.fixPoint R x i = x i := by
+  classical
+  simp [Subcube.fixPoint, h]
+
+lemma Subcube.fixPoint_eq_of_mem {R : Subcube n} {x : Point n}
+    (hx : R.mem x) : Subcube.fixPoint R x = x := by
+  funext i
+  classical
+  by_cases h : i ∈ R.idx
+  · have := (hx i h).symm
+    simpa [Subcube.fixPoint, h] using this
+  · simp [Subcube.fixPoint, h]
+
+/-- Restrict a Boolean function to the subcube `R`.  Coordinates fixed by `R`
+are ignored. -/
+def BFunc.restrictSubcube (f : BFunc n) (R : Subcube n) : BFunc n :=
+  fun x => f (Subcube.fixPoint R x)
+
+@[simp] lemma restrictSubcube_agrees {f : BFunc n} {R : Subcube n}
+    {x : Point n} (hx : R.mem x) :
+    BFunc.restrictSubcube f R x = f x := by
+  simp [BFunc.restrictSubcube, Subcube.fixPoint_eq_of_mem hx]
+
+/-- Restrict every function in the family to the subcube `R`. -/
+noncomputable def Family.restrictSubcube {n : ℕ}
+    (F : Family n) (R : Subcube n) : Family n :=
+  F.image fun f => BFunc.restrictSubcube f R
+
 end Restrict
 
 /-- The set of inputs on which a Boolean function outputs `true`. -/

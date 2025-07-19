@@ -195,6 +195,11 @@ def coloredSubcubes (t : DecisionTree n) : Finset (Bool × Subcube n) :=
     coloredSubcubes (n := n) (leaf b) = {⟨b, subcube_of_path (n := n) []⟩} := by
   simp [coloredSubcubes]
 
+/-! A leaf contributes exactly one coloured subcube. -/
+@[simp] lemma coloredSubcubes_leaf_card (b : Bool) :
+    (coloredSubcubes (n := n) (leaf b)).card = 1 := by
+  simp
+
 end DecisionTree
 
 end BoolFunc

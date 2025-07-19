@@ -51,10 +51,11 @@ gradually migrated across.
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
   `sunflower_exists`.  Monochromaticity of the resulting cover is now
-  fully proved via the lemma `buildCover_mono`, while the size bound
-  `buildCover_card_bound` remains axiomatic.  A helper lemma
-  `AllOnesCovered.union` now abstracts the union step in the coverage
-  proof.
+  fully proved via the lemma `buildCover_mono`.  The companion size
+  estimate `buildCover_card_bound` is established via a well-founded
+  induction on a simple measure tracking the remaining uncovered pairs.
+  The helper lemma `AllOnesCovered.union` abstracts the union step in
+  the coverage proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
   `Pnp2` namespace.  A complete proof will be added shortly.

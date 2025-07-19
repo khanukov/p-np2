@@ -124,6 +124,21 @@ lemma exists_sensitive_coord (f : BFunc n) (hpos : 0 < sensitivity f) :
   refine ⟨i, x, ?_⟩
   simpa using ((Finset.mem_filter.mp hi).2).symm
 
+/-!
+If at least one function in a family has positive sensitivity, then the family
+contains a function together with an input and coordinate witnessing this
+sensitivity.  This is a light wrapper around `exists_sensitive_coord` that also
+returns the membership proof for convenience.
+-/
+lemma exists_family_sensitive_coord (F : Family n) [Fintype (Point n)]
+    (h : ∃ f ∈ F, 0 < sensitivity f) :
+    ∃ i : Fin n, ∃ f ∈ F, ∃ x : Point n,
+      f x ≠ f (Point.update x i (!x i)) := by
+  classical
+  rcases h with ⟨f, hfF, hpos⟩
+  rcases exists_sensitive_coord (f := f) hpos with ⟨i, x, hx⟩
+  exact ⟨i, f, hfF, x, hx⟩
+
 
 end BoolFunc
 

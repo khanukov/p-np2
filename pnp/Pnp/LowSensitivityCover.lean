@@ -32,7 +32,6 @@ cube, we can cover all ones with just that cube.  This lemma acts as a base case
 for the eventual recursive construction of `decisionTree_cover`. -/
 lemma decisionTree_cover_of_constant
   {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s)
   (hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b) :
   ∃ Rset : Finset (Subcube n),
     (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧

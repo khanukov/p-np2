@@ -2,7 +2,7 @@
 
 This note summarises the definition of **collision entropy** for a
 single Boolean function and shows how it is formalised in Lean.  The
-implementation can be found in `pnp/Pnp/Collentropy.lean`.
+implementation can be found in `Pnp2/collentropy.lean`.
 
 ## Definition
 

@@ -7,10 +7,10 @@ currently provided as axioms without proof.  Many basic lemmas have now been
 formalised, so the repository also serves as a record of ongoing progress
 towards a full argument.
 
-The current active development happens in the `pnp` namespace.  The historical
-`Pnp2` directory is still present as an archive of earlier work.  Some proofs in
-that directory have not yet been ported, so you may find additional lemmas
-there, but it is no longer built by default.
+The current active development happens in the `Pnp2` namespace.  The earlier
+`pnp` directory remains as a legacy snapshot of previous experiments.  Its files
+still compile, but new proofs and lemmas are added under `Pnp2` and modules are
+gradually migrated across.
 
 ## Layout
 
@@ -52,7 +52,7 @@ there, but it is no longer built by default.
   proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
-  `pnp` namespace.  A complete proof will be added shortly.
+  `Pnp2` namespace.  A complete proof will be added shortly.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
@@ -137,17 +137,16 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop, and preliminary proofs of its properties (`buildCover_mono` and `buildCover_card_bound`) have been added. The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
-Within `pnp` the overall structure of the FCE argument is now visible: entropy
+Within `Pnp2` the overall structure of the FCE argument is now visible: entropy
 lemmas, cover builders and decision-tree tools all compile, but the final
 subexponential bound is still axiomatic.  The next steps are porting the
 remaining numeric estimates and reconnecting the SAT outline to recover the full
 `P ≠ NP` implication.
 
-The migration to the new `pnp` namespace is largely complete.  Every module has
-been copied from the historical `Pnp2` directory and now compiles under the new
-hierarchy.  The `lakefile` no longer builds any code from `Pnp2`; the directory
-remains only for reference.  See `migration.md` for a list of missing proofs and
-tests that still need to be ported.
+The code base has returned to the `Pnp2` namespace.  Modules originally written
+under `pnp` are being migrated back, with `migration.md` listing the remaining
+files.  The `lakefile` still builds the old `pnp` tree for comparison, but new
+results appear in `Pnp2`.
 
 Work is ongoing on the decision-tree construction for low-sensitivity families.
 The lemma `decisionTree_cover` is currently axiomatic, but the repository
@@ -156,13 +155,10 @@ bounds that will support a full proof in future commits.
 
 ### pnp vs Pnp2
 
-The `pnp` directory is the main code base.  It focuses on a clean hierarchy and
-modern Lean style, but some proofs have been stubbed out during the migration.
-The legacy `Pnp2` directory retains older files with more complete proofs.  It
-is no longer part of the build, but it does contain the finished arithmetic
-bounds (`Pnp2/bound.lean`) and several example-driven modules that have yet to
-be re‑integrated.  Progress is tracked in `migration.md`, and eventually all
-features will live in `pnp` only.
+`Pnp2` is now the primary development directory.  It contains the actively
+maintained proof scripts and new lemmas.  The older `pnp` folder still compiles
+but serves only as a historical reference.  Outstanding modules will gradually
+be moved from `pnp` to `Pnp2` until the migration is complete.
 
 ## Development plan
 
@@ -170,7 +166,7 @@ The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key
 tasks are:
 1. ~~finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
    complement the proved entropy drop,~~
-2. ~~move all modules from `Pnp2` into the `pnp` directory and extend the test
+2. ~~move all modules from `pnp` into the `Pnp2` directory and extend the test
    suite to cover the migrated code,~~
 3. complete the `buildCover` correctness proof and establish the bound
    `mBound_lt_subexp`,

@@ -503,6 +503,42 @@ lemma mu_union_buildCover_le (hH : BoolFunc.H₂ F ≤ (h : ℝ))
   simpa [Finset.union_comm, Finset.union_assoc] using
     (mu_union_le (F := F) (h := h) (R₁ := Rset)
       (R₂ := buildCover F h hH Rset))
+
+/-!
+`mu_buildCover_lt_start` is a convenient strict version of
+`mu_union_buildCover_le` for the initial call of `buildCover`.
+If a `1`‑input remains uncovered, then the measure strictly decreases
+after inserting the rectangles produced by `buildCover`.
+-/
+lemma mu_buildCover_lt_start (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hfu : firstUncovered (F := F) (∅ : Finset (Subcube n)) ≠ none) :
+    mu F h (buildCover F h hH) < mu F h (∅ : Finset (Subcube n)) := by
+  classical
+  -- The uncovered set is nonempty because `firstUncovered` returned a value.
+  have hne : uncovered F (∅ : Finset (Subcube n)) ≠ ∅ := by
+    intro hempty
+    have hfu0 :=
+      (firstUncovered_none_iff (F := F) (R := (∅ : Finset (Subcube n)))).2 hempty
+    exact hfu hfu0
+  have hpos :
+      0 < (uncovered F (∅ : Finset (Subcube n))).toFinset.card := by
+    have hnonempty :
+        (uncovered F (∅ : Finset (Subcube n))).toFinset.Nonempty := by
+      obtain ⟨p, hp⟩ := Set.nonempty_iff_ne_empty.mpr hne
+      exact ⟨p, by simpa using hp⟩
+    exact Finset.card_pos.mpr hnonempty
+  -- The measure of the final cover collapses to `2*h`.
+  have hmu := buildCover_mu (F := F) (h := h) (hH := hH)
+  -- Explicit expression for the initial measure.
+  have hmu0 :
+      mu F h (∅ : Finset (Subcube n)) =
+        2 * h + (uncovered F (∅ : Finset (Subcube n))).toFinset.card := by
+    simp [mu]
+  -- Compare the two measures.
+  have hgt :
+      (2 * h) < 2 * h + (uncovered F (∅ : Finset (Subcube n))).toFinset.card :=
+    Nat.lt_add_of_pos_right hpos
+  simpa [hmu, hmu0] using hgt
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

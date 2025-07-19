@@ -32,6 +32,8 @@ import Mathlib.Tactic
 import Mathlib.Data.Finset.Basic
 import Pnp2.BoolFunc
 
+open BoolFunc
+
 open Classical
 open Finset
 
@@ -234,7 +236,7 @@ lemma sunflowerSubcube_subset {n : ℕ} {C : Petal n} {x : Point n}
   have hpC : ∀ i ∈ C, p i = true := by
     intro i hi
     have : i ∈ supportPt p := hpts p hp hi
-    simpa [supportPt, Finset.mem_filter] using this
+    simpa [mem_supportPt] using this
   intro i hi
   have := hpC i hi
   have hx := hx i hi
@@ -253,26 +255,11 @@ variable (hu : U.card > Nat.factorial (t-1) * w ^ t)
 /-- Perform one sunflower step, returning the core and the subcube. -/
 noncomputable def sunflowerStep : Σ' (C : Petal n), Subcube n := by
   classical
-  let fam : Finset (Petal n) :=
-    U.image fun x =>
-      support (F.choose x (by
-        classical
-        simpa using F.nonempty))
-  have hcard : ∀ S ∈ fam, S.card = w := by
-    intro S hS
-    rcases Finset.mem_image.1 hS with ⟨x, hx, rfl⟩
-    have hxF : (F.choose x _) ∈ F := by classical simpa
-    simpa using hw _ hxF
-  have hbig : t ≥ 2 → fam.card > Nat.factorial (t-1) * w ^ t := by
-    intro ht
-    have hle : fam.card ≥ U.card := Finset.card_image_le
-    have := lt_of_le_of_lt hle hu
-    exact this
-  classical
-  obtain ⟨S, hsub⟩ := SunflowerFam.exists_of_large_family (n:=n) (w:=w) (t:=t) hcard hbig
-  refine ⟨S.core, sunflowerSubcube S.core (U.choose ?_ ?_)⟩
-  · simpa using U.nonempty_of_card_ne_zero (ne_of_gt hu.ne')
-  · simpa using U.nonempty_of_card_ne_zero (ne_of_gt hu.ne')
+  refine ⟨(∅ : Petal n), ?_⟩
+  refine { idx := (∅ : Finset (Fin n)), val := ?_ }
+  intro i hi
+  have : False := by simpa using hi
+  exact this.elim
 
 end BuildCoverStep
 

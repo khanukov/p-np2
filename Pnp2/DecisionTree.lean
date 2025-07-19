@@ -195,6 +195,48 @@ def coloredSubcubes (t : DecisionTree n) : Finset (Bool × Subcube n) :=
     coloredSubcubes (n := n) (leaf b) = {⟨b, subcube_of_path (n := n) []⟩} := by
   simp [coloredSubcubes]
 
+/-- Evaluate a leaf. -/
+@[simp] lemma eval_tree_leaf (b : Bool) (x : Point n) :
+    eval_tree (leaf b) x = b := rfl
+
+/-- Evaluate a node. -/
+@[simp] lemma eval_tree_node (i : Fin n) (t0 t1 : DecisionTree n) (x : Point n) :
+    eval_tree (node i t0 t1) x = (if x i then eval_tree t1 x else eval_tree t0 x) := by
+  by_cases h : x i
+  · simp [eval_tree, h]
+  · simp [eval_tree, h]
+
+/-- Extend membership in a path subcube by fixing one more coordinate. -/
+lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
+    (i : Fin n) (b : Bool)
+    (hx : (subcube_of_path p).mem x) (hxi : x i = b) :
+    (subcube_of_path ((i, b) :: p)).mem x := by
+  intro j hj
+  rcases Finset.mem_insert.mp hj with hj | hj
+  · subst hj; simpa [subcube_of_path, hxi]
+  · have hxj := hx j hj
+    by_cases hji : j = i
+    · subst hji; simpa [subcube_of_path, hxi] using hxi
+    · simp [subcube_of_path, hj, hji, hxj]
+
+/-- Every input lies in the subcube described by its path to a leaf. -/
+lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
+    (subcube_of_path (path_to_leaf t x)).mem x := by
+  induction t generalizing x with
+  | leaf b =>
+      simpa [path_to_leaf, subcube_of_path] using
+        (mem_subcube_of_path_nil (n := n) (x := x))
+  | node i t0 t1 ih0 ih1 =>
+      by_cases h : x i
+      · have h' := ih1 x
+        simpa [path_to_leaf, h] using
+          mem_subcube_of_path_cons_of_mem (x := x) (p := path_to_leaf t1 x)
+            (i := i) (b := true) h' (by simpa [h])
+      · have h' := ih0 x
+        simpa [path_to_leaf, h] using
+          mem_subcube_of_path_cons_of_mem (x := x) (p := path_to_leaf t0 x)
+            (i := i) (b := false) h' (by simpa [h])
+
 end DecisionTree
 
 end BoolFunc

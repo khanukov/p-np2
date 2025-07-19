@@ -736,6 +736,80 @@ lemma buildCover_mono_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       have hR_ls : R ∈ R_ls := by simpa [hres] using hR
       exact hmono_ls R hR_ls
 
+/-!
+### Cardinality bound in the low-sensitivity case
+
+When every function in the family has sensitivity strictly below
+`log₂ (n + 1)` the cover constructed by `buildCover` immediately
+selects the low-sensitivity branch.  In this situation the rectangles
+returned by `low_sensitivity_cover` form the entire result, so we can
+read off a concrete size bound from that lemma.
+-/
+
+lemma buildCover_card_bound_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, sensitivity f < Nat.log2 (Nat.succ n)) :
+    (buildCover F h hH).card ≤
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Unfold the recursion once at the top level.
+  dsimp [buildCover]
+  -- Split on the presence of an uncovered pair.
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      -- No uncovered inputs: the result is the empty set.
+      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+        simpa [buildCover, hfu]
+      have : (0 : ℕ) ≤ Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+        Nat.zero_le _
+      simpa [hres] using this
+  | some tup =>
+      rcases tup with ⟨f, x⟩
+      -- The family is nonempty, so `max'` is defined.
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F (∅ : Finset (Subcube n))) hfu with
+          ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      -- Maximum sensitivity over the family.
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      -- Show that `s` itself is below the logarithmic threshold.
+      have hs_lt : s < Nat.log2 (Nat.succ n) := by
+        have hle : s ≤ Nat.log2 (Nat.succ n) - 1 := by
+          refine Finset.max'_le ?_?;
+          intro t ht
+          rcases Finset.mem_image.mp ht with ⟨g, hg, rfl⟩
+          exact Nat.le_pred_of_lt (hs g hg)
+        have hpos : 0 < Nat.log2 (Nat.succ n) := by
+          have : (1 : ℕ) < Nat.succ n := Nat.succ_lt_succ (Nat.zero_lt_succ _)
+          exact Nat.log2_pos this
+        have : s.succ ≤ Nat.log2 (Nat.succ n) := by
+          simpa [Nat.succ_pred_eq_of_pos hpos] using Nat.succ_le_succ hle
+        exact Nat.lt_of_succ_le this
+      -- The recursion chooses the low-sensitivity branch.
+      have hs_case : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) := Or.inl hs_lt
+      -- Obtain the low-sensitivity cover with explicit constant `10`.
+      obtain ⟨R_ls, -, -, hsize⟩ :=
+        BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
+      -- `buildCover` returns exactly this set of rectangles.
+      have hres : buildCover F h hH = R_ls := by
+        simp [buildCover, hfu, hs_case]
+      -- Use `s ≤ log₂(n+1)` to enlarge the exponent to `(log₂(n+1))^2`.
+      have hs_le : s ≤ Nat.log2 (Nat.succ n) := Nat.le_of_lt_succ hs_lt
+      have hpow_le :
+          Nat.pow 2 (10 * s * Nat.log2 (Nat.succ n)) ≤
+            Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+        have : 10 * s * Nat.log2 (Nat.succ n) ≤
+            10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) := by
+          have := Nat.mul_le_mul_right (Nat.log2 (Nat.succ n)) hs_le
+          have := Nat.mul_le_mul_left 10 this
+          simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+        exact Nat.pow_le_pow_of_le_left (by decide : (2 : ℕ) ≥ 1) this
+      -- Combine the size bound from `low_sensitivity_cover` with the inequality.
+      have hfinal := le_trans hsize hpow_le
+      simpa [hres] using hfinal
+
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The present

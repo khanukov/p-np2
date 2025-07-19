@@ -159,6 +159,25 @@ example {n s C : ℕ} [Fintype (Point n)] :
       (F := ({fun _ : Point n => true} : Family n))
       (s := s) (C := C) hconst
 
+/-- `buildCover_card_bound_lowSens` gives a concrete bound for a
+single low-sensitivity function.  We check the constantly true
+function as a sanity test. -/
+example {n h : ℕ} [Fintype (Point n)] :
+    (Cover.buildCover ({fun _ : Point n => true} : Family n) h
+      (by simpa using (le_of_eq (by norm_num : (0 : ℝ) = 0)))) .card
+      ≤ Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  classical
+  have hs : ∀ f ∈ ({fun _ : Point n => true} : Family n),
+      sensitivity f < Nat.log2 (Nat.succ n) := by
+    intro f hf
+    have : f = fun _ : Point n => true := by simpa [Finset.mem_singleton] using hf
+    simpa [this, BoolFunc.sensitivity_const] using
+      Nat.zero_lt_succ _
+  simpa using
+    Cover.buildCover_card_bound_lowSens
+      (F := ({fun _ : Point n => true} : Family n))
+      (h := h) (hH := by simpa) hs
+
 /-- Every evaluation/path pair computed by a decision tree occurs in its
 `coloredSubcubes` set.  We simply invoke the lemma
 `eval_pair_mem_coloredSubcubes`. -/

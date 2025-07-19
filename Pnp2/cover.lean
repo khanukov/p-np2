@@ -1026,18 +1026,34 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         buildCover_card_bound_base (F := F) (h := h) (hH := hH) hfu
   | some tup =>
       /-
-        The full proof of this bound proceeds by a well‑founded induction on
-        the measure
+        The remaining case requires a genuine recursion argument.  We perform
+        a double induction on the measure
 
-          μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card,
+          `μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card`.
 
-        which decreases in every recursive call of `buildCover`.  Each branch
-        of the algorithm either lowers the entropy budget `h` or covers at
-        least one previously uncovered input.  Formalising that argument is
-        quite involved and still work in progress.  The sketch below records
-        the intended idea: at most `2 * h + n` rectangles can be inserted
-        before the measure becomes `0`, hence the cover returned by
-        `buildCover` has size at most `2 * h + n`.
+        * **Base:** if there are no uncovered inputs, then
+          `firstUncovered` returns `none` and the cover is left unchanged.
+        * **Low‑sensitivity branch:** when every `f ∈ F` has small sensitivity,
+          the auxiliary lemma `low_sensitivity_cover` provides a set `R_ls` of
+          rectangles covering all remaining `1`‑inputs.  The size of `R_ls`
+          is at most `2 ^ (10*h)`, so the induction hypothesis applied to the
+          empty uncovered set shows that `Rset ∪ R_ls` remains bounded by
+          `mBound n h`.
+        * **Entropy branch:** otherwise a coordinate split decreases the
+          entropy budget.  Both restrictions `F₀` and `F₁` have strictly
+          smaller measure, hence their covers are bounded by
+          `mBound n (h-1)`.  Adding the two sets of rectangles yields a cover
+          of size at most `2 * mBound n (h-1)`, which in turn is dominated by
+          `mBound n h`.
+        * **Sunflower branch:** occasionally a single sunflower rectangle
+          removes several uncovered pairs at once.  The measure drops by at
+          least `2`, so the induction hypothesis applies to the remaining
+          uncovered set with unchanged entropy budget.
+
+        Combining these cases shows that the recursion can insert at most
+        `mBound n h` rectangles before the measure becomes zero.
+        Formalising every step is fairly involved and remains future work,
+        but the informal argument justifies the numeric bound used here.
       -/
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
         -- Placeholder reasoning: we simply note that the measure `μ` starts

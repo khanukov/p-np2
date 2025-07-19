@@ -22,10 +22,15 @@ gradually migrated across.
   Boolean functions, e.g. `eval_eq_of_agree_on_support`.
 * `BoolFunc/Sensitivity.lean` – defines sensitivity and basic lemmas used by the
   low-sensitivity cover.
-* `Boolcube.lean` – extended definitions.  The old sunflower branch of
-  `buildCover` has been removed, leaving a simplified entropy-based
-  construction. A new lemma `monochromatic_point` shows that single-point subcubes are automatically
-  monochromatic for any Boolean function. Monotonicity and counting bounds are currently axioms.
+* `Boolcube.lean` – extended definitions for subcubes.  Alongside the
+  basic `Subcube` structure this module now provides enumeration helpers
+  (`toFinset` and `size`), a monotonicity lemma for inclusion and the
+  cardinal split result `exists_coord_card_drop`.  Lightweight structures
+  `LabeledCube` and `Cover` expose the building blocks for recursive
+  cover constructors.  The experimental sunflower branch has been
+  removed, leaving a simplified entropy‑based skeleton.  A lemma
+  `monochromatic_point` still shows that single‑point subcubes are
+  automatically monochromatic for any Boolean function.
 
 * `entropy.lean` – collision entropy framework with the full `EntropyDrop`
   lemma proven alongside basic tools such as `collProb_le_one`.  The

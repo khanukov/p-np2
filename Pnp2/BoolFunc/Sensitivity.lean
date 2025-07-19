@@ -139,6 +139,38 @@ lemma exists_family_sensitive_coord (F : Family n) [Fintype (Point n)]
   rcases exists_sensitive_coord (f := f) hpos with ⟨i, x, hx⟩
   exact ⟨i, f, hfF, x, hx⟩
 
+/--
+If a Boolean function is constant, then its sensitivity is zero.
+This simple observation will serve as a base case for more involved
+decision-tree constructions.
+-/
+lemma sensitivity_eq_zero_of_constant (f : BFunc n) (b : Bool)
+    (hconst : ∀ x : Point n, f x = b) :
+    sensitivity f = 0 := by
+  classical
+  -- `sensitivity` takes the maximum of `sensitivityAt` over all inputs.
+  -- We first show that each `sensitivityAt` value is zero.
+  have hs : ∀ x : Point n, sensitivityAt f x = 0 := by
+    intro x
+    -- No coordinate flip can change the value because `f` is constant.
+    have hflip :
+        ∀ i : Fin n, f (Point.update x i (!x i)) = f x := by
+      intro i; simpa [hconst (Point.update x i (!x i)), hconst x]
+    -- The set of sensitive coordinates is empty.
+    have :
+        (Finset.univ.filter fun i => f (Point.update x i (!x i)) ≠ f x).card = 0 := by
+      apply Finset.card_eq_zero.mpr
+      intro i hi
+      have := (Finset.mem_filter.mp hi).2
+      simpa [hflip i] using this
+    -- Hence `sensitivityAt` evaluates to zero.
+    simp [sensitivityAt, this]
+  -- Taking the supremum over an all-zero function yields zero.
+  unfold sensitivity
+  have hconst : (fun x : Point n => sensitivityAt f x) = fun _ => 0 := by
+    funext x; simpa [hs x]
+  simp [hconst]
+
 
 end BoolFunc
 

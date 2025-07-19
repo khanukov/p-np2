@@ -139,5 +139,18 @@ lemma low_sensitivity_cover_single
   · intro x hx
     simpa using hcov f (by simp) x hx
 
-end BoolFunc
 
+
+/-- Specialized version of `low_sensitivity_cover` for the empty family.
+    This is a small convenience wrapper around `decisionTree_cover_empty`. -/
+lemma low_sensitivity_cover_empty (n s C : ℕ)
+    [Fintype (Point n)] :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family n)) ∧
+    (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  simpa using
+    (decisionTree_cover_empty (n := n) (s := s) (C := C))
+
+end BoolFunc

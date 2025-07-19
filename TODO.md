@@ -18,6 +18,7 @@ Short list of development tasks reflecting the current repository status.
 - [x] Provide more decision-tree utilities (leaf subcubes, path handling).
 - [x] Formalise path length bounds like `path_to_leaf_length_le_depth`.
 - [x] Prove basic leaf-count bound `leaf_count_le_pow_depth`.
+- [ ] Show that every evaluation/path pair appears in `coloredSubcubes`.
 - [x] Remove outdated sunflower branch placeholder in `Boolcube.buildCover`.
 - [x] Drop obsolete note about `sorry` usage in `Boolcube.lean`.
 - [x] Add `AllOnesCovered.union` helper lemma to simplify coverage proofs.

@@ -58,7 +58,22 @@ maintain a public repository with Lean scripts and accompanying notes.
 Much of the foundational material (Step 0) is available in print but only partly
 formalised.  Steps 1–3 are active research; the key missing piece is proving a
 rectangular cover of `ACC⁰ ∘ MCSP` tables of size at most `2^{N - N^{\delta}}`.
-Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_drop`.  The cardinal drop lemma `exists_coord_card_drop` is now proven.  The lemma `buildCover_mono` has also been established, while the size bound `buildCover_card_bound` remains axiomatic.  Lemma statements for `low_sensitivity_cover` are in place, and `acc_mcsp_sat.lean` outlines the SAT reduction. The next steps depend on this breakthrough.
+Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_drop`.  The cardinal drop lemma `exists_coord_card_drop` is now proven.  The lemma `buildCover_mono` has also been established.  Work continues on the counting lemma `buildCover_card_bound`.
+The intended proof performs a double induction on the entropy budget `h` and on
+the number of uncovered pairs.  Writing
+
+```
+μ(F, h, Rset) = 2 * h + |uncovered F Rset|
+```
+
+each branch of the recursion strictly decreases this measure:
+low-sensitivity families are covered via `low_sensitivity_cover`, otherwise a
+coordinate split reduces the entropy budget, and occasionally a sunflower step
+covers multiple functions at once.  Combining these cases yields a bound of at
+most `mBound n h` rectangles before the measure collapses to zero.  The Lean
+formalisation of this argument is still in progress.  Lemma statements for
+`low_sensitivity_cover` are in place, and `acc_mcsp_sat.lean` outlines the SAT
+reduction.  The next steps depend on this breakthrough.
 A small `DecisionTree` module with evaluation and size utilities now also
 provides path handling via `subcube_of_path` and the lemmas
 `path_to_leaf_length_le_depth` and a leaf-count bound `leaf_count_le_pow_depth`.

@@ -75,6 +75,34 @@ lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
             Nat.mul_le_mul_left _ hpow
       simpa [mBound] using this
 
+/-! ### Inductive growth of `mBound`
+The numerical bound `mBound` grows very quickly with the entropy
+budget `h`.  The following helper lemma shows that doubling the bound
+for budget `h` stays below the bound for `h + 1`.  This simple fact is
+used in the cardinality argument for `buildCover`. -/
+
+lemma mBound_mul_two_le_succ (n h : ℕ) :
+    2 * mBound n h ≤ mBound n (h + 1) := by
+  -- Expand both sides of the inequality.
+  have hpow : (2 : ℕ) ≤ 2 ^ 10 := by decide
+  have hx : (h + 2) * 2 ≤ (h + 3) * 2 ^ 10 := by
+    have hx1 : (h + 2) * 2 ≤ (h + 2) * 2 ^ 10 := by
+      exact Nat.mul_le_mul_left _ hpow
+    have hx2 : (h + 2) * 2 ^ 10 ≤ (h + 3) * 2 ^ 10 := by
+      exact Nat.mul_le_mul_right _ (Nat.le_succ _)
+    exact hx1.trans hx2
+  -- Factor out the common term `n * 2^(10*h)` and apply `hx`.
+  have hx' := Nat.mul_le_mul_left (n * 2 ^ (10 * h)) hx
+  -- Rewrite the resulting expressions to match the goal.
+  simpa [mBound, pow_add, pow_succ, mul_comm, mul_left_comm, mul_assoc,
+        Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using hx'
+
+lemma mBound_mul_two_pred_le (n h : ℕ) (hh : 0 < h) :
+    2 * mBound n (h - 1) ≤ mBound n h := by
+  -- Reduce to the previous lemma via `h - 1 + 1 = h`.
+  have hpred : (h - 1) + 1 = h := Nat.succ_pred_eq_of_pos hh
+  simpa [hpred] using mBound_mul_two_le_succ n (h - 1)
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

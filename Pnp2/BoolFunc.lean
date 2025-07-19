@@ -165,6 +165,17 @@ def Point.const (n : ℕ) (b : Bool) : Point n := fun _ => b
 @[simp] lemma Point.const_apply (n : ℕ) (b : Bool) (i : Fin n) :
     (Point.const n b) i = b := rfl
 
+/-! ### Coordinate support of a point -/
+
+/-- Set of coordinates where the Boolean point `x` evaluates to `true`. -/
+def supportPt (x : Point n) : Finset (Fin n) :=
+  Finset.univ.filter fun i => x i = true
+
+@[simp] lemma mem_supportPt {x : Point n} {i : Fin n} :
+    i ∈ supportPt (n := n) x ↔ x i = true := by
+  classical
+  simp [supportPt]
+
 end PointOps
 
 section Restrict

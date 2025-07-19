@@ -203,6 +203,21 @@ lemma subcube_of_path_idx_card_le (p : List (Fin n × Bool)) :
       simpa [subcube_of_path] using h
 
 /-!
+Fixing the coordinates along a path reduces the subcube dimension by at
+most the length of the path.  Equivalently, the resulting subcube still
+has at least `n - p.length` free coordinates.
+-/
+lemma subcube_of_path_dimension_ge (p : List (Fin n × Bool)) :
+    n - p.length ≤ (subcube_of_path (n := n) p).dimension := by
+  classical
+  -- We know how many coordinates were fixed in `subcube_of_path`.
+  have hidx := subcube_of_path_idx_card_le (n := n) (p := p)
+  -- `Nat.sub_le_sub_left` converts the bound on fixed coordinates to a
+  -- bound on the remaining dimension.
+  have h := Nat.sub_le_sub_left hidx n
+  simpa [Subcube.dimension] using h
+
+/-!
 Collect all leaf subcubes of a decision tree together with their Boolean labels.
 The helper `coloredSubcubesAux` threads the current path as an accumulator.
 -/
@@ -324,6 +339,18 @@ lemma path_to_leaf_idx_card_le_depth (t : DecisionTree n) (x : Point n) :
   have hlen := path_to_leaf_length_le_depth (t := t) (x := x)
   have := subcube_of_path_idx_card_le (n := n) (p := path_to_leaf t x)
   exact le_trans this hlen
+
+/-!
+The subcube obtained from following `x` down the tree retains at least
+`n - depth t` free coordinates.  This follows from the bound on the
+index set above.
+-/
+lemma path_to_leaf_dimension_ge_n_minus_depth (t : DecisionTree n) (x : Point n) :
+    n - depth t ≤ (subcube_of_path (path_to_leaf t x)).dimension := by
+  classical
+  have hidx := path_to_leaf_idx_card_le_depth (t := t) (x := x)
+  have h := Nat.sub_le_sub_left hidx n
+  simpa [Subcube.dimension] using h
 
 end DecisionTree
 

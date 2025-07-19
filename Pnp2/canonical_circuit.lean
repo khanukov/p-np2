@@ -1,4 +1,5 @@
 import Pnp2.Boolcube
+import Mathlib.Data.List.Basic
 
 /-
 canonical_circuit.lean
@@ -170,11 +171,24 @@ bits plus the binary representation of variable indices.  The exact
 format is irrelevant for now; we only rely on the length bound provided
 by `codeLen`.  The corresponding decoding function and proof of
 correctness are left for future work.
+
+To encode variables we convert the index into a fixed-width binary
+representation of length `Nat.log n + 1`.  A helper function
+`natToBitsFixed` produces exactly `k` bits (little-endian) by querying
+`Nat.testBit` on the range `0 .. k-1`.
+-/
+
+def natToBitsFixed (m k : ℕ) : List Bool :=
+  (List.range k).map fun j => Nat.testBit m j
+
+lemma natToBitsFixed_length (m k : ℕ) :
+    (natToBitsFixed m k).length = k := by
+  simp [natToBitsFixed]
 -/
 
 -- | Encode a canonical circuit as a `List` of bits.
 def encodeCanon {n : ℕ} : Canon n → List Bool
-  | Canon.var i       => List.replicate (Nat.log n + 1) false  -- placeholder
+  | Canon.var i       => natToBitsFixed i (Nat.log n + 1)
   | Canon.const b     => [b]
   | Canon.not c       => false :: encodeCanon c
   | Canon.and c₁ c₂   => true :: encodeCanon c₁ ++ encodeCanon c₂
@@ -184,7 +198,7 @@ lemma encodeCanon_length {n : ℕ} (c : Canon n) :
     (encodeCanon c).length ≤ codeLen c := by
   induction c with
   | var i =>
-      simp [encodeCanon, codeLen]
+      simp [encodeCanon, codeLen, natToBitsFixed_length]
   | const b =>
       simp [encodeCanon, codeLen]
   | not c ih =>

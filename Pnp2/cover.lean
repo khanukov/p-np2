@@ -812,9 +812,37 @@ The argument follows the same branch analysis as `buildCover_mono` and repeatedl
 -/
 /-!
 `buildCover_card_bound` bounds the size of the cover returned by
-`buildCover` in terms of the entropy budget `h`.  The detailed induction
-argument is deferred; we expose the expected statement as an axiom for
-now so that the remainder of the development can use it. -/
+`buildCover` in terms of the entropy budget `h`.
+
+The intended argument mirrors the correctness proof of `buildCover` and
+performs a double induction on the **entropy budget** `h` and the
+cardinality of the set of uncovered pairs.  More precisely we consider
+the measure
+
+```
+μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card
+```
+
+which decreases with every recursive call.  The construction splits into
+three main branches:
+
+* **Low‑sensitivity branch:** if all functions in the family have small
+  sensitivity we invoke `low_sensitivity_cover`, obtaining a set of
+  rectangles whose size is exponentially bounded in the maximum
+  sensitivity.  The union of the existing rectangles with this new set
+  satisfies the desired numeric bound.
+* **Entropy branch:** otherwise a coordinate split lowers the entropy
+  budget.  Both restrictions `F₀` and `F₁` have strictly smaller
+  measure, so the induction hypothesis applies to each of them.  Their
+  covers are then lifted back to the original family.
+* **Sunflower branch:** occasionally a subcube found via the sunflower
+  lemma covers many remaining functions.  Adding this rectangle strictly
+  decreases the number of uncovered pairs and hence the measure.
+
+Combining these cases shows that the recursion can add at most
+`mBound n h` rectangles before the measure becomes `0`.  The current
+code only records a sketch of this reasoning; a complete formalisation
+is left for future work. -/
 lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hfu : firstUncovered F (∅ : Finset (Subcube n)) = none) :
     (buildCover F h hH).card ≤ mBound n h := by

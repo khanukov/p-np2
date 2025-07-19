@@ -97,6 +97,25 @@ lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
     exact Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) this
   exact Nat.mul_le_mul hfac hpow
 
+/-!  Doubling the bound for a smaller budget stays below the bound for the
+next budget.  This simple numeric inequality is used when analysing the
+entropy branch of `buildCover`. -/
+lemma two_mul_mBound_le_succ (n h : ℕ) :
+    2 * mBound n h ≤ mBound n (h + 1) := by
+  have hfac : h + 2 ≤ h + 3 := by exact Nat.succ_le_succ (Nat.le_refl _)
+  have hexp : 10 * h + 1 ≤ 10 * h + 10 := by
+    have := (Nat.succ_le_succ (Nat.zero_le (10 * h)))
+    -- `1 ≤ 10` allows us to shift by `10 * h`
+    have h1 : (1 : ℕ) ≤ 10 := by decide
+    exact add_le_add_left h1 (10 * h)
+  have hpow : 2 ^ (10 * h + 1) ≤ 2 ^ (10 * h + 10) :=
+    Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) hexp
+  have hmul := Nat.mul_le_mul hfac hpow
+  have := Nat.mul_le_mul_left n hmul
+  -- rewrite both sides in terms of `mBound`
+  simpa [mBound, pow_add, pow_succ, Nat.mul_left_comm, Nat.mul_assoc,
+        Nat.mul_comm] using this
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

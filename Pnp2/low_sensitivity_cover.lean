@@ -70,6 +70,24 @@ lemma decisionTree_cover_of_constant
       Nat.succ_le_of_lt hpos
     simpa [hcard] using this
 
+/--
+  Degenerate base case: the empty family has no `1`-inputs to cover.
+  Returning the empty set of rectangles trivially satisfies the
+  monochromaticity and coverage requirements.
+-/
+lemma decisionTree_cover_empty
+  {n s C : Nat} [Fintype (Point n)] :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family n)) ∧
+    (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  refine ⟨∅, ?_, ?_, ?_⟩
+  · intro R hR; simpa using hR
+  · intro f hf; simpa using hf
+  · have : 0 ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := Nat.zero_le _
+    simpa using this
+
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →
     Subcube.monochromaticFor R f := by

@@ -75,6 +75,15 @@ lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
             Nat.mul_le_mul_left _ hpow
       simpa [mBound] using this
 
+lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
+    2 ^ (10 * h) ≤ mBound n h := by
+  have hpos : 0 < n * (h + 2) := by
+    have hpos' : 0 < h + 2 := Nat.succ_pos _
+    exact Nat.mul_pos hn hpos'
+  have hfactor : 1 ≤ n * (h + 2) := Nat.succ_le_of_lt hpos
+  have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
+  simpa [mBound, one_mul] using this
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

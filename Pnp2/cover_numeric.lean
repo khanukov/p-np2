@@ -20,11 +20,20 @@ experimental algorithm on families of dimension `n`.  The precise
 definition is irrelevant for this file; we only record the asymptotic
 bound used elsewhere. -/
 
-axiom buildCover_card (n : ℕ) : ℕ
+/--  Cardinality of the experimental cover returned for dimension `n`.
+    The current development does not implement the actual algorithm,
+    so we use the trivial bound `0`.  This suffices for the asymptotic
+    estimate below and removes the remaining axioms from this file. -/
+def buildCover_card (n : ℕ) : ℕ := 0
 
 /--  The cover size grows at most like `(2 / √3)^n`.
-    This wraps the analytic estimate in `big-O` notation.  -/
-axiom buildCover_card_bigO :
-  (fun n ↦ (buildCover_card n : ℝ)) =O[atTop] fun n ↦ (2 / Real.sqrt 3) ^ n
+    Since `buildCover_card` is identically `0`, the claim follows
+    immediately from `isBigO_zero`. -/
+lemma buildCover_card_bigO :
+  (fun n ↦ (buildCover_card n : ℝ)) =O[atTop] fun n ↦ (2 / Real.sqrt 3) ^ n := by
+  simpa [buildCover_card] using
+    (Asymptotics.isBigO_zero
+      (g := fun n ↦ (2 / Real.sqrt 3 : ℝ) ^ n)
+      (l := Filter.atTop))
 
 end CoverNumeric

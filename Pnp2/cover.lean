@@ -1073,6 +1073,21 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- `2 * h + n` used above.
       exact hsize.trans (numeric_bound (n := n) (h := h))
 
+/-! ### Universal bound on the number of rectangles
+
+Even without the detailed recursion argument we can still bound the
+size of the cover produced by `buildCover` by the number of all
+subcubes.  This very weak estimate is occasionally useful as a
+fallback. -/
+
+lemma buildCover_card_univ_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover F h hH).card ≤ bound_function n := by
+  classical
+  -- `size_bounds` provides a universal bound for any finite set of
+  -- subcubes.  We instantiate it with the set returned by `buildCover`.
+  have := size_bounds (n := n) (Rset := buildCover F h hH)
+  simpa [size, bound_function] using this
+
 /-! ## Main existence lemma -/
 
 lemma cover_exists (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :

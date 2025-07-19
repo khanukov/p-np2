@@ -84,6 +84,19 @@ lemma cover_size_bound {n : ℕ} (Rset : Finset (Subcube n)) :
   classical
   simpa [size] using (Finset.card_le_univ (s := Rset))
 
+/-! ### Alternate bound wrapping the cardinality of `Subcube n`
+The legacy development in `pnp` introduced an auxiliary function
+`bound_function` to emphasise the `3 ^ n` growth of the universal
+subcube family.  We reproduce the same API here for compatibility
+with migrated proofs. -/
+
+@[simp] def bound_function (n : ℕ) : ℕ := Fintype.card (Subcube n)
+
+lemma size_bounds {n : ℕ} (Rset : Finset (Subcube n)) :
+    size Rset ≤ bound_function n := by
+  classical
+  simpa [bound_function] using cover_size_bound (Rset := Rset)
+
 /-! ## Auxiliary predicates -/
 
 variable {n h : ℕ} (F : Family n)

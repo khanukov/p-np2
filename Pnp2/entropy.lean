@@ -77,16 +77,11 @@ noncomputable def H₂ {n : ℕ} (F : Family n) : ℝ :=
     H₂ F = 0 := by simp [H₂, h]
 
 /-!
-`Family.restrict i b` applies `BFunc.restrictCoord` to every function in `F`, fixing the `i`-th input bit to `b`.  This may identify previously distinct functions, so the resulting family can have smaller cardinality.  The next two helper lemmas are straightforward bookkeeping about these cardinalities and need no additional imports.
--/
-
-lemma card_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
-    (F.restrict i b).card ≤ F.card := by
-  classical
-  -- `restrict` is implemented via `Finset.image`, hence the cardinality can
-  -- only drop.
-  simpa [Family.restrict] using
-    (Finset.card_image_le (s := F) (f := fun f : BFunc n => f.restrictCoord i b))
+`Family.restrict i b` applies `BFunc.restrictCoord` to every function in `F`,
+fixing the `i`-th input bit to `b`.  This may identify previously distinct
+functions, so the resulting family can only become smaller.  The lemma
+`BoolFunc.card_restrict_le` in `BoolFunc.lean` records this fact.  We do not
+restate it here to avoid duplication. -/
 
 /-- **Existence of a halving restriction (ℝ version)** –
 provides a coordinate `i` and bit `b` such that restricting every

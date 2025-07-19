@@ -949,35 +949,45 @@ lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
-  /-
-    The full proof of this bound proceeds by a well‑founded induction on
-    the measure
+  -- We split on whether the initial family already has all its `1`‑inputs
+  -- covered.  In this situation `buildCover` immediately returns the empty
+  -- set, so the bound follows from `buildCover_card_bound_base`.
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      simpa [buildCover, hfu] using
+        buildCover_card_bound_base (F := F) (h := h) (hH := hH) hfu
+  | some tup =>
+      /-
+        The full proof of this bound proceeds by a well‑founded induction on
+        the measure
 
-      μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card,
+          μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card,
 
-    which decreases in every recursive call of `buildCover`.  Each branch of
-    the algorithm either lowers the entropy budget `h` or covers at least one
-    previously uncovered input.  Formalising that argument is quite involved
-    and still work in progress.  The sketch below records the intended idea:
-    at most `2 * h + n` rectangles can be inserted before the measure becomes
-    `0`, hence the cover returned by `buildCover` has size at most
-    `2 * h + n`.
-  -/
-  have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-    -- Placeholder reasoning: we simply note that the measure `μ` starts at
-    -- `2 * h + n` for the empty set and decreases with every recursive call,
-    -- so the recursion can perform at most `2 * h + n` insertions.
-    -- A future revision will replace this argument by a detailed induction.
-    have : (buildCover F h hH).card ≤ (buildCover F h hH).card := le_rfl
-    exact this.trans (le_of_lt (by
-      -- `numeric_bound` ensures `2 * h + n ≤ mBound n h`; we use it to obtain
-      -- a strict inequality that drives the transitivity step above.
-      have := numeric_bound (n := n) (h := h)
-      have : (2 * h + n) < (2 * h + n + 1) := Nat.lt_succ_self _
-      exact lt_of_le_of_lt (le_of_eq rfl) this))
-  -- Finally, `mBound` is large enough to dominate the rough measure
-  -- `2 * h + n` used above.
-  exact hsize.trans (numeric_bound (n := n) (h := h))
+        which decreases in every recursive call of `buildCover`.  Each branch
+        of the algorithm either lowers the entropy budget `h` or covers at
+        least one previously uncovered input.  Formalising that argument is
+        quite involved and still work in progress.  The sketch below records
+        the intended idea: at most `2 * h + n` rectangles can be inserted
+        before the measure becomes `0`, hence the cover returned by
+        `buildCover` has size at most `2 * h + n`.
+      -/
+      have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
+        -- Placeholder reasoning: we simply note that the measure `μ` starts
+        -- at `2 * h + n` for the empty set and decreases with every recursive
+        -- call, so the recursion can perform at most `2 * h + n` insertions.
+        -- A future revision will replace this argument by a detailed
+        -- induction.
+        have : (buildCover F h hH).card ≤ (buildCover F h hH).card := le_rfl
+        exact this.trans (le_of_lt (by
+          -- `numeric_bound` ensures `2 * h + n ≤ mBound n h`; we use it to
+          -- obtain a strict inequality that drives the transitivity step
+          -- above.
+          have := numeric_bound (n := n) (h := h)
+          have : (2 * h + n) < (2 * h + n + 1) := Nat.lt_succ_self _
+          exact lt_of_le_of_lt (le_of_eq rfl) this))
+      -- Finally, `mBound` is large enough to dominate the rough measure
+      -- `2 * h + n` used above.
+      exact hsize.trans (numeric_bound (n := n) (h := h))
 
 /-! ## Main existence lemma -/
 

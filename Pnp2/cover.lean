@@ -887,7 +887,21 @@ three main branches:
 Combining these cases shows that the recursion can add at most
 `mBound n h` rectangles before the measure becomes `0`.  The current
 code only records a sketch of this reasoning; a complete formalisation
-is left for future work. -/
+is left for future work.
+
+--
+-- The outline below sketches a concrete induction strategy.
+-- We consider the measure `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.
+-- * The base case covers the situation `uncovered = ∅`.
+-- * The low sensitivity branch uses `low_sensitivity_cover` to
+--   produce at most `2^(10*h)` rectangles.
+-- * The entropy branch reduces the entropy budget and applies the
+--   induction hypothesis to the restricted families.
+-- * The sunflower branch picks a rectangle that simultaneously covers
+--   many functions and recurses on the remaining uncovered points.
+-- This decreases `μ` in every step and yields the desired bound 
+-- `mBound n h`.
+-- -/
 lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hfu : firstUncovered F (∅ : Finset (Subcube n)) = none) :
     (buildCover F h hH).card ≤ mBound n h := by

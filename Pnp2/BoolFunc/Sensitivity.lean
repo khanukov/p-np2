@@ -123,6 +123,18 @@ lemma exists_sensitive_coord (f : BFunc n) (hpos : 0 < sensitivity f) :
   -- `hi` certifies that flipping the `i`‑th bit changes the output of `f`.
   refine ⟨i, x, ?_⟩
   simpa using ((Finset.mem_filter.mp hi).2).symm
+/-- Constant Boolean functions have sensitivity zero. -/
+
+@[simp] lemma sensitivity_const (b : Bool) :
+    sensitivity (fun _ : Point n => b) = 0 := by
+  classical
+  have hs : ∀ x : Point n, (Finset.univ.filter fun i => (fun _ => b) (Point.update x i (!x i)) ≠ (fun _ => b) x).card = 0 := by
+    intro x; simp
+  unfold sensitivity
+  have hzero : ∀ x ∈ (Finset.univ : Finset (Point n)), sensitivityAt (fun _ => b) x = 0 := by
+    intro x hx; simpa [sensitivityAt] using hs x
+  simpa using Finset.sup_eq_bot_iff.mpr hzero
+
 
 
 end BoolFunc

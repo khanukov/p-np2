@@ -26,6 +26,16 @@ def leaf_count : DecisionTree n → Nat
   | leaf _ => 1
   | node _ t0 t1 => leaf_count t0 + leaf_count t1
 
+/-- A decision tree always has at least one leaf. -/
+lemma leaf_count_pos (t : DecisionTree n) : 0 < leaf_count t := by
+  induction t with
+  | leaf b =>
+      simp [leaf_count]
+  | node i t0 t1 ih0 ih1 =>
+      have : 0 < leaf_count t0 + leaf_count t1 :=
+        Nat.add_pos_left (n := leaf_count t1) ih0
+      simpa [leaf_count] using this
+
 /-- Evaluate the tree on an input point. -/
 def eval_tree : DecisionTree n → Point n → Bool
   | leaf b, _ => b

@@ -386,6 +386,29 @@ lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
   simpa [mu] using Nat.le_add_right (2 * h) ((uncovered F Rset).toFinset.card)
 
 /-!
+If `firstUncovered` returns a value, then the uncovered set is nonempty
+and the measure `mu` is strictly larger than `2 * h`.  This convenience
+lemma will be useful when analysing the main recursion measure.
+-/
+lemma mu_gt_of_firstUncovered_some {F : Family n} {Rset : Finset (Subcube n)}
+    {h : ℕ} (hfu : firstUncovered (F := F) Rset ≠ none) :
+    2 * h < mu F h Rset := by
+  classical
+  -- The uncovered set cannot be empty, otherwise `firstUncovered` would
+  -- have returned `none`.
+  have hne : uncovered F Rset ≠ ∅ := by
+    intro hempty
+    have := (firstUncovered_none_iff (F := F) (R := Rset)).2 hempty
+    exact hfu this
+  -- A nonempty set has positive card after coercion to a finset.
+  obtain ⟨p, hp⟩ := Set.nonempty_iff_ne_empty.mpr hne
+  have hpos : 0 < (uncovered F Rset).toFinset.card :=
+    Finset.card_pos.mpr ⟨p, by simpa using hp⟩
+  -- Hence the measure `mu` exceeds `2 * h` by at least one.
+  have := Nat.lt_add_of_pos_right hpos
+  simpa [mu] using this
+
+/-!
 `uncovered` is monotone with respect to the set of rectangles: adding
 a new rectangle can only remove uncovered pairs.  The next lemma
 formalises this simple observation and will be handy when reasoning

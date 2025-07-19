@@ -48,6 +48,19 @@ namespace Subcube
     · cases hj; simp [fixOne, h]
     · simp [fixOne, hj]
 
+@[simp] lemma support_fixOne (i : Fin n) (b : Bool) :
+  (fixOne (n := n) i b).support = {i} := by
+  classical
+  ext j; by_cases hji : j = i
+  · subst hji; simp [Subcube.support, fixOne]
+  · have : j ≠ i := hji
+    simp [Subcube.support, fixOne, hji, this]
+
+@[simp] lemma dim_fixOne (i : Fin n) (b : Bool) :
+  (fixOne (n := n) i b).dim = n - 1 := by
+  classical
+  simp [Subcube.dim, support_fixOne]
+
 @[simp] lemma dim_full (n : ℕ) :
   (Subcube.full : Subcube n).dim = n := by
   classical

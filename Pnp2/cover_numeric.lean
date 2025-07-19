@@ -11,7 +11,7 @@ variable {N Nδ : ℕ} (F : Family N)
 -- Placeholder definitions if needed
 -- We assume `minCoverSize` and `buildCover_size_bound` are provided elsewhere.
 
-lemma numeric_bound
+lemma minCoverSize_bound
     (h₀ : H₂ F ≤ N - Nδ) : (minCoverSize F) ≤ 2^(N - Nδ) := by
   simpa using buildCover_size_bound (F := F) h₀
 

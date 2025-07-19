@@ -172,15 +172,12 @@ lemma exists_coord_card_drop
   have hcontr := lt_of_lt_of_le this rhs_le
   exact lt_irrefl _ hcontr
 
+
 -- Entropy version.  From the cardinal drop we derive a quantitative decrease of
 -- `H₂`.  Using `log₂ (1 - 1/n) ≤ -1 / (n * ln 2)`.
-lemma exists_coord_entropy_drop
-    (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool,
-      H₂ (F.restrict i b) ≤ H₂ F - 1 := by
-  classical
-  simpa using
-    (BoolFunc.exists_coord_entropy_drop (F := F) (hn := hn) (hF := hF))
+-- The actual lemma lives in `entropy.lean` as
+-- `BoolFunc.exists_coord_entropy_drop`.  We omit its duplicate
+-- statement here.
 
 
 /-!  ### 2.  High‑level cover structure and recursive constructor -/

@@ -636,7 +636,22 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         exact ⟨R1, by simp [hR1], hyR1⟩
   -- **Termination proofs for recursive calls**
   · exact Nat.pred_lt (Nat.pos_of_ne_zero (by linarith))
+
 /-! ## Basic properties of `buildCover` -/
+
+/--
+After constructing a cover via `buildCover`, the auxiliary measure `mu`
+records that no uncovered pairs remain.  Hence the measure of the
+resulting cover collapses to `2 * h`.
+-/
+lemma buildCover_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    mu F h (buildCover F h hH) = 2 * h := by
+  classical
+  -- The coverage lemma establishes that the result covers all `1`-inputs.
+  have hcov := buildCover_covers (F := F) (h := h) (hH := hH)
+  -- Once everything is covered `mu` drops to `2 * h`.
+  simpa using mu_of_allCovered (F := F) (Rset := buildCover F h hH) (h := h)
+    hcov
 
 /--
 `buildCover_mono` states that every subcube produced by `buildCover` is

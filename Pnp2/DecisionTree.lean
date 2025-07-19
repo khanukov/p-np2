@@ -280,11 +280,11 @@ lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
     (subcube_of_path ((i, b) :: p)).mem x := by
   intro j hj
   rcases Finset.mem_insert.mp hj with hj | hj
-  · subst hj; simpa [subcube_of_path, hxi]
+  · subst hj; simp [subcube_of_path, hxi]
   · have hxj := hx j hj
     by_cases hji : j = i
-    · subst hji; simpa [subcube_of_path, hxi] using hxi
-    · simp [subcube_of_path, hj, hji, hxj]
+    · subst hji; simp [subcube_of_path, hxi]
+    · simp [subcube_of_path, hji, hxj]
 
 /-- Every input lies in the subcube described by its path to a leaf. -/
 lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
@@ -298,11 +298,11 @@ lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
       · have h' := ih1 x
         simpa [path_to_leaf, h] using
           mem_subcube_of_path_cons_of_mem (x := x) (p := path_to_leaf t1 x)
-            (i := i) (b := true) h' (by simpa [h])
+            (i := i) (b := true) h' (by simp [h])
       · have h' := ih0 x
         simpa [path_to_leaf, h] using
           mem_subcube_of_path_cons_of_mem (x := x) (p := path_to_leaf t0 x)
-            (i := i) (b := false) h' (by simpa [h])
+            (i := i) (b := false) h' (by simp [h])
 
 /-!  The index set of the subcube obtained from the path to a leaf has
 cardinality bounded by the depth of the tree.  This follows from

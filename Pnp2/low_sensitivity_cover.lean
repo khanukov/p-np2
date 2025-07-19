@@ -36,7 +36,6 @@ cube, we can cover all ones with just that cube.  This lemma acts as a base case
 for the eventual recursive construction of `decisionTree_cover`. -/
 lemma decisionTree_cover_of_constant
   {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s)
   (hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b) :
   ∃ Rset : Finset (Subcube n),
     (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
@@ -83,10 +82,10 @@ lemma decisionTree_cover_empty
     Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
   classical
   refine ⟨∅, ?_, ?_, ?_⟩
-  · intro R hR; simpa using hR
-  · intro f hf; simpa using hf
+  · intro R hR; cases hR
+  · intro f hf; cases hf
   · have : 0 ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := Nat.zero_le _
-    simpa using this
+    exact this
 
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →

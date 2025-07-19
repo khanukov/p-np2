@@ -1,51 +1,47 @@
-# Migration progress from Pnp2 to pnp
+# Migration progress from `pnp` to `Pnp2`
 
-The project has mostly completed the move from the historical `Pnp2` namespace
-to the new `pnp` directory.  Every file now has a counterpart under
-`pnp/Pnp/` and compiles in the new namespace.  The `lakefile` no longer
-builds the old sources.  The `Pnp2` directory remains in the repository for
-reference because several modules were only ported as skeletons.
+Development has shifted back to the historical `Pnp2` namespace.  The `pnp`
+folder remains in the repository only for reference.  Each module is being
+ported across so that the proofs live under `Pnp2` once more.  The build still
+includes the old code, but new lemmas and theorems appear only in `Pnp2`.
 
-## Modules now in `pnp/Pnp/`
+## Modules already migrated to `Pnp2`
 
-- `BoolFunc.lean` together with the subdirectory `BoolFunc/` (`Support.lean`,
-  `Sensitivity.lean`)
+- `BoolFunc.lean` and the `BoolFunc/` subdirectory
 - `DecisionTree.lean`
 - `Agreement.lean`
 - `Boolcube.lean`
 - `Collentropy.lean`
 - `Entropy.lean`
-- `LowSensitivityCover.lean`
+- `Low_sensitivity_cover.lean`
 - `Cover.lean`
 - `Bound.lean`
 - `ComplexityClasses.lean`
-- `NPSeparation.lean`
-- `AccMcspSat.lean`
-- `CanonicalCircuit.lean`
-- `FamilyEntropyCover.lean`
+- `NP_separation.lean`
+- `Acc_mcsp_sat.lean`
+- `Canonical_circuit.lean`
+- `Family_entropy_cover.lean`
 - `Sunflower/` containing `RSpread.lean` and `Sunflower.lean`
-- `CoverNumeric.lean`
+- `Cover_numeric.lean`
 - `Examples.lean`
-- `LowSensitivity.lean`
-- `MergeLowSens.lean`
-- `TableLocality.lean`
-- `Pnp.lean` acting as the root module
+- `Low_sensitivity.lean`
+- `Merge_low_sens.lean`
+- `Table_locality.lean`
+- `Pnp2.lean` as the root module
 
-## Outstanding work
+## Remaining work
 
-The implementations from `Pnp2` still contain complete statements and proofs
-that have been replaced by placeholders in `pnp`.  The following parts are
-missing and should be ported:
+Several statements in the `pnp` tree still provide more complete proofs.
+The following items need to be moved and checked:
 
-- the proofs of `aux_growth` and `mBound_lt_subexp` in `Bound.lean` (proof incoming in next commit)
-- the full definition of `mergeLowSensitivityCover` in `MergeLowSens.lean`
-- the `low_sensitivity_cover` construction and helper lemmas from
-  `LowSensitivity.lean`
-- the example-driven code in `Examples.lean`
-- the SAT outline in `AccMcspSat.lean`
-- the separation lemma `P_ne_NP_of_MCSP_bound` from `NPSeparation.lean`
-- numeric cover bounds in `CoverNumeric.lean` (proof incoming in next commit)
+- the proofs of `aux_growth` and `mBound_lt_subexp` in `bound.lean`
+- the full definition of `mergeLowSensitivityCover` in `merge_low_sens.lean`
+- the `low_sensitivity_cover` construction from `low_sensitivity.lean`
+- the example-driven code in `examples.lean`
+- the SAT outline in `acc_mcsp_sat.lean`
+- the separation lemma `P_ne_NP_of_MCSP_bound` from `NP_separation.lean`
+- numeric cover bounds in `cover_numeric.lean`
 - tests exercising these modules
 
-Once these proofs and tests have been migrated, the `Pnp2` directory can be
-removed entirely.
+Once all modules are moved and the proofs re-established, the `pnp`
+directory can be dropped entirely.

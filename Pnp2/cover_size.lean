@@ -40,24 +40,8 @@ lemma subcube_monochromatic_base {n : ℕ} (s : Subcube n)
     (hs : s.dim = 0) : is_monochromatic s := by
   simpa [is_monochromatic, hs]
 
-lemma slice_monochromatic {n : ℕ} (s : Subcube n) (i : Fin n) (b : Bool)
-    (hs : is_monochromatic s) :
-    is_monochromatic (Subcube.fixOne (n := n) i b) := by
-  -- Restricting a coordinate cannot increase the dimension.
-  have hdim := by
-    classical
-    have : (Subcube.fixOne (n := n) i b).dim ≤ s.dim := by
-      -- `fixOne` fixes one additional coordinate
-      simp [Subcube.dim, Subcube.support] at *
-    have hzero : s.dim = 0 := by simpa [is_monochromatic] using hs
-    exact le_of_lt (Nat.lt_of_le_of_ne (Nat.zero_le _) (by simpa [hzero]))
-  have h0 : (Subcube.fixOne (n := n) i b).dim = 0 :=
-    le_antisymm (Nat.le_of_lt_succ hdim) (Nat.zero_le _)
-  simpa [is_monochromatic, h0]
-
 -- In this toy development we do not prove any meaningful
--- monochromaticity statement.  The definition above is merely
--- illustrative, so we omit the lemma from the ported version.
+-- monochromaticity statement beyond the base case above.
 
 /-! ### Size bound for covers -/
 
@@ -72,12 +56,15 @@ lemma cover_size_bound {n : ℕ} (c : Cover n) : size c ≤ 3 ^ n := by
     simpa [size] using (Finset.card_le_univ (s := c))
   have hcard : Fintype.card (Subcube n) = 3 ^ n := by
     classical
+    -- `Subcube n` is isomorphic to the function space `Fin n → Option Bool`
+    -- via the `fix` map.
     let e : Subcube n ≃ Fin n → Option Bool :=
       { toFun := fun C => C.fix,
-        invFun := fun f => ⟨f⟩,
+        invFun := fun f => { fix := f },
         left_inv := by intro C; cases C; rfl,
         right_inv := by intro f; rfl }
     have h1 := Fintype.card_congr e
+    -- compute the cardinality of the function space directly
     have h2 := Fintype.card_fun (Fin n) (Option Bool)
     have h3 : Fintype.card (Fin n → Option Bool) = 3 ^ n := by
       classical

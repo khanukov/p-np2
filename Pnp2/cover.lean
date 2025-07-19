@@ -814,7 +814,17 @@ The argument follows the same branch analysis as `buildCover_mono` and repeatedl
 `buildCover_card_bound` bounds the size of the cover returned by
 `buildCover` in terms of the entropy budget `h`.  The detailed induction
 argument is deferred; we expose the expected statement as an axiom for
-now so that the remainder of the development can use it.
+now so that the remainder of the development can use it. -/
+lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hfu : firstUncovered F (∅ : Finset (Subcube n)) = none) :
+    (buildCover F h hH).card ≤ mBound n h := by
+  classical
+  have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+    simpa [buildCover, hfu]
+  have : (0 : ℕ) ≤ mBound n h :=
+    (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
+  simpa [hres] using this
+
 -/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by

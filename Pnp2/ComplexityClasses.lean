@@ -81,3 +81,12 @@ structure InPpoly (L : Language) where
 
 /-- The non-uniform class `P/poly`. -/
 def Ppoly : Set Language := { L | ∃ h : InPpoly L, True }
+
+/-!
+`P ⊆ Ppoly` is a classical counting argument: every polytime Turing
+machine can be translated into a polynomial-size circuit family.  We
+keep this implication as an axiom so that later developments can rely
+on the standard complexity-theoretic fact without redoing the
+construction here.
+-/
+axiom P_subset_Ppoly : P ⊆ Ppoly

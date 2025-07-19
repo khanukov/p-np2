@@ -159,6 +159,17 @@ example {n s C : ℕ} [Fintype (Point n)] :
       (F := ({fun _ : Point n => true} : Family n))
       (s := s) (C := C) hconst
 
+/-- Every evaluation/path pair computed by a decision tree occurs in its
+`coloredSubcubes` set.  We simply invoke the lemma
+`eval_pair_mem_coloredSubcubes`. -/
+example {n : ℕ} (t : DecisionTree n) (x : Point n) :
+    ⟨DecisionTree.eval_tree t x,
+      DecisionTree.subcube_of_path ((DecisionTree.path_to_leaf t x).reverse)⟩ ∈
+      DecisionTree.coloredSubcubes (n := n) t := by
+  classical
+  simpa using
+    DecisionTree.eval_pair_mem_coloredSubcubes (t := t) (x := x)
+
 
 
 end Pnp2Tests

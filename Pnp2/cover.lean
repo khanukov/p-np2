@@ -357,6 +357,13 @@ lemma mu_of_allCovered {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
   have hzero : uncovered F Rset = ∅ := uncovered_eq_empty_of_allCovered (F := F) hcov
   simp [mu, hzero]
 
+lemma mu_of_firstUncovered_none {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
+    (hfu : firstUncovered (F := F) Rset = none) :
+    mu F h Rset = 2 * h := by
+  have hcov : AllOnesCovered F Rset :=
+    allOnesCovered_of_firstUncovered_none (F := F) (Rset := Rset) hfu
+  simpa using mu_of_allCovered (F := F) (Rset := Rset) (h := h) hcov
+
 lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     0 ≤ mu F h Rset := by
   exact Nat.zero_le _
@@ -491,6 +498,22 @@ lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     simp at hR
   · intro h f hf x hx
     exact False.elim (h f hf x hx)
+
+lemma allOnesCovered_of_firstUncovered_none {F : Family n}
+    {Rset : Finset (Subcube n)}
+    (hfu : firstUncovered (F := F) Rset = none) :
+    AllOnesCovered F Rset := by
+  classical
+  intro f hf x hx
+  by_contra hxcov
+  -- If `x` were uncovered, `⟨f, x⟩` would appear in `uncovered F Rset`.
+  have hxNC : NotCovered (Rset := Rset) x := by
+    intro R hR hxR
+    exact hxcov ⟨R, hR, hxR⟩
+  have hx_mem : (⟨f, x⟩ : Σ f : BoolFunc n, Vector Bool n) ∈ uncovered F Rset := by
+    simp [uncovered, hf, hx, hxNC]
+  have hempty : uncovered F Rset = ∅ := (firstUncovered_none_iff (F := F) (R := Rset)).1 hfu
+  simpa [hempty] using hx_mem
 
 
 /-! ### Lifting monochromaticity from restricted families

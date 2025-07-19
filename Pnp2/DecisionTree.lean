@@ -192,8 +192,53 @@ def coloredSubcubes (t : DecisionTree n) : Finset (Bool × Subcube n) :=
   simp [coloredSubcubesAux]
 
 @[simp] lemma coloredSubcubes_leaf (b : Bool) :
-    coloredSubcubes (n := n) (leaf b) = {⟨b, subcube_of_path (n := n) []⟩} := by
+  coloredSubcubes (n := n) (leaf b) = {⟨b, subcube_of_path (n := n) []⟩} := by
   simp [coloredSubcubes]
+
+/-!
+The number of coloured subcubes produced by a decision tree does not
+exceed the number of leaves.  This technical lemma is useful when
+bounding the overall size of decision-tree based covers.
+-/
+lemma coloredSubcubesAux_card_le_leaf_count (t : DecisionTree n)
+    (p : List (Fin n × Bool)) :
+    (coloredSubcubesAux (n := n) t p).card ≤ leaf_count t := by
+  classical
+  induction t generalizing p with
+  | leaf b =>
+      simp [coloredSubcubesAux, leaf_count]
+  | node i t0 t1 ih0 ih1 =>
+      have h0 := ih0 ((i, false) :: p)
+      have h1 := ih1 ((i, true) :: p)
+      have hunion :
+          (coloredSubcubesAux t0 ((i, false) :: p) ∪
+            coloredSubcubesAux t1 ((i, true) :: p)).card ≤
+            (coloredSubcubesAux t0 ((i, false) :: p)).card +
+              (coloredSubcubesAux t1 ((i, true) :: p)).card := by
+        simpa using
+          (Finset.card_union_le (s := coloredSubcubesAux t0 ((i, false) :: p))
+            (t := coloredSubcubesAux t1 ((i, true) :: p)))
+      have hsum :
+          (coloredSubcubesAux t0 ((i, false) :: p)).card +
+            (coloredSubcubesAux t1 ((i, true) :: p)).card ≤
+              leaf_count t0 + leaf_count t1 :=
+        Nat.add_le_add h0 h1
+      have h := le_trans hunion hsum
+      simpa [coloredSubcubesAux, leaf_count] using h
+
+lemma coloredSubcubes_card_le_leaf_count (t : DecisionTree n) :
+    (coloredSubcubes (n := n) t).card ≤ leaf_count t := by
+  simpa [coloredSubcubes] using
+    (coloredSubcubesAux_card_le_leaf_count (n := n) (t := t) (p := []))
+
+/-- The number of coloured subcubes of a decision tree is bounded by
+`2 ^ depth`.  This follows from `coloredSubcubes_card_le_leaf_count` and
+`leaf_count_le_pow_depth`. -/
+lemma coloredSubcubes_card_le_pow_depth (t : DecisionTree n) :
+    (coloredSubcubes (n := n) t).card ≤ 2 ^ depth t := by
+  have h₁ := coloredSubcubes_card_le_leaf_count (n := n) (t := t)
+  have h₂ := leaf_count_le_pow_depth (t := t)
+  exact le_trans h₁ h₂
 
 /-- Evaluate a leaf. -/
 @[simp] lemma eval_tree_leaf (b : Bool) (x : Point n) :

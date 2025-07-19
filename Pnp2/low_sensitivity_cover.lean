@@ -1,6 +1,7 @@
 import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
+import Pnp.LowSensitivityCover
 
 open BoolFunc
 
@@ -8,21 +9,32 @@ namespace BoolFunc
 
 variable {n : ℕ}
 
--- This axiom summarises the decision-tree construction for families of
+-- This theorem summarises the decision-tree construction for families of
 -- low-sensitivity Boolean functions.  The underlying combinatorial result
 -- (due to Gopalan--Moshkovitz--Oliveira) shows that a single decision tree of
 -- depth `O(s * log n)` suffices to compute every function in the family.
 -- Each leaf of that tree corresponds to a rectangular subcube on which all
 -- functions agree.  The number of such subcubes is therefore bounded by an
--- exponential in `s * log₂ (n + 1)`.  We assume this theorem as an axiom in
--- the current development.
-axiom decisionTree_cover
+-- exponential in `s * log₂ (n + 1)`.  We reuse the statement from the legacy
+-- `Pnp` development.
+/--
+  This lemma restates the decision-tree cover bound from the legacy `Pnp`
+  library.  Instead of assuming it as a fresh axiom, we simply refer to the
+  corresponding statement from `Pnp`.  The result states that if every
+  function in the family has sensitivity at most `s`, then there exists a set
+  of monochromatic subcubes whose cardinality is bounded by
+  `2 ^ (C * s * log₂ (n + 1))` and that covers all `1`-inputs of the family.
+-/
+theorem decisionTree_cover
   {n : Nat} (F : Family n) (s C : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
   ∃ Rset : Finset (Subcube n),
     (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n))
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  simpa using
+    (Pnp.BoolFunc.decisionTree_cover (F := F) (s := s) (C := C) Hsens)
 
 /-!
 The lemma states that a family of low-sensitivity Boolean functions admits a
@@ -37,9 +49,9 @@ recursively building a decision tree:
   all functions agree.
 
 Establishing the required depth bound `O(s * log n)` involves a careful analysis
-of how sensitivity behaves under restrictions.  This development has not yet
-been formalised, so `decisionTree_cover` remains an axiom providing the intended
-statement. -/
+of how sensitivity behaves under restrictions.  Instead of reproving the
+result here, we defer to the statement already present in the legacy `Pnp`
+library and simply reuse it. -/
 
 /-- Trivial base case: if all functions in the family are constant on the full
 cube, we can cover all ones with just that cube.  This lemma acts as a base case

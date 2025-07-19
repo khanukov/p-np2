@@ -352,6 +352,39 @@ lemma path_to_leaf_dimension_ge_n_minus_depth (t : DecisionTree n) (x : Point n)
   have h := Nat.sub_le_sub_left hidx n
   simpa [Subcube.dimension] using h
 
+/--
+Every evaluation/path pair produced by a decision tree appears in the set of
+coloured subcubes.  The path accumulated by `coloredSubcubesAux` is reversed
+relative to `path_to_leaf`, hence the `List.reverse` operation below. -/
+lemma eval_pair_mem_coloredSubcubesAux (t : DecisionTree n) (x : Point n)
+    (p : List (Fin n × Bool)) :
+    ⟨eval_tree t x, subcube_of_path ((path_to_leaf t x).reverse ++ p)⟩ ∈
+      coloredSubcubesAux (n := n) t p := by
+  classical
+  induction t generalizing x p with
+  | leaf b =>
+      simp [path_to_leaf, eval_tree, coloredSubcubesAux]
+  | node i t0 t1 ih0 ih1 =>
+      by_cases hxi : x i
+      · have hmem := ih1 x ((i, true) :: p)
+        have : (path_to_leaf (node i t0 t1) x).reverse ++ p =
+            (path_to_leaf t1 x).reverse ++ (i, true) :: p := by
+          simp [path_to_leaf, hxi, List.reverse_cons, List.append_assoc]
+        simpa [coloredSubcubesAux, eval_tree, path_to_leaf, hxi, this]
+          using Finset.mem_union.mpr (Or.inr hmem)
+      · have hmem := ih0 x ((i, false) :: p)
+        have : (path_to_leaf (node i t0 t1) x).reverse ++ p =
+            (path_to_leaf t0 x).reverse ++ (i, false) :: p := by
+          simp [path_to_leaf, hxi, List.reverse_cons, List.append_assoc]
+        simpa [coloredSubcubesAux, eval_tree, path_to_leaf, hxi, this]
+          using Finset.mem_union.mpr (Or.inl hmem)
+
+lemma eval_pair_mem_coloredSubcubes (t : DecisionTree n) (x : Point n) :
+    ⟨eval_tree t x, subcube_of_path ((path_to_leaf t x).reverse)⟩ ∈
+      coloredSubcubes (n := n) t := by
+  simpa [coloredSubcubes] using
+    eval_pair_mem_coloredSubcubesAux (t := t) (x := x) (p := [])
+
 end DecisionTree
 
 /-! ### Path-based family restrictions -/

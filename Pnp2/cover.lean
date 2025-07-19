@@ -971,6 +971,15 @@ is left for future work.
 -- This decreases `μ` in every step and yields the desired bound 
 -- `mBound n h`.
 -- -/
+lemma buildCover_card_bound_of_none (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    {Rset : Finset (Subcube n)}
+    (hfu : firstUncovered F Rset = none) (hcard : Rset.card ≤ mBound n h) :
+    (buildCover F h hH Rset).card ≤ mBound n h := by
+  classical
+  have hres : buildCover F h hH Rset = Rset := by
+    simpa [buildCover, hfu]
+  simpa [hres] using hcard
+
 lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hfu : firstUncovered F (∅ : Finset (Subcube n)) = none) :
     (buildCover F h hH).card ≤ mBound n h := by

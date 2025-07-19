@@ -948,15 +948,15 @@ three main branches:
 * **Entropy branch:** otherwise a coordinate split lowers the entropy
   budget.  Both restrictions `F₀` and `F₁` have strictly smaller
   measure, so the induction hypothesis applies to each of them.  Their
-  covers are then lifted back to the original family.
-* **Sunflower branch:** occasionally a subcube found via the sunflower
-  lemma covers many remaining functions.  Adding this rectangle strictly
-  decreases the number of uncovered pairs and hence the measure.
+  covers are lifted back to the original family.
+* **Sunflower branch:** occasionally a rectangle found via the sunflower
+  lemma simultaneously covers many functions.  Adding this rectangle
+  decreases the set of uncovered pairs and thus the measure.
 
-Combining these cases shows that the recursion can add at most
-`mBound n h` rectangles before the measure becomes `0`.  The current
-code only records a sketch of this reasoning; a complete formalisation
-is left for future work.
+Combining these cases shows that at most `mBound n h` rectangles are
+inserted before the measure becomes `0`.  The current lemma only
+records this reasoning informally; a complete formal proof remains
+future work.
 
 --
 -- The outline below sketches a concrete induction strategy.

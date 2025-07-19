@@ -239,4 +239,48 @@ lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
 
 end DecisionTree
 
+/-! ### Path-based family restrictions -/
+
+namespace Family
+
+variable {n : ℕ}
+
+/--
+Restrict every function in a family according to a path of fixed coordinates.
+Each pair `(i, b)` in the list records the value `b` assigned to coordinate
+`i`. Later occurrences in the path take precedence over earlier ones,
+matching the behaviour of `DecisionTree.subcube_of_path`.
+-/
+noncomputable def restrictPath (F : Family n) : List (Fin n × Bool) → Family n
+  | []        => F
+  | (i, b) :: p => (restrictPath F p).restrict i b
+
+@[simp] lemma restrictPath_nil (F : Family n) :
+    restrictPath F [] = F := rfl
+
+@[simp] lemma restrictPath_cons (F : Family n) (i : Fin n) (b : Bool)
+    (p : List (Fin n × Bool)) :
+    restrictPath F ((i, b) :: p) = (restrictPath F p).restrict i b := rfl
+
+/--
+Restricting by a path never increases sensitivity.  This is a direct
+iterative application of `sensitivity_family_restrict_le`.
+-/
+lemma sensitivity_restrictPath_le (F : Family n) (p : List (Fin n × Bool))
+    {s : ℕ} [Fintype (Point n)] (Hs : ∀ f ∈ F, sensitivity f ≤ s) :
+    ∀ g ∈ restrictPath F p, sensitivity g ≤ s := by
+  induction p with
+  | nil =>
+      simpa using Hs
+  | cons q p ih =>
+      cases q with
+      | mk i b =>
+          intro g hg
+          have hg' : g ∈ (restrictPath F p).restrict i b := by simpa using hg
+          have htail := sensitivity_family_restrict_le
+            (F := restrictPath F p) (i := i) (b := b) (s := s) (hF := ih)
+          exact htail g hg'
+
+end Family
+
 end BoolFunc

@@ -170,6 +170,28 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
   rfl
 
 /-!
+`subcube_of_path` collects the indices encountered along a decision-tree path.
+Since each step inserts at most one new coordinate, the resulting index set has
+cardinality bounded by the length of the path.  This simple bound will be
+useful when turning recorded paths into subcubes with dimension estimates.
+-/
+lemma subcube_of_path_idx_card_le (p : List (Fin n × Bool)) :
+    (subcube_of_path (n := n) p).idx.card ≤ p.length := by
+  classical
+  induction p with
+  | nil =>
+      simp [subcube_of_path]
+  | cons hd tl ih =>
+      cases' hd with i b
+      have hcard : (insert i (subcube_of_path tl).idx).card ≤
+          (subcube_of_path tl).idx.card + 1 := by
+        simpa using Finset.card_insert_le (s := (subcube_of_path tl).idx) (a := i)
+      have hlen : (subcube_of_path tl).idx.card + 1 ≤ tl.length + 1 :=
+        Nat.succ_le_succ ih
+      have h := Nat.le_trans hcard hlen
+      simpa [subcube_of_path] using h
+
+/-!
 Collect all leaf subcubes of a decision tree together with their Boolean labels.
 The helper `coloredSubcubesAux` threads the current path as an accumulator.
 -/
@@ -281,6 +303,16 @@ lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
         simpa [path_to_leaf, h] using
           mem_subcube_of_path_cons_of_mem (x := x) (p := path_to_leaf t0 x)
             (i := i) (b := false) h' (by simpa [h])
+
+/-!  The index set of the subcube obtained from the path to a leaf has
+cardinality bounded by the depth of the tree.  This follows from
+`path_to_leaf_length_le_depth` combined with `subcube_of_path_idx_card_le`.
+-/
+lemma path_to_leaf_idx_card_le_depth (t : DecisionTree n) (x : Point n) :
+    (subcube_of_path (path_to_leaf t x)).idx.card ≤ depth t := by
+  have hlen := path_to_leaf_length_le_depth (t := t) (x := x)
+  have := subcube_of_path_idx_card_le (n := n) (p := path_to_leaf t x)
+  exact le_trans this hlen
 
 end DecisionTree
 

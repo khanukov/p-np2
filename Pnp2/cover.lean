@@ -472,6 +472,24 @@ lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
         · exact hx₂.1
   have := mu_union_le (F := F) (h := h) (R₁ := R₁) (R₂ := R₂ \ R₁)
   simpa [hunion] using this
+
+/-!
+`mu_union_buildCover_le` is a small helper lemma used in termination
+arguments for `buildCover`.  Adding the rectangles produced by one
+step of the construction can only decrease the measure `μ`, since the
+set of uncovered pairs shrinks.  The result follows directly from
+`mu_union_le`.
+-/
+lemma mu_union_buildCover_le (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (Rset : Finset (Subcube n)) :
+    mu F h (Rset ∪ buildCover F h hH Rset) ≤ mu F h Rset := by
+  classical
+  -- `mu_union_le` already states that adding any collection of
+  -- rectangles cannot increase `μ`.  We instantiate it with the set
+  -- returned by `buildCover`.
+  simpa [Finset.union_comm, Finset.union_assoc] using
+    (mu_union_le (F := F) (h := h) (R₁ := Rset)
+      (R₂ := buildCover F h hH Rset))
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

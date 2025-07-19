@@ -265,6 +265,43 @@ noncomputable
 def Family.restrict {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) : Family n :=
   F.image fun f x => f (Point.update x i b)
 
+namespace Family
+
+variable {n : ℕ}
+
+/-!
+`mem_restrict` characterises membership in the restricted family.  A function
+`g` lies in `F.restrict i b` iff it arises by restricting some `f ∈ F` on the
+`i`‑th coordinate.
+-/
+@[simp] lemma mem_restrict {F : Family n} {i : Fin n} {b : Bool} {g : BFunc n} :
+    g ∈ Family.restrict F i b ↔ ∃ f ∈ F, g = BFunc.restrictCoord f i b := by
+  classical
+  unfold Family.restrict
+  constructor
+  · intro hg
+    rcases Finset.mem_image.mp hg with ⟨f, hf, rfl⟩
+    exact ⟨f, hf, rfl⟩
+  · rintro ⟨f, hf, rfl⟩
+    exact Finset.mem_image.mpr ⟨f, hf, rfl⟩
+
+/-! The restricted family is no larger than the original one since `Finset.image`
+never increases cardinalities. -/
+lemma card_restrict_le (F : Family n) (i : Fin n) (b : Bool) :
+    (Family.restrict F i b).card ≤ F.card := by
+  classical
+  unfold Family.restrict
+  simpa using Finset.card_image_le (s := F) (f := fun f => (fun x => f (Point.update x i b)))
+
+/-! Restriction is monotone with respect to set inclusion of families. -/
+lemma restrict_mono {F G : Family n} (h : F ⊆ G) (i : Fin n) (b : Bool) :
+    Family.restrict F i b ⊆ Family.restrict G i b := by
+  intro g hg
+  rcases (mem_restrict.mp hg) with ⟨f, hf, rfl⟩
+  exact mem_restrict.mpr ⟨f, h hf, rfl⟩
+
+end Family
+
 /-! ### Essential coordinate support -/
 
 /-- Set of coordinates on which `f` depends essentially.  A coordinate `i`

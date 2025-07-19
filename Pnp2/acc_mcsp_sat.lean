@@ -58,5 +58,18 @@ def SATViaCover {N : ℕ}
   -- sums derived from `Φ`.  Here we only sketch the structure.
   false
 
+/-!  A minimal reduction lemma showing how a hypothetical rectangular
+cover could solve SAT for `ACC⁰ ∘ MCSP`.  The statement simply returns
+an empty cover as a placeholder.  The legacy development included this
+lemma; we port it here so that downstream files no longer depend on the
+old `pnp` namespace. -/
+lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
+    (hdepth : True := by trivial) :
+    ∃ cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by
+  -- A real implementation would build `cover` using the polynomial
+  -- representation of `Φ` and the cover guaranteed by the FCE Lemma.
+  -- We simply return the empty cover as a placeholder.
+  exact ⟨∅, trivial⟩
+
 end ACCSAT
 

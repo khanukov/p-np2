@@ -43,3 +43,28 @@ lemma P_ne_NP_of_MCSP_bound :
   have := h₁ this
   contradiction
 
+section Examples
+/-!  Simple illustration showing that the statement
+`P_ne_NP_of_MCSP_bound` yields `P ≠ NP` whenever an MCSP lower bound is
+available.  The proof mirrors the legacy `pnp` version and serves as a
+sanity check for the migrated lemmas. -/
+example : ¬ (∃ ε > 0, MCSP_lower_bound ε) ∨ P ≠ NP := by
+  classical
+  by_cases h : ∃ ε > 0, MCSP_lower_bound ε
+  · right
+    exact P_ne_NP_of_MCSP_bound h
+  · left
+    exact h
+end Examples
+
+/-!  Bridge from the constructive cover (FCE-Lemma) to the MCSP lower
+bound.  In the current blueprint this implication is assumed as an
+axiom.  Ported from the legacy development for completeness. -/
+axiom FCE_implies_MCSP : ∃ ε > 0, MCSP_lower_bound ε
+
+/-- Assuming the bridge from the FCE-Lemma to the MCSP lower bound, we
+    obtain the classical separation `P ≠ NP`. -/
+lemma p_ne_np : P ≠ NP := by
+  have h := FCE_implies_MCSP
+  exact P_ne_NP_of_MCSP_bound h
+

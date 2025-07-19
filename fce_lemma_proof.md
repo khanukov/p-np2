@@ -123,6 +123,32 @@ The modules above serve as milestones. Our immediate goals are:
 
 6. Provide small test instances in `examples.lean`.
 
+
+### Sketch of `buildCover_card_bound`
+
+The recursive procedure `buildCover` is guided by the measure
+$$\mu(F,h,Rset)=2h + |\text{uncovered}\,F\,Rset|,$$
+where `uncovered F Rset` collects pairs \(\langle f,x\rangle\) with
+\(f \in F\), \(f(x)=1\) and \(x\) not covered by rectangles from `Rset`.
+Induction on this measure explains why only a bounded number of rectangles
+are inserted.
+
+* **Base case.** If no uncovered pairs remain, the call returns `Rset`
+  unchanged.
+* **Low-sensitivity branch.** When every function has sensitivity below
+  \(\log_2(n+1)\), a cover `R_ls` with at most \(2^{10h}\) rectangles is
+  supplied by `low_sensitivity_cover`, and the measure collapses to `2*h`.
+* **Entropy branch.** Otherwise a coordinate split produces two
+  restrictions with budget `h-1`. By the induction hypothesis their covers
+  have size at most `mBound n (h-1)` each, and their union respects
+  `mBound n h`.
+* **Sunflower branch.** Occasionally a sunflower rectangle covers many
+  functions at once.  The uncovered count drops by at least two, so the
+  recursion continues with smaller measure.
+
+Combining these cases shows that `(buildCover F h ∅).card ≤ mBound n h`.
+A future Lean proof will mirror this outline using well-founded recursion
+on `\mu`.
 ### Status Update (July 2025)
 
 The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. A few auxiliary lemmas—most notably the probabilistic halving bound—are currently assumed as axioms, but the classical

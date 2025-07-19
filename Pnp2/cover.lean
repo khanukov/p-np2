@@ -84,6 +84,19 @@ lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
   simpa [mBound, one_mul] using this
 
+/-!  `mBound` is monotone in the entropy budget.  We will repeatedly
+use this fact to lift bounds from recursive calls. -/
+
+lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
+  intro h₁ h₂ hh
+  dsimp [mBound]
+  have hfac : n * (h₁ + 2) ≤ n * (h₂ + 2) :=
+    Nat.mul_le_mul_left _ (Nat.add_le_add_right hh 2)
+  have hpow : 2 ^ (10 * h₁) ≤ 2 ^ (10 * h₂) := by
+    have := Nat.mul_le_mul_left 10 hh
+    exact Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) this
+  exact Nat.mul_le_mul hfac hpow
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

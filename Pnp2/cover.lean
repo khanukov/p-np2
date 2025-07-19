@@ -385,6 +385,14 @@ lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     2 * h ≤ mu F h Rset := by
   simpa [mu] using Nat.le_add_right (2 * h) ((uncovered F Rset).toFinset.card)
 
+/-! `mu` is monotone in the entropy budget `h`:
+increasing the available budget can only increase the measure. -/
+lemma mu_mono_h {F : Family n} {Rset : Finset (Subcube n)}
+    {h₁ h₂ : ℕ} (hh : h₁ ≤ h₂) :
+    mu F h₁ Rset ≤ mu F h₂ Rset := by
+  dsimp [mu]
+  exact add_le_add (Nat.mul_le_mul_left _ hh) le_rfl
+
 /-!
 `uncovered` is monotone with respect to the set of rectangles: adding
 a new rectangle can only remove uncovered pairs.  The next lemma

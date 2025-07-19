@@ -26,10 +26,20 @@ axiom decisionTree_cover
 
 /-!
 The lemma states that a family of low-sensitivity Boolean functions admits a
-compact cover by monochromatic subcubes.  Its proof is expected to recursively
-build a decision tree, branching on sensitive coordinates until each leaf is
-constant.  Formalising this construction is ongoing work, so we keep the result
-as an axiom and document the intended approach here. -/
+compact cover by monochromatic subcubes.  A constructive proof would proceed by
+recursively building a decision tree:
+
+* At each node pick a coordinate on which some function in the family is
+  sensitive and branch on its value.
+* Restrict every function to the chosen half of the cube and continue
+  recursively until the family becomes constant on the remaining subcube.
+* Each leaf of the resulting tree corresponds to a rectangular subcube on which
+  all functions agree.
+
+Establishing the required depth bound `O(s * log n)` involves a careful analysis
+of how sensitivity behaves under restrictions.  This development has not yet
+been formalised, so `decisionTree_cover` remains an axiom providing the intended
+statement. -/
 
 /-- Trivial base case: if all functions in the family are constant on the full
 cube, we can cover all ones with just that cube.  This lemma acts as a base case

@@ -130,6 +130,35 @@ example {n ℓ : ℕ} (x : Point n) :
           simpa [Finset.mem_singleton] using hf
         simp [hf'] )
 
+/-!
+The specialised decision-tree cover lemmas have simple instances for
+trivial families.  We verify the constant-family case here to ensure
+that the base lemmas are usable in tests.
+-/
+example {n s C : ℕ} [Fintype (Point n)] :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset,
+        Subcube.monochromaticForFamily R
+          ({fun _ : Point n => true} : Family n)) ∧
+      (∀ f ∈ ({fun _ : Point n => true} : Family n),
+          ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Build the constant witness required by `decisionTree_cover_of_constant`.
+  have hconst : ∃ b, ∀ f ∈ ({fun _ : Point n => true} : Family n), ∀ x, f x = b :=
+    by
+      refine ⟨true, ?_⟩
+      intro f hf x
+      -- Membership in the singleton family pins down `f`.
+      have : f = (fun _ : Point n => true) := by
+        simpa [Finset.mem_singleton] using hf
+      simp [this]
+  -- Apply the constant-family cover lemma.
+  simpa using
+    BoolFunc.decisionTree_cover_of_constant
+      (F := ({fun _ : Point n => true} : Family n))
+      (s := s) (C := C) hconst
+
 
 
 end Pnp2Tests

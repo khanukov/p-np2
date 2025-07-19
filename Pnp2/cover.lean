@@ -84,6 +84,22 @@ lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
   simpa [mBound, one_mul] using this
 
+/-! ### Monotonicity of `mBound` in the entropy budget
+
+The numeric bound `mBound n h = n * (h + 2) * 2 ^ (10 * h)` clearly grows with
+`h`.  We record this as a small helper lemma used in various inductive
+arguments. -/
+
+lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
+  intro h₁ h₂ hle
+  unfold mBound
+  have hlin : n * (h₁ + 2) ≤ n * (h₂ + 2) :=
+    Nat.mul_le_mul_left _ <| add_le_add_right hle 2
+  have hpow : 2 ^ (10 * h₁) ≤ 2 ^ (10 * h₂) := by
+    have : 10 * h₁ ≤ 10 * h₂ := Nat.mul_le_mul_left _ hle
+    exact Nat.pow_le_pow_of_le_right (by decide : 1 ≤ (2 : ℕ)) this
+  exact Nat.mul_le_mul hlin hpow
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

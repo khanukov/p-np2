@@ -309,7 +309,8 @@ partial def buildCover (F : Family n) (h : ℕ)
       cases Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
       | inl hs_small =>
           -- All functions have sensitivity ≤ s, with s relatively small compared to n.
-          have ⟨R_ls, Hmono, Hcover, Hsize⟩ := BoolFunc.low_sensitivity_cover (F := F) s Hsens
+          have ⟨R_ls, Hmono, Hcover, Hsize⟩ :=
+            BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
           -- Use the lemma's witness set R_ls as the remaining cover for all uncovered points.
           exact Rset ∪ R_ls
       | inr hs_large =>
@@ -733,7 +734,8 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     cases hs : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
     | inl hs_small =>
       -- Low-sensitivity case: use the `low_sensitivity_cover` lemma to cover all 1-inputs at once
-      obtain ⟨R_ls, Hmono, Hcover, Hsize⟩ := BoolFunc.low_sensitivity_cover (F := F) s Hsens
+      obtain ⟨R_ls, Hmono, Hcover, Hsize⟩ :=
+        BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
       -- Here `Hcover` states: ∀ f ∈ F, ∀ y, f y = true → ∃ R ∈ R_ls, y ∈ₛ R
       -- Combine the existing coverage of `Rset` with the low-sensitivity cover `R_ls`.
       have hcov_union : AllOnesCovered F (Rset ∪ R_ls) := by
@@ -883,7 +885,7 @@ lemma buildCover_mono_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       -- The pattern match in `buildCover` therefore selects the low-sensitivity branch.
       have hs_case : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) := Or.inl hs_lt
       obtain ⟨R_ls, hmono_ls, -, -⟩ :=
-        BoolFunc.low_sensitivity_cover (F := F) s Hsens
+        BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
       -- The result of `buildCover` is precisely `R_ls`.
       have hres : buildCover (F := F) (h := h) hH = R_ls := by
         simp [buildCover, hfu, hs_case]
@@ -996,7 +998,7 @@ lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       cases hs : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
       | inl hs_small =>
           obtain ⟨R_ls, hmono_ls, -, -⟩ :=
-            BoolFunc.low_sensitivity_cover (F := F) s Hsens
+            BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
           have hres : buildCover F h hH Rset = Rset ∪ R_ls := by
             simp [buildCover, hfu, hs_small]
           have hmono_union := mono_union hmonoR hmono_ls

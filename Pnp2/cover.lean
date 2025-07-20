@@ -84,6 +84,17 @@ lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
   simpa [mBound, one_mul] using this
 
+/-!  `mBound` is strictly positive for any positive dimension `n`.  This simple
+numeric fact often provides a convenient lower bound when reasoning about cover
+sizes. -/
+lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
+    0 < mBound n h := by
+  have hpos₁ : 0 < h + 2 := Nat.succ_pos _
+  have hpos₂ : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
+  have hmul : 0 < n * (h + 2) := Nat.mul_pos hn hpos₁
+  have := Nat.mul_pos hmul hpos₂
+  simpa [mBound] using this
+
 /-!  `mBound` is monotone in the entropy budget.  We will repeatedly
 use this fact to lift bounds from recursive calls. -/
 

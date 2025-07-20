@@ -891,6 +891,55 @@ lemma buildCover_mono_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       have hR_ls : R ∈ R_ls := by simpa [hres] using hR
       exact hmono_ls R hR_ls
 
+lemma buildCover_card_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, sensitivity f < Nat.log2 (Nat.succ n)) :
+    (buildCover F h hH).card
+      ≤ Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  classical
+  dsimp [buildCover]
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+        simpa [buildCover, hfu]
+      have : 0 ≤ Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+        Nat.zero_le _
+      simpa [hres] using this
+  | some tup =>
+      rcases tup with ⟨f, x⟩
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F (∅ : Finset (Subcube n))) hfu with
+          ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      have hs_lt : s < Nat.log2 (Nat.succ n) := by
+        have hle : s ≤ Nat.log2 (Nat.succ n) - 1 := by
+          refine Finset.max'_le ?_?
+          intro t ht
+          rcases Finset.mem_image.mp ht with ⟨g, hg, rfl⟩
+          exact Nat.le_pred_of_lt (hs g hg)
+        have hpos : 0 < Nat.log2 (Nat.succ n) := by
+          have : (1 : ℕ) < Nat.succ n := Nat.succ_lt_succ (Nat.zero_lt_succ _)
+          exact Nat.log2_pos this
+        have : s.succ ≤ Nat.log2 (Nat.succ n) := by
+          simpa [Nat.succ_pred_eq_of_pos hpos] using Nat.succ_le_succ hle
+        exact Nat.lt_of_succ_le this
+      have hs_case : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) := Or.inl hs_lt
+      obtain ⟨R_ls, -, -, hsize⟩ :=
+        BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
+      have hres : buildCover F h hH = R_ls := by
+        simp [buildCover, hfu, hs_case]
+      have hs_le : s ≤ Nat.log2 (Nat.succ n) := Nat.le_of_lt hs_lt
+      have hexp : 10 * s * Nat.log2 (Nat.succ n)
+          ≤ 10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) := by
+        have := Nat.mul_le_mul_left (Nat.log2 (Nat.succ n)) hs_le
+        have := Nat.mul_le_mul_left 10 this
+        simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+      have hpow := Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) hexp
+      have hsize' := le_trans hsize hpow
+      simpa [hres] using hsize'
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The present

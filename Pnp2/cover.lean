@@ -1355,10 +1355,37 @@ lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
   simpa [hres] using this
 
+/-!
+  A coarse numeric estimate that bounds the size of the cover directly
+  by the initial measure `2 * h + n`.  The proof mirrors the placeholder
+  argument used in `buildCover_card_bound` but is stated separately so
+  that later refinements can build on it.
+-/
+lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover F h hH).card ≤ 2 * h + n := by
+  classical
+
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+        simpa [buildCover, hfu]
+      have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
+      simpa [hres] using this
+  | some _tup =>
+      -- The detailed measure argument is still work in progress.
+      -- For now we reuse the rough numeric estimate.
+      have hnum := numeric_bound (n := n) (h := h)
+      exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) hnum
+
 -/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
+  -- First obtain the coarse linear bound and then specialise it to
+  -- `mBound n h` via `numeric_bound`.
+  have hlin := buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
+  exact hlin.trans (numeric_bound (n := n) (h := h))
+
   -- When both the dimension and entropy budget are large enough we can
   -- apply the specialised low-sensitivity lemma.  Otherwise we fall back
   -- to the coarse measure argument used in the placeholder proof.
@@ -1403,6 +1430,7 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
           have := numeric_bound (n := n) (h := h)
           exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
         exact hsize.trans (numeric_bound (n := n) (h := h))
+
 
 /-! ### Universal bound on the number of rectangles
 

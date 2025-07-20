@@ -1104,8 +1104,9 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         `mBound n h` rectangles before the measure becomes zero.  This
         measure-based induction argument matches the informal proof in the
         project documentation, but the present implementation only sketches
-        the details.  A complete formalisation will replace the placeholder
-        bound used here.
+        the details.  **TODO:** replace this outline with a fully formal
+        proof showing that the recursion yields at most `mBound n h`
+        rectangles.
       -/
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
         -- Placeholder reasoning: we simply note that the measure `μ` starts

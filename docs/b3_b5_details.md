@@ -148,3 +148,38 @@ for each split.  This numerical exploration illustrates the drop in
 entropy predicted by the theory and helps choose a good threshold `k`.
 With `--suggest` the script also prints which split achieves the largest
 entropy drop, hinting at a promising decomposition point.
+
+### Sketch of `buildCover_card_bound`
+
+The remaining numeric bound argues by a well-founded recursion on the measure
+
+\[
+  \mu(F,h,R) = 2h + |\mathrm{uncovered}\,F\,R|,
+\]
+
+lexicographically ordered by the entropy budget `h` and then by the number of
+uncovered pairs.  The proof proceeds as follows.
+
+1. **Base case.**  If `uncovered = ∅` then `buildCover` simply returns the
+   existing set `R`.  Its cardinality is unchanged and obviously bounded by
+   `mBound`.
+2. **Low-sensitivity branch.**  When all functions in the family have small
+   sensitivity, the helper lemma `low_sensitivity_cover` yields a collection of
+   rectangles covering all remaining `1`‑inputs.  The number of rectangles is at
+   most `2^{10h}`, so the union with the current set stays below
+   `mBound n h`.
+3. **Entropy branch.**  Otherwise a coordinate split decreases the entropy
+   budget.  Both restricted families have measure strictly smaller than the
+   original one, allowing the induction hypothesis to bound the size of their
+   covers by `mBound n (h-1)`.  Doubling this quantity is still dominated by
+   `mBound n h`.
+4. **Sunflower branch.**  Occasionally a sunflower argument extracts a single
+   rectangle that simultaneously covers many functions.  This step reduces the
+   uncovered set by at least two elements, again decreasing `μ` and keeping the
+   overall number of inserted rectangles below `mBound`.
+
+In each case the measure drops, so after at most `μ(F,h,∅)` iterations it
+reaches `2h` and the recursion terminates.  Since `mBound` dominates this
+initial measure, the final cover produced by `buildCover` contains at most
+`mBound n h` rectangles.  The Lean development implements the required helper
+lemmas, but the full inductive proof is still being formalised.

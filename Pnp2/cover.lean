@@ -443,6 +443,24 @@ lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     0 ≤ mu F h Rset := by
   exact Nat.zero_le _
 
+/-!  The recursion measure for `buildCover` depends on the family `F`,
+    the remaining entropy budget `h` and the set of rectangles collected
+    so far.  We package these three pieces of data into a sigma type
+    so that `measure_wf` can supply a well-founded induction principle. -/
+structure MuState (n : ℕ) where
+  F : Family n
+  h : ℕ
+  R : Finset (Subcube n)
+
+@[simp] def MuState.measure {n : ℕ} (s : MuState n) : ℕ :=
+  mu s.F s.h s.R
+
+lemma mu_measure_wf (n : ℕ) :
+    WellFounded (fun a b : MuState n => MuState.measure a < MuState.measure b) :=
+by
+  classical
+  exact measure_wf MuState.measure
+
 lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     2 * h ≤ mu F h Rset := by
   simpa [mu] using Nat.le_add_right (2 * h) ((uncovered F Rset).toFinset.card)
@@ -1226,25 +1244,15 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   | some tup =>
       /-
         When an uncovered input exists we proceed by well-founded
-        induction on the measure
+        induction on the auxiliary measure
 
           `μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card`.
 
-        * **Base case:** `firstUncovered` returns `none` and the cover is
-          left unchanged.
-        * **Low-sensitivity branch:** all functions have small
-          sensitivity, so `low_sensitivity_cover` adds at most
-          `2 ^ (10*h)` rectangles.
-        * **Entropy branch:** splitting on a coordinate reduces the
-          entropy budget, yielding two recursive calls with measure
-          strictly smaller than the initial one.
-        * **Sunflower branch:** removing several uncovered pairs at once
-          decreases the uncovered count by at least two.
-
-        Each step strictly decreases `μ`, whence at most `2 * h + n`
-        rectangles are inserted before termination.  Formalising this
-        induction is future work; the remainder of this proof records the
-        resulting bound as a placeholder.
+        The full development performs a detailed case analysis on the
+        three branches of `buildCover`.  Here we only register the
+        existence of a suitable recursion principle via `mu_measure_wf`
+        and reuse the coarse numeric bound from the project notes as a
+        placeholder.  Completing the proof remains work in progress.
       -/
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
         -- Placeholder reasoning: the auxiliary measure `μ` starts at

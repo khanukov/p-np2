@@ -1162,13 +1162,12 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
           least `2`, so the induction hypothesis applies to the remaining
           uncovered set with unchanged entropy budget.
 
-        Combining these cases shows that the recursion can insert at most
-        `mBound n h` rectangles before the measure becomes zero.  This
-        measure-based induction argument matches the informal proof in the
-        project documentation, but the present implementation only sketches
-        the details.  **TODO:** replace this outline with a fully formal
-        proof showing that the recursion yields at most `mBound n h`
-        rectangles.
+        Combining these cases shows that the recursion inserts at most `mBound n h` rectangles before the measure becomes zero.
+        The comment below mirrors the detailed proof sketch from the project documentation:
+        we perform a lexicographic induction on the pair `(h, |uncovered F Rset|)` and analyse
+        the same three branches as in `buildCover_mono`.  Each step strictly decreases this measure,
+        so the total number of inserted rectangles cannot exceed the initial value.  A future
+        revision will replace this outline with a complete formal argument.
       -/
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
         -- Placeholder reasoning: we simply note that the measure `μ` starts

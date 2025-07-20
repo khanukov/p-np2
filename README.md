@@ -51,9 +51,10 @@ gradually migrated across.
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
   `sunflower_exists`.  Monochromaticity of the resulting cover is now
-  fully proved via the lemma `buildCover_mono`.  The companion size
-  estimate `buildCover_card_bound` is established via a well-founded
-  induction on a simple measure tracking the remaining uncovered pairs.
+  fully proved via the lemma `buildCover_mono`.  A preliminary argument
+  for the companion size estimate `buildCover_card_bound` outlines the
+  well-founded induction that bounds the remaining uncovered pairs, but a
+  complete proof is still being formalised.
   The helper lemma `AllOnesCovered.union` abstracts the union step in
   the coverage proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
@@ -144,7 +145,7 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop, and preliminary proofs of its properties (`buildCover_mono` and `buildCover_card_bound`) have been added. The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
+This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop.  `buildCover_mono` is fully proved, while `buildCover_card_bound` currently uses only a coarse measure argument.  The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
 
 Within `Pnp2` the overall structure of the FCE argument is now visible: entropy
 lemmas, cover builders and decision-tree tools all compile, but the final

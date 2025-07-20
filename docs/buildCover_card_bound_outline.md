@@ -46,5 +46,6 @@ recursion stops.  Because `mBound` dominates this initial measure we obtain
 `(buildCover F h hH).card ≤ mBound n h`.
 
 The current Lean development provides most helper lemmas described above.
-Formalising the complete induction is work in progress, but the outline here
-records the intended argument.
+Formalising the complete induction is work in progress.  The current
+implementation in `cover.lean` includes a coarse bound following this
+strategy, and future updates will replace it with the full argument.

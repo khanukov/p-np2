@@ -9,8 +9,13 @@ Short list of development tasks reflecting the current repository status.
       only for reference.
 - [ ] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
 - [x] Port `Bound.mBound_lt_subexp` proof and related lemmas.
-- [x] Port halving lemmas `exists_restrict_half_real_aux` and `exists_restrict_half` from `entropy.lean`.
 - [ ] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
+      The main missing piece is a well‑founded induction on the measure
+      `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.  Each branch of
+      `buildCover` should strictly decrease `μ`, leading to a cardinality
+      bound via double induction on `h` and the uncovered count.  The
+      current code sketches this argument informally; the goal is to
+      formalise it and remove the temporary numeric placeholder.
 * [x] Replace the axiom `buildCover_mono` with a complete proof.  The counting
   lemma `buildCover_card_bound` now has a placeholder proof using a coarse
   measure bound.  Formalising the full induction is still on the to-do list.

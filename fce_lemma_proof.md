@@ -146,6 +146,19 @@ are inserted.
   functions at once.  The uncovered count drops by at least two, so the
   recursion continues with smaller measure.
 
+
+The detailed argument performs a lexicographic induction on
+
+$$\mu(F,h,Rset) = 2h + |\text{uncovered}\,F\,Rset|.$$ 
+
+The outer recursion decreases $h$ via the entropy branch, while the inner count decreases the uncovered pairs.  Each branch strictly reduces this measure:
+
+- **Base:** when no pairs remain the measure is $2h$ and no rectangles are added.
+- **Low-sensitivity:** `low_sensitivity_cover` inserts at most $2^{10h}$ rectangles and resets the measure to $2h`.
+- **Entropy:** splitting on a coordinate lowers the budget; each subfamily is handled recursively with budget $h-1`.
+- **Sunflower:** adding the sunflower rectangle covers several pairs, dropping the measure by at least two.
+
+By induction the total number of rectangles never exceeds $mBound\,n\,h$.
 Combining these cases shows that `(buildCover F h ∅).card ≤ mBound n h`.
 A future Lean proof will mirror this outline using well-founded recursion
 on `\mu`.

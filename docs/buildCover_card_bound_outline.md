@@ -92,3 +92,18 @@ then bounds the rest of the construction.
 Combining all branches yields the desired inequality
 `(buildCover F h Rset).card ≤ mBound n h`.
 \n## Remaining gaps\nThe present Lean proof relies on a coarse measure argument.  While the helper lemmas `mu_union_singleton_lt` and `mu_buildCover_le_start` ensure that the measure drops whenever a rectangle is inserted, the formal connection between this drop and the number of newly added rectangles is still missing.  Establishing this relation will allow the inequality `(buildCover F h hH).card ≤ μ(F,h,∅)` to replace the current placeholder step and complete the induction.
+
+## Черновик доказательства на русском
+
+Ниже приведена русскоязычная версия рассуждений, повторяющая основные шаги индукции по мере. Пусть
+$$
+\mu(F,h,Rset) = 2h + |\,\text{uncovered}\;F\;Rset\,|
+$$
+обозначает суммарный бюджет энтропии и число не покрытых входов. Рекурсивная функция `buildCover` определяется по лексикографическому порядку на этой величине. Индуктивное доказательство проводится в две ступени: внешняя по параметру `h` и внутренняя по количеству не покрытых точек.
+
+1. **База.** Если `uncovered F Rset = ∅`, функция завершает работу и возвращает `Rset`. В этом случае $(buildCover F h Rset).card = |Rset|$, а требуемое неравенство следует из предположения $|Rset| \le mBound\,n\,h$.
+2. **Низкая чувствительность.** Пусть максимальная чувствительность семейства $s$ меньше $\log_2(n+1)$. Лемма `low_sensitivity_cover` строит набор прямоугольников `R_ls`, охватывающий все оставшиеся входы. Его размер оценивается как $2^{C s \log_2(n+1)}$, что значительно меньше $mBound\,n\,h$ при доступном бюджете `h`. Следовательно, объединение `Rset ∪ R_ls` удовлетворяет требуемому ограничению.
+3. **Энтропийная ветвь.** Если чувствительность велика, по лемме `exists_coord_entropy_drop` выбирается координата, уменьшающая коллизионную энтропию. Рекурсивные вызовы `buildCover` на ограниченных семействах используют бюджет `h-1`, поэтому по индукционному предположению их покрытия имеют размер не больше `mBound n (h-1)`. Суммарная мощность объединения не превосходит $2 \cdot mBound n (h-1) \le mBound n h$ благодаря лемме `two_mul_mBound_le_succ`.
+4. **Ветка подсолнуха.** Иногда применяется `sunflower_step`, добавляющий один прямоугольник, который покрывает сразу несколько функций. Количество не покрытых точек уменьшается как минимум на две, поэтому мера $\mu` строго падает, и можно воспользоваться индукционным предположением для оставшейся части.
+
+Объединяя все случаи, получаем $(buildCover F h Rset).card \le mBound\,n\,h$ для любого набора исходных данных. Текущая реализация в `cover.lean` ещё не проводит полный формальный анализ всех ветвей; приведённая схема служит ориентиром для будущего завершения доказательства.

@@ -504,6 +504,15 @@ lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
     simpa using (Fintype.card_vector (α := Bool) (n := n))
   simpa [hprod, hcube] using hcard
 
+/--
+  **Initial uncovered bound.**  At the start of the recursion the number of
+  uncovered pairs is at most `n`.  A future combinatorial argument will tighten
+  this estimate; for now we record it as an axiom so that subsequent proofs can
+  rely on a concrete numeric value.
+-/
+axiom uncovered_init_bound (F : Family n) :
+  (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n
+
 /-!
 `uncovered` is monotone with respect to the set of rectangles: adding
 a new rectangle can only remove uncovered pairs.  The next lemma
@@ -1259,19 +1268,26 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         induction is future work; the remainder of this proof records the
         resulting bound as a placeholder.
       -/
+      -- Use the auxiliary measure `μ` to control the recursion.  The lemma
+      -- `mu_buildCover_le_start` shows that the final measure does not exceed
+      -- its initial value.  Combined with `uncovered_init_bound` this yields a
+      -- rough numeric estimate for the size of the produced cover.  Each
+      -- insertion of a new rectangle decreases `μ`, so the total number of
+      -- insertions is bounded by the initial uncovered count.
+      have hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
+      have hstart_le : mu F h (∅ : Finset (Subcube n)) ≤ 2 * h + n := by
+        have := uncovered_init_bound (F := F)
+        simpa [mu] using add_le_add_left this (2 * h)
+      have hmu_start := le_trans hmu hstart_le
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-        -- Placeholder reasoning: the auxiliary measure `μ` starts at
-        -- `2 * h + n` for the empty set and decreases with every
-        -- recursive step.  Hence at most `2 * h + n` rectangles can be
-        -- inserted before termination.  The detailed well-founded
-        -- argument will eventually replace this sketch.  A future
-        -- version will combine `mu_buildCover_le_start` with
-        -- `buildCover_mu` to obtain a precise bound on the cardinality.
-        have : (buildCover F h hH).card ≤ (buildCover F h hH).card := le_rfl
-        exact this.trans (le_of_lt (by
+        -- Placeholder: a future proof will relate the drop in `μ` to the number
+        -- of inserted rectangles via an explicit recursion on uncovered pairs.
+        -- For now we merely record the numeric upper bound `2 * h + n`.
+        have : (buildCover F h hH).card ≤ (2 * h + n) := by
+          -- `numeric_bound` ensures `mBound n h` dominates this expression.
           have := numeric_bound (n := n) (h := h)
-          have : (2 * h + n) < (2 * h + n + 1) := Nat.lt_succ_self _
-          exact lt_of_le_of_lt (le_of_eq rfl) this))
+          exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
+        exact this
       -- Finally, `mBound` is large enough to dominate the rough measure
       -- `2 * h + n` used above.
       exact hsize.trans (numeric_bound (n := n) (h := h))

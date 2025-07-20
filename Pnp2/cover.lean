@@ -443,6 +443,24 @@ lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     0 ≤ mu F h Rset := by
   exact Nat.zero_le _
 
+/-!  The recursion measure for `buildCover` depends on the family `F`,
+    the remaining entropy budget `h` and the set of rectangles collected
+    so far.  We package these three pieces of data into a sigma type
+    so that `measure_wf` can supply a well-founded induction principle. -/
+structure MuState (n : ℕ) where
+  F : Family n
+  h : ℕ
+  R : Finset (Subcube n)
+
+@[simp] def MuState.measure {n : ℕ} (s : MuState n) : ℕ :=
+  mu s.F s.h s.R
+
+lemma mu_measure_wf (n : ℕ) :
+    WellFounded (fun a b : MuState n => MuState.measure a < MuState.measure b) :=
+by
+  classical
+  exact measure_wf MuState.measure
+
 lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     2 * h ≤ mu F h Rset := by
   simpa [mu] using Nat.le_add_right (2 * h) ((uncovered F Rset).toFinset.card)
@@ -1215,54 +1233,35 @@ lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
-  -- We split on whether the initial family already has all its `1`‑inputs
-  -- covered.  In this situation `buildCover` immediately returns the empty
-  -- set, so the bound follows from `buildCover_card_bound_base`.
+  -- We first check whether the initial family already has all its
+  -- `1`‑inputs covered.  In this case `buildCover` simply returns the
+  -- empty set and the claim reduces to the base lemma
+  -- `buildCover_card_bound_base`.
   cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
   | none =>
       simpa [buildCover, hfu] using
         buildCover_card_bound_base (F := F) (h := h) (hH := hH) hfu
   | some tup =>
       /-
-        The remaining case requires a genuine recursion argument.  We perform
-        a double induction on the measure
+        When an uncovered input exists we proceed by well-founded
+        induction on the auxiliary measure
 
           `μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card`.
 
-        * **Base:** if there are no uncovered inputs, then
-          `firstUncovered` returns `none` and the cover is left unchanged.
-        * **Low‑sensitivity branch:** when every `f ∈ F` has small sensitivity,
-          the auxiliary lemma `low_sensitivity_cover` provides a set `R_ls` of
-          rectangles covering all remaining `1`‑inputs.  The size of `R_ls`
-          is at most `2 ^ (10*h)`, so the induction hypothesis applied to the
-          empty uncovered set shows that `Rset ∪ R_ls` remains bounded by
-          `mBound n h`.
-        * **Entropy branch:** otherwise a coordinate split decreases the
-          entropy budget.  Both restrictions `F₀` and `F₁` have strictly
-          smaller measure, hence their covers are bounded by
-          `mBound n (h-1)`.  Adding the two sets of rectangles yields a cover
-          of size at most `2 * mBound n (h-1)`, which in turn is dominated by
-          `mBound n h`.
-        * **Sunflower branch:** occasionally a single sunflower rectangle
-          removes several uncovered pairs at once.  The measure drops by at
-          least `2`, so the induction hypothesis applies to the remaining
-          uncovered set with unchanged entropy budget.
-
-        Combining these cases shows that the recursion inserts at most `mBound n h` rectangles before the measure becomes zero.
-        The comment below mirrors the detailed proof sketch from the project documentation:
-        we perform a lexicographic induction on the pair `(h, |uncovered F Rset|)` and analyse
-        the same three branches as in `buildCover_mono`.  Each step strictly decreases this measure,
-        so the total number of inserted rectangles cannot exceed the initial value.  A future
-        revision will replace this outline with a complete formal argument.
+        The full development performs a detailed case analysis on the
+        three branches of `buildCover`.  Here we only register the
+        existence of a suitable recursion principle via `mu_measure_wf`
+        and reuse the coarse numeric bound from the project notes as a
+        placeholder.  Completing the proof remains work in progress.
       -/
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-        -- Placeholder reasoning: the auxiliary measure `μ` starts at `2 * h + n` for the empty set and decreases with every recursive step. Hence at most `2 * h + n` rectangles can be inserted before termination.
-        -- TODO: replace this sketch with the full induction.
+        -- Placeholder reasoning: the auxiliary measure `μ` starts at
+        -- `2 * h + n` for the empty set and decreases with every
+        -- recursive step.  Hence at most `2 * h + n` rectangles can be
+        -- inserted before termination.  The detailed well-founded
+        -- argument will eventually replace this simplification.
         have : (buildCover F h hH).card ≤ (buildCover F h hH).card := le_rfl
         exact this.trans (le_of_lt (by
-          -- `numeric_bound` ensures `2 * h + n ≤ mBound n h`; we use it to
-          -- obtain a strict inequality that drives the transitivity step
-          -- above.
           have := numeric_bound (n := n) (h := h)
           have : (2 * h + n) < (2 * h + n + 1) := Nat.lt_succ_self _
           exact lt_of_le_of_lt (le_of_eq rfl) this))

@@ -1251,7 +1251,9 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         -- `2 * h + n` for the empty set and decreases with every
         -- recursive step.  Hence at most `2 * h + n` rectangles can be
         -- inserted before termination.  The detailed well-founded
-        -- argument will eventually replace this simplification.
+        -- argument will eventually replace this sketch.  A future
+        -- version will combine `mu_buildCover_le_start` with
+        -- `buildCover_mu` to obtain a precise bound on the cardinality.
         have : (buildCover F h hH).card ≤ (buildCover F h hH).card := le_rfl
         exact this.trans (le_of_lt (by
           have := numeric_bound (n := n) (h := h)

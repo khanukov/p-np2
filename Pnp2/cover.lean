@@ -965,6 +965,37 @@ lemma buildCover_card_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       have hpow := Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) hexp
       have hsize' := le_trans hsize hpow
       simpa [hres] using hsize'
+
+/-!
+`buildCover_card_bound_lowSens` is a numeric refinement of
+`buildCover_card_lowSens`.  When the sensitivity threshold is small
+relative to the entropy budget we can upgrade the crude exponential
+bound on the number of rectangles to the standard `mBound` function.
+The inequality `hh` ensures that `10 * log₂(n+1)^2 ≤ 10*h`, allowing us
+to compare the two exponentials.  A positivity hypothesis on `n`
+conveniently supplies the final factor from `pow_le_mBound`.-/
+lemma buildCover_card_bound_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, sensitivity f < Nat.log2 (Nat.succ n))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) :
+    (buildCover F h hH).card ≤ mBound n h := by
+  classical
+  -- Start with the crude exponential bound from `buildCover_card_lowSens`.
+  have hcard :=
+    buildCover_card_lowSens (F := F) (h := h) (hH := hH) hs
+  -- Compare the exponents `10 * log₂(n+1)^2` and `10 * h`.
+  have hexp_mul : 10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)
+      ≤ 10 * h := by
+    have := Nat.mul_le_mul_left 10 hh
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hpow :
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n))
+        ≤ Nat.pow 2 (10 * h) :=
+    Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) hexp_mul
+  -- Combine the two exponentials and finish with `pow_le_mBound`.
+  have hbig := le_trans hcard hpow
+  have hbound := le_trans hbig (pow_le_mBound (n := n) (h := h) hn)
+  simpa using hbound
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The present

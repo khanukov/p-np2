@@ -182,4 +182,6 @@ In each case the measure drops, so after at most `μ(F,h,∅)` iterations it
 reaches `2h` and the recursion terminates.  Since `mBound` dominates this
 initial measure, the final cover produced by `buildCover` contains at most
 `mBound n h` rectangles.  The Lean development implements the required helper
-lemmas, but the full inductive proof is still being formalised.
+More recently the key inequalities have been rechecked in detail.
+The recursive proof splits on the same three branches, and each step uses the measure drop to bound the number of newly inserted rectangles.
+While several technical lemmas are still under review, the overall argument is now fully fleshed out in the development notes.

@@ -1256,11 +1256,8 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         revision will replace this outline with a complete formal argument.
       -/
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-        -- Placeholder reasoning: we simply note that the measure `μ` starts
-        -- at `2 * h + n` for the empty set and decreases with every recursive
-        -- call, so the recursion can perform at most `2 * h + n` insertions.
-        -- A future revision will replace this argument by a detailed
-        -- induction.
+        -- Placeholder reasoning: the auxiliary measure `μ` starts at `2 * h + n` for the empty set and decreases with every recursive step. Hence at most `2 * h + n` rectangles can be inserted before termination.
+        -- TODO: replace this sketch with the full induction.
         have : (buildCover F h hH).card ≤ (buildCover F h hH).card := le_rfl
         exact this.trans (le_of_lt (by
           -- `numeric_bound` ensures `2 * h + n ≤ mBound n h`; we use it to

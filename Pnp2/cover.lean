@@ -139,6 +139,25 @@ lemma two_mul_mBound_le_succ (n h : ℕ) :
   simpa [mBound, pow_add, pow_succ, Nat.mul_left_comm, Nat.mul_assoc,
         Nat.mul_comm] using this
 
+/-!  Bounding the size of a union of two covers.  If both sets are
+bounded by `mBound n h`, then their union stays below the next budget
+`mBound n (h + 1)`.  This lemma abstracts the numeric step used in the
+entropy branch of `buildCover`. -/
+lemma card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : R₁.card ≤ mBound n h) (h₂ : R₂.card ≤ mBound n h) :
+    (R₁ ∪ R₂).card ≤ mBound n (h + 1) := by
+  classical
+  -- First bound the union by the sum of cardinals.
+  have hsum : (R₁ ∪ R₂).card ≤ R₁.card + R₂.card :=
+    Finset.card_union_le
+  -- Next bound the sum by twice `mBound n h`.
+  have hdouble : R₁.card + R₂.card ≤ 2 * mBound n h := by
+    have := add_le_add h₁ h₂
+    simpa [two_mul] using this
+  -- Combine with the numeric growth of `mBound`.
+  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+  exact hsum.trans <| hdouble.trans hstep
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

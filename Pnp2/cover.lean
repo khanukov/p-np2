@@ -523,6 +523,20 @@ lemma uncovered_init_coarse_bound (F : Family n) :
 -/
 axiom uncovered_init_bound (F : Family n) :
   (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n
+/--
+  A direct numeric variant of `uncovered_init_bound` expressed via the measure
+  `μ`.  Initially we have `μ(F, h, ∅) = 2 * h + (uncovered F ∅).toFinset.card`.
+  Plugging in the bound on the uncovered count yields `μ(F, h, ∅) ≤ 2 * h + n`.
+  This coarse inequality is occasionally convenient when reasoning about the
+  overall recursion measure.
+-/
+lemma mu_init_linear_bound (F : Family n) (h : ℕ) :
+    mu F h (∅ : Finset (Subcube n)) ≤ 2 * h + n := by
+  have hstart :
+      (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n :=
+    uncovered_init_bound (F := F)
+  simpa [mu] using add_le_add_left hstart (2 * h)
+
 
 /-!
 `mu_init_bound` upgrades the initial uncovered bound to the full measure.

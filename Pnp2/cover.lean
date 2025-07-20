@@ -479,6 +479,32 @@ lemma mu_gt_of_firstUncovered_some {F : Family n} {Rset : Finset (Subcube n)}
   simpa [mu] using this
 
 /-!
+`uncovered_card_bound` provides a very coarse upper bound on the number of
+still uncovered pairs.  Each pair consists of some function from `F` together
+with a point of the Boolean cube, hence there are at most `F.card * 2 ^ n`
+possibilities.  This crude estimate is occasionally convenient when comparing
+with numeric bounds on the cover size.-/
+lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
+    (uncovered F Rset).toFinset.card ≤ F.card * 2 ^ n := by
+  classical
+  -- Every element of `uncovered F Rset` is a pair `⟨f, x⟩` with `f ∈ F` and a
+  -- point `x : Vector Bool n`.  Compare with the full Cartesian product.
+  have hsubset : (uncovered F Rset).toFinset ⊆
+      F.product (Finset.univ : Finset (Vector Bool n)) := by
+    intro p hp
+    rcases hp with ⟨hf, -, -⟩
+    have hx : p.2 ∈ (Finset.univ : Finset (Vector Bool n)) := by simp
+    exact Finset.mem_product.mpr ⟨hf, hx⟩
+  have hcard := Finset.card_le_of_subset hsubset
+  -- Cardinality of a product splits multiplicatively.
+  have hprod := Finset.card_product (s := F)
+      (t := (Finset.univ : Finset (Vector Bool n)))
+  -- The cube `Vector Bool n` has size `2 ^ n`.
+  have hcube : ((Finset.univ : Finset (Vector Bool n))).card = 2 ^ n := by
+    simpa using (Fintype.card_vector (α := Bool) (n := n))
+  simpa [hprod, hcube] using hcard
+
+/-!
 `uncovered` is monotone with respect to the set of rectangles: adding
 a new rectangle can only remove uncovered pairs.  The next lemma
 formalises this simple observation and will be handy when reasoning

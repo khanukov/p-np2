@@ -1178,9 +1178,22 @@ construction.
   measure drops and the induction hypothesis applies to the remainder.
 
 Combining these cases shows that no more than `mBound n h` rectangles are
-added before the measure reaches `0`.  The formal development below still
-uses a simplified argument, but the comments document the intended
-induction in detail.
+added before the measure reaches `0`.  A convenient way to organise the
+argument is to introduce a measure
+
+```
+μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card
+```
+
+which simultaneously tracks the remaining entropy budget and the number of
+yet uncovered pairs `(f, x)`.  Every recursive call in `buildCover`
+strictly reduces this measure: the entropy branch decreases the first
+component, while the sunflower and low-sensitivity branches reduce the
+second.  Double induction on `h` and the size of the uncovered set then
+proves that the recursion cannot insert more than `mBound n h` rectangles.
+
+The formal development below still uses a simplified argument, but the
+comments document the intended induction in detail.
 
 --  The outline below mirrors the informal reasoning:
 --  * Base case: `uncovered = ∅`.

@@ -149,6 +149,46 @@ are inserted.
 Combining these cases shows that `(buildCover F h ∅).card ≤ mBound n h`.
 A future Lean proof will mirror this outline using well-founded recursion
 on `\mu`.
+
+#### Detailed measure-based induction
+
+The intended formal argument proceeds by a *double induction* on the
+measure
+
+$$
+  \mu(F,h,Rset) = 2h + |\text{uncovered}\,F\,Rset|,
+$$
+where `uncovered F Rset` collects all currently uncovered pairs
+`⟨f, x⟩` with `f ∈ F` and `f x = true`.  The outer induction decreases the
+entropy budget `h`, while the inner induction reduces the number of
+uncovered pairs.  Each branch of `buildCover` strictly decreases this
+lexicographic measure:
+
+* **Base case.**  When `uncovered F Rset = ∅` the recursion terminates
+  immediately, returning `Rset`.
+* **Low-sensitivity branch.**  If all functions in `F` have sensitivity
+  below `log₂(n+1)`, the lemma `low_sensitivity_cover` supplies a set
+  `R_ls` of rectangles covering the remaining `1`-points.  Their number is
+  bounded by an explicit exponential in the maximum sensitivity, so the
+  induction hypothesis applies to the empty uncovered set.
+* **Entropy branch.**  Otherwise `exists_coord_entropy_drop` provides a
+  coordinate split decreasing `H₂` by one.  Recursive calls on the two
+  restrictions use budget `h-1`.  Bounding the size of each restricted
+  cover and adding them yields at most `2 * mBound n (h-1)` rectangles,
+  which remains below `mBound n h`.
+* **Sunflower branch.**  Occasionally `sunflower_step` finds a rectangle
+  that simultaneously hits many functions.  The uncovered count drops by
+  at least two, so the measure decreases even without reducing `h`.
+
+Since the measure cannot decrease indefinitely, the recursion inserts at
+most `mBound n h` rectangles before reaching the base case.  This shows
+
+$$
+  (buildCover F h ∅).\text{card} \le mBound\;n\;h.
+$$
+
+The current Lean development implements the measure and its basic
+properties; the full induction proof is work in progress.
 ### Status Update (July 2025)
 
 The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. A few auxiliary lemmas—most notably the probabilistic halving bound—are currently assumed as axioms, but the classical

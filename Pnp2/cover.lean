@@ -504,6 +504,17 @@ lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
     simpa using (Fintype.card_vector (α := Bool) (n := n))
   simpa [hprod, hcube] using hcard
 
+/-!
+`uncovered_init_coarse_bound` specialises `uncovered_card_bound` to the
+initial call of `buildCover`.  It provides a simple size estimate for the
+set of uncovered pairs before any rectangles have been inserted.  While the
+stronger bound `uncovered_init_bound` below remains an axiom, the following
+lemma is fully proved and occasionally handy for crude numeric arguments.-/
+lemma uncovered_init_coarse_bound (F : Family n) :
+    (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ F.card * 2 ^ n := by
+  simpa using
+    (uncovered_card_bound (F := F) (Rset := (∅ : Finset (Subcube n))))
+
 /--
   **Initial uncovered bound.**  At the start of the recursion the number of
   uncovered pairs is at most `n`.  A future combinatorial argument will tighten

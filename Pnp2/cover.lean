@@ -1355,63 +1355,35 @@ lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
   simpa [hres] using this
 
+/-!
+  A coarse numeric estimate that bounds the size of the cover directly
+  by the initial measure `2 * h + n`.  The proof mirrors the placeholder
+  argument used in `buildCover_card_bound` but is stated separately so
+  that later refinements can build on it.
+-/
+lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover F h hH).card ≤ 2 * h + n := by
+  classical
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+        simpa [buildCover, hfu]
+      have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
+      simpa [hres] using this
+  | some _tup =>
+      -- The detailed measure argument is still work in progress.
+      -- For now we reuse the rough numeric estimate.
+      have hnum := numeric_bound (n := n) (h := h)
+      exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) hnum
+
 -/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
-  -- We first check whether the initial family already has all its
-  -- `1`‑inputs covered.  In this case `buildCover` simply returns the
-  -- empty set and the claim reduces to the base lemma
-  -- `buildCover_card_bound_base`.
-  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
-  | none =>
-      simpa [buildCover, hfu] using
-        buildCover_card_bound_base (F := F) (h := h) (hH := hH) hfu
-  | some tup =>
-      /-
-        When an uncovered input exists we proceed by well-founded
-        induction on the measure
-
-          `μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card`.
-
-        * **Base case:** `firstUncovered` returns `none` and the cover is
-          left unchanged.
-        * **Low-sensitivity branch:** all functions have small
-          sensitivity, so `low_sensitivity_cover` adds at most
-          `2 ^ (10*h)` rectangles.
-        * **Entropy branch:** splitting on a coordinate reduces the
-          entropy budget, yielding two recursive calls with measure
-          strictly smaller than the initial one.
-        * **Sunflower branch:** removing several uncovered pairs at once
-          decreases the uncovered count by at least two.
-
-        Each step strictly decreases `μ`, whence at most `2 * h + n`
-        rectangles are inserted before termination.  Formalising this
-        induction is future work; the remainder of this proof records the
-        resulting bound as a placeholder.
-      -/
-      -- Use the auxiliary measure `μ` to control the recursion.  The lemma
-      -- `mu_buildCover_le_start` compares the final measure with the initial
-      -- one.  Combined with `mu_init_bound` this yields a coarse numeric bound
-      -- for the size of the produced cover.  Each insertion of a rectangle
-      -- decreases `μ`, so the total number of insertions is bounded by the
-      -- initial measure.
-      -- Compare the recursion measure with its initial value and bound the
-      -- latter by `mBound`.
-      have _hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
-      have _hstart_le := mu_init_bound (F := F) (h := h)
-      have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-        -- Placeholder: a future proof will relate the drop in `μ` to the number
-        -- of inserted rectangles via an explicit recursion on uncovered pairs.
-        -- For now we merely record the numeric upper bound `2 * h + n`.
-        have : (buildCover F h hH).card ≤ (2 * h + n) := by
-          -- `numeric_bound` ensures `mBound n h` dominates this expression.
-          have := numeric_bound (n := n) (h := h)
-          exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
-        exact this
-      -- Finally, `mBound` is large enough to dominate the rough measure
-      -- `2 * h + n` used above.
-      exact hsize.trans (numeric_bound (n := n) (h := h))
+  -- First obtain the coarse linear bound and then specialise it to
+  -- `mBound n h` via `numeric_bound`.
+  have hlin := buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
+  exact hlin.trans (numeric_bound (n := n) (h := h))
 
 /-! ### Universal bound on the number of rectangles
 

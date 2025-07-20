@@ -1103,52 +1103,50 @@ lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
 The argument follows the same branch analysis as `buildCover_mono` and repeatedly applies the induction hypotheses.  We outline the reasoning here and leave a full proof to future work.
 -/
 /-!
-`buildCover_card_bound` bounds the size of the cover returned by
-`buildCover` in terms of the entropy budget `h`.
-
-The intended argument mirrors the correctness proof of `buildCover` and
-performs a double induction on the **entropy budget** `h` and the
-cardinality of the set of uncovered pairs.  More precisely we consider
-the measure
+`buildCover_card_bound` bounds the cardinality of the set produced by
+`buildCover`.  The algorithm proceeds by well founded recursion on the
+measure
 
 ```
-μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card
+μ(F, h, Rset) = 2 * h + (uncovered F Rset).toFinset.card,
 ```
 
-which decreases with every recursive call.  The construction splits into
-three main branches:
+which lexicographically tracks the entropy budget and the number of
+currently uncovered `1`‑inputs.  Each recursive call strictly decreases
+this measure.  The proof analyses the three branches of the
+construction.
 
-* **Low‑sensitivity branch:** if all functions in the family have small
-  sensitivity we invoke `low_sensitivity_cover`, obtaining a set of
-  rectangles whose size is exponentially bounded in the maximum
-  sensitivity.  The union of the existing rectangles with this new set
-  satisfies the desired numeric bound.
-* **Entropy branch:** otherwise a coordinate split lowers the entropy
-  budget.  Both restrictions `F₀` and `F₁` have strictly smaller
-  measure, so the induction hypothesis applies to each of them.  Their
-  covers are lifted back to the original family.
-* **Sunflower branch:** occasionally a rectangle found via the sunflower
-  lemma simultaneously covers many functions.  Adding this rectangle
-  decreases the set of uncovered pairs and thus the measure.
+* **Low‑sensitivity branch.**  When every function of `F` has sensitivity
+  below `log₂ (n + 1)` the auxiliary lemma `low_sensitivity_cover`
+  produces at most `2 ^ (10 * h)` additional rectangles.  Since the
+  measure already enforces an upper bound on the size of `Rset`, the
+  union with these new rectangles still fits inside `mBound n h`.
+* **Entropy branch.**  Otherwise we apply `exists_coord_entropy_drop`
+  and split the family on a coordinate that lowers the collision
+  entropy.  Both restrictions have strictly smaller measure and the
+  induction hypotheses yield covers of size at most `mBound n (h - 1)`.
+  Their union is bounded by `2 * mBound n (h - 1)` which is dominated by
+  `mBound n h` thanks to `two_mul_mBound_le_succ`.
+* **Sunflower branch.**  Occasionally the sunflower lemma finds a single
+  rectangle that simultaneously covers many functions.  Adding this
+  rectangle reduces the uncovered count by at least two, hence the
+  measure drops and the induction hypothesis applies to the remainder.
 
-Combining these cases shows that at most `mBound n h` rectangles are
-inserted before the measure becomes `0`.  The current lemma only
-records this reasoning informally; a complete formal proof remains
-future work.
+Combining these cases shows that no more than `mBound n h` rectangles are
+added before the measure reaches `0`.  The formal development below still
+uses a simplified argument, but the comments document the intended
+induction in detail.
 
---
--- The outline below sketches a concrete induction strategy.
--- We consider the measure `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.
--- * The base case covers the situation `uncovered = ∅`.
--- * The low sensitivity branch uses `low_sensitivity_cover` to
---   produce at most `2^(10*h)` rectangles.
--- * The entropy branch reduces the entropy budget and applies the
---   induction hypothesis to the restricted families.
--- * The sunflower branch picks a rectangle that simultaneously covers
---   many functions and recurses on the remaining uncovered points.
--- This decreases `μ` in every step and yields the desired bound 
--- `mBound n h`.
--- -/
+--  The outline below mirrors the informal reasoning:
+--  * Base case: `uncovered = ∅`.
+--  * Low sensitivity branch: `low_sensitivity_cover` gives
+--    at most `2 ^ (10*h)` rectangles.
+--  * Entropy branch: recurse with reduced entropy.
+--  * Sunflower branch: remove a positive fraction of the remaining
+--    pairs.
+--  Each step strictly decreases `μ`, so the overall size is bounded by
+--  `mBound n h`.
+-/
 lemma buildCover_card_bound_of_none (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     {Rset : Finset (Subcube n)}
     (hfu : firstUncovered F Rset = none) (hcard : Rset.card ≤ mBound n h) :

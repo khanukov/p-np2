@@ -12,7 +12,8 @@ Short list of development tasks reflecting the current repository status.
 - [x] Port halving lemmas `exists_restrict_half_real_aux` and `exists_restrict_half` from `entropy.lean`.
 - [ ] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
 * [x] Replace the axiom `buildCover_mono` with a complete proof.  The counting
-  lemma `buildCover_card_bound` remains to be formalised.
+  lemma `buildCover_card_bound` now has a placeholder proof using a coarse
+  measure bound.  Formalising the full induction is still on the to-do list.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
 - [ ] Expand numeric bounds in `bound.lean`.
 - [x] Provide more decision-tree utilities (leaf subcubes, path handling).

@@ -170,6 +170,21 @@ example {n : ℕ} (t : DecisionTree n) (x : Point n) :
   simpa using
     DecisionTree.eval_pair_mem_coloredSubcubes (t := t) (x := x)
 
+/-- `buildCover_card_bound` for a single-variable function. -/
+example :
+    let f : BFunc 1 := fun x => x 0
+    let F : BoolFunc.Family 1 := {f}
+    (Cover.buildCover (F := F) (h := 1) (by simpa [F] : BoolFunc.H₂ F ≤ (1 : ℝ))).card
+      ≤ Cover.mBound 1 1 := by
+  classical
+  intro f F
+  have hH : BoolFunc.H₂ F ≤ (1 : ℝ) := by simp [F]
+  simpa [f, F] using
+    Cover.buildCover_card_bound (F := F) (h := 1) (hH := hH)
+
 
 
 end Pnp2Tests
+
+
+

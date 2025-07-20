@@ -92,3 +92,13 @@ then bounds the rest of the construction.
 Combining all branches yields the desired inequality
 `(buildCover F h Rset).card ≤ mBound n h`.
 \n## Remaining gaps\nThe present Lean proof relies on a coarse measure argument.  While the helper lemmas `mu_union_singleton_lt` and `mu_buildCover_le_start` ensure that the measure drops whenever a rectangle is inserted, the formal connection between this drop and the number of newly added rectangles is still missing.  Establishing this relation will allow the inequality `(buildCover F h hH).card ≤ μ(F,h,∅)` to replace the current placeholder step and complete the induction.
+
+## Numeric placeholder in the code
+
+The current implementation of `buildCover_card_bound` in `cover.lean` does not yet follow the full induction sketched above.  Instead the code relies on the helper lemmas `mu_buildCover_le_start` and `uncovered_init_bound` to bound the final measure by `2 * h + n`.  This numeric estimate is sufficient to deduce
+
+```
+(buildCover F h hH).card ≤ mBound n h
+```
+
+via the coarse inequality `2 * h + n ≤ mBound n h`.  Future work will refine this argument and remove the gap between the conceptual proof and the formal code.

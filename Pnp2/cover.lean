@@ -95,6 +95,22 @@ lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_pos hmul hpos₂
   simpa [mBound] using this
 
+@[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by
+  simp [mBound]
+
+lemma mBound_eq_zero_iff {n h : ℕ} : mBound n h = 0 ↔ n = 0 := by
+  cases n with
+  | zero =>
+      simp [mBound_zero]
+  | succ n =>
+      have : 0 < mBound (Nat.succ n) h := mBound_pos (n := Nat.succ n) (h := h) (Nat.succ_pos _)
+      have : mBound (Nat.succ n) h ≠ 0 := ne_of_gt this
+      constructor
+      · intro hzero
+        exact False.elim (this hzero)
+      · intro hfalse
+        cases hfalse
+
 /-!  `mBound` is monotone in the entropy budget.  We will repeatedly
 use this fact to lift bounds from recursive calls. -/
 

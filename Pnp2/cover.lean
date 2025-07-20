@@ -681,6 +681,22 @@ lemma mu_buildCover_le_start (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     have hlt := mu_buildCover_lt_start (F := F) (h := h) (hH := hH)
       (by simpa using hfu)
     exact hlt.le
+
+/-!  The previous lemma together with `buildCover_mu` yields a handy
+inequality between the initial measure and the final value `2 * h`.  We
+record it explicitly for later use.  The main counting argument for
+`buildCover_card_bound` will eventually rely on a more precise analysis,
+but this simple bound already provides a useful sanity check.-/
+lemma buildCover_measure_drop (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    2 * h ≤ mu F h (∅ : Finset (Subcube n)) := by
+  classical
+  -- `mu_buildCover_le_start` compares the measure of the final cover with
+  -- the measure of the empty set.
+  have hμ := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
+  -- `buildCover_mu` states that the final measure collapses to `2 * h`.
+  have hfinal := buildCover_mu (F := F) (h := h) (hH := hH)
+  -- Combine the two statements.
+  simpa [hfinal] using hμ
   
 lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :

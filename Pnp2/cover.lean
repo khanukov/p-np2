@@ -108,6 +108,18 @@ lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
     exact Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) this
   exact Nat.mul_le_mul hfac hpow
 
+/-!  `mBound` is also monotone in the dimension parameter.  Increasing the
+number of variables can only enlarge the numeric bound.  This simple fact
+is occasionally convenient when comparing covers across different cube
+sizes. -/
+lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
+    mBound n₁ h ≤ mBound n₂ h := by
+  dsimp [mBound]
+  have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
+    Nat.mul_le_mul_right (h + 2) hn
+  have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
 /-!  Doubling the bound for a smaller budget stays below the bound for the
 next budget.  This simple numeric inequality is used when analysing the
 entropy branch of `buildCover`. -/

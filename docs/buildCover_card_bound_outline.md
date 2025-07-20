@@ -49,3 +49,45 @@ The current Lean development provides most helper lemmas described above.
 Formalising the complete induction is work in progress.  The current
 implementation in `cover.lean` includes a coarse bound following this
 strategy, and future updates will replace it with the full argument.
+
+## Detailed branch analysis
+The measure-based induction follows these steps in detail.
+
+### Induction on the measure
+We set
+$$
+\mu(F,h,Rset) = 2*h + |\,\text{uncovered}\;F\;Rset\,|.
+$$
+The recursion for `buildCover` is well founded with respect to this measure.
+We perform a **double induction**: an outer induction on `h` and an inner
+induction on the number of uncovered pairs.  This is equivalent to
+lexicographic induction on `μ`.  Assume the statement already holds for
+all smaller values of `μ`.
+
+### Base case `uncovered = ∅`
+If `firstUncovered F Rset = none` the recursion terminates immediately and
+returns `Rset`.  Provided that `Rset.card ≤ mBound n h` the claim holds.
+
+### Low-sensitivity branch
+Let `s` be the maximal sensitivity of functions in `F`.  When
+`s < \log_2(n+1)` the auxiliary lemma `low_sensitivity_cover` produces a
+collection `R_ls` of at most
+$2^{10 * s * \log_2(n+1)}$ rectangles covering the remaining inputs.  Because
+`mBound` eventually dominates this quantity for `h ≥ \log_2(n+1)^2`, their
+union with the current set stays below `mBound n h`.
+
+### Entropy branch
+Otherwise an entropy split finds a coordinate that decreases collision
+entropy.  Both restricted families have budget `h - 1`, so the induction
+hypotheses give covers bounded by `mBound n (h-1)`.  Since
+`2 * mBound n (h-1) ≤ mBound n h` the union of these two covers also stays
+within the desired bound.
+
+### Sunflower branch
+A sunflower step occasionally extracts a single rectangle covering several
+functions at once.  This reduces the number of uncovered pairs by at least
+two without changing `h`.  The induction hypothesis for the smaller measure
+then bounds the rest of the construction.
+
+Combining all branches yields the desired inequality
+`(buildCover F h Rset).card ≤ mBound n h`.

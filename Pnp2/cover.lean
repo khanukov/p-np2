@@ -1120,6 +1120,58 @@ lemma buildCover_card_bound_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
   have hbig := le_trans hcard hpow
   have hbound := le_trans hbig (pow_le_mBound (n := n) (h := h) hn)
   simpa using hbound
+
+/-!
+  `buildCover_card_bound_lowSens_or` partially bridges the gap towards the
+  full counting lemma `buildCover_card_bound`.  When the maximum sensitivity of
+  functions in the family falls below the logarithmic threshold we invoke the
+  established low‑sensitivity bound.  Otherwise we fall back to the coarse
+  measure argument used in the general placeholder proof.  The additional
+  hypotheses `hh` and `hn` ensure that the numeric comparison with
+  `mBound` is valid in the first case.
+-/
+lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) :
+    (buildCover F h hH).card ≤ mBound n h := by
+  classical
+  -- Inspect the initial uncovered pair, if any, to obtain a witness function.
+  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
+  | none =>
+      -- Trivial termination: `buildCover` returns the empty set.
+      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+        simpa [buildCover, hfu]
+      have : (0 : ℕ) ≤ mBound n h :=
+        (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
+      simpa [hres] using this
+  | some tup =>
+      -- A genuine uncovered pair exists.  Compute the maximal sensitivity `s`.
+      rcases tup with ⟨f, x⟩
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F (∅ : Finset (Subcube n))) hfu with
+          ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      -- Compare `s` with the logarithmic threshold.
+      by_cases hs_small : s < Nat.log2 (Nat.succ n)
+      ·
+        -- Low-sensitivity branch: apply the dedicated lemma.
+        have hsF : ∀ g ∈ F, sensitivity g < Nat.log2 (Nat.succ n) :=
+          fun g hg => lt_of_le_of_lt (Hsens g hg) hs_small
+        simpa [buildCover, hfu, hs_small] using
+          buildCover_card_bound_lowSens (F := F) (h := h) (hH := hH) hsF hh hn
+      ·
+        -- Fallback: reuse the coarse measure argument from
+        -- `buildCover_card_bound`.
+        have _hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
+        have _hstart_le := mu_init_bound (F := F) (h := h)
+        have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
+          have := numeric_bound (n := n) (h := h)
+          exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
+        exact hsize.trans (numeric_bound (n := n) (h := h))
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The present

@@ -514,6 +514,19 @@ axiom uncovered_init_bound (F : Family n) :
   (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n
 
 /-!
+`mu_init_bound` upgrades the initial uncovered bound to the full measure.
+Since `mu` adds `2 * h` to the uncovered count, the inequality
+`uncovered_init_bound` immediately yields
+`mu F h ∅ ≤ mBound n h` via `numeric_bound`.-/
+lemma mu_init_bound (F : Family n) (h : ℕ) :
+    mu F h (∅ : Finset (Subcube n)) ≤ mBound n h := by
+  have hstart : (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n :=
+    uncovered_init_bound (F := F)
+  have hμ : mu F h (∅ : Finset (Subcube n)) ≤ 2 * h + n := by
+    simpa [mu] using add_le_add_left hstart (2 * h)
+  exact hμ.trans (numeric_bound (n := n) (h := h))
+
+/-!
 `uncovered` is monotone with respect to the set of rectangles: adding
 a new rectangle can only remove uncovered pairs.  The next lemma
 formalises this simple observation and will be handy when reasoning
@@ -1285,16 +1298,15 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
         resulting bound as a placeholder.
       -/
       -- Use the auxiliary measure `μ` to control the recursion.  The lemma
-      -- `mu_buildCover_le_start` shows that the final measure does not exceed
-      -- its initial value.  Combined with `uncovered_init_bound` this yields a
-      -- rough numeric estimate for the size of the produced cover.  Each
-      -- insertion of a new rectangle decreases `μ`, so the total number of
-      -- insertions is bounded by the initial uncovered count.
-      have hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
-      have hstart_le : mu F h (∅ : Finset (Subcube n)) ≤ 2 * h + n := by
-        have := uncovered_init_bound (F := F)
-        simpa [mu] using add_le_add_left this (2 * h)
-      have hmu_start := le_trans hmu hstart_le
+      -- `mu_buildCover_le_start` compares the final measure with the initial
+      -- one.  Combined with `mu_init_bound` this yields a coarse numeric bound
+      -- for the size of the produced cover.  Each insertion of a rectangle
+      -- decreases `μ`, so the total number of insertions is bounded by the
+      -- initial measure.
+      -- Compare the recursion measure with its initial value and bound the
+      -- latter by `mBound`.
+      have _hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
+      have _hstart_le := mu_init_bound (F := F) (h := h)
       have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
         -- Placeholder: a future proof will relate the drop in `μ` to the number
         -- of inserted rectangles via an explicit recursion on uncovered pairs.

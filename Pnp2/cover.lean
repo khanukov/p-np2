@@ -212,6 +212,26 @@ lemma card_union_singleton_mBound_succ {n h : ℕ}
   -- Combine the inequalities.
   exact hsum.trans <| hbound.trans hstep
 
+/-!
+Adding a rectangle via `Finset.insert` is numerically harmless:
+if the original set already lies within `mBound n h`, then the
+inserted set stays within `mBound n (h + 1)`.  This is just a
+convenient wrapper around `card_union_singleton_mBound_succ`.
+-/
+lemma card_insert_mBound_succ {n h : ℕ}
+    {Rset : Finset (Subcube n)} {R : Subcube n}
+    (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
+    (insert R Rset).card ≤ mBound n (h + 1) := by
+  classical
+  -- Express the insertion as a union with a singleton.
+  have hunion : insert R Rset = Rset ∪ {R} := by
+    ext x; by_cases hx : x = R <;> by_cases hxset : x ∈ Rset <;>
+      simp [hx, hxset, Finset.mem_insert, Finset.mem_union]
+  -- Apply the union lemma and rewrite.
+  simpa [hunion] using
+    (card_union_singleton_mBound_succ (n := n) (h := h)
+      (Rset := Rset) (R := R) hcard hn)
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

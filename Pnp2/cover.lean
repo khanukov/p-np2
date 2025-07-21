@@ -95,6 +95,23 @@ lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_pos hmul hpos₂
   simpa [mBound] using this
 
+/-!  A tiny numeric fact: for any positive dimension `n` the bound
+`mBound n h` is at least `2`.  This convenient inequality helps when
+bounding the size of a small collection of rectangles. -/
+lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
+    2 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have hh2 : 2 ≤ h + 2 := by
+    have := Nat.zero_le h
+    exact Nat.succ_le_succ (Nat.succ_le_succ this)
+  have hfactor : 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul hn1 hh2 (by decide) (Nat.zero_le _)
+    simpa [one_mul] using this
+  have hpow : 1 ≤ 2 ^ (10 * h) :=
+    Nat.one_le_pow (2) (10 * h) (by decide)
+  have := Nat.mul_le_mul hfactor hpow
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
 @[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by
   simp [mBound]
 
@@ -231,6 +248,31 @@ lemma card_insert_mBound_succ {n h : ℕ}
   simpa [hunion] using
     (card_union_singleton_mBound_succ (n := n) (h := h)
       (Rset := Rset) (R := R) hcard hn)
+
+/--
+`card_union_pair_mBound_succ` is a tiny convenience lemma: inserting
+two rectangles at once keeps the size within the next budget
+`mBound n (h + 1)` as long as the starting set already lies inside
+`mBound n h`.  The dimension hypothesis ensures this next budget is
+strictly larger.
+-/
+lemma card_union_pair_mBound_succ {n h : ℕ}
+    {Rset : Finset (Subcube n)} {R₁ R₂ : Subcube n}
+    (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
+    (Rset ∪ {R₁, R₂}).card ≤ mBound n (h + 1) := by
+  classical
+  -- Bound the pair `{R₁, R₂}` by `mBound n h` via the `two_le_mBound` lemma.
+  let Rpair : Finset (Subcube n) := {R₁, R₂}
+  have hpair_le_two : Rpair.card ≤ 2 := by
+    by_cases h : R₁ = R₂
+    · subst h; simp [Rpair]
+    · simp [Rpair, h]
+  have hpair_bound : Rpair.card ≤ mBound n h :=
+    le_trans hpair_le_two (two_le_mBound (n := n) (h := h) hn)
+  -- Apply the general union bound for two sets of size ≤ `mBound n h`.
+  have := card_union_mBound_succ (n := n) (h := h)
+      (R₁ := Rset) (R₂ := Rpair) hcard hpair_bound
+  simpa [Rpair, Finset.union_comm, Finset.union_assoc] using this
 
 /-! ### Counting bound for arbitrary covers -/
 

@@ -15,6 +15,12 @@ example (n : ℕ) :
     support (fun _ : Point n => false) = (∅ : Finset (Fin n)) := by
   ext i
   simp [support]
+/-- The support of a constantly true function is empty. -/
+example (n : ℕ) :
+    support (fun _ : Point n => true) = (∅ : Finset (Fin n)) := by
+  ext i
+  simp [support]
+
 
 /-- Modifying an irrelevant coordinate leaves the function unchanged. -/
 example (x : Point 2) (b : Bool) :

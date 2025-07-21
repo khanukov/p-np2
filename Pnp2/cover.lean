@@ -1466,64 +1466,23 @@ lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
-  -- Combine the linear bound with the numeric growth of `mBound`.
-  have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
-  have hbound := numeric_bound (n := n) (h := h)
-  exact hμ.trans hbound
-
-  -- When both the dimension and entropy budget are large enough we can
-  -- apply the specialised low-sensitivity lemma.  Otherwise we fall back
-  -- to the coarse measure argument used in the placeholder proof.
   by_cases hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h
   ·
     by_cases hn : 0 < n
-    · -- Use the refined bound that analyses the low-sensitivity branch.
+    ·
       simpa using
         buildCover_card_bound_lowSens_or (F := F) (h := h)
           (hH := hH) hh hn
-    · -- Degenerate dimension: revert to the basic measure estimate.
-      have hfu := (by
-        classical
-        -- Check if an uncovered input exists; otherwise we are done.
-        cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
-        | none =>
-            have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
-              simpa [buildCover, hfu]
-            have : (0 : ℕ) ≤ mBound n h :=
-              (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
-            exact (by simpa [hres] using this)
-        | some _ =>
-            -- Use the numeric placeholder bound.
-            have _hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
-            have _hstart_le := mu_init_bound (F := F) (h := h)
-            have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-              have := numeric_bound (n := n) (h := h)
-              exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
-            exact hsize.trans (numeric_bound (n := n) (h := h)))
-      simpa using hfu
+    ·
+      -- Degenerate dimension: fall back to the coarse measure bound.
+      have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
+      have hbound := numeric_bound (n := n) (h := h)
+      exact hμ.trans hbound
   ·
-    -- Entropy budget too small for the refined argument: reuse the
-    -- original placeholder proof.
-    cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
-    | none =>
-        simpa [buildCover, hfu] using
-          buildCover_card_bound_base (F := F) (h := h) (hH := hH) hfu
-    | some tup =>
-        have _hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
-        have _hstart_le := mu_init_bound (F := F) (h := h)
-        have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-          have := numeric_bound (n := n) (h := h)
-          exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
-        exact hsize.trans (numeric_bound (n := n) (h := h))
-
-
-/-! ### Universal bound on the number of rectangles
-
-Even without the detailed recursion argument we can still bound the
-size of the cover produced by `buildCover` by the number of all
-subcubes.  This very weak estimate is occasionally useful as a
-fallback. -/
-
+    -- Entropy budget too small: reuse the basic linear estimate.
+    have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
+    have hbound := numeric_bound (n := n) (h := h)
+    exact hμ.trans hbound
 lemma buildCover_card_univ_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ bound_function n := by
   classical

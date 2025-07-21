@@ -26,8 +26,10 @@ lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
     have hx : x ∈ (Finset.univ : Finset (Point n)) := by simp
     exact Finset.le_sup (s := Finset.univ) hx
 
-/-! ### Sensitivity and restrictions -/
+/- ### Sensitivity and restrictions -/
 
+set_option linter.unnecessarySimpa false in
+set_option linter.unusedSectionVars false in
 @[simp] lemma sensitivityAt_restrict_le (f : BFunc n) (j : Fin n)
     (b : Bool) (x : Point n) :
     sensitivityAt (f.restrictCoord j b) x ≤
@@ -129,6 +131,7 @@ contains a function together with an input and coordinate witnessing this
 sensitivity.  This is a light wrapper around `exists_sensitive_coord` that also
 returns the membership proof for convenience.
 -/
+set_option linter.unusedSectionVars false in
 lemma exists_family_sensitive_coord (F : Family n) [Fintype (Point n)]
     (h : ∃ f ∈ F, 0 < sensitivity f) :
     ∃ i : Fin n, ∃ f ∈ F, ∃ x : Point n,

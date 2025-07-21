@@ -531,6 +531,20 @@ lemma uncovered_init_coarse_bound (F : Family n) :
   simpa using
     (uncovered_card_bound (F := F) (Rset := (∅ : Finset (Subcube n))))
 
+/-!
+  A trivial instance of `uncovered_init_bound` holds when the family is
+  empty.  In this situation there are no uncovered pairs at all, so the
+  bound is immediate.  This lemma serves as a simple sanity check and a
+  base case for future refinements of the combinatorial argument.
+-/
+lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
+    (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n := by
+  classical
+  have h : uncovered F (∅ : Finset (Subcube n)) = ∅ := by
+    ext p; simp [uncovered, hF]
+  have := Nat.zero_le n
+  simpa [h] using this
+
 /--
   **Initial uncovered bound.**  At the start of the recursion the number of
   uncovered pairs is at most `n`.  A future combinatorial argument will tighten

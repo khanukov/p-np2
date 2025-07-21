@@ -683,6 +683,32 @@ lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
   simpa [hunion] using this
 
 /-!
+`mu_union_lt` generalises `mu_union_singleton_lt` to an arbitrary set of
+rectangles.  If some uncovered pair of `R₁` is covered by a rectangle from
+`R₂`, then the measure strictly decreases after taking the union.
+-/
+lemma mu_union_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
+    (hx : ∃ p ∈ uncovered F R₁, ∃ R ∈ R₂, p.2 ∈ₛ R) :
+    mu F h (R₁ ∪ R₂) < mu F h R₁ := by
+  classical
+  rcases hx with ⟨p, hpU, R, hR, hpR⟩
+  -- First insert the specific rectangle that covers `p`.
+  have hx_singleton : ∃ q ∈ uncovered F R₁, q.2 ∈ₛ R := ⟨p, hpU, hpR⟩
+  have hstep :=
+    mu_union_singleton_lt (F := F) (Rset := R₁) (R := R) (h := h) hx_singleton
+  -- Adding more rectangles cannot increase the measure.
+  have hsubset : R₁ ∪ {R} ⊆ R₁ ∪ R₂ := by
+    intro x hx'
+    rcases Finset.mem_union.mp hx' with hx₁ | hx₂
+    · exact Finset.mem_union.mpr <| Or.inl hx₁
+    · have hxR : x = R := by simpa using hx₂
+      subst hxR
+      exact Finset.mem_union.mpr <| Or.inr hR
+  have hmono :=
+    mu_mono_subset (F := F) (h := h) (R₁ := R₁ ∪ {R}) (R₂ := R₁ ∪ R₂) hsubset
+  exact lt_of_le_of_lt hmono hstep
+
+/-!
 `mu_union_buildCover_le` is a small helper lemma used in termination
 arguments for `buildCover`.  Adding the rectangles produced by one
 step of the construction can only decrease the measure `μ`, since the

@@ -1579,13 +1579,10 @@ lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
         simpa [buildCover, hfu, hs_small] using
           buildCover_card_bound_lowSens (F := F) (h := h) (hH := hH) hsF hh hn
       ·
-        -- Fallback: reuse the coarse measure argument from
-        -- `buildCover_card_bound`.
-        have _hmu := mu_buildCover_le_start (F := F) (h := h) (hH := hH)
-        have _hstart_le := mu_init_bound (F := F) (h := h)
-        have hsize : (buildCover F h hH).card ≤ 2 * h + n := by
-          have := numeric_bound (n := n) (h := h)
-          exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) this
+        -- Fallback: reuse the coarse measure bound from
+        -- `buildCover_card_init_mu` and compare with `mBound`.
+        have hsize :=
+          buildCover_card_init_mu (F := F) (h := h) (hH := hH)
         exact hsize.trans (numeric_bound (n := n) (h := h))
 /--
 `buildCover_mono` states that every rectangle produced by the recursive

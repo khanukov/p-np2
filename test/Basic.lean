@@ -234,6 +234,18 @@ example (x : Fin 3 → Bool) :
     ACCSAT.leftBits (N := 3) (k := 1) (ℓ := 2) rfl x ⟨0, by decide⟩ = x 0 := by
   rfl
 
+-- Merging the left and right halves reconstructs the original vector.
+-- Merging followed by `leftBits` and `rightBits` recovers the original halves.
+example (xL : Fin 2 → Bool) (xR : Fin 3 → Bool) :
+    ACCSAT.leftBits (N := 5) (k := 2) (ℓ := 3) rfl
+      (ACCSAT.mergeBits (k := 2) (ℓ := 3) xL xR) = xL := by
+  simpa using ACCSAT.leftBits_mergeBits (xL := xL) (xR := xR)
+
+example (xL : Fin 2 → Bool) (xR : Fin 3 → Bool) :
+    ACCSAT.rightBits (N := 5) (k := 2) (ℓ := 3) rfl
+      (ACCSAT.mergeBits (k := 2) (ℓ := 3) xL xR) = xR := by
+  simpa using ACCSAT.rightBits_mergeBits (xL := xL) (xR := xR)
+
 -- The convenience bound `n₀` is positive for every `h`.
 example (h : ℕ) : 0 < Bound.n₀ h := by
   have hpow : 0 < Nat.pow 2 (10 * h) := pow_pos (by decide) _

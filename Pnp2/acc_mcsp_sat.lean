@@ -42,8 +42,59 @@ def leftBits (N k ℓ : ℕ) (h : N = k + ℓ)
   fun i => x (Fin.castAdd ℓ i)
 
 def rightBits (N k ℓ : ℕ) (h : N = k + ℓ)
-    (x : Fin N → Bool) : Fin ℓ → Bool :=
-  fun j => x (Fin.addNat k j)
+    (x : Fin N → Bool) : Fin ℓ → Bool := by
+  subst h
+  have hcomm : ℓ + k = k + ℓ := Nat.add_comm _ _
+  exact fun j => x (Fin.cast hcomm (j.addNat k))
+
+/-- Merge a left and a right bit vector into a single vector of length
+    `k + ℓ`.  The result places the `k` left bits first followed by the
+    `ℓ` right bits. -/
+def mergeBits (k ℓ : ℕ) (xL : Fin k → Bool) (xR : Fin ℓ → Bool) :
+    Fin (k + ℓ) → Bool :=
+  fun i =>
+    if h : (i : ℕ) < k then
+      xL ⟨i, h⟩
+    else
+      let hle : k ≤ (i : ℕ) := le_of_not_lt h
+      let hlt : (i : ℕ) - k < ℓ := by
+        have hi : (i : ℕ) < k + ℓ := i.is_lt
+        have hi' : k + ((i : ℕ) - k) < k + ℓ := by
+          simpa [Nat.add_sub_of_le hle] using hi
+        exact Nat.lt_of_add_lt_add_left hi'
+      xR ⟨(i : ℕ) - k, hlt⟩
+
+/-- Taking the left half of a merged vector recovers the original left
+    component. -/
+lemma leftBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → Bool) :
+    leftBits (N := k + ℓ) k ℓ rfl (mergeBits k ℓ xL xR) = xL := by
+  funext i
+  dsimp [leftBits, mergeBits]
+  have hi : ((Fin.castAdd ℓ i : Fin (k + ℓ)) : ℕ) < k := by
+    simpa using i.is_lt
+  simp [hi]
+
+/-- Taking the right half of a merged vector recovers the original right
+    component. -/
+lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → Bool) :
+    rightBits (N := k + ℓ) k ℓ rfl (mergeBits k ℓ xL xR) = xR := by
+  funext j
+  dsimp [rightBits, mergeBits]
+  have hnot : ¬((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) < k :=
+    by
+      -- The value of `j.addNat k` is `j + k`, hence not `< k`.
+      simpa using not_lt_of_ge (Nat.le_add_left k j)
+  have hsub :
+      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k = j := by
+    -- Casting does not change the underlying value.
+    simp [Fin.addNat]
+  have hlt :
+      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k < ℓ := by
+    -- Bounds follow from the definition of `addNat`.
+    simpa [hsub] using j.is_lt
+  simp [hnot, hsub, hlt]
+
+
 
 /-- Schematic definition of the meet‑in‑the‑middle SAT algorithm using
     a rectangular cover of the MCSP truth tables.  The algorithm loops

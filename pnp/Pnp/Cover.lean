@@ -55,6 +55,13 @@ lemma numeric_bound (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h := by
       simp at this
       exact this
 
+/-!
+The legacy `Pnp2` development includes a variant of this lemma without
+the positivity assumption on `n`.  For the streamlined rewrite we keep
+the slightly simpler statement here and postpone the general bound to
+future work.
+-/
+
 /-! ## Auxiliary predicates -/
 
 variable {n : ℕ} (F : Family n)

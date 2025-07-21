@@ -657,6 +657,21 @@ lemma mu_union_singleton_lt {F : Family n} {Rset : Finset (Subcube n)}
   -- Add `2*h` to both sides.
   simpa [mu] using Nat.add_lt_add_left hcard (2 * h)
 
+/-!
+Adding a rectangle that covers at least one previously uncovered
+pair decreases the measure `μ` by at least one.
+This quantified version of `mu_union_singleton_lt` is occasionally
+convenient when reasoning about numeric bounds.
+-/
+lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    (hx : ∃ p ∈ uncovered F Rset, p.2 ∈ₛ R) :
+    mu F h (Rset ∪ {R}) + 1 ≤ mu F h Rset := by
+  classical
+  have hlt :=
+    mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
+  exact Nat.succ_le_of_lt hlt
+
 lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
     mu F h (R₁ ∪ R₂) ≤ mu F h R₁ := by
   classical

@@ -189,6 +189,28 @@ lemma one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
   have hstep := two_mul_mBound_le_succ (n := n) (h := h)
   exact hdouble.trans hstep
 
+/-!
+Bounding the union of a cover with a single new rectangle.  If the existing
+set fits inside `mBound n h`, then adding one more rectangle still stays below
+`mBound n (h + 1)`.  The dimension must be positive so that the budget
+increases by at least one.
+-/
+lemma card_union_singleton_mBound_succ {n h : ℕ}
+    {Rset : Finset (Subcube n)} {R : Subcube n}
+    (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
+    (Rset ∪ {R}).card ≤ mBound n (h + 1) := by
+  classical
+  -- First bound the union by the sum of cardinals.
+  have hsum : (Rset ∪ {R}).card ≤ Rset.card + 1 := by
+    simpa using (Finset.card_union_le (s := Rset) (t := ({R} : Finset (Subcube n))))
+  -- Bound the sum by `mBound n h + 1` using the hypothesis on `Rset`.
+  have hbound : Rset.card + 1 ≤ mBound n h + 1 :=
+    Nat.add_le_add_right hcard 1
+  -- Increase the budget by one to absorb the extra rectangle.
+  have hstep := one_add_mBound_le_succ (n := n) (h := h) hn
+  -- Combine the inequalities.
+  exact hsum.trans <| hbound.trans hstep
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

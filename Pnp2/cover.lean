@@ -451,6 +451,17 @@ lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
 
+/-!  A handy special case of `AllOnesCovered`: a single rectangle equal to
+`Subcube.full` trivially covers all `1`-inputs of any family.  We record this
+lemma explicitly to ease test proofs and small examples. -/
+lemma AllOnesCovered.full (F : Family n) :
+    AllOnesCovered F ({Subcube.full} : Finset (Subcube n)) := by
+  classical
+  intro f hf x hx
+  refine ⟨Subcube.full, by simp, ?_⟩
+  -- `Subcube.full` contains every point of the cube by definition.
+  simpa using (Subcube.mem_full (n := n) (x := x))
+
 
 /-! ### Uncovered pairs and a simple measure
 

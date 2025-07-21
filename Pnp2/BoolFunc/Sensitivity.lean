@@ -7,7 +7,7 @@ open Finset
 
 namespace BoolFunc
 
-variable {n : ℕ} [Fintype (Point n)]
+variable {n : ℕ}
 
 /-- `sensitivityAt f x` is the number of coordinates on which flipping the
     input changes the value of `f`. -/
@@ -16,10 +16,10 @@ def sensitivityAt (f : BFunc n) (x : Point n) : ℕ :=
 
 /-- The (block) sensitivity of a Boolean function.  We take the maximum of
     `sensitivityAt` over all points of the cube. -/
-def sensitivity (f : BFunc n) : ℕ :=
+def sensitivity (f : BFunc n) [Fintype (Point n)] : ℕ :=
   (Finset.univ.sup fun x => sensitivityAt f x)
 
-lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
+lemma sensitivityAt_le (f : BFunc n) (x : Point n) [Fintype (Point n)] :
     sensitivityAt f x ≤ sensitivity f :=
   by
     classical
@@ -29,7 +29,7 @@ lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
 /-! ### Sensitivity and restrictions -/
 
 @[simp] lemma sensitivityAt_restrict_le (f : BFunc n) (j : Fin n)
-    (b : Bool) (x : Point n) :
+    (b : Bool) (x : Point n) [Fintype (Point n)] :
     sensitivityAt (f.restrictCoord j b) x ≤
       sensitivityAt f (Point.update x j b) := by
   classical
@@ -62,12 +62,14 @@ lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
     · -- For `i ≠ j` we use the swap lemma to rewrite the update order.
       have hi' : f (Point.update z i (!z i)) ≠ f z := by
         simpa [hz_i i hij, hz, hij] using hi
-      exact Finset.mem_filter.mpr ⟨by simpa, hi'⟩
+      -- The goal fits the `simp` pattern directly.
+      exact Finset.mem_filter.mpr ⟨by simp, hi'⟩
   -- The subset relation yields the desired card inequality.
   have hcard := Finset.card_le_card hsubset
   simpa [hz] using hcard
 
-lemma sensitivity_restrictCoord_le (f : BFunc n) (j : Fin n) (b : Bool) :
+lemma sensitivity_restrictCoord_le (f : BFunc n) (j : Fin n) (b : Bool)
+    [Fintype (Point n)] :
     sensitivity (f.restrictCoord j b) ≤ sensitivity f := by
   classical
   unfold sensitivity
@@ -83,7 +85,7 @@ construction of a decision tree: restricting the family to `i = b`
 keeps all sensitivities below the original bound.
  -/
 lemma sensitivity_family_restrict_le (F : Family n) (i : Fin n) (b : Bool)
-    {s : ℕ} (hF : ∀ f ∈ F, sensitivity f ≤ s) :
+    [Fintype (Point n)] {s : ℕ} (hF : ∀ f ∈ F, sensitivity f ≤ s) :
     ∀ g ∈ F.restrict i b, sensitivity g ≤ s := by
   intro g hg
   classical
@@ -100,7 +102,8 @@ If a Boolean function has positive sensitivity, then there exists a coordinate
 whose value change flips the function on some input.  This lemma extracts such
 a witness and will be useful for constructing decision trees.
 -/
-lemma exists_sensitive_coord (f : BFunc n) (hpos : 0 < sensitivity f) :
+lemma exists_sensitive_coord (f : BFunc n) [Fintype (Point n)]
+    (hpos : 0 < sensitivity f) :
     ∃ i : Fin n, ∃ x : Point n, f x ≠ f (Point.update x i (!x i)) := by
   classical
   -- Expand the definition of sensitivity.  The assumption `hpos` shows that the

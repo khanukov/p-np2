@@ -1109,6 +1109,93 @@ lemma buildCover_covers (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   -- **Termination proofs for recursive calls**
   · exact Nat.pred_lt (Nat.pos_of_ne_zero (by linarith))
 
+/-!
+`buildCover_covers_with` extends `buildCover_covers` to an arbitrary
+initial collection of rectangles.  The union of this starting set with
+the rectangles produced by `buildCover` still covers all `1`-inputs of
+the family.  The proof follows the same recursion as above, with an
+additional case distinction for points already covered by `Rset`.-/
+lemma buildCover_covers_with (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (Rset : Finset (Subcube n)) :
+    AllOnesCovered F (Rset ∪ buildCover F h hH Rset) := by
+  classical
+  -- well-founded recursion on the uncovered count as in `buildCover_covers`.
+  revert F
+  refine (fun F ↦ _ : AllOnesCovered F (Rset ∪ buildCover F h hH Rset)) ?_?_
+  intro F
+  suffices H : ∀ S, AllOnesCovered F (S ∪ buildCover F h hH S) by
+    simpa using H Rset
+  intro S
+  -- Analyse the first uncovered input of `S` if it exists.
+  cases hfu : firstUncovered F S with
+  | none =>
+      -- If no uncovered pair remains, `S` already covers everything and the
+      -- recursion terminates without adding new rectangles.
+      have hbase : AllOnesCovered F S :=
+        allOnesCovered_of_firstUncovered_none (F := F) (Rset := S) hfu
+      simpa [buildCover, hfu, Finset.union_self] using hbase
+  | some tup =>
+      -- A witness `⟨f, x⟩` lies in `uncovered F S`.
+      rcases tup with ⟨f, x⟩
+      have hf : f ∈ F := (Set.choose?_mem (S := uncovered F S) hfu).1
+      have hx_true : f x = true := (Set.choose?_mem (S := uncovered F S) hfu).2.1
+      have hxNC : NotCovered (Rset := S) x := (Set.choose?_mem (S := uncovered F S) hfu).2.2
+      -- Compute the maximum sensitivity `s` of functions in `F`.
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image ⟨f, hf⟩ _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg ↦ Finset.le_max' sensSet s (by simp [sensSet, hg])
+      -- Split on the sensitivity threshold as in `buildCover`.
+      cases hs : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
+      | inl hs_small =>
+          -- Low-sensitivity branch inserts the rectangles `R_ls`.
+          obtain ⟨R_ls, _hm, Hcover, _hsize⟩ :=
+            BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
+          have hcov_union : AllOnesCovered F (S ∪ R_ls) := by
+            intro g hg y hy
+            by_cases hyS : ∃ R ∈ S, y ∈ₛ R
+            · rcases hyS with ⟨R, hR, hyR⟩
+              exact ⟨R, by simp [Finset.mem_union.mpr (Or.inl hR)], hyR⟩
+            · obtain ⟨R, hRls, hyR⟩ := Hcover g hg y hy
+              exact ⟨R, by simp [Finset.mem_union.mpr (Or.inr hRls)], hyR⟩
+          -- Resulting cover is `S ∪ R_ls`.
+          simpa [buildCover, hfu, hs_small, Finset.union_assoc] using hcov_union
+      | inr hs_large =>
+          -- Entropy branch: recurse on restricted families.
+          obtain ⟨i, b, Hdrop⟩ :=
+            BoolFunc.exists_coord_entropy_drop (F := F) (hn := by decide)
+              (hF := Finset.card_pos.mpr ⟨f, hf⟩)
+          let F0 := F.restrict i b
+          let F1 := F.restrict i (!b)
+          have hH0 : BoolFunc.H₂ F0 ≤ (h - 1 : ℝ) := by
+            simpa using (BoolFunc.H₂_restrict_le (F := F) (i := i) (b := b)).trans Hdrop
+          have hH1 : BoolFunc.H₂ F1 ≤ (h - 1 : ℝ) := by
+            simpa using (BoolFunc.H₂_restrict_compl_le (F := F) (i := i) (b := b)).trans Hdrop
+          -- Cover the input depending on the value of `x i`.
+          intro g hg y hy
+          by_cases hyS : ∃ R ∈ S, y ∈ₛ R
+          · rcases hyS with ⟨R, hR, hyR⟩
+            exact ⟨R, by simp [Finset.mem_union.mpr (Or.inl hR)], hyR⟩
+          by_cases hi : y i = b
+          · let g0 := g.restrictCoord i b
+            have hg0 : g0 ∈ F0 := Finset.mem_image_of_mem (fun f => f.restrictCoord i b) hg
+            have hg0y : g0 y = true := by simp [BoolFunc.restrictCoord, hi, hy]
+            rcases buildCover_covers (F := F0) (h := h - 1) (hH := hH0) g0 hg0 y hg0y with ⟨R0, hR0, hyR0⟩
+            exact ⟨R0, by
+              have hmem : R0 ∈ buildCover F0 (h - 1) hH0 ∪ buildCover F1 (h - 1) hH1 :=
+                Finset.mem_union.mpr (Or.inl hR0)
+              simpa [buildCover, hfu, hs_large] using hmem, hyR0⟩
+          · let g1 := g.restrictCoord i (!b)
+            have hg1 : g1 ∈ F1 := Finset.mem_image_of_mem (fun f => f.restrictCoord i (!b)) hg
+            have hg1y : g1 y = true := by simp [BoolFunc.restrictCoord, hi, hy]
+            rcases buildCover_covers (F := F1) (h := h - 1) (hH := hH1) g1 hg1 y hg1y with ⟨R1, hR1, hyR1⟩
+            exact ⟨R1, by
+              have hmem : R1 ∈ buildCover F0 (h - 1) hH0 ∪ buildCover F1 (h - 1) hH1 :=
+                Finset.mem_union.mpr (Or.inr hR1)
+              simpa [buildCover, hfu, hs_large] using hmem, hyR1⟩
+  -- Recursive calls decrease the measure.
+  · exact Nat.pred_lt (Nat.pos_of_ne_zero (by linarith))
+
 /-! ## Basic properties of `buildCover` -/
 
 /--

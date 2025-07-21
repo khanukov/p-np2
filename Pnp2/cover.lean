@@ -189,12 +189,13 @@ lemma one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
   have hstep := two_mul_mBound_le_succ (n := n) (h := h)
   exact hdouble.trans hstep
 
-/-!
-Bounding the union of a cover with a single new rectangle.  If the existing
-set fits inside `mBound n h`, then adding one more rectangle still stays below
-`mBound n (h + 1)`.  The dimension must be positive so that the budget
-increases by at least one.
--/
+/--
+`card_union_singleton_mBound_succ` is a numeric helper for the counting
+argument of `buildCover`.  If a set of rectangles already fits inside
+`mBound n h`, adding one additional rectangle increases the size by at most one,
+so the union still lies within the next budget `mBound n (h + 1)`.  The
+dimension must be positive to ensure that this next budget is indeed larger.
+--/
 lemma card_union_singleton_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :

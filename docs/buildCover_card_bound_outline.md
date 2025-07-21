@@ -104,6 +104,12 @@ budget satisfies `log₂(n+1)^2 ≤ h`. The sunflower step inserts only a bounde
 rectangles, so the slack in `mBound` absorbs this additive overhead. Combining these estimates
 yields `(buildCover F h ∅).card ≤ mBound n h` for the initial call.
 
+The formal definition `coverFamily` packages this construction and its
+properties.  In particular the lemma `coverFamily_card_bound` exposes the
+cardinality estimate without unfolding the recursion.  While numeric
+constants may change as the development matures, the overall measure-based
+strategy is expected to remain stable.
+
 # Detailed branch reasoning
 
 The following notes expand the outline with a more explicit measure-based argument.

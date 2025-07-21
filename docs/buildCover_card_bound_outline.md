@@ -124,6 +124,9 @@ of `buildCover` strictly decreases this measure.
 ## Base case
 When `uncovered F R = ∅` the recursion stops and returns `R`.  Since the size of
 `R` is assumed to be at most `mBound n h`, the claim follows immediately.
+The file `cover.lean` isolates this reasoning in the lemma
+`buildCover_card_bound_of_none`, which bounds the result size under the
+same hypothesis.
 
 ## Low-sensitivity branch
 Assume every `g ∈ F` has sensitivity at most `s` with `s < log₂(n+1)`.  The lemma

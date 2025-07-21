@@ -826,6 +826,50 @@ lemma mu_buildCover_lt_start (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     Nat.lt_add_of_pos_right hpos
   simpa [hmu, hmu0] using hgt
 
+/--
+`mu_union_buildCover_lt` generalises `mu_buildCover_lt_start` to an
+arbitrary starting set of rectangles.  Whenever `firstUncovered` returns a
+pair, the recursion inserts additional subcubes that strictly decrease the
+measure `μ`.
+-/
+lemma mu_union_buildCover_lt (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    {Rset : Finset (Subcube n)}
+    (hfu : firstUncovered (F := F) Rset ≠ none) :
+    mu F h (Rset ∪ buildCover F h hH Rset) < mu F h Rset := by
+  classical
+  -- The uncovered set is nonempty because `firstUncovered` returned a value.
+  have hpos : 0 < (uncovered F Rset).toFinset.card := by
+    have hne : uncovered F Rset ≠ ∅ := by
+      intro hempty
+      have hfu0 :=
+        (firstUncovered_none_iff (F := F) (R := Rset)).2 hempty
+      exact hfu hfu0
+    obtain ⟨p, hp⟩ := Set.nonempty_iff_ne_empty.mpr hne
+    exact Finset.card_pos.mpr ⟨p, by simpa using hp⟩
+  -- The final union covers all 1-inputs, hence its measure collapses to `2*h`.
+  have hcov := buildCover_covers (F := F) (h := h) (hH := hH) (Rset := Rset)
+  have hmu_fin :
+      mu F h (Rset ∪ buildCover F h hH Rset) = 2 * h := by
+    -- First drop the extra rectangles from the measure comparison.
+    have hdrop :=
+      mu_union_le (F := F) (h := h)
+        (R₁ := buildCover F h hH Rset) (R₂ := Rset)
+    have hmain : mu F h (buildCover F h hH Rset) = 2 * h :=
+      mu_of_allCovered (F := F) (Rset := buildCover F h hH Rset)
+        (h := h) hcov
+    have hle :
+        mu F h (Rset ∪ buildCover F h hH Rset) ≤ 2 * h := by
+      simpa [Finset.union_comm, hmain] using hdrop
+    have hge : 2 * h ≤ mu F h (Rset ∪ buildCover F h hH Rset) :=
+      mu_lower_bound (F := F) (Rset := Rset ∪ buildCover F h hH Rset)
+        (h := h)
+    exact le_antisymm hle hge
+  -- The starting measure exceeds `2*h` because a pair is uncovered.
+  have hstart :=
+    mu_gt_of_firstUncovered_some (F := F) (Rset := Rset) (h := h) hfu
+  -- Combine the two facts.
+  simpa [hmu_fin] using hstart
+
 /-!
 `mu_buildCover_le_start` is a weak version of `mu_buildCover_lt_start`
 that holds unconditionally.  If the family already has no uncovered

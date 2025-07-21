@@ -40,8 +40,7 @@ lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
   have hz_i (i : Fin n) (hij : i ≠ j) :
       Point.update (Point.update x i (!x i)) j b =
         Point.update z i (!z i) := by
-    have := Point.update_swap (x := x) hij (!x i) b
-    simpa [hz, hij] using this
+    simpa [hz, hij] using Point.update_swap (x := x) hij (!x i) b
   have hsubset :
       (Finset.univ.filter fun i =>
           f (Point.update (Point.update x i (!x i)) j b) ≠ f z) ⊆
@@ -56,13 +55,13 @@ lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
         by_cases hk : k = i
         · subst hk; simp [Point.update]
         · simp [Point.update, hk]
-      have hcontr : f (Point.update x i b) ≠ f (Point.update x i b) := by
+      have hcontr : False := by
         simpa [hz, hpoint] using hi
-      exact (hcontr rfl).elim
+      exact hcontr.elim
     · -- For `i ≠ j` we use the swap lemma to rewrite the update order.
       have hi' : f (Point.update z i (!z i)) ≠ f z := by
         simpa [hz_i i hij, hz, hij] using hi
-      exact Finset.mem_filter.mpr ⟨by simpa, hi'⟩
+      exact Finset.mem_filter.mpr ⟨by simp, hi'⟩
   -- The subset relation yields the desired card inequality.
   have hcard := Finset.card_le_card hsubset
   simpa [hz] using hcard

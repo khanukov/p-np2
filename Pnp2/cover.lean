@@ -1377,14 +1377,28 @@ lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       have hnum := numeric_bound (n := n) (h := h)
       exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) hnum
 
+/-!
+Bounding the size of the cover by the initial measure `μ`.  The
+coarse linear estimate together with `mu_init_linear_bound` shows that
+the rectangles produced by `buildCover` never exceed the starting
+measure.
+-/
+lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover F h hH).card ≤ mu F h (∅ : Finset (Subcube n)) := by
+  classical
+  have hlin := buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
+  have hμ := mu_init_linear_bound (F := F) (h := h)
+  exact hlin.trans hμ
+
 -/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
-  -- First obtain the coarse linear bound and then specialise it to
-  -- `mBound n h` via `numeric_bound`.
-  have hlin := buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
-  exact hlin.trans (numeric_bound (n := n) (h := h))
+  -- Bound the cardinality by the initial measure and then specialise
+  -- to `mBound` via `mu_init_bound`.
+  have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
+  have hbound := mu_init_bound (F := F) (h := h)
+  exact hμ.trans hbound
 
   -- When both the dimension and entropy budget are large enough we can
   -- apply the specialised low-sensitivity lemma.  Otherwise we fall back

@@ -169,7 +169,17 @@ example {n : ℕ} (t : DecisionTree n) (x : Point n) :
   classical
   simpa using
     DecisionTree.eval_pair_mem_coloredSubcubes (t := t) (x := x)
-
-
+/-- `cover_exists` produces a small cover for the constant true function. -/
+example {n : ℕ} :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R ({fun _ : Point n => true} : Family n)) ∧
+      AllOnesCovered ({fun _ : Point n => true} : Family n) Rset ∧
+      Rset.card ≤ mBound n 0 := by
+  classical
+  -- Collision entropy of the constant family is zero.
+  have hH : BoolFunc.H₂ ({fun _ : Point n => true} : Family n) ≤ (0 : ℝ) := by simp
+  obtain ⟨Rset, hmono, hcov, hbound⟩ :=
+    Cover.cover_exists (F := ({fun _ : Point n => true} : Family n)) (h := 0) hH
+  exact ⟨Rset, hmono, hcov, hbound⟩
 
 end Pnp2Tests

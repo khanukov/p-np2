@@ -103,3 +103,49 @@ The proof also requires several numeric comparisons. In the entropy branch the i
 budget satisfies `log₂(n+1)^2 ≤ h`. The sunflower step inserts only a bounded number of
 rectangles, so the slack in `mBound` absorbs this additive overhead. Combining these estimates
 yields `(buildCover F h ∅).card ≤ mBound n h` for the initial call.
+
+# Detailed branch reasoning
+
+The following notes expand the outline with a more explicit measure-based argument.
+Let
+$$
+  \mu(F,h,R) = 2h + |\,\text{uncovered}\,F\,R\,|
+$$
+be the lexicographic measure driving the recursion.  The outer induction is on
+`h` and the inner induction counts the remaining uncovered pairs.  Each branch
+of `buildCover` strictly decreases this measure.
+
+## Base case
+When `uncovered F R = ∅` the recursion stops and returns `R`.  Since the size of
+`R` is assumed to be at most `mBound n h`, the claim follows immediately.
+
+## Low-sensitivity branch
+Assume every `g ∈ F` has sensitivity at most `s` with `s < log₂(n+1)`.  The lemma
+`low_sensitivity_cover` provides a set `R_ls` covering all remaining inputs and
+bounding its size by `2^{C * s * log₂(n+1)}` for a universal constant `C`
+(currently chosen as `10`).  Because `s < log₂(n+1)` this exponent is dominated
+by `10 * h` once `log₂(n+1)^2 ≤ h`.  Consequently
+`R.card + R_ls.card ≤ mBound n h`, which establishes the inductive step.
+
+## Entropy branch
+If the family is not low-sensitivity we use `exists_coord_entropy_drop` to find a
+coordinate that lowers collision entropy.  Splitting on this bit yields two
+restricted families `F₀` and `F₁` with entropy budget `h - 1`.  By induction
+their covers contain at most `mBound n (h - 1)` rectangles.  The union of the
+two covers therefore has size at most `2 * mBound n (h - 1)`, which stays below
+`mBound n h` by `two_mul_mBound_le_succ`.
+
+## Sunflower branch
+Occasionally the sunflower lemma extracts a single rectangle that covers many
+functions simultaneously.  Adding this rectangle lowers the number of uncovered
+pairs by at least two.  The measure drops accordingly and the induction
+hypothesis applies to the remaining recursion with the same entropy budget.
+Since `mBound` grows fast enough to absorb a constant additive term, inserting a
+bounded number of such rectangles preserves the desired inequality.
+
+## Conclusion
+By analysing all three branches we see that every recursive call reduces `µ` and
+that the numeric constant in `mBound` eventually dominates the total number of
+inserted rectangles.  Hence the final cover returned by `buildCover` never
+contains more than `mBound n h` rectangles.
+

@@ -9,29 +9,43 @@ namespace CoverNumeric
 variable {N Nδ : ℕ} (F : Family N)
 
 /-!  The original development left the numeric cover bounds abstract.
-    For now we provide trivial placeholder definitions so that other
-    modules can use the API without relying on additional axioms.  The
-    quantities below will be replaced by meaningful constructions once
-    the full counting argument is formalised. -/
+    This file now derives a simple numeric bound from `familyEntropyCover`.
+    The definitions remain noncomputable, but they no longer collapse to
+    trivial constants.  Future work will refine these quantities further.
+-/
 
-/-- Minimal size of a rectangular cover for `F`.  The current
-    repository does not implement the actual optimisation procedure, so
-    we simply return `0`.  This suffices for downstream files that only
-    need a numerical bound. -/
-def minCoverSize (F : Family N) : ℕ := 0
+/--
+`minCoverSize F h hH` is the size of the cover returned by
+`familyEntropyCover` when the family has collision entropy at most `h`.
+The witness cover is obtained via classical choice, so the definition is
+noncomputable but entirely constructive.
+-/
+noncomputable def minCoverSize (F : Family N) (h : ℕ) (hH : H₂ F ≤ (h : ℝ)) : ℕ :=
+  (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card
 
 /-- Basic entropy-based bound on `minCoverSize`.  Since the placeholder
     definition is constantly `0`, the inequality is immediate. -/
-lemma buildCover_size_bound (h₀ : H₂ F ≤ N - Nδ) :
-    minCoverSize F ≤ 2 ^ (N - Nδ) := by
-  simpa [minCoverSize] using (Nat.zero_le _)
+/--
+`minCoverSize` is bounded by `mBound`.  Instantiating `familyEntropyCover`
+with the given entropy estimate yields the cover, and `pow_le_mBound`
+translates the bound to a simple exponential.  The dimension must be
+positive for this step.
+-/
+lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ)) (hn : 0 < N) :
+    minCoverSize F (h := N - Nδ) h₀ ≤ 2 ^ (N - Nδ) := by
+  classical
+  have hbound :=
+    (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀).bound
+  have hpow := pow_le_mBound (n := N) (h := N - Nδ) hn
+  exact hbound.trans hpow
 
 /-- Convenience wrapper exposing the numeric bound on the minimal cover
     size.  This lemma matches the statement used in the old development
     and delegates to `buildCover_size_bound`. -/
 lemma minCoverSize_bound
-    (h₀ : H₂ F ≤ N - Nδ) : minCoverSize F ≤ 2 ^ (N - Nδ) := by
-  simpa using buildCover_size_bound (F := F) (Nδ := Nδ) h₀
+    (h₀ : H₂ F ≤ (N - Nδ : ℝ)) (hn : 0 < N) :
+    minCoverSize F (h := N - Nδ) h₀ ≤ 2 ^ (N - Nδ) := by
+  simpa using buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀) hn
 
 /-!  `buildCover_card n` denotes the size of the cover returned by the
 experimental algorithm on families of dimension `n`.  The precise

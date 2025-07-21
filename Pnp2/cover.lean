@@ -1620,6 +1620,54 @@ lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
         have hsize :=
           buildCover_card_init_mu (F := F) (h := h) (hH := hH)
         exact hsize.trans (numeric_bound (n := n) (h := h))
+
+/--
+`buildCover_card_bound_lowSens_or_with` generalises
+`buildCover_card_bound_lowSens_or` to an arbitrary starting set of rectangles.
+Provided the existing rectangles fit into the current budget, the resulting
+cover still obeys the bound `mBound n (h + 1)`.  The proof mirrors the case for
+an empty starting set.
+-/
+lemma buildCover_card_bound_lowSens_or_with (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) (Rset : Finset (Subcube n))
+    (hcard : Rset.card ≤ mBound n h) :
+    (buildCover F h hH Rset).card ≤ mBound n (h + 1) := by
+  classical
+  -- Analyse the first uncovered pair of `Rset`.
+  cases hfu : firstUncovered F Rset with
+  | none =>
+      -- Nothing to add: the result equals the starting set.
+      have hres : buildCover F h hH Rset = Rset := by
+        simpa [buildCover, hfu]
+      -- Increase the bound to `h + 1` using monotonicity of `mBound`.
+      have hmono := mBound_mono (n := n) (h₁ := h) (h₂ := h + 1) (Nat.le_succ h)
+      simpa [hres] using hcard.trans hmono
+  | some tup =>
+      -- A genuine uncovered pair exists.  Compute the maximal sensitivity `s`.
+      rcases tup with ⟨f, x⟩
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F Rset) hfu with ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      by_cases hs_small : s < Nat.log2 (Nat.succ n)
+      ·
+        -- Low-sensitivity branch: invoke the refined lemma with `Rset`.
+        have hsF : ∀ g ∈ F, sensitivity g < Nat.log2 (Nat.succ n) :=
+          fun g hg => lt_of_le_of_lt (Hsens g hg) hs_small
+        simpa [buildCover, hfu, hs_small] using
+          buildCover_card_bound_lowSens_with (F := F) (h := h) (hH := hH)
+            (hs := hsF) hh hn (Rset := Rset) (hcard := hcard)
+      ·
+        -- Fallback: combine the coarse bound with monotonicity.
+        have hsize :=
+          buildCover_card_init_mu (F := F) (h := h) (hH := hH)
+        have hmain := hsize.trans (numeric_bound (n := n) (h := h))
+        have hmono := mBound_mono (n := n) (h₁ := h) (h₂ := h + 1) (Nat.le_succ h)
+        exact hmain.trans hmono
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The present

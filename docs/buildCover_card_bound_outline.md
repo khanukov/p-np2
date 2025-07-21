@@ -92,3 +92,12 @@ then bounds the rest of the construction.
 Combining all branches yields the desired inequality
 `(buildCover F h Rset).card ≤ mBound n h`.
 \n## Remaining gaps\nThe present Lean proof relies on a coarse measure argument.  While the helper lemmas `mu_union_singleton_lt` and `mu_buildCover_le_start` ensure that the measure drops whenever a rectangle is inserted, the formal connection between this drop and the number of newly added rectangles is still missing.  Establishing this relation will allow the inequality `(buildCover F h hH).card ≤ μ(F,h,∅)` to replace the current placeholder step and complete the induction.
+
+### Numeric considerations
+The proof also requires several numeric comparisons. In the entropy branch the inequality
+`two_mul_mBound_le_succ` guarantees that doubling the bound for budget `h-1` stays below
+`mBound n h`. For the low-sensitivity case the auxiliary constant `10` in the definition of
+`mBound` ensures that `2^{10 * s * log₂(n+1)} ≤ 2^{10 * h}` whenever `s < log₂(n+1)` and the
+budget satisfies `log₂(n+1)^2 ≤ h`. The sunflower step inserts only a bounded number of
+rectangles, so the slack in `mBound` absorbs this additive overhead. Combining these estimates
+yields `(buildCover F h ∅).card ≤ mBound n h` for the initial call.

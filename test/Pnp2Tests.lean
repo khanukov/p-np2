@@ -170,6 +170,16 @@ example {n : ℕ} (t : DecisionTree n) (x : Point n) :
   simpa using
     DecisionTree.eval_pair_mem_coloredSubcubes (t := t) (x := x)
 
+/-- Restricting along a concatenated path is equivalent to
+    applying the restrictions sequentially. -/
+example {n : ℕ} (F : Family n) (p q : List (Fin n × Bool)) :
+    BoolFunc.Family.restrictPath (n := n) (F := F) (p ++ q) =
+      BoolFunc.Family.restrictPath (n := n)
+        (F := BoolFunc.Family.restrictPath (n := n) (F := F) q) p := by
+  classical
+  simpa using
+    BoolFunc.Family.restrictPath_append (F := F) (p := p) (q := q)
+
 
 
 end Pnp2Tests

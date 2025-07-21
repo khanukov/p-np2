@@ -103,3 +103,10 @@ The proof also requires several numeric comparisons. In the entropy branch the i
 budget satisfies `log₂(n+1)^2 ≤ h`. The sunflower step inserts only a bounded number of
 rectangles, so the slack in `mBound` absorbs this additive overhead. Combining these estimates
 yields `(buildCover F h ∅).card ≤ mBound n h` for the initial call.
+
+Additional numeric facts:
+Doubling the bound for budget `h-1` remains below `mBound n h`.  Expanding the definition
+  mBound n h = n * (h + 2) * 2^(10*h)
+yields
+  2 * mBound n (h-1) = n * (h + 1) * 2^(10*h - 9)
+which is at most `mBound n h` for all `h ≥ 1`.

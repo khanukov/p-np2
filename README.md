@@ -52,8 +52,9 @@ gradually migrated across.
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
   `sunflower_exists`.  Monochromaticity of the resulting cover is now
   fully proved via the lemma `buildCover_mono`.  The companion size bound
-  `buildCover_card_bound` is now established using a well-founded
-  induction on the measure `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.
+  `buildCover_card_bound` currently relies on a coarse measure
+  argument; completing the full induction on
+  `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` remains future work.
   The helper lemma `AllOnesCovered.union` abstracts the union step in
   the coverage proof.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;

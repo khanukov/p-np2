@@ -1090,6 +1090,65 @@ lemma buildCover_card_lowSens (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       have hsize' := le_trans hsize hpow
       simpa [hres] using hsize'
 
+/-!  Variant of `buildCover_card_lowSens` that takes an existing set of
+    rectangles.  The lemma adds the low-sensitivity cover on top of
+    `Rset` and bounds the resulting cardinality. -/
+lemma buildCover_card_lowSens_with (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, sensitivity f < Nat.log2 (Nat.succ n))
+    (Rset : Finset (Subcube n)) :
+    (buildCover F h hH Rset).card ≤
+      Rset.card + Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  classical
+  cases hfu : firstUncovered F Rset with
+  | none =>
+      -- If nothing is uncovered, the recursion terminates immediately.
+      have hres : buildCover F h hH Rset = Rset := by
+        simpa [buildCover, hfu]
+      have hle : Rset.card ≤ Rset.card + Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+        Nat.le_add_right _ _
+      simpa [hres] using hle
+  | some tup =>
+      rcases tup with ⟨f, x⟩
+      have F_nonempty : F.Nonempty := by
+        rcases Set.choose?_mem (S := uncovered F Rset) hfu with ⟨hf, -, -⟩
+        exact ⟨f, hf⟩
+      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+      have hs_lt : s < Nat.log2 (Nat.succ n) := by
+        have hle : s ≤ Nat.log2 (Nat.succ n) - 1 := by
+          refine Finset.max'_le ?_?
+          intro t ht
+          rcases Finset.mem_image.mp ht with ⟨g, hg, rfl⟩
+          exact Nat.le_pred_of_lt (hs g hg)
+        have hpos : 0 < Nat.log2 (Nat.succ n) := by
+          have : (1 : ℕ) < Nat.succ n := Nat.succ_lt_succ (Nat.zero_lt_succ _)
+          exact Nat.log2_pos this
+        have : s.succ ≤ Nat.log2 (Nat.succ n) := by
+          simpa [Nat.succ_pred_eq_of_pos hpos] using Nat.succ_le_succ hle
+        exact Nat.lt_of_succ_le this
+      have hs_case : Nat.lt_or_le s (Nat.log2 (Nat.succ n)) := Or.inl hs_lt
+      obtain ⟨R_ls, -, -, hsize⟩ :=
+        BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
+      have hres : buildCover F h hH Rset = Rset ∪ R_ls := by
+        simp [buildCover, hfu, hs_case]
+      have hs_le : s ≤ Nat.log2 (Nat.succ n) := Nat.le_of_lt hs_lt
+      have hexp : 10 * s * Nat.log2 (Nat.succ n)
+          ≤ 10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) := by
+        have := Nat.mul_le_mul_left (Nat.log2 (Nat.succ n)) hs_le
+        have := Nat.mul_le_mul_left 10 this
+        simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+      have hpow := Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) hexp
+      have hsize' := le_trans hsize hpow
+      -- Combine with the existing rectangles via `card_union_le`.
+      have hunion : (Rset ∪ R_ls).card ≤ Rset.card + R_ls.card :=
+        Finset.card_union_le
+      have hfinal : (Rset ∪ R_ls).card ≤
+          Rset.card + Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+        hunion.trans <| Nat.add_le_add_left hsize' _
+      simpa [hres] using hfinal
+
 /-!
 `buildCover_card_bound_lowSens` is a numeric refinement of
 `buildCover_card_lowSens`.  When the sensitivity threshold is small

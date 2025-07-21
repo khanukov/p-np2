@@ -1465,8 +1465,13 @@ lemma cover_exists (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
 /-! ## Choice wrapper -/
 
 noncomputable
-def coverFamily (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
-  Classical.choice (cover_exists (F := F) (h := h) hH)
+  def coverFamily (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
+    Classical.choice (cover_exists (F := F) (h := h) hH)
+
+  @[simp] lemma coverFamily_eq_buildCover (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+      coverFamily (F := F) (h := h) hH = buildCover F h hH := by
+    classical
+    simp [coverFamily, cover_exists]
 
 lemma coverFamily_spec (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (∀ R ∈ coverFamily (F := F) (h := h) hH,
@@ -1486,8 +1491,14 @@ lemma coverFamily_spec_cover (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered F (coverFamily (F := F) (h := h) hH) :=
   (coverFamily_spec (F := F) (h := h) hH).2.1
 
-lemma coverFamily_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (coverFamily (F := F) (h := h) hH).card ≤ mBound n h :=
-  (coverFamily_spec (F := F) (h := h) hH).2.2
+  lemma coverFamily_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+      (coverFamily (F := F) (h := h) hH).card ≤ mBound n h :=
+    (coverFamily_spec (F := F) (h := h) hH).2.2
 
-end Cover
+  lemma coverFamily_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+      (coverFamily (F := F) (h := h) hH).card ≤ 2 * h + n := by
+    classical
+    simpa [coverFamily_eq_buildCover (F := F) (h := h) hH] using
+      buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
+
+  end Cover

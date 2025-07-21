@@ -174,6 +174,21 @@ lemma card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
   have hstep := two_mul_mBound_le_succ (n := n) (h := h)
   exact hsum.trans <| hdouble.trans hstep
 
+/-!  Increasing the entropy budget by one more than compensates the
+addition of a single rectangle.  This convenient numeric fact helps
+bound union steps where at least one new subcube is inserted. -/
+lemma one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
+    mBound n h + 1 ≤ mBound n (h + 1) := by
+  have hpos : 1 ≤ mBound n h := by
+    have := mBound_pos (n := n) (h := h) hn
+    exact Nat.succ_le_of_lt this
+  have hdouble : mBound n h + 1 ≤ 2 * mBound n h := by
+    have htwice : mBound n h + 1 ≤ mBound n h + mBound n h :=
+      Nat.add_le_add_left hpos (mBound n h)
+    simpa [two_mul] using htwice
+  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+  exact hdouble.trans hstep
+
 /-! ### Counting bound for arbitrary covers -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card

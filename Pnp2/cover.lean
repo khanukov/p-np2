@@ -1676,4 +1676,13 @@ lemma coverFamily_spec_cover (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     simpa [coverFamily_eq_buildCover (F := F) (h := h) hH] using
       buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
 
-  end Cover
+lemma coverFamily_card_univ_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (F := F) (h := h) hH).card ≤ bound_function n := by
+  classical
+  -- `buildCover_card_univ_bound` already gives the universal bound for
+  -- the underlying `buildCover` construction.  We reuse it here via
+  -- the equality `coverFamily_eq_buildCover`.
+  simpa [coverFamily_eq_buildCover (F := F) (h := h) hH] using
+    buildCover_card_univ_bound (F := F) (h := h) (hH := hH)
+
+end Cover

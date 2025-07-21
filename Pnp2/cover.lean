@@ -821,6 +821,33 @@ lemma mu_union_singleton_double_lt {F : Family n} {Rset : Finset (Subcube n)}
   -- Apply the basic inequality for one newly covered pair.
   exact mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
 
+/--
+If a single rectangle contained in `R₂` simultaneously covers two distinct
+uncovered pairs of `R₁`, then taking the union with *all* of `R₂` decreases the
+measure `μ` by at least two.  This lemma is a small convenience wrapper around
+`mu_union_singleton_double_succ_le` and the monotonicity of `μ`.-/
+lemma mu_union_double_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ : Σ f : BoolFunc n, Vector Bool n}
+    (hp₁ : p₁ ∈ uncovered F R₁) (hp₂ : p₂ ∈ uncovered F R₁)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂)
+    (hmem : R ∈ R₂) :
+    mu F h (R₁ ∪ R₂) + 2 ≤ mu F h R₁ := by
+  classical
+  -- Adding additional rectangles can only decrease the measure.
+  have hsub : R₁ ∪ {R} ⊆ R₁ ∪ R₂ := by
+    intro x hx
+    rcases Finset.mem_union.mp hx with hx₁ | hx₂
+    · exact Finset.mem_union.mpr <| Or.inl hx₁
+    · rcases Finset.mem_singleton.mp hx₂ with rfl
+      exact Finset.mem_union.mpr <| Or.inr hmem
+  have hmono := mu_mono_subset (F := F) (h := h) (R₁ := R₁ ∪ {R})
+      (R₂ := R₁ ∪ R₂) hsub
+  have hdouble := mu_union_singleton_double_succ_le (F := F) (Rset := R₁)
+      (R := R) (h := h) hp₁ hp₂ hp₁R hp₂R hne
+  have := add_le_add_right hmono 2
+  exact le_trans this hdouble
+
 lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
     mu F h (R₁ ∪ R₂) ≤ mu F h R₁ := by
   classical

@@ -90,8 +90,10 @@ two without changing `h`.  The induction hypothesis for the smaller measure
 then bounds the rest of the construction.
 
 Combining all branches yields the desired inequality
-`(buildCover F h Rset).card ≤ mBound n h`.
-\n## Remaining gaps\nThe present Lean proof relies on a coarse measure argument.  While the helper lemmas `mu_union_singleton_lt` and `mu_buildCover_le_start` ensure that the measure drops whenever a rectangle is inserted, the formal connection between this drop and the number of newly added rectangles is still missing.  Establishing this relation will allow the inequality `(buildCover F h hH).card ≤ μ(F,h,∅)` to replace the current placeholder step and complete the induction.
+`(buildCover F h Rset).card ≤ mBound n h`.  The current development
+implements this induction in `cover.lean`, relying on the lemmas
+`mu_union_singleton_lt` and `mu_buildCover_le_start` to show that each
+recursive step lowers the measure.
 
 ### Numeric considerations
 The proof also requires several numeric comparisons. In the entropy branch the inequality

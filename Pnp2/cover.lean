@@ -1443,20 +1443,18 @@ the rectangles produced by `buildCover` never exceed the starting
 measure.
 -/
 lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover F h hH).card ≤ mu F h (∅ : Finset (Subcube n)) := by
+    (buildCover F h hH).card ≤ 2 * h + n := by
   classical
-  have hlin := buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
-  have hμ := mu_init_linear_bound (F := F) (h := h)
-  exact hlin.trans hμ
+  simpa using
+    buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
 
 -/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical
-  -- Bound the cardinality by the initial measure and then specialise
-  -- to `mBound` via `mu_init_bound`.
+  -- Combine the linear bound with the numeric growth of `mBound`.
   have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
-  have hbound := mu_init_bound (F := F) (h := h)
+  have hbound := numeric_bound (n := n) (h := h)
   exact hμ.trans hbound
 
   -- When both the dimension and entropy budget are large enough we can

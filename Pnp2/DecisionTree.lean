@@ -429,6 +429,20 @@ noncomputable def restrictPath (F : Family n) : List (Fin n × Bool) → Family 
     (p : List (Fin n × Bool)) :
     restrictPath F ((i, b) :: p) = (restrictPath F p).restrict i b := rfl
 
+/-!  Concatenating paths corresponds to sequentially applying the
+    restrictions.  This helper lemma unfolds the recursion and shows
+    that processing `p ++ q` is the same as first restricting by `q`
+    and then by `p`. -/
+lemma restrictPath_append (F : Family n) (p q : List (Fin n × Bool)) :
+    restrictPath F (p ++ q) = restrictPath (restrictPath F q) p := by
+  induction p with
+  | nil =>
+      simp [restrictPath]
+  | cons hd tl ih =>
+      cases hd with
+      | mk i b =>
+          simp [List.cons_append, restrictPath, ih]
+
 /-- Restricting along a path does not increase sensitivity.  This follows by
 iterating `sensitivity_family_restrict_le`. -/
 lemma sensitivity_restrictPath_le (F : Family n) (p : List (Fin n × Bool))

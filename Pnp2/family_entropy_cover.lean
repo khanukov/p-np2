@@ -51,4 +51,19 @@ noncomputable def familyEntropyCover
   rcases hcov f hf x hx with ⟨C, hC, hxC⟩
   exact ⟨C, hC, hxC⟩
 
+/-!
+`familyEntropyCover` is defined using `cover_exists`, just like
+`Cover.coverFamily`.  The following lemma exposes this relationship by
+identifying the set of rectangles produced by both constructions.
+This convenience result simplifies linking the wrapper record with the
+underlying cover used elsewhere in the development.
+-/
+@[simp] lemma familyEntropyCover_rects_eq_coverFamily
+    {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
+    (familyEntropyCover (F := F) (h := h) hH).rects
+      = Cover.coverFamily (F := F) (h := h) hH := by
+  classical
+  -- Unfold both constructions and simplify using `cover_exists`.
+  simp [familyEntropyCover, Cover.coverFamily, Cover.cover_exists]
+
 end Boolcube

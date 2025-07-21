@@ -54,7 +54,7 @@ def mergeBits (k ℓ : ℕ) (xL : Fin k → Bool) (xR : Fin ℓ → Bool) :
     if h : (i : ℕ) < k then
       xL ⟨i, h⟩
     else
-      let hle : k ≤ (i : ℕ) := le_of_not_lt h
+      let hle : k ≤ (i : ℕ) := le_of_not_gt h
       let hlt : (i : ℕ) - k < ℓ := by
         have hi : (i : ℕ) < k + ℓ := i.is_lt
         have hi' : k + ((i : ℕ) - k) < k + ℓ := by
@@ -68,8 +68,7 @@ lemma leftBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → B
     leftBits (N := k + ℓ) k ℓ rfl (mergeBits k ℓ xL xR) = xL := by
   funext i
   dsimp [leftBits, mergeBits]
-  have hi : ((Fin.castAdd ℓ i : Fin (k + ℓ)) : ℕ) < k := by
-    simpa using i.is_lt
+  have hi : ((Fin.castAdd ℓ i : Fin (k + ℓ)) : ℕ) < k := i.is_lt
   simp [hi]
 
 /-- Taking the right half of a merged vector recovers the original right
@@ -80,13 +79,15 @@ lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → 
   dsimp [rightBits, mergeBits]
   have hnot : ¬((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) < k :=
     by
-      simpa using not_lt_of_ge (Nat.le_add_left k j)
+      have hge : k ≤ ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) :=
+        by simpa using Nat.le_add_left k j
+      exact not_lt_of_ge hge
   have hsub :
-      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k = j := by
-    simp [Fin.addNat]
+      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k = j :=
+    by simp [Fin.addNat]
   have hlt :
-      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k < ℓ := by
-    simpa [hsub] using j.is_lt
+      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k < ℓ :=
+    by simpa [hsub] using j.is_lt
   simp [hnot, hsub, hlt]
 
 

@@ -1,34 +1,23 @@
-import Pnp2.BoolFunc
+import Pnp2.Boolcube
 import Pnp2.cover
 import Pnp2.canonical_circuit
 
 open Classical
-open BoolFunc
+open Boolcube
 open Cover
+
+notation x " ∈ₛ " R => R.Mem x
+
+def Subcube.monochromaticFor (R : Subcube n) (f : BoolFun n) : Prop :=
+  ∃ b : Bool, ∀ x : Point n, x ∈ₛ R → f x = b
 
 namespace SATCover
 
-/-- Choose a canonical point inside a subcube by assigning `false` to all
-free coordinates. -/
-noncomputable def Subcube.somePoint {n : ℕ} (R : Subcube n) : Point n :=
-  fun i => by
-    classical
-    by_cases h : i ∈ R.idx
-    · exact R.val i h
-    · exact false
-
-lemma somePoint_mem {n : ℕ} (R : Subcube n) : R.mem (Subcube.somePoint R) := by
-  classical
-  intro i hi
-  dsimp [Subcube.somePoint]
-  simp [hi]
-
-/-- Enumerate all rectangles in `cover` and evaluate `Φ` on a witness
-point from each rectangle.  The algorithm succeeds if any evaluation
-returns `true`. -/
+/- Enumerate all rectangles in `cover` and evaluate `Φ` on the sample point of
+each subcube.  The algorithm succeeds if any evaluation returns `true`. -/
 noncomputable def satByCover {n : ℕ}
     (Φ : Circuit n) (cover : Finset (Subcube n)) : Bool :=
-  decide (∃ R ∈ cover, Circuit.eval Φ (Subcube.somePoint R) = true)
+  decide (∃ R ∈ cover, Circuit.eval Φ (Subcube.sample R) = true)
 
 lemma satByCover_true_of_sat {n : ℕ} {Φ : Circuit n} {cover : Finset (Subcube n)}
     (hmono : ∀ R ∈ cover, Subcube.monochromaticFor R (Circuit.eval Φ))
@@ -44,9 +33,11 @@ lemma satByCover_true_of_sat {n : ℕ} {Φ : Circuit n} {cover : Finset (Subcube
     calc
       b = Circuit.eval Φ x := by simpa using hxcol.symm
       _ = true := hx
-  have hpoint : Circuit.eval Φ (Subcube.somePoint R) = b := hb (somePoint_mem R)
-  have hpoint_true : Circuit.eval Φ (Subcube.somePoint R) = true := by simpa [hbtrue] using hpoint
-  have hExists : ∃ R ∈ cover, Circuit.eval Φ (Subcube.somePoint R) = true :=
+  have hpoint : Circuit.eval Φ (Subcube.sample R) = b :=
+    hb (Subcube.sample R) (Subcube.sample_mem R)
+  have hpoint_true : Circuit.eval Φ (Subcube.sample R) = true := by
+    simpa [hbtrue] using hpoint
+  have hExists : ∃ R ∈ cover, Circuit.eval Φ (Subcube.sample R) = true :=
     ⟨R, hR, hpoint_true⟩
   simpa [satByCover, hExists]
 
@@ -55,9 +46,9 @@ lemma satByCover_complete {n : ℕ} {Φ : Circuit n} {cover : Finset (Subcube n)
   classical
   intro h
   dsimp [satByCover] at h
-  have hExists : ∃ R ∈ cover, Circuit.eval Φ (Subcube.somePoint R) = true :=
+  have hExists : ∃ R ∈ cover, Circuit.eval Φ (Subcube.sample R) = true :=
     of_decide_eq_true h
   rcases hExists with ⟨R, _, hval⟩
-  exact ⟨Subcube.somePoint R, hval⟩
+  exact ⟨Subcube.sample R, hval⟩
 
 end SATCover

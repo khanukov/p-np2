@@ -1,6 +1,6 @@
-# Sketch proof of `buildCover_card_bound`
+# Proof outline of `buildCover_card_bound`
 
-This note elaborates on the measure based induction used to bound the
+This note now corresponds to the formalised proof. It elaborates on the measure based induction used to bound the
 size of the rectangle cover produced by `buildCover`.
 The lemma
 

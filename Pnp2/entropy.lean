@@ -186,15 +186,30 @@ lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
     ∃ i : Fin n, ∃ b : Bool,
       H₂ (F.restrict i b) ≤ H₂ F - 1 := by
   classical
-  -- Apply the previous lemma to obtain a restriction cutting the family in half
+  -- Obtain a coordinate and bit that cut the family size in half.
   obtain ⟨i, b, h_half⟩ := exists_restrict_half_real (F := F) hn hF
-  -- Take logarithms (base 2) of the cardinality inequality.
-  -- Monotonicity of `log` ensures the desired drop by one bit.
-  have hlog := Real.logb_le_logb (by norm_num : (2:ℝ) > 1) h_half
-  -- `logb` of division simplifies via the standard identity.
-  rw [Real.logb_div (by norm_num) (Nat.cast_ne_zero.2 (Nat.one_ne_zero)),
-      Real.logb_two] at hlog
-  exact ⟨i, b, hlog⟩
+  -- `F.card ≥ 2`, hence `(F.card : ℝ) / 2 > 0`.
+  have hFpos : (0 : ℝ) < (F.card : ℝ) / 2 := by
+    have hpos : 0 < (F.card : ℝ) := by exact_mod_cast (lt_of_le_of_lt (Nat.zero_le _) hF)
+    exact div_pos hpos (by norm_num)
+  -- Analyse the restricted cardinality.
+  by_cases hzero : (F.restrict i b).card = 0
+  · -- Trivial bound if the restricted family is empty.
+    have hge : (2 : ℝ) ≤ (F.card : ℝ) := by exact_mod_cast Nat.succ_le_of_lt hF
+    have hmon := (Real.logb_le_logb_of_le (b := 2) (hb := by norm_num) (by norm_num) hge)
+    have hHF : (1 : ℝ) ≤ H₂ F := by simpa [H₂] using hmon
+    have hsub : 0 ≤ H₂ F - 1 := sub_nonneg.mpr hHF
+    refine ⟨i, b, ?_⟩
+    simpa [H₂, hzero] using hsub
+  · -- Otherwise the logarithm inequality follows from monotonicity.
+    have hpos : 0 < ((F.restrict i b).card : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hzero
+    have hlog :=
+      (Real.logb_le_logb_of_le (b := 2) (hb := by norm_num) hpos h_half)
+    have hx : (F.card : ℝ) ≠ 0 := by
+      exact_mod_cast (Nat.ne_of_gt (lt_of_le_of_lt (Nat.zero_le _) hF))
+    have hdrop := Real.logb_div (b := 2) hx (by norm_num : (2 : ℝ) ≠ 0)
+    refine ⟨i, b, ?_⟩
+    simpa [H₂, hdrop] using hlog
 
 
 end BoolFunc

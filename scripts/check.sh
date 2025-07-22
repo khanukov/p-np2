@@ -3,6 +3,5 @@
 set -euo pipefail
 
 lake build
-lake build Pnp2
 lake env lean --run scripts/smoke.lean
 lake test

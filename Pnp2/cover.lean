@@ -1053,6 +1053,62 @@ lemma mu_union_double_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     exact this.trans hdrop
   exact Nat.lt_of_succ_le hsucc
 
+/-!
+`mu_union_triple_succ_le` extends `mu_union_double_succ_le` to the case of
+three distinct uncovered pairs.  If a rectangle contained in `R₂` covers all
+three of them, then taking the union with `R₂` decreases the measure `μ` by at
+least three.
+-/
+lemma mu_union_triple_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ p₃ : Σ f : BoolFunc n, Vector Bool n}
+    (hp₁ : p₁ ∈ uncovered F R₁) (hp₂ : p₂ ∈ uncovered F R₁)
+    (hp₃ : p₃ ∈ uncovered F R₁)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R)
+    (hne₁₂ : p₁ ≠ p₂) (hne₁₃ : p₁ ≠ p₃) (hne₂₃ : p₂ ≠ p₃)
+    (hmem : R ∈ R₂) :
+    mu F h (R₁ ∪ R₂) + 3 ≤ mu F h R₁ := by
+  classical
+  -- Adding additional rectangles can only decrease the measure.
+  have hsub : R₁ ∪ {R} ⊆ R₁ ∪ R₂ := by
+    intro x hx
+    rcases Finset.mem_union.mp hx with hx₁ | hx₂
+    · exact Finset.mem_union.mpr <| Or.inl hx₁
+    · rcases Finset.mem_singleton.mp hx₂ with rfl
+      exact Finset.mem_union.mpr <| Or.inr hmem
+  have hmono :=
+    mu_mono_subset (F := F) (h := h) (R₁ := R₁ ∪ {R}) (R₂ := R₁ ∪ R₂) hsub
+  have htriple :=
+    mu_union_singleton_triple_succ_le (F := F) (Rset := R₁) (R := R) (h := h)
+      hp₁ hp₂ hp₃ hp₁R hp₂R hp₃R hne₁₂ hne₁₃ hne₂₃
+  have := add_le_add_right hmono 3
+  exact le_trans this htriple
+
+/--
+`mu_union_triple_lt` is the strict version of `mu_union_triple_succ_le`.
+Covering three distinct uncovered pairs with a rectangle from `R₂` drops the
+measure strictly.
+-/
+lemma mu_union_triple_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ p₃ : Σ f : BoolFunc n, Vector Bool n}
+    (hp₁ : p₁ ∈ uncovered F R₁) (hp₂ : p₂ ∈ uncovered F R₁)
+    (hp₃ : p₃ ∈ uncovered F R₁)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R)
+    (hne₁₂ : p₁ ≠ p₂) (hne₁₃ : p₁ ≠ p₃) (hne₂₃ : p₂ ≠ p₃)
+    (hmem : R ∈ R₂) :
+    mu F h (R₁ ∪ R₂) < mu F h R₁ := by
+  classical
+  -- Use the additive inequality and drop one unit to obtain strictness.
+  have hdrop :=
+    mu_union_triple_succ_le (F := F) (R₁ := R₁) (R₂ := R₂) (R := R) (h := h)
+      hp₁ hp₂ hp₃ hp₁R hp₂R hp₃R hne₁₂ hne₁₃ hne₂₃ hmem
+  have hsucc : mu F h (R₁ ∪ R₂) + 1 ≤ mu F h R₁ := by
+    have hstep : (1 : ℕ) ≤ 3 := by decide
+    have := Nat.add_le_add_left hstep (mu F h (R₁ ∪ R₂))
+    exact this.trans hdrop
+  exact Nat.lt_of_succ_le hsucc
+
 lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
     mu F h (R₁ ∪ R₂) ≤ mu F h R₁ := by
   classical

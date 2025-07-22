@@ -124,6 +124,23 @@ lemma monotonicity {C D : Subcube n}
     ext y; simp [toFinset, Subcube.mem_point_iff]
   simp [size, hfin]
 
+/-! ### A representative point of a subcube -/
+
+-- |`Subcube.rep R`| picks an arbitrary point inside `R` by assigning
+-- `false` to all free coordinates.  This choice is convenient for
+-- constructive algorithms that need a concrete witness from each
+-- subcube.
+@[simp] def Subcube.rep (R : Subcube n) : Point n :=
+  fun i => (R.fix i).getD false
+
+lemma Subcube.rep_mem (R : Subcube n) : R.Mem (Subcube.rep (n := n) R) := by
+  intro i
+  cases h : R.fix i with
+  | none =>
+      simp [Subcube.rep, Mem, h]
+  | some b =>
+      simp [Subcube.rep, Mem, h]
+
 
 end Subcube
 

@@ -862,6 +862,24 @@ lemma mu_union_singleton_double_succ_le {F : Family n} {Rset : Finset (Subcube n
   -- Rewrite everything in terms of `μ`.
   simpa [mu, S, T, add_comm, add_left_comm, add_assoc] using this
 
+/-!  A convenient corollary of `mu_union_singleton_triple_succ_le`: if a
+rectangle covers three distinct uncovered pairs, the measure strictly decreases
+after inserting this rectangle.  As in the double case we reuse the basic
+one-pair inequality on one witness. -/
+lemma mu_union_singleton_triple_lt {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ p₃ : Σ f : BoolFunc n, Vector Bool n}
+    (hp₁ : p₁ ∈ uncovered F Rset) (hp₂ : p₂ ∈ uncovered F Rset)
+    (hp₃ : p₃ ∈ uncovered F Rset)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R)
+    (hne₁₂ : p₁ ≠ p₂) (hne₁₃ : p₁ ≠ p₃) (hne₂₃ : p₂ ≠ p₃) :
+    mu F h (Rset ∪ {R}) < mu F h Rset := by
+  classical
+  -- Covering even a single uncovered pair suffices for a strict drop.
+  have hx : ∃ p ∈ uncovered F Rset, p.2 ∈ₛ R := ⟨p₁, hp₁, hp₁R⟩
+  -- Apply the basic inequality for one newly covered pair.
+  exact mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
+
 /-!
 Adding a rectangle that covers *three distinct* uncovered pairs decreases the
 measure `μ` by at least three.  This is a straightforward extension of

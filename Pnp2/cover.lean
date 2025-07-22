@@ -153,6 +153,13 @@ lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
   have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
   simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
+/-!  A convenient special case of `mBound_mono`: increasing the entropy
+budget by one never decreases the bound.  This tiny lemma avoids having
+to spell out `Nat.le_succ` at every call site. -/
+lemma mBound_le_succ (n h : ℕ) :
+    mBound n h ≤ mBound n (h + 1) :=
+  mBound_mono (n := n) (Nat.le_succ h)
+
 /-!  Doubling the bound for a smaller budget stays below the bound for the
 next budget.  This simple numeric inequality is used when analysing the
 entropy branch of `buildCover`. -/

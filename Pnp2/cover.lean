@@ -710,6 +710,21 @@ lemma uncovered_subset_of_union_singleton {F : Family n}
   intro S hS
   exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
 
+/-!
+`uncovered_subset_of_union` generalises
+`uncovered_subset_of_union_singleton` to any finite set of rectangles.
+Adding more rectangles cannot produce new uncovered pairs.
+-/
+lemma uncovered_subset_of_union {F : Family n}
+    {R₁ R₂ : Finset (Subcube n)} :
+    uncovered F (R₁ ∪ R₂) ⊆ uncovered F R₁ := by
+  classical
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  exact ⟨hf, hx, by
+    intro S hS
+    exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)⟩
+
 lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ} :
     mu F h (Rset ∪ {R}) ≤ mu F h Rset := by

@@ -521,6 +521,19 @@ lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
 
+/-- Inserting a rectangle into an existing cover preserves the
+`AllOnesCovered` property.  This is a convenience wrapper around
+`AllOnesCovered.superset`. -/
+lemma AllOnesCovered.insert {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} (hcov : AllOnesCovered F Rset) :
+    AllOnesCovered F (insert R Rset) := by
+  classical
+  have hsub : Rset ⊆ insert R Rset := by
+    intro S hS
+    exact Finset.mem_insert.mpr <| Or.inr hS
+  exact AllOnesCovered.superset (F := F) (R₁ := Rset) (R₂ := insert R Rset)
+    hcov hsub
+
 /-!  A handy special case of `AllOnesCovered`: a single rectangle equal to
 `Subcube.full` trivially covers all `1`-inputs of any family.  We record this
 lemma explicitly to ease test proofs and small examples. -/

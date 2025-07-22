@@ -82,6 +82,10 @@ this sketches the decision-tree argument for covering smooth functions.
 Additional modules `collentropy.lean` and `family_entropy_cover.lean` provide
 single-function entropy tools and a bundled `FamilyCover` record extracted from
 `cover.lean`.
+The repository now also includes `Cover/Compute.lean` and
+`Algorithms/SatCover.lean`, offering constructive enumeration of the cover and a
+simple SAT solver stub.  Their proofs remain incomplete but they integrate with
+the existing API.
 
 This document records the plan for future reference and serves as a pointer for
 contributors interested in the overarching project.

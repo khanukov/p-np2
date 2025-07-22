@@ -78,7 +78,11 @@ theory.
   approach to the cover.
 * **Utilities.**  The new files `collentropy.lean` and `family_entropy_cover.lean`
   collect single-function entropy facts and package the cover from
-  `cover.lean` as a reusable record.
+  `cover.lean` as a reusable record.  A lightweight variant
+  `CollentropyBasic.lean` now supplies just the numeric bounds needed by
+  the SAT prototype, while `Cover/Compute.lean` and `Algorithms/SatCover.lean`
+  provide constructive skeletons for cover enumeration and satisfiability
+  search.
 
 ---
 

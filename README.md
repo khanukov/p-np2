@@ -57,12 +57,19 @@ gradually migrated across.
   `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` remains future work.
   The helper lemma `AllOnesCovered.union` abstracts the union step in
   the coverage proof.
+* `Cover/Compute.lean` – lightweight wrapper exposing a constructive
+  variant `buildCoverCompute` that enumerates the rectangles as a list.
+  The current implementation is a stub returning an empty list; the
+  specification is admitted until the full recursion is ported.
 The sunflower case is still only sketched in comments and the proof falls back to a numeric estimate.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
   `Pnp2` namespace.  A complete proof will be added shortly.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
+* `CollentropyBasic.lean` – trimmed-down entropy file containing only the
+  bounds needed for the SAT solver. Several numeric inequalities remain
+  admitted for the time being.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
   record extracted from `cover.lean`.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
@@ -73,6 +80,10 @@ The sunflower case is still only sketched in comments and the proof falls back t
 * `low_sensitivity_cover.lean` – lemma skeletons using these trees.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `low_sensitivity.lean` – trivial cover for smooth functions (self-contained).
+* `Algorithms/SatCover.lean` – constructive SAT search procedure scanning the
+  rectangles from `buildCoverCompute`.  It currently falls back to enumerating
+  all points but provides the intended interface for meet-in-the-middle
+  extensions.
 * `acc_mcsp_sat.lean` – outline of the meet-in-the-middle SAT connection.
 * `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP`.
 * `ComplexityClasses.lean` – minimal definitions of `P`, `NP` and `P/poly` for
@@ -147,6 +158,7 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 ## Status
 
 This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop.  `buildCover_mono` and `buildCover_card_bound` are now fully formalised via a measure-based recursion.  The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
+The newly introduced `Cover/Compute.lean` and `Algorithms/SatCover.lean` provide a constructive cover enumerator and a simple SAT search routine; their proofs remain admitted.
 
 Within `Pnp2` the overall structure of the FCE argument is now visible: entropy
 lemmas, cover builders and decision-tree tools all compile.  The next steps are porting the

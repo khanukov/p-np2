@@ -1,7 +1,7 @@
 import Pnp2.Boolcube
 import Pnp2.Cover.Compute
 import Pnp2.cover
-import Pnp2.collentropy
+import Pnp2.CollentropyBasic
 
 open Boolcube
 open Cover

@@ -1898,6 +1898,15 @@ lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
   simpa [hres] using this
 
+lemma buildCover_card_linear_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hfu : firstUncovered F (∅ : Finset (Subcube n)) = none) :
+    (buildCover F h hH).card ≤ 2 * h + n := by
+  classical
+  have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
+    simpa [buildCover, hfu]
+  have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
+  simpa [hres] using this
+
 /-!
   A coarse numeric estimate that bounds the size of the cover directly
   by the initial measure `2 * h + n`.  The proof mirrors the placeholder
@@ -1910,10 +1919,8 @@ lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
 
   cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
   | none =>
-      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
-        simpa [buildCover, hfu]
-      have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
-      simpa [hres] using this
+      simpa using
+        (buildCover_card_linear_bound_base (F := F) (h := h) (hH := hH) hfu)
   | some _tup =>
       -- The detailed measure argument is still work in progress.
       -- For now we reuse the rough numeric estimate.

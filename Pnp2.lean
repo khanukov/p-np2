@@ -3,6 +3,7 @@ import Pnp2.DecisionTree
 import Pnp2.low_sensitivity_cover
 import Pnp2.cover
 import Pnp2.sat_cover
+import Pnp2.Algorithms.SatCover
 
 /-!
   Entrypoint for the `pnp2` toy development.

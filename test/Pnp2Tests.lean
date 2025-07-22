@@ -186,6 +186,14 @@ example {n : ℕ} (F : Family n) (p q : List (Fin n × Bool)) :
   simpa using
     BoolFunc.Family.restrictPath_append (F := F) (p := p) (q := q)
 
+/-- The subcube recorded by a two-step path freezes exactly two coordinates. -/
+example :
+    (DecisionTree.subcube_of_path
+        (n := 2) [(⟨0, by decide⟩, true), (⟨1, by decide⟩, false)]).idx.card = 2 :=
+by
+  classical
+  simp [DecisionTree.subcube_of_path]
+
 
 
 end Pnp2Tests

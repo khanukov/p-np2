@@ -35,10 +35,24 @@ lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
   by_cases hfx : f x = true
   · exact ⟨x, hfx⟩
   · have hxne : f (Point.update x i (!x i)) ≠ f x := by simpa using hx.symm
-    cases hupdate : f (Point.update x i (!x i))
-    · have : False := by
-        simp [hfx, hupdate] at hx
-      contradiction
-    · exact ⟨Point.update x i (!x i), by simp [hupdate]⟩
+    cases hupdate : f (Point.update x i (!x i)) with
+    | false =>
+        have : False := by
+          simp [hfx, hupdate] at hxne
+        contradiction
+    | true =>
+        exact ⟨Point.update x i (!x i), by simp [hupdate]⟩
+
+@[simp] lemma support_const_false (n : ℕ) :
+    support (fun _ : Point n => false) = (∅ : Finset (Fin n)) := by
+  classical
+  ext i
+  simp [support]
+
+@[simp] lemma support_const_true (n : ℕ) :
+    support (fun _ : Point n => true) = (∅ : Finset (Fin n)) := by
+  classical
+  ext i
+  simp [support]
 
 end BoolFunc

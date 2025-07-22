@@ -113,6 +113,21 @@ lemma monotonicity {C D : Subcube n}
   -- Hence the cardinality equals the size of the entire cube.
   simp [size, hfin]
 
+/-! ### Picking a representative point from a subcube -/
+
+/-
+`sample` assigns the fixed coordinates of a subcube and fills all
+remaining bits with `false`.  This deterministic choice is handy for
+searching a cover: evaluating a Boolean function on `sample C` reveals
+the constant colour of `C` when `C` is known to be monochromatic. -/
+def sample (C : Subcube n) : Point n :=
+  fun i => (C.fix i).getD false
+
+@[simp] lemma sample_mem (C : Subcube n) : C.Mem (sample C) := by
+  intro i
+  cases h : C.fix i <;> simp [sample, h]
+
+
 /-!  A single-point subcube has size `1`. -/
 @[simp] lemma size_point (x : Point n) :
     size (n := n) (Subcube.point (n := n) x) = 1 := by

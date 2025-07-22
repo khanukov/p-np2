@@ -120,6 +120,34 @@ lemma mergeBits_left_right {k ℓ : ℕ} (x : Fin (k + ℓ) → Bool) :
     simp [h, hcast, hle]
 
 
+/-! ## SAT search via rectangle covers
+
+`satSearchList` iterates over a list of subcubes and evaluates a Boolean
+function on the canonical `sample` point of each cube.  If any evaluation
+returns `true`, that witness is returned.  The wrapper `satSearch` applies
+this procedure to a `Finset` of rectangles.  When the rectangles form a
+monochromatic cover, this realises the shortened brute‑force SAT search
+from the project overview. -/
+
+open Boolcube
+
+def satSearchList {n : ℕ} (f : BoolFun n) :
+    List (Subcube n) → Option (Point n)
+  | [] => none
+  | R :: Rs =>
+      if f (Subcube.sample R) then
+        some (Subcube.sample R)
+      else
+        satSearchList Rs
+
+/-- Search for a satisfying assignment using a rectangular cover.  The
+    cubes are examined in an arbitrary order until a `true` evaluation is
+    found.  Returns `none` if no sampled point satisfies `f`. -/
+def satSearch {n : ℕ} (f : BoolFun n) (cover : Finset (Subcube n)) :
+    Option (Point n) :=
+  satSearchList f cover.toList
+
+
 
 /-- Schematic definition of the meet‑in‑the‑middle SAT algorithm using
     a rectangular cover of the MCSP truth tables.  The algorithm loops

@@ -566,6 +566,37 @@ lemma mu_of_firstUncovered_none {F : Family n} {Rset : Finset (Subcube n)} {h : 
     allOnesCovered_of_firstUncovered_none (F := F) (Rset := Rset) hfu
   simpa using mu_of_allCovered (F := F) (Rset := Rset) (h := h) hcov
 
+/-!
+  The converse direction: if the measure `μ` collapses to `2 * h`, then no
+  uncovered pairs remain and hence `Rset` already covers all `1`-inputs of `F`.
+-/
+lemma allOnesCovered_of_mu_eq {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
+    (hμ : mu F h Rset = 2 * h) :
+    AllOnesCovered F Rset := by
+  classical
+  -- From the definition of `μ` we infer that the uncovered set has
+  -- cardinality `0`.
+  have hμ' : 2 * h + (uncovered F Rset).toFinset.card = 2 * h + 0 := by
+    simpa [mu] using hμ
+  have hcard0 : (uncovered F Rset).toFinset.card = 0 := by
+    exact Nat.add_left_cancel hμ'
+  -- Hence the uncovered set itself is empty.
+  have hset : uncovered F Rset = ∅ := by
+    classical
+    have hfin : (uncovered F Rset).toFinset = ∅ :=
+      Finset.card_eq_zero.mp hcard0
+    ext p; constructor
+    · intro hp
+      have : p ∈ (uncovered F Rset).toFinset := by simpa using hp
+      simpa [hfin] using this
+    · intro hp
+      have : p ∈ (uncovered F Rset).toFinset := by simpa [hfin] using hp
+      simpa using this
+  -- An empty uncovered set implies full coverage.
+  exact
+    allOnesCovered_of_firstUncovered_none (F := F) (Rset := Rset)
+      ((firstUncovered_none_iff (F := F) (R := Rset)).2 hset)
+
 lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     0 ≤ mu F h Rset := by
   exact Nat.zero_le _

@@ -103,6 +103,29 @@ lemma monotonicity {C D : Subcube n}
     exact (mem_toFinset (C := D) (x := x)).2 hxD
   simpa [size] using Finset.card_le_card hsubset
 
+/-!  The full subcube enumerates all `2^n` points of the Boolean cube. -/
+@[simp] lemma size_full (n : ℕ) :
+    size (n := n) (Subcube.full : Subcube n) = 2 ^ n := by
+  classical
+  -- `toFinset` filters `Finset.univ` by a predicate that is always true.
+  have hfin : toFinset (n := n) (Subcube.full : Subcube n) = Finset.univ := by
+    ext x; simp [toFinset]
+  -- Hence the cardinality equals the size of the entire cube.
+  simp [size, hfin]
+
+/-!  A single-point subcube has size `1`. -/
+@[simp] lemma size_point (x : Point n) :
+    size (n := n) (Subcube.point (n := n) x) = 1 := by
+  classical
+  -- Only the point `x` satisfies the membership predicate.
+  have hfin : toFinset (n := n) (Subcube.point (n := n) x) = {x} := by
+    ext y; constructor <;> intro hy
+    · have := (mem_toFinset (C := Subcube.point (n := n) x) (x := y)).1 hy
+      simpa [Subcube.point] using this
+    · have hy' : y = x := by simpa using hy
+      simpa [hy', Subcube.point] using Finset.mem_singleton.mpr rfl
+  simp [size, hfin]
+
 
 end Subcube
 

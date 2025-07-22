@@ -112,6 +112,25 @@ lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_le_mul hfactor hpow
   simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
+/--  For a positive dimension and entropy budget at least `1`,
+`mBound n h` is also at least `3`.  This slightly stronger bound is
+useful when estimating unions of three rectangles. -/
+lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
+    3 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  -- Establish `3 ≤ n * (h + 2)` using `hn` and `hh`.
+  have h3 : 3 ≤ h + 2 := by
+    have hh' : (1 : ℤ) ≤ h := by exact_mod_cast hh
+    have : (3 : ℤ) ≤ h + 2 := by nlinarith
+    exact_mod_cast this
+  have hfac1 : h + 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul_right (h + 2) hn1
+    simpa [one_mul] using this
+  have hfac : 3 ≤ n * (h + 2) := le_trans h3 hfac1
+  -- Multiply by the positive power factor.
+  have hpow : 1 ≤ 2 ^ (10 * h) := Nat.one_le_pow (2) (10 * h) (by decide)
+  have := Nat.mul_le_mul hfac hpow
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 @[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by
   simp [mBound]
 
@@ -280,6 +299,28 @@ lemma card_union_pair_mBound_succ {n h : ℕ}
   have := card_union_mBound_succ (n := n) (h := h)
       (R₁ := Rset) (R₂ := Rpair) hcard hpair_bound
   simpa [Rpair, Finset.union_comm, Finset.union_assoc] using this
+lemma card_union_triple_mBound_succ {n h : ℕ}
+    {Rset : Finset (Subcube n)} {R₁ R₂ R₃ : Subcube n}
+    (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) (hh : 1 ≤ h) :
+    (Rset ∪ {R₁, R₂, R₃}).card ≤ mBound n (h + 1) := by
+  classical
+  -- The triple set `{R₁, R₂, R₃}` has at most three elements.
+  let Rtriple : Finset (Subcube n) := {R₁, R₂, R₃}
+  have htriple_le_three : Rtriple.card ≤ 3 := by
+    have hcard_insert := Finset.card_insert_le (s := {R₁, R₂}) (a := R₃)
+    have hpair_le_two : ({R₁, R₂} : Finset (Subcube n)).card ≤ 2 := by
+      by_cases h : R₁ = R₂
+  · subst h; simp
+  · simp [h]
+    have := le_trans hcard_insert (Nat.add_le_add_right hpair_le_two 1)
+    simpa [Rtriple] using this
+  have htriple_bound : Rtriple.card ≤ mBound n h :=
+    le_trans htriple_le_three (three_le_mBound (n := n) (h := h) hn hh)
+  -- Apply the general union bound.
+  have := card_union_mBound_succ (n := n) (h := h)
+      (R₁ := Rset) (R₂ := Rtriple) hcard htriple_bound
+  simpa [Rtriple, Finset.union_comm, Finset.union_assoc] using this
+
 
 /-! ### Counting bound for arbitrary covers -/
 

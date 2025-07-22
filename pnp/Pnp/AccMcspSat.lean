@@ -88,7 +88,8 @@ lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → 
   have hlt :
       ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k < ℓ :=
     by simpa [hsub] using j.is_lt
-  simp [hnot, hsub, hlt]
+  -- The goals simplify directly after rewriting the index equations.
+  simp [hnot]
 
 
 /-- Schematic meet-in-the-middle SAT algorithm using a rectangular cover of the

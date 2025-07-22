@@ -88,7 +88,12 @@ lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → 
   have hlt :
       ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k < ℓ :=
     by simpa [hsub] using j.is_lt
-  simp [hnot, hsub, hlt]
+  -- Show that the index produced by `mergeBits` coincides with `j`.
+  have hfin :
+      (⟨((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k, hlt⟩ : Fin ℓ) = j := by
+    ext; simp [hsub]
+  -- Evaluate the conditional using `hnot` and simplify via `hfin`.
+  simp [hnot, hfin]
 
 
 /-- Schematic meet-in-the-middle SAT algorithm using a rectangular cover of the

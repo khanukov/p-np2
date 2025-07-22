@@ -1090,6 +1090,141 @@ lemma mu_union_singleton_triple_succ_le {F : Family n} {Rset : Finset (Subcube n
   -- Rewrite everything in terms of `μ`.
   simpa [mu, S, T, add_comm, add_left_comm, add_assoc] using this
 
+/-!
+Adding a rectangle that covers *four distinct* uncovered pairs decreases the
+measure `μ` by at least four.  This statement is a straightforward extension of
+`mu_union_singleton_triple_succ_le` and follows the same bookkeeping
+argument.-/
+lemma mu_union_singleton_quad_succ_le {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ p₃ p₄ : Σ f : BoolFunc n, Vector Bool n}
+    (hp₁ : p₁ ∈ uncovered F Rset) (hp₂ : p₂ ∈ uncovered F Rset)
+    (hp₃ : p₃ ∈ uncovered F Rset) (hp₄ : p₄ ∈ uncovered F Rset)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R) (hp₄R : p₄.2 ∈ₛ R)
+    (hne₁₂ : p₁ ≠ p₂) (hne₁₃ : p₁ ≠ p₃) (hne₁₄ : p₁ ≠ p₄)
+    (hne₂₃ : p₂ ≠ p₃) (hne₂₄ : p₂ ≠ p₄) (hne₃₄ : p₃ ≠ p₄) :
+    mu F h (Rset ∪ {R}) + 4 ≤ mu F h Rset := by
+  classical
+  -- Abbreviations for the uncovered sets before and after inserting `R`.
+  let S : Finset (Σ f : BoolFunc n, Vector Bool n) :=
+    (uncovered F Rset).toFinset
+  let T : Finset (Σ f : BoolFunc n, Vector Bool n) :=
+    (uncovered F (Rset ∪ {R})).toFinset
+  -- Adding a rectangle cannot create new uncovered pairs.
+  have hsub_main : T ⊆ S := by
+    intro x hxT
+    have hx' : x ∈ uncovered F (Rset ∪ {R}) := by simpa using hxT
+    have hx'' : x ∈ uncovered F Rset :=
+      uncovered_subset_of_union_singleton (F := F) (Rset := Rset) (R := R) hx'
+    simpa using hx''
+  -- Membership facts for the four pairs.
+  have hp₁S : p₁ ∈ S := by simpa [S] using hp₁
+  have hp₂S : p₂ ∈ S := by simpa [S] using hp₂
+  have hp₃S : p₃ ∈ S := by simpa [S] using hp₃
+  have hp₄S : p₄ ∈ S := by simpa [S] using hp₄
+  -- After adding `R`, none of the pairs remain uncovered.
+  have hp₁T : p₁ ∉ T := by
+    intro hx
+    have hx' : p₁ ∈ uncovered F (Rset ∪ {R}) := by simpa using hx
+    rcases hx' with ⟨_, _, hnc⟩
+    exact hnc R (by simp) hp₁R
+  have hp₂T : p₂ ∉ T := by
+    intro hx
+    have hx' : p₂ ∈ uncovered F (Rset ∪ {R}) := by simpa using hx
+    rcases hx' with ⟨_, _, hnc⟩
+    exact hnc R (by simp) hp₂R
+  have hp₃T : p₃ ∉ T := by
+    intro hx
+    have hx' : p₃ ∈ uncovered F (Rset ∪ {R}) := by simpa using hx
+    rcases hx' with ⟨_, _, hnc⟩
+    exact hnc R (by simp) hp₃R
+  have hp₄T : p₄ ∉ T := by
+    intro hx
+    have hx' : p₄ ∈ uncovered F (Rset ∪ {R}) := by simpa using hx
+    rcases hx' with ⟨_, _, hnc⟩
+    exact hnc R (by simp) hp₄R
+  -- The new uncovered set is contained in `S.erase p₁.erase p₂.erase p₃.erase p₄`.
+  have hsub4 : T ⊆ (((S.erase p₁).erase p₂).erase p₃).erase p₄ := by
+    intro x hxT
+    have hxS : x ∈ S := hsub_main hxT
+    have hxne1 : x ≠ p₁ := by
+      intro hxEq; have : p₁ ∈ T := by simpa [hxEq] using hxT; exact hp₁T this
+    have hxne2 : x ≠ p₂ := by
+      intro hxEq; have : p₂ ∈ T := by simpa [hxEq] using hxT; exact hp₂T this
+    have hxne3 : x ≠ p₃ := by
+      intro hxEq; have : p₃ ∈ T := by simpa [hxEq] using hxT; exact hp₃T this
+    have hxne4 : x ≠ p₄ := by
+      intro hxEq; have : p₄ ∈ T := by simpa [hxEq] using hxT; exact hp₄T this
+    have hx1 : x ∈ S.erase p₁ := Finset.mem_erase.mpr ⟨hxne1, hxS⟩
+    have hx2 : x ∈ (S.erase p₁).erase p₂ := Finset.mem_erase.mpr ⟨hxne2, hx1⟩
+    have hx3 : x ∈ ((S.erase p₁).erase p₂).erase p₃ :=
+      Finset.mem_erase.mpr ⟨hxne3, hx2⟩
+    exact Finset.mem_erase.mpr ⟨hxne4, hx3⟩
+  -- Cardinalities of the intermediate sets.
+  have hp₂_in_erase1 : p₂ ∈ S.erase p₁ :=
+    Finset.mem_erase.mpr ⟨hne₁₂.symm, hp₂S⟩
+  have hp₃_in_erase2 : p₃ ∈ (S.erase p₁).erase p₂ := by
+    have hp₃_in_erase1 : p₃ ∈ S.erase p₁ :=
+      Finset.mem_erase.mpr ⟨hne₁₃.symm, hp₃S⟩
+    exact Finset.mem_erase.mpr ⟨hne₂₃.symm, hp₃_in_erase1⟩
+  have hp₄_in_erase3 : p₄ ∈ ((S.erase p₁).erase p₂).erase p₃ := by
+    have hp₄_in_erase1 : p₄ ∈ S.erase p₁ :=
+      Finset.mem_erase.mpr ⟨hne₁₄.symm, hp₄S⟩
+    have hp₄_in_erase2 : p₄ ∈ (S.erase p₁).erase p₂ :=
+      Finset.mem_erase.mpr ⟨hne₂₄.symm, hp₄_in_erase1⟩
+    exact Finset.mem_erase.mpr ⟨hne₃₄.symm, hp₄_in_erase2⟩
+  have hcard_le : T.card ≤ ((((S.erase p₁).erase p₂).erase p₃).erase p₄).card :=
+    Finset.card_le_of_subset hsub4
+  have hcard1 : (S.erase p₁).card = S.card - 1 :=
+    Finset.card_erase_of_mem hp₁S
+  have hcard2 : ((S.erase p₁).erase p₂).card = (S.erase p₁).card - 1 :=
+    Finset.card_erase_of_mem hp₂_in_erase1
+  have hcard3 : (((S.erase p₁).erase p₂).erase p₃).card =
+      ((S.erase p₁).erase p₂).card - 1 :=
+    Finset.card_erase_of_mem hp₃_in_erase2
+  have hcard4 : ((((S.erase p₁).erase p₂).erase p₃).erase p₄).card =
+      (((S.erase p₁).erase p₂).erase p₃).card - 1 :=
+    Finset.card_erase_of_mem hp₄_in_erase3
+  have hcard_final : T.card ≤ S.card - 4 := by
+    have := hcard_le
+    simpa [hcard1, hcard2, hcard3, hcard4] using this
+  -- `S` contains the four distinct pairs, so its cardinality is at least four.
+  have hfour : 4 ≤ S.card := by
+    classical
+    have hsub_quad : ({p₁, p₂, p₃, p₄} : Finset _) ⊆ S := by
+      intro x hx
+      rcases Finset.mem_insert.mp hx with hx₁ | hxrest
+      · simpa [hx₁] using hp₁S
+      rcases Finset.mem_insert.mp hxrest with hx₂ | hxrest
+      · have hx' := Finset.mem_insert.mp hx₂
+        rcases hx' with hx₂ | hx3
+        · have hx'' := Finset.mem_singleton.mp hx₂
+          simpa [hx''] using hp₂S
+        · have hx'' := Finset.mem_singleton.mp hx3
+          simpa [hx''] using hp₃S
+      rcases Finset.mem_insert.mp hxrest with hx₃ | hx₄
+      · have hx' := Finset.mem_singleton.mp hx₃
+        simpa [hx'] using hp₄S
+      · have hx' := Finset.mem_singleton.mp hx₄
+        simpa [hx'] using hp₄S
+    have hcard_quad : ({p₁, p₂, p₃, p₄} : Finset _).card = 4 := by
+      classical
+      have hnot12 : p₁ ≠ p₂ := hne₁₂
+      have hnot13 : p₁ ≠ p₃ := hne₁₃
+      have hnot14 : p₁ ≠ p₄ := hne₁₄
+      have hnot23 : p₂ ≠ p₃ := hne₂₃
+      have hnot24 : p₂ ≠ p₄ := hne₂₄
+      have hnot34 : p₃ ≠ p₄ := hne₃₄
+      simp [Finset.card_insert, hnot12, hnot13, hnot14, hnot23, hnot24, hnot34]
+    have hfour_aux : 4 ≤ ({p₁, p₂, p₃, p₄} : Finset _).card := by simpa [hcard_quad]
+    exact le_trans hfour_aux (Finset.card_le_of_subset hsub_quad)
+  -- Convert the difference bound into the desired inequality.
+  have hdiff := (Nat.le_sub_iff_add_le hfour).mp hcard_final
+  -- Add the `2 * h` entropy contribution to both sides.
+  have := Nat.add_le_add_left hdiff (2 * h)
+  -- Rewrite everything in terms of `μ`.
+  simpa [mu, S, T, add_comm, add_left_comm, add_assoc] using this
+
 /-!  A convenient corollary of `mu_union_singleton_double_succ_le`: if a
 rectangle covers two distinct uncovered pairs, the measure strictly decreases
 after inserting this rectangle.  The proof reuses the single-pair inequality

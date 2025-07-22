@@ -92,8 +92,8 @@ lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → 
   have hfin :
       (⟨((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k, hlt⟩ : Fin ℓ) = j := by
     ext; simp [hsub]
-  -- Evaluate the conditional using `hnot` and simplify via `hfin`.
-  simp [hnot, hfin]
+  -- Evaluate the conditional using the derived bounds.
+  simp
 
 
 /-- Schematic meet-in-the-middle SAT algorithm using a rectangular cover of the

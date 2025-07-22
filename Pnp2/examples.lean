@@ -187,7 +187,31 @@ end CoverDemo
 
 
 
-/-! ## 5.  (Optional) Small‑scale sunflower check -/
+/-! ## 5.  Tiny bound check for `buildCover` -/
+
+section BuildCoverBound
+
+open Cover
+
+-- A trivial family consisting only of the constant `false` function.
+def fFalse : BoolFunc.BFunc 1 := fun _ => false
+def FFalse : BoolFunc.Family 1 := {fFalse}
+
+-- The family has collision entropy `0`, witnessed by `H₂_card_one`.
+lemma H2_FFalse : BoolFunc.H₂ FFalse ≤ (0 : ℝ) := by
+  have hcard : FFalse.card = 1 := by simp [FFalse]
+  simpa [hcard] using (BoolFunc.H₂_card_one (F := FFalse) hcard)
+
+/-!  Even though `buildCover` is non-computable, we can still state and
+    prove the numeric bound for this tiny example. -/
+example :
+    (Cover.buildCover (n := 1) FFalse (h := 0) H2_FFalse).card ≤ mBound 1 0 := by
+  simpa using
+    Cover.buildCover_card_bound (n := 1) (F := FFalse) (h := 0) (hH := H2_FFalse)
+
+end BuildCoverBound
+
+/-! ## 6.  (Optional) Small‑scale sunflower check -/
 
 /-
 For illustration we build a *family of 6 distinct 2‑subsets* of
@@ -240,7 +264,7 @@ end SunflowerCheck
 
 
 
-/-! ## 6.  Summary
+/-! ## 7.  Summary
 
 * All preceding code *type‑checks* and can be executed with `lake run`.
 * “Opaque” objects (rectangles from `coverFamily`, cores from the

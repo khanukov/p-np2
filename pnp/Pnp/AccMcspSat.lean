@@ -77,18 +77,20 @@ lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → 
     rightBits (N := k + ℓ) k ℓ rfl (mergeBits k ℓ xL xR) = xR := by
   funext j
   dsimp [rightBits, mergeBits]
-  have hnot : ¬((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) < k :=
-    by
-      have hge : k ≤ ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) :=
-        by simpa using Nat.le_add_left k j
-      exact not_lt_of_ge hge
+  have hnot : ¬((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) < k := by
+    -- The index `j.addNat k` is at least `k`, so the condition is false.
+    have hge : k ≤ ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) := by
+      simpa using Nat.le_add_left k j
+    exact not_lt_of_ge hge
   have hsub :
-      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k = j :=
-    by simp [Fin.addNat]
+      ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k = j := by
+    simp [Fin.addNat]
+  -- The index lies within bounds after subtracting `k`.
   have hlt :
       ((Fin.cast (Nat.add_comm ℓ k) (j.addNat k) : Fin (k + ℓ)) : ℕ) - k < ℓ :=
     by simpa [hsub] using j.is_lt
-  simp [hnot, hsub, hlt]
+  -- `simp` resolves the remaining arithmetic in the index.
+  simp [hnot]
 
 
 /-- Schematic meet-in-the-middle SAT algorithm using a rectangular cover of the

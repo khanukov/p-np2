@@ -26,6 +26,10 @@ Short list of development tasks reflecting the current repository status.
 - [x] Add `AllOnesCovered.union` helper lemma to simplify coverage proofs.
 - [ ] Use `collentropy.lean` and `family_entropy_cover.lean` across modules.
 - [x] Remove outdated standalone file `src/entropy_drop.lean` (lemma now lives in `Boolcube.lean`).
+- [ ] Complete the constructive cover enumerator in `Cover/Compute.lean` and prove
+      `buildCoverCompute_spec`.
+- [ ] Prove `satViaCover_correct` and establish a time bound in
+      `Algorithms/SatCover.lean`.
 
 ## Remaining axioms (as of 2025-07-16)
  - `LowSensitivityCover.decisionTree_cover` (external)

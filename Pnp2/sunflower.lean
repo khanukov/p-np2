@@ -1,11 +1,13 @@
-/-!
-  Minimal Sunflower lemma interface for the migrated `Pnp2` library.
-  The full classical proof is omitted; we record only the statements
-  used elsewhere in the repository.  This keeps the module lightweight
-  while ensuring compatibility with earlier versions.
--/
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Nat.Factorial.Basic
+import Mathlib.Data.Finset.Card
+
+/-!
+Minimal Sunflower lemma interface for the migrated `Pnp2` library.
+The full classical proof is omitted; we record only the statements
+used elsewhere in the repository.  This keeps the module lightweight
+while ensuring compatibility with earlier versions.
+-/
 
 open Finset
 
@@ -43,8 +45,7 @@ lemma sunflower_exists_of_fixedSize
   (S : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
   (h_cards : ∀ A ∈ S, A.card = w)
   (h_big : S.card > (p - 1).factorial * w ^ p) :
-  HasSunflower S w p :=
-by
+  HasSunflower S w p := by
   have h_bound : (p - 1).factorial * w ^ p < S.card :=
     lt_of_le_of_ne (Nat.le_of_lt h_big)
       (by simpa [h_big.ne] using h_big.ne.symm)

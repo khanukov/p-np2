@@ -84,6 +84,20 @@ lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
   simpa [mBound, one_mul] using this
 
+/-!  A convenient variant of `pow_le_mBound`: the exponential `2 ^ h` is
+bounded by `mBound n h` for any positive dimension `n`.  This simple
+estimate occasionally suffices when the exact `10 * h` exponent is not
+needed. -/
+lemma pow_le_mBound_simple (n h : ℕ) (hn : 0 < n) :
+    2 ^ h ≤ mBound n h := by
+  have hexp : h ≤ 10 * h := by
+    have hbase : (1 : ℕ) ≤ 10 := by decide
+    have := Nat.mul_le_mul_left h hbase
+    simpa [Nat.mul_comm] using this
+  have hpow : 2 ^ h ≤ 2 ^ (10 * h) :=
+    Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) hexp
+  exact hpow.trans (pow_le_mBound (n := n) (h := h) hn)
+
 /-!  `mBound` is strictly positive for any positive dimension `n`.  This simple
 numeric fact often provides a convenient lower bound when reasoning about cover
 sizes. -/

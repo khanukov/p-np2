@@ -141,6 +141,17 @@ lemma exists_family_sensitive_coord (F : Family n) [Fintype (Point n)]
   rcases exists_sensitive_coord (f := f) hpos with ⟨i, x, hx⟩
   exact ⟨i, f, hfF, x, hx⟩
 
+@[simp] lemma sensitivity_const (n : ℕ) (b : Bool) [Fintype (Point n)] :
+    sensitivity (fun _ : Point n => b) = 0 := by
+  classical
+  have hxle : (Finset.univ.sup fun x : Point n => sensitivityAt (fun _ : Point n => b) x) ≤ 0 := by
+    refine Finset.sup_le ?_; intro x hx
+    simp [sensitivityAt]
+  have hxge : 0 ≤ (Finset.univ.sup fun x : Point n => sensitivityAt (fun _ : Point n => b) x) := by
+    exact Nat.zero_le _
+  have hx : (Finset.univ.sup fun x : Point n => sensitivityAt (fun _ : Point n => b) x) = 0 := le_antisymm hxle hxge
+  simpa [sensitivity] using hx
+
 
 end BoolFunc
 

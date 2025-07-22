@@ -21,6 +21,15 @@ example (n : ℕ) :
   ext i
   simp [support]
 
+/-- Constant functions have zero sensitivity. -/
+example (n : ℕ) [Fintype (Point n)] :
+    BoolFunc.sensitivity (fun _ : Point n => false) = 0 := by
+  simp [BoolFunc.sensitivity_const]
+
+example (n : ℕ) [Fintype (Point n)] :
+    BoolFunc.sensitivity (fun _ : Point n => true) = 0 := by
+  simp [BoolFunc.sensitivity_const]
+
 
 /-- Modifying an irrelevant coordinate leaves the function unchanged. -/
 example (x : Point 2) (b : Bool) :

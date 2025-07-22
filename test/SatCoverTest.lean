@@ -20,8 +20,7 @@ example : ∃ x, satViaCover (n := 3) or3 1 = some x ∧ or3 x = true := by
   have hx : ∃ x, or3 x = true := by
     refine ⟨fun _ => true, ?_⟩
     simp [or3]
-  have hcorrect := (satViaCover_correct (f := or3) (h := 1)
-    (hh := BoolFunc.H₂Fun_le_one (f := or3))).mpr hx
+  have hcorrect := (satViaCover_correct (f := or3) (h := 1)).mpr hx
   exact hcorrect
 
 /-- `satViaCover` finds a witness for `and3`. -/
@@ -30,15 +29,13 @@ example : ∃ x, satViaCover (n := 3) and3 1 = some x ∧ and3 x = true := by
   have hx : ∃ x, and3 x = true := by
     refine ⟨fun _ => true, ?_⟩
     simp [and3]
-  have hcorrect := (satViaCover_correct (f := and3) (h := 1)
-    (hh := BoolFunc.H₂Fun_le_one (f := and3))).mpr hx
+  have hcorrect := (satViaCover_correct (f := and3) (h := 1)).mpr hx
   exact hcorrect
 
 /-- The constantly false function yields `none`. -/
 example : satViaCover (n := 3) const0 1 = none := by
   classical
-  have hnone := (satViaCover_none (f := const0) (h := 1)
-    (hh := BoolFunc.H₂Fun_le_one (f := const0))).mpr (by intro x; simp [const0])
+  have hnone := (satViaCover_none (f := const0) (h := 1)).mpr (by intro x; simp [const0])
   simpa using hnone
 
 end SatCoverTest

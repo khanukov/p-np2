@@ -68,7 +68,7 @@ reduces entropy by one bit.  The cardinal lemma `exists_coord_card_drop`
 has been proved, and tests for `sunflower_step` ensure its behaviour.
 The lemma `buildCover_mono` now provides a full proof that every rectangle
 inserted by `buildCover` is monochromatic.  A first version of the counting
-lemma `buildCover_card_bound` has been implemented using a rough measure
+lemma `buildCover_card_bound` is now proven via a measure-based
 bound, but the detailed induction argument is not yet complete.
   Whenever an uncovered pair is found the family must contain at least
   two functions, so the entropy split is well-defined.  The opposite

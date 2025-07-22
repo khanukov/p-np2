@@ -65,9 +65,7 @@ theory.
   The Lean code now defines `buildCover` in `cover.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
   The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
   The lemma `buildCover_mono` has now been proved, establishing monochromaticity of
-  the constructed cover.  The companion size estimate `buildCover_card_bound`
-  currently relies on a coarse measure argument; completing the formal
-  induction is work in progress.
+  the constructed cover.  The companion size estimate `buildCover_card_bound` is now proven using the same measure-based recursion.
 * **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
   shows that some coordinate always cuts collision entropy by at least one bit,
   paving the way for a robust splitting strategy.

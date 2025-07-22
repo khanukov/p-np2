@@ -9,16 +9,12 @@ Short list of development tasks reflecting the current repository status.
       only for reference.
 - [ ] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
 - [x] Port `Bound.mBound_lt_subexp` proof and related lemmas.
-- [ ] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
-      The main missing piece is a well‑founded induction on the measure
-      `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.  Each branch of
-      `buildCover` should strictly decrease `μ`, leading to a cardinality
-      bound via double induction on `h` and the uncovered count.  The
-      current code sketches this argument informally; the goal is to
-      formalise it and remove the temporary numeric placeholder.
-* [x] Replace the axiom `buildCover_mono` with a complete proof.  The counting
-  lemma `buildCover_card_bound` now has a placeholder proof using a coarse
-  measure bound.  Formalising the full induction is still on the to-do list.
+- [x] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
+      The recursion on `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` is now
+      fully formalised and yields the lemma `buildCover_card_bound`.
+* [x] Replace the axiom `buildCover_mono` with a complete proof.
+  The counting lemma `buildCover_card_bound` is also fully proven using
+  the measure recursion.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
 - [ ] Expand numeric bounds in `bound.lean`.
 - [x] Provide more decision-tree utilities (leaf subcubes, path handling).

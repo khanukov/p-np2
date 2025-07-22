@@ -75,7 +75,7 @@ namespace Subcube
     · simp [Subcube.fixOne, hj]
   -- Hence the cardinality of the support is one.
   have hcard : ((Subcube.fixOne (n := n) i b).support).card = 1 := by
-    simpa [hsup]
+    simpa [hsup] using (Finset.card_singleton i)
   -- The dimension subtracts this cardinality from `n`.
   simpa [Subcube.dim, hcard]
 
@@ -111,7 +111,9 @@ lemma monotonicity {C D : Subcube n}
   have hfin : toFinset (n := n) (Subcube.full : Subcube n) = Finset.univ := by
     ext x; simp [toFinset]
   -- Hence the cardinality equals the size of the entire cube.
-  simp [size, hfin]
+  have hcard : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
+    simpa using (Fintype.card_fun (α := Fin n) (β := fun _ => Bool))
+  simpa [size, hfin] using hcard
 
 /-!  A single-point subcube has size `1`. -/
 @[simp] lemma size_point (x : Point n) :
@@ -119,11 +121,7 @@ lemma monotonicity {C D : Subcube n}
   classical
   -- Only the point `x` satisfies the membership predicate.
   have hfin : toFinset (n := n) (Subcube.point (n := n) x) = {x} := by
-    ext y; constructor <;> intro hy
-    · have := (mem_toFinset (C := Subcube.point (n := n) x) (x := y)).1 hy
-      simpa [Subcube.point] using this
-    · have hy' : y = x := by simpa using hy
-      simpa [hy', Subcube.point] using Finset.mem_singleton.mpr rfl
+    ext y; simp [toFinset, Subcube.mem_point_iff]
   simp [size, hfin]
 
 

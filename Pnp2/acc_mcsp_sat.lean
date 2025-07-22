@@ -94,6 +94,31 @@ lemma rightBits_mergeBits {k ℓ : ℕ} (xL : Fin k → Bool) (xR : Fin ℓ → 
     simpa [hsub] using j.is_lt
   simp [hnot, hsub, hlt]
 
+/-! Merging the results of `leftBits` and `rightBits` reconstructs the
+original vector.  This lemma complements `leftBits_mergeBits` and
+`rightBits_mergeBits` and will be useful for sanity checks. -/
+lemma mergeBits_left_right {k ℓ : ℕ} (x : Fin (k + ℓ) → Bool) :
+    mergeBits k ℓ
+      (leftBits (N := k + ℓ) k ℓ rfl x)
+      (rightBits (N := k + ℓ) k ℓ rfl x) = x := by
+  funext i
+  dsimp [mergeBits, leftBits, rightBits]
+  by_cases h : (i : ℕ) < k
+  · have hcast : Fin.castAdd ℓ ⟨i, h⟩ = i := by
+      ext; simp
+    simp [h, hcast]
+  · have hle : k ≤ (i : ℕ) := le_of_not_lt h
+    have hlt : (i : ℕ) - k < ℓ := by
+      have hi : (i : ℕ) < k + ℓ := i.is_lt
+      have hi' : k + ((i : ℕ) - k) < k + ℓ := by
+        simpa [Nat.add_sub_of_le hle] using hi
+      exact Nat.lt_of_add_lt_add_left hi'
+    have hcast :
+        (Fin.cast (Nat.add_comm ℓ k)
+          (Fin.addNat ⟨(i : ℕ) - k, hlt⟩ k) : Fin (k + ℓ)) = i := by
+      ext; simp [Fin.addNat, Nat.sub_add_cancel hle]
+    simp [h, hcast, hle]
+
 
 
 /-- Schematic definition of the meet‑in‑the‑middle SAT algorithm using

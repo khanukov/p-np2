@@ -1,27 +1,26 @@
-import Pnp2.BoolFunc
+import Pnp2.Boolcube
 import Pnp2.cover
 import Pnp2.canonical_circuit
 
 open Classical
-open BoolFunc
+open Boolcube
 open Cover
+
+variable {n : ℕ}
+
+notation x " ∈ₛ " R => R.Mem x
+
+def Boolcube.Subcube.monochromaticFor (R : Subcube n) (f : BoolFun n) : Prop :=
+  ∃ b : Bool, ∀ x, x ∈ₛ R → f x = b
 
 namespace SATCover
 
 /-- Choose a canonical point inside a subcube by assigning `false` to all
-free coordinates. -/
-noncomputable def Subcube.somePoint {n : ℕ} (R : Subcube n) : Point n :=
-  fun i => by
-    classical
-    by_cases h : i ∈ R.idx
-    · exact R.val i h
-    · exact false
+free coordinates.  This is the same as `Subcube.sample`. -/
+def Subcube.somePoint {n : ℕ} (R : Subcube n) : Point n := Subcube.sample R
 
-lemma somePoint_mem {n : ℕ} (R : Subcube n) : R.mem (Subcube.somePoint R) := by
-  classical
-  intro i hi
-  dsimp [Subcube.somePoint]
-  simp [hi]
+lemma somePoint_mem {n : ℕ} (R : Subcube n) : R.Mem (Subcube.somePoint R) := by
+  simpa [Subcube.somePoint] using Subcube.sample_mem (n := n) R
 
 /-- Enumerate all rectangles in `cover` and evaluate `Φ` on a witness
 point from each rectangle.  The algorithm succeeds if any evaluation

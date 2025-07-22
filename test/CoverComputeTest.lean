@@ -18,7 +18,9 @@ example :
       (by
         classical
         -- Collision entropy of a singleton family is zero.
-        sorry)
+        have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+        have hH₂ := BoolFunc.H₂_card_one (F := ({trivialFun} : Boolcube.Family 1)) hcard
+        simpa [hH₂])
       = [] :=
 by
   rfl

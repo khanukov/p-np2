@@ -145,16 +145,18 @@ def sample (C : Subcube n) : Point n :=
 -- `false` to all free coordinates.  This choice is convenient for
 -- constructive algorithms that need a concrete witness from each
 -- subcube.
-@[simp] def Subcube.rep (R : Subcube n) : Point n :=
+/-- Pick a canonical representative point inside `R` by assigning `false`
+to all free coordinates. -/
+@[simp] def rep (R : Subcube n) : Point n :=
   fun i => (R.fix i).getD false
 
-lemma Subcube.rep_mem (R : Subcube n) : R.Mem (Subcube.rep (n := n) R) := by
+lemma rep_mem (R : Subcube n) : R.Mem (rep (n := n) R) := by
   intro i
   cases h : R.fix i with
   | none =>
-      simp [Subcube.rep, Mem, h]
+      simp [rep, Mem, h]
   | some b =>
-      simp [Subcube.rep, Mem, h]
+      simp [rep, Mem, h]
 
 
 end Subcube

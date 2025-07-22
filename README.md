@@ -57,6 +57,7 @@ gradually migrated across.
   `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` remains future work.
   The helper lemma `AllOnesCovered.union` abstracts the union step in
   the coverage proof.
+The sunflower case is still only sketched in comments and the proof falls back to a numeric estimate.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is currently stated as an axiom in the
   `Pnp2` namespace.  A complete proof will be added shortly.

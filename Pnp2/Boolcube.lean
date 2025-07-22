@@ -65,6 +65,20 @@ namespace Subcube
   classical
   simp [Subcube.dim, Subcube.support]
 
+@[simp] lemma dim_fixOne (i : Fin n) (b : Bool) :
+    (Subcube.fixOne (n := n) i b).dim = n - 1 := by
+  classical
+  -- The support of `fixOne i b` is exactly the singleton `{i}`.
+  have hsup : (Subcube.fixOne (n := n) i b).support = {i} := by
+    ext j; by_cases hj : j = i
+    · subst hj; simp [Subcube.fixOne]
+    · simp [Subcube.fixOne, hj]
+  -- Hence the cardinality of the support is one.
+  have hcard : ((Subcube.fixOne (n := n) i b).support).card = 1 := by
+    simpa [hsup]
+  -- The dimension subtracts this cardinality from `n`.
+  simpa [Subcube.dim, hcard]
+
 /-! ### Enumerating the points of a subcube -/
 
 noncomputable def toFinset (C : Subcube n) : Finset (Point n) := by

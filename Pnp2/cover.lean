@@ -890,6 +890,32 @@ lemma mu_union_double_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   have := add_le_add_right hmono 2
   exact le_trans this hdouble
 
+/-!
+`mu_union_double_lt` is the strict counterpart to
+`mu_union_double_succ_le`.  If some rectangle in `R₂` covers two distinct
+uncovered pairs of `R₁`, then the measure drops strictly after taking the
+union with all of `R₂`.  The proof simply upgrades the `+ 2` inequality to a
+strict comparison via `Nat.lt_of_succ_le`.
+-/
+lemma mu_union_double_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ : Σ f : BoolFunc n, Vector Bool n}
+    (hp₁ : p₁ ∈ uncovered F R₁) (hp₂ : p₂ ∈ uncovered F R₁)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂)
+    (hmem : R ∈ R₂) :
+    mu F h (R₁ ∪ R₂) < mu F h R₁ := by
+  classical
+  -- First obtain the numeric drop by two from the previous lemma.
+  have hdrop :=
+    mu_union_double_succ_le (F := F) (R₁ := R₁) (R₂ := R₂)
+      (R := R) (h := h) hp₁ hp₂ hp₁R hp₂R hne hmem
+  -- `a + 2 ≤ b` implies `a + 1 ≤ b`, hence `a < b` for natural numbers.
+  have hsucc : mu F h (R₁ ∪ R₂) + 1 ≤ mu F h R₁ := by
+    have hstep : (1 : ℕ) ≤ 2 := by decide
+    have := Nat.add_le_add_left hstep (mu F h (R₁ ∪ R₂))
+    exact this.trans hdrop
+  exact Nat.lt_of_succ_le hsucc
+
 lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
     mu F h (R₁ ∪ R₂) ≤ mu F h R₁ := by
   classical

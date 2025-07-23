@@ -27,6 +27,11 @@ def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
   []
 
+@[simp] lemma buildCoverCompute_empty (h : ℕ)
+    (hH : BoolFunc.H₂ (∅ : Family n) ≤ (h : ℝ)) :
+    buildCoverCompute (F := (∅ : Family n)) (h := h) hH = [] :=
+  rfl
+
 /--
 Specification of `buildCoverCompute`.  The rectangles cover all positive
 inputs of the family, are monochromatic, and the list length is bounded by

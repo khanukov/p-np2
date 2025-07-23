@@ -75,7 +75,7 @@ namespace Subcube
     · simp [hj]
     · simp [hj]
   have hcard : (Finset.univ.filter (fun j : Fin n => j = i)).card = 1 := by
-    simpa [hset]
+    simp [hset]
   simp [hcard]
 
 /-! ### Enumerating the points of a subcube -/
@@ -140,7 +140,7 @@ def sample (C : Subcube n) : Point n :=
       have hy' : (Subcube.point (n := n) x).Mem y :=
         (mem_toFinset (C := Subcube.point (n := n) x) (x := y)).1 hy
       have : y = x := ((Subcube.mem_point_iff (x := x) (y := y)).1 hy').symm
-      simpa [this]
+      simp [this]
     · intro hy
       -- Conversely, membership in `{x}` means `y = x`.
       have hy' : y = x := by simpa using hy
@@ -169,9 +169,9 @@ lemma rep_mem (R : Subcube n) : R.Mem (rep (n := n) R) := by
   intro i
   cases h : R.fix i with
   | none =>
-      simp [rep, Mem, h]
+      simp [rep, h]
   | some b =>
-      simp [rep, Mem, h]
+      simp [rep, h]
 
 
 end Subcube

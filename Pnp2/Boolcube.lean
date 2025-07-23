@@ -68,8 +68,15 @@ namespace Subcube
 @[simp] lemma dim_fixOne (i : Fin n) (b : Bool) :
     (Subcube.fixOne (n := n) i b).dim = n - 1 := by
   classical
-  -- Placeholder proof pending more basic API.
-  sorry
+  -- Unfold the definitions to analyse the fixed coordinate.
+  unfold Subcube.dim Subcube.support Subcube.fixOne
+  -- The support of `fixOne` is exactly `{i}`.
+  have hsupp :
+      (Finset.univ.filter fun j => (if j = i then some b else (none : Option Bool)).isSome) =
+        ({i} : Finset (Fin n)) := by
+    ext j; by_cases hji : j = i <;> simp [hji]
+  -- Hence the dimension drops by one.
+  simp [hsupp]
 
 /-! ### Enumerating the points of a subcube -/
 
@@ -120,8 +127,10 @@ def sample (C : Subcube n) : Point n :=
 @[simp] lemma size_point (x : Point n) :
     size (n := n) (Subcube.point (n := n) x) = 1 := by
   classical
-  -- Placeholder proof; enumeration of a singleton is trivial.
-  sorry
+  -- The only point satisfying all fixed coordinates is `x` itself.
+  have hset : toFinset (n := n) (Subcube.point (n := n) x) = {x} := by
+    ext y; simp [toFinset]
+  simp [size, hset]
 
 /-! ### A representative point of a subcube -/
 

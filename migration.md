@@ -1,9 +1,9 @@
-# Migration progress from `pnp` to `Pnp2`
+# Migration progress from the legacy directory to `Pnp2`
 
-Development has shifted back to the historical `Pnp2` namespace.  The `pnp`
-folder remains in the repository only for reference.  Each module is being
-ported across so that the proofs live under `Pnp2` once more.  The build still
-includes the old code, but new lemmas and theorems appear only in `Pnp2`.
+Development has shifted back to the historical `Pnp2` namespace.  The previous
+directory remains in the repository only for reference.  Each module has been
+ported so that the proofs live under `Pnp2`.  The build no longer includes the
+old code.
 
 ## Modules already migrated to `Pnp2`
 

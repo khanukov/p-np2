@@ -166,7 +166,7 @@ def SATViaCover {N : ℕ}
 cover could solve SAT for `ACC⁰ ∘ MCSP`.  The statement simply returns
 an empty cover as a placeholder.  The legacy development included this
 lemma; we port it here so that downstream files no longer depend on the
-old `pnp` namespace. -/
+old namespace. -/
 lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
     (hdepth : True := by trivial) :
     ∃ cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by

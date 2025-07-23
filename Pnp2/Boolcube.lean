@@ -68,8 +68,16 @@ namespace Subcube
 @[simp] lemma dim_fixOne (i : Fin n) (b : Bool) :
     (Subcube.fixOne (n := n) i b).dim = n - 1 := by
   classical
-  -- Placeholder proof pending more basic API.
-  sorry
+  -- `fixOne` fixes exactly the coordinate `i`, so the support is `{i}`.
+  have hsupport_card : (Subcube.fixOne (n := n) i b).support.card = 1 := by
+    classical
+    have hset : (Subcube.fixOne (n := n) i b).support = {i} := by
+      ext j
+      by_cases hji : j = i
+      · simp [Subcube.support, Subcube.fixOne, hji]
+      · simp [Subcube.support, Subcube.fixOne, hji]
+    simpa [hset] using Finset.card_singleton i
+  simpa [Subcube.dim, hsupport_card]
 
 /-! ### Enumerating the points of a subcube -/
 
@@ -120,8 +128,17 @@ def sample (C : Subcube n) : Point n :=
 @[simp] lemma size_point (x : Point n) :
     size (n := n) (Subcube.point (n := n) x) = 1 := by
   classical
-  -- Placeholder proof; enumeration of a singleton is trivial.
-  sorry
+  -- The only point contained in `Subcube.point x` is `x` itself.
+  have hset : toFinset (n := n) (Subcube.point (n := n) x) = {x} := by
+    ext y
+    have hy : y ∈ toFinset (n := n) (Subcube.point (n := n) x) ↔ y = x := by
+      classical
+      simp [toFinset, mem_point_iff]
+    simpa [hy]
+  -- With the explicit enumeration, the cardinality is `1`.
+  have hcard : (toFinset (n := n) (Subcube.point (n := n) x)).card = 1 := by
+    simp [hset]
+  simpa [size] using hcard
 
 /-! ### A representative point of a subcube -/
 
@@ -139,9 +156,9 @@ lemma rep_mem (R : Subcube n) : R.Mem (rep (n := n) R) := by
   intro i
   cases h : R.fix i with
   | none =>
-      simp [rep, Mem, h]
+      simp [rep, h]
   | some b =>
-      simp [rep, Mem, h]
+      simp [rep, h]
 
 
 end Subcube

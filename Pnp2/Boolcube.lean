@@ -68,8 +68,15 @@ namespace Subcube
 @[simp] lemma dim_fixOne (i : Fin n) (b : Bool) :
     (Subcube.fixOne (n := n) i b).dim = n - 1 := by
   classical
-  -- Placeholder proof pending more basic API.
-  sorry
+  unfold Subcube.dim Subcube.support Subcube.fixOne
+  have hset : Finset.univ.filter (fun j : Fin n => j = i) = ({i} : Finset (Fin n)) := by
+    ext j
+    by_cases hj : j = i
+    · simp [hj]
+    · simp [hj]
+  have hcard : (Finset.univ.filter (fun j : Fin n => j = i)).card = 1 := by
+    simpa [hset]
+  simp [hcard]
 
 /-! ### Enumerating the points of a subcube -/
 

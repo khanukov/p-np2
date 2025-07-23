@@ -7,7 +7,7 @@ Short list of development tasks reflecting the current repository status.
       tests for the migrated code.
 - [x] Remove the `Pnp2` library from `lakefile.lean`; the directory is now kept
       only for reference.
-- [ ] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
+- [x] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
 - [x] Port `Bound.mBound_lt_subexp` proof and related lemmas.
 - [x] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
       The recursion on `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` is now
@@ -28,13 +28,11 @@ Short list of development tasks reflecting the current repository status.
 - [x] Remove outdated standalone file `src/entropy_drop.lean` (lemma now lives in `Boolcube.lean`).
 - [ ] Complete the constructive cover enumerator in `Cover/Compute.lean` and prove
       `buildCoverCompute_spec`.
-- [ ] Prove `satViaCover_correct` and establish a time bound in
+- [x] Prove `satViaCover_correct` and establish a time bound in
       `Algorithms/SatCover.lean`.
 
 ## Remaining axioms (as of 2025-07-16)
  - `LowSensitivityCover.decisionTree_cover` (external)
- - `CoverNumeric.minCoverSize`
- - `CoverNumeric.buildCover_size_bound`
  - `ComplexityClasses.P_subset_Ppoly` (external)
  - `NPSeparation.MCSP_lower_bound` (external)
  - `NPSeparation.magnification_AC0_MCSP` (external)

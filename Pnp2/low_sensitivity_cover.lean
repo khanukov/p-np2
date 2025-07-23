@@ -97,6 +97,34 @@ lemma decisionTree_cover_empty
   · have : 0 ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := Nat.zero_le _
     exact this
 
+/-!
+Integrate the explicit decision tree with the cover construction.
+If a tree has monochromatic leaves for `F` and covers every `1`-input,
+its leaf subcubes form a valid cover whose size is bounded by `2 ^ depth`.
+-/
+lemma decisionTree_cover_of_tree
+  {n s C : Nat} (F : Family n) (t : DecisionTree n) [Fintype (Point n)]
+  (hmono : ∀ R ∈ DecisionTree.leaves_as_subcubes t,
+      Subcube.monochromaticForFamily R F)
+  (hcov : ∀ f ∈ F, ∀ x, f x = true →
+      ∃ R ∈ DecisionTree.leaves_as_subcubes t, x ∈ₛ R)
+  (hdepth : DecisionTree.depth t ≤ C * s * Nat.log2 (Nat.succ n)) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Choose the set of leaf subcubes as the cover.
+  let Rset := DecisionTree.leaves_as_subcubes t
+  have hcard_le : Rset.card ≤ 2 ^ DecisionTree.depth t :=
+    DecisionTree.tree_depth_bound (t := t)
+  have hcard : Rset.card ≤ 2 ^ (C * s * Nat.log2 (Nat.succ n)) := by
+    exact le_trans hcard_le
+      (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hdepth)
+  refine ⟨Rset, ?_, ?_, hcard⟩
+  · intro R hR; exact hmono R hR
+  · intro f hf x hx; exact hcov f hf x hx
+
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →
     Subcube.monochromaticFor R f := by

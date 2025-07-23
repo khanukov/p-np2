@@ -79,6 +79,34 @@ lemma tree_depth_bound (t : DecisionTree n) :
     (DecisionTree.leaves_as_subcubes t).card ≤ 2 ^ DecisionTree.depth t := by
   simpa using DecisionTree.leaves_as_subcubes_card_le_pow_depth (t := t)
 
+/--
+Convert an explicit decision tree into a rectangle cover.
+If every leaf of `t` is monochromatic for `F` and the tree covers all
+`1`-inputs, then the leaf subcubes themselves form the desired cover.
+The size bound follows from `tree_depth_bound`.
+-/
+lemma decisionTree_cover_of_tree
+  {n s C : Nat} (F : Family n) (t : DecisionTree n) [Fintype (Point n)]
+  (hmono : ∀ R ∈ DecisionTree.leaves_as_subcubes t,
+      Subcube.monochromaticForFamily R F)
+  (hcov : ∀ f ∈ F, ∀ x, f x = true →
+      ∃ R ∈ DecisionTree.leaves_as_subcubes t, x ∈ₛ R)
+  (hdepth : DecisionTree.depth t ≤ C * s * Nat.log2 (Nat.succ n)) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  let Rset := DecisionTree.leaves_as_subcubes t
+  have hcard_le : Rset.card ≤ 2 ^ DecisionTree.depth t :=
+    DecisionTree.tree_depth_bound (t := t)
+  have hcard : Rset.card ≤ 2 ^ (C * s * Nat.log2 (Nat.succ n)) := by
+    exact le_trans hcard_le
+      (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hdepth)
+  refine ⟨Rset, ?_, ?_, hcard⟩
+  · intro R hR; exact hmono R hR
+  · intro f hf x hx; exact hcov f hf x hx
+
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of
     subcubes covering all ones of the family.  The proof will use decision

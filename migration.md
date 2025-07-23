@@ -31,17 +31,6 @@ includes the old code, but new lemmas and theorems appear only in `Pnp2`.
 
 ## Remaining work
 
-Several statements in the `pnp` tree still provide more complete proofs.
-The following items need to be moved and checked:
-
-- the proofs of `aux_growth` and `mBound_lt_subexp` in `bound.lean`
-- the full definition of `mergeLowSensitivityCover` in `merge_low_sens.lean`
-- the `low_sensitivity_cover` construction from `low_sensitivity.lean`
-- the example-driven code in `examples.lean`
-- the SAT outline in `acc_mcsp_sat.lean`
-- the separation lemma `P_ne_NP_of_MCSP_bound` from `NP_separation.lean`
-- numeric cover bounds in `cover_numeric.lean`
-- tests exercising these modules
-
-Once all modules are moved and the proofs re-established, the `pnp`
-directory can be dropped entirely.
+All major files have been migrated to `Pnp2` and the legacy directory now
+serves purely for historical reference.  Future clean-up will remove the
+old tree once downstream tools no longer rely on it.

@@ -12,6 +12,10 @@ The current active development happens in the `Pnp2` namespace.  The earlier
 still compile, but new proofs and lemmas are added under `Pnp2` and modules are
 gradually migrated across.
 
+Several files continue to contain `sorry` placeholders and axiomatic
+statements while the formal proofs are completed.  These markers are
+tracked in `TODO.md` and will be removed as the project progresses.
+
 ## Layout
 
 * `BoolFunc.lean` – basic types for Boolean functions, points and subcubes (fully

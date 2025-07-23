@@ -1,9 +1,13 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.Finset.Card
-import Pnp.Sunflower.Sunflower
+import Pnp2.Sunflower.Sunflower
 
 /--!
-This file re-exports the classical sunflower lemma from the legacy `Pnp` development. Importing `Pnp.Sunflower.Sunflower` provides the definitions `Sunflower.IsSunflower` and `Sunflower.HasSunflower` together with the theorem `Sunflower.sunflower_exists`. The goal is to keep the modern `Pnp2` library lightweight while relying on the proven result without duplicating its original proof or introducing an axiom.
+This file re-exports the classical sunflower lemma now formalised within the
+`Pnp2` namespace. Importing `Pnp2.Sunflower.Sunflower` provides the definitions
+`Sunflower.IsSunflower` and `Sunflower.HasSunflower` together with the theorem
+`Sunflower.sunflower_exists`.  Keeping a small wrapper avoids sprinkling the
+longer path throughout the rest of the library.
 -/
 

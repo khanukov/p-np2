@@ -21,7 +21,7 @@ includes the old code, but new lemmas and theorems appear only in `Pnp2`.
 - `Acc_mcsp_sat.lean`
 - `Canonical_circuit.lean`
 - `Family_entropy_cover.lean`
-- `Sunflower/` containing `RSpread.lean` and `Sunflower.lean`
+- `Sunflower/` containing `RSpread.lean` and the ported proof `Sunflower.lean`
 - `Cover_numeric.lean`
 - `Examples.lean`
 - `Low_sensitivity.lean`

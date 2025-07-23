@@ -44,7 +44,8 @@ tracked in `TODO.md` and will be removed as the project progresses.
   `exists_restrict_half_real_prob` provide the bridge to analytic
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
-* `sunflower.lean` – full classical sunflower lemma `sunflower_exists` now formalised.
+* `sunflower.lean` – full classical sunflower lemma `sunflower_exists` now
+  formalised **inside `Pnp2`** (ported from the legacy `pnp` folder).
 * `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`).
   The lemma `RSpread.mono` now shows that a larger spread parameter implies
   a smaller one when `0 < R₂ ≤ R₁`.  Additional helper lemmas

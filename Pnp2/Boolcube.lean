@@ -127,8 +127,31 @@ def sample (C : Subcube n) : Point n :=
 @[simp] lemma size_point (x : Point n) :
     size (n := n) (Subcube.point (n := n) x) = 1 := by
   classical
-  -- Placeholder proof; enumeration of a singleton is trivial.
-  sorry
+  -- A point subcube contains precisely the point `x`.  We show that
+  -- the finite set enumerating its elements is `{x}` and hence has
+  -- cardinality `1`.
+  have hset : toFinset (n := n) (Subcube.point (n := n) x)
+      = ({x} : Finset (Point n)) := by
+    classical
+    ext y
+    constructor
+    · intro hy
+      -- Membership in the finset implies the point coincides with `x`.
+      have hy' : (Subcube.point (n := n) x).Mem y :=
+        (mem_toFinset (C := Subcube.point (n := n) x) (x := y)).1 hy
+      have : y = x := ((Subcube.mem_point_iff (x := x) (y := y)).1 hy').symm
+      simpa [this]
+    · intro hy
+      -- Conversely, membership in `{x}` means `y = x`.
+      have hy' : y = x := by simpa using hy
+      subst hy'
+      simp [mem_toFinset]
+  -- With this characterisation the result is immediate.
+  -- The cardinality of a singleton set is one.
+  have : size (n := n) (Subcube.point (n := n) x)
+      = ({x} : Finset (Point n)).card := by
+    simpa [size] using congrArg Finset.card hset
+  simpa [this]
 
 /-! ### A representative point of a subcube -/
 

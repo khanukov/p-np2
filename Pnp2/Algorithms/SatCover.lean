@@ -64,10 +64,22 @@ lemma satViaCover_none (f : BoolFun n) (h : ℕ) :
 noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
   (Finset.univ.filter fun x : Point n => f x = true).card
 
+/-!  A simple cardinality bound for `satViaCover_time`.  Since the filtered
+set of satisfying assignments is contained in the full cube of size `2^n`,
+the running time is trivially bounded by this exponential. -/
 lemma satViaCover_time_bound (f : BoolFun n) (h : ℕ) :
-    satViaCover_time (n:=n) f h ≤ mBound n h := by
+    satViaCover_time (n:=n) f h ≤ 2 ^ n := by
   classical
-  -- Placeholder bound.
-  sorry
+  -- The filtered set is contained in the full cube `Finset.univ`.
+  have hsubset :
+      (Finset.univ.filter fun x : Point n => f x = true) ⊆ Finset.univ :=
+    Finset.filter_subset _ _
+  -- Cardinalities respect subset relations.
+  have hcard := Finset.card_le_of_subset hsubset
+  -- The cube `Fin n → Bool` has size `2 ^ n`.
+  have hcube : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
+    simpa using (Fintype.card_fun (Fin := Fin n) (β := Bool))
+  -- Combine the inequalities.
+  simpa [satViaCover_time, hcube] using hcard
 
 end Pnp2.Algorithms

@@ -65,9 +65,13 @@ noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
   (Finset.univ.filter fun x : Point n => f x = true).card
 
 lemma satViaCover_time_bound (f : BoolFun n) (h : ℕ) :
-    satViaCover_time (n:=n) f h ≤ mBound n h := by
+    satViaCover_time (n:=n) f h ≤ 2 ^ n := by
   classical
-  -- Placeholder bound.
-  sorry
+  have hle := Finset.card_filter_le (s := Finset.univ)
+    (p := fun x : Point n => f x = true)
+  have huniv : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
+    classical
+    simpa [Point] using (Finset.card_univ : (Finset.univ : Finset (Point n)).card = Fintype.card (Point n))
+  simpa [satViaCover_time, huniv] using hle
 
 end Pnp2.Algorithms

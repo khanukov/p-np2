@@ -99,8 +99,7 @@ lemma monotonicity {C D : Subcube n}
 @[simp] lemma size_full (n : ℕ) :
     size (n := n) (Subcube.full : Subcube n) = 2 ^ n := by
   classical
-  -- Placeholder proof; direct enumeration is straightforward.
-  sorry
+  simp [size, toFinset]
 
 /-! ### Picking a representative point from a subcube -/
 

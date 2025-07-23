@@ -1,6 +1,6 @@
-import Pnp.BoolFunc
-import Pnp.Boolcube
-import Pnp.Sunflower.RSpread
+import Pnp2.BoolFunc
+import Pnp2.Boolcube
+import Pnp2.Sunflower.RSpread
 -- Additional cover modules are still incomplete, so we test RSpread only.
 
 open BoolFunc

@@ -127,8 +127,21 @@ def sample (C : Subcube n) : Point n :=
 @[simp] lemma size_point (x : Point n) :
     size (n := n) (Subcube.point (n := n) x) = 1 := by
   classical
-  -- Placeholder proof; enumeration of a singleton is trivial.
-  sorry
+  -- Enumerating a point yields a singleton set.
+  have henum :
+      toFinset (n := n) (Subcube.point (n := n) x) = ({x} : Finset (Point n)) := by
+    ext y; constructor
+    · intro hy
+      rcases Finset.mem_filter.mp hy with ⟨-, hy_mem⟩
+      have hxy : x = y := (Subcube.mem_point_iff x y).1 hy_mem
+      simpa [Finset.mem_singleton, hxy]
+    · intro hy
+      have hxy : y = x := Finset.mem_singleton.mp hy
+      refine Finset.mem_filter.mpr ?_
+      refine ⟨Finset.mem_univ _, ?_⟩
+      simpa [Subcube.mem_point_iff, hxy]
+  have hxcard := congrArg Finset.card henum
+  simpa [size] using hxcard
 
 /-! ### A representative point of a subcube -/
 

@@ -7,10 +7,9 @@ currently provided as axioms without proof.  Many basic lemmas have now been
 formalised, so the repository also serves as a record of ongoing progress
 towards a full argument.
 
-The current active development happens in the `Pnp2` namespace.  The earlier
-`pnp` directory remains as a legacy snapshot of previous experiments.  Its files
-still compile, but new proofs and lemmas are added under `Pnp2` and modules are
-gradually migrated across.
+The development now happens entirely in the `Pnp2` namespace.  The previous
+development tree is kept only as a historical snapshot and is no longer part of
+the build.
 
 Several files continue to contain `sorry` placeholders and axiomatic
 statements while the formal proofs are completed.  These markers are
@@ -45,7 +44,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
   of collision entropy.
 * `sunflower.lean` – full classical sunflower lemma `sunflower_exists` now
-  formalised **inside `Pnp2`** (ported from the legacy `pnp` folder).
+  formalised **inside `Pnp2`** (ported from the previous development folder).
 * `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`).
   The lemma `RSpread.mono` now shows that a larger spread parameter implies
   a smaller one when `0 < R₂ ≤ R₁`.  Additional helper lemmas
@@ -171,18 +170,18 @@ lemmas, cover builders and decision-tree tools all compile.  The next steps are 
 remaining numeric estimates and reconnecting the SAT outline to recover the full
 `P ≠ NP` implication.
 
-The code base has returned to the `Pnp2` namespace.  All major modules have been ported and `migration.md` now serves only as a historical record.  The `lakefile` still builds the old `pnp` tree for comparison, but new
-results appear in `Pnp2`.
+The code base has returned to the `Pnp2` namespace.  All major modules have been ported and `migration.md` now serves only as a historical record.  The build system now targets only `Pnp2` and the historical files are excluded.
 
 Work is ongoing on the decision-tree construction for low-sensitivity families.
 The lemma `decisionTree_cover` is currently axiomatic, but the repository
 includes helper definitions (`DecisionTree`, `subcube_of_path`) and leaf-count
 bounds that will support a full proof in future commits.
 
-### pnp vs Pnp2
+### Development namespace
 
-`Pnp2` is now the primary development directory.  It contains the actively
-maintained proof scripts and new lemmas.  The older `pnp` folder still compiles
+`Pnp2` is now the sole development directory.  It contains all maintained
+proof scripts and new lemmas.  The older directory is preserved for reference
+only and no longer compiles as part of the build.
 
 ## Development plan
 
@@ -190,7 +189,7 @@ The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key
 tasks are:
 1. ~~finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
    complement the proved entropy drop,~~
-2. ~~move all modules from `pnp` into the `Pnp2` directory and extend the test
+2. ~~move all modules from the legacy directory into `Pnp2` and extend the test
    suite to cover the migrated code,~~
 3. complete the `buildCover` correctness proof and establish the bound
    `mBound_lt_subexp`,

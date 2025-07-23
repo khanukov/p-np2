@@ -91,5 +91,5 @@
    "inputRev": "main",
    "inherited": true,
    "configFile": "lakefile.toml"}],
- "name": "pnp",
+ "name": "pnp2",
  "lakeDir": ".lake"}

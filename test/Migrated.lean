@@ -1,8 +1,8 @@
-import Pnp.LowSensitivity
-import Pnp.TableLocality
-import Pnp.NPSeparation
-import Pnp.Entropy
-import Pnp.Collentropy
+import Pnp2.LowSensitivity
+import Pnp2.TableLocality
+import Pnp2.NPSeparation
+import Pnp2.Entropy
+import Pnp2.Collentropy
 
 open Boolcube
 

@@ -43,7 +43,7 @@ lemma numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h := by
   simpa [mBound] using this
 
 /-! ### Improved bound with positivity assumption
-The development in `pnp` strengthens `numeric_bound` by assuming
+The legacy development strengthens `numeric_bound` by assuming
 `0 < n`.  This version follows the newer proof and will be useful for
 compatibility with migrated lemmas. -/
 
@@ -346,7 +346,7 @@ lemma cover_size_bound {n : ℕ} (Rset : Finset (Subcube n)) :
   simpa [size] using (Finset.card_le_univ (s := Rset))
 
 /-! ### Alternate bound wrapping the cardinality of `Subcube n`
-The legacy development in `pnp` introduced an auxiliary function
+The legacy development introduced an auxiliary function
 `bound_function` to emphasise the `3 ^ n` growth of the universal
 subcube family.  We reproduce the same API here for compatibility
 with migrated proofs. -/

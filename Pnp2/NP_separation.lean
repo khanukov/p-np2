@@ -46,7 +46,7 @@ lemma P_ne_NP_of_MCSP_bound :
 section Examples
 /-!  Simple illustration showing that the statement
 `P_ne_NP_of_MCSP_bound` yields `P ≠ NP` whenever an MCSP lower bound is
-available.  The proof mirrors the legacy `pnp` version and serves as a
+available.  The proof mirrors the legacy version and serves as a
 sanity check for the migrated lemmas. -/
 example : ¬ (∃ ε > 0, MCSP_lower_bound ε) ∨ P ≠ NP := by
   classical

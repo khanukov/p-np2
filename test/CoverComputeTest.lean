@@ -10,6 +10,11 @@ namespace CoverComputeTest
 example : mBound 1 0 = 2 := by
   simp [mBound]
 
+/-- `mBound` is positive whenever `n > 0`. -/
+example : 0 < mBound 1 0 := by
+  have : 0 < (1 : ℕ) := by decide
+  simpa [mBound] using mBound_pos (n := 1) (h := 0) this
+
 /-- `buildCoverCompute` returns the empty list for a trivial function. -/
 def trivialFun : BoolFun 1 := fun _ => false
 

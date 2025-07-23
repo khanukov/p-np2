@@ -64,6 +64,17 @@ lemma satViaCover_none (f : BoolFun n) (h : ℕ) :
 noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
   (Finset.univ.filter fun x : Point n => f x = true).card
 
+lemma satViaCover_time_le_pow (f : BoolFun n) (h : ℕ) :
+    satViaCover_time (n:=n) f h ≤ 2 ^ n := by
+  classical
+  unfold satViaCover_time
+  have hle := Finset.card_filter_le (s := Finset.univ)
+                  (p := fun x : Point n => f x = true)
+  have hcard : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
+    classical
+    simpa using (Fintype.card_fun (Fin n) Bool)
+  simpa [hcard] using hle
+
 lemma satViaCover_time_bound (f : BoolFun n) (h : ℕ) :
     satViaCover_time (n:=n) f h ≤ 2 ^ n := by
   classical

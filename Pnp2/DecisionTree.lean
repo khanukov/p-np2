@@ -101,7 +101,7 @@ def leaves_as_subcubes : DecisionTree n → Finset (Subcube n)
 The number of leaf subcubes is bounded by `2 ^ depth`. This follows from
 `leaf_count_le_pow_depth` by unfolding the `leaves_as_subcubes` definition
 and showing that the number of leaves coincides with the number of trivial
-subcubes produced from them. The proof mirrors the version in `pnp` and is
+subcubes produced from them. The proof mirrors the legacy version and is
 included here so that the legacy `Pnp2` library exposes the same API as the
 modern code.
 -/
@@ -137,7 +137,7 @@ lemma leaves_as_subcubes_card_le_pow_depth (t : DecisionTree n) :
 
 /--
 A convenient alias for `leaves_as_subcubes_card_le_pow_depth` matching the
-modern `pnp` library. It states the depth bound using the short name
+the legacy library. It states the depth bound using the short name
 `tree_depth_bound`.
 -/
 lemma tree_depth_bound (t : DecisionTree n) :

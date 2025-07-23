@@ -118,7 +118,7 @@ The modules above serve as milestones. Our immediate goals are:
    The file `Agreement.lean` now contains the complete proof of this lemma.
 4. Finalise the recursive covering algorithm in `cover.lean`.  A
   proof of the inequality `mBound_lt_subexp` exists in the legacy
-  `Pnp2/bound.lean` file, but the new `pnp` version still marks this
+  `Pnp2/bound.lean` file, but the new version still marks this
   statement as an axiom awaiting porting.
 
 6. Provide small test instances in `examples.lean`.

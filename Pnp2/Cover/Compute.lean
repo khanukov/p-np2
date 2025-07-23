@@ -12,6 +12,13 @@ for now we expose a stub version accompanied by admitted specifications.
 -- Basic definitions reproduced here to avoid depending on the full cover file.
 @[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
+lemma mBound_pos (n h : ℕ) (hn : 0 < n) : 0 < mBound n h := by
+  have hpow : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
+  have hmul1 : 0 < n * (h + 2) := by
+    have hpos : 0 < h + 2 := Nat.succ_pos _
+    exact Nat.mul_pos hn hpos
+  exact Nat.mul_pos hmul1 hpow
+
 namespace Cover
 
 open BoolFunc

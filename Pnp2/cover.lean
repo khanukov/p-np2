@@ -1815,9 +1815,8 @@ resulting cover collapses to `2 * h`.
 lemma buildCover_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     mu F h (buildCover F h hH) = 2 * h := by
   classical
-  -- Placeholder: the proof relies on the detailed behaviour of `mu`.
-  -- It is admitted for now to keep the file compiling.
-  sorry
+  have hcov := buildCover_covers (F := F) (h := h) (hH := hH)
+  simpa using mu_of_allCovered (F := F) (Rset := buildCover F h hH) (h := h) hcov
 
 /--
 `buildCover_mono` states that every subcube produced by `buildCover` is

@@ -574,7 +574,7 @@ partial def buildCover (F : Family n) (h : ℕ)
                 (BoolFunc.H₂_filter_le (F := F)
                     (P := fun g => ¬ ∀ x, x ∈ₛ R → g x = true))
             exact
-              buildCover F_reduced h (by simpa using hH_reduced)
+              buildCover F_reduced h hH_reduced
                 (insert R Rset)
           ·
             exact fallback

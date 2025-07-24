@@ -167,8 +167,8 @@ lemma exists_of_large_family
       (by simpa [hcard]) (by intro ht; exact hbig ht) with
     ⟨pet, hsub, core, hpair, hsize, hsubcore⟩
   refine ⟨⟨pet, hsize, core, ?_, ?_⟩, hsub⟩
-  · intro P hP; exact hsubcore P hP
-  · intro P₁ h₁ P₂ h₂ hne; exact hpair P₁ h₁ P₂ h₂ hne
+  · intro P hP; exact core.subset_of_mem_inter_all P hP
+  · intro P₁ h₁ P₂ h₂ hne; exact hpair.pairwise_inter P₁ h₁ P₂ h₂ hne
 
 end SunflowerFam
 

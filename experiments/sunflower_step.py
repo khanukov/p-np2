@@ -6,7 +6,7 @@ def find_sunflower(supports, t):
     """Return core and subset forming t-sunflower if one exists."""
     for comb in combinations(supports, t):
         core = set.intersection(*comb)
-        if all(A & B == core for A in comb for B in comb if A is not B):
+        if all(A & B == core for A in comb for B in comb if A != B):
             return core, list(comb)
     return None
 

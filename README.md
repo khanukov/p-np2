@@ -175,8 +175,8 @@ bounds that will support a full proof in future commits.
 ### Development namespace
 
 `Pnp2` is now the sole development directory.  It contains all maintained
-proof scripts and new lemmas.  The older directory is preserved for reference
-only and no longer compiles as part of the build.
+proof scripts and new lemmas.  The legacy `pnp` folder has been removed and
+no longer ships with the repository.
 
 ## Development plan
 

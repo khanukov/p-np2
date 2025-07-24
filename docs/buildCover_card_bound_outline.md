@@ -155,3 +155,8 @@ that the numeric constant in `mBound` eventually dominates the total number of
 inserted rectangles.  Hence the final cover returned by `buildCover` never
 contains more than `mBound n h` rectangles.
 
+
+## Subexponential tail bound
+The arithmetic lemma `mBound_lt_subexp` in `bound.lean` proves that `mBound n h < 2^(n/100)` once `n ≥ n₀(h)`.  Since the dimension `N` of the truth table equals `2^n`, this implies
+$$|\mathcal{R}| \le 2^{n/100} = 2^{\log_2 N / 100} \le 2^{N - N^{1/2}}$$
+for all sufficiently large `n`.  In other words the size of the cover grows strictly slower than any full exponential `2^N`, matching the usual form `2^{N - N^{\delta}}` of Lemma B for some `\delta > 0`.

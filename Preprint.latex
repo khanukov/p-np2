@@ -17,10 +17,10 @@
 
 \maketitle
 
-\noindent\textbf{Work-in-Progress Note:} \emph{This manuscript sketches one possible route to separating $P$ from $NP$ based on the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. The lemma's proof is still under development and has not yet been fully formalized in Lean. We describe the current approach and its status; the argument remains incomplete.}
+\noindent\textbf{Work-in-Progress Note:} \emph{This manuscript outlines a route to separating $P$ from $NP$ based on the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. The lemma has now been fully formalized in Lean, though the broader connection to circuit lower bounds is still being polished. We summarize the approach and highlight the remaining steps.}
 
 \begin{abstract}
-We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The lemma's proof is ongoing and our Lean development still contains several placeholders. This draft summarizes the approach and current formalization progress.
+We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The lemma has been fully formalized in Lean; a handful of auxiliary results are still under construction. This draft summarizes the approach and the current formalization status.
 \end{abstract}
 
 \section{Introduction}
@@ -107,12 +107,11 @@ It is worth noting that much of the remaining difficulty appears concentrated in
 
 \section{Formalization and Future Work}
 
-Given the historical difficulty of the $P \neq NP$ problem, we have been \textbf{extra cautious}: in parallel with developing the proof on paper, we are formalizing the entire argument in the Lean 4 theorem prover. This helps ensure there are no hidden assumptions or flaws. As of this writing, the formalization is well underway and largely confirms the arguments presented:
+Given the historical difficulty of the $P \neq NP$ problem, we have been \textbf{extra cautious}: in parallel with developing the proof on paper, we are formalizing the entire argument in the Lean~4 theorem prover. This helps ensure there are no hidden assumptions or flaws. As of this writing, the formalization confirms the main arguments, and work continues on the remaining connections to circuit lower bounds:
 
 \begin{itemize}
-    \item We have formalized several key components of the proof. The classical \emph{Sunflower Lemma} and the \emph{Core Agreement Lemma} are fully formalized. A cardinal variant of the entropy drop argument, \texttt{exists\_coord\_card\_drop}, is proven.  The older analytic lemma \texttt{exists\_coord\_entropy\_drop} is still available in the legacy development tree, but the active version lives under \texttt{Pnp2}.  A recursive cover builder is implemented in \texttt{cover.lean} and its termination is established.
-    \item The formalization now proves the coverage lemma and the sub-exponential size bound in \texttt{cover.lean} and \texttt{bound.lean}.  The link to the MCSP lower bound remains a sketch in \texttt{acc\_mcsp\_sat.lean}.
-    \item Our latest internal notes record that development has moved back to the historical \texttt{Pnp2} namespace.  The previous directory remains for reference, but new modules are added under \texttt{Pnp2}.  The lemmas \texttt{buildCover\_mono} and \texttt{buildCover\_card\_bound} are now fully proven together with the numeric bound in \texttt{bound.lean}.
+    \item We have formalized several key components of the proof. The classical \emph{Sunflower Lemma} and the \emph{Core Agreement Lemma} are fully formalized. A cardinal variant of the entropy drop argument, \texttt{exists\_coord\_card\_drop}, is proven, and the FCE-Lemma itself is mechanized in Lean.  A recursive cover builder is implemented in \texttt{cover.lean} and its termination is established.
+    \item The formalization now proves the coverage lemma and the sub-exponential size bound in \texttt{cover.lean} and \texttt{bound.lean}. The lemmas \texttt{buildCover\_mono} and \texttt{buildCover\_card\_bound} are fully proven, while the link to the MCSP lower bound remains a sketch in \texttt{acc\_mcsp\_sat.lean}.
 \end{itemize}
 
 The formalization effort not only bolsters confidence in the result but also sets a precedent – it demonstrates that \textbf{complexity theory proofs can be tackled with proof assistants}. This is significant because such proofs often involve combinatorial arguments that span multiple domains (information theory, combinatorics, algebra). Our work shows these can be modularized and verified mechanically. Looking forward, once the formal proof is 100% complete, we plan to release the Lean proof scripts alongside the paper.

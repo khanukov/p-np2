@@ -69,20 +69,13 @@ lemma satViaCover_time_le_pow (f : BoolFun n) (h : ℕ) :
   classical
   unfold satViaCover_time
   have hle := Finset.card_filter_le (s := Finset.univ)
-                  (p := fun x : Point n => f x = true)
+      (p := fun x : Point n => f x = true)
   have hcard : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
-    classical
     simpa using (Fintype.card_fun (Fin n) Bool)
   simpa [hcard] using hle
 
 lemma satViaCover_time_bound (f : BoolFun n) (h : ℕ) :
-    satViaCover_time (n:=n) f h ≤ 2 ^ n := by
-  classical
-  have hle := Finset.card_filter_le (s := Finset.univ)
-    (p := fun x : Point n => f x = true)
-  have huniv : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
-    classical
-    simpa [Point] using (Finset.card_univ : (Finset.univ : Finset (Point n)).card = Fintype.card (Point n))
-  simpa [satViaCover_time, huniv] using hle
+    satViaCover_time (n:=n) f h ≤ 2 ^ n :=
+  satViaCover_time_le_pow (f := f) (h := h)
 
 end Pnp2.Algorithms

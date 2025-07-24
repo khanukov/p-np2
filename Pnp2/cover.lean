@@ -770,16 +770,16 @@ lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
 /-!
 `uncovered_init_coarse_bound` specialises `uncovered_card_bound` to the
 initial call of `buildCover`.  It provides a simple size estimate for the
-set of uncovered pairs before any rectangles have been inserted.  While the
-stronger bound `uncovered_init_bound` below remains an axiom, the following
-lemma is fully proved and occasionally handy for crude numeric arguments.-/
+set of uncovered pairs before any rectangles have been inserted.  The
+following lemma is fully proved and occasionally handy for crude numeric
+arguments.-/
 lemma uncovered_init_coarse_bound (F : Family n) :
     (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ F.card * 2 ^ n := by
   simpa using
     (uncovered_card_bound (F := F) (Rset := (∅ : Finset (Subcube n))))
 
 /-!
-  A trivial instance of `uncovered_init_bound` holds when the family is
+  A trivial bound on the uncovered pairs holds when the family is
   empty.  In this situation there are no uncovered pairs at all, so the
   bound is immediate.  This lemma serves as a simple sanity check and a
   base case for future refinements of the combinatorial argument.
@@ -791,42 +791,6 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
     ext p; simp [uncovered, hF]
   have := Nat.zero_le n
   simpa [h] using this
-
-/--
-  **Initial uncovered bound.**  At the start of the recursion the number of
-  uncovered pairs is at most `n`.  A future combinatorial argument will tighten
-  this estimate; for now we record it as an axiom so that subsequent proofs can
-  rely on a concrete numeric value.
--/
-axiom uncovered_init_bound (F : Family n) :
-  (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n
-/--
-  A direct numeric variant of `uncovered_init_bound` expressed via the measure
-  `μ`.  Initially we have `μ(F, h, ∅) = 2 * h + (uncovered F ∅).toFinset.card`.
-  Plugging in the bound on the uncovered count yields `μ(F, h, ∅) ≤ 2 * h + n`.
-  This coarse inequality is occasionally convenient when reasoning about the
-  overall recursion measure.
--/
-lemma mu_init_linear_bound (F : Family n) (h : ℕ) :
-    mu F h (∅ : Finset (Subcube n)) ≤ 2 * h + n := by
-  have hstart :
-      (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n :=
-    uncovered_init_bound (F := F)
-  simpa [mu] using add_le_add_left hstart (2 * h)
-
-
-/-!
-`mu_init_bound` upgrades the initial uncovered bound to the full measure.
-Since `mu` adds `2 * h` to the uncovered count, the inequality
-`uncovered_init_bound` immediately yields
-`mu F h ∅ ≤ mBound n h` via `numeric_bound`.-/
-lemma mu_init_bound (F : Family n) (h : ℕ) :
-    mu F h (∅ : Finset (Subcube n)) ≤ mBound n h := by
-  have hstart : (uncovered F (∅ : Finset (Subcube n))).toFinset.card ≤ n :=
-    uncovered_init_bound (F := F)
-  have hμ : mu F h (∅ : Finset (Subcube n)) ≤ 2 * h + n := by
-    simpa [mu] using add_le_add_left hstart (2 * h)
-  exact hμ.trans (numeric_bound (n := n) (h := h))
 
 /-!
 `uncovered` is monotone with respect to the set of rectangles: adding
@@ -2389,9 +2353,8 @@ lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
 
 /-!
 Bounding the size of the cover by the initial measure `μ`.  The
-coarse linear estimate together with `mu_init_linear_bound` shows that
-the rectangles produced by `buildCover` never exceed the starting
-measure.
+coarse linear estimate shows that the rectangles produced by
+`buildCover` never exceed the starting measure.
 -/
 lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ 2 * h + n := by

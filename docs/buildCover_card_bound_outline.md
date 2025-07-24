@@ -160,3 +160,15 @@ contains more than `mBound n h` rectangles.
 The arithmetic lemma `mBound_lt_subexp` in `bound.lean` proves that `mBound n h < 2^(n/100)` once `n ≥ n₀(h)`.  Since the dimension `N` of the truth table equals `2^n`, this implies
 $$|\mathcal{R}| \le 2^{n/100} = 2^{\log_2 N / 100} \le 2^{N - N^{1/2}}$$
 for all sufficiently large `n`.  In other words the size of the cover grows strictly slower than any full exponential `2^N`, matching the usual form `2^{N - N^{\delta}}` of Lemma B for some `\delta > 0`.
+
+## From `mBound` to Lemma B
+
+The formal statement `family_collision_entropy_lemma_table` in
+`bound.lean` packages the construction together with the numeric bound
+above.  Combining this inequality with the elementary estimate
+$$(2^n)/100 \le 2^n - 2^{\lfloor n/2\rfloor}$$
+(which holds for all `n \ge 1`) immediately yields a stronger version
+in the usual "exponentially small" form
+$$|\mathcal{R}| \le 2^{2^n - 2^{\lfloor n/2\rfloor}}.$$
+Consequently the cover produced by `buildCover` witnesses Lemma B with
+parameter $\delta=1/2$ once `n \ge n₀(h)`.

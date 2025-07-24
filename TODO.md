@@ -16,7 +16,7 @@ Short list of development tasks reflecting the current repository status.
   The counting lemma `buildCover_card_bound` is also fully proven using
   the measure recursion.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
-- [ ] Expand numeric bounds in `bound.lean`.
+- [x] Expand numeric bounds in `bound.lean`.
 - [x] Provide more decision-tree utilities (leaf subcubes, path handling).
 - [x] Formalise path length bounds like `path_to_leaf_length_le_depth`.
 - [x] Prove basic leaf-count bound `leaf_count_le_pow_depth`.

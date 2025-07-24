@@ -523,8 +523,8 @@ partial def buildCover (F : Family n) (h : ℕ)
       -- Attempt to extract a single rectangle covering many functions at once.
       -- This step relies on `SunflowerFam.exists_of_large_family` under the hood.
       let p := (BoolFunc.support f).card
-      let t := 2
-      have ht : (2 : ℕ) ≤ t := by decide
+      let t := max 2 (Nat.log2 (F.card + 1))
+      have ht : (2 : ℕ) ≤ t := by simp [t, le_max_left]
       -- Fallback to the existing two-branch strategy.
       let fallback : Finset (Subcube n) := by
         -- Compute the maximum sensitivity `s` of functions in `F`.

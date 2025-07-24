@@ -19,6 +19,10 @@ lemma mBound_pos (n h : ℕ) (hn : 0 < n) : 0 < mBound n h := by
     exact Nat.mul_pos hn hpos
   exact Nat.mul_pos hmul1 hpow
 
+/-- `mBound` vanishes when there are no variables. -/
+@[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by
+  simp [mBound]
+
 /-!  `mBound` is at least `2` whenever the dimension `n` is positive.  This
 simple numeric bound mirrors the analogous lemma in the full cover
 development and is occasionally convenient for toy proofs. -/

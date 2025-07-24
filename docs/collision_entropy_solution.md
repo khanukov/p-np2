@@ -66,7 +66,7 @@ These facts provide the basic groundwork for further entropy arguments.
 To compile the `collentropy` module run:
 ```bash
 lake exe cache get
-lake build Pnp.Collentropy
+lake build Pnp2.collentropy
 ```
 The first command downloads pre-built Mathlib binaries. If the download fails or is skipped, the build step may take a long time as it compiles Mathlib from source.
 

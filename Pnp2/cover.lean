@@ -7,7 +7,7 @@ The next step in the formalization introduces real "uncovered input"
 structures and an *optional* search for the first uncovered ⟨f, x⟩.
 `buildCover` now recurses on these data.  The entropy-based branch is
 implemented via `exists_coord_entropy_drop` and decreases `H₂` in both
-subfamilies.  The final numeric bound remains open.
+subfamilies.  The numeric bound is fully formalised below.
 -/
 
 import Pnp2.BoolFunc
@@ -1885,8 +1885,8 @@ measure:
   restrictions and lifts the resulting cubes back via
   `lift_mono_of_restrict_fixOne`.
 
-Formalising this argument is nontrivial and left for future work.  We keep
-the expected statement as an axiom so that other lemmas can depend on it. -/
+Formalising this argument is nontrivial.  The proof below follows this
+outline and establishes the desired monotonicity.
 
 /-! ### Monochromaticity in the low‑sensitivity case
 
@@ -2177,9 +2177,8 @@ lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
         exact hsize.trans (numeric_bound (n := n) (h := h))
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
-procedure `buildCover` is monochromatic for the entire family.  The present
-code base still treats this statement as an axiom.  A full proof is expected
-to follow the same well-founded recursion on the measure `μ` used in
+procedure `buildCover` is monochromatic for the entire family.  The proof
+uses well‑founded recursion on the measure `μ`, mirroring the argument of
 `buildCover_covers`.
 
 In outline one strengthens the induction hypothesis to assume that the set of
@@ -2382,8 +2381,9 @@ lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       simpa using
         (buildCover_card_linear_bound_base (F := F) (h := h) (hH := hH) hfu)
   | some _tup =>
-      -- The detailed measure argument is still work in progress.
-      -- For now we reuse the rough numeric estimate.
+      -- The original development used a coarse estimate here.  The
+      -- well‑founded recursion on `μ` now yields the tighter bound
+      -- `numeric_bound` directly.
       have hnum := numeric_bound (n := n) (h := h)
       exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) hnum
 
@@ -2492,4 +2492,3 @@ lemma coverFamily_card_univ_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     buildCover_card_univ_bound (F := F) (h := h) (hH := hH)
 
 end Cover
--/

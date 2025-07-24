@@ -147,5 +147,14 @@ axiom exists_coord_entropy_drop {n : ℕ} (F : Family n)
     ∃ i : Fin n, ∃ b : Bool,
       H₂ (F.restrict i b) ≤ H₂ F - 1
 
+/--
+Filtering a family cannot increase collision entropy.  We keep this
+statement as an axiom for now so that cover constructions may remove
+functions while staying within the entropy budget.
+-/
+axiom H₂_filter_le {n : ℕ} (F : Family n)
+    (P : BFunc n → Prop) [DecidablePred P] :
+    H₂ (F.filter P) ≤ H₂ F
+
 
 end BoolFunc

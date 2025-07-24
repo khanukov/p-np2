@@ -562,10 +562,20 @@ partial def buildCover (F : Family n) (h : ℕ)
         ·
           by_cases h_big : (t - 1).factorial * p ^ t < (Family.supports F).card
           ·
-            obtain ⟨R, hcov, hdim, F_reduced⟩ :=
+            obtain ⟨R, hcov, hdim⟩ :=
               sunflower_step (F := F) (p := p) (t := t) hp ht h_big h_support
-            -- Insert `R` into the current cover and recurse on reduced family.
-            exact buildCover F_reduced (h - 1) (entropy_bound_after_sunflower hH hdim) (insert R Rset)
+            -- Remove all functions that are constantly `true` on `R` and
+            -- continue covering the remainder.  The entropy budget is kept
+            -- unchanged, as removing functions cannot increase `H₂`.
+            let F_reduced := F.filter fun g => ¬ ∀ x, x ∈ₛ R → g x = true
+            have hH_reduced : BoolFunc.H₂ F_reduced ≤ (h : ℝ) := by
+              -- Filtering a family cannot increase collision entropy.
+              simpa [F_reduced] using
+                (BoolFunc.H₂_filter_le (F := F)
+                    (P := fun g => ¬ ∀ x, x ∈ₛ R → g x = true))
+            exact
+              buildCover F_reduced h (by simpa using hH_reduced)
+                (insert R Rset)
           ·
             exact fallback
         ·

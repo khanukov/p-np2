@@ -19,6 +19,23 @@ lemma mBound_pos (n h : ℕ) (hn : 0 < n) : 0 < mBound n h := by
     exact Nat.mul_pos hn hpos
   exact Nat.mul_pos hmul1 hpow
 
+/-!  `mBound` is at least `2` whenever the dimension `n` is positive.  This
+simple numeric bound mirrors the analogous lemma in the full cover
+development and is occasionally convenient for toy proofs. -/
+lemma two_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have hh2 : 2 ≤ h + 2 := by
+    have := Nat.zero_le h
+    exact Nat.succ_le_succ (Nat.succ_le_succ this)
+  have hfactor : 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul hn1 hh2
+    simpa [one_mul] using this
+  have hpow : 1 ≤ 2 ^ (10 * h) := by
+    have hpos : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
+    exact Nat.succ_le_of_lt hpos
+  have := Nat.mul_le_mul hfactor hpow
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
 namespace Cover
 
 open BoolFunc

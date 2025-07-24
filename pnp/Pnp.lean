@@ -8,5 +8,7 @@ import Pnp.Collentropy
 import Pnp.Sunflower.RSpread
 import Pnp.CanonicalCircuit
 import Pnp.ComplexityClasses
+import Pnp.NPSeparation
 import Pnp.Cover
 import Pnp.Bound
+import Pnp.CoverNumeric

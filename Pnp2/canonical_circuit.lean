@@ -282,3 +282,44 @@ end Circuit
 
 end Boolcube
 
+
+namespace Boolcube
+namespace Circuit
+
+/-- The family of Boolean functions computed by circuits of size at most `m`. -/
+@[simp] def family (n m : ℕ) : Family n :=
+  ((circuitsUpTo n m).toFinset.image fun c : Circuit n => eval c)
+
+/-- Cardinality bound for `Circuit.family`.  This is an immediate
+    consequence of `count_canonical_bounded`. -/
+lemma family_card_le (n m : ℕ) :
+    (family n m).card ≤ 2 ^ (m * (Nat.log n + 1) + 1) := by
+  classical
+  have hcount := (count_canonical_bounded (n := n) (m := m)).2
+  have himg : (family n m).card ≤ (circuitsUpTo n m).toFinset.card :=
+    Finset.card_image_le
+  exact himg.trans hcount
+
+/-- Collision entropy bound for the family of circuits of size at most `m`. -/
+lemma family_H₂_le (n m : ℕ) :
+    Entropy.H₂ (family n m) ≤ (m * (Nat.log n + 1) + 1) := by
+  classical
+  have hcard := family_card_le (n := n) (m := m)
+  by_cases h0 : (family n m).card = 0
+  · have hzero : Entropy.H₂ (family n m) = 0 := by simp [Entropy.H₂, h0]
+    have hnonneg : (0 : ℝ) ≤ (m * (Nat.log n + 1) + 1) := by exact_mod_cast Nat.zero_le _
+    simpa [hzero] using hnonneg
+  · have hpos : (0 : ℝ) < (family n m).card := by exact_mod_cast Nat.pos_of_ne_zero h0
+    have hx : ((family n m).card : ℝ) ≤ (2 : ℝ) ^ (m * (Nat.log n + 1) + 1) := by
+      exact_mod_cast hcard
+    have hxlog := Real.logb_le_logb_of_le (b := 2) (by norm_num) hpos hx
+    have hb : (1 : ℝ) < 2 := by norm_num
+    have hpow : Real.logb 2 ((2 : ℝ) ^ (m * (Nat.log n + 1) + 1))
+        = (m * (Nat.log n + 1) + 1) := by
+      simpa [Real.logb_pow, hb] using
+        (Real.logb_pow (b := 2) (x := 2) (k := m * (Nat.log n + 1) + 1))
+    simpa [Entropy.H₂, family, hpow] using hxlog
+
+end Circuit
+end Boolcube
+

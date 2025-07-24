@@ -142,19 +142,82 @@ lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
 
 /-- **Entropy‑Drop Lemma.**  There exists a coordinate / bit whose
 restriction lowers collision entropy by at least one bit. -/
-axiom exists_coord_entropy_drop {n : ℕ} (F : Family n)
+lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
     (hn : 0 < n) (hF : 1 < F.card) :
     ∃ i : Fin n, ∃ b : Bool,
-      H₂ (F.restrict i b) ≤ H₂ F - 1
+      H₂ (F.restrict i b) ≤ H₂ F - 1 := by
+  classical
+  -- Obtain a coordinate/bit pair that halves the family size.
+  obtain ⟨i, b, hhalf⟩ :=
+    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+  -- Deal with the special case that the restricted family is empty.
+  by_cases hcard : (F.restrict i b).card = 0
+  · -- `logb` of zero is zero, so the inequality is trivial since
+    -- `H₂ F ≥ 1` for `F.card ≥ 2`.
+    have hpos : (1 : ℝ) ≤ H₂ F := by
+      have : (2 : ℝ) ≤ (F.card : ℝ) := by
+        exact_mod_cast Nat.succ_le_of_lt hF
+      have hb : 1 < (2 : ℝ) := by norm_num
+      have := Real.logb_le_logb_of_le hb (by norm_num) this
+      simpa [H₂] using this
+    refine ⟨i, b, ?_⟩
+    simpa [H₂, hcard, sub_nonneg.mpr hpos] using hpos
+  · -- The restricted family is nonempty, so `logb` is monotone with respect to
+    -- the size bound obtained above.
+    have hpos : 0 < ((F.restrict i b).card : ℝ) := by
+      exact_mod_cast Nat.pos_of_ne_zero hcard
+    have hb2 : 1 < (2 : ℝ) := by norm_num
+    have hlog :=
+      Real.logb_le_logb_of_le hb2 hpos hhalf
+    have hdrop : Real.logb 2 ((F.card : ℝ) / 2) = H₂ F - 1 := by
+      have hFpos : (F.card : ℝ) ≠ 0 := by
+        have hpos : 0 < F.card := lt_trans (Nat.succ_pos 0) hF
+        exact_mod_cast (ne_of_gt hpos)
+      have hlog2 : Real.logb 2 (2 : ℝ) = (1 : ℝ) := by simp
+      have := Real.logb_div (b := 2) (x := (F.card : ℝ)) (y := (2 : ℝ)) hFpos (by norm_num)
+      simpa [H₂, hlog2, div_eq_mul_inv] using this
+    refine ⟨i, b, ?_⟩
+    -- Combine the logarithmic bound with the equality above and rewrite.
+    have hineq : logb 2 ((F.restrict i b).card : ℝ) ≤ logb 2 ((F.card : ℝ) / 2) :=
+      hlog
+    have h := hineq
+    -- Rewrite the right-hand side using `hdrop` and the definition of `H₂`.
+    simpa [H₂, hdrop] using h
 
 /--
-Filtering a family cannot increase collision entropy.  We keep this
-statement as an axiom for now so that cover constructions may remove
-functions while staying within the entropy budget.
+Filtering a family cannot increase collision entropy: removing functions
+from the family can only lower its cardinality, hence its entropy.
 -/
-axiom H₂_filter_le {n : ℕ} (F : Family n)
+lemma H₂_filter_le {n : ℕ} (F : Family n)
     (P : BFunc n → Prop) [DecidablePred P] :
-    H₂ (F.filter P) ≤ H₂ F
+    H₂ (F.filter P) ≤ H₂ F := by
+  classical
+  -- Filtering yields a subfamily, hence the cardinality can only decrease.
+  have hcard : (F.filter P).card ≤ F.card := Finset.card_filter_le _ _
+  have hb : 1 < (2 : ℝ) := by norm_num
+  by_cases hzero : (F.filter P).card = 0
+  · -- The filtered family is empty, so the entropy is zero.
+    have hF_ge : 0 ≤ H₂ F := by
+      by_cases hF0 : F.card = 0
+      · simpa [H₂, hF0] using (le_of_eq rfl : (0 : ℝ) ≤ 0)
+      ·
+        have hx : 1 ≤ (F.card : ℝ) := by
+          have hpos : 0 < F.card := Nat.pos_of_ne_zero hF0
+          exact_mod_cast Nat.succ_le_of_lt hpos
+        have := Real.logb_nonneg (b := 2) hb hx
+        simpa [H₂] using this
+    have hzero' : logb 2 ((F.filter P).card : ℝ) = 0 := by simp [hzero]
+    have hposF : 0 ≤ H₂ F := by simpa [H₂] using hF_ge
+    have : H₂ (F.filter P) ≤ H₂ F := by
+      have := hposF
+      simpa [H₂, hzero'] using this
+    exact this
+  · -- The filtered family is nonempty; compare logarithms of the sizes.
+    have hposFilt : 0 < ((F.filter P).card : ℝ) := by
+      exact_mod_cast Nat.pos_of_ne_zero hzero
+    have hle : ((F.filter P).card : ℝ) ≤ (F.card : ℝ) := by exact_mod_cast hcard
+    have := Real.logb_le_logb_of_le hb hposFilt hle
+    simpa [H₂] using this
 
 
 end BoolFunc

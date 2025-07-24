@@ -562,10 +562,10 @@ partial def buildCover (F : Family n) (h : ℕ)
         ·
           by_cases h_big : (t - 1).factorial * p ^ t < (Family.supports F).card
           ·
-            obtain ⟨R, hcov, hdim⟩ :=
+            obtain ⟨R, hcov, hdim, F_reduced⟩ :=
               sunflower_step (F := F) (p := p) (t := t) hp ht h_big h_support
-            -- Insert `R` into the current cover and recurse.
-            exact buildCover F h hH (insert R Rset)
+            -- Insert `R` into the current cover and recurse on reduced family.
+            exact buildCover F_reduced h (entropy_bound_after_sunflower hH hdim) (insert R Rset)
           ·
             exact fallback
         ·

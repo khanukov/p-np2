@@ -17,7 +17,11 @@ def main():
     parser.add_argument("supports", nargs="+", help="Supports as comma-separated lists of integers")
     args = parser.parse_args()
 
-    supp_sets = [set(map(int, s.split(','))) for s in args.supports]
+    try:
+        supp_sets = [set(map(int, s.split(','))) for s in args.supports]
+    except ValueError as e:
+        print(f"Error parsing supports: {e}")
+        return
     result = find_sunflower(supp_sets, args.t)
     if result is None:
         print("No sunflower found")

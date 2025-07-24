@@ -570,9 +570,8 @@ partial def buildCover (F : Family n) (h : ℕ)
             let F_reduced := F.filter fun g => ¬ ∀ x, x ∈ₛ R → g x = true
             have hH_reduced : BoolFunc.H₂ F_reduced ≤ (h : ℝ) := by
               -- Filtering a family cannot increase collision entropy.
-              simpa [F_reduced] using
-                (BoolFunc.H₂_filter_le (F := F)
-                    (P := fun g => ¬ ∀ x, x ∈ₛ R → g x = true))
+              exact le_trans (BoolFunc.H₂_filter_le (F := F)
+                  (P := fun g => ¬ ∀ x, x ∈ₛ R → g x = true)) hH
             exact
               buildCover F_reduced h hH_reduced
                 (insert R Rset)

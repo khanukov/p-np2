@@ -71,6 +71,65 @@ lemma aux_growth (h : ℕ) :
       linarith
     simpa [hrewrite, hmul] using hdom
 
+-- Basic numeric facts about `mBound`.  These lemmas mirror the
+-- versions in `cover.lean` but live in the arithmetic-focused
+-- namespace for easier reuse.
+
+lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
+    0 < mBound n h := by
+  have hpos₁ : 0 < h + 2 := Nat.succ_pos _
+  have hpos₂ : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
+  have hmul : 0 < n * (h + 2) := Nat.mul_pos hn hpos₁
+  have := Nat.mul_pos hmul hpos₂
+  simpa [Cover.mBound] using this
+
+lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
+    2 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have hh2 : 2 ≤ h + 2 := by
+    have := Nat.zero_le h
+    exact Nat.succ_le_succ (Nat.succ_le_succ this)
+  have hfactor : 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul hn1 hh2 (by decide) (Nat.zero_le _)
+    simpa [one_mul] using this
+  have hpow : 1 ≤ 2 ^ (10 * h) :=
+    Nat.one_le_pow (2) (10 * h) (by decide)
+  have := Nat.mul_le_mul hfactor hpow
+  simpa [Cover.mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
+lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
+    3 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have h3 : 3 ≤ h + 2 := by
+    have hh' : (1 : ℤ) ≤ h := by exact_mod_cast hh
+    have : (3 : ℤ) ≤ h + 2 := by nlinarith
+    exact_mod_cast this
+  have hfac1 : h + 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul_right (h + 2) hn1
+    simpa [one_mul] using this
+  have hfac : 3 ≤ n * (h + 2) := le_trans h3 hfac1
+  have hpow : 1 ≤ 2 ^ (10 * h) := Nat.one_le_pow (2) (10 * h) (by decide)
+  have := Nat.mul_le_mul hfac hpow
+  simpa [Cover.mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
+lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
+  intro h₁ h₂ hh
+  dsimp [Cover.mBound]
+  have hfac : n * (h₁ + 2) ≤ n * (h₂ + 2) :=
+    Nat.mul_le_mul_left _ (Nat.add_le_add_right hh 2)
+  have hpow : 2 ^ (10 * h₁) ≤ 2 ^ (10 * h₂) := by
+    have := Nat.mul_le_mul_left 10 hh
+    exact Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) this
+  exact Nat.mul_le_mul hfac hpow
+
+lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
+    mBound n₁ h ≤ mBound n₂ h := by
+  dsimp [Cover.mBound]
+  have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
+    Nat.mul_le_mul_right (h + 2) hn
+  have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
 /-- Main numeric inequality: the explicit bound *is* sub‑exponential. -/
 lemma mBound_lt_subexp
     (h : ℕ) (n : ℕ) (hn : n ≥ n₀ h) :

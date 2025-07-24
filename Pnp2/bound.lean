@@ -290,4 +290,36 @@ theorem family_collision_entropy_lemma_table
       Nat.pow_le_pow_of_le_left (by decide : (1 : ℕ) ≤ 2) hpow
   exact ⟨Rset, hmono, hcov, hbound'⟩
 
+/-! ### Specialised corollary for small circuits
+
+The next lemma packages `family_collision_entropy_lemma_table`
+for the concrete family of Boolean functions computed by circuits of
+size at most `n^c`.  This is a convenient formulation of **Lemma B**:
+for sufficiently large `n` the entire circuit class admits a joint
+monochromatic cover of size strictly smaller than `2^{(2^n)/100}`. -/
+
+open Boolcube Circuit
+
+/-- **Lemma B (circuit form).**
+    Let `c` be a fixed exponent and consider all circuits on `n`
+    inputs of size at most `n^c`.  Once `n` exceeds the threshold
+    `n₀ h` (with `h = n^c * (Nat.log n + 1) + 1`), there exists a
+    finite set of subcubes covering every `1`‑input of every such
+    circuit.  Moreover the number of rectangles is bounded by
+    `2^{(2^n)/100}`. -/
+theorem lemmaB_circuit_cover (c n : ℕ)
+    (hn : n ≥ n₀ (n ^ c * (Nat.log n + 1) + 1)) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R (Circuit.family n (n ^ c))) ∧
+      (∀ f ∈ Circuit.family n (n ^ c), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
+  classical
+  let h := n ^ c * (Nat.log n + 1) + 1
+  have hH : H₂ (Circuit.family n (n ^ c)) ≤ (h : ℝ) := by
+    simpa [h] using Circuit.family_H₂_le (n := n) (m := n ^ c)
+  -- Apply the general entropy-cover lemma specialised to this family.
+  simpa [h] using
+    family_collision_entropy_lemma_table
+      (F := Circuit.family n (n ^ c)) (h := h) (hH := hH) (hn := hn)
+
 end Bound

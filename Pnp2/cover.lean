@@ -519,38 +519,59 @@ partial def buildCover (F : Family n) (h : ℕ)
           -- firstUncovered gives ⟨f, x⟩ with f ∈ F by definition
           rcases Set.choose?_mem (S := uncovered F Rset) hfu with ⟨hf, -, -⟩
           exact hf⟩
-      -- Compute the maximum sensitivity s of functions in F
-      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
-      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
-      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
-        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
-      -- **(1) Low-sensitivity branch:** if s is relatively small (e.g. O(log n)), use `low_sensitivity_cover`.
-      -- Here we require `s` to be below a threshold; for example, if s ≤ ⌊log₂(n+1)⌋, consider F "low-sensitivity".
-      cases Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
-      | inl hs_small =>
-          -- All functions have sensitivity ≤ s, with s relatively small compared to n.
-          have ⟨R_ls, Hmono, Hcover, Hsize⟩ :=
-            BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
-          -- Use the lemma's witness set R_ls as the remaining cover for all uncovered points.
-          exact Rset ∪ R_ls
-      | inr hs_large =>
-          -- **Entropy branch:** apply one-bit entropy drop and recurse on two sub-families.
-          have ⟨i, b, Hdrop⟩ :=
-            BoolFunc.exists_coord_entropy_drop (F := F)
-              (hn := by decide)
-              (hF := Finset.card_pos.mpr F_nonempty)
-          -- Split on coordinate `i = b` (one branch) vs `i = ¬b` (other branch),
-          -- both reduce `H₂` by at least `1`.
-          let F0 := F.restrict i b
-          let F1 := F.restrict i (!b)
-          have hH0 : BoolFunc.H₂ F0 ≤ (h - 1 : ℝ) := by
-            -- H₂(F0) ≤ H₂(F) - 1
-            simpa using (BoolFunc.H₂_restrict_le (F := F) (i := i) (b := b)).trans Hdrop
-          have hH1 : BoolFunc.H₂ F1 ≤ (h - 1 : ℝ) := by
-            -- H₂(F1) ≤ H₂(F) - 1
-            simpa using (BoolFunc.H₂_restrict_compl_le (F := F) (i := i) (b := b)).trans Hdrop
-          exact (buildCover F0 (h - 1) (by exact hH0)) ∪
-                (buildCover F1 (h - 1) (by exact hH1))
+      -- ### Sunflower branch
+      -- Attempt to extract a single rectangle covering many functions at once.
+      -- This step relies on `SunflowerFam.exists_of_large_family` under the hood.
+      let p := (BoolFunc.support f).card
+      let t := max 2 (Nat.log2 (F.card + 1))
+      have ht : (2 : ℕ) ≤ t := by simp [t, le_max_left]
+      -- Fallback to the existing two-branch strategy.
+      let fallback : Finset (Subcube n) := by
+        -- Compute the maximum sensitivity `s` of functions in `F`.
+        let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
+        let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
+        have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
+          fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
+        -- **(1) Low-sensitivity branch.**
+        -- If all functions have small sensitivity we reuse `low_sensitivity_cover`.
+        classical
+        cases Nat.lt_or_le s (Nat.log2 (Nat.succ n)) with
+        | inl hs_small =>
+            have ⟨R_ls, Hmono, Hcover, Hsize⟩ :=
+              BoolFunc.low_sensitivity_cover (F := F) (s := s) (C := 10) Hsens
+            exact Rset ∪ R_ls
+        | inr hs_large =>
+            -- **Entropy branch.**  Split on a coordinate that drops the entropy.
+            have ⟨i, b, Hdrop⟩ :=
+              BoolFunc.exists_coord_entropy_drop (F := F)
+                (hn := by decide)
+                (hF := Finset.card_pos.mpr F_nonempty)
+            let F0 := F.restrict i b
+            let F1 := F.restrict i (!b)
+            have hH0 : BoolFunc.H₂ F0 ≤ (h - 1 : ℝ) := by
+              simpa using (BoolFunc.H₂_restrict_le (F := F) (i := i) (b := b)).trans Hdrop
+            have hH1 : BoolFunc.H₂ F1 ≤ (h - 1 : ℝ) := by
+              simpa using (BoolFunc.H₂_restrict_compl_le (F := F) (i := i) (b := b)).trans Hdrop
+            exact (buildCover F0 (h - 1) (by exact hH0)) ∪
+                  (buildCover F1 (h - 1) (by exact hH1))
+      classical
+      -- Try the sunflower extraction if it applies.
+      by_cases hp : 0 < p
+      ·
+        by_cases h_support : ∀ g ∈ F, (BoolFunc.support g).card = p
+        ·
+          by_cases h_big : (t - 1).factorial * p ^ t < (Family.supports F).card
+          ·
+            obtain ⟨R, hcov, hdim, F_reduced⟩ :=
+              sunflower_step (F := F) (p := p) (t := t) hp ht h_big h_support
+            -- Insert `R` into the current cover and recurse on reduced family.
+            exact buildCover F_reduced (h - 1) (entropy_bound_after_sunflower hH hdim) (insert R Rset)
+          ·
+            exact fallback
+        ·
+          exact fallback
+      ·
+        exact fallback
 
 /-! ## Proof that buildCover indeed covers every 1‑input -/
 

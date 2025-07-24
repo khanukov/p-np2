@@ -30,8 +30,9 @@ tracked in `TODO.md` and will be removed as the project progresses.
   (`toFinset` and `size`), a monotonicity lemma for inclusion and the
   cardinal split result `exists_coord_card_drop`.  Lightweight structures
   `LabeledCube` and `Cover` expose the building blocks for recursive
-  cover constructors.  The experimental sunflower branch has been
-  removed, leaving a simplified entropy‑based skeleton.  A lemma
+  cover constructors.  A lemma `sunflower_step` extracts a large
+  monochromatic subcube when the supports form a sunflower,
+  complementing the entropy-based split.  A lemma
   `monochromatic_point` still shows that single‑point subcubes are
   automatically monochromatic for any Boolean function.
 
@@ -67,7 +68,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   placeholder for the future recursive procedure.  Its specification is
   proven and the file is used by `Algorithms/SatCover` for basic SAT
   experimentation.
-The sunflower case is still only sketched in comments and the proof falls back to a numeric estimate.
+The cover now includes a dedicated sunflower branch using `sunflower_step`.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is now fully proved in the
   `Pnp2` namespace.

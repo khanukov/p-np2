@@ -44,6 +44,10 @@ lemma two_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ≤ mBound n h := by
 
 namespace Cover
 
+lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) : mBound n₁ h ≤ mBound n₂ h := by
+  have : n₁ * (h + 2) ≤ n₂ * (h + 2) := Nat.mul_le_mul_right _ hn
+  have := Nat.mul_le_mul_right (2 ^ (10 * h)) this
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 open BoolFunc
 
 variable {n : ℕ}

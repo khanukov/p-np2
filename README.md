@@ -30,8 +30,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   (`toFinset` and `size`), a monotonicity lemma for inclusion and the
   cardinal split result `exists_coord_card_drop`.  Lightweight structures
   `LabeledCube` and `Cover` expose the building blocks for recursive
-  cover constructors.  The experimental sunflower branch has been
-  removed, leaving a simplified entropy‑based skeleton.  A lemma
+  cover constructors.  The module now integrates a sunflower step via `sunflower_exists` that extracts a rectangle covering several functions at once.  A lemma
   `monochromatic_point` still shows that single‑point subcubes are
   automatically monochromatic for any Boolean function.
 
@@ -54,11 +53,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
 * `cover.lean` – experimental cover builder that keeps track of the
   set of uncovered inputs via `firstUncovered`.  The entropy split now
   uses `exists_coord_entropy_drop`, and the sunflower step relies on
-  `sunflower_exists`.  Monochromaticity of the resulting cover is now
-  fully proved via the lemma `buildCover_mono`.  The companion size bound
-  `buildCover_card_bound` currently relies on a coarse measure
-  argument; completing the full induction on
-  `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` remains future work.
+  `sunflower_exists`.  Monochromaticity of the resulting cover is now fully established via the lemma `buildCover_mono`.  The companion counting lemma `buildCover_card_bound` has been proven through a complete measure-based induction on `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.
   The helper lemma `AllOnesCovered.union` abstracts the union step in
   the coverage proof.
 * `Cover/Compute.lean` – lightweight wrapper exposing a constructive
@@ -67,7 +62,6 @@ tracked in `TODO.md` and will be removed as the project progresses.
   placeholder for the future recursive procedure.  Its specification is
   proven and the file is used by `Algorithms/SatCover` for basic SAT
   experimentation.
-The sunflower case is still only sketched in comments and the proof falls back to a numeric estimate.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is now fully proved in the
   `Pnp2` namespace.

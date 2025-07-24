@@ -922,7 +922,7 @@ lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
 /-!
 Adding a rectangle that covers *two distinct* uncovered pairs reduces the
 measure `μ` by at least two.  This strengthening of
-`mu_union_singleton_succ_le` will be useful for the future sunflower branch of
+`mu_union_singleton_succ_le` will be useful in the sunflower branch of
 the cover construction.-/
 lemma mu_union_singleton_double_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
@@ -1019,8 +1019,7 @@ lemma mu_union_singleton_triple_lt {F : Family n} {Rset : Finset (Subcube n)}
 /-!
 Adding a rectangle that covers *three distinct* uncovered pairs decreases the
 measure `μ` by at least three.  This is a straightforward extension of
-`mu_union_singleton_double_succ_le` and will be useful for a potential
-sunflower branch.
+`mu_union_singleton_double_succ_le` and will be useful in the sunflower branch.
 -/
 lemma mu_union_singleton_triple_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}

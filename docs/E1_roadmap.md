@@ -50,7 +50,7 @@ positive-dimensional subcube.  A corrected monotonicity lemma for
 is positive, and new helper lemmas reformulate the bounds and cover the
 trivial case `R = 1`.  The entropy branch continues to use
 `exists_coord_entropy_drop` to split on a coordinate that decreases
-collision entropy.  The numeric counting argument is still incomplete,
+collision entropy.  The numeric counting argument has now been formalised,
 but the previously stubbed `coreAgreement` lemma in `Agreement.lean` has
 been formalised in full, removing a major gap in the combinatorial
 theory.

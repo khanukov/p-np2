@@ -24,6 +24,7 @@ Short list of development tasks reflecting the current repository status.
 - [x] Remove outdated sunflower branch placeholder in `Boolcube.buildCover`.
 - [x] Drop obsolete note about `sorry` usage in `Boolcube.lean`.
 - [x] Add `AllOnesCovered.union` helper lemma to simplify coverage proofs.
+- [x] Integrate `sunflower_step` into `buildCover` and update the documentation.
 - [ ] Use `collentropy.lean` and `family_entropy_cover.lean` across modules.
 - [x] Remove outdated standalone file `src/entropy_drop.lean` (lemma now lives in `Boolcube.lean`).
 - [ ] Complete the constructive cover enumerator in `Cover/Compute.lean` and prove

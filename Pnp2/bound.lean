@@ -259,4 +259,35 @@ theorem family_collision_entropy_lemma
   have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
   refine ⟨FC.rects, FC.mono, FC.covers, hle⟩
 
+/-- A convenient numeric corollary of `family_collision_entropy_lemma`.
+    Replacing the exponent `n / 100` by `(2 ^ n) / 100` emphasises that
+    the bound depends subexponentially on the full truth-table size
+    `N = 2 ^ n`. -/
+theorem family_collision_entropy_lemma_table
+    (hH : H₂ F ≤ (h : ℝ))
+    (hn : n ≥ n₀ h) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
+  classical
+  obtain ⟨Rset, hmono, hcov, hbound⟩ :=
+    family_collision_entropy_lemma (F := F) (h := h) (hH := hH) hn
+  have hpow : (n / 100) ≤ (Nat.pow 2 n) / 100 := by
+    have hle : n ≤ Nat.pow 2 n := by
+      -- elementary inequality `n ≤ 2 ^ n`
+      induction' n with d hd
+      · simp
+      ·
+        have hstep : d + 1 ≤ 2 ^ d + 1 := Nat.succ_le_succ hd
+        have hpos : (0 : ℕ) < 2 ^ d := pow_pos (by decide) _
+        have hstep' : d + 1 ≤ 2 ^ d + 2 ^ d :=
+          le_trans hstep <| Nat.add_le_add_left (Nat.succ_le_of_lt hpos) _
+        simpa [two_mul, Nat.pow_succ] using hstep'
+    exact Nat.div_le_div_right hle
+  have hbound' : Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) :=
+    le_trans hbound <|
+      Nat.pow_le_pow_of_le_left (by decide : (1 : ℕ) ≤ 2) hpow
+  exact ⟨Rset, hmono, hcov, hbound'⟩
+
 end Bound

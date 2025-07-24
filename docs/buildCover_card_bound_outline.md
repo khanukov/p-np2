@@ -45,10 +45,7 @@ Since `μ` decreases in every step, after at most `μ(F, h, ∅)` iterations the
 recursion stops.  Because `mBound` dominates this initial measure we obtain
 `(buildCover F h hH).card ≤ mBound n h`.
 
-The current Lean development provides most helper lemmas described above.
-Formalising the complete induction is work in progress.  The current
-implementation in `cover.lean` includes a coarse bound following this
-strategy, and future updates will replace it with the full argument.
+The induction has now been fully formalised in `cover.lean`, using these helper lemmas to prove `buildCover_card_bound` outright.
 
 ## Detailed branch analysis
 The measure-based induction follows these steps in detail.

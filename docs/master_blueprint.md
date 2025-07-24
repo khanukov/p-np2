@@ -70,10 +70,7 @@ each branch of the recursion strictly decreases this measure:
 low-sensitivity families are covered via `low_sensitivity_cover`, otherwise a
 coordinate split reduces the entropy budget, and occasionally a sunflower step
 covers multiple functions at once.  Combining these cases yields a bound of at
-most `mBound n h` rectangles before the measure collapses to zero.  The Lean
-formalisation of this argument is still in progress.  Lemma statements for
-`low_sensitivity_cover` are in place, and `acc_mcsp_sat.lean` outlines the SAT
-reduction.  The next steps depend on this breakthrough.
+most `mBound n h` rectangles before the measure collapses to zero.  This argument is now fully formalised in Lean.  The file `acc_mcsp_sat.lean` outlines the SAT reduction and awaits integration with the decision-tree cover.
 A small `DecisionTree` module with evaluation and size utilities now also
 provides path handling via `subcube_of_path` and the lemmas
 `path_to_leaf_length_le_depth` and a leaf-count bound `leaf_count_le_pow_depth`.

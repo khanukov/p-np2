@@ -20,7 +20,7 @@
 \noindent\textbf{Work-in-Progress Note:} \emph{This manuscript outlines a route to separating $P$ from $NP$ based on the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. The lemma has now been fully formalized in Lean, though the broader connection to circuit lower bounds is still being polished. We summarize the approach and highlight the remaining steps.}
 
 \begin{abstract}
-We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The lemma has been fully formalized in Lean; a handful of auxiliary results are still under construction. This draft summarizes the approach and the current formalization status.
+We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The core lemma has been formalized in Lean, with a handful of auxiliary results still under construction. This draft summarizes the approach and the current formalization status.
 \end{abstract}
 
 \section{Introduction}

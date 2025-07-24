@@ -44,8 +44,10 @@ variable {n : ℕ}
 
 /--
 `buildCoverCompute` is a constructive cover enumerator used by the SAT
-procedure.  The current implementation is a placeholder that returns an
-empty list; the full algorithm will mirror `Cover.buildCover`.
+procedure.  The current implementation is a placeholder that simply
+returns the empty list.  The full algorithm will eventually mirror
+`Cover.buildCover` once all intermediate steps become effective.
+-  TODO: replace this stub with the real recursive procedure.
 -/
 def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=

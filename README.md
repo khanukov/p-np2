@@ -157,13 +157,10 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop.  `buildCover_mono` and `buildCover_card_bound` are now fully formalised via a measure-based recursion.  The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. Numeric counting bounds remain open, so the repository documents ongoing progress rather than a finished proof.
+This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop.  `buildCover_mono` and `buildCover_card_bound` are now fully formalised via a measure-based recursion.  The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. The numeric bounds have been completed in `bound.lean`, culminating in the theorem `family_collision_entropy_lemma_table`. This establishes the sub-exponential cover (Lemma B).
 The newly introduced `Cover/Compute.lean` and `Algorithms/SatCover.lean` provide a constructive cover enumerator and a simple SAT search routine; their specifications are proven although the implementations are still placeholders.
 
-Within `Pnp2` the overall structure of the FCE argument is now visible: entropy
-lemmas, cover builders and decision-tree tools all compile.  The next steps are porting the
-remaining numeric estimates and reconnecting the SAT outline to recover the full
-`P ≠ NP` implication.
+Within `Pnp2` the overall structure of the FCE argument is complete and the focus shifts to optimising the constructive algorithms and reconnecting the SAT outline to recover the full `P ≠ NP` implication.
 
 The code base has returned to the `Pnp2` namespace.  All major modules have been ported and `migration.md` now serves only as a historical record.  The build system now targets only `Pnp2` and the historical files are excluded.
 
@@ -180,17 +177,16 @@ no longer ships with the repository.
 
 ## Development plan
 
-The next milestone is completing the Family Collision-Entropy Lemma in Lean. Key
-tasks are:
+The Family Collision-Entropy Lemma is now formalised. Remaining tasks include:
 1. ~~finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
    complement the proved entropy drop,~~
 2. ~~move all modules from the legacy directory into `Pnp2` and extend the test
    suite to cover the migrated code,~~
-3. complete the `buildCover` correctness proof and establish the bound
-   `mBound_lt_subexp`,
+3. ~~complete the `buildCover` correctness proof and establish the bound
+   `mBound_lt_subexp`,~~
 4. integrate the decision-tree cover into `low_sensitivity_cover`,
 5. expose `FamilyCover` and single-function entropy utilities throughout the
    codebase.
-Once these are done the lemma `FCE_lemma` will follow.
+The lemma `FCE_lemma` is now available, proving the desired sub-exponential bound.
 
-Proofs for the numeric bounds are being ported and will appear in the next update.
+The numeric bounds have been incorporated into the development.

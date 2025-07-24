@@ -188,5 +188,8 @@ The Family Collision-Entropy Lemma is now formalised. Remaining tasks include:
 5. expose `FamilyCover` and single-function entropy utilities throughout the
    codebase.
 The lemma `FCE_lemma` is now available, proving the desired sub-exponential bound.
+The corollary `family_collision_entropy_lemma_table` packages this result
+as **Lemma B**, yielding a joint monochromatic cover of size `2^{n/100}`
+for large enough `n`.
 
 The numeric bounds have been incorporated into the development.

@@ -36,9 +36,25 @@ import Pnp2.Boolcube
 open Classical
 open Finset
 
+namespace Finset
+
+/-! ### Auxiliary: intersection of a family of finsets -/
+
+/** `interFinset s` returns the intersection of all sets in `s` as an
+`Option` value. It is `none` when `s` is empty and `some` of the actual
+intersection otherwise. This helper replaces the older `interFinset`
+defined in previous versions of this project. -/
+def interFinset (s : Finset (Finset α)) : Option (Finset α) := by
+  classical
+  by_cases h : s.Nonempty
+  · exact some (s.inf' h id)
+  · exact none
+
+end Finset
 namespace Sunflower
 
 variable {α : Type} [DecidableEq α]
+
 
 /-! ### Basic definitions -/
 

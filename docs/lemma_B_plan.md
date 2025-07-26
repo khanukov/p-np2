@@ -35,3 +35,9 @@ What remains open is a **computable** enumeration of these rectangles
 via `Cover.buildCoverCompute`.  The current stub always returns an
 empty list, so the algorithmic applications are still hypothetical.
 
+An alternative presentation is given by the lemma
+`Bound.lemmaB_circuit_cover_delta`.  It reformulates the subexponential
+bound as `|Rset| ≤ 2^{2^n - 2^{n/2}}`, matching the usual
+`2^{N - N^δ}` notation with `δ = 1/2`.  This version follows from the
+basic bound by a straightforward numeric comparison.
+

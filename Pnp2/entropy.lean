@@ -22,12 +22,12 @@ namespace BoolFunc
 We work in `ℝ` because later analytic lemmas (`log` monotonicity, etc.) live
 in `ℝ`. -/
 noncomputable
- def collProb {n : ℕ} (F : Family n) : ℝ :=
-  if h : (F.card = 0) then 0 else (F.card : ℝ)⁻¹
+def collProb {n : ℕ} (F : Family n) : ℝ :=
+  if F.card = 0 then 0 else (F.card : ℝ)⁻¹
 
 @[simp] lemma collProb_pos {n : ℕ} {F : Family n} (h : 0 < F.card) :
     collProb F = (F.card : ℝ)⁻¹ := by
-  simp [collProb, h.ne', h]
+  simp [collProb, h.ne']
 
 @[simp] lemma collProb_zero {n : ℕ} {F : Family n} (h : F.card = 0) :
     collProb F = 0 := by simp [collProb, h]
@@ -36,8 +36,9 @@ lemma collProb_nonneg {n : ℕ} (F : Family n) :
     0 ≤ collProb F := by
   by_cases h : F.card = 0
   · simp [collProb, h]
-  · have : 0 < (F.card : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero h
-    simpa [collProb, h] using inv_nonneg.mpr (le_of_lt this)
+  · have hpos : 0 < (F.card : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero h
+    have hnonneg : 0 ≤ (F.card : ℝ)⁻¹ := inv_nonneg.mpr (le_of_lt hpos)
+    simpa [collProb, h] using hnonneg
 
 lemma collProb_le_one {n : ℕ} (F : Family n) :
     collProb F ≤ 1 := by

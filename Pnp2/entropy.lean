@@ -22,12 +22,12 @@ namespace BoolFunc
 We work in `ℝ` because later analytic lemmas (`log` monotonicity, etc.) live
 in `ℝ`. -/
 noncomputable
- def collProb {n : ℕ} (F : Family n) : ℝ :=
-  if h : (F.card = 0) then 0 else (F.card : ℝ)⁻¹
+def collProb {n : ℕ} (F : Family n) : ℝ :=
+  if F.card = 0 then 0 else (F.card : ℝ)⁻¹
 
 @[simp] lemma collProb_pos {n : ℕ} {F : Family n} (h : 0 < F.card) :
     collProb F = (F.card : ℝ)⁻¹ := by
-  simp [collProb, h.ne', h]
+  simp [collProb, Nat.ne_of_gt h]
 
 @[simp] lemma collProb_zero {n : ℕ} {F : Family n} (h : F.card = 0) :
     collProb F = 0 := by simp [collProb, h]
@@ -199,7 +199,7 @@ lemma H₂_filter_le {n : ℕ} (F : Family n)
   · -- The filtered family is empty, so the entropy is zero.
     have hF_ge : 0 ≤ H₂ F := by
       by_cases hF0 : F.card = 0
-      · simpa [H₂, hF0] using (le_of_eq rfl : (0 : ℝ) ≤ 0)
+      · simp [H₂, hF0]
       ·
         have hx : 1 ≤ (F.card : ℝ) := by
           have hpos : 0 < F.card := Nat.pos_of_ne_zero hF0

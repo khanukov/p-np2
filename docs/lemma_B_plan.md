@@ -22,3 +22,16 @@ The remaining work mainly concerns connecting these pieces with the
 combinatorial lemmas from the `sunflower` development and providing a
 computable version of `buildCover`.
 
+## Current status
+
+The formal development now proves the desired sub-exponential bound as
+`Bound.lemmaB_circuit_cover`.  This theorem packages the entropy cover
+construction and the numeric estimate `mBound_lt_subexp` to show that
+all circuits of size `≤ n^c` admit a joint monochromatic cover of at
+most `2^{(2^n)/100}` rectangles.  The proof relies on the `family_collision_entropy_lemma_table`
+for general families and instantiates it with the circuit family.
+
+What remains open is a **computable** enumeration of these rectangles
+via `Cover.buildCoverCompute`.  The current stub always returns an
+empty list, so the algorithmic applications are still hypothetical.
+

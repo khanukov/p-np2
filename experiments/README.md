@@ -12,7 +12,10 @@ Run the scripts with Python 3.
 
 ``lemma_b_search.py`` performs an exhaustive search of circuits with up to
 ``max_gates`` gates on ``n`` inputs.  Both parameters are optional positional
-arguments with defaults ``n=3`` and ``max_gates=2``.
+arguments with defaults ``n=3`` and ``max_gates=2``.  Passing ``--prefix``
+will additionally print how many circuits share a fixed left prefix for each
+split size, estimating the capacity drop from the "canonical circuits" point of
+view.
 
 The script can also report an estimated capacity drop for each split using
 ``--capacity``.  This prints exponents ``α`` such that ``|A| ≤ 2^{(1-α)k}`` and
@@ -29,6 +32,7 @@ prints the observed ``α`` values directly.
 python3 lemma_b_search.py          # use defaults n=3, max_gates=2
 python3 lemma_b_search.py 4 1      # four inputs, at most one gate
 python3 lemma_b_search.py 7 3 --capacity  # show α drop for n=7
+python3 lemma_b_search.py 8 4 --prefix    # prefix capacity stats for n=8
 python3 single_gate_count.py       # tables from one gate on three inputs
 python3 capacity_drop.py 6 3       # α for k up to 6 inputs
 python3 collision_entropy.py 3 1         # log2 of unique functions for n=3

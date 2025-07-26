@@ -62,6 +62,7 @@ lemma satViaCover_none (f : BoolFun n) (h : ℕ) :
     simp [satViaCover, hx, hxforall]
 
 noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
+  let _ := h -- retain parameter for future complexity bounds
   (Finset.univ.filter fun x : Point n => f x = true).card
 
 lemma satViaCover_time_le_pow (f : BoolFun n) (h : ℕ) :

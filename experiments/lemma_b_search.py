@@ -150,6 +150,7 @@ def experiment(
     max_gates,
     show_entropy=False,
     suggest_split=False,
+    show_capacity=False,
     csv_path=None,
 ):
     """Run the enumeration experiment and optionally write CSV output."""
@@ -164,6 +165,8 @@ def experiment(
         header = ["k", "A", "B", "rectangles"]
         if show_entropy or suggest_split:
             header += ["H_A", "H_B"]
+        if show_capacity:
+            header += ["alpha_A", "alpha_B"]
         if suggest_split:
             header += ["delta_A", "delta_B"]
         writer.writerow(header)
@@ -171,10 +174,21 @@ def experiment(
         a, b = split_tables(funcs, n, k)
         line = f"  split k={k}: |A|={a}, |B|={b}, rectangles={a*b}"
         ha = hb = None
+        alpha_a = alpha_b = None
         if show_entropy or suggest_split:
             ha, hb = split_entropies(funcs, n, k)
             if show_entropy:
                 line += f", H(A)={ha:.2f}, H(B)={hb:.2f}"
+        if show_capacity:
+            if a > 0 and k > 0:
+                alpha_a = 1.0 - (log2(a) / k)
+            else:
+                alpha_a = 0.0
+            if b > 0 and (n - k) > 0:
+                alpha_b = 1.0 - (log2(b) / (n - k))
+            else:
+                alpha_b = 0.0
+            line += f", αA={alpha_a:.2f}, αB={alpha_b:.2f}"
         if suggest_split:
             da, db = k - ha, (n - k) - hb
             score = max(da, db)
@@ -187,6 +201,8 @@ def experiment(
             row = [k, a, b, a * b]
             if show_entropy or suggest_split:
                 row += [ha, hb]
+            if show_capacity:
+                row += [alpha_a, alpha_b]
             if suggest_split:
                 row += [da, db]
             writer.writerow(row)
@@ -211,6 +227,9 @@ if __name__ == "__main__":
         "--suggest", action="store_true",
         help="print recommended split based on entropy drop")
     parser.add_argument(
+        "--capacity", action="store_true",
+        help="display estimated α drop for each split")
+    parser.add_argument(
         "--csv", type=str, default=None,
         help="write per-split results to a CSV file")
     args = parser.parse_args()
@@ -219,5 +238,6 @@ if __name__ == "__main__":
         max_gates=args.max_gates,
         show_entropy=args.entropy,
         suggest_split=args.suggest,
+        show_capacity=args.capacity,
         csv_path=args.csv,
     )

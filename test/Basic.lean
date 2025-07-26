@@ -327,5 +327,18 @@ example :
     simp [Bound.n₀]
   exact Bound.mBound_lt_subexp (h := 1) (n := 30720000) h0
 
+-- The circuit form of **Lemma B** ensures a joint cover of size
+-- `2^{(2^n)/100}` once `n` exceeds the threshold `n₀`.
+example (c n : ℕ)
+    (hn : n ≥ Bound.n₀ (n ^ c * (Nat.log n + 1) + 1)) :
+    ∃ Rset : Finset (Boolcube.Subcube n),
+      (∀ R ∈ Rset,
+          Subcube.monochromaticForFamily R (Boolcube.Circuit.family n (n ^ c))) ∧
+      (∀ f ∈ Boolcube.Circuit.family n (n ^ c),
+          ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
+  classical
+  simpa using Bound.lemmaB_circuit_cover (c := c) (n := n) hn
+
 
 end BasicTests

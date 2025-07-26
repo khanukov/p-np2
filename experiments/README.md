@@ -14,13 +14,23 @@ Run the scripts with Python 3.
 ``max_gates`` gates on ``n`` inputs.  Both parameters are optional positional
 arguments with defaults ``n=3`` and ``max_gates=2``.
 
+The script can also report an estimated capacity drop for each split using
+``--capacity``.  This prints exponents ``α`` such that ``|A| ≤ 2^{(1-α)k}`` and
+``|B| ≤ 2^{(1-α)(n-k)}``, giving a rough idea how structured the function family
+is.  Results can be saved as CSV via ``--csv``.
+
 ``single_gate_count.py`` simply lists all functions realizable by a single gate
 on ``n`` inputs (optional, default ``n=3``).
+
+``capacity_drop.py`` enumerates circuits on ``k`` inputs for growing ``k`` and
+prints the observed ``α`` values directly.
 
 ```bash
 python3 lemma_b_search.py          # use defaults n=3, max_gates=2
 python3 lemma_b_search.py 4 1      # four inputs, at most one gate
+python3 lemma_b_search.py 7 3 --capacity  # show α drop for n=7
 python3 single_gate_count.py       # tables from one gate on three inputs
+python3 capacity_drop.py 6 3       # α for k up to 6 inputs
 python3 collision_entropy.py 3 1         # log2 of unique functions for n=3
 python3 collision_entropy.py 3 1 --circuits  # weight by circuit count
 python3 collision_entropy.py 3 1 --list-counts  # print truth table counts

@@ -26,7 +26,9 @@ is.  Results can be saved as CSV via ``--csv``.
 on ``n`` inputs (optional, default ``n=3``).
 
 ``capacity_drop.py`` enumerates circuits on ``k`` inputs for growing ``k`` and
-prints the observed ``α`` values directly.
+prints the observed ``α`` values directly.  Passing ``--prefix N`` measures how
+many circuits on ``N`` inputs share a fixed left prefix, providing a more direct
+estimate for the capacity drop constant ``α``.
 
 ```bash
 python3 lemma_b_search.py          # use defaults n=3, max_gates=2
@@ -35,6 +37,7 @@ python3 lemma_b_search.py 7 3 --capacity  # show α drop for n=7
 python3 lemma_b_search.py 8 4 --prefix    # prefix capacity stats for n=8
 python3 single_gate_count.py       # tables from one gate on three inputs
 python3 capacity_drop.py 6 3       # α for k up to 6 inputs
+python3 capacity_drop.py --prefix 7 3  # prefix drop for n=7
 python3 collision_entropy.py 3 1         # log2 of unique functions for n=3
 python3 collision_entropy.py 3 1 --circuits  # weight by circuit count
 python3 collision_entropy.py 3 1 --list-counts  # print truth table counts

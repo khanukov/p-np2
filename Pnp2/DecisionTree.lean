@@ -405,6 +405,81 @@ lemma eval_pair_mem_coloredSubcubes (t : DecisionTree n) (x : Point n) :
   simpa [coloredSubcubes] using
     eval_pair_mem_coloredSubcubesAux (t := t) (x := x) (p := [])
 
+/-!  The list of coordinates along a path records the bit seen at each
+input position.  Every entry therefore agrees with the corresponding
+coordinate of the input that generated the path. -/
+lemma path_to_leaf_agrees (t : DecisionTree n) (x : Point n) :
+    ∀ q ∈ path_to_leaf t x, x q.1 = q.2 := by
+  induction t generalizing x with
+  | leaf b =>
+      intro q hq
+      simp [path_to_leaf] at hq
+  | node i t0 t1 ih0 ih1 =>
+      intro q hq
+      by_cases hxi : x i
+      · have h := ih1 x
+        simp [path_to_leaf, hxi] at hq
+        cases hq with
+        | inl hq => cases hq; simpa [hxi]
+        | inr hq => exact h q hq
+      · have h := ih0 x
+        simp [path_to_leaf, hxi] at hq
+        cases hq with
+        | inl hq => cases hq; simpa [hxi]
+        | inr hq => exact h q hq
+
+/-!  If every entry of `p` matches the corresponding coordinate of `x`,
+then `x` lies in the subcube described by `p`. -/
+lemma mem_subcube_of_path_of_agrees (x : Point n) :
+    ∀ p : List (Fin n × Bool), (∀ q ∈ p, x q.1 = q.2) →
+      (subcube_of_path (n := n) p).mem x := by
+  intro p
+  induction p with
+  | nil =>
+      intro _; simpa using mem_subcube_of_path_nil (n := n) (x := x)
+  | cons q p ih =>
+      intro h
+      rcases q with ⟨i, b⟩
+      have hx_tail : (subcube_of_path (n := n) p).mem x :=
+        ih (fun q hq => h q (by simp [hq]))
+      have hxi : x i = b := h ⟨i, b⟩ (by simp)
+      exact mem_subcube_of_path_cons_of_mem (x := x) (p := p) (i := i) (b := b) hx_tail hxi
+
+lemma mem_subcube_of_path_reverse_path_to_leaf (t : DecisionTree n) (x : Point n) :
+    (subcube_of_path ((path_to_leaf t x).reverse)).mem x := by
+  classical
+  have hagree := path_to_leaf_agrees (t := t) (x := x)
+  have hrev : ∀ q ∈ (path_to_leaf t x).reverse, x q.1 = q.2 := by
+    intro q hq
+    have hq' : q ∈ path_to_leaf t x := by simpa using List.mem_reverse.mpr hq
+    exact hagree q hq'
+  exact mem_subcube_of_path_of_agrees (x := x) (p := (path_to_leaf t x).reverse) hrev
+
+
+/-!
+Every `true` evaluation of the decision tree is witnessed by a
+subcube in `coloredSubcubes` labelled with `true` that contains the
+input.  This lemma packages the membership information from
+`eval_pair_mem_coloredSubcubes` together with the path membership
+property.  It will be convenient when constructing covers from
+decision trees.
+-/
+lemma coloredSubcubes_cover_true (t : DecisionTree n) :
+    ∀ x : Point n, eval_tree t x = true →
+      ∃ R : Subcube n, (true, R) ∈ coloredSubcubes (n := n) t ∧ x ∈ₛ R := by
+  intro x hx
+  classical
+  -- Subcube obtained from the path taken by `x`.
+  let R := subcube_of_path ((path_to_leaf t x).reverse)
+  have hmem : (eval_tree t x, R) ∈ coloredSubcubes (n := n) t :=
+    eval_pair_mem_coloredSubcubes (t := t) (x := x)
+  have hxR : x ∈ₛ R :=
+    mem_subcube_of_path_reverse_path_to_leaf (t := t) (x := x)
+  refine ⟨R, ?_, ?_⟩
+  · -- Rewrite the membership using the fact that `eval_tree t x = true`.
+    simpa [R, hx] using hmem
+  · simpa [R] using hxR
+
 end DecisionTree
 
 /-! ### Path-based family restrictions -/

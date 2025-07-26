@@ -322,4 +322,65 @@ theorem lemmaB_circuit_cover (c n : ℕ)
     family_collision_entropy_lemma_table
       (F := Circuit.family n (n ^ c)) (h := h) (hH := hH) (hn := hn)
 
+/-! ### Variant bound in the usual $2^{N - N^{\delta}}$ form
+
+The next lemma reformulates `lemmaB_circuit_cover` using the
+slightly stronger inequality `(|Rset| ≤ 2^{2^n - 2^{n/2}})`.
+This matches the conventional presentation of Lemma B with the
+parameter `δ = 1/2`.  The proof just observes that
+`(2^n)/100 ≤ 2^n - 2^{n/2}` for every positive `n`. -/
+
+lemma pow_two_div_hundred_le (n : ℕ) (hn : 0 < n) :
+    (Nat.pow 2 n) / 100 ≤ Nat.pow 2 n - Nat.pow 2 (n / 2) := by
+  have hdiv : n / 2 < n := Nat.div_lt_self hn (by decide)
+  have hpos : 1 ≤ n - n / 2 := Nat.succ_le_of_lt (Nat.sub_pos_of_lt hdiv)
+  have hpow : (2 : ℕ) ≤ Nat.pow 2 (n - n / 2) := by
+    simpa [pow_one] using
+      (Nat.pow_le_pow_of_le_left (by decide : (2 : ℕ) ≤ 2) hpos)
+  have hstep : 100 ≤ 99 * Nat.pow 2 (n - n / 2) := by
+    have hbase : (100 : ℕ) ≤ 99 * 2 := by decide
+    have := Nat.mul_le_mul_left 99 hpow
+    exact hbase.trans this
+  have hmult := Nat.mul_le_mul_right (Nat.pow 2 (n / 2)) hstep
+  have hpow2 :
+      Nat.pow 2 (n - n / 2) * Nat.pow 2 (n / 2) = Nat.pow 2 n := by
+    have hsum : n - n / 2 + n / 2 = n := by
+      exact Nat.sub_add_cancel (Nat.le_of_lt hdiv)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, hsum] using
+      (Nat.pow_add (2) (n - n / 2) (n / 2)).symm
+  have hineq : 100 * Nat.pow 2 (n / 2) ≤ 99 * Nat.pow 2 n := by
+    simpa [hpow2, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmult
+  have hsum := Nat.add_le_add_left hineq (Nat.pow 2 n)
+  have hsum' :
+      Nat.pow 2 n + 100 * Nat.pow 2 (n / 2) ≤ 100 * Nat.pow 2 n := by
+    simpa [Nat.mul_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hsum
+  have hsub :=
+    (Nat.le_sub_iff_add_le
+        (by
+          have := Nat.mul_le_mul_left 100
+              (Nat.pow_le_pow_of_le_left (by decide : (2 : ℕ) ≤ 2)
+                (Nat.div_le_self n 2))
+          simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this)).mpr
+      hsum'
+  have :=
+    (Nat.le_div_iff_mul_le (by decide : (0 : ℕ) < 100)).mpr hsub
+  simpa using this
+
+theorem lemmaB_circuit_cover_delta (c n : ℕ)
+    (hn : n ≥ n₀ (n ^ c * (Nat.log n + 1) + 1)) (hnpos : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R (Circuit.family n (n ^ c))) ∧
+      (∀ f ∈ Circuit.family n (n ^ c), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (Nat.pow 2 n - Nat.pow 2 (n / 2)) := by
+  classical
+  obtain ⟨Rset, hmono, hcov, hbound⟩ :=
+    lemmaB_circuit_cover (c := c) (n := n) hn
+  have hineq := pow_two_div_hundred_le (n := n) hnpos
+  have hbound' :
+      Rset.card ≤ Nat.pow 2 (Nat.pow 2 n - Nat.pow 2 (n / 2)) := by
+    have := Nat.pow_le_pow_of_le_left (by decide : (1 : ℕ) ≤ 2) hineq
+    exact le_trans hbound this
+  exact ⟨Rset, hmono, hcov, hbound'⟩
+
 end Bound

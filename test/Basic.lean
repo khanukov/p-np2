@@ -340,5 +340,18 @@ example (c n : ℕ)
   classical
   simpa using Bound.lemmaB_circuit_cover (c := c) (n := n) hn
 
+-- A variant of Lemma B with an explicit exponential tail `δ = 1/2`.
+example (c n : ℕ)
+    (hn : n ≥ Bound.n₀ (n ^ c * (Nat.log n + 1) + 1)) (hnpos : 0 < n) :
+    ∃ Rset : Finset (Boolcube.Subcube n),
+      (∀ R ∈ Rset,
+          Subcube.monochromaticForFamily R (Boolcube.Circuit.family n (n ^ c))) ∧
+      (∀ f ∈ Boolcube.Circuit.family n (n ^ c),
+          ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (Nat.pow 2 n - Nat.pow 2 (n / 2)) := by
+  classical
+  simpa using
+    Bound.lemmaB_circuit_cover_delta (c := c) (n := n) hn hnpos
+
 
 end BasicTests

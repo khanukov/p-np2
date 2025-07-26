@@ -21,7 +21,7 @@ explored without editing the file.
 
 import argparse
 import csv
-from collections import Counter
+from collections import Counter, defaultdict
 from math import log2
 
 # encode a boolean function on n inputs as an integer with 2**n bits
@@ -145,12 +145,40 @@ def _entropy_drop(funcs, n, k):
     return k - ha, (n - k) - hb
 
 
+def prefix_capacity_drop(n: int, max_gates: int) -> list[tuple[int, int, float]]:
+    """Estimate how many circuits share a fixed left ``k``-bit prefix.
+
+    For each ``k`` from ``1`` to ``n`` this function computes the maximum number
+    of circuits whose truth tables agree on the left ``2^k`` entries.  The
+    result is a list ``[(k, count, α), ...]`` where ``count`` is this maximum and
+    ``α = 1 - log2(count) / k``.  Large ``α`` indicates that few circuits depend
+    on a given prefix, supporting Lemma B's capacity drop hypothesis.
+    """
+
+    counts = function_counts(n, max_gates)
+    results: list[tuple[int, int, float]] = []
+    for k in range(1, n + 1):
+        left_len = 1 << k
+        mask = (1 << left_len) - 1
+        prefix_counter: defaultdict[int, int] = defaultdict(int)
+        for table, c in counts.items():
+            prefix_counter[table & mask] += c
+        max_count = max(prefix_counter.values()) if prefix_counter else 0
+        if k == 0 or max_count == 0:
+            alpha = 0.0
+        else:
+            alpha = 1.0 - (log2(max_count) / k)
+        results.append((k, max_count, alpha))
+    return results
+
+
 def experiment(
     n,
     max_gates,
     show_entropy=False,
     suggest_split=False,
     show_capacity=False,
+    prefix_drop=False,
     csv_path=None,
 ):
     """Run the enumeration experiment and optionally write CSV output."""
@@ -211,6 +239,12 @@ def experiment(
     if suggest_split and best is not None:
         print(f"Suggested split: k={best} with entropy drop {best_score:.2f}")
 
+    if prefix_drop:
+        print("\nPrefix capacity drop (max circuits sharing a left prefix):")
+        prefix_results = prefix_capacity_drop(n, max_gates)
+        for k, cnt, alpha in prefix_results:
+            print(f"  k={k}: max_count={cnt}, α={alpha:.2f}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enumerate small circuits")
@@ -230,6 +264,9 @@ if __name__ == "__main__":
         "--capacity", action="store_true",
         help="display estimated α drop for each split")
     parser.add_argument(
+        "--prefix", action="store_true",
+        help="also print prefix capacity drop statistics")
+    parser.add_argument(
         "--csv", type=str, default=None,
         help="write per-split results to a CSV file")
     args = parser.parse_args()
@@ -239,5 +276,6 @@ if __name__ == "__main__":
         show_entropy=args.entropy,
         suggest_split=args.suggest,
         show_capacity=args.capacity,
+        prefix_drop=args.prefix,
         csv_path=args.csv,
     )

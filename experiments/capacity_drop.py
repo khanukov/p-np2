@@ -1,17 +1,28 @@
 """Estimate the circuit capacity drop for small parameters.
 
-For each ``k`` up to the chosen ``max_k`` the script enumerates all circuits
-with at most ``max_gates`` gates that depend on exactly ``k`` input bits.
-The total count of such circuits is compared to ``2^{k}``, yielding the
-exponent ``alpha`` in the inequality ``#circuits <= 2^{(1-alpha) * k}``.
-The enumeration uses the helper ``function_counts`` from ``lemma_b_search.py``
-so that the logic stays consistent with the other experiments.
+The script has two modes:
+
+* **Direct enumeration** (default):
+  For each ``k`` up to ``max_k`` it enumerates all circuits that *exactly*
+  use ``k`` input bits and at most ``max_gates`` logical gates.  The total
+  count of such circuits is compared to ``2^{k}``, yielding the exponent
+  ``alpha`` in the inequality ``#circuits ≤ 2^{(1-α) k}``.
+
+* **Prefix enumeration** (``--prefix N``):
+  For a fixed overall input size ``N`` it counts, for each prefix length
+  ``k`` from ``1`` to ``N``, how many circuits share the same left ``k``-bit
+  prefix of the truth table.  This supports the "canonical circuits" approach
+  from roadmap B‑3 by estimating how many circuits actually depend on a
+  chosen subset of inputs.
+
+Both modes rely on the enumeration helpers from ``lemma_b_search.py`` so the
+logic stays consistent with the other experiments.
 """
 
 import argparse
 from math import log2
 from collections import Counter
-from lemma_b_search import function_counts
+from lemma_b_search import function_counts, prefix_capacity_drop
 
 
 def capacity_drop(max_k: int, max_gates: int) -> list[tuple[int, int, float]]:
@@ -34,6 +45,16 @@ def capacity_drop(max_k: int, max_gates: int) -> list[tuple[int, int, float]]:
     return results
 
 
+def prefix_drop(n: int, max_gates: int) -> list[tuple[int, int, float]]:
+    """Measure prefix capacity drop for circuits on ``n`` inputs.
+
+    This wraps ``prefix_capacity_drop`` from ``lemma_b_search`` and simply
+    forwards its output.
+    """
+
+    return prefix_capacity_drop(n, max_gates)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Estimate the circuit capacity drop for small k",
@@ -44,8 +65,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "max_gates", type=int, nargs="?", default=3,
         help="maximum number of gates per circuit (default: 3)")
+    parser.add_argument(
+        "--prefix", type=int, metavar="N", default=0,
+        help=(
+            "measure prefix capacity drop for circuits on N inputs "
+            "instead of enumerating by k"
+        ),
+    )
     args = parser.parse_args()
 
-    results = capacity_drop(args.max_k, args.max_gates)
-    for k, count, alpha in results:
-        print(f"k={k}: circuits={count}, alpha={alpha:.4f}")
+    if args.prefix > 0:
+        results = prefix_drop(args.prefix, args.max_gates)
+        for k, count, alpha in results:
+            print(f"prefix k={k}: max_count={count}, alpha={alpha:.4f}")
+    else:
+        results = capacity_drop(args.max_k, args.max_gates)
+        for k, count, alpha in results:
+            print(f"k={k}: circuits={count}, alpha={alpha:.4f}")

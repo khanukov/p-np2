@@ -148,6 +148,8 @@ Boolean circuits to collect data for Lemma B.  Invoke them with Python 3:
 ```bash
 python3 experiments/lemma_b_search.py     # exhaustive search of small circuits
 python3 experiments/single_gate_count.py  # list functions from a single gate
+python3 experiments/capacity_drop.py 6 3  # α drop for up to 6 inputs
+python3 experiments/capacity_drop.py --prefix 7 3  # prefix drop on 7 inputs
 python3 experiments/collision_entropy.py 3 1         # log2 of unique functions
 python3 experiments/collision_entropy.py 3 1 --circuits  # weight by circuit count
 python3 experiments/collision_entropy.py 3 1 --list-counts  # table counts

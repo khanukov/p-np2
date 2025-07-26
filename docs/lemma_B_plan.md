@@ -1,0 +1,24 @@
+# Progress Towards Lemma B
+
+This short note summarises the intended formal proof that the family of
+small Boolean functions admits a subexponential rectangular cover.  It
+collects various helper lemmas already available in the repository and
+sketches how they fit together.  The goal is to bound the size of the
+cover produced by `buildCover` by the function `mBound` and then use the
+asymptotic estimate `mBound_lt_subexp` from `bound.lean`.
+
+The `buildCover_card_bound` lemma establishes
+```
+(buildCover F h hH).card ≤ mBound n h
+```
+for any family `F : Family n` whose collision entropy does not exceed
+`h`.  Combining this with `cover_exists` we obtain a finite set of
+subcubes covering all one‑inputs of every function in `F` with the same
+size bound.  Finally `mBound_lt_subexp` shows that for sufficiently
+large `n` this bound is `≤ 2^(n/100)`, yielding the desired
+subexponential behaviour.
+
+The remaining work mainly concerns connecting these pieces with the
+combinatorial lemmas from the `sunflower` development and providing a
+computable version of `buildCover`.
+

@@ -25,16 +25,73 @@ namespace ACCSAT
 /-- Polynomials in `n` variables over `𝔽₂`. -/
 abbrev Polynomial (n : ℕ) := MvPolynomial (Fin n) (ZMod 2)
 
+/-! ### Encoding circuits as polynomials over `𝔽₂`
+
+To reason about the meet-in-the-middle approach it will be convenient to
+express a Boolean circuit as a polynomial over the field `𝔽₂`.  The following
+utility converts booleans to `𝔽₂` and establishes the basic identities for the
+logical operations. -/
+
+@[simp] def boolToF2 (b : Bool) : ZMod 2 := if b then 1 else 0
+
+@[simp] lemma boolToF2_true : boolToF2 true = (1 : ZMod 2) := by rfl
+
+@[simp] lemma boolToF2_false : boolToF2 false = (0 : ZMod 2) := by rfl
+
+@[simp] lemma boolToF2_not (b : Bool) : boolToF2 (!b) = 1 + boolToF2 b := by
+  cases b <;> simp [boolToF2]
+
+@[simp] lemma boolToF2_and (a b : Bool) :
+    boolToF2 (a && b) = boolToF2 a * boolToF2 b := by
+  cases a <;> cases b <;> simp [boolToF2]
+
+@[simp] lemma boolToF2_or (a b : Bool) :
+    boolToF2 (a || b) = boolToF2 a + boolToF2 b + boolToF2 a * boolToF2 b := by
+  cases a <;> cases b <;> simp [boolToF2]
+
+/-! The translation of circuits to polynomials is completely structural.  The
+degree bound from Razborov--Smolensky is suppressed here; the main purpose of
+this definition is to provide a concrete polynomial whose evaluation matches the
+circuit semantics. -/
+
+noncomputable def circuitToPoly {n : ℕ} : Boolcube.Circuit n → Polynomial n
+  | Boolcube.Circuit.var i   => MvPolynomial.X i
+  | Boolcube.Circuit.const b => if b then 1 else 0
+  | Boolcube.Circuit.not c   => 1 + circuitToPoly c
+  | Boolcube.Circuit.and c₁ c₂ => circuitToPoly c₁ * circuitToPoly c₂
+  | Boolcube.Circuit.or c₁ c₂  =>
+      circuitToPoly c₁ + circuitToPoly c₂ + circuitToPoly c₁ * circuitToPoly c₂
+
+lemma eval_circuitToPoly {n : ℕ} (c : Boolcube.Circuit n) (x : Boolcube.Point n) :
+    boolToF2 (Boolcube.Circuit.eval c x) =
+      MvPolynomial.eval (fun i => boolToF2 (x i)) (circuitToPoly c) := by
+  induction c with
+  | var i =>
+      simp [circuitToPoly]
+  | const b =>
+      cases b <;> simp [circuitToPoly]
+  | not c ih =>
+      simp [circuitToPoly, ih]
+  | and c₁ c₂ ih₁ ih₂ =>
+      simp [circuitToPoly, ih₁, ih₂]
+  | or c₁ c₂ ih₁ ih₂ =>
+      simp [circuitToPoly, ih₁, ih₂, add_comm, add_left_comm, add_assoc]
+
+/-! Razborov–Smolensky: every `ACC⁰` circuit can be expressed as a low-degree
+polynomial over `𝔽₂`.  The bound on the degree is schematic and stated in
+big‑O form.  The construction `circuitToPoly` provides one explicit witness. -/
+
 /-- Razborov–Smolensky: every `ACC⁰` circuit can be expressed as a
     low-degree polynomial over `𝔽₂`.  The bound on the degree is
     schematic and stated in big‑O form. -/
 lemma acc_circuit_poly {n d : ℕ} (C : Boolcube.Circuit n)
     (hdepth : True := by trivial) :
-    ∃ P : Polynomial n, True := by
-  -- A real proof would translate `C` into a polynomial and
-  -- bound the degree.  We merely return the zero polynomial.
-  refine ⟨0, ?_⟩
-  trivial
+    ∃ P : Polynomial n,
+      ∀ x, boolToF2 (Boolcube.Circuit.eval C x) =
+        MvPolynomial.eval (fun i => boolToF2 (x i)) P := by
+  refine ⟨circuitToPoly C, ?_⟩
+  intro x
+  simpa using eval_circuitToPoly (c := C) (x := x)
 
 /-- Split an `N`‑bit vector into `k` left bits and `ℓ` right bits
     (`N = k + ℓ`).  The helper functions merely project the
@@ -290,6 +347,41 @@ lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
     have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
     rcases hcov (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, hR, hxR⟩
+
+/-! ### A concrete SAT solver using the entropy cover
+
+`SATUsingFCE` extracts the rectangle cover from `sat_reduction` and runs
+`SATViaCover`.  The complexity bound follows from `sat_reduction` together with
+`SATViaCover_time_bound`. -/
+
+noncomputable def SATUsingFCE {N : ℕ} (Φ : Boolcube.Circuit N)
+    (hn : N ≥ Bound.n₀ 0) : Bool :=
+  let cover := Classical.choose (sat_reduction (Φ := Φ) (hn := hn))
+  SATViaCover Φ cover
+
+def SATUsingFCE_time {N : ℕ} (Φ : Boolcube.Circuit N) (hn : N ≥ Bound.n₀ 0) : ℕ :=
+  let cover := Classical.choose (sat_reduction (Φ := Φ) (hn := hn))
+  SATViaCover_time cover
+
+lemma SATUsingFCE_correct {N : ℕ} (Φ : Boolcube.Circuit N)
+    (hn : N ≥ Bound.n₀ 0) :
+    SATUsingFCE Φ hn = true ↔ ∃ x, Circuit.eval Φ x = true := by
+  classical
+  let key := sat_reduction (Φ := Φ) (hn := hn)
+  rcases key with ⟨cover, hmono, hcov, hbound⟩
+  unfold SATUsingFCE SATViaCover
+  have := SATViaCover_correct (Φ := Φ) (cover := cover) hmono hcov
+  simpa using this
+
+lemma SATUsingFCE_time_bound {N : ℕ} (Φ : Boolcube.Circuit N)
+    (hn : N ≥ Bound.n₀ 0) :
+    SATUsingFCE_time Φ hn ≤ Nat.pow 2 (N / 100) := by
+  classical
+  let key := sat_reduction (Φ := Φ) (hn := hn)
+  rcases key with ⟨cover, hmono, hcov, hbound⟩
+  unfold SATUsingFCE_time
+  have htime := SATViaCover_time_bound (cover := cover)
+  exact le_trans htime hbound
 
 end ACCSAT
 

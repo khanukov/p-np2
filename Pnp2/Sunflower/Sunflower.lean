@@ -76,23 +76,30 @@ lemma exists_of_large_family
     (hbig : F.card > Nat.factorial (t - 1) * w ^ t) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F := by
   classical
+  -- Apply the classical sunflower lemma to obtain a `t`-sunflower inside `F`.
   rcases sunflower_exists (𝓢 := F) (w := w) (p := t) hw ht
       (by simpa using hbig) hcard with
-    ⟨pet, hsub, core, hSun, hsize⟩
-  refine ⟨⟨pet, by simpa using hSun.card_p, core, ?_, ?_⟩, hsub⟩
-  · intro P hP
+    ⟨pet, hsub, core, hSun, hcards⟩
+  -- Break down the `IsSunflower` structure into its two components.
+  rcases hSun with ⟨hsize, hpair⟩
+  -- We now show that the common `core` is contained in every petal.
+  have hsub_core : ∀ P ∈ pet, core ⊆ P := by
+    intro P hP
+    -- Show that the family has at least two petals.
     have h_two : 1 < pet.card := by
-      have h : 2 ≤ pet.card := by simpa [hSun.card_p] using ht
-      simpa using (Nat.succ_le_iff.mp h)
-    obtain ⟨Q, hQ, hQne⟩ := Finset.exists_ne_of_one_lt_card h_two P
-    have hPQ := hSun.pairwise_inter (A := P) (by simpa using hP)
-      (B := Q) (by simpa using hQ) (Ne.symm hQne)
-    intro x hx
-    have hx' : x ∈ P ∩ Q := by simpa [hPQ] using hx
-    exact (Finset.mem_inter.mp hx').1
-  · intro P₁ h₁ P₂ h₂ hne
-    exact hSun.pairwise_inter (A := P₁) (by simpa using h₁)
-      (B := P₂) (by simpa using h₂) hne
+      have h : 2 ≤ pet.card := by simpa [hsize] using ht
+      have h12 : 1 < 2 := by decide
+      exact lt_of_lt_of_le h12 h
+    -- Obtain a different petal `Q` using `exists_ne_of_one_lt_card`.
+    obtain ⟨Q, hQ, hne⟩ := Finset.exists_ne_of_one_lt_card h_two P
+    -- The sunflower property says `P ∩ Q = core`, hence `core ⊆ P`.
+    have hPQ := hpair (A := P) hP (B := Q) hQ (Ne.symm hne)
+    simpa [hPQ] using (Finset.inter_subset_left : P ∩ Q ⊆ P)
+  -- Assemble the final `SunflowerFam` structure.
+  refine ⟨⟨pet, hsize, core, hsub_core, ?_⟩, hsub⟩
+  -- The pairwise intersection condition follows directly from `hpair`.
+  intro P₁ h₁ P₂ h₂ hne
+  exact hpair (A := P₁) h₁ (B := P₂) h₂ hne
 
 end SunflowerFam
 

@@ -101,8 +101,10 @@ tracked in `TODO.md` and will be removed as the project progresses.
   current roadmap for the ACC⁰∘MCSP subexponential SAT approach.  A new note
   `buildCover_card_bound_outline.md` summarises the measure-based induction used
   in the proof of `buildCover_card_bound`.  The document
-  `canonical_eq_proof_plan.md` records a detailed sketch for proving that
-  canonical circuits coincide exactly when their evaluations agree.
+  `canonical_eq_proof_plan.md` records the original sketch for proving that
+  canonical circuits coincide exactly when their evaluations agree.  The
+  theorem is formalised in `Pnp2/canonical_circuit.lean` as
+  `canonical_eq_iff_eqv`.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 
 ## Building

@@ -2,10 +2,12 @@
 -- ==================
 --
 -- Outline of the meet-in-the-middle SAT algorithm for `ACC⁰ ∘ MCSP`.
--- This module gathers a few definitions and lemma stubs that would
--- connect the cover from the Family Collision–Entropy Lemma
--- (Lemma B) with a subexponential SAT algorithm.
--- All statements are currently placeholders and the proofs are omitted.
+-- This module sketches how a rectangle cover from the
+-- Family Collision–Entropy Lemma (Lemma B) can yield a
+-- subexponential SAT algorithm for `ACC⁰ ∘ MCSP`.
+-- Many statements were previously placeholders; several of the
+-- helper lemmas are now fully proven, while the remaining parts
+-- still serve as a blueprint for future development.
 
 import Pnp2.BoolFunc
 import Pnp2.canonical_circuit
@@ -218,9 +220,8 @@ lemma satSearch_complete {n : ℕ} {f : BoolFun n}
 
 /-- Schematic definition of the meet‑in‑the‑middle SAT algorithm using
     a rectangular cover of the MCSP truth tables.  The algorithm loops
-    over the rectangles and computes partial sums on the left and right
-    halves.  Whenever a non‑zero product is detected the circuit is
-    satisfiable.  This stub merely returns `false`. -/
+    over the rectangles and tests the circuit on each sample point.
+    As soon as a `true` evaluation is found the search terminates. -/
 noncomputable
 def SATViaCover {N : ℕ}
     (Φ : Boolcube.Circuit N)

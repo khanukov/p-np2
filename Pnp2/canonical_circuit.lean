@@ -179,6 +179,33 @@ lemma exists_input_of_canonical_ne {n : ℕ} {c₁ c₂ : Canon n}
   -- or versus and
   · refine ⟨fun _ => false, by simp⟩
 
+/-- Two circuits have the same canonical form *iff* they are extensionally
+    equivalent, i.e. they compute the same Boolean function.  The forward
+    implication is `canonical_inj`.  For the converse we show that if the
+    canonical forms differ then `exists_input_of_canonical_ne` produces an
+    input where the evaluations disagree, contradicting `eqv`. -/
+theorem canonical_eq_iff_eqv {n : ℕ} (c₁ c₂ : Circuit n) :
+    canonical c₁ = canonical c₂ ↔ eqv c₁ c₂ := by
+  constructor
+  · -- Soundness: identical canonical forms yield equal evaluations.
+    intro h
+    exact canonical_inj (c₁ := c₁) (c₂ := c₂) h
+  · -- Completeness: if the circuits agree on every input, their canonical
+    -- forms must coincide.  We argue by contrapositive.
+    intro h
+    classical
+    by_contra hneq
+    -- Obtain a counterexample input where the canonical circuits disagree.
+    have ⟨x, hx⟩ :=
+      exists_input_of_canonical_ne (c₁ := canonical c₁)
+        (c₂ := canonical c₂) hneq
+    -- Relate canonical evaluation back to the original circuits.
+    have hx₁ := eval_canonical (c := c₁) (x := x)
+    have hx₂ := eval_canonical (c := c₂) (x := x)
+    -- `hx` shows `eval c₁ x ≠ eval c₂ x`, contradicting `eqv`.
+    have : eval c₁ x ≠ eval c₂ x := by simpa [hx₁, hx₂] using hx
+    exact this (h x)
+
 /-- Length bound for canonical descriptions.  Each gate contributes at most
     `O(log n)` bits, hence a circuit of size `m` yields a description of
     length `O(m log n)`.  In particular, if `sizeOf c ≤ n^d` then the

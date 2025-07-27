@@ -115,11 +115,9 @@ variable {n t : ℕ}
 
 lemma petals_nonempty {S : SunflowerFam n t} (ht : 0 < t) :
     S.petals.Nonempty := by
-  have hcard : S.petals.card ≠ 0 := by
-    have : S.petals.card = t := S.tsize
-    have ht' : t ≠ 0 := Nat.ne_of_gt ht
-    simpa [this] using ht'
-  exact Finset.card_ne_zero.mp hcard
+  rw [← Finset.card_pos]
+  rw [S.tsize]
+  exact ht
 
 end SunflowerFam
 

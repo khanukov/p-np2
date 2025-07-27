@@ -17,6 +17,6 @@ The outline follows two main steps.
    and binary gates and the corresponding inductive step.
 
 Combining these directions establishes the desired equivalence, denoted
-here as `canonical_eq_iff_eqv`.  The proof is not yet fully formalised in
-Lean but the outline provides a concrete roadmap for completing the
-implementation without disrupting existing tests.
+here as `canonical_eq_iff_eqv`.  The proof is now fully formalised in
+`canonical_circuit.lean` as the theorem `canonical_eq_iff_eqv`, and this
+note records the original roadmap that guided the implementation.

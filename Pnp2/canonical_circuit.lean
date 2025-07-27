@@ -176,9 +176,9 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     _ = eval c₂ x := hc₂.symm
 
 /-- If canonical forms differ, there exists an input where the evaluations
-    disagree.  This lemma currently handles only mismatched outer constructors.
-    Completing the inductive proof for matching constructors is left for future
-    work. -/
+    disagree.  The proof performs a case analysis on both canonical circuits,
+    recursively descending into subcircuits when the constructors match.  In
+    each branch we produce a point that distinguishes the evaluations. -/
 lemma exists_input_of_canonical_ne {n : ℕ} {c₁ c₂ : Canon n}
     (h : c₁ ≠ c₂) : ∃ x : Point n, evalCanon c₁ x ≠ evalCanon c₂ x := by
   classical

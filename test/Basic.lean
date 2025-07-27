@@ -205,6 +205,19 @@ example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
   have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
   simpa using hfun x
 
+-- Extensionally equal circuits may still have distinct canonical forms.
+example :
+    Boolcube.Circuit.canonical (Boolcube.Circuit.var (0 : Fin 1)) ≠
+      Boolcube.Circuit.canonical
+        (Boolcube.Circuit.not (Boolcube.Circuit.not (Boolcube.Circuit.var 0))) := by
+  decide
+
+example (x : Boolcube.Point 1) :
+    Boolcube.Circuit.eval (Boolcube.Circuit.var 0) x =
+      Boolcube.Circuit.eval
+        (Boolcube.Circuit.not (Boolcube.Circuit.not (Boolcube.Circuit.var 0))) x := by
+  simp
+
 -- Encoding length of a canonical circuit is bounded by `codeLen`.
 example {n : ℕ} (c : Boolcube.Circuit.Canon n) :
     (Boolcube.Circuit.encodeCanon c).length ≤

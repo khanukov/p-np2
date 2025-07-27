@@ -35,6 +35,23 @@ noncomputable def eval {n : ℕ} : Circuit n → Point n → Bool
   | and c₁ c₂, x  => eval c₁ x && eval c₂ x
   | or c₁ c₂, x   => eval c₁ x || eval c₂ x
 
+/-- Two circuits are *extensionally equivalent* when they agree on all inputs. -/
+def eqv {n : ℕ} (c₁ c₂ : Circuit n) : Prop :=
+  ∀ x, eval c₁ x = eval c₂ x
+
+@[simp] theorem eqv_refl {n} (c : Circuit n) : eqv c c :=
+  by intro _; rfl
+
+theorem eqv_symm {n} {c₁ c₂ : Circuit n} (h : eqv c₁ c₂) : eqv c₂ c₁ := by
+  intro x; simpa [eqv] using (h x).symm
+
+theorem eqv_trans {n} {c₁ c₂ c₃ : Circuit n}
+    (h₁ : eqv c₁ c₂) (h₂ : eqv c₂ c₃) : eqv c₁ c₃ := by
+  intro x
+  specialize h₁ x
+  specialize h₂ x
+  exact h₁.trans h₂
+
 /-- Canonical circuits have commutative gates ordered lexicographically
     by their string representation.  This makes the structure unique. -/
 inductive Canon (n : ℕ) where
@@ -93,10 +110,13 @@ theorem eval_canonical {n : ℕ} (c : Circuit n) (x : Point n) :
       · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h]
       · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h, Bool.or_comm]
 
-/-- Two circuits have the same canonical form iff they compute the same function. -/
+/-! If two circuits have the same canonical form, they agree on all inputs.  This
+    is the "soundness" direction of canonicalisation.  The converse fails for
+    the simplified normal form used here (different circuits can compute the
+    same function yet yield distinct canonical representations). -/
 theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     canonical c₁ = canonical c₂ →
-    (∀ x, eval c₁ x = eval c₂ x) := by
+    eqv c₁ c₂ := by
   -- This follows from `eval_canonical` for both circuits.
   intro h x
   have hcanon := congrArg (fun c => evalCanon c x) h

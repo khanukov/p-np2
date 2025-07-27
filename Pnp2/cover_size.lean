@@ -43,6 +43,14 @@ lemma subcube_monochromatic_base {n : ℕ} (s : Subcube n)
 -- In this toy development we do not prove any meaningful
 -- monochromaticity statement beyond the base case above.
 
+@[simp] lemma size_empty {n : ℕ} :
+    size (n := n) (∅ : Cover n) = 0 := by
+  simp [size]
+
+lemma size_union_le {n : ℕ} (c₁ c₂ : Cover n) :
+    size (c₁ ∪ c₂) ≤ size c₁ + size c₂ := by
+  simpa [size] using Finset.card_union_le (s := c₁) (t := c₂)
+
 /-! ### Size bound for covers -/
 
 /-- An explicit upper bound function used in the toy estimate. -/

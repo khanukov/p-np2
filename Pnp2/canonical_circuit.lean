@@ -7,8 +7,9 @@ canonical_circuit.lean
 
 This module formalises a very small model of Boolean circuits and a
 canonicalisation procedure used in roadmap items **B‑1** and **B‑3**.
-Commutative gates are ordered lexicographically so that each circuit is
-associated with a unique canonical form.  The length of the resulting
+Commutative gates are ordered according to a fixed `Ord` instance so that
+each circuit is associated with a unique canonical form.  The length of
+the resulting
 description is proportional to the number of gates times `log n`, which
 implies that any circuit of size `≤ n^c` admits a representation of
 length `O(n^c log n)`.
@@ -52,15 +53,17 @@ theorem eqv_trans {n} {c₁ c₂ c₃ : Circuit n}
   specialize h₂ x
   exact h₁.trans h₂
 
-/-- Canonical circuits have commutative gates ordered lexicographically
-    by their string representation.  This makes the structure unique. -/
+/-- Canonical circuits have commutative gates ordered according to the
+    `Ord` instance on canonical circuits.  This makes the structure
+    unique and avoids relying on potentially unstable string
+    representations. -/
 inductive Canon (n : ℕ) where
   | var   : Fin n → Canon n
   | const : Bool → Canon n
   | not   : Canon n → Canon n
   | and   : Canon n → Canon n → Canon n
   | or    : Canon n → Canon n → Canon n
-  deriving DecidableEq
+  deriving DecidableEq, Ord
 
 private def canonAnd {n : ℕ} (l r : Canon n) : Canon n :=
   match l, r with
@@ -69,11 +72,10 @@ private def canonAnd {n : ℕ} (l r : Canon n) : Canon n :=
   | Canon.const true, _  => r
   | _, Canon.const true  => l
   | _ =>
-      if h : l = r then l
-      else if toString l ≤ toString r then
-        Canon.and l r
-      else
-        Canon.and r l
+      match compare l r with
+      | Ordering.lt => Canon.and l r
+      | Ordering.eq => l
+      | Ordering.gt => Canon.and r l
 
 private def canonOr {n : ℕ} (l r : Canon n) : Canon n :=
   match l, r with
@@ -82,16 +84,15 @@ private def canonOr {n : ℕ} (l r : Canon n) : Canon n :=
   | Canon.const false, _ => r
   | _, Canon.const false => l
   | _ =>
-      if h : l = r then l
-      else if toString l ≤ toString r then
-        Canon.or l r
-      else
-        Canon.or r l
+      match compare l r with
+      | Ordering.lt => Canon.or l r
+      | Ordering.eq => l
+      | Ordering.gt => Canon.or r l
 
 /-- Convert a circuit to a canonical form.  The implementation recursively
     canonicalises subcircuits, removes trivial logical redundancies
     (double negation, constant propagation and idempotent gates) and then
-    orders arguments of commutative gates lexicographically. -/
+    orders arguments of commutative gates using the canonical order. -/
 noncomputable def canonical {n : ℕ} : Circuit n → Canon n
   | var i       => Canon.var i
   | const b     => Canon.const b
@@ -122,22 +123,14 @@ lemma evalCanon_canonAnd {n : ℕ} (l r : Canon n) (x : Point n) :
   classical
   cases l <;> cases r <;> try (simp [canonAnd, evalCanon])
   all_goals
-    by_cases h : _ = _
-    · simp [canonAnd, h, evalCanon]
-    · by_cases h' : toString _ ≤ toString _
-      · simp [canonAnd, h, h', evalCanon]
-      · simp [canonAnd, h, h', evalCanon, Bool.and_comm]
+    cases h : compare _ _ <;> simp [canonAnd, evalCanon, h, Bool.and_comm]
 
 lemma evalCanon_canonOr {n : ℕ} (l r : Canon n) (x : Point n) :
     evalCanon (canonOr l r) x = evalCanon l x || evalCanon r x := by
   classical
   cases l <;> cases r <;> try (simp [canonOr, evalCanon])
   all_goals
-    by_cases h : _ = _
-    · simp [canonOr, h, evalCanon]
-    · by_cases h' : toString _ ≤ toString _
-      · simp [canonOr, h, h', evalCanon]
-      · simp [canonOr, h, h', evalCanon, Bool.or_comm]
+    cases h : compare _ _ <;> simp [canonOr, evalCanon, h, Bool.or_comm]
 
 /-- Canonicalisation preserves semantics. -/
 theorem eval_canonical {n : ℕ} (c : Circuit n) (x : Point n) :
@@ -346,11 +339,11 @@ theorem canonical_desc_length {n : ℕ} (c : Circuit n) :
         codeLen (canonical c₁) ≤ sizeOf c₁ * (Nat.log n + 1) + 1 := ih₁
         codeLen (canonical c₂) ≤ sizeOf c₂ * (Nat.log n + 1) + 1 := ih₂
       show codeLen (canonical (Circuit.and c₁ c₂)) ≤ _ := by
-        by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
-        <;> simp [canonical, codeLen, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] at *
+        cases h : compare (canonical c₁) (canonical c₂) <;>
+          simp [canonical, codeLen, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] at *
   | or c₁ c₂ ih₁ ih₂ =>
-      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
-      <;> simp [canonical, codeLen, ih₁, ih₂, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+      cases h : compare (canonical c₁) (canonical c₂) <;>
+        simp [canonical, codeLen, ih₁, ih₂, h, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
 /-!
 ## Counting canonical circuits

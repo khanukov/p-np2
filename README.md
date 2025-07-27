@@ -100,7 +100,9 @@ tracked in `TODO.md` and will be removed as the project progresses.
 * `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the
   current roadmap for the ACC⁰∘MCSP subexponential SAT approach.  A new note
   `buildCover_card_bound_outline.md` summarises the measure-based induction used
-  in the proof of `buildCover_card_bound`.
+  in the proof of `buildCover_card_bound`.  The document
+  `canonical_eq_proof_plan.md` records a detailed sketch for proving that
+  canonical circuits coincide exactly when their evaluations agree.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 
 ## Building

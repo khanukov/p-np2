@@ -210,6 +210,27 @@ with the counting argument and example scripts, remains the next milestone.
 
 The parameter $h$ is treated as a fixed constant (or $o(n)$) when establishing the bound.
 
+## Potential Improvements and Next Steps
+
+Several parts of the argument remain sketches.  We list a few directions that
+would further strengthen the proof:
+
+1. **Complete the induction proof in `bound.lean`.**  The measure-based
+   argument is outlined above but the details are still missing in the Lean
+   code.  Formalising this step would remove the last large axiom.
+2. **Eliminate remaining axioms.**  In particular the probabilistic halving
+   bound is currently assumed.  A direct proof or a reference to a published
+   result would increase confidence in the final bound.
+3. **Sharpen the low-sensitivity branch.**  The constant hidden in
+   `low_sensitivity_cover` is relatively coarse.  A tighter analysis might
+   reduce the overall rectangle bound.
+4. **Expand test coverage.**  The repository contains a test harness but few
+   concrete examples.  Adding small sample families in `examples.lean` would
+   help catch regressions as the formalisation evolves.
+5. **Clarify termination reasoning.**  The interplay between the recursion
+   measure and the entropy budget deserves a more explicit explanation to aid
+   future readers.
+
 ## References
 
 1. Erdős & Rado (1960), intersection theorems.

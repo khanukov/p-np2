@@ -10,11 +10,14 @@ Short list of development tasks reflecting the current repository status.
 - [x] Port missing proofs from `Pnp2` modules (Bound, LowSensitivity, MergeLowSens, CoverNumeric, NPSeparation, AccMcspSat) and add tests.
 - [x] Port `Bound.mBound_lt_subexp` proof and related lemmas.
 - [x] Complete `buildCover` proofs and establish the bound `mBound_lt_subexp`.
-      The recursion on `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` is now
+  The recursion on `μ(F, h, Rset) = 2 * h + |uncovered F Rset|` is now
       fully formalised and yields the lemma `buildCover_card_bound`.
 * [x] Replace the axiom `buildCover_mono` with a complete proof.
   The counting lemma `buildCover_card_bound` is also fully proven using
   the measure recursion.
+- [x] Prove canonical circuit equality.  The lemma
+      `exists_input_of_canonical_ne` now performs a full case analysis and
+      the theorem `canonical_eq_iff_eqv` is established.
 - [ ] Integrate the decision-tree implementation with `low_sensitivity_cover`.
 - [x] Expand numeric bounds in `bound.lean`.
 - [x] Provide more decision-tree utilities (leaf subcubes, path handling).

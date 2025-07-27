@@ -22,7 +22,6 @@ makes the statement available in the `Utils` namespace. -/
 lemma card_lt_of_ssSubset {α} [DecidableEq α] {s t : Finset α}
     (h : s ⊂ t) :
     s.card < t.card := by
-  classical
   simpa using Finset.card_lt_card h
 
 end Utils

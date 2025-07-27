@@ -49,7 +49,6 @@ lemma subcube_monochromatic_base {n : ℕ} (s : Subcube n)
 
 lemma size_union_le {n : ℕ} (c₁ c₂ : Cover n) :
     size (c₁ ∪ c₂) ≤ size c₁ + size c₂ := by
-  classical
   simpa [size] using Finset.card_union_le (s := c₁) (t := c₂)
 
 /-! ### Size bound for covers -/

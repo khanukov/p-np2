@@ -201,13 +201,9 @@ lemma exists_input_of_canonical_ne {n : ℕ} {c₁ c₂ : Canon n}
   -- and versus and
   · rename_i a₁ b₁ a₂ b₂
     have hsub : a₁ ≠ a₂ ∨ b₁ ≠ b₂ := by
-      by_cases hleft : a₁ = a₂
-      · have : b₁ ≠ b₂ := by
-          intro hb
-          apply h
-          simp [hleft, hb]
-        exact Or.inr this
-      · exact Or.inl hleft
+      contrapose h
+      push_neg at h
+      simp [h.1, h.2]
     cases hsub with
     | inl hleft =>
         rcases exists_input_of_canonical_ne (c₁ := a₁) (c₂ := a₂) hleft with ⟨x, hx⟩

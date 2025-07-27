@@ -436,7 +436,7 @@ lemma mem_subcube_of_path_of_agrees (x : Point n) :
   intro p
   induction p with
   | nil =>
-      intro _; simpa using mem_subcube_of_path_nil (n := n) (x := x)
+      intro _; simp
   | cons q p ih =>
       intro h
       rcases q with ⟨i, b⟩

@@ -205,9 +205,9 @@ example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
   have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
   simpa using hfun x
 
--- Extensionally equal circuits may still have distinct canonical forms.
+-- Double negation is eliminated by canonicalisation.
 example :
-    Boolcube.Circuit.canonical (Boolcube.Circuit.var (0 : Fin 1)) ≠
+    Boolcube.Circuit.canonical (Boolcube.Circuit.var (0 : Fin 1)) =
       Boolcube.Circuit.canonical
         (Boolcube.Circuit.not (Boolcube.Circuit.not (Boolcube.Circuit.var 0))) := by
   decide

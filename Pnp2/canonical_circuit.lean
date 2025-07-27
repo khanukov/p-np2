@@ -62,26 +62,52 @@ inductive Canon (n : ℕ) where
   | or    : Canon n → Canon n → Canon n
   deriving DecidableEq
 
-/-- Convert a circuit to a canonical form.  The implementation recursively
-    canonicalises subcircuits and orders arguments of commutative gates. -/
-noncomputable def canonical {n : ℕ} : Circuit n → Canon n
-  | var i       => Canon.var i
-  | const b     => Canon.const b
-  | not c       => Canon.not (canonical c)
-  | and c₁ c₂   =>
-      let l := canonical c₁
-      let r := canonical c₂
-      if toString l ≤ toString r then
+private def canonAnd {n : ℕ} (l r : Canon n) : Canon n :=
+  match l, r with
+  | Canon.const false, _ => Canon.const false
+  | _, Canon.const false => Canon.const false
+  | Canon.const true, _  => r
+  | _, Canon.const true  => l
+  | _ =>
+      if h : l = r then l
+      else if toString l ≤ toString r then
         Canon.and l r
       else
         Canon.and r l
-  | or c₁ c₂    =>
-      let l := canonical c₁
-      let r := canonical c₂
-      if toString l ≤ toString r then
+
+private def canonOr {n : ℕ} (l r : Canon n) : Canon n :=
+  match l, r with
+  | Canon.const true, _  => Canon.const true
+  | _, Canon.const true  => Canon.const true
+  | Canon.const false, _ => r
+  | _, Canon.const false => l
+  | _ =>
+      if h : l = r then l
+      else if toString l ≤ toString r then
         Canon.or l r
       else
         Canon.or r l
+
+/-- Convert a circuit to a canonical form.  The implementation recursively
+    canonicalises subcircuits, removes trivial logical redundancies
+    (double negation, constant propagation and idempotent gates) and then
+    orders arguments of commutative gates lexicographically. -/
+noncomputable def canonical {n : ℕ} : Circuit n → Canon n
+  | var i       => Canon.var i
+  | const b     => Canon.const b
+  | not c       =>
+      match canonical c with
+      | Canon.not d   => d
+      | Canon.const b => Canon.const (!b)
+      | d             => Canon.not d
+  | and c₁ c₂   =>
+      let l := canonical c₁
+      let r := canonical c₂
+      canonAnd l r
+  | or c₁ c₂    =>
+      let l := canonical c₁
+      let r := canonical c₂
+      canonOr l r
 
 /-- Evaluate a canonical circuit. -/
 noncomputable def evalCanon {n : ℕ} : Canon n → Point n → Bool
@@ -91,29 +117,57 @@ noncomputable def evalCanon {n : ℕ} : Canon n → Point n → Bool
   | Canon.and c₁ c₂, x => evalCanon c₁ x && evalCanon c₂ x
   | Canon.or c₁ c₂, x  => evalCanon c₁ x || evalCanon c₂ x
 
+lemma evalCanon_canonAnd {n : ℕ} (l r : Canon n) (x : Point n) :
+    evalCanon (canonAnd l r) x = evalCanon l x && evalCanon r x := by
+  classical
+  cases l <;> cases r <;> try (simp [canonAnd, evalCanon])
+  all_goals
+    by_cases h : _ = _
+    · simp [canonAnd, h, evalCanon]
+    · by_cases h' : toString _ ≤ toString _
+      · simp [canonAnd, h, h', evalCanon]
+      · simp [canonAnd, h, h', evalCanon, Bool.and_comm]
+
+lemma evalCanon_canonOr {n : ℕ} (l r : Canon n) (x : Point n) :
+    evalCanon (canonOr l r) x = evalCanon l x || evalCanon r x := by
+  classical
+  cases l <;> cases r <;> try (simp [canonOr, evalCanon])
+  all_goals
+    by_cases h : _ = _
+    · simp [canonOr, h, evalCanon]
+    · by_cases h' : toString _ ≤ toString _
+      · simp [canonOr, h, h', evalCanon]
+      · simp [canonOr, h, h', evalCanon, Bool.or_comm]
+
 /-- Canonicalisation preserves semantics. -/
 theorem eval_canonical {n : ℕ} (c : Circuit n) (x : Point n) :
     eval c x = evalCanon (canonical c) x := by
+  classical
   induction c generalizing x with
   | var i =>
       rfl
   | const b =>
       rfl
   | not c ih =>
-      simp [Circuit.eval, evalCanon, canonical, ih]
+      cases hc : canonical c with
+      | not d =>
+          simp [Circuit.eval, canonical, evalCanon, ih, hc]
+      | const b =>
+          simp [Circuit.eval, canonical, evalCanon, ih, hc]
+      | d =>
+          simp [Circuit.eval, canonical, evalCanon, ih, hc]
   | and c₁ c₂ ih₁ ih₂ =>
-      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
-      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h]
-      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h, Bool.and_comm]
+      have h := evalCanon_canonAnd (canonical c₁) (canonical c₂) (x := x)
+      simp [Circuit.eval, canonical, ih₁, ih₂, h]
   | or c₁ c₂ ih₁ ih₂ =>
-      by_cases h : toString (canonical c₁) ≤ toString (canonical c₂)
-      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h]
-      · simp [Circuit.eval, canonical, evalCanon, ih₁, ih₂, h, Bool.or_comm]
+      have h := evalCanon_canonOr (canonical c₁) (canonical c₂) (x := x)
+      simp [Circuit.eval, canonical, ih₁, ih₂, h]
 
 /-! If two circuits have the same canonical form, they agree on all inputs.  This
-    is the "soundness" direction of canonicalisation.  The converse fails for
-    the simplified normal form used here (different circuits can compute the
-    same function yet yield distinct canonical representations). -/
+    is the "soundness" direction of canonicalisation.  Even with the basic
+    simplifications above, the converse still fails in general—distinct circuit
+    structures can compute the same Boolean function while producing different
+    canonical representations. -/
 theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     canonical c₁ = canonical c₂ →
     eqv c₁ c₂ := by

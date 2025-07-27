@@ -181,7 +181,7 @@ lemma satSearchList_exists_of_mem {n : ℕ} {f : BoolFun n}
         cases hmem with
         | head =>
             -- Contradiction with `htrue` since `R = R'`.
-            cases htrue; simp [h] at htrue
+            exact absurd htrue h
         | tail hmem' =>
             obtain ⟨x, hx⟩ := ih hmem'
             exact ⟨x, by simp [satSearchList, h, hx]⟩

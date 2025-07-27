@@ -367,10 +367,10 @@ lemma SATUsingFCE_correct {N : ℕ} (Φ : Boolcube.Circuit N)
     (hn : N ≥ Bound.n₀ 0) :
     SATUsingFCE Φ hn = true ↔ ∃ x, Circuit.eval Φ x = true := by
   classical
-  let key := sat_reduction (Φ := Φ) (hn := hn)
-  rcases key with ⟨cover, hmono, hcov, hbound⟩
+  have key := Classical.choose_spec (sat_reduction (Φ := Φ) (hn := hn))
+  rcases key with ⟨hmono, hcov, hbound⟩
   unfold SATUsingFCE SATViaCover
-  have := SATViaCover_correct (Φ := Φ) (cover := cover) hmono hcov
+  have := SATViaCover_correct (Φ := Φ) (cover := Classical.choose (sat_reduction (Φ := Φ) (hn := hn))) hmono hcov
   simpa using this
 
 lemma SATUsingFCE_time_bound {N : ℕ} (Φ : Boolcube.Circuit N)

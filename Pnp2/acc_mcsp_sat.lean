@@ -183,7 +183,7 @@ lemma satSearchList_exists_of_mem {n : ℕ} {f : BoolFun n}
         cases hmem with
         | head =>
             -- Contradiction with `htrue` since `R = R'`.
-            cases htrue; simp [h] at htrue
+            exact absurd htrue h
         | tail hmem' =>
             obtain ⟨x, hx⟩ := ih hmem'
             exact ⟨x, by simp [satSearchList, h, hx]⟩
@@ -261,7 +261,6 @@ def SATViaCover_time {N : ℕ} (cover : Finset (Subcube N)) : ℕ :=
 lemma SATViaCover_time_bound {N : ℕ} (cover : Finset (Subcube N)) :
     SATViaCover_time (cover := cover) ≤ cover.card := by
   rfl
-
 
 /-!  A minimal reduction lemma showing how a hypothetical rectangular
 cover could solve SAT for `ACC⁰ ∘ MCSP`.  The statement simply returns

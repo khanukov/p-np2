@@ -178,6 +178,60 @@ lemma exists_input_of_canonical_ne {n : ℕ} {c₁ c₂ : Canon n}
   · refine ⟨fun _ => true, by simp⟩
   -- or versus and
   · refine ⟨fun _ => false, by simp⟩
+  -- variable versus variable (different indices)
+  · rename_i i j
+    refine ?_
+    by_cases hidx : i = j
+    · cases h (by cases hidx; rfl)
+    · refine ⟨fun k => if k = i then true else if k = j then false else false, ?_⟩
+      simp [evalCanon, hidx]
+  -- constant versus constant (different values)
+  · rename_i b₁ b₂
+    refine ?_
+    have hval : b₁ ≠ b₂ := by aesop
+    refine ⟨fun _ => false, by simpa [evalCanon] using hval⟩
+  -- not versus not
+  · rename_i d₁ d₂
+    have hsub : d₁ ≠ d₂ := by
+      intro h'
+      apply h
+      simpa [h']
+    rcases exists_input_of_canonical_ne (c₁ := d₁) (c₂ := d₂) hsub with ⟨x, hx⟩
+    refine ⟨x, by simpa [evalCanon] using congrArg Not hx⟩
+  -- and versus and
+  · rename_i a₁ b₁ a₂ b₂
+    have hsub : a₁ ≠ a₂ ∨ b₁ ≠ b₂ := by
+      by_cases hleft : a₁ = a₂
+      · have : b₁ ≠ b₂ := by
+          intro hb
+          apply h
+          simp [hleft, hb]
+        exact Or.inr this
+      · exact Or.inl hleft
+    cases hsub with
+    | inl hleft =>
+        rcases exists_input_of_canonical_ne (c₁ := a₁) (c₂ := a₂) hleft with ⟨x, hx⟩
+        refine ⟨x, by simp [evalCanon, hx]⟩
+    | inr hright =>
+        rcases exists_input_of_canonical_ne (c₁ := b₁) (c₂ := b₂) hright with ⟨x, hx⟩
+        refine ⟨x, by simp [evalCanon, hx]⟩
+  -- or versus or
+  · rename_i a₁ b₁ a₂ b₂
+    have hsub : a₁ ≠ a₂ ∨ b₁ ≠ b₂ := by
+      by_cases hleft : a₁ = a₂
+      · have : b₁ ≠ b₂ := by
+          intro hb
+          apply h
+          simp [hleft, hb]
+        exact Or.inr this
+      · exact Or.inl hleft
+    cases hsub with
+    | inl hleft =>
+        rcases exists_input_of_canonical_ne (c₁ := a₁) (c₂ := a₂) hleft with ⟨x, hx⟩
+        refine ⟨x, by simp [evalCanon, hx]⟩
+    | inr hright =>
+        rcases exists_input_of_canonical_ne (c₁ := b₁) (c₂ := b₂) hright with ⟨x, hx⟩
+        refine ⟨x, by simp [evalCanon, hx]⟩
 
 /-- Length bound for canonical descriptions.  Each gate contributes at most
     `O(log n)` bits, hence a circuit of size `m` yields a description of

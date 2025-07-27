@@ -157,10 +157,10 @@ def satSearch {n : ℕ} (f : BoolFun n) (cover : Finset (Subcube n)) :
 noncomputable
 def SATViaCover {N : ℕ}
     (Φ : Boolcube.Circuit N)
-    (cover : Finset (Finset (Fin N) × Finset (Fin N))) : Bool :=
-  -- Real code would iterate over `cover` and evaluate the partial
-  -- sums derived from `Φ`.  Here we only sketch the structure.
-  false
+    (cover : Finset (Subcube N)) : Bool :=
+  match satSearch (fun x => Circuit.eval Φ x) cover with
+  | some _ => true
+  | none   => false
 
 /-!  A minimal reduction lemma showing how a hypothetical rectangular
 cover could solve SAT for `ACC⁰ ∘ MCSP`.  The statement simply returns
@@ -168,12 +168,28 @@ an empty cover as a placeholder.  The legacy development included this
 lemma; we port it here so that downstream files no longer depend on the
 old namespace. -/
 lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
-    (hdepth : True := by trivial) :
-    ∃ cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by
-  -- A real implementation would build `cover` using the polynomial
-  -- representation of `Φ` and the cover guaranteed by the FCE Lemma.
-  -- We simply return the empty cover as a placeholder.
-  exact ⟨∅, trivial⟩
+    (hn : N ≥ Bound.n₀ 0) :
+    ∃ cover : Finset (Subcube N),
+      (∀ R ∈ cover, Subcube.monochromaticFor R (Circuit.eval Φ)) ∧
+      (∀ x, Circuit.eval Φ x = true → ∃ R ∈ cover, x ∈ₛ R) ∧
+      cover.card ≤ Nat.pow 2 (N / 100) := by
+  classical
+  let F : Boolcube.Family N := {fun x => Circuit.eval Φ x}
+  have hcard : F.card = 1 := by simp [F]
+  have hH : Entropy.H₂ F ≤ (0 : ℝ) := by simpa [Entropy.H₂_card_one, hcard]
+  obtain ⟨cover, hmono, hcov, hbound⟩ :=
+    Bound.family_collision_entropy_lemma (F := F) (h := 0) (hH := hH) (hn := hn)
+  refine ⟨cover, ?_, ?_, hbound⟩
+  · intro R hR
+    rcases hmono R hR with ⟨b, hb⟩
+    refine ⟨b, ?_⟩
+    intro x hx
+    have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
+    simpa [F] using hb (fun x => Circuit.eval Φ x) hf hx
+  · intro x hx
+    have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
+    rcases hcov (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
+    exact ⟨R, hR, hxR⟩
 
 end ACCSAT
 

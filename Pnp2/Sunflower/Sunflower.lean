@@ -103,5 +103,25 @@ lemma exists_of_large_family
 
 end SunflowerFam
 
+/-!
+Additional small facts about sunflower families.  These are
+convenient when reasoning about the petals of an existing
+`SunflowerFam`.  They avoid repeatedly rewriting with
+`SunflowerFam.tsize`.
+-/
+namespace SunflowerFam
+
+variable {n t : ℕ}
+
+lemma petals_nonempty {S : SunflowerFam n t} (ht : 0 < t) :
+    S.petals.Nonempty := by
+  have hcard : S.petals.card ≠ 0 := by
+    have : S.petals.card = t := S.tsize
+    have ht' : t ≠ 0 := Nat.ne_of_gt ht
+    simpa [this] using ht'
+  exact Finset.card_ne_zero.mp hcard
+
+end SunflowerFam
+
 end Sunflower
 

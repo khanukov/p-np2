@@ -108,6 +108,57 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
     _ = evalCanon (canonical c₂) x := by simpa using hcanon
     _ = eval c₂ x := hc₂.symm
 
+/-- If canonical forms differ, there exists an input where the evaluations
+    disagree.  This lemma currently handles only mismatched outer constructors.
+    Completing the inductive proof for matching constructors is left for future
+    work. -/
+lemma exists_input_of_canonical_ne {n : ℕ} {c₁ c₂ : Canon n}
+    (h : c₁ ≠ c₂) : ∃ x : Point n, evalCanon c₁ x ≠ evalCanon c₂ x := by
+  classical
+  cases c₁ <;> cases c₂
+  <;> (first | cases h rfl)
+  <;> refine ?_
+  -- variable versus constant
+  · refine ⟨fun j => if j = _match.k then !(_match.k_1) else false, by simp⟩
+  -- variable versus not
+  · refine ⟨fun _ => false, by simp⟩
+  -- variable versus and
+  · refine ⟨fun j => if j = _match.k then true else false, by simp⟩
+  -- variable versus or
+  · refine ⟨fun j => if j = _match.k then false else true, by simp⟩
+  -- constant versus variable
+  · refine ⟨fun j => if j = _match.k then !(_match.k_1) else false, by simp⟩
+  -- constant versus not
+  · refine ⟨fun _ => false, by simp⟩
+  -- constant versus and
+  · refine ⟨fun _ => false, by simp⟩
+  -- constant versus or
+  · refine ⟨fun _ => true, by simp⟩
+  -- not versus variable
+  · refine ⟨fun _ => true, by simp⟩
+  -- not versus constant
+  · refine ⟨fun _ => false, by simp⟩
+  -- not versus and
+  · refine ⟨fun _ => false, by simp⟩
+  -- not versus or
+  · refine ⟨fun _ => true, by simp⟩
+  -- and versus variable
+  · refine ⟨fun j => if j = _match.k then true else false, by simp⟩
+  -- and versus constant
+  · refine ⟨fun _ => false, by simp⟩
+  -- and versus not
+  · refine ⟨fun _ => false, by simp⟩
+  -- and versus or
+  · refine ⟨fun _ => false, by simp⟩
+  -- or versus variable
+  · refine ⟨fun j => if j = _match.k then false else true, by simp⟩
+  -- or versus constant
+  · refine ⟨fun _ => true, by simp⟩
+  -- or versus not
+  · refine ⟨fun _ => true, by simp⟩
+  -- or versus and
+  · refine ⟨fun _ => false, by simp⟩
+
 /-- Length bound for canonical descriptions.  Each gate contributes at most
     `O(log n)` bits, hence a circuit of size `m` yields a description of
     length `O(m log n)`.  In particular, if `sizeOf c ≤ n^d` then the

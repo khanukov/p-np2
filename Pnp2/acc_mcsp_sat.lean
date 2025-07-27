@@ -147,6 +147,73 @@ def satSearch {n : ℕ} (f : BoolFun n) (cover : Finset (Subcube n)) :
     Option (Point n) :=
   satSearchList f cover.toList
 
+/-!
+`satSearchList` simply scans the list of rectangles and returns the sample
+point of the first cube whose colour under `f` is `true`.  The following
+lemmas record the basic correctness properties used by `SATViaCover`.
+-/
+
+lemma satSearchList_sound {n : ℕ} {f : BoolFun n} {Rs : List (Subcube n)}
+    {x : Point n} (hx : satSearchList f Rs = some x) :
+    f x = true := by
+  induction Rs with
+  | nil =>
+      -- The empty list cannot yield a witness.
+      cases hx
+  | cons R Rs ih =>
+      dsimp [satSearchList] at hx
+      by_cases hR : f (Subcube.sample R)
+      · simp [hR] at hx; cases hx; simpa
+      · simp [hR] at hx; exact ih hx
+
+lemma satSearchList_exists_of_mem {n : ℕ} {f : BoolFun n}
+    (Rs : List (Subcube n)) (R : Subcube n)
+    (hmem : R ∈ Rs) (htrue : f (Subcube.sample R) = true) :
+    ∃ x, satSearchList f Rs = some x := by
+  induction Rs with
+  | nil => cases hmem
+  | cons R' Rs ih =>
+      dsimp [satSearchList] at hmem
+      by_cases h : f (Subcube.sample R') = true
+      · -- The head cube already satisfies the predicate.
+        exact ⟨Subcube.sample R', by simp [satSearchList, h]⟩
+      · -- Continue searching in the tail.
+        cases hmem with
+        | head =>
+            -- Contradiction with `htrue` since `R = R'`.
+            cases htrue; simp [h] at htrue
+        | tail hmem' =>
+            obtain ⟨x, hx⟩ := ih hmem'
+            exact ⟨x, by simp [satSearchList, h, hx]⟩
+
+lemma satSearch_sound {n : ℕ} {f : BoolFun n}
+    {cover : Finset (Subcube n)} {x : Point n}
+    (hx : satSearch f cover = some x) : f x = true := by
+  unfold satSearch at hx
+  exact satSearchList_sound hx
+
+lemma satSearch_complete {n : ℕ} {f : BoolFun n}
+    (cover : Finset (Subcube n))
+    (hmono : ∀ R ∈ cover, Subcube.monochromaticFor R f)
+    (hcov : ∀ x, f x = true → ∃ R ∈ cover, x ∈ₛ R)
+    (hx : ∃ x, f x = true) :
+    ∃ x, satSearch f cover = some x ∧ f x = true := by
+  classical
+  rcases hx with ⟨x, hxtrue⟩
+  obtain ⟨R, hR, hxR⟩ := hcov x hxtrue
+  have htrue : f (Subcube.sample R) = true := by
+    rcases hmono R hR with ⟨b, hb⟩
+    have hb' : b = true := by
+      have := hb x hxR
+      simpa [hxtrue] using this
+    have hxmem : Subcube.sample R ∈ₛ R := Subcube.sample_mem R
+    have := hb (Subcube.sample R) hxmem
+    simpa [hb'] using this
+  have hmem := (List.mem_toList).2 hR
+  obtain ⟨y, hy⟩ := satSearchList_exists_of_mem cover.toList R hmem htrue
+  refine ⟨y, ?_, satSearchList_sound hy⟩
+  simpa [satSearch] using hy
+
 
 
 /-- Schematic definition of the meet‑in‑the‑middle SAT algorithm using
@@ -157,10 +224,43 @@ def satSearch {n : ℕ} (f : BoolFun n) (cover : Finset (Subcube n)) :
 noncomputable
 def SATViaCover {N : ℕ}
     (Φ : Boolcube.Circuit N)
-    (cover : Finset (Finset (Fin N) × Finset (Fin N))) : Bool :=
-  -- Real code would iterate over `cover` and evaluate the partial
-  -- sums derived from `Φ`.  Here we only sketch the structure.
-  false
+    (cover : Finset (Subcube N)) : Bool :=
+  match satSearch (fun x => Circuit.eval Φ x) cover with
+  | some _ => true
+  | none   => false
+
+lemma SATViaCover_correct {N : ℕ} (Φ : Boolcube.Circuit N)
+    (cover : Finset (Subcube N))
+    (hmono : ∀ R ∈ cover, Subcube.monochromaticFor R (Circuit.eval Φ))
+    (hcov : ∀ x, Circuit.eval Φ x = true → ∃ R ∈ cover, x ∈ₛ R) :
+    SATViaCover Φ cover = true ↔ ∃ x, Circuit.eval Φ x = true := by
+  classical
+  constructor
+  · intro h
+    unfold SATViaCover at h
+    cases hx : satSearch (fun x => Circuit.eval Φ x) cover with
+    | none =>
+        simp [hx] at h
+    | some x =>
+        have hxtrue : (fun x => Circuit.eval Φ x) x = true :=
+          satSearch_sound (f := fun x => Circuit.eval Φ x) (cover := cover) hx
+        simp [hx] at h
+        exact ⟨x, hxtrue⟩
+  · intro hx
+    obtain ⟨x, hxtrue⟩ := hx
+    rcases satSearch_complete (cover := cover) (f := fun x => Circuit.eval Φ x)
+        hmono hcov ⟨x, hxtrue⟩ with ⟨y, hy, _⟩
+    unfold SATViaCover
+    have := satSearch_sound (f := fun x => Circuit.eval Φ x) (cover := cover) hy
+    simp [hy]
+
+def SATViaCover_time {N : ℕ} (cover : Finset (Subcube N)) : ℕ :=
+  cover.card
+
+lemma SATViaCover_time_bound {N : ℕ} (cover : Finset (Subcube N)) :
+    SATViaCover_time (cover := cover) ≤ cover.card := by
+  rfl
+
 
 /-!  A minimal reduction lemma showing how a hypothetical rectangular
 cover could solve SAT for `ACC⁰ ∘ MCSP`.  The statement simply returns
@@ -168,12 +268,28 @@ an empty cover as a placeholder.  The legacy development included this
 lemma; we port it here so that downstream files no longer depend on the
 old namespace. -/
 lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
-    (hdepth : True := by trivial) :
-    ∃ cover : Finset (Finset (Fin N) × Finset (Fin N)), True := by
-  -- A real implementation would build `cover` using the polynomial
-  -- representation of `Φ` and the cover guaranteed by the FCE Lemma.
-  -- We simply return the empty cover as a placeholder.
-  exact ⟨∅, trivial⟩
+    (hn : N ≥ Bound.n₀ 0) :
+    ∃ cover : Finset (Subcube N),
+      (∀ R ∈ cover, Subcube.monochromaticFor R (Circuit.eval Φ)) ∧
+      (∀ x, Circuit.eval Φ x = true → ∃ R ∈ cover, x ∈ₛ R) ∧
+      cover.card ≤ Nat.pow 2 (N / 100) := by
+  classical
+  let F : Boolcube.Family N := {fun x => Circuit.eval Φ x}
+  have hcard : F.card = 1 := by simp [F]
+  have hH : Entropy.H₂ F ≤ (0 : ℝ) := by simpa [Entropy.H₂_card_one, hcard]
+  obtain ⟨cover, hmono, hcov, hbound⟩ :=
+    Bound.family_collision_entropy_lemma (F := F) (h := 0) (hH := hH) (hn := hn)
+  refine ⟨cover, ?_, ?_, hbound⟩
+  · intro R hR
+    rcases hmono R hR with ⟨b, hb⟩
+    refine ⟨b, ?_⟩
+    intro x hx
+    have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
+    simpa [F] using hb (fun x => Circuit.eval Φ x) hf hx
+  · intro x hx
+    have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
+    rcases hcov (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
+    exact ⟨R, hR, hxR⟩
 
 end ACCSAT
 

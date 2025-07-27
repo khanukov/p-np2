@@ -1,6 +1,7 @@
 import Pnp2.Boolcube
 import Pnp2.BoolFunc
 import Pnp2.entropy
+import Pnp2.family_entropy_cover
 
 -- The full cover construction is not yet available in this trimmed-down
 -- environment, so we avoid importing `Pnp2.cover` here.
@@ -55,13 +56,16 @@ variable {n : ℕ}
 `buildCoverCompute` is a constructive cover enumerator used by the SAT procedure.
 It enumerates the rectangles produced by `Cover.coverFamily`, turning the finite set into an explicit list.
 -/
-def buildCoverCompute (F : Family n) (h : ℕ)
+/--
+`buildCoverCompute` explicitly lists the rectangles returned by
+`familyEntropyCover`.  The underlying cover is noncomputable because it
+uses classical choice, so this enumerator is also noncomputable.
+Nevertheless the resulting list is finite and can be processed by other
+algorithms such as `satSearch`.
+-/
+noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  []
-@[simp] lemma buildCoverCompute_empty (h : ℕ)
-    (hH : BoolFunc.H₂ (∅ : Family n) ≤ (h : ℝ)) :
-    buildCoverCompute (F := (∅ : Family n)) (h := h) hH = [] :=
-  rfl
+  (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.toList
 /--
 Basic specification for `buildCoverCompute`. It simply expands `Cover.coverFamily` into a list,
 so the rectangles remain monochromatic and the length bound follows from `coverFamily_card_bound`.
@@ -72,8 +76,15 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
         Subcube.monochromaticForFamily R F) ∧
     (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
   classical
+  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH
   constructor
-  · intro R hR; cases hR
-  · simp [buildCoverCompute]
+  · intro R hR
+    -- Membership in the list's finset is membership in the cover set.
+    have hmem : R ∈ FC.rects := by
+      simpa [buildCoverCompute, FC] using hR
+    -- Use the monotonicity proof from the cover record.
+    exact FC.mono R hmem
+  · -- The list length is the card of the underlying finset.
+    simpa [buildCoverCompute, FC, Finset.length_toList] using FC.bound
 
 end Cover

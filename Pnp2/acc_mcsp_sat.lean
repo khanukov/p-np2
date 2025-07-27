@@ -261,7 +261,6 @@ lemma SATViaCover_time_bound {N : ℕ} (cover : Finset (Subcube N)) :
     SATViaCover_time (cover := cover) ≤ cover.card := by
   rfl
 
-
 /-!  A minimal reduction lemma showing how a hypothetical rectangular
 cover could solve SAT for `ACC⁰ ∘ MCSP`.  The statement simply returns
 an empty cover as a placeholder.  The legacy development included this

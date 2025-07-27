@@ -62,6 +62,14 @@ def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ (∅ : Family n) ≤ (h : ℝ)) :
     buildCoverCompute (F := (∅ : Family n)) (h := h) hH = [] :=
   rfl
+
+/-- The length of `buildCoverCompute` is always zero since the current
+implementation merely returns the empty list.  This lemma keeps the
+interface stable while the constructive cover enumeration is unfinished. -/
+@[simp] lemma buildCoverCompute_length (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCoverCompute (F := F) (h := h) hH).length = 0 := by
+  simp [buildCoverCompute]
 /--
 Basic specification for `buildCoverCompute`. It simply expands `Cover.coverFamily` into a list,
 so the rectangles remain monochromatic and the length bound follows from `coverFamily_card_bound`.
@@ -74,6 +82,6 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
   classical
   constructor
   · intro R hR; cases hR
-  · simp [buildCoverCompute]
+  · simpa [buildCoverCompute] using buildCoverCompute_length (F := F) (h := h) (hH := hH)
 
 end Cover

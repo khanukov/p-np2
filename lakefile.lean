@@ -30,3 +30,7 @@ lean_lib Tests where
     `SunflowerTest
   ]
   srcDir := "test"
+
+lean_lib CoverAPI where
+  srcDir := "Pnp2/Cover"
+  roots := #[`Cover.API]

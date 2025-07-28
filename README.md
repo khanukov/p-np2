@@ -58,10 +58,11 @@ tracked in `TODO.md` and will be removed as the project progresses.
   the coverage proof.
 * `Cover/Compute.lean` – lightweight wrapper exposing a constructive
   variant `buildCoverCompute` that enumerates the rectangles as a list.
-  The current implementation still returns an empty list, serving as a
-  placeholder for the future recursive procedure.  Its specification is
-  proven and the file is used by `Algorithms/SatCover` for basic SAT
-  experimentation.
+  The enumerator now calls `Cover.coverFamily` via a thin API layer so
+  the returned list contains the actual cover used by the proofs.
+  The specification lemma `buildCoverCompute_spec` follows directly from
+  the underlying `Cover` development and the file is used by
+  `Algorithms/SatCover` for basic SAT experimentation.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is now fully proved in the
   `Pnp2` namespace.

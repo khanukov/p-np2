@@ -303,6 +303,14 @@ theorem canonical_eq_iff_eqv {n : ℕ} (c₁ c₂ : Circuit n) :
     have : eval c₁ x ≠ eval c₂ x := by simpa [hx₁, hx₂] using hx
     exact this (h x)
 
+/-!
+The theorem `canonical_eq_iff_eqv` establishes that canonicalisation is
+**both sound and complete** with respect to circuit evaluation.  Two circuits
+have identical canonical representations exactly when they compute the same
+Boolean function.  This fact underpins later counting arguments where each
+equivalence class of circuits can be represented by a unique canonical member.
+-/
+
 /-- Length bound for canonical descriptions.  Each gate contributes at most
     `O(log n)` bits, hence a circuit of size `m` yields a description of
     length `O(m log n)`.  In particular, if `sizeOf c ≤ n^d` then the

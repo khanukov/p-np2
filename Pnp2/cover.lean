@@ -1810,15 +1810,8 @@ lemma buildCover_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   classical
   have hcov := buildCover_covers (F := F) (h := h) (hH := hH)
   simpa using mu_of_allCovered (F := F) (Rset := buildCover F h hH) (h := h) hcov
-
 /--
-`buildCover_mono` states that every subcube produced by `buildCover` is
-monochromatic for the whole family.  The full proof proceeds by well-founded
-induction on the recursion tree.  The low-sensitivity branch inserts cubes
-from `low_sensitivity_cover`, while the entropy branch applies the
-induction hypothesis to the restricted families.
--
-/-!
+
 `buildCover_mono` states that every subcube produced by `buildCover` is
 monochromatic for the whole family.  The proof follows the same well-founded
 induction as `buildCover_covers`.  Each branch either inserts a collection of
@@ -1851,6 +1844,7 @@ measure:
 
 Formalising this argument is nontrivial.  The proof below follows this
 outline and establishes the desired monotonicity.
+-/
 
 /-! ### Monochromaticity in the low‑sensitivity case
 
@@ -2361,7 +2355,6 @@ lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
   classical
   simpa using
     buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
-
 -/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
@@ -2410,12 +2403,9 @@ lemma cover_exists (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
 
 noncomputable
   def coverFamily (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
-    Classical.choice (cover_exists (F := F) (h := h) hH)
-
-  @[simp] lemma coverFamily_eq_buildCover (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-      coverFamily (F := F) (h := h) hH = buildCover F h hH := by
-    classical
-    simp [coverFamily, cover_exists]
+    Classical.choose (cover_exists (F := F) (h := h) hH)
+@[simp] lemma coverFamily_eq_buildCover (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    coverFamily (F := F) (h := h) hH = buildCover F h hH := rfl
 
 lemma coverFamily_spec (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (∀ R ∈ coverFamily (F := F) (h := h) hH,

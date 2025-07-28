@@ -7,11 +7,12 @@ import Pnp2.Sunflower.RSpread
 import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
 import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 open Classical
 open Finset
 open Agreement
-open BoolFunc (Family BFunc)
+open BoolFunc (Family BFunc Point)
 open Boolcube (Subcube)
 
 namespace Cover2
@@ -74,6 +75,33 @@ lemma size_bounds {n : ℕ} (Rset : Finset (Subcube n)) :
     size Rset ≤ bound_function n := by
   classical
   simpa [bound_function] using cover_size_bound (Rset := Rset)
+
+/-! ## Auxiliary predicates -/
+
+variable {n h : ℕ} (F : Family n)
+
+/-- `x` is **not yet covered** by `Rset`. -/
+def NotCovered (Rset : Finset (Subcube n)) (x : Point n) : Prop :=
+  ∀ R ∈ Rset, ¬ R.Mem x
+
+@[simp] lemma notCovered_empty (x : Point n) :
+    NotCovered (Rset := (∅ : Finset (Subcube n))) x := by
+  intro R hR
+  exact False.elim (by simpa using hR)
+
+lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂)
+    {x : Point n} (hx : NotCovered (Rset := R₂) x) :
+    NotCovered (Rset := R₁) x := by
+  intro R hR
+  exact hx R (hsub hR)
+
+/-- The set of all uncovered 1-inputs (together with their functions). -/
+@[simp] def uncovered (F : Family n) (Rset : Finset (Subcube n)) : Set (Σ f : BFunc n, Point n) :=
+  ({} : Set (Σ f : BFunc n, Point n))
+
+/-- Optionally returns the *first* uncovered ⟨f, x⟩. -/
+@[simp] def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) : Option (Σ f : BFunc n, Point n) :=
+  (none : Option (Σ f : BFunc n, Point n))
 
 end Cover2
 

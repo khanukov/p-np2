@@ -1,5 +1,7 @@
 import Pnp2.cover2
 
+open Boolcube (Subcube)
+
 open Cover2
 
 namespace Cover2Test
@@ -21,6 +23,18 @@ example : 1 ≤ mBound 1 0 := by
 example : 2 ≤ mBound 1 0 := by
   have hn : 0 < (1 : ℕ) := by decide
   simpa using two_le_mBound (n := 1) (h := 0) hn
+
+/-- Inserting a single rectangle stays within the next budget. -/
+example :
+    (insert Subcube.full (∅ : Finset (Subcube 1))).card ≤ mBound 1 1 := by
+  classical
+  have hcard : ( (∅ : Finset (Subcube 1)).card ) ≤ mBound 1 0 := by
+    simp [mBound]
+  have hn : 0 < (1 : ℕ) := by decide
+  simpa using
+    (card_insert_mBound_succ (n := 1) (h := 0)
+      (Rset := (∅ : Finset (Subcube 1))) (R := Subcube.full)
+      hcard hn)
 
 end Cover2Test
 

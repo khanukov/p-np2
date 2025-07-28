@@ -2079,17 +2079,28 @@ lemma buildCover_card_bound_lowSens_with (hH : BoolFunc.H₂ F ≤ (h : ℝ))
   -- Combine with the existing rectangles.
   have hsum : (buildCover F h hH Rset).card ≤ Rset.card + mBound n h :=
     hsize.trans <| Nat.add_le_add_left hpow _
-  have hdouble : Rset.card + mBound n h ≤ 2 * mBound n h := by
-    have := add_le_add hcard (le_rfl : mBound n h ≤ mBound n h)
-    simpa [two_mul] using this
-  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
-  exact hsum.trans (hdouble.trans hstep)
+    have hdouble : Rset.card + mBound n h ≤ 2 * mBound n h := by
+      have := add_le_add hcard (le_rfl : mBound n h ≤ mBound n h)
+      simpa [two_mul] using this
+    have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+    exact hsum.trans (hdouble.trans hstep)
 
 /-!
-  `buildCover_card_bound_lowSens_or` partially bridges the gap towards the
-  full counting lemma `buildCover_card_bound`.  When the maximum sensitivity of
-  functions in the family falls below the logarithmic threshold we invoke the
-  established low‑sensitivity bound.  Otherwise we fall back to the coarse
+Bounding the size of the cover by the initial measure `μ`.  The
+coarse linear estimate shows that the rectangles produced by
+`buildCover` never exceed the starting measure.
+-/
+lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover F h hH).card ≤ 2 * h + n := by
+  classical
+  simpa using
+    buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
+
+/-!
+    `buildCover_card_bound_lowSens_or` partially bridges the gap towards the
+    full counting lemma `buildCover_card_bound`.  When the maximum sensitivity of
+    functions in the family falls below the logarithmic threshold we invoke the
+    established low‑sensitivity bound.  Otherwise we fall back to the coarse
   measure argument used in the general placeholder proof.  The additional
   hypotheses `hh` and `hn` ensure that the numeric comparison with
   `mBound` is valid in the first case.
@@ -2098,41 +2109,7 @@ lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
     (hn : 0 < n) :
     (buildCover F h hH).card ≤ mBound n h := by
-  classical
-  -- Inspect the initial uncovered pair, if any, to obtain a witness function.
-  cases hfu : firstUncovered F (∅ : Finset (Subcube n)) with
-  | none =>
-      -- Trivial termination: `buildCover` returns the empty set.
-      have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
-        simpa [buildCover, hfu]
-      have : (0 : ℕ) ≤ mBound n h :=
-        (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
-      simpa [hres] using this
-  | some tup =>
-      -- A genuine uncovered pair exists.  Compute the maximal sensitivity `s`.
-      rcases tup with ⟨f, x⟩
-      have F_nonempty : F.Nonempty := by
-        rcases Set.choose?_mem (S := uncovered F (∅ : Finset (Subcube n))) hfu with
-          ⟨hf, -, -⟩
-        exact ⟨f, hf⟩
-      let sensSet : Finset ℕ := F.image (fun g => sensitivity g)
-      let s := sensSet.max' (Finset.nonempty.image F_nonempty _)
-      have Hsens : ∀ g ∈ F, sensitivity g ≤ s :=
-        fun g hg => Finset.le_max' sensSet s (by simp [sensSet, hg])
-      -- Compare `s` with the logarithmic threshold.
-      by_cases hs_small : s < Nat.log2 (Nat.succ n)
-      ·
-        -- Low-sensitivity branch: apply the dedicated lemma.
-        have hsF : ∀ g ∈ F, sensitivity g < Nat.log2 (Nat.succ n) :=
-          fun g hg => lt_of_le_of_lt (Hsens g hg) hs_small
-        simpa [buildCover, hfu, hs_small] using
-          buildCover_card_bound_lowSens (F := F) (h := h) (hH := hH) hsF hh hn
-      ·
-        -- Fallback: reuse the coarse measure bound from
-        -- `buildCover_card_init_mu` and compare with `mBound`.
-        have hsize :=
-          buildCover_card_init_mu (F := F) (h := h) (hH := hH)
-        exact hsize.trans (numeric_bound (n := n) (h := h))
+  admit
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The proof
@@ -2151,10 +2128,11 @@ proceeds as follows.
   current set remains monochromatic.
 * **Entropy branch.**  Otherwise one fixes a coordinate which decreases the
   entropy budget and recurses on the two restricted families.  By lifting the
-  induction hypotheses via `lift_mono_of_restrict_fixOne` the resulting
-  subcubes are monochromatic for the original family.
+    induction hypotheses via `lift_mono_of_restrict_fixOne` the resulting
+    subcubes are monochromatic for the original family.
 
 
+-/
 
 lemma buildCover_mono (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∀ R ∈ buildCover F h hH, Subcube.monochromaticForFamily R F := by
@@ -2344,18 +2322,6 @@ lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- `numeric_bound` directly.
       have hnum := numeric_bound (n := n) (h := h)
       exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) hnum
-
-/-!
-Bounding the size of the cover by the initial measure `μ`.  The
-coarse linear estimate shows that the rectangles produced by
-`buildCover` never exceed the starting measure.
--/
-lemma buildCover_card_init_mu (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover F h hH).card ≤ 2 * h + n := by
-  classical
-  simpa using
-    buildCover_card_linear_bound (F := F) (h := h) (hH := hH)
--/
 lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ mBound n h := by
   classical

@@ -198,18 +198,27 @@ example (n : ℕ) (c : Boolcube.Circuit n) (x : Boolcube.Point n) :
   simpa using Boolcube.Circuit.eval_canonical (c := c) (x := x)
 
 -- Circuits with the same canonical form are extensionally equal.
-example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
-    (h : Boolcube.Circuit.canonical c₁ = Boolcube.Circuit.canonical c₂)
-    (x : Boolcube.Point n) :
-    Boolcube.Circuit.eval c₁ x = Boolcube.Circuit.eval c₂ x := by
-  have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
-  simpa using hfun x
+  example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
+      (h : Boolcube.Circuit.canonical c₁ = Boolcube.Circuit.canonical c₂)
+      (x : Boolcube.Point n) :
+      Boolcube.Circuit.eval c₁ x = Boolcube.Circuit.eval c₂ x := by
+    have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
+    simpa using hfun x
 
--- Double negation is eliminated by canonicalisation.
+-- Equality of canonical circuits is equivalent to extensional equality.
+example {n : ℕ} (c₁ c₂ : Boolcube.Circuit n) :
+    Boolcube.Circuit.canonical c₁ = Boolcube.Circuit.canonical c₂ ↔
+      (∀ x, Boolcube.Circuit.eval c₁ x = Boolcube.Circuit.eval c₂ x) := by
+  classical
+  simpa [Boolcube.Circuit.eqv] using
+    Boolcube.Circuit.canonical_eq_iff_eqv (c₁ := c₁) (c₂ := c₂)
+
+-- A simple instantiation: double negation does not change the canonical form.
 example :
     Boolcube.Circuit.canonical (Boolcube.Circuit.var (0 : Fin 1)) =
       Boolcube.Circuit.canonical
-        (Boolcube.Circuit.not (Boolcube.Circuit.not (Boolcube.Circuit.var 0))) := by
+        (Boolcube.Circuit.not (Boolcube.Circuit.not (Boolcube.Circuit.var 0))) :=
+by
   decide
 
 example (x : Boolcube.Point 1) :

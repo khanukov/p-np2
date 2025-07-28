@@ -34,11 +34,11 @@ lemma satViaCover_correct (f : BoolFun n) (h : ℕ) :
       exact ⟨x, hxtrue⟩
     · intro _
       refine ⟨Classical.choose hx, ?_, hxval⟩
-      simp [satViaCover, hx, hxval]
+      simp [hx]
   · constructor
     · intro hres
       rcases hres with ⟨x, hxres, _⟩
-      simp [satViaCover, hx] at hxres
+      simp [hx] at hxres
     · intro h
       rcases h with ⟨x, hxtrue⟩
       exact False.elim (hx ⟨x, hxtrue⟩)
@@ -53,13 +53,14 @@ lemma satViaCover_none (f : BoolFun n) (h : ℕ) :
       intro h'
       have := h' x
       simp [hxtrue] at this
-    have hxval := Classical.choose_spec hx
-    simp [satViaCover, hx, hxval, hxfalse]
+    simp [hx]
   · have hxforall : ∀ x, f x = false := by
       intro x
       by_contra hxtrue
       exact hx ⟨x, by simpa using hxtrue⟩
-    simp [satViaCover, hx, hxforall]
+    constructor
+    · intro _; exact hxforall
+    · intro _; simp [satViaCover, hx]
 
 noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
   let _ := h -- retain parameter for future complexity bounds
@@ -72,7 +73,7 @@ lemma satViaCover_time_le_pow (f : BoolFun n) (h : ℕ) :
   have hle := Finset.card_filter_le (s := Finset.univ)
       (p := fun x : Point n => f x = true)
   have hcard : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
-    simpa using (Fintype.card_fun (Fin n) Bool)
+    simp
   simpa [hcard] using hle
 
 lemma satViaCover_time_bound (f : BoolFun n) (h : ℕ) :

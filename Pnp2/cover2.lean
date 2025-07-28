@@ -6,7 +6,9 @@ import Pnp2.BoolFunc.Support
 import Pnp2.Sunflower.RSpread
 import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
+import Pnp2.cover  -- access existing proofs
 import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 open Classical
 open Finset
@@ -23,7 +25,8 @@ original construction.  -/
 
 @[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
-axiom numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h
+lemma numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h := by
+  simpa [mBound, Cover.mBound] using Cover.numeric_bound (n := n) (h := h)
 axiom numeric_bound_pos (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h
 axiom pow_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ^ (10 * h) ≤ mBound n h
 axiom pow_le_mBound_simple (n h : ℕ) (hn : 0 < n) : 2 ^ h ≤ mBound n h

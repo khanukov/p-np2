@@ -24,6 +24,7 @@ lean_lib Tests where
   -- migration, so we exclude them from the test library.
   globs := #[
     `CoverExtra,
+    `Cover2Test,
     `Pnp2Tests,
     `SatCoverTest,
     `CoverComputeTest,

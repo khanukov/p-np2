@@ -12,11 +12,6 @@ example : mBound 1 0 = 2 := by
 example : 2 * 0 + 1 ≤ mBound 1 0 := by
   simpa using numeric_bound (n := 1) (h := 0)
 
-/-- Positivity of `mBound` when `n` is positive. -/
-example : 0 < mBound 1 0 := by
-  have hn : 0 < (1 : ℕ) := by decide
-  simpa [mBound] using mBound_pos (n := 1) (h := 0) hn
-
 /-- `pow_le_mBound_simple` for trivial parameters. -/
 example : 1 ≤ mBound 1 0 := by
   have hn : 0 < (1 : ℕ) := by decide

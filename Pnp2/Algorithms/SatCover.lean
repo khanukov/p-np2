@@ -58,10 +58,9 @@ lemma satViaCover_none (f : BoolFun n) (h : ℕ) :
       intro x
       by_contra hxtrue
       exact hx ⟨x, by simpa using hxtrue⟩
-    have hnone : satViaCover (n:=n) f h = none := by simp [satViaCover, hx]
     constructor
     · intro _; exact hxforall
-    · intro _; simpa [hnone]
+    · intro _; simp [satViaCover, hx]
 
 noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
   let _ := h -- retain parameter for future complexity bounds

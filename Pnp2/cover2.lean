@@ -33,7 +33,17 @@ axiom three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) : 3 ≤ mBound n h
 
 @[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by simp [mBound]
 
-axiom mBound_eq_zero_iff {n h : ℕ} : mBound n h = 0 ↔ n = 0
+lemma mBound_eq_zero_iff {n h : ℕ} : mBound n h = 0 ↔ n = 0 := by
+  cases n with
+  | zero =>
+      simp [mBound_zero]
+  | succ n =>
+      have hpos : 0 < mBound (Nat.succ n) h :=
+        mBound_pos (n := Nat.succ n) (h := h) (Nat.succ_pos _)
+      have hneq : mBound (Nat.succ n) h ≠ 0 := ne_of_gt hpos
+      constructor
+      · intro hzero; exact False.elim (hneq hzero)
+      · intro hfalse; cases hfalse
 axiom mBound_mono {n : ℕ} : Monotone (mBound n)
 axiom mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
     mBound n₁ h ≤ mBound n₂ h

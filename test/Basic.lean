@@ -205,6 +205,13 @@ example {n : ℕ} {c₁ c₂ : Boolcube.Circuit n}
   have hfun := Boolcube.Circuit.canonical_inj (c₁ := c₁) (c₂ := c₂) h
   simpa using hfun x
 
+-- The converse also holds: if two circuits agree on every input, their
+-- canonical forms coincide.
+example {n : ℕ} (c₁ c₂ : Boolcube.Circuit n) :
+    (Boolcube.Circuit.eqv c₁ c₂) ↔
+      Boolcube.Circuit.canonical c₁ = Boolcube.Circuit.canonical c₂ := by
+  simpa [Boolcube.Circuit.canonical_eq_iff_eqv (c₁ := c₁) (c₂ := c₂)]
+
 -- Double negation is eliminated by canonicalisation.
 example :
     Boolcube.Circuit.canonical (Boolcube.Circuit.var (0 : Fin 1)) =

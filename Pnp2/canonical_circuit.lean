@@ -182,60 +182,87 @@ theorem canonical_inj {n : ℕ} {c₁ c₂ : Circuit n} :
 lemma exists_input_of_canonical_ne {n : ℕ} {c₁ c₂ : Canon n}
     (h : c₁ ≠ c₂) : ∃ x : Point n, evalCanon c₁ x ≠ evalCanon c₂ x := by
   classical
+  -- We perform a full case analysis on both canonical circuits.
+  -- Heterogeneous constructor pairs can be separated by choosing an
+  -- input that forces different root values.  When the constructors
+  -- coincide, we recursively apply the lemma to the differing
+  -- subcircuits.  The generated assignment is then reused at the top
+  -- level to witness the discrepancy.
   cases c₁ <;> cases c₂
+  -- Eliminate impossible equalities introduced by the case split.
   <;> (first | cases h rfl)
+  -- Remaining cases are handled one by one.
   <;> refine ?_
   -- variable versus constant
-  · refine ⟨fun j => if j = _match.k then !(_match.k_1) else false, by simp⟩
+  · rename_i i b
+    refine ⟨fun j => if j = i then !b else false, by simp⟩
   -- variable versus not
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i i d
+    refine ⟨fun _ => false, by simp⟩
   -- variable versus and
-  · refine ⟨fun j => if j = _match.k then true else false, by simp⟩
+  · rename_i i a b
+    refine ⟨fun j => if j = i then true else false, by simp⟩
   -- variable versus or
-  · refine ⟨fun j => if j = _match.k then false else true, by simp⟩
+  · rename_i i a b
+    refine ⟨fun j => if j = i then false else true, by simp⟩
   -- constant versus variable
-  · refine ⟨fun j => if j = _match.k then !(_match.k_1) else false, by simp⟩
+  · rename_i b i
+    refine ⟨fun j => if j = i then !b else false, by simp⟩
   -- constant versus not
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i b d
+    refine ⟨fun _ => false, by simp⟩
   -- constant versus and
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i b a d
+    refine ⟨fun _ => false, by simp⟩
   -- constant versus or
-  · refine ⟨fun _ => true, by simp⟩
+  · rename_i b a d
+    refine ⟨fun _ => true, by simp⟩
   -- not versus variable
-  · refine ⟨fun _ => true, by simp⟩
+  · rename_i d i
+    refine ⟨fun _ => true, by simp⟩
   -- not versus constant
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i d b
+    refine ⟨fun _ => false, by simp⟩
   -- not versus and
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i d a b
+    refine ⟨fun _ => false, by simp⟩
   -- not versus or
-  · refine ⟨fun _ => true, by simp⟩
+  · rename_i d a b
+    refine ⟨fun _ => true, by simp⟩
   -- and versus variable
-  · refine ⟨fun j => if j = _match.k then true else false, by simp⟩
+  · rename_i a b i
+    refine ⟨fun j => if j = i then true else false, by simp⟩
   -- and versus constant
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i a b c
+    refine ⟨fun _ => false, by simp⟩
   -- and versus not
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i a b d
+    refine ⟨fun _ => false, by simp⟩
   -- and versus or
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i a b c d
+    refine ⟨fun _ => false, by simp⟩
   -- or versus variable
-  · refine ⟨fun j => if j = _match.k then false else true, by simp⟩
+  · rename_i a b i
+    refine ⟨fun j => if j = i then false else true, by simp⟩
   -- or versus constant
-  · refine ⟨fun _ => true, by simp⟩
+  · rename_i a b c
+    refine ⟨fun _ => true, by simp⟩
   -- or versus not
-  · refine ⟨fun _ => true, by simp⟩
+  · rename_i a b d
+    refine ⟨fun _ => true, by simp⟩
   -- or versus and
-  · refine ⟨fun _ => false, by simp⟩
+  · rename_i a b c d
+    refine ⟨fun _ => false, by simp⟩
   -- variable versus variable (different indices)
   · rename_i i j
-    refine ?_
     by_cases hidx : i = j
     · cases h (by cases hidx; rfl)
     · refine ⟨fun k => if k = i then true else if k = j then false else false, ?_⟩
       simp [evalCanon, hidx]
   -- constant versus constant (different values)
   · rename_i b₁ b₂
-    refine ?_
-    have hval : b₁ ≠ b₂ := by aesop
+    have hval : b₁ ≠ b₂ := by
+      intro hb; apply h; cases hb; rfl
     refine ⟨fun _ => false, by simpa [evalCanon] using hval⟩
   -- not versus not
   · rename_i d₁ d₂

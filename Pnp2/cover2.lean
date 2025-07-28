@@ -7,6 +7,7 @@ import Pnp2.Sunflower.RSpread
 import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
 import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 open Classical
 open Finset
@@ -25,7 +26,14 @@ original construction.  -/
 
 axiom numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h
 axiom numeric_bound_pos (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h
-axiom pow_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ^ (10 * h) ≤ mBound n h
+lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
+    2 ^ (10 * h) ≤ mBound n h := by
+  have hpos : 0 < n * (h + 2) := by
+    have hpos' : 0 < h + 2 := Nat.succ_pos _
+    exact Nat.mul_pos hn hpos'
+  have hfactor : 1 ≤ n * (h + 2) := Nat.succ_le_of_lt hpos
+  have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
+  simpa [mBound, one_mul] using this
 axiom pow_le_mBound_simple (n h : ℕ) (hn : 0 < n) : 2 ^ h ≤ mBound n h
 axiom mBound_pos (n h : ℕ) (hn : 0 < n) : 0 < mBound n h
 axiom two_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ≤ mBound n h

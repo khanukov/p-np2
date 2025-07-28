@@ -17,5 +17,15 @@ example : 0 < mBound 1 0 := by
   have hn : 0 < (1 : ℕ) := by decide
   simpa [mBound] using mBound_pos (n := 1) (h := 0) hn
 
+/-- `pow_le_mBound_simple` for trivial parameters. -/
+example : 1 ≤ mBound 1 0 := by
+  have hn : 0 < (1 : ℕ) := by decide
+  simpa using pow_le_mBound_simple (n := 1) (h := 0) hn
+
+/-- `two_le_mBound` verifies the bound is at least `2`. -/
+example : 2 ≤ mBound 1 0 := by
+  have hn : 0 < (1 : ℕ) := by decide
+  simpa using two_le_mBound (n := 1) (h := 0) hn
+
 end Cover2Test
 

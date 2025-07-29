@@ -70,10 +70,7 @@ example :
     Cover2.AllOnesCovered (n := 1)
       ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
       ({Subcube.full} : Finset (Subcube 1)) := by
-  classical
-  let Fset : BoolFunc.Family 1 := {(fun _ : Point 1 => true)}
-  have h := Cover2.AllOnesCovered.full (F := Fset)
-  simpa [Fset] using h
+  exact Cover2.AllOnesCovered.full _
 
 end Cover2Test
 

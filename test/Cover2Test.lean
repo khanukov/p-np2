@@ -10,9 +10,19 @@ namespace Cover2Test
 example : mBound 1 0 = 2 := by
   simp [mBound]
 
-/-- Numeric bound specialised to trivial parameters. -/
+/-- Numeric bound specialised to trivial parameters using the positive version. -/
 example : 2 * 0 + 1 ≤ mBound 1 0 := by
-  simpa using numeric_bound (n := 1) (h := 0)
+  have hn : 0 < (1 : ℕ) := by decide
+  simpa using numeric_bound_pos (n := 1) (h := 0) hn
+
+/-- `numeric_bound_pos` also holds when `n` is strictly positive. -/
+example : 2 * 0 + 2 ≤ mBound 2 0 := by
+  have hn : 0 < (2 : ℕ) := by decide
+  simpa using numeric_bound_pos (n := 2) (h := 0) hn
+
+/-- Doubling the bound for a smaller budget stays below the next budget. -/
+example : 2 * mBound 1 0 ≤ mBound 1 1 := by
+  simpa using two_mul_mBound_le_succ (n := 1) (h := 0)
 
 /-- `pow_le_mBound_simple` for trivial parameters. -/
 example : 1 ≤ mBound 1 0 := by

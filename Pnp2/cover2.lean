@@ -7,6 +7,7 @@ import Pnp2.Sunflower.RSpread
 import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
 import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic
 
 open Classical
@@ -305,6 +306,32 @@ lemma AllOnesCovered.full (F : Family n) :
   intro f hf x hx
   refine ⟨Subcube.full, by simp, ?_⟩
   simp
+
+lemma AllOnesCovered.superset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : AllOnesCovered (n := n) F R₁) (hsub : R₁ ⊆ R₂) :
+    AllOnesCovered (n := n) F R₂ := by
+  intro f hf x hx
+  rcases h₁ f hf x hx with ⟨R, hR, hxR⟩
+  exact ⟨R, hsub hR, hxR⟩
+
+lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : AllOnesCovered (n := n) F R₁) (h₂ : AllOnesCovered (n := n) F R₂) :
+    AllOnesCovered (n := n) F (R₁ ∪ R₂) := by
+  intro f hf x hx
+  by_cases hx1 : ∃ R ∈ R₁, x ∈ₛ R
+  · rcases hx1 with ⟨R, hR, hxR⟩
+    exact ⟨R, by simpa [Finset.mem_union] using Or.inl hR, hxR⟩
+  · rcases h₂ f hf x hx with ⟨R, hR, hxR⟩
+    exact ⟨R, by simpa [Finset.mem_union, hx1] using Or.inr hR, hxR⟩
+
+lemma AllOnesCovered.insert {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} (hcov : AllOnesCovered (n := n) F Rset) :
+    AllOnesCovered (n := n) F (Insert.insert R Rset) := by
+  classical
+  have hsub : Rset ⊆ Insert.insert R Rset := by
+    intro S hS; exact Finset.mem_insert.mpr (Or.inr hS)
+  exact AllOnesCovered.superset (F := F) (R₁ := Rset)
+    (R₂ := Insert.insert R Rset) hcov hsub
 
 end Cover2
 

@@ -72,5 +72,48 @@ example :
       ({Subcube.full} : Finset (Subcube 1)) := by
   exact Cover2.AllOnesCovered.full _
 
+/-- `AllOnesCovered.superset` allows enlarging the rectangle set. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full, Subcube.full} : Finset (Subcube 1)) := by
+  classical
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) :=
+    Cover2.AllOnesCovered.full _
+  have hsub : ({Subcube.full} : Finset (Subcube 1)) ⊆ {Subcube.full, Subcube.full} := by
+    intro R hR
+    simp [Finset.mem_insert, Finset.mem_singleton] at hR
+    simp [Finset.mem_insert, Finset.mem_singleton, hR]
+  exact
+    Cover2.AllOnesCovered.superset (F := {(fun _ : Point 1 => true)})
+      (R₁ := {Subcube.full}) (R₂ := {Subcube.full, Subcube.full})
+      hcov hsub
+
+/-- The union of two covers is again a cover. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} ∪ {Subcube.full} : Finset (Subcube 1)) := by
+  classical
+  have hcov := Cover2.AllOnesCovered.full
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+  simpa using
+    Cover2.AllOnesCovered.union (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) hcov hcov
+
+/-- Inserting a rectangle preserves coverage. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (insert Subcube.full {Subcube.full} : Finset (Subcube 1)) := by
+  classical
+  have hcov := Cover2.AllOnesCovered.full
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+  simpa using
+    Cover2.AllOnesCovered.insert (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := {Subcube.full}) (R := Subcube.full) hcov
+
 end Cover2Test
 

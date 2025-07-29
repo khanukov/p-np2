@@ -40,6 +40,7 @@ noncomputable def choose? {α : Type _} (S : Set α) : Option α :=
   by_cases hs : S.Nonempty
   · simp [hs] at h; cases h; exact hs.choose_spec
   · simp [hs] at h
+    contradiction
 
 end Set
 

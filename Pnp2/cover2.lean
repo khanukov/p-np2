@@ -302,7 +302,6 @@ def AllOnesCovered (F : Family n) (Rset : Finset (Subcube n)) : Prop :=
 
 lemma AllOnesCovered.full (F : Family n) :
     AllOnesCovered (n := n) F ({Subcube.full} : Finset (Subcube n)) := by
-  classical
   intro f hf x hx
   refine ⟨Subcube.full, by simp, ?_⟩
   simpa using (Subcube.mem_full (n := n) (x := x))

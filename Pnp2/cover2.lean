@@ -296,6 +296,24 @@ lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂
   intro R hR
   exact hx R (hsub hR)
 
+/-! ### Uncovered points and search utilities -/
+
+/-- The set of all uncovered `1`-inputs (paired with their functions). -/
+@[simp]
+def uncovered (F : Family n) (Rset : Finset (Subcube n)) :
+    Set (Σ f : BFunc n, Point n) :=
+  {p | p.1 ∈ F ∧ p.1 p.2 = true ∧ NotCovered (n := n) (Rset := Rset) p.2}
+
+/-- Optionally return the *first* uncovered pair. -/
+noncomputable
+def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) :
+    Option (Σ f : BFunc n, Point n) :=
+  if h : (uncovered (n := n) F Rset).Nonempty then
+    some h.choose
+  else
+    none
+
+
 /-- All `1`-inputs of `F` lie in some rectangle of `Rset`. -/
 @[simp]
 def AllOnesCovered (F : Family n) (Rset : Finset (Subcube n)) : Prop :=
@@ -332,6 +350,22 @@ lemma AllOnesCovered.insert {F : Family n} {Rset : Finset (Subcube n)}
     intro S hS; exact Finset.mem_insert.mpr (Or.inr hS)
   exact AllOnesCovered.superset (F := F) (R₁ := Rset)
     (R₂ := Insert.insert R Rset) hcov hsub
+
+lemma uncovered_eq_empty_of_allCovered {F : Family n}
+    {Rset : Finset (Subcube n)}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    uncovered (n := n) F Rset = (∅ : Set (Σ f : BFunc n, Point n)) := by
+  classical
+  ext p; constructor
+  · intro hp
+    have hf : p.1 ∈ F := hp.1
+    have hx : p.1 p.2 = true := hp.2.1
+    have hnc : NotCovered (n := n) (Rset := Rset) p.2 := hp.2.2
+    rcases hcov p.1 hf p.2 hx with ⟨R, hR, hxR⟩
+    have : ¬ Boolcube.Subcube.Mem R p.2 := hnc R hR
+    exact False.elim (this hxR)
+  · intro hp
+    cases hp
 
 end Cover2
 

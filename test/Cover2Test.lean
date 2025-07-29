@@ -24,6 +24,10 @@ example : 2 ≤ mBound 1 0 := by
   have hn : 0 < (1 : ℕ) := by decide
   simpa using two_le_mBound (n := 1) (h := 0) hn
 
+/-- Doubling the bound fits inside the next budget. -/
+example : 2 * mBound 1 0 ≤ mBound 1 1 := by
+  simpa using two_mul_mBound_le_succ (n := 1) (h := 0)
+
 /-- Inserting a single rectangle stays within the next budget. -/
 example :
     (insert Subcube.full (∅ : Finset (Subcube 1))).card ≤ mBound 1 1 := by

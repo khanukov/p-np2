@@ -168,27 +168,92 @@ lemma two_mul_mBound_le_succ (n h : ℕ) :
     have : 10 * (h + 1) = 10 * h + 10 := by ring
     simp [mBound, pow_add, this, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
   simpa [lhs_eq, rhs_eq] using hmain
-axiom card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
+lemma card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : R₁.card ≤ mBound n h) (h₂ : R₂.card ≤ mBound n h) :
-    (R₁ ∪ R₂).card ≤ mBound n (h + 1)
-axiom one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
-    mBound n h + 1 ≤ mBound n (h + 1)
-axiom card_union_singleton_mBound_succ {n h : ℕ}
+    (R₁ ∪ R₂).card ≤ mBound n (h + 1) := by
+  classical
+  have hsum : (R₁ ∪ R₂).card ≤ R₁.card + R₂.card := by
+    simpa using (Finset.card_union_le (s := R₁) (t := R₂))
+  have hdouble : R₁.card + R₂.card ≤ 2 * mBound n h := by
+    have := add_le_add h₁ h₂
+    simpa [two_mul] using this
+  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+  exact hsum.trans <| hdouble.trans hstep
+
+lemma one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
+    mBound n h + 1 ≤ mBound n (h + 1) := by
+  have hpos : 1 ≤ mBound n h := by
+    have := mBound_pos (n := n) (h := h) hn
+    exact Nat.succ_le_of_lt this
+  have hdouble : mBound n h + 1 ≤ 2 * mBound n h := by
+    have htwice : mBound n h + 1 ≤ mBound n h + mBound n h :=
+      Nat.add_le_add_left hpos (mBound n h)
+    simpa [two_mul] using htwice
+  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+  exact hdouble.trans hstep
+
+lemma card_union_singleton_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
-    (Rset ∪ {R}).card ≤ mBound n (h + 1)
-axiom card_insert_mBound_succ {n h : ℕ}
+    (Rset ∪ {R}).card ≤ mBound n (h + 1) := by
+  classical
+  have hsum : (Rset ∪ {R}).card ≤ Rset.card + 1 := by
+    simpa using (Finset.card_union_le (s := Rset) (t := ({R} : Finset (Subcube n))) )
+  have hbound : Rset.card + 1 ≤ mBound n h + 1 :=
+    Nat.add_le_add_right hcard 1
+  have hstep := one_add_mBound_le_succ (n := n) (h := h) hn
+  exact hsum.trans <| hbound.trans hstep
+
+lemma card_insert_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
-    (insert R Rset).card ≤ mBound n (h + 1)
-axiom card_union_pair_mBound_succ {n h : ℕ}
+    (insert R Rset).card ≤ mBound n (h + 1) := by
+  classical
+  have hunion : insert R Rset = Rset ∪ {R} := by
+    ext x; by_cases hx : x = R <;> by_cases hxset : x ∈ Rset <;>
+      simp [hx, hxset, Finset.mem_insert, Finset.mem_union]
+  simpa [hunion] using
+    (card_union_singleton_mBound_succ (n := n) (h := h)
+      (Rset := Rset) (R := R) hcard hn)
+
+lemma card_union_pair_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R₁ R₂ : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
-    (Rset ∪ {R₁, R₂}).card ≤ mBound n (h + 1)
-axiom card_union_triple_mBound_succ {n h : ℕ}
+    (Rset ∪ {R₁, R₂}).card ≤ mBound n (h + 1) := by
+  classical
+  let Rpair : Finset (Subcube n) := {R₁, R₂}
+  have hpair_le_two : Rpair.card ≤ 2 := by
+    by_cases h : R₁ = R₂
+    · subst h; simp [Rpair]
+    · simp [Rpair, h]
+  have hpair_bound : Rpair.card ≤ mBound n h :=
+    le_trans hpair_le_two (two_le_mBound (n := n) (h := h) hn)
+  have := card_union_mBound_succ (n := n) (h := h)
+      (R₁ := Rset) (R₂ := Rpair) hcard hpair_bound
+  simpa [Rpair, Finset.union_comm, Finset.union_assoc] using this
+
+lemma card_union_triple_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R₁ R₂ R₃ : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) (hh : 1 ≤ h) :
-    (Rset ∪ {R₁, R₂, R₃}).card ≤ mBound n (h + 1)
+    (Rset ∪ {R₁, R₂, R₃}).card ≤ mBound n (h + 1) := by
+  classical
+  let Rtriple : Finset (Subcube n) := {R₁, R₂, R₃}
+  have htriple_le_three : Rtriple.card ≤ 3 := by
+    have hcard_insert := Finset.card_insert_le (s := {R₁, R₂}) (a := R₃)
+    have hpair_le_two : ({R₁, R₂} : Finset (Subcube n)).card ≤ 2 := by
+      by_cases h : R₁ = R₂
+      · subst h; simp
+      · simp [h]
+    have h := le_trans hcard_insert (Nat.add_le_add_right hpair_le_two 1)
+    have hrepr : insert R₃ ({R₁, R₂} : Finset (Subcube n)) = {R₁, R₂, R₃} := by
+      ext x; by_cases hx : x = R₃ <;> by_cases hx1 : x = R₁ <;> by_cases hx2 : x = R₂ <;>
+        simp [hx, hx1, hx2, Finset.mem_insert, Finset.mem_singleton, or_comm, or_left_comm, or_assoc]
+    simpa [Rtriple, hrepr] using h
+  have htriple_bound : Rtriple.card ≤ mBound n h :=
+    le_trans htriple_le_three (three_le_mBound (n := n) (h := h) hn hh)
+  have := card_union_mBound_succ (n := n) (h := h)
+      (R₁ := Rset) (R₂ := Rtriple) hcard htriple_bound
+  simpa [Rtriple, Finset.union_comm, Finset.union_assoc] using this
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card
 

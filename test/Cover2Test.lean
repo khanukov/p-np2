@@ -1,6 +1,6 @@
 import Pnp2.cover2
 
-open Boolcube (Subcube)
+open Boolcube (Point Subcube)
 
 open Cover2
 
@@ -49,6 +49,21 @@ example :
     (card_insert_mBound_succ (n := 1) (h := 0)
       (Rset := (∅ : Finset (Subcube 1))) (R := Subcube.full)
       hcard hn)
+
+/-- Nothing is covered by an empty set of rectangles. -/
+example (x : Point 1) :
+    Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
+  simpa using Cover2.notCovered_empty (n := 1) (x := x)
+
+/-- `NotCovered` is monotone under set inclusion. -/
+example (x : Point 1) (R : Subcube 1)
+    (hx : Cover2.NotCovered (n := 1) (Rset := {R}) x) :
+    Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
+  have hsub : (∅ : Finset (Subcube 1)) ⊆ {R} := by
+    intro r hr; cases hr
+  simpa using
+    Cover2.NotCovered.monotone (n := 1) (R₁ := (∅ : Finset (Subcube 1)))
+      (R₂ := {R}) hsub hx
 
 end Cover2Test
 

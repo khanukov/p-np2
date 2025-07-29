@@ -367,5 +367,29 @@ lemma uncovered_eq_empty_of_allCovered {F : Family n}
   · intro hp
     cases hp
 
+/-!  Adding rectangles can only shrink the uncovered set.  Inserting a single
+rectangle therefore produces a subset of the original uncovered pairs. -/
+lemma uncovered_subset_of_union_singleton {F : Family n}
+    {Rset : Finset (Subcube n)} {R : Subcube n} :
+    uncovered (n := n) F (Rset ∪ {R}) ⊆ uncovered (n := n) F Rset := by
+  classical
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  intro S hS
+  exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
+/-- Extending the rectangle set by any finite collection cannot create new
+uncovered pairs. -/
+lemma uncovered_subset_of_union {F : Family n}
+    {R₁ R₂ : Finset (Subcube n)} :
+    uncovered (n := n) F (R₁ ∪ R₂) ⊆ uncovered (n := n) F R₁ := by
+  classical
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  intro S hS
+  exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
 end Cover2
 

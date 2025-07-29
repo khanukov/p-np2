@@ -118,7 +118,30 @@ lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
 
 lemma mBound_le_succ (n h : ℕ) : mBound n h ≤ mBound n (h + 1) :=
   mBound_mono (n := n) (Nat.le_succ h)
-axiom two_mul_mBound_le_succ (n h : ℕ) : 2 * mBound n h ≤ mBound n (h + 1)
+lemma two_mul_mBound_le_succ (n h : ℕ) :
+    2 * mBound n h ≤ mBound n (h + 1) := by
+  -- We compare the factors of `mBound` for budgets `h` and `h + 1`.
+  -- The linear factor grows monotonically with `h`.
+  have hfac : h + 2 ≤ h + 3 := Nat.le_succ (h + 2)
+  -- The exponential term grows by a factor of at least `2 ^ 9`.
+  have hexp : 10 * h + 1 ≤ 10 * h + 10 := by
+    -- `1 ≤ 10` lets us shift by `10 * h` on both sides.
+    have h1 : (1 : ℕ) ≤ 10 := by decide
+    exact add_le_add_left h1 (10 * h)
+  -- Use monotonicity of exponentiation with a positive base.
+  have hpow : 2 ^ (10 * h + 1) ≤ 2 ^ (10 * h + 10) :=
+    Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+  -- Combine growth of both factors.
+  have hmul := Nat.mul_le_mul hfac hpow
+  -- Multiply by the common dimension factor.
+  have hmain := Nat.mul_le_mul_left n hmul
+  -- Rewrite both sides into the desired `mBound` form.
+  have lhs_eq : n * ((h + 2) * 2 ^ (10 * h + 1)) = 2 * mBound n h := by
+    simp [mBound, pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  have rhs_eq : n * ((h + 3) * 2 ^ (10 * h + 10)) = mBound n (h + 1) := by
+    have : 10 * (h + 1) = 10 * h + 10 := by ring
+    simp [mBound, pow_add, this, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  simpa [lhs_eq, rhs_eq] using hmain
 axiom card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : R₁.card ≤ mBound n h) (h₂ : R₂.card ≤ mBound n h) :
     (R₁ ∪ R₂).card ≤ mBound n (h + 1)

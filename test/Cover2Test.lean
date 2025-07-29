@@ -65,5 +65,15 @@ example (x : Point 1) (R : Subcube 1)
     Cover2.NotCovered.monotone (n := 1) (R₁ := (∅ : Finset (Subcube 1)))
       (R₂ := {R}) hsub hx
 
+/-- A single full rectangle covers all `1`-inputs. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) := by
+  classical
+  let Fset : BoolFunc.Family 1 := {(fun _ : Point 1 => true)}
+  have h := Cover2.AllOnesCovered.full (F := Fset)
+  simpa [Fset] using h
+
 end Cover2Test
 

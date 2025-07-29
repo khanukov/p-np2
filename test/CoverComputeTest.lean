@@ -12,8 +12,7 @@ example : mBound 1 0 = 2 := by
 
 /-- `mBound` is positive whenever `n > 0`. -/
 example : 0 < mBound 1 0 := by
-  have : 0 < (1 : ℕ) := by decide
-  simpa [mBound] using mBound_pos (n := 1) (h := 0) this
+  simp [mBound]
 
 /-/  `buildCoverCompute` enumerates a small cover for a trivial function. -/
 def trivialFun : BoolFun 1 := fun _ => false
@@ -24,9 +23,9 @@ example :
         classical
         -- Collision entropy of a singleton family is zero.
         have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
-        have hH₂ := BoolFunc.H₂_card_one
+        have _hH₂ := BoolFunc.H₂_card_one
             (F := ({trivialFun} : Boolcube.Family 1)) hcard
-        simpa [hH₂])
+        simp)
       ).length ≤ mBound 1 0 :=
 by
   classical
@@ -34,9 +33,9 @@ by
         (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
         (by
           have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
-          have hH₂ := BoolFunc.H₂_card_one
+          have _hH₂ := BoolFunc.H₂_card_one
               (F := ({trivialFun} : Boolcube.Family 1)) hcard
-          simpa [hH₂])
-  simpa using hspec.2
+          simp)
+  exact hspec.2
 
 end CoverComputeTest

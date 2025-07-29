@@ -420,12 +420,12 @@ lemma path_to_leaf_agrees (t : DecisionTree n) (x : Point n) :
       · have h := ih1 x
         simp [path_to_leaf, hxi] at hq
         cases hq with
-        | inl hq => cases hq; simpa [hxi]
+        | inl hq => cases hq; simp [hxi]
         | inr hq => exact h q hq
       · have h := ih0 x
         simp [path_to_leaf, hxi] at hq
         cases hq with
-        | inl hq => cases hq; simpa [hxi]
+        | inl hq => cases hq; simp [hxi]
         | inr hq => exact h q hq
 
 /-!  If every entry of `p` matches the corresponding coordinate of `x`,
@@ -436,7 +436,7 @@ lemma mem_subcube_of_path_of_agrees (x : Point n) :
   intro p
   induction p with
   | nil =>
-      intro _; simpa using mem_subcube_of_path_nil (n := n) (x := x)
+      intro _; simp [mem_subcube_of_path_nil (n := n) (x := x)]
   | cons q p ih =>
       intro h
       rcases q with ⟨i, b⟩

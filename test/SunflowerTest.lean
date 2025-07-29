@@ -21,8 +21,8 @@ example :
     have hS' := by
       simpa [F] using hS
     rcases hS' with h0 | h1
-    · simpa [h0]
-    · simpa [h1]
+    · simp [h0]
+    · simp [h1]
   have hbig : F.card > Nat.factorial (2 - 1) * 1 ^ 2 := by
     simp [F]
   simpa [F] using

@@ -171,16 +171,49 @@ lemma two_mul_mBound_le_succ (n h : ℕ) :
 axiom card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : R₁.card ≤ mBound n h) (h₂ : R₂.card ≤ mBound n h) :
     (R₁ ∪ R₂).card ≤ mBound n (h + 1)
-axiom one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
-    mBound n h + 1 ≤ mBound n (h + 1)
-axiom card_union_singleton_mBound_succ {n h : ℕ}
+lemma one_add_mBound_le_succ {n h : ℕ} (hn : 0 < n) :
+    mBound n h + 1 ≤ mBound n (h + 1) := by
+  -- `mBound` is strictly positive when `n` is positive.
+  have hpos : 1 ≤ mBound n h := by
+    have := mBound_pos (n := n) (h := h) hn
+    exact Nat.succ_le_of_lt this
+  -- Doubling the budget certainly absorbs the extra `1`.
+  have hdouble : mBound n h + 1 ≤ 2 * mBound n h := by
+    have htwice : mBound n h + 1 ≤ mBound n h + mBound n h :=
+      Nat.add_le_add_left hpos (mBound n h)
+    simpa [two_mul] using htwice
+  -- The budget grows by at least a factor of two when increasing `h`.
+  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+  exact hdouble.trans hstep
+
+lemma card_union_singleton_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
-    (Rset ∪ {R}).card ≤ mBound n (h + 1)
-axiom card_insert_mBound_succ {n h : ℕ}
+    (Rset ∪ {R}).card ≤ mBound n (h + 1) := by
+  classical
+  -- The union can at most increase the cardinality by `1`.
+  have hsum : (Rset ∪ {R}).card ≤ Rset.card + 1 := by
+    simpa using (Finset.card_union_le (s := Rset) (t := ({R} : Finset (Subcube n))))
+  -- Use the bound on `Rset` to control this sum.
+  have hbound : Rset.card + 1 ≤ mBound n h + 1 :=
+    Nat.add_le_add_right hcard 1
+  -- Grow the budget by one using the helper lemma above.
+  have hstep := one_add_mBound_le_succ (n := n) (h := h) hn
+  exact hsum.trans <| hbound.trans hstep
+
+lemma card_insert_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :
-    (insert R Rset).card ≤ mBound n (h + 1)
+    (insert R Rset).card ≤ mBound n (h + 1) := by
+  classical
+  -- `insert` is just a union with a singleton.
+  have hunion : insert R Rset = Rset ∪ {R} := by
+    ext x; by_cases hx : x = R <;> by_cases hxset : x ∈ Rset <;>
+      simp [hx, hxset, Finset.mem_insert, Finset.mem_union]
+  -- Apply the union lemma and rewrite the result back.
+  simpa [hunion] using
+    (card_union_singleton_mBound_succ (n := n) (h := h)
+      (Rset := Rset) (R := R) hcard hn)
 axiom card_union_pair_mBound_succ {n h : ℕ}
     {Rset : Finset (Subcube n)} {R₁ R₂ : Subcube n}
     (hcard : Rset.card ≤ mBound n h) (hn : 0 < n) :

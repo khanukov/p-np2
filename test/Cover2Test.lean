@@ -50,5 +50,17 @@ example :
       (Rset := (∅ : Finset (Subcube 1))) (R := Subcube.full)
       hcard hn)
 
+/-- Uniting with a singleton cover stays within the next budget. -/
+example :
+    ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}).card ≤ mBound 1 1 := by
+  classical
+  have hcard : ((∅ : Finset (Subcube 1)).card) ≤ mBound 1 0 := by
+    simp [mBound]
+  have hn : 0 < (1 : ℕ) := by decide
+  simpa using
+    (card_union_singleton_mBound_succ (n := 1) (h := 0)
+      (Rset := (∅ : Finset (Subcube 1))) (R := Subcube.full)
+      hcard hn)
+
 end Cover2Test
 

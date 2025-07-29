@@ -114,8 +114,7 @@ lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
   dsimp [mBound]
   have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
     Nat.mul_le_mul_right (h + 2) hn
-  have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  exact Nat.mul_le_mul hfac (le_rfl)
 
 lemma mBound_le_succ (n h : ℕ) : mBound n h ≤ mBound n (h + 1) :=
   mBound_mono (n := n) (Nat.le_succ h)

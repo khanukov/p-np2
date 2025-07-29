@@ -115,5 +115,19 @@ example :
     Cover2.AllOnesCovered.insert (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (Rset := {Subcube.full}) (R := Subcube.full) hcov
 
+/-- If all `1`-inputs are covered by a single full rectangle, the uncovered set
+is empty. -/
+example :
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) = (∅ : Set (Sigma (fun _ => Point 1))) := by
+  have hcov := Cover2.AllOnesCovered.full
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+  simpa using
+    Cover2.uncovered_eq_empty_of_allCovered
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (Rset := {Subcube.full}) hcov
+
 end Cover2Test
 

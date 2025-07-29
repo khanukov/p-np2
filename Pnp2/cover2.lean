@@ -34,10 +34,57 @@ lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
   have hfactor : 1 ≤ n * (h + 2) := Nat.succ_le_of_lt hpos
   have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
   simpa [mBound, one_mul] using this
-axiom pow_le_mBound_simple (n h : ℕ) (hn : 0 < n) : 2 ^ h ≤ mBound n h
-axiom mBound_pos (n h : ℕ) (hn : 0 < n) : 0 < mBound n h
-axiom two_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ≤ mBound n h
-axiom three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) : 3 ≤ mBound n h
+lemma pow_le_mBound_simple (n h : ℕ) (hn : 0 < n) :
+    2 ^ h ≤ mBound n h := by
+  -- The exponent `10 * h` dominates `h`, so `2 ^ h ≤ 2 ^ (10 * h)`.
+  have hexp : h ≤ 10 * h := by
+    have hbase : (1 : ℕ) ≤ 10 := by decide
+    have := Nat.mul_le_mul_left h hbase
+    simpa [Nat.mul_comm] using this
+  have hpow : 2 ^ h ≤ 2 ^ (10 * h) :=
+    Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hexp
+  -- Combine with the main bound on the power factor.
+  exact hpow.trans (pow_le_mBound (n := n) (h := h) hn)
+
+lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
+    0 < mBound n h := by
+  -- Each factor in the definition is positive.
+  have hpos₁ : 0 < h + 2 := Nat.succ_pos _
+  have hpos₂ : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
+  have hmul : 0 < n * (h + 2) := Nat.mul_pos hn hpos₁
+  have := Nat.mul_pos hmul hpos₂
+  simpa [mBound] using this
+
+lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
+    2 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have hh2 : 2 ≤ h + 2 := by
+    have := Nat.zero_le h
+    exact Nat.succ_le_succ (Nat.succ_le_succ this)
+  have hfactor : 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul hn1 hh2
+    simpa [one_mul] using this
+  have hpow : 1 ≤ 2 ^ (10 * h) :=
+    Nat.succ_le_of_lt (pow_pos (by decide) _)
+  have := Nat.mul_le_mul hfactor hpow
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
+lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
+    3 ≤ mBound n h := by
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  -- Establish `3 ≤ n * (h + 2)` using `hn` and `hh`.
+  have h3 : 3 ≤ h + 2 := by
+    have hh' : (1 : ℤ) ≤ h := by exact_mod_cast hh
+    have : (3 : ℤ) ≤ h + 2 := by nlinarith
+    exact_mod_cast this
+  have hfac1 : h + 2 ≤ n * (h + 2) := by
+    have := Nat.mul_le_mul_right (h + 2) hn1
+    simpa [one_mul] using this
+  have hfac : 3 ≤ n * (h + 2) := le_trans h3 hfac1
+  -- Multiply by the positive power factor.
+  have hpow : 1 ≤ 2 ^ (10 * h) := Nat.succ_le_of_lt (pow_pos (by decide) _)
+  have := Nat.mul_le_mul hfac hpow
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
 @[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by simp [mBound]
 

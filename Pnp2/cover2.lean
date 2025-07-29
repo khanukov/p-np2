@@ -18,6 +18,31 @@ open Boolcube (Point Subcube)
 -- Local notation for membership in a subcube of the Boolean cube.
 notation x " ∈ₛ " R => Boolcube.Subcube.Mem R x
 
+namespace Set
+
+noncomputable def choose? {α : Type _} (S : Set α) : Option α :=
+  if h : S.Nonempty then some h.choose else none
+
+@[simp] lemma choose?_eq_none {α : Type _} {S : Set α} :
+    choose? S = none ↔ S = (∅ : Set α) := by
+  classical
+  unfold choose?
+  by_cases h : S.Nonempty
+  · have hne : S ≠ (∅ : Set α) := Set.nonempty_iff_ne_empty.mp h
+    simp [h, hne]
+  · have hempty : S = (∅ : Set α) := Set.not_nonempty_iff_eq_empty.mp h
+    simp [h, hempty]
+
+@[simp] lemma choose?_mem {α : Type _} {S : Set α} {x : α}
+    (h : choose? S = some x) : x ∈ S := by
+  classical
+  unfold choose? at h
+  by_cases hs : S.Nonempty
+  · simp [hs] at h; cases h; exact hs.choose_spec
+  · simp [hs] at h
+
+end Set
+
 namespace Cover2
 
 /-!  This module will eventually replicate `cover.lean`.  For now we only
@@ -294,6 +319,23 @@ lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂
     NotCovered (n := n) (Rset := R₁) x := by
   intro R hR
   exact hx R (hsub hR)
+
+/-- The set of uncovered `1`‑inputs paired with their functions. -/
+@[simp]
+def uncovered (F : Family n) (Rset : Finset (Subcube n)) :
+    Set (Σ f : BFunc n, Point n) :=
+  {p | p.1 ∈ F ∧ p.1 p.2 = true ∧ NotCovered (n := n) (Rset := Rset) p.2}
+
+/-- Optionally returns the *first* uncovered pair `⟨f, x⟩`. -/
+noncomputable
+def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) :
+    Option (Σ f : BFunc n, Point n) :=
+  (uncovered (n := n) F Rset).choose?
+
+@[simp] lemma firstUncovered_none_iff (R : Finset (Subcube n)) :
+    firstUncovered (n := n) F R = none ↔ uncovered (n := n) F R = ∅ := by
+  classical
+  simp [firstUncovered, uncovered, Set.choose?_eq_none]
 
 end Cover2
 

@@ -1,7 +1,7 @@
 import Pnp2.cover2
 
 open Boolcube (Point Subcube)
-
+open BoolFunc (Family BFunc)
 open Cover2
 
 namespace Cover2Test
@@ -64,6 +64,13 @@ example (x : Point 1) (R : Subcube 1)
   simpa using
     Cover2.NotCovered.monotone (n := 1) (R₁ := (∅ : Finset (Subcube 1)))
       (R₂ := {R}) hsub hx
+
+/-- When no functions and no rectangles are present, there is no uncovered pair. -/
+example :
+    Cover2.firstUncovered (F := (∅ : Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) = none := by
+  classical
+  simp [Cover2.firstUncovered, Cover2.uncovered, Cover2.NotCovered]
 
 end Cover2Test
 

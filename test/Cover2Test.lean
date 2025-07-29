@@ -129,5 +129,35 @@ example :
       (F := {(fun _ : Point 1 => true)})
       (Rset := {Subcube.full}) hcov
 
+/-- Adding a rectangle cannot create new uncovered pairs (singleton version). -/
+example (R : Subcube 1) :
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ((∅ : Finset (Subcube 1)) ∪ {R}) ⊆
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) := by
+  classical
+  simpa using
+    Cover2.uncovered_subset_of_union_singleton
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (Rset := (∅ : Finset (Subcube 1))) (R := R)
+
+/-- Adding a set of rectangles cannot create new uncovered pairs. -/
+example (R₁ R₂ : Finset (Subcube 1)) :
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (R₁ ∪ R₂) ⊆
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      R₁ := by
+  classical
+  simpa using
+    Cover2.uncovered_subset_of_union
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (R₁ := R₁) (R₂ := R₂)
+
 end Cover2Test
 

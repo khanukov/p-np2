@@ -367,5 +367,29 @@ lemma uncovered_eq_empty_of_allCovered {F : Family n}
   · intro hp
     cases hp
 
+/-!
+`uncovered` is monotone with respect to the set of rectangles.  Adding a new
+rectangle can only remove uncovered pairs.  The next lemmas capture this
+simple observation and will be useful when reasoning about termination
+measures.-/
+
+lemma uncovered_subset_of_union_singleton {F : Family n}
+    {Rset : Finset (Subcube n)} {R : Subcube n} :
+    uncovered (n := n) F (Rset ∪ {R}) ⊆ uncovered (n := n) F Rset := by
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  intro S hS
+  exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
+lemma uncovered_subset_of_union {F : Family n}
+    {R₁ R₂ : Finset (Subcube n)} :
+    uncovered (n := n) F (R₁ ∪ R₂) ⊆ uncovered (n := n) F R₁ := by
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  intro S hS
+  exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
 end Cover2
 

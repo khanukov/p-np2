@@ -17,14 +17,15 @@ open Boolcube (Subcube)
 
 namespace Cover2
 
-/-!  This module will eventually replicate `cover.lean`.  For now we only
-reintroduce the basic numeric definitions and state their properties as
-axioms so that other files can depend on them without importing the heavy
-original construction.  -/
+/-!
+This module will eventually replicate `cover.lean`.  At this stage we
+reintroduce the basic numeric definitions and prove the key lemmas used by
+other files.  The goal is to keep dependencies lightweight while gradually
+porting the full development from the legacy file.
+-/
 
 @[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
-axiom numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h
 lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
     2 * h + n ≤ mBound n h := by
   classical
@@ -52,6 +53,10 @@ lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
           _ ≤ (n * (h + 1 + 2)) * 2 ^ (10 * (h + 1)) :=
             Nat.mul_le_mul_left _ hpow
       simpa [mBound] using this
+
+lemma numeric_bound (n h : ℕ) (hn : 0 < n) : 2 * h + n ≤ mBound n h := by
+  -- Reuse the main positivity lemma.
+  simpa using numeric_bound_pos (n := n) (h := h) hn
 lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
     2 ^ (10 * h) ≤ mBound n h := by
   have hpos : 0 < n * (h + 2) := by

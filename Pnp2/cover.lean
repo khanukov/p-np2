@@ -2112,7 +2112,7 @@ lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
       have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
         simpa [buildCover, hfu]
       have : (0 : ℕ) ≤ mBound n h :=
-        (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
+        (Nat.zero_le _).trans (numeric_bound (n := n) (h := h) hn)
       simpa [hres] using this
   | some tup =>
       -- A genuine uncovered pair exists.  Compute the maximal sensitivity `s`.
@@ -2138,7 +2138,7 @@ lemma buildCover_card_bound_lowSens_or (hH : BoolFunc.H₂ F ≤ (h : ℝ))
         -- `buildCover_card_init_mu` and compare with `mBound`.
         have hsize :=
           buildCover_card_init_mu (F := F) (h := h) (hH := hH)
-        exact hsize.trans (numeric_bound (n := n) (h := h))
+        exact hsize.trans (numeric_bound (n := n) (h := h) hn)
 /--
 `buildCover_mono` states that every rectangle produced by the recursive
 procedure `buildCover` is monochromatic for the entire family.  The proof
@@ -2318,7 +2318,7 @@ lemma buildCover_card_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
   have hres : buildCover F h hH = (∅ : Finset (Subcube n)) := by
     simpa [buildCover, hfu]
   have : (0 : ℕ) ≤ mBound n h :=
-    (Nat.zero_le _).trans (numeric_bound (n := n) (h := h))
+    (Nat.zero_le _).trans (numeric_bound (n := n) (h := h) hn)
   simpa [hres] using this
 
 lemma buildCover_card_linear_bound_base (hH : BoolFunc.H₂ F ≤ (h : ℝ))
@@ -2348,7 +2348,7 @@ lemma buildCover_card_linear_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
       -- The original development used a coarse estimate here.  The
       -- well‑founded recursion on `μ` now yields the tighter bound
       -- `numeric_bound` directly.
-      have hnum := numeric_bound (n := n) (h := h)
+      have hnum := numeric_bound (n := n) (h := h) hn
       exact le_trans (Nat.le_of_lt_succ (Nat.lt_succ_self _)) hnum
 
 /-!
@@ -2376,12 +2376,12 @@ lemma buildCover_card_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ·
       -- Degenerate dimension: fall back to the coarse measure bound.
       have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
-      have hbound := numeric_bound (n := n) (h := h)
+      have hbound := numeric_bound (n := n) (h := h) hn
       exact hμ.trans hbound
   ·
     -- Entropy budget too small: reuse the basic linear estimate.
     have hμ := buildCover_card_init_mu (F := F) (h := h) (hH := hH)
-    have hbound := numeric_bound (n := n) (h := h)
+    have hbound := numeric_bound (n := n) (h := h) hn
     exact hμ.trans hbound
 lemma buildCover_card_univ_bound (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover F h hH).card ≤ bound_function n := by

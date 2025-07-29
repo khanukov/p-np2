@@ -13,7 +13,10 @@ open Classical
 open Finset
 open Agreement
 open BoolFunc (Family BFunc)
-open Boolcube (Subcube)
+open Boolcube (Point Subcube)
+
+-- Local notation for membership in a subcube of the Boolean cube.
+notation x " ∈ₛ " R => Boolcube.Subcube.Mem R x
 
 namespace Cover2
 
@@ -271,6 +274,26 @@ lemma size_bounds {n : ℕ} (Rset : Finset (Subcube n)) :
     size Rset ≤ bound_function n := by
   classical
   simpa [bound_function] using cover_size_bound (Rset := Rset)
+
+/-! ## Auxiliary predicates -/
+
+variable {n h : ℕ} (F : Family n)
+
+/-- `x` is **not yet covered** by `Rset`. -/
+def NotCovered (Rset : Finset (Subcube n)) (x : Point n) : Prop :=
+  ∀ R ∈ Rset, ¬ x ∈ₛ R
+
+@[simp] lemma notCovered_empty (x : Point n) :
+    NotCovered (n := n) (Rset := (∅ : Finset (Subcube n))) x := by
+  intro R hR
+  -- `hR` is impossible since the set is empty
+  exact False.elim (by simpa using hR)
+
+lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂)
+    {x : Point n} (hx : NotCovered (n := n) (Rset := R₂) x) :
+    NotCovered (n := n) (Rset := R₁) x := by
+  intro R hR
+  exact hx R (hsub hR)
 
 end Cover2
 

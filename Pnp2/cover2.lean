@@ -99,10 +99,26 @@ lemma mBound_eq_zero_iff {n h : ℕ} : mBound n h = 0 ↔ n = 0 := by
       constructor
       · intro hzero; exact False.elim (hneq hzero)
       · intro hfalse; cases hfalse
-axiom mBound_mono {n : ℕ} : Monotone (mBound n)
-axiom mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
-    mBound n₁ h ≤ mBound n₂ h
-axiom mBound_le_succ (n h : ℕ) : mBound n h ≤ mBound n (h + 1)
+lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
+  intro h₁ h₂ hh
+  dsimp [mBound]
+  have hfac : n * (h₁ + 2) ≤ n * (h₂ + 2) :=
+    Nat.mul_le_mul_left _ (Nat.add_le_add_right hh 2)
+  have hpow : 2 ^ (10 * h₁) ≤ 2 ^ (10 * h₂) := by
+    have := Nat.mul_le_mul_left 10 hh
+    exact Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) this
+  exact Nat.mul_le_mul hfac hpow
+
+lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
+    mBound n₁ h ≤ mBound n₂ h := by
+  dsimp [mBound]
+  have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
+    Nat.mul_le_mul_right (h + 2) hn
+  have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
+lemma mBound_le_succ (n h : ℕ) : mBound n h ≤ mBound n (h + 1) :=
+  mBound_mono (n := n) (Nat.le_succ h)
 axiom two_mul_mBound_le_succ (n h : ℕ) : 2 * mBound n h ≤ mBound n (h + 1)
 axiom card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : R₁.card ≤ mBound n h) (h₂ : R₂.card ≤ mBound n h) :

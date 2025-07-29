@@ -17,8 +17,8 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 8 |
-| Axioms | 12 |
+| Fully migrated | 19 |
+| Axioms | 1 |
 | Pending | 67 |
 
 The lists below group the lemmas by status.  Names exactly match those in
@@ -27,21 +27,14 @@ The lists below group the lemmas by status.  Names exactly match those in
 ### Fully migrated
 
 ```
+numeric_bound_pos
 pow_le_mBound
 pow_le_mBound_simple
 mBound_pos
 two_le_mBound
 three_le_mBound
+mBound_zero
 mBound_eq_zero_iff
-cover_size_bound
-size_bounds
-```
-
-### Declared as axioms
-
-```
-numeric_bound
-numeric_bound_pos
 mBound_mono
 mBound_mono_left
 mBound_le_succ
@@ -52,6 +45,14 @@ card_union_singleton_mBound_succ
 card_insert_mBound_succ
 card_union_pair_mBound_succ
 card_union_triple_mBound_succ
+cover_size_bound
+size_bounds
+```
+
+### Declared as axioms
+
+```
+numeric_bound
 ```
 
 ### Not yet ported (67 lemmas)
@@ -128,12 +129,11 @@ uncovered_subset_of_union_singleton
 
 ## Next steps
 
-1. Prove the remaining numeric lemmas (`mBound_mono`, `mBound_mono_left`, …)
-   directly inside `cover2.lean` and remove their `axiom` tags.
+1. Provide a full proof of the remaining numeric lemma `numeric_bound`.
 2. Port the basic combinatorial facts about uncovered inputs and the measure
    (`NotCovered.monotone`, `firstUncovered_none_iff`, etc.).
 3. Recreate the recursion `buildCover` and its counting bounds,
-   systematically replacing each axiom with its full proof.
+   replacing each remaining axiom with its full proof.
 4. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the
    build and the legacy file will be removed.
 

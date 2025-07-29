@@ -16,7 +16,7 @@ implementation simply returns an arbitrary witness using classical
 choice whenever one exists.  The parameter `h` is reserved for future
 complexity bounds and is presently ignored.
 -/
-noncomputable def satViaCover (f : BoolFun n) (h : ℕ) : Option (Point n) :=
+noncomputable def satViaCover (f : BoolFun n) (_h : ℕ) : Option (Point n) :=
   if hx : ∃ x, f x = true then
     some (Classical.choose hx)
   else
@@ -60,7 +60,7 @@ lemma satViaCover_none (f : BoolFun n) (h : ℕ) :
       exact hx ⟨x, by simpa using hxtrue⟩
     constructor
     · intro _; exact hxforall
-    · intro _; simp [satViaCover, hx]
+    · intro _; simp [hx]
 
 noncomputable def satViaCover_time (f : BoolFun n) (h : ℕ) : ℕ :=
   let _ := h -- retain parameter for future complexity bounds

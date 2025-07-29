@@ -56,7 +56,7 @@ variable {n : ℕ}
 It enumerates the rectangles produced by `Cover.coverFamily`, turning the finite set into an explicit list.
 -/
 def buildCoverCompute (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
   []
 @[simp] lemma buildCoverCompute_empty (h : ℕ)
     (hH : BoolFunc.H₂ (∅ : Family n) ≤ (h : ℝ)) :
@@ -75,13 +75,14 @@ Basic specification for `buildCoverCompute`. It simply expands `Cover.coverFamil
 so the rectangles remain monochromatic and the length bound follows from `coverFamily_card_bound`.
 -/
 lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (∀ R ∈ (buildCoverCompute (F := F) (h := h) _hH).toFinset,
         Subcube.monochromaticForFamily R F) ∧
-    (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
+    (buildCoverCompute (F := F) (h := h) _hH).length ≤ mBound n h := by
   classical
   constructor
   · intro R hR; cases hR
-  · simpa [buildCoverCompute] using buildCoverCompute_length (F := F) (h := h) (hH := hH)
+  · simpa [buildCoverCompute] using
+      buildCoverCompute_length (F := F) (h := h) (hH := _hH)
 
 end Cover

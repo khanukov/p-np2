@@ -123,7 +123,7 @@ lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
 lemma mBound_eq_zero_iff {n h : ℕ} : mBound n h = 0 ↔ n = 0 := by
   cases n with
   | zero =>
-      simp [mBound_zero]
+      simp
   | succ n =>
       have hpos : 0 < mBound (Nat.succ n) h :=
         mBound_pos (n := Nat.succ n) (h := h) (Nat.succ_pos _)
@@ -253,7 +253,7 @@ lemma card_union_triple_mBound_succ {n h : ℕ}
     have h := le_trans hcard_insert (Nat.add_le_add_right hpair_le_two 1)
     have hrepr : insert R₃ ({R₁, R₂} : Finset (Subcube n)) = {R₁, R₂, R₃} := by
       ext x; by_cases hx : x = R₃ <;> by_cases hx1 : x = R₁ <;> by_cases hx2 : x = R₂ <;>
-        simp [hx, hx1, hx2, Finset.mem_insert, Finset.mem_singleton, or_comm, or_left_comm, or_assoc]
+        simp [hx, hx1, hx2, Finset.mem_insert, Finset.mem_singleton, or_comm]
     simpa [Rtriple, hrepr] using h
   have htriple_bound : Rtriple.card ≤ mBound n h :=
     le_trans htriple_le_three (three_le_mBound (n := n) (h := h) hn hh)
@@ -287,7 +287,7 @@ def NotCovered (Rset : Finset (Subcube n)) (x : Point n) : Prop :=
     NotCovered (n := n) (Rset := (∅ : Finset (Subcube n))) x := by
   intro R hR
   -- `hR` is impossible since the set is empty
-  exact False.elim (by simpa using hR)
+  cases hR
 
 lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂)
     {x : Point n} (hx : NotCovered (n := n) (Rset := R₂) x) :
@@ -304,7 +304,7 @@ lemma AllOnesCovered.full (F : Family n) :
     AllOnesCovered (n := n) F ({Subcube.full} : Finset (Subcube n)) := by
   intro f hf x hx
   refine ⟨Subcube.full, by simp, ?_⟩
-  simpa using (Subcube.mem_full (n := n) (x := x))
+  simp
 
 end Cover2
 

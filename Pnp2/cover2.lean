@@ -295,5 +295,16 @@ lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂
   intro R hR
   exact hx R (hsub hR)
 
+/-- All `1`-inputs of `F` lie in some rectangle of `Rset`. -/
+@[simp]
+def AllOnesCovered (F : Family n) (Rset : Finset (Subcube n)) : Prop :=
+  ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R
+
+lemma AllOnesCovered.full (F : Family n) :
+    AllOnesCovered (n := n) F ({Subcube.full} : Finset (Subcube n)) := by
+  intro f hf x hx
+  refine ⟨Subcube.full, by simp, ?_⟩
+  simpa using (Subcube.mem_full (n := n) (x := x))
+
 end Cover2
 

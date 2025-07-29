@@ -24,8 +24,7 @@ original construction.  -/
 
 @[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
-axiom numeric_bound (n h : ℕ) : 2 * h + n ≤ mBound n h
-lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
+lemma numeric_bound (n h : ℕ) (hn : 0 < n) :
     2 * h + n ≤ mBound n h := by
   classical
   cases h with
@@ -52,6 +51,10 @@ lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
           _ ≤ (n * (h + 1 + 2)) * 2 ^ (10 * (h + 1)) :=
             Nat.mul_le_mul_left _ hpow
       simpa [mBound] using this
+
+lemma numeric_bound_pos (n h : ℕ) (hn : 0 < n) :
+    2 * h + n ≤ mBound n h :=
+  numeric_bound (n := n) (h := h) hn
 lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
     2 ^ (10 * h) ≤ mBound n h := by
   have hpos : 0 < n * (h + 2) := by

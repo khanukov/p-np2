@@ -271,5 +271,27 @@ example :
       (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩)
       hp₁ hp₂ hx₁R hx₂R hne
 
+/-- `mu_mono_subset` expresses that enlarging the set of rectangles can only
+decrease the measure.  We test it on a simple pair of sets. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 {Subcube.full} ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  let Fset : BoolFunc.Family 1 := {(fun _ : Point 1 => true)}
+  have hsub : (∅ : Finset (Subcube 1)) ⊆ {Subcube.full} := by
+    intro R hR; cases hR
+  simpa using
+    Cover2.mu_mono_subset
+      (F := Fset)
+      (R₁ := (∅ : Finset (Subcube 1)))
+      (R₂ := {Subcube.full})
+      (h := 0)
+      (n := 1)
+      hsub
+
 end Cover2Test
 

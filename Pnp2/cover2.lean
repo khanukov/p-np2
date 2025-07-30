@@ -425,5 +425,52 @@ lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
   have := add_le_add_left hcard (2 * h)
   simpa [mu] using this
 
+/-!
+Adding a rectangle that covers at least one previously uncovered pair strictly
+decreases the measure `μ`.  This lemma will be useful when reasoning about
+progress of the cover construction.
+-/
+lemma mu_union_singleton_lt {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    (hx : ∃ p ∈ uncovered (n := n) F Rset, p.2 ∈ₛ R) :
+    mu (n := n) F h (Rset ∪ {R}) < mu (n := n) F h Rset := by
+  classical
+  rcases hx with ⟨p, hpU, hpR⟩
+  have hp_not : p ∉ uncovered (n := n) F (Rset ∪ {R}) := by
+    rcases hpU with ⟨hf, hx, hnc⟩
+    intro hp'
+    rcases hp' with ⟨hf', hx', hnc'⟩
+    have := hnc' R (by simp) hpR
+    exact this
+  have hsub : (uncovered (n := n) F (Rset ∪ {R})).toFinset ⊆
+      (uncovered (n := n) F Rset).toFinset := by
+    intro x hx
+    have hx' : x ∈ uncovered (n := n) F (Rset ∪ {R}) := by simpa using hx
+    have hx'' : x ∈ uncovered (n := n) F Rset :=
+      uncovered_subset_of_union_singleton
+        (F := F) (Rset := Rset) (R := R) hx'
+    simpa using hx''
+  have hproper : ¬((uncovered (n := n) F Rset).toFinset ⊆
+        (uncovered (n := n) F (Rset ∪ {R})).toFinset) := by
+    intro hsubset
+    have hpFin : p ∈ (uncovered (n := n) F Rset).toFinset := by simpa using hpU
+    have := hsubset hpFin
+    exact hp_not (by simpa using this)
+  have hcard := Finset.card_lt_card ⟨hsub, hproper⟩
+  have := Nat.add_lt_add_left hcard (2 * h)
+  simpa [mu] using this
+
+/-!  A convenient corollary of `mu_union_singleton_lt`: if at least one new
+pair becomes covered, the measure decreases by one.  This quantified version is
+occasionally handy for numeric estimates. -/
+lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    (hx : ∃ p ∈ uncovered (n := n) F Rset, p.2 ∈ₛ R) :
+    mu (n := n) F h (Rset ∪ {R}) + 1 ≤ mu (n := n) F h Rset := by
+  classical
+  have hlt :=
+    mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
+  exact Nat.succ_le_of_lt hlt
+
 end Cover2
 

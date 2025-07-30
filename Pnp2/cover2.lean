@@ -472,5 +472,22 @@ lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
   exact Nat.succ_le_of_lt hlt
 
+/--
+If a rectangle covers two distinct uncovered pairs, the measure drops strictly
+after inserting this rectangle.  The proof reuses the single-pair inequality on
+one witness.
+-/
+lemma mu_union_singleton_double_lt {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ : Σ f : BFunc n, Point n}
+    (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂) :
+    mu (n := n) F h (Rset ∪ {R}) < mu (n := n) F h Rset := by
+  classical
+  -- It suffices to cover one of the two pairs.
+  have hx : ∃ p ∈ uncovered (n := n) F Rset, p.2 ∈ₛ R := ⟨p₁, hp₁, hp₁R⟩
+  -- Apply the basic inequality for a newly covered pair.
+  exact mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
+
 end Cover2
 

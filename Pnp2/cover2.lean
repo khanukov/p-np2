@@ -579,6 +579,24 @@ lemma mu_union_singleton_double_succ_le {F : Family n} {Rset : Finset (Subcube n
   simpa [mu, S, T, add_comm, add_left_comm, add_assoc] using this
 
 /-!
+If a rectangle covers three distinct uncovered pairs, the measure drops
+strictly after inserting this rectangle.  The proof reuses the basic
+single-pair inequality on one witness.-/
+lemma mu_union_singleton_triple_lt {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ p₃ : Σ f : BFunc n, Point n}
+    (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
+    (hp₃ : p₃ ∈ uncovered (n := n) F Rset)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R)
+    (hne₁₂ : p₁ ≠ p₂) (hne₁₃ : p₁ ≠ p₃) (hne₂₃ : p₂ ≠ p₃) :
+    mu (n := n) F h (Rset ∪ {R}) < mu (n := n) F h Rset := by
+  classical
+  -- It suffices to cover one of the three pairs.
+  have hx : ∃ p ∈ uncovered (n := n) F Rset, p.2 ∈ₛ R := ⟨p₁, hp₁, hp₁R⟩
+  exact mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
+
+
+/-!
 Taking the union of two rectangle sets cannot increase the measure `μ`.  This
 simple monotonicity fact follows by induction on the second set using the
 single--rectangle lemma `mu_union_singleton_le`.

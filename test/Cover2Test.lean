@@ -231,5 +231,34 @@ example :
       (Rset := (∅ : Finset (Subcube 1)))
       (R := Subcube.full) (h := 0) hx
 
+/-- `mu` is always non-negative. -/
+  example :
+      0 ≤ Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          0 (∅ : Finset (Subcube 1)) := by
+  simpa using
+    (Cover2.mu_nonneg (n := 1)
+      (F := {(fun _ : Point 1 => true)}) (Rset := (∅ : Finset (Subcube 1))) (h := 0))
+
+/-- The entropy contribution bounds `μ` from below. -/
+  example :
+      2 * 1 ≤ Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          1 (∅ : Finset (Subcube 1)) := by
+  simpa using
+    (Cover2.mu_lower_bound (n := 1)
+      (F := {(fun _ : Point 1 => true)}) (Rset := (∅ : Finset (Subcube 1))) (h := 1))
+
+/-- Increasing the entropy budget increases `μ`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        1 (∅ : Finset (Subcube 1)) := by
+  simpa using Cover2.mu_mono_h (n := 1) (F := {(fun _ : Point 1 => true)})
+    (Rset := (∅ : Finset (Subcube 1))) (h₁ := 0) (h₂ := 1) (Nat.zero_le 1)
+
 end Cover2Test
 

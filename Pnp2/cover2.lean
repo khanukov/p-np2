@@ -472,5 +472,22 @@ lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
   exact Nat.succ_le_of_lt hlt
 
+/-!  The measure `μ` is always non-negative. -/
+lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    0 ≤ mu (n := n) F h Rset := by
+  exact Nat.zero_le _
+
+/-!  The entropy contribution `2 * h` is a lower bound for `μ`. -/
+lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    2 * h ≤ mu (n := n) F h Rset := by
+  simpa [mu] using Nat.le_add_right (2 * h) ((uncovered (n := n) F Rset).toFinset.card)
+
+/-!  Increasing the entropy budget cannot decrease `μ`. -/
+lemma mu_mono_h {F : Family n} {Rset : Finset (Subcube n)}
+    {h₁ h₂ : ℕ} (hh : h₁ ≤ h₂) :
+    mu (n := n) F h₁ Rset ≤ mu (n := n) F h₂ Rset := by
+  dsimp [mu]
+  exact add_le_add (Nat.mul_le_mul_left _ hh) le_rfl
+
 end Cover2
 

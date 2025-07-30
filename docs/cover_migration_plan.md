@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 19 |
+| Fully migrated | 23 |
 | Axioms | 1 |
-| Pending | 67 |
+| Pending | 64 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -47,6 +47,9 @@ card_union_pair_mBound_succ
 card_union_triple_mBound_succ
 cover_size_bound
 size_bounds
+mu_union_singleton_le
+mu_union_singleton_lt
+mu_union_singleton_succ_le
 ```
 
 ### Declared as axioms
@@ -110,10 +113,7 @@ mu_union_le
 mu_union_lt
 mu_union_singleton_double_lt
 mu_union_singleton_double_succ_le
-mu_union_singleton_le
-mu_union_singleton_lt
 mu_union_singleton_quad_succ_le
-mu_union_singleton_succ_le
 mu_union_singleton_triple_lt
 mu_union_singleton_triple_succ_le
 mu_union_triple_lt

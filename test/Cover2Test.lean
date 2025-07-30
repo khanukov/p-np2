@@ -1,6 +1,8 @@
 import Pnp2.cover2
+import Pnp2.BoolFunc
 
 open Boolcube (Point Subcube)
+open BoolFunc (BFunc Family)
 
 open Cover2
 
@@ -174,6 +176,60 @@ example :
       (F := {(fun _ : Point 1 => true)})
       (Rset := (∅ : Finset (Subcube 1)))
       (R := Subcube.full) (h := 0)
+
+/-- Adding a rectangle that covers a new input strictly decreases the measure. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) <
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Build a witness pair covered by `Subcube.full`.
+  let f : BFunc 1 := fun _ => true
+  let x : Point 1 := fun _ => true
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hxval : f x = true := by simp [f, x]
+  have hnc : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
+    intro R hR; cases hR
+  have hx : ∃ p ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)), p.2 ∈ₛ Subcube.full := by
+    refine ⟨⟨f, x⟩, ?_, ?_⟩
+    · exact ⟨hf, hxval, hnc⟩
+    · simp [x]
+  simpa using
+    Cover2.mu_union_singleton_lt
+      (n := 1) (F := {f})
+      (Rset := (∅ : Finset (Subcube 1)))
+      (R := Subcube.full) (h := 0) hx
+
+/-- `mu_union_singleton_succ_le` provides a convenient inequality on measures. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) + 1 ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Reuse the witness from the previous example.
+  let f : BFunc 1 := fun _ => true
+  let x : Point 1 := fun _ => true
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hxval : f x = true := by simp [f, x]
+  have hnc : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
+    intro R hR; cases hR
+  have hx : ∃ p ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)), p.2 ∈ₛ Subcube.full := by
+    refine ⟨⟨f, x⟩, ?_, ?_⟩
+    · exact ⟨hf, hxval, hnc⟩
+    · simp [x]
+  simpa using
+    Cover2.mu_union_singleton_succ_le
+      (n := 1) (F := {f})
+      (Rset := (∅ : Finset (Subcube 1)))
+      (R := Subcube.full) (h := 0) hx
 
 end Cover2Test
 

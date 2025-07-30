@@ -231,5 +231,48 @@ example :
       (Rset := (∅ : Finset (Subcube 1)))
       (R := Subcube.full) (h := 0) hx
 
+/-- `mu_union_singleton_double_lt` shows that covering two distinct pairs
+drops the measure strictly. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) <
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Two distinct points both covered by `Subcube.full`.
+  let f : BFunc 1 := fun _ => true
+  let x₁ : Point 1 := fun _ => true
+  let x₂ : Point 1 := fun _ => false
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hx1val : f x₁ = true := by simp [f, x₁]
+  have hx2val : f x₂ = true := by simp [f, x₂]
+  have hnc1 : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x₁ := by
+    intro R hR; cases hR
+  have hnc2 : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x₂ := by
+    intro R hR; cases hR
+  let p₁ : Σ g : BFunc 1, Point 1 := ⟨f, x₁⟩
+  let p₂ : Σ g : BFunc 1, Point 1 := ⟨f, x₂⟩
+  have hp₁ : p₁ ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) := by exact ⟨hf, hx1val, hnc1⟩
+  have hp₂ : p₂ ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) := by exact ⟨hf, hx2val, hnc2⟩
+  have hx₁ : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂ : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hne_point : x₁ ≠ x₂ := by
+    intro hx
+    have := congrArg (fun v => v 0) hx
+    simpa [x₁, x₂] using this
+  have hne : p₁ ≠ p₂ := by
+    intro h; have := congrArg Sigma.snd h; exact hne_point this
+  simpa [p₁, p₂] using
+    Cover2.mu_union_singleton_double_lt
+      (n := 1) (F := {f})
+      (Rset := (∅ : Finset (Subcube 1)))
+      (R := Subcube.full) (h := 0)
+      (p₁ := p₁) (p₂ := p₂)
+      hp₁ hp₂ hx₁ hx₂ hne
+
 end Cover2Test
 

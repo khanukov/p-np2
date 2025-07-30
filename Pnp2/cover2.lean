@@ -8,6 +8,8 @@ import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic
 
 open Classical
@@ -390,6 +392,38 @@ lemma uncovered_subset_of_union {F : Family n}
   refine ⟨hf, hx, ?_⟩
   intro S hS
   exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
+/-! ### Simple termination measure
+
+`mu` tracks the remaining entropy budget together with the number of
+currently uncovered pairs.  The measure is used in the original
+construction to show that each recursive step makes progress.  We only
+record a minimal API for now. -/
+
+noncomputable def mu (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) : ℕ :=
+  2 * h + (uncovered (n := n) F Rset).toFinset.card
+
+lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ} :
+    mu (n := n) F h (Rset ∪ {R}) ≤ mu (n := n) F h Rset := by
+  classical
+  -- Adding a rectangle can only reduce the uncovered set.
+  have hsub : uncovered (n := n) F (Rset ∪ {R}) ⊆
+      uncovered (n := n) F Rset :=
+    uncovered_subset_of_union_singleton
+      (F := F) (Rset := Rset) (R := R)
+  -- Convert the set inclusion into a finset inclusion on cardinals.
+  have hsubF : (uncovered (n := n) F (Rset ∪ {R})).toFinset ⊆
+        (uncovered (n := n) F Rset).toFinset := by
+    intro x hx
+    have hx' : x ∈ uncovered (n := n) F (Rset ∪ {R}) := by simpa using hx
+    have hx'' : x ∈ uncovered (n := n) F Rset := hsub hx'
+    simpa using hx''
+  -- Cardinalities respect inclusion.
+  have hcard := Finset.card_le_card hsubF
+  -- Add the entropy contribution to both sides.
+  have := add_le_add_left hcard (2 * h)
+  simpa [mu] using this
 
 end Cover2
 

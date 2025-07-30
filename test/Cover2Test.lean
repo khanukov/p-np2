@@ -159,5 +159,21 @@ example (R₁ R₂ : Finset (Subcube 1)) :
       (F := {(fun _ : Point 1 => true)})
       (R₁ := R₁) (R₂ := R₂)
 
+/-- Inserting a rectangle never increases the measure `mu`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  simpa using
+    Cover2.mu_union_singleton_le
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (Rset := (∅ : Finset (Subcube 1)))
+      (R := Subcube.full) (h := 0)
+
 end Cover2Test
 

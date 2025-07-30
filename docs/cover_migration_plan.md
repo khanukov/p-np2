@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 23 |
+| Fully migrated | 32 |
 | Axioms | 1 |
-| Pending | 64 |
+| Pending | 55 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -50,6 +50,15 @@ size_bounds
 mu_union_singleton_le
 mu_union_singleton_lt
 mu_union_singleton_succ_le
+AllOnesCovered.full
+AllOnesCovered.insert
+AllOnesCovered.superset
+AllOnesCovered.union
+NotCovered.monotone
+uncovered_eq_empty_of_allCovered
+uncovered_subset_of_union_singleton
+uncovered_subset_of_union
+firstUncovered_none_iff
 ```
 
 ### Declared as axioms
@@ -58,14 +67,9 @@ mu_union_singleton_succ_le
 numeric_bound
 ```
 
-### Not yet ported (67 lemmas)
+### Not yet ported (55 lemmas)
 
 ```
-AllOnesCovered.full
-AllOnesCovered.insert
-AllOnesCovered.superset
-AllOnesCovered.union
-NotCovered.monotone
 allOnesCovered_of_firstUncovered_none
 allOnesCovered_of_mu_eq
 buildCover_card_bound
@@ -91,7 +95,6 @@ coverFamily_mono
 coverFamily_spec
 coverFamily_spec_cover
 cover_exists
-firstUncovered_none_iff
 lift_mono_of_restrict
 lift_mono_of_restrict_fixOne
 mono_subset
@@ -120,11 +123,8 @@ mu_union_triple_lt
 mu_union_triple_succ_le
 sunflower_step
 uncovered_card_bound
-uncovered_eq_empty_of_allCovered
 uncovered_init_bound_empty
 uncovered_init_coarse_bound
-uncovered_subset_of_union
-uncovered_subset_of_union_singleton
 ```
 
 ## Next steps

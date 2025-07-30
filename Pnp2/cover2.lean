@@ -489,5 +489,31 @@ lemma mu_union_singleton_double_lt {F : Family n} {Rset : Finset (Subcube n)}
   -- Apply the basic inequality for a newly covered pair.
   exact mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
 
+/-!
+Taking the union of two rectangle sets cannot increase the measure `μ`.  This
+simple monotonicity fact follows by induction on the second set using the
+single--rectangle lemma `mu_union_singleton_le`.
+-/
+lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
+    mu (n := n) F h (R₁ ∪ R₂) ≤ mu (n := n) F h R₁ := by
+  classical
+  -- We induct over `R₂`, inserting one rectangle at a time.
+  refine Finset.induction_on R₂ ?base ?step
+  · -- Base case: union with the empty set has no effect.
+    simp [mu]
+  · -- Induction step: insert a rectangle `R` into the growing set `S`.
+    intro R S hR hIH
+    -- First bound the union with `R` using the single-rectangle lemma.
+    have hstep :=
+      mu_union_singleton_le (F := F) (Rset := R₁ ∪ S) (R := R) (h := h)
+    -- Combine with the induction hypothesis.
+    have hcomb := le_trans hstep hIH
+    -- Reassociate unions to match the induction hypothesis.
+    have : R₁ ∪ insert R S = (R₁ ∪ S) ∪ {R} := by
+      ext x; by_cases hx : x = R
+      · subst hx; simp [hR]
+      · simp [Finset.mem_insert, hx]
+    simpa [this, Finset.union_assoc] using hcomb
+
 end Cover2
 

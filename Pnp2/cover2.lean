@@ -515,5 +515,40 @@ lemma mu_union_le {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ} :
       · simp [Finset.mem_insert, hx]
     simpa [this, Finset.union_assoc] using hcomb
 
+/-!
+`mu_mono_subset` is a convenient monotonicity lemma for the measure `μ` with
+respect to the set of rectangles.  Enlarging the rectangle set can only
+decrease the measure.
+-/
+lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
+    (hsub : R₁ ⊆ R₂) :
+    mu (n := n) F h R₂ ≤ mu (n := n) F h R₁ := by
+  classical
+  -- Express `R₂` as `R₁ ∪ (R₂ \ R₁)` and apply `mu_union_le`.
+  have hunion : R₂ = R₁ ∪ (R₂ \ R₁) := by
+    ext x; by_cases hx : x ∈ R₁
+    · constructor
+      · intro hxR2
+        exact Finset.mem_union.mpr <| Or.inl hx
+      · intro hunion
+        exact hsub hx
+    · constructor
+      · intro hxR2
+        -- Construct membership in the sdiff using both properties.
+        have hxRdiff : x ∈ R₂ \ R₁ := by
+          have hxpair : x ∈ R₂ ∧ x ∉ R₁ := ⟨hxR2, by simpa [hx]⟩
+          simpa [Finset.mem_sdiff] using hxpair
+        exact Finset.mem_union.mpr <| Or.inr hxRdiff
+      · intro hunion
+        rcases Finset.mem_union.mp hunion with hx₁ | hx₂
+        · exact hsub hx₁
+        · -- Extract membership in `R₂` from the difference set.
+          exact (Finset.mem_sdiff.mp hx₂).1
+  have := mu_union_le (F := F) (h := h) (R₁ := R₁) (R₂ := R₂ \ R₁)
+  -- Rewrite the left-hand side using `hunion` and apply the union lemma.
+  -- Using the subset assumption, simplify the union with a set difference.
+  have hx : R₁ ∪ (R₂ \ R₁) = R₂ := Finset.union_sdiff_of_subset hsub
+  simpa [hx] using this
+
 end Cover2
 

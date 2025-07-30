@@ -271,6 +271,85 @@ example :
       (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩)
       hp₁ hp₂ hx₁R hx₂R hne
 
+/-- `mu_union_double_succ_le` bounds the measure drop when the covering
+rectangle is part of a larger set. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) + 2 ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Reuse the witnesses from the previous example.
+  let f : BFunc 1 := fun _ => true
+  let x₁ : Point 1 := fun _ => true
+  let x₂ : Point 1 := fun _ => false
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hx₁val : f x₁ = true := by simp [f, x₁]
+  have hx₂val : f x₂ = true := by simp [f, x₂]
+  have hnc₁ : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x₁ :=
+    by intro R hR; cases hR
+  have hnc₂ : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x₂ :=
+    by intro R hR; cases hR
+  have hp₁ : ⟨f, x₁⟩ ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) := ⟨hf, hx₁val, hnc₁⟩
+  have hp₂ : ⟨f, x₂⟩ ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) := ⟨hf, hx₂val, hnc₂⟩
+  have hx₁R : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂R : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hxne : x₁ ≠ x₂ := by
+    intro hx; have h0 : x₁ 0 = x₂ 0 := congrArg (fun p => p 0) hx
+    simpa [x₁, x₂] using h0
+  have hne : (⟨f, x₁⟩ : Σ g : BFunc 1, Point 1) ≠ ⟨f, x₂⟩ := by
+    intro h; apply hxne; exact congrArg Sigma.snd h
+  have hmem : Subcube.full ∈ ({Subcube.full} : Finset (Subcube 1)) := by simp
+  simpa using
+    Cover2.mu_union_double_succ_le
+      (n := 1) (F := {f}) (R₁ := (∅ : Finset (Subcube 1)))
+      (R₂ := {Subcube.full}) (R := Subcube.full) (h := 0)
+      (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩)
+      hp₁ hp₂ hx₁R hx₂R hne hmem
+
+/-- `mu_union_double_lt` yields a strict inequality for the same setup. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) <
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Reuse the same witnesses as above.
+  let f : BFunc 1 := fun _ => true
+  let x₁ : Point 1 := fun _ => true
+  let x₂ : Point 1 := fun _ => false
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hx₁val : f x₁ = true := by simp [f, x₁]
+  have hx₂val : f x₂ = true := by simp [f, x₂]
+  have hnc₁ : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x₁ :=
+    by intro R hR; cases hR
+  have hnc₂ : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x₂ :=
+    by intro R hR; cases hR
+  have hp₁ : ⟨f, x₁⟩ ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) := ⟨hf, hx₁val, hnc₁⟩
+  have hp₂ : ⟨f, x₂⟩ ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) := ⟨hf, hx₂val, hnc₂⟩
+  have hx₁R : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂R : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hxne : x₁ ≠ x₂ := by
+    intro hx; have h0 : x₁ 0 = x₂ 0 := congrArg (fun p => p 0) hx
+    simpa [x₁, x₂] using h0
+  have hne : (⟨f, x₁⟩ : Σ g : BFunc 1, Point 1) ≠ ⟨f, x₂⟩ := by
+    intro h; apply hxne; exact congrArg Sigma.snd h
+  have hmem : Subcube.full ∈ ({Subcube.full} : Finset (Subcube 1)) := by simp
+  simpa using
+    Cover2.mu_union_double_lt
+      (n := 1) (F := {f}) (R₁ := (∅ : Finset (Subcube 1)))
+      (R₂ := {Subcube.full}) (R := Subcube.full) (h := 0)
+      (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩)
+      hp₁ hp₂ hx₁R hx₂R hne hmem
+
 /-- `mu_mono_subset` expresses that enlarging the set of rectangles can only
 decrease the measure.  We test it on a simple pair of sets. -/
 example :

@@ -652,5 +652,49 @@ lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
   have := hrewrite ▸ hmain
   simpa using this
 
+/-- `mu_union_double_succ_le` combines the single-rectangle estimate with
+monotonicity.  If some rectangle in `R₂` covers two distinct uncovered pairs of
+`R₁`, then the measure drops by at least two after taking the union. -/
+lemma mu_union_double_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ : Σ f : BFunc n, Point n}
+    (hp₁ : p₁ ∈ uncovered (n := n) F R₁) (hp₂ : p₂ ∈ uncovered (n := n) F R₁)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂)
+    (hmem : R ∈ R₂) :
+    mu (n := n) F h (R₁ ∪ R₂) + 2 ≤ mu (n := n) F h R₁ := by
+  classical
+  -- Adding additional rectangles can only decrease the measure.
+  have hsub : R₁ ∪ {R} ⊆ R₁ ∪ R₂ := by
+    intro x hx
+    rcases Finset.mem_union.mp hx with hx₁ | hx₂
+    · exact Finset.mem_union.mpr <| Or.inl hx₁
+    · rcases Finset.mem_singleton.mp hx₂ with rfl
+      exact Finset.mem_union.mpr <| Or.inr hmem
+  have hmono := mu_mono_subset (F := F) (h := h)
+      (R₁ := R₁ ∪ {R}) (R₂ := R₁ ∪ R₂) hsub
+  have hdouble := mu_union_singleton_double_succ_le
+      (F := F) (Rset := R₁) (R := R) (h := h)
+      hp₁ hp₂ hp₁R hp₂R hne
+  have := add_le_add_right hmono 2
+  exact le_trans this hdouble
+
+/-- `mu_union_double_lt` is the strict version of `mu_union_double_succ_le`. -/
+lemma mu_union_double_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ : Σ f : BFunc n, Point n}
+    (hp₁ : p₁ ∈ uncovered (n := n) F R₁) (hp₂ : p₂ ∈ uncovered (n := n) F R₁)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂)
+    (hmem : R ∈ R₂) :
+    mu (n := n) F h (R₁ ∪ R₂) < mu (n := n) F h R₁ := by
+  classical
+  have hdrop :=
+    mu_union_double_succ_le (F := F) (R₁ := R₁) (R₂ := R₂)
+      (R := R) (h := h) hp₁ hp₂ hp₁R hp₂R hne hmem
+  have hsucc : mu (n := n) F h (R₁ ∪ R₂) + 1 ≤ mu (n := n) F h R₁ := by
+    have hstep : (1 : ℕ) ≤ 2 := by decide
+    have := Nat.add_le_add_left hstep (mu (n := n) F h (R₁ ∪ R₂))
+    exact this.trans hdrop
+  exact Nat.lt_of_succ_le hsucc
+
 end Cover2
 

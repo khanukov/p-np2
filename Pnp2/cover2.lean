@@ -472,6 +472,93 @@ lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     mu_union_singleton_lt (F := F) (Rset := Rset) (R := R) (h := h) hx
   exact Nat.succ_le_of_lt hlt
 
+/-!
+Adding a rectangle that covers *two distinct* uncovered pairs reduces the
+measure `μ` by at least two.  This strengthening of
+`mu_union_singleton_succ_le` will be useful in the sunflower branch of
+the cover construction.-/
+lemma mu_union_singleton_double_succ_le {F : Family n} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {h : ℕ}
+    {p₁ p₂ : Σ f : BFunc n, Point n}
+    (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
+    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂) :
+    mu (n := n) F h (Rset ∪ {R}) + 2 ≤ mu (n := n) F h Rset := by
+  classical
+  -- Abbreviations for the uncovered sets before and after inserting `R`.
+  let S : Finset (Σ f : BFunc n, Point n) :=
+    (uncovered (n := n) F Rset).toFinset
+  let T : Finset (Σ f : BFunc n, Point n) :=
+    (uncovered (n := n) F (Rset ∪ {R})).toFinset
+  -- `T` is a subset of `S` since adding rectangles cannot create new
+  -- uncovered pairs.
+  have hsub_main : T ⊆ S := by
+    intro x hxT
+    have hx' : x ∈ uncovered (n := n) F (Rset ∪ {R}) := by
+      simpa [T] using hxT
+    have hx'' : x ∈ uncovered (n := n) F Rset :=
+      uncovered_subset_of_union_singleton
+        (F := F) (Rset := Rset) (R := R) hx'
+    simpa [S] using hx''
+  have hp₁S : p₁ ∈ S := by simpa [S] using hp₁
+  have hp₂S : p₂ ∈ S := by simpa [S] using hp₂
+  -- After adding `R`, the pairs `p₁` and `p₂` are no longer uncovered.
+  have hp₁T : p₁ ∉ T := by
+    intro hx
+    have hx' : p₁ ∈ uncovered (n := n) F (Rset ∪ {R}) := by simpa [T] using hx
+    rcases hx' with ⟨_, _, hnc⟩
+    exact hnc R (by simp) hp₁R
+  have hp₂T : p₂ ∉ T := by
+    intro hx
+    have hx' : p₂ ∈ uncovered (n := n) F (Rset ∪ {R}) := by simpa [T] using hx
+    rcases hx' with ⟨_, _, hnc⟩
+    exact hnc R (by simp) hp₂R
+  -- The new uncovered set is contained in `S.erase p₁.erase p₂`.
+  have hsub2 : T ⊆ (S.erase p₁).erase p₂ := by
+    intro x hxT
+    have hxS : x ∈ S := hsub_main hxT
+    have hxne1 : x ≠ p₁ := by
+      intro hxEq
+      have hxT' : p₁ ∈ T := by simpa [hxEq] using hxT
+      exact hp₁T hxT'
+    have hxne2 : x ≠ p₂ := by
+      intro hxEq
+      have hxT' : p₂ ∈ T := by simpa [hxEq] using hxT
+      exact hp₂T hxT'
+    have hx1 : x ∈ S.erase p₁ := Finset.mem_erase.mpr ⟨hxne1, hxS⟩
+    exact Finset.mem_erase.mpr ⟨hxne2, hx1⟩
+  -- Cardinalities of the intermediate sets.
+  have hp₂_in_erase1 : p₂ ∈ S.erase p₁ :=
+    Finset.mem_erase.mpr ⟨hne.symm, hp₂S⟩
+  have hcard_le : T.card ≤ ((S.erase p₁).erase p₂).card :=
+    Finset.card_le_card hsub2
+  have hcard1 : (S.erase p₁).card = S.card - 1 :=
+    Finset.card_erase_of_mem hp₁S
+  have hcard2 : ((S.erase p₁).erase p₂).card = (S.erase p₁).card - 1 :=
+    Finset.card_erase_of_mem hp₂_in_erase1
+  have hcard_final : T.card ≤ S.card - 2 := by
+    have := hcard_le
+    simpa [hcard1, hcard2] using this
+  -- `S` contains both `p₁` and `p₂`, so its cardinality is at least two.
+  have htwo : 2 ≤ S.card := by
+    classical
+    have hsub_pair : ({p₁, p₂} : Finset _) ⊆ S := by
+      intro x hx
+      rcases Finset.mem_insert.mp hx with hx | hx
+      · simpa [hx] using hp₁S
+      · have hx' := Finset.mem_singleton.mp hx; simpa [hx'] using hp₂S
+    have hcard_pair : ({p₁, p₂} : Finset _).card = 2 := by
+      classical
+      simpa using (Finset.card_pair (a := p₁) (b := p₂) hne)
+    have htwo_aux : 2 ≤ ({p₁, p₂} : Finset _).card := by
+      simpa [hcard_pair]
+    exact le_trans htwo_aux (Finset.card_le_card hsub_pair)
+  -- Convert the difference bound into the desired inequality.
+  have hdiff := (Nat.le_sub_iff_add_le htwo).mp hcard_final
+  -- Add the `2 * h` entropy contribution to both sides.
+  have := Nat.add_le_add_left hdiff (2 * h)
+  -- Rewrite everything in terms of `μ`.
+  simpa [mu, S, T, add_comm, add_left_comm, add_assoc] using this
+
 /--
 If a rectangle covers two distinct uncovered pairs, the measure drops strictly
 after inserting this rectangle.  The proof reuses the single-pair inequality on

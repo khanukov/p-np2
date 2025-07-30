@@ -315,6 +315,22 @@ def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) :
   else
     none
 
+@[simp] lemma firstUncovered_none_iff (Rset : Finset (Subcube n)) :
+    firstUncovered (n := n) F Rset = none ↔
+      uncovered (n := n) F Rset = (∅ : Set (Σ f : BFunc n, Point n)) := by
+  classical
+  by_cases h : uncovered (n := n) F Rset = (∅ : Set (Σ f : BFunc n, Point n))
+  ·
+    have hnon : ¬(uncovered (n := n) F Rset).Nonempty := by
+      intro hx
+      rcases hx with ⟨p, hp⟩
+      simpa [h] using hp
+    simp [firstUncovered, hnon, h]
+  ·
+    have hnon : (uncovered (n := n) F Rset).Nonempty :=
+      Set.nonempty_iff_ne_empty.mpr h
+    simp [firstUncovered, hnon, h]
+
 
 /-- All `1`-inputs of `F` lie in some rectangle of `Rset`. -/
 @[simp]
@@ -392,6 +408,14 @@ lemma uncovered_subset_of_union {F : Family n}
   refine ⟨hf, hx, ?_⟩
   intro S hS
   exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
+
+lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
+    (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤ n := by
+  classical
+  have h : uncovered (n := n) F (∅ : Finset (Subcube n)) = ∅ := by
+    ext p; simp [uncovered, hF]
+  have := Nat.zero_le n
+  simpa [h] using this
 
 /-! ### Simple termination measure
 

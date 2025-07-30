@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 23 |
-| Axioms | 1 |
-| Pending | 64 |
+| Fully migrated | 34 |
+| Axioms | 0 |
+| Pending | 57 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -27,6 +27,7 @@ The lists below group the lemmas by status.  Names exactly match those in
 ### Fully migrated
 
 ```
+numeric_bound
 numeric_bound_pos
 pow_le_mBound
 pow_le_mBound_simple
@@ -50,22 +51,21 @@ size_bounds
 mu_union_singleton_le
 mu_union_singleton_lt
 mu_union_singleton_succ_le
-```
-
-### Declared as axioms
-
-```
-numeric_bound
-```
-
-### Not yet ported (67 lemmas)
-
-```
 AllOnesCovered.full
 AllOnesCovered.insert
 AllOnesCovered.superset
 AllOnesCovered.union
 NotCovered.monotone
+firstUncovered_none_iff
+uncovered_eq_empty_of_allCovered
+uncovered_subset_of_union_singleton
+uncovered_subset_of_union
+uncovered_init_bound_empty
+```
+
+### Not yet ported (57 lemmas)
+
+```
 allOnesCovered_of_firstUncovered_none
 allOnesCovered_of_mu_eq
 buildCover_card_bound
@@ -91,7 +91,6 @@ coverFamily_mono
 coverFamily_spec
 coverFamily_spec_cover
 cover_exists
-firstUncovered_none_iff
 lift_mono_of_restrict
 lift_mono_of_restrict_fixOne
 mono_subset
@@ -120,20 +119,15 @@ mu_union_triple_lt
 mu_union_triple_succ_le
 sunflower_step
 uncovered_card_bound
-uncovered_eq_empty_of_allCovered
-uncovered_init_bound_empty
 uncovered_init_coarse_bound
-uncovered_subset_of_union
-uncovered_subset_of_union_singleton
 ```
 
 ## Next steps
 
-1. Provide a full proof of the remaining numeric lemma `numeric_bound`.
-2. Port the basic combinatorial facts about uncovered inputs and the measure
-   (`NotCovered.monotone`, `firstUncovered_none_iff`, etc.).
-3. Recreate the recursion `buildCover` and its counting bounds,
+1. Continue porting the combinatorial facts about uncovered inputs and the measure
+   (`allOnesCovered_of_firstUncovered_none`, `mu_nonneg`, etc.).
+2. Recreate the recursion `buildCover` and its counting bounds,
    replacing each remaining axiom with its full proof.
-4. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the
+3. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the
    build and the legacy file will be removed.
 

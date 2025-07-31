@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 56 |
+| Fully migrated | 57 |
 | Axioms | 0 |
-| Pending | 32 |
+| Pending | 31 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -72,6 +72,7 @@ uncovered_card_bound
 uncovered_init_coarse_bound
 uncovered_init_bound_empty
 mu_mono_subset
+mu_of_firstUncovered_none
 mu_gt_of_firstUncovered_some
 mu_union_double_lt
 mu_union_double_succ_le
@@ -85,7 +86,7 @@ mu_union_triple_lt
 mu_union_triple_succ_le
 ```
 
-### Not yet ported (32 lemmas)
+### Not yet ported (31 lemmas)
 
 ```
 buildCover_card_bound
@@ -117,7 +118,6 @@ mono_union
 mu_buildCover_le_start
 mu_buildCover_lt_start
 sunflower_step
-mu_of_firstUncovered_none
 mu_union_buildCover_le
 mu_union_buildCover_lt
 ```
@@ -125,7 +125,7 @@ mu_union_buildCover_lt
 ## Next steps
 
 1. Port the remaining combinatorial facts about uncovered inputs and the
-   termination measure (e.g., `mu_of_firstUncovered_none` and related lemmas).
+   termination measure (e.g., `mu_union_buildCover_le` and related lemmas).
 2. Recreate the recursion `buildCover` and its counting bounds,
    replacing each remaining axiom with its full proof.
 3. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the

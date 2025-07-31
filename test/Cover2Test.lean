@@ -189,6 +189,43 @@ example :
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (R := (∅ : Finset (Subcube 1))))
 
+/-- If `firstUncovered` returns `none`, all `1`‑inputs are covered. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) := by
+  classical
+  -- The uncovered set is empty since the function has no `1`-inputs.
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) := by
+    simpa using
+      (Cover2.AllOnesCovered.empty
+        (n := 1)
+        (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)))
+  have huncov : Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) =
+      (∅ : Set (Sigma (fun _ => Point 1))) :=
+    Cover2.uncovered_eq_empty_of_allCovered
+      (n := 1) (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) hcov
+  have hfu :
+      Cover2.firstUncovered (n := 1)
+        ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) = none := by
+    exact
+      (Cover2.firstUncovered_none_iff
+        (n := 1)
+        (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+        (R := (∅ : Finset (Subcube 1)))).2 huncov
+  -- Invoke the main lemma.
+  simpa using
+    (Cover2.allOnesCovered_of_firstUncovered_none
+      (n := 1)
+      (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) hfu)
+
 /-- `μ` is nonnegative by construction. -/
 example :
     0 ≤ Cover2.mu (n := 1)

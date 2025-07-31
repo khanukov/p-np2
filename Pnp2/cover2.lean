@@ -496,7 +496,16 @@ then the uncovered set is empty and the measure `μ` collapses to `2 * h`.
           simpa using this
       _ = 2 * h + 0 := by simp
       _ = 2 * h := by simp
-    
+lemma mu_of_firstUncovered_none {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
+    (hfu : firstUncovered (n := n) F Rset = none) :
+    mu (n := n) F h Rset = 2 * h := by
+  -- Coverage follows from the absence of uncovered pairs.
+  have hcov : AllOnesCovered (n := n) F Rset :=
+    allOnesCovered_of_firstUncovered_none
+      (n := n) (F := F) (Rset := Rset) hfu
+  -- `μ` therefore reduces to `2 * h`.
+  simpa using
+    mu_of_allCovered (n := n) (F := F) (Rset := Rset) (h := h) hcov
 
 /-!
 Conversely, if the measure `μ` equals `2 * h`, then no uncovered pairs remain.

@@ -265,6 +265,31 @@ example :
       (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
       (Rset := (∅ : Finset (Subcube 1))) hfu)
 
+/-- If `firstUncovered` returns `none`, the measure collapses to `2 * h`. -/
+example :
+    Cover2.mu (n := 1)
+      (∅ : BoolFunc.Family 1) 0 (∅ : Finset (Subcube 1)) = 0 := by
+  -- `firstUncovered` is `none` because the family is empty.
+  have hfu : Cover2.firstUncovered (n := 1)
+      (∅ : BoolFunc.Family 1) (∅ : Finset (Subcube 1)) = none := by
+    -- The uncovered set is empty by definition.
+    have hunc :
+        Cover2.uncovered (n := 1)
+          (∅ : BoolFunc.Family 1) (∅ : Finset (Subcube 1)) =
+          (∅ : Set (Sigma (fun _ => Point 1))) := by
+      ext p; constructor <;> intro hp
+      · rcases hp with ⟨hf, _, _⟩; simpa using hf
+      · cases hp
+    simpa using
+      (Cover2.firstUncovered_none_iff
+        (n := 1) (F := (∅ : BoolFunc.Family 1))
+        (R := (∅ : Finset (Subcube 1)))).2 hunc
+  -- Apply the lemma under test.
+  simpa using
+    Cover2.mu_of_firstUncovered_none
+      (n := 1) (F := (∅ : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) (h := 0) hfu
+
 /-- If all `1`-inputs are covered, the measure collapses to `2 * h`. -/
 example :
     Cover2.mu (n := 1)

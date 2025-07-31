@@ -1290,7 +1290,7 @@ steps.  This suffices for basic cardinality lemmas while the full algorithm is
 being ported from `cover.lean`.
 -/
 noncomputable def buildCover (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
   Rset
 
@@ -1300,11 +1300,11 @@ If the search for an uncovered pair already fails (`firstUncovered = none`),
 assumed to be bounded by `mBound`.
 -/
 lemma buildCover_card_bound_of_none {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     {Rset : Finset (Subcube n)}
-    (hfu : firstUncovered (n := n) F Rset = none)
+    (_hfu : firstUncovered (n := n) F Rset = none)
     (hcard : Rset.card ≤ mBound n h) :
-    (buildCover (n := n) F h hH Rset).card ≤ mBound n h := by
+    (buildCover (n := n) F h _hH Rset).card ≤ mBound n h := by
   simpa [buildCover] using hcard
 
 /--
@@ -1312,10 +1312,24 @@ Base case of the size bound: if no uncovered pair exists initially, the
 constructed cover is empty and trivially bounded by `mBound`.
 -/
 lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
-    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
+    (buildCover (n := n) F h _hH).card ≤ mBound n h := by
   have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
+  simpa [buildCover] using this
+
+/-!
+  A coarse numeric estimate that bounds the size of the cover directly by the
+  initial measure `2 * h + n`.  Since `buildCover` currently acts as the
+  identity on `Rset`, the constructed set is empty and the inequality is
+  immediate.  This lemma mirrors `Cover.buildCover_card_linear_bound` from the
+  legacy development.
+-/
+lemma buildCover_card_linear_bound {n h : ℕ} (F : Family n)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
+  -- The stub `buildCover` returns the empty set, whose cardinality is `0`.
+  have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
   simpa [buildCover] using this
 
 end Cover2

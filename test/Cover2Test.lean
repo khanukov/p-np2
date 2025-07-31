@@ -961,5 +961,14 @@ example :
       hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
       hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
+/-- The coarse linear bound estimates the size of the constructed cover. -/
+example :
+    (Cover2.buildCover (n := 1)
+        (F := (∅ : BoolFunc.Family 1)) 0 (by simp)).card ≤ 2 * 0 + 1 := by
+  -- `buildCover` returns the empty set, so the bound reduces to `0 ≤ 1`.
+  simpa using
+    Cover2.buildCover_card_linear_bound
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0) (by simp)
+
 end Cover2Test
 

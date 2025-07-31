@@ -315,6 +315,24 @@ def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) :
   else
     none
 
+@[simp] lemma firstUncovered_none_iff (F : Family n)
+    (R : Finset (Subcube n)) :
+    firstUncovered (n := n) F R = none ↔
+      uncovered (n := n) F R = (∅ : Set (Σ f : BFunc n, Point n)) := by
+  classical
+  unfold firstUncovered
+  by_cases h : (uncovered (n := n) F R).Nonempty
+  ·
+    have hne : uncovered (n := n) F R ≠ (∅ : Set _) :=
+      Set.nonempty_iff_ne_empty.mp h
+    simp [h, Set.nonempty_iff_ne_empty, hne]
+  ·
+    have hempty : uncovered (n := n) F R = (∅ : Set _) := by
+      apply Set.eq_empty_iff_forall_notMem.mpr
+      intro p hp
+      exact h ⟨p, hp⟩
+    simp [h, Set.nonempty_iff_ne_empty, hempty]
+
 
 /-- All `1`-inputs of `F` lie in some rectangle of `Rset`. -/
 @[simp]

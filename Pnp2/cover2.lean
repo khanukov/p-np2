@@ -471,7 +471,35 @@ noncomputable def mu (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) : ℕ 
   2 * h + (uncovered (n := n) F Rset).toFinset.card
 
 /-!
-If the measure `μ` equals `2 * h`, then no uncovered pairs remain.
+If all `1`‑inputs of `F` already lie inside some rectangle of `Rset`,
+then the uncovered set is empty and the measure `μ` collapses to `2 * h`.
+-/
+  lemma mu_of_allCovered {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ}
+      (hcov : AllOnesCovered (n := n) F Rset) :
+      mu (n := n) F h Rset = 2 * h := by
+    classical
+    -- Replace the uncovered set by `∅` using the coverage assumption.
+    have hzero :
+        uncovered (n := n) F Rset =
+          (∅ : Set (Σ f : BFunc n, Point n)) :=
+      uncovered_eq_empty_of_allCovered
+        (n := n) (F := F) (Rset := Rset) hcov
+    -- Unfold `μ` and simplify using the empty uncovered set.
+    calc
+      mu (n := n) F h Rset
+          = 2 * h + (uncovered (n := n) F Rset).toFinset.card := rfl
+      _ = 2 * h + (∅ : Set (Σ f : BFunc n, Point n)).toFinset.card := by
+          -- Apply `congrArg` to rewrite the uncovered set using `hzero`.
+          have := congrArg
+            (fun s : Set (Σ f : BFunc n, Point n) => 2 * h + s.toFinset.card)
+            hzero
+          simpa using this
+      _ = 2 * h + 0 := by simp
+      _ = 2 * h := by simp
+    
+
+/-!
+Conversely, if the measure `μ` equals `2 * h`, then no uncovered pairs remain.
 Consequently all `1`‑inputs of `F` must already be covered by `Rset`.
 -/
 lemma allOnesCovered_of_mu_eq {F : Family n} {Rset : Finset (Subcube n)}

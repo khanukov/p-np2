@@ -265,6 +265,22 @@ example :
       (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
       (Rset := (∅ : Finset (Subcube 1))) hfu)
 
+/-- If all `1`-inputs are covered, the measure collapses to `2 * h`. -/
+example :
+    Cover2.mu (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      0 ({Subcube.full} : Finset (Subcube 1)) = 2 * 0 := by
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) :=
+    Cover2.AllOnesCovered.full _
+  simpa using
+    Cover2.mu_of_allCovered
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := ({Subcube.full} : Finset (Subcube 1)))
+      (h := 0) hcov
+
 /-- `allOnesCovered_of_mu_eq` infers coverage from a collapsed measure. -/
 example :
     Cover2.AllOnesCovered (n := 1)

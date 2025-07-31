@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 45 |
+| Fully migrated | 53 |
 | Axioms | 0 |
-| Pending | 43 |
+| Pending | 35 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -48,19 +48,27 @@ card_union_pair_mBound_succ
 card_union_triple_mBound_succ
 cover_size_bound
 size_bounds
+mu_nonneg
+mu_lower_bound
+mu_mono_h
 mu_union_singleton_le
 mu_union_singleton_lt
 mu_union_singleton_succ_le
+mu_union_lt
 notCovered_empty
 NotCovered.monotone
+firstUncovered_none_iff
 AllOnesCovered.full
 AllOnesCovered.superset
 AllOnesCovered.union
 AllOnesCovered.insert
+allOnesCovered_of_firstUncovered_none
 uncovered_eq_empty_of_allCovered
 uncovered_subset_of_union_singleton
 uncovered_subset_of_union
 uncovered_card_bound
+uncovered_init_coarse_bound
+uncovered_init_bound_empty
 mu_mono_subset
 mu_union_double_lt
 mu_union_double_succ_le
@@ -74,10 +82,9 @@ mu_union_triple_lt
 mu_union_triple_succ_le
 ```
 
-### Not yet ported (43 lemmas)
+### Not yet ported (35 lemmas)
 
 ```
-allOnesCovered_of_firstUncovered_none
 allOnesCovered_of_mu_eq
 buildCover_card_bound
 buildCover_card_bound_base
@@ -102,31 +109,24 @@ coverFamily_mono
 coverFamily_spec
 coverFamily_spec_cover
 cover_exists
-firstUncovered_none_iff
 lift_mono_of_restrict
 lift_mono_of_restrict_fixOne
 mono_subset
 mono_union
 mu_buildCover_le_start
 mu_buildCover_lt_start
+sunflower_step
 mu_gt_of_firstUncovered_some
-mu_lower_bound
-mu_mono_h
-mu_nonneg
 mu_of_allCovered
 mu_of_firstUncovered_none
 mu_union_buildCover_le
 mu_union_buildCover_lt
-mu_union_lt
-sunflower_step
-uncovered_init_bound_empty
-uncovered_init_coarse_bound
 ```
 
 ## Next steps
 
 1. Port the remaining combinatorial facts about uncovered inputs and the
-   termination measure (starting with `firstUncovered_none_iff`).
+   termination measure (e.g., `mu_of_allCovered` and related lemmas).
 2. Recreate the recursion `buildCover` and its counting bounds,
    replacing each remaining axiom with its full proof.
 3. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the

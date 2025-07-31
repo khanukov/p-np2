@@ -192,6 +192,27 @@ example :
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (Rset := (∅ : Finset (Subcube 1)))
 
+/-- Coarse bound specialised to the initial uncovered set. -/
+example :
+    (Cover2.uncovered (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1))).toFinset.card ≤
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card * 2 ^ 1 := by
+  classical
+  simpa using
+    (Cover2.uncovered_init_coarse_bound
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)))
+
+/-- If the family is empty, the initial uncovered set is empty as well. -/
+example :
+    (Cover2.uncovered (n := 1) (∅ : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1))).toFinset.card ≤ 1 := by
+  have hF : (∅ : BoolFunc.Family 1) = (∅ : BoolFunc.Family 1) := rfl
+  simpa [hF]
+    using Cover2.uncovered_init_bound_empty
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (hF := rfl)
+
 /-- `firstUncovered` returns `none` precisely when the uncovered set is empty. -/
 example :
     Cover2.firstUncovered (n := 1)

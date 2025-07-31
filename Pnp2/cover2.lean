@@ -374,6 +374,26 @@ lemma AllOnesCovered.insert {F : Family n} {Rset : Finset (Subcube n)}
   exact AllOnesCovered.superset (F := F) (R₁ := Rset)
     (R₂ := Insert.insert R Rset) hcov hsub
 
+/-- Monochromaticity is preserved when restricting to a subset of rectangles. -/
+lemma mono_subset {F : Family n}
+    {R₁ R₂ : Finset (BoolFunc.Subcube n)}
+    (h₁ : ∀ R ∈ R₁, BoolFunc.Subcube.monochromaticForFamily R F)
+    (hsub : R₂ ⊆ R₁) :
+    ∀ R ∈ R₂, BoolFunc.Subcube.monochromaticForFamily R F := by
+  intro R hR
+  exact h₁ R (hsub hR)
+
+/-- The union of two monochromatic collections remains monochromatic. -/
+lemma mono_union {F : Family n}
+    {R₁ R₂ : Finset (BoolFunc.Subcube n)}
+    (h₁ : ∀ R ∈ R₁, BoolFunc.Subcube.monochromaticForFamily R F)
+    (h₂ : ∀ R ∈ R₂, BoolFunc.Subcube.monochromaticForFamily R F) :
+    ∀ R ∈ R₁ ∪ R₂, BoolFunc.Subcube.monochromaticForFamily R F := by
+  intro R hR
+  rcases Finset.mem_union.mp hR with h | h
+  · exact h₁ R h
+  · exact h₂ R h
+
 /-- When the set of rectangles is empty, `AllOnesCovered` simply states that
 no function in the family has a `1`‑input.  This handy characterisation is
 often used to initiate cover constructions. -/

@@ -9,6 +9,13 @@ open Cover2
 
 namespace Cover2Test
 
+/-- The full subcube with no fixed coordinates. -/
+def fullSubcube (n : ℕ) : BoolFunc.Subcube n :=
+  { idx := (∅ : Finset (Fin n)),
+    val := by
+      intro i hi
+      exact False.elim (by simpa using hi) }
+
 /-- `mBound` is computed via the wrapper definition. -/
 example : mBound 1 0 = 2 := by
   simp [mBound]
@@ -109,6 +116,33 @@ example :
   simpa using
     Cover2.AllOnesCovered.union (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) hcov hcov
+
+/-- `mono_union` combines monochromatic rectangle sets. -/
+  example :
+      ∀ R ∈ ({fullSubcube 1} ∪ {fullSubcube 1} : Finset (BoolFunc.Subcube 1)),
+          BoolFunc.Subcube.monochromaticForFamily R
+            ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+    classical
+    have hmono :
+        ∀ R ∈ ({fullSubcube 1} : Finset (BoolFunc.Subcube 1)),
+            BoolFunc.Subcube.monochromaticForFamily R
+              ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+      intro R hR
+      -- Any member of the singleton must be `fullSubcube 1`.
+      have hR' : R = fullSubcube 1 := by
+        simpa [Finset.mem_singleton] using hR
+      subst hR'
+      -- The constant-true function is monochromatic with colour `true`.
+      refine ⟨true, ?_⟩
+      intro f hf x hx
+      have hf' : f = (fun _ : Point 1 => true) := by simpa using hf
+      subst hf'
+      simp
+    -- Apply `mono_union` to merge the two monochromatic sets.
+    simpa using
+      (Cover2.mono_union
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (R₁ := {fullSubcube 1}) (R₂ := {fullSubcube 1}) hmono hmono)
 
 /-- Inserting a rectangle preserves coverage. -/
 example :

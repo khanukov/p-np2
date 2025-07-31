@@ -372,6 +372,66 @@ example :
       (n := 1)
       hsub
 
+/-- `mu_union_singleton_triple_succ_le` ensures a drop of at least three when
+three distinct pairs are covered. -/
+example :
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 ((∅ : Finset (Subcube 2)) ∪ {Subcube.full}) + 3 ≤
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 (∅ : Finset (Subcube 2)) := by
+  classical
+  -- Three uncovered inputs for the constant-true function.
+  let f : BFunc 2 := fun _ => true
+  let x₁ : Point 2 := fun _ => true
+  let x₂ : Point 2 := fun
+    | 0 => false
+    | 1 => true
+  let x₃ : Point 2 := fun
+    | 0 => true
+    | 1 => false
+  have hf : f ∈ ({f} : BoolFunc.Family 2) := by simp
+  have hx₁val : f x₁ = true := by simp [f, x₁]
+  have hx₂val : f x₂ = true := by simp [f, x₂]
+  have hx₃val : f x₃ = true := by simp [f, x₃]
+  have hnc₁ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₁ :=
+    by intro R hR; cases hR
+  have hnc₂ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₂ :=
+    by intro R hR; cases hR
+  have hnc₃ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₃ :=
+    by intro R hR; cases hR
+  have hp₁ : ⟨f, x₁⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₁val, hnc₁⟩
+  have hp₂ : ⟨f, x₂⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₂val, hnc₂⟩
+  have hp₃ : ⟨f, x₃⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₃val, hnc₃⟩
+  have hx₁R : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂R : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hx₃R : x₃ ∈ₛ Subcube.full := by simp [x₃]
+  have hne₁₂ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₂⟩ := by
+    intro h
+    have hx : x₁ = x₂ := congrArg Sigma.snd h
+    have hx0 : x₁ 0 = x₂ 0 := congrArg (fun g => g 0) hx
+    simp [x₁, x₂] at hx0
+  have hne₁₃ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₁ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₁ 1 = x₃ 1 := congrArg (fun g => g 1) hx
+    simp [x₁, x₃] at hx0
+  have hne₂₃ : (⟨f, x₂⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₂ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₂ 0 = x₃ 0 := congrArg (fun g => g 0) hx
+    simp [x₂, x₃] at hx0
+  simpa using
+    Cover2.mu_union_singleton_triple_succ_le
+      (n := 2) (F := {f}) (Rset := (∅ : Finset (Subcube 2)))
+      (R := Subcube.full) (h := 0)
+      (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩) (p₃ := ⟨f, x₃⟩)
+      hp₁ hp₂ hp₃ hx₁R hx₂R hx₃R hne₁₂ hne₁₃ hne₂₃
+
 /-- `mu_union_singleton_triple_lt` specialises the strict inequality to three
 distinct uncovered pairs. -/
 example :

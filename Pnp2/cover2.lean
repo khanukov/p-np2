@@ -403,6 +403,36 @@ lemma uncovered_eq_empty_of_allCovered {F : Family n}
   · intro hp
     cases hp
 
+lemma allOnesCovered_of_firstUncovered_none {F : Family n}
+    {Rset : Finset (Subcube n)}
+    (hfu : firstUncovered (n := n) F Rset = none) :
+    AllOnesCovered (n := n) F Rset := by
+  classical
+  intro f hf x hx
+  by_contra hxcov
+  -- If `x` were uncovered, the pair `⟨f, x⟩` would belong to the uncovered set.
+  have hxNC : NotCovered (n := n) (Rset := Rset) x := by
+    intro R hR hxR
+    exact hxcov ⟨R, hR, hxR⟩
+  have hx_mem' : (⟨f, x⟩ : Σ f : BFunc n, Point n)
+      ∈ uncovered (n := n) F Rset := ⟨hf, hx, hxNC⟩
+  -- But the uncovered set is empty by assumption.
+  have hempty : uncovered (n := n) F Rset =
+      (∅ : Set (Σ f : BFunc n, Point n)) :=
+    (firstUncovered_none_iff (n := n) (F := F) (R := Rset)).1 hfu
+  -- The assumption gives a witness in the uncovered set, contradicting emptiness.
+  have hx_mem : f ∈ F ∧ f x = true ∧ NotCovered (n := n) (Rset := Rset) x :=
+    hx_mem'
+  have hx_mem_set : (⟨f, x⟩ : Σ f : BFunc n, Point n)
+      ∈ uncovered (n := n) F Rset := by
+    simpa [uncovered] using hx_mem
+  have hx_eq := congrArg (fun s => (⟨f, x⟩ : Σ f : BFunc n, Point n) ∈ s) hempty
+  have hx_empty : (⟨f, x⟩ : Σ f : BFunc n, Point n)
+      ∈ (∅ : Set (Σ f : BFunc n, Point n)) := by
+    have := Eq.mp hx_eq hx_mem_set
+    simpa using this
+  cases hx_empty
+
 /-!
 `uncovered` is monotone with respect to the set of rectangles.  Adding a new
 rectangle can only remove uncovered pairs.  The next lemmas capture this

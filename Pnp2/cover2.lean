@@ -1153,5 +1153,37 @@ lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
     simpa using (Fintype.card_vector (α := Bool) (n := n))
   simpa [hprod, hcube] using hcard
 
+/--
+`uncovered_init_coarse_bound` specialises the coarse cardinality estimate
+to the initial call of the cover construction where no rectangles are
+present yet.  Even this simple bound is occasionally useful for quick
+sanity checks.
+-/
+lemma uncovered_init_coarse_bound (F : Family n) :
+    (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤
+      F.card * 2 ^ n := by
+  simpa using
+    (uncovered_card_bound (n := n) (F := F)
+      (Rset := (∅ : Finset (Subcube n))))
+
+/--
+If the family itself is empty, the set of initially uncovered pairs is
+trivially empty.  In this case any numeric bound holds; we record a
+simple instance with the dimension `n` for convenience.
+-/
+lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
+    (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤ n := by
+  classical
+  -- With an empty family no pairs are uncovered, so the cardinality is zero.
+  have hcard :
+      (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card = 0 := by
+    simpa [uncovered, hF]
+  -- Rewrite the goal using `hcard` and conclude with `Nat.zero_le`.
+  have hgoal :
+      (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤ n := by
+    rw [hcard]
+    exact Nat.zero_le n
+  exact hgoal
+
 end Cover2
 

@@ -350,6 +350,129 @@ example :
       (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩)
       hp₁ hp₂ hx₁R hx₂R hne hmem
 
+/-- `mu_union_triple_succ_le` bounds the drop when a rectangle from a larger
+family covers three distinct uncovered pairs. -/
+example :
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 ((
+            (∅ : Finset (Subcube 2))
+            ) ∪ {Subcube.full}) + 3 ≤
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 (∅ : Finset (Subcube 2)) := by
+  classical
+  -- Three uncovered inputs for the constant-true function.
+  let f : BFunc 2 := fun _ => true
+  let x₁ : Point 2 := fun _ => true
+  let x₂ : Point 2 := fun
+    | 0 => false
+    | 1 => true
+  let x₃ : Point 2 := fun
+    | 0 => true
+    | 1 => false
+  have hf : f ∈ ({f} : BoolFunc.Family 2) := by simp
+  have hx₁val : f x₁ = true := by simp [f, x₁]
+  have hx₂val : f x₂ = true := by simp [f, x₂]
+  have hx₃val : f x₃ = true := by simp [f, x₃]
+  have hnc₁ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₁ :=
+    by intro R hR; cases hR
+  have hnc₂ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₂ :=
+    by intro R hR; cases hR
+  have hnc₃ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₃ :=
+    by intro R hR; cases hR
+  have hp₁ : ⟨f, x₁⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₁val, hnc₁⟩
+  have hp₂ : ⟨f, x₂⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₂val, hnc₂⟩
+  have hp₃ : ⟨f, x₃⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₃val, hnc₃⟩
+  have hx₁R : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂R : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hx₃R : x₃ ∈ₛ Subcube.full := by simp [x₃]
+  have hne₁₂ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₂⟩ := by
+    intro h
+    have hx : x₁ = x₂ := congrArg Sigma.snd h
+    have hx0 : x₁ 0 = x₂ 0 := congrArg (fun g => g 0) hx
+    simp [x₁, x₂] at hx0
+  have hne₁₃ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₁ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₁ 1 = x₃ 1 := congrArg (fun g => g 1) hx
+    simp [x₁, x₃] at hx0
+  have hne₂₃ : (⟨f, x₂⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₂ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₂ 0 = x₃ 0 := congrArg (fun g => g 0) hx
+    simp [x₂, x₃] at hx0
+  have hmem : Subcube.full ∈ ({Subcube.full} : Finset (Subcube 2)) := by simp
+  simpa using
+    Cover2.mu_union_triple_succ_le
+      (n := 2) (F := {f}) (R₁ := (∅ : Finset (Subcube 2)))
+      (R₂ := {Subcube.full}) (R := Subcube.full) (h := 0)
+      (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩) (p₃ := ⟨f, x₃⟩)
+      hp₁ hp₂ hp₃ hx₁R hx₂R hx₃R hne₁₂ hne₁₃ hne₂₃ hmem
+
+/-- `mu_union_triple_lt` gives the strict inequality for the same setup. -/
+example :
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 ((∅ : Finset (Subcube 2)) ∪ {Subcube.full}) <
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 (∅ : Finset (Subcube 2)) := by
+  classical
+  -- Reuse the witnesses from the previous example.
+  let f : BFunc 2 := fun _ => true
+  let x₁ : Point 2 := fun _ => true
+  let x₂ : Point 2 := fun
+    | 0 => false
+    | 1 => true
+  let x₃ : Point 2 := fun
+    | 0 => true
+    | 1 => false
+  have hf : f ∈ ({f} : BoolFunc.Family 2) := by simp
+  have hx₁val : f x₁ = true := by simp [f, x₁]
+  have hx₂val : f x₂ = true := by simp [f, x₂]
+  have hx₃val : f x₃ = true := by simp [f, x₃]
+  have hnc₁ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₁ :=
+    by intro R hR; cases hR
+  have hnc₂ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₂ :=
+    by intro R hR; cases hR
+  have hnc₃ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₃ :=
+    by intro R hR; cases hR
+  have hp₁ : ⟨f, x₁⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₁val, hnc₁⟩
+  have hp₂ : ⟨f, x₂⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₂val, hnc₂⟩
+  have hp₃ : ⟨f, x₃⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₃val, hnc₃⟩
+  have hx₁R : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂R : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hx₃R : x₃ ∈ₛ Subcube.full := by simp [x₃]
+  have hne₁₂ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₂⟩ := by
+    intro h
+    have hx : x₁ = x₂ := congrArg Sigma.snd h
+    have hx0 : x₁ 0 = x₂ 0 := congrArg (fun g => g 0) hx
+    simp [x₁, x₂] at hx0
+  have hne₁₃ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₁ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₁ 1 = x₃ 1 := congrArg (fun g => g 1) hx
+    simp [x₁, x₃] at hx0
+  have hne₂₃ : (⟨f, x₂⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₂ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₂ 0 = x₃ 0 := congrArg (fun g => g 0) hx
+    simp [x₂, x₃] at hx0
+  have hmem : Subcube.full ∈ ({Subcube.full} : Finset (Subcube 2)) := by simp
+  simpa using
+    Cover2.mu_union_triple_lt
+      (n := 2) (F := {f}) (R₁ := (∅ : Finset (Subcube 2)))
+      (R₂ := {Subcube.full}) (R := Subcube.full) (h := 0)
+      (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩) (p₃ := ⟨f, x₃⟩)
+      hp₁ hp₂ hp₃ hx₁R hx₂R hx₃R hne₁₂ hne₁₃ hne₂₃ hmem
+
 /-- `mu_mono_subset` expresses that enlarging the set of rectangles can only
 decrease the measure.  We test it on a simple pair of sets. -/
 example :
@@ -491,6 +614,89 @@ example :
       (R := Subcube.full) (h := 0)
       (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩) (p₃ := ⟨f, x₃⟩)
       hp₁ hp₂ hp₃ hx₁R hx₂R hx₃R hne₁₂ hne₁₃ hne₂₃
+
+/-- `mu_union_singleton_quad_succ_le` ensures a drop of at least four when
+four distinct pairs are covered. -/
+example :
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 ((∅ : Finset (Subcube 2)) ∪ {Subcube.full}) + 4 ≤
+    Cover2.mu (n := 2)
+        ({(fun _ : Point 2 => true)} : BoolFunc.Family 2)
+        0 (∅ : Finset (Subcube 2)) := by
+  classical
+  -- Four uncovered inputs for the constant-true function.
+  let f : BFunc 2 := fun _ => true
+  let x₁ : Point 2 := fun _ => true
+  let x₂ : Point 2 := fun
+    | 0 => false
+    | 1 => true
+  let x₃ : Point 2 := fun
+    | 0 => true
+    | 1 => false
+  let x₄ : Point 2 := fun _ => false
+  have hf : f ∈ ({f} : BoolFunc.Family 2) := by simp
+  have hx₁val : f x₁ = true := by simp [f, x₁]
+  have hx₂val : f x₂ = true := by simp [f, x₂]
+  have hx₃val : f x₃ = true := by simp [f, x₃]
+  have hx₄val : f x₄ = true := by simp [f, x₄]
+  have hnc₁ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₁ :=
+    by intro R hR; cases hR
+  have hnc₂ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₂ :=
+    by intro R hR; cases hR
+  have hnc₃ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₃ :=
+    by intro R hR; cases hR
+  have hnc₄ : Cover2.NotCovered (n := 2) (Rset := (∅ : Finset (Subcube 2))) x₄ :=
+    by intro R hR; cases hR
+  have hp₁ : ⟨f, x₁⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₁val, hnc₁⟩
+  have hp₂ : ⟨f, x₂⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₂val, hnc₂⟩
+  have hp₃ : ⟨f, x₃⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₃val, hnc₃⟩
+  have hp₄ : ⟨f, x₄⟩ ∈ Cover2.uncovered (n := 2) ({f} : BoolFunc.Family 2)
+        (∅ : Finset (Subcube 2)) := ⟨hf, hx₄val, hnc₄⟩
+  have hx₁R : x₁ ∈ₛ Subcube.full := by simp [x₁]
+  have hx₂R : x₂ ∈ₛ Subcube.full := by simp [x₂]
+  have hx₃R : x₃ ∈ₛ Subcube.full := by simp [x₃]
+  have hx₄R : x₄ ∈ₛ Subcube.full := by simp [x₄]
+  have hne₁₂ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₂⟩ := by
+    intro h
+    have hx : x₁ = x₂ := congrArg Sigma.snd h
+    have hx0 : x₁ 0 = x₂ 0 := congrArg (fun g => g 0) hx
+    simp [x₁, x₂] at hx0
+  have hne₁₃ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₁ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₁ 1 = x₃ 1 := congrArg (fun g => g 1) hx
+    simp [x₁, x₃] at hx0
+  have hne₁₄ : (⟨f, x₁⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₄⟩ := by
+    intro h
+    have hx : x₁ = x₄ := congrArg Sigma.snd h
+    have hx0 : x₁ 0 = x₄ 0 := congrArg (fun g => g 0) hx
+    simp [x₁, x₄] at hx0
+  have hne₂₃ : (⟨f, x₂⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₃⟩ := by
+    intro h
+    have hx : x₂ = x₃ := congrArg Sigma.snd h
+    have hx0 : x₂ 0 = x₃ 0 := congrArg (fun g => g 0) hx
+    simp [x₂, x₃] at hx0
+  have hne₂₄ : (⟨f, x₂⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₄⟩ := by
+    intro h
+    have hx : x₂ = x₄ := congrArg Sigma.snd h
+    have hx1 : x₂ 1 = x₄ 1 := congrArg (fun g => g 1) hx
+    simp [x₂, x₄] at hx1
+  have hne₃₄ : (⟨f, x₃⟩ : Σ g : BFunc 2, Point 2) ≠ ⟨f, x₄⟩ := by
+    intro h
+    have hx : x₃ = x₄ := congrArg Sigma.snd h
+    have hx0 : x₃ 0 = x₄ 0 := congrArg (fun g => g 0) hx
+    simp [x₃, x₄] at hx0
+  simpa using
+    Cover2.mu_union_singleton_quad_succ_le
+      (n := 2) (F := {f}) (Rset := (∅ : Finset (Subcube 2)))
+      (R := Subcube.full) (h := 0)
+      (p₁ := ⟨f, x₁⟩) (p₂ := ⟨f, x₂⟩) (p₃ := ⟨f, x₃⟩) (p₄ := ⟨f, x₄⟩)
+      hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
+      hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
 end Cover2Test
 

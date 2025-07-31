@@ -3,6 +3,7 @@ import Pnp2.BoolFunc
 
 open Boolcube (Point Subcube)
 open BoolFunc (BFunc Family)
+open Classical
 
 open Cover2
 
@@ -177,6 +178,19 @@ example (R₁ R₂ : Finset (Subcube 1)) :
       (n := 1)
       (F := {(fun _ : Point 1 => true)})
       (R₁ := R₁) (R₂ := R₂)
+
+/-- The coarse cardinality bound on uncovered pairs. -/
+example :
+    (Cover2.uncovered (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1))).toFinset.card ≤
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card * 2 ^ 1 := by
+  classical
+  simpa using
+    Cover2.uncovered_card_bound
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1)))
 
 /-- `firstUncovered` returns `none` precisely when the uncovered set is empty. -/
 example :

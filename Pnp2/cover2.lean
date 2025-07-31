@@ -1128,5 +1128,30 @@ lemma mu_union_triple_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     exact this.trans hdrop
   exact Nat.lt_of_succ_le hsucc
 
+/-! ### Coarse bound on the number of uncovered pairs -/
+
+lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
+    (uncovered (n := n) F Rset).toFinset.card ≤ F.card * 2 ^ n := by
+  classical
+  -- Each uncovered pair corresponds to a function from `F` and a cube point.
+  have hsubset : (uncovered (n := n) F Rset).toFinset ⊆
+      F.sigma (fun _ => (Finset.univ : Finset (Point n))) := by
+    intro p hp
+    have hp' : p ∈ uncovered (n := n) F Rset := by simpa using hp
+    rcases hp' with ⟨hf, hx, _⟩
+    have hx' : p.2 ∈ (Finset.univ : Finset (Point n)) := by simp
+    exact Finset.mem_sigma.mpr ⟨hf, hx'⟩
+  have hcard := Finset.card_le_card hsubset
+  -- Cardinality of a sigma-type splits multiplicatively for a constant fiber.
+  have hprod : (F.sigma fun _ => (Finset.univ : Finset (Point n))).card =
+      F.card * (Finset.univ : Finset (Point n)).card := by
+    classical
+    simpa [Finset.card_sigma, Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc]
+  -- The Boolean cube has size `2 ^ n`.
+  have hcube : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
+    simpa using (Fintype.card_vector (α := Bool) (n := n))
+  simpa [hprod, hcube] using hcard
+
 end Cover2
 

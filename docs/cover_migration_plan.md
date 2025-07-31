@@ -6,7 +6,7 @@ interface for downstream files while gradually re-establishing all results.
 
 ## Overview
 
-* `cover.lean` contains 89 lemmas supporting the recursive construction of a
+* `cover.lean` contains 88 lemmas supporting the recursive construction of a
   rectangular cover.  The file is self‑contained but heavy.
 * `cover2.lean` reintroduces the key numeric definitions and currently provides
   only a subset of these lemmas.
@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 33 |
+| Fully migrated | 44 |
 | Axioms | 0 |
-| Pending | 55 |
+| Pending | 44 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -60,9 +60,20 @@ AllOnesCovered.insert
 uncovered_eq_empty_of_allCovered
 uncovered_subset_of_union_singleton
 uncovered_subset_of_union
+mu_mono_subset
+mu_union_double_lt
+mu_union_double_succ_le
+mu_union_le
+mu_union_singleton_double_lt
+mu_union_singleton_double_succ_le
+mu_union_singleton_triple_lt
+mu_union_singleton_triple_succ_le
+mu_union_singleton_quad_succ_le
+mu_union_triple_lt
+mu_union_triple_succ_le
 ```
 
-### Not yet ported (55 lemmas)
+### Not yet ported (44 lemmas)
 
 ```
 allOnesCovered_of_firstUncovered_none
@@ -100,23 +111,12 @@ mu_buildCover_lt_start
 mu_gt_of_firstUncovered_some
 mu_lower_bound
 mu_mono_h
-mu_mono_subset
 mu_nonneg
 mu_of_allCovered
 mu_of_firstUncovered_none
 mu_union_buildCover_le
 mu_union_buildCover_lt
-mu_union_double_lt
-mu_union_double_succ_le
-mu_union_le
 mu_union_lt
-mu_union_singleton_double_lt
-mu_union_singleton_double_succ_le
-mu_union_singleton_quad_succ_le
-mu_union_singleton_triple_lt
-mu_union_singleton_triple_succ_le
-mu_union_triple_lt
-mu_union_triple_succ_le
 sunflower_step
 uncovered_card_bound
 uncovered_init_bound_empty

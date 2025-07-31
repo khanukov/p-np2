@@ -265,6 +265,23 @@ example :
       (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
       (Rset := (∅ : Finset (Subcube 1))) hfu)
 
+/-- `allOnesCovered_of_mu_eq` infers coverage from a collapsed measure. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) := by
+  have hmu :
+      Cover2.mu (n := 1)
+        (F := (∅ : BoolFunc.Family 1))
+        0 (Rset := (∅ : Finset (Subcube 1))) = 2 * 0 := by
+    simp [Cover2.mu, Cover2.uncovered, Cover2.NotCovered]
+  simpa using
+    Cover2.allOnesCovered_of_mu_eq
+      (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1)))
+      (h := 0) hmu
+
 /-- `μ` is nonnegative by construction. -/
 example :
     0 ≤ Cover2.mu (n := 1)

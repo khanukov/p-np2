@@ -686,6 +686,35 @@ example :
       (R₁ := (∅ : Finset (Subcube 1)))
       (R₂ := {Subcube.full}) (h := 0) hx
 
+/-- `mu_gt_of_firstUncovered_some` detects progress when an uncovered pair exists. -/
+example :
+    2 * 0 < Cover2.mu (n := 1)
+        ({(fun x : Point 1 => x 0)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- The projection function has the point `x` with value `1` uncovered.
+  let f : BFunc 1 := fun x => x 0
+  let x : Point 1 := fun _ => true
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hxval : f x = true := by simp [f, x]
+  have hnc : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
+    intro R hR; cases hR
+  have hx : (Cover2.uncovered (n := 1) {f} (∅ : Finset (Subcube 1))).Nonempty :=
+    ⟨⟨f, x⟩, ⟨hf, hxval, hnc⟩⟩
+  have hfu : Cover2.firstUncovered (n := 1) {f} (∅ : Finset (Subcube 1)) ≠ none := by
+    intro hnone
+    have hxne :
+        Cover2.uncovered (n := 1) {f} (∅ : Finset (Subcube 1)) ≠
+          (∅ : Set (Sigma (fun _ : BFunc 1 => Point 1))) :=
+      Set.nonempty_iff_ne_empty.mp hx
+    have hempty :=
+      (Cover2.firstUncovered_none_iff (n := 1) (F := {f})
+        (R := (∅ : Finset (Subcube 1)))).1 hnone
+    exact hxne hempty
+  simpa using
+    Cover2.mu_gt_of_firstUncovered_some
+      (n := 1) (F := {f}) (Rset := (∅ : Finset (Subcube 1))) (h := 0) hfu
+
 /-- `mu_union_singleton_triple_succ_le` ensures a drop of at least three when
 three distinct pairs are covered. -/
 example :

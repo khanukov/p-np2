@@ -731,6 +731,33 @@ example :
     Cover2.mu_gt_of_firstUncovered_some
       (n := 1) (F := {f}) (Rset := (∅ : Finset (Subcube 1))) (h := 0) hfu
 
+/-- If `firstUncovered` returns `none`, the measure collapses to `2 * h`. -/
+example :
+    Cover2.mu (n := 1) (F := (∅ : BoolFunc.Family 1)) 0
+        (∅ : Finset (Subcube 1)) = 0 := by
+  classical
+  -- With an empty family the uncovered set is empty.
+  have hempty :
+      Cover2.uncovered (n := 1) (F := (∅ : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1))) =
+        (∅ : Set (Sigma fun _ : BFunc 1 => Point 1)) := by
+    ext p; constructor
+    · intro hp; cases hp.1
+    · intro hp; cases hp
+  -- Hence `firstUncovered` yields `none`.
+  have hfu : Cover2.firstUncovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) = none :=
+    (Cover2.firstUncovered_none_iff (n := 1)
+        (F := (∅ : BoolFunc.Family 1))
+        (R := (∅ : Finset (Subcube 1)))).2 hempty
+  -- Applying the lemma collapses `μ` to `2 * h`.
+  simpa using
+    (Cover2.mu_of_firstUncovered_none (n := 1)
+        (F := (∅ : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))
+        (h := 0) hfu)
+
 /-- `mu_union_singleton_triple_succ_le` ensures a drop of at least three when
 three distinct pairs are covered. -/
 example :

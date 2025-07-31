@@ -419,6 +419,27 @@ record a minimal API for now. -/
 noncomputable def mu (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) : ℕ :=
   2 * h + (uncovered (n := n) F Rset).toFinset.card
 
+/-!  Basic properties of the measure `μ`. -/
+
+lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    0 ≤ mu (n := n) F h Rset := by
+  -- Since `μ` is a natural number, nonnegativity is immediate.
+  exact Nat.zero_le _
+
+lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    2 * h ≤ mu (n := n) F h Rset := by
+  -- The uncovered cardinality is nonnegative, so `μ` is at least `2 * h`.
+  simpa [mu] using
+    (Nat.le_add_right (2 * h)
+      ((uncovered (n := n) F Rset).toFinset.card))
+
+lemma mu_mono_h {F : Family n} {Rset : Finset (Subcube n)}
+    {h₁ h₂ : ℕ} (hh : h₁ ≤ h₂) :
+    mu (n := n) F h₁ Rset ≤ mu (n := n) F h₂ Rset := by
+  -- Increasing the entropy budget can only increase the measure.
+  dsimp [mu]
+  exact add_le_add (Nat.mul_le_mul_left _ hh) le_rfl
+
 lemma mu_union_singleton_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ} :
     mu (n := n) F h (Rset ∪ {R}) ≤ mu (n := n) F h Rset := by

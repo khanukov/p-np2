@@ -174,6 +174,43 @@ example (R₁ R₂ : Finset (Subcube 1)) :
       (F := {(fun _ : Point 1 => true)})
       (R₁ := R₁) (R₂ := R₂)
 
+/-- `μ` is nonnegative by construction. -/
+example :
+    0 ≤ Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  simpa using
+    Cover2.mu_nonneg
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+
+/-- `μ` always dominates the entropy budget. -/
+example :
+    2 * 0 ≤ Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  simpa using
+    Cover2.mu_lower_bound
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+
+/-- Increasing the entropy budget can only increase `μ`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        1 (∅ : Finset (Subcube 1)) := by
+  simpa using
+    Cover2.mu_mono_h
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1)))
+      (h₁ := 0) (h₂ := 1) (by decide)
+
 /-- Inserting a rectangle never increases the measure `mu`. -/
 example :
     Cover2.mu (n := 1)

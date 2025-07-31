@@ -470,6 +470,45 @@ record a minimal API for now. -/
 noncomputable def mu (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) : ℕ :=
   2 * h + (uncovered (n := n) F Rset).toFinset.card
 
+/-!
+If the measure `μ` equals `2 * h`, then no uncovered pairs remain.
+Consequently all `1`‑inputs of `F` must already be covered by `Rset`.
+-/
+lemma allOnesCovered_of_mu_eq {F : Family n} {Rset : Finset (Subcube n)}
+    {h : ℕ} (hμ : mu (n := n) F h Rset = 2 * h) :
+    AllOnesCovered (n := n) F Rset := by
+  classical
+  -- From the equality on `μ` we deduce that the uncovered set has
+  -- cardinality `0`.
+  have hμ' : 2 * h + (uncovered (n := n) F Rset).toFinset.card =
+      2 * h + 0 := by
+    simpa [mu] using hμ
+  have hcard0 : (uncovered (n := n) F Rset).toFinset.card = 0 :=
+    Nat.add_left_cancel hμ'
+  -- Hence the uncovered set itself is empty.
+  have hset : uncovered (n := n) F Rset =
+      (∅ : Set (Σ f : BFunc n, Point n)) := by
+    classical
+    -- Convert cardinality information into emptiness of the uncovered set.
+    have hfin :
+        (uncovered (n := n) F Rset).toFinset =
+          (∅ : Finset (Σ f : BFunc n, Point n)) :=
+      Finset.card_eq_zero.mp hcard0
+    apply Set.eq_empty_iff_forall_notMem.mpr
+    intro p hp
+    -- Membership in the set contradicts the finset being empty.
+    have hpFin : p ∈ (uncovered (n := n) F Rset).toFinset :=
+      Set.mem_toFinset.mpr hp
+    -- Rewrite using `hfin` and derive a contradiction.
+    rw [hfin] at hpFin
+    cases hpFin
+  -- Conclude by converting the empty uncovered set into coverage.
+  have hfu : firstUncovered (n := n) F Rset = none :=
+    (firstUncovered_none_iff (n := n) (F := F) (R := Rset)).2
+      (by simpa using hset)
+  exact allOnesCovered_of_firstUncovered_none
+      (F := F) (Rset := Rset) hfu
+
 /-!  Basic properties of the measure `μ`. -/
 
 lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :

@@ -781,5 +781,24 @@ example :
       hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
       hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
+/-- `mu_union_buildCover_le` specialises to a reflexive inequality for the
+empty family and entropy budget `0`. -/
+example :
+    Cover2.mu (n := 1) (F := (∅ : BoolFunc.Family 1)) 0
+        ((∅ : Finset (Subcube 1)) ∪
+          Cover2.buildCover (n := 1)
+            (F := (∅ : BoolFunc.Family 1)) (h := 0)
+            (hH := by simpa [BoolFunc.H₂])
+            (Rset := (∅ : Finset (Subcube 1))))
+        ≤ Cover2.mu (n := 1) (F := (∅ : BoolFunc.Family 1)) 0
+          (∅ : Finset (Subcube 1)) := by
+  classical
+  -- With the current stub, `buildCover` returns `∅` so the union is unchanged.
+  simpa using
+    Cover2.mu_union_buildCover_le
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0)
+      (hH := by simpa [BoolFunc.H₂])
+      (Rset := (∅ : Finset (Subcube 1)))
+
 end Cover2Test
 

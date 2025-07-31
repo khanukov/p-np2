@@ -1077,5 +1077,33 @@ lemma mu_union_triple_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     exact this.trans hdrop
   exact Nat.lt_of_succ_le hsucc
 
+/-! ### Placeholder cover construction
+
+The original development defines a sophisticated recursive procedure
+`buildCover`.  In this port we only require a minimal stub returning the
+empty set so that later lemmas depending on its interface can already be
+stated and proved.  The full construction will replace this definition in a
+future update. -/
+
+noncomputable
+def buildCover {n : ℕ} (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
+  (∅ : Finset (Subcube n))
+
+/--  Adding the rectangles produced by `buildCover` cannot increase the
+measure `μ`.  This is a direct consequence of `mu_union_le` since our current
+stub returns an empty set. -/
+lemma mu_union_buildCover_le {n : ℕ} {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
+    mu (n := n) F h
+        (Rset ∪ buildCover (n := n) (F := F) (h := h) hH Rset) ≤
+      mu (n := n) F h Rset := by
+  classical
+  -- Instantiating `mu_union_le` with the result of `buildCover`.
+  simpa [buildCover] using
+    mu_union_le (n := n) (F := F) (h := h) (R₁ := Rset)
+      (R₂ := buildCover (n := n) (F := F) (h := h) hH Rset)
+
 end Cover2
 

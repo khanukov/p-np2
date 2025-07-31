@@ -353,6 +353,22 @@ lemma AllOnesCovered.insert {F : Family n} {Rset : Finset (Subcube n)}
   exact AllOnesCovered.superset (F := F) (R₁ := Rset)
     (R₂ := Insert.insert R Rset) hcov hsub
 
+/-- When the set of rectangles is empty, `AllOnesCovered` simply states that
+no function in the family has a `1`‑input.  This handy characterisation is
+often used to initiate cover constructions. -/
+@[simp] lemma AllOnesCovered.empty {F : Family n} :
+    AllOnesCovered (n := n) F (∅ : Finset (Subcube n)) ↔
+      ∀ f ∈ F, ∀ x, f x = true → False := by
+  classical
+  constructor
+  · intro h f hf x hx
+    rcases h f hf x hx with ⟨R, hR, _⟩
+    -- `R` cannot belong to the empty set.
+    simpa using hR
+  · intro h f hf x hx
+    -- The empty set cannot cover any `1`‑input.
+    exact False.elim (h f hf x hx)
+
 lemma uncovered_eq_empty_of_allCovered {F : Family n}
     {Rset : Finset (Subcube n)}
     (hcov : AllOnesCovered (n := n) F Rset) :

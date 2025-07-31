@@ -1167,6 +1167,27 @@ lemma mu_union_triple_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     exact this.trans hdrop
   exact Nat.lt_of_succ_le hsucc
 
+/-!  If `firstUncovered` returns some pair, then the measure exceeds `2 * h`.
+This witness guarantees that the uncovered set has positive cardinality. -/
+lemma mu_gt_of_firstUncovered_some {F : Family n} {Rset : Finset (Subcube n)}
+    {h : ℕ} (hfu : firstUncovered (n := n) F Rset ≠ none) :
+    2 * h < mu (n := n) F h Rset := by
+  classical
+  -- If `firstUncovered` is nonempty, the uncovered set cannot be empty.
+  have hne : uncovered (n := n) F Rset ≠
+      (∅ : Set (Σ f : BFunc n, Point n)) := by
+    intro hempty
+    have := (firstUncovered_none_iff (n := n) (F := F) (R := Rset)).2 hempty
+    exact hfu this
+  -- Obtain an explicit witness from the nonempty uncovered set.
+  obtain ⟨p, hp⟩ := Set.nonempty_iff_ne_empty.mpr hne
+  -- This ensures the cardinality of the finset is positive.
+  have hpos : 0 < (uncovered (n := n) F Rset).toFinset.card :=
+    Finset.card_pos.mpr ⟨p, by simpa using hp⟩
+  -- Conclude that `μ` exceeds `2 * h` by at least one.
+  have := Nat.lt_add_of_pos_right (n := 2 * h) hpos
+  simpa [mu] using this
+
 /-! ### Coarse bound on the number of uncovered pairs -/
 
 lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :

@@ -30,6 +30,9 @@ original construction.  -/
 
 @[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
+lemma mBound_nonneg (n h : ℕ) : 0 ≤ mBound n h := by
+  exact Nat.zero_le _
+
 lemma numeric_bound (n h : ℕ) (hn : 0 < n) :
     2 * h + n ≤ mBound n h := by
   classical

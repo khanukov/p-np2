@@ -14,7 +14,7 @@ example : mBound 1 0 = 2 := by
 
 /-- `mBound` is nonnegative for all inputs. -/
 example : 0 ≤ mBound 1 0 := by
-  simpa using Cover2.mBound_nonneg (n := 1) (h := 0)
+  exact Cover2.mBound_nonneg (n := 1) (h := 0)
 
 /-- Numeric bound specialised to trivial parameters using the positive version. -/
 example : 2 * 0 + 1 ≤ mBound 1 0 := by

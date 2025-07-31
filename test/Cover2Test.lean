@@ -174,6 +174,21 @@ example (R₁ R₂ : Finset (Subcube 1)) :
       (F := {(fun _ : Point 1 => true)})
       (R₁ := R₁) (R₂ := R₂)
 
+/-- `firstUncovered` returns `none` precisely when the uncovered set is empty. -/
+example :
+    Cover2.firstUncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) = none ↔
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) =
+        (∅ : Set (Sigma (fun _ => Point 1))) := by
+  simpa using
+    (Cover2.firstUncovered_none_iff
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (R := (∅ : Finset (Subcube 1))))
+
 /-- `μ` is nonnegative by construction. -/
 example :
     0 ≤ Cover2.mu (n := 1)

@@ -951,6 +951,32 @@ lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
   have := hrewrite ▸ hmain
   simpa using this
 
+/-- `mu_union_lt` generalises `mu_union_singleton_lt` to an arbitrary set of
+rectangles.  If some uncovered pair of `R₁` is covered by a rectangle from
+`R₂`, then the measure strictly decreases after taking the union. -/
+lemma mu_union_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
+    (hx : ∃ p ∈ uncovered (n := n) F R₁, ∃ R ∈ R₂, p.2 ∈ₛ R) :
+    mu (n := n) F h (R₁ ∪ R₂) < mu (n := n) F h R₁ := by
+  classical
+  rcases hx with ⟨p, hpU, R, hR, hpR⟩
+  -- First insert the specific rectangle that covers `p`.
+  have hx_singleton : ∃ q ∈ uncovered (n := n) F R₁, q.2 ∈ₛ R :=
+    ⟨p, hpU, hpR⟩
+  have hstep :=
+    mu_union_singleton_lt (F := F) (Rset := R₁) (R := R)
+      (h := h) hx_singleton
+  -- Adding more rectangles cannot increase the measure.
+  have hsubset : R₁ ∪ {R} ⊆ R₁ ∪ R₂ := by
+    intro x hx'
+    rcases Finset.mem_union.mp hx' with hx₁ | hx₂
+    · exact Finset.mem_union.mpr <| Or.inl hx₁
+    · rcases Finset.mem_singleton.mp hx₂ with rfl
+      exact Finset.mem_union.mpr <| Or.inr hR
+  have hmono :=
+    mu_mono_subset (F := F) (h := h)
+      (R₁ := R₁ ∪ {R}) (R₂ := R₁ ∪ R₂) hsubset
+  exact lt_of_le_of_lt hmono hstep
+
 /-- `mu_union_double_succ_le` combines the single-rectangle estimate with
 monotonicity.  If some rectangle in `R₂` covers two distinct uncovered pairs of
 `R₁`, then the measure drops by at least two after taking the union. -/

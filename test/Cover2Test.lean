@@ -545,6 +545,39 @@ example :
       (n := 1)
       hsub
 
+/-- `mu_union_lt` strictly decreases the measure when a rectangle from `R₂`
+covers an uncovered pair of `R₁`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun x : Point 1 => x 0)} : BoolFunc.Family 1)
+        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) <
+    Cover2.mu (n := 1)
+        ({(fun x : Point 1 => x 0)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- A single uncovered input for the projection function.
+  let f : BFunc 1 := fun x => x 0
+  let x : Point 1 := fun _ => true
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hxval : f x = true := by simp [f, x]
+  have hnc : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
+    intro R hR; cases hR
+  have hx :
+      ∃ p, p ∈ Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+            (∅ : Finset (Subcube 1)) ∧
+          ∃ R, R ∈ ({Subcube.full (n := 1)} : Finset (Subcube 1)) ∧
+            Boolcube.Subcube.Mem R (p.2) := by
+    refine ⟨⟨f, x⟩, ?_, ?_⟩
+    · exact ⟨hf, hxval, hnc⟩
+    · refine ⟨Subcube.full (n := 1), ?_, ?_⟩
+      · simp
+      · simp [x]
+  simpa using
+    Cover2.mu_union_lt
+      (n := 1) (F := {f})
+      (R₁ := (∅ : Finset (Subcube 1)))
+      (R₂ := {Subcube.full}) (h := 0) hx
+
 /-- `mu_union_singleton_triple_succ_le` ensures a drop of at least three when
 three distinct pairs are covered. -/
 example :

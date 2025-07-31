@@ -723,5 +723,76 @@ example :
       (Rset := (∅ : Finset (Subcube 1)))
       (h := 0)
 
+/-- `mu` collapses to `2*h` once all `1`-inputs are covered. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 ({Subcube.full} : Finset (Subcube 1)) = 2 * 0 := by
+  classical
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) :=
+    Cover2.AllOnesCovered.full _
+  simpa using
+    Cover2.mu_of_allCovered
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (Rset := {Subcube.full})
+      (h := 0)
+      hcov
+
+/-- If `mu` equals `2*h`, coverage follows immediately. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) := by
+  classical
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) :=
+    Cover2.AllOnesCovered.full _
+  have hmu : Cover2.mu (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      0 ({Subcube.full} : Finset (Subcube 1)) = 2 * 0 := by
+    simpa using
+      Cover2.mu_of_allCovered
+        (n := 1)
+        (F := {(fun _ : Point 1 => true)})
+        (Rset := {Subcube.full})
+        (h := 0)
+        hcov
+  simpa using
+    Cover2.allOnesCovered_of_mu_eq
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (Rset := {Subcube.full})
+      (h := 0)
+      hmu
+
+/-- If `firstUncovered` returns a value, the measure strictly exceeds `2*h`. -/
+example :
+    2 * 0 < Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Exhibit a specific uncovered pair.
+  let f : Cover2.BFunc 1 := fun _ => true
+  let x : Point 1 := fun _ => true
+  have hf : f ∈ ({f} : BoolFunc.Family 1) := by simp
+  have hxval : f x = true := by simp [f, x]
+  have hnc : Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x :=
+    by intro R hR; cases hR
+  have hxnon : (Cover2.uncovered (n := 1) ({f} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1))).Nonempty :=
+    ⟨⟨f, x⟩, by simpa [uncovered, hf, hxval, hnc]⟩
+  have hfu : Cover2.firstUncovered (n := 1) ({f} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) ≠ none := by
+    simpa [Cover2.firstUncovered, hxnon]
+  have := Cover2.mu_gt_of_firstUncovered_some
+      (n := 1) (F := {f})
+      (Rset := (∅ : Finset (Subcube 1)))
+      (h := 0) hfu
+  simpa using this
+
 end Cover2Test
 

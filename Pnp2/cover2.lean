@@ -1283,5 +1283,40 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
     exact Nat.zero_le n
   exact hgoal
 
+/--
+A preliminary stub for the cover construction.  For now `buildCover` simply
+returns the accumulated set of rectangles without performing any recursive
+steps.  This suffices for basic cardinality lemmas while the full algorithm is
+being ported from `cover.lean`.
+-/
+noncomputable def buildCover (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
+  Rset
+
+/--
+If the search for an uncovered pair already fails (`firstUncovered = none`),
+`buildCover` immediately returns the existing set of rectangles, whose size is
+assumed to be bounded by `mBound`.
+-/
+lemma buildCover_card_bound_of_none {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    {Rset : Finset (Subcube n)}
+    (hfu : firstUncovered (n := n) F Rset = none)
+    (hcard : Rset.card ≤ mBound n h) :
+    (buildCover (n := n) F h hH Rset).card ≤ mBound n h := by
+  simpa [buildCover] using hcard
+
+/--
+Base case of the size bound: if no uncovered pair exists initially, the
+constructed cover is empty and trivially bounded by `mBound`.
+-/
+lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
+    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+  have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
+  simpa [buildCover] using this
+
 end Cover2
 

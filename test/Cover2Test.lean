@@ -117,6 +117,19 @@ example :
     Cover2.AllOnesCovered.insert (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (Rset := {Subcube.full}) (R := Subcube.full) hcov
 
+/-- Coverage by an empty set of rectangles is equivalent to the absence of
+`1`‑inputs in the family. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) ↔
+    ∀ f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1),
+        ∀ x, f x = true → False := by
+  simpa using
+    (Cover2.AllOnesCovered.empty
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)))
+
 /-- If all `1`-inputs are covered by a single full rectangle, the uncovered set
 is empty. -/
 example :

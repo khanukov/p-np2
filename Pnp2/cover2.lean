@@ -1030,5 +1030,20 @@ lemma mu_union_triple_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     exact this.trans hdrop
   exact Nat.lt_of_succ_le hsucc
 
+lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    0 ≤ mu (n := n) F h Rset := by
+  exact Nat.zero_le _
+
+lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    2 * h ≤ mu (n := n) F h Rset := by
+  simpa [mu] using
+    Nat.le_add_right (2 * h) ((uncovered (n := n) F Rset).toFinset.card)
+
+lemma mu_mono_h {F : Family n} {Rset : Finset (Subcube n)}
+    {h₁ h₂ : ℕ} (hh : h₁ ≤ h₂) :
+    mu (n := n) F h₁ Rset ≤ mu (n := n) F h₂ Rset := by
+  dsimp [mu]
+  exact add_le_add (Nat.mul_le_mul_left _ hh) le_rfl
+
 end Cover2
 

@@ -711,5 +711,17 @@ example :
       hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
       hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
+/-- The measure `mu` always dominates the term `2 * h`. -/
+example :
+    2 * 0 ≤ Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        0 (∅ : Finset (Subcube 1)) := by
+  simpa using
+    Cover2.mu_lower_bound
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (Rset := (∅ : Finset (Subcube 1)))
+      (h := 0)
+
 end Cover2Test
 

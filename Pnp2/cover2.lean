@@ -1319,6 +1319,17 @@ lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
   simpa [buildCover] using this
 
 /--
+`buildCover` (with the current stub implementation) always returns the
+empty set, so its cardinality trivially satisfies the `mBound` bound.
+This lemma mirrors the API of the full development and allows downstream
+files to rely on the bound even before the full recursion is ported. -/
+lemma buildCover_card_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+  have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
+  simpa [buildCover] using this
+
+/--
 `buildCover` always yields a set of rectangles whose cardinality is bounded by
 the universal function `bound_function`.  This is a direct consequence of the
 generic size bound for finite sets of subcubes and does not rely on the

@@ -982,6 +982,9 @@ example :
       hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
       hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
+/-- An empty family of Boolean functions on one variable. -/
+def Fempty : BoolFunc.Family 1 := (∅ : BoolFunc.Family 1)
+
 /-- A single full rectangle still respects the universal cover bound. -/
 def Fsingle : BoolFunc.Family 1 := {fun _ : Point 1 => true}
 
@@ -1108,6 +1111,26 @@ example :
   have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
   simpa [Fsingle] using
     (Cover2.mu_buildCover_le_start (n := 1) (F := Fsingle) (h := 0) hH')
+
+/-- `buildCover_card_bound_lowSens` holds trivially for an empty family. -/
+example (h : ℕ)
+    (hh : Nat.log2 (Nat.succ 1) * Nat.log2 (Nat.succ 1) ≤ h) :
+    (Cover2.buildCover (n := 1) (F := Fempty) (h := h)
+        (by
+          have hH0 : BoolFunc.H₂ Fempty = (0 : ℝ) := by simp [Fempty]
+          have : (0 : ℝ) ≤ (h : ℝ) := by exact_mod_cast Nat.zero_le h
+          simpa [hH0] using this)).card ≤ Cover2.mBound 1 h := by
+  classical
+  -- Provide witnesses for the hypotheses of `buildCover_card_bound_lowSens`.
+  have hH0 : BoolFunc.H₂ Fempty = (0 : ℝ) := by simp [Fempty]
+  have hH : BoolFunc.H₂ Fempty ≤ (h : ℝ) := by
+    simpa [hH0] using (show (0 : ℝ) ≤ (h : ℝ) from by exact_mod_cast Nat.zero_le h)
+  have hs : ∀ f ∈ Fempty, BoolFunc.sensitivity f < Nat.log2 (Nat.succ 1) := by
+    intro f hf; cases hf
+  have hn : 0 < (1 : ℕ) := by decide
+  simpa [Fempty] using
+    (Cover2.buildCover_card_bound_lowSens (n := 1) (F := Fempty)
+      (h := h) hH hs hh hn)
 
 end Cover2Test
 

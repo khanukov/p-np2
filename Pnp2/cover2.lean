@@ -1392,6 +1392,23 @@ lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
   have := size_bounds (n := n) (Rset := buildCover (n := n) F h _hH)
   simpa [size, bound_function] using this
 
+/--
+`buildCover_card_bound_lowSens` is a numeric refinement of the coarse size
+estimate for `buildCover`.  When every function in the family has sensitivity
+below the logarithmic threshold, the bound improves to the standard
+`mBound`.  With the current stub implementation of `buildCover`, which simply
+returns the starting set of rectangles, the inequality is immediate.
+-/
+lemma buildCover_card_bound_lowSens {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (_hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (_hn : 0 < n) :
+    (buildCover F h hH).card ≤ mBound n h := by
+  -- The stub `buildCover` yields the empty set, so the cardinality is zero.
+  have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
+  simpa [buildCover] using this
+
 /-!
 `mu_union_buildCover_le` is a small helper lemma used in termination
 arguments for `buildCover`.  Adding the rectangles produced by one

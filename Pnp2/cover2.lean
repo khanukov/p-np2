@@ -560,10 +560,8 @@ lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
 lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     2 * h ≤ mu (n := n) F h Rset := by
   -- The uncovered cardinality is nonnegative, so `μ` is at least `2 * h`.
-    -- The uncovered cardinality is nonnegative, so `μ` is at least `2 * h`.
-    simpa [mu] using
-      (Nat.le_add_right (2 * h)
-        ((uncovered (n := n) F Rset).toFinset.card))
+    -- `simp` proves the inequality after unfolding `μ`.
+    simp [mu]
 
 lemma mu_mono_h {F : Family n} {Rset : Finset (Subcube n)}
     {h₁ h₂ : ℕ} (hh : h₁ ≤ h₂) :
@@ -739,8 +737,11 @@ lemma mu_union_singleton_double_succ_le {F : Family n} {Rset : Finset (Subcube n
       · have hx' := Finset.mem_singleton.mp hx; simpa [hx'] using hp₂S
     have hcard_pair : ({p₁, p₂} : Finset _).card = 2 := by
       classical
-      simpa using Finset.card_pair (a := p₁) (b := p₂) hne
-    have htwo_aux : 2 ≤ ({p₁, p₂} : Finset _).card := by simpa [hcard_pair]
+      -- Use the dedicated lemma for the cardinality of a pair.
+      exact Finset.card_pair (a := p₁) (b := p₂) hne
+    have htwo_aux : 2 ≤ ({p₁, p₂} : Finset _).card := by
+      -- Rewrite using the computed cardinality.
+      simp [hcard_pair]
     exact le_trans htwo_aux (Finset.card_le_card hsub_pair)
   -- Convert the difference bound into the desired inequality.
   have hdiff := (Nat.le_sub_iff_add_le htwo).mp hcard_final
@@ -872,10 +873,11 @@ lemma mu_union_singleton_triple_succ_le {F : Family n} {Rset : Finset (Subcube n
       have hnot12 : p₁ ≠ p₂ := hne₁₂
       have hnot13 : p₁ ≠ p₃ := hne₁₃
       have hnot23 : p₂ ≠ p₃ := hne₂₃
-      simp [Finset.card_insert_of_notMem, Finset.card_insert_of_mem,
-            hnot12, hnot13, hnot23]
+      -- Remove the unused lemma and simplify.
+      simp [Finset.card_insert_of_notMem, hnot12, hnot13, hnot23]
     have hthree_aux : 3 ≤ ({p₁, p₂, p₃} : Finset _).card := by
-      simpa [hcard_trip]
+      -- Simplify using the computed cardinality.
+      simp [hcard_trip]
     exact hthree_aux.trans (Finset.card_le_card hsub_trip)
   -- Convert the difference bound into the desired inequality.
   have hdiff := (Nat.le_sub_iff_add_le hthree).mp hcard_final
@@ -1018,10 +1020,12 @@ lemma mu_union_singleton_quad_succ_le {F : Family n} {Rset : Finset (Subcube n)}
       have hnot23 : p₂ ≠ p₃ := hne₂₃
       have hnot24 : p₂ ≠ p₄ := hne₂₄
       have hnot34 : p₃ ≠ p₄ := hne₃₄
-      simp [Finset.card_insert_of_notMem, Finset.card_insert_of_mem,
+      -- Omit the unused lemma and simplify.
+      simp [Finset.card_insert_of_notMem,
             hnot12, hnot13, hnot14, hnot23, hnot24, hnot34]
     have hfour_aux : 4 ≤ ({p₁, p₂, p₃, p₄} : Finset _).card := by
-      simpa [hcard_quad]
+      -- Simplify using the established cardinality.
+      simp [hcard_quad]
     exact hfour_aux.trans (Finset.card_le_card hsub_quad)
   -- Convert the difference bound into the desired inequality.
   have hdiff := (Nat.le_sub_iff_add_le hfour).mp hcard_final
@@ -1073,7 +1077,8 @@ lemma mu_mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)} {h : ℕ}
     · constructor
       · intro hxR2
         have hxRdiff : x ∈ R₂ \ R₁ :=
-          Finset.mem_sdiff.mpr ⟨hxR2, by simpa [hx]⟩
+          -- Rewrite membership in the difference using `simp`.
+          Finset.mem_sdiff.mpr ⟨hxR2, by simp [hx]⟩
         exact Finset.mem_union.mpr <| Or.inr hxRdiff
       · intro hxUnion
         rcases Finset.mem_union.mp hxUnion with hx₁ | hx₂
@@ -1298,7 +1303,7 @@ steps.  This suffices for basic cardinality lemmas while the full algorithm is
 being ported from `cover.lean`.
 -/
 noncomputable def buildCover (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
   Rset
 
@@ -1308,11 +1313,11 @@ If the search for an uncovered pair already fails (`firstUncovered = none`),
 assumed to be bounded by `mBound`.
 -/
 lemma buildCover_card_bound_of_none {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     {Rset : Finset (Subcube n)}
-    (hfu : firstUncovered (n := n) F Rset = none)
+    (_hfu : firstUncovered (n := n) F Rset = none)
     (hcard : Rset.card ≤ mBound n h) :
-    (buildCover (n := n) F h hH Rset).card ≤ mBound n h := by
+    (buildCover (n := n) F h _hH Rset).card ≤ mBound n h := by
   simpa [buildCover] using hcard
 
 /--
@@ -1320,9 +1325,9 @@ Base case of the size bound: if no uncovered pair exists initially, the
 constructed cover is empty and trivially bounded by `mBound`.
 -/
 lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
-    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
+    (buildCover (n := n) F h _hH).card ≤ mBound n h := by
   have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
   simpa [buildCover] using this
 
@@ -1332,11 +1337,11 @@ A coarse numeric estimate that bounds the size of the cover directly by
 rectangles is empty, so the claim follows immediately.
 -/
 lemma buildCover_card_linear_bound_base {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
-    (buildCover (n := n) F h hH).card ≤ 2 * h + n := by
-  have hres : buildCover (n := n) F h hH = (∅ : Finset (Subcube n)) := by
-    simpa [buildCover, hfu]
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
+    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
+  have hres : buildCover (n := n) F h _hH = (∅ : Finset (Subcube n)) := by
+    simpa [buildCover, _hfu]
   have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
   simpa [hres] using this
 
@@ -1346,8 +1351,8 @@ fails initially.  Since the stub `buildCover` returns the empty set, the
 result is immediate.
 -/
 lemma buildCover_card_linear_bound {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤ 2 * h + n := by
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
   have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
   simpa [buildCover] using this
 
@@ -1356,10 +1361,10 @@ Rewriting of `buildCover_card_linear_bound` emphasising the initial measure
 `μ = 2 * h + n`.  This variant mirrors the legacy API.
 -/
 lemma buildCover_card_init_mu {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤ 2 * h + n := by
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
   simpa using
-    (buildCover_card_linear_bound (n := n) (F := F) (h := h) hH)
+    (buildCover_card_linear_bound (n := n) (F := F) (h := h) _hH)
 
 /--
 `buildCover` (with the current stub implementation) always returns the
@@ -1367,8 +1372,8 @@ empty set, so its cardinality trivially satisfies the `mBound` bound.
 This lemma mirrors the API of the full development and allows downstream
 files to rely on the bound even before the full recursion is ported. -/
 lemma buildCover_card_bound {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h _hH).card ≤ mBound n h := by
   have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
   simpa [buildCover] using this
 
@@ -1379,12 +1384,12 @@ generic size bound for finite sets of subcubes and does not rely on the
 internal construction of `buildCover`.
 -/
 lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤ bound_function n := by
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h _hH).card ≤ bound_function n := by
   classical
   -- `size_bounds` provides the universal bound for any finite set of
   -- rectangles.  Instantiate it with the set produced by `buildCover`.
-  have := size_bounds (n := n) (Rset := buildCover (n := n) F h hH)
+  have := size_bounds (n := n) (Rset := buildCover (n := n) F h _hH)
   simpa [size, bound_function] using this
 
 /-!

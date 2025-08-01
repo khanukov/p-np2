@@ -21,6 +21,17 @@ open Boolcube (Point Subcube)
 -- Local notation for membership in a subcube of the Boolean cube.
 notation x " ∈ₛ " R => Boolcube.Subcube.Mem R x
 
+-- A rectangle `R` is monochromatic for a family `F` if all functions in `F`
+-- take the same Boolean value on every point of `R`.
+namespace Boolcube
+namespace Subcube
+
+def monochromaticForFamily {n : ℕ} (R : Subcube n) (F : Family n) : Prop :=
+  ∃ b : Bool, ∀ f ∈ F, ∀ {x : Point n}, R.Mem x → f x = b
+
+end Subcube
+end Boolcube
+
 namespace Cover2
 
 /-!  This module will eventually replicate `cover.lean`.  For now we only
@@ -373,6 +384,24 @@ lemma AllOnesCovered.insert {F : Family n} {Rset : Finset (Subcube n)}
     intro S hS; exact Finset.mem_insert.mpr (Or.inr hS)
   exact AllOnesCovered.superset (F := F) (R₁ := Rset)
     (R₂ := Insert.insert R Rset) hcov hsub
+
+/-! ### Monochromaticity utilities -/
+
+lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F) (hsub : R₂ ⊆ R₁) :
+    ∀ R ∈ R₂, Subcube.monochromaticForFamily R F := by
+  intro R hR
+  exact h₁ R (hsub hR)
+
+lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F)
+    (h₂ : ∀ R ∈ R₂, Subcube.monochromaticForFamily R F) :
+    ∀ R ∈ R₁ ∪ R₂, Subcube.monochromaticForFamily R F := by
+  intro R hR
+  classical
+  rcases Finset.mem_union.mp hR with h | h
+  · exact h₁ R h
+  · exact h₂ R h
 
 /-- When the set of rectangles is empty, `AllOnesCovered` simply states that
 no function in the family has a `1`‑input.  This handy characterisation is

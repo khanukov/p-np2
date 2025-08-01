@@ -9,6 +9,9 @@ open Cover2
 
 namespace Cover2Test
 
+/-- A singleton family containing the constant-`true` function. -/
+def Fsingle : BoolFunc.Family 1 := {fun _ : Point 1 => true}
+
 /-- `mBound` is computed via the wrapper definition. -/
 example : mBound 1 0 = 2 := by
   simp [mBound]
@@ -121,6 +124,25 @@ example :
   simpa using
     Cover2.AllOnesCovered.insert (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (Rset := {Subcube.full}) (R := Subcube.full) hcov
+
+/-- The union of two monochromatic rectangle sets remains monochromatic. -/
+example :
+    (∀ R ∈ ({Subcube.full} ∪ {Subcube.full} : Finset (Subcube 1)),
+        Subcube.monochromaticForFamily R Fsingle) := by
+  classical
+  have h1 : ∀ R ∈ ({Subcube.full} : Finset (Subcube 1)),
+      Subcube.monochromaticForFamily R Fsingle := by
+    intro R hR
+    have : R = Subcube.full := by simpa [Finset.mem_singleton] using hR
+    subst this
+    refine ⟨true, ?_⟩
+    intro f hf x hx
+    simp [Fsingle] at hf
+    simpa [Fsingle, hf]
+  have h2 := h1
+  simpa using
+    (Cover2.mono_union (n := 1) (F := Fsingle)
+      (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) h1 h2)
 
 /-- Coverage by an empty set of rectangles is equivalent to the absence of
 `1`‑inputs in the family. -/
@@ -961,10 +983,8 @@ example :
       hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
       hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
-/-- A single full rectangle still respects the universal cover bound. -/
-def Fsingle : BoolFunc.Family 1 := {fun _ : Point 1 => true}
-
-/-- `buildCover_card_bound` applies to the stub `buildCover` construction. -/
+/-- A single full rectangle still respects the universal cover bound.
+    `buildCover_card_bound` applies to the stub `buildCover` construction. -/
 example :
     (Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)
         (by

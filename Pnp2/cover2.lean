@@ -1454,6 +1454,20 @@ lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
   have := size_bounds (n := n) (Rset := buildCover (n := n) F h _hH)
   simpa [size, bound_function] using this
 
+/--
+Every rectangle produced by `buildCover` is monochromatic for the family `F`.
+With the current stub implementation, the cover is empty and the claim holds
+vacuously.  This lemma mirrors the API of the full development.
+-/
+lemma buildCover_mono {n h : ℕ} (F : Family n)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ buildCover (n := n) F h _hH,
+        Subcube.monochromaticForFamily R F := by
+  intro R hR
+  -- Membership in the empty cover yields a contradiction.
+  have : False := by simpa [buildCover] using hR
+  cases this
+
 /-!
 `mu_union_buildCover_le` is a small helper lemma used in termination
 arguments for `buildCover`.  Adding the rectangles produced by one

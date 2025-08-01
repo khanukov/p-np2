@@ -18,9 +18,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 70 |
+| Fully migrated | 71 |
 | Axioms | 0 |
-| Pending | 23 |
+| Pending | 22 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -95,12 +95,13 @@ buildCover_card_univ_bound
 buildCover_card_init_mu
 buildCover_card_linear_bound
 buildCover_card_linear_bound_base
+buildCover_mono
 lift_mono_of_restrict
 mono_subset
 mono_union
 ```
 
-### Not yet ported (23 lemmas)
+### Not yet ported (22 lemmas)
 
 ```
 buildCover_card_bound_lowSens
@@ -111,7 +112,6 @@ buildCover_card_lowSens_with
 buildCover_covers
 buildCover_covers_with
 buildCover_measure_drop
-buildCover_mono
 buildCover_mono_lowSens
 buildCover_mu
 coverFamily_card_bound

@@ -986,5 +986,30 @@ example :
   simpa [Fsingle] using
     (Cover2.buildCover_card_univ_bound (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- `mu_union_buildCover_le` holds for the stub cover construction. -/
+example :
+    Cover2.mu (n := 1) Fsingle 0
+        ((∅ : Finset (Subcube 1)) ∪
+          Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)
+            (by
+              have hcard : Fsingle.card = 1 := by simp [Fsingle]
+              have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+                simpa [hcard] using
+                  (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+              have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+              simpa using hH)
+            (∅ : Finset (Subcube 1)))
+      ≤
+    Cover2.mu (n := 1) Fsingle 0 (∅ : Finset (Subcube 1)) := by
+  -- Reuse the entropy witness and simplify the union.
+  have hcard : Fsingle.card = 1 := by simp [Fsingle]
+  have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+    simpa [hcard] using (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+  have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+  have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
+  simpa [Fsingle] using
+    (Cover2.mu_union_buildCover_le (n := 1) (F := Fsingle) (h := 0)
+      (Rset := (∅ : Finset (Subcube 1))) hH')
+
 end Cover2Test
 

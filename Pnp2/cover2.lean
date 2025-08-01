@@ -1333,5 +1333,21 @@ lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
   have := size_bounds (n := n) (Rset := buildCover (n := n) F h hH)
   simpa [size, bound_function] using this
 
+/-!
+`mu_union_buildCover_le` is a small helper lemma used in termination
+arguments for `buildCover`.  Adding the rectangles produced by one
+step of the construction can only decrease the measure `μ`, since the
+set of uncovered pairs shrinks.  With the current stub implementation of
+`buildCover` this is immediate.
+-/
+lemma mu_union_buildCover_le {F : Family n}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (Rset : Finset (Subcube n)) :
+    mu (n := n) F h (Rset ∪ buildCover F h hH Rset) ≤
+      mu (n := n) F h Rset := by
+  -- `buildCover` currently returns its input set of rectangles, so the union
+  -- collapses to `Rset`.
+  simp [buildCover, mu]
+
 end Cover2
 

@@ -1395,5 +1395,21 @@ lemma mu_union_buildCover_le {F : Family n}
   -- collapses to `Rset`.
   simp [buildCover, mu]
 
+/--
+`mu_buildCover_le_start` is a convenient special case of
+`mu_union_buildCover_le`: starting from the empty set of rectangles, running
+`buildCover` cannot increase the measure `μ`.
+-/
+lemma mu_buildCover_le_start {F : Family n}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    mu (n := n) F h (buildCover (n := n) F h hH) ≤
+      mu (n := n) F h (∅ : Finset (Subcube n)) := by
+  -- Instantiate `mu_union_buildCover_le` with an empty starting set.
+  have :=
+    mu_union_buildCover_le (n := n) (F := F) (h := h) (hH := hH)
+      (Rset := (∅ : Finset (Subcube n)))
+  -- Simplify using the stub definition of `buildCover`.
+  simpa [buildCover] using this
+
 end Cover2
 

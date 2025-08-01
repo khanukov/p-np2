@@ -1318,5 +1318,20 @@ lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
   have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
   simpa [buildCover] using this
 
+/--
+`buildCover` always yields a set of rectangles whose cardinality is bounded by
+the universal function `bound_function`.  This is a direct consequence of the
+generic size bound for finite sets of subcubes and does not rely on the
+internal construction of `buildCover`.
+-/
+lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h hH).card ≤ bound_function n := by
+  classical
+  -- `size_bounds` provides the universal bound for any finite set of
+  -- rectangles.  Instantiate it with the set produced by `buildCover`.
+  have := size_bounds (n := n) (Rset := buildCover (n := n) F h hH)
+  simpa [size, bound_function] using this
+
 end Cover2
 

@@ -58,7 +58,8 @@ example :
   have hcard : ( (∅ : Finset (Subcube 1)).card ) ≤ mBound 1 0 := by
     simp [mBound]
   have hn : 0 < (1 : ℕ) := by decide
-  simpa using
+  -- The goal matches the lemma exactly, so we can use it directly
+  exact
     (card_insert_mBound_succ (n := 1) (h := 0)
       (Rset := (∅ : Finset (Subcube 1))) (R := Subcube.full)
       hcard hn)
@@ -66,7 +67,8 @@ example :
 /-- Nothing is covered by an empty set of rectangles. -/
 example (x : Point 1) :
     Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
-  simpa using Cover2.notCovered_empty (n := 1) (x := x)
+  -- Use the lemma directly instead of `simpa`
+  exact Cover2.notCovered_empty (n := 1) (x := x)
 
 /-- `NotCovered` is monotone under set inclusion. -/
 example (x : Point 1) (R : Subcube 1)
@@ -74,7 +76,8 @@ example (x : Point 1) (R : Subcube 1)
     Cover2.NotCovered (n := 1) (Rset := (∅ : Finset (Subcube 1))) x := by
   have hsub : (∅ : Finset (Subcube 1)) ⊆ {R} := by
     intro r hr; cases hr
-  simpa using
+  -- Again the statement coincides with the lemma, so apply it directly
+  exact
     Cover2.NotCovered.monotone (n := 1) (R₁ := (∅ : Finset (Subcube 1)))
       (R₂ := {R}) hsub hx
 
@@ -97,49 +100,53 @@ example :
     Cover2.AllOnesCovered.full _
   have hsub : ({Subcube.full} : Finset (Subcube 1)) ⊆ {Subcube.full, Subcube.full} := by
     intro R hR
-    simp [Finset.mem_insert, Finset.mem_singleton] at hR
-    simp [Finset.mem_insert, Finset.mem_singleton, hR]
+    -- `Finset.mem_insert` is redundant here; removing it avoids an unused simp argument
+    simp [Finset.mem_singleton] at hR
+    simp [Finset.mem_singleton, hR]
   exact
     Cover2.AllOnesCovered.superset (F := {(fun _ : Point 1 => true)})
       (R₁ := {Subcube.full}) (R₂ := {Subcube.full, Subcube.full})
       hcov hsub
 
 /-- The union of two covers is again a cover. -/
-example :
-    Cover2.AllOnesCovered (n := 1)
-      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-      ({Subcube.full} ∪ {Subcube.full} : Finset (Subcube 1)) := by
-  classical
-  have hcov := Cover2.AllOnesCovered.full
-      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-  simpa using
-    Cover2.AllOnesCovered.union (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) hcov hcov
+  example :
+      Cover2.AllOnesCovered (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        ({Subcube.full} ∪ {Subcube.full} : Finset (Subcube 1)) := by
+    classical
+    have hcov := Cover2.AllOnesCovered.full
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+    -- Apply the union lemma directly
+    exact
+      Cover2.AllOnesCovered.union (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) hcov hcov
 
 /-- Inserting a rectangle preserves coverage. -/
-example :
-    Cover2.AllOnesCovered (n := 1)
-      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-      (insert Subcube.full {Subcube.full} : Finset (Subcube 1)) := by
-  classical
-  have hcov := Cover2.AllOnesCovered.full
-      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-  simpa using
-    Cover2.AllOnesCovered.insert (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (Rset := {Subcube.full}) (R := Subcube.full) hcov
+  example :
+      Cover2.AllOnesCovered (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        (insert Subcube.full {Subcube.full} : Finset (Subcube 1)) := by
+    classical
+    have hcov := Cover2.AllOnesCovered.full
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+    -- The goal is exactly the statement of `AllOnesCovered.insert`
+    exact
+      Cover2.AllOnesCovered.insert (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := {Subcube.full}) (R := Subcube.full) hcov
 
 /-- Coverage by an empty set of rectangles is equivalent to the absence of
 `1`‑inputs in the family. -/
-example :
-    Cover2.AllOnesCovered (n := 1)
-      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-      (∅ : Finset (Subcube 1)) ↔
-    ∀ f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1),
-        ∀ x, f x = true → False := by
-  simpa using
-    (Cover2.AllOnesCovered.empty
-      (n := 1)
-      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)))
+  example :
+      Cover2.AllOnesCovered (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) ↔
+      ∀ f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1),
+          ∀ x, f x = true → False := by
+    -- Use the equivalence lemma directly
+    exact
+      (Cover2.AllOnesCovered.empty
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)))
 
 /-- If all `1`-inputs are covered by a single full rectangle, the uncovered set
 is empty. -/
@@ -214,9 +221,9 @@ example :
 example :
     (Cover2.uncovered (n := 1) (∅ : BoolFunc.Family 1)
         (∅ : Finset (Subcube 1))).toFinset.card ≤ 1 := by
-  have hF : (∅ : BoolFunc.Family 1) = (∅ : BoolFunc.Family 1) := rfl
-  simpa [hF]
-    using Cover2.uncovered_init_bound_empty
+  -- Direct application of the bound for the empty family
+  exact
+    Cover2.uncovered_init_bound_empty
       (n := 1) (F := (∅ : BoolFunc.Family 1)) (hF := rfl)
 
 /-- `firstUncovered` returns `none` precisely when the uncovered set is empty. -/
@@ -228,7 +235,8 @@ example :
       ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
       (∅ : Finset (Subcube 1)) =
         (∅ : Set (Sigma (fun _ => Point 1))) := by
-  simpa using
+  -- Apply the characterisation of `firstUncovered` directly
+  exact
     (Cover2.firstUncovered_none_iff
       (n := 1)
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
@@ -244,6 +252,7 @@ example :
   have hcov : Cover2.AllOnesCovered (n := 1)
       ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
       (∅ : Finset (Subcube 1)) := by
+    -- Use the lemma; `simpa` handles the trivial right-hand side
     simpa using
       (Cover2.AllOnesCovered.empty
         (n := 1)
@@ -264,8 +273,8 @@ example :
         (n := 1)
         (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
         (R := (∅ : Finset (Subcube 1)))).2 huncov
-  -- Invoke the main lemma.
-  simpa using
+  -- Invoke the main lemma directly.
+  exact
     (Cover2.allOnesCovered_of_firstUncovered_none
       (n := 1)
       (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
@@ -280,7 +289,8 @@ example :
       ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
       ({Subcube.full} : Finset (Subcube 1)) :=
     Cover2.AllOnesCovered.full _
-  simpa using
+  -- Apply the lemma directly without `simpa`
+  exact
     Cover2.mu_of_allCovered
       (n := 1)
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
@@ -297,7 +307,8 @@ example :
         (F := (∅ : BoolFunc.Family 1))
         0 (Rset := (∅ : Finset (Subcube 1))) = 2 * 0 := by
     simp [Cover2.mu, Cover2.uncovered, Cover2.NotCovered]
-  simpa using
+  -- Invoke the converse lemma directly
+  exact
     Cover2.allOnesCovered_of_mu_eq
       (n := 1)
       (F := (∅ : BoolFunc.Family 1))
@@ -305,57 +316,61 @@ example :
       (h := 0) hmu
 
 /-- `μ` is nonnegative by construction. -/
-example :
-    0 ≤ Cover2.mu (n := 1)
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-        0 (∅ : Finset (Subcube 1)) := by
-  simpa using
-    Cover2.mu_nonneg
-      (n := 1)
-      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+  example :
+      0 ≤ Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          0 (∅ : Finset (Subcube 1)) := by
+    -- Nonnegativity follows directly from the lemma `mu_nonneg`
+    exact
+      Cover2.mu_nonneg
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1))) (h := 0)
 
 /-- `μ` always dominates the entropy budget. -/
-example :
-    2 * 0 ≤ Cover2.mu (n := 1)
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-        0 (∅ : Finset (Subcube 1)) := by
-  simpa using
-    Cover2.mu_lower_bound
-      (n := 1)
-      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+  example :
+      2 * 0 ≤ Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          0 (∅ : Finset (Subcube 1)) := by
+    -- Apply the lower bound lemma directly
+    exact
+      Cover2.mu_lower_bound
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1))) (h := 0)
 
 /-- Increasing the entropy budget can only increase `μ`. -/
-example :
-    Cover2.mu (n := 1)
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-        0 (∅ : Finset (Subcube 1)) ≤
-    Cover2.mu (n := 1)
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-        1 (∅ : Finset (Subcube 1)) := by
-  simpa using
-    Cover2.mu_mono_h
-      (n := 1)
-      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (Rset := (∅ : Finset (Subcube 1)))
-      (h₁ := 0) (h₂ := 1) (by decide)
+  example :
+      Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          0 (∅ : Finset (Subcube 1)) ≤
+      Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          1 (∅ : Finset (Subcube 1)) := by
+    -- Monotonicity in the entropy budget
+    exact
+      Cover2.mu_mono_h
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))
+        (h₁ := 0) (h₂ := 1) (by decide)
 
 /-- Inserting a rectangle never increases the measure `mu`. -/
-example :
-    Cover2.mu (n := 1)
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-        0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) ≤
-    Cover2.mu (n := 1)
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-        0 (∅ : Finset (Subcube 1)) := by
-  classical
-  simpa using
-    Cover2.mu_union_singleton_le
-      (n := 1)
-      (F := {(fun _ : Point 1 => true)})
-      (Rset := (∅ : Finset (Subcube 1)))
-      (R := Subcube.full) (h := 0)
+  example :
+      Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          0 ((∅ : Finset (Subcube 1)) ∪ {Subcube.full}) ≤
+      Cover2.mu (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          0 (∅ : Finset (Subcube 1)) := by
+    classical
+    -- Direct application of the measure monotonicity lemma
+    exact
+      Cover2.mu_union_singleton_le
+        (n := 1)
+        (F := {(fun _ : Point 1 => true)})
+        (Rset := (∅ : Finset (Subcube 1)))
+        (R := Subcube.full) (h := 0)
 
 /-- Adding a rectangle that covers a new input strictly decreases the measure. -/
 example :

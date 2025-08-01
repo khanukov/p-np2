@@ -1160,6 +1160,36 @@ example :
       (i := 0) (b := true)
       (R := Subcube.fixOne (0 : Fin 1) true) hfix hmono
 
+/-- `lift_mono_of_restrict_fixOne` reuses the fixed-coordinate hypothesis. -/
+example :
+    Subcube.monochromaticForFamily
+      (Subcube.fixOne (0 : Fin 1) true)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+  classical
+  -- The subcube `fixOne` forces coordinate `0` to be `true`.
+  have hfix : ∀ x, (Subcube.fixOne (0 : Fin 1) true).Mem x → x 0 = true := by
+    intro x hx; exact (Subcube.mem_fixOne_iff).1 hx
+  -- The restricted family is monochromatic with colour `true`.
+  have hmono :
+      Subcube.monochromaticForFamily
+        (Subcube.fixOne (0 : Fin 1) true)
+        ((({(fun _ : Point 1 => true)} : BoolFunc.Family 1).restrict (0 : Fin 1) true)) := by
+    refine ⟨true, ?_⟩
+    intro f hf x hx
+    rcases (BoolFunc.Family.mem_restrict.mp hf) with ⟨g, hg, rfl⟩
+    have hgtrue : g = (fun _ : Point 1 => true) := by
+      simpa [Finset.mem_singleton] using hg
+    subst hgtrue
+    simp [BFunc.restrictCoord]
+  -- Apply the packaged lifting lemma.
+  exact
+    Cover2.lift_mono_of_restrict_fixOne
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (i := 0) (b := true)
+      (R := Subcube.fixOne (0 : Fin 1) true)
+      hfix hmono
+
 /-- `mono_subset` preserves monochromaticity under subset inclusion. -/
 example :
     Subcube.monochromaticForFamily Subcube.full

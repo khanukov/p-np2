@@ -1336,6 +1336,18 @@ lemma lift_mono_of_restrict
   exact this
 
 /--
+When a subcube `R` already forces the `i`-th coordinate to be `b`,
+monochromaticity for the restricted family lifts directly to the original
+family.  This variant mirrors `lift_mono_of_restrict` but packages the
+common situation where the fixed-coordinate condition is immediate. -/
+lemma lift_mono_of_restrict_fixOne
+    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
+    (hfix : ∀ x, R.Mem x → x i = b)
+    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
+    Subcube.monochromaticForFamily R F :=
+  lift_mono_of_restrict (F := F) (i := i) (b := b) (R := R) hfix hmono
+
+/--
 Monochromaticity is preserved when restricting to a subset of rectangles.
 If every rectangle in `R₁` is monochromatic for `F` and `R₂ ⊆ R₁`, then every
 rectangle in `R₂` remains monochromatic. -/

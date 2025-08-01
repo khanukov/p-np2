@@ -1138,6 +1138,70 @@ example :
       (i := 0) (b := true)
       (R := Subcube.fixOne (0 : Fin 1) true) hfix hmono
 
+/-- `mono_subset` preserves monochromaticity under subset inclusion. -/
+example :
+    Subcube.monochromaticForFamily Subcube.full
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+  classical
+  -- Each rectangle in `{full}` is monochromatic for the constant family.
+  have h₁ :
+      ∀ R ∈ ({Subcube.full} : Finset (Subcube 1)),
+        Subcube.monochromaticForFamily R
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+    intro R hR
+    have : R = Subcube.full := by simpa [Finset.mem_singleton] using hR
+    subst this
+    refine ⟨true, ?_⟩
+    intro f hf x hx
+    rcases Finset.mem_singleton.mp hf with rfl
+    simp
+  -- Trivial subset relation `{full} ⊆ {full}`.
+  have hsub :
+      ({Subcube.full} : Finset (Subcube 1)) ⊆ {Subcube.full} := by
+    intro R hR; simpa [Finset.mem_singleton] using hR
+  -- Apply the lemma and extract the desired case.
+  have hres :=
+    Cover2.mono_subset
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) h₁ hsub
+  simpa using hres Subcube.full (by simp)
+
+/-- `mono_union` combines two monochromatic collections. -/
+example :
+    Subcube.monochromaticForFamily Subcube.full
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+  classical
+  -- As before, `{full}` is monochromatic for the constant family.
+  have hmono :
+      ∀ R ∈ ({Subcube.full} : Finset (Subcube 1)),
+        Subcube.monochromaticForFamily R
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+    intro R hR
+    have : R = Subcube.full := by simpa [Finset.mem_singleton] using hR
+    subst this
+    refine ⟨true, ?_⟩
+    intro f hf x hx
+    rcases Finset.mem_singleton.mp hf with rfl
+    simp
+  -- The empty set yields a vacuous monochromatic collection.
+  have hmono_empty :
+      ∀ R ∈ (∅ : Finset (Subcube 1)),
+        Subcube.monochromaticForFamily R
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+    intro R hR; cases hR
+  -- Apply the union lemma; the union is `{full}`.
+  have hres :=
+    Cover2.mono_union
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (R₁ := {Subcube.full}) (R₂ := (∅ : Finset (Subcube 1)))
+      hmono hmono_empty
+  have hR :
+      Subcube.full ∈ {Subcube.full} ∪ (∅ : Finset (Subcube 1)) := by
+    simp
+  exact hres Subcube.full hR
+
 
 end Cover2Test
 

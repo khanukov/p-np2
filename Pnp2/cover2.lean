@@ -27,7 +27,7 @@ namespace Boolcube
 namespace Subcube
 
 def monochromaticForFamily {n : ℕ} (R : Subcube n) (F : Family n) : Prop :=
-  ∃ b : Bool, ∀ f ∈ F, ∀ {x : Point n}, R.Mem x → f x = b
+  F.Nonempty ∧ ∃ b : Bool, ∀ f ∈ F, ∀ {x : Point n}, R.Mem x → f x = b
 
 end Subcube
 end Boolcube

@@ -1109,6 +1109,20 @@ example :
   simpa [Fsingle] using
     (Cover2.mu_buildCover_le_start (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
+example :
+    2 * (0 : ℕ) ≤
+      Cover2.mu (n := 1) Fsingle 0 (∅ : Finset (Subcube 1)) := by
+  -- Compute the entropy bound for the single-function family.
+  have hcard : Fsingle.card = 1 := by simp [Fsingle]
+  have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+    simpa [hcard] using (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+  have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+  have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
+  -- Apply the lemma directly.
+  simpa [Fsingle] using
+    (Cover2.buildCover_measure_drop (n := 1) (F := Fsingle) (h := 0) hH')
+
 /-- `buildCover_mono` yields a vacuous monochromaticity condition. -/
 example :
     ∀ R ∈ Cover2.buildCover (n := 1) (F := Fsingle) (h := 0) hH',

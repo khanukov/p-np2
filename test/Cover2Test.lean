@@ -18,32 +18,38 @@ example : 0 ≤ mBound 1 0 := by
   exact Cover2.mBound_nonneg (n := 1) (h := 0)
 
 /-- Numeric bound specialised to trivial parameters using the positive version. -/
-example : 2 * 0 + 1 ≤ mBound 1 0 := by
-  have hn : 0 < (1 : ℕ) := by decide
-  simp [numeric_bound_pos (n := 1) (h := 0) hn]
+  example : 2 * 0 + 1 ≤ mBound 1 0 := by
+    have hn : 0 < (1 : ℕ) := by decide
+    -- Apply the numeric bound directly.
+    exact numeric_bound_pos (n := 1) (h := 0) hn
 
 /-- `numeric_bound_pos` also holds when `n` is strictly positive. -/
-example : 2 * 0 + 2 ≤ mBound 2 0 := by
-  have hn : 0 < (2 : ℕ) := by decide
-  simp [numeric_bound_pos (n := 2) (h := 0) hn]
+  example : 2 * 0 + 2 ≤ mBound 2 0 := by
+    have hn : 0 < (2 : ℕ) := by decide
+    -- Again we apply the lemma directly.
+    exact numeric_bound_pos (n := 2) (h := 0) hn
 
 /-- Doubling the bound for a smaller budget stays below the next budget. -/
-example : 2 * mBound 1 0 ≤ mBound 1 1 := by
-  simpa using two_mul_mBound_le_succ (n := 1) (h := 0)
+  example : 2 * mBound 1 0 ≤ mBound 1 1 := by
+    -- The statement matches `two_mul_mBound_le_succ` exactly.
+    exact two_mul_mBound_le_succ (n := 1) (h := 0)
 
 /-- `pow_le_mBound_simple` for trivial parameters. -/
-example : 1 ≤ mBound 1 0 := by
-  have hn : 0 < (1 : ℕ) := by decide
-  simp [pow_le_mBound_simple (n := 1) (h := 0) hn]
+  example : 1 ≤ mBound 1 0 := by
+    have hn : 0 < (1 : ℕ) := by decide
+    -- Use the lemma directly instead of a `simp` rewrite.
+    exact pow_le_mBound_simple (n := 1) (h := 0) hn
 
 /-- `two_le_mBound` verifies the bound is at least `2`. -/
-example : 2 ≤ mBound 1 0 := by
-  have hn : 0 < (1 : ℕ) := by decide
-  simp [two_le_mBound (n := 1) (h := 0) hn]
+  example : 2 ≤ mBound 1 0 := by
+    have hn : 0 < (1 : ℕ) := by decide
+    -- Applying `two_le_mBound` directly avoids an unused `simp` argument warning.
+    exact two_le_mBound (n := 1) (h := 0) hn
 
 /-- Doubling the bound for `h = 0` stays below the next budget. -/
-example : 2 * mBound 1 0 ≤ mBound 1 1 := by
-  simpa using two_mul_mBound_le_succ (n := 1) (h := 0)
+  example : 2 * mBound 1 0 ≤ mBound 1 1 := by
+    -- As before, use the lemma directly.
+    exact two_mul_mBound_le_succ (n := 1) (h := 0)
 
 /-- Inserting a single rectangle stays within the next budget. -/
 example :

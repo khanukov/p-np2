@@ -39,8 +39,17 @@ lemma two_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ≤ mBound n h := by
   have hpow : 1 ≤ 2 ^ (10 * h) := by
     have hpos : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
     exact Nat.succ_le_of_lt hpos
-  have := Nat.mul_le_mul hfactor hpow
-  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  -- Combine the lower bounds on both factors and shuffle the product into
+  -- the `mBound` shape using a calculation block.  This avoids the linter
+  -- warning about `simpa` while keeping the proof explicit.
+  have hmul := Nat.mul_le_mul hfactor hpow
+  have hmain : 2 ≤ mBound n h := by
+    calc
+      2 ≤ (n * (h + 2)) * 2 ^ (10 * h) := by
+        simpa using hmul
+      _ = mBound n h := by
+        simp [mBound, Nat.mul_comm, Nat.mul_assoc]
+  exact hmain
 
 namespace Cover
 
@@ -79,10 +88,12 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (∀ R ∈ (buildCoverCompute (F := F) (h := h) _hH).toFinset,
         Subcube.monochromaticForFamily R F) ∧
     (buildCoverCompute (F := F) (h := h) _hH).length ≤ mBound n h := by
-  classical
-  constructor
-  · intro R hR; cases hR
-  · simpa [buildCoverCompute] using
-      buildCoverCompute_length (F := F) (h := h) (hH := _hH)
+    classical
+    refine And.intro ?left ?right
+    · intro R hR; cases hR
+    ·
+      -- The stub implementation always returns an empty list, so the goal
+      -- simplifies to `0 ≤ mBound n h`, which holds by `Nat.zero_le`.
+      simp [buildCoverCompute]
 
 end Cover

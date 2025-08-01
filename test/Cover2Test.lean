@@ -964,6 +964,28 @@ example :
 /-- A single full rectangle still respects the universal cover bound. -/
 def Fsingle : BoolFunc.Family 1 := {fun _ : Point 1 => true}
 
+/-- `buildCover_card_bound` applies to the stub `buildCover` construction. -/
+example :
+    (Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)
+        (by
+          -- `Fsingle` has collision entropy zero.
+          have hcard : Fsingle.card = 1 := by simp [Fsingle]
+          have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+            simpa [hcard] using
+              (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+          have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+          have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
+          simpa using hH')).card ≤
+      Cover2.mBound 1 0 := by
+  -- Reuse the entropy witness for the main statement.
+  have hcard : Fsingle.card = 1 := by simp [Fsingle]
+  have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+    simpa [hcard] using (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+  have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+  have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
+  simpa [Fsingle] using
+    (Cover2.buildCover_card_bound (n := 1) (F := Fsingle) (h := 0) hH')
+
 /-- `buildCover_card_univ_bound` applies to the stub `buildCover` construction. -/
 example :
     (Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)

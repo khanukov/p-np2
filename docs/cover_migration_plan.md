@@ -17,9 +17,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 61 |
+| Fully migrated | 62 |
 | Axioms | 0 |
-| Pending | 27 |
+| Pending | 26 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -87,13 +87,13 @@ mu_union_triple_succ_le
 mu_union_buildCover_le
 buildCover_card_bound_base
 buildCover_card_bound_of_none
+buildCover_card_bound
 buildCover_card_univ_bound
 ```
 
-### Not yet ported (27 lemmas)
+### Not yet ported (26 lemmas)
 
 ```
-buildCover_card_bound
 buildCover_card_bound_lowSens
 buildCover_card_bound_lowSens_or
 buildCover_card_bound_lowSens_with

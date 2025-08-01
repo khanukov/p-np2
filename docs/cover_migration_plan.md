@@ -6,10 +6,11 @@ interface for downstream files while gradually re-establishing all results.
 
 ## Overview
 
-* `cover.lean` contains 88 lemmas supporting the recursive construction of a
+* `cover.lean` contains 93 lemmas supporting the recursive construction of a
   rectangular cover.  The file is self‑contained but heavy.
 * `cover2.lean` reintroduces the key numeric definitions and currently provides
-  only a subset of these lemmas.
+  only a subset of these lemmas.  It additionally includes a helper
+  `mBound_nonneg` not present in `cover.lean`.
 * Statements required by other modules are temporarily marked as `axiom` until
 their proofs are ported.
 
@@ -17,9 +18,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 67 |
+| Fully migrated | 68 |
 | Axioms | 0 |
-| Pending | 21 |
+| Pending | 25 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -62,6 +63,7 @@ AllOnesCovered.full
 AllOnesCovered.superset
 AllOnesCovered.union
 AllOnesCovered.insert
+AllOnesCovered.empty
 allOnesCovered_of_firstUncovered_none
 mu_of_allCovered
 allOnesCovered_of_mu_eq
@@ -84,9 +86,9 @@ mu_union_singleton_triple_succ_le
 mu_union_singleton_quad_succ_le
 mu_union_triple_lt
 mu_union_triple_succ_le
-  mu_union_buildCover_le
-  mu_buildCover_le_start
-  buildCover_card_bound_base
+mu_union_buildCover_le
+mu_buildCover_le_start
+buildCover_card_bound_base
 buildCover_card_bound_of_none
 buildCover_card_bound
 buildCover_card_univ_bound
@@ -96,7 +98,7 @@ buildCover_card_linear_bound_base
 lift_mono_of_restrict
 ```
 
-### Not yet ported (21 lemmas)
+### Not yet ported (25 lemmas)
 
 ```
 buildCover_card_bound_lowSens
@@ -110,16 +112,20 @@ buildCover_measure_drop
 buildCover_mono
 buildCover_mono_lowSens
 buildCover_mu
+coverFamily_card_bound
+coverFamily_card_linear_bound
+coverFamily_eq_buildCover
 coverFamily_card_univ_bound
 coverFamily_mono
 coverFamily_spec
 coverFamily_spec_cover
 cover_exists
 lift_mono_of_restrict_fixOne
-  mono_union
-  mu_buildCover_lt_start
-  sunflower_step
-  mu_union_buildCover_lt
+mono_subset
+mono_union
+mu_buildCover_lt_start
+sunflower_step
+mu_union_buildCover_lt
 ```
 
 ## Next steps

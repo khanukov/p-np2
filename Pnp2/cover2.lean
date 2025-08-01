@@ -21,6 +21,17 @@ open Boolcube (Point Subcube)
 -- Local notation for membership in a subcube of the Boolean cube.
 notation x " ∈ₛ " R => Boolcube.Subcube.Mem R x
 
+namespace Boolcube.Subcube
+
+/-- `R` is jointly monochromatic for the family `F` if every function shares a
+constant value on all points of `R`.  This lightweight wrapper mirrors the
+definition from `BoolFunc.lean` for the simplified subcube structure used in
+`cover2`. -/
+def monochromaticForFamily {n : ℕ} (R : Subcube n) (F : BoolFunc.Family n) : Prop :=
+  ∃ b : Bool, ∀ f ∈ F, ∀ x, R.Mem x → f x = b
+
+end Boolcube.Subcube
+
 namespace Cover2
 
 /-!  This module will eventually replicate `cover.lean`.  For now we only
@@ -1295,6 +1306,34 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
     rw [hcard]
     exact Nat.zero_le n
   exact hgoal
+
+/-! ### Lifting monochromaticity from restricted families
+
+If a subcube `R` fixes the `i`-th coordinate to `b`, then a family that is
+monochromatic on the restricted version of `F` is also monochromatic on `F`
+itself.  These helper lemmas mirror their counterparts in `cover.lean` and
+will support the recursion once `buildCover` is fully ported. -/
+
+lemma lift_mono_of_restrict
+    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
+    (hfix : ∀ x, R.Mem x → x i = b)
+    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
+    Subcube.monochromaticForFamily R F := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro f hf x hx
+  have hf0 : f.restrictCoord i b ∈ F.restrict i b :=
+    (BoolFunc.Family.mem_restrict).2 ⟨f, hf, rfl⟩
+  have hxib : x i = b := hfix x hx
+  have hxupdate : BoolFunc.update x i b = x := by
+    funext j; by_cases hji : j = i
+    · subst hji; simp [BoolFunc.update, hxib]
+    · simp [BoolFunc.update, hji]
+  have htmp := hc (f.restrictCoord i b) hf0 x hx
+  have : f x = c := by
+    simpa [BFunc.restrictCoord, hxupdate] using htmp
+  exact this
 
 /--
 A preliminary stub for the cover construction.  For now `buildCover` simply

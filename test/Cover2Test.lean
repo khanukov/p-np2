@@ -1109,5 +1109,35 @@ example :
   simpa [Fsingle] using
     (Cover2.mu_buildCover_le_start (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-/ `lift_mono_of_restrict` lifts monochromaticity from a restricted family. -/
+example :
+    Subcube.monochromaticForFamily
+      (Subcube.fixOne (0 : Fin 1) true)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+  classical
+  -- On this subcube the coordinate is fixed to `true`.
+  have hfix : ∀ x, (Subcube.fixOne (0 : Fin 1) true).Mem x → x (0) = true := by
+    intro x hx; exact (Subcube.mem_fixOne_iff).1 hx
+  -- The restricted family remains monochromatic with colour `true`.
+  have hmono :
+      Subcube.monochromaticForFamily
+        (Subcube.fixOne (0 : Fin 1) true)
+        ((({(fun _ : Point 1 => true)} : BoolFunc.Family 1).restrict (0 : Fin 1) true)) := by
+    refine ⟨true, ?_⟩
+    intro f hf x hx
+    rcases (BoolFunc.Family.mem_restrict.mp hf) with ⟨g, hg, rfl⟩
+    have hgtrue : g = (fun _ : Point 1 => true) := by
+      simpa [Finset.mem_singleton] using hg
+    subst hgtrue
+    simp [BFunc.restrictCoord]
+  -- Apply the lifting lemma.
+  exact
+    Cover2.lift_mono_of_restrict
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (i := 0) (b := true)
+      (R := Subcube.fixOne (0 : Fin 1) true) hfix hmono
+
+
 end Cover2Test
 

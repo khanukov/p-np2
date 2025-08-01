@@ -1109,6 +1109,14 @@ example :
   simpa [Fsingle] using
     (Cover2.mu_buildCover_le_start (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- `buildCover_mono` yields a vacuous monochromaticity condition. -/
+example :
+    ∀ R ∈ Cover2.buildCover (n := 1) (F := Fsingle) (h := 0) hH',
+      Subcube.monochromaticForFamily R Fsingle := by
+  -- Direct application of the lemma.
+  simpa [Fsingle] using
+    (Cover2.buildCover_mono (n := 1) (F := Fsingle) (h := 0) hH')
+
 /-/ `lift_mono_of_restrict` lifts monochromaticity from a restricted family. -/
 example :
     Subcube.monochromaticForFamily

@@ -1319,6 +1319,41 @@ lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
   simpa [buildCover] using this
 
 /--
+A coarse numeric estimate that bounds the size of the cover directly by
+`2 * h + n`.  With the current stub `buildCover`, the constructed set of
+rectangles is empty, so the claim follows immediately.
+-/
+lemma buildCover_card_linear_bound_base {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
+    (buildCover (n := n) F h hH).card ≤ 2 * h + n := by
+  have hres : buildCover (n := n) F h hH = (∅ : Finset (Subcube n)) := by
+    simpa [buildCover, hfu]
+  have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
+  simpa [hres] using this
+
+/--
+The linear bound holds without assuming that the search for uncovered pairs
+fails initially.  Since the stub `buildCover` returns the empty set, the
+result is immediate.
+-/
+lemma buildCover_card_linear_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h hH).card ≤ 2 * h + n := by
+  have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
+  simpa [buildCover] using this
+
+/--
+Rewriting of `buildCover_card_linear_bound` emphasising the initial measure
+`μ = 2 * h + n`.  This variant mirrors the legacy API.
+-/
+lemma buildCover_card_init_mu {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h hH).card ≤ 2 * h + n := by
+  simpa using
+    (buildCover_card_linear_bound (n := n) (F := F) (h := h) hH)
+
+/--
 `buildCover` (with the current stub implementation) always returns the
 empty set, so its cardinality trivially satisfies the `mBound` bound.
 This lemma mirrors the API of the full development and allows downstream

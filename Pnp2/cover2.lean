@@ -1500,5 +1500,19 @@ lemma mu_buildCover_le_start {F : Family n}
   -- Simplify using the stub definition of `buildCover`.
   simpa [buildCover] using this
 
+/--
+`buildCover_measure_drop` bounds the initial measure by `2 * h`.  In the
+current development `buildCover` does not alter the uncovered set, so the
+general lower bound on `μ` suffices.  The statement matches the legacy API
+for downstream compatibility.
+-/
+lemma buildCover_measure_drop {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    2 * h ≤ mu (n := n) F h (∅ : Finset (Subcube n)) := by
+  -- The measure `μ` always dominates `2 * h`, even for the empty rectangle set.
+  simpa using
+    (mu_lower_bound (n := n) (F := F) (h := h)
+      (Rset := (∅ : Finset (Subcube n))))
+
 end Cover2
 

@@ -1007,6 +1007,30 @@ example :
   simpa [Fsingle] using
     (Cover2.buildCover_card_bound (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- `buildCover_mono` holds for the stub cover construction. -/
+example :
+    ∀ R ∈ Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)
+        (by
+          -- `Fsingle` has collision entropy zero.
+          have hcard : Fsingle.card = 1 := by simp [Fsingle]
+          have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+            simpa [hcard] using
+              (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+          have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+          have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by
+            simpa using hH
+          exact hH'),
+      Subcube.monochromaticForFamily R Fsingle := by
+  -- Rebuild the entropy witness for applying the lemma.
+  have hcard : Fsingle.card = 1 := by simp [Fsingle]
+  have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+    simpa [hcard] using
+      (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+  have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+  have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by
+    simpa using hH
+  exact Cover2.buildCover_mono (n := 1) (h := 0) (F := Fsingle) hH'
+
 /-- `buildCover_card_univ_bound` applies to the stub `buildCover` construction. -/
 example :
     (Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)

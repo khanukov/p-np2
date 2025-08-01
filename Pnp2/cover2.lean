@@ -178,7 +178,9 @@ lemma two_mul_mBound_le_succ (n h : ℕ) :
     simp [mBound, pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
   have rhs_eq : n * ((h + 3) * 2 ^ (10 * h + 10)) = mBound n (h + 1) := by
     have : 10 * (h + 1) = 10 * h + 10 := by ring
-    simp [mBound, pow_add, this, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    -- `Nat.mul_left_comm` is unnecessary here; removing it satisfies the
+    -- linter without altering the simplification.
+    simp [mBound, pow_add, this, Nat.mul_comm, Nat.mul_assoc]
   simpa [lhs_eq, rhs_eq] using hmain
 lemma card_union_mBound_succ {n h : ℕ} {R₁ R₂ : Finset (Subcube n)}
     (h₁ : R₁.card ≤ mBound n h) (h₂ : R₂.card ≤ mBound n h) :
@@ -306,13 +308,13 @@ lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂
 /-- The set of all uncovered `1`-inputs (paired with their functions). -/
 @[simp]
 def uncovered (F : Family n) (Rset : Finset (Subcube n)) :
-    Set (Σ f : BFunc n, Point n) :=
+    Set (Σ _ : BFunc n, Point n) :=
   {p | p.1 ∈ F ∧ p.1 p.2 = true ∧ NotCovered (n := n) (Rset := Rset) p.2}
 
 /-- Optionally return the *first* uncovered pair. -/
 noncomputable
 def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) :
-    Option (Σ f : BFunc n, Point n) :=
+    Option (Σ _ : BFunc n, Point n) :=
   if h : (uncovered (n := n) F Rset).Nonempty then
     some h.choose
   else
@@ -321,20 +323,22 @@ def firstUncovered (F : Family n) (Rset : Finset (Subcube n)) :
 @[simp] lemma firstUncovered_none_iff (F : Family n)
     (R : Finset (Subcube n)) :
     firstUncovered (n := n) F R = none ↔
-      uncovered (n := n) F R = (∅ : Set (Σ f : BFunc n, Point n)) := by
+      uncovered (n := n) F R = (∅ : Set (Σ _ : BFunc n, Point n)) := by
   classical
   unfold firstUncovered
   by_cases h : (uncovered (n := n) F R).Nonempty
   ·
     have hne : uncovered (n := n) F R ≠ (∅ : Set _) :=
       Set.nonempty_iff_ne_empty.mp h
-    simp [h, Set.nonempty_iff_ne_empty, hne]
+    -- `h` and `hne` do not contribute to the simplification.
+    simp [Set.nonempty_iff_ne_empty]
   ·
     have hempty : uncovered (n := n) F R = (∅ : Set _) := by
       apply Set.eq_empty_iff_forall_notMem.mpr
       intro p hp
       exact h ⟨p, hp⟩
-    simp [h, Set.nonempty_iff_ne_empty, hempty]
+    -- Again, omit unused arguments from `simp`.
+    simp [Set.nonempty_iff_ne_empty]
 
 
 /-- All `1`-inputs of `F` lie in some rectangle of `Rset`. -/
@@ -356,7 +360,7 @@ lemma AllOnesCovered.superset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   exact ⟨R, hsub hR, hxR⟩
 
 lemma AllOnesCovered.union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
-    (h₁ : AllOnesCovered (n := n) F R₁) (h₂ : AllOnesCovered (n := n) F R₂) :
+    (_h₁ : AllOnesCovered (n := n) F R₁) (h₂ : AllOnesCovered (n := n) F R₂) :
     AllOnesCovered (n := n) F (R₁ ∪ R₂) := by
   intro f hf x hx
   by_cases hx1 : ∃ R ∈ R₁, x ∈ₛ R
@@ -385,7 +389,8 @@ often used to initiate cover constructions. -/
   · intro h f hf x hx
     rcases h f hf x hx with ⟨R, hR, _⟩
     -- `R` cannot belong to the empty set.
-    simpa using hR
+    -- A direct contradiction closes the goal.
+    cases hR
   · intro h f hf x hx
     -- The empty set cannot cover any `1`‑input.
     exact False.elim (h f hf x hx)
@@ -393,7 +398,7 @@ often used to initiate cover constructions. -/
 lemma uncovered_eq_empty_of_allCovered {F : Family n}
     {Rset : Finset (Subcube n)}
     (hcov : AllOnesCovered (n := n) F Rset) :
-    uncovered (n := n) F Rset = (∅ : Set (Σ f : BFunc n, Point n)) := by
+    uncovered (n := n) F Rset = (∅ : Set (Σ _ : BFunc n, Point n)) := by
   classical
   ext p; constructor
   · intro hp
@@ -417,24 +422,22 @@ lemma allOnesCovered_of_firstUncovered_none {F : Family n}
   have hxNC : NotCovered (n := n) (Rset := Rset) x := by
     intro R hR hxR
     exact hxcov ⟨R, hR, hxR⟩
-  have hx_mem' : (⟨f, x⟩ : Σ f : BFunc n, Point n)
+  have hx_mem' : (⟨f, x⟩ : Σ _ : BFunc n, Point n)
       ∈ uncovered (n := n) F Rset := ⟨hf, hx, hxNC⟩
   -- But the uncovered set is empty by assumption.
   have hempty : uncovered (n := n) F Rset =
-      (∅ : Set (Σ f : BFunc n, Point n)) :=
+      (∅ : Set (Σ _ : BFunc n, Point n)) :=
     (firstUncovered_none_iff (n := n) (F := F) (R := Rset)).1 hfu
   -- The assumption gives a witness in the uncovered set, contradicting emptiness.
   have hx_mem : f ∈ F ∧ f x = true ∧ NotCovered (n := n) (Rset := Rset) x :=
     hx_mem'
-  have hx_mem_set : (⟨f, x⟩ : Σ f : BFunc n, Point n)
+  have hx_mem_set : (⟨f, x⟩ : Σ _ : BFunc n, Point n)
       ∈ uncovered (n := n) F Rset := by
     simpa [uncovered] using hx_mem
-  have hx_eq := congrArg (fun s => (⟨f, x⟩ : Σ f : BFunc n, Point n) ∈ s) hempty
-  have hx_empty : (⟨f, x⟩ : Σ f : BFunc n, Point n)
-      ∈ (∅ : Set (Σ f : BFunc n, Point n)) := by
-    have := Eq.mp hx_eq hx_mem_set
-    simpa using this
-  cases hx_empty
+  have hx_eq := congrArg (fun s => (⟨f, x⟩ : Σ _ : BFunc n, Point n) ∈ s) hempty
+  have hx_mem_empty := Eq.mp hx_eq hx_mem_set
+  -- Membership in the empty set yields a contradiction.
+  cases hx_mem_empty
 
 /-!
 `uncovered` is monotone with respect to the set of rectangles.  Adding a new
@@ -481,17 +484,17 @@ then the uncovered set is empty and the measure `μ` collapses to `2 * h`.
     -- Replace the uncovered set by `∅` using the coverage assumption.
     have hzero :
         uncovered (n := n) F Rset =
-          (∅ : Set (Σ f : BFunc n, Point n)) :=
+          (∅ : Set (Σ _ : BFunc n, Point n)) :=
       uncovered_eq_empty_of_allCovered
         (n := n) (F := F) (Rset := Rset) hcov
     -- Unfold `μ` and simplify using the empty uncovered set.
     calc
       mu (n := n) F h Rset
           = 2 * h + (uncovered (n := n) F Rset).toFinset.card := rfl
-      _ = 2 * h + (∅ : Set (Σ f : BFunc n, Point n)).toFinset.card := by
+      _ = 2 * h + (∅ : Set (Σ _ : BFunc n, Point n)).toFinset.card := by
           -- Apply `congrArg` to rewrite the uncovered set using `hzero`.
           have := congrArg
-            (fun s : Set (Σ f : BFunc n, Point n) => 2 * h + s.toFinset.card)
+            (fun s : Set (Σ _ : BFunc n, Point n) => 2 * h + s.toFinset.card)
             hzero
           simpa using this
       _ = 2 * h + 0 := by simp
@@ -525,12 +528,12 @@ lemma allOnesCovered_of_mu_eq {F : Family n} {Rset : Finset (Subcube n)}
     Nat.add_left_cancel hμ'
   -- Hence the uncovered set itself is empty.
   have hset : uncovered (n := n) F Rset =
-      (∅ : Set (Σ f : BFunc n, Point n)) := by
+      (∅ : Set (Σ _ : BFunc n, Point n)) := by
     classical
     -- Convert cardinality information into emptiness of the uncovered set.
     have hfin :
         (uncovered (n := n) F Rset).toFinset =
-          (∅ : Finset (Σ f : BFunc n, Point n)) :=
+          (∅ : Finset (Σ _ : BFunc n, Point n)) :=
       Finset.card_eq_zero.mp hcard0
     apply Set.eq_empty_iff_forall_notMem.mpr
     intro p hp
@@ -557,9 +560,10 @@ lemma mu_nonneg {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
 lemma mu_lower_bound {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
     2 * h ≤ mu (n := n) F h Rset := by
   -- The uncovered cardinality is nonnegative, so `μ` is at least `2 * h`.
-  simpa [mu] using
-    (Nat.le_add_right (2 * h)
-      ((uncovered (n := n) F Rset).toFinset.card))
+    -- The uncovered cardinality is nonnegative, so `μ` is at least `2 * h`.
+    simpa [mu] using
+      (Nat.le_add_right (2 * h)
+        ((uncovered (n := n) F Rset).toFinset.card))
 
 lemma mu_mono_h {F : Family n} {Rset : Finset (Subcube n)}
     {h₁ h₂ : ℕ} (hh : h₁ ≤ h₂) :
@@ -644,9 +648,11 @@ one witness.
 -/
 lemma mu_union_singleton_double_lt {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ : Σ f : BFunc n, Point n}
-    (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
-    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂) :
+      {p₁ p₂ : Σ _ : BFunc n, Point n}
+      (hp₁ : p₁ ∈ uncovered (n := n) F Rset)
+      (_hp₂ : p₂ ∈ uncovered (n := n) F Rset)
+      (hp₁R : p₁.2 ∈ₛ R) (_hp₂R : p₂.2 ∈ₛ R)
+      (_hne : p₁ ≠ p₂) :
     mu (n := n) F h (Rset ∪ {R}) < mu (n := n) F h Rset := by
   classical
   -- It suffices to cover one of the two pairs.
@@ -662,15 +668,15 @@ least two after inserting this rectangle.  This strengthening of
 -/
 lemma mu_union_singleton_double_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ : Σ f : BFunc n, Point n}
+    {p₁ p₂ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
     (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂) :
     mu (n := n) F h (Rset ∪ {R}) + 2 ≤ mu (n := n) F h Rset := by
   classical
   -- Abbreviations for the uncovered sets before and after inserting `R`.
-  let S : Finset (Σ f : BFunc n, Point n) :=
+  let S : Finset (Σ _ : BFunc n, Point n) :=
     (uncovered (n := n) F Rset).toFinset
-  let T : Finset (Σ f : BFunc n, Point n) :=
+  let T : Finset (Σ _ : BFunc n, Point n) :=
     (uncovered (n := n) F (Rset ∪ {R})).toFinset
   -- Adding a rectangle cannot create new uncovered pairs.
   have hsub_main : T ⊆ S := by
@@ -749,11 +755,13 @@ strictly after inserting this rectangle.  The proof reuses the basic
 single-pair inequality on one witness.-/
 lemma mu_union_singleton_triple_lt {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ p₃ : Σ f : BFunc n, Point n}
-    (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
-    (hp₃ : p₃ ∈ uncovered (n := n) F Rset)
-    (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R)
-    (hne₁₂ : p₁ ≠ p₂) (hne₁₃ : p₁ ≠ p₃) (hne₂₃ : p₂ ≠ p₃) :
+      {p₁ p₂ p₃ : Σ _ : BFunc n, Point n}
+      (hp₁ : p₁ ∈ uncovered (n := n) F Rset)
+      (_hp₂ : p₂ ∈ uncovered (n := n) F Rset)
+      (_hp₃ : p₃ ∈ uncovered (n := n) F Rset)
+      (hp₁R : p₁.2 ∈ₛ R)
+      (_hp₂R : p₂.2 ∈ₛ R) (_hp₃R : p₃.2 ∈ₛ R)
+      (_hne₁₂ : p₁ ≠ p₂) (_hne₁₃ : p₁ ≠ p₃) (_hne₂₃ : p₂ ≠ p₃) :
     mu (n := n) F h (Rset ∪ {R}) < mu (n := n) F h Rset := by
   classical
   -- It suffices to cover one of the three pairs.
@@ -767,7 +775,7 @@ measure `μ` by at least three.  This strengthening of
 original `cover` module.-/
 lemma mu_union_singleton_triple_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ p₃ : Σ f : BFunc n, Point n}
+    {p₁ p₂ p₃ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F Rset) (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
     (hp₃ : p₃ ∈ uncovered (n := n) F Rset)
     (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hp₃R : p₃.2 ∈ₛ R)
@@ -775,9 +783,9 @@ lemma mu_union_singleton_triple_succ_le {F : Family n} {Rset : Finset (Subcube n
     mu (n := n) F h (Rset ∪ {R}) + 3 ≤ mu (n := n) F h Rset := by
   classical
   -- Abbreviations for the uncovered sets before and after inserting `R`.
-  let S : Finset (Σ f : BFunc n, Point n) :=
+  let S : Finset (Σ _ : BFunc n, Point n) :=
     (uncovered (n := n) F Rset).toFinset
-  let T : Finset (Σ f : BFunc n, Point n) :=
+  let T : Finset (Σ _ : BFunc n, Point n) :=
     (uncovered (n := n) F (Rset ∪ {R})).toFinset
   -- Adding a rectangle cannot create new uncovered pairs.
   have hsub_main : T ⊆ S := by
@@ -878,7 +886,7 @@ lemma mu_union_singleton_triple_succ_le {F : Family n} {Rset : Finset (Subcube n
 
 lemma mu_union_singleton_quad_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ p₃ p₄ : Σ f : BFunc n, Point n}
+    {p₁ p₂ p₃ p₄ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F Rset)
     (hp₂ : p₂ ∈ uncovered (n := n) F Rset)
     (hp₃ : p₃ ∈ uncovered (n := n) F Rset)
@@ -890,9 +898,9 @@ lemma mu_union_singleton_quad_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     mu (n := n) F h (Rset ∪ {R}) + 4 ≤ mu (n := n) F h Rset := by
   classical
   -- Abbreviations for the uncovered sets before and after inserting `R`.
-  let S : Finset (Σ f : BFunc n, Point n) :=
+  let S : Finset (Σ _ : BFunc n, Point n) :=
     (uncovered (n := n) F Rset).toFinset
-  let T : Finset (Σ f : BFunc n, Point n) :=
+  let T : Finset (Σ _ : BFunc n, Point n) :=
     (uncovered (n := n) F (Rset ∪ {R})).toFinset
   -- Adding a rectangle cannot create new uncovered pairs.
   have hsub_main : T ⊆ S := by
@@ -1110,7 +1118,7 @@ monotonicity.  If some rectangle in `R₂` covers two distinct uncovered pairs o
 `R₁`, then the measure drops by at least two after taking the union. -/
 lemma mu_union_double_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ : Σ f : BFunc n, Point n}
+    {p₁ p₂ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F R₁) (hp₂ : p₂ ∈ uncovered (n := n) F R₁)
     (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂)
     (hmem : R ∈ R₂) :
@@ -1134,7 +1142,7 @@ lemma mu_union_double_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
 /-- `mu_union_double_lt` is the strict version of `mu_union_double_succ_le`. -/
 lemma mu_union_double_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ : Σ f : BFunc n, Point n}
+    {p₁ p₂ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F R₁) (hp₂ : p₂ ∈ uncovered (n := n) F R₁)
     (hp₁R : p₁.2 ∈ₛ R) (hp₂R : p₂.2 ∈ₛ R) (hne : p₁ ≠ p₂)
     (hmem : R ∈ R₂) :
@@ -1156,7 +1164,7 @@ then taking the union with `R₂` decreases the measure by at least three.
 -/
 lemma mu_union_triple_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ p₃ : Σ f : BFunc n, Point n}
+    {p₁ p₂ p₃ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F R₁)
     (hp₂ : p₂ ∈ uncovered (n := n) F R₁)
     (hp₃ : p₃ ∈ uncovered (n := n) F R₁)
@@ -1184,7 +1192,7 @@ lemma mu_union_triple_succ_le {F : Family n} {R₁ R₂ : Finset (Subcube n)}
 /-- `mu_union_triple_lt` is the strict version of `mu_union_triple_succ_le`. -/
 lemma mu_union_triple_lt {F : Family n} {R₁ R₂ : Finset (Subcube n)}
     {R : Subcube n} {h : ℕ}
-    {p₁ p₂ p₃ : Σ f : BFunc n, Point n}
+    {p₁ p₂ p₃ : Σ _ : BFunc n, Point n}
     (hp₁ : p₁ ∈ uncovered (n := n) F R₁)
     (hp₂ : p₂ ∈ uncovered (n := n) F R₁)
     (hp₃ : p₃ ∈ uncovered (n := n) F R₁)
@@ -1213,7 +1221,7 @@ lemma mu_gt_of_firstUncovered_some {F : Family n} {Rset : Finset (Subcube n)}
   classical
   -- If `firstUncovered` is nonempty, the uncovered set cannot be empty.
   have hne : uncovered (n := n) F Rset ≠
-      (∅ : Set (Σ f : BFunc n, Point n)) := by
+      (∅ : Set (Σ _ : BFunc n, Point n)) := by
     intro hempty
     have := (firstUncovered_none_iff (n := n) (F := F) (R := Rset)).2 hempty
     exact hfu this

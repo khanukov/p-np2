@@ -139,10 +139,11 @@ example :
     intro f hf x hx
     simp [Fsingle] at hf
     simpa [Fsingle, hf]
-  have h2 := h1
+  have h2 : ∀ R ∈ (∅ : Finset (Subcube 1)),
+      Subcube.monochromaticForFamily R Fsingle := by simp
   simpa using
     (Cover2.mono_union (n := 1) (F := Fsingle)
-      (R₁ := {Subcube.full}) (R₂ := {Subcube.full}) h1 h2)
+      (R₁ := {Subcube.full}) (R₂ := ∅) h1 h2)
 
 /-- Coverage by an empty set of rectangles is equivalent to the absence of
 `1`‑inputs in the family. -/

@@ -1336,6 +1336,29 @@ lemma lift_mono_of_restrict
   exact this
 
 /--
+Monochromaticity is preserved when restricting to a subset of rectangles.
+If every rectangle in `R₁` is monochromatic for `F` and `R₂ ⊆ R₁`, then every
+rectangle in `R₂` remains monochromatic. -/
+lemma mono_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F)
+    (hsub : R₂ ⊆ R₁) :
+    ∀ R ∈ R₂, Subcube.monochromaticForFamily R F := by
+  intro R hR
+  exact h₁ R (hsub hR)
+
+/--
+The union of two collections of monochromatic rectangles is again a collection
+of monochromatic rectangles. -/
+lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (h₁ : ∀ R ∈ R₁, Subcube.monochromaticForFamily R F)
+    (h₂ : ∀ R ∈ R₂, Subcube.monochromaticForFamily R F) :
+    ∀ R ∈ R₁ ∪ R₂, Subcube.monochromaticForFamily R F := by
+  intro R hR
+  rcases Finset.mem_union.mp hR with h | h
+  · exact h₁ R h
+  · exact h₂ R h
+
+/--
 A preliminary stub for the cover construction.  For now `buildCover` simply
 returns the accumulated set of rectangles without performing any recursive
 steps.  This suffices for basic cardinality lemmas while the full algorithm is

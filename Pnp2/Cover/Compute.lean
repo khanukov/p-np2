@@ -82,7 +82,9 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
   classical
   constructor
   · intro R hR; cases hR
-  · simpa [buildCoverCompute] using
+  ·
+    -- `simp` is sufficient here; no need for the more elaborate `simpa`.
+    simp [buildCoverCompute] using
       buildCoverCompute_length (F := F) (h := h) (hH := _hH)
 
 end Cover

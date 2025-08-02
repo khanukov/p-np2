@@ -19,9 +19,9 @@ their proofs are ported.
 
 | Category | Lemmas |
 |---------|--------|
-| Fully migrated | 84 |
+| Fully migrated | 87 |
 | Axioms | 0 |
-| Pending | 9 |
+| Pending | 6 |
 
 The lists below group the lemmas by status.  Names exactly match those in
 `cover.lean`.
@@ -89,6 +89,9 @@ mu_union_triple_lt
 mu_union_triple_succ_le
 mu_union_buildCover_le
 mu_buildCover_le_start
+buildCover_covers_with
+buildCover_covers
+buildCover_mu
 buildCover_measure_drop
 buildCover_card_bound_base
 buildCover_card_bound_of_none
@@ -115,12 +118,9 @@ coverFamily_card_linear_bound
 coverFamily_card_univ_bound
 ```
 
-### Not yet ported (9 lemmas)
+### Not yet ported (6 lemmas)
 
 ```
-buildCover_covers
-buildCover_covers_with
-buildCover_mu
 coverFamily_spec
 coverFamily_spec_cover
 cover_exists
@@ -138,9 +138,9 @@ mu_union_buildCover_lt
 3. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the
    build and the legacy file will be removed.
 
-Note: `cover2.lean` now contains a weak variant `buildCover_covers_with` that
-assumes the starting rectangle set already covers all `1`-inputs.  The full
-lemma without this hypothesis remains pending.
+Note: `cover2.lean` now contains weak variants `buildCover_covers_with` and
+`buildCover_mu` that assume the starting rectangle set already covers all
+`1`-inputs.  The full lemmas without this hypothesis remain pending.
 
 At this stage the lemma `sunflower_step` still depends on the legacy
 `Subcube` implementation.  To prepare for this port we introduced

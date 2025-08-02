@@ -1417,6 +1417,22 @@ example :
       (h := 0) (hH := by simpa)
       ({Subcube.full} : Finset (Subcube 1)) hcov
 
+/-- For an empty family, `buildCover_mu` collapses the measure to `2 * h`. -/
+example :
+    Cover2.mu (n := 1) (F := (∅ : BoolFunc.Family 1)) 0
+        (Cover2.buildCover (n := 1) (F := (∅ : BoolFunc.Family 1))
+          0 (by simp)) = 0 := by
+  classical
+  -- The empty family vacuously covers all `1`-inputs.
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1)) (∅ : Finset (Subcube 1)) := by
+    intro f hf; cases hf
+  -- Apply the lemma for `buildCover`.
+  simpa using
+    Cover2.buildCover_mu
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0)
+      (hH := by simp) hcov
+
 
 end Cover2Test
 

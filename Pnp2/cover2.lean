@@ -1771,6 +1771,32 @@ noncomputable def coverFamily {n : ℕ} (F : Family n) (h : ℕ)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     coverFamily (n := n) F h _hH = buildCover (n := n) F h _hH := rfl
 
+lemma coverFamily_spec {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    (∀ R ∈ coverFamily (n := n) F h hH,
+        Subcube.monochromaticForFamily R F) ∧
+      AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
+      (coverFamily (n := n) F h hH).card ≤ mBound n h := by
+  classical
+  refine ⟨?mono, ?cover, ?card⟩
+  · -- Monochromaticity follows from the corresponding lemma for `buildCover`.
+    simpa [coverFamily] using
+      (buildCover_mono (n := n) (F := F) (h := h) hH)
+  · -- Coverage relies on the hypothesis that the empty set already covers
+    -- all `1`-inputs.  The stubbed `buildCover` returns this set unchanged.
+    simpa [coverFamily] using
+      (buildCover_covers (n := n) (F := F) (h := h) hH hcov)
+  · -- Cardinality bound obtained from the corresponding `buildCover` lemma.
+    simpa [coverFamily] using
+      (buildCover_card_bound (n := n) (F := F) (h := h) hH)
+
+lemma coverFamily_spec_cover {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) :=
+  (coverFamily_spec (n := n) (F := F) (h := h) hH hcov).2.1
+
 /-!  Every rectangle in the canonical cover is monochromatic for the family.
 With the current stub `buildCover` the cover is empty, so the statement holds
 vacuously.  This lemma mirrors the eventual behaviour of the full

@@ -1691,6 +1691,25 @@ lemma buildCover_covers {n h : ℕ} (F : Family n)
     AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
   simpa [buildCover] using hcov
 
+/--
+`buildCover_mu` collapses the measure to `2 * h` when the empty set already
+covers all `1`-inputs.  This mirrors the behaviour of the eventual cover
+construction.
+-/
+lemma buildCover_mu {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    mu (n := n) F h (buildCover (n := n) F h hH) = 2 * h := by
+  -- `buildCover` returns the empty set, so the coverage hypothesis transfers.
+  have hcov' :
+      AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
+    simpa [buildCover] using
+      (buildCover_covers (n := n) (F := F) (h := h) hH hcov)
+  -- Apply the general lemma characterising covers with measure `2 * h`.
+  simpa [buildCover] using
+    (mu_of_allCovered (n := n) (F := F)
+      (Rset := buildCover (n := n) F h hH) (h := h) hcov')
+
 /-!
 `mu_union_buildCover_le` is a small helper lemma used in termination
 arguments for `buildCover`.  Adding the rectangles produced by one

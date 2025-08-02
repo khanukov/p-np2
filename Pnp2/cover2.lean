@@ -404,6 +404,34 @@ lemma NotCovered.monotone {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂
   intro R hR
   exact hx R (hsub hR)
 
+--!/ A convenient characterisation of uncoveredness for unions of rectangle sets.
+-- Adding more rectangles to the cover can only shrink the set of uncovered
+-- points.  Conversely, to show that a point is uncovered by a union it suffices
+-- to show that it is uncovered by each component separately.
+lemma NotCovered.union {R₁ R₂ : Finset (Subcube n)} {x : Point n} :
+    NotCovered (n := n) (Rset := R₁ ∪ R₂) x ↔
+      NotCovered (n := n) (Rset := R₁) x ∧
+        NotCovered (n := n) (Rset := R₂) x := by
+  classical
+  constructor
+  · intro h
+    refine ⟨?_, ?_⟩
+    · -- Any rectangle from `R₁` is also in the union, hence `x` misses it.
+      intro R hR
+      exact h R (by
+        exact Finset.mem_union.mpr <| Or.inl hR)
+    · -- Symmetric argument for rectangles coming from `R₂`.
+      intro R hR
+      exact h R (by
+        exact Finset.mem_union.mpr <| Or.inr hR)
+  · intro h R hR
+    -- A rectangle in the union lies in either `R₁` or `R₂`, so use the
+    -- corresponding component of the conjunction.
+    have hmem := Finset.mem_union.mp hR
+    cases hmem with
+    | inl hR1 => exact h.1 R hR1
+    | inr hR2 => exact h.2 R hR2
+
 /-! ### Uncovered points and search utilities -/
 
 /-- The set of all uncovered `1`-inputs (paired with their functions). -/

@@ -58,6 +58,20 @@ def fromPoint {n : ℕ} (x : Point n) (K : Finset (Fin n)) : Subcube n :=
     ext i; by_cases hi : i ∈ K <;> simp [hi]
   simpa [hset]
 
+@[simp] lemma mem_fromPoint_subset {n : ℕ} {x : Point n}
+    {K L : Finset (Fin n)} {y : Point n}
+    (hKL : K ⊆ L)
+    (hy : y ∈ₛ fromPoint (n := n) x L) :
+    y ∈ₛ fromPoint (n := n) x K := by
+  classical
+  -- Expand membership of `hy` and restrict it along the subset relation.
+  have hL : ∀ i ∈ L, y i = x i :=
+    (mem_fromPoint (x := x) (K := L) (y := y)).1 hy
+  -- Show membership in the smaller cube using the specialised equality.
+  exact
+    (mem_fromPoint (x := x) (K := K) (y := y)).2
+      (by intro i hiK; exact hL i (hKL hiK))
+
 end Boolcube.Subcube
 
 namespace Cover2

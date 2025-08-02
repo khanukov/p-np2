@@ -1078,6 +1078,19 @@ example {n h : ℕ} (F : BoolFunc.Family n)
   -- Direct application of the lemma suffices.
   exact Cover2.buildCover_card_lowSens (n := n) (F := F) (h := h) hH hs
 
+/-- Supplying an existing set of rectangles still yields the crude
+exponential bound from `buildCover_card_lowSens_with`. -/
+example {n h : ℕ} (F : BoolFunc.Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (Rset : Finset (Subcube n)) :
+    (Cover2.buildCover (n := n) F h hH Rset).card ≤
+      Rset.card +
+        Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  -- Again we simply apply the lemma.
+  exact
+    Cover2.buildCover_card_lowSens_with (n := n) (F := F) (h := h) hH hs Rset
+
 /-- The refined bound `buildCover_card_bound_lowSens` specialises to the stubbed
 cover construction. -/
 example {n h : ℕ} (F : BoolFunc.Family n)

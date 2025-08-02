@@ -1069,6 +1069,15 @@ example :
   simpa [Fsingle] using
     (Cover2.buildCover_card_init_mu (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- Even the specialised low-sensitivity bound holds for the stub cover. -/
+example {n h : ℕ} (F : BoolFunc.Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n)) :
+    (Cover2.buildCover (n := n) F h hH).card ≤
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  -- Direct application of the lemma suffices.
+  exact Cover2.buildCover_card_lowSens (n := n) (F := F) (h := h) hH hs
+
 /-- `mu_union_buildCover_le` holds for the stub cover construction. -/
 example :
     Cover2.mu (n := 1) Fsingle 0

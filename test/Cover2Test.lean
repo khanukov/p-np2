@@ -1235,6 +1235,15 @@ example :
   simpa [Fsingle] using
     (Cover2.mu_buildCover_le_start (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- `mu_buildCover_lt_start` applies to any family once an uncovered pair exists. -/
+example (F : BoolFunc.Family 1)
+    (hH : BoolFunc.H₂ F ≤ ((0 : ℕ) : ℝ))
+    (hfu : Cover2.firstUncovered (n := 1) F (∅ : Finset (Subcube 1)) ≠ none) :
+    Cover2.mu (n := 1) F 0
+        (Cover2.buildCover (n := 1) (F := F) (h := 0) hH)
+        ≤ Cover2.mu (n := 1) F 0 (∅ : Finset (Subcube 1)) :=
+  Cover2.mu_buildCover_lt_start (n := 1) (F := F) (h := 0) hH hfu
+
 /-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
 example :
     2 * (0 : ℕ) ≤

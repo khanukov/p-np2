@@ -192,6 +192,20 @@ example (R₁ R₂ : Finset (Subcube 1)) :
       (F := {(fun _ : Point 1 => true)})
       (R₁ := R₁) (R₂ := R₂)
 
+/-- The uncovered set shrinks when enlarging the rectangle collection. -/
+example (R₁ R₂ : Finset (Subcube 1))
+    (hsub : R₁ ⊆ R₂) :
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) R₂ ⊆
+    Cover2.uncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) R₁ := by
+  classical
+  exact
+    Cover2.uncovered_subset
+      (n := 1)
+      (F := {(fun _ : Point 1 => true)})
+      (R₁ := R₁) (R₂ := R₂) hsub
+
 /-- The coarse cardinality bound on uncovered pairs. -/
 example :
     (Cover2.uncovered (n := 1)

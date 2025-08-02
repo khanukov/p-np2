@@ -9,8 +9,9 @@ interface for downstream files while gradually re-establishing all results.
 * `cover.lean` contains 93 lemmas supporting the recursive construction of a
   rectangular cover.  The file is self‑contained but heavy.
 * `cover2.lean` reintroduces the key numeric definitions and currently provides
-  only a subset of these lemmas.  It additionally includes a helper
-  `mBound_nonneg` not present in `cover.lean`.
+  only a subset of these lemmas.  It additionally includes helpers such as
+  `mBound_nonneg` and the monotonicity lemma `uncovered_subset` not present in
+  `cover.lean`.
 * Statements required by other modules are temporarily marked as `axiom` until
 their proofs are ported.
 

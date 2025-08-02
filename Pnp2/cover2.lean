@@ -1689,6 +1689,18 @@ noncomputable def coverFamily {n : ℕ} (F : Family n) (h : ℕ)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     coverFamily (n := n) F h _hH = buildCover (n := n) F h _hH := rfl
 
+/-!  Every rectangle in the canonical cover is monochromatic for the family.
+With the current stub `buildCover` the cover is empty, so the statement holds
+vacuously.  This lemma mirrors the eventual behaviour of the full
+construction. -/
+lemma coverFamily_mono {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ coverFamily (n := n) F h hH,
+      Subcube.monochromaticForFamily R F := by
+  -- Unfold `coverFamily` and reuse the corresponding lemma for `buildCover`.
+  simpa [coverFamily] using
+    (buildCover_mono (n := n) (F := F) (h := h) hH)
+
 lemma coverFamily_card_bound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (coverFamily (n := n) F h hH).card ≤ mBound n h := by

@@ -1483,6 +1483,38 @@ lemma buildCover_card_lowSens {n h : ℕ} (F : Family n)
   simpa [buildCover] using this
 
 /--
+`buildCover_card_bound_lowSens` upgrades the crude exponential bound from
+`buildCover_card_lowSens` to the standard `mBound` function whenever the
+logarithmic threshold `Nat.log2 (n + 1)^2` is at most the entropy budget `h`.
+This mirrors the corresponding lemma in `cover.lean` but is trivial for the
+stubbed `buildCover`.
+-/
+lemma buildCover_card_bound_lowSens {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) :
+    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+  classical
+  -- Start with the exponential estimate from `buildCover_card_lowSens`.
+  have hcard : (buildCover (n := n) F h hH).card ≤
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+    buildCover_card_lowSens (n := n) (F := F) (h := h) hH hs
+  -- Compare the exponents `10 * log₂(n+1)^2` and `10 * h`.
+  have hexp_mul :
+      10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ 10 * h := by
+    have := Nat.mul_le_mul_left 10 hh
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hpow :
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) ≤
+        Nat.pow 2 (10 * h) :=
+    Nat.pow_le_pow_of_le_right (by decide : 0 < (2 : ℕ)) hexp_mul
+  -- Combine with the main bound `pow_le_mBound`.
+  have hbig := hcard.trans hpow
+  have hbound := hbig.trans (pow_le_mBound (n := n) (h := h) hn)
+  simpa using hbound
+
+/--
 Every rectangle produced by `buildCover` is monochromatic for the family `F`.
 With the current stub implementation, the cover is empty and the claim holds
 vacuously.  This lemma mirrors the API of the full development.

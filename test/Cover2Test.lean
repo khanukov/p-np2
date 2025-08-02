@@ -1078,6 +1078,19 @@ example {n h : ℕ} (F : BoolFunc.Family n)
   -- Direct application of the lemma suffices.
   exact Cover2.buildCover_card_lowSens (n := n) (F := F) (h := h) hH hs
 
+/-- The refined bound `buildCover_card_bound_lowSens` specialises to the stubbed
+cover construction. -/
+example {n h : ℕ} (F : BoolFunc.Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) :
+    (Cover2.buildCover (n := n) F h hH).card ≤ Cover2.mBound n h := by
+  -- The lemma applies directly with the given hypotheses.
+  exact
+    Cover2.buildCover_card_bound_lowSens (n := n) (F := F) (h := h)
+      hH hs hh hn
+
 /-- `mu_union_buildCover_le` holds for the stub cover construction. -/
 example :
     Cover2.mu (n := 1) Fsingle 0

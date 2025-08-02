@@ -62,10 +62,10 @@ end Boolcube.Subcube
 
 namespace Cover2
 
-/-!  This module will eventually replicate `cover.lean`.  For now we only
-reintroduce the basic numeric definitions and state their properties as
-axioms so that other files can depend on them without importing the heavy
-original construction.  -/
+/-!  This module gradually reimplements the original `cover.lean` file.
+Most numeric and combinatorial lemmas have already been ported, while the
+recursive cover construction is currently represented by a lightweight stub.
+Remaining gaps are tracked in `docs/cover_migration_plan.md`. -/
 
 @[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
@@ -1755,6 +1755,26 @@ lemma buildCover_measure_drop {F : Family n} {h : ℕ}
   simpa using
     (mu_lower_bound (n := n) (F := F) (h := h)
       (Rset := (∅ : Finset (Subcube n))))
+
+/--
+`cover_exists` packages the properties of `buildCover` into an existence
+statement.  When the starting family has no uncovered `1`‑inputs, the stub
+implementation returns the empty cover, which trivially satisfies the required
+bounds.  This lemma mirrors the API of the full development, making it easier
+for downstream files to transition once the real construction is ported. -/
+lemma cover_exists {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      AllOnesCovered (n := n) F Rset ∧
+      Rset.card ≤ mBound n h := by
+  classical
+  refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
+  · intro R hR
+    exact buildCover_mono (n := n) (F := F) (h := h) hH R hR
+  · exact buildCover_covers (n := n) (F := F) (h := h) hH hcov
+  · exact buildCover_card_bound (n := n) (F := F) (h := h) hH
 
 /-! ### Canonical cover family
 

@@ -74,6 +74,54 @@ def fromPoint {n : ℕ} (x : Point n) (K : Finset (Fin n)) : Subcube n :=
 
 end Boolcube.Subcube
 
+--! ### Bridging the legacy `BoolFunc.Subcube` with the simplified `Boolcube.Subcube`
+
+namespace BoolFunc.Subcube
+
+/-- Convert an old-style subcube (specified by a set of fixed coordinates and
+their Boolean values) into the simplified `Boolcube.Subcube` representation
+used in `cover2`.  Each coordinate in `idx` becomes a fixed bit in the
+resulting cube, while all other coordinates remain free. -/
+def toCube {n : ℕ} (R : Subcube n) : Boolcube.Subcube n :=
+  ⟨fun i => if h : i ∈ R.idx then some (R.val i h) else none⟩
+
+/-- Membership in the converted cube coincides with membership in the original
+subcube. -/
+lemma mem_toCube {n : ℕ} (R : Subcube n) (x : Boolcube.Point n) :
+    Boolcube.Subcube.Mem (toCube (n := n) R) x ↔ Subcube.mem (n := n) R x := by
+  classical
+  unfold toCube Boolcube.Subcube.Mem Subcube.mem
+  constructor
+  · intro h i hi
+    have hx := h i
+    -- The `if` branch collapses using the membership assumption `hi`.
+    simpa [hi] using hx
+  · intro h i
+    by_cases hi : i ∈ R.idx
+    · have hx := h i hi
+      simpa [hi, hx]
+    · -- Outside the fixed coordinates the membership predicate is trivially
+      -- satisfied.
+      simpa [hi]
+
+/-- The dimension of the converted cube matches that of the original
+subcube. -/
+lemma dim_toCube {n : ℕ} (R : Subcube n) :
+    (toCube (n := n) R).dim = Subcube.dimension (n := n) R := by
+  classical
+  unfold toCube Boolcube.Subcube.dim Boolcube.Subcube.support
+  unfold Subcube.dimension
+  -- The support of `toCube R` is exactly the set of fixed coordinates `R.idx`.
+  have hset :
+      Finset.univ.filter
+          (fun i : Fin n =>
+            (if h : i ∈ R.idx then some (R.val i h) else none).isSome)
+          = R.idx := by
+    ext i; by_cases hi : i ∈ R.idx <;> simp [hi]
+  simpa [hset]
+
+end BoolFunc.Subcube
+
 namespace Cover2
 
 /-!  This module gradually reimplements the original `cover.lean` file.
@@ -1357,6 +1405,22 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
     rw [hcard]
     exact Nat.zero_le n
   exact hgoal
+
+/--
+`sunflower_step` is currently assumed as an axiom in `cover2`.  It matches the
+combinatorial statement from the legacy development: whenever all functions in
+`F` have the same positive support size `p` and the family of supports is
+large, there exists a subcube `R` of positive dimension such that at least
+`t` functions are constantly `true` on `R`.
+-/
+axiom sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
+    (hp : 0 < p) (ht : 2 ≤ t)
+    (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
+    (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p) :
+    ∃ (R : Boolcube.Subcube n),
+      ((F.filter fun f => ∀ x : Boolcube.Point n,
+          Boolcube.Subcube.Mem R x → f x = true).card ≥ t) ∧
+      1 ≤ Boolcube.Subcube.dim R
 
 /-! ### Lifting monochromaticity from restricted families
 

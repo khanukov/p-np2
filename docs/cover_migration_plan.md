@@ -138,6 +138,10 @@ mu_union_buildCover_lt
 3. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the
    build and the legacy file will be removed.
 
+Note: `cover2.lean` now contains a weak variant `buildCover_covers_with` that
+assumes the starting rectangle set already covers all `1`-inputs.  The full
+lemma without this hypothesis remains pending.
+
 At this stage the lemma `sunflower_step` still depends on the legacy
 `Subcube` implementation.  To prepare for this port we introduced
 `Boolcube.Subcube.fromPoint` together with basic lemmas on membership and

@@ -1665,6 +1665,32 @@ lemma buildCover_mono {n h : ℕ} (F : Family n)
   have : False := by simpa [buildCover] using hR
   cases this
 
+/--
+If the starting set of rectangles already covers all `1`-inputs of the
+family `F`, then adding the (currently empty) result of `buildCover`
+preserves this property.  This weak variant mirrors the intended lemma
+from `cover.lean` and will be strengthened once the full construction is
+ported.
+-/
+lemma buildCover_covers_with {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n))
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    AllOnesCovered (n := n) F
+      (Rset ∪ buildCover (n := n) F h hH Rset) := by
+  -- `buildCover` returns `Rset`, so the union does not change the set of
+  -- rectangles.  The coverage hypothesis therefore transfers directly.
+  simpa [buildCover] using hcov
+
+/--
+Special case of `buildCover_covers_with` starting from the empty set of
+rectangles.
+-/
+lemma buildCover_covers {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
+  simpa [buildCover] using hcov
+
 /-!
 `mu_union_buildCover_le` is a small helper lemma used in termination
 arguments for `buildCover`.  Adding the rectangles produced by one

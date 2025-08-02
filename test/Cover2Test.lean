@@ -1394,6 +1394,29 @@ example :
     Cover2.buildCover_mono_lowSens
       (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0) (by simpa) hs
 
+/-- A starting cover that already covers all `1`-inputs remains a cover after
+adding the (empty) result of `buildCover`. -/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      (({Subcube.full} : Finset (Subcube 1)) ∪
+        Cover2.buildCover (n := 1)
+          (F := (∅ : BoolFunc.Family 1)) 0 (by simpa)
+          ({Subcube.full} : Finset (Subcube 1))) := by
+  classical
+  -- The initial set `{full}` trivially covers the empty family.
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      ({Subcube.full} : Finset (Subcube 1)) := by
+    intro f hf; cases hf
+  -- Applying `buildCover_covers_with` leaves the coverage unchanged.
+  simpa using
+    Cover2.buildCover_covers_with
+      (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      (h := 0) (hH := by simpa)
+      ({Subcube.full} : Finset (Subcube 1)) hcov
+
 
 end Cover2Test
 

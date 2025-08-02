@@ -35,10 +35,17 @@ example : 0 ≤ mBound 1 0 := by
     exact two_mul_mBound_le_succ (n := 1) (h := 0)
 
 /-- `pow_le_mBound_simple` for trivial parameters. -/
-  example : 1 ≤ mBound 1 0 := by
+example : 1 ≤ mBound 1 0 := by
     have hn : 0 < (1 : ℕ) := by decide
     -- Use the lemma directly instead of a `simp` rewrite.
     exact pow_le_mBound_simple (n := 1) (h := 0) hn
+
+/-- Freezing a coordinate with `fromPoint` fixes membership. -/
+example :
+    (Subcube.fromPoint (n := 1) (fun _ : Fin 1 => true) (∅ : Finset (Fin 1))).Mem
+      (fun _ : Fin 1 => true) := by
+  simp [Subcube.fromPoint]
+
 
 /-- `two_le_mBound` verifies the bound is at least `2`. -/
   example : 2 ≤ mBound 1 0 := by

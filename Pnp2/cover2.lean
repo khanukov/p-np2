@@ -30,6 +30,34 @@ definition from `BoolFunc.lean` for the simplified subcube structure used in
 def monochromaticForFamily {n : ℕ} (R : Subcube n) (F : BoolFunc.Family n) : Prop :=
   ∃ b : Bool, ∀ f ∈ F, ∀ x, R.Mem x → f x = b
 
+/-- Construct a subcube by freezing the coordinates in `K` to match the base point `x`. -/
+def fromPoint {n : ℕ} (x : Point n) (K : Finset (Fin n)) : Subcube n :=
+  ⟨fun i => if h : i ∈ K then some (x i) else none⟩
+
+@[simp] lemma mem_fromPoint {n : ℕ} {x : Point n} {K : Finset (Fin n)} {y : Point n} :
+    Mem (fromPoint (n := n) x K) y ↔ ∀ i ∈ K, y i = x i := by
+  classical
+  unfold fromPoint Mem
+  constructor
+  · intro h i hi
+    have := h i
+    simpa [hi] using this
+  · intro h i
+    by_cases hiK : i ∈ K
+    · have hx := h i hiK
+      simpa [fromPoint, hiK] using hx
+    · simp [fromPoint, hiK]
+
+@[simp] lemma dim_fromPoint {n : ℕ} {x : Point n} {K : Finset (Fin n)} :
+    (fromPoint (n := n) x K).dim = n - K.card := by
+  classical
+  unfold fromPoint dim support
+  have hset :
+      Finset.univ.filter (fun i : Fin n =>
+        (if h : i ∈ K then some (x i) else none).isSome) = K := by
+    ext i; by_cases hi : i ∈ K <;> simp [hi]
+  simpa [hset]
+
 end Boolcube.Subcube
 
 namespace Cover2

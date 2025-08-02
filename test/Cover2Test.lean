@@ -1104,6 +1104,18 @@ example {n h : ℕ} (F : BoolFunc.Family n)
     Cover2.buildCover_card_bound_lowSens (n := n) (F := F) (h := h)
       hH hs hh hn
 
+/-- Even without assuming a sensitivity bound, the trivial inequality
+`buildCover_card_bound_lowSens_or` holds for the stubbed cover. -/
+example {n h : ℕ} (F : BoolFunc.Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) :
+    (Cover2.buildCover (n := n) F h hH).card ≤ Cover2.mBound n h := by
+  -- Direct application of the lemma suffices.
+  exact
+    Cover2.buildCover_card_bound_lowSens_or
+      (n := n) (h := h) (F := F) hH hh hn
+
 /-- `mu_union_buildCover_le` holds for the stub cover construction. -/
 example :
     Cover2.mu (n := 1) Fsingle 0

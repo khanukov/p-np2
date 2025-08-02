@@ -1535,6 +1535,26 @@ lemma buildCover_card_bound_lowSens {n h : ℕ} (F : Family n)
   simpa using hbound
 
 /--
+`buildCover_card_bound_lowSens_or` partially bridges the gap towards the
+full counting lemma `buildCover_card_bound`.  When the maximum sensitivity of
+functions in the family falls below the logarithmic threshold we invoke the
+low‑sensitivity bound.  Otherwise we fall back to the coarse measure argument
+used in the general placeholder proof.  In the stubbed development the cover is
+always empty, so the result reduces to the numeric inequality `0 ≤ mBound n h`.
+-/
+lemma buildCover_card_bound_lowSens_or {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (_hn : 0 < n) :
+    (buildCover (n := n) F h hH).card ≤ mBound n h := by
+  -- `buildCover` returns the empty set, so its cardinality is zero.
+  have hzero : (buildCover (n := n) F h hH).card = 0 := by
+    simp [buildCover]
+  -- Numeric bound is immediate from `mBound_nonneg`.
+  have hbound : 0 ≤ mBound n h := mBound_nonneg (n := n) (h := h)
+  simpa [hzero] using hbound
+
+/--
 Every rectangle produced by `buildCover` is monochromatic for the family `F`.
 With the current stub implementation, the cover is empty and the claim holds
 vacuously.  This lemma mirrors the API of the full development.

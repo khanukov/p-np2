@@ -137,3 +137,7 @@ mu_union_buildCover_lt
    replacing each remaining axiom with its full proof.
 3. Once all lemmas are available, `cover2.lean` can replace `cover.lean` in the
    build and the legacy file will be removed.
+
+At this stage the lemma `sunflower_step` still depends on the legacy
+`Subcube` implementation.  Porting it requires reconciling this structure
+with the simplified `Boolcube.Subcube` used throughout `cover2.lean`.

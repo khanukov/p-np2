@@ -1433,6 +1433,26 @@ example :
       (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0)
       (hH := by simp) hcov
 
+/-- `cover_exists` constructs a cover when the family has no `1`‑inputs. -/
+example :
+    ∃ Rset : Finset (Subcube 1),
+      Rset.card ≤ mBound 1 0 := by
+  classical
+  -- Family consisting of the constant false function.
+  let F : BoolFunc.Family 1 := { (fun _ : Point 1 => false) }
+  have hcard : F.card = 1 := by simp [F]
+  have hH : BoolFunc.H₂ F ≤ (0 : ℝ) := by
+    simp [BoolFunc.H₂, hcard]
+  have hcov : Cover2.AllOnesCovered (n := 1) F (∅ : Finset (Subcube 1)) := by
+    intro f hf x hx
+    have hf' : f = (fun _ : Point 1 => false) := by simpa [F] using hf
+    have : False := by simpa [hf'] using hx
+    exact this.elim
+  obtain ⟨Rset, _, _, hbound⟩ :=
+    Cover2.cover_exists (n := 1) (F := F) (h := 0)
+      (hH := by simpa using hH) (hcov := hcov)
+  exact ⟨Rset, hbound⟩
+
 
 end Cover2Test
 

@@ -139,5 +139,8 @@ mu_union_buildCover_lt
    build and the legacy file will be removed.
 
 At this stage the lemma `sunflower_step` still depends on the legacy
-`Subcube` implementation.  Porting it requires reconciling this structure
-with the simplified `Boolcube.Subcube` used throughout `cover2.lean`.
+`Subcube` implementation.  To prepare for this port we introduced
+`Boolcube.Subcube.fromPoint` together with basic lemmas on membership and
+dimension, but the full `sunflower_step` proof remains pending.  Completing the
+lemma still requires reconciling the classical argument with the simplified
+subcube structure used throughout `cover2.lean`.

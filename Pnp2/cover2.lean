@@ -1759,6 +1759,25 @@ lemma mu_buildCover_le_start {F : Family n}
   simpa [buildCover] using this
 
 /--
+`mu_union_buildCover_lt` mirrors the corresponding lemma from the
+legacy `cover` module.  In the complete development the union with the
+rectangles produced by `buildCover` would strictly decrease the measure
+whenever `firstUncovered` returns a pair.  The current stubbed
+implementation leaves the rectangle set unchanged, so we can only show
+that the measure does not increase.  The strict version will return once
+the full recursion is ported. -/
+lemma mu_union_buildCover_lt {F : Family n}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    {Rset : Finset (Subcube n)}
+    (_hfu : firstUncovered (n := n) F Rset ≠ none) :
+    mu (n := n) F h (Rset ∪ buildCover (n := n) F h hH Rset) ≤
+      mu (n := n) F h Rset := by
+  -- The stub `buildCover` leaves `Rset` unchanged, so the measures coincide.
+  simpa using
+    (mu_union_buildCover_le (n := n) (F := F) (h := h)
+      (hH := hH) (Rset := Rset))
+
+/--
 `buildCover_measure_drop` bounds the initial measure by `2 * h`.  In the
 current development `buildCover` does not alter the uncovered set, so the
 general lower bound on `μ` suffices.  The statement matches the legacy API

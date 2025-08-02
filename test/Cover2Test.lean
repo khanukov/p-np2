@@ -1126,6 +1126,20 @@ example {n h : ℕ} (F : BoolFunc.Family n)
     Cover2.buildCover_card_bound_lowSens (n := n) (F := F) (h := h)
       hH hs hh hn
 
+/-- `buildCover_card_bound_lowSens_with` for the stubbed cover construction. -/
+example {n h : ℕ} (F : BoolFunc.Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) (Rset : Finset (Subcube n))
+    (hcard : Rset.card ≤ Cover2.mBound n h) :
+    (Cover2.buildCover (n := n) F h hH Rset).card ≤
+      Cover2.mBound n (h + 1) := by
+  -- The lemma applies directly to the given parameters.
+  exact
+    Cover2.buildCover_card_bound_lowSens_with
+      (n := n) (F := F) (h := h) hH hs hh hn (Rset := Rset) hcard
+
 /-- Even without assuming a sensitivity bound, the trivial inequality
 `buildCover_card_bound_lowSens_or` holds for the stubbed cover. -/
 example {n h : ℕ} (F : BoolFunc.Family n)

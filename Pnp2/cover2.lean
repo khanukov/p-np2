@@ -1534,6 +1534,49 @@ lemma buildCover_card_bound_lowSens {n h : ℕ} (F : Family n)
   have hbound := hbig.trans (pow_le_mBound (n := n) (h := h) hn)
   simpa using hbound
 
+/-!
+`buildCover_card_bound_lowSens_with` upgrades the crude exponential bound from
+`buildCover_card_lowSens_with` to the standard `mBound` function when an
+initial set of rectangles `Rset` is provided.  Under the numeric hypothesis
+`hh`, the additional rectangles introduced by the low-sensitivity cover already
+fit inside `mBound n h`, allowing us to conclude that the final size stays below
+`mBound n (h + 1)` using `two_mul_mBound_le_succ`.
+-/
+lemma buildCover_card_bound_lowSens_with {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
+    (hn : 0 < n) (Rset : Finset (Subcube n))
+    (hcard : Rset.card ≤ mBound n h) :
+    (buildCover (n := n) F h hH Rset).card ≤ mBound n (h + 1) := by
+  classical
+  -- Cardinality bound from the low-sensitivity cover.
+  have hsize :
+      (buildCover (n := n) F h hH Rset).card ≤
+        Rset.card +
+          Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+    buildCover_card_lowSens_with (n := n) (F := F) (h := h) hH hs
+      (Rset := Rset)
+  -- Estimate the additional rectangles using `mBound`.
+  have hexp_mul :
+      10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ 10 * h := by
+    have := Nat.mul_le_mul_left 10 hh
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hpow :
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) ≤
+        mBound n h :=
+    (Nat.pow_le_pow_of_le_right (by decide : 0 < (2 : ℕ)) hexp_mul).trans
+      (pow_le_mBound (n := n) (h := h) hn)
+  -- Combine with the existing rectangles.
+  have hsum :
+      (buildCover (n := n) F h hH Rset).card ≤ Rset.card + mBound n h :=
+    hsize.trans <| Nat.add_le_add_left hpow _
+  have hdouble : Rset.card + mBound n h ≤ 2 * mBound n h := by
+    have := add_le_add hcard (le_rfl : mBound n h ≤ mBound n h)
+    simpa [two_mul] using this
+  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
+  exact hsum.trans (hdouble.trans hstep)
+
 /--
 `buildCover_card_bound_lowSens_or` partially bridges the gap towards the
 full counting lemma `buildCover_card_bound`.  When the maximum sensitivity of

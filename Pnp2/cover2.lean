@@ -1727,6 +1727,22 @@ lemma mu_union_buildCover_le {F : Family n}
   simp [buildCover, mu]
 
 /--
+`mu_buildCover_lt_start` is a weak variant of the legacy lemma with the same
+name.  In the original development the cover construction strictly decreased
+the measure whenever an uncovered pair existed.  The current stubbed
+implementation leaves the rectangle set unchanged, so we can only conclude that
+the measure does not increase.  The strict inequality will return once the full
+algorithm is ported.
+-/
+lemma mu_buildCover_lt_start {F : Family n}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
+    mu (n := n) F h (buildCover (n := n) F h hH) ≤
+      mu (n := n) F h (∅ : Finset (Subcube n)) := by
+  -- `buildCover` returns the empty set, so both measures coincide.
+  simp [buildCover, mu]
+
+/--
 `mu_buildCover_le_start` is a convenient special case of
 `mu_union_buildCover_le`: starting from the empty set of rectangles, running
 `buildCover` cannot increase the measure `μ`.

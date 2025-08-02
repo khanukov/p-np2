@@ -1614,5 +1614,38 @@ lemma buildCover_measure_drop {F : Family n} {h : ℕ}
     (mu_lower_bound (n := n) (F := F) (h := h)
       (Rset := (∅ : Finset (Subcube n))))
 
+/-! ### Canonical cover family
+
+`coverFamily` wraps the `buildCover` construction to provide a single
+canonical set of rectangles.  With the current stubbed `buildCover` this
+definition simply returns the same set, but the API mirrors the legacy
+development to ease future porting. -/
+
+noncomputable def coverFamily {n : ℕ} (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
+  buildCover (n := n) F h hH
+
+@[simp] lemma coverFamily_eq_buildCover {n : ℕ} (F : Family n) {h : ℕ}
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    coverFamily (n := n) F h _hH = buildCover (n := n) F h _hH := rfl
+
+lemma coverFamily_card_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (n := n) F h hH).card ≤ mBound n h := by
+  simpa [coverFamily] using
+    (buildCover_card_bound (n := n) (F := F) (h := h) hH)
+
+lemma coverFamily_card_linear_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (n := n) F h hH).card ≤ 2 * h + n := by
+  simpa [coverFamily] using
+    (buildCover_card_linear_bound (n := n) (F := F) (h := h) hH)
+
+lemma coverFamily_card_univ_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (n := n) F h hH).card ≤ bound_function n := by
+  simpa [coverFamily] using
+    (buildCover_card_univ_bound (n := n) (F := F) (h := h) hH)
+
 end Cover2
 

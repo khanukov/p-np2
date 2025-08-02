@@ -1337,6 +1337,20 @@ example :
     simp
   exact hres Subcube.full hR
 
+/-- `buildCover_mono_lowSens` is vacuous for the empty family and stub cover. -/
+example :
+    ∀ R ∈ Cover2.buildCover (n := 1)
+        (F := (∅ : BoolFunc.Family 1)) 0 (by simpa),
+      Subcube.monochromaticForFamily R (∅ : BoolFunc.Family 1) := by
+  classical
+  -- The sensitivity assumption is trivially satisfied since the family is empty.
+  have hs : ∀ f ∈ (∅ : BoolFunc.Family 1),
+      BoolFunc.sensitivity f < Nat.log2 (Nat.succ 1) := by
+    intro f hf; cases hf
+  simpa using
+    Cover2.buildCover_mono_lowSens
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0) (by simpa) hs
+
 
 end Cover2Test
 

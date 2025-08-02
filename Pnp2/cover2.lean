@@ -1598,6 +1598,23 @@ lemma buildCover_card_bound_lowSens_or {n h : ℕ} (F : Family n)
   simpa [hzero] using hbound
 
 /--
+In the low-sensitivity regime, `buildCover` produces a collection of
+monochromatic rectangles.  With the current stubbed implementation the
+constructed cover is empty, so the claim holds vacuously.  This lemma mirrors
+the statement from `cover.lean` and will gain substance once the recursive
+construction is ported.
+-/
+lemma buildCover_mono_lowSens {n h : ℕ} (F : Family n)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n)) :
+    ∀ R ∈ buildCover (n := n) F h _hH,
+      Subcube.monochromaticForFamily R F := by
+  intro R hR
+  -- No rectangles are produced by the stubbed `buildCover`.
+  have : False := by simpa [buildCover] using hR
+  exact this.elim
+
+/--
 Every rectangle produced by `buildCover` is monochromatic for the family `F`.
 With the current stub implementation, the cover is empty and the claim holds
 vacuously.  This lemma mirrors the API of the full development.

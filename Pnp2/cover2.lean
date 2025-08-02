@@ -474,6 +474,15 @@ lemma uncovered_subset_of_union {F : Family n}
   intro S hS
   exact hnc S (by exact Finset.mem_union.mpr <| Or.inl hS)
 
+lemma uncovered_subset {F : Family n} {R₁ R₂ : Finset (Subcube n)}
+    (hsub : R₁ ⊆ R₂) :
+    uncovered (n := n) F R₂ ⊆ uncovered (n := n) F R₁ := by
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  intro R hR
+  exact hnc R (hsub hR)
+
 /-! ### Simple termination measure
 
 `mu` tracks the remaining entropy budget together with the number of

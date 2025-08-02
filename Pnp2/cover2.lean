@@ -1467,6 +1467,22 @@ lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
   simpa [size, bound_function] using this
 
 /--
+When all functions in the family have sensitivity below the logarithmic
+threshold, the (stubbed) cover remains empty and hence satisfies the crude
+exponential bound.  This lemma mirrors the statement from `cover.lean` while
+the full algorithm is being ported. -/
+lemma buildCover_card_lowSens {n h : ℕ} (F : Family n)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n)) :
+    (buildCover (n := n) F h _hH).card ≤
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  -- The stubbed `buildCover` returns the empty set, whose cardinality is `0`.
+  have : (0 : ℕ) ≤
+      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+    Nat.zero_le _
+  simpa [buildCover] using this
+
+/--
 Every rectangle produced by `buildCover` is monochromatic for the family `F`.
 With the current stub implementation, the cover is empty and the claim holds
 vacuously.  This lemma mirrors the API of the full development.

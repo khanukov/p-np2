@@ -1051,6 +1051,28 @@ example :
   simpa [Fsingle] using
     (Cover2.coverFamily_card_univ_bound (n := 1) (F := Fsingle) (h := 0) hH')
 
+/-- Every rectangle in the canonical cover is monochromatic. -/
+example :
+    ∀ R ∈ Cover2.coverFamily (n := 1) (F := Fsingle) (h := 0)
+          (by
+            -- `Fsingle` has collision entropy zero.
+            have hcard : Fsingle.card = 1 := by simp [Fsingle]
+            have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+              simpa [hcard] using
+                (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+            have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+            have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
+            simpa using hH'),
+        Subcube.monochromaticForFamily R Fsingle := by
+  -- Direct application of the lemma `coverFamily_mono`.
+  have hcard : Fsingle.card = 1 := by simp [Fsingle]
+  have hH0 : BoolFunc.H₂ Fsingle = (0 : ℝ) := by
+    simpa [hcard] using (BoolFunc.H₂_card_one (F := Fsingle) hcard)
+  have hH : BoolFunc.H₂ Fsingle ≤ (0 : ℝ) := by exact le_of_eq hH0
+  have hH' : BoolFunc.H₂ Fsingle ≤ ((0 : ℕ) : ℝ) := by simpa using hH
+  simpa [Fsingle] using
+    (Cover2.coverFamily_mono (n := 1) (F := Fsingle) (h := 0) hH')
+
 /-- The coarse linear estimate applies to the stub `buildCover`. -/
 example :
     (Cover2.buildCover (n := 1) (F := Fsingle) (h := 0)

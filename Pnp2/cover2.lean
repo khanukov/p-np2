@@ -1483,6 +1483,26 @@ lemma buildCover_card_lowSens {n h : ℕ} (F : Family n)
   simpa [buildCover] using this
 
 /--
+`buildCover_card_lowSens_with` extends `buildCover_card_lowSens` to the case
+where an initial set of rectangles `Rset` is provided.  The stubbed
+implementation of `buildCover` simply returns `Rset`, so the inequality reduces
+to the trivial bound `Rset.card ≤ Rset.card + …`.
+-/
+lemma buildCover_card_lowSens_with {n h : ℕ} (F : Family n)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
+    (Rset : Finset (Subcube n)) :
+    (buildCover (n := n) F h _hH Rset).card ≤
+      Rset.card +
+        Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
+  -- The right-hand side obviously dominates `Rset.card`.
+  have : Rset.card ≤
+      Rset.card +
+        Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
+    Nat.le_add_right _ _
+  simpa [buildCover] using this
+
+/--
 `buildCover_card_bound_lowSens` upgrades the crude exponential bound from
 `buildCover_card_lowSens` to the standard `mBound` function whenever the
 logarithmic threshold `Nat.log2 (n + 1)^2` is at most the entropy budget `h`.

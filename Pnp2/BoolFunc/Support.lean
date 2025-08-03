@@ -101,8 +101,67 @@ lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
   -- After all updates the point coincides with `y`.
   have hfold_eq :
       (T.attach.toList).foldl (fun z i => Point.update z i.1 (y i.1)) x = y := by
-    -- TODO: show that applying all updates from `T` indeed reconstructs `y`.
-    sorry
+    classical
+    -- Prove equality by comparing coordinates one by one.
+    ext j
+    -- Auxiliary lemma describing the effect of sequential updates on a single
+    -- coordinate `j`.
+    have haux :
+        ∀ (l : List {i // i ∈ T}) (z : Point n),
+          (l.foldl (fun z i => Point.update z i.1 (y i.1)) z) j =
+            if j ∈ l.map (fun i => i.1) then y j else z j := by
+      intro l
+      induction l with
+      | nil =>
+          intro z; simp
+      | cons i l ih =>
+          intro z
+          by_cases hji : j = i.1
+          · subst hji
+            -- The current step updates coordinate `j` to `y j`.
+            simp [List.map, ih, Point.update_eq]
+          · have hji' : j ≠ i.1 := hji
+            -- Coordinate `j` differs from `i.1`; recurse on the tail.
+            simp [List.map, ih, Point.update_neq, hji']
+    -- Relate membership in the mapped list to membership in the original
+    -- finset `T`.
+    have hmem_equiv :
+        j ∈ (T.attach.toList.map fun i => i.1) ↔ j ∈ T := by
+      constructor
+      · intro hjmap
+        rcases List.mem_map.1 hjmap with ⟨i, hi, hval⟩
+        -- Recover membership in `T.attach` from membership in its list.
+        have hiT : i ∈ T.attach := by
+          exact Finset.mem_toList.mp hi
+        -- Hence the underlying value lies in `T`.
+        simpa [hval] using i.property
+      · intro hjT
+        have hiT : (⟨j, hjT⟩ : {i // i ∈ T}) ∈ T.attach := by
+          simpa using (Finset.mem_attach hjT)
+        have hiList : (⟨j, hjT⟩ : {i // i ∈ T}) ∈ T.attach.toList :=
+          Finset.mem_toList.mpr hiT
+        exact List.mem_map.2 ⟨_, hiList, rfl⟩
+    -- Apply the auxiliary lemma to the full list of updates.
+    specialize haux (T.attach.toList) x
+    -- Distinguish whether `j` belongs to `T`.
+    by_cases hjT : j ∈ T
+    · have hjmap : j ∈ (T.attach.toList.map fun i => i.1) :=
+        (hmem_equiv).2 hjT
+      simpa [hjmap, hmem_equiv, hjT] using haux
+    · have hjmap : j ∉ (T.attach.toList.map fun i => i.1) := by
+        intro hjm; exact hjT ((hmem_equiv).1 hjm)
+      -- If `j ∉ T`, the original points agree on `j`.
+      have hx_eq_y : x j = y j := by
+        by_contra hneq
+        -- Then `j` would belong to `T` by construction.
+        have : j ∈ T := by
+          have hjuniv : j ∈ Finset.univ := by simpa
+          have hjfilter :
+              j ∈ Finset.univ.filter (fun i : Fin n => x i ≠ y i) :=
+            Finset.mem_filter.mpr ⟨hjuniv, hneq⟩
+          simpa [T] using hjfilter
+        exact hjT this
+      simpa [hjmap, hmem_equiv, hjT, hx_eq_y] using haux
   -- Combining both facts gives the desired evaluation equality.
   simpa [hfold_eq] using hfold
 

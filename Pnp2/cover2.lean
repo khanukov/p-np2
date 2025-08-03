@@ -68,8 +68,11 @@ def fromPoint {n : ℕ} (x : Point n) (K : Finset (Fin n)) : Subcube n :=
   have hset :
       Finset.univ.filter (fun i : Fin n =>
         (if h : i ∈ K then some (x i) else none).isSome) = K := by
+    -- Membership in the filtered set coincides with membership in `K`.
     ext i; by_cases hi : i ∈ K <;> simp [hi]
-  simpa [hset]
+  -- The dimension is simply the number of unfixed coordinates.
+  -- The filtered set is exactly `K`, so the dimension drops by `K.card`.
+  simp [hset]
 
 @[simp] lemma mem_fromPoint_subset {n : ℕ} {x : Point n}
     {K L : Finset (Fin n)} {y : Point n}
@@ -108,14 +111,18 @@ lemma mem_toCube {n : ℕ} (R : Subcube n) (x : Boolcube.Point n) :
   · intro h i hi
     have hx := h i
     -- The `if` branch collapses using the membership assumption `hi`.
-    simpa [hi] using hx
+    -- Simplify the hypothesis using the fact that `i ∈ R.idx`.
+    simp [hi] at hx
+    -- The goal now reduces to a trivial equality on coordinates.
+    simp [hi, hx]
   · intro h i
     by_cases hi : i ∈ R.idx
     · have hx := h i hi
-      simpa [hi, hx]
+      -- In the fixed coordinates, `toCube` and `R` agree by definition.
+      simp [hi, hx]
     · -- Outside the fixed coordinates the membership predicate is trivially
       -- satisfied.
-      simpa [hi]
+      simp [hi]
 
 /-- The dimension of the converted cube matches that of the original
 subcube. -/
@@ -130,8 +137,10 @@ lemma dim_toCube {n : ℕ} (R : Subcube n) :
           (fun i : Fin n =>
             (if h : i ∈ R.idx then some (R.val i h) else none).isSome)
           = R.idx := by
+    -- Again we unfold the filtered set and identify it with `R.idx`.
     ext i; by_cases hi : i ∈ R.idx <;> simp [hi]
-  simpa [hset]
+  -- The dimension of the cube produced by `toCube` matches that of `R`.
+  simp [hset]
 
 end BoolFunc.Subcube
 
@@ -1688,7 +1697,8 @@ lemma buildCover_card_bound_lowSens {n h : ℕ} (F : Family n)
   have hpow :
       Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) ≤
         Nat.pow 2 (10 * h) :=
-    Nat.pow_le_pow_of_le_right (by decide : 0 < (2 : ℕ)) hexp_mul
+    -- Use the modern lemma `pow_le_pow_right` for exponent monotonicity.
+    Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp_mul
   -- Combine with the main bound `pow_le_mBound`.
   have hbig := hcard.trans hpow
   have hbound := hbig.trans (pow_le_mBound (n := n) (h := h) hn)
@@ -1725,7 +1735,9 @@ lemma buildCover_card_bound_lowSens_with {n h : ℕ} (F : Family n)
   have hpow :
       Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) ≤
         mBound n h :=
-    (Nat.pow_le_pow_of_le_right (by decide : 0 < (2 : ℕ)) hexp_mul).trans
+    -- Apply monotonicity of exponentiation in a single step and then
+    -- leverage the existing bound on `mBound`.
+    (Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp_mul).trans
       (pow_le_mBound (n := n) (h := h) hn)
   -- Combine with the existing rectangles.
   have hsum :

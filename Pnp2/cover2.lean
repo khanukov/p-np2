@@ -1465,16 +1465,34 @@ enough, one can find a subcube `R` of positive dimension on which at least
 `t` functions from the family are identically `true`.
 
 The formal proof has not yet been ported to the simplified `Boolcube.Subcube`
-structure and remains as future work.
+structure and remains as future work.  The lemma below states the expected
+result but leaves the combinatorial heart of the argument as a `sorry`.  It
+serves as a blueprint for the eventual port: extracting a sunflower core using
+`Sunflower.sunflower_exists`, turning it into a subcube via
+`Boolcube.Subcube.fromPoint`, and showing that several functions become
+constant on the resulting cube.  For the moment this lemma behaves like the old
+axiom while documenting the intended structure of the proof.
 -/
-axiom sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
+lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p) :
     ∃ (R : Boolcube.Subcube n),
       ((F.filter fun f => ∀ x : Boolcube.Point n,
           Boolcube.Subcube.Mem R x → f x = true).card ≥ t) ∧
-      1 ≤ Boolcube.Subcube.dim R
+      1 ≤ Boolcube.Subcube.dim R := by
+  classical
+  -- The original proof considers the family of supports of functions in `F`.
+  -- A sunflower with at least `t` petals exists thanks to the classical
+  -- `sunflower_exists` combinatorial lemma once the cardinality threshold
+  -- `h_big` is met.  Choosing an arbitrary point `x₀` and freezing the
+  -- coordinates of the resulting core yields a candidate subcube via
+  -- `Boolcube.Subcube.fromPoint`.
+  --
+  -- Completing this argument requires transferring the agreement properties of
+  -- the sunflower back to the Boolean functions.  This step is intricate and is
+  -- left as future work.
+  sorry
 
 /-! ### Lifting monochromaticity from restricted families
 

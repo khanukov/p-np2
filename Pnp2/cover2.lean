@@ -1434,12 +1434,12 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
     exact Nat.zero_le n
   exact hgoal
 
-/--
-`sunflower_step` is currently assumed as an axiom in `cover2`.  It matches the
-combinatorial statement from the legacy development: whenever all functions in
-`F` have the same positive support size `p` and the family of supports is
-large, there exists a subcube `R` of positive dimension such that at least
-`t` functions are constantly `true` on `R`.
+ /--
+`sunflower_step` is currently stated as an axiom.  It mirrors the combinatorial
+statement used in the legacy development: whenever all functions in `F` have the
+same positive support size `p` and the number of distinct supports is large,
+there exists a subcube `R` of positive dimension on which at least `t` members
+of `F` are constantly `true`.
 -/
 axiom sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)

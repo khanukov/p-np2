@@ -8,6 +8,7 @@ import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
 import Pnp2.Cover.SubcubeAdapters -- subcube conversion utilities
 import Pnp2.Cover.Bounds -- numeric bounds for the cover construction
+import Pnp2.Cover.CoarseBound -- rough estimate on uncovered pairs
 import Pnp2.Cover.Uncovered -- predicates about uncovered points
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
@@ -29,9 +30,10 @@ Most numeric and combinatorial lemmas have already been ported, while the
 recursive cover construction is currently represented by a lightweight stub.
 Remaining gaps are tracked in `docs/cover_migration_plan.md`.
 
-The heavy arithmetic lemmas surrounding the auxiliary function `mBound`
-now live in `Pnp2.Cover.Bounds` to keep this file focused on the cover
-construction itself.
+The heavy arithmetic lemmas surrounding the auxiliary function `mBound` live in
+`Pnp2.Cover.Bounds`, while a coarse estimate on uncovered pairs resides in
+`Pnp2.Cover.CoarseBound`.  This separation keeps the present file focused on the
+combinatorial aspects of the cover construction.
 -/
 
 @[simp] def size {n : ℕ} (Rset : Finset (Subcube n)) : ℕ := Rset.card
@@ -825,63 +827,6 @@ lemma mu_gt_of_firstUncovered_some {F : Family n} {Rset : Finset (Subcube n)}
   -- Conclude that `μ` exceeds `2 * h` by at least one.
   have := Nat.lt_add_of_pos_right (n := 2 * h) hpos
   simpa [mu] using this
-
-/-! ### Coarse bound on the number of uncovered pairs -/
-
-lemma uncovered_card_bound (F : Family n) (Rset : Finset (Subcube n)) :
-    (uncovered (n := n) F Rset).toFinset.card ≤ F.card * 2 ^ n := by
-  classical
-  -- Each uncovered pair corresponds to a function from `F` and a cube point.
-  have hsubset : (uncovered (n := n) F Rset).toFinset ⊆
-      F.sigma (fun _ => (Finset.univ : Finset (Point n))) := by
-    intro p hp
-    have hp' : p ∈ uncovered (n := n) F Rset := by simpa using hp
-    rcases hp' with ⟨hf, hx, _⟩
-    have hx' : p.2 ∈ (Finset.univ : Finset (Point n)) := by simp
-    exact Finset.mem_sigma.mpr ⟨hf, hx'⟩
-  have hcard := Finset.card_le_card hsubset
-  -- Cardinality of a sigma-type splits multiplicatively for a constant fiber.
-  have hprod : (F.sigma fun _ => (Finset.univ : Finset (Point n))).card =
-      F.card * (Finset.univ : Finset (Point n)).card := by
-    classical
-    simpa [Finset.card_sigma, Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm,
-      Nat.mul_assoc]
-  -- The Boolean cube has size `2 ^ n`.
-  have hcube : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
-    simpa using (Fintype.card_vector (α := Bool) (n := n))
-  simpa [hprod, hcube] using hcard
-
-/--
-`uncovered_init_coarse_bound` specialises the coarse cardinality estimate
-to the initial call of the cover construction where no rectangles are
-present yet.  Even this simple bound is occasionally useful for quick
-sanity checks.
--/
-lemma uncovered_init_coarse_bound (F : Family n) :
-    (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤
-      F.card * 2 ^ n := by
-  simpa using
-    (uncovered_card_bound (n := n) (F := F)
-      (Rset := (∅ : Finset (Subcube n))))
-
-/--
-If the family itself is empty, the set of initially uncovered pairs is
-trivially empty.  In this case any numeric bound holds; we record a
-simple instance with the dimension `n` for convenience.
--/
-lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
-    (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤ n := by
-  classical
-  -- With an empty family no pairs are uncovered, so the cardinality is zero.
-  have hcard :
-      (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card = 0 := by
-    simpa [uncovered, hF]
-  -- Rewrite the goal using `hcard` and conclude with `Nat.zero_le`.
-  have hgoal :
-      (uncovered (n := n) F (∅ : Finset (Subcube n))).toFinset.card ≤ n := by
-    rw [hcard]
-    exact Nat.zero_le n
-  exact hgoal
 
 /--
 **Sunflower extraction.**  At the current stage of the migration this lemma is

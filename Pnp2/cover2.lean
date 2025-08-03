@@ -17,6 +17,7 @@ open Finset
 open Agreement
 open BoolFunc (Family BFunc)
 open Boolcube (Point Subcube)
+open Sunflower
 
 -- Local notation for membership in a subcube of the Boolean cube.
 notation x " ∈ₛ " R => Boolcube.Subcube.Mem R x
@@ -1465,16 +1466,173 @@ enough, one can find a subcube `R` of positive dimension on which at least
 `t` functions from the family are identically `true`.
 
 The formal proof has not yet been ported to the simplified `Boolcube.Subcube`
-structure and remains as future work.
+structure.  The next lemma develops most of the combinatorial argument,
+obtaining a sunflower of supports and turning its core into a candidate subcube.
+The final step – establishing that every selected function evaluates to `true`
+on that subcube – remains a `sorry`, but the surrounding reasoning mirrors the
+original proof closely.
 -/
-axiom sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
+lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p) :
     ∃ (R : Boolcube.Subcube n),
       ((F.filter fun f => ∀ x : Boolcube.Point n,
           Boolcube.Subcube.Mem R x → f x = true).card ≥ t) ∧
-      1 ≤ Boolcube.Subcube.dim R
+      1 ≤ Boolcube.Subcube.dim R := by
+  classical
+  -- Assemble the family of supports.
+  let 𝓢 : Finset (Finset (Fin n)) := Family.supports F
+  have h_sizes : ∀ s ∈ 𝓢, s.card = p := by
+    intro s hs
+    rcases Family.mem_supports.mp hs with ⟨f, hf, rfl⟩
+    exact h_support f hf
+  -- Extract a sunflower family from `𝓢`.
+  obtain ⟨S, hSsub⟩ : ∃ S : SunflowerFam n t, S.petals ⊆ 𝓢 := by
+    have hbig' : 𝓢.card > Nat.factorial (t - 1) * p ^ t := by
+      simpa using h_big
+    exact SunflowerFam.exists_of_large_family
+      (F := 𝓢) (w := p) (t := t) hp ht h_sizes hbig'
+  -- Select, for each petal, a function with exactly that support.
+  have exists_f : ∀ A ∈ S.petals, ∃ f ∈ F, BoolFunc.support f = A := by
+    intro A hA
+    have hA' : A ∈ 𝓢 := hSsub hA
+    rcases Family.mem_supports.mp hA' with ⟨f, hfF, hsup⟩
+    exact ⟨f, hfF, hsup⟩
+  classical
+  choose f hfF hfSupp using exists_f
+  -- Freeze the sunflower core to obtain a covering subcube.
+  let x₀ : Boolcube.Point n := fun _ => false
+  let R : Boolcube.Subcube n := Boolcube.Subcube.fromPoint x₀ S.core
+  -- Bounding the cardinality and dimension is the intricate part of the argument.
+  -- We leave the two key properties as placeholders for future work.
+  have h_filter_ge :
+      (F.filter fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true).card ≥ t := by
+    -- We embed the `t` selected functions into the filtered family and count them.
+    -- First build the image of the mapping from petals to their chosen functions.
+    let im :=
+      S.petals.attach.image (fun a : {A // A ∈ S.petals} => f a.1 a.2)
+    -- This mapping is injective because different petals have different supports
+    -- and each chosen function has support exactly its petal.
+    have h_inj_aux :
+        Function.Injective (fun a : {A // A ∈ S.petals} => f a.1 a.2) := by
+      intro a₁ a₂ h_eq
+      -- Equality of functions forces equality of their supports.
+      have hsup := congrArg BoolFunc.support h_eq
+      have hA : a₁.1 = a₂.1 := by
+        simpa [hfSupp _ a₁.2, hfSupp _ a₂.2] using hsup
+      -- Subtype equality follows from equality of the underlying sets.
+      exact Subtype.ext hA
+    -- Hence the image has cardinality `t`.
+    have h_im_card : im.card = t := by
+      have hcard :=
+        Finset.card_image_of_injective
+          (s := S.petals.attach)
+          (f := fun a : {A // A ∈ S.petals} => f a.1 a.2)
+          h_inj_aux
+      -- Translate the cardinality of `attach` using `S.tsize`.
+      simpa [im, Finset.card_attach, S.tsize] using hcard
+    -- Show that every chosen function indeed belongs to the filter set.
+    have h_sub :
+        im ⊆ F.filter (fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true) := by
+      intro g hg
+      rcases Finset.mem_image.1 hg with ⟨a, ha, rfl⟩
+      have hgF : f a.1 a.2 ∈ F := hfF _ a.2
+      have htrue : ∀ x : Boolcube.Point n, R.Mem x → (f a.1 a.2) x = true := by
+        -- Points of `R` agree with `x₀` on the sunflower core.  If the support of
+        -- `f a.1 a.2` is contained in that core, then the evaluation on any `x ∈ R`
+        -- coincides with the evaluation at `x₀`, which we will eventually show is
+        -- `true` for these selected functions.
+        intro x hx
+        -- Agreement on the core coordinates provided by `hx`.
+        have h_agree_core : ∀ i ∈ S.core, x i = x₀ i := by
+          intro i hi
+          -- Membership in `R` fixes the value on the sunflower core.
+          have hx' := hx i
+          simpa [R, Boolcube.Subcube.fromPoint, hi] using hx'
+        -- Assume for now that the support of the chosen function lies inside
+        -- the sunflower core.
+        have h_support_core :
+            BoolFunc.support (f a.1 a.2) ⊆ S.core := by
+          -- TODO: deduce from the sunflower structure that the chosen function
+          -- depends only on coordinates from the core.
+          sorry
+        -- Extend the agreement on the core to the full support of `f`.
+        have h_agree : ∀ i ∈ BoolFunc.support (f a.1 a.2), x i = x₀ i := by
+          intro i hi
+          have hi_core : i ∈ S.core := h_support_core hi
+          exact h_agree_core i hi_core
+        -- With the agreement in hand, evaluations at `x` and `x₀` are equal.
+        have hx_eq :=
+          BoolFunc.eval_eq_of_agree_on_support
+            (f := f a.1 a.2) (x := x) (y := x₀) h_agree
+        -- The witness returned by `exists_true_on_support` will eventually
+        -- establish the value at `x₀`.
+        have hx0_true : (f a.1 a.2) x₀ = true := by
+          -- TODO: prove that each chosen function evaluates to `true` on the
+          -- base point `x₀` constructed above.
+          sorry
+        -- Combining the two facts yields the desired result.
+        simpa [hx_eq] using hx0_true
+      -- Package the membership proof for the filter.
+      have : f a.1 a.2 ∈ F.filter
+          (fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true) := by
+        -- Membership in a filtered set amounts to membership in `F` and the property.
+        have : f a.1 a.2 ∈ F ∧
+            (∀ x : Boolcube.Point n, R.Mem x → (f a.1 a.2) x = true) :=
+          ⟨hgF, htrue⟩
+        simpa using this
+      simpa using this
+    -- The image has cardinality `t` and sits inside the filtered family.
+    have h_le := Finset.card_le_card h_sub
+    have :
+        t ≤ (F.filter fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true).card := by
+      simpa [im, h_im_card] using h_le
+    -- Interpreting `≥` as `≤` yields the desired inequality.
+    exact this
+  have h_dim : 1 ≤ Boolcube.Subcube.dim R := by
+    -- The sunflower guarantees at least two distinct petals of size `p`.
+    -- This forces the common core to be strictly smaller than `p`.
+    have hpet_card : ∀ P ∈ S.petals, P.card = p := by
+      intro P hP; exact h_sizes P (hSsub hP)
+    -- Choose two distinct petals to witness strict containment of the core.
+    have h_one_lt : 1 < S.petals.card :=
+      let htwo : 2 ≤ S.petals.card := by simpa [S.tsize] using ht
+      lt_of_lt_of_le (by decide : 1 < 2) htwo
+    obtain ⟨P₁, hP₁, P₂, hP₂, hP₁P₂⟩ := Finset.one_lt_card.mp h_one_lt
+    -- The core is contained in each petal, so its size is at most `p`.
+    have h_core_le_p : S.core.card ≤ p := by
+      have := card_le_card (S.sub_core P₁ hP₁)
+      simpa [hpet_card P₁ hP₁] using this
+    -- Show the core cannot itself have size `p`; otherwise two petals coincide.
+    have h_core_ne_p : S.core.card ≠ p := by
+      intro h_eq
+      have h1 : S.core = P₁ := by
+        apply Finset.eq_of_subset_of_card_le (S.sub_core P₁ hP₁)
+        have : P₁.card = S.core.card := by simpa [hpet_card P₁ hP₁, h_eq]
+        exact le_of_eq this
+      have h2 : S.core = P₂ := by
+        apply Finset.eq_of_subset_of_card_le (S.sub_core P₂ hP₂)
+        have : P₂.card = S.core.card := by simpa [hpet_card P₂ hP₂, h_eq]
+        exact le_of_eq this
+      have hcontr : P₁ = P₂ := h1.symm.trans h2
+      exact hP₁P₂ hcontr
+    have h_core_lt_p : S.core.card < p :=
+      lt_of_le_of_ne' h_core_le_p (by simpa [eq_comm] using h_core_ne_p)
+    -- Any petal lives inside the `n` coordinates, hence `p ≤ n`.
+    have hp_le_n : p ≤ n := by
+      have : P₁.card ≤ (Finset.univ : Finset (Fin n)).card :=
+        Finset.card_le_univ _
+      simpa [hpet_card P₁ hP₁] using this
+    -- Combine the two inequalities to deduce that the core leaves at least one free coordinate.
+    have h_core_lt_n : S.core.card < n := lt_of_lt_of_le h_core_lt_p hp_le_n
+    have hpos : 0 < n - S.core.card := Nat.sub_pos_of_lt h_core_lt_n
+    -- Finally rewrite the dimension of `R` in terms of the core cardinality.
+    have hdim' : 1 ≤ n - S.core.card := Nat.succ_le_of_lt hpos
+    have hdim_eq : Boolcube.Subcube.dim R = n - S.core.card := by
+      simpa [R] using (Boolcube.Subcube.dim_fromPoint (x := x₀) (K := S.core))
+    exact hdim_eq.symm ▸ hdim'
+  exact ⟨R, h_filter_ge, h_dim⟩
 
 /-! ### Lifting monochromaticity from restricted families
 

@@ -10,6 +10,7 @@ import Pnp2.Cover.SubcubeAdapters -- subcube conversion utilities
 import Pnp2.Cover.Bounds -- numeric bounds for the cover construction
 import Pnp2.Cover.CoarseBound -- rough estimate on uncovered pairs
 import Pnp2.Cover.Uncovered -- predicates about uncovered points
+import Pnp2.Cover.Lifting -- lemmas for lifting monochromaticity
 import Pnp2.Cover2.Measure -- termination measure and its basic lemmas
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
@@ -230,46 +231,6 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
       simpa [R] using (Boolcube.Subcube.dim_fromPoint (x := x₀) (K := S.core))
     exact hdim_eq.symm ▸ hdim'
   exact ⟨R, h_filter_ge, h_dim⟩
-
-/-! ### Lifting monochromaticity from restricted families
-
-If a subcube `R` fixes the `i`-th coordinate to `b`, then a family that is
-monochromatic on the restricted version of `F` is also monochromatic on `F`
-itself.  These helper lemmas mirror their counterparts in `cover.lean` and
-will support the recursion once `buildCover` is fully ported. -/
-
-lemma lift_mono_of_restrict
-    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
-    (hfix : ∀ x, R.Mem x → x i = b)
-    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
-    Subcube.monochromaticForFamily R F := by
-  classical
-  rcases hmono with ⟨c, hc⟩
-  refine ⟨c, ?_⟩
-  intro f hf x hx
-  have hf0 : f.restrictCoord i b ∈ F.restrict i b :=
-    (BoolFunc.Family.mem_restrict).2 ⟨f, hf, rfl⟩
-  have hxib : x i = b := hfix x hx
-  have hxupdate : BoolFunc.update x i b = x := by
-    funext j; by_cases hji : j = i
-    · subst hji; simp [BoolFunc.update, hxib]
-    · simp [BoolFunc.update, hji]
-  have htmp := hc (f.restrictCoord i b) hf0 x hx
-  have : f x = c := by
-    simpa [BFunc.restrictCoord, hxupdate] using htmp
-  exact this
-
-/--
-When a subcube `R` already forces the `i`-th coordinate to be `b`,
-monochromaticity for the restricted family lifts directly to the original
-family.  This variant mirrors `lift_mono_of_restrict` but packages the
-common situation where the fixed-coordinate condition is immediate. -/
-lemma lift_mono_of_restrict_fixOne
-    {F : Family n} {i : Fin n} {b : Bool} {R : Subcube n}
-    (hfix : ∀ x, R.Mem x → x i = b)
-    (hmono : Subcube.monochromaticForFamily R (F.restrict i b)) :
-    Subcube.monochromaticForFamily R F :=
-  lift_mono_of_restrict (F := F) (i := i) (b := b) (R := R) hfix hmono
 
 /--
 Monochromaticity is preserved when restricting to a subset of rectangles.

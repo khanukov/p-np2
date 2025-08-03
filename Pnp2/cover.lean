@@ -398,7 +398,9 @@ lemma firstUncovered_none_iff (R : Finset (Subcube n)) :
 uncovered functions is large, the classical sunflower lemma yields a
 subcube covering a positive fraction of them.  The precise constants
 are irrelevant here; we only record the existence of such a rectangle.
-Formal details are deferred. -/
+The proof uses `BoolFunc.eval_eq_of_agree_on_support` to show that once
+all coordinates from the sunflower core are frozen, every selected
+function evaluates to the same Boolean value on that subcube. -/
 -- This lemma implements step A-3 of the `buildCover` algorithm,
 -- extracting a subcube that simultaneously covers many functions.
 

@@ -101,8 +101,65 @@ lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
   -- After all updates the point coincides with `y`.
   have hfold_eq :
       (T.attach.toList).foldl (fun z i => Point.update z i.1 (y i.1)) x = y := by
-    -- TODO: show that applying all updates from `T` indeed reconstructs `y`.
-    sorry
+    -- We show equality by comparing coordinates individually.
+    classical
+    -- General auxiliary lemma describing the effect of the updates on a
+    -- single coordinate.
+    have haux :
+        ∀ l (z : Point n) (j : Fin n),
+          (List.foldl (fun z i => Point.update z i.1 (y i.1)) z l) j =
+            if ∃ i ∈ l, i.1 = j then y j else z j := by
+      intro l
+      induction l with
+      | nil =>
+          intro z j; simp
+      | cons i l ih =>
+          intro z j
+          by_cases hji : i.1 = j
+          · subst hji; simp [List.foldl_cons, ih]
+          · simp [List.foldl_cons, ih, hji, eq_comm] -- analyze remaining list
+    -- Reason pointwise on coordinates.
+    ext j
+    have hcoord' := haux (T.attach.toList) x j
+    -- The existence in `hcoord'` is equivalent to membership in `T`.
+    have hmem : (∃ i ∈ T.attach.toList, i.1 = j) ↔ j ∈ T := by
+      constructor
+      · intro h
+        rcases h with ⟨i, hi, hval⟩
+        -- Membership in the list implies membership in the original finset.
+        have hiT : i ∈ T.attach := by
+          -- `mem_toList` converts list membership to finset membership.
+          simpa using (Finset.mem_toList.mp hi)
+        have : i.1 ∈ T := by
+          -- Elements of `T.attach` project back to `T`.
+          simpa using (Finset.mem_attach.mp hiT)
+        simpa [hval] using this
+      · intro hj
+        -- Use the obvious candidate `⟨j, hj⟩`.
+        refine ⟨⟨j, hj⟩, ?_, rfl⟩
+        -- Convert finset membership to list membership.
+        have : ⟨j, hj⟩ ∈ T.attach := by
+          -- This is immediate by `simp`.
+          simpa
+        simpa using (Finset.mem_toList.mpr this)
+    -- Express the fold at coordinate `j` using membership in `T`.
+    have hcoord'' :
+        (List.foldl (fun z i => Point.update z i.1 (y i.1)) x
+            (T.attach.toList)) j =
+            if j ∈ T then y j else x j := by
+      simpa [hmem] using hcoord'
+    -- Finally, reason by cases on whether `j` lies in `T`.
+    by_cases hj : j ∈ T
+    · have htemp := hcoord''
+      simpa [hj, htemp]
+    · -- Outside `T` the coordinates of `x` and `y` already agree.
+      have hxj : x j = y j := by
+        have : j ∉ Finset.univ.filter (fun i => x i ≠ y i) := by
+          simpa [T] using hj
+        have := Finset.mem_filter.not.mp this
+        simpa [not_not] using this.2
+      have htemp := hcoord''
+      simp [hj, htemp, hxj]
   -- Combining both facts gives the desired evaluation equality.
   simpa [hfold_eq] using hfold
 

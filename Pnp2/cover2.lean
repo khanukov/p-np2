@@ -31,8 +31,13 @@ def monochromaticForFamily {n : ℕ} (R : Subcube n) (F : BoolFunc.Family n) : P
   ∃ b : Bool, ∀ f ∈ F, ∀ x, R.Mem x → f x = b
 
 /-- Construct a subcube by freezing the coordinates in `K` to match the base point `x`. -/
+-- In the simplified `Boolcube.Subcube` representation a subcube is specified by
+-- giving the value of each coordinate: coordinates mapped to `some b` are
+-- fixed to the Boolean value `b` whereas coordinates mapped to `none` are left
+-- free.  The constructor below freezes exactly the coordinates from the set
+-- `K` to match a given base point `x`.
 def fromPoint {n : ℕ} (x : Point n) (K : Finset (Fin n)) : Subcube n :=
-  ⟨fun i => if h : i ∈ K then some (x i) else none⟩
+  ⟨fun i => if _ : i ∈ K then some (x i) else none⟩
 
 @[simp] lemma mem_fromPoint {n : ℕ} {x : Point n} {K : Finset (Fin n)} {y : Point n} :
     Mem (fromPoint (n := n) x K) y ↔ ∀ i ∈ K, y i = x i := by
@@ -45,8 +50,16 @@ def fromPoint {n : ℕ} (x : Point n) (K : Finset (Fin n)) : Subcube n :=
   · intro h i
     by_cases hiK : i ∈ K
     · have hx := h i hiK
-      simpa [fromPoint, hiK] using hx
-    · simp [fromPoint, hiK]
+      -- Expand the definition of the cube and reduce using the assumed equality.
+      simpa [hiK] using hx
+    · simp [hiK]
+
+@[simp] lemma self_mem_fromPoint {n : ℕ} {x : Point n} {K : Finset (Fin n)} :
+    x ∈ₛ fromPoint (n := n) x K := by
+  classical
+  -- Each coordinate in `K` obviously matches the corresponding bit of `x`.
+  refine (mem_fromPoint (x := x) (K := K) (y := x)).2 ?_;
+  intro i hi; rfl
 
 @[simp] lemma dim_fromPoint {n : ℕ} {x : Point n} {K : Finset (Fin n)} :
     (fromPoint (n := n) x K).dim = n - K.card := by

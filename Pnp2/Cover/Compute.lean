@@ -1,6 +1,7 @@
 import Pnp2.Boolcube
 import Pnp2.BoolFunc
 import Pnp2.entropy
+import Pnp2.Cover.Bounds
 
 -- The full cover construction is not yet available in this trimmed-down
 -- environment, so we avoid importing `Pnp2.cover` here.
@@ -10,53 +11,19 @@ heavy `cover` development.  To keep the test suite compiling we include only
 the definitions needed by `Algorithms.SatCover` and postpone the actual proof
 details.  The implementation will eventually mirror `Cover.buildCover`, but
 for now we expose a stub version accompanied by admitted specifications.
+
+`Cover.Bounds` exposes the auxiliary function `mBound` together with several
+useful arithmetic lemmas.  We simply re-export those facts here so that the
+computational wrapper can use them without depending on the full cover file.
 -/
--- Basic definitions reproduced here to avoid depending on the full cover file.
-@[simp] def mBound (n h : ℕ) : ℕ := n * (h + 2) * 2 ^ (10 * h)
 
-lemma mBound_pos (n h : ℕ) (hn : 0 < n) : 0 < mBound n h := by
-  have hpow : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
-  have hmul1 : 0 < n * (h + 2) := by
-    have hpos : 0 < h + 2 := Nat.succ_pos _
-    exact Nat.mul_pos hn hpos
-  exact Nat.mul_pos hmul1 hpow
-
-/-- `mBound` vanishes when there are no variables. -/
-@[simp] lemma mBound_zero (h : ℕ) : mBound 0 h = 0 := by
-  simp [mBound]
-
-/-!  `mBound` is at least `2` whenever the dimension `n` is positive.  This
-simple numeric bound mirrors the analogous lemma in the full cover
-development and is occasionally convenient for toy proofs. -/
-lemma two_le_mBound (n h : ℕ) (hn : 0 < n) : 2 ≤ mBound n h := by
-  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
-  have hh2 : 2 ≤ h + 2 := by
-    have := Nat.zero_le h
-    exact Nat.succ_le_succ (Nat.succ_le_succ this)
-  have hfactor : 2 ≤ n * (h + 2) := by
-    have := Nat.mul_le_mul hn1 hh2
-    simpa [one_mul] using this
-  have hpow : 1 ≤ 2 ^ (10 * h) := by
-    have hpos : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
-    exact Nat.succ_le_of_lt hpos
-  -- Combine the lower bounds on both factors and shuffle the product into
-  -- the `mBound` shape using a calculation block.  This avoids the linter
-  -- warning about `simpa` while keeping the proof explicit.
-  have hmul := Nat.mul_le_mul hfactor hpow
-  have hmain : 2 ≤ mBound n h := by
-    calc
-      2 ≤ (n * (h + 2)) * 2 ^ (10 * h) := by
-        simpa using hmul
-      _ = mBound n h := by
-        simp [mBound, Nat.mul_comm, Nat.mul_assoc]
-  exact hmain
+open Cover2
 
 namespace Cover
 
-lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) : mBound n₁ h ≤ mBound n₂ h := by
-  have : n₁ * (h + 2) ≤ n₂ * (h + 2) := Nat.mul_le_mul_right _ hn
-  have := Nat.mul_le_mul_right (2 ^ (10 * h)) this
-  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+-- Re-export the numeric bounds from `Cover2` for convenience.
+export Cover2 (mBound mBound_pos mBound_zero two_le_mBound mBound_mono_left)
+
 open BoolFunc
 
 variable {n : ℕ}

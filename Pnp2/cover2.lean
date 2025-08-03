@@ -1456,26 +1456,98 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
     exact Nat.zero_le n
   exact hgoal
 
-/--
-**Sunflower extraction.**  At the current stage of the migration this lemma is
-still posed as an axiom.  It is a direct analogue of the classical
-`sunflower_step` used in the original `cover` module: if all functions in `F`
-share the same non‑zero support size `p` and the family of supports is large
-enough, one can find a subcube `R` of positive dimension on which at least
-`t` functions from the family are identically `true`.
 
-The formal proof has not yet been ported to the simplified `Boolcube.Subcube`
-structure and remains as future work.
--/
-axiom sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
+/--
+**Sunflower extraction.**  This is the analogue of the combinatorial lemma used
+in the legacy `cover` module.  If every function in `F` has the same non‑zero
+support size `p` and the collection of distinct supports is large, then a
+sunflower of size `t` exists.  Freezing the common core of this sunflower yields
+ a subcube on which at least `t` functions are constantly `true`, and the
+ resulting subcube has positive dimension.
+-/-
+lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p) :
     ∃ (R : Boolcube.Subcube n),
       ((F.filter fun f => ∀ x : Boolcube.Point n,
           Boolcube.Subcube.Mem R x → f x = true).card ≥ t) ∧
-      1 ≤ Boolcube.Subcube.dim R
-
+      1 ≤ Boolcube.Subcube.dim R := by
+  classical
+  -- Collect the supports of the family.
+  let 𝓢 : Finset (Finset (Fin n)) := Family.supports F
+  have h_sizes : ∀ s ∈ 𝓢, s.card = p := by
+    intro s hs
+    rcases Family.mem_supports.mp hs with ⟨f, hf, rfl⟩
+    exact h_support f hf
+  -- Apply the classical sunflower lemma.
+  obtain ⟨𝓣, h𝓣sub, hSun, hcard⟩ :=
+    Sunflower.sunflower_exists (𝓢 := 𝓢) (w := p) (p := t)
+      hp ht h_big (by intro s hs; simpa [h_sizes s hs] using h_sizes s hs)
+  -- Extract the common core `K`.
+  obtain ⟨hT, K, h_core⟩ := hSun
+  -- Freeze the coordinates in `K` according to a base point.
+  let x₀ : Boolcube.Point n := fun _ => false
+  let R : Boolcube.Subcube n := Boolcube.Subcube.fromPoint (n := n) x₀ K
+  refine ⟨R, ?_, ?_⟩
+  ·
+    -- For each petal `A` pick a function `f_A` with support `A`.
+    have exists_f : ∀ A ∈ 𝓣, ∃ f ∈ F, BoolFunc.support f = A := by
+      intro A hA; exact Family.mem_supports.mp (h𝓣sub hA)
+    choose f hfF hfSupp using exists_f
+    -- The chosen functions are distinct; hence the image has size `t`.
+    have h_inj :
+        (Finset.image (fun A : Finset (Fin n) => f A (by exact ‹A ∈ 𝓣›)) 𝓣).card = t := by
+      have h_inj_aux : Function.Injective (fun A : Finset (Fin n) => f A (by exact ‹A ∈ 𝓣›)) := by
+        intro A1 A2 h_eq
+        have : BoolFunc.support (f A1 (by exact ‹A1 ∈ 𝓣›)) =
+                 BoolFunc.support (f A2 (by exact ‹A2 ∈ 𝓣›)) := by
+          simpa [hfSupp _ (by exact ‹A1 ∈ 𝓣›), hfSupp _ (by exact ‹A2 ∈ 𝓣›)]
+            using congrArg BoolFunc.support h_eq
+        simpa [hfSupp _ (by exact ‹A1 ∈ 𝓣›), hfSupp _ (by exact ‹A2 ∈ 𝓣›)] using this
+      simpa [Finset.card_image] using Finset.card_image_of_injective _ h_inj_aux
+    -- Show that every chosen function passes the filter.
+    have h_sub :
+        (Finset.image (fun A : Finset (Fin n) => f A _) 𝓣) ⊆
+          F.filter (fun f => ∀ x, x ∈ₛ R → f x = true) := by
+      intro g hg
+      rcases Finset.mem_image.mp hg with ⟨A, hA, rfl⟩
+      have hfA : f A _ ∈ F := hfF _ hA
+      have htrue : ∀ x, x ∈ₛ R → (f A _) x = true := by
+        intro x hx
+        -- Points in `R` agree with `x₀` on the core `K`.
+        have hxK : ∀ i ∈ K, x i = x₀ i :=
+          (Boolcube.Subcube.mem_fromPoint (x := x₀) (K := K) (y := x)).1 hx
+        -- Coordinates from the support also lie in `K`.
+        have hxA : ∀ i ∈ BoolFunc.support (f A _), x i = x₀ i := by
+          intro i hi
+          have hiA : i ∈ A := by simpa [hfSupp _ hA] using hi
+          have hiK : i ∈ K := h_core.sub_core _ (hT hA) hiA
+          exact hxK i hiK
+        have hagree : ∀ i ∈ BoolFunc.support (f A _), x i = x₀ i := hxA
+        -- Flipping irrelevant coordinates does not change the value of `f`.
+        have hx_eq :=
+          BoolFunc.eval_eq_of_agree_on_support (f := f A _) (x := x) (y := x₀) hagree
+        -- Obtain a witness where `f A` evaluates to `true`.
+        obtain ⟨y, hy⟩ :=
+          BoolFunc.exists_true_on_support
+            (f := f A _) (by simpa [hfSupp _ hA])
+        have hx0 : (f A _) x₀ = true := by simpa using hy
+        simpa [hx0] using hx_eq.symm.trans hx0
+      exact Finset.mem_filter.mpr ⟨hfA, htrue⟩
+    have h_card_le := Finset.card_le_of_subset h_sub
+    exact (le_of_eq_of_le h_inj).trans h_card_le
+  ·
+    -- `R` has positive dimension as `K` is a strict subset of some petal.
+    have h_dim_pos : 0 < n - K.card := by
+      obtain ⟨A, hA𝓣, hKA⟩ := hT
+      have hlt : K.card < A.card := Finset.card_lt_card hKA
+      have hA_le : A.card ≤ n := by
+        have : A ⊆ Finset.univ := by intro i hi; exact Finset.mem_univ _
+        exact Finset.card_le_of_subset this
+      exact Nat.sub_pos_of_lt (hlt.trans_le hA_le)
+    have := Nat.succ_le_of_lt h_dim_pos
+    simpa [R, Boolcube.Subcube.dim_fromPoint] using this
 /-! ### Lifting monochromaticity from restricted families
 
 If a subcube `R` fixes the `i`-th coordinate to `b`, then a family that is

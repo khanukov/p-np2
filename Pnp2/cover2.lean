@@ -1435,11 +1435,15 @@ lemma uncovered_init_bound_empty (F : Family n) (hF : F = (∅ : Family n)) :
   exact hgoal
 
 /--
-`sunflower_step` is currently assumed as an axiom in `cover2`.  It matches the
-combinatorial statement from the legacy development: whenever all functions in
-`F` have the same positive support size `p` and the family of supports is
-large, there exists a subcube `R` of positive dimension such that at least
-`t` functions are constantly `true` on `R`.
+**Sunflower extraction.**  At the current stage of the migration this lemma is
+still posed as an axiom.  It is a direct analogue of the classical
+`sunflower_step` used in the original `cover` module: if all functions in `F`
+share the same non‑zero support size `p` and the family of supports is large
+enough, one can find a subcube `R` of positive dimension on which at least
+`t` functions from the family are identically `true`.
+
+The formal proof has not yet been ported to the simplified `Boolcube.Subcube`
+structure and remains as future work.
 -/
 axiom sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)

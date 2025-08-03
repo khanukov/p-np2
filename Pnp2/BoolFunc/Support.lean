@@ -43,6 +43,69 @@ lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
     | true =>
         exact ⟨Point.update x i (!x i), by simp [hupdate]⟩
 
+/-!
+If two Boolean points agree on every coordinate belonging to the *essential*
+`support` of a function, then that function evaluates to the same result on
+both points.  The combinatorial proof—incrementally updating coordinates
+outside the support—is still pending and will replace this placeholder.
+-/
+lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
+    (h : ∀ i ∈ support f, x i = y i) :
+    f x = f y := by
+  classical
+  -- Consider the finite set of coordinates where `x` and `y` differ.
+  let T : Finset (Fin n) :=
+    Finset.univ.filter fun i => x i ≠ y i
+  -- Any coordinate in `T` lies outside the support of `f` by hypothesis.
+  have hT_not_support : ∀ i ∈ T, i ∉ support f := by
+    intro i hi
+    rcases Finset.mem_filter.mp hi with ⟨-, hdiff⟩
+    by_contra hmem
+    have := h i hmem
+    exact hdiff this
+  -- Update `x` one coordinate at a time along `T`, using the previous lemma to
+  -- keep the evaluation of `f` unchanged.  The technical induction over the
+  -- list `T.attach.toList` is deferred to future work.
+  have hfold :
+      f x =
+        f ((T.attach.toList).foldl (fun z i => Point.update z i.1 (y i.1)) x) := by
+    -- We generalise the statement to an arbitrary starting point `z` and
+    -- perform induction over the list of coordinates to be updated.  At each
+    -- step we use `eval_update_not_support` to show that modifying a
+    -- non-support coordinate leaves the value of `f` unchanged.
+    have hfold_aux :
+        ∀ (l : List {i // i ∈ T}) (z : Point n),
+          f z =
+            f (List.foldl (fun z i => Point.update z i.1 (y i.1)) z l) := by
+      intro l z
+      induction l generalizing z with
+      | nil =>
+          -- No coordinates to update: the fold is the identity.
+          simp
+      | cons i l ih =>
+          -- `i.1` is a coordinate from `T`, hence outside the support of `f`.
+          have hiT : i.1 ∈ T := by
+            -- Membership in `T.attach` projects to membership in `T`.
+            simpa using i.property
+          have hnot : i.1 ∉ support f := hT_not_support _ hiT
+          -- Updating a non-support coordinate preserves the evaluation.
+          have hstep :=
+            eval_update_not_support (f := f) (i := i.1) (hi := hnot) z (y i.1)
+          -- Invoke the inductive hypothesis on the remaining coordinates.
+          have htail := ih (Point.update z i.1 (y i.1))
+          -- Combine the two equalities and rewrite the fold.
+          have hcomb := hstep.trans htail
+          simpa [List.foldl_cons] using hcomb
+    -- Apply the auxiliary lemma with the specific list `T.attach.toList`.
+    simpa using hfold_aux (T.attach.toList) x
+  -- After all updates the point coincides with `y`.
+  have hfold_eq :
+      (T.attach.toList).foldl (fun z i => Point.update z i.1 (y i.1)) x = y := by
+    -- TODO: show that applying all updates from `T` indeed reconstructs `y`.
+    sorry
+  -- Combining both facts gives the desired evaluation equality.
+  simpa [hfold_eq] using hfold
+
 @[simp] lemma support_const_false (n : ℕ) :
     support (fun _ : Point n => false) = (∅ : Finset (Fin n)) := by
   classical

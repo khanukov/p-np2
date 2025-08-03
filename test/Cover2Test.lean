@@ -1,4 +1,5 @@
 import Pnp2.cover2
+import Pnp2.Cover.Canonical
 import Pnp2.BoolFunc
 
 open Boolcube (Point Subcube)

@@ -54,15 +54,21 @@ lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
     f x = f y := by
   classical
   -- Consider the finite set of coordinates where `x` and `y` differ.
-  let T : Finset (Fin n) :=
-    Finset.univ.filter fun i => x i ≠ y i
-  -- Any coordinate in `T` lies outside the support of `f` by hypothesis.
-  have hT_not_support : ∀ i ∈ T, i ∉ support f := by
-    intro i hi
-    rcases Finset.mem_filter.mp hi with ⟨-, hdiff⟩
-    by_contra hmem
-    have := h i hmem
-    exact hdiff this
+    let T : Finset (Fin n) :=
+      Finset.univ.filter fun i => x i ≠ y i
+    -- Membership in `T` corresponds exactly to coordinates where `x` and `y`
+    -- disagree.  This characterisation will be useful throughout the proof.
+    have hTmem : ∀ i : Fin n, i ∈ T ↔ x i ≠ y i := by
+      intro i
+      have : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+      simp [T, this]
+    -- Any coordinate in `T` lies outside the support of `f` by hypothesis.
+    have hT_not_support : ∀ i ∈ T, i ∉ support f := by
+      intro i hi
+      have hdiff : x i ≠ y i := (hTmem i).1 hi
+      by_contra hmem
+      have := h i hmem
+      exact hdiff this
   -- Update `x` one coordinate at a time along `T`, using the previous lemma to
   -- keep the evaluation of `f` unchanged.  The technical induction over the
   -- list `T.attach.toList` is deferred to future work.
@@ -101,8 +107,54 @@ lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
   -- After all updates the point coincides with `y`.
   have hfold_eq :
       (T.attach.toList).foldl (fun z i => Point.update z i.1 (y i.1)) x = y := by
-    -- TODO: show that applying all updates from `T` indeed reconstructs `y`.
-    sorry
+    classical
+    -- Prove equality by showing both sides agree on every coordinate.
+    funext j
+    -- Compute the value of the folded point at coordinate `j`.
+    have hcoord :
+        ((T.attach.toList).foldl (fun z i => Point.update z i.1 (y i.1)) x) j =
+          if j ∈ T then y j else x j := by
+      -- General auxiliary lemma over arbitrary lists.
+      have haux :
+          ∀ (l : List {i // i ∈ T}) (z : Point n),
+            (l.foldl (fun z i => Point.update z i.1 (y i.1)) z) j =
+              if j ∈ l.map Subtype.val then y j else z j := by
+        intro l z
+        induction l generalizing z with
+        | nil =>
+            -- No coordinates updated.
+            simp
+        | cons i l ih =>
+            -- Update coordinate `i.1` and recurse on the tail.
+            have := ih (Point.update z i.1 (y i.1))
+            by_cases hj : j = i.1
+            · subst hj
+              -- First update hits `j`; afterwards the value is fixed to `y j`.
+              simp [List.foldl_cons, this]
+            · -- `j` is different from `i.1`; the inductive hypothesis applies.
+              simp [List.foldl_cons, hj, this]
+      -- Apply the auxiliary lemma to the list of all differing coordinates.
+      have hmem : (j ∈ (T.attach.toList.map Subtype.val)) ↔ j ∈ T := by
+        constructor
+        · intro hj
+          rcases List.mem_map.1 hj with ⟨i, hi, hji⟩
+          have : i.1 ∈ T := by simpa using i.2
+          simpa [hji] using this
+        · intro hj
+          refine List.mem_map.2 ?_
+          refine ⟨⟨j, hj⟩, ?_, rfl⟩
+          simp
+      have := haux (T.attach.toList) x
+      simpa [hmem] using this
+    -- With the explicit coordinate description, deduce equality with `y`.
+    by_cases hj : j ∈ T
+    · simp [hcoord, hj]
+    ·
+      -- Outside `T` the points already agree.
+      have hx_eq : x j = y j := by
+        have := (hTmem j).not.mp hj
+        exact not_not.mp this
+      simp [hcoord, hj, hx_eq]
   -- Combining both facts gives the desired evaluation equality.
   simpa [hfold_eq] using hfold
 

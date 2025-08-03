@@ -1443,6 +1443,31 @@ example :
       (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0)
       (hH := by simp) hcov
 
+/--
+If the measure of the rectangles returned by `buildCover` equals `2 * h`, then
+the rectangles already cover all `1`-inputs.  This is the converse of
+`buildCover_mu`.
+-/
+example :
+    Cover2.AllOnesCovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1))
+      (Cover2.buildCover (n := 1)
+        (F := (∅ : BoolFunc.Family 1)) 0 (by simp)) := by
+  classical
+  -- Reuse `buildCover_mu` to obtain the required measure equality.
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      (F := (∅ : BoolFunc.Family 1)) (∅ : Finset (Subcube 1)) := by
+    intro f hf; cases hf
+  have hμ :=
+    Cover2.buildCover_mu
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0)
+      (hH := by simp) hcov
+  -- Apply the converse lemma to deduce coverage.
+  simpa using
+    Cover2.buildCover_covers_of_mu_eq
+      (n := 1) (F := (∅ : BoolFunc.Family 1)) (h := 0)
+      (hH := by simp) hμ
+
 /-- `cover_exists` constructs a cover when the family has no `1`‑inputs. -/
 example :
     ∃ Rset : Finset (Subcube 1),

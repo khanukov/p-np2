@@ -569,6 +569,24 @@ lemma buildCover_mu {n h : ℕ} (F : Family n)
     (mu_of_allCovered (n := n) (F := F)
       (Rset := buildCover (n := n) F h hH) (h := h) hcov')
 
+/--
+The converse direction: if the measure of the set of rectangles returned by
+`buildCover` already equals `2 * h`, then no uncovered pairs remain.  Hence the
+resulting rectangles cover all `1`-inputs of the family `F`.
+-/
+lemma buildCover_covers_of_mu_eq {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hμ : mu (n := n) F h (buildCover (n := n) F h hH) = 2 * h) :
+    AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
+  -- The lemma `allOnesCovered_of_mu_eq` already provides the desired
+  -- implication for an arbitrary rectangle set.  Instantiating it with the
+  -- result of `buildCover` yields the statement.
+  exact
+    allOnesCovered_of_mu_eq
+      (n := n) (F := F)
+      (Rset := buildCover (n := n) F h hH)
+      (h := h) hμ
+
 /-!
 `mu_union_buildCover_le` is a small helper lemma used in termination
 arguments for `buildCover`.  Adding the rectangles produced by one

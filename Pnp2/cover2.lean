@@ -199,10 +199,10 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
           -- `hx_eq` shows that `x` and `x₀` agree on the support of the
           -- selected function.  A witness provided by
           -- `exists_true_on_support` therefore evaluates to `true` on `x₀`.
-          obtain ⟨x₀, hx₀⟩ :=
+          obtain ⟨witness, hwitness⟩ :=
             BoolFunc.exists_true_on_support
               (f := f a.1 a.2) h_support_nonempty
-          simpa using hx₀
+          simpa using hwitness
         -- Combining the two facts yields the desired result.
         simpa [hx_eq] using hx0_true
       -- Package the membership proof for the filter.

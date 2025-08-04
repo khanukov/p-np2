@@ -70,6 +70,43 @@ axiom petal_agree_on_core
     (∀ i ∈ S.core, x i = y i) → f x = f y
 
 /--
+The axiom `petal_agree_on_core` forces the support of the selected
+function to lie entirely inside the sunflower core.  Indeed, if a
+coordinate of the support were outside the core, flipping that
+coordinate would yield two points agreeing on the core but with
+different evaluations, contradicting the axiom.
+-/
+lemma support_subset_core_of_petal_agree_on_core
+    {n t : ℕ} (S : SunflowerFam n t)
+    {A : Finset (Fin n)} (hA : A ∈ S.petals)
+    {f : BFunc n} (hSupp : BoolFunc.support f = A) :
+    BoolFunc.support f ⊆ S.core := by
+  classical
+  intro i hi
+  -- Assume for contradiction that `i` lies outside the core.
+  by_contra hi_core
+  -- Witness that flipping coordinate `i` changes the value of `f`.
+  rcases BoolFunc.mem_support_iff.mp hi with ⟨x, hx⟩
+  -- Updating coordinate `i` preserves all core coordinates.
+  -- Flip coordinate `i` while keeping all other coordinates identical.
+  let y : Boolcube.Point n := BoolFunc.Point.update (n := n) x i (!(x i))
+  have hagree : ∀ j ∈ S.core, x j = y j := by
+    intro j hj
+    by_cases hji : j = i
+    · -- If `j = i`, then `i` lies in the core, contradicting the assumption.
+      have hj' : i ∈ S.core := by simpa [hji] using hj
+      exact (hi_core hj').elim
+    · -- Otherwise `j` is unaffected by the update.
+      simpa [y, BoolFunc.Point.update, hji]
+  -- The axiom yields equality of evaluations on `x` and `y`.
+  have hxy : f x = f y :=
+    petal_agree_on_core (S := S) (A := A) (hA := hA)
+      (f := f) (hSupp := hSupp) (x := x) (y := y) hagree
+  -- Yet `x` witnesses that flipping `i` changes `f`.
+  have hx' : f x ≠ f y := by simpa [y] using hx
+  exact hx' hxy
+
+/--
 If two Boolean points coincide on the core of a sunflower and a Boolean function
 has support contained in that core, then the function evaluates identically on
 the two points.  This lemma isolates a general evaluation principle used in
@@ -185,12 +222,18 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
           -- Membership in `R` fixes the value on the sunflower core.
           have hx' := hx i
           simpa [R, Boolcube.Subcube.fromPoint, hi] using hx'
-        -- Evaluations on `x` and the base point coincide thanks to
-        -- `petal_agree_on_core`.
-        have hx_eq : (f a.1 a.2) x = (f a.1 a.2) x₀ :=
-          petal_agree_on_core (S := S) (A := a.1) (hA := a.2)
+        -- The axiom implies that the support of the chosen function lies
+        -- inside the core.
+        have h_supp_core :
+            BoolFunc.support (f a.1 a.2) ⊆ S.core :=
+          support_subset_core_of_petal_agree_on_core
+            (S := S) (A := a.1) (hA := a.2)
             (f := f a.1 a.2) (hSupp := hfSupp _ a.2)
-            (x := x) (y := x₀) h_agree_core
+        -- Consequently, evaluations on `x` and the base point coincide.
+        have hx_eq : (f a.1 a.2) x = (f a.1 a.2) x₀ :=
+          eval_agree_of_support_subset_core (S := S)
+            (f := f a.1 a.2) (x := x) (y := x₀)
+            h_supp_core h_agree_core
         -- By assumption every function in `F` is `true` on the all-`false`
         -- point, in particular the selected one.
         have hx0_true : (f a.1 a.2) x₀ = true := by

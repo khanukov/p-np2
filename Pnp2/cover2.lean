@@ -674,7 +674,7 @@ general lower bound on `μ` suffices.  The statement matches the legacy API
 for downstream compatibility.
 -/
 lemma buildCover_measure_drop {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     2 * h ≤ mu (n := n) F h (∅ : Finset (Subcube n)) := by
   -- The measure `μ` always dominates `2 * h`, even for the empty rectangle set.
   simpa using

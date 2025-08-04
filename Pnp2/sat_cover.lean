@@ -1,9 +1,7 @@
 import Pnp2.Boolcube
-import Pnp2.cover
 import Pnp2.canonical_circuit
 
 open Classical
-open Cover
 open Boolcube
 
 namespace Boolcube.Subcube

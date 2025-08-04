@@ -17,13 +17,13 @@ sketched at the end of this file, but the statements are final and can be
 used by subsequent documentation or tests.
 -/
 
-import Pnp2.cover
+import Pnp2.cover2
 import Pnp2.family_entropy_cover
 import Mathlib.Data.Real.Log
 import Mathlib.Tactic
 
 open Classical
-open Cover
+open Cover2
 open Boolcube
 
 namespace Bound
@@ -81,7 +81,7 @@ lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
   have hpos₂ : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
   have hmul : 0 < n * (h + 2) := Nat.mul_pos hn hpos₁
   have := Nat.mul_pos hmul hpos₂
-  simpa [Cover.mBound] using this
+  simpa [mBound] using this
 
 lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
     2 ≤ mBound n h := by
@@ -95,7 +95,7 @@ lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
   have hpow : 1 ≤ 2 ^ (10 * h) :=
     Nat.one_le_pow (2) (10 * h) (by decide)
   have := Nat.mul_le_mul hfactor hpow
-  simpa [Cover.mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
 lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
     3 ≤ mBound n h := by
@@ -110,11 +110,11 @@ lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
   have hfac : 3 ≤ n * (h + 2) := le_trans h3 hfac1
   have hpow : 1 ≤ 2 ^ (10 * h) := Nat.one_le_pow (2) (10 * h) (by decide)
   have := Nat.mul_le_mul hfac hpow
-  simpa [Cover.mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
 lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
   intro h₁ h₂ hh
-  dsimp [Cover.mBound]
+  dsimp [mBound]
   have hfac : n * (h₁ + 2) ≤ n * (h₂ + 2) :=
     Nat.mul_le_mul_left _ (Nat.add_le_add_right hh 2)
   have hpow : 2 ^ (10 * h₁) ≤ 2 ^ (10 * h₂) := by
@@ -124,7 +124,7 @@ lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
 
 lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
     mBound n₁ h ≤ mBound n₂ h := by
-  dsimp [Cover.mBound]
+  dsimp [mBound]
   have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
     Nat.mul_le_mul_right (h + 2) hn
   have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
@@ -179,7 +179,7 @@ lemma mBound_lt_subexp
     -- Expand the logarithm of `mBound`.
     have hlog : Real.logb 2 (mBound n h : ℝ) =
         Real.logb 2 (n : ℝ) + Real.logb 2 (h + 2 : ℝ) + 10 * h := by
-      simp [Cover.mBound, Real.logb_mul, npos.ne', hpos.ne',
+      simp [mBound, Real.logb_mul, npos.ne', hpos.ne',
         Real.logb_pow hb]
     -- Use the bound on `n` given by `hn`.
     have hbase : Real.logb 2 (n : ℝ) ≥
@@ -232,7 +232,7 @@ theorem FCE_lemma
   -- Combines `coverFamily_card_bound` from `cover.lean`
   -- with the arithmetic lemma above.
   have h1 :=
-    Cover.coverFamily_card_bound (n := n) (h := h) F hH
+    Cover2.coverFamily_card_bound (n := n) (h := h) F hH
   have h2 :=
     mBound_lt_subexp (h := h) (n := n) hn
   exact lt_of_le_of_lt h1 h2

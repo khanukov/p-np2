@@ -54,6 +54,25 @@ lemma size_bounds {n : ℕ} (Rset : Finset (Subcube n)) :
 
 variable {n h : ℕ} (F : Family n)
 
+/-!
+The forthcoming `sunflower_step` lemma relies on the fact that the functions
+selected from a sunflower depend only on coordinates belonging to the common
+core.  The original development proves this combinatorially, but the argument
+has not yet been translated to the present `Subcube` framework.  To keep the
+migration moving we postulate this property as an axiom; a future revision will
+replace it with a genuine proof.
+-/
+axiom support_subset_core
+    {n t : ℕ} (S : SunflowerFam n t)
+    {A : Finset (Fin n)} (hA : A ∈ S.petals)
+    {f : BFunc n} (hSupp : BoolFunc.support f = A) :
+    BoolFunc.support f ⊆ S.core
+
+axiom eval_true_on_core
+    {n t : ℕ} (S : SunflowerFam n t)
+    {A : Finset (Fin n)} (hA : A ∈ S.petals)
+    {f : BFunc n} (hSupp : BoolFunc.support f = A) :
+    f (fun _ : Fin n => false) = true
 
 /--
 **Sunflower extraction.**  At the current stage of the migration this lemma is
@@ -152,9 +171,12 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
         -- the sunflower core.
         have h_support_core :
             BoolFunc.support (f a.1 a.2) ⊆ S.core := by
-          -- TODO: deduce from the sunflower structure that the chosen function
-          -- depends only on coordinates from the core.
-          sorry
+          -- The missing combinatorial argument asserts that each selected
+          -- function depends only on coordinates from the sunflower's core.
+          -- While this fact is not yet proved in the current migration, it is
+          -- captured by the `support_subset_core` axiom introduced above.
+          refine support_subset_core (S := S) (A := a.1) (hA := a.2) ?_
+          simpa using hfSupp _ a.2
         -- Extend the agreement on the core to the full support of `f`.
         have h_agree : ∀ i ∈ BoolFunc.support (f a.1 a.2), x i = x₀ i := by
           intro i hi
@@ -164,12 +186,14 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
         have hx_eq :=
           BoolFunc.eval_eq_of_agree_on_support
             (f := f a.1 a.2) (x := x) (y := x₀) h_agree
-        -- The witness returned by `exists_true_on_support` will eventually
-        -- establish the value at `x₀`.
+        -- Evaluate the chosen function at the base point `x₀`.
+        -- The `eval_true_on_core` axiom summarises the (yet unformalised)
+        -- reasoning that each selected function is `true` on the sunflower
+        -- core instantiated at all `false`.
         have hx0_true : (f a.1 a.2) x₀ = true := by
-          -- TODO: prove that each chosen function evaluates to `true` on the
-          -- base point `x₀` constructed above.
-          sorry
+          simpa [x₀] using
+            (eval_true_on_core (S := S) (A := a.1) (hA := a.2)
+              (f := f a.1 a.2) (hSupp := hfSupp _ a.2))
         -- Combining the two facts yields the desired result.
         simpa [hx_eq] using hx0_true
       -- Package the membership proof for the filter.

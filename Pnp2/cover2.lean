@@ -211,18 +211,11 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
           -- Membership in `R` fixes the value on the sunflower core.
           have hx' := hx i
           simpa [R, Boolcube.Subcube.fromPoint, hi] using hx'
-        -- The agreement hypothesis implies that the support of the chosen
-        -- function lies inside the core.
-        have h_supp_core :
-            BoolFunc.support (f a.1 a.2) ⊆ S.core :=
-          support_subset_core_of_agree_on_core
-            (S := S) (f := f a.1 a.2)
-            (hAgree := hfAgree _ a.2)
-        -- Consequently, evaluations on `x` and the base point coincide.
+        -- Evaluation of the chosen function only depends on the core
+        -- coordinates, so agreement on the core suffices to relate `x`
+        -- and the base point `x₀`.
         have hx_eq : (f a.1 a.2) x = (f a.1 a.2) x₀ :=
-          eval_agree_of_support_subset_core (S := S)
-            (f := f a.1 a.2) (x := x) (y := x₀)
-            h_supp_core h_agree_core
+          hfAgree _ a.2 x x₀ h_agree_core
         -- By assumption every function in `F` is `true` on the all-`false`
         -- point, in particular the selected one.
         have hx0_true : (f a.1 a.2) x₀ = true := by

@@ -111,6 +111,17 @@ noncomputable def firstUncovered {n : ℕ} (F : Family n)
       intro p hp; exact h ⟨p, hp⟩
     simp [Set.nonempty_iff_ne_empty]
 
+/-- If `firstUncovered` returns `some p`, then `p` indeed belongs to the uncovered set. -/
+lemma mem_uncovered_of_firstUncovered_some {n : ℕ} {F : Family n} {R : Finset (Subcube n)}
+    {p : Σ _ : BFunc n, Point n}
+    (hp : firstUncovered (n := n) F R = some p) :
+    p ∈ uncovered (n := n) F R := by
+  classical
+  unfold firstUncovered at hp
+  split_ifs at hp with h
+  · cases hp
+    exact Classical.choose_spec h
+
 /-- Every `1`-input of every `f ∈ F` lies inside some rectangle of `Rset`. -/
 @[simp] def AllOnesCovered {n : ℕ} (F : Family n)
     (Rset : Finset (Subcube n)) : Prop :=

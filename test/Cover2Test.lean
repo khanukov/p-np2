@@ -264,6 +264,13 @@ example :
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (R := (∅ : Finset (Subcube 1))))
 
+/-- If `firstUncovered` yields a witness, that witness lies in the uncovered set. -/
+example (F : BoolFunc.Family 1) (R : Finset (Subcube 1))
+    {p : Sigma (fun _ => Point 1)}
+    (hp : Cover2.firstUncovered (n := 1) F R = some p) :
+    p ∈ Cover2.uncovered (n := 1) F R :=
+  Cover2.mem_uncovered_of_firstUncovered_some (n := 1) (F := F) (R := R) hp
+
 /-- If `firstUncovered` returns `none`, all `1`‑inputs are covered. -/
 example :
     Cover2.AllOnesCovered (n := 1)

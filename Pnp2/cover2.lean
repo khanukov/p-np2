@@ -57,51 +57,34 @@ variable {n h : ℕ} (F : Family n)
 /-!
 The forthcoming `sunflower_step` lemma relies on the fact that the functions
 selected from a sunflower behave identically on any two points that agree on the
-core.  The original development establishes this combinatorially, but the
-argument has not yet been ported to the present `Subcube` framework.  To keep the
-migration moving we record the missing reasoning as an axiom; a future revision
-will replace it with a genuine proof.
+core.  In the original development this follows from a combinatorial argument;
+until that proof is ported we expose the required behaviour as an explicit
+hypothesis.  The next lemma shows that such an agreement property forces the
+support of the function to lie inside the core.
 -/
-axiom petal_agree_on_core
+lemma support_subset_core_of_agree_on_core
     {n t : ℕ} (S : SunflowerFam n t)
-    {A : Finset (Fin n)} (hA : A ∈ S.petals)
-    {f : BFunc n} (hSupp : BoolFunc.support f = A)
-    {x y : Boolcube.Point n} :
-    (∀ i ∈ S.core, x i = y i) → f x = f y
-
-/--
-The axiom `petal_agree_on_core` forces the support of the selected
-function to lie entirely inside the sunflower core.  Indeed, if a
-coordinate of the support were outside the core, flipping that
-coordinate would yield two points agreeing on the core but with
-different evaluations, contradicting the axiom.
--/
-lemma support_subset_core_of_petal_agree_on_core
-    {n t : ℕ} (S : SunflowerFam n t)
-    {A : Finset (Fin n)} (hA : A ∈ S.petals)
-    {f : BFunc n} (hSupp : BoolFunc.support f = A) :
+    {f : BFunc n}
+    (hAgree : ∀ x y : Boolcube.Point n,
+        (∀ i ∈ S.core, x i = y i) → f x = f y) :
     BoolFunc.support f ⊆ S.core := by
   classical
   intro i hi
-  -- Assume for contradiction that `i` lies outside the core.
+  -- Suppose `i` lies outside the core.
   by_contra hi_core
-  -- Witness that flipping coordinate `i` changes the value of `f`.
+  -- Use the definition of `support` to obtain points differing at `i`.
   rcases BoolFunc.mem_support_iff.mp hi with ⟨x, hx⟩
-  -- Updating coordinate `i` preserves all core coordinates.
-  -- Flip coordinate `i` while keeping all other coordinates identical.
+  -- Flip coordinate `i` while keeping all others fixed.
   let y : Boolcube.Point n := BoolFunc.Point.update (n := n) x i (!(x i))
+  -- Points `x` and `y` agree on the sunflower core.
   have hagree : ∀ j ∈ S.core, x j = y j := by
     intro j hj
     by_cases hji : j = i
-    · -- If `j = i`, then `i` lies in the core, contradicting the assumption.
-      have hj' : i ∈ S.core := by simpa [hji] using hj
+    · have hj' : i ∈ S.core := by simpa [hji] using hj
       exact (hi_core hj').elim
-    · -- Otherwise `j` is unaffected by the update.
-      simpa [y, BoolFunc.Point.update, hji]
-  -- The axiom yields equality of evaluations on `x` and `y`.
-  have hxy : f x = f y :=
-    petal_agree_on_core (S := S) (A := A) (hA := hA)
-      (f := f) (hSupp := hSupp) (x := x) (y := y) hagree
+    · simpa [y, BoolFunc.Point.update, hji]
+  -- Apply the agreement hypothesis.
+  have hxy : f x = f y := hAgree x y hagree
   -- Yet `x` witnesses that flipping `i` changes `f`.
   have hx' : f x ≠ f y := by simpa [y] using hx
   exact hx' hxy
@@ -135,21 +118,26 @@ support size `p` and the family of supports is large enough, a subcube of
 positive dimension hosts `t` functions that are constantly `true`.
 
 The argument below follows the combinatorial skeleton of the classical proof.
-We rely on the axiom `petal_agree_on_core` to encapsulate the missing reasoning
-showing that the selected functions depend only on the sunflower core.  For the
-time being we additionally assume that every function evaluates to `true` on the
-all‑`false` input; once the combinatorial argument is fully ported this extra
-hypothesis will become redundant.
+We assume that whenever a sunflower is extracted from the supports, each petal
+corresponds to a function whose behaviour depends only on the sunflower core.
+For the time being we additionally assume that every function evaluates to
+`true` on the all‑`false` input; once the combinatorial argument is fully
+ported this extra hypothesis will become redundant.
 -/
 lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p)
-    -- For the time being we additionally assume that every function in the
-    -- family evaluates to `true` on the all-`false` input.  The original
-    -- development derives this property from the combinatorial structure of the
-    -- sunflower; porting that argument will eventually discharge this extra
-    -- hypothesis.
+    -- Hypothesis capturing the missing combinatorial argument: for any sunflower
+    -- extracted from the supports, each petal corresponds to a function that is
+    -- constant on points agreeing on the sunflower core.
+    (h_agree :
+      ∀ (S : SunflowerFam n t), S.petals ⊆ Family.supports F →
+        ∀ A ∈ S.petals,
+          ∃ f ∈ F, BoolFunc.support f = A ∧
+            (∀ x y : Boolcube.Point n,
+                (∀ i ∈ S.core, x i = y i) → f x = f y))
+    -- Every function in the family evaluates to `true` on the all‑`false` input.
     (h_true : ∀ f ∈ F, f (fun _ : Fin n => false) = true) :
     ∃ (R : Boolcube.Subcube n),
       ((F.filter fun f => ∀ x : Boolcube.Point n,
@@ -168,14 +156,15 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
       simpa using h_big
     exact SunflowerFam.exists_of_large_family
       (F := 𝓢) (w := p) (t := t) hp ht h_sizes hbig'
-  -- Select, for each petal, a function with exactly that support.
-  have exists_f : ∀ A ∈ S.petals, ∃ f ∈ F, BoolFunc.support f = A := by
-    intro A hA
-    have hA' : A ∈ 𝓢 := hSsub hA
-    rcases Family.mem_supports.mp hA' with ⟨f, hfF, hsup⟩
-    exact ⟨f, hfF, hsup⟩
+  -- Select, for each petal, a function from the family with that support and
+  -- agreeing on points that share the core coordinates.
+  have exists_f :
+      ∀ A ∈ S.petals, ∃ f ∈ F, BoolFunc.support f = A ∧
+        (∀ x y : Boolcube.Point n,
+            (∀ i ∈ S.core, x i = y i) → f x = f y) :=
+    h_agree S hSsub
   classical
-  choose f hfF hfSupp using exists_f
+  choose f hfF hfSupp hfAgree using exists_f
   -- Freeze the sunflower core to obtain a covering subcube.
   let x₀ : Boolcube.Point n := fun _ => false
   let R : Boolcube.Subcube n := Boolcube.Subcube.fromPoint x₀ S.core
@@ -222,18 +211,11 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
           -- Membership in `R` fixes the value on the sunflower core.
           have hx' := hx i
           simpa [R, Boolcube.Subcube.fromPoint, hi] using hx'
-        -- The axiom implies that the support of the chosen function lies
-        -- inside the core.
-        have h_supp_core :
-            BoolFunc.support (f a.1 a.2) ⊆ S.core :=
-          support_subset_core_of_petal_agree_on_core
-            (S := S) (A := a.1) (hA := a.2)
-            (f := f a.1 a.2) (hSupp := hfSupp _ a.2)
-        -- Consequently, evaluations on `x` and the base point coincide.
+        -- Evaluation of the chosen function only depends on the core
+        -- coordinates, so agreement on the core suffices to relate `x`
+        -- and the base point `x₀`.
         have hx_eq : (f a.1 a.2) x = (f a.1 a.2) x₀ :=
-          eval_agree_of_support_subset_core (S := S)
-            (f := f a.1 a.2) (x := x) (y := x₀)
-            h_supp_core h_agree_core
+          hfAgree _ a.2 x x₀ h_agree_core
         -- By assumption every function in `F` is `true` on the all-`false`
         -- point, in particular the selected one.
         have hx0_true : (f a.1 a.2) x₀ = true := by

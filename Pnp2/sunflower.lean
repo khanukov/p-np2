@@ -7,4 +7,4 @@ This module simply re-exports `Pnp2.Sunflower.Sunflower` under the shorter
 path `Pnp2.sunflower`.
 -/
 
-export Sunflower (IsSunflower HasSunflower sunflower_exists)
+export Sunflower (IsSunflower HasSunflower sunflower_exists sunflower_exists_two)

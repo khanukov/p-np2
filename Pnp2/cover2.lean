@@ -225,31 +225,28 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     -- Interpreting `≥` as `≤` yields the desired inequality.
     exact this
   have h_dim : 1 ≤ Boolcube.Subcube.dim R := by
-    -- The sunflower guarantees at least two distinct petals of size `p`.
-    -- This forces the common core to be strictly smaller than `p`.
+    -- The sunflower has at least two petals, each of size `p`.
     have hpet_card : ∀ P ∈ S.petals, P.card = p := by
       intro P hP; exact h_sizes P (hSsub hP)
-    -- Choose two distinct petals to witness strict containment of the core.
     have h_one_lt : 1 < S.petals.card :=
       let htwo : 2 ≤ S.petals.card := by simpa [S.tsize] using ht
       lt_of_lt_of_le (by decide : 1 < 2) htwo
     obtain ⟨P₁, hP₁, P₂, hP₂, hP₁P₂⟩ := Finset.one_lt_card.mp h_one_lt
-    -- The sunflower property forces the core to be strictly contained in a petal.
-    have h_core_ssub : S.core ⊂ P₁ := by
+    -- Extract a coordinate that lies in `P₁` but not in the core.
+    have hcoord : ∃ i ∈ P₁, i ∉ S.core := by
       have hcard : P₂.card = P₁.card := by
         simpa [hpet_card P₁ hP₁, hpet_card P₂ hP₂]
-      exact SunflowerFam.core_ssubset_of_two_petals
+      exact SunflowerFam.exists_coord_not_core_of_two_petals
         (S := S) (P₁ := P₁) (P₂ := P₂) hP₁ hP₂ hcard hP₁P₂
-    have h_core_lt_p : S.core.card < p := by
-      have hlt := Finset.card_lt_card h_core_ssub
-      simpa [hpet_card P₁ hP₁] using hlt
-    -- Any petal lives inside the `n` coordinates, hence `p ≤ n`.
-    have hp_le_n : p ≤ n := by
-      have : P₁.card ≤ (Finset.univ : Finset (Fin n)).card :=
-        Finset.card_le_univ _
-      simpa [hpet_card P₁ hP₁] using this
-    -- Combine the two inequalities to deduce that the core leaves at least one free coordinate.
-    have h_core_lt_n : S.core.card < n := lt_of_lt_of_le h_core_lt_p hp_le_n
+    rcases hcoord with ⟨i, hiP₁, hi_not⟩
+    -- Hence the core misses at least one coordinate of the cube.
+    have h_core_lt_n : S.core.card < n := by
+      have hsubset : S.core ⊆ (Finset.univ : Finset (Fin n)) := by simp
+      have hne : S.core ≠ (Finset.univ : Finset (Fin n)) := by
+        intro h; exact hi_not (by simpa [h] using (by simp : i ∈ (Finset.univ : Finset (Fin n))))
+      have hssub : S.core ⊂ (Finset.univ : Finset (Fin n)) :=
+        (Finset.ssubset_iff_subset_ne).2 ⟨hsubset, hne⟩
+      simpa using (Finset.card_lt_card hssub)
     have hpos : 0 < n - S.core.card := Nat.sub_pos_of_lt h_core_lt_n
     -- Finally rewrite the dimension of `R` in terms of the core cardinality.
     have hdim' : 1 ≤ n - S.core.card := Nat.succ_le_of_lt hpos

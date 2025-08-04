@@ -173,6 +173,24 @@ lemma core_ssubset_of_two_petals {S : SunflowerFam n t}
   -- Together these facts yield the desired strict inclusion.
   exact (Finset.ssubset_iff_subset_ne).2 ⟨hsub, hneq⟩
 
+/--
+A petal strictly larger than the sunflower core must contain a coordinate not
+belonging to the core.  Given two distinct petals of the same cardinality, this
+follows immediately from `core_ssubset_of_two_petals`.
+-/
+lemma exists_coord_not_core_of_two_petals {S : SunflowerFam n t}
+    {P₁ P₂ : Petal n} (h₁ : P₁ ∈ S.petals) (h₂ : P₂ ∈ S.petals)
+    (hcard : P₂.card = P₁.card) (hne : P₁ ≠ P₂) :
+    ∃ i ∈ P₁, i ∉ S.core := by
+  classical
+  -- The core is strictly contained in `P₁` by the preceding lemma.
+  have hssub : S.core ⊂ P₁ :=
+    core_ssubset_of_two_petals (S := S)
+      (P₁ := P₁) (P₂ := P₂) h₁ h₂ hcard hne
+  -- Cardinality comparison provides a witness outside the core.
+  rcases Finset.exists_of_ssubset hssub with ⟨i, hiP₁, hiNot⟩
+  exact ⟨i, hiP₁, hiNot⟩
+
 end SunflowerFam
 
 end Sunflower

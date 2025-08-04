@@ -119,6 +119,60 @@ lemma petals_nonempty {S : SunflowerFam n t} (ht : 0 < t) :
   rw [S.tsize]
   exact ht
 
+/--
+When a sunflower family contains two distinct petals, its core is strictly
+smaller than each of those petals.  This basic combinatorial fact is convenient
+when reasoning about dimensions of subcubes extracted from the sunflower.
+-/
+lemma core_card_lt_of_two_petals {S : SunflowerFam n t}
+    {P₁ P₂ : Petal n} (h₁ : P₁ ∈ S.petals) (h₂ : P₂ ∈ S.petals)
+    (hcard : P₂.card = P₁.card) (hne : P₁ ≠ P₂) :
+    S.core.card < P₁.card := by
+  classical
+  -- The core is always contained in any petal.
+  have hsub : S.core ⊆ P₁ := S.sub_core _ h₁
+  -- Hence its cardinality is bounded by that of the petal.
+  have hle : S.core.card ≤ P₁.card := Finset.card_le_card hsub
+  -- Show that equality of cardinalities would force the two petals to coincide.
+  have hneq : S.core.card ≠ P₁.card := by
+    intro hEq
+    -- Convert the inclusion into an equality of sets.
+    have hcore_eq : S.core = P₁ :=
+      Finset.eq_of_subset_of_card_le hsub (by simpa [hEq])
+    -- From the sunflower property we deduce `P₁ ⊆ P₂`.
+    have hsubset : P₁ ⊆ P₂ := by
+      have htmp : P₁ ∩ P₂ = P₁ := by
+        simpa [hcore_eq] using S.pairwise_core P₁ h₁ P₂ h₂ hne
+      have hsubset_inter : P₁ ∩ P₂ ⊆ P₂ := Finset.inter_subset_right
+      simpa [htmp] using hsubset_inter
+    -- Equal cardinalities force the two petals to coincide.
+    have hcardle : P₂.card ≤ P₁.card := by simpa [hcard]
+    have : P₁ = P₂ := Finset.eq_of_subset_of_card_le hsubset hcardle
+    exact hne this
+  exact lt_of_le_of_ne hle hneq
+
+/-
+If a sunflower family contains two distinct petals of equal cardinality,
+then the common core is strictly contained in each of those petals.  This
+reformulation of `core_card_lt_of_two_petals` exposes the set-theoretic
+relationship which is often more convenient to exploit directly.
+-/
+lemma core_ssubset_of_two_petals {S : SunflowerFam n t}
+    {P₁ P₂ : Petal n} (h₁ : P₁ ∈ S.petals) (h₂ : P₂ ∈ S.petals)
+    (hcard : P₂.card = P₁.card) (hne : P₁ ≠ P₂) :
+    S.core ⊂ P₁ := by
+  classical
+  -- The core is contained in any petal by definition.
+  have hsub : S.core ⊆ P₁ := S.sub_core _ h₁
+  -- Cardinality considerations rule out equality of `core` and `P₁`.
+  have hneq : S.core ≠ P₁ := by
+    intro hEq
+    have hlt := core_card_lt_of_two_petals (S := S)
+      (P₁ := P₁) (P₂ := P₂) h₁ h₂ hcard hne
+    simpa [hEq] using hlt
+  -- Together these facts yield the desired strict inclusion.
+  exact (Finset.ssubset_iff_subset_ne).2 ⟨hsub, hneq⟩
+
 end SunflowerFam
 
 end Sunflower

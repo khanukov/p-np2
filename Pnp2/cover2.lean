@@ -69,29 +69,23 @@ axiom support_subset_core
     BoolFunc.support f ⊆ S.core
 
 /--
-If two Boolean points coincide on the core of a sunflower, any function whose
-support lives inside a petal evaluates identically on both points.  This isolates
-the combinatorial content required later in `sunflower_step` and will eventually
-replace the ad-hoc reasoning bundled into `eval_true_on_core`.
+If two Boolean points coincide on the core of a sunflower and a Boolean function
+depends only on coordinates from that core, then the function evaluates
+identically on the two points.  This isolates the combinatorial content required
+later in `sunflower_step` and will eventually replace the ad‑hoc reasoning bundled
+into `eval_true_on_core`.
 -/
 lemma eval_agree_on_core
     {n t : ℕ} (S : SunflowerFam n t)
-    {A : Finset (Fin n)} (hA : A ∈ S.petals)
-    {f : BFunc n} (hSupp : BoolFunc.support f = A)
-    {x y : Boolcube.Point n}
+    {f : BFunc n} {x y : Boolcube.Point n}
+    (h_support : BoolFunc.support f ⊆ S.core)
     (hxy : ∀ i ∈ S.core, x i = y i) :
     f x = f y := by
   classical
-  -- The axiom `support_subset_core` ensures that `f` depends only on the core
-  -- coordinates of the sunflower.
-  have h_support_core : BoolFunc.support f ⊆ S.core := by
-    simpa [hSupp] using
-      (support_subset_core (S := S) (A := A) (hA := hA)
-        (f := f) (hSupp := hSupp))
-  -- Agreement on the core therefore implies agreement on the full support.
+  -- Agreement on the core lifts to agreement on the whole support of `f`.
   have h_agree : ∀ i ∈ BoolFunc.support f, x i = y i := by
     intro i hi
-    exact hxy i (h_support_core hi)
+    exact hxy i (h_support hi)
   -- Evaluation of `f` is preserved under such coordinate-wise agreement.
   simpa using
     (BoolFunc.eval_eq_of_agree_on_support (f := f) (x := x) (y := y) h_agree)
@@ -198,9 +192,15 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
           simpa [R, Boolcube.Subcube.fromPoint, hi] using hx'
         -- Evaluations on `x` and the base point coincide thanks to
         -- `eval_agree_on_core`.
+        have h_support_core :
+            BoolFunc.support (f a.1 a.2) ⊆ S.core := by
+          simpa [hfSupp _ a.2] using
+            (support_subset_core (S := S) (A := a.1) (hA := a.2)
+              (f := f a.1 a.2) (hSupp := hfSupp _ a.2))
         have hx_eq : (f a.1 a.2) x = (f a.1 a.2) x₀ :=
-          eval_agree_on_core (S := S) (A := a.1) (hA := a.2)
-            (f := f a.1 a.2) (hSupp := hfSupp _ a.2) h_agree_core
+          eval_agree_on_core (S := S)
+            (f := f a.1 a.2) (h_support := h_support_core)
+            (hxy := h_agree_core)
         -- By assumption every function in `F` is `true` on the all-`false`
         -- point, in particular the selected one.
         have hx0_true : (f a.1 a.2) x₀ = true := by
@@ -234,25 +234,15 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
       let htwo : 2 ≤ S.petals.card := by simpa [S.tsize] using ht
       lt_of_lt_of_le (by decide : 1 < 2) htwo
     obtain ⟨P₁, hP₁, P₂, hP₂, hP₁P₂⟩ := Finset.one_lt_card.mp h_one_lt
-    -- The core is contained in each petal, so its size is at most `p`.
-    have h_core_le_p : S.core.card ≤ p := by
-      have := card_le_card (S.sub_core P₁ hP₁)
-      simpa [hpet_card P₁ hP₁] using this
-    -- Show the core cannot itself have size `p`; otherwise two petals coincide.
-    have h_core_ne_p : S.core.card ≠ p := by
-      intro h_eq
-      have h1 : S.core = P₁ := by
-        apply Finset.eq_of_subset_of_card_le (S.sub_core P₁ hP₁)
-        have : P₁.card = S.core.card := by simpa [hpet_card P₁ hP₁, h_eq]
-        exact le_of_eq this
-      have h2 : S.core = P₂ := by
-        apply Finset.eq_of_subset_of_card_le (S.sub_core P₂ hP₂)
-        have : P₂.card = S.core.card := by simpa [hpet_card P₂ hP₂, h_eq]
-        exact le_of_eq this
-      have hcontr : P₁ = P₂ := h1.symm.trans h2
-      exact hP₁P₂ hcontr
-    have h_core_lt_p : S.core.card < p :=
-      lt_of_le_of_ne' h_core_le_p (by simpa [eq_comm] using h_core_ne_p)
+    -- The sunflower property forces the core to be strictly contained in a petal.
+    have h_core_ssub : S.core ⊂ P₁ := by
+      have hcard : P₂.card = P₁.card := by
+        simpa [hpet_card P₁ hP₁, hpet_card P₂ hP₂]
+      exact SunflowerFam.core_ssubset_of_two_petals
+        (S := S) (P₁ := P₁) (P₂ := P₂) hP₁ hP₂ hcard hP₁P₂
+    have h_core_lt_p : S.core.card < p := by
+      have hlt := Finset.card_lt_card h_core_ssub
+      simpa [hpet_card P₁ hP₁] using hlt
     -- Any petal lives inside the `n` coordinates, hence `p ≤ n`.
     have hp_le_n : p ≤ n := by
       have : P₁.card ≤ (Finset.univ : Finset (Fin n)).card :=

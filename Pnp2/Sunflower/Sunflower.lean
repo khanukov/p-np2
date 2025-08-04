@@ -1,4 +1,5 @@
 import Mathlib.Data.Nat.Factorial.Basic
+import Mathlib.Data.Finset.Card
 import Pnp2.Boolcube
 
 /-! # Classical sunflower lemma
@@ -39,6 +40,60 @@ axiom sunflower_exists
     (h_w : ∀ A ∈ 𝓢, A.card = w) :
     HasSunflower 𝓢 w p
 
+/--
+For two petals the sunflower lemma becomes completely elementary: any
+family containing at least two sets already forms a `2`‑sunflower.  We
+record this special case with a direct proof so that small instances do
+not depend on the general combinatorial argument.
+-/
+lemma sunflower_exists_two
+    (𝓢 : Finset (Finset α)) (w : ℕ) (hw : 0 < w)
+    (h_large : 1 < 𝓢.card)
+    (h_w : ∀ A ∈ 𝓢, A.card = w) :
+    HasSunflower 𝓢 w 2 := by
+  classical
+  -- Choose two distinct members of the family.
+  have hpos : 0 < 𝓢.card := lt_trans Nat.zero_lt_one h_large
+  obtain ⟨A, hA⟩ := Finset.card_pos.mp hpos
+  obtain ⟨B, hB, hAB⟩ := Finset.exists_ne_of_one_lt_card h_large A
+  -- The petals of the sunflower are the two chosen sets.
+  refine ⟨{A, B}, ?_, ?_⟩
+  · intro X hX
+    have hx : X = A ∨ X = B := by
+      simpa [Finset.mem_insert, Finset.mem_singleton] using hX
+    cases hx with
+    | inl hXA => simpa [hXA] using hA
+    | inr hXB => simpa [hXB] using hB
+  · refine ⟨A ∩ B, ?_, ?_⟩
+    · -- Proof of the sunflower structure.
+      have hA_notB : A ∉ ({B} : Finset (Finset α)) := by
+        simpa [Finset.mem_singleton] using hAB.symm
+      refine ⟨by
+        simpa [Finset.card_singleton, hA_notB] using
+          (Finset.card_insert_of_notMem hA_notB), ?_⟩
+      -- The pairwise intersection property is immediate.
+      intro X hX Y hY hXY
+      have hX' : X = A ∨ X = B := by
+        simpa [Finset.mem_insert, Finset.mem_singleton] using hX
+      have hY' : Y = A ∨ Y = B := by
+        simpa [Finset.mem_insert, Finset.mem_singleton] using hY
+      cases hX' with
+      | inl hx =>
+          cases hY' with
+          | inl hy => cases hXY (by simpa [hx, hy])
+          | inr hy => simpa [hx, hy, Finset.inter_comm]
+      | inr hx =>
+          cases hY' with
+          | inl hy => simpa [hx, hy, Finset.inter_comm]
+          | inr hy => cases hXY (by simpa [hx, hy])
+    · -- Finally each petal has cardinality `w`.
+      intro X hX
+      have hx : X = A ∨ X = B := by
+        simpa [Finset.mem_insert, Finset.mem_singleton] using hX
+      cases hx with
+      | inl hx => simpa [hx] using h_w A hA
+      | inr hx => simpa [hx] using h_w B hB
+
 /-- Convenient wrapper for the sunflower lemma when the family is
 already known to consist of `w`‑sets. -/
 lemma sunflower_exists_of_fixedSize
@@ -76,10 +131,23 @@ lemma exists_of_large_family
     (hbig : F.card > Nat.factorial (t - 1) * w ^ t) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F := by
   classical
-  -- Apply the classical sunflower lemma to obtain a `t`-sunflower inside `F`.
-  rcases sunflower_exists (𝓢 := F) (w := w) (p := t) hw ht
-      (by simpa using hbig) hcard with
-    ⟨pet, hsub, core, hSun, hcards⟩
+  -- Obtain a `t`‑sunflower inside `F`.
+  have hsun : HasSunflower F w t := by
+    by_cases ht2 : t = 2
+    · -- The case `t = 2` is trivial and avoids the axiom.
+      subst ht2
+      have hgt1 : 1 < F.card := by
+        have hw1 : 1 ≤ w := Nat.succ_le_of_lt hw
+        have hpow : 1 ≤ w ^ 2 := by
+          simpa [pow_two] using (Nat.mul_le_mul hw1 hw1)
+        exact lt_of_le_of_lt hpow (by simpa using hbig)
+        -- F.card > w^2 and w^2 ≥ 1
+      exact sunflower_exists_two (𝓢 := F) (w := w) hw hgt1 hcard
+    · -- For `t ≥ 3` we fall back to the general lemma.
+      have ht' : 2 ≤ t := ht
+      exact sunflower_exists (𝓢 := F) (w := w) (p := t) hw ht'
+        (by simpa using hbig) hcard
+  rcases hsun with ⟨pet, hsub, core, hSun, hcards⟩
   -- Break down the `IsSunflower` structure into its two components.
   rcases hSun with ⟨hsize, hpair⟩
   -- We now show that the common `core` is contained in every petal.

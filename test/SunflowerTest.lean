@@ -30,4 +30,22 @@ example :
       (n := 2) (w := 1) (t := 2) (F := F)
       hw ht hcard hbig
 
+/-- The specialised `sunflower_exists_two` also witnesses a sunflower
+    in this basic family. -/
+example :
+    let F : Finset (Petal 2) := { {0}, {1} }
+    HasSunflower F 1 2 := by
+  classical
+  intro F
+  have hw : 0 < (1 : ℕ) := by decide
+  have hlarge : 1 < F.card := by simp [F]
+  have hcard : ∀ S ∈ F, S.card = 1 := by
+    intro S hS
+    have hS' := by simpa [F] using hS
+    rcases hS' with h0 | h1
+    · simp [h0]
+    · simp [h1]
+  simpa [F] using
+    sunflower_exists_two (𝓢 := F) (w := 1) hw hlarge hcard
+
 end SunflowerTest

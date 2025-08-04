@@ -1,14 +1,14 @@
 import Pnp2.Boolcube
-import Pnp2.cover
+import Pnp2.cover2
 
 namespace Boolcube
 
 open Entropy
-open Cover
+open Cover2
 
 /-!
 `familyCollisionEntropyCover` wraps the existential statement
-`Cover.cover_exists` for easier use in downstream files.  It asserts that a
+`Cover2.cover_exists` for easier use in downstream files.  It asserts that a
 family of Boolean functions with bounded collision entropy admits a small set of
 jointly monochromatic subcubes covering all `1`‑inputs of every function in the
 family.  The full proof is nontrivial and omitted; this declaration merely
@@ -22,7 +22,7 @@ theorem familyCollisionEntropyCover
     (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) ∧
     T.card ≤ mBound n h := by
   classical
-  simpa using Cover.cover_exists (F := F) (h := h) hH
+  simpa using Cover2.cover_exists (F := F) (h := h) hH
 
 /-!
 ### A convenience record for covers returned by `familyEntropyCover`.
@@ -53,7 +53,7 @@ noncomputable def familyEntropyCover
 
 /-!
 `familyEntropyCover` is defined using `cover_exists`, just like
-`Cover.coverFamily`.  The following lemma exposes this relationship by
+`Cover2.coverFamily`.  The following lemma exposes this relationship by
 identifying the set of rectangles produced by both constructions.
 This convenience result simplifies linking the wrapper record with the
 underlying cover used elsewhere in the development.
@@ -61,9 +61,9 @@ underlying cover used elsewhere in the development.
 @[simp] lemma familyEntropyCover_rects_eq_coverFamily
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
     (familyEntropyCover (F := F) (h := h) hH).rects
-      = Cover.coverFamily (F := F) (h := h) hH := by
+      = Cover2.coverFamily (F := F) (h := h) hH := by
   classical
   -- Unfold both constructions and simplify using `cover_exists`.
-  simp [familyEntropyCover, Cover.coverFamily, Cover.cover_exists]
+  simp [familyEntropyCover, Cover2.coverFamily, Cover2.cover_exists]
 
 end Boolcube

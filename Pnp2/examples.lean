@@ -22,13 +22,13 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement
-import Pnp2.cover
+import Pnp2.cover2
 import Pnp2.bound
 import Mathlib.Data.Finset.Basic
 
 open Classical
 open BoolFunc
-open Cover
+open Cover2
 open Bound
 open Sunflower
 open Agreement
@@ -166,7 +166,7 @@ def Rcover : Finset (Subcube 3) :=
 #eval Rcover.card   -- Lean can *not* compute this (opaque), but type‑checks.
 
 example : Rcover.card ≤ mBound 3 h₀ :=
-  Cover.coverFamily_card_bound (n := 3) (h := h₀) F₃ h₀_ok
+  Cover2.coverFamily_card_bound (n := 3) (h := h₀) F₃ h₀_ok
 
 /-
 Similarly, every *1‑input* of every function is covered:
@@ -174,7 +174,7 @@ Similarly, every *1‑input* of every function is covered:
 -/
 example (x : Point 3) (h : f_and x = true) :
     ∃ R, R ∈ Rcover ∧ (x ∈ₛ R) :=
-  Cover.coverFamily_spec_cover (n := 3) (h := h₀) F₃ h₀_ok
+  Cover2.coverFamily_spec_cover (n := 3) (h := h₀) F₃ h₀_ok
     f_and
     (by
       -- `f_and ∈ F₃`
@@ -191,7 +191,7 @@ end CoverDemo
 
 section BuildCoverBound
 
-open Cover
+  open Cover2
 
 -- A trivial family consisting only of the constant `false` function.
 def fFalse : BoolFunc.BFunc 1 := fun _ => false
@@ -205,9 +205,9 @@ lemma H2_FFalse : BoolFunc.H₂ FFalse ≤ (0 : ℝ) := by
 /-!  Even though `buildCover` is non-computable, we can still state and
     prove the numeric bound for this tiny example. -/
 example :
-    (Cover.buildCover (n := 1) FFalse (h := 0) H2_FFalse).card ≤ mBound 1 0 := by
+    (Cover2.buildCover (n := 1) FFalse (h := 0) H2_FFalse).card ≤ mBound 1 0 := by
   simpa using
-    Cover.buildCover_card_bound (n := 1) (F := FFalse) (h := 0) (hH := H2_FFalse)
+    Cover2.buildCover_card_bound (n := 1) (F := FFalse) (h := 0) (hH := H2_FFalse)
 
 end BuildCoverBound
 

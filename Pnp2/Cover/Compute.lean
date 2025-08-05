@@ -121,7 +121,7 @@ noncomputable def buildCoverSearch.loop (F : Family n) :
       | some ⟨_, x⟩ =>
           let R := Subcube.point (n := n) x
           -- Continue the search with the newly inserted rectangle.
-          R :: buildCoverSearch.loop F fuel (Insert.insert R Rset)
+          R :: buildCoverSearch.loop (n := n) F fuel (Insert.insert R Rset)
 
 /--
 `buildCoverSearch` is a naive executable cover construction.  It repeatedly

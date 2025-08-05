@@ -44,6 +44,62 @@ variable {n : ℕ}
 
 
 /--
+`buildCoverNaive` is a tiny executable baseline for the cover construction.
+It scans all points of the Boolean cube and records those on which **every**
+function in the family evaluates to `true`.  Each such point becomes a
+zero‑dimensional subcube.  The procedure is exponentially slow in `n` but keeps
+the code entirely constructive and provides a convenient playground while the
+efficient algorithm is being developed.
+-/
+noncomputable def buildCoverNaive (F : Family n) : List (Subcube n) :=
+  ((Finset.univ.filter (fun x : Point n => ∀ f ∈ F, f x = true)).image
+      (fun x => Subcube.point (n := n) x)).toList
+
+/--
+Basic specification for `buildCoverNaive`.
+The resulting list has no duplicates, every listed cube is monochromatic for
+the family (with colour `true`) and the length never exceeds the number of
+available subcubes.
+-/
+lemma buildCoverNaive_spec (F : Family n) :
+    (buildCoverNaive (n := n) (F := F)).Nodup ∧
+    (∀ R ∈ (buildCoverNaive (n := n) (F := F)).toFinset,
+        Subcube.monochromaticForFamily R F) ∧
+    (buildCoverNaive (n := n) (F := F)).length ≤
+      Fintype.card (Subcube n) := by
+  classical
+  -- Abbreviate the underlying finite set of subcubes.
+  set S :=
+    (Finset.univ.filter (fun x : Point n => ∀ f ∈ F, f x = true)).image
+      (fun x => Subcube.point (n := n) x) with hS
+  have hlist : buildCoverNaive (n := n) (F := F) = S.toList := by
+    simpa [buildCoverNaive, hS]
+  have hnodup : (buildCoverNaive (n := n) (F := F)).Nodup := by
+    simpa [hlist] using (Finset.nodup_toList S)
+  refine And.intro hnodup ?_
+  -- Establish monochromaticity and the cardinality bound.
+  refine And.intro ?mono ?bound
+  · -- Each element stems from a point where all functions evaluate to `true`.
+    intro R hR
+    have hR' : R ∈ S := by
+      simpa [hlist] using hR
+    rcases Finset.mem_image.mp hR' with ⟨x, hx, rfl⟩
+    have hx' : ∀ f ∈ F, f x = true :=
+      (Finset.mem_filter.mp hx).2
+    refine ⟨true, ?_⟩
+    intro f hf y hy
+    have hy' : x = y :=
+      (Subcube.mem_point_iff (x := x) (y := y)).1 hy
+    simpa [hy'] using hx' f hf
+  · -- The list enumerates a subset of all subcubes.
+    have hcard : S.card ≤ Fintype.card (Subcube n) :=
+      Finset.card_le_univ _
+    have hlen : (buildCoverNaive (n := n) (F := F)).length = S.card := by
+      simpa [hlist] using (Finset.length_toList S)
+    simpa [hlen]
+
+
+/--
 Enumerate the rectangles returned by `Cover2.buildCover` as a list.  The list is
 free of duplicates and its cardinality agrees with that of the underlying
 `Finset`.

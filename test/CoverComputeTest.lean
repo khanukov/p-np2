@@ -36,6 +36,27 @@ by
           have _hH₂ := BoolFunc.H₂_card_one
               (F := ({trivialFun} : Boolcube.Family 1)) hcard
           simp)
-  exact hspec.2
+  exact hspec.2.2
+
+/-- The list returned by `buildCoverCompute` has no duplicates. -/
+example :
+    (buildCoverCompute (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+      (by
+        classical
+        -- Collision entropy of a singleton family is zero.
+        have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+        have _hH₂ := BoolFunc.H₂_card_one
+            (F := ({trivialFun} : Boolcube.Family 1)) hcard
+        simp)).Nodup :=
+by
+  classical
+  have hspec := buildCoverCompute_spec
+        (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+        (by
+          have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+          have _hH₂ := BoolFunc.H₂_card_one
+              (F := ({trivialFun} : Boolcube.Family 1)) hcard
+          simp)
+  exact hspec.1
 
 end CoverComputeTest

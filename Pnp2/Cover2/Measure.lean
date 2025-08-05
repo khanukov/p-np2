@@ -231,6 +231,114 @@ lemma mu_union_singleton_succ_le {F : Family n} {Rset : Finset (Subcube n)}
   exact Nat.succ_le_of_lt hlt
 
 /--
+If `firstUncovered` produces a witness `p`, inserting the point subcube
+obtained by freezing all coordinates of `p.2` strictly decreases the measure.
+This is a specialised convenience lemma for constructing covers one uncovered
+pair at a time.
+-/
+lemma mu_union_firstUncovered_singleton_lt {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    {p : Σ _ : BFunc n, Point n}
+    (hp : firstUncovered (n := n) F Rset = some p) :
+    mu (n := n) F h
+        (Rset ∪
+          {Boolcube.Subcube.fromPoint (n := n) p.2
+              (Finset.univ : Finset (Fin n))}) <
+      mu (n := n) F h Rset := by
+  classical
+  -- The returned pair is indeed uncovered.
+  have hpU :=
+    mem_uncovered_of_firstUncovered_some (n := n)
+      (F := F) (R := Rset) (p := p) hp
+  -- The point `p.2` obviously lies in the singleton subcube we insert.
+  have hpR : p.2 ∈ₛ
+      Boolcube.Subcube.fromPoint (n := n) p.2 (Finset.univ : Finset (Fin n)) := by
+    simpa using
+      (Boolcube.Subcube.self_mem_fromPoint (n := n)
+        (x := p.2) (K := (Finset.univ : Finset (Fin n))))
+  -- Package the witness to apply `mu_union_singleton_lt`.
+  have hx : ∃ q ∈ uncovered (n := n) F Rset,
+      q.2 ∈ₛ Boolcube.Subcube.fromPoint (n := n) p.2
+        (Finset.univ : Finset (Fin n)) := ⟨p, hpU, hpR⟩
+  -- Adding this singleton subcube strictly reduces the measure.
+  simpa using
+    (mu_union_singleton_lt (n := n) (F := F) (Rset := Rset)
+      (R := Boolcube.Subcube.fromPoint (n := n) p.2
+          (Finset.univ : Finset (Fin n))) (h := h) hx)
+
+/--
+If `firstUncovered` produces a witness `p`, inserting the corresponding point
+subcube decreases the measure by at least one.  This quantified variant of
+`mu_union_firstUncovered_singleton_lt` is convenient when only an inequality is
+required.
+-/
+lemma mu_union_firstUncovered_singleton_succ_le {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    {p : Σ _ : BFunc n, Point n}
+    (hp : firstUncovered (n := n) F Rset = some p) :
+    mu (n := n) F h
+        (Rset ∪
+          {Boolcube.Subcube.fromPoint (n := n) p.2
+              (Finset.univ : Finset (Fin n))}) + 1 ≤
+      mu (n := n) F h Rset := by
+  classical
+  -- The pair returned by `firstUncovered` is uncovered and lies inside the
+  -- inserted point subcube.
+  have hpU :=
+    mem_uncovered_of_firstUncovered_some (n := n)
+      (F := F) (R := Rset) (p := p) hp
+  have hpR : p.2 ∈ₛ
+      Boolcube.Subcube.fromPoint (n := n) p.2 (Finset.univ : Finset (Fin n)) := by
+    simpa using
+      (Boolcube.Subcube.self_mem_fromPoint (n := n)
+        (x := p.2) (K := (Finset.univ : Finset (Fin n))))
+  -- Package the witness and apply the general estimate.
+  have hx : ∃ q ∈ uncovered (n := n) F Rset,
+      q.2 ∈ₛ Boolcube.Subcube.fromPoint (n := n) p.2
+        (Finset.univ : Finset (Fin n)) := ⟨p, hpU, hpR⟩
+  exact
+    mu_union_singleton_succ_le (n := n) (F := F) (Rset := Rset)
+      (R := Boolcube.Subcube.fromPoint (n := n) p.2
+        (Finset.univ : Finset (Fin n))) (h := h) hx
+
+/--
+`extendCover` performs a single covering step: if `firstUncovered` locates a
+pair `(f, x)` that is not yet covered by `Rset`, we insert the subcube freezing
+all coordinates of `x`.  Otherwise the original set `Rset` is returned
+unchanged.
+-/
+noncomputable def extendCover {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) : Finset (Subcube n) :=
+  match firstUncovered (n := n) F Rset with
+  | none => Rset
+  | some p =>
+      Rset ∪
+        {Boolcube.Subcube.fromPoint (n := n) p.2
+            (Finset.univ : Finset (Fin n))}
+
+/--
+If `firstUncovered` finds an uncovered pair, `extendCover` inserts the
+corresponding point subcube and the measure drops by at least one.
+-/
+lemma mu_extendCover_succ_le {F : Family n} {Rset : Finset (Subcube n)}
+    {h : ℕ}
+    (hfu : firstUncovered (n := n) F Rset ≠ none) :
+    mu (n := n) F h (extendCover (n := n) F Rset) + 1 ≤
+      mu (n := n) F h Rset := by
+  classical
+  -- Analyse the outcome of `firstUncovered`.
+  cases hfu' : firstUncovered (n := n) F Rset with
+  | none =>
+      -- Contradiction: `firstUncovered` yielded `none`.
+      exact (hfu hfu').elim
+  | some p =>
+      -- The measure drops after inserting the corresponding point subcube.
+      have hdrop :=
+        mu_union_firstUncovered_singleton_succ_le
+          (F := F) (Rset := Rset) (h := h) (p := p) (hp := hfu')
+      simpa [extendCover, hfu'] using hdrop
+
+/--
 If a rectangle covers two distinct uncovered pairs, the measure drops
 strictly after inserting this rectangle.
 -/

@@ -3,6 +3,7 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Cover.SubcubeAdapters
+import Pnp2.Cover.Uncovered
 import Pnp2.cover2
 
 -- Silence linter suggestions about using `simp` instead of `simpa` in this file.
@@ -97,6 +98,33 @@ lemma buildCoverNaive_spec (F : Family n) :
     have hlen : (buildCoverNaive (n := n) (F := F)).length = S.card := by
       simpa [hlist] using (Finset.length_toList S)
     simpa [hlen]
+
+/--
+`buildCoverSearch` provides a tiny constructive cover routine used for
+experimentation.  Starting from the empty rectangle set the algorithm keeps
+requesting an uncovered witness using `Cover2.firstUncovered`.  For every point
+returned it inserts the corresponding zero‑dimensional subcube and continues the
+search.  The process repeats for at most `F.card * 2^n` iterations, which is
+sufficient to cover every `true` value individually.
+
+This procedure is *exponentially* slow and should only be used as a reference
+implementation.  Nevertheless it offers a simple executable model of the cover
+construction that avoids the classical reasoning of `Cover2.buildCover`.
+-/
+noncomputable def buildCoverSearch (F : Family n) : List (Subcube n) := by
+  classical
+  let fuel := F.card * Fintype.card (Point n)
+  -- recursive worker that keeps track of the already chosen rectangles
+  let rec loop : Nat → Finset (Subcube n) → List (Subcube n)
+    | 0, _ => []
+    | Nat.succ fuel, Rset =>
+        match Cover2.firstUncovered (n := n) F Rset with
+        | none => []
+        | some ⟨_, x⟩ =>
+            let R := Subcube.point (n := n) x
+            -- continue the search with the newly inserted rectangle
+            R :: loop fuel (Insert.insert R Rset)
+  exact loop fuel (∅ : Finset (Subcube n))
 
 
 /--

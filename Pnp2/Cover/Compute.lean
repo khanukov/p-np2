@@ -3,17 +3,22 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Cover.SubcubeAdapters
+import Pnp2.cover2
 
 /-!
-This file intentionally provides only a **tiny computational stub** for the
-cover construction.  The heavy combinatorial machinery lives elsewhere; here we
-only expose a minimal API that is sufficient for the test suite and downstream
-experiments to compile.
+This module provides a **lightweight executable wrapper** around the
+non‑computable cover construction in `cover2.lean`.
 
-For the time being `buildCoverCompute` does not attempt to compute a genuine
-cover.  It simply returns the empty list of rectangles.  This keeps the
-implementation trivially executable while we gradually fill in the real
-algorithm.  The specification below reflects this placeholder behaviour.
+The main development constructs a finite set of monochromatic subcubes via the
+function `Cover2.buildCover`.  That definition lives in a classical world and
+returns a `Finset`.  For experimentation it is convenient to obtain an actual
+`List` of rectangles, hence the function `buildCoverCompute` below simply
+enumerates the set produced by `Cover2.buildCover`.
+
+The current implementation does not attempt to be efficient—the heavy lifting
+is delegated to `Cover2.buildCover` which itself is still a placeholder in this
+repository.  Nevertheless, providing this wrapper keeps the interface stable
+while the constructive algorithm is being developed.
 
 `Cover.Bounds` exposes the auxiliary function `mBound` together with several
 useful arithmetic lemmas.  We re-export the most common ones so that users of
@@ -34,23 +39,45 @@ open Boolcube.Subcube
 
 variable {n : ℕ}
 
+
 /--
-Trivial computational cover.  Given a family `F` and an entropy budget `h`,
-`buildCoverCompute F h` returns the empty list of rectangles.  This is merely a
-placeholder for the future constructive implementation.
--/
-def buildCoverCompute (F : Family n) (h : ℕ)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  []
+Enumerate the rectangles returned by `Cover2.buildCover` as a list.  The list is
+free of duplicates and its cardinality agrees with that of the underlying
+`Finset`.
+
+At the moment `Cover2.buildCover` itself is a stub which always produces the
+empty set, so this function merely returns `[]`.  Once the full construction is
+ported, this wrapper will automatically expose the computed rectangles as a
+list.
+--/
+noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
+  -- Convert the finite set of rectangles into an explicit list.
+  (Cover2.buildCover (n := n) F h hH).toList
 
 @[simp] lemma buildCoverCompute_empty (h : ℕ)
     (hH : BoolFunc.H₂ (∅ : Family n) ≤ (h : ℝ)) :
-    buildCoverCompute (F := (∅ : Family n)) (h := h) hH = [] := rfl
+    buildCoverCompute (F := (∅ : Family n)) (h := h) hH = [] := by
+  classical
+  -- `buildCover` returns the empty set, whose list enumeration is `[]`.
+  have hres := Cover2.buildCover_eq_Rset
+    (n := n) (F := (∅ : Family n)) (h := h) (_hH := hH)
+    (Rset := (∅ : Finset (Subcube n)))
+  -- Rewrite using the characterisation of `buildCover` on the empty family.
+  simpa [buildCoverCompute, hres]
 
+/--
+The length of the list produced by `buildCoverCompute` coincides with the
+cardinality of the underlying set returned by `Cover2.buildCover`.
+-/
 @[simp] lemma buildCoverCompute_length (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCoverCompute (F := F) (h := h) hH).length = 0 := by
-  simp [buildCoverCompute]
+    (buildCoverCompute (F := F) (h := h) hH).length =
+      (Cover2.buildCover (n := n) F h hH).card := by
+  -- Finsets enumerate to lists without repetition and of matching size.
+  classical
+  simpa [buildCoverCompute] using
+    (Finset.length_toList (Cover2.buildCover (n := n) F h hH))
 
 /--
 Basic specification for the stub `buildCoverCompute`: all listed rectangles are
@@ -64,12 +91,19 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
   refine And.intro ?mono ?bound
   · intro R hR
-    -- No rectangles are produced, hence no membership is possible.
-    simp [buildCoverCompute] at hR
+    -- Translate membership in the enumerated list back to the underlying set
+    -- of rectangles and reuse `buildCover_mono`.
+    have hR' : R ∈ Cover2.buildCover (n := n) F h hH := by
+      -- The conversion from list to set preserves membership.
+      simpa [buildCoverCompute] using hR
+    exact Cover2.buildCover_mono (n := n) (F := F) (h := h) hH R hR'
   ·
-    -- The length is zero, which trivially satisfies any non-negative bound.
-    have hnonneg : 0 ≤ mBound n h := Nat.zero_le _
-    exact by simpa [buildCoverCompute] using hnonneg
+    -- The length of the list equals the cardinality of the set, which is
+    -- bounded by `mBound` via `buildCover_card_bound`.
+    have hcard := Cover2.buildCover_card_bound
+      (n := n) (F := F) (h := h) hH
+    -- Rewrite the goal using the length/cardinality equality.
+    simpa [buildCoverCompute_length] using hcard
 
 end Cover
 

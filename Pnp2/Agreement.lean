@@ -66,6 +66,20 @@ def Subcube.fromPoint (x : Point n) (I : Finset (Fin n)) : Subcube n where
     (Subcube.fromPoint x I).dimension = n - I.card := by
   rfl
 
+@[simp] lemma mem_fromPoint_univ
+    {x y : Point n} :
+    (y ∈ₛ Subcube.fromPoint x (Finset.univ : Finset (Fin n))) ↔ y = x := by
+  classical
+  constructor
+  · intro h
+    funext i
+    have hi : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+    exact h i hi
+  · intro h
+    subst h
+    intro i hi
+    rfl
+
 /-! ### Core‑agreement lemma with CoreClosed assumption -/
 
 /-

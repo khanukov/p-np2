@@ -1252,6 +1252,17 @@ example (F : BoolFunc.Family 1)
         ≤ Cover2.mu (n := 1) F 0 (∅ : Finset (Subcube 1)) :=
   Cover2.mu_buildCover_lt_start (n := 1) (F := F) (h := 0) hH hfu
 
+/--
+A single `extendCover` step reduces the measure whenever an uncovered pair
+exists.
+-/
+example (F : BoolFunc.Family 1)
+    (hfu : Cover2.firstUncovered (n := 1) F (∅ : Finset (Subcube 1)) ≠ none) :
+    Cover2.mu (n := 1) F 0
+        (Cover2.extendCover (n := 1) F (∅ : Finset (Subcube 1))) + 1
+        ≤ Cover2.mu (n := 1) F 0 (∅ : Finset (Subcube 1)) :=
+  Cover2.mu_extendCover_succ_le (n := 1) (F := F) (Rset := ∅) (h := 0) hfu
+
 /-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
 example :
     2 * (0 : ℕ) ≤

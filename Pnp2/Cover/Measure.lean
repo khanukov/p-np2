@@ -339,6 +339,41 @@ lemma mu_extendCover_succ_le {F : Family n} {Rset : Finset (Subcube n)}
       simpa [extendCover, hfu'] using hdrop
 
 /--
+If the search for an uncovered pair fails, `extendCover` leaves the set of
+rectangles unchanged.  This lemma exposes that behaviour for convenient
+rewriting in subsequent proofs.
+-/
+@[simp] lemma extendCover_none {F : Family n} {Rset : Finset (Subcube n)}
+    (hfu : firstUncovered (n := n) F Rset = none) :
+    extendCover (n := n) F Rset = Rset := by
+  classical
+  simp [extendCover, hfu]
+
+/--
+Applying `extendCover` never increases the termination measure `μ`.  If a new
+rectangle is inserted the measure drops by at least one, otherwise it remains
+unchanged.
+-/
+lemma mu_extendCover_le {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    mu (n := n) F h (extendCover (n := n) F Rset) ≤
+      mu (n := n) F h Rset := by
+  classical
+  -- Inspect the outcome of `firstUncovered`.
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      -- No uncovered pairs remain; `extendCover` is the identity.
+      simpa [extendCover, hfu]
+  | some p =>
+      -- A new rectangle gets inserted and the measure decreases.
+      have hdrop :=
+        mu_union_firstUncovered_singleton_succ_le
+          (F := F) (Rset := Rset) (h := h) (p := p) (hp := hfu)
+      -- Turn the quantified drop by one into a plain inequality.
+      have := Nat.le_trans (Nat.le_succ _)
+        (by simpa [extendCover, hfu] using hdrop)
+      simpa [extendCover, hfu] using this
+
+/--
 If a rectangle covers two distinct uncovered pairs, the measure drops
 strictly after inserting this rectangle.
 -/

@@ -128,69 +128,57 @@ noncomputable def buildCoverSearch (F : Family n) : List (Subcube n) := by
 
 
 /-!
-`buildCoverCompute` below implements a very small executable cover
-construction.  It repeatedly queries `Cover2.firstUncovered` and inserts the
-corresponding point subcube.  The routine stops after at most `2^n` iterations,
-ensuring termination even though the search itself is naive.  The resulting
-rectangles are all zero‑dimensional, but this suffices for experimentation.
+`buildCoverCompute` enumerates the rectangles produced by the classical
+construction `Cover2.buildCover`.  The latter returns a finite set of
+monochromatic subcubes; here we simply convert that set into a list to obtain an
+executable description.  All guarantees of `Cover2.buildCover` are preserved –
+the resulting list has no duplicates, every subcube is monochromatic for the
+family and the length is bounded by `mBound`.
 -/
-noncomputable def coverLoop (F : Family n) : Nat → Finset (Subcube n) → Finset (Subcube n)
-  | 0, Rset => Rset
-  | Nat.succ k, Rset =>
-      match Cover2.firstUncovered (n := n) F Rset with
-      | none => Rset
-      | some ⟨_, x⟩ =>
-          let R := Subcube.point (n := n) x
-          coverLoop F k (Insert.insert R Rset)
-
 noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  let _ := h; let _ := hH
-  let fuel := Fintype.card (Point n)
-  (coverLoop (n := n) F fuel (∅ : Finset (Subcube n))).toList
+  (Cover2.buildCover (n := n) F h hH).toList
 
 /--
-Specification for `buildCoverCompute`.  The returned list contains no
-duplicates, every element is a point subcube and the total length is bounded by
-`2^n`.
+Specification for `buildCoverCompute`.  The returned list enumerates the set of
+rectangles from `Cover2.buildCover`; hence it contains no duplicates, every
+element is monochromatic for the family and the length is bounded by `mBound`.
 -/
 lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCoverCompute (F := F) (h := h) hH).Nodup ∧
-    (buildCoverCompute (F := F) (h := h) hH).length ≤
-      Fintype.card (Point n) := by
+    (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
+        Subcube.monochromaticForFamily R F) ∧
+    (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
   classical
-  unfold buildCoverCompute
-  set fuel := Fintype.card (Point n) with hfuel
-  set loop := coverLoop (n := n) F with hloop
-  -- Bound the cardinality of the intermediate set.
-  have hcard_aux : ∀ k Rset, (loop k Rset).card ≤ Rset.card + k := by
-    intro k; induction k with
-    | zero => intro Rset; simp [hloop, coverLoop]
-    | succ k ih =>
-        intro Rset; cases hfu : Cover2.firstUncovered (n := n) F Rset with
-        | none => simpa [coverLoop, hfu, hloop]
-        | some p =>
-            have ih' := ih (Insert.insert (Subcube.point (n := n) p.2) Rset)
-            have hinsert :
-                (Insert.insert (Subcube.point (n := n) p.2) Rset).card ≤ Rset.card + 1 :=
-              Finset.card_insert_le (a := Subcube.point (n := n) p.2) (s := Rset)
-            calc
-              (loop (Nat.succ k) Rset).card
-                  = (loop k (Insert.insert (Subcube.point (n := n) p.2) Rset)).card := by
-                        simp [coverLoop, hfu, hloop]
-              _ ≤ (Insert.insert (Subcube.point (n := n) p.2) Rset).card + k := ih'
-              _ ≤ (Rset.card + 1) + k := Nat.add_le_add_right hinsert _
-              _ = Rset.card + Nat.succ k := by
-                simp [Nat.add_comm, Nat.add_left_comm]
-  have hcard := hcard_aux fuel (∅ : Finset (Subcube n))
-  have hnodup := Finset.nodup_toList (loop fuel (∅ : Finset (Subcube n)))
-  have hlen := Finset.length_toList (loop fuel (∅ : Finset (Subcube n)))
-  refine And.intro ?nodup ?length
-  · simpa [hloop, hfuel] using hnodup
-  · have : (loop fuel (∅ : Finset (Subcube n))).card ≤ fuel := by
-        simpa [hloop, hfuel] using hcard
-    simpa [hloop, hfuel, hlen] using this
+  -- Abbreviate the finite set returned by `Cover2.buildCover`.
+  set S := Cover2.buildCover (n := n) F h hH with hS
+  -- The list is just `S.toList`.
+  have hlist : buildCoverCompute (F := F) (h := h) hH = S.toList := by
+    simpa [buildCoverCompute, hS]
+  -- Basic properties of `toList`.
+  have hnodup : (buildCoverCompute (F := F) (h := h) hH).Nodup := by
+    simpa [hlist] using (Finset.nodup_toList S)
+  -- Translate membership in the list's `toFinset` to membership in `S`.
+  have hmono :
+      (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
+        Subcube.monochromaticForFamily R F) := by
+    intro R hR
+    -- `simp` converts membership in the list's finset back to the original set.
+    have hR' : R ∈ S := by
+      simpa [hlist] using hR
+    exact (Cover2.buildCover_mono (n := n) (F := F) (h := h) hH R hR')
+  -- Relate the list length to the cardinality of `S` and apply the bound.
+  have hlen : (buildCoverCompute (F := F) (h := h) hH).length = S.card := by
+    simpa [hlist] using (Finset.length_toList S)
+  have hcard : S.card ≤ mBound n h :=
+    Cover2.buildCover_card_bound (n := n) (F := F) (h := h) hH
+  have hlen' :
+      (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
+    simpa [hlen] using hcard
+  -- Assemble the final specification.
+  refine And.intro hnodup ?rest
+  refine And.intro hmono hlen'
 
 end Cover
 

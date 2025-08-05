@@ -95,6 +95,20 @@ This is a direct consequence of enumerating a `Finset` via `toList`.
     (Finset.nodup_toList (Cover2.buildCover (n := n) F h hH))
 
 /--
+The `Finset` of rectangles enumerated by `buildCoverCompute` agrees with
+`Cover2.buildCover`.  This convenience lemma allows translating membership
+statements between the list and the underlying set without manual rewrites.
+-/
+@[simp] lemma buildCoverCompute_toFinset (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCoverCompute (F := F) (h := h) hH).toFinset =
+      Cover2.buildCover (n := n) F h hH := by
+  classical
+  -- `Finset.toList` followed by `List.toFinset` yields the original set.
+  ext R
+  simp [buildCoverCompute]
+
+/--
 Basic specification for the stub `buildCoverCompute`: all listed rectangles are
 monochromatic for the family (vacuously, since the list is empty) and the
 enumeration length satisfies the global bound `mBound`.
@@ -117,8 +131,9 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
       -- Translate membership in the enumerated list back to the underlying set
       -- of rectangles and reuse `buildCover_mono`.
       have hR' : R ∈ Cover2.buildCover (n := n) F h hH := by
-        -- The conversion from list to set preserves membership.
-        simpa [buildCoverCompute] using hR
+        -- The conversion from list to set is handled by
+        -- `buildCoverCompute_toFinset`.
+        simpa [buildCoverCompute_toFinset] using hR
       exact Cover2.buildCover_mono (n := n) (F := F) (h := h) hH R hR'
     ·
       -- The length of the list equals the cardinality of the set, which is

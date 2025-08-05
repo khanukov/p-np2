@@ -43,7 +43,6 @@ open Boolcube.Subcube
 
 variable {n : ℕ}
 
-
 /--
 `buildCoverNaive` is a tiny executable baseline for the cover construction.
 It scans all points of the Boolean cube and records those on which **every**
@@ -100,175 +99,47 @@ lemma buildCoverNaive_spec (F : Family n) :
     simpa [hlen]
 
 /--
-`buildCoverSearch` provides a tiny constructive cover routine used for
-experimentation.  Starting from the empty rectangle set the algorithm keeps
-requesting an uncovered witness using `Cover2.firstUncovered`.  For every point
-returned it inserts the corresponding zero‑dimensional subcube and continues the
-search.  The process repeats for at most `F.card * 2^n` iterations, which is
-sufficient to cover every `true` value individually.
-
-This procedure is *exponentially* slow and should only be used as a reference
-implementation.  Nevertheless it offers a simple executable model of the cover
-construction that avoids the classical reasoning of `Cover2.buildCover`.
--/
-noncomputable def buildCoverSearch (F : Family n) : List (Subcube n) := by
-  classical
-  let fuel := F.card * Fintype.card (Point n)
-  -- recursive worker that keeps track of the already chosen rectangles
-  let rec loop : Nat → Finset (Subcube n) → List (Subcube n)
-    | 0, _ => []
-    | Nat.succ fuel, Rset =>
-        match Cover2.firstUncovered (n := n) F Rset with
-        | none => []
-        | some ⟨_, x⟩ =>
-            let R := Subcube.point (n := n) x
-            -- continue the search with the newly inserted rectangle
-            R :: loop fuel (Insert.insert R Rset)
-  exact loop fuel (∅ : Finset (Subcube n))
-
-
-/-!
-`buildCoverCompute` below implements a very small executable cover construction.
-It repeatedly queries `Cover2.firstUncovered` and inserts the corresponding
-point subcube.  The routine stops after at most `2^n` iterations, ensuring
-termination even though the search itself is naive.  The resulting rectangles
-are all zero‑dimensional, but this suffices for experimentation.
-
-To make the control flow explicit we separate the insertion of a single
-uncovered point from the iteration logic.
--/
-
-/--
-Insert the zero‑dimensional subcube corresponding to the first uncovered point
-into the accumulator `Rset`.  If no uncovered point exists the accumulator is
-returned unchanged.
--/
-noncomputable def insertFirstUncovered (F : Family n)
-    (Rset : Finset (Subcube n)) : Finset (Subcube n) :=
-  match Cover2.firstUncovered (n := n) F Rset with
-  | none => Rset
-  | some ⟨_, x⟩ =>
-      let R := Subcube.point (n := n) x
-      Insert.insert R Rset
-
-/--
-Iterate `insertFirstUncovered` for at most `k` steps.  The bound `k` ensures
-termination even if the search keeps discovering new uncovered points.
--/
-noncomputable def searchLoop (F : Family n) : Nat → Finset (Subcube n) → Finset (Subcube n)
-  | 0, Rset => Rset
-  | Nat.succ k, Rset =>
-      searchLoop F k (insertFirstUncovered (n := n) F Rset)
-
-/--
-Execute `searchLoop` with a fuel of `2^n` iterations and enumerate the resulting
-set of rectangles.  Each iteration inserts at most one new point subcube, hence
-the final list contains no more elements than there are points in the Boolean
-cube.
+`buildCoverCompute` enumerates the finite set of rectangles produced by
+`Cover2.buildCover` as a list.  The construction itself is non‑computable but
+results in a concrete `List` which is convenient for experimentation.
 -/
 noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  -- the arguments `h` and `hH` are currently unused but kept for a stable API
-  let _ := h; let _ := hH
-  let fuel := Fintype.card (Point n)
-  (searchLoop (n := n) F fuel (∅ : Finset (Subcube n))).toList
+  (Cover2.buildCover (n := n) F h hH).toList
 
 /--
-Specification for `buildCoverCompute`.  The returned list contains no
-duplicates, every element is a point subcube and the total length is bounded by
-`2^n`.
+Specification for `buildCoverCompute`.  The returned list contains no duplicates,
+its elements are precisely the rectangles produced by `Cover2.buildCover` and
+its length is bounded by `mBound`.
 -/
 lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCoverCompute (F := F) (h := h) hH).Nodup ∧
     (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
-        ∃ x : Point n, R = Subcube.point (n := n) x) ∧
-    (buildCoverCompute (F := F) (h := h) hH).length ≤
-      Fintype.card (Point n) := by
+        R ∈ Cover2.buildCover (n := n) F h hH) ∧
+    (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
   classical
   unfold buildCoverCompute
-  set fuel := Fintype.card (Point n) with hfuel
-  -- Abbreviate the looping function to simplify subsequent rewrites.
-  set loop := searchLoop (n := n) F with hloop
-  -- Bound the cardinality of the intermediate set.
-  have hcard_aux : ∀ k Rset, (loop k Rset).card ≤ Rset.card + k := by
-    intro k; induction k with
-    | zero => intro Rset; simp [hloop, searchLoop]
-    | succ k ih =>
-        intro Rset
-        -- Apply the inductive hypothesis to the next iteration of the loop.
-        have ih' := ih (insertFirstUncovered (n := n) F Rset)
-        -- Each step inserts at most one new rectangle.
-        have hinsert :
-            (insertFirstUncovered (n := n) F Rset).card ≤ Rset.card + 1 := by
-          -- Split on whether an uncovered point exists.
-          cases hfu : Cover2.firstUncovered (n := n) F Rset with
-          | none =>
-              -- No point inserted; cardinality stays the same.
-              simpa [insertFirstUncovered, hfu]
-          | some p =>
-              -- A point cube is inserted; use `card_insert_le`.
-              have := Finset.card_insert_le
-                (a := Subcube.point (n := n) p.2) (s := Rset)
-              simpa [insertFirstUncovered, hfu] using this
-        -- Combine the bounds.
-        calc
-          (loop (Nat.succ k) Rset).card
-              = (loop k (insertFirstUncovered (n := n) F Rset)).card := by
-                    simp [searchLoop, hloop]
-          _ ≤ (insertFirstUncovered (n := n) F Rset).card + k := ih'
-          _ ≤ (Rset.card + 1) + k := Nat.add_le_add_right hinsert _
-          _ = Rset.card + Nat.succ k := by
-                simp [Nat.add_comm, Nat.add_left_comm]
-  -- Show that every element inserted by the loop is a point subcube.
-  have hpoint_aux :
-      ∀ k Rset,
-        (∀ R ∈ Rset, ∃ x : Point n, R = Subcube.point (n := n) x) →
-        (∀ R ∈ loop k Rset, ∃ x : Point n, R = Subcube.point (n := n) x) := by
-    intro k; induction k with
-    | zero =>
-        intro Rset hR R hmem
-        simpa [hloop, searchLoop] using hR R hmem
-    | succ k ih =>
-        intro Rset hR R hmem
-        have hR' : ∀ S ∈ insertFirstUncovered (n := n) F Rset,
-            ∃ x : Point n, S = Subcube.point (n := n) x := by
-          -- Analyse the inserted set.
-          cases hfu : Cover2.firstUncovered (n := n) F Rset with
-          | none =>
-              -- No change; reuse the hypothesis `hR`.
-              simpa [insertFirstUncovered, hfu] using hR
-          | some p =>
-              -- A point cube is inserted; handle both cases.
-              intro S hS; by_cases hS' : S = Subcube.point (n := n) p.2
-              · exact ⟨p.2, by simpa [insertFirstUncovered, hfu, hS']⟩
-              · have hmem : S ∈ Rset := by
-                  have hS'' := Finset.mem_insert.mp
-                    (by simpa [insertFirstUncovered, hfu] using hS)
-                  cases hS'' with
-                  | inl h => exact (hS' h).elim
-                  | inr h => exact h
-                exact hR S hmem
-        have hmem' : R ∈ loop k (insertFirstUncovered (n := n) F Rset) := by
-          simpa [searchLoop, hloop] using hmem
-        exact ih _ hR' R hmem'
-  -- Apply the auxiliary lemmas to the full run of the loop.
-  have hcard := hcard_aux fuel (∅ : Finset (Subcube n))
-  have hpoints : ∀ R ∈ loop fuel (∅ : Finset (Subcube n)),
-      ∃ x : Point n, R = Subcube.point (n := n) x :=
-    hpoint_aux fuel (∅ : Finset (Subcube n)) (by intro R h; simpa using h)
-  have hnodup := Finset.nodup_toList (loop fuel (∅ : Finset (Subcube n)))
-  have hlen := Finset.length_toList (loop fuel (∅ : Finset (Subcube n)))
-  refine And.intro ?nodup ?rest
-  · simpa [hloop, hfuel] using hnodup
-  · refine And.intro ?points ?length
-    · intro R hR
-      have hR' := hpoints R ?_
-      · exact hR'
-      · simpa [hloop, hfuel] using hR
-    · have : (loop fuel (∅ : Finset (Subcube n))).card ≤ fuel := by
-          simpa [hloop, hfuel] using hcard
-      simpa [hloop, hfuel, hlen] using this
+  -- Abbreviate the underlying set of rectangles.
+  set Rset := Cover2.buildCover (n := n) F h hH with hRset
+  -- Basic properties of `toList`.
+  have hnodup : Rset.toList.Nodup := Finset.nodup_toList _
+  have hmem : ∀ R ∈ Rset.toList.toFinset, R ∈ Rset := by
+    intro R hR
+    have hR_list : R ∈ Rset.toList := by
+      simpa using (List.mem_toFinset.mp hR)
+    simpa using (Finset.mem_toList.mp hR_list)
+  -- Cardinality bound transfers to the length of the list.
+  have hcard : Rset.card ≤ mBound n h :=
+    Cover2.buildCover_card_bound (n := n) (F := F) (h := h) hH
+  have hlen : Rset.toList.length ≤ mBound n h := by
+    simpa [Finset.length_toList] using hcard
+  -- Assemble the specification.
+  refine And.intro ?_ (And.intro ?_ ?_)
+  · simpa [hRset] using hnodup
+  · intro R hR
+    have hR' : R ∈ Rset := hmem R (by simpa [hRset] using hR)
+    simpa [hRset] using hR'
+  · simpa [hRset] using hlen
 
 end Cover
-

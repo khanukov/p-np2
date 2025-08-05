@@ -109,6 +109,44 @@ statements between the list and the underlying set without manual rewrites.
   simp [buildCoverCompute]
 
 /--
+The list produced by `buildCoverCompute` is empty if and only if the
+underlying set of rectangles from `Cover2.buildCover` is empty.  This
+lemma is handy when reasoning about trivial families where the cover
+vanishes entirely.
+-/
+@[simp] lemma buildCoverCompute_nil_iff (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    buildCoverCompute (F := F) (h := h) hH = [] ↔
+      Cover2.buildCover (n := n) F h hH = (∅ : Finset (Subcube n)) := by
+  classical
+  constructor
+  · intro hlist
+    -- Convert the hypothesis to a statement about cardinalities and use it
+    -- to deduce that the underlying `Finset` has zero elements.
+    have hlen : (buildCoverCompute (F := F) (h := h) hH).length = 0 := by
+      simpa [hlist]
+    -- The length of the enumeration agrees with the cardinality of the
+    -- original set of rectangles.
+    have hcard : (Cover2.buildCover (n := n) F h hH).card = 0 := by
+      -- Rewrite the above length in terms of the cardinality.
+      have := (buildCoverCompute_length (F := F) (h := h) hH).symm
+      simpa [hlen] using this
+    -- A finite set with zero elements is equal to `∅`.
+    exact Finset.card_eq_zero.mp hcard
+  · intro hset
+    -- Start from the assumption that the set of rectangles is empty and
+    -- translate it to the list enumeration.
+    have hcard : (Cover2.buildCover (n := n) F h hH).card = 0 := by
+      simpa [hset]
+    -- The list has matching length, hence it must also be empty.
+    have hlen : (buildCoverCompute (F := F) (h := h) hH).length = 0 := by
+      -- Use the length/cardinality correspondence.
+      have := buildCoverCompute_length (F := F) (h := h) hH
+      simpa [hcard] using this
+    -- Lists of length zero are definitionally empty.
+    exact List.length_eq_zero_iff.mp hlen
+
+/--
 Basic specification for the stub `buildCoverCompute`: all listed rectangles are
 monochromatic for the family (vacuously, since the list is empty) and the
 enumeration length satisfies the global bound `mBound`.

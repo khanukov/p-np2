@@ -12,6 +12,11 @@ can rely on the statement without depending on a particular proof.
 
 open Classical Finset
 
+-- The linter suggestions for `simp` vs `simpa` and unused variables
+-- are not relevant for this axiomatized development.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 noncomputable section
 
 namespace Sunflower

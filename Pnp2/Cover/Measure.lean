@@ -10,6 +10,9 @@ open Finset
 open BoolFunc (Family BFunc)
 open Boolcube (Point Subcube)
 
+-- Disable style linting that is not important for the measure machinery.
+set_option linter.unnecessarySimpa false
+
 namespace Cover2
 
 /-!

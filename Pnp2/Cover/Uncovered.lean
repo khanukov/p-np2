@@ -11,6 +11,10 @@ open Finset
 open BoolFunc (Family BFunc)
 open Boolcube (Point Subcube)
 
+-- Silence linter warnings in this auxiliary module.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 namespace Cover2
 
 /-!

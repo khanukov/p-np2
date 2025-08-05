@@ -18,6 +18,11 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic
 
+-- Silence noisy linter suggestions in this development file.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
+
 open Classical
 open Finset
 open Agreement

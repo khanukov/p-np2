@@ -302,15 +302,41 @@ lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · exact h₂ R h
 
 /--
-A preliminary stub for the cover construction.  For now `buildCover` simply
-returns the accumulated set of rectangles without performing any recursive
-steps.  This suffices for basic cardinality lemmas while the full algorithm is
-being ported from `cover.lean`.
+Skeleton of the recursive cover construction.  The function searches for an
+uncovered pair of a function and an input point.  If no such pair exists we
+simply return the accumulated set of rectangles `Rset`.  The recursive branch is
+currently a placeholder that will eventually insert additional rectangles to
+cover the uncovered pair.  For now it falls back to returning `Rset` unchanged,
+mirroring the previous stub behaviour.
 -/
 noncomputable def buildCover (F : Family n) (h : ℕ)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
-  Rset
+    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) := by
+  classical
+  -- Attempt to locate an uncovered pair `(f, x)`.
+  match firstUncovered (n := n) F Rset with
+  | none =>
+      -- All `1`-inputs are already covered; return the accumulated set.
+      exact Rset
+  | some _ =>
+      -- Placeholder: future developments will insert additional rectangles
+      -- here.  The current implementation keeps the behaviour identical to the
+      -- original stub by simply returning `Rset`.
+      exact Rset
+
+/-- With the current placeholder implementation `buildCover` simply returns the
+initial set of rectangles `Rset`.  This helper lemma exposes that behaviour so
+that subsequent proofs can rewrite by it without repeatedly unfolding the
+definition. -/
+lemma buildCover_eq_Rset (F : Family n) (h : ℕ)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (Rset : Finset (Subcube n)) :
+    buildCover (n := n) F h _hH Rset = Rset := by
+  classical
+  -- Case split on `firstUncovered`; both branches return `Rset`.
+  cases hfu' : firstUncovered (n := n) F Rset with
+  | none => simp [buildCover, hfu']
+  | some p => simp [buildCover, hfu']
 
 /--
 If the search for an uncovered pair already fails (`firstUncovered = none`),
@@ -323,7 +349,7 @@ lemma buildCover_card_bound_of_none {n h : ℕ} (F : Family n)
     (_hfu : firstUncovered (n := n) F Rset = none)
     (hcard : Rset.card ≤ mBound n h) :
     (buildCover (n := n) F h _hH Rset).card ≤ mBound n h := by
-  simpa [buildCover] using hcard
+  simpa [buildCover_eq_Rset] using hcard
 
 /--
 Base case of the size bound: if no uncovered pair exists initially, the
@@ -334,7 +360,7 @@ lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
     (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
     (buildCover (n := n) F h _hH).card ≤ mBound n h := by
   have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-  simpa [buildCover] using this
+  simpa [buildCover_eq_Rset] using this
 
 /--
 A coarse numeric estimate that bounds the size of the cover directly by
@@ -346,7 +372,9 @@ lemma buildCover_card_linear_bound_base {n h : ℕ} (F : Family n)
     (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
     (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
   have hres : buildCover (n := n) F h _hH = (∅ : Finset (Subcube n)) := by
-    simpa [buildCover, _hfu]
+    simpa [buildCover_eq_Rset] using
+      (buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
+        (Rset := (∅ : Finset (Subcube n))))
   have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
   simpa [hres] using this
 
@@ -359,7 +387,9 @@ lemma buildCover_card_linear_bound {n h : ℕ} (F : Family n)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
   have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
-  simpa [buildCover] using this
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
+      (Rset := (∅ : Finset (Subcube n)))
+  simpa [hres] using this
 
 /--
 Rewriting of `buildCover_card_linear_bound` emphasising the initial measure
@@ -380,7 +410,9 @@ lemma buildCover_card_bound {n h : ℕ} (F : Family n)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCover (n := n) F h _hH).card ≤ mBound n h := by
   have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-  simpa [buildCover] using this
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
+      (Rset := (∅ : Finset (Subcube n)))
+  simpa [hres] using this
 
 /--
 `buildCover` always yields a set of rectangles whose cardinality is bounded by
@@ -411,7 +443,9 @@ lemma buildCover_card_lowSens {n h : ℕ} (F : Family n)
   have : (0 : ℕ) ≤
       Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
     Nat.zero_le _
-  simpa [buildCover] using this
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
+      (Rset := (∅ : Finset (Subcube n)))
+  simpa [hres] using this
 
 /--
 `buildCover_card_lowSens_with` extends `buildCover_card_lowSens` to the case
@@ -431,7 +465,9 @@ lemma buildCover_card_lowSens_with {n h : ℕ} (F : Family n)
       Rset.card +
         Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
     Nat.le_add_right _ _
-  simpa [buildCover] using this
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
+      (Rset := Rset)
+  simpa [hres] using this
 
 /--
 `buildCover_card_bound_lowSens` upgrades the crude exponential bound from
@@ -526,7 +562,9 @@ lemma buildCover_card_bound_lowSens_or {n h : ℕ} (F : Family n)
     (buildCover (n := n) F h hH).card ≤ mBound n h := by
   -- `buildCover` returns the empty set, so its cardinality is zero.
   have hzero : (buildCover (n := n) F h hH).card = 0 := by
-    simp [buildCover]
+    have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+        (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
+    simp [hres]
   -- Numeric bound is immediate from `mBound_nonneg`.
   have hbound : 0 ≤ mBound n h := mBound_nonneg (n := n) (h := h)
   simpa [hzero] using hbound
@@ -545,7 +583,9 @@ lemma buildCover_mono_lowSens {n h : ℕ} (F : Family n)
       Subcube.monochromaticForFamily R F := by
   intro R hR
   -- No rectangles are produced by the stubbed `buildCover`.
-  have : False := by simpa [buildCover] using hR
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+      (_hH := _hH) (Rset := (∅ : Finset (Subcube n)))
+  have : False := by simpa [hres] using hR
   exact this.elim
 
 /--
@@ -559,7 +599,9 @@ lemma buildCover_mono {n h : ℕ} (F : Family n)
         Subcube.monochromaticForFamily R F := by
   intro R hR
   -- Membership in the empty cover yields a contradiction.
-  have : False := by simpa [buildCover] using hR
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+      (_hH := _hH) (Rset := (∅ : Finset (Subcube n)))
+  have : False := by simpa [hres] using hR
   cases this
 
 /--
@@ -576,7 +618,9 @@ lemma buildCover_covers_with {n h : ℕ} (F : Family n)
       (Rset ∪ buildCover (n := n) F h hH Rset) := by
   -- `buildCover` returns `Rset`, so the union does not change the set of
   -- rectangles.  The coverage hypothesis therefore transfers directly.
-  simpa [buildCover] using hcov
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := hH)
+      (Rset := Rset)
+  simpa [hres] using hcov
 
 /--
 Special case of `buildCover_covers_with` starting from the empty set of
@@ -586,7 +630,9 @@ lemma buildCover_covers {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
     AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
-  simpa [buildCover] using hcov
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
+  simpa [hres] using hcov
 
 /--
 `buildCover_mu` collapses the measure to `2 * h` when the empty set already
@@ -598,12 +644,14 @@ lemma buildCover_mu {n h : ℕ} (F : Family n)
     (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
     mu (n := n) F h (buildCover (n := n) F h hH) = 2 * h := by
   -- `buildCover` returns the empty set, so the coverage hypothesis transfers.
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
   have hcov' :
       AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
-    simpa [buildCover] using
+    simpa [hres] using
       (buildCover_covers (n := n) (F := F) (h := h) hH hcov)
   -- Apply the general lemma characterising covers with measure `2 * h`.
-  simpa [buildCover] using
+  simpa [hres] using
     (mu_of_allCovered (n := n) (F := F)
       (Rset := buildCover (n := n) F h hH) (h := h) hcov')
 
@@ -639,7 +687,13 @@ lemma mu_union_buildCover_le {F : Family n}
       mu (n := n) F h Rset := by
   -- `buildCover` currently returns its input set of rectangles, so the union
   -- collapses to `Rset`.
-  simp [buildCover, mu]
+  classical
+  have hres : buildCover (n := n) F h hH Rset = Rset := by
+    -- Analyse the result of `firstUncovered` to simplify the definition.
+    cases hfu' : firstUncovered (n := n) F Rset with
+    | none => simpa [buildCover, hfu']
+    | some p => simpa [buildCover, hfu']
+  simpa [mu, hres]
 
 /--
 `mu_buildCover_lt_start` is a weak variant of the legacy lemma with the same
@@ -655,7 +709,9 @@ lemma mu_buildCover_lt_start {F : Family n}
     mu (n := n) F h (buildCover (n := n) F h hH) ≤
       mu (n := n) F h (∅ : Finset (Subcube n)) := by
   -- `buildCover` returns the empty set, so both measures coincide.
-  simp [buildCover, mu]
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
+  simpa [mu, hres]
 
 /--
 `mu_buildCover_le_start` is a convenient special case of
@@ -667,11 +723,13 @@ lemma mu_buildCover_le_start {F : Family n}
     mu (n := n) F h (buildCover (n := n) F h hH) ≤
       mu (n := n) F h (∅ : Finset (Subcube n)) := by
   -- Instantiate `mu_union_buildCover_le` with an empty starting set.
+  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
+      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
   have :=
     mu_union_buildCover_le (n := n) (F := F) (h := h) (hH := hH)
       (Rset := (∅ : Finset (Subcube n)))
-  -- Simplify using the stub definition of `buildCover`.
-  simpa [buildCover] using this
+  -- Simplify using the computed shape of `buildCover`.
+  simpa [hres] using this
 
 /--
 `mu_union_buildCover_lt` mirrors the corresponding lemma from the

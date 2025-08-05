@@ -111,20 +111,61 @@ This procedure is *exponentially* slow and should only be used as a reference
 implementation.  Nevertheless it offers a simple executable model of the cover
 construction that avoids the classical reasoning of `Cover2.buildCover`.
 -/
-noncomputable def buildCoverSearch (F : Family n) : List (Subcube n) := by
-  classical
+-- Auxiliary worker for `buildCoverSearch` that performs the bounded search.
+noncomputable def buildCoverSearch.loop (F : Family n) :
+    Nat → Finset (Subcube n) → List (Subcube n)
+  | 0, _ => []
+  | Nat.succ fuel, Rset =>
+      match Cover2.firstUncovered (n := n) F Rset with
+      | none => []
+      | some ⟨_, x⟩ =>
+          let R := Subcube.point (n := n) x
+          -- Continue the search with the newly inserted rectangle.
+          R :: buildCoverSearch.loop F fuel (Insert.insert R Rset)
+
+/--
+`buildCoverSearch` is a naive executable cover construction.  It repeatedly
+searches for an uncovered point and inserts the corresponding zero-dimensional
+subcube.  The process is capped by a simple `fuel` counter to guarantee
+termination.
+-/
+noncomputable def buildCoverSearch (F : Family n) : List (Subcube n) :=
   let fuel := F.card * Fintype.card (Point n)
-  -- recursive worker that keeps track of the already chosen rectangles
-  let rec loop : Nat → Finset (Subcube n) → List (Subcube n)
-    | 0, _ => []
-    | Nat.succ fuel, Rset =>
-        match Cover2.firstUncovered (n := n) F Rset with
-        | none => []
-        | some ⟨_, x⟩ =>
-            let R := Subcube.point (n := n) x
-            -- continue the search with the newly inserted rectangle
-            R :: loop fuel (Insert.insert R Rset)
-  exact loop fuel (∅ : Finset (Subcube n))
+  buildCoverSearch.loop (n := n) F fuel (∅ : Finset (Subcube n))
+
+
+/--
+`buildCoverSearch` never produces more rectangles than the search `fuel`.
+This crude bound is handy for sanity checks in small examples.
+-/
+lemma buildCoverSearch_length_le (F : Family n) :
+    (buildCoverSearch (n := n) (F := F)).length ≤
+      F.card * Fintype.card (Point n) := by
+  classical
+  -- The worker emits at most as many rectangles as the fuel supplied to it.
+  have hloop :
+      ∀ f (Rset : Finset (Subcube n)),
+        (buildCoverSearch.loop (n := n) (F := F) f Rset).length ≤ f := by
+    intro f
+    induction f with
+    | zero =>
+        intro Rset; simp [buildCoverSearch.loop]
+    | succ f ih =>
+        intro Rset
+        cases hfu : Cover2.firstUncovered (n := n) F Rset with
+        | none =>
+            simp [buildCoverSearch.loop, hfu]
+        | some p =>
+            -- Apply the induction hypothesis to the recursive call and lift the
+            -- inequality through `Nat.succ`.
+            have := ih (Insert.insert (Subcube.point (n := n) p.2) Rset)
+            have := Nat.succ_le_succ this
+            simpa [buildCoverSearch.loop, hfu] using this
+  -- Run the worker with the initial fuel and empty set of rectangles.
+  let fuel := F.card * Fintype.card (Point n)
+  have := hloop fuel (∅ : Finset (Subcube n))
+  -- Connect the result back to `buildCoverSearch`.
+  simpa [buildCoverSearch, fuel] using this
 
 
 /--

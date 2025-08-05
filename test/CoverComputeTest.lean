@@ -20,8 +20,19 @@ example : mBound 1 0 = 2 := by
 example : 0 < mBound 1 0 := by
   simp [mBound]
 
+/-- `buildCoverSearch` produces at most as many rectangles as its fuel. -/
 /-/  `buildCoverCompute` enumerates a small cover for a trivial function. -/
 def trivialFun : BoolFun 1 := fun _ => false
+
+/-- `buildCoverSearch` produces at most as many rectangles as its fuel. -/
+example :
+    (buildCoverSearch (F := ({trivialFun} : Boolcube.Family 1))).length ≤
+      ({trivialFun} : Boolcube.Family 1).card *
+        Fintype.card (Boolcube.Point 1) := by
+  classical
+  simpa using
+    (buildCoverSearch_length_le
+      (n := 1) (F := ({trivialFun} : Boolcube.Family 1)))
 
 example :
     (buildCoverCompute (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)

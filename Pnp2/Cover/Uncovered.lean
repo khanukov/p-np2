@@ -70,6 +70,65 @@ lemma NotCovered.union {n : ℕ} {R₁ R₂ : Finset (Subcube n)} {x : Point n} 
     | inl hR1 => exact h.1 R hR1
     | inr hR2 => exact h.2 R hR2
 
+/--
+`NotCovered` for a singleton set simply states that the point misses the lone
+rectangle.  This specialised lemma streamlines arguments that peel off a single
+rectangle from a cover.
+-/
+@[simp] lemma notCovered_singleton {n : ℕ} {R : Subcube n} {x : Point n} :
+    NotCovered (n := n) (Rset := ({R} : Finset (Subcube n))) x ↔ ¬ x ∈ₛ R := by
+  classical
+  unfold NotCovered
+  constructor
+  · intro h; exact h R (by simp)
+  · intro hx R' hR'
+    -- Membership in the singleton forces `R' = R`.
+    have hR'' : R' = R := by simpa using Finset.mem_singleton.mp hR'
+    -- The result follows by rewriting with `hR''`.
+    simpa [hR''] using hx
+
+/--
+Inserting a rectangle into a set splits uncoveredness into two conditions: the
+point must avoid the newly inserted rectangle and remain uncovered by the
+original set.  This lemma complements `NotCovered.union` and is frequently
+useful when reasoning about incremental cover constructions.
+-/
+@[simp] lemma NotCovered.insert {n : ℕ} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {x : Point n} :
+    NotCovered (n := n) (Rset := Insert.insert R Rset) x ↔
+      (¬ x ∈ₛ R) ∧ NotCovered (n := n) (Rset := Rset) x := by
+  classical
+  constructor
+  · intro h
+    -- The inserted rectangle is also part of the set, so `x` must miss it.
+    have hxR : ¬ x ∈ₛ R := h R (by simp)
+    -- The remaining rectangles form a subset of the union, preserving uncoveredness.
+    have hxRset : NotCovered (n := n) (Rset := Rset) x := by
+      intro S hS
+      exact h S (Finset.mem_insert.mpr (Or.inr hS))
+    exact ⟨hxR, hxRset⟩
+  · intro h
+    rcases h with ⟨hxR, hxRset⟩
+    intro S hS
+    -- An element of the inserted set is either the newly added rectangle or one
+    -- of the original ones.
+    rcases Finset.mem_insert.mp hS with hSR | hSset
+    · subst hSR; exact hxR
+    · exact hxRset S hSset
+
+/--
+If a point lies inside a rectangle, inserting that rectangle into a set ensures
+the point is no longer uncovered.
+-/
+lemma notCovered_insert_of_mem {n : ℕ} {Rset : Finset (Subcube n)}
+    {R : Subcube n} {x : Point n}
+    (hx : x ∈ₛ R) :
+    NotCovered (n := n) (Rset := Insert.insert R Rset) x → False := by
+  intro h
+  -- The equivalence from `NotCovered.insert` exposes membership in `R`.
+  have hx_not : ¬ x ∈ₛ R := (NotCovered.insert.mp h).1
+  exact hx_not hx
+
 /-!
 `uncovered F Rset` collects all pairs `⟨f, x⟩` where `f ∈ F`, `f x = true` and
 the point `x` is not covered by the rectangles in `Rset`.  This set shrinks as
@@ -78,6 +137,47 @@ we add more rectangles to the cover.
 @[simp] def uncovered {n : ℕ} (F : Family n) (Rset : Finset (Subcube n)) :
     Set (Σ _ : BFunc n, Point n) :=
   {p | p.1 ∈ F ∧ p.1 p.2 = true ∧ NotCovered (n := n) (Rset := Rset) p.2}
+
+/--
+Membership in `uncovered` for a set extended by inserting a rectangle can be
+described explicitly.  The pair `⟨f, x⟩` remains uncovered precisely when it
+already belonged to the uncovered set for the original rectangles and the point
+`x` does not lie in the newly added rectangle.  This characterisation is often
+useful when analysing the effect of adding a single rectangle to the cover. -/
+@[simp] lemma mem_uncovered_insert {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {R : Subcube n}
+    {p : Σ _ : BFunc n, Point n} :
+    p ∈ uncovered (n := n) F (Insert.insert R Rset) ↔
+      p.1 ∈ F ∧ p.1 p.2 = true ∧ ¬ (p.2 ∈ₛ R) ∧
+        NotCovered (n := n) (Rset := Rset) p.2 := by
+  classical
+  -- Unfold the definition and simplify using `NotCovered.insert`.
+  unfold uncovered
+  constructor
+  · intro h
+    rcases h with ⟨hf, hx, hnc⟩
+    -- `NotCovered.insert` splits the uncoveredness after insertion.
+    have hsplit := (NotCovered.insert (Rset := Rset) (R := R) (x := p.2)).1 hnc
+    rcases hsplit with ⟨hnot, hnc'⟩
+    exact ⟨hf, hx, hnot, hnc'⟩
+  · intro h
+    rcases h with ⟨hf, hx, hnot, hnc⟩
+    refine ⟨hf, hx, ?_⟩
+    -- Reassemble uncoveredness for the enlarged set.
+    exact (NotCovered.insert (Rset := Rset) (R := R) (x := p.2)).2 ⟨hnot, hnc⟩
+
+/-- Inserting a rectangle can only shrink the uncovered set. -/
+lemma uncovered_insert_subset {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {R : Subcube n} :
+    uncovered (n := n) F (Insert.insert R Rset) ⊆
+      uncovered (n := n) F Rset := by
+  intro p hp
+  -- Use the explicit characterisation from `mem_uncovered_insert` and drop the
+  -- extra condition about the new rectangle.
+  have h := (mem_uncovered_insert (F := F)
+      (Rset := Rset) (R := R) (p := p)).1 hp
+  rcases h with ⟨hf, hx, _hnot, hnc⟩
+  exact ⟨hf, hx, hnc⟩
 
 /-!
 `firstUncovered` is a tiny search routine: it returns some element of the

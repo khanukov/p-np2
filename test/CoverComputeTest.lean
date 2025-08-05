@@ -92,4 +92,33 @@ by
           (BoolFunc.H₂_card_one
             (F := ({trivialFun} : Boolcube.Family 1)) hcard)))
 
+/-- `buildCoverCompute` returns the empty list precisely when the underlying
+`Cover2.buildCover` set is empty.  This sanity check uses the stubbed cover,
+which always yields no rectangles for the trivial family. -/
+example :
+    buildCoverCompute (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+      (by
+        have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+        simpa [hcard] using
+          (BoolFunc.H₂_card_one
+            (F := ({trivialFun} : Boolcube.Family 1)) hcard)) = [] := by
+  classical
+  -- Prepare the entropy bound once more for reuse.
+  have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+  have hH : BoolFunc.H₂ ({trivialFun} : Boolcube.Family 1) ≤ (0 : ℝ) := by
+    simpa using
+      (BoolFunc.H₂_card_one (F := ({trivialFun} : Boolcube.Family 1)) hcard)
+  -- The stubbed cover construction yields the empty set of rectangles.
+  have hset :=
+    Cover2.buildCover_eq_Rset
+      (n := 1) (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+      (_hH := by simpa using hH)
+      (Rset := (∅ : Finset (Boolcube.Subcube 1)))
+  -- Apply the characterisation lemma from `Cover.Compute`.
+  exact
+    (buildCoverCompute_nil_iff
+      (n := 1) (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+      (by simpa using hH)).2
+      (by simpa using hset)
+
 end CoverComputeTest

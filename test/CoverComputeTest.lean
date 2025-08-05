@@ -43,7 +43,7 @@ by
               (F := ({trivialFun} : Boolcube.Family 1)) hcard
           simp)
   -- Bound the length by the number of cube points and relate this to `mBound`.
-  have hlen := hspec.2
+  have hlen := hspec.2.2
   have hpow : Fintype.card (Boolcube.Point 1) = 2 := by simp
   have hlen' :
       (buildCoverCompute (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)

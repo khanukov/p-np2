@@ -157,6 +157,8 @@ duplicates, every element is a point subcube and the total length is bounded by
 lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCoverCompute (F := F) (h := h) hH).Nodup ∧
+    (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
+        ∃ x : Point n, R = Subcube.point (n := n) x) ∧
     (buildCoverCompute (F := F) (h := h) hH).length ≤
       Fintype.card (Point n) := by
   classical
@@ -183,14 +185,56 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
               _ ≤ (Rset.card + 1) + k := Nat.add_le_add_right hinsert _
               _ = Rset.card + Nat.succ k := by
                 simp [Nat.add_comm, Nat.add_left_comm]
+  -- Show that every element inserted by the loop is a point subcube.
+  have hpoint_aux :
+      ∀ k Rset,
+        (∀ R ∈ Rset, ∃ x : Point n, R = Subcube.point (n := n) x) →
+        (∀ R ∈ loop k Rset, ∃ x : Point n, R = Subcube.point (n := n) x) := by
+    intro k; induction k with
+    | zero =>
+        intro Rset hR R hmem
+        simpa [hloop, coverLoop] using hR R hmem
+    | succ k ih =>
+        intro Rset hR R hmem
+        cases hfu : Cover2.firstUncovered (n := n) F Rset with
+        | none =>
+            -- No new cube inserted; fall back to the assumption on `Rset`.
+            have hmemR : R ∈ Rset := by
+              simpa [coverLoop, hloop, hfu] using hmem
+            simpa [coverLoop, hloop, hfu] using hR R hmemR
+        | some p =>
+            -- The loop inserts a point cube and recurses.
+            have hR' : ∀ S ∈ Insert.insert (Subcube.point (n := n) p.2) Rset,
+                ∃ x : Point n, S = Subcube.point (n := n) x := by
+              intro S hS; by_cases hS' : S = Subcube.point (n := n) p.2
+              · exact ⟨p.2, by simpa [hS']⟩
+              · have hmem : S ∈ Rset := by
+                  have hS'' := Finset.mem_insert.mp hS
+                  match hS'' with
+                  | Or.inl h => exact (hS' h).elim
+                  | Or.inr h => exact h
+                exact hR S hmem
+            have hmem' : R ∈
+                loop k (Insert.insert (Subcube.point (n := n) p.2) Rset) := by
+              simpa [coverLoop, hloop, hfu] using hmem
+            exact ih _ hR' R hmem'
+  -- Apply the auxiliary lemmas to the full run of the loop.
   have hcard := hcard_aux fuel (∅ : Finset (Subcube n))
+  have hpoints : ∀ R ∈ loop fuel (∅ : Finset (Subcube n)),
+      ∃ x : Point n, R = Subcube.point (n := n) x :=
+    hpoint_aux fuel (∅ : Finset (Subcube n)) (by intro R h; simpa using h)
   have hnodup := Finset.nodup_toList (loop fuel (∅ : Finset (Subcube n)))
   have hlen := Finset.length_toList (loop fuel (∅ : Finset (Subcube n)))
-  refine And.intro ?nodup ?length
+  refine And.intro ?nodup ?rest
   · simpa [hloop, hfuel] using hnodup
-  · have : (loop fuel (∅ : Finset (Subcube n))).card ≤ fuel := by
-        simpa [hloop, hfuel] using hcard
-    simpa [hloop, hfuel, hlen] using this
+  · refine And.intro ?points ?length
+    · intro R hR
+      have hR' := hpoints R ?_
+      · exact hR'
+      · simpa [hloop, hfuel] using hR
+    · have : (loop fuel (∅ : Finset (Subcube n))).card ≤ fuel := by
+          simpa [hloop, hfuel] using hcard
+      simpa [hloop, hfuel, hlen] using this
 
 end Cover
 

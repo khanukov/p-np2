@@ -11,12 +11,17 @@ import Pnp2.Cover.Bounds -- numeric bounds for the cover construction
 import Pnp2.Cover.CoarseBound -- rough estimate on uncovered pairs
 import Pnp2.Cover.Uncovered -- predicates about uncovered points
 import Pnp2.Cover.Lifting -- lemmas lifting monochromaticity through restrictions
-import Pnp2.Cover2.Measure -- termination measure and its basic lemmas
+import Pnp2.Cover.Measure -- termination measure and its basic lemmas
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic
+
+-- Silence noisy linter suggestions in this development file.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
 
 open Classical
 open Finset

@@ -6,6 +6,11 @@ open Boolcube (Point Subcube)
 open BoolFunc (BFunc Family)
 open Classical
 
+-- Tests often use `simpa` for readability; suppress related lint warnings.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
+
 open Cover2
 
 namespace Cover2Test

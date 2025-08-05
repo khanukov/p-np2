@@ -3,6 +3,9 @@ import Pnp2.BoolFunc
 
 open Finset
 
+-- Silence linter warnings about `simp`/`simpa` usage in this file.
+set_option linter.unnecessarySimpa false
+
 namespace BoolFunc
 variable {n : ℕ}
 

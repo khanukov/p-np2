@@ -12,6 +12,9 @@ open Finset
 open BoolFunc (Family BFunc)
 open Boolcube (Point Subcube)
 
+-- This file is purely technical; silence stylistic linter warnings.
+set_option linter.unnecessarySimpa false
+
 namespace Cover2
 
 /-!

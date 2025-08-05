@@ -4,6 +4,12 @@ open Cover
 open BoolFunc
 open Boolcube
 
+-- Silence stylistic linter warnings in this test file.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
+
 namespace CoverComputeTest
 
 /-- `mBound` expands to the expected arithmetic expression. -/
@@ -58,5 +64,32 @@ by
               (F := ({trivialFun} : Boolcube.Family 1)) hcard
           simp)
   exact hspec.1
+
+open Cover2
+
+/-- `buildCoverCompute` enumerates the same rectangles as `Cover2.buildCover`. -/
+example :
+    (buildCoverCompute (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+      (by
+        have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+        simpa [hcard] using
+          (BoolFunc.H₂_card_one
+            (F := ({trivialFun} : Boolcube.Family 1)) hcard))).toFinset =
+      Cover2.buildCover (n := 1) ({trivialFun} : Boolcube.Family 1) 0
+        (by
+          have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+          simpa [hcard] using
+            (BoolFunc.H₂_card_one
+              (F := ({trivialFun} : Boolcube.Family 1)) hcard)) :=
+by
+  classical
+  simpa using
+    (buildCoverCompute_toFinset
+      (F := ({trivialFun} : Boolcube.Family 1)) (h := 0)
+      (by
+        have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
+        simpa [hcard] using
+          (BoolFunc.H₂_card_one
+            (F := ({trivialFun} : Boolcube.Family 1)) hcard)))
 
 end CoverComputeTest

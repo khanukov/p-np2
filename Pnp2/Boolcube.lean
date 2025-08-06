@@ -173,6 +173,30 @@ lemma rep_mem (R : Subcube n) : R.Mem (rep (n := n) R) := by
   | some b =>
       simp [rep, h]
 
+/-- Fix an additional coordinate `i` to value `b`.
+If the coordinate was already fixed to a different value, the resulting
+subcube is empty (contains no points).  If it was already fixed to the
+same value, the operation has no effect. -/
+def fixBit (C : Subcube n) (i : Fin n) (b : Bool) : Subcube n :=
+  ⟨fun j => if j = i then some b else C.fix j⟩
+
+@[simp] lemma mem_fixBit_iff {C : Subcube n} {i : Fin n} {b : Bool} {x : Point n} :
+    (fixBit C i b).Mem x ↔ C.Mem x ∧ x i = b := by
+  constructor
+  · intro h
+    have h_mem : C.Mem x := by
+      intro j
+      by_cases hj : j = i
+      · cases hj; have := h i; simp [fixBit, h] at this; simp [this]
+      · have := h j; simpa [fixBit, hj] using this
+    have h_bit : x i = b := by
+      have := h i; simpa [fixBit] using this
+    exact ⟨h_mem, h_bit⟩
+  · intro ⟨h_mem, h_bit⟩ j
+    by_cases hj : j = i
+    · cases hj; simpa [fixBit, h_bit]
+    · simpa [fixBit, hj] using h_mem j
+
 
 end Subcube
 

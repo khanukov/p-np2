@@ -307,16 +307,22 @@ lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · exact h₂ R h
 
 /--
-Skeleton of the recursive cover construction.  The function searches for an
-uncovered pair of a function and an input point.  If no such pair exists we
-simply return the accumulated set of rectangles `Rset`.  The recursive branch is
-currently a placeholder that will eventually insert additional rectangles to
-cover the uncovered pair.  For now it falls back to returning `Rset` unchanged,
-mirroring the previous stub behaviour.
+`buildCover` is intended to be the heart of the covering algorithm.
+
+*Eventually* this function will recurse, repeatedly extending the current
+collection of rectangles `Rset` until every `1`‑input is covered.  Each
+recursive step will consume one unit of the termination measure `μ` from
+`Measure.lean`, providing a well‑founded recursion scheme.
+
+The present development has not yet implemented the full recursion.  Instead we
+keep a very small wrapper around `extendCover` that performs **a single**
+covering step.  This stub is sufficient for the existing theory and serves as a
+clear starting point for the forthcoming recursive version.
 -/
 noncomputable def buildCover (F : Family n) (h : ℕ)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
+  -- For now we simply delegate to `extendCover`.
   extendCover (n := n) F Rset
 
 @[simp] lemma buildCover_eq_extendCover (F : Family n) (h : ℕ)
@@ -338,11 +344,18 @@ lemma mu_union_buildCover_le {F : Family n} {h : ℕ}
     mu (n := n) F h (Rset ∪ buildCover (n := n) F h hH Rset) ≤
       mu (n := n) F h Rset := by
   classical
+  -- `buildCover` currently expands to a single call to `extendCover`.  We use the
+  -- corresponding lemma `mu_extendCover_le` to establish the desired inequality.
+  -- First observe that the original set of rectangles is contained in the
+  -- extended set produced by `extendCover`.
   have hsubset : Rset ⊆ extendCover (n := n) F Rset :=
     subset_extendCover (n := n) (F := F) (Rset := Rset)
+  -- This containment lets us rewrite the union with `Rset` as simply the
+  -- `extendCover` result.
   have hunion : Rset ∪ extendCover (n := n) F Rset =
       extendCover (n := n) F Rset :=
     Finset.union_eq_right.mpr hsubset
+  -- Finally translate the claim to the established `extendCover` inequality.
   simpa [buildCover, hunion] using
     (mu_extendCover_le (n := n) (F := F) (Rset := Rset) (h := h))
 
@@ -352,6 +365,7 @@ lemma mu_buildCover_le_start {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     mu (n := n) F h (buildCover (n := n) F h hH) ≤
       mu (n := n) F h (∅ : Finset (Subcube n)) := by
+  -- Again we reduce the claim to `extendCover` by unfolding `buildCover`.
   simpa [buildCover] using
     (mu_extendCover_le (n := n) (F := F)
       (Rset := (∅ : Finset (Subcube n))) (h := h))

@@ -1170,8 +1170,48 @@ example :
         (∅ : Finset (Subcube 1)) := by
   classical
   simpa using
-    Cover2.mu_extendCover_le
+      Cover2.mu_extendCover_le
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+
+/-- If an uncovered pair exists, `extendCover` strictly decreases the
+termination measure `μ`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (extendCover (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1))) <
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Show that `firstUncovered` actually finds a witness pair.
+  have hfu_ne :
+      Cover2.firstUncovered (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1)) ≠ none := by
+    -- The constant-`true` function evaluated at `x` remains uncovered.
+    let f : BFunc 1 := fun _ => true
+    let x : Point 1 := fun _ => false
+    have hf : f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+      simp [f]
+    have hxval : f x = true := by simp [f, x]
+    intro hnone
+    -- From `firstUncovered = none` we obtain full coverage, contradicting `x`.
+    have hcov :=
+      (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))).1 hnone
+    have hcontr := hcov f hf x hxval
+    rcases hcontr with ⟨R, hR, _⟩
+    simpa using hR
+  -- Apply the strict decrease lemma.
+  simpa using
+    Cover2.mu_extendCover_lt
       (n := 1)
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+      (Rset := (∅ : Finset (Subcube 1))) (h := 0) hfu_ne
 

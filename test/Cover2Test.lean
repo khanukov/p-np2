@@ -291,6 +291,61 @@ example (F : BoolFunc.Family 1) (R : Finset (Subcube 1))
     p ∈ Cover2.uncovered (n := 1) F R :=
   Cover2.mem_uncovered_of_firstUncovered_some (n := 1) (F := F) (R := R) hp
 
+/-- Two-bit `AND` and `OR` functions forming a tiny family. -/
+def and2 : BoolFunc.BFunc 2 :=
+  fun x => x ⟨0, by decide⟩ && x ⟨1, by decide⟩
+
+def or2 : BoolFunc.BFunc 2 :=
+  fun x => x ⟨0, by decide⟩ || x ⟨1, by decide⟩
+
+/-- Family containing only `and2`, used for the coverage tests below. -/
+def F₂ : BoolFunc.Family 2 := ({and2} : Finset (BoolFunc.BFunc 2))
+
+/-- Point with both coordinates set to `true`. -/
+def x11 : Boolcube.Point 2 := fun _ => true
+
+/-- With no rectangles, `firstUncovered` finds a witness. -/
+example :
+    Cover2.firstUncovered (n := 2) F₂ (∅ : Finset (Boolcube.Subcube 2)) ≠ none := by
+  classical
+  intro hnone
+  have hcov :=
+    (Cover2.firstUncovered_none_iff_AllOnesCovered
+      (n := 2) (F := F₂) (Rset := (∅ : Finset (Boolcube.Subcube 2)))).1 hnone
+  have hf : and2 ∈ F₂ := by simp [F₂]
+  have hx : and2 x11 = true := by
+    simp [and2, x11]
+  have hcontr := hcov and2 hf x11 hx
+  rcases hcontr with ⟨R, hR, _⟩
+  simpa using hR
+
+/-- Covering the uncovered point removes all witnesses. -/
+example :
+    Cover2.firstUncovered (n := 2) F₂
+        ({Boolcube.Subcube.point (n := 2) x11} : Finset (Boolcube.Subcube 2)) =
+      none := by
+  classical
+  have hcov : Cover2.AllOnesCovered (n := 2) F₂
+      ({Boolcube.Subcube.point (n := 2) x11} : Finset (Boolcube.Subcube 2)) := by
+    intro f hf x hx
+    have hf' : f = and2 := by simpa [F₂] using hf
+    subst hf'
+    have hx_bits :
+        x ⟨0, by decide⟩ = true ∧ x ⟨1, by decide⟩ = true := by
+      simpa [and2] using hx
+    have hx_eq : x = x11 := by
+      ext i
+      fin_cases i
+      · simpa [x11] using hx_bits.1
+      · simpa [x11] using hx_bits.2
+    subst hx_eq
+    refine ⟨Boolcube.Subcube.point (n := 2) x11, by simp, ?_⟩
+    simp
+  exact
+    (Cover2.firstUncovered_none_iff_AllOnesCovered
+      (n := 2) (F := F₂)
+      (Rset := {Boolcube.Subcube.point (n := 2) x11})).2 hcov
+
 /-- If `firstUncovered` returns `none`, all `1`‑inputs are covered. -/
 example :
     Cover2.AllOnesCovered (n := 1)

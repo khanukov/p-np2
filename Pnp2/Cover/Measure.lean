@@ -375,6 +375,30 @@ lemma mu_extendCover_succ_le {F : Family n} {Rset : Finset (Subcube n)}
       simpa [extendCover, hfu'] using hdrop
 
 /--
+If an uncovered pair exists, applying `extendCover` causes a strict drop in
+the termination measure `μ`.  This is a convenient reformulation of
+`mu_extendCover_succ_le` that exposes the decrease as a `<` inequality, which
+is often more ergonomic when reasoning about recursive calls.
+-/
+lemma mu_extendCover_lt {F : Family n} {Rset : Finset (Subcube n)}
+    {h : ℕ}
+    (hfu : firstUncovered (n := n) F Rset ≠ none) :
+    mu (n := n) F h (extendCover (n := n) F Rset) <
+      mu (n := n) F h Rset := by
+  classical
+  -- Obtain the quantified decrease from the previous lemma.
+  have hdrop :=
+    mu_extendCover_succ_le (n := n) (F := F) (Rset := Rset)
+      (h := h) hfu
+  -- Interpret `a + 1 ≤ b` as `succ a ≤ b` to derive a strict inequality.
+  have hdrop' :
+      Nat.succ (mu (n := n) F h (extendCover (n := n) F Rset)) ≤
+        mu (n := n) F h Rset := by
+    simpa [Nat.succ_eq_add_one] using hdrop
+  -- Conclude with the standard natural number comparison lemma.
+  exact Nat.lt_of_succ_le hdrop'
+
+/--
 If the search for an uncovered pair fails, `extendCover` leaves the set of
 rectangles unchanged.  This lemma exposes that behaviour for convenient
 rewriting in subsequent proofs.

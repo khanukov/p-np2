@@ -1170,8 +1170,106 @@ example :
         (∅ : Finset (Subcube 1)) := by
   classical
   simpa using
-    Cover2.mu_extendCover_le
+      Cover2.mu_extendCover_le
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+
+/-- If an uncovered pair exists, `extendCover` strictly decreases the
+termination measure `μ`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (extendCover (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1))) <
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (∅ : Finset (Subcube 1)) := by
+  classical
+  -- Show that `firstUncovered` actually finds a witness pair.
+  have hfu_ne :
+      Cover2.firstUncovered (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1)) ≠ none := by
+    -- The constant-`true` function evaluated at `x` remains uncovered.
+    let f : BFunc 1 := fun _ => true
+    let x : Point 1 := fun _ => false
+    have hf : f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+      simp [f]
+    have hxval : f x = true := by simp [f, x]
+    intro hnone
+    -- From `firstUncovered = none` we obtain full coverage, contradicting `x`.
+    have hcov :=
+      (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))).1 hnone
+    have hcontr := hcov f hf x hxval
+    rcases hcontr with ⟨R, hR, _⟩
+    simpa using hR
+  -- Apply the strict decrease lemma.
+  simpa using
+    Cover2.mu_extendCover_lt
       (n := 1)
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
+      (Rset := (∅ : Finset (Subcube 1))) (h := 0) hfu_ne
+
+/-- Running `buildCover` strictly reduces the measure for the simple
+singleton family consisting of the constant-`true` function.  This mirrors the
+behaviour of `extendCover` since `buildCover` currently performs exactly one
+covering step. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (Cover2.buildCover (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (h := 0)
+          (by
+            -- Collision entropy of a singleton family is zero.
+            have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
+              simp
+            have hH₂ := BoolFunc.H₂_card_one
+                (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
+            simpa [hH₂]))
+        <
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (∅ : Finset (Subcube 1)) := by
+  classical
+  -- `firstUncovered` locates an uncovered witness pair as in the previous test.
+  have hfu_ne :
+      Cover2.firstUncovered (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1)) ≠ none := by
+    -- The constant-`true` function evaluated at `x` remains uncovered.
+    let f : BFunc 1 := fun _ => true
+    let x : Point 1 := fun _ => false
+    have hf : f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+      simp [f]
+    have hxval : f x = true := by simp [f, x]
+    intro hnone
+    -- From `firstUncovered = none` we obtain full coverage, contradicting `x`.
+    have hcov :=
+      (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))).1 hnone
+    have hcontr := hcov f hf x hxval
+    rcases hcontr with ⟨R, hR, _⟩
+    simpa using hR
+  -- Apply the strict decrease lemma for `buildCover`.
+  simpa using
+    Cover2.mu_buildCover_lt_start
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (h := 0)
+      (by
+        -- Collision entropy of the singleton family is `0`.
+        have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
+          simp
+        have hH₂ := BoolFunc.H₂_card_one
+            (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
+        simpa [hH₂])
+      hfu_ne
 

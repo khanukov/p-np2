@@ -356,15 +356,20 @@ lemma mu_buildCover_le_start {F : Family n} {h : ℕ}
     (mu_extendCover_le (n := n) (F := F)
       (Rset := (∅ : Finset (Subcube n))) (h := h))
 
-/-- If an uncovered pair exists, the measure after one `buildCover` step does
-not exceed the starting measure. -/
+/-- If an uncovered pair exists, running `buildCover` strictly decreases the
+termination measure `μ`.  This follows directly from the corresponding
+statement for `extendCover` since `buildCover` is just a thin wrapper around
+`extendCover` in the current development. -/
 lemma mu_buildCover_lt_start {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
-    mu (n := n) F h (buildCover (n := n) F h hH) ≤
-      mu (n := n) F h (∅ : Finset (Subcube n)) :=
-  -- The measure bound does not actually depend on the specific uncovered pair.
-  mu_buildCover_le_start (n := n) (F := F) (h := h) hH
+    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
+    mu (n := n) F h (buildCover (n := n) F h hH) <
+      mu (n := n) F h (∅ : Finset (Subcube n)) := by
+  -- Unfold `buildCover` to expose the single covering step and apply the
+  -- previously established measure drop for `extendCover`.
+  simpa [buildCover] using
+    (mu_extendCover_lt (n := n) (F := F)
+      (Rset := (∅ : Finset (Subcube n))) (h := h) hfu)
 
 /-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
 lemma buildCover_measure_drop {F : Family n} {h : ℕ}

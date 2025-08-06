@@ -10,6 +10,7 @@ open Classical
 set_option linter.unnecessarySimpa false
 set_option linter.unusedTactic false
 set_option linter.unreachableTactic false
+set_option linter.unusedSimpArgs false
 
 open Cover2
 
@@ -1086,6 +1087,91 @@ example :
       hp₁ hp₂ hp₃ hp₄ hx₁R hx₂R hx₃R hx₄R
       hne₁₂ hne₁₃ hne₁₄ hne₂₃ hne₂₄ hne₃₄
 
-/-- A single full rectangle still respects the universal cover bound. -/
-def Fsingle : BoolFunc.Family 1 := {fun _ : Point 1 => true}
+/-/ A single full rectangle still respects the universal cover bound. -/
+/-- `extendCover` inserts the full subcube for a constant-`true` family. -/
+example :
+    extendCover (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) =
+    {Subcube.full} := by
+  classical
+  -- Exhibit an uncovered witness pair to show that `firstUncovered` is `some _`.
+  let f : BFunc 1 := fun _ => true
+  let x : Point 1 := fun _ => false
+  have hf : f ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+    simp [f]
+  have hxval : f x = true := by simp [f, x]
+  have hnc : Cover2.NotCovered (n := 1)
+      (Rset := (∅ : Finset (Subcube 1))) x := by
+    intro R hR; cases hR
+  have hcov_false : ¬ Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      (∅ : Finset (Subcube 1)) := by
+    intro hcov
+    have hcontr := hcov f hf x hxval
+    rcases hcontr with ⟨R, hR, _⟩
+    simpa using hR
+  have hfu_ne :
+      Cover2.firstUncovered (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1)) ≠ none := by
+    intro hnone
+    have hcov :=
+      (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))).1 hnone
+    exact hcov_false hcov
+  -- Evaluate `extendCover` in the successful branch.
+  cases hfu :
+      Cover2.firstUncovered (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) with
+  | none => cases (hfu_ne hfu)
+  | some p =>
+      -- The coordinate filter is empty, yielding the full subcube.
+      simp [Cover2.extendCover, hfu, Boolcube.Subcube.fromPoint, Boolcube.Subcube.full]
+
+/-- When all `1`‑inputs are already covered, `extendCover` is the identity. -/
+example :
+    extendCover (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+        ({Subcube.full} : Finset (Subcube 1)) =
+    {Subcube.full} := by
+  classical
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) :=
+    Cover2.AllOnesCovered.full _
+  have hfu :
+      Cover2.firstUncovered (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          ({Subcube.full} : Finset (Subcube 1)) = none := by
+    simpa using
+      (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+        (Rset := ({Subcube.full} : Finset (Subcube 1)))).2 hcov
+  simpa using
+    (Cover2.extendCover_none
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := ({Subcube.full} : Finset (Subcube 1))) hfu)
+
+/-- `extendCover` never increases the termination measure `μ`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (extendCover (n := 1)
+          ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1))) ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
+        (∅ : Finset (Subcube 1)) := by
+  classical
+  simpa using
+    Cover2.mu_extendCover_le
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Subcube 1))) (h := 0)
 

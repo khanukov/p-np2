@@ -327,6 +327,25 @@ lemma allOnesCovered_of_firstUncovered_none {n : ℕ} {F : Family n}
   have hx_mem_empty := Eq.mp hx_eq hx_mem_set
   cases hx_mem_empty
 
+/--
+`firstUncovered` yields `none` exactly when every `1`‑input of the family is
+already covered.  This bundles the two implications into a single convenient
+equivalence.
+-/
+lemma firstUncovered_none_iff_AllOnesCovered {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) :
+    firstUncovered (n := n) F Rset = none ↔
+      AllOnesCovered (n := n) F Rset := by
+  classical
+  constructor
+  · intro h
+    exact allOnesCovered_of_firstUncovered_none
+      (n := n) (F := F) (Rset := Rset) h
+  · intro hcov
+    have hempty := uncovered_eq_empty_of_allCovered
+      (n := n) (F := F) (Rset := Rset) hcov
+    exact (firstUncovered_none_iff (n := n) (F := F) (R := Rset)).2 hempty
+
 /-- Adding rectangles can only reduce the uncovered set. -/
 lemma uncovered_subset_of_union_singleton {n : ℕ} {F : Family n}
     {Rset : Finset (Subcube n)} {R : Subcube n} :

@@ -1,5 +1,7 @@
 
 
+*Note: This document outlines the original research and formalization plan for the Family Collision-Entropy Lemma. As of August 2025, a significant portion of this plan has been implemented. For a summary of the current project status, please see the `README.md` file and the updated checklist at the end of this document.*
+
 Formal Proof Plan for the Family Collision-Entropy Lemma (FCE-Lemma)
 
 Background and Significance
@@ -258,8 +260,8 @@ Updated checklist (August 2025)
 - [x] `sunflower.lean`: classical sunflower lemma fully formalised.
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.
 - [x] `cover2.lean`: recursive covering uses `sunflower_step` and entropy split; monochromaticity and counting via `buildCover_card_bound` are now established.
-- [x] `bound.lean`: counting argument not yet formalised.
-- [x] `examples.lean`: small tests to be written.
+- [x] `bound.lean`: numeric bounds and sub-exponential estimate now formalised.
+- [x] `examples.lean`: runnable examples illustrating key definitions.
 - [ ] `acc_mcsp_sat.lean`: skeleton SAT reduction with placeholders.
 
 

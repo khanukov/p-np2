@@ -62,8 +62,8 @@ tracked in `TODO.md` and will be removed as the project progresses.
   variant `buildCoverCompute` that enumerates the rectangles as a list.
   The current implementation reuses the naive exhaustive scan of the Boolean
   cube, so it is exponentially slow but fully constructive.  Its specification
-  is proven and the file is used by `Algorithms/SatCover` for basic SAT
-  experimentation.
+  is being formalised, and the file is used by `Algorithms/SatCover` for
+  basic SAT experimentation.
 * `bound.lean` – arithmetic bounds deriving the subexponential size estimate;
   the main inequality `mBound_lt_subexp` is now fully proved in the
   `Pnp2` namespace.
@@ -166,7 +166,7 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 ## Status
 
 This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop.  `buildCover_mono` and `buildCover_card_bound` are now fully formalised via a measure-based recursion.  The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. The numeric bounds have been completed in `bound.lean`, culminating in the theorem `family_collision_entropy_lemma_table`. This establishes the sub-exponential cover (Lemma B).
-The newly introduced `Cover/Compute.lean` and `Algorithms/SatCover.lean` provide a constructive cover enumerator and a simple SAT search routine; their specifications are proven although the implementations are still placeholders.
+The newly introduced `Cover/Compute.lean` and `Algorithms/SatCover.lean` provide a constructive cover enumerator and a simple SAT search routine; their specifications are being formalised, although the implementations are still placeholders.
 
 Within `Pnp2` the overall structure of the FCE argument is complete and the focus shifts to optimising the constructive algorithms and reconnecting the SAT outline to recover the full `P ≠ NP` implication.
 

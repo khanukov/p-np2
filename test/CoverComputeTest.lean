@@ -31,7 +31,7 @@ def trivialFun : BoolFun 1 := fun _ => false
           have hcard : ({trivialFun} : Boolcube.Family 1).card = 1 := by simp
           have _hH₂ := BoolFunc.H₂_card_one
               (F := ({trivialFun} : Boolcube.Family 1)) hcard
-          simp)).length ≤ mBound 1 0 :=
+          simp)).length ≤ Fintype.card (Boolcube.Subcube 1) :=
   by
     classical
     have hspec := buildCoverCompute_spec

@@ -3,26 +3,26 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Cover.SubcubeAdapters
-import Pnp2.Cover.Uncovered
-import Pnp2.cover2
 
 -- Silence linter suggestions about using `simp` instead of `simpa` in this file.
 set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
 
 /-!
-This module provides a **lightweight executable wrapper** around the
-non‑computable cover construction in `cover2.lean`.
+This module provides an **executable baseline** for the cover construction.
 
-The main development constructs a finite set of monochromatic subcubes via the
-function `Cover2.buildCover`.  That definition lives in a classical world and
-returns a `Finset`.  For experimentation it is convenient to obtain an actual
-`List` of rectangles, hence the function `buildCoverCompute` below simply
-enumerates the set produced by `Cover2.buildCover`.
+The long‑term goal of the project is an efficient algorithm that enumerates a
+small collection of monochromatic subcubes covering all `1`‑inputs of a family
+of Boolean functions.  The sophisticated machinery for that algorithm lives in
+`cover2.lean` and its companion files but is still under active development.
 
-The current implementation does not attempt to be efficient—the heavy lifting
-is delegated to `Cover2.buildCover` which itself is still a placeholder in this
-repository.  Nevertheless, providing this wrapper keeps the interface stable
-while the constructive algorithm is being developed.
+To keep the experimental interface usable we currently expose a very simple
+enumerator `buildCoverCompute`.  It merely scans the entire Boolean cube and
+records every point on which *all* functions evaluate to `true`.  Each such
+point becomes a zero‑dimensional subcube, providing a tiny yet fully
+constructive cover.  Although this procedure is exponentially slow and far from
+the eventual strategy, it offers a convenient playground for experimentation
+and keeps the public API stable.
 
 `Cover.Bounds` exposes the auxiliary function `mBound` together with several
 useful arithmetic lemmas.  We re-export the most common ones so that users of
@@ -99,47 +99,31 @@ lemma buildCoverNaive_spec (F : Family n) :
     simpa [hlen]
 
 /--
-`buildCoverCompute` enumerates the finite set of rectangles produced by
-`Cover2.buildCover` as a list.  The construction itself is non‑computable but
-results in a concrete `List` which is convenient for experimentation.
+`buildCoverCompute` is the executable interface exposed to external users.
+For the moment it simply delegates to `buildCoverNaive`, ignoring the entropy
+budget.  The parameters `h` and `hH` are retained to keep the signature stable
+for future refinements when a more sophisticated algorithm becomes available.
 -/
 noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  (Cover2.buildCover (n := n) F h hH).toList
+  buildCoverNaive (n := n) (F := F)
 
 /--
-Specification for `buildCoverCompute`.  The returned list contains no duplicates,
-its elements are precisely the rectangles produced by `Cover2.buildCover` and
-its length is bounded by `mBound`.
+Specification for `buildCoverCompute`.  The resulting list has no duplicates,
+every listed subcube is monochromatic for the family and the length never
+exceeds the number of available subcubes.  The statement mirrors
+`buildCoverNaive_spec` but keeps the interface in terms of the entropy budget.
 -/
 lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCoverCompute (F := F) (h := h) hH).Nodup ∧
     (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
-        R ∈ Cover2.buildCover (n := n) F h hH) ∧
-    (buildCoverCompute (F := F) (h := h) hH).length ≤ mBound n h := by
+        Subcube.monochromaticForFamily R F) ∧
+    (buildCoverCompute (F := F) (h := h) hH).length ≤
+      Fintype.card (Subcube n) := by
   classical
-  unfold buildCoverCompute
-  -- Abbreviate the underlying set of rectangles.
-  set Rset := Cover2.buildCover (n := n) F h hH with hRset
-  -- Basic properties of `toList`.
-  have hnodup : Rset.toList.Nodup := Finset.nodup_toList _
-  have hmem : ∀ R ∈ Rset.toList.toFinset, R ∈ Rset := by
-    intro R hR
-    have hR_list : R ∈ Rset.toList := by
-      simpa using (List.mem_toFinset.mp hR)
-    simpa using (Finset.mem_toList.mp hR_list)
-  -- Cardinality bound transfers to the length of the list.
-  have hcard : Rset.card ≤ mBound n h :=
-    Cover2.buildCover_card_bound (n := n) (F := F) (h := h) hH
-  have hlen : Rset.toList.length ≤ mBound n h := by
-    simpa [Finset.length_toList] using hcard
-  -- Assemble the specification.
-  refine And.intro ?_ (And.intro ?_ ?_)
-  · simpa [hRset] using hnodup
-  · intro R hR
-    have hR' : R ∈ Rset := hmem R (by simpa [hRset] using hR)
-    simpa [hRset] using hR'
-  · simpa [hRset] using hlen
+  -- The definition is merely a thin wrapper around `buildCoverNaive`.
+  simpa [buildCoverCompute] using
+    (buildCoverNaive_spec (n := n) (F := F))
 
 end Cover

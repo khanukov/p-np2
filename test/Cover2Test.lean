@@ -269,6 +269,21 @@ example :
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (R := (∅ : Finset (Subcube 1))))
 
+/-- `firstUncovered` returns `none` exactly when every `1`‑input is covered. -/
+example :
+    Cover2.firstUncovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) = none ↔
+    Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
+      ({Subcube.full} : Finset (Subcube 1)) := by
+  -- The dedicated lemma proves the equivalence directly.
+  exact
+    (Cover2.firstUncovered_none_iff_AllOnesCovered
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := ({Subcube.full} : Finset (Subcube 1))))
+
 /-- If `firstUncovered` yields a witness, that witness lies in the uncovered set. -/
 example (F : BoolFunc.Family 1) (R : Finset (Subcube 1))
     {p : Sigma (fun _ => Point 1)}

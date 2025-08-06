@@ -3,7 +3,8 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Cover.SubcubeAdapters
-import Pnp2.cover2 -- main cover construction
+import Pnp2.Cover.Uncovered
+import Pnp2.cover2 -- numeric bounds and helpers
 
 -- Silence linter suggestions about using `simp` instead of `simpa` in this file.
 set_option linter.unnecessarySimpa false
@@ -24,14 +25,14 @@ simple, this approach is exponentially slow and therefore only suitable as a
 temporary stand‑in.
 
 In addition to this baseline enumerator we expose `buildCoverCompute`, a
-small executable interface used throughout the project.  The long‑term plan is
-to hook it up to the efficient recursive construction developed in
-`cover2.lean`.  This is now achieved by delegating to `Cover2.buildCover` and
-converting the resulting finite set of rectangles into a list.  The recursive
-construction is still under active development, so at the moment the behaviour
-mirrors the placeholder implementation of `buildCover` (which returns an empty
-set), but any future improvements to that construction will automatically
-propagate to `buildCoverCompute` without further changes to this file.
+small executable interface used throughout the project.  The long‑term goal is
+an efficient recursive algorithm, but for now we provide a simple constructive
+baseline: we scan the entire Boolean cube and record every point on which *some*
+function from the family evaluates to `true`.  Each such point becomes a
+zero‑dimensional subcube.  While exponentially slow in `n`, this procedure is
+easy to reason about and suffices for experimentation.  Future improvements to
+the recursive construction can replace this definition without affecting
+callers.
 
 `Cover.Bounds` exposes the auxiliary function `mBound` together with several
 useful arithmetic lemmas.  We re-export the most common ones so that users of
@@ -107,66 +108,65 @@ lemma buildCoverNaive_spec (F : Family n) :
 
 
 /--
-`buildCoverCompute` exposes a small executable interface for the cover
-construction.  For the time being it simply delegates to `buildCoverNaive`,
-which enumerates all points of the Boolean cube and records those on which all
-functions evaluate to `true`.  Despite its exponential cost this implementation
-is entirely constructive and suffices for experimentation.  Once the recursive
-algorithm in `cover2.lean` is available this definition can switch to it without
-affecting callers.
-
-The parameters `h` and `hH` provide an upper bound on the collision entropy of
-the family.  They are forwarded to `Cover2.buildCover`, which in the future will
-use them to guide the recursion.  At present the underlying implementation does
-not exploit this information, but keeping the parameters in the interface
-avoids churn once the full algorithm lands.
+`buildCoverCompute` enumerates all points of the Boolean cube on which at least
+one function from the family evaluates to `true` and converts each such point
+into a zero‑dimensional subcube.  This produces a trivial cover of all `1`
+inputs of the family.
 -/
 noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  -- Delegate to the main cover construction and expose the resulting set of
-  -- rectangles as a list.
-  (Cover2.buildCover (n := n) (F := F) (h := h) (_hH := hH)).toList
+  ((Finset.univ.filter (fun x : Point n => ∃ f ∈ F, f x = true)).image
+      (fun x => Subcube.point (n := n) x)).toList
 
 /--
 Specification for `buildCoverCompute`.  The resulting list has no duplicates,
-every listed subcube is monochromatic for the family and the length never
-exceeds the number of available subcubes.  This follows from the corresponding
-results about `Cover2.buildCover`.
+covers every `1`‑input of the family and its length never exceeds the number of
+available subcubes.  This is immediate from the explicit construction above.
 -/
 lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (buildCoverCompute (F := F) (h := h) hH).Nodup ∧
-    (∀ R ∈ (buildCoverCompute (F := F) (h := h) hH).toFinset,
-        Subcube.monochromaticForFamily R F) ∧
+    (Cover2.AllOnesCovered (n := n) F
+        (buildCoverCompute (F := F) (h := h) hH).toFinset) ∧
     (buildCoverCompute (F := F) (h := h) hH).length ≤
       Fintype.card (Subcube n) := by
   classical
-  -- Abbreviate the set of rectangles produced by `Cover2.buildCover`.
+  -- Abbreviate the underlying finite set of subcubes.
   set S : Finset (Subcube n) :=
-    Cover2.buildCover (n := n) (F := F) (h := h) (_hH := hH) with hS
-  -- The list produced by `buildCoverCompute` is `S.toList`.
+    (Finset.univ.filter (fun x : Point n => ∃ f ∈ F, f x = true)).image
+      (fun x => Subcube.point (n := n) x) with hS
+  -- The produced list is `S.toList`.
   have hlist : buildCoverCompute (F := F) (h := h) hH = S.toList := by
-    simp [buildCoverCompute, hS]
+    simpa [buildCoverCompute, hS]
   -- Establish duplicate freedom.
   have hnodup : (buildCoverCompute (F := F) (h := h) hH).Nodup := by
     simpa [hlist] using (Finset.nodup_toList S)
   refine And.intro hnodup ?_
-  -- Remaining obligations: monochromaticity and size bound.
-  refine And.intro ?mono ?bound
-  · -- Monochromaticity for each element of the list follows from the set version.
-    intro R hR
-    -- Convert membership in the list to membership in `S`.
-    have hRlist : R ∈ buildCoverCompute (F := F) (h := h) hH :=
-      (List.mem_toFinset.mp hR)
-    have hR' : R ∈ S := by
-      simpa [hlist] using (Finset.mem_toList.mp hRlist)
-    -- Invoke the monochromaticity lemma for `buildCover`.
-    exact Cover2.buildCover_mono (n := n) (F := F) (h := h) (_hH := hH) R hR'
-  · -- Bound the length via the cardinality of `S`.
+  -- Remaining obligations: coverage and size bound.
+  refine And.intro ?cover ?bound
+  · -- Every `1`‑input is covered by the point subcube at the corresponding point.
+    intro f hf x hx
+    -- The point `x` appears in the filtered set of points.
+    have hxfilter : x ∈
+        (Finset.univ.filter fun y : Point n => ∃ f ∈ F, f y = true) := by
+      refine Finset.mem_filter.mpr ?_
+      exact ⟨Finset.mem_univ _, ⟨f, hf, hx⟩⟩
+    -- Hence the corresponding point subcube belongs to `S`.
+    have hxS : Subcube.point (n := n) x ∈ S := by
+      exact Finset.mem_image.mpr ⟨x, hxfilter, rfl⟩
+    -- Convert membership in `S` to membership in the produced list.
+    have hxlist : Subcube.point (n := n) x ∈
+        (buildCoverCompute (F := F) (h := h) hH).toFinset := by
+      simpa [hlist] using hxS
+    -- Finally `x` is obviously contained in its point subcube.
+    have hxmem : x ∈ₛ Subcube.point (n := n) x :=
+      (Subcube.mem_point_iff (x := x) (y := x)).2 rfl
+    exact ⟨_, hxlist, hxmem⟩
+  · -- The list enumerates a subset of all subcubes.
+    have hcard : S.card ≤ Fintype.card (Subcube n) :=
+      Finset.card_le_univ _
     have hlen : (buildCoverCompute (F := F) (h := h) hH).length = S.card := by
       simpa [hlist] using (Finset.length_toList S)
-    have hcard : S.card ≤ Fintype.card (Subcube n) :=
-      Cover2.buildCover_card_univ_bound (n := n) (F := F) (h := h) (_hH := hH)
     simpa [hlen] using hcard
 
 end Cover

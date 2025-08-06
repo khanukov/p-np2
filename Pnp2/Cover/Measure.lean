@@ -305,19 +305,22 @@ lemma mu_union_firstUncovered_singleton_succ_le {F : Family n}
         (Finset.univ : Finset (Fin n))) (h := h) hx
 
 /--
-`extendCover` performs a single covering step: if `firstUncovered` locates a
-pair `(f, x)` that is not yet covered by `Rset`, we insert the subcube freezing
-all coordinates of `x`.  Otherwise the original set `Rset` is returned
-unchanged.
+`extendCover` performs a single covering step.  When `firstUncovered` locates a
+pair `(f, x)` that is not yet covered by `Rset` we add the largest subcube
+around `x` on which every function in `F` is constant.  Coordinates that affect
+any function are frozen while the remaining coordinates stay free.  If no
+uncovered pair exists, `Rset` is returned unchanged.
 -/
 noncomputable def extendCover {n : ℕ} (F : Family n)
     (Rset : Finset (Subcube n)) : Finset (Subcube n) :=
   match firstUncovered (n := n) F Rset with
   | none => Rset
   | some p =>
-      Rset ∪
-        {Boolcube.Subcube.fromPoint (n := n) p.2
-            (Finset.univ : Finset (Fin n))}
+      let K : Finset (Fin n) :=
+        Finset.univ.filter fun i : Fin n =>
+          ∃ g ∈ F,
+            g p.2 ≠ g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))
+      Rset ∪ {Boolcube.Subcube.fromPoint (n := n) p.2 K}
 
 /--
 If `firstUncovered` finds an uncovered pair, `extendCover` inserts the
@@ -335,10 +338,40 @@ lemma mu_extendCover_succ_le {F : Family n} {Rset : Finset (Subcube n)}
       -- Contradiction: `firstUncovered` yielded `none`.
       exact (hfu hfu').elim
   | some p =>
-      -- The measure drops after inserting the corresponding point subcube.
+      -- The pair returned by `firstUncovered` is uncovered.
+      have hpU :=
+        mem_uncovered_of_firstUncovered_some (n := n)
+          (F := F) (R := Rset) (p := p) hfu'
+      -- The point lies in the newly created subcube.
+      have hpR : p.2 ∈ₛ Boolcube.Subcube.fromPoint (n := n) p.2
+          (Finset.univ.filter fun i : Fin n =>
+            ∃ g ∈ F,
+              g p.2 ≠
+                g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))) := by
+        have :=
+          Boolcube.Subcube.self_mem_fromPoint (n := n) (x := p.2)
+            (K :=
+              Finset.univ.filter fun i : Fin n =>
+                ∃ g ∈ F,
+                  g p.2 ≠
+                    g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i))))
+        simpa using this
+      -- Package the witness for `mu_union_singleton_succ_le`.
+      have hx : ∃ q ∈ uncovered (n := n) F Rset, q.2 ∈ₛ
+          Boolcube.Subcube.fromPoint (n := n) p.2
+            (Finset.univ.filter fun i : Fin n =>
+              ∃ g ∈ F,
+                g p.2 ≠
+                  g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))) :=
+        ⟨p, hpU, hpR⟩
       have hdrop :=
-        mu_union_firstUncovered_singleton_succ_le
-          (F := F) (Rset := Rset) (h := h) (p := p) (hp := hfu')
+        mu_union_singleton_succ_le (n := n) (F := F) (Rset := Rset)
+          (R := Boolcube.Subcube.fromPoint (n := n) p.2
+            (Finset.univ.filter fun i : Fin n =>
+              ∃ g ∈ F,
+                g p.2 ≠
+                  g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))))
+          (h := h) hx
       simpa [extendCover, hfu'] using hdrop
 
 /--
@@ -368,9 +401,11 @@ lemma mu_extendCover_le {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
       simpa [extendCover, hfu]
   | some p =>
       -- A new rectangle gets inserted and the measure decreases.
+      have hfu' : firstUncovered (n := n) F Rset ≠ none := by
+        simpa [hfu]
       have hdrop :=
-        mu_union_firstUncovered_singleton_succ_le
-          (F := F) (Rset := Rset) (h := h) (p := p) (hp := hfu)
+        mu_extendCover_succ_le (n := n) (F := F) (Rset := Rset)
+          (h := h) hfu'
       -- Turn the quantified drop by one into a plain inequality.
       have := Nat.le_trans (Nat.le_succ _)
         (by simpa [extendCover, hfu] using hdrop)

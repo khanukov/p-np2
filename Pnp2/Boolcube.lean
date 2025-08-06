@@ -356,7 +356,7 @@ structure Cover {n : ℕ} (F : Family n) where
 
 /-!
 Sunflower step lemma from early drafts (deprecated).
-The current development in `cover.lean` relies directly on the
+The current development in `cover2.lean` relies directly on the
 formalised `Sunflower.sunflower_exists` from `sunflower.lean`, so this
 placeholder proof has been removed.  The full cover construction is
 postponed in this lightweight version.

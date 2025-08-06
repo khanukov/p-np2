@@ -59,7 +59,7 @@ enumerable in time `2^{(1-α)k}` on the left and `2^{(1-α)ℓ}` on the
 right (`k + ℓ = n`).
 
 *Current status.*  Low-sensitivity functions can already be compressed via
-the Impagliazzo–Moshkovitz–Oliveira method.  The updated `cover.lean` module
+the Impagliazzo–Moshkovitz–Oliveira method.  The updated `cover2.lean` module
 records uncovered inputs explicitly and splits on them.  A new lemma
 `sunflower_step` extracts a monochromatic subcube whenever a large set of
 small-support functions with **distinct supports** remains uncovered,

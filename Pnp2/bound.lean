@@ -2,8 +2,8 @@
 bound.lean
 ===========
 
-Pure *arithmetic* lemmas that translate the explicit counting bound  
-`|𝓡| ≤ n·(h+2)·2^(10 h)` (proved in `cover.lean`) into the convenient
+Pure *arithmetic* lemmas that translate the explicit counting bound
+`|𝓡| ≤ n·(h+2)·2^(10 h)` (proved in `cover2.lean`) into the convenient
 *sub‑exponential* tail bound that appears in every prose version of the
 Family Collision‑Entropy Lemma:
 
@@ -72,7 +72,7 @@ lemma aux_growth (h : ℕ) :
     simpa [hrewrite, hmul] using hdom
 
 -- Basic numeric facts about `mBound`.  These lemmas mirror the
--- versions in `cover.lean` but live in the arithmetic-focused
+-- versions in `cover2.lean` but live in the arithmetic-focused
 -- namespace for easier reuse.
 
 lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
@@ -217,7 +217,7 @@ variable {n h : ℕ} (F : Family n)
 **Family Collision‑Entropy Lemma (β‑version).**
 
 Under the entropy assumption `H₂(F) ≤ h`,
-the `coverFamily` constructed in `cover.lean`:
+the `coverFamily` constructed in `cover2.lean`:
 
 1.  is jointly **monochromatic** on each rectangle;
 2.  **covers** every `1`‑input of every `f ∈ F`;
@@ -229,7 +229,7 @@ theorem FCE_lemma
     (hn : n ≥ n₀ h) :
     (coverFamily (n := n) (h := h) F hH).card <
       Nat.pow 2 (n / 100) := by
-  -- Combines `coverFamily_card_bound` from `cover.lean`
+  -- Combines `coverFamily_card_bound` from `cover2.lean`
   -- with the arithmetic lemma above.
   have h1 :=
     Cover2.coverFamily_card_bound (n := n) (h := h) F hH

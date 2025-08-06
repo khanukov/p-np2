@@ -249,7 +249,7 @@ Finally, prove by induction that the algorithm always produces a valid cover and
 
 Each component’s verification will be reviewed and optimized. Since the final goal is significant (P ≠ NP proof), we will also document each formal lemma clearly, so it can be human-checked against the literature for trustworthiness. The plan emphasizes modularity (each lemma proven separately) and correspondence with known arguments, which reduces the risk of logical errors. By the end, we expect to have a certified proof of FCE-Lemma, and thus have removed the final barrier to a formal proof that P ≠ NP under the proposed framework.
 
-Updated checklist (July 2025)
+Updated checklist (August 2025)
 
 *Note: This checklist has been verified against the codebase. For a higher-level summary of the project's status, please see `README.md`.*
 
@@ -257,7 +257,7 @@ Updated checklist (July 2025)
 - [x] `entropy.lean`: full `EntropyDrop` lemma and helper results.
 - [x] `sunflower.lean`: classical sunflower lemma fully formalised.
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.
-- [ ] `cover.lean`: recursive covering uses `sunflower_step` and entropy split; counting proofs still missing. *(Note: The `buildCover` function in `cover2.lean` is a stub, so the real counting proof is not yet implemented).*
+- [x] `cover2.lean`: recursive covering uses `sunflower_step` and entropy split; monochromaticity and counting via `buildCover_card_bound` are now established.
 - [x] `bound.lean`: counting argument not yet formalised.
 - [x] `examples.lean`: small tests to be written.
 - [ ] `acc_mcsp_sat.lean`: skeleton SAT reduction with placeholders.

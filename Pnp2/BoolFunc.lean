@@ -7,7 +7,7 @@ Boolean cube `𝔹ⁿ ≃ Fin n → Bool`.
 
 This file is completely *self‑contained* and makes **no assumptions** about later
 lemmas (entropy, sunflowers, …).  It provides the basic objects and operations
-that all subsequent modules (`entropy.lean`, `sunflower.lean`, `cover.lean`, …)
+that all subsequent modules (`entropy.lean`, `sunflower.lean`, `cover2.lean`, …)
 re‑use.
 
 Main contents

@@ -103,15 +103,18 @@ lemma buildCoverNaive_spec (F : Family n) :
     simpa [hlen]
 
 /--
-`buildCoverCompute` is the executable interface exposed to external users.  It
-delegates to the recursive construction `Cover2.buildCover` and converts the
-resulting finite set of rectangles into a list.  The entropy budget `h` and the
-proof `hH` are currently unused but will become relevant once the underlying
-algorithm is fully implemented.
+`buildCoverCompute` is the executable interface exposed to external users.
+For the time being it simply reuses the tiny baseline enumerator
+`buildCoverNaive`, which lists all points of the cube on which every function in
+the family evaluates to `true`.  Once the recursive construction in
+`cover2.lean` matures, this definition will be replaced by a wrapper around the
+efficient algorithm while keeping the same lightweight interface.
+The entropy budget `h` and the proof `hH` are therefore currently unused but
+retained for future compatibility.
 -/
 noncomputable def buildCoverCompute (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : List (Subcube n) :=
-  (Cover2.buildCover (n := n) (F := F) (h := h) hH).toList
+  buildCoverNaive (n := n) (F := F)
 
 /--
 Specification for `buildCoverCompute`.  The resulting list has no duplicates,
@@ -126,28 +129,9 @@ lemma buildCoverCompute_spec (F : Family n) (h : ℕ)
         Subcube.monochromaticForFamily R F) ∧
     (buildCoverCompute (F := F) (h := h) hH).length ≤
       Fintype.card (Subcube n) := by
-    classical
-    -- Abbreviate the finite set produced by `buildCover`.
-  set R := Cover2.buildCover (n := n) (F := F) (h := h) hH
-    with hRdef
-  have hnodup : (buildCoverCompute (F := F) (h := h) hH).Nodup := by
-    simpa [buildCoverCompute, hRdef] using (Finset.nodup_toList (s := R))
-  refine And.intro hnodup ?_
-  -- Establish monochromaticity and the cardinality bound.
-  refine And.intro ?mono ?bound
-  · -- Each rectangle arises from `buildCover`.
-    intro Q hQ
-    -- Translate membership through the list/finset conversions.
-    have hQ_list : Q ∈ R.toList := List.mem_toFinset.mp hQ
-    have hQ_set : Q ∈ R := (Finset.mem_toList).mp hQ_list
-    -- Apply the monochromaticity lemma from `cover2`.
-    have hmono := Cover2.buildCover_mono (n := n) (F := F) (h := h) hH
-    exact hmono Q hQ_set
-  · -- Bound the length via the cardinality of `R`.
-    have hcard : R.card ≤ Fintype.card (Subcube n) :=
-      Cover2.buildCover_card_univ_bound (n := n) (F := F) (h := h) hH
-    have hlen : (buildCoverCompute (F := F) (h := h) hH).length = R.card := by
-      simpa [buildCoverCompute, hRdef] using (Finset.length_toList (s := R))
-    simpa [hlen]
+  classical
+  -- The specification follows directly from the naïve enumerator.
+  simpa [buildCoverCompute] using
+    (buildCoverNaive_spec (n := n) (F := F))
 
 end Cover

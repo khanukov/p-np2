@@ -1089,3 +1089,68 @@ example :
 /-- A single full rectangle still respects the universal cover bound. -/
 def Fsingle : BoolFunc.Family 1 := {fun _ : Point 1 => true}
 
+
+/-- `extendCover` is the identity when no uncovered pair exists. -/
+example :
+    Cover2.extendCover (n := 1)
+        ({(fun _ : Boolcube.Point 1 => false)} : BoolFunc.Family 1)
+        (∅ : Finset (Boolcube.Subcube 1)) =
+      (∅ : Finset (Boolcube.Subcube 1)) := by
+  classical
+  -- All functions have no `1`-inputs, hence coverage is trivial.
+  have hcov : Cover2.AllOnesCovered (n := 1)
+      ({(fun _ : Boolcube.Point 1 => false)} : BoolFunc.Family 1)
+      (∅ : Finset (Boolcube.Subcube 1)) :=
+    (Cover2.AllOnesCovered.empty (n := 1)
+      (F := ({(fun _ : Boolcube.Point 1 => false)} : BoolFunc.Family 1))).2
+      (by
+        intro f hf x hx
+        -- The sole function in the family is constantly `false`.
+        have hf' : f = (fun _ : Boolcube.Point 1 => false) := by
+          simpa using hf
+        subst hf'
+        simpa using hx)
+  -- `firstUncovered` therefore returns `none`.
+  have hfu : Cover2.firstUncovered (n := 1)
+      ({(fun _ : Boolcube.Point 1 => false)} : BoolFunc.Family 1)
+      (∅ : Finset (Boolcube.Subcube 1)) = none :=
+    (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Boolcube.Point 1 => false)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Boolcube.Subcube 1)))).2 hcov
+  -- With no uncovered pair, `extendCover` leaves the set unchanged.
+  simpa [hfu] using
+    (Cover2.extendCover_none (n := 1)
+      (F := ({(fun _ : Boolcube.Point 1 => false)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Boolcube.Subcube 1))) hfu)
+
+/-- `extendCover` never increases the measure `μ`. -/
+example :
+    Cover2.mu (n := 1)
+        ({(fun _ : Boolcube.Point 1 => true)} : BoolFunc.Family 1) 0
+        (Cover2.extendCover (n := 1)
+          ({(fun _ : Boolcube.Point 1 => true)} : BoolFunc.Family 1)
+          (∅ : Finset (Boolcube.Subcube 1))) ≤
+    Cover2.mu (n := 1)
+        ({(fun _ : Boolcube.Point 1 => true)} : BoolFunc.Family 1) 0
+        (∅ : Finset (Boolcube.Subcube 1)) := by
+  classical
+  -- Apply the general inequality directly.
+  exact
+    Cover2.mu_extendCover_le
+      (n := 1)
+      (F := ({(fun _ : Boolcube.Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := (∅ : Finset (Boolcube.Subcube 1)))
+      (h := 0)
+
+/-- Existing rectangles remain part of the result of `extendCover`. -/
+example (Rset : Finset (Boolcube.Subcube 1)) :
+    Rset ⊆ Cover2.extendCover (n := 1)
+        ({(fun _ : Boolcube.Point 1 => true)} : BoolFunc.Family 1) Rset := by
+  classical
+  -- Direct application of the subset lemma.
+  exact
+    Cover2.subset_extendCover
+      (n := 1)
+      (F := ({(fun _ : Boolcube.Point 1 => true)} : BoolFunc.Family 1))
+      (Rset := Rset)

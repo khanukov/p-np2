@@ -360,9 +360,10 @@ lemma mu_buildCover_le_start {F : Family n} {h : ℕ}
 not exceed the starting measure. -/
 lemma mu_buildCover_lt_start {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
+    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
     mu (n := n) F h (buildCover (n := n) F h hH) ≤
       mu (n := n) F h (∅ : Finset (Subcube n)) :=
+  -- The measure bound does not actually depend on the specific uncovered pair.
   mu_buildCover_le_start (n := n) (F := F) (h := h) hH
 
 /-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
@@ -377,7 +378,7 @@ lemma buildCover_measure_drop {F : Family n} {h : ℕ}
 statement for downstream use.  When the family has no `1`‑inputs the result of
 `buildCover` is the empty set, which trivially satisfies all requirements. -/
 lemma cover_exists {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧

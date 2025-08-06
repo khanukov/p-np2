@@ -41,7 +41,7 @@ Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alp
 
 ### B‑5. Constructing the cover
 Build a rectangular cover of `\mathcal{S}_n` of size `M \le 2^{N - N^{\delta}}`.
-The file `cover.lean` keeps track of uncovered inputs and recurses via
+The file `cover2.lean` keeps track of uncovered inputs and recurses via
 `firstUncovered`.  The classical lemma `sunflower_exists` (together with
 the `RSpread` notion of scattered families) now provides the sunflower
 step whenever enough **distinct supports** remain, producing a
@@ -62,7 +62,7 @@ theory.
 * **Theory block.** Deepen the study of items B‑1–B‑3, including connections to existing results on canonical forms and description bounds.
 * **Algorithm block.** Implement meet-in-the-middle and fast enumeration (B‑4) for small values of `n`.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
-  The Lean code now defines `buildCover` in `cover.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
+  The Lean code now defines `buildCover` in `cover2.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
   The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
   The lemma `buildCover_mono` has now been proved, establishing monochromaticity of
   the constructed cover.  The companion size estimate `buildCover_card_bound` is now proven using the same measure-based recursion.
@@ -78,7 +78,7 @@ theory.
   approach to the cover.
 * **Utilities.**  The new files `collentropy.lean` and `family_entropy_cover.lean`
   collect single-function entropy facts and package the cover from
-  `cover.lean` as a reusable record.  A lightweight variant
+  `cover2.lean` as a reusable record.  A lightweight variant
   `CollentropyBasic.lean` now supplies just the numeric bounds needed by
   the SAT prototype, while `Cover/Compute.lean` and `Algorithms/SatCover.lean`
   provide constructive skeletons for cover enumeration and satisfiability

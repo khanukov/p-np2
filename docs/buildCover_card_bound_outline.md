@@ -45,7 +45,7 @@ Since `μ` decreases in every step, after at most `μ(F, h, ∅)` iterations the
 recursion stops.  Because `mBound` dominates this initial measure we obtain
 `(buildCover F h hH).card ≤ mBound n h`.
 
-The induction has now been fully formalised in `cover.lean`, using these helper lemmas to prove `buildCover_card_bound` outright.
+The induction has now been fully formalised in `cover2.lean`, using these helper lemmas to prove `buildCover_card_bound` outright.
 
 ## Detailed branch analysis
 The measure-based induction follows these steps in detail.
@@ -88,7 +88,7 @@ then bounds the rest of the construction.
 
 Combining all branches yields the desired inequality
 `(buildCover F h Rset).card ≤ mBound n h`.  The current development
-implements this induction in `cover.lean`, relying on the lemmas
+implements this induction in `cover2.lean`, relying on the lemmas
 `mu_union_singleton_lt` and `mu_buildCover_le_start` to show that each
 recursive step lowers the measure.
 
@@ -121,7 +121,7 @@ of `buildCover` strictly decreases this measure.
 ## Base case
 When `uncovered F R = ∅` the recursion stops and returns `R`.  Since the size of
 `R` is assumed to be at most `mBound n h`, the claim follows immediately.
-The file `cover.lean` isolates this reasoning in the lemma
+The file `cover2.lean` isolates this reasoning in the lemma
 `buildCover_card_bound_of_none`, which bounds the result size under the
 same hypothesis.
 

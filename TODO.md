@@ -35,7 +35,7 @@ Short list of development tasks reflecting the current repository status.
 - [x] Prove `satViaCover_correct` and establish a time bound in
       `Algorithms/SatCover.lean`.
 
-## Remaining axioms (as of 2025-07-16)
+## Remaining axioms (as of 2025-08-06)
  - `LowSensitivityCover.decisionTree_cover` (external)
  - `ComplexityClasses.P_subset_Ppoly` (external)
  - `NPSeparation.MCSP_lower_bound` (external)

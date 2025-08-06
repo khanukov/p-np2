@@ -100,10 +100,10 @@ Modules in Lean 4:
 * `entropy.lean`: entropy-drop lemma.
 * `sunflower.lean`: sunflower extraction.
 * `Agreement.lean`: core agreement.
-* `cover.lean`: main recursive algorithm.
+* `cover2.lean`: main recursive algorithm.
 * `bound.lean`: size bound proof.
 * `examples.lean`: auto-tests.
-### Updated Formalisation Plan (2025-07-04)
+### Updated Formalisation Plan (2025-08-06)
 The modules above serve as milestones. Our immediate goals are:
 
 1. Complete the proof of `EntropyDrop` in `entropy.lean`.  The helper
@@ -116,10 +116,10 @@ The modules above serve as milestones. Our immediate goals are:
 2. The classical sunflower lemma in `sunflower.lean` is now fully formalised.
 3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
    The file `Agreement.lean` now contains the complete proof of this lemma.
-4. Finalise the recursive covering algorithm in `cover.lean`.  A
+4. ~~Finalise the recursive covering algorithm in `cover2.lean`.  A
   proof of the inequality `mBound_lt_subexp` exists in the legacy
   `Pnp2/bound.lean` file, but the new version still marks this
-  statement as an axiom awaiting porting.
+  statement as an axiom awaiting porting.~~
 
 6. Provide small test instances in `examples.lean`.
 

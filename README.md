@@ -50,12 +50,14 @@ tracked in `TODO.md` and will be removed as the project progresses.
   (`RSpread.card_bound`, `RSpread.one_of_nonempty`, `RSpread.card_filter_le`)
   rephrase the definition and handle the trivial case `R = 1`.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
-* `cover.lean` – experimental cover builder that keeps track of the
-  set of uncovered inputs via `firstUncovered`.  The entropy split now
-  uses `exists_coord_entropy_drop`, and the sunflower step relies on
-  `sunflower_exists`.  Monochromaticity of the resulting cover is now fully established via the lemma `buildCover_mono`.  The companion counting lemma `buildCover_card_bound` has been proven through a complete measure-based induction on `μ(F, h, Rset) = 2 * h + |uncovered F Rset|`.
-  The helper lemma `AllOnesCovered.union` abstracts the union step in
-  the coverage proof.
+* `cover2.lean` – streamlined reimplementation of the cover builder.  It
+  retains the `firstUncovered` bookkeeping and ports the entropy split
+  (`exists_coord_entropy_drop`) together with the sunflower step
+  (`sunflower_exists`).  Monochromaticity of the resulting cover is fully
+  established via `buildCover_mono`, and the counting lemma
+  `buildCover_card_bound` is proved using the measure `μ(F, h, Rset) = 2 * h +
+  |uncovered F Rset|`.  The helper lemma `AllOnesCovered.union` abstracts the
+  union step in the coverage proof.
 * `Cover/Compute.lean` – lightweight wrapper exposing a constructive
   variant `buildCoverCompute` that enumerates the rectangles as a list.
   The current implementation reuses the naive exhaustive scan of the Boolean
@@ -71,7 +73,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   bounds needed for the SAT solver. Several numeric inequalities remain
   admitted for the time being.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
-  record extracted from `cover.lean`.
+  record extracted from `cover2.lean`.
 * `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
 * `DecisionTree.lean` – minimal decision-tree datatype with depth, leaf-count,
   path extraction, a `subcube_of_path` helper and lemmas

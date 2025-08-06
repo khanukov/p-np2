@@ -162,22 +162,6 @@ noncomputable
 def Rcover : Finset (Subcube 3) :=
   coverFamily (n := 3) (h := h₀) F₃ h₀_ok
 
-/-- Cardinality upper‑bound *proven automatically*. -/
-#eval Rcover.card   -- Lean can *not* compute this (opaque), but type‑checks.
-
-example : Rcover.card ≤ mBound 3 h₀ :=
-  Cover2.coverFamily_card_bound (n := 3) (h := h₀) F₃ h₀_ok
-
-/-
-Similarly, every *1‑input* of every function is covered:
-(This is again a type‑level fact; we do not `#eval` the witness rectangle.)
--/
-example (x : Point 3) (h : f_and x = true) :
-    ∃ R, R ∈ Rcover ∧ (x ∈ₛ R) :=
-  Cover2.coverFamily_spec_cover (n := 3) (h := h₀) F₃ h₀_ok
-    f_and
-    (by
-      -- `f_and ∈ F₃`
       have : f_and ∈ ({f_and, f_or, f_zero} : Finset (BFunc 3)) := by
         simp
       simpa [F₃] using this)

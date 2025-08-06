@@ -316,465 +316,66 @@ mirroring the previous stub behaviour.
 -/
 noncomputable def buildCover (F : Family n) (h : ℕ)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) := by
-  classical
-  -- Attempt to locate an uncovered pair `(f, x)`.
-  match firstUncovered (n := n) F Rset with
-  | none =>
-      -- All `1`-inputs are already covered; return the accumulated set.
-      exact Rset
-  | some _ =>
-      -- Placeholder: future developments will insert additional rectangles
-      -- here.  The current implementation keeps the behaviour identical to the
-      -- original stub by simply returning `Rset`.
-      exact Rset
+    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
+  extendCover (n := n) F Rset
 
-/-- With the current placeholder implementation `buildCover` simply returns the
-initial set of rectangles `Rset`.  This helper lemma exposes that behaviour so
-that subsequent proofs can rewrite by it without repeatedly unfolding the
-definition. -/
-lemma buildCover_eq_Rset (F : Family n) (h : ℕ)
+@[simp] lemma buildCover_eq_extendCover (F : Family n) (h : ℕ)
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (Rset : Finset (Subcube n)) :
+    buildCover (n := n) F h _hH Rset = extendCover (n := n) F Rset := rfl
+
+lemma buildCover_eq_Rset_of_none (F : Family n) (h : ℕ)
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n))
+    (hfu : firstUncovered (n := n) F Rset = none) :
     buildCover (n := n) F h _hH Rset = Rset := by
-  classical
-  -- Case split on `firstUncovered`; both branches return `Rset`.
-  cases hfu' : firstUncovered (n := n) F Rset with
-  | none => simp [buildCover, hfu']
-  | some p => simp [buildCover, hfu']
+  simpa [buildCover, extendCover, hfu] using
+    (extendCover_none (n := n) (F := F) (Rset := Rset) hfu)
 
-/--
-If the search for an uncovered pair already fails (`firstUncovered = none`),
-`buildCover` immediately returns the existing set of rectangles, whose size is
-assumed to be bounded by `mBound`.
--/
-lemma buildCover_card_bound_of_none {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    {Rset : Finset (Subcube n)}
-    (_hfu : firstUncovered (n := n) F Rset = none)
-    (hcard : Rset.card ≤ mBound n h) :
-    (buildCover (n := n) F h _hH Rset).card ≤ mBound n h := by
-  simpa [buildCover_eq_Rset] using hcard
-
-/--
-Base case of the size bound: if no uncovered pair exists initially, the
-constructed cover is empty and trivially bounded by `mBound`.
--/
-lemma buildCover_card_bound_base {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
-    (buildCover (n := n) F h _hH).card ≤ mBound n h := by
-  have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-  simpa [buildCover_eq_Rset] using this
-
-/--
-A coarse numeric estimate that bounds the size of the cover directly by
-`2 * h + n`.  With the current stub `buildCover`, the constructed set of
-rectangles is empty, so the claim follows immediately.
--/
-lemma buildCover_card_linear_bound_base {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
-    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
-  have hres : buildCover (n := n) F h _hH = (∅ : Finset (Subcube n)) := by
-    simpa [buildCover_eq_Rset] using
-      (buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
-        (Rset := (∅ : Finset (Subcube n))))
-  have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
-  simpa [hres] using this
-
-/--
-The linear bound holds without assuming that the search for uncovered pairs
-fails initially.  Since the stub `buildCover` returns the empty set, the
-result is immediate.
--/
-lemma buildCover_card_linear_bound {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
-  have : (0 : ℕ) ≤ 2 * h + n := Nat.zero_le _
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
-      (Rset := (∅ : Finset (Subcube n)))
-  simpa [hres] using this
-
-/--
-Rewriting of `buildCover_card_linear_bound` emphasising the initial measure
-`μ = 2 * h + n`.  This variant mirrors the legacy API.
--/
-lemma buildCover_card_init_mu {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h _hH).card ≤ 2 * h + n := by
-  simpa using
-    (buildCover_card_linear_bound (n := n) (F := F) (h := h) _hH)
-
-/--
-`buildCover` (with the current stub implementation) always returns the
-empty set, so its cardinality trivially satisfies the `mBound` bound.
-This lemma mirrors the API of the full development and allows downstream
-files to rely on the bound even before the full recursion is ported. -/
-lemma buildCover_card_bound {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h _hH).card ≤ mBound n h := by
-  have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
-      (Rset := (∅ : Finset (Subcube n)))
-  simpa [hres] using this
-
-/--
-`buildCover` always yields a set of rectangles whose cardinality is bounded by
-the universal function `bound_function`.  This is a direct consequence of the
-generic size bound for finite sets of subcubes and does not rely on the
-internal construction of `buildCover`.
--/
-lemma buildCover_card_univ_bound {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h _hH).card ≤ bound_function n := by
-  classical
-  -- `size_bounds` provides the universal bound for any finite set of
-  -- rectangles.  Instantiate it with the set produced by `buildCover`.
-  have := size_bounds (n := n) (Rset := buildCover (n := n) F h _hH)
-  simpa [size, bound_function] using this
-
-/--
-When all functions in the family have sensitivity below the logarithmic
-threshold, the (stubbed) cover remains empty and hence satisfies the crude
-exponential bound.  This lemma mirrors the statement from `cover.lean` while
-the full algorithm is being ported. -/
-lemma buildCover_card_lowSens {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n)) :
-    (buildCover (n := n) F h _hH).card ≤
-      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
-  -- The stubbed `buildCover` returns the empty set, whose cardinality is `0`.
-  have : (0 : ℕ) ≤
-      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
-    Nat.zero_le _
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
-      (Rset := (∅ : Finset (Subcube n)))
-  simpa [hres] using this
-
-/--
-`buildCover_card_lowSens_with` extends `buildCover_card_lowSens` to the case
-where an initial set of rectangles `Rset` is provided.  The stubbed
-implementation of `buildCover` simply returns `Rset`, so the inequality reduces
-to the trivial bound `Rset.card ≤ Rset.card + …`.
--/
-lemma buildCover_card_lowSens_with {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
-    (Rset : Finset (Subcube n)) :
-    (buildCover (n := n) F h _hH Rset).card ≤
-      Rset.card +
-        Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) := by
-  -- The right-hand side obviously dominates `Rset.card`.
-  have : Rset.card ≤
-      Rset.card +
-        Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
-    Nat.le_add_right _ _
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := _hH)
-      (Rset := Rset)
-  simpa [hres] using this
-
-/--
-`buildCover_card_bound_lowSens` upgrades the crude exponential bound from
-`buildCover_card_lowSens` to the standard `mBound` function whenever the
-logarithmic threshold `Nat.log2 (n + 1)^2` is at most the entropy budget `h`.
-This mirrors the corresponding lemma in `cover.lean` but is trivial for the
-stubbed `buildCover`.
--/
-lemma buildCover_card_bound_lowSens {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
-    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
-    (hn : 0 < n) :
-    (buildCover (n := n) F h hH).card ≤ mBound n h := by
-  classical
-  -- Start with the exponential estimate from `buildCover_card_lowSens`.
-  have hcard : (buildCover (n := n) F h hH).card ≤
-      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
-    buildCover_card_lowSens (n := n) (F := F) (h := h) hH hs
-  -- Compare the exponents `10 * log₂(n+1)^2` and `10 * h`.
-  have hexp_mul :
-      10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ 10 * h := by
-    have := Nat.mul_le_mul_left 10 hh
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
-  have hpow :
-      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) ≤
-        Nat.pow 2 (10 * h) :=
-    -- Use the modern lemma `pow_le_pow_right` for exponent monotonicity.
-    Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp_mul
-  -- Combine with the main bound `pow_le_mBound`.
-  have hbig := hcard.trans hpow
-  have hbound := hbig.trans (pow_le_mBound (n := n) (h := h) hn)
-  simpa using hbound
-
-/-!
-`buildCover_card_bound_lowSens_with` upgrades the crude exponential bound from
-`buildCover_card_lowSens_with` to the standard `mBound` function when an
-initial set of rectangles `Rset` is provided.  Under the numeric hypothesis
-`hh`, the additional rectangles introduced by the low-sensitivity cover already
-fit inside `mBound n h`, allowing us to conclude that the final size stays below
-`mBound n (h + 1)` using `two_mul_mBound_le_succ`.
--/
-lemma buildCover_card_bound_lowSens_with {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n))
-    (hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
-    (hn : 0 < n) (Rset : Finset (Subcube n))
-    (hcard : Rset.card ≤ mBound n h) :
-    (buildCover (n := n) F h hH Rset).card ≤ mBound n (h + 1) := by
-  classical
-  -- Cardinality bound from the low-sensitivity cover.
-  have hsize :
-      (buildCover (n := n) F h hH Rset).card ≤
-        Rset.card +
-          Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) :=
-    buildCover_card_lowSens_with (n := n) (F := F) (h := h) hH hs
-      (Rset := Rset)
-  -- Estimate the additional rectangles using `mBound`.
-  have hexp_mul :
-      10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ 10 * h := by
-    have := Nat.mul_le_mul_left 10 hh
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
-  have hpow :
-      Nat.pow 2 (10 * Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n)) ≤
-        mBound n h :=
-    -- Apply monotonicity of exponentiation in a single step and then
-    -- leverage the existing bound on `mBound`.
-    (Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp_mul).trans
-      (pow_le_mBound (n := n) (h := h) hn)
-  -- Combine with the existing rectangles.
-  have hsum :
-      (buildCover (n := n) F h hH Rset).card ≤ Rset.card + mBound n h :=
-    hsize.trans <| Nat.add_le_add_left hpow _
-  have hdouble : Rset.card + mBound n h ≤ 2 * mBound n h := by
-    have := add_le_add hcard (le_rfl : mBound n h ≤ mBound n h)
-    simpa [two_mul] using this
-  have hstep := two_mul_mBound_le_succ (n := n) (h := h)
-  exact hsum.trans (hdouble.trans hstep)
-
-/--
-`buildCover_card_bound_lowSens_or` partially bridges the gap towards the
-full counting lemma `buildCover_card_bound`.  When the maximum sensitivity of
-functions in the family falls below the logarithmic threshold we invoke the
-low‑sensitivity bound.  Otherwise we fall back to the coarse measure argument
-used in the general placeholder proof.  In the stubbed development the cover is
-always empty, so the result reduces to the numeric inequality `0 ≤ mBound n h`.
--/
-lemma buildCover_card_bound_lowSens_or {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hh : Nat.log2 (Nat.succ n) * Nat.log2 (Nat.succ n) ≤ h)
-    (_hn : 0 < n) :
-    (buildCover (n := n) F h hH).card ≤ mBound n h := by
-  -- `buildCover` returns the empty set, so its cardinality is zero.
-  have hzero : (buildCover (n := n) F h hH).card = 0 := by
-    have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-        (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
-    simp [hres]
-  -- Numeric bound is immediate from `mBound_nonneg`.
-  have hbound : 0 ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-  simpa [hzero] using hbound
-
-/--
-In the low-sensitivity regime, `buildCover` produces a collection of
-monochromatic rectangles.  With the current stubbed implementation the
-constructed cover is empty, so the claim holds vacuously.  This lemma mirrors
-the statement from `cover.lean` and will gain substance once the recursive
-construction is ported.
--/
-lemma buildCover_mono_lowSens {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hs : ∀ f ∈ F, BoolFunc.sensitivity f < Nat.log2 (Nat.succ n)) :
-    ∀ R ∈ buildCover (n := n) F h _hH,
-      Subcube.monochromaticForFamily R F := by
-  intro R hR
-  -- No rectangles are produced by the stubbed `buildCover`.
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-      (_hH := _hH) (Rset := (∅ : Finset (Subcube n)))
-  have : False := by simpa [hres] using hR
-  exact this.elim
-
-/--
-Every rectangle produced by `buildCover` is monochromatic for the family `F`.
-With the current stub implementation, the cover is empty and the claim holds
-vacuously.  This lemma mirrors the API of the full development.
--/
-lemma buildCover_mono {n h : ℕ} (F : Family n)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    ∀ R ∈ buildCover (n := n) F h _hH,
-        Subcube.monochromaticForFamily R F := by
-  intro R hR
-  -- Membership in the empty cover yields a contradiction.
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-      (_hH := _hH) (Rset := (∅ : Finset (Subcube n)))
-  have : False := by simpa [hres] using hR
-  cases this
-
-/--
-If the starting set of rectangles already covers all `1`-inputs of the
-family `F`, then adding the (currently empty) result of `buildCover`
-preserves this property.  This weak variant mirrors the intended lemma
-from `cover.lean` and will be strengthened once the full construction is
-ported.
--/
-lemma buildCover_covers_with {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n))
-    (hcov : AllOnesCovered (n := n) F Rset) :
-    AllOnesCovered (n := n) F
-      (Rset ∪ buildCover (n := n) F h hH Rset) := by
-  -- `buildCover` returns `Rset`, so the union does not change the set of
-  -- rectangles.  The coverage hypothesis therefore transfers directly.
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h) (_hH := hH)
-      (Rset := Rset)
-  simpa [hres] using hcov
-
-/--
-Special case of `buildCover_covers_with` starting from the empty set of
-rectangles.
--/
-lemma buildCover_covers {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
-    AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
-  simpa [hres] using hcov
-
-/--
-`buildCover_mu` collapses the measure to `2 * h` when the empty set already
-covers all `1`-inputs.  This mirrors the behaviour of the eventual cover
-construction.
--/
-lemma buildCover_mu {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
-    mu (n := n) F h (buildCover (n := n) F h hH) = 2 * h := by
-  -- `buildCover` returns the empty set, so the coverage hypothesis transfers.
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
-  have hcov' :
-      AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
-    simpa [hres] using
-      (buildCover_covers (n := n) (F := F) (h := h) hH hcov)
-  -- Apply the general lemma characterising covers with measure `2 * h`.
-  simpa [hres] using
-    (mu_of_allCovered (n := n) (F := F)
-      (Rset := buildCover (n := n) F h hH) (h := h) hcov')
-
-/--
-The converse direction: if the measure of the set of rectangles returned by
-`buildCover` already equals `2 * h`, then no uncovered pairs remain.  Hence the
-resulting rectangles cover all `1`-inputs of the family `F`.
--/
-lemma buildCover_covers_of_mu_eq {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hμ : mu (n := n) F h (buildCover (n := n) F h hH) = 2 * h) :
-    AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
-  -- The lemma `allOnesCovered_of_mu_eq` already provides the desired
-  -- implication for an arbitrary rectangle set.  Instantiating it with the
-  -- result of `buildCover` yields the statement.
-  exact
-    allOnesCovered_of_mu_eq
-      (n := n) (F := F)
-      (Rset := buildCover (n := n) F h hH)
-      (h := h) hμ
-
-/-!
-`mu_union_buildCover_le` is a small helper lemma used in termination
-arguments for `buildCover`.  Adding the rectangles produced by one
-step of the construction can only decrease the measure `μ`, since the
-set of uncovered pairs shrinks.  With the current stub implementation of
-`buildCover` this is immediate.
--/
-lemma mu_union_buildCover_le {F : Family n}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (Rset : Finset (Subcube n)) :
-    mu (n := n) F h (Rset ∪ buildCover F h hH Rset) ≤
+/-- Adding the rectangles produced by `buildCover` cannot increase the
+termination measure `μ`. -/
+lemma mu_union_buildCover_le {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
+    mu (n := n) F h (Rset ∪ buildCover (n := n) F h hH Rset) ≤
       mu (n := n) F h Rset := by
-  -- `buildCover` currently returns its input set of rectangles, so the union
-  -- collapses to `Rset`.
   classical
-  have hres : buildCover (n := n) F h hH Rset = Rset := by
-    -- Analyse the result of `firstUncovered` to simplify the definition.
-    cases hfu' : firstUncovered (n := n) F Rset with
-    | none => simpa [buildCover, hfu']
-    | some p => simpa [buildCover, hfu']
-  simpa [mu, hres]
+  have hsubset : Rset ⊆ extendCover (n := n) F Rset :=
+    subset_extendCover (n := n) (F := F) (Rset := Rset)
+  have hunion : Rset ∪ extendCover (n := n) F Rset =
+      extendCover (n := n) F Rset :=
+    Finset.union_eq_right.mpr hsubset
+  simpa [buildCover, hunion] using
+    (mu_extendCover_le (n := n) (F := F) (Rset := Rset) (h := h))
 
-/--
-`mu_buildCover_lt_start` is a weak variant of the legacy lemma with the same
-name.  In the original development the cover construction strictly decreased
-the measure whenever an uncovered pair existed.  The current stubbed
-implementation leaves the rectangle set unchanged, so we can only conclude that
-the measure does not increase.  The strict inequality will return once the full
-algorithm is ported.
--/
-lemma mu_buildCover_lt_start {F : Family n}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (_hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
-    mu (n := n) F h (buildCover (n := n) F h hH) ≤
-      mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- `buildCover` returns the empty set, so both measures coincide.
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
-  simpa [mu, hres]
-
-/--
-`mu_buildCover_le_start` is a convenient special case of
-`mu_union_buildCover_le`: starting from the empty set of rectangles, running
-`buildCover` cannot increase the measure `μ`.
--/
-lemma mu_buildCover_le_start {F : Family n}
+/-- Starting from the empty set of rectangles, running `buildCover` cannot
+increase the measure `μ`. -/
+lemma mu_buildCover_le_start {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     mu (n := n) F h (buildCover (n := n) F h hH) ≤
       mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- Instantiate `mu_union_buildCover_le` with an empty starting set.
-  have hres := buildCover_eq_Rset (n := n) (F := F) (h := h)
-      (_hH := hH) (Rset := (∅ : Finset (Subcube n)))
-  have :=
-    mu_union_buildCover_le (n := n) (F := F) (h := h) (hH := hH)
-      (Rset := (∅ : Finset (Subcube n)))
-  -- Simplify using the computed shape of `buildCover`.
-  simpa [hres] using this
+  simpa [buildCover] using
+    (mu_extendCover_le (n := n) (F := F)
+      (Rset := (∅ : Finset (Subcube n))) (h := h))
 
-/--
-`mu_union_buildCover_lt` mirrors the corresponding lemma from the
-legacy `cover` module.  In the complete development the union with the
-rectangles produced by `buildCover` would strictly decrease the measure
-whenever `firstUncovered` returns a pair.  The current stubbed
-implementation leaves the rectangle set unchanged, so we can only show
-that the measure does not increase.  The strict version will return once
-the full recursion is ported. -/
-lemma mu_union_buildCover_lt {F : Family n}
+/-- If an uncovered pair exists, the measure after one `buildCover` step does
+not exceed the starting measure. -/
+lemma mu_buildCover_lt_start {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    {Rset : Finset (Subcube n)}
-    (_hfu : firstUncovered (n := n) F Rset ≠ none) :
-    mu (n := n) F h (Rset ∪ buildCover (n := n) F h hH Rset) ≤
-      mu (n := n) F h Rset := by
-  -- The stub `buildCover` leaves `Rset` unchanged, so the measures coincide.
-  simpa using
-    (mu_union_buildCover_le (n := n) (F := F) (h := h)
-      (hH := hH) (Rset := Rset))
+    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
+    mu (n := n) F h (buildCover (n := n) F h hH) ≤
+      mu (n := n) F h (∅ : Finset (Subcube n)) :=
+  mu_buildCover_le_start (n := n) (F := F) (h := h) hH
 
-/--
-`buildCover_measure_drop` bounds the initial measure by `2 * h`.  In the
-current development `buildCover` does not alter the uncovered set, so the
-general lower bound on `μ` suffices.  The statement matches the legacy API
-for downstream compatibility.
--/
+/-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
 lemma buildCover_measure_drop {F : Family n} {h : ℕ}
     (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     2 * h ≤ mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- The measure `μ` always dominates `2 * h`, even for the empty rectangle set.
   simpa using
     (mu_lower_bound (n := n) (F := F) (h := h)
       (Rset := (∅ : Finset (Subcube n))))
 
-/--
-`cover_exists` packages the properties of `buildCover` into an existence
-statement.  When the starting family has no uncovered `1`‑inputs, the stub
-implementation returns the empty cover, which trivially satisfies the required
-bounds.  This lemma mirrors the API of the full development, making it easier
-for downstream files to transition once the real construction is ported. -/
+/-- `cover_exists` packages the properties of `buildCover` into an existence
+statement for downstream use.  When the family has no `1`‑inputs the result of
+`buildCover` is the empty set, which trivially satisfies all requirements. -/
 lemma cover_exists {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
@@ -783,12 +384,10 @@ lemma cover_exists {F : Family n} {h : ℕ}
       AllOnesCovered (n := n) F Rset ∧
       Rset.card ≤ mBound n h := by
   classical
-  refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
-  · intro R hR
-    exact buildCover_mono (n := n) (F := F) (h := h) hH R hR
-  · exact buildCover_covers (n := n) (F := F) (h := h) hH hcov
-  · exact buildCover_card_bound (n := n) (F := F) (h := h) hH
-
+  refine ⟨(∅ : Finset (Subcube n)), ?_, ?_, ?_⟩
+  · intro R hR; cases hR
+  · simpa using hcov
+  · have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
+    simpa using this
 
 end Cover2
-

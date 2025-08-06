@@ -412,6 +412,30 @@ lemma mu_extendCover_le {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
       simpa [extendCover, hfu] using this
 
 /--
+The original set of rectangles is always contained in the result of
+`extendCover`.
+-/
+lemma subset_extendCover {F : Family n} {Rset : Finset (Subcube n)} :
+    Rset ⊆ extendCover (n := n) F Rset := by
+  classical
+  intro R hR
+  -- Inspect the outcome of `firstUncovered`.
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      -- `extendCover` is the identity in this case.
+      simpa [extendCover, hfu] using hR
+  | some p =>
+      -- The result is the union with a freshly constructed subcube.
+      have : R ∈ Rset ∪
+          {Boolcube.Subcube.fromPoint (n := n) p.2
+            (Finset.univ.filter fun i : Fin n =>
+              ∃ g ∈ F,
+                g p.2 ≠
+                  g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i))))} :=
+        Finset.mem_union.mpr (Or.inl hR)
+      simpa [extendCover, hfu] using this
+
+/--
 If a rectangle covers two distinct uncovered pairs, the measure drops
 strictly after inserting this rectangle.
 -/

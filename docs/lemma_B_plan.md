@@ -31,9 +31,10 @@ all circuits of size `≤ n^c` admit a joint monochromatic cover of at
 most `2^{(2^n)/100}` rectangles.  The proof relies on the `family_collision_entropy_lemma_table`
 for general families and instantiates it with the circuit family.
 
-What remains open is a **computable** enumeration of these rectangles
-via `Cover.buildCoverCompute`.  The current stub always returns an
-empty list, so the algorithmic applications are still hypothetical.
+What remains open is a **practical** enumeration of these rectangles
+via `Cover.buildCoverCompute`.  The current implementation simply
+enumerates all points of the Boolean cube one by one, which is
+exponentially slow and therefore limits algorithmic applications.
 
 An alternative presentation is given by the lemma
 `Bound.lemmaB_circuit_cover_delta`.  It reformulates the subexponential

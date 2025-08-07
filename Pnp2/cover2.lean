@@ -337,6 +337,16 @@ lemma buildCover_eq_Rset_of_none (F : Family n) (h : ℕ)
   simpa [buildCover, extendCover, hfu] using
     (extendCover_none (n := n) (F := F) (Rset := Rset) hfu)
 
+/-- Every rectangle from the starting set remains present after calling
+`buildCover`.  This simple inclusion lemma will be convenient once the full
+recursive version is implemented. -/
+lemma subset_buildCover {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
+    Rset ⊆ buildCover (n := n) F h hH Rset := by
+  classical
+  simpa [buildCover] using
+    (subset_extendCover (n := n) (F := F) (Rset := Rset))
+
 /-- Adding the rectangles produced by `buildCover` cannot increase the
 termination measure `μ`. -/
 lemma mu_union_buildCover_le {F : Family n} {h : ℕ}

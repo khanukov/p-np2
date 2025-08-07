@@ -1273,3 +1273,118 @@ example :
         simpa [hH₂])
       hfu_ne
 
+/-- When `firstUncovered` fails to find a witness, `buildCoverAux` returns the
+input rectangle set unchanged.  We verify this behaviour for the trivial
+constant-`false` family, where no `1`-inputs exist. -/
+example :
+    Cover2.buildCoverAux (n := 1)
+        (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+        (h := 0)
+        (by
+          -- Entropy of a singleton family is `0`.
+          have hcard : ({(fun _ : Point 1 => false)} : BoolFunc.Family 1).card = 1 := by
+            simp
+          have hH₂ := BoolFunc.H₂_card_one
+              (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
+          simpa [hH₂])
+        (∅ : Finset (Subcube 1))
+      = (∅ : Finset (Subcube 1)) := by
+  classical
+  -- The family has no `1`-inputs, hence the uncovered set is empty.
+  have hfu :
+      Cover2.firstUncovered (n := 1)
+        ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
+        (∅ : Finset (Subcube 1)) = none := by
+    -- Coverage by the empty rectangle set holds trivially.
+    have hcov :
+        Cover2.AllOnesCovered (n := 1)
+          ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)
+          (∅ : Finset (Subcube 1)) := by
+      simpa using
+        (Cover2.AllOnesCovered.empty
+          (n := 1)
+          (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)))
+    -- Translate coverage into absence of witnesses.
+    exact
+      (Cover2.firstUncovered_none_iff_AllOnesCovered
+        (n := 1)
+        (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+        (Rset := (∅ : Finset (Subcube 1)))).2 hcov
+  -- Apply the unfolding lemma.
+  simpa using
+    Cover2.buildCoverAux_none
+      (n := 1)
+      (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+      (h := 0)
+      (hH := by
+        have hcard : ({(fun _ : Point 1 => false)} : BoolFunc.Family 1).card = 1 := by
+          simp
+        have hH₂ := BoolFunc.H₂_card_one
+            (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
+        simpa [hH₂])
+      (Rset := (∅ : Finset (Subcube 1)))
+      hfu
+
+/-- The rectangles produced by `buildCover` are monochromatic for a constant-`true`
+family. -/
+example :
+    ∀ R ∈ Cover2.buildCover (n := 1)
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) (h := 0)
+        (by
+          -- Collision entropy of a singleton family is `0`.
+          have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
+            simp
+          have hH₂ := BoolFunc.H₂_card_one
+              (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
+          simpa [hH₂]) ,
+      Subcube.monochromaticForFamily R
+        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+  classical
+  intro R hR
+  -- The current implementation of `buildCover_mono` still relies on placeholders,
+  -- but its interface can already be exercised in simple examples.
+  exact
+    Cover2.buildCover_mono
+      (n := 1)
+      (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
+      (h := 0)
+      (hH :=
+        by
+          have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
+            simp
+          have hH₂ := BoolFunc.H₂_card_one
+              (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
+          simpa [hH₂])
+      R hR
+
+/-- For a constant-`false` family the cover is empty and trivially monochromatic. -/
+example :
+    ∀ R ∈ Cover2.buildCover (n := 1)
+        ({(fun _ : Point 1 => false)} : BoolFunc.Family 1) (h := 0)
+        (by
+          -- The collision entropy is again `0` for the singleton family.
+          have hcard : ({(fun _ : Point 1 => false)} : BoolFunc.Family 1).card = 1 := by
+            simp
+          have hH₂ := BoolFunc.H₂_card_one
+              (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
+          simpa [hH₂]) ,
+      Subcube.monochromaticForFamily R
+        ({(fun _ : Point 1 => false)} : BoolFunc.Family 1) := by
+  classical
+  intro R hR
+  -- Again we simply invoke the specification lemma.  The result set is empty,
+  -- so the property holds vacuously.
+  exact
+    Cover2.buildCover_mono
+      (n := 1)
+      (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
+      (h := 0)
+      (hH :=
+        by
+          have hcard : ({(fun _ : Point 1 => false)} : BoolFunc.Family 1).card = 1 := by
+            simp
+          have hH₂ := BoolFunc.H₂_card_one
+              (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
+          simpa [hH₂])
+      R hR
+

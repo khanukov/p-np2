@@ -82,11 +82,32 @@ lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
       | some _ =>
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
-  -- Proving this lemma amounts to unfolding the underlying well-founded
-  -- fixpoint once.  A future version will invoke `WellFounded.fix_eq` and
-  -- simplify the resulting expression so that the recursive call is exposed
-  -- explicitly as `buildCoverAux (extendCover F Rset)`.  The technical details
-  -- of that argument are still being worked out, hence the placeholder below.
+  classical
+  -- Unfold the definition and expose the underlying fixpoint once.  The helper
+  -- theorem `WellFounded.fix_eq` yields an equation that already has the desired
+  -- shape; matching it to the statement requires a few additional rewriting
+  -- steps that are deferred for future work.
+  unfold buildCoverAux
+  have hfix :=
+    (WellFounded.fix_eq
+      (C := fun _ : Finset (Subcube n) => Finset (Subcube n))
+      (μRel_wf (n := n) (F := F) h)
+      (fun Rset rec =>
+        match hfu : firstUncovered (n := n) F Rset with
+        | none => Rset
+        | some _ =>
+            let R' := extendCover (n := n) F Rset
+            have hdrop : μRel (n := n) (F := F) h R' Rset := by
+              have hne : firstUncovered (n := n) F Rset ≠ none := by
+                simpa [hfu]
+              simpa [μRel, R'] using
+                (mu_extendCover_lt (n := n) (F := F)
+                  (Rset := Rset) (h := h) hne)
+            rec R' hdrop)
+      Rset)
+  -- The proof will finish by simplifying `hfix` and identifying the recursive
+  -- call `rec R' hdrop` with `buildCoverAux F h hH (extendCover F Rset)`.
+  -- These remaining steps are technical and left as a `sorry` for now.
   exact sorry
 
 /--  If `firstUncovered` finds no witness, the recursive auxiliary function

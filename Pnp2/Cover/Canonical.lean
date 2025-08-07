@@ -60,13 +60,16 @@ lemma coverFamily_spec {n h : ℕ} (F : Family n)
   refine ⟨?mono, ?cover, ?card⟩
   · intro R hR
     -- `hR` asserts membership in the empty cover and is thus impossible.
-    have : False := by simpa [hbuild] using hR
-    exact this.elim
+    -- Rewriting with `hbuild` reveals this contradiction explicitly.
+    have hR' : R ∈ (∅ : Finset (Subcube n)) := by
+      simpa [hbuild] using hR
+    simpa using hR'
   · -- Coverage coincides with the assumption `hcov` for the empty cover.
+    -- After rewriting the goal using `hbuild` it matches the hypothesis `hcov`.
     simpa [hbuild] using hcov
   · -- The cardinality of the empty cover is trivially bounded.
-    have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-    simpa [hbuild] using this
+    -- Simplification again reduces the goal to a basic arithmetic fact.
+    simpa [hbuild] using (mBound_nonneg (n := n) (h := h))
 
 /--
 Every rectangle returned by `coverFamily` is monochromatic for the input family.

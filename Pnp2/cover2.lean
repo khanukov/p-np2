@@ -12,6 +12,7 @@ import Pnp2.Cover.CoarseBound -- rough estimate on uncovered pairs
 import Pnp2.Cover.Uncovered -- predicates about uncovered points
 import Pnp2.Cover.Lifting -- lemmas lifting monochromaticity through restrictions
 import Pnp2.Cover.Measure -- termination measure and its basic lemmas
+import Pnp2.Cover.BuildCover -- recursive cover construction and its API
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
@@ -307,128 +308,20 @@ lemma mono_union {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   · exact h₂ R h
 
 /--
-`buildCover` is intended to be the heart of the covering algorithm.
+`buildCover` is implemented in `Cover.BuildCover`.
+`cover_exists` repackages its specification as an existential statement for
+downstream use. -/
 
-*Eventually* this function will recurse, repeatedly extending the current
-collection of rectangles `Rset` until every `1`‑input is covered.  Each
-recursive step will consume one unit of the termination measure `μ` from
-`Measure.lean`, providing a well‑founded recursion scheme.
-
-The present development has not yet implemented the full recursion.  Instead we
-keep a very small wrapper around `extendCover` that performs **a single**
-covering step.  This stub is sufficient for the existing theory and serves as a
-clear starting point for the forthcoming recursive version.
--/
-noncomputable def buildCover (F : Family n) (h : ℕ)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (Rset : Finset (Subcube n) := ∅) : Finset (Subcube n) :=
-  -- For now we simply delegate to `extendCover`.
-  extendCover (n := n) F Rset
-
-@[simp] lemma buildCover_eq_extendCover (F : Family n) (h : ℕ)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (Rset : Finset (Subcube n)) :
-    buildCover (n := n) F h _hH Rset = extendCover (n := n) F Rset := rfl
-
-lemma buildCover_eq_Rset_of_none (F : Family n) (h : ℕ)
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n))
-    (hfu : firstUncovered (n := n) F Rset = none) :
-    buildCover (n := n) F h _hH Rset = Rset := by
-  simpa [buildCover, extendCover, hfu] using
-    (extendCover_none (n := n) (F := F) (Rset := Rset) hfu)
-
-/-- Every rectangle from the starting set remains present after calling
-`buildCover`.  This simple inclusion lemma will be convenient once the full
-recursive version is implemented. -/
-lemma subset_buildCover {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
-    Rset ⊆ buildCover (n := n) F h hH Rset := by
-  classical
-  simpa [buildCover] using
-    (subset_extendCover (n := n) (F := F) (Rset := Rset))
-
-/-- Adding the rectangles produced by `buildCover` cannot increase the
-termination measure `μ`. -/
-lemma mu_union_buildCover_le {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
-    mu (n := n) F h (Rset ∪ buildCover (n := n) F h hH Rset) ≤
-      mu (n := n) F h Rset := by
-  classical
-  -- `buildCover` currently expands to a single call to `extendCover`.  We use the
-  -- corresponding lemma `mu_extendCover_le` to establish the desired inequality.
-  -- First observe that the original set of rectangles is contained in the
-  -- extended set produced by `extendCover`.
-  have hsubset : Rset ⊆ extendCover (n := n) F Rset :=
-    subset_extendCover (n := n) (F := F) (Rset := Rset)
-  -- This containment lets us rewrite the union with `Rset` as simply the
-  -- `extendCover` result.
-  have hunion : Rset ∪ extendCover (n := n) F Rset =
-      extendCover (n := n) F Rset :=
-    Finset.union_eq_right.mpr hsubset
-  -- Finally translate the claim to the established `extendCover` inequality.
-  simpa [buildCover, hunion] using
-    (mu_extendCover_le (n := n) (F := F) (Rset := Rset) (h := h))
-
-/-- Running `buildCover` alone does not increase the measure `μ`.  This is a
-direct reformulation of `mu_extendCover_le` for the thin wrapper `buildCover`. -/
-lemma mu_buildCover_le {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
-    mu (n := n) F h (buildCover (n := n) F h hH Rset) ≤
-      mu (n := n) F h Rset := by
-  classical
-  -- `buildCover` currently performs just one covering step.
-  simpa [buildCover] using
-    (mu_extendCover_le (n := n) (F := F) (Rset := Rset) (h := h))
-
-/-- Starting from the empty set of rectangles, running `buildCover` cannot
-increase the measure `μ`. -/
-lemma mu_buildCover_le_start {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    mu (n := n) F h (buildCover (n := n) F h hH) ≤
-      mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- Specialise `mu_buildCover_le` to the empty starting set.
-  simpa using
-    (mu_buildCover_le (n := n) (F := F) (h := h) (hH := hH)
-      (Rset := (∅ : Finset (Subcube n))))
-
-/-- If an uncovered pair exists, running `buildCover` strictly decreases the
-termination measure `μ`.  This follows directly from the corresponding
-statement for `extendCover` since `buildCover` is just a thin wrapper around
-`extendCover` in the current development. -/
-lemma mu_buildCover_lt_start {F : Family n} {h : ℕ}
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
-    mu (n := n) F h (buildCover (n := n) F h hH) <
-      mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- Unfold `buildCover` to expose the single covering step and apply the
-  -- previously established measure drop for `extendCover`.
-  simpa [buildCover] using
-    (mu_extendCover_lt (n := n) (F := F)
-      (Rset := (∅ : Finset (Subcube n))) (h := h) hfu)
-
-/-- `buildCover_measure_drop` bounds the initial measure by `2 * h`. -/
-lemma buildCover_measure_drop {F : Family n} {h : ℕ}
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    2 * h ≤ mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  simpa using
-    (mu_lower_bound (n := n) (F := F) (h := h)
-      (Rset := (∅ : Finset (Subcube n))))
-
-/-- `cover_exists` packages the properties of `buildCover` into an existence
-statement for downstream use.  When the family has no `1`‑inputs the result of
-`buildCover` is the empty set, which trivially satisfies all requirements. -/
 lemma cover_exists {F : Family n} {h : ℕ}
-    (_hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
       AllOnesCovered (n := n) F Rset ∧
       Rset.card ≤ mBound n h := by
   classical
-  refine ⟨(∅ : Finset (Subcube n)), ?_, ?_, ?_⟩
-  · intro R hR; cases hR
-  · simpa using hcov
-  · have : (0 : ℕ) ≤ mBound n h := mBound_nonneg (n := n) (h := h)
-    simpa using this
+  refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
+  · intro R hR; exact (buildCover_mono (F := F) (h := h) (hH := hH) R hR)
+  · exact buildCover_covers (F := F) (h := h) (hH := hH)
+  · exact buildCover_card_bound (F := F) (h := h) (hH := hH)
 
 end Cover2

@@ -44,6 +44,13 @@ lemma μRel_wf (F : Family n) (h : ℕ) :
     (InvImage.wf (f := fun Rset : Finset (Subcube n) => mu (n := n) F h Rset)
       Nat.lt_wfRel.wf)
 
+/--  A rectangle set cannot have a strictly smaller measure than itself. -/
+lemma μRel_irrefl (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) :
+    ¬ μRel (n := n) (F := F) h Rset Rset := by
+  intro hlt
+  -- The measure `μ` takes values in `ℕ`, where `<` is irreflexive.
+  exact lt_irrefl _ hlt
+
 /-!
 ### Recursive cover construction
 

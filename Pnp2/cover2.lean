@@ -359,16 +359,27 @@ lemma mu_union_buildCover_le {F : Family n} {h : ℕ}
   simpa [buildCover, hunion] using
     (mu_extendCover_le (n := n) (F := F) (Rset := Rset) (h := h))
 
+/-- Running `buildCover` alone does not increase the measure `μ`.  This is a
+direct reformulation of `mu_extendCover_le` for the thin wrapper `buildCover`. -/
+lemma mu_buildCover_le {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
+    mu (n := n) F h (buildCover (n := n) F h hH Rset) ≤
+      mu (n := n) F h Rset := by
+  classical
+  -- `buildCover` currently performs just one covering step.
+  simpa [buildCover] using
+    (mu_extendCover_le (n := n) (F := F) (Rset := Rset) (h := h))
+
 /-- Starting from the empty set of rectangles, running `buildCover` cannot
 increase the measure `μ`. -/
 lemma mu_buildCover_le_start {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     mu (n := n) F h (buildCover (n := n) F h hH) ≤
       mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- Again we reduce the claim to `extendCover` by unfolding `buildCover`.
-  simpa [buildCover] using
-    (mu_extendCover_le (n := n) (F := F)
-      (Rset := (∅ : Finset (Subcube n))) (h := h))
+  -- Specialise `mu_buildCover_le` to the empty starting set.
+  simpa using
+    (mu_buildCover_le (n := n) (F := F) (h := h) (hH := hH)
+      (Rset := (∅ : Finset (Subcube n))))
 
 /-- If an uncovered pair exists, running `buildCover` strictly decreases the
 termination measure `μ`.  This follows directly from the corresponding

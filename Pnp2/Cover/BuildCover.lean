@@ -82,8 +82,32 @@ lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
       | some _ =>
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
-  -- Proving this lemma requires unfolding the well-founded fixpoint.  The
-  -- argument is technical and postponed.
+  classical
+  -- Unfold the definition and expose the underlying fixpoint once.  The helper
+  -- theorem `WellFounded.fix_eq` yields an equation that already has the desired
+  -- shape; matching it to the statement requires a few additional rewriting
+  -- steps that are deferred for future work.
+  unfold buildCoverAux
+  have hfix :=
+    (WellFounded.fix_eq
+      (C := fun _ : Finset (Subcube n) => Finset (Subcube n))
+      (μRel_wf (n := n) (F := F) h)
+      (fun Rset rec =>
+        match hfu : firstUncovered (n := n) F Rset with
+        | none => Rset
+        | some _ =>
+            let R' := extendCover (n := n) F Rset
+            have hdrop : μRel (n := n) (F := F) h R' Rset := by
+              have hne : firstUncovered (n := n) F Rset ≠ none := by
+                simpa [hfu]
+              simpa [μRel, R'] using
+                (mu_extendCover_lt (n := n) (F := F)
+                  (Rset := Rset) (h := h) hne)
+            rec R' hdrop)
+      Rset)
+  -- The proof will finish by simplifying `hfix` and identifying the recursive
+  -- call `rec R' hdrop` with `buildCoverAux F h hH (extendCover F Rset)`.
+  -- These remaining steps are technical and left as a `sorry` for now.
   exact sorry
 
 /--  If `firstUncovered` finds no witness, the recursive auxiliary function
@@ -154,6 +178,21 @@ lemma buildCoverAux_mono (F : Family n) (h : ℕ)
       -- recursive hypothesis on a strictly smaller measure.  Formalising this
       -- argument is non-trivial and remains future work.
       intro R hR
+      -- First, expose the recursive call of `buildCoverAux` using the unfolding
+      -- lemma.  The assumption `hfu` fixes the branch to the `some` case.
+      have hrec :=
+        buildCoverAux_unfold (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset)
+      -- Replace the membership hypothesis by the result of the recursive call
+      -- on the extended rectangle set.
+      have hR' : R ∈
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+            (extendCover (n := n) F Rset) := by
+        simpa [hrec, hfu] using hR
+      -- Showing that the newly added rectangle is monochromatic and invoking
+      -- the induction hypothesis on the smaller measure will complete the
+      -- argument.  These steps require additional lemmas and are left for
+      -- future work.
       exact sorry
 
 /-- Every rectangle returned by `buildCover` is monochromatic for the family.

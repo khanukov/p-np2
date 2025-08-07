@@ -37,8 +37,12 @@ def μRel (F : Family n) (h : ℕ) :
 /--  `μRel` is a well‑founded relation, enabling recursion on the measure. -/
 lemma μRel_wf (F : Family n) (h : ℕ) :
     WellFounded (μRel (n := n) (F := F) h) := by
-  -- Placeholder: the relation is well-founded since `mu` maps into `ℕ`.
-  exact sorry
+  -- The relation `μRel` is the inverse image of `<` on `ℕ` under the measure
+  -- `μ`.  Well‑foundedness therefore follows from the well‑foundedness of
+  -- `<` on the natural numbers.
+  simpa [μRel] using
+    (InvImage.wf (f := fun Rset : Finset (Subcube n) => mu (n := n) F h Rset)
+      Nat.lt_wfRel.wf)
 
 /-!
 ### Recursive cover construction
@@ -50,7 +54,7 @@ recurse on the strictly smaller measure.
 -/
 
 noncomputable def buildCoverAux (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (_hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (Rset : Finset (Subcube n)) → Finset (Subcube n) :=
   (μRel_wf (n := n) (F := F) h).fix
     (fun Rset rec =>
@@ -70,7 +74,7 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
 /--  Top‑level wrapper starting the recursion from the empty set. -/
 noncomputable def buildCover (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
-  buildCoverAux (n := n) (F := F) (h := h) (hH := hH) ∅
+  buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) ∅
 
 /-!
 ### Specification lemmas

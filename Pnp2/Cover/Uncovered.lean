@@ -74,6 +74,19 @@ lemma NotCovered.union {n : ℕ} {R₁ R₂ : Finset (Subcube n)} {x : Point n} 
     | inl hR1 => exact h.1 R hR1
     | inr hR2 => exact h.2 R hR2
 
+/-- If a point is uncovered by the union `R₁ ∪ R₂` it is in particular
+uncovered by the left component. -/
+lemma NotCovered.union_left {n : ℕ} {R₁ R₂ : Finset (Subcube n)}
+    {x : Point n} (h : NotCovered (n := n) (Rset := R₁ ∪ R₂) x) :
+    NotCovered (n := n) (Rset := R₁) x :=
+  (NotCovered.union (R₁ := R₁) (R₂ := R₂) (x := x)).1 h |> And.left
+
+/-- Symmetric version of `NotCovered.union_left` for the right component. -/
+lemma NotCovered.union_right {n : ℕ} {R₁ R₂ : Finset (Subcube n)}
+    {x : Point n} (h : NotCovered (n := n) (Rset := R₁ ∪ R₂) x) :
+    NotCovered (n := n) (Rset := R₂) x :=
+  (NotCovered.union (R₁ := R₁) (R₂ := R₂) (x := x)).1 h |> And.right
+
 /--
 `NotCovered` for a singleton set simply states that the point misses the lone
 rectangle.  This specialised lemma streamlines arguments that peel off a single

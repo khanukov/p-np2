@@ -178,6 +178,21 @@ lemma buildCoverAux_mono (F : Family n) (h : ℕ)
       -- recursive hypothesis on a strictly smaller measure.  Formalising this
       -- argument is non-trivial and remains future work.
       intro R hR
+      -- First, expose the recursive call of `buildCoverAux` using the unfolding
+      -- lemma.  The assumption `hfu` fixes the branch to the `some` case.
+      have hrec :=
+        buildCoverAux_unfold (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset)
+      -- Replace the membership hypothesis by the result of the recursive call
+      -- on the extended rectangle set.
+      have hR' : R ∈
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+            (extendCover (n := n) F Rset) := by
+        simpa [hrec, hfu] using hR
+      -- Showing that the newly added rectangle is monochromatic and invoking
+      -- the induction hypothesis on the smaller measure will complete the
+      -- argument.  These steps require additional lemmas and are left for
+      -- future work.
       exact sorry
 
 /-- Every rectangle returned by `buildCover` is monochromatic for the family.

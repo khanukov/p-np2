@@ -129,6 +129,21 @@ noncomputable def buildCover (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) : Finset (Subcube n) :=
   buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) ∅
 
+/--  If the initial search finds no uncovered pair, `buildCover` returns the
+    empty rectangle set.  This is an immediate consequence of the base case for
+    `buildCoverAux`. -/
+lemma buildCover_empty_of_none (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none) :
+    buildCover (n := n) F h hH = (∅ : Finset (Subcube n)) := by
+  classical
+  -- Expand the definition and apply the auxiliary lemma specialised to the
+  -- empty starting set.
+  unfold buildCover
+  simpa using
+    (buildCoverAux_none (n := n) (F := F) (h := h)
+      (hH := hH) (Rset := (∅ : Finset (Subcube n))) hfu)
+
 /-!
 ### Specification lemmas
 

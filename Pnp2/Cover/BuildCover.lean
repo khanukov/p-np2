@@ -82,8 +82,11 @@ lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
       | some _ =>
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
-  -- Proving this lemma requires unfolding the well-founded fixpoint.  The
-  -- argument is technical and postponed.
+  -- Proving this lemma amounts to unfolding the underlying well-founded
+  -- fixpoint once.  A future version will invoke `WellFounded.fix_eq` and
+  -- simplify the resulting expression so that the recursive call is exposed
+  -- explicitly as `buildCoverAux (extendCover F Rset)`.  The technical details
+  -- of that argument are still being worked out, hence the placeholder below.
   exact sorry
 
 /--  If `firstUncovered` finds no witness, the recursive auxiliary function

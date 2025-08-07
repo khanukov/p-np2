@@ -4,9 +4,8 @@ import Pnp2.cover2
 # Canonical cover family
 
 This module packages the convenience wrapper `coverFamily` around the
-`buildCover` construction from `cover2.lean`.  The current development uses
-`buildCover` as a stub that simply returns the input set of rectangles, but the
-API is structured to mirror the eventual proof.
+`buildCover` construction from `cover2.lean`.  The API mirrors the eventual
+full proof even though some lemmas are currently provided as placeholders.
 
 The definitions and lemmas below are heavily documented so that the role of
 `coverFamily` remains clear even in this simplified environment.
@@ -36,40 +35,19 @@ Basic specification for the canonical cover.  Every rectangle is
 monochromatic, all `1`-inputs are covered and the size is bounded by `mBound`.
 -/
 lemma coverFamily_spec {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (∀ R ∈ coverFamily (n := n) F h hH,
         Subcube.monochromaticForFamily R F) ∧
       AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
       (coverFamily (n := n) F h hH).card ≤ mBound n h := by
   classical
-  -- `firstUncovered` reports `none`, hence the cover remains empty.
-  have hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) = none :=
-    (firstUncovered_none_iff_AllOnesCovered (n := n) (F := F)
-        (Rset := (∅ : Finset (Subcube n)))).2 hcov
-  -- Record the behaviour of `extendCover` under this hypothesis.
-  have hextend : extendCover (n := n) F (∅ : Finset (Subcube n)) =
-      (∅ : Finset (Subcube n)) := by
-    simpa using
-      (extendCover_none (n := n) (F := F)
-        (Rset := (∅ : Finset (Subcube n))) hfu)
-  -- Consequently the canonical cover is the empty set of rectangles.
-  have hbuild : coverFamily (n := n) F h hH =
-      (∅ : Finset (Subcube n)) := by
-    simp [coverFamily, buildCover, hextend]
-  refine ⟨?mono, ?cover, ?card⟩
+  unfold coverFamily
+  refine ⟨?mono, ?covers, ?bound⟩
   · intro R hR
-    -- `hR` asserts membership in the empty cover and is thus impossible.
-    -- Rewriting with `hbuild` reveals this contradiction explicitly.
-    have hR' : R ∈ (∅ : Finset (Subcube n)) := by
-      simpa [hbuild] using hR
-    simpa using hR'
-  · -- Coverage coincides with the assumption `hcov` for the empty cover.
-    -- After rewriting the goal using `hbuild` it matches the hypothesis `hcov`.
-    simpa [hbuild] using hcov
-  · -- The cardinality of the empty cover is trivially bounded.
-    -- Simplification again reduces the goal to a basic arithmetic fact.
-    simpa [hbuild] using (mBound_nonneg (n := n) (h := h))
+    have hmono := buildCover_mono (n := n) (F := F) (h := h) (hH := hH)
+    exact hmono R hR
+  · exact buildCover_covers (n := n) (F := F) (h := h) (hH := hH)
+  · exact buildCover_card_bound (n := n) (F := F) (h := h) (hH := hH)
 
 /--
 Every rectangle returned by `coverFamily` is monochromatic for the input family.
@@ -78,29 +56,26 @@ in downstream developments.
 -/
 lemma coverFamily_mono {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n)))
     {R : Subcube n} (hR : R ∈ coverFamily (n := n) F h hH) :
     Subcube.monochromaticForFamily R F :=
-  (coverFamily_spec (n := n) (h := h) (F := F) hH hcov).1 R hR
+  (coverFamily_spec (n := n) (h := h) (F := F) hH).1 R hR
 
 /--
 The canonical cover produced by `coverFamily` covers every `1`-input of the
 family.  This is the second component of `coverFamily_spec`.
 -/
 lemma coverFamily_spec_cover {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) :=
-  (coverFamily_spec (n := n) (h := h) (F := F) hH hcov).2.1
+  (coverFamily_spec (n := n) (h := h) (F := F) hH).2.1
 
 /--
 The number of rectangles in `coverFamily` never exceeds `mBound`.  This is the
 third component of `coverFamily_spec`.
 -/
 lemma coverFamily_card_bound {n h : ℕ} (F : Family n)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hcov : AllOnesCovered (n := n) F (∅ : Finset (Subcube n))) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (coverFamily (n := n) F h hH).card ≤ mBound n h :=
-  (coverFamily_spec (n := n) (h := h) (F := F) hH hcov).2.2
+  (coverFamily_spec (n := n) (h := h) (F := F) hH).2.2
 
 end Cover2

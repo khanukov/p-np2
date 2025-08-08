@@ -79,8 +79,7 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
           rec R' hdrop)
 
 /--  Unfolding equation for `buildCoverAux`.  It exposes the first recursive
-    step and is useful for subsequent reasoning.  The proof is currently a
-    placeholder. -/
+    step and is useful for subsequent reasoning. -/
 lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
     buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
@@ -90,32 +89,18 @@ lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
   classical
-  -- Unfold the definition and expose the underlying fixpoint once.  The helper
-  -- theorem `WellFounded.fix_eq` yields an equation that already has the desired
-  -- shape; matching it to the statement requires a few additional rewriting
-  -- steps that are deferred for future work.
   unfold buildCoverAux
-  have hfix :=
-    (WellFounded.fix_eq
-      (C := fun _ : Finset (Subcube n) => Finset (Subcube n))
-      (μRel_wf (n := n) (F := F) h)
-      (fun Rset rec =>
-        match hfu : firstUncovered (n := n) F Rset with
-        | none => Rset
-        | some _ =>
-            let R' := extendCover (n := n) F Rset
-            have hdrop : μRel (n := n) (F := F) h R' Rset := by
-              have hne : firstUncovered (n := n) F Rset ≠ none := by
-                simpa [hfu]
-              simpa [μRel, R'] using
-                (mu_extendCover_lt (n := n) (F := F)
-                  (Rset := Rset) (h := h) hne)
-            rec R' hdrop)
-      Rset)
-  -- The proof will finish by simplifying `hfix` and identifying the recursive
-  -- call `rec R' hdrop` with `buildCoverAux F h hH (extendCover F Rset)`.
-  -- These remaining steps are technical and left as a `sorry` for now.
-  exact sorry
+  rw [WellFounded.fix_eq]
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      simp [hfu]
+  | some p =>
+      simp [hfu]
+      have hne : firstUncovered (n := n) F Rset ≠ none := by simp [hfu]
+      have hdrop : μRel (n := n) (F := F) h (extendCover F Rset) Rset := by
+        simpa [μRel] using mu_extendCover_lt (n := n) (F := F)
+          (Rset := Rset) (h := h) hne
+      rfl
 
 /--  If `firstUncovered` finds no witness, the recursive auxiliary function
     `buildCoverAux` leaves the current rectangle set unchanged.  This lemma

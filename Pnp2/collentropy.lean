@@ -41,6 +41,11 @@ lemma collProbFun_const_false : collProbFun (fun _ => false : BFunc n) = 1 := by
 lemma collProbFun_const_true : collProbFun (fun _ => true : BFunc n) = 1 := by
   simp [collProbFun, prob]
 
+/-- Collision probability for a constant Boolean function. -/
+lemma collProbFun_const (b : Bool) :
+    collProbFun (fun _ => b : BFunc n) = 1 := by
+  cases b <;> simp [collProbFun, prob]
+
 lemma H₂Fun_const_false :
     H₂Fun (fun _ => false : BFunc n) = 0 := by
   simp [H₂Fun, collProbFun_const_false]
@@ -48,6 +53,11 @@ lemma H₂Fun_const_false :
 lemma H₂Fun_const_true :
     H₂Fun (fun _ => true : BFunc n) = 0 := by
   simp [H₂Fun, collProbFun_const_true]
+
+/-- Collision entropy of a constant Boolean function is zero. -/
+lemma H₂Fun_const (b : Bool) :
+    H₂Fun (fun _ => b : BFunc n) = 0 := by
+  cases b <;> simp [H₂Fun, collProbFun_const]
 
 lemma collProbFun_ge_half (f : BFunc n) :
     (1 / 2 : ℝ) ≤ collProbFun f := by

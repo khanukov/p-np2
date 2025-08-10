@@ -1130,7 +1130,13 @@ example :
   | none => cases (hfu_ne hfu)
   | some p =>
       -- The coordinate filter is empty, yielding the full subcube.
-      simp [Cover2.extendCover, hfu, Boolcube.Subcube.fromPoint, Boolcube.Subcube.full]
+      -- `supportUnion` for the constant-`true` family is empty.
+      have hsup : Cover2.supportUnion
+          (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) =
+          (∅ : Finset (Fin 1)) := by
+        ext i; simp [Cover2.supportUnion]
+      simp [Cover2.extendCover, hfu, hsup, Boolcube.Subcube.fromPoint,
+        Boolcube.Subcube.full]
 
 /-- When all `1`‑inputs are already covered, `extendCover` is the identity. -/
 example :

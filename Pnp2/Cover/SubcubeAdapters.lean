@@ -23,6 +23,14 @@ notation x " ∈ₛ " R => Boolcube.Subcube.Mem R x
 namespace Boolcube.Subcube
 
 /--
+`R` is monochromatic for the function `f` if `f` takes a constant Boolean
+value on all points of the subcube.  This mirrors the corresponding definition
+for the legacy subcube representation used in other parts of the repository.
+-/
+def monochromaticFor {n : ℕ} (R : Subcube n) (f : BoolFunc.BFunc n) : Prop :=
+  ∃ b : Bool, ∀ x, R.Mem x → f x = b
+
+/--
 `R` is jointly monochromatic for the family `F` if every function in `F`
 assumes the same Boolean value on all points of `R`.
 This lightweight wrapper mirrors the corresponding definition for the

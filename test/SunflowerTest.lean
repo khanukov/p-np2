@@ -1,10 +1,27 @@
 import Pnp2.Sunflower.Sunflower
 
 open Sunflower
+open scoped BigOperators
 
 namespace SunflowerTest
 
 open Finset
+
+/-- Simple check of the double-counting lemma on a tiny family of two
+    singletons. -/
+example :
+    let 𝓢 : Finset (Finset ℕ) := { {0}, {1} }
+    ∑ x ∈ 𝓢.unions, (slice 𝓢 x).card = 1 * 𝓢.card := by
+  classical
+  intro 𝓢
+  have h_w : ∀ A ∈ 𝓢, A.card = 1 := by
+    intro A hA
+    have hA' := by simpa [𝓢] using hA
+    rcases hA' with h0 | h1
+    · simp [h0]
+    · simp [h1]
+  simpa using
+    (Sunflower.sum_card_slices_eq_w_mul_card (𝓢 := 𝓢) (w := 1) h_w)
 
 /-- A simple family of two singletons forms a sunflower.
     We verify that `exists_of_large_family_classic` can produce the structure

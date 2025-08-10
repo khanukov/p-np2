@@ -44,7 +44,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   (`RSpread.card_bound`, `RSpread.one_of_nonempty`, `RSpread.card_filter_le`)
   rephrase the definition and handle the trivial case `R = 1`.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
-* `cover2.lean` – reimplementation of the cover builder. Core results such as `buildCover_mono` and `buildCover_card_bound` still depend on unfinished proofs in `Cover/BuildCover.lean`.
+* `cover2.lean` – reimplementation of the cover builder. The pointwise monochromaticity result `buildCover_pointwiseMono` is available, while the counting lemma `buildCover_card_bound` still depends on unfinished proofs in `Cover/BuildCover.lean`.
 * `Cover/Compute.lean` – lightweight wrapper exposing a constructive
   variant `buildCoverCompute` that enumerates the rectangles as a list.
   The current implementation reuses the naive exhaustive scan of the Boolean

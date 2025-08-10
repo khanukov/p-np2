@@ -18,15 +18,16 @@ noncomputable def mergeLowSensitivityCover
   Finset (Subcube n) :=
   Cover2.buildCover (F := F) (h := h) hH
 
-/-- Every rectangle returned by `mergeLowSensitivityCover` is jointly
-    monochromatic for the family. This follows directly from the
-    corresponding property of `buildCover`. -/
-lemma mergeLowSensitivityCover_mono
+/-- Every rectangle returned by `mergeLowSensitivityCover` is constant for each
+    function of the family.  This follows directly from the corresponding
+    property of `buildCover`. -/
+lemma mergeLowSensitivityCover_pointwiseMono
   {n : ℕ} (F : Family n) (h : ℕ) (hH : Entropy.H₂ F ≤ (h : ℝ))
   {C : Subcube n} (hC : C ∈ mergeLowSensitivityCover (F := F) h hH) :
-  Subcube.monochromaticForFamily C F := by
+  ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g := by
   classical
-  have hmono := Cover2.buildCover_mono (F := F) (h := h) (hH := hH)
+  have hmono :=
+    Cover2.buildCover_pointwiseMono (F := F) (h := h) (hH := hH)
   simpa [mergeLowSensitivityCover] using hmono C hC
 
 /-- All `1`-inputs of every `f ∈ F` lie in some rectangle of

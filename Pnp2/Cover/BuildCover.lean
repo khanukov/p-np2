@@ -78,44 +78,69 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
                 (Rset := Rset) (h := h) hne)
           rec R' hdrop)
 
-/--  Unfolding equation for `buildCoverAux`.  It exposes the first recursive
-    step and is useful for subsequent reasoning.  The proof is currently a
-    placeholder. -/
-lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
+  set_option linter.unusedSimpArgs false in
+  /-- Technical unfolding with an equation binder:
+      this matches exactly what `WellFounded.fix_eq` produces. -/
+  lemma buildCoverAux_unfold_eq (F : Family n) (h : ℕ)
+      (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
     buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
-      match firstUncovered (n := n) F Rset with
-      | none => Rset
+      match _hfc : firstUncovered (n := n) F Rset with
+      | none   => Rset
       | some _ =>
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
-  classical
-  -- Unfold the definition and expose the underlying fixpoint once.  The helper
-  -- theorem `WellFounded.fix_eq` yields an equation that already has the desired
-  -- shape; matching it to the statement requires a few additional rewriting
-  -- steps that are deferred for future work.
-  unfold buildCoverAux
-  have hfix :=
-    (WellFounded.fix_eq
-      (C := fun _ : Finset (Subcube n) => Finset (Subcube n))
-      (μRel_wf (n := n) (F := F) h)
-      (fun Rset rec =>
-        match hfu : firstUncovered (n := n) F Rset with
-        | none => Rset
-        | some _ =>
-            let R' := extendCover (n := n) F Rset
-            have hdrop : μRel (n := n) (F := F) h R' Rset := by
-              have hne : firstUncovered (n := n) F Rset ≠ none := by
-                simpa [hfu]
-              simpa [μRel, R'] using
-                (mu_extendCover_lt (n := n) (F := F)
-                  (Rset := Rset) (h := h) hne)
-            rec R' hdrop)
-      Rset)
-  -- The proof will finish by simplifying `hfix` and identifying the recursive
-  -- call `rec R' hdrop` with `buildCoverAux F h hH (extendCover F Rset)`.
-  -- These remaining steps are technical and left as a `sorry` for now.
-  exact sorry
+    classical
+    -- Use `fix_eq` with exactly the same functional as in the `def` above.
+    simpa [buildCoverAux] using
+      (WellFounded.fix_eq
+        (C := fun _ => Finset (Subcube n))
+        (μRel_wf (n := n) (F := F) h)
+        (fun Rset rec =>
+          match _hfc : firstUncovered (n := n) F Rset with
+          | none   => Rset
+          | some _ =>
+              let R' := extendCover (n := n) F Rset
+              -- Establish the recursive call on a strictly smaller measure.
+              have hdrop : μRel (n := n) (F := F) h R' Rset := by
+                have hne : firstUncovered (n := n) F Rset ≠ none := by
+                  simpa [_hfc]
+                simpa [μRel, R'] using
+                  (mu_extendCover_lt (n := n) (F := F)
+                    (Rset := Rset) (h := h) hne)
+              rec R' hdrop)
+        Rset)
+
+  set_option linter.unusedSimpArgs false in
+  /--  Unfolding equation for `buildCoverAux`.  It exposes the first recursive
+      step and is useful for subsequent reasoning. -/
+  lemma buildCoverAux_unfold (F : Family n) (h : ℕ)
+      (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (Rset : Finset (Subcube n)) :
+    buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
+      match firstUncovered (n := n) F Rset with
+      | none   => Rset
+      | some _ =>
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+            (extendCover (n := n) F Rset) := by
+    classical
+    -- Reduce to the technical version and discharge the binder by case splitting.
+    cases hfu : firstUncovered (n := n) F Rset with
+    | none   =>
+        have h' :=
+          buildCoverAux_unfold_eq (n := n) (F := F) (h := h) (hH := hH)
+            (Rset := Rset)
+        -- Simplify the technical equation using the case hypothesis.
+        -- Specialise the technical lemma and simplify using the hypothesis.
+        -- A direct rewrite removes the `match` binder produced by `fix_eq`.
+        rw [hfu] at h'
+        simpa using h'
+    | some _ =>
+        have h' :=
+          buildCoverAux_unfold_eq (n := n) (F := F) (h := h) (hH := hH)
+            (Rset := Rset)
+        -- Again simplify with the case hypothesis to expose the recursive call.
+        -- In the recursive case the same rewrite exposes the recursive call.
+        rw [hfu] at h'
+        simpa using h'
 
 /--  If `firstUncovered` finds no witness, the recursive auxiliary function
     `buildCoverAux` leaves the current rectangle set unchanged.  This lemma

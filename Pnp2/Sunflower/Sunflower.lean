@@ -34,8 +34,170 @@ subfamily with the sunflower property and all petals have size `w`. -/
 def HasSunflower (𝓢 : Finset (Finset α)) (w p : ℕ) : Prop :=
   ∃ 𝓣 ⊆ 𝓢, ∃ core, IsSunflower (α := α) p 𝓣 core ∧ ∀ A ∈ 𝓣, A.card = w
 
-/-! ### Two petals: explicit proof -/
+/-! ### Slices and erase-by-element infrastructure -/
 
+/-- `slice 𝓢 x` is the subfamily of sets from `𝓢` that contain `x`. -/
+def slice (𝓢 : Finset (Finset α)) (x : α) : Finset (Finset α) :=
+  𝓢.filter (fun A => x ∈ A)
+
+lemma mem_slice {𝓢 : Finset (Finset α)} {x : α} {A : Finset α} :
+    A ∈ slice 𝓢 x ↔ (A ∈ 𝓢 ∧ x ∈ A) := by
+  simp [slice]
+
+/-- `eraseSlice 𝓢 x` is obtained from `slice 𝓢 x` by removing `x` from each set. -/
+def eraseSlice (𝓢 : Finset (Finset α)) (x : α) : Finset (Finset α) :=
+  (slice 𝓢 x).image (fun A => A.erase x)
+
+/-- If `x ∈ A` and `x ∈ B` and the erasures coincide, then the original
+sets coincide as well. -/
+lemma erase_inj_of_mem {x : α} {A B : Finset α}
+    (hxA : x ∈ A) (hxB : x ∈ B) :
+    A.erase x = B.erase x → A = B := by
+  intro h
+  have := congrArg (fun (S : Finset α) => insert x S) h
+  simpa [insert_erase hxA, insert_erase hxB] using this
+
+/-- On the slice `𝓢.filter (· ∋ x)` the map `erase x` is injective. -/
+lemma erase_injective_on_slice (𝓢 : Finset (Finset α)) (x : α) :
+    Set.InjOn (fun A : Finset α => A.erase x) {A | A ∈ slice 𝓢 x} := by
+  intro A hA B hB h
+  exact erase_inj_of_mem
+    (by
+      have := (mem_slice.mp hA).2
+      simpa using this)
+    (by
+      have := (mem_slice.mp hB).2
+      simpa using this) h
+
+/-- The cardinalities of `slice 𝓢 x` and `eraseSlice 𝓢 x` agree. -/
+lemma card_eraseSlice (𝓢 : Finset (Finset α)) (x : α) :
+    (eraseSlice 𝓢 x).card = (slice 𝓢 x).card := by
+  classical
+  have hinj : Set.InjOn (fun A : Finset α => A.erase x) {A | A ∈ slice 𝓢 x} :=
+    erase_injective_on_slice 𝓢 x
+  simpa [eraseSlice] using
+    Finset.card_image_of_injOn (s := slice 𝓢 x)
+      (f := fun A : Finset α => A.erase x) hinj
+
+/-- In a uniform family of positive width, removing a point lowers the
+cardinality by one. -/
+lemma card_erase_of_uniform
+    {𝓢 : Finset (Finset α)} {w : ℕ}
+    (hunif : ∀ A ∈ 𝓢, A.card = w) (hw : 0 < w)
+    {x : α} {A : Finset α} (hA : A ∈ 𝓢) (hx : x ∈ A) :
+    (A.erase x).card = w - 1 := by
+  have := hunif A hA
+  simpa [Finset.card_erase_of_mem hx, this] 
+
+/-! ### Lifting a sunflower from a slice back to the original family -/
+
+/-- If `eraseSlice 𝓢 x` contains a `p`-sunflower with core `C`, then the
+original family `𝓢` contains a `p`-sunflower with core `insert x C`. -/
+lemma lift_sunflower
+    (𝓢 : Finset (Finset α)) {w p : ℕ} {x : α}
+    (hunif : ∀ A ∈ 𝓢, A.card = w) (hw : 0 < w)
+    {𝓣 : Finset (Finset α)} {C : Finset α}
+    (hTsub : 𝓣 ⊆ eraseSlice 𝓢 x)
+    (hSun : IsSunflower (α := α) p 𝓣 C) :
+    ∃ 𝓣' ⊆ 𝓢, IsSunflower (α := α) p 𝓣' (insert x C) ∧
+      (∀ A ∈ 𝓣', A.card = w) := by
+  classical
+  -- Image of `𝓣` under inserting `x` back.
+  let 𝓣' := 𝓣.image (fun B => insert x B)
+  have hT'sub : 𝓣' ⊆ 𝓢 := by
+    intro X hX
+    rcases Finset.mem_image.mp hX with ⟨B, hB, rfl⟩
+    rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hB) with ⟨A, hAin, hAeq⟩
+    rcases mem_slice.mp hAin with ⟨hA𝓢, hxA⟩
+    have hXB : insert x B = A := by
+      have := insert_erase hxA
+      simpa [hAeq] using this
+    simpa [hXB] using hA𝓢
+  have hcards : ∀ A ∈ 𝓣', A.card = w := by
+    intro A hA
+    rcases Finset.mem_image.mp hA with ⟨B, hB, rfl⟩
+    rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hB) with ⟨S, hSin, hSeq⟩
+    rcases mem_slice.mp hSin with ⟨hS𝓢, hxS⟩
+    have hXB : insert x B = S := by
+      have := insert_erase hxS
+      simpa [hSeq] using this
+    simpa [hXB] using (hunif S hS𝓢)
+  -- cardinalities of `𝓣` and `𝓣'` coincide
+  have hcard : 𝓣'.card = 𝓣.card := by
+    classical
+    -- The map `B ↦ insert x B` is injective on `𝓣` since every `B` misses `x`.
+    have hinj : Set.InjOn (fun B : Finset α => insert x B) {B | B ∈ 𝓣} := by
+      intro B₁ hB₁ B₂ hB₂ hEq
+      -- show `x ∉ B₁` and `x ∉ B₂`
+      have hx₁ : x ∉ B₁ := by
+        have := hTsub hB₁
+        rcases Finset.mem_image.mp (by simpa [eraseSlice] using this) with ⟨S, hSin, hSeq⟩
+        rcases mem_slice.mp hSin with ⟨_, hxS⟩
+        have : x ∉ S.erase x := by simp
+        simpa [hSeq] using this
+      have hx₂ : x ∉ B₂ := by
+        have := hTsub hB₂
+        rcases Finset.mem_image.mp (by simpa [eraseSlice] using this) with ⟨S, hSin, hSeq⟩
+        rcases mem_slice.mp hSin with ⟨_, hxS⟩
+        have : x ∉ S.erase x := by simp
+        simpa [hSeq] using this
+      -- erasing `x` from both sides yields equality of the original sets
+      have hEq' := congrArg (fun s => s.erase x) hEq
+      simpa [Finset.erase_insert, hx₁, hx₂] using hEq'
+    simpa [𝓣'] using
+      Finset.card_image_of_injOn (s := 𝓣)
+        (f := fun B : Finset α => insert x B) hinj
+  have pairwise_lift :
+      ∀ ⦃A⦄, A ∈ 𝓣' → ∀ ⦃B⦄, B ∈ 𝓣' → A ≠ B → A ∩ B = insert x C := by
+    intro A hA B hB hAB
+    rcases Finset.mem_image.mp hA with ⟨A', hA', rfl⟩
+    rcases Finset.mem_image.mp hB with ⟨B', hB', rfl⟩
+    -- `x` is not in `A'` or `B'` since they arise from erasures.
+    have hxA' : x ∉ A' := by
+      rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hA') with ⟨S, hSin, hSeq⟩
+      rcases mem_slice.mp hSin with ⟨_, hxS⟩
+      have : x ∉ S.erase x := by simp
+      simpa [hSeq] using this
+    have hxB' : x ∉ B' := by
+      rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hB') with ⟨S, hSin, hSeq⟩
+      rcases mem_slice.mp hSin with ⟨_, hxS⟩
+      have : x ∉ S.erase x := by simp
+      simpa [hSeq] using this
+    -- Intersections of inserted sets.
+    have inter_lift :
+        (insert x A') ∩ (insert x B') = insert x (A' ∩ B') := by
+      ext y; constructor <;> intro hy
+      · rcases Finset.mem_inter.mp hy with ⟨hy1, hy2⟩
+        by_cases hyx : y = x
+        · subst hyx; simp
+        ·
+          have hyA' : y ∈ A' := by simpa [Finset.mem_insert, hyx] using hy1
+          have hyB' : y ∈ B' := by simpa [Finset.mem_insert, hyx] using hy2
+          have hmem : y ∈ A' ∩ B' := by
+            exact Finset.mem_inter.mpr ⟨hyA', hyB'⟩
+          simp [Finset.mem_insert, hyx, hmem]
+      · rcases Finset.mem_insert.mp hy with hyx | hy'
+        · subst hyx; simp
+        · rcases Finset.mem_inter.mp hy' with ⟨hyA', hyB'⟩
+          have hyA'' : y ∈ insert x A' := by
+            have : y = x ∨ y ∈ A' := Or.inr hyA'
+            simpa [Finset.mem_insert, hxA'] using this
+          have hyB'' : y ∈ insert x B' := by
+            have : y = x ∨ y ∈ B' := Or.inr hyB'
+            simpa [Finset.mem_insert, hxB'] using this
+          exact Finset.mem_inter.mpr ⟨hyA'', hyB''⟩
+    have hAB' : A' ≠ B' := by
+      intro h; exact hAB (by simpa [h])
+    have hcore := hSun.pairwise_inter (A := A') hA' (B := B') hB' hAB'
+    simpa [inter_lift, hcore]
+  refine ⟨𝓣', hT'sub, ?_, hcards⟩
+  refine ⟨?_, ?_⟩
+  · -- cardinality of the lifted sunflower
+    have : 𝓣.card = p := hSun.card_p
+    simpa [hcard, this]
+  · intro A hA B hB hAB; exact pairwise_lift hA hB hAB
+
+/-! ### Two petals: explicit proof -/
 /-- For two petals the sunflower lemma becomes completely elementary: any
 family containing at least two sets already forms a `2`-sunflower.  We
 record this special case with a direct proof so that small instances do

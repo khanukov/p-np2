@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Proof outline of `buildCover_card_bound`
 
 This note now corresponds to the formalised proof. It elaborates on the measure based induction used to bound the

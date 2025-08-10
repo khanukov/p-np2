@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Details for Lemma B Subtasks B-3 and B-5
 
 This note expands upon the roadmap items **B‑3** and **B‑5** from

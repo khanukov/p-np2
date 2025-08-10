@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is a research plan and does not reflect a completed formalisation.
+
 
 
 Formal Proof Plan for the Family Collision-Entropy Lemma (FCE-Lemma)

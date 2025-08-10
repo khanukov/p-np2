@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Enumeration Results for n = 7 and n = 8
 
 These runs extend the brute-force search to slightly larger circuits as

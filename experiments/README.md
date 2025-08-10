@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Experiments for Lemma B
 
 This folder contains small prototype code to explore the **structural compression** conjectured in Lemma B of the research notes.  The script `lemma_b_search.py` exhaustively enumerates Boolean functions that can be computed by circuits of bounded size (over the gates `AND`, `OR`, and `NOT`) on a small number of input variables.  A simpler tool `single_gate_count.py` lists all functions realizable with a single gate for a given input size.

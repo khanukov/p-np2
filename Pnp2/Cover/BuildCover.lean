@@ -181,8 +181,10 @@ lemma buildCover_empty_of_none (F : Family n) (h : ℕ)
 
 In this section we establish that the cover construction preserves the weaker
 invariant that each rectangle is monochromatic for every function of the family
-individually.  The colours may differ between functions, but each function is
-constant on every rectangle produced by the algorithm.
+individually.  Earlier drafts aimed for the stronger predicate
+`Subcube.monochromaticForFamily`, but the current algorithm only guarantees the
+pointwise version: the colours may differ between functions, yet each function is
+constant on every rectangle produced by the construction.
 -/
 
 /--

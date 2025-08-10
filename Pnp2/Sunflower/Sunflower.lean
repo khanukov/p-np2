@@ -197,6 +197,44 @@ lemma sum_card_slices_eq_w_mul_card
           -- sum of a constant over `𝓢`
           simpa [Finset.sum_const, nsmul_eq_mul, Nat.mul_comm]
 
+/-! ### Iterated element erasure -/
+
+/-- `familyAfter 𝓢 xs` iteratively removes each element of the list `xs`
+    from all members of the family `𝓢`.  The elements are removed in order,
+    so `familyAfter 𝓢 [] = 𝓢` and `familyAfter 𝓢 (x :: xs)` first processes
+    the tail `xs` and then erases `x` from every set. -/
+def familyAfter : Finset (Finset α) → List α → Finset (Finset α)
+  | 𝓢, []      => 𝓢
+  | 𝓢, x :: xs => eraseSlice (familyAfter 𝓢 xs) x
+
+/-- In a `w`-uniform family, iteratively erasing a list of elements of length
+    `xs.length` lowers the size of each set precisely by that length. -/
+lemma familyAfter_uniform
+    {𝓢 : Finset (Finset α)} {w : ℕ}
+    (hunif : ∀ A ∈ 𝓢, A.card = w)
+    (xs : List α) :
+    ∀ A ∈ familyAfter 𝓢 xs, A.card = w - xs.length := by
+  classical
+  -- Induction on the list of elements being erased
+  induction xs with
+  | nil =>
+      -- No erasures: the family remains uniform of width `w`
+      intro A hA; simpa using hunif A hA
+  | cons x xs ih =>
+      intro A hA
+      -- Membership in `familyAfter` is membership in an erased slice
+      -- of the family obtained after processing `xs`.
+      have hA' : A ∈ eraseSlice (familyAfter 𝓢 xs) x := hA
+      -- Unpack the membership in `eraseSlice` via the image description.
+      rcases Finset.mem_image.mp hA' with ⟨B, hB, rfl⟩
+      rcases mem_slice.mp hB with ⟨hB_in, hxB⟩
+      -- Apply the inductive hypothesis to the preimage set `B`.
+      have hBcard : B.card = w - xs.length := ih B hB_in
+      -- Removing `x` lowers the cardinality by one.
+      have := Finset.card_erase_of_mem hxB
+      -- Rewrite the right-hand side using the inductive hypothesis.
+      simpa [hBcard, Nat.sub_sub, List.length] using this
+
 /-! ### Lifting a sunflower from a slice back to the original family -/
 
 /-- If `eraseSlice 𝓢 x` contains a `p`-sunflower with core `C`, then the

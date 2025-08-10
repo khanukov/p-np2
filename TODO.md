@@ -4,14 +4,14 @@
 
 Updated development tasks after audit (2025-08-06).
 
+- [ ] Complete proofs in `Pnp2/Cover/BuildCover.lean` (`buildCoverAux_mono`, `buildCover_covers`, `buildCover_card_bound`, `mu_buildCover_lt_start`).
+- [ ] Prove `exists_restrict_half_real_aux` and remove dependent axioms in `Pnp2/entropy.lean`.
+- [ ] Make `firstUncovered` constructive in `Pnp2/Cover/Uncovered.lean`.
+- [ ] Provide a formal proof of `sunflower_exists` in `Pnp2/Sunflower/Sunflower.lean`.
+- [ ] Replace stub `buildCover_card` and update `buildCover_card_bigO` in `Pnp2/cover_numeric.lean`.
+- [ ] Implement `decisionTree_cover` for low-sensitivity families.
 - [ ] Replace complexity-theoretic assumptions in `Pnp2/NP_separation.lean` with proven results.
 - [ ] Prove inclusion `P ⊆ P/poly` in `Pnp2/ComplexityClasses.lean`.
-- [ ] Prove `exists_restrict_half_real_aux` and remove dependent axioms in `Pnp2/entropy.lean`.
-- [ ] Provide a formal proof of `sunflower_exists` in `Pnp2/Sunflower/Sunflower.lean`.
-- [ ] Implement `decisionTree_cover` for low-sensitivity families.
-- [ ] Complete proofs in `Pnp2/Cover/BuildCover.lean` (`buildCoverAux_mono`, `buildCover_covers`, `buildCover_card_bound`, `mu_buildCover_lt_start`).
-- [ ] Replace stub `buildCover_card` and update `buildCover_card_bigO` in `Pnp2/cover_numeric.lean`.
-- [ ] Make `firstUncovered` constructive in `Pnp2/Cover/Uncovered.lean`.
 
 ## Remaining axioms (as of 2025-08-06)
 

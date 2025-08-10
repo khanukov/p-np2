@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Master Blueprint 2025 → 20XX
 
 This note summarizes a long-term plan towards a formal proof that `P ≠ NP`.

@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Collision Entropy of a Boolean Function
 
 This note summarises the definition of **collision entropy** for a

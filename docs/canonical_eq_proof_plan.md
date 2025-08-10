@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Plan for the canonical equality theorem
 
 This document sketches a proof of the statement

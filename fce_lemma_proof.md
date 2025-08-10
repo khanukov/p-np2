@@ -1,4 +1,6 @@
 # The Family Collision-Entropy Lemma: Formal Statement and Constructive Proof
+> **Status (2025-08-06)**: Outline only; the lemma is unproven and many steps rely on conjectures.
+
 
 ## Abstract
 

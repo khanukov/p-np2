@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # NP \nsubseteq P/poly via magnification
 
 This short note records the assumptions and final logical steps used in the repository to obtain the non-uniform separation `NP \nsubseteq P/poly` and the consequence `P ≠ NP`.

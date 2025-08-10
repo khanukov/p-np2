@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Enumeration Results for n = 4 and n = 5
 
 This note collects raw counts from running `lemma_b_search.py` with slightly larger

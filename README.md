@@ -1,4 +1,6 @@
 # P≠NP formalization repository
+> **Status (2025-08-06)**: This repository is incomplete; many results rely on axioms or unfinished proofs.
+
 
 This repository collects experimental Lean files that sketch a formal proof of the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma aims to cover families of Boolean functions with a subexponential number of monochromatic subcubes and is a building block for a potential proof that `P ≠ NP`.
 
@@ -30,34 +32,19 @@ tracked in `TODO.md` and will be removed as the project progresses.
   (`toFinset` and `size`), a monotonicity lemma for inclusion and the
   cardinal split result `exists_coord_card_drop`.  Lightweight structures
   `LabeledCube` and `Cover` expose the building blocks for recursive
-  cover constructors.  The module now integrates a sunflower step via `sunflower_exists` that extracts a rectangle covering several functions at once.  A lemma
+  cover constructors.  The module now integrates a sunflower step via the axiomatic `sunflower_exists` that extracts a rectangle covering several functions at once.  A lemma
   `monochromatic_point` still shows that single‑point subcubes are
   automatically monochromatic for any Boolean function.
 
-* `entropy.lean` – collision entropy framework with the full `EntropyDrop`
-  lemma proven alongside basic tools such as `collProb_le_one`.  The
-  auxiliary lemma `exists_restrict_half` shows that some input bit
-  restricts a family to at most half its size.  Its real-valued
-  variant `exists_restrict_half_real` and the probability version
-  `exists_restrict_half_real_prob` provide the bridge to analytic
-  bounds, and `exists_coord_entropy_drop` turns this into a one‑bit drop
-  of collision entropy.
-* `sunflower.lean` – full classical sunflower lemma `sunflower_exists` now
-  formalised **inside `Pnp2`** (ported from the previous development folder).
+* `entropy.lean` – collision entropy framework with the `EntropyDrop` lemma. The halving statement `exists_restrict_half` currently relies on the axiom `exists_restrict_half_real_aux`.
+* `sunflower.lean` – contains the classical sunflower lemma `sunflower_exists`, which is presently assumed as an axiom.
 * `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`).
   The lemma `RSpread.mono` now shows that a larger spread parameter implies
   a smaller one when `0 < R₂ ≤ R₁`.  Additional helper lemmas
   (`RSpread.card_bound`, `RSpread.one_of_nonempty`, `RSpread.card_filter_le`)
   rephrase the definition and handle the trivial case `R = 1`.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
-* `cover2.lean` – streamlined reimplementation of the cover builder.  It
-  retains the `firstUncovered` bookkeeping and ports the entropy split
-  (`exists_coord_entropy_drop`) together with the sunflower step
-  (`sunflower_exists`).  Monochromaticity of the resulting cover is fully
-  established via `buildCover_mono`, and the counting lemma
-  `buildCover_card_bound` is proved using the measure `μ(F, h, Rset) = 2 * h +
-  |uncovered F Rset|`.  The helper lemma `AllOnesCovered.union` abstracts the
-  union step in the coverage proof.
+* `cover2.lean` – reimplementation of the cover builder. Core results such as `buildCover_mono` and `buildCover_card_bound` still depend on unfinished proofs in `Cover/BuildCover.lean`.
 * `Cover/Compute.lean` – lightweight wrapper exposing a constructive
   variant `buildCoverCompute` that enumerates the rectangles as a list.
   The current implementation reuses the naive exhaustive scan of the Boolean
@@ -79,7 +66,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   path extraction, a `subcube_of_path` helper and lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
   bounding recorded paths and leaf count.
-* `low_sensitivity_cover.lean` – lemma skeletons using these trees.
+* `low_sensitivity_cover.lean` – lemma skeletons using decision trees; key statement `decisionTree_cover` remains an axiom.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `low_sensitivity.lean` – trivial cover for smooth functions (self-contained).
 * `Algorithms/SatCover.lean` – constructive SAT search procedure scanning the
@@ -87,10 +74,9 @@ tracked in `TODO.md` and will be removed as the project progresses.
   all points but provides the intended interface for meet-in-the-middle
   extensions.
 * `acc_mcsp_sat.lean` – outline of the meet-in-the-middle SAT connection.
-* `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP`.
-* `ComplexityClasses.lean` – minimal definitions of `P`, `NP` and `P/poly` for
-  stating complexity results.
-* `cover_numeric.lean` – placeholder numeric bounds wrapping `buildCover`.
+* `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP`, relying on assumptions such as `magnification_AC0_MCSP`, `karp_lipton`, and `FCE_implies_MCSP`.
+* `ComplexityClasses.lean` – minimal definitions of `P`, `NP` and `P/poly`; inclusion `P ⊆ P/poly` is currently assumed as an axiom.
+* `cover_numeric.lean` – placeholder numeric bounds; `buildCover_card` currently returns `0`.
 * `table_locality.lean` – defines the locality property and proves a
   basic version of the table locality lemma (roadmap B‑2) with the
   trivial bound `k = n`.
@@ -165,39 +151,13 @@ python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
 
 ## Status
 
-This is still a research prototype. The core-agreement lemma is fully proven, and the entropy-drop lemma `exists_coord_entropy_drop` is proved in `entropy.lean`.  The cardinal analogue `exists_coord_card_drop` is now formalised in `Boolcube.lean`; an earlier standalone demonstration file has been removed. `buildCover` splits on uncovered pairs using `sunflower_step` or the entropy drop.  `buildCover_mono` and `buildCover_card_bound` are now fully formalised via a measure-based recursion.  The convenience wrapper `coverFamily` exposes these results via lemmas `coverFamily_mono`, `coverFamily_spec_cover` and `coverFamily_card_bound`. Collision entropy for a single function lives in `collentropy.lean`.  A formal definition of sensitivity with the lemma statement `low_sensitivity_cover` is available.  A small `DecisionTree` module provides depth, leaf counting, path extraction and the helper `subcube_of_path`.  Lemmas `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth` bound the recorded paths and the number of leaves, and `low_sensitivity_cover_single` sketches the tree-based approach.  `acc_mcsp_sat.lean` sketches the SAT connection. The numeric bounds have been completed in `bound.lean`, culminating in the theorem `family_collision_entropy_lemma_table`. This establishes the sub-exponential cover (Lemma B).
-The newly introduced `Cover/Compute.lean` and `Algorithms/SatCover.lean` provide a constructive cover enumerator and a simple SAT search routine; their specifications are proven although the implementations are still placeholders.
+This repository is a research prototype. Many central lemmas remain incomplete and are marked with `sorry` or `axiom`. In particular:
+* `sunflower_exists`, `exists_restrict_half_real_aux`, `decisionTree_cover`, and several `buildCover` lemmas are axioms.
+* `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
+* `ComplexityClasses.lean` assumes `P ⊆ P/poly`.
 
-Within `Pnp2` the overall structure of the FCE argument is complete and the focus shifts to optimising the constructive algorithms and reconnecting the SAT outline to recover the full `P ≠ NP` implication.
-
-The code base has returned to the `Pnp2` namespace.  All major modules have been ported and `migration.md` now serves only as a historical record.  The build system now targets only `Pnp2` and the historical files are excluded.
-
-Work is ongoing on the decision-tree construction for low-sensitivity families.
-The lemma `decisionTree_cover` is currently axiomatic, but the repository
-includes helper definitions (`DecisionTree`, `subcube_of_path`) and leaf-count
-bounds that will support a full proof in future commits.
-
-### Development namespace
-
-`Pnp2` is now the sole development directory.  It contains all maintained
-proof scripts and new lemmas.  The legacy `pnp` folder has been removed and
-no longer ships with the repository.
+See `TODO.md` for an up-to-date list of outstanding tasks.
 
 ## Development plan
 
-The Family Collision-Entropy Lemma is now formalised. Remaining tasks include:
-1. ~~finish the cardinal lemma `exists_coord_card_drop` in `Boolcube.lean` to
-   complement the proved entropy drop,~~
-2. ~~move all modules from the legacy directory into `Pnp2` and extend the test
-   suite to cover the migrated code,~~
-3. ~~complete the `buildCover` correctness proof and establish the bound
-   `mBound_lt_subexp`,~~
-4. integrate the decision-tree cover into `low_sensitivity_cover`,
-5. expose `FamilyCover` and single-function entropy utilities throughout the
-   codebase.
-The lemma `FCE_lemma` is now available, proving the desired sub-exponential bound.
-The corollary `family_collision_entropy_lemma_table` packages this result
-as **Lemma B**, yielding a joint monochromatic cover of size `2^{n/100}`
-for large enough `n`.
-
-The numeric bounds have been incorporated into the development.
+The immediate goal is to replace the axioms above with formal proofs and to provide a constructive cover algorithm with verified bounds.

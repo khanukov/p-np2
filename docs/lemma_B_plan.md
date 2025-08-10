@@ -1,3 +1,5 @@
+> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+>
 # Progress Towards Lemma B
 
 This short note summarises the intended formal proof that the family of

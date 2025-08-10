@@ -260,6 +260,65 @@ lemma buildCover_pointwiseMono (F : Family n) (h : ℕ)
       intro R hR g hg; cases hR)
   simpa [buildCover] using haux
 
+/--
+Every `1`-input of every `f ∈ F` is eventually covered by the rectangles
+returned by `buildCoverAux`.  This lemma establishes the coverage invariant for
+the recursive construction.
+-/
+lemma buildCoverAux_covers (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ Rset,
+      AllOnesCovered (n := n) F
+        (buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset) := by
+  classical
+  intro Rset
+  -- We prove the statement by well-founded induction over the measure `μ`.
+  refine (μRel_wf (n := n) (F := F) h).induction Rset
+    (C := fun Rset =>
+      AllOnesCovered (n := n) F
+        (buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset)) ?step
+  intro Rset IH
+  -- Unfold the recursion to inspect the first branch.
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      -- Base case: no uncovered pairs remain.  The result equals `Rset` and the
+      -- desired property follows directly from `firstUncovered_none_iff`.
+      have hcov :
+          AllOnesCovered (n := n) F Rset :=
+        (firstUncovered_none_iff_AllOnesCovered (n := n) (F := F)
+          (Rset := Rset)).1 hfu
+      have hbase :
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset = Rset :=
+        buildCoverAux_none (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset) hfu
+      simpa [hbase] using hcov
+  | some _ =>
+      -- Recursive case: extend the cover and apply the inductive hypothesis on
+      -- the strictly smaller measure.
+      have h1 : buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
+          match firstUncovered (n := n) F Rset with
+          | none   => Rset
+          | some _ => buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+              (extendCover (n := n) F Rset) :=
+        buildCoverAux_unfold (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset)
+      have hrec :
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
+            buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+              (extendCover (n := n) F Rset) := by
+        simpa [hfu] using h1
+      -- The measure strictly decreases after `extendCover`.
+      have hdrop : μRel (n := n) (F := F) h
+          (extendCover (n := n) F Rset) Rset := by
+        have hne : firstUncovered (n := n) F Rset ≠ none := by
+          simpa [hfu]
+        simpa [μRel] using
+          mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
+      -- Apply the inductive hypothesis to the strictly smaller measure.
+      have hIH := IH (extendCover (n := n) F Rset) hdrop
+      -- Rewrite using the unfolding equation to obtain the desired result.
+      simpa [hrec] using hIH
+
 /-!
 ### Specification lemmas
 
@@ -273,8 +332,12 @@ arguments is future work.
 lemma buildCover_covers (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     AllOnesCovered (n := n) F (buildCover (n := n) F h hH) := by
-  -- To be completed.
-  exact sorry
+  classical
+  -- Specialise the auxiliary coverage lemma to the empty starting set.
+  have haux :=
+    buildCoverAux_covers (n := n) (F := F) (h := h) (hH := hH) (Rset := (∅))
+  -- The definition of `buildCover` unfolds to a call to `buildCoverAux` on `∅`.
+  simpa [buildCover] using haux
 
 /-- The number of rectangles produced by `buildCover` is bounded by `mBound`. -/
 lemma buildCover_card_bound (F : Family n) (h : ℕ)

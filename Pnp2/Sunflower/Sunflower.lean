@@ -1,19 +1,17 @@
+--
+--  Pnp2/Sunflower/Sunflower.lean
+--
+--  Classical sunflower lemma: axiomatized with the standard threshold
+--  `(p - 1)^w * w!`.  We provide the basic definitions together with a
+--  direct proof for the two-petal case; the general combinatorial lemma
+--  is recorded as an axiom for now.
+--
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.Finset.Card
 import Pnp2.Boolcube
 
-/-! # Classical sunflower lemma
-
-This module provides a minimal interface for the classical
-Erdős–Rado sunflower lemma.  The combinatorial proof is omitted and the
-result is recorded as an axiom so that other parts of the development
-can rely on the statement without depending on a particular proof.
--/
-
 open Classical Finset
 
--- The linter suggestions for `simp` vs `simpa` and unused variables
--- are not relevant for this axiomatized development.
 set_option linter.unnecessarySimpa false
 set_option linter.unusedVariables false
 
@@ -23,7 +21,7 @@ namespace Sunflower
 
 variable {α : Type} [DecidableEq α]
 
-/-- A `p`‑sunflower inside a family `𝓢` consists of a subfamily `𝓣` of
+/-- A `p`-sunflower inside a family `𝓢` consists of a subfamily `𝓣` of
 cardinality `p` whose pairwise intersections all coincide with a set
 `core`. -/
 structure IsSunflower (p : ℕ) (𝓣 : Finset (Finset α)) (core : Finset α) : Prop where
@@ -31,26 +29,180 @@ structure IsSunflower (p : ℕ) (𝓣 : Finset (Finset α)) (core : Finset α) :
   pairwise_inter :
     ∀ ⦃A⦄, A ∈ 𝓣 → ∀ ⦃B⦄, B ∈ 𝓣 → A ≠ B → A ∩ B = core
 
-/-- A family `𝓢` *has* a `p`‑sunflower of width `w` if it contains a
+/-- A family `𝓢` has a `p`-sunflower of width `w` if it contains a
 subfamily with the sunflower property and all petals have size `w`. -/
 def HasSunflower (𝓢 : Finset (Finset α)) (w p : ℕ) : Prop :=
   ∃ 𝓣 ⊆ 𝓢, ∃ core, IsSunflower (α := α) p 𝓣 core ∧ ∀ A ∈ 𝓣, A.card = w
 
-/-- **Erdős–Rado sunflower lemma** (axiom).  If a finite family of
-`w`‑sets has more than `(p - 1)! * w^p` members, then it contains a
-`p`‑sunflower. -/
-axiom sunflower_exists
-    (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
-    (h_size : (p - 1).factorial * w ^ p < 𝓢.card)
-    (h_w : ∀ A ∈ 𝓢, A.card = w) :
-    HasSunflower 𝓢 w p
+/-! ### Slices and erase-by-element infrastructure -/
 
-/--
-For two petals the sunflower lemma becomes completely elementary: any
-family containing at least two sets already forms a `2`‑sunflower.  We
+/-- `slice 𝓢 x` is the subfamily of sets from `𝓢` that contain `x`. -/
+def slice (𝓢 : Finset (Finset α)) (x : α) : Finset (Finset α) :=
+  𝓢.filter (fun A => x ∈ A)
+
+lemma mem_slice {𝓢 : Finset (Finset α)} {x : α} {A : Finset α} :
+    A ∈ slice 𝓢 x ↔ (A ∈ 𝓢 ∧ x ∈ A) := by
+  simp [slice]
+
+/-- `eraseSlice 𝓢 x` is obtained from `slice 𝓢 x` by removing `x` from each set. -/
+def eraseSlice (𝓢 : Finset (Finset α)) (x : α) : Finset (Finset α) :=
+  (slice 𝓢 x).image (fun A => A.erase x)
+
+/-- If `x ∈ A` and `x ∈ B` and the erasures coincide, then the original
+sets coincide as well. -/
+lemma erase_inj_of_mem {x : α} {A B : Finset α}
+    (hxA : x ∈ A) (hxB : x ∈ B) :
+    A.erase x = B.erase x → A = B := by
+  intro h
+  have := congrArg (fun (S : Finset α) => insert x S) h
+  simpa [insert_erase hxA, insert_erase hxB] using this
+
+/-- On the slice `𝓢.filter (· ∋ x)` the map `erase x` is injective. -/
+lemma erase_injective_on_slice (𝓢 : Finset (Finset α)) (x : α) :
+    Set.InjOn (fun A : Finset α => A.erase x) {A | A ∈ slice 𝓢 x} := by
+  intro A hA B hB h
+  exact erase_inj_of_mem
+    (by
+      have := (mem_slice.mp hA).2
+      simpa using this)
+    (by
+      have := (mem_slice.mp hB).2
+      simpa using this) h
+
+/-- The cardinalities of `slice 𝓢 x` and `eraseSlice 𝓢 x` agree. -/
+lemma card_eraseSlice (𝓢 : Finset (Finset α)) (x : α) :
+    (eraseSlice 𝓢 x).card = (slice 𝓢 x).card := by
+  classical
+  have hinj : Set.InjOn (fun A : Finset α => A.erase x) {A | A ∈ slice 𝓢 x} :=
+    erase_injective_on_slice 𝓢 x
+  simpa [eraseSlice] using
+    Finset.card_image_of_injOn (s := slice 𝓢 x)
+      (f := fun A : Finset α => A.erase x) hinj
+
+/-- In a uniform family of positive width, removing a point lowers the
+cardinality by one. -/
+lemma card_erase_of_uniform
+    {𝓢 : Finset (Finset α)} {w : ℕ}
+    (hunif : ∀ A ∈ 𝓢, A.card = w) (hw : 0 < w)
+    {x : α} {A : Finset α} (hA : A ∈ 𝓢) (hx : x ∈ A) :
+    (A.erase x).card = w - 1 := by
+  have := hunif A hA
+  simpa [Finset.card_erase_of_mem hx, this] 
+
+/-! ### Lifting a sunflower from a slice back to the original family -/
+
+/-- If `eraseSlice 𝓢 x` contains a `p`-sunflower with core `C`, then the
+original family `𝓢` contains a `p`-sunflower with core `insert x C`. -/
+lemma lift_sunflower
+    (𝓢 : Finset (Finset α)) {w p : ℕ} {x : α}
+    (hunif : ∀ A ∈ 𝓢, A.card = w) (hw : 0 < w)
+    {𝓣 : Finset (Finset α)} {C : Finset α}
+    (hTsub : 𝓣 ⊆ eraseSlice 𝓢 x)
+    (hSun : IsSunflower (α := α) p 𝓣 C) :
+    ∃ 𝓣' ⊆ 𝓢, IsSunflower (α := α) p 𝓣' (insert x C) ∧
+      (∀ A ∈ 𝓣', A.card = w) := by
+  classical
+  -- Image of `𝓣` under inserting `x` back.
+  let 𝓣' := 𝓣.image (fun B => insert x B)
+  have hT'sub : 𝓣' ⊆ 𝓢 := by
+    intro X hX
+    rcases Finset.mem_image.mp hX with ⟨B, hB, rfl⟩
+    rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hB) with ⟨A, hAin, hAeq⟩
+    rcases mem_slice.mp hAin with ⟨hA𝓢, hxA⟩
+    have hXB : insert x B = A := by
+      have := insert_erase hxA
+      simpa [hAeq] using this
+    simpa [hXB] using hA𝓢
+  have hcards : ∀ A ∈ 𝓣', A.card = w := by
+    intro A hA
+    rcases Finset.mem_image.mp hA with ⟨B, hB, rfl⟩
+    rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hB) with ⟨S, hSin, hSeq⟩
+    rcases mem_slice.mp hSin with ⟨hS𝓢, hxS⟩
+    have hXB : insert x B = S := by
+      have := insert_erase hxS
+      simpa [hSeq] using this
+    simpa [hXB] using (hunif S hS𝓢)
+  -- cardinalities of `𝓣` and `𝓣'` coincide
+  have hcard : 𝓣'.card = 𝓣.card := by
+    classical
+    -- The map `B ↦ insert x B` is injective on `𝓣` since every `B` misses `x`.
+    have hinj : Set.InjOn (fun B : Finset α => insert x B) {B | B ∈ 𝓣} := by
+      intro B₁ hB₁ B₂ hB₂ hEq
+      -- show `x ∉ B₁` and `x ∉ B₂`
+      have hx₁ : x ∉ B₁ := by
+        have := hTsub hB₁
+        rcases Finset.mem_image.mp (by simpa [eraseSlice] using this) with ⟨S, hSin, hSeq⟩
+        rcases mem_slice.mp hSin with ⟨_, hxS⟩
+        have : x ∉ S.erase x := by simp
+        simpa [hSeq] using this
+      have hx₂ : x ∉ B₂ := by
+        have := hTsub hB₂
+        rcases Finset.mem_image.mp (by simpa [eraseSlice] using this) with ⟨S, hSin, hSeq⟩
+        rcases mem_slice.mp hSin with ⟨_, hxS⟩
+        have : x ∉ S.erase x := by simp
+        simpa [hSeq] using this
+      -- erasing `x` from both sides yields equality of the original sets
+      have hEq' := congrArg (fun s => s.erase x) hEq
+      simpa [Finset.erase_insert, hx₁, hx₂] using hEq'
+    simpa [𝓣'] using
+      Finset.card_image_of_injOn (s := 𝓣)
+        (f := fun B : Finset α => insert x B) hinj
+  have pairwise_lift :
+      ∀ ⦃A⦄, A ∈ 𝓣' → ∀ ⦃B⦄, B ∈ 𝓣' → A ≠ B → A ∩ B = insert x C := by
+    intro A hA B hB hAB
+    rcases Finset.mem_image.mp hA with ⟨A', hA', rfl⟩
+    rcases Finset.mem_image.mp hB with ⟨B', hB', rfl⟩
+    -- `x` is not in `A'` or `B'` since they arise from erasures.
+    have hxA' : x ∉ A' := by
+      rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hA') with ⟨S, hSin, hSeq⟩
+      rcases mem_slice.mp hSin with ⟨_, hxS⟩
+      have : x ∉ S.erase x := by simp
+      simpa [hSeq] using this
+    have hxB' : x ∉ B' := by
+      rcases Finset.mem_image.mp (by simpa [eraseSlice] using hTsub hB') with ⟨S, hSin, hSeq⟩
+      rcases mem_slice.mp hSin with ⟨_, hxS⟩
+      have : x ∉ S.erase x := by simp
+      simpa [hSeq] using this
+    -- Intersections of inserted sets.
+    have inter_lift :
+        (insert x A') ∩ (insert x B') = insert x (A' ∩ B') := by
+      ext y; constructor <;> intro hy
+      · rcases Finset.mem_inter.mp hy with ⟨hy1, hy2⟩
+        by_cases hyx : y = x
+        · subst hyx; simp
+        ·
+          have hyA' : y ∈ A' := by simpa [Finset.mem_insert, hyx] using hy1
+          have hyB' : y ∈ B' := by simpa [Finset.mem_insert, hyx] using hy2
+          have hmem : y ∈ A' ∩ B' := by
+            exact Finset.mem_inter.mpr ⟨hyA', hyB'⟩
+          simp [Finset.mem_insert, hyx, hmem]
+      · rcases Finset.mem_insert.mp hy with hyx | hy'
+        · subst hyx; simp
+        · rcases Finset.mem_inter.mp hy' with ⟨hyA', hyB'⟩
+          have hyA'' : y ∈ insert x A' := by
+            have : y = x ∨ y ∈ A' := Or.inr hyA'
+            simpa [Finset.mem_insert, hxA'] using this
+          have hyB'' : y ∈ insert x B' := by
+            have : y = x ∨ y ∈ B' := Or.inr hyB'
+            simpa [Finset.mem_insert, hxB'] using this
+          exact Finset.mem_inter.mpr ⟨hyA'', hyB''⟩
+    have hAB' : A' ≠ B' := by
+      intro h; exact hAB (by simpa [h])
+    have hcore := hSun.pairwise_inter (A := A') hA' (B := B') hB' hAB'
+    simpa [inter_lift, hcore]
+  refine ⟨𝓣', hT'sub, ?_, hcards⟩
+  refine ⟨?_, ?_⟩
+  · -- cardinality of the lifted sunflower
+    have : 𝓣.card = p := hSun.card_p
+    simpa [hcard, this]
+  · intro A hA B hB hAB; exact pairwise_lift hA hB hAB
+
+/-! ### Two petals: explicit proof -/
+
+/-- For two petals the sunflower lemma becomes completely elementary: any
+family containing at least two sets already forms a `2`-sunflower.  We
 record this special case with a direct proof so that small instances do
-not depend on the general combinatorial argument.
--/
+not depend on the general combinatorial argument. -/
 lemma sunflower_exists_two
     (𝓢 : Finset (Finset α)) (w : ℕ) (hw : 0 < w)
     (h_large : 1 < 𝓢.card)
@@ -99,14 +251,26 @@ lemma sunflower_exists_two
       | inl hx => simpa [hx] using h_w A hA
       | inr hx => simpa [hx] using h_w B hB
 
+/-! ### Classical sunflower lemma (axiomatized) -/
+
+/-- **Erdős–Rado sunflower lemma** (axiom).  If a finite family of
+`w`-sets has more than `(p - 1)^w * w!` members, then it contains a
+`p`-sunflower.  A complete combinatorial proof will be provided in a
+future revision. -/
+axiom sunflower_exists_classic
+    (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
+    (h_size : (p - 1) ^ w * Nat.factorial w < 𝓢.card)
+    (h_w : ∀ A ∈ 𝓢, A.card = w) :
+    HasSunflower 𝓢 w p
+
 /-- Convenient wrapper for the sunflower lemma when the family is
-already known to consist of `w`‑sets. -/
+already known to consist of `w`-sets. -/
 lemma sunflower_exists_of_fixedSize
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
     (h_cards : ∀ A ∈ 𝓢, A.card = w)
-    (h_big  : 𝓢.card > (p - 1).factorial * w ^ p) :
+    (h_big  : 𝓢.card > (p - 1) ^ w * Nat.factorial w) :
     HasSunflower 𝓢 w p :=
-  sunflower_exists 𝓢 w p hw hp
+  sunflower_exists_classic 𝓢 w p hw hp
     (by simpa using h_big) h_cards
 
 /-! ## Structures for the cover algorithm -/
@@ -128,63 +292,35 @@ namespace SunflowerFam
 
 variable {n w t : ℕ}
 
-/-- Existence of a sunflower family given a large collection of petals. -/
-lemma exists_of_large_family
+/-- From a sufficiently large family of `w`-subsets we can extract a
+`t`-sunflower.  This is a thin wrapper around the classical lemma above
+adapted to the `SunflowerFam` structure. -/
+lemma exists_of_large_family_classic
     {F : Finset (Petal n)}
     (hw : 0 < w) (ht : 2 ≤ t)
     (hcard : ∀ S ∈ F, S.card = w)
-    (hbig : F.card > Nat.factorial (t - 1) * w ^ t) :
+    (hbig : F.card > (t - 1) ^ w * Nat.factorial w) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F := by
   classical
-  -- Obtain a `t`‑sunflower inside `F`.
-  have hsun : HasSunflower F w t := by
-    by_cases ht2 : t = 2
-    · -- The case `t = 2` is trivial and avoids the axiom.
-      subst ht2
-      have hgt1 : 1 < F.card := by
-        have hw1 : 1 ≤ w := Nat.succ_le_of_lt hw
-        have hpow : 1 ≤ w ^ 2 := by
-          simpa [pow_two] using (Nat.mul_le_mul hw1 hw1)
-        exact lt_of_le_of_lt hpow (by simpa using hbig)
-        -- F.card > w^2 and w^2 ≥ 1
-      exact sunflower_exists_two (𝓢 := F) (w := w) hw hgt1 hcard
-    · -- For `t ≥ 3` we fall back to the general lemma.
-      have ht' : 2 ≤ t := ht
-      exact sunflower_exists (𝓢 := F) (w := w) (p := t) hw ht'
-        (by simpa using hbig) hcard
+  -- obtain the abstract sunflower using the axiom
+  have hsun : HasSunflower (α := Fin n) F w t :=
+    sunflower_exists_classic (𝓢 := F) (w := w) (p := t) hw ht hbig hcard
   rcases hsun with ⟨pet, hsub, core, hSun, hcards⟩
-  -- Break down the `IsSunflower` structure into its two components.
   rcases hSun with ⟨hsize, hpair⟩
-  -- We now show that the common `core` is contained in every petal.
+  -- show the core is contained in every petal
   have hsub_core : ∀ P ∈ pet, core ⊆ P := by
     intro P hP
-    -- Show that the family has at least two petals.
     have h_two : 1 < pet.card := by
-      have h : 2 ≤ pet.card := by simpa [hsize] using ht
-      have h12 : 1 < 2 := by decide
-      exact lt_of_lt_of_le h12 h
-    -- Obtain a different petal `Q` using `exists_ne_of_one_lt_card`.
+      have : 2 ≤ pet.card := by simpa [hsize] using ht
+      exact lt_of_lt_of_le (by decide : 1 < 2) this
     obtain ⟨Q, hQ, hne⟩ := Finset.exists_ne_of_one_lt_card h_two P
-    -- The sunflower property says `P ∩ Q = core`, hence `core ⊆ P`.
     have hPQ := hpair (A := P) hP (B := Q) hQ (Ne.symm hne)
     simpa [hPQ] using (Finset.inter_subset_left : P ∩ Q ⊆ P)
-  -- Assemble the final `SunflowerFam` structure.
   refine ⟨⟨pet, hsize, core, hsub_core, ?_⟩, hsub⟩
-  -- The pairwise intersection condition follows directly from `hpair`.
   intro P₁ h₁ P₂ h₂ hne
   exact hpair (A := P₁) h₁ (B := P₂) h₂ hne
 
-end SunflowerFam
-
-/-!
-Additional small facts about sunflower families.  These are
-convenient when reasoning about the petals of an existing
-`SunflowerFam`.  They avoid repeatedly rewriting with
-`SunflowerFam.tsize`.
--/
-namespace SunflowerFam
-
-variable {n t : ℕ}
+/-! ### Auxiliary facts about sunflower families -/
 
 lemma petals_nonempty {S : SunflowerFam n t} (ht : 0 < t) :
     S.petals.Nonempty := by
@@ -192,79 +328,59 @@ lemma petals_nonempty {S : SunflowerFam n t} (ht : 0 < t) :
   rw [S.tsize]
   exact ht
 
-/--
-When a sunflower family contains two distinct petals, its core is strictly
-smaller than each of those petals.  This basic combinatorial fact is convenient
-when reasoning about dimensions of subcubes extracted from the sunflower.
--/
+/-- If a sunflower family contains two distinct petals of equal
+cardinality, then the core is strictly smaller than each of those petals. -/
 lemma core_card_lt_of_two_petals {S : SunflowerFam n t}
     {P₁ P₂ : Petal n} (h₁ : P₁ ∈ S.petals) (h₂ : P₂ ∈ S.petals)
     (hcard : P₂.card = P₁.card) (hne : P₁ ≠ P₂) :
     S.core.card < P₁.card := by
   classical
-  -- The core is always contained in any petal.
   have hsub : S.core ⊆ P₁ := S.sub_core _ h₁
-  -- Hence its cardinality is bounded by that of the petal.
   have hle : S.core.card ≤ P₁.card := Finset.card_le_card hsub
-  -- Show that equality of cardinalities would force the two petals to coincide.
   have hneq : S.core.card ≠ P₁.card := by
     intro hEq
-    -- Convert the inclusion into an equality of sets.
     have hcore_eq : S.core = P₁ :=
       Finset.eq_of_subset_of_card_le hsub (by simpa [hEq])
-    -- From the sunflower property we deduce `P₁ ⊆ P₂`.
     have hsubset : P₁ ⊆ P₂ := by
       have htmp : P₁ ∩ P₂ = P₁ := by
         simpa [hcore_eq] using S.pairwise_core P₁ h₁ P₂ h₂ hne
       have hsubset_inter : P₁ ∩ P₂ ⊆ P₂ := Finset.inter_subset_right
       simpa [htmp] using hsubset_inter
-    -- Equal cardinalities force the two petals to coincide.
     have hcardle : P₂.card ≤ P₁.card := by simpa [hcard]
     have : P₁ = P₂ := Finset.eq_of_subset_of_card_le hsubset hcardle
     exact hne this
   exact lt_of_le_of_ne hle hneq
 
-/-
-If a sunflower family contains two distinct petals of equal cardinality,
-then the common core is strictly contained in each of those petals.  This
-reformulation of `core_card_lt_of_two_petals` exposes the set-theoretic
-relationship which is often more convenient to exploit directly.
--/
+/-- Reformulation of the previous lemma as a strict subset. -/
 lemma core_ssubset_of_two_petals {S : SunflowerFam n t}
     {P₁ P₂ : Petal n} (h₁ : P₁ ∈ S.petals) (h₂ : P₂ ∈ S.petals)
     (hcard : P₂.card = P₁.card) (hne : P₁ ≠ P₂) :
     S.core ⊂ P₁ := by
   classical
-  -- The core is contained in any petal by definition.
   have hsub : S.core ⊆ P₁ := S.sub_core _ h₁
-  -- Cardinality considerations rule out equality of `core` and `P₁`.
   have hneq : S.core ≠ P₁ := by
     intro hEq
     have hlt := core_card_lt_of_two_petals (S := S)
       (P₁ := P₁) (P₂ := P₂) h₁ h₂ hcard hne
     simpa [hEq] using hlt
-  -- Together these facts yield the desired strict inclusion.
   exact (Finset.ssubset_iff_subset_ne).2 ⟨hsub, hneq⟩
 
-/--
-A petal strictly larger than the sunflower core must contain a coordinate not
-belonging to the core.  Given two distinct petals of the same cardinality, this
-follows immediately from `core_ssubset_of_two_petals`.
--/
+/-- If a sunflower family contains two distinct petals of equal
+cardinality, there exists an element of one petal outside the core. -/
 lemma exists_coord_not_core_of_two_petals {S : SunflowerFam n t}
     {P₁ P₂ : Petal n} (h₁ : P₁ ∈ S.petals) (h₂ : P₂ ∈ S.petals)
     (hcard : P₂.card = P₁.card) (hne : P₁ ≠ P₂) :
     ∃ i ∈ P₁, i ∉ S.core := by
   classical
-  -- The core is strictly contained in `P₁` by the preceding lemma.
   have hssub : S.core ⊂ P₁ :=
     core_ssubset_of_two_petals (S := S)
       (P₁ := P₁) (P₂ := P₂) h₁ h₂ hcard hne
-  -- Cardinality comparison provides a witness outside the core.
   rcases Finset.exists_of_ssubset hssub with ⟨i, hiP₁, hiNot⟩
   exact ⟨i, hiP₁, hiNot⟩
 
 end SunflowerFam
 
 end Sunflower
+
+end
 

@@ -10,15 +10,15 @@ open Cover2
 `familyCollisionEntropyCover` wraps the existential statement
 `Cover2.cover_exists` for easier use in downstream files.  It asserts that a
 family of Boolean functions with bounded collision entropy admits a small set of
-jointly monochromatic subcubes covering all `1`‑inputs of every function in the
-family.  The full proof is nontrivial and omitted; this declaration merely
+subcubes that are monochromatic for every function in the family when inspected
+pointwise.  The full proof is nontrivial and omitted; this declaration merely
 re‑exports the existential lemma so that other parts of the development can rely
 on it.
 -/
 theorem familyCollisionEntropyCover
   {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
   ∃ (T : Finset (Subcube n)),
-    (∀ C ∈ T, Subcube.monochromaticForFamily C F) ∧
+    (∀ C ∈ T, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) ∧
     T.card ≤ mBound n h := by
   classical
@@ -32,7 +32,7 @@ is monochromatic for the whole family, that the rectangles cover all
 -/
 structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   rects   : Finset (Subcube n)
-  mono    : ∀ C ∈ rects, Subcube.monochromaticForFamily C F
+  mono    : ∀ C ∈ rects, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
   bound   : rects.card ≤ mBound n h
 

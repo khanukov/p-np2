@@ -198,7 +198,6 @@ lemma lift_sunflower
   · intro A hA B hB hAB; exact pairwise_lift hA hB hAB
 
 /-! ### Two petals: explicit proof -/
-
 /-- For two petals the sunflower lemma becomes completely elementary: any
 family containing at least two sets already forms a `2`-sunflower.  We
 record this special case with a direct proof so that small instances do

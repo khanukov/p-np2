@@ -68,7 +68,7 @@ small-support functions with **distinct supports** remains uncovered,
 while the entropy step now splits on a coordinate whose restriction
 reduces entropy by one bit.  The cardinal lemma `exists_coord_card_drop`
 has been proved, and tests for `sunflower_step` ensure its behaviour.
-The lemma `buildCover_mono` now provides a full proof that every rectangle
+The lemma `buildCover_pointwiseMono` now provides a full proof that every rectangle
 inserted by `buildCover` is monochromatic.  A first version of the counting
 lemma `buildCover_card_bound` is now proven via a measure-based
 bound, but the detailed induction argument is not yet complete.

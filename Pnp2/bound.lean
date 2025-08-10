@@ -249,7 +249,7 @@ theorem family_collision_entropy_lemma
     (hH : H₂ F ≤ (h : ℝ))
     (hn : n ≥ n₀ h) :
     ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (n / 100) := by
   classical
@@ -267,7 +267,7 @@ theorem family_collision_entropy_lemma_table
     (hH : H₂ F ≤ (h : ℝ))
     (hn : n ≥ n₀ h) :
     ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
   classical

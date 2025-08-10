@@ -132,7 +132,7 @@ ported this extra hypothesis will become redundant.
 -/
 lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
-    (h_big : (t - 1).factorial * p ^ t < (Family.supports F).card)
+    (h_big : (t - 1) ^ p * Nat.factorial p < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p)
     -- Hypothesis capturing the missing combinatorial argument: for any sunflower
     -- extracted from the supports, each petal corresponds to a function that is
@@ -158,9 +158,9 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
     exact h_support f hf
   -- Extract a sunflower family from `𝓢`.
   obtain ⟨S, hSsub⟩ : ∃ S : SunflowerFam n t, S.petals ⊆ 𝓢 := by
-    have hbig' : 𝓢.card > Nat.factorial (t - 1) * p ^ t := by
+    have hbig' : 𝓢.card > (t - 1) ^ p * Nat.factorial p := by
       simpa using h_big
-    exact SunflowerFam.exists_of_large_family
+    exact SunflowerFam.exists_of_large_family_classic
       (F := 𝓢) (w := p) (t := t) hp ht h_sizes hbig'
   -- Select, for each petal, a function from the family with that support and
   -- agreeing on points that share the core coordinates.

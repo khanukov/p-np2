@@ -7,7 +7,7 @@ namespace SunflowerTest
 open Finset
 
 /-- A simple family of two singletons forms a sunflower.
-    We verify that `exists_of_large_family` can produce the structure
+    We verify that `exists_of_large_family_classic` can produce the structure
     for this tiny example. -/
 example :
     let F : Finset (Petal 2) := { {0}, {1} }
@@ -23,10 +23,10 @@ example :
     rcases hS' with h0 | h1
     · simp [h0]
     · simp [h1]
-  have hbig : F.card > Nat.factorial (2 - 1) * 1 ^ 2 := by
+  have hbig : F.card > (2 - 1) ^ 1 * Nat.factorial 1 := by
     simp [F]
   simpa [F] using
-    SunflowerFam.exists_of_large_family
+    SunflowerFam.exists_of_large_family_classic
       (n := 2) (w := 1) (t := 2) (F := F)
       hw ht hcard hbig
 

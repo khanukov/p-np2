@@ -32,6 +32,14 @@ def monochromaticForFamily {n : ℕ} (R : Subcube n) (F : BoolFunc.Family n) : P
   ∃ b : Bool, ∀ f ∈ F, ∀ x, R.Mem x → f x = b
 
 /--
+`R` is monochromatic for a single Boolean function `f` if `f` evaluates to a
+constant value on every point in `R`.
+This is the single-function analogue of `monochromaticForFamily` above.
+-/
+def monochromaticFor {n : ℕ} (R : Subcube n) (f : BoolFunc.BFunc n) : Prop :=
+  ∃ b : Bool, ∀ {x : Point n}, R.Mem x → f x = b
+
+/--
 Construct a subcube by *freezing* the coordinates in `K` to match the values
 of a base point `x`.
 

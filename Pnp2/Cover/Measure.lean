@@ -1,4 +1,6 @@
 import Pnp2.Cover.Uncovered
+import Pnp2.Cover.SubcubeAdapters
+import Pnp2.BoolFunc.Support
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
@@ -304,22 +306,57 @@ lemma mu_union_firstUncovered_singleton_succ_le {F : Family n}
       (R := Boolcube.Subcube.fromPoint (n := n) p.2
         (Finset.univ : Finset (Fin n))) (h := h) hx
 
+/-!
+### Supports of the entire family
+
+In the original development `extendCover` froze only those coordinates that
+were locally relevant around the uncovered witness.  This was insufficient to
+establish even pointwise monochromaticity for newly inserted rectangles.  The
+revised version uses the **union of supports of all functions in the family**
+instead.  Any function is constant on the resulting subcube, which enables the
+monochromaticity reasoning in later files.
+-/
+
+/-- The union of the essential supports of every function in `F`. -/
+noncomputable def supportUnion {n : ℕ} (F : Family n) : Finset (Fin n) :=
+  Finset.univ.filter fun i : Fin n => ∃ g ∈ F, i ∈ BoolFunc.support g
+
+/-- Every individual support is contained in the union of supports. -/
+lemma support_subset_supportUnion {n : ℕ} {F : Family n} {g : BFunc n}
+    (hg : g ∈ F) :
+    BoolFunc.support g ⊆ supportUnion (n := n) F := by
+  classical
+  intro i hi
+  -- Witness that `i` indeed lies in the filtered set.
+  have hprop : ∃ g' ∈ F, i ∈ BoolFunc.support g' := ⟨g, hg, hi⟩
+  -- `i` belongs to `Finset.univ`, hence it also belongs to the filtered set.
+  have hiU : i ∈ (Finset.univ.filter
+      (fun j : Fin n => ∃ g' ∈ F, j ∈ BoolFunc.support g')) := by
+    have hmem : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+    exact Finset.mem_filter.mpr ⟨hmem, hprop⟩
+  simpa [supportUnion] using hiU
+
+/-- For a singleton family the union of supports reduces to the support of the
+contained function. This lemma enables simplification in concrete test cases. -/
+@[simp] lemma supportUnion_singleton {n : ℕ} (f : BFunc n) :
+    supportUnion (n := n) ({f} : Family n) = BoolFunc.support f := by
+  classical
+  ext i; simp [supportUnion]
+
 /--
 `extendCover` performs a single covering step.  When `firstUncovered` locates a
 pair `(f, x)` that is not yet covered by `Rset` we add the largest subcube
-around `x` on which every function in `F` is constant.  Coordinates that affect
-any function are frozen while the remaining coordinates stay free.  If no
-uncovered pair exists, `Rset` is returned unchanged.
+around `x` on which every function in `F` is constant.  Coordinates belonging to
+the support of **any** function in the family are frozen while the remaining
+coordinates stay free.  If no uncovered pair exists, `Rset` is returned
+unchanged.
 -/
 noncomputable def extendCover {n : ℕ} (F : Family n)
     (Rset : Finset (Subcube n)) : Finset (Subcube n) :=
   match firstUncovered (n := n) F Rset with
   | none => Rset
   | some p =>
-      let K : Finset (Fin n) :=
-        Finset.univ.filter fun i : Fin n =>
-          ∃ g ∈ F,
-            g p.2 ≠ g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))
+      let K : Finset (Fin n) := supportUnion (n := n) F
       Rset ∪ {Boolcube.Subcube.fromPoint (n := n) p.2 K}
 
 /--
@@ -344,34 +381,19 @@ lemma mu_extendCover_succ_le {F : Family n} {Rset : Finset (Subcube n)}
           (F := F) (R := Rset) (p := p) hfu'
       -- The point lies in the newly created subcube.
       have hpR : p.2 ∈ₛ Boolcube.Subcube.fromPoint (n := n) p.2
-          (Finset.univ.filter fun i : Fin n =>
-            ∃ g ∈ F,
-              g p.2 ≠
-                g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))) := by
-        have :=
-          Boolcube.Subcube.self_mem_fromPoint (n := n) (x := p.2)
-            (K :=
-              Finset.univ.filter fun i : Fin n =>
-                ∃ g ∈ F,
-                  g p.2 ≠
-                    g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i))))
-        simpa using this
+          (supportUnion (n := n) F) := by
+        -- membership follows from `self_mem_fromPoint`
+        simpa [supportUnion] using
+          (Boolcube.Subcube.self_mem_fromPoint (n := n)
+            (x := p.2) (K := supportUnion (n := n) F))
       -- Package the witness for `mu_union_singleton_succ_le`.
       have hx : ∃ q ∈ uncovered (n := n) F Rset, q.2 ∈ₛ
-          Boolcube.Subcube.fromPoint (n := n) p.2
-            (Finset.univ.filter fun i : Fin n =>
-              ∃ g ∈ F,
-                g p.2 ≠
-                  g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))) :=
+          Boolcube.Subcube.fromPoint (n := n) p.2 (supportUnion (n := n) F) :=
         ⟨p, hpU, hpR⟩
       have hdrop :=
         mu_union_singleton_succ_le (n := n) (F := F) (Rset := Rset)
           (R := Boolcube.Subcube.fromPoint (n := n) p.2
-            (Finset.univ.filter fun i : Fin n =>
-              ∃ g ∈ F,
-                g p.2 ≠
-                  g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i)))))
-          (h := h) hx
+            (supportUnion (n := n) F)) (h := h) hx
       simpa [extendCover, hfu'] using hdrop
 
 /--
@@ -452,12 +474,73 @@ lemma subset_extendCover {F : Family n} {Rset : Finset (Subcube n)} :
       -- The result is the union with a freshly constructed subcube.
       have : R ∈ Rset ∪
           {Boolcube.Subcube.fromPoint (n := n) p.2
-            (Finset.univ.filter fun i : Fin n =>
-              ∃ g ∈ F,
-                g p.2 ≠
-                  g (BoolFunc.Point.update (n := n) p.2 i (!(p.2 i))))} :=
+            (supportUnion (n := n) F)} :=
         Finset.mem_union.mpr (Or.inl hR)
       simpa [extendCover, hfu] using this
+
+/--
+The subcube inserted by `extendCover` is monochromatic for each function in the
+family individually.  The constant colour for `g` is simply `g` evaluated at the
+witness point.
+-/
+lemma fromPoint_supportUnion_monoFor_each {n : ℕ} {F : Family n}
+    {x : Boolcube.Point n} :
+    ∀ g ∈ F,
+      Subcube.monochromaticFor
+        (Boolcube.Subcube.fromPoint (n := n) x (supportUnion (n := n) F)) g := by
+  classical
+  intro g hg
+  -- We exhibit the constant value `g x`.
+  refine ⟨g x, ?_⟩
+  intro y hy
+  -- Points in the subcube agree with `x` on all coordinates from `supportUnion F`.
+  have hagree : ∀ i ∈ BoolFunc.support g, y i = x i := by
+    intro i hi
+    -- Every coordinate in `support g` also lies in `supportUnion F`.
+    have hi' : i ∈ supportUnion (n := n) F :=
+      support_subset_supportUnion (n := n) (F := F) (g := g) hg hi
+    -- Membership in `fromPoint` gives agreement on those coordinates.
+    have hyK :=
+      (Boolcube.Subcube.mem_fromPoint (n := n) (x := x)
+        (K := supportUnion (n := n) F) (y := y)).1 hy
+    simpa using hyK i hi'
+  -- Having established agreement on the support, evaluations coincide.
+  have hconst :=
+    BoolFunc.eval_eq_of_agree_on_support (f := g) (x := y) (y := x) hagree
+  simpa using hconst
+
+/--
+Pointwise monochromaticity is preserved when applying `extendCover`.
+If all rectangles in the starting set are monochromatic for every `g ∈ F`,
+the enlarged set produced by `extendCover` enjoys the same property.
+-/
+lemma extendCover_pointwiseMono {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} :
+    (∀ R ∈ Rset, ∀ g ∈ F, Subcube.monochromaticFor R g) →
+    (∀ R ∈ extendCover (n := n) F Rset, ∀ g ∈ F,
+        Subcube.monochromaticFor R g) := by
+  classical
+  intro hMono R hR g hg
+  -- Split based on whether `extendCover` inserted a new rectangle.
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      -- No new rectangle; the property follows from the assumption.
+      have hRset : R ∈ Rset := by simpa [extendCover, hfu] using hR
+      simpa [extendCover, hfu] using hMono R hRset g hg
+  | some p =>
+      -- Membership in the union splits into the old set or the new rectangle.
+      have hmem : R ∈ Rset ∪
+          {Boolcube.Subcube.fromPoint (n := n) p.2 (supportUnion (n := n) F)} := by
+        simpa [extendCover, hfu] using hR
+      have hcases := Finset.mem_union.mp hmem
+      cases hcases with
+      | inl hRset =>
+          exact hMono R hRset g hg
+      | inr hnew =>
+          -- `R` is exactly the freshly inserted subcube.
+          rcases Finset.mem_singleton.mp hnew with rfl
+          exact fromPoint_supportUnion_monoFor_each (n := n) (F := F)
+            (x := p.2) g hg
 
 /--
 If a rectangle covers two distinct uncovered pairs, the measure drops

@@ -177,6 +177,86 @@ lemma buildCover_empty_of_none (F : Family n) (h : ℕ)
       (hH := hH) (Rset := (∅ : Finset (Subcube n))) hfu)
 
 /-!
+### Pointwise monochromaticity
+
+The following lemmas establish that the cover construction maintains
+monochromaticity **for each function individually**.  This weaker invariant
+is all that can be shown with the current definition of `extendCover`, yet it
+suffices for many applications.
+-/
+
+/--
+Assuming every rectangle in `Rset` is monochromatic for each `g ∈ F`, the
+recursive call `buildCoverAux` produces only rectangles with the same property.
+This is the pointwise counterpart to the stronger (currently unfinished)
+monochromaticity lemma for entire families.
+-/
+lemma buildCoverAux_pointwiseMono (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ Rset,
+      (∀ R ∈ Rset, ∀ g ∈ F, Subcube.monochromaticFor R g) →
+      ∀ R ∈ buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset,
+        ∀ g ∈ F, Subcube.monochromaticFor R g := by
+  classical
+  -- Well-founded induction over the measure relation.
+  intro Rset
+  apply (μRel_wf (n := n) (F := F) h).induction (a := Rset)
+  intro Rset IH hMono R hR g hg
+  -- Expand the first step of the recursion.
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      -- Base case: no uncovered pair, the set is unchanged.
+      have hbase :=
+        buildCoverAux_none (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset) hfu
+      have hRset : R ∈ Rset := by simpa [hbase] using hR
+      simpa [hbase] using hMono R hRset g hg
+  | some p =>
+      -- Recursive case: `extendCover` adds a new subcube.
+      have hrec :=
+        buildCoverAux_unfold (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset)
+      -- Membership translates to the recursive call on the extended set.
+      have hR' : R ∈
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+            (extendCover (n := n) F Rset) := by
+        simpa [hrec, hfu] using hR
+      -- The measure strictly decreases after `extendCover`.
+      have hdrop : μRel (n := n) (F := F) h
+          (extendCover (n := n) F Rset) Rset := by
+        have hne : firstUncovered (n := n) F Rset ≠ none := by
+          simpa [hfu]
+        simpa [μRel] using
+          (mu_extendCover_lt (n := n) (F := F)
+            (Rset := Rset) (h := h) hne)
+      -- Pointwise monochromaticity carries over to the extended set.
+      have hMono' :
+          ∀ R ∈ extendCover (n := n) F Rset, ∀ g ∈ F,
+              Subcube.monochromaticFor R g :=
+        extendCover_pointwiseMono (n := n) (F := F) (Rset := Rset) hMono
+      -- Invoke the inductive hypothesis on the smaller measure.
+      have hIH := IH (extendCover (n := n) F Rset) hdrop hMono' R hR'
+      -- Apply the induction hypothesis to the currently fixed function `g`.
+      exact hIH g hg
+
+/--
+Starting from the empty set of rectangles, the full cover returned by
+`buildCover` is monochromatic for each `g ∈ F`.
+-/
+lemma buildCover_pointwiseMono (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ R ∈ buildCover (n := n) F h hH, ∀ g ∈ F,
+      Subcube.monochromaticFor R g := by
+  classical
+  -- Instantiate the auxiliary lemma with the empty starting set.
+  have haux :
+      ∀ R ∈ buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) ∅,
+        ∀ g ∈ F, Subcube.monochromaticFor R g :=
+    buildCoverAux_pointwiseMono (n := n) (F := F) (h := h) (hH := hH) ∅ (by
+      intro R hR g hg; cases hR)
+  simpa [buildCover] using haux
+
+/-!
 ### Specification lemmas
 
 The following results summarise the expected behaviour of `buildCover`.  Their

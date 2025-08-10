@@ -335,9 +335,15 @@ lemma support_subset_supportUnion {n : ℕ} {F : Family n} {g : BFunc n}
 
 /--
 `extendCover` performs a single covering step.  When `firstUncovered` locates a
-pair `(f, x)` that is not yet covered by `Rset` we add the largest subcube
-around `x` on which every function in `F` is constant.  Coordinates that affect
-any function are frozen while the remaining coordinates stay free.  If no
+pair `(f, x)` that is not yet covered by `Rset` we insert a subcube around `x`
+on which every function in `F` is constant.  To keep the invariant simple we
+freeze all coordinates that occur in the support of some function in `F`.  This
+global choice may over‑approximate the coordinates that actually matter at `x`
+and thus yield a smaller rectangle than a point‑adaptive construction, but it
+still covers the uncovered pair.  The measure arguments below rely only on this
+coverage and therefore remain valid.  The trade‑off is that the cover may
+contain more, smaller rectangles, but termination bounds are unaffected because
+the measure still drops whenever an uncovered point is inserted.  If no
 uncovered pair exists, `Rset` is returned unchanged.
 -/
 noncomputable def extendCover {n : ℕ} (F : Family n)
@@ -345,9 +351,10 @@ noncomputable def extendCover {n : ℕ} (F : Family n)
   match firstUncovered (n := n) F Rset with
   | none => Rset
   | some p =>
-      -- Freeze precisely those coordinates on which some function of the
-      -- family depends.  The resulting subcube is the largest one around the
-      -- uncovered point `p.2` where all functions are constant.
+      -- Freeze all coordinates appearing in the support of some function in
+      -- the family.  The resulting subcube is guaranteed to be constant for
+      -- each `g ∈ F`, although it may be smaller than the maximal one that would
+      -- suffice for the particular point `p.2`.
       let K : Finset (Fin n) := supportUnion (n := n) F
       Rset ∪ {Boolcube.Subcube.fromPoint (n := n) p.2 K}
 
@@ -384,8 +391,10 @@ lemma fromPoint_supportUnion_monoFor_each {n : ℕ} {F : Family n}
     (BoolFunc.eval_eq_of_agree_on_support (f := g) (x := y) (y := x) hagree)
 
 /--
-If `firstUncovered` finds an uncovered pair, `extendCover` inserts the
-corresponding point subcube and the measure drops by at least one.
+If `firstUncovered` finds an uncovered pair, `extendCover` inserts a subcube
+containing that point and the measure drops by at least one.  The argument uses
+only the containment of the uncovered point, so it remains valid even though
+`extendCover` may freeze more coordinates than strictly necessary.
 -/
 lemma mu_extendCover_succ_le {F : Family n} {Rset : Finset (Subcube n)}
     {h : ℕ}

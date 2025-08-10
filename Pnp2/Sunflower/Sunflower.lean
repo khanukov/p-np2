@@ -11,11 +11,32 @@ import Mathlib.Data.Finset.Card
 import Pnp2.Boolcube
 
 open Classical Finset
+open scoped BigOperators
 
 set_option linter.unnecessarySimpa false
 set_option linter.unusedVariables false
 
 noncomputable section
+
+/- Auxiliary namespace: we rebuild `Finset.unions` which is no longer
+   present in `mathlib`.  It is defined as the supremum (union) of all
+   members of a finite family.  We keep it outside of the `Sunflower`
+   namespace so that it is available globally. -/
+namespace Finset
+
+variable {α : Type} [DecidableEq α]
+
+/-- Union of all sets in a finite family. -/
+def unions (𝓢 : Finset (Finset α)) : Finset α :=
+  𝓢.sup id
+
+@[simp] lemma mem_unions {𝓢 : Finset (Finset α)} {x : α} :
+    x ∈ 𝓢.unions ↔ ∃ A ∈ 𝓢, x ∈ A := by
+  unfold unions
+  -- `mem_sup` characterises membership in the supremum
+  simpa using (Finset.mem_sup (s := 𝓢) (f := id) (a := x))
+
+end Finset
 
 namespace Sunflower
 
@@ -87,7 +108,76 @@ lemma card_erase_of_uniform
     {x : α} {A : Finset α} (hA : A ∈ 𝓢) (hx : x ∈ A) :
     (A.erase x).card = w - 1 := by
   have := hunif A hA
-  simpa [Finset.card_erase_of_mem hx, this] 
+  simpa [Finset.card_erase_of_mem hx, this]
+
+/-! ### Double counting: sum of slice sizes -/
+
+/-- In a `w`-uniform family the sum of the cardinalities of all slices
+    equals `w` times the size of the family.  This is the key combinatorial
+    fact behind the classical sunflower bound. -/
+lemma sum_card_slices_eq_w_mul_card
+    (𝓢 : Finset (Finset α)) (w : ℕ)
+    (h_w : ∀ A ∈ 𝓢, A.card = w) :
+    ∑ x ∈ 𝓢.unions, (slice 𝓢 x).card = w * 𝓢.card := by
+  classical
+  -- rewrite each slice cardinality via indicators over `𝓢`
+  have h1 :
+      ∑ x ∈ 𝓢.unions, (slice 𝓢 x).card
+        = ∑ x ∈ 𝓢.unions, ∑ A ∈ 𝓢, (if x ∈ A then (1 : ℕ) else 0) := by
+    refine Finset.sum_congr rfl ?_ 
+    intro x hx
+    -- `card (S.filter p) = ∑ A∈S, if p A then 1 else 0`
+    simpa [slice] using
+      (Finset.card_filter (s := 𝓢) (p := fun A => x ∈ A))
+
+  -- swap the summations
+  have h2 :
+      ∑ x ∈ 𝓢.unions, ∑ A ∈ 𝓢, (if x ∈ A then (1 : ℕ) else 0)
+        = ∑ A ∈ 𝓢, ∑ x ∈ 𝓢.unions, (if x ∈ A then (1 : ℕ) else 0) := by
+    classical
+    -- finite sums commute
+    simpa [Finset.sum_comm] using
+      (Finset.sum_comm
+        (s := 𝓢.unions) (t := 𝓢)
+        (f := fun x A => (if x ∈ A then (1 : ℕ) else 0)))
+
+  -- inner sum over x reduces to the size of A
+  have h3 :
+      ∀ {A}, A ∈ 𝓢 →
+        ∑ x ∈ 𝓢.unions, (if x ∈ A then (1 : ℕ) else 0) = A.card := by
+    intro A hA
+    -- restrict sum to elements of A
+    have := (Finset.sum_filter
+      (s := 𝓢.unions) (p := fun x => x ∈ A)
+      (f := fun _ : α => (1 : ℕ))).symm
+    have hfilter :
+        (𝓢.unions.filter (fun x => x ∈ A)) = A := by
+      -- since `A ⊆ 𝓢.unions`
+      apply Finset.ext; intro x; constructor
+      · intro hx; exact (Finset.mem_filter.mp hx).2
+      · intro hxA
+        have hxU : x ∈ 𝓢.unions := by
+          exact Finset.mem_unions.mpr ⟨A, hA, hxA⟩
+        exact Finset.mem_filter.mpr ⟨hxU, hxA⟩
+    have : ∑ x ∈ 𝓢.unions, (if x ∈ A then (1 : ℕ) else 0)
+            = ∑ x ∈ (𝓢.unions.filter (fun x => x ∈ A)), (1 : ℕ) := by
+      simpa [Finset.sum_filter] using this
+    simpa [hfilter] using this
+
+  -- assemble the pieces
+  calc
+    ∑ x ∈ 𝓢.unions, (slice 𝓢 x).card
+        = ∑ x ∈ 𝓢.unions, ∑ A ∈ 𝓢, (if x ∈ A then (1 : ℕ) else 0) := h1
+    _ = ∑ A ∈ 𝓢, ∑ x ∈ 𝓢.unions, (if x ∈ A then (1 : ℕ) else 0) := h2
+    _ = ∑ A ∈ 𝓢, A.card := by
+          apply Finset.sum_congr rfl
+          intro A hA; simp [h3 hA]
+    _ = ∑ A ∈ 𝓢, w := by
+          apply Finset.sum_congr rfl
+          intro A hA; simp [h_w A hA]
+    _ = w * 𝓢.card := by
+          -- sum of a constant over `𝓢`
+          simpa [Finset.sum_const, nsmul_eq_mul, Nat.mul_comm]
 
 /-! ### Lifting a sunflower from a slice back to the original family -/
 

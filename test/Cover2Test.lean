@@ -1331,8 +1331,8 @@ example :
       (Rset := (∅ : Finset (Subcube 1)))
       hfu
 
-/-- The rectangles produced by `buildCover` are monochromatic for a constant-`true`
-family. -/
+/-- The rectangles produced by `buildCover` are pointwise monochromatic for a
+constant-`true` family. -/
 example :
     ∀ R ∈ Cover2.buildCover (n := 1)
         ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) (h := 0)
@@ -1343,14 +1343,13 @@ example :
           have hH₂ := BoolFunc.H₂_card_one
               (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
           simpa [hH₂]) ,
-      Subcube.monochromaticForFamily R
-        ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) := by
+      ∀ g ∈ ({(fun _ : Point 1 => true)} : BoolFunc.Family 1),
+        Boolcube.Subcube.monochromaticFor R g := by
   classical
-  intro R hR
-  -- The current implementation of `buildCover_mono` still relies on placeholders,
-  -- but its interface can already be exercised in simple examples.
+  intro R hR g hg
+  -- Invoke the pointwise monochromaticity lemma for `buildCover`.
   exact
-    Cover2.buildCover_mono
+    Cover2.buildCover_pointwiseMono
       (n := 1)
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
       (h := 0)
@@ -1361,9 +1360,10 @@ example :
           have hH₂ := BoolFunc.H₂_card_one
               (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
           simpa [hH₂])
-      R hR
+      R hR g hg
 
-/-- For a constant-`false` family the cover is empty and trivially monochromatic. -/
+/-- For a constant-`false` family the cover is empty and trivially pointwise
+monochromatic. -/
 example :
     ∀ R ∈ Cover2.buildCover (n := 1)
         ({(fun _ : Point 1 => false)} : BoolFunc.Family 1) (h := 0)
@@ -1374,14 +1374,13 @@ example :
           have hH₂ := BoolFunc.H₂_card_one
               (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
           simpa [hH₂]) ,
-      Subcube.monochromaticForFamily R
-        ({(fun _ : Point 1 => false)} : BoolFunc.Family 1) := by
+      ∀ g ∈ ({(fun _ : Point 1 => false)} : BoolFunc.Family 1),
+        Boolcube.Subcube.monochromaticFor R g := by
   classical
-  intro R hR
-  -- Again we simply invoke the specification lemma.  The result set is empty,
-  -- so the property holds vacuously.
+  intro R hR g hg
+  -- The result set is empty, hence the property holds vacuously.
   exact
-    Cover2.buildCover_mono
+    Cover2.buildCover_pointwiseMono
       (n := 1)
       (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1))
       (h := 0)
@@ -1392,5 +1391,5 @@ example :
           have hH₂ := BoolFunc.H₂_card_one
               (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
           simpa [hH₂])
-      R hR
+      R hR g hg
 

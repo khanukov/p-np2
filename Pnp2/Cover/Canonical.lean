@@ -37,15 +37,16 @@ monochromatic, all `1`-inputs are covered and the size is bounded by `mBound`.
 lemma coverFamily_spec {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (∀ R ∈ coverFamily (n := n) F h hH,
-        Subcube.monochromaticForFamily R F) ∧
+        ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
       (coverFamily (n := n) F h hH).card ≤ mBound n h := by
   classical
   unfold coverFamily
   refine ⟨?mono, ?covers, ?bound⟩
-  · intro R hR
-    have hmono := buildCover_mono (n := n) (F := F) (h := h) (hH := hH)
-    exact hmono R hR
+  · intro R hR g hg
+    have hmono :=
+      buildCover_pointwiseMono (n := n) (F := F) (h := h) (hH := hH)
+    exact hmono R hR g hg
   · exact buildCover_covers (n := n) (F := F) (h := h) (hH := hH)
   · exact buildCover_card_bound (n := n) (F := F) (h := h) (hH := hH)
 
@@ -54,10 +55,10 @@ Every rectangle returned by `coverFamily` is monochromatic for the input family.
 This lemma unwraps the first component of `coverFamily_spec` for convenient use
 in downstream developments.
 -/
-lemma coverFamily_mono {n h : ℕ} (F : Family n)
+lemma coverFamily_pointwiseMono {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     {R : Subcube n} (hR : R ∈ coverFamily (n := n) F h hH) :
-    Subcube.monochromaticForFamily R F :=
+    ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g :=
   (coverFamily_spec (n := n) (h := h) (F := F) hH).1 R hR
 
 /--

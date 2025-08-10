@@ -315,12 +315,14 @@ downstream use. -/
 lemma cover_exists {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
       Rset.card ≤ mBound n h := by
   classical
   refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
-  · intro R hR; exact (buildCover_mono (F := F) (h := h) (hH := hH) R hR)
+  · intro R hR f hf
+    exact
+      (buildCover_pointwiseMono (F := F) (h := h) (hH := hH) R hR f hf)
   · exact buildCover_covers (F := F) (h := h) (hH := hH)
   · exact buildCover_card_bound (F := F) (h := h) (hH := hH)
 

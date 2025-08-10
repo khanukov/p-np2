@@ -66,7 +66,7 @@ theory.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
   The Lean code now defines `buildCover` in `cover2.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
   The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
-  The lemma `buildCover_mono` has now been proved, establishing monochromaticity of
+  The lemma `buildCover_pointwiseMono` has now been proved, establishing monochromaticity of
   the constructed cover.  The companion size estimate `buildCover_card_bound` is now proven using the same measure-based recursion.
 * **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
   shows that some coordinate always cuts collision entropy by at least one bit,

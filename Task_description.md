@@ -257,7 +257,8 @@ Updated checklist (August 2025)
 
 - [x] `bool_func.lean`: basic types.
  - [x] `entropy.lean`: full `exists_coord_entropy_drop` lemma and helper results.
- - [ ] `sunflower.lean`: classical sunflower lemma remains axiomatic (`sunflower_exists_classic`).
+ - [x] `sunflower.lean`: classical sunflower lemma `sunflower_exists_classic`
+       now has a complete formal proof.
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.
  - [ ] `cover2.lean`: recursive covering uses `sunflower_step` and entropy split; pointwise monochromaticity is proved.
  - [ ] `bound.lean`: counting argument not yet formalised.

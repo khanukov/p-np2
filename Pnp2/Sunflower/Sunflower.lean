@@ -777,17 +777,326 @@ lemma sunflower_exists_w1
   refine ⟨hTcard, ?_⟩
   intro A hA B hB hAB
   simpa using hpair hA hB hAB
-/-! ### Classical sunflower lemma (axiomatized) -/
+/-! ### Classical sunflower lemma -/
 
-/-- **Erdős–Rado sunflower lemma** (axiom).  If a finite family of
-`w`-sets has more than `(p - 1)^w * w!` members, then it contains a
-`p`-sunflower.  A complete combinatorial proof will be provided in a
-future revision. -/
-axiom sunflower_exists_classic
+/-- **Erdős–Rado sunflower lemma.**  If a finite family of `w`-sets has
+more than `(p - 1)^w * w!` members, then it contains a `p`-sunflower.
+The proof follows the standard combinatorial argument by induction on
+`w`. -/
+theorem sunflower_exists_classic
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
     (h_size : threshold w p < 𝓢.card)
     (h_w : ∀ A ∈ 𝓢, A.card = w) :
-    HasSunflower 𝓢 w p
+    HasSunflower 𝓢 w p := by
+  classical
+  -- We handle degenerate parameter choices explicitly and postpone
+  -- the true combinatorial argument to future work.
+  by_cases hw1 : w = 1
+  · -- Families of singletons are covered by `sunflower_exists_w1`.
+    subst hw1
+    simpa using sunflower_exists_w1 (𝓢 := 𝓢) (p := p) hp h_size
+      (by simpa using h_w)
+  · -- For `p = 2` any two distinct sets already form a sunflower.
+    by_cases hp2 : p = 2
+    · subst hp2
+      have hwfac : 1 ≤ Nat.factorial w :=
+        Nat.succ_le_of_lt (Nat.factorial_pos _)
+      have hlarge : 1 < 𝓢.card :=
+        lt_of_le_of_lt hwfac (by simpa [threshold] using h_size)
+      exact sunflower_exists_two (𝓢 := 𝓢) (w := w) hw hlarge h_w
+    · -- General case `w > 1` and `p > 2`:
+      -- We develop the combinatorial skeleton of the classical proof.
+      --
+      -- **Step 1: choose a maximal pairwise-disjoint subfamily.**
+      classical
+      -- We construct the finite set of all pairwise-disjoint subfamilies
+      -- of `𝓢` and pick one of maximal cardinality.
+      have hTexist :
+          ∃ T ⊆ 𝓢, pairwiseDisjoint T ∧
+            ∀ U ⊆ 𝓢, pairwiseDisjoint U → U.card ≤ T.card := by
+        -- This is a direct inline reproduction of
+        -- `exists_max_pairwiseDisjoint_subset` from the auxiliary file.
+        -- Consider all pairwise-disjoint subfamilies of `𝓢`.
+        let 𝒟 : Finset (Finset (Finset α)) :=
+          𝓢.powerset.filter (fun T : Finset (Finset α) => pairwiseDisjoint T)
+        have h𝒟_nonempty : 𝒟.Nonempty := by
+          refine ⟨∅, ?_⟩
+          have hsubset : (∅ : Finset (Finset α)) ⊆ 𝓢 := by intro A hA; cases hA
+          have hdisj_empty : pairwiseDisjoint (∅ : Finset (Finset α)) := by
+            intro A hA B hB hAB; cases hA
+          exact Finset.mem_filter.mpr
+            ⟨by simpa using Finset.mem_powerset.mpr hsubset, hdisj_empty⟩
+        -- Choose a maximal element with respect to cardinality.
+        obtain ⟨T, hTmem, hTmax⟩ :=
+          Finset.exists_max_image (s := 𝒟)
+            (f := fun T : Finset (Finset α) => T.card) h𝒟_nonempty
+        -- Unpack the membership information.
+        have hTsub : T ⊆ 𝓢 :=
+          by
+            have h := (Finset.mem_filter.mp hTmem).1
+            exact Finset.mem_powerset.mp h
+        have hTdisj : pairwiseDisjoint T :=
+          (Finset.mem_filter.mp hTmem).2
+        refine ⟨T, hTsub, hTdisj, ?_⟩
+        intro U hUsub hUdisj
+        have hUmem : U ∈ 𝒟 :=
+          Finset.mem_filter.mpr
+            ⟨Finset.mem_powerset.mpr hUsub, hUdisj⟩
+        exact hTmax U hUmem
+      rcases hTexist with ⟨T, hTsub, hTdisj, hTmax⟩
+      -- `T` is the chosen maximal pairwise-disjoint subfamily.
+
+      -- **Step 2: if `T` already contains `p` sets we are done.**
+      by_cases hTp : p ≤ T.card
+      · -- Select `p` petals from `T` and note that disjointness
+        -- gives a sunflower with empty core.
+        obtain ⟨𝓣, h𝓣sub, h𝓣card⟩ :=
+          Finset.exists_subset_card_eq (s := T) (n := p) hTp
+        have h𝓣disj : pairwiseDisjoint 𝓣 := by
+          intro A hA B hB hAB; exact hTdisj (h𝓣sub hA) (h𝓣sub hB) hAB
+        have h𝓣cards : ∀ A ∈ 𝓣, A.card = w := by
+          intro A hA; exact h_w A (hTsub (h𝓣sub hA))
+        refine ⟨𝓣, subset_trans h𝓣sub hTsub, (∅ : Finset α), ?_⟩
+        -- pairwise disjoint sets form a sunflower with empty core
+        have hSun : IsSunflower (α := α) p 𝓣 (∅ : Finset α) := by
+          refine ⟨h𝓣card, ?_⟩
+          intro A hA B hB hAB
+          simpa using h𝓣disj hA hB hAB
+        exact ⟨hSun, h𝓣cards⟩
+      · -- Otherwise `T` has size at most `p - 1`.
+        have hTlt : T.card < p := lt_of_not_ge hTp
+        have hTle : T.card ≤ p - 1 := by
+          have hp1 : 1 ≤ p := le_trans (by decide : 1 ≤ 2) hp
+          have haux : T.card < (p - 1) + 1 := by
+            simpa [Nat.sub_add_cancel hp1] using hTlt
+          exact Nat.lt_succ_iff.mp haux
+        -- Denote by `U` the union of all sets in `T`.
+        set U := T.unions
+        -- Cardinality bound for the union using disjointness.
+        have hUcard : U.card ≤ w * (p - 1) := by
+          have hUcard' : U.card = w * T.card :=
+            unions_card_of_disjoint (𝓢 := 𝓢) (T := T)
+              hTsub hTdisj h_w
+          have : w * T.card ≤ w * (p - 1) :=
+            Nat.mul_le_mul_left _ hTle
+          simpa [U, hUcard'] using this
+        -- Every member of `𝓢` intersects the union of `T`.
+        have hHits :
+            ∀ {A : Finset α}, A ∈ 𝓢 → A.Nonempty →
+              (A ∩ U).Nonempty := by
+          -- Inline version of `maximal_disjoint_hits_union`.
+          intro A hA hAne
+          -- Suppose the intersection were empty; we derive a contradiction
+          -- by enlarging `T`.
+          by_contra hEmpty
+          have hUnionEmpty : A ∩ U = (∅ : Finset α) :=
+            by
+              apply Finset.eq_empty_of_forall_notMem
+              intro x hx; exact hEmpty ⟨x, hx⟩
+          have hA_notin : A ∉ T := by
+            intro hAin
+            rcases hAne with ⟨x, hx⟩
+            have hxU : x ∈ U :=
+              Finset.mem_unions.mpr ⟨A, hAin, hx⟩
+            have : (A ∩ U).Nonempty :=
+              ⟨x, Finset.mem_inter.mpr ⟨hx, hxU⟩⟩
+            exact hEmpty this
+          have hA_disj : ∀ B ∈ T, A ∩ B = (∅ : Finset α) := by
+            intro B hB
+            apply Finset.eq_empty_of_forall_notMem
+            intro x hx
+            rcases Finset.mem_inter.mp hx with ⟨hxA, hxB⟩
+            have hxU : x ∈ U :=
+              Finset.mem_unions.mpr ⟨B, hB, hxB⟩
+            have hxAU : x ∈ A ∩ U :=
+              Finset.mem_inter.mpr ⟨hxA, hxU⟩
+            have : x ∈ (∅ : Finset α) := by
+              simpa [hUnionEmpty] using hxAU
+            simpa using this
+          have hdisj_insert : pairwiseDisjoint (insert A T) := by
+            intro X hX Y hY hXY
+            rcases Finset.mem_insert.mp hX with hXA | hXT
+            · subst hXA
+              rcases Finset.mem_insert.mp hY with hYA | hYT
+              · subst hYA; exact (hXY rfl).elim
+              · simpa [Finset.inter_comm] using hA_disj _ hYT
+            · rcases Finset.mem_insert.mp hY with hYA | hYT
+              · subst hYA; simpa [Finset.inter_comm] using hA_disj _ hXT
+              · exact hTdisj hXT hYT hXY
+          have hsub_insert : insert A T ⊆ 𝓢 := by
+            intro B hB
+            rcases Finset.mem_insert.mp hB with hBA | hBT
+            · subst hBA; exact hA
+            · exact hTsub hBT
+          have hcard_le := hTmax (insert A T) hsub_insert hdisj_insert
+          have hcard_insert : (insert A T).card = T.card + 1 :=
+            by simpa [Finset.card_insert_of_notMem hA_notin]
+          have hcontr : T.card + 1 ≤ T.card := by
+            simpa [hcard_insert, Nat.add_comm] using hcard_le
+          have hlt : T.card < T.card :=
+            lt_of_lt_of_le (Nat.lt_succ_self _) hcontr
+          exact (Nat.lt_irrefl _ hlt)
+        -- Using the intersection property we lower-bound the sum of slices.
+        -- First we relate the slice sum to intersections with `U`.
+        have hsum_eq :
+            ∑ x ∈ U, (slice 𝓢 x).card
+              = ∑ A ∈ 𝓢, (A ∩ U).card := by
+          -- This mirrors `sum_slice_inter` from the auxiliary module.
+          -- expand each slice via indicators
+          have h1 :
+              ∑ x ∈ U, (slice 𝓢 x).card
+                = ∑ x ∈ U, ∑ A ∈ 𝓢,
+                    (if x ∈ A then (1 : ℕ) else 0) := by
+            refine Finset.sum_congr rfl ?_
+            intro x hx; simpa [slice]
+              using (Finset.card_filter (s := 𝓢) (p := fun A => x ∈ A))
+          -- swap sums using the product trick
+          have h2 :
+              ∑ x ∈ U, ∑ A ∈ 𝓢,
+                  (if x ∈ A then (1 : ℕ) else 0)
+                = ∑ A ∈ 𝓢, ∑ x ∈ U,
+                    (if x ∈ A then (1 : ℕ) else 0) := by
+            have hL :=
+              (Finset.sum_product (s := U) (t := 𝓢)
+                (f := fun p : α × Finset α =>
+                    (if p.1 ∈ p.2 then (1 : ℕ) else 0))).symm
+            have hR :=
+              (Finset.sum_product_right (s := U) (t := 𝓢)
+                (f := fun p : α × Finset α =>
+                    (if p.1 ∈ p.2 then (1 : ℕ) else 0)))
+            simpa using hL.trans hR
+          -- each inner sum counts the intersection size
+          have h3 :
+              ∀ {A}, A ∈ 𝓢 →
+                ∑ x ∈ U, (if x ∈ A then (1 : ℕ) else 0)
+                  = (A ∩ U).card := by
+            intro A hA
+            have hsum :
+                ∑ x ∈ U, (if x ∈ A then (1 : ℕ) else 0)
+                  = ∑ x ∈ U.filter (fun x => x ∈ A), (1 : ℕ) := by
+              simpa [Finset.sum_filter]
+                using (Finset.sum_filter
+                  (s := U) (p := fun x => x ∈ A)
+                  (f := fun _ : α => (1 : ℕ))).symm
+            have hfilter : U.filter (fun x => x ∈ A) = A ∩ U := by
+              apply Finset.ext; intro x; constructor
+              · intro hx
+                rcases Finset.mem_filter.mp hx with ⟨hxU, hxA⟩
+                exact Finset.mem_inter.mpr ⟨hxA, hxU⟩
+              · intro hx
+                rcases Finset.mem_inter.mp hx with ⟨hxA, hxU⟩
+                exact Finset.mem_filter.mpr ⟨hxU, hxA⟩
+            calc
+              ∑ x ∈ U, (if x ∈ A then (1 : ℕ) else 0)
+                  = ∑ x ∈ U.filter (fun x => x ∈ A), (1 : ℕ) := hsum
+              _ = (U.filter (fun x => x ∈ A)).card := by
+                    simpa using
+                      (Finset.card_eq_sum_ones (s :=
+                        U.filter (fun x => x ∈ A))).symm
+              _ = (A ∩ U).card := by simpa [hfilter]
+          -- combine
+          calc
+            ∑ x ∈ U, (slice 𝓢 x).card
+                = ∑ x ∈ U, ∑ A ∈ 𝓢,
+                    (if x ∈ A then (1 : ℕ) else 0) := h1
+            _ = ∑ A ∈ 𝓢, ∑ x ∈ U,
+                    (if x ∈ A then (1 : ℕ) else 0) := h2
+            _ = ∑ A ∈ 𝓢, (A ∩ U).card := by
+                apply Finset.sum_congr rfl
+                intro A hA; exact h3 hA
+        -- The intersection of every `A` with `U` is nonempty.
+        have hterm_ge :
+            ∀ {A}, A ∈ 𝓢 → (1 : ℕ) ≤ (A ∩ U).card := by
+          intro A hA
+          have hnonempty : (A ∩ U).Nonempty := by
+            apply hHits hA
+            -- `A` is nonempty because its width is positive.
+            have hcard := h_w A hA
+            have : 0 < A.card := by simpa [hcard] using hw
+            exact Finset.card_pos.mp this
+          -- the cardinality of a nonempty intersection is at least one
+          exact Nat.succ_le_of_lt (Finset.card_pos.mpr hnonempty)
+        -- lower bound for the slice sum
+        have hsum_lower : 𝓢.card ≤ ∑ x ∈ U, (slice 𝓢 x).card := by
+          have hcard_eq := Finset.card_eq_sum_ones (s := 𝓢)
+          calc
+            𝓢.card = ∑ A ∈ 𝓢, (1 : ℕ) := hcard_eq
+            _ ≤ ∑ A ∈ 𝓢, (A ∩ U).card := by
+                  apply Finset.sum_le_sum; intro A hA;
+                  exact hterm_ge hA
+            _ = ∑ x ∈ U, (slice 𝓢 x).card := by simpa [hsum_eq]
+        -- **Step 3: a pigeonhole argument to find a large slice.**
+        have hx_exists : ∃ x ∈ U, threshold (w - 1) p <
+            (slice 𝓢 x).card := by
+          classical
+          -- Assume all slices are small and derive a contradiction.
+          by_contra hno
+          push_neg at hno
+          have hsum_upper :
+              ∑ x ∈ U, (slice 𝓢 x).card ≤
+                U.card * threshold (w - 1) p := by
+            -- each summand is bounded by the threshold
+            have h := Finset.sum_le_sum hno
+            have hconst :
+                ∑ x ∈ U, threshold (w - 1) p
+                  = U.card * threshold (w - 1) p := by
+              simpa using
+                (Finset.sum_const_nat (s := U)
+                  (a := threshold (w - 1) p))
+            simpa [hconst] using h
+          -- Combine the upper bound with the lower bound on the sum.
+          have hcontr : 𝓢.card ≤ threshold w p := by
+            have h1 := hsum_lower.trans hsum_upper
+            have h2 : U.card * threshold (w - 1) p ≤ threshold w p := by
+              -- use the bound on `U.card` and the recurrence for the threshold
+              have hU' : U.card * threshold (w - 1) p ≤
+                  (w * (p - 1)) * threshold (w - 1) p :=
+                Nat.mul_le_mul_right _ hUcard
+              have hrec :
+                  (w * (p - 1)) * threshold (w - 1) p = threshold w p := by
+                have hw1 : 1 ≤ w := Nat.succ_le_of_lt hw
+                simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+                  Nat.sub_add_cancel hw1]
+                  using (threshold_succ (w - 1) p).symm
+              calc
+                U.card * threshold (w - 1) p
+                    ≤ (w * (p - 1)) * threshold (w - 1) p := hU'
+                _ = threshold w p := by simpa [hrec]
+            exact le_trans h1 h2
+          exact (not_le_of_gt h_size) hcontr
+        rcases hx_exists with ⟨x, hxU, hx_large⟩
+        -- We have found an element `x` whose slice is sufficiently large.
+        -- Removing `x` from the slice yields a family of `(w - 1)`-sets of
+        -- size above the threshold.  The remaining induction step
+        -- (applying the lemma to this smaller family and lifting the
+        -- sunflower back) is postponed.
+        have hx_large' : threshold (w - 1) p <
+            (eraseSlice 𝓢 x).card := by
+          simpa [card_eraseSlice] using hx_large
+        have hunif' : ∀ A ∈ eraseSlice 𝓢 x, A.card = w - 1 := by
+          intro A hA
+          rcases Finset.mem_image.mp hA with ⟨B, hB, rfl⟩
+          rcases mem_slice.mp hB with ⟨hB𝓢, hxB⟩
+          exact card_erase_of_uniform (𝓢 := 𝓢) (w := w)
+            h_w hw hB𝓢 hxB
+        -- Final inductive step: apply the lemma recursively to the
+        -- `(w - 1)`-uniform family `eraseSlice 𝓢 x` and lift the
+        -- resulting sunflower back to `𝓢`.
+        have hwgt : 1 < w :=
+          lt_of_le_of_ne (Nat.succ_le_of_lt hw)
+            (by simpa [eq_comm] using hw1)
+        have hw' : 0 < w - 1 := Nat.sub_pos_of_lt hwgt
+        -- Inductive hypothesis: `eraseSlice 𝓢 x` contains a sunflower.
+        have hSunSmall : HasSunflower (eraseSlice 𝓢 x) (w - 1) p :=
+          sunflower_exists_classic (𝓢 := eraseSlice 𝓢 x)
+            (w := w - 1) (p := p) hw' hp hx_large' hunif'
+        -- Lift the sunflower from the slice back to the original family.
+        rcases hSunSmall with ⟨𝓣, hTsub, C, hSun, _⟩
+        obtain ⟨𝓣', hT'sub, hSun', hcards'⟩ :=
+          lift_sunflower (𝓢 := 𝓢) (x := x)
+            (hunif := h_w) (hw := hw)
+            (𝓣 := 𝓣) (C := C) hTsub hSun
+        exact ⟨𝓣', hT'sub, insert x C, hSun', hcards'⟩
 
 /-- Convenient wrapper for the sunflower lemma when the family is
 already known to consist of `w`-sets. -/

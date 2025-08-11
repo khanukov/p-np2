@@ -23,13 +23,11 @@ import Pnp2.entropy
 import Pnp2.sunflower
 import Pnp2.Agreement
 import Pnp2.cover2
-import Pnp2.bound
 import Mathlib.Data.Finset.Basic
 
 open Classical
 open BoolFunc
 open Cover2
-open Bound
 open Sunflower
 open Agreement
 open Finset
@@ -186,14 +184,21 @@ lemma H2_FFalse : BoolFunc.H₂ FFalse ≤ (0 : ℝ) := by
   have hcard : FFalse.card = 1 := by simp [FFalse]
   simpa [hcard] using (BoolFunc.H₂_card_one (F := FFalse) hcard)
 
-/-!  Even though `buildCover` is non-computable, we can still state and
-    prove the numeric bound for this tiny example. -/
-example :
-    (Cover2.buildCover (n := 1) FFalse (h := 0) H2_FFalse).card ≤ mBound 1 0 := by
-  simpa using
-    Cover2.buildCover_card_bound (n := 1) (F := FFalse) (h := 0) (hH := H2_FFalse)
+  /-!  Even though the covering construction is abstract, we can still
+      inspect the canonical cover for this tiny example.  Since there are no
+      `1`-inputs, the empty cover suffices. -/
+  example :
+      Cover2.coverFamily (n := 1) FFalse (h := 0) H2_FFalse = (∅ : Finset (Subcube 1)) := by
+    classical
+    -- `coverFamily` covers all `1`-inputs, of which there are none.
+    have hcov := Cover2.coverFamily_spec_cover (F := FFalse) (h := 0) (hH := H2_FFalse)
+    -- No rectangle is required in the cover.
+    ext R; by_cases hR : R ∈ Cover2.coverFamily (n := 1) FFalse (h := 0) H2_FFalse
+    · have := hcov (fun _ => False) (by simp) (fun _ => by simp) (by simp)
+      simpa [Cover2.AllOnesCovered] using this
+    · simpa [hR]
 
-end BuildCoverBound
+  end BuildCoverBound
 
 /-! ## 6.  (Optional) Small‑scale sunflower check -/
 

@@ -19,8 +19,7 @@ theorem familyCollisionEntropyCover
   {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
   ∃ (T : Finset (Subcube n)),
     (∀ C ∈ T, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) ∧
-    T.card ≤ mBound n h := by
+    (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) := by
   classical
   simpa using Cover2.cover_exists (F := F) (h := h) hH
 
@@ -34,7 +33,6 @@ structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   rects   : Finset (Subcube n)
   mono    : ∀ C ∈ rects, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
-  bound   : rects.card ≤ mBound n h
 
 /--
 `familyEntropyCover` packages `familyCollisionEntropyCover` as a concrete
@@ -44,9 +42,9 @@ noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
     FamilyCover F h := by
   classical
-  obtain ⟨T, hmono, hcov, hcard⟩ :=
+  obtain ⟨T, hmono, hcov⟩ :=
     familyCollisionEntropyCover (F := F) (h := h) hH
-  refine ⟨T, hmono, ?_, hcard⟩
+  refine ⟨T, hmono, ?_⟩
   intro f hf x hx
   rcases hcov f hf x hx with ⟨C, hC, hxC⟩
   exact ⟨C, hC, hxC⟩

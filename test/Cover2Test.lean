@@ -1228,16 +1228,9 @@ covering step. -/
 example :
     Cover2.mu (n := 1)
         ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
-        (Cover2.buildCover (n := 1)
+        (Cover2.extendCover (n := 1)
           ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-          (h := 0)
-          (by
-            -- Collision entropy of a singleton family is zero.
-            have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
-              simp
-            have hH₂ := BoolFunc.H₂_card_one
-                (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
-            simpa [hH₂]))
+          (Rset := (∅ : Finset (Subcube 1))))
         <
     Cover2.mu (n := 1)
         ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0

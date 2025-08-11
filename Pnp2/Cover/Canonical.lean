@@ -62,4 +62,12 @@ lemma coverFamily_spec_cover {n h : ℕ} (F : Family n)
     AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) :=
   (coverFamily_spec (n := n) (h := h) (F := F) hH).2
 
+/--
+Cardinality bound for the canonical cover.  This statement summarises the
+counting argument of the recursive construction and is currently assumed as an
+axiom pending a full port of the original proof. -/
+axiom coverFamily_card_bound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (coverFamily (n := n) F h hH).card ≤ mBound n h
+
 end Cover2

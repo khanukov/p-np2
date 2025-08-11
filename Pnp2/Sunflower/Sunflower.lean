@@ -322,6 +322,105 @@ lemma factorial_card_decomposition
               -- and `card_eraseSlice` replaces the cardinality of a slice.
               simpa [S', familyAfter, card_eraseSlice]
 
+/-! ### Greedy choice of a large next slice -/
+
+/-- **Greedy slice bound: existence of a large next-step family.**
+
+Given a `w`-uniform family `𝓢` and a list `xs` of already erased elements,
+assume the remaining width `w - xs.length` is positive and the current family
+`familyAfter 𝓢 xs` is nonempty.  Then there exists an element `x` in the union
+of the current family such that the next-step family `familyAfter 𝓢 (x :: xs)`
+has cardinality at least the average value predicted by the factorial
+decomposition.
+
+The bound is written in a slightly algebraic form using `Nat.div`; it says
+that the maximal slice is at least the average slice size. -/
+lemma exists_x_with_large_next_family
+    {𝓢 : Finset (Finset α)} {w : ℕ} {xs : List α}
+    (hunif : ∀ A ∈ 𝓢, A.card = w)
+    (hpos : xs.length < w)
+    (hSnonempty : (familyAfter 𝓢 xs).Nonempty) :
+    ∃ x ∈ (familyAfter 𝓢 xs).unions,
+      (familyAfter 𝓢 (x :: xs)).card ≥
+        Nat.div (Nat.factorial (w - xs.length) * (familyAfter 𝓢 xs).card)
+                ((familyAfter 𝓢 xs).unions.card *
+                  Nat.factorial (w - xs.length - 1)) := by
+  classical
+  -- Abbreviation for the intermediate family.
+  let S' := familyAfter 𝓢 xs
+  -- After erasing `xs` the family remains uniform of width `w - xs.length`.
+  have h_unif : ∀ A ∈ S', A.card = w - xs.length :=
+    familyAfter_uniform (hunif := hunif) xs
+  -- The remaining width is positive.
+  have hw' : 0 < w - xs.length := Nat.sub_pos_of_lt hpos
+  -- The current family is nonempty by assumption, hence its union is also
+  -- nonempty (each set has positive cardinality).
+  have hU_nonempty : (S'.unions).Nonempty := by
+    rcases hSnonempty with ⟨A, hA⟩
+    have hAcard := h_unif A hA
+    have hApos : 0 < A.card := by
+      simpa [hAcard] using hw'
+    rcases Finset.card_pos.mp hApos with ⟨x, hxA⟩
+    exact ⟨x, Finset.mem_unions.mpr ⟨A, hA, hxA⟩⟩
+
+  -- Apply the factorial decomposition to `S'`.
+  have hsum :=
+    factorial_card_decomposition (𝓢 := 𝓢) (w := w) (xs := xs) hunif hpos
+
+  -- Some handy abbreviations for the forthcoming calculations.
+  let F := Nat.factorial (w - xs.length) * S'.card
+  let c := Nat.factorial (w - xs.length - 1)
+  let f : α → ℕ := fun x => c * (familyAfter 𝓢 (x :: xs)).card
+
+  -- Rewrite the factorial decomposition using the abbreviations.
+  have hsum' : ∑ x ∈ S'.unions, f x = F := by
+    simpa [F, c, f] using hsum.symm
+
+  -- Choose an element `x` maximising `f` on the union.
+  obtain ⟨x, hxU, hxmax⟩ :=
+    Finset.exists_max_image (s := S'.unions) f hU_nonempty
+
+  -- All summands are bounded by the maximal one, so the sum is bounded by
+  -- `|S'.unions| * f x`.
+  have hbound : F ≤ S'.unions.card * f x := by
+    -- from the maximality statement
+    have hle : ∀ y ∈ S'.unions, f y ≤ f x := hxmax
+    -- apply the standard estimate on sums of bounded functions
+    have := Finset.sum_le_card_nsmul (s := S'.unions) (f := f)
+      (n := f x) hle
+    -- substitute the sum with `F`
+    simpa [hsum', Nat.mul_comm] using this
+
+  -- Extract the average bound: `f x ≥ F / |S'.unions|`.
+  have hxavg : F / S'.unions.card ≤ f x :=
+    Nat.div_le_of_le_mul (by
+      simpa [Nat.mul_comm] using hbound)
+
+  -- Divide once more by the factorial constant to isolate the cardinality
+  -- of the next family.
+  have hxavg2 : (F / S'.unions.card) / c ≤
+      (familyAfter 𝓢 (x :: xs)).card := by
+    -- rewrite `hxavg` in terms of the cardinality and apply the division
+    -- inequality once more
+    have hineq : F / S'.unions.card ≤
+        c * (familyAfter 𝓢 (x :: xs)).card := by
+      simpa [f, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hxavg
+    -- `Nat.div_le_of_le_mul` expects the product in the form `c * g`
+    -- where `g` is the eventual bound; this matches `hineq`
+    simpa using Nat.div_le_of_le_mul hineq
+
+  -- Convert `(F / |U|) / c` into `F / (|U| * c)` and finish.
+  have hxfinal :
+      F / (S'.unions.card * c) ≤
+        (familyAfter 𝓢 (x :: xs)).card := by
+    simpa [F, c, Nat.div_div_eq_div_mul, Nat.mul_comm,
+      Nat.mul_left_comm, Nat.mul_assoc] using hxavg2
+
+  -- Present the result in the desired `Nat.div` form.
+  refine ⟨x, hxU, ?_⟩
+  simpa [F, c, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using hxfinal
+
 /-! ### Lifting a sunflower from a slice back to the original family -/
 
 /-- If `eraseSlice 𝓢 x` contains a `p`-sunflower with core `C`, then the

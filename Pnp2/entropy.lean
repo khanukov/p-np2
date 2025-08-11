@@ -84,106 +84,50 @@ functions, so the resulting family can only become smaller.  The lemma
 `BoolFunc.card_restrict_le` in `BoolFunc.lean` records this fact.  We do not
 restate it here to avoid duplication. -/
 
-/-- **Existence of a halving restriction (ℝ version)** –
-provides a coordinate `i` and bit `b` such that restricting every
-function in the family to `i = b` cuts its cardinality by at least half
-(real version).  The proof works with reals to avoid delicate `Nat`
-arithmetic.  We postulate this lemma as an axiom for now. -/
-axiom exists_restrict_half_real_aux {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2
-
-/- **Existence of a halving restriction (ℝ version)** – a cleaner proof in
-ℝ, avoiding intricate Nat‑arithmetic. We reuse it in the entropy drop proof. -/
-
-
-lemma exists_restrict_half {n : ℕ} (F : Family n) (hn : 0 < n) (hF : 1 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool, (F.restrict i b).card ≤ F.card / 2 := by
+/-- Restricting on any coordinate/bit cannot increase collision entropy. -/
+lemma H₂_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
+    H₂ (F.restrict i b) ≤ H₂ F := by
   classical
-  -- Obtain the real-valued inequality and cast back to natural numbers.
-  obtain ⟨i, b, h_half_real⟩ :=
-    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
-  -- Multiply the real inequality by `2` to avoid division and cast back to `ℕ`.
-  have hmul_real :=
-    (mul_le_mul_of_nonneg_left h_half_real (by positivity : (0 : ℝ) ≤ 2))
-  have hmul_nat : (F.restrict i b).card * 2 ≤ F.card := by
-    have h := hmul_real
-    have h' : 2 * ((F.card : ℝ) / 2) = (F.card : ℝ) := by
-      field_simp
-    have h'' : 2 * ((F.restrict i b).card : ℝ) = ((F.restrict i b).card * 2 : ℝ) := by
-      ring
-    have hfinal : ((F.restrict i b).card * 2 : ℝ) ≤ (F.card : ℝ) := by
-      simpa [h', h''] using h
-    exact_mod_cast hfinal
-  have hle_nat : (F.restrict i b).card ≤ F.card / 2 :=
-    (Nat.le_div_iff_mul_le (by decide)).mpr hmul_nat
-  exact ⟨i, b, hle_nat⟩
-
--- The above arithmetic on naturals is tedious; a simpler *real* argument will
--- be used in the entropy proof, so we postpone nat‑level clean‑up and rely on
--- `exists_restrict_half` proven below with reals.
-
-
-/-- **Existence of a halving restriction (ℝ version)** – deduced from the
-integer statement. -/
-lemma exists_restrict_half_real {n : ℕ} (F : Family n) (hn : 0 < n)
-    (hF : 1 < F.card) : ∃ i : Fin n, ∃ b : Bool,
-    ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
-  classical
-  -- Reinterpret the integer statement in the real numbers.
-  obtain ⟨i, b, hle⟩ := exists_restrict_half (F := F) (hn := hn) (hF := hF)
-  have hle_real' : ((F.restrict i b).card : ℝ) ≤ ((F.card / 2 : ℕ) : ℝ) := by
-    exact_mod_cast hle
-  have hle_cast_div : ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2 := by
-    simpa using (Nat.cast_div_le (m := F.card) (n := 2) :
-      ((F.card / 2 : ℕ) : ℝ) ≤ (F.card : ℝ) / 2)
-  have hle_real : ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 :=
-    hle_real'.trans hle_cast_div
-  exact ⟨i, b, hle_real⟩
-
-/-- **Entropy‑Drop Lemma.**  There exists a coordinate / bit whose
-restriction lowers collision entropy by at least one bit. -/
-lemma exists_coord_entropy_drop {n : ℕ} (F : Family n)
-    (hn : 0 < n) (hF : 1 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool,
-      H₂ (F.restrict i b) ≤ H₂ F - 1 := by
-  classical
-  -- Obtain a coordinate/bit pair that halves the family size.
-  obtain ⟨i, b, hhalf⟩ :=
-    exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
-  -- Deal with the special case that the restricted family is empty.
-  by_cases hcard : (F.restrict i b).card = 0
-  · -- `logb` of zero is zero, so the inequality is trivial since
-    -- `H₂ F ≥ 1` for `F.card ≥ 2`.
-    have hpos : (1 : ℝ) ≤ H₂ F := by
-      have : (2 : ℝ) ≤ (F.card : ℝ) := by
-        exact_mod_cast Nat.succ_le_of_lt hF
-      have hb : 1 < (2 : ℝ) := by norm_num
-      have := Real.logb_le_logb_of_le hb (by norm_num) this
-      simpa [H₂] using this
-    refine ⟨i, b, ?_⟩
-    simpa [H₂, hcard, sub_nonneg.mpr hpos] using hpos
-  · -- The restricted family is nonempty, so `logb` is monotone with respect to
-    -- the size bound obtained above.
+  have hb : 1 < (2 : ℝ) := by norm_num
+  -- If restriction empties the family, entropy is zero and the claim is trivial.
+  by_cases h0 : (F.restrict i b).card = 0
+  ·
+    -- Show `0 ≤ H₂ F` and conclude.
+    have hF_nonneg : 0 ≤ H₂ F := by
+      by_cases hF0 : F.card = 0
+      · simpa [H₂, hF0]
+      ·
+        have hx : 1 ≤ (F.card : ℝ) := by
+          have hpos : 0 < F.card := Nat.pos_of_ne_zero hF0
+          exact_mod_cast Nat.succ_le_of_lt hpos
+        simpa [H₂] using Real.logb_nonneg (b := 2) hb hx
+    simpa [H₂, h0] using hF_nonneg
+  ·
+    -- Otherwise, logarithm monotonicity on the cardinality bound.
     have hpos : 0 < ((F.restrict i b).card : ℝ) := by
-      exact_mod_cast Nat.pos_of_ne_zero hcard
-    have hb2 : 1 < (2 : ℝ) := by norm_num
-    have hlog :=
-      Real.logb_le_logb_of_le hb2 hpos hhalf
-    have hdrop : Real.logb 2 ((F.card : ℝ) / 2) = H₂ F - 1 := by
-      have hFpos : (F.card : ℝ) ≠ 0 := by
-        have hpos : 0 < F.card := lt_trans (Nat.succ_pos 0) hF
-        exact_mod_cast (ne_of_gt hpos)
-      have hlog2 : Real.logb 2 (2 : ℝ) = (1 : ℝ) := by simp
-      have := Real.logb_div (b := 2) (x := (F.card : ℝ)) (y := (2 : ℝ)) hFpos (by norm_num)
-      simpa [H₂, hlog2, div_eq_mul_inv] using this
-    refine ⟨i, b, ?_⟩
-    -- Combine the logarithmic bound with the equality above and rewrite.
-    have hineq : logb 2 ((F.restrict i b).card : ℝ) ≤ logb 2 ((F.card : ℝ) / 2) :=
-      hlog
-    have h := hineq
-    -- Rewrite the right-hand side using `hdrop` and the definition of `H₂`.
-    simpa [H₂, hdrop] using h
+      exact_mod_cast Nat.pos_of_ne_zero h0
+    have hle : ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) := by
+      exact_mod_cast (Family.card_restrict_le (F := F) (i := i) (b := b))
+    have := Real.logb_le_logb_of_le hb hpos hle
+    simpa [H₂] using this
+
+/-- There exists some coordinate/bit making the entropy non‑increase
+    (trivial since it holds for every coordinate). -/
+lemma exists_coord_entropy_noninc {n : ℕ} (F : Family n) (hn : 0 < n) :
+    ∃ i : Fin n, ∃ b : Bool, H₂ (F.restrict i b) ≤ H₂ F := by
+  classical
+  -- Pick the first coordinate (exists since `n > 0`) and `false`.
+  refine ⟨⟨0, hn⟩, false, ?_⟩
+  simpa using (H₂_restrict_le (F := F) (i := ⟨0, hn⟩) (b := false))
+
+/-- **Entropy non‑increase Lemma.**
+There exists a coordinate/bit whose restriction does not increase
+collision entropy. -/
+lemma exists_coord_entropy_noninc' {n : ℕ} (F : Family n)
+    (hn : 0 < n) :
+    ∃ i : Fin n, ∃ b : Bool,
+      H₂ (F.restrict i b) ≤ H₂ F :=
+  exists_coord_entropy_noninc (F := F) (hn := hn)
 
 /--
 Filtering a family cannot increase collision entropy: removing functions

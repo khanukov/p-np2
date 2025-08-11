@@ -79,11 +79,10 @@ bound, but the detailed induction argument is not yet complete.
   the measure on which `buildCover` recurses.
   Every rectangle produced in this way is monochromatic for the whole
   family; this follows by induction on the construction of the cover.
-  An auxiliary lemma `exists_restrict_half` in `entropy.lean` shows that
-  some input bit restricts a family to at most half its size.  Its
-  real-valued sibling `exists_restrict_half_real` eases analytic bounds.
-  The strengthened `exists_coord_entropy_drop` lemma then guarantees a
-  one‑bit decrease of collision entropy, setting the stage for a cleaner
+  The lemma `H₂_restrict_le` in `entropy.lean` shows that restricting on any
+  input bit cannot increase collision entropy.  The auxiliary result
+  `exists_coord_entropy_noninc` then provides a concrete coordinate and bit
+  witnessing this monotonicity, setting the stage for a cleaner
   argument.
 
 *Next steps.*

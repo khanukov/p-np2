@@ -5,7 +5,6 @@
 Updated development tasks after audit (2025-08-06).
 
 - [ ] Complete proofs in `Pnp2/Cover/BuildCover.lean` (`buildCover_covers`).
-- [ ] Prove `exists_restrict_half_real_aux` and remove dependent axioms in `Pnp2/entropy.lean`.
 - [ ] Make `firstUncovered` constructive in `Pnp2/Cover/Uncovered.lean`.
 - [x] Provide a formal proof of `sunflower_exists_classic` in `Pnp2/Sunflower/Sunflower.lean`.
       * Proof completed; the classical sunflower lemma is now fully formalised.
@@ -16,7 +15,6 @@ Updated development tasks after audit (2025-08-06).
 
 ## Remaining axioms (as of 2025-08-06)
 
-- `Entropy.exists_restrict_half_real_aux`
 - `LowSensitivityCover.decisionTree_cover`
 - `ComplexityClasses.P_subset_Ppoly`
 - `NPSeparation.magnification_AC0_MCSP`

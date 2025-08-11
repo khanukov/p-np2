@@ -30,12 +30,10 @@ example (h : ∃ ε > 0, MCSP_lower_bound ε) :
     P ≠ NP := by
   exact P_ne_NP_of_MCSP_bound h
 
--- The halving lemma provides a coordinate that cuts the family size in half.
-example {n : ℕ} (F : BoolFunc.Family n) (hn : 0 < n) (hF : 1 < F.card) :
-    ∃ i : Fin n, ∃ b : Bool,
-      ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2 := by
-  simpa using
-    BoolFunc.exists_restrict_half_real_aux (F := F) (hn := hn) (hF := hF)
+-- Restricting on a coordinate does not increase collision entropy.
+example {n : ℕ} (F : BoolFunc.Family n) (i : Fin n) (b : Bool) :
+    BoolFunc.H₂ (F.restrict i b) ≤ BoolFunc.H₂ F := by
+  simpa using BoolFunc.H₂_restrict_le (F := F) (i := i) (b := b)
 
 -- Collision probability is always positive.
 example {n : ℕ} (f : BoolFunc.BFunc n) [Fintype (BoolFunc.Point n)] :

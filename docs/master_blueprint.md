@@ -60,7 +60,7 @@ maintain a public repository with Lean scripts and accompanying notes.
 Much of the foundational material (Step 0) is available in print but only partly
 formalised.  Steps 1–3 are active research; the key missing piece is proving a
 rectangular cover of `ACC⁰ ∘ MCSP` tables of size at most `2^{N - N^{\delta}}`.
-Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_drop`.  The cardinal drop lemma `exists_coord_card_drop` is now proven.  The lemma `buildCover_pointwiseMono` has also been established.  The counting lemma `buildCover_card_bound` has now been proven.
+Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_noninc`.  The cardinal drop lemma `exists_coord_card_drop` is now proven.  The lemma `buildCover_pointwiseMono` has also been established.  The counting lemma `buildCover_card_bound` has now been proven.
 The intended proof performs a double induction on the entropy budget `h` and on
 the number of uncovered pairs.  Writing
 

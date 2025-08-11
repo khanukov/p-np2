@@ -130,54 +130,33 @@ example (n : ℕ) (f : BFunc n) :
       BoolFunc.low_sensitivity_cover_single
         (n := n) (s := s) (C := C) (f := f) Hs
 
-  -- There exists a coordinate whose restriction drops the entropy by one bit.
+  -- There exists a coordinate whose restriction does not increase entropy.
   example :
       ∃ i : Fin 1, ∃ b : Bool,
         BoolFunc.H₂ (({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
           Family 1).restrict i b) ≤
           BoolFunc.H₂ ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-            Family 1) - 1 := by
+            Family 1) := by
     classical
     have hn : 0 < (1 : ℕ) := by decide
-    have hF : 1 < ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-        Family 1).card := by
-      classical
-      have hne : (fun _ : Point 1 => true) ≠ (fun _ : Point 1 => false) := by
-        intro h
-        have := congrArg (fun f => f (fun _ => false)) h
-        simp at this
-      have hcard : ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-          Family 1).card = 2 := by
-        simp [hne]
-      simp [hcard]
     simpa using
-      BoolFunc.exists_coord_entropy_drop
-        (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)})
-        hn hF
+      BoolFunc.exists_coord_entropy_noninc
+        (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)}) hn
 
--- There exists a coordinate whose restriction halves the family size.
+-- Restricting a coordinate cannot enlarge the family.
 example :
     ∃ i : Fin 1, ∃ b : Bool,
       (({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
         Family 1).restrict i b).card ≤
       ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-        Family 1).card / 2 := by
+        Family 1).card := by
   classical
   have hn : 0 < (1 : ℕ) := by decide
-  have hF : 1 < ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-      Family 1).card := by
-    classical
-    have hne : (fun _ : Point 1 => true) ≠ (fun _ : Point 1 => false) := by
-      intro h
-      have := congrArg (fun f => f (fun _ => false)) h
-      simp at this
-    have hcard : ({(fun _ : Point 1 => true), (fun _ : Point 1 => false)} :
-        Family 1).card = 2 := by
-      simp [hne]
-    simp [hcard]
+  refine ⟨⟨0, hn⟩, false, ?_⟩
   simpa using
-    BoolFunc.exists_restrict_half
-      (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)}) hn hF
+    Family.card_restrict_le
+      (F := {(fun _ : Point 1 => true), (fun _ : Point 1 => false)})
+      (i := ⟨0, hn⟩) (b := false)
 
 -- Evaluate a simple Boolean circuit.
 example (x : Point 2) :

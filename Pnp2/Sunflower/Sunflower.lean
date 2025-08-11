@@ -924,6 +924,57 @@ lemma exists_cover_step_strict
     S.card_removeCovered_lt (F := F) hSsub htpos
   exact ⟨S, hSsub, h_uniform, hlt⟩
 
+/-- Итерация алгоритма покрытия: из `w`-равномерного семейства `F` мы удаляем
+    покрытые ядрами найденных подсолнечников до тех пор, пока размер не
+    станет `≤ (t - 1)^w * w!`.  На выходе получаем подсемейство `F' ⊆ F`,
+    которое остаётся `w`-равномерным и имеет ограниченный размер. -/
+lemma exists_cover_until_threshold
+    {F : Finset (Petal n)} {w t : ℕ}
+    (hw : 0 < w) (ht : 2 ≤ t)
+    (hcardF : ∀ A ∈ F, A.card = w) :
+    ∃ F' ⊆ F, (∀ A ∈ F', A.card = w) ∧
+      F'.card ≤ (t - 1) ^ w * Nat.factorial w := by
+  classical
+  -- Обозначим порог для размера семейства.
+  let B := (t - 1) ^ w * Nat.factorial w
+
+  -- Индуктивное утверждение: для любого семейства `F'` размера `N`,
+  -- которое `w`-равномерно, существует подсемейство размера `≤ B`.
+  let P : ℕ → Prop := fun N =>
+    ∀ F' : Finset (Petal n),
+      F'.card = N →
+      (∀ A ∈ F', A.card = w) →
+      ∃ G ⊆ F', (∀ A ∈ G, A.card = w) ∧ G.card ≤ B
+
+  -- Докажем `P F.card` по сильной индукции по `F.card`.
+  have hMain : P F.card := by
+    -- сильная индукция по размеру семейства
+    refine Nat.strongRecOn F.card ?step
+    intro N IH F' hcardF' hunifF'
+    -- Проверяем, не достигнут ли уже порог.
+    by_cases hsmall : F'.card ≤ B
+    · -- Семейство уже достаточно маленькое, берём его целиком.
+      exact ⟨F', by exact Subset.rfl, hunifF', hsmall⟩
+    -- Иначе `F'.card > B`, делаем один строгий шаг алгоритма покрытия.
+    · have hbig' : F'.card > B := Nat.lt_of_not_ge hsmall
+      -- Выделяем подсолнечник и уменьшаем семейство.
+      obtain ⟨S, hSsub, h_uniform_after, hlt⟩ :=
+        exists_cover_step_strict (n := n) (F := F') (w := w) (t := t)
+          hw ht hunifF' hbig'
+      -- Определяем `F₁` как остаток.
+      let F₁ := S.removeCovered F'
+      -- После одного шага размер строго уменьшается.
+      have hlt' : F₁.card < N := by
+        simpa [hcardF'] using hlt
+      -- Применяем IH к `F₁`.
+      have hrec := IH F₁.card hlt' F₁ rfl h_uniform_after
+      rcases hrec with ⟨G, hGsub, hGunif, hGle⟩
+      -- Полученное `G` также является подсемейством исходного `F'`.
+      exact ⟨G, hGsub.trans (S.removeCovered_subset (F := F')), hGunif, hGle⟩
+
+  -- Применяем индуктивное утверждение к исходному `F`.
+  exact hMain F rfl hcardF
+
 end SunflowerFam
 
 end Sunflower

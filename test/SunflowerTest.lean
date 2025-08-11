@@ -40,8 +40,8 @@ example :
     rcases hS' with h0 | h1
     · simp [h0]
     · simp [h1]
-  have hbig : F.card > (2 - 1) ^ 1 * Nat.factorial 1 := by
-    simp [F]
+  have hbig : F.card > Sunflower.threshold 1 2 := by
+    simp [F, Sunflower.threshold]
   simpa [F] using
     SunflowerFam.exists_of_large_family_classic
       (n := 2) (w := 1) (t := 2) (F := F)

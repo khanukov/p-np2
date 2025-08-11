@@ -869,6 +869,36 @@ lemma card_removeCovered_le_sub_t'
   intro hSub
   simpa [S.tsize] using card_removeCovered_le_sub_t (S := S) (F := F) hSub
 
+/-- Равномерность семейства сохраняется при удалении покрытых точками ядра. -/
+lemma uniform_of_removeCovered
+    {S : SunflowerFam n t} {F : Finset (Petal n)} {w : ℕ}
+    (hcardF : ∀ A ∈ F, A.card = w) :
+    ∀ A ∈ S.removeCovered F, A.card = w := by
+  classical
+  intro A hA
+  rcases S.mem_removeCovered.mp hA with ⟨hAF, _⟩
+  simpa using hcardF A hAF
+
+/-- Если `S.petals ⊆ F` и `0 < t`, то размер семейства строго убывает. -/
+lemma card_removeCovered_lt
+    {S : SunflowerFam n t} {F : Finset (Petal n)}
+    (hSub : S.petals ⊆ F) (htpos : 0 < t) :
+    (S.removeCovered F).card < F.card := by
+  classical
+  -- Используем оценку `≤ F.card - t`, доказанную выше
+  have hle := S.card_removeCovered_le_sub_t (F := F) hSub
+  have hle' : (S.removeCovered F).card ≤ F.card - t := by
+    simpa [S.tsize] using hle
+  -- Из `S.petals ⊆ F` и `t > 0` следует, что `F` непусто.
+  have hFpos : 0 < F.card := by
+    have hCardLe : S.petals.card ≤ F.card := Finset.card_le_card hSub
+    have hPetPos : 0 < S.petals.card := by
+      simpa [S.tsize] using htpos
+    exact lt_of_lt_of_le hPetPos hCardLe
+  -- Число элементов после удаления строго меньше исходного.
+  have hlt : F.card - t < F.card := Nat.sub_lt hFpos htpos
+  exact lt_of_le_of_lt hle' hlt
+
 end SunflowerFam
 
 end Sunflower

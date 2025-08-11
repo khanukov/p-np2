@@ -36,7 +36,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   lemma `sunflower_exists_classic` whose combinatorial proof is now
   completely formalised.
 
-* `entropy.lean` – collision entropy framework with the `exists_coord_entropy_drop` lemma. The halving statement `exists_restrict_half` currently relies on the axiom `exists_restrict_half_real_aux`.
+* `entropy.lean` – collision entropy framework with the entropy monotonicity lemma `H₂_restrict_le`. The earlier halving axiom has been removed.
 * `sunflower.lean` – reexports the classical sunflower lemma
   `sunflower_exists_classic`; the full combinatorial proof is now present
   in the repository.
@@ -146,8 +146,7 @@ python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2  # search for a small su
 ## Status
 
 This repository is a research prototype. Many central lemmas remain incomplete and are marked with `sorry` or `axiom`. In particular:
-* `exists_restrict_half_real_aux` together with `decisionTree_cover` remain
-  axioms.
+* `decisionTree_cover` remains an axiom.
 * `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
 * `ComplexityClasses.lean` assumes `P ⊆ P/poly`.
 

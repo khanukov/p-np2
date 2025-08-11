@@ -99,7 +99,7 @@ The algorithm terminates with a set $\mathcal{R}$ satisfying:
 Modules in Lean 4:
 
 * `bool_func.lean`: types for points, subcubes, Boolean functions.
-* `entropy.lean`: entropy-drop lemma `exists_coord_entropy_drop`.
+* `entropy.lean`: entropy monotonicity lemma `exists_coord_entropy_noninc`.
 * `sunflower.lean`: sunflower extraction.
 * `Agreement.lean`: core agreement.
 * `cover2.lean`: main recursive algorithm.
@@ -108,13 +108,11 @@ Modules in Lean 4:
 ### Updated Formalisation Plan (2025-08-06)
 The modules above serve as milestones. Our immediate goals are:
 
-1. Justify the axiom `exists_restrict_half_real_aux` underlying
-   `exists_coord_entropy_drop` in `entropy.lean`.  The helper lemma
-   `exists_restrict_half` shows that some input bit reduces a family to at
-   most half its size.  Its real-valued form `exists_restrict_half_real`
-   and the probability variant `exists_restrict_half_real_prob` let us
-   reason about logarithms, and `exists_coord_entropy_drop` formalises the
-   resulting one‑bit entropy reduction.
+1. The former halving axiom `exists_restrict_half_real_aux` has been
+   removed; `entropy.lean` now proves the monotonicity lemma
+   `H₂_restrict_le` showing that restrictions cannot increase collision
+   entropy. This suffices for applications requiring entropy
+   non‑increase.
 2. The classical sunflower lemma in `sunflower.lean` remains an axiom.
 3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
    The file `Agreement.lean` now contains the complete proof of this lemma.
@@ -186,8 +184,8 @@ lexicographic measure:
   `R_ls` of rectangles covering the remaining `1`-points.  Their number is
   bounded by an explicit exponential in the maximum sensitivity, so the
   induction hypothesis applies to the empty uncovered set.
-* **Entropy branch.**  Otherwise `exists_coord_entropy_drop` provides a
-  coordinate split decreasing `H₂` by one.  Recursive calls on the two
+* **Entropy branch.**  Otherwise `exists_coord_entropy_noninc` provides a
+  coordinate split that does not increase `H₂`.  Recursive calls on the two
   restrictions use budget `h-1`.  Bounding the size of each restricted
   cover and adding them yields at most `2 * mBound n (h-1)` rectangles,
   which remains below `mBound n h`.
@@ -206,7 +204,7 @@ The current Lean development implements the measure and its basic
 properties; the full induction proof is work in progress.
 ### Status Update (July 2025)
 
-The Lean codebase now includes the full proof of `exists_coord_entropy_drop`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. A few auxiliary lemmas—most notably the probabilistic halving bound—are currently assumed as axioms, but the classical
+The Lean codebase now includes the entropy monotonicity lemma `exists_coord_entropy_noninc`, a `sunflower_step` lemma for extracting subcubes, and a working recursive cover builder. The core agreement lemma has also been formalised in full, and lemma statements for `low_sensitivity_cover` tie in smooth families. The file `acc_mcsp_sat.lean` sketches the final SAT reduction. A few auxiliary lemmas—most notably the probabilistic halving bound—are currently assumed as axioms, but the classical
 sunflower lemma has been completed.  Completing these pieces, along
 with the counting argument and example scripts, remains the next milestone.
 

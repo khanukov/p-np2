@@ -51,7 +51,7 @@ positive-dimensional subcube.  A corrected monotonicity lemma for
 `RSpread` states that larger parameters imply smaller ones when the base
 is positive, and new helper lemmas reformulate the bounds and cover the
 trivial case `R = 1`.  The entropy branch continues to use
-`exists_coord_entropy_drop` to split on a coordinate that decreases
+`exists_coord_entropy_noninc` to split on a coordinate that does not increase
 collision entropy.  The numeric counting argument has now been formalised,
 but the previously stubbed `coreAgreement` lemma in `Agreement.lean` has
 been formalised in full, removing a major gap in the combinatorial
@@ -64,13 +64,13 @@ theory.
 * **Theory block.** Deepen the study of items B‑1–B‑3, including connections to existing results on canonical forms and description bounds.
 * **Algorithm block.** Implement meet-in-the-middle and fast enumeration (B‑4) for small values of `n`.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
-  The Lean code now defines `buildCover` in `cover2.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_drop`.
+  The Lean code now defines `buildCover` in `cover2.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_noninc`.
   The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
   The lemma `buildCover_pointwiseMono` has now been proved, establishing monochromaticity of
   the constructed cover.  The companion size estimate `buildCover_card_bound` is now proven using the same measure-based recursion.
-* **Entropy block.**  The new lemma `exists_coord_entropy_drop` in `entropy.lean`
-  shows that some coordinate always cuts collision entropy by at least one bit,
-  paving the way for a robust splitting strategy.
+* **Entropy block.**  The lemma `exists_coord_entropy_noninc` in `entropy.lean`
+  shows that some coordinate always yields a restriction with no increase in
+  collision entropy, paving the way for a robust splitting strategy.
   A lemma `low_sensitivity_cover` describes how smooth families can be compressed, and the stub `acc_mcsp_sat.lean` sketches the final SAT reduction.
   A minimal `DecisionTree` API with depth and evaluation utilities now also
   includes path extraction with `subcube_of_path` and the lemmas

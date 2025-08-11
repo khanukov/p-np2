@@ -136,9 +136,9 @@ by `10 * h` once `log₂(n+1)^2 ≤ h`.  Consequently
 `R.card + R_ls.card ≤ mBound n h`, which establishes the inductive step.
 
 ## Entropy branch
-If the family is not low-sensitivity we use `exists_coord_entropy_drop` to find a
-coordinate that lowers collision entropy.  Splitting on this bit yields two
-restricted families `F₀` and `F₁` with entropy budget `h - 1`.  By induction
+If the family is not low-sensitivity we use `exists_coord_entropy_noninc` to find a
+coordinate whose restriction does not increase collision entropy.  Splitting on this bit
+yields two restricted families `F₀` and `F₁` with entropy budget `h - 1`.  By induction
 their covers contain at most `mBound n (h - 1)` rectangles.  The union of the
 two covers therefore has size at most `2 * mBound n (h - 1)`, which stays below
 `mBound n h` by `two_mul_mBound_le_succ`.

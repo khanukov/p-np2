@@ -256,7 +256,7 @@ Updated checklist (August 2025)
 *Note: This checklist has been verified against the codebase. For a higher-level summary of the project's status, please see `README.md`.*
 
 - [x] `bool_func.lean`: basic types.
- - [x] `entropy.lean`: full `exists_coord_entropy_drop` lemma and helper results.
+ - [x] `entropy.lean`: entropy monotonicity lemma `exists_coord_entropy_noninc` and helper results.
  - [x] `sunflower.lean`: classical sunflower lemma `sunflower_exists_classic`
        now has a complete formal proof.
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.

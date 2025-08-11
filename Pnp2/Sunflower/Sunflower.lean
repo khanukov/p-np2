@@ -1,10 +1,9 @@
 --
 --  Pnp2/Sunflower/Sunflower.lean
 --
---  Classical sunflower lemma: axiomatized with the standard threshold
---  `(p - 1)^w * w!`.  We provide the basic definitions together with a
---  direct proof for the two-petal case; the general combinatorial lemma
---  is recorded as an axiom for now.
+--  Classical sunflower lemma with the standard threshold `(p - 1)^w * w!`.
+--  We provide the basic definitions and a constructive proof of the full
+--  combinatorial lemma, including the two-petal base case.
 --
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.Finset.Card
@@ -789,8 +788,8 @@ theorem sunflower_exists_classic
     (h_w : ∀ A ∈ 𝓢, A.card = w) :
     HasSunflower 𝓢 w p := by
   classical
-  -- We handle degenerate parameter choices explicitly and postpone
-  -- the true combinatorial argument to future work.
+  -- We handle degenerate parameter choices explicitly before proceeding
+  -- with the standard combinatorial argument.
   by_cases hw1 : w = 1
   · -- Families of singletons are covered by `sunflower_exists_w1`.
     subst hw1
@@ -1067,9 +1066,8 @@ theorem sunflower_exists_classic
         rcases hx_exists with ⟨x, hxU, hx_large⟩
         -- We have found an element `x` whose slice is sufficiently large.
         -- Removing `x` from the slice yields a family of `(w - 1)`-sets of
-        -- size above the threshold.  The remaining induction step
-        -- (applying the lemma to this smaller family and lifting the
-        -- sunflower back) is postponed.
+        -- size above the threshold.  We now apply the inductive hypothesis
+        -- to this smaller family and lift the resulting sunflower back to `𝓢`.
         have hx_large' : threshold (w - 1) p <
             (eraseSlice 𝓢 x).card := by
           simpa [card_eraseSlice] using hx_large
@@ -1137,7 +1135,7 @@ lemma exists_of_large_family_classic
     (hbig : F.card > threshold w t) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F := by
   classical
-  -- obtain the abstract sunflower using the axiom
+  -- obtain the abstract sunflower using the proven lemma
   have hsun : HasSunflower (α := Fin n) F w t :=
     sunflower_exists_classic (𝓢 := F) (w := w) (p := t) hw ht
       (by simpa [threshold] using hbig) hcard

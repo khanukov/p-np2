@@ -42,6 +42,11 @@ namespace Sunflower
 
 variable {α : Type} [DecidableEq α]
 
+/-- The standard cardinality bound `(t - 1)^w * w!` appearing in the
+    sunflower lemma.  Having it as a named definition makes subsequent
+    statements cleaner. -/
+def threshold (w t : ℕ) : ℕ := (t - 1) ^ w * Nat.factorial w
+
 /-- A `p`-sunflower inside a family `𝓢` consists of a subfamily `𝓣` of
 cardinality `p` whose pairwise intersections all coincide with a set
 `core`. -/
@@ -590,7 +595,7 @@ lemma sunflower_exists_two
 future revision. -/
 axiom sunflower_exists_classic
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
-    (h_size : (p - 1) ^ w * Nat.factorial w < 𝓢.card)
+    (h_size : threshold w p < 𝓢.card)
     (h_w : ∀ A ∈ 𝓢, A.card = w) :
     HasSunflower 𝓢 w p
 
@@ -599,10 +604,10 @@ already known to consist of `w`-sets. -/
 lemma sunflower_exists_of_fixedSize
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
     (h_cards : ∀ A ∈ 𝓢, A.card = w)
-    (h_big  : 𝓢.card > (p - 1) ^ w * Nat.factorial w) :
+    (h_big  : 𝓢.card > threshold w p) :
     HasSunflower 𝓢 w p :=
   sunflower_exists_classic 𝓢 w p hw hp
-    (by simpa using h_big) h_cards
+    (by simpa [threshold] using h_big) h_cards
 
 /-! ## Structures for the cover algorithm -/
 
@@ -630,12 +635,13 @@ lemma exists_of_large_family_classic
     {F : Finset (Petal n)}
     (hw : 0 < w) (ht : 2 ≤ t)
     (hcard : ∀ S ∈ F, S.card = w)
-    (hbig : F.card > (t - 1) ^ w * Nat.factorial w) :
+    (hbig : F.card > threshold w t) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F := by
   classical
   -- obtain the abstract sunflower using the axiom
   have hsun : HasSunflower (α := Fin n) F w t :=
-    sunflower_exists_classic (𝓢 := F) (w := w) (p := t) hw ht hbig hcard
+    sunflower_exists_classic (𝓢 := F) (w := w) (p := t) hw ht
+      (by simpa [threshold] using hbig) hcard
   rcases hsun with ⟨pet, hsub, core, hSun, hcards⟩
   rcases hSun with ⟨hsize, hpair⟩
   -- show the core is contained in every petal
@@ -779,7 +785,7 @@ lemma cover_step_if_large
     {F : Finset (Petal n)} {w t : ℕ}
     (hw : 0 < w) (ht : 2 ≤ t)
     (hcard : ∀ A ∈ F, A.card = w)
-    (hbig  : F.card > (t - 1) ^ w * Nat.factorial w) :
+    (hbig  : F.card > threshold w t) :
     ∃ S : SunflowerFam n t, S.petals ⊆ F ∧
       (S.removeCovered F).card ≤ F.card := by
   classical
@@ -905,7 +911,7 @@ lemma exists_cover_step_strict
     {F : Finset (Petal n)} {w t : ℕ}
     (hw : 0 < w) (ht : 2 ≤ t)
     (hcardF : ∀ A ∈ F, A.card = w)
-    (hbig  : F.card > (t - 1) ^ w * Nat.factorial w) :
+    (hbig  : F.card > threshold w t) :
     ∃ S : SunflowerFam n t,
       S.petals ⊆ F ∧
       (∀ A ∈ S.removeCovered F, A.card = w) ∧
@@ -933,10 +939,10 @@ lemma exists_cover_until_threshold
     (hw : 0 < w) (ht : 2 ≤ t)
     (hcardF : ∀ A ∈ F, A.card = w) :
     ∃ F' ⊆ F, (∀ A ∈ F', A.card = w) ∧
-      F'.card ≤ (t - 1) ^ w * Nat.factorial w := by
+      F'.card ≤ threshold w t := by
   classical
   -- Обозначим порог для размера семейства.
-  let B := (t - 1) ^ w * Nat.factorial w
+  let B := threshold w t
 
   -- Индуктивное утверждение: для любого семейства `F'` размера `N`,
   -- которое `w`-равномерно, существует подсемейство размера `≤ B`.

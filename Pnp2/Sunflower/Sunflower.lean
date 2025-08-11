@@ -899,6 +899,31 @@ lemma card_removeCovered_lt
   have hlt : F.card - t < F.card := Nat.sub_lt hFpos htpos
   exact lt_of_le_of_lt hle' hlt
 
+/-- Один строгий шаг алгоритма покрытия: из большого `w`-равномерного семейства
+    мы выделяем подсолнечник и удаляем все множества, содержащие его ядро. -/
+lemma exists_cover_step_strict
+    {F : Finset (Petal n)} {w t : ℕ}
+    (hw : 0 < w) (ht : 2 ≤ t)
+    (hcardF : ∀ A ∈ F, A.card = w)
+    (hbig  : F.card > (t - 1) ^ w * Nat.factorial w) :
+    ∃ S : SunflowerFam n t,
+      S.petals ⊆ F ∧
+      (∀ A ∈ S.removeCovered F, A.card = w) ∧
+      (S.removeCovered F).card < F.card := by
+  classical
+  -- Шаг 1: извлекаем подсолнечник из большого семейства
+  obtain ⟨S, hSsub⟩ := exists_of_large_family_classic
+    (n := n) (w := w) (t := t) (F := F) hw ht hcardF hbig
+  -- Шаг 2: после удаления покрытых сохраняется `w`-равномерность
+  have h_uniform : ∀ A ∈ S.removeCovered F, A.card = w :=
+    S.uniform_of_removeCovered (F := F) (w := w) hcardF
+  -- Из `t ≥ 2` получаем `t > 0`, нужное для строгой убываемости
+  have htpos : 0 < t := lt_of_lt_of_le (by decide : 0 < 2) ht
+  -- Шаг 3: количество элементов после удаления строго меньше
+  have hlt : (S.removeCovered F).card < F.card :=
+    S.card_removeCovered_lt (F := F) hSsub htpos
+  exact ⟨S, hSsub, h_uniform, hlt⟩
+
 end SunflowerFam
 
 end Sunflower

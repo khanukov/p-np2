@@ -788,6 +788,87 @@ lemma cover_step_if_large
   refine ⟨S, hSsub, ?_⟩
   simpa using S.card_removeCovered_le (F := F)
 
+
+/-- На одном шаге алгоритма покрытия: если `S.petals ⊆ F`, то после удаления покрытых элементов
+    (всех `A ∈ F`, таких что `S.core ⊆ A`) остаётся по меньшей мере на `S.petals.card` меньше. -/
+lemma card_removeCovered_le_sub_t
+    {S : SunflowerFam n t} {F : Finset (Petal n)}
+    (hSub : S.petals ⊆ F) :
+    (S.removeCovered F).card ≤ F.card - S.petals.card := by
+  classical
+  -- Множество удалённых элементов: все `A ∈ F` с `S.core ⊆ A`.
+  let R := F.filter (fun A => S.core ⊆ A)
+  -- Остаток: не содержащие ядра
+  let G := S.removeCovered F   -- = F.filter (fun A => ¬ S.core ⊆ A)
+  have hdisj : Disjoint G R := by
+    -- `G` и `R` — это два комплиментарных фильтра по предикату и его отрицанию.
+    -- В таких случаях они пересекаются пусто.
+    apply Finset.disjoint_left.mpr
+    intro A hG hR
+    -- `hG`: A ∈ G = F.filter (¬ core ⊆ A)
+    -- `hR`: A ∈ R = F.filter (core ⊆ A)
+    -- противоречие
+    have hG' := (Finset.mem_filter.mp hG).2
+    have hR' := (Finset.mem_filter.mp hR).2
+    exact hG' (hR')
+  have hunnion : G ∪ R ⊆ F := by
+    -- обе части — подсемейства F
+    intro A hA
+    have : (A ∈ G) ∨ (A ∈ R) := Finset.mem_union.mp hA
+    cases this with
+    | inl hGA =>
+      exact (Finset.mem_filter.mp hGA).1
+    | inr hRA =>
+      exact (Finset.mem_filter.mp hRA).1
+
+  -- Теперь посмотрим на `F.filter (core ⊆ ·)`.
+  have : ∀ P ∈ S.petals, P ∈ R := by
+    intro P hP
+    have hP_core : S.core ⊆ P := S.sub_core _ hP
+    have hPF : P ∈ F := hSub hP
+    exact Finset.mem_filter.mpr ⟨hPF, hP_core⟩
+
+  -- Значит `S.petals ⊆ R`; получаем нижнюю оценку для `R.card`.
+  have hRcard_lower : S.petals.card ≤ R.card :=
+    Finset.card_le_card this
+
+  -- `G` и `R` дизъюнктны и подмножетсва `F`. Кардинальность `F`
+  -- как минимум сумма кардинальностей `G` и `R`.
+  have hUnionCard : G.card + R.card ≤ F.card := by
+    -- поскольку `G ⊆ F`, `R ⊆ F`, и они дизъюнктны, то
+    -- `|G| + |R| = |G ∪ R| ≤ |F|`
+    -- Сначала докажем: `G ∪ R ⊆ F`, `Disjoint G R`. Уже есть.
+    have hUnion : (G ∪ R).card = G.card + R.card :=
+      Finset.card_union_of_disjoint hdisj
+    have h_le : (G ∪ R).card ≤ F.card :=
+      Finset.card_le_card hunnion
+    -- Итого: card G + card R = card (G ∪ R) ≤ F.card.
+    simpa [hUnion, Nat.add_comm] using h_le
+
+  -- Из `G.card + R.card ≤ F.card` следует `G.card ≤ F.card - R.card`
+  have : G.card ≤ F.card - R.card := by
+    -- вычитаем `R.card` из обеих частей неравенства `G.card + R.card ≤ F.card`
+    have h := Nat.sub_le_sub_right hUnionCard R.card
+    have h_cancel : (G.card + R.card) - R.card = G.card := by
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        Nat.add_sub_cancel G.card R.card
+    simpa [h_cancel] using h
+
+  -- Подставим нижнюю оценку на `R.card`: `R.card ≥ S.petals.card`.
+  exact le_trans this (by
+    -- здесь используем монотонность `Nat.sub` по правому аргументу
+    -- `F.card - R.card ≤ F.card - S.petals.card` если `S.petals.card ≤ R.card`.
+    exact Nat.sub_le_sub_left hRcard_lower F.card)
+
+/-- Частный случай с разыменованием `S.tsize`. -/
+lemma card_removeCovered_le_sub_t'
+    {S : SunflowerFam n t} {F : Finset (Petal n)} :
+    S.petals ⊆ F →
+    (S.removeCovered F).card ≤ F.card - t := by
+  classical
+  intro hSub
+  simpa [S.tsize] using card_removeCovered_le_sub_t (S := S) (F := F) hSub
+
 end SunflowerFam
 
 end Sunflower

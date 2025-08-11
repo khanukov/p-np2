@@ -32,19 +32,21 @@ tracked in `TODO.md` and will be removed as the project progresses.
   (`toFinset` and `size`), a monotonicity lemma for inclusion and the
   cardinal split result `exists_coord_card_drop`.  Lightweight structures
   `LabeledCube` and `Cover` expose the building blocks for recursive
-  cover constructors.  The module now integrates a sunflower step via the axiomatic `sunflower_exists` that extracts a rectangle covering several functions at once.  A lemma
-  `monochromatic_point` still shows that single‑point subcubes are
-  automatically monochromatic for any Boolean function.
+  cover constructors.  The module now integrates a sunflower step via the
+  axiomatic `sunflower_exists_classic` that extracts a rectangle covering
+  several functions at once.
 
-* `entropy.lean` – collision entropy framework with the `EntropyDrop` lemma. The halving statement `exists_restrict_half` currently relies on the axiom `exists_restrict_half_real_aux`.
-* `sunflower.lean` – contains the classical sunflower lemma `sunflower_exists`, which is presently assumed as an axiom.
+* `entropy.lean` – collision entropy framework with the `exists_coord_entropy_drop` lemma. The halving statement `exists_restrict_half` currently relies on the axiom `exists_restrict_half_real_aux`.
+* `sunflower.lean` – reexports the classical sunflower lemma `sunflower_exists_classic`, which is presently assumed as an axiom.
 * `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`).
   The lemma `RSpread.mono` now shows that a larger spread parameter implies
   a smaller one when `0 < R₂ ≤ R₁`.  Additional helper lemmas
   (`RSpread.card_bound`, `RSpread.one_of_nonempty`, `RSpread.card_filter_le`)
   rephrase the definition and handle the trivial case `R = 1`.
 * `Agreement.lean` – complete proof of the core‑agreement lemma.
-* `cover2.lean` – reimplementation of the cover builder. The pointwise monochromaticity result `buildCover_pointwiseMono` is available, while the counting lemma `buildCover_card_bound` still depends on unfinished proofs in `Cover/BuildCover.lean`.
+* `cover2.lean` – reimplementation of the cover builder with `buildCover_pointwiseMono`, `sunflower_step`, and supporting combinatorial lemmas. Earlier counting lemmas such as `buildCover_card_bound` have been removed.
+* `cover_size.lean` – minimal notion of cover size with an elementary cardinality bound.
+* `sat_cover.lean` – evaluates circuits on representative points of a rectangle cover and proves basic correctness properties.
 * `Cover/Compute.lean` – lightweight wrapper exposing a constructive
   variant `buildCoverCompute` that enumerates the rectangles as a list.
   The current implementation reuses the naive exhaustive scan of the Boolean
@@ -56,12 +58,10 @@ tracked in `TODO.md` and will be removed as the project progresses.
   `Pnp2` namespace.
 * `collentropy.lean` – collision entropy of a single Boolean function with
   basic lemmas such as `H₂Fun_le_one`.
-* `CollentropyBasic.lean` – trimmed-down entropy file containing only the
-  bounds needed for the SAT solver. Several numeric inequalities remain
-  admitted for the time being.
+* `CollentropyBasic.lean` – trimmed-down entropy file containing only the bounds needed for the SAT solver. All numeric inequalities are now fully proved.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
   record extracted from `cover2.lean`.
-* `merge_low_sens.lean` – stub combining low‑sensitivity and entropy covers.
+* `merge_low_sens.lean` – provides `mergeLowSensitivityCover` and `merge_cover` to combine low‑sensitivity and entropy covers, together with accompanying correctness lemmas.
 * `DecisionTree.lean` – minimal decision-tree datatype with depth, leaf-count,
   path extraction, a `subcube_of_path` helper and lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
@@ -81,18 +81,9 @@ tracked in `TODO.md` and will be removed as the project progresses.
   basic version of the table locality lemma (roadmap B‑2) with the
   trivial bound `k = n`.
 * `examples.lean` – runnable examples illustrating the definitions.
-* `experiments/` – small Python tools exploring rectangle covers, including
-  `lemma_b_search.py`, `single_gate_count.py`, and `collision_entropy.py`.
-  The directory also contains enumeration logs such as
-  `results_n2_n3.md`, `results_n4_n5.md`, and `results_n6.md`.
-* `docs/` – assorted background notes.  The file `E1_roadmap.md` contains the
-  current roadmap for the ACC⁰∘MCSP subexponential SAT approach.  A new note
-  `buildCover_card_bound_outline.md` summarises the measure-based induction used
-  in the proof of `buildCover_card_bound`.  The document
-  `canonical_eq_proof_plan.md` records the original sketch for proving that
-  canonical circuits coincide exactly when their evaluations agree.  The
-  theorem is formalised in `Pnp2/canonical_circuit.lean` as
-  `canonical_eq_iff_eqv`.
+* `experiments/` – small Python tools exploring rectangle covers, including `lemma_b_search.py`, `single_gate_count.py`, `collision_entropy.py`, `capacity_drop.py`, and `sunflower_step.py`.
+  The directory also contains enumeration logs such as `results_n2_n3.md`, `results_n4_n5.md`, `results_n6.md`, and `results_n7_n8.md`.
+* `docs/` – assorted background notes. `E1_roadmap.md` outlines the ACC⁰∘MCSP approach. Additional materials include `buildCover_card_bound_outline.md` (historical proof outline for a now‑removed counting lemma), `canonical_eq_proof_plan.md`, `collision_entropy_solution.md`, `master_blueprint.md`, `lemma_B_plan.md`, `b3_b5_details.md`, and `np_not_p_poly_sketch.md`. The theorem `canonical_eq_iff_eqv` from `canonical_eq_proof_plan.md` is formalised in `Pnp2/canonical_circuit.lean`.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
 
 ## Building
@@ -147,12 +138,13 @@ python3 experiments/collision_entropy.py 3 1 --circuits  # weight by circuit cou
 python3 experiments/collision_entropy.py 3 1 --list-counts  # table counts
 python3 experiments/collision_entropy.py 3 1 --list-counts --descending
 python3 experiments/collision_entropy.py 3 1 --list-counts --top 5
+python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2  # search for a small sunflower
 ```
 
 ## Status
 
 This repository is a research prototype. Many central lemmas remain incomplete and are marked with `sorry` or `axiom`. In particular:
-* `sunflower_exists`, `exists_restrict_half_real_aux`, `decisionTree_cover`, and several `buildCover` lemmas are axioms.
+* `sunflower_exists_classic`, `exists_restrict_half_real_aux`, and `decisionTree_cover` are axioms.
 * `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
 * `ComplexityClasses.lean` assumes `P ⊆ P/poly`.
 

@@ -26,15 +26,17 @@ theorem familyCollisionEntropyCover
 
 /-!
 ### A convenience record for covers returned by `familyEntropyCover`.
-This bundles the list of rectangles together with proofs that each
-is monochromatic for the whole family, that the rectangles cover all
-`1`‑inputs, and that their number is bounded by `mBound`.
+This bundles the list of rectangles together with proofs that each is
+monochromatic for the whole family and that the rectangles cover all
+`1`‑inputs.  Earlier iterations of this project also recorded an explicit
+cardinality bound, but the current development does not rely on this
+additional information.  Dropping the field keeps the interface
+lightweight and avoids depending on the unfinished size analysis.
 -/
 structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   rects   : Finset (Subcube n)
   mono    : ∀ C ∈ rects, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
-  bound   : rects.card ≤ mBound n h
 
 /--
 `familyEntropyCover` packages the canonical cover produced by `coverFamily` into
@@ -48,15 +50,13 @@ noncomputable def familyEntropyCover
   classical
   refine
     ⟨Cover2.coverFamily (F := F) (h := h) hH,
-      ?mono, ?covers, ?bound⟩
+      ?mono, ?covers⟩
   · -- Monochromaticity is inherited from `coverFamily`.
     intro C hC g hg
     exact Cover2.coverFamily_pointwiseMono (F := F) (h := h) (hH := hH) hC g hg
   · -- All `1`-inputs are covered by construction.
     intro f hf x hx
     exact Cover2.coverFamily_spec_cover (F := F) (h := h) (hH := hH) f hf x hx
-  · -- The size of the cover is bounded by `mBound` (axiom).
-    exact Cover2.coverFamily_card_bound (F := F) (h := h) (hH := hH)
 
 /-!
 `familyEntropyCover` is defined using `cover_exists`, just like

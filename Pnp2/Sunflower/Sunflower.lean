@@ -715,3 +715,81 @@ end Sunflower
 
 end
 
+namespace Sunflower
+
+open Boolcube
+
+variable {α : Type} [DecidableEq α]
+
+/-! ### Очистка семейства после выделения ядра -/
+
+/-- Удаляет из семейства `𝓢` те подмножества, которые содержат фиксированное `core`. -/
+def removeSupersets (𝓢 : Finset (Finset α)) (core : Finset α) :
+    Finset (Finset α) :=
+  𝓢.filter (fun A => ¬ core ⊆ A)
+
+/-- Характеризация членства в `removeSupersets`. -/
+lemma mem_removeSupersets {𝓢 : Finset (Finset α)} {core A : Finset α} :
+    A ∈ removeSupersets 𝓢 core ↔ (A ∈ 𝓢 ∧ ¬ core ⊆ A) := by
+  simp [removeSupersets]
+
+/-- Размер отфильтрованного семейства не превосходит исходный размер. -/
+lemma card_removeSupersets_le (𝓢 : Finset (Finset α)) (core : Finset α) :
+    (removeSupersets 𝓢 core).card ≤ 𝓢.card := by
+  classical
+  exact Finset.card_filter_le (s := 𝓢) (p := fun A => ¬ core ⊆ A)
+
+/-- Отфильтрованное семейство является подсемейством исходного. -/
+lemma removeSupersets_subset (𝓢 : Finset (Finset α)) (core : Finset α) :
+    removeSupersets 𝓢 core ⊆ 𝓢 := by
+  intro A hA
+  exact (mem_removeSupersets.mp hA).1
+
+namespace SunflowerFam
+
+variable {n t : ℕ}
+
+/-- Удаляем из семейства `F` те элементы, которые содержат ядро `S.core`. -/
+def removeCovered {S : SunflowerFam n t} (F : Finset (Petal n)) :
+    Finset (Petal n) :=
+  removeSupersets F S.core
+
+/-- Остаток после удаления покрытых является подсемейством `F`. -/
+lemma removeCovered_subset {S : SunflowerFam n t} {F : Finset (Petal n)} :
+    S.removeCovered F ⊆ F :=
+  removeSupersets_subset F S.core
+
+/-- Характеризация членства в `removeCovered`. -/
+lemma mem_removeCovered {S : SunflowerFam n t} {F : Finset (Petal n)}
+    {A : Petal n} :
+    A ∈ S.removeCovered F ↔ (A ∈ F ∧ ¬ S.core ⊆ A) := by
+  classical
+  simpa [SunflowerFam.removeCovered, Sunflower.removeSupersets,
+    Sunflower.mem_removeSupersets]
+
+/-- Оценка на размер оставшегося семейства после удаления покрытых. -/
+lemma card_removeCovered_le {S : SunflowerFam n t} {F : Finset (Petal n)} :
+    (S.removeCovered F).card ≤ F.card := by
+  classical
+  simpa [removeCovered] using Sunflower.card_removeSupersets_le F S.core
+
+/-- Один шаг “алгоритма покрытия”: если семейство достаточно велико, то можно
+    извлечь подсолнечник и удалить покрытые элементы. -/
+lemma cover_step_if_large
+    {F : Finset (Petal n)} {w t : ℕ}
+    (hw : 0 < w) (ht : 2 ≤ t)
+    (hcard : ∀ A ∈ F, A.card = w)
+    (hbig  : F.card > (t - 1) ^ w * Nat.factorial w) :
+    ∃ S : SunflowerFam n t, S.petals ⊆ F ∧
+      (S.removeCovered F).card ≤ F.card := by
+  classical
+  obtain ⟨S, hSsub⟩ := exists_of_large_family_classic
+    (n := n) (w := w) (t := t) (F := F) hw ht hcard hbig
+  refine ⟨S, hSsub, ?_⟩
+  simpa using S.card_removeCovered_le (F := F)
+
+end SunflowerFam
+
+end Sunflower
+
+

@@ -777,20 +777,12 @@ lemma sunflower_exists_w1
   refine ⟨hTcard, ?_⟩
   intro A hA B hB hAB
   simpa using hpair hA hB hAB
-/-! ### Classical sunflower lemma (axiomatized) -/
+/-! ### Classical sunflower lemma -/
 
-/-- **Erdős–Rado sunflower lemma** (axiom).  If a finite family of
-`w`-sets has more than `(p - 1)^w * w!` members, then it contains a
-`p`-sunflower.  A complete combinatorial proof will be provided in a
-future revision. -/
-/-
-  **Erdős–Rado sunflower lemma.**
-  The classical combinatorial proof is not yet fully formalised.
-  The statement is provided here as a theorem with a partial proof
-  covering easy parameter cases; the remaining induction step is left
-  as a `sorry` placeholder.  Completing this proof will remove the last
-  axiomatic assumption in the sunflower development.
--/
+/-- **Erdős–Rado sunflower lemma.**  If a finite family of `w`-sets has
+more than `(p - 1)^w * w!` members, then it contains a `p`-sunflower.
+The proof follows the standard combinatorial argument by induction on
+`w`. -/
 theorem sunflower_exists_classic
     (𝓢 : Finset (Finset α)) (w p : ℕ) (hw : 0 < w) (hp : 2 ≤ p)
     (h_size : threshold w p < 𝓢.card)
@@ -814,8 +806,6 @@ theorem sunflower_exists_classic
       exact sunflower_exists_two (𝓢 := 𝓢) (w := w) hw hlarge h_w
     · -- General case `w > 1` and `p > 2`:
       -- We develop the combinatorial skeleton of the classical proof.
-      -- The final inductive step invoking the hypothesis `w - 1` is
-      -- still pending and is marked with `sorry` below.
       --
       -- **Step 1: choose a maximal pairwise-disjoint subfamily.**
       classical
@@ -1089,13 +1079,24 @@ theorem sunflower_exists_classic
           rcases mem_slice.mp hB with ⟨hB𝓢, hxB⟩
           exact card_erase_of_uniform (𝓢 := 𝓢) (w := w)
             h_w hw hB𝓢 hxB
-        -- Final inductive step still to be supplied.
-        -- One would apply `sunflower_exists_classic` recursively to
-        -- `eraseSlice 𝓢 x` and lift the resulting sunflower.
-        --
-        -- TODO: implement the recursive call and `lift_sunflower` step.
-        -- This will close the final gap in the classical proof.
-        sorry
+        -- Final inductive step: apply the lemma recursively to the
+        -- `(w - 1)`-uniform family `eraseSlice 𝓢 x` and lift the
+        -- resulting sunflower back to `𝓢`.
+        have hwgt : 1 < w :=
+          lt_of_le_of_ne (Nat.succ_le_of_lt hw)
+            (by simpa [eq_comm] using hw1)
+        have hw' : 0 < w - 1 := Nat.sub_pos_of_lt hwgt
+        -- Inductive hypothesis: `eraseSlice 𝓢 x` contains a sunflower.
+        have hSunSmall : HasSunflower (eraseSlice 𝓢 x) (w - 1) p :=
+          sunflower_exists_classic (𝓢 := eraseSlice 𝓢 x)
+            (w := w - 1) (p := p) hw' hp hx_large' hunif'
+        -- Lift the sunflower from the slice back to the original family.
+        rcases hSunSmall with ⟨𝓣, hTsub, C, hSun, _⟩
+        obtain ⟨𝓣', hT'sub, hSun', hcards'⟩ :=
+          lift_sunflower (𝓢 := 𝓢) (x := x)
+            (hunif := h_w) (hw := hw)
+            (𝓣 := 𝓣) (C := C) hTsub hSun
+        exact ⟨𝓣', hT'sub, insert x C, hSun', hcards'⟩
 
 /-- Convenient wrapper for the sunflower lemma when the family is
 already known to consist of `w`-sets. -/

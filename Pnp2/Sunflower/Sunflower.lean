@@ -8,6 +8,7 @@
 --
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.Finset.Card
+import Mathlib.Data.Finset.Disjoint
 import Pnp2.Boolcube
 
 open Classical Finset
@@ -46,6 +47,21 @@ variable {α : Type} [DecidableEq α]
     sunflower lemma.  Having it as a named definition makes subsequent
     statements cleaner. -/
 def threshold (w t : ℕ) : ℕ := (t - 1) ^ w * Nat.factorial w
+
+/-- The threshold for width `0` is `1`, since there is exactly one empty
+set. -/
+lemma threshold_zero (p : ℕ) : threshold 0 p = 1 := by
+  simp [threshold]
+
+/-- A convenient recurrence for the sunflower threshold.  Increasing the
+width by one multiplies the bound by `(p - 1)` (for the new element) and
+`w + 1` (for the factorial). -/
+lemma threshold_succ (w p : ℕ) :
+    threshold (w + 1) p = (p - 1) * (w + 1) * threshold w p := by
+  -- Expand both sides and simplify using `pow_succ` and
+  -- `Nat.factorial_succ`.
+  simp [threshold, Nat.factorial_succ, pow_succ, Nat.mul_comm, Nat.mul_left_comm,
+    Nat.mul_assoc]
 
 /-- A `p`-sunflower inside a family `𝓢` consists of a subfamily `𝓣` of
 cardinality `p` whose pairwise intersections all coincide with a set
@@ -587,6 +603,56 @@ lemma sunflower_exists_two
       | inl hx => simpa [hx] using h_w A hA
       | inr hx => simpa [hx] using h_w B hB
 
+/-- Base case of the classical sunflower lemma: families of singletons.
+If a family of singletons has more than `p - 1` members (which is exactly
+`threshold 1 p`), then it contains a `p`-sunflower with empty core. -/
+lemma sunflower_exists_w1
+    (𝓢 : Finset (Finset α)) (p : ℕ) (hp : 2 ≤ p)
+    (h_size : threshold 1 p < 𝓢.card)
+    (h_w : ∀ A ∈ 𝓢, A.card = 1) :
+    HasSunflower 𝓢 1 p := by
+  classical
+  -- From the size assumption we extract a subfamily of size `p`.
+  have hcardp : p ≤ 𝓢.card := by
+    -- `threshold 1 p = p - 1` by definition.
+    have hsize' : (p - 1) < 𝓢.card := by
+      simpa [threshold] using h_size
+    -- Hence `(p - 1) + 1 = p` is bounded by `𝓢.card`.
+    have hsize'' : (p - 1) + 1 ≤ 𝓢.card := Nat.succ_le_of_lt hsize'
+    -- Using `p ≥ 1` we rewrite `(p - 1) + 1` to `p`.
+    have hp1lt : 1 < p := lt_of_lt_of_le (by decide : 1 < 2) hp
+    have hp1 : 1 ≤ p := Nat.le_of_lt hp1lt
+    simpa [Nat.sub_add_cancel hp1] using hsize''
+  -- Choose a subfamily of exactly `p` singletons.
+  obtain ⟨𝓣, hTsub, hTcard⟩ :=
+    Finset.exists_subset_card_eq (s := 𝓢) (n := p) hcardp
+  -- All members of this subfamily are still singletons.
+  have hT_cards : ∀ A ∈ 𝓣, A.card = 1 := by
+    intro A hA; exact h_w A (hTsub hA)
+  -- Distinct singletons are disjoint, hence their intersection is empty.
+  have hpair :
+      ∀ ⦃A⦄, A ∈ 𝓣 → ∀ ⦃B⦄, B ∈ 𝓣 → A ≠ B →
+        A ∩ B = (∅ : Finset α) := by
+    intro A hA B hB hAB
+    have hA1 : A.card = 1 := hT_cards A hA
+    have hB1 : B.card = 1 := hT_cards B hB
+    obtain ⟨a, haA⟩ := Finset.card_eq_one.mp hA1
+    obtain ⟨b, hbB⟩ := Finset.card_eq_one.mp hB1
+    have hneq : a ≠ b := by
+      intro h
+      apply hAB
+      simpa [haA, hbB, h]
+    have hdisj_single : Disjoint ({a} : Finset α) {b} :=
+      (disjoint_singleton).2 hneq
+    have hdisj : Disjoint A B := by
+      simpa [haA, hbB] using hdisj_single
+    simpa using
+      (Finset.disjoint_iff_inter_eq_empty.mp hdisj)
+  -- Assemble the sunflower structure with empty core.
+  refine ⟨𝓣, hTsub, ∅, ?_, hT_cards⟩
+  refine ⟨hTcard, ?_⟩
+  intro A hA B hB hAB
+  simpa using hpair hA hB hAB
 /-! ### Classical sunflower lemma (axiomatized) -/
 
 /-- **Erdős–Rado sunflower lemma** (axiom).  If a finite family of

@@ -235,6 +235,93 @@ lemma familyAfter_uniform
       -- Rewrite the right-hand side using the inductive hypothesis.
       simpa [hBcard, Nat.sub_sub, List.length] using this
 
+/-! ### Factorial decomposition over iterated erasures -/
+
+/-- **Factorial decomposition of iterated slices.**
+
+    Let `𝓢` be a `w`-uniform family and `xs` a list of elements to be
+    erased one by one.  As long as the remaining width `w - xs.length` is
+    positive, the following identity holds:
+
+    \[
+      (w - |xs|)! \cdot |familyAfter 𝓢 xs|
+        = \sum_{x \in (familyAfter 𝓢 xs).unions}
+            (w - |xs| - 1)! \cdot |familyAfter 𝓢 (x :: xs)|.
+    \]
+
+    Intuitively, each set in `familyAfter 𝓢 xs` has `w - xs.length`
+    elements.  Expanding the factorial of this width and applying the
+    double-counting lemma `sum_card_slices_eq_w_mul_card` yields the
+    stated equality. -/
+lemma factorial_card_decomposition
+    {𝓢 : Finset (Finset α)} {w : ℕ} {xs : List α}
+    (hunif : ∀ A ∈ 𝓢, A.card = w)
+    (hpos : xs.length < w) :
+    Nat.factorial (w - xs.length) * (familyAfter 𝓢 xs).card
+      = ∑ x ∈ (familyAfter 𝓢 xs).unions,
+          Nat.factorial (w - xs.length - 1)
+            * (familyAfter 𝓢 (x :: xs)).card := by
+  classical
+  -- Abbreviation for the intermediate family after erasing `xs`.
+  let S' := familyAfter 𝓢 xs
+  -- After erasing `xs` the family remains uniform of width `w - xs.length`.
+  have h_unif : ∀ A ∈ S', A.card = w - xs.length :=
+    familyAfter_uniform (hunif := hunif) xs
+  -- Apply the double-counting lemma to `S'`.
+  have hsum :
+      ∑ x ∈ S'.unions, (slice S' x).card
+        = (w - xs.length) * S'.card :=
+    sum_card_slices_eq_w_mul_card
+      (𝓢 := S') (w := w - xs.length) h_unif
+
+  -- The remaining width after processing `xs` is positive by assumption.
+  have hw' : 0 < w - xs.length := Nat.sub_pos_of_lt hpos
+
+  -- Expand the factorial on the left: `n! = n * (n - 1)!` for positive `n`.
+  have hfact :
+      Nat.factorial (w - xs.length)
+        = (w - xs.length) * Nat.factorial (w - xs.length - 1) := by
+    -- From `0 < w - xs.length` we obtain `1 ≤ w - xs.length`.
+    have hle : 1 ≤ w - xs.length := Nat.succ_le_of_lt hw'
+    -- Therefore `w - xs.length - 1 + 1 = w - xs.length`.
+    have hsucc : w - xs.length - 1 + 1 = w - xs.length := by
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        using Nat.sub_add_cancel hle
+    -- Apply the recursive formula for the factorial and simplify.
+    have := Nat.factorial_succ (w - xs.length - 1)
+    -- Replace occurrences of `w - xs.length - 1 + 1` using the identity above.
+    simpa [hsucc]
+      using this
+
+  -- Start rewriting the desired equality.
+  calc
+    Nat.factorial (w - xs.length) * S'.card
+        = ((w - xs.length) *
+            Nat.factorial (w - xs.length - 1)) * S'.card := by
+              -- replace factorial using the expansion above
+              simpa [hfact]
+    _ = Nat.factorial (w - xs.length - 1) *
+            ((w - xs.length) * S'.card) := by
+              -- just reshuffle the multiplication for better readability
+              ac_rfl
+    _ = Nat.factorial (w - xs.length - 1) *
+            (∑ x ∈ S'.unions, (slice S' x).card) := by
+              -- substitute the double-counting identity
+              simpa [hsum]
+    _ = ∑ x ∈ S'.unions,
+            Nat.factorial (w - xs.length - 1) * (slice S' x).card := by
+              -- pull the scalar multiplier inside the sum
+              simpa [Finset.mul_sum]
+    _ = ∑ x ∈ S'.unions,
+            Nat.factorial (w - xs.length - 1) *
+              (familyAfter 𝓢 (x :: xs)).card := by
+              -- identifying each slice with the next step in `familyAfter`
+              apply Finset.sum_congr rfl
+              intro x hx
+              -- `familyAfter 𝓢 (x :: xs)` equals `eraseSlice S' x`
+              -- and `card_eraseSlice` replaces the cardinality of a slice.
+              simpa [S', familyAfter, card_eraseSlice]
+
 /-! ### Lifting a sunflower from a slice back to the original family -/
 
 /-- If `eraseSlice 𝓢 x` contains a `p`-sunflower with core `C`, then the

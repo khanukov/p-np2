@@ -37,6 +37,27 @@ def unions (𝓢 : Finset (Finset α)) : Finset α :=
   -- `mem_sup` characterises membership in the supremum
   simpa using (Finset.mem_sup (s := 𝓢) (f := id) (a := x))
 
+@[simp] lemma unions_empty :
+    (∅ : Finset (Finset α)).unions = (∅ : Finset α) := by
+  simp [unions]
+
+@[simp] lemma unions_insert (A : Finset α) (𝓣 : Finset (Finset α)) :
+    (insert A 𝓣).unions = A ∪ 𝓣.unions := by
+  classical
+  ext x; constructor <;> intro hx
+  · rcases Finset.mem_unions.mp hx with ⟨B, hB, hxB⟩
+    rcases Finset.mem_insert.mp hB with hBA | hBT
+    · subst hBA
+      exact Finset.mem_union.mpr (Or.inl hxB)
+    · exact Finset.mem_union.mpr
+        (Or.inr (Finset.mem_unions.mpr ⟨B, hBT, hxB⟩))
+  · rcases Finset.mem_union.mp hx with hxA | hxU
+    · exact Finset.mem_unions.mpr
+        ⟨A, Finset.mem_insert_self _ _, hxA⟩
+    · rcases Finset.mem_unions.mp hxU with ⟨B, hB, hxB⟩
+      exact Finset.mem_unions.mpr
+        ⟨B, Finset.mem_insert.mpr (Or.inr hB), hxB⟩
+
 end Finset
 
 namespace Sunflower
@@ -217,6 +238,109 @@ lemma sum_card_slices_eq_w_mul_card
     _ = w * 𝓢.card := by
           -- sum of a constant over `𝓢`
           simpa [Finset.sum_const, nsmul_eq_mul, Nat.mul_comm]
+
+/-- The union of a `w`-uniform family has size at most `w * |𝓢|`.  Each
+element of the union contributes at least one to the sum of slice
+cardinalities, which equals `w * 𝓢.card` by
+`sum_card_slices_eq_w_mul_card`. -/
+lemma unions_card_le_w_mul
+    (𝓢 : Finset (Finset α)) (w : ℕ)
+    (h_w : ∀ A ∈ 𝓢, A.card = w) :
+    (𝓢.unions).card ≤ w * 𝓢.card := by
+  classical
+  -- double counting provides the total number of incidences
+  have hsum := sum_card_slices_eq_w_mul_card (𝓢 := 𝓢) (w := w) h_w
+  -- every element of the union appears in at least one set
+  have hpos :
+      ∑ x ∈ 𝓢.unions, (1 : ℕ)
+        ≤ ∑ x ∈ 𝓢.unions, (slice 𝓢 x).card := by
+    refine Finset.sum_le_sum ?_
+    intro x hx
+    rcases Finset.mem_unions.mp hx with ⟨A, hA, hxA⟩
+    have hx_nonempty : (slice 𝓢 x).Nonempty :=
+      ⟨A, by simpa [slice] using And.intro hA hxA⟩
+    have hx_pos : 0 < (slice 𝓢 x).card := Finset.card_pos.mpr hx_nonempty
+    exact Nat.succ_le_of_lt hx_pos
+  -- rewrite the left-hand side via the cardinality of the union
+  have hcard : (𝓢.unions).card = ∑ x ∈ 𝓢.unions, (1 : ℕ) :=
+    Finset.card_eq_sum_ones (s := 𝓢.unions)
+  -- combine the inequalities
+  have hleft : (𝓢.unions).card ≤ ∑ x ∈ 𝓢.unions, (1 : ℕ) :=
+    le_of_eq hcard
+  have h' := le_trans hleft hpos
+  simpa [hsum] using h'
+
+/-! ### Pairwise disjoint subfamilies -/
+
+/-- `pairwiseDisjoint T` means that distinct members of `T` have
+disjoint intersection.  This is the natural notion of a family of
+pairwise disjoint sets. -/
+def pairwiseDisjoint (T : Finset (Finset α)) : Prop :=
+  ∀ ⦃A⦄, A ∈ T → ∀ ⦃B⦄, B ∈ T → A ≠ B →
+    A ∩ B = (∅ : Finset α)
+
+/-- For a pairwise-disjoint subfamily `T ⊆ 𝓢` of `w`-sets, the union of
+`T` has cardinality exactly `w * T.card`. -/
+lemma unions_card_of_disjoint
+    {𝓢 T : Finset (Finset α)} {w : ℕ}
+    (hTsub : T ⊆ 𝓢)
+    (hdisj : pairwiseDisjoint T)
+    (h_w : ∀ A ∈ 𝓢, A.card = w) :
+    (T.unions).card = w * T.card := by
+  classical
+  revert hTsub hdisj
+  refine Finset.induction_on T ?base ?step
+  · intro _ _; simp
+  · intro A T hA hIH hTsub hdisj
+    -- T is a subfamily of 𝓢
+    have hTsub' : T ⊆ 𝓢 := by
+      intro B hB; exact hTsub (Finset.mem_insert.mpr (Or.inr hB))
+    -- pairwise disjointness restricts to `T`
+    have hdisj' : pairwiseDisjoint T := by
+      intro B hB C hC hBC
+      exact hdisj (Finset.mem_insert.mpr (Or.inr hB))
+        (Finset.mem_insert.mpr (Or.inr hC)) hBC
+    -- apply the inductive hypothesis to `T`
+    have hIH' : (T.unions).card = w * T.card := hIH hTsub' hdisj'
+    -- union of `insert A T` is `A ∪ T.unions`
+    have hUnions : (insert A T).unions = A ∪ T.unions := by
+      simpa [Finset.unions_insert]
+    -- intersection of `A` with the union of `T` is empty
+    have hA_disj : A ∩ T.unions = (∅ : Finset α) := by
+      apply Finset.eq_empty_of_forall_not_mem
+      intro x hx
+      rcases Finset.mem_inter.mp hx with ⟨hxA, hxU⟩
+      rcases Finset.mem_unions.mp hxU with ⟨B, hB, hxB⟩
+      have hAB := hdisj (Finset.mem_insert.mpr (Or.inl rfl))
+        (Finset.mem_insert.mpr (Or.inr hB)) ?_
+      · have : x ∈ (∅ : Finset α) := by
+          simpa [hAB] using (Finset.mem_inter.mpr ⟨hxA, hxB⟩)
+        simpa using this
+      · intro hBA; exact hA (by simpa [hBA] using hB)
+    -- card of the union using disjointness
+    have hCardUnion : ((insert A T).unions).card = A.card + (T.unions).card := by
+      have hAdd := Finset.card_union_add_card_inter A T.unions
+      have hInterZero : (A ∩ T.unions).card = 0 := by
+        simpa [hA_disj]
+      have hAdd' : (A ∪ T.unions).card = A.card + (T.unions).card := by
+        have := hAdd
+        -- rewrite using the vanishing intersection
+        simpa [hInterZero, add_comm, add_left_comm, add_assoc] using this
+      simpa [hUnions, add_comm] using hAdd'
+    -- conclude by rewriting in terms of `w`
+    have hAcard : A.card = w := h_w A (hTsub (Finset.mem_insert.mpr (Or.inl rfl)))
+    calc
+      ((insert A T).unions).card
+          = A.card + (T.unions).card := hCardUnion
+      _ = w + (T.unions).card := by simpa [hAcard]
+      _ = w + w * T.card := by simpa [hIH']
+      _ = w * T.card + w := by
+            simpa [Nat.add_comm] using (Nat.add_comm w (w * T.card))
+      _ = w * (T.card + 1) := (Nat.mul_succ w T.card).symm
+      _ = w * (insert A T).card := by
+            have hcard_insert : (insert A T).card = T.card + 1 :=
+              Finset.card_insert_of_not_mem hA
+            simpa [hcard_insert, Nat.add_comm]
 
 /-! ### Iterated element erasure -/
 

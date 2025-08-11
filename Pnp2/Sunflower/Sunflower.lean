@@ -715,3 +715,268 @@ end Sunflower
 
 end
 
+namespace Sunflower
+
+open Boolcube
+
+variable {α : Type} [DecidableEq α]
+
+/-! ### Очистка семейства после выделения ядра -/
+
+/-- Удаляет из семейства `𝓢` те подмножества, которые содержат фиксированное `core`. -/
+def removeSupersets (𝓢 : Finset (Finset α)) (core : Finset α) :
+    Finset (Finset α) :=
+  𝓢.filter (fun A => ¬ core ⊆ A)
+
+/-- Характеризация членства в `removeSupersets`. -/
+lemma mem_removeSupersets {𝓢 : Finset (Finset α)} {core A : Finset α} :
+    A ∈ removeSupersets 𝓢 core ↔ (A ∈ 𝓢 ∧ ¬ core ⊆ A) := by
+  simp [removeSupersets]
+
+/-- Размер отфильтрованного семейства не превосходит исходный размер. -/
+lemma card_removeSupersets_le (𝓢 : Finset (Finset α)) (core : Finset α) :
+    (removeSupersets 𝓢 core).card ≤ 𝓢.card := by
+  classical
+  exact Finset.card_filter_le (s := 𝓢) (p := fun A => ¬ core ⊆ A)
+
+/-- Отфильтрованное семейство является подсемейством исходного. -/
+lemma removeSupersets_subset (𝓢 : Finset (Finset α)) (core : Finset α) :
+    removeSupersets 𝓢 core ⊆ 𝓢 := by
+  intro A hA
+  exact (mem_removeSupersets.mp hA).1
+
+namespace SunflowerFam
+
+variable {n t : ℕ}
+
+/-- Удаляем из семейства `F` те элементы, которые содержат ядро `S.core`. -/
+def removeCovered {S : SunflowerFam n t} (F : Finset (Petal n)) :
+    Finset (Petal n) :=
+  removeSupersets F S.core
+
+/-- Остаток после удаления покрытых является подсемейством `F`. -/
+lemma removeCovered_subset {S : SunflowerFam n t} {F : Finset (Petal n)} :
+    S.removeCovered F ⊆ F :=
+  removeSupersets_subset F S.core
+
+/-- Характеризация членства в `removeCovered`. -/
+lemma mem_removeCovered {S : SunflowerFam n t} {F : Finset (Petal n)}
+    {A : Petal n} :
+    A ∈ S.removeCovered F ↔ (A ∈ F ∧ ¬ S.core ⊆ A) := by
+  classical
+  simpa [SunflowerFam.removeCovered, Sunflower.removeSupersets,
+    Sunflower.mem_removeSupersets]
+
+/-- Оценка на размер оставшегося семейства после удаления покрытых. -/
+lemma card_removeCovered_le {S : SunflowerFam n t} {F : Finset (Petal n)} :
+    (S.removeCovered F).card ≤ F.card := by
+  classical
+  simpa [removeCovered] using Sunflower.card_removeSupersets_le F S.core
+
+/-- Один шаг “алгоритма покрытия”: если семейство достаточно велико, то можно
+    извлечь подсолнечник и удалить покрытые элементы. -/
+lemma cover_step_if_large
+    {F : Finset (Petal n)} {w t : ℕ}
+    (hw : 0 < w) (ht : 2 ≤ t)
+    (hcard : ∀ A ∈ F, A.card = w)
+    (hbig  : F.card > (t - 1) ^ w * Nat.factorial w) :
+    ∃ S : SunflowerFam n t, S.petals ⊆ F ∧
+      (S.removeCovered F).card ≤ F.card := by
+  classical
+  obtain ⟨S, hSsub⟩ := exists_of_large_family_classic
+    (n := n) (w := w) (t := t) (F := F) hw ht hcard hbig
+  refine ⟨S, hSsub, ?_⟩
+  simpa using S.card_removeCovered_le (F := F)
+
+
+/-- На одном шаге алгоритма покрытия: если `S.petals ⊆ F`, то после удаления покрытых элементов
+    (всех `A ∈ F`, таких что `S.core ⊆ A`) остаётся по меньшей мере на `S.petals.card` меньше. -/
+lemma card_removeCovered_le_sub_t
+    {S : SunflowerFam n t} {F : Finset (Petal n)}
+    (hSub : S.petals ⊆ F) :
+    (S.removeCovered F).card ≤ F.card - S.petals.card := by
+  classical
+  -- Множество удалённых элементов: все `A ∈ F` с `S.core ⊆ A`.
+  let R := F.filter (fun A => S.core ⊆ A)
+  -- Остаток: не содержащие ядра
+  let G := S.removeCovered F   -- = F.filter (fun A => ¬ S.core ⊆ A)
+  have hdisj : Disjoint G R := by
+    -- `G` и `R` — это два комплиментарных фильтра по предикату и его отрицанию.
+    -- В таких случаях они пересекаются пусто.
+    apply Finset.disjoint_left.mpr
+    intro A hG hR
+    -- `hG`: A ∈ G = F.filter (¬ core ⊆ A)
+    -- `hR`: A ∈ R = F.filter (core ⊆ A)
+    -- противоречие
+    have hG' := (Finset.mem_filter.mp hG).2
+    have hR' := (Finset.mem_filter.mp hR).2
+    exact hG' (hR')
+  have hunnion : G ∪ R ⊆ F := by
+    -- обе части — подсемейства F
+    intro A hA
+    have : (A ∈ G) ∨ (A ∈ R) := Finset.mem_union.mp hA
+    cases this with
+    | inl hGA =>
+      exact (Finset.mem_filter.mp hGA).1
+    | inr hRA =>
+      exact (Finset.mem_filter.mp hRA).1
+
+  -- Теперь посмотрим на `F.filter (core ⊆ ·)`.
+  have : ∀ P ∈ S.petals, P ∈ R := by
+    intro P hP
+    have hP_core : S.core ⊆ P := S.sub_core _ hP
+    have hPF : P ∈ F := hSub hP
+    exact Finset.mem_filter.mpr ⟨hPF, hP_core⟩
+
+  -- Значит `S.petals ⊆ R`; получаем нижнюю оценку для `R.card`.
+  have hRcard_lower : S.petals.card ≤ R.card :=
+    Finset.card_le_card this
+
+  -- `G` и `R` дизъюнктны и подмножетсва `F`. Кардинальность `F`
+  -- как минимум сумма кардинальностей `G` и `R`.
+  have hUnionCard : G.card + R.card ≤ F.card := by
+    -- поскольку `G ⊆ F`, `R ⊆ F`, и они дизъюнктны, то
+    -- `|G| + |R| = |G ∪ R| ≤ |F|`
+    -- Сначала докажем: `G ∪ R ⊆ F`, `Disjoint G R`. Уже есть.
+    have hUnion : (G ∪ R).card = G.card + R.card :=
+      Finset.card_union_of_disjoint hdisj
+    have h_le : (G ∪ R).card ≤ F.card :=
+      Finset.card_le_card hunnion
+    -- Итого: card G + card R = card (G ∪ R) ≤ F.card.
+    simpa [hUnion, Nat.add_comm] using h_le
+
+  -- Из `G.card + R.card ≤ F.card` следует `G.card ≤ F.card - R.card`
+  have : G.card ≤ F.card - R.card := by
+    -- вычитаем `R.card` из обеих частей неравенства `G.card + R.card ≤ F.card`
+    have h := Nat.sub_le_sub_right hUnionCard R.card
+    have h_cancel : (G.card + R.card) - R.card = G.card := by
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        Nat.add_sub_cancel G.card R.card
+    simpa [h_cancel] using h
+
+  -- Подставим нижнюю оценку на `R.card`: `R.card ≥ S.petals.card`.
+  exact le_trans this (by
+    -- здесь используем монотонность `Nat.sub` по правому аргументу
+    -- `F.card - R.card ≤ F.card - S.petals.card` если `S.petals.card ≤ R.card`.
+    exact Nat.sub_le_sub_left hRcard_lower F.card)
+
+/-- Частный случай с разыменованием `S.tsize`. -/
+lemma card_removeCovered_le_sub_t'
+    {S : SunflowerFam n t} {F : Finset (Petal n)} :
+    S.petals ⊆ F →
+    (S.removeCovered F).card ≤ F.card - t := by
+  classical
+  intro hSub
+  simpa [S.tsize] using card_removeCovered_le_sub_t (S := S) (F := F) hSub
+
+/-- Равномерность семейства сохраняется при удалении покрытых точками ядра. -/
+lemma uniform_of_removeCovered
+    {S : SunflowerFam n t} {F : Finset (Petal n)} {w : ℕ}
+    (hcardF : ∀ A ∈ F, A.card = w) :
+    ∀ A ∈ S.removeCovered F, A.card = w := by
+  classical
+  intro A hA
+  rcases S.mem_removeCovered.mp hA with ⟨hAF, _⟩
+  simpa using hcardF A hAF
+
+/-- Если `S.petals ⊆ F` и `0 < t`, то размер семейства строго убывает. -/
+lemma card_removeCovered_lt
+    {S : SunflowerFam n t} {F : Finset (Petal n)}
+    (hSub : S.petals ⊆ F) (htpos : 0 < t) :
+    (S.removeCovered F).card < F.card := by
+  classical
+  -- Используем оценку `≤ F.card - t`, доказанную выше
+  have hle := S.card_removeCovered_le_sub_t (F := F) hSub
+  have hle' : (S.removeCovered F).card ≤ F.card - t := by
+    simpa [S.tsize] using hle
+  -- Из `S.petals ⊆ F` и `t > 0` следует, что `F` непусто.
+  have hFpos : 0 < F.card := by
+    have hCardLe : S.petals.card ≤ F.card := Finset.card_le_card hSub
+    have hPetPos : 0 < S.petals.card := by
+      simpa [S.tsize] using htpos
+    exact lt_of_lt_of_le hPetPos hCardLe
+  -- Число элементов после удаления строго меньше исходного.
+  have hlt : F.card - t < F.card := Nat.sub_lt hFpos htpos
+  exact lt_of_le_of_lt hle' hlt
+
+/-- Один строгий шаг алгоритма покрытия: из большого `w`-равномерного семейства
+    мы выделяем подсолнечник и удаляем все множества, содержащие его ядро. -/
+lemma exists_cover_step_strict
+    {F : Finset (Petal n)} {w t : ℕ}
+    (hw : 0 < w) (ht : 2 ≤ t)
+    (hcardF : ∀ A ∈ F, A.card = w)
+    (hbig  : F.card > (t - 1) ^ w * Nat.factorial w) :
+    ∃ S : SunflowerFam n t,
+      S.petals ⊆ F ∧
+      (∀ A ∈ S.removeCovered F, A.card = w) ∧
+      (S.removeCovered F).card < F.card := by
+  classical
+  -- Шаг 1: извлекаем подсолнечник из большого семейства
+  obtain ⟨S, hSsub⟩ := exists_of_large_family_classic
+    (n := n) (w := w) (t := t) (F := F) hw ht hcardF hbig
+  -- Шаг 2: после удаления покрытых сохраняется `w`-равномерность
+  have h_uniform : ∀ A ∈ S.removeCovered F, A.card = w :=
+    S.uniform_of_removeCovered (F := F) (w := w) hcardF
+  -- Из `t ≥ 2` получаем `t > 0`, нужное для строгой убываемости
+  have htpos : 0 < t := lt_of_lt_of_le (by decide : 0 < 2) ht
+  -- Шаг 3: количество элементов после удаления строго меньше
+  have hlt : (S.removeCovered F).card < F.card :=
+    S.card_removeCovered_lt (F := F) hSsub htpos
+  exact ⟨S, hSsub, h_uniform, hlt⟩
+
+/-- Итерация алгоритма покрытия: из `w`-равномерного семейства `F` мы удаляем
+    покрытые ядрами найденных подсолнечников до тех пор, пока размер не
+    станет `≤ (t - 1)^w * w!`.  На выходе получаем подсемейство `F' ⊆ F`,
+    которое остаётся `w`-равномерным и имеет ограниченный размер. -/
+lemma exists_cover_until_threshold
+    {F : Finset (Petal n)} {w t : ℕ}
+    (hw : 0 < w) (ht : 2 ≤ t)
+    (hcardF : ∀ A ∈ F, A.card = w) :
+    ∃ F' ⊆ F, (∀ A ∈ F', A.card = w) ∧
+      F'.card ≤ (t - 1) ^ w * Nat.factorial w := by
+  classical
+  -- Обозначим порог для размера семейства.
+  let B := (t - 1) ^ w * Nat.factorial w
+
+  -- Индуктивное утверждение: для любого семейства `F'` размера `N`,
+  -- которое `w`-равномерно, существует подсемейство размера `≤ B`.
+  let P : ℕ → Prop := fun N =>
+    ∀ F' : Finset (Petal n),
+      F'.card = N →
+      (∀ A ∈ F', A.card = w) →
+      ∃ G ⊆ F', (∀ A ∈ G, A.card = w) ∧ G.card ≤ B
+
+  -- Докажем `P F.card` по сильной индукции по `F.card`.
+  have hMain : P F.card := by
+    -- сильная индукция по размеру семейства
+    refine Nat.strongRecOn F.card ?step
+    intro N IH F' hcardF' hunifF'
+    -- Проверяем, не достигнут ли уже порог.
+    by_cases hsmall : F'.card ≤ B
+    · -- Семейство уже достаточно маленькое, берём его целиком.
+      exact ⟨F', by exact Subset.rfl, hunifF', hsmall⟩
+    -- Иначе `F'.card > B`, делаем один строгий шаг алгоритма покрытия.
+    · have hbig' : F'.card > B := Nat.lt_of_not_ge hsmall
+      -- Выделяем подсолнечник и уменьшаем семейство.
+      obtain ⟨S, hSsub, h_uniform_after, hlt⟩ :=
+        exists_cover_step_strict (n := n) (F := F') (w := w) (t := t)
+          hw ht hunifF' hbig'
+      -- Определяем `F₁` как остаток.
+      let F₁ := S.removeCovered F'
+      -- После одного шага размер строго уменьшается.
+      have hlt' : F₁.card < N := by
+        simpa [hcardF'] using hlt
+      -- Применяем IH к `F₁`.
+      have hrec := IH F₁.card hlt' F₁ rfl h_uniform_after
+      rcases hrec with ⟨G, hGsub, hGunif, hGle⟩
+      -- Полученное `G` также является подсемейством исходного `F'`.
+      exact ⟨G, hGsub.trans (S.removeCovered_subset (F := F')), hGunif, hGle⟩
+
+  -- Применяем индуктивное утверждение к исходному `F`.
+  exact hMain F rfl hcardF
+
+end SunflowerFam
+
+end Sunflower
+
+

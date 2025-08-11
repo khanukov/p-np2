@@ -99,7 +99,7 @@ The algorithm terminates with a set $\mathcal{R}$ satisfying:
 Modules in Lean 4:
 
 * `bool_func.lean`: types for points, subcubes, Boolean functions.
-* `entropy.lean`: entropy-drop lemma.
+* `entropy.lean`: entropy-drop lemma `exists_coord_entropy_drop`.
 * `sunflower.lean`: sunflower extraction.
 * `Agreement.lean`: core agreement.
 * `cover2.lean`: main recursive algorithm.
@@ -108,14 +108,14 @@ Modules in Lean 4:
 ### Updated Formalisation Plan (2025-08-06)
 The modules above serve as milestones. Our immediate goals are:
 
-1. Complete the proof of `EntropyDrop` in `entropy.lean`.  The helper
-   lemma `exists_restrict_half` shows that some input bit reduces a
-   family to at most half its size.  Its real-valued form
-   `exists_restrict_half_real` and the probability variant
-   `exists_restrict_half_real_prob` let us reason about logarithms, and
-   `exists_coord_entropy_drop` formalises the resulting one‑bit entropy
-   reduction.
-2. The classical sunflower lemma in `sunflower.lean` is now fully formalised.
+1. Justify the axiom `exists_restrict_half_real_aux` underlying
+   `exists_coord_entropy_drop` in `entropy.lean`.  The helper lemma
+   `exists_restrict_half` shows that some input bit reduces a family to at
+   most half its size.  Its real-valued form `exists_restrict_half_real`
+   and the probability variant `exists_restrict_half_real_prob` let us
+   reason about logarithms, and `exists_coord_entropy_drop` formalises the
+   resulting one‑bit entropy reduction.
+2. The classical sunflower lemma in `sunflower.lean` remains an axiom.
 3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
    The file `Agreement.lean` now contains the complete proof of this lemma.
 4. ~~Finalise the recursive covering algorithm in `cover2.lean`.  A
@@ -126,7 +126,7 @@ The modules above serve as milestones. Our immediate goals are:
 6. Provide small test instances in `examples.lean`.
 
 
-### Sketch of `buildCover_card_bound`
+### Historical sketch of `buildCover_card_bound`
 
 The recursive procedure `buildCover` is guided by the measure
 $$\mu(F,h,Rset)=2h + |\text{uncovered}\,F\,Rset|,$$

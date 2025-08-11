@@ -256,11 +256,11 @@ Updated checklist (August 2025)
 *Note: This checklist has been verified against the codebase. For a higher-level summary of the project's status, please see `README.md`.*
 
 - [x] `bool_func.lean`: basic types.
-- [x] `entropy.lean`: full `EntropyDrop` lemma and helper results.
-- [x] `sunflower.lean`: classical sunflower lemma fully formalised.
+ - [x] `entropy.lean`: full `exists_coord_entropy_drop` lemma and helper results.
+ - [ ] `sunflower.lean`: classical sunflower lemma remains axiomatic (`sunflower_exists_classic`).
 - [x] `Agreement.lean`: `CoreAgreement` now fully proven.
-- [x] `cover2.lean`: recursive covering uses `sunflower_step` and entropy split; monochromaticity and counting via `buildCover_card_bound` are now established.
-- [x] `bound.lean`: counting argument not yet formalised.
+ - [ ] `cover2.lean`: recursive covering uses `sunflower_step` and entropy split; pointwise monochromaticity is proved.
+ - [ ] `bound.lean`: counting argument not yet formalised.
 - [x] `examples.lean`: small tests to be written.
 - [ ] `acc_mcsp_sat.lean`: skeleton SAT reduction with placeholders.
 

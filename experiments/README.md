@@ -32,6 +32,9 @@ prints the observed ``α`` values directly.  Passing ``--prefix N`` measures how
 many circuits on ``N`` inputs share a fixed left prefix, providing a more direct
 estimate for the capacity drop constant ``α``.
 
+``sunflower_step.py`` tests whether a given collection of supports contains a
+`t`‑sunflower and prints the extracted core and petals when successful.
+
 ```bash
 python3 lemma_b_search.py          # use defaults n=3, max_gates=2
 python3 lemma_b_search.py 4 1      # four inputs, at most one gate
@@ -45,7 +48,9 @@ python3 collision_entropy.py 3 1 --circuits  # weight by circuit count
 python3 collision_entropy.py 3 1 --list-counts  # print truth table counts
 python3 collision_entropy.py 3 1 --list-counts --descending
 python3 collision_entropy.py 3 1 --list-counts --top 5
+python3 sunflower_step.py --t 3 0,1 0,2 1,2  # find a sunflower among supports
 ```
 
+Enumeration logs up to eight inputs are recorded in `results_n7_n8.md`.
 Note that the enumeration grows rapidly with both ``n`` and ``max_gates``.
 

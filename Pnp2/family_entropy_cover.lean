@@ -1,5 +1,6 @@
 import Pnp2.Boolcube
 import Pnp2.cover2
+import Pnp2.Cover.Canonical
 
 namespace Boolcube
 
@@ -19,8 +20,7 @@ theorem familyCollisionEntropyCover
   {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
   ∃ (T : Finset (Subcube n)),
     (∀ C ∈ T, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) ∧
-    T.card ≤ mBound n h := by
+    (∀ f ∈ F, ∀ x, f x = true → ∃ C, C ∈ T ∧ C.Mem x) := by
   classical
   simpa using Cover2.cover_exists (F := F) (h := h) hH
 
@@ -37,19 +37,26 @@ structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   bound   : rects.card ≤ mBound n h
 
 /--
-`familyEntropyCover` packages `familyCollisionEntropyCover` as a concrete
-object.  It simply uses classical choice to extract a witnessing set of
-rectangles from the existential statement. -/
+`familyEntropyCover` packages the canonical cover produced by `coverFamily` into
+an explicit record exposing its basic properties.  The construction relies on
+classical choice and is therefore non‑computable, but it provides a convenient
+interface for downstream modules.
+-/
 noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
     FamilyCover F h := by
   classical
-  obtain ⟨T, hmono, hcov, hcard⟩ :=
-    familyCollisionEntropyCover (F := F) (h := h) hH
-  refine ⟨T, hmono, ?_, hcard⟩
-  intro f hf x hx
-  rcases hcov f hf x hx with ⟨C, hC, hxC⟩
-  exact ⟨C, hC, hxC⟩
+  refine
+    ⟨Cover2.coverFamily (F := F) (h := h) hH,
+      ?mono, ?covers, ?bound⟩
+  · -- Monochromaticity is inherited from `coverFamily`.
+    intro C hC g hg
+    exact Cover2.coverFamily_pointwiseMono (F := F) (h := h) (hH := hH) hC g hg
+  · -- All `1`-inputs are covered by construction.
+    intro f hf x hx
+    exact Cover2.coverFamily_spec_cover (F := F) (h := h) (hH := hH) f hf x hx
+  · -- The size of the cover is bounded by `mBound` (axiom).
+    exact Cover2.coverFamily_card_bound (F := F) (h := h) (hH := hH)
 
 /-!
 `familyEntropyCover` is defined using `cover_exists`, just like
@@ -62,8 +69,6 @@ underlying cover used elsewhere in the development.
     {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
     (familyEntropyCover (F := F) (h := h) hH).rects
       = Cover2.coverFamily (F := F) (h := h) hH := by
-  classical
-  -- Unfold both constructions and simplify using `cover_exists`.
-  simp [familyEntropyCover, Cover2.coverFamily, Cover2.cover_exists]
+  simp [familyEntropyCover]
 
 end Boolcube

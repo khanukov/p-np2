@@ -1228,16 +1228,9 @@ covering step. -/
 example :
     Cover2.mu (n := 1)
         ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
-        (Cover2.buildCover (n := 1)
+        (Cover2.extendCover (n := 1)
           ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)
-          (h := 0)
-          (by
-            -- Collision entropy of a singleton family is zero.
-            have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
-              simp
-            have hH₂ := BoolFunc.H₂_card_one
-                (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
-            simpa [hH₂]))
+          (Rset := (∅ : Finset (Subcube 1))))
         <
     Cover2.mu (n := 1)
         ({(fun _ : Point 1 => true)} : BoolFunc.Family 1) 0
@@ -1264,20 +1257,14 @@ example :
     have hcontr := hcov f hf x hxval
     rcases hcontr with ⟨R, hR, _⟩
     simpa using hR
-  -- Apply the strict decrease lemma for `buildCover`.
-  simpa using
-    Cover2.mu_buildCover_lt_start
+  -- Apply the strict decrease lemma for a single extension step.
+  have hdrop :=
+    Cover2.mu_extendCover_lt
       (n := 1)
       (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1))
-      (h := 0)
-      (by
-        -- Collision entropy of the singleton family is `0`.
-        have hcard : ({(fun _ : Point 1 => true)} : BoolFunc.Family 1).card = 1 := by
-          simp
-        have hH₂ := BoolFunc.H₂_card_one
-            (F := ({(fun _ : Point 1 => true)} : BoolFunc.Family 1)) hcard
-        simpa [hH₂])
-      hfu_ne
+      (Rset := (∅ : Finset (Subcube 1)))
+      (h := 0) hfu_ne
+  simpa using hdrop
 
 /-- When `firstUncovered` fails to find a witness, `buildCoverAux` returns the
 input rectangle set unchanged.  We verify this behaviour for the trivial

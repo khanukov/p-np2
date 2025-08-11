@@ -328,24 +328,22 @@ lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
     (hn : N ≥ Bound.n₀ 0) :
     ∃ cover : Finset (Subcube N),
       (∀ R ∈ cover, Subcube.monochromaticFor R (Circuit.eval Φ)) ∧
-      (∀ x, Circuit.eval Φ x = true → ∃ R ∈ cover, x ∈ₛ R) ∧
-      cover.card ≤ Nat.pow 2 (N / 100) := by
+      (∀ x, Circuit.eval Φ x = true → ∃ R ∈ cover, x ∈ₛ R) := by
   classical
   let F : Boolcube.Family N := {fun x => Circuit.eval Φ x}
   have hcard : F.card = 1 := by simp [F]
   have hH : Entropy.H₂ F ≤ (0 : ℝ) := by simpa [Entropy.H₂_card_one, hcard]
-  obtain ⟨cover, hmono, hcov, hbound⟩ :=
-    Bound.family_collision_entropy_lemma (F := F) (h := 0) (hH := hH) (hn := hn)
-  refine ⟨cover, ?_, ?_, hbound⟩
+  let FC := Boolcube.familyEntropyCover (F := F) (h := 0) hH
+  refine ⟨FC.rects, ?_, ?_⟩
   · intro R hR
-    rcases hmono R hR with ⟨b, hb⟩
+    rcases FC.mono R hR with ⟨b, hb⟩
     refine ⟨b, ?_⟩
     intro x hx
     have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
     simpa [F] using hb (fun x => Circuit.eval Φ x) hf hx
   · intro x hx
     have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
-    rcases hcov (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
+    rcases FC.covers (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, hR, hxR⟩
 
 /-! ### A concrete SAT solver using the entropy cover

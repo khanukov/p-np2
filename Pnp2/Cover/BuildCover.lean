@@ -320,11 +320,12 @@ lemma buildCoverAux_covers (F : Family n) (h : ℕ)
       simpa [hrec] using hIH
 
 /-!
-### Specification lemmas
+### Specification lemma
 
-The following results summarise the expected behaviour of `buildCover`.  Their
-current proofs are placeholders; replacing the `sorry` markers with complete
-arguments is future work.
+The following result records the key property of `buildCover`: every `1`‑input
+of the family appears in at least one rectangle produced by the construction.
+This statement suffices for downstream developments; quantitative bounds on the
+size of the cover are provided by separate APIs.
 -/
 
 
@@ -338,22 +339,6 @@ lemma buildCover_covers (F : Family n) (h : ℕ)
     buildCoverAux_covers (n := n) (F := F) (h := h) (hH := hH) (Rset := (∅))
   -- The definition of `buildCover` unfolds to a call to `buildCoverAux` on `∅`.
   simpa [buildCover] using haux
-
-/-- The number of rectangles produced by `buildCover` is bounded by `mBound`. -/
-lemma buildCover_card_bound (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤ mBound n h := by
-  -- To be completed.
-  exact sorry
-
-/-- If an uncovered pair exists initially, `buildCover` drops the measure. -/
-lemma mu_buildCover_lt_start (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hfu : firstUncovered (n := n) F (∅ : Finset (Subcube n)) ≠ none) :
-    mu (n := n) F h (buildCover (n := n) F h hH) <
-      mu (n := n) F h (∅ : Finset (Subcube n)) := by
-  -- To be completed.
-  exact sorry
 
 end Cover2
 

@@ -204,50 +204,29 @@ lemma mBound_lt_subexp
       have := add_lt_add_right this (Real.logb 2 (h + 2 : ℝ))
       have := add_lt_add_right this (10 * h)
       simpa [hlog] using this
-    exact (Real.logb_lt_iff_lt_rpow hb).1 this
+  exact (Real.logb_lt_iff_lt_rpow hb).1 this
   exact_mod_cast this
 
-/-! ## Final packaging: the full FCE‑lemma statement -/
-
-open BoolFunc
+open Boolcube
 
 variable {n h : ℕ} (F : Family n)
 
-/--
-**Family Collision‑Entropy Lemma (β‑version).**
-
-Under the entropy assumption `H₂(F) ≤ h`,
-the `coverFamily` constructed in `cover2.lean`:
-
-1.  is jointly **monochromatic** on each rectangle;
-2.  **covers** every `1`‑input of every `f ∈ F`;
-3.  satisfies the **sub‑exponential** bound  
-    `|coverFamily| < 2^{n/100}` once `n ≥ n₀(h)`.
--/
-theorem FCE_lemma
-    (hH : H₂ F ≤ (h : ℝ))
+/-- The size bound from `familyEntropyCover` yields a sub-exponential cover. -/
+theorem FCE_lemma (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     (hn : n ≥ n₀ h) :
-    (coverFamily (n := n) (h := h) F hH).card <
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card <
       Nat.pow 2 (n / 100) := by
-  -- Combines `coverFamily_card_bound` from `cover2.lean`
-  -- with the arithmetic lemma above.
-  have h1 :=
-    Cover2.coverFamily_card_bound (n := n) (h := h) F hH
-  have h2 :=
-    mBound_lt_subexp (h := h) (n := n) hn
-  exact lt_of_le_of_lt h1 h2
+  have hcard :=
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH).bound
+  have hsub := mBound_lt_subexp (h := h) (n := n) hn
+  exact lt_of_le_of_lt hcard hsub
 
-/--
-**Family Collision‑Entropy Lemma.**
-
-Assuming `H₂(F) ≤ h` and `n ≥ n₀(h)`, there exists a finite set of
-subcubes that is jointly monochromatic for the entire family and covers
-all `1`‑inputs of every `f ∈ F`.  The construction is the
-`familyEntropyCover` from `family_entropy_cover.lean`, and the numeric
-bound below shows that the cover has at most `2^{n/100}` rectangles. -/
+/-- **Family Collision-Entropy Lemma.**  A family of Boolean functions with
+    bounded collision entropy admits a set of monochromatic rectangles covering
+    all `1`-inputs whose size is at most `2^{n / 100}` once the dimension is
+    large enough. -/
 theorem family_collision_entropy_lemma
-    (hH : H₂ F ≤ (h : ℝ))
-    (hn : n ≥ n₀ h) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (hn : n ≥ n₀ h) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
@@ -255,132 +234,8 @@ theorem family_collision_entropy_lemma
   classical
   let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH
   have hlt : FC.rects.card < Nat.pow 2 (n / 100) :=
-    lt_of_le_of_lt FC.bound (mBound_lt_subexp (h := h) (n := n) hn)
+    FCE_lemma (F := F) (h := h) (hH := hH) (hn := hn)
   have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
   refine ⟨FC.rects, FC.mono, FC.covers, hle⟩
-
-/-- A convenient numeric corollary of `family_collision_entropy_lemma`.
-    Replacing the exponent `n / 100` by `(2 ^ n) / 100` emphasises that
-    the bound depends subexponentially on the full truth-table size
-    `N = 2 ^ n`. -/
-theorem family_collision_entropy_lemma_table
-    (hH : H₂ F ≤ (h : ℝ))
-    (hn : n ≥ n₀ h) :
-    ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
-      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
-  classical
-  obtain ⟨Rset, hmono, hcov, hbound⟩ :=
-    family_collision_entropy_lemma (F := F) (h := h) (hH := hH) hn
-  have hpow : (n / 100) ≤ (Nat.pow 2 n) / 100 := by
-    have hle : n ≤ Nat.pow 2 n := by
-      -- elementary inequality `n ≤ 2 ^ n`
-      induction' n with d hd
-      · simp
-      ·
-        have hstep : d + 1 ≤ 2 ^ d + 1 := Nat.succ_le_succ hd
-        have hpos : (0 : ℕ) < 2 ^ d := pow_pos (by decide) _
-        have hstep' : d + 1 ≤ 2 ^ d + 2 ^ d :=
-          le_trans hstep <| Nat.add_le_add_left (Nat.succ_le_of_lt hpos) _
-        simpa [two_mul, Nat.pow_succ] using hstep'
-    exact Nat.div_le_div_right hle
-  have hbound' : Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) :=
-    le_trans hbound <|
-      Nat.pow_le_pow_of_le_left (by decide : (1 : ℕ) ≤ 2) hpow
-  exact ⟨Rset, hmono, hcov, hbound'⟩
-
-/-! ### Specialised corollary for small circuits
-
-The next lemma packages `family_collision_entropy_lemma_table`
-for the concrete family of Boolean functions computed by circuits of
-size at most `n^c`.  This is a convenient formulation of **Lemma B**:
-for sufficiently large `n` the entire circuit class admits a joint
-monochromatic cover of size strictly smaller than `2^{(2^n)/100}`. -/
-
-open Boolcube Circuit
-
-/-- **Lemma B (circuit form).**
-    Let `c` be a fixed exponent and consider all circuits on `n`
-    inputs of size at most `n^c`.  Once `n` exceeds the threshold
-    `n₀ h` (with `h = n^c * (Nat.log n + 1) + 1`), there exists a
-    finite set of subcubes covering every `1`‑input of every such
-    circuit.  Moreover the number of rectangles is bounded by
-    `2^{(2^n)/100}`. -/
-theorem lemmaB_circuit_cover (c n : ℕ)
-    (hn : n ≥ n₀ (n ^ c * (Nat.log n + 1) + 1)) :
-    ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R (Circuit.family n (n ^ c))) ∧
-      (∀ f ∈ Circuit.family n (n ^ c), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
-  classical
-  let h := n ^ c * (Nat.log n + 1) + 1
-  have hH : H₂ (Circuit.family n (n ^ c)) ≤ (h : ℝ) := by
-    simpa [h] using Circuit.family_H₂_le (n := n) (m := n ^ c)
-  -- Apply the general entropy-cover lemma specialised to this family.
-  simpa [h] using
-    family_collision_entropy_lemma_table
-      (F := Circuit.family n (n ^ c)) (h := h) (hH := hH) (hn := hn)
-
-/-! ### Variant bound in the usual $2^{N - N^{\delta}}$ form
-
-The next lemma reformulates `lemmaB_circuit_cover` using the
-slightly stronger inequality `(|Rset| ≤ 2^{2^n - 2^{n/2}})`.
-This matches the conventional presentation of Lemma B with the
-parameter `δ = 1/2`.  The proof just observes that
-`(2^n)/100 ≤ 2^n - 2^{n/2}` for every positive `n`. -/
-
-lemma pow_two_div_hundred_le (n : ℕ) (hn : 0 < n) :
-    (Nat.pow 2 n) / 100 ≤ Nat.pow 2 n - Nat.pow 2 (n / 2) := by
-  have hdiv : n / 2 < n := Nat.div_lt_self hn (by decide)
-  have hpos : 1 ≤ n - n / 2 := Nat.succ_le_of_lt (Nat.sub_pos_of_lt hdiv)
-  have hpow : (2 : ℕ) ≤ Nat.pow 2 (n - n / 2) := by
-    simpa [pow_one] using
-      (Nat.pow_le_pow_of_le_left (by decide : (2 : ℕ) ≤ 2) hpos)
-  have hstep : 100 ≤ 99 * Nat.pow 2 (n - n / 2) := by
-    have hbase : (100 : ℕ) ≤ 99 * 2 := by decide
-    have := Nat.mul_le_mul_left 99 hpow
-    exact hbase.trans this
-  have hmult := Nat.mul_le_mul_right (Nat.pow 2 (n / 2)) hstep
-  have hpow2 :
-      Nat.pow 2 (n - n / 2) * Nat.pow 2 (n / 2) = Nat.pow 2 n := by
-    have hsum : n - n / 2 + n / 2 = n := by
-      exact Nat.sub_add_cancel (Nat.le_of_lt hdiv)
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, hsum] using
-      (Nat.pow_add (2) (n - n / 2) (n / 2)).symm
-  have hineq : 100 * Nat.pow 2 (n / 2) ≤ 99 * Nat.pow 2 n := by
-    simpa [hpow2, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmult
-  have hsum := Nat.add_le_add_left hineq (Nat.pow 2 n)
-  have hsum' :
-      Nat.pow 2 n + 100 * Nat.pow 2 (n / 2) ≤ 100 * Nat.pow 2 n := by
-    simpa [Nat.mul_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
-      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hsum
-  have hsub :=
-    (Nat.le_sub_iff_add_le
-        (by
-          have := Nat.mul_le_mul_left 100
-              (Nat.pow_le_pow_of_le_left (by decide : (2 : ℕ) ≤ 2)
-                (Nat.div_le_self n 2))
-          simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this)).mpr
-      hsum'
-  have :=
-    (Nat.le_div_iff_mul_le (by decide : (0 : ℕ) < 100)).mpr hsub
-  simpa using this
-
-theorem lemmaB_circuit_cover_delta (c n : ℕ)
-    (hn : n ≥ n₀ (n ^ c * (Nat.log n + 1) + 1)) (hnpos : 0 < n) :
-    ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R (Circuit.family n (n ^ c))) ∧
-      (∀ f ∈ Circuit.family n (n ^ c), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (Nat.pow 2 n - Nat.pow 2 (n / 2)) := by
-  classical
-  obtain ⟨Rset, hmono, hcov, hbound⟩ :=
-    lemmaB_circuit_cover (c := c) (n := n) hn
-  have hineq := pow_two_div_hundred_le (n := n) hnpos
-  have hbound' :
-      Rset.card ≤ Nat.pow 2 (Nat.pow 2 n - Nat.pow 2 (n / 2)) := by
-    have := Nat.pow_le_pow_of_le_left (by decide : (1 : ℕ) ≤ 2) hineq
-    exact le_trans hbound this
-  exact ⟨Rset, hmono, hcov, hbound'⟩
 
 end Bound

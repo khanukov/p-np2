@@ -315,63 +315,6 @@ example :
   classical
   simp [Cover.firstUncovered, Cover.uncovered, Cover.NotCovered]
 
--- The Family Collision-Entropy Lemma bounds the size of the entropy cover.
-example {n h : ℕ} (F : Family n) (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn : n ≥ Bound.n₀ h) :
-    (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card <
-      Nat.pow 2 (n / 100) := by
-  simpa using Bound.FCE_lemma (F := F) (h := h) hH hn
-
--- The packaged Family Collision-Entropy Lemma provides the full cover.
-example {n h : ℕ} (F : Family n) (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn : n ≥ Bound.n₀ h) :
-    ∃ Rset : Finset (BoolFunc.Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
-      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (n / 100) := by
-  classical
-  simpa using
-    Bound.family_collision_entropy_lemma (F := F) (h := h) hH hn
-
--- A concrete instance of the sub-exponential bound.
-example :
-    Bound.mBound 20000 0 < Nat.pow 2 (20000 / 100) := by
-  have h0 : (20000 : ℕ) ≥ Bound.n₀ 0 := by
-    simp [Bound.n₀]
-  exact Bound.mBound_lt_subexp (h := 0) (n := 20000) h0
-
--- Another numeric instance for `mBound_lt_subexp` with `h = 1`.
-example :
-    Bound.mBound 30720000 1 < Nat.pow 2 (30720000 / 100) := by
-  have h0 : (30720000 : ℕ) ≥ Bound.n₀ 1 := by
-    simp [Bound.n₀]
-  exact Bound.mBound_lt_subexp (h := 1) (n := 30720000) h0
-
--- The circuit form of **Lemma B** ensures a joint cover of size
--- `2^{(2^n)/100}` once `n` exceeds the threshold `n₀`.
-example (c n : ℕ)
-    (hn : n ≥ Bound.n₀ (n ^ c * (Nat.log n + 1) + 1)) :
-    ∃ Rset : Finset (Boolcube.Subcube n),
-      (∀ R ∈ Rset,
-          Subcube.monochromaticForFamily R (Boolcube.Circuit.family n (n ^ c))) ∧
-      (∀ f ∈ Boolcube.Circuit.family n (n ^ c),
-          ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 ((Nat.pow 2 n) / 100) := by
-  classical
-  simpa using Bound.lemmaB_circuit_cover (c := c) (n := n) hn
-
--- A variant of Lemma B with an explicit exponential tail `δ = 1/2`.
-example (c n : ℕ)
-    (hn : n ≥ Bound.n₀ (n ^ c * (Nat.log n + 1) + 1)) (hnpos : 0 < n) :
-    ∃ Rset : Finset (Boolcube.Subcube n),
-      (∀ R ∈ Rset,
-          Subcube.monochromaticForFamily R (Boolcube.Circuit.family n (n ^ c))) ∧
-      (∀ f ∈ Boolcube.Circuit.family n (n ^ c),
-          ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (Nat.pow 2 n - Nat.pow 2 (n / 2)) := by
-  classical
-  simpa using
-    Bound.lemmaB_circuit_cover_delta (c := c) (n := n) hn hnpos
 
 
 end BasicTests

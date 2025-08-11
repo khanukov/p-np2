@@ -8,15 +8,14 @@ namespace Boolcube
 
 /-!
 `mergeLowSensitivityCover` re-exports the entropy-based cover construction
-`Cover.buildCover` so that downstream files can obtain a set of subcubes
-covering all ones of `F` without referring to the full `Cover` machinery.
-It takes the entropy bound as a natural number `h` and simply returns the
-rectangles produced by `buildCover`.
+through the canonical interface `coverFamily`.  Downstream files can thus obtain
+the required set of subcubes without referring to the underlying implementation
+details.
 -/
 noncomputable def mergeLowSensitivityCover
   {n : ℕ} (F : Family n) (h : ℕ) (hH : Entropy.H₂ F ≤ (h : ℝ)) :
   Finset (Subcube n) :=
-  Cover2.buildCover (F := F) (h := h) hH
+  Cover2.coverFamily (F := F) (h := h) hH
 
 /-- Every rectangle returned by `mergeLowSensitivityCover` is constant for each
     function of the family.  This follows directly from the corresponding
@@ -27,8 +26,8 @@ lemma mergeLowSensitivityCover_pointwiseMono
   ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g := by
   classical
   have hmono :=
-    Cover2.buildCover_pointwiseMono (F := F) (h := h) (hH := hH)
-  simpa [mergeLowSensitivityCover] using hmono C hC
+    Cover2.coverFamily_pointwiseMono (F := F) (h := h) (hH := hH)
+  simpa [mergeLowSensitivityCover] using hmono hC
 
 /-- All `1`-inputs of every `f ∈ F` lie in some rectangle of
     `mergeLowSensitivityCover`. -/
@@ -37,17 +36,8 @@ lemma mergeLowSensitivityCover_covers
   {f : BFunc n} (hf : f ∈ F) {x : Point n} (hx : f x = true) :
   ∃ C ∈ mergeLowSensitivityCover (F := F) h hH, x ∈ₛ C := by
   classical
-  have hcov := Cover2.buildCover_covers (F := F) (h := h) (hH := hH)
+  have hcov := Cover2.coverFamily_spec_cover (F := F) (h := h) (hH := hH)
   simpa [mergeLowSensitivityCover] using hcov f hf x hx
-
-/-- The number of rectangles produced by `mergeLowSensitivityCover` is
-    bounded by `mBound`. -/
-lemma mergeLowSensitivityCover_bound
-  {n : ℕ} (F : Family n) (h : ℕ) (hH : Entropy.H₂ F ≤ (h : ℝ)) :
-  (mergeLowSensitivityCover (F := F) h hH).card ≤ mBound n h := by
-  classical
-  have hbound := Cover2.buildCover_card_bound (F := F) (h := h) (hH := hH)
-  simpa [mergeLowSensitivityCover] using hbound
 
 /-- Choose the smaller of a low-sensitivity and an entropy-based cover. -/
 noncomputable def merge_cover

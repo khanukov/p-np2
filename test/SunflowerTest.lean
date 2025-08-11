@@ -1,4 +1,5 @@
 import Pnp2.Sunflower.Sunflower
+import Pnp2.Sunflower.Aux
 
 open Sunflower
 open scoped BigOperators
@@ -46,6 +47,18 @@ example :
     SunflowerFam.exists_of_large_family_classic
       (n := 2) (w := 1) (t := 2) (F := F)
       hw ht hcard hbig
+
+/-- `sum_slice_inter` specialises to the expected value on a simple
+family and ambient set. -/
+example :
+    let 𝓢 : Finset (Finset ℕ) := { {0}, {1} }
+    let U : Finset ℕ := {0, 1}
+    ∑ x ∈ U, (slice 𝓢 x).card = ∑ A ∈ 𝓢, (A ∩ U).card := by
+  classical
+  intro 𝓢 U
+  -- The general lemma handles this computation directly.
+  simpa [𝓢, U] using
+    (Sunflower.sum_slice_inter (𝓢 := 𝓢) (U := U))
 
 /-- The specialised `sunflower_exists_two` also witnesses a sunflower
     in this basic family. -/

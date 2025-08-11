@@ -33,11 +33,13 @@ tracked in `TODO.md` and will be removed as the project progresses.
   cardinal split result `exists_coord_card_drop`.  Lightweight structures
   `LabeledCube` and `Cover` expose the building blocks for recursive
   cover constructors.  The module now integrates a sunflower step via the
-  axiomatic `sunflower_exists_classic` that extracts a rectangle covering
-  several functions at once.
+  lemma `sunflower_exists_classic` (currently containing a `sorry` placeholder)
+  that extracts a rectangle covering several functions at once.
 
 * `entropy.lean` – collision entropy framework with the `exists_coord_entropy_drop` lemma. The halving statement `exists_restrict_half` currently relies on the axiom `exists_restrict_half_real_aux`.
-* `sunflower.lean` – reexports the classical sunflower lemma `sunflower_exists_classic`, which is presently assumed as an axiom.
+* `sunflower.lean` – reexports the classical sunflower lemma
+  `sunflower_exists_classic`; its full combinatorial proof is still pending
+  and the Lean file currently contains a `sorry` placeholder.
 * `Sunflower/RSpread.lean` – definition of scattered families (`RSpread`).
   The lemma `RSpread.mono` now shows that a larger spread parameter implies
   a smaller one when `0 < R₂ ≤ R₁`.  Additional helper lemmas
@@ -144,7 +146,9 @@ python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2  # search for a small su
 ## Status
 
 This repository is a research prototype. Many central lemmas remain incomplete and are marked with `sorry` or `axiom`. In particular:
-* `sunflower_exists_classic`, `exists_restrict_half_real_aux`, and `decisionTree_cover` are axioms.
+* `sunflower_exists_classic` contains an unfinished proof (`sorry`), and
+  `exists_restrict_half_real_aux` together with `decisionTree_cover` remain
+  axioms.
 * `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
 * `ComplexityClasses.lean` assumes `P ⊆ P/poly`.
 

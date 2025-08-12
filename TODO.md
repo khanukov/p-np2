@@ -10,6 +10,7 @@ Updated development tasks after audit (2025-08-06).
       * Proof completed; the classical sunflower lemma is now fully formalised.
 - [ ] Replace stub `buildCover_card` and update `buildCover_card_bigO` in `Pnp2/cover_numeric.lean`.
 - [ ] Implement `decisionTree_cover` for low-sensitivity families.
+      * Подробный план: см. `docs/decisionTree_cover_plan.md`.
 - [ ] Replace complexity-theoretic assumptions in `Pnp2/NP_separation.lean` with proven results.
 - [ ] Prove inclusion `P ⊆ P/poly` in `Pnp2/ComplexityClasses.lean`.
 

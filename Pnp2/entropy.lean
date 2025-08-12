@@ -319,6 +319,18 @@ lemma measure_restrict_lt_of_card_le_half {n : ℕ} (F : Family n)
     Nat.lt_succ_self _
   exact lt_of_lt_of_le hlt hsucc
 
+/-- A convenient restatement of `measure_restrict_lt_of_card_le_half`.
+The lemma asserts that if restricting the family to the `i`‑th coordinate
+leaves at most half of its members, then the integer measure strictly
+decreases.  It is phrased as a thin wrapper to ease later use. -/
+lemma measure_restrict_decreases {n : ℕ} (F : Family n)
+    (i : Fin n) (b : Bool)
+    (hpos : 0 < (F.restrict i b).card)
+    (hhalf : 2 * (F.restrict i b).card ≤ F.card) :
+    measure (F.restrict i b) < measure F :=
+  measure_restrict_lt_of_card_le_half (F := F) (i := i) (b := b)
+    (hpos := hpos) (hhalf := hhalf)
+
 /-- If filtering the family retains at most half of its members, the measure
     strictly decreases.  This is a generalisation of
     `measure_restrict_lt_of_card_le_half` from coordinate restrictions to

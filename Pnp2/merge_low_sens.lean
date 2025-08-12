@@ -85,4 +85,41 @@ lemma merge_card_eq_min
           entropy_cover.rects.card := Nat.min_eq_right (le_of_not_le h_le)
     simp [merge_cover, h_le, hmin]
 
+/--
+The merged cover cannot have more rectangles than the low-sensitivity cover.
+This inequality is a direct consequence of `merge_card_eq_min` and is useful
+when only a one-sided bound is needed.
+-/
+lemma merge_card_le_low_sens
+    {n : ℕ} {F : Family n} {h : ℕ}
+    (low_sens_cover : FamilyCover F h) (entropy_cover : FamilyCover F h) :
+    (merge_cover low_sens_cover entropy_cover).rects.card ≤
+      low_sens_cover.rects.card := by
+  classical
+  have hmin :=
+    merge_card_eq_min (low_sens_cover := low_sens_cover)
+      (entropy_cover := entropy_cover)
+  -- Rewrite the goal using the description via `Nat.min` and apply the
+  -- standard inequality `Nat.min_le_left`.
+  simpa [hmin] using
+    Nat.min_le_left low_sens_cover.rects.card entropy_cover.rects.card
+
+/--
+Symmetrically, the merged cover is no larger than the entropy-based one.
+This lemma mirrors `merge_card_le_low_sens` and allows bounding the size from
+the other side.
+-/
+lemma merge_card_le_entropy
+    {n : ℕ} {F : Family n} {h : ℕ}
+    (low_sens_cover : FamilyCover F h) (entropy_cover : FamilyCover F h) :
+    (merge_cover low_sens_cover entropy_cover).rects.card ≤
+      entropy_cover.rects.card := by
+  classical
+  have hmin :=
+    merge_card_eq_min (low_sens_cover := low_sens_cover)
+      (entropy_cover := entropy_cover)
+  -- `Nat.min_le_right` supplies the required inequality after rewriting.
+  simpa [hmin] using
+    Nat.min_le_right low_sens_cover.rects.card entropy_cover.rects.card
+
 end Boolcube

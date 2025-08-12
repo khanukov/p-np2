@@ -38,6 +38,7 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Real.Basic
+import Mathlib.Data.Finset.Prod
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Algebra.Order.GroupWithZero.Unbundled.Basic
 
@@ -259,6 +260,49 @@ def BFunc.restrictCoord (f : BFunc n) (j : Fin n) (b : Bool) : BFunc n :=
     · simp [Point.update, hk]
   simp [BFunc.restrictCoord, this]
 
+/-!
+Equality of both `0`- and `1`-restrictions forces equality of the original
+function.  This simple observation will later allow us to inject a family into
+the product of its two coordinate restrictions.
+-/
+lemma eq_of_restrictCoord_eq {f g : BFunc n} {i : Fin n}
+    (h0 : BFunc.restrictCoord f i false = BFunc.restrictCoord g i false)
+    (h1 : BFunc.restrictCoord f i true = BFunc.restrictCoord g i true) :
+    f = g := by
+  classical
+  funext x
+  cases hxi : x i
+  · -- When `x i = false`, the `false`-restriction recovers the value of `f x`.
+    have h0' := congrArg (fun h => h x) h0
+    have hf := restrictCoord_agrees (f := f) (j := i) (b := false)
+      (x := x) (h := hxi)
+    have hg := restrictCoord_agrees (f := g) (j := i) (b := false)
+      (x := x) (h := hxi)
+    simpa [hf, hg] using h0'
+  · -- Otherwise use the `true`-restriction.
+    have h1' := congrArg (fun h => h x) h1
+    have hf := restrictCoord_agrees (f := f) (j := i) (b := true)
+      (x := x) (h := hxi)
+    have hg := restrictCoord_agrees (f := g) (j := i) (b := true)
+      (x := x) (h := hxi)
+    simpa [hf, hg] using h1'
+
+/--
+The mapping sending a function to the pair of its `0`- and `1`-restrictions on
+coordinate `i` is injective.  Knowing how a function behaves on both halves of
+the cube uniquely determines the original function.
+-/
+lemma restrict_pair_injective (i : Fin n) :
+    Function.Injective
+      (fun f : BFunc n =>
+        (BFunc.restrictCoord f i false, BFunc.restrictCoord f i true)) := by
+  intro f g hpair
+  have h0 : BFunc.restrictCoord f i false = BFunc.restrictCoord g i false :=
+    congrArg Prod.fst hpair
+  have h1 : BFunc.restrictCoord f i true = BFunc.restrictCoord g i true :=
+    congrArg Prod.snd hpair
+  exact eq_of_restrictCoord_eq (i := i) h0 h1
+
 end Restrict
 
 /-- The set of inputs on which a Boolean function outputs `true`. -/
@@ -362,6 +406,36 @@ lemma restrict_mono {F G : Family n} (h : F ⊆ G) (i : Fin n) (b : Bool) :
   intro g hg
   rcases (mem_restrict.mp hg) with ⟨f, hf, rfl⟩
   exact mem_restrict.mpr ⟨f, h hf, rfl⟩
+
+/-!
+The size of the original family is bounded by the product of the sizes of its
+two coordinate restrictions.  The proof embeds `F` into the Cartesian product of
+`F.restrict i false` and `F.restrict i true` via the injective mapping from
+`restrict_pair_injective`.
+-/
+lemma card_le_mul_card_restrict (F : Family n) (i : Fin n) :
+    F.card ≤
+      (Family.restrict F i false).card * (Family.restrict F i true).card := by
+  classical
+  -- Map each function to the pair of its restrictions and use injectivity.
+  let pairMap :=
+    fun f : BFunc n =>
+      (BFunc.restrictCoord f i false, BFunc.restrictCoord f i true)
+  have hinj : Function.Injective pairMap :=
+    restrict_pair_injective (i := i)
+  have hcard_img : (F.image pairMap).card = F.card :=
+    Finset.card_image_of_injective (s := F) (f := pairMap) hinj
+  -- Every such pair lies in the product of the two restricted families.
+  have hsubset : F.image pairMap ⊆
+      Finset.product (Family.restrict F i false) (Family.restrict F i true) := by
+    intro p hp
+    rcases Finset.mem_image.mp hp with ⟨f, hfF, rfl⟩
+    refine Finset.mem_product.2 ?_
+    constructor <;> exact Finset.mem_image.mpr ⟨f, hfF, rfl⟩
+  -- Cardinalities transfer along the subset relation.
+  have hcard_le := Finset.card_le_card hsubset
+  -- Rewrite the image and product cardinalities to obtain the claim.
+  simpa [hcard_img, Finset.card_product] using hcard_le
 
 end Family
 

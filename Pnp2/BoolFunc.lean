@@ -118,6 +118,58 @@ shared by *all* functions in `F`. -/
 def monochromaticForFamily (R : Subcube n) (F : Family n) : Prop :=
   ∃ b : Bool, ∀ f, f ∈ F → ∀ {x : Point n}, R.mem x → f x = b
 
+/-! ### Extending subcubes by fixing one more coordinate -/
+
+/-- Add a new fixed coordinate `i := b` to a subcube `R`.
+The index `i` need not be previously free, but in typical
+applications we assume `i ∉ R.idx` so that the resulting
+subcube describes a refinement of `R`. -/
+def extend (R : Subcube n) (i : Fin n) (b : Bool) : Subcube n :=
+  { idx := insert i R.idx
+    val := fun j hj =>
+      -- Inspect whether `j` is the newly inserted coordinate.
+      if hji : j = i then by cases hji; exact b
+      else
+        -- Otherwise `j` was already fixed in `R`.
+        let hj' : j ∈ R.idx := by
+          have := Finset.mem_insert.mp hj
+          cases this with
+          | inl h => exact False.elim (hji h)
+          | inr h => exact h
+        R.val j hj' }
+
+/-- Membership in the extended subcube equals membership in the
+original subcube together with the fixed value on the new coordinate. -/
+lemma mem_extend_iff {R : Subcube n} {i : Fin n} {b : Bool}
+    {x : Point n} (hi : i ∉ R.idx) :
+    (extend R i b).mem x ↔ x i = b ∧ R.mem x := by
+  classical
+  constructor
+  · intro hx
+    have hxi : x i = b := by
+      have := hx i (by simp [extend])
+      simpa [extend] using this
+    refine ⟨hxi, ?_⟩
+    intro j hj
+    have hij : j ≠ i := by
+      exact fun hji => hi (by simpa [hji] using hj)
+    have hmem := hx j (by
+      have : j ∈ insert i R.idx :=
+        Finset.mem_insert.mpr (Or.inr hj)
+      exact this)
+    simpa [extend, hij] using hmem
+  · rintro ⟨hxi, hxR⟩ j hj
+    by_cases hji : j = i
+    · subst hji; simpa [extend, hxi]
+    ·
+      have hjR : j ∈ R.idx := by
+        have := Finset.mem_insert.mp hj
+        cases this with
+        | inl h => exact False.elim (hji h)
+        | inr h => exact h
+      have := hxR j hjR
+      simpa [extend, hji] using this
+
 end Subcube
 
 /-! ### Basic point and function operations -/
@@ -312,6 +364,35 @@ lemma restrict_mono {F G : Family n} (h : F ⊆ G) (i : Fin n) (b : Bool) :
   exact mem_restrict.mpr ⟨f, h hf, rfl⟩
 
 end Family
+
+namespace Subcube
+
+/--
+If a subcube `R` is monochromatic for the restricted family `F.restrict i b`
+and the coordinate `i` is not yet fixed in `R`, then the subcube obtained by
+also fixing `x_i = b` is monochromatic for the original family `F`.
+-/
+lemma monochromaticForFamily_extend_restrict {n : ℕ} {F : Family n}
+    {R : Subcube n} {i : Fin n} {b : Bool} (hi : i ∉ R.idx)
+    (hmono : monochromaticForFamily R (Family.restrict F i b)) :
+    monochromaticForFamily (extend R i b) F := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro f hf x hx
+  -- `x` lies in the extended cube, hence in the original one and with `x i = b`.
+  have hxR : R.mem x :=
+    ((mem_extend_iff (R := R) (i := i) (b := b) (x := x) hi).1 hx).2
+  have hxi : x i = b :=
+    ((mem_extend_iff (R := R) (i := i) (b := b) (x := x) hi).1 hx).1
+  -- the restricted version of `f` belongs to the restricted family
+  have hf0 : BFunc.restrictCoord f i b ∈ Family.restrict F i b :=
+    (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+  -- monochromaticity on `R` transfers to the extended cube using the above facts
+  have := hc (BFunc.restrictCoord f i b) hf0 (x := x) hxR
+  simpa [restrictCoord_agrees (f := f) (j := i) (b := b) (x := x) hxi] using this
+
+end Subcube
 
 /-! ### Essential coordinate support -/
 

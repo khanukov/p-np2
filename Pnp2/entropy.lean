@@ -191,4 +191,12 @@ lemma measure_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   -- `Nat.ceil_mono` converts the entropy inequality into one on the ceiling.
   exact Nat.ceil_mono h
 
+/-- A family containing a single Boolean function has zero measure. -/
+@[simp] lemma measure_singleton {n : ℕ} (f : BFunc n) :
+    measure ({f} : Family n) = 0 := by
+  classical
+  unfold measure
+  -- The entropy of a singleton family is zero.
+  simp [H₂]
+
 end BoolFunc

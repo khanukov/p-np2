@@ -346,6 +346,7 @@ lemma measure_filter_lt_of_card_le_half {n : ℕ} (F : Family n)
     -- from 0 < |F.filter P| and 2|F.filter P| ≤ |F|
     have : 0 < 2 * (F.filter P).card := Nat.mul_pos (by decide) hpos
     exact_mod_cast lt_of_lt_of_le this hhalf
+
   -- Compare logarithms of the doubled filtered family with the original.
   have hlog :=
       Real.logb_le_logb_of_le (b := 2) hb hpos2 hhalfR
@@ -379,6 +380,7 @@ lemma measure_filter_lt_of_card_le_half {n : ℕ} (F : Family n)
       Nat.ceil (H₂ (F.filter P) + 1) = measure (F.filter P) + 1 := by
     have := Nat.ceil_add_one (a := H₂ (F.filter P)) (ha := hposH)
     simpa [measure] using this
+
   have hfinal :
       measure (F.filter P) + 1 ≤ measure F := by
     have htemp := hceil

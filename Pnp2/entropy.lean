@@ -191,6 +191,30 @@ lemma measure_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   -- `Nat.ceil_mono` converts the entropy inequality into one on the ceiling.
   exact Nat.ceil_mono h
 
+/-- Filtering a family along a predicate cannot increase the measure. -/
+lemma measure_filter_le {n : ℕ} (F : Family n)
+    (P : BFunc n → Prop) [DecidablePred P] :
+    measure (F.filter P) ≤ measure F := by
+  classical
+  -- Filtering the family lowers or preserves the entropy, see `H₂_filter_le`.
+  have h := H₂_filter_le (F := F) (P := P)
+  -- The `Nat.ceil` function is monotone, so the inequality transfers.
+  unfold measure
+  exact Nat.ceil_mono h
+
+/-!
+Some concrete values of the measure are handy later on.  They also serve as
+sanity checks for the definitions above.
+-/
+
+/-- The empty family carries no information and hence has measure `0`. -/
+@[simp] lemma measure_empty {n : ℕ} :
+    measure (∅ : Family n) = 0 := by
+  classical
+  unfold measure
+  -- The entropy of an empty set is zero by definition of `H₂`.
+  simp [H₂]
+
 /-- A family containing a single Boolean function has zero measure. -/
 @[simp] lemma measure_singleton {n : ℕ} (f : BFunc n) :
     measure ({f} : Family n) = 0 := by
@@ -198,5 +222,101 @@ lemma measure_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   unfold measure
   -- The entropy of a singleton family is zero.
   simp [H₂]
+
+/-- If a family has at least two distinct functions, then its measure is
+    strictly positive.  This fact helps show that any reduction in entropy
+    forces a decrease in the measure. -/
+lemma measure_pos_of_card_two_le {n : ℕ} {F : Family n}
+    (hF : 2 ≤ F.card) : 0 < measure F := by
+  classical
+  -- Since `card F ≥ 2`, the entropy `H₂ F` is at least `1`.
+  have hb : 1 < (2 : ℝ) := by norm_num
+  have hpos : 0 < (2 : ℝ) := by norm_num
+  have hx : (2 : ℝ) ≤ (F.card : ℝ) := by exact_mod_cast hF
+  have hlog : (1 : ℝ) ≤ H₂ F := by
+    -- Monotonicity of `logb` transfers the bound on cardinalities to entropies.
+    have := Real.logb_le_logb_of_le (b := 2) hb hpos hx
+    simpa [H₂] using this
+  -- A lower bound `1 ≤ H₂ F` implies the measure, as ceiling, is positive.
+  have hposH : 0 < H₂ F := by
+    -- Start from `0 < 1` and chain the inequalities.
+    have : (0 : ℝ) < 1 := by norm_num
+    exact lt_of_lt_of_le this hlog
+  unfold measure
+  exact Nat.ceil_pos.mpr hposH
+
+/-- If restricting along a coordinate identifies at least half of the
+    functions, the measure drops strictly.  This criterion will later
+    ensure progress in the decision‑tree construction once we know that
+    many functions agree after fixing a bit. -/
+lemma measure_restrict_lt_of_card_le_half {n : ℕ} (F : Family n)
+    (i : Fin n) (b : Bool)
+    (hpos : 0 < (F.restrict i b).card)
+    (hhalf : 2 * (F.restrict i b).card ≤ F.card) :
+    measure (F.restrict i b) < measure F := by
+  classical
+  -- Work with real numbers to leverage logarithm monotonicity.
+  have hb : 1 < (2 : ℝ) := by norm_num
+  have hposR : 0 < ((F.restrict i b).card : ℝ) := by exact_mod_cast hpos
+  -- The size after doubling remains positive.
+  -- The size after doubling remains positive.
+  have hpos2 :
+      0 < ((2 * (F.restrict i b).card : ℕ) : ℝ) := by
+    have hmulpos : 0 < 2 * (F.restrict i b).card :=
+      Nat.mul_pos (by decide) hpos
+    exact_mod_cast hmulpos
+  -- Cast the cardinality inequality to `ℝ`.
+  have hhalfR :
+      ((2 * (F.restrict i b).card : ℕ) : ℝ) ≤ (F.card : ℝ) :=
+    by exact_mod_cast hhalf
+  -- Compare logarithms of the doubled restricted family with the original.
+  have hlog :=
+      Real.logb_le_logb_of_le (b := 2) hb hpos2 hhalfR
+  -- Rewrite `logb 2 (2 * |F_b|)` as `1 + logb 2 |F_b|`.
+  have hlogb2 : Real.logb 2 (2 : ℝ) = 1 := by simp
+  have hy0 : ((F.restrict i b).card : ℝ) ≠ 0 := by
+    exact_mod_cast (ne_of_gt hpos)
+  have hmul :
+      Real.logb 2 ((2 : ℝ) * ((F.restrict i b).card : ℝ)) =
+        Real.logb 2 (2 : ℝ) + Real.logb 2 ((F.restrict i b).card : ℝ) :=
+    Real.logb_mul (b := 2) (hx := by norm_num) (hy := hy0)
+  have hcast :
+      ((2 * (F.restrict i b).card : ℕ) : ℝ) =
+        (2 : ℝ) * ((F.restrict i b).card : ℝ) := by
+    norm_cast
+  have hlog' :
+      H₂ (F.restrict i b) + 1 ≤ H₂ F := by
+    -- The previous inequality becomes an entropy bound after rewriting.
+    simpa [H₂, hcast, hmul, hlogb2, add_comm, add_left_comm, add_assoc]
+      using hlog
+  -- Convert the entropy inequality into one on the integer ceiling.
+  have hceil :
+      Nat.ceil (H₂ (F.restrict i b) + 1) ≤ Nat.ceil (H₂ F) :=
+    Nat.ceil_mono hlog'
+  -- Simplify `ceil (x + 1)` using nonnegativity of the entropy.
+  have hposH : 0 ≤ H₂ (F.restrict i b) := by
+    -- since the restricted family is nonempty, its entropy is nonnegative
+    have hcard : 1 ≤ (F.restrict i b).card := Nat.succ_le_of_lt hpos
+    have hx : 1 ≤ ((F.restrict i b).card : ℝ) := by exact_mod_cast hcard
+    have hb' : 1 < (2 : ℝ) := by norm_num
+    simpa [H₂] using Real.logb_nonneg (b := 2) hb' hx
+  have hceq :
+      Nat.ceil (H₂ (F.restrict i b) + 1) =
+        measure (F.restrict i b) + 1 := by
+    unfold measure
+    simpa using Nat.ceil_add_one (ha := hposH) (a := H₂ (F.restrict i b))
+  have hfinal :
+      measure (F.restrict i b) + 1 ≤ measure F := by
+    -- Replace the left-hand ceiling using `hceq` without invoking extra simp rules.
+    have htemp := hceil
+    rw [hceq] at htemp
+    -- Now substitute the definition of `measure F` for the remaining ceiling.
+    simpa [measure] using htemp
+  -- Translating `a + 1 ≤ b` to `a < b` concludes the proof.
+  have hsucc : Nat.succ (measure (F.restrict i b)) ≤ measure F := by
+    simpa [Nat.succ_eq_add_one] using hfinal
+  have hlt : measure (F.restrict i b) < Nat.succ (measure (F.restrict i b)) :=
+    Nat.lt_succ_self _
+  exact lt_of_lt_of_le hlt hsucc
 
 end BoolFunc

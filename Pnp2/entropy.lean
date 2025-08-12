@@ -191,6 +191,30 @@ lemma measure_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   -- `Nat.ceil_mono` converts the entropy inequality into one on the ceiling.
   exact Nat.ceil_mono h
 
+/-- Filtering a family along a predicate cannot increase the measure. -/
+lemma measure_filter_le {n : ℕ} (F : Family n)
+    (P : BFunc n → Prop) [DecidablePred P] :
+    measure (F.filter P) ≤ measure F := by
+  classical
+  -- Filtering the family lowers or preserves the entropy, see `H₂_filter_le`.
+  have h := H₂_filter_le (F := F) (P := P)
+  -- The `Nat.ceil` function is monotone, so the inequality transfers.
+  unfold measure
+  exact Nat.ceil_mono h
+
+/-!
+Some concrete values of the measure are handy later on.  They also serve as
+sanity checks for the definitions above.
+-/
+
+/-- The empty family carries no information and hence has measure `0`. -/
+@[simp] lemma measure_empty {n : ℕ} :
+    measure (∅ : Family n) = 0 := by
+  classical
+  unfold measure
+  -- The entropy of an empty set is zero by definition of `H₂`.
+  simp [H₂]
+
 /-- A family containing a single Boolean function has zero measure. -/
 @[simp] lemma measure_singleton {n : ℕ} (f : BFunc n) :
     measure ({f} : Family n) = 0 := by
@@ -198,5 +222,76 @@ lemma measure_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
   unfold measure
   -- The entropy of a singleton family is zero.
   simp [H₂]
+
+/-- If a family has at least two distinct functions, then its measure is
+    strictly positive.  This fact helps show that any reduction in entropy
+    forces a decrease in the measure. -/
+lemma measure_pos_of_card_two_le {n : ℕ} {F : Family n}
+    (hF : 2 ≤ F.card) : 0 < measure F := by
+  classical
+  -- Since `card F ≥ 2`, the entropy `H₂ F` is at least `1`.
+  have hb : 1 < (2 : ℝ) := by norm_num
+  have hpos : 0 < (2 : ℝ) := by norm_num
+  have hx : (2 : ℝ) ≤ (F.card : ℝ) := by exact_mod_cast hF
+  have hlog : (1 : ℝ) ≤ H₂ F := by
+    -- Monotonicity of `logb` transfers the bound on cardinalities to entropies.
+    have := Real.logb_le_logb_of_le (b := 2) hb hpos hx
+    simpa [H₂] using this
+  -- A lower bound `1 ≤ H₂ F` implies the measure, as ceiling, is positive.
+  have hposH : 0 < H₂ F := by
+    -- Start from `0 < 1` and chain the inequalities.
+    have : (0 : ℝ) < 1 := by norm_num
+    exact lt_of_lt_of_le this hlog
+  unfold measure
+  exact Nat.ceil_pos.mpr hposH
+
+/-- If a restriction of a family cuts its size by at least half,
+    then the entropy-based measure strictly decreases. -/
+lemma measure_restrict_lt_of_card_le_half {n : ℕ} {F : Family n}
+    (i : Fin n) (b : Bool)
+    (hF : 2 ≤ F.card)
+    (hhalf : ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) / 2) :
+    measure (F.restrict i b) < measure F := by
+  classical
+  by_cases h0 : (F.restrict i b).card = 0
+  · -- The restriction wipes out the family entirely.
+    have hpos : 0 < measure F :=
+      measure_pos_of_card_two_le (F := F) (hF := hF)
+    simpa [measure, h0] using hpos
+  ·
+    -- Positivity of the restricted cardinality.
+    have hpos_restrict : 0 < ((F.restrict i b).card : ℝ) := by
+      exact_mod_cast Nat.pos_of_ne_zero h0
+    have hb : 1 < (2 : ℝ) := by norm_num
+    -- `F.card` is positive thanks to the assumption `2 ≤ F.card`.
+    have hFposNat : 0 < F.card := lt_of_lt_of_le Nat.zero_lt_two hF
+    have hpos_half : 0 < (F.card : ℝ) / 2 := by
+      have hcard_pos : 0 < (F.card : ℝ) := by exact_mod_cast hFposNat
+      exact div_pos hcard_pos (by norm_num)
+    -- Compare entropies via logarithm monotonicity.
+    have h :=
+      (Real.logb_le_logb (b := 2) hb hpos_restrict hpos_half).mpr hhalf
+    -- Rewrite the right-hand side using `logb_div`.
+    have hcard_ne_zero : (F.card : ℝ) ≠ 0 := by
+      have : 0 < (F.card : ℝ) := by exact_mod_cast hFposNat
+      exact ne_of_gt this
+    have htwo_ne_zero : (2 : ℝ) ≠ 0 := by norm_num
+    have hrewrite : Real.logb 2 ((F.card : ℝ) / 2) = H₂ F - 1 := by
+        simp [H₂, Real.logb_div hcard_ne_zero htwo_ne_zero]
+    have hHle : H₂ (F.restrict i b) ≤ H₂ F - 1 := by
+      simpa [H₂, hrewrite] using h
+    -- Transfer the bound through the ceiling function.
+    have hceil := Nat.ceil_mono hHle
+    have hceilsimp : Nat.ceil (H₂ F - 1) = measure F - 1 := by
+      unfold measure
+      simpa using (Nat.ceil_sub_one (H₂ F))
+    have hmeasure_le : measure (F.restrict i b) ≤ measure F - 1 := by
+      simpa [measure, hceilsimp] using hceil
+    -- Finish with elementary arithmetic on naturals.
+    have hFpos : 0 < measure F :=
+      measure_pos_of_card_two_le (F := F) (hF := hF)
+    have hlt : measure F - 1 < measure F :=
+      Nat.sub_lt hFpos Nat.one_pos
+    exact lt_of_le_of_lt hmeasure_le hlt
 
 end BoolFunc

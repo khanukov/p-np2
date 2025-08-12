@@ -102,9 +102,10 @@
      `sensitivity_restrictCoord_le`; вероятно достаточно ссылаться на
      неё.
 
-4. `extend_monochromatic`
+4. ~~`extend_monochromatic`
    * если `R` монохроматичен для `F_b`, то `extend i b R` монохроматичен
-     для `F`.
+     для `F`.~~ Реализовано как `Subcube.extend` и лемма
+   `monochromaticForFamily_extend_restrict` в `BoolFunc.lean`.
 
 5. `cover_all_inputs`
    * формализовать приведённый в описании аргумент: каждую точку с

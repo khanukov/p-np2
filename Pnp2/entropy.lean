@@ -442,4 +442,42 @@ lemma measureLexRel_of_measure_eq_card_lt {n : ℕ} {F G : Family n}
   dsimp [measureLexRel, measureLex, Prod.lex]
   simpa [hμ] using Prod.Lex.right _ hc
 
+/-- Restricting along a coordinate strictly decreases the lexicographic
+measure provided the restricted family is smaller.  The proof analyses the
+entropy inequality `measure_restrict_le` and falls back to a cardinality drop
+when the entropies coincide. -/
+lemma measureLex_restrict_decreases {n : ℕ} (F : Family n)
+    (i : Fin n) (b : Bool)
+    (hc : (F.restrict i b).card < F.card) :
+    measureLexRel (measureLex (F.restrict i b)) (measureLex F) := by
+  classical
+  -- Restricting cannot increase the entropy measure.
+  have hμ : measure (F.restrict i b) ≤ measure F :=
+    measure_restrict_le (F := F) (i := i) (b := b)
+  -- Either the entropy drops strictly, or we rely on the cardinality drop.
+  rcases lt_or_eq_of_le hμ with hlt | hEq
+  · exact measureLexRel_of_measure_lt (F := F.restrict i b) (G := F) hlt
+  · exact
+      measureLexRel_of_measure_eq_card_lt (F := F.restrict i b) (G := F)
+        hEq hc
+
+/--
+If two distinct functions from a family collapse to the same function after
+restricting a coordinate, the lexicographic measure strictly decreases on that
+branch.  This is a convenient wrapper combining
+`Family.card_restrict_lt_of_restrict_eq` with
+`measureLex_restrict_decreases`.-/
+lemma measureLex_restrict_lt_of_restrict_eq {n : ℕ} {F : Family n}
+    {i : Fin n} {b : Bool} {f g : BFunc n}
+    (hf : f ∈ F) (hg : g ∈ F) (hfg : f ≠ g)
+    (heq : BFunc.restrictCoord f i b = BFunc.restrictCoord g i b) :
+    measureLexRel (measureLex (F.restrict i b)) (measureLex F) := by
+  classical
+  -- The coinciding restrictions guarantee a strict drop in the branch size.
+  have hc : (F.restrict i b).card < F.card :=
+    Family.card_restrict_lt_of_restrict_eq (F := F) (i := i) (b := b)
+      (f := f) (g := g) hf hg hfg heq
+  -- Feed this inequality into the general measure monotonicity lemma.
+  exact measureLex_restrict_decreases (F := F) (i := i) (b := b) hc
+
 end BoolFunc

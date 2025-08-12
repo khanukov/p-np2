@@ -437,6 +437,66 @@ lemma card_le_mul_card_restrict (F : Family n) (i : Fin n) :
   -- Rewrite the image and product cardinalities to obtain the claim.
   simpa [hcard_img, Finset.card_product] using hcard_le
 
+/--
+If two distinct functions from a family become identical after restricting a
+coordinate, that branch of the family is strictly smaller.  Intuitively,
+restricting collapses `f` and `g` into the same element of the image, so the
+resulting family loses at least one member.-/
+lemma card_restrict_lt_of_restrict_eq {F : Family n} (i : Fin n) (b : Bool)
+    {f g : BFunc n} (hf : f ∈ F) (hg : g ∈ F) (hfg : f ≠ g)
+    (heq : BFunc.restrictCoord f i b = BFunc.restrictCoord g i b) :
+    (Family.restrict F i b).card < F.card := by
+  classical
+  -- Removing `f` from the family does not change the restricted image:
+  -- `f` and `g` map to the same function, so `g` still covers that value.
+  have himg_eq :
+      Family.restrict F i b = Family.restrict (Finset.erase F f) i b := by
+    -- Compare membership elementwise in both images.
+    unfold Family.restrict
+    ext h; constructor
+    · intro hh
+      rcases Finset.mem_image.mp hh with ⟨f', hf', rfl⟩
+      by_cases hff' : f' = f
+      · -- The image comes from `f`; replace it by `g` from the erased set.
+        have hg' : g ∈ Finset.erase F f :=
+          Finset.mem_erase.mpr ⟨hfg.symm, hg⟩
+        refine Finset.mem_image.mpr ?_
+        -- `heq` witnesses that the restricted versions coincide.
+        have hrestrict :
+            BFunc.restrictCoord g i b = BFunc.restrictCoord f' i b := by
+          simpa [hff'] using heq.symm
+        exact ⟨g, hg', hrestrict⟩
+      · -- Any other element already lies in the erased family.
+        have hf'' : f' ∈ Finset.erase F f :=
+          Finset.mem_erase.mpr ⟨hff', hf'⟩
+        exact Finset.mem_image.mpr ⟨f', hf'', rfl⟩
+    · intro hh
+      -- Every image from the erased family trivially comes from the original one.
+      rcases Finset.mem_image.mp hh with ⟨f', hf', rfl⟩
+      have hf'F : f' ∈ F := by
+        rcases Finset.mem_erase.mp hf' with ⟨_, hfF⟩; exact hfF
+      exact Finset.mem_image.mpr ⟨f', hf'F, rfl⟩
+  -- The restricted family therefore has at most `F.erase f` many elements.
+  have hle : (Family.restrict F i b).card ≤ (Finset.erase F f).card := by
+    simpa [himg_eq] using
+      (Family.card_restrict_le (F := Finset.erase F f) (i := i) (b := b))
+  -- Removing a member strictly decreases the size of the family.
+  have hlt_erase : (Finset.erase F f).card < F.card := by
+    -- `card (erase f) = card F - 1`, hence it is strictly smaller than `card F`.
+    have hpos : 0 < F.card := Finset.card_pos.mpr ⟨f, hf⟩
+    have hcard := Finset.card_erase_of_mem hf
+    -- Rephrase the equality `card (erase f) = card F - 1`.
+    have hsucc : (Finset.erase F f).card + 1 = F.card := by
+      have hsub : F.card - 1 + 1 = F.card :=
+        Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+      simpa [hcard, Nat.succ_eq_add_one, hsub] using
+        congrArg (fun t => t + 1) hcard
+    -- The desired inequality follows from `a < a + 1`.
+    have hlt' : (Finset.erase F f).card < (Finset.erase F f).card + 1 :=
+      Nat.lt_succ_self _
+    simpa [hsucc] using hlt'
+  exact lt_of_le_of_lt hle hlt_erase
+
 end Family
 
 namespace Subcube

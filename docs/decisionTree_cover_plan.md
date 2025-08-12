@@ -19,7 +19,9 @@
     `measure_restrict_le`, `measure_filter_le`, `measure_empty`,
     `measure_singleton`, `measure_pos_of_card_two_le`,
     `measure_restrict_lt_of_card_le_half`,
-    `measure_filter_lt_of_card_le_half` в `entropy.lean`.
+    `measure_filter_lt_of_card_le_half` (доказательство усилено, чтобы
+    явно обеспечить положительность исходного семейства) в `entropy.lean`.
+
 * Недостаёт доказательства существования дерева решений глубины
   `O(s · log (n+1))`, покрывающего все 1‑входы семейства.
 

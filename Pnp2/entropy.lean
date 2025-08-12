@@ -258,13 +258,13 @@ lemma measure_restrict_lt_of_card_le_half {n : ℕ} (F : Family n)
   -- Work with real numbers to leverage logarithm monotonicity.
   have hb : 1 < (2 : ℝ) := by norm_num
   have hposR : 0 < ((F.restrict i b).card : ℝ) := by exact_mod_cast hpos
-  -- The size after doubling remains positive.
-  -- The size after doubling remains positive.
+  -- The size after doubling remains positive in the reals.
   have hpos2 :
       0 < ((2 * (F.restrict i b).card : ℕ) : ℝ) := by
-    have hmulpos : 0 < 2 * (F.restrict i b).card :=
-      Nat.mul_pos (by decide) hpos
-    exact_mod_cast hmulpos
+    have : 0 < (2 : ℝ) * ((F.restrict i b).card : ℝ) := by
+      have h2pos : 0 < (2 : ℝ) := by norm_num
+      exact mul_pos h2pos hposR
+    simpa [Nat.cast_mul, Nat.cast_ofNat] using this
   -- Cast the cardinality inequality to `ℝ`.
   have hhalfR :
       ((2 * (F.restrict i b).card : ℕ) : ℝ) ≤ (F.card : ℝ) :=
@@ -303,8 +303,8 @@ lemma measure_restrict_lt_of_card_le_half {n : ℕ} (F : Family n)
   have hceq :
       Nat.ceil (H₂ (F.restrict i b) + 1) =
         measure (F.restrict i b) + 1 := by
-    unfold measure
-    simpa using Nat.ceil_add_one (ha := hposH) (a := H₂ (F.restrict i b))
+    have := Nat.ceil_add_one (a := H₂ (F.restrict i b)) (ha := hposH)
+    simpa [measure] using this
   have hfinal :
       measure (F.restrict i b) + 1 ≤ measure F := by
     -- Replace the left-hand ceiling using `hceq` without invoking extra simp rules.
@@ -334,12 +334,19 @@ lemma measure_filter_lt_of_card_le_half {n : ℕ} (F : Family n)
   have hposR : 0 < ((F.filter P).card : ℝ) := by exact_mod_cast hpos
   -- Doubling the size preserves positivity.
   have hpos2 : 0 < ((2 * (F.filter P).card : ℕ) : ℝ) := by
-    have hmulpos : 0 < 2 * (F.filter P).card :=
-      Nat.mul_pos (by decide) hpos
-    exact_mod_cast hmulpos
+    have : 0 < (2 : ℝ) * ((F.filter P).card : ℝ) := by
+      have h2pos : 0 < (2 : ℝ) := by norm_num
+      exact mul_pos h2pos hposR
+    simpa [Nat.cast_mul, Nat.cast_ofNat] using this
   -- Cast the cardinality inequality to the reals.
   have hhalfR : ((2 * (F.filter P).card : ℕ) : ℝ) ≤ (F.card : ℝ) :=
     by exact_mod_cast hhalf
+  -- Show the original family is nonempty to justify logarithms on the RHS.
+  have hFpos : 0 < (F.card : ℝ) := by
+    -- from 0 < |F.filter P| and 2|F.filter P| ≤ |F|
+    have : 0 < 2 * (F.filter P).card := Nat.mul_pos (by decide) hpos
+    exact_mod_cast lt_of_lt_of_le this hhalf
+
   -- Compare logarithms of the doubled filtered family with the original.
   have hlog :=
       Real.logb_le_logb_of_le (b := 2) hb hpos2 hhalfR
@@ -371,8 +378,9 @@ lemma measure_filter_lt_of_card_le_half {n : ℕ} (F : Family n)
   -- Simplify the left-hand side using `Nat.ceil_add_one`.
   have hceq :
       Nat.ceil (H₂ (F.filter P) + 1) = measure (F.filter P) + 1 := by
-    unfold measure
-    simpa using Nat.ceil_add_one (ha := hposH) (a := H₂ (F.filter P))
+    have := Nat.ceil_add_one (a := H₂ (F.filter P)) (ha := hposH)
+    simpa [measure] using this
+
   have hfinal :
       measure (F.filter P) + 1 ≤ measure F := by
     have htemp := hceil

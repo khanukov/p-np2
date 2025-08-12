@@ -1,4 +1,5 @@
 import Pnp2.BoolFunc
+import Pnp2.BoolFunc.Support
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Lattice.Fold
@@ -139,6 +140,80 @@ lemma exists_family_sensitive_coord (F : Family n) [Fintype (Point n)]
   classical
   rcases h with ⟨f, hfF, hpos⟩
   rcases exists_sensitive_coord (f := f) hpos with ⟨i, x, hx⟩
+  exact ⟨i, f, hfF, x, hx⟩
+
+/--
+If a Boolean function has zero sensitivity, then its essential `support` is
+empty.  Any coordinate belonging to the support would witness positive
+sensitivity, contradicting the assumption.
+-/
+lemma support_eq_empty_of_sensitivity_zero (f : BFunc n)
+    (h : sensitivity f = 0) :
+    support f = (∅ : Finset (Fin n)) := by
+  classical
+  -- Show that no coordinate can belong to the support.
+  apply Finset.eq_empty_iff_forall_not_mem.mpr
+  intro i hi
+  rcases mem_support_iff.mp hi with ⟨x, hx⟩
+  -- The witness `x` certifies that flipping `i` changes the value of `f`.
+  have hxpos' :
+      0 < (Finset.univ.filter fun j => f (Point.update x j (!x j)) ≠ f x).card := by
+    have hiuniv : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+    have hmem : i ∈
+        Finset.univ.filter fun j => f (Point.update x j (!x j)) ≠ f x :=
+      Finset.mem_filter.mpr ⟨hiuniv, by simpa using hx.symm⟩
+    exact Finset.card_pos.mpr ⟨i, hmem⟩
+  have hAtpos : 0 < sensitivityAt f x := by
+    simpa [sensitivityAt] using hxpos'
+  have hle : sensitivityAt f x ≤ sensitivity f :=
+    sensitivityAt_le (f := f) (x := x)
+  have hpos : 0 < sensitivity f := lt_of_lt_of_le hAtpos hle
+  have : False := by simpa [h] using hpos
+  exact this.elim
+
+/--
+For a non‑constant family without identically false members, there exists a
+function, input, and sensitive coordinate witnessing positive sensitivity.
+This lemma combines `support_eq_empty_of_sensitivity_zero` with the helper
+`exists_family_sensitive_coord`.
+-/
+lemma non_constant_family_has_sensitive_coord (F : Family n)
+    [Fintype (Point n)]
+    (hconst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true) :
+    ∃ i : Fin n, ∃ f ∈ F, ∃ x : Point n,
+      f x ≠ f (Point.update x i (!x i)) := by
+  classical
+  -- First show that some function has positive sensitivity.
+  have hpos : ∃ f ∈ F, 0 < sensitivity f := by
+    classical
+    by_contra h
+    -- Then every function would have zero sensitivity and hence be constant.
+    have hzero : ∀ f ∈ F, sensitivity f = 0 := by
+      intro f hf
+      by_contra hf0
+      have hposf : 0 < sensitivity f := Nat.pos_of_ne_zero hf0
+      exact h ⟨f, hf, hposf⟩
+    -- Using the `true` witness, deduce that each function is constantly `true`.
+    have hconst' : ∀ f ∈ F, ∀ x, f x = true := by
+      intro f hf x
+      obtain ⟨x₀, hx₀⟩ := htrue f hf
+      have hsupp :=
+        support_eq_empty_of_sensitivity_zero (f := f) (h := hzero f hf)
+      have hagree : ∀ i ∈ support f, x i = x₀ i := by
+        intro i hi
+        have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
+        cases this
+      have hval : f x = f x₀ :=
+        eval_eq_of_agree_on_support (f := f) (x := x) (y := x₀) hagree
+      simpa [hval, hx₀]
+    -- Thus the whole family would be constantly `true`, contradicting `hconst`.
+    have hcontr : False :=
+      hconst ⟨true, hconst'⟩
+    exact hcontr.elim
+  -- Apply the existing lemma to extract the sensitive coordinate.
+  rcases exists_family_sensitive_coord (F := F) hpos with
+    ⟨i, f, hfF, x, hx⟩
   exact ⟨i, f, hfF, x, hx⟩
 
 @[simp] lemma sensitivity_const (n : ℕ) (b : Bool) [Fintype (Point n)] :

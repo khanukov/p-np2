@@ -78,7 +78,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
 * `acc_mcsp_sat.lean` – outline of the meet-in-the-middle SAT connection.
 * `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP`, relying on assumptions such as `magnification_AC0_MCSP`, `karp_lipton`, and `FCE_implies_MCSP`.
 * `ComplexityClasses.lean` – minimal definitions of `P`, `NP` and `P/poly`; inclusion `P ⊆ P/poly` is currently assumed as an axiom.
-* `cover_numeric.lean` – placeholder numeric bounds; `buildCover_card` currently returns `0`.
+* `cover_numeric.lean` – placeholder numeric bounds; `buildCover_card` currently returns `2^n`.
 * `table_locality.lean` – defines the locality property and proves a
   basic version of the table locality lemma (roadmap B‑2) with the
   trivial bound `k = n`.

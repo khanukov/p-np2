@@ -295,6 +295,8 @@ lemma buildCoverAux_covers (F : Family n) (h : ℕ)
   | some _ =>
       -- Recursive case: extend the cover and apply the inductive hypothesis on
       -- the strictly smaller measure.
+      -- In this branch `firstUncovered` produced a witness, so `extendCover`
+      -- indeed removes at least that point and therefore decreases `μ`.
       have h1 : buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
           match firstUncovered (n := n) F Rset with
           | none   => Rset

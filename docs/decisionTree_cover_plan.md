@@ -18,7 +18,9 @@
   - определение `measure` как `Nat.ceil (H₂ F)` и леммы
     `measure_restrict_le`, `measure_filter_le`, `measure_empty`,
     `measure_singleton`, `measure_pos_of_card_two_le`,
-    `measure_restrict_lt_of_card_le_half` в `entropy.lean`.
+    `measure_restrict_lt_of_card_le_half`,
+    `measure_filter_lt_of_card_le_half` (доказательство усилено, чтобы
+    явно обеспечить положительность исходного семейства) в `entropy.lean`.
 * Недостаёт доказательства существования дерева решений глубины
   `O(s · log (n+1))`, покрывающего все 1‑входы семейства.
 
@@ -97,10 +99,11 @@
    * для выбранного индекса `i` доказать `measure F₀ < measure F` либо
      `measure F₁ < measure F` (хватит строгого уменьшения хотя бы в
      среднем).
-   * сейчас реализована только более слабая `measure_restrict_le` и
-     частичная `measure_restrict_lt_of_card_le_half`, которая гарантирует
-     уменьшение при схлопывании хотя бы половины функций; общий строгий
-     вариант остаётся открытым.
+  * сейчас реализована только более слабая `measure_restrict_le` и
+    частичные версии `measure_restrict_lt_of_card_le_half` и
+    `measure_filter_lt_of_card_le_half`, которые гарантируют уменьшение
+    при схлопывании хотя бы половины функций; общий строгий вариант
+    остаётся открытым.
 
 3. ~~`sensitivity_restrict_le`
    * показать, что ограничение функции по координате не увеличивает

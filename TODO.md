@@ -4,7 +4,7 @@
 
 Updated development tasks after audit (2025-08-06).
 
-- [ ] Complete proofs in `Pnp2/Cover/BuildCover.lean` (`buildCover_covers`).
+- [x] Complete proofs in `Pnp2/Cover/BuildCover.lean` (`buildCover_covers`).
 - [ ] Make `firstUncovered` constructive in `Pnp2/Cover/Uncovered.lean`.
 - [x] Provide a formal proof of `sunflower_exists_classic` in `Pnp2/Sunflower/Sunflower.lean`.
       * Proof completed; the classical sunflower lemma is now fully formalised.

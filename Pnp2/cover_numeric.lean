@@ -120,4 +120,5 @@ lemma buildCover_card_bigO :
   -- Compose the two bounds.
   exact h₁.trans h₂
 
+
 end CoverNumeric

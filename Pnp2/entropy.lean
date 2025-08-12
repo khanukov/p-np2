@@ -8,6 +8,8 @@ now complete so the definitions can be imported by other files.
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic
 import Mathlib.Algebra.Order.Field.Basic
+import Mathlib.Algebra.Order.Floor.Defs
+import Mathlib.Algebra.Order.Floor.Semiring
 import Pnp2.BoolFunc
 
 open Classical
@@ -164,5 +166,29 @@ lemma H₂_filter_le {n : ℕ} (F : Family n)
     have := Real.logb_le_logb_of_le hb hposFilt hle
     simpa [H₂] using this
 
+/-!
+### Entropy-based measure
+
+The recursion for the decision-tree cover will rely on a simple
+numeric measure of a family.  We choose the integer ceiling of the
+collision entropy `H₂ F`.  Any real drop in entropy lowers this
+measure by at least one, giving a convenient well-founded order.
+-/
+
+/-- Complexity measure for a family `F` of Boolean functions:
+the integer ceiling of its collision entropy. -/
+noncomputable def measure {n : ℕ} (F : Family n) : ℕ :=
+  Nat.ceil (H₂ F)
+
+/-- Restricting a family along a coordinate cannot increase the measure. -/
+lemma measure_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
+    measure (F.restrict i b) ≤ measure F := by
+  classical
+  -- Restricting lowers or preserves the entropy, see `H₂_restrict_le`.
+  have h := H₂_restrict_le (F := F) (i := i) (b := b)
+  -- `Nat.ceil` is monotone on `ℝ`, so the inequality lifts to the measure.
+  unfold measure
+  -- `Nat.ceil_mono` converts the entropy inequality into one on the ceiling.
+  exact Nat.ceil_mono h
 
 end BoolFunc

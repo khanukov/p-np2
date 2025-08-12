@@ -405,4 +405,41 @@ lemma measure_filter_lt_of_card_le_half {n : ℕ} (F : Family n)
     Nat.lt_succ_self _
   exact lt_of_lt_of_le hlt hsucc
 
+/-!
+### Lexicographic measure
+
+For the recursive cover construction it is convenient to combine the
+entropy-based `measure` with the raw cardinality of the family.  The
+resulting pair is ordered lexicographically; any drop in either
+component therefore witnesses a strict decrease in the overall
+complexity.
+-/
+
+/-- Lexicographic complexity measure `(measure F, F.card)` for a family. -/
+@[simp] noncomputable def measureLex {n : ℕ} (F : Family n) : ℕ × ℕ :=
+  (measure F, F.card)
+
+/-- Relation implementing the lexicographic order on the pair measure. -/
+abbrev measureLexRel : (ℕ × ℕ) → (ℕ × ℕ) → Prop :=
+  (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).rel
+
+/-- The lexicographic order on measures is well-founded. -/
+lemma measureLexRel_wf : WellFounded measureLexRel :=
+  (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).wf
+
+/-- If the entropy measure drops strictly, the lexicographic measure decreases. -/
+lemma measureLexRel_of_measure_lt {n : ℕ} {F G : Family n}
+    (h : measure F < measure G) :
+    measureLexRel (measureLex F) (measureLex G) := by
+  dsimp [measureLexRel, measureLex, Prod.lex]
+  exact Prod.Lex.left _ _ h
+
+/-- If the entropy measures coincide but the cardinality drops, the
+lexicographic measure still decreases. -/
+lemma measureLexRel_of_measure_eq_card_lt {n : ℕ} {F G : Family n}
+    (hμ : measure F = measure G) (hc : F.card < G.card) :
+    measureLexRel (measureLex F) (measureLex G) := by
+  dsimp [measureLexRel, measureLex, Prod.lex]
+  simpa [hμ] using Prod.Lex.right _ hc
+
 end BoolFunc

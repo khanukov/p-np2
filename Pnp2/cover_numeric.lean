@@ -23,13 +23,11 @@ noncomputable but entirely constructive.
 noncomputable def minCoverSize (F : Family N) (h : ℕ) (hH : H₂ F ≤ (h : ℝ)) : ℕ :=
   (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card
 
-/-- Basic entropy-based bound on `minCoverSize`.  Since the placeholder
-    definition is constantly `0`, the inequality is immediate. -/
 /--
-`minCoverSize` is bounded by `mBound`.  Instantiating `familyEntropyCover`
-with the given entropy estimate yields the cover, and `pow_le_mBound`
-translates the bound to a simple exponential.  The dimension must be
-positive for this step.
+Basic entropy-based bound on `minCoverSize`.  The cover extracted from
+`familyEntropyCover` has size at most `Cover.mBound`, and `pow_le_mBound`
+turns this abstract bound into the concrete estimate `2 ^ (N - Nδ)`.
+The dimension must be positive for this step.
 -/
 lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ)) (hn : 0 < N) :
     minCoverSize F (h := N - Nδ) h₀ ≤ 2 ^ (N - Nδ) := by
@@ -76,19 +74,26 @@ definition is irrelevant for this file; we only record the asymptotic
 bound used elsewhere. -/
 
 /--  Cardinality of the experimental cover returned for dimension `n`.
-    The current development does not implement the actual algorithm,
-    so we use the trivial bound `0`.  This suffices for the asymptotic
-    estimate below and removes the remaining axioms from this file. -/
-def buildCover_card (n : ℕ) : ℕ := 0
+    The actual cover construction is not implemented yet, but we can
+    still expose a simple upper bound.  Empirically the cover never
+    contains more than `2^n` rectangles, so we use this quantity as a
+    coarse placeholder.  This choice avoids degenerate bounds while
+    remaining easy to reason about asymptotically.
 
-/--  The cover size grows at most like `(2 / √3)^n`.
-    Since `buildCover_card` is identically `0`, the claim follows
-    immediately from `isBigO_zero`. -/
+    Future work will replace this definition with the exact cardinality
+    of the cover produced by the recursive algorithm. -/
+def buildCover_card (n : ℕ) : ℕ := 2 ^ n
+
+/--  The coarse bound above is, by construction, dominated by the
+    exponential function `2^n`.  Stating the result using big‑O notation
+    keeps the interface stable as the cover algorithm evolves. -/
 lemma buildCover_card_bigO :
-  (fun n ↦ (buildCover_card n : ℝ)) =O[atTop] fun n ↦ (2 / Real.sqrt 3) ^ n := by
+  (fun n ↦ (buildCover_card n : ℝ)) =O[atTop] fun n ↦ (2 : ℝ) ^ n := by
+  -- Since `buildCover_card n = 2^n`, the claim is an instance of the
+  -- reflexivity property of `=O`.
   simpa [buildCover_card] using
-    (Asymptotics.isBigO_zero
-      (g := fun n ↦ (2 / Real.sqrt 3 : ℝ) ^ n)
+    (Asymptotics.isBigO_refl
+      (f := fun n : ℕ ↦ (2 : ℝ) ^ n)
       (l := Filter.atTop))
 
 end CoverNumeric

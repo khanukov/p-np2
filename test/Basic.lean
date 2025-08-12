@@ -119,16 +119,16 @@ example (n : ℕ) (f : BFunc n) :
     exact Agreement.Subcube.monochromatic_point (x := x) (f := f)
 
   -- The low-sensitivity cover for a single function follows from `decisionTree_cover`.
-  example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
+  example (n s : ℕ) (f : BFunc n) [Fintype (Point n)]
       (Hs : sensitivity f ≤ s) :
       ∃ Rset : Finset (Subcube n),
         (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+        Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
     classical
     simpa using
       BoolFunc.low_sensitivity_cover_single
-        (n := n) (s := s) (C := C) (f := f) Hs
+        (n := n) (s := s) (f := f) Hs
 
   -- There exists a coordinate whose restriction does not increase entropy.
   example :

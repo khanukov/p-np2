@@ -90,16 +90,16 @@ example :
   exact hx
 
 /-- The low-sensitivity cover for a single function exists. -/
-example (n s C : ℕ) (f : BFunc n) [Fintype (Point n)]
+example (n s : ℕ) (f : BFunc n) [Fintype (Point n)]
     (Hs : sensitivity f ≤ s) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
   simpa using
     BoolFunc.low_sensitivity_cover_single
-      (n := n) (s := s) (C := C) (f := f) Hs
+      (n := n) (s := s) (f := f) Hs
 
 /-- Dimension of a subcube freezes exactly the chosen coordinates. -/
 example {n : ℕ} (x : Point n) (I : Finset (Fin n)) :
@@ -150,14 +150,14 @@ The specialised decision-tree cover lemmas have simple instances for
 trivial families.  We verify the constant-family case here to ensure
 that the base lemmas are usable in tests.
 -/
-example {n s C : ℕ} [Fintype (Point n)] :
+example {n s : ℕ} [Fintype (Point n)] :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset,
         Subcube.monochromaticForFamily R
           ({fun _ : Point n => true} : Family n)) ∧
       (∀ f ∈ ({fun _ : Point n => true} : Family n),
           ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (C * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
   -- Build the constant witness required by `decisionTree_cover_of_constant`.
   have hconst : ∃ b, ∀ f ∈ ({fun _ : Point n => true} : Family n), ∀ x, f x = b :=
@@ -172,7 +172,7 @@ example {n s C : ℕ} [Fintype (Point n)] :
   simpa using
     BoolFunc.decisionTree_cover_of_constant
       (F := ({fun _ : Point n => true} : Family n))
-      (s := s) (C := C) hconst
+      (s := s) hconst
 
 /-- Every evaluation/path pair computed by a decision tree occurs in its
 `coloredSubcubes` set.  We simply invoke the lemma

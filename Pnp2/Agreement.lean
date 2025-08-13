@@ -17,9 +17,9 @@ functions in `F`.
 ------------------------------------------------------------------
 Current status
 ------------------------------------------------------------------
-Earlier revisions left the proof as a `sorry` placeholder.  The file now
-contains the complete 60-line combinatorial argument, so downstream
-modules no longer depend on unproven stubs.
+Earlier revisions lacked a complete proof.  The file now contains the
+complete 60-line combinatorial argument, so downstream modules no longer
+depend on unproven stubs.
 -/
 
 import Pnp2.BoolFunc

@@ -2,9 +2,9 @@
   Pnp2/low_sensitivity.lean
   Trivial low-sensitivity cover without recursion.
 
-  This version provides a self-contained file with no `sorry`.  It
-  uses a very simple construction: the full cube covers every input,
-  so we return a singleton list containing `Subcube.full`.
+  This version provides a self-contained file.  It uses a very simple
+  construction: the full cube covers every input, so we return a
+  singleton list containing `Subcube.full`.
 -/
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.Basic

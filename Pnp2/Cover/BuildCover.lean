@@ -14,8 +14,8 @@ for the accompanying lemmas.
 The actual correctness proofs are substantial and remain works in progress.
 We nevertheless expose the intended API so that other parts of the repository
 can already rely on the interface.  Lemmas that still await a complete proof
-are marked with `sorry`.  They can be filled in once the missing arguments
-have been formalised.
+are currently stated as axioms.  They can be filled in once the missing
+arguments have been formalised.
 -/
 
 open Classical

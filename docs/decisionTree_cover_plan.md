@@ -139,8 +139,13 @@
 
 ### 4) Построение дерева из покрытия
 
-- Реализовать `DecisionTree.ofRectCover` и связать глубину дерева с числом
-  листьев через `DecisionTree.leaf_count_le_pow_depth`.  **Сложность:** низкая.
+- ✅ Добавлена заготовка `DecisionTree.ofRectCover`, превращающая набор
+  субкубов в дерево решений.  Добавлены вспомогательные леммы
+  `matches_toList_of_mem`, `eval_matchSubcube_matches` и
+  `eval_ofRectCoverList_cons_mem`, обеспечивающие корректность расчёта
+  цвета на точках внутри каждого субкуба.  Оценки числа листьев и
+  глубины пока не реализованы; связь с
+  `DecisionTree.leaf_count_le_pow_depth` остаётся открытым пунктом.
   **Файл:** `DecisionTree.lean`.
 
 ### 5) Глобальная оценка глубины

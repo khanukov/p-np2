@@ -174,6 +174,40 @@ lemma coordSensitivity_restrict_eq_zero (f : BFunc n) (i j : Fin n) (b : Bool)
     simpa [BFunc.restrictCoord] using hx'
 
 /--
+If all coordinates outside `A` are insensitive across the family `F`, then the
+same property holds for the restricted family `F.restrict i b` with respect to
+`A.erase i`.  In other words, fixing a coordinate preserves the invariant that
+no function in the family is sensitive outside the allowed coordinate set.
+-/
+lemma insens_off_A_restrict (F : Family n) (A : Finset (Fin n))
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
+    (i : Fin n) (b : Bool) :
+    ∀ j ∉ A.erase i, ∀ g ∈ F.restrict i b, coordSensitivity g j = 0 := by
+  classical
+  intro j hj g hg
+  -- Expand membership in the restricted family.
+  rcases Finset.mem_image.mp hg with ⟨f, hfF, rfl⟩
+  -- Either `j` already lies outside `A` or it equals the fixed coordinate `i`.
+  have hjA : j ∉ A ∨ j = i := by
+    by_cases hjA : j ∈ A
+    · by_cases hji : j = i
+      · exact Or.inr hji
+      ·
+        have : j ∈ A.erase i := by simpa [Finset.mem_erase, hjA, hji]
+        exact (False.elim (hj this))
+    · exact Or.inl hjA
+  -- Handle the two cases separately.
+  cases hjA with
+  | inl hjA =>
+      have hz := hA j hjA f hfF
+      simpa using
+        (coordSensitivity_restrict_eq_zero (f := f) (i := i) (j := j) (b := b) hz)
+    | inr hji =>
+        have hzero :=
+          coordSensitivity_restrict_self_zero (f := f) (i := i) (b := b)
+        simpa [hji] using hzero
+
+/--
 If a Boolean function has positive sensitivity, then there exists a coordinate
 whose value change flips the function on some input.  This lemma extracts such
 a witness and will be useful for constructing decision trees.
@@ -314,9 +348,54 @@ lemma exists_sensitive_coord_in_A (F : Family n) (A : Finset (Fin n))
     by_contra hnot
     have hzero := hA i hnot f hfF
     have hcontr :=
-      (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 hzero x
+        (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 hzero x
     exact hx hcontr
   exact ⟨i, hiA, f, hfF, x, hx⟩
+
+/--
+A convenient choice function producing a sensitive coordinate inside a prescribed
+set `A`.  The result comes equipped with proofs that the coordinate indeed
+belongs to `A` and witnesses sensitivity for the family `F`.  This noncomputable
+definition packages `exists_sensitive_coord_in_A` into a form suitable for
+recursive constructions.
+-/
+noncomputable def chooseSensitiveCoordInA (F : Family n) (A : Finset (Fin n))
+    [Fintype (Point n)]
+    (hNonConst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    {i // i ∈ A ∧ sensitiveCoord F i} := by
+  classical
+  -- Extract the coordinate using classical choice and bundle the evidence.
+  -- Obtain the witness and wrap it into a subtype for easier reuse.
+  obtain h :=
+    exists_sensitive_coord_in_A (F := F) (A := A) hNonConst htrue hA
+  refine ⟨Classical.choose h, ?_⟩
+  -- `choose_spec` furnishes the membership and sensitivity proofs.
+  simpa using Classical.choose_spec h
+
+@[simp]
+lemma chooseSensitiveCoordInA_mem (F : Family n) (A : Finset (Fin n))
+    [Fintype (Point n)]
+    (hNonConst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    (chooseSensitiveCoordInA (F := F) (A := A) hNonConst htrue hA).1 ∈ A := by
+  classical
+  -- By construction the chosen coordinate lies in `A`.
+  exact (chooseSensitiveCoordInA (F := F) (A := A) hNonConst htrue hA).2.1
+
+@[simp]
+lemma chooseSensitiveCoordInA_sensitive (F : Family n) (A : Finset (Fin n))
+    [Fintype (Point n)]
+    (hNonConst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    sensitiveCoord F
+      (chooseSensitiveCoordInA (F := F) (A := A) hNonConst htrue hA).1 := by
+  classical
+  -- The second component of the subtype records sensitivity.
+  exact (chooseSensitiveCoordInA (F := F) (A := A) hNonConst htrue hA).2.2
 
 /-!
 The project originally conjectured the following statement: if a family has a

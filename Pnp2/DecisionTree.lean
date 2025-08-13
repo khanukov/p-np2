@@ -17,6 +17,30 @@ namespace DecisionTree
 
 variable {n : ℕ}
 
+/-- `agreesWithAssignments x p` means that the point `x` satisfies all assignments
+in the list `p`.  Each pair `(i, b)` in `p` demands that the `i`-th coordinate of
+`x` equals `b`. -/
+def agreesWithAssignments (x : Point n) (p : List (Fin n × Bool)) : Prop :=
+  ∀ q ∈ p, x q.1 = q.2
+
+@[simp] lemma agreesWithAssignments_nil (x : Point n) :
+    agreesWithAssignments (n := n) x [] := by
+  intro q hq; cases hq
+
+lemma agreesWithAssignments_cons {x : Point n} {i : Fin n} {b : Bool}
+    {p : List (Fin n × Bool)} :
+    agreesWithAssignments (n := n) x ((i, b) :: p) ↔
+      x i = b ∧ agreesWithAssignments (n := n) x p := by
+  constructor
+  · intro h; refine ⟨h (i, b) (by simp), ?_⟩
+    intro q hq; exact h q (List.mem_cons.mpr (Or.inr hq))
+  · rintro ⟨hx, hrest⟩ q hq
+    have := List.mem_cons.mp hq
+    cases this with
+    | inl hq' => cases hq'; simpa using hx
+    | inr hq' => exact hrest q hq'
+
+
 /-- Depth of a decision tree. -/
 def depth : DecisionTree n → Nat
   | leaf _ => 0
@@ -44,6 +68,18 @@ def eval_tree : DecisionTree n → Point n → Bool
       by_cases h : x i
       · exact eval_tree t1 x
       · exact eval_tree t0 x
+
+/-- Evaluate a leaf. -/
+@[simp] lemma eval_tree_leaf (b : Bool) (x : Point n) :
+    eval_tree (leaf b) x = b := rfl
+
+/-- Evaluate a node. -/
+@[simp] lemma eval_tree_node (i : Fin n) (t0 t1 : DecisionTree n) (x : Point n) :
+    eval_tree (node i t0 t1) x =
+      (if x i then eval_tree t1 x else eval_tree t0 x) := by
+  by_cases h : x i
+  · simp [eval_tree, h]
+  · simp [eval_tree, h]
 
 /-- Path taken by an input to reach a leaf. -/
 def path_to_leaf : DecisionTree n → Point n → List (Fin n × Bool)
@@ -288,19 +324,139 @@ lemma coloredSubcubes_card_le_pow_depth (t : DecisionTree n) :
   have h₂ := leaf_count_le_pow_depth (t := t)
   exact le_trans h₁ h₂
 
-/-- Evaluate a leaf. -/
-@[simp] lemma eval_tree_leaf (b : Bool) (x : Point n) :
-    eval_tree (leaf b) x = b := rfl
+end DecisionTree
 
-/-- Evaluate a node. -/
-@[simp] lemma eval_tree_node (i : Fin n) (t0 t1 : DecisionTree n) (x : Point n) :
-    eval_tree (node i t0 t1) x = (if x i then eval_tree t1 x else eval_tree t0 x) := by
-  by_cases h : x i
-  · simp [eval_tree, h]
-  · simp [eval_tree, h]
+/-!
+Turning a set of monochromatic subcubes into a concrete decision tree.
+The construction proceeds in two steps:
 
-/-- Extend membership in a path subcube by fixing one more coordinate. -/
-lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
+1.  `ofRectCoverList` consumes a list of coloured subcubes.  Each
+    element `(b, R)` is turned into a small decision tree testing
+    membership in `R` and returning the colour `b` on success while
+    falling back to the remainder of the list otherwise.
+2.  `ofRectCover` packages a finite set of rectangles together with the
+    required monochromaticity witnesses and invokes `ofRectCoverList`.
+
+This section also derives a simple bound on the number of leaves of the
+resulting tree, allowing later conversions between covers and decision
+trees.
+-/
+
+namespace Subcube
+
+variable {n : ℕ}
+
+/--
+Convert a subcube into an explicit list of fixed coordinates together
+with their Boolean values.  This representation is convenient for
+iteratively constructing decision trees.
+-/
+noncomputable def toList (R : Subcube n) : List (Fin n × Bool) :=
+  let l := R.idx.attach.toList
+  -- sort coordinates to obtain a canonical order
+  let l' := l.mergeSort (fun a b => a.1 < b.1)
+  l'.map (fun i => (i.1, R.val i.1 i.2))
+
+end Subcube
+
+open Subcube
+
+namespace DecisionTree
+
+variable {n : ℕ}
+
+lemma agreesWithAssignments_toList_of_mem {R : Subcube n} {x : Point n}
+    (hx : x ∈ₛ R) :
+    agreesWithAssignments (n := n) x (Subcube.toList (n := n) R) := by
+  classical
+  intro q hq
+  unfold Subcube.toList at hq
+  -- unpack membership in the mapped list
+  rcases List.mem_map.mp hq with ⟨i, hi, rfl⟩
+  -- the proof component of `i` certifies membership in `R.idx`
+  exact hx i.1 i.2
+
+/-
+`matchSubcube p b t` builds a decision tree which checks the coordinate
+assignments recorded in the list `p`.  If the input satisfies all
+constraints, the tree returns the constant Boolean `b`.  Any mismatch
+causes evaluation of the fallback tree `t`.
+-/
+noncomputable def matchSubcube : List (Fin n × Bool) → Bool → DecisionTree n → DecisionTree n
+  | [], b, _ => leaf b
+  | (i, true) :: p, b, t =>
+      node i t (matchSubcube p b t)
+  | (i, false) :: p, b, t =>
+      node i (matchSubcube p b t) t
+
+/-- If `x` agrees with every assignment in `p`, `matchSubcube p b t`
+returns the constant colour `b` regardless of the fallback tree `t`. -/
+lemma eval_matchSubcube_agrees {p : List (Fin n × Bool)} {b : Bool}
+    {t : DecisionTree n} {x : Point n}
+    (h : agreesWithAssignments (n := n) x p) :
+    eval_tree (matchSubcube (n := n) p b t) x = b := by
+  classical
+  induction p with
+  | nil => simpa [matchSubcube] using h
+  | cons hd tl ih =>
+      rcases hd with ⟨i, b'⟩
+      have hcons :=
+        (agreesWithAssignments_cons (x:=x) (i:=i) (b:=b') (p:=tl)) |>.mp h
+      cases b' with
+      | false =>
+          have hx : x i = false := hcons.1
+          have ih' := ih hcons.2
+          simpa [matchSubcube, hx] using ih'
+      | true =>
+          have hx : x i = true := hcons.1
+          have ih' := ih hcons.2
+          simpa [matchSubcube, hx] using ih'
+
+/--
+Convert a list of coloured subcubes into a decision tree.  Earlier
+rectangles in the list take precedence over later ones.
+-/
+noncomputable def ofRectCoverList (default : Bool) : List (Bool × Subcube n) → DecisionTree n
+  | [] => leaf default
+  | (b, R) :: rs =>
+      matchSubcube (Subcube.toList (n := n) R) b (ofRectCoverList default rs)
+
+/--
+`ofRectCover` turns a finite set of rectangles into a decision tree.
+Each rectangle is assigned a colour using the accompanying proof of
+monochromaticity.  The resulting decision tree computes a Boolean family
+which agrees with all rectangles in the cover.
+-/
+noncomputable def ofRectCover (default : Bool) (F : Family n)
+    (Rset : Finset (Subcube n))
+    (hmono : ∀ R ∈ Rset, Subcube.monochromaticForFamily R F) :
+    DecisionTree n :=
+  let colored : List (Bool × Subcube n) :=
+    Rset.attach.toList.map (fun R =>
+      (Classical.choose (hmono R.1 R.2), R.1))
+  ofRectCoverList (n := n) default colored
+
+/-!
+At present we do not develop detailed bounds relating the size of the
+input rectangle set to the leaf count or depth of `ofRectCover`.  The
+primary goal of this section is to provide a concrete tree structure; a
+more refined analysis can be added once needed.
+-/
+@[simp] lemma eval_ofRectCoverList_nil (default : Bool) (x : Point n) :
+    eval_tree (ofRectCoverList (n := n) default []) x = default := rfl
+
+lemma eval_ofRectCoverList_cons_mem {default : Bool} {b : Bool}
+    {R : Subcube n} {rs : List (Bool × Subcube n)} {x : Point n}
+    (hx : x ∈ₛ R) :
+    eval_tree (ofRectCoverList (n := n) default ((b, R) :: rs)) x = b := by
+  have hmatch :=
+    agreesWithAssignments_toList_of_mem (n := n) (R := R) (x := x) hx
+  simpa using
+    (eval_matchSubcube_agrees (n := n)
+      (p := Subcube.toList (n := n) R)
+      (b := b) (t := ofRectCoverList (n := n) default rs)
+      (x := x) hmatch)
+  lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
     (i : Fin n) (b : Bool)
     (hx : (subcube_of_path p).mem x) (hxi : x i = b) :
     (subcube_of_path ((i, b) :: p)).mem x := by
@@ -428,7 +584,7 @@ lemma path_to_leaf_agrees (t : DecisionTree n) (x : Point n) :
         | inl hq => cases hq; simp [hxi]
         | inr hq => exact h q hq
 
-/-!  If every entry of `p` matches the corresponding coordinate of `x`,
+/-!  If every entry of `p` agrees with the corresponding coordinate of `x`,
 then `x` lies in the subcube described by `p`. -/
 lemma mem_subcube_of_path_of_agrees (x : Point n) :
     ∀ p : List (Fin n × Bool), (∀ q ∈ p, x q.1 = q.2) →

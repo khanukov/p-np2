@@ -140,6 +140,138 @@ lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
   have := hb f (by simp) hx
   simpa using this
 
+/--
+The images of two rectangle sets under extension with opposite fixed values of
+`i` are disjoint.  Intuitively, any point lying in an extension with `i = false`
+must satisfy `x i = false`, whereas membership in an extension with
+`i = true` forces `x i = true`.  The hypotheses `hi₀`/`hi₁` guarantee that `i`
+was not already fixed in the original rectangles, so the extensions genuinely
+record the new value of `i`.
+-/
+lemma disjoint_extend_images (i : Fin n) {R0 R1 : Finset (Subcube n)}
+    (hi0 : ∀ R ∈ R0, i ∉ R.idx)
+    (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
+    Disjoint (R0.image (fun R => Subcube.extend R i false))
+             (R1.image (fun R => Subcube.extend R i true)) := by
+  classical
+  refine Finset.disjoint_left.2 ?_
+  intro R hR0 hR1
+  -- Decode membership of `R` in the two images.
+  obtain ⟨S0, hS0, hR0'⟩ := Finset.mem_image.mp hR0
+  obtain ⟨S1, hS1, hR1'⟩ := Finset.mem_image.mp hR1
+  -- Consequently the same subcube arises by extending with both `false` and `true`.
+  have hEq : Subcube.extend S0 i false = Subcube.extend S1 i true :=
+    by simpa [hR0', hR1'] using Eq.trans hR0' (hR1'.symm)
+  -- Build a point in `S0` forcing `x i = false`.
+  classical
+  let x : Point n := fun j => if h : j ∈ S0.idx then S0.val j h else false
+  have hx0 : x ∈ₛ S0 := by
+    intro j hj; dsimp [x]; simp [hj]
+  have hxi : x i = false := by
+    dsimp [x];
+    have : i ∉ S0.idx := hi0 _ hS0
+    simp [this]
+  -- The point `x` lies in the extended subcube on the `false` branch.
+  have hxR0 : x ∈ₛ Subcube.extend S0 i false :=
+    (Subcube.mem_extend_iff (R := S0) (i := i) (b := false)
+        (x := x) (hi0 _ hS0)).2 ⟨hxi, hx0⟩
+  -- Due to `hEq`, it also lies in the extension on the `true` branch.
+  have hxR1 : x ∈ₛ Subcube.extend S1 i true := by
+    simpa [hEq] using hxR0
+  have hx1 : x i = true :=
+    (Subcube.mem_extend_iff (R := S1) (i := i) (b := true)
+        (x := x) (hi1 _ hS1)).1 hxR1 |>.1
+  -- Finally derive the contradiction `false = true`.
+  have : False := by simpa [hxi] using hx1
+  exact this
+
+/-!
+`disjoint_extend_images` immediately yields a convenient cardinality
+statement: when extending two rectangle collections along opposite values of
+the same coordinate, the resulting images are disjoint.  Consequently the size
+of their union is just the sum of the original sizes.  This fact will be used
+when estimating the number of rectangles produced by the recursive cover
+construction.
+-/
+lemma card_extend_union_le (i : Fin n) {R0 R1 : Finset (Subcube n)}
+    (hi0 : ∀ R ∈ R0, i ∉ R.idx)
+    (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
+    (R0.image (fun R => Subcube.extend R i false) ∪
+       R1.image (fun R => Subcube.extend R i true)).card ≤
+      R0.card + R1.card := by
+  classical
+  have hdis :=
+    disjoint_extend_images (i := i) (R0 := R0) (R1 := R1) hi0 hi1
+  have hcard :=
+    (Finset.card_union_of_disjoint hdis :
+        (R0.image (fun R => Subcube.extend R i false) ∪
+            R1.image (fun R => Subcube.extend R i true)).card =
+          (R0.image (fun R => Subcube.extend R i false)).card +
+            (R1.image (fun R => Subcube.extend R i true)).card)
+  have h0 := Finset.card_image_le (s := R0) (f := fun R => Subcube.extend R i false)
+  have h1 := Finset.card_image_le (s := R1) (f := fun R => Subcube.extend R i true)
+  have hsum := Nat.add_le_add h0 h1
+  simpa [hcard] using hsum
+
+/--
+If two collections of subcubes cover all `1`-inputs of the restricted families
+`F.restrict i false` and `F.restrict i true` respectively, then after extending
+each subcube with the fixed value of `i` their union covers every `1`-input of
+the original family `F`.  The hypothesis `hi₀`/`hi₁` ensures that the
+coordinate `i` is not already fixed in the rectangles before extension.
+-/
+lemma cover_all_inputs_extend_union (F : Family n) (i : Fin n)
+    {R0 R1 : Finset (Subcube n)}
+    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x,
+        f x = true → ∃ R ∈ R0, x ∈ₛ R)
+    (hcov1 : ∀ f ∈ F.restrict i true, ∀ x,
+        f x = true → ∃ R ∈ R1, x ∈ₛ R)
+    (hi0 : ∀ R ∈ R0, i ∉ R.idx)
+    (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
+    ∀ f ∈ F, ∀ x, f x = true →
+      ∃ R ∈ (R0.image (fun R => Subcube.extend R i false) ∪
+              R1.image (fun R => Subcube.extend R i true)),
+        x ∈ₛ R := by
+  classical
+  intro f hf x hx
+  cases hxi : x i
+  ·
+    -- Case `x i = false`: use the cover for the `false` branch.
+    have hg : BFunc.restrictCoord f i false ∈ F.restrict i false :=
+      (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+    have hx' : BFunc.restrictCoord f i false x = true := by
+      simpa [restrictCoord_agrees (f := f) (j := i) (b := false)
+              (x := x) hxi] using hx
+    obtain ⟨R, hR, hxR⟩ := hcov0 _ hg x hx'
+    refine ⟨Subcube.extend R i false, ?_, ?_⟩
+    · refine Finset.mem_union.mpr ?_
+      refine Or.inl ?_
+      exact Finset.mem_image.mpr ⟨R, hR, rfl⟩
+    ·
+      have hiR : i ∉ R.idx := hi0 R hR
+      have : x ∈ₛ Subcube.extend R i false :=
+        (Subcube.mem_extend_iff (R := R) (i := i) (b := false)
+            (x := x) hiR).2 ⟨hxi, hxR⟩
+      simpa using this
+  ·
+    -- Case `x i = true`.
+    have hg : BFunc.restrictCoord f i true ∈ F.restrict i true :=
+      (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+    have hx' : BFunc.restrictCoord f i true x = true := by
+      simpa [restrictCoord_agrees (f := f) (j := i) (b := true)
+              (x := x) hxi] using hx
+    obtain ⟨R, hR, hxR⟩ := hcov1 _ hg x hx'
+    refine ⟨Subcube.extend R i true, ?_, ?_⟩
+    · refine Finset.mem_union.mpr ?_
+      refine Or.inr ?_
+      exact Finset.mem_image.mpr ⟨R, hR, rfl⟩
+    ·
+      have hiR : i ∉ R.idx := hi1 R hR
+      have : x ∈ₛ Subcube.extend R i true :=
+        (Subcube.mem_extend_iff (R := R) (i := i) (b := true)
+            (x := x) hiR).2 ⟨hxi, hxR⟩
+      simpa using this
+
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of
     subcubes covering all ones of the family.  The proof will use decision

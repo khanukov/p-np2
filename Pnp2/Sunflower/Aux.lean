@@ -6,6 +6,9 @@
 
 import Pnp2.Sunflower.Sunflower
 
+-- Disable `unnecessarySimpa` warnings in this auxiliary file:
+set_option linter.unnecessarySimpa false
+
 open Classical Finset
 open scoped BigOperators
 

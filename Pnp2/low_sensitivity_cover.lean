@@ -2,8 +2,12 @@ import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
+import Mathlib.Data.Finset.Card
 
 open BoolFunc
+
+-- Silence `unnecessarySimpa` linter warnings in this developing file.
+set_option linter.unnecessarySimpa false
 
 namespace BoolFunc
 
@@ -261,6 +265,98 @@ lemma card_extend_union_le (i : Fin n) {R0 R1 : Finset (Subcube n)}
   simpa [hcard] using hsum
 
 /--
+Normalise a cover of the branch `F_b` so that none of its rectangles
+fixes the splitting coordinate `i`.  Rectangles that already avoid `i`
+are kept as is, whereas those fixing `i = b` are "unfixed" via
+`Subcube.unfix`.  Rectangles fixing `i` to the opposite Boolean value do
+not contain any point with `x i = b` and are therefore discarded.  The
+resulting collection still covers all relevant inputs, its size does not
+exceed the original one, and every rectangle avoids `i`.
+-/
+lemma cover_normalize_branch {F_b : Family n} (i : Fin n) (b : Bool)
+    {Rb : Finset (Subcube n)}
+    (hcov : ∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb, x ∈ₛ R) :
+    ∃ Rb' : Finset (Subcube n),
+      (∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb', x ∈ₛ R) ∧
+      (∀ R ∈ Rb', i ∉ R.idx) ∧
+      Rb'.card ≤ Rb.card := by
+  classical
+  -- Split the original collection into rectangles that already avoid `i`
+  -- and those that fix `i = b`.
+  let S0 := Rb.filter fun R => i ∉ R.idx
+  let S1 :=
+    Rb.filter fun R => if h : i ∈ R.idx then R.val i h = b else False
+  -- Normalised collection: keep `S0` and unfix the rectangles from `S1`.
+  let Rb' := S0 ∪ S1.image (fun R => Subcube.unfix R i)
+  refine ⟨Rb', ?cov, ?hi, ?card⟩
+  · -- Coverage of all inputs with `x i = b` is preserved.
+    intro f hf x hxi hx
+    obtain ⟨R, hR, hxR⟩ := hcov f hf x hxi hx
+    by_cases hiR : i ∈ R.idx
+    · -- The rectangle fixes `i`; it must be to `b` because `x i = b`.
+      have hval : R.val i hiR = b := by
+        have := hxR i hiR
+        simpa [hxi] using this.symm
+      -- `R` lies in `S1`.
+      have hS1 : R ∈ S1 := by
+        refine Finset.mem_filter.mpr ?_
+        have hpred : (if h : i ∈ R.idx then R.val i h = b else False) := by
+          simp [hiR, hval]
+        exact ⟨hR, hpred⟩
+      -- Use the unfixed rectangle to cover `x`.
+      refine ⟨Subcube.unfix R i, ?_, ?_⟩
+      · refine Finset.mem_union.mpr ?_
+        refine Or.inr ?_
+        exact Finset.mem_image.mpr ⟨R, hS1, rfl⟩
+      · exact Subcube.mem_unfix_of_mem (i := i) (R := R) hxR
+    · -- The rectangle already avoids `i` and is kept unchanged.
+      have hS0 : R ∈ S0 := by
+        refine Finset.mem_filter.mpr ⟨hR, ?_⟩
+        exact hiR
+      refine ⟨R, ?_, hxR⟩
+      exact Finset.mem_union.mpr (Or.inl hS0)
+  · -- No rectangle in the normalised collection fixes `i`.
+    intro R hR
+    rcases Finset.mem_union.mp hR with hS0 | hS1
+    · exact (Finset.mem_filter.mp hS0).2
+    · rcases Finset.mem_image.mp hS1 with ⟨S, hS, rfl⟩
+      -- `Subcube.unfix` explicitly removes `i`.
+      simpa using Subcube.idx_unfix (R := S) (i := i)
+  · -- Cardinality does not increase.
+    -- First bound the size of `Rb'` by the sizes of `S0` and `S1`.
+    have hcard_union : Rb'.card ≤ S0.card + (S1.image (fun R => Subcube.unfix R i)).card :=
+      Finset.card_union_le (s := S0) (t := S1.image (fun R => Subcube.unfix R i))
+    have hcard_image : (S1.image (fun R => Subcube.unfix R i)).card ≤ S1.card :=
+      Finset.card_image_le (s := S1) (f := fun R => Subcube.unfix R i)
+    have hcard₁ : Rb'.card ≤ S0.card + S1.card :=
+      le_trans hcard_union (by exact add_le_add_left hcard_image _)
+    -- Relate `S0.card + S1.card` back to the original collection `Rb`.
+    have hsubset : S0 ∪ S1 ⊆ Rb := by
+      intro R hR
+      rcases Finset.mem_union.mp hR with hR0 | hR1
+      · exact (Finset.mem_filter.mp hR0).1
+      · exact (Finset.mem_filter.mp hR1).1
+    have hdis : Disjoint S0 S1 := by
+      refine Finset.disjoint_left.mpr ?_
+      intro R hR0 hR1
+      have hi0 : i ∉ R.idx := (Finset.mem_filter.mp hR0).2
+      have hi1' := (Finset.mem_filter.mp hR1).2
+      -- The predicate in `S1` implies `i ∈ R.idx`.
+      have hi1 : i ∈ R.idx := by
+        by_cases h : i ∈ R.idx
+        · exact h
+        · have : (if h : i ∈ R.idx then R.val i h = b else False) := hi1'
+          simp [h] at this
+      exact False.elim (hi0 hi1)
+    have hcard_subset : (S0 ∪ S1).card ≤ Rb.card :=
+      Finset.card_le_card hsubset
+    have hcard_union_eq : (S0 ∪ S1).card = S0.card + S1.card :=
+      Finset.card_union_of_disjoint hdis
+    have hbound : S0.card + S1.card ≤ Rb.card := by
+      simpa [hcard_union_eq] using hcard_subset
+    exact le_trans hcard₁ hbound
+
+/--
 If two collections of subcubes cover all `1`-inputs of the restricted families
 `F.restrict i false` and `F.restrict i true` respectively, then after extending
 each subcube with the fixed value of `i` their union covers every `1`-input of
@@ -269,10 +365,8 @@ coordinate `i` is not already fixed in the rectangles before extension.
 -/
 lemma cover_all_inputs_extend_union (F : Family n) (i : Fin n)
     {R0 R1 : Finset (Subcube n)}
-    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x,
-        f x = true → ∃ R ∈ R0, x ∈ₛ R)
-    (hcov1 : ∀ f ∈ F.restrict i true, ∀ x,
-        f x = true → ∃ R ∈ R1, x ∈ₛ R)
+    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x, x i = false → f x = true → ∃ R ∈ R0, x ∈ₛ R)
+    (hcov1 : ∀ f ∈ F.restrict i true,  ∀ x, x i = true  → f x = true → ∃ R ∈ R1, x ∈ₛ R)
     (hi0 : ∀ R ∈ R0, i ∉ R.idx)
     (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
     ∀ f ∈ F, ∀ x, f x = true →
@@ -289,7 +383,7 @@ lemma cover_all_inputs_extend_union (F : Family n) (i : Fin n)
     have hx' : BFunc.restrictCoord f i false x = true := by
       simpa [restrictCoord_agrees (f := f) (j := i) (b := false)
               (x := x) hxi] using hx
-    obtain ⟨R, hR, hxR⟩ := hcov0 _ hg x hx'
+    obtain ⟨R, hR, hxR⟩ := hcov0 _ hg x hxi hx'
     refine ⟨Subcube.extend R i false, ?_, ?_⟩
     · refine Finset.mem_union.mpr ?_
       refine Or.inl ?_
@@ -307,7 +401,7 @@ lemma cover_all_inputs_extend_union (F : Family n) (i : Fin n)
     have hx' : BFunc.restrictCoord f i true x = true := by
       simpa [restrictCoord_agrees (f := f) (j := i) (b := true)
               (x := x) hxi] using hx
-    obtain ⟨R, hR, hxR⟩ := hcov1 _ hg x hx'
+    obtain ⟨R, hR, hxR⟩ := hcov1 _ hg x hxi hx'
     refine ⟨Subcube.extend R i true, ?_, ?_⟩
     · refine Finset.mem_union.mpr ?_
       refine Or.inr ?_
@@ -330,10 +424,8 @@ lemma extend_union_cover (F : Family n) (i : Fin n)
     {R0 R1 : Finset (Subcube n)}
     (hmono0 : ∀ R ∈ R0, Subcube.monochromaticForFamily R (F.restrict i false))
     (hmono1 : ∀ R ∈ R1, Subcube.monochromaticForFamily R (F.restrict i true))
-    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x,
-        f x = true → ∃ R ∈ R0, x ∈ₛ R)
-    (hcov1 : ∀ f ∈ F.restrict i true, ∀ x,
-        f x = true → ∃ R ∈ R1, x ∈ₛ R)
+    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x, x i = false → f x = true → ∃ R ∈ R0, x ∈ₛ R)
+    (hcov1 : ∀ f ∈ F.restrict i true,  ∀ x, x i = true  → f x = true → ∃ R ∈ R1, x ∈ₛ R)
     (hi0 : ∀ R ∈ R0, i ∉ R.idx)
     (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
     ∃ Rset : Finset (Subcube n),
@@ -378,8 +470,8 @@ to future iterations.
 noncomputable def buildCoverLex3
     (F : Family n) (A : Finset (Fin n)) (s h : ℕ)
     [Fintype (Point n)]
-    (hSens : ∀ f ∈ F, sensitivity f ≤ s)
-    (hEnt  : measure F ≤ h) :
+    (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
+    (_hEnt  : measure F ≤ h) :
     Finset (Subcube n) :=
 by
   classical
@@ -397,10 +489,10 @@ by
   rcases p with ⟨F, A⟩
   -- Base case: constant family.
   by_cases hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b
-  · exact {⟨∅, fun _ hi => False.elim (Finset.not_mem_empty _ hi)⟩}
+  · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
   -- No coordinates left to branch on.
   by_cases hAempty : A = ∅
-  · exact {⟨∅, fun _ hi => False.elim (Finset.not_mem_empty _ hi)⟩}
+  · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
   -- Recursive step: pick a coordinate and split.
   have hAne : A.Nonempty := Finset.nonempty_of_ne_empty (by simpa [hAempty])
   let i : Fin n := hAne.choose

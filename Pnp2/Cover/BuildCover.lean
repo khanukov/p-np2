@@ -72,7 +72,9 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
           -- Establish the recursive call on a strictly smaller measure.
           have hdrop : μRel (n := n) (F := F) h R' Rset := by
             have hne : firstUncovered (n := n) F Rset ≠ none := by
-              simpa [hfu]
+              -- The first uncovered point is `some _`, so the option is nonempty.
+              -- `simp` suffices; no rewrite is required after the computation.
+              simp [hfu]
             simpa [μRel, R'] using
               (mu_extendCover_lt (n := n) (F := F)
                 (Rset := Rset) (h := h) hne)
@@ -103,7 +105,8 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
               -- Establish the recursive call on a strictly smaller measure.
               have hdrop : μRel (n := n) (F := F) h R' Rset := by
                 have hne : firstUncovered (n := n) F Rset ≠ none := by
-                  simpa [_hfc]
+                  -- From the assumption that `firstUncovered` returns `some _`.
+                  simp [_hfc]
                 simpa [μRel, R'] using
                   (mu_extendCover_lt (n := n) (F := F)
                     (Rset := Rset) (h := h) hne)
@@ -230,7 +233,8 @@ lemma buildCoverAux_pointwiseMono (F : Family n) (h : ℕ)
       have hdrop : μRel (n := n) (F := F) h
           (extendCover (n := n) F Rset) Rset := by
         have hne : firstUncovered (n := n) F Rset ≠ none := by
-          simpa [hfu]
+          -- Under hypothesis `hfu`, the result is `some _`, hence `≠ none`.
+          simp [hfu]
         simpa [μRel] using
           mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
       -- The extended set retains pointwise monochromaticity.
@@ -313,7 +317,8 @@ lemma buildCoverAux_covers (F : Family n) (h : ℕ)
       have hdrop : μRel (n := n) (F := F) h
           (extendCover (n := n) F Rset) Rset := by
         have hne : firstUncovered (n := n) F Rset ≠ none := by
-          simpa [hfu]
+          -- The uncovered point is present, so the option is not `none`.
+          simp [hfu]
         simpa [μRel] using
           mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
       -- Apply the inductive hypothesis to the strictly smaller measure.

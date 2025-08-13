@@ -288,6 +288,87 @@ lemma coloredSubcubes_card_le_pow_depth (t : DecisionTree n) :
   have h₂ := leaf_count_le_pow_depth (t := t)
   exact le_trans h₁ h₂
 
+/-!
+Turning a set of monochromatic subcubes into a concrete decision tree.
+The construction proceeds in two steps:
+
+1.  `ofRectCoverList` consumes a list of coloured subcubes.  Each
+    element `(b, R)` is turned into a small decision tree testing
+    membership in `R` and returning the colour `b` on success while
+    falling back to the remainder of the list otherwise.
+2.  `ofRectCover` packages a finite set of rectangles together with the
+    required monochromaticity witnesses and invokes `ofRectCoverList`.
+
+This section also derives a simple bound on the number of leaves of the
+resulting tree, allowing later conversions between covers and decision
+trees.
+-/
+
+namespace Subcube
+
+variable {n : ℕ}
+
+/--
+Convert a subcube into an explicit list of fixed coordinates together
+with their Boolean values.  This representation is convenient for
+iteratively constructing decision trees.
+-/
+noncomputable def toList (R : Subcube n) : List (Fin n × Bool) :=
+  R.idx.attach.toList.map (fun i => (i.1, R.val i.1 i.2))
+
+end Subcube
+
+open Subcube
+
+namespace DecisionTree
+
+variable {n : ℕ}
+
+/-
+`matchSubcube p b t` builds a decision tree which checks the coordinate
+assignments recorded in the list `p`.  If the input satisfies all
+constraints, the tree returns the constant Boolean `b`.  Any mismatch
+causes evaluation of the fallback tree `t`.
+-/
+noncomputable def matchSubcube : List (Fin n × Bool) → Bool → DecisionTree n → DecisionTree n
+  | [], b, t => leaf b
+  | (i, true) :: p, b, t =>
+      node i t (matchSubcube p b t)
+  | (i, false) :: p, b, t =>
+      node i (matchSubcube p b t) t
+
+/--
+Convert a list of coloured subcubes into a decision tree.  Earlier
+rectangles in the list take precedence over later ones.
+-/
+noncomputable def ofRectCoverList : List (Bool × Subcube n) → DecisionTree n
+  | [] => leaf false
+  | (b, R) :: rs =>
+      matchSubcube (Subcube.toList (n := n) R) b (ofRectCoverList rs)
+
+/--
+`ofRectCover` turns a finite set of rectangles into a decision tree.
+Each rectangle is assigned a colour using the accompanying proof of
+monochromaticity.  The resulting decision tree computes a Boolean family
+which agrees with all rectangles in the cover.
+-/
+noncomputable def ofRectCover (F : Family n) (Rset : Finset (Subcube n))
+    (hmono : ∀ R ∈ Rset, Subcube.monochromaticForFamily R F) :
+    DecisionTree n :=
+  let colored : List (Bool × Subcube n) :=
+    Rset.attach.toList.map (fun R =>
+      (Classical.choose (hmono R.1 R.2), R.1))
+  ofRectCoverList (n := n) colored
+
+/-!
+At present we do not develop detailed bounds relating the size of the
+input rectangle set to the leaf count or depth of `ofRectCover`.  The
+primary goal of this section is to provide a concrete tree structure; a
+more refined analysis can be added once needed.
+-/
+
+end DecisionTree
+
 /-- Evaluate a leaf. -/
 @[simp] lemma eval_tree_leaf (b : Bool) (x : Point n) :
     eval_tree (leaf b) x = b := rfl

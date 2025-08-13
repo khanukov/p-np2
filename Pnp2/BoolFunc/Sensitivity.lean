@@ -6,6 +6,10 @@ import Mathlib.Data.Finset.Lattice.Fold
 
 open Finset
 
+-- Silence routine linter warnings during development.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedSectionVars false
+
 namespace BoolFunc
 
 variable {n : ℕ} [Fintype (Point n)]
@@ -19,6 +23,43 @@ def sensitivityAt (f : BFunc n) (x : Point n) : ℕ :=
     `sensitivityAt` over all points of the cube. -/
 def sensitivity (f : BFunc n) : ℕ :=
   (Finset.univ.sup fun x => sensitivityAt f x)
+
+/--
+`coordSensitivity f i` counts the number of inputs where flipping the `i`‑th
+bit changes the value of `f`.  This refined notion is useful for tracking which
+coordinates remain "active" during recursive constructions.
+-/
+def coordSensitivity (f : BFunc n) (i : Fin n) : ℕ :=
+  (Finset.univ.filter fun x : Point n =>
+      f x ≠ f (Point.update x i (!x i))).card
+
+lemma coordSensitivity_eq_zero_iff (f : BFunc n) (i : Fin n) :
+    coordSensitivity f i = 0 ↔
+      ∀ x : Point n, f x = f (Point.update x i (!x i)) := by
+  classical
+  unfold coordSensitivity
+  constructor
+  · intro h x
+    have hempty :
+        (Finset.univ.filter fun y : Point n =>
+          f y ≠ f (Point.update y i (!y i))) = (∅ : Finset (Point n)) :=
+      Finset.card_eq_zero.mp h
+    by_contra hx
+    have hxmem : x ∈
+        (Finset.univ.filter fun y : Point n =>
+          f y ≠ f (Point.update y i (!y i))) := by
+      simpa [hx]
+    simpa [hempty] using hxmem
+  · intro hx
+    have hempty :
+        (Finset.univ.filter fun y : Point n =>
+          f y ≠ f (Point.update y i (!y i))) = (∅ : Finset (Point n)) := by
+      apply Finset.eq_empty_of_forall_not_mem
+      intro x hxmem
+      rcases Finset.mem_filter.mp hxmem with ⟨-, hxneq⟩
+      have := hx x
+      exact hxneq (by simpa using this)
+    simpa [hempty]
 
 lemma sensitivityAt_le (f : BFunc n) (x : Point n) :
     sensitivityAt f x ≤ sensitivity f :=
@@ -97,6 +138,41 @@ lemma sensitivity_family_restrict_le (F : Family n) (i : Fin n) (b : Bool)
   exact le_trans (sensitivity_restrictCoord_le (f := f) (j := i) (b := b))
     (hF f hfF)
 
+/-- After fixing coordinate `i` the resulting function no longer depends on
+`i`; the coordinate sensitivity along `i` is therefore zero. -/
+lemma coordSensitivity_restrict_self_zero (f : BFunc n) (i : Fin n) (b : Bool) :
+    coordSensitivity (f.restrictCoord i b) i = 0 := by
+  classical
+  apply (coordSensitivity_eq_zero_iff (f := f.restrictCoord i b) (i := i)).2
+  intro x
+  have : Point.update (Point.update x i (!x i)) i b = Point.update x i b := by
+    funext k; by_cases hk : k = i <;> simp [Point.update, hk]
+  simp [BFunc.restrictCoord, this]
+
+/--
+Restricting a function on an unrelated coordinate preserves zero sensitivity on
+`j`.  In particular, if flipping `j` never changes `f`, the same remains true
+after fixing any coordinate `i`.
+-/
+lemma coordSensitivity_restrict_eq_zero (f : BFunc n) (i j : Fin n) (b : Bool)
+    (h : coordSensitivity f j = 0) :
+    coordSensitivity (f.restrictCoord i b) j = 0 := by
+  classical
+  have h' := (coordSensitivity_eq_zero_iff (f := f) (i := j)).1 h
+  by_cases hji : j = i
+  ·
+    subst hji
+    have hzero := coordSensitivity_restrict_self_zero (f := f) (i := j) (b := b)
+    simpa using hzero
+  · apply (coordSensitivity_eq_zero_iff
+        (f := f.restrictCoord i b) (i := j)).2
+    intro x
+    have hx := h' (Point.update x i b)
+    have hx' : f (Point.update x i b) =
+        f (Point.update (Point.update x j (!x j)) i b) := by
+      simpa [Point.update, hji] using hx
+    simpa [BFunc.restrictCoord] using hx'
+
 /--
 If a Boolean function has positive sensitivity, then there exists a coordinate
 whose value change flips the function on some input.  This lemma extracts such
@@ -143,6 +219,12 @@ lemma exists_family_sensitive_coord (F : Family n) [Fintype (Point n)]
   exact ⟨i, f, hfF, x, hx⟩
 
 /--
+`sensitiveCoord F i` means that some function in the family `F` changes value
+when the `i`‑th bit of the input is flipped. -/
+def sensitiveCoord (F : Family n) (i : Fin n) : Prop :=
+  ∃ f ∈ F, ∃ x : Point n, f x ≠ f (Point.update x i (!x i))
+
+/--
 If a Boolean function has zero sensitivity, then its essential `support` is
 empty.  Any coordinate belonging to the support would witness positive
 sensitivity, contradicting the assumption.
@@ -152,7 +234,7 @@ lemma support_eq_empty_of_sensitivity_zero (f : BFunc n)
     support f = (∅ : Finset (Fin n)) := by
   classical
   -- Show that no coordinate can belong to the support.
-  apply Finset.eq_empty_iff_forall_not_mem.mpr
+  apply Finset.eq_empty_iff_forall_notMem.mpr
   intro i hi
   rcases mem_support_iff.mp hi with ⟨x, hx⟩
   -- The witness `x` certifies that flipping `i` changes the value of `f`.
@@ -178,7 +260,6 @@ This lemma combines `support_eq_empty_of_sensitivity_zero` with the helper
 `exists_family_sensitive_coord`.
 -/
 lemma non_constant_family_has_sensitive_coord (F : Family n)
-    [Fintype (Point n)]
     (hconst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
     (htrue : ∀ f ∈ F, ∃ x, f x = true) :
     ∃ i : Fin n, ∃ f ∈ F, ∃ x : Point n,
@@ -206,7 +287,7 @@ lemma non_constant_family_has_sensitive_coord (F : Family n)
         cases this
       have hval : f x = f x₀ :=
         eval_eq_of_agree_on_support (f := f) (x := x) (y := x₀) hagree
-      simpa [hval, hx₀]
+      simp [hval, hx₀]
     -- Thus the whole family would be constantly `true`, contradicting `hconst`.
     have hcontr : False :=
       hconst ⟨true, hconst'⟩
@@ -215,6 +296,27 @@ lemma non_constant_family_has_sensitive_coord (F : Family n)
   rcases exists_family_sensitive_coord (F := F) hpos with
     ⟨i, f, hfF, x, hx⟩
   exact ⟨i, f, hfF, x, hx⟩
+
+/--
+If a family is not constant and all coordinates outside `A` are known to be
+insensitive, then the sensitive coordinate guaranteed by
+`non_constant_family_has_sensitive_coord` must lie inside `A`.
+-/
+lemma exists_sensitive_coord_in_A (F : Family n) (A : Finset (Fin n))
+    (hNonConst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    ∃ i ∈ A, sensitiveCoord F i := by
+  classical
+  rcases non_constant_family_has_sensitive_coord (F := F) (hconst := hNonConst)
+      (htrue := htrue) with ⟨i, f, hfF, x, hx⟩
+  have hiA : i ∈ A := by
+    by_contra hnot
+    have hzero := hA i hnot f hfF
+    have hcontr :=
+      (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 hzero x
+    exact hx hcontr
+  exact ⟨i, hiA, f, hfF, x, hx⟩
 
 /-!
 The project originally conjectured the following statement: if a family has a

@@ -4,6 +4,10 @@ import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
 
 namespace BoolFunc
 
+-- Silence auxiliary linter warnings in this foundational file.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedSectionVars false
+
 /--
   Simple decision-tree structure for Boolean functions on `n` bits.
   Each internal node queries a coordinate `i` and branches on its value.

@@ -171,6 +171,42 @@ lemma mem_extend_iff {R : Subcube n} {i : Fin n} {b : Bool}
       have := hxR j hjR
       simpa [extend, hji] using this
 
+/--
+"Unfix" a coordinate of a subcube by removing it from the set of
+frozen indices.  The resulting subcube agrees with `R` on all other
+coordinates and no longer constrains the `i`-th bit.  This operation
+is useful when normalising branch covers in the decision-tree
+construction: after exploring the branch where `x i = b` we may
+"forget" that `i` was fixed inside the subcubes returned by the
+recursive call.
+-/
+def unfix (R : Subcube n) (i : Fin n) : Subcube n :=
+  { idx := R.idx.erase i
+    val := fun j hj =>
+      -- Membership in the erased set provides a proof that `j ≠ i` and
+      -- that `j` originally belonged to `R.idx`.
+      let hjR : j ∈ R.idx := (Finset.mem_erase.mp hj).2
+      R.val j hjR }
+
+/--
+Any point belonging to `R` also lies in `R.unfix i` since the latter
+imposes only a subset of the original constraints.
+-/
+lemma mem_unfix_of_mem {R : Subcube n} {i : Fin n} {x : Point n}
+    (hx : R.mem x) : (unfix (R := R) i).mem x := by
+  intro j hj
+  -- Extract the membership proof for `j` from the erased index set.
+  have hjR : j ∈ R.idx := (Finset.mem_erase.mp hj).2
+  -- `R.unfix i` uses the same Boolean value as `R` on coordinate `j`.
+  have := hx j hjR
+  simpa [unfix, hjR] using this
+
+@[simp]
+lemma idx_unfix (R : Subcube n) (i : Fin n) :
+    i ∉ (unfix (R := R) i).idx := by
+  classical
+  simp [unfix]
+
 end Subcube
 
 /-! ### Basic point and function operations -/

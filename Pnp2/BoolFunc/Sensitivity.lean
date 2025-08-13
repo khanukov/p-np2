@@ -174,6 +174,40 @@ lemma coordSensitivity_restrict_eq_zero (f : BFunc n) (i j : Fin n) (b : Bool)
     simpa [BFunc.restrictCoord] using hx'
 
 /--
+If all coordinates outside `A` are insensitive across the family `F`, then the
+same property holds for the restricted family `F.restrict i b` with respect to
+`A.erase i`.  In other words, fixing a coordinate preserves the invariant that
+no function in the family is sensitive outside the allowed coordinate set.
+-/
+lemma insens_off_A_restrict (F : Family n) (A : Finset (Fin n))
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
+    (i : Fin n) (b : Bool) :
+    ∀ j ∉ A.erase i, ∀ g ∈ F.restrict i b, coordSensitivity g j = 0 := by
+  classical
+  intro j hj g hg
+  -- Expand membership in the restricted family.
+  rcases Finset.mem_image.mp hg with ⟨f, hfF, rfl⟩
+  -- Either `j` already lies outside `A` or it equals the fixed coordinate `i`.
+  have hjA : j ∉ A ∨ j = i := by
+    by_cases hjA : j ∈ A
+    · by_cases hji : j = i
+      · exact Or.inr hji
+      ·
+        have : j ∈ A.erase i := by simpa [Finset.mem_erase, hjA, hji]
+        exact (False.elim (hj this))
+    · exact Or.inl hjA
+  -- Handle the two cases separately.
+  cases hjA with
+  | inl hjA =>
+      have hz := hA j hjA f hfF
+      simpa using
+        (coordSensitivity_restrict_eq_zero (f := f) (i := i) (j := j) (b := b) hz)
+    | inr hji =>
+        have hzero :=
+          coordSensitivity_restrict_self_zero (f := f) (i := i) (b := b)
+        simpa [hji] using hzero
+
+/--
 If a Boolean function has positive sensitivity, then there exists a coordinate
 whose value change flips the function on some input.  This lemma extracts such
 a witness and will be useful for constructing decision trees.

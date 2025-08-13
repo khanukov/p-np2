@@ -8,6 +8,9 @@ open BoolFunc
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
+-- Increase the heartbeat limit to accommodate the heavy well-founded recursion
+-- used below.
+set_option maxHeartbeats 1000000
 
 namespace BoolFunc
 
@@ -190,6 +193,54 @@ lemma exists_sensitive_coord_true_false (F : Family n) [Fintype (Point n)]
         · simp [Point.update, hji]
       have := congrArg f hxupd
       simpa [hfxfalse] using this
+
+/--
+An oriented version of `exists_sensitive_coord_in_A`.  Under the same
+hypotheses, it returns a sensitive coordinate inside `A` together with a
+point where some function flips from `true` to `false` when that coordinate is
+toggled.  This orientation is convenient for recursive constructions that
+always follow a `true` branch.
+-/
+lemma exists_sensitive_coord_true_false_in_A
+    (F : Family n) [Fintype (Point n)] (A : Finset (Fin n))
+    (hconst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    ∃ i ∈ A, ∃ f ∈ F, ∃ x : Point n,
+      f x = true ∧ f (Point.update x i (!x i)) = false := by
+  classical
+  obtain ⟨i, hiA, f, hfF, x, hx⟩ :=
+    exists_sensitive_coord_in_A (F := F) (A := A)
+      (hNonConst := hconst) (htrue := htrue) (hA := hA)
+  have hx_ne : f x ≠ f (Point.update x i (!x i)) := hx
+  by_cases hfx : f x = true
+  ·
+    have hflip : f (Point.update x i (!x i)) = false := by
+      have : f (Point.update x i (!x i)) ≠ true := by
+        simpa [hfx] using hx_ne
+      cases hval : f (Point.update x i (!x i)) with
+      | false => simpa [hval]
+      | true => cases this hval
+    exact ⟨i, hiA, f, hfF, x, hfx, hflip⟩
+  ·
+    have hfxfalse : f x = false := by
+      cases hval : f x with
+      | true => cases hfx hval
+      | false => simpa [hval]
+    have hflip : f (Point.update x i (!x i)) = true := by
+      have : f (Point.update x i (!x i)) ≠ false := by
+        simpa [hfxfalse] using hx_ne.symm
+      cases hval : f (Point.update x i (!x i)) with
+      | true => simpa [hval]
+      | false => cases this hval
+    let x' := Point.update x i (!x i)
+    have hxupd : Point.update x' i (! x' i) = x := by
+      funext j; by_cases hji : j = i
+      · subst hji; simp [Point.update, x']
+      · simp [Point.update, hji, x']
+    refine ⟨i, hiA, f, hfF, x', hflip, ?_⟩
+    have := congrArg f hxupd
+    simpa [hxupd, hfxfalse] using this
 
 /--
 The images of two rectangle sets under extension with opposite fixed values of
@@ -461,6 +512,54 @@ lemma extend_union_cover (F : Family n) (i : Fin n)
     exact card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1
 
 /--
+`CoverRes F k` bundles a collection of rectangles together with proofs that
+each is monochromatic for the family `F`, that all `1`-inputs of `F` lie in some
+rectangle, and that the total number of rectangles does not exceed `k`.
+This record will streamline reasoning about the recursive cover construction.
+-/
+structure CoverRes (F : Family n) (k : ℕ) where
+  rects   : Finset (Subcube n)
+  mono    : ∀ R ∈ rects, Subcube.monochromaticForFamily R F
+  covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ rects, x ∈ₛ R
+  card_le : rects.card ≤ k
+
+/--
+Package the union step of two branch covers into a `CoverRes`.  Given covers of
+the restricted families `F.restrict i false` and `F.restrict i true` that avoid
+fixing the splitting coordinate `i`, the resulting cover for `F` has at most
+`|R0| + |R1|` rectangles.
+-/
+noncomputable def glue_step (F : Family n) (i : Fin n)
+    {R0 R1 : Finset (Subcube n)}
+    (hmono0 : ∀ R ∈ R0, Subcube.monochromaticForFamily R (F.restrict i false))
+    (hmono1 : ∀ R ∈ R1, Subcube.monochromaticForFamily R (F.restrict i true))
+    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x, x i = false → f x = true → ∃ R ∈ R0, x ∈ₛ R)
+    (hcov1 : ∀ f ∈ F.restrict i true,  ∀ x, x i = true  → f x = true → ∃ R ∈ R1, x ∈ₛ R)
+    (hi0 : ∀ R ∈ R0, i ∉ R.idx)
+    (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
+    CoverRes (F := F) (R0.card + R1.card) := by
+  classical
+  -- Use classical choice to extract the explicit cover from the existence proof.
+  let h :=
+    extend_union_cover (F := F) (i := i) (R0 := R0) (R1 := R1)
+      hmono0 hmono1 hcov0 hcov1 hi0 hi1
+  refine
+    { rects   := Classical.choose h
+      , mono    := (Classical.choose_spec h).1
+      , covers  := (Classical.choose_spec h).2.1
+      , card_le := (Classical.choose_spec h).2.2 }
+
+-- Auxiliary structure bundling all invariants required during the recursive
+-- construction of the cover.  For a pair `(F, A)` it stores the sensitivity
+-- bound for every function in `F`, the entropy bound for `F`, and the fact that
+-- functions are insensitive outside the coordinate set `A`.
+structure BuildInv (s h : ℕ) (p : Family n × Finset (Fin n))
+    [Fintype (Point n)] : Type :=
+  (hSens : ∀ f ∈ p.1, sensitivity f ≤ s)
+  (hEnt  : measure p.1 ≤ h)
+  (hA    : ∀ j ∉ p.2, ∀ f ∈ p.1, coordSensitivity f j = 0)
+
+/--
 Recursive cover construction driven by the three-component measure
 `measureLex3`.  For a family `F` and a set of available coordinates `A` the
 function returns a tentative set of subcubes.  At the moment this only provides
@@ -471,7 +570,8 @@ noncomputable def buildCoverLex3
     (F : Family n) (A : Finset (Fin n)) (s h : ℕ)
     [Fintype (Point n)]
     (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
-    (_hEnt  : measure F ≤ h) :
+    (_hEnt  : measure F ≤ h)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
     Finset (Subcube n) :=
 by
   classical
@@ -483,10 +583,14 @@ by
     simpa [R] using
       (InvImage.wf (f := fun p : Family n × Finset (Fin n) =>
         measureLex3 p.1 p.2) measureLex3Rel_wf)
-  -- Run the well-founded recursion.
-  refine (hWF.fix (C := fun _ => Finset (Subcube n)) ?_ (F, A))
-  intro p rec
+  -- Run the well-founded recursion using the packaged invariants.
+  refine
+    (hWF.fix
+      (C := fun p => BuildInv (n := n) (s := s) (h := h) p → Finset (Subcube n))
+      ?_ (F, A)) ⟨_hSens, _hEnt, hA⟩
+  intro p rec hp
   rcases p with ⟨F, A⟩
+  rcases hp with ⟨hSens, hEnt, hA⟩
   -- Base case: constant family.
   by_cases hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b
   · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
@@ -500,12 +604,39 @@ by
   let F0 := F.restrict i false
   let F1 := F.restrict i true
   let A' := A.erase i
+  -- Propagate the invariants to the branches.
+  have hSens0 : ∀ g ∈ F0, sensitivity g ≤ s := by
+    simpa [F0] using
+      (sensitivity_family_restrict_le (F := F) (i := i) (b := false)
+        (s := s) hSens)
+  have hSens1 : ∀ g ∈ F1, sensitivity g ≤ s := by
+    simpa [F1] using
+      (sensitivity_family_restrict_le (F := F) (i := i) (b := true)
+        (s := s) hSens)
+  have hEnt0 : measure F0 ≤ h :=
+    le_trans (measure_restrict_le (F := F) (i := i) (b := false)) hEnt
+  have hEnt1 : measure F1 ≤ h :=
+    le_trans (measure_restrict_le (F := F) (i := i) (b := true)) hEnt
+  have hA0 : ∀ j ∉ A', ∀ g ∈ F0, coordSensitivity g j = 0 := by
+    simpa [F0, A'] using
+      (insens_off_A_restrict (F := F) (A := A) hA (i := i) (b := false))
+  have hA1 : ∀ j ∉ A', ∀ g ∈ F1, coordSensitivity g j = 0 := by
+    simpa [F1, A'] using
+      (insens_off_A_restrict (F := F) (A := A) hA (i := i) (b := true))
+  -- Recurse on both branches.
+  let inv0 : BuildInv (n := n) (s := s) (h := h) ⟨F0, A'⟩ :=
+    ⟨hSens0, hEnt0, hA0⟩
+  let inv1 : BuildInv (n := n) (s := s) (h := h) ⟨F1, A'⟩ :=
+    ⟨hSens1, hEnt1, hA1⟩
   let R0 :=
     rec ⟨F0, A'⟩
-      (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA (b := false))
+      (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA
+        (b := false)) inv0
   let R1 :=
     rec ⟨F1, A'⟩
-      (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA (b := true))
+      (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA
+        (b := true)) inv1
+  -- Combine the branch covers by extending along the chosen coordinate.
   exact
     R0.image (fun R => Subcube.extend R i false) ∪
       R1.image (fun R => Subcube.extend R i true)

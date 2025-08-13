@@ -216,6 +216,16 @@ lemma non_constant_family_has_sensitive_coord (F : Family n)
     ⟨i, f, hfF, x, hx⟩
   exact ⟨i, f, hfF, x, hx⟩
 
+/-!
+The project originally conjectured the following statement: if a family has a
+function witnessing sensitivity on coordinate `i`, then two distinct members of
+the family must coincide after restricting `i` to some Boolean value.  During
+development we found a counterexample (`F = {id, not}` on one bit), so the claim
+is **false** as stated.  A corrected version will require additional
+assumptions, and the precise formulation remains open.  The placeholder lemma
+has therefore been removed to keep the code base consistent.
+-/
+
 @[simp] lemma sensitivity_const (n : ℕ) (b : Bool) [Fintype (Point n)] :
     sensitivity (fun _ : Point n => b) = 0 := by
   classical

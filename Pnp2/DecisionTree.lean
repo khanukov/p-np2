@@ -456,7 +456,172 @@ lemma eval_ofRectCoverList_cons_mem {default : Bool} {b : Bool}
       (p := Subcube.toList (n := n) R)
       (b := b) (t := ofRectCoverList (n := n) default rs)
       (x := x) hmatch)
-  lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
+
+/--
+The `matchSubcube` construction adds a chain of decision nodes checking each
+assignment in `p` before consulting the fallback tree `t`.  Consequently the
+number of leaves grows linearly with the length of `p`.
+The exact count is `leaf_count t * p.length + 1`.
+-/
+lemma leaf_count_matchSubcube (p : List (Fin n × Bool)) (b : Bool)
+    (t : DecisionTree n) :
+    leaf_count (matchSubcube (n := n) p b t)
+      = leaf_count t * p.length + 1 := by
+  induction p with
+  | nil =>
+      simp [matchSubcube, leaf_count]
+  | cons hd tl ih =>
+      rcases hd with ⟨i, bi⟩
+      cases bi with
+      | false =>
+          simp [matchSubcube, leaf_count, ih, Nat.mul_succ, Nat.add_comm,
+            Nat.add_left_comm]
+      | true =>
+          simp [matchSubcube, leaf_count, ih, Nat.mul_succ, Nat.add_comm,
+            Nat.add_left_comm]
+
+/--
+The depth of `matchSubcube p b t` is at most the depth of the fallback tree
+`t` plus the length of the assignment list `p`.  Each entry of `p` introduces
+one additional decision node, yielding a linear overhead.
+-/
+lemma depth_matchSubcube_le (p : List (Fin n × Bool)) (b : Bool)
+    (t : DecisionTree n) :
+    depth (matchSubcube (n := n) p b t) ≤ depth t + p.length := by
+  induction p with
+  | nil =>
+      -- No assignments: the construction collapses to a leaf.
+      simp [matchSubcube, depth]
+  | cons hd tl ih =>
+      rcases hd with ⟨i, bi⟩
+      cases bi with
+      | false =>
+          -- Branching on `(i, false)` places the recursive call on the left.
+          -- Bound both children of the node by `depth t + tl.length` and apply
+          -- `max` monotonicity.
+          have h0 : depth t ≤ depth t + tl.length := Nat.le_add_right _ _
+          have h1 : depth (matchSubcube (n := n) tl b t) ≤ depth t + tl.length := ih
+          have hmax :
+              max (depth (matchSubcube (n := n) tl b t)) (depth t)
+                  ≤ depth t + tl.length :=
+            max_le_iff.mpr ⟨h1, h0⟩
+          have := Nat.succ_le_succ hmax
+          -- The resulting bound matches `depth t + (tl.length + 1)` after
+          -- rewriting.
+          simpa [matchSubcube, depth, Nat.add_comm, Nat.add_left_comm,
+                Nat.add_assoc] using this
+      | true =>
+          -- Symmetric case: the recursive call sits on the right branch.
+          have h0 : depth t ≤ depth t + tl.length := Nat.le_add_right _ _
+          have h1 : depth (matchSubcube (n := n) tl b t) ≤ depth t + tl.length := ih
+          have hmax :
+              max (depth t) (depth (matchSubcube (n := n) tl b t))
+                  ≤ depth t + tl.length :=
+            max_le_iff.mpr ⟨h0, h1⟩
+          have := Nat.succ_le_succ hmax
+          simpa [matchSubcube, depth, Nat.add_comm, Nat.add_left_comm,
+                Nat.add_assoc] using this
+
+/--
+Bounding the number of leaves produced by `ofRectCoverList`.
+Each rectangle contributes at most a multiplicative factor of
+`(length (Subcube.toList R) + 1)` to the total leaf count.
+-/
+lemma leaf_count_ofRectCoverList_le (default : Bool) :
+    ∀ rs : List (Bool × Subcube n),
+      leaf_count (ofRectCoverList (n := n) default rs) ≤
+        List.foldr (fun r acc =>
+          ((Subcube.toList (n := n) r.2).length.succ) * acc) 1 rs := by
+  intro rs; induction rs with
+  | nil =>
+      have h : leaf_count (ofRectCoverList (n := n) default []) = 1 := by
+        simp [ofRectCoverList, leaf_count]
+      simpa [h, List.foldr] using (Nat.le_refl 1)
+  | cons hd tl ih =>
+      rcases hd with ⟨b, R⟩
+      -- Let `t` denote the tree built from the tail.
+      set t := ofRectCoverList (n := n) default tl
+      -- Length of the assignment list describing `R`.
+      set len := (Subcube.toList (n := n) R).length
+      -- Exact leaf count for the head rectangle.
+      have hmatch := leaf_count_matchSubcube
+        (n := n) (p := Subcube.toList (n := n) R) (b := b) (t := t)
+      -- The tree `t` has at least one leaf.
+      have hpos : 1 ≤ t.leaf_count := Nat.succ_le_of_lt (leaf_count_pos _)
+      -- Bound the new leaves created by matching `R`.
+      have hstep :
+          leaf_count (matchSubcube (n := n) (Subcube.toList (n := n) R) b t)
+              ≤ t.leaf_count * (len.succ) := by
+        -- Start from the exact formula and replace the trailing `+ 1` by `+ t.leaf_count`.
+        have hle : t.leaf_count * len + 1 ≤ t.leaf_count * len + t.leaf_count :=
+          Nat.add_le_add_left hpos (t.leaf_count * len)
+        have hmul : t.leaf_count * len + t.leaf_count = t.leaf_count * (len.succ) := by
+          have := Nat.mul_succ t.leaf_count len
+          -- `mul_succ` yields `a * (b + 1) = a * b + a`.
+          simpa [len, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this.symm
+        have : leaf_count (matchSubcube (n := n) (Subcube.toList (n := n) R) b t)
+            ≤ t.leaf_count * len + t.leaf_count := by
+          simpa [hmatch, len] using hle
+        simpa [hmul] using this
+      -- Apply the inductive hypothesis for the tail and multiply the bound.
+      have hrec := ih
+      have hmul := Nat.mul_le_mul_left (len.succ) hrec
+      have hmul' : t.leaf_count * (len.succ) ≤
+          (len.succ) * List.foldr (fun r acc => ((Subcube.toList (n := n) r.2).length.succ) * acc) 1 tl := by
+        simpa [t, len, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+          using hmul
+      -- Combine the bounds.
+      have : leaf_count (ofRectCoverList (n := n) default ((b, R) :: tl)) ≤
+          (len.succ) * List.foldr (fun r acc => ((Subcube.toList (n := n) r.2).length.succ) * acc) 1 tl := by
+        calc
+          leaf_count (ofRectCoverList (n := n) default ((b, R) :: tl))
+              = leaf_count (matchSubcube (n := n) (Subcube.toList (n := n) R) b t) := by rfl
+          _ ≤ t.leaf_count * (len.succ) := hstep
+          _ ≤ (len.succ) *
+              List.foldr (fun r acc => ((Subcube.toList (n := n) r.2).length.succ) * acc) 1 tl := hmul'
+      -- Rewrite in terms of `R` and `tl`.
+      simpa [List.foldr, len, t, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using this
+
+/--
+Bounding the depth of `ofRectCoverList`.  The construction consumes the list
+from head to tail, matching each rectangle before consulting the remainder of
+the tree.  Consequently every rectangle contributes at most the length of its
+assignment list to the final depth.
+-/
+lemma depth_ofRectCoverList_le (default : Bool) :
+    ∀ rs : List (Bool × Subcube n),
+      depth (ofRectCoverList (n := n) default rs) ≤
+        List.foldr (fun r acc =>
+          (Subcube.toList (n := n) r.2).length + acc) 0 rs := by
+  intro rs; induction rs with
+  | nil =>
+      -- The empty list produces a single leaf with zero depth.
+      simp [ofRectCoverList, depth]
+  | cons hd tl ih =>
+      rcases hd with ⟨b, R⟩
+      -- Recursive tree built from the tail of the list.
+      set t := ofRectCoverList (n := n) default tl
+      -- Length of the path describing the current rectangle.
+      set len := (Subcube.toList (n := n) R).length
+      -- Bound the depth added by matching the rectangle in front of `t`.
+      have hmatch := depth_matchSubcube_le
+        (n := n) (p := Subcube.toList (n := n) R) (b := b) (t := t)
+      -- Combine with the inductive hypothesis for the tail.
+      have hbound :
+          depth (ofRectCoverList (n := n) default ((b, R) :: tl)) ≤
+            depth t + len := by
+        simpa [t, len] using hmatch
+      have htail : depth t + len ≤
+          List.foldr
+              (fun r acc => (Subcube.toList (n := n) r.2).length + acc) 0 tl + len :=
+        Nat.add_le_add_right ih len
+      have := le_trans hbound htail
+      -- Reorder the sums to match the desired fold on the entire list.
+      simpa [List.foldr, t, len, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        using this
+
+lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
     (i : Fin n) (b : Bool)
     (hx : (subcube_of_path p).mem x) (hxi : x i = b) :
     (subcube_of_path ((i, b) :: p)).mem x := by

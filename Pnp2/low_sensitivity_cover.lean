@@ -141,6 +141,52 @@ lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
   simpa using this
 
 /--
+Refined orientation of `non_constant_family_has_sensitive_coord`.
+It produces a sensitive coordinate together with an input where the
+value changes from `true` to `false`.  This direction is convenient for
+the recursive cover construction, which always follows a `true` branch. -/
+lemma exists_sensitive_coord_true_false (F : Family n) [Fintype (Point n)]
+    (hconst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true) :
+    ∃ i : Fin n, ∃ f ∈ F, ∃ x : Point n,
+      f x = true ∧ f (Point.update x i (!x i)) = false := by
+  classical
+  -- Obtain a sensitive coordinate and a witness where the value flips.
+  obtain ⟨i, f, hfF, x, hxneq⟩ :=
+    non_constant_family_has_sensitive_coord (F := F) (n := n) hconst htrue
+  -- Case analysis on the value of `f` at `x`.
+  by_cases hfx : f x = true
+  · refine ⟨i, f, hfF, x, hfx, ?_⟩
+    -- The flipped point must evaluate to `false`.
+    have : f (Point.update x i (!x i)) ≠ true := by
+      simpa [hfx] using hxneq
+    cases hflip : f (Point.update x i (!x i)) with
+    | false => simpa [hflip]
+    | true => simpa [hflip] using this
+  · -- Otherwise `f x = false`; flip the bit to get a `true` value.
+    have hfxfalse : f x = false := by
+      cases hval : f x with
+      | false => simpa [hval]
+      | true => cases hfx hval
+    -- Consider the flipped input.
+    refine ⟨i, f, hfF, Point.update x i (!x i), ?_, ?_⟩
+    · -- Show that the flipped input yields `true`.
+      have : f (Point.update x i (!x i)) ≠ false := by
+        simpa [hfxfalse] using hxneq.symm
+      cases hflip : f (Point.update x i (!x i)) with
+      | true => simpa [hflip]
+      | false => simpa [hflip] using this
+    · -- Flipping again returns to `x`, where the value is `false`.
+      have hxupd :
+          Point.update (Point.update x i (!x i)) i (! (Point.update x i (!x i)) i) = x := by
+        -- simplify the double update
+        funext j; by_cases hji : j = i
+        · subst hji; simp [Point.update]
+        · simp [Point.update, hji]
+      have := congrArg f hxupd
+      simpa [hfxfalse] using this
+
+/--
 The images of two rectangle sets under extension with opposite fixed values of
 `i` are disjoint.  Intuitively, any point lying in an extension with `i = false`
 must satisfy `x i = false`, whereas membership in an extension with
@@ -271,6 +317,55 @@ lemma cover_all_inputs_extend_union (F : Family n) (i : Fin n)
         (Subcube.mem_extend_iff (R := R) (i := i) (b := true)
             (x := x) hiR).2 ⟨hxi, hxR⟩
       simpa using this
+
+/--
+Combines covers of the restricted families `F.restrict i false` and
+`F.restrict i true` into a cover of the original family `F`.  Each subcube in
+the branch covers is assumed not to fix the splitting coordinate `i`; after
+extension with the corresponding value of `i`, their union forms a cover for
+`F`, and its size is bounded by the sum of branch sizes.
+-/
+lemma extend_union_cover (F : Family n) (i : Fin n)
+    {R0 R1 : Finset (Subcube n)}
+    (hmono0 : ∀ R ∈ R0, Subcube.monochromaticForFamily R (F.restrict i false))
+    (hmono1 : ∀ R ∈ R1, Subcube.monochromaticForFamily R (F.restrict i true))
+    (hcov0 : ∀ f ∈ F.restrict i false, ∀ x,
+        f x = true → ∃ R ∈ R0, x ∈ₛ R)
+    (hcov1 : ∀ f ∈ F.restrict i true, ∀ x,
+        f x = true → ∃ R ∈ R1, x ∈ₛ R)
+    (hi0 : ∀ R ∈ R0, i ∉ R.idx)
+    (hi1 : ∀ R ∈ R1, i ∉ R.idx) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ R0.card + R1.card := by
+  classical
+  -- The final cover extends rectangles from both branches and unites them.
+  let Rset :=
+    R0.image (fun R => Subcube.extend R i false) ∪
+      R1.image (fun R => Subcube.extend R i true)
+  refine ⟨Rset, ?mono, ?cov, ?card⟩
+  · -- Monochromaticity transfers from each branch to the corresponding extension.
+    intro R hR
+    rcases Finset.mem_union.mp hR with hR | hR
+    · -- Case: `R` comes from the `false` branch.
+      rcases Finset.mem_image.mp hR with ⟨S, hS, rfl⟩
+      have hmonoS := hmono0 S hS
+      have hiS : i ∉ S.idx := hi0 S hS
+      -- Extend monochromaticity to the original family.
+      exact Subcube.monochromaticForFamily_extend_restrict (F := F)
+        (R := S) (i := i) (b := false) hiS hmonoS
+    · -- Case: `R` comes from the `true` branch.
+      rcases Finset.mem_image.mp hR with ⟨S, hS, rfl⟩
+      have hmonoS := hmono1 S hS
+      have hiS : i ∉ S.idx := hi1 S hS
+      exact Subcube.monochromaticForFamily_extend_restrict (F := F)
+        (R := S) (i := i) (b := true) hiS hmonoS
+  · -- Coverage follows from the branch covers via `cover_all_inputs_extend_union`.
+    exact cover_all_inputs_extend_union (F := F) (i := i)
+      (R0 := R0) (R1 := R1) hcov0 hcov1 hi0 hi1
+  · -- The cardinality of the combined cover is bounded by the sum of branch sizes.
+    exact card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1
 
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of

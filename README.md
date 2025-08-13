@@ -1,5 +1,5 @@
 # P≠NP formalization repository
-> **Status (2025-08-06)**: This repository is incomplete; many results rely on axioms or unfinished proofs.
+> **Status (2025-08-06)**: This repository is incomplete; unproven statements are currently marked with `axiom` placeholders while their proofs are developed.
 
 
 This repository collects experimental Lean files that sketch a formal proof of the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma aims to cover families of Boolean functions with a subexponential number of monochromatic subcubes and is a building block for a potential proof that `P ≠ NP`.
@@ -13,8 +13,8 @@ The development now happens entirely in the `Pnp2` namespace.  The previous
 development tree is kept only as a historical snapshot and is no longer part of
 the build.
 
-Several files continue to contain `sorry` placeholders and axiomatic
-statements while the formal proofs are completed.  These markers are
+Several files continue to contain axiomatic placeholders
+(`axiom`) while the formal proofs are completed.  These markers are
 tracked in `TODO.md` and will be removed as the project progresses.
 
 ## Layout
@@ -146,7 +146,7 @@ python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2  # search for a small su
 
 ## Status
 
-This repository is a research prototype. Many central lemmas remain incomplete and are marked with `sorry` or `axiom`. In particular:
+This repository is a research prototype. Many central lemmas remain incomplete and are marked with `axiom`. In particular:
 * `decisionTree_cover` remains an axiom.
 * `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
 * `ComplexityClasses.lean` assumes `P ⊆ P/poly`.

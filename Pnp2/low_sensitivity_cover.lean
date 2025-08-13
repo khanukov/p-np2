@@ -1,6 +1,7 @@
 import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
+import Pnp2.entropy
 
 open BoolFunc
 
@@ -366,6 +367,56 @@ lemma extend_union_cover (F : Family n) (i : Fin n)
       (R0 := R0) (R1 := R1) hcov0 hcov1 hi0 hi1
   · -- The cardinality of the combined cover is bounded by the sum of branch sizes.
     exact card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1
+
+/--
+Recursive cover construction driven by the three-component measure
+`measureLex3`.  For a family `F` and a set of available coordinates `A` the
+function returns a tentative set of subcubes.  At the moment this only provides
+the structural recursion; proofs of monochromaticity and coverage are postponed
+to future iterations.
+-/
+noncomputable def buildCoverLex3
+    (F : Family n) (A : Finset (Fin n)) (s h : ℕ)
+    [Fintype (Point n)]
+    (hSens : ∀ f ∈ F, sensitivity f ≤ s)
+    (hEnt  : measure F ≤ h) :
+    Finset (Subcube n) :=
+by
+  classical
+  -- Relation on pairs `(F, A)` induced by the lexicographic measure.
+  let R : (Family n × Finset (Fin n)) → (Family n × Finset (Fin n)) → Prop :=
+    fun p q => measureLex3Rel (measureLex3 p.1 p.2) (measureLex3 q.1 q.2)
+  -- Well-foundedness follows from the corresponding result on `ℕ³`.
+  have hWF : WellFounded R := by
+    simpa [R] using
+      (InvImage.wf (f := fun p : Family n × Finset (Fin n) =>
+        measureLex3 p.1 p.2) measureLex3Rel_wf)
+  -- Run the well-founded recursion.
+  refine (hWF.fix (C := fun _ => Finset (Subcube n)) ?_ (F, A))
+  intro p rec
+  rcases p with ⟨F, A⟩
+  -- Base case: constant family.
+  by_cases hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b
+  · exact {⟨∅, fun _ hi => False.elim (Finset.not_mem_empty _ hi)⟩}
+  -- No coordinates left to branch on.
+  by_cases hAempty : A = ∅
+  · exact {⟨∅, fun _ hi => False.elim (Finset.not_mem_empty _ hi)⟩}
+  -- Recursive step: pick a coordinate and split.
+  have hAne : A.Nonempty := Finset.nonempty_of_ne_empty (by simpa [hAempty])
+  let i : Fin n := hAne.choose
+  have hiA : i ∈ A := hAne.choose_spec
+  let F0 := F.restrict i false
+  let F1 := F.restrict i true
+  let A' := A.erase i
+  let R0 :=
+    rec ⟨F0, A'⟩
+      (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA (b := false))
+  let R1 :=
+    rec ⟨F1, A'⟩
+      (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA (b := true))
+  exact
+    R0.image (fun R => Subcube.extend R i false) ∪
+      R1.image (fun R => Subcube.extend R i true)
 
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of

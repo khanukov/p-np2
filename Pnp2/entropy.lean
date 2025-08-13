@@ -517,4 +517,112 @@ lemma exists_branch_lex_smaller_of_half {n : ℕ} (F : Family n) (i : Fin n)
     measureLex_restrict_lt_of_card_le_half (F := F) (i := i) (b := b)
       (hpos := hpos) (hhalf := hhalf)⟩
 
+/--
+If two distinct functions from the family become identical after restricting a
+coordinate, the lexicographic measure drops on that branch.  This lemma packages
+`measureLex_restrict_lt_of_restrict_eq` in an existential form.
+-/
+lemma exists_branch_lex_smaller_of_merge {n : ℕ} (F : Family n) (i : Fin n)
+    (h : ∃ f ∈ F, ∃ g ∈ F, f ≠ g ∧ ∃ b : Bool,
+      BFunc.restrictCoord f i b = BFunc.restrictCoord g i b) :
+    ∃ b : Bool,
+      measureLexRel (measureLex (F.restrict i b)) (measureLex F) := by
+  classical
+  rcases h with ⟨f, hf, g, hg, hfg, b, heq⟩
+  exact ⟨b,
+    measureLex_restrict_lt_of_restrict_eq (F := F) (i := i) (b := b)
+      (f := f) (g := g) hf hg hfg heq⟩
+
+/-!
+### Three-component lexicographic measure with dimension
+
+To guarantee progress of the recursive cover construction even in degenerate
+cases (e.g. when restricting along a sensitive coordinate neither decreases the
+measure nor the cardinality), we enrich the lexicographic measure with a third
+component tracking the number of *available* coordinates.  This allows us to
+prove termination solely from the fact that each recursive step removes one
+coordinate from the set `A` of yet-unfixed indices.
+-/
+
+/-- Three-component lexicographic complexity measure
+`(measure F, F.card, A.card)` for a family `F` with a set of available
+coordinates `A`.  The measure is represented as a pair-of-a-pair to reuse
+`Prod.lex`. -/
+@[simp] noncomputable
+def measureLex3 {n : ℕ} (F : Family n) (A : Finset (Fin n)) : (ℕ × ℕ) × ℕ :=
+  ((measure F, F.card), A.card)
+
+/-- Relation implementing the lexicographic order on triples.  It is the
+lexicographic order on the first two components, with the third component used
+as a final tie breaker. -/
+abbrev measureLex3Rel : ((ℕ × ℕ) × ℕ) → ((ℕ × ℕ) × ℕ) → Prop :=
+  (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).rel
+
+/-- The three-component lexicographic relation is well-founded. -/
+lemma measureLex3Rel_wf : WellFounded measureLex3Rel :=
+  (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).wf
+
+/--
+Restricting a family along a coordinate from the available set strictly
+decreases the three-component measure because the set of available coordinates
+shrinks.  The entropy and cardinality components may stay the same, but the
+dimension component drops by one.
+-/
+lemma measureLex3_restrict_lt_dim {n : ℕ} (F : Family n) (A : Finset (Fin n))
+    {i : Fin n} (hi : i ∈ A) (b : Bool) :
+    measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+      (measureLex3 F A) := by
+  classical
+  -- Entropy and cardinality do not increase upon restriction.
+  have hμ : measure (F.restrict i b) ≤ measure F :=
+    measure_restrict_le (F := F) (i := i) (b := b)
+  have hc : (F.restrict i b).card ≤ F.card :=
+    Family.card_restrict_le (F := F) (i := i) (b := b)
+  -- Removing `i` from `A` strictly decreases its cardinality.
+  have hA : (A.erase i).card < A.card := by
+    have hss : A.erase i ⊂ A := by
+      refine Finset.ssubset_iff_subset_ne.mpr ?_
+      refine ⟨Finset.erase_subset _ _, ?_⟩
+      intro h
+      have hi_not : i ∉ A.erase i := by simpa using Finset.not_mem_erase i A
+      have hi_in : i ∈ A.erase i := by simpa [h] using hi
+      exact hi_not hi_in
+    exact Finset.card_lt_card hss
+  -- Split into cases depending on whether entropy or cardinality drop.
+  dsimp [measureLex3, measureLex3Rel]
+  by_cases hμlt : measure (F.restrict i b) < measure F
+  · -- Entropy strictly decreases: conclude immediately.
+    have hx := measureLexRel_of_measure_lt (F := F.restrict i b) (G := F) hμlt
+    exact Prod.Lex.left _ _ hx
+  · -- Entropy preserved; analyse cardinality.
+    have hμeq : measure (F.restrict i b) = measure F :=
+      le_antisymm hμ (le_of_not_gt hμlt)
+    have hc' := lt_or_eq_of_le hc
+    cases hc' with
+    | inl hc_lt =>
+        -- Cardinality strictly decreases.
+        have hx :=
+          measureLexRel_of_measure_eq_card_lt (F := F.restrict i b) (G := F)
+            hμeq hc_lt
+        exact Prod.Lex.left _ _ hx
+    | inr hc_eq =>
+        -- Both entropy and cardinality coincide; rely on the dimension drop.
+        have hpair :
+            (measure (F.restrict i b), (F.restrict i b).card) =
+              (measure F, F.card) := by simpa [hμeq, hc_eq]
+        -- After unfolding the relation, the goal reduces to applying
+        -- `Prod.Lex.right` with this equality and the strict drop `hA`.
+        -- Expand the goal and perform the substitution.
+        have hx :
+            (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).rel
+              ((measure F, F.card), (A.erase i).card)
+              ((measure F, F.card), A.card) :=
+          Prod.Lex.right (a := (measure F, F.card))
+            (b₁ := (A.erase i).card) (b₂ := A.card) hA
+        have :
+            measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+              (measureLex3 F A) := by
+          simpa [measureLex3Rel, measureLex3, hpair] using hx
+        exact this
+
 end BoolFunc

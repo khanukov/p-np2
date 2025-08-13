@@ -480,4 +480,22 @@ lemma measureLex_restrict_lt_of_restrict_eq {n : ℕ} {F : Family n}
   -- Feed this inequality into the general measure monotonicity lemma.
   exact measureLex_restrict_decreases (F := F) (i := i) (b := b) hc
 
+/--
+If restricting along a coordinate leaves at most half of the functions,
+the lexicographic measure drops strictly.  This convenience lemma packages
+`measure_restrict_decreases` for later use in the recursive construction. -/
+lemma measureLex_restrict_lt_of_card_le_half {n : ℕ} (F : Family n)
+    (i : Fin n) (b : Bool)
+    (hpos : 0 < (F.restrict i b).card)
+    (hhalf : 2 * (F.restrict i b).card ≤ F.card) :
+    measureLexRel (measureLex (F.restrict i b)) (measureLex F) := by
+  -- First obtain the strict entropy drop from the cardinality condition.
+  have hμ :
+      measure (F.restrict i b) < measure F :=
+    measure_restrict_decreases (F := F) (i := i) (b := b)
+      (hpos := hpos) (hhalf := hhalf)
+  -- Translating this entropy inequality to the lexicographic measure
+  -- yields the desired well-founded relation step.
+  exact measureLexRel_of_measure_lt (F := F.restrict i b) (G := F) hμ
+
 end BoolFunc

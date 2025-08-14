@@ -155,4 +155,4 @@ See `TODO.md` for an up-to-date list of outstanding tasks.
 
 ## Development plan
 
-The immediate goal is to replace the axioms above with formal proofs and to provide a constructive cover algorithm with verified bounds.
+The immediate goal is to replace the axioms above with formal proofs and to provide a constructive cover algorithm with verified bounds.  The current search routine `firstUncovered` relies on classical choice; rewriting it constructively is postponed until the overall `P ≠ NP` argument is fully formalised.

@@ -200,7 +200,10 @@ lemma uncovered_insert_subset {n : ℕ} {F : Family n}
 `firstUncovered` is a tiny search routine: it returns some element of the
 uncovered set if one exists, and `none` otherwise.  The use of the axiom of
 choice makes the definition noncomputable, but this is sufficient for the
-structural arguments in the cover development.
+structural arguments in the cover development.  To accelerate progress toward
+the overall `P ≠ NP` separation, we temporarily accept this classical search;
+rewriting it via explicit enumeration is deferred until the full proof is
+formalised.
 -/
 noncomputable def firstUncovered {n : ℕ} (F : Family n)
     (Rset : Finset (Subcube n)) :

@@ -73,4 +73,32 @@ lemma coverFamily_spec_bound {n h : ℕ} (F : Family n)
       Fintype.card (Subcube n) :=
   (coverFamily_spec (n := n) (h := h) (F := F) hH).2.2
 
+/--
+`coverFamily_spec` can be strengthened to the explicit `mBound` cardinality
+estimate once an external numeric argument shows that `mBound n h` dominates
+the total number of subcubes.  This separates the combinatorial cover
+construction from the arithmetic reasoning about the size bound.
+-/
+lemma coverFamily_spec_mBound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (∀ R ∈ coverFamily (n := n) F h hH,
+        ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
+      AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
+      (coverFamily (n := n) F h hH).card ≤ mBound n h := by
+  classical
+  -- Start from the basic specification and strengthen the cardinality bound.
+  obtain hspec := coverFamily_spec (n := n) (h := h) (F := F) hH
+  refine ⟨hspec.1, hspec.2.1, ?_⟩
+  exact hspec.2.2.trans hM
+
+/-- Convenience wrapper extracting only the cardinality estimate from
+`coverFamily_spec_mBound`.  This form is handy when the other properties are
+already known or irrelevant for the caller. -/
+lemma coverFamily_card_le_mBound {n h : ℕ} (F : Family n)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (coverFamily (n := n) F h hH).card ≤ mBound n h :=
+  (coverFamily_spec_mBound (n := n) (h := h) (F := F) hH hM).2.2
+
 end Cover2

@@ -62,7 +62,8 @@ tracked in `TODO.md` and will be removed as the project progresses.
   basic lemmas such as `H₂Fun_le_one`.
 * `CollentropyBasic.lean` – trimmed-down entropy file containing only the bounds needed for the SAT solver. All numeric inequalities are now fully proved.
 * `family_entropy_cover.lean` – convenience wrapper returning a `FamilyCover`
-  record extracted from `cover2.lean`.
+  record extracted from `cover2.lean`; the record includes an explicit
+  `mBound` cardinality estimate.
 * `merge_low_sens.lean` – provides `mergeLowSensitivityCover` and `merge_cover` to combine low‑sensitivity and entropy covers, together with accompanying correctness lemmas.
 * `DecisionTree.lean` – minimal decision-tree datatype with depth, leaf-count,
   path extraction, a `subcube_of_path` helper and lemmas

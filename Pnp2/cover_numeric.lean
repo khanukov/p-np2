@@ -3,6 +3,7 @@ import Mathlib.Analysis.Asymptotics.SpecificAsymptotics
 
 open BoolFunc
 open Asymptotics
+open Cover2
 
 namespace CoverNumeric
 
@@ -15,33 +16,40 @@ variable {N Nδ : ℕ} (F : Family N)
 -/
 
 /--
-`minCoverSize F h hH` is the size of the cover returned by
+`minCoverSize F h hH hM` is the size of the cover returned by
 `familyEntropyCover` when the family has collision entropy at most `h`.
 The witness cover is obtained via classical choice, so the definition is
-noncomputable but entirely constructive.
+noncomputable but entirely constructive.  The extra hypothesis `hM`
+provides the numeric inequality required to instantiate the explicit
+`mBound` estimate.
 -/
-noncomputable def minCoverSize (F : Family N) (h : ℕ) (hH : H₂ F ≤ (h : ℝ)) : ℕ :=
-  (Boolcube.familyEntropyCover (F := F) (h := h) hH).rects.card
+noncomputable def minCoverSize (F : Family N) (h : ℕ)
+    (hH : H₂ F ≤ (h : ℝ))
+    (hM : Fintype.card (Subcube N) ≤ mBound N h) : ℕ :=
+  (Boolcube.familyEntropyCover (F := F) (h := h) hH hM).rects.card
 
 /--
 Basic entropy-based bound on `minCoverSize`.  The cover extracted from
-`familyEntropyCover` has size at most the total number of subcubes.  This
-coarse estimate suffices for the numerical considerations in this module.
+`familyEntropyCover` obeys the explicit `mBound` estimate, provided the
+arithmetic inequality `hM` is available.  This coarse bound suffices for the
+numerical considerations in this module.
 -/
-lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ)) :
-    minCoverSize F (h := N - Nδ) h₀ ≤ Fintype.card (Subcube N) := by
+lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ))
+    (hM : Fintype.card (Subcube N) ≤ mBound N (N - Nδ)) :
+    minCoverSize F (h := N - Nδ) h₀ hM ≤ mBound N (N - Nδ) := by
   classical
   -- The bound is provided directly by `familyEntropyCover`.
   simpa [minCoverSize] using
-    (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀).bound
+    (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀ hM).bound
 
 /-- Convenience wrapper exposing the numeric bound on the minimal cover
     size.  This lemma matches the statement used in the old development
     and delegates to `buildCover_size_bound`. -/
 lemma minCoverSize_bound
-    (h₀ : H₂ F ≤ (N - Nδ : ℝ)) :
-    minCoverSize F (h := N - Nδ) h₀ ≤ Fintype.card (Subcube N) :=
-  buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀)
+    (h₀ : H₂ F ≤ (N - Nδ : ℝ))
+    (hM : Fintype.card (Subcube N) ≤ mBound N (N - Nδ)) :
+    minCoverSize F (h := N - Nδ) h₀ hM ≤ mBound N (N - Nδ) :=
+  buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀) (hM := hM)
 
 /--
 Simple numeric bound on `minCoverSize` without the dimension positivity
@@ -49,9 +57,10 @@ assumption.  The bound is immediate when `N = 0`, otherwise we reuse
 `minCoverSize_bound` with the derived positivity proof.
 -/
 lemma numeric_bound
-    (h₀ : H₂ F ≤ (N - Nδ : ℝ)) :
-    minCoverSize F (h := N - Nδ) h₀ ≤ Fintype.card (Subcube N) :=
-  buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀)
+    (h₀ : H₂ F ≤ (N - Nδ : ℝ))
+    (hM : Fintype.card (Subcube N) ≤ mBound N (N - Nδ)) :
+    minCoverSize F (h := N - Nδ) h₀ hM ≤ mBound N (N - Nδ) :=
+  buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀) (hM := hM)
 
 /-!  `buildCover_card n` denotes the size of the cover returned by the
 experimental algorithm on families of dimension `n`.  The precise

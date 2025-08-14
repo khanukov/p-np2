@@ -344,4 +344,26 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
   · exact buildCover_covers (F := F) (h := h) (hH := hH)
   · exact buildCover_card_bound (n := n) (F := F) (h := h) hH
 
+/--
+A variant of `cover_exists_bound` that exposes the explicit numerical bound
+`mBound`.  The combinatorial part of the construction already yields a cover
+bounded by the total number of subcubes.  This lemma allows downstream files to
+upgrade that estimate to `mBound n h` once a separate arithmetic argument
+establishes `Fintype.card (Subcube n) ≤ mBound n h`.
+-/
+lemma cover_exists_mBound {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ))
+    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
+      AllOnesCovered (n := n) F Rset ∧
+      Rset.card ≤ mBound n h := by
+  classical
+  -- Start from the cover provided by `cover_exists_bound`.
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    cover_exists_bound (n := n) (F := F) (h := h) hH
+  refine ⟨Rset, hmono, hcov, ?_⟩
+  -- Replace the coarse cardinality bound with the stronger `mBound` estimate.
+  exact hcard.trans hM
+
 end Cover2

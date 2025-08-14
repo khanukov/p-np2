@@ -15,7 +15,7 @@
   - `DecisionTree.leaf_count_le_pow_depth`;
   - `H₂_restrict_le`;
   - `sunflower_exists_classic`;
-  - набор фактов о мере: `measure_restrict_le`, `measure_filter_le`,
+ - набор фактов о мере: `measure_restrict_le`, `measure_filter_le`,
     `measure_empty`, `measure_singleton`, `measure_pos_of_card_two_le`,
     `measure_restrict_lt_of_card_le_half`, `measure_filter_lt_of_card_le_half`.
 - Существует каркас для объединения покрытий (`merge_low_sens.lean`) и
@@ -23,20 +23,21 @@
   числа субкубов в объединённом покрытии; зафиксирована безопасная константа
   `C = 10` (`BoolFunc.coverConst`) для всех асимптотических оценок.
 - Доказана лемма `buildCover_card_bound`; теперь `cover_exists_bound` и
-  спецификация `FamilyCover` используют грубую границу — общее число
-  субкубов без асимптотической оценки. Аксиома устранена, `entropyCover`
-  строит покрытие с этим естественным ограничением.
+  `FamilyCover` усилены до явной оценки `mBound`, и `entropyCover`
+  строит покрытие с ограничением `≤ mBound n h` при условии
+  `Fintype.card (Subcube n) ≤ mBound n h`.
 
 ## Ключевые вопросы и текущий статус
 
 1. **Энтропийная оценка**
-   *Сделано:* введена мера `measure F = Nat.ceil (H₂ F)` и принято безопасное
-   ограничение `measure F ≤ 10 · s · log₂(n+1)`. Грубая граница из леммы
-   `buildCover_card_bound` пока остаётся основной; в качестве целевой
-   модернизации планируется перейти к асимптотическим формам `2^{C⋅h}` и
-   `(n+1)^{O(s)}`, согласующимся с результатами
-   Gopalan–Moshковitz–Oliveira. Эти оценки ещё предстоит формально связать
-   с `cover_exists_bound` и `entropyCover`.
+ *Сделано:* введена мера `measure F = Nat.ceil (H₂ F)` и принято безопасное
+  ограничение `measure F ≤ 10 · s · log₂(n+1)`. Грубая граница из леммы
+  `buildCover_card_bound` остаётся в силе, но теперь подготовлен отдельный
+  документ `asymptotic_cover_estimates.md`, где эта граница сведена к
+  асимптотическим формам `2^{C⋅h}` и `(n+1)^{O(s)}`, согласующимся с
+  результатами Gopalan–Moshковitz–Oliveira. Дополнительно леммы
+  `cover_exists_mBound`, `coverFamily_card_le_mBound` и обновлённая
+  `entropyCover` связывают эти оценки с каноническим покрытием в коде.
 
 2. **Строгое уменьшение меры**  
  *Сделано:* леммы `measure_restrict_le`, `measure_restrict_decreases`,

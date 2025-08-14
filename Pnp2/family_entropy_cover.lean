@@ -28,15 +28,21 @@ theorem familyCollisionEntropyCover
 ### A convenience record for covers returned by `familyEntropyCover`.
 This bundles the list of rectangles together with proofs that each is
 monochromatic for the whole family, that the rectangles cover all
-`1`‑inputs, and an explicit bound on their number.  We currently bound the
-size by the total number of subcubes; a sharper estimate can be plugged in
-once available.
+`1`‑inputs, and an explicit bound on their number.  The size bound is
+parametrised by `mBound n h`, the coarse upper estimate used throughout the
+cover development.  An external arithmetic argument must establish that this
+quantity indeed dominates the total number of subcubes; see
+`coverFamily_card_le_mBound` for the combinatorial part of the story.
 -/
 structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
+  /-- The covering rectangles. -/
   rects   : Finset (Subcube n)
+  /-- Each rectangle is monochromatic for every function of the family. -/
   mono    : ∀ C ∈ rects, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g
+  /-- Every `1`-input of every function is contained in some rectangle. -/
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
-  bound   : rects.card ≤ Fintype.card (Subcube n)
+  /-- Cardinality bound exposed via the explicit quantity `mBound`. -/
+  bound   : rects.card ≤ mBound n h
 
 /--
 `familyEntropyCover` packages the canonical cover produced by `coverFamily` into
@@ -45,7 +51,9 @@ classical choice and is therefore non‑computable, but it provides a convenient
 interface for downstream modules.
 -/
 noncomputable def familyEntropyCover
-    {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
+    {n : ℕ} (F : Family n) {h : ℕ}
+    (hH : H₂ F ≤ (h : ℝ))
+    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
     FamilyCover F h := by
   classical
   refine
@@ -57,8 +65,8 @@ noncomputable def familyEntropyCover
   · -- All `1`-inputs are covered by construction.
     intro f hf x hx
     exact Cover2.coverFamily_spec_cover (F := F) (h := h) (hH := hH) f hf x hx
-  · -- Cardinality bound supplied by `coverFamily`.
-    exact Cover2.coverFamily_spec_bound (F := F) (h := h) (hH := hH)
+  · -- Cardinality bound supplied by `coverFamily` and upgraded to `mBound`.
+    exact Cover2.coverFamily_card_le_mBound (F := F) (h := h) (hH := hH) hM
 
 /-!
 `familyEntropyCover` is defined using `cover_exists`, just like
@@ -68,8 +76,10 @@ This convenience result simplifies linking the wrapper record with the
 underlying cover used elsewhere in the development.
 -/
 @[simp] lemma familyEntropyCover_rects_eq_coverFamily
-    {n : ℕ} (F : Family n) {h : ℕ} (hH : H₂ F ≤ (h : ℝ)) :
-    (familyEntropyCover (F := F) (h := h) hH).rects
+    {n : ℕ} (F : Family n) {h : ℕ}
+    (hH : H₂ F ≤ (h : ℝ))
+    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (familyEntropyCover (F := F) (h := h) hH hM).rects
       = Cover2.coverFamily (F := F) (h := h) hH := by
   simp [familyEntropyCover]
 
@@ -85,15 +95,16 @@ subcube is monochromatic for every function in `F`, and together they cover all
 -/
 lemma entropyCover {n : ℕ} (F : Family n) {h : ℕ} :
     BoolFunc.measure F ≤ h →
+    Fintype.card (Subcube n) ≤ mBound n h →
     ∃ R : Finset (Subcube n),
       (∀ C ∈ R, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ R, x ∈ₛ C) ∧
-      R.card ≤ Fintype.card (Subcube n) := by
-  intro hμ
+      R.card ≤ mBound n h := by
+  intro hμ hM
   classical
   -- Translate the measure bound into a real entropy bound.
   have hH : BoolFunc.H₂ F ≤ (h : ℝ) :=
     H₂_le_of_measure_le (F := F) (h := h) hμ
   -- Package the canonical cover with all required properties.
-  let FC := familyEntropyCover (F := F) (h := h) hH
+  let FC := familyEntropyCover (F := F) (h := h) hH hM
   exact ⟨FC.rects, FC.mono, FC.covers, FC.bound⟩

@@ -260,9 +260,12 @@ example (h : ℕ) :
 
 -- Entropy-based numeric bound on cover size.
 example {N Nδ : ℕ} (F : Family N)
-    (h₂ : BoolFunc.H₂ F ≤ N - Nδ) :
-    CoverNumeric.minCoverSize F ≤ Fintype.card (Subcube N) := by
-  simpa using CoverNumeric.numeric_bound (F := F) (Nδ := Nδ) h₂
+    (h₂ : BoolFunc.H₂ F ≤ N - Nδ)
+    (hM : Fintype.card (Subcube N) ≤ Cover2.mBound N (N - Nδ)) :
+    CoverNumeric.minCoverSize F (h := N - Nδ) h₂ hM
+      ≤ Cover2.mBound N (N - Nδ) := by
+  simpa using
+    CoverNumeric.numeric_bound (F := F) (Nδ := Nδ) (h₀ := h₂) (hM := hM)
 
 -- Existence of a low-sensitivity cover for a finite set of functions.
 example {n s : ℕ} (F : Finset (BoolFunc.Point n → Bool))

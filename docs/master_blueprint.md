@@ -80,7 +80,7 @@ Alongside the lemma `low_sensitivity_cover_single`,
 this sketches the decision-tree argument for covering smooth functions.
 Additional modules `collentropy.lean` and `family_entropy_cover.lean` provide
 single-function entropy tools and a bundled `FamilyCover` record extracted from
-`cover2.lean`.
+`cover2.lean` with an explicit `mBound` size estimate.
 The repository now also includes `Cover/Compute.lean` and
 `Algorithms/SatCover.lean`, offering constructive enumeration of the cover and a
 simple SAT solver stub.  Their proofs remain incomplete but they integrate with

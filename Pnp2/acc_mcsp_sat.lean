@@ -333,17 +333,19 @@ lemma sat_reduction {N : ℕ} (Φ : Boolcube.Circuit N)
   let F : Boolcube.Family N := {fun x => Circuit.eval Φ x}
   have hcard : F.card = 1 := by simp [F]
   have hH : Entropy.H₂ F ≤ (0 : ℝ) := by simpa [Entropy.H₂_card_one, hcard]
-  let FC := Boolcube.familyEntropyCover (F := F) (h := 0) hH
-  refine ⟨FC.rects, ?_, ?_⟩
+  -- Obtain an entropy-based cover without caring about its size.
+  rcases Boolcube.familyCollisionEntropyCover (F := F) (h := 0) hH
+      with ⟨T, hmono, hcov⟩
+  refine ⟨T, ?_, ?_⟩
   · intro R hR
-    rcases FC.mono R hR with ⟨b, hb⟩
+    rcases hmono R hR with ⟨b, hb⟩
     refine ⟨b, ?_⟩
     intro x hx
     have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
     simpa [F] using hb (fun x => Circuit.eval Φ x) hf hx
   · intro x hx
     have hf : (fun x => Circuit.eval Φ x) ∈ F := by simp [F]
-    rcases FC.covers (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
+    rcases hcov (fun x => Circuit.eval Φ x) hf x hx with ⟨R, hR, hxR⟩
     exact ⟨R, hR, hxR⟩
 
 /-! ### A concrete SAT solver using the entropy cover

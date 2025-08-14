@@ -324,4 +324,27 @@ lemma cover_exists {F : Family n} {h : ℕ}
       (buildCover_pointwiseMono (F := F) (h := h) (hH := hH) R hR f hf)
   · exact buildCover_covers (F := F) (h := h) (hH := hH)
 
+/--
+`cover_exists_bound` strengthens `cover_exists` with an explicit cardinality
+bound.  The combinatorial proof establishing the numerical estimate has not yet
+been formalised, so the bound is currently assumed via `sorry`.  Once the
+arithmetic analysis is ported the placeholder can be replaced by the actual
+argument.
+-/
+lemma cover_exists_bound {F : Family n} {h : ℕ}
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
+      AllOnesCovered (n := n) F Rset ∧
+      Rset.card ≤ Nat.pow 2 (BoolFunc.coverConst * h) := by
+  classical
+  -- Obtain the basic cover without the size bound.
+  obtain ⟨Rset, hmono, hcover⟩ :=
+    cover_exists (n := n) (F := F) (h := h) hH
+  -- The size estimate remains a stub; the eventual proof will combine the
+  -- combinatorial construction with explicit bounds from `Cover2.Bounds`.
+  have hbound : Rset.card ≤ Nat.pow 2 (BoolFunc.coverConst * h) := by
+    sorry
+  exact ⟨Rset, hmono, hcover, hbound⟩
+
 end Cover2

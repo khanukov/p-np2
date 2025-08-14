@@ -689,6 +689,212 @@ noncomputable def glue_branch_covers (F : Family n) (i : Fin n)
       , covers  := glued.covers
       , card_le := le_trans glued.card_le hsum }
 
+/--
+Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
+The resulting tree queries the rectangles in `cover.rects` in an arbitrary
+order and returns `true` as soon as one of them matches the input.  Inputs not
+belonging to any rectangle evaluate to `false`.
+-/
+noncomputable def CoverRes.toDecisionTree
+    {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverRes (F := F) k) : DecisionTree n :=
+  DecisionTree.ofRectCover (n := n) false (F := F)
+    cover.rects cover.mono
+
+/--
+Evaluating the tree produced from a `CoverRes` yields `true` on every input
+`x` where some function `f ∈ F` outputs `true`.  This is the crucial bridge
+between abstract covers and executable decision trees.
+-/
+lemma CoverRes.eval_true {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverRes (F := F) k) {f : BFunc n} (hf : f ∈ F)
+    {x : Point n} (hx : f x = true) :
+    DecisionTree.eval_tree
+        (CoverRes.toDecisionTree (n := n) (F := F) cover) x = true := by
+  classical
+  -- Assemble the list of coloured rectangles used by `ofRectCover`.
+  let colored := cover.rects.attach.toList.map
+    (fun R => (Classical.choose (cover.mono R.1 R.2), R.1))
+  -- Prove that every rectangle containing `x` is coloured `true`.
+  have hall : ∀ p ∈ colored, Subcube.mem p.2 x → p.1 = true := by
+    intro p hp hxR
+    -- Extract the source rectangle `R` from the mapped list.
+    rcases List.mem_map.1 hp with ⟨r, hr, hpair⟩
+    rcases r with ⟨R, hR⟩
+    -- Identify the colour of the rectangle.
+    have hb : Classical.choose (cover.mono R hR) = p.1 := by
+      simpa [Prod.ext_iff] using congrArg Prod.fst hpair
+    have hRe : R = p.2 := by
+      simpa [Prod.ext_iff] using congrArg Prod.snd hpair
+    -- On rectangle `R` all functions of `F` agree with the chosen colour.
+    have hmono := cover.mono R hR
+    have hxR' : Subcube.mem R x := by simpa [hRe] using hxR
+    have hbval := (Classical.choose_spec hmono) f hf (x := x) hxR'
+    subst hRe
+    have hbtrue : Classical.choose hmono = true := by
+      simpa [hbval] using hx
+    simpa [hb] using hbtrue
+  -- There exists at least one rectangle containing `x` thanks to `covers`.
+  obtain ⟨R0, hR0, hxR0⟩ := cover.covers f hf x hx
+  let p0 : Bool × Subcube n := (Classical.choose (cover.mono R0 hR0), R0)
+  have hp0_mem : p0 ∈ colored := by
+    have hattach' :
+        (⟨R0, hR0⟩ : {R : Subcube n // R ∈ cover.rects}) ∈ cover.rects.attach := by
+      simpa using (Finset.mem_attach (s := cover.rects) hR0)
+    have hattach :
+        (⟨R0, hR0⟩ : {R : Subcube n // R ∈ cover.rects}) ∈
+            cover.rects.attach.toList := by
+      simpa using (List.mem_toList.mpr hattach')
+    exact List.mem_map.2 ⟨⟨R0, hR0⟩, hattach, rfl⟩
+  have hex : ∃ p ∈ colored, Subcube.mem p.2 x := ⟨p0, hp0_mem, hxR0⟩
+  -- Apply the generic list-based evaluation lemma.
+  simpa [CoverRes.toDecisionTree, DecisionTree.ofRectCover, colored] using
+    (DecisionTree.eval_ofRectCoverList_true_of_mem (n := n)
+      (default := false) (colored := colored) (x := x) hex hall)
+
+/--
+The general leaf-count bound for `DecisionTree.ofRectCover` specialises to the
+tree extracted from a `CoverRes`.
+-/
+lemma CoverRes.leaf_count_le {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverRes (F := F) k) :
+    DecisionTree.leaf_count
+        (CoverRes.toDecisionTree (n := n) (F := F) cover) ≤
+      List.foldr
+        (fun R acc => ((Subcube.toList (n := n) R.1).length.succ) * acc)
+        1 cover.rects.attach.toList := by
+  classical
+  simpa [CoverRes.toDecisionTree] using
+    (DecisionTree.leaf_count_ofRectCover_le
+      (n := n) (default := false) (F := F)
+      (Rset := cover.rects) (hmono := cover.mono))
+
+/--
+The depth of the tree obtained from a `CoverRes` is bounded by the sum of the
+lengths of the assignment lists of its rectangles.  This is a direct
+specialisation of `DecisionTree.depth_ofRectCover_le`.
+-/
+lemma CoverRes.depth_le {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverRes (F := F) k) :
+    DecisionTree.depth
+        (CoverRes.toDecisionTree (n := n) (F := F) cover) ≤
+      List.foldr
+        (fun R acc => (Subcube.toList (n := n) R.1).length + acc)
+        0 cover.rects.attach.toList := by
+  classical
+  simpa [CoverRes.toDecisionTree] using
+    (DecisionTree.depth_ofRectCover_le
+      (n := n) (default := false) (F := F)
+      (Rset := cover.rects) (hmono := cover.mono))
+
+/--
+Summing the lengths of the assignment lists of a list of rectangles is bounded by
+`n` times the length of that list.  This technical lemma underpins the global
+depth estimate for decision trees extracted from a cover.
+-/
+private lemma fold_length_le {n : ℕ}
+    {P : Subcube n → Prop} :
+    ∀ l : List {R : Subcube n // P R},
+      List.foldr
+          (fun R acc => (Subcube.toList (n := n) R.1).length + acc)
+          0 l ≤ n * l.length
+  | [] => by simpa
+  | r :: l =>
+      -- Bound the contribution of the head and use the inductive hypothesis for
+      -- the tail.
+      have hR : (Subcube.toList (n := n) r.1).length ≤ n :=
+        Subcube.toList_length_le (n := n) (R := r.1)
+      have htail := fold_length_le l
+      -- Combine the two estimates and rewrite into the desired form.
+      have hsum :
+          (Subcube.toList (n := n) r.1).length +
+              List.foldr
+                (fun R acc => (Subcube.toList (n := n) R.1).length + acc) 0 l
+              ≤ n + n * l.length :=
+        Nat.add_le_add hR htail
+        have hmul : n * l.length + n = n * (l.length + 1) := by
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.mul_comm,
+                Nat.mul_left_comm, Nat.mul_assoc] using
+            (Nat.mul_succ n l.length).symm
+        -- Translate the RHS into the cardinality of `r :: l` and simplify.
+        have hfinal : n + n * l.length = n * (r :: l).length := by
+          -- Start from `hmul` and rewrite step by step.
+          calc
+            n + n * l.length
+                = n * l.length + n := by
+                    simpa [Nat.add_comm, Nat.add_left_comm]
+            _ = n * (l.length + 1) := hmul
+            _ = n * (r :: l).length := by simp
+      -- Combine all inequalities with the rewriting of the target.
+      have hgoal :
+          (Subcube.toList (n := n) r.1).length +
+              List.foldr
+                (fun R acc => (Subcube.toList (n := n) R.1).length + acc) 0 l
+              ≤ n * (r :: l).length := by
+        simpa [hfinal] using hsum
+      hgoal
+
+/--
+The depth of the decision tree extracted from a cover is at most `n` times the
+number of rectangles in that cover.
+-/
+lemma CoverRes.depth_le_card_mul {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverRes (F := F) k) :
+    DecisionTree.depth
+        (CoverRes.toDecisionTree (n := n) (F := F) cover) ≤ n * k := by
+  classical
+  -- Start from the generic bound involving the sum of assignment lengths.
+  have hdepth := CoverRes.depth_le (n := n) (F := F) (k := k) cover
+  -- Estimate the sum by `n * cover.rects.card`.
+  have hfold :=
+    fold_length_le (n := n)
+      (P := fun R : Subcube n => R ∈ cover.rects)
+      (l := cover.rects.attach.toList)
+  -- Translate the list length of attached rectangles into the set cardinality.
+  have hlen : cover.rects.attach.toList.length = cover.rects.card := by
+    classical
+    simpa using Finset.length_attach cover.rects
+  -- Combine all inequalities and replace `cover.rects.card` by the bound `k`.
+  have hsum :
+      List.foldr
+          (fun R acc => (Subcube.toList (n := n) R.1).length + acc) 0
+          cover.rects.attach.toList ≤ n * cover.rects.card := by
+    simpa [hlen] using hfold
+  have hbound := le_trans hdepth hsum
+  exact le_trans hbound (Nat.mul_le_mul_left _ cover.card_le)
+
+/--
+If `k ≤ k'`, a cover bounded by `k` rectangles also yields a depth bound of
+`n * k'` for the associated decision tree.  This lemma is a convenient corollary
+of `CoverRes.depth_le_card_mul` allowing one to substitute a larger cardinality
+estimate.
+-/
+lemma CoverRes.depth_le_of_card_le {n : ℕ} {F : Family n} {k k' : ℕ}
+    (cover : CoverRes (F := F) k) (hk : k ≤ k') :
+    DecisionTree.depth
+        (CoverRes.toDecisionTree (n := n) (F := F) cover) ≤ n * k' := by
+  -- The original bound is `n * k`; monotonicity of multiplication upgrades it
+  -- to `n * k'` under the assumption `k ≤ k'`.
+  have := CoverRes.depth_le_card_mul (n := n) (F := F) (k := k) cover
+  exact le_trans this <| Nat.mul_le_mul_left _ hk
+
+/--
+Specialised depth bound using the global `coverConst`.  If a cover is known to
+contain at most `2^{coverConst * s * log₂ (n+1)}` rectangles, then the depth of
+the tree produced by `CoverRes.toDecisionTree` is bounded accordingly.
+-/
+lemma CoverRes.depth_le_coverConst {n s : ℕ} {F : Family n}
+    (cover : CoverRes (F := F)
+        (Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))) :
+    DecisionTree.depth
+        (CoverRes.toDecisionTree (n := n) (F := F) cover)
+          ≤ n * Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- This is a direct specialisation of `CoverRes.depth_le_card_mul` with
+  -- `k = 2^{coverConst * s * log₂ (n+1)}`.
+  simpa using
+    (CoverRes.depth_le_card_mul (n := n) (F := F)
+      (k := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) cover)
+
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity
 -- bound for every function in `F`, the entropy bound for `F`, and the fact that

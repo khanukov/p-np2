@@ -640,4 +640,50 @@ lemma measureLex3_restrict_lt_dim {n : ℕ} (F : Family n) (A : Finset (Fin n))
           simpa [measureLex3Rel, measureLex3, hpair] using hx
         exact this
 
+/-!
+Removing a single function from the family strictly decreases the
+`measureLex3` complexity measure: the entropy component cannot increase
+because `erase` is realised by filtering, while the cardinality drops by one.
+The dimension component `A.card` stays unchanged.  This lemma is useful for
+preprocessing steps that discard trivially false functions before selecting a
+splitting coordinate.
+-/
+lemma measureLex3_erase_lt {n : ℕ} (F : Family n) (A : Finset (Fin n))
+    {f : BFunc n} (hf : f ∈ F) :
+    measureLex3Rel (measureLex3 (Finset.erase F f) A) (measureLex3 F A) := by
+  classical
+  -- Filtering by `≠ f` realises `erase`, so the measure cannot increase.
+  have hμ : measure (Finset.erase F f) ≤ measure F := by
+    simpa [Finset.filter_ne'] using
+      (measure_filter_le (F := F) (P := fun g : BFunc n => g ≠ f))
+  -- Removing an element strictly decreases the family size.
+  have hc : (Finset.erase F f).card < F.card := by
+    -- `erase` lowers the cardinality by one.
+    have hpos : 0 < F.card := Finset.card_pos.mpr ⟨f, hf⟩
+    have hcard := Finset.card_erase_of_mem hf
+    -- Rephrase `card (erase f) = card F - 1` in a form convenient for `lt`.
+    have hsucc : (Finset.erase F f).card + 1 = F.card := by
+      have hsub : F.card - 1 + 1 = F.card :=
+        Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+      simpa [hcard, hsub, Nat.succ_eq_add_one] using
+        congrArg (fun t => t + 1) hcard
+    -- `a < a + 1` gives the desired strict inequality.
+    have hlt : (Finset.erase F f).card < (Finset.erase F f).card + 1 :=
+      Nat.lt_succ_self _
+    simpa [hsucc] using hlt
+  -- Combine the entropy and cardinality facts to obtain the lexicographic drop.
+  dsimp [measureLex3, measureLex3Rel]
+  by_cases hμlt : measure (Finset.erase F f) < measure F
+  · -- Entropy decreased, so the whole measure drops immediately.
+    have hx :=
+      measureLexRel_of_measure_lt (F := Finset.erase F f) (G := F) hμlt
+    exact Prod.Lex.left _ _ hx
+  · -- Entropy preserved; rely on the cardinality decrease.
+    have hμeq : measure (Finset.erase F f) = measure F :=
+      le_antisymm hμ (le_of_not_gt hμlt)
+    have hx :=
+      measureLexRel_of_measure_eq_card_lt (F := Finset.erase F f) (G := F)
+        hμeq hc
+    exact Prod.Lex.left _ _ hx
+
 end BoolFunc

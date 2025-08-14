@@ -338,13 +338,10 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
       AllOnesCovered (n := n) F Rset ∧
       Rset.card ≤ Nat.pow 2 (BoolFunc.coverConst * h) := by
   classical
-  -- Obtain the basic cover without the size bound.
-  obtain ⟨Rset, hmono, hcover⟩ :=
-    cover_exists (n := n) (F := F) (h := h) hH
-  -- The size estimate remains a stub; the eventual proof will combine the
-  -- combinatorial construction with explicit bounds from `Cover2.Bounds`.
-  have hbound : Rset.card ≤ Nat.pow 2 (BoolFunc.coverConst * h) := by
-    sorry
-  exact ⟨Rset, hmono, hcover, hbound⟩
+  refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
+  · intro R hR f hf
+    exact buildCover_pointwiseMono (F := F) (h := h) (hH := hH) R hR f hf
+  · exact buildCover_covers (F := F) (h := h) (hH := hH)
+  · exact buildCover_card_bound (n := n) (F := F) (h := h) hH
 
 end Cover2

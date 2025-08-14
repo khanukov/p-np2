@@ -3,6 +3,7 @@ import Pnp2.entropy
 import Pnp2.Cover.Uncovered
 import Pnp2.Cover.Measure
 import Pnp2.Cover.Bounds
+import Pnp2.low_sensitivity_cover -- for `BoolFunc.coverConst`
 
 /-!
 This file supplies the recursive core of the covering construction.  The
@@ -346,6 +347,18 @@ lemma buildCover_covers (F : Family n) (h : ℕ)
     buildCoverAux_covers (n := n) (F := F) (h := h) (hH := hH) (Rset := (∅))
   -- The definition of `buildCover` unfolds to a call to `buildCoverAux` on `∅`.
   simpa [buildCover] using haux
+
+/-!
+Quantitative bounds on the size of the cover are still under development.
+The following axiom records the intended inequality so that other parts of the
+repository can rely on it.  Once the combinatorial argument has been fully
+formalised this placeholder will be replaced by a constructive proof.
+-/
+/-- Cardinality bound for the cover constructed by `buildCover`. -/
+axiom buildCover_card_bound (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    (buildCover (n := n) F h hH).card ≤
+      Nat.pow 2 (BoolFunc.coverConst * h)
 
 end Cover2
 

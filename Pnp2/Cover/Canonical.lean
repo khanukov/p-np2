@@ -29,7 +29,7 @@ noncomputable def coverFamily {n : ℕ} (F : Family n) (h : ℕ)
 /--
 Basic specification for the canonical cover.  Every rectangle is
 monochromatic, all `1`-inputs are covered and the number of rectangles
-is bounded by `2^(BoolFunc.coverConst * h)`.
+is bounded by the total number of subcubes.
 -/
 lemma coverFamily_spec {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
@@ -37,7 +37,7 @@ lemma coverFamily_spec {n h : ℕ} (F : Family n)
         ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
       (coverFamily (n := n) F h hH).card ≤
-        Nat.pow 2 (BoolFunc.coverConst * h) := by
+        Fintype.card (Subcube n) := by
   classical
   -- Unpack the existential witness returned by `cover_exists_bound`.
   simpa [coverFamily] using
@@ -70,7 +70,7 @@ The canonical cover also satisfies the explicit size bound.
 lemma coverFamily_spec_bound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
     (coverFamily (n := n) F h hH).card ≤
-      Nat.pow 2 (BoolFunc.coverConst * h) :=
+      Fintype.card (Subcube n) :=
   (coverFamily_spec (n := n) (h := h) (F := F) hH).2.2
 
 end Cover2

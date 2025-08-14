@@ -336,7 +336,7 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
-      Rset.card ≤ Nat.pow 2 (BoolFunc.coverConst * h) := by
+      Rset.card ≤ Fintype.card (Subcube n) := by
   classical
   refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
   · intro R hR f hf

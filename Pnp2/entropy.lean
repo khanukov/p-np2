@@ -202,6 +202,21 @@ lemma measure_filter_le {n : ℕ} (F : Family n)
   unfold measure
   exact Nat.ceil_mono h
 
+/--
+A bound on the integer measure immediately bounds the collision entropy.  This
+lemma is convenient when switching from the `measure` abstraction back to the
+real-valued quantity `H₂ F` required by entropy-based cover constructions.
+-/
+lemma H₂_le_of_measure_le {n : ℕ} (F : Family n) {h : ℕ}
+    (hμ : measure F ≤ h) : H₂ F ≤ (h : ℝ) := by
+  -- First relate the entropy directly to the ceiling-based measure.
+  have hH₂ : H₂ F ≤ (measure F : ℝ) := by
+    -- `Nat.le_ceil` specializes to `H₂ F ≤ ⌈H₂ F⌉₊`, which is `measure F`.
+    simpa [measure] using (Nat.le_ceil (a := H₂ F))
+  -- Cast the natural bound to the reals and combine both inequalities.
+  have hcast : (measure F : ℝ) ≤ h := by exact_mod_cast hμ
+  exact hH₂.trans hcast
+
 /-!
 Some concrete values of the measure are handy later on.  They also serve as
 sanity checks for the definitions above.

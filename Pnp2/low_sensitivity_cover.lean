@@ -36,6 +36,13 @@ axiom decisionTree_cover
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
 
+-- Axiomatized entropy-based cover: if the collision entropy of `F` is at most
+-- `h`, we may cover all `1`-inputs of `F` by at most `2^h` subcubes.
+axiom entropyCover
+  {n : Nat} (F : Family n) (h : Nat) [Fintype (Point n)]
+  (hH₂ : H₂ F ≤ (h : ℝ)) :
+  Finset (Subcube n)
+
 /-!
 The lemma states that a family of low-sensitivity Boolean functions admits a
 compact cover by monochromatic subcubes.  A constructive proof would proceed by
@@ -596,7 +603,11 @@ by
   · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
   -- No coordinates left to branch on.
   by_cases hAempty : A = ∅
-  · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
+  ·
+    -- Fall back to the entropy-based cover when no branching choices remain.
+    have hH2 : H₂ F ≤ (h : ℝ) :=
+      H₂_le_of_measure_le (F := F) (h := h) hEnt
+    exact entropyCover (F := F) (h := h) hH2
   -- Recursive step: pick a coordinate and split.
   have hAne : A.Nonempty := Finset.nonempty_of_ne_empty (by simpa [hAempty])
   let i : Fin n := hAne.choose

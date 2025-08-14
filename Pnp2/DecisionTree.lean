@@ -138,42 +138,38 @@ def leaves_as_subcubes : DecisionTree n → Finset (Subcube n)
   | node _ t0 t1 => leaves_as_subcubes t0 ∪ leaves_as_subcubes t1
 
 /--
-The number of leaf subcubes is bounded by `2 ^ depth`. This follows from
-`leaf_count_le_pow_depth` by unfolding the `leaves_as_subcubes` definition
-and showing that the number of leaves coincides with the number of trivial
-subcubes produced from them. The proof mirrors the legacy version and is
-included here so that the legacy `Pnp2` library exposes the same API as the
-modern code.
+The set of subcubes obtained from the leaves may identify duplicate leaves.
+Consequently, its cardinality never exceeds the raw leaf count.
+-/
+lemma leaves_as_subcubes_card_le_leaf_count (t : DecisionTree n) :
+    (leaves_as_subcubes t).card ≤ leaf_count t := by
+  induction t with
+  | leaf b =>
+      simp [leaves_as_subcubes, leaf_count]
+  | node i t0 t1 ih0 ih1 =>
+      -- First bound the union by the sum of the cardinalities.
+      have h_union :=
+        (Finset.card_union_le (s := leaves_as_subcubes t0)
+          (t := leaves_as_subcubes t1))
+      -- Combine with the inductive hypotheses for the two subtrees.
+      have h :=
+        le_trans h_union (Nat.add_le_add ih0 ih1)
+      -- Clean up the arithmetic to match the goal statement.
+      simpa [leaves_as_subcubes, leaf_count,
+             Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+
+/--
+The number of leaf subcubes is bounded by `2 ^ depth`. This is a direct
+consequence of `leaves_as_subcubes_card_le_leaf_count` and the bound on the
+total number of leaves.
 -/
 lemma leaves_as_subcubes_card_le_pow_depth (t : DecisionTree n) :
     (leaves_as_subcubes t).card ≤ 2 ^ depth t := by
-  induction t with
-  | leaf b =>
-      simp [leaves_as_subcubes, depth]
-  | node i t0 t1 ih0 ih1 =>
-      have hunion :
-          (leaves_as_subcubes t0 ∪ leaves_as_subcubes t1).card ≤
-            (leaves_as_subcubes t0).card + (leaves_as_subcubes t1).card := by
-        simpa using
-          (Finset.card_union_le (s := leaves_as_subcubes t0)
-            (t := leaves_as_subcubes t1))
-      have hsum : (leaves_as_subcubes t0).card + (leaves_as_subcubes t1).card ≤
-          2 ^ depth t0 + 2 ^ depth t1 := Nat.add_le_add ih0 ih1
-      have h0 : 2 ^ depth t0 ≤ 2 ^ max (depth t0) (depth t1) := by
-        have : depth t0 ≤ max (depth t0) (depth t1) := le_max_left _ _
-        exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) this
-      have h1 : 2 ^ depth t1 ≤ 2 ^ max (depth t0) (depth t1) := by
-        have : depth t1 ≤ max (depth t0) (depth t1) := le_max_right _ _
-        exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) this
-      have hsum2 : 2 ^ depth t0 + 2 ^ depth t1 ≤ 2 * 2 ^ max (depth t0) (depth t1) := by
-        have := Nat.add_le_add h0 h1
-        simpa [two_mul] using this
-      have h : (leaves_as_subcubes t0 ∪ leaves_as_subcubes t1).card ≤ 2 * 2 ^ max (depth t0) (depth t1) :=
-        le_trans hunion (le_trans hsum hsum2)
-      have hpow : 2 * 2 ^ max (depth t0) (depth t1) =
-          2 ^ (Nat.succ (max (depth t0) (depth t1))) := by
-        simp [Nat.pow_succ, Nat.mul_comm]
-      simpa [leaves_as_subcubes, depth, hpow] using h
+  -- Relate the number of distinct leaf subcubes to the raw leaf count.
+  have h_leaves := leaves_as_subcubes_card_le_leaf_count (t := t)
+  -- Bound the leaf count by a power of two using the depth estimate.
+  have h_depth := leaf_count_le_pow_depth (t := t)
+  exact le_trans h_leaves h_depth
 
 /--
 A convenient alias for `leaves_as_subcubes_card_le_pow_depth` matching the
@@ -625,6 +621,75 @@ lemma depth_ofRectCoverList_le (default : Bool) :
       simpa [List.foldr, t, len, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
         using this
 
+/--
+Bound the number of leaves produced by `ofRectCover`.  The statement
+specialises `leaf_count_ofRectCoverList_le` to the list extracted from a
+finite set of rectangles.  Each rectangle contributes at most a factor of
+`(length (Subcube.toList R) + 1)` to the final leaf count.
+-/
+lemma leaf_count_ofRectCover_le (default : Bool) (F : Family n)
+    (Rset : Finset (Subcube n))
+    (hmono : ∀ R ∈ Rset, Subcube.monochromaticForFamily R F) :
+    leaf_count (ofRectCover (n := n) default F Rset hmono) ≤
+      List.foldr
+        (fun R acc => ((Subcube.toList (n := n) R.1).length.succ) * acc)
+        1 Rset.attach.toList := by
+  classical
+  -- Expand the definition of `ofRectCover` and apply the list-based bound.
+  set colored :=
+    Rset.attach.toList.map (fun R =>
+      (Classical.choose (hmono R.1 R.2), R.1)) with hcolored
+  have h := leaf_count_ofRectCoverList_le
+      (n := n) (default := default) (rs := colored)
+  -- The map in `colored` only affects the Boolean colour; remove it.
+  simpa [ofRectCover, hcolored, List.foldr_map] using h
+
+/--
+Bounding the depth of the decision tree constructed by `ofRectCover`.
+Each rectangle contributes at most the length of its assignment list to
+the overall depth.
+-/
+lemma depth_ofRectCover_le (default : Bool) (F : Family n)
+    (Rset : Finset (Subcube n))
+    (hmono : ∀ R ∈ Rset, Subcube.monochromaticForFamily R F) :
+    depth (ofRectCover (n := n) default F Rset hmono) ≤
+      List.foldr
+        (fun R acc => (Subcube.toList (n := n) R.1).length + acc)
+        0 Rset.attach.toList := by
+  classical
+  set colored :=
+    Rset.attach.toList.map (fun R =>
+      (Classical.choose (hmono R.1 R.2), R.1)) with hcolored
+  have h := depth_ofRectCoverList_le
+      (n := n) (default := default) (rs := colored)
+  simpa [ofRectCover, hcolored, List.foldr_map] using h
+
+/--
+The number of coloured subcubes produced by `ofRectCover` is bounded by the
+same product that controls the leaf count.  Each rectangle contributes a factor
+of the length of its assignment list plus one, mirroring the construction of
+the underlying decision tree.
+-/
+lemma coloredSubcubes_ofRectCover_card_le (default : Bool) (F : Family n)
+    (Rset : Finset (Subcube n))
+    (hmono : ∀ R ∈ Rset, Subcube.monochromaticForFamily R F) :
+    (coloredSubcubes
+        (ofRectCover (n := n) default F Rset hmono)).card ≤
+      List.foldr
+        (fun R acc => ((Subcube.toList (n := n) R.1).length.succ) * acc)
+        1 Rset.attach.toList := by
+  -- First bound the number of coloured subcubes by the number of leaves.
+  have h₁ :=
+    coloredSubcubes_card_le_leaf_count
+      (t := ofRectCover (n := n) default F Rset hmono)
+  -- Then apply the leaf-count bound specialised to `ofRectCover`.
+  have h₂ :=
+    leaf_count_ofRectCover_le
+      (n := n) (default := default)
+      (F := F) (Rset := Rset) (hmono := hmono)
+  -- Combine the two inequalities to obtain the final estimate.
+  exact le_trans h₁ h₂
+
 lemma mem_subcube_of_path_cons_of_mem (x : Point n) (p : List (Fin n × Bool))
     (i : Fin n) (b : Bool)
     (hx : (subcube_of_path p).mem x) (hxi : x i = b) :
@@ -780,19 +845,17 @@ lemma mem_subcube_of_path_reverse_path_to_leaf (t : DecisionTree n) (x : Point n
     exact hagree q hq'
   exact mem_subcube_of_path_of_agrees (x := x) (p := (path_to_leaf t x).reverse) hrev
 
-
 /-!
-Every `true` evaluation of the decision tree is witnessed by a
-subcube in `coloredSubcubes` labelled with `true` that contains the
-input.  This lemma packages the membership information from
-`eval_pair_mem_coloredSubcubes` together with the path membership
-property.  It will be convenient when constructing covers from
-decision trees.
+Every evaluation of the decision tree is witnessed by a suitably
+labelled subcube in `coloredSubcubes` containing the input.  This
+packages `eval_pair_mem_coloredSubcubes` together with the path
+membership property and will be convenient when constructing covers
+from decision trees.
 -/
-lemma coloredSubcubes_cover_true (t : DecisionTree n) :
-    ∀ x : Point n, eval_tree t x = true →
-      ∃ R : Subcube n, (true, R) ∈ coloredSubcubes (n := n) t ∧ x ∈ₛ R := by
-  intro x hx
+lemma coloredSubcubes_cover_eval (t : DecisionTree n) :
+    ∀ x : Point n,
+      ∃ R : Subcube n, (eval_tree t x, R) ∈ coloredSubcubes (n := n) t ∧ x ∈ₛ R := by
+  intro x
   classical
   -- Subcube obtained from the path taken by `x`.
   let R := subcube_of_path ((path_to_leaf t x).reverse)
@@ -800,10 +863,33 @@ lemma coloredSubcubes_cover_true (t : DecisionTree n) :
     eval_pair_mem_coloredSubcubes (t := t) (x := x)
   have hxR : x ∈ₛ R :=
     mem_subcube_of_path_reverse_path_to_leaf (t := t) (x := x)
-  refine ⟨R, ?_, ?_⟩
-  · -- Rewrite the membership using the fact that `eval_tree t x = true`.
-    simpa [R, hx] using hmem
-  · simpa [R] using hxR
+  exact ⟨R, hmem, by simpa [R] using hxR⟩
+
+/-!
+Specialisations of `coloredSubcubes_cover_eval` to the concrete colours
+`true` and `false`.  These forms emphasise that the sets of
+subcubes labelled with a fixed colour cover exactly the inputs mapped to
+that colour by the decision tree.
+-/
+lemma coloredSubcubes_cover_true (t : DecisionTree n) :
+    ∀ x : Point n, eval_tree t x = true →
+      ∃ R : Subcube n, (true, R) ∈ coloredSubcubes (n := n) t ∧ x ∈ₛ R := by
+  intro x hx
+  classical
+  obtain ⟨R, hmem, hxR⟩ := coloredSubcubes_cover_eval (t := t) (x := x)
+  refine ⟨R, ?_, hxR⟩
+  -- Rewrite the membership using the fact that `eval_tree t x = true`.
+  simpa [hx] using hmem
+
+lemma coloredSubcubes_cover_false (t : DecisionTree n) :
+    ∀ x : Point n, eval_tree t x = false →
+      ∃ R : Subcube n, (false, R) ∈ coloredSubcubes (n := n) t ∧ x ∈ₛ R := by
+  intro x hx
+  classical
+  obtain ⟨R, hmem, hxR⟩ := coloredSubcubes_cover_eval (t := t) (x := x)
+  refine ⟨R, ?_, hxR⟩
+  -- Rewrite the membership using the fact that `eval_tree t x = false`.
+  simpa [hx] using hmem
 
 end DecisionTree
 

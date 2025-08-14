@@ -31,13 +31,12 @@
 
 1. **Энтропийная оценка**
    *Сделано:* введена мера `measure F = Nat.ceil (H₂ F)` и принято безопасное
-   ограничение `measure F ≤ 10 · s · log₂(n+1)`. Лемма `buildCover_card_bound`
-   обеспечивает существование покрытия с числом субкубов, не превышающим
-   общее количество субкубов. `cover_exists_bound` и `entropyCover` теперь
-   полагаются на эту грубую оценку.
-   *Осталось:* уточнить численную границу до асимптотической формы
-   `2^{C⋅h}` или `(n+1)^{O(s)}`, формализовав соответствующие оценки из
-   работы Gopalan–Moshковitz–Oliveira.
+   ограничение `measure F ≤ 10 · s · log₂(n+1)`. Грубая граница из леммы
+   `buildCover_card_bound` пока остаётся основной; в качестве целевой
+   модернизации планируется перейти к асимптотическим формам `2^{C⋅h}` и
+   `(n+1)^{O(s)}`, согласующимся с результатами
+   Gopalan–Moshковitz–Oliveira. Эти оценки ещё предстоит формально связать
+   с `cover_exists_bound` и `entropyCover`.
 
 2. **Строгое уменьшение меры**  
  *Сделано:* леммы `measure_restrict_le`, `measure_restrict_decreases`,
@@ -215,11 +214,15 @@
   `matches_toList_of_mem`, `eval_matchSubcube_matches` и
   `eval_ofRectCoverList_cons_mem`, обеспечивающие корректность расчёта
   цвета на точках внутри каждого субкуба.
-- ✅ Получены оценки числа листьев и глубины.  Леммы
-  `leaf_count_matchSubcube` и `leaf_count_ofRectCoverList_le` связывают
-  количество листьев построенного дерева с длинами списков субкубов, а
-  `depth_matchSubcube_le` и `depth_ofRectCoverList_le` оценивают глубину
-  через суммарную длину этих списков.  Связь с глобальной оценкой
+- ✅ Получены оценки числа листьев, глубины и числа окрашенных субкубов.
+  Леммы `leaf_count_matchSubcube` и `leaf_count_ofRectCoverList_le`
+  связывают количество листьев построенного дерева с длинами списков
+  субкубов; `depth_matchSubcube_le` и `depth_ofRectCoverList_le` оценивают
+  глубину через суммарную длину этих списков; `coloredSubcubes_ofRectCover_card_le`
+  переносит ту же оценку на мощность множества окрашенных субкубов;
+  `coloredSubcubes_cover_eval` (и частные `coloredSubcubes_cover_true`/
+  `coloredSubcubes_cover_false`) гарантирует, что каждый вход покрыт
+  подходящим субкубом.  Связь с глобальной оценкой
   `DecisionTree.leaf_count_le_pow_depth` всё ещё требует исследования.
   **Файл:** `DecisionTree.lean`.
 

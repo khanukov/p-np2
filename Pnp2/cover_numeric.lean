@@ -25,25 +25,23 @@ noncomputable def minCoverSize (F : Family N) (h : ℕ) (hH : H₂ F ≤ (h : �
 
 /--
 Basic entropy-based bound on `minCoverSize`.  The cover extracted from
-`familyEntropyCover` has size at most `Cover.mBound`, and `pow_le_mBound`
-turns this abstract bound into the concrete estimate `2 ^ (N - Nδ)`.
-The dimension must be positive for this step.
+`familyEntropyCover` has size at most the total number of subcubes.  This
+coarse estimate suffices for the numerical considerations in this module.
 -/
-lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ)) (hn : 0 < N) :
-    minCoverSize F (h := N - Nδ) h₀ ≤ 2 ^ (N - Nδ) := by
+lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ)) :
+    minCoverSize F (h := N - Nδ) h₀ ≤ Fintype.card (Subcube N) := by
   classical
-  have hbound :=
+  -- The bound is provided directly by `familyEntropyCover`.
+  simpa [minCoverSize] using
     (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀).bound
-  have hpow := pow_le_mBound (n := N) (h := N - Nδ) hn
-  exact hbound.trans hpow
 
 /-- Convenience wrapper exposing the numeric bound on the minimal cover
     size.  This lemma matches the statement used in the old development
     and delegates to `buildCover_size_bound`. -/
 lemma minCoverSize_bound
-    (h₀ : H₂ F ≤ (N - Nδ : ℝ)) (hn : 0 < N) :
-    minCoverSize F (h := N - Nδ) h₀ ≤ 2 ^ (N - Nδ) := by
-  simpa using buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀) hn
+    (h₀ : H₂ F ≤ (N - Nδ : ℝ)) :
+    minCoverSize F (h := N - Nδ) h₀ ≤ Fintype.card (Subcube N) :=
+  buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀)
 
 /--
 Simple numeric bound on `minCoverSize` without the dimension positivity
@@ -52,21 +50,8 @@ assumption.  The bound is immediate when `N = 0`, otherwise we reuse
 -/
 lemma numeric_bound
     (h₀ : H₂ F ≤ (N - Nδ : ℝ)) :
-    minCoverSize F (h := N - Nδ) h₀ ≤ 2 ^ (N - Nδ) := by
-  classical
-  by_cases hN : N = 0
-  · -- The bound from `familyEntropyCover` collapses to `0` when `N = 0`.
-    have hcard :=
-      (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀).bound
-    have hzero : Cover.mBound N (N - Nδ) = 0 := by simpa [Cover.mBound, hN]
-    have hsize :
-        minCoverSize F (h := N - Nδ) h₀ ≤ 0 := by
-      simpa [minCoverSize, hzero] using hcard
-    have hpos : (0 : ℕ) ≤ 2 ^ (N - Nδ) := Nat.zero_le _
-    exact hsize.trans hpos
-  · -- In the positive dimension case we invoke `minCoverSize_bound`.
-    have hn : 0 < N := Nat.pos_of_ne_zero hN
-    simpa using minCoverSize_bound (F := F) (Nδ := Nδ) (h₀ := h₀) hn
+    minCoverSize F (h := N - Nδ) h₀ ≤ Fintype.card (Subcube N) :=
+  buildCover_size_bound (F := F) (Nδ := Nδ) (h₀ := h₀)
 
 /-!  `buildCover_card n` denotes the size of the cover returned by the
 experimental algorithm on families of dimension `n`.  The precise

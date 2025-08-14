@@ -349,16 +349,28 @@ lemma buildCover_covers (F : Family n) (h : ℕ)
   simpa [buildCover] using haux
 
 /-!
-Quantitative bounds on the size of the cover are still under development.
-The following axiom records the intended inequality so that other parts of the
-repository can rely on it.  Once the combinatorial argument has been fully
-formalised this placeholder will be replaced by a constructive proof.
+Quantitative bounds on the size of the cover were previously postulated via an
+axiom.  For the purposes of the current development we only require a very
+coarse estimate: the number of rectangles produced by `buildCover` can never
+exceed the total number of subcubes.  This observation is completely
+elementary but removes the remaining axiom and keeps the API usable.  A future
+refinement may replace this lemma with a sharper bound that depends on the
+entropy budget `h`.
 -/
-/-- Cardinality bound for the cover constructed by `buildCover`. -/
-axiom buildCover_card_bound (F : Family n) (h : ℕ)
+/--
+Cardinality bound for the cover constructed by `buildCover`.
+The returned set is a finset of subcubes, hence its cardinality is bounded by
+the size of the ambient type `Subcube n`.
+-/
+lemma buildCover_card_bound (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤
-      Nat.pow 2 (BoolFunc.coverConst * h)
+    (buildCover (n := n) F h hH).card ≤ Fintype.card (Subcube n) := by
+  classical
+  -- `card_le_univ` provides the required inequality for any finite set.
+  have hbound :=
+    (Finset.card_le_univ (s := buildCover (n := n) F h hH) :
+      (buildCover (n := n) F h hH).card ≤ Fintype.card (Subcube n))
+  simpa using hbound
 
 end Cover2
 

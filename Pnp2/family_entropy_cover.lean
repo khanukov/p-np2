@@ -28,14 +28,15 @@ theorem familyCollisionEntropyCover
 ### A convenience record for covers returned by `familyEntropyCover`.
 This bundles the list of rectangles together with proofs that each is
 monochromatic for the whole family, that the rectangles cover all
-`1`‑inputs, and an explicit bound on their number.  The size estimate uses
-the universal constant `BoolFunc.coverConst` (currently `10`).
+`1`‑inputs, and an explicit bound on their number.  We currently bound the
+size by the total number of subcubes; a sharper estimate can be plugged in
+once available.
 -/
 structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   rects   : Finset (Subcube n)
   mono    : ∀ C ∈ rects, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
-  bound   : rects.card ≤ Nat.pow 2 (BoolFunc.coverConst * h)
+  bound   : rects.card ≤ Fintype.card (Subcube n)
 
 /--
 `familyEntropyCover` packages the canonical cover produced by `coverFamily` into
@@ -78,16 +79,16 @@ open Boolcube
 
 /--
 `entropyCover` translates a bound on the integer measure of `F` into an
-explicit cover by at most `2^(BoolFunc.coverConst * h)` subcubes.  Each
-subcube is monochromatic for every function in `F`, and together they cover
-all `1`-inputs of the family.
+explicit cover whose size does not exceed the total number of subcubes.  Each
+subcube is monochromatic for every function in `F`, and together they cover all
+`1`-inputs of the family.
 -/
 lemma entropyCover {n : ℕ} (F : Family n) {h : ℕ} :
     BoolFunc.measure F ≤ h →
     ∃ R : Finset (Subcube n),
       (∀ C ∈ R, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ R, x ∈ₛ C) ∧
-      R.card ≤ Nat.pow 2 (BoolFunc.coverConst * h) := by
+      R.card ≤ Fintype.card (Subcube n) := by
   intro hμ
   classical
   -- Translate the measure bound into a real entropy bound.

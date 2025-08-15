@@ -1077,7 +1077,8 @@ noncomputable def buildCoverLex3
     [Fintype (Point n)] [Fintype (Subcube n)]
     (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
     (_hEnt  : measure F ≤ h)
-    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
+    (hn : 0 < n) (hcard : n ≤ 5 * h) :
     Finset (Subcube n) :=
 by
   classical
@@ -1104,13 +1105,10 @@ by
   by_cases hAempty : A = ∅
   ·
     -- With no coordinates left to branch on, resort to the entropy bound.
-    -- `family_entropy_cover` supplies a constructive cover whose cardinality is
-    -- controlled by `mBound`.  The required arithmetic bound on the number of
-    -- subcubes is deferred to future work.
     have hμ : measure F ≤ h := hEnt
+    -- Establish the coarse combinatorial estimate on the number of subcubes.
     have hM : Fintype.card (Boolcube.Subcube n) ≤ Cover2.mBound n h := by
-      -- TODO: Prove a coarse inequality such as `3^n ≤ mBound n h`.
-      admit
+      exact Cover2.card_subcube_le_mBound (n := n) (h := h) hn hcard
     classical
     -- Convert the returned cubes from the `Boolcube` representation to the
     -- legacy `BoolFunc.Subcube` used in the rest of this file.

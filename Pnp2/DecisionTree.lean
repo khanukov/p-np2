@@ -357,6 +357,21 @@ noncomputable def toList (R : Subcube n) : List (Fin n × Bool) :=
   let l' := l.mergeSort (fun a b => a.1 < b.1)
   l'.map (fun i => (i.1, R.val i.1 i.2))
 
+@[simp] lemma toList_length (R : Subcube n) :
+    (Subcube.toList (n := n) R).length = R.idx.card := by
+  classical
+  unfold Subcube.toList
+  -- `mergeSort` and `map` preserve the length of the list of fixed coordinates.
+  simp
+
+lemma toList_length_le (R : Subcube n) :
+    (Subcube.toList (n := n) R).length ≤ n := by
+  classical
+  -- Using the explicit formula from `toList_length`, the bound reduces to the
+  -- obvious inequality `R.idx.card ≤ n`.
+  simpa [toList_length (n := n) (R := R)] using
+    (Finset.card_le_univ (s := R.idx))
+
 end Subcube
 
 open Subcube
@@ -375,6 +390,31 @@ lemma agreesWithAssignments_toList_of_mem {R : Subcube n} {x : Point n}
   rcases List.mem_map.mp hq with ⟨i, hi, rfl⟩
   -- the proof component of `i` certifies membership in `R.idx`
   exact hx i.1 i.2
+
+/--
+From a successful assignment check against `R.toList` one can reconstruct
+membership in the original subcube.  This is the converse of
+`agreesWithAssignments_toList_of_mem` and will be useful when reasoning about
+failures of `matchSubcube`.
+-/
+lemma mem_of_agreesWithAssignments_toList {R : Subcube n} {x : Point n}
+    (h : agreesWithAssignments (n := n) x (Subcube.toList (n := n) R)) :
+    x ∈ₛ R := by
+  classical
+  intro i hi
+  have hi_set : ((⟨i, hi⟩) : {j : Fin n // j ∈ R.idx}) ∈ R.idx.attach := by
+    simpa [Finset.mem_attach]
+  have hi_list : ((⟨i, hi⟩) : {j : Fin n // j ∈ R.idx}) ∈ R.idx.attach.toList := by
+    simpa using (List.mem_toList).2 hi_set
+  have hi_merge : ((⟨i, hi⟩) : {j : Fin n // j ∈ R.idx}) ∈
+      R.idx.attach.toList.mergeSort (fun a b => a.1 < b.1) :=
+    (List.mem_mergeSort (le := fun a b : {j : Fin n // j ∈ R.idx} => a.1 < b.1)
+      (a := ⟨i, hi⟩) (l := R.idx.attach.toList)).2 hi_list
+  have hmem : (i, R.val i hi) ∈
+      (R.idx.attach.toList.mergeSort (fun a b => a.1 < b.1)).map
+        (fun j => (j.1, R.val j.1 j.2)) :=
+    List.mem_map.2 ⟨⟨i, hi⟩, hi_merge, rfl⟩
+  simpa using h _ hmem
 
 /-
 `matchSubcube p b t` builds a decision tree which checks the coordinate
@@ -411,6 +451,54 @@ lemma eval_matchSubcube_agrees {p : List (Fin n × Bool)} {b : Bool}
           have hx : x i = true := hcons.1
           have ih' := ih hcons.2
           simpa [matchSubcube, hx] using ih'
+
+/--
+If the input `x` violates at least one assignment in `p`, evaluating
+`matchSubcube p b t` is the same as evaluating the fallback tree `t`.
+-/
+lemma eval_matchSubcube_not_agrees {p : List (Fin n × Bool)} {b : Bool}
+    {t : DecisionTree n} {x : Point n}
+    (h : ¬ agreesWithAssignments (n := n) x p) :
+    eval_tree (matchSubcube (n := n) p b t) x = eval_tree t x := by
+  classical
+  induction p with
+  | nil =>
+      have : False := by simpa using h
+      exact this.elim
+  | cons hd tl ih =>
+      rcases hd with ⟨i, b'⟩
+      have hcons : ¬ (x i = b' ∧ agreesWithAssignments (n := n) x tl) := by
+        simpa [agreesWithAssignments_cons] using h
+      have hx_or := not_and_or.mp hcons
+      cases b' with
+      | false =>
+          cases hx_or with
+          | inl hxne =>
+              have hxi : x i = true := by
+                cases h' : x i <;> simpa [h'] using hxne
+              simp [matchSubcube, hxi]
+          | inr htl =>
+              by_cases hxi : x i = false
+              · have := ih htl
+                simp [matchSubcube, hxi, this]
+              ·
+                have hxi' : x i = true := by
+                  cases h' : x i <;> simpa [h'] using hxi
+                simp [matchSubcube, hxi']
+      | true =>
+          cases hx_or with
+          | inl hxne =>
+              have hxi : x i = false := by
+                cases h' : x i <;> simpa [h'] using hxne
+              simp [matchSubcube, hxi]
+          | inr htl =>
+              by_cases hxi : x i = true
+              · have := ih htl
+                simp [matchSubcube, hxi, this]
+              ·
+                have hxi' : x i = false := by
+                  cases h' : x i <;> simpa [h'] using hxi
+                simp [matchSubcube, hxi']
 
 /--
 Convert a list of coloured subcubes into a decision tree.  Earlier
@@ -456,6 +544,61 @@ lemma eval_ofRectCoverList_cons_mem {default : Bool} {b : Bool}
       (p := Subcube.toList (n := n) R)
       (b := b) (t := ofRectCoverList (n := n) default rs)
       (x := x) hmatch)
+
+/--
+If every rectangle of the list `colored` that contains a point `x` is labelled
+`true` and at least one such rectangle exists, then evaluating
+`ofRectCoverList colored` on `x` yields `true`.  This lemma is the engine behind
+the correctness proof for `CoverRes.eval_true`.
+-/
+lemma eval_ofRectCoverList_true_of_mem
+    {default : Bool} {colored : List (Bool × Subcube n)} {x : Point n}
+    (hex : ∃ p ∈ colored, Subcube.mem p.snd x)
+    (hall : ∀ (p : Bool × Subcube n), p ∈ colored → Subcube.mem p.snd x → p.fst = true) :
+    eval_tree (ofRectCoverList (n := n) default colored) x = true := by
+  classical
+  induction colored with
+  | nil =>
+      rcases hex with ⟨p, hp, _⟩
+      cases hp
+  | cons hd tl ih =>
+      rcases hd with ⟨b, R⟩
+      by_cases hxR : x ∈ₛ R
+      ·
+        -- The head rectangle contains `x`; the evaluation equals its colour.
+        have hb : b = true := by
+          have := hall (p := (b, R)) (by simp) (by simpa using hxR)
+          simpa using this
+        have := eval_ofRectCoverList_cons_mem
+          (n := n) (default := default) (b := b) (R := R) (rs := tl)
+          (x := x) hxR
+        simpa [ofRectCoverList, hb] using this
+      ·
+        -- Otherwise reduce to the tail of the list.
+        have hnot : ¬ agreesWithAssignments (n := n) x
+            (Subcube.toList (n := n) R) := by
+          intro hagrees
+          have hxmem : x ∈ₛ R :=
+            mem_of_agreesWithAssignments_toList (n := n) (x := x) (R := R) hagrees
+          exact hxR hxmem
+        have hall_tl : ∀ p ∈ tl, Subcube.mem p.snd x → p.fst = true := by
+          intro p hp hxP
+          have hp' : p ∈ (b, R) :: tl := List.mem_cons_of_mem _ hp
+          exact hall p hp' hxP
+        have hex_tl : ∃ p ∈ tl, Subcube.mem p.snd x := by
+          rcases hex with ⟨p, hp, hxP⟩
+          have hp' : p = (b, R) ∨ p ∈ tl := List.mem_cons.mp hp
+          cases hp' with
+          | inl hpr =>
+              cases hpr
+              exact (hxR hxP).elim
+          | inr htl =>
+              exact ⟨p, htl, hxP⟩
+        have htail := ih hex_tl hall_tl
+        have := eval_matchSubcube_not_agrees (n := n)
+            (p := Subcube.toList (n := n) R) (b := b)
+            (t := ofRectCoverList (n := n) default tl) (x := x) hnot
+        simpa [ofRectCoverList, this, htail]
 
 /--
 The `matchSubcube` construction adds a chain of decision nodes checking each

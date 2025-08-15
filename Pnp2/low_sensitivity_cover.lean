@@ -2,9 +2,12 @@ import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
+import Pnp2.family_entropy_cover
 import Mathlib.Data.Finset.Card
+import Aesop
 
 open BoolFunc
+open Boolcube
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
@@ -27,21 +30,20 @@ def coverConst : Nat := 10
 -- Each leaf of that tree corresponds to a rectangular subcube on which all
 -- functions agree.  The number of such subcubes is therefore bounded by an
 -- exponential in `s * log₂ (n + 1)`.  We assume this theorem as an axiom in
--- the current development.
-axiom decisionTree_cover
+-- Once the full recursive construction is in place, the following statement
+-- will no longer require an axiom.  We keep it as a theorem with an admitted
+-- proof so that downstream developments can rely on the intended interface.
+theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
   ∃ Rset : Finset (Subcube n),
     (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- The constructive proof is still under development.
+  admit
 
--- Axiomatized entropy-based cover: if the collision entropy of `F` is at most
--- `h`, we may cover all `1`-inputs of `F` by at most `2^h` subcubes.
-axiom entropyCover
-  {n : Nat} (F : Family n) (h : Nat) [Fintype (Point n)]
-  (hH₂ : H₂ F ≤ (h : ℝ)) :
-  Finset (Subcube n)
 
 /-!
 The lemma states that a family of low-sensitivity Boolean functions admits a
@@ -148,12 +150,15 @@ lemma decisionTree_cover_of_tree
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →
     Subcube.monochromaticFor R f := by
+  classical
   intro h
   rcases h with ⟨b, hb⟩
   refine ⟨b, ?_⟩
   intro x hx
-  have := hb f (by simp) hx
-  simpa using this
+  -- `aesop` recognises that the desired equality is provided by `hb`.
+  have hx' : f x = b := hb f (by simp) hx
+  -- `aesop` discharges the goal from the available hypothesis.
+  aesop
 
 /--
 Refined orientation of `non_constant_family_has_sensitive_coord`.
@@ -371,6 +376,55 @@ lemma Subcube.monochromaticForFamily_unfix_of_insensitive {n : ℕ}
   exact hxswap.trans hxval
 
 /--
+If a Boolean function `f` does not depend on coordinate `i` and a subcube `R`
+fixes that coordinate, removing the constraint preserves monochromaticity.  This
+is the single-function analogue of
+`Subcube.monochromaticForFamily_unfix_of_insensitive`.
+-/
+lemma Subcube.monochromaticFor_unfix_of_insensitive {n : ℕ}
+    {f : BFunc n} {R : Subcube n} {i : Fin n}
+    (hins : coordSensitivity f i = 0)
+    (hi : i ∈ R.idx)
+    (hmono : Subcube.monochromaticFor R f) :
+    Subcube.monochromaticFor (Subcube.unfix R i) f := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro x hx
+  let x' := Point.update x i (R.val i hi)
+  have hx' : x' ∈ₛ R := by
+    intro j hjR
+    by_cases hji : j = i
+    · subst hji; simp [x', Point.update]
+    · have hjmem : j ∈ R.idx.erase i := Finset.mem_erase.mpr ⟨hji, hjR⟩
+      have hxj := hx j hjmem
+      simp [Subcube.unfix, hjR, hji, x', Point.update] at hxj
+      simpa [x', Point.update, hji] using hxj
+  have hxval : f x' = c := hc (x := x') hx'
+  have hins' := (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 hins
+  have hxswap : f x = f x' := by
+    by_cases hxi : x i = R.val i hi
+    · have hxEq : x' = x := by
+        funext j; by_cases hji : j = i
+        · subst hji; simp [x', Point.update, hxi]
+        · simp [x', Point.update, hji]
+      simpa [hxEq] using (rfl : f x = f x)
+    ·
+      have hxflip : R.val i hi = !x i := by
+        cases hxb : x i
+        · cases hrb : R.val i hi
+          · have : x i = R.val i hi := by simp [hxb, hrb]
+            exact (hxi this).elim
+          · simp [hxb, hrb]
+        · cases hrb : R.val i hi
+          · simp [hxb, hrb]
+          · have : x i = R.val i hi := by simp [hxb, hrb]
+            exact (hxi this).elim
+      have := hins' x
+      simpa [x', hxflip] using this
+  exact hxswap.trans hxval
+
+/--
 Normalise a cover of the branch `F_b` so that none of its rectangles
 fixes the splitting coordinate `i`.  Rectangles that already avoid `i`
 are kept as is, whereas those fixing `i = b` are "unfixed" via
@@ -483,6 +537,104 @@ lemma cover_normalize_branch {F_b : Family n} (i : Fin n) (b : Bool)
     have hbound : S0.card + S1.card ≤ Rb.card := by
       simpa [hcard_union_eq] using hcard_subset
     exact le_trans hcard₁ hbound
+
+/--
+Pointwise variant of `cover_normalize_branch`.  Here monochromaticity is
+tracked per function in the branch family rather than for the entire family at
+once.  This formulation prepares the ground for refactoring the recursive
+cover construction to carry pointwise colour information.
+-/
+lemma cover_normalize_branch_pointwise {F_b : Family n} (i : Fin n) (b : Bool)
+    {Rb : Finset (Subcube n)}
+    (hmono : ∀ R ∈ Rb, ∀ g ∈ F_b, Subcube.monochromaticFor R g)
+    (hcov  : ∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb, x ∈ₛ R)
+    (hins  : ∀ f ∈ F_b, coordSensitivity f i = 0) :
+    ∃ Rb' : Finset (Subcube n),
+      (∀ R ∈ Rb', ∀ g ∈ F_b, Subcube.monochromaticFor R g) ∧
+      (∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb', x ∈ₛ R) ∧
+      (∀ R ∈ Rb', i ∉ R.idx) ∧
+      Rb'.card ≤ Rb.card := by
+  classical
+  -- As before, split rectangles into those already avoiding `i` and those
+  -- fixing `i = b`.
+  let S0 := Rb.filter fun R => i ∉ R.idx
+  let S1 := Rb.filter fun R => if h : i ∈ R.idx then R.val i h = b else False
+  let Rb' := S0 ∪ S1.image (fun R => Subcube.unfix R i)
+  refine ⟨Rb', ?mono, ?cov, ?hi, ?card⟩
+  · -- Pointwise monochromaticity for every rectangle in the normalised set.
+    intro R hR g hg
+    rcases Finset.mem_union.mp hR with hS0 | hS1
+    · -- `R` was untouched and already avoided `i`.
+      have hRb : R ∈ Rb := (Finset.mem_filter.mp hS0).1
+      exact hmono R hRb g hg
+    · -- `R` results from unfixing some `S` in `S1`.
+      rcases Finset.mem_image.mp hS1 with ⟨S, hS, rfl⟩
+      have hRbS : S ∈ Rb := (Finset.mem_filter.mp hS).1
+      -- `S` fixes `i`, so `Subcube.unfix` may be applied.
+      have hiS : i ∈ S.idx := by
+        have hp := (Finset.mem_filter.mp hS).2
+        by_cases h : i ∈ S.idx
+        · exact h
+        · have : (if h : i ∈ S.idx then S.val i h = b else False) := hp
+          simp [h] at this
+      have hmonoS := hmono S hRbS g hg
+      have hinsg : coordSensitivity g i = 0 := hins g hg
+      -- Use the single-function unfix lemma.
+      exact Subcube.monochromaticFor_unfix_of_insensitive
+        (f := g) (R := S) (i := i) hinsg hiS hmonoS
+  · -- Coverage mirrors the family-level version.
+    intro f hf x hxi hx
+    obtain ⟨R, hR, hxR⟩ := hcov f hf x hxi hx
+    by_cases hiR : i ∈ R.idx
+    · have hval : R.val i hiR = b := by
+        have := hxR i hiR; simpa [hxi] using this.symm
+      have hS1 : R ∈ S1 := by
+        refine Finset.mem_filter.mpr ?_
+        exact ⟨hR, by simp [hiR, hval]⟩
+      refine ⟨Subcube.unfix R i, ?_, ?_⟩
+      · refine Finset.mem_union.mpr ?_
+        refine Or.inr ?_
+        exact Finset.mem_image.mpr ⟨R, hS1, rfl⟩
+      · exact Subcube.mem_unfix_of_mem (i := i) (R := R) hxR
+    · have hS0 : R ∈ S0 := by
+        refine Finset.mem_filter.mpr ⟨hR, ?_⟩; exact hiR
+      refine ⟨R, ?_, hxR⟩
+      exact Finset.mem_union.mpr (Or.inl hS0)
+  · -- All rectangles in the result avoid `i`.
+    intro R hR
+    rcases Finset.mem_union.mp hR with hS0 | hS1
+    · exact (Finset.mem_filter.mp hS0).2
+    · rcases Finset.mem_image.mp hS1 with ⟨S, hS, rfl⟩
+      simpa using Subcube.idx_unfix (R := S) (i := i)
+  · -- Cardinality does not increase (same argument as before).
+    have hcard_union : Rb'.card ≤ S0.card + (S1.image (fun R => Subcube.unfix R i)).card :=
+      Finset.card_union_le (s := S0) (t := S1.image (fun R => Subcube.unfix R i))
+    have hcard_image : (S1.image (fun R => Subcube.unfix R i)).card ≤ S1.card :=
+      Finset.card_image_le (s := S1) (f := fun R => Subcube.unfix R i)
+    have hcard₁ : Rb'.card ≤ S0.card + S1.card :=
+      hcard_union.trans (by exact add_le_add_left hcard_image _)
+    have hsubset : S0 ∪ S1 ⊆ Rb := by
+      intro R hR; rcases Finset.mem_union.mp hR with hR0 | hR1
+      · exact (Finset.mem_filter.mp hR0).1
+      · exact (Finset.mem_filter.mp hR1).1
+    have hdis : Disjoint S0 S1 := by
+      refine Finset.disjoint_left.mpr ?_
+      intro R hR0 hR1
+      have hi0 : i ∉ R.idx := (Finset.mem_filter.mp hR0).2
+      have hi1' := (Finset.mem_filter.mp hR1).2
+      have hi1 : i ∈ R.idx := by
+        by_cases h : i ∈ R.idx
+        · exact h
+        · have : (if h : i ∈ R.idx then R.val i h = b else False) := hi1'
+          simp [h] at this
+      exact False.elim (hi0 hi1)
+    have hcard_subset : (S0 ∪ S1).card ≤ Rb.card :=
+      Finset.card_le_card hsubset
+    have hcard_union_eq : (S0 ∪ S1).card = S0.card + S1.card :=
+      Finset.card_union_of_disjoint hdis
+    have hbound : S0.card + S1.card ≤ Rb.card := by
+      simpa [hcard_union_eq] using hcard_subset
+    exact hcard₁.trans hbound
 
 /--
 If two collections of subcubes cover all `1`-inputs of the restricted families
@@ -922,10 +1074,11 @@ with proofs of monochromaticity, coverage, and cardinality bounds.
 -/
 noncomputable def buildCoverLex3
     (F : Family n) (A : Finset (Fin n)) (s h : ℕ)
-    [Fintype (Point n)]
+    [Fintype (Point n)] [Fintype (Subcube n)]
     (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
     (_hEnt  : measure F ≤ h)
-    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
+    (hn : 0 < n) (hcard : n ≤ 5 * h) :
     Finset (Subcube n) :=
 by
   classical
@@ -951,10 +1104,29 @@ by
   -- No coordinates left to branch on.
   by_cases hAempty : A = ∅
   ·
-    -- Fall back to the entropy-based cover when no branching choices remain.
-    have hH2 : H₂ F ≤ (h : ℝ) :=
-      H₂_le_of_measure_le (F := F) (h := h) hEnt
-    exact entropyCover (F := F) (h := h) hH2
+    -- With no coordinates left to branch on, resort to the entropy bound.
+    have hμ : measure F ≤ h := hEnt
+    -- Establish the coarse combinatorial estimate on the number of subcubes.
+    have hM : Fintype.card (Boolcube.Subcube n) ≤ Cover2.mBound n h := by
+      exact Cover2.card_subcube_le_mBound (n := n) (h := h) hn hcard
+    classical
+    -- Convert the returned cubes from the `Boolcube` representation to the
+    -- legacy `BoolFunc.Subcube` used in the rest of this file.
+    let toLegacy : Boolcube.Subcube n → Subcube n :=
+      fun C =>
+        { idx := C.support,
+          val :=
+            by
+              intro i hi
+              -- Membership in `C.support` guarantees that `C.fix i = some b`.
+              have hsome : (C.fix i).isSome := by
+                have := (Finset.mem_filter.mp hi).2
+                simpa [Boolcube.Subcube.support] using this
+              -- Extract the frozen Boolean value on coordinate `i`.
+              exact Option.get (C.fix i) hsome }
+    -- Obtain the cover from the entropy bound and convert each rectangle.
+    have hexists := entropyCover (F := F) (h := h) hμ hM
+    exact hexists.choose.image toLegacy
   -- Recursive step: either drop a trivially false function or branch on a
   -- sensitive coordinate.
   by_cases hallTrue : ∀ f ∈ F, ∃ x, f x = true

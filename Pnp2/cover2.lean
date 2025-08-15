@@ -4,7 +4,6 @@ import Pnp2.sunflower
 import Pnp2.Agreement
 import Pnp2.BoolFunc.Support
 import Pnp2.Sunflower.RSpread
-import Pnp2.low_sensitivity_cover
 import Pnp2.Boolcube
 import Pnp2.Cover.SubcubeAdapters -- subcube conversion utilities
 import Pnp2.Cover.Bounds -- numeric bounds for the cover construction

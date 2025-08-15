@@ -371,9 +371,31 @@ lemma Subcube.monochromaticForFamily_unfix_of_insensitive {n : ℕ}
           · simp [hxb, hrb]
           · have : x i = R.val i hi := by simp [hxb, hrb]
             exact (hxi this).elim
-      have := hins' x
+  have := hins' x
       simpa [x', hxflip] using this
   exact hxswap.trans hxval
+
+/--
+Extending a monochromatic subcube along a fixed coordinate preserves
+monochromaticity for the original function.  If a subcube `R` is
+monochromatic for the restricted function `f.restrictCoord i b` and does not
+already fix the coordinate `i`, then the extension that additionally fixes
+`i := b` remains monochromatic for `f`.
+-/
+lemma Subcube.monochromaticFor_extend_restrict {f : BFunc n} {R : Subcube n}
+    {i : Fin n} {b : Bool} (hi : i ∉ R.idx)
+    (hmono : Subcube.monochromaticFor R (BFunc.restrictCoord f i b)) :
+    Subcube.monochromaticFor (Subcube.extend R i b) f := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro x hx
+  have hx' : R.mem x := (Subcube.mem_extend_iff (R := R) (i := i) (b := b)
+      (x := x) hi).1 hx |>.2
+  have hxi : x i = b := (Subcube.mem_extend_iff (R := R) (i := i) (b := b)
+      (x := x) hi).1 hx |>.1
+  have hrestrict : (BFunc.restrictCoord f i b) x = c := hc hx'
+  simpa [BFunc.restrictCoord, hxi] using hrestrict
 
 /--
 If a Boolean function `f` does not depend on coordinate `i` and a subcube `R`

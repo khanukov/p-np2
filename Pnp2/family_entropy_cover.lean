@@ -1,6 +1,7 @@
 import Pnp2.Boolcube
 import Pnp2.cover2
 import Pnp2.Cover.Canonical
+import Pnp2.entropy
 
 namespace Boolcube
 
@@ -42,7 +43,7 @@ structure FamilyCover {n : ℕ} (F : Family n) (h : ℕ) where
   /-- Every `1`-input of every function is contained in some rectangle. -/
   covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ rects, x ∈ₛ C
   /-- Cardinality bound exposed via the explicit quantity `mBound`. -/
-  bound   : rects.card ≤ mBound n h
+  bound   : rects.card ≤ Cover2.mBound n h
 
 /--
 `familyEntropyCover` packages the canonical cover produced by `coverFamily` into
@@ -53,7 +54,7 @@ interface for downstream modules.
 noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ}
     (hH : H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (hM : Fintype.card (Subcube n) ≤ Cover2.mBound n h) :
     FamilyCover F h := by
   classical
   refine
@@ -78,7 +79,7 @@ underlying cover used elsewhere in the development.
 @[simp] lemma familyEntropyCover_rects_eq_coverFamily
     {n : ℕ} (F : Family n) {h : ℕ}
     (hH : H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (hM : Fintype.card (Subcube n) ≤ Cover2.mBound n h) :
     (familyEntropyCover (F := F) (h := h) hH hM).rects
       = Cover2.coverFamily (F := F) (h := h) hH := by
   simp [familyEntropyCover]
@@ -95,16 +96,16 @@ subcube is monochromatic for every function in `F`, and together they cover all
 -/
 lemma entropyCover {n : ℕ} (F : Family n) {h : ℕ} :
     BoolFunc.measure F ≤ h →
-    Fintype.card (Subcube n) ≤ mBound n h →
+    Fintype.card (Subcube n) ≤ Cover2.mBound n h →
     ∃ R : Finset (Subcube n),
       (∀ C ∈ R, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ R, x ∈ₛ C) ∧
-      R.card ≤ mBound n h := by
+      R.card ≤ Cover2.mBound n h := by
   intro hμ hM
   classical
   -- Translate the measure bound into a real entropy bound.
   have hH : BoolFunc.H₂ F ≤ (h : ℝ) :=
-    H₂_le_of_measure_le (F := F) (h := h) hμ
+    BoolFunc.H₂_le_of_measure_le (F := F) (h := h) hμ
   -- Package the canonical cover with all required properties.
   let FC := familyEntropyCover (F := F) (h := h) hH hM
   exact ⟨FC.rects, FC.mono, FC.covers, FC.bound⟩

@@ -62,63 +62,6 @@ of how sensitivity behaves under restrictions.  This development has not yet
 been formalised, so `decisionTree_cover` remains an axiom providing the intended
 statement. -/
 
-/-- Trivial base case: if all functions in the family are constant on the full
-cube, we can cover all ones with just that cube.  This lemma acts as a base case
-for the eventual recursive construction of `decisionTree_cover`. -/
-lemma decisionTree_cover_of_constant
-  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-  (hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  rcases hconst with ⟨b, hb⟩
-  -- The full cube represented as a subcube.
-  let R : Subcube n :=
-    { idx := ∅,
-      val := by
-        intro i hi
-        exact False.elim <| Finset.notMem_empty _ hi }
-  have hmem : ∀ x : Point n, x ∈ₛ R := by
-    intro x i hi; cases hi
-  have hmono : Subcube.monochromaticForFamily R F := by
-    refine ⟨b, ?_⟩
-    intro f hf x hx
-    simpa using hb f hf x
-  refine ⟨{R}, ?_, ?_, ?_⟩
-  · intro R' hR'
-    have hR : R' = R := by simpa using Finset.mem_singleton.mp hR'
-    simpa [hR] using hmono
-  · intro f hf x hx
-    refine ⟨R, by simp, ?_⟩
-    simpa using hmem x
-  · have hcard : ({R} : Finset (Subcube n)).card = 1 := by simp
-    have hpos : 0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-      pow_pos (by decide) _
-    have : 1 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-      Nat.succ_le_of_lt hpos
-    simpa [hcard] using this
-
-/--
-  Degenerate base case: the empty family has no `1`-inputs to cover.
-  Returning the empty set of rectangles trivially satisfies the
-  monochromaticity and coverage requirements.
--/
-lemma decisionTree_cover_empty
-  {n s : Nat} [Fintype (Point n)] :
-  ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family n)) ∧
-    (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  refine ⟨∅, ?_, ?_, ?_⟩
-  · intro R hR; cases hR
-  · intro f hf; cases hf
-  · have : 0 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-      Nat.zero_le _
-    exact this
-
 /-!
 Integrate the explicit decision tree with the cover construction.
 If a tree has monochromatic leaves for `F` and covers every `1`-input,
@@ -842,6 +785,53 @@ noncomputable def glue_branch_covers (F : Family n) (i : Fin n)
       , card_le := le_trans glued.card_le hsum }
 
 /--
+Build a `CoverRes` for the empty family.  With no functions present there are
+no `1`-inputs to cover, so the empty set of rectangles suffices.
+-/
+noncomputable def CoverRes.empty (n : ℕ) :
+    CoverRes (F := (∅ : Family n)) 0 := by
+  classical
+  refine
+    { rects := ∅
+      , mono := ?_
+      , covers := ?_
+      , card_le := by simp }
+  · intro R hR; cases hR
+  · intro f hf; cases hf
+
+/--
+Build a `CoverRes` for a constant family: the full cube is the sole rectangle.
+Every function in `F` evaluates to the same Boolean `b` on all inputs, so that
+rectangle trivially covers all `1`-inputs and is monochromatic for the family.
+-/
+noncomputable def CoverRes.const (F : Family n) (b : Bool)
+    (hconst : ∀ f ∈ F, ∀ x, f x = b) :
+    CoverRes (F := F) 1 := by
+  classical
+  -- The full cube as a subcube with no fixed coordinates.
+  let R : Subcube n :=
+    { idx := ∅
+      , val := by
+          intro i hi
+          exact False.elim (Finset.notMem_empty _ hi) }
+  -- Membership in `R` is trivial for any point.
+  have hmem : ∀ x : Point n, x ∈ₛ R := by
+    intro x i hi; cases hi
+  refine
+    { rects := {R}
+      , mono := ?_
+      , covers := ?_
+      , card_le := by simp }
+  · intro R' hR'
+    have hR : R' = R := by simpa using Finset.mem_singleton.mp hR'
+    subst hR
+    refine ⟨b, ?_⟩
+    intro f hf x hx
+    simpa using hconst f hf x
+  · intro f hf x hx
+    exact ⟨R, by simp, hmem x⟩
+
+/--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
 The resulting tree queries the rectangles in `cover.rects` in an arbitrary
 order and returns `true` as soon as one of them matches the input.  Inputs not
@@ -1044,8 +1034,88 @@ lemma CoverRes.depth_le_coverConst {n s : ℕ} {F : Family n}
   -- This is a direct specialisation of `CoverRes.depth_le_card_mul` with
   -- `k = 2^{coverConst * s * log₂ (n+1)}`.
   simpa using
-    (CoverRes.depth_le_card_mul (n := n) (F := F)
+      (CoverRes.depth_le_card_mul (n := n) (F := F)
       (k := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) cover)
+
+/--
+Extract the underlying rectangle set from a `CoverRes`, allowing the
+cardinality bound to be relaxed from `k` to any `k' ≥ k`.  This will be
+useful when plugging a concrete cover into the final existential statement
+about low-sensitivity families.
+-/
+lemma CoverRes.as_cover {n : ℕ} {F : Family n} {k k' : ℕ}
+    (cover : CoverRes (F := F) k) (hk : k ≤ k') :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ k' := by
+  -- The rectangle set packaged in `cover` already satisfies the desired
+  -- monochromaticity and coverage properties, so it witnesses the existential
+  -- claim directly.
+  refine ⟨cover.rects, cover.mono, cover.covers, ?_⟩
+  exact le_trans cover.card_le hk
+
+/--
+Specialisation of `CoverRes.as_cover` using the global `coverConst` bound.  A
+`CoverRes` whose cardinality is already bounded by `2^{coverConst * s * log₂
+(n+1)}` immediately yields the corresponding cover statement.
+-/
+lemma CoverRes.as_cover_coverConst {n s : ℕ} {F : Family n}
+    (cover : CoverRes (F := F)
+        (Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- Here the desired bound coincides with the one stored in `cover`, so we can
+  -- reuse `CoverRes.as_cover` with `k' = k`.
+  simpa using
+    (CoverRes.as_cover (n := n) (F := F)
+      (k := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))
+      (k' := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))
+      cover le_rfl)
+
+/-- Trivial base case: if all functions in the family are constant on the full
+cube, we can cover all ones with just that cube.  This lemma acts as a base case
+for the eventual recursive construction of `decisionTree_cover`. -/
+lemma decisionTree_cover_of_constant
+  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
+  (hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Package the full-cube cover using `CoverRes.const` and expose its fields.
+  rcases hconst with ⟨b, hb⟩
+  let cover := CoverRes.const (F := F) (b := b) hb
+  refine ⟨cover.rects, cover.mono, cover.covers, ?_⟩
+  -- The cover contains a single rectangle; compare it against the exponential bound.
+  have hpow : 1 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    have hpos : 0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
+      pow_pos (by decide) _
+    exact Nat.succ_le_of_lt hpos
+  have hcard : cover.rects.card ≤ 1 := cover.card_le
+  exact le_trans hcard hpow
+
+/--
+  Degenerate base case: the empty family has no `1`-inputs to cover.
+  Returning the empty set of rectangles trivially satisfies the
+  monochromaticity and coverage requirements.
+-/
+lemma decisionTree_cover_empty
+  {n s : Nat} [Fintype (Point n)] :
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family n)) ∧
+    (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Invoke the generic empty cover and unpack its fields.
+  let cover := CoverRes.empty (n := n)
+  refine ⟨cover.rects, cover.mono, cover.covers, ?_⟩
+  have hpow : 0 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
+    Nat.zero_le _
+  exact le_trans cover.card_le hpow
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

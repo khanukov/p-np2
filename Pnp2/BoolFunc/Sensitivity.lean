@@ -164,14 +164,29 @@ lemma coordSensitivity_restrict_eq_zero (f : BFunc n) (i j : Fin n) (b : Bool)
     subst hji
     have hzero := coordSensitivity_restrict_self_zero (f := f) (i := j) (b := b)
     simpa using hzero
-  · apply (coordSensitivity_eq_zero_iff
-        (f := f.restrictCoord i b) (i := j)).2
+  ·
+    apply (coordSensitivity_eq_zero_iff
+      (f := f.restrictCoord i b) (i := j)).2
     intro x
     have hx := h' (Point.update x i b)
     have hx' : f (Point.update x i b) =
         f (Point.update (Point.update x j (!x j)) i b) := by
       simpa [Point.update, hji] using hx
     simpa [BFunc.restrictCoord] using hx'
+
+/--
+Fixing a coordinate across an entire family renders that coordinate
+insensitive for every restricted function.  Each member of
+`F.restrict i b` is obtained by fixing `i := b` in some original
+function, and therefore has zero sensitivity on `i` itself.
+-/
+lemma coordSensitivity_family_restrict_self_zero (F : Family n)
+    (i : Fin n) (b : Bool) :
+    ∀ g ∈ F.restrict i b, coordSensitivity g i = 0 := by
+  classical
+  intro g hg
+  rcases (Family.mem_restrict).1 hg with ⟨f, hfF, rfl⟩
+  simpa using coordSensitivity_restrict_self_zero (f := f) (i := i) (b := b)
 
 /--
 If all coordinates outside `A` are insensitive across the family `F`, then the

@@ -3,7 +3,6 @@ import Pnp2.entropy
 import Pnp2.Cover.Uncovered
 import Pnp2.Cover.Measure
 import Pnp2.Cover.Bounds
-import Pnp2.low_sensitivity_cover -- for `BoolFunc.coverConst`
 
 /-!
 This file supplies the recursive core of the covering construction.  The

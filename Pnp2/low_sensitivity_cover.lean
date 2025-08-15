@@ -2,9 +2,12 @@ import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
+import Pnp2.family_entropy_cover
 import Mathlib.Data.Finset.Card
+import Aesop
 
 open BoolFunc
+open Boolcube
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
@@ -36,12 +39,6 @@ axiom decisionTree_cover
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
 
--- Axiomatized entropy-based cover: if the collision entropy of `F` is at most
--- `h`, we may cover all `1`-inputs of `F` by at most `2^h` subcubes.
-axiom entropyCover
-  {n : Nat} (F : Family n) (h : Nat) [Fintype (Point n)]
-  (hH₂ : H₂ F ≤ (h : ℝ)) :
-  Finset (Subcube n)
 
 /-!
 The lemma states that a family of low-sensitivity Boolean functions admits a
@@ -148,12 +145,15 @@ lemma decisionTree_cover_of_tree
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →
     Subcube.monochromaticFor R f := by
+  classical
   intro h
   rcases h with ⟨b, hb⟩
   refine ⟨b, ?_⟩
   intro x hx
-  have := hb f (by simp) hx
-  simpa using this
+  -- `aesop` recognises that the desired equality is provided by `hb`.
+  have hx' : f x = b := hb f (by simp) hx
+  -- `aesop` discharges the goal from the available hypothesis.
+  aesop
 
 /--
 Refined orientation of `non_constant_family_has_sensitive_coord`.
@@ -348,6 +348,55 @@ lemma Subcube.monochromaticForFamily_unfix_of_insensitive {n : ℕ}
   have hxval : f x' = c := hc f hf (x := x') hx'
   have hins' :=
     (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 (hins f hf)
+  have hxswap : f x = f x' := by
+    by_cases hxi : x i = R.val i hi
+    · have hxEq : x' = x := by
+        funext j; by_cases hji : j = i
+        · subst hji; simp [x', Point.update, hxi]
+        · simp [x', Point.update, hji]
+      simpa [hxEq] using (rfl : f x = f x)
+    ·
+      have hxflip : R.val i hi = !x i := by
+        cases hxb : x i
+        · cases hrb : R.val i hi
+          · have : x i = R.val i hi := by simp [hxb, hrb]
+            exact (hxi this).elim
+          · simp [hxb, hrb]
+        · cases hrb : R.val i hi
+          · simp [hxb, hrb]
+          · have : x i = R.val i hi := by simp [hxb, hrb]
+            exact (hxi this).elim
+      have := hins' x
+      simpa [x', hxflip] using this
+  exact hxswap.trans hxval
+
+/--
+If a Boolean function `f` does not depend on coordinate `i` and a subcube `R`
+fixes that coordinate, removing the constraint preserves monochromaticity.  This
+is the single-function analogue of
+`Subcube.monochromaticForFamily_unfix_of_insensitive`.
+-/
+lemma Subcube.monochromaticFor_unfix_of_insensitive {n : ℕ}
+    {f : BFunc n} {R : Subcube n} {i : Fin n}
+    (hins : coordSensitivity f i = 0)
+    (hi : i ∈ R.idx)
+    (hmono : Subcube.monochromaticFor R f) :
+    Subcube.monochromaticFor (Subcube.unfix R i) f := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro x hx
+  let x' := Point.update x i (R.val i hi)
+  have hx' : x' ∈ₛ R := by
+    intro j hjR
+    by_cases hji : j = i
+    · subst hji; simp [x', Point.update]
+    · have hjmem : j ∈ R.idx.erase i := Finset.mem_erase.mpr ⟨hji, hjR⟩
+      have hxj := hx j hjmem
+      simp [Subcube.unfix, hjR, hji, x', Point.update] at hxj
+      simpa [x', Point.update, hji] using hxj
+  have hxval : f x' = c := hc (x := x') hx'
+  have hins' := (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 hins
   have hxswap : f x = f x' := by
     by_cases hxi : x i = R.val i hi
     · have hxEq : x' = x := by
@@ -922,7 +971,7 @@ with proofs of monochromaticity, coverage, and cardinality bounds.
 -/
 noncomputable def buildCoverLex3
     (F : Family n) (A : Finset (Fin n)) (s h : ℕ)
-    [Fintype (Point n)]
+    [Fintype (Point n)] [Fintype (Subcube n)]
     (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
     (_hEnt  : measure F ≤ h)
     (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
@@ -951,10 +1000,32 @@ by
   -- No coordinates left to branch on.
   by_cases hAempty : A = ∅
   ·
-    -- Fall back to the entropy-based cover when no branching choices remain.
-    have hH2 : H₂ F ≤ (h : ℝ) :=
-      H₂_le_of_measure_le (F := F) (h := h) hEnt
-    exact entropyCover (F := F) (h := h) hH2
+    -- With no coordinates left to branch on, resort to the entropy bound.
+    -- `family_entropy_cover` supplies a constructive cover whose cardinality is
+    -- controlled by `mBound`.  The required arithmetic bound on the number of
+    -- subcubes is deferred to future work.
+    have hμ : measure F ≤ h := hEnt
+    have hM : Fintype.card (Boolcube.Subcube n) ≤ Cover2.mBound n h := by
+      -- TODO: Prove a coarse inequality such as `3^n ≤ mBound n h`.
+      admit
+    classical
+    -- Convert the returned cubes from the `Boolcube` representation to the
+    -- legacy `BoolFunc.Subcube` used in the rest of this file.
+    let toLegacy : Boolcube.Subcube n → Subcube n :=
+      fun C =>
+        { idx := C.support,
+          val :=
+            by
+              intro i hi
+              -- Membership in `C.support` guarantees that `C.fix i = some b`.
+              have hsome : (C.fix i).isSome := by
+                have := (Finset.mem_filter.mp hi).2
+                simpa [Boolcube.Subcube.support] using this
+              -- Extract the frozen Boolean value on coordinate `i`.
+              exact Option.get (C.fix i) hsome }
+    -- Obtain the cover from the entropy bound and convert each rectangle.
+    have hexists := entropyCover (F := F) (h := h) hμ hM
+    exact hexists.choose.image toLegacy
   -- Recursive step: either drop a trivially false function or branch on a
   -- sensitive coordinate.
   by_cases hallTrue : ∀ f ∈ F, ∃ x, f x = true

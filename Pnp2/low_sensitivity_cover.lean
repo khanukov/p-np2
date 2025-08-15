@@ -539,6 +539,104 @@ lemma cover_normalize_branch {F_b : Family n} (i : Fin n) (b : Bool)
     exact le_trans hcard₁ hbound
 
 /--
+Pointwise variant of `cover_normalize_branch`.  Here monochromaticity is
+tracked per function in the branch family rather than for the entire family at
+once.  This formulation prepares the ground for refactoring the recursive
+cover construction to carry pointwise colour information.
+-/
+lemma cover_normalize_branch_pointwise {F_b : Family n} (i : Fin n) (b : Bool)
+    {Rb : Finset (Subcube n)}
+    (hmono : ∀ R ∈ Rb, ∀ g ∈ F_b, Subcube.monochromaticFor R g)
+    (hcov  : ∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb, x ∈ₛ R)
+    (hins  : ∀ f ∈ F_b, coordSensitivity f i = 0) :
+    ∃ Rb' : Finset (Subcube n),
+      (∀ R ∈ Rb', ∀ g ∈ F_b, Subcube.monochromaticFor R g) ∧
+      (∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb', x ∈ₛ R) ∧
+      (∀ R ∈ Rb', i ∉ R.idx) ∧
+      Rb'.card ≤ Rb.card := by
+  classical
+  -- As before, split rectangles into those already avoiding `i` and those
+  -- fixing `i = b`.
+  let S0 := Rb.filter fun R => i ∉ R.idx
+  let S1 := Rb.filter fun R => if h : i ∈ R.idx then R.val i h = b else False
+  let Rb' := S0 ∪ S1.image (fun R => Subcube.unfix R i)
+  refine ⟨Rb', ?mono, ?cov, ?hi, ?card⟩
+  · -- Pointwise monochromaticity for every rectangle in the normalised set.
+    intro R hR g hg
+    rcases Finset.mem_union.mp hR with hS0 | hS1
+    · -- `R` was untouched and already avoided `i`.
+      have hRb : R ∈ Rb := (Finset.mem_filter.mp hS0).1
+      exact hmono R hRb g hg
+    · -- `R` results from unfixing some `S` in `S1`.
+      rcases Finset.mem_image.mp hS1 with ⟨S, hS, rfl⟩
+      have hRbS : S ∈ Rb := (Finset.mem_filter.mp hS).1
+      -- `S` fixes `i`, so `Subcube.unfix` may be applied.
+      have hiS : i ∈ S.idx := by
+        have hp := (Finset.mem_filter.mp hS).2
+        by_cases h : i ∈ S.idx
+        · exact h
+        · have : (if h : i ∈ S.idx then S.val i h = b else False) := hp
+          simp [h] at this
+      have hmonoS := hmono S hRbS g hg
+      have hinsg : coordSensitivity g i = 0 := hins g hg
+      -- Use the single-function unfix lemma.
+      exact Subcube.monochromaticFor_unfix_of_insensitive
+        (f := g) (R := S) (i := i) hinsg hiS hmonoS
+  · -- Coverage mirrors the family-level version.
+    intro f hf x hxi hx
+    obtain ⟨R, hR, hxR⟩ := hcov f hf x hxi hx
+    by_cases hiR : i ∈ R.idx
+    · have hval : R.val i hiR = b := by
+        have := hxR i hiR; simpa [hxi] using this.symm
+      have hS1 : R ∈ S1 := by
+        refine Finset.mem_filter.mpr ?_
+        exact ⟨hR, by simp [hiR, hval]⟩
+      refine ⟨Subcube.unfix R i, ?_, ?_⟩
+      · refine Finset.mem_union.mpr ?_
+        refine Or.inr ?_
+        exact Finset.mem_image.mpr ⟨R, hS1, rfl⟩
+      · exact Subcube.mem_unfix_of_mem (i := i) (R := R) hxR
+    · have hS0 : R ∈ S0 := by
+        refine Finset.mem_filter.mpr ⟨hR, ?_⟩; exact hiR
+      refine ⟨R, ?_, hxR⟩
+      exact Finset.mem_union.mpr (Or.inl hS0)
+  · -- All rectangles in the result avoid `i`.
+    intro R hR
+    rcases Finset.mem_union.mp hR with hS0 | hS1
+    · exact (Finset.mem_filter.mp hS0).2
+    · rcases Finset.mem_image.mp hS1 with ⟨S, hS, rfl⟩
+      simpa using Subcube.idx_unfix (R := S) (i := i)
+  · -- Cardinality does not increase (same argument as before).
+    have hcard_union : Rb'.card ≤ S0.card + (S1.image (fun R => Subcube.unfix R i)).card :=
+      Finset.card_union_le (s := S0) (t := S1.image (fun R => Subcube.unfix R i))
+    have hcard_image : (S1.image (fun R => Subcube.unfix R i)).card ≤ S1.card :=
+      Finset.card_image_le (s := S1) (f := fun R => Subcube.unfix R i)
+    have hcard₁ : Rb'.card ≤ S0.card + S1.card :=
+      hcard_union.trans (by exact add_le_add_left hcard_image _)
+    have hsubset : S0 ∪ S1 ⊆ Rb := by
+      intro R hR; rcases Finset.mem_union.mp hR with hR0 | hR1
+      · exact (Finset.mem_filter.mp hR0).1
+      · exact (Finset.mem_filter.mp hR1).1
+    have hdis : Disjoint S0 S1 := by
+      refine Finset.disjoint_left.mpr ?_
+      intro R hR0 hR1
+      have hi0 : i ∉ R.idx := (Finset.mem_filter.mp hR0).2
+      have hi1' := (Finset.mem_filter.mp hR1).2
+      have hi1 : i ∈ R.idx := by
+        by_cases h : i ∈ R.idx
+        · exact h
+        · have : (if h : i ∈ R.idx then R.val i h = b else False) := hi1'
+          simp [h] at this
+      exact False.elim (hi0 hi1)
+    have hcard_subset : (S0 ∪ S1).card ≤ Rb.card :=
+      Finset.card_le_card hsubset
+    have hcard_union_eq : (S0 ∪ S1).card = S0.card + S1.card :=
+      Finset.card_union_of_disjoint hdis
+    have hbound : S0.card + S1.card ≤ Rb.card := by
+      simpa [hcard_union_eq] using hcard_subset
+    exact hcard₁.trans hbound
+
+/--
 If two collections of subcubes cover all `1`-inputs of the restricted families
 `F.restrict i false` and `F.restrict i true` respectively, then after extending
 each subcube with the fixed value of `i` their union covers every `1`-input of

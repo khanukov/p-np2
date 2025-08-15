@@ -2,12 +2,10 @@ import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
-import Pnp2.family_entropy_cover
 import Mathlib.Data.Finset.Card
 import Aesop
 
 open BoolFunc
-open Boolcube
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
@@ -196,6 +194,27 @@ lemma exists_sensitive_coord_true_false_in_A
     refine ⟨i, hiA, f, hfF, x', hflip, ?_⟩
     have := congrArg f hxupd
     simpa [hxupd, hfxfalse] using this
+
+/--
+If a family is non-constant yet every coordinate is insensitive and each
+function attains `true` somewhere, we reach a contradiction.  This helper
+rules out the case `A = ∅` in the recursive cover construction: once all
+coordinates are known to be insensitive, any remaining non-constant family
+would exhibit a sensitive coordinate, contradicting the hypothesis.
+-/
+lemma nonconstant_all_insensitive_false (F : Family n) [Fintype (Point n)]
+    (hconst : ¬ ∃ b, ∀ f ∈ F, ∀ x, f x = b)
+    (htrue : ∀ f ∈ F, ∃ x, f x = true)
+    (hins : ∀ j : Fin n, ∀ f ∈ F, coordSensitivity f j = 0) :
+    False := by
+  classical
+  -- A sensitive coordinate exists by non-constancy and the `true` witnesses.
+  obtain ⟨i, f, hfF, x, hx⟩ :=
+    non_constant_family_has_sensitive_coord (F := F)
+      (n := n) (hconst := hconst) (htrue := htrue)
+  -- But `hins` declares that all coordinates are insensitive, a contradiction.
+  have hzero := (coordSensitivity_eq_zero_iff (f := f) (i := i)).1 (hins i f hfF) x
+  exact hx hzero
 
 /--
 The images of two rectangle sets under extension with opposite fixed values of
@@ -1147,8 +1166,7 @@ noncomputable def buildCoverLex3
     [Fintype (Point n)] [Fintype (Subcube n)]
     (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
     (_hEnt  : measure F ≤ h)
-    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
-    (hn : 0 < n) (hcard : n ≤ 5 * h) :
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
     Finset (Subcube n) :=
 by
   classical
@@ -1171,32 +1189,6 @@ by
   -- Base case: constant family.
   by_cases hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b
   · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
-  -- No coordinates left to branch on.
-  by_cases hAempty : A = ∅
-  ·
-    -- With no coordinates left to branch on, resort to the entropy bound.
-    have hμ : measure F ≤ h := hEnt
-    -- Establish the coarse combinatorial estimate on the number of subcubes.
-    have hM : Fintype.card (Boolcube.Subcube n) ≤ Cover2.mBound n h := by
-      exact Cover2.card_subcube_le_mBound (n := n) (h := h) hn hcard
-    classical
-    -- Convert the returned cubes from the `Boolcube` representation to the
-    -- legacy `BoolFunc.Subcube` used in the rest of this file.
-    let toLegacy : Boolcube.Subcube n → Subcube n :=
-      fun C =>
-        { idx := C.support,
-          val :=
-            by
-              intro i hi
-              -- Membership in `C.support` guarantees that `C.fix i = some b`.
-              have hsome : (C.fix i).isSome := by
-                have := (Finset.mem_filter.mp hi).2
-                simpa [Boolcube.Subcube.support] using this
-              -- Extract the frozen Boolean value on coordinate `i`.
-              exact Option.get (C.fix i) hsome }
-    -- Obtain the cover from the entropy bound and convert each rectangle.
-    have hexists := entropyCover (F := F) (h := h) hμ hM
-    exact hexists.choose.image toLegacy
   -- Recursive step: either drop a trivially false function or branch on a
   -- sensitive coordinate.
   by_cases hallTrue : ∀ f ∈ F, ∃ x, f x = true

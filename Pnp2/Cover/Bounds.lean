@@ -300,3 +300,55 @@ lemma card_union_triple_mBound_succ {n h : ℕ}
 
 end Cover2
 
+namespace Cover2
+
+/-- The family of subcubes on `n` variables has cardinality `3^n`.  Each
+subcube is described by choosing, for every coordinate, either `none`
+(coordinate is free) or `some b` (coordinate fixed to `b`). -/
+lemma card_subcube (n : ℕ) :
+    Fintype.card (Boolcube.Subcube n) = 3 ^ n := by
+  classical
+  -- Equip `Subcube n` with the obvious equivalence to functions `Fin n → Option Bool`.
+  let e : Boolcube.Subcube n ≃ (Fin n → Option Bool) :=
+    { toFun := fun C => C.fix,
+      invFun := fun f => ⟨f⟩,
+      left_inv := by intro C; cases C; rfl,
+      right_inv := by intro f; rfl }
+  have hcard := Fintype.card_congr e
+  have hpow : Fintype.card (Fin n → Option Bool) = 3 ^ n := by
+    classical
+    simpa [Fintype.card_fin, Fintype.card_option] using
+      Fintype.card_fun (Fin n) (Option Bool)
+  simpa [hpow] using hcard
+
+/-- A coarse arithmetic bound showing that the total number of subcubes is
+dominated by `mBound` once the entropy budget `h` grows linearly with the
+dimension.  The factor `5` is deliberately slack to keep the argument simple. -/
+lemma card_subcube_le_mBound {n h : ℕ}
+    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    Fintype.card (Boolcube.Subcube n) ≤ mBound n h := by
+  classical
+  -- Rewrite the cardinality via the explicit formula `3^n`.
+  have hcard := card_subcube (n := n)
+  -- `3^n ≤ 4^n = 2^(2*n)` since `3 ≤ 4`.
+  have h3le4 : (3 : ℕ) ≤ 4 := by decide
+  have hpow1 : 3 ^ n ≤ 4 ^ n := Nat.pow_le_pow_left h3le4 n
+  -- Rewrite `4^n` as `2^(2*n)` using `pow_mul`.
+  have h4 : 4 ^ n = 2 ^ (2 * n) := by
+    have : (4 : ℕ) = 2 ^ 2 := by decide
+    simpa [this, Nat.mul_comm] using (pow_mul (2 : ℕ) 2 n).symm
+  have hpow1' : 3 ^ n ≤ 2 ^ (2 * n) := by simpa [h4] using hpow1
+  -- Relate the exponents `2*n` and `10*h` using the assumption `n ≤ 5*h`.
+  have hineq : 2 * n ≤ 10 * h := by
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+      Nat.mul_le_mul_left 2 hlarge
+  have hpow2 : 2 ^ (2 * n) ≤ 2 ^ (10 * h) :=
+    Nat.pow_le_pow_right (by decide : 1 ≤ 2) hineq
+  have hpow : 3 ^ n ≤ 2 ^ (10 * h) := hpow1'.trans hpow2
+  -- Finally invoke the generic bound `2^(10*h) ≤ mBound n h`.
+  have hmb : 2 ^ (10 * h) ≤ mBound n h := pow_le_mBound (n := n) (h := h) hn
+  have hfinal : 3 ^ n ≤ mBound n h := hpow.trans hmb
+  simpa [hcard] using hfinal
+
+end Cover2
+

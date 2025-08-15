@@ -28,6 +28,7 @@ lean_lib Tests where
     `Pnp2Tests,
     `SatCoverTest,
     `CoverComputeTest,
+    `CoverResBaseTest,
     `SunflowerTest
   ]
   srcDir := "test"

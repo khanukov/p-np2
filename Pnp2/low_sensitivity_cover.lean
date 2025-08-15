@@ -30,14 +30,19 @@ def coverConst : Nat := 10
 -- Each leaf of that tree corresponds to a rectangular subcube on which all
 -- functions agree.  The number of such subcubes is therefore bounded by an
 -- exponential in `s * log₂ (n + 1)`.  We assume this theorem as an axiom in
--- the current development.
-axiom decisionTree_cover
+-- Once the full recursive construction is in place, the following statement
+-- will no longer require an axiom.  We keep it as a theorem with an admitted
+-- proof so that downstream developments can rely on the intended interface.
+theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
   ∃ Rset : Finset (Subcube n),
     (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- The constructive proof is still under development.
+  admit
 
 
 /-!

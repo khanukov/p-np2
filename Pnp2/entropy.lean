@@ -579,6 +579,100 @@ lemma measureLex3Rel_wf : WellFounded measureLex3Rel :=
   (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).wf
 
 /--
+If the two-component lexicographic measure drops, then the
+three-component measure also decreases, regardless of the dimension
+component.  This lemma allows us to lift measure decreases proved for
+`measureLex` to the extended measure `measureLex3`.
+-/
+lemma measureLex3Rel_of_measureLex {n : ℕ} {F G : Family n}
+    {A B : Finset (Fin n)}
+    (h : measureLexRel (measureLex F) (measureLex G)) :
+    measureLex3Rel (measureLex3 F A) (measureLex3 G B) := by
+  -- The relation on triples prioritises the first pair.  A strict drop in
+  -- that pair therefore yields a lexicographic decrease for the whole
+  -- triple, irrespective of the third component.
+  dsimp [measureLex3, measureLex3Rel]
+  exact Prod.Lex.left _ _ h
+
+/--
+If two distinct functions from `F` collapse to the same function after
+restricting a coordinate, the three-component lexicographic measure
+strictly decreases on that branch.  This is a direct lift of
+`measureLex_restrict_lt_of_restrict_eq` to `measureLex3`.
+-/
+lemma measureLex3_restrict_lt_of_restrict_eq {n : ℕ} (F : Family n)
+    (A : Finset (Fin n)) {i : Fin n} {b : Bool}
+    {f g : BFunc n} (hf : f ∈ F) (hg : g ∈ F) (hfg : f ≠ g)
+    (heq : BFunc.restrictCoord f i b = BFunc.restrictCoord g i b) :
+    measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+      (measureLex3 F A) := by
+  -- First obtain the decrease for the two-component measure and then lift it
+  -- to `measureLex3`.
+  have h :=
+    measureLex_restrict_lt_of_restrict_eq (F := F) (i := i) (b := b)
+      (f := f) (g := g) hf hg hfg heq
+  exact
+    measureLex3Rel_of_measureLex (F := F.restrict i b) (G := F)
+      (A := A.erase i) (B := A) h
+
+/--
+If restricting on a coordinate leaves at most half of the functions in the
+family, the three-component measure drops strictly on that branch.  This is a
+`measureLex3` version of `measureLex_restrict_lt_of_card_le_half`.
+-/
+lemma measureLex3_restrict_lt_of_card_le_half {n : ℕ} (F : Family n)
+    (A : Finset (Fin n)) (i : Fin n) (b : Bool)
+    (hpos : 0 < (F.restrict i b).card)
+    (hhalf : 2 * (F.restrict i b).card ≤ F.card) :
+    measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+      (measureLex3 F A) := by
+  -- Apply the two-component lemma and lift the result.
+  have h :=
+    measureLex_restrict_lt_of_card_le_half (F := F) (i := i) (b := b)
+      (hpos := hpos) (hhalf := hhalf)
+  exact
+    measureLex3Rel_of_measureLex (F := F.restrict i b) (G := F)
+      (A := A.erase i) (B := A) h
+
+/--
+Existential form of `measureLex3_restrict_lt_of_card_le_half`.  Given a
+witness branch where the restricted family is at most half of the original,
+we obtain a corresponding decrease of the three-component measure.
+-/
+lemma exists_branch_measureLex3_smaller_of_half {n : ℕ} (F : Family n)
+    (A : Finset (Fin n)) (i : Fin n)
+    (h : ∃ b : Bool,
+      0 < (F.restrict i b).card ∧ 2 * (F.restrict i b).card ≤ F.card) :
+    ∃ b : Bool,
+      measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+        (measureLex3 F A) := by
+  classical
+  rcases exists_branch_lex_smaller_of_half (F := F) (i := i) h with ⟨b, hb⟩
+  exact
+    ⟨b,
+      measureLex3Rel_of_measureLex (F := F.restrict i b) (G := F)
+        (A := A.erase i) (B := A) hb⟩
+
+/--
+Existential form of `measureLex3_restrict_lt_of_restrict_eq`.  If two members
+of the family merge after restricting a coordinate, there exists a Boolean
+branch where the three-component measure decreases.
+-/
+lemma exists_branch_measureLex3_smaller_of_merge {n : ℕ} (F : Family n)
+    (A : Finset (Fin n)) (i : Fin n)
+    (h : ∃ f ∈ F, ∃ g ∈ F, f ≠ g ∧ ∃ b : Bool,
+      BFunc.restrictCoord f i b = BFunc.restrictCoord g i b) :
+    ∃ b : Bool,
+      measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+        (measureLex3 F A) := by
+  classical
+  rcases exists_branch_lex_smaller_of_merge (F := F) (i := i) h with ⟨b, hb⟩
+  exact
+    ⟨b,
+      measureLex3Rel_of_measureLex (F := F.restrict i b) (G := F)
+        (A := A.erase i) (B := A) hb⟩
+
+/--
 Restricting a family along a coordinate from the available set strictly
 decreases the three-component measure because the set of available coordinates
 shrinks.  The entropy and cardinality components may stay the same, but the
@@ -707,5 +801,20 @@ lemma measureLex3_erase_lt {n : ℕ} (F : Family n) (A : Finset (Fin n))
       measureLexRel_of_measure_eq_card_lt (F := Finset.erase F f) (G := F)
         hμeq hc
     exact Prod.Lex.left _ _ hx
+
+/--
+If the family contains a function that is everywhere `false`, erasing that
+function strictly decreases the three-component measure `measureLex3`.  This
+lemma packages `measureLex3_erase_lt` in an existential form convenient for
+recursive constructions that peel off constantly `false` functions before
+branching on a sensitive coordinate.-/
+lemma exists_measureLex3_drop_const_false {n : ℕ} (F : Family n)
+    (A : Finset (Fin n))
+    (h : ∃ f ∈ F, ∀ x, f x = false) :
+    ∃ f ∈ F,
+      measureLex3Rel (measureLex3 (Finset.erase F f) A) (measureLex3 F A) := by
+  classical
+  rcases h with ⟨f, hfF, hfconst⟩
+  exact ⟨f, hfF, measureLex3_erase_lt (F := F) (A := A) (f := f) hfF⟩
 
 end BoolFunc

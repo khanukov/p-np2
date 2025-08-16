@@ -218,6 +218,32 @@ example : True := by
         (x := fun _ : Fin 1 => true) (by simp))
   exact trivial
 
+/-- `buildCoverLex3` first erases constantly `false` functions before
+constructing the pointwise cover.  The remaining functions are covered as in
+the base case. -/
+example : True := by
+  classical
+  -- One constantly `false` function and one sensitive identity function.
+  let f₀ : BFunc 1 := fun _ => false
+  let f₁ : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f₀, f₁}
+  have hn : 0 < 1 := by decide
+  have hbase : (1 : ℕ) ≤ 5 * 1 := by decide
+  -- Build the cover; the `false` function is discarded internally.
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hbase
+  have hf₁F : f₁ ∈ F := by simp [F]
+  -- Evaluate on the `true` input; the decision tree should return `true`.
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := F)
+            (k := Cover2.mBound 1 1) cover (f := f₁) hf₁F)
+          (fun _ : Fin 1 => true) = true := by
+    simpa [f₁] using
+      (CoverResP.eval_true (n := 1) (F := F)
+        (k := Cover2.mBound 1 1) (cover := cover) (f := f₁) hf₁F
+        (x := fun _ : Fin 1 => true) (by simp [f₁]))
+  exact trivial
+
 /-- Lifting a cover after reintroducing a constantly `false` function. -/
 example : True := by
   classical
@@ -310,4 +336,49 @@ example : True := by
       (CoverResP.eval_true (n := 1) (F := F) (k := 2)
         (cover := cover) (f := f) hfF
         (x := fun _ : Fin 1 => true) (by simp [f]))
+  exact trivial
+/-- Building a cover via `buildCoverLex3` in the base case `n ≤ 5*h`. -/
+example : True := by
+  classical
+  -- Single sensitive function on one bit.
+  let f : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f}
+  -- `buildCoverLex3` requires a positive dimension and the inequality `n ≤ 5*h`.
+  have hn : 0 < 1 := by decide
+  have hbase : (1 : ℕ) ≤ 5 * 1 := by decide
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hbase
+  -- Evaluate the resulting decision tree on the `true` input.
+  have hfF : f ∈ F := by simp [F]
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := F)
+            (k := Cover2.mBound 1 1) cover (f := f) hfF)
+          (fun _ : Fin 1 => true) = true := by
+    simpa [f] using
+      (CoverResP.eval_true (n := 1) (F := F)
+        (k := Cover2.mBound 1 1) (cover := cover) (f := f) hfF
+        (x := fun _ : Fin 1 => true) (by simp [f]))
+  exact trivial
+
+/-- Even in the degenerate family `{id, not}`, restricting along the sensitive
+coordinate decreases the three-component measure `measureLex3`. -/
+example : True := by
+  classical
+  -- Two opposing functions on one bit.
+  let f_id  : BFunc 1 := fun x => x 0
+  let f_not : BFunc 1 := fun x => !x 0
+  let F : Family 1 := {f_id, f_not}
+  -- Coordinate `0` is sensitive for this family.
+  have hsens : sensitiveCoord F (0 : Fin 1) := by
+    refine ⟨f_id, by simp [F, f_id], ?_⟩
+    refine ⟨fun _ => false, ?_⟩
+    simp [f_id]
+  -- Instantiate the existential lemma on the singleton set `{0}`.
+  have hA : (0 : Fin 1) ∈ ({0} : Finset (Fin 1)) := by simp
+  have h := exists_branch_measure_drop_of_sensitive (F := F)
+      (A := ({0} : Finset (Fin 1))) ⟨0, hA, hsens⟩
+  -- Extract the witness and confirm measure drop for both branches.
+  obtain ⟨i, hi, hdrop⟩ := h
+  have _ := hdrop false
+  have _ := hdrop true
   exact trivial

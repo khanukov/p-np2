@@ -969,6 +969,76 @@ noncomputable def CoverResP.const (F : Family n) (b : Bool)
     exact ⟨R, by simp, hmem x⟩
 
 /--
+Exhaustive cover obtained by listing all points of the Boolean cube as
+zero‑dimensional subcubes.  This serves as the base case for the recursive
+construction when the dimension `n` is sufficiently small compared to the
+entropy budget `h`.  Every rectangle is a singleton cube and hence
+monochromatic for each function individually.  The cardinality bound follows
+from `card_subcube_le_mBound`.
+-/
+noncomputable def CoverResP.pointCover (F : Family n) (h : ℕ)
+    (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    CoverResP (F := F) (k := Cover2.mBound n h) := by
+  classical
+  refine
+    { rects := (Finset.univ : Finset (Point n)).image
+        (fun x : Point n =>
+          { idx := Finset.univ
+            , val := fun i _ => x i })
+      , monoPw := ?_
+      , covers := ?_
+      , card_le := ?_ }
+  · intro f hf R hR
+    rcases Finset.mem_image.mp hR with ⟨x, -, rfl⟩
+    refine ⟨f x, ?_⟩
+    intro y hy
+    -- Membership in the fully frozen cube forces equality with `x`.
+    have hxy : y = x := by
+      funext i
+      have := hy i (by simp)
+      simpa using this
+    simpa [hxy]
+  · intro f hf x hx
+    refine ⟨{ idx := Finset.univ, val := fun i _ => x i }, ?_, ?_⟩
+    · refine Finset.mem_image.mpr ?_
+      exact ⟨x, by simp, rfl⟩
+    · -- The point `x` satisfies all fixed coordinates of its cube.
+      intro i hi; simp
+  · -- Cardinality bound: first bound the number of point subcubes by the
+    -- number of points `2^n`, then compare against the total number of
+    -- subcubes `3^n` and finally apply `card_subcube_le_mBound`.
+    have hpts :
+        ((Finset.univ : Finset (Point n)).image
+            (fun x : Point n =>
+              ({ idx := Finset.univ
+                  , val := fun i _ => x i } : Subcube n))).card
+          ≤ (Finset.univ : Finset (Point n)).card :=
+      Finset.card_image_le
+        (s := (Finset.univ : Finset (Point n)))
+        (f := fun x : Point n => ({ idx := Finset.univ, val := fun i _ => x i } : Subcube n))
+    have hpoint : (Finset.univ : Finset (Point n)).card = 2 ^ n := by
+      classical
+      simpa [Fintype.card_fun, Fintype.card_fin] using
+        (Finset.card_univ : (Finset.univ : Finset (Point n)).card = Fintype.card (Point n))
+    have hsubcube : Fintype.card (Boolcube.Subcube n) = 3 ^ n :=
+      Cover2.card_subcube (n := n)
+    have h2le3 : 2 ^ n ≤ 3 ^ n := by
+      have : (2 : ℕ) ≤ 3 := by decide
+      exact Nat.pow_le_pow_left this n
+    have hsub : Fintype.card (Boolcube.Subcube n) ≤ Cover2.mBound n h :=
+      Cover2.card_subcube_le_mBound (n := n) (h := h) hn hbase
+    -- Chain the inequalities together.
+    have hpts_le_subcube :
+        ((Finset.univ : Finset (Point n)).image
+            (fun x : Point n => ({ idx := Finset.univ, val := fun i _ => x i } : Subcube n))).card
+          ≤ Fintype.card (Boolcube.Subcube n) := by
+      -- Start from `hpts` and use `2^n ≤ 3^n` to replace points by subcubes.
+      have hpoints_le_sub :
+          (Finset.univ : Finset (Point n)).card ≤ Fintype.card (Boolcube.Subcube n) := by
+        simpa [hpoint, hsubcube] using h2le3
+      exact hpts.trans hpoints_le_sub
+    exact hpts_le_subcube.trans hsub
+/--
 Lift a cover for the subfamily obtained by erasing a constantly `false`
 function back to the original family.  Since the erased function never takes
 the value `true`, the rectangles and their cardinality bound are reused
@@ -1001,6 +1071,49 @@ noncomputable def CoverResP.lift_erase_false
     ·
       have hf' : f ∈ F.erase f₀ := Finset.mem_erase.mpr ⟨hf0, hf⟩
       exact cover'.covers f hf' x hx
+
+/--
+`buildCoverLex3` is the intended recursive cover constructor based on the
+three‑component measure `measureLex3`.  As a preparatory step we remove any
+functions that are constantly `false` by erasing them and lifting the cover
+from the smaller family.  Once no such function remains, the current
+implementation falls back to the trivial point enumeration via
+`CoverResP.pointCover`.  Sensitive branching will be incorporated in later
+iterations.
+-/
+noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
+    [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    CoverResP (F := F) (k := Cover2.mBound n h) := by
+  classical
+  by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
+  · classical
+    -- Use classical choice to select a constantly `false` function.
+    let f₀ := Classical.choose hfalse
+    have hf₀ := Classical.choose_spec hfalse
+    have hf₀F : f₀ ∈ F := hf₀.1
+    have hf₀false : ∀ x, f₀ x = false := hf₀.2
+    exact CoverResP.lift_erase_false (F := F) (f₀ := f₀)
+      (hf₀F := hf₀F) (hf₀false := hf₀false)
+      (cover' := buildCoverLex3 (F := F.erase f₀) (h := h) hn hbase)
+  · exact CoverResP.pointCover (F := F) (h := h) hn hbase
+
+termination_by F.card
+decreasing_by
+  classical
+  let f₀ := Classical.choose hfalse
+  have hf₀ := Classical.choose_spec hfalse
+  have hf₀F : f₀ ∈ F := hf₀.1
+  have hpos : 0 < F.card := Finset.card_pos.mpr ⟨f₀, hf₀F⟩
+  have hsucc : (F.erase f₀).card + 1 = F.card := by
+    have := Finset.card_erase_of_mem hf₀F
+    have hsub : F.card - 1 + 1 = F.card :=
+      Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+    simpa [this, hsub, Nat.succ_eq_add_one]
+  have hlt : (F.erase f₀).card < F.card := by
+    have := Nat.lt_succ_self (F.erase f₀).card
+    simpa [hsucc] using this
+  simpa using hlt
+
 
 /--
 Expose the underlying rectangle set of a pointwise cover, relaxing the

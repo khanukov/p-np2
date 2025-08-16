@@ -126,7 +126,7 @@ example : True := by
     simpa [h]
   have _ :
       ∃ Rset : Finset (Subcube 1),
-        (∀ R ∈ Rset, Subcube.monochromaticForFamily R constFamily) ∧
+        (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
         Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
     decisionTree_cover_of_constant (n := 1) (F := constFamily) (s := 0) hconst
@@ -137,10 +137,33 @@ example : True := by
   classical
   have _ :
       ∃ Rset : Finset (Subcube 1),
-        (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family 1)) ∧
+        (∀ f ∈ (∅ : Family 1), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ (∅ : Family 1), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
         Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
     decisionTree_cover_empty (n := 1) (s := 0)
+  exact trivial
+
+-- Direct use of `decisionTree_cover_of_coverResP` on a constant family.
+example : True := by
+  classical
+  -- Construct the trivial pointwise cover.
+  have hconst : ∀ f ∈ constFamily, ∀ x, f x = false := by
+    intro f hf x
+    have h : f = (fun (_ : Point 1) => false) := by
+      simpa [constFamily] using Finset.mem_singleton.mp hf
+    simpa [h]
+  let cover := CoverResP.const (F := constFamily) (b := false) hconst
+  have hpow : 1 ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) := by
+    have hpos : 0 < Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+      pow_pos (by decide) _
+    exact Nat.succ_le_of_lt hpos
+  have _ :
+      ∃ Rset : Finset (Subcube 1),
+        (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+    decisionTree_cover_of_coverResP (n := 1) (F := constFamily) (s := 0)
+      (cover := cover) hpow
   exact trivial
 
 -- Specialisation to a single function using `low_sensitivity_cover_single`.
@@ -165,8 +188,126 @@ example : True := by
   classical
   have _ :
       ∃ Rset : Finset (Subcube 1),
-        (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family 1)) ∧
+        (∀ f ∈ (∅ : Family 1), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ (∅ : Family 1), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
         Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
     low_sensitivity_cover_empty (n := 1) (s := 0)
+  exact trivial
+
+/-- Evaluating the decision tree produced from a pointwise cover. -/
+example : True := by
+  classical
+  -- Prepare the constant `true` family and its pointwise cover.
+  have hconst : ∀ f ∈ trueFamily, ∀ x, f x = true := by
+    intro f hf x
+    have h : f = (fun (_ : Point 1) => true) := by
+      simpa [trueFamily] using Finset.mem_singleton.mp hf
+    simpa [h]
+  let cover := CoverResP.const (F := trueFamily) (b := true) hconst
+  have hf : (fun (_ : Point 1) => true) ∈ trueFamily := by
+    simp [trueFamily]
+  -- The resulting decision tree evaluates to `true` on the all-true input.
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := trueFamily) (k := 1)
+            cover (f := fun _ : Point 1 => true) hf)
+          (fun _ : Fin 1 => true) = true := by
+    simpa using
+      (CoverResP.eval_true (n := 1) (F := trueFamily) (k := 1)
+        (cover := cover) (f := fun _ : Point 1 => true) hf
+        (x := fun _ : Fin 1 => true) (by simp))
+  exact trivial
+
+/-- Lifting a cover after reintroducing a constantly `false` function. -/
+example : True := by
+  classical
+  -- Define two Boolean functions and their family.
+  let f0 : BFunc 1 := fun _ => false
+  let f1 : BFunc 1 := fun _ => true
+  let F : Family 1 := ({f0, f1} : Finset (BFunc 1))
+  -- Witness that `f0` belongs to the family and is constantly `false`.
+  have hf0F : f0 ∈ F := by simp [F]
+  have hf0false : ∀ x : Point 1, f0 x = false := by intro x; simp [f0]
+  -- Cover the subfamily without `f0`, which reduces to the constant `true` family.
+  have hconst1 : ∀ f ∈ F.erase f0, ∀ x, f x = true := by
+    intro f hf x
+    have hfmem : f ∈ ({f1} : Finset (BFunc 1)) := by
+      -- Simplify membership in the erased family and eliminate the `f0` case.
+      have hf' := Finset.mem_erase.mp hf
+      have : f ∈ ({f0, f1} : Finset (BFunc 1)) := by
+        simpa [F] using hf'.2
+      -- Analyse membership in the two-element set.
+      have hcases := Finset.mem_insert.mp this
+      cases hcases with
+      | inl h => cases hf'.1 h
+      | inr h => exact h
+    have hf' : f = f1 := by
+      simpa using Finset.mem_singleton.mp hfmem
+    subst hf'
+    simp [f1]
+  let cover' := CoverResP.const (F := F.erase f0) (b := true) hconst1
+  -- Lift the cover back to the original family `F`.
+  let cover :=
+    CoverResP.lift_erase_false (n := 1) (F := F) (f₀ := f0) (k := 1)
+      hf0F hf0false cover'
+  -- Evaluate the resulting decision tree for the `true` function.
+  have hf1F : f1 ∈ F := by simp [F]
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := F) (k := 1)
+            cover (f := f1) hf1F)
+          (fun _ : Fin 1 => true) = true := by
+    simpa [f1] using
+      (CoverResP.eval_true (n := 1) (F := F) (k := 1)
+        (cover := cover) (f := f1) hf1F
+        (x := fun _ : Fin 1 => true) (by simp [f1]))
+  exact trivial
+
+/-- Gluing covers of the false and true branches via `glue_branch_coversPw`. -/
+example : True := by
+  classical
+  -- Define the identity function on one bit and the singleton family containing it.
+  let f : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f}
+  -- On the `false` branch the restricted function is constantly `false`.
+  have hconst0 : ∀ g ∈ F.restrict 0 false, ∀ x, g x = false := by
+    intro g hg x
+    rcases (Family.mem_restrict (F := F) (i := (0 : Fin 1)) (b := false)).1 hg with
+      ⟨f', hf', rfl⟩
+    have hf' : f' = f := by
+      simpa [F] using Finset.mem_singleton.mp hf'
+    subst hf'
+    simp [f, BFunc.restrictCoord]
+  -- Similarly, the `true` branch is constantly `true`.
+  have hconst1 : ∀ g ∈ F.restrict 0 true, ∀ x, g x = true := by
+    intro g hg x
+    rcases (Family.mem_restrict (F := F) (i := (0 : Fin 1)) (b := true)).1 hg with
+      ⟨f', hf', rfl⟩
+    have hf' : f' = f := by
+      simpa [F] using Finset.mem_singleton.mp hf'
+    subst hf'
+    simp [f, BFunc.restrictCoord]
+  -- Assemble the branch covers and glue them.
+  let cover0 :=
+    CoverResP.const (F := F.restrict 0 false) (b := false) hconst0
+  let cover1 :=
+    CoverResP.const (F := F.restrict 0 true)  (b := true)  hconst1
+  -- Functions in the restricted families are insensitive to the splitting coordinate.
+  have hins0 := coordSensitivity_family_restrict_self_zero (F := F) (i := (0 : Fin 1))
+      (b := false)
+  have hins1 := coordSensitivity_family_restrict_self_zero (F := F) (i := (0 : Fin 1))
+      (b := true)
+  let cover :=
+    glue_branch_coversPw (F := F) (i := (0 : Fin 1)) cover0 cover1 hins0 hins1
+  -- The resulting decision tree correctly recognises the `true` input.
+  have hfF : f ∈ F := by simp [F]
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := F) (k := 2)
+            cover (f := f) hfF)
+          (fun _ : Fin 1 => true) = true := by
+    simpa [f] using
+      (CoverResP.eval_true (n := 1) (F := F) (k := 2)
+        (cover := cover) (f := f) hfF
+        (x := fun _ : Fin 1 => true) (by simp [f]))
   exact trivial

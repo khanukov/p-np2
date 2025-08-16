@@ -26,17 +26,18 @@ def coverConst : Nat := 10
 -- low-sensitivity Boolean functions.  The underlying combinatorial result
 -- (due to Gopalan--Moshkovitz--Oliveira) shows that a single decision tree of
 -- depth `O(s * log n)` suffices to compute every function in the family.
--- Each leaf of that tree corresponds to a rectangular subcube on which all
--- functions agree.  The number of such subcubes is therefore bounded by an
--- exponential in `s * log₂ (n + 1)`.  We assume this theorem as an axiom in
--- Once the full recursive construction is in place, the following statement
--- will no longer require an axiom.  We keep it as a theorem with an admitted
--- proof so that downstream developments can rely on the intended interface.
+-- Each leaf of that tree corresponds to a rectangular subcube on which every
+-- function is constant (potentially with different colours).  The number of
+-- such subcubes is therefore bounded by an exponential in `s * log₂ (n + 1)`.
+-- We assume this theorem as an axiom in this development.  Once the full
+-- recursive construction is in place, the following statement will no longer
+-- require an axiom.  We keep it as a theorem with an admitted proof so that
+-- downstream developments can rely on the intended interface.
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
   ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
@@ -54,7 +55,7 @@ recursively building a decision tree:
 * Restrict every function to the chosen half of the cube and continue
   recursively until the family becomes constant on the remaining subcube.
 * Each leaf of the resulting tree corresponds to a rectangular subcube on which
-  all functions agree.
+  every function in the family is constant.
 
 Establishing the required depth bound `O(s * log n)` involves a careful analysis
 of how sensitivity behaves under restrictions.  This development has not yet
@@ -63,18 +64,19 @@ statement. -/
 
 /-!
 Integrate the explicit decision tree with the cover construction.
-If a tree has monochromatic leaves for `F` and covers every `1`-input,
-its leaf subcubes form a valid cover whose size is bounded by `2 ^ depth`.
+If a tree has leaves that are monochromatic for each function individually and
+covers every `1`-input, its leaf subcubes form a valid cover whose size is
+bounded by `2 ^ depth`.
 -/
 lemma decisionTree_cover_of_tree
   {n s : Nat} (F : Family n) (t : DecisionTree n) [Fintype (Point n)]
-  (hmono : ∀ R ∈ DecisionTree.leaves_as_subcubes t,
-      Subcube.monochromaticForFamily R F)
+  (hmono : ∀ f ∈ F, ∀ R ∈ DecisionTree.leaves_as_subcubes t,
+      Subcube.monochromaticFor R f)
   (hcov : ∀ f ∈ F, ∀ x, f x = true →
       ∃ R ∈ DecisionTree.leaves_as_subcubes t, x ∈ₛ R)
   (hdepth : DecisionTree.depth t ≤ coverConst * s * Nat.log2 (Nat.succ n)) :
   ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
@@ -86,7 +88,7 @@ lemma decisionTree_cover_of_tree
     exact le_trans hcard_le
       (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hdepth)
   refine ⟨Rset, ?_, ?_, hcard⟩
-  · intro R hR; exact hmono R hR
+  · intro f hf R hR; exact hmono f hf R hR
   · intro f hf x hx; exact hcov f hf x hx
 
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
@@ -1348,6 +1350,218 @@ lemma CoverRes.as_cover_coverConst {n s : ℕ} {F : Family n}
       (k' := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))
       cover le_rfl)
 
+/--
+Turn a pointwise cover into a decision tree for a specific function `f` in the
+family.  Each rectangle of the cover is coloured using the witness that `f` is
+constant on it, and the resulting tree searches through the rectangles in an
+arbitrary order, returning `true` as soon as one matches the input.
+-/
+noncomputable def CoverResP.toDecisionTree_for
+    {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F) :
+    DecisionTree n :=
+  -- Specialise `ofRectCover` to the singleton family `{f}`; this only requires
+  -- a monochromaticity proof for `f` on each rectangle.
+  DecisionTree.ofRectCover (n := n) false (F := ({f} : Family n)) cover.rects
+    (by
+      intro R hR
+      -- Obtain the colour of `f` on `R`.
+      rcases cover.monoPw f hf R hR with ⟨b, hb⟩
+      refine ⟨b, ?_⟩
+      intro g hg x hx
+      -- Any function in the singleton family must be `f` itself.
+      have : g = f := by
+        simpa [Finset.mem_singleton] using hg
+      subst this
+      -- `f` agrees with the colour `b` on every point of `R`.
+      simpa using hb hx)
+
+/--
+Evaluating the decision tree obtained from a pointwise cover yields `true` on
+every input where the designated function outputs `true`.
+-/
+lemma CoverResP.eval_true {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F)
+    {x : Point n} (hx : f x = true) :
+    DecisionTree.eval_tree
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) x = true := by
+  classical
+  -- Assemble the list of coloured rectangles used by `ofRectCover`.
+  let colored := cover.rects.attach.toList.map
+    (fun R => (Classical.choose (cover.monoPw f hf R.1 R.2), R.1))
+  -- Prove that every rectangle containing `x` is coloured `true`.
+  have hall : ∀ p ∈ colored, Subcube.mem p.2 x → p.1 = true := by
+    intro p hp hxR
+    -- Extract the source rectangle `R` from the mapped list.
+    rcases List.mem_map.1 hp with ⟨r, hr, hpair⟩
+    rcases r with ⟨R, hR⟩
+    -- Identify the colour of the rectangle.
+    have hb : Classical.choose (cover.monoPw f hf R hR) = p.1 := by
+      simpa [Prod.ext_iff] using congrArg Prod.fst hpair
+    have hRe : R = p.2 := by
+      simpa [Prod.ext_iff] using congrArg Prod.snd hpair
+    -- On rectangle `R` the function `f` agrees with the chosen colour.
+    have hmono := cover.monoPw f hf R hR
+    have hxR' : Subcube.mem R x := by simpa [hRe] using hxR
+    have hbval := (Classical.choose_spec hmono) hxR'
+    subst hRe
+    have hbtrue : Classical.choose hmono = true := by
+      simpa [hbval] using hx
+    simpa [hb] using hbtrue
+  -- There exists at least one rectangle containing `x` thanks to `covers`.
+  obtain ⟨R0, hR0, hxR0⟩ := cover.covers f hf x hx
+  let p0 : Bool × Subcube n := (Classical.choose (cover.monoPw f hf R0 hR0), R0)
+  have hp0_mem : p0 ∈ colored := by
+    have hattach' :
+        (⟨R0, hR0⟩ : {R : Subcube n // R ∈ cover.rects}) ∈ cover.rects.attach := by
+      simpa using (Finset.mem_attach (s := cover.rects) hR0)
+    have hattach :
+        (⟨R0, hR0⟩ : {R : Subcube n // R ∈ cover.rects}) ∈
+            cover.rects.attach.toList := by
+      simpa using (List.mem_toList.mpr hattach')
+    exact List.mem_map.2 ⟨⟨R0, hR0⟩, hattach, rfl⟩
+  have hex : ∃ p ∈ colored, Subcube.mem p.2 x := ⟨p0, hp0_mem, hxR0⟩
+  -- Apply the generic list-based evaluation lemma.
+  simpa [CoverResP.toDecisionTree_for, DecisionTree.ofRectCover, colored]
+    using (DecisionTree.eval_ofRectCoverList_true_of_mem (n := n)
+      (default := false) (colored := colored) (x := x) hex hall)
+
+/--
+The general leaf-count bound for `DecisionTree.ofRectCover` specialises to the
+tree extracted from a pointwise cover.
+-/
+lemma CoverResP.leaf_count_le {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F) :
+    DecisionTree.leaf_count
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) ≤
+      List.foldr
+        (fun R acc => ((Subcube.toList (n := n) R.1).length.succ) * acc)
+        1 cover.rects.attach.toList := by
+  classical
+  simpa [CoverResP.toDecisionTree_for]
+    using (DecisionTree.leaf_count_ofRectCover_le (n := n) (default := false)
+      (F := ({f} : Family n)) (Rset := cover.rects)
+      (hmono := by
+        intro R hR
+        rcases cover.monoPw f hf R hR with ⟨b, hb⟩
+        refine ⟨b, ?_⟩
+        intro g hg x hx
+        have : g = f := by simpa [Finset.mem_singleton] using hg
+        subst this
+        simpa using hb hx))
+
+/--
+The depth of the tree obtained from a pointwise cover is bounded by the sum of
+the lengths of the assignment lists of its rectangles.
+-/
+lemma CoverResP.depth_le {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F) :
+    DecisionTree.depth
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) ≤
+      List.foldr
+        (fun R acc => (Subcube.toList (n := n) R.1).length + acc)
+        0 cover.rects.attach.toList := by
+  classical
+  simpa [CoverResP.toDecisionTree_for]
+    using (DecisionTree.depth_ofRectCover_le (n := n) (default := false)
+      (F := ({f} : Family n)) (Rset := cover.rects)
+      (hmono := by
+        intro R hR
+        rcases cover.monoPw f hf R hR with ⟨b, hb⟩
+        refine ⟨b, ?_⟩
+        intro g hg x hx
+        have : g = f := by simpa [Finset.mem_singleton] using hg
+        subst this
+        simpa using hb hx))
+
+/--
+The depth of the decision tree extracted from a pointwise cover is at most `n`
+times the number of rectangles in that cover.
+-/
+lemma CoverResP.depth_le_card_mul {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F) :
+    DecisionTree.depth
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) ≤ n * k := by
+  classical
+  -- Start from the generic bound involving the sum of assignment lengths.
+  have hdepth :=
+    CoverResP.depth_le (n := n) (F := F) (k := k) (cover := cover)
+      (f := f) hf
+  -- Estimate the sum by `n * cover.rects.card`.
+  have hfold :
+      List.foldr
+          (fun R acc => (Subcube.toList (n := n) R.1).length + acc) 0
+          cover.rects.attach.toList ≤ n * cover.rects.card := by
+    have :=
+      fold_length_le (n := n)
+        (P := fun R : Subcube n => R ∈ cover.rects)
+        (l := cover.rects.attach.toList)
+    -- Translate the list length of attached rectangles into the set cardinality.
+    have hlen : cover.rects.attach.toList.length = cover.rects.card := by
+      simpa using Finset.length_attach cover.rects
+    simpa [hlen] using this
+  -- Combine the inequalities and replace `cover.rects.card` by the bound `k`.
+  have hbound := le_trans hdepth hfold
+  exact le_trans hbound (Nat.mul_le_mul_left _ cover.card_le)
+
+/--
+If `k ≤ k'`, a pointwise cover bounded by `k` rectangles also yields a depth
+bound of `n * k'` for the associated decision tree.  This lemma mirrors
+`CoverRes.depth_le_of_card_le`.
+-/
+lemma CoverResP.depth_le_of_card_le {n : ℕ} {F : Family n} {k k' : ℕ}
+    (cover : CoverResP (F := F) k) (hk : k ≤ k') {f : BFunc n}
+    (hf : f ∈ F) :
+    DecisionTree.depth
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) ≤ n * k' := by
+  have := CoverResP.depth_le_card_mul (n := n) (F := F) (k := k)
+    (cover := cover) (f := f) hf
+  exact le_trans this <| Nat.mul_le_mul_left _ hk
+
+/--
+Specialised depth bound using the global `coverConst`.  If a pointwise cover is
+known to contain at most `2^{coverConst * s * log₂ (n+1)}` rectangles, then the
+depth of its associated decision tree is bounded accordingly.
+-/
+lemma CoverResP.depth_le_coverConst {n s : ℕ} {F : Family n}
+    (cover : CoverResP (F := F)
+        (Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))) {f : BFunc n}
+    (hf : f ∈ F) :
+    DecisionTree.depth
+        (CoverResP.toDecisionTree_for (n := n) (F := F)
+          (k := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))
+          cover (f := f) hf) ≤
+      n * Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- This is a direct specialisation of `CoverResP.depth_le_card_mul` with
+  -- `k = 2^{coverConst * s * log₂ (n+1)}`.
+  simpa using (CoverResP.depth_le_card_mul (n := n) (F := F)
+    (k := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)))
+    (cover := cover) (f := f) hf)
+
+/--
+Expose a pointwise cover as the existential statement used by
+`decisionTree_cover`.  Given a cover with at most `k` rectangles, any larger
+bound `k'` also suffices for the final inequality.
+-/
+lemma decisionTree_cover_of_coverResP {n s k : Nat} {F : Family n}
+    [Fintype (Point n)]
+    (cover : CoverResP (F := F) k)
+    (hk : k ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- Reveal the rectangle set and relax the cardinality bound via `CoverResP.as_cover`.
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    CoverResP.as_cover (n := n) (F := F) (k := k)
+      (k' := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) cover hk
+  exact ⟨Rset, hmono, hcov, hcard⟩
+
 /-- Trivial base case: if all functions in the family are constant on the full
 cube, we can cover all ones with just that cube.  This lemma acts as a base case
 for the eventual recursive construction of `decisionTree_cover`. -/
@@ -1355,21 +1569,20 @@ lemma decisionTree_cover_of_constant
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
   (hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b) :
   ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
-  -- Package the full-cube cover using `CoverRes.const` and expose its fields.
+  -- Package the full-cube cover and discharge the cardinality constraint.
   rcases hconst with ⟨b, hb⟩
-  let cover := CoverRes.const (F := F) (b := b) hb
-  refine ⟨cover.rects, cover.mono, cover.covers, ?_⟩
-  -- The cover contains a single rectangle; compare it against the exponential bound.
+  let cover := CoverResP.const (F := F) (b := b) hb
   have hpow : 1 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
     have hpos : 0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
       pow_pos (by decide) _
     exact Nat.succ_le_of_lt hpos
-  have hcard : cover.rects.card ≤ 1 := cover.card_le
-  exact le_trans hcard hpow
+  -- Invoke the generic wrapper to obtain the final existential cover.
+  exact decisionTree_cover_of_coverResP (n := n) (s := s)
+    (F := F) (cover := cover) hpow
 
 /--
   Degenerate base case: the empty family has no `1`-inputs to cover.
@@ -1379,16 +1592,16 @@ lemma decisionTree_cover_of_constant
 lemma decisionTree_cover_empty
   {n s : Nat} [Fintype (Point n)] :
   ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family n)) ∧
+    (∀ f ∈ (∅ : Family n), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
-  -- Invoke the generic empty cover and unpack its fields.
-  let cover := CoverRes.empty (n := n)
-  refine ⟨cover.rects, cover.mono, cover.covers, ?_⟩
+  -- Use the universal empty cover and apply the wrapper.
+  let cover := CoverResP.empty (n := n)
   have hpow : 0 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
     Nat.zero_le _
-  exact le_trans cover.card_le hpow
+  exact decisionTree_cover_of_coverResP (n := n) (s := s)
+    (F := (∅ : Family n)) (cover := cover) hpow
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity
@@ -1404,7 +1617,7 @@ lemma low_sensitivity_cover (F : Family n) (s : ℕ)
     [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
     ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticForFamily R F) ∧
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
@@ -1432,8 +1645,7 @@ lemma low_sensitivity_cover_single
     decisionTree_cover (F := ({f} : Family n)) (s := s) hfamily
   refine ⟨Rset, ?_, ?_, hcard⟩
   · intro R hR
-    have := hmono R hR
-    exact monochromaticFor_of_family_singleton this
+    simpa using hmono f (by simp) R hR
   · intro x hx
     simpa using hcov f (by simp) x hx
 
@@ -1444,7 +1656,7 @@ lemma low_sensitivity_cover_single
 lemma low_sensitivity_cover_empty (n s : ℕ)
     [Fintype (Point n)] :
   ∃ Rset : Finset (Subcube n),
-    (∀ R ∈ Rset, Subcube.monochromaticForFamily R (∅ : Family n)) ∧
+    (∀ f ∈ (∅ : Family n), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical

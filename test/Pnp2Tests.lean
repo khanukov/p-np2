@@ -152,9 +152,8 @@ that the base lemmas are usable in tests.
 -/
 example {n s : ℕ} [Fintype (Point n)] :
     ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset,
-        Subcube.monochromaticForFamily R
-          ({fun _ : Point n => true} : Family n)) ∧
+      (∀ f ∈ ({fun _ : Point n => true} : Family n),
+          ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ ({fun _ : Point n => true} : Family n),
           ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by

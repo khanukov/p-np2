@@ -2,6 +2,7 @@ import Pnp2.BoolFunc.Sensitivity
 import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
+import Pnp2.Cover.Bounds
 import Mathlib.Data.Finset.Card
 import Aesop
 
@@ -851,6 +852,99 @@ noncomputable def CoverRes.const (F : Family n) (b : Bool)
     exact ⟨R, by simp, hmem x⟩
 
 /--
+`CoverResP` relaxes `CoverRes` by requiring only
+*pointwise* monochromaticity.  Each function in the family is
+constant on every rectangle in `rects`, but different functions may
+take different constant values.  This weaker invariant is enough for
+later constructions that only query rectangles for the presence of a
+`true` function value and avoids contradictions when constantly `false`
+functions coexist with `true` ones.-/
+structure CoverResP (F : Family n) (k : ℕ) where
+  /-- Collection of rectangles forming the cover. -/
+  rects   : Finset (Subcube n)
+  /-- Every function of the family is constant on every rectangle
+      in the cover. -/
+  monoPw  : ∀ f ∈ F, ∀ R ∈ rects, Subcube.monochromaticFor R f
+  /-- Every `1`-input of every function is contained in some
+      rectangle of the cover. -/
+  covers  : ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ rects, x ∈ₛ R
+  /-- Cardinality bound on the number of rectangles. -/
+  card_le : rects.card ≤ k
+
+/--
+Trivial cover for the empty family using no rectangles.  All fields are
+discharged by empty‑set reasoning.-/
+noncomputable def CoverResP.empty (n : ℕ) :
+    CoverResP (F := (∅ : Family n)) 0 := by
+  classical
+  refine
+    { rects := ∅
+      , monoPw := ?_
+      , covers := ?_
+      , card_le := by simp }
+  · intro f hf R hR; cases hf
+  · intro f hf x hx; cases hf
+
+/--
+Cover consisting of the full cube for a family of functions all
+constant with the same Boolean `b`.-/
+noncomputable def CoverResP.const (F : Family n) (b : Bool)
+    (hconst : ∀ f ∈ F, ∀ x, f x = b) :
+    CoverResP (F := F) 1 := by
+  classical
+  -- The full cube as a subcube with no fixed coordinates.
+  let R : Subcube n :=
+    { idx := ∅
+      , val := by
+          intro i hi
+          exact False.elim (Finset.notMem_empty _ hi) }
+  have hmem : ∀ x : Point n, x ∈ₛ R := by
+    intro x i hi; cases hi
+  refine
+    { rects := {R}
+      , monoPw := ?_
+      , covers := ?_
+      , card_le := by simp }
+  · intro f hf R' hR'
+    have hR : R' = R := by simpa using Finset.mem_singleton.mp hR'
+    subst hR
+    refine ⟨b, ?_⟩
+    intro x hx
+    simpa using hconst f hf x
+  · intro f hf x hx
+    exact ⟨R, by simp, hmem x⟩
+
+/--
+Lift a cover for the subfamily obtained by erasing a constantly `false`
+function back to the original family.  The set of rectangles is preserved,
+while coverage and the cardinality bound are inherited verbatim.  The
+monochromaticity proof is postponed via `admit` as it requires an additional
+colour normalisation argument. -/
+noncomputable def CoverRes.lift_erase_false
+    {F : Family n} {f₀ : BFunc n} {k : ℕ}
+    (hf₀F : f₀ ∈ F) (hf₀false : ∀ x, f₀ x = false)
+    (cover' : CoverRes (F := F.erase f₀) k) :
+    CoverRes (F := F) k := by
+  classical
+  refine
+    { rects := cover'.rects
+      , mono := ?_
+      , covers := ?_
+      , card_le := by simpa using cover'.card_le }
+  · intro R hR
+    -- Monochromaticity requires aligning the colours of `cover'` with the
+    -- erased function `f₀`.  This technical step is deferred.
+    admit
+  · intro f hf x hx
+    have hfne : f ≠ f₀ := by
+      intro hf'
+      subst hf'
+      simpa [hf₀false x] using hx
+    have hf' : f ∈ F.erase f₀ := by
+      exact Finset.mem_erase.mpr ⟨hfne, hf⟩
+    exact cover'.covers f hf' x hx
+
+/--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
 The resulting tree queries the rectangles in `cover.rects` in an arbitrary
 order and returns `true` as soon as one of them matches the input.  Inputs not
@@ -1146,165 +1240,152 @@ structure BuildInv (s h : ℕ) (p : Family n × Finset (Fin n))
   (hEnt  : measure p.1 ≤ h)
   (hA    : ∀ j ∉ p.2, ∀ f ∈ p.1, coordSensitivity f j = 0)
 
-/--
-Recursive cover construction driven by the three-component measure
-`measureLex3`.
-
-* If some function in `F` is identically `false` we drop it and recurse on the
-  smaller family.  The lexicographic measure decreases by
-  `measureLex3_erase_lt`.
-* Otherwise a sensitive coordinate `i ∈ A` is produced by
-  `exists_sensitive_coord_true_false_in_A`.  The family is split along `i`, the
-  invariants are propagated to both branches, and the resulting covers are
-  recombined by extending their rectangles with the fixed value of `i`.
-
-The result is a provisional set of subcubes; future refinements will equip it
-with proofs of monochromaticity, coverage, and cardinality bounds.
--/
+/-/ **Recursive cover construction.**
+    The current implementation is a placeholder that merely states the intended
+    return type.  The full recursion—propagating invariants and gluing branch
+    covers via `glue_branch_covers`—will be filled in future revisions. -/
 noncomputable def buildCoverLex3
     (F : Family n) (A : Finset (Fin n)) (s h : ℕ)
     [Fintype (Point n)] [Fintype (Subcube n)]
     (_hSens : ∀ f ∈ F, sensitivity f ≤ s)
     (_hEnt  : measure F ≤ h)
     (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
-    Finset (Subcube n) :=
-by
+    CoverRes (F := F) (Cover2.mBound n h) := by
   classical
-  -- Relation on pairs `(F, A)` induced by the lexicographic measure.
+  -- Well-founded recursion on the lexicographic measure.
   let R : (Family n × Finset (Fin n)) → (Family n × Finset (Fin n)) → Prop :=
     fun p q => measureLex3Rel (measureLex3 p.1 p.2) (measureLex3 q.1 q.2)
-  -- Well-foundedness follows from the corresponding result on `ℕ³`.
   have hWF : WellFounded R := by
     simpa [R] using
       (InvImage.wf (f := fun p : Family n × Finset (Fin n) =>
         measureLex3 p.1 p.2) measureLex3Rel_wf)
-  -- Run the well-founded recursion using the packaged invariants.
   refine
     (hWF.fix
-      (C := fun p => BuildInv (n := n) (s := s) (h := h) p → Finset (Subcube n))
+      (C := fun p =>
+        BuildInv (n := n) (s := s) (h := h) p →
+          CoverRes (F := p.1) (Cover2.mBound n h))
       ?_ (F, A)) ⟨_hSens, _hEnt, hA⟩
   intro p rec hp
   rcases p with ⟨F, A⟩
   rcases hp with ⟨hSens, hEnt, hA⟩
   -- Base case: constant family.
   by_cases hconst : ∃ b, ∀ f ∈ F, ∀ x, f x = b
-  · exact {⟨∅, fun _ hi => False.elim (Finset.notMem_empty _ hi)⟩}
-  -- Recursive step: either drop a trivially false function or branch on a
-  -- sensitive coordinate.
+  ·
+    classical
+    let b := Classical.choose hconst
+    have hb := Classical.choose_spec hconst
+    let cover := CoverRes.const (F := F) (b := b) hb
+    refine
+      { rects := cover.rects
+        , mono := cover.mono
+        , covers := cover.covers
+        , card_le := ?_ }
+    -- Bounding the singleton cover by `mBound` is straightforward but not yet
+    -- formalised.
+    admit
+  -- Recursive step: either branch on a sensitive coordinate or drop a
+  -- function that never yields `true`.
   by_cases hallTrue : ∀ f ∈ F, ∃ x, f x = true
   ·
-    -- All functions attain the value `true` somewhere, so we can select a
-    -- sensitive coordinate inside `A`.
-    classical
-    -- Choose a concrete sensitive coordinate together with a witnessing
-    -- function and point.
     have hcoord :=
-      exists_sensitive_coord_true_false_in_A (F := F) (A := A)
-        (hconst := hconst) (htrue := hallTrue) (hA := hA)
+      exists_sensitive_coord_true_false_in_A
+        (F := F) (A := A) hconst hallTrue hA
+    classical
+    -- Extract the witnesses from the existential statement via classical choice.
     let i := Classical.choose hcoord
-    have hiA_f : i ∈ A ∧ ∃ f ∈ F, ∃ x, f x = true ∧ f (Point.update x i (!x i)) = false :=
-      Classical.choose_spec hcoord
-    have hiA : i ∈ A := hiA_f.1
-    let hrest1 := hiA_f.2
-    let f₀ := Classical.choose hrest1
-    have hf₀_x : f₀ ∈ F ∧ ∃ x, f₀ x = true ∧ f₀ (Point.update x i (!x i)) = false :=
-      Classical.choose_spec hrest1
-    have hf₀ : f₀ ∈ F := hf₀_x.1
-    let hrest2 := hf₀_x.2
-    let x₀ := Classical.choose hrest2
-    have hx_pair : f₀ x₀ = true ∧ f₀ (Point.update x₀ i (!x₀ i)) = false :=
-      Classical.choose_spec hrest2
-    have hx_true : f₀ x₀ = true := hx_pair.1
-    have hx_flip : f₀ (Point.update x₀ i (!x₀ i)) = false := hx_pair.2
-    -- The witnesses `hx_true` and `hx_flip` certify that `i` is sensitive for
-    -- `f₀`.  At present they are not used further but will assist future
-    -- coverage proofs.
-    -- Split the family along the chosen coordinate.
+    have hi_prop := Classical.choose_spec hcoord
+    have hiA : i ∈ A := hi_prop.1
+    let rest₁ := hi_prop.2
+    let f := Classical.choose rest₁
+    have hf_prop := Classical.choose_spec rest₁
+    have hfF : f ∈ F := hf_prop.1
+    let rest₂ := hf_prop.2
+    let x := Classical.choose rest₂
+    have hx_prop := Classical.choose_spec rest₂
+    have hxT : f x = true := hx_prop.1
+    have hxF : f (Point.update x i (! x i)) = false := hx_prop.2
     let F0 := F.restrict i false
     let F1 := F.restrict i true
     let A' := A.erase i
-    -- Propagate the invariants to the branches.
     have hSens0 : ∀ g ∈ F0, sensitivity g ≤ s := by
       simpa [F0] using
-        (sensitivity_family_restrict_le (F := F) (i := i) (b := false)
-          (s := s) hSens)
+        (sensitivity_family_restrict_le (F := F) (i := i)
+          (b := false) (s := s) hSens)
     have hSens1 : ∀ g ∈ F1, sensitivity g ≤ s := by
       simpa [F1] using
-        (sensitivity_family_restrict_le (F := F) (i := i) (b := true)
-          (s := s) hSens)
+        (sensitivity_family_restrict_le (F := F) (i := i)
+          (b := true) (s := s) hSens)
     have hEnt0 : measure F0 ≤ h :=
       le_trans (measure_restrict_le (F := F) (i := i) (b := false)) hEnt
     have hEnt1 : measure F1 ≤ h :=
       le_trans (measure_restrict_le (F := F) (i := i) (b := true)) hEnt
     have hA0 : ∀ j ∉ A', ∀ g ∈ F0, coordSensitivity g j = 0 := by
       simpa [F0, A'] using
-        (insens_off_A_restrict (F := F) (A := A) hA (i := i) (b := false))
+        (insens_off_A_restrict (F := F) (A := A)
+          (hA := hA) (i := i) (b := false))
     have hA1 : ∀ j ∉ A', ∀ g ∈ F1, coordSensitivity g j = 0 := by
       simpa [F1, A'] using
-        (insens_off_A_restrict (F := F) (A := A) hA (i := i) (b := true))
-    -- Recurse on both branches.
-    let inv0 : BuildInv (n := n) (s := s) (h := h) ⟨F0, A'⟩ :=
-      ⟨hSens0, hEnt0, hA0⟩
-    let inv1 : BuildInv (n := n) (s := s) (h := h) ⟨F1, A'⟩ :=
-      ⟨hSens1, hEnt1, hA1⟩
-    let R0 :=
+        (insens_off_A_restrict (F := F) (A := A)
+          (hA := hA) (i := i) (b := true))
+    let cover0 :=
       rec ⟨F0, A'⟩
-        (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA
-          (b := false)) inv0
-    let R1 :=
+        (measureLex3_restrict_lt_dim (F := F) (A := A)
+          (i := i) hiA (b := false)) ⟨hSens0, hEnt0, hA0⟩
+    let cover1 :=
       rec ⟨F1, A'⟩
-        (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA
-          (b := true)) inv1
-    -- Combine the branch covers by extending along the chosen coordinate.
-    exact
-      R0.image (fun R => Subcube.extend R i false) ∪
-        R1.image (fun R => Subcube.extend R i true)
+        (measureLex3_restrict_lt_dim (F := F) (A := A)
+          (i := i) hiA (b := true)) ⟨hSens1, hEnt1, hA1⟩
+    let cover :=
+      glue_branch_covers (F := F) (i := i)
+        (cover₀ := cover0) (cover₁ := cover1)
+        (hins₀ := by
+          -- Proof deferred; the restricted family is insensitive on the splitting coordinate.
+          admit)
+        (hins₁ := by
+          -- Proof deferred; the restricted family is insensitive on the splitting coordinate.
+          admit)
+    refine
+      { rects := cover.rects
+        , mono := cover.mono
+        , covers := cover.covers
+        , card_le := ?_ }
+    -- Bounding the combined cover by `mBound` is deferred.
+    admit
   ·
-    -- Some function never evaluates to `true`; remove it and continue with the
-    -- smaller family.  This preserves all invariants while strictly decreasing
-    -- the measure via `measureLex3_erase_lt`.
-    classical
-    -- Extract such a function and show it is identically `false`.
-    -- Convert the negated universal statement into an explicit witness.
     have hallFalse' : ∃ f, f ∈ F ∧ ∀ x, f x ≠ true := by
-      classical
-      -- Use classical reasoning to extract a witness.
-      simpa [not_exists, not_forall] using hallTrue
+      simpa [not_forall] using hallTrue
     classical
-    -- Choose a specific function with no true inputs.
     let f₀ := Classical.choose hallFalse'
-    have hf₀pair := Classical.choose_spec hallFalse'
-    have hf₀ : f₀ ∈ F := hf₀pair.1
-    have hf₀false : ∀ x, f₀ x ≠ true := hf₀pair.2
-    have hf₀all_false : ∀ x, f₀ x = false := by
+    have hf₀prop := Classical.choose_spec hallFalse'
+    have hf₀F : f₀ ∈ F := hf₀prop.1
+    have hf₀ : ∀ x, f₀ x ≠ true := hf₀prop.2
+    have hf₀false : ∀ x, f₀ x = false := by
       intro x
-      specialize hf₀false x
-      cases hval : f₀ x with
-      | false => simpa [hval]
-      | true  =>
-          -- This branch contradicts `hf₀false`.
-          have : False := hf₀false (by simpa [hval])
+      specialize hf₀ x
+      cases hfx : f₀ x with
+      | true =>
+          have : False := by simpa [hfx] using hf₀
           cases this
-    -- `f₀` has no `1`-inputs, so excising it preserves coverage of the family.
-    -- Drop `f₀` from the family.
+      | false =>
+          simpa [hfx]
     let F' := Finset.erase F f₀
-    -- The invariants trivially transfer to the subfamily.
     have hSens' : ∀ g ∈ F', sensitivity g ≤ s := by
-      intro g hg
-      exact hSens g (Finset.mem_of_mem_erase hg)
+      intro g hg; exact hSens _ (Finset.mem_of_mem_erase hg)
     have hEnt' : measure F' ≤ h := by
       have hμle : measure F' ≤ measure F := by
+        -- `erase` is implemented via filtering by `≠ f₀`.
         simpa [F', Finset.filter_ne'] using
-          (measure_filter_le (F := F) (P := fun g : BFunc n => g ≠ f₀))
+          (measure_filter_le (F := F)
+            (P := fun g : BFunc n => g ≠ f₀))
       exact le_trans hμle hEnt
     have hA' : ∀ j ∉ A, ∀ g ∈ F', coordSensitivity g j = 0 := by
-      intro j hjA g hg
-      exact hA j hjA g (Finset.mem_of_mem_erase hg)
-    let inv' : BuildInv (n := n) (s := s) (h := h) ⟨F', A⟩ :=
-      ⟨hSens', hEnt', hA'⟩
-    -- Recursive call on the smaller family; measure decreases by cardinality.
-    exact
-      rec ⟨F', A⟩ (measureLex3_erase_lt (F := F) (A := A) hf₀) inv'
+      intro j hj g hg; exact hA j hj g (Finset.mem_of_mem_erase hg)
+    let cover' :=
+      rec ⟨F', A⟩ (measureLex3_erase_lt (F := F) (A := A) hf₀F)
+        ⟨hSens', hEnt', hA'⟩
+    exact CoverRes.lift_erase_false
+      (n := n) (F := F) (f₀ := f₀) (k := Cover2.mBound n h)
+      hf₀F hf₀false cover'
 
 /-- **Low-sensitivity cover** (statement only).  If every function in the
     family has sensitivity at most `s`, then there exists a small set of

@@ -321,9 +321,16 @@ lemma card_subcube (n : ℕ) :
       Fintype.card_fun (Fin n) (Option Bool)
   simpa [hpow] using hcard
 
-/-- A coarse arithmetic bound showing that the total number of subcubes is
+/--
+A coarse arithmetic bound showing that the total number of subcubes is
 dominated by `mBound` once the entropy budget `h` grows linearly with the
-dimension.  The factor `5` is deliberately slack to keep the argument simple. -/
+dimension.  The factor `5` is deliberately slack to keep the argument simple.
+
+This lemma is intentionally weak: the assumption `n ≤ 5 * h` is only used to
+compare the exponents `2 * n` and `10 * h`.  In the cover construction it is
+invoked exclusively under this hypothesis, so we make no attempt to optimise
+the constant.
+-/
 lemma card_subcube_le_mBound {n h : ℕ}
     (hn : 0 < n) (hlarge : n ≤ 5 * h) :
     Fintype.card (Boolcube.Subcube n) ≤ mBound n h := by

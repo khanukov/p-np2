@@ -916,6 +916,55 @@ noncomputable def CoverResP.const (F : Family n) (b : Bool)
 
 /--
 Lift a cover for the subfamily obtained by erasing a constantly `false`
+function back to the original family.  Since the erased function never takes
+the value `true`, the rectangles and their cardinality bound are reused
+verbatim.  Pointwise monochromaticity extends to the deleted function because
+it is itself constant `false` on every rectangle.-/
+noncomputable def CoverResP.lift_erase_false
+    {F : Family n} {f₀ : BFunc n} {k : ℕ}
+    (hf₀F : f₀ ∈ F) (hf₀false : ∀ x, f₀ x = false)
+    (cover' : CoverResP (F := F.erase f₀) k) :
+    CoverResP (F := F) k := by
+  classical
+  refine
+    { rects := cover'.rects
+      , monoPw := ?_
+      , covers := ?_
+      , card_le := by simpa using cover'.card_le }
+  · intro f hf R hR
+    by_cases hf0 : f = f₀
+    · subst hf0
+      refine ⟨false, ?_⟩
+      intro x hx; simpa using hf₀false x
+    ·
+      have hf' : f ∈ F.erase f₀ := Finset.mem_erase.mpr ⟨hf0, hf⟩
+      exact cover'.monoPw f hf' R hR
+  · intro f hf x hx
+    by_cases hf0 : f = f₀
+    · subst hf0
+      have : False := by simpa [hf₀false x] using hx
+      exact False.elim this
+    ·
+      have hf' : f ∈ F.erase f₀ := Finset.mem_erase.mpr ⟨hf0, hf⟩
+      exact cover'.covers f hf' x hx
+
+/--
+Expose the underlying rectangle set of a pointwise cover, relaxing the
+cardinality bound from `k` to any `k' ≥ k`.  This mirrors `CoverRes.as_cover`
+for the pointwise version `CoverResP` and will be convenient when presenting
+`CoverResP` as an existential result.-/
+lemma CoverResP.as_cover {n : ℕ} {F : Family n} {k k' : ℕ}
+    (cover : CoverResP (F := F) k) (hk : k ≤ k') :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ k' := by
+  refine ⟨cover.rects, ?_, cover.covers, ?_⟩
+  · intro f hf R hR; exact cover.monoPw f hf R hR
+  · exact le_trans cover.card_le hk
+
+/--
+Lift a cover for the subfamily obtained by erasing a constantly `false`
 function back to the original family.  The set of rectangles is preserved,
 while coverage and the cardinality bound are inherited verbatim.  The
 monochromaticity proof is postponed via `admit` as it requires an additional

@@ -11,6 +11,7 @@ import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Algebra.Order.Floor.Defs
 import Mathlib.Algebra.Order.Floor.Semiring
 import Pnp2.BoolFunc
+import Pnp2.BoolFunc.Sensitivity
 
 open Classical
 open Real
@@ -639,6 +640,27 @@ lemma measureLex3_restrict_lt_dim {n : ℕ} (F : Family n) (A : Finset (Fin n))
               (measureLex3 F A) := by
           simpa [measureLex3Rel, measureLex3, hpair] using hx
         exact this
+
+/--
+If the family `F` exhibits sensitivity on some coordinate inside the set `A`,
+then fixing that coordinate strictly decreases the three-component measure
+`measureLex3`.  This remains true even for counterexamples such as the family
+`{id, not}` on one bit: restricting along the unique sensitive coordinate does
+not shrink the family, yet the dimension component drops from `A.card`,
+ensuring progress for the recursive construction.
+-/
+lemma exists_branch_measure_drop_of_sensitive {n : ℕ}
+    (F : Family n) (A : Finset (Fin n))
+    (h : ∃ i ∈ A, sensitiveCoord F i) :
+    ∃ i ∈ A, ∀ b : Bool,
+        measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+          (measureLex3 F A) := by
+  classical
+  rcases h with ⟨i, hiA, _hi⟩
+  refine ⟨i, hiA, ?_⟩
+  intro b
+  exact
+    measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA (b := b)
 
 /-!
 Removing a single function from the family strictly decreases the

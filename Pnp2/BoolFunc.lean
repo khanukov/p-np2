@@ -562,6 +562,28 @@ lemma monochromaticForFamily_extend_restrict {n : ℕ} {F : Family n}
   have := hc (BFunc.restrictCoord f i b) hf0 (x := x) hxR
   simpa [restrictCoord_agrees (f := f) (j := i) (b := b) (x := x) hxi] using this
 
+/--
+If a subcube `R` is monochromatic for the restriction of a single function `f`
+to the branch `xᵢ = b` and `R` does not fix `i`, then the extended subcube with
+`xᵢ = b` is monochromatic for `f`.  This is the single‑function counterpart of
+`monochromaticForFamily_extend_restrict`.
+-/
+lemma monochromaticFor_extend_restrict {n : ℕ} {f : BFunc n}
+    {R : Subcube n} {i : Fin n} {b : Bool} (hi : i ∉ R.idx)
+    (hmono : Subcube.monochromaticFor R (BFunc.restrictCoord f i b)) :
+    Subcube.monochromaticFor (Subcube.extend R i b) f := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro x hx
+  have hxR : R.mem x :=
+    ((Subcube.mem_extend_iff (R := R) (i := i) (b := b) (x := x) hi).1 hx).2
+  have hxi : x i = b :=
+    ((Subcube.mem_extend_iff (R := R) (i := i) (b := b) (x := x) hi).1 hx).1
+  have hxval := hc hxR
+  simpa [restrictCoord_agrees (f := f) (j := i) (b := b)
+            (x := x) hxi] using hxval
+
 end Subcube
 
 /-! ### Essential coordinate support -/

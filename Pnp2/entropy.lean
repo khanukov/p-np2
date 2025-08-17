@@ -756,6 +756,37 @@ lemma exists_branch_measure_drop_of_sensitive {n : ℕ}
   exact
     measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hiA (b := b)
 
+/--
+Removing a coordinate from the set `A` strictly decreases the three-component
+measure `measureLex3` even without altering the underlying family.  The first
+two components `(measure F, F.card)` stay unchanged while the third component
+`A.card` drops by one.  This lightweight lemma is handy when analysing the
+dimension part of the measure in isolation.
+-/
+lemma measureLex3_drop_coord {n : ℕ} (F : Family n) (A : Finset (Fin n))
+    {i : Fin n} (hi : i ∈ A) :
+    measureLex3Rel (measureLex3 F (A.erase i)) (measureLex3 F A) := by
+  classical
+  -- Removing `i` from `A` yields a strict subset and hence a smaller
+  -- cardinality for the third component of `measureLex3`.
+  have hA : (A.erase i).card < A.card := by
+    have hss : A.erase i ⊂ A := by
+      refine Finset.ssubset_iff_subset_ne.mpr ?_
+      refine ⟨Finset.erase_subset _ _, ?_⟩
+      intro h
+      have hi_not : i ∉ A.erase i := by
+        simpa using Finset.not_mem_erase i A
+      have hi_in : i ∈ A.erase i := by simpa [h] using hi
+      exact hi_not hi_in
+    exact Finset.card_lt_card hss
+  -- With identical entropy and cardinality components, the measure drop is
+  -- witnessed by `Prod.Lex.right` acting on the dimension component.
+  dsimp [measureLex3, measureLex3Rel]
+  -- The first two components `(measure F, F.card)` coincide, and the strict
+  -- inequality on the third component `A.card` yields the desired relation.
+  refine Prod.Lex.right (a := (measure F, F.card))
+    (b₁ := (A.erase i).card) (b₂ := A.card) hA
+
 /-!
 Removing a single function from the family strictly decreases the
 `measureLex3` complexity measure: the entropy component cannot increase

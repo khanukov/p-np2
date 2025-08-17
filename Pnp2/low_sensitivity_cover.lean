@@ -220,6 +220,47 @@ lemma nonconstant_all_insensitive_false (F : Family n) [Fintype (Point n)]
   exact hx hzero
 
 /--
+If no coordinate is sensitive across the family and no function is constantly
+`false`, then every function must be constantly `true`.  This lemma underpins
+the constant branch of `buildCoverLex3` once all sensitive coordinates have
+been eliminated.
+-/
+lemma all_true_of_no_sensitive_coord (F : Family n) [Fintype (Point n)]
+    (hins : ∀ i : Fin n, ¬ sensitiveCoord F i)
+    (hfalse : ¬ ∃ f ∈ F, ∀ x, f x = false) :
+    ∀ f ∈ F, ∀ x : Point n, f x = true := by
+  classical
+  intro f hf x
+  -- Each function attains `true` somewhere; otherwise it would be constantly
+  -- `false`, contradicting `hfalse`.
+  have hx0 : ∃ x0 : Point n, f x0 = true := by
+    by_contra h
+    have hfalsef : ∀ y, f y = false := by
+      intro y
+      have hy := not_exists.mp h y
+      cases hfy : f y with
+      | false => simpa [hfy]
+      | true => cases hy hfy
+    exact hfalse ⟨f, hf, hfalsef⟩
+  rcases hx0 with ⟨x0, hx0⟩
+  -- Show that the support of `f` is empty.
+  have hsupp : support f = (∅ : Finset (Fin n)) := by
+    apply Finset.eq_empty_iff_forall_notMem.mpr
+    intro i hi
+    have hiSens : sensitiveCoord F i := by
+      rcases mem_support_iff.mp hi with ⟨y, hy⟩
+      exact ⟨f, hf, y, hy⟩
+    exact (hins i) hiSens
+  -- Points trivially agree on the empty support, so `f` is constant.
+  have hagree : ∀ i ∈ support f, x i = x0 i := by
+    intro i hi
+    have : False := by simpa [hsupp] using hi
+    exact this.elim
+  have hx :=
+    eval_eq_of_agree_on_support (f := f) (x := x) (y := x0) hagree
+  simpa [hx0] using hx
+
+/--
 The images of two rectangle sets under extension with opposite fixed values of
 `i` are disjoint.  Intuitively, any point lying in an extension with `i = false`
 must satisfy `x i = false`, whereas membership in an extension with
@@ -1073,6 +1114,29 @@ noncomputable def CoverResP.lift_erase_false
       exact cover'.covers f hf' x hx
 
 /--
+Specialised orientation of `exists_branch_measure_drop_of_sensitive` to the
+full coordinate set.  Whenever the family `F` has a sensitive coordinate,
+restricting along that coordinate strictly decreases the three-component
+measure `measureLex3` in both Boolean branches.  This lemma records the
+measure drop that will justify recursive calls in `buildCoverLex3` once
+sensitive branching replaces the current placeholder implementation.
+-/
+lemma exists_branch_measure_drop_univ {n : ℕ} (F : Family n)
+    (hsens : ∃ i : Fin n, sensitiveCoord F i) :
+    ∃ i : Fin n, ∀ b : Bool,
+        measureLex3Rel (measureLex3 (F.restrict i b) (Finset.univ.erase i))
+          (measureLex3 F Finset.univ) := by
+  classical
+  -- Choose a sensitive coordinate and apply the general branching lemma on
+  -- the universal set of coordinates.
+  rcases hsens with ⟨i, hi⟩
+  have hiA : (i : Fin n) ∈ (Finset.univ : Finset (Fin n)) := by simp
+  obtain ⟨j, _hjA, hdrop⟩ :=
+    exists_branch_measure_drop_of_sensitive
+      (F := F) (A := (Finset.univ : Finset (Fin n))) ⟨i, hiA, hi⟩
+  exact ⟨j, hdrop⟩
+
+/--
 `buildCoverLex3` is the intended recursive cover constructor based on the
 three‑component measure `measureLex3`.  As a preparatory step we remove any
 functions that are constantly `false` by erasing them and lifting the cover
@@ -1092,27 +1156,67 @@ noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     have hf₀ := Classical.choose_spec hfalse
     have hf₀F : f₀ ∈ F := hf₀.1
     have hf₀false : ∀ x, f₀ x = false := hf₀.2
+    -- Removing such a function strictly decreases the three‑component
+    -- measure `measureLex3`.  Although `buildCoverLex3` currently terminates
+    -- by a simple cardinality argument, future refinements will employ
+    -- `measureLex3` as the well‑founded measure.  We record the decrease here
+    -- for use in later developments.
+    have hmeasure :
+        measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
+          (measureLex3 F Finset.univ) :=
+      measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
     exact CoverResP.lift_erase_false (F := F) (f₀ := f₀)
       (hf₀F := hf₀F) (hf₀false := hf₀false)
       (cover' := buildCoverLex3 (F := F.erase f₀) (h := h) hn hbase)
-  · exact CoverResP.pointCover (F := F) (h := h) hn hbase
+  ·
+    -- No constantly `false` functions remain.  Either the family still
+    -- exhibits a sensitive coordinate—handled in future iterations by
+    -- branching—or all functions are already constant.  In the latter case we
+    -- can collapse the cover to a single full subcube coloured `true`.
+    by_cases hsens : ∃ i : Fin n, sensitiveCoord F i
+    ·
+      -- The family still possesses a sensitive coordinate.  The specialised
+      -- lemma `exists_branch_measure_drop_univ` guarantees that fixing such a
+      -- coordinate in either Boolean branch strictly decreases the
+      -- three‑component measure `measureLex3`.  Recording this fact now will
+      -- allow the eventual recursive implementation to justify its
+      -- termination by well‑founded recursion on that measure.
+      have _hdrop :=
+        exists_branch_measure_drop_univ (F := F) (hsens := hsens)
+      -- Placeholder behaviour: until the branching recursion is implemented we
+      -- conservatively enumerate all points of the cube.
+      exact CoverResP.pointCover (F := F) (h := h) hn hbase
+    ·
+      -- With no sensitive coordinate every function in `F` is constantly `true`.
+      -- Repackage the resulting singleton cover under the wider cardinality
+      -- bound `mBound n h`.
+      have hconst : ∀ f ∈ F, ∀ x, f x = true :=
+        all_true_of_no_sensitive_coord (F := F) (hins := not_exists.mp hsens)
+          (hfalse := hfalse)
+      have coverConst := CoverResP.const (F := F) (b := true) hconst
+      have hk : 1 ≤ Cover2.mBound n h := by
+        have hpos := Cover2.mBound_pos (n := n) (h := h) hn
+        exact Nat.succ_le_of_lt hpos
+      exact
+        { rects := coverConst.rects
+          , monoPw := coverConst.monoPw
+          , covers := coverConst.covers
+          , card_le := le_trans coverConst.card_le hk }
 
-termination_by F.card
+termination_by measureLex3 F Finset.univ
 decreasing_by
   classical
+  -- The only recursive call removes the chosen constantly `false` function.
+  -- Lemma `measureLex3_erase_lt` guarantees that this elimination strictly
+  -- decreases the three-component measure used for well-founded recursion.
   let f₀ := Classical.choose hfalse
   have hf₀ := Classical.choose_spec hfalse
   have hf₀F : f₀ ∈ F := hf₀.1
-  have hpos : 0 < F.card := Finset.card_pos.mpr ⟨f₀, hf₀F⟩
-  have hsucc : (F.erase f₀).card + 1 = F.card := by
-    have := Finset.card_erase_of_mem hf₀F
-    have hsub : F.card - 1 + 1 = F.card :=
-      Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-    simpa [this, hsub, Nat.succ_eq_add_one]
-  have hlt : (F.erase f₀).card < F.card := by
-    have := Nat.lt_succ_self (F.erase f₀).card
-    simpa [hsucc] using this
-  simpa using hlt
+  have hdrop :
+      measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
+        (measureLex3 F Finset.univ) :=
+    measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
+  simpa using hdrop
 
 
 /--

@@ -244,6 +244,52 @@ example : True := by
         (x := fun _ : Fin 1 => true) (by simp [f₁]))
   exact trivial
 
+/-- `buildCoverLex3` collapses to a single rectangle when the family has no
+sensitive coordinates. -/
+example : True := by
+  classical
+  -- The singleton family containing only the constantly `true` function.
+  let f : BFunc 1 := fun _ => true
+  let F : Family 1 := {f}
+  have hn : 0 < 1 := by decide
+  have hbase : (1 : ℕ) ≤ 5 * 1 := by decide
+  -- Build the cover; it should be the constant full cube.
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hbase
+  -- The cover contains exactly one rectangle.
+  have : cover.rects.card = 1 := by
+    -- Simplify the definition using the constant-family branch.
+    have hfalse : ¬ ∃ f' ∈ F, ∀ x, f' x = false := by
+      intro h; rcases h with ⟨g, hg, hgfalse⟩
+      have : g = f := by simpa [F] using Finset.mem_singleton.mp hg
+      subst this; have := hgfalse (fun _ => true); simp [f] at this
+    have hsens : ¬ ∃ i : Fin 1, sensitiveCoord F i := by
+      simp [F, f, sensitiveCoord]
+    have hconst : ∀ g ∈ F, ∀ x, g x = true := by
+      simpa [F, f] using
+        all_true_of_no_sensitive_coord (F := F)
+          (hins := not_exists.mp hsens) (hfalse := hfalse)
+    -- Reduce `buildCoverLex3` to the constant branch and compute the cardinality.
+    have hrects :
+        cover.rects =
+          (CoverResP.const (F := F) (b := true) hconst).rects := by
+      simp [cover, buildCoverLex3, hfalse, hsens, hconst]
+    have hcardConst :
+        (CoverResP.const (F := F) (b := true) hconst).rects.card = 1 := by
+      simp [CoverResP.const]
+    simpa [hrects, hcardConst]
+  -- Sanity check: the single rectangle covers the all-true input.
+  have hfF : f ∈ F := by simp [F]
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := F)
+            (k := Cover2.mBound 1 1) cover (f := f) hfF)
+          (fun _ : Fin 1 => true) = true := by
+    simpa [f] using
+      (CoverResP.eval_true (n := 1) (F := F)
+        (k := Cover2.mBound 1 1) (cover := cover) (f := f) hfF
+        (x := fun _ : Fin 1 => true) (by simp [f]))
+  exact trivial
+
 /-- Lifting a cover after reintroducing a constantly `false` function. -/
 example : True := by
   classical
@@ -337,6 +383,55 @@ example : True := by
         (cover := cover) (f := f) hfF
         (x := fun _ : Fin 1 => true) (by simp [f]))
   exact trivial
+
+/-- Bounding the size of glued branch covers via `glue_branch_coversPw_mBound`. -/
+example : True := by
+  classical
+  -- Same setup as above: a single identity function on one bit.
+  let f : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f}
+  have hconst0 : ∀ g ∈ F.restrict 0 false, ∀ x, g x = false := by
+    intro g hg x
+    rcases (Family.mem_restrict (F := F) (i := (0 : Fin 1)) (b := false)).1 hg with
+      ⟨f', hf', rfl⟩
+    have hf' : f' = f := by
+      simpa [F] using Finset.mem_singleton.mp hf'
+    subst hf'
+    simp [f, BFunc.restrictCoord]
+  have hconst1 : ∀ g ∈ F.restrict 0 true, ∀ x, g x = true := by
+    intro g hg x
+    rcases (Family.mem_restrict (F := F) (i := (0 : Fin 1)) (b := true)).1 hg with
+      ⟨f', hf', rfl⟩
+    have hf' : f' = f := by
+      simpa [F] using Finset.mem_singleton.mp hf'
+    subst hf'
+    simp [f, BFunc.restrictCoord]
+  -- Each branch is covered by a single rectangle; relax the cardinality to `mBound`.
+  let cover0' :=
+    CoverResP.const (F := F.restrict 0 false) (b := false) hconst0
+  let cover1' :=
+    CoverResP.const (F := F.restrict 0 true)  (b := true)  hconst1
+  have hk0 : cover0'.rects.card ≤ Cover2.mBound 1 0 :=
+    le_trans cover0'.card_le
+      (Nat.succ_le_of_lt (Cover2.mBound_pos (n := 1) (h := 0) (hn := by decide)))
+  have hk1 : cover1'.rects.card ≤ Cover2.mBound 1 0 :=
+    le_trans cover1'.card_le
+      (Nat.succ_le_of_lt (Cover2.mBound_pos (n := 1) (h := 0) (hn := by decide)))
+  let cover0 : CoverResP (F := F.restrict 0 false) (Cover2.mBound 1 0) :=
+    { rects := cover0'.rects, monoPw := cover0'.monoPw, covers := cover0'.covers, card_le := hk0 }
+  let cover1 : CoverResP (F := F.restrict 0 true) (Cover2.mBound 1 0) :=
+    { rects := cover1'.rects, monoPw := cover1'.monoPw, covers := cover1'.covers, card_le := hk1 }
+  have hins0 := coordSensitivity_family_restrict_self_zero (F := F)
+      (i := (0 : Fin 1)) (b := false)
+  have hins1 := coordSensitivity_family_restrict_self_zero (F := F)
+      (i := (0 : Fin 1)) (b := true)
+  -- Gluing with an explicit `mBound` cardinality estimate.
+  let cover :=
+    glue_branch_coversPw_mBound (F := F) (i := (0 : Fin 1)) (h := 0)
+      cover0 cover1 hins0 hins1
+  -- The constructed cover contains at most `mBound 1 (0+1)` rectangles.
+  have _ : cover.rects.card ≤ Cover2.mBound 1 (0 + 1) := cover.card_le
+  exact trivial
 /-- Building a cover via `buildCoverLex3` in the base case `n ≤ 5*h`. -/
 example : True := by
   classical
@@ -379,6 +474,26 @@ example : True := by
       (A := ({0} : Finset (Fin 1))) ⟨0, hA, hsens⟩
   -- Extract the witness and confirm measure drop for both branches.
   obtain ⟨i, hi, hdrop⟩ := h
+  have _ := hdrop false
+  have _ := hdrop true
+  exact trivial
+
+/-- Specialised variant `exists_branch_measure_drop_univ` also detects the
+measure decrease when branching on the sensitive coordinate of `{id, not}`. -/
+example : True := by
+  classical
+  let f_id  : BFunc 1 := fun x => x 0
+  let f_not : BFunc 1 := fun x => !x 0
+  let F : Family 1 := {f_id, f_not}
+  -- The family has a sensitive coordinate at `0`.
+  have hsens : ∃ i : Fin 1, sensitiveCoord F i := by
+    refine ⟨0, ?_⟩
+    refine ⟨f_id, by simp [F, f_id], ?_⟩
+    refine ⟨fun _ => false, ?_⟩
+    simp [f_id]
+  -- Applying the specialised lemma on the universal set.
+  have h := exists_branch_measure_drop_univ (F := F) hsens
+  obtain ⟨i, hdrop⟩ := h
   have _ := hdrop false
   have _ := hdrop true
   exact trivial

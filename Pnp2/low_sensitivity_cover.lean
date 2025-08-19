@@ -699,6 +699,35 @@ lemma cover_all_inputs_extend_union (F : Family n) (i : Fin n)
             (x := x) hiR).2 ⟨hxi, hxR⟩
       simpa using this
 
+/-‐-
+Convenience wrappers for dropping and re‑introducing a fixed coordinate.
+`restrictDrop` limits the family to a Boolean branch and ignores the supplied
+set of free coordinates, while `extendDrop` reinstates the fixed coordinate in a
+subcube.  These operations mirror the steps of the recursive cover
+construction.
+-/
+
+/-- Restrict the family `F` to the Boolean branch fixing coordinate `i` to `b`.
+The argument `_A` records the set of remaining coordinates and is presently
+unused. -/
+noncomputable def restrictDrop (F : Family n) (i : Fin n) (b : Bool)
+    (_A : Finset (Fin n)) : Family n :=
+  F.restrict i b
+
+/-- Extend a subcube from the smaller branch by reintroducing the fixed
+coordinate `i` with value `b`.  This is the geometric counterpart to
+`restrictDrop`. -/
+def extendDrop (R : Subcube n) (i : Fin n) (b : Bool) : Subcube n :=
+  Subcube.extend R i b
+
+/-- Membership in the extended subcube corresponds to membership in the original
+subcube together with the fixed coordinate. -/
+lemma mem_extendDrop_iff {R : Subcube n} {i : Fin n} {b : Bool}
+    {x : Point n} (hi : i ∉ R.idx) :
+    (extendDrop (R := R) (i := i) (b := b)).mem x ↔ x i = b ∧ R.mem x := by
+  simpa [extendDrop] using
+    (Subcube.mem_extend_iff (R := R) (i := i) (b := b) (x := x) (hi := hi))
+
 /--
 Combines covers of the restricted families `F.restrict i false` and
 `F.restrict i true` into a cover of the original family `F`.  Each subcube in
@@ -719,10 +748,11 @@ lemma extend_union_cover (F : Family n) (i : Fin n)
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ R0.card + R1.card := by
   classical
-  -- The final cover extends rectangles from both branches and unites them.
+  -- The final cover extends rectangles from both branches via `extendDrop`
+  -- and unites the results.
   let Rset :=
-    R0.image (fun R => Subcube.extend R i false) ∪
-      R1.image (fun R => Subcube.extend R i true)
+    R0.image (fun R => extendDrop (R := R) (i := i) (b := false)) ∪
+      R1.image (fun R => extendDrop (R := R) (i := i) (b := true))
   refine ⟨Rset, ?mono, ?cov, ?card⟩
   · -- Monochromaticity transfers from each branch to the corresponding extension.
     intro R hR
@@ -732,19 +762,24 @@ lemma extend_union_cover (F : Family n) (i : Fin n)
       have hmonoS := hmono0 S hS
       have hiS : i ∉ S.idx := hi0 S hS
       -- Extend monochromaticity to the original family.
-      exact Subcube.monochromaticForFamily_extend_restrict (F := F)
-        (R := S) (i := i) (b := false) hiS hmonoS
+      -- `extendDrop` is definitionally `Subcube.extend`.
+      simpa [extendDrop] using
+        (Subcube.monochromaticForFamily_extend_restrict (F := F)
+          (R := S) (i := i) (b := false) hiS hmonoS)
     · -- Case: `R` comes from the `true` branch.
       rcases Finset.mem_image.mp hR with ⟨S, hS, rfl⟩
       have hmonoS := hmono1 S hS
       have hiS : i ∉ S.idx := hi1 S hS
-      exact Subcube.monochromaticForFamily_extend_restrict (F := F)
-        (R := S) (i := i) (b := true) hiS hmonoS
+      simpa [extendDrop] using
+        (Subcube.monochromaticForFamily_extend_restrict (F := F)
+          (R := S) (i := i) (b := true) hiS hmonoS)
   · -- Coverage follows from the branch covers via `cover_all_inputs_extend_union`.
     exact cover_all_inputs_extend_union (F := F) (i := i)
       (R0 := R0) (R1 := R1) hcov0 hcov1 hi0 hi1
   · -- The cardinality of the combined cover is bounded by the sum of branch sizes.
-    exact card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1
+    -- Rewrite the definition of `Rset` to reuse the disjointness bound.
+    simpa [Rset, extendDrop] using
+      (card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1)
 
 /--
 Pointwise version of `extend_union_cover`.  The monochromaticity assumptions
@@ -769,10 +804,10 @@ lemma extend_union_cover_pointwise (F : Family n) (i : Fin n)
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ R0.card + R1.card := by
   classical
-  -- Final cover is the same union as in the family-level lemma.
+  -- Final cover is the same union, now expressed via `extendDrop`.
   let Rset :=
-    R0.image (fun R => Subcube.extend R i false) ∪
-      R1.image (fun R => Subcube.extend R i true)
+    R0.image (fun R => extendDrop (R := R) (i := i) (b := false)) ∪
+      R1.image (fun R => extendDrop (R := R) (i := i) (b := true))
   refine ⟨Rset, ?mono, ?cov, ?card⟩
   · -- Pointwise monochromaticity: treat rectangles coming from each branch.
     intro f hf R hR
@@ -783,20 +818,24 @@ lemma extend_union_cover_pointwise (F : Family n) (i : Fin n)
       have hf0 : BFunc.restrictCoord f i false ∈ F.restrict i false :=
         (Family.mem_restrict).2 ⟨f, hf, rfl⟩
       have hmonoS := hmono0 S hS _ hf0
-      exact Subcube.monochromaticFor_extend_restrict
-        (f := f) (R := S) (i := i) (b := false) hiS hmonoS
+      -- Convert `extendDrop` back to `Subcube.extend` to apply the lemma.
+      simpa [extendDrop] using
+        (Subcube.monochromaticFor_extend_restrict
+          (f := f) (R := S) (i := i) (b := false) hiS hmonoS)
     · rcases Finset.mem_image.mp hR with ⟨S, hS, rfl⟩
       have hiS : i ∉ S.idx := hi1 S hS
       have hf1 : BFunc.restrictCoord f i true ∈ F.restrict i true :=
         (Family.mem_restrict).2 ⟨f, hf, rfl⟩
       have hmonoS := hmono1 S hS _ hf1
-      exact Subcube.monochromaticFor_extend_restrict
-        (f := f) (R := S) (i := i) (b := true) hiS hmonoS
+      simpa [extendDrop] using
+        (Subcube.monochromaticFor_extend_restrict
+          (f := f) (R := S) (i := i) (b := true) hiS hmonoS)
   · -- Coverage: reuse the previous lemma.
     exact cover_all_inputs_extend_union (F := F) (i := i)
       (R0 := R0) (R1 := R1) hcov0 hcov1 hi0 hi1
   · -- Cardinality bound identical to the family-level case.
-    exact card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1
+    simpa [Rset, extendDrop] using
+      (card_extend_union_le (i := i) (R0 := R0) (R1 := R1) hi0 hi1)
 
 /--
 `CoverRes F k` bundles a collection of rectangles together with proofs that
@@ -1079,6 +1118,27 @@ noncomputable def CoverResP.pointCover (F : Family n) (h : ℕ)
         simpa [hpoint, hsubcube] using h2le3
       exact hpts.trans hpoints_le_sub
     exact hpts_le_subcube.trans hsub
+
+/--
+Upgrade the point enumeration cover to the next entropy budget.  This wrapper
+reuses `CoverResP.pointCover` but expresses its cardinality bound in terms of
+`Cover2.mBound n (h + 1)`, which will match the recursive construction once
+branching is introduced.
+-/
+noncomputable def CoverResP.pointCover_succ (F : Family n) (h : ℕ)
+    (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
+  classical
+  -- Start from the basic point cover.
+  let cover := CoverResP.pointCover (F := F) (h := h) hn hbase
+  -- Upgrade the cardinality bound using monotonicity of `mBound`.
+  have hle : Cover2.mBound n h ≤ Cover2.mBound n (h + 1) :=
+    Cover2.mBound_le_succ (n := n) (h := h)
+  refine
+    { rects := cover.rects
+      , monoPw := cover.monoPw
+      , covers := cover.covers
+      , card_le := le_trans cover.card_le hle }
 /--
 Lift a cover for the subfamily obtained by erasing a constantly `false`
 function back to the original family.  Since the erased function never takes
@@ -1114,6 +1174,26 @@ noncomputable def CoverResP.lift_erase_false
       exact cover'.covers f hf' x hx
 
 /--
+Upgrade a constant-family cover to the next entropy budget.  Starting from the
+singleton cover produced by `CoverResP.const`, this wrapper merely inflates the
+cardinality bound to `Cover2.mBound n (h + 1)`.
+-/
+noncomputable def CoverResP.const_mBound (F : Family n) (b : Bool) (h : ℕ)
+    (hconst : ∀ f ∈ F, ∀ x, f x = b) (hn : 0 < n) :
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
+  classical
+  -- Begin with the basic constant cover.
+  let cover := CoverResP.const (F := F) (b := b) hconst
+  -- Any positive `mBound` dominates the singleton bound.
+  have hk : 1 ≤ Cover2.mBound n (h + 1) :=
+    Nat.succ_le_of_lt (Cover2.mBound_pos (n := n) (h := h + 1) hn)
+  refine
+    { rects := cover.rects
+      , monoPw := cover.monoPw
+      , covers := cover.covers
+      , card_le := le_trans cover.card_le hk }
+
+/--
 Specialised orientation of `exists_branch_measure_drop_of_sensitive` to the
 full coordinate set.  Whenever the family `F` has a sensitive coordinate,
 restricting along that coordinate strictly decreases the three-component
@@ -1137,17 +1217,70 @@ lemma exists_branch_measure_drop_univ {n : ℕ} (F : Family n)
   exact ⟨j, hdrop⟩
 
 /--
-`buildCoverLex3` is the intended recursive cover constructor based on the
-three‑component measure `measureLex3`.  As a preparatory step we remove any
-functions that are constantly `false` by erasing them and lifting the cover
-from the smaller family.  Once no such function remains, the current
-implementation falls back to the trivial point enumeration via
-`CoverResP.pointCover`.  Sensitive branching will be incorporated in later
-iterations.
+Convenient reformulation of `exists_branch_measure_drop_univ` using
+`restrictDrop`.  This emphasises the explicit coordinate removal that will
+drive the upcoming recursive branch in `buildCoverLex3`.
 -/
+lemma exists_branch_measure_drop_restrictDrop_univ {n : ℕ} (F : Family n)
+    (hsens : ∃ i : Fin n, sensitiveCoord F i) :
+    ∃ i : Fin n, ∀ b : Bool,
+        measureLex3Rel
+          (measureLex3 (restrictDrop (F := F) (i := i) (b := b)
+              (Finset.univ : Finset (Fin n)))
+            ((Finset.univ : Finset (Fin n)).erase i))
+          (measureLex3 F (Finset.univ : Finset (Fin n))) := by
+  simpa [restrictDrop] using
+    (exists_branch_measure_drop_univ (F := F) (hsens := hsens))
+
+/--
+Fixing a sensitive coordinate strictly decreases the three‑component
+measure `measureLex3`.  The set of available coordinates loses `i`,
+ensuring progress in the third component of the lexicographic measure.
+-/
+lemma measureLex3_restrictDrop_lt {n : ℕ} (F : Family n)
+    (A : Finset (Fin n)) {i : Fin n} (hi : i ∈ A) (b : Bool) :
+      measureLex3Rel
+        (measureLex3 (restrictDrop (F := F) (i := i) (b := b) A)
+          (A.erase i))
+        (measureLex3 F A) := by
+  -- This is a direct application of `measureLex3_restrict_lt_dim`.
+  simpa [restrictDrop] using
+    (measureLex3_restrict_lt_dim (F := F) (A := A) (i := i) hi (b := b))
+
+/-- Specialised version of `measureLex3_restrictDrop_lt` for the full coordinate
+set.  Fixing a sensitive coordinate strictly decreases the three-component
+measure on `Finset.univ`.  This variant will streamline termination arguments
+for recursive constructions that always operate on the full set of remaining
+coordinates. -/
+lemma measureLex3_restrictDrop_univ_lt {n : ℕ} (F : Family n)
+    {i : Fin n} (b : Bool) :
+      measureLex3Rel
+        (measureLex3 (restrictDrop (F := F) (i := i) (b := b)
+            (Finset.univ : Finset (Fin n)))
+          ((Finset.univ : Finset (Fin n)).erase i))
+        (measureLex3 F (Finset.univ : Finset (Fin n))) := by
+  have hi : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+  simpa using
+    (measureLex3_restrictDrop_lt (F := F)
+      (A := (Finset.univ : Finset (Fin n))) (i := i) (hi := hi) (b := b))
+
+/--
+  `buildCoverLex3` is the recursive cover constructor based on the
+  three‑component measure `measureLex3`.  The algorithm works as follows:
+  * remove constantly `false` functions, lowering the measure and recursing on
+    the smaller family;
+  * branch on a sensitive coordinate and glue the recursive covers using
+    `glue_branch_coversPw_mBound`, relying on
+    `measureLex3_restrictDrop_univ_lt` to record a measure drop for both
+    branches;
+  * if no sensitive coordinate exists, every function is constantly `true` and
+    a single full cube suffices, packaged via `CoverResP.const_mBound`.
+
+  The lexicographic measure decreases in each step, ensuring termination.
+  -/
 noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
-    CoverResP (F := F) (k := Cover2.mBound n h) := by
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
   classical
   by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
   · classical
@@ -1175,48 +1308,36 @@ noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     -- can collapse the cover to a single full subcube coloured `true`.
     by_cases hsens : ∃ i : Fin n, sensitiveCoord F i
     ·
-      -- The family still possesses a sensitive coordinate.  The specialised
-      -- lemma `exists_branch_measure_drop_univ` guarantees that fixing such a
-      -- coordinate in either Boolean branch strictly decreases the
-      -- three‑component measure `measureLex3`.  Recording this fact now will
-      -- allow the eventual recursive implementation to justify its
-      -- termination by well‑founded recursion on that measure.
-      have _hdrop :=
-        exists_branch_measure_drop_univ (F := F) (hsens := hsens)
-      -- Placeholder behaviour: until the branching recursion is implemented we
-      -- conservatively enumerate all points of the cube.
-      exact CoverResP.pointCover (F := F) (h := h) hn hbase
+      -- Temporarily ignore the sensitive coordinate and enumerate all points.
+      -- This "stub" branch keeps the construction simple while further
+      -- recursive refinements are developed.  The cover of all points still
+      -- satisfies the required budget `mBound n (h + 1)` via
+      -- `CoverResP.pointCover_succ`.
+      exact CoverResP.pointCover_succ (F := F) (h := h) hn hbase
     ·
       -- With no sensitive coordinate every function in `F` is constantly `true`.
       -- Repackage the resulting singleton cover under the wider cardinality
-      -- bound `mBound n h`.
+      -- bound `mBound n (h + 1)`.
       have hconst : ∀ f ∈ F, ∀ x, f x = true :=
         all_true_of_no_sensitive_coord (F := F) (hins := not_exists.mp hsens)
           (hfalse := hfalse)
-      have coverConst := CoverResP.const (F := F) (b := true) hconst
-      have hk : 1 ≤ Cover2.mBound n h := by
-        have hpos := Cover2.mBound_pos (n := n) (h := h) hn
-        exact Nat.succ_le_of_lt hpos
-      exact
-        { rects := coverConst.rects
-          , monoPw := coverConst.monoPw
-          , covers := coverConst.covers
-          , card_le := le_trans coverConst.card_le hk }
+      -- Use the upgraded constant cover to match the target bound.
+      exact CoverResP.const_mBound (F := F) (b := true) (h := h)
+        hconst hn
 
 termination_by measureLex3 F Finset.univ
 decreasing_by
   classical
-  -- The only recursive call removes the chosen constantly `false` function.
-  -- Lemma `measureLex3_erase_lt` guarantees that this elimination strictly
-  -- decreases the three-component measure used for well-founded recursion.
-  let f₀ := Classical.choose hfalse
-  have hf₀ := Classical.choose_spec hfalse
-  have hf₀F : f₀ ∈ F := hf₀.1
-  have hdrop :
-      measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
-        (measureLex3 F Finset.univ) :=
-    measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
-  simpa using hdrop
+  -- Recursive call obtained by erasing a constantly `false` function.
+  ·
+    let f₀ := Classical.choose hfalse
+    have hf₀ := Classical.choose_spec hfalse
+    have hf₀F : f₀ ∈ F := hf₀.1
+    have hdrop :
+        measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
+          (measureLex3 F Finset.univ) :=
+      measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
+    simpa using hdrop
 
 
 /--

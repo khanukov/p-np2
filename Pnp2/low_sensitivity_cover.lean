@@ -1493,6 +1493,52 @@ lemma CoverResP.as_cover {n : ℕ} {F : Family n} {k k' : ℕ}
   · exact le_trans cover.card_le hk
 
 /--
+  Present the cover constructed by `buildCoverLex3` in existential form.
+  This wrapper exposes the set of rectangles together with their pointwise
+  monochromaticity, coverage of all `true` inputs and the `mBound` cardinality
+  bound.  It serves as a convenient interface for downstream developments that
+  prefer an explicit witness over the structured `CoverResP` record.
+-/
+lemma cover_exists_mBound
+  {n : ℕ} (F : Family n) (h : ℕ)
+  [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Cover2.mBound n (h + 1) := by
+  classical
+  -- Obtain the structured cover from the recursive constructor.
+  let cover := buildCoverLex3 (F := F) (h := h) hn hbase
+  -- Unpack it using `CoverResP.as_cover` while keeping the same bound.
+  simpa using
+    (CoverResP.as_cover (n := n) (F := F)
+      (cover := cover) (hk := le_rfl))
+
+/--
+  A convenience variant of `cover_exists_mBound` that chooses a suitable
+  budget `h` automatically.  Taking `h = n` trivially satisfies the required
+  inequality `n ≤ 5 * h`.
+-/
+lemma cover_exists_mBound_choose_h
+  {n : ℕ} (F : Family n) [Fintype (Point n)] (hn : 0 < n) :
+  ∃ h : ℕ, ∃ Rset : Finset (Subcube n),
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Cover2.mBound n (h + 1) := by
+  classical
+  -- Choose `h = n` and establish the base inequality `n ≤ 5 * h`.
+  refine ⟨n, ?_⟩
+  -- Proof of `n ≤ 5 * n` using monotonicity of multiplication.
+  have hbase : n ≤ 5 * n := by
+    have h15 : (1 : ℕ) ≤ 5 := by decide
+    -- Multiply both sides by `n` and rewrite.
+    simpa [Nat.mul_comm] using (Nat.mul_le_mul_left n h15)
+  -- Apply the main existence lemma with this choice of `h`.
+  simpa using
+    (cover_exists_mBound (n := n) (F := F) (h := n)
+      (hn := hn) (hbase := hbase))
+
+/--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
 The resulting tree queries the rectangles in `cover.rects` in an arbitrary
 order and returns `true` as soon as one of them matches the input.  Inputs not

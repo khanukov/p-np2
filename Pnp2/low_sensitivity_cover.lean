@@ -1420,7 +1420,7 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
   -/
 noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
-    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
+    CoverResP (F := F) (k := Cover2.mBound n h) := by
   classical
   by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
   · classical
@@ -1448,46 +1448,22 @@ noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     -- can collapse the cover to a single full subcube coloured `true`.
     by_cases hsens : ∃ i : Fin n, sensitiveCoord F i
     ·
-      classical
-      -- Use the canonical instance on points to avoid instance-mismatch issues.
-      letI : Fintype (Point n) := inferInstance
-      -- Extract a concrete sensitive coordinate.
-      let i := Classical.choose hsens
-      have hi : sensitiveCoord F i := Classical.choose_spec hsens
-      -- Build basic covers on both restricted subfamilies using `pointCover`.
-      let cover₀basic :=
-        CoverResP.pointCover (F := F.restrict i false) (h := h) hn hbase
-      let cover₁basic :=
-        CoverResP.pointCover (F := F.restrict i true)  (h := h) hn hbase
-      -- Each restricted family is insensitive to `i` by construction.
-      have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 := by
-        simpa using
-          (coordSensitivity_family_restrict_self_zero
-            (F := F) (i := i) (b := false))
-      have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 := by
-        simpa using
-          (coordSensitivity_family_restrict_self_zero
-            (F := F) (i := i) (b := true))
-      -- Glue the point covers of both branches, upgrading the bound to
-      -- `mBound n (h + 1)`.
+      -- Placeholder: the recursive branching construction will appear here.
+      -- For the moment we fall back to the naive point cover, which enumerates
+      -- every vertex of the Boolean cube individually.  This satisfies the
+      -- required `mBound` cardinality bound but does not yet exploit the
+      -- sensitive coordinate.
       exact
-        glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
-          (cover₀ := cover₀basic) (cover₁ := cover₁basic) hins₀ hins₁
+        CoverResP.pointCover (F := F) (h := h) hn hbase
     ·
       -- With no sensitive coordinate every function in `F` is constantly `true`.
-      -- Repackage the resulting singleton cover under the wider cardinality
-      -- bound `mBound n (h + 1)`.
+      -- A single full cube suffices, packaged via `CoverResP.const_mBound_exact`.
       have hconst : ∀ f ∈ F, ∀ x, f x = true :=
         all_true_of_no_sensitive_coord (F := F) (hins := not_exists.mp hsens)
           (hfalse := hfalse)
-      -- Start with the exact-budget constant cover and then enlarge the bound.
-      let cover_const :=
-        CoverResP.const_mBound_exact (F := F) (b := true) (h := h) hconst hn
-      have hk : Cover2.mBound n h ≤ Cover2.mBound n (h + 1) :=
-        Cover2.mBound_le_succ (n := n) (h := h)
-      -- Assemble the final cover with the inflated cardinality bound.
+      -- The exact-budget constant cover already matches the required bound.
       exact
-        { cover_const with card_le := le_trans cover_const.card_le hk }
+        CoverResP.const_mBound_exact (F := F) (b := true) (h := h) hconst hn
 
 termination_by measureLex3 F Finset.univ
 decreasing_by
@@ -1533,8 +1509,12 @@ lemma cover_exists_mBound
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Cover2.mBound n (h + 1) := by
   classical
-  -- Obtain the structured cover from the recursive constructor.
-  let cover := buildCoverLex3 (F := F) (h := h) hn hbase
+  -- Obtain the structured cover from the recursive constructor.  The helper
+  -- `buildCoverLex3` delivers a cover with budget `mBound n h`, so we invoke it
+  -- with `h + 1` to obtain the desired `mBound n (h + 1)` bound.
+  have hbase' : n ≤ 5 * (h + 1) :=
+    hbase.trans (Nat.mul_le_mul_left 5 (Nat.le_succ h))
+  let cover := buildCoverLex3 (F := F) (h := h + 1) hn hbase'
   -- Unpack it using `CoverResP.as_cover` while keeping the same bound.
   simpa using
     (CoverResP.as_cover (n := n) (F := F)

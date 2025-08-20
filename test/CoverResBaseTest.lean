@@ -236,11 +236,11 @@ example : True := by
   have _ :
       DecisionTree.eval_tree
           (CoverResP.toDecisionTree_for (n := 1) (F := F)
-            (k := Cover2.mBound 1 (1 + 1)) cover (f := f₁) hf₁F)
+            (k := Cover2.mBound 1 1) cover (f := f₁) hf₁F)
           (fun _ : Fin 1 => true) = true := by
     simpa [f₁] using
       (CoverResP.eval_true (n := 1) (F := F)
-        (k := Cover2.mBound 1 (1 + 1)) (cover := cover) (f := f₁) hf₁F
+        (k := Cover2.mBound 1 1) (cover := cover) (f := f₁) hf₁F
         (x := fun _ : Fin 1 => true) (by simp [f₁]))
   exact trivial
 
@@ -285,11 +285,11 @@ example : True := by
   have _ :
       DecisionTree.eval_tree
           (CoverResP.toDecisionTree_for (n := 1) (F := F)
-            (k := Cover2.mBound 1 (1 + 1)) cover (f := f) hfF)
+            (k := Cover2.mBound 1 1) cover (f := f) hfF)
           (fun _ : Fin 1 => true) = true := by
     simpa [f] using
       (CoverResP.eval_true (n := 1) (F := F)
-        (k := Cover2.mBound 1 (1 + 1)) (cover := cover) (f := f) hfF
+        (k := Cover2.mBound 1 1) (cover := cover) (f := f) hfF
         (x := fun _ : Fin 1 => true) (by simp [f]))
   exact trivial
 
@@ -450,11 +450,11 @@ example : True := by
   have _ :
       DecisionTree.eval_tree
           (CoverResP.toDecisionTree_for (n := 1) (F := F)
-            (k := Cover2.mBound 1 (1 + 1)) cover (f := f) hfF)
+            (k := Cover2.mBound 1 1) cover (f := f) hfF)
           (fun _ : Fin 1 => true) = true := by
     simpa [f] using
       (CoverResP.eval_true (n := 1) (F := F)
-        (k := Cover2.mBound 1 (1 + 1)) (cover := cover) (f := f) hfF
+        (k := Cover2.mBound 1 1) (cover := cover) (f := f) hfF
         (x := fun _ : Fin 1 => true) (by simp [f]))
   exact trivial
 

@@ -268,17 +268,15 @@ example : True := by
       simpa [F, f] using
         all_true_of_no_sensitive_coord (F := F)
           (hins := not_exists.mp hsens) (hfalse := hfalse)
-    -- Reduce `buildCoverLex3` to the constant branch and compute the cardinality.
-    have hrects :
-        cover.rects =
-          (CoverResP.const_mBound (F := F) (b := true) (h := 1)
-            hconst hn).rects := by
-      simp [cover, buildCoverLex3, hfalse, hsens, hconst]
-    have hcardConst :
-        (CoverResP.const_mBound (F := F) (b := true) (h := 1)
-            hconst hn).rects.card = 1 := by
-      simp [CoverResP.const_mBound, CoverResP.const]
-    simpa [hrects, hcardConst]
+    -- Evaluate `buildCoverLex3` in this constant-family setting and
+    -- compute the number of rectangles explicitly.
+    have hcard : cover.rects.card = 1 := by
+      -- Use `hsens` to simplify away the sensitive-branch `if`.
+      have hsens0 : ¬ sensitiveCoord F 0 := by
+        simpa using (not_exists.mp hsens 0)
+      simp [cover, buildCoverLex3, buildCoverLex3A, hfalse, hsens0,
+        CoverResP.const_mBound, CoverResP.const]
+    simpa [hcard]
   -- Sanity check: the single rectangle covers the all-true input.
   have hfF : f ∈ F := by simp [F]
   have _ :

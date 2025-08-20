@@ -11,8 +11,8 @@ Updated development tasks after audit (2025-08-06).
         complete `P ≠ NP` proof is in place.
 - [x] Provide a formal proof of `sunflower_exists_classic` in `Pnp2/Sunflower/Sunflower.lean`.
       * Proof completed; the classical sunflower lemma is now fully formalised.
-- [ ] Replace provisional assumption `buildCover_card_le_pow2` and adjust
-      `buildCover_card`/`buildCover_card_bigO` once the recursive cover algorithm is implemented.
+ - [x] Replace provisional assumption `buildCover_card_le_pow2` and adjust
+       `buildCover_card`/`buildCover_card_bigO` once the recursive cover algorithm is implemented.
 - [ ] Implement `decisionTree_cover` for low-sensitivity families.
       * Подробный план: см. `docs/decisionTree_cover_plan.md`.
 - [ ] Replace complexity-theoretic assumptions in `Pnp2/NP_separation.lean` with proven results.

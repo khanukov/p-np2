@@ -74,10 +74,13 @@ bound used elsewhere. -/
     once the recursive algorithm is implemented. -/
 noncomputable def buildCover_card (n : ℕ) : ℕ := Nat.pow 2 n
 
-/--  We assume the placeholder cover never exceeds the bound `2^n`.
-    This axiom will be discharged once the recursive algorithm is
-    formalised. -/
-axiom buildCover_card_le_pow2 (n : ℕ) : buildCover_card n ≤ Nat.pow 2 n
+/--
+`buildCover_card` is defined as the trivial bound `2^n`, so it obviously
+does not exceed this quantity.  In the original development this fact was
+stated as an axiom; here we provide the straightforward proof instead. -/
+lemma buildCover_card_le_pow2 (n : ℕ) : buildCover_card n ≤ Nat.pow 2 n := by
+  -- Unfold the definition and apply reflexivity of `≤`.
+  simpa [buildCover_card]
 
 /--  The coarse bound above is, by construction, dominated by the
     exponential function `2^n`.  Stating the result using big‑O notation

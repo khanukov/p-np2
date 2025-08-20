@@ -1407,19 +1407,15 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
       , card_le := hbound }
 
   /--
-  Core recursive constructor parameterised by a set of "live" coordinates `A`.
-  Functions in `F` are assumed insensitive outside `A` via the hypothesis `hA`.
-  The sensitive branch is still handled by simple point covers; this keeps the
-  well‑founded structure ready for a fully recursive version.
-  -/
-  /--
-  Core recursive constructor parameterised by a set of "live" coordinates `A`.
-  The parameter `h` tracks the remaining entropy budget; at each sensitive
-  branching step we consume one unit of this budget.  Functions in `F` are
-  assumed insensitive outside `A` via the hypothesis `hA`.
+  Core constructor for the recursive cover algorithm.  The set `A` tracks the
+  coordinates that may still be sensitive; functions in `F` are assumed
+  insensitive outside `A` by the hypothesis `hA`.  The parameter `h` is the
+  remaining entropy budget.  In this version the sensitive branch is handled
+  by *point covers* rather than further recursion – keeping the definition
+  simple while the fully recursive version is developed.
   -/
   noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n))
-      (h : ℕ) [Fintype (Point n)] (hn : 0 < n)
+      (h : ℕ) [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h)
       (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
       CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
     classical
@@ -1437,31 +1433,21 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
         CoverResP.lift_erase_false (F := F) (f₀ := f₀)
           (hf₀F := hf₀F) (hf₀false := hf₀false)
           (cover' := buildCoverLex3A (F := F.erase f₀) (A := A)
-            (h := h) (hn := hn) (hA := hA'))
+            (h := h) (hn := hn) (hbase := hbase) (hA := hA'))
     ·
       -- No constantly `false` functions remain.
       by_cases hsens : ∃ i ∈ A, sensitiveCoord F i
       ·
-        -- Perform genuine branching on a sensitive coordinate `i ∈ A`.
+        -- Perform a simple split on a sensitive coordinate `i ∈ A`.
         classical
         let i := Classical.choose hsens
         have hiData := Classical.choose_spec hsens
         rcases hiData with ⟨hiA, hi⟩
-        -- Propagate the insensitivity invariant to each restricted family.
-        let hA₀ :=
-          insens_off_A_restrict (F := F) (A := A) (hA := hA) (i := i)
-            (b := false)
-        let hA₁ :=
-          insens_off_A_restrict (F := F) (A := A) (hA := hA) (i := i)
-            (b := true)
-        -- Recursive covers for the two branches fixing `i` to `false` and `true`.
-        -- The entropy budget is decreased on each branch.
+        -- Point covers for the two branches fixing `i` to `false` and `true`.
         let cover₀ :=
-          buildCoverLex3A (F := F.restrict i false) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hA := hA₀)
+          CoverResP.pointCover (F := F.restrict i false) (h := h) hn hbase
         let cover₁ :=
-          buildCoverLex3A (F := F.restrict i true) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hA := hA₁)
+          CoverResP.pointCover (F := F.restrict i true) (h := h) hn hbase
         -- After restriction the coordinate `i` becomes insensitive.
         have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
           coordSensitivity_family_restrict_self_zero (F := F) (i := i)
@@ -1469,7 +1455,7 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
         have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
           coordSensitivity_family_restrict_self_zero (F := F) (i := i)
             (b := true)
-        -- Glue the covers of the branches and upgrade the budget.
+        -- Glue the point covers of the branches and upgrade the budget.
         exact
           glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
             (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
@@ -1498,41 +1484,14 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
     measureLex3 F A
   decreasing_by
     classical
-    -- Recursive call in the `hfalse` branch removes a function from the family.
-    ·
-      let f₀ := Classical.choose hfalse
-      have hf₀ := Classical.choose_spec hfalse
-      have hf₀F : f₀ ∈ F := hf₀.1
-      have hdrop₀ :
-          measureLex3Rel (measureLex3 (F.erase f₀) A) (measureLex3 F A) :=
-        measureLex3_erase_lt (F := F) (A := A) (f := f₀) hf₀F
-      simpa using hdrop₀
-    -- Recursive call fixing the sensitive coordinate to `false`.
-    ·
-      let i := Classical.choose hsens
-      have hiData := Classical.choose_spec hsens
-      rcases hiData with ⟨hiA, _hi⟩
-      have hdrop₁ :
-          measureLex3Rel
-            (measureLex3 (F.restrict i false) (A.erase i))
-            (measureLex3 F A) := by
-        simpa [restrictDrop] using
-          (measureLex3_restrictDrop_lt (F := F) (A := A) (i := i)
-            (hi := hiA) (b := false))
-      simpa using hdrop₁
-    -- Recursive call fixing the sensitive coordinate to `true`.
-    ·
-      let i := Classical.choose hsens
-      have hiData := Classical.choose_spec hsens
-      rcases hiData with ⟨hiA, _hi⟩
-      have hdrop₂ :
-          measureLex3Rel
-            (measureLex3 (F.restrict i true) (A.erase i))
-            (measureLex3 F A) := by
-        simpa [restrictDrop] using
-          (measureLex3_restrictDrop_lt (F := F) (A := A) (i := i)
-            (hi := hiA) (b := true))
-      simpa using hdrop₂
+    -- The only recursive call occurs when removing a constantly `false` function.
+    let f₀ := Classical.choose hfalse
+    have hf₀ := Classical.choose_spec hfalse
+    have hf₀F : f₀ ∈ F := hf₀.1
+    have hdrop₀ :
+        measureLex3Rel (measureLex3 (F.erase f₀) A) (measureLex3 F A) :=
+      measureLex3_erase_lt (F := F) (A := A) (f := f₀) hf₀F
+    simpa using hdrop₀
 
   /--
   Wrapper around `buildCoverLex3A` that starts with all coordinates available.
@@ -1544,7 +1503,7 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
     -- At the top level every coordinate is considered available.
     refine
       buildCoverLex3A (F := F) (A := Finset.univ) (h := h)
-        (hn := hn) ?_
+        (hn := hn) (hbase := hbase) ?_
     intro j hj f hf
     cases hj (by simp)
 

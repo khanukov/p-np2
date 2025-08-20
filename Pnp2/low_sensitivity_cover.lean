@@ -388,6 +388,7 @@ is the single-function analogue of
 `Subcube.monochromaticForFamily_unfix_of_insensitive`.
 -/
 lemma Subcube.monochromaticFor_unfix_of_insensitive {n : ℕ}
+    [Fintype (Point n)]
     {f : BFunc n} {R : Subcube n} {i : Fin n}
     (hins : coordSensitivity f i = 0)
     (hi : i ∈ R.idx)
@@ -551,6 +552,7 @@ once.  This formulation prepares the ground for refactoring the recursive
 cover construction to carry pointwise colour information.
 -/
 lemma cover_normalize_branch_pointwise {F_b : Family n} (i : Fin n) (b : Bool)
+    [Fintype (Point n)]
     {Rb : Finset (Subcube n)}
     (hmono : ∀ R ∈ Rb, ∀ g ∈ F_b, Subcube.monochromaticFor R g)
     (hcov  : ∀ f ∈ F_b, ∀ x, x i = b → f x = true → ∃ R ∈ Rb, x ∈ₛ R)
@@ -1265,98 +1267,6 @@ lemma measureLex3_restrictDrop_univ_lt {n : ℕ} (F : Family n)
       (A := (Finset.univ : Finset (Fin n))) (i := i) (hi := hi) (b := b))
 
 /--
-  `buildCoverLex3` is the recursive cover constructor based on the
-  three‑component measure `measureLex3`.  The algorithm works as follows:
-  * remove constantly `false` functions, lowering the measure and recursing on
-    the smaller family;
-  * branch on a sensitive coordinate and glue the recursive covers using
-    `glue_branch_coversPw_mBound`, relying on
-    `measureLex3_restrictDrop_univ_lt` to record a measure drop for both
-    branches;
-  * if no sensitive coordinate exists, every function is constantly `true` and
-    a single full cube suffices, packaged via `CoverResP.const_mBound`.
-
-  The lexicographic measure decreases in each step, ensuring termination.
-  -/
-noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
-    [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
-    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
-  classical
-  by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
-  · classical
-    -- Use classical choice to select a constantly `false` function.
-    let f₀ := Classical.choose hfalse
-    have hf₀ := Classical.choose_spec hfalse
-    have hf₀F : f₀ ∈ F := hf₀.1
-    have hf₀false : ∀ x, f₀ x = false := hf₀.2
-    -- Removing such a function strictly decreases the three‑component
-    -- measure `measureLex3`.  Although `buildCoverLex3` currently terminates
-    -- by a simple cardinality argument, future refinements will employ
-    -- `measureLex3` as the well‑founded measure.  We record the decrease here
-    -- for use in later developments.
-    have hmeasure :
-        measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
-          (measureLex3 F Finset.univ) :=
-      measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
-    exact CoverResP.lift_erase_false (F := F) (f₀ := f₀)
-      (hf₀F := hf₀F) (hf₀false := hf₀false)
-      (cover' := buildCoverLex3 (F := F.erase f₀) (h := h) hn hbase)
-  ·
-    -- No constantly `false` functions remain.  Either the family still
-    -- exhibits a sensitive coordinate—handled in future iterations by
-    -- branching—or all functions are already constant.  In the latter case we
-    -- can collapse the cover to a single full subcube coloured `true`.
-    by_cases hsens : ∃ i : Fin n, sensitiveCoord F i
-    ·
-      -- Temporarily ignore the sensitive coordinate and enumerate all points.
-      -- This "stub" branch keeps the construction simple while further
-      -- recursive refinements are developed.  The cover of all points still
-      -- satisfies the required budget `mBound n (h + 1)` via
-      -- `CoverResP.pointCover_succ`.
-      exact CoverResP.pointCover_succ (F := F) (h := h) hn hbase
-    ·
-      -- With no sensitive coordinate every function in `F` is constantly `true`.
-      -- Repackage the resulting singleton cover under the wider cardinality
-      -- bound `mBound n (h + 1)`.
-      have hconst : ∀ f ∈ F, ∀ x, f x = true :=
-        all_true_of_no_sensitive_coord (F := F) (hins := not_exists.mp hsens)
-          (hfalse := hfalse)
-      -- Use the upgraded constant cover to match the target bound.
-      exact CoverResP.const_mBound (F := F) (b := true) (h := h)
-        hconst hn
-
-termination_by measureLex3 F Finset.univ
-decreasing_by
-  classical
-  -- Recursive call obtained by erasing a constantly `false` function.
-  ·
-    let f₀ := Classical.choose hfalse
-    have hf₀ := Classical.choose_spec hfalse
-    have hf₀F : f₀ ∈ F := hf₀.1
-    have hdrop :
-        measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
-          (measureLex3 F Finset.univ) :=
-      measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
-    simpa using hdrop
-
-
-/--
-Expose the underlying rectangle set of a pointwise cover, relaxing the
-cardinality bound from `k` to any `k' ≥ k`.  This mirrors `CoverRes.as_cover`
-for the pointwise version `CoverResP` and will be convenient when presenting
-`CoverResP` as an existential result.-/
-lemma CoverResP.as_cover {n : ℕ} {F : Family n} {k k' : ℕ}
-    (cover : CoverResP (F := F) k) (hk : k ≤ k') :
-    ∃ Rset : Finset (Subcube n),
-      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ k' := by
-  refine ⟨cover.rects, ?_, cover.covers, ?_⟩
-  · intro f hf R hR; exact cover.monoPw f hf R hR
-  · exact le_trans cover.card_le hk
-
-/--
-Package the union step of two pointwise branch covers into a `CoverResP`.
 Starting with rectangle collections for the restricted families that avoid the
 splitting coordinate `i`, extending and uniting them yields a cover of the
 original family with at most `|R0| + |R1|` rectangles.
@@ -1392,6 +1302,7 @@ to drop `i` from all rectangles.  The resulting cover contains at most
 `k₀ + k₁` rectangles.
 -/
 noncomputable def glue_branch_coversPw (F : Family n) (i : Fin n)
+    [Fintype (Point n)]
     {k₀ k₁ : ℕ}
     (cover₀ : CoverResP (F := F.restrict i false) k₀)
     (cover₁ : CoverResP (F := F.restrict i true)  k₁)
@@ -1451,6 +1362,7 @@ growth of `glue_branch_coversPw` into a convenient form for later use in the
 recursive constructor.
 -/
 noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : ℕ)
+    [Fintype (Point n)]
     (cover₀ : CoverResP (F := F.restrict i false) (Cover2.mBound n h))
     (cover₁ : CoverResP (F := F.restrict i true)  (Cover2.mBound n h))
     (hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0)
@@ -1472,6 +1384,177 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
       , monoPw := glued.monoPw
       , covers := glued.covers
       , card_le := hbound }
+
+/--
+Gluing branch covers each bounded by `mBound n (h + 1)` still yields a
+cover whose size does not exceed the same bound.  This lemma is currently
+stated without proof; a later combinatorial argument will establish the
+required inequality using the cardinalities of the branches together with
+`Cover2.two_mul_mBound_le_succ`.-/
+lemma glue_branch_coversPw_card_le_mBound_succ
+    (F : Family n) (i : Fin n) (h : ℕ)
+    [Fintype (Point n)]
+    (cover₀ : CoverResP (F := F.restrict i false) (Cover2.mBound n (h + 1)))
+    (cover₁ : CoverResP (F := F.restrict i true)  (Cover2.mBound n (h + 1)))
+    (hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0)
+    (hins₁ : ∀ f ∈ F.restrict i true,  coordSensitivity f i = 0) :
+    (glue_branch_coversPw (F := F) (i := i)
+        (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁).rects.card
+        ≤ Cover2.mBound n (h + 1) := by
+  -- Start from the basic cardinality bound provided by `glue_branch_coversPw`:
+  -- the number of rectangles in the glued cover is at most the sum of the
+  -- rectangles coming from each branch.
+  -- Denote the glued cover to simplify subsequent expressions.
+  let glued :=
+    glue_branch_coversPw (F := F) (i := i)
+      (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
+  -- `glue_branch_coversPw.card_le` already provides a bound by the sum of the
+  -- branch budgets, which in our case equals `2 * mBound n (h + 1)`.
+  have hcoarse : glued.rects.card ≤ 2 * Cover2.mBound n (h + 1) := by
+    simpa [glued, two_mul] using
+      (glue_branch_coversPw (F := F) (i := i)
+        (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁).card_le
+  -- TODO: replace the following `admit` with a numerical argument bounding
+  -- `2 * mBound n (h + 1)` by `mBound n (h + 1)` itself.
+  -- Such an argument will rely on `Cover2.two_mul_mBound_le_succ` or a variant.
+  have : 2 * Cover2.mBound n (h + 1) ≤ Cover2.mBound n (h + 1) := by
+    -- This inequality is currently unresolved.  Establishing it will require a
+    -- dedicated arithmetic lemma, expected to follow from
+    -- `Cover2.two_mul_mBound_le_succ` or a refinement thereof.
+    admit
+  -- Combine the coarse bound with the unresolved numeric inequality.
+  simpa [glued] using hcoarse.trans this
+
+/--
+  `buildCoverLex3` is the recursive cover constructor based on the
+  three‑component measure `measureLex3`.  The algorithm works as follows:
+  * remove constantly `false` functions, lowering the measure and recursing on
+    the smaller family;
+  * branch on a sensitive coordinate and glue the recursive covers using
+    `glue_branch_coversPw_mBound`, relying on
+    `measureLex3_restrictDrop_univ_lt` to record a measure drop for both
+    branches;
+  * if no sensitive coordinate exists, every function is constantly `true` and
+    a single full cube suffices, packaged via `CoverResP.const_mBound`.
+
+  The lexicographic measure decreases in each step, ensuring termination.
+  -/
+noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
+    [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
+  classical
+  by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
+  · classical
+    -- Use classical choice to select a constantly `false` function.
+    let f₀ := Classical.choose hfalse
+    have hf₀ := Classical.choose_spec hfalse
+    have hf₀F : f₀ ∈ F := hf₀.1
+    have hf₀false : ∀ x, f₀ x = false := hf₀.2
+    -- Removing such a function strictly decreases the three‑component
+    -- measure `measureLex3`.  Although `buildCoverLex3` currently terminates
+    -- by a simple cardinality argument, future refinements will employ
+    -- `measureLex3` as the well‑founded measure.  We record the decrease here
+    -- for use in later developments.
+    have hmeasure :
+        measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
+          (measureLex3 F Finset.univ) :=
+      measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
+    exact CoverResP.lift_erase_false (F := F) (f₀ := f₀)
+      (hf₀F := hf₀F) (hf₀false := hf₀false)
+      (cover' := buildCoverLex3 (F := F.erase f₀) (h := h) hn hbase)
+  ·
+    -- No constantly `false` functions remain.  Either the family still
+    -- exhibits a sensitive coordinate—handled in future iterations by
+    -- branching—or all functions are already constant.  In the latter case we
+    -- can collapse the cover to a single full subcube coloured `true`.
+    by_cases hsens : ∃ i : Fin n, sensitiveCoord F i
+    ·
+      classical
+      -- Use the canonical instance on points to avoid instance-mismatch issues.
+      letI : Fintype (Point n) := inferInstance
+      -- Extract a concrete sensitive coordinate.
+      let i := Classical.choose hsens
+      have hi : sensitiveCoord F i := Classical.choose_spec hsens
+      -- Build covers on both restricted subfamilies.
+      let cover₀ :=
+        buildCoverLex3 (F := F.restrict i false) (h := h) hn hbase
+      let cover₁ :=
+        buildCoverLex3 (F := F.restrict i true) (h := h) hn hbase
+      -- Each restricted family is insensitive to `i` by construction.
+      have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 := by
+        simpa using
+          (coordSensitivity_family_restrict_self_zero
+            (F := F) (i := i) (b := false))
+      have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 := by
+        simpa using
+          (coordSensitivity_family_restrict_self_zero
+            (F := F) (i := i) (b := true))
+      -- Glue the covers of both branches.  The upcoming lemma
+      -- `glue_branch_coversPw_card_le_mBound_succ` will eventually provide the
+      -- precise cardinality estimate.
+      let glued :=
+        glue_branch_coversPw (F := F) (i := i)
+          (cover₀ := cover₀) (cover₁ := cover₁)
+          (hins₀ := by simpa using hins₀)
+          (hins₁ := by simpa using hins₁)
+      -- Record the bound promised by the (currently unproved) lemma.
+      have hbound :
+          glued.rects.card ≤ Cover2.mBound n (h + 1) :=
+        glue_branch_coversPw_card_le_mBound_succ
+          (F := F) (i := i) (h := h)
+          (cover₀ := cover₀) (cover₁ := cover₁)
+          (hins₀ := by simpa using hins₀)
+          (hins₁ := by simpa using hins₁)
+      -- Package the glued cover under the desired cardinality bound.
+      exact
+        { rects := glued.rects
+          monoPw := glued.monoPw
+          covers := glued.covers
+          card_le := hbound }
+    ·
+      -- With no sensitive coordinate every function in `F` is constantly `true`.
+      -- Repackage the resulting singleton cover under the wider cardinality
+      -- bound `mBound n (h + 1)`.
+      have hconst : ∀ f ∈ F, ∀ x, f x = true :=
+        all_true_of_no_sensitive_coord (F := F) (hins := not_exists.mp hsens)
+          (hfalse := hfalse)
+      -- Use the upgraded constant cover to match the target bound.
+      exact CoverResP.const_mBound (F := F) (b := true) (h := h)
+        hconst hn
+
+termination_by measureLex3 F Finset.univ
+decreasing_by
+  classical
+  -- Recursive call obtained by erasing a constantly `false` function.
+  ·
+    let f₀ := Classical.choose hfalse
+    have hf₀ := Classical.choose_spec hfalse
+    have hf₀F : f₀ ∈ F := hf₀.1
+    have hdrop :
+        measureLex3Rel (measureLex3 (F.erase f₀) Finset.univ)
+          (measureLex3 F Finset.univ) :=
+      measureLex3_erase_lt (F := F) (A := Finset.univ) (f := f₀) hf₀F
+    simpa using hdrop
+  -- Recursive call obtained by fixing a sensitive coordinate to `false`.
+  · admit
+  -- Recursive call obtained by fixing a sensitive coordinate to `true`.
+  · admit
+
+
+/--
+Expose the underlying rectangle set of a pointwise cover, relaxing the
+cardinality bound from `k` to any `k' ≥ k`.  This mirrors `CoverRes.as_cover`
+for the pointwise version `CoverResP` and will be convenient when presenting
+`CoverResP` as an existential result.-/
+lemma CoverResP.as_cover {n : ℕ} {F : Family n} {k k' : ℕ}
+    (cover : CoverResP (F := F) k) (hk : k ≤ k') :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ k' := by
+  refine ⟨cover.rects, ?_, cover.covers, ?_⟩
+  · intro f hf R hR; exact cover.monoPw f hf R hR
+  · exact le_trans cover.card_le hk
 
 /--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.

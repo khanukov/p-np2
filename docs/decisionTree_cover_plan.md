@@ -367,9 +367,11 @@
     - В чувствительной ветви `buildCoverLex3` вызвано
       `exists_branch_measure_drop_univ`, что фиксирует факт убывания меры при
       дальнейшей рекурсивной ветвизации.
-    - Добавлены обёртки `CoverResP.pointCover_succ` и `CoverResP.const_mBound`,
-      позволяющие сразу возвращать покрытие с бюджетом `mBound n (h + 1)`;
-      `buildCoverLex3` использует их, готовя почву для настоящего ветвления.
+    - Добавлены обёртки `CoverResP.pointCover_succ`, `CoverResP.const_mBound`
+      и новая версия `CoverResP.const_mBound_exact`, позволяющие получать
+      покрытие при точном бюджете и при необходимости "поднимать" его до
+      следующего уровня `mBound`.  `buildCoverLex3` использует эту обёртку,
+      подготавливая почву для полноценного рекурсивного ветвления.
     - ✅ Ветвление реализовано через `restrictDrop` и
       `glue_branch_coversPw_mBound`, каждая ветка строится через `CoverResP.pointCover`
       без необходимости отдельного доказательства границы `card_le`.

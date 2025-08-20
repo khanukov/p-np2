@@ -1196,6 +1196,27 @@ noncomputable def CoverResP.const_mBound (F : Family n) (b : Bool) (h : ℕ)
       , card_le := le_trans cover.card_le hk }
 
 /--
+Upgrade a constant-family cover to an arbitrary entropy budget `h` without
+adding any rectangles.  Starting from the singleton cover `CoverResP.const`,
+this simply enlarges the cardinality bound to `Cover2.mBound n h`.
+-/
+noncomputable def CoverResP.const_mBound_exact (F : Family n) (b : Bool) (h : ℕ)
+    (hconst : ∀ f ∈ F, ∀ x, f x = b) (hn : 0 < n) :
+    CoverResP (F := F) (k := Cover2.mBound n h) := by
+  classical
+  -- Begin with the basic constant cover of size one.
+  let cover := CoverResP.const (F := F) (b := b) hconst
+  -- Show that the requested `mBound` budget dominates the singleton.
+  have hk : 1 ≤ Cover2.mBound n h :=
+    Nat.succ_le_of_lt (Cover2.mBound_pos (n := n) (h := h) hn)
+  -- Repackage the cover under the larger cardinality bound.
+  refine
+    { rects := cover.rects
+      , monoPw := cover.monoPw
+      , covers := cover.covers
+      , card_le := le_trans cover.card_le hk }
+
+/--
 Specialised orientation of `exists_branch_measure_drop_of_sensitive` to the
 full coordinate set.  Whenever the family `F` has a sensitive coordinate,
 restricting along that coordinate strictly decreases the three-component
@@ -1459,9 +1480,14 @@ noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
       have hconst : ∀ f ∈ F, ∀ x, f x = true :=
         all_true_of_no_sensitive_coord (F := F) (hins := not_exists.mp hsens)
           (hfalse := hfalse)
-      -- Use the upgraded constant cover to match the target bound.
-      exact CoverResP.const_mBound (F := F) (b := true) (h := h)
-        hconst hn
+      -- Start with the exact-budget constant cover and then enlarge the bound.
+      let cover_const :=
+        CoverResP.const_mBound_exact (F := F) (b := true) (h := h) hconst hn
+      have hk : Cover2.mBound n h ≤ Cover2.mBound n (h + 1) :=
+        Cover2.mBound_le_succ (n := n) (h := h)
+      -- Assemble the final cover with the inflated cardinality bound.
+      exact
+        { cover_const with card_le := le_trans cover_const.card_le hk }
 
 termination_by measureLex3 F Finset.univ
 decreasing_by

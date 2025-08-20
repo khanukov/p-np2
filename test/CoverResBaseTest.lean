@@ -271,13 +271,14 @@ example : True := by
     -- Reduce `buildCoverLex3` to the constant branch and compute the cardinality.
     have hrects :
         cover.rects =
-          (CoverResP.const_mBound (F := F) (b := true) (h := 1)
+          (CoverResP.const_mBound_exact (F := F) (b := true) (h := 1)
             hconst hn).rects := by
-      simp [cover, buildCoverLex3, hfalse, hsens, hconst]
+      simp [cover, buildCoverLex3, hfalse, hsens, hconst,
+        CoverResP.const_mBound_exact]
     have hcardConst :
-        (CoverResP.const_mBound (F := F) (b := true) (h := 1)
+        (CoverResP.const_mBound_exact (F := F) (b := true) (h := 1)
             hconst hn).rects.card = 1 := by
-      simp [CoverResP.const_mBound, CoverResP.const]
+      simp [CoverResP.const_mBound_exact, CoverResP.const]
     simpa [hrects, hcardConst]
   -- Sanity check: the single rectangle covers the all-true input.
   have hfF : f ∈ F := by simp [F]

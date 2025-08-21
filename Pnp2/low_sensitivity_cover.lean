@@ -1484,11 +1484,19 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
         have cover₀ :
             CoverResP (F := F.restrict i false) (k := Cover2.mBound n 0) :=
           CoverResP.pointCover (F := F.restrict i false) (h := 0) hn
-            (by simpa [hh] using (show n ≤ 5 * h from by have := Nat.le_of_lt_succ hn; simp [hh] at this))
+            (by
+              -- provide or thread a valid bound hypothesis here
+              have hbase0 : n ≤ 5 * 0 := by
+                exact ?impossible_or_adjust_pointCover
+              simpa using hbase0)
         have cover₁ :
             CoverResP (F := F.restrict i true) (k := Cover2.mBound n 0) :=
           CoverResP.pointCover (F := F.restrict i true) (h := 0) hn
-            (by simpa [hh] using (show n ≤ 5 * h from by have := Nat.le_of_lt_succ hn; simp [hh] at this))
+            (by
+              -- provide or thread a valid bound hypothesis here
+              have hbase0 : n ≤ 5 * 0 := by
+                exact ?impossible_or_adjust_pointCover
+              simpa using hbase0)
         exact
           glue_branch_coversPw_mBound (F := F) (i := i) (h := 0)
             (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁

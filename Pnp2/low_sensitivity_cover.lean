@@ -1406,85 +1406,141 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
       , covers := glued.covers
       , card_le := hbound }
 
-  /--
-  Core constructor for the recursive cover algorithm.  The set `A` tracks the
-  coordinates that may still be sensitive; functions in `F` are assumed
-  insensitive outside `A` by the hypothesis `hA`.  The parameter `h` is the
-  remaining entropy budget.  In this version the sensitive branch is handled
-  by *point covers* rather than further recursion – keeping the definition
-  simple while the fully recursive version is developed.
-  -/
-  noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n))
-      (h : ℕ) [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h)
-      (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
-      CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
-    classical
-    by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
+/--
+`buildCoverLex3A` constructs a pointwise cover of a family `F` given a set of
+available coordinates `A`.  The auxiliary hypothesis `hA` states that every
+coordinate outside of `A` is already insensitive for all members of `F`.  The
+construction mirrors `buildCoverLex3` but tracks the coordinate set explicitly
+so that recursive calls remove the chosen branching coordinate from `A`.
+-/
+noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
+    [Fintype (Point n)] (hn : 0 < n)
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
+  classical
+  by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
+  ·
+    -- Remove a constantly `false` function and recurse on the smaller family.
+    let f₀ := Classical.choose hfalse
+    have hf₀ := Classical.choose_spec hfalse
+    have hf₀F : f₀ ∈ F := hf₀.1
+    have hf₀false : ∀ x, f₀ x = false := hf₀.2
+    have hA' : ∀ j ∉ A, ∀ f ∈ F.erase f₀, coordSensitivity f j = 0 := by
+      intro j hj f hf
+      exact hA j hj f (Finset.mem_of_mem_erase hf)
+    refine
+      CoverResP.lift_erase_false (F := F) (f₀ := f₀)
+        (hf₀F := hf₀F) (hf₀false := hf₀false)
+        (cover' := buildCoverLex3A (F := F.erase f₀) (A := A)
+          (h := h) (hn := hn) (hA := hA'))
+  ·
+    -- No constantly `false` functions remain.
+    by_cases hsens : ∃ i ∈ A, sensitiveCoord F i
     ·
-      -- Remove a constantly `false` function and recurse on the smaller family.
-      let f₀ := Classical.choose hfalse
-      have hf₀ := Classical.choose_spec hfalse
-      have hf₀F : f₀ ∈ F := hf₀.1
-      have hf₀false : ∀ x, f₀ x = false := hf₀.2
-      have hA' : ∀ j ∉ A, ∀ f ∈ F.erase f₀, coordSensitivity f j = 0 := by
+      -- Choose a sensitive coordinate `i ∈ A` and branch on its value.
+      classical
+      let i := Classical.choose hsens
+      have hiData := Classical.choose_spec hsens
+      rcases hiData with ⟨hiA, hi⟩
+
+      -- Prepare insensitivity hypotheses for recursive calls on each branch.
+      have hA0 :
+          ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i false,
+            coordSensitivity f j = 0 := by
         intro j hj f hf
-        exact hA j hj f (Finset.mem_of_mem_erase hf)
-      refine
-        CoverResP.lift_erase_false (F := F) (f₀ := f₀)
-          (hf₀F := hf₀F) (hf₀false := hf₀false)
-          (cover' := buildCoverLex3A (F := F.erase f₀) (A := A)
-            (h := h) (hn := hn) (hbase := hbase) (hA := hA'))
-    ·
-      -- No constantly `false` functions remain.
-      by_cases hsens : ∃ i ∈ A, sensitiveCoord F i
+        by_cases hji : j = i
+        · subst hji
+          exact coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+            (b := false) f hf
+        ·
+          exact
+            hA j (by simpa [Finset.mem_erase, hji] using hj) f
+              (Family.mem_of_mem_restrict hf)
+      have hA1 :
+          ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i true,
+            coordSensitivity f j = 0 := by
+        intro j hj f hf
+        by_cases hji : j = i
+        · subst hji
+          exact coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+            (b := true) f hf
+        ·
+          exact
+            hA j (by simpa [Finset.mem_erase, hji] using hj) f
+              (Family.mem_of_mem_restrict hf)
+
+      -- Both branches are insensitive to the chosen coordinate itself.
+      have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
+        coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+          (b := false)
+      have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
+        coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+          (b := true)
+
+      -- Split depending on the remaining budget `h`.
+      by_cases hh : h = 0
       ·
-        -- Perform a simple split on a sensitive coordinate `i ∈ A`.
-        classical
-        let i := Classical.choose hsens
-        have hiData := Classical.choose_spec hsens
-        rcases hiData with ⟨hiA, hi⟩
-        -- Point covers for the two branches fixing `i` to `false` and `true`.
-        let cover₀ :=
-          CoverResP.pointCover (F := F.restrict i false) (h := h) hn hbase
-        let cover₁ :=
-          CoverResP.pointCover (F := F.restrict i true) (h := h) hn hbase
-        -- After restriction the coordinate `i` becomes insensitive.
-        have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
-          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := false)
-        have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
-          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := true)
-        -- Glue the point covers of the branches and upgrade the budget.
+        -- Base case: when no budget remains, fall back to point covers.
+        have cover₀ :
+            CoverResP (F := F.restrict i false) (k := Cover2.mBound n 0) :=
+          CoverResP.pointCover (F := F.restrict i false) (h := 0) hn
+            (by simpa [hh] using (show n ≤ 5 * h from by have := Nat.le_of_lt_succ hn; simp [hh] at this))
+        have cover₁ :
+            CoverResP (F := F.restrict i true) (k := Cover2.mBound n 0) :=
+          CoverResP.pointCover (F := F.restrict i true) (h := 0) hn
+            (by simpa [hh] using (show n ≤ 5 * h from by have := Nat.le_of_lt_succ hn; simp [hh] at this))
+        exact
+          glue_branch_coversPw_mBound (F := F) (i := i) (h := 0)
+            (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
+      ·
+        -- Recursive step: build covers for both branches with a smaller budget.
+        have hpos : 0 < h := Nat.pos_of_ne_zero hh
+        have cover₀ :
+            CoverResP (F := F.restrict i false) (k := Cover2.mBound n h) := by
+          have cover :=
+            buildCoverLex3A
+              (F := F.restrict i false) (A := A.erase i)
+              (h := h - 1) (hn := hn) (hA := hA0)
+          have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+          simpa [this] using cover
+        have cover₁ :
+            CoverResP (F := F.restrict i true) (k := Cover2.mBound n h) := by
+          have cover :=
+            buildCoverLex3A
+              (F := F.restrict i true) (A := A.erase i)
+              (h := h - 1) (hn := hn) (hA := hA1)
+          have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+          simpa [this] using cover
+        -- Glue the recursively obtained covers, upgrading the budget to `h + 1`.
         exact
           glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
             (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
-      ·
-        -- All remaining coordinates are insensitive; every function is constant.
-        have hins_all : ∀ j : Fin n, ¬ sensitiveCoord F j := by
-          intro j
-          by_cases hjA : j ∈ A
-          ·
-            have haux := (not_exists.mp hsens) j
-            exact fun h => haux ⟨hjA, h⟩
-          ·
-            have hz := hA j hjA
-            intro hcontr
-            rcases hcontr with ⟨f, hfF, x, hx⟩
-            have hzero :=
-              (coordSensitivity_eq_zero_iff (f := f) (i := j)).1 (hz f hfF) x
-            exact hx hzero
-        have hconst : ∀ f ∈ F, ∀ x, f x = true :=
-          all_true_of_no_sensitive_coord (F := F) (hins := hins_all)
-            (hfalse := hfalse)
-        exact
-          CoverResP.const_mBound (F := F) (b := true) (h := h) hconst hn
+    ·
+      -- All remaining coordinates are insensitive; every function is constant.
+      have hins_all : ∀ j : Fin n, ¬ sensitiveCoord F j := by
+        intro j
+        by_cases hjA : j ∈ A
+        ·
+          have haux := (not_exists.mp hsens) j
+          exact fun h => haux ⟨hjA, h⟩
+        ·
+          have hz := hA j hjA
+          intro hcontr
+          rcases hcontr with ⟨f, hfF, x, hx⟩
+          have hzero :=
+            (coordSensitivity_eq_zero_iff (f := f) (i := j)).1 (hz f hfF) x
+          exact hx hzero
+      have hconst : ∀ f ∈ F, ∀ x, f x = true :=
+        all_true_of_no_sensitive_coord (F := F) (hins := hins_all)
+          (hfalse := hfalse)
+      exact
+        CoverResP.const_mBound (F := F) (b := true) (h := h) hconst hn
 
   termination_by
     measureLex3 F A
   decreasing_by
     classical
-    -- The only recursive call occurs when removing a constantly `false` function.
+    -- Removing a constantly `false` function decreases the measure.
     let f₀ := Classical.choose hfalse
     have hf₀ := Classical.choose_spec hfalse
     have hf₀F : f₀ ∈ F := hf₀.1
@@ -1492,20 +1548,28 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
         measureLex3Rel (measureLex3 (F.erase f₀) A) (measureLex3 F A) :=
       measureLex3_erase_lt (F := F) (A := A) (f := f₀) hf₀F
     simpa using hdrop₀
+    -- Restricting on the chosen sensitive coordinate strictly decreases.
+    have hdrop_false :
+        measureLex3Rel (measureLex3 (F.restrict i false) (A.erase i))
+          (measureLex3 F A) :=
+      measureLex3_restrict_lt_dim (F := F) (A := A) (i := i)
+        (hi := hiA) (b := false)
+    simpa using hdrop_false
+    have hdrop_true :
+        measureLex3Rel (measureLex3 (F.restrict i true) (A.erase i))
+          (measureLex3 F A) :=
+      measureLex3_restrict_lt_dim (F := F) (A := A) (i := i)
+        (hi := hiA) (b := true)
+    simpa using hdrop_true
 
-  /--
-  Wrapper around `buildCoverLex3A` that starts with all coordinates available.
-  -/
-  noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
-      [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
-      CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
-    classical
-    -- At the top level every coordinate is considered available.
-    refine
-      buildCoverLex3A (F := F) (A := Finset.univ) (h := h)
-        (hn := hn) (hbase := hbase) ?_
-    intro j hj f hf
-    cases hj (by simp)
+noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
+    [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) :=
+  buildCoverLex3A (F := F) (A := (Finset.univ : Finset (Fin n))) (h := h)
+    (hn := hn)
+    (hA := by
+      intro j hj f hf
+      exact False.elim (hj (Finset.mem_univ j)))
 
 
 /--

@@ -1511,8 +1511,9 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
               (h := h - 1) (hn := hn) (hA := hA1)
           have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
           simpa [this] using cover
+        -- Glue the recursively obtained covers, upgrading the budget to `h + 1`.
         exact
-          glue_branch_coversPw_mBound (F := F) (i := i) (h := h - 1)
+          glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
             (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
     ·
       -- All remaining coordinates are insensitive; every function is constant.
@@ -1563,142 +1564,12 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
 
 noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
-    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
-  classical
-  by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
-  ·
-    -- Remove a constantly `false` function and recurse on the smaller family.
-    let f₀ := Classical.choose hfalse
-    have hf₀ := Classical.choose_spec hfalse
-    have hf₀F : f₀ ∈ F := hf₀.1
-    have hf₀false : ∀ x, f₀ x = false := hf₀.2
-    refine
-      CoverResP.lift_erase_false (F := F) (f₀ := f₀)
-        (hf₀F := hf₀F) (hf₀false := hf₀false)
-        (cover' := buildCoverLex3 (F := F.erase f₀) (h := h)
-          (hn := hn) (hbase := hbase))
-  ·
-    -- No constantly `false` functions remain.
-    by_cases hsens : ∃ i : Fin n, sensitiveCoord F i
-    ·
-      -- Choose a sensitive coordinate and branch on its value.
-      classical
-      let i := Classical.choose hsens
-      have hi : sensitiveCoord F i := Classical.choose_spec hsens
-
-      -- Measure drops for both branches (used in `decreasing_by`).
-      have hdrop0 :
-          measureLex3Rel
-            (measureLex3
-              (restrictDrop (F := F) (i := i) (b := false)
-                (Finset.univ : Finset (Fin n)))
-              ((Finset.univ : Finset (Fin n)).erase i))
-            (measureLex3 F (Finset.univ : Finset (Fin n))) :=
-        measureLex3_restrictDrop_univ_lt (F := F) (i := i) (b := false)
-      have hdrop1 :
-          measureLex3Rel
-            (measureLex3
-              (restrictDrop (F := F) (i := i) (b := true)
-                (Finset.univ : Finset (Fin n)))
-              ((Finset.univ : Finset (Fin n)).erase i))
-            (measureLex3 F (Finset.univ : Finset (Fin n))) :=
-        measureLex3_restrictDrop_univ_lt (F := F) (i := i) (b := true)
-
-      -- Split based on the remaining budget `h`.
-      by_cases hh : h = 0
-      ·
-        -- Base case: fall back to point covers when the budget is exhausted.
-        have cover₀ :
-            CoverResP (F := F.restrict i false) (k := Cover2.mBound n 0) :=
-          CoverResP.pointCover (F := F.restrict i false) (h := 0) hn
-            (by simpa [hh] using hbase)
-        have cover₁ :
-            CoverResP (F := F.restrict i true) (k := Cover2.mBound n 0) :=
-          CoverResP.pointCover (F := F.restrict i true) (h := 0) hn
-            (by simpa [hh] using hbase)
-        have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
-          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := false)
-        have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
-          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := true)
-        exact
-          glue_branch_coversPw_mBound (F := F) (i := i) (h := 0)
-            (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
-      ·
-        -- Recursive case: build covers for both branches with smaller budget.
-        have hpos : 0 < h := Nat.pos_of_ne_zero hh
-        let cover₀ :=
-          buildCoverLex3
-            (F := restrictDrop (F := F) (i := i) (b := false)
-              (Finset.univ : Finset (Fin n)))
-            (h := h - 1) (hn := hn) (hbase := hbase)
-        let cover₁ :=
-          buildCoverLex3
-            (F := restrictDrop (F := F) (i := i) (b := true)
-              (Finset.univ : Finset (Fin n)))
-            (h := h - 1) (hn := hn) (hbase := hbase)
-        have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
-          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := false)
-        have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
-          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := true)
-        exact
-          glue_branch_coversPw_mBound (F := F) (i := i) (h := h - 1)
-            (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
-    ·
-      -- All coordinates are insensitive; every function is constantly `true`.
-      have hins_all : ∀ j : Fin n, ¬ sensitiveCoord F j :=
-        not_exists.mp hsens
-      have hconst : ∀ f ∈ F, ∀ x, f x = true :=
-        all_true_of_no_sensitive_coord (F := F) (hins := hins_all)
-          (hfalse := hfalse)
-      exact
-        CoverResP.const_mBound (F := F) (b := true) (h := h) hconst hn
-
-termination_by
-  measureLex3 F (Finset.univ : Finset (Fin n))
-decreasing_by
-  classical
-  -- Handle all recursive calls using the lexicographic measure.
-  first
-  |
-    -- Removal of a constantly `false` function.
-    let f₀ := Classical.choose hfalse
-    have hf₀ := Classical.choose_spec hfalse
-    have hf₀F : f₀ ∈ F := hf₀.1
-    have hdrop₀ :
-        measureLex3Rel
-          (measureLex3 (F.erase f₀) (Finset.univ : Finset (Fin n)))
-          (measureLex3 F (Finset.univ : Finset (Fin n))) :=
-      measureLex3_erase_lt (F := F) (A := (Finset.univ : Finset (Fin n)))
-        (f := f₀) hf₀F
-    simpa using hdrop₀
-  |
-    -- Restricting to the `false` branch decreases the measure.
-    obtain ⟨i, hi⟩ := hsens
-    have hdrop₀ :
-        measureLex3Rel
-          (measureLex3
-            (restrictDrop (F := F) (i := i) (b := false)
-              (Finset.univ : Finset (Fin n)))
-            ((Finset.univ : Finset (Fin n)).erase i))
-          (measureLex3 F (Finset.univ : Finset (Fin n))) :=
-      measureLex3_restrictDrop_univ_lt (F := F) (i := i) (b := false)
-    simpa using hdrop₀
-  |
-    -- Restricting to the `true` branch also decreases the measure.
-    obtain ⟨i, hi⟩ := hsens
-    have hdrop₁ :
-        measureLex3Rel
-          (measureLex3
-            (restrictDrop (F := F) (i := i) (b := true)
-              (Finset.univ : Finset (Fin n)))
-            ((Finset.univ : Finset (Fin n)).erase i))
-          (measureLex3 F (Finset.univ : Finset (Fin n))) :=
-      measureLex3_restrictDrop_univ_lt (F := F) (i := i) (b := true)
-    simpa using hdrop₁
+    CoverResP (F := F) (k := Cover2.mBound n (h + 1)) :=
+  buildCoverLex3A (F := F) (A := (Finset.univ : Finset (Fin n))) (h := h)
+    (hn := hn)
+    (hA := by
+      intro j hj f hf
+      exact False.elim (hj (Finset.mem_univ j)))
 
 
 /--

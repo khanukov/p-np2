@@ -1414,7 +1414,7 @@ construction mirrors `buildCoverLex3` but tracks the coordinate set explicitly
 so that recursive calls remove the chosen branching coordinate from `A`.
 -/
 noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
-    [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h)
+    [Fintype (Point n)] (hn : 0 < n)
     (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
     CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
   classical
@@ -1432,7 +1432,7 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
       CoverResP.lift_erase_false (F := F) (f₀ := f₀)
         (hf₀F := hf₀F) (hf₀false := hf₀false)
         (cover' := buildCoverLex3A (F := F.erase f₀) (A := A)
-          (h := h) (hn := hn) (hbase := hbase) (hA := hA'))
+          (h := h) (hn := hn) (hA := hA'))
   ·
     -- No constantly `false` functions remain.
     by_cases hsens : ∃ i ∈ A, sensitiveCoord F i
@@ -1477,36 +1477,43 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
         coordSensitivity_family_restrict_self_zero (F := F) (i := i)
           (b := true)
 
-      -- Deduce that the entropy budget is positive; otherwise `hbase` would
-      -- contradict `hn`.
-      have hpos : 0 < h := by
-        by_contra hzero
-        have : n ≤ 0 := by simpa [hzero] using hbase
-        exact (Nat.not_lt.mpr this) hn
-
-      -- Recursive step: build covers for both branches with a smaller budget
-      -- and glue the results.
-      have cover₀ :
-          CoverResP (F := F.restrict i false) (k := Cover2.mBound n h) := by
-        have cover :=
-          buildCoverLex3A
-            (F := F.restrict i false) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hbase := hbase)
-            (hA := hA0)
-        have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-        simpa [this] using cover
-      have cover₁ :
-          CoverResP (F := F.restrict i true) (k := Cover2.mBound n h) := by
-        have cover :=
-          buildCoverLex3A
-            (F := F.restrict i true) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hbase := hbase)
-            (hA := hA1)
-        have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-        simpa [this] using cover
-      exact
-        glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
-          (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
+      -- Split depending on the remaining budget `h`.
+      by_cases hh : h = 0
+      ·
+        -- Base case: when no budget remains, fall back to point covers.
+        have cover₀ :
+            CoverResP (F := F.restrict i false) (k := Cover2.mBound n 0) :=
+          CoverResP.pointCover (F := F.restrict i false) (h := 0) hn
+            (by simpa [hh] using (show n ≤ 5 * h from by have := Nat.le_of_lt_succ hn; simp [hh] at this))
+        have cover₁ :
+            CoverResP (F := F.restrict i true) (k := Cover2.mBound n 0) :=
+          CoverResP.pointCover (F := F.restrict i true) (h := 0) hn
+            (by simpa [hh] using (show n ≤ 5 * h from by have := Nat.le_of_lt_succ hn; simp [hh] at this))
+        exact
+          glue_branch_coversPw_mBound (F := F) (i := i) (h := 0)
+            (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
+      ·
+        -- Recursive step: build covers for both branches with a smaller budget.
+        have hpos : 0 < h := Nat.pos_of_ne_zero hh
+        have cover₀ :
+            CoverResP (F := F.restrict i false) (k := Cover2.mBound n h) := by
+          have cover :=
+            buildCoverLex3A
+              (F := F.restrict i false) (A := A.erase i)
+              (h := h - 1) (hn := hn) (hA := hA0)
+          have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+          simpa [this] using cover
+        have cover₁ :
+            CoverResP (F := F.restrict i true) (k := Cover2.mBound n h) := by
+          have cover :=
+            buildCoverLex3A
+              (F := F.restrict i true) (A := A.erase i)
+              (h := h - 1) (hn := hn) (hA := hA1)
+          have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+          simpa [this] using cover
+        exact
+          glue_branch_coversPw_mBound (F := F) (i := i) (h := h - 1)
+            (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
     ·
       -- All remaining coordinates are insensitive; every function is constant.
       have hins_all : ∀ j : Fin n, ¬ sensitiveCoord F j := by

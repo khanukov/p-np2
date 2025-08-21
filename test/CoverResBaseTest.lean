@@ -274,7 +274,7 @@ example : True := by
       -- Use `hsens` to simplify away the sensitive-branch `if`.
       have hsens0 : ¬ sensitiveCoord F 0 := by
         simpa using (not_exists.mp hsens 0)
-      simp [cover, buildCoverLex3, buildCoverLex3A, hfalse, hsens0,
+      simp [cover, buildCoverLex3, hfalse, hsens0,
         CoverResP.const_mBound, CoverResP.const]
     simpa [hcard]
   -- Sanity check: the single rectangle covers the all-true input.

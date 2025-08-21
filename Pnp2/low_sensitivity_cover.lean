@@ -1458,36 +1458,21 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
       rcases hiData with ⟨hiA, hi⟩
 
       -- Prepare insensitivity hypotheses for recursive calls on each branch.
-      have hA0 :
-          ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i false,
+      have hA' :
+          ∀ b, ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i b,
             coordSensitivity f j = 0 := by
-        intro j hj f hf
+        intro b j hj f hf
         by_cases hji : j = i
         · subst hji
           exact coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := false) f hf
+            (b := b) f hf
         ·
           rcases Family.mem_of_mem_restrict hf with ⟨f', hf'F, rfl⟩
           have hzero :=
             hA j (by simpa [Finset.mem_erase, hji] using hj) f' hf'F
           exact
             coordSensitivity_restrict_eq_zero (f := f') (i := i) (j := j)
-              (b := false) hzero
-      have hA1 :
-          ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i true,
-            coordSensitivity f j = 0 := by
-        intro j hj f hf
-        by_cases hji : j = i
-        · subst hji
-          exact coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := true) f hf
-        ·
-          rcases Family.mem_of_mem_restrict hf with ⟨f', hf'F, rfl⟩
-          have hzero :=
-            hA j (by simpa [Finset.mem_erase, hji] using hj) f' hf'F
-          exact
-            coordSensitivity_restrict_eq_zero (f := f') (i := i) (j := j)
-              (b := true) hzero
+              (b := b) hzero
 
       -- Both branches are insensitive to the chosen coordinate itself.
       have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
@@ -1511,7 +1496,7 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
         have cover :=
           buildCoverLex3A
             (F := F.restrict i false) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hA := hA0)
+            (h := h - 1) (hn := hn) (hA := hA' false)
         have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
         simpa [this] using cover
       have cover₁ :
@@ -1519,7 +1504,7 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
         have cover :=
           buildCoverLex3A
             (F := F.restrict i true) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hA := hA1)
+            (h := h - 1) (hn := hn) (hA := hA' true)
         have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
         simpa [this] using cover
       -- Glue the recursively obtained covers, upgrading the budget to `h + 1`.

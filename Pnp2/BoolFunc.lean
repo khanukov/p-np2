@@ -428,6 +428,15 @@ variable {n : ℕ}
   · rintro ⟨f, hf, rfl⟩
     exact Finset.mem_image.mpr ⟨f, hf, rfl⟩
 
+/-!  A convenient elimination rule for membership in a restricted family.  The
+`Family.mem_of_mem_restrict` lemma packages the forward direction of
+`mem_restrict` so that a witness from the original family can be retrieved
+directly. -/
+lemma mem_of_mem_restrict {F : Family n} {i : Fin n} {b : Bool} {g : BFunc n}
+    (hg : g ∈ Family.restrict F i b) :
+    ∃ f ∈ F, g = BFunc.restrictCoord f i b :=
+  (mem_restrict (F := F) (i := i) (b := b) (g := g)).1 hg
+
 /-! The restricted family is no larger than the original one since `Finset.image`
 never increases cardinalities. -/
 lemma card_restrict_le (F : Family n) (i : Fin n) (b : Bool) :

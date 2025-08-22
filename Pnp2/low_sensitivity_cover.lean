@@ -1255,6 +1255,52 @@ lemma exists_branch_measure_drop_restrictDrop_univ {n : ℕ} (F : Family n)
   simpa [restrictDrop] using
     (exists_branch_measure_drop_univ (F := F) (hsens := hsens))
 
+/-- If a sensitive coordinate lies inside a set `A` whose size does not exceed
+the available budget `h`, then the budget is necessarily positive.  This
+elementary lemma serves as a building block for eliminating the temporary
+axiom `no_sensitive_at_zero` in the recursive cover construction. -/
+lemma budget_pos_of_sensitive {n : ℕ} (F : Family n) (A : Finset (Fin n))
+    {h : ℕ} (hcard : A.card ≤ h)
+    (hsens : ∃ i ∈ A, sensitiveCoord F i) : 0 < h := by
+  classical
+  rcases hsens with ⟨i, hiA, _⟩
+  have hApos : 0 < A.card := Finset.card_pos.mpr ⟨i, hiA⟩
+  exact lt_of_lt_of_le hApos hcard
+
+/--
+If the available budget `h` is zero, a sensitive coordinate cannot remain inside
+`A`.  This is an immediate corollary of `budget_pos_of_sensitive` and formally
+replaces the former axiom `no_sensitive_at_zero` in termination arguments.
+-/
+lemma no_sensitive_of_budget_zero {n : ℕ} (F : Family n) (A : Finset (Fin n))
+    {h : ℕ} (hcard : A.card ≤ h) (hzero : h = 0) :
+    ¬ ∃ i ∈ A, sensitiveCoord F i := by
+  intro hsens
+  have hpos : 0 < h :=
+    budget_pos_of_sensitive (F := F) (A := A) (h := h)
+      (hcard := hcard) hsens
+  simpa [hzero] using hpos
+
+/--
+Specialised version of `no_sensitive_of_budget_zero` for the full set of
+coordinates.  If the entropy budget `h` has been exhausted and still dominates
+the dimension `n`, then the family cannot possess a sensitive coordinate.
+This tiny wrapper is convenient when working with `buildCoverLex3`, which
+always starts from the universal coordinate set.
+-/
+lemma no_sensitive_of_budget_zero_univ {n : ℕ} (F : Family n) {h : ℕ}
+    (hcard : n ≤ h) (hzero : h = 0) :
+    ¬ ∃ i : Fin n, sensitiveCoord F i := by
+  -- Convert the numeric constraint `n ≤ h` into the form expected by
+  -- `no_sensitive_of_budget_zero` and specialise that lemma to `A = univ`.
+  have hcard' : (Finset.univ : Finset (Fin n)).card ≤ h := by
+    simpa [Finset.card_univ] using hcard
+  have haux :=
+    no_sensitive_of_budget_zero (F := F)
+      (A := (Finset.univ : Finset (Fin n))) (hcard := hcard') (hzero := hzero)
+  -- Repackage the statement without the explicit membership proof.
+  simpa using haux
+
 /--
 Fixing a sensitive coordinate strictly decreases the three‑component
 measure `measureLex3`.  The set of available coordinates loses `i`,
@@ -1406,30 +1452,16 @@ noncomputable def glue_branch_coversPw_mBound (F : Family n) (i : Fin n) (h : �
       , covers := glued.covers
       , card_le := hbound }
 
-/--
-Technical lemma used to rule out sensitive coordinates when the recursion
-has exhausted its budget.  If every coordinate outside `A` is already
-insensitive for the family `F` and the remaining budget `h` is zero, then
-no coordinate inside `A` can be sensitive.  The proof relies on the
-properties of the measure `measureLex3` and is assumed here as an axiom.
--/
-axiom no_sensitive_at_zero
-    {n : ℕ} {F : Family n} {A : Finset (Fin n)} {h : ℕ}
-    [Fintype (Point n)]
-    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
-    (hzero : h = 0) :
-    ¬ ∃ i ∈ A, sensitiveCoord F i
-
-/--
-`buildCoverLex3A` constructs a pointwise cover of a family `F` given a set of
-available coordinates `A`.  The auxiliary hypothesis `hA` states that every
-coordinate outside of `A` is already insensitive for all members of `F`.  The
-construction mirrors `buildCoverLex3` but tracks the coordinate set explicitly
-so that recursive calls remove the chosen branching coordinate from `A`.
--/
+-- `buildCoverLex3A` constructs a pointwise cover of a family `F` given a set
+-- of available coordinates `A`.  Besides the insensitivity hypothesis `hA` on
+-- coordinates outside `A`, we maintain the combinatorial budget invariant
+-- `A.card ≤ h`.  This relation ensures that whenever a sensitive coordinate is
+-- discovered, the remaining budget is necessarily positive, allowing recursive
+-- calls with `h - 1`.
 noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
     [Fintype (Point n)] (hn : 0 < n)
-    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0) :
+    (hA : ∀ j ∉ A, ∀ f ∈ F, coordSensitivity f j = 0)
+    (hcard : A.card ≤ h) :
     CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
   classical
   by_cases hfalse : ∃ f ∈ F, ∀ x, f x = false
@@ -1446,91 +1478,129 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
       CoverResP.lift_erase_false (F := F) (f₀ := f₀)
         (hf₀F := hf₀F) (hf₀false := hf₀false)
         (cover' := buildCoverLex3A (F := F.erase f₀) (A := A)
-          (h := h) (hn := hn) (hA := hA'))
+          (h := h) (hn := hn) (hA := hA') (hcard := hcard))
   ·
     -- No constantly `false` functions remain.
-    by_cases hsens : ∃ i ∈ A, sensitiveCoord F i
+    by_cases hzero : h = 0
     ·
-      -- Choose a sensitive coordinate `i ∈ A` and branch on its value.
-      classical
-      let i := Classical.choose hsens
-      have hiData := Classical.choose_spec hsens
-      rcases hiData with ⟨hiA, hi⟩
-
-      -- Prepare insensitivity hypotheses for recursive calls on each branch.
-      have hA' :
-          ∀ b, ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i b,
-            coordSensitivity f j = 0 := by
-        intro b j hj f hf
-        by_cases hji : j = i
-        · subst hji
-          exact coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-            (b := b) f hf
-        ·
-          rcases Family.mem_of_mem_restrict hf with ⟨f', hf'F, rfl⟩
-          have hzero :=
-            hA j (by simpa [Finset.mem_erase, hji] using hj) f' hf'F
-          exact
-            coordSensitivity_restrict_eq_zero (f := f') (i := i) (j := j)
-              (b := b) hzero
-
-      -- Both branches are insensitive to the chosen coordinate itself.
-      have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
-        coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-          (b := false)
-      have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
-        coordSensitivity_family_restrict_self_zero (F := F) (i := i)
-          (b := true)
-      -- The sensitive branch cannot occur when `h = 0`, hence the budget is
-      -- positive and the recursive calls operate with `h - 1`.
-      have hpos : 0 < h := by
-        have hne : h ≠ 0 := by
-          intro hzero
-          have hnosens : ¬ ∃ i ∈ A, sensitiveCoord F i :=
-            no_sensitive_at_zero (F := F) (A := A) (h := h) (hA := hA)
-              (hzero := hzero)
-          exact hnosens ⟨i, hiA, hi⟩
-        exact Nat.pos_of_ne_zero hne
-      have cover₀ :
-          CoverResP (F := F.restrict i false) (k := Cover2.mBound n h) := by
-        have cover :=
-          buildCoverLex3A
-            (F := F.restrict i false) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hA := hA' false)
-        have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-        simpa [this] using cover
-      have cover₁ :
-          CoverResP (F := F.restrict i true) (k := Cover2.mBound n h) := by
-        have cover :=
-          buildCoverLex3A
-            (F := F.restrict i true) (A := A.erase i)
-            (h := h - 1) (hn := hn) (hA := hA' true)
-        have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-        simpa [this] using cover
-      -- Glue the recursively obtained covers, upgrading the budget to `h + 1`.
-      exact
-        glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
-          (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
-    ·
-      -- All remaining coordinates are insensitive; every function is constant.
-      have hins_all : ∀ j : Fin n, ¬ sensitiveCoord F j := by
+      -- With no budget left, the available coordinate set is empty.
+      have hA0 : A = ∅ := by
+        apply Finset.card_eq_zero.mp
+        have : A.card ≤ 0 := by simpa [hzero] using hcard
+        exact Nat.le_antisymm this (Nat.zero_le _)
+      -- Specialise `no_sensitive_of_budget_zero` to conclude the absence of
+      -- sensitive coordinates within `A` and combine with `hA` outside `A`.
+      have hins : ∀ j : Fin n, ¬ sensitiveCoord F j := by
         intro j
         by_cases hjA : j ∈ A
-        ·
-          have haux := (not_exists.mp hsens) j
-          exact fun h => haux ⟨hjA, h⟩
+        · have : False := by simpa [hA0] using hjA
+          exact this.elim
         ·
           have hz := hA j hjA
           intro hcontr
           rcases hcontr with ⟨f, hfF, x, hx⟩
-          have hzero :=
+          have hzero' :=
             (coordSensitivity_eq_zero_iff (f := f) (i := j)).1 (hz f hfF) x
-          exact hx hzero
+          exact hx hzero'
       have hconst : ∀ f ∈ F, ∀ x, f x = true :=
-        all_true_of_no_sensitive_coord (F := F) (hins := hins_all)
+        all_true_of_no_sensitive_coord (F := F) (hins := hins)
           (hfalse := hfalse)
-      exact
-        CoverResP.const_mBound (F := F) (b := true) (h := h) hconst hn
+      -- With `h = 0`, the bound simplifies to `Cover2.mBound n 1`.
+      have : h + 1 = 1 := by simpa [hzero]
+      simpa [this] using
+        (CoverResP.const_mBound (F := F) (b := true) (h := 0) hconst hn)
+    ·
+      -- Budget is still positive; obtain `0 < h` for recursive calls.
+      have hpos : 0 < h := Nat.pos_of_ne_zero hzero
+      by_cases hsens : ∃ i ∈ A, sensitiveCoord F i
+      ·
+        -- Choose a sensitive coordinate `i ∈ A` and branch on its value.
+        classical
+        let i := Classical.choose hsens
+        have hiData := Classical.choose_spec hsens
+        rcases hiData with ⟨hiA, hi⟩
+
+        -- Prepare insensitivity hypotheses for recursive calls on each branch.
+        have hA' :
+            ∀ b, ∀ j ∉ A.erase i, ∀ f ∈ F.restrict i b,
+              coordSensitivity f j = 0 := by
+          intro b j hj f hf
+          by_cases hji : j = i
+          · subst hji
+            exact coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+              (b := b) f hf
+          ·
+            rcases Family.mem_of_mem_restrict hf with ⟨f', hf'F, rfl⟩
+            have hzero' :=
+              hA j (by simpa [Finset.mem_erase, hji] using hj) f' hf'F
+            exact
+              coordSensitivity_restrict_eq_zero (f := f') (i := i) (j := j)
+                (b := b) hzero'
+
+        -- Both branches are insensitive to the chosen coordinate itself.
+        have hins₀ : ∀ f ∈ F.restrict i false, coordSensitivity f i = 0 :=
+          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+            (b := false)
+        have hins₁ : ∀ f ∈ F.restrict i true, coordSensitivity f i = 0 :=
+          coordSensitivity_family_restrict_self_zero (F := F) (i := i)
+            (b := true)
+        have cover₀ :
+            CoverResP (F := F.restrict i false) (k := Cover2.mBound n h) := by
+          have hcard' : (A.erase i).card ≤ h - 1 := by
+            -- From `A.card ≤ h` deduce `(A.erase i).card ≤ h - 1`.
+            have hsucc' : (A.erase i).card.succ ≤ h := by
+              have htmp : (A.erase i).card + 1 ≤ h := by
+                simpa [← Finset.card_erase_add_one hiA] using hcard
+              simpa [Nat.succ_eq_add_one] using htmp
+            have hsucc'' : (A.erase i).card.succ ≤ (h - 1).succ := by
+              simpa [Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)] using hsucc'
+            exact Nat.succ_le_succ_iff.mp hsucc''
+          have cover :=
+            buildCoverLex3A
+              (F := F.restrict i false) (A := A.erase i)
+              (h := h - 1) (hn := hn) (hA := hA' false) (hcard := hcard')
+          have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+          simpa [this] using cover
+        have cover₁ :
+            CoverResP (F := F.restrict i true) (k := Cover2.mBound n h) := by
+          have hcard' : (A.erase i).card ≤ h - 1 := by
+            have hsucc' : (A.erase i).card.succ ≤ h := by
+              have htmp : (A.erase i).card + 1 ≤ h := by
+                simpa [← Finset.card_erase_add_one hiA] using hcard
+              simpa [Nat.succ_eq_add_one] using htmp
+            have hsucc'' : (A.erase i).card.succ ≤ (h - 1).succ := by
+              simpa [Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)] using hsucc'
+            exact Nat.succ_le_succ_iff.mp hsucc''
+          have cover :=
+            buildCoverLex3A
+              (F := F.restrict i true) (A := A.erase i)
+              (h := h - 1) (hn := hn) (hA := hA' true) (hcard := hcard')
+          have : h - 1 + 1 = h := Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+          simpa [this] using cover
+        -- Glue the recursively obtained covers, upgrading the budget to `h + 1`.
+        exact
+          glue_branch_coversPw_mBound (F := F) (i := i) (h := h)
+            (cover₀ := cover₀) (cover₁ := cover₁) hins₀ hins₁
+      ·
+        -- All remaining coordinates are insensitive; every function is constant.
+        have hins_all : ∀ j : Fin n, ¬ sensitiveCoord F j := by
+          intro j
+          by_cases hjA : j ∈ A
+          ·
+            have haux := (not_exists.mp hsens) j
+            exact fun h => haux ⟨hjA, h⟩
+          ·
+            have hz := hA j hjA
+            intro hcontr
+            rcases hcontr with ⟨f, hfF, x, hx⟩
+            have hzero' :=
+              (coordSensitivity_eq_zero_iff (f := f) (i := j)).1 (hz f hfF) x
+            exact hx hzero'
+        have hconst : ∀ f ∈ F, ∀ x, f x = true :=
+          all_true_of_no_sensitive_coord (F := F) (hins := hins_all)
+            (hfalse := hfalse)
+        exact
+          CoverResP.const_mBound (F := F) (b := true) (h := h) hconst hn
 
   termination_by
     measureLex3 F A
@@ -1559,13 +1629,15 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
     simpa using hdrop_true
 
 noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
-    [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    [Fintype (Point n)] (hn : 0 < n) (hcard : n ≤ h) :
     CoverResP (F := F) (k := Cover2.mBound n (h + 1)) :=
   buildCoverLex3A (F := F) (A := (Finset.univ : Finset (Fin n))) (h := h)
     (hn := hn)
     (hA := by
       intro j hj f hf
       exact False.elim (hj (Finset.mem_univ j)))
+    (hcard := by
+      simpa [Finset.card_univ] using hcard)
 
 
 /--
@@ -1592,23 +1664,23 @@ lemma CoverResP.as_cover {n : ℕ} {F : Family n} {k k' : ℕ}
 -/
 lemma cover_exists_mBound
   {n : ℕ} (F : Family n) (h : ℕ)
-  [Fintype (Point n)] (hn : 0 < n) (hbase : n ≤ 5 * h) :
+  [Fintype (Point n)] (hn : 0 < n) (hcard : n ≤ h) :
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Cover2.mBound n (h + 1) := by
   classical
   -- Obtain the structured cover from the recursive constructor.
-  let cover := buildCoverLex3 (F := F) (h := h) hn hbase
+  let cover := buildCoverLex3 (F := F) (h := h) hn hcard
   -- Unpack it using `CoverResP.as_cover` while keeping the same bound.
   simpa using
     (CoverResP.as_cover (n := n) (F := F)
       (cover := cover) (hk := le_rfl))
 
-/--
+/-
   A convenience variant of `cover_exists_mBound` that chooses a suitable
-  budget `h` automatically.  Taking `h = n` trivially satisfies the required
-  inequality `n ≤ 5 * h`.
+  budget `h` automatically.  Taking `h = n` satisfies the required constraint
+  `n ≤ h`.
 -/
 lemma cover_exists_mBound_choose_h
   {n : ℕ} (F : Family n) [Fintype (Point n)] (hn : 0 < n) :
@@ -1617,17 +1689,11 @@ lemma cover_exists_mBound_choose_h
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Cover2.mBound n (h + 1) := by
   classical
-  -- Choose `h = n` and establish the base inequality `n ≤ 5 * h`.
+  -- Choose `h = n` and invoke the main existence lemma.
   refine ⟨n, ?_⟩
-  -- Proof of `n ≤ 5 * n` using monotonicity of multiplication.
-  have hbase : n ≤ 5 * n := by
-    have h15 : (1 : ℕ) ≤ 5 := by decide
-    -- Multiply both sides by `n` and rewrite.
-    simpa [Nat.mul_comm] using (Nat.mul_le_mul_left n h15)
-  -- Apply the main existence lemma with this choice of `h`.
   simpa using
     (cover_exists_mBound (n := n) (F := F) (h := n)
-      (hn := hn) (hbase := hbase))
+      (hn := hn) (hcard := le_rfl))
 
 /--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
@@ -1691,6 +1757,44 @@ lemma CoverRes.eval_true {n : ℕ} {F : Family n} {k : ℕ}
   simpa [CoverRes.toDecisionTree, DecisionTree.ofRectCover, colored] using
     (DecisionTree.eval_ofRectCoverList_true_of_mem (n := n)
       (default := false) (colored := colored) (x := x) hex hall)
+
+/--
+Evaluating the tree produced from a `CoverRes` yields `false` on any input
+where the chosen function evaluates to `false`.  Every rectangle containing
+such a point must be coloured `false`, so the resulting decision tree returns
+`false`.
+-/
+lemma CoverRes.eval_false {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverRes (F := F) k) {f : BFunc n} (hf : f ∈ F)
+    {x : Point n} (hx : f x = false) :
+    DecisionTree.eval_tree
+        (CoverRes.toDecisionTree (n := n) (F := F) cover) x = false := by
+  classical
+  -- Assemble the list of coloured rectangles as in `eval_true`.
+  let colored := cover.rects.attach.toList.map
+    (fun R => (Classical.choose (cover.mono R.1 R.2), R.1))
+  -- Prove that every rectangle containing `x` carries the colour `false`.
+  have hall : ∀ p ∈ colored, Subcube.mem p.2 x → p.1 = false := by
+    intro p hp hxR
+    rcases List.mem_map.1 hp with ⟨r, hr, hpair⟩
+    rcases r with ⟨R, hR⟩
+    -- Identify the colour chosen for rectangle `R`.
+    have hb : Classical.choose (cover.mono R hR) = p.1 := by
+      simpa [Prod.ext_iff] using congrArg Prod.fst hpair
+    have hRe : R = p.2 := by
+      simpa [Prod.ext_iff] using congrArg Prod.snd hpair
+    -- Monochromaticity forces the colour to be `false` on `x`.
+    have hmono := cover.mono R hR
+    have hxR' : Subcube.mem R x := by simpa [hRe] using hxR
+    have hbval := (Classical.choose_spec hmono) f hf (x := x) hxR'
+    subst hRe
+    have hbfalse : Classical.choose hmono = false := by
+      simpa [hbval] using hx
+    simpa [hb] using hbfalse
+  -- Apply the generic list-based evaluation lemma specialised to `false`.
+  simpa [CoverRes.toDecisionTree, DecisionTree.ofRectCover, colored] using
+    (DecisionTree.eval_ofRectCoverList_false_of_forall
+      (n := n) (colored := colored) (x := x) hall)
 
 /--
 The general leaf-count bound for `DecisionTree.ofRectCover` specialises to the
@@ -1951,6 +2055,43 @@ lemma CoverResP.eval_true {n : ℕ} {F : Family n} {k : ℕ}
       (default := false) (colored := colored) (x := x) hex hall)
 
 /--
+Evaluating the decision tree extracted from a pointwise cover yields `false` on
+any input where the chosen function evaluates to `false`.  This complements
+`CoverResP.eval_true` and follows from the fact that every rectangle containing
+such an input is coloured `false`.
+-/
+lemma CoverResP.eval_false {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F)
+    {x : Point n} (hx : f x = false) :
+    DecisionTree.eval_tree
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) x = false := by
+  classical
+  -- Assemble the coloured rectangles as in the `eval_true` case.
+  let colored := cover.rects.attach.toList.map
+    (fun R => (Classical.choose (cover.monoPw f hf R.1 R.2), R.1))
+  -- Show that every rectangle containing `x` is coloured `false`.
+  have hall : ∀ p ∈ colored, Subcube.mem p.2 x → p.1 = false := by
+    intro p hp hxR
+    rcases List.mem_map.1 hp with ⟨r, hr, hpair⟩
+    rcases r with ⟨R, hR⟩
+    have hb : Classical.choose (cover.monoPw f hf R hR) = p.1 := by
+      simpa [Prod.ext_iff] using congrArg Prod.fst hpair
+    have hRe : R = p.2 := by
+      simpa [Prod.ext_iff] using congrArg Prod.snd hpair
+    have hmono := cover.monoPw f hf R hR
+    have hxR' : Subcube.mem R x := by simpa [hRe] using hxR
+    have hbval := (Classical.choose_spec hmono) hxR'
+    subst hRe
+    have hbfalse : Classical.choose hmono = false := by
+      simpa [hbval] using hx
+    simpa [hb] using hbfalse
+  -- Invoke the list-based evaluation lemma specialised to `false` colours.
+  simpa [CoverResP.toDecisionTree_for, DecisionTree.ofRectCover, colored]
+    using (DecisionTree.eval_ofRectCoverList_false_of_forall
+      (n := n) (colored := colored) (x := x) hall)
+
+/--
 The general leaf-count bound for `DecisionTree.ofRectCover` specialises to the
 tree extracted from a pointwise cover.
 -/
@@ -2084,6 +2225,27 @@ lemma decisionTree_cover_of_coverResP {n s k : Nat} {F : Family n}
     CoverResP.as_cover (n := n) (F := F) (k := k)
       (k' := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) cover hk
   exact ⟨Rset, hmono, hcov, hcard⟩
+
+/--
+Use the recursive constructor `buildCoverLex3` to obtain a pointwise cover and
+immediately expose it through `decisionTree_cover_of_coverResP`.  The numeric
+bound `hk` translates the cardinality guarantee `mBound` into the final bound
+required by `decisionTree_cover`.
+-/
+lemma decisionTree_cover_of_buildCover {n s h : Nat} (F : Family n)
+    [Fintype (Point n)] (hn : 0 < n) (hcard : n ≤ h)
+    (hk : Cover2.mBound n (h + 1)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Construct the structured cover via `buildCoverLex3` and expose it.
+  let cover := buildCoverLex3 (F := F) (h := h) hn hcard
+  exact
+    decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
+      (cover := cover) (hk := hk)
 
 /-- Trivial base case: if all functions in the family are constant on the full
 cube, we can cover all ones with just that cube.  This lemma acts as a base case

@@ -2,6 +2,9 @@ import Pnp2.low_sensitivity_cover
 
 open BoolFunc
 
+-- Disable `unnecessarySimpa` linter to avoid noise in pedagogical tests.
+set_option linter.unnecessarySimpa false
+
 /-- A simple family consisting of the constantly-false function on one bit. -/
 def constFamily : Family 1 :=
   ({fun (_ : Point 1) => false} : Finset (BFunc 1))
@@ -17,7 +20,7 @@ example : True := by
     intro f hf x
     have h : f = (fun (_ : Point 1) => false) := by
       simpa [constFamily] using Finset.mem_singleton.mp hf
-    simpa [h]
+    simp [h]
   let cover := CoverRes.const (F := constFamily) (b := false) hconst
   exact trivial
 
@@ -47,9 +50,35 @@ example :
           intro f hf x
           have h : f = (fun (_ : Point 1) => true) := by
             simpa [trueFamily] using Finset.mem_singleton.mp hf
-          simpa [h]))
+          simp [h]))
       (f := fun _ : Point 1 => true) (by simp [trueFamily])
       (x := fun _ : Fin 1 => true) (by simp))
+
+/-- Evaluating a cover built from a constant-`false` family returns `false`
+for any input. -/
+example :
+    DecisionTree.eval_tree
+        (CoverRes.toDecisionTree (n := 1) (F := constFamily)
+          (CoverRes.const (F := constFamily) (b := false)
+            (by
+              intro f hf x
+              have h : f = (fun (_ : Point 1) => false) := by
+                simpa [constFamily] using Finset.mem_singleton.mp hf
+              simp [h])))
+        (fun _ : Fin 1 => true) = false := by
+  classical
+  -- Evaluate the tree on the all-`true` point where each function is `false`.
+  have hconst : ∀ f ∈ constFamily, ∀ x, f x = false := by
+    intro f hf x
+    have h : f = (fun (_ : Point 1) => false) := by
+      simpa [constFamily] using Finset.mem_singleton.mp hf
+    simp [h]
+  let cover := CoverRes.const (F := constFamily) (b := false) hconst
+  simpa using
+    (CoverRes.eval_false (n := 1) (F := constFamily) (k := 1)
+      (cover := cover)
+      (f := fun _ : Point 1 => false) (hf := by simp [constFamily])
+      (x := fun _ : Fin 1 => true) (hx := by simp))
 
 /-- Extracting a plain cover from a `CoverRes` using `CoverRes.as_cover`. -/
 example : True := by
@@ -58,7 +87,7 @@ example : True := by
     intro f hf x
     have h : f = (fun (_ : Point 1) => false) := by
       simpa [constFamily] using Finset.mem_singleton.mp hf
-    simpa [h]
+    simp [h]
   let cover := CoverRes.const (F := constFamily) (b := false) hconst
   have _h :=
     CoverRes.as_cover (n := 1) (F := constFamily) (k := 1)
@@ -77,7 +106,7 @@ example : True := by
       intro f hf x
       have h : f = (fun (_ : Point 1) => true) := by
         simpa [trueFamily] using Finset.mem_singleton.mp hf
-      simpa [h])
+      simp [h])
   have _ :
       DecisionTree.depth (CoverRes.toDecisionTree (n := 1) (F := trueFamily) cover)
         ≤ 1 :=
@@ -95,7 +124,7 @@ example : True := by
       intro f hf x
       have h : f = (fun (_ : Point 1) => true) := by
         simpa [trueFamily] using Finset.mem_singleton.mp hf
-      simpa [h])
+      simp [h])
   -- Repackage the cover with the larger bound expected by `depth_le_coverConst`.
   have hpow : 1 ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) := by
     have hpos : 0 < Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
@@ -123,7 +152,7 @@ example : True := by
     intro f hf x
     have h : f = (fun (_ : Point 1) => false) := by
       simpa [constFamily] using Finset.mem_singleton.mp hf
-    simpa [h]
+    simp [h]
   have _ :
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
@@ -166,12 +195,32 @@ example : True := by
       (cover := cover) hpow
   exact trivial
 
+-- Using the recursive constructor `buildCoverLex3` in tandem with
+-- `decisionTree_cover_of_coverResP`.
+example : True := by
+  classical
+  have hn : 0 < 1 := by decide
+  have hcard : (1 : Nat) ≤ 1 := le_rfl
+  have hk : Cover2.mBound 1 (1 + 1) ≤
+      Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) := by
+    have hlog2 : Nat.log2 2 = 1 := by simpa using (Nat.log2_two_pow (n := 1))
+    have : (4194304 : ℕ) ≤ 1073741824 := by decide
+    simpa [Cover2.mBound, coverConst, hlog2] using this
+  have _ :
+      ∃ Rset : Finset (Subcube 1),
+        (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) :=
+    decisionTree_cover_of_buildCover (n := 1) (s := 3) (h := 1)
+      (F := constFamily) (hn := hn) (hcard := hcard) (hk := hk)
+  exact trivial
+
 -- Specialisation to a single function using `low_sensitivity_cover_single`.
 example : True := by
   classical
   -- Prove the sensitivity bound for the constant `false` function directly.
-  have hSens : BoolFunc.sensitivity (fun _ : BoolFunc.Point 1 => false) ≤ 0 := by
-    simpa using (le_of_eq (BoolFunc.sensitivity_const (n := 1) (b := false)))
+    have hSens : BoolFunc.sensitivity (fun _ : BoolFunc.Point 1 => false) ≤ 0 := by
+      simpa using (le_of_eq (BoolFunc.sensitivity_const (n := 1) (b := false)))
   have _ :
       ∃ Rset : Finset (BoolFunc.Subcube 1),
         (∀ R ∈ Rset,
@@ -202,7 +251,7 @@ example : True := by
     intro f hf x
     have h : f = (fun (_ : Point 1) => true) := by
       simpa [trueFamily] using Finset.mem_singleton.mp hf
-    simpa [h]
+    simp [h]
   let cover := CoverResP.const (F := trueFamily) (b := true) hconst
   have hf : (fun (_ : Point 1) => true) ∈ trueFamily := by
     simp [trueFamily]
@@ -228,9 +277,9 @@ example : True := by
   let f₁ : BFunc 1 := fun x => x 0
   let F : Family 1 := {f₀, f₁}
   have hn : 0 < 1 := by decide
-  have hbase : (1 : ℕ) ≤ 5 * 1 := by decide
+  have hcard : (1 : ℕ) ≤ 1 := by decide
   -- Build the cover; the `false` function is discarded internally.
-  let cover := buildCoverLex3 (F := F) (h := 1) hn hbase
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hcard
   have hf₁F : f₁ ∈ F := by simp [F]
   -- Evaluate on the `true` input; the decision tree should return `true`.
   have _ :
@@ -244,6 +293,28 @@ example : True := by
         (x := fun _ : Fin 1 => true) (by simp [f₁]))
   exact trivial
 
+/-- The decision tree derived from a cover returns `false` on inputs where the
+underlying function is `false`. -/
+example : True := by
+  classical
+  let f : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f}
+  have hn : 0 < 1 := by decide
+  have hcard : (1 : ℕ) ≤ 1 := by decide
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hcard
+  have hfF : f ∈ F := by simp [F]
+  -- Evaluate on the `false` input; the decision tree should return `false`.
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := F)
+            (k := Cover2.mBound 1 (1 + 1)) cover (f := f) hfF)
+          (fun _ : Fin 1 => false) = false := by
+    simpa [f] using
+      (CoverResP.eval_false (n := 1) (F := F)
+        (k := Cover2.mBound 1 (1 + 1)) (cover := cover) (f := f) hfF
+        (x := fun _ : Fin 1 => false) (hx := by simp [f]))
+  exact trivial
+
 /-- `buildCoverLex3` collapses to a single rectangle when the family has no
 sensitive coordinates. -/
 example : True := by
@@ -252,31 +323,28 @@ example : True := by
   let f : BFunc 1 := fun _ => true
   let F : Family 1 := {f}
   have hn : 0 < 1 := by decide
-  have hbase : (1 : ℕ) ≤ 5 * 1 := by decide
+  have hcard : (1 : ℕ) ≤ 1 := by decide
   -- Build the cover; it should be the constant full cube.
-  let cover := buildCoverLex3 (F := F) (h := 1) hn hbase
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hcard
   -- The cover contains exactly one rectangle.
-  have : cover.rects.card = 1 := by
+  have hcard_rect : cover.rects.card = 1 := by
     -- Simplify the definition using the constant-family branch.
     have hfalse : ¬ ∃ f' ∈ F, ∀ x, f' x = false := by
       intro h; rcases h with ⟨g, hg, hgfalse⟩
       have : g = f := by simpa [F] using Finset.mem_singleton.mp hg
       subst this; have := hgfalse (fun _ => true); simp [f] at this
-    have hsens : ¬ ∃ i : Fin 1, sensitiveCoord F i := by
-      simp [F, f, sensitiveCoord]
+    have hsens : ¬ ∃ i : Fin 1, sensitiveCoord F i :=
+      by simpa [F, f, sensitiveCoord]
     have hconst : ∀ g ∈ F, ∀ x, g x = true := by
-      simpa [F, f] using
-        all_true_of_no_sensitive_coord (F := F)
-          (hins := not_exists.mp hsens) (hfalse := hfalse)
-    -- Evaluate `buildCoverLex3` in this constant-family setting and
-    -- compute the number of rectangles explicitly.
-    have hcard : cover.rects.card = 1 := by
-      -- Use `hsens` to simplify away the sensitive-branch `if`.
-        have hsens0 : ¬ sensitiveCoord F 0 := by
-          simpa using (not_exists.mp hsens 0)
-        simpa [cover, buildCoverLex3, buildCoverLex3A, hfalse, hsens0,
-          CoverResP.const_mBound, CoverResP.const]
-    simpa [hcard]
+      intro g hg x
+      have : g = f := by simpa [F] using Finset.mem_singleton.mp hg
+      subst this
+      simp [f]
+    -- Use `hsens` to simplify away the sensitive-branch `if` and compute
+    -- the number of rectangles explicitly.
+    have hsens0 : ¬ sensitiveCoord F 0 := (not_exists.mp hsens 0)
+    simpa [cover, buildCoverLex3, buildCoverLex3A, hfalse, hsens0,
+      CoverResP.const_mBound, CoverResP.const]
   -- Sanity check: the single rectangle covers the all-true input.
   have hfF : f ∈ F := by simp [F]
   have _ :
@@ -440,8 +508,8 @@ example : True := by
   let F : Family 1 := {f}
   -- `buildCoverLex3` requires a positive dimension and the inequality `n ≤ 5*h`.
   have hn : 0 < 1 := by decide
-  have hbase : (1 : ℕ) ≤ 5 * 1 := by decide
-  let cover := buildCoverLex3 (F := F) (h := 1) hn hbase
+  have hcard : (1 : ℕ) ≤ 1 := by decide
+  let cover := buildCoverLex3 (F := F) (h := 1) hn hcard
   -- Evaluate the resulting decision tree on the `true` input.
   have hfF : f ∈ F := by simp [F]
   have _ :
@@ -496,4 +564,31 @@ example : True := by
   obtain ⟨i, hdrop⟩ := h
   have _ := hdrop false
   have _ := hdrop true
+  exact trivial
+
+/-- A simple sanity check for `budget_pos_of_sensitive`: a sensitive coordinate
+forces the budget to be positive. -/
+example : True := by
+  classical
+  let f : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f}
+  have hsens : ∃ i ∈ ({0} : Finset (Fin 1)), sensitiveCoord F i := by
+    refine ⟨0, by simp, ?_⟩
+    refine ⟨f, by simp [F], ?_⟩
+    refine ⟨fun _ => false, by simp [f]⟩
+  have hpos : 0 < (1 : ℕ) :=
+    budget_pos_of_sensitive (F := F) (A := ({0} : Finset (Fin 1)))
+      (hcard := by simp) (hsens := hsens)
+  exact trivial
+
+/-- If the budget is exhausted, no sensitive coordinate can remain in `A`. -/
+example : True := by
+  classical
+  let f : BFunc 1 := fun x => x 0
+  let F : Family 1 := {f}
+  -- With `A = ∅` and budget `h = 0`, the lemma forbids sensitive coordinates.
+  have hno :
+      ¬ ∃ i ∈ (∅ : Finset (Fin 1)), sensitiveCoord F i :=
+    no_sensitive_of_budget_zero (F := F) (A := (∅ : Finset (Fin 1))) (h := 0)
+      (hcard := by simp) (hzero := rfl)
   exact trivial

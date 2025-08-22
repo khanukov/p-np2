@@ -601,6 +601,51 @@ lemma eval_ofRectCoverList_true_of_mem
         simpa [ofRectCoverList, this, htail]
 
 /--
+If every rectangle in the list `colored` that contains a point `x` is labelled
+`false` (or there is no such rectangle), then evaluating
+`ofRectCoverList colored` on `x` yields `false`.  The default value of the tree
+is also `false`, so the lemma does not require an existence hypothesis.
+-/
+lemma eval_ofRectCoverList_false_of_forall
+    {colored : List (Bool × Subcube n)} {x : Point n}
+    (hall : ∀ p ∈ colored, Subcube.mem p.snd x → p.fst = false) :
+    eval_tree (ofRectCoverList (n := n) false colored) x = false := by
+  classical
+  induction colored with
+  | nil =>
+      -- No rectangles: evaluation falls back to the default value.
+      simp [ofRectCoverList]
+  | cons hd tl ih =>
+      rcases hd with ⟨b, R⟩
+      -- Check whether the head rectangle contains `x`.
+      by_cases hxR : x ∈ₛ R
+      ·
+        -- The head colour matches the evaluation.
+        have hb : b = false :=
+          hall (p := (b, R)) (by simp) (by simpa using hxR)
+        have := eval_ofRectCoverList_cons_mem
+          (n := n) (default := false) (b := b) (R := R)
+          (rs := tl) (x := x) hxR
+        simpa [ofRectCoverList, hb] using this
+      ·
+        -- Otherwise reduce to the tail.
+        have hnot : ¬ agreesWithAssignments (n := n) x
+            (Subcube.toList (n := n) R) := by
+          intro hagrees
+          have hxmem : x ∈ₛ R :=
+            mem_of_agreesWithAssignments_toList (n := n) (x := x)
+              (R := R) hagrees
+          exact hxR hxmem
+        have hall_tl : ∀ p ∈ tl, Subcube.mem p.snd x → p.fst = false := by
+          intro p hp hxP
+          have hp' : p ∈ (b, R) :: tl := List.mem_cons_of_mem _ hp
+          exact hall p hp' hxP
+        have htail := ih hall_tl
+        have := eval_matchSubcube_not_agrees (n := n)
+            (p := Subcube.toList (n := n) R) (b := b)
+            (t := ofRectCoverList (n := n) false tl) (x := x) hnot
+        simpa [ofRectCoverList, this, htail]
+/--
 The `matchSubcube` construction adds a chain of decision nodes checking each
 assignment in `p` before consulting the fallback tree `t`.  Consequently the
 number of leaves grows linearly with the length of `p`.

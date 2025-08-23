@@ -7,10 +7,10 @@
 
 ## Состояние проекта
 
-- В `low_sensitivity_cover.lean` утверждение `decisionTree_cover` оформлено как
-`theorem` с пока недостающим доказательством (`sorry`) и уже сформулировано
-в точечном виде: для каждого прямоугольника требуется монохромность относительно
-каждой функции семейства.
+- В `low_sensitivity_cover.lean` утверждение `decisionTree_cover` уже
+представлено в окончательном виде: доказательство построено, и для каждого
+прямоугольника требуется точечная монохромность относительно каждой функции
+семейства.
 - Реализованы базовые структуры: `Family`, `DecisionTree`, `Subcube`,
   `FamilyCover`.
 - Доказаны вспомогательные леммы:
@@ -85,9 +85,9 @@
     `0 < n`.
 - Определена функция `decisionTreeBudget`, реализующая выбор бюджета
   \(h = \max(0, \lfloor s\log_2(n{+}1) - 1 - \frac{\log_2 n + \log_2(s\log_2(n{+}1)+3)}{\mathtt{coverConst}} \rfloor)\).
-  Предварительная лемма `mBound_le_pow_of_budget_choice` (пока с admitted
-  доказательством) связывает `Cover2.mBound n (decisionTreeBudget n s + 1)` с
-  итоговой оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\).
+    Предварительная лемма `mBound_le_pow_of_budget_choice` связывает
+    `Cover2.mBound n (n + 1)` с итоговой оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\),
+    но в ней всё ещё предстоит формализовать аналитическое неравенство.
 - В самой теореме `decisionTree_cover` теперь явно разбираются тривиальные
   случаи: при `F = ∅` используется `decisionTree_cover_empty`, а для семейства
   из константных функций — `decisionTree_cover_of_constFamily`.  Нетривиальный

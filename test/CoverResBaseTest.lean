@@ -161,6 +161,30 @@ example : True := by
     decisionTree_cover_of_constant (n := 1) (F := constFamily) (s := 0) hconst
   exact trivial
 
+/-- A family with both `true` and `false` constants still admits a singleton
+cover via `decisionTree_cover_of_constFamily`. -/
+noncomputable example : True := by
+  classical
+  -- Two constant functions with opposite values.
+  let mixedFamily : Family 1 :=
+    ({fun (_ : Point 1) => false, fun (_ : Point 1) => true} :
+      Finset (BFunc 1))
+  have hconst : ∀ f ∈ mixedFamily, ∀ x y, f x = f y := by
+    intro f hf x y
+    have hf' : f = (fun (_ : Point 1) => false) ∨ f = (fun (_ : Point 1) => true) := by
+      simpa [mixedFamily] using hf
+    cases hf' with
+    | inl h => simp [h]
+    | inr h => simp [h]
+  have _ :
+      ∃ Rset : Finset (Subcube 1),
+        (∀ f ∈ mixedFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ mixedFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+    decisionTree_cover_of_constFamily (n := 1) (F := mixedFamily) (s := 0)
+      hconst
+  exact trivial
+
 -- The empty family admits the trivial cover returned by `decisionTree_cover_empty`.
 example : True := by
   classical
@@ -195,6 +219,30 @@ example : True := by
       (cover := cover) hpow
   exact trivial
 
+-- Direct use of `decisionTree_cover_of_coverRes` on a constant family.
+example : True := by
+  classical
+  -- Construct the trivial cover with family-level monochromaticity.
+  have hconst : ∀ f ∈ constFamily, ∀ x, f x = false := by
+    intro f hf x
+    have h : f = (fun (_ : Point 1) => false) := by
+      simpa [constFamily] using Finset.mem_singleton.mp hf
+    simp [h]
+  let cover := CoverRes.const (F := constFamily) (b := false) hconst
+  -- The cardinality bound simplifies to `1` as before.
+  have hpow : 1 ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) := by
+    have hpos : 0 < Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+      pow_pos (by decide) _
+    exact Nat.succ_le_of_lt hpos
+  have _ :
+      ∃ Rset : Finset (Subcube 1),
+        (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+    decisionTree_cover_of_coverRes (n := 1) (F := constFamily) (s := 0)
+      (cover := cover) hpow
+  exact trivial
+
 -- Using the recursive constructor `buildCoverLex3` in tandem with
 -- `decisionTree_cover_of_coverResP`.
 example : True := by
@@ -213,6 +261,42 @@ example : True := by
         Rset.card ≤ Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) :=
     decisionTree_cover_of_buildCover (n := 1) (s := 3) (h := 1)
       (F := constFamily) (hn := hn) (hcard := hcard) (hk := hk)
+  exact trivial
+
+-- The convenience variant chooses `h = n` automatically.
+example : True := by
+  classical
+  have hk : Cover2.mBound 1 (1 + 1) ≤
+      Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) := by
+    have hlog2 : Nat.log2 2 = 1 := by simpa using (Nat.log2_two_pow (n := 1))
+    have : (4194304 : ℕ) ≤ 1073741824 := by decide
+    simpa [Cover2.mBound, coverConst, hlog2] using this
+  have _ :
+      ∃ Rset : Finset (Subcube 1),
+        (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) :=
+    decisionTree_cover_of_buildCover_choose_h (n := 1) (s := 3)
+      (F := constFamily) (hk := hk)
+  exact trivial
+
+-- The wrapper also handles the degenerate case `n = 0` automatically.
+example : True := by
+  classical
+  -- A family with a single constant `false` function on zero variables.
+  let constFamily0 : Family 0 :=
+    ({fun (_ : Point 0) => false} : Finset (BFunc 0))
+  have hk : Cover2.mBound 0 (0 + 1) ≤
+      Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 0)) := by
+    -- Both sides simplify: `mBound 0 1 = 0` and `log2 1 = 0`.
+    simp [Cover2.mBound, coverConst]
+  have _ :
+      ∃ Rset : Finset (Subcube 0),
+        (∀ f ∈ constFamily0, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ constFamily0, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 0)) :=
+    decisionTree_cover_of_buildCover_choose_h (n := 0) (s := 0)
+      (F := constFamily0) (hk := hk)
   exact trivial
 
 -- Specialisation to a single function using `low_sensitivity_cover_single`.
@@ -265,6 +349,31 @@ example : True := by
       (CoverResP.eval_true (n := 1) (F := trueFamily) (k := 1)
         (cover := cover) (f := fun _ : Point 1 => true) hf
         (x := fun _ : Fin 1 => true) (by simp))
+  exact trivial
+
+/-- The generic evaluation lemma combines the `true` and `false` cases. -/
+example : True := by
+  classical
+  -- Reuse the constant `true` family and its trivial cover.
+  have hconst : ∀ f ∈ trueFamily, ∀ x, f x = true := by
+    intro f hf x
+    have h : f = (fun (_ : Point 1) => true) := by
+      simpa [trueFamily] using Finset.mem_singleton.mp hf
+    simp [h]
+  let cover := CoverResP.const (F := trueFamily) (b := true) hconst
+  have hf : (fun (_ : Point 1) => true) ∈ trueFamily := by
+    simp [trueFamily]
+  -- The evaluation of the associated decision tree matches the function value.
+  have _ :
+      DecisionTree.eval_tree
+          (CoverResP.toDecisionTree_for (n := 1) (F := trueFamily) (k := 1)
+            cover (f := fun _ : Point 1 => true) hf)
+          (fun _ : Fin 1 => true)
+        = (fun _ : Point 1 => true) (fun _ : Fin 1 => true) := by
+    simpa using
+      (CoverResP.eval (n := 1) (F := trueFamily) (k := 1)
+        (cover := cover) (f := fun _ : Point 1 => true) hf
+        (x := fun _ : Fin 1 => true))
   exact trivial
 
 /-- `buildCoverLex3` first erases constantly `false` functions before
@@ -592,3 +701,19 @@ example : True := by
     no_sensitive_of_budget_zero (F := F) (A := (∅ : Finset (Fin 1))) (h := 0)
       (hcard := by simp) (hzero := rfl)
   exact trivial
+
+/-- `decisionTree_cover_mBound` packages `cover_exists_mBound` in the format
+expected by `decisionTree_cover`.  This example instantiates it on a simple
+one-dimensional family to ensure the bridge works. -/
+example :
+    ∃ Rset : Finset (Subcube 1),
+      (∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+          ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+          ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Cover2.mBound 1 (1 + 1) := by
+  classical
+  -- The general lemma immediately provides the cover.
+  simpa using
+    BoolFunc.decisionTree_cover_mBound (n := 1)
+      (F := ({fun x : Point 1 => x 0} : Family 1)) (hn := by decide)

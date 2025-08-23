@@ -4,6 +4,7 @@ import Pnp2.DecisionTree
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Mathlib.Data.Finset.Card
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Aesop
 
 open BoolFunc
@@ -21,6 +22,38 @@ variable {n : ℕ}
 /-- Universal constant used in all depth and cover bounds.  The exact value is
 chosen for convenience and does not attempt to be optimal. -/
 def coverConst : Nat := 10
+
+/--
+Proposed recursion budget used in the constructive proof of
+`decisionTree_cover`.  It instantiates the informal choice
+
+\[ h = \max\Big(0, \big\lfloor s\,\log_2(n+1) - 1 - \frac{\log_2 n + \log_2(s\,\log_2(n+1)+3)}{\mathtt{coverConst}} \big\rfloor \Big) \].
+
+The `Int.toNat` conversion implements the outer `max 0` by truncating negative
+values to zero.
+-/
+noncomputable def decisionTreeBudget (n s : ℕ) : ℕ :=
+  Int.toNat <|
+    Int.floor ((s : ℝ) * Real.logb 2 (n + 1) - 1
+      - (Real.logb 2 n +
+          Real.logb 2 ((s : ℝ) * Real.logb 2 (n + 1) + 3)) / (coverConst : ℝ))
+
+/--
+Numeric inequality underpinning the intended proof of `decisionTree_cover`.
+For the budget chosen by `decisionTreeBudget`, the combinatorial bound
+`Cover2.mBound` is dominated by the final target
+`2 ^ (coverConst * s * log₂ (n+1))`.
+
+This statement is currently admitted: the analytic argument showing the
+inequality is routine but not yet formalised in Lean.
+-/
+lemma mBound_le_pow_of_budget_choice
+  {n s : ℕ} (hn : 1 ≤ n) (hs : 1 ≤ s) :
+  Cover2.mBound n (decisionTreeBudget n s + 1)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- Proof to be filled in: follows from logarithmic estimates described in the
+  -- accompanying documentation.
+  admit
 
 -- This axiom summarises the decision-tree construction for families of
 -- low-sensitivity Boolean functions.  The underlying combinatorial result

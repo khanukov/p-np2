@@ -83,6 +83,11 @@
     автоматически выбирающая бюджет `h = n` и, благодаря обработке случая
     `n = 0` через `decisionTree_cover_of_constFamily`, не требующая предположения
     `0 < n`.
+- Определена функция `decisionTreeBudget`, реализующая выбор бюджета
+  \(h = \max(0, \lfloor s\log_2(n{+}1) - 1 - \frac{\log_2 n + \log_2(s\log_2(n{+}1)+3)}{\mathtt{coverConst}} \rfloor)\).
+  Предварительная лемма `mBound_le_pow_of_budget_choice` (пока с admitted
+  доказательством) связывает `Cover2.mBound n (decisionTreeBudget n s + 1)` с
+  итоговой оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\).
 - В рекурсивной функции `buildCoverLex3A` временно применяется аксиома
   временная аксиома `no_sensitive_at_zero`, утверждавшая, что при исчерпании
   бюджета `h` внутри множества `A` не остаётся чувствительных координат, если

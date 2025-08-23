@@ -2742,6 +2742,14 @@ theorem decisionTree_cover
   ·
     -- TODO: implement the small‑`s` case using a refined decision tree
     -- argument that avoids `mBound`.
+    --
+    -- The current numeric infrastructure only provides
+    -- `mBound_le_pow_of_budget_choice_bigS`, which assumes `s ≥ n + 2` to
+    -- relate `Cover2.mBound n (n + 1)` with the target bound
+    -- `2^(coverConst * s * log₂(n + 1))`.  Handling the complementary regime
+    -- `s ≤ n + 1` would require either a specialised inequality
+    -- `Cover2.mBound n (n + 1) ≤ 2^(coverConst * s * log₂(n + 1))` or a
+    -- different combinatorial argument that bypasses `mBound` entirely.
     admit
 
 -- Auxiliary structure bundling all invariants required during the recursive

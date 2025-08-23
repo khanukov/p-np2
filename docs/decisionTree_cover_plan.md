@@ -85,13 +85,14 @@
     `0 < n`.
 - Определена функция `decisionTreeBudget`, реализующая выбор бюджета
   \(h = \max(0, \lfloor s\log_2(n{+}1) - 1 - \frac{\log_2 n + \log_2(s\log_2(n{+}1)+3)}{\mathtt{coverConst}} \rfloor)\).
-    Предварительная лемма `mBound_le_pow_of_budget_choice` связывает
-    `Cover2.mBound n (n + 1)` с итоговой оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\),
-    но в ней всё ещё предстоит формализовать аналитическое неравенство.
+    Доказана лемма `mBound_le_pow_of_budget_choice_bigS`, связывающая
+    `Cover2.mBound n (n + 1)` с оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\)
+    при `s ≥ n + 2`. Оценка для `s ≤ n + 1` остаётся недоказанной.
 - В самой теореме `decisionTree_cover` теперь явно разбираются тривиальные
-  случаи: при `F = ∅` используется `decisionTree_cover_empty`, а для семейства
-  из константных функций — `decisionTree_cover_of_constFamily`.  Нетривиальный
-  случай остаётся без доказательства.
+  случаи: при `F = ∅` используется `decisionTree_cover_empty`, для семейства
+  из константных функций — `decisionTree_cover_of_constFamily`, а при `s ≥ n + 2`
+  применяется лемма `mBound_le_pow_of_budget_choice_bigS`.  Случай `s ≤ n + 1`
+  остаётся без доказательства и реализован в коде через `admit`.
 - В рекурсивной функции `buildCoverLex3A` временно применяется аксиома
   временная аксиома `no_sensitive_at_zero`, утверждавшая, что при исчерпании
   бюджета `h` внутри множества `A` не остаётся чувствительных координат, если
@@ -442,11 +443,15 @@
     - ✅ Леммы `decisionTree_cover_of_coverResP` и `decisionTree_cover_mBound`
       связывают границу `mBound` с экспонентой `2^h`, обеспечивая нужную
       оценку числа прямоугольников.
-    - Введена функция выбора бюджета `decisionTreeBudget`, однако ключевое
-      неравенство `mBound_le_pow_of_budget_choice`, сравнивающее
-      `Cover2.mBound` с целевой границей `2^{coverConst·s·log₂(n+1)}`, пока не
-      доказано. Кроме того, текущая реализация `buildCoverLex3` требует
-      условия `n ≤ h`, что мешает напрямую использовать адаптивный бюджет.
+    - Введена функция выбора бюджета `decisionTreeBudget`. Для случая
+      `s ≥ n + 2` доказана лемма `mBound_le_pow_of_budget_choice_bigS`,
+      сравнивающая `Cover2.mBound` с требуемой границей `2^{coverConst·s·log₂(n+1)}`.
+      Случай `s ≤ n + 1` остаётся открытым, поэтому общее неравенство
+      `mBound_le_pow_of_budget_choice` ещё не завершено. Кроме того, текущая
+      реализация `buildCoverLex3` требует условия `n ≤ h`, что мешает
+      напрямую использовать адаптивный бюджет.
+    - Реализовать малый случай `s ≤ n + 1` в теореме `decisionTree_cover`,
+      заменив оставшийся `admit` в `low_sensitivity_cover.lean`.
     - Остаётся объединить глубинную оценку с рекурсивной конструкцией и
       заменить допущение в теореме `decisionTree_cover` на полноценное
       доказательство.

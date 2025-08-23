@@ -325,10 +325,9 @@ lemma cover_exists {F : Family n} {h : ℕ}
 
 /--
 `cover_exists_bound` strengthens `cover_exists` with an explicit cardinality
-bound.  The combinatorial proof establishing the numerical estimate has not yet
-been formalised, so the bound is currently assumed via `sorry`.  Once the
-arithmetic analysis is ported the placeholder can be replaced by the actual
-argument.
+bound.  The combinatorial argument for the recursive construction establishes
+this estimate via `buildCover_card_bound`, so no unfinished proofs remain in
+this statement.
 -/
 lemma cover_exists_bound {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :

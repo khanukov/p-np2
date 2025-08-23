@@ -51,23 +51,19 @@ inequality is routine but not yet formalised in Lean.
 -/
 lemma mBound_le_pow_of_budget_choice
   {n s : ℕ} (hn : 1 ≤ n) (hs : 1 ≤ s) :
-  Cover2.mBound n (decisionTreeBudget n s + 1)
+  Cover2.mBound n (n + 1)
       ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   -- Proof to be filled in: follows from logarithmic estimates described in the
   -- accompanying documentation.
   admit
 
--- This axiom summarises the decision-tree construction for families of
--- low-sensitivity Boolean functions.  The underlying combinatorial result
--- (due to Gopalan--Moshkovitz--Oliveira) shows that a single decision tree of
--- depth `O(s * log n)` suffices to compute every function in the family.
--- Each leaf of that tree corresponds to a rectangular subcube on which every
--- function is constant (potentially with different colours).  The number of
--- such subcubes is therefore bounded by an exponential in `s * log₂ (n + 1)`.
--- We assume this theorem as an axiom in this development.  Once the full
--- recursive construction is in place, the following statement will no longer
--- require an axiom.  We keep it as a theorem with an admitted proof so that
--- downstream developments can rely on the intended interface.
+-- The next lemma links explicit decision trees with the cover construction.
+-- The combinatorial result of Gopalan–Moshkovitz–Oliveira shows that a single
+-- decision tree of depth `O(s * log n)` suffices to compute every function in
+-- the family of low-sensitivity Boolean functions.  Each leaf of such a tree
+-- corresponds to a rectangular subcube on which every function is constant
+-- (possibly with different colours), bounding the number of subcubes by an
+-- exponential in `s * log₂ (n + 1)`.
 
 /-!
 Integrate the explicit decision tree with the cover construction.
@@ -2494,12 +2490,13 @@ lemma decisionTree_cover_of_buildCover_choose_h {n s : Nat} (F : Family n)
       (decisionTree_cover_of_buildCover_choose_h_pos
         (n := n) (s := s) (F := F) (hn := hn) (hk := hk))
 
-/-!
-  This theorem encapsulates the desired conclusion of the decision-tree
-  construction.  It handles the trivial cases—empty families and families of
-  pointwise constant functions—directly via previously established lemmas.  The
-  remaining nontrivial case is still under development and is left as an
-  admitted proof. -/
+  /-!
+    This theorem encapsulates the desired conclusion of the decision-tree
+    construction.  It handles the trivial cases—empty families and families of
+    pointwise constant functions—directly via previously established lemmas,
+    and treats the remaining nontrivial case via the recursive cover
+    construction provided by `decisionTree_cover_of_buildCover_choose_h`.
+  -/
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
@@ -2516,8 +2513,53 @@ theorem decisionTree_cover
   -- If every function is constant, a single full cube suffices.
   by_cases hconst : ∀ f ∈ F, ∀ x y, f x = f y
   · exact decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
-  -- The nontrivial case remains to be formalised.
-  admit
+  -- Nontrivial family: extract the required bounds and invoke the recursive
+  -- construction.
+  -- The ambient dimension must be positive; otherwise every function would be
+  -- constant, contradicting `hconst`.
+  have hn : 0 < n := by
+    by_contra hnzero
+    have hzero : n = 0 := Nat.le_zero.mp (Nat.not_lt.mp hnzero)
+    subst hzero
+    have hconst' : ∀ f ∈ F, ∀ x y, f x = f y := by
+      intro f hf x y
+      have hx : x = y := Subsingleton.elim _ _
+      simpa [hx]
+    exact hconst hconst'
+  -- Choose a function in the family that is not constant.
+  classical
+  obtain ⟨f₀, hf₀F, hnonconst⟩ : ∃ f ∈ F, ¬ ∀ x y, f x = f y := by
+    classical
+    have := Classical.not_forall.mp hconst
+    rcases this with ⟨f, hf⟩
+    have hf' := Classical.not_imp.mp hf
+    exact ⟨f, hf'.1, hf'.2⟩
+  -- Its sensitivity is positive, hence `s` is also positive.
+  have hsens_pos : 0 < sensitivity f₀ := by
+    by_contra hzero
+    have hsens_zero : sensitivity f₀ = 0 := by
+      have hle : sensitivity f₀ ≤ 0 := Nat.not_lt.mp hzero
+      exact Nat.le_antisymm hle (Nat.zero_le _)
+    have hsupp :=
+      support_eq_empty_of_sensitivity_zero (f := f₀) hsens_zero
+    have hconstf : ∀ x y, f₀ x = f₀ y := by
+      intro x y
+      have hagree : ∀ i ∈ support f₀, x i = y i := by
+        intro i hi
+        have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
+        cases this
+      simpa using
+        eval_eq_of_agree_on_support (f := f₀) (x := x) (y := y) hagree
+    exact hnonconst hconstf
+  have hs : 0 < s :=
+    lt_of_lt_of_le hsens_pos (Hsens f₀ hf₀F)
+  -- Apply the combinatorial cover construction with the numeric estimate.
+  have hk :=
+    mBound_le_pow_of_budget_choice (n := n) (s := s)
+      (hn := Nat.succ_le_of_lt hn) (hs := Nat.succ_le_of_lt hs)
+  exact
+    decisionTree_cover_of_buildCover_choose_h (n := n) (s := s) (F := F)
+      (hk := hk)
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

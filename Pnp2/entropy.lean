@@ -92,13 +92,12 @@ lemma H₂_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
     H₂ (F.restrict i b) ≤ H₂ F := by
   classical
   have hb : 1 < (2 : ℝ) := by norm_num
-  -- If restriction empties the family, entropy is zero and the claim is trivial.
   by_cases h0 : (F.restrict i b).card = 0
   ·
-    -- Show `0 ≤ H₂ F` and conclude.
+    -- When restriction empties the family, the claim reduces to `0 ≤ H₂ F`.
     have hF_nonneg : 0 ≤ H₂ F := by
       by_cases hF0 : F.card = 0
-      · simpa [H₂, hF0]
+      · simp [H₂, hF0]
       ·
         have hx : 1 ≤ (F.card : ℝ) := by
           have hpos : 0 < F.card := Nat.pos_of_ne_zero hF0
@@ -106,7 +105,7 @@ lemma H₂_restrict_le {n : ℕ} (F : Family n) (i : Fin n) (b : Bool) :
         simpa [H₂] using Real.logb_nonneg (b := 2) hb hx
     simpa [H₂, h0] using hF_nonneg
   ·
-    -- Otherwise, logarithm monotonicity on the cardinality bound.
+    -- Otherwise, apply logarithm monotonicity on the cardinality bound.
     have hpos : 0 < ((F.restrict i b).card : ℝ) := by
       exact_mod_cast Nat.pos_of_ne_zero h0
     have hle : ((F.restrict i b).card : ℝ) ≤ (F.card : ℝ) := by
@@ -694,7 +693,9 @@ lemma measureLex3_restrict_lt_dim {n : ℕ} (F : Family n) (A : Finset (Fin n))
       refine Finset.ssubset_iff_subset_ne.mpr ?_
       refine ⟨Finset.erase_subset _ _, ?_⟩
       intro h
-      have hi_not : i ∉ A.erase i := by simpa using Finset.not_mem_erase i A
+      have hi_not : i ∉ A.erase i := by
+        -- Removing `i` ensures it is not present in the erasure.
+        simp
       have hi_in : i ∈ A.erase i := by simpa [h] using hi
       exact hi_not hi_in
     exact Finset.card_lt_card hss
@@ -709,31 +710,31 @@ lemma measureLex3_restrict_lt_dim {n : ℕ} (F : Family n) (A : Finset (Fin n))
       le_antisymm hμ (le_of_not_gt hμlt)
     have hc' := lt_or_eq_of_le hc
     cases hc' with
-    | inl hc_lt =>
-        -- Cardinality strictly decreases.
-        have hx :=
-          measureLexRel_of_measure_eq_card_lt (F := F.restrict i b) (G := F)
-            hμeq hc_lt
-        exact Prod.Lex.left _ _ hx
-    | inr hc_eq =>
-        -- Both entropy and cardinality coincide; rely on the dimension drop.
-        have hpair :
-            (measure (F.restrict i b), (F.restrict i b).card) =
-              (measure F, F.card) := by simpa [hμeq, hc_eq]
-        -- After unfolding the relation, the goal reduces to applying
-        -- `Prod.Lex.right` with this equality and the strict drop `hA`.
-        -- Expand the goal and perform the substitution.
-        have hx :
-            (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).rel
-              ((measure F, F.card), (A.erase i).card)
-              ((measure F, F.card), A.card) :=
-          Prod.Lex.right (a := (measure F, F.card))
-            (b₁ := (A.erase i).card) (b₂ := A.card) hA
-        have :
-            measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
-              (measureLex3 F A) := by
-          simpa [measureLex3Rel, measureLex3, hpair] using hx
-        exact this
+      | inl hc_lt =>
+          -- Cardinality strictly decreases.
+          have hx :=
+            measureLexRel_of_measure_eq_card_lt (F := F.restrict i b) (G := F)
+              hμeq hc_lt
+          exact Prod.Lex.left _ _ hx
+      | inr hc_eq =>
+          -- Both entropy and cardinality coincide; rely on the dimension drop.
+          have hpair :
+              (measure (F.restrict i b), (F.restrict i b).card) =
+                (measure F, F.card) := by
+            simp [hμeq, hc_eq]
+          -- After unfolding the relation, the goal reduces to applying
+          -- `Prod.Lex.right` with this equality and the strict drop `hA`.
+          have hx :
+              (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).rel
+                ((measure F, F.card), (A.erase i).card)
+                ((measure F, F.card), A.card) :=
+            Prod.Lex.right (a := (measure F, F.card))
+              (b₁ := (A.erase i).card) (b₂ := A.card) hA
+          have :
+              measureLex3Rel (measureLex3 (F.restrict i b) (A.erase i))
+                (measureLex3 F A) := by
+            simpa [measureLex3Rel, measureLex3, hpair] using hx
+          exact this
 
 /--
 If the family `F` exhibits sensitivity on some coordinate inside the set `A`,
@@ -775,7 +776,8 @@ lemma measureLex3_drop_coord {n : ℕ} (F : Family n) (A : Finset (Fin n))
       refine ⟨Finset.erase_subset _ _, ?_⟩
       intro h
       have hi_not : i ∉ A.erase i := by
-        simpa using Finset.not_mem_erase i A
+        -- Removing `i` from the set ensures it is not in the erasure.
+        simp
       have hi_in : i ∈ A.erase i := by simpa [h] using hi
       exact hi_not hi_in
     exact Finset.card_lt_card hss
@@ -812,8 +814,11 @@ lemma measureLex3_erase_lt {n : ℕ} (F : Family n) (A : Finset (Fin n))
     have hsucc : (Finset.erase F f).card + 1 = F.card := by
       have hsub : F.card - 1 + 1 = F.card :=
         Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-      simpa [hcard, hsub, Nat.succ_eq_add_one] using
-        congrArg (fun t => t + 1) hcard
+      -- Apply `congrArg` and simplify only the right-hand side.
+      have h := congrArg (fun t => t + 1) hcard
+      have h' : (Finset.erase F f).card + 1 = F.card := by
+        simpa [hsub] using h
+      exact h'
     -- `a < a + 1` gives the desired strict inequality.
     have hlt : (Finset.erase F f).card < (Finset.erase F f).card + 1 :=
       Nat.lt_succ_self _

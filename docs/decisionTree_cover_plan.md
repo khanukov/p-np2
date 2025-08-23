@@ -87,7 +87,11 @@
   \(h = \max(0, \lfloor s\log_2(n{+}1) - 1 - \frac{\log_2 n + \log_2(s\log_2(n{+}1)+3)}{\mathtt{coverConst}} \rfloor)\).
     Доказана лемма `mBound_le_pow_of_budget_choice_bigS`, связывающая
     `Cover2.mBound n (n + 1)` с оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\)
-    при `s ≥ n + 2`. Оценка для `s ≤ n + 1` остаётся недоказанной.
+    при `s ≥ n + 2`. Оценка для `s ≤ n + 1` остаётся недоказанной;
+    дополнительная лемма `mBound_le_pow_of_budget_choice_smallS_false`
+    показывает, что неравенство в целом неверно уже при `n = 1`, `s = 1`
+    (`Cover2.mBound 1 2 = 4·2^{20} > 2^{10}`), что подтверждает необходимость
+    другого подхода к малому случаю.
 - В самой теореме `decisionTree_cover` теперь явно разбираются тривиальные
   случаи: при `F = ∅` используется `decisionTree_cover_empty`, для семейства
   из константных функций — `decisionTree_cover_of_constFamily`, а при `s ≥ n + 2`

@@ -232,6 +232,27 @@ lemma mBound_le_pow_of_budget_choice_bigS
     Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
     add_comm, add_left_comm, add_assoc] using hfinal
 
+/--
+The inequality `Cover2.mBound n (n + 1) ≤ 2^(coverConst * s * log₂ (n + 1))`
+is generally false for small sensitivity parameters.  As a concrete witness,
+the instance `n = 1`, `s = 1` already violates it.  This counterexample
+justifies why the preceding lemma restricts to the large‑`s` regime.
+-/
+lemma mBound_le_pow_of_budget_choice_smallS_false :
+  ¬ Cover2.mBound 1 (1 + 1)
+      ≤ Nat.pow 2 (coverConst * 1 * Nat.log2 (Nat.succ 1)) := by
+  -- Evaluate both sides numerically and compare.
+  have hLHS : Cover2.mBound 1 (1 + 1) = 4194304 := by
+    simp [Cover2.mBound]
+  have hlog2 : Nat.log2 2 = 1 := by
+    simpa using (Nat.log2_two_pow (n := 1))
+  have hRHS : Nat.pow 2 (coverConst * 1 * Nat.log2 (Nat.succ 1)) = 1024 := by
+    simp [coverConst, hlog2]
+  have hnum : ¬ (4194304 ≤ 1024) := by decide
+  -- Rewrite the goal into the explicit inequality and discharge it.
+  rw [hLHS, hRHS]
+  exact hnum
+
 -- The next lemma links explicit decision trees with the cover construction.
 -- The combinatorial result of Gopalan–Moshkovitz–Oliveira shows that a single
 -- decision tree of depth `O(s * log n)` suffices to compute every function in

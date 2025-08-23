@@ -88,6 +88,10 @@
   Предварительная лемма `mBound_le_pow_of_budget_choice` (пока с admitted
   доказательством) связывает `Cover2.mBound n (decisionTreeBudget n s + 1)` с
   итоговой оценкой \(2^{\mathtt{coverConst} \cdot s \cdot \log_2(n+1)}\).
+- В самой теореме `decisionTree_cover` теперь явно разбираются тривиальные
+  случаи: при `F = ∅` используется `decisionTree_cover_empty`, а для семейства
+  из константных функций — `decisionTree_cover_of_constFamily`.  Нетривиальный
+  случай остаётся без доказательства.
 - В рекурсивной функции `buildCoverLex3A` временно применяется аксиома
   временная аксиома `no_sensitive_at_zero`, утверждавшая, что при исчерпании
   бюджета `h` внутри множества `A` не остаётся чувствительных координат, если

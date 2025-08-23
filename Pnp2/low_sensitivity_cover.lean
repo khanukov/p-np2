@@ -11,6 +11,8 @@ open BoolFunc
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
+-- Temporary: ignore unused simp arguments while the development is in flux.
+set_option linter.unusedSimpArgs false
 -- Increase the heartbeat limit to accommodate the heavy well-founded recursion
 -- used below.
 set_option maxHeartbeats 1000000
@@ -66,34 +68,6 @@ lemma mBound_le_pow_of_budget_choice
 -- recursive construction is in place, the following statement will no longer
 -- require an axiom.  We keep it as a theorem with an admitted proof so that
 -- downstream developments can rely on the intended interface.
-theorem decisionTree_cover
-  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  -- The constructive proof is still under development.
-  admit
-
-
-/-!
-The lemma states that a family of low-sensitivity Boolean functions admits a
-compact cover by monochromatic subcubes.  A constructive proof would proceed by
-recursively building a decision tree:
-
-* At each node pick a coordinate on which some function in the family is
-  sensitive and branch on its value.
-* Restrict every function to the chosen half of the cube and continue
-  recursively until the family becomes constant on the remaining subcube.
-* Each leaf of the resulting tree corresponds to a rectangular subcube on which
-  every function in the family is constant.
-
-Establishing the required depth bound `O(s * log n)` involves a careful analysis
-of how sensitivity behaves under restrictions.  This development has not yet
-been formalised, so `decisionTree_cover` remains an axiom providing the intended
-statement. -/
 
 /-!
 Integrate the explicit decision tree with the cover construction.
@@ -2519,6 +2493,31 @@ lemma decisionTree_cover_of_buildCover_choose_h {n s : Nat} (F : Family n)
     simpa [hzero] using
       (decisionTree_cover_of_buildCover_choose_h_pos
         (n := n) (s := s) (F := F) (hn := hn) (hk := hk))
+
+/-!
+  This theorem encapsulates the desired conclusion of the decision-tree
+  construction.  It handles the trivial cases—empty families and families of
+  pointwise constant functions—directly via previously established lemmas.  The
+  remaining nontrivial case is still under development and is left as an
+  admitted proof. -/
+theorem decisionTree_cover
+  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
+    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Handle the trivial cases up front.
+  by_cases hF : F = (∅ : Family n)
+  · subst hF
+    -- The empty family admits the empty cover.
+    simpa using (decisionTree_cover_empty (n := n) (s := s))
+  -- If every function is constant, a single full cube suffices.
+  by_cases hconst : ∀ f ∈ F, ∀ x y, f x = f y
+  · exact decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
+  -- The nontrivial case remains to be formalised.
+  admit
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

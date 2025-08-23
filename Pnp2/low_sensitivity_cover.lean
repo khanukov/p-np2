@@ -987,7 +987,7 @@ noncomputable def CoverRes.const (F : Family n) (b : Bool)
   · intro f hf x hx
     exact ⟨R, by simp, hmem x⟩
 
-/--
+/-
 `CoverResP` relaxes `CoverRes` by requiring only
 *pointwise* monochromaticity.  Each function in the family is
 constant on every rectangle in `rects`, but different functions may
@@ -1049,6 +1049,65 @@ noncomputable def CoverResP.const (F : Family n) (b : Bool)
     simpa using hconst f hf x
   · intro f hf x hx
     exact ⟨R, by simp, hmem x⟩
+
+/--
+Cover consisting of the full cube for a family where each function is
+individually constant (potentially with different Boolean values).  All
+functions are constant on the unique rectangle `R`, so the cover contains
+exactly one subcube.
+-/
+noncomputable def CoverResP.constFamily (F : Family n)
+    (hconst : ∀ f ∈ F, ∀ x y, f x = f y) :
+    CoverResP (F := F) 1 := by
+  classical
+  -- The full cube without fixed coordinates.
+  let R : Subcube n :=
+    { idx := ∅
+      , val := by
+          intro i hi
+          exact False.elim (Finset.notMem_empty _ hi) }
+  have hmem : ∀ x : Point n, x ∈ₛ R := by
+    intro x i hi; cases hi
+  -- Use the all-false point to pin down the constant value of each function.
+  let x₀ : Point n := fun _ => false
+  refine
+    { rects := {R}
+      , monoPw := ?_
+      , covers := ?_
+      , card_le := by simp }
+  · intro f hf R' hR'
+    have hR : R' = R := by simpa using Finset.mem_singleton.mp hR'
+    subst hR
+    refine ⟨f x₀, ?_⟩
+    intro x hx
+    simpa [x₀] using hconst f hf x x₀
+  · intro f hf x hx
+    exact ⟨R, by simp, hmem x⟩
+
+namespace CoverRes
+
+variable {n : ℕ} {F : Family n} {k : ℕ}
+
+/--
+Convert a cover with family-level monochromaticity into a pointwise cover.  The
+resulting `CoverResP` retains the original rectangles and coverage proof while
+allowing each function to have its own colour on the rectangles.
+-/
+noncomputable def toCoverResP (cover : CoverRes F k) :
+    CoverResP F k := by
+  classical
+  refine
+    { rects := cover.rects
+      , monoPw := ?_
+      , covers := cover.covers
+      , card_le := cover.card_le }
+  intro f hf R hR
+  rcases cover.mono R hR with ⟨b, hb⟩
+  refine ⟨b, ?_⟩
+  intro x hx
+  exact hb f hf hx
+
+end CoverRes
 
 /--
 Exhaustive cover obtained by listing all points of the Boolean cube as
@@ -2092,6 +2151,35 @@ lemma CoverResP.eval_false {n : ℕ} {F : Family n} {k : ℕ}
       (n := n) (colored := colored) (x := x) hall)
 
 /--
+Combine the specialised evaluation lemmas to show that the decision tree
+extracted from a pointwise cover computes the designated function exactly on
+every input.
+-/
+lemma CoverResP.eval {n : ℕ} {F : Family n} {k : ℕ}
+    (cover : CoverResP (F := F) k) {f : BFunc n} (hf : f ∈ F)
+    {x : Point n} :
+    DecisionTree.eval_tree
+        (CoverResP.toDecisionTree_for (n := n) (F := F) (k := k)
+          cover (f := f) hf) x = f x := by
+  classical
+  -- Branch on the value of `f x` and invoke the corresponding lemma.
+  by_cases hx : f x = true
+  · -- When `f x = true`, the tree evaluates to `true` as well.
+    simpa [hx] using
+      (CoverResP.eval_true (n := n) (F := F) (k := k)
+        (cover := cover) (f := f) hf (x := x) hx)
+  · -- Otherwise `f x` must be `false`.
+    have hxfalse : f x = false := by
+      -- The Boolean value `f x` can only be `true` or `false`; the former
+      -- contradicts `hx`.
+      cases hx' : f x with
+      | false => simpa [hx']
+      | true  => exact (False.elim (hx hx'))
+    simpa [hxfalse] using
+      (CoverResP.eval_false (n := n) (F := F) (k := k)
+        (cover := cover) (f := f) hf (x := x) hxfalse)
+
+/--
 The general leaf-count bound for `DecisionTree.ofRectCover` specialises to the
 tree extracted from a pointwise cover.
 -/
@@ -2227,6 +2315,44 @@ lemma decisionTree_cover_of_coverResP {n s k : Nat} {F : Family n}
   exact ⟨Rset, hmono, hcov, hcard⟩
 
 /--
+Variant of `decisionTree_cover_of_coverResP` that accepts a cover with
+family-level monochromaticity.  Such a cover is first reinterpreted as a
+pointwise cover via `CoverRes.toCoverResP` and then exposed as an existential
+cover satisfying the required cardinality bound.
+-/
+lemma decisionTree_cover_of_coverRes {n s k : Nat} {F : Family n}
+    [Fintype (Point n)]
+    (cover : CoverRes (F := F) k)
+    (hk : k ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Convert to the pointwise structure and invoke the previous lemma.
+  have coverP : CoverResP (F := F) k := CoverRes.toCoverResP (F := F) (k := k) cover
+  exact
+    decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
+      (cover := coverP) (hk := hk)
+
+/-/
+Expose the cover produced by `cover_exists_mBound` in the `decisionTree_cover`
+format.  The number of rectangles is bounded explicitly by
+`Cover2.mBound n (n + 1)`.
+-/
+lemma decisionTree_cover_mBound {n : Nat} (F : Family n) [Fintype (Point n)]
+    (hn : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Cover2.mBound n (n + 1) := by
+  classical
+  -- Instantiate `cover_exists_mBound` with `h = n` to match the requested bound.
+  simpa using
+    (cover_exists_mBound (n := n) (F := F) (h := n)
+      (hn := hn) (hcard := le_rfl))
+
+/--
 Use the recursive constructor `buildCoverLex3` to obtain a pointwise cover and
 immediately expose it through `decisionTree_cover_of_coverResP`.  The numeric
 bound `hk` translates the cardinality guarantee `mBound` into the final bound
@@ -2247,6 +2373,24 @@ lemma decisionTree_cover_of_buildCover {n s h : Nat} (F : Family n)
     decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
       (cover := cover) (hk := hk)
 
+/--
+A convenience variant of `decisionTree_cover_of_buildCover` that fixes the
+budget to `h = n`.  This automatically satisfies the technical requirement
+`n ≤ h` needed by the recursive constructor.
+-/
+lemma decisionTree_cover_of_buildCover_choose_h_pos {n s : Nat} (F : Family n)
+    [Fintype (Point n)] (hn : 0 < n)
+    (hk : Cover2.mBound n (n + 1)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Instantiate `h` with `n` in the general lemma.
+  simpa using
+    (decisionTree_cover_of_buildCover (n := n) (s := s) (F := F)
+      (h := n) (hn := hn) (hcard := le_rfl) (hk := hk))
 /-- Trivial base case: if all functions in the family are constant on the full
 cube, we can cover all ones with just that cube.  This lemma acts as a base case
 for the eventual recursive construction of `decisionTree_cover`. -/
@@ -2270,6 +2414,29 @@ lemma decisionTree_cover_of_constant
     (F := F) (cover := cover) hpow
 
 /--
+Base case handling families where every function is individually constant,
+possibly with different outputs.  A single full‑cube rectangle covers all
+`true` inputs and is monochromatic for every function.
+-/
+lemma decisionTree_cover_of_constFamily
+  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
+  (hconst : ∀ f ∈ F, ∀ x y, f x = f y) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Build the singleton cover and lift it through the generic wrapper.
+  let cover := CoverResP.constFamily (F := F) hconst
+  have hpow : 1 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    have hpos : 0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
+      pow_pos (by decide) _
+    exact Nat.succ_le_of_lt hpos
+  exact
+    decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
+      (cover := cover) (hk := hpow)
+
+/--
   Degenerate base case: the empty family has no `1`-inputs to cover.
   Returning the empty set of rectangles trivially satisfies the
   monochromaticity and coverage requirements.
@@ -2287,6 +2454,38 @@ lemma decisionTree_cover_empty
     Nat.zero_le _
   exact decisionTree_cover_of_coverResP (n := n) (s := s)
     (F := (∅ : Family n)) (cover := cover) hpow
+
+/--
+A wrapper around `decisionTree_cover_of_buildCover` that selects the budget
+`h = n` and also handles the degenerate case `n = 0` by reducing to
+`decisionTree_cover_of_constFamily`.  This removes the technical assumption
+`0 < n` required by `buildCoverLex3`.
+-/
+lemma decisionTree_cover_of_buildCover_choose_h {n s : Nat} (F : Family n)
+    [Fintype (Point n)]
+    (hk : Cover2.mBound n (n + 1)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  by_cases hzero : n = 0
+  · -- With no variables all functions are constant; use the dedicated lemma.
+    subst hzero
+    -- Any two points of the empty cube are equal.
+    have hconst : ∀ f ∈ F, ∀ x y, f x = f y := by
+      intro f hf x y
+      have : x = y := Subsingleton.elim _ _
+      simpa [this]
+    -- Apply the constant-family cover.
+    simpa using
+      (decisionTree_cover_of_constFamily (n := 0) (F := F) (s := s) hconst)
+  · -- Positive dimension: fall back to the specialised wrapper.
+    have hn : 0 < n := Nat.pos_of_ne_zero hzero
+    simpa [hzero] using
+      (decisionTree_cover_of_buildCover_choose_h_pos
+        (n := n) (s := s) (F := F) (hn := hn) (hk := hk))
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

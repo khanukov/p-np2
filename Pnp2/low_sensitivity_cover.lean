@@ -2750,7 +2750,7 @@ theorem decisionTree_cover
     -- `s ≤ n + 1` would require either a specialised inequality
     -- `Cover2.mBound n (n + 1) ≤ 2^(coverConst * s * log₂(n + 1))` or a
     -- different combinatorial argument that bypasses `mBound` entirely.
-    admit
+    sorry
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

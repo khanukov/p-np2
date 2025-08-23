@@ -24,7 +24,23 @@ variable {n : ℕ}
 
 /-- Universal constant used in all depth and cover bounds.  The exact value is
 chosen for convenience and does not attempt to be optimal. -/
+-- Universal constant used throughout depth and cover bounds.  The value is
+-- chosen for convenience rather than optimality.
 def coverConst : Nat := 10
+
+--! ### Auxiliary numerical lemmas
+
+/-- If `a ≤ b` then raising both to the same power preserves the inequality for
+natural numbers.  We prove this by induction on the exponent. -/
+private lemma pow_le_pow_of_le_base {a b k : ℕ} (h : a ≤ b) : a ^ k ≤ b ^ k := by
+  induction k with
+  | zero =>
+      -- Base case: `a^0 = 1` and `b^0 = 1`.
+      simpa
+  | succ k ih =>
+      -- Inductive step: `a^(k+1) = a^k * a`, and similarly for `b`.
+      simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+        Nat.mul_le_mul ih h
 
 /--
 Proposed recursion budget used in the constructive proof of
@@ -58,8 +74,163 @@ lemma mBound_le_pow_of_budget_choice_bigS
   {n s : ℕ} (hn : 1 ≤ n) (hs : n + 2 ≤ s) :
   Cover2.mBound n (n + 1)
       ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  -- TODO: a complete arithmetic proof will be provided in a future revision.
-  admit
+  -- Throughout the proof we abbreviate `log₂ (n + 1)` by `L`.
+  set L := Nat.log2 (n + 1) with hLdef
+
+  ----------------------------------------------------------------------------
+  -- Step 1: polynomial factor `n * (n + 3)` is bounded by `(n + 1)^4`.
+  have h₁ : n ≤ (n + 1) ^ 2 := by
+    -- Here `n ≤ n + 1` and `(n + 1) ≤ (n + 1)^2` since `1 ≤ n + 1`.
+    have hle : n + 1 ≤ (n + 1) ^ 2 := by
+      have hpos : 1 ≤ n + 1 := Nat.succ_le_succ (Nat.zero_le _)
+      have := Nat.mul_le_mul_left (n + 1) hpos
+      simpa [pow_two] using this
+    exact (Nat.le_succ _).trans hle
+  have h₂ : n + 3 ≤ (n + 1) ^ 2 := by
+    -- First use `n + 3 ≤ 2 * (n + 1)` (valid for `n ≥ 1`).
+    have hstep : n + 3 ≤ 2 * (n + 1) := by
+      have h3 : 3 ≤ n + 2 := Nat.succ_le_succ (Nat.succ_le_succ hn)
+      have := Nat.add_le_add_left h3 n
+      simpa [two_mul, add_comm, add_left_comm, add_assoc] using this
+    -- Then bound `2 * (n + 1)` by `(n + 1)^2` since `2 ≤ n + 1`.
+    have hsq : 2 * (n + 1) ≤ (n + 1) ^ 2 := by
+      have hpos : 2 ≤ n + 1 := Nat.succ_le_succ hn
+      have := Nat.mul_le_mul_left (n + 1) hpos
+      simpa [pow_two, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+    exact hstep.trans hsq
+  have hpoly : n * (n + 3) ≤ (n + 1) ^ 4 := by
+    -- Multiply the two inequalities and simplify `(n+1)^2 * (n+1)^2`.
+    have := Nat.mul_le_mul h₁ h₂
+    -- The product `(n+1)^2 * (n+1)^2` is `(n+1)^(2+2) = (n+1)^4`.
+    calc
+      n * (n + 3) ≤ (n + 1) ^ 2 * (n + 1) ^ 2 := by simpa using this
+      _ = (n + 1) ^ (2 + 2) := by
+        simpa [pow_add] using (pow_add (n + 1) 2 2).symm
+      _ = (n + 1) ^ 4 := by simp
+
+  ----------------------------------------------------------------------------
+  -- Step 2: incorporate the exponential factor `2^(10*(n+1))` from `mBound`.
+  have hpoly' :
+      n * (n + 3) * 2 ^ (10 * (n + 1))
+        ≤ (n + 1) ^ 4 * 2 ^ (10 * (n + 1)) :=
+    Nat.mul_le_mul_right _ hpoly
+
+  ----------------------------------------------------------------------------
+  -- Step 3: estimate `(n + 1)^4` using the integer logarithm `L`.
+  -- First show `n + 1 ≤ 2^(L+1)` via properties of `Nat.log` and `Nat.log2`.
+  have hpow_base : n + 1 ≤ 2 ^ (L + 1) := by
+    have hlt : n + 1 < 2 ^ (Nat.log 2 (n + 1) + 1) :=
+      Nat.lt_pow_succ_log_self (b := 2) (x := n + 1) Nat.one_lt_two
+    have hle : n + 1 ≤ 2 ^ (Nat.log 2 (n + 1) + 1) := Nat.le_of_lt hlt
+    simpa [hLdef, Nat.log2_eq_log_two, add_comm] using hle
+  -- Raise both sides of the previous inequality to the fourth power.
+  have hpow₀ : (n + 1) ^ 4 ≤ (2 ^ (L + 1)) ^ 4 :=
+    pow_le_pow_of_le_base hpow_base
+  have hpow : (n + 1) ^ 4 ≤ 2 ^ (4 * L + 4) := by
+    -- Rewrite `(2^(L+1))^4` as `2^((L+1)*4)` and simplify the product.
+    have htmp : (n + 1) ^ 4 ≤ 2 ^ ((L + 1) * 4) := by
+      simpa [pow_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow₀
+    -- Convert `((L + 1) * 4)` to `4 * L + 4` using `Nat.succ_mul`.
+    have haux : (L + 1) * 4 = L * 4 + 4 := by
+      simpa using (Nat.succ_mul L 4)
+    have htmp' : (n + 1) ^ 4 ≤ 2 ^ (L * 4 + 4) := by
+      simpa [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using htmp
+    -- Reorder the sum to the canonical `4 * L + 4` form.
+    simpa [Nat.mul_comm, add_comm, add_left_comm, add_assoc] using htmp'
+
+  -- Combine with the extra factor `2^(10*(n+1))`.
+  have hpow' :
+      (n + 1) ^ 4 * 2 ^ (10 * (n + 1))
+        ≤ 2 ^ (4 * L + 4) * 2 ^ (10 * (n + 1)) :=
+    Nat.mul_le_mul_right _ hpow
+
+  ----------------------------------------------------------------------------
+  -- Step 4: merge both inequalities into a single power of two.
+  have hbound := hpoly'.trans hpow'
+  have hpowadd :
+      2 ^ (4 * L + 4) * 2 ^ (10 * (n + 1))
+        = 2 ^ (4 * L + 4 + 10 * (n + 1)) := by
+    -- Merge the exponents using `pow_add` and tidy up multiplications.
+    simp [pow_add, add_comm, add_left_comm, add_assoc,
+          Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  have hbound' :
+      n * (n + 3) * 2 ^ (10 * (n + 1))
+        ≤ 2 ^ (4 * L + 4 + 10 * (n + 1)) := by
+    simpa [hpowadd] using hbound
+
+  ----------------------------------------------------------------------------
+  -- Step 5: compare the exponents.
+  -- First prove `L ≥ 1`, a simple consequence of `n ≥ 1`.
+  have hLpos : 1 ≤ L := by
+    have hmono : Nat.log 2 2 ≤ Nat.log 2 (n + 1) :=
+      Nat.log_mono_right (b := 2) (Nat.succ_le_succ hn)
+    have hlog2 : Nat.log2 2 = 1 := by
+      -- `log₂ 2 = 1` follows from the general lemma `Nat.log2_two_pow`.
+      simpa using (Nat.log2_two_pow (n := 1))
+    have : Nat.log2 2 ≤ Nat.log2 (n + 1) := by
+      simpa [Nat.log2_eq_log_two] using hmono
+    simpa [hLdef, hlog2] using this
+
+  -- From `L ≥ 1` we infer `10*(n+1) ≤ 10*(n+1)*L`.
+  have hten : 10 * (n + 1) ≤ 10 * (n + 1) * L := by
+    have := Nat.mul_le_mul_left (10 * (n + 1)) hLpos
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
+  -- Bring in the remaining constant `4` and collect terms with a factor `L`.
+  have hcoeff : 4 + 4 * L + 10 * (n + 1)
+      ≤ 4 + (4 + 10 * (n + 1)) * L := by
+    have := Nat.add_le_add_left hten (4 * L)
+    have := Nat.add_le_add_left this 4
+    simpa [add_comm, add_left_comm, add_assoc, left_distrib, right_distrib,
+          Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+
+  -- Absorb the remaining `4` into the coefficient by bounding `4 ≤ 6*L`.
+  have hfour : 4 ≤ 6 * L := by
+    have : 4 ≤ 6 := by decide
+    have hmul := Nat.mul_le_mul_left 6 hLpos
+    exact this.trans hmul
+  have hcoeff' : 4 + (4 + 10 * (n + 1)) * L
+      ≤ 10 * (n + 2) * L := by
+    -- First add the terms and then rewrite the coefficient explicitly.
+    have htmp := Nat.add_le_add_right hfour ((4 + 10 * (n + 1)) * L)
+    have htmp' : 6 * L + (4 + 10 * (n + 1)) * L =
+        (6 + (4 + 10 * (n + 1))) * L := by
+      simp [add_mul, add_comm, add_left_comm, add_assoc,
+            Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    -- Simplify the numeric coefficient `6 + (4 + 10 * (n + 1))` to `10 * (n + 2)`.
+    have hcoeff_add : 6 + (4 + 10 * (n + 1)) = 10 * (n + 2) := by
+      -- Evaluate both sides to the common normal form `10 * n + 20`.
+      have hLHS : 6 + (4 + 10 * (n + 1)) = 10 * n + 20 := by
+        simp [Nat.mul_add, Nat.mul_succ, add_comm, add_left_comm, add_assoc,
+              Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      have hRHS : 10 * (n + 2) = 10 * n + 20 := by
+        simp [Nat.mul_add, add_comm, add_left_comm, add_assoc]
+      simpa [hLHS, hRHS]
+    have hcoeff_mul := congrArg (fun t => t * L) hcoeff_add
+    have hcoeff_mul' : 6 * L + (4 + 10 * (n + 1)) * L
+        = 10 * (n + 2) * L := by simpa [htmp'] using hcoeff_mul
+    simpa [hcoeff_mul'] using htmp
+
+  -- Finally apply the assumption `s ≥ n + 2` to compare with the target exponent.
+  have hexp : 4 + 4 * L + 10 * (n + 1) ≤ 10 * s * L := by
+    have := hcoeff.trans hcoeff'
+    have hs' : 10 * (n + 2) * L ≤ 10 * s * L :=
+      Nat.mul_le_mul (Nat.mul_le_mul_left 10 hs) (le_of_eq rfl)
+    exact this.trans hs'
+
+  -- Monotonicity of `2^x` in the exponent for base `2`.
+  have hpowexp := pow_le_pow_right' (a := (2 : ℕ)) (by decide : (1 : ℕ) ≤ 2) hexp
+  have hpowexp' : 2 ^ (4 * L + 4 + 10 * (n + 1))
+      ≤ 2 ^ (coverConst * s * L) := by
+    simpa [coverConst, add_comm, add_left_comm, add_assoc] using hpowexp
+
+  -- Combine everything: polynomial bound followed by exponent comparison.
+  have hfinal := hbound'.trans hpowexp'
+
+  -- Reintroduce definitions to match the statement exactly.
+  simpa [Cover2.mBound, coverConst, hLdef, Nat.succ_eq_add_one,
+    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+    add_comm, add_left_comm, add_assoc] using hfinal
 
 -- The next lemma links explicit decision trees with the cover construction.
 -- The combinatorial result of Gopalan–Moshkovitz–Oliveira shows that a single

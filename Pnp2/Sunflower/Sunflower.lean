@@ -306,7 +306,8 @@ lemma unions_card_of_disjoint
       simpa [Finset.unions_insert]
     -- intersection of `A` with the union of `T` is empty
     have hA_disj : A ∩ T.unions = (∅ : Finset α) := by
-      apply Finset.eq_empty_of_forall_not_mem
+      -- Use the modern lemma name avoiding deprecation warnings.
+      apply Finset.eq_empty_of_forall_notMem
       intro x hx
       rcases Finset.mem_inter.mp hx with ⟨hxA, hxU⟩
       rcases Finset.mem_unions.mp hxU with ⟨B, hB, hxB⟩
@@ -338,7 +339,7 @@ lemma unions_card_of_disjoint
       _ = w * (T.card + 1) := (Nat.mul_succ w T.card).symm
       _ = w * (insert A T).card := by
             have hcard_insert : (insert A T).card = T.card + 1 :=
-              Finset.card_insert_of_not_mem hA
+              Finset.card_insert_of_notMem hA
             simpa [hcard_insert, Nat.add_comm]
 
 /-! ### Iterated element erasure -/

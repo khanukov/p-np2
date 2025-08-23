@@ -5,6 +5,7 @@ import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Mathlib.Data.Finset.Card
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Tactic
 import Aesop
 
 open BoolFunc
@@ -41,21 +42,131 @@ noncomputable def decisionTreeBudget (n s : ℕ) : ℕ :=
           Real.logb 2 ((s : ℝ) * Real.logb 2 (n + 1) + 3)) / (coverConst : ℝ))
 
 /--
-Numeric inequality underpinning the intended proof of `decisionTree_cover`.
-For the budget chosen by `decisionTreeBudget`, the combinatorial bound
-`Cover2.mBound` is dominated by the final target
-`2 ^ (coverConst * s * log₂ (n+1))`.
+Numerical bound for the ``large‑`$s$'' regime.
 
-This statement is currently admitted: the analytic argument showing the
-inequality is routine but not yet formalised in Lean.
+If the sensitivity parameter `s` dominates the dimension `n` (precisely,
+`n + 2 ≤ s`), the crude combinatorial estimate `Cover2.mBound` for a budget
+`h = n + 1` already fits under the final target `2^(coverConst * s * log₂(n+1))`.
+
+This lemma is a minimal, yet fully formal, replacement for the false claim
+`mBound n (n + 1) ≤ 2^(coverConst * s * log₂(n+1))` without any assumption on
+`s`.  The inequality is easy for large `s`, and this version integrates with the
+existing recursive cover construction (`buildCoverLex3`) which currently always
+operates with the budget `h = n`.
 -/
-lemma mBound_le_pow_of_budget_choice
-  {n s : ℕ} (hn : 1 ≤ n) (hs : 1 ≤ s) :
+lemma mBound_le_pow_of_budget_choice_bigS
+  {n s : ℕ} (hn : 1 ≤ n) (hs : n + 2 ≤ s) :
   Cover2.mBound n (n + 1)
       ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  -- Proof to be filled in: follows from logarithmic estimates described in the
-  -- accompanying documentation.
-  admit
+  -- Unfold the definition of `mBound` for the specific budget `n+1`.
+  -- We keep the factors separate to reason about them individually.
+  have hmb : Cover2.mBound n (n + 1)
+      = n * (n + 3) * 2 ^ (10 * (n + 1)) := by
+    simp [Cover2.mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+      add_comm, add_left_comm, add_assoc]
+
+  -- Bound the polynomial part `n * (n + 3)` by `(n + 1)^4`.
+  -- The inequality `n + 3 ≤ (n + 1)^2` holds for `n ≥ 1`;
+  -- combining it with `n ≤ (n + 1)^2` yields the desired product bound.
+  have h_le_pow2 : n ≤ (n + 1) ^ 2 := by
+    -- `n ≤ n+1` and `n+1 ≤ (n+1)^2`.
+    have hle₁ : n ≤ n + 1 := Nat.le_succ _
+    have hle₂ : n + 1 ≤ (n + 1) ^ 2 := by
+      -- `(n+1)^2 = (n+1) * (n+1)` and `1 ≤ n+1` since `n ≥ 1`.
+      have hpos : 1 ≤ n + 1 := Nat.succ_le_succ (Nat.zero_le _)
+      simpa [Nat.pow_two, Nat.mul_comm] using
+        (Nat.mul_le_mul_left (n + 1) hpos)
+    exact le_trans hle₁ hle₂
+  have h_le_pow2' : n + 3 ≤ (n + 1) ^ 2 := by
+    -- Rewrite the claim as a nonnegativity statement and use that
+    -- `(n - 1) * (n + 2) ≥ 0` for `n ≥ 1`.
+    have hx : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    have hnonneg : 0 ≤ ((n : ℝ) - 1) * ((n : ℝ) + 2) := by
+      have h₁ : 0 ≤ (n : ℝ) - 1 := sub_nonneg.mpr hx
+      have h₂ : 0 ≤ (n : ℝ) + 2 := by linarith
+      exact mul_nonneg h₁ h₂
+    have : (n + 3 : ℝ) ≤ (n + 1 : ℝ) ^ 2 := by
+      have hdiff :
+          (n + 1 : ℝ) ^ 2 - (n + 3 : ℝ) = ((n : ℝ) - 1) * ((n : ℝ) + 2) := by ring
+      have hdiff_nonneg : 0 ≤ (n + 1 : ℝ) ^ 2 - (n + 3 : ℝ) := by
+        simpa [hdiff] using hnonneg
+      exact sub_nonneg.mp hdiff_nonneg
+    exact_mod_cast this
+  have hpoly : n * (n + 3) ≤ (n + 1) ^ 4 := by
+    have := Nat.mul_le_mul h_le_pow2 h_le_pow2'
+    -- Simplify the right-hand side into `(n+1)^4`.
+    simpa [Nat.pow_two, pow_add, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc] using this
+
+  -- As `n ≥ 1`, the base `n + 1` dominates `2`, hence the exponential factor
+  -- `2^(10*(n+1))` is bounded by `(n+1)^(10*(n+1))`.
+  have hpow : 2 ^ (10 * (n + 1)) ≤ (n + 1) ^ (10 * (n + 1)) := by
+    have hbase : 2 ≤ n + 1 := Nat.succ_le_succ hn
+    exact Nat.pow_le_pow_left hbase (10 * (n + 1))
+
+  -- Combine the polynomial and exponential bounds.
+  have hbound : Cover2.mBound n (n + 1)
+      ≤ (n + 1) ^ 4 * (n + 1) ^ (10 * (n + 1)) := by
+    -- Start from `hmb` and replace the factors.
+    have := Nat.mul_le_mul hpoly hpow
+    simpa [hmb] using this
+
+  -- Collapse the product of powers into a single power.
+  have hpow_add : (n + 1) ^ 4 * (n + 1) ^ (10 * (n + 1))
+      = (n + 1) ^ (10 * (n + 1) + 4) := by
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, pow_add] using
+      (Nat.pow_add (n + 1) (10 * (n + 1)) 4).symm
+
+  -- Put everything together.
+  have hmb_final :
+      Cover2.mBound n (n + 1)
+        ≤ (n + 1) ^ (10 * (n + 1) + 4) := by
+    simpa [hpow_add] using hbound
+
+  -- Finally, compare the exponents.  Since `s ≥ n + 2`, the right-hand side
+  -- exponent dominates `10*(n+1)+4`.
+  have hexp : 10 * (n + 1) + 4 ≤ coverConst * s := by
+    -- `coverConst = 10`.
+    have : 10 * (n + 1) + 4 ≤ 10 * s := by
+      have hbase : 10 * (n + 1) + 4 ≤ 10 * (n + 2) := by
+        -- Rearranged: 10*n + 14 ≤ 10*n + 20, which holds since 14 ≤ 20.
+        have : 14 ≤ 20 := by decide
+        -- Adding `10*n` to both sides preserves the inequality.
+        simpa [Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+          Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+          (add_le_add_left this (10 * n))
+      have htrans := le_trans hbase (Nat.mul_le_mul_left 10 hs)
+      exact htrans
+    simpa [coverConst] using this
+  have hpow_exp :
+      (n + 1) ^ (10 * (n + 1) + 4)
+        ≤ (n + 1) ^ (coverConst * s) :=
+    Nat.pow_le_pow_of_le_left (by exact Nat.succ_le_succ (Nat.zero_le _)) hexp
+
+  -- Convert the base `(n+1)^...` into the desired `2^...` using the identity
+  -- `a^k = 2^(k * log₂ a)` for `a = n + 1`.
+  have hpow_base :
+      (n + 1) ^ (coverConst * s)
+        ≤ 2 ^ (coverConst * s * Nat.log2 (n + 1)) := by
+    -- `Nat.pow_log2_le` supplies `2^(log₂ (n+1)) ≤ n+1`; raising both sides to
+    -- the positive power `coverConst * s` preserves the inequality.
+    have hlog : 2 ^ Nat.log2 (n + 1) ≤ n + 1 := Nat.pow_log2_le (n + 1)
+    have hpos : 0 < coverConst * s := by
+      have : 0 < s := lt_of_lt_of_le (Nat.succ_pos _) hs
+      have : 0 < coverConst * s := Nat.mul_pos (by decide) this
+      simpa [coverConst] using this
+    exact
+      Nat.pow_le_pow_of_le_left' hlog (coverConst * s)
+
+  -- Final comparison in the chain of inequalities.
+  have hfinal :
+      Cover2.mBound n (n + 1)
+        ≤ 2 ^ (coverConst * s * Nat.log2 (n + 1)) := by
+    have := le_trans hmb_final hpow_exp
+    exact le_trans this hpow_base
+
+  -- Simplify `(Nat.succ n)` in the logarithm.
+  simpa [Nat.succ_eq_add_one] using hfinal
 
 -- The next lemma links explicit decision trees with the cover construction.
 -- The combinatorial result of Gopalan–Moshkovitz–Oliveira shows that a single
@@ -2553,13 +2664,21 @@ theorem decisionTree_cover
     exact hnonconst hconstf
   have hs : 0 < s :=
     lt_of_lt_of_le hsens_pos (Hsens f₀ hf₀F)
-  -- Apply the combinatorial cover construction with the numeric estimate.
-  have hk :=
-    mBound_le_pow_of_budget_choice (n := n) (s := s)
-      (hn := Nat.succ_le_of_lt hn) (hs := Nat.succ_le_of_lt hs)
-  exact
-    decisionTree_cover_of_buildCover_choose_h (n := n) (s := s) (F := F)
-      (hk := hk)
+  -- Apply the combinatorial cover construction.  For large `s` we can bound
+  -- the rectangle count via `mBound_le_pow_of_budget_choice_bigS`.  The case
+  -- `s ≤ n + 1` remains open and requires a refined recursive analysis.
+  by_cases hbig : n + 2 ≤ s
+  ·
+    have hk :=
+      mBound_le_pow_of_budget_choice_bigS (n := n) (s := s)
+        (hn := Nat.succ_le_of_lt hn) (hs := hbig)
+    exact
+      decisionTree_cover_of_buildCover_choose_h (n := n) (s := s) (F := F)
+        (hk := hk)
+  ·
+    -- TODO: implement the small‑`s` case using a refined decision tree
+    -- argument that avoids `mBound`.
+    admit
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

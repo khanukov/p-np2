@@ -7,6 +7,7 @@ namespace BoolFunc
 -- Silence auxiliary linter warnings in this foundational file.
 set_option linter.unnecessarySimpa false
 set_option linter.unusedSectionVars false
+set_option linter.unusedSimpArgs false
 
 /--
   Simple decision-tree structure for Boolean functions on `n` bits.
@@ -43,6 +44,7 @@ lemma agreesWithAssignments_cons {x : Point n} {i : Fin n} {b : Bool}
     cases this with
     | inl hq' => cases hq'; simpa using hx
     | inr hq' => exact hrest q hq'
+
 
 
 /-- Depth of a decision tree. -/
@@ -107,6 +109,68 @@ lemma path_to_leaf_length_le_depth (t : DecisionTree n) (x : Point n) :
       · have hlen := ih0 x
         have := Nat.le_trans hlen (Nat.le_max_left (depth t0) (depth t1))
         simpa [path_to_leaf, depth, h] using Nat.succ_le_succ this
+
+/--
+`ofAssignments p b` builds a decision tree that sequentially checks the
+assignments listed in `p`.  If the input point satisfies every pair `(i, v)` in
+`p`, evaluation returns the Boolean `b`.  The first mismatch immediately
+terminates the search with the opposite colour `!b`.
+
+This constructor will later allow us to convert a (possibly large) set of fixed
+coordinates into a shallow branch of the full decision tree.
+-/
+def ofAssignments : List (Fin n × Bool) → Bool → DecisionTree n
+  | [], b => leaf b
+  | (i, v) :: p, b =>
+      if v then
+        -- The coordinate `i` should be `true`.  The `false` branch is rejected
+        -- immediately with the opposite colour, while the `true` branch
+        -- continues checking the remaining assignments.
+        node i (leaf (!b)) (ofAssignments p b)
+      else
+        -- Symmetrically, expect `x i = false`.
+        node i (ofAssignments p b) (leaf (!b))
+
+/--
+Evaluating `ofAssignments p b` on a point that agrees with all assignments in
+`p` yields the colour `b`.
+-/
+lemma eval_ofAssignments_of_agrees {p : List (Fin n × Bool)} {x : Point n}
+    {b : Bool} (hx : agreesWithAssignments (n := n) x p) :
+    eval_tree (ofAssignments (n := n) p b) x = b := by
+  induction p with
+  | nil =>
+      -- No assignments: the tree is a single leaf.
+      simp [ofAssignments] at hx ⊢
+  | cons hd tl ih =>
+      -- Break down the agreement condition for the head and tail.
+      rcases hd with ⟨i, v⟩
+      have h := (agreesWithAssignments_cons (x := x) (i := i) (b := v)
+        (p := tl)).1 hx
+      rcases h with ⟨hix, htl⟩
+      -- The head assignment determines which branch is taken.
+      cases v
+      · -- Expect `x i = false`.
+        simp [ofAssignments, hix, ih htl]
+      · -- Expect `x i = true`.
+        simp [ofAssignments, hix, ih htl]
+
+/--
+The depth of `ofAssignments p b` is bounded by the length of the assignment
+list.  Each pair `(i, v)` contributes at most one additional level.
+-/
+lemma depth_ofAssignments_le {p : List (Fin n × Bool)} {b : Bool} :
+    depth (ofAssignments (n := n) p b) ≤ p.length := by
+  induction p with
+  | nil =>
+      simp [ofAssignments, depth]
+  | cons hd tl ih =>
+      rcases hd with ⟨i, v⟩
+      -- The constructed node adds one level atop the recursion on `tl`.
+      have h := Nat.succ_le_succ ih
+      cases v
+      · simpa [ofAssignments, depth, List.length] using h
+      · simpa [ofAssignments, depth, List.length] using h
 
 /-- A decision tree with depth `d` has at most `2 ^ d` leaves. -/
 lemma leaf_count_le_pow_depth (t : DecisionTree n) :
@@ -416,6 +480,49 @@ lemma mem_of_agreesWithAssignments_toList {R : Subcube n} {x : Point n}
     List.mem_map.2 ⟨⟨i, hi⟩, hi_merge, rfl⟩
   simpa using h _ hmem
 
+/-- Convert a subcube with a prescribed colour into a linear decision-tree
+branch.  The tree checks every fixed coordinate of `R` in turn and returns `b`
+if all assignments match. -/
+noncomputable def ofSubcube (R : Subcube n) (b : Bool) : DecisionTree n :=
+  ofAssignments (Subcube.toList (n := n) R) b
+
+/-- Membership in `R` forces evaluation of `ofSubcube R b` to yield `b`. -/
+lemma eval_ofSubcube_of_mem {R : Subcube n} {x : Point n} {b : Bool}
+    (hx : x ∈ₛ R) :
+    eval_tree (ofSubcube (n := n) R b) x = b := by
+  classical
+  have hagrees :=
+    agreesWithAssignments_toList_of_mem (n := n) (R := R) (x := x) hx
+  simpa [ofSubcube] using
+    (eval_ofAssignments_of_agrees (n := n)
+      (p := Subcube.toList (n := n) R) (x := x) (b := b) hagrees)
+
+/-- The depth of `ofSubcube R b` is bounded by the number of fixed coordinates. -/
+lemma depth_ofSubcube_le (R : Subcube n) {b : Bool} :
+    depth (ofSubcube (n := n) R b) ≤ R.idx.card := by
+  simpa [ofSubcube, Subcube.toList_length (n := n) (R := R)] using
+    (depth_ofAssignments_le (n := n) (p := Subcube.toList (n := n) R)
+      (b := b))
+
+/--
+The codimension of a subcube bounds the depth of the decision tree
+`ofSubcube`.  This reformulation is often convenient when a lower
+estimate on the dimension is available.
+-/
+lemma depth_ofSubcube_le_codim (R : Subcube n) {b : Bool} :
+    depth (ofSubcube (n := n) R b) ≤ n - R.dimension := by
+  classical
+  -- We rewrite the codimension `n - dimension` as the number of fixed
+  -- coordinates `idx.card`.
+  have hle : R.idx.card ≤ n := by
+    simpa using (Finset.card_le_univ (s := R.idx))
+  have hcodim : n - R.dimension = R.idx.card := by
+    -- `dimension` is defined as `n - idx.card`.
+    have := Nat.sub_sub_self hle
+    simpa [Subcube.dimension] using this
+  -- Now apply the previous bound in terms of `idx.card`.
+  simpa [hcodim] using (depth_ofSubcube_le (n := n) (R := R) (b := b))
+
 /-
 `matchSubcube p b t` builds a decision tree which checks the coordinate
 assignments recorded in the list `p`.  If the input satisfies all
@@ -658,15 +765,15 @@ lemma leaf_count_matchSubcube (p : List (Fin n × Bool)) (b : Bool)
   induction p with
   | nil =>
       simp [matchSubcube, leaf_count]
-  | cons hd tl ih =>
+    | cons hd tl ih =>
       rcases hd with ⟨i, bi⟩
-      cases bi with
-      | false =>
-          simp [matchSubcube, leaf_count, ih, Nat.mul_succ, Nat.add_comm,
-            Nat.add_left_comm]
-      | true =>
-          simp [matchSubcube, leaf_count, ih, Nat.mul_succ, Nat.add_comm,
-            Nat.add_left_comm]
+      cases bi
+      case false =>
+        simp [matchSubcube, leaf_count, ih, Nat.mul_succ, Nat.add_comm,
+          Nat.add_left_comm]
+      case true =>
+        simp [matchSubcube, leaf_count, ih, Nat.mul_succ, Nat.add_comm,
+          Nat.add_left_comm]
 
 /--
 The depth of `matchSubcube p b t` is at most the depth of the fallback tree
@@ -680,35 +787,111 @@ lemma depth_matchSubcube_le (p : List (Fin n × Bool)) (b : Bool)
   | nil =>
       -- No assignments: the construction collapses to a leaf.
       simp [matchSubcube, depth]
-  | cons hd tl ih =>
-      rcases hd with ⟨i, bi⟩
-      cases bi with
-      | false =>
-          -- Branching on `(i, false)` places the recursive call on the left.
-          -- Bound both children of the node by `depth t + tl.length` and apply
-          -- `max` monotonicity.
-          have h0 : depth t ≤ depth t + tl.length := Nat.le_add_right _ _
-          have h1 : depth (matchSubcube (n := n) tl b t) ≤ depth t + tl.length := ih
-          have hmax :
-              max (depth (matchSubcube (n := n) tl b t)) (depth t)
-                  ≤ depth t + tl.length :=
-            max_le_iff.mpr ⟨h1, h0⟩
-          have := Nat.succ_le_succ hmax
-          -- The resulting bound matches `depth t + (tl.length + 1)` after
-          -- rewriting.
-          simpa [matchSubcube, depth, Nat.add_comm, Nat.add_left_comm,
-                Nat.add_assoc] using this
-      | true =>
-          -- Symmetric case: the recursive call sits on the right branch.
-          have h0 : depth t ≤ depth t + tl.length := Nat.le_add_right _ _
-          have h1 : depth (matchSubcube (n := n) tl b t) ≤ depth t + tl.length := ih
-          have hmax :
-              max (depth t) (depth (matchSubcube (n := n) tl b t))
-                  ≤ depth t + tl.length :=
-            max_le_iff.mpr ⟨h0, h1⟩
-          have := Nat.succ_le_succ hmax
-          simpa [matchSubcube, depth, Nat.add_comm, Nat.add_left_comm,
-                Nat.add_assoc] using this
+    | cons hd tl ih =>
+        rcases hd with ⟨i, bi⟩
+        cases bi
+        case false =>
+            -- Branching on `(i, false)` places the recursive call on the left.
+            -- Bound both children of the node by `depth t + tl.length` and apply
+            -- `max` monotonicity.
+            have h0 : depth t ≤ depth t + tl.length := Nat.le_add_right _ _
+            have h1 : depth (matchSubcube (n := n) tl b t) ≤ depth t + tl.length := ih
+            have hmax :
+                max (depth (matchSubcube (n := n) tl b t)) (depth t)
+                    ≤ depth t + tl.length :=
+              max_le_iff.mpr ⟨h1, h0⟩
+            have := Nat.succ_le_succ hmax
+            -- The resulting bound matches `depth t + (tl.length + 1)` after
+            -- rewriting.
+            simpa [matchSubcube, depth, Nat.add_comm, Nat.add_left_comm,
+                  Nat.add_assoc] using this
+        case true =>
+            -- Symmetric case: the recursive call sits on the right branch.
+            have h0 : depth t ≤ depth t + tl.length := Nat.le_add_right _ _
+            have h1 : depth (matchSubcube (n := n) tl b t) ≤ depth t + tl.length := ih
+            have hmax :
+                max (depth t) (depth (matchSubcube (n := n) tl b t))
+                    ≤ depth t + tl.length :=
+              max_le_iff.mpr ⟨h0, h1⟩
+            have := Nat.succ_le_succ hmax
+            simpa [matchSubcube, depth, Nat.add_comm, Nat.add_left_comm,
+                  Nat.add_assoc] using this
+
+/--
+Specialised branching on a given `Subcube`.  The resulting decision tree
+checks all fixed coordinates of `R`; if the input lies inside `R`, it returns
+the constant colour `b`.  Otherwise evaluation falls back to the tree `t`.
+-/
+noncomputable def branchOnSubcube (R : Subcube n) (b : Bool)
+    (t : DecisionTree n) : DecisionTree n :=
+  matchSubcube (Subcube.toList (n := n) R) b t
+
+/-- Evaluating `branchOnSubcube R b t` on a point of `R` yields `b`. -/
+lemma eval_branchOnSubcube_mem {R : Subcube n} {x : Point n} {b : Bool}
+    {t : DecisionTree n} (hx : x ∈ₛ R) :
+    eval_tree (branchOnSubcube (n := n) R b t) x = b := by
+  classical
+  unfold branchOnSubcube
+  have hagrees :=
+    agreesWithAssignments_toList_of_mem (n := n) (R := R) (x := x) hx
+  simpa using
+    eval_matchSubcube_agrees (n := n)
+      (p := Subcube.toList (n := n) R) (b := b) (t := t) (x := x) hagrees
+
+/--
+If the point `x` lies outside `R`, `branchOnSubcube` delegates evaluation to
+the fallback tree `t`.
+-/
+lemma eval_branchOnSubcube_not_mem {R : Subcube n} {x : Point n} {b : Bool}
+    {t : DecisionTree n} (hx : Subcube.mem R x → False) :
+    eval_tree (branchOnSubcube (n := n) R b t) x = eval_tree t x := by
+  classical
+  unfold branchOnSubcube
+  have hagrees :
+      ¬ agreesWithAssignments (n := n) x (Subcube.toList (n := n) R) := by
+    intro h
+    have hxmem : Subcube.mem R x :=
+      mem_of_agreesWithAssignments_toList (n := n) (x := x) (R := R) h
+    exact hx hxmem
+  simpa using
+    eval_matchSubcube_not_agrees (n := n)
+      (p := Subcube.toList (n := n) R) (b := b) (t := t) (x := x) hagrees
+
+/--
+Evaluating `branchOnSubcube R b t` can be described by an `if` expression: the
+tree returns `b` on points inside `R` and otherwise falls back to the tree `t`.
+This consolidated statement is often convenient when reasoning about coverings
+that branch on a known subcube.
+-/
+lemma eval_branchOnSubcube (R : Subcube n) (b : Bool)
+    (t : DecisionTree n) (x : Point n) [Decidable (x ∈ₛ R)] :
+    eval_tree (branchOnSubcube (n := n) R b t) x =
+      if x ∈ₛ R then b else eval_tree t x := by
+  classical
+  by_cases hx : x ∈ₛ R
+  · -- Inside the subcube the tree returns the fixed colour `b`.
+    simpa [hx] using
+      (eval_branchOnSubcube_mem (n := n) (R := R) (x := x) (b := b)
+        (t := t) hx)
+  · -- Outside `R` evaluation delegates to the fallback tree `t`.
+    have hx' : Subcube.mem R x → False := by
+      intro hmem; exact hx hmem
+    simpa [hx] using
+      (eval_branchOnSubcube_not_mem (n := n) (R := R) (x := x) (b := b)
+        (t := t) hx')
+
+/--
+The depth of `branchOnSubcube R b t` increases by at most the number of fixed
+coordinates of `R` compared to the fallback tree `t`.
+-/
+lemma depth_branchOnSubcube_le (R : Subcube n) (b : Bool)
+    (t : DecisionTree n) :
+    depth (branchOnSubcube (n := n) R b t) ≤
+        depth t + R.idx.card := by
+  unfold branchOnSubcube
+  simpa [Subcube.toList_length (n := n) (R := R)] using
+    depth_matchSubcube_le (n := n)
+      (p := Subcube.toList (n := n) R) (b := b) (t := t)
 
 /--
 Bounding the number of leaves produced by `ofRectCoverList`.
@@ -1006,6 +1189,47 @@ lemma path_to_leaf_agrees (t : DecisionTree n) (x : Point n) :
         | inl hq => cases hq; simp [hxi]
         | inr hq => exact h q hq
 
+/-!  A reformulation of `path_to_leaf_agrees` in terms of the
+    `agreesWithAssignments` predicate.  It records that the point `x`
+    generating the path satisfies every assignment along that path. -/
+lemma agreesWithAssignments_path_to_leaf (t : DecisionTree n)
+    (x : Point n) :
+    agreesWithAssignments (n := n) x (path_to_leaf t x) :=
+  path_to_leaf_agrees (t := t) (x := x)
+
+/-!  If a point `y` satisfies all coordinate decisions recorded along the
+    path of an input `x`, then the decision tree yields the same result on
+    `y` as on `x`.  Intuitively, `y` follows the exact same branches as `x`.-/
+lemma eval_tree_of_agrees_path (t : DecisionTree n) (x y : Point n)
+    (h : agreesWithAssignments (n := n) y (path_to_leaf t x)) :
+    eval_tree t y = eval_tree t x := by
+  induction t generalizing x y with
+  | leaf b =>
+      -- With no queries, every point reaches the same leaf.
+      simp [path_to_leaf] at h
+      simpa [eval_tree, path_to_leaf] using h
+  | node i t0 t1 ih0 ih1 =>
+      -- The first decision inspects coordinate `i`.
+      by_cases hxi : x i
+      · -- `x` takes the `true` branch.
+        have hcons :=
+          (agreesWithAssignments_cons (x := y) (i := i) (b := true)
+            (p := path_to_leaf t1 x)).1
+            (by simpa [path_to_leaf, hxi] using h)
+        rcases hcons with ⟨hyi, htail⟩
+        have := ih1 (x := x) (y := y) htail
+        have hyi' : y i = true := hyi
+        simpa [eval_tree, path_to_leaf, hxi, hyi'] using this
+      · -- `x` takes the `false` branch.
+        have hcons :=
+          (agreesWithAssignments_cons (x := y) (i := i) (b := false)
+            (p := path_to_leaf t0 x)).1
+            (by simpa [path_to_leaf, hxi] using h)
+        rcases hcons with ⟨hyi, htail⟩
+        have := ih0 (x := x) (y := y) htail
+        have hyi' : y i = false := hyi
+        simpa [eval_tree, path_to_leaf, hxi, hyi'] using this
+
 /-!  If every entry of `p` agrees with the corresponding coordinate of `x`,
 then `x` lies in the subcube described by `p`. -/
 lemma mem_subcube_of_path_of_agrees (x : Point n) :
@@ -1135,5 +1359,96 @@ lemma sensitivity_restrictPath_le (F : Family n) (p : List (Fin n × Bool))
           exact htail g hg'
 
 end Family
+
+/--
+Given any Boolean function `f`, we can build a decision tree that computes it
+while querying at most one coordinate for each element of `support f`.  The
+resulting tree has depth bounded by the size of the support.
+
+This basic construction performs a case split on a coordinate from the support
+and recursively handles the two restricted functions.  When the support is
+empty, the function is constant and the tree collapses to a single leaf.
+-/
+lemma exists_decisionTree_depth_le_support_card (f : BFunc n) :
+    ∃ t : DecisionTree n,
+      (∀ x : Point n, DecisionTree.eval_tree (n := n) t x = f x) ∧
+      DecisionTree.depth (n := n) t ≤ (support f).card := by
+  classical
+  -- We generalise the statement to any upper bound `k` on the support size and
+  -- perform induction on `k`.
+  have hgen :
+      ∀ k f, (support f).card ≤ k →
+        ∃ t : DecisionTree n,
+          (∀ x, DecisionTree.eval_tree (n := n) t x = f x) ∧
+          DecisionTree.depth (n := n) t ≤ k := by
+    refine Nat.rec ?base ?step
+    · -- Base case: the support is empty, so the function is constant.
+      intro f hf
+      have hcard0 : (support f).card = 0 := Nat.le_zero.mp hf
+      have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
+        Finset.card_eq_zero.mp hcard0
+      have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
+        intro x
+        have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
+          intro i hi
+          have : False := by simpa [hsupport_empty] using hi
+          exact this.elim
+        simpa using
+          (eval_eq_of_agree_on_support (f := f) (x := x)
+            (y := fun _ : Fin n => false) hx)
+        
+      refine ⟨DecisionTree.leaf (n := n) (f (fun _ => false)), ?_, by
+        simp [DecisionTree.depth]⟩
+      intro x
+      have hx := hxconst x
+      simp [hx.symm]
+    · -- Inductive step: split on a coordinate from the support.
+      intro k ih f hf
+      by_cases hzero : (support f).card = 0
+      · -- With empty support we can invoke the induction hypothesis directly.
+        have hf0 : (support f).card ≤ 0 := by simpa [hzero]
+        have hf' : (support f).card ≤ k :=
+          hf0.trans (Nat.zero_le _)
+        obtain ⟨t, ht, hdepth⟩ := ih (f := f) hf'
+        refine ⟨t, ht, ?_⟩
+        exact hdepth.trans (Nat.le_succ _)
+      ·
+        -- Choose a coordinate `i` from the nonempty support.
+        have hpos : 0 < (support f).card := Nat.pos_of_ne_zero hzero
+        obtain ⟨i, hi⟩ := Finset.card_pos.mp hpos
+        -- Build trees for both restrictions, using the induction hypothesis.
+        have hlt0 := support_card_restrict_lt (f := f) (i := i)
+            (b := false) (hi := hi)
+        have hlt1 := support_card_restrict_lt (f := f) (i := i)
+            (b := true) (hi := hi)
+        have hle0 : (support (f.restrictCoord i false)).card ≤ k :=
+          Nat.lt_succ_iff.mp (Nat.lt_of_lt_of_le hlt0 hf)
+        have hle1 : (support (f.restrictCoord i true)).card ≤ k :=
+          Nat.lt_succ_iff.mp (Nat.lt_of_lt_of_le hlt1 hf)
+        obtain ⟨t0, ht0, hdepth0⟩ := ih (f.restrictCoord i false) hle0
+        obtain ⟨t1, ht1, hdepth1⟩ := ih (f.restrictCoord i true) hle1
+        refine ⟨DecisionTree.node i t0 t1, ?_, ?_⟩
+        · intro x; cases hxi : x i with
+          | false =>
+              -- On the `false` branch, evaluate the restricted function.
+              have := ht0 x
+              have hx := restrictCoord_agrees (f := f) (j := i) (b := false)
+                (x := x) (h := hxi)
+              simpa [DecisionTree.eval_tree, hxi, hx] using this
+          | true =>
+              -- Symmetric case for the `true` branch.
+              have := ht1 x
+              have hx := restrictCoord_agrees (f := f) (j := i) (b := true)
+                (x := x) (h := hxi)
+              simpa [DecisionTree.eval_tree, hxi, hx] using this
+        · -- The depth increases by at most one.
+          have hmax :
+              max (DecisionTree.depth (n := n) t0)
+                  (DecisionTree.depth (n := n) t1) ≤ k :=
+            max_le_iff.mpr ⟨hdepth0, hdepth1⟩
+          have := Nat.succ_le_succ hmax
+          simpa [DecisionTree.depth, Nat.succ_eq_add_one] using this
+  -- Apply the general lemma with the exact support size bound.
+  exact hgen (support f).card f (Nat.le_refl _)
 
 end BoolFunc

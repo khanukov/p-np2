@@ -173,4 +173,36 @@ lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
   ext i
   simp [support]
 
+
+/-! ### Subcubes determined by the support -/
+
+/--
+`supportSubcube f x` freezes every coordinate from the `support` of `f` to
+the value it takes in a base point `x`.  Since `f` ignores all other
+coordinates, the function is constant on this subcube.
+-/
+noncomputable def supportSubcube (f : BFunc n) (x : Point n) : Subcube n where
+  idx := support f
+  val := fun i _ => x i
+
+@[simp] lemma mem_supportSubcube {f : BFunc n} {x y : Point n} :
+    (y ∈ₛ supportSubcube f x) ↔ ∀ i ∈ support f, y i = x i := by
+  rfl
+
+/-- On the subcube determined by its `support`, a Boolean function is
+constant with value `f x`.
+-/
+lemma supportSubcube_monochromatic (f : BFunc n) (x : Point n) :
+    ∀ y : Point n, (supportSubcube f x).mem y → f y = f x := by
+  intro y
+  intro hy
+  have h : ∀ i ∈ support f, y i = x i :=
+    (mem_supportSubcube (f := f) (x := x) (y := y)).1 hy
+  simpa using
+    (eval_eq_of_agree_on_support (f := f) (x := y) (y := x) h)
+
+@[simp] lemma supportSubcube_dim (f : BFunc n) (x : Point n) :
+    (supportSubcube f x).dimension = n - (support f).card := by
+  rfl
+
 end BoolFunc

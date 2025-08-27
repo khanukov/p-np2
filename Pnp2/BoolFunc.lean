@@ -37,6 +37,7 @@ import Mathlib.Data.Bool.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Finset.Prod
 import Mathlib.Tactic.FieldSimp
@@ -56,6 +57,11 @@ abbrev Point (n : ℕ) : Type := Fin n → Bool
 
 /-- **A Boolean function** on `n` input bits. -/
 abbrev BFunc (n : ℕ) : Type := Point n → Bool
+
+/-- The Boolean cube `Point n` has `2^n` vertices. -/
+@[simp] lemma card_point (n : ℕ) : Fintype.card (Point n) = 2 ^ n := by
+  classical
+  simpa [Point, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool]
 
 /-- A *family* (finite set) of Boolean functions on `n` bits.  We use
 `Finset` rather than `Set` so that cardinalities are definable.  Lean does
@@ -248,6 +254,82 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
     · subst hjk; simp [Point.update, hk]
     · simp [Point.update, hk, hjk]
 
+/-! ### Flipping multiple coordinates -/
+
+/-- `Point.flip x S` negates all coordinates of `x` listed in the finite set `S`. -/
+def Point.flip (x : Point n) (S : Finset (Fin n)) : Point n :=
+  fun i => if i ∈ S then ! x i else x i
+
+@[simp] lemma Point.flip_apply_mem {x : Point n} {S : Finset (Fin n)} {i : Fin n}
+    (hi : i ∈ S) :
+    Point.flip x S i = ! x i := by
+  simp [Point.flip, hi]
+
+@[simp] lemma Point.flip_apply_not_mem {x : Point n} {S : Finset (Fin n)} {i : Fin n}
+    (hi : i ∉ S) :
+    Point.flip x S i = x i := by
+  simp [Point.flip, hi]
+
+@[simp] lemma Point.flip_empty (x : Point n) :
+    Point.flip x (∅ : Finset (Fin n)) = x := by
+  funext i; simp [Point.flip]
+
+/-- Flipping a singleton set coincides with updating the corresponding
+coordinate. -/
+@[simp] lemma Point.flip_singleton (x : Point n) (i : Fin n) :
+    Point.flip x ({i} : Finset (Fin n)) = Point.update x i (! x i) := by
+  classical
+  funext j
+  by_cases hji : j = i
+  · subst hji; simp [Point.flip, Point.update]
+  · simp [Point.flip, Point.update, hji]
+
+/-- Flipping after inserting a fresh coordinate `i` is the same as first
+flipping `i` and then the original set. -/
+@[simp] lemma Point.flip_insert (x : Point n) {S : Finset (Fin n)} {i : Fin n}
+    (hi : i ∉ S) :
+    Point.flip x (insert i S) = Point.flip (Point.flip x ({i})) S := by
+  classical
+  funext j
+  by_cases hji : j = i
+  · subst hji
+    simp [Point.flip, Finset.mem_insert, hi]
+  · by_cases hjs : j ∈ S
+    · simp [Point.flip, Finset.mem_insert, hji, hjs]
+    · simp [Point.flip, Finset.mem_insert, hji, hjs]
+
+/-- Flipping the same set twice returns to the original point. -/
+@[simp] lemma Point.flip_flip (x : Point n) (S : Finset (Fin n)) :
+    Point.flip (Point.flip x S) S = x := by
+  classical
+  funext i
+  by_cases hi : i ∈ S
+  · simp [Point.flip, hi]
+  · simp [Point.flip, hi]
+
+/-- If two points agree outside a finite set `A`, then flipping exactly the
+coordinates where they differ recovers the second point. -/
+lemma Point.flip_eq_of_eq_on_compl {x y : Point n} (A : Finset (Fin n))
+    (h : ∀ i ∉ A, y i = x i) :
+    Point.flip x (A.filter fun i => y i ≠ x i) = y := by
+  classical
+  funext i
+  by_cases hiA : i ∈ A
+  · by_cases hneq : y i = x i
+    · have hiT : i ∉ A.filter fun j => y j ≠ x j := by
+        simp [hiA, hneq]
+      simp [Point.flip, hiT, hneq]  -- both sides equal `x i`
+    · have hiT : i ∈ A.filter fun j => y j ≠ x j := by
+        simp [hiA, hneq]
+      -- `y i` must be the negation of `x i`
+      have : y i = ! x i := by
+        cases hxi : x i <;> cases hyi : y i <;> simp [hxi, hyi] at hneq ⊢
+      simp [Point.flip, hiT, this]
+  · have hiT : i ∉ A.filter fun j => y j ≠ x j := by
+      simp [hiA]
+    have : y i = x i := h i hiA
+    simp [Point.flip, hiT, this]
+
 /-- **A constant point** with the same Boolean value in every coordinate. -/
 def Point.const (n : ℕ) (b : Bool) : Point n := fun _ => b
 
@@ -338,6 +420,62 @@ lemma restrict_pair_injective (i : Fin n) :
   have h1 : BFunc.restrictCoord f i true = BFunc.restrictCoord g i true :=
     congrArg Prod.snd hpair
   exact eq_of_restrictCoord_eq (i := i) h0 h1
+
+/-! ### Restricting by multiple assignments -/
+
+/--
+Fix several coordinates of a Boolean function according to a list of
+assignments.  Each pair `(i, b)` in the list freezes the `i`‑th coordinate
+to the Boolean value `b`.  The function still has arity `n`; internally we
+apply `BFunc.restrictCoord` for every entry of the list.-/
+def BFunc.restrictAssignments (f : BFunc n) :
+    List (Fin n × Bool) → BFunc n
+  | [] => f
+  | (i, b) :: p => BFunc.restrictAssignments (BFunc.restrictCoord f i b) p
+
+/--
+`satisfiesAssignments x p` means that the point `x` agrees with every
+coordinate–value pair in the list `p`.
+-/
+def satisfiesAssignments (x : Point n) :
+    List (Fin n × Bool) → Prop
+  | [] => True
+  | (i, b) :: p => x i = b ∧ satisfiesAssignments x p
+
+@[simp] lemma restrictAssignments_nil (f : BFunc n) :
+    BFunc.restrictAssignments (f := f) [] = f := rfl
+
+@[simp] lemma restrictAssignments_cons (f : BFunc n)
+    (i : Fin n) (b : Bool) (p : List (Fin n × Bool)) :
+    BFunc.restrictAssignments (f := f) ((i, b) :: p) =
+      BFunc.restrictAssignments
+        (f := BFunc.restrictCoord f i b) p := rfl
+
+@[simp] lemma satisfiesAssignments_nil (x : Point n) :
+    satisfiesAssignments x [] := by trivial
+
+lemma satisfiesAssignments_cons {x : Point n} {i : Fin n} {b : Bool}
+    {p : List (Fin n × Bool)} :
+    satisfiesAssignments x ((i, b) :: p) ↔
+      x i = b ∧ satisfiesAssignments x p := Iff.rfl
+
+/--
+If a point `x` satisfies all assignments in `p`, restricting `f` by `p`
+does not change the value at `x`.
+-/
+lemma restrictAssignments_agrees {f : BFunc n} {x : Point n}
+    {p : List (Fin n × Bool)}
+    (h : satisfiesAssignments x p) :
+    BFunc.restrictAssignments (f := f) p x = f x := by
+  induction p generalizing f with
+  | nil =>
+      simpa [BFunc.restrictAssignments, satisfiesAssignments] using h
+  | cons hb tl ih =>
+      rcases hb with ⟨i, b⟩
+      rcases h with ⟨hx, hrest⟩
+      have := ih (f := BFunc.restrictCoord f i b) hrest
+      simpa [BFunc.restrictAssignments, satisfiesAssignments, hx,
+        restrictCoord_agrees (f := f) (j := i) (b := b) (x := x) (h := hx)] using this
 
 end Restrict
 

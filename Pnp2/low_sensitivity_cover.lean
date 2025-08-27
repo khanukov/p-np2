@@ -269,26 +269,175 @@ bounded by `2 ^ depth`.
 -/
 lemma decisionTree_cover_of_tree
   {n s : Nat} (F : Family n) (t : DecisionTree n) [Fintype (Point n)]
-  (hmono : ∀ f ∈ F, ∀ R ∈ DecisionTree.leaves_as_subcubes t,
-      Subcube.monochromaticFor R f)
+  (hmono : ∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) t,
+      Subcube.monochromaticFor br.2 f)
   (hcov : ∀ f ∈ F, ∀ x, f x = true →
-      ∃ R ∈ DecisionTree.leaves_as_subcubes t, x ∈ₛ R)
+      ∃ br ∈ DecisionTree.coloredSubcubes (n := n) t, x ∈ₛ br.2)
   (hdepth : DecisionTree.depth t ≤ coverConst * s * Nat.log2 (Nat.succ n)) :
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
-  -- Choose the set of leaf subcubes as the cover.
-  let Rset := DecisionTree.leaves_as_subcubes t
+  -- Project coloured subcubes to their underlying subcubes.
+  let C := DecisionTree.coloredSubcubes (n := n) t
+  let Rset : Finset (Subcube n) := C.image Prod.snd
+  -- Cardinality bound: the projection cannot increase the number of leaves.
+  have hcard_leC : Rset.card ≤ C.card := Finset.card_image_le
+  have hC_le : C.card ≤ 2 ^ DecisionTree.depth t :=
+    DecisionTree.coloredSubcubes_card_le_pow_depth (t := t)
   have hcard_le : Rset.card ≤ 2 ^ DecisionTree.depth t :=
-    DecisionTree.tree_depth_bound (t := t)
-  have hcard : Rset.card ≤ 2 ^ (coverConst * s * Nat.log2 (Nat.succ n)) := by
-    exact le_trans hcard_le
+    le_trans hcard_leC hC_le
+  have hcard : Rset.card ≤ 2 ^ (coverConst * s * Nat.log2 (Nat.succ n)) :=
+    le_trans hcard_le
       (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hdepth)
   refine ⟨Rset, ?_, ?_, hcard⟩
-  · intro f hf R hR; exact hmono f hf R hR
-  · intro f hf x hx; exact hcov f hf x hx
+  · intro f hf R hR
+    -- Recover the coloured cube that maps to `R` and apply `hmono`.
+    rcases Finset.mem_image.mp hR with ⟨br, hbr, rfl⟩
+    simpa using hmono f hf br hbr
+  · intro f hf x hx
+    -- Use the covering hypothesis and project the coloured cube to `Rset`.
+    rcases hcov f hf x hx with ⟨br, hbr, hxR⟩
+    refine ⟨br.2, ?_, hxR⟩
+    exact Finset.mem_image.mpr ⟨br, hbr, rfl⟩
+
+/-! ### Branching on a large insensitive subcube
+
+The following construction performs a single "shortcut" step in the eventual
+decision tree.  Given a point `x` and a global sensitivity bound, the lemma
+`exists_large_monochromatic_subcube` provides a sizeable subcube on which the
+Boolean function `f` is constant.  We fold this subcube into the current tree
+by inserting a `branchOnSubcube` node that immediately returns the known value
+on this region and delegates to the fallback tree `t` otherwise.  The depth
+increases by at most the codimension of the subcube, which is bounded in terms
+of the sensitivity parameter.
+-/
+
+/--
+Attach a `branchOnSubcube` node capturing the large monochromatic subcube
+around `x`.  The resulting tree evaluates to `f x` on the entire subcube and
+behaves like the provided fallback tree `t` elsewhere.
+-/
+noncomputable def branchLargeInsensitive (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
+    DecisionTree n :=
+  -- Extract a concrete subcube witnessing the large insensitive region.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  DecisionTree.branchOnSubcube (n := n) R (f x) t
+
+/--
+Evaluating the tree produced by `branchLargeInsensitive` on any point of the
+chosen subcube returns the reference value `f x`.
+-/
+lemma eval_branchLargeInsensitive_mem (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
+    (hy : y ∈ₛ Classical.choose
+        (exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x))) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+      = f x := by
+  classical
+  -- Unpack the subcube returned by `exists_large_monochromatic_subcube`.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hy' : y ∈ₛ R := hy
+  -- Evaluation reduces to the generic `branchOnSubcube` lemma.
+  simpa [branchLargeInsensitive, h, R] using
+    (DecisionTree.eval_branchOnSubcube_mem (n := n)
+      (R := R) (x := y) (b := f x) (t := t) (hx := hy'))
+
+/--
+Outside the extracted subcube, `branchLargeInsensitive` delegates evaluation to
+the fallback tree `t`.
+-/
+lemma eval_branchLargeInsensitive_not_mem (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
+    (hy : ¬ y ∈ₛ Classical.choose
+        (exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x))) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+      = DecisionTree.eval_tree t y := by
+  classical
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hy' : Subcube.mem R y → False := by simpa [R] using hy
+  simpa [branchLargeInsensitive, h, R] using
+    (DecisionTree.eval_branchOnSubcube_not_mem (n := n)
+      (R := R) (x := y) (b := f x) (t := t) (hx := hy'))
+
+/--
+In particular, evaluating `branchLargeInsensitive` on the base point `x`
+recovers the original value `f x`.
+-/
+lemma eval_branchLargeInsensitive_self (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) x
+      = f x := by
+  classical
+  -- `x` lies in the chosen subcube by construction.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hx : x ∈ₛ R := (Classical.choose_spec h).1
+  simpa [branchLargeInsensitive, h, R] using
+    (DecisionTree.eval_branchOnSubcube_mem (n := n)
+      (R := R) (x := x) (b := f x) (t := t) (hx := hx))
+
+/--
+The depth overhead of `branchLargeInsensitive` is bounded by the codimension of
+the extracted subcube, which in turn is at most `2^n * s`.  This coarse bound
+will later be refined using sharper combinatorial estimates.
+-/
+lemma depth_branchLargeInsensitive_le (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
+    DecisionTree.depth (branchLargeInsensitive (n := n) (f := f)
+        (hs := hs) (x := x) t)
+      ≤ Fintype.card (Point n) * s + DecisionTree.depth t := by
+  classical
+  -- Instantiate the subcube chosen in `branchLargeInsensitive`.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  -- Access the accompanying properties of `R`.
+  have hdim : n - Fintype.card (Point n) * s ≤ R.dimension :=
+    (Classical.choose_spec h).2.2
+  -- Generic depth bound for branching on this subcube.
+  have hdepth :=
+    (DecisionTree.depth_branchOnSubcube_le (n := n) (R := R) (b := f x)
+      (t := t))
+  -- From `hdim` derive a bound on the number of fixed coordinates.
+  have hcodim : R.idx.card ≤ Fintype.card (Point n) * s := by
+    -- First, convert the dimension bound into an inequality on `n`.
+    have hle' : n ≤ R.dimension + Fintype.card (Point n) * s := by
+      by_cases hle : Fintype.card (Point n) * s ≤ n
+      ·
+        have := add_le_add_right hdim (Fintype.card (Point n) * s)
+        have hleft : n - Fintype.card (Point n) * s +
+            Fintype.card (Point n) * s = n := Nat.sub_add_cancel hle
+        simpa [hleft, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+      ·
+        have : n ≤ Fintype.card (Point n) * s := le_of_not_ge hle
+        exact this.trans (Nat.le_add_left _ _)
+    -- Translate back to a bound on `n - R.dimension`.
+    have hsub : n - R.dimension ≤ Fintype.card (Point n) * s :=
+      (Nat.sub_le_iff_le_add).2 <|
+        by simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hle'
+    -- Express the left-hand side via `idx.card`.
+    have hle : R.idx.card ≤ n := by
+      simpa using (Finset.card_le_univ (s := R.idx))
+    have hidx : n - R.dimension = R.idx.card := by
+      have := Nat.sub_sub_self hle
+      simpa [Subcube.dimension] using this
+    simpa [hidx] using hsub
+  -- Combine both estimates.
+  have hsum := Nat.add_le_add_right hcodim (DecisionTree.depth t)
+  have hfinal : DecisionTree.depth t + R.idx.card
+      ≤ Fintype.card (Point n) * s + DecisionTree.depth t := by
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hsum
+  -- The definition of `branchLargeInsensitive` chooses the same `R`.
+  simpa [branchLargeInsensitive, h, R, Nat.add_comm, Nat.add_left_comm,
+    Nat.add_assoc] using (le_trans hdepth hfinal)
 
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →

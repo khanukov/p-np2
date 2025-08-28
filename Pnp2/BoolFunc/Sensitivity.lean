@@ -489,6 +489,62 @@ non‑zero.
     have hzero := (mem_insensitiveCoords (f := f) (i := i)).1 hins
     exact hne hzero
 
+/-- Membership in the global `support` forces positive coordinate sensitivity. -/
+lemma coordSensitivity_pos_of_mem_support (f : BFunc n) (i : Fin n)
+    (hi : i ∈ support f) : 0 < coordSensitivity f i := by
+  have hne := (mem_support_iff_coordSensitivity_ne_zero (f := f) (i := i)).1 hi
+  exact Nat.pos_of_ne_zero hne
+
+/--
+A coordinate belonging to the `support` contributes at least two to the
+total coordinate sensitivity.  Flipping such an index changes the value of
+`f` on both endpoints of the corresponding cube edge, yielding two distinct
+witnesses in the defining set for `coordSensitivity`.
+-/
+lemma two_le_coordSensitivity_of_mem_support (f : BFunc n) (i : Fin n)
+    (hi : i ∈ support f) : 2 ≤ coordSensitivity f i := by
+  classical
+  -- Extract a point `x` witnessing the dependence on coordinate `i`.
+  rcases (mem_support_iff (f := f) (i := i)).1 hi with ⟨x, hx⟩
+  -- Consider both endpoints of the sensitive edge along `i`.
+  let y := Point.update x i (! x i)
+  have hxmem : x ∈
+      (Finset.univ.filter fun z : Point n =>
+        f z ≠ f (Point.update z i (! z i))) := by
+    simpa [hx]
+  have hymem : y ∈
+      (Finset.univ.filter fun z : Point n =>
+        f z ≠ f (Point.update z i (! z i))) := by
+    have hupdate : (x.update i !x i).update i (x i) = x := by
+      funext j; by_cases hj : j = i <;> simp [Point.update, hj]
+    have hneq : f y ≠ f ((x.update i !x i).update i (x i)) := by
+      simpa [y, hupdate] using ne_comm.mp hx
+    have hneq' : f y ≠ f (y.update i (!y i)) := by
+      simpa [y] using hneq
+    refine Finset.mem_filter.mpr ?_
+    exact ⟨by simp [y], hneq'⟩
+  -- The two endpoints form a size-two subset of the full set.
+  have hsubset : ({x, y} : Finset (Point n)) ⊆
+      (Finset.univ.filter fun z : Point n =>
+        f z ≠ f (Point.update z i (! z i))) := by
+    intro z hz; rcases Finset.mem_insert.mp hz with hz | hz
+    · simpa [hz] using hxmem
+    · have hz' : z = y := by simpa [Finset.mem_singleton] using hz
+      simpa [hz'] using hymem
+  have hcard := Finset.card_le_card hsubset
+  have hxy : x ≠ y := by
+    intro h; have : x i = y i := congrArg (fun t => t i) h
+    have : x i = ! x i := by simpa [y] using this
+    cases hxbool : x i <;> simp [hxbool] at this
+  have hpair : ({x, y} : Finset (Point n)).card = 2 := by
+    simp [y, hxy]
+  -- Translate back to `coordSensitivity`.
+  have htwo : 2 ≤
+      (Finset.univ.filter fun z : Point n =>
+        f z ≠ f (Point.update z i (! z i))).card := by
+    simpa [hpair] using hcard
+  simpa [coordSensitivity] using htwo
+
 /--
 The essential `support` forms the complement of `insensitiveCoords`.
 -/
@@ -809,6 +865,242 @@ lemma supportSubcube_dim_le_insensitiveSubcubeAt_dim (f : BFunc n)
   simpa [hsupp, hins] using h
 
 /--
+Any subcube that is monochromatic for `f` and contains a point `x` must lie
+inside `insensitiveSubcubeAt f x`.  Thus every element of such a subcube
+agrees with `x` on all locally sensitive coordinates.-/
+lemma monochromaticSubcube_subset_insensitiveSubcubeAt (f : BFunc n)
+    {R : Subcube n} (x : Point n) (hxR : x ∈ₛ R)
+    (hmono : Subcube.monochromaticFor R f) {y : Point n}
+    (hy : y ∈ₛ R) :
+    y ∈ₛ insensitiveSubcubeAt f x := by
+  classical
+  -- Membership requires agreement with `x` on all sensitive coordinates.
+  refine (mem_insensitiveSubcubeAt (f := f) (x := x) (y := y)).2 ?_
+  intro i hi
+  have hins : i ∉ insensitiveCoordsAt f x := (Finset.mem_sdiff.mp hi).2
+  -- Suppose `y` disagrees with `x` on `i`; we derive a contradiction.
+  by_contra hneq
+  -- Then `i` cannot be fixed by `R`.
+  have hiidx : i ∉ R.idx := by
+    intro hi'
+    have hx := hxR i hi'
+    have hy' := hy i hi'
+    exact hneq (hy'.trans hx.symm)
+  -- Flipping `i` from `x` stays within the subcube.
+  have hxflip : Point.flip x ({i} : Finset (Fin n)) ∈ₛ R := by
+    intro j hj
+    have hji : j ≠ i := by
+      intro hji; exact hiidx (hji ▸ hj)
+    have hxj := hxR j hj
+    simp [Point.flip, hji, hxj]
+  -- Monochromaticity equates the function values of `x` and the flipped point.
+  rcases hmono with ⟨b, hb⟩
+  have hxval : f x = b := hb hxR
+  have hflipval := hb (x := Point.flip x ({i} : Finset (Fin n))) hxflip
+  have heq : f (Point.flip x ({i} : Finset (Fin n))) = f x := by
+    simpa [hxval, Point.flip_singleton] using hflipval
+  -- But sensitivity at `x` forbids this equality.
+  have hne : f (Point.flip x ({i} : Finset (Fin n))) ≠ f x := by
+    have : f (Point.update x i (! x i)) ≠ f x := by
+      intro h
+      apply hins
+      have hiuniv : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+      exact Finset.mem_filter.2 ⟨hiuniv, h⟩
+    simpa [Point.flip_singleton] using this
+  exact hne heq
+
+/--
+The dimension of any monochromatic subcube through `x` is bounded above by the
+dimension of `insensitiveSubcubeAt f x`, since all its free coordinates must be
+locally insensitive at `x`.-/
+lemma monochromaticSubcube_dim_le_insensitiveSubcubeAt_dim (f : BFunc n)
+    {R : Subcube n} (x : Point n) (hxR : x ∈ₛ R)
+    (hmono : Subcube.monochromaticFor R f) :
+    R.dimension ≤ (insensitiveSubcubeAt f x).dimension := by
+  classical
+  -- The free coordinates of `R` are locally insensitive at `x`.
+  have hsubset : (Finset.univ \ R.idx) ⊆ insensitiveCoordsAt f x := by
+    intro j hj
+    have hjnot : j ∉ R.idx := (Finset.mem_sdiff.mp hj).2
+    -- Flipping a free coordinate remains inside `R`.
+    have hjflip : Point.flip x ({j} : Finset (Fin n)) ∈ₛ R := by
+      intro i hi
+      have hji : i ≠ j := by
+        intro h; exact hjnot (h ▸ hi)
+      have hxi := hxR i hi
+      simp [Point.flip, hji, hxi]
+    -- Consequently the flip lies in `insensitiveSubcubeAt`.
+    have hins' :=
+      monochromaticSubcube_subset_insensitiveSubcubeAt (f := f)
+        (R := R) (x := x) (hxR := hxR) (hmono := hmono)
+        (y := Point.flip x ({j} : Finset (Fin n))) (hy := hjflip)
+    -- Extract the membership as a subset condition on coordinates.
+    have :=
+      (flip_mem_insensitiveSubcubeAt_iff (f := f) (x := x)
+        (S := ({j} : Finset (Fin n)))).1 hins'
+    simpa using this
+  -- Compare cardinalities to translate the subset relation to dimensions.
+  have hcard := Finset.card_le_card hsubset
+  -- Rewrite both dimensions via cardinalities of free coordinates.
+  have hdimR : R.dimension = (Finset.univ \ R.idx).card := by
+    have hsdiff :
+        (Finset.univ \ R.idx).card
+          = (Finset.univ : Finset (Fin n)).card - R.idx.card :=
+      Finset.card_sdiff (Finset.subset_univ R.idx)
+    have : (Finset.univ \ R.idx).card = n - R.idx.card := by
+      simpa [Finset.card_univ] using hsdiff
+    simpa [Subcube.dimension, this]
+  have hinsdim := insensitiveSubcubeAt_dim (f := f) (x := x)
+  simpa [hdimR, hinsdim] using hcard
+
+/-- Flipping coordinates outside the fixed index set of a subcube keeps the
+point inside that subcube. -/
+@[simp] lemma flip_mem_subcube (R : Subcube n) (x : Point n)
+    (hx : x ∈ₛ R) {S : Finset (Fin n)}
+    (hS : S ⊆ Finset.univ \ R.idx) :
+    Point.flip x S ∈ₛ R := by
+  classical
+  intro i hi
+  -- A coordinate from `R.idx` cannot appear in the flipped set `S`.
+  have hnot : i ∉ Finset.univ \ R.idx := by
+    intro hmem
+    exact (Finset.mem_sdiff.mp hmem).2 hi
+  have hiS : i ∉ S := fun hmem => hnot (hS hmem)
+  -- Hence the flipped point agrees with `x` on `i`, and `x` already satisfies
+  -- the defining equation of `R`.
+  have hx_eq : x i = R.val i hi := hx i hi
+  have hflip : Point.flip x S i = x i := by
+    simpa [Point.flip_apply_not_mem hiS]
+  simpa [hflip, hx_eq]
+
+/-- Inside a monochromatic subcube `R`, flipping any subset of its free
+coordinates leaves the function value unchanged. -/
+lemma eval_flip_subset_of_monochromatic (f : BFunc n) {R : Subcube n}
+    (x : Point n) (hx : x ∈ₛ R)
+    (hmono : Subcube.monochromaticFor R f)
+    {S : Finset (Fin n)} (hS : S ⊆ Finset.univ \ R.idx) :
+    f (Point.flip x S) = f x := by
+  classical
+  -- The flipped point remains within `R`.
+  have hmem : Point.flip x S ∈ₛ R :=
+    flip_mem_subcube (R := R) (x := x) (hx := hx) (S := S) (hS := hS)
+  -- Monochromaticity equates the function values.
+  rcases hmono with ⟨b, hb⟩
+  have hxval : f x = b := hb hx
+  have hflipval : f (Point.flip x S) = b := hb hmem
+  simpa [hxval] using hflipval
+
+/--
+Points within a monochromatic subcube all evaluate to the same Boolean value.
+This specialises `eval_flip_subset_of_monochromatic` to two arbitrary members
+of the subcube.
+-/
+lemma eval_eq_of_mem_of_monochromatic (f : BFunc n) {R : Subcube n}
+    (hmono : Subcube.monochromaticFor R f) {x y : Point n}
+    (hx : x ∈ₛ R) (hy : y ∈ₛ R) : f x = f y := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  have hx' : f x = c := hc hx
+  have hy' : f y = c := hc hy
+  exact hx'.trans hy'.symm
+
+/-- From a monochromatic subcube we can extract an explicit set of coordinates
+that is insensitive to flips around the base point.  The set consists of all
+free coordinates of the subcube and its size equals the subcube's dimension. -/
+lemma insensitive_subset_of_monochromatic_subcube (f : BFunc n)
+    {R : Subcube n} (x : Point n) (hx : x ∈ₛ R)
+    (hmono : Subcube.monochromaticFor R f) :
+    ∃ A : Finset (Fin n), R.dimension = A.card ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A →
+        f (Point.flip x T) = f x := by
+  classical
+  -- Take the set of all free coordinates of `R`.
+  let A := Finset.univ \ R.idx
+  have hAcard' : A.card = n - R.idx.card := by
+    -- Cardinality of the complement of `R.idx` inside the universe.
+    simpa [A, Finset.card_univ]
+      using Finset.card_sdiff (Finset.subset_univ R.idx)
+  have hdim : R.dimension = n - R.idx.card := by
+    simp [Subcube.dimension]
+  refine ⟨A, ?_, ?_⟩
+  · -- The size of `A` matches the dimension of `R`.
+    simpa [hdim, hAcard']
+  · intro T hT
+    -- Flipping any subset of `A` preserves membership in `R` and hence the
+    -- function value.
+    have hsubset : T ⊆ Finset.univ \ R.idx := by
+      simpa [A] using hT
+    exact
+      eval_flip_subset_of_monochromatic (f := f) (R := R)
+        (x := x) (hx := hx) (hmono := hmono)
+        (S := T) (hS := hsubset)
+
+/--
+From a monochromatic subcube whose dimension dominates a numerical bound `k`, we
+can extract an explicit set of at least `k` coordinates around the base point on
+which the Boolean function is insensitive to simultaneous flips.  This is a
+convenient wrapper around `insensitive_subset_of_monochromatic_subcube` that
+tracks only a lower bound on the dimension instead of the exact equality. -/
+lemma exists_large_insensitive_subset_of_monochromatic_subcube (f : BFunc n)
+    {R : Subcube n} {x : Point n} (hx : x ∈ₛ R)
+    (hmono : Subcube.monochromaticFor R f) {k : ℕ}
+    (hk : k ≤ R.dimension) :
+    ∃ A : Finset (Fin n), k ≤ A.card ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  -- Obtain the full set of free coordinates provided by the previous lemma.
+  obtain ⟨A, hdim, hflip⟩ :=
+    insensitive_subset_of_monochromatic_subcube (f := f) (R := R)
+      (x := x) (hx := hx) (hmono := hmono)
+  -- Translate the dimension lower bound into a cardinality statement.
+  have hcard : k ≤ A.card := by
+    simpa [hdim] using hk
+  exact ⟨A, hcard, hflip⟩
+
+/--
+Extracts an insensitive set of coordinates from a monochromatic subcube and
+records explicitly that every coordinate in the set is locally insensitive at
+the base point.  This variant packages the subset condition
+`A ⊆ insensitiveCoordsAt f x` which is often convenient when composing with
+lemmas about local insensitive regions.
+-/
+lemma exists_large_insensitive_subset_of_monochromatic_subcube_subset_insensitiveCoordsAt
+    (f : BFunc n) {R : Subcube n} {x : Point n} (hx : x ∈ₛ R)
+    (hmono : Subcube.monochromaticFor R f) {k : ℕ}
+    (hk : k ≤ R.dimension) :
+    ∃ A : Finset (Fin n), k ≤ A.card ∧
+      A ⊆ insensitiveCoordsAt f x ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  -- Start with the insensitive set given by the previous lemma.
+  obtain ⟨A, hAcard, hAflip⟩ :=
+    exists_large_insensitive_subset_of_monochromatic_subcube
+      (f := f) (R := R) (x := x) (hx := hx) (hmono := hmono) (hk := hk)
+  -- Every element of `A` is locally insensitive because singletons preserve
+  -- the function value.
+  have hAsub : A ⊆ insensitiveCoordsAt f x := by
+    intro i hiA
+    -- Apply the flip invariance to the singleton `{i}`.
+    have hflip_single : f (Point.flip x {i}) = f x := by
+      have hsubset : ({i} : Finset (Fin n)) ⊆ A := by
+        intro j hj
+        -- `j` can only be `i` in this singleton, yielding membership in `A`.
+        have hj_eq : j = i := by simpa [Finset.mem_singleton] using hj
+        simpa [hj_eq] using hiA
+      simpa using hAflip (T := {i}) hsubset
+    -- Rewrite the flip in terms of `update` to match the definition.
+    have hflip_single' : f (x.update i (!x i)) = f x := by
+      simpa [Point.flip] using hflip_single
+    -- Conclude that `i` is insensitive at `x` via the definition.
+    have : i ∈ insensitiveCoordsAt f x := by
+      simp [insensitiveCoordsAt, Finset.mem_filter, hflip_single']
+    exact this
+  -- Assemble the result with the strengthened subset information.
+  refine ⟨A, hAcard, hAsub, ?_⟩
+  intro T hT
+  exact hAflip hT
+
+/--
 Flipping a subset of globally insensitive coordinates keeps a point inside the
 subcube determined by the `support`.
 -/
@@ -1029,6 +1321,53 @@ lemma monochromaticSubcube_of_insensitive_subset (f : BFunc n)
   exact ⟨R, hxmem, hmono, hdim⟩
 
 /--
+If a set of coordinates `A` leaves the function `f` unchanged whenever the
+input agrees with `x` outside `A`, then the points obtained by varying only the
+bits of `A` form a monochromatic subcube.  The subcube has dimension `|A|` and
+is anchored at the reference point `x`.
+-/
+lemma monochromaticSubcube_of_pointwise (f : BFunc n) (x : Point n)
+    {A : Finset (Fin n)}
+    (hA : ∀ ⦃y : Point n⦄, (∀ i ∉ A, y i = x i) → f y = f x) :
+    ∃ R : Subcube n, (x ∈ₛ R) ∧ Subcube.monochromaticFor R f ∧
+      R.dimension = A.card := by
+  classical
+  -- Freeze all coordinates outside `A` to the values in `x`.
+  let R : Subcube n := Agreement.Subcube.fromPoint x (Finset.univ \ A)
+  have hx : x ∈ₛ R := by
+    -- The reference point obviously lies in the constructed subcube.
+    simp [R]
+  -- Points inside `R` agree with `x` on the complement of `A`.
+  have hmono : Subcube.monochromaticFor R f := by
+    refine ⟨f x, ?_⟩
+    intro y hy
+    have hy' := (Agreement.fromPoint_mem (x := x) (I := Finset.univ \ A)).1 hy
+    -- Convert membership information into agreement outside `A`.
+    have hy_eq : ∀ i ∉ A, y i = x i := by
+      intro i hi
+      have hi' : i ∈ Finset.univ \ A := by
+        simpa [Finset.mem_sdiff, hi]
+      exact hy' i hi'
+    -- Apply the invariance hypothesis to conclude.
+    simpa [hy_eq] using hA (y := y) hy_eq
+  -- Compute the dimension: `idx` fixes exactly the complement of `A`.
+  have hdim : R.dimension = A.card := by
+    have hAuniv : A ⊆ (Finset.univ : Finset (Fin n)) := by
+      intro i hi; simp
+    have hcard : (Finset.univ \ A).card = n - A.card := by
+      simpa [Finset.card_univ] using
+        Finset.card_sdiff (s := A) (t := (Finset.univ : Finset (Fin n))) hAuniv
+    -- Translate the dimension formula via the index size.
+    have : R.dimension = n - (Finset.univ \ A).card := by
+      simpa [R] using
+        (Agreement.dimension_fromPoint (x := x) (I := Finset.univ \ A))
+    have hAle : A.card ≤ n := by
+      simpa [Finset.card_univ] using (Finset.card_le_univ (s := A))
+    have hsub : n - (n - A.card) = A.card := Nat.sub_sub_self hAle
+    simpa [hcard, this, hsub]
+  exact ⟨R, hx, hmono, hdim⟩
+
+/--
 Given a global sensitivity bound, every point lies in a "monochromatic"
 subcube obtained by freely varying a large set of globally insensitive
 coordinates.  While this cardinality bound `n - 2^n * s` is weaker than the
@@ -1118,6 +1457,459 @@ lemma exists_large_insensitive_subset_div_of_small (f : BFunc n) {s : ℕ}
   exact le_trans hineq hAcard
 
 /--
+When the coarse inequality `2^n * s ≤ n - n/(2*s)` holds, the large insensitive
+set from `exists_large_insensitive_subset_div_of_small` yields a sizeable
+monochromatic subcube around any reference point.  This strengthens
+`exists_large_monochromatic_subcube` under the numeric assumption and will serve
+as a preparatory step towards the general `n/(2*s)` bound without extra
+constraints.-/
+lemma exists_large_monochromatic_subcube_div_of_small (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hsmall : Fintype.card (Point n) * s ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ R : Subcube n,
+      (x ∈ₛ R) ∧ Subcube.monochromaticFor R f ∧
+      n / (2 * s) ≤ R.dimension := by
+  classical
+  -- Obtain the large flip‑invariant set `A` and turn it into a subcube.
+  obtain ⟨A, hAcard, hAflip⟩ :=
+    exists_large_insensitive_subset_div_of_small (f := f) (s := s)
+      (hs := hs) (hsmall := hsmall) (x := x)
+  -- Freeze the complement of `A` to the values of `x`.
+  let R : Subcube n := { idx := Finset.univ \ A, val := fun i _ => x i }
+  have hxR : x ∈ₛ R := by
+    intro i hi
+    simp [R] at hi
+    simpa [R]
+  -- Any point in `R` differs from `x` only on `A`, hence evaluates identically.
+  have hmono : Subcube.monochromaticFor R f := by
+    refine ⟨f x, ?_⟩
+    intro y hy
+    -- Express `y` as a flip of `x` on a subset of `A`.
+    have hyagree : ∀ i ∉ A, y i = x i := by
+      intro i hiA
+      have hi : i ∈ Finset.univ \ A := by
+        simp [Finset.mem_sdiff, hiA]
+      exact hy i hi
+    have hy_eq : Point.flip x (A.filter fun i => y i ≠ x i) = y :=
+      Point.flip_eq_of_eq_on_compl (x := x) (y := y) (A := A) hyagree
+    have hTsub : (A.filter fun i => y i ≠ x i) ⊆ A :=
+      Finset.filter_subset _ _
+    have := hAflip (T := A.filter fun i => y i ≠ x i) hTsub
+    simpa [hy_eq]
+  -- Translate the cardinality bound on `A` to the dimension of `R`.
+  have hdim_card : R.dimension = A.card := by
+    have hidx : R.idx.card = n - A.card := by
+      have := Finset.card_sdiff (Finset.subset_univ A)
+      simpa [R] using this
+    have hdim0 : R.dimension = n - (n - A.card) := by
+      simpa [Subcube.dimension, R, hidx]
+    have hA_le_n : A.card ≤ n := by
+      simpa using
+        (Finset.card_le_univ (s := A) : A.card ≤ Fintype.card (Fin n))
+    have hsub : n - (n - A.card) = A.card := Nat.sub_sub_self hA_le_n
+    simpa [hsub] using hdim0
+  have hdim : n / (2 * s) ≤ R.dimension := by
+    simpa [hdim_card] using hAcard
+  exact ⟨R, hxR, hmono, hdim⟩
+
+/--
+If the essential `support` of a Boolean function is small, we can directly
+extract a large set of globally insensitive coordinates.  The bound `n - m`
+describes how many variables remain freely flippable whenever the support has
+size at most `m`.
+
+This lemma provides a convenient bridge between combinatorial information about
+the `support` and the flip-invariance guarantee required later in the
+construction of low-sensitivity covers.
+-/
+lemma exists_large_insensitive_subset_of_support_le (f : BFunc n)
+    {m : ℕ} (hsupp : (support f).card ≤ m) (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n - m ≤ A.card ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  -- Use all globally insensitive coordinates as the candidate set.
+  refine ⟨insensitiveCoords f, ?_, ?_⟩
+  · -- Convert the support bound into a lower bound on the complement.
+    have hins : (insensitiveCoords f).card = n - (support f).card := by
+      -- Rearrange the equality `|insensitive| + |support| = n`.
+      have hsum := insensitiveCoords_card_add_support_card (f := f)
+      -- Subtract `|support|` from both sides.
+      have := congrArg (fun t => t - (support f).card) hsum
+      -- Simplify the resulting expression.
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        using this
+    -- Comparing with `m` yields the desired inequality.
+    have hineq : n - m ≤ n - (support f).card :=
+      Nat.sub_le_sub_left hsupp _
+    simpa [hins] using hineq
+  · -- Flipping coordinates outside the support leaves `f` unchanged.
+    intro T hT
+    have hTins : T ⊆ insensitiveCoords f := hT
+    simpa using
+      (eval_flip_subset_insensitiveCoords' (f := f) (x := x)
+        (S := T) (hS := hTins))
+
+/--
+A specialised variant of `exists_large_insensitive_subset_of_support_le` that
+expresses the lower bound using the familiar `n / (2*s)` quantity.  Supplying a
+numerical `support` estimate in this form will often be easier in applications.
+-/
+lemma exists_large_insensitive_subset_div_of_support (f : BFunc n) {s : ℕ}
+    (hsupp : (support f).card ≤ n - n / (2 * s)) (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n / (2 * s) ≤ A.card ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  -- Instantiate the previous lemma with `m = n - n/(2*s)`.
+  obtain ⟨A, hAcard, hAflip⟩ :=
+    exists_large_insensitive_subset_of_support_le (f := f)
+      (m := n - n / (2 * s)) (hsupp := hsupp) (x := x)
+  -- Rewrite the resulting lower bound into the desired form.
+  have hdiv : n / (2 * s) ≤ n := Nat.div_le_self _ _
+  have hrewrite : n - (n - n / (2 * s)) = n / (2 * s) :=
+    Nat.sub_sub_self hdiv
+  have hbound : n / (2 * s) ≤ A.card := by
+    simpa [hrewrite] using hAcard
+  exact ⟨A, hbound, hAflip⟩
+
+/--
+A pointwise variant of `exists_large_insensitive_subset_div_of_support`.  Any
+point agreeing with the reference input `x` outside the extracted set `A`
+evaluates to the same function value.
+-/
+lemma exists_large_insensitive_subset_pointwise_div_of_support
+    (f : BFunc n) {s : ℕ}
+    (hsupp : (support f).card ≤ n - n / (2 * s)) (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n / (2 * s) ≤ A.card ∧
+      ∀ ⦃y : Point n⦄, (∀ i ∉ A, y i = x i) → f y = f x := by
+  classical
+  -- Extract the insensitive set using the flip-based lemma.
+  obtain ⟨A, hAcard, hAflip⟩ :=
+    exists_large_insensitive_subset_div_of_support (f := f) (s := s)
+      (hsupp := hsupp) (x := x)
+  refine ⟨A, hAcard, ?_⟩
+  intro y hy
+  -- Express `y` as a flip of `x` over the coordinates where they differ.
+  have hy_eq :
+      Point.flip x (A.filter fun i => y i ≠ x i) = y :=
+    Point.flip_eq_of_eq_on_compl (x := x) (y := y) (A := A) hy
+  have hsub : (A.filter fun i => y i ≠ x i) ⊆ A :=
+    Finset.filter_subset _ _
+  -- Apply the flip invariance to this disagreement set.
+  simpa [hy_eq] using hAflip (T := A.filter fun i => y i ≠ x i) hsub
+
+/--
+Combines the two routes to a large insensitive set.  If either the coarse
+inequality `2^n * s ≤ n - n/(2*s)` holds or the essential `support` of `f`
+is bounded by `n - n/(2*s)`, there exists a subset of at least `n/(2*s)`
+coordinates around the point `x` on which simultaneous flips leave the
+function value unchanged.
+-/
+lemma exists_large_insensitive_subset_div (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ A : Finset (Fin n), n / (2 * s) ≤ A.card ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  cases hbound with
+  | inl hsmall =>
+      exact
+        exists_large_insensitive_subset_div_of_small (f := f) (s := s)
+          (hs := hs) (hsmall := hsmall) (x := x)
+  | inr hsupp =>
+      exact
+        exists_large_insensitive_subset_div_of_support (f := f) (s := s)
+          (hsupp := hsupp) (x := x)
+
+/--
+Pointwise version of `exists_large_insensitive_subset_div`.  Any point that
+agrees with `x` outside the produced set takes the same value of `f`.
+-/
+lemma exists_large_insensitive_subset_pointwise_div (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ A : Finset (Fin n), n / (2 * s) ≤ A.card ∧
+      ∀ ⦃y : Point n⦄, (∀ i ∉ A, y i = x i) → f y = f x := by
+  classical
+  obtain ⟨A, hAcard, hAflip⟩ :=
+    exists_large_insensitive_subset_div (f := f) (s := s)
+      (hs := hs) (hbound := hbound) (x := x)
+  refine ⟨A, hAcard, ?_⟩
+  intro y hy
+  -- Express `y` as a flip of `x` on the disagreement set.
+  have hy_eq :
+      Point.flip x (A.filter fun i => y i ≠ x i) = y :=
+    Point.flip_eq_of_eq_on_compl (x := x) (y := y) (A := A) hy
+  have hsub : (A.filter fun i => y i ≠ x i) ⊆ A :=
+    Finset.filter_subset _ _
+  simpa [hy_eq] using hAflip (T := A.filter fun i => y i ≠ x i) hsub
+
+/--
+From the combined insensitive-set lemma we obtain a monochromatic subcube of
+dimension at least `n/(2*s)` whenever one of the numeric side conditions holds.
+-/
+lemma exists_large_monochromatic_subcube_div (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ R : Subcube n, (x ∈ₛ R) ∧ Subcube.monochromaticFor R f ∧
+      n / (2 * s) ≤ R.dimension := by
+  classical
+  obtain ⟨A, hAcard, hApoint⟩ :=
+    exists_large_insensitive_subset_pointwise_div (f := f) (s := s)
+      (hs := hs) (hbound := hbound) (x := x)
+  obtain ⟨R, hxR, hmono, hdim⟩ :=
+    monochromaticSubcube_of_pointwise (f := f) (x := x) (A := A)
+      (hA := hApoint)
+  refine ⟨R, hxR, hmono, ?_⟩
+  simpa [hdim] using hAcard
+
+/--
+The `n/(2*s)`-dimensional subcube obtained above lies entirely inside the
+local `insensitiveSubcubeAt` of the base point.  This ensures that subsequent
+flips remain within the region where the set of sensitive coordinates is
+frozen.-/
+lemma exists_large_monochromatic_subcube_div_subset_insensitiveSubcubeAt
+    (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ R : Subcube n,
+      (x ∈ₛ R) ∧
+      Subcube.monochromaticFor R f ∧
+      n / (2 * s) ≤ R.dimension ∧
+      (∀ y : Point n, (y ∈ₛ R) → y ∈ₛ insensitiveSubcubeAt f x) := by
+  classical
+  obtain ⟨R, hxR, hmono, hdim⟩ :=
+    exists_large_monochromatic_subcube_div (f := f) (s := s)
+      (hs := hs) (hbound := hbound) (x := x)
+  have hsub :
+      ∀ y : Point n, (y ∈ₛ R) → y ∈ₛ insensitiveSubcubeAt f x := by
+    intro y hy
+    exact monochromaticSubcube_subset_insensitiveSubcubeAt
+      (f := f) (R := R) (x := x) (hxR := hxR) (hmono := hmono)
+      (y := y) (hy := hy)
+  exact ⟨R, hxR, hmono, hdim, hsub⟩
+
+/--
+Combining the nested subcube construction with the subset version of
+`exists_large_insensitive_subset_of_monochromatic_subcube` yields a concrete set
+of locally insensitive coordinates inside `insensitiveCoordsAt f x` whose size
+meets the `n/(2*s)` bound.  Flipping any subset of this set leaves the function
+value at `x` unchanged.
+-/
+lemma exists_large_insensitive_subset_div_subset_insensitiveCoordsAt
+    (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n / (2 * s) ≤ A.card ∧
+      A ⊆ insensitiveCoordsAt f x ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  -- Obtain the large monochromatic subcube that sits inside the local
+  -- insensitive region around `x`.
+  obtain ⟨R, hxR, hmono, hdim, _⟩ :=
+    exists_large_monochromatic_subcube_div_subset_insensitiveSubcubeAt
+      (f := f) (s := s) (hs := hs) (hbound := hbound) (x := x)
+  -- Extract the free coordinates as an insensitive set.
+  obtain ⟨A, hAcard, hAsub, hAflip⟩ :=
+    exists_large_insensitive_subset_of_monochromatic_subcube_subset_insensitiveCoordsAt
+      (f := f) (R := R) (x := x) (hx := hxR) (hmono := hmono)
+      (hk := hdim)
+  exact ⟨A, hAcard, hAsub, hAflip⟩
+
+/--
+Pointwise reformulation of
+`exists_large_insensitive_subset_div_subset_insensitiveCoordsAt`.  Any point
+that agrees with `x` outside the extracted set `A` yields the same function
+value.
+-/
+lemma exists_large_insensitive_subset_pointwise_div_subset_insensitiveCoordsAt
+    (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n / (2 * s) ≤ A.card ∧
+      A ⊆ insensitiveCoordsAt f x ∧
+      ∀ ⦃y : Point n⦄, (∀ i ∉ A, y i = x i) → f y = f x := by
+  classical
+  obtain ⟨A, hAcard, hAsub, hAflip⟩ :=
+    exists_large_insensitive_subset_div_subset_insensitiveCoordsAt
+      (f := f) (s := s) (hs := hs) (hbound := hbound) (x := x)
+  refine ⟨A, hAcard, hAsub, ?_⟩
+  intro y hy
+  -- Represent `y` as a flip over the coordinates where it differs from `x`.
+  have hy_eq :
+      Point.flip x (A.filter fun i => y i ≠ x i) = y :=
+    Point.flip_eq_of_eq_on_compl (x := x) (y := y) (A := A) hy
+  have hsubset : (A.filter fun i => y i ≠ x i) ⊆ A :=
+    Finset.filter_subset _ _
+  -- Apply the flip-based invariance.
+  simpa [hy_eq] using hAflip (T := A.filter fun i => y i ≠ x i) hsubset
+
+/--
+Combining the pointwise variant with `monochromaticSubcube_of_pointwise` yields a
+monochromatic subcube whose free coordinates lie inside
+`insensitiveCoordsAt f x`.  The subcube has dimension at least `n/(2*s)` and can
+be freely flipped along locally insensitive directions.
+-/
+lemma exists_large_monochromatic_subcube_div_subset_insensitiveCoordsAt
+    (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s))
+    (x : Point n) :
+    ∃ R : Subcube n,
+      (x ∈ₛ R) ∧
+      Subcube.monochromaticFor R f ∧
+      n / (2 * s) ≤ R.dimension ∧
+      (Finset.univ \ R.idx) ⊆ insensitiveCoordsAt f x := by
+  classical
+  -- Extract a large locally insensitive set with pointwise invariance.
+  obtain ⟨A, hAcard, hAsub, hApoint⟩ :=
+    exists_large_insensitive_subset_pointwise_div_subset_insensitiveCoordsAt
+      (f := f) (s := s) (hs := hs) (hbound := hbound) (x := x)
+  -- Build the subcube that varies exactly on the coordinates in `A`.
+  let R : Subcube n := Agreement.Subcube.fromPoint x (Finset.univ \ A)
+  have hxR : x ∈ₛ R := by
+    -- The reference point obviously belongs to this subcube.
+    simp [R]
+  have hmono : Subcube.monochromaticFor R f := by
+    refine ⟨f x, ?_⟩
+    intro y hy
+    -- Points in `R` coincide with `x` outside `A`.
+    have hy' := (Agreement.fromPoint_mem (x := x) (I := Finset.univ \ A)).1 hy
+    have hy_eq : ∀ i ∉ A, y i = x i := by
+      intro i hi
+      have hi' : i ∈ Finset.univ \ A := by simpa [Finset.mem_sdiff, hi]
+      exact hy' i hi'
+    simpa [hy_eq] using hApoint (y := y) hy_eq
+  -- Compute the dimension of the constructed subcube.
+  have hcard : (Finset.univ \ A).card = n - A.card := by
+    simpa [Finset.card_univ] using (Finset.card_compl (s := A))
+  have hA_le : A.card ≤ n := by
+    simpa [Finset.card_univ] using (Finset.card_le_univ A)
+  have hdim : R.dimension = A.card := by
+    have hsub' : n - (n - A.card) = A.card := Nat.sub_sub_self hA_le
+    have hsub : n - (Finset.univ \ A).card = A.card := by
+      simpa [hcard] using hsub'
+    simpa [R, Subcube.dimension] using hsub
+  -- Translate the cardinality bound to the subcube dimension.
+  have hdim_ge : n / (2 * s) ≤ R.dimension := by
+    simpa [hdim] using hAcard
+  -- Free coordinates of `R` are contained in `A` and thus locally insensitive.
+  have hfree_subset : (Finset.univ \ R.idx) ⊆ insensitiveCoordsAt f x := by
+    intro i hi
+    -- Extract membership information from the set difference.
+    have hi_not : i ∉ R.idx := (Finset.mem_sdiff.mp hi).2
+    -- Since `R.idx = univ \ A`, absence from `R.idx` forces membership in `A`.
+    have hiA : i ∈ A := by
+      have hi_univ : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+      by_contra hnotA
+      have hmem : i ∈ R.idx := by
+        -- If `i ∉ A` then `i` would belong to `R.idx = univ \ A`.
+        dsimp [R]
+        exact Finset.mem_sdiff.mpr ⟨hi_univ, hnotA⟩
+      exact hi_not hmem
+    -- Membership in `A` implies local insensitivity via `hAsub`.
+    exact hAsub hiA
+  exact ⟨R, hxR, hmono, hdim_ge, hfree_subset⟩
+
+/--
+A bound on the size of the essential `support` immediately forces many
+globally insensitive coordinates.  This numerical corollary will be
+useful when converting combinatorial information about the `support`
+into explicit flip-invariant sets.
+-/
+lemma insensitiveCoords_card_ge_div_of_support (f : BFunc n) {s : ℕ}
+    (hsupp : (support f).card ≤ n - n / (2 * s)) :
+    n / (2 * s) ≤ (insensitiveCoords f).card := by
+  classical
+  -- Turn the assumption into an additive inequality.
+  have hsupp_plus : (support f).card + n / (2 * s) ≤ n := by
+    have := Nat.add_le_add_right hsupp (n / (2 * s))
+    have hdivle : n / (2 * s) ≤ n := Nat.div_le_self _ _
+    have hcancel : n - n / (2 * s) + n / (2 * s) = n :=
+      Nat.sub_add_cancel hdivle
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, hcancel] using this
+  have hsupp_plus' : n / (2 * s) + (support f).card ≤ n := by
+    simpa [Nat.add_comm] using hsupp_plus
+  -- Remove the support contribution from both sides.
+  have hineq : n / (2 * s) ≤ n - (support f).card :=
+    Nat.le_sub_of_add_le hsupp_plus'
+  -- Express the number of insensitive coordinates via the support.
+  have hins : (insensitiveCoords f).card = n - (support f).card := by
+    have hsum := insensitiveCoords_card_add_support_card (f := f)
+    have := congrArg (fun t => t - (support f).card) hsum
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+  -- Combine the two inequalities.
+  simpa [hins] using hineq
+
+/--
+Combining the global sensitivity bound with the coarse numerical condition
+`2^n * s ≤ n - n/(2*s)` directly yields many globally insensitive coordinates.
+This lemma ties the rough sensitivity estimate to the refined `n/(2*s)`
+bound via the general support-based corollary above.
+-/
+lemma insensitiveCoords_card_ge_div_of_small (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hsmall : Fintype.card (Point n) * s ≤ n - n / (2 * s)) :
+    n / (2 * s) ≤ (insensitiveCoords f).card := by
+  classical
+  -- First bound the size of the support using the sensitivity estimate.
+  have hsupp := support_card_le (f := f) (hs := hs)
+  have hsupp' : (support f).card ≤ n - n / (2 * s) :=
+    hsupp.trans hsmall
+  -- Apply the support-based insensitive coordinate bound.
+  exact
+    insensitiveCoords_card_ge_div_of_support (f := f) (s := s)
+      (hsupp := hsupp')
+
+/--
+Combines the two numeric routes to many globally insensitive coordinates.  If
+either the coarse inequality `2^n * s ≤ n - n/(2*s)` holds or the size of the
+`support` is bounded by `n - n/(2*s)`, then at least `n/(2*s)` coordinates are
+globally insensitive.
+-/
+lemma insensitiveCoords_card_ge_div (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s)
+    (hbound :
+        Fintype.card (Point n) * s ≤ n - n / (2 * s) ∨
+        (support f).card ≤ n - n / (2 * s)) :
+    n / (2 * s) ≤ (insensitiveCoords f).card := by
+  classical
+  cases hbound with
+  | inl hsmall =>
+      exact
+        insensitiveCoords_card_ge_div_of_small (f := f) (s := s)
+          (hs := hs) (hsmall := hsmall)
+  | inr hsupp =>
+      exact
+        insensitiveCoords_card_ge_div_of_support (f := f) (s := s)
+          (hsupp := hsupp)
+
+/--
 From a global sensitivity bound we can extract an explicit "large" subcube on
 which the Boolean function stays constant.  Starting from the witness
 `exists_large_insensitive_subset`, we freeze all coordinates *outside* the
@@ -1140,6 +1932,157 @@ lemma exists_large_monochromatic_subcube (f : BFunc n) {s : ℕ}
   have hbound : n - Fintype.card (Point n) * s ≤ A.card := by
     simpa [hAcard]
   simpa [hdim] using hbound
+
+/--
+The large monochromatic subcube extracted above can be placed entirely inside
+the local `insensitiveSubcubeAt` around the reference point `x`.  This
+compatibility will be helpful when recursively extending covers only along
+locally insensitive directions.-/
+lemma exists_large_monochromatic_subcube_subset_insensitiveSubcubeAt
+    (f : BFunc n) {s : ℕ} (hs : sensitivity f ≤ s) (x : Point n) :
+    ∃ R : Subcube n,
+      (x ∈ₛ R) ∧ Subcube.monochromaticFor R f ∧
+      n - Fintype.card (Point n) * s ≤ R.dimension ∧
+      (∀ y : Point n, (y ∈ₛ R) → y ∈ₛ insensitiveSubcubeAt f x) := by
+  classical
+  obtain ⟨R, hxR, hmono, hdim⟩ :=
+    exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  have hsub : ∀ y : Point n, (y ∈ₛ R) → y ∈ₛ insensitiveSubcubeAt f x := by
+    intro y hy
+    exact monochromaticSubcube_subset_insensitiveSubcubeAt
+      (f := f) (R := R) (x := x) (hxR := hxR) (hmono := hmono)
+      (y := y) (hy := hy)
+  exact ⟨R, hxR, hmono, hdim, hsub⟩
+
+/--
+Combining the unconditional subcube construction with the subset version of
+`exists_large_insensitive_subset_of_monochromatic_subcube` yields a concrete set
+of locally insensitive coordinates around `x`.  This set sits inside
+`insensitiveCoordsAt f x`, has cardinality at least `n - 2^n · s`, and flipping
+any subset of it leaves the value of `f` at `x` unchanged.-/
+lemma exists_large_insensitive_subset_subset_insensitiveCoordsAt
+    (f : BFunc n) {s : ℕ} (hs : sensitivity f ≤ s) (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n - Fintype.card (Point n) * s ≤ A.card ∧
+      A ⊆ insensitiveCoordsAt f x ∧
+      ∀ ⦃T : Finset (Fin n)⦄, T ⊆ A → f (Point.flip x T) = f x := by
+  classical
+  -- Obtain the large monochromatic subcube in the local insensitive region.
+  obtain ⟨R, hxR, hmono, hdim, _⟩ :=
+    exists_large_monochromatic_subcube_subset_insensitiveSubcubeAt
+      (f := f) (s := s) (hs := hs) (x := x)
+  -- Extract the free coordinates as an insensitive set.
+  obtain ⟨A, hAcard, hAsub, hAflip⟩ :=
+    exists_large_insensitive_subset_of_monochromatic_subcube_subset_insensitiveCoordsAt
+      (f := f) (R := R) (x := x) (hx := hxR) (hmono := hmono)
+      (k := n - Fintype.card (Point n) * s) (hk := hdim)
+  exact ⟨A, hAcard, hAsub, hAflip⟩
+
+/--
+Pointwise reformulation of
+`exists_large_insensitive_subset_subset_insensitiveCoordsAt`.  Any point that
+agrees with `x` outside the extracted set takes the same value of `f`.-/
+lemma exists_large_insensitive_subset_pointwise_subset_insensitiveCoordsAt
+    (f : BFunc n) {s : ℕ} (hs : sensitivity f ≤ s) (x : Point n) :
+    ∃ A : Finset (Fin n),
+      n - Fintype.card (Point n) * s ≤ A.card ∧
+      A ⊆ insensitiveCoordsAt f x ∧
+      ∀ ⦃y : Point n⦄, (∀ i ∉ A, y i = x i) → f y = f x := by
+  classical
+  obtain ⟨A, hAcard, hAsub, hAflip⟩ :=
+    exists_large_insensitive_subset_subset_insensitiveCoordsAt
+      (f := f) (s := s) (hs := hs) (x := x)
+  refine ⟨A, hAcard, hAsub, ?_⟩
+  intro y hy
+  -- Represent `y` as a flip of `x` over the coordinates where they differ.
+  have hy_eq :
+      Point.flip x (A.filter fun i => y i ≠ x i) = y :=
+    Point.flip_eq_of_eq_on_compl (x := x) (y := y) (A := A) hy
+  have hsubset : (A.filter fun i => y i ≠ x i) ⊆ A :=
+    Finset.filter_subset _ _
+  -- Apply the flip invariance from the previous lemma.
+  simpa [hy_eq] using hAflip
+    (T := A.filter fun i => y i ≠ x i) hsubset
+
+/--
+From a bound on the size of the essential `support` we can extract a large
+monochromatic subcube.  The resulting dimension is expressed via the familiar
+quantity `n / (2*s)`, strengthening `exists_large_monochromatic_subcube` under
+the additional numeric assumption on the support.
+-/
+lemma exists_large_monochromatic_subcube_div_of_support
+    (f : BFunc n) {s : ℕ}
+    (hsupp : (support f).card ≤ n - n / (2 * s)) (x : Point n) :
+    ∃ R : Subcube n,
+      (x ∈ₛ R) ∧ Subcube.monochromaticFor R f ∧
+      n / (2 * s) ≤ R.dimension := by
+  classical
+  -- Build the subcube from all globally insensitive coordinates.
+  have hA : insensitiveCoords f ⊆ insensitiveCoords f := by
+    intro i hi; simpa using hi
+  obtain ⟨R, hxR, hmono, hdim⟩ :=
+    monochromaticSubcube_of_insensitive_subset (f := f)
+      (A := insensitiveCoords f) (hA := hA) (x := x)
+  -- Relate the support bound to the size of `insensitiveCoords f`.
+  have hins :
+      (insensitiveCoords f).card = n - (support f).card := by
+    have hsum := insensitiveCoords_card_add_support_card (f := f)
+    have := congrArg (fun t => t - (support f).card) hsum
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+  have hsupp_plus : (support f).card + n / (2 * s) ≤ n := by
+    have := Nat.add_le_add_right hsupp (n / (2 * s))
+    have hdivle : n / (2 * s) ≤ n := Nat.div_le_self _ _
+    have hcancel : n - n / (2 * s) + n / (2 * s) = n :=
+      Nat.sub_add_cancel hdivle
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, hcancel] using this
+  have hsupp_plus' : n / (2 * s) + (support f).card ≤ n := by
+    simpa [Nat.add_comm] using hsupp_plus
+  have hdim_bound :
+      n / (2 * s) ≤ (insensitiveCoords f).card := by
+    have h := Nat.le_sub_of_add_le hsupp_plus'
+    simpa [hins] using h
+  -- Transfer the bound to the dimension of `R`.
+  refine ⟨R, hxR, hmono, ?_⟩
+  simpa [hdim] using hdim_bound
+
+/--
+Pointwise variant of `exists_large_monochromatic_subcube_div_of_support`.  It
+derives a monochromatic subcube of dimension at least `n / (2*s)` from a bound
+on the `support`, using the pointwise insensitive set directly.
+-/
+lemma exists_large_monochromatic_subcube_pointwise_div_of_support
+    (f : BFunc n) {s : ℕ}
+    (hsupp : (support f).card ≤ n - n / (2 * s)) (x : Point n) :
+    ∃ R : Subcube n,
+      (x ∈ₛ R) ∧ Subcube.monochromaticFor R f ∧
+      n / (2 * s) ≤ R.dimension := by
+  classical
+  -- Obtain the pointwise insensitive set and turn it into a subcube.
+  obtain ⟨A, hAcard, hApoint⟩ :=
+    exists_large_insensitive_subset_pointwise_div_of_support
+      (f := f) (s := s) (hsupp := hsupp) (x := x)
+  obtain ⟨R, hxR, hmono, hdim⟩ :=
+    monochromaticSubcube_of_pointwise (f := f) (x := x)
+      (A := A) (hA := hApoint)
+  refine ⟨R, hxR, hmono, ?_⟩
+  -- Translate the cardinality bound on `A` to the dimension of `R`.
+  simpa [hdim] using hAcard
+
+/--
+The bound `|insensitiveCoords f| ≥ n / (2*s)` does not hold in full generality.
+The following four-variable function has sensitivity `2` yet depends on every
+coordinate, so the set of globally insensitive coordinates is empty.
+-/
+def sensitivityTwoSupportFull : BFunc 4 :=
+  fun x => (x 1 && x 2) || (x 3 && x 0)
+
+lemma sensitivityTwoSupportFull_sensitivity :
+    sensitivity sensitivityTwoSupportFull = 2 := by
+  decide
+
+lemma sensitivityTwoSupportFull_insensitiveCoords :
+    insensitiveCoords sensitivityTwoSupportFull = (∅ : Finset (Fin 4)) := by
+  decide
 
 /- ### Sensitivity and restrictions -/
 

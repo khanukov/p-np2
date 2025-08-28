@@ -386,7 +386,66 @@ lemma eval_branchLargeInsensitive_self (f : BFunc n) {s : ℕ}
       (R := R) (x := x) (b := f x) (t := t) (hx := hx))
 
 /--
-The depth overhead of `branchLargeInsensitive` is bounded by the codimension of
+If the fallback tree `t` already computes `f` everywhere, then augmenting it
+with `branchLargeInsensitive` around a reference point `x` still yields a tree
+that evaluates to `f` on the entire cube.  On the selected monochromatic
+subcube the value is fixed to `f x`, and elsewhere the computation is delegated
+to `t`.-/
+lemma eval_branchLargeInsensitive (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n)
+    (ht : ∀ y : Point n, DecisionTree.eval_tree (n := n) t y = f y) :
+    ∀ y : Point n,
+      DecisionTree.eval_tree
+          (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+        = f y := by
+  classical
+  intro y
+  -- Instantiate the large monochromatic subcube around `x`.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hxR : x ∈ₛ R := (Classical.choose_spec h).1
+  have hmono : Subcube.monochromaticFor R f := (Classical.choose_spec h).2.1
+  by_cases hyR : y ∈ₛ R
+  · -- Inside `R` the tree returns `f x`, which equals `f y` by monochromaticity.
+    have h_eval :=
+      eval_branchLargeInsensitive_mem (f := f) (s := s) (hs := hs)
+        (x := x) (y := y) (t := t) hyR
+    have hconst : f y = f x :=
+      eval_eq_of_mem_of_monochromatic (f := f) (R := R)
+        (hmono := hmono) (x := y) (y := x) (hx := hyR) (hy := hxR)
+    simpa [hconst] using h_eval
+  · -- Outside `R` the tree defers to `t`, which is assumed to compute `f`.
+    have h_eval :=
+      eval_branchLargeInsensitive_not_mem (f := f) (s := s) (hs := hs)
+        (x := x) (y := y) (t := t) hyR
+    exact h_eval.trans (ht y)
+
+/--
+Outside the extracted monochromatic subcube, `branchLargeInsensitive` behaves
+like the fallback tree.  Consequently, if the fallback already computes `f` at
+such a point `y`, the augmented tree agrees with `f` there as well.-/
+lemma eval_branchLargeInsensitive_off (f : BFunc n) {s : ℕ}
+    (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
+    (hy : ¬ y ∈ₛ Classical.choose
+        (exists_large_monochromatic_subcube (f := f) (s := s)
+          (hs := hs) (x := x)))
+    (ht : DecisionTree.eval_tree (n := n) t y = f y) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+      = f y := by
+  classical
+  -- Unpack the chosen subcube and specialise the non-membership assumption.
+  let h := exists_large_monochromatic_subcube (f := f) (s := s)
+      (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hyR : ¬ y ∈ₛ R := by simpa [R] using hy
+  have h_eval :=
+    eval_branchLargeInsensitive_not_mem (f := f) (s := s) (hs := hs)
+      (x := x) (y := y) (t := t) hyR
+  exact h_eval.trans ht
+
+  /--
+  The depth overhead of `branchLargeInsensitive` is bounded by the codimension of
 the extracted subcube, which in turn is at most `2^n * s`.  This coarse bound
 will later be refined using sharper combinatorial estimates.
 -/

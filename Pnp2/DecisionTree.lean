@@ -280,6 +280,20 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
     (subcube_of_path ((i, b) :: p)).idx = insert i (subcube_of_path p).idx :=
   rfl
 
+/-- Inserting the same coordinate twice does not change the recorded index
+set.  This `simp` lemma helps eliminate redundant assignments in technical
+arguments about decision-tree paths. -/
+@[simp] lemma subcube_of_path_cons_cons_idx (i : Fin n) (b₁ b₂ : Bool)
+    (p : List (Fin n × Bool)) :
+    (subcube_of_path ((i, b₁) :: (i, b₂) :: p)).idx =
+      (subcube_of_path ((i, b₁) :: p)).idx := by
+  classical
+  simp [subcube_of_path_cons_idx, Finset.insert_eq_of_mem]
+
+-- TODO: prove the analogous equality for the whole subcube, not just its index
+-- set.  Such a lemma would streamline future arguments about removing
+-- redundant assignments in decision-tree paths.
+
 /-!
 `subcube_of_path` collects the indices encountered along a decision-tree path.
 Since each step inserts at most one new coordinate, the resulting index set has
@@ -316,6 +330,37 @@ lemma subcube_of_path_dimension_ge (p : List (Fin n × Bool)) :
   -- bound on the remaining dimension.
   have h := Nat.sub_le_sub_left hidx n
   simpa [Subcube.dimension] using h
+
+/-!  
+`subcube_of_path` extracts the set of indices touched along a path.  Each
+index appearing in the list `p` therefore occurs in `(subcube_of_path p).idx`.
+Conversely, no other indices are inserted, so the index set is always a
+subset of the coordinates listed in `p`.  This observation helps to
+translate assumptions about duplicated indices in paths into constraints on
+the resulting subcubes.
+-/
+lemma subcube_of_path_idx_subset_map_fst_toFinset
+    (p : List (Fin n × Bool)) :
+    (subcube_of_path (n := n) p).idx ⊆ (p.map Prod.fst).toFinset := by
+  classical
+  induction p with
+  | nil =>
+      intro i hi
+      simpa using hi
+  | cons hd tl ih =>
+      rcases hd with ⟨i, b⟩
+      intro j hj
+      have hj' : j = i ∨ j ∈ (subcube_of_path (n := n) tl).idx :=
+        Finset.mem_insert.mp hj
+      have : j ∈ insert i ((tl.map Prod.fst).toFinset) := by
+        cases hj' with
+        | inl hji =>
+            subst hji
+            exact Finset.mem_insert.mpr (Or.inl rfl)
+        | inr hjtl =>
+            have : j ∈ (tl.map Prod.fst).toFinset := ih hjtl
+            exact Finset.mem_insert.mpr (Or.inr this)
+      simpa [List.map_cons] using this
 
 /-!
 Collect all leaf subcubes of a decision tree together with their Boolean labels.
@@ -893,6 +938,11 @@ lemma depth_branchOnSubcube_le (R : Subcube n) (b : Bool)
     depth_matchSubcube_le (n := n)
       (p := Subcube.toList (n := n) R) (b := b) (t := t)
 
+/-
+The following helper lemma will be useful when analysing coloured subcubes
+after pre‑pending an assignment to the path.  Intuitively, removing the
+leading assignment can only enlarge the described subcube.
+-/
 /--
 Bounding the number of leaves produced by `ofRectCoverList`.
 Each rectangle contributes at most a multiplicative factor of
@@ -1093,6 +1143,25 @@ lemma mem_subcube_of_path_cons_fixed (x : Point n) (p : List (Fin n × Bool))
   have := hx i (by simp)
   simpa [subcube_of_path] using this
 
+/--
+Если точка удовлетворяет расширенному списку присваиваний `p ++ q`,
+то она также удовлетворяет хвостовой части `q`.
+-/
+lemma agreesWithAssignments_tail_of_append (x : Point n)
+    (p q : List (Fin n × Bool))
+    (h : agreesWithAssignments (n := n) x (p ++ q)) :
+    agreesWithAssignments (n := n) x q := by
+  induction p with
+  | nil =>
+      simpa using h
+  | cons hd tl ih =>
+      rcases hd with ⟨i, b⟩
+      -- Раскрываем условие для головы и рекурсивно обрабатываем хвост.
+      have h' :=
+        (agreesWithAssignments_cons (x := x) (i := i) (b := b)
+          (p := tl ++ q)).1 h
+      exact ih h'.2
+
 /-- Every input lies in the subcube described by its path to a leaf. -/
 lemma mem_subcube_of_path_path_to_leaf (t : DecisionTree n) (x : Point n) :
     (subcube_of_path (path_to_leaf t x)).mem x := by
@@ -1258,6 +1327,108 @@ lemma mem_subcube_of_path_reverse_path_to_leaf (t : DecisionTree n) (x : Point n
   exact mem_subcube_of_path_of_agrees (x := x) (p := (path_to_leaf t x).reverse) hrev
 
 /-!
+Membership in a path-defined subcube is equivalent to the point satisfying
+all assignments along that path.  The forward direction is shown by peeling
+off the head assignment and applying the induction hypothesis to the tail.
+-/
+lemma agreesOf_mem_subcube_of_path (x : Point n)
+    (p : List (Fin n × Bool))
+    (hnodup : (p.map Prod.fst).Nodup) :
+    (subcube_of_path (n := n) p).mem x →
+      agreesWithAssignments (n := n) x p := by
+  classical
+  induction p with
+  | nil =>
+      intro _
+      -- The empty path imposes no constraints.
+      simpa [agreesWithAssignments_nil (n := n) (x := x)]
+  | cons q p ih =>
+      rcases q with ⟨i, b⟩
+      intro hx
+      -- Split the nodup assumption for the tail and the new head index.
+      have hnodup_cons : List.Nodup (List.map Prod.fst ((i, b) :: p)) := by
+        simpa [List.map_cons] using hnodup
+      have hi_not : i ∉ (List.map Prod.fst p) :=
+        (List.nodup_cons).1 hnodup_cons |>.1
+      have hnodup_tail : (List.map Prod.fst p).Nodup :=
+        (List.nodup_cons).1 hnodup_cons |>.2
+      -- Membership enforces the head assignment and membership in the tail.
+      have hxi : x i = b :=
+        mem_subcube_of_path_cons_fixed (n := n) (x := x)
+          (p := p) (i := i) (b := b) hx
+      -- Show that `i` does not occur among the indices of the tail subcube.
+      have hi : i ∉ (subcube_of_path (n := n) p).idx := by
+        intro hi_mem
+        have hi' : i ∈ (List.map Prod.fst p).toFinset :=
+          subcube_of_path_idx_subset_map_fst_toFinset
+            (n := n) (p := p) hi_mem
+        have : i ∈ List.map Prod.fst p := by
+          simpa [List.mem_toFinset] using hi'
+        exact hi_not this
+      -- Having established freshness of `i`, membership descends to the tail.
+      have hx_tail : (subcube_of_path (n := n) p).mem x := by
+        intro j hj
+        have hj' : j ∈ insert i (subcube_of_path (n := n) p).idx :=
+          Finset.mem_insert.mpr (Or.inr hj)
+        have hxj := hx j hj'
+        have hji : j ≠ i := by
+          intro hji; subst hji; exact hi hj
+        simpa [subcube_of_path, hji] using hxj
+      have hagree_tail : agreesWithAssignments (n := n) x p :=
+        ih hnodup_tail hx_tail
+      -- Reassemble the full agreement statement.
+      exact (agreesWithAssignments_cons (x := x)
+        (i := i) (b := b) (p := p)).2 ⟨hxi, hagree_tail⟩
+
+@[simp] lemma mem_subcube_of_path_iff_agrees (x : Point n)
+    (p : List (Fin n × Bool)) (hnodup : (p.map Prod.fst).Nodup) :
+    (subcube_of_path (n := n) p).mem x ↔
+      agreesWithAssignments (n := n) x p := by
+  constructor
+  · exact agreesOf_mem_subcube_of_path (n := n) (x := x) (p := p) hnodup
+  · intro hagree
+    -- The converse direction reuses `mem_subcube_of_path_of_agrees`.
+    exact mem_subcube_of_path_of_agrees (n := n) (x := x) (p := p) hagree
+
+/-
+Удаление ведущего присваивания ослабляет подкуб.  Это справедливо лишь в
+случае, когда рассматриваемая координата не встречается в хвосте пути:
+иначе позже в списке может быть зафиксировано другое значение, и
+включение перестанет выполняться.
+-/
+lemma mem_subcube_of_path_cons_subset (x : Point n)
+    (i : Fin n) (b : Bool) (p : List (Fin n × Bool))
+    (hi : i ∉ (subcube_of_path (n := n) p).idx)
+    (hx : (subcube_of_path ((i, b) :: p)).mem x) :
+    (subcube_of_path p).mem x := by
+  -- Проверяем все индексы, фиксированные в хвосте пути.
+  intro j hj
+  have hj' : j ∈ insert i (subcube_of_path (n := n) p).idx :=
+    Finset.mem_insert.mpr (Or.inr hj)
+  have hxj := hx j hj'
+  have hji : j ≠ i := by
+    intro hji; subst hji; exact hi hj
+  simpa [subcube_of_path, hji] using hxj
+
+/-- Adding a constraint on a different coordinate preserves the freshness of
+an index.  If `i` does not occur in the index set extracted from `p`, then it
+also does not occur after consing a pair for a distinct coordinate `j`.
+This technical lemma will be used when analysing how paths grow in recursive
+constructions. -/
+lemma not_mem_subcube_of_path_cons
+    (i j : Fin n) (b : Bool) (p : List (Fin n × Bool))
+    (hi : i ∉ (subcube_of_path (n := n) p).idx) (hij : i ≠ j) :
+    i ∉ (subcube_of_path ((j, b) :: p)).idx := by
+  intro hi'
+  -- Membership in the extended index set splits into two possibilities:
+  -- either the new coordinate coincides with `i` or it already belonged to the
+  -- previous path.  Both contradict the assumptions.
+  obtain h | h := Finset.mem_insert.mp
+    (by simpa [subcube_of_path_cons_idx] using hi')
+  · exact hij h
+  · exact hi h
+
+/-!
 Every evaluation of the decision tree is witnessed by a suitably
 labelled subcube in `coloredSubcubes` containing the input.  This
 packages `eval_pair_mem_coloredSubcubes` together with the path
@@ -1302,6 +1473,138 @@ lemma coloredSubcubes_cover_false (t : DecisionTree n) :
   refine ⟨R, ?_, hxR⟩
   -- Rewrite the membership using the fact that `eval_tree t x = false`.
   simpa [hx] using hmem
+
+/--
+The helper `coloredSubcubesAux_cons_subset` shows that removing the most
+recent assignment from the path enlarges the described subcube.  It will be
+useful when relating subcubes produced by different branches of a decision
+tree.
+-/
+lemma coloredSubcubesAux_cons_subset (t : DecisionTree n) (i : Fin n) (b : Bool)
+    (p : List (Fin n × Bool)) (br : Bool × Subcube n)
+    (hmem : br ∈ coloredSubcubesAux (n := n) t ((i, b) :: p))
+    (hi : i ∉ (subcube_of_path (n := n) p).idx) :
+    ∃ brRec ∈ coloredSubcubesAux (n := n) t p,
+      ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
+  classical
+  -- We analyse the structure of the tree.  Removing the head assignment from
+  -- the accumulated path corresponds to enlarging the recorded subcube.
+  induction t with
+  | leaf c =>
+      -- The set of coloured subcubes is a singleton, so membership forces
+      -- `br` to be this unique element.
+      have hsingle : br = ⟨c, subcube_of_path ((i, b) :: p)⟩ := by
+        refine Finset.mem_singleton.mp ?_
+        simpa [coloredSubcubesAux] using hmem
+      subst hsingle
+      refine ⟨⟨c, subcube_of_path p⟩, ?_, ?_⟩
+      · -- The corresponding element with the shortened path belongs to the
+        -- colour set generated from `p` alone.
+        simpa [coloredSubcubesAux]
+      · -- Membership in the smaller subcube implies membership in the larger
+        -- one obtained by dropping the head assignment.
+        intro x hx
+        exact mem_subcube_of_path_cons_subset (n := n) (x := x)
+          (i := i) (b := b) (p := p) (hi := hi) hx
+  | node j t0 t1 ih0 ih1 =>
+      -- The recursive case, where the tree branches on a coordinate, is more
+      -- involved.  It requires tracking how coloured subcubes descend through
+      -- both subtrees and will be addressed in subsequent work.
+      -- TODO: complete the inductive step for decision nodes.
+      sorry
+
+/--
+Colored subcubes of `branchOnSubcube R b t` other than the main subcube `R`
+originate from the fallback tree `t`.  Consequently, each such subcube is a
+subset of a coloured subcube of `t`.
+-/
+lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
+    {t : DecisionTree n} {br : Bool × Subcube n}
+    (hmem : br ∈ coloredSubcubes (n := n) (branchOnSubcube (n := n) R b t))
+    (hne : br.2 ≠ R) :
+    ∃ brRec ∈ coloredSubcubes (n := n) t,
+      ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
+  classical
+  -- Split according to whether the branching subcube `R` fixes any
+  -- coordinates.  When `R.idx = ∅` the construction degenerates to a single
+  -- leaf, and no coloured subcubes other than `R` itself can appear.
+  by_cases hRidx : R.idx = (∅ : Finset (Fin n))
+  ·
+    -- Convert the empty index set into an explicit representation of the
+    -- path describing `R`.
+    have hlen : (Subcube.toList (n := n) R).length = 0 := by
+      have hcard : R.idx.card = 0 := Finset.card_eq_zero.mpr hRidx
+      simpa [Subcube.toList_length (n := n) (R := R)] using hcard
+    have hpath : Subcube.toList (n := n) R = [] :=
+      List.length_eq_zero.mp hlen
+    -- Unfold the colour set of the branched tree; it is a singleton.
+    let br0 : Bool × Subcube n := ⟨b, DecisionTree.subcube_of_path (n := n) []⟩
+    have hcol :
+        coloredSubcubes (n := n) (branchOnSubcube (n := n) R b t)
+          = ({br0} : Finset (Bool × Subcube n)) := by
+      simp [branchOnSubcube, matchSubcube, hpath, coloredSubcubes,
+        coloredSubcubesAux, br0]
+    have hmem_single : br ∈ ({br0} : Finset (Bool × Subcube n)) := by
+      simpa [hcol] using hmem
+    have hbr2 : br.2 = br0.2 := by
+      exact congrArg Prod.snd (Finset.mem_singleton.mp hmem_single)
+    -- For an empty index set the representation is unique: `R` coincides with
+    -- the subcube `br0.2`.
+    have hR : R = br0.2 := by
+      -- Both subcubes fix no coordinates, hence they must be equal.
+      cases' R with idx val
+      dsimp [br0, DecisionTree.subcube_of_path] at hRidx ⊢
+      -- The index set is empty by assumption.
+      have hidx : idx = (∅ : Finset (Fin n)) := hRidx
+      subst hidx
+      -- Values coincide on the empty domain.
+      have hval :
+          val = (fun i h => False.elim (Finset.notMem_empty _ h)) := by
+        funext i hi
+        have : False := by simpa using hi
+        cases this
+      simp [hval]
+    -- Membership in the singleton contradicts `hne`.
+    have : br.2 = R := by simpa [hR] using hbr2
+    exact (hne this).elim
+  ·
+    -- The interesting case when `R` fixes at least one coordinate is
+    -- postponed.  Here each coloured subcube stems from the recursive tree
+    -- `t` after matching a proper prefix of the path describing `R`.
+    -- A detailed inductive analysis will eventually provide the required
+    -- containment relation.
+    -- TODO: complete the recursive argument.
+    sorry
+
+/--
+If a subcube `R` is monochromatic for every function in a family `F` and the
+fallback tree `t` only produces monochromatic subcubes for all members of `F`,
+then every coloured subcube of `branchOnSubcube R b t` is also monochromatic for
+all functions in `F`.
+-/
+lemma coloredSubcubes_branchOnSubcube_monochromatic {R : Subcube n} {b : Bool}
+    {t : DecisionTree n} {F : Family n}
+    (hR : ∀ f ∈ F, Subcube.monochromaticFor R f)
+    (hRec : ∀ f ∈ F, ∀ br ∈ coloredSubcubes (n := n) t,
+        Subcube.monochromaticFor br.2 f) :
+    ∀ f ∈ F, ∀ br ∈
+        coloredSubcubes (n := n) (branchOnSubcube (n := n) R b t),
+        Subcube.monochromaticFor br.2 f := by
+  intro f hf br hbr
+  classical
+  -- Either `br` coincides with the main subcube `R` or it descends from `t`.
+  by_cases hbrR : br.2 = R
+  · -- If `br` is exactly `R`, the claim follows from the assumption `hR`.
+    subst hbrR
+    exact hR f hf
+  · -- Otherwise `br` comes from the recursive tree.  Locate the ancestor
+    -- subcube `brRec` in `t` and transfer monochromaticity along the inclusion.
+    obtain ⟨brRec, hbrRec, hsub⟩ :=
+      coloredSubcubes_branchOnSubcube_subset (n := n) (R := R) (b := b)
+        (t := t) (br := br) hbr hbrR
+    have hmonoRec := hRec f hf brRec hbrRec
+    exact Subcube.monochromaticFor_subset (n := n) (f := f)
+      (R := brRec.2) (S := br.2) hsub hmonoRec
 
 end DecisionTree
 

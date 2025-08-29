@@ -5,6 +5,8 @@ import Pnp2.DecisionTree
 import Pnp2.low_sensitivity_cover
 -- `collentropy` is not imported to keep the legacy library lightweight
 
+set_option linter.unnecessarySimpa false
+
 open BoolFunc
 open Agreement
 
@@ -378,7 +380,7 @@ example :
   let f : BFunc 3 := fun x => x 0
   have hs : BoolFunc.sensitivity f ≤ 1 := by
     have : BoolFunc.sensitivity f = 1 := by decide
-    simpa [this]
+    simp [this]
   have hsupp : (support f).card ≤ 3 - 3 / (2 * 1) := by decide
   have hbound :
       Fintype.card (Point 3) * 1 ≤ 3 - 3 / (2 * 1) ∨

@@ -320,6 +320,7 @@ around `x`.  The resulting tree evaluates to `f x` on the entire subcube and
 behaves like the provided fallback tree `t` elsewhere.
 -/
 noncomputable def branchLargeInsensitive (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
     DecisionTree n :=
   -- Extract a concrete subcube witnessing the large insensitive region.
@@ -332,6 +333,7 @@ Evaluating the tree produced by `branchLargeInsensitive` on any point of the
 chosen subcube returns the reference value `f x`.
 -/
 lemma eval_branchLargeInsensitive_mem (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
     (hy : y ∈ₛ Classical.choose
         (exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x))) :
@@ -353,6 +355,7 @@ Outside the extracted subcube, `branchLargeInsensitive` delegates evaluation to
 the fallback tree `t`.
 -/
 lemma eval_branchLargeInsensitive_not_mem (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
     (hy : ¬ y ∈ₛ Classical.choose
         (exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x))) :
@@ -372,6 +375,7 @@ In particular, evaluating `branchLargeInsensitive` on the base point `x`
 recovers the original value `f x`.
 -/
 lemma eval_branchLargeInsensitive_self (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
     DecisionTree.eval_tree
         (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) x
@@ -392,6 +396,7 @@ that evaluates to `f` on the entire cube.  On the selected monochromatic
 subcube the value is fixed to `f x`, and elsewhere the computation is delegated
 to `t`.-/
 lemma eval_branchLargeInsensitive (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n)
     (ht : ∀ y : Point n, DecisionTree.eval_tree (n := n) t y = f y) :
     ∀ y : Point n,
@@ -425,6 +430,7 @@ Outside the extracted monochromatic subcube, `branchLargeInsensitive` behaves
 like the fallback tree.  Consequently, if the fallback already computes `f` at
 such a point `y`, the augmented tree agrees with `f` there as well.-/
 lemma eval_branchLargeInsensitive_off (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
     (hy : ¬ y ∈ₛ Classical.choose
         (exists_large_monochromatic_subcube (f := f) (s := s)
@@ -450,6 +456,7 @@ the extracted subcube, which in turn is at most `2^n * s`.  This coarse bound
 will later be refined using sharper combinatorial estimates.
 -/
 lemma depth_branchLargeInsensitive_le (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
     (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
     DecisionTree.depth (branchLargeInsensitive (n := n) (f := f)
         (hs := hs) (x := x) t)
@@ -2934,7 +2941,7 @@ lemma decisionTree_cover_smallS_zero
 -/
 lemma decisionTree_cover_smallS_pos_n1
   (F : Family 1) (s : Nat) [Fintype (Point 1)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hsmall : s ≤ 2) (hspos : 0 < s) :
+  (_Hsens : ∀ f ∈ F, sensitivity f ≤ s) (_hsmall : s ≤ 2) (hspos : 0 < s) :
   ∃ Rset : Finset (Subcube 1),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
@@ -3019,26 +3026,276 @@ lemma decisionTree_cover_smallS_pos_n1
   have := hcard_le.trans hpow
   simpa [hlog, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
-/--
-  Axiomatic placeholder for the positive-sensitivity case in higher
-  dimensions (`n ≥ 2`).  The constructive proof will eventually replace
-  this axiom.
--/
-axiom decisionTree_cover_smallS_pos_general
-  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-  (hsmall : s ≤ n + 1) (hspos : 0 < s) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
+  /--
+    Предполагаемое существование большого подкуба, на котором каждая функция
+    семейства монохроматична.  Пока мы выводим лишь грубое ограничение
+    `R.idx.card ≤ |Point n| · s`; улучшение до `≤ s` остаётся задачей.
+  -/
+  lemma exists_common_monochromatic_subcube
+    {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
+    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
+    (hsmall : s ≤ n + 1) (hspos : 0 < s) :
+    ∃ R : Subcube n,
+      (∀ f ∈ F, Subcube.monochromaticFor R f) ∧
+      R.idx.card ≤ Fintype.card (Point n) * s := by
+    classical
+    -- Even the empty family admits a trivial common subcube: the whole cube.
+    by_cases hF : F = (∅ : Family n)
+    · subst hF
+      refine ⟨DecisionTree.subcube_of_path (n := n) [], ?_, ?_⟩
+      · intro f hf; cases hf
+      · have : (DecisionTree.subcube_of_path (n := n) []).idx.card = 0 := by
+          simp
+        simpa [this] using (Nat.zero_le s)
+    · -- Непустое семейство: выберем опорную функцию и применим
+      -- одновариантную лемму о большом монохроматическом подкубе.
+      classical
+      have hFnonempty : F.Nonempty := Finset.nonempty_iff_ne_empty.mpr hF
+      obtain ⟨f₀, hf₀⟩ := hFnonempty
+      -- Зафиксируем точку и применим лемму о большом монохроматическом подкубе.
+      let x₀ : Point n := fun _ => false
+      obtain ⟨R₀, _hx₀, hmono₀, hdim₀⟩ :=
+        exists_large_monochromatic_subcube
+          (f := f₀) (hs := Hsens f₀ hf₀) (x := x₀)
+      -- Переведём оценку на размерность в ограничение на кодименсию.
+      have hcodim : R₀.idx.card ≤ Fintype.card (Point n) * s := by
+        have hnle : n ≤ R₀.dimension + Fintype.card (Point n) * s :=
+          Nat.sub_le_iff_le_add.mp hdim₀
+        have hcodim' : n - R₀.dimension ≤ Fintype.card (Point n) * s :=
+          Nat.sub_le_iff_le_add.mpr (by
+            simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hnle)
+        have hle : R₀.idx.card ≤ n := by
+          simpa using (Finset.card_le_univ (s := R₀.idx))
+        have hidxdim : n - R₀.dimension = R₀.idx.card := by
+          have : R₀.dimension = n - R₀.idx.card := by
+            simp [Subcube.dimension]
+          simpa [this, Nat.sub_sub_self hle]
+        simpa [hidxdim] using hcodim'
+      -- Если семейство содержит только `f₀`, искомый подкуб уже построен.
+      by_cases hFsingle : F = {f₀}
+      · subst hFsingle
+        have hmono_all : ∀ f ∈ ({f₀} : Family n), Subcube.monochromaticFor R₀ f := by
+          intro f hf
+          have hf' : f = f₀ := Finset.mem_singleton.mp hf
+          subst hf'
+          simpa using hmono₀
+        exact ⟨R₀, hmono_all, hcodim⟩
+      · -- Ненулевое семейство, содержащее более одной функции.  Выберем вторую
+        -- функцию `f₁ ≠ f₀`, чтобы далее пытаться переносить монохроматичность
+        -- с `R₀` на всё семейство.  Технические детали такого переноса ещё не
+        -- реализованы и оформлены в виде `sorry`.
+        classical
+        have hneF : ∃ f₁ ∈ F, f₁ ≠ f₀ := by
+          -- Удаление `f₀` из семейства оставляет непустое множество, раз оно
+          -- не сведено к `{f₀}`.
+          have hErase : F.erase f₀ ≠ ∅ := by
+            intro h
+            apply hFsingle
+            ext f; constructor
+            · intro hf
+              by_cases hf0 : f = f₀
+              · subst hf0; simp
+              · have : f ∈ F.erase f₀ := by
+                  simpa [Finset.mem_erase, hf0, hf] using hf
+                simpa [h] using this
+            ·
+              intro hf
+              -- Преобразуем членство `f ∈ {f₀}` в равенство и переписываем.
+              have h := Finset.mem_singleton.mp hf
+              subst h
+              simpa using hf₀
+          -- Получаем элемент из `F.erase f₀` через эквивалентность непустоты.
+          have hNonempty : (F.erase f₀).Nonempty :=
+            Finset.nonempty_iff_ne_empty.mpr hErase
+          obtain ⟨f₁, hf₁⟩ := hNonempty
+          refine ⟨f₁, ?_, ?_⟩
+          · exact Finset.mem_of_mem_erase hf₁
+          · exact Finset.ne_of_mem_erase hf₁
+        obtain ⟨f₁, hf₁, hf₁ne⟩ := hneF
+        -- FIXME: перенести монохроматичность с опорной функции `f₀` и
+        -- дополнительной функции `f₁` на всё семейство.
+        -- Это потребует леммы о нечувствительных координатах и более сложного
+        -- анализа структуры `F`.
+        sorry
 
-/--
-  Wrapper lemma splitting on whether `s` is zero or positive.  The zero case is
-  handled constructively by `decisionTree_cover_smallS_zero`; the positive case
-  currently relies on the axiomatic placeholder above.
--/
-lemma decisionTree_cover_smallS
+  /--
+    Рекурсивный шаг положительного случая: имея большой общий подкуб `R`,
+    необходимо построить дерево решений для внешней области.  Лемма обещает
+    существование такого дерева с требуемой оценкой на глубину.  Полное
+    конструктивное доказательство пока отсутствует и заменено заглушкой.
+  -/
+  lemma decisionTree_cover_smallS_pos_general_rec
+    {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
+    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
+    (hsmall : s ≤ n + 1) (hspos : 0 < s)
+    (R : Subcube n)
+    (hRmono_all : ∀ f ∈ F, Subcube.monochromaticFor R f)
+    (hRcodim_big : R.idx.card ≤ Fintype.card (Point n) * s) :
+    ∃ tRec : DecisionTree n,
+      (∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) tRec,
+          Subcube.monochromaticFor br.2 f) ∧
+      DecisionTree.depth tRec + R.idx.card
+        ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+    classical
+    -- Если `R` совпадает со всем кубом, внешней области нет и можно вернуть
+    -- тривиальное дерево из одного листа.  Все функции уже монохромны на `R`,
+    -- поэтому единственный подкуб дерева также монохроматичен.
+    by_cases hRempty : R.idx = (∅ : Finset (Fin n))
+    · refine ⟨DecisionTree.leaf false, ?_, ?_⟩
+      · intro f hf br hbr
+        -- Все цветные подкубы листа совпадают с подкубом всего куба.
+        have hbr0 : br = ⟨false, DecisionTree.subcube_of_path (n := n) []⟩ := by
+          simpa [DecisionTree.coloredSubcubes] using hbr
+        subst hbr0
+        -- Монохромность следует напрямую из монохроматичности `R` и того,
+        -- что при `R.idx = ∅` любая точка принадлежит `R`.
+        -- `hRmono_all` already supplies глобальную константу на всём кубе,
+        -- так как `R.idx = ∅`.  Переносим её на тривиальный подкуб
+        -- `subcube_of_path []`.
+        obtain ⟨b, hb⟩ := hRmono_all f hf
+        refine ⟨b, ?_⟩
+        intro x hx
+        have hxR : x ∈ₛ R := by simpa [Subcube.mem, hRempty]
+        exact hb hxR
+      · -- Глубина листа равна нулю, а `R` имеет пустой индекс, поэтому
+        -- суммарная глубина также ноль.
+        have hcard : R.idx.card = 0 := by simpa [hRempty]
+        simpa [DecisionTree.depth, hcard] using
+          (Nat.zero_le (coverConst * s * Nat.log2 (Nat.succ n)))
+    · -- Невырожденный случай `R.idx ≠ ∅`: выбираем конкретную координату
+      -- из `R.idx`, чтобы далее анализировать внешнюю область.  Последующий
+      -- рекурсивный аргумент пока не реализован.
+      have hidx_ne : R.idx.Nonempty :=
+        Finset.nonempty_iff_ne_empty.mpr hRempty
+      obtain ⟨i, hi⟩ := hidx_ne
+      -- Удалим координату `i` из индекса и получим более крупный подкуб `R₁`.
+      -- Внешняя область относительно `R` будет анализироваться после
+      -- разделения по этой координате.
+      let R₁ : Subcube n := Subcube.unfix (R := R) i
+      -- Кодименсия `R₁` на единицу меньше, чем у `R`.
+      have hcodim₁ : R₁.idx.card + 1 = R.idx.card :=
+        Subcube.card_idx_unfix (R := R) (i := i) hi
+      -- Получаем прежнее ограничение на кодименсию и для ослабленного подкуба.
+      have hR₁codim_big :
+          R₁.idx.card ≤ Fintype.card (Point n) * s := by
+        have hle : R₁.idx.card ≤ R.idx.card := by
+          simpa [R₁] using (Finset.card_erase_le (s := R.idx) (a := i))
+        exact hle.trans hRcodim_big
+      -- TODO: построить дерево решений для области, где координата `i`
+      -- выходит за пределы `R`, и оценить его глубину.
+      -- В частности, требуется рекурсивная конструкция дерева для подкуба
+      -- `R₁` и анализ ветви `x i ≠ R.val i`.
+      sorry
+
+  /--
+    Конструктивная версия положительного случая при `s > 0` и `n ≥ 2`.
+
+    На первом шаге выбираем произвольную функцию семейства и фиксируем точку,
+    вокруг которой вставляется ветвь `branchLargeInsensitive`.
+    Рекурсивное построение в остальной области пока не реализовано, поэтому
+    доказательство завершается `sorry`.
+  -/
+  lemma decisionTree_cover_smallS_pos_general
+    {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
+    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
+    (hsmall : s ≤ n + 1) (hspos : 0 < s) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    classical
+    -- Trivial cover for the empty family: no rectangles are needed.
+    by_cases hF : F = (∅ : Family n)
+    · subst hF
+      simpa using (decisionTree_cover_empty (n := n) (s := s))
+    -- For a nonempty family we postulate the existence of a large subcube
+    -- on which **all** functions are constant.  This lemma encapsulates the
+    -- still-missing multivariate sensitivity argument.
+    obtain ⟨R, hRmono_all, hRcodim_big⟩ :=
+      exists_common_monochromatic_subcube (F := F) (s := s)
+        (Hsens := Hsens) (hn := hn) (hsmall := hsmall) (hspos := hspos)
+    -- Если подкуб `R` совпадает со всем кубом, то ветвление не требуется:
+    -- достаточно одного прямоугольника, покрывающего все функции.
+    by_cases hRempty : R.idx = (∅ : Finset (Fin n))
+    · -- `R` is the full cube: return the singleton cover `{R}`.
+      refine ⟨{R}, ?_, ?_, ?_⟩
+      · intro f hf R' hR'
+        have hR' : R' = R := by simpa [Finset.mem_singleton] using hR'
+        subst hR'
+        exact hRmono_all f hf
+      · intro f hf x hx
+        refine ⟨R, ?_, ?_⟩
+        · simp
+        · -- любой вектор принадлежит полному кубу: условий нет
+          simp [Subcube.mem, hRempty]
+      · -- кардинальность одноэлементного набора и экспоненциальная граница
+        have hcard : ({R} : Finset (Subcube n)).card = 1 := by simp
+        have hpowpos :
+            0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+          simpa using
+            (Nat.pow_pos (by decide)
+              (coverConst * s * Nat.log2 (Nat.succ n)))
+        have hpow :
+            ({R} : Finset (Subcube n)).card ≤
+                Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+          simpa [hcard] using (Nat.succ_le_of_lt hpowpos)
+        exact hpow
+    · -- Невырожденный случай: индекс подкуба непустой, поэтому требуется
+      -- дальнейшее ветвление вне `R`.
+      -- Рекурсивное построение дерева для области вне `R`.
+      -- Реализация этого шага вынесена в отдельную лемму
+      -- `decisionTree_cover_smallS_pos_general_rec`, которая остаётся
+      -- предметом дальнейшей работы.
+      obtain ⟨tRec, hmonoRec, hdepthRec⟩ :=
+        decisionTree_cover_smallS_pos_general_rec
+          (F := F) (s := s) (Hsens := Hsens) (hn := hn)
+          (hsmall := hsmall) (hspos := hspos)
+          (R := R) (hRmono_all := hRmono_all)
+          (hRcodim_big := hRcodim_big)
+      -- Branch on `R`, returning `false` inside and delegating to `tRec`
+      -- outside.  The particular colour is irrelevant since every function is
+      -- constant on `R`.
+      let t : DecisionTree n :=
+        DecisionTree.branchOnSubcube (n := n) R false tRec
+      have hmono :
+          ∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) t,
+              Subcube.monochromaticFor br.2 f :=
+        DecisionTree.coloredSubcubes_branchOnSubcube_monochromatic
+          (n := n) (R := R) (b := false) (t := tRec) (F := F)
+          (hR := hRmono_all) (hRec := hmonoRec)
+      have hcov :
+          ∀ f ∈ F, ∀ x, f x = true →
+              ∃ br ∈ DecisionTree.coloredSubcubes (n := n) t, x ∈ₛ br.2 := by
+        intro f hf x hx
+        -- `coloredSubcubes` образуют разбиение всего куба, поэтому любая точка
+        -- принадлежит некоторому элементу.  Лемма
+        -- `coloredSubcubes_cover_eval` предоставляет соответствующий подкуб.
+        obtain ⟨R', hmem, hxR'⟩ :=
+          DecisionTree.coloredSubcubes_cover_eval (n := n) (t := t) (x := x)
+        exact ⟨⟨DecisionTree.eval_tree (n := n) t x, R'⟩, hmem, hxR'⟩
+      have hdepth :
+          DecisionTree.depth t ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+        -- Глубину `t` можно ограничить через
+        -- `DecisionTree.depth_branchOnSubcube_le`, учитывая оценку на глубину
+        -- рекурсивного дерева `tRec` и численную границу на кодименсию `R`.
+        -- Сначала контролируем рост глубины при добавлении ветви на `R`.
+        have hdepth_branch :=
+          (DecisionTree.depth_branchOnSubcube_le (n := n)
+            (R := R) (b := false) (t := tRec))
+        -- `depth t ≤ depth tRec + R.idx.card`, а затем применяется гипотеза
+        -- `hdepthRec`.
+        exact hdepth_branch.trans hdepthRec
+      -- Преобразуем дерево в множество подкубов.
+      exact decisionTree_cover_of_tree
+        (F := F) (s := s) (t := t) hmono hcov hdepth
+
+  /--
+    Обёртка по случаю `s = 0` или `s > 0`.  Нулевая чувствительность
+    конструктивно разбирается леммой `decisionTree_cover_smallS_zero`.  При
+    `s > 0` используется `decisionTree_cover_smallS_pos_general`, чьё
+    доказательство пока не завершено.
+  -/
+  lemma decisionTree_cover_smallS
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
   (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 0 < n) (hsmall : s ≤ n + 1) :
   ∃ Rset : Finset (Subcube n),
@@ -3059,7 +3316,7 @@ lemma decisionTree_cover_smallS
       have hsmall' : s ≤ 2 := by simpa using hsmall
       simpa using
         (decisionTree_cover_smallS_pos_n1 (F := F) (s := s)
-          (Hsens := Hsens) (hsmall := hsmall') (hspos := hspos))
+          (_Hsens := Hsens) (_hsmall := hsmall') (hspos := hspos))
     ·
       -- In dimensions `n ≥ 2` the full constructive proof is not yet available.
       -- We delegate to the placeholder axiom specialised to this case.

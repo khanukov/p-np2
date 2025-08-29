@@ -111,6 +111,23 @@ notation x " ∈ₛ " R => Subcube.mem R x
 def dimension (R : Subcube n) : ℕ :=
   n - R.idx.card
 
+/-- Extensionality for subcubes: equality is determined by index sets and
+assigned values. -/
+@[ext (iff := false)] lemma ext {R S : Subcube n}
+    (hidx : R.idx = S.idx)
+    (hval : ∀ i hi, R.val i hi = S.val i (by simpa [hidx] using hi)) :
+    R = S := by
+  cases R with
+  | mk idxR valR =>
+    cases S with
+    | mk idxS valS =>
+      dsimp at hidx hval
+      cases hidx
+      -- With identical index sets, the value functions share the same domain.
+      have hfun : valR = valS := by
+        funext i hi; simpa using hval i hi
+      simpa [hfun]
+
 @[simp] lemma mem_of_not_fixed {R : Subcube n} {x : Point n} {i : Fin n}
     (_ : i ∉ R.idx) : R.mem x → True := by
   intro _; trivial
@@ -212,6 +229,15 @@ lemma idx_unfix (R : Subcube n) (i : Fin n) :
     i ∉ (unfix (R := R) i).idx := by
   classical
   simp [unfix]
+
+/-- Removing a coordinate from a subcube decreases the cardinality of the
+index set by one. -/
+@[simp]
+lemma card_idx_unfix (R : Subcube n) (i : Fin n) (hi : i ∈ R.idx) :
+    (unfix (R := R) i).idx.card + 1 = R.idx.card := by
+  classical
+  -- `unfix` simply erases `i` from the index set.
+  simpa [unfix] using Finset.card_erase_add_one (s := R.idx) (a := i) hi
 
 end Subcube
 
@@ -730,6 +756,30 @@ lemma monochromaticFor_extend_restrict {n : ℕ} {f : BFunc n}
   have hxval := hc hxR
   simpa [restrictCoord_agrees (f := f) (j := i) (b := b)
             (x := x) hxi] using hxval
+
+/-/ Restricting to a smaller subcube preserves monochromaticity. -/
+lemma monochromaticFor_subset {n : ℕ} {f : BFunc n}
+    {R S : Subcube n}
+    (hsub : ∀ ⦃x : Point n⦄, Subcube.mem S x → Subcube.mem R x)
+    (hmono : Subcube.monochromaticFor R f) :
+    Subcube.monochromaticFor S f := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro x hx
+  exact hc (hsub (x := x) hx)
+
+/-/ Family version of `monochromaticFor_subset`. -/
+lemma monochromaticForFamily_subset {n : ℕ} {F : Family n}
+    {R S : Subcube n}
+    (hsub : ∀ ⦃x : Point n⦄, Subcube.mem S x → Subcube.mem R x)
+    (hmono : monochromaticForFamily R F) :
+    monochromaticForFamily S F := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro f hf x hx
+  exact hc f hf (hsub (x := x) hx)
 
 end Subcube
 

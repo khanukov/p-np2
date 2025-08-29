@@ -3098,8 +3098,16 @@ lemma decisionTree_cover_smallS_pos_n1
               · have : f ∈ F.erase f₀ := by
                   simpa [Finset.mem_erase, hf0, hf] using hf
                 simpa [h] using this
-            · intro hf; simpa using (Finset.mem_singleton.mp hf)
-          obtain ⟨f₁, hf₁, hmem⟩ := Finset.exists_mem_of_ne_empty hErase
+            ·
+              intro hf
+              -- Преобразуем членство `f ∈ {f₀}` в равенство и переписываем.
+              have h := Finset.mem_singleton.mp hf
+              subst h
+              simpa using hf₀
+          -- Получаем элемент из `F.erase f₀` через эквивалентность непустоты.
+          have hNonempty : (F.erase f₀).Nonempty :=
+            Finset.nonempty_iff_ne_empty.mpr hErase
+          obtain ⟨f₁, hf₁⟩ := hNonempty
           refine ⟨f₁, ?_, ?_⟩
           · exact Finset.mem_of_mem_erase hf₁
           · exact Finset.ne_of_mem_erase hf₁

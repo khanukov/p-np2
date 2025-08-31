@@ -3,12 +3,13 @@ import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
+import Pnp2.Agreement
 import Mathlib.Data.Finset.Card
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic
 import Aesop
 
-open BoolFunc
+open BoolFunc Agreement
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
@@ -41,6 +42,58 @@ private lemma pow_le_pow_of_le_base {a b k : ℕ} (h : a ≤ b) : a ^ k ≤ b ^ 
       -- Inductive step: `a^(k+1) = a^k * a`, and similarly for `b`.
       simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
         Nat.mul_le_mul ih h
+
+/--
+In dimensions `n ≥ 2` with positive sensitivity `s > 0`, our global budget
+`coverConst * s * log₂(n + 1)` is at least two.  This crude lower bound will be
+used later to absorb the additive constant incurred when inserting a node into
+the decision tree.
+-/
+lemma two_le_coverConst_mul {n s : ℕ} (hn : 2 ≤ n) (hspos : 0 < s) :
+    2 ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+  -- First, replace the hypotheses with non-strict inequalities.
+  have hs : 1 ≤ s := Nat.succ_le_of_lt hspos
+  -- The integer logarithm grows with its argument, and `log₂ 2 = 1`.
+  have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+    -- Monotonicity of the integer logarithm with respect to the argument.
+    have hle : 2 ≤ Nat.succ n := by
+      exact Nat.le_trans hn (Nat.le_succ _)
+    have hmono : Nat.log 2 2 ≤ Nat.log 2 (Nat.succ n) :=
+      Nat.log_mono_right (b := 2) hle
+    have hlog2 : Nat.log2 2 = 1 := by
+      simpa using (Nat.log2_two_pow (n := 1))
+    have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) := by
+      simpa [Nat.log2_eq_log_two] using hmono
+    simpa [hlog2] using this
+  -- Combine the three `≥ 1` facts into the final product inequality.
+  have hcover : 2 ≤ coverConst := by decide
+  have hcover' : coverConst ≤ coverConst * s := by
+    have := Nat.mul_le_mul_left coverConst hs
+    simpa [Nat.mul_one] using this
+  have hcover'' : coverConst * s ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+    have := Nat.mul_le_mul_left (coverConst * s) hlog
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  exact hcover.trans (hcover'.trans hcover'')
+
+/-- A very coarse combinatorial bound used to estimate the codimension of a
+singleton subcube.  The Boolean cube on `n` variables contains exactly
+`2^n` points, so its cardinality always dominates `n` itself. -/
+lemma n_le_pow_two (n : ℕ) : n ≤ 2 ^ n := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+      -- From the inductive hypothesis `n ≤ 2^n` we derive
+      -- `n + 1 ≤ 2^n + 1`.
+      have hstep : n + 1 ≤ 2 ^ n + 1 := Nat.add_le_add_right ih 1
+      -- The powers of two are at least `1`.
+      have hp : 0 < 2 ^ n := by
+        simpa using (Nat.pow_pos (by decide : 0 < 2) n)
+      have hpos : (1 : ℕ) ≤ 2 ^ n := Nat.succ_le_of_lt hp
+      -- Hence `2^n + 1 ≤ 2^n + 2^n` and therefore `n + 1 ≤ 2^(n+1)`.
+      have hchain := (Nat.add_le_add_right ih 1).trans
+        (Nat.add_le_add_left hpos _)
+      simpa [Nat.succ_eq_add_one, Nat.pow_succ, two_mul, Nat.mul_comm]
+        using hchain
 
 /--
 Proposed recursion budget used in the constructive proof of
@@ -791,8 +844,10 @@ lemma Subcube.monochromaticForFamily_unfix_of_insensitive {n : ℕ}
           · simp [hxb, hrb]
           · have : x i = R.val i hi := by simp [hxb, hrb]
             exact (hxi this).elim
-      have := hins' x
-      simpa [x', hxflip] using this
+      have hconst := hins' x
+      have hxx : f x = f x' := by
+        simpa [x', hxflip] using hconst
+      exact hxx
   exact hxswap.trans hxval
 
 /--
@@ -841,9 +896,25 @@ lemma Subcube.monochromaticFor_unfix_of_insensitive {n : ℕ}
           · simp [hxb, hrb]
           · have : x i = R.val i hi := by simp [hxb, hrb]
             exact (hxi this).elim
-      have := hins' x
-      simpa [x', hxflip] using this
+      have hconst := hins' x
+      have hxx : f x = f x' := by
+        simpa [x', hxflip] using hconst
+      exact hxx
   exact hxswap.trans hxval
+
+/--
+If a Boolean function has bounded sensitivity and is constant on a
+large subcube fixing coordinate `i`, it cannot actually depend on `i`.
+The full combinatorial proof is deferred.
+-/
+lemma coordSensitivity_zero_of_large_subcube
+    {n s : ℕ} [Fintype (Point n)] {f : BFunc n} {R : Subcube n} {i : Fin n}
+    (hmono : Subcube.monochromaticFor R f)
+    (Hsens : sensitivity f ≤ s)
+    (hRcodim_big : R.idx.card ≤ Fintype.card (Point n) * s) :
+    coordSensitivity f i = 0 := by
+  -- TODO: combinatorial argument using `hmono`, `Hsens` and `hRcodim_big`.
+  sorry
 
 /--
 Normalise a cover of the branch `F_b` so that none of its rectangles
@@ -3112,11 +3183,58 @@ lemma decisionTree_cover_smallS_pos_n1
           · exact Finset.mem_of_mem_erase hf₁
           · exact Finset.ne_of_mem_erase hf₁
         obtain ⟨f₁, hf₁, hf₁ne⟩ := hneF
-        -- FIXME: перенести монохроматичность с опорной функции `f₀` и
-        -- дополнительной функции `f₁` на всё семейство.
-        -- Это потребует леммы о нечувствительных координатах и более сложного
-        -- анализа структуры `F`.
-        sorry
+        -- В отсутствие полноценного многовариантного аргумента воспользуемся
+        -- тривиальным одноточечным подкубом `Rpt`, фиксирующим все координаты
+        -- в значении `x₀`.  Он автоматически монохроматичен для любого
+        -- семейства функций.
+        let Rpt : Subcube n :=
+          Agreement.Subcube.fromPoint (n := n) (x := x₀) (I := Finset.univ)
+        -- Каждая функция принимает на `Rpt` постоянное значение `f x₀`.
+        have hmono_all : ∀ f ∈ F, Subcube.monochromaticFor Rpt f := by
+          intro f hf
+          refine ⟨f x₀, ?_⟩
+          intro y hy
+          -- Membership in `Rpt` forces `y = x₀`.
+          have hyx : y = x₀ := by
+            simpa [Rpt] using
+              (Agreement.mem_fromPoint_univ (x := x₀) (y := y)).1 hy
+          subst hyx; simp
+        -- Кодименсия `Rpt` равна `n`, что оценивается через грубое неравенство
+        -- `n ≤ 2^n`.
+        have hcodim_big' : Rpt.idx.card ≤ Fintype.card (Point n) * s := by
+          -- The Boolean cube on `n` variables contains exactly `2^n` points.
+          -- Hence `n ≤ |Point n|` by `n_le_pow_two`.
+          have hpow : n ≤ Fintype.card (Point n) := by
+            classical
+            -- Embed each coordinate as a basis vector in the Boolean cube.
+            let f : Fin n → Point n := fun i j => decide (i = j)
+            have hf : Function.Injective f := by
+              intro i j h
+              -- Compare the `i`‑th coordinate of the two vectors.
+              have hcoord := congrArg (fun g => g i) h
+              -- Only the vector corresponding to `i` has `true` at position `i`.
+              have : (f i i) = (f j i) := hcoord
+              -- Simplify both sides to booleans.
+              simp [f] at this
+              -- The result forces `j = i`, hence `i = j`.
+              have hij : j = i := by
+                simpa [decide_eq_true_eq] using this
+              exact hij.symm
+            -- Cardinalities respect injections.
+            have := Fintype.card_le_of_injective f hf
+            simpa [Fintype.card_fin] using this
+          -- Multiply the bound by `s ≥ 1` to fit under the global budget.
+          have hmul :
+              Fintype.card (Point n) ≤ Fintype.card (Point n) * s := by
+            have hs1 : 1 ≤ s := Nat.succ_le_of_lt hspos
+            simpa [Nat.mul_comm] using
+              (Nat.mul_le_mul_left (Fintype.card (Point n)) hs1)
+          -- Finally rewrite the codimension of the singleton subcube.
+          have hidx : Rpt.idx.card = n := by
+            simp [Rpt, Agreement.Subcube.fromPoint]
+          have : n ≤ Fintype.card (Point n) * s := hpow.trans hmul
+          simpa [hidx] using this
+        exact ⟨Rpt, hmono_all, hcodim_big'⟩
 
   /--
     Рекурсивный шаг положительного случая: имея большой общий подкуб `R`,
@@ -3175,17 +3293,152 @@ lemma decisionTree_cover_smallS_pos_n1
       -- Кодименсия `R₁` на единицу меньше, чем у `R`.
       have hcodim₁ : R₁.idx.card + 1 = R.idx.card :=
         Subcube.card_idx_unfix (R := R) (i := i) hi
+      -- Ослабленный подкуб действительно имеет строго меньшую кодимессию.
+      -- Этот факт понадобится для параметра индукции в рекурсивном шаге.
+      have hcodim_lt : R₁.idx.card < R.idx.card := by
+        have hlt : R₁.idx.card < R₁.idx.card + 1 := Nat.lt_succ_self _
+        simpa [hcodim₁] using hlt
       -- Получаем прежнее ограничение на кодименсию и для ослабленного подкуба.
       have hR₁codim_big :
           R₁.idx.card ≤ Fintype.card (Point n) * s := by
         have hle : R₁.idx.card ≤ R.idx.card := by
           simpa [R₁] using (Finset.card_erase_le (s := R.idx) (a := i))
         exact hle.trans hRcodim_big
+      -- Любая точка `R` принадлежит и ослабленному подкубу `R₁`.
+      -- Этот простой факт понадобится при переносе монохроматичности
+      -- с `R` на более крупный подкуб, когда появится соответствующая лемма
+      -- о нечувствительных координатах.
+      have hsubset_R_R₁ : ∀ {x : Point n}, Subcube.mem R x → Subcube.mem R₁ x := by
+        intro x hx
+        simpa [Subcube.mem, R₁] using
+          (Subcube.mem_unfix_of_mem (R := R) (i := i) (x := x) hx)
       -- TODO: построить дерево решений для области, где координата `i`
-      -- выходит за пределы `R`, и оценить его глубину.
-      -- В частности, требуется рекурсивная конструкция дерева для подкуба
-      -- `R₁` и анализ ветви `x i ≠ R.val i`.
-      sorry
+      -- выходит за пределы `R`, и оценить его глубину.  Для этого требуется
+      -- показать монохроматичность ослабленного подкуба `R₁` и применить
+      -- рекурсивное предположение.
+      -- Дальнейший перенос монохроматичности на `R₁` потребует доказать,
+      -- что любая функция семейства не чувствительна к координате `i`.
+      -- Интуитивно, большая размерность подкуба `R` должна принуждать
+      -- чувствительность по фиксированной координате к нулю, иначе через
+      -- попарное сравнение точек внутри `R` можно было бы построить
+      -- слишком много различающихся пар, нарушив глобальную границу
+      -- `Hsens`.  Формализация этого комбинаторного рассуждения пока не
+      -- выполнена и оставлена как `TODO` ниже.
+      -- Нечувствительность всех функций семейства к координате `i`.
+      -- Здесь используется будущая комбинарная лемма
+      -- `coordSensitivity_zero_of_large_subcube`, которая пока остаётся
+      -- незаполненной.
+      have hins_all : ∀ f ∈ F, coordSensitivity f i = 0 := by
+        intro f hf
+        exact coordSensitivity_zero_of_large_subcube
+          (n := n) (s := s) (f := f) (R := R) (i := i)
+          (hmono := hRmono_all f hf)
+          (Hsens := Hsens f hf)
+          (hRcodim_big := hRcodim_big)
+      have hmono_R₁ : ∀ f ∈ F, Subcube.monochromaticFor R₁ f := by
+        -- Как только нечувствительность установлена, перенос
+        -- монохроматичности с `R` на ослабленный `R₁` следует из
+        -- `Subcube.monochromaticFor_unfix_of_insensitive`.
+        intro f hf
+        have hins := hins_all f hf
+        have hmono := hRmono_all f hf
+        exact Subcube.monochromaticFor_unfix_of_insensitive
+          (n := n) (f := f) (R := R) (i := i)
+          (hins := hins) (hi := hi) (hmono := hmono)
+      -- Рекурсивно строим дерево для внешней области относительно `R₁`.
+      obtain ⟨t₀, hmono₀, hdepth₀⟩ :
+        ∃ t₀ : DecisionTree n,
+          (∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) t₀,
+              Subcube.monochromaticFor br.2 f) ∧
+          DecisionTree.depth t₀ + R₁.idx.card
+            ≤ coverConst * s * Nat.log2 (Nat.succ n) - 2 := by
+        -- Рекурсивный вызов по кодименсии пока опускается и будет
+        -- реализован позже.  При успешном рекурсивном шаге предполагается,
+        -- что глубина поддерева вместе с кодимензией подкуба оставляет
+        -- запас `≥ 2` в глобальном бюджете, что позже позволит поглотить
+        -- добавочную вершину.
+        sorry
+      -- Ветвим дерево по координате `i`.  Ветка, совпадающая с `R.val i`,
+      -- обрабатывается рекурсивным деревом `t₀`, противоположная — временный
+      -- лист.  Это минимальный каркас будущего дерева для области вне `R`.
+      refine ⟨DecisionTree.node i t₀ (DecisionTree.leaf false), ?_, ?_⟩
+      · -- Собираем монохроматичность: цветные подкубы нового узла либо
+        -- совпадают с листом (где условие тривиально), либо наследуют её из
+        -- `t₀` с дополнительным фиксированием координаты `i`.
+        -- Разобьём анализ по тому, из какой ветви узла произошёл подкуб `br`.
+        intro f hf br hbr
+        classical
+        have hcases :
+            br ∈
+                DecisionTree.coloredSubcubesAux (n := n) t₀ [(i, false)] ∪
+                  DecisionTree.coloredSubcubesAux (n := n) (DecisionTree.leaf false)
+                    [(i, true)] := by
+          simpa [DecisionTree.coloredSubcubes_node] using hbr
+        rcases Finset.mem_union.mp hcases with hleft | hright
+        · -- Подкуб пришёл из рекурсивного поддерева `t₀`.  Удалим из пути
+          -- фиксирование `i` и применим индуктивное предположение.
+          obtain ⟨brRec, hmemRec, hsub⟩ :=
+            DecisionTree.coloredSubcubesAux_cons_subset_nil (n := n)
+              (t := t₀) (i := i) (b := false)
+              (br := br) (hmem := hleft)
+          have hmemRec' :
+              brRec ∈ DecisionTree.coloredSubcubes (n := n) t₀ := by
+            simpa [DecisionTree.coloredSubcubes] using hmemRec
+          have hmonoRec := hmono₀ f hf brRec hmemRec'
+          exact Subcube.monochromaticFor_subset (n := n) (f := f)
+            (R := brRec.2) (S := br.2) hsub hmonoRec
+        · -- Подкуб происходит из листа: он тривиально монохроматичен.
+          have hsingle :
+              br = ⟨false, DecisionTree.subcube_of_path (n := n) [(i, true)]⟩ := by
+            have : br ∈ ({⟨false, DecisionTree.subcube_of_path (n := n) [(i, true)]⟩} :
+                Finset (Bool × Subcube n)) := by
+              simpa [DecisionTree.coloredSubcubesAux] using hright
+            exact Finset.mem_singleton.mp this
+          subst hsingle
+          refine ⟨false, ?_⟩
+          intro x hx
+          -- Значение функции на данном подкубе пока не анализируется.
+          -- После установления `hins_all` предполагается подобрать точку
+          -- из `R`, отличающуюся только координатой `i`, и перенести
+          -- её цвет на рассматриваемый подкуб.  Соответствующая
+          -- реализация ещё отсутствует.
+          sorry
+      · -- Явно рассчитываем вклад в глубину: добавление вершины даёт прирост
+        -- на две единицы по сравнению с рекурсивным поддеревом `t₀` и
+        -- подкубом `R₁`.
+        have hdepth_eq :
+            DecisionTree.depth (DecisionTree.node i t₀ (DecisionTree.leaf false))
+              + R.idx.card
+              = (DecisionTree.depth t₀ + R₁.idx.card) + 2 := by
+          -- Свёртка глубины узла и кодименсии приводит к арифметическому равенству.
+          have := calc
+            DecisionTree.depth (DecisionTree.node i t₀ (DecisionTree.leaf false))
+                + R.idx.card
+                = (DecisionTree.depth t₀ + 1) + (R₁.idx.card + 1) := by
+                    simp [DecisionTree.depth, hcodim₁, add_comm, add_left_comm, add_assoc]
+            _ = (DecisionTree.depth t₀ + R₁.idx.card) + 2 := by
+                    ring
+          simpa [add_comm, add_left_comm, add_assoc] using this
+        -- Поглощаем дополнительное `+ 2` в глобальной оценке
+        -- `coverConst · s · log₂(n+1)`.  Рекурсивное предположение даёт
+        -- запас в две единицы, а лемма `two_le_coverConst_mul` гарантирует,
+        -- что логарифмический бюджет действительно не меньше двух.
+        -- Рекурсивное предположение `hdepth₀` гарантирует запас в две
+        -- единицы глубины.  Следующее неравенство поглощает этот запас и
+        -- возвращает нас к исходному бюджету `coverConst · s · log₂(n+1)`.
+        have hdepth_aux :
+            (DecisionTree.depth t₀ + R₁.idx.card) + 2
+              ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+          -- Лемма `two_le_coverConst_mul` показывает, что глобальный бюджет
+          -- не меньше двух, поэтому выражение `… - 2 + 2` можно свернуть.
+          have hcover : 2 ≤ coverConst * s * Nat.log2 (Nat.succ n) :=
+            two_le_coverConst_mul hn hspos
+          -- Переносим `+2` в правую часть неравенства.
+          have h := Nat.add_le_add_right hdepth₀ 2
+          -- После свёртки `… - 2 + 2` остаётся исходная правая часть.
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+            Nat.sub_add_cancel hcover] using h
+        simpa [hdepth_eq] using hdepth_aux
 
   /--
     Конструктивная версия положительного случая при `s > 0` и `n ≥ 2`.

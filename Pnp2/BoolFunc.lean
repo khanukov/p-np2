@@ -224,6 +224,23 @@ lemma mem_unfix_of_mem {R : Subcube n} {i : Fin n} {x : Point n}
   have := hx j hjR
   simpa [unfix, hjR] using this
 
+/--
+Updating a point `x` inside a subcube `R` by changing the value at a single
+coordinate `i` yields another point of the relaxed subcube `R.unfix i`.  All
+other coordinates remain untouched, so the membership proof only needs to check
+the remaining constraints of `R`.
+-/
+lemma mem_unfix_update {R : Subcube n} {i : Fin n} {x : Point n} {b : Bool}
+    (hx : R.mem x) :
+    (unfix (R := R) i).mem (fun j => if j = i then b else x j) := by
+  classical
+  intro j hj
+  -- Membership in `R.unfix i` provides a proof that `j ≠ i` and `j ∈ R.idx`.
+  rcases Finset.mem_erase.mp hj with ⟨hne, hjR⟩
+  -- On such coordinates the updated point coincides with `x`.
+  have hxj := hx j hjR
+  simp [unfix, hne, hjR, hxj]  -- the `if`-statement simplifies via `hne`
+
 @[simp]
 lemma idx_unfix (R : Subcube n) (i : Fin n) :
     i ∉ (unfix (R := R) i).idx := by

@@ -901,21 +901,6 @@ lemma Subcube.monochromaticFor_unfix_of_insensitive {n : ℕ}
         simpa [x', hxflip] using hconst
       exact hxx
   exact hxswap.trans hxval
-
-/--
-If a Boolean function has bounded sensitivity and is constant on a
-large subcube fixing coordinate `i`, it cannot actually depend on `i`.
-The full combinatorial proof is deferred.
--/
-lemma coordSensitivity_zero_of_large_subcube
-    {n s : ℕ} [Fintype (Point n)] {f : BFunc n} {R : Subcube n} {i : Fin n}
-    (hmono : Subcube.monochromaticFor R f)
-    (Hsens : sensitivity f ≤ s)
-    (hRcodim_big : R.idx.card ≤ Fintype.card (Point n) * s) :
-    coordSensitivity f i = 0 := by
-  -- TODO: combinatorial argument using `hmono`, `Hsens` and `hRcodim_big`.
-  sorry
-
 /--
 Normalise a cover of the branch `F_b` so that none of its rectangles
 fixes the splitting coordinate `i`.  Rectangles that already avoid `i`

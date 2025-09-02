@@ -2240,6 +2240,295 @@ lemma cover_exists_mBound_choose_h
       (hn := hn) (hcard := le_rfl))
 
 /--
+If a point does not belong to a subcube, then there exists a coordinate in the
+index set of the subcube where the point disagrees with the fixed value.  This
+simple contraposition of the membership definition will be handy when
+reasoning about points outside a large monochromatic subcube.
+-/
+lemma not_mem_subcube_exists_mismatch {n : ℕ} {R : Subcube n}
+    {x : Point n} (hx : ¬ R.mem x) :
+    ∃ (i : Fin n) (hi : i ∈ R.idx), x i ≠ R.val i hi := by
+  classical
+  -- Unfold membership and negate the universal quantifiers.
+  unfold Subcube.mem at hx
+  -- First obtain a coordinate where the membership condition fails.
+  obtain ⟨i, hi⟩ := Classical.not_forall.1 hx
+  -- For that coordinate, extract the specific index witnessing the mismatch.
+  obtain ⟨hidx, hneq⟩ := Classical.not_forall.1 hi
+  -- Assemble the final witness.
+  exact ⟨i, hidx, hneq⟩
+
+/--
+From a point outside a subcube we can extract a coordinate where the point
+flips the fixed bit of the subcube.  This variant returns the equality with the
+negated bit, which is often more convenient for subsequent constructions. -/
+lemma not_mem_subcube_exists_mismatch_eq {n : ℕ} {R : Subcube n}
+    {x : Point n} (hx : ¬ R.mem x) :
+    ∃ (i : Fin n) (hi : i ∈ R.idx), x i = ! (R.val i hi) := by
+  classical
+  obtain ⟨i, hi, hneq⟩ := not_mem_subcube_exists_mismatch (R := R) (x := x) hx
+  -- Analyse the Boolean cases to convert inequality into equality with `!`.
+  cases hxi : x i with
+  | false =>
+      cases hRi : R.val i hi with
+      | false =>
+          have : False := by simpa [hxi, hRi] using hneq
+          cases this
+      | true =>
+          exact ⟨i, hi, by simpa [hxi, hRi]⟩
+  | true =>
+      cases hRi : R.val i hi with
+      | false =>
+          exact ⟨i, hi, by simpa [hxi, hRi]⟩
+      | true =>
+          have : False := by simpa [hxi, hRi] using hneq
+          cases this
+
+/--
+Construct a pointwise cover for the branch determined by forcing
+`x i = ! (R.val i hi)`.  The resulting rectangles live in the
+original space `n` and are monochromatic for every function in `F`.
+Moreover, every `1`-input satisfying this branch constraint lies in
+one of these rectangles and their total number is bounded by
+`Cover2.mBound n (n + 1)`.
+-/
+noncomputable def cover_outside_one_index
+    {n : ℕ} (F : Family n) (i : Fin n) (R : Subcube n)
+    [Fintype (Point n)]
+    (hnpos : 0 < n) (hi : i ∈ R.idx) :
+    ∃ Rset_i : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset_i, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x, x i = ! (R.val i hi) → f x = true →
+        ∃ R' ∈ Rset_i, x ∈ₛ R') ∧
+      Rset_i.card ≤ Cover2.mBound n (n + 1) := by
+  classical
+  -- Work in the restricted family fixing `i := !b` where `b` is the value of
+  -- the subcube `R` at coordinate `i`.
+  set b := R.val i hi
+  let Fb := F.restrict i (! b)
+  -- Obtain a pointwise cover for the restricted family with budget `h = n`.
+  have coverFb_struct : CoverResP
+      (F := Fb) (k := Cover2.mBound n (n + 1)) :=
+    buildCoverLex3 (F := Fb) (h := n) (hn := hnpos) (hcard := le_rfl)
+  -- Normalise so that none of the rectangles fixes the splitting coordinate `i`.
+  have hins : ∀ g ∈ Fb, coordSensitivity g i = 0 :=
+    coordSensitivity_family_restrict_self_zero (F := F) (i := i) (b := ! b)
+  obtain ⟨Rb', hmonoRb', hcovRb', hiRb', hcardRb'⟩ :=
+    cover_normalize_branch_pointwise
+      (F_b := Fb) (i := i) (b := ! b) (Rb := coverFb_struct.rects)
+      (hmono := by
+        intro R' hR' g hg
+        exact coverFb_struct.monoPw g hg R' hR')
+      (hcov := by
+        intro f hf x hxbranch hxtrue
+        exact coverFb_struct.covers f hf x hxtrue)
+      (hins := hins)
+  -- Lift the normalised rectangles back to the original space.
+  let Rset_i := Rb'.image (fun S => Subcube.extend S i (! b))
+  refine ⟨Rset_i, ?mono, ?cov, ?card⟩
+  · -- Monochromaticity transfers from the restricted family via `extend`/`restrict`.
+    intro f hf R' hR'
+    rcases Finset.mem_image.mp hR' with ⟨S, hS, rfl⟩
+    have hiS : i ∉ S.idx := hiRb' S hS
+    have hf_restrict : BFunc.restrictCoord f i (! b) ∈ Fb :=
+      (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+    have hmonoS := hmonoRb' S hS _ hf_restrict
+    simpa using
+      (Subcube.monochromaticFor_extend_restrict
+        (f := f) (R := S) (i := i) (b := ! b) hiS hmonoS)
+  · -- Coverage: first obtain a rectangle in the restricted family and then extend it.
+    intro f hf x hxi hxtrue
+    have hf_restrict : BFunc.restrictCoord f i (! b) ∈ Fb :=
+      (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+    have hxtrue' : BFunc.restrictCoord f i (! b) x = true := by
+      simpa [restrictCoord_agrees (f := f) (j := i) (b := ! b) (x := x) (h := hxi)] using hxtrue
+    obtain ⟨S, hS, hxS⟩ := hcovRb' _ hf_restrict _ hxi hxtrue'
+    refine ⟨Subcube.extend S i (! b), ?_, ?_⟩
+    · exact Finset.mem_image.mpr ⟨S, hS, rfl⟩
+    ·
+      have hiS : i ∉ S.idx := hiRb' S hS
+      have hmem :=
+        (Subcube.mem_extend_iff (R := S) (i := i) (b := ! b) (x := x) (hi := hiS)).2
+      exact hmem ⟨hxi, hxS⟩
+  · -- Cardinality bound: the image does not increase the size and normalisation
+    -- respects the bound provided by `buildCoverLex3`.
+    have hcard_image : Rset_i.card ≤ Rb'.card :=
+      Finset.card_image_le (s := Rb') (f := fun S => Subcube.extend S i (! b))
+    have hcard_cover : coverFb_struct.rects.card ≤ Cover2.mBound n (n + 1) := by
+      simpa using coverFb_struct.card_le
+    exact
+      le_trans hcard_image (le_trans hcardRb' hcard_cover)
+
+
+/--
+Helper lemma: build a pointwise cover for all inputs that mismatch `R`
+in *some* coordinate belonging to a fixed index set `I`.  The cover is
+obtained by uniting the branch covers from `cover_outside_one_index` over
+all indices in `I` and the cardinality is bounded by `I.card * mBound`.
+-/
+lemma cover_outside_by_index_set
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)]
+    (I : Finset (Fin n)) (hsubset : I ⊆ R.idx)
+    (hnpos : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x,
+          (∃ (j : Fin n) (hj : j ∈ I),
+              x j = ! (R.val j (hsubset hj))) →
+            f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ I.card * Cover2.mBound n (n + 1) := by
+  classical
+  -- We prove the statement by induction over `I`.
+  revert hsubset
+  refine Finset.induction_on I ?base ?step
+  · -- Base case: `I = ∅`.  The cover is empty and the coverage condition is vacuous.
+    intro hsubset
+    refine ⟨∅, ?_, ?_, ?_⟩
+    · intro f hf R' hR'; cases hR'
+    · intro f hf x hx _hx1
+      -- `hx` asserts the existence of a mismatching coordinate in the empty set,
+      -- which is impossible.
+      rcases hx with ⟨j, hj, _⟩
+      -- membership in the empty set yields an immediate contradiction
+      cases hj
+    · simpa
+  · -- Induction step: extend the cover by adding the branch corresponding to `i`.
+    intro i I hi ih hsubset_insert
+    -- Derive the subset condition for the induction hypothesis.
+    have hsubsetI : I ⊆ R.idx := by
+      intro j hj
+      exact hsubset_insert (Finset.mem_insert_of_mem hj)
+    -- Apply the induction hypothesis to the smaller index set.
+    obtain ⟨RsetI, hmonoI, hcovI, hcardI⟩ := ih hsubsetI
+    -- Build the cover for the new index `i`.
+    have hi_mem : i ∈ R.idx := hsubset_insert (Finset.mem_insert_self i I)
+    obtain ⟨Rseti, hmonoi, hcovi, hcardi⟩ :=
+      cover_outside_one_index (F := F) (i := i) (R := R)
+        (hnpos := hnpos) (hi := hi_mem)
+    -- Unite the two covers.
+    refine ⟨RsetI ∪ Rseti, ?_, ?_, ?_⟩
+    · -- Monochromaticity holds for all rectangles in the union.
+      intro f hf R' hR'
+      rcases Finset.mem_union.mp hR' with hR' | hR'
+      · exact hmonoI f hf R' hR'
+      · exact hmonoi f hf R' hR'
+    · -- Coverage: a mismatching coordinate lies either in `I` or is the new `i`.
+      intro f hf x hx hxtrue
+      rcases hx with ⟨j, hj, hbit⟩
+      have hj' := Finset.mem_insert.mp hj
+      cases hj' with
+        | inl hji =>
+            -- The mismatch occurs at the newly added index `i`.
+            have hxbranch : x i = ! (R.val i hi_mem) := by
+              simpa [hji] using hbit
+            rcases hcovi f hf x hxbranch hxtrue with ⟨Ri, hRi, hxRi⟩
+            exact ⟨Ri, Finset.mem_union.mpr (Or.inr hRi), hxRi⟩
+          | inr hjI =>
+              -- The mismatch belongs to the inductive set `I`.
+              rcases hcovI f hf x ⟨j, hjI, hbit⟩ hxtrue with ⟨Rj, hRj, hxRj⟩
+              exact ⟨Rj, Finset.mem_union.mpr (Or.inl hRj), hxRj⟩
+    · -- Cardinality bound: `|RsetI ∪ Rseti| ≤ |RsetI| + |Rseti|`.
+      have hcard_union : (RsetI ∪ Rseti).card ≤ RsetI.card + Rseti.card :=
+        Finset.card_union_le (s := RsetI) (t := Rseti)
+      have hcard_sum :
+          RsetI.card + Rseti.card ≤
+            I.card * Cover2.mBound n (n + 1) + Cover2.mBound n (n + 1) :=
+        Nat.add_le_add hcardI hcardi
+      have hcard_insert : (insert i I).card = I.card + 1 := by
+        simpa [Finset.card_insert_of_notMem hi, Nat.add_comm]
+      have hcard_final :
+          (RsetI ∪ Rseti).card ≤ (insert i I).card * Cover2.mBound n (n + 1) := by
+        have hcard'' := le_trans hcard_union hcard_sum
+        simpa [hcard_insert, Nat.succ_mul, Nat.mul_comm, Nat.mul_left_comm,
+          Nat.mul_assoc] using hcard''
+      exact hcard_final
+
+/--
+Cover all `1`-inputs that lie outside a fixed subcube `R`.  The resulting
+cover is obtained by uniting branch covers over all coordinates in `R.idx`.
+-/
+lemma cover_outside_common_cube_all
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)] (hnpos : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ R.idx.card * Cover2.mBound n (n + 1) := by
+  classical
+  -- First build the cover indexed by the full set `R.idx`.
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    cover_outside_by_index_set (F := F) (R := R)
+      (I := R.idx) (hsubset := by intro i hi; exact hi) (hnpos := hnpos)
+  -- Convert the coverage premise from an existential mismatch to `¬ R.mem x`.
+  refine ⟨Rset, hmono, ?_, hcard⟩
+  intro f hf x hxmem hxtrue
+  -- The mismatch witness directly provides the flipped coordinate.
+  obtain ⟨j, hj, hxbit⟩ :=
+    not_mem_subcube_exists_mismatch_eq (R := R) (x := x) hxmem
+  exact hcov f hf x ⟨j, hj, hxbit⟩ hxtrue
+
+/-- Package the exterior cover into a `CoverResP` structure. -/
+noncomputable def cover_outside_common_cube_mBound
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)] (hnpos : 0 < n) :
+    CoverResP (F := F) (R.idx.card * Cover2.mBound n (n + 1)) := by
+  classical
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    cover_outside_common_cube_all (F := F) (R := R) (hnpos := hnpos)
+  exact ⟨Rset, hmono, hcov, hcard⟩
+
+/-
+Combine a common monochromatic subcube with the exterior cover to obtain a
+global pointwise cover for the entire family.  The resulting cover consists of
+the subcube `R` itself together with the rectangles covering all points outside
+`R`.
+-/
+noncomputable def cover_with_common_cube
+    {n : ℕ} (F : Family n) (R : Subcube n) [Fintype (Point n)]
+    (hnpos : 0 < n)
+    (hmono : ∀ f ∈ F, Subcube.monochromaticFor R f) :
+    CoverResP (F := F) (1 + R.idx.card * Cover2.mBound n (n + 1)) := by
+  classical
+  -- Extract the exterior cover via classical choice.
+  let h :=
+    cover_outside_common_cube_all (F := F) (R := R) (hnpos := hnpos)
+  classical
+  let Rset_out := Classical.choose h
+  have h_spec := Classical.choose_spec h
+  have hmono_out : ∀ f ∈ F, ∀ R' ∈ Rset_out, Subcube.monochromaticFor R' f :=
+    h_spec.1
+  have hcov_out :
+      ∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset_out, x ∈ₛ R' :=
+    h_spec.2.1
+  have hcard_out : Rset_out.card ≤ R.idx.card * Cover2.mBound n (n + 1) :=
+    h_spec.2.2
+  refine
+    { rects := insert R Rset_out
+      , monoPw := ?_ , covers := ?_ , card_le := ?_ }
+  · -- Monochromaticity holds for `R` and all rectangles from the exterior cover.
+    intro f hf R' hR'
+    rcases Finset.mem_insert.mp hR' with hR' | hR'
+    · subst hR'
+      exact hmono f hf
+    · exact hmono_out f hf R' hR'
+  · -- Every `1`-input lies either in `R` or in the exterior cover.
+    intro f hf x hxtrue
+    by_cases hxR : R.mem x
+    · exact ⟨R, Finset.mem_insert_self _ _, hxR⟩
+    · obtain ⟨R', hR', hxR'⟩ := hcov_out f hf x hxR hxtrue
+      exact ⟨R', Finset.mem_insert.mpr (Or.inr hR'), hxR'⟩
+  · -- The cardinality increases by at most one when inserting `R`.
+    have hcard_insert :
+        (insert R Rset_out).card ≤ Rset_out.card + 1 :=
+      Finset.card_insert_le _ _
+    have hcard_out' :
+        Rset_out.card + 1 ≤ 1 + R.idx.card * Cover2.mBound n (n + 1) := by
+      have := Nat.add_le_add_right hcard_out 1
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+    exact hcard_insert.trans hcard_out'
+
+/--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
 The resulting tree queries the rectangles in `cover.rects` in an arbitrary
 order and returns `true` as soon as one of them matches the input.  Inputs not

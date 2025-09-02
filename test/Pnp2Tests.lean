@@ -124,6 +124,89 @@ example {n : ℕ} (x : Point n) (f : BFunc n) :
     funext i; simpa using (h_eq i)
   simp [this]
 
+/-- A point outside a subcube reveals the flipped coordinate. -/
+example :
+    ∃ (i : Fin 1)
+      (hi : i ∈ (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).idx),
+        (fun _ : Fin 1 => true) i =
+          ! (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).val i hi := by
+  classical
+  have hx :
+      ¬ (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).mem
+          (fun _ => true) := by
+    simp [Agreement.Subcube.fromPoint, Subcube.mem]
+  simpa using
+    not_mem_subcube_exists_mismatch_eq
+      (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (x := fun _ : Fin 1 => true) hx
+
+/-- The single-branch outside cover lemma applies to the one-bit family. -/
+example :
+    ∃ Rset : Finset (Subcube 1),
+      (∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+          ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+          ∀ x,
+            x 0 = ! (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).val
+                0 (by decide) →
+              f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ Cover2.mBound 1 (1 + 1) := by
+  classical
+  -- Instantiate `cover_outside_one_index` for the sole coordinate `0`.
+  simpa using
+    cover_outside_one_index
+      (F := ({fun x : Point 1 => x 0} : Family 1))
+      (i := 0)
+      (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (hnpos := Nat.succ_pos 0)
+      (hi := by decide)
+
+/-- The outside cover lemma applies to a simple one-bit family. -/
+example :
+    ∃ Rset : Finset (Subcube 1),
+      (∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+          ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+          ∀ x, ¬ (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).mem x →
+            f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤
+        (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).idx.card *
+          Cover2.mBound 1 (1 + 1) := by
+  classical
+  -- Directly instantiate `cover_outside_common_cube_all`.
+  simpa using
+    cover_outside_common_cube_all
+      (F := ({fun x : Point 1 => x 0} : Family 1))
+      (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (hnpos := Nat.succ_pos 0)
+
+/-- Combine a monochromatic subcube with its exterior cover. -/
+noncomputable example :
+    CoverResP (F := ({fun x : Point 1 => x 0} : Family 1))
+      (1 +
+        (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).idx.card *
+          Cover2.mBound 1 (1 + 1)) := by
+  classical
+  -- The subcube fixing coordinate `0` to `false` is monochromatic for the family.
+  have hmonoR :
+      ∀ f ∈ ({fun x : Point 1 => x 0} : Family 1),
+        Subcube.monochromaticFor
+          (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}) f := by
+    intro f hf
+    have hf' : f = (fun x : Point 1 => x 0) := by
+      simpa [Finset.mem_singleton] using hf
+    subst hf'
+    refine ⟨false, ?_⟩
+    intro y hy
+    have : y 0 = false := hy 0 (by decide)
+    simpa [this]
+  -- Instantiate the combined cover.
+  simpa using
+    cover_with_common_cube
+      (F := ({fun x : Point 1 => x 0} : Family 1))
+      (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (hnpos := Nat.succ_pos 0) (hmono := hmonoR)
+
 /-- Core-agreement for the trivial family containing only the constantly true function. -/
 example {n ℓ : ℕ} (x : Point n) :
     Agreement.Subcube.fromPoint (n := n) x Finset.univ |>.monochromaticForFamily

@@ -1781,7 +1781,7 @@ lemma coloredSubcubesAux_cons_subset_node_same (t₀ t₁ : DecisionTree n)
     (i : Fin n) (b : Bool) (p : List (Fin n × Bool)) (br : Bool × Subcube n)
     (hmem : br ∈ coloredSubcubesAux (n := n)
         (DecisionTree.node i t₀ t₁) ((i, b) :: p))
-    (hi : i ∉ (subcube_of_path (n := n) p).idx) :
+    (_hi : i ∉ (subcube_of_path (n := n) p).idx) :
     ∃ brRec ∈ coloredSubcubesAux (n := n)
         (DecisionTree.node i t₀ t₁) p,
       ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
@@ -1867,7 +1867,7 @@ lemma coloredSubcubesAux_cons_subset (t : DecisionTree n) (i : Fin n) (b : Bool)
         exact
           coloredSubcubesAux_cons_subset_node_same
             (t₀ := t0) (t₁ := t1) (i := i) (b := b)
-            (p := p) (br := br) (hmem := hmem) (hi := hi)
+            (p := p) (br := br) (hmem := hmem) (_hi := hi)
       ·
         -- Otherwise the branching coordinate `j` differs from `i`.  If `j`
         -- does not appear in the tail path `p` we may invoke the companion

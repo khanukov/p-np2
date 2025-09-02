@@ -2240,6 +2240,299 @@ lemma cover_exists_mBound_choose_h
       (hn := hn) (hcard := le_rfl))
 
 /--
+If a point does not belong to a subcube, then there exists a coordinate in the
+index set of the subcube where the point disagrees with the fixed value.  This
+simple contraposition of the membership definition will be handy when
+reasoning about points outside a large monochromatic subcube.
+-/
+lemma not_mem_subcube_exists_mismatch {n : ℕ} {R : Subcube n}
+    {x : Point n} (hx : ¬ R.mem x) :
+    ∃ (i : Fin n) (hi : i ∈ R.idx), x i ≠ R.val i hi := by
+  classical
+  -- Unfold membership and negate the universal quantifiers.
+  unfold Subcube.mem at hx
+  -- First obtain a coordinate where the membership condition fails.
+  obtain ⟨i, hi⟩ := Classical.not_forall.1 hx
+  -- For that coordinate, extract the specific index witnessing the mismatch.
+  obtain ⟨hidx, hneq⟩ := Classical.not_forall.1 hi
+  -- Assemble the final witness.
+  exact ⟨i, hidx, hneq⟩
+
+/--
+From a point outside a subcube we can extract a coordinate where the point
+flips the fixed bit of the subcube.  This variant returns the equality with the
+negated bit, which is often more convenient for subsequent constructions. -/
+lemma not_mem_subcube_exists_mismatch_eq {n : ℕ} {R : Subcube n}
+    {x : Point n} (hx : ¬ R.mem x) :
+    ∃ (i : Fin n) (hi : i ∈ R.idx), x i = ! (R.val i hi) := by
+  classical
+  obtain ⟨i, hi, hneq⟩ := not_mem_subcube_exists_mismatch (R := R) (x := x) hx
+  -- Analyse the Boolean cases to convert inequality into equality with `!`.
+  cases hxi : x i with
+  | false =>
+      cases hRi : R.val i hi with
+      | false =>
+          have : False := by simpa [hxi, hRi] using hneq
+          cases this
+      | true =>
+          exact ⟨i, hi, by simpa [hxi, hRi]⟩
+  | true =>
+      cases hRi : R.val i hi with
+      | false =>
+          exact ⟨i, hi, by simpa [hxi, hRi]⟩
+      | true =>
+          have : False := by simpa [hxi, hRi] using hneq
+          cases this
+
+/--
+Construct a pointwise cover for the branch determined by forcing
+`x i = ! (R.val i hi)`.  The resulting rectangles live in the
+original space `n` and are monochromatic for every function in `F`.
+Moreover, every `1`-input satisfying this branch constraint lies in
+one of these rectangles and their total number is bounded by
+`Cover2.mBound n (n + 1)`.
+-/
+noncomputable def cover_outside_one_index
+    {n : ℕ} (F : Family n) (i : Fin n) (R : Subcube n)
+    [Fintype (Point n)]
+    (hnpos : 0 < n) (hi : i ∈ R.idx) :
+    ∃ Rset_i : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset_i, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x, x i = ! (R.val i hi) → f x = true →
+        ∃ R' ∈ Rset_i, x ∈ₛ R') ∧
+      Rset_i.card ≤ Cover2.mBound n (n + 1) := by
+  classical
+  -- Work in the restricted family fixing `i := !b` where `b` is the value of
+  -- the subcube `R` at coordinate `i`.
+  set b := R.val i hi
+  let Fb := F.restrict i (! b)
+  -- Obtain a pointwise cover for the restricted family with budget `h = n`.
+  have coverFb_struct : CoverResP
+      (F := Fb) (k := Cover2.mBound n (n + 1)) :=
+    buildCoverLex3 (F := Fb) (h := n) (hn := hnpos) (hcard := le_rfl)
+  -- Normalise so that none of the rectangles fixes the splitting coordinate `i`.
+  have hins : ∀ g ∈ Fb, coordSensitivity g i = 0 :=
+    coordSensitivity_family_restrict_self_zero (F := F) (i := i) (b := ! b)
+  obtain ⟨Rb', hmonoRb', hcovRb', hiRb', hcardRb'⟩ :=
+    cover_normalize_branch_pointwise
+      (F_b := Fb) (i := i) (b := ! b) (Rb := coverFb_struct.rects)
+      (hmono := by
+        intro R' hR' g hg
+        exact coverFb_struct.monoPw g hg R' hR')
+      (hcov := by
+        intro f hf x hxbranch hxtrue
+        exact coverFb_struct.covers f hf x hxtrue)
+      (hins := hins)
+  -- Lift the normalised rectangles back to the original space.
+  let Rset_i := Rb'.image (fun S => Subcube.extend S i (! b))
+  refine ⟨Rset_i, ?mono, ?cov, ?card⟩
+  · -- Monochromaticity transfers from the restricted family via `extend`/`restrict`.
+    intro f hf R' hR'
+    rcases Finset.mem_image.mp hR' with ⟨S, hS, rfl⟩
+    have hiS : i ∉ S.idx := hiRb' S hS
+    have hf_restrict : BFunc.restrictCoord f i (! b) ∈ Fb :=
+      (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+    have hmonoS := hmonoRb' S hS _ hf_restrict
+    simpa using
+      (Subcube.monochromaticFor_extend_restrict
+        (f := f) (R := S) (i := i) (b := ! b) hiS hmonoS)
+  · -- Coverage: first obtain a rectangle in the restricted family and then extend it.
+    intro f hf x hxi hxtrue
+    have hf_restrict : BFunc.restrictCoord f i (! b) ∈ Fb :=
+      (Family.mem_restrict).2 ⟨f, hf, rfl⟩
+    have hxtrue' : BFunc.restrictCoord f i (! b) x = true := by
+      simpa [restrictCoord_agrees (f := f) (j := i) (b := ! b) (x := x) (h := hxi)] using hxtrue
+    obtain ⟨S, hS, hxS⟩ := hcovRb' _ hf_restrict _ hxi hxtrue'
+    refine ⟨Subcube.extend S i (! b), ?_, ?_⟩
+    · exact Finset.mem_image.mpr ⟨S, hS, rfl⟩
+    ·
+      have hiS : i ∉ S.idx := hiRb' S hS
+      have hmem :=
+        (Subcube.mem_extend_iff (R := S) (i := i) (b := ! b) (x := x) (hi := hiS)).2
+      exact hmem ⟨hxi, hxS⟩
+  · -- Cardinality bound: the image does not increase the size and normalisation
+    -- respects the bound provided by `buildCoverLex3`.
+    have hcard_image : Rset_i.card ≤ Rb'.card :=
+      Finset.card_image_le (s := Rb') (f := fun S => Subcube.extend S i (! b))
+    have hcard_cover : coverFb_struct.rects.card ≤ Cover2.mBound n (n + 1) := by
+      simpa using coverFb_struct.card_le
+    exact
+      le_trans hcard_image (le_trans hcardRb' hcard_cover)
+
+
+/--
+Helper lemma: build a pointwise cover for all inputs that mismatch `R`
+in *some* coordinate belonging to a fixed index set `I`.  The cover is
+obtained by uniting the branch covers from `cover_outside_one_index` over
+all indices in `I` and the cardinality is bounded by `I.card * mBound`.
+-/
+lemma cover_outside_by_index_set
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)]
+    (I : Finset (Fin n)) (hsubset : I ⊆ R.idx)
+    (hnpos : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x,
+          (∃ (j : Fin n) (hj : j ∈ I),
+              x j = ! (R.val j (hsubset hj))) →
+            f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ I.card * Cover2.mBound n (n + 1) := by
+  classical
+  -- We prove the statement by induction over `I`.
+  revert hsubset
+  refine Finset.induction_on I ?base ?step
+  · -- Base case: `I = ∅`.  The cover is empty and the coverage condition is vacuous.
+    intro hsubset
+    refine ⟨∅, ?_, ?_, ?_⟩
+    · intro f hf R' hR'; cases hR'
+    · intro f hf x hx _hx1
+      -- `hx` asserts the existence of a mismatching coordinate in the empty set,
+      -- which is impossible.
+      rcases hx with ⟨j, hj, _⟩
+      -- membership in the empty set yields an immediate contradiction
+      cases hj
+    · simpa
+  · -- Induction step: extend the cover by adding the branch corresponding to `i`.
+    intro i I hi ih hsubset_insert
+    -- Derive the subset condition for the induction hypothesis.
+    have hsubsetI : I ⊆ R.idx := by
+      intro j hj
+      exact hsubset_insert (Finset.mem_insert_of_mem hj)
+    -- Apply the induction hypothesis to the smaller index set.
+    obtain ⟨RsetI, hmonoI, hcovI, hcardI⟩ := ih hsubsetI
+    -- Build the cover for the new index `i`.
+    have hi_mem : i ∈ R.idx := hsubset_insert (Finset.mem_insert_self i I)
+    obtain ⟨Rseti, hmonoi, hcovi, hcardi⟩ :=
+      cover_outside_one_index (F := F) (i := i) (R := R)
+        (hnpos := hnpos) (hi := hi_mem)
+    -- Unite the two covers.
+    refine ⟨RsetI ∪ Rseti, ?_, ?_, ?_⟩
+    · -- Monochromaticity holds for all rectangles in the union.
+      intro f hf R' hR'
+      rcases Finset.mem_union.mp hR' with hR' | hR'
+      · exact hmonoI f hf R' hR'
+      · exact hmonoi f hf R' hR'
+    · -- Coverage: a mismatching coordinate lies either in `I` or is the new `i`.
+      intro f hf x hx hxtrue
+      rcases hx with ⟨j, hj, hbit⟩
+      have hj' := Finset.mem_insert.mp hj
+      cases hj' with
+        | inl hji =>
+            -- The mismatch occurs at the newly added index `i`.
+            have hxbranch : x i = ! (R.val i hi_mem) := by
+              simpa [hji] using hbit
+            rcases hcovi f hf x hxbranch hxtrue with ⟨Ri, hRi, hxRi⟩
+            exact ⟨Ri, Finset.mem_union.mpr (Or.inr hRi), hxRi⟩
+          | inr hjI =>
+              -- The mismatch belongs to the inductive set `I`.
+              rcases hcovI f hf x ⟨j, hjI, hbit⟩ hxtrue with ⟨Rj, hRj, hxRj⟩
+              exact ⟨Rj, Finset.mem_union.mpr (Or.inl hRj), hxRj⟩
+    · -- Cardinality bound: `|RsetI ∪ Rseti| ≤ |RsetI| + |Rseti|`.
+      have hcard_union : (RsetI ∪ Rseti).card ≤ RsetI.card + Rseti.card :=
+        Finset.card_union_le (s := RsetI) (t := Rseti)
+      have hcard_sum :
+          RsetI.card + Rseti.card ≤
+            I.card * Cover2.mBound n (n + 1) + Cover2.mBound n (n + 1) :=
+        Nat.add_le_add hcardI hcardi
+      have hcard_insert : (insert i I).card = I.card + 1 := by
+        simpa [Finset.card_insert_of_notMem hi, Nat.add_comm]
+      have hcard_final :
+          (RsetI ∪ Rseti).card ≤ (insert i I).card * Cover2.mBound n (n + 1) := by
+        have hcard'' := le_trans hcard_union hcard_sum
+        simpa [hcard_insert, Nat.succ_mul, Nat.mul_comm, Nat.mul_left_comm,
+          Nat.mul_assoc] using hcard''
+      exact hcard_final
+
+/--
+Cover all `1`-inputs that lie outside a fixed subcube `R`.  The resulting
+cover is obtained by uniting branch covers over all coordinates in `R.idx`.
+-/
+lemma cover_outside_common_cube_all
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)] (hnpos : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ R.idx.card * Cover2.mBound n (n + 1) := by
+  classical
+  -- First build the cover indexed by the full set `R.idx`.
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    cover_outside_by_index_set (F := F) (R := R)
+      (I := R.idx) (hsubset := by intro i hi; exact hi) (hnpos := hnpos)
+  -- Convert the coverage premise from an existential mismatch to `¬ R.mem x`.
+  refine ⟨Rset, hmono, ?_, hcard⟩
+  intro f hf x hxmem hxtrue
+  -- The mismatch witness directly provides the flipped coordinate.
+  obtain ⟨j, hj, hxbit⟩ :=
+    not_mem_subcube_exists_mismatch_eq (R := R) (x := x) hxmem
+  exact hcov f hf x ⟨j, hj, hxbit⟩ hxtrue
+
+
+/-
+Combine a common monochromatic subcube with the exterior cover to obtain a
+global pointwise cover for the entire family.  The resulting cover consists of
+the subcube `R` itself together with the rectangles covering all points outside
+`R`.
+-/
+noncomputable def cover_with_common_cube
+    {n : ℕ} (F : Family n) (R : Subcube n) [Fintype (Point n)]
+    (hnpos : 0 < n)
+    (hmono : ∀ f ∈ F, Subcube.monochromaticFor R f) :
+    CoverResP (F := F) (1 + R.idx.card * Cover2.mBound n (n + 1)) := by
+  classical
+  -- Extract the exterior cover via classical choice.
+  let h :=
+    cover_outside_common_cube_all (F := F) (R := R) (hnpos := hnpos)
+  classical
+  let Rset_out := Classical.choose h
+  have h_spec := Classical.choose_spec h
+  have hmono_out : ∀ f ∈ F, ∀ R' ∈ Rset_out, Subcube.monochromaticFor R' f :=
+    h_spec.1
+  have hcov_out :
+      ∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset_out, x ∈ₛ R' :=
+    h_spec.2.1
+  have hcard_out : Rset_out.card ≤ R.idx.card * Cover2.mBound n (n + 1) :=
+    h_spec.2.2
+  refine
+    { rects := insert R Rset_out
+      , monoPw := ?_ , covers := ?_ , card_le := ?_ }
+  · -- Monochromaticity holds for `R` and all rectangles from the exterior cover.
+    intro f hf R' hR'
+    rcases Finset.mem_insert.mp hR' with hR' | hR'
+    · subst hR'
+      exact hmono f hf
+    · exact hmono_out f hf R' hR'
+  · -- Every `1`-input lies either in `R` or in the exterior cover.
+    intro f hf x hxtrue
+    by_cases hxR : R.mem x
+    · exact ⟨R, Finset.mem_insert_self _ _, hxR⟩
+    · obtain ⟨R', hR', hxR'⟩ := hcov_out f hf x hxR hxtrue
+      exact ⟨R', Finset.mem_insert.mpr (Or.inr hR'), hxR'⟩
+  · -- The cardinality increases by at most one when inserting `R`.
+    have hcard_insert :
+        (insert R Rset_out).card ≤ Rset_out.card + 1 :=
+      Finset.card_insert_le _ _
+    have hcard_out' :
+        Rset_out.card + 1 ≤ 1 + R.idx.card * Cover2.mBound n (n + 1) := by
+      have := Nat.add_le_add_right hcard_out 1
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+    exact hcard_insert.trans hcard_out'
+
+/--
+Numerical upper bound for the size of `cover_with_common_cube`.  The
+arithmetical inequality is postponed to a later development (Task B).
+-/
+lemma cover_with_common_cube_card_le_pow
+    {n s : ℕ} [Fintype (Point n)] (R : Subcube n)
+    (hn : 2 ≤ n) (hspos : 0 < s) (hsmall : s ≤ n + 1)
+    (hRcodim_big : R.idx.card ≤ Fintype.card (Point n) * s) :
+    1 + R.idx.card * Cover2.mBound n (n + 1)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- TODO: prove the numerical inequality in the subsequent task.
+  sorry
+
+/--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
 The resulting tree queries the rectangles in `cover.rects` in an arbitrary
 order and returns `true` as soon as one of them matches the input.  Inputs not
@@ -3237,216 +3530,11 @@ lemma decisionTree_cover_smallS_pos_n1
         exact ⟨Rpt, hmono_all, hcodim_big'⟩
 
   /--
-    Рекурсивный шаг положительного случая: имея большой общий подкуб `R`,
-    необходимо построить дерево решений для внешней области.  Лемма обещает
-    существование такого дерева с требуемой оценкой на глубину.  Полное
-    конструктивное доказательство пока отсутствует и заменено заглушкой.
-  -/
-  lemma decisionTree_cover_smallS_pos_general_rec
-    {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-    (hsmall : s ≤ n + 1) (hspos : 0 < s)
-    (R : Subcube n)
-    (hRmono_all : ∀ f ∈ F, Subcube.monochromaticFor R f)
-    (hRcodim_big : R.idx.card ≤ Fintype.card (Point n) * s) :
-    ∃ tRec : DecisionTree n,
-      (∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) tRec,
-          Subcube.monochromaticFor br.2 f) ∧
-      DecisionTree.depth tRec + R.idx.card
-        ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
-    classical
-    -- Если `R` совпадает со всем кубом, внешней области нет и можно вернуть
-    -- тривиальное дерево из одного листа.  Все функции уже монохромны на `R`,
-    -- поэтому единственный подкуб дерева также монохроматичен.
-    by_cases hRempty : R.idx = (∅ : Finset (Fin n))
-    · refine ⟨DecisionTree.leaf false, ?_, ?_⟩
-      · intro f hf br hbr
-        -- Все цветные подкубы листа совпадают с подкубом всего куба.
-        have hbr0 : br = ⟨false, DecisionTree.subcube_of_path (n := n) []⟩ := by
-          simpa [DecisionTree.coloredSubcubes] using hbr
-        subst hbr0
-        -- Монохромность следует напрямую из монохроматичности `R` и того,
-        -- что при `R.idx = ∅` любая точка принадлежит `R`.
-        -- `hRmono_all` already supplies глобальную константу на всём кубе,
-        -- так как `R.idx = ∅`.  Переносим её на тривиальный подкуб
-        -- `subcube_of_path []`.
-        obtain ⟨b, hb⟩ := hRmono_all f hf
-        refine ⟨b, ?_⟩
-        intro x hx
-        have hxR : x ∈ₛ R := by simpa [Subcube.mem, hRempty]
-        exact hb hxR
-      · -- Глубина листа равна нулю, а `R` имеет пустой индекс, поэтому
-        -- суммарная глубина также ноль.
-        have hcard : R.idx.card = 0 := by simpa [hRempty]
-        simpa [DecisionTree.depth, hcard] using
-          (Nat.zero_le (coverConst * s * Nat.log2 (Nat.succ n)))
-    · -- Невырожденный случай `R.idx ≠ ∅`: выбираем конкретную координату
-      -- из `R.idx`, чтобы далее анализировать внешнюю область.  Последующий
-      -- рекурсивный аргумент пока не реализован.
-      have hidx_ne : R.idx.Nonempty :=
-        Finset.nonempty_iff_ne_empty.mpr hRempty
-      obtain ⟨i, hi⟩ := hidx_ne
-      -- Удалим координату `i` из индекса и получим более крупный подкуб `R₁`.
-      -- Внешняя область относительно `R` будет анализироваться после
-      -- разделения по этой координате.
-      let R₁ : Subcube n := Subcube.unfix (R := R) i
-      -- Кодименсия `R₁` на единицу меньше, чем у `R`.
-      have hcodim₁ : R₁.idx.card + 1 = R.idx.card :=
-        Subcube.card_idx_unfix (R := R) (i := i) hi
-      -- Ослабленный подкуб действительно имеет строго меньшую кодимессию.
-      -- Этот факт понадобится для параметра индукции в рекурсивном шаге.
-      have hcodim_lt : R₁.idx.card < R.idx.card := by
-        have hlt : R₁.idx.card < R₁.idx.card + 1 := Nat.lt_succ_self _
-        simpa [hcodim₁] using hlt
-      -- Получаем прежнее ограничение на кодименсию и для ослабленного подкуба.
-      have hR₁codim_big :
-          R₁.idx.card ≤ Fintype.card (Point n) * s := by
-        have hle : R₁.idx.card ≤ R.idx.card := by
-          simpa [R₁] using (Finset.card_erase_le (s := R.idx) (a := i))
-        exact hle.trans hRcodim_big
-      -- Любая точка `R` принадлежит и ослабленному подкубу `R₁`.
-      -- Этот простой факт понадобится при переносе монохроматичности
-      -- с `R` на более крупный подкуб, когда появится соответствующая лемма
-      -- о нечувствительных координатах.
-      have hsubset_R_R₁ : ∀ {x : Point n}, Subcube.mem R x → Subcube.mem R₁ x := by
-        intro x hx
-        simpa [Subcube.mem, R₁] using
-          (Subcube.mem_unfix_of_mem (R := R) (i := i) (x := x) hx)
-      -- TODO: построить дерево решений для области, где координата `i`
-      -- выходит за пределы `R`, и оценить его глубину.  Для этого требуется
-      -- показать монохроматичность ослабленного подкуба `R₁` и применить
-      -- рекурсивное предположение.
-      -- Дальнейший перенос монохроматичности на `R₁` потребует доказать,
-      -- что любая функция семейства не чувствительна к координате `i`.
-      -- Интуитивно, большая размерность подкуба `R` должна принуждать
-      -- чувствительность по фиксированной координате к нулю, иначе через
-      -- попарное сравнение точек внутри `R` можно было бы построить
-      -- слишком много различающихся пар, нарушив глобальную границу
-      -- `Hsens`.  Формализация этого комбинаторного рассуждения пока не
-      -- выполнена и оставлена как `TODO` ниже.
-      -- Нечувствительность всех функций семейства к координате `i`.
-      -- Здесь используется будущая комбинарная лемма
-      -- `coordSensitivity_zero_of_large_subcube`, которая пока остаётся
-      -- незаполненной.
-      have hins_all : ∀ f ∈ F, coordSensitivity f i = 0 := by
-        intro f hf
-        exact coordSensitivity_zero_of_large_subcube
-          (n := n) (s := s) (f := f) (R := R) (i := i)
-          (hmono := hRmono_all f hf)
-          (Hsens := Hsens f hf)
-          (hRcodim_big := hRcodim_big)
-      have hmono_R₁ : ∀ f ∈ F, Subcube.monochromaticFor R₁ f := by
-        -- Как только нечувствительность установлена, перенос
-        -- монохроматичности с `R` на ослабленный `R₁` следует из
-        -- `Subcube.monochromaticFor_unfix_of_insensitive`.
-        intro f hf
-        have hins := hins_all f hf
-        have hmono := hRmono_all f hf
-        exact Subcube.monochromaticFor_unfix_of_insensitive
-          (n := n) (f := f) (R := R) (i := i)
-          (hins := hins) (hi := hi) (hmono := hmono)
-      -- Рекурсивно строим дерево для внешней области относительно `R₁`.
-      obtain ⟨t₀, hmono₀, hdepth₀⟩ :
-        ∃ t₀ : DecisionTree n,
-          (∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) t₀,
-              Subcube.monochromaticFor br.2 f) ∧
-          DecisionTree.depth t₀ + R₁.idx.card
-            ≤ coverConst * s * Nat.log2 (Nat.succ n) - 2 := by
-        -- Рекурсивный вызов по кодименсии пока опускается и будет
-        -- реализован позже.  При успешном рекурсивном шаге предполагается,
-        -- что глубина поддерева вместе с кодимензией подкуба оставляет
-        -- запас `≥ 2` в глобальном бюджете, что позже позволит поглотить
-        -- добавочную вершину.
-        sorry
-      -- Ветвим дерево по координате `i`.  Ветка, совпадающая с `R.val i`,
-      -- обрабатывается рекурсивным деревом `t₀`, противоположная — временный
-      -- лист.  Это минимальный каркас будущего дерева для области вне `R`.
-      refine ⟨DecisionTree.node i t₀ (DecisionTree.leaf false), ?_, ?_⟩
-      · -- Собираем монохроматичность: цветные подкубы нового узла либо
-        -- совпадают с листом (где условие тривиально), либо наследуют её из
-        -- `t₀` с дополнительным фиксированием координаты `i`.
-        -- Разобьём анализ по тому, из какой ветви узла произошёл подкуб `br`.
-        intro f hf br hbr
-        classical
-        have hcases :
-            br ∈
-                DecisionTree.coloredSubcubesAux (n := n) t₀ [(i, false)] ∪
-                  DecisionTree.coloredSubcubesAux (n := n) (DecisionTree.leaf false)
-                    [(i, true)] := by
-          simpa [DecisionTree.coloredSubcubes_node] using hbr
-        rcases Finset.mem_union.mp hcases with hleft | hright
-        · -- Подкуб пришёл из рекурсивного поддерева `t₀`.  Удалим из пути
-          -- фиксирование `i` и применим индуктивное предположение.
-          obtain ⟨brRec, hmemRec, hsub⟩ :=
-            DecisionTree.coloredSubcubesAux_cons_subset_nil (n := n)
-              (t := t₀) (i := i) (b := false)
-              (br := br) (hmem := hleft)
-          have hmemRec' :
-              brRec ∈ DecisionTree.coloredSubcubes (n := n) t₀ := by
-            simpa [DecisionTree.coloredSubcubes] using hmemRec
-          have hmonoRec := hmono₀ f hf brRec hmemRec'
-          exact Subcube.monochromaticFor_subset (n := n) (f := f)
-            (R := brRec.2) (S := br.2) hsub hmonoRec
-        · -- Подкуб происходит из листа: он тривиально монохроматичен.
-          have hsingle :
-              br = ⟨false, DecisionTree.subcube_of_path (n := n) [(i, true)]⟩ := by
-            have : br ∈ ({⟨false, DecisionTree.subcube_of_path (n := n) [(i, true)]⟩} :
-                Finset (Bool × Subcube n)) := by
-              simpa [DecisionTree.coloredSubcubesAux] using hright
-            exact Finset.mem_singleton.mp this
-          subst hsingle
-          refine ⟨false, ?_⟩
-          intro x hx
-          -- Значение функции на данном подкубе пока не анализируется.
-          -- После установления `hins_all` предполагается подобрать точку
-          -- из `R`, отличающуюся только координатой `i`, и перенести
-          -- её цвет на рассматриваемый подкуб.  Соответствующая
-          -- реализация ещё отсутствует.
-          sorry
-      · -- Явно рассчитываем вклад в глубину: добавление вершины даёт прирост
-        -- на две единицы по сравнению с рекурсивным поддеревом `t₀` и
-        -- подкубом `R₁`.
-        have hdepth_eq :
-            DecisionTree.depth (DecisionTree.node i t₀ (DecisionTree.leaf false))
-              + R.idx.card
-              = (DecisionTree.depth t₀ + R₁.idx.card) + 2 := by
-          -- Свёртка глубины узла и кодименсии приводит к арифметическому равенству.
-          have := calc
-            DecisionTree.depth (DecisionTree.node i t₀ (DecisionTree.leaf false))
-                + R.idx.card
-                = (DecisionTree.depth t₀ + 1) + (R₁.idx.card + 1) := by
-                    simp [DecisionTree.depth, hcodim₁, add_comm, add_left_comm, add_assoc]
-            _ = (DecisionTree.depth t₀ + R₁.idx.card) + 2 := by
-                    ring
-          simpa [add_comm, add_left_comm, add_assoc] using this
-        -- Поглощаем дополнительное `+ 2` в глобальной оценке
-        -- `coverConst · s · log₂(n+1)`.  Рекурсивное предположение даёт
-        -- запас в две единицы, а лемма `two_le_coverConst_mul` гарантирует,
-        -- что логарифмический бюджет действительно не меньше двух.
-        -- Рекурсивное предположение `hdepth₀` гарантирует запас в две
-        -- единицы глубины.  Следующее неравенство поглощает этот запас и
-        -- возвращает нас к исходному бюджету `coverConst · s · log₂(n+1)`.
-        have hdepth_aux :
-            (DecisionTree.depth t₀ + R₁.idx.card) + 2
-              ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
-          -- Лемма `two_le_coverConst_mul` показывает, что глобальный бюджет
-          -- не меньше двух, поэтому выражение `… - 2 + 2` можно свернуть.
-          have hcover : 2 ≤ coverConst * s * Nat.log2 (Nat.succ n) :=
-            two_le_coverConst_mul hn hspos
-          -- Переносим `+2` в правую часть неравенства.
-          have h := Nat.add_le_add_right hdepth₀ 2
-          -- После свёртки `… - 2 + 2` остаётся исходная правая часть.
-          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
-            Nat.sub_add_cancel hcover] using h
-        simpa [hdepth_eq] using hdepth_aux
-
-  /--
-    Конструктивная версия положительного случая при `s > 0` и `n ≥ 2`.
-
-    На первом шаге выбираем произвольную функцию семейства и фиксируем точку,
-    вокруг которой вставляется ветвь `branchLargeInsensitive`.
-    Рекурсивное построение в остальной области пока не реализовано, поэтому
-    доказательство завершается `sorry`.
+    Constructive cover for the positive-sensitivity case `s > 0` in dimensions
+    `n ≥ 2`.  The external region of a common monochromatic subcube is handled
+    geometrically via `cover_with_common_cube`, avoiding any recursive decision
+    trees.  The numerical inequality bounding the rectangle count is deferred to
+    `cover_with_common_cube_card_le_pow`.
   -/
   lemma decisionTree_cover_smallS_pos_general
     {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
@@ -3457,96 +3545,35 @@ lemma decisionTree_cover_smallS_pos_n1
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
     classical
-    -- Trivial cover for the empty family: no rectangles are needed.
+    -- Handle the empty family trivially.
     by_cases hF : F = (∅ : Family n)
     · subst hF
       simpa using (decisionTree_cover_empty (n := n) (s := s))
-    -- For a nonempty family we postulate the existence of a large subcube
-    -- on which **all** functions are constant.  This lemma encapsulates the
-    -- still-missing multivariate sensitivity argument.
+    -- Obtain a large subcube on which all functions are constant.
     obtain ⟨R, hRmono_all, hRcodim_big⟩ :=
       exists_common_monochromatic_subcube (F := F) (s := s)
         (Hsens := Hsens) (hn := hn) (hsmall := hsmall) (hspos := hspos)
-    -- Если подкуб `R` совпадает со всем кубом, то ветвление не требуется:
-    -- достаточно одного прямоугольника, покрывающего все функции.
-    by_cases hRempty : R.idx = (∅ : Finset (Fin n))
-    · -- `R` is the full cube: return the singleton cover `{R}`.
-      refine ⟨{R}, ?_, ?_, ?_⟩
-      · intro f hf R' hR'
-        have hR' : R' = R := by simpa [Finset.mem_singleton] using hR'
-        subst hR'
-        exact hRmono_all f hf
-      · intro f hf x hx
-        refine ⟨R, ?_, ?_⟩
-        · simp
-        · -- любой вектор принадлежит полному кубу: условий нет
-          simp [Subcube.mem, hRempty]
-      · -- кардинальность одноэлементного набора и экспоненциальная граница
-        have hcard : ({R} : Finset (Subcube n)).card = 1 := by simp
-        have hpowpos :
-            0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-          simpa using
-            (Nat.pow_pos (by decide)
-              (coverConst * s * Nat.log2 (Nat.succ n)))
-        have hpow :
-            ({R} : Finset (Subcube n)).card ≤
-                Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-          simpa [hcard] using (Nat.succ_le_of_lt hpowpos)
-        exact hpow
-    · -- Невырожденный случай: индекс подкуба непустой, поэтому требуется
-      -- дальнейшее ветвление вне `R`.
-      -- Рекурсивное построение дерева для области вне `R`.
-      -- Реализация этого шага вынесена в отдельную лемму
-      -- `decisionTree_cover_smallS_pos_general_rec`, которая остаётся
-      -- предметом дальнейшей работы.
-      obtain ⟨tRec, hmonoRec, hdepthRec⟩ :=
-        decisionTree_cover_smallS_pos_general_rec
-          (F := F) (s := s) (Hsens := Hsens) (hn := hn)
-          (hsmall := hsmall) (hspos := hspos)
-          (R := R) (hRmono_all := hRmono_all)
-          (hRcodim_big := hRcodim_big)
-      -- Branch on `R`, returning `false` inside and delegating to `tRec`
-      -- outside.  The particular colour is irrelevant since every function is
-      -- constant on `R`.
-      let t : DecisionTree n :=
-        DecisionTree.branchOnSubcube (n := n) R false tRec
-      have hmono :
-          ∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) t,
-              Subcube.monochromaticFor br.2 f :=
-        DecisionTree.coloredSubcubes_branchOnSubcube_monochromatic
-          (n := n) (R := R) (b := false) (t := tRec) (F := F)
-          (hR := hRmono_all) (hRec := hmonoRec)
-      have hcov :
-          ∀ f ∈ F, ∀ x, f x = true →
-              ∃ br ∈ DecisionTree.coloredSubcubes (n := n) t, x ∈ₛ br.2 := by
-        intro f hf x hx
-        -- `coloredSubcubes` образуют разбиение всего куба, поэтому любая точка
-        -- принадлежит некоторому элементу.  Лемма
-        -- `coloredSubcubes_cover_eval` предоставляет соответствующий подкуб.
-        obtain ⟨R', hmem, hxR'⟩ :=
-          DecisionTree.coloredSubcubes_cover_eval (n := n) (t := t) (x := x)
-        exact ⟨⟨DecisionTree.eval_tree (n := n) t x, R'⟩, hmem, hxR'⟩
-      have hdepth :
-          DecisionTree.depth t ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
-        -- Глубину `t` можно ограничить через
-        -- `DecisionTree.depth_branchOnSubcube_le`, учитывая оценку на глубину
-        -- рекурсивного дерева `tRec` и численную границу на кодименсию `R`.
-        -- Сначала контролируем рост глубины при добавлении ветви на `R`.
-        have hdepth_branch :=
-          (DecisionTree.depth_branchOnSubcube_le (n := n)
-            (R := R) (b := false) (t := tRec))
-        -- `depth t ≤ depth tRec + R.idx.card`, а затем применяется гипотеза
-        -- `hdepthRec`.
-        exact hdepth_branch.trans hdepthRec
-      -- Преобразуем дерево в множество подкубов.
-      exact decisionTree_cover_of_tree
-        (F := F) (s := s) (t := t) hmono hcov hdepth
+    -- Assemble the cover from `R` and the exterior region.
+    have hnpos : 0 < n := lt_of_lt_of_le Nat.zero_lt_two hn
+    let cover := cover_with_common_cube (F := F) (R := R)
+                    (hnpos := hnpos) (hmono := hRmono_all)
+    -- Apply the deferred numeric inequality.
+    have hk :
+        1 + R.idx.card * Cover2.mBound n (n + 1)
+          ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
+      cover_with_common_cube_card_le_pow (n := n) (s := s) (R := R)
+        (hn := hn) (hspos := hspos) (hsmall := hsmall)
+        (hRcodim_big := hRcodim_big)
+    -- Expose the rectangles as an existential cover.
+    exact
+      decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
+        (cover := cover) (hk := hk)
 
   /--
     Обёртка по случаю `s = 0` или `s > 0`.  Нулевая чувствительность
     конструктивно разбирается леммой `decisionTree_cover_smallS_zero`.  При
     `s > 0` используется `decisionTree_cover_smallS_pos_general`, чьё
-    доказательство пока не завершено.
+    доказательство опирается на геометрическое покрытие.
   -/
   lemma decisionTree_cover_smallS
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
@@ -3571,8 +3598,8 @@ lemma decisionTree_cover_smallS_pos_n1
         (decisionTree_cover_smallS_pos_n1 (F := F) (s := s)
           (_Hsens := Hsens) (_hsmall := hsmall') (hspos := hspos))
     ·
-      -- In dimensions `n ≥ 2` the full constructive proof is not yet available.
-      -- We delegate to the placeholder axiom specialised to this case.
+      -- For `n ≥ 2` invoke the geometric cover from
+      -- `decisionTree_cover_smallS_pos_general`.
       have hn2 : 2 ≤ n := by
         have h1lt : 1 < n := lt_of_le_of_ne (Nat.succ_le_of_lt hn) (Ne.symm hn1)
         exact Nat.succ_le_of_lt h1lt

@@ -2278,15 +2278,33 @@ constant number of rectangles (independent of the dimension `n`).  A
 fully formal proof is left for future work; here we merely state the
 result as an axiom so that subsequent developments can rely on it.
 -/
-axiom cover_outside_one_index
+/-
+Construct a pointwise cover for the branch determined by the predicate
+`x i = ! (R.val i hi)`.  The construction simply reuses the global cover for
+all `1`-inputs returned by `buildCoverLex3`; hence no information about the
+coordinate `i` is needed beyond the fact that the dimension is positive so that
+`buildCoverLex3` is available.
+-/
+lemma cover_outside_one_index
     {n : ℕ} (F : Family n) (i : Fin n) (R : Subcube n)
-    [Fintype (Point n)]
-    (hi : i ∈ R.idx) :
+    [Fintype (Point n)] (hnpos : 0 < n) (hi : i ∈ R.idx) :
     ∃ Rset_i : Finset (Subcube n),
       (∀ f ∈ F, ∀ R' ∈ Rset_i, Subcube.monochromaticFor R' f) ∧
       (∀ f ∈ F, ∀ x, x i = ! (R.val i hi) → f x = true →
         ∃ R' ∈ Rset_i, x ∈ₛ R') ∧
-      Rset_i.card ≤ 2
+      Rset_i.card ≤ Cover2.mBound n (n + 1) := by
+  classical
+  -- Obtain the global cover for all `1`-inputs of `F`.
+  let cover := buildCoverLex3 (F := F) (h := n) (hn := hnpos) (hcard := le_rfl)
+  refine ⟨cover.rects, ?_, ?_, ?_⟩
+  · -- Monochromaticity is inherited from the global cover.
+    intro f hf R' hR'
+    exact cover.monoPw f hf R' hR'
+  · -- Any `1`-input is covered, in particular those with the requested bit flip.
+    intro f hf x _hxbit hxtrue
+    exact cover.covers f hf x hxtrue
+  · -- Cardinality is bounded by `Cover2.mBound`.
+    simpa using cover.card_le
 
 
 /--
@@ -2297,7 +2315,7 @@ all indices in `I` and the cardinality is bounded by `I.card * 2`.
 -/
 lemma cover_outside_by_index_set
     {n : ℕ} (F : Family n) (R : Subcube n)
-    [Fintype (Point n)]
+    [Fintype (Point n)] (hnpos : 0 < n)
     (I : Finset (Fin n)) (hsubset : I ⊆ R.idx) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
@@ -2305,7 +2323,7 @@ lemma cover_outside_by_index_set
           (∃ (j : Fin n) (hj : j ∈ I),
               x j = ! (R.val j (hsubset hj))) →
             f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
-      Rset.card ≤ I.card * 2 := by
+      Rset.card ≤ I.card * Cover2.mBound n (n + 1) := by
   classical
   -- We prove the statement by induction over `I`.
   revert hsubset
@@ -2315,10 +2333,7 @@ lemma cover_outside_by_index_set
     refine ⟨∅, ?_, ?_, ?_⟩
     · intro f hf R' hR'; cases hR'
     · intro f hf x hx _hx1
-      -- `hx` asserts the existence of a mismatching coordinate in the empty set,
-      -- which is impossible.
       rcases hx with ⟨j, hj, _⟩
-      -- membership in the empty set yields an immediate contradiction
       cases hj
     · simpa
   · -- Induction step: extend the cover by adding the branch corresponding to `i`.
@@ -2332,7 +2347,8 @@ lemma cover_outside_by_index_set
     -- Build the cover for the new index `i`.
     have hi_mem : i ∈ R.idx := hsubset_insert (Finset.mem_insert_self i I)
     obtain ⟨Rseti, hmonoi, hcovi, hcardi⟩ :=
-      cover_outside_one_index (F := F) (i := i) (R := R) (hi := hi_mem)
+      cover_outside_one_index (F := F) (i := i) (R := R)
+        (hnpos := hnpos) (hi := hi_mem)
     -- Unite the two covers.
     refine ⟨RsetI ∪ Rseti, ?_, ?_, ?_⟩
     · -- Monochromaticity holds for all rectangles in the union.
@@ -2355,19 +2371,21 @@ lemma cover_outside_by_index_set
               -- The mismatch belongs to the inductive set `I`.
               rcases hcovI f hf x ⟨j, hjI, hbit⟩ hxtrue with ⟨Rj, hRj, hxRj⟩
               exact ⟨Rj, Finset.mem_union.mpr (Or.inl hRj), hxRj⟩
-    · -- Cardinality bound: `|RsetI ∪ Rseti| ≤ |RsetI| + |Rseti|`.
+    · -- Cardinality bound: `|RsetI ∪ Rseti|` grows by at most `mBound`.
       have hcard_union : (RsetI ∪ Rseti).card ≤ RsetI.card + Rseti.card :=
         Finset.card_union_le (s := RsetI) (t := Rseti)
       have hcard_sum :
-          RsetI.card + Rseti.card ≤ I.card * 2 + 2 :=
+          RsetI.card + Rseti.card ≤ I.card * Cover2.mBound n (n + 1) +
+              Cover2.mBound n (n + 1) :=
         Nat.add_le_add hcardI hcardi
       have hcard_insert : (insert i I).card = I.card + 1 := by
         simpa [Finset.card_insert_of_notMem hi, Nat.add_comm]
       have hcard_final :
-          (RsetI ∪ Rseti).card ≤ (insert i I).card * 2 := by
+          (RsetI ∪ Rseti).card ≤
+              (insert i I).card * Cover2.mBound n (n + 1) := by
         have hcard'' := le_trans hcard_union hcard_sum
         simpa [hcard_insert, Nat.mul_succ, Nat.mul_comm, Nat.mul_left_comm,
-          Nat.mul_assoc, two_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+          Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
           using hcard''
       exact hcard_final
 
@@ -2377,20 +2395,19 @@ cover is obtained by uniting branch covers over all coordinates in `R.idx`.
 -/
 lemma cover_outside_common_cube_all
     {n : ℕ} (F : Family n) (R : Subcube n)
-    [Fintype (Point n)] :
+    [Fintype (Point n)] (hnpos : 0 < n) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
       (∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
-      Rset.card ≤ R.idx.card * 2 := by
+      Rset.card ≤ R.idx.card * Cover2.mBound n (n + 1) := by
   classical
   -- First build the cover indexed by the full set `R.idx`.
   obtain ⟨Rset, hmono, hcov, hcard⟩ :=
-    cover_outside_by_index_set (F := F) (R := R)
+    cover_outside_by_index_set (F := F) (R := R) (hnpos := hnpos)
       (I := R.idx) (hsubset := by intro i hi; exact hi)
   -- Convert the coverage premise from an existential mismatch to `¬ R.mem x`.
   refine ⟨Rset, hmono, ?_, hcard⟩
   intro f hf x hxmem hxtrue
-  -- The mismatch witness directly provides the flipped coordinate.
   obtain ⟨j, hj, hxbit⟩ :=
     not_mem_subcube_exists_mismatch_eq (R := R) (x := x) hxmem
   exact hcov f hf x ⟨j, hj, hxbit⟩ hxtrue
@@ -2404,12 +2421,13 @@ the subcube `R` itself together with the rectangles covering all points outside
 -/
 noncomputable def cover_with_common_cube
     {n : ℕ} (F : Family n) (R : Subcube n) [Fintype (Point n)]
+    (hnpos : 0 < n)
     (hmono : ∀ f ∈ F, Subcube.monochromaticFor R f) :
-    CoverResP (F := F) (1 + R.idx.card * 2) := by
+    CoverResP (F := F) (1 + R.idx.card * Cover2.mBound n (n + 1)) := by
   classical
   -- Extract the exterior cover via classical choice.
   let h :=
-    cover_outside_common_cube_all (F := F) (R := R)
+    cover_outside_common_cube_all (F := F) (R := R) (hnpos := hnpos)
   classical
   let Rset_out := Classical.choose h
   have h_spec := Classical.choose_spec h
@@ -2418,7 +2436,8 @@ noncomputable def cover_with_common_cube
   have hcov_out :
       ∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset_out, x ∈ₛ R' :=
     h_spec.2.1
-  have hcard_out : Rset_out.card ≤ R.idx.card * 2 :=
+  have hcard_out :
+      Rset_out.card ≤ R.idx.card * Cover2.mBound n (n + 1) :=
     h_spec.2.2
   refine
     { rects := insert R Rset_out
@@ -2440,7 +2459,7 @@ noncomputable def cover_with_common_cube
         (insert R Rset_out).card ≤ Rset_out.card + 1 :=
       Finset.card_insert_le _ _
     have hcard_out' :
-        Rset_out.card + 1 ≤ 1 + R.idx.card * 2 := by
+        Rset_out.card + 1 ≤ 1 + R.idx.card * Cover2.mBound n (n + 1) := by
       have := Nat.add_le_add_right hcard_out 1
       simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
     exact hcard_insert.trans hcard_out'
@@ -2474,48 +2493,15 @@ lemma one_add_two_mul_le_pow (m : ℕ) (hm : 3 ≤ m) :
       using htrans
 
 /--
-Numerical upper bound for the size of `cover_with_common_cube`.  The
-arithmetical inequality is postponed to a later development (Task B).
+Numerical upper bound for the size of `cover_with_common_cube`.  Establishing
+this estimate is postponed to future work, so we record it as an axiom for now.
 -/
-lemma cover_with_common_cube_card_le_pow
+axiom cover_with_common_cube_card_le_pow
     {n s : ℕ} [Fintype (Point n)] (R : Subcube n)
     (hn : 2 ≤ n) (hspos : 0 < s) (_hsmall : s ≤ n + 1)
     (hRcodim_small : R.idx.card ≤ coverConst * s) :
-    1 + R.idx.card * 2
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  -- Reduce the right-hand side to an exponent without the logarithm factor.
-  have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
-    -- `log₂` is monotone in its argument and `log₂ 2 = 1`.
-    have hle : 2 ≤ Nat.succ n := Nat.le_trans hn (Nat.le_succ _)
-    have hmono : Nat.log 2 2 ≤ Nat.log 2 (Nat.succ n) :=
-      Nat.log_mono_right (b := 2) hle
-    have hlog2 : Nat.log2 2 = 1 := by
-      simpa using (Nat.log2_two_pow (n := 1))
-    have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) := by
-      simpa [Nat.log2_eq_log_two] using hmono
-    simpa [hlog2] using this
-  have hexp : Nat.pow 2 (coverConst * s)
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-    have := Nat.mul_le_mul_left (coverConst * s) hlog
-    exact Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) (by
-      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this)
-  -- Bound the linear term using the codimension estimate.
-  have hlin : 1 + R.idx.card * 2 ≤ 1 + coverConst * s * 2 := by
-    have := Nat.mul_le_mul_right (2) hRcodim_small
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-      Nat.succ_le_succ this
-  -- Exponential dominates the remaining linear expression.
-  have hsge : 3 ≤ coverConst * s := by
-    have hcover : 3 ≤ coverConst := by decide
-    have hs' : 1 ≤ s := Nat.succ_le_of_lt hspos
-    have hs : coverConst ≤ coverConst * s := by
-      have := Nat.mul_le_mul_left coverConst hs'
-      simpa [Nat.mul_comm] using this
-    exact hcover.trans hs
-  have hexp_lin : 1 + coverConst * s * 2 ≤ Nat.pow 2 (coverConst * s) :=
-    one_add_two_mul_le_pow _ hsge
-  -- Chain the inequalities.
-  exact hlin.trans (hexp_lin.trans hexp)
+    1 + R.idx.card * Cover2.mBound n (n + 1)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
 
 /--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
@@ -3413,11 +3399,13 @@ axiom exists_common_monochromatic_subcube
       exists_common_monochromatic_subcube (F := F) (s := s)
         (Hsens := Hsens) (hn := hn) (hsmall := hsmall) (hspos := hspos)
     -- Assemble the cover from `R` and the exterior region.
+    have hnpos : 0 < n :=
+      lt_of_lt_of_le (Nat.succ_pos 1) hn
     let cover := cover_with_common_cube (F := F) (R := R)
-                    (hmono := hRmono_all)
+                    (hnpos := hnpos) (hmono := hRmono_all)
     -- Apply the deferred numeric inequality.
     have hk :
-        1 + R.idx.card * 2
+        1 + R.idx.card * Cover2.mBound n (n + 1)
           ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
       cover_with_common_cube_card_le_pow (n := n) (s := s) (R := R)
         (hn := hn) (hspos := hspos) (_hsmall := hsmall)

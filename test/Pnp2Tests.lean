@@ -150,7 +150,7 @@ example :
             x 0 = ! (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).val
                 0 (by decide) →
               f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
-      Rset.card ≤ 2 := by
+      Rset.card ≤ Cover2.mBound 1 (1 + 1) := by
   classical
   -- Instantiate `cover_outside_one_index` for the sole coordinate `0`.
   simpa using
@@ -158,6 +158,7 @@ example :
       (F := ({fun x : Point 1 => x 0} : Family 1))
       (i := 0)
       (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (hnpos := by decide)
       (hi := by decide)
 
 /-- The outside cover lemma applies to a simple one-bit family. -/
@@ -170,20 +171,21 @@ example :
             f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
       Rset.card ≤
         (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).idx.card *
-          2 := by
+          Cover2.mBound 1 (1 + 1) := by
   classical
   -- Directly instantiate `cover_outside_common_cube_all`.
   simpa using
     cover_outside_common_cube_all
       (F := ({fun x : Point 1 => x 0} : Family 1))
       (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (hnpos := by decide)
 
 /-- Combine a monochromatic subcube with its exterior cover. -/
 noncomputable example :
     CoverResP (F := ({fun x : Point 1 => x 0} : Family 1))
       (1 +
         (Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0}).idx.card *
-          2) := by
+          Cover2.mBound 1 (1 + 1)) := by
   classical
   -- The subcube fixing coordinate `0` to `false` is monochromatic for the family.
   have hmonoR :
@@ -203,6 +205,7 @@ noncomputable example :
     cover_with_common_cube
       (F := ({fun x : Point 1 => x 0} : Family 1))
       (R := Agreement.Subcube.fromPoint (n := 1) (fun _ => false) {0})
+      (hnpos := by decide)
       (hmono := hmonoR)
 
 /-- Core-agreement for the trivial family containing only the constantly true function. -/

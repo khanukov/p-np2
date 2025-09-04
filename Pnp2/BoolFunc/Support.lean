@@ -49,8 +49,9 @@ lemma exists_true_on_support {f : BFunc n} (h : support f ≠ ∅) :
 /-!
 If two Boolean points agree on every coordinate belonging to the *essential*
 `support` of a function, then that function evaluates to the same result on
-both points.  The combinatorial proof—incrementally updating coordinates
-outside the support—is still pending and will replace this placeholder.
+both points.
+The combinatorial proof—incrementally updating coordinates
+outside the support—is now complete.
 -/
 lemma eval_eq_of_agree_on_support {f : BFunc n} {x y : Point n}
     (h : ∀ i ∈ support f, x i = y i) :

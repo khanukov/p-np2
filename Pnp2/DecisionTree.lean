@@ -709,14 +709,31 @@ lemma toList_nodup_fst (R : Subcube n) :
   -- Substitute and conclude.
   simpa [hfst] using hmap_nodup
 
+/--
+Every subcube contains at least one point.  A witness can be constructed by
+assigning the prescribed values on the fixed coordinates and an arbitrary
+default value elsewhere (we choose `false`).
+-/
+lemma nonempty (R : Subcube n) : ∃ x : Point n, R.mem x := by
+  classical
+  -- Define the candidate point.
+  let x : Point n := fun i => if h : i ∈ R.idx then R.val i h else false
+  refine ⟨x, ?_⟩
+  -- On coordinates fixed by `R`, `x` agrees by construction.
+  intro i hi
+  simp [x, hi]
+
 end Subcube
 
 open Subcube
-
 namespace DecisionTree
 
 variable {n : ℕ}
 
+/--
+If a point belongs to a subcube `R`, then it satisfies every assignment encoded
+in `R.toList`.
+-/
 lemma agreesWithAssignments_toList_of_mem {R : Subcube n} {x : Point n}
     (hx : x ∈ₛ R) :
     agreesWithAssignments (n := n) x (Subcube.toList (n := n) R) := by
@@ -1690,6 +1707,46 @@ lemma mem_subcube_idx_of_mem_path (i : Fin n)
       · have hidx := ih (List.mem_map.mpr ⟨(i, b'), htl, rfl⟩)
         exact Finset.mem_insert.mpr (Or.inr hidx)
 
+/--
+A subcube can be reconstructed from the list of assignments produced by
+`Subcube.toList`.  This shows that the list representation faithfully encodes the
+subcube.  The proof of value equality is left as a future improvement.
+-/
+lemma subcube_of_path_eq_self (R : Subcube n) :
+    subcube_of_path (n := n) (Subcube.toList (n := n) R) = R := by
+  classical
+  -- Compare index sets and value functions separately.
+  ext j
+  · -- Index sets coincide.
+    constructor
+    · intro hj
+      have hmem :=
+        subcube_of_path_idx_subset_map_fst_toFinset (n := n)
+          (p := Subcube.toList (n := n) R) hj
+      have hmem' : j ∈ (Subcube.toList (n := n) R).map Prod.fst := by
+        simpa using hmem
+      simpa [Subcube.toList] using hmem'
+    · intro hj
+      have hpair : (j, R.val j hj) ∈ Subcube.toList (n := n) R := by
+        unfold Subcube.toList
+        set l := R.idx.attach.toList
+        set l' := l.mergeSort (fun a b => a.1 < b.1)
+        have hjl : ((⟨j, hj⟩) : {i // i ∈ R.idx}) ∈ l := by
+          simpa [l] using (List.mem_toList.mpr (Finset.mem_attach _ _))
+        have hjl' : ((⟨j, hj⟩) : {i // i ∈ R.idx}) ∈ l' :=
+          (List.mem_mergeSort (le := fun a b : {i // i ∈ R.idx} => a.1 < b.1)
+            (a := ⟨j, hj⟩) (l := l)).2 hjl
+        exact List.mem_map.2 ⟨⟨j, hj⟩, hjl', rfl⟩
+      -- Convert pair membership to membership of the first component.
+      have hi : j ∈ (Subcube.toList (n := n) R).map Prod.fst :=
+        List.mem_map.2 ⟨(j, R.val j hj), hpair, rfl⟩
+      have hidx := mem_subcube_idx_of_mem_path (n := n) (i := j)
+          (p := Subcube.toList (n := n) R) hi
+      simpa using hidx
+  · -- Value functions coincide: left as future work.
+    -- TODO: prove value equality rigorously.
+    sorry
+
 /-!
 Every evaluation of the decision tree is witnessed by a suitably
 labelled subcube in `coloredSubcubes` containing the input.  This
@@ -2110,7 +2167,8 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
         -- When the path is empty the tree is a single leaf, whose only
         -- coloured subcube is `subcube_of_path []`.  This contradicts `hne`.
         simp [matchSubcube, coloredSubcubes, coloredSubcubesAux] at hmem
-        rcases Finset.mem_singleton.mp hmem with rfl
+        -- The membership reduces to equality with the unique leaf subcube.
+        cases hmem
         simp [subcube_of_path] at hne
     | cons hd tl ih =>
         intro hnodup hmem hne
@@ -2170,10 +2228,8 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
   have hnodup : ((Subcube.toList (n := n) R).map Prod.fst).Nodup :=
     toList_nodup_fst (n := n) R
   have hne' : br.2 ≠ subcube_of_path (n := n) (Subcube.toList (n := n) R) := by
-    -- This step relies on the fact that `subcube_of_path (R.toList) = R`.
-    -- Proving this auxiliary lemma is postponed.
-    -- With such a lemma, the result follows from the assumption `hne`.
-    sorry
+    -- The principal subcube of `branchOnSubcube` is exactly `R`.
+    simpa [subcube_of_path_eq_self (n := n) (R := R)] using hne
   exact h_gen (Subcube.toList (n := n) R) hnodup hmem' hne'
 
 

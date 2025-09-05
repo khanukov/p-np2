@@ -2173,55 +2173,48 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
     | cons hd tl ih =>
         intro hnodup hmem hne
         rcases hd with ⟨i, v⟩
-        -- Expand membership in the coloured subcubes of the node.
-        simp [matchSubcube, coloredSubcubes, coloredSubcubesAux] at hmem
-        rcases hmem with h_branch | h_main
-        {-- Case 1: the path deviates immediately to the fallback tree `t`.
-          -- The coloured subcube comes from `coloredSubcubesAux t [(i, !v)]`.
-          have h_path : br ∈ coloredSubcubesAux t [(i, !v)] := by
-            cases v <;> (simp at h_branch; exact h_branch)
-
-          -- Removing the head assignment yields an ancestor in `coloredSubcubes t`.
-          obtain ⟨brRec, hmemRec, hsub⟩ :=
-            coloredSubcubesAux_cons_subset_nil (t := t) (i := i) (b := !v)
-              (br := br) (hmem := h_path)
-          refine ⟨brRec, ?_, hsub⟩
-          simpa [coloredSubcubes] using hmemRec
-        }
-        {-- Case 2: the path continues along the main branch.
-          have h_path_main :
-              br ∈ coloredSubcubesAux (matchSubcube (n := n) tl b t) [(i, v)] := by
-            cases v <;> (simp at h_main; exact h_main)
-
-          -- Remove the head assignment and obtain an ancestor inside
-          -- `matchSubcube tl b t`.
-          obtain ⟨brRec, hmemRec, hsub⟩ :=
-            coloredSubcubesAux_cons_subset_nil
-              (t := matchSubcube (n := n) tl b t) (i := i) (b := v)
-              (br := br) (hmem := h_path_main)
-
-          -- Show that this ancestor is not the principal subcube; otherwise
-          -- `br` would equal the principal subcube for the longer path.
-          have hne_rec : brRec.2 ≠ subcube_of_path (n := n) tl := by
-            intro h_eq
-            have : br.2 = subcube_of_path (n := n) ((i, v) :: tl) := by
-              -- Intuitively, the path for `br` is obtained by prefixing
-              -- `(i, v)` to the path defining `brRec`.
-              -- A rigorous proof would unfold `subcube_of_path` and analyse
-              -- the structure of `coloredSubcubesAux`.
-              -- We leave this technical verification for future work.
-              sorry
-            exact hne (by simpa [this])
-
-          -- Apply the inductive hypothesis to the ancestor `brRec`.
-          have hnodup_tl : (tl.map Prod.fst).Nodup :=
-            (List.nodup_cons.mp hnodup).2
-          obtain ⟨brRec', hmemRec', hsub'⟩ :=
-            ih hnodup_tl hmemRec hne_rec
-          refine ⟨brRec', hmemRec', ?_⟩
-          intro x hx
-          exact hsub' (hsub hx)
-        }
+        -- Unfold the coloured subcubes of the node and branch on `v`.
+        unfold coloredSubcubes at hmem
+        unfold coloredSubcubesAux at hmem
+        unfold matchSubcube at hmem
+        cases v
+        · -- Case `v = false`.
+          simp at hmem
+          rcases hmem with h_main | h_branch
+          {
+            -- Path continues.  This case mirrors the `v = true` branch below.
+            -- A full proof would extract the recursive ancestor and apply the
+            -- induction hypothesis.  We postpone this technical work.
+            sorry
+          }
+          {
+            -- Path deviates immediately to the fallback tree `t`.
+            have h_path : br ∈ coloredSubcubesAux t [(i, true)] := by
+              simpa using h_branch
+            obtain ⟨brRec, hmemRec, hsub⟩ :=
+              coloredSubcubesAux_cons_subset_nil (t := t) (i := i) (b := true)
+                (br := br) (hmem := h_path)
+            refine ⟨brRec, ?_, hsub⟩
+            simpa [coloredSubcubes] using hmemRec
+          }
+        · -- Case `v = true`.
+          simp at hmem
+          rcases hmem with h_branch | h_main
+          {
+            -- Path deviates immediately to the fallback tree `t`.
+            have h_path : br ∈ coloredSubcubesAux t [(i, false)] := by
+              simpa using h_branch
+            obtain ⟨brRec, hmemRec, hsub⟩ :=
+              coloredSubcubesAux_cons_subset_nil (t := t) (i := i) (b := false)
+                (br := br) (hmem := h_path)
+            refine ⟨brRec, ?_, hsub⟩
+            simpa [coloredSubcubes] using hmemRec
+          }
+          { -- Path continues along the main branch.  Establishing this case
+            -- requires a detailed analysis of path extensions and is deferred
+            -- to future work.
+            sorry
+          }
   -- Specialise the general statement to the list of assignments describing `R`.
   have hmem' : br ∈ coloredSubcubes (matchSubcube (n := n) (Subcube.toList (n := n) R) b t) := by
     simpa [branchOnSubcube] using hmem

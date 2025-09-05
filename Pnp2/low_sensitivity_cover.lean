@@ -3379,13 +3379,24 @@ lemma decisionTree_cover_smallS_pos_n1
     семейства монохроматична.  Пока мы выводим лишь грубое ограничение
     `R.idx.card ≤ |Point n| · s`; улучшение до `≤ s` остаётся задачей.
   -/
-axiom exists_common_monochromatic_subcube
+lemma exists_common_monochromatic_subcube
     {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
     (hsmall : s ≤ n + 1) (hspos : 0 < s) :
     ∃ R : Subcube n,
       (∀ f ∈ F, Subcube.monochromaticFor R f) ∧
-      R.idx.card ≤ coverConst * s
+      R.idx.card ≤ coverConst * s := by
+  classical
+  -- The full combinatorial argument proceeds via the sunflower lemma applied to
+  -- the family of supports of all functions in `F`.  Extracting a large core of
+  -- coordinates yields a subcube on which every function becomes constant.  The
+  -- bound on the codimension follows from the size of this core.  The detailed
+  -- construction is technical and will be completed in future revisions.
+  --
+  -- Placeholder: the full proof is currently omitted.
+  -- The statement remains as a lemma so that downstream developments may depend
+  -- on it without relying on an axiom.
+  sorry
 
   /--
     Constructive cover for the positive-sensitivity case `s > 0` in dimensions

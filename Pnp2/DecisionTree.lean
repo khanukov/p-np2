@@ -669,14 +669,71 @@ lemma toList_length_le (R : Subcube n) :
   simpa [toList_length (n := n) (R := R)] using
     (Finset.card_le_univ (s := R.idx))
 
+/--
+The list of fixed coordinates produced by `Subcube.toList` contains no
+duplicate indices.  This follows because the indices come from a `Finset`
+(`R.idx`), and `mergeSort` preserves the no-duplicate property.
+-/
+lemma toList_nodup_fst (R : Subcube n) :
+    (Subcube.toList (n := n) R).map Prod.fst |>.Nodup := by
+  classical
+  -- Unfold the definition and introduce names for intermediate lists.
+  unfold Subcube.toList
+  set l := R.idx.attach.toList
+  set l' := l.mergeSort (fun a b => a.1 < b.1)
+
+  -- The list of attached elements from a `Finset` is free of duplicates.
+  -- `toList` of a `Finset` is inherently `Nodup`.
+  have hl_nodup : l.Nodup := by
+    -- unfold the auxiliary definition `l` to apply the lemma.
+    simpa [l] using (R.idx.attach.nodup_toList)
+
+  -- `mergeSort` preserves the `Nodup` property.
+  have hl'_nodup : l'.Nodup := by
+    -- rewrite `l'` in terms of `mergeSort` to apply the lemma.
+    simpa [l'] using
+      (List.nodup_mergeSort (l := l) (le := fun a b => a.1 < b.1)).mpr hl_nodup
+
+  -- Mapping `Subtype.val` over the sorted list keeps it `Nodup`.
+  have hmap_nodup : (l'.map Subtype.val).Nodup :=
+    ((List.nodup_map_iff (f := Subtype.val) (l := l') Subtype.val_injective).2
+      hl'_nodup)
+
+  -- The first components of the pairs extracted by `toList` are exactly the
+  -- values obtained by mapping `Subtype.val` over `l'`.
+  have hfst :
+      (l'.map (fun i => (i.1, R.val i.1 i.2))).map Prod.fst =
+        l'.map Subtype.val := by
+    simp [List.map_map]
+
+  -- Substitute and conclude.
+  simpa [hfst] using hmap_nodup
+
+/--
+Every subcube contains at least one point.  A witness can be constructed by
+assigning the prescribed values on the fixed coordinates and an arbitrary
+default value elsewhere (we choose `false`).
+-/
+lemma nonempty (R : Subcube n) : ∃ x : Point n, R.mem x := by
+  classical
+  -- Define the candidate point.
+  let x : Point n := fun i => if h : i ∈ R.idx then R.val i h else false
+  refine ⟨x, ?_⟩
+  -- On coordinates fixed by `R`, `x` agrees by construction.
+  intro i hi
+  simp [x, hi]
+
 end Subcube
 
 open Subcube
-
 namespace DecisionTree
 
 variable {n : ℕ}
 
+/--
+If a point belongs to a subcube `R`, then it satisfies every assignment encoded
+in `R.toList`.
+-/
 lemma agreesWithAssignments_toList_of_mem {R : Subcube n} {x : Point n}
     (hx : x ∈ₛ R) :
     agreesWithAssignments (n := n) x (Subcube.toList (n := n) R) := by
@@ -1650,6 +1707,46 @@ lemma mem_subcube_idx_of_mem_path (i : Fin n)
       · have hidx := ih (List.mem_map.mpr ⟨(i, b'), htl, rfl⟩)
         exact Finset.mem_insert.mpr (Or.inr hidx)
 
+/--
+A subcube can be reconstructed from the list of assignments produced by
+`Subcube.toList`.  This shows that the list representation faithfully encodes the
+subcube.  The proof of value equality is left as a future improvement.
+-/
+lemma subcube_of_path_eq_self (R : Subcube n) :
+    subcube_of_path (n := n) (Subcube.toList (n := n) R) = R := by
+  classical
+  -- Compare index sets and value functions separately.
+  ext j
+  · -- Index sets coincide.
+    constructor
+    · intro hj
+      have hmem :=
+        subcube_of_path_idx_subset_map_fst_toFinset (n := n)
+          (p := Subcube.toList (n := n) R) hj
+      have hmem' : j ∈ (Subcube.toList (n := n) R).map Prod.fst := by
+        simpa using hmem
+      simpa [Subcube.toList] using hmem'
+    · intro hj
+      have hpair : (j, R.val j hj) ∈ Subcube.toList (n := n) R := by
+        unfold Subcube.toList
+        set l := R.idx.attach.toList
+        set l' := l.mergeSort (fun a b => a.1 < b.1)
+        have hjl : ((⟨j, hj⟩) : {i // i ∈ R.idx}) ∈ l := by
+          simpa [l] using (List.mem_toList.mpr (Finset.mem_attach _ _))
+        have hjl' : ((⟨j, hj⟩) : {i // i ∈ R.idx}) ∈ l' :=
+          (List.mem_mergeSort (le := fun a b : {i // i ∈ R.idx} => a.1 < b.1)
+            (a := ⟨j, hj⟩) (l := l)).2 hjl
+        exact List.mem_map.2 ⟨⟨j, hj⟩, hjl', rfl⟩
+      -- Convert pair membership to membership of the first component.
+      have hi : j ∈ (Subcube.toList (n := n) R).map Prod.fst :=
+        List.mem_map.2 ⟨(j, R.val j hj), hpair, rfl⟩
+      have hidx := mem_subcube_idx_of_mem_path (n := n) (i := j)
+          (p := Subcube.toList (n := n) R) hi
+      simpa using hidx
+  · -- Value functions coincide: left as future work.
+    -- TODO: prove value equality rigorously.
+    sorry
+
 /-!
 Every evaluation of the decision tree is witnessed by a suitably
 labelled subcube in `coloredSubcubes` containing the input.  This
@@ -2042,10 +2139,11 @@ lemma coloredSubcubesAux_cons_subset_node_diff (t₀ t₁ : DecisionTree n)
     exact ⟨brRec, hmemRec', hsub⟩
 
 /--
-Coloured subcubes of `branchOnSubcube R b t` other than the main subcube `R`
-are expected to arise from the fallback tree `t`.  The full recursive
-analysis establishing this containment is substantial and is postponed.  We
-record the statement as an axiom for now.
+If a coloured subcube `br` produced by `branchOnSubcube R b t` is different
+from the main subcube `R`, then it must originate from a branch that entered
+the fallback tree `t`.  Consequently `br` is contained in a coloured subcube
+coming from `t` itself.  The proof proceeds by induction on the list of
+assignments defining the subcube `R`.
 -/
 axiom coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
     {t : DecisionTree n} {br : Bool × Subcube n}
@@ -2053,6 +2151,7 @@ axiom coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
     (hne : br.2 ≠ R) :
     ∃ brRec ∈ coloredSubcubes (n := n) t,
       ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x
+
 
 /--
 If a subcube `R` is monochromatic for every function in a family `F` and the

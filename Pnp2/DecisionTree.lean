@@ -2051,6 +2051,47 @@ lemma coloredSubcubesAux_cons_subset (t : DecisionTree n) (i : Fin n) (b : Bool)
             exact ⟨brRec, hmemRec', hsub⟩
 
 /--
+Any coloured subcube `br` produced by `coloredSubcubesAux t p` corresponds to a
+sub-cube of the one defined by the initial path `p`.  The proof proceeds by
+induction on the tree.
+-/
+lemma subcube_of_coloredSubcubesAux_le_subcube_of_path (t : DecisionTree n)
+    (p : List (Fin n × Bool)) (br : Bool × Subcube n)
+    (hmem : br ∈ coloredSubcubesAux (n := n) t p)
+    (hnodup : (p.map Prod.fst).Nodup) :
+    ∀ x, br.2.mem x → (subcube_of_path (n := n) p).mem x := by
+  classical
+  induction t generalizing p br with
+  | leaf c =>
+      intro x hx
+      have : br = ⟨c, subcube_of_path (n := n) p⟩ := by
+        simpa [coloredSubcubesAux] using Finset.mem_singleton.mp hmem
+      cases this
+      simpa
+  | node j t₀ t₁ ih₀ ih₁ =>
+      intro x hx
+      have h_union : br ∈
+          coloredSubcubesAux (n := n) t₀ ((j, false) :: p) ∪
+          coloredSubcubesAux (n := n) t₁ ((j, true) :: p) := by
+        simpa [coloredSubcubesAux] using hmem
+      rcases Finset.mem_union.mp h_union with h_left | h_right
+      · have hnodup' : ((j, false) :: p).map Prod.fst |>.Nodup := by
+          -- Freshness of `j` relative to `p` will supply this proof.
+          sorry
+        have hi_notin : j ∉ (subcube_of_path (n := n) p).idx := by
+          sorry
+        have h_sub := ih₀ ((j, false) :: p) br h_left hnodup' x hx
+        exact mem_subcube_of_path_cons_subset (n := n) (x := x) (i := j)
+          (b := false) (p := p) hi_notin h_sub
+      · have hnodup' : ((j, true) :: p).map Prod.fst |>.Nodup := by
+          sorry
+        have hi_notin : j ∉ (subcube_of_path (n := n) p).idx := by
+          sorry
+        have h_sub := ih₁ ((j, true) :: p) br h_right hnodup' x hx
+        exact mem_subcube_of_path_cons_subset (n := n) (x := x) (i := j)
+          (b := true) (p := p) hi_notin h_sub
+
+/--
 Removing a single leading assignment enlarges the described subcube.  This
 specialised variant of `coloredSubcubesAux_cons_subset` handles the case of an
 empty tail path, which suffices for early steps of the cover construction.
@@ -2168,7 +2209,7 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
         -- coloured subcube coincides with `subcube_of_path []`, contradicting
         -- the hypothesis `hne`.
         simp [matchSubcube, coloredSubcubes, coloredSubcubesAux] at hmem
-        rcases Finset.mem_singleton.mp hmem with rfl
+        cases hmem
         simp [subcube_of_path] at hne
     | cons hd tl ih =>
         intro hmem hne
@@ -2207,10 +2248,25 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
                 (p := tl) hi_notin_tl
             -- Points in `br.2` satisfy the assignment for coordinate `i`.
             have hfix : ∀ x, br.2.mem x → x i = v := by
-              -- Placeholder: establishing this property requires analysing the
-              -- path carried by `coloredSubcubesAux`.  It will be provided in a
-              -- follow-up lemma.
-              sorry
+              intro x hx_br
+              -- From `h_main` we know `br` arises from a path prefixed by `(i, v)`.
+              have h_path_main_aux :
+                  br ∈ coloredSubcubesAux (n := n)
+                    (matchSubcube (n := n) tl b t) [(i, v)] := by
+                cases v <;> (simp [coloredSubcubes, coloredSubcubesAux] at h_main)
+                exact h_main
+              -- The singleton path carries no duplicate indices.
+              have h_nodup_singleton : ([(i, v)].map Prod.fst).Nodup := by simp
+              -- Therefore `br.2` is contained in the subcube described by this path.
+              have h_sub := subcube_of_coloredSubcubesAux_le_subcube_of_path
+                (matchSubcube (n := n) tl b t) [(i, v)] br h_path_main_aux
+                h_nodup_singleton x hx_br
+              -- Membership in `subcube_of_path [(i,v)]` forces the `i`-th bit.
+              rcases
+                  (mem_subcube_of_path_iff_agrees (n := n) x [(i, v)]
+                    h_nodup_singleton).mp h_sub with
+                ⟨h_head, _⟩
+              exact h_head
             -- Yet the subcube `subcube_of_path tl` leaves `i` free.  Choose a
             -- witness with the opposite value to contradict `hfix`.
             have hfree : ∃ x, (subcube_of_path (n := n) tl).mem x ∧ x i ≠ v := by

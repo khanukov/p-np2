@@ -4,6 +4,7 @@ import Pnp2.DecisionTree
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Agreement
+import Pnp2.sunflower
 import Mathlib.Data.Finset.Card
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic
@@ -3379,13 +3380,71 @@ lemma decisionTree_cover_smallS_pos_n1
     семейства монохроматична.  Пока мы выводим лишь грубое ограничение
     `R.idx.card ≤ |Point n| · s`; улучшение до `≤ s` остаётся задачей.
   -/
-axiom exists_common_monochromatic_subcube
+lemma exists_common_monochromatic_subcube
     {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
     (hsmall : s ≤ n + 1) (hspos : 0 < s) :
     ∃ R : Subcube n,
       (∀ f ∈ F, Subcube.monochromaticFor R f) ∧
-      R.idx.card ≤ coverConst * s
+      R.idx.card ≤ coverConst * s := by
+  classical
+  -- ### Step 1: pass to the family of supports.
+  -- `𝓢` collects the support of each function in `F`.
+  let 𝓢 : Finset (Finset (Fin n)) := F.image (fun f => support f)
+  -- Every support has size at most `s` by the sensitivity assumption.
+  have h_card_le : ∀ S ∈ 𝓢, S.card ≤ s := by
+    -- In the full development this follows from the characterisation
+    -- `sensitivity f = (support f).card`.
+    intro S hS
+    sorry
+
+  -- ### Step 2: apply the sunflower lemma to the support family.
+  -- We ask for a sunflower with at least `p = n + 1` petals.
+  let p := n + 1
+  have hp : 2 ≤ p :=
+    (le_trans (by decide : (2 : ℕ) ≤ 3) (Nat.succ_le_succ hn))
+  -- The classic lemma assumes all sets have the same cardinality `s`; in a full
+  -- development we would handle varying sizes, but for now we postulate the
+  -- required equality.
+  have h_card_eq : ∀ S ∈ 𝓢, S.card = s := by
+    -- TODO: refine the argument to drop this strong assumption.
+    sorry
+  -- `sunflower_exists_classic` also requires the family to be large enough.
+  have h_size : threshold s p < 𝓢.card := by
+    -- Quantitative lower bound on the size of `𝓢`; to be supplied later.
+    sorry
+  obtain ⟨T, hTsub, core, hSun, hT_card⟩ :=
+    sunflower_exists_classic (𝓢 := 𝓢) (w := s) (p := p)
+      hspos hp h_size h_card_eq
+
+  -- ### Step 3: build the candidate subcube from the sunflower core.
+  -- The core is contained in every petal of the sunflower.
+  let R : Subcube n :=
+    { idx := core
+      -- For the purposes of this skeleton we freeze all core coordinates to `false`.
+      , val := fun _ _ => false }
+  -- The codimension of `R` is at most the size of the core, which itself is
+  -- bounded by `s` since each petal has size `s`.
+  have h_core_le : R.idx.card ≤ s := by
+    -- Each `core` is a subset of a petal of size `s`.
+    -- Formal proof will depend on `hSun` and `hT_card`.
+    sorry
+
+  -- ### Step 4: every function becomes constant on the core-fixing subcube `R`.
+  have h_mono : ∀ f ∈ F, Subcube.monochromaticFor R f := by
+    intro f hfF
+    -- The combinatorial heart of the argument uses the disjointness of sunflower
+    -- petals.  This will be formalised in future revisions.
+    sorry
+
+  -- Assemble the final existential witness.
+  refine ⟨R, h_mono, ?_⟩
+  -- `R.idx.card ≤ coverConst * s` follows from `h_core_le` and a trivial
+  -- inequality `s ≤ coverConst * s` since `coverConst = 10 ≥ 1`.
+  have hcover : s ≤ coverConst * s := by
+    have : 1 ≤ coverConst := by decide
+    simpa [Nat.mul_comm] using Nat.mul_le_mul_right s this
+  exact h_core_le.trans hcover
 
   /--
     Constructive cover for the positive-sensitivity case `s > 0` in dimensions

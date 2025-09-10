@@ -3265,10 +3265,12 @@ lemma decisionTree_cover_smallS_zero
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ n)) := by
   classical
+  -- First upgrade the non‑strict bound `sensitivity f ≤ 0` to an equality.
   have Hsens0 : ∀ f ∈ F, sensitivity f = 0 := by
     intro f hf
     have hle := Hsens f hf
     exact le_antisymm hle (Nat.zero_le _)
+  -- A Boolean function with zero sensitivity is constant on all inputs.
   have hconst : ∀ f ∈ F, ∀ x y, f x = f y := by
     intro f hf x y
     have hsupp :=
@@ -3277,8 +3279,10 @@ lemma decisionTree_cover_smallS_zero
       intro i hi
       have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
       cases this
+    -- With an empty support, the values agree on all points.
     simpa using
       eval_eq_of_agree_on_support (f := f) (x := x) (y := y) hagree
+  -- The specialised constant-family cover provides the desired rectangle set.
   simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
     (decisionTree_cover_of_constFamily (n := n) (F := F) (s := 0) hconst)
 

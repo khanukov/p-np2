@@ -2552,8 +2552,9 @@ Constant Boolean functions have zero sensitivity.
 
 /--
 If a Boolean function has zero sensitivity, then its essential `support` is
-empty.  Any coordinate belonging to the support would witness positive
-sensitivity, contradicting the assumption.
+empty.  The proof proceeds by contradiction: assuming a coordinate lies in the
+support, we exhibit a point where flipping that coordinate changes the function
+value, deriving positive sensitivity and contradicting `h`.
 -/
 lemma support_eq_empty_of_sensitivity_zero (f : BFunc n)
     (h : sensitivity f = 0) :
@@ -2563,6 +2564,8 @@ lemma support_eq_empty_of_sensitivity_zero (f : BFunc n)
   apply Finset.eq_empty_iff_forall_notMem.mpr
   intro i hi
   rcases mem_support_iff.mp hi with ⟨x, hx⟩
+  -- The point `x` demonstrates that flipping coordinate `i` changes `f`.
+  -- This non-trivial change will yield positive sensitivity, contradicting `h`.
   -- The witness `x` certifies that flipping `i` changes the value of `f`.
   have hxpos' :
       0 < (Finset.univ.filter fun j => f (Point.update x j (!x j)) ≠ f x).card := by

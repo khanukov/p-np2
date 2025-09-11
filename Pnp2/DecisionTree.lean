@@ -486,6 +486,24 @@ lemma subcube_of_path_idx_subset_map_fst_toFinset
             exact Finset.mem_insert.mpr (Or.inr this)
       simpa [List.map_cons] using this
 
+/--
+If an index appears in the set extracted by `subcube_of_path`, then the
+corresponding coordinate must have occurred somewhere along the original
+path.  This is the converse direction to
+`mem_subcube_idx_of_mem_path` and is frequently used to translate
+membership facts about subcubes back to statements about the underlying
+decision-tree paths.
+-/
+lemma mem_path_of_mem_subcube_idx (i : Fin n) (p : List (Fin n × Bool))
+    (hi : i ∈ (subcube_of_path (n := n) p).idx) :
+    i ∈ p.map Prod.fst := by
+  -- Convert the index-set membership to a membership in the finset of
+  -- coordinates appearing along the path, then interpret it back as a
+  -- list membership.
+  have hi' :=
+    subcube_of_path_idx_subset_map_fst_toFinset (n := n) (p := p) hi
+  simpa [List.mem_toFinset] using hi'
+
 /-- Split a path at the last occurrence of a coordinate.  The resulting suffix
 contains no further assignments for that coordinate.  This lemma is a purely
 list-based statement used to manipulate decision-tree paths. -/
@@ -1655,6 +1673,34 @@ lemma mem_subcube_of_path_cons_subset (x : Point n)
     intro hji; subst hji; exact hi hj
   simpa [subcube_of_path, hji] using hxj
 
+/--
+Membership in an extended path subcube is equivalent to satisfying the new
+coordinate and belonging to the original subcube, provided the coordinate is
+fresh.  This bundles the two helper lemmas
+`mem_subcube_of_path_cons_fixed` and `mem_subcube_of_path_cons_subset` into a
+single reusable equivalence.-/
+@[simp] lemma mem_subcube_of_path_cons (x : Point n)
+    (i : Fin n) (b : Bool) (p : List (Fin n × Bool))
+    (hi : i ∉ (subcube_of_path (n := n) p).idx) :
+    (subcube_of_path ((i, b) :: p)).mem x ↔
+      x i = b ∧ (subcube_of_path p).mem x := by
+  constructor
+  · intro hx
+    -- The head assignment fixes the value at coordinate `i`.
+    have hxi :=
+      mem_subcube_of_path_cons_fixed (n := n) (x := x) (p := p)
+        (i := i) (b := b) hx
+    -- Membership in the extended subcube descends to the tail.
+    have hx_tail :=
+      mem_subcube_of_path_cons_subset (n := n) (x := x) (i := i)
+        (b := b) (p := p) hi hx
+    exact ⟨hxi, hx_tail⟩
+  · rintro ⟨hxi, hx_tail⟩
+    -- Conversely, satisfying the head and tail assignments yields membership
+    -- in the extended subcube.
+    exact mem_subcube_of_path_cons_of_mem (n := n) (x := x) (p := p)
+      (i := i) (b := b) hx_tail hxi
+
 /-- Adding a constraint on a different coordinate preserves the freshness of
 an index.  If `i` does not occur in the index set extracted from `p`, then it
 also does not occur after consing a pair for a distinct coordinate `j`.
@@ -1691,6 +1737,23 @@ lemma not_mem_subcube_of_path_of_not_mem_fst (i : Fin n)
         (not_mem_subcube_of_path_cons (n := n) (i := i)
           (j := j) (b := b) (p := tl) hi hij)
 
+/--
+Если координата `i` отсутствует в списке индексов пути `p`, то
+удаление ведущего присваивания `(i, b)` сохраняет принадлежность точки
+подкубу, описанному хвостом `p`.  Свежесть `i` формулируется на уровне
+списка, что удобно в индуктивных аргументах.-/
+lemma mem_subcube_of_path_cons_subset_of_not_mem_fst (x : Point n)
+    (i : Fin n) (b : Bool) (p : List (Fin n × Bool))
+    (hi : i ∉ p.map Prod.fst)
+    (hx : (subcube_of_path ((i, b) :: p)).mem x) :
+    (subcube_of_path p).mem x := by
+  -- Переводим условие свежести из списка в индексное множество и
+  -- применяем базовую лемму `mem_subcube_of_path_cons_subset`.
+  refine mem_subcube_of_path_cons_subset (n := n) (x := x) (i := i)
+      (b := b) (p := p)
+      (hi := not_mem_subcube_of_path_of_not_mem_fst (n := n) (i := i)
+        (p := p) hi) hx
+
 /-- Membership of a coordinate in the list of assignments implies membership in
 the index set of the associated subcube. -/
 lemma mem_subcube_idx_of_mem_path (i : Fin n)
@@ -1708,9 +1771,102 @@ lemma mem_subcube_idx_of_mem_path (i : Fin n)
         exact Finset.mem_insert.mpr (Or.inr hidx)
 
 /--
+Если координата отсутствует в `idx` подкуба, построенного по пути `p`,
+то она не встречается и в самом пути.  Эта форма контрапозиции
+используется для обеспечения свежести индексов при анализе ветвлений
+деревьев решений.-/
+lemma not_mem_path_of_not_mem_subcube_idx (i : Fin n)
+    (p : List (Fin n × Bool))
+    (hi : i ∉ (subcube_of_path (n := n) p).idx) :
+    i ∉ p.map Prod.fst := by
+  intro hip
+  have hi' := mem_subcube_idx_of_mem_path (n := n) (i := i) (p := p) hip
+  exact hi hi'
+
+/-- Consing a fresh coordinate preserves the `Nodup` property on the list of
+first components.  This helper lemma streamlines many path manipulations. -/
+lemma nodup_map_fst_cons {i : Fin n} {b : Bool} {p : List (Fin n × Bool)}
+    (hi : i ∉ p.map Prod.fst) (h : (p.map Prod.fst).Nodup) :
+    (((i, b) :: p).map Prod.fst).Nodup := by
+  simpa [List.map_cons] using List.nodup_cons.mpr ⟨hi, h⟩
+
+/--
+If consing `(i, b)` yields a list of distinct indices, then `i` could not
+have appeared in the original path.  This is the converse direction to
+`nodup_map_fst_cons` and is handy when the fresh coordinate is witnessed via
+`Nodup` on the extended path.-/
+lemma not_mem_map_fst_of_cons_nodup {i : Fin n} {b : Bool}
+    {p : List (Fin n × Bool)}
+    (h : (((i, b) :: p).map Prod.fst).Nodup) :
+    i ∉ p.map Prod.fst := by
+  classical
+  -- Extract the `i ∉` component from `List.nodup_cons` on the mapped list.
+  have hip : i ∉ p.map Prod.fst ∧ (p.map Prod.fst).Nodup :=
+    List.nodup_cons.mp (by simpa [List.map_cons] using h)
+  exact hip.1
+
+/--
+A variant of `nodup_map_fst_cons` where freshness is provided via the index
+set of the corresponding subcube.  This form is convenient when the available
+information is phrased in terms of `subcube_of_path p`. -/
+lemma nodup_map_fst_cons_of_not_mem_idx {i : Fin n} {b : Bool}
+    {p : List (Fin n × Bool)}
+    (hi : i ∉ (subcube_of_path (n := n) p).idx)
+    (h : (p.map Prod.fst).Nodup) :
+    (((i, b) :: p).map Prod.fst).Nodup := by
+  have hip : i ∉ p.map Prod.fst :=
+    not_mem_path_of_not_mem_subcube_idx (n := n) (i := i) (p := p) hi
+  exact nodup_map_fst_cons (n := n) (i := i) (b := b) (p := p) hip h
+
+/--
+If a pair `(j, b)` occurs in a path `p` whose indices are `Nodup`, then the
+value assigned to `j` by `subcube_of_path p` is exactly `b`.  The statement is
+uniform in the proof `hj` witnessing membership of `j` in the index set of the
+resulting subcube.
+-/
+lemma val_mem_subcube_of_path (p : List (Fin n × Bool))
+    (hnodup : (p.map Prod.fst).Nodup)
+    {j : Fin n} {b : Bool} (hmem : (j, b) ∈ p) :
+    ∀ hj : j ∈ (subcube_of_path (n := n) p).idx,
+      (subcube_of_path (n := n) p).val j hj = b := by
+  induction p with
+  | nil =>
+      intro hj; cases hmem
+  | cons hd tl ih =>
+      rcases hd with ⟨i, bi⟩
+      -- Split the nodup hypothesis and the membership information.
+      have hnodup_cons : (List.map Prod.fst ((i, bi) :: tl)).Nodup := hnodup
+      have hi_not : i ∉ (tl.map Prod.fst) :=
+        (List.nodup_cons).1 hnodup_cons |>.1
+      have hnodup_tl : (tl.map Prod.fst).Nodup :=
+        (List.nodup_cons).1 hnodup_cons |>.2
+      have hmem' : (j, b) = (i, bi) ∨ (j, b) ∈ tl := by
+        simpa [List.mem_cons] using hmem
+      intro hj
+      rcases hmem' with hji | htl
+      · -- The head assignment matches `(j, b)`.
+        cases hji
+        -- In this case the value is given directly by the head pair.
+        simp [subcube_of_path]  -- `simp` resolves the `by_cases` on `j = i`.
+      · -- The pair occurs in the tail; deduce freshness of `j`.
+        have hji : j ≠ i := by
+          intro hji; subst hji
+          exact hi_not (List.mem_map.2 ⟨(j, b), htl, rfl⟩)
+        -- Extract membership in the tail subcube from `hj`.
+        have hj_tail : j ∈ (subcube_of_path (n := n) tl).idx := by
+          have := Finset.mem_insert.mp hj
+          rcases this with hj | hj
+          · exact False.elim (hji hj)
+          · exact hj
+        -- Apply the induction hypothesis on the tail.
+        have := ih hnodup_tl htl hj_tail
+        -- Evaluate the value function using the recursive definition.
+        simpa [subcube_of_path, hji, hj_tail] using this
+
+/--
 A subcube can be reconstructed from the list of assignments produced by
 `Subcube.toList`.  This shows that the list representation faithfully encodes the
-subcube.  The proof of value equality is left as a future improvement.
+subcube, both on its index set and on the values fixed at those indices.
 -/
 lemma subcube_of_path_eq_self (R : Subcube n) :
     subcube_of_path (n := n) (Subcube.toList (n := n) R) = R := by
@@ -1743,9 +1899,40 @@ lemma subcube_of_path_eq_self (R : Subcube n) :
       have hidx := mem_subcube_idx_of_mem_path (n := n) (i := j)
           (p := Subcube.toList (n := n) R) hi
       simpa using hidx
-  · -- Value functions coincide: left as future work.
-    -- TODO: prove value equality rigorously.
-    sorry
+  · -- Values attached to each index match the original subcube.
+    -- `hj` witnesses that `j` lies in the reconstructed index set.
+    rename_i hj
+    have hi_map :=
+      subcube_of_path_idx_subset_map_fst_toFinset (n := n)
+        (p := Subcube.toList (n := n) R) hj
+    have hi_list : j ∈ (Subcube.toList (n := n) R).map Prod.fst := by
+      simpa using hi_map
+    rcases List.mem_map.1 hi_list with ⟨⟨k, b⟩, hk_mem, hk_fst⟩
+    have hk : k = j := by simpa using hk_fst
+    -- Unfold the definition of `toList` to expose the witness in `R.idx`.
+    unfold Subcube.toList at hk_mem
+    rcases List.mem_map.1 hk_mem with ⟨t, ht_mem, ht_eq⟩
+    -- The element `t` of the merged list corresponds to index `j`.
+    have hk' : t.1 = k := by cases ht_eq; rfl
+    have hb : b = R.val t.1 t.2 := by cases ht_eq; rfl
+    -- Membership of `j` in `R.idx`.
+    have hjR : j ∈ R.idx := by
+      subst hk
+      subst hk'
+      simpa using t.2
+    -- The pair `(j, R.val j hjR)` indeed appears in `R.toList`.
+    have hpair : (j, R.val j hjR) ∈ Subcube.toList (n := n) R := by
+      subst hk
+      subst hk'
+      subst hb
+      simpa [Subcube.toList] using List.mem_map.2 ⟨t, ht_mem, rfl⟩
+    -- Apply the value reconstruction lemma.
+    have :=
+      val_mem_subcube_of_path (n := n)
+        (p := Subcube.toList (n := n) R)
+        (hnodup := toList_nodup_fst (n := n) (R := R))
+        (j := j) (b := R.val j hjR) hpair hj
+    simpa using this
 
 /-!
 Every evaluation of the decision tree is witnessed by a suitably
@@ -2075,18 +2262,32 @@ lemma subcube_of_coloredSubcubesAux_le_subcube_of_path (t : DecisionTree n)
           coloredSubcubesAux (n := n) t₁ ((j, true) :: p) := by
         simpa [coloredSubcubesAux] using hmem
       rcases Finset.mem_union.mp h_union with h_left | h_right
-      · have hnodup' : ((j, false) :: p).map Prod.fst |>.Nodup := by
-          -- Freshness of `j` relative to `p` will supply this proof.
-          sorry
+      · -- `br` arises from the left subtree, i.e. from assigning `j = false`.
+        -- To recurse we must show that the root coordinate `j` is fresh for
+        -- the tail path `p`.  Intuitively this holds because every extension of
+        -- the path adds a new coordinate, but formalising it requires a yet
+        -- unproven permutation lemma (`coloredSubcubesAux_cons_subset_node_perm`).
+        -- Once that lemma is available we can derive `j ∉ p.map Prod.fst` and
+        -- consequently `j ∉ (subcube_of_path p).idx`.
         have hi_notin : j ∉ (subcube_of_path (n := n) p).idx := by
+          -- TODO: replace this placeholder using the forthcoming permutation
+          -- argument for `coloredSubcubesAux`.
           sorry
+        have hnodup' : ((j, false) :: p).map Prod.fst |>.Nodup :=
+          nodup_map_fst_cons_of_not_mem_idx (n := n) (i := j) (b := false)
+            (p := p) (hi := hi_notin) hnodup
         have h_sub := ih₀ ((j, false) :: p) br h_left hnodup' x hx
         exact mem_subcube_of_path_cons_subset (n := n) (x := x) (i := j)
           (b := false) (p := p) hi_notin h_sub
-      · have hnodup' : ((j, true) :: p).map Prod.fst |>.Nodup := by
-          sorry
+      · -- Symmetric argument for the right subtree (`j = true`).
+        -- As above, we require freshness of `j` with respect to `p`, which
+        -- will be obtainable once the permutation lemma has been established.
         have hi_notin : j ∉ (subcube_of_path (n := n) p).idx := by
+          -- TODO: populate using `coloredSubcubesAux_cons_subset_node_perm`.
           sorry
+        have hnodup' : ((j, true) :: p).map Prod.fst |>.Nodup :=
+          nodup_map_fst_cons_of_not_mem_idx (n := n) (i := j) (b := true)
+            (p := p) (hi := hi_notin) hnodup
         have h_sub := ih₁ ((j, true) :: p) br h_right hnodup' x hx
         exact mem_subcube_of_path_cons_subset (n := n) (x := x) (i := j)
           (b := true) (p := p) hi_notin h_sub

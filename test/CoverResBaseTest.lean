@@ -312,10 +312,12 @@ example : True := by
     simpa [hg'] using hSens
   have _ :
       ∃ Rset : Finset (BoolFunc.Subcube 1),
-        (∀ R ∈ Rset,
-            BoolFunc.Subcube.monochromaticFor R (fun _ : BoolFunc.Point 1 => false)) ∧
-        (∀ x : BoolFunc.Point 1, (fun _ : BoolFunc.Point 1 => false) x = true →
-            ∃ R ∈ Rset, x ∈ₛ R) ∧
+        (∀ f ∈ ({fun _ : BoolFunc.Point 1 => false} : Family 1),
+            ∀ R ∈ Rset,
+              BoolFunc.Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ ({fun _ : BoolFunc.Point 1 => false} : Family 1),
+            ∀ x, f x = true →
+              ∃ R ∈ Rset, x ∈ₛ R) ∧
         Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
     BoolFunc.decisionTree_cover
       (F := ({fun _ : BoolFunc.Point 1 => false} : Family 1))

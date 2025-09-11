@@ -2107,14 +2107,15 @@ lemma coloredSubcubesAux_cons_subset_node_same (t₀ t₁ : DecisionTree n)
     intro x hx; simpa using hx
 
 /--
-Placeholder for the permutation case of
-`coloredSubcubesAux_cons_subset`.  When the root coordinate `j` of a
-node already appears inside the tail path `p` and differs from the
-coordinate `i` being removed, the combinatorial bookkeeping becomes
-substantial.  The full proof is deferred; we assume the existence of an
-ancestor subcube provided by reordering assignments inside `p`.
+Permutation case of `coloredSubcubesAux_cons_subset`.  When the root
+coordinate `j` already appears inside the tail path `p` and differs from
+the coordinate `i` being removed at the head, we may reorder the path so
+that the occurrence of `j` is processed first.  This reveals an ancestor
+subcube from the shortened path.  The full combinatorial argument is
+somewhat technical and is postponed – we record the statement here with
+the intended strategy sketched in the comments below.
 -/
-axiom coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
+lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
     (i j : Fin n) (b : Bool) (p : List (Fin n × Bool))
     (br : Bool × Subcube n)
     (hmem : br ∈ coloredSubcubesAux (n := n)
@@ -2124,7 +2125,24 @@ axiom coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
     (hij : i ≠ j) :
     ∃ brRec ∈ coloredSubcubesAux (n := n)
           (DecisionTree.node j t₀ t₁) p,
-        ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x
+        ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
+  classical
+  -- We first expose the final occurrence of `j` inside `p`.
+  obtain ⟨bj, p₁, p₂, hp, hjtail⟩ :=
+    subcube_of_path_idx_split_last (n := n) (p := p) (j := j) hj
+  subst hp
+  -- After rewriting, the path has shape `(i,b) :: p₁ ++ (j,bj) :: p₂` with
+  -- `j ∉ (subcube_of_path p₂).idx`.
+  -- By swapping assignments inside the prefix we can move `(i,b)` past `p₁`
+  -- and finally behind the occurrence of `j`.
+  -- Reordering does not change membership in `coloredSubcubesAux` thanks to
+  -- `coloredSubcubesAux_cons_swap` and its iteration.  The resulting path has
+  -- form `(j,bj) :: (i,b) :: p₁ ++ p₂`.
+  -- Removing the leading assignment for `j` now falls under
+  -- `coloredSubcubesAux_cons_subset_node_same`, yielding the desired ancestor
+  -- subcube.
+  -- The detailed commutator chain is not yet formalised.
+  sorry
 
 /--
 The helper `coloredSubcubesAux_cons_subset` shows that removing the most

@@ -3676,10 +3676,10 @@ lemma exists_common_monochromatic_subcube
                 (∀ x ∈ T, f x = f (Point.update x i (!x i))) :=
             huang_step (n := n) (s := s) hnpos (hs_lt_n := hs_lt_n)
               (f := f) (hf := by
-                -- The sensitivity bound required by `huang_step` follows from
-                -- the assumptions on the family.  The explicit conversion is
-                -- deferred.
-                sorry)
+                -- The sensitivity bound for `f` comes straight from the
+                -- global assumption `Hsens` stating that every function in the
+                -- family has sensitivity at most `s`.
+                exact Hsens f hfF)
           -- Unpack the returned data via classical choice.
           classical
           let i := Classical.choose hstep

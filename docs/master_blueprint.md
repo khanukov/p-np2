@@ -76,8 +76,7 @@ most `mBound n h` rectangles before the measure collapses to zero.  This argumen
 A small `DecisionTree` module with evaluation and size utilities now also
 provides path handling via `subcube_of_path` and the lemmas
 `path_to_leaf_length_le_depth` and a leaf-count bound `leaf_count_le_pow_depth`.
-Alongside the lemma `low_sensitivity_cover_single`,
-this sketches the decision-tree argument for covering smooth functions.
+This sketches the decision-tree argument for covering smooth functions.
 Additional modules `collentropy.lean` and `family_entropy_cover.lean` provide
 single-function entropy tools and a bundled `FamilyCover` record extracted from
 `cover2.lean` with an explicit `mBound` size estimate.

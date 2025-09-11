@@ -123,8 +123,8 @@ lemma low_sensitivity_cover (F : Family n) (s : ℕ)
       ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R ∧ ∀ y ∈ R, f y = true
 ```
 
-An auxiliary lemma `low_sensitivity_cover_single` demonstrates the same bound
-for a single function using a small decision tree structure.
+For a single function the same bound follows directly from `decisionTree_cover`
+applied to the singleton family.
 Here `C` denotes an absolute constant.  The second lemma packages the
 decision-tree bound for low-sensitivity functions from Gopalan et al.
 In both cases the proofs would reuse the previously established

@@ -99,9 +99,12 @@ example (n s : ℕ) (f : BFunc n) [Fintype (Point n)]
       (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
   classical
+  have hfamily : ∀ g ∈ ({f} : Family n), sensitivity g ≤ s := by
+    intro g hg
+    have hg' : g = f := by simpa [Finset.mem_singleton] using hg
+    simpa [hg'] using Hs
   simpa using
-    BoolFunc.low_sensitivity_cover_single
-      (n := n) (s := s) (f := f) Hs
+    BoolFunc.decisionTree_cover (F := ({f} : Family n)) (s := s) hfamily
 
 /-- Dimension of a subcube freezes exactly the chosen coordinates. -/
 example {n : ℕ} (x : Point n) (I : Finset (Fin n)) :

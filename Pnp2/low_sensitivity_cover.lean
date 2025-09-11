@@ -3676,10 +3676,10 @@ lemma exists_common_monochromatic_subcube
                 (∀ x ∈ T, f x = f (Point.update x i (!x i))) :=
             huang_step (n := n) (s := s) hnpos (hs_lt_n := hs_lt_n)
               (f := f) (hf := by
-                -- The sensitivity bound required by `huang_step` follows from
-                -- the assumptions on the family.  The explicit conversion is
-                -- deferred.
-                sorry)
+                -- The sensitivity bound for `f` comes straight from the
+                -- global assumption `Hsens` stating that every function in the
+                -- family has sensitivity at most `s`.
+                exact Hsens f hfF)
           -- Unpack the returned data via classical choice.
           classical
           let i := Classical.choose hstep
@@ -3873,10 +3873,83 @@ theorem decisionTree_cover
         decisionTree_cover_smallS (F := F) (s := s)
           (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
           (hs_lt_n := hs_lt_n)
-    · -- TODO: handle the boundary sensitivity `n ≤ s ≤ n + 1`.
-      -- In this situation Huang's theorem does not guarantee a strict
-      -- majority in either fibre.
-      sorry
+    · -- Boundary case `n ≤ s ≤ n + 1`.  When the sensitivity saturates the
+      -- ambient dimension we fall back to the trivial cover consisting of all
+      -- singletons.  Each singleton is monochromatic for every function and
+      -- the cardinality bound holds since the exponent on the right-hand side
+      -- is linear in `s` with a large constant factor.
+      have hs_ge_n : n ≤ s := le_of_not_lt hs_lt_n
+      have hs_pos : 0 < s := lt_of_lt_of_le hn hs_ge_n
+      classical
+      -- Embed points as singleton subcubes.
+      let emb : Point n ↪ Subcube n :=
+        { toFun := fun x => Subcube.fromPoint (n := n) x (Finset.univ : Finset (Fin n))
+          inj' := by
+            intro x y hxy
+            -- Membership in the universal `fromPoint` singles out the base point.
+            have hx : x ∈ₛ Subcube.fromPoint (n := n) x (Finset.univ : Finset (Fin n)) :=
+              Agreement.self_mem_fromPoint (x := x) (K := (Finset.univ : Finset (Fin n)))
+            have hx' : x ∈ₛ Subcube.fromPoint (n := n) y (Finset.univ : Finset (Fin n)) :=
+              by simpa [hxy] using hx
+            simpa using
+              (Agreement.mem_fromPoint_univ (n := n) (x := y) (y := x)).1 hx' }
+      let Rset : Finset (Subcube n) := (Finset.univ.map emb)
+      refine ⟨Rset, ?_, ?_, ?_⟩
+      · -- Every singleton subcube is monochromatic for all functions.
+        intro f hf R hR
+        rcases Finset.mem_map.mp hR with ⟨x, -, rfl⟩
+        refine ⟨f x, ?_⟩
+        intro y hy
+        have : y = x := by
+          simpa using
+            (Agreement.mem_fromPoint_univ (n := n) (x := x) (y := y)).1 hy
+        simpa [this]
+      · -- Coverage: each point witnessing `f x = true` is contained in its
+        -- corresponding singleton subcube.
+        intro f hf x hx
+        refine ⟨Subcube.fromPoint (n := n) x (Finset.univ : Finset (Fin n)), ?_, ?_⟩
+        · -- The singleton belongs to the cover.
+          have hxuniv : x ∈ (Finset.univ : Finset (Point n)) := by simp
+          exact Finset.mem_map.mpr ⟨x, hxuniv, rfl⟩
+        · -- And of course contains `x`.
+          simpa using
+            (Agreement.self_mem_fromPoint (n := n) (x := x)
+              (K := (Finset.univ : Finset (Fin n))))
+      · -- Cardinality bound: `|Rset| = 2^n ≤ 2^{coverConst * s * log₂(n+1)}`.
+        have hcardR : Rset.card = 2 ^ n := by
+          have hmap : (Finset.univ.map emb).card = (Finset.univ : Finset (Point n)).card :=
+            Finset.card_map _ _
+          have hcube : (Finset.univ : Finset (Point n)).card = 2 ^ n :=
+            BoolFunc.card_point (n := n)
+          simpa [Rset, hmap, hcube]
+        -- Show the exponent on the right-hand side dominates `n`.
+        have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+          have hle : 2 ≤ Nat.succ n :=
+            Nat.succ_le_succ (Nat.succ_le_of_lt hn)
+          have hmono : Nat.log 2 2 ≤ Nat.log 2 (Nat.succ n) :=
+            Nat.log_mono_right (b := 2) hle
+          have hlog2 : Nat.log2 2 = 1 := by
+            simpa using (Nat.log2_two_pow (n := 1))
+          have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) :=
+            by simpa [Nat.log2_eq_log_two] using hmono
+          simpa [hlog2] using this
+        have hcover : n ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+          -- Multiply the inequalities `n ≤ s` and `1 ≤ log₂(n+1)` by the large
+          -- constant `coverConst`.
+          have hns : coverConst * n ≤ coverConst * s :=
+            Nat.mul_le_mul_left _ hs_ge_n
+          have hlogmul : coverConst * s ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+            have := Nat.mul_le_mul_left (coverConst * s) hlog
+            simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+          exact
+            le_trans
+              (by
+                have hc : 1 ≤ coverConst := by decide
+                simpa [Nat.mul_comm] using
+                  (Nat.mul_le_mul_right n hc))
+              (le_trans hns hlogmul)
+        have hpow := pow_le_pow_right' (a := (2 : ℕ)) (by decide : (1 : ℕ) ≤ 2) hcover
+        simpa [hcardR] using hpow
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

@@ -4,13 +4,13 @@ import Pnp2.DecisionTree
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Agreement
-import Pnp2.sunflower
 import Mathlib.Data.Finset.Card
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic
+import Archive.Sensitivity
 import Aesop
 
-open BoolFunc Agreement
+open BoolFunc Agreement Finset
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
@@ -318,46 +318,6 @@ lemma mBound_le_pow_of_budget_choice_smallS_false :
 -- (possibly with different colours), bounding the number of subcubes by an
 -- exponential in `s * log₂ (n + 1)`.
 
-/-!
-Integrate the explicit decision tree with the cover construction.
-If a tree has leaves that are monochromatic for each function individually and
-covers every `1`-input, its leaf subcubes form a valid cover whose size is
-bounded by `2 ^ depth`.
--/
-lemma decisionTree_cover_of_tree
-  {n s : Nat} (F : Family n) (t : DecisionTree n) [Fintype (Point n)]
-  (hmono : ∀ f ∈ F, ∀ br ∈ DecisionTree.coloredSubcubes (n := n) t,
-      Subcube.monochromaticFor br.2 f)
-  (hcov : ∀ f ∈ F, ∀ x, f x = true →
-      ∃ br ∈ DecisionTree.coloredSubcubes (n := n) t, x ∈ₛ br.2)
-  (hdepth : DecisionTree.depth t ≤ coverConst * s * Nat.log2 (Nat.succ n)) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  -- Project coloured subcubes to their underlying subcubes.
-  let C := DecisionTree.coloredSubcubes (n := n) t
-  let Rset : Finset (Subcube n) := C.image Prod.snd
-  -- Cardinality bound: the projection cannot increase the number of leaves.
-  have hcard_leC : Rset.card ≤ C.card := Finset.card_image_le
-  have hC_le : C.card ≤ 2 ^ DecisionTree.depth t :=
-    DecisionTree.coloredSubcubes_card_le_pow_depth (t := t)
-  have hcard_le : Rset.card ≤ 2 ^ DecisionTree.depth t :=
-    le_trans hcard_leC hC_le
-  have hcard : Rset.card ≤ 2 ^ (coverConst * s * Nat.log2 (Nat.succ n)) :=
-    le_trans hcard_le
-      (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hdepth)
-  refine ⟨Rset, ?_, ?_, hcard⟩
-  · intro f hf R hR
-    -- Recover the coloured cube that maps to `R` and apply `hmono`.
-    rcases Finset.mem_image.mp hR with ⟨br, hbr, rfl⟩
-    simpa using hmono f hf br hbr
-  · intro f hf x hx
-    -- Use the covering hypothesis and project the coloured cube to `Rset`.
-    rcases hcov f hf x hx with ⟨br, hbr, hxR⟩
-    refine ⟨br.2, ?_, hxR⟩
-    exact Finset.mem_image.mpr ⟨br, hbr, rfl⟩
 
 /-! ### Branching on a large insensitive subcube
 
@@ -2210,24 +2170,6 @@ lemma cover_exists_mBound
     (CoverResP.as_cover (n := n) (F := F)
       (cover := cover) (hk := le_rfl))
 
-/-
-  A convenience variant of `cover_exists_mBound` that chooses a suitable
-  budget `h` automatically.  Taking `h = n` satisfies the required constraint
-  `n ≤ h`.
--/
-lemma cover_exists_mBound_choose_h
-  {n : ℕ} (F : Family n) [Fintype (Point n)] (hn : 0 < n) :
-  ∃ h : ℕ, ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Cover2.mBound n (h + 1) := by
-  classical
-  -- Choose `h = n` and invoke the main existence lemma.
-  refine ⟨n, ?_⟩
-  simpa using
-    (cover_exists_mBound (n := n) (F := F) (h := n)
-      (hn := hn) (hcard := le_rfl))
-
 /--
 If a point does not belong to a subcube, then there exists a coordinate in the
 index set of the subcube where the point disagrees with the fixed value.  This
@@ -3380,75 +3322,400 @@ lemma decisionTree_cover_smallS_pos_n1
   simpa [hlog, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
   /--
+    Among the two fibres of a Boolean function (the preimages of `false` and
+    `true`) at least one contains half of all vertices of the Boolean cube.
+
+    This simple combinatorial fact will later feed into the Huang step, where a
+    strictly larger lower bound is required to invoke
+    `Sensitivity.huang_degree_theorem`.
+  -/
+  lemma exists_large_fiber {n : ℕ} (hn : 0 < n)
+      (f : BFunc n) :
+      ∃ b, (Finset.univ.filter fun x : Point n => f x = b).card ≥ 2 ^ (n - 1) := by
+    classical
+    -- The union of the two fibres has size `2^n`.
+    have hsum' :
+        (Finset.univ.filter fun x : Point n => f x = true).card +
+        (Finset.univ.filter fun x : Point n => f x = false).card = 2 ^ n := by
+      -- The general partition lemma decomposes the cube into a predicate and its
+      -- complement.
+      have hsplit₁ :=
+        Finset.filter_card_add_filter_neg_card_eq_card
+          (s := (Finset.univ : Finset (Point n)))
+          (p := fun x : Point n => f x = true)
+      -- Replace the complement by the `false` fibre.
+      have hsplit₂ :
+          (Finset.univ.filter fun x : Point n => f x = true).card +
+          (Finset.univ.filter fun x : Point n => f x = false).card =
+            Fintype.card (Point n) := by
+        have hneg :
+            (Finset.univ.filter fun x : Point n => ¬ (f x = true))
+              = (Finset.univ.filter fun x : Point n => f x = false) := by
+          apply Finset.filter_congr
+          intro x _; by_cases hx : f x = true <;> simp [hx]
+        simpa [hneg] using hsplit₁
+      -- Evaluate the cardinality of the whole cube.
+      have hcard : Fintype.card (Point n) = 2 ^ n := BoolFunc.card_point n
+      have htmp := hsplit₂
+      -- Rewrite the right-hand side via `hcard`.
+      rw [hcard] at htmp
+      simpa using htmp
+    -- Introduce names `A` and `B` for the two fibres.
+    set A := (Finset.univ.filter fun x : Point n => f x = true)
+      with hA
+    set B := (Finset.univ.filter fun x : Point n => f x = false)
+      with hB
+    have hsum : A.card + B.card = 2 ^ n := by simpa [hA, hB] using hsum'
+    -- If both fibres were smaller than `2^(n-1)`, their sum would be too small.
+    have hdisj :
+        2 ^ (n - 1) ≤ A.card ∨ 2 ^ (n - 1) ≤ B.card := by
+      by_contra h
+      push_neg at h
+      have hlt : A.card + B.card < 2 ^ (n - 1) + 2 ^ (n - 1) :=
+        Nat.add_lt_add h.1 h.2
+      -- `2^(n-1) + 2^(n-1) = 2^n` for positive `n`.
+      have hcalc : 2 ^ (n - 1) + 2 ^ (n - 1) = 2 ^ n := by
+        have hn' : n - 1 + 1 = n := Nat.sub_add_cancel (Nat.succ_le_of_lt hn)
+        calc
+          2 ^ (n - 1) + 2 ^ (n - 1)
+              = 2 * 2 ^ (n - 1) := by
+                simp [two_mul, Nat.add_comm]
+          _ = 2 ^ (n - 1) * 2 := by
+                simp [Nat.mul_comm]
+          _ = 2 ^ ((n - 1) + 1) := by
+                simpa [Nat.mul_comm] using (Nat.pow_succ 2 (n - 1)).symm
+          _ = 2 ^ n := by
+                simpa [hn']
+      have hlt' : A.card + B.card < 2 ^ n := by
+        simpa [hcalc] using hlt
+      have hcontr : (A.card + B.card) < (A.card + B.card) := by
+        simpa [hsum] using hlt'
+      have : False := (Nat.lt_irrefl _ hcontr)
+      exact this
+    -- Choose the larger fibre.
+    cases hdisj with
+    | inl hAcard =>
+        refine ⟨true, ?_⟩
+        simpa [A] using hAcard
+    | inr hBcard =>
+        refine ⟨false, ?_⟩
+        simpa [B] using hBcard
+
+  /--
+    **One-step Huang reduction.**
+
+    Given a Boolean function `f` of arity `n`, the lemma produces a coordinate
+    `i` and at least two points `T` such that flipping the `i`-th bit leaves the
+    value of `f` unchanged on all points of `T`.
+
+    The intended proof appeals to `Sensitivity.huang_degree_theorem` to obtain a
+    densely connected vertex inside the support of `f`.  For now we cover the
+    easy base case when the sensitivity of `f` is zero, deferring the
+    substantial Huang-based argument to future work.
+  -/
+  lemma huang_step
+      {n s : ℕ} (hn : 0 < n) (hs_lt_n : s < n)
+      {f : BFunc n} (hf : sensitivity f ≤ s) :
+      ∃ (i : Fin n) (T : Finset (Point n)),
+        2 ≤ T.card ∧
+        (∀ x ∈ T, f x = f (Point.update x i (!x i))) := by
+    classical
+    -- Case analysis on whether the sensitivity is zero.
+    by_cases hzero : sensitivity f = 0
+    · -- With zero sensitivity the function is constant on the entire cube.
+      -- We can therefore pick any coordinate and any pair of adjacent points.
+      -- The function takes the same value on both points, establishing the
+      -- required invariant set `T`.
+      have hconst : ∀ x y : Point n, f x = f y := by
+        -- An empty support means every pair of points agrees on the support.
+        have hsupport := support_eq_empty_of_sensitivity_zero (f := f) hzero
+        intro x y
+        have hagree : ∀ j ∈ support f, x j = y j := by
+          intro j hj
+          simpa [hsupport] using hj
+        simpa using (eval_eq_of_agree_on_support (f := f) (x := x) (y := y) hagree)
+      -- Pick the first coordinate `⟨0, _⟩`; `hn` ensures that `n` is positive and
+      -- hence this index exists.
+      let i : Fin n := ⟨0, hn⟩
+      -- Choose an arbitrary point and flip its `i`-th bit.
+      let x0 : Point n := Classical.arbitrary (Point n)
+      let y0 : Point n := Point.update x0 i (! x0 i)
+      have hxy : x0 ≠ y0 := by
+        -- They differ at the coordinate `i`.
+        have hx : x0 i ≠ y0 i := by
+          have hy : y0 i = !x0 i := by
+            simp [y0, i]  -- unfold `Point.update`
+          by_cases hx0 : x0 i
+          · simp [hx0, hy] -- `true ≠ false`
+          · simp [hx0, hy] -- `false ≠ true`
+        exact fun h => by
+          apply hx
+          simpa [h]
+      -- Form the two‑element set consisting of the chosen point and its flip.
+      refine ⟨i, {x0, y0}, ?_, ?_⟩
+      · -- The two points are distinct, hence the cardinality is two.
+        have hcard : ({x0, y0} : Finset (Point n)).card = 2 := by
+          simpa [hxy] using (Finset.card_doubleton x0 y0)
+        -- Rewrite using the known cardinality.
+        simpa [hcard]
+      · -- `f` takes the same value on both points and remains constant under a
+        -- second flip of `i`.
+        intro z hz
+        have hz' : z = x0 ∨ z = y0 := by
+          simpa [Finset.mem_insert, Finset.mem_singleton] using hz
+        cases hz' with
+        | inl hz0 =>
+            -- On `x0` the one-step flip yields `y0`.
+            have hy : Point.update x0 i (!x0 i) = y0 := rfl
+            simpa [hz0, hy] using (hconst x0 y0)
+        | inr hy0 =>
+            -- Flipping `y0` again recovers `x0`.
+            have hy : Point.update y0 i (!y0 i) = x0 := by
+              -- coordinate `i` returns to its original value
+              funext j
+              by_cases hji : j = i
+              · subst hji; simp [y0, i]
+              · simp [y0, i, hji]
+            simpa [hy0, hy] using (hconst y0 x0)
+    · -- Non-constant case: use Huang's sensitivity theorem to isolate a
+      -- coordinate along which the function admits many agreeing neighbours.
+      have hpos : 0 < sensitivity f := Nat.pos_of_ne_zero hzero
+      -- Among the two level sets of `f`, choose the larger one; it must contain
+      -- more than half of all vertices since `f` is not constant.
+      classical
+      let H₀ := (Finset.univ.filter fun x : Point n => f x = false)
+      let H₁ := (Finset.univ.filter fun x : Point n => f x = true)
+      -- By a simple counting argument at least one fibre occupies half of the
+      -- Boolean cube.  Upgrading this `≥` bound to the strict `>` required by
+      -- Huang's theorem remains to be addressed.
+      have hbMajor := exists_large_fiber (n := n) (hn := hn) (f := f)
+      rcases hbMajor with ⟨b, hbcard⟩
+      -- View the chosen fibre as a `Set` to apply Huang's theorem.
+      -- It is convenient to work in the `Sensitivity.Q n` type, which is
+      -- definally equal to `Point n`.
+      let H : Set (Sensitivity.Q n) := {x | f x = b}
+      have hHcard : H.toFinset.card ≥ 2 ^ (n - 1) := by
+        -- Convert the finset counting statement `hbcard` to the set-based
+        -- version required by Huang's theorem.
+        simpa [H] using hbcard
+      -- Instantiate Huang's theorem in dimension `n` with `m = n - 1`.
+      have hm : n = (n - 1).succ := (Nat.succ_pred_eq_of_pos hn).symm
+      -- After rewriting the dimension, obtain a vertex with many neighbours in
+      -- the chosen fibre.
+      -- Apply Huang's degree theorem.  The ambient types coincide, so it
+      -- suffices to reinterpret the dimension.
+      have hHcard' :
+          H.toFinset.card ≥ 2 ^ (n - 1) + 1 := by
+        -- Strengthen the coarse bound `hHcard` to the strict inequality
+        -- required by `huang_degree_theorem`.  This step is currently left
+        -- open; it amounts to ruling out the exact-half case where the two
+        -- fibres have equal size.
+        -- TODO: show `2 ^ (n - 1) + 1 ≤ H.toFinset.card`.
+        sorry
+      have : ∃ q : Point n, q ∈ H ∧ √ (↑(n - 1) + 1) ≤
+          ↑((H ∩ (Sensitivity.Q.adjacent q)).toFinset.card) := by
+        -- Having obtained the strengthened cardinality estimate, we can now
+        -- invoke Huang's theorem.  A precise call requires casting `H` to
+        -- `Sensitivity.Q (n - 1).succ`; this technical step is postponed.
+        -- TODO: instantiate `huang_degree_theorem` on the casted fibre.
+        sorry
+      rcases this with ⟨q, hqH, hdeg⟩
+      -- The degree bound ensures the existence of at least one neighbour inside
+      -- `H`.
+      have hneigh : ∃ r : Point n, r ∈ H ∧ r ∈ Sensitivity.Q.adjacent q := by
+        -- `hdeg` asserts that `q` has at least `√ n` neighbours inside `H`.  In
+        -- particular this number is positive, so the intersection is nonempty.
+        have hsqrt_pos :
+            0 < Real.sqrt (↑(n - 1) + 1 : ℝ) := by
+          -- `Real.sqrt` of a positive number is positive; here the argument is
+          -- `(n - 1).succ = n`.
+          have : 0 < ((n - 1).succ : ℝ) := by
+            exact_mod_cast (Nat.succ_pos (n - 1))
+          simpa [Nat.succ_eq_add_one] using Real.sqrt_pos.mpr this
+        have hcard_pos :
+            0 < ((H ∩ Sensitivity.Q.adjacent q).toFinset.card) := by
+          -- From `hdeg` we know the cardinality (as a real number) is at least
+          -- `√ n`, and the latter is positive, hence the intersection is
+          -- nonempty.
+          have hpos :
+              (0 : ℝ) <
+                (↑((H ∩ Sensitivity.Q.adjacent q).toFinset.card) : ℝ) :=
+            lt_of_lt_of_le hsqrt_pos hdeg
+          exact_mod_cast hpos
+        -- Extract an element from the nonempty intersection.
+        obtain ⟨r, hr⟩ := Finset.card_pos.1 hcard_pos
+        have hr' : r ∈ H ∩ Sensitivity.Q.adjacent q := by
+          simpa using hr
+        exact ⟨r, hr'.1, hr'.2⟩
+      rcases hneigh with ⟨r, hrH, hrAdj⟩
+      -- `hrAdj` certifies a unique coordinate where `q` and `r` differ.
+      rcases hrAdj with ⟨i, hneq, huniq⟩
+      -- Form the two-point set `{q, r}` which is stable under flipping `i`.
+      refine ⟨i, {q, r}, ?_, ?_⟩
+      · -- Cardinality of the doubleton.
+        have hqr : q ≠ r := by
+          -- They differ at coordinate `i`.
+          exact fun h => by
+            apply hneq
+            simpa [h] using rfl
+        have hcard : ({q, r} : Finset (Point n)).card = 2 := by
+          simpa [hqr] using Finset.card_doubleton q r
+        simpa [hcard]
+      · -- The function agrees on each point and its flip along `i`.
+        intro x hx
+        have hx' : x = q ∨ x = r := by
+          simpa [Finset.mem_insert, Finset.mem_singleton] using hx
+        cases hx' with
+        | inl hxq =>
+            -- `r` is the unique neighbour of `q` differing at `i`.
+            have hflip : Point.update q i (!q i) = r := by
+              -- The points `q` and `r` differ only at coordinate `i`, where the
+              -- value of `r` is the negation of that of `q`.
+              have hri : r i = ! q i :=
+                (Bool.eq_not_iff.mpr (by simpa [ne_comm] using hneq))
+              have hqr : ∀ j, j ≠ i → q j = r j := by
+                intro j hji; by_contra hneqjr
+                exact hji (huniq j hneqjr)
+              funext j; by_cases hji : j = i
+              · subst hji; simpa [Point.update, hri]
+              · have := hqr j hji
+                simpa [Point.update, hji, this]
+            have hq : f q = b := hqH
+            have hr : f r = b := hrH
+            have : f (Point.update q i (!q i)) = b := by
+              simpa [hflip] using hr
+            simpa [hxq, hq, this]
+        | inr hxr =>
+            -- Flipping `r` returns to `q`.
+            have hflip : Point.update r i (!r i) = q := by
+              -- Symmetric argument to the previous case.
+              have hqi : q i = ! r i := (Bool.eq_not_iff.mpr hneq)
+              have hqr : ∀ j, j ≠ i → q j = r j := by
+                intro j hji; by_contra hneqjr
+                exact hji (huniq j hneqjr)
+              funext j; by_cases hji : j = i
+              · subst hji; simpa [Point.update, hqi]
+              · have := hqr j hji
+                simpa [Point.update, hji, this.symm]
+            have hq : f q = b := hqH
+            have hr : f r = b := hrH
+            have : f (Point.update r i (!r i)) = b := by
+              simpa [hflip] using hq
+            simpa [hxr, hr, this]
+
+  /--
     Предполагаемое существование большого подкуба, на котором каждая функция
-    семейства монохроматична.  Пока мы выводим лишь грубое ограничение
-    `R.idx.card ≤ |Point n| · s`; улучшение до `≤ s` остаётся задачей.
+    семейства монохроматична.  С помощью будущей итерации леммы `huang_step`
+    ожидается получение субкуба `R` с ограничением на кодименсию
+    `R.idx.card ≤ coverConst * s`.  Формальное доказательство этой оценки ещё
+    предстоит реализовать; здесь фиксируется лишь требуемое формулировкой
+    заключение.
   -/
 lemma exists_common_monochromatic_subcube
     {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-    (hsmall : s ≤ n + 1) (hspos : 0 < s) :
+    (hsmall : s ≤ n + 1) (hspos : 0 < s) (hs_lt_n : s < n) :
     ∃ R : Subcube n,
       (∀ f ∈ F, Subcube.monochromaticFor R f) ∧
       R.idx.card ≤ coverConst * s := by
   classical
-  -- ### Step 1: pass to the family of supports.
-  -- `𝓢` collects the support of each function in `F`.
-  let 𝓢 : Finset (Finset (Fin n)) := F.image (fun f => support f)
-  -- Every support has size at most `s` by the sensitivity assumption.
-  have h_card_le : ∀ S ∈ 𝓢, S.card ≤ s := by
-    -- In the full development this follows from the characterisation
-    -- `sensitivity f = (support f).card`.
-    intro S hS
-    sorry
+  -- ### Inductive construction via Huang's sensitivity theorem.
+  --
+  -- The earlier development applied the sunflower lemma to the family of
+  -- supports of the functions in `F`, extracting a large common core.  We now
+  -- envision a different approach: repeatedly apply `huang_step` to any
+  -- function that is non-constant on the current subcube, fixing the returned
+  -- coordinate to obtain a smaller subcube with fewer conflicts.  Iterating
+  -- this process should terminate after at most `coverConst * s` steps,
+  -- producing a subcube `R` on which every `f ∈ F` is constant.  The codimension
+  -- of `R` is then bounded by `coverConst * s` as well.
+  --
+  -- Formalising this recursion and proving the termination bound require a
+  -- significant amount of additional combinatorial infrastructure.  Those
+  -- details are left for future work; the present lemma records only the final
+  -- statement needed for downstream applications.  Nevertheless we sketch the
+  -- recursive construction that will eventually realise the bound on
+  -- `R.idx.card`.
 
-  -- ### Step 2: apply the sunflower lemma to the support family.
-  -- We ask for a sunflower with at least `p = n + 1` petals.
-  let p := n + 1
-  have hp : 2 ≤ p :=
-    (le_trans (by decide : (2 : ℕ) ≤ 3) (Nat.succ_le_succ hn))
-  -- The classic lemma assumes all sets have the same cardinality `s`; in a full
-  -- development we would handle varying sizes, but for now we postulate the
-  -- required equality.
-  have h_card_eq : ∀ S ∈ 𝓢, S.card = s := by
-    -- TODO: refine the argument to drop this strong assumption.
-    sorry
-  -- `sunflower_exists_classic` also requires the family to be large enough.
-  have h_size : threshold s p < 𝓢.card := by
-    -- Quantitative lower bound on the size of `𝓢`; to be supplied later.
-    sorry
-  obtain ⟨T, hTsub, core, hSun, hT_card⟩ :=
-    sunflower_exists_classic (𝓢 := 𝓢) (w := s) (p := p)
-      hspos hp h_size h_card_eq
+  -- Basic positivity fact for the dimension `n` needed by `huang_step`.
+  have hnpos : 0 < n := lt_of_lt_of_le (by decide : 0 < 2) hn
 
-  -- ### Step 3: build the candidate subcube from the sunflower core.
-  -- The core is contained in every petal of the sunflower.
-  let R : Subcube n :=
-    { idx := core
-      -- For the purposes of this skeleton we freeze all core coordinates to `false`.
-      , val := fun _ _ => false }
-  -- The codimension of `R` is at most the size of the core, which itself is
-  -- bounded by `s` since each petal has size `s`.
-  have h_core_le : R.idx.card ≤ s := by
-    -- Each `core` is a subset of a petal of size `s`.
-    -- Formal proof will depend on `hSun` and `hT_card`.
-    sorry
+  -- A single refinement step: given a current set of fixed coordinates `core`
+  -- and a subcube `cube`, locate a function not yet constant on `cube` and fix
+  -- one more coordinate suggested by `huang_step`.
+  -- If all functions are already constant we simply return the current state.
+  let step : (Finset (Fin n) × Subcube n) → (Finset (Fin n) × Subcube n) :=
+    fun p =>
+      let core := p.1
+      let cube := p.2
+      if h : ∀ f ∈ F, Subcube.monochromaticFor cube f then
+        p
+      else
+        by
+          classical
+          -- Select a witness `f` that is not monochromatic on `cube`.
+          have hcounter := not_forall.mp h
+          let f := Classical.choose hcounter
+          have hf : ¬ (f ∈ F → Subcube.monochromaticFor cube f) :=
+            Classical.choose_spec hcounter
+          -- `hf` witnesses that the implication `f ∈ F → monochromatic` fails.
+          -- First extract the membership of `f` in the family.
+          have hfF : f ∈ F := by
+            by_contra hfF
+            have : f ∈ F → Subcube.monochromaticFor cube f := by
+              intro hfF'; exact False.elim (hfF hfF')
+            exact (hf this).elim
+          -- With `hfF` at hand we directly obtain the negated monochromaticity.
+          have hfMono : ¬ Subcube.monochromaticFor cube f := by
+            intro hmono; apply hf; intro _; exact hmono
+          -- Apply `huang_step` to isolate a new coordinate `i`.
+          -- Apply `huang_step` to isolate a new coordinate `i`.
+          have hstep :
+              ∃ (i : Fin n) (T : Finset (Point n)),
+                2 ≤ T.card ∧
+                (∀ x ∈ T, f x = f (Point.update x i (!x i))) :=
+            huang_step (n := n) (s := s) hnpos (hs_lt_n := hs_lt_n)
+              (f := f) (hf := by
+                -- The sensitivity bound required by `huang_step` follows from
+                -- the assumptions on the family.  The explicit conversion is
+                -- deferred.
+                sorry)
+          -- Unpack the returned data via classical choice.
+          classical
+          let i := Classical.choose hstep
+          have hstep2 := Classical.choose_spec hstep
+          let T := Classical.choose hstep2
+          have hTdata := Classical.choose_spec hstep2
+          have hTcard : 2 ≤ T.card := hTdata.1
+          have hTflip : ∀ x ∈ T, f x = f (Point.update x i (!x i)) := hTdata.2
+          -- Pick one of the witnesses from `T` to determine the fixed value.
+          have hpos : 0 < T.card := lt_of_lt_of_le (by decide : 0 < 2) hTcard
+          have hne : T.Nonempty := Finset.card_pos.mp hpos
+          let x := Classical.choose hne
+          have hx : x ∈ T := Classical.choose_spec hne
+          -- Extend the subcube and index set.
+          exact (insert i core, cube.extend i (x i))
 
-  -- ### Step 4: every function becomes constant on the core-fixing subcube `R`.
-  have h_mono : ∀ f ∈ F, Subcube.monochromaticFor R f := by
-    intro f hfF
-    -- The combinatorial heart of the argument uses the disjointness of sunflower
-    -- petals.  This will be formalised in future revisions.
-    sorry
+  -- Iterate the step at most `coverConst * s` times, starting from the full cube
+  -- with no fixed coordinates.
+  let rec loop : Nat → (Finset (Fin n) × Subcube n)
+    | 0 => (∅, Subcube.fromPoint (fun _ => false) ∅)
+    | Nat.succ k => step (loop k)
 
-  -- Assemble the final existential witness.
-  refine ⟨R, h_mono, ?_⟩
-  -- `R.idx.card ≤ coverConst * s` follows from `h_core_le` and a trivial
-  -- inequality `s ≤ coverConst * s` since `coverConst = 10 ≥ 1`.
-  have hcover : s ≤ coverConst * s := by
-    have : 1 ≤ coverConst := by decide
-    simpa [Nat.mul_comm] using Nat.mul_le_mul_right s this
-  exact h_core_le.trans hcover
+  let result := loop (coverConst * s)
+
+  -- The eventual proof will show that every function in `F` is constant on the
+  -- resulting cube and that the number of fixed coordinates does not exceed the
+  -- iteration bound `coverConst * s`.
+  -- These properties are currently admitted while the combinatorial argument is
+  -- developed.
+  refine ⟨result.2, ?_, ?_⟩
+  · -- Monochromaticity of all functions on the final cube.
+    -- TODO: prove `∀ f ∈ F, Subcube.monochromaticFor result.2 f`.
+    sorry
+  · -- Codimension bound of the final cube.
+    -- TODO: show `result.2.idx.card ≤ coverConst * s`.
+    sorry
 
   /--
     Constructive cover for the positive-sensitivity case `s > 0` in dimensions
@@ -3460,7 +3727,7 @@ lemma exists_common_monochromatic_subcube
   lemma decisionTree_cover_smallS_pos_general
     {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-    (hsmall : s ≤ n + 1) (hspos : 0 < s) :
+    (hsmall : s ≤ n + 1) (hspos : 0 < s) (hs_lt_n : s < n) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
@@ -3470,16 +3737,21 @@ lemma exists_common_monochromatic_subcube
     by_cases hF : F = (∅ : Family n)
     · subst hF
       simpa using (decisionTree_cover_empty (n := n) (s := s))
-    -- Obtain a large subcube on which all functions are constant.
+    -- Obtain a large subcube on which all functions are constant.  The lemma
+    -- `exists_common_monochromatic_subcube` relies precisely on the three
+    -- numeric hypotheses `hn`, `hsmall` and `hspos` supplied here.
     obtain ⟨R, hRmono_all, hRcodim_small⟩ :=
       exists_common_monochromatic_subcube (F := F) (s := s)
-        (Hsens := Hsens) (hn := hn) (hsmall := hsmall) (hspos := hspos)
-    -- Assemble the cover from `R` and the exterior region.
+        (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
+        (hspos := hspos) (hs_lt_n := hs_lt_n)
+    -- Convert the subcube into a concrete cover: one rectangle for the cube
+    -- `R` itself and a recursive cover for its complement.
     have hnpos : 0 < n :=
       lt_of_lt_of_le (Nat.succ_pos 1) hn
-    let cover := cover_with_common_cube (F := F) (R := R)
-                    (hnpos := hnpos) (hmono := hRmono_all)
-    -- Apply the deferred numeric inequality.
+    let cover :=
+      cover_with_common_cube (F := F) (R := R) (hnpos := hnpos)
+        (hmono := hRmono_all)
+    -- Apply the deferred numeric inequality bounding the size of this cover.
     have hk :
         1 + R.idx.card * Cover2.mBound n (n + 1)
           ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
@@ -3499,7 +3771,8 @@ lemma exists_common_monochromatic_subcube
   -/
   lemma decisionTree_cover_smallS
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 0 < n) (hsmall : s ≤ n + 1) :
+  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 0 < n)
+  (hsmall : s ≤ n + 1) (hs_lt_n : s < n) :
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
@@ -3512,22 +3785,16 @@ lemma exists_common_monochromatic_subcube
     simpa using decisionTree_cover_smallS_zero (F := F) (Hsens := Hsens0)
   ·
     have hspos : 0 < s := Nat.pos_of_ne_zero hs0
-    by_cases hn1 : n = 1
-    ·
-      subst hn1
-      have hsmall' : s ≤ 2 := by simpa using hsmall
-      simpa using
-        (decisionTree_cover_smallS_pos_n1 (F := F) (s := s)
-          (_Hsens := Hsens) (_hsmall := hsmall') (hspos := hspos))
-    ·
-      -- For `n ≥ 2` invoke the geometric cover from
-      -- `decisionTree_cover_smallS_pos_general`.
-      have hn2 : 2 ≤ n := by
-        have h1lt : 1 < n := lt_of_le_of_ne (Nat.succ_le_of_lt hn) (Ne.symm hn1)
-        exact Nat.succ_le_of_lt h1lt
-      exact
-        decisionTree_cover_smallS_pos_general (F := F) (s := s)
-          (Hsens := Hsens) (hn := hn2) (hsmall := hsmall) (hspos := hspos)
+    -- From `hspos` and `hs_lt_n` we deduce `n ≥ 2`.
+    have hn2 : 2 ≤ n := by
+      have : 1 ≤ s := Nat.succ_le_of_lt hspos
+      have : 1 < n := lt_of_le_of_lt this hs_lt_n
+      exact Nat.succ_le_of_lt this
+    -- Apply the general positive case lemma under the strict bound `s < n`.
+    exact
+      decisionTree_cover_smallS_pos_general (F := F) (s := s)
+        (Hsens := Hsens) (hn := hn2) (hsmall := hsmall)
+        (hspos := hspos) (hs_lt_n := hs_lt_n)
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
@@ -3596,12 +3863,20 @@ theorem decisionTree_cover
       decisionTree_cover_of_buildCover_choose_h (n := n) (s := s) (F := F)
         (hk := hk)
   ·
-    -- Small-sensitivity regime: defer to the axiomatic placeholder.
+    -- Small-sensitivity regime: further split depending on whether the
+    -- sensitivity lies strictly below the dimension.  The boundary cases
+    -- `n ≤ s ≤ n + 1` are left as future work.
     have hsmall : s ≤ n + 1 :=
       Nat.le_of_lt_succ (Nat.lt_of_not_ge hbig)
-    exact
-      decisionTree_cover_smallS (F := F) (s := s)
-        (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
+    by_cases hs_lt_n : s < n
+    · exact
+        decisionTree_cover_smallS (F := F) (s := s)
+          (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
+          (hs_lt_n := hs_lt_n)
+    · -- TODO: handle the boundary sensitivity `n ≤ s ≤ n + 1`.
+      -- In this situation Huang's theorem does not guarantee a strict
+      -- majority in either fibre.
+      sorry
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity
@@ -3623,44 +3898,5 @@ lemma low_sensitivity_cover (F : Family n) (s : ℕ)
   classical
   simpa using decisionTree_cover (F := F) (s := s) Hsens
 
-/-/ Variant of `low_sensitivity_cover` for a single Boolean function.
-    This skeleton assumes a suitable decision tree for `f` of depth
-    `O(s * log n)`.  All remaining steps are placeholders. -/
-
-lemma low_sensitivity_cover_single
-  (n s : ℕ) (f : BoolFunc.BFunc n)
-    [Fintype (BoolFunc.Point n)]
-    (Hsens : BoolFunc.sensitivity f ≤ s) :
-  ∃ Rset : Finset (BoolFunc.Subcube n),
-    (∀ R ∈ Rset, BoolFunc.Subcube.monochromaticFor R f) ∧
-    (∀ x : BoolFunc.Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  -- Treat `{f}` as a family and apply `decisionTree_cover`.
-  have hfamily : ∀ g ∈ ({f} : Family n), sensitivity g ≤ s := by
-    intro g hg
-    have hg' : g = f := by simpa [Finset.mem_singleton] using hg
-    simpa [hg'] using Hsens
-  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
-    decisionTree_cover (F := ({f} : Family n)) (s := s) hfamily
-  refine ⟨Rset, ?_, ?_, hcard⟩
-  · intro R hR
-    simpa using hmono f (by simp) R hR
-  · intro x hx
-    simpa using hcov f (by simp) x hx
-
-
-
-/-- Specialized version of `low_sensitivity_cover` for the empty family.
-    This is a small convenience wrapper around `decisionTree_cover_empty`. -/
-lemma low_sensitivity_cover_empty (n s : ℕ)
-    [Fintype (Point n)] :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ (∅ : Family n), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  simpa using
-    (decisionTree_cover_empty (n := n) (s := s))
 
 end BoolFunc

@@ -80,8 +80,8 @@ theory.
   includes path extraction with `subcube_of_path` and the lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
   controlling path lengths and leaf counts.
-  Together with `low_sensitivity_cover_single` this outlines a decision-tree
-  approach to the cover.
+  Together with the singleton case of `decisionTree_cover` this outlines a
+  decision-tree approach to the cover.
 * **Utilities.**  The new files `collentropy.lean` and `family_entropy_cover.lean`
   collect single-function entropy facts and package the cover from
   `cover2.lean` as a reusable record.  A lightweight variant

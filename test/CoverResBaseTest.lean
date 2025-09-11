@@ -299,24 +299,32 @@ example : True := by
       (F := constFamily0) (hk := hk)
   exact trivial
 
--- Specialisation to a single function using `low_sensitivity_cover_single`.
+-- Specialisation to a single function using `decisionTree_cover`.
 example : True := by
   classical
-  -- Prove the sensitivity bound for the constant `false` function directly.
-    have hSens : BoolFunc.sensitivity (fun _ : BoolFunc.Point 1 => false) ≤ 0 := by
-      simpa using (le_of_eq (BoolFunc.sensitivity_const (n := 1) (b := false)))
+  have hSens : BoolFunc.sensitivity (fun _ : BoolFunc.Point 1 => false) ≤ 0 := by
+    simpa using (le_of_eq (BoolFunc.sensitivity_const (n := 1) (b := false)))
+  have hfamily : ∀ g ∈ ({fun _ : BoolFunc.Point 1 => false} : Family 1),
+      BoolFunc.sensitivity g ≤ 0 := by
+    intro g hg
+    have hg' : g = (fun _ : BoolFunc.Point 1 => false) := by
+      simpa [Finset.mem_singleton] using hg
+    simpa [hg'] using hSens
   have _ :
       ∃ Rset : Finset (BoolFunc.Subcube 1),
-        (∀ R ∈ Rset,
-            BoolFunc.Subcube.monochromaticFor R (fun _ : BoolFunc.Point 1 => false)) ∧
-        (∀ x : BoolFunc.Point 1, (fun _ : BoolFunc.Point 1 => false) x = true →
-            ∃ R ∈ Rset, x ∈ₛ R) ∧
+        (∀ f ∈ ({fun _ : BoolFunc.Point 1 => false} : Family 1),
+            ∀ R ∈ Rset,
+              BoolFunc.Subcube.monochromaticFor R f) ∧
+        (∀ f ∈ ({fun _ : BoolFunc.Point 1 => false} : Family 1),
+            ∀ x, f x = true →
+              ∃ R ∈ Rset, x ∈ₛ R) ∧
         Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
-    low_sensitivity_cover_single (n := 1) (s := 0)
-      (f := fun _ : BoolFunc.Point 1 => false) hSens
+    BoolFunc.decisionTree_cover
+      (F := ({fun _ : BoolFunc.Point 1 => false} : Family 1))
+      (s := 0) hfamily
   exact trivial
 
--- Wrapper lemma for the empty family `low_sensitivity_cover_empty`.
+-- Wrapper lemma for the empty family using `decisionTree_cover_empty`.
 example : True := by
   classical
   have _ :
@@ -324,7 +332,7 @@ example : True := by
         (∀ f ∈ (∅ : Family 1), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ (∅ : Family 1), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
         Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
-    low_sensitivity_cover_empty (n := 1) (s := 0)
+    BoolFunc.decisionTree_cover_empty (n := 1) (s := 0)
   exact trivial
 
 /-- Evaluating the decision tree produced from a pointwise cover. -/

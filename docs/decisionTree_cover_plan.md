@@ -15,8 +15,6 @@
   `FamilyCover`.
 - Доказаны вспомогательные леммы:
   - `DecisionTree.leaf_count_le_pow_depth`;
-  - `decisionTree_cover_of_tree`, извлекающая покрытие из дерева решений через
-    `coloredSubcubes` и дающая оценку размера `≤ 2^{depth}`;
   - `agreesWithAssignments_path_to_leaf` и `eval_tree_of_agrees_path`,
     показывающие, что путь до листа задаёт монохроматический субкуб;
   - `H₂_restrict_le`;
@@ -865,8 +863,8 @@
    размер входа сокращается примерно в `(1 - 1/(2*s))` раз, что даёт глубину
    `O(s · log n)`.
 3. **Интеграция в `decisionTree_cover`.**
-   Полученное дерево преобразуется в покрытие через
-    `decisionTree_cover_of_tree`.  Лемма
+   Полученное дерево преобразуется в покрытие посредством
+    `decisionTree_cover_of_coverResP`.  Лемма
     `decisionTree_cover_smallS_pos_general` теперь опирается на предположенную
    `exists_common_monochromatic_subcube`, предоставляющую большой подкуб,
    монохроматический для всего семейства.  На данный момент реализованы

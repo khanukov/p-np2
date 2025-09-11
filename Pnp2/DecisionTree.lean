@@ -1673,6 +1673,34 @@ lemma mem_subcube_of_path_cons_subset (x : Point n)
     intro hji; subst hji; exact hi hj
   simpa [subcube_of_path, hji] using hxj
 
+/--
+Membership in an extended path subcube is equivalent to satisfying the new
+coordinate and belonging to the original subcube, provided the coordinate is
+fresh.  This bundles the two helper lemmas
+`mem_subcube_of_path_cons_fixed` and `mem_subcube_of_path_cons_subset` into a
+single reusable equivalence.-/
+@[simp] lemma mem_subcube_of_path_cons (x : Point n)
+    (i : Fin n) (b : Bool) (p : List (Fin n × Bool))
+    (hi : i ∉ (subcube_of_path (n := n) p).idx) :
+    (subcube_of_path ((i, b) :: p)).mem x ↔
+      x i = b ∧ (subcube_of_path p).mem x := by
+  constructor
+  · intro hx
+    -- The head assignment fixes the value at coordinate `i`.
+    have hxi :=
+      mem_subcube_of_path_cons_fixed (n := n) (x := x) (p := p)
+        (i := i) (b := b) hx
+    -- Membership in the extended subcube descends to the tail.
+    have hx_tail :=
+      mem_subcube_of_path_cons_subset (n := n) (x := x) (i := i)
+        (b := b) (p := p) hi hx
+    exact ⟨hxi, hx_tail⟩
+  · rintro ⟨hxi, hx_tail⟩
+    -- Conversely, satisfying the head and tail assignments yields membership
+    -- in the extended subcube.
+    exact mem_subcube_of_path_cons_of_mem (n := n) (x := x) (p := p)
+      (i := i) (b := b) hx_tail hxi
+
 /-- Adding a constraint on a different coordinate preserves the freshness of
 an index.  If `i` does not occur in the index set extracted from `p`, then it
 also does not occur after consing a pair for a distinct coordinate `j`.

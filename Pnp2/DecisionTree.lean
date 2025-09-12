@@ -2261,13 +2261,13 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
           (DecisionTree.node j t₀ t₁) p,
         ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
   classical
-  -- We isolate the *last* occurrence of `j` inside the tail path `p`.  The
-  -- auxiliary lemma `subcube_of_path_idx_split_last` yields a decomposition
-  -- `p = p₁ ++ (j, bj) :: p₂` where the suffix `p₂` contains no further
-  -- mentions of `j`.  This condition is crucial for the subsequent swapping
-  -- argument which requires the tail after `(j, bj)` to avoid `j` entirely.
-  obtain ⟨bj, p₁, p₂, hsplit, hjp₂⟩ :=
-    subcube_of_path_idx_split_last (n := n) (p := p) (j := j) hj
+  -- We isolate the *first* occurrence of `j` inside the tail path `p`.  The
+  -- auxiliary lemma `subcube_of_path_idx_split_first` yields a decomposition
+  -- `p = p₁ ++ (j, bj) :: p₂` where the prefix `p₁` avoids any mention of
+  -- `j`.  This condition is crucial for the subsequent swapping argument
+  -- which requires the segment preceding `(j, bj)` to be free of `j` entirely.
+  obtain ⟨bj, p₁, p₂, hsplit, hjp₁⟩ :=
+    subcube_of_path_idx_split_first (n := n) (p := p) (j := j) hj
   -- Rewrite the membership assumption using the split path.  The goal is to
   -- eventually bubble the `(j, bj)` assignment to the very front so that
   -- `coloredSubcubesAux_cons_subset_node_same` becomes applicable.
@@ -2278,9 +2278,9 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
     simpa [hsplit, List.cons_append, List.append_assoc] using hmem
   -- The combinatorial heart of the argument is an induction that repeatedly
   -- swaps neighbouring coordinate assignments, implemented by the lemma
-  -- `coloredSubcubesAux_cons_swap`.  Because the suffix `p₂` is free of `j`
-  -- (captured by `hjp₂`), the pair `(j, bj)` can be moved leftwards across the
-  -- prefix `p₁` until it becomes the head of the entire path.
+  -- `coloredSubcubesAux_cons_swap`.  Because the prefix `p₁` contains no
+  -- mention of `j` (captured by `hjp₁`), the pair `(j, bj)` can be moved
+  -- leftwards across the prefix until it becomes the head of the entire path.
   --
   -- The intricate bookkeeping required for this permutation – in particular
   -- maintaining the `Nodup` conditions on index sets and updating membership
@@ -2296,7 +2296,7 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
   -- To expose the first occurrence of `j` as the head of the path we successively
   -- swap it with the preceding entries of `p₁`.  Each step relies on the
   -- established lemma `coloredSubcubesAux_cons_swap` and the fact that the
-  -- remaining suffix `p₂` avoids `j` (`hjp₂`).
+  -- preceding prefix `p₁` avoids `j` (`hjp₁`).
   --
   -- The final permuted form is captured by the following equality of colour
   -- sets:
@@ -2305,14 +2305,26 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
           ((i, b) :: (p₁ ++ (j, bj) :: p₂))
         = coloredSubcubesAux (n := n) (DecisionTree.node j t₀ t₁)
           ((j, bj) :: (i, b) :: (p₁ ++ p₂)) := by
-    -- TODO: prove by induction on `p₁` using `coloredSubcubesAux_cons_swap`.
-    -- Each swap moves `(j, bj)` one step to the left while preserving
-    -- membership in the colour set.  The proof must also maintain the
-    -- `Nodup` properties of index lists via `subcube_of_path_append_cons_swap`.
-    --
-    -- This equality is the crux of the permutation argument and remains to be
-    -- formalised.
-    sorry
+    -- Move the pair `(j, bj)` to the very front by repeatedly swapping with the
+    -- elements of `p₁`.  The helper lemma `coloredSubcubesAux_cons_bubble`
+    -- performs exactly this bubbling operation.
+    have hi_p2 : i ∉ (subcube_of_path (n := n) p₂).idx := by
+      -- TODO: deduce from `hi` using the inclusion of index sets.
+      sorry
+    have hj_p2 : j ∉ (subcube_of_path (n := n) p₂).idx := by
+      -- Membership in the prefix is incompatible with the index set of the
+      -- suffix obtained from `subcube_of_path_idx_split_first`.
+      -- TODO: derive from `hjp₁`.
+      sorry
+    have hjp₁' : j ∉ p₁.map Prod.fst := by
+      -- Translate the index-set exclusion `hjp₁` to the list representation.
+      -- TODO: prove using `subcube_of_path_idx_subset_map_fst_toFinset`.
+      sorry
+    simpa [List.cons_append, List.append_assoc] using
+      (coloredSubcubesAux_cons_bubble (t := DecisionTree.node j t₀ t₁)
+        (i := i) (j := j) (bi := b) (bj := bj)
+        (p₁ := p₁) (p₂ := p₂)
+        (hi := hi_p2) (hj := hj_p2) (hij := hij) (hj₁ := hjp₁'))
   have hmemNorm :
       br ∈ coloredSubcubesAux (n := n)
         (DecisionTree.node j t₀ t₁)

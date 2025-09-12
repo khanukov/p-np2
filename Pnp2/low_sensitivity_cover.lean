@@ -5,6 +5,7 @@ import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Agreement
 import Mathlib.Data.Finset.Card
+import Mathlib.Data.Nat.Log
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic
 import Archive.Sensitivity
@@ -3873,10 +3874,95 @@ theorem decisionTree_cover
         decisionTree_cover_smallS (F := F) (s := s)
           (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
           (hs_lt_n := hs_lt_n)
-    · -- TODO: handle the boundary sensitivity `n ≤ s ≤ n + 1`.
-      -- In this situation Huang's theorem does not guarantee a strict
-      -- majority in either fibre.
-      sorry
+    ·
+      -- Boundary regime `n ≤ s ≤ n + 1`.  The previous lemma cannot be
+      -- applied with the required strict inequality `s < n`, so we fall back
+      -- to the trivial cover consisting of all `2^n` singleton subcubes.
+      -- Each singleton is automatically monochromatic for every Boolean
+      -- function, and their total count fits under the asymptotic bound since
+      -- `n ≤ coverConst * s * log₂ (n+1)` in this regime.
+      have hs_ge_n : n ≤ s := le_of_not_lt hs_lt_n
+      -- Instantiate the family of all singleton subcubes.
+      classical
+      let singletonSubcube : Point n → Subcube n := fun x =>
+        { idx := Finset.univ
+          , val := fun i _ => x i }
+      let Rset : Finset (Subcube n) :=
+        (Finset.univ.image singletonSubcube)
+      -- Membership in a singleton subcube forces equality with its witness.
+      have hmem_eq {x y : Point n} :
+          y ∈ₛ singletonSubcube x → y = x := by
+        intro hy
+        funext i
+        have hi : i ∈ (Finset.univ : Finset (Fin n)) := by simp
+        have := hy i hi
+        simpa using this
+      have hmem_self (x : Point n) : x ∈ₛ singletonSubcube x := by
+        intro i hi; rfl
+      -- Singletons are monochromatic for any function.
+      have hmono :
+          ∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f := by
+        intro f hf R hR
+        rcases Finset.mem_image.mp hR with ⟨x, -, rfl⟩
+        refine ⟨f x, ?_⟩
+        intro y hy
+        have hyx : y = x := hmem_eq hy
+        simpa [hyx]
+      -- They trivially cover every point where `f` evaluates to `true`.
+      have hcover :
+          ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R := by
+        intro f hf x hx
+        refine ⟨singletonSubcube x, ?_, hmem_self x⟩
+        exact Finset.mem_image.mpr ⟨x, by simp, rfl⟩
+      -- Cardinality: one rectangle per point of the cube.
+      -- Two singleton subcubes are equal only when their witnesses coincide.
+      have hinj : Function.Injective singletonSubcube := by
+        intro x y hxy
+        cases hxy
+        rfl
+      -- Consequently `Rset` has as many elements as the whole cube.
+      have hcard : Rset.card = Nat.pow 2 n := by
+        have hcard' : Rset.card = (Finset.univ : Finset (Point n)).card := by
+          simpa [Rset] using
+            (Finset.card_image_iff.mpr (fun x _ y _ h => hinj h))
+        -- rewrite the cardinality of `Point n` as `2^n`
+        simpa [Finset.card_univ, BoolFunc.card_point] using hcard'
+      -- Numerical bound `2^n ≤ 2^{coverConst * s * log₂ (n+1)}`.
+      -- First, `log₂ (n+1)` is at least one for `n ≥ 1`.
+      have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+        have hs : 2 ^ 1 ≤ Nat.succ n := by
+          simpa [Nat.pow_one] using Nat.succ_le_succ hn
+        -- `le_log_of_pow_le` turns this into a logarithmic inequality.
+        have h := Nat.le_log_of_pow_le (b := 2) (x := 1)
+            (y := Nat.succ n) Nat.one_lt_two hs
+        -- Switch to base-2 logarithms.
+        simpa [Nat.pow_one, Nat.log2_eq_log_two] using h
+      -- Next, since `coverConst ≥ 1`, multiplying by it preserves the
+      -- inequality `s ≤ coverConst * s`.
+      have hmul₁ : n ≤ coverConst * s := by
+        have hge1 : 1 ≤ coverConst :=
+          Nat.succ_le_of_lt (by decide : 0 < coverConst)
+        have hcover : s ≤ coverConst * s := by
+          have := Nat.mul_le_mul_right s hge1
+          simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+        exact le_trans hs_ge_n hcover
+      -- Finally, we can enlarge the product by the logarithmic factor.
+      have hmul₂ : coverConst * s ≤
+            coverConst * s * Nat.log2 (Nat.succ n) :=
+        by
+        have : coverConst * s * 1 ≤
+            coverConst * s * Nat.log2 (Nat.succ n) :=
+          Nat.mul_le_mul_left (coverConst * s) hlog
+        simpa using this
+      have hpow_le :
+          Nat.pow 2 n ≤
+            Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+        have : n ≤ coverConst * s * Nat.log2 (Nat.succ n) :=
+          le_trans hmul₁ hmul₂
+        -- apply monotonicity of `Nat.pow`
+        exact Nat.pow_le_pow_right (by decide : (0 : ℕ) < 2) this
+      exact
+        ⟨Rset, hmono, hcover, by simpa [hcard] using hpow_le⟩
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

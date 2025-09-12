@@ -280,6 +280,22 @@ def subcube_of_path : List (Fin n × Bool) → Subcube n
     (subcube_of_path ((i, b) :: p)).idx = insert i (subcube_of_path p).idx :=
   rfl
 
+lemma subcube_of_path_cons (i : Fin n) (b : Bool) (p : List (Fin n × Bool)) :
+    subcube_of_path ((i, b) :: p) = (subcube_of_path p).extend i b := by
+  classical
+  -- Two subcubes are equal once their index sets and assigned values coincide.
+  refine Subcube.ext ?_ ?_
+  · -- Index sets agree by `subcube_of_path_cons_idx` and the definition of `extend`.
+    simp [subcube_of_path_cons_idx, Subcube.extend]
+  · intro j hj
+    -- Values align whether or not the queried coordinate is `i`.
+    by_cases hji : j = i
+    · subst hji; simp [subcube_of_path, Subcube.extend]
+    · have hjR : j ∈ (subcube_of_path p).idx := by
+        -- Membership in the extended index set reduces to the tail.
+        simpa [Subcube.extend, subcube_of_path_cons_idx, hji] using hj
+      simp [subcube_of_path, Subcube.extend, hji, hjR]
+
 /-- Inserting the same coordinate twice does not change the recorded index
 set.  This `simp` lemma helps eliminate redundant assignments in technical
 arguments about decision-tree paths. -/
@@ -866,6 +882,32 @@ lemma eval_matchSubcube_agrees {p : List (Fin n × Bool)} {b : Bool}
           have hx : x i = true := hcons.1
           have ih' := ih hcons.2
           simpa [matchSubcube, hx] using ih'
+
+/--
+When the point `x` satisfies every assignment in `p`, the execution of
+`matchSubcube p b t` visits nodes in exactly the same order as the list
+`p` records.  Consequently `path_to_leaf` reproduces `p` verbatim.-/
+lemma path_to_leaf_matchSubcube_agrees {p : List (Fin n × Bool)} {b : Bool}
+    {t : DecisionTree n} {x : Point n}
+    (h : agreesWithAssignments (n := n) x p) :
+    path_to_leaf (matchSubcube (n := n) p b t) x = p := by
+  classical
+  induction p with
+  | nil =>
+      -- With no assignments the tree collapses to a leaf, producing an empty path.
+      simp [matchSubcube, path_to_leaf]
+  | cons hd tl ih =>
+      rcases hd with ⟨i, v⟩
+      -- Split the agreement condition into the head assignment and the tail.
+      have hcons :
+          x i = v ∧ agreesWithAssignments (n := n) x tl :=
+        (agreesWithAssignments_cons (x := x) (i := i) (b := v) (p := tl)).1 h
+      -- Recurse on the tail after following the corresponding branch.
+      cases v
+      · have := ih hcons.2
+        simp [matchSubcube, path_to_leaf, hcons.1, this]
+      · have := ih hcons.2
+        simp [matchSubcube, path_to_leaf, hcons.1, this]
 
 /--
 If the input `x` violates at least one assignment in `p`, evaluating
@@ -1738,6 +1780,21 @@ lemma not_mem_subcube_of_path_of_not_mem_fst (i : Fin n)
           (j := j) (b := b) (p := tl) hi hij)
 
 /--
+If the list of coordinates remains `Nodup` after prefixing `(i, b)`, then the
+index set of the tail path does not contain `i`.  This is a convenient
+bridging lemma when converting between syntactic freshness on paths and the
+semantic statement about subcube indices.-/
+lemma not_mem_subcube_of_path_of_nodup_head (i : Fin n) (b : Bool)
+    (p : List (Fin n × Bool))
+    (hnodup : (((i, b) :: p).map Prod.fst).Nodup) :
+    i ∉ (subcube_of_path (n := n) p).idx := by
+  -- From `Nodup` we know `i` is absent from `p.map Prod.fst`, and the previous
+  -- lemma transports this fact to the index set recorded by `subcube_of_path`.
+  have hip : i ∉ p.map Prod.fst :=
+    (List.nodup_cons).1 hnodup |>.1
+  exact not_mem_subcube_of_path_of_not_mem_fst (n := n) (i := i) (p := p) hip
+
+/--
 Если координата `i` отсутствует в списке индексов пути `p`, то
 удаление ведущего присваивания `(i, b)` сохраняет принадлежность точки
 подкубу, описанному хвостом `p`.  Свежесть `i` формулируется на уровне
@@ -1766,7 +1823,7 @@ lemma mem_subcube_idx_of_mem_path (i : Fin n)
       have hmem' : i = j ∨ ∃ b', (i, b') ∈ tl := by
         simpa [List.map_cons, List.mem_cons] using hi
       rcases hmem' with hji | ⟨b', htl⟩
-      · subst hji; simp
+      · subst hji; simp [subcube_of_path_cons, Subcube.extend]
       · have hidx := ih (List.mem_map.mpr ⟨(i, b'), htl, rfl⟩)
         exact Finset.mem_insert.mpr (Or.inr hidx)
 
@@ -2106,15 +2163,21 @@ lemma coloredSubcubesAux_cons_subset_node_same (t₀ t₁ : DecisionTree n)
     refine ⟨br, hmemRec, ?_⟩
     intro x hx; simpa using hx
 
-/--
-Placeholder for the permutation case of
-`coloredSubcubesAux_cons_subset`.  When the root coordinate `j` of a
-node already appears inside the tail path `p` and differs from the
-coordinate `i` being removed, the combinatorial bookkeeping becomes
-substantial.  The full proof is deferred; we assume the existence of an
-ancestor subcube provided by reordering assignments inside `p`.
+  /-!
+The final, yet unproven, case of `coloredSubcubesAux_cons_subset` deals with
+removing an assignment `(i, b)` from the path when the decision node queries a
+different coordinate `j` that already occurs somewhere in the tail `p`.  To
+handle this situation one has to commute `j` towards the front of `p`, a task
+achieved by repeatedly applying `coloredSubcubesAux_cons_swap` in tandem with
+the path normalisation lemma `subcube_of_path_append_cons_swap`.  Once the
+first occurrence of `j` is exposed, the previously established lemma
+`coloredSubcubesAux_cons_subset_node_same` can be invoked.
+
+The swapping argument has not yet been formalised; replacing the earlier axiom
+with the lemma below concentrates the remaining work in a single proof
+obligation, marked by `sorry`.
 -/
-axiom coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
+lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
     (i j : Fin n) (b : Bool) (p : List (Fin n × Bool))
     (br : Bool × Subcube n)
     (hmem : br ∈ coloredSubcubesAux (n := n)
@@ -2124,7 +2187,14 @@ axiom coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
     (hij : i ≠ j) :
     ∃ brRec ∈ coloredSubcubesAux (n := n)
           (DecisionTree.node j t₀ t₁) p,
-        ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x
+        ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
+  classical
+  -- TODO: commute the first occurrence of `j` in `p` to the front using
+  -- `coloredSubcubesAux_cons_swap` and `subcube_of_path_append_cons_swap`.
+  -- After normalising the path, apply
+  -- `coloredSubcubesAux_cons_subset_node_same` to drop the head assignment.
+  -- The details of this combinatorial argument remain to be formalised.
+  sorry
 
 /--
 The helper `coloredSubcubesAux_cons_subset` shows that removing the most
@@ -2423,8 +2493,12 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
             simpa [matchSubcube, coloredSubcubes, coloredSubcubesAux] using hmem
           rcases Finset.mem_union.mp hmem_unfolded with h_main | h_branch
           · -- Path continues along the main branch.
-            -- TODO: relate this membership to the recursive tree and apply IH.
-            -- The argument mirrors the `v = true` branch below.
+            -- After stripping the head assignment we expect to obtain a
+            -- coloured subcube produced by `matchSubcube tl b t`.  Showing that
+            -- this ancestor does not coincide with `subcube_of_path tl` will
+            -- allow an application of the inductive hypothesis.
+            -- TODO: formalise this argument and derive the required
+            -- contradiction with `hne`.
             sorry
           · -- Path deviates into the fallback tree `t`.
             have h_path : br ∈ coloredSubcubesAux (n := n) t [(i, true)] := h_branch
@@ -2445,7 +2519,10 @@ lemma coloredSubcubes_branchOnSubcube_subset {R : Subcube n} {b : Bool}
                 (br := br) (hmem := h_path)
             exact ⟨brRec, by simpa [coloredSubcubes] using hmemRec, hsub⟩
           · -- Path continues along the main branch (symmetric to the previous case).
-            -- TODO: convert this membership and apply the inductive hypothesis.
+            -- As above, removing the initial assignment should expose a coloured
+            -- subcube for `matchSubcube tl b t` and lead to an inductive call
+            -- once we rule out equality with `subcube_of_path tl`.
+            -- TODO: carry out the symmetry argument and apply the inductive step.
             sorry
   -- Specialise the general statement to the list encoding of `R`.
   have hmem' : br ∈ coloredSubcubes (n := n) (matchSubcube (n := n) (R.toList) b t) := by
@@ -2567,6 +2644,7 @@ lemma exists_decisionTree_depth_le_support_card (f : BFunc n) :
     refine Nat.rec ?base ?step
     · -- Base case: the support is empty, so the function is constant.
       intro f hf
+      -- The empty support implies that `f` is constant.
       have hcard0 : (support f).card = 0 := Nat.le_zero.mp hf
       have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
         Finset.card_eq_zero.mp hcard0
@@ -2579,22 +2657,68 @@ lemma exists_decisionTree_depth_le_support_card (f : BFunc n) :
         simpa using
           (eval_eq_of_agree_on_support (f := f) (x := x)
             (y := fun _ : Fin n => false) hx)
-        
-      refine ⟨DecisionTree.leaf (n := n) (f (fun _ => false)), ?_, by
-        simp [DecisionTree.depth]⟩
-      intro x
-      have hx := hxconst x
-      simp [hx.symm]
+      -- Build a depth-zero tree that always returns this constant value.
+      refine ⟨DecisionTree.ofSubcube (n := n)
+          (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+          (f (fun _ => false)), ?_, ?_⟩
+      · intro x
+        have hxmem : x ∈ₛ DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
+          -- The empty path describes the whole cube, so membership is trivial.
+          simpa [Subcube.mem, DecisionTree.subcube_of_path]
+        have hconst :=
+          DecisionTree.eval_ofSubcube_of_mem (n := n)
+            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+            (x := x) (b := f (fun _ => false)) hxmem
+        have hx := hxconst x
+        simpa [hx.symm] using hconst
+      ·
+        -- The depth of `ofSubcube` is bounded by the number of fixed coordinates,
+        -- which is zero for the empty path.
+        have hdepth :=
+          DecisionTree.depth_ofSubcube_le
+            (n := n)
+            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+            (b := f (fun _ => false))
+        simpa [DecisionTree.subcube_of_path] using hdepth
     · -- Inductive step: split on a coordinate from the support.
       intro k ih f hf
       by_cases hzero : (support f).card = 0
-      · -- With empty support we can invoke the induction hypothesis directly.
-        have hf0 : (support f).card ≤ 0 := by simpa [hzero]
-        have hf' : (support f).card ≤ k :=
-          hf0.trans (Nat.zero_le _)
-        obtain ⟨t, ht, hdepth⟩ := ih (f := f) hf'
-        refine ⟨t, ht, ?_⟩
-        exact hdepth.trans (Nat.le_succ _)
+      · -- With empty support the function again collapses to a constant tree.
+        have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
+          Finset.card_eq_zero.mp hzero
+        have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
+          intro x
+          have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
+            intro i hi
+            have : False := by simpa [hsupport_empty] using hi
+            exact this.elim
+          simpa using
+            (eval_eq_of_agree_on_support (f := f) (x := x)
+              (y := fun _ : Fin n => false) hx)
+        refine ⟨DecisionTree.ofSubcube (n := n)
+            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+            (f (fun _ => false)), ?_, ?_⟩
+        · intro x
+          have hxmem : x ∈ₛ DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
+            simpa [Subcube.mem, DecisionTree.subcube_of_path]
+          have hconst :=
+            DecisionTree.eval_ofSubcube_of_mem (n := n)
+              (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+              (x := x) (b := f (fun _ => false)) hxmem
+          have hx := hxconst x
+          simpa [hx.symm] using hconst
+        ·
+          have hdepth :=
+            DecisionTree.depth_ofSubcube_le
+              (n := n)
+              (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+              (b := f (fun _ => false))
+          have : DecisionTree.depth (n := n)
+              (DecisionTree.ofSubcube (n := n)
+                (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+                (f (fun _ => false))) ≤ 0 := by
+            simpa [DecisionTree.subcube_of_path] using hdepth
+          exact this.trans (Nat.zero_le _)
       ·
         -- Choose a coordinate `i` from the nonempty support.
         have hpos : 0 < (support f).card := Nat.pos_of_ne_zero hzero

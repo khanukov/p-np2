@@ -2189,12 +2189,49 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
           (DecisionTree.node j t₀ t₁) p,
         ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
   classical
-  -- TODO: commute the first occurrence of `j` in `p` to the front using
-  -- `coloredSubcubesAux_cons_swap` and `subcube_of_path_append_cons_swap`.
-  -- After normalising the path, apply
-  -- `coloredSubcubesAux_cons_subset_node_same` to drop the head assignment.
-  -- The details of this combinatorial argument remain to be formalised.
-  sorry
+  -- We first locate the *last* occurrence of `j` inside the tail path `p`.
+  -- The auxiliary lemma `subcube_of_path_idx_split_last` provides a
+  -- decomposition `p = p₁ ++ (j, bj) :: p₂` such that the suffix `p₂` no
+  -- longer mentions `j`.
+  obtain ⟨bj, p₁, p₂, hsplit, hjp₂⟩ :=
+    subcube_of_path_idx_split_last (n := n) (p := p) (j := j) hj
+  -- Rewrite the membership assumption using the split path.  The goal is to
+  -- eventually bubble the `(j, bj)` assignment to the very front so that
+  -- `coloredSubcubesAux_cons_subset_node_same` becomes applicable.
+  have hmem' :
+      br ∈ coloredSubcubesAux (n := n)
+        (DecisionTree.node j t₀ t₁)
+        ((i, b) :: p₁ ++ (j, bj) :: p₂) := by
+    simpa [hsplit, List.cons_append, List.append_assoc] using hmem
+  -- We now perform an induction on the prefix `p₁`.  When `p₁` is empty the
+  -- coordinate `j` already occurs at the head of `p`, so the general lemma
+  -- `coloredSubcubesAux_cons_subset` immediately yields the desired ancestor
+  -- subcube.  The non-empty case, which requires a genuine permutation of the
+  -- path, is postponed as future work.
+  induction' p₁ with hd tl ih generalizing br hmem' hi
+  · -- Base case: `p₁ = []`, so `p = (j, bj) :: p₂`.
+    have hi' : i ∉ (subcube_of_path (n := n) ((j, bj) :: p₂)).idx := by
+      simpa [hsplit] using hi
+    -- The membership hypothesis has the required shape for
+    -- `coloredSubcubesAux_cons_subset`.
+    have hmem'' :
+        br ∈ coloredSubcubesAux (n := n)
+            (DecisionTree.node j t₀ t₁) ((i, b) :: (j, bj) :: p₂) := by
+      simpa [hsplit] using hmem
+    obtain ⟨brRec, hmemRec, hsub⟩ :=
+      coloredSubcubesAux_cons_subset
+        (t := DecisionTree.node j t₀ t₁)
+        (i := i) (b := b) (p := (j, bj) :: p₂)
+        (br := br) (hmem := hmem'') (hi := hi')
+    -- The resulting element lies in the colour set for the tail path `p`.
+    refine ⟨brRec, ?_, hsub⟩
+    simpa [hsplit] using hmemRec
+  · -- Inductive step: `p₁ = hd :: tl`.  Commuting the occurrence of `j`
+    -- past this additional head element and finishing the argument requires a
+    -- careful swapping argument that has not yet been formalised.
+    -- TODO: implement the permutation step using `coloredSubcubesAux_cons_swap`.
+    -- The statement is therefore left as a proof obligation for future work.
+    exact sorry
 
 /--
 The helper `coloredSubcubesAux_cons_subset` shows that removing the most
@@ -2621,6 +2658,53 @@ lemma sensitivity_restrictPath_le (F : Family n) (p : List (Fin n × Bool))
 end Family
 
 /--
+  Build a depth-zero decision tree for a Boolean function with empty support.
+  Such a function is constant on the entire cube, so a single leaf suffices.
+-/
+lemma exists_decisionTree_of_support_card_zero (f : BFunc n)
+    (hzero : (support f).card = 0) :
+    ∃ t : DecisionTree n,
+      (∀ x : Point n, DecisionTree.eval_tree (n := n) t x = f x) ∧
+      DecisionTree.depth (n := n) t ≤ 0 := by
+  classical
+  -- The empty support implies the function is constant.
+  have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
+    Finset.card_eq_zero.mp hzero
+  have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
+    intro x
+    have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
+      intro i hi
+      have : False := by simpa [hsupport_empty] using hi
+      exact this.elim
+    simpa using
+      (eval_eq_of_agree_on_support (f := f) (x := x)
+        (y := fun _ : Fin n => false) hx)
+  -- The tree `ofSubcube` for the empty path queries no coordinates.
+  refine ⟨DecisionTree.ofSubcube (n := n)
+      (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+      (f (fun _ => false)), ?_, ?_⟩
+  · intro x
+    -- Every point belongs to the subcube described by the empty path.
+    have hxmem : x ∈ₛ
+        DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
+      simpa [Subcube.mem, DecisionTree.subcube_of_path]
+    -- Evaluation reduces to the constant value.
+    have hconst :=
+      DecisionTree.eval_ofSubcube_of_mem (n := n)
+        (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+        (x := x) (b := f (fun _ => false)) hxmem
+    have hx := hxconst x
+    simpa [hx.symm] using hconst
+  ·
+    -- The depth is bounded by the number of fixed coordinates, which is zero.
+    have hdepth :=
+      DecisionTree.depth_ofSubcube_le
+        (n := n)
+        (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+        (b := f (fun _ => false))
+    simpa [DecisionTree.subcube_of_path] using hdepth
+
+/--
 Given any Boolean function `f`, we can build a decision tree that computes it
 while querying at most one coordinate for each element of `support f`.  The
 resulting tree has depth bounded by the size of the support.
@@ -2644,81 +2728,23 @@ lemma exists_decisionTree_depth_le_support_card (f : BFunc n) :
     refine Nat.rec ?base ?step
     · -- Base case: the support is empty, so the function is constant.
       intro f hf
-      -- The empty support implies that `f` is constant.
+      -- Translate the bound `hf` into exact emptiness of the support and apply
+      -- the constant-function construction.
       have hcard0 : (support f).card = 0 := Nat.le_zero.mp hf
-      have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
-        Finset.card_eq_zero.mp hcard0
-      have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
-        intro x
-        have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
-          intro i hi
-          have : False := by simpa [hsupport_empty] using hi
-          exact this.elim
-        simpa using
-          (eval_eq_of_agree_on_support (f := f) (x := x)
-            (y := fun _ : Fin n => false) hx)
-      -- Build a depth-zero tree that always returns this constant value.
-      refine ⟨DecisionTree.ofSubcube (n := n)
-          (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-          (f (fun _ => false)), ?_, ?_⟩
-      · intro x
-        have hxmem : x ∈ₛ DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
-          -- The empty path describes the whole cube, so membership is trivial.
-          simpa [Subcube.mem, DecisionTree.subcube_of_path]
-        have hconst :=
-          DecisionTree.eval_ofSubcube_of_mem (n := n)
-            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-            (x := x) (b := f (fun _ => false)) hxmem
-        have hx := hxconst x
-        simpa [hx.symm] using hconst
-      ·
-        -- The depth of `ofSubcube` is bounded by the number of fixed coordinates,
-        -- which is zero for the empty path.
-        have hdepth :=
-          DecisionTree.depth_ofSubcube_le
-            (n := n)
-            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-            (b := f (fun _ => false))
-        simpa [DecisionTree.subcube_of_path] using hdepth
+      obtain ⟨t, ht, hdepth⟩ :=
+        exists_decisionTree_of_support_card_zero (n := n) (f := f) hcard0
+      exact ⟨t, ht, by simpa using hdepth⟩
     · -- Inductive step: split on a coordinate from the support.
       intro k ih f hf
       by_cases hzero : (support f).card = 0
       · -- With empty support the function again collapses to a constant tree.
-        have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
-          Finset.card_eq_zero.mp hzero
-        have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
-          intro x
-          have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
-            intro i hi
-            have : False := by simpa [hsupport_empty] using hi
-            exact this.elim
-          simpa using
-            (eval_eq_of_agree_on_support (f := f) (x := x)
-              (y := fun _ : Fin n => false) hx)
-        refine ⟨DecisionTree.ofSubcube (n := n)
-            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-            (f (fun _ => false)), ?_, ?_⟩
-        · intro x
-          have hxmem : x ∈ₛ DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
-            simpa [Subcube.mem, DecisionTree.subcube_of_path]
-          have hconst :=
-            DecisionTree.eval_ofSubcube_of_mem (n := n)
-              (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-              (x := x) (b := f (fun _ => false)) hxmem
-          have hx := hxconst x
-          simpa [hx.symm] using hconst
-        ·
-          have hdepth :=
-            DecisionTree.depth_ofSubcube_le
-              (n := n)
-              (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-              (b := f (fun _ => false))
-          have : DecisionTree.depth (n := n)
-              (DecisionTree.ofSubcube (n := n)
-                (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-                (f (fun _ => false))) ≤ 0 := by
-            simpa [DecisionTree.subcube_of_path] using hdepth
-          exact this.trans (Nat.zero_le _)
+        obtain ⟨t, ht, hdepth⟩ :=
+          exists_decisionTree_of_support_card_zero (n := n) (f := f) hzero
+        refine ⟨t, ht, ?_⟩
+        -- The produced tree has depth `≤ 0`, which trivially bounds the desired
+        -- depth `≤ Nat.succ k`.
+        have hle : 0 ≤ Nat.succ k := Nat.zero_le _
+        exact hdepth.trans hle
       ·
         -- Choose a coordinate `i` from the nonempty support.
         have hpos : 0 < (support f).card := Nat.pos_of_ne_zero hzero

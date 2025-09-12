@@ -2173,7 +2173,6 @@ permutation lemma and remains to be formalised.
 lemma coloredSubcubesAux_cons_bubble (t : DecisionTree n)
     (i j : Fin n) (bi bj : Bool) (p₁ p₂ : List (Fin n × Bool))
     (hi : i ∉ (subcube_of_path (n := n) p₂).idx)
-    (hj : j ∉ (subcube_of_path (n := n) p₂).idx)
     (hij : i ≠ j)
     (hj₁ : j ∉ p₁.map Prod.fst) :
     coloredSubcubesAux (n := n) t
@@ -2348,11 +2347,6 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
           i ∈ (subcube_of_path (n := n) p).idx :=
         mem_subcube_idx_of_mem_path (n := n) (i := i) (p := p) hip_list
       exact hi hip_idx
-    have hj_p2 : j ∉ (subcube_of_path (n := n) p₂).idx := by
-      -- Membership in the prefix is incompatible with the index set of the
-      -- suffix obtained from `subcube_of_path_idx_split_first`.
-      -- TODO: derive from `hjp₁`.
-      sorry
     -- Translate the exclusion of `j` from the index set of the prefix `p₁`
     -- to the corresponding list representation.
     have hjp₁' : j ∉ p₁.map Prod.fst := by
@@ -2362,7 +2356,7 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
       (coloredSubcubesAux_cons_bubble (t := DecisionTree.node j t₀ t₁)
         (i := i) (j := j) (bi := b) (bj := bj)
         (p₁ := p₁) (p₂ := p₂)
-        (hi := hi_p2) (hj := hj_p2) (hij := hij) (hj₁ := hjp₁'))
+        (hi := hi_p2) (hij := hij) (hj₁ := hjp₁'))
   have hmemNorm :
       br ∈ coloredSubcubesAux (n := n)
         (DecisionTree.node j t₀ t₁)

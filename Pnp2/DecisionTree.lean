@@ -111,6 +111,15 @@ lemma path_to_leaf_length_le_depth (t : DecisionTree n) (x : Point n) :
         simpa [path_to_leaf, depth, h] using Nat.succ_le_succ this
 
 /--
+A Boolean constant admits a decision tree of depth zero consisting of a
+single leaf.  This lemma packages the construction for later reuse.
+-/
+lemma exists_decisionTree_constant (b : Bool) :
+    ∃ t : DecisionTree n, (∀ x, eval_tree t x = b) ∧ depth t = 0 := by
+  refine ⟨leaf b, ?_, rfl⟩
+  intro x; simpa using (eval_tree_leaf (n := n) (b := b) (x := x))
+
+/--
 `ofAssignments p b` builds a decision tree that sequentially checks the
 assignments listed in `p`.  If the input point satisfies every pair `(i, v)` in
 `p`, evaluation returns the Boolean `b`.  The first mismatch immediately

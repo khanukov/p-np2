@@ -2362,11 +2362,19 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
         (DecisionTree.node j t₀ t₁)
         ((j, bj) :: (i, b) :: (p₁ ++ p₂)) := by
     simpa [hperm, List.cons_append, List.append_assoc] using hmem'
-  -- With the normalised path in hand, applying
-  -- `coloredSubcubesAux_cons_subset_node_same` would yield the desired result.
-  -- The remaining steps are therefore postponed.
-  -- TODO: complete the permutation argument and final application.
-  sorry
+  -- After bubbling `(j, bj)` to the front we can drop this head entry using
+  -- the specialised subset lemma for matching coordinates.
+  obtain ⟨br₁, hbr₁, hsub₁⟩ :=
+    coloredSubcubesAux_cons_subset_node_same (t₀ := t₀) (t₁ := t₁)
+      (i := j) (b := bj) (p := (i, b) :: (p₁ ++ p₂)) (br := br) hmemNorm
+  -- Having removed `(j, bj)` we would next like to delete the `(i, b)`
+  -- assignment and permute the remaining path back to `p`.  These steps
+  -- require additional bookkeeping and are left for future work.
+  refine ⟨br₁, ?_, ?_⟩
+  · -- membership in the target coloured subcube set
+    sorry
+  · -- the subcube inclusion established so far
+    exact hsub₁
 
 /--
 The helper `coloredSubcubesAux_cons_subset` shows that removing the most

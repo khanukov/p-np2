@@ -2241,25 +2241,26 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
           (DecisionTree.node j t₀ t₁) p,
         ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
   classical
-  -- We first locate the *first* occurrence of `j` inside the tail path `p`.
-  -- The auxiliary lemma `subcube_of_path_idx_split_first` provides a
-  -- decomposition `p = p₁ ++ (j, bj) :: p₂` where the prefix `p₁` is free of
-  -- further mentions of `j`.
-  obtain ⟨bj, p₁, p₂, hsplit, hjp₁⟩ :=
-    subcube_of_path_idx_split_first (n := n) (p := p) (j := j) hj
+  -- We isolate the *last* occurrence of `j` inside the tail path `p`.  The
+  -- auxiliary lemma `subcube_of_path_idx_split_last` yields a decomposition
+  -- `p = p₁ ++ (j, bj) :: p₂` where the suffix `p₂` contains no further
+  -- mentions of `j`.  This condition is crucial for the subsequent swapping
+  -- argument which requires the tail after `(j, bj)` to avoid `j` entirely.
+  obtain ⟨bj, p₁, p₂, hsplit, hjp₂⟩ :=
+    subcube_of_path_idx_split_last (n := n) (p := p) (j := j) hj
   -- Rewrite the membership assumption using the split path.  The goal is to
   -- eventually bubble the `(j, bj)` assignment to the very front so that
   -- `coloredSubcubesAux_cons_subset_node_same` becomes applicable.
   have hmem' :
       br ∈ coloredSubcubesAux (n := n)
         (DecisionTree.node j t₀ t₁)
-        ((i, b) :: p₁ ++ (j, bj) :: p₂) := by
+        ((i, b) :: (p₁ ++ (j, bj) :: p₂)) := by
     simpa [hsplit, List.cons_append, List.append_assoc] using hmem
   -- The combinatorial heart of the argument is an induction that repeatedly
   -- swaps neighbouring coordinate assignments, implemented by the lemma
-  -- `coloredSubcubesAux_cons_swap`.  Because the prefix `p₁` is free of `j`
-  -- (captured by `hjp₁`), the pair `(j, bj)` can be moved leftwards until it
-  -- becomes the head of the entire path.
+  -- `coloredSubcubesAux_cons_swap`.  Because the suffix `p₂` is free of `j`
+  -- (captured by `hjp₂`), the pair `(j, bj)` can be moved leftwards across the
+  -- prefix `p₁` until it becomes the head of the entire path.
   --
   -- The intricate bookkeeping required for this permutation – in particular
   -- maintaining the `Nodup` conditions on index sets and updating membership
@@ -2272,15 +2273,31 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
   -- the head assignment and obtain the required ancestor subcube.
   --
   -- Implementing this reasoning remains future work.
+  -- To expose the first occurrence of `j` as the head of the path we successively
+  -- swap it with the preceding entries of `p₁`.  Each step relies on the
+  -- established lemma `coloredSubcubesAux_cons_swap` and the fact that the
+  -- remaining suffix `p₂` avoids `j` (`hjp₂`).
+  --
+  -- The final permuted form is captured by the following equality of colour
+  -- sets:
+  have hperm :
+      coloredSubcubesAux (n := n) (DecisionTree.node j t₀ t₁)
+          ((i, b) :: (p₁ ++ (j, bj) :: p₂))
+        = coloredSubcubesAux (n := n) (DecisionTree.node j t₀ t₁)
+          ((j, bj) :: (i, b) :: (p₁ ++ p₂)) := by
+    -- TODO: prove by induction on `p₁` using `coloredSubcubesAux_cons_swap`.
+    -- Each swap moves `(j, bj)` one step to the left while preserving
+    -- membership in the colour set.  The proof must also maintain the
+    -- `Nodup` properties of index lists via `subcube_of_path_append_cons_swap`.
+    --
+    -- This equality is the crux of the permutation argument and remains to be
+    -- formalised.
+    sorry
   have hmemNorm :
       br ∈ coloredSubcubesAux (n := n)
         (DecisionTree.node j t₀ t₁)
-        ((j, bj) :: (i, b) :: p₁ ++ p₂) := by
-    -- TODO: build this membership via repeated applications of
-    -- `coloredSubcubesAux_cons_swap`.
-    -- This placeholder highlights the intended normal form of the path.
-    -- The actual derivation is still missing.
-    sorry
+        ((j, bj) :: (i, b) :: (p₁ ++ p₂)) := by
+    simpa [hperm, List.cons_append, List.append_assoc] using hmem'
   -- With the normalised path in hand, applying
   -- `coloredSubcubesAux_cons_subset_node_same` would yield the desired result.
   -- The remaining steps are therefore postponed.

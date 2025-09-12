@@ -2308,18 +2308,56 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
     -- Move the pair `(j, bj)` to the very front by repeatedly swapping with the
     -- elements of `p₁`.  The helper lemma `coloredSubcubesAux_cons_bubble`
     -- performs exactly this bubbling operation.
+    -- The index set of a suffix is contained in that of the whole path, so
+    -- freshness of `i` for `p` immediately transfers to `p₂`.
     have hi_p2 : i ∉ (subcube_of_path (n := n) p₂).idx := by
-      -- TODO: deduce from `hi` using the inclusion of index sets.
-      sorry
+      intro hip₂
+      -- Membership in the index set of `p₂` yields a corresponding occurrence
+      -- of `i` in the list of coordinates of `p₂`.
+      have hip₂_list : i ∈ p₂.map Prod.fst := by
+        have hip₂_fin :
+            i ∈ (p₂.map Prod.fst).toFinset :=
+          subcube_of_path_idx_subset_map_fst_toFinset (n := n)
+            (p := p₂) hip₂
+        simpa [List.mem_toFinset] using hip₂_fin
+      -- This occurrence also shows up in the full path `p`.
+      have hip_list : i ∈ p.map Prod.fst := by
+        -- Using the decomposition `hsplit` and distributing `map` over append.
+        have hmap :
+            (p₁ ++ (j, bj) :: p₂).map Prod.fst
+              = p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by
+          simp
+        have hip_total : i ∈ p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by
+          -- The element comes from the second half of the concatenation.
+          apply (List.mem_append).2
+          right
+          -- Membership reduces to the known occurrence in `p₂`.
+          simpa [List.mem_cons, hip₂_list, hij] using
+            (Or.inr hip₂_list : i = j ∨ i ∈ p₂.map Prod.fst)
+        have hip_total' :
+            i ∈ (p₁ ++ (j, bj) :: p₂).map Prod.fst := by
+          simpa [hmap] using hip_total
+        -- Replace the left-hand side using `hsplit`.
+        have hp : p.map Prod.fst =
+            (p₁ ++ (j, bj) :: p₂).map Prod.fst := by
+          simpa [hsplit]
+        simpa [hp] using hip_total'
+      -- From a list membership we obtain membership in the index set of the
+      -- full path, contradicting `hi`.
+      have hip_idx :
+          i ∈ (subcube_of_path (n := n) p).idx :=
+        mem_subcube_idx_of_mem_path (n := n) (i := i) (p := p) hip_list
+      exact hi hip_idx
     have hj_p2 : j ∉ (subcube_of_path (n := n) p₂).idx := by
       -- Membership in the prefix is incompatible with the index set of the
       -- suffix obtained from `subcube_of_path_idx_split_first`.
       -- TODO: derive from `hjp₁`.
       sorry
+    -- Translate the exclusion of `j` from the index set of the prefix `p₁`
+    -- to the corresponding list representation.
     have hjp₁' : j ∉ p₁.map Prod.fst := by
-      -- Translate the index-set exclusion `hjp₁` to the list representation.
-      -- TODO: prove using `subcube_of_path_idx_subset_map_fst_toFinset`.
-      sorry
+      exact not_mem_path_of_not_mem_subcube_idx (n := n) (i := j)
+        (p := p₁) hjp₁
     simpa [List.cons_append, List.append_assoc] using
       (coloredSubcubesAux_cons_bubble (t := DecisionTree.node j t₀ t₁)
         (i := i) (j := j) (bi := b) (bj := bj)

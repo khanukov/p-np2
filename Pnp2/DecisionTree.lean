@@ -551,6 +551,31 @@ lemma path_split_last {p : List (Fin n × Bool)} {j : Fin n}
         · simp [hjhead]
         · simpa [hjtail]
 
+/-- Split a path at the *first* occurrence of a coordinate `j`.  The prefix
+`p₁` contains no mention of `j`, while the suffix `p₂` begins with the
+corresponding assignment. -/
+lemma path_split_first {p : List (Fin n × Bool)} {j : Fin n}
+    (hj : j ∈ p.map Prod.fst) :
+    ∃ b p₁ p₂, p = p₁ ++ (j, b) :: p₂ ∧ j ∉ p₁.map Prod.fst := by
+  classical
+  revert j
+  induction p with
+  | nil =>
+      intro j hj; cases hj
+  | cons hd tl ih =>
+      intro j hj
+      by_cases hjhead : j = hd.1
+      · subst hjhead
+        refine ⟨hd.2, [], tl, ?_, by simp⟩
+        simp
+      ·
+        have hjtail : j ∈ tl.map Prod.fst := by
+          simpa [hjhead, List.map, List.mem_cons] using hj
+        obtain ⟨b, p₁, p₂, hsplit, hnot⟩ := ih hjtail
+        refine ⟨b, hd :: p₁, p₂, ?_, ?_⟩
+        · simp [hsplit, List.cons_append]
+        · simpa [hjhead] using hnot
+
 /-- A coordinate occurring in the index set of `subcube_of_path p` can be
 isolated as the last occurrence in the underlying path.  The tail after this
 occurrence is guaranteed to be free of further mentions of the coordinate. -/
@@ -577,6 +602,67 @@ lemma subcube_of_path_idx_split_last
     subcube_of_path_idx_subset_map_fst_toFinset (n := n) (p := p₂) hjmem
   have : j ∈ p₂.map Prod.fst := by simpa [List.mem_toFinset] using this
   exact hnot this
+
+/-- A coordinate in the index set of `subcube_of_path p` can be isolated as the
+first occurrence in the underlying path.  The prefix before this occurrence is
+guaranteed to avoid further mentions of the coordinate. -/
+lemma subcube_of_path_idx_split_first
+    {p : List (Fin n × Bool)} {j : Fin n}
+    (hj : j ∈ (subcube_of_path (n := n) p).idx) :
+    ∃ b p₁ p₂, p = p₁ ++ (j, b) :: p₂ ∧
+      j ∉ (subcube_of_path (n := n) p₁).idx := by
+  classical
+  -- Translate membership in the index set to a membership in the list of
+  -- coordinates along the path.
+  have hj_list : j ∈ p.map Prod.fst := by
+    have hj_finset :
+        j ∈ (p.map Prod.fst).toFinset :=
+      subcube_of_path_idx_subset_map_fst_toFinset (n := n) (p := p) hj
+    simpa [List.mem_toFinset] using hj_finset
+  -- Split the path at the first occurrence of `j`.
+  obtain ⟨b, p₁, p₂, hsplit, hnot⟩ := path_split_first (p := p) (j := j) hj_list
+  refine ⟨b, p₁, p₂, hsplit, ?_⟩
+  -- If `j` were present in the index set of the prefix, it would also appear in
+  -- the list of coordinates, contradicting `hnot`.
+  intro hjmem
+  have : j ∈ (p₁.map Prod.fst).toFinset :=
+    subcube_of_path_idx_subset_map_fst_toFinset (n := n) (p := p₁) hjmem
+  have : j ∈ p₁.map Prod.fst := by simpa [List.mem_toFinset] using this
+  exact hnot this
+
+/--
+Splitting a path at the first occurrence of a coordinate yields suffix
+and prefix subpaths that both avoid any further mention of that
+coordinate provided the list of indices is `Nodup`.  This strengthened
+variant of `subcube_of_path_idx_split_first` records freshness of `j`
+for both halves, which is convenient when reasoning about subsequent
+permutations.
+-/
+lemma subcube_of_path_idx_split_first_unique
+    {p : List (Fin n × Bool)} {j : Fin n}
+    (hj : j ∈ (subcube_of_path (n := n) p).idx)
+    (hnodup : (p.map Prod.fst).Nodup) :
+    ∃ b p₁ p₂, p = p₁ ++ (j, b) :: p₂ ∧
+      j ∉ (subcube_of_path (n := n) p₁).idx ∧
+      j ∉ (subcube_of_path (n := n) p₂).idx := by
+  classical
+  obtain ⟨b, p₁, p₂, hsplit, hjp₁⟩ :=
+    subcube_of_path_idx_split_first (n := n) (p := p) (j := j) hj
+  -- The nodup condition ensures that `j` cannot appear in the suffix `p₂`.
+  have hmap : p.map Prod.fst =
+      p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by
+    simp [hsplit]
+  have hnodup' : (p₁.map Prod.fst ++ j :: p₂.map Prod.fst).Nodup := by
+    simpa [hmap] using hnodup
+  have hjp₂_list : j ∉ p₂.map Prod.fst :=
+    let h := (List.nodup_append.1 hnodup').2.1
+    (List.nodup_cons).1 h |>.1
+  have hjp₂ : j ∉ (subcube_of_path (n := n) p₂).idx := by
+    intro hjmem
+    have : j ∈ p₂.map Prod.fst :=
+      mem_path_of_mem_subcube_idx (n := n) (i := j) (p := p₂) hjmem
+    exact hjp₂_list this
+  exact ⟨b, p₁, p₂, hsplit, hjp₁, hjp₂⟩
 
 /-!
 Collect all leaf subcubes of a decision tree together with their Boolean labels.
@@ -2113,6 +2199,47 @@ subcube construction. -/
       simp [coloredSubcubesAux, h0', h1']
 
 /--
+Permutation helper moving a coordinate `(j, bj)` across a prefix `p₁`.  The
+proof proceeds by iteratively swapping neighbouring assignments via
+`coloredSubcubesAux_cons_swap`.  It is stated here for later use in the
+permutation lemma and remains to be formalised.
+-/
+lemma coloredSubcubesAux_cons_bubble (t : DecisionTree n)
+    (i j : Fin n) (bi bj : Bool) (p₁ p₂ : List (Fin n × Bool))
+    (hi : i ∉ (subcube_of_path (n := n) p₂).idx)
+    (hij : i ≠ j)
+    (hj₁ : j ∉ p₁.map Prod.fst) :
+    coloredSubcubesAux (n := n) t
+        ((i, bi) :: p₁ ++ (j, bj) :: p₂)
+      = coloredSubcubesAux (n := n) t
+        ((j, bj) :: (i, bi) :: p₁ ++ p₂) := by
+  classical
+  -- TODO: prove by induction on `p₁` using `coloredSubcubesAux_cons_swap`.
+  sorry
+
+/--
+Reinsert a previously extracted assignment `(j, bj)` between two segments of a
+path.  Provided that the prefix `p₁` does not mention the coordinate `j`, the
+set of coloured subcubes obtained from the shorter path `p₁ ++ p₂` is a subset
+of the set obtained after reintroducing `(j, bj)`.
+This lemma is a direct consequence of the permutation arguments developed for
+`coloredSubcubesAux_cons_bubble` and will be populated in future work.
+-/
+lemma coloredSubcubesAux_cons_restore (t : DecisionTree n)
+    (j : Fin n) (bj : Bool) (p₁ p₂ : List (Fin n × Bool))
+    (hj₁ : j ∉ (subcube_of_path (n := n) p₁).idx) :
+    coloredSubcubesAux (n := n) t (p₁ ++ p₂) ⊆
+      coloredSubcubesAux (n := n) t (p₁ ++ (j, bj) :: p₂) := by
+  classical
+  -- TODO: establish the subset via repeated swapping using
+  -- `coloredSubcubesAux_cons_bubble`.
+  intro br hbr
+  -- Placeholder for the forthcoming argument.
+  -- Ultimately this will swap `(j, bj)` through `p₂` using
+  -- `coloredSubcubesAux_cons_bubble`.
+  sorry
+
+/--
 Specialised version of `coloredSubcubesAux_cons_subset` for a node that branches
 on the very same coordinate as the one being removed.  In this case no path
 permutation is required: membership already lies in the appropriate branch of
@@ -2189,12 +2316,186 @@ lemma coloredSubcubesAux_cons_subset_node_perm (t₀ t₁ : DecisionTree n)
           (DecisionTree.node j t₀ t₁) p,
         ∀ ⦃x : Point n⦄, Subcube.mem br.2 x → Subcube.mem brRec.2 x := by
   classical
-  -- TODO: commute the first occurrence of `j` in `p` to the front using
-  -- `coloredSubcubesAux_cons_swap` and `subcube_of_path_append_cons_swap`.
-  -- After normalising the path, apply
-  -- `coloredSubcubesAux_cons_subset_node_same` to drop the head assignment.
-  -- The details of this combinatorial argument remain to be formalised.
-  sorry
+  -- We isolate the *first* occurrence of `j` inside the tail path `p`.  The
+  -- auxiliary lemma `subcube_of_path_idx_split_first` yields a decomposition
+  -- `p = p₁ ++ (j, bj) :: p₂` where the prefix `p₁` avoids any mention of
+  -- `j`.  This condition is crucial for the subsequent swapping argument
+  -- which requires the segment preceding `(j, bj)` to be free of `j` entirely.
+  obtain ⟨bj, p₁, p₂, hsplit, hjp₁⟩ :=
+    subcube_of_path_idx_split_first (n := n) (p := p) (j := j) hj
+  -- Rewrite the membership assumption using the split path.  The goal is to
+  -- eventually bubble the `(j, bj)` assignment to the very front so that
+  -- `coloredSubcubesAux_cons_subset_node_same` becomes applicable.
+  have hmem' :
+      br ∈ coloredSubcubesAux (n := n)
+        (DecisionTree.node j t₀ t₁)
+        ((i, b) :: (p₁ ++ (j, bj) :: p₂)) := by
+    simpa [hsplit, List.cons_append, List.append_assoc] using hmem
+  -- The combinatorial heart of the argument is an induction that repeatedly
+  -- swaps neighbouring coordinate assignments, implemented by the lemma
+  -- `coloredSubcubesAux_cons_swap`.  Because the prefix `p₁` contains no
+  -- mention of `j` (captured by `hjp₁`), the pair `(j, bj)` can be moved
+  -- leftwards across the prefix until it becomes the head of the entire path.
+  --
+  -- The intricate bookkeeping required for this permutation – in particular
+  -- maintaining the `Nodup` conditions on index sets and updating membership
+  -- proofs after each swap – has not yet been formalised.  Finishing the proof
+  -- will require an induction on the length of the prefix `p₁`, invoking the
+  -- swapping lemma at each step.
+  --
+  -- Once the path is normalised to `(j, bj) :: (i, b) :: p₁ ++ p₂`, the existing
+  -- lemma `coloredSubcubesAux_cons_subset_node_same` can be employed to drop
+  -- the head assignment and obtain the required ancestor subcube.
+  --
+  -- Implementing this reasoning remains future work.
+  -- To expose the first occurrence of `j` as the head of the path we successively
+  -- swap it with the preceding entries of `p₁`.  Each step relies on the
+  -- established lemma `coloredSubcubesAux_cons_swap` and the fact that the
+  -- preceding prefix `p₁` avoids `j` (`hjp₁`).
+  --
+  -- The final permuted form is captured by the following equality of colour
+  -- sets:
+  have hperm :
+      coloredSubcubesAux (n := n) (DecisionTree.node j t₀ t₁)
+          ((i, b) :: (p₁ ++ (j, bj) :: p₂))
+        = coloredSubcubesAux (n := n) (DecisionTree.node j t₀ t₁)
+          ((j, bj) :: (i, b) :: (p₁ ++ p₂)) := by
+    -- Move the pair `(j, bj)` to the very front by repeatedly swapping with the
+    -- elements of `p₁`.  The helper lemma `coloredSubcubesAux_cons_bubble`
+    -- performs exactly this bubbling operation.
+    -- The index set of a suffix is contained in that of the whole path, so
+    -- freshness of `i` for `p` immediately transfers to `p₂`.
+    have hi_p2 : i ∉ (subcube_of_path (n := n) p₂).idx := by
+      intro hip₂
+      -- Membership in the index set of `p₂` yields a corresponding occurrence
+      -- of `i` in the list of coordinates of `p₂`.
+      have hip₂_list : i ∈ p₂.map Prod.fst := by
+        have hip₂_fin :
+            i ∈ (p₂.map Prod.fst).toFinset :=
+          subcube_of_path_idx_subset_map_fst_toFinset (n := n)
+            (p := p₂) hip₂
+        simpa [List.mem_toFinset] using hip₂_fin
+      -- This occurrence also shows up in the full path `p`.
+      have hip_list : i ∈ p.map Prod.fst := by
+        -- Using the decomposition `hsplit` and distributing `map` over append.
+        have hmap :
+            (p₁ ++ (j, bj) :: p₂).map Prod.fst
+              = p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by
+          simp
+        have hip_total : i ∈ p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by
+          -- The element comes from the second half of the concatenation.
+          apply (List.mem_append).2
+          right
+          -- Membership reduces to the known occurrence in `p₂`.
+          simpa [List.mem_cons, hip₂_list, hij] using
+            (Or.inr hip₂_list : i = j ∨ i ∈ p₂.map Prod.fst)
+        have hip_total' :
+            i ∈ (p₁ ++ (j, bj) :: p₂).map Prod.fst := by
+          simpa [hmap] using hip_total
+        -- Replace the left-hand side using `hsplit`.
+        have hp : p.map Prod.fst =
+            (p₁ ++ (j, bj) :: p₂).map Prod.fst := by
+          simpa [hsplit]
+        simpa [hp] using hip_total'
+      -- From a list membership we obtain membership in the index set of the
+      -- full path, contradicting `hi`.
+      have hip_idx :
+          i ∈ (subcube_of_path (n := n) p).idx :=
+        mem_subcube_idx_of_mem_path (n := n) (i := i) (p := p) hip_list
+      exact hi hip_idx
+    -- Translate the exclusion of `j` from the index set of the prefix `p₁`
+    -- to the corresponding list representation.
+    have hjp₁' : j ∉ p₁.map Prod.fst := by
+      exact not_mem_path_of_not_mem_subcube_idx (n := n) (i := j)
+        (p := p₁) hjp₁
+    simpa [List.cons_append, List.append_assoc] using
+      (coloredSubcubesAux_cons_bubble (t := DecisionTree.node j t₀ t₁)
+        (i := i) (j := j) (bi := b) (bj := bj)
+        (p₁ := p₁) (p₂ := p₂)
+        (hi := hi_p2) (hij := hij) (hj₁ := hjp₁'))
+  have hmemNorm :
+      br ∈ coloredSubcubesAux (n := n)
+        (DecisionTree.node j t₀ t₁)
+        ((j, bj) :: (i, b) :: (p₁ ++ p₂)) := by
+    simpa [hperm, List.cons_append, List.append_assoc] using hmem'
+  -- After bubbling `(j, bj)` to the front we can drop this head entry using
+  -- the specialised subset lemma for matching coordinates.
+  obtain ⟨br₁, hbr₁, hsub₁⟩ :=
+    coloredSubcubesAux_cons_subset_node_same (t₀ := t₀) (t₁ := t₁)
+      (i := j) (b := bj) (p := (i, b) :: (p₁ ++ p₂)) (br := br) hmemNorm
+  -- Having removed `(j, bj)`, note that the coordinate `i` remains fresh for
+  -- the concatenated tail `p₁ ++ p₂`.  This fact will facilitate the pending
+  -- permutation argument that reinserts `(j, bj)` at its original position.
+  have hi_p1p2 : i ∉ (subcube_of_path (n := n) (p₁ ++ p₂)).idx := by
+    intro hip
+    -- An index in the concatenated path yields a corresponding occurrence in
+    -- the full path `p`, contradicting `hi`.
+    have hip_list : i ∈ (p₁ ++ p₂).map Prod.fst := by
+      have hip_fin : i ∈ ((p₁ ++ p₂).map Prod.fst).toFinset :=
+        subcube_of_path_idx_subset_map_fst_toFinset (n := n) (p := p₁ ++ p₂) hip
+      simpa [List.mem_toFinset] using hip_fin
+    have hip_full : i ∈ (p₁ ++ (j, bj) :: p₂).map Prod.fst := by
+      -- Membership transfers to the larger path by the append relation.
+      have hcases : i ∈ p₁.map Prod.fst ∨ i ∈ p₂.map Prod.fst :=
+        List.mem_append.mp (by simpa using hip_list)
+      have hmap : (p₁ ++ (j, bj) :: p₂).map Prod.fst =
+          p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by simp
+      have hip_split : i ∈ p₁.map Prod.fst ++ j :: p₂.map Prod.fst := by
+        refine hcases.elim ?_ ?_
+        · intro hip₁; exact List.mem_append_left _ hip₁
+        · intro hip₂; exact List.mem_append_right _ (List.mem_cons.mpr <| Or.inr hip₂)
+      simpa [hmap] using hip_split
+    have hip_p : i ∈ p.map Prod.fst := by simpa [hsplit] using hip_full
+    have hip_idx : i ∈ (subcube_of_path (n := n) p).idx :=
+      mem_subcube_idx_of_mem_path (n := n) (i := i) (p := p) hip_p
+    exact hi hip_idx
+  -- Dropping the fresh coordinate `(i, b)` similarly enlarges the subcube.
+  obtain ⟨br₂, hbr₂, hsub₂⟩ :
+      ∃ brRec ∈ coloredSubcubesAux (n := n) (DecisionTree.node j t₀ t₁) (p₁ ++ p₂),
+        ∀ ⦃x : Point n⦄, Subcube.mem br₁.2 x → Subcube.mem brRec.2 x := by
+    -- Here we can directly appeal to `coloredSubcubesAux_cons_subset`, which
+    -- formalises the intuition that removing a *fresh* assignment from the
+    -- front of the path only enlarges the resulting subcube.
+    --
+    -- The path supplied to that lemma is `p₁ ++ p₂`, and the required
+    -- freshness condition corresponds exactly to `hi_p1p2` established above.
+    -- The element whose membership we track is `br₁`.
+    exact
+      coloredSubcubesAux_cons_subset (t := DecisionTree.node j t₀ t₁)
+        (i := i) (b := b) (p := p₁ ++ p₂) (br := br₁) hbr₁ hi_p1p2
+  -- At this juncture the path no longer contains either `j` or `i`.  To
+  -- reconstruct the original path `p = p₁ ++ (j, bj) :: p₂` we must reinsert
+  -- `(j, bj)` between the two segments via the yet-to-be formalised
+  -- permutation lemma `coloredSubcubesAux_cons_bubble`.
+  refine ⟨br₂, ?_, ?_⟩
+  ·
+    -- To re-establish membership for the original path `p`, we insert the
+    -- previously extracted assignment `(j, bj)` between `p₁` and `p₂`.
+    -- The auxiliary lemma `coloredSubcubesAux_cons_restore` provides the
+    -- requisite subset relation.
+    have hrestore :
+        coloredSubcubesAux (n := n)
+            (DecisionTree.node j t₀ t₁) (p₁ ++ p₂) ⊆
+        coloredSubcubesAux (n := n)
+            (DecisionTree.node j t₀ t₁) p := by
+      -- First, use `coloredSubcubesAux_cons_restore` to reintroduce `(j, bj)`
+      -- between the two path segments.
+      have hinsert :
+          coloredSubcubesAux (n := n)
+              (DecisionTree.node j t₀ t₁) (p₁ ++ p₂) ⊆
+          coloredSubcubesAux (n := n)
+              (DecisionTree.node j t₀ t₁) (p₁ ++ (j, bj) :: p₂) :=
+        coloredSubcubesAux_cons_restore
+          (t := DecisionTree.node j t₀ t₁)
+          (j := j) (bj := bj) (p₁ := p₁) (p₂ := p₂) (hj₁ := hjp₁)
+      -- Rewrite using the decomposition `hsplit : p = p₁ ++ (j, bj) :: p₂`.
+      intro br hbr
+      have htemp := hinsert hbr
+      simpa [hsplit] using htemp
+    -- Apply the subset relation to the intermediate membership `hbr₂`.
+    exact hrestore hbr₂
+  · -- Subcube inclusion follows by composing the two enlargement steps.
+    intro x hx; exact hsub₂ (hsub₁ hx)
 
 /--
 The helper `coloredSubcubesAux_cons_subset` shows that removing the most
@@ -2621,6 +2922,53 @@ lemma sensitivity_restrictPath_le (F : Family n) (p : List (Fin n × Bool))
 end Family
 
 /--
+  Build a depth-zero decision tree for a Boolean function with empty support.
+  Such a function is constant on the entire cube, so a single leaf suffices.
+-/
+lemma exists_decisionTree_of_support_card_zero (f : BFunc n)
+    (hzero : (support f).card = 0) :
+    ∃ t : DecisionTree n,
+      (∀ x : Point n, DecisionTree.eval_tree (n := n) t x = f x) ∧
+      DecisionTree.depth (n := n) t ≤ 0 := by
+  classical
+  -- The empty support implies the function is constant.
+  have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
+    Finset.card_eq_zero.mp hzero
+  have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
+    intro x
+    have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
+      intro i hi
+      have : False := by simpa [hsupport_empty] using hi
+      exact this.elim
+    simpa using
+      (eval_eq_of_agree_on_support (f := f) (x := x)
+        (y := fun _ : Fin n => false) hx)
+  -- The tree `ofSubcube` for the empty path queries no coordinates.
+  refine ⟨DecisionTree.ofSubcube (n := n)
+      (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+      (f (fun _ => false)), ?_, ?_⟩
+  · intro x
+    -- Every point belongs to the subcube described by the empty path.
+    have hxmem : x ∈ₛ
+        DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
+      simpa [Subcube.mem, DecisionTree.subcube_of_path]
+    -- Evaluation reduces to the constant value.
+    have hconst :=
+      DecisionTree.eval_ofSubcube_of_mem (n := n)
+        (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+        (x := x) (b := f (fun _ => false)) hxmem
+    have hx := hxconst x
+    simpa [hx.symm] using hconst
+  ·
+    -- The depth is bounded by the number of fixed coordinates, which is zero.
+    have hdepth :=
+      DecisionTree.depth_ofSubcube_le
+        (n := n)
+        (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
+        (b := f (fun _ => false))
+    simpa [DecisionTree.subcube_of_path] using hdepth
+
+/--
 Given any Boolean function `f`, we can build a decision tree that computes it
 while querying at most one coordinate for each element of `support f`.  The
 resulting tree has depth bounded by the size of the support.
@@ -2644,81 +2992,23 @@ lemma exists_decisionTree_depth_le_support_card (f : BFunc n) :
     refine Nat.rec ?base ?step
     · -- Base case: the support is empty, so the function is constant.
       intro f hf
-      -- The empty support implies that `f` is constant.
+      -- Translate the bound `hf` into exact emptiness of the support and apply
+      -- the constant-function construction.
       have hcard0 : (support f).card = 0 := Nat.le_zero.mp hf
-      have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
-        Finset.card_eq_zero.mp hcard0
-      have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
-        intro x
-        have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
-          intro i hi
-          have : False := by simpa [hsupport_empty] using hi
-          exact this.elim
-        simpa using
-          (eval_eq_of_agree_on_support (f := f) (x := x)
-            (y := fun _ : Fin n => false) hx)
-      -- Build a depth-zero tree that always returns this constant value.
-      refine ⟨DecisionTree.ofSubcube (n := n)
-          (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-          (f (fun _ => false)), ?_, ?_⟩
-      · intro x
-        have hxmem : x ∈ₛ DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
-          -- The empty path describes the whole cube, so membership is trivial.
-          simpa [Subcube.mem, DecisionTree.subcube_of_path]
-        have hconst :=
-          DecisionTree.eval_ofSubcube_of_mem (n := n)
-            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-            (x := x) (b := f (fun _ => false)) hxmem
-        have hx := hxconst x
-        simpa [hx.symm] using hconst
-      ·
-        -- The depth of `ofSubcube` is bounded by the number of fixed coordinates,
-        -- which is zero for the empty path.
-        have hdepth :=
-          DecisionTree.depth_ofSubcube_le
-            (n := n)
-            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-            (b := f (fun _ => false))
-        simpa [DecisionTree.subcube_of_path] using hdepth
+      obtain ⟨t, ht, hdepth⟩ :=
+        exists_decisionTree_of_support_card_zero (n := n) (f := f) hcard0
+      exact ⟨t, ht, by simpa using hdepth⟩
     · -- Inductive step: split on a coordinate from the support.
       intro k ih f hf
       by_cases hzero : (support f).card = 0
       · -- With empty support the function again collapses to a constant tree.
-        have hsupport_empty : support f = (∅ : Finset (Fin n)) :=
-          Finset.card_eq_zero.mp hzero
-        have hxconst : ∀ x : Point n, f x = f (fun _ => false) := by
-          intro x
-          have hx : ∀ i ∈ support f, x i = (fun _ : Fin n => false) i := by
-            intro i hi
-            have : False := by simpa [hsupport_empty] using hi
-            exact this.elim
-          simpa using
-            (eval_eq_of_agree_on_support (f := f) (x := x)
-              (y := fun _ : Fin n => false) hx)
-        refine ⟨DecisionTree.ofSubcube (n := n)
-            (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-            (f (fun _ => false)), ?_, ?_⟩
-        · intro x
-          have hxmem : x ∈ₛ DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)) := by
-            simpa [Subcube.mem, DecisionTree.subcube_of_path]
-          have hconst :=
-            DecisionTree.eval_ofSubcube_of_mem (n := n)
-              (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-              (x := x) (b := f (fun _ => false)) hxmem
-          have hx := hxconst x
-          simpa [hx.symm] using hconst
-        ·
-          have hdepth :=
-            DecisionTree.depth_ofSubcube_le
-              (n := n)
-              (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-              (b := f (fun _ => false))
-          have : DecisionTree.depth (n := n)
-              (DecisionTree.ofSubcube (n := n)
-                (R := DecisionTree.subcube_of_path (n := n) ([] : List (Fin n × Bool)))
-                (f (fun _ => false))) ≤ 0 := by
-            simpa [DecisionTree.subcube_of_path] using hdepth
-          exact this.trans (Nat.zero_le _)
+        obtain ⟨t, ht, hdepth⟩ :=
+          exists_decisionTree_of_support_card_zero (n := n) (f := f) hzero
+        refine ⟨t, ht, ?_⟩
+        -- The produced tree has depth `≤ 0`, which trivially bounds the desired
+        -- depth `≤ Nat.succ k`.
+        have hle : 0 ≤ Nat.succ k := Nat.zero_le _
+        exact hdepth.trans hle
       ·
         -- Choose a coordinate `i` from the nonempty support.
         have hpos : 0 < (support f).card := Nat.pos_of_ne_zero hzero

@@ -3657,16 +3657,15 @@ lemma exists_common_monochromatic_subcube
             intro hmono; apply hf; intro _; exact hmono
           -- Apply `huang_step` to isolate a new coordinate `i`.
           -- Apply `huang_step` to isolate a new coordinate `i`.
+          -- Convert the global sensitivity hypothesis for the family into a
+          -- concrete bound for the offending function `f`.
+          have hfSens : sensitivity f ≤ s := Hsens f hfF
           have hstep :
               ∃ (i : Fin n) (T : Finset (Point n)),
                 2 ≤ T.card ∧
                 (∀ x ∈ T, f x = f (Point.update x i (!x i))) :=
             huang_step (n := n) (s := s) hnpos (hs_lt_n := hs_lt_n)
-              (f := f) (hf := by
-                -- The sensitivity bound required by `huang_step` follows from
-                -- the assumptions on the family.  The explicit conversion is
-                -- deferred.
-                sorry)
+              (f := f) (hf := hfSens)
           -- Unpack the returned data via classical choice.
           classical
           let i := Classical.choose hstep

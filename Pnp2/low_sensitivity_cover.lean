@@ -3797,6 +3797,91 @@ Every point of the Boolean cube becomes its own rectangle; the total number
 This simple construction handles the case where the sensitivity parameter
 barely exceeds the dimension.
 -/
+lemma mBound_le_pow_of_budget_choice_smallS {n s : ℕ}
+    (hn : 0 < n) (hs : n ≤ s) :
+    Fintype.card (Point n)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- We compare the exponents by gradually strengthening the coefficient
+  -- in front of the logarithm.  The starting point is the linear term `n`.
+  have hcoverConst : 1 ≤ coverConst := by
+    -- The universal constant is the literal `10`.
+    norm_num [coverConst]
+  have hstep₁ : n ≤ coverConst * n := by
+    -- Multiply the identity `n ≤ n` by the positive constant `coverConst`.
+    simpa [Nat.one_mul] using Nat.mul_le_mul_right n hcoverConst
+  have hstep₂ : coverConst * n ≤ coverConst * s :=
+    -- The sensitivity bound `s` dominates `n` in the small-sensitivity regime.
+    Nat.mul_le_mul_left coverConst hs
+  -- The logarithmic factor `log₂ (n + 1)` is at least one for `n ≥ 1`.
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have hle : 2 ≤ Nat.succ n := Nat.succ_le_succ hn1
+  have hmono := Nat.log_mono_right (b := 2) hle
+  have hlog2 : Nat.log2 2 = 1 := by
+    simpa using (Nat.log2_two_pow (n := 1))
+  have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+    have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) := by
+      simpa [Nat.log2_eq_log_two] using hmono
+    simpa [hlog2] using this
+  have hstep₃ : coverConst * s ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+    -- Multiply both sides of `1 ≤ log₂ (n + 1)` by `coverConst * s`.
+    have := Nat.mul_le_mul_left (coverConst * s) hlog
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  -- Chain all estimates to compare the exponents of the two powers of two.
+  have hx : n ≤ coverConst * s * Nat.log2 (Nat.succ n) :=
+    (hstep₁.trans hstep₂).trans hstep₃
+  have hxpow :
+      2 ^ n ≤ 2 ^ (coverConst * s * Nat.log2 (Nat.succ n)) :=
+    Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hx
+  -- Evaluate the cardinality of the Boolean cube on `n` variables.
+  have hcard_point : Fintype.card (Point n) = 2 ^ n := card_point n
+  simpa [hcard_point] using hxpow
+
+/--
+Cover all points of the Boolean cube by singletons.  This construction is
+independent of the family `F` and therefore valid for arbitrary sensitivity
+assumptions.  The cardinality bound is provided by the numerical inequality
+`mBound_le_pow_of_budget_choice_smallS` above.
+-/
+lemma decisionTree_cover_singleton_bound
+  {n : Nat} (F : Family n) (s : Nat)
+  (hn : 0 < n) (hs : n ≤ s) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Enumerate every vertex of the cube as the singleton subcube fixing all
+  -- coordinates to match the chosen point.
+  let cubeOf : Point n → Subcube n := fun x =>
+    { idx := Finset.univ
+      , val := fun i _ => x i }
+  let Rset : Finset (Subcube n) :=
+    (Finset.univ : Finset (Point n)).image cubeOf
+  have hmono : ∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f := by
+    intro f hf R hR
+    rcases Finset.mem_image.mp hR with ⟨x, -, rfl⟩
+    refine ⟨f x, ?_⟩
+    intro y hy
+    -- Membership in the singleton forces `y = x`.
+    have hxy : y = x := by
+      funext i
+      have := hy i (by simp [cubeOf])
+      simpa [cubeOf] using this
+    simpa [hxy]
+  have hcov : ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R := by
+    intro f hf x hx
+    refine ⟨cubeOf x, ?_, ?_⟩
+    · exact Finset.mem_image.mpr ⟨x, by simp, rfl⟩
+    · intro i hi; simp [cubeOf]
+  -- The cardinality of the cover equals the number of points in the cube.
+  have hcard_le : Rset.card ≤ Fintype.card (Point n) := by
+    simpa [Rset] using
+      (Finset.card_image_le (s := (Finset.univ : Finset (Point n)))
+        (f := cubeOf))
+  have hpow :=
+    mBound_le_pow_of_budget_choice_smallS (n := n) (s := s) hn hs
+  exact ⟨Rset, hmono, hcov, hcard_le.trans hpow⟩
+
 lemma decisionTree_cover_boundary_succ
   {n : Nat} (F : Family n)
   (hn : 0 < n) :
@@ -3805,69 +3890,12 @@ lemma decisionTree_cover_boundary_succ
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) := by
   classical
-  -- Enumerate all points of the cube as singleton subcubes.
-  let cubeOf : Point n → Subcube n := fun x =>
-    { idx := Finset.univ
-      , val := fun i _ => x i }
-  let Rset : Finset (Subcube n) :=
-    (Finset.univ : Finset (Point n)).image cubeOf
-  -- Each singleton cube is monochromatic for any Boolean function.
-  have hmono : ∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f := by
-    intro f hf R hR
-    rcases Finset.mem_image.mp hR with ⟨x, -, rfl⟩
-    refine ⟨f x, ?_⟩
-    intro y hy
-    -- Membership forces equality with `x`.
-    have hxy : y = x := by
-      funext i
-      have := hy i (by simp [cubeOf])
-      simpa [cubeOf] using this
-    simpa [hxy]
-  -- Coverage: the cube associated to `x` contains `x` itself.
-  have hcov : ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R := by
-    intro f hf x hx
-    refine ⟨cubeOf x, ?_, ?_⟩
-    · exact Finset.mem_image.mpr ⟨x, by simp, rfl⟩
-    · intro i hi; simp [cubeOf]
-  -- Cardinality of the singleton cover is bounded by the number of points.
-  have hcard_le : Rset.card ≤ Fintype.card (Point n) := by
-    simpa [Rset] using
-      (Finset.card_image_le (s := (Finset.univ : Finset (Point n)))
-        (f := cubeOf))
-  -- Compare the number of points with the final exponential bound.
-  have hpow : Fintype.card (Point n)
-      ≤ Nat.pow 2 (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) := by
-    -- First, bound `n` by the linear term `coverConst * (n + 1)`.
-    have hcoverConst : 1 ≤ coverConst := by norm_num [coverConst]
-    have h1 : n ≤ coverConst * n := by
-      simpa [Nat.one_mul] using Nat.mul_le_mul_right n hcoverConst
-    have h2 : coverConst * n ≤ coverConst * (n + 1) :=
-      Nat.mul_le_mul_left coverConst (Nat.le_succ n)
-    have hcover : n ≤ coverConst * (n + 1) := h1.trans h2
-    -- Next, show that the logarithmic factor is at least one for `n ≥ 1`.
-    have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
-    have hle : 2 ≤ Nat.succ n := Nat.succ_le_succ hn1
-    have hmono := Nat.log_mono_right (b := 2) hle
-    have hlog2 : Nat.log2 2 = 1 := by
-      simpa using (Nat.log2_two_pow (n := 1))
-    have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
-      have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) :=
-        by simpa [Nat.log2_eq_log_two] using hmono
-      simpa [hlog2] using this
-    -- Combine both bounds to compare exponents.
-    have hcover' : coverConst * (n + 1)
-        ≤ coverConst * (n + 1) * Nat.log2 (Nat.succ n) := by
-      have := Nat.mul_le_mul_left (coverConst * (n + 1)) hlog
-      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
-    have hx : n ≤ coverConst * (n + 1) * Nat.log2 (Nat.succ n) :=
-      hcover.trans hcover'
-    have hxpow :
-        2 ^ n ≤ 2 ^ (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) :=
-      Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hx
-    have hcard_point : Fintype.card (Point n) = 2 ^ n := card_point n
-    simpa [hcard_point] using hxpow
-  -- Assemble the final bound.
-  exact ⟨Rset, hmono, hcov, hcard_le.trans hpow⟩
+  -- Apply the general singleton cover to the specific sensitivity `s = n + 1`.
+  have hs : n ≤ n + 1 := Nat.le_succ _
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using
+        (decisionTree_cover_singleton_bound (n := n) (F := F)
+          (s := n + 1) (hn := hn) (hs := hs))
 
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
@@ -3955,15 +3983,11 @@ theorem decisionTree_cover
         subst hs_eq_n1
         exact decisionTree_cover_boundary_succ (F := F) (hn := hn)
       · -- The only other possibility is `s = n`.
-        have hs_le_n : s ≤ n := by
-          have hs_lt_n1 : s < n + 1 := lt_of_le_of_ne hsmall hs_eq_n1
-          exact Nat.lt_succ_iff.mp hs_lt_n1
-        have hs_eq_n : s = n := Nat.le_antisymm hs_le_n hs_ge_n
-        subst hs_eq_n
-        -- TODO: handle the boundary sensitivity `s = n`.
-        -- In this situation Huang's theorem does not guarantee a strict
-        -- majority in either fibre.
-        sorry
+        -- At the exact boundary `s = n` we fall back to the singleton cover,
+        -- which only requires the inequality `n ≤ s`.
+        exact
+          decisionTree_cover_singleton_bound (F := F) (s := s)
+            (hn := hn) (hs := hs_ge_n)
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

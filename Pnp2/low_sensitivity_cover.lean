@@ -3540,132 +3540,56 @@ lemma decisionTree_cover_smallS_pos_n1
               · subst hji; simp [y0, i]
               · simp [y0, i, hji]
             simpa [hy0, hy] using (hconst y0 x0)
-    · -- Non-constant case: use Huang's sensitivity theorem to isolate a
-      -- coordinate along which the function admits many agreeing neighbours.
+    · -- Non-constant case: the global sensitivity bound provides a coordinate
+      -- that leaves the function invariant.
       have hpos : 0 < sensitivity f := Nat.pos_of_ne_zero hzero
-      -- Among the two level sets of `f`, choose the larger one; it must contain
-      -- more than half of all vertices since `f` is not constant.
       classical
-      let H₀ := (Finset.univ.filter fun x : Point n => f x = false)
-      let H₁ := (Finset.univ.filter fun x : Point n => f x = true)
-      -- By a simple counting argument at least one fibre occupies half of the
-      -- Boolean cube.  Upgrading this `≥` bound to the strict `>` required by
-      -- Huang's theorem remains to be addressed.
-      have hbMajor := exists_large_fiber (n := n) (hn := hn) (f := f)
-      rcases hbMajor with ⟨b, hbcard⟩
-      -- View the chosen fibre as a `Set` to apply Huang's theorem.
-      -- It is convenient to work in the `Sensitivity.Q n` type, which is
-      -- definally equal to `Point n`.
-      let H : Set (Sensitivity.Q n) := {x | f x = b}
-      have hHcard : H.toFinset.card ≥ 2 ^ (n - 1) := by
-        -- Convert the finset counting statement `hbcard` to the set-based
-        -- version required by Huang's theorem.
-        simpa [H] using hbcard
-      -- Instantiate Huang's theorem in dimension `n` with `m = n - 1`.
-      have hm : n = (n - 1).succ := (Nat.succ_pred_eq_of_pos hn).symm
-      -- After rewriting the dimension, obtain a vertex with many neighbours in
-      -- the chosen fibre.
-      -- Apply Huang's degree theorem.  The ambient types coincide, so it
-      -- suffices to reinterpret the dimension.
-      have hHcard' :
-          H.toFinset.card ≥ 2 ^ (n - 1) + 1 := by
-        -- Strengthen the coarse bound `hHcard` to the strict inequality
-        -- required by `huang_degree_theorem`.  This step is currently left
-        -- open; it amounts to ruling out the exact-half case where the two
-        -- fibres have equal size.
-        -- TODO: show `2 ^ (n - 1) + 1 ≤ H.toFinset.card`.
-        sorry
-      have : ∃ q : Point n, q ∈ H ∧ √ (↑(n - 1) + 1) ≤
-          ↑((H ∩ (Sensitivity.Q.adjacent q)).toFinset.card) := by
-        -- Having obtained the strengthened cardinality estimate, we can now
-        -- invoke Huang's theorem.  A precise call requires casting `H` to
-        -- `Sensitivity.Q (n - 1).succ`; this technical step is postponed.
-        -- TODO: instantiate `huang_degree_theorem` on the casted fibre.
-        sorry
-      rcases this with ⟨q, hqH, hdeg⟩
-      -- The degree bound ensures the existence of at least one neighbour inside
-      -- `H`.
-      have hneigh : ∃ r : Point n, r ∈ H ∧ r ∈ Sensitivity.Q.adjacent q := by
-        -- `hdeg` asserts that `q` has at least `√ n` neighbours inside `H`.  In
-        -- particular this number is positive, so the intersection is nonempty.
-        have hsqrt_pos :
-            0 < Real.sqrt (↑(n - 1) + 1 : ℝ) := by
-          -- `Real.sqrt` of a positive number is positive; here the argument is
-          -- `(n - 1).succ = n`.
-          have : 0 < ((n - 1).succ : ℝ) := by
-            exact_mod_cast (Nat.succ_pos (n - 1))
-          simpa [Nat.succ_eq_add_one] using Real.sqrt_pos.mpr this
-        have hcard_pos :
-            0 < ((H ∩ Sensitivity.Q.adjacent q).toFinset.card) := by
-          -- From `hdeg` we know the cardinality (as a real number) is at least
-          -- `√ n`, and the latter is positive, hence the intersection is
-          -- nonempty.
-          have hpos :
-              (0 : ℝ) <
-                (↑((H ∩ Sensitivity.Q.adjacent q).toFinset.card) : ℝ) :=
-            lt_of_lt_of_le hsqrt_pos hdeg
-          exact_mod_cast hpos
-        -- Extract an element from the nonempty intersection.
-        obtain ⟨r, hr⟩ := Finset.card_pos.1 hcard_pos
-        have hr' : r ∈ H ∩ Sensitivity.Q.adjacent q := by
-          simpa using hr
-        exact ⟨r, hr'.1, hr'.2⟩
-      rcases hneigh with ⟨r, hrH, hrAdj⟩
-      -- `hrAdj` certifies a unique coordinate where `q` and `r` differ.
-      rcases hrAdj with ⟨i, hneq, huniq⟩
-      -- Form the two-point set `{q, r}` which is stable under flipping `i`.
-      refine ⟨i, {q, r}, ?_, ?_⟩
-      · -- Cardinality of the doubleton.
-        have hqr : q ≠ r := by
-          -- They differ at coordinate `i`.
-          exact fun h => by
-            apply hneq
-            simpa [h] using rfl
-        have hcard : ({q, r} : Finset (Point n)).card = 2 := by
-          simpa [hqr] using Finset.card_doubleton q r
+      -- Pick an arbitrary point and extract an insensitive coordinate.
+      let x : Point n := Classical.arbitrary (Point n)
+      have hinsensitive :=
+        BoolFunc.insensitiveCoordsAt_card_ge_of_global (f := f) (hs := hf)
+          (x := x)
+      have hns : 0 < n - s := Nat.sub_pos_of_lt hs_lt_n
+      have hcard_ins :
+          1 ≤ (BoolFunc.insensitiveCoordsAt f x).card :=
+        (Nat.succ_le_of_lt hns).trans hinsensitive
+      have hpos_ins :
+          0 < (BoolFunc.insensitiveCoordsAt f x).card :=
+        lt_of_lt_of_le (Nat.succ_pos 0) hcard_ins
+      obtain ⟨i, hi⟩ := Finset.card_pos.1 hpos_ins
+      have hi_prop : f (Point.update x i (!x i)) = f x := by
+        simpa [BoolFunc.insensitiveCoordsAt] using hi
+      -- The two points `x` and its `i`-flip form the desired witness set.
+      let y : Point n := Point.update x i (!x i)
+      have hxy : x ≠ y := by
+        intro h
+        have : x i = y i := congrArg (fun z => z i) h
+        have hxne : x i ≠ y i := by
+          have : x i ≠ !x i := by
+            by_cases hx' : x i <;> simp [hx']
+          simpa [y] using this
+        exact hxne this
+      have hyflip : Point.update y i (!y i) = x := by
+        funext j
+        by_cases hji : j = i
+        · subst hji; simp [y]
+        · simp [y, Point.update, hji]
+      refine ⟨i, {x, y}, ?_, ?_⟩
+      · have hcard : ({x, y} : Finset (Point n)).card = 2 := by
+          simpa [hxy] using Finset.card_doubleton x y
         simpa [hcard]
-      · -- The function agrees on each point and its flip along `i`.
-        intro x hx
-        have hx' : x = q ∨ x = r := by
-          simpa [Finset.mem_insert, Finset.mem_singleton] using hx
-        cases hx' with
-        | inl hxq =>
-            -- `r` is the unique neighbour of `q` differing at `i`.
-            have hflip : Point.update q i (!q i) = r := by
-              -- The points `q` and `r` differ only at coordinate `i`, where the
-              -- value of `r` is the negation of that of `q`.
-              have hri : r i = ! q i :=
-                (Bool.eq_not_iff.mpr (by simpa [ne_comm] using hneq))
-              have hqr : ∀ j, j ≠ i → q j = r j := by
-                intro j hji; by_contra hneqjr
-                exact hji (huniq j hneqjr)
-              funext j; by_cases hji : j = i
-              · subst hji; simpa [Point.update, hri]
-              · have := hqr j hji
-                simpa [Point.update, hji, this]
-            have hq : f q = b := hqH
-            have hr : f r = b := hrH
-            have : f (Point.update q i (!q i)) = b := by
-              simpa [hflip] using hr
-            simpa [hxq, hq, this]
-        | inr hxr =>
-            -- Flipping `r` returns to `q`.
-            have hflip : Point.update r i (!r i) = q := by
-              -- Symmetric argument to the previous case.
-              have hqi : q i = ! r i := (Bool.eq_not_iff.mpr hneq)
-              have hqr : ∀ j, j ≠ i → q j = r j := by
-                intro j hji; by_contra hneqjr
-                exact hji (huniq j hneqjr)
-              funext j; by_cases hji : j = i
-              · subst hji; simpa [Point.update, hqi]
-              · have := hqr j hji
-                simpa [Point.update, hji, this.symm]
-            have hq : f q = b := hqH
-            have hr : f r = b := hrH
-            have : f (Point.update r i (!r i)) = b := by
-              simpa [hflip] using hq
-            simpa [hxr, hr, this]
-
+      · intro z hz
+        have hz' : z = x ∨ z = y := by
+          simpa [Finset.mem_insert, Finset.mem_singleton] using hz
+        cases hz' with
+        | inl hz0 =>
+            have : f x = f y := by simpa [y] using hi_prop.symm
+            simpa [hz0, y] using this
+        | inr hz1 =>
+            have hy1 : f y = f x := by simpa [y] using hi_prop
+            have hy2 : f (Point.update y i (!y i)) = f x := by simpa [hyflip]
+            have hyfinal : f y = f (Point.update y i (!y i)) := hy1.trans hy2.symm
+            simpa [hz1, y] using hyfinal
   /--
     Предполагаемое существование большого подкуба, на котором каждая функция
     семейства монохроматична.  С помощью будущей итерации леммы `huang_step`

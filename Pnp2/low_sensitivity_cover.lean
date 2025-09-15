@@ -3691,6 +3691,45 @@ lemma exists_common_monochromatic_subcube
 
   let result := loop (coverConst * s)
 
+  -- Analysing the effect of a single `step`.  The procedure either leaves the
+  -- current pair untouched (when all functions are already constant) or it
+  -- inserts one additional frozen coordinate suggested by `huang_step`.
+  have hstep_idx_card
+      : ∀ p : Finset (Fin n) × Subcube n,
+          (step p).2.idx.card ≤ p.2.idx.card + 1 := by
+    intro p
+    classical
+    rcases p with ⟨core, cube⟩
+    dsimp [step]
+    split_ifs with h
+    · -- No refinement takes place: the list of fixed coordinates is unchanged.
+      exact Nat.le_add_right _ _
+    · -- The new cube fixes at most one extra coordinate via `Finset.insert`.
+      have hcard : (cube.extend i (x i)).idx.card ≤ cube.idx.card + 1 := by
+        simpa [Subcube.extend] using
+          (Finset.card_insert_le (s := cube.idx) (a := i))
+      simpa using hcard
+
+  -- Iterating the previous bound shows that after `t` steps the index set of
+  -- fixed coordinates contains at most `t` elements.
+  have hloop_idx_card : ∀ t : Nat, (loop t).2.idx.card ≤ t := by
+    intro t
+    induction t with
+    | zero =>
+        -- Base case: the initial cube fixes no coordinates.
+        simp [loop]
+    | succ t ih =>
+        -- Each refinement adds at most one coordinate to the index set.
+        have hstep := hstep_idx_card (loop t)
+        have hbound : (loop t).2.idx.card + 1 ≤ t + 1 := by
+          simpa using Nat.add_le_add_right ih 1
+        have hfinal : (loop (Nat.succ t)).2.idx.card ≤ t + 1 := by
+          simpa [loop] using hstep.trans hbound
+        simpa [Nat.succ_eq_add_one] using hfinal
+
+  have hresult_card : result.2.idx.card ≤ coverConst * s := by
+    simpa [result] using hloop_idx_card (coverConst * s)
+
   -- The eventual proof will show that every function in `F` is constant on the
   -- resulting cube and that the number of fixed coordinates does not exceed the
   -- iteration bound `coverConst * s`.
@@ -3702,7 +3741,7 @@ lemma exists_common_monochromatic_subcube
     sorry
   · -- Codimension bound of the final cube.
     -- TODO: show `result.2.idx.card ≤ coverConst * s`.
-    sorry
+    exact hresult_card
 
   /--
     Constructive cover for the positive-sensitivity case `s > 0` in dimensions

@@ -3858,6 +3858,87 @@ lemma exists_common_monochromatic_subcube
       decisionTree_cover_smallS_pos_general (F := F) (s := s)
         (Hsens := Hsens) (hn := hn2) (hsmall := hsmall)
         (hspos := hspos) (hs_lt_n := hs_lt_n)
+
+/--
+Cover by singleton cubes for the boundary sensitivity `s = n + 1`.
+Every point of the Boolean cube becomes its own rectangle; the total number
+`2^n` of such subcubes is still bounded by
+`2^(coverConst * (n + 1) * log₂(n + 1))`.
+This simple construction handles the case where the sensitivity parameter
+barely exceeds the dimension.
+-/
+lemma decisionTree_cover_boundary_succ
+  {n : Nat} (F : Family n)
+  (hn : 0 < n) :
+  ∃ Rset : Finset (Subcube n),
+    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ Nat.pow 2 (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) := by
+  classical
+  -- Enumerate all points of the cube as singleton subcubes.
+  let cubeOf : Point n → Subcube n := fun x =>
+    { idx := Finset.univ
+      , val := fun i _ => x i }
+  let Rset : Finset (Subcube n) :=
+    (Finset.univ : Finset (Point n)).image cubeOf
+  -- Each singleton cube is monochromatic for any Boolean function.
+  have hmono : ∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f := by
+    intro f hf R hR
+    rcases Finset.mem_image.mp hR with ⟨x, -, rfl⟩
+    refine ⟨f x, ?_⟩
+    intro y hy
+    -- Membership forces equality with `x`.
+    have hxy : y = x := by
+      funext i
+      have := hy i (by simp [cubeOf])
+      simpa [cubeOf] using this
+    simpa [hxy]
+  -- Coverage: the cube associated to `x` contains `x` itself.
+  have hcov : ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R := by
+    intro f hf x hx
+    refine ⟨cubeOf x, ?_, ?_⟩
+    · exact Finset.mem_image.mpr ⟨x, by simp, rfl⟩
+    · intro i hi; simp [cubeOf]
+  -- Cardinality of the singleton cover is bounded by the number of points.
+  have hcard_le : Rset.card ≤ Fintype.card (Point n) := by
+    simpa [Rset] using
+      (Finset.card_image_le (s := (Finset.univ : Finset (Point n)))
+        (f := cubeOf))
+  -- Compare the number of points with the final exponential bound.
+  have hpow : Fintype.card (Point n)
+      ≤ Nat.pow 2 (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) := by
+    -- First, bound `n` by the linear term `coverConst * (n + 1)`.
+    have hcoverConst : 1 ≤ coverConst := by norm_num [coverConst]
+    have h1 : n ≤ coverConst * n := by
+      simpa [Nat.one_mul] using Nat.mul_le_mul_right n hcoverConst
+    have h2 : coverConst * n ≤ coverConst * (n + 1) :=
+      Nat.mul_le_mul_left coverConst (Nat.le_succ n)
+    have hcover : n ≤ coverConst * (n + 1) := h1.trans h2
+    -- Next, show that the logarithmic factor is at least one for `n ≥ 1`.
+    have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+    have hle : 2 ≤ Nat.succ n := Nat.succ_le_succ hn1
+    have hmono := Nat.log_mono_right (b := 2) hle
+    have hlog2 : Nat.log2 2 = 1 := by
+      simpa using (Nat.log2_two_pow (n := 1))
+    have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+      have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) :=
+        by simpa [Nat.log2_eq_log_two] using hmono
+      simpa [hlog2] using this
+    -- Combine both bounds to compare exponents.
+    have hcover' : coverConst * (n + 1)
+        ≤ coverConst * (n + 1) * Nat.log2 (Nat.succ n) := by
+      have := Nat.mul_le_mul_left (coverConst * (n + 1)) hlog
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+    have hx : n ≤ coverConst * (n + 1) * Nat.log2 (Nat.succ n) :=
+      hcover.trans hcover'
+    have hxpow :
+        2 ^ n ≤ 2 ^ (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) :=
+      Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hx
+    have hcard_point : Fintype.card (Point n) = 2 ^ n := card_point n
+    simpa [hcard_point] using hxpow
+  -- Assemble the final bound.
+  exact ⟨Rset, hmono, hcov, hcard_le.trans hpow⟩
+
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
@@ -3936,10 +4017,23 @@ theorem decisionTree_cover
         decisionTree_cover_smallS (F := F) (s := s)
           (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
           (hs_lt_n := hs_lt_n)
-    · -- TODO: handle the boundary sensitivity `n ≤ s ≤ n + 1`.
-      -- In this situation Huang's theorem does not guarantee a strict
-      -- majority in either fibre.
-      sorry
+    ·
+      -- In the remaining branch we have `n ≤ s ≤ n + 1`.
+      have hs_ge_n : n ≤ s := Nat.not_lt.mp hs_lt_n
+      by_cases hs_eq_n1 : s = n + 1
+      · -- Sensitivity exceeds the dimension by one: cover with singletons.
+        subst hs_eq_n1
+        exact decisionTree_cover_boundary_succ (F := F) (hn := hn)
+      · -- The only other possibility is `s = n`.
+        have hs_le_n : s ≤ n := by
+          have hs_lt_n1 : s < n + 1 := lt_of_le_of_ne hsmall hs_eq_n1
+          exact Nat.lt_succ_iff.mp hs_lt_n1
+        have hs_eq_n : s = n := Nat.le_antisymm hs_le_n hs_ge_n
+        subst hs_eq_n
+        -- TODO: handle the boundary sensitivity `s = n`.
+        -- In this situation Huang's theorem does not guarantee a strict
+        -- majority in either fibre.
+        sorry
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity

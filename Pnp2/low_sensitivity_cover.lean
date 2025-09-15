@@ -3477,7 +3477,7 @@ lemma decisionTree_cover_smallS_pos_n1
     substantial Huang-based argument to future work.
   -/
   lemma huang_step
-      {n s : ℕ} (hn : 0 < n) (hs_lt_n : s < n)
+      {n s : ℕ} [Fintype (Point n)] (hn : 0 < n) (hs_lt_n : s < n)
       {f : BFunc n} (hf : sensitivity f ≤ s) :
       ∃ (i : Fin n) (T : Finset (Point n)),
         2 ≤ T.card ∧
@@ -3643,18 +3643,24 @@ lemma exists_common_monochromatic_subcube
           -- Select a witness `f` that is not monochromatic on `cube`.
           have hcounter := not_forall.mp h
           let f := Classical.choose hcounter
-          have hf : ¬ (f ∈ F → Subcube.monochromaticFor cube f) :=
+          have hfImp : ¬ (f ∈ F → Subcube.monochromaticFor cube f) :=
             Classical.choose_spec hcounter
-          -- `hf` witnesses that the implication `f ∈ F → monochromatic` fails.
+          -- `hfImp` witnesses that the implication `f ∈ F → monochromatic` fails.
           -- First extract the membership of `f` in the family.
           have hfF : f ∈ F := by
             by_contra hfF
             have : f ∈ F → Subcube.monochromaticFor cube f := by
               intro hfF'; exact False.elim (hfF hfF')
-            exact (hf this).elim
+            exact (hfImp this).elim
           -- With `hfF` at hand we directly obtain the negated monochromaticity.
           have hfMono : ¬ Subcube.monochromaticFor cube f := by
-            intro hmono; apply hf; intro _; exact hmono
+            intro hmono; apply hfImp; intro _; exact hmono
+          -- The global assumption `Hsens` supplies the sensitivity bound needed
+          -- by `huang_step` for the particular witness `f`.  We add a `simpa`
+          -- to align the implicit `Fintype` instances appearing in the goal and
+          -- in the hypothesis.
+          have hf : sensitivity f ≤ s := by
+            simpa using Hsens f hfF
           -- Apply `huang_step` to isolate a new coordinate `i`.
           -- Apply `huang_step` to isolate a new coordinate `i`.
           have hstep :
@@ -3664,9 +3670,9 @@ lemma exists_common_monochromatic_subcube
             huang_step (n := n) (s := s) hnpos (hs_lt_n := hs_lt_n)
               (f := f) (hf := by
                 -- The sensitivity bound required by `huang_step` follows from
-                -- the assumptions on the family.  The explicit conversion is
-                -- deferred.
-                sorry)
+                -- the assumptions on the family.  Instantiating `Hsens` with
+                -- `hfF` yields exactly the required inequality.
+                simpa using hf)
           -- Unpack the returned data via classical choice.
           classical
           let i := Classical.choose hstep

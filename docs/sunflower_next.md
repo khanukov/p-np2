@@ -12,8 +12,10 @@ step into the broader cover construction and complexity-theoretic applications.
   `cover_numeric` still contain placeholders.
 - **Entropy branch interaction:** the sunflower argument interacts with the
   entropy-reduction branch (`exists_coord_entropy_drop`).  The auxiliary lemma
-  `exists_restrict_half_real_aux` remains axiomatic and needs a constructive
-  proof.
+  `exists_restrict_half_real_aux` remains axiomatic and still requires a proof;
+  classical reasoning (including `Classical.choice` and `noncomputable`
+  sections) is fully acceptable, while a constructive variant can be treated as
+  a later refinement.
 - **Complexity consequences:** later files such as `NP_separation.lean` and
   `ComplexityClasses.lean` rely on several open conjectures.  Progress on the
   sunflower side feeds into these modules once the remaining axioms are removed.

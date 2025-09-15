@@ -66,11 +66,12 @@ all smaller values of `μ`.
 ### Base case `uncovered = ∅`
 If `firstUncovered F Rset = none` the recursion terminates immediately and
 returns `Rset`.  Provided that `Rset.card ≤ mBound n h` the claim holds.
-For the moment `firstUncovered` relies on a classical (nonconstructive)
-search; rewriting it as a constructive enumeration is postponed until the
-overall `P ≠ NP` formalisation is complete. Consequently, all size/complexity
-bounds discussed here are proof-theoretic rather than executable runtime
-guarantees until a constructive replacement is provided.
+For the moment `firstUncovered` relies on a classical search.  This is entirely
+acceptable for the Prop-level bounds proved here: we freely `open Classical`,
+invoke `Classical.choice`, and work in `noncomputable` sections whenever that
+streamlines the argument.  A constructive enumeration remains an optional
+enhancement for future executable tooling, but it is not required for the
+current proof obligations.
 
 ### Low-sensitivity branch
 Let `s` be the maximal sensitivity of functions in `F`.  When

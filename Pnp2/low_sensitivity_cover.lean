@@ -3207,26 +3207,64 @@ lemma decisionTree_cover_smallS_zero
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ n)) := by
   classical
-  -- First upgrade the non‑strict bound `sensitivity f ≤ 0` to an equality.
-  have Hsens0 : ∀ f ∈ F, sensitivity f = 0 := by
-    intro f hf
-    have hle := Hsens f hf
-    exact le_antisymm hle (Nat.zero_le _)
-  -- A Boolean function with zero sensitivity is constant on all inputs.
-  have hconst : ∀ f ∈ F, ∀ x y, f x = f y := by
+
+  --## Step 1: every function in `F` is constant.
+  -- From `sensitivity f ≤ 0` we deduce `sensitivity f = 0` and hence that the
+  -- support is empty.  Agreement on the empty support means the outputs agree
+  -- on all points.
+  have h_const : ∀ f ∈ F, ∀ x y : Point n, f x = f y := by
     intro f hf x y
-    have hsupp :=
-      support_eq_empty_of_sensitivity_zero (f := f) (h := Hsens0 f hf)
-    have hagree : ∀ i ∈ support f, x i = y i := by
+    have hsens_zero : sensitivity f = 0 := by
+      have h := Hsens f hf
+      exact le_antisymm h (Nat.zero_le _)
+    have hsupport_empty : support f = ∅ :=
+      support_eq_empty_of_sensitivity_zero (f := f) (h := hsens_zero)
+    -- Any two points trivially agree on the (empty) support.
+    have h_agree : ∀ i ∈ support f, x i = y i := by
       intro i hi
-      have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
-      cases this
-    -- With an empty support, the values agree on all points.
-    simpa using
-      eval_eq_of_agree_on_support (f := f) (x := x) (y := y) hagree
-  -- The specialised constant-family cover provides the desired rectangle set.
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-    (decisionTree_cover_of_constFamily (n := n) (F := F) (s := 0) hconst)
+      have : False := by simpa [hsupport_empty] using hi
+      exact this.elim
+    simpa using eval_eq_of_agree_on_support (f := f) (x := x) (y := y) h_agree
+
+  --## Step 2: define the full subcube with no fixed coordinates.
+  let fullCube : Subcube n :=
+    { idx := ∅,
+      val := fun i h => False.elim ((Finset.not_mem_empty i) h) }
+
+  --## Step 3: decide whether some function ever evaluates to `true`.
+  by_cases hex_true : ∃ f ∈ F, ∃ x, f x = true
+  · --### Case 1: some function is `true` somewhere.
+    -- By constancy, *every* function is the constant `true` function.
+    rcases hex_true with ⟨f₀, hf₀, x₀, hx₀⟩
+    have h_all_true : ∀ f ∈ F, ∀ x, f x = true := by
+      intro f hf x
+      have := h_const f hf x x₀
+      simpa [hx₀] using this
+
+    refine ⟨{fullCube}, ?_, ?_, ?_⟩
+    · -- Full cube is monochromatic (colour `true`) for every function.
+      intro f hf R hR
+      have hRfull : R = fullCube := by
+        simpa [Finset.mem_singleton] using hR
+      subst hRfull
+      refine ⟨true, ?_⟩
+      intro x _; exact h_all_true f hf x
+    · -- Every `true` point lies inside the full cube.
+      intro f hf x hx
+      refine ⟨fullCube, ?_, ?_⟩
+      · simp
+      · intro i hi; cases hi
+    · -- Cardinality bound: singleton set ≤ 1 = 2^0.
+      simp
+  · --### Case 2: all functions are constantly `false`.
+    refine ⟨∅, ?_, ?_, ?_⟩
+    · -- Monochromaticity holds vacuously.
+      intro f hf R hR; simpa using hR
+    · -- No `true` points exist, contradicting the assumption.
+      intro f hf x hx
+      exact hex_true ⟨f, hf, x, hx⟩
+    · -- Cardinality bound for the empty set.
+      simp
 
 /--
   Auxiliary construction for the one‑dimensional case.  When `n = 1` every

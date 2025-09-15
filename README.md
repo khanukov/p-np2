@@ -69,7 +69,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   path extraction, a `subcube_of_path` helper and lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
   bounding recorded paths and leaf count.
-* `low_sensitivity_cover.lean` – lemma skeletons using decision trees; key statement `decisionTree_cover` remains an axiom.
+* `low_sensitivity_cover.lean` – ongoing construction of decision-tree covers. The main theorem `decisionTree_cover` now splits into the large- and small-sensitivity regimes, but the small-case bound still depends on the lemma `exists_common_monochromatic_subcube`, whose proof contains two `sorry`s.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `low_sensitivity.lean` – trivial cover for smooth functions (self-contained).
 * `Algorithms/SatCover.lean` – constructive SAT search procedure scanning the
@@ -89,6 +89,24 @@ tracked in `TODO.md` and will be removed as the project progresses.
   The directory also contains enumeration logs such as `results_n2_n3.md`, `results_n4_n5.md`, `results_n6.md`, and `results_n7_n8.md`.
 * `docs/` – assorted background notes. `E1_roadmap.md` outlines the ACC⁰∘MCSP approach. Additional materials include `buildCover_card_bound_outline.md` (historical proof outline for a now‑removed counting lemma), `canonical_eq_proof_plan.md`, `collision_entropy_solution.md`, `master_blueprint.md`, `lemma_B_plan.md`, `b3_b5_details.md`, and `np_not_p_poly_sketch.md`. The theorem `canonical_eq_iff_eqv` from `canonical_eq_proof_plan.md` is formalised in `Pnp2/canonical_circuit.lean`.
 * `Task_description.md`, `fce_lemma_proof.md` – original research notes explaining the FCE‑Lemma project.
+
+## Logic conventions
+
+All Prop-level arguments in the repository freely use classical reasoning.  In
+particular:
+
+* we routinely `open Classical` and work in `noncomputable` sections when this
+  simplifies a proof;
+* standard mathlib axioms such as `funext`, `propext`, and `Classical.choice`
+  are part of the accepted toolkit;
+* noncomputable definitions are allowed whenever they shorten proofs—our
+  results are proofs of existence rather than executable programs;
+* previously formalised lemmas from mathlib (including statements about
+  computability, automata, and decision trees) may be reused without providing
+  constructive rederivations.
+
+Whenever a constructive variant is desirable for extraction or experimentation,
+the documentation marks it explicitly as a future enhancement.
 
 ## Building
 
@@ -148,7 +166,7 @@ python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2  # search for a small su
 ## Status
 
 This repository is a research prototype. Many central lemmas remain incomplete and are marked with `axiom`. In particular:
-* `decisionTree_cover` remains an axiom.
+* `decisionTree_cover` is still unfinished: `exists_common_monochromatic_subcube` in `low_sensitivity_cover.lean` and several path-permutation lemmas in `DecisionTree.lean` remain as `sorry`s.
 * `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
 * `ComplexityClasses.lean` assumes `P ⊆ P/poly`.
 
@@ -156,4 +174,9 @@ See `TODO.md` for an up-to-date list of outstanding tasks.
 
 ## Development plan
 
-The immediate goal is to replace the axioms above with formal proofs and to provide a constructive cover algorithm with verified bounds.  The current search routine `firstUncovered` relies on classical choice; rewriting it constructively is postponed until the overall `P ≠ NP` argument is fully formalised.
+The immediate goal is to replace the axioms above with formal proofs and to
+obtain verified bounds for the cover construction.  The project deliberately
+allows classical choice and other nonconstructive steps for these Prop-level
+results.  The current search routine `firstUncovered` therefore keeps its
+classical implementation; a constructive rewrite is tracked separately for the
+moment when executable artefacts become a priority.

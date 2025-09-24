@@ -5,6 +5,14 @@ open BoolFunc
 -- Disable `unnecessarySimpa` linter to avoid noise in pedagogical tests.
 set_option linter.unnecessarySimpa false
 
+-- The cover-building examples below intentionally exercise a large fraction of
+-- the decision-tree development.  Their proofs consist mostly of `simp`-style
+-- automation, but the sheer number of intermediate rewrites means that the
+-- default heartbeat budget (200k) is occasionally exhausted when the module is
+-- compiled in one go.  Relax the bound to match the generous value used in the
+-- main development so that `lake test` remains stable.
+set_option maxHeartbeats 50000000
+
 /-- A simple family consisting of the constantly-false function on one bit. -/
 def constFamily : Family 1 :=
   ({fun (_ : Point 1) => false} : Finset (BFunc 1))
@@ -318,7 +326,7 @@ example : True := by
         (∀ f ∈ ({fun _ : BoolFunc.Point 1 => false} : Family 1),
             ∀ x, f x = true →
               ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     BoolFunc.decisionTree_cover
       (F := ({fun _ : BoolFunc.Point 1 => false} : Family 1))
       (s := 0) hfamily

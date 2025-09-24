@@ -94,10 +94,10 @@ example :
 /-- The low-sensitivity cover for a single function exists. -/
 example (n s : ℕ) (f : BFunc n) [Fintype (Point n)]
     (Hs : sensitivity f ≤ s) :
-    ∃ Rset : Finset (Subcube n),
-      (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-      (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  ∃ Rset : Finset (Subcube n),
+    (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+    (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+    Rset.card ≤ coverBound n s := by
   classical
   have hfamily : ∀ g ∈ ({f} : Family n), sensitivity g ≤ s := by
     intro g hg

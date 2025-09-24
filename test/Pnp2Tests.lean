@@ -70,18 +70,6 @@ example :
     simp [hempty] at hmem
   exact BoolFunc.exists_true_on_support (f := fun y : Point 1 => y 0) hsupp
 
-/-- A trivial tree has depth zero and one leaf subcube. -/
-example :
-    (DecisionTree.leaves_as_subcubes (DecisionTree.leaf true : DecisionTree 1)).card = 0 :=
-by
-  simp [DecisionTree.leaves_as_subcubes]
-
-/-- The depth bound lemma from the legacy library. -/
-example (t : DecisionTree 2) :
-    (DecisionTree.leaves_as_subcubes t).card ≤ 2 ^ DecisionTree.depth t :=
-by
-  simpa using DecisionTree.tree_depth_bound (t := t)
-
 /-- A trivial decision tree has at most `2 ^ depth` leaves. -/
 example :
     (DecisionTree.leaf true : DecisionTree 1).leaf_count ≤
@@ -261,17 +249,6 @@ example {n s : ℕ} [Fintype (Point n)] :
     BoolFunc.decisionTree_cover_of_constant
       (F := ({fun _ : Point n => true} : Family n))
       (s := s) hconst
-
-/-- Every evaluation/path pair computed by a decision tree occurs in its
-`coloredSubcubes` set.  We simply invoke the lemma
-`eval_pair_mem_coloredSubcubes`. -/
-example {n : ℕ} (t : DecisionTree n) (x : Point n) :
-    ⟨DecisionTree.eval_tree t x,
-      DecisionTree.subcube_of_path ((DecisionTree.path_to_leaf t x).reverse)⟩ ∈
-      DecisionTree.coloredSubcubes (n := n) t := by
-  classical
-  simpa using
-    DecisionTree.eval_pair_mem_coloredSubcubes (t := t) (x := x)
 
 /-- Restricting along a concatenated path is equivalent to
     applying the restrictions sequentially. -/

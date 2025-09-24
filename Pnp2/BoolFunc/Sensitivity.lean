@@ -39,53 +39,6 @@ def insensitiveCoordsAt (f : BFunc n) (x : Point n) : Finset (Fin n) :=
 def sensitivity (f : BFunc n) : ℕ :=
   (Finset.univ.sup fun x => sensitivityAt f x)
 
-/-- A *dictator* function returning the value of the `i`-th input bit. -/
-@[simp] def dictator (i : Fin n) : BFunc n := fun x => x i
-
-lemma sensitivityAt_dictator (i : Fin n) (x : Point n) :
-    sensitivityAt (dictator (n := n) i) x = 1 := by
-  classical
-  unfold sensitivityAt dictator
-  -- The filtered set contains precisely the coordinate `i`.
-  have hset :
-      (Finset.univ.filter fun j : Fin n =>
-          (Point.update x j (!x j)) i ≠ x i)
-        = ({i} : Finset (Fin n)) := by
-    ext j
-    by_cases hji : j = i
-    · subst hji
-      -- Flipping the `i`-th bit changes the value of the dictator.
-      simp
-    · have hneq : i ≠ j := Ne.symm hji
-      -- Updating a *different* coordinate leaves the `i`-th bit untouched.
-      have hupdate : (Point.update x j (!x j)) i = x i :=
-        Point.update_neq (x := x) (i := j) (j := i) hneq (!x j)
-      constructor
-      · intro hj
-        rcases Finset.mem_filter.mp hj with ⟨-, hj⟩
-        have hfalse : False := by
-          have : x i ≠ x i := by simpa [hupdate] using hj
-          exact this rfl
-        exact hfalse.elim
-      · intro hj
-        have : j = i := Finset.mem_singleton.mp hj
-        exact (hji this).elim
-  -- The cardinality of a singleton set is one.
-  simp [hset]
-
-lemma sensitivity_dictator (i : Fin n) :
-    sensitivity (dictator (n := n) i) = 1 := by
-  classical
-  unfold sensitivity
-  -- Every point witnesses sensitivity one, so the supremum is one.
-  have hconst :
-      (fun x : Point n => sensitivityAt (dictator (n := n) i) x)
-        = fun _ => (1 : ℕ) := by
-    funext x; simpa using sensitivityAt_dictator (n := n) (i := i) (x := x)
-  have hnonempty : (Finset.univ : Finset (Point n)).Nonempty :=
-    Finset.univ_nonempty
-  simpa [hconst] using Finset.sup_const hnonempty (1 : ℕ)
-
 /--
 `coordSensitivity f i` counts the number of inputs where flipping the `i`‑th
 bit changes the value of `f`.  This refined notion is useful for tracking which

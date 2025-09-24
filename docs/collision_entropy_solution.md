@@ -1,4 +1,4 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: Matches the implementation in `Pnp2/collentropy.lean`.
 >
 # Collision Entropy of a Boolean Function
 

@@ -69,7 +69,7 @@ lemma coordSensitivity_eq_zero_iff (f : BFunc n) (i : Fin n) :
     have hempty :
         (Finset.univ.filter fun y : Point n =>
           f y ≠ f (Point.update y i (!y i))) = (∅ : Finset (Point n)) := by
-      apply Finset.eq_empty_of_forall_not_mem
+      apply Finset.eq_empty_of_forall_notMem
       intro x hxmem
       rcases Finset.mem_filter.mp hxmem with ⟨-, hxneq⟩
       have := hx x
@@ -1179,15 +1179,16 @@ lemma support_card_le_sum_coordSensitivity (f : BFunc n) :
       (mem_support_iff_coordSensitivity_ne_zero (f := f) (i := i)).1 hi
     exact Nat.succ_le_of_lt (Nat.pos_of_ne_zero hne)
   have hcard_le :
-      (support f).card ≤ ∑ i in support f, coordSensitivity f i := by
+      (support f).card ≤ ∑ i ∈ support f, coordSensitivity f i := by
     -- Compare the two sums coordinatewise using `hforall`.
-    have hsum_le : ∑ i in support f, (1 : ℕ) ≤ ∑ i in support f, coordSensitivity f i :=
+    have hsum_le :
+        ∑ i ∈ support f, (1 : ℕ) ≤ ∑ i ∈ support f, coordSensitivity f i :=
       Finset.sum_le_sum (by intro i hi; exact hforall i hi)
     simpa using hsum_le
   -- Extending the sum to all coordinates can only increase its value.
   have hsubset :
-      (∑ i in support f, coordSensitivity f i)
-        ≤ ∑ i in (Finset.univ : Finset (Fin n)), coordSensitivity f i :=
+      (∑ i ∈ support f, coordSensitivity f i)
+        ≤ ∑ i ∈ (Finset.univ : Finset (Fin n)), coordSensitivity f i :=
     Finset.sum_le_sum_of_subset_of_nonneg
       (Finset.subset_univ _)
       (by intro i hi hnot; exact Nat.zero_le _)

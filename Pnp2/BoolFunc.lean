@@ -61,7 +61,12 @@ abbrev BFunc (n : ℕ) : Type := Point n → Bool
 /-- The Boolean cube `Point n` has `2^n` vertices. -/
 @[simp] lemma card_point (n : ℕ) : Fintype.card (Point n) = 2 ^ n := by
   classical
-  simpa [Point, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool]
+  have hfun :
+      Fintype.card (Fin n → Bool) = (Fintype.card Bool) ^ Fintype.card (Fin n) :=
+    Fintype.card_fun
+  have hpow : (Fintype.card Bool) ^ Fintype.card (Fin n) = 2 ^ n := by
+    simp [Fintype.card_bool, Fintype.card_fin]
+  exact (rfl.trans (hfun.trans hpow))
 
 /-- A *family* (finite set) of Boolean functions on `n` bits.  We use
 `Finset` rather than `Set` so that cardinalities are definable.  Lean does
@@ -126,11 +131,7 @@ assigned values. -/
       -- With identical index sets, the value functions share the same domain.
       have hfun : valR = valS := by
         funext i hi; simpa using hval i hi
-      simpa [hfun]
-
-@[simp] lemma mem_of_not_fixed {R : Subcube n} {x : Point n} {i : Fin n}
-    (_ : i ∉ R.idx) : R.mem x → True := by
-  intro _; trivial
+      simp [hfun]
 
 /-- **Monochromaticity for a single function**:
 `R` is monochromatic for `f` if `f` is constant on `R`. -/
@@ -171,8 +172,9 @@ lemma mem_extend_iff {R : Subcube n} {i : Fin n} {b : Bool}
   constructor
   · intro hx
     have hxi : x i = b := by
-      have := hx i (by simp [extend])
-      simpa [extend] using this
+      have hxib := hx i (by simp [extend])
+      simp [extend] at hxib
+      exact hxib
     refine ⟨hxi, ?_⟩
     intro j hj
     have hij : j ≠ i := by
@@ -181,18 +183,25 @@ lemma mem_extend_iff {R : Subcube n} {i : Fin n} {b : Bool}
       have : j ∈ insert i R.idx :=
         Finset.mem_insert.mpr (Or.inr hj)
       exact this)
-    simpa [extend, hij] using hmem
+    simp [extend, hij] at hmem
+    exact hmem
   · rintro ⟨hxi, hxR⟩ j hj
     by_cases hji : j = i
-    · subst hji; simpa [extend, hxi]
+    · subst hji
+      simp [extend, hxi]
     ·
       have hjR : j ∈ R.idx := by
         have := Finset.mem_insert.mp hj
         cases this with
         | inl h => exact False.elim (hji h)
         | inr h => exact h
-      have := hxR j hjR
-      simpa [extend, hji] using this
+      have hxmem := hxR j hjR
+      classical
+      have hrewrite : R.val j hjR = (extend R i b).val j hj := by
+        simp [extend, hji]
+      have hxmem' := hxmem
+      simp [hrewrite] at hxmem'
+      exact hxmem'
 
 /--
 "Unfix" a coordinate of a subcube by removing it from the set of
@@ -221,8 +230,8 @@ lemma mem_unfix_of_mem {R : Subcube n} {i : Fin n} {x : Point n}
   -- Extract the membership proof for `j` from the erased index set.
   have hjR : j ∈ R.idx := (Finset.mem_erase.mp hj).2
   -- `R.unfix i` uses the same Boolean value as `R` on coordinate `j`.
-  have := hx j hjR
-  simpa [unfix, hjR] using this
+  have hxmem := hx j hjR
+  simpa [unfix] using hxmem
 
 /--
 Updating a point `x` inside a subcube `R` by changing the value at a single
@@ -239,7 +248,7 @@ lemma mem_unfix_update {R : Subcube n} {i : Fin n} {x : Point n} {b : Bool}
   rcases Finset.mem_erase.mp hj with ⟨hne, hjR⟩
   -- On such coordinates the updated point coincides with `x`.
   have hxj := hx j hjR
-  simp [unfix, hne, hjR, hxj]  -- the `if`-statement simplifies via `hne`
+  simp [unfix, hne, hxj]  -- the `if`-statement simplifies via `hne`
 
 @[simp]
 lemma idx_unfix (R : Subcube n) (i : Fin n) :
@@ -512,13 +521,13 @@ lemma restrictAssignments_agrees {f : BFunc n} {x : Point n}
     BFunc.restrictAssignments (f := f) p x = f x := by
   induction p generalizing f with
   | nil =>
-      simpa [BFunc.restrictAssignments, satisfiesAssignments] using h
+      simp [BFunc.restrictAssignments]
   | cons hb tl ih =>
       rcases hb with ⟨i, b⟩
       rcases h with ⟨hx, hrest⟩
       have := ih (f := BFunc.restrictCoord f i b) hrest
-      simpa [BFunc.restrictAssignments, satisfiesAssignments, hx,
-        restrictCoord_agrees (f := f) (j := i) (b := b) (x := x) (h := hx)] using this
+      simp [hx] at this
+      exact this
 
 end Restrict
 
@@ -704,8 +713,10 @@ lemma card_restrict_lt_of_restrict_eq {F : Family n} (i : Fin n) (b : Bool)
       exact Finset.mem_image.mpr ⟨f', hf'F, rfl⟩
   -- The restricted family therefore has at most `F.erase f` many elements.
   have hle : (Family.restrict F i b).card ≤ (Finset.erase F f).card := by
-    simpa [himg_eq] using
+    have hcard :=
       (Family.card_restrict_le (F := Finset.erase F f) (i := i) (b := b))
+    convert hcard using 1
+    simp [himg_eq]
   -- Removing a member strictly decreases the size of the family.
   have hlt_erase : (Finset.erase F f).card < F.card := by
     -- `card (erase f) = card F - 1`, hence it is strictly smaller than `card F`.
@@ -715,12 +726,14 @@ lemma card_restrict_lt_of_restrict_eq {F : Family n} (i : Fin n) (b : Bool)
     have hsucc : (Finset.erase F f).card + 1 = F.card := by
       have hsub : F.card - 1 + 1 = F.card :=
         Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-      simpa [hcard, Nat.succ_eq_add_one, hsub] using
-        congrArg (fun t => t + 1) hcard
+      have := congrArg (fun t => t + 1) hcard
+      simp [hsub] at this
+      exact this
     -- The desired inequality follows from `a < a + 1`.
     have hlt' : (Finset.erase F f).card < (Finset.erase F f).card + 1 :=
       Nat.lt_succ_self _
-    simpa [hsucc] using hlt'
+    simp [hsucc] at hlt'
+    exact hlt'
   exact lt_of_le_of_lt hle hlt_erase
 
 end Family

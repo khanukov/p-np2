@@ -1,46 +1,21 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: Combinatorial ingredients for Lemma B are formalised.  The remaining gap is an efficient enumeration strategy.
 >
 # Progress Towards Lemma B
 
-This short note summarises the intended formal proof that the family of
-small Boolean functions admits a subexponential rectangular cover.  It
-collects various helper lemmas already available in the repository and
-sketches how they fit together.  The goal is to bound the size of the
-cover produced by `buildCover` by the function `mBound` and then use the
-asymptotic estimate `mBound_lt_subexp` from `bound.lean`.
+This note summarises how the Lean development assembles a subexponential rectangular cover for families of small Boolean circuits.
 
-The `buildCover_card_bound` lemma establishes
-```
-(buildCover F h hH).card ≤ mBound n h
-```
-for any family `F : Family n` whose collision entropy does not exceed
-`h`.  Combining this with `cover_exists` we obtain a finite set of
-subcubes covering all one‑inputs of every function in `F` with the same
-size bound.  Finally `mBound_lt_subexp` shows that for sufficiently
-large `n` this bound is `≤ 2^(n/100)`, yielding the desired
-subexponential behaviour.
+* `Cover/BuildCover.lean` constructs a cover `buildCover F h hH` and proves coverage together with the universal bound `(buildCover F h hH).card ≤ Fintype.card (Subcube n)`.
+* `family_entropy_cover.lean` packages the construction into a `FamilyCover` record whose cardinality satisfies `≤ Cover2.mBound n h = n (h+2) 2^{10h}` whenever the arithmetic condition `Fintype.card (Subcube n) ≤ Cover2.mBound n h` holds.
+* `bound.lean` shows that `Cover2.mBound n h` is subexponential in `n` (`mBound_lt_subexp`).
+* `low_sensitivity_cover.lean` and `merge_low_sens.lean` glue the entropy cover with the low-sensitivity branch, culminating in `decisionTree_cover`.
 
-The remaining work mainly concerns connecting these pieces with the
-combinatorial lemmas from the `sunflower` development and providing a
-computable version of `buildCover`.
+Combining these pieces yields the statement that families of circuits of size `≤ n^c` admit subexponential covers; the blueprint for the final Lemma B is laid out in `bound.lean` and `cover_numeric.lean`.
 
 ## Current status
 
-The formal development now proves the desired sub-exponential bound as
-`Bound.lemmaB_circuit_cover`.  This theorem packages the entropy cover
-construction and the numeric estimate `mBound_lt_subexp` to show that
-all circuits of size `≤ n^c` admit a joint monochromatic cover of at
-most `2^{(2^n)/100}` rectangles.  The proof relies on the `family_collision_entropy_lemma_table`
-for general families and instantiates it with the circuit family.
+* ✅ Structural lemmas (`sunflower_step`, `exists_coord_card_drop`, `coreAgreement`).
+* ✅ Entropy bounds and the packaged cover (`family_entropy_cover`, `mBound_lt_subexp`).
+* ✅ Decision-tree cover and merging arguments.
+* ⚠️ Open: devise an efficient (better-than-exhaustive) enumeration of the rectangles produced by `buildCover`.  The executable baseline in `Cover/Compute.lean` still scans the full Boolean cube.
 
-What remains open is a **practical** enumeration of these rectangles
-via `Cover.buildCoverCompute`.  The current implementation simply
-enumerates all points of the Boolean cube one by one, which is
-exponentially slow and therefore limits algorithmic applications.
-
-An alternative presentation is given by the lemma
-`Bound.lemmaB_circuit_cover_delta`.  It reformulates the subexponential
-bound as `|Rset| ≤ 2^{2^n - 2^{n/2}}`, matching the usual
-`2^{N - N^δ}` notation with `δ = 1/2`.  This version follows from the
-basic bound by a straightforward numeric comparison.
-
+These notes serve as a checklist for future work on the algorithmic side of Lemma B.

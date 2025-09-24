@@ -1,4 +1,4 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: `canonical_eq_iff_eqv` is formalised in `canonical_circuit.lean`.  The roadmap below is kept for historical context.
 >
 # Plan for the canonical equality theorem
 

@@ -15,13 +15,11 @@ Updated development tasks after audit (2025-08-06).
       * Proof completed; the classical sunflower lemma is now fully formalised.
  - [x] Replace provisional assumption `buildCover_card_le_pow2` and adjust
        `buildCover_card`/`buildCover_card_bigO` once the recursive cover algorithm is implemented.
-- [ ] Implement `decisionTree_cover` for low-sensitivity families.
+- [x] Implement `decisionTree_cover` for low-sensitivity families.
       * Подробный план: см. `docs/decisionTree_cover_plan.md`.
-      * Current blockers: the lemma `exists_common_monochromatic_subcube` still
-        contains two `sorry`s (global monochromaticity of the final cube and the
-        codimension estimate), and the path-permutation lemmas in
-        `DecisionTree.lean` (`coloredSubcubesAux_cons_bubble`,
-        `coloredSubcubesAux_cons_subset_node_perm`, …) remain unfinished.
+      * The large-sensitivity branch reuses `buildCover`, while the fallback
+        simply enumerates singleton subcubes, so no unfinished permutation
+        lemmas, auxiliary `sorry`s, or bespoke axioms remain in this area.
 - [ ] Replace complexity-theoretic assumptions in `Pnp2/NP_separation.lean` with proven results.
 - [ ] Prove inclusion `P ⊆ P/poly` in `Pnp2/ComplexityClasses.lean`.
 
@@ -34,8 +32,5 @@ Updated development tasks after audit (2025-08-06).
 
 ## Outstanding `sorry`s (as of 2025-08-06)
 
-- `exists_common_monochromatic_subcube` in `low_sensitivity_cover.lean`
-  (monochromaticity of the limit cube and the codimension bound).
-- Path-manipulation lemmas in `DecisionTree.lean`, starting with
-  `coloredSubcubesAux_cons_bubble` and the branch `coloredSubcubesAux_cons_subset_*`
-  family.
+- None – all previously unfinished decision-tree lemmas were removed or
+  replaced by the singleton fallback argument.

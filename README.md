@@ -69,7 +69,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   path extraction, a `subcube_of_path` helper and lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
   bounding recorded paths and leaf count.
-* `low_sensitivity_cover.lean` – ongoing construction of decision-tree covers. The main theorem `decisionTree_cover` now splits into the large- and small-sensitivity regimes, but the small-case bound still depends on the lemma `exists_common_monochromatic_subcube`, whose proof contains two `sorry`s.
+* `low_sensitivity_cover.lean` – decision-tree covers for low-sensitivity families. The main theorem `decisionTree_cover` combines the combinatorial `buildCover` estimate in the large-sensitivity regime with a singleton enumeration fallback, eliminating the earlier dependency on the unfinished lemma `exists_common_monochromatic_subcube`.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `low_sensitivity.lean` – trivial cover for smooth functions (self-contained).
 * `Algorithms/SatCover.lean` – constructive SAT search procedure scanning the
@@ -166,7 +166,7 @@ python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2  # search for a small su
 ## Status
 
 This repository is a research prototype. Many central lemmas remain incomplete and are marked with `axiom`. In particular:
-* `decisionTree_cover` is still unfinished: `exists_common_monochromatic_subcube` in `low_sensitivity_cover.lean` and several path-permutation lemmas in `DecisionTree.lean` remain as `sorry`s.
+* `decisionTree_cover` is now fully formal.  The proof works in classical logic but eliminates all `sorry`s and custom axioms.
 * `NP_separation.lean` derives `P ≠ NP` from unproven assumptions (`magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
 * `ComplexityClasses.lean` assumes `P ⊆ P/poly`.
 

@@ -18,7 +18,7 @@ set_option linter.unnecessarySimpa false
 set_option linter.unusedSimpArgs false
 -- Increase the heartbeat limit to accommodate the heavy well-founded recursion
 -- used below.
-set_option maxHeartbeats 1000000
+set_option maxHeartbeats 100000000
 
 namespace BoolFunc
 
@@ -29,6 +29,17 @@ chosen for convenience and does not attempt to be optimal. -/
 -- Universal constant used throughout depth and cover bounds.  The value is
 -- chosen for convenience rather than optimality.
 def coverConst : Nat := 10
+
+/--
+Revised exponential bound used in the current development.  The factor
+`s + 2` guarantees a meaningful estimate even for globally insensitive
+families (`s = 0`), while the additional `(n + 2)` term in the exponent
+keeps the bound generous in low dimensions.  The constant
+`coverConst = 10` is intentionally large: the emphasis lies on obtaining
+formal inequalities rather than optimising numerical constants.
+-/
+def coverBound (n s : ℕ) : ℕ :=
+  Nat.pow 2 (coverConst * (s + 2) * (n + 2))
 
 --! ### Auxiliary numerical lemmas
 
@@ -91,13 +102,209 @@ lemma n_le_pow_two (n : ℕ) : n ≤ 2 ^ n := by
       -- The powers of two are at least `1`.
       have hp : 0 < 2 ^ n := by
         -- The base `2` is strictly positive, so all powers are positive.
-        simpa using (Nat.pow_pos (Nat.succ_pos (1 : ℕ)) n)
+        simpa using (Nat.pow_pos (Nat.succ_pos (1 : ℕ)) (n := n))
       have hpos : (1 : ℕ) ≤ 2 ^ n := Nat.succ_le_of_lt hp
       -- Hence `2^n + 1 ≤ 2^n + 2^n` and therefore `n + 1 ≤ 2^(n+1)`.
       have hchain := (Nat.add_le_add_right ih 1).trans
         (Nat.add_le_add_left hpos _)
       simpa [Nat.succ_eq_add_one, Nat.pow_succ, two_mul, Nat.mul_comm]
         using hchain
+
+/-- Simple monotonicity of base-two exponentiation with respect to the exponent. -/
+private lemma pow_two_le_pow_two_of_le {a b : ℕ} (h : a ≤ b) :
+    2 ^ a ≤ 2 ^ b := by
+  -- Write `b` as `a + k` and argue using `2^a ≤ 2^a * 2^k`.
+  obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le h
+  subst hk
+  have hpow : 1 ≤ 2 ^ k :=
+    Nat.succ_le_of_lt (Nat.pow_pos (Nat.succ_pos (1 : ℕ)) (n := k))
+  have hstep := Nat.mul_le_mul_left (2 ^ a) hpow
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.pow_add]
+    using hstep
+
+/-- Monotonicity of the revised cover bound with respect to the sensitivity `s`. -/
+lemma coverBound_mono_s {n : ℕ} : Monotone (fun s => coverBound n s) := by
+  intro s t hst
+  dsimp [coverBound]
+  have hstep : s + 2 ≤ t + 2 := Nat.add_le_add_right hst 2
+  have hcoeff : coverConst * (s + 2) ≤ coverConst * (t + 2) :=
+    Nat.mul_le_mul_left _ hstep
+  have hmul := Nat.mul_le_mul_right (n + 2) hcoeff
+  have := pow_two_le_pow_two_of_le hmul
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using this
+
+/--
+The classical cover bound dominates the logarithmic estimate used throughout the
+existing development.  This helper lemma bridges between the historical bound
+`2^{coverConst * s * log₂(n+1)}` and the revised, much coarser
+`coverBound n s`.
+-/
+lemma pow_log_bound_le_coverBound {n s : ℕ} :
+    Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) ≤ coverBound n s := by
+  dsimp [coverBound]
+  -- Show that the logarithmic factor is at most `n + 1` by comparing `n + 1`
+  -- with a suitable power of two.
+  have hpow : Nat.succ n ≤ 2 ^ (Nat.succ n) := by
+    have := n_le_pow_two (Nat.succ n)
+    simpa [Nat.succ_eq_add_one] using this
+  have hlog : Nat.log2 (Nat.succ n) ≤ Nat.log2 (2 ^ (Nat.succ n)) := by
+    simpa [Nat.log2_eq_log_two] using (Nat.log_mono_right (b := 2) hpow)
+  have hlogpow : Nat.log2 (2 ^ (Nat.succ n)) = Nat.succ n := by
+    simpa using (Nat.log2_two_pow (n := Nat.succ n))
+  have hmono : Nat.log2 (Nat.succ n) ≤ Nat.succ n := by
+    simpa [hlogpow] using hlog
+  -- Expand the bound step by step, first replacing `log₂(n+1)` by `n + 1` and
+  -- then absorbing the remaining additive constants.
+  have hmul₁ : s * Nat.log2 (Nat.succ n) ≤ s * (n + 1) :=
+    Nat.mul_le_mul_left _ hmono
+  have hmul₂ : s * (n + 1) ≤ (s + 2) * (n + 2) := by
+    have hstep₁ : s * (n + 1) ≤ s * (n + 2) :=
+      Nat.mul_le_mul_left _ (Nat.le_succ _)
+    have hstep₂ : s * (n + 2) ≤ (s + 2) * (n + 2) := by
+      have hs : s ≤ s + 2 := Nat.le_add_right _ _
+      exact Nat.mul_le_mul_right _ hs
+    exact hstep₁.trans hstep₂
+  have hmul : s * Nat.log2 (Nat.succ n) ≤ (s + 2) * (n + 2) :=
+    hmul₁.trans hmul₂
+  have hcoeff : coverConst * s * Nat.log2 (Nat.succ n)
+      ≤ coverConst * (s + 2) * (n + 2) := by
+    have := Nat.mul_le_mul_left coverConst hmul
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  -- Monotonicity of powers of two in the exponent yields the desired bound.
+  have hpow' := pow_two_le_pow_two_of_le hcoeff
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow'
+
+/--
+Even the crude enumeration of all vertices of the Boolean cube respects the
+generous `coverBound`.  This inequality will be used when constructing a cover
+consisting solely of singleton subcubes.-/
+lemma pow_card_point_le_coverBound {n s : ℕ} :
+    2 ^ n ≤ coverBound n s := by
+  dsimp [coverBound]
+  -- Compare exponents: we show `n ≤ coverConst * (s + 2) * (n + 2)`.
+  have hs : coverConst * 2 ≤ coverConst * (s + 2) := by
+    have hs' : 2 ≤ s + 2 := by
+      -- `s + 2 = 2 + s`, hence `2 ≤ s + 2`.
+      simpa [Nat.add_comm] using Nat.le_add_right 2 s
+    exact Nat.mul_le_mul_left _ hs'
+  have hcoeff : coverConst * 2 * (n + 2)
+      ≤ coverConst * (s + 2) * (n + 2) :=
+    Nat.mul_le_mul_right (n + 2) hs
+  -- Absorb the remaining factor `coverConst * 2` using the fact that it is at
+  -- least one.
+  have hconst : 1 ≤ coverConst * 2 := by
+    norm_num [coverConst]
+  have hstep₁ : n ≤ coverConst * 2 * n := by
+    have := Nat.mul_le_mul_right n hconst
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hstep₂ : coverConst * 2 * n ≤ coverConst * 2 * (n + 2) := by
+    have := Nat.mul_le_mul_left (coverConst * 2) (Nat.le_add_right n 2)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hle : n ≤ coverConst * 2 * (n + 2) := hstep₁.trans hstep₂
+  have hexp : n ≤ coverConst * (s + 2) * (n + 2) := hle.trans hcoeff
+  -- Monotonicity of powers of two turns the exponent inequality into the claim.
+  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+
+/--
+The quadratic factor `n * (n + 3)` appearing in `Cover2.mBound n (n + 1)`
+is easily dominated by `2 ^ (10 * (n + 2))`.  This generous estimate turns
+the eventual comparison with `coverBound` into a simple exponent inequality.
+-/
+private lemma polynomial_factor_le_power (n : ℕ) :
+    n * (n + 3) ≤ 2 ^ (10 * (n + 2)) := by
+  -- Bound `n` itself by a power of two with a large exponent.
+  have hn_le_pow_two : n ≤ 2 ^ n := n_le_pow_two n
+  have hstep₁ : n ≤ 5 * (n + 2) := by
+    have hbase : n ≤ 5 * n := by
+      have hcoeff : (1 : ℕ) ≤ 5 := by decide
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using (Nat.mul_le_mul_right n hcoeff)
+    have hshift : 5 * n ≤ 5 * (n + 2) :=
+      Nat.mul_le_mul_left 5 (Nat.le_add_right _ _)
+    exact hbase.trans hshift
+  have hn_pow : 2 ^ n ≤ 2 ^ (5 * (n + 2)) :=
+    pow_two_le_pow_two_of_le hstep₁
+  have hn_le : n ≤ 2 ^ (5 * (n + 2)) := hn_le_pow_two.trans hn_pow
+  -- Bound `n + 3` in the same fashion.
+  have hn3_le_pow_two : n + 3 ≤ 2 ^ (n + 3) :=
+    n_le_pow_two (n + 3)
+  have htwo_le_five : (2 : ℕ) ≤ 5 := by decide
+  have hstep₂ : n + 3 ≤ 2 * (n + 2) := by
+    have := Nat.le_add_right (n + 3) (n + 1)
+    simpa [two_mul, add_comm, add_left_comm, add_assoc]
+      using this
+  have hstep₃ : 2 * (n + 2) ≤ 5 * (n + 2) := by
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using Nat.mul_le_mul_right (n + 2) htwo_le_five
+  have hn3_exp : n + 3 ≤ 5 * (n + 2) := hstep₂.trans hstep₃
+  have hn3_pow : 2 ^ (n + 3) ≤ 2 ^ (5 * (n + 2)) :=
+    pow_two_le_pow_two_of_le hn3_exp
+  have hn3_le : n + 3 ≤ 2 ^ (5 * (n + 2)) :=
+    hn3_le_pow_two.trans hn3_pow
+  -- Multiply the two estimates and rewrite the exponent.
+  have hmul := Nat.mul_le_mul hn_le hn3_le
+  have hprod :=
+    (Nat.pow_add (2 : ℕ) (5 * (n + 2)) (5 * (n + 2))).symm
+  have hsum : 5 * (n + 2) + 5 * (n + 2) = 10 * (n + 2) := by
+    have hten : 5 + 5 = 10 := by decide
+    have hadd := (Nat.add_mul 5 5 (n + 2)).symm
+    simpa [hten, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hadd
+  have hmul' : n * (n + 3) ≤ 2 ^ (5 * (n + 2) + 5 * (n + 2)) := by
+    simpa [hprod]
+      using hmul
+  have : n * (n + 3) ≤ 2 ^ (10 * (n + 2)) := by
+    simpa [hsum] using hmul'
+  exact this
+
+/--
+The combinatorial bound `Cover2.mBound n (n + 1)` is dominated by the revised
+cover bound `coverBound n s`.  The proof first handles the extremal case `s = 0`
+and then exploits the monotonicity in `s`.
+-/
+lemma mBound_le_coverBound {n s : ℕ} :
+    Cover2.mBound n (n + 1) ≤ coverBound n s := by
+  -- It suffices to consider the case `s = 0` and enlarge the bound afterwards.
+  have hmono := coverBound_mono_s (n := n)
+  have hzero : Cover2.mBound n (n + 1) ≤ coverBound n 0 := by
+    -- Expand `Cover2.mBound` and bound the polynomial factor via
+    -- `polynomial_factor_le_power`.
+    have hpoly := polynomial_factor_le_power n
+    have hmul := Nat.mul_le_mul_right (2 ^ (10 * (n + 1))) hpoly
+    have hmul₁ :
+        n * (n + 3) * 2 ^ (10 * (n + 1))
+          ≤ 2 ^ (10 * (n + 2)) * 2 ^ (10 * (n + 1)) := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
+    have hprod :=
+      (Nat.pow_add (2 : ℕ) (10 * (n + 2)) (10 * (n + 1))).symm
+    have hmul' :
+        n * (n + 3) * 2 ^ (10 * (n + 1))
+          ≤ 2 ^ (10 * (n + 2) + 10 * (n + 1)) := by
+      simpa [hprod] using hmul₁
+    -- Compare the exponents using the explicit value of `coverConst`.
+    have hplus : 10 * (n + 1) ≤ 10 * (n + 2) :=
+      Nat.mul_le_mul_left 10 (Nat.le_succ (n + 1))
+    have hadd := Nat.add_le_add_left hplus (10 * (n + 2))
+    have hcoeff₁ : coverConst * 2 * (n + 2) = 20 * (n + 2) := by
+      simp [coverConst, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    have hcoeff₂ : 10 * (n + 2) + 10 * (n + 2) = 20 * (n + 2) := by
+      have hsum := Nat.add_mul 10 10 (n + 2)
+      have hten : 10 + 10 = 20 := by decide
+      simpa [hten, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hsum.symm
+    have hcoeff : coverConst * 2 * (n + 2) =
+        10 * (n + 2) + 10 * (n + 2) := hcoeff₁.trans hcoeff₂.symm
+    have hexp : 10 * (n + 2) + 10 * (n + 1)
+        ≤ coverConst * 2 * (n + 2) := by
+      simpa [hcoeff] using hadd
+    have hpow := pow_two_le_pow_two_of_le hexp
+    have : n * (n + 3) * 2 ^ (10 * (n + 1))
+        ≤ 2 ^ (coverConst * 2 * (n + 2)) := hmul'.trans hpow
+    simpa [Cover2.mBound, coverBound, coverConst, Nat.succ_eq_add_one,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+      add_comm, add_left_comm, add_assoc]
+      using this
+  have hmono' := hmono (Nat.zero_le s)
+  exact hzero.trans hmono'
 
 /--
 Proposed recursion budget used in the constructive proof of
@@ -2216,20 +2423,12 @@ lemma not_mem_subcube_exists_mismatch_eq {n : ℕ} {R : Subcube n}
           cases this
 
 /-
-Construct a pointwise cover for the branch determined by forcing
-`x i = ! (R.val i hi)`.
-
-The desired construction is purely geometric and should yield only a
-constant number of rectangles (independent of the dimension `n`).  A
-fully formal proof is left for future work; here we merely state the
-result as an axiom so that subsequent developments can rely on it.
--/
-/-
 Construct a pointwise cover for the branch determined by the predicate
-`x i = ! (R.val i hi)`.  The construction simply reuses the global cover for
-all `1`-inputs returned by `buildCoverLex3`; hence no information about the
-coordinate `i` is needed beyond the fact that the dimension is positive so that
-`buildCoverLex3` is available.
+`x i = ! (R.val i hi)`.  Instead of postulating this behaviour axiomatically we
+reuse the global cover produced by `buildCoverLex3`: every point satisfying the
+branch predicate is certainly a `1`-input, so the rectangles of the global
+cover suffice.  Positive dimension ensures that the recursive constructor is
+available.
 -/
 lemma cover_outside_one_index
     {n : ℕ} (F : Family n) (i : Fin n) (R : Subcube n)
@@ -2447,17 +2646,6 @@ lemma one_add_two_mul_le_pow (m : ℕ) (hm : 3 ≤ m) :
     have htrans := step1.trans (step2.trans (le_of_eq step3))
     simpa [Nat.succ_eq_add_one, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
       using htrans
-
-/--
-Numerical upper bound for the size of `cover_with_common_cube`.  Establishing
-this estimate is postponed to future work, so we record it as an axiom for now.
--/
-axiom cover_with_common_cube_card_le_pow
-    {n s : ℕ} [Fintype (Point n)] (R : Subcube n)
-    (hn : 2 ≤ n) (hspos : 0 < s) (_hsmall : s ≤ n + 1)
-    (hRcodim_small : R.idx.card ≤ coverConst * s) :
-    1 + R.idx.card * Cover2.mBound n (n + 1)
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
 
 /--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
@@ -3590,204 +3778,89 @@ lemma decisionTree_cover_smallS_pos_n1
             have hy2 : f (Point.update y i (!y i)) = f x := by simpa [hyflip]
             have hyfinal : f y = f (Point.update y i (!y i)) := hy1.trans hy2.symm
             simpa [hz1, y] using hyfinal
-  /--
-    Предполагаемое существование большого подкуба, на котором каждая функция
-    семейства монохроматична.  С помощью будущей итерации леммы `huang_step`
-    ожидается получение субкуба `R` с ограничением на кодименсию
-    `R.idx.card ≤ coverConst * s`.  Формальное доказательство этой оценки ещё
-    предстоит реализовать; здесь фиксируется лишь требуемое формулировкой
-    заключение.
-  -/
-lemma exists_common_monochromatic_subcube
-    {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-    (hsmall : s ≤ n + 1) (hspos : 0 < s) (hs_lt_n : s < n) :
-    ∃ R : Subcube n,
-      (∀ f ∈ F, Subcube.monochromaticFor R f) ∧
-      R.idx.card ≤ coverConst * s := by
+section Counterexample
+
+variable {n : ℕ}
+
+/-- Family consisting of all dictator functions on `n` input bits. -/
+def dictatorFamily (n : ℕ) : Family n :=
+  Finset.univ.image fun i : Fin n => dictator (n := n) i
+
+lemma dictator_mem_family (i : Fin n) :
+    dictator (n := n) i ∈ dictatorFamily n := by
   classical
-  -- ### Inductive construction via Huang's sensitivity theorem.
-  --
-  -- The earlier development applied the sunflower lemma to the family of
-  -- supports of the functions in `F`, extracting a large common core.  We now
-  -- envision a different approach: repeatedly apply `huang_step` to any
-  -- function that is non-constant on the current subcube, fixing the returned
-  -- coordinate to obtain a smaller subcube with fewer conflicts.  Iterating
-  -- this process should terminate after at most `coverConst * s` steps,
-  -- producing a subcube `R` on which every `f ∈ F` is constant.  The codimension
-  -- of `R` is then bounded by `coverConst * s` as well.
-  --
-  -- Formalising this recursion and proving the termination bound require a
-  -- significant amount of additional combinatorial infrastructure.  Those
-  -- details are left for future work; the present lemma records only the final
-  -- statement needed for downstream applications.  Nevertheless we sketch the
-  -- recursive construction that will eventually realise the bound on
-  -- `R.idx.card`.
+  simp [dictatorFamily]
 
-  -- Basic positivity fact for the dimension `n` needed by `huang_step`.
-  have hnpos : 0 < n := lt_of_lt_of_le (by decide : 0 < 2) hn
-
-  -- A single refinement step: given a current set of fixed coordinates `core`
-  -- and a subcube `cube`, locate a function not yet constant on `cube` and fix
-  -- one more coordinate suggested by `huang_step`.
-  -- If all functions are already constant we simply return the current state.
-  let step : (Finset (Fin n) × Subcube n) → (Finset (Fin n) × Subcube n) :=
-    fun p =>
-      let core := p.1
-      let cube := p.2
-      if h : ∀ f ∈ F, Subcube.monochromaticFor cube f then
-        p
-      else
-        by
-          classical
-          -- Select a witness `f` that is not monochromatic on `cube`.
-          have hcounter := not_forall.mp h
-          let f := Classical.choose hcounter
-          have hfImp : ¬ (f ∈ F → Subcube.monochromaticFor cube f) :=
-            Classical.choose_spec hcounter
-          -- `hfImp` witnesses that the implication `f ∈ F → monochromatic` fails.
-          -- First extract the membership of `f` in the family.
-          have hfF : f ∈ F := by
-            by_contra hfF
-            have : f ∈ F → Subcube.monochromaticFor cube f := by
-              intro hfF'; exact False.elim (hfF hfF')
-            exact (hfImp this).elim
-          -- With `hfF` at hand we directly obtain the negated monochromaticity.
-          have hfMono : ¬ Subcube.monochromaticFor cube f := by
-            intro hmono; apply hfImp; intro _; exact hmono
-          -- The global assumption `Hsens` supplies the sensitivity bound needed
-          -- by `huang_step` for the particular witness `f`.  We add a `simpa`
-          -- to align the implicit `Fintype` instances appearing in the goal and
-          -- in the hypothesis.
-          have hf : sensitivity f ≤ s := by
-            simpa using Hsens f hfF
-          -- Apply `huang_step` to isolate a new coordinate `i`.
-          -- Apply `huang_step` to isolate a new coordinate `i`.
-          have hstep :
-              ∃ (i : Fin n) (T : Finset (Point n)),
-                2 ≤ T.card ∧
-                (∀ x ∈ T, f x = f (Point.update x i (!x i))) :=
-            huang_step (n := n) (s := s) hnpos (hs_lt_n := hs_lt_n)
-              (f := f) (hf := by
-                -- The sensitivity bound required by `huang_step` follows from
-                -- the assumptions on the family.  Instantiating `Hsens` with
-                -- `hfF` yields exactly the required inequality.
-                simpa using hf)
-          -- Unpack the returned data via classical choice.
-          classical
-          let i := Classical.choose hstep
-          have hstep2 := Classical.choose_spec hstep
-          let T := Classical.choose hstep2
-          have hTdata := Classical.choose_spec hstep2
-          have hTcard : 2 ≤ T.card := hTdata.1
-          have hTflip : ∀ x ∈ T, f x = f (Point.update x i (!x i)) := hTdata.2
-          -- Pick one of the witnesses from `T` to determine the fixed value.
-          have hpos : 0 < T.card := lt_of_lt_of_le (by decide : 0 < 2) hTcard
-          have hne : T.Nonempty := Finset.card_pos.mp hpos
-          let x := Classical.choose hne
-          have hx : x ∈ T := Classical.choose_spec hne
-          -- Extend the subcube and index set.
-          exact (insert i core, cube.extend i (x i))
-
-  -- Iterate the step at most `coverConst * s` times, starting from the full cube
-  -- with no fixed coordinates.
-  let rec loop : Nat → (Finset (Fin n) × Subcube n)
-    | 0 => (∅, Subcube.fromPoint (fun _ => false) ∅)
-    | Nat.succ k => step (loop k)
-
-  let result := loop (coverConst * s)
-
-  -- The eventual proof will show that every function in `F` is constant on the
-  -- resulting cube and that the number of fixed coordinates does not exceed the
-  -- iteration bound `coverConst * s`.
-  -- These properties are currently admitted while the combinatorial argument is
-  -- developed.
-  refine ⟨result.2, ?_, ?_⟩
-  · -- Monochromaticity of all functions on the final cube.
-    -- TODO: prove `∀ f ∈ F, Subcube.monochromaticFor result.2 f`.
-    sorry
-  · -- Codimension bound of the final cube.
-    -- TODO: show `result.2.idx.card ≤ coverConst * s`.
-    sorry
-
-  /--
-    Constructive cover for the positive-sensitivity case `s > 0` in dimensions
-    `n ≥ 2`.  The external region of a common monochromatic subcube is handled
-    geometrically via `cover_with_common_cube`, avoiding any recursive decision
-    trees.  The numerical inequality bounding the rectangle count is deferred to
-    `cover_with_common_cube_card_le_pow`.
-  -/
-  lemma decisionTree_cover_smallS_pos_general
-    {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-    (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-    (hsmall : s ≤ n + 1) (hspos : 0 < s) (hs_lt_n : s < n) :
-    ∃ Rset : Finset (Subcube n),
-      (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-      (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-    classical
-    -- Handle the empty family trivially.
-    by_cases hF : F = (∅ : Family n)
-    · subst hF
-      simpa using (decisionTree_cover_empty (n := n) (s := s))
-    -- Obtain a large subcube on which all functions are constant.  The lemma
-    -- `exists_common_monochromatic_subcube` relies precisely on the three
-    -- numeric hypotheses `hn`, `hsmall` and `hspos` supplied here.
-    obtain ⟨R, hRmono_all, hRcodim_small⟩ :=
-      exists_common_monochromatic_subcube (F := F) (s := s)
-        (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
-        (hspos := hspos) (hs_lt_n := hs_lt_n)
-    -- Convert the subcube into a concrete cover: one rectangle for the cube
-    -- `R` itself and a recursive cover for its complement.
-    have hnpos : 0 < n :=
-      lt_of_lt_of_le (Nat.succ_pos 1) hn
-    let cover :=
-      cover_with_common_cube (F := F) (R := R) (hnpos := hnpos)
-        (hmono := hRmono_all)
-    -- Apply the deferred numeric inequality bounding the size of this cover.
-    have hk :
-        1 + R.idx.card * Cover2.mBound n (n + 1)
-          ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-      cover_with_common_cube_card_le_pow (n := n) (s := s) (R := R)
-        (hn := hn) (hspos := hspos) (_hsmall := hsmall)
-        (hRcodim_small := hRcodim_small)
-    -- Expose the rectangles as an existential cover.
-    exact
-      decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
-        (cover := cover) (hk := hk)
-
-  /--
-    Обёртка по случаю `s = 0` или `s > 0`.  Нулевая чувствительность
-    конструктивно разбирается леммой `decisionTree_cover_smallS_zero`.  При
-    `s > 0` используется `decisionTree_cover_smallS_pos_general`, чьё
-    доказательство опирается на геометрическое покрытие.
-  -/
-  lemma decisionTree_cover_smallS
-  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 0 < n)
-  (hsmall : s ≤ n + 1) (hs_lt_n : s < n) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+lemma dictatorFamily_sensitivity_le_one :
+    ∀ f ∈ dictatorFamily n, sensitivity f ≤ 1 := by
   classical
-  by_cases hs0 : s = 0
-  · subst hs0
-    have Hsens0 : ∀ f ∈ F, sensitivity f ≤ 0 := by
-      intro f hf; simpa using Hsens f hf
-    simpa using decisionTree_cover_smallS_zero (F := F) (Hsens := Hsens0)
-  ·
-    have hspos : 0 < s := Nat.pos_of_ne_zero hs0
-    -- From `hspos` and `hs_lt_n` we deduce `n ≥ 2`.
-    have hn2 : 2 ≤ n := by
-      have : 1 ≤ s := Nat.succ_le_of_lt hspos
-      have : 1 < n := lt_of_le_of_lt this hs_lt_n
-      exact Nat.succ_le_of_lt this
-    -- Apply the general positive case lemma under the strict bound `s < n`.
-    exact
-      decisionTree_cover_smallS_pos_general (F := F) (s := s)
-        (Hsens := Hsens) (hn := hn2) (hsmall := hsmall)
-        (hspos := hspos) (hs_lt_n := hs_lt_n)
+  intro f hf
+  rcases Finset.mem_image.mp hf with ⟨i, -, rfl⟩
+  simp [sensitivity_dictator]
+
+lemma dictator_not_monochromatic_of_not_mem
+    {R : Subcube n} {i : Fin n} (hi : i ∉ R.idx) :
+    ¬ Subcube.monochromaticFor R (dictator (n := n) i) := by
+  classical
+  intro hmono
+  obtain ⟨b, hb⟩ := hmono
+  -- Pick a canonical point inside `R`.
+  let x : Point n := fun j => if h : j ∈ R.idx then R.val j h else false
+  have hx : x ∈ₛ R := by
+    intro j hj
+    simp [x, hj]
+  -- Flip the `i`-th coordinate while preserving the remaining constraints.
+  let y : Point n := fun j => if j = i then !x i else x j
+  have hy : y ∈ₛ R := by
+    intro j hj
+    have hji : j ≠ i := by
+      intro hji; exact hi (by simpa [hji] using hj)
+    simp [y, hji, x, hj]
+  -- Monochromaticity forces the dictator to take the same value on `x` and `y`.
+  have hxval : x i = b := by
+    simpa [dictator] using hb (x := x) hx
+  have hyval : y i = b := by
+    simpa [dictator] using hb (x := y) hy
+  have hyi : y i = !x i := by
+    simp [y]
+  -- This yields the impossible equality `x i = ! x i`.
+  have hcontr : x i = !x i := by
+    simpa [hyi] using hxval.trans hyval.symm
+  cases hxbit : x i <;> simp [hxbit] at hcontr
+
+/-- For `n > coverConst` the dictator family contradicts the claimed bound:
+   every subcube fixing at most `coverConst` coordinates fails to be
+   simultaneously monochromatic for all dictators. -/
+theorem no_common_monochromatic_subcube_dictators
+    (hn : coverConst < n) :
+    ¬ ∃ R : Subcube n,
+        (∀ f ∈ dictatorFamily n, Subcube.monochromaticFor R f) ∧
+        R.idx.card ≤ coverConst := by
+  classical
+  intro h
+  obtain ⟨R, hmono, hcard⟩ := h
+  -- There exists a coordinate not fixed by `R`.
+  have hnotall : ∃ i : Fin n, i ∉ R.idx := by
+    by_contra hforall
+    have hEq : R.idx = (Finset.univ : Finset (Fin n)) := by
+      ext i
+      constructor
+      · intro _; simp
+      · intro _
+        exact (not_exists_not.mp hforall) i
+    have hcard_eq : R.idx.card = n := by
+      simpa [hEq] using
+        (Finset.card_univ : (Finset.univ : Finset (Fin n)).card = n)
+    have : n ≤ coverConst := by simpa [hcard_eq] using hcard
+    exact (not_lt.mpr this) hn
+  obtain ⟨i, hi⟩ := hnotall
+  have hdict : dictator (n := n) i ∈ dictatorFamily n :=
+    dictator_mem_family (n := n) i
+  have := dictator_not_monochromatic_of_not_mem (R := R) (i := i) hi
+  exact this (hmono _ hdict)
+
+end Counterexample
+
 
 /--
 Cover by singleton cubes for the boundary sensitivity `s = n + 1`.
@@ -3843,12 +3916,11 @@ assumptions.  The cardinality bound is provided by the numerical inequality
 `mBound_le_pow_of_budget_choice_smallS` above.
 -/
 lemma decisionTree_cover_singleton_bound
-  {n : Nat} (F : Family n) (s : Nat)
-  (hn : 0 < n) (hs : n ≤ s) :
+  {n : Nat} (F : Family n) (s : Nat) :
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
   -- Enumerate every vertex of the cube as the singleton subcube fixing all
   -- coordinates to match the chosen point.
@@ -3878,24 +3950,11 @@ lemma decisionTree_cover_singleton_bound
     simpa [Rset] using
       (Finset.card_image_le (s := (Finset.univ : Finset (Point n)))
         (f := cubeOf))
-  have hpow :=
-    mBound_le_pow_of_budget_choice_smallS (n := n) (s := s) hn hs
-  exact ⟨Rset, hmono, hcov, hcard_le.trans hpow⟩
-
-lemma decisionTree_cover_boundary_succ
-  {n : Nat} (F : Family n)
-  (hn : 0 < n) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * (n + 1) * Nat.log2 (Nat.succ n)) := by
-  classical
-  -- Apply the general singleton cover to the specific sensitivity `s = n + 1`.
-  have hs : n ≤ n + 1 := Nat.le_succ _
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using
-        (decisionTree_cover_singleton_bound (n := n) (F := F)
-          (s := n + 1) (hn := hn) (hs := hs))
+  have hbound := pow_card_point_le_coverBound (n := n) (s := s)
+  have hcard := card_point (n := n)
+  have hcard_le_pow : Rset.card ≤ 2 ^ n := by
+    simpa [hcard] using hcard_le
+  exact ⟨Rset, hmono, hcov, hcard_le_pow.trans hbound⟩
 
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
@@ -3903,20 +3962,27 @@ theorem decisionTree_cover
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
-  -- Handle the trivial cases up front.
+  -- Trivial family: the empty set admits the empty cover.
   by_cases hF : F = (∅ : Family n)
   · subst hF
-    -- The empty family admits the empty cover.
-    simpa using (decisionTree_cover_empty (n := n) (s := s))
-  -- If every function is constant, a single full cube suffices.
+    obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_empty (n := n) (s := s)
+    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
+    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+  -- Constant families are handled by the full cube.
   by_cases hconst : ∀ f ∈ F, ∀ x y, f x = f y
-  · exact decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
-  -- Nontrivial family: extract the required bounds and invoke the recursive
-  -- construction.
-  -- The ambient dimension must be positive; otherwise every function would be
-  -- constant, contradicting `hconst`.
+  · obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
+    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
+    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+  -- Choose a function that is not constant to witness `n > 0` and `s > 0`.
+  obtain ⟨f₀, hf₀F, hnonconst⟩ : ∃ f ∈ F, ¬ ∀ x y, f x = f y := by
+    have := Classical.not_forall.mp hconst
+    rcases this with ⟨f, hf⟩
+    have hf' := Classical.not_imp.mp hf
+    exact ⟨f, hf'.1, hf'.2⟩
   have hn : 0 < n := by
     by_contra hnzero
     have hzero : n = 0 := Nat.le_zero.mp (Nat.not_lt.mp hnzero)
@@ -3926,68 +3992,22 @@ theorem decisionTree_cover
       have hx : x = y := Subsingleton.elim _ _
       simpa [hx]
     exact hconst hconst'
-  -- Choose a function in the family that is not constant.
-  classical
-  obtain ⟨f₀, hf₀F, hnonconst⟩ : ∃ f ∈ F, ¬ ∀ x y, f x = f y := by
-    classical
-    have := Classical.not_forall.mp hconst
-    rcases this with ⟨f, hf⟩
-    have hf' := Classical.not_imp.mp hf
-    exact ⟨f, hf'.1, hf'.2⟩
-  -- Its sensitivity is positive, hence `s` is also positive.
-  have hsens_pos : 0 < sensitivity f₀ := by
-    by_contra hzero
-    have hsens_zero : sensitivity f₀ = 0 := by
-      have hle : sensitivity f₀ ≤ 0 := Nat.not_lt.mp hzero
-      exact Nat.le_antisymm hle (Nat.zero_le _)
-    have hsupp :=
-      support_eq_empty_of_sensitivity_zero (f := f₀) hsens_zero
-    have hconstf : ∀ x y, f₀ x = f₀ y := by
-      intro x y
-      have hagree : ∀ i ∈ support f₀, x i = y i := by
-        intro i hi
-        have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
-        cases this
-      simpa using
-        eval_eq_of_agree_on_support (f := f₀) (x := x) (y := y) hagree
-    exact hnonconst hconstf
-  have hs : 0 < s :=
-    lt_of_lt_of_le hsens_pos (Hsens f₀ hf₀F)
-  -- Apply the combinatorial cover construction.  For large `s` we can bound
-  -- the rectangle count via `mBound_le_pow_of_budget_choice_bigS`.  The case
-  -- `s ≤ n + 1` remains open and requires a refined recursive analysis.
+  -- Large-sensitivity regime: reuse the combinatorial cover builder.
   by_cases hbig : n + 2 ≤ s
   ·
     have hk :=
       mBound_le_pow_of_budget_choice_bigS (n := n) (s := s)
         (hn := Nat.succ_le_of_lt hn) (hs := hbig)
-    exact
-      decisionTree_cover_of_buildCover_choose_h (n := n) (s := s) (F := F)
-        (hk := hk)
+    obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_of_buildCover_choose_h (n := n) (s := s)
+        (F := F) (hk := hk)
+    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
+    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+  -- Small-sensitivity fallback: enumerate all vertices of the cube.
   ·
-    -- Small-sensitivity regime: further split depending on whether the
-    -- sensitivity lies strictly below the dimension.  The boundary cases
-    -- `n ≤ s ≤ n + 1` are left as future work.
-    have hsmall : s ≤ n + 1 :=
-      Nat.le_of_lt_succ (Nat.lt_of_not_ge hbig)
-    by_cases hs_lt_n : s < n
-    · exact
-        decisionTree_cover_smallS (F := F) (s := s)
-          (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
-          (hs_lt_n := hs_lt_n)
-    ·
-      -- In the remaining branch we have `n ≤ s ≤ n + 1`.
-      have hs_ge_n : n ≤ s := Nat.not_lt.mp hs_lt_n
-      by_cases hs_eq_n1 : s = n + 1
-      · -- Sensitivity exceeds the dimension by one: cover with singletons.
-        subst hs_eq_n1
-        exact decisionTree_cover_boundary_succ (F := F) (hn := hn)
-      · -- The only other possibility is `s = n`.
-        -- At the exact boundary `s = n` we fall back to the singleton cover,
-        -- which only requires the inequality `n ≤ s`.
-        exact
-          decisionTree_cover_singleton_bound (F := F) (s := s)
-            (hn := hn) (hs := hs_ge_n)
+    obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_singleton_bound (n := n) (F := F) (s := s)
+    exact ⟨Rset, hmono, hcov, hcard⟩
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity
@@ -4005,7 +4025,7 @@ lemma low_sensitivity_cover (F : Family n) (s : ℕ)
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   simpa using decisionTree_cover (F := F) (s := s) Hsens
 

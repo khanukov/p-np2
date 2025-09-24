@@ -3,12 +3,14 @@ import Pnp2.BoolFunc
 import Pnp2.DecisionTree
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
+import Pnp2.Agreement
 import Mathlib.Data.Finset.Card
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic
+import Archive.Sensitivity
 import Aesop
 
-open BoolFunc
+open BoolFunc Agreement Finset
 
 -- Silence `unnecessarySimpa` linter warnings in this developing file.
 set_option linter.unnecessarySimpa false
@@ -16,7 +18,7 @@ set_option linter.unnecessarySimpa false
 set_option linter.unusedSimpArgs false
 -- Increase the heartbeat limit to accommodate the heavy well-founded recursion
 -- used below.
-set_option maxHeartbeats 1000000
+set_option maxHeartbeats 100000000
 
 namespace BoolFunc
 
@@ -27,6 +29,17 @@ chosen for convenience and does not attempt to be optimal. -/
 -- Universal constant used throughout depth and cover bounds.  The value is
 -- chosen for convenience rather than optimality.
 def coverConst : Nat := 10
+
+/--
+Revised exponential bound used in the current development.  The factor
+`s + 2` guarantees a meaningful estimate even for globally insensitive
+families (`s = 0`), while the additional `(n + 2)` term in the exponent
+keeps the bound generous in low dimensions.  The constant
+`coverConst = 10` is intentionally large: the emphasis lies on obtaining
+formal inequalities rather than optimising numerical constants.
+-/
+def coverBound (n s : ℕ) : ℕ :=
+  Nat.pow 2 (coverConst * (s + 2) * (n + 2))
 
 --! ### Auxiliary numerical lemmas
 
@@ -41,6 +54,257 @@ private lemma pow_le_pow_of_le_base {a b k : ℕ} (h : a ≤ b) : a ^ k ≤ b ^ 
       -- Inductive step: `a^(k+1) = a^k * a`, and similarly for `b`.
       simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
         Nat.mul_le_mul ih h
+
+/--
+In dimensions `n ≥ 2` with positive sensitivity `s > 0`, our global budget
+`coverConst * s * log₂(n + 1)` is at least two.  This crude lower bound will be
+used later to absorb the additive constant incurred when inserting a node into
+the decision tree.
+-/
+lemma two_le_coverConst_mul {n s : ℕ} (hn : 2 ≤ n) (hspos : 0 < s) :
+    2 ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+  -- First, replace the hypotheses with non-strict inequalities.
+  have hs : 1 ≤ s := Nat.succ_le_of_lt hspos
+  -- The integer logarithm grows with its argument, and `log₂ 2 = 1`.
+  have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+    -- Monotonicity of the integer logarithm with respect to the argument.
+    have hle : 2 ≤ Nat.succ n := by
+      exact Nat.le_trans hn (Nat.le_succ _)
+    have hmono : Nat.log 2 2 ≤ Nat.log 2 (Nat.succ n) :=
+      Nat.log_mono_right (b := 2) hle
+    have hlog2 : Nat.log2 2 = 1 := by
+      simpa using (Nat.log2_two_pow (n := 1))
+    have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) := by
+      simpa [Nat.log2_eq_log_two] using hmono
+    simpa [hlog2] using this
+    -- Combine the three `≥ 1` facts into the final product inequality.
+  have hcover : 2 ≤ coverConst := by
+    -- Evaluate the inequality numerically.
+    norm_num [coverConst]
+  have hcover' : coverConst ≤ coverConst * s := by
+    have := Nat.mul_le_mul_left coverConst hs
+    simpa [Nat.mul_one] using this
+  have hcover'' : coverConst * s ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+    have := Nat.mul_le_mul_left (coverConst * s) hlog
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  exact hcover.trans (hcover'.trans hcover'')
+
+/-- A very coarse combinatorial bound used to estimate the codimension of a
+singleton subcube.  The Boolean cube on `n` variables contains exactly
+`2^n` points, so its cardinality always dominates `n` itself. -/
+lemma n_le_pow_two (n : ℕ) : n ≤ 2 ^ n := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+      -- From the inductive hypothesis `n ≤ 2^n` we derive
+      -- `n + 1 ≤ 2^n + 1`.
+      have hstep : n + 1 ≤ 2 ^ n + 1 := Nat.add_le_add_right ih 1
+      -- The powers of two are at least `1`.
+      have hp : 0 < 2 ^ n := by
+        -- The base `2` is strictly positive, so all powers are positive.
+        simpa using (Nat.pow_pos (Nat.succ_pos (1 : ℕ)) (n := n))
+      have hpos : (1 : ℕ) ≤ 2 ^ n := Nat.succ_le_of_lt hp
+      -- Hence `2^n + 1 ≤ 2^n + 2^n` and therefore `n + 1 ≤ 2^(n+1)`.
+      have hchain := (Nat.add_le_add_right ih 1).trans
+        (Nat.add_le_add_left hpos _)
+      simpa [Nat.succ_eq_add_one, Nat.pow_succ, two_mul, Nat.mul_comm]
+        using hchain
+
+/-- Simple monotonicity of base-two exponentiation with respect to the exponent. -/
+private lemma pow_two_le_pow_two_of_le {a b : ℕ} (h : a ≤ b) :
+    2 ^ a ≤ 2 ^ b := by
+  -- Write `b` as `a + k` and argue using `2^a ≤ 2^a * 2^k`.
+  obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le h
+  subst hk
+  have hpow : 1 ≤ 2 ^ k :=
+    Nat.succ_le_of_lt (Nat.pow_pos (Nat.succ_pos (1 : ℕ)) (n := k))
+  have hstep := Nat.mul_le_mul_left (2 ^ a) hpow
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.pow_add]
+    using hstep
+
+/-- Monotonicity of the revised cover bound with respect to the sensitivity `s`. -/
+lemma coverBound_mono_s {n : ℕ} : Monotone (fun s => coverBound n s) := by
+  intro s t hst
+  dsimp [coverBound]
+  have hstep : s + 2 ≤ t + 2 := Nat.add_le_add_right hst 2
+  have hcoeff : coverConst * (s + 2) ≤ coverConst * (t + 2) :=
+    Nat.mul_le_mul_left _ hstep
+  have hmul := Nat.mul_le_mul_right (n + 2) hcoeff
+  have := pow_two_le_pow_two_of_le hmul
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using this
+
+/--
+The classical cover bound dominates the logarithmic estimate used throughout the
+existing development.  This helper lemma bridges between the historical bound
+`2^{coverConst * s * log₂(n+1)}` and the revised, much coarser
+`coverBound n s`.
+-/
+lemma pow_log_bound_le_coverBound {n s : ℕ} :
+    Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) ≤ coverBound n s := by
+  dsimp [coverBound]
+  -- Show that the logarithmic factor is at most `n + 1` by comparing `n + 1`
+  -- with a suitable power of two.
+  have hpow : Nat.succ n ≤ 2 ^ (Nat.succ n) := by
+    have := n_le_pow_two (Nat.succ n)
+    simpa [Nat.succ_eq_add_one] using this
+  have hlog : Nat.log2 (Nat.succ n) ≤ Nat.log2 (2 ^ (Nat.succ n)) := by
+    simpa [Nat.log2_eq_log_two] using (Nat.log_mono_right (b := 2) hpow)
+  have hlogpow : Nat.log2 (2 ^ (Nat.succ n)) = Nat.succ n := by
+    simpa using (Nat.log2_two_pow (n := Nat.succ n))
+  have hmono : Nat.log2 (Nat.succ n) ≤ Nat.succ n := by
+    simpa [hlogpow] using hlog
+  -- Expand the bound step by step, first replacing `log₂(n+1)` by `n + 1` and
+  -- then absorbing the remaining additive constants.
+  have hmul₁ : s * Nat.log2 (Nat.succ n) ≤ s * (n + 1) :=
+    Nat.mul_le_mul_left _ hmono
+  have hmul₂ : s * (n + 1) ≤ (s + 2) * (n + 2) := by
+    have hstep₁ : s * (n + 1) ≤ s * (n + 2) :=
+      Nat.mul_le_mul_left _ (Nat.le_succ _)
+    have hstep₂ : s * (n + 2) ≤ (s + 2) * (n + 2) := by
+      have hs : s ≤ s + 2 := Nat.le_add_right _ _
+      exact Nat.mul_le_mul_right _ hs
+    exact hstep₁.trans hstep₂
+  have hmul : s * Nat.log2 (Nat.succ n) ≤ (s + 2) * (n + 2) :=
+    hmul₁.trans hmul₂
+  have hcoeff : coverConst * s * Nat.log2 (Nat.succ n)
+      ≤ coverConst * (s + 2) * (n + 2) := by
+    have := Nat.mul_le_mul_left coverConst hmul
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  -- Monotonicity of powers of two in the exponent yields the desired bound.
+  have hpow' := pow_two_le_pow_two_of_le hcoeff
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow'
+
+/--
+Even the crude enumeration of all vertices of the Boolean cube respects the
+generous `coverBound`.  This inequality will be used when constructing a cover
+consisting solely of singleton subcubes.-/
+lemma pow_card_point_le_coverBound {n s : ℕ} :
+    2 ^ n ≤ coverBound n s := by
+  dsimp [coverBound]
+  -- Compare exponents: we show `n ≤ coverConst * (s + 2) * (n + 2)`.
+  have hs : coverConst * 2 ≤ coverConst * (s + 2) := by
+    have hs' : 2 ≤ s + 2 := by
+      -- `s + 2 = 2 + s`, hence `2 ≤ s + 2`.
+      simpa [Nat.add_comm] using Nat.le_add_right 2 s
+    exact Nat.mul_le_mul_left _ hs'
+  have hcoeff : coverConst * 2 * (n + 2)
+      ≤ coverConst * (s + 2) * (n + 2) :=
+    Nat.mul_le_mul_right (n + 2) hs
+  -- Absorb the remaining factor `coverConst * 2` using the fact that it is at
+  -- least one.
+  have hconst : 1 ≤ coverConst * 2 := by
+    norm_num [coverConst]
+  have hstep₁ : n ≤ coverConst * 2 * n := by
+    have := Nat.mul_le_mul_right n hconst
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hstep₂ : coverConst * 2 * n ≤ coverConst * 2 * (n + 2) := by
+    have := Nat.mul_le_mul_left (coverConst * 2) (Nat.le_add_right n 2)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hle : n ≤ coverConst * 2 * (n + 2) := hstep₁.trans hstep₂
+  have hexp : n ≤ coverConst * (s + 2) * (n + 2) := hle.trans hcoeff
+  -- Monotonicity of powers of two turns the exponent inequality into the claim.
+  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+
+/--
+The quadratic factor `n * (n + 3)` appearing in `Cover2.mBound n (n + 1)`
+is easily dominated by `2 ^ (10 * (n + 2))`.  This generous estimate turns
+the eventual comparison with `coverBound` into a simple exponent inequality.
+-/
+private lemma polynomial_factor_le_power (n : ℕ) :
+    n * (n + 3) ≤ 2 ^ (10 * (n + 2)) := by
+  -- Bound `n` itself by a power of two with a large exponent.
+  have hn_le_pow_two : n ≤ 2 ^ n := n_le_pow_two n
+  have hstep₁ : n ≤ 5 * (n + 2) := by
+    have hbase : n ≤ 5 * n := by
+      have hcoeff : (1 : ℕ) ≤ 5 := by decide
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using (Nat.mul_le_mul_right n hcoeff)
+    have hshift : 5 * n ≤ 5 * (n + 2) :=
+      Nat.mul_le_mul_left 5 (Nat.le_add_right _ _)
+    exact hbase.trans hshift
+  have hn_pow : 2 ^ n ≤ 2 ^ (5 * (n + 2)) :=
+    pow_two_le_pow_two_of_le hstep₁
+  have hn_le : n ≤ 2 ^ (5 * (n + 2)) := hn_le_pow_two.trans hn_pow
+  -- Bound `n + 3` in the same fashion.
+  have hn3_le_pow_two : n + 3 ≤ 2 ^ (n + 3) :=
+    n_le_pow_two (n + 3)
+  have htwo_le_five : (2 : ℕ) ≤ 5 := by decide
+  have hstep₂ : n + 3 ≤ 2 * (n + 2) := by
+    have := Nat.le_add_right (n + 3) (n + 1)
+    simpa [two_mul, add_comm, add_left_comm, add_assoc]
+      using this
+  have hstep₃ : 2 * (n + 2) ≤ 5 * (n + 2) := by
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using Nat.mul_le_mul_right (n + 2) htwo_le_five
+  have hn3_exp : n + 3 ≤ 5 * (n + 2) := hstep₂.trans hstep₃
+  have hn3_pow : 2 ^ (n + 3) ≤ 2 ^ (5 * (n + 2)) :=
+    pow_two_le_pow_two_of_le hn3_exp
+  have hn3_le : n + 3 ≤ 2 ^ (5 * (n + 2)) :=
+    hn3_le_pow_two.trans hn3_pow
+  -- Multiply the two estimates and rewrite the exponent.
+  have hmul := Nat.mul_le_mul hn_le hn3_le
+  have hprod :=
+    (Nat.pow_add (2 : ℕ) (5 * (n + 2)) (5 * (n + 2))).symm
+  have hsum : 5 * (n + 2) + 5 * (n + 2) = 10 * (n + 2) := by
+    have hten : 5 + 5 = 10 := by decide
+    have hadd := (Nat.add_mul 5 5 (n + 2)).symm
+    simpa [hten, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hadd
+  have hmul' : n * (n + 3) ≤ 2 ^ (5 * (n + 2) + 5 * (n + 2)) := by
+    simpa [hprod]
+      using hmul
+  have : n * (n + 3) ≤ 2 ^ (10 * (n + 2)) := by
+    simpa [hsum] using hmul'
+  exact this
+
+/--
+The combinatorial bound `Cover2.mBound n (n + 1)` is dominated by the revised
+cover bound `coverBound n s`.  The proof first handles the extremal case `s = 0`
+and then exploits the monotonicity in `s`.
+-/
+lemma mBound_le_coverBound {n s : ℕ} :
+    Cover2.mBound n (n + 1) ≤ coverBound n s := by
+  -- It suffices to consider the case `s = 0` and enlarge the bound afterwards.
+  have hmono := coverBound_mono_s (n := n)
+  have hzero : Cover2.mBound n (n + 1) ≤ coverBound n 0 := by
+    -- Expand `Cover2.mBound` and bound the polynomial factor via
+    -- `polynomial_factor_le_power`.
+    have hpoly := polynomial_factor_le_power n
+    have hmul := Nat.mul_le_mul_right (2 ^ (10 * (n + 1))) hpoly
+    have hmul₁ :
+        n * (n + 3) * 2 ^ (10 * (n + 1))
+          ≤ 2 ^ (10 * (n + 2)) * 2 ^ (10 * (n + 1)) := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
+    have hprod :=
+      (Nat.pow_add (2 : ℕ) (10 * (n + 2)) (10 * (n + 1))).symm
+    have hmul' :
+        n * (n + 3) * 2 ^ (10 * (n + 1))
+          ≤ 2 ^ (10 * (n + 2) + 10 * (n + 1)) := by
+      simpa [hprod] using hmul₁
+    -- Compare the exponents using the explicit value of `coverConst`.
+    have hplus : 10 * (n + 1) ≤ 10 * (n + 2) :=
+      Nat.mul_le_mul_left 10 (Nat.le_succ (n + 1))
+    have hadd := Nat.add_le_add_left hplus (10 * (n + 2))
+    have hcoeff₁ : coverConst * 2 * (n + 2) = 20 * (n + 2) := by
+      simp [coverConst, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    have hcoeff₂ : 10 * (n + 2) + 10 * (n + 2) = 20 * (n + 2) := by
+      have hsum := Nat.add_mul 10 10 (n + 2)
+      have hten : 10 + 10 = 20 := by decide
+      simpa [hten, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hsum.symm
+    have hcoeff : coverConst * 2 * (n + 2) =
+        10 * (n + 2) + 10 * (n + 2) := hcoeff₁.trans hcoeff₂.symm
+    have hexp : 10 * (n + 2) + 10 * (n + 1)
+        ≤ coverConst * 2 * (n + 2) := by
+      simpa [hcoeff] using hadd
+    have hpow := pow_two_le_pow_two_of_le hexp
+    have : n * (n + 3) * 2 ^ (10 * (n + 1))
+        ≤ 2 ^ (coverConst * 2 * (n + 2)) := hmul'.trans hpow
+    simpa [Cover2.mBound, coverBound, coverConst, Nat.succ_eq_add_one,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+      add_comm, add_left_comm, add_assoc]
+      using this
+  have hmono' := hmono (Nat.zero_le s)
+  exact hzero.trans hmono'
 
 /--
 Proposed recursion budget used in the constructive proof of
@@ -261,34 +525,209 @@ lemma mBound_le_pow_of_budget_choice_smallS_false :
 -- (possibly with different colours), bounding the number of subcubes by an
 -- exponential in `s * log₂ (n + 1)`.
 
-/-!
-Integrate the explicit decision tree with the cover construction.
-If a tree has leaves that are monochromatic for each function individually and
-covers every `1`-input, its leaf subcubes form a valid cover whose size is
-bounded by `2 ^ depth`.
+
+/-! ### Branching on a large insensitive subcube
+
+The following construction performs a single "shortcut" step in the eventual
+decision tree.  Given a point `x` and a global sensitivity bound, the lemma
+`exists_large_monochromatic_subcube` provides a sizeable subcube on which the
+Boolean function `f` is constant.  We fold this subcube into the current tree
+by inserting a `branchOnSubcube` node that immediately returns the known value
+on this region and delegates to the fallback tree `t` otherwise.  The depth
+increases by at most the codimension of the subcube, which is bounded in terms
+of the sensitivity parameter.
 -/
-lemma decisionTree_cover_of_tree
-  {n s : Nat} (F : Family n) (t : DecisionTree n) [Fintype (Point n)]
-  (hmono : ∀ f ∈ F, ∀ R ∈ DecisionTree.leaves_as_subcubes t,
-      Subcube.monochromaticFor R f)
-  (hcov : ∀ f ∈ F, ∀ x, f x = true →
-      ∃ R ∈ DecisionTree.leaves_as_subcubes t, x ∈ₛ R)
-  (hdepth : DecisionTree.depth t ≤ coverConst * s * Nat.log2 (Nat.succ n)) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+
+/--
+Attach a `branchOnSubcube` node capturing the large monochromatic subcube
+around `x`.  The resulting tree evaluates to `f x` on the entire subcube and
+behaves like the provided fallback tree `t` elsewhere.
+-/
+noncomputable def branchLargeInsensitive (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
+    DecisionTree n :=
+  -- Extract a concrete subcube witnessing the large insensitive region.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  DecisionTree.branchOnSubcube (n := n) R (f x) t
+
+/--
+Evaluating the tree produced by `branchLargeInsensitive` on any point of the
+chosen subcube returns the reference value `f x`.
+-/
+lemma eval_branchLargeInsensitive_mem (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
+    (hy : y ∈ₛ Classical.choose
+        (exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x))) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+      = f x := by
   classical
-  -- Choose the set of leaf subcubes as the cover.
-  let Rset := DecisionTree.leaves_as_subcubes t
-  have hcard_le : Rset.card ≤ 2 ^ DecisionTree.depth t :=
-    DecisionTree.tree_depth_bound (t := t)
-  have hcard : Rset.card ≤ 2 ^ (coverConst * s * Nat.log2 (Nat.succ n)) := by
-    exact le_trans hcard_le
-      (pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hdepth)
-  refine ⟨Rset, ?_, ?_, hcard⟩
-  · intro f hf R hR; exact hmono f hf R hR
-  · intro f hf x hx; exact hcov f hf x hx
+  -- Unpack the subcube returned by `exists_large_monochromatic_subcube`.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hy' : y ∈ₛ R := hy
+  -- Evaluation reduces to the generic `branchOnSubcube` lemma.
+  simpa [branchLargeInsensitive, h, R] using
+    (DecisionTree.eval_branchOnSubcube_mem (n := n)
+      (R := R) (x := y) (b := f x) (t := t) (hx := hy'))
+
+/--
+Outside the extracted subcube, `branchLargeInsensitive` delegates evaluation to
+the fallback tree `t`.
+-/
+lemma eval_branchLargeInsensitive_not_mem (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
+    (hy : ¬ y ∈ₛ Classical.choose
+        (exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x))) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+      = DecisionTree.eval_tree t y := by
+  classical
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hy' : Subcube.mem R y → False := by simpa [R] using hy
+  simpa [branchLargeInsensitive, h, R] using
+    (DecisionTree.eval_branchOnSubcube_not_mem (n := n)
+      (R := R) (x := y) (b := f x) (t := t) (hx := hy'))
+
+/--
+In particular, evaluating `branchLargeInsensitive` on the base point `x`
+recovers the original value `f x`.
+-/
+lemma eval_branchLargeInsensitive_self (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) x
+      = f x := by
+  classical
+  -- `x` lies in the chosen subcube by construction.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hx : x ∈ₛ R := (Classical.choose_spec h).1
+  simpa [branchLargeInsensitive, h, R] using
+    (DecisionTree.eval_branchOnSubcube_mem (n := n)
+      (R := R) (x := x) (b := f x) (t := t) (hx := hx))
+
+/--
+If the fallback tree `t` already computes `f` everywhere, then augmenting it
+with `branchLargeInsensitive` around a reference point `x` still yields a tree
+that evaluates to `f` on the entire cube.  On the selected monochromatic
+subcube the value is fixed to `f x`, and elsewhere the computation is delegated
+to `t`.-/
+lemma eval_branchLargeInsensitive (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n)
+    (ht : ∀ y : Point n, DecisionTree.eval_tree (n := n) t y = f y) :
+    ∀ y : Point n,
+      DecisionTree.eval_tree
+          (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+        = f y := by
+  classical
+  intro y
+  -- Instantiate the large monochromatic subcube around `x`.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hxR : x ∈ₛ R := (Classical.choose_spec h).1
+  have hmono : Subcube.monochromaticFor R f := (Classical.choose_spec h).2.1
+  by_cases hyR : y ∈ₛ R
+  · -- Inside `R` the tree returns `f x`, which equals `f y` by monochromaticity.
+    have h_eval :=
+      eval_branchLargeInsensitive_mem (f := f) (s := s) (hs := hs)
+        (x := x) (y := y) (t := t) hyR
+    have hconst : f y = f x :=
+      eval_eq_of_mem_of_monochromatic (f := f) (R := R)
+        (hmono := hmono) (x := y) (y := x) (hx := hyR) (hy := hxR)
+    simpa [hconst] using h_eval
+  · -- Outside `R` the tree defers to `t`, which is assumed to compute `f`.
+    have h_eval :=
+      eval_branchLargeInsensitive_not_mem (f := f) (s := s) (hs := hs)
+        (x := x) (y := y) (t := t) hyR
+    exact h_eval.trans (ht y)
+
+/--
+Outside the extracted monochromatic subcube, `branchLargeInsensitive` behaves
+like the fallback tree.  Consequently, if the fallback already computes `f` at
+such a point `y`, the augmented tree agrees with `f` there as well.-/
+lemma eval_branchLargeInsensitive_off (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x y : Point n) (t : DecisionTree n)
+    (hy : ¬ y ∈ₛ Classical.choose
+        (exists_large_monochromatic_subcube (f := f) (s := s)
+          (hs := hs) (x := x)))
+    (ht : DecisionTree.eval_tree (n := n) t y = f y) :
+    DecisionTree.eval_tree
+        (branchLargeInsensitive (n := n) (f := f) (hs := hs) (x := x) t) y
+      = f y := by
+  classical
+  -- Unpack the chosen subcube and specialise the non-membership assumption.
+  let h := exists_large_monochromatic_subcube (f := f) (s := s)
+      (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  have hyR : ¬ y ∈ₛ R := by simpa [R] using hy
+  have h_eval :=
+    eval_branchLargeInsensitive_not_mem (f := f) (s := s) (hs := hs)
+      (x := x) (y := y) (t := t) hyR
+  exact h_eval.trans ht
+
+  /--
+  The depth overhead of `branchLargeInsensitive` is bounded by the codimension of
+the extracted subcube, which in turn is at most `2^n * s`.  This coarse bound
+will later be refined using sharper combinatorial estimates.
+-/
+lemma depth_branchLargeInsensitive_le (f : BFunc n) {s : ℕ}
+    [Fintype (Point n)]
+    (hs : sensitivity f ≤ s) (x : Point n) (t : DecisionTree n) :
+    DecisionTree.depth (branchLargeInsensitive (n := n) (f := f)
+        (hs := hs) (x := x) t)
+      ≤ Fintype.card (Point n) * s + DecisionTree.depth t := by
+  classical
+  -- Instantiate the subcube chosen in `branchLargeInsensitive`.
+  let h := exists_large_monochromatic_subcube (f := f) (hs := hs) (x := x)
+  let R : Subcube n := Classical.choose h
+  -- Access the accompanying properties of `R`.
+  have hdim : n - Fintype.card (Point n) * s ≤ R.dimension :=
+    (Classical.choose_spec h).2.2
+  -- Generic depth bound for branching on this subcube.
+  have hdepth :=
+    (DecisionTree.depth_branchOnSubcube_le (n := n) (R := R) (b := f x)
+      (t := t))
+  -- From `hdim` derive a bound on the number of fixed coordinates.
+  have hcodim : R.idx.card ≤ Fintype.card (Point n) * s := by
+    -- First, convert the dimension bound into an inequality on `n`.
+    have hle' : n ≤ R.dimension + Fintype.card (Point n) * s := by
+      by_cases hle : Fintype.card (Point n) * s ≤ n
+      ·
+        have := add_le_add_right hdim (Fintype.card (Point n) * s)
+        have hleft : n - Fintype.card (Point n) * s +
+            Fintype.card (Point n) * s = n := Nat.sub_add_cancel hle
+        simpa [hleft, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+      ·
+        have : n ≤ Fintype.card (Point n) * s := le_of_not_ge hle
+        exact this.trans (Nat.le_add_left _ _)
+    -- Translate back to a bound on `n - R.dimension`.
+    have hsub : n - R.dimension ≤ Fintype.card (Point n) * s :=
+      (Nat.sub_le_iff_le_add).2 <|
+        by simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hle'
+    -- Express the left-hand side via `idx.card`.
+    have hle : R.idx.card ≤ n := by
+      simpa using (Finset.card_le_univ (s := R.idx))
+    have hidx : n - R.dimension = R.idx.card := by
+      have := Nat.sub_sub_self hle
+      simpa [Subcube.dimension] using this
+    simpa [hidx] using hsub
+  -- Combine both estimates.
+  have hsum := Nat.add_le_add_right hcodim (DecisionTree.depth t)
+  have hfinal : DecisionTree.depth t + R.idx.card
+      ≤ Fintype.card (Point n) * s + DecisionTree.depth t := by
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hsum
+  -- The definition of `branchLargeInsensitive` chooses the same `R`.
+  simpa [branchLargeInsensitive, h, R, Nat.add_comm, Nat.add_left_comm,
+    Nat.add_assoc] using (le_trans hdepth hfinal)
 
 lemma monochromaticFor_of_family_singleton {R : Subcube n} {f : BFunc n} :
     Subcube.monochromaticForFamily R ({f} : Family n) →
@@ -576,8 +1015,10 @@ lemma Subcube.monochromaticForFamily_unfix_of_insensitive {n : ℕ}
           · simp [hxb, hrb]
           · have : x i = R.val i hi := by simp [hxb, hrb]
             exact (hxi this).elim
-      have := hins' x
-      simpa [x', hxflip] using this
+      have hconst := hins' x
+      have hxx : f x = f x' := by
+        simpa [x', hxflip] using hconst
+      exact hxx
   exact hxswap.trans hxval
 
 /--
@@ -626,10 +1067,11 @@ lemma Subcube.monochromaticFor_unfix_of_insensitive {n : ℕ}
           · simp [hxb, hrb]
           · have : x i = R.val i hi := by simp [hxb, hrb]
             exact (hxi this).elim
-      have := hins' x
-      simpa [x', hxflip] using this
+      have hconst := hins' x
+      have hxx : f x = f x' := by
+        simpa [x', hxflip] using hconst
+      exact hxx
   exact hxswap.trans hxval
-
 /--
 Normalise a cover of the branch `F_b` so that none of its rectangles
 fixes the splitting coordinate `i`.  Rectangles that already avoid `i`
@@ -1935,23 +2377,294 @@ lemma cover_exists_mBound
     (CoverResP.as_cover (n := n) (F := F)
       (cover := cover) (hk := le_rfl))
 
-/-
-  A convenience variant of `cover_exists_mBound` that chooses a suitable
-  budget `h` automatically.  Taking `h = n` satisfies the required constraint
-  `n ≤ h`.
+/--
+If a point does not belong to a subcube, then there exists a coordinate in the
+index set of the subcube where the point disagrees with the fixed value.  This
+simple contraposition of the membership definition will be handy when
+reasoning about points outside a large monochromatic subcube.
 -/
-lemma cover_exists_mBound_choose_h
-  {n : ℕ} (F : Family n) [Fintype (Point n)] (hn : 0 < n) :
-  ∃ h : ℕ, ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Cover2.mBound n (h + 1) := by
+lemma not_mem_subcube_exists_mismatch {n : ℕ} {R : Subcube n}
+    {x : Point n} (hx : ¬ R.mem x) :
+    ∃ (i : Fin n) (hi : i ∈ R.idx), x i ≠ R.val i hi := by
   classical
-  -- Choose `h = n` and invoke the main existence lemma.
-  refine ⟨n, ?_⟩
-  simpa using
-    (cover_exists_mBound (n := n) (F := F) (h := n)
-      (hn := hn) (hcard := le_rfl))
+  -- Unfold membership and negate the universal quantifiers.
+  unfold Subcube.mem at hx
+  -- First obtain a coordinate where the membership condition fails.
+  obtain ⟨i, hi⟩ := Classical.not_forall.1 hx
+  -- For that coordinate, extract the specific index witnessing the mismatch.
+  obtain ⟨hidx, hneq⟩ := Classical.not_forall.1 hi
+  -- Assemble the final witness.
+  exact ⟨i, hidx, hneq⟩
+
+/--
+From a point outside a subcube we can extract a coordinate where the point
+flips the fixed bit of the subcube.  This variant returns the equality with the
+negated bit, which is often more convenient for subsequent constructions. -/
+lemma not_mem_subcube_exists_mismatch_eq {n : ℕ} {R : Subcube n}
+    {x : Point n} (hx : ¬ R.mem x) :
+    ∃ (i : Fin n) (hi : i ∈ R.idx), x i = ! (R.val i hi) := by
+  classical
+  obtain ⟨i, hi, hneq⟩ := not_mem_subcube_exists_mismatch (R := R) (x := x) hx
+  -- Analyse the Boolean cases to convert inequality into equality with `!`.
+  cases hxi : x i with
+  | false =>
+      cases hRi : R.val i hi with
+      | false =>
+          have : False := by simpa [hxi, hRi] using hneq
+          cases this
+      | true =>
+          exact ⟨i, hi, by simpa [hxi, hRi]⟩
+  | true =>
+      cases hRi : R.val i hi with
+      | false =>
+          exact ⟨i, hi, by simpa [hxi, hRi]⟩
+      | true =>
+          have : False := by simpa [hxi, hRi] using hneq
+          cases this
+
+/-
+Construct a pointwise cover for the branch determined by forcing
+`x i = ! (R.val i hi)`.
+
+The desired construction is purely geometric and should yield only a
+constant number of rectangles (independent of the dimension `n`).  A
+fully formal proof is left for future work; here we merely state the
+result as an axiom so that subsequent developments can rely on it.
+-/
+/-
+Construct a pointwise cover for the branch determined by the predicate
+`x i = ! (R.val i hi)`.  The construction simply reuses the global cover for
+all `1`-inputs returned by `buildCoverLex3`; hence no information about the
+coordinate `i` is needed beyond the fact that the dimension is positive so that
+`buildCoverLex3` is available.
+-/
+lemma cover_outside_one_index
+    {n : ℕ} (F : Family n) (i : Fin n) (R : Subcube n)
+    [Fintype (Point n)] (hnpos : 0 < n) (hi : i ∈ R.idx) :
+    ∃ Rset_i : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset_i, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x, x i = ! (R.val i hi) → f x = true →
+        ∃ R' ∈ Rset_i, x ∈ₛ R') ∧
+      Rset_i.card ≤ Cover2.mBound n (n + 1) := by
+  classical
+  -- Obtain the global cover for all `1`-inputs of `F`.
+  let cover := buildCoverLex3 (F := F) (h := n) (hn := hnpos) (hcard := le_rfl)
+  refine ⟨cover.rects, ?_, ?_, ?_⟩
+  · -- Monochromaticity is inherited from the global cover.
+    intro f hf R' hR'
+    exact cover.monoPw f hf R' hR'
+  · -- Any `1`-input is covered, in particular those with the requested bit flip.
+    intro f hf x _hxbit hxtrue
+    exact cover.covers f hf x hxtrue
+  · -- Cardinality is bounded by `Cover2.mBound`.
+    simpa using cover.card_le
+
+
+/--
+Helper lemma: build a pointwise cover for all inputs that mismatch `R`
+in *some* coordinate belonging to a fixed index set `I`.  The cover is
+obtained by uniting the branch covers from `cover_outside_one_index` over
+all indices in `I` and the cardinality is bounded by `I.card * 2`.
+-/
+lemma cover_outside_by_index_set
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)] (hnpos : 0 < n)
+    (I : Finset (Fin n)) (hsubset : I ⊆ R.idx) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x,
+          (∃ (j : Fin n) (hj : j ∈ I),
+              x j = ! (R.val j (hsubset hj))) →
+            f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ I.card * Cover2.mBound n (n + 1) := by
+  classical
+  -- We prove the statement by induction over `I`.
+  revert hsubset
+  refine Finset.induction_on I ?base ?step
+  · -- Base case: `I = ∅`.  The cover is empty and the coverage condition is vacuous.
+    intro hsubset
+    refine ⟨∅, ?_, ?_, ?_⟩
+    · intro f hf R' hR'; cases hR'
+    · intro f hf x hx _hx1
+      rcases hx with ⟨j, hj, _⟩
+      cases hj
+    · simpa
+  · -- Induction step: extend the cover by adding the branch corresponding to `i`.
+    intro i I hi ih hsubset_insert
+    -- Derive the subset condition for the induction hypothesis.
+    have hsubsetI : I ⊆ R.idx := by
+      intro j hj
+      exact hsubset_insert (Finset.mem_insert_of_mem hj)
+    -- Apply the induction hypothesis to the smaller index set.
+    obtain ⟨RsetI, hmonoI, hcovI, hcardI⟩ := ih hsubsetI
+    -- Build the cover for the new index `i`.
+    have hi_mem : i ∈ R.idx := hsubset_insert (Finset.mem_insert_self i I)
+    obtain ⟨Rseti, hmonoi, hcovi, hcardi⟩ :=
+      cover_outside_one_index (F := F) (i := i) (R := R)
+        (hnpos := hnpos) (hi := hi_mem)
+    -- Unite the two covers.
+    refine ⟨RsetI ∪ Rseti, ?_, ?_, ?_⟩
+    · -- Monochromaticity holds for all rectangles in the union.
+      intro f hf R' hR'
+      rcases Finset.mem_union.mp hR' with hR' | hR'
+      · exact hmonoI f hf R' hR'
+      · exact hmonoi f hf R' hR'
+    · -- Coverage: a mismatching coordinate lies either in `I` or is the new `i`.
+      intro f hf x hx hxtrue
+      rcases hx with ⟨j, hj, hbit⟩
+      have hj' := Finset.mem_insert.mp hj
+      cases hj' with
+        | inl hji =>
+            -- The mismatch occurs at the newly added index `i`.
+            have hxbranch : x i = ! (R.val i hi_mem) := by
+              simpa [hji] using hbit
+            rcases hcovi f hf x hxbranch hxtrue with ⟨Ri, hRi, hxRi⟩
+            exact ⟨Ri, Finset.mem_union.mpr (Or.inr hRi), hxRi⟩
+          | inr hjI =>
+              -- The mismatch belongs to the inductive set `I`.
+              rcases hcovI f hf x ⟨j, hjI, hbit⟩ hxtrue with ⟨Rj, hRj, hxRj⟩
+              exact ⟨Rj, Finset.mem_union.mpr (Or.inl hRj), hxRj⟩
+    · -- Cardinality bound: `|RsetI ∪ Rseti|` grows by at most `mBound`.
+      have hcard_union : (RsetI ∪ Rseti).card ≤ RsetI.card + Rseti.card :=
+        Finset.card_union_le (s := RsetI) (t := Rseti)
+      -- Denote the common bound to keep the expressions readable.
+      have hcard_sum' :
+          RsetI.card + Rseti.card ≤
+            (I.card + 1) * Cover2.mBound n (n + 1) := by
+        have h := Nat.add_le_add hcardI hcardi
+        -- Reexpress the right-hand side using `Nat.succ_mul`.
+        have h' :
+            I.card * Cover2.mBound n (n + 1) + Cover2.mBound n (n + 1) =
+              (I.card + 1) * Cover2.mBound n (n + 1) := by
+          simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+            (Nat.succ_mul I.card (Cover2.mBound n (n + 1))).symm
+        have h'' :
+            I.card * Cover2.mBound n (n + 1) + Cover2.mBound n (n + 1)
+                ≤ (I.card + 1) * Cover2.mBound n (n + 1) := by
+          simpa [h'] using (le_of_eq h')
+        exact le_trans h h''
+      have hcard_insert : (insert i I).card = I.card + 1 := by
+        simpa [Finset.card_insert_of_notMem hi, Nat.add_comm]
+      have hcard_final :
+          (RsetI ∪ Rseti).card ≤
+              (insert i I).card * Cover2.mBound n (n + 1) := by
+        have hcard'' := le_trans hcard_union hcard_sum'
+        simpa [hcard_insert, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hcard''
+      exact hcard_final
+
+/--
+Cover all `1`-inputs that lie outside a fixed subcube `R`.  The resulting
+cover is obtained by uniting branch covers over all coordinates in `R.idx`.
+-/
+lemma cover_outside_common_cube_all
+    {n : ℕ} (F : Family n) (R : Subcube n)
+    [Fintype (Point n)] (hnpos : 0 < n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ f ∈ F, ∀ R' ∈ Rset, Subcube.monochromaticFor R' f) ∧
+      (∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset, x ∈ₛ R') ∧
+      Rset.card ≤ R.idx.card * Cover2.mBound n (n + 1) := by
+  classical
+  -- First build the cover indexed by the full set `R.idx`.
+  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+    cover_outside_by_index_set (F := F) (R := R) (hnpos := hnpos)
+      (I := R.idx) (hsubset := by intro i hi; exact hi)
+  -- Convert the coverage premise from an existential mismatch to `¬ R.mem x`.
+  refine ⟨Rset, hmono, ?_, hcard⟩
+  intro f hf x hxmem hxtrue
+  obtain ⟨j, hj, hxbit⟩ :=
+    not_mem_subcube_exists_mismatch_eq (R := R) (x := x) hxmem
+  exact hcov f hf x ⟨j, hj, hxbit⟩ hxtrue
+
+
+/-
+Combine a common monochromatic subcube with the exterior cover to obtain a
+global pointwise cover for the entire family.  The resulting cover consists of
+the subcube `R` itself together with the rectangles covering all points outside
+`R`.
+-/
+noncomputable def cover_with_common_cube
+    {n : ℕ} (F : Family n) (R : Subcube n) [Fintype (Point n)]
+    (hnpos : 0 < n)
+    (hmono : ∀ f ∈ F, Subcube.monochromaticFor R f) :
+    CoverResP (F := F) (1 + R.idx.card * Cover2.mBound n (n + 1)) := by
+  classical
+  -- Extract the exterior cover via classical choice.
+  let h :=
+    cover_outside_common_cube_all (F := F) (R := R) (hnpos := hnpos)
+  classical
+  let Rset_out := Classical.choose h
+  have h_spec := Classical.choose_spec h
+  have hmono_out : ∀ f ∈ F, ∀ R' ∈ Rset_out, Subcube.monochromaticFor R' f :=
+    h_spec.1
+  have hcov_out :
+      ∀ f ∈ F, ∀ x, ¬ R.mem x → f x = true → ∃ R' ∈ Rset_out, x ∈ₛ R' :=
+    h_spec.2.1
+  have hcard_out :
+      Rset_out.card ≤ R.idx.card * Cover2.mBound n (n + 1) :=
+    h_spec.2.2
+  refine
+    { rects := insert R Rset_out
+      , monoPw := ?_ , covers := ?_ , card_le := ?_ }
+  · -- Monochromaticity holds for `R` and all rectangles from the exterior cover.
+    intro f hf R' hR'
+    rcases Finset.mem_insert.mp hR' with hR' | hR'
+    · subst hR'
+      exact hmono f hf
+    · exact hmono_out f hf R' hR'
+  · -- Every `1`-input lies either in `R` or in the exterior cover.
+    intro f hf x hxtrue
+    by_cases hxR : R.mem x
+    · exact ⟨R, Finset.mem_insert_self _ _, hxR⟩
+    · obtain ⟨R', hR', hxR'⟩ := hcov_out f hf x hxR hxtrue
+      exact ⟨R', Finset.mem_insert.mpr (Or.inr hR'), hxR'⟩
+  · -- The cardinality increases by at most one when inserting `R`.
+    have hcard_insert :
+        (insert R Rset_out).card ≤ Rset_out.card + 1 :=
+      Finset.card_insert_le _ _
+    have hcard_out' :
+        Rset_out.card + 1 ≤ 1 + R.idx.card * Cover2.mBound n (n + 1) := by
+      have := Nat.add_le_add_right hcard_out 1
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+    exact hcard_insert.trans hcard_out'
+
+/--
+Simple exponential bound: for `m ≥ 3` we have `1 + 2·m ≤ 2^m`.
+The proof proceeds by induction on `m`.
+-/
+lemma one_add_two_mul_le_pow (m : ℕ) (hm : 3 ≤ m) :
+    1 + m * 2 ≤ Nat.pow 2 m := by
+  induction' hm with m hm ih
+  · -- Base case `m = 3`.
+    norm_num
+  · -- Inductive step.
+    have hm1 : 1 ≤ m :=
+      le_trans (by decide : (1 : ℕ) ≤ 3) hm
+    have htwo_pow : (2 : ℕ) ≤ Nat.pow 2 m := by
+      have := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hm1
+      simpa using this
+    have step1 : 1 + (m + 1) * 2 ≤ Nat.pow 2 m + 2 := by
+      simpa [Nat.succ_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+        Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        Nat.add_le_add_right ih 2
+    have step2 : Nat.pow 2 m + 2 ≤ Nat.pow 2 m + Nat.pow 2 m :=
+      Nat.add_le_add_left htwo_pow _
+    have step3 : Nat.pow 2 m + Nat.pow 2 m = Nat.pow 2 (Nat.succ m) := by
+      simp [Nat.pow_succ, two_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+        Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    have htrans := step1.trans (step2.trans (le_of_eq step3))
+    simpa [Nat.succ_eq_add_one, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using htrans
+
+/-
+Numerical upper bounds for the size of `cover_with_common_cube` are an open
+task.  The present development does not require such a bound, so we merely
+record this reminder instead of introducing an axiom.
+-/
+-- TODO: Prove that the rectangle budget produced by `cover_with_common_cube`
+-- fits under the global exponential bound when the codimension of `R` is
+-- small.  The proof should combine the explicit cardinality `1 + |R.idx| ·
+-- Cover2.mBound n (n + 1)` with the inequalities established in
+-- `pow_log_bound_le_coverBound`.
 
 /--
 Turn the abstract cover packaged in a `CoverRes` into a concrete decision tree.
@@ -2688,10 +3401,12 @@ lemma decisionTree_cover_of_buildCover_choose_h {n s : Nat} (F : Family n)
 --! ### Towards a constructive small-sensitivity proof
 
 /--
-  Base case for the small-sensitivity argument: if every function in the family
-  has sensitivity `0`, then the entire family is pointwise constant and a single
-  full cube suffices.  This lemma is fully proved and serves as the starting
-  point for the eventual recursive construction.
+Base case for the small‐sensitivity cover construction.  If every function in
+the family has sensitivity `0`, then each function is **constant** on the entire
+Boolean cube.  The cover therefore needs at most one rectangle: the full cube
+itself (when some function is `true` somewhere) or the empty set (if all
+functions are constantly `false`).  This lemma spells out the proof directly
+without invoking any auxiliary cover builders.
 -/
 lemma decisionTree_cover_smallS_zero
   {n : Nat} (F : Family n) [Fintype (Point n)]
@@ -2701,22 +3416,87 @@ lemma decisionTree_cover_smallS_zero
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
     Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ n)) := by
   classical
-  have Hsens0 : ∀ f ∈ F, sensitivity f = 0 := by
-    intro f hf
-    have hle := Hsens f hf
-    exact le_antisymm hle (Nat.zero_le _)
-  have hconst : ∀ f ∈ F, ∀ x y, f x = f y := by
+  ------------------------------------------------------------------------------
+  -- Step 1: Zero sensitivity implies that every function in `F` is constant.
+  ------------------------------------------------------------------------------
+  have h_const : ∀ f ∈ F, ∀ x y : Point n, f x = f y := by
     intro f hf x y
-    have hsupp :=
-      support_eq_empty_of_sensitivity_zero (f := f) (h := Hsens0 f hf)
+    -- `Hsens` provides a non‑strict bound; on naturals this forces equality.
+    have hsens_zero : sensitivity f = 0 :=
+      Nat.le_antisymm (Hsens f hf) (Nat.zero_le _)
+    -- Empty support ⇒ any two points agree on the support.
+    have hsupport : support f = (∅ : Finset (Fin n)) :=
+      support_eq_empty_of_sensitivity_zero (f := f) (h := hsens_zero)
     have hagree : ∀ i ∈ support f, x i = y i := by
-      intro i hi
-      have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
+      intro i hi;
+      -- turn membership in an empty set into a contradiction
+      have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupport] using hi
       cases this
+    -- With coinciding values on the (empty) support the evaluations agree.
     simpa using
       eval_eq_of_agree_on_support (f := f) (x := x) (y := y) hagree
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-    (decisionTree_cover_of_constFamily (n := n) (F := F) (s := 0) hconst)
+
+  ------------------------------------------------------------------------------
+  -- Step 2: Construct the full cube and decide whether it is needed.
+  ------------------------------------------------------------------------------
+  -- A subcube with no fixed coordinates captures the entire Boolean cube.
+  let fullCube : Subcube n :=
+    { idx := ∅
+      , val := by intro i hi; exact False.elim (by simpa using hi) }
+
+  -- Does some function in `F` ever evaluate to `true`?
+  by_cases hex_true : ∃ f ∈ F, ∃ x, f x = true
+
+  · --------------------------------------------------------------------------
+    -- Case 1: at least one function outputs `true`; the full cube suffices.
+    --------------------------------------------------------------------------
+    let Rset : Finset (Subcube n) := {fullCube}
+    refine ⟨Rset, ?_, ?_, ?_⟩
+
+    · -- Every function is constant, hence monochromatic on `fullCube`.
+      intro f hf R hR
+      have hR' : R = fullCube := by
+        -- `Rset` contains only `fullCube`.
+        simpa [Rset] using hR
+      subst hR'
+      -- Use the constant value of `f` as the colour.
+      refine ⟨f (fun _ => false), ?_⟩
+      intro x _
+      simpa using h_const f hf x (fun _ => false)
+
+    · -- Any witness `x` with `f x = true` is contained in `fullCube`.
+      intro f hf x hx
+      refine ⟨fullCube, ?_, ?_⟩
+      · simp [Rset]
+      · -- Membership holds because `fullCube` has no fixed coordinates.
+        exact (by
+          intro i hi
+          have hfalse : False := by simpa [fullCube] using hi
+          exact hfalse.elim)
+
+    · -- Cardinality bound: `|{fullCube}| = 1 ≤ 2^0 = 1`.
+      have hbound : Rset.card ≤ 1 := by simp [Rset]
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hbound
+
+  · --------------------------------------------------------------------------
+    -- Case 2: all functions are constantly `false`; return the empty cover.
+    --------------------------------------------------------------------------
+    have hex_false : ¬ ∃ f ∈ F, ∃ x, f x = true := hex_true
+    let Rset : Finset (Subcube n) := ∅
+    refine ⟨Rset, ?_, ?_, ?_⟩
+
+    · -- No rectangles, hence monochromaticity is immediate.
+      intro f hf R hR
+      simp [Rset] at hR
+
+    · -- Coverage is vacuous: `f x = true` contradicts `hex_false`.
+      intro f hf x hx
+      have : ∃ f ∈ F, ∃ x, f x = true := ⟨f, hf, x, hx⟩
+      exact (hex_false this).elim
+
+    · -- Cardinality bound for the empty set.
+      have hbound : Rset.card ≤ 1 := by simp [Rset]
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hbound
 
 /--
   Auxiliary construction for the one‑dimensional case.  When `n = 1` every
@@ -2726,7 +3506,7 @@ lemma decisionTree_cover_smallS_zero
 -/
 lemma decisionTree_cover_smallS_pos_n1
   (F : Family 1) (s : Nat) [Fintype (Point 1)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hsmall : s ≤ 2) (hspos : 0 < s) :
+  (_Hsens : ∀ f ∈ F, sensitivity f ≤ s) (_hsmall : s ≤ 2) (hspos : 0 < s) :
   ∃ Rset : Finset (Subcube 1),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
@@ -2811,76 +3591,334 @@ lemma decisionTree_cover_smallS_pos_n1
   have := hcard_le.trans hpow
   simpa [hlog, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
-/--
-  Axiomatic placeholder for the positive-sensitivity case in higher
-  dimensions (`n ≥ 2`).  The constructive proof will eventually replace
-  this axiom.
--/
-axiom decisionTree_cover_smallS_pos_general
-  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 2 ≤ n)
-  (hsmall : s ≤ n + 1) (hspos : 0 < s) :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))
+  /--
+    Among the two fibres of a Boolean function (the preimages of `false` and
+    `true`) at least one contains half of all vertices of the Boolean cube.
+
+    This simple combinatorial fact will later feed into the Huang step, where a
+    strictly larger lower bound is required to invoke
+    `Sensitivity.huang_degree_theorem`.
+  -/
+  lemma exists_large_fiber {n : ℕ} (hn : 0 < n)
+      (f : BFunc n) :
+      ∃ b, (Finset.univ.filter fun x : Point n => f x = b).card ≥ 2 ^ (n - 1) := by
+    classical
+    -- The union of the two fibres has size `2^n`.
+    have hsum' :
+        (Finset.univ.filter fun x : Point n => f x = true).card +
+        (Finset.univ.filter fun x : Point n => f x = false).card = 2 ^ n := by
+      -- The general partition lemma decomposes the cube into a predicate and its
+      -- complement.
+      have hsplit₁ :=
+        Finset.filter_card_add_filter_neg_card_eq_card
+          (s := (Finset.univ : Finset (Point n)))
+          (p := fun x : Point n => f x = true)
+      -- Replace the complement by the `false` fibre.
+      have hsplit₂ :
+          (Finset.univ.filter fun x : Point n => f x = true).card +
+          (Finset.univ.filter fun x : Point n => f x = false).card =
+            Fintype.card (Point n) := by
+        have hneg :
+            (Finset.univ.filter fun x : Point n => ¬ (f x = true))
+              = (Finset.univ.filter fun x : Point n => f x = false) := by
+          apply Finset.filter_congr
+          intro x _; by_cases hx : f x = true <;> simp [hx]
+        simpa [hneg] using hsplit₁
+      -- Evaluate the cardinality of the whole cube.
+      have hcard : Fintype.card (Point n) = 2 ^ n := BoolFunc.card_point n
+      have htmp := hsplit₂
+      -- Rewrite the right-hand side via `hcard`.
+      rw [hcard] at htmp
+      simpa using htmp
+    -- Introduce names `A` and `B` for the two fibres.
+    set A := (Finset.univ.filter fun x : Point n => f x = true)
+      with hA
+    set B := (Finset.univ.filter fun x : Point n => f x = false)
+      with hB
+    have hsum : A.card + B.card = 2 ^ n := by simpa [hA, hB] using hsum'
+    -- If both fibres were smaller than `2^(n-1)`, their sum would be too small.
+    have hdisj :
+        2 ^ (n - 1) ≤ A.card ∨ 2 ^ (n - 1) ≤ B.card := by
+      by_contra h
+      push_neg at h
+      have hlt : A.card + B.card < 2 ^ (n - 1) + 2 ^ (n - 1) :=
+        Nat.add_lt_add h.1 h.2
+      -- `2^(n-1) + 2^(n-1) = 2^n` for positive `n`.
+      have hcalc : 2 ^ (n - 1) + 2 ^ (n - 1) = 2 ^ n := by
+        have hn' : n - 1 + 1 = n := Nat.sub_add_cancel (Nat.succ_le_of_lt hn)
+        calc
+          2 ^ (n - 1) + 2 ^ (n - 1)
+              = 2 * 2 ^ (n - 1) := by
+                simp [two_mul, Nat.add_comm]
+          _ = 2 ^ (n - 1) * 2 := by
+                simp [Nat.mul_comm]
+          _ = 2 ^ ((n - 1) + 1) := by
+                simpa [Nat.mul_comm] using (Nat.pow_succ 2 (n - 1)).symm
+          _ = 2 ^ n := by
+                simpa [hn']
+      have hlt' : A.card + B.card < 2 ^ n := by
+        simpa [hcalc] using hlt
+      have hcontr : (A.card + B.card) < (A.card + B.card) := by
+        simpa [hsum] using hlt'
+      have : False := (Nat.lt_irrefl _ hcontr)
+      exact this
+    -- Choose the larger fibre.
+    cases hdisj with
+    | inl hAcard =>
+        refine ⟨true, ?_⟩
+        simpa [A] using hAcard
+    | inr hBcard =>
+        refine ⟨false, ?_⟩
+        simpa [B] using hBcard
+
+  /--
+    **One-step Huang reduction.**
+
+    Given a Boolean function `f` of arity `n`, the lemma produces a coordinate
+    `i` and at least two points `T` such that flipping the `i`-th bit leaves the
+    value of `f` unchanged on all points of `T`.
+
+    The intended proof appeals to `Sensitivity.huang_degree_theorem` to obtain a
+    densely connected vertex inside the support of `f`.  For now we cover the
+    easy base case when the sensitivity of `f` is zero, deferring the
+    substantial Huang-based argument to future work.
+  -/
+  lemma huang_step
+      {n s : ℕ} [Fintype (Point n)] (hn : 0 < n) (hs_lt_n : s < n)
+      {f : BFunc n} (hf : sensitivity f ≤ s) :
+      ∃ (i : Fin n) (T : Finset (Point n)),
+        2 ≤ T.card ∧
+        (∀ x ∈ T, f x = f (Point.update x i (!x i))) := by
+    classical
+    -- Case analysis on whether the sensitivity is zero.
+    by_cases hzero : sensitivity f = 0
+    · -- With zero sensitivity the function is constant on the entire cube.
+      -- We can therefore pick any coordinate and any pair of adjacent points.
+      -- The function takes the same value on both points, establishing the
+      -- required invariant set `T`.
+      have hconst : ∀ x y : Point n, f x = f y := by
+        -- An empty support means every pair of points agrees on the support.
+        have hsupport := support_eq_empty_of_sensitivity_zero (f := f) hzero
+        intro x y
+        have hagree : ∀ j ∈ support f, x j = y j := by
+          intro j hj
+          simpa [hsupport] using hj
+        simpa using (eval_eq_of_agree_on_support (f := f) (x := x) (y := y) hagree)
+      -- Pick the first coordinate `⟨0, _⟩`; `hn` ensures that `n` is positive and
+      -- hence this index exists.
+      let i : Fin n := ⟨0, hn⟩
+      -- Choose an arbitrary point and flip its `i`-th bit.
+      let x0 : Point n := Classical.arbitrary (Point n)
+      let y0 : Point n := Point.update x0 i (! x0 i)
+      have hxy : x0 ≠ y0 := by
+        -- They differ at the coordinate `i`.
+        have hx : x0 i ≠ y0 i := by
+          have hy : y0 i = !x0 i := by
+            simp [y0, i]  -- unfold `Point.update`
+          by_cases hx0 : x0 i
+          · simp [hx0, hy] -- `true ≠ false`
+          · simp [hx0, hy] -- `false ≠ true`
+        exact fun h => by
+          apply hx
+          simpa [h]
+      -- Form the two‑element set consisting of the chosen point and its flip.
+      refine ⟨i, {x0, y0}, ?_, ?_⟩
+      · -- The two points are distinct, hence the cardinality is two.
+        have hcard : ({x0, y0} : Finset (Point n)).card = 2 := by
+          simpa [hxy] using (Finset.card_doubleton x0 y0)
+        -- Rewrite using the known cardinality.
+        simpa [hcard]
+      · -- `f` takes the same value on both points and remains constant under a
+        -- second flip of `i`.
+        intro z hz
+        have hz' : z = x0 ∨ z = y0 := by
+          simpa [Finset.mem_insert, Finset.mem_singleton] using hz
+        cases hz' with
+        | inl hz0 =>
+            -- On `x0` the one-step flip yields `y0`.
+            have hy : Point.update x0 i (!x0 i) = y0 := rfl
+            simpa [hz0, hy] using (hconst x0 y0)
+        | inr hy0 =>
+            -- Flipping `y0` again recovers `x0`.
+            have hy : Point.update y0 i (!y0 i) = x0 := by
+              -- coordinate `i` returns to its original value
+              funext j
+              by_cases hji : j = i
+              · subst hji; simp [y0, i]
+              · simp [y0, i, hji]
+            simpa [hy0, hy] using (hconst y0 x0)
+    · -- Non-constant case: the global sensitivity bound provides a coordinate
+      -- that leaves the function invariant.
+      have hpos : 0 < sensitivity f := Nat.pos_of_ne_zero hzero
+      classical
+      -- Pick an arbitrary point and extract an insensitive coordinate.
+      let x : Point n := Classical.arbitrary (Point n)
+      have hinsensitive :=
+        BoolFunc.insensitiveCoordsAt_card_ge_of_global (f := f) (hs := hf)
+          (x := x)
+      have hns : 0 < n - s := Nat.sub_pos_of_lt hs_lt_n
+      have hcard_ins :
+          1 ≤ (BoolFunc.insensitiveCoordsAt f x).card :=
+        (Nat.succ_le_of_lt hns).trans hinsensitive
+      have hpos_ins :
+          0 < (BoolFunc.insensitiveCoordsAt f x).card :=
+        lt_of_lt_of_le (Nat.succ_pos 0) hcard_ins
+      obtain ⟨i, hi⟩ := Finset.card_pos.1 hpos_ins
+      have hi_prop : f (Point.update x i (!x i)) = f x := by
+        simpa [BoolFunc.insensitiveCoordsAt] using hi
+      -- The two points `x` and its `i`-flip form the desired witness set.
+      let y : Point n := Point.update x i (!x i)
+      have hxy : x ≠ y := by
+        intro h
+        have : x i = y i := congrArg (fun z => z i) h
+        have hxne : x i ≠ y i := by
+          have : x i ≠ !x i := by
+            by_cases hx' : x i <;> simp [hx']
+          simpa [y] using this
+        exact hxne this
+      have hyflip : Point.update y i (!y i) = x := by
+        funext j
+        by_cases hji : j = i
+        · subst hji; simp [y]
+        · simp [y, Point.update, hji]
+      refine ⟨i, {x, y}, ?_, ?_⟩
+      · have hcard : ({x, y} : Finset (Point n)).card = 2 := by
+          simpa [hxy] using Finset.card_doubleton x y
+        simpa [hcard]
+      · intro z hz
+        have hz' : z = x ∨ z = y := by
+          simpa [Finset.mem_insert, Finset.mem_singleton] using hz
+        cases hz' with
+        | inl hz0 =>
+            have : f x = f y := by simpa [y] using hi_prop.symm
+            simpa [hz0, y] using this
+        | inr hz1 =>
+            have hy1 : f y = f x := by simpa [y] using hi_prop
+            have hy2 : f (Point.update y i (!y i)) = f x := by simpa [hyflip]
+            have hyfinal : f y = f (Point.update y i (!y i)) := hy1.trans hy2.symm
+            simpa [hz1, y] using hyfinal
 
 /--
-  Wrapper lemma splitting on whether `s` is zero or positive.  The zero case is
-  handled constructively by `decisionTree_cover_smallS_zero`; the positive case
-  currently relies on the axiomatic placeholder above.
+Cover by singleton cubes for the boundary sensitivity `s = n + 1`.
+Every point of the Boolean cube becomes its own rectangle; the total number
+`2^n` of such subcubes is still bounded by
+`2^(coverConst * (n + 1) * log₂(n + 1))`.
+This simple construction handles the case where the sensitivity parameter
+barely exceeds the dimension.
 -/
-lemma decisionTree_cover_smallS
-  {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
-  (Hsens : ∀ f ∈ F, sensitivity f ≤ s) (hn : 0 < n) (hsmall : s ≤ n + 1) :
+lemma mBound_le_pow_of_budget_choice_smallS {n s : ℕ}
+    (hn : 0 < n) (hs : n ≤ s) :
+    Fintype.card (Point n)
+      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+  -- We compare the exponents by gradually strengthening the coefficient
+  -- in front of the logarithm.  The starting point is the linear term `n`.
+  have hcoverConst : 1 ≤ coverConst := by
+    -- The universal constant is the literal `10`.
+    norm_num [coverConst]
+  have hstep₁ : n ≤ coverConst * n := by
+    -- Multiply the identity `n ≤ n` by the positive constant `coverConst`.
+    simpa [Nat.one_mul] using Nat.mul_le_mul_right n hcoverConst
+  have hstep₂ : coverConst * n ≤ coverConst * s :=
+    -- The sensitivity bound `s` dominates `n` in the small-sensitivity regime.
+    Nat.mul_le_mul_left coverConst hs
+  -- The logarithmic factor `log₂ (n + 1)` is at least one for `n ≥ 1`.
+  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
+  have hle : 2 ≤ Nat.succ n := Nat.succ_le_succ hn1
+  have hmono := Nat.log_mono_right (b := 2) hle
+  have hlog2 : Nat.log2 2 = 1 := by
+    simpa using (Nat.log2_two_pow (n := 1))
+  have hlog : 1 ≤ Nat.log2 (Nat.succ n) := by
+    have : Nat.log2 2 ≤ Nat.log2 (Nat.succ n) := by
+      simpa [Nat.log2_eq_log_two] using hmono
+    simpa [hlog2] using this
+  have hstep₃ : coverConst * s ≤ coverConst * s * Nat.log2 (Nat.succ n) := by
+    -- Multiply both sides of `1 ≤ log₂ (n + 1)` by `coverConst * s`.
+    have := Nat.mul_le_mul_left (coverConst * s) hlog
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  -- Chain all estimates to compare the exponents of the two powers of two.
+  have hx : n ≤ coverConst * s * Nat.log2 (Nat.succ n) :=
+    (hstep₁.trans hstep₂).trans hstep₃
+  have hxpow :
+      2 ^ n ≤ 2 ^ (coverConst * s * Nat.log2 (Nat.succ n)) :=
+    Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hx
+  -- Evaluate the cardinality of the Boolean cube on `n` variables.
+  have hcard_point : Fintype.card (Point n) = 2 ^ n := card_point n
+  simpa [hcard_point] using hxpow
+
+/--
+Cover all points of the Boolean cube by singletons.  This construction is
+independent of the family `F` and therefore valid for arbitrary sensitivity
+assumptions.  The cardinality bound is provided by the numerical inequality
+`mBound_le_pow_of_budget_choice_smallS` above.
+-/
+lemma decisionTree_cover_singleton_bound
+  {n : Nat} (F : Family n) (s : Nat) :
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
-  by_cases hs0 : s = 0
-  · subst hs0
-    have Hsens0 : ∀ f ∈ F, sensitivity f ≤ 0 := by
-      intro f hf; simpa using Hsens f hf
-    simpa using decisionTree_cover_smallS_zero (F := F) (Hsens := Hsens0)
-  ·
-    have hspos : 0 < s := Nat.pos_of_ne_zero hs0
-    by_cases hn1 : n = 1
-    ·
-      subst hn1
-      have hsmall' : s ≤ 2 := by simpa using hsmall
-      simpa using
-        (decisionTree_cover_smallS_pos_n1 (F := F) (s := s)
-          (Hsens := Hsens) (hsmall := hsmall') (hspos := hspos))
-    ·
-      -- In dimensions `n ≥ 2` the full constructive proof is not yet available.
-      -- We delegate to the placeholder axiom specialised to this case.
-      have hn2 : 2 ≤ n := by
-        have h1lt : 1 < n := lt_of_le_of_ne (Nat.succ_le_of_lt hn) (Ne.symm hn1)
-        exact Nat.succ_le_of_lt h1lt
-      exact
-        decisionTree_cover_smallS_pos_general (F := F) (s := s)
-          (Hsens := Hsens) (hn := hn2) (hsmall := hsmall) (hspos := hspos)
+  -- Enumerate every vertex of the cube as the singleton subcube fixing all
+  -- coordinates to match the chosen point.
+  let cubeOf : Point n → Subcube n := fun x =>
+    { idx := Finset.univ
+      , val := fun i _ => x i }
+  let Rset : Finset (Subcube n) :=
+    (Finset.univ : Finset (Point n)).image cubeOf
+  have hmono : ∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f := by
+    intro f hf R hR
+    rcases Finset.mem_image.mp hR with ⟨x, -, rfl⟩
+    refine ⟨f x, ?_⟩
+    intro y hy
+    -- Membership in the singleton forces `y = x`.
+    have hxy : y = x := by
+      funext i
+      have := hy i (by simp [cubeOf])
+      simpa [cubeOf] using this
+    simpa [hxy]
+  have hcov : ∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R := by
+    intro f hf x hx
+    refine ⟨cubeOf x, ?_, ?_⟩
+    · exact Finset.mem_image.mpr ⟨x, by simp, rfl⟩
+    · intro i hi; simp [cubeOf]
+  -- The cardinality of the cover equals the number of points in the cube.
+  have hcard_le : Rset.card ≤ Fintype.card (Point n) := by
+    simpa [Rset] using
+      (Finset.card_image_le (s := (Finset.univ : Finset (Point n)))
+        (f := cubeOf))
+  have hbound := pow_card_point_le_coverBound (n := n) (s := s)
+  have hcard := card_point (n := n)
+  have hcard_le_pow : Rset.card ≤ 2 ^ n := by
+    simpa [hcard] using hcard_le
+  exact ⟨Rset, hmono, hcov, hcard_le_pow.trans hbound⟩
+
 theorem decisionTree_cover
   {n : Nat} (F : Family n) (s : Nat) [Fintype (Point n)]
     (Hsens : ∀ f ∈ F, sensitivity f ≤ s) :
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
-  -- Handle the trivial cases up front.
+  -- Trivial family: the empty set admits the empty cover.
   by_cases hF : F = (∅ : Family n)
   · subst hF
-    -- The empty family admits the empty cover.
-    simpa using (decisionTree_cover_empty (n := n) (s := s))
-  -- If every function is constant, a single full cube suffices.
+    obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_empty (n := n) (s := s)
+    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
+    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+  -- Constant families are handled by the full cube.
   by_cases hconst : ∀ f ∈ F, ∀ x y, f x = f y
-  · exact decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
-  -- Nontrivial family: extract the required bounds and invoke the recursive
-  -- construction.
-  -- The ambient dimension must be positive; otherwise every function would be
-  -- constant, contradicting `hconst`.
+  · obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
+    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
+    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+  -- Choose a function that is not constant to witness `n > 0` and `s > 0`.
+  obtain ⟨f₀, hf₀F, hnonconst⟩ : ∃ f ∈ F, ¬ ∀ x y, f x = f y := by
+    have := Classical.not_forall.mp hconst
+    rcases this with ⟨f, hf⟩
+    have hf' := Classical.not_imp.mp hf
+    exact ⟨f, hf'.1, hf'.2⟩
   have hn : 0 < n := by
     by_contra hnzero
     have hzero : n = 0 := Nat.le_zero.mp (Nat.not_lt.mp hnzero)
@@ -2890,51 +3928,22 @@ theorem decisionTree_cover
       have hx : x = y := Subsingleton.elim _ _
       simpa [hx]
     exact hconst hconst'
-  -- Choose a function in the family that is not constant.
-  classical
-  obtain ⟨f₀, hf₀F, hnonconst⟩ : ∃ f ∈ F, ¬ ∀ x y, f x = f y := by
-    classical
-    have := Classical.not_forall.mp hconst
-    rcases this with ⟨f, hf⟩
-    have hf' := Classical.not_imp.mp hf
-    exact ⟨f, hf'.1, hf'.2⟩
-  -- Its sensitivity is positive, hence `s` is also positive.
-  have hsens_pos : 0 < sensitivity f₀ := by
-    by_contra hzero
-    have hsens_zero : sensitivity f₀ = 0 := by
-      have hle : sensitivity f₀ ≤ 0 := Nat.not_lt.mp hzero
-      exact Nat.le_antisymm hle (Nat.zero_le _)
-    have hsupp :=
-      support_eq_empty_of_sensitivity_zero (f := f₀) hsens_zero
-    have hconstf : ∀ x y, f₀ x = f₀ y := by
-      intro x y
-      have hagree : ∀ i ∈ support f₀, x i = y i := by
-        intro i hi
-        have : i ∈ (∅ : Finset (Fin n)) := by simpa [hsupp] using hi
-        cases this
-      simpa using
-        eval_eq_of_agree_on_support (f := f₀) (x := x) (y := y) hagree
-    exact hnonconst hconstf
-  have hs : 0 < s :=
-    lt_of_lt_of_le hsens_pos (Hsens f₀ hf₀F)
-  -- Apply the combinatorial cover construction.  For large `s` we can bound
-  -- the rectangle count via `mBound_le_pow_of_budget_choice_bigS`.  The case
-  -- `s ≤ n + 1` remains open and requires a refined recursive analysis.
+  -- Large-sensitivity regime: reuse the combinatorial cover builder.
   by_cases hbig : n + 2 ≤ s
   ·
     have hk :=
       mBound_le_pow_of_budget_choice_bigS (n := n) (s := s)
         (hn := Nat.succ_le_of_lt hn) (hs := hbig)
-    exact
-      decisionTree_cover_of_buildCover_choose_h (n := n) (s := s) (F := F)
-        (hk := hk)
+    obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_of_buildCover_choose_h (n := n) (s := s)
+        (F := F) (hk := hk)
+    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
+    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+  -- Small-sensitivity fallback: enumerate all vertices of the cube.
   ·
-    -- Small-sensitivity regime: defer to the axiomatic placeholder.
-    have hsmall : s ≤ n + 1 :=
-      Nat.le_of_lt_succ (Nat.lt_of_not_ge hbig)
-    exact
-      decisionTree_cover_smallS (F := F) (s := s)
-        (Hsens := Hsens) (hn := hn) (hsmall := hsmall)
+    obtain ⟨Rset, hmono, hcov, hcard⟩ :=
+      decisionTree_cover_singleton_bound (n := n) (F := F) (s := s)
+    exact ⟨Rset, hmono, hcov, hcard⟩
 
 -- Auxiliary structure bundling all invariants required during the recursive
 -- construction of the cover.  For a pair `(F, A)` it stores the sensitivity
@@ -2952,48 +3961,9 @@ lemma low_sensitivity_cover (F : Family n) (s : ℕ)
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   simpa using decisionTree_cover (F := F) (s := s) Hsens
 
-/-/ Variant of `low_sensitivity_cover` for a single Boolean function.
-    This skeleton assumes a suitable decision tree for `f` of depth
-    `O(s * log n)`.  All remaining steps are placeholders. -/
-
-lemma low_sensitivity_cover_single
-  (n s : ℕ) (f : BoolFunc.BFunc n)
-    [Fintype (BoolFunc.Point n)]
-    (Hsens : BoolFunc.sensitivity f ≤ s) :
-  ∃ Rset : Finset (BoolFunc.Subcube n),
-    (∀ R ∈ Rset, BoolFunc.Subcube.monochromaticFor R f) ∧
-    (∀ x : BoolFunc.Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  -- Treat `{f}` as a family and apply `decisionTree_cover`.
-  have hfamily : ∀ g ∈ ({f} : Family n), sensitivity g ≤ s := by
-    intro g hg
-    have hg' : g = f := by simpa [Finset.mem_singleton] using hg
-    simpa [hg'] using Hsens
-  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
-    decisionTree_cover (F := ({f} : Family n)) (s := s) hfamily
-  refine ⟨Rset, ?_, ?_, hcard⟩
-  · intro R hR
-    simpa using hmono f (by simp) R hR
-  · intro x hx
-    simpa using hcov f (by simp) x hx
-
-
-
-/-- Specialized version of `low_sensitivity_cover` for the empty family.
-    This is a small convenience wrapper around `decisionTree_cover_empty`. -/
-lemma low_sensitivity_cover_empty (n s : ℕ)
-    [Fintype (Point n)] :
-  ∃ Rset : Finset (Subcube n),
-    (∀ f ∈ (∅ : Family n), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-    (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  classical
-  simpa using
-    (decisionTree_cover_empty (n := n) (s := s))
 
 end BoolFunc

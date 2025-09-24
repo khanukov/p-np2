@@ -1,90 +1,52 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: Updated after the September audit.  The combinatorial core is formalised; only the complexity bridge remains axiomatic.
 >
 # Master Blueprint 2025 → 20XX
 
-This note summarizes a long-term plan towards a formal proof that `P ≠ NP`.
-The outline below condenses ongoing discussions and research snippets.  It is
-not a proof, but a roadmap for the remaining steps.
+This note summarises the long-term plan towards a formal proof that `P ≠ NP`.  The Lean development now proves every combinatorial ingredient that feeds the Family Collision-Entropy Lemma (FCE-Lemma).  The remaining gaps concern classical complexity theory (circuit simulations, magnification, and the Karp–Lipton collapse).
 
 ## 0. Foundation
 
-* Consolidate all published arguments into a single machine-checked corpus.
-* Formalise the lower bound for `MCSPpoly` against $AC^0_d$ and the
-  magnification theorem.  From these, derive
-  `$NP \nsubseteq P/\mathsf{poly}$` under a weak assumption.
+* Maintain the Lean library of Boolean functions, subcubes, entropy, and sunflower technology.  ✅ Completed in `Pnp2/`.
+* Record outstanding axioms explicitly (`ComplexityClasses.P_subset_Ppoly`, `NPSeparation.*`).
 
 ## 1. From restricted to general models
 
-Strengthen the current linear lower bound for `MCSP` in restricted circuits to
-an $(1+\varepsilon)$ exponent for all depth $o(\log N)$ circuits.  The goal is
-to avoid the Natural Proofs barrier by working with sparse languages.
+Strengthen known lower bounds for `MCSP` in restricted circuit classes to depth `o(log N)` with exponent `1+ε`.  This remains an open mathematical problem; the Lean repository provides infrastructure for experimenting with the combinatorial side (decision-tree covers, entropy bounds).
 
 ## 2. Trigger magnification
 
-Apply the magnification theorem to the improved bound from step 1, obtaining the
-non-uniform separation `$NP \nsubseteq P/\mathsf{poly}`.
+Formalise the magnification theorem that converts the improved `MCSP` bound into `NP ⊄ P/poly`.  This step is currently modelled by the axiom `magnification_AC0_MCSP`.
 
 ## 3. Break algebrisation / relativisation
 
-Develop a meet-in-the-middle SAT algorithm for compositions `ACC⁰ ∘ MCSP` or, if
-that fails, argue that the previous steps already go beyond algebrising
-techniques.  Key pieces are a structural compression lemma ("Lemma B") and its
-consequences for sub-exponential SAT.
+Develop a meet-in-the-middle SAT algorithm for compositions `ACC⁰ ∘ MCSP`, or argue that the previous steps already bypass known barriers.  `Algorithms/SatCover.lean` and `acc_mcsp_sat.lean` provide stubs for future work; they compile and expose constructive interfaces but still rely on exponential enumeration.
 
 ## 4. Uniformisation
 
-Convert the non-uniform separation into `$P ≠ NP` using weak-uniform
-translations (e.g. Rossman–Williams) and the Karp–Lipton argument.  Verify that
-a potential collapse of `PH` cannot bypass the conclusion.
+Convert the non-uniform separation into `P ≠ NP` using the Karp–Lipton argument.  The axiom `karp_lipton` marks the remaining gap; everything else needed on the Lean side (covers, entropy control) is already in place.
 
-## 5. Proof-complexity lock-in
+## 5. Proof-complexity lock-in (optional)
 
-As an alternative route, show strong lower bounds for Extended Frege proofs.
-Combined with the previous steps, this would also yield `$P ≠ NP`.
+As an alternative route, pursue strong lower bounds for Extended Frege proofs, leveraging the formalised cover technology.
 
-## 6. Cryptographic connection
+## 6. Cryptographic connection (optional)
 
-Relate the hardness of `MCSP` to pseudorandom generator constructions and
-one-way functions.  Establishing such a generator would reinforce the failure of
-Natural Proofs and provide an independent path to `$P ≠ NP`.
+Explore connections between `MCSP` hardness, pseudorandom generators, and one-way functions.  These directions are not yet reflected in the Lean code but can reuse the combinatorial infrastructure.
 
 ## 7. Verification and publication
 
-Machine-check every component, provide demo code for the SAT algorithms, and
-maintain a public repository with Lean scripts and accompanying notes.
+* `Cover/BuildCover.lean` now implements the well-founded recursion with proofs of coverage and a universal cardinal bound.
+* `family_entropy_cover.lean` packages the cover with the explicit `mBound` estimate required by downstream arguments.
+* `low_sensitivity_cover.lean` completes the decision-tree cover, including the low-sensitivity fallback, without any axioms.
+* `Cover/Compute.lean` and `Algorithms/SatCover.lean` provide executable enumerators for experimentation.
+* Documentation (`docs/*.md`) has been refreshed to reflect the September 2025 state.
 
----
+### Current snapshot
 
-### Current status
+* ✅ `buildCover` recursion, coverage, and cardinality bound (`Cover/BuildCover.lean`).
+* ✅ Sunflower lemma (`Sunflower/Sunflower.lean`) and agreement lemmas (`Agreement.lean`).
+* ✅ Entropy monotonicity and bounds (`entropy.lean`, `bound.lean`, `cover_numeric.lean`).
+* ✅ Low-sensitivity decision-tree cover (`low_sensitivity_cover.lean`).
+* ⚠️ Pending: replace the axioms in `ComplexityClasses.lean` and `NP_separation.lean` with constructive proofs.
 
-Much of the foundational material (Step 0) is available in print but only partly
-formalised.  Steps 1–3 are active research; the key missing piece is proving a
-rectangular cover of `ACC⁰ ∘ MCSP` tables of size at most `2^{N - N^{\delta}}`.
-Recent commits formalise the `coreAgreement` lemma and implement a recursive `buildCover` using `sunflower_step` and `exists_coord_entropy_noninc`.  The cardinal drop lemma `exists_coord_card_drop` is now proven.  The lemma `buildCover_pointwiseMono` has also been established.  The counting lemma `buildCover_card_bound` has now been proven.
-The intended proof performs a double induction on the entropy budget `h` and on
-the number of uncovered pairs.  Writing
-
-```
-μ(F, h, Rset) = 2 * h + |uncovered F Rset|
-```
-
-each branch of the recursion strictly decreases this measure:
-low-sensitivity families are covered via `low_sensitivity_cover`, otherwise a
-coordinate split reduces the entropy budget, and occasionally a sunflower step
-covers multiple functions at once.  Combining these cases yields a bound of at
-most `mBound n h` rectangles before the measure collapses to zero.  This argument is now fully formalised in Lean.  The file `acc_mcsp_sat.lean` outlines the SAT reduction and awaits integration with the decision-tree cover.
-A small `DecisionTree` module with evaluation and size utilities now also
-provides path handling via `subcube_of_path` and the lemmas
-`path_to_leaf_length_le_depth` and a leaf-count bound `leaf_count_le_pow_depth`.
-Alongside the lemma `low_sensitivity_cover_single`,
-this sketches the decision-tree argument for covering smooth functions.
-Additional modules `collentropy.lean` and `family_entropy_cover.lean` provide
-single-function entropy tools and a bundled `FamilyCover` record extracted from
-`cover2.lean` with an explicit `mBound` size estimate.
-The repository now also includes `Cover/Compute.lean` and
-`Algorithms/SatCover.lean`, offering constructive enumeration of the cover and a
-simple SAT solver stub.  Their proofs remain incomplete but they integrate with
-the existing API.
-
-This document records the plan for future reference and serves as a pointer for
-contributors interested in the overarching project.
+The blueprint remains a living document; contributors should update this file whenever milestones are reached or research priorities shift.

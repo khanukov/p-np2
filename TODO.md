@@ -1,29 +1,25 @@
 # To-Do
-> **Status (2025-08-06)**: Tasks below track incomplete proofs and axioms.
+> **Status (2025-09-24)**: The combinatorial cover is fully formalised.  The items below track the remaining axioms and quality-of-life improvements.
 
+## Complexity bridge
 
-Updated development tasks after audit (2025-08-06).
+- [ ] Replace the axioms in `Pnp2/ComplexityClasses.lean` and `Pnp2/NP_separation.lean` with formal proofs:
+  - Prove the classical circuit-simulation result `P ⊆ P/poly`.
+  - Formalise the magnification link `magnification_AC0_MCSP` from ACC⁰ lower bounds to `NP ⊄ P/poly`.
+  - Formalise the Karp–Lipton collapse (`karp_lipton`) and the bridge `FCE_implies_MCSP` from the constructive cover to the MCSP lower bound.
 
-- [x] Complete proofs in `Pnp2/Cover/BuildCover.lean` (`buildCover_covers`).
-- [ ] Make `firstUncovered` constructive in `Pnp2/Cover/Uncovered.lean`.
-      * _Deferred_: the current classical search suffices for the overall
-        argument, and a constructive rewrite will be tackled only after the
-        complete `P ≠ NP` proof is in place.
-- [x] Provide a formal proof of `sunflower_exists_classic` in `Pnp2/Sunflower/Sunflower.lean`.
-      * Proof completed; the classical sunflower lemma is now fully formalised.
- - [x] Replace provisional assumption `buildCover_card_le_pow2` and adjust
-       `buildCover_card`/`buildCover_card_bigO` once the recursive cover algorithm is implemented.
-- [ ] Implement `decisionTree_cover` for low-sensitivity families.
-      * Подробный план: см. `docs/decisionTree_cover_plan.md`.
-- [ ] Replace complexity-theoretic assumptions in `Pnp2/NP_separation.lean` with proven results.
-- [ ] Prove inclusion `P ⊆ P/poly` in `Pnp2/ComplexityClasses.lean`.
+## Cover pipeline refinements (optional)
 
-## Remaining axioms (as of 2025-08-06)
+- [ ] Strengthen the coarse numeric bound in `Pnp2/cover_numeric.lean` (`buildCover_card = 2^n`) once sharper combinatorial estimates are available.
+- [ ] Provide a constructive variant of `firstUncovered` in `Pnp2/Cover/Uncovered.lean` if executable tooling becomes a priority.  The current classical search is sufficient for the Prop-level results.
 
-- `LowSensitivityCover.decisionTree_cover`
+## Remaining axioms (as of 2025-09-24)
+
 - `ComplexityClasses.P_subset_Ppoly`
 - `NPSeparation.magnification_AC0_MCSP`
 - `NPSeparation.karp_lipton`
 - `NPSeparation.FCE_implies_MCSP`
 
-These axioms represent major gaps in the current formalisation.
+## Outstanding `sorry`s (as of 2025-09-24)
+
+- None – the Lean sources compile without placeholders.

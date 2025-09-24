@@ -1,4 +1,4 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: Roadmap aligned with the current Lean development.  Combinatorial lemmas referenced below are now formalised; complexity-theoretic assumptions remain axiomatic.
 >
 # Task E1 Roadmap
 
@@ -44,8 +44,10 @@ Justify enumeration of `A_i` and `B_i` in time `2^{(1-\alpha)k}` and `2^{(1-\alp
 ### B‑5. Constructing the cover
 Build a rectangular cover of `\mathcal{S}_n` of size `M \le 2^{N - N^{\delta}}`.
 The file `cover2.lean` keeps track of uncovered inputs and recurses via
-`firstUncovered` (currently a classical search; a constructive rewrite is
-deferred until later).  The classical lemma `sunflower_exists` (together with
+`firstUncovered` (currently a classical search that is perfectly adequate for
+the Prop-level cover; a constructive rewrite would only be needed for
+executable enumeration later on).  The classical lemma `sunflower_exists`
+(together with
 the `RSpread` notion of scattered families) now provides the sunflower
 step whenever enough **distinct supports** remain, producing a
 positive-dimensional subcube.  A corrected monotonicity lemma for
@@ -66,9 +68,10 @@ theory.
 * **Algorithm block.** Implement meet-in-the-middle and fast enumeration (B‑4) for small values of `n`.
 * **Combinatorial block.** Develop the covering method (B‑5) via an “address–data” representation or similar constructions.
   The Lean code now defines `buildCover` in `cover2.lean`, tracking uncovered inputs via `firstUncovered` and applying either `sunflower_step` or `exists_coord_entropy_noninc`.
-  At present `firstUncovered` employs a classical search.  Making this routine
-  constructive is postponed until the global `P ≠ NP` proof is established, in
-  order to prioritise the higher-level formalisation.
+  At present `firstUncovered` employs a classical search, and we intentionally
+  keep it that way: the project allows `Classical.choice`, `funext`, `propext`,
+  and `noncomputable` sections whenever they shorten proofs.  A constructive
+  variant is merely an optional improvement for future executable artefacts.
   The cardinal lemma `exists_coord_card_drop` is proven and tests for `sunflower_step` verify its behaviour.
   The lemma `buildCover_pointwiseMono` has now been proved, establishing monochromaticity of
   the constructed cover.  The companion size estimate `buildCover_card_bound` is now proven using the same measure-based recursion.
@@ -80,8 +83,8 @@ theory.
   includes path extraction with `subcube_of_path` and the lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
   controlling path lengths and leaf counts.
-  Together with `low_sensitivity_cover_single` this outlines a decision-tree
-  approach to the cover.
+  Together with the singleton case of `decisionTree_cover` this outlines a
+  decision-tree approach to the cover.
 * **Utilities.**  The new files `collentropy.lean` and `family_entropy_cover.lean`
   collect single-function entropy facts and package the cover from
   `cover2.lean` as a reusable record.  A lightweight variant

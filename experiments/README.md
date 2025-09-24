@@ -1,8 +1,8 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: Experiments mirror the current Lean development.  Scripts remain exploratory and rely on exhaustive enumeration.
 >
 # Experiments for Lemma B
 
-This folder contains small prototype code to explore the **structural compression** conjectured in Lemma B of the research notes.  The script `lemma_b_search.py` exhaustively enumerates Boolean functions that can be computed by circuits of bounded size (over the gates `AND`, `OR`, and `NOT`) on a small number of input variables.  A simpler tool `single_gate_count.py` lists all functions realizable with a single gate for a given input size.
+This folder contains small prototype code to explore the **structural compression** conjectured in Lemma B of the research notes.  The script `lemma_b_search.py` exhaustively enumerates Boolean functions that can be computed by circuits of bounded size (over the gates `AND`, `OR`, and `NOT`) on a small number of input variables.  A simpler tool `single_gate_count.py` lists all functions realizable by a single gate for a given input size.
 
 For each split of the truth table into `k` left bits and `n-k` right bits, the script reports how many distinct left and right halves appear among all enumerated functions.  The product `|A| × |B|` is the size of a simple rectangle cover obtained by grouping functions with the same halves.
 
@@ -32,6 +32,8 @@ prints the observed ``α`` values directly.  Passing ``--prefix N`` measures how
 many circuits on ``N`` inputs share a fixed left prefix, providing a more direct
 estimate for the capacity drop constant ``α``.
 
+``collision_entropy.py`` tabulates collision-entropy statistics for the enumerated circuits.  The `--circuits` flag weights the counts by the number of generating circuits, while `--list-counts` prints raw histogram data for inspection.
+
 ``sunflower_step.py`` tests whether a given collection of supports contains a
 `t`‑sunflower and prints the extracted core and petals when successful.
 
@@ -53,4 +55,3 @@ python3 sunflower_step.py --t 3 0,1 0,2 1,2  # find a sunflower among supports
 
 Enumeration logs up to eight inputs are recorded in `results_n7_n8.md`.
 Note that the enumeration grows rapidly with both ``n`` and ``max_gates``.
-

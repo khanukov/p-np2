@@ -37,6 +37,7 @@ import Mathlib.Data.Bool.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Finset.Prod
 import Mathlib.Tactic.FieldSimp
@@ -56,6 +57,16 @@ abbrev Point (n : ℕ) : Type := Fin n → Bool
 
 /-- **A Boolean function** on `n` input bits. -/
 abbrev BFunc (n : ℕ) : Type := Point n → Bool
+
+/-- The Boolean cube `Point n` has `2^n` vertices. -/
+@[simp] lemma card_point (n : ℕ) : Fintype.card (Point n) = 2 ^ n := by
+  classical
+  have hfun :
+      Fintype.card (Fin n → Bool) = (Fintype.card Bool) ^ Fintype.card (Fin n) :=
+    Fintype.card_fun
+  have hpow : (Fintype.card Bool) ^ Fintype.card (Fin n) = 2 ^ n := by
+    simp [Fintype.card_bool, Fintype.card_fin]
+  exact (rfl.trans (hfun.trans hpow))
 
 /-- A *family* (finite set) of Boolean functions on `n` bits.  We use
 `Finset` rather than `Set` so that cardinalities are definable.  Lean does
@@ -105,9 +116,22 @@ notation x " ∈ₛ " R => Subcube.mem R x
 def dimension (R : Subcube n) : ℕ :=
   n - R.idx.card
 
-@[simp] lemma mem_of_not_fixed {R : Subcube n} {x : Point n} {i : Fin n}
-    (_ : i ∉ R.idx) : R.mem x → True := by
-  intro _; trivial
+/-- Extensionality for subcubes: equality is determined by index sets and
+assigned values. -/
+@[ext (iff := false)] lemma ext {R S : Subcube n}
+    (hidx : R.idx = S.idx)
+    (hval : ∀ i hi, R.val i hi = S.val i (by simpa [hidx] using hi)) :
+    R = S := by
+  cases R with
+  | mk idxR valR =>
+    cases S with
+    | mk idxS valS =>
+      dsimp at hidx hval
+      cases hidx
+      -- With identical index sets, the value functions share the same domain.
+      have hfun : valR = valS := by
+        funext i hi; simpa using hval i hi
+      simp [hfun]
 
 /-- **Monochromaticity for a single function**:
 `R` is monochromatic for `f` if `f` is constant on `R`. -/
@@ -148,8 +172,9 @@ lemma mem_extend_iff {R : Subcube n} {i : Fin n} {b : Bool}
   constructor
   · intro hx
     have hxi : x i = b := by
-      have := hx i (by simp [extend])
-      simpa [extend] using this
+      have hxib := hx i (by simp [extend])
+      simp [extend] at hxib
+      exact hxib
     refine ⟨hxi, ?_⟩
     intro j hj
     have hij : j ≠ i := by
@@ -158,18 +183,25 @@ lemma mem_extend_iff {R : Subcube n} {i : Fin n} {b : Bool}
       have : j ∈ insert i R.idx :=
         Finset.mem_insert.mpr (Or.inr hj)
       exact this)
-    simpa [extend, hij] using hmem
+    simp [extend, hij] at hmem
+    exact hmem
   · rintro ⟨hxi, hxR⟩ j hj
     by_cases hji : j = i
-    · subst hji; simpa [extend, hxi]
+    · subst hji
+      simp [extend, hxi]
     ·
       have hjR : j ∈ R.idx := by
         have := Finset.mem_insert.mp hj
         cases this with
         | inl h => exact False.elim (hji h)
         | inr h => exact h
-      have := hxR j hjR
-      simpa [extend, hji] using this
+      have hxmem := hxR j hjR
+      classical
+      have hrewrite : R.val j hjR = (extend R i b).val j hj := by
+        simp [extend, hji]
+      have hxmem' := hxmem
+      simp [hrewrite] at hxmem'
+      exact hxmem'
 
 /--
 "Unfix" a coordinate of a subcube by removing it from the set of
@@ -198,14 +230,40 @@ lemma mem_unfix_of_mem {R : Subcube n} {i : Fin n} {x : Point n}
   -- Extract the membership proof for `j` from the erased index set.
   have hjR : j ∈ R.idx := (Finset.mem_erase.mp hj).2
   -- `R.unfix i` uses the same Boolean value as `R` on coordinate `j`.
-  have := hx j hjR
-  simpa [unfix, hjR] using this
+  have hxmem := hx j hjR
+  simpa [unfix] using hxmem
+
+/--
+Updating a point `x` inside a subcube `R` by changing the value at a single
+coordinate `i` yields another point of the relaxed subcube `R.unfix i`.  All
+other coordinates remain untouched, so the membership proof only needs to check
+the remaining constraints of `R`.
+-/
+lemma mem_unfix_update {R : Subcube n} {i : Fin n} {x : Point n} {b : Bool}
+    (hx : R.mem x) :
+    (unfix (R := R) i).mem (fun j => if j = i then b else x j) := by
+  classical
+  intro j hj
+  -- Membership in `R.unfix i` provides a proof that `j ≠ i` and `j ∈ R.idx`.
+  rcases Finset.mem_erase.mp hj with ⟨hne, hjR⟩
+  -- On such coordinates the updated point coincides with `x`.
+  have hxj := hx j hjR
+  simp [unfix, hne, hxj]  -- the `if`-statement simplifies via `hne`
 
 @[simp]
 lemma idx_unfix (R : Subcube n) (i : Fin n) :
     i ∉ (unfix (R := R) i).idx := by
   classical
   simp [unfix]
+
+/-- Removing a coordinate from a subcube decreases the cardinality of the
+index set by one. -/
+@[simp]
+lemma card_idx_unfix (R : Subcube n) (i : Fin n) (hi : i ∈ R.idx) :
+    (unfix (R := R) i).idx.card + 1 = R.idx.card := by
+  classical
+  -- `unfix` simply erases `i` from the index set.
+  simpa [unfix] using Finset.card_erase_add_one (s := R.idx) (a := i) hi
 
 end Subcube
 
@@ -247,6 +305,82 @@ def Point.update (x : Point n) (i : Fin n) (b : Bool) : Point n :=
   · by_cases hjk : k = j
     · subst hjk; simp [Point.update, hk]
     · simp [Point.update, hk, hjk]
+
+/-! ### Flipping multiple coordinates -/
+
+/-- `Point.flip x S` negates all coordinates of `x` listed in the finite set `S`. -/
+def Point.flip (x : Point n) (S : Finset (Fin n)) : Point n :=
+  fun i => if i ∈ S then ! x i else x i
+
+@[simp] lemma Point.flip_apply_mem {x : Point n} {S : Finset (Fin n)} {i : Fin n}
+    (hi : i ∈ S) :
+    Point.flip x S i = ! x i := by
+  simp [Point.flip, hi]
+
+@[simp] lemma Point.flip_apply_not_mem {x : Point n} {S : Finset (Fin n)} {i : Fin n}
+    (hi : i ∉ S) :
+    Point.flip x S i = x i := by
+  simp [Point.flip, hi]
+
+@[simp] lemma Point.flip_empty (x : Point n) :
+    Point.flip x (∅ : Finset (Fin n)) = x := by
+  funext i; simp [Point.flip]
+
+/-- Flipping a singleton set coincides with updating the corresponding
+coordinate. -/
+@[simp] lemma Point.flip_singleton (x : Point n) (i : Fin n) :
+    Point.flip x ({i} : Finset (Fin n)) = Point.update x i (! x i) := by
+  classical
+  funext j
+  by_cases hji : j = i
+  · subst hji; simp [Point.flip, Point.update]
+  · simp [Point.flip, Point.update, hji]
+
+/-- Flipping after inserting a fresh coordinate `i` is the same as first
+flipping `i` and then the original set. -/
+@[simp] lemma Point.flip_insert (x : Point n) {S : Finset (Fin n)} {i : Fin n}
+    (hi : i ∉ S) :
+    Point.flip x (insert i S) = Point.flip (Point.flip x ({i})) S := by
+  classical
+  funext j
+  by_cases hji : j = i
+  · subst hji
+    simp [Point.flip, Finset.mem_insert, hi]
+  · by_cases hjs : j ∈ S
+    · simp [Point.flip, Finset.mem_insert, hji, hjs]
+    · simp [Point.flip, Finset.mem_insert, hji, hjs]
+
+/-- Flipping the same set twice returns to the original point. -/
+@[simp] lemma Point.flip_flip (x : Point n) (S : Finset (Fin n)) :
+    Point.flip (Point.flip x S) S = x := by
+  classical
+  funext i
+  by_cases hi : i ∈ S
+  · simp [Point.flip, hi]
+  · simp [Point.flip, hi]
+
+/-- If two points agree outside a finite set `A`, then flipping exactly the
+coordinates where they differ recovers the second point. -/
+lemma Point.flip_eq_of_eq_on_compl {x y : Point n} (A : Finset (Fin n))
+    (h : ∀ i ∉ A, y i = x i) :
+    Point.flip x (A.filter fun i => y i ≠ x i) = y := by
+  classical
+  funext i
+  by_cases hiA : i ∈ A
+  · by_cases hneq : y i = x i
+    · have hiT : i ∉ A.filter fun j => y j ≠ x j := by
+        simp [hiA, hneq]
+      simp [Point.flip, hiT, hneq]  -- both sides equal `x i`
+    · have hiT : i ∈ A.filter fun j => y j ≠ x j := by
+        simp [hiA, hneq]
+      -- `y i` must be the negation of `x i`
+      have : y i = ! x i := by
+        cases hxi : x i <;> cases hyi : y i <;> simp [hxi, hyi] at hneq ⊢
+      simp [Point.flip, hiT, this]
+  · have hiT : i ∉ A.filter fun j => y j ≠ x j := by
+      simp [hiA]
+    have : y i = x i := h i hiA
+    simp [Point.flip, hiT, this]
 
 /-- **A constant point** with the same Boolean value in every coordinate. -/
 def Point.const (n : ℕ) (b : Bool) : Point n := fun _ => b
@@ -338,6 +472,62 @@ lemma restrict_pair_injective (i : Fin n) :
   have h1 : BFunc.restrictCoord f i true = BFunc.restrictCoord g i true :=
     congrArg Prod.snd hpair
   exact eq_of_restrictCoord_eq (i := i) h0 h1
+
+/-! ### Restricting by multiple assignments -/
+
+/--
+Fix several coordinates of a Boolean function according to a list of
+assignments.  Each pair `(i, b)` in the list freezes the `i`‑th coordinate
+to the Boolean value `b`.  The function still has arity `n`; internally we
+apply `BFunc.restrictCoord` for every entry of the list.-/
+def BFunc.restrictAssignments (f : BFunc n) :
+    List (Fin n × Bool) → BFunc n
+  | [] => f
+  | (i, b) :: p => BFunc.restrictAssignments (BFunc.restrictCoord f i b) p
+
+/--
+`satisfiesAssignments x p` means that the point `x` agrees with every
+coordinate–value pair in the list `p`.
+-/
+def satisfiesAssignments (x : Point n) :
+    List (Fin n × Bool) → Prop
+  | [] => True
+  | (i, b) :: p => x i = b ∧ satisfiesAssignments x p
+
+@[simp] lemma restrictAssignments_nil (f : BFunc n) :
+    BFunc.restrictAssignments (f := f) [] = f := rfl
+
+@[simp] lemma restrictAssignments_cons (f : BFunc n)
+    (i : Fin n) (b : Bool) (p : List (Fin n × Bool)) :
+    BFunc.restrictAssignments (f := f) ((i, b) :: p) =
+      BFunc.restrictAssignments
+        (f := BFunc.restrictCoord f i b) p := rfl
+
+@[simp] lemma satisfiesAssignments_nil (x : Point n) :
+    satisfiesAssignments x [] := by trivial
+
+lemma satisfiesAssignments_cons {x : Point n} {i : Fin n} {b : Bool}
+    {p : List (Fin n × Bool)} :
+    satisfiesAssignments x ((i, b) :: p) ↔
+      x i = b ∧ satisfiesAssignments x p := Iff.rfl
+
+/--
+If a point `x` satisfies all assignments in `p`, restricting `f` by `p`
+does not change the value at `x`.
+-/
+lemma restrictAssignments_agrees {f : BFunc n} {x : Point n}
+    {p : List (Fin n × Bool)}
+    (h : satisfiesAssignments x p) :
+    BFunc.restrictAssignments (f := f) p x = f x := by
+  induction p generalizing f with
+  | nil =>
+      simp [BFunc.restrictAssignments]
+  | cons hb tl ih =>
+      rcases hb with ⟨i, b⟩
+      rcases h with ⟨hx, hrest⟩
+      have := ih (f := BFunc.restrictCoord f i b) hrest
+      simp [hx] at this
+      exact this
 
 end Restrict
 
@@ -523,8 +713,10 @@ lemma card_restrict_lt_of_restrict_eq {F : Family n} (i : Fin n) (b : Bool)
       exact Finset.mem_image.mpr ⟨f', hf'F, rfl⟩
   -- The restricted family therefore has at most `F.erase f` many elements.
   have hle : (Family.restrict F i b).card ≤ (Finset.erase F f).card := by
-    simpa [himg_eq] using
+    have hcard :=
       (Family.card_restrict_le (F := Finset.erase F f) (i := i) (b := b))
+    convert hcard using 1
+    simp [himg_eq]
   -- Removing a member strictly decreases the size of the family.
   have hlt_erase : (Finset.erase F f).card < F.card := by
     -- `card (erase f) = card F - 1`, hence it is strictly smaller than `card F`.
@@ -534,12 +726,14 @@ lemma card_restrict_lt_of_restrict_eq {F : Family n} (i : Fin n) (b : Bool)
     have hsucc : (Finset.erase F f).card + 1 = F.card := by
       have hsub : F.card - 1 + 1 = F.card :=
         Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
-      simpa [hcard, Nat.succ_eq_add_one, hsub] using
-        congrArg (fun t => t + 1) hcard
+      have := congrArg (fun t => t + 1) hcard
+      simp [hsub] at this
+      exact this
     -- The desired inequality follows from `a < a + 1`.
     have hlt' : (Finset.erase F f).card < (Finset.erase F f).card + 1 :=
       Nat.lt_succ_self _
-    simpa [hsucc] using hlt'
+    simp [hsucc] at hlt'
+    exact hlt'
   exact lt_of_le_of_lt hle hlt_erase
 
 end Family
@@ -592,6 +786,30 @@ lemma monochromaticFor_extend_restrict {n : ℕ} {f : BFunc n}
   have hxval := hc hxR
   simpa [restrictCoord_agrees (f := f) (j := i) (b := b)
             (x := x) hxi] using hxval
+
+/-/ Restricting to a smaller subcube preserves monochromaticity. -/
+lemma monochromaticFor_subset {n : ℕ} {f : BFunc n}
+    {R S : Subcube n}
+    (hsub : ∀ ⦃x : Point n⦄, Subcube.mem S x → Subcube.mem R x)
+    (hmono : Subcube.monochromaticFor R f) :
+    Subcube.monochromaticFor S f := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro x hx
+  exact hc (hsub (x := x) hx)
+
+/-/ Family version of `monochromaticFor_subset`. -/
+lemma monochromaticForFamily_subset {n : ℕ} {F : Family n}
+    {R S : Subcube n}
+    (hsub : ∀ ⦃x : Point n⦄, Subcube.mem S x → Subcube.mem R x)
+    (hmono : monochromaticForFamily R F) :
+    monochromaticForFamily S F := by
+  classical
+  rcases hmono with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro f hf x hx
+  exact hc f hf (hsub (x := x) hx)
 
 end Subcube
 

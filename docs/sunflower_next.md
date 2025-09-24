@@ -1,22 +1,12 @@
 # Next steps after the sunflower lemma
+> **Status (2025-09-24)**: `sunflower_exists_classic` and its integration into `buildCover` are complete.  Remaining work concerns downstream complexity applications.
 
-The classical sunflower lemma is now fully formalised via `sunflower_exists_classic`.
-The remaining work involving sunflowers focuses on integrating this combinatorial
-step into the broader cover construction and complexity-theoretic applications.
+The classical sunflower lemma is fully formalised via `sunflower_exists_classic`.  The combinatorial step is now integrated with the recursive cover construction (`sunflower_step` in `cover2.lean`).
 
 ## Follow-up tasks
 
-- **RSpread and cover builder:** ensure the sunflower step is properly connected to
-  the `RSpread` framework and the recursive `buildCover` procedure.  Tests for
-  `sunflower_step` already exist, but the surrounding proofs in `BuildCover` and
-  `cover_numeric` still contain placeholders.
-- **Entropy branch interaction:** the sunflower argument interacts with the
-  entropy-reduction branch (`exists_coord_entropy_drop`).  The auxiliary lemma
-  `exists_restrict_half_real_aux` remains axiomatic and needs a constructive
-  proof.
-- **Complexity consequences:** later files such as `NP_separation.lean` and
-  `ComplexityClasses.lean` rely on several open conjectures.  Progress on the
-  sunflower side feeds into these modules once the remaining axioms are removed.
+- **Quantitative refinements.**  The current sunflower step feeds into the coarse bound `Cover2.mBound`.  Any improvement to the combinatorial constants will immediately sharpen the numeric estimates in `cover_numeric.lean`.
+- **Executable tooling.**  `sunflower_step` is used abstractly inside `buildCover`.  A constructive enumerator could reuse the same lemma but would need efficient data structures for supports.
+- **Complexity consequences.**  Complexity-theoretic files (`NP_separation.lean`, `ComplexityClasses.lean`) still rely on axioms.  Progress on magnification or the Karp–Lipton bridge will propagate the sunflower advances to final `P ≠ NP` statements.
 
-This file serves as a lightweight roadmap for the sunflower component.  See
-`TODO.md` for a global list of outstanding tasks.
+For a global list of outstanding tasks see `TODO.md`.

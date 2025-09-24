@@ -317,9 +317,14 @@ lemma card_subcube (n : ℕ) :
   have hcard := Fintype.card_congr e
   have hpow : Fintype.card (Fin n → Option Bool) = 3 ^ n := by
     classical
-    simpa [Fintype.card_fin, Fintype.card_option] using
-      Fintype.card_fun (Fin n) (Option Bool)
-  simpa [hpow] using hcard
+    have hcard_fun :
+        Fintype.card (Fin n → Option Bool) =
+          (Fintype.card (Option Bool)) ^ Fintype.card (Fin n) :=
+      Fintype.card_fun
+    have hnum : (Fintype.card (Option Bool)) ^ Fintype.card (Fin n) = 3 ^ n := by
+      simp [Fintype.card_fin, Fintype.card_option]
+    exact hcard_fun.trans hnum
+  exact hcard.trans hpow
 
 /--
 A coarse arithmetic bound showing that the total number of subcubes is

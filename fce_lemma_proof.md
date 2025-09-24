@@ -1,5 +1,5 @@
 # The Family Collision-Entropy Lemma: Formal Statement and Constructive Proof
-> **Status (2025-08-06)**: Outline only; the lemma is unproven and many steps rely on conjectures.
+> **Status (2025-09-24)**: Combinatorial sublemmas (sunflower step, entropy drop, cover construction) are formalised in Lean.  The remaining gap is the complexity-theoretic bridge from the FCE-Lemma to `P ≠ NP`.
 
 
 ## Abstract
@@ -105,7 +105,7 @@ Modules in Lean 4:
 * `cover2.lean`: main recursive algorithm.
 * `bound.lean`: size bound proof.
 * `examples.lean`: auto-tests.
-### Updated Formalisation Plan (2025-08-06)
+### Historical Formalisation Plan (2025-08-06)
 The modules above serve as milestones. Our immediate goals are:
 
 1. The former halving axiom `exists_restrict_half_real_aux` has been

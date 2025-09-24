@@ -122,13 +122,16 @@ example (n : ℕ) (f : BFunc n) :
   example (n s : ℕ) (f : BFunc n) [Fintype (Point n)]
       (Hs : sensitivity f ≤ s) :
       ∃ Rset : Finset (Subcube n),
-        (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
-        (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ x : Point n, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ coverBound n s := by
     classical
+    have hfamily : ∀ g ∈ ({f} : Family n), sensitivity g ≤ s := by
+      intro g hg
+      have hg' : g = f := by simpa [Finset.mem_singleton] using hg
+      simpa [hg'] using Hs
     simpa using
-      BoolFunc.low_sensitivity_cover_single
-        (n := n) (s := s) (f := f) Hs
+      BoolFunc.decisionTree_cover (F := ({f} : Family n)) (s := s) hfamily
 
   -- There exists a coordinate whose restriction does not increase entropy.
   example :

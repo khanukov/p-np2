@@ -1,4 +1,4 @@
-> **Status (2025-08-06)**: This document is a research plan and does not reflect a completed formalisation.
+> **Status (2025-09-24)**: Research plan – the document summarises motivation and remains valid as background context.
 
 
 

@@ -1,4 +1,4 @@
-> **Status (2025-08-06)**: This document is part of an unfinished repository. Results and plans may rely on unproven axioms or placeholders.
+> **Status (2025-09-24)**: Structural lemmas referenced here exist; the counting arguments remain conjectural and are tracked for future work.
 >
 # Details for Lemma B Subtasks B-3 and B-5
 

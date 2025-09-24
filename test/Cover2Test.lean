@@ -1,6 +1,8 @@
 import Pnp2.cover2
 import Pnp2.Cover.Canonical
+import Pnp2.Cover.Compute
 import Pnp2.BoolFunc
+import Pnp2.entropy
 
 open Boolcube (Point Subcube)
 open BoolFunc (BFunc Family)
@@ -15,6 +17,67 @@ set_option linter.unusedSimpArgs false
 open Cover2
 
 namespace Cover2Test
+
+/-!
+Supplementary helpers for non-trivial coverage checks.  They introduce a
+concrete two-bit family that mixes an `AND` gate with a projection and provide
+explicit points on the Boolean square.  The resulting examples exercise the
+monochromaticity and coverage guarantees of the recursive construction.
+-/
+
+open Real
+
+/-- A helper point on the Boolean square determined by its two coordinates. -/
+@[simp] def point₂ (b₀ b₁ : Bool) : Boolcube.Point 2 :=
+  fun i => if i = 0 then b₀ else b₁
+
+@[simp] lemma point₂_zero (b₀ b₁ : Bool) : point₂ b₀ b₁ 0 = b₀ := by
+  simp [point₂]
+
+@[simp] lemma point₂_one (b₀ b₁ : Bool) : point₂ b₀ b₁ 1 = b₁ := by
+  have h₁ : (1 : Fin 2) ≠ 0 := by decide
+  simp [point₂, h₁]
+
+/-- The `AND` component of the illustrative two-bit family. -/
+@[simp] def twoBitAnd : BoolFunc.BFunc 2 := fun x => x 0 && x 1
+
+/-- The projection component of the illustrative two-bit family. -/
+@[simp] def twoBitProj : BoolFunc.BFunc 2 := fun x => x 0
+
+/-- The concrete two-bit family used in the coverage tests below. -/
+@[simp] def twoBitFamily : BoolFunc.Family 2 := {twoBitAnd, twoBitProj}
+
+lemma twoBitFamily_card : twoBitFamily.card = 2 := by
+  classical
+  have hne : twoBitAnd ≠ twoBitProj := by
+    intro h
+    have hx := congrArg (fun f => f (point₂ true false)) h
+    simp [point₂] at hx
+  simpa [twoBitFamily, hne]
+
+lemma twoBitFamily_entropy : BoolFunc.H₂ twoBitFamily ≤ (1 : ℝ) := by
+  classical
+  have hb : (1 : ℝ) < 2 := by norm_num
+  have hlog : Real.logb (2 : ℝ) (2 : ℝ) = (1 : ℝ) := by
+    simpa using (Real.logb_self_eq_one (hb := hb))
+  have hcard : twoBitFamily.card = 2 := twoBitFamily_card
+  have hval : BoolFunc.H₂ twoBitFamily = (1 : ℝ) := by
+    simpa [BoolFunc.H₂, twoBitFamily, hcard, hlog]
+  calc
+    BoolFunc.H₂ twoBitFamily = (1 : ℝ) := hval
+    _ ≤ (1 : ℝ) := le_rfl
+
+/-- A singleton family consisting solely of the constantly-false function. -/
+@[simp] def constFalseFamily : BoolFunc.Family 1 := {fun _ : Boolcube.Point 1 => false}
+
+lemma constFalse_entropy : BoolFunc.H₂ constFalseFamily ≤ (0 : ℝ) := by
+  classical
+  have hcard : constFalseFamily.card = 1 := by simp [constFalseFamily]
+  have hval : BoolFunc.H₂ constFalseFamily = (0 : ℝ) := by
+    simpa [BoolFunc.H₂, constFalseFamily, hcard]
+  calc
+    BoolFunc.H₂ constFalseFamily = (0 : ℝ) := hval
+    _ ≤ (0 : ℝ) := le_rfl
 
 /-- `mBound` is computed via the wrapper definition. -/
 example : mBound 1 0 = 2 := by
@@ -1379,4 +1442,71 @@ example :
               (F := ({(fun _ : Point 1 => false)} : BoolFunc.Family 1)) hcard
           simpa [hH₂])
       R hR g hg
+
+/-- The empty-cover lemma specialises to the `constFalseFamily`. -/
+example :
+    Cover2.buildCover (n := 1) constFalseFamily 0
+        (by simpa using constFalse_entropy) =
+      (∅ : Finset (Subcube 1)) := by
+  classical
+  have hcovered : Cover2.AllOnesCovered (n := 1) constFalseFamily
+      (∅ : Finset (Subcube 1)) := by
+    simp [Cover2.AllOnesCovered.empty, constFalseFamily]
+  have hfu : Cover2.firstUncovered (n := 1) constFalseFamily (∅ : Finset (Subcube 1)) = none := by
+    refine
+      ((Cover2.firstUncovered_none_iff_AllOnesCovered (n := 1)
+          (F := constFalseFamily) (Rset := (∅ : Finset (Subcube 1)))).2 hcovered)
+  simpa [constFalseFamily] using
+    Cover2.buildCover_empty_of_none (n := 1) (F := constFalseFamily)
+      (h := 0) (hH := (by simpa using constFalse_entropy)) hfu
+
+/-- Every `1`-input of the `AND` component is covered by the recursive construction. -/
+example :
+    ∃ R ∈ Cover2.buildCover (n := 2) twoBitFamily 1
+        (by simpa using twoBitFamily_entropy),
+        point₂ true true ∈ₛ R := by
+  classical
+  have hcov :=
+    Cover2.buildCover_covers (n := 2) (F := twoBitFamily)
+      (h := 1) (hH := (by simpa using twoBitFamily_entropy))
+  have hf : twoBitAnd ∈ twoBitFamily := by simp [twoBitFamily]
+  have hx : twoBitAnd (point₂ true true) = true := by simp
+  simpa using hcov _ hf _ hx
+
+/-- The projection branch of the two-bit family is also covered. -/
+example :
+    ∃ R ∈ Cover2.buildCover (n := 2) twoBitFamily 1
+        (by simpa using twoBitFamily_entropy),
+        point₂ true false ∈ₛ R := by
+  classical
+  have hcov :=
+    Cover2.buildCover_covers (n := 2) (F := twoBitFamily)
+      (h := 1) (hH := (by simpa using twoBitFamily_entropy))
+  have hf : twoBitProj ∈ twoBitFamily := by simp [twoBitFamily]
+  have hx : twoBitProj (point₂ true false) = true := by simp
+  simpa using hcov _ hf _ hx
+
+/-- Rectangles produced by `buildCover` remain monochromatic for every function in the family. -/
+example :
+    ∀ R ∈ Cover2.buildCover (n := 2) twoBitFamily 1
+        (by simpa using twoBitFamily_entropy),
+        ∀ g ∈ twoBitFamily, Boolcube.Subcube.monochromaticFor R g := by
+  classical
+  simpa using
+    Cover2.buildCover_pointwiseMono (n := 2) (F := twoBitFamily)
+      (h := 1) (hH := (by simpa using twoBitFamily_entropy))
+
+/-- The constructive enumerator also covers the non-trivial projection witness. -/
+example :
+    ∃ R ∈
+        (Cover.buildCoverCompute (F := twoBitFamily) (h := 1)
+            (by simpa using twoBitFamily_entropy)).toFinset,
+          point₂ true false ∈ₛ R := by
+  classical
+  obtain ⟨_, hcover, _⟩ :=
+    Cover.buildCoverCompute_spec (F := twoBitFamily) (h := 1)
+      (hH := (by simpa using twoBitFamily_entropy))
+  have hf : twoBitProj ∈ twoBitFamily := by simp [twoBitFamily]
+  have hx : twoBitProj (point₂ true false) = true := by simp
+  exact hcover _ hf _ hx
 

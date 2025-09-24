@@ -69,7 +69,7 @@ tracked in `TODO.md` and will be removed as the project progresses.
   path extraction, a `subcube_of_path` helper and lemmas
   `path_to_leaf_length_le_depth` and `leaf_count_le_pow_depth`
   bounding recorded paths and leaf count.
-* `low_sensitivity_cover.lean` – ongoing construction of decision-tree covers. The main theorem `decisionTree_cover` now splits into the large- and small-sensitivity regimes, but the small-case bound still depends on the lemma `exists_common_monochromatic_subcube`, whose proof contains two `sorry`s.
+* `low_sensitivity_cover.lean` – decision-tree covers for low-sensitivity families. The main theorem `decisionTree_cover` combines the combinatorial `buildCover` estimate in the large-sensitivity regime with a singleton enumeration fallback, eliminating the earlier dependency on the unfinished lemma `exists_common_monochromatic_subcube`.
 * `canonical_circuit.lean` – Boolean circuits with a basic canonicalisation function.
 * `low_sensitivity.lean` – trivial cover for smooth functions (self-contained).
 * `Algorithms/SatCover.lean` – constructive SAT search procedure scanning the

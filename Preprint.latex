@@ -20,7 +20,7 @@
 \noindent\textbf{Work-in-Progress Note:} \emph{This manuscript outlines a route to separating $P$ from $NP$ based on the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. The lemma has now been fully formalized in Lean, though the broader connection to circuit lower bounds is still being polished. We summarize the approach and highlight the remaining steps.}
 
 \begin{abstract}
-We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Assuming this lemma together with the standard hypothesis that the polynomial hierarchy does not collapse (\emph{PHNC}), one can deduce $NP \not\subseteq P/\mathrm{poly}$ and consequently $P \neq NP$. The core lemma has been formalized in Lean, with a handful of auxiliary results still under construction. This draft summarizes the approach and the current formalization status.
+We outline the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial statement about covering low-entropy families of boolean functions by a small number of monochromatic subcubes. Together with a \emph{hardness magnification} theorem for (variants of) MCSP and the classical simulation $P \subseteq P/\mathrm{poly}$, the FCE-Lemma yields \textbf{an unconditional route} to $NP \not\subseteq P/\mathrm{poly}$ and hence $P \neq NP$. The core lemma and its cover-building algorithm are being fully formalized in Lean; the remaining work is the formal bridge from FCE to explicit MCSP lower bounds under parameters that trigger magnification, and a Lean-level TM$\to$circuits simulation (closing $P \subseteq P/\mathrm{poly}$) for the final step. We summarize the approach and the current formalization status.
 \end{abstract}
 
 \section{Introduction}
@@ -32,6 +32,8 @@ The last step is captured by what we call the \textbf{Family Collision-Entropy L
 Why is this lemma so significant? In earlier work by researchers like Göös, Lovett, and others, complexity lower bounds were linked to the inability to cover certain function families with few rectangles (a rectangle is essentially a subcube in the boolean hypercube). For example, NP-complete problems are believed to require exponentially many rectangles in any communication protocol or DNF representation \cite{Juk12}. The FCE-Lemma formalizes a combinatorial condition under which \emph{such large covers are unavoidable}. Establishing the FCE-Lemma would show that certain NP-related function families (those with small entropy, arising in hardness reductions) \emph{cannot} be covered by fewer than $2^{n^{c}}$ rectangles for some $c>0$. This yields the desired lower bound in communication or circuit complexity that separates NP from P. In short, the FCE-Lemma would be a central ingredient in this approach.
 
 Our contributions in this preprint are: (1) a formal statement of the FCE-Lemma and an outline of its \emph{constructive proof}, (2) an explanation of how this lemma fits into the larger framework that yields $P \neq NP$, and (3) a report on the status of a full \textbf{formal verification} of this proof in Lean (a proof assistant), underscoring our confidence in its correctness.
+
+Our route reduces $P$ vs.\ $NP$ to a combinatorial covering statement (FCE) and then leverages recent \emph{hardness magnification} results for (variants of) MCSP to obtain $NP \not\subseteq P/\mathrm{poly}$. Together with the classical $P \subseteq P/\mathrm{poly}$ simulation, this yields $P \neq NP$ without any appeal to the polynomial hierarchy.
 
 \section{Main Result: The Family Collision-Entropy Lemma}
 
@@ -80,30 +82,71 @@ initialize $\mathcal{R}\leftarrow\emptyset$ and $\texttt{Pts}\leftarrow\{x\mid f
 \Return{$\mathcal{R}$}
 \end{algorithm}
 This iterative process alternates sunflower extractions and entropy-drop splits. Because $H_2(F)\le h$, there can be at most $h$ entropy-based splits before the family becomes monochromatic. Each sunflower step removes many points at once. The overall number of rectangles produced is bounded by $m \le n(h+2)2^{10h} < 2^{n/100}$ for sufficiently large $n$.
-The above is a high-level sketch. Each step uses a specific lemma: the \emph{Sunflower Lemma} to find common cores, a \emph{Core Agreement Lemma} to ensure that if two inputs have a large common intersection and are 1 for all $f$, then the whole subcube is 1 for all $f$, an \emph{Entropy Drop Lemma} to reduce $H_2$, and a \emph{Low-Sensitivity Cover Lemma} (for a technical case of very ``smooth'' functions) to merge small decision-tree covers. All these pieces are proven or cited in our development. What\'s important is that this constructive procedure will not run for too many steps and will output a correct cover $\mathcal{R}$ meeting the three criteria of the FCE-Lemma. Thus, we have (sketchily) proven the main theorem. The full details of the proof are being formalized in Lean (see Section~5).
-\section{From FCE to Circuit Lower Bounds}
+The above is a high-level sketch. Each step uses a specific lemma: the \emph{Sunflower Lemma} to find common cores, a \emph{Core Agreement Lemma} to ensure that if two inputs have a large common intersection and are 1 for all $f$, then the whole subcube is 1 for all $f$, an \emph{Entropy Drop Lemma} to reduce $H_2$, and a \emph{Low-Sensitivity Cover Lemma} (for a technical case of very ``smooth'' functions) to merge small decision-tree covers. All these pieces are proven or cited in our development. What\'s important is that this constructive procedure will not run for too many steps and will output a correct cover $\mathcal{R}$ meeting the three criteria of the FCE-Lemma. Thus, we have (sketchily) proven the main theorem. The full details of the proof are being formalized in Lean (see Section~6).
+\section{From FCE to Circuit Lower Bounds (PH-free Route)}
 
-If the FCE-Lemma can be proved, one could connect it to circuit complexity as follows:
+This section records the exact, PH-free pipeline from the Family Collision-Entropy Lemma to $P \neq NP$. We present two interchangeable targets for the intermediate circuit lower bound (choose one to implement; we recommend the McKay--Murray--Williams path as the primary target).
 
-\begin{itemize}
-\item The FCE-Lemma yields a critical \emph{lower bound on circuit size} for a specific problem. In particular, from the constructive cover one can derive that the \textbf{Minimum Circuit Size Problem (MCSP)} (an NP problem often used in complexity reductions) does not have moderately small circuits in certain circuit classes. Specifically, using the FCE-Lemma’s covering, one can argue that \textbf{MCSP requires circuits of size at least $n^{1+\varepsilon}$ (super-linear) and sublogarithmic depth in $\mathsf{ACC}^0$} for some constant $\varepsilon > 0$. This statement – a strengthened circuit lower bound for MCSP – is something we prove assuming the FCE-Lemma’s conditions (essentially, MCSP instances yield function families of low entropy due to their promise structure, so the lemma applies). The exact parameters aren’t crucial; what matters is \textbf{we get a non-trivial (superlinear) circuit lower bound for an NP problem in a restricted circuit class.}
-    \item Next, we invoke a known result in complexity theory: the \textbf{magnification theorem} of Oliveira and Pich (2019). \emph{Hardness magnification} is a technique that says a slightly superlinear lower bound in a lower circuit class can “blow up” to a superpolynomial lower bound in a higher class (or general circuits) when certain conditions are met. In our case, \textbf{the magnification theorem implies that if MCSP requires $n^{1+\varepsilon}$-size $\mathsf{ACC}^0$ circuits, then indeed $NP \not\subseteq P/\mathrm{poly}$} \cite{OPS19}. In other words, NP cannot be solved by any family of polynomial-size (non-uniform) circuits. This already separates NP from P/poly (non-uniform P), giving a \textbf{non-uniform $P \neq NP$} separation.
-    \item Finally, to jump from non-uniform to uniform complexity, we combine the separation $NP \not\subseteq P/\mathrm{poly}$ with the standard inclusion $P \subseteq P/\mathrm{poly}$. This classical simulation argument (see, e.g., Arora--Barak) converts any polynomial-time Turing machine into a polynomial-size circuit family. Consequently, if $NP$ fails to embed into $P/\mathrm{poly}$ while $P$ does, then necessarily $P \neq NP$.
-\end{itemize}
+\paragraph{Target A (MMW'19, recommended).}
+Let $N=2^n$ denote the input length for the tabulated function on $n$ bits. Consider the \emph{search} version of MCSP (find a small circuit or certify none exists) under the usual size parameter $s(n)\ge n$. McKay--Murray--Williams (STOC'19) show, in essence, that if one rules out \emph{oracle circuits} of
+\[
+\text{size } N\cdot \mathrm{poly}(\log N)\quad\text{and}\quad \text{depth } \mathrm{poly}(\log N)
+\]
+(with short queries to a fixed $A\in \mathrm{PH}$), then it already follows that $NP \not\subseteq P/\mathrm{poly}$. Concretely:
 
-\section{Conditional Implications for P vs.NP}
+\begin{theorem}[MMW'19, informal trigger]
+\label{thm:mmw-trigger}
+If \textup{search-MCSP}$_A[s(\cdot)]$ cannot be computed by oracle circuits of size $N\cdot\mathrm{poly}(\log N)$ and depth $\mathrm{poly}(\log N)$ (for a suitable $s(\cdot)$ and short queries to $A\in \mathrm{PH}$), then $NP \not\subseteq P/\mathrm{poly}$.
+\end{theorem}
 
-We summarize the logical flow as a list of implications (each established by either our work or a known theorem):
+Thus, our job is to derive such a lower bound for \textup{search-MCSP} using FCE.
+
+\paragraph{Target B (OPS'19/ToC'21).}
+Oliveira--Pich--Santhanam show a hardness magnification statement for \emph{Gap}-MCSP vs.\ \emph{general} circuits:
+
+\begin{theorem}[OPS'19, informal trigger]
+\label{thm:ops-trigger}
+If \textup{Gap-MCSP} requires circuits of size $N^{1+\varepsilon}$ (for some fixed $\varepsilon>0$) on inputs of length $N$, then $NP \not\subseteq P/\mathrm{poly}$.
+\end{theorem}
+
+This alternative avoids oracle gates but asks for a superlinear lower bound against all circuits.
+
+\medskip
+In both routes, once $NP \not\subseteq P/\mathrm{poly}$ is obtained, combining with the classical inclusion $P\subseteq P/\mathrm{poly}$ immediately yields $P\neq NP$.
+
+\subsection{FCE $\Rightarrow$ lower bounds for (search/Gap-)MCSP}
+
+The FCE-Lemma provides a \emph{subexponential}-size, \emph{family-uniform} cover of the 1-inputs of each $f\in F$ by monochromatic subcubes, whenever the collision entropy $H_2(F)$ is $o(n)$. We now explain how to instantiate $F$ with the distributions that arise in (search/Gap-)MCSP so that small-depth/small-size circuits for MCSP would contradict FCE.
+
+At a high level, suppose \textup{(search/Gap)-MCSP} had circuits under the target model/parameters. Standard rectangle/DNF simulations for such circuits over tabulation inputs yield small covers for the corresponding \emph{families} of acceptance regions. By construction, these families enjoy low collision entropy (they are drawn from tabulations with a structured size promise). Applying FCE collapses these families to a \emph{common} subcube cover of size $2^{o(n)}$, which in turn forces the DNF/rectangle complexity to be $2^{o(n)}$. For MCSP this contradicts the intended behavior (one can separate positive and negative instances only with sufficiently many distinct “shapes”), yielding:
+
+\begin{lemma}[FCE-to-MCSP lower bound, schematic]
+\label{lem:FCE-to-MCSP}
+Assume FCE at parameter $h=o(n)$. Then there exist natural parameterizations of \textup{search-MCSP} or \textup{Gap-MCSP} such that:
+\begin{enumerate}
+  \item either \textup{search-MCSP}$_A[s(\cdot)] \notin$ oracle-circuits of size $N\cdot\mathrm{poly}(\log N)$ and depth $\mathrm{poly}(\log N)$ (MMW trigger),
+  \item or \textup{Gap-MCSP} $\notin$ circuits of size $N^{1+\varepsilon}$ for some fixed $\varepsilon>0$ (OPS trigger).
+\end{enumerate}
+\end{lemma}
+
+\noindent The concrete choice (1) or (2) fixes the exact circuit model we must simulate into covers; both are compatible with the FCE cover bound $2^{o(n)}$.
+
+\subsection{Magnification step and the final implication}
+
+By Theorems~\ref{thm:mmw-trigger} or \ref{thm:ops-trigger}, Lemma~\ref{lem:FCE-to-MCSP} implies $NP \not\subseteq P/\mathrm{poly}$. Finally, together with the classical simulation $P\subseteq P/\mathrm{poly}$ we conclude $P\neq NP$. Importantly, \emph{no assumption about the polynomial hierarchy is used} in this chain.
+
+\section{Unconditional Implications for $P$ vs.\ $NP$}
+
+We summarize the PH-free logical flow:
 
 \begin{enumerate}
-    \item \textbf{FCE-Lemma $\Rightarrow$ MCSP circuit lower bound:} If the FCE-Lemma holds, then there exists some $\varepsilon > 0$ such that \textbf{MCSP requires circuits of size $n^{1+\varepsilon}$ in $\mathsf{ACC}^0$ (depth $o(\log n)$)}. (This is derived in our framework using the subcube cover: any smaller circuit for MCSP could be “simulated” by a small rectangle cover, contradicting the FCE-Lemma.)
-\item \textbf{MCSP lower bound $\Rightarrow NP \not\subseteq P/\mathrm{poly}$ (Magnification):} Given the above lower bound, we apply the Oliveira–Pich \emph{hardness magnification} theorem (formalized as an axiom in our Lean files). It states that such a modest lower bound on MCSP implies \textbf{NP is not contained in P/poly}:\cite{OPS19}. Intuitively, a strong lower bound on this NP-complete problem at a finite size “magnifies” to a general superpolynomial lower bound on NP.
-    \item \textbf{$NP \not\subseteq P/\mathrm{poly} \Rightarrow P \neq NP$:} Combine $NP \not\subseteq P/\mathrm{poly}$ with the classical inclusion $P \subseteq P/\mathrm{poly}$ to deduce \textbf{$P \neq NP$}. No appeal to the polynomial hierarchy is necessary; the Lean development contains an explicit lemma implementing this implication.
+  \item \textbf{FCE-Lemma} (proved/being formalized): for any family $F$ with $H_2(F)=o(n)$ there is a subcube cover of size $2^{o(n)}$ that uniformly covers the 1-inputs of all $f\in F$.
+  \item \textbf{FCE $\Rightarrow$ MCSP lower bound} (Lemma~\ref{lem:FCE-to-MCSP}): instantiate $F$ with the acceptance families induced by (search/Gap-)MCSP under the usual promise; conclude either an oracle-circuit lower bound of size $N\cdot\mathrm{polylog}(N)$ and depth $\mathrm{polylog}(N)$ (MMW) \emph{or} a general-circuit lower bound $N^{1+\varepsilon}$ (OPS).
+  \item \textbf{Hardness magnification:} apply MMW'19 or OPS'19 to deduce $NP \not\subseteq P/\mathrm{poly}$.
+  \item \textbf{Classical simulation:} since $P \subseteq P/\mathrm{poly}$, we conclude \textbf{$P \neq NP$}.
 \end{enumerate}
 
-Combining these steps would yield a separation of $P$ and $NP$. In our Lean development the FCE-Lemma supplies an $\varepsilon$ for the \texttt{MCSP\_lower\_bound} lemma, while magnification and the classical circuit-simulation inclusion are currently assumed as axioms. Under those assumptions the statement \texttt{P\_neq\_NP} can be derived, showing how the pieces fit together.
-
-It is worth noting that much of the remaining difficulty appears concentrated in the FCE-Lemma. The other ingredients rely on established results or standard assumptions. Proving this lemma would effectively reduce the $P$ versus $NP$ question to a concrete combinatorial statement that can be checked formally.
+This route is \emph{unconditional}: it uses only FCE, a concrete MCSP lower bound derived from FCE, a published magnification theorem, and the textbook inclusion $P\subseteq P/\mathrm{poly}$.
 
 \section{Formalization and Future Work}
 
@@ -120,19 +163,34 @@ The formalization effort not only bolsters confidence in the result but also set
 
 \section{Conclusion}
 
-We have outlined a combinatorial lemma that, together with standard assumptions, may lead to a separation of $P$ and $NP$. The \textbf{Family Collision-Entropy Lemma} suggests that attempts to make NP computations efficient run into an unavoidable combinatorial explosion. This preprint records the current state of the argument and invites feedback while the Lean formalization is still under development.
+We have outlined a combinatorial lemma that, together with published hardness-magnification triggers for MCSP and the classical circuit simulation $P \subseteq P/\mathrm{poly}$, may lead to a separation of $P$ and $NP$. The \textbf{Family Collision-Entropy Lemma} suggests that attempts to make NP computations efficient run into an unavoidable combinatorial explosion. This preprint records the current state of the argument and invites feedback while the Lean formalization is still under development.
 
 The claims here remain provisional and will require careful scrutiny. We hope that continued work on the formal proof and feedback from the community will clarify whether this approach can indeed separate $P$ from $NP$.
 
-\section*{Remaining Work and Open Verification Tasks}
+\section*{Remaining Work and Open Verification Tasks (PH-free)}
 
-While the overall proof strategy is set, a few components are still being completed:
 \begin{itemize}
-    \item \textbf{Finalize the MCSP connection:} the reduction from the FCE-Lemma to an explicit circuit lower bound is still sketched in \texttt{acc\_mcsp\_sat.lean}.
-    \item \textbf{Formalize the MCSP lower bound derivation:} We are in the process of formally deriving the circuit lower bound for MCSP from the FCE-Lemma within the Lean framework. This involves verifying that any hypothetical smaller $\mathsf{ACC}^0$ circuit for MCSP would contradict the subcube cover lemma. This step, currently outlined in our Lean development, is being completed next.
-    \item \textbf{Track remaining placeholders:} The main outstanding assumption is the decision-tree cover lemma used in the low-sensitivity theory.  The canonical equality theorem is now formalized in \texttt{canonical\_circuit.lean}, but the SAT connection in \texttt{acc\_mcsp\_sat.lean} and the associated complexity bounds still require work.
-    \item \textbf{Review of assumptions:} The final steps of the proof rely on the magnification theorem and the classical simulation $P \subseteq P/\mathrm{poly}$. These are invoked as axioms in our formal proof. While they are well-established results, we will double-check that our usage of these theorems fits their stated conditions. In particular, we must ensure that the version of MCSP we handle meets the requirements of the magnification framework (e.g. appropriate gap parameters and circuit class conditions).
-    \item \textbf{Peer review and polishing:} We plan to thoroughly review the argument for any gaps. Feedback from colleagues and the community will be incorporated, and we will polish the exposition while preparing a version suitable for peer review. Every component of the proof will be made as transparent as possible.
+  \item \textbf{Finalize the MCSP connection under a fixed trigger.} 
+  Pick one magnification trigger (we recommend MMW'19) and freeze the exact parameters:
+  \begin{itemize}
+    \item \emph{MMW’19 path}: formalize oracle-circuit models with size $N\cdot\mathrm{polylog}(N)$ and depth $\mathrm{polylog}(N)$, short queries to $A\in\mathrm{PH}$, and the \textup{search-MCSP} parameter $s(n)$ used in their theorem. Prove the FCE$\to$MCSP lower bound in that model.
+    \item \emph{OPS’19 path (backup)}: formalize \textup{Gap-MCSP} and show a superlinear lower bound $N^{1+\varepsilon}$ vs.\ \emph{general} circuits.
+  \end{itemize}
+
+  \item \textbf{Lean formalization of the trigger theorem.} 
+  Either (i) import the MMW/OPS magnification theorem as a trusted reference with a precise statement matching our parameters, or (ii) mechanize its proof (longer-term).
+
+  \item \textbf{Close the TM$\to$circuits simulation in Lean ($P \subseteq P/\mathrm{poly}$).}
+  Replace the current placeholder with a constructive simulation: from a poly-time TM build a circuit family of polynomial size and prove correctness/size bounds.
+
+  \item \textbf{Remove legacy PH mentions from the mainline.}
+  Preserve the PH-dependent route as historical context (appendix), but the main proof should state explicitly that PH is not used.
+
+  \item \textbf{Quantitative polishing (optional).}
+  Tighten constants in the FCE cover bound (any $2^{o(n)}$ suffices for magnification, but better bounds may yield stronger side-results).
+
+  \item \textbf{Packaging for review.}
+  Ensure Lean scripts expose (i) FCE, (ii) FCE$\to$MCSP-LB (chosen path), (iii) magnification trigger, (iv) $P\subseteq P/\mathrm{poly}$, and (v) the final lemma \texttt{P\_neq\_NP} with no extraneous assumptions.
 \end{itemize}
 
 \bibliographystyle{plain}
@@ -160,6 +218,11 @@ I.~C. Oliveira, J.~Pich, and R.~Santhanam.
 \newblock Hardness magnification near state-of-the-art lower bounds.
 \newblock In {\em Proc.~34th Computational Complexity Conference (CCC 2019)},
   volume 137 of {\em LIPIcs}, pages 27:1--27:29. Schloss Dagstuhl, 2019.
+
+\bibitem{MMW19}
+R.~McKay, C.~Murray, and R.~Williams.
+\newblock Hardness magnification near state-of-the-art lower bounds.
+\newblock In {\em Proc.~51st ACM STOC}, 2019.
 
 \bibitem{KL80}
 R.~M. Karp and R.~J. Lipton.

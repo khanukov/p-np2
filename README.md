@@ -3,6 +3,8 @@
 
 This project develops, in Lean 4, the infrastructure required for the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma asserts that Boolean-function families with small collision entropy admit a subexponential cover by monochromatic subcubes.  Establishing this result is a key milestone on the roadmap towards a formal separation `P ≠ NP`.
 
+The final bridge now follows the classical route “`NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`” without appealing to any collapse of the polynomial hierarchy.  Remaining axioms concentrate on magnification for `MCSP` and on the constructive cover itself.
+
 Every file that participates in the cover construction now has full proofs.  Classical complexity-theoretic statements that are not yet formalised appear as explicit axioms and are tracked in `TODO.md`.
 
 ## Layout
@@ -30,7 +32,8 @@ Every file that participates in the cover construction now has full proofs.  Cla
 ### Complexity interface
 * `canonical_circuit.lean`, `Algorithms/` – canonical circuits and executable experiments.
 * `acc_mcsp_sat.lean` – meet-in-the-middle SAT outline.
-* `ComplexityClasses.lean`, `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP` (the only files still containing axioms: `P_subset_Ppoly`, `magnification_AC0_MCSP`, `karp_lipton`, `FCE_implies_MCSP`).
+* `ComplexityClasses.lean`, `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP` (remaining axioms: `P_subset_Ppoly`, `magnification_AC0_MCSP`, `FCE_implies_MCSP`).
+* `TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean` – groundwork for the classical inclusion `P ⊆ P/poly`.
 
 ### Documentation and experiments
 * `docs/` – research notes and blueprints updated during the September 2025 audit.
@@ -91,7 +94,7 @@ Enumerations for `n ≤ 8` are documented in `results_n*.md`.
 The constructive cover (`buildCover`, `familyEntropyCover`, `decisionTree_cover`) is completely formalised.  Outstanding work is concentrated in the complexity bridge:
 
 * Prove `P ⊆ P/poly` (currently axiomatic in `ComplexityClasses.lean`).
-* Replace the assumptions `magnification_AC0_MCSP`, `karp_lipton`, and `FCE_implies_MCSP` in `NP_separation.lean` with formal proofs.
+* Replace the assumptions `magnification_AC0_MCSP` and `FCE_implies_MCSP` in `NP_separation.lean` with formal proofs.
 * Strengthen the experimental numeric bounds in `cover_numeric.lean` (the current `2^n` cap is a safe placeholder).
 
 See `TODO.md` for a detailed task list and progress tracker.

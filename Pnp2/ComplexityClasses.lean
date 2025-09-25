@@ -1,4 +1,5 @@
 import Pnp2.canonical_circuit
+import Pnp2.TM.Encoding
 
 /-!
 # Basic Complexity Classes
@@ -11,11 +12,10 @@ statements in a familiar language.
 
 A *language* is a predicate on bitstrings of a given
 length; we model bitstrings as functions `Fin n → Bool`.
-`TM` is a tiny placeholder for a deterministic Turing
-machine equipped with a running-time bound.  Using these
-we define membership in `P` and `NP`.  Non-uniform
-polynomial size is captured via families of Boolean
-circuits, yielding `P/poly`.
+`TM` refers to the single-tape binary machines developed in
+`TM/Encoding.lean`.  Using these we define membership in `P`
+and `NP`.  Non-uniform polynomial size is captured via
+families of Boolean circuits, yielding `P/poly`.
 -/
 
 open Boolcube
@@ -27,21 +27,12 @@ abbrev Bitstring (n : ℕ) := Fin n → Bool
 input of length `n`. -/
 abbrev Language := ∀ n, Bitstring n → Bool
 
-/-- A very small model of deterministic Turing machines.
-`runTime n` is the claimed running time on inputs of length
-`n`, and `accepts` is the machine's decision procedure.  No
-operational semantics are provided; this stub merely allows
-one to state complexity-theoretic definitions. -/
-structure TM where
-  runTime : ℕ → ℕ
-  accepts : ∀ n, Bitstring n → Bool
-
 /-- A language has a polynomial-time decider if some Turing
 machine decides it within time `n^c + c`. -/
 def polyTimeDecider (L : Language) : Prop :=
   ∃ (T : TM) (c : ℕ),
     (∀ n, T.runTime n ≤ n^c + c) ∧
-    (∀ n x, T.accepts n x = L n x)
+    (∀ n x, T.accepts (n := n) x = L n x)
 
 /-- The class `P` of polynomial-time decidable languages. -/
 def P : Set Language := { L | polyTimeDecider L }

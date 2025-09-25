@@ -2,7 +2,7 @@
 >
 # Master Blueprint 2025 → 20XX
 
-This note summarises the long-term plan towards a formal proof that `P ≠ NP`.  The Lean development now proves every combinatorial ingredient that feeds the Family Collision-Entropy Lemma (FCE-Lemma).  The remaining gaps concern classical complexity theory (circuit simulations, magnification, and the Karp–Lipton collapse).
+This note summarises the long-term plan towards a formal proof that `P ≠ NP`.  The Lean development now proves every combinatorial ingredient that feeds the Family Collision-Entropy Lemma (FCE-Lemma).  The remaining gaps concern classical complexity theory (circuit simulations, magnification, and the bridge from the cover to `MCSP` lower bounds).
 
 ## 0. Foundation
 
@@ -23,7 +23,7 @@ Develop a meet-in-the-middle SAT algorithm for compositions `ACC⁰ ∘ MCSP`, o
 
 ## 4. Uniformisation
 
-Convert the non-uniform separation into `P ≠ NP` using the Karp–Lipton argument.  The axiom `karp_lipton` marks the remaining gap; everything else needed on the Lean side (covers, entropy control) is already in place.
+Convert the non-uniform separation into `P ≠ NP` through the classical implication `NP ⊄ P/poly` + `P ⊆ P/poly`.  The set-theoretic deduction is now formalised; it awaits only the removal of `P_subset_Ppoly` and the magnification/cover bridges.  The groundwork for the uniform side now lives in `TM/Encoding.lean`, `Circuit/Family.lean`, and `PsubsetPpoly.lean`.
 
 ## 5. Proof-complexity lock-in (optional)
 
@@ -47,6 +47,6 @@ Explore connections between `MCSP` hardness, pseudorandom generators, and one-wa
 * ✅ Sunflower lemma (`Sunflower/Sunflower.lean`) and agreement lemmas (`Agreement.lean`).
 * ✅ Entropy monotonicity and bounds (`entropy.lean`, `bound.lean`, `cover_numeric.lean`).
 * ✅ Low-sensitivity decision-tree cover (`low_sensitivity_cover.lean`).
-* ⚠️ Pending: replace the axioms in `ComplexityClasses.lean` and `NP_separation.lean` with constructive proofs.
+* ⚠️ Pending: replace the axioms in `ComplexityClasses.lean` and `NP_separation.lean` with constructive proofs (magnification and the cover→`MCSP` bridge).
 
 The blueprint remains a living document; contributors should update this file whenever milestones are reached or research priorities shift.

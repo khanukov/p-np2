@@ -7,6 +7,6 @@ The classical sunflower lemma is fully formalised via `sunflower_exists_classic`
 
 - **Quantitative refinements.**  The current sunflower step feeds into the coarse bound `Cover2.mBound`.  Any improvement to the combinatorial constants will immediately sharpen the numeric estimates in `cover_numeric.lean`.
 - **Executable tooling.**  `sunflower_step` is used abstractly inside `buildCover`.  A constructive enumerator could reuse the same lemma but would need efficient data structures for supports.
-- **Complexity consequences.**  Complexity-theoretic files (`NP_separation.lean`, `ComplexityClasses.lean`) still rely on axioms.  Progress on magnification or the Karp–Lipton bridge will propagate the sunflower advances to final `P ≠ NP` statements.
+- **Complexity consequences.**  Complexity-theoretic files (`NP_separation.lean`, `ComplexityClasses.lean`) still rely on axioms.  Progress on magnification or the constructive bridge to `MCSP` will propagate the sunflower advances to final `P ≠ NP` statements.  The newly added modules `TM/Encoding.lean`, `Circuit/Family.lean`, and `PsubsetPpoly.lean` initiate the removal of the `P_subset_Ppoly` axiom.
 
 For a global list of outstanding tasks see `TODO.md`.

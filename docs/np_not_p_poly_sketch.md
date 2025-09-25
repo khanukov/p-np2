@@ -13,9 +13,11 @@ This short note records the assumptions and final logical steps used in the repo
    ```
    Here `MCSP_lower_bound ε` abbreviates the depth and size restriction from step 1 and `Ppoly` denotes `P/poly`.
 3. **Applying the axiom.** Once the FCE‑Lemma yields the existence of such an `ε`, the axiom implies `NP ⊄ P/poly`.
-4. **From non‑uniform to uniform.** The classical Karp–Lipton theorem states that if `NP ⊆ P/poly` then the polynomial hierarchy collapses to `Σ₂`.  Taking the contrapositive, the separation from step 3 implies `P ≠ NP` unless one accepts such a collapse.  In the Lean files we leave the Karp–Lipton step as another axiom:
+4. **From non‑uniform to uniform.** Combining the separation from step 3 with the classical inclusion `P ⊆ P/poly` yields `P ≠ NP`.  The Lean code now contains a direct lemma
    ```lean
-   axiom karp_lipton : (NP ⊆ Ppoly) → PH_collapse
+   lemma P_ne_NP_of_NP_not_subset_Ppoly
+       (hNP : NP ⊄ Ppoly) (hP : P ⊆ Ppoly) : P ≠ NP
    ```
+   so the only missing ingredients are the magnification theorem and the bridge `FCE_implies_MCSP`.  The new files `TM/Encoding.lean`, `Circuit/Family.lean`, and `PsubsetPpoly.lean` record the ongoing effort to discharge the remaining axiom `P_subset_Ppoly` constructively.
 
-In summary, the combination of the FCE‑Lemma, the magnification axiom and the (contrapositive of) Karp–Lipton yields the concluding statement `P ≠ NP` inside this blueprint.
+In summary, the combination of the FCE‑Lemma, the magnification axiom and the classical inclusion `P ⊆ P/poly` yields the concluding statement `P ≠ NP` inside this blueprint, without appealing to any collapse of the polynomial hierarchy.

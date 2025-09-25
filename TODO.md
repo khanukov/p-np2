@@ -1,12 +1,16 @@
 # To-Do
 > **Status (2025-09-24)**: The combinatorial cover is fully formalised.  The items below track the remaining axioms and quality-of-life improvements.
 
-## Complexity bridge
+## Complexity bridge (no-PH roadmap)
 
-- [ ] Replace the axioms in `Pnp2/ComplexityClasses.lean` and `Pnp2/NP_separation.lean` with formal proofs:
-  - Prove the classical circuit-simulation result `P ⊆ P/poly`.
-  - Formalise the magnification link `magnification_AC0_MCSP` from ACC⁰ lower bounds to `NP ⊄ P/poly`.
-  - Formalise the Karp–Lipton collapse (`karp_lipton`) and the bridge `FCE_implies_MCSP` from the constructive cover to the MCSP lower bound.
+- [ ] **[classic]** Develop the standard simulation of polynomial-time Turing machines by polynomial-size circuit families (`TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean`), then replace the axiom `P_subset_Ppoly` in `ComplexityClasses.lean`.
+  - [x] Introduce an explicit single-tape TM model with configurations (`TM/Encoding.lean`).
+  - [x] Add basic circuit bookkeeping (`Circuit/Family.lean`) and initialise the configuration-circuit framework (`PsubsetPpoly.lean`).
+- [ ] **[models]** Define circuit models for the magnification theorems (`Circuit/Depth.lean`, `Circuit/Oracle.lean` for the MMW’19 route, or `Circuit/General.lean` for OPS’21).
+- [ ] **[mcsp]** Introduce the decision/search/gap variants of `MCSP` (`MCSP/Core.lean`, `MCSP/Search.lean`, `MCSP/Gap.lean`).
+- [ ] **[bridge]** Strengthen the cover/locality files (`table_locality.lean`, `sat_cover.lean`, `acc_mcsp_sat.lean`) and derive lower bounds for (search-)`MCSP` (`MCSP/LowerBoundsFromCovers.lean`).
+- [ ] **[magnif]** Formalise the appropriate magnification theorem (`Magnification/MMW19.lean` or `Magnification/OPS21.lean`) and remove the axiom `magnification_AC0_MCSP`.
+- [ ] **[finish]** Replace the placeholder `FCE_implies_MCSP` with the constructive bridge and complete the final derivation of `P ≠ NP` via `NP ⊄ P/poly` + `P ⊆ P/poly`.
 
 ## Cover pipeline refinements (optional)
 
@@ -17,7 +21,6 @@
 
 - `ComplexityClasses.P_subset_Ppoly`
 - `NPSeparation.magnification_AC0_MCSP`
-- `NPSeparation.karp_lipton`
 - `NPSeparation.FCE_implies_MCSP`
 
 ## Outstanding `sorry`s (as of 2025-09-24)

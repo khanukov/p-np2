@@ -1,4 +1,5 @@
 import Pnp2.canonical_circuit
+import Pnp2.Circuit.StraightLine
 
 /--
 `Pnp2.Circuit.Family` collects a handful of convenience lemmas about the

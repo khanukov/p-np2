@@ -24,6 +24,13 @@ lemma any_map {α β} (l : List α) (f : α → β) (p : β → Bool) :
   | cons a l ih =>
       simp [List.map, List.any, ih]
 
+lemma foldl_or_eq_any {α} (l : List α) (f : α → Bool) :
+    l.foldl (fun acc x => acc || f x) false = List.any l f := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+      simp [List.any, ih, Bool.or_left_comm, Bool.or_assoc]
+
 end List
 
 namespace Complexity
@@ -207,6 +214,846 @@ lemma initial_spec (M : TM) (n : ℕ) :
       have hstate : (M.initialConfig x).state = M.start := TM.initial_state (M := M) (x := x)
       simp [initial, stateIndicator, hi, stateIndex, stateEquiv, hstate, this]
 
+/--
+Straight-line representation of configuration circuits.  The straight-line
+model keeps a single pool of gates that subsequent layers can reuse via wire
+references.  The tape, head and state projections simply identify which wires
+encode the observable components of the configuration.
+-/-
+structure StraightConfig (M : TM) (n : ℕ) where
+  circuit : StraightLineCircuit n
+  tape : Fin (M.tapeLength n) → Fin (n + circuit.gates)
+  head : Fin (M.tapeLength n) → Fin (n + circuit.gates)
+  state : Fin (stateCard M) → Fin (n + circuit.gates)
+
+namespace StraightConfig
+
+variable {M : TM} {n : ℕ}
+
+open Boolcube
+open StraightLineCircuit
+
+/-- Evaluate the tape portion of a straight-line configuration. -/
+def evalTape (sc : StraightConfig M n) (x : Point n) :
+    Fin (M.tapeLength n) → Bool :=
+  fun i => StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.tape i)
+
+/-- Evaluate the head-indicator portion of a straight-line configuration. -/
+def evalHead (sc : StraightConfig M n) (x : Point n) :
+    Fin (M.tapeLength n) → Bool :=
+  fun i => StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.head i)
+
+/-- Evaluate the state-indicator portion of a straight-line configuration. -/
+def evalState (sc : StraightConfig M n) (x : Point n) :
+    Fin (stateCard M) → Bool :=
+  fun i => StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.state i)
+
+/--
+Specification predicate connecting a straight-line configuration to a concrete
+machine configuration.  The statement mirrors `ConfigCircuits.Spec` but operates
+on `StraightLineCircuit` evaluations.
+-/-
+structure Spec (sc : StraightConfig M n)
+    (f : Point n → TM.Configuration M n) : Prop where
+  tape_eq : ∀ x i, evalTape sc x i = (f x).tape i
+  head_eq : ∀ x i, evalHead sc x i = headIndicator (f x) i
+  state_eq : ∀ x i, evalState sc x i = stateIndicator M (f x) i
+
+/--
+Straight-line circuit consisting of a single constant gate.  The designated
+output wire points to the newly created gate, providing a convenient source of
+Boolean literals that later constructions can reuse.
+-/-
+@[simp] def constCircuit (n : ℕ) (b : Bool) : StraightLineCircuit n :=
+  { gates := 1
+    , gate := fun g =>
+        match g with
+        | ⟨0, _⟩ => StraightOp.const b
+    , output := Fin.last (n + 1) }
+
+@[simp] lemma eval_constCircuit (n : ℕ) (b : Bool) (x : Point n) :
+    StraightLineCircuit.eval (constCircuit (n := n) b) x = b := by
+  -- Evaluating the unique gate simply returns the stored constant.
+  simp [constCircuit, StraightLineCircuit.eval, StraightLineCircuit.evalWireAux,
+    StraightLineCircuit.evalGateAux]
+
+/--
+Initial straight-line configuration encoding the start configuration of `M` on
+inputs of length `n`.  The construction introduces two reusable constant gates
+(`false` and `true`) that subsequent layers may reference without adding new
+gates.
+-/-
+def initial (M : TM) (n : ℕ) : StraightConfig M n :=
+  let base := constCircuit (n := n) false
+  let circuit := StraightLineCircuit.snoc base (StraightOp.const true)
+  let falseWire := StraightLineCircuit.liftWire (C := base) base.output
+  let trueWire : Fin (n + circuit.gates) := Fin.last _
+  { circuit
+    , tape := fun i =>
+        if hi : (i : ℕ) < n then
+          -- Positions inside the input prefix forward the corresponding input.
+          ⟨(i : ℕ), Nat.lt_of_lt_of_le hi (Nat.le_add_right _ _)⟩
+        else
+          -- Cells beyond the input prefix start as blanks.
+          falseWire
+    , head := fun i =>
+        if hi : i = ⟨0, by
+              -- The tape length is at least one cell (`n + T(n) + 1`).
+              have : (0 : ℕ) < n + M.runTime n + 1 := Nat.succ_pos _
+              simpa [TM.tapeLength] using this⟩ then
+          trueWire
+        else
+          falseWire
+    , state := fun i =>
+        if hi : i = stateIndex M M.start then
+          trueWire
+        else
+          falseWire }
+
+/--
+The straight-line initial configuration evaluates to the genuine machine start
+configuration.
+-/-
+lemma initial_spec (M : TM) (n : ℕ) :
+    Spec (M := M) (n := n) (initial (M := M) n)
+      (fun x => M.initialConfig x) := by
+  classical
+  -- Unfold the definition to expose the helper bindings.
+  unfold initial
+  set base := constCircuit (n := n) false
+  set circuit := StraightLineCircuit.snoc base (StraightOp.const true)
+  set falseWire := StraightLineCircuit.liftWire (C := base) base.output
+  set trueWire : Fin (n + circuit.gates) := Fin.last _
+  refine ⟨?_, ?_, ?_⟩
+  · intro x i
+    by_cases hi : (i : ℕ) < n
+    · -- Inside the input prefix the circuit simply forwards the input bit.
+      simp [evalTape, evalHead, evalState, hi, StraightLineCircuit.evalWire_input,
+        TM.initial_tape_input (M := M) (x := x) (i := i) hi]
+    · -- Beyond the input prefix the circuit resorts to the cached `false` gate.
+      have hfalseBase : StraightLineCircuit.evalWire (C := base) (x := x)
+          base.output = false := by
+        simpa [StraightLineCircuit.eval_eq_evalWire]
+          using eval_constCircuit (n := n) (b := false) (x := x)
+      have hfalse : StraightLineCircuit.evalWire (C := circuit) (x := x)
+          falseWire = false := by
+        simpa [falseWire, circuit, StraightLineCircuit.evalWire_snoc_lift]
+          using hfalseBase
+      have hi' : ¬ (i : ℕ) < n := hi
+      have : (M.initialConfig x).tape i = false :=
+        TM.initial_tape_blank (M := M) (x := x) (i := i) (Nat.le_of_not_lt hi')
+      simp [evalTape, evalHead, evalState, hi, hfalse, this]
+  · intro x i
+    by_cases hi : i = ⟨0, by
+        have : (0 : ℕ) < n + M.runTime n + 1 := Nat.succ_pos _
+        simpa [TM.tapeLength] using this⟩
+    · subst hi
+      have htrueEval : StraightLineCircuit.eval (snoc (C := base) (StraightOp.const true)) x = true := by
+        simpa [circuit, StraightOp.eval] using
+          StraightLineCircuit.eval_snoc (C := base)
+            (op := StraightOp.const true) (x := x)
+      have htrue : StraightLineCircuit.evalWire (C := circuit) (x := x) trueWire = true := by
+        simpa [trueWire, StraightLineCircuit.eval_eq_evalWire] using htrueEval
+      have hhead := TM.initial_head (M := M) (x := x)
+      simp [evalHead, evalTape, evalState, trueWire, falseWire,
+        htrue, hhead, headIndicator]
+    · have hfalseBase : StraightLineCircuit.evalWire (C := base) (x := x)
+          base.output = false := by
+        simpa [StraightLineCircuit.eval_eq_evalWire]
+          using eval_constCircuit (n := n) (b := false) (x := x)
+      have hfalse : StraightLineCircuit.evalWire (C := circuit) (x := x)
+          falseWire = false := by
+        simpa [falseWire, circuit, StraightLineCircuit.evalWire_snoc_lift]
+          using hfalseBase
+      have : headIndicator (M := M) (n := n) (M.initialConfig x) i = false := by
+        have hi' : i ≠ ⟨0, by
+            have : (0 : ℕ) < n + M.runTime n + 1 := Nat.succ_pos _
+            simpa [TM.tapeLength] using this⟩ := hi
+        simp [headIndicator, TM.initial_head, hi']
+      simp [evalHead, evalTape, evalState, hi, hfalse, this]
+  · intro x i
+    by_cases hi : i = stateIndex M M.start
+    · subst hi
+      have htrueEval : StraightLineCircuit.eval (snoc (C := base) (StraightOp.const true)) x = true := by
+        simpa [circuit, StraightOp.eval] using
+          StraightLineCircuit.eval_snoc (C := base)
+            (op := StraightOp.const true) (x := x)
+      have htrue : StraightLineCircuit.evalWire (C := circuit) (x := x) trueWire = true := by
+        simpa [trueWire, StraightLineCircuit.eval_eq_evalWire] using htrueEval
+      have hstate := TM.initial_state (M := M) (x := x)
+      simp [evalState, evalTape, evalHead, htrue, hstate, stateIndicator,
+        stateIndex, stateEquiv]
+    · have hfalseBase : StraightLineCircuit.evalWire (C := base) (x := x)
+          base.output = false := by
+        simpa [StraightLineCircuit.eval_eq_evalWire]
+          using eval_constCircuit (n := n) (b := false) (x := x)
+      have hfalse : StraightLineCircuit.evalWire (C := circuit) (x := x)
+          falseWire = false := by
+        simpa [falseWire, circuit, StraightLineCircuit.evalWire_snoc_lift]
+          using hfalseBase
+      have hstate := TM.initial_state (M := M) (x := x)
+      have : stateIndicator (M := M) (c := M.initialConfig x) i = false := by
+        have hi' : i ≠ stateIndex M M.start := hi
+        simp [stateIndicator, stateIndex, stateEquiv, hstate, hi']
+      simp [evalState, evalTape, evalHead, hi, hfalse, this]
+
+/--
+Helper used in the construction of the symbol wire: given a current builder and
+an accumulator wire computing the disjunction of the previously processed
+entries, append the contribution of the next tape cell.
+-/
+def symbolBuilderStep (sc : StraightConfig M n) :
+    (Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+        Fin (n + b.circuit.gates)) →
+      Fin (M.tapeLength n) →
+        Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+          Fin (n + b.circuit.gates)
+  | ⟨b, acc⟩, i =>
+      let head := b.liftBase (sc.head i)
+      let tape := b.liftBase (sc.tape i)
+      let andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := b) head tape
+      let accLift := (StraightLineCircuit.EvalBuilder.appendFin_lift
+        (b := b) (op := StraightOp.and head tape)) acc
+      let orResult := StraightLineCircuit.EvalBuilder.appendOrFin
+        (b := andResult.fst) accLift andResult.snd
+      ⟨orResult.fst, orResult.snd⟩
+
+/--
+Build a wire computing the Boolean symbol currently scanned by the head.  The
+construction iterates over all tape cells, successively accumulating the OR of
+the conjunctions `head[i] ∧ tape[i]`.
+-/
+def symbolBuilder (sc : StraightConfig M n) :
+    Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+      Fin (n + b.circuit.gates) :=
+  let start := StraightLineCircuit.EvalBuilder.appendConstFin
+    (b := StraightLineCircuit.EvalBuilder.mk sc.circuit) false
+  let init : Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+      Fin (n + b.circuit.gates) := ⟨start.fst, start.snd⟩
+  (tapeIndexList (M := M) n).foldl (fun acc i =>
+      symbolBuilderStep (M := M) (n := n) sc acc i) init
+
+/--
+Token-based version of `symbolBuilder`.  The returned wire remembers the gate
+count of the augmented circuit, making it convenient to transport across
+further gate insertions without having to rebuild the index from scratch.
+-/
+def symbolBuilderWire (sc : StraightConfig M n) :
+    Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+      StraightLineCircuit.Wire n :=
+  let result := symbolBuilder (M := M) (n := n) sc
+  ⟨ result.fst
+  , StraightLineCircuit.Wire.ofFin (n := n)
+      (g := result.fst.circuit.gates) result.snd ⟩
+
+/--
+Evaluation of the wire returned by `symbolBuilder`.  The result is the OR-fold
+over all cells, matching the combinational definition of the scanned symbol.
+-/
+lemma symbolBuilder_eval (sc : StraightConfig M n) (x : Point n) :
+    let result := symbolBuilder (M := M) (n := n) sc
+    StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x) result.snd =
+      (tapeIndexList (M := M) n).foldl (fun acc i =>
+        acc ||
+          (StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.head i) &&
+            StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.tape i)))
+        false := by
+  classical
+  unfold symbolBuilder
+  generalize hfold : (tapeIndexList (M := M) n) = cells
+  revert sc
+  induction cells with
+  | nil =>
+      intro sc
+      simp [symbolBuilderStep]
+  | cons i cells ih =>
+      intro sc
+      simp [symbolBuilderStep, List.foldl_cons, ih, Bool.or_assoc,
+        Bool.or_left_comm, Bool.or_comm,
+        StraightLineCircuit.EvalBuilder.appendAndFin_eval,
+        StraightLineCircuit.EvalBuilder.appendOrFin_eval,
+        StraightLineCircuit.EvalBuilder.appendFin_lift_eval]
+
+/--
+Evaluation rule for the token-based symbol builder.  It simply forwards the
+statement of `symbolBuilder_eval` after translating the stored wire token back
+into a concrete index.
+-/
+lemma symbolBuilderWire_eval (sc : StraightConfig M n) (x : Point n) :
+    let result := symbolBuilderWire (M := M) (n := n) sc
+    StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x)
+        (result.snd.toFin (n := n) (g := result.fst.circuit.gates)
+          (Nat.le_of_eq rfl)) =
+      (tapeIndexList (M := M) n).foldl (fun acc i =>
+        acc ||
+          (StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.head i) &&
+            StraightLineCircuit.evalWire (C := sc.circuit) (x := x) (sc.tape i)))
+        false := by
+  classical
+  unfold symbolBuilderWire
+  simpa [StraightLineCircuit.Wire.toFin_ofFin]
+    using symbolBuilder_eval (M := M) (n := n) (sc := sc) (x := x)
+
+/--
+The symbol wire produced by `symbolBuilder` evaluates to the tape bit located
+under the head whenever the straight-line configuration satisfies its
+specification.
+-/
+lemma symbolBuilder_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    ∀ x,
+      let result := symbolBuilder (M := M) (n := n) sc
+      StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x) result.snd =
+        (f x).tape (f x).head := by
+  classical
+  intro x
+  have hEval := symbolBuilder_eval (M := M) (n := n) (sc := sc) (x := x)
+  simp [symbolBuilder, foldl_or_eq_any, List.any_map, evalHead, evalTape,
+    Bool.and_left_comm, Bool.and_assoc, Bool.and_comm,
+    hsc.head_eq, hsc.tape_eq] at hEval
+  have hMem : (f x).head ∈ tapeIndexList (M := M) n := by
+    simpa [tapeIndexList] using List.mem_finRange (f x).head
+  by_cases hbit : (f x).tape (f x).head = true
+  · have hWitness : headIndicator (M := M) (n := n) (f x) ((f x).head) &&
+        (f x).tape ((f x).head) = true := by
+        simp [hbit, headIndicator_self]
+    have hAny : List.any (tapeIndexList (M := M) n)
+        (fun i => headIndicator (M := M) (n := n) (f x) i && (f x).tape i) = true := by
+      refine (List.any_eq_true).2 ?_
+      exact ⟨(f x).head, hMem, hWitness⟩
+    simpa [hAny, hbit] using hEval
+  · have hAnyFalse : List.any (tapeIndexList (M := M) n)
+        (fun i => headIndicator (M := M) (n := n) (f x) i && (f x).tape i) = false := by
+      refine (List.any_eq_false).2 ?_
+      intro i hi
+      by_cases hEq : i = (f x).head
+      · subst hEq
+        simp [hbit, headIndicator_self]
+      · have : headIndicator (M := M) (n := n) (f x) i = false :=
+          headIndicator_ne (M := M) (n := n) (f x) (by simpa [eq_comm] using hEq)
+      simp [this, Bool.false_and]
+    simpa [hAnyFalse, hbit] using hEval
+
+/--
+Correctness statement for `symbolBuilderWire`: translating the stored token
+into a concrete wire yields the actual tape symbol located under the head.
+-/
+lemma symbolBuilderWire_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    ∀ x,
+      let result := symbolBuilderWire (M := M) (n := n) sc
+      StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x)
+          (result.snd.toFin (n := n) (g := result.fst.circuit.gates)
+            (Nat.le_of_eq rfl)) =
+        (f x).tape (f x).head := by
+  classical
+  intro x
+  unfold symbolBuilderWire
+  simpa [StraightLineCircuit.Wire.toFin_ofFin]
+    using symbolBuilder_spec (M := M) (n := n) (sc := sc) (f := f) hsc (x := x)
+
+/-!
+### Branch indicators in the straight-line world
+
+The next helper packages the ubiquitous conjunction
+`stateIndicator(q) ∧ guardSymbol(b)` into a single reusable wire.  The
+construction mirrors `branchIndicator` from the tree-based circuit
+development but operates in the straight-line builder monad so that the
+resulting wire can be referenced by later gates without rebuilding the
+intermediate bookkeeping each time.
+-/
+
+/--
+Specialised helper building the conjunction "the control state is `q` and the
+scanned symbol equals `b`" when a reusable symbol wire is already available.
+The function merely appends the necessary gates to the supplied builder,
+returning both the extended builder and the freshly created wire.
+-/
+def branchBuilderFrom (sc : StraightConfig M n)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (symbolWire : Fin (n + b.circuit.gates)) (qs : M.state × Bool) :
+    Σ' (b' : StraightLineCircuit.EvalBuilder n sc.circuit),
+      Fin (n + b'.circuit.gates) := by
+  classical
+  -- The state component is an existing wire of the base circuit; lift it into
+  -- the current builder so that the subsequent gates may reference it.
+  let stateWire := b.liftBase (sc.state (stateIndex M qs.1))
+  -- Depending on the requested symbol value we either negate the symbol first
+  -- or directly form the conjunction `state ∧ symbol`.
+  cases hsym : qs.2 with
+  | false =>
+      let negResult := StraightLineCircuit.EvalBuilder.appendNotFin
+        (b := b) symbolWire
+      let liftedState :=
+        (StraightLineCircuit.EvalBuilder.appendFin_lift
+          (b := b) (op := StraightOp.not symbolWire)) stateWire
+      let andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := negResult.fst) liftedState negResult.snd
+      exact ⟨andResult.fst, andResult.snd⟩
+  | true =>
+      let andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := b) stateWire symbolWire
+      exact ⟨andResult.fst, andResult.snd⟩
+
+/--
+Straight-line counterpart of `branchIndicator`.  Starting from a straight-line
+configuration, the builder augments the circuit with the necessary gates to
+compute the conjunction "the control state is `q` and the scanned symbol is
+`b`".  The resulting sigma package exposes both the extended builder and the
+wire pointing to the freshly created gate.
+-/
+def branchBuilder (sc : StraightConfig M n) (qs : M.state × Bool) :
+    Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+      Fin (n + b.circuit.gates) := by
+  classical
+  -- First obtain the wire computing the tape symbol under the head.
+  let symbol := symbolBuilder (M := M) (n := n) sc
+  -- Delegate to the helper, which reuses the symbol across all branches.
+  exact branchBuilderFrom (M := M) (n := n) (sc := sc)
+    (b := symbol.fst) (symbolWire := symbol.snd) qs
+
+/--
+Semantic characterisation of the straight-line branch indicator.  When the
+input straight-line configuration satisfies `Spec`, the resulting wire evaluates
+to the Boolean guard checking that the control state equals `q` and that the
+scanned tape symbol is `b`.
+-/
+lemma branchBuilder_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    ∀ x (qs : M.state × Bool),
+      let result := branchBuilder (M := M) (n := n) sc qs
+      StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x) result.snd =
+        (stateIndicator M (f x) (stateIndex M qs.1) &&
+          cond qs.2 ((f x).tape (f x).head)
+            (!(f x).tape (f x).head)) := by
+  classical
+  intro x qs
+  -- Expose the straight-line symbol wire and instantiate the generic helper.
+  set symbol := symbolBuilder (M := M) (n := n) sc with hsymbolDef
+  -- Apply the general branch builder lemma.
+  simpa [branchBuilder, symbol, hsymbolDef]
+    using branchBuilderFrom_spec (M := M) (n := n) (sc := sc)
+      (b := symbol.fst) (symbolWire := symbol.snd)
+      (hsymbol := by intro y; simpa [symbol, hsymbolDef]
+        using symbolBuilder_spec (M := M) (n := n)
+          (sc := sc) (f := f) hsc (x := y)) (x := x) (qs := qs)
+
+/--
+Specification of `branchBuilderFrom`: assuming the supplied symbol wire indeed
+computes the scanned tape bit, the resulting gate realises the conjunction of
+the state indicator and the corresponding symbol guard.
+-/
+lemma branchBuilderFrom_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (symbolWire : Fin (n + b.circuit.gates))
+    (hsymbol : ∀ x,
+      StraightLineCircuit.evalWire (C := b.circuit) (x := x) symbolWire =
+        (f x).tape (f x).head) :
+    ∀ x (qs : M.state × Bool),
+      let result := branchBuilderFrom (M := M) (n := n) (sc := sc)
+        (b := b) (symbolWire := symbolWire) qs
+      StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x) result.snd =
+        (stateIndicator M (f x) (stateIndex M qs.1) &&
+          cond qs.2 ((f x).tape (f x).head)
+            (!(f x).tape (f x).head)) := by
+  classical
+  intro x qs
+  -- Lift the state wire once; its evaluation is determined by the specification.
+  let stateWire := b.liftBase (sc.state (stateIndex M qs.1))
+  have hstateEval :
+      StraightLineCircuit.evalWire (C := b.circuit) (x := x) stateWire =
+        stateIndicator M (f x) (stateIndex M qs.1) := by
+    have hLift := StraightLineCircuit.EvalBuilder.eval_liftBase_eq
+        (b := b) (x := x) (i := sc.state (stateIndex M qs.1))
+    have hBase : StraightLineCircuit.evalWire (C := sc.circuit) (x := x)
+        (sc.state (stateIndex M qs.1)) =
+          stateIndicator M (f x) (stateIndex M qs.1) := by
+      simpa [evalState]
+        using hsc.state_eq (x := x) (i := stateIndex M qs.1)
+    simpa [stateWire] using hLift.trans hBase
+  -- Split on the requested symbol value.
+  cases hqs : qs.2 with
+  | false =>
+      -- Append the negation gate followed by the final conjunction.
+      have hneg := StraightLineCircuit.EvalBuilder.appendFin_eval
+        (b := b) (op := StraightOp.not symbolWire) (x := x)
+      have hstateLift := StraightLineCircuit.EvalBuilder.appendFin_lift_eval
+        (b := b) (op := StraightOp.not symbolWire) (x := x)
+        (w := stateWire)
+      set negResult := StraightLineCircuit.EvalBuilder.appendNotFin
+        (b := b) symbolWire with hnegResult
+      set liftedState :=
+        (StraightLineCircuit.EvalBuilder.appendFin_lift
+          (b := b) (op := StraightOp.not symbolWire)) stateWire
+        with hlifted
+      have hstateLiftEval :
+          StraightLineCircuit.evalWire
+              (C := negResult.fst.circuit) (x := x) liftedState =
+            stateIndicator M (f x) (stateIndex M qs.1) := by
+        simpa [hstateEval, hnegResult, liftedState, hlifted]
+          using hstateLift
+      set andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := negResult.fst) liftedState negResult.snd with handResult
+      have hnegEval : StraightLineCircuit.evalWire
+          (C := negResult.fst.circuit) (x := x) negResult.snd =
+          ! StraightLineCircuit.evalWire (C := b.circuit) (x := x) symbolWire := by
+        simpa [negResult, hnegResult] using hneg
+      have := StraightLineCircuit.EvalBuilder.appendAndFin_eval
+        (b := negResult.fst) (u := liftedState) (v := negResult.snd) (x := x)
+      have hsymEval := hsymbol x
+      simpa [branchBuilderFrom, hqs, cond_false, stateWire, hstateEval,
+        hstateLiftEval, hnegEval, hsymEval, Bool.and_left_comm, Bool.and_assoc,
+        negResult, andResult, hnegResult, handResult]
+        using this
+  | true =>
+      -- Direct conjunction case.
+      set andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := b) stateWire symbolWire with handResult
+      have := StraightLineCircuit.EvalBuilder.appendAndFin_eval
+        (b := b) (u := stateWire) (v := symbolWire) (x := x)
+      have hsymEval := hsymbol x
+      simpa [branchBuilderFrom, hqs, cond_true, stateWire, hstateEval,
+        hsymEval, Bool.and_left_comm, Bool.and_assoc, andResult, handResult]
+        using this
+
+/--
+Token-based variant of `branchBuilder`.  Packaging the resulting wire as a
+`StraightLineCircuit.Wire` facilitates transporting it across subsequent gate
+insertions without repeating the underlying arithmetic bounds.
+-/
+def branchBuilderWire (sc : StraightConfig M n) (qs : M.state × Bool) :
+    Σ' (b : StraightLineCircuit.EvalBuilder n sc.circuit),
+      StraightLineCircuit.Wire n :=
+  let result := branchBuilder (M := M) (n := n) sc qs
+  ⟨ result.fst
+  , StraightLineCircuit.Wire.ofFin (n := n)
+      (g := result.fst.circuit.gates) result.snd ⟩
+
+/--
+Evaluation rule for the token returned by `branchBuilderWire`.
+-/
+lemma branchBuilderWire_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    ∀ x (qs : M.state × Bool),
+      let result := branchBuilderWire (M := M) (n := n) sc qs
+      StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x)
+          (result.snd.toFin (n := n) (g := result.fst.circuit.gates)
+            (Nat.le_of_eq rfl)) =
+        (stateIndicator M (f x) (stateIndex M qs.1) &&
+          cond qs.2 ((f x).tape (f x).head)
+            (!(f x).tape (f x).head)) := by
+  classical
+  intro x qs
+  unfold branchBuilderWire
+  simpa [StraightLineCircuit.Wire.toFin_ofFin]
+    using branchBuilder_spec (M := M) (n := n) (sc := sc) (f := f) hsc (x := x)
+      (qs := qs)
+
+/--
+The straight-line construction of `branchBuilderFrom` only appends gates to the
+current builder.  Consequently the number of gates monotonically increases, a
+fact we will repeatedly rely on when transporting previously created wires
+through subsequent builder extensions.
+-/
+lemma branchBuilderFrom_gate_le (sc : StraightConfig M n)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (symbolWire : Fin (n + b.circuit.gates)) (qs : M.state × Bool) :
+    b.circuit.gates ≤
+      (branchBuilderFrom (M := M) (n := n) (sc := sc)
+        (b := b) (symbolWire := symbolWire) qs).fst.circuit.gates := by
+  classical
+  -- Peel off the two cases present in the definition of `branchBuilderFrom`.
+  cases hqs : qs.2 with
+  | false =>
+      -- In the `false` branch we append a negation followed by a conjunction.
+      -- We expose the intermediate builders in order to reason about their
+      -- gate counts explicitly.
+      set negResult :=
+        StraightLineCircuit.EvalBuilder.appendNotFin (b := b) symbolWire
+        with hneg
+      set liftedState :=
+        (StraightLineCircuit.EvalBuilder.appendFin_lift
+          (b := b) (op := StraightOp.not symbolWire))
+          (b.liftBase (sc.state (stateIndex M qs.1))) with hlift
+      set andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := negResult.fst) liftedState negResult.snd with hand
+      have hnegGate :
+          negResult.fst.circuit.gates = b.circuit.gates + 1 := by
+        -- Appending the negation adds a single gate.
+        simpa [negResult, StraightLineCircuit.EvalBuilder.appendNotFin]
+          using StraightLineCircuit.EvalBuilder.appendFin_gate_eq
+            (b := b) (op := StraightOp.not symbolWire)
+      have handGate :
+          andResult.fst.circuit.gates = negResult.fst.circuit.gates + 1 := by
+        -- Appending the final conjunction adds one more gate.
+        simpa [andResult, StraightLineCircuit.EvalBuilder.appendAndFin,
+          hnegGate]
+          using StraightLineCircuit.EvalBuilder.appendFin_gate_eq
+            (b := negResult.fst)
+            (op := StraightOp.and liftedState negResult.snd)
+      -- Combine the two increments to obtain the desired inequality.
+      have hle₁ : b.circuit.gates ≤ negResult.fst.circuit.gates := by
+        have := Nat.le_succ b.circuit.gates
+        simpa [hnegGate, Nat.succ_eq_add_one] using this
+      have hle₂ : negResult.fst.circuit.gates ≤ andResult.fst.circuit.gates := by
+        have := Nat.le_succ negResult.fst.circuit.gates
+        simpa [handGate, Nat.succ_eq_add_one] using this
+      exact Nat.le_trans hle₁ hle₂
+  | true =>
+      -- When the scanned symbol is true we only append a single conjunction.
+      set stateWire := b.liftBase (sc.state (stateIndex M qs.1)) with hstate
+      set andResult := StraightLineCircuit.EvalBuilder.appendAndFin
+        (b := b) stateWire symbolWire with hand
+      have handGate :
+          andResult.fst.circuit.gates = b.circuit.gates + 1 := by
+        simpa [andResult, StraightLineCircuit.EvalBuilder.appendAndFin,
+          hstate]
+          using StraightLineCircuit.EvalBuilder.appendFin_gate_eq
+            (b := b) (op := StraightOp.and stateWire symbolWire)
+      have := Nat.le_succ b.circuit.gates
+      simpa [handGate, Nat.succ_eq_add_one]
+        using this
+
+/--
+Auxiliary structure recording the state after constructing the straight-line
+branch indicators for every pair `(q, b)` appearing in `stateSymbolPairs`.  The
+data keeps track of the accumulated builder, the reusable symbol wire and all
+branch wires together with the guarantees that the recorded wires remain within
+the range of the builder's gate count.
+-/
+structure BranchSnapshot (sc : StraightConfig M n) where
+  builder : StraightLineCircuit.EvalBuilder n sc.circuit
+  symbol  : StraightLineCircuit.Wire n
+  symbol_le : symbol.bound ≤ builder.circuit.gates
+  branches : List ((M.state × Bool) × StraightLineCircuit.Wire n)
+  branches_le :
+    ∀ {qs : M.state × Bool} {w : StraightLineCircuit.Wire n},
+      ((qs, w) ∈ branches) → w.bound ≤ builder.circuit.gates
+
+/--
+Internal helper used to accumulate the list of branch wires.  The function
+processes the supplied list of transition pairs sequentially, invoking
+`branchBuilderFrom` at each step and recording the resulting wire token.  The
+return value packages the final builder together with the updated bookkeeping
+information required to keep track of index bounds.
+-/
+def branchSnapshotAux (sc : StraightConfig M n)
+    (symbol : StraightLineCircuit.Wire n)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hSymbol : symbol.bound ≤ b.circuit.gates)
+    : ∀ (pairs : List (M.state × Bool)),
+        Σ' (b' : StraightLineCircuit.EvalBuilder n sc.circuit),
+          (symbol.bound ≤ b'.circuit.gates) ×
+            (b.circuit.gates ≤ b'.circuit.gates) ×
+            { l : List ((M.state × Bool) × StraightLineCircuit.Wire n) //
+              ∀ {qs : M.state × Bool} {w : StraightLineCircuit.Wire n},
+                ((qs, w) ∈ l) → w.bound ≤ b'.circuit.gates }
+  | [] =>
+      -- No more branches to process: return the current builder unchanged.
+      ⟨ b
+      , hSymbol
+      , le_rfl
+      , ⟨[], by intro qs w hmem; cases hmem⟩ ⟩
+  | qs :: rest =>
+      by
+        -- Interpret the cached symbol wire inside the current builder.
+        have hSymbolCurrent : symbol.bound ≤ b.circuit.gates := hSymbol
+        let symbolFin := symbol.toFin (n := n) (g := b.circuit.gates)
+          hSymbolCurrent
+        -- Append the branch corresponding to `qs` and convert the resulting
+        -- index into a reusable wire token.
+        let result := branchBuilderFrom (M := M) (n := n) (sc := sc)
+          (b := b) (symbolWire := symbolFin) qs
+        let token : StraightLineCircuit.Wire n :=
+          StraightLineCircuit.Wire.ofFin (n := n)
+            (g := result.fst.circuit.gates) result.snd
+        -- The symbol wire remains valid in the extended builder thanks to the
+        -- monotonicity lemma established above.
+        have hSymbolNext : symbol.bound ≤ result.fst.circuit.gates := by
+          exact Nat.le_trans hSymbol
+            (branchBuilderFrom_gate_le (M := M) (n := n) (sc := sc)
+              (b := b) (symbolWire := symbolFin) (qs := qs))
+        -- Recursively process the remaining branches.
+        obtain ⟨bRest, hSymbolRest, hMonoRest, restList⟩ :=
+          branchSnapshotAux (M := M) (n := n) (sc := sc)
+            symbol result.fst hSymbolNext rest
+        -- Assemble the final list together with its bound witnesses.
+        refine ⟨ bRest
+               , hSymbolRest
+               , ?_ 
+               , ⟨ (qs, token) :: restList.val, ?_ ⟩ ⟩
+        · -- The final builder contains all gates produced so far.
+          exact Nat.le_trans
+            (branchBuilderFrom_gate_le (M := M) (n := n) (sc := sc)
+              (b := b) (symbolWire := symbolFin) (qs := qs))
+            hMonoRest
+        · -- Every recorded wire remains within range of the final builder.
+          intro qs' w hmem
+          have hmem' := List.mem_cons.1 hmem
+          cases hmem' with
+          | inl hhead =>
+              -- The head of the list corresponds to the freshly created wire.
+              cases hhead with
+              | rfl =>
+                  have : result.fst.circuit.gates ≤ bRest.circuit.gates :=
+                    hMonoRest
+                  simpa [token] using this
+          | inr htail =>
+              -- All other wires come from the recursive call where the bound
+              -- property is already available.
+              exact restList.property htail
+
+/--
+Construct the full branch snapshot starting from a straight-line configuration.
+The function first materialises the reusable symbol wire (via
+`symbolBuilderWire`) and subsequently processes every transition pair.  The
+resulting snapshot records the extended builder together with the collected
+branch wires.
+-/
+def branchSnapshot (sc : StraightConfig M n) : BranchSnapshot (M := M) (n := n) sc := by
+  classical
+  -- Obtain the initial builder equipped with the symbol wire.
+  let symbolResult := symbolBuilderWire (M := M) (n := n) sc
+  have hSymbol : symbolResult.snd.bound ≤ symbolResult.fst.circuit.gates := by
+    -- The token was created directly from the builder, hence the bounds agree.
+    have := (by
+      simp [symbolResult] : symbolResult.snd.bound = symbolResult.fst.circuit.gates)
+    exact le_of_eq this
+  -- Process all pairs contained in `stateSymbolPairs`.
+  obtain ⟨bFinal, hSymbolFinal, _hMono, restList⟩ :=
+    branchSnapshotAux (M := M) (n := n) (sc := sc)
+      symbolResult.snd symbolResult.fst hSymbol (stateSymbolPairs M)
+  -- Package the collected information into the `BranchSnapshot` structure.
+  refine { builder := bFinal
+         , symbol := symbolResult.snd
+         , symbol_le := hSymbolFinal
+         , branches := restList.val
+         , branches_le := ?_ }
+  intro qs w hmem
+  exact restList.property hmem
+
+/--
+The branch snapshot is the foundation for subsequent straight-line
+constructions.  In addition to reusing the symbol wire we will also need the
+aggregated write bit.  The following structure extends the snapshot with a
+dedicated wire computing the write contribution of the current configuration.
+-/
+structure WriteSnapshot (sc : StraightConfig M n)
+    extends BranchSnapshot (M := M) (n := n) sc where
+  write : StraightLineCircuit.Wire n
+  write_le : write.bound ≤ builder.circuit.gates
+
+/--
+Appending a `bigOr` never decreases the number of gates of an
+`EvalBuilder`.  The lemma is proved by induction on the list of wires,
+tracking the recursive shape of `appendBigOr`.
+-/
+lemma StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+    (b : StraightLineCircuit.EvalBuilder n base)
+    (ws : List (Fin (n + b.circuit.gates))) :
+    b.circuit.gates ≤
+      (StraightLineCircuit.EvalBuilder.appendBigOr (b := b) ws).fst.circuit.gates := by
+  classical
+  induction ws with
+  | nil =>
+      -- The empty list introduces a fresh constant gate.
+      simp [StraightLineCircuit.EvalBuilder.appendBigOr]
+      -- The helper `appendConstFin` appends a single gate.
+      have := StraightLineCircuit.EvalBuilder.appendFin_gate_eq
+        (b := b) (op := StraightOp.const false)
+      simpa [StraightLineCircuit.EvalBuilder.appendConstFin,
+        StraightLineCircuit.EvalBuilder.appendBigOr] using
+        (Nat.le_succ b.circuit.gates)
+  | cons w ws ih =>
+      cases ws with
+      | nil =>
+          -- A singleton list leaves the builder unchanged.
+          simp [StraightLineCircuit.EvalBuilder.appendBigOr]
+      | cons w' ws' =>
+          -- The recursion appends one OR gate and continues with the lifted list.
+          simp [StraightLineCircuit.EvalBuilder.appendBigOr] at ih ⊢
+          set result := StraightLineCircuit.EvalBuilder.appendOrFin
+            (b := b) w w' with hresult
+          have hStep : b.circuit.gates ≤ result.fst.circuit.gates := by
+            -- Appending a single gate increases the count by one.
+            simpa [result, StraightLineCircuit.EvalBuilder.appendOrFin] using
+              (Nat.le_succ b.circuit.gates)
+          -- Compose with the induction hypothesis for the recursive call.
+          exact Nat.le_trans hStep ih
+
+/--
+Construct the write-bit wire alongside the branch snapshot.  The resulting
+`WriteSnapshot` stores the accumulated builder together with all auxiliary wires
+required to analyse the transition step.
+-/
+def writeSnapshot (sc : StraightConfig M n) : WriteSnapshot (M := M) (n := n) sc := by
+  classical
+  -- Start from the branch snapshot which already provides the symbol and all
+  -- branch guards.
+  let base := branchSnapshot (M := M) (n := n) sc
+  -- Helper collecting all write-contributing wires.  The predicate `h` provides
+  -- the bound guarantee for the sublist currently under consideration.
+  let rec collect
+      (branches : List ((M.state × Bool) × StraightLineCircuit.Wire n)) :
+      (∀ {qs : M.state × Bool} {w : StraightLineCircuit.Wire n},
+          ((qs, w) ∈ branches) → w.bound ≤ base.builder.circuit.gates) →
+        List (Fin (n + base.builder.circuit.gates)) :=
+    fun h =>
+      match branches with
+      | [] => []
+      | (qs, w) :: rest =>
+          -- Process the tail first, inheriting the bound invariant.
+          let restCollected := collect rest (fun {qs'} {w'} hmem =>
+            h (by exact List.mem_cons_of_mem _ hmem))
+          -- The head contributes iff the transition writes `true`.
+          let hbound : w.bound ≤ base.builder.circuit.gates :=
+            h (by exact List.mem_cons_self _ _)
+          if (M.step qs.1 qs.2).2 then
+            (w.toFin (n := n) (g := base.builder.circuit.gates) hbound) ::
+              restCollected
+          else
+            restCollected
+    termination_by collect branches _ => branches.length
+  -- Instantiate the helper with the complete branch list.
+  let writeIndices := collect base.branches base.branches_le
+  -- Augment the builder with the disjunction of all write contributions.
+  let writeResult := StraightLineCircuit.EvalBuilder.appendBigOr
+    (b := base.builder) writeIndices
+  -- The newly created gate serves as the write-bit wire.
+  let writeWire : StraightLineCircuit.Wire n :=
+    StraightLineCircuit.Wire.ofFin (n := n)
+      (g := writeResult.fst.circuit.gates) writeResult.snd
+  -- Assemble the final structure, updating the bound witnesses accordingly.
+  refine { builder := writeResult.fst
+         , symbol := base.symbol
+         , symbol_le := ?_
+         , branches := base.branches
+         , branches_le := ?_
+         , write := writeWire
+         , write_le := by
+             have := StraightLineCircuit.Wire.ofFin_bound
+               (n := n) (g := writeResult.fst.circuit.gates) writeResult.snd
+             simpa [writeWire] using (le_of_eq this) }
+  · -- The symbol wire remains in range thanks to gate-count monotonicity.
+    have := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+      (b := base.builder) (ws := writeIndices)
+    exact Nat.le_trans base.symbol_le this
+  · -- Every branch wire continues to be valid in the extended builder.
+    intro qs w hmem
+    have := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+      (b := base.builder) (ws := writeIndices)
+    have hbranch := base.branches_le hmem
+    exact Nat.le_trans hbranch this
+
+end StraightConfig
+
 /-- Enumerate all tape indices as a list. -/
 def tapeIndexList (M : TM) (n : ℕ) : List (Fin (M.tapeLength n)) :=
   List.finRange (M.tapeLength n)
@@ -300,6 +1147,136 @@ lemma pair_mem_stateSymbolPairs (M : TM) (q : M.state) (b : Bool) :
   refine List.mem_bind.2 ?_
   refine ⟨q, state_mem_stateList (M := M) q, ?_⟩
   cases b <;> simp
+
+/-- Boolean guard capturing the conjunction "the control state equals `q` and
+the scanned symbol equals `b`" for a concrete configuration.  This predicate is
+the semantic counterpart of the straight-line branch builders. -/
+def branchGuard (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (qs : M.state × Bool) : Bool :=
+  stateIndicator M conf (stateIndex M qs.1) &&
+    cond qs.2 (conf.tape conf.head) (!(conf.tape conf.head))
+
+/-- Contribution of the transition branch `(q, b)` to the write bit.  The branch
+affects the next tape value precisely when the transition function writes `true`
+for the corresponding pair. -/
+def writeContribution (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (qs : M.state × Bool) : Bool :=
+  match M.step qs.1 qs.2 with
+  | ⟨_, write, _⟩ =>
+      if write then branchGuard (M := M) (conf := conf) qs else false
+
+/-- Fold function used to aggregate the write-bit contributions of the processed
+branches.  The helper is phrased in terms of a Boolean OR so that standard
+lemmas about `List.any` become directly applicable. -/
+def writeFoldFun (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (acc : Bool) (qs : M.state × Bool) : Bool :=
+  acc || writeContribution (M := M) (conf := conf) qs
+
+/-- Aggregated effect of the supplied branch list on the tape bit written by the
+machine.  The definition mirrors the Boolean structure of `writeBit` but is
+stated directly on configurations rather than circuits. -/
+def writeAccumulator (M : TM) {n : ℕ}
+    (pairs : List (M.state × Bool)) (conf : TM.Configuration M n) : Bool :=
+  pairs.foldl (writeFoldFun (M := M) (conf := conf)) false
+
+@[simp] lemma writeAccumulator_nil (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) :
+    writeAccumulator (M := M) (pairs := []) conf = false := rfl
+
+lemma writeAccumulator_cons (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (qs : M.state × Bool)
+    (pairs : List (M.state × Bool)) :
+    writeAccumulator (M := M) (pairs := qs :: pairs) conf =
+      writeFoldFun (M := M) (conf := conf) false qs := by
+  simp [writeAccumulator, writeFoldFun]
+
+lemma writeAccumulator_append_singleton (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (pairs : List (M.state × Bool))
+    (qs : M.state × Bool) :
+    writeAccumulator (M := M) (pairs := pairs ++ [qs]) conf =
+      writeFoldFun (M := M) (conf := conf)
+        (writeAccumulator (M := M) (pairs := pairs) conf) qs := by
+  simp [writeAccumulator, writeFoldFun, List.foldl_append]
+
+lemma writeAccumulator_eq_or (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (pairs : List (M.state × Bool)) :
+    writeAccumulator (M := M) (pairs := pairs) conf =
+      pairs.foldl (fun acc qs =>
+        acc || writeContribution (M := M) (conf := conf) qs) false := by
+  simp [writeAccumulator, writeFoldFun]
+
+lemma writeAccumulator_eq_any (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (pairs : List (M.state × Bool)) :
+    writeAccumulator (M := M) (pairs := pairs) conf =
+      List.any pairs (fun qs =>
+        writeContribution (M := M) (conf := conf) qs) := by
+  classical
+  induction pairs generalizing conf with
+  | nil => simp [writeAccumulator]
+  | cons qs pairs ih =>
+      simp [writeAccumulator, writeFoldFun, Bool.or_comm, Bool.or_left_comm,
+        Bool.or_assoc, ih]
+
+lemma writeContribution_spec (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) (qs : M.state × Bool) :
+    writeContribution (M := M) (conf := conf) qs = true ↔
+      (conf.state = qs.1 ∧ conf.tape conf.head = qs.2 ∧
+        (M.step qs.1 qs.2).2 = true) := by
+  classical
+  unfold writeContribution branchGuard
+  cases hstep : M.step qs.1 qs.2 with
+  | mk next write move =>
+      cases write <;>
+        simp [stateIndicator_true_iff, stateIndicator_ne, stateIndex,
+          stateEquiv, hstep]
+
+lemma writeAccumulator_spec (M : TM) {n : ℕ}
+    (conf : TM.Configuration M n) :
+    writeAccumulator (M := M) (pairs := stateSymbolPairs M) conf =
+      let sym := conf.tape conf.head
+      let (_, bit, _) := M.step conf.state sym
+      bit := by
+  classical
+  obtain ⟨next, bit, move⟩ := M.step conf.state (conf.tape conf.head)
+  have hPairs := pair_mem_stateSymbolPairs (M := M)
+      conf.state (conf.tape conf.head)
+  have hAny := writeAccumulator_eq_any (M := M) (n := n) (conf := conf)
+      (pairs := stateSymbolPairs M)
+  have hWitness : writeContribution (M := M) (conf := conf)
+      (conf.state, conf.tape conf.head) = bit := by
+    cases bit <;> simp [writeContribution, branchGuard]
+  have hAllFalse : ∀ qs ∈ stateSymbolPairs M,
+      qs ≠ (conf.state, conf.tape conf.head) →
+      writeContribution (M := M) (conf := conf) qs = false := by
+    intro qs hqs hneq
+    rcases qs with ⟨q, b⟩
+    by_cases hq : q = conf.state
+    · subst hq
+      by_cases hb : b = conf.tape conf.head
+      · exact (hneq (by cases hb; simp)).elim
+      · cases hb <;> simp [writeContribution, branchGuard]
+    · cases hq <;> simp [writeContribution, branchGuard]
+  cases bit with
+  | false =>
+      have :
+          List.any (stateSymbolPairs M)
+            (fun qs => writeContribution (M := M) (conf := conf) qs) = false :=
+        by
+          refine (List.any_eq_false).2 ?_
+          intro qs hqs
+          by_cases hq : qs = (conf.state, conf.tape conf.head)
+          · subst hq
+            simpa [hWitness]
+          · exact hAllFalse qs hqs hq
+      simpa [writeAccumulator, writeFoldFun, hAny, this]
+  | true =>
+      have :
+          List.any (stateSymbolPairs M)
+            (fun qs => writeContribution (M := M) (conf := conf) qs) = true :=
+        by
+          refine (List.any_eq_true).2 ?_
+          exact ⟨(conf.state, conf.tape conf.head), hPairs, by simpa [hWitness]⟩
+      simpa [writeAccumulator, writeFoldFun, hAny, this]
 
 /-- Guard ensuring that the symbol tested in a transition branch equals the
 chosen Boolean value. -/

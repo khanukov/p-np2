@@ -6,6 +6,7 @@
 - [ ] **[classic]** Develop the standard simulation of polynomial-time Turing machines by polynomial-size circuit families (`TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean`), then replace the axiom `P_subset_Ppoly` in `ComplexityClasses.lean`.
   - [x] Introduce an explicit single-tape TM model with configurations (`TM/Encoding.lean`).
   - [x] Add basic circuit bookkeeping (`Circuit/Family.lean`) and initialise the configuration-circuit framework (`PsubsetPpoly.lean`).
+  - [ ] Tighten the gate-count bounds so that `gatePolyBound` is dominated by a genuine polynomial; see `docs/PsubsetPpoly_status.md` for the current obstruction and proposed plan.
 - [ ] **[models]** Define circuit models for the magnification theorems (`Circuit/Depth.lean`, `Circuit/Oracle.lean` for the MMW’19 route, or `Circuit/General.lean` for OPS’21).
 - [ ] **[mcsp]** Introduce the decision/search/gap variants of `MCSP` (`MCSP/Core.lean`, `MCSP/Search.lean`, `MCSP/Gap.lean`).
 - [ ] **[bridge]** Strengthen the cover/locality files (`table_locality.lean`, `sat_cover.lean`, `acc_mcsp_sat.lean`) and derive lower bounds for (search-)`MCSP` (`MCSP/LowerBoundsFromCovers.lean`).

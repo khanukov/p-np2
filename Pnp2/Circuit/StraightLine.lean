@@ -394,6 +394,26 @@ def evalList (C : StraightLineCircuit n) (x : Point n)
   ws.foldl (fun acc w => acc || StraightLineCircuit.evalWire (C := C) (x := x) w)
     false
 
+/--
+Evaluating a concatenated list of wires splits as the disjunction of the two
+parts.  The result is immediate from the `foldl` characterisation of
+`StraightLineCircuit.evalList` together with the associativity and commutativity
+of Boolean `or`.-/
+lemma evalList_append (C : StraightLineCircuit n) (x : Point n)
+    (ws₁ ws₂ : List (Fin (n + C.gates))) :
+    evalList (C := C) (x := x) (ws₁ ++ ws₂) =
+      (evalList (C := C) (x := x) ws₁) ||
+        (evalList (C := C) (x := x) ws₂) := by
+  induction ws₁ generalizing ws₂ with
+  | nil =>
+      simp [evalList]
+  | cons w ws ih =>
+      intro ws₂
+      -- Expand the definition and apply the standard `foldl` append law to
+      -- expose the inductive hypothesis.
+      simp [evalList, List.foldl_append, ih, Bool.or_assoc, Bool.or_left_comm,
+        Bool.or_comm]
+
 /-- Start the builder with the original circuit. -/
 @[simp] def mk (base : StraightLineCircuit n) : Builder n base :=
   { circuit := base, base_le := le_rfl }

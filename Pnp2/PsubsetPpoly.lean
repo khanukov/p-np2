@@ -32,6 +32,16 @@ lemma foldl_or_eq_any {α} (l : List α) (f : α → Bool) :
   | cons a l ih =>
       simp [List.any, ih, Bool.or_left_comm, Bool.or_assoc]
 
+lemma foldl_filter_or_eq_any {α} (l : List α) (p f : α → Bool) :
+    l.foldl (fun acc x => if p x then acc || f x else acc) false =
+      List.any l (fun x => p x && f x) := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+      by_cases hp : p a
+      · simp [List.any, hp, Bool.or_left_comm, Bool.or_assoc, ih]
+      · simp [List.any, hp, Bool.and_eq_false_left, ih]
+
 lemma foldl_map_fst {α β γ} (l : List (α × β)) (f : γ → α → γ) (init : γ) :
     l.foldl (fun acc p => f acc p.1) init =
       (l.map Prod.fst).foldl f init := by
@@ -269,6 +279,26 @@ structure Spec (sc : StraightConfig M n)
   tape_eq : ∀ x i, evalTape sc x i = (f x).tape i
   head_eq : ∀ x i, evalHead sc x i = headIndicator (f x) i
   state_eq : ∀ x i, evalState sc x i = stateIndicator M (f x) i
+
+/--
+Total number of gates appearing in a straight-line configuration.  Since all
+components share the same underlying circuit, this is simply the gate count of
+`sc.circuit`.  The wrapper keeps the intended quantity explicit in subsequent
+lemmas and mirrors the notation used for tree-style configurations.-/
+def straightTotalGateCount (sc : StraightConfig M n) : ℕ :=
+  sc.circuit.gates
+
+/--
+Gate count of the straight-line initial configuration.  The construction starts
+from a one-gate circuit producing the constant `false` and appends a second gate
+realising `true`, hence the overall size equals two.
+-/
+@[simp] lemma straightTotalGateCount_initial (M : TM) (n : ℕ) :
+    straightTotalGateCount (StraightConfig.initial (M := M) n) = 2 := by
+  -- By definition the initial circuit arises from a single `snoc` above the
+  -- one-gate `constCircuit false`.
+  simp [StraightConfig.initial, straightTotalGateCount, StraightLineCircuit.size,
+    StraightLineCircuit.snoc, constCircuit]
 
 /--
 Straight-line circuit consisting of a single constant gate.  The designated
@@ -2749,6 +2779,13 @@ lemma tapeSnapshot_tapes_pairs (sc : StraightConfig M n) :
   simpa [base, hbase, tapeSnapshot, Nat.le_trans]
     using this
 
+lemma tapeSnapshot_tapes_length (sc : StraightConfig M n) :
+    (tapeSnapshot (M := M) (n := n) sc).tapes.length = M.tapeLength n := by
+  classical
+  have := congrArg List.length
+    (tapeSnapshot_tapes_pairs (M := M) (n := n) (sc := sc))
+  simpa [List.length_map, length_tapeIndexList] using this
+
 lemma tapeSnapshot_spec (sc : StraightConfig M n) :
     let snapshot := tapeSnapshot (M := M) (n := n) sc
     ∀ x {i : Fin (M.tapeLength n)} {w : StraightLineCircuit.Wire n},
@@ -2865,6 +2902,125 @@ lemma tapeSnapshot_step_spec (sc : StraightConfig M n)
         hWriteBool, hWriteVal]
     simpa [tapeSnapshot, base, hbase, Nat.le_trans]
       using hWriteEval
+
+/--
+Branch wires remain semantically equal to their guards after materialising the
+write snapshot.  The proof relies on the general preservation lemma for
+`appendBigOr`, which guarantees that previously existing wires continue to
+evaluate to the same Boolean values once the aggregated write gate has been
+appended.-/
+lemma writeSnapshot_branch_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    let snapshot := writeSnapshot (M := M) (n := n) sc
+    ∀ x {qs : M.state × Bool} {w : StraightLineCircuit.Wire n},
+      (hmem : (qs, w) ∈ snapshot.branches) →
+        StraightLineCircuit.evalWire (C := snapshot.builder.circuit) (x := x)
+            (w.toFin (n := n) (g := snapshot.builder.circuit.gates)
+              (snapshot.branches_le hmem)) =
+          branchGuard (M := M) (conf := f x) qs := by
+  classical
+  intro snapshot x qs w hmem
+  -- Expose the underlying branch snapshot used as the starting point.
+  unfold writeSnapshot at snapshot
+  set base := branchSnapshot (M := M) (n := n) sc with hbase
+  set writeIndices := writeIndexList (M := M) (n := n) (sc := sc) base
+    with hindices
+  -- Semantic characterisation of the branch wires before appending the write gate.
+  have hBaseSpec := branchSnapshot_spec (M := M) (n := n) (sc := sc)
+      (f := f) hsc
+  have hBaseBranches := hBaseSpec.2
+  -- Appending the aggregated write gate does not modify existing wires.
+  have hPres := StraightLineCircuit.EvalBuilder.appendBigOr_evalWire_preserved
+      (b := base.builder) (ws := writeIndices) (w := w)
+      (hw := base.branches_le (by simpa [snapshot, hbase, hindices] using hmem))
+      (x := x)
+  -- Rewrite the preservation lemma to reference the concrete snapshot fields.
+  -- Combine preservation with the semantic description of the branch guard.
+  have hRewrite :
+      StraightLineCircuit.evalWire
+          (C :=
+            (StraightLineCircuit.EvalBuilder.appendBigOr
+              (b := base.builder) writeIndices).fst.circuit) (x := x)
+          (w.toFin (n := n)
+            (g :=
+              (StraightLineCircuit.EvalBuilder.appendBigOr
+                (b := base.builder) writeIndices).fst.circuit.gates)
+            (by
+              have hmono := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+                (b := base.builder) (ws := writeIndices)
+              exact Nat.le_trans
+                (base.branches_le
+                  (by simpa [snapshot, hbase, hindices] using hmem)) hmono)) =
+        StraightLineCircuit.evalWire (C := base.builder.circuit) (x := x)
+          (w.toFin (n := n) (g := base.builder.circuit.gates)
+            (base.branches_le
+              (by simpa [snapshot, hbase, hindices] using hmem))) := by
+    simpa [snapshot, hbase, hindices] using hPres
+  -- The evaluation in the base snapshot coincides with the Boolean guard.
+  have hBaseEval := hBaseBranches (x := x) (qs := qs) (w := w)
+    (by simpa [snapshot, hbase] using hmem)
+  -- Conclude by rewriting the sigma components introduced in `writeSnapshot`.
+  simpa [snapshot, hbase, hindices] using hRewrite.trans hBaseEval
+
+/--
+Branch guards remain valid after extending the write snapshot with the
+per-cell tape gadgets.  Consequently the tape snapshot continues to expose, for
+each transition pair, a wire evaluating to `branchGuard` in the enlarged
+straight-line circuit.-/
+lemma tapeSnapshot_branch_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    let snapshot := tapeSnapshot (M := M) (n := n) sc
+    ∀ x {qs : M.state × Bool} {w : StraightLineCircuit.Wire n},
+      (hmem : (qs, w) ∈ snapshot.branches) →
+        StraightLineCircuit.evalWire (C := snapshot.builder.circuit) (x := x)
+            (w.toFin (n := n) (g := snapshot.builder.circuit.gates)
+              (snapshot.branches_le hmem)) =
+          branchGuard (M := M) (conf := f x) qs := by
+  classical
+  intro snapshot x qs w hmem
+  -- Unfold the snapshot to expose the auxiliary construction.
+  unfold tapeSnapshot at snapshot
+  set base := writeSnapshot (M := M) (n := n) sc with hbase
+  set indices := tapeIndexList (M := M) n with hindices
+  obtain ⟨bFinal, hWriteFinal, hMono, tapes⟩ :=
+    tapeSnapshotAux (M := M) (n := n) (sc := sc) (snapshot := base)
+      (tapeIndexList (M := M) n) base.builder base.write_le
+  -- Evaluate the branch wire in the base snapshot before extending the builder.
+  have hBaseEval := writeSnapshot_branch_spec (M := M) (n := n) (sc := sc)
+      (f := f) hsc
+  -- Transport the equality through the tape-extension helper.
+  have hPres := tapeSnapshotAux_preserves_wire (M := M) (n := n) (sc := sc)
+      (snapshot := base) (indices := tapeIndexList (M := M) n)
+      (b := base.builder) (hWrite := base.write_le) (w := w)
+      (hw := base.branches_le (by simpa [snapshot, hbase] using hmem))
+      (g := fun x => branchGuard (M := M) (conf := f x) qs)
+      (hwEval := by
+        intro x'
+        simpa [hbase] using hBaseEval (snapshot := base) (x := x')
+          (qs := qs) (w := w) (by simpa [snapshot, hbase] using hmem))
+  have hResult := hPres (x := x)
+  -- Rephrase the result using the concrete sigma components of the snapshot.
+  simpa [snapshot, hbase, hindices, Nat.le_trans] using hResult
+
+
+lemma tapeSnapshot_exists_wire (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) :
+    ∃ w, (i, w) ∈ (tapeSnapshot (M := M) (n := n) sc).tapes := by
+  classical
+  set snapshot := tapeSnapshot (M := M) (n := n) sc
+  have hi : i ∈ tapeIndexList (M := M) n := by
+    simpa [tapeIndexList] using List.mem_finRange i
+  have hPairs := tapeSnapshot_tapes_pairs (M := M) (n := n) (sc := sc)
+  have hiMap : i ∈ snapshot.tapes.map Prod.fst := by
+    simpa [snapshot, hPairs] using hi
+  obtain ⟨entry, hmem, hfst⟩ := List.mem_map.1 hiMap
+  rcases entry with ⟨j, w⟩
+  have : j = i := by simpa using hfst
+  subst this
+  exact ⟨w, by simpa [snapshot] using hmem⟩
+
 
 end StraightConfig
 
@@ -3289,6 +3445,531 @@ lemma stateBuilderStep_spec (sc : StraightConfig M n)
     (hEval.trans (by simpa using hGuardFold)).trans
       ((by simpa using hMapPairs).trans hAccumulator)
   simpa using hCombined
+
+/--
+State-level snapshot extending the head snapshot with wires computing each
+successor state indicator.  The structure mirrors the previous snapshots and
+records the accumulated builder together with proofs that all collected wires
+remain within bounds.
+-/
+structure StraightConfig.StateSnapshot (sc : StraightConfig M n)
+    extends StraightConfig.HeadSnapshot (M := M) (n := n) sc where
+  states : List (M.state × StraightLineCircuit.Wire n)
+  states_le :
+    ∀ {q : M.state} {w : StraightLineCircuit.Wire n},
+      (q, w) ∈ states → w.bound ≤ builder.circuit.gates
+
+/--
+Auxiliary recursion used to build the state snapshot.  The helper iterates over
+an explicit list of states, applying `stateBuilderStep` to accumulate the wires
+for each successor indicator while preserving the monotonicity facts required to
+reuse previously constructed gadgets.
+-/
+def StraightConfig.stateSnapshotAux (sc : StraightConfig M n)
+    (snapshot : StraightConfig.HeadSnapshot (M := M) (n := n) sc) :
+    ∀ (states : List M.state)
+      (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+      (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates),
+        Σ' (b' : StraightLineCircuit.EvalBuilder n sc.circuit),
+            (snapshot.builder.circuit.gates ≤ b'.circuit.gates) ×
+            (b.circuit.gates ≤ b'.circuit.gates) ×
+            { wires : List (M.state × StraightLineCircuit.Wire n) //
+                ∀ {q : M.state} {w : StraightLineCircuit.Wire n},
+                  (q, w) ∈ wires → w.bound ≤ b'.circuit.gates }
+  | [], b, hMono =>
+      ⟨ b, hMono, le_rfl, ⟨[], by intro q w h; cases h⟩ ⟩
+  | q :: rest, b, hMono => by
+      classical
+      -- Append the wire computing the contribution to state `q`.
+      let step := stateBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (q' := q)
+      obtain ⟨bNext, wire⟩ := step
+      have hMonoStep : b.circuit.gates ≤ bNext.circuit.gates := by
+        unfold stateBuilderStep at step
+        have := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+          (b := b)
+          (ws := stateContributionIndices (M := M) (n := n) (sc := sc)
+            (snapshot := snapshot) (b := b) (hMono := hMono) q)
+        simpa [step, stateBuilderStep] using this
+      have hMonoSnapshot : snapshot.builder.circuit.gates ≤ bNext.circuit.gates :=
+        Nat.le_trans hMono hMonoStep
+      -- Recurse on the tail of the state list.
+      obtain ⟨bRest, hMonoRest, hChain, restList⟩ :=
+        StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) rest bNext hMonoSnapshot
+      have hWireBound : wire.bound ≤ bRest.circuit.gates := by
+        have hWireNext : wire.bound ≤ bNext.circuit.gates := by
+          unfold stateBuilderStep at step
+          have := StraightLineCircuit.Wire.ofFin_bound
+            (n := n)
+            (g := (StraightLineCircuit.EvalBuilder.appendBigOr
+              (b := b)
+              (stateContributionIndices (M := M) (n := n) (sc := sc)
+                (snapshot := snapshot) (b := b) (hMono := hMono) q))).fst.circuit.gates)
+            ((StraightLineCircuit.EvalBuilder.appendBigOr
+              (b := b)
+              (stateContributionIndices (M := M) (n := n) (sc := sc)
+                (snapshot := snapshot) (b := b) (hMono := hMono) q))).snd)
+          simpa [step, stateBuilderStep] using this
+        exact Nat.le_trans hWireNext hChain
+      refine ⟨ bRest
+             , hMonoRest
+             , Nat.le_trans hMonoStep hChain
+             , ⟨ (q, wire) :: restList.val, ?_ ⟩ ⟩
+      intro q' w' hmem
+      have hcases := List.mem_cons.1 hmem
+      cases hcases with
+      | inl hhead =>
+          cases hhead with
+          | rfl =>
+              exact hWireBound
+      | inr htail =>
+          exact restList.property htail
+
+lemma StraightConfig.stateSnapshotAux_states_pairs (sc : StraightConfig M n)
+    (snapshot : StraightConfig.HeadSnapshot (M := M) (n := n) sc)
+    (states : List M.state)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates) :
+    let result := StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) states b hMono
+    result.snd.snd.snd.val.map Prod.fst = states := by
+  classical
+  induction states with
+  | nil =>
+      intro b hMono
+      simp [StraightConfig.stateSnapshotAux]
+  | cons q rest ih =>
+      intro b hMono
+      have step := stateBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (q' := q)
+      obtain ⟨bNext, _wire⟩ := step
+      have hMonoStep : b.circuit.gates ≤ bNext.circuit.gates := by
+        unfold stateBuilderStep at step
+        have := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+          (b := b)
+          (ws := stateContributionIndices (M := M) (n := n) (sc := sc)
+            (snapshot := snapshot) (b := b) (hMono := hMono) q)
+        simpa [step, stateBuilderStep] using this
+      have hMonoSnapshot : snapshot.builder.circuit.gates ≤ bNext.circuit.gates :=
+        Nat.le_trans hMono hMonoStep
+      obtain ⟨bRest, hMonoRest, hChain, restList⟩ :=
+        StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) rest bNext hMonoSnapshot
+      have hTail := ih (b := bNext) (hMono := hMonoSnapshot)
+      simp [StraightConfig.stateSnapshotAux, step, hMonoStep, hMonoSnapshot,
+        List.map_cons, hTail]
+
+lemma StraightConfig.stateSnapshotAux_gate_le (sc : StraightConfig M n)
+    (snapshot : StraightConfig.HeadSnapshot (M := M) (n := n) sc)
+    (states : List M.state)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates) :
+    let result := StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) states b hMono
+    result.fst.circuit.gates ≤
+      b.circuit.gates + states.length * (2 * snapshot.branches.length + 1) := by
+  classical
+  induction states with
+  | nil =>
+      intro b hMono
+      simp [StraightConfig.stateSnapshotAux]
+  | cons q rest ih =>
+      intro b hMono
+      have step := stateBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (q' := q)
+      obtain ⟨bNext, _wire⟩ := step
+      have hMonoStep : b.circuit.gates ≤ bNext.circuit.gates := by
+        unfold stateBuilderStep at step
+        have := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+          (b := b)
+          (ws := stateContributionIndices (M := M) (n := n) (sc := sc)
+            (snapshot := snapshot) (b := b) (hMono := hMono) q)
+        simpa [step, stateBuilderStep] using this
+      have hMonoSnapshot : snapshot.builder.circuit.gates ≤ bNext.circuit.gates :=
+        Nat.le_trans hMono hMonoStep
+      have hRec := ih (b := bNext) (hMono := hMonoSnapshot)
+      have hStep := stateBuilderStep_gate_le (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (q' := q)
+      have hCombined :=
+        Nat.le_trans hRec
+          (Nat.add_le_add_left hStep (rest.length * (2 * snapshot.branches.length + 1)))
+      simp [StraightConfig.stateSnapshotAux, step, hMonoStep, hMonoSnapshot,
+        Nat.mul_add, Nat.mul_succ, Nat.succ_eq_add_one, Nat.add_comm,
+        Nat.add_left_comm, Nat.add_assoc] using hCombined
+
+/--
+Assemble the full state snapshot by iterating over `stateList`.  The builder is
+extended so that, in addition to the previously recorded tape and head wires, it
+now also stores the successor state indicators.
+-/
+noncomputable def StraightConfig.stateSnapshot (sc : StraightConfig M n) :
+    StraightConfig.StateSnapshot (M := M) (n := n) sc := by
+  classical
+  let base := StraightConfig.headSnapshot (M := M) (n := n) sc
+  let states := stateList M
+  obtain ⟨bFinal, hMono, _hChain, wires⟩ :=
+    StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+      (snapshot := base) states base.builder (Nat.le_refl _)
+  refine { builder := bFinal
+         , symbol := base.symbol
+         , symbol_le := Nat.le_trans base.symbol_le hMono
+         , branches := base.branches
+         , branches_le := fun hmem => Nat.le_trans (base.branches_le hmem) hMono
+         , write := base.write
+         , write_le := Nat.le_trans base.write_le hMono
+         , tapes := base.tapes
+         , tapes_le := fun hmem => Nat.le_trans (base.tapes_le hmem) hMono
+         , heads := base.heads
+         , heads_le := fun hmem => Nat.le_trans (base.heads_le hmem) hMono
+         , states := wires.val
+         , states_le := fun hmem => wires.property hmem }
+
+lemma StraightConfig.stateSnapshot_states_pairs (sc : StraightConfig M n) :
+    (StraightConfig.stateSnapshot (M := M) (n := n) sc).states.map Prod.fst =
+      stateList M := by
+  classical
+  unfold StraightConfig.stateSnapshot
+  set base := StraightConfig.headSnapshot (M := M) (n := n) sc with hbase
+  set states := stateList M with hstates
+  obtain ⟨bFinal, hMono, _hChain, wires⟩ :=
+    StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+      (snapshot := base) states base.builder (Nat.le_refl _)
+  have := StraightConfig.stateSnapshotAux_states_pairs (M := M) (n := n)
+      (sc := sc) (snapshot := base) (states := states)
+      (b := base.builder) (hMono := Nat.le_refl _)
+  simpa [base, hbase, states, hstates]
+    using this
+
+lemma StraightConfig.stateSnapshot_gate_le (sc : StraightConfig M n) :
+    (StraightConfig.stateSnapshot (M := M) (n := n) sc).builder.circuit.gates ≤
+      (StraightConfig.headSnapshot (M := M) (n := n) sc).builder.circuit.gates +
+        stateCard M * (2 * (StraightConfig.tapeSnapshot (M := M) (n := n) sc).branches.length + 1) := by
+  classical
+  unfold StraightConfig.stateSnapshot
+  set base := StraightConfig.headSnapshot (M := M) (n := n) sc with hbase
+  set states := stateList M with hstates
+  obtain ⟨bFinal, hMono, _hChain, wires⟩ :=
+    StraightConfig.stateSnapshotAux (M := M) (n := n) (sc := sc)
+      (snapshot := base) states base.builder (Nat.le_refl _)
+  have hAux := StraightConfig.stateSnapshotAux_gate_le (M := M) (n := n)
+      (sc := sc) (snapshot := base) (states := states)
+      (b := base.builder) (hMono := Nat.le_refl _)
+  have hLen : states.length = stateCard M := by
+    simpa [states, hstates, stateList] using length_stateList (M := M)
+  simpa [base, hbase, states, hstates, hLen, Nat.mul_comm, Nat.mul_left_comm,
+    Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    using hAux
+
+lemma StraightConfig.stateSnapshot_exists_wire (sc : StraightConfig M n)
+    (q : M.state) :
+    ∃ w, (q, w) ∈ (StraightConfig.stateSnapshot (M := M) (n := n) sc).states := by
+  classical
+  set snapshot := StraightConfig.stateSnapshot (M := M) (n := n) sc
+  have hmem : q ∈ stateList M := state_mem_stateList (M := M) q
+  have hPairs := StraightConfig.stateSnapshot_states_pairs (M := M) (n := n)
+    (sc := sc)
+  have hMap : q ∈ snapshot.states.map Prod.fst := by
+    simpa [snapshot, hPairs] using hmem
+  obtain ⟨entry, hmemEntry, hfst⟩ := List.mem_map.1 hMap
+  rcases entry with ⟨q', w⟩
+  have : q' = q := by simpa using hfst
+  subst this
+  exact ⟨w, by simpa [snapshot] using hmemEntry⟩
+
+/--
+Every tape index recorded in the underlying tape snapshot also appears in the
+state snapshot.  The proof unfolds both constructions and observes that the
+lists of tape wires are carried over verbatim when enriching the snapshot with
+head and state information.
+-/
+lemma StraightConfig.stateSnapshot_exists_tape (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) :
+    ∃ w, (i, w) ∈ (StraightConfig.stateSnapshot (M := M) (n := n) sc).tapes := by
+  classical
+  set snapshot := StraightConfig.stateSnapshot (M := M) (n := n) sc with hsnapshot
+  set headSnapshot := StraightConfig.headSnapshot (M := M) (n := n) sc with hhead
+  set tapeSnapshot := StraightConfig.tapeSnapshot (M := M) (n := n) sc with htape
+  -- Retrieve the requested wire from the original tape snapshot.
+  obtain ⟨w, hw⟩ := tapeSnapshot_exists_wire (M := M) (n := n) (sc := sc) i
+  -- Show that the intermediate head snapshot preserves the tape list.
+  have hHeadTape : headSnapshot.tapes = tapeSnapshot.tapes := by
+    simp [headSnapshot, hhead, StraightConfig.headSnapshot, tapeSnapshot, htape]
+  -- The state snapshot keeps exactly the same tape list as the head snapshot.
+  have hStateTape : snapshot.tapes = headSnapshot.tapes := by
+    simp [snapshot, hsnapshot, StraightConfig.stateSnapshot, headSnapshot, hhead]
+  -- Rewrite the membership proof along the equalities recorded above.
+  have hRewrite : (i, w) ∈ snapshot.tapes := by
+    simpa [snapshot, hsnapshot, headSnapshot, hhead, tapeSnapshot, htape,
+      hStateTape, hHeadTape] using hw
+  exact ⟨w, hRewrite⟩
+
+/--
+Each head index produced during `StraightConfig.headSnapshot` remains available
+after extending the snapshot with the successor-state wires.  This lemma turns
+the definitional equalities of the nested snapshots into an existence statement
+that is convenient when assembling the straight-line step configuration.
+-/
+lemma StraightConfig.stateSnapshot_exists_head (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) :
+    ∃ w, (i, w) ∈ (StraightConfig.stateSnapshot (M := M) (n := n) sc).heads := by
+  classical
+  set snapshot := StraightConfig.stateSnapshot (M := M) (n := n) sc with hsnapshot
+  set headSnapshot := StraightConfig.headSnapshot (M := M) (n := n) sc with hhead
+  -- Obtain the desired head wire in the intermediate snapshot.
+  obtain ⟨w, hw⟩ := StraightConfig.headSnapshot_exists_wire
+    (M := M) (n := n) (sc := sc) i
+  -- The state snapshot simply reuses the list of head wires from the head snapshot.
+  have hStateHead : snapshot.heads = headSnapshot.heads := by
+    simp [snapshot, hsnapshot, StraightConfig.stateSnapshot, headSnapshot, hhead]
+  -- Transport the membership proof through the equality above.
+  have hRewrite : (i, w) ∈ snapshot.heads := by
+    simpa [snapshot, hsnapshot, headSnapshot, hhead, hStateHead] using hw
+  exact ⟨w, hRewrite⟩
+
+/--
+Return the straight-line handles for every successor state indicator, indexed by
+`Fin (stateCard M)` in the canonical order induced by `stateEquiv`.
+-/
+noncomputable def StraightConfig.nextStateBuilder (sc : StraightConfig M n) :
+    Σ' snapshot : StraightConfig.StateSnapshot (M := M) (n := n) sc,
+      Fin (stateCard M) → Fin (n + snapshot.builder.circuit.gates) := by
+  classical
+  refine ⟨StraightConfig.stateSnapshot (M := M) (n := n) sc, ?_⟩
+  intro i
+  set snapshot := StraightConfig.stateSnapshot (M := M) (n := n) sc
+  let q := (stateEquiv M).symm i
+  let wire := Classical.choose
+    (StraightConfig.stateSnapshot_exists_wire (M := M) (n := n) (sc := sc) q)
+  have hmem := Classical.choose_spec
+    (StraightConfig.stateSnapshot_exists_wire (M := M) (n := n) (sc := sc) q)
+  exact wire.toFin (n := n) (g := snapshot.builder.circuit.gates)
+    (snapshot.states_le (by simpa [snapshot, q] using hmem))
+
+/--
+Construct the straight-line configuration representing the successor of `sc`.
+The function reuses the state snapshot built in previous sections and turns the
+recorded tape/head/state wires into `Fin`-indexed handles referencing the final
+builder.  No new gates are introduced here—the heavy lifting is delegated to the
+snapshot constructors—so this wrapper merely exposes a convenient high-level
+API for the upcoming semantic and gate-count analyses.
+-/
+noncomputable def StraightConfig.step (sc : StraightConfig M n) :
+    StraightConfig M n := by
+  classical
+  -- Materialise the complete snapshot covering tape, head, and state updates.
+  let snapshot := StraightConfig.stateSnapshot (M := M) (n := n) sc
+  -- Interpret the collected tape wires inside the final builder.
+  have tapeHandles :
+      Fin (M.tapeLength n) → Fin (n + snapshot.builder.circuit.gates) := fun i =>
+    let entry := Classical.choose
+      (StraightConfig.stateSnapshot_exists_tape (M := M) (n := n) (sc := sc) i)
+    have hmem := Classical.choose_spec
+      (StraightConfig.stateSnapshot_exists_tape (M := M) (n := n) (sc := sc) i)
+    entry.toFin (n := n) (g := snapshot.builder.circuit.gates)
+      (snapshot.tapes_le hmem)
+  -- Similarly expose the head wires.
+  have headHandles :
+      Fin (M.tapeLength n) → Fin (n + snapshot.builder.circuit.gates) := fun i =>
+    let entry := Classical.choose
+      (StraightConfig.stateSnapshot_exists_head (M := M) (n := n) (sc := sc) i)
+    have hmem := Classical.choose_spec
+      (StraightConfig.stateSnapshot_exists_head (M := M) (n := n) (sc := sc) i)
+    entry.toFin (n := n) (g := snapshot.builder.circuit.gates)
+      (snapshot.heads_le hmem)
+  -- State indicators were already packaged for the snapshot; we reuse them directly.
+  have stateHandles :
+      Fin (stateCard M) → Fin (n + snapshot.builder.circuit.gates) := fun i =>
+    let entry := Classical.choose
+      (StraightConfig.stateSnapshot_exists_wire (M := M) (n := n) (sc := sc)
+        ((stateEquiv M).symm i))
+    have hmem := Classical.choose_spec
+      (StraightConfig.stateSnapshot_exists_wire (M := M) (n := n) (sc := sc)
+        ((stateEquiv M).symm i))
+    entry.toFin (n := n) (g := snapshot.builder.circuit.gates)
+      (snapshot.states_le (by simpa using hmem))
+  -- Package the handles alongside the snapshot builder into a full straight configuration.
+  exact
+    { circuit := snapshot.builder.circuit
+      , tape := tapeHandles
+      , head := headHandles
+      , state := stateHandles }
+
+/--
+Gate-count bound for the straight-line successor configuration.  The wrapper
+`StraightConfig.step` merely exposes the wires produced by
+`StraightConfig.stateSnapshot`, hence its circuit size coincides with that of
+the underlying snapshot.  Combining the previously established bounds for the
+tape, head, and state snapshots yields an explicit global estimate on the
+number of appended gates.-/
+lemma StraightConfig.step_gateGrowth (sc : StraightConfig M n) :
+    (StraightConfig.step (M := M) (n := n) sc).circuit.gates ≤
+      sc.circuit.gates +
+        (6 * M.tapeLength n + 8 * stateCard M + 2) +
+        M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) +
+        stateCard M * (4 * stateCard M + 1) := by
+  classical
+  -- Name the intermediate snapshots used by the straight-line step wrapper.
+  set snapshot := StraightConfig.stateSnapshot (M := M) (n := n) sc with hsnapshot
+  set headSnapshot := StraightConfig.headSnapshot (M := M) (n := n) sc with hhead
+  set tapeSnapshot := StraightConfig.tapeSnapshot (M := M) (n := n) sc with htape
+  -- Gate count of `step` matches the state snapshot.
+  have hStepEq :
+      (StraightConfig.step (M := M) (n := n) sc).circuit.gates =
+        snapshot.builder.circuit.gates := by
+    simp [StraightConfig.step, snapshot, hsnapshot]
+  -- Apply the bound for the state snapshot.
+  have hState := StraightConfig.stateSnapshot_gate_le (M := M) (n := n)
+      (sc := sc)
+  have hState' :
+      snapshot.builder.circuit.gates ≤
+        headSnapshot.builder.circuit.gates +
+          stateCard M *
+            (2 * tapeSnapshot.branches.length + 1) := by
+    simpa [snapshot, hsnapshot, headSnapshot, hhead, tapeSnapshot, htape]
+      using hState
+  -- Rewrite the branch count using the explicit enumeration of transition pairs.
+  have hBranchesLen : tapeSnapshot.branches.length = 2 * stateCard M := by
+    have hPairs := StraightConfig.tapeSnapshot_branches_pairs (M := M)
+      (n := n) (sc := sc)
+    have hLen := congrArg List.length hPairs
+    have hStatePairs : (stateSymbolPairs M).length = 2 * stateCard M :=
+      length_stateSymbolPairs (M := M)
+    simpa [tapeSnapshot, htape, hStatePairs]
+      using hLen
+  have hConst :
+      stateCard M * (2 * tapeSnapshot.branches.length + 1) =
+        stateCard M * (4 * stateCard M + 1) := by
+    simp [tapeSnapshot, htape, hBranchesLen, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+  -- Instantiate the bound for the head snapshot.
+  have hHead := StraightConfig.headSnapshot_gate_le (M := M) (n := n)
+      (sc := sc)
+  have hHead' : headSnapshot.builder.circuit.gates ≤
+      sc.circuit.gates +
+        (6 * M.tapeLength n + 8 * stateCard M + 2) +
+        M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) := by
+    simpa [headSnapshot, hhead]
+      using hHead
+  -- Assemble all components into the final inequality.
+  have hState'' :
+      snapshot.builder.circuit.gates ≤
+        headSnapshot.builder.circuit.gates +
+          stateCard M * (4 * stateCard M + 1) := by
+    simpa [hConst]
+      using hState'
+  have hCombined :=
+    Nat.le_trans hState''
+      (Nat.add_le_add_right hHead'
+        (stateCard M * (4 * stateCard M + 1)))
+  -- Convert back to the gate count of `StraightConfig.step`.
+  simpa [hStepEq, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    using hCombined
+
+/--
+Rephrasing of `StraightConfig.step_gateGrowth` using the dedicated gate-count
+notation.  The lemma emphasises that taking a single straight-line step only
+adds a fixed number of gates depending on the machine parameters and the tape
+length of the current input.-/
+lemma straightTotalGateCount_step_le (sc : StraightConfig M n) :
+    straightTotalGateCount (StraightConfig.step (M := M) (n := n) sc) ≤
+      straightTotalGateCount sc +
+        (6 * M.tapeLength n + 8 * stateCard M + 2) +
+        M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) +
+        stateCard M * (4 * stateCard M + 1) := by
+  simpa [straightTotalGateCount]
+    using StraightConfig.step_gateGrowth (M := M) (n := n) (sc := sc)
+
+/--
+Increment added to the gate count by a single straight-line step.  The constant
+depends only on the machine parameters (number of states and tape length for the
+current input size) and will be iterated in `straightTotalGateCount_iterate_le`.
+-/
+def straightStepGateGrowthBound (M : TM) (n : ℕ) : ℕ :=
+  (6 * M.tapeLength n + 8 * stateCard M + 2) +
+    M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) +
+    stateCard M * (4 * stateCard M + 1)
+
+lemma straightTotalGateCount_step_le' (sc : StraightConfig M n) :
+    straightTotalGateCount (StraightConfig.step (M := M) (n := n) sc) ≤
+      straightTotalGateCount sc + straightStepGateGrowthBound (M := M) (n := n) := by
+  simpa [straightStepGateGrowthBound]
+    using straightTotalGateCount_step_le (M := M) (n := n) (sc := sc)
+
+/--
+Linear bound for the gate count after iterating the straight-line step `t`
+times.  Each iteration contributes at most
+`straightStepGateGrowthBound M n` additional gates, yielding a simple affine
+estimate with respect to the number of simulated machine steps.
+-/
+lemma straightTotalGateCount_iterate_le (t : ℕ) (sc : StraightConfig M n) :
+    straightTotalGateCount
+        (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc) ≤
+      straightTotalGateCount sc +
+        t * straightStepGateGrowthBound (M := M) (n := n) := by
+  classical
+  induction t with
+  | zero =>
+      simp
+  | succ t ih =>
+      set Δ := straightStepGateGrowthBound (M := M) (n := n) with hΔ
+      have hStep := straightTotalGateCount_step_le'
+        (M := M) (n := n)
+        (sc := Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)
+      have hIH := Nat.add_le_add_right ih Δ
+      have hIter :
+          straightTotalGateCount
+              (Nat.iterate (StraightConfig.step (M := M) (n := n)) (Nat.succ t) sc) =
+            straightTotalGateCount
+              (StraightConfig.step (M := M) (n := n)
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)) := by
+        simp [Nat.iterate_succ, Function.comp]
+      have hBound :
+          straightTotalGateCount
+              (StraightConfig.step (M := M) (n := n)
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)) ≤
+            straightTotalGateCount
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc) + Δ := by
+        simpa [hΔ] using hStep
+      have hAccum :
+          straightTotalGateCount
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc) + Δ ≤
+            (straightTotalGateCount sc +
+                t * straightStepGateGrowthBound (M := M) (n := n)) + Δ := by
+        simpa [hΔ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+          using hIH
+      have hSucc :
+          (straightTotalGateCount sc +
+              t * straightStepGateGrowthBound (M := M) (n := n)) + Δ =
+            straightTotalGateCount sc +
+              Nat.succ t * straightStepGateGrowthBound (M := M) (n := n) := by
+        simp [hΔ, Nat.succ_mul, Nat.mul_succ, Nat.add_comm, Nat.add_left_comm,
+          Nat.add_assoc]
+      have :=
+        le_trans (by simpa [hIter] using hBound)
+          (le_trans hAccum (by simpa [hSucc]))
+      simpa [hΔ]
+        using this
+
+/--
+Global gate-count bound for the straight-line simulation after the full runtime
+of the machine.  Each iteration contributes at most
+`straightStepGateGrowthBound M n` fresh gates, so `M.runTime n` repetitions grow
+linearly in the number of steps.
+-/
+lemma straightTotalGateCount_runtime_le (M : TM) (n : ℕ) :
+    straightTotalGateCount
+        (Nat.iterate (StraightConfig.step (M := M) (n := n)) (M.runTime n)
+          (StraightConfig.initial (M := M) n)) ≤
+      2 +
+        M.runTime n * straightStepGateGrowthBound (M := M) (n := n) := by
+  -- Instantiate the generic iterate inequality with `t = M.runTime n` and
+  -- unfold the initial gate count.
+  have hIter := straightTotalGateCount_iterate_le (M := M) (n := n)
+    (t := M.runTime n) (sc := StraightConfig.initial (M := M) n)
+  simpa [straightTotalGateCount_initial, Nat.add_comm]
+    using hIter
+
 
 /-!
 ### Head builder infrastructure
@@ -3956,9 +4637,534 @@ def headContributionIndices (sc : StraightConfig M n)
       (w.1.toFin (n := n) (g := builder.circuit.gates)
         (wires.property (by simpa using w.2))))
   exact ⟨builder, hMono', indices⟩
+
+/--
+Helper builder constructing the contribution of all transition branches to the
+head indicator at position `j`.  The function first materialises the auxiliary
+AND gates recorded by `headContributionIndices` and subsequently aggregates them
+into a single wire via `appendBigOr`.-/
+def headBuilderStep (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates)
+    (j : Fin (M.tapeLength n)) :
+    Σ' (b' : StraightLineCircuit.EvalBuilder n sc.circuit),
+      StraightLineCircuit.Wire n := by
+  classical
+  -- Enumerate the indices contributing to the next-head indicator.
+  let indices := headContributionIndices (M := M) (n := n) (sc := sc)
+    (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+  -- Aggregate the collected wires into a single disjunction gate.
+  let result := StraightLineCircuit.EvalBuilder.appendBigOr
+    (b := indices.fst) indices.snd.snd
+  -- Package the resulting gate as a reusable wire token.
+  let wire : StraightLineCircuit.Wire n :=
+    StraightLineCircuit.Wire.ofFin (n := n)
+      (g := result.fst.circuit.gates) result.snd
+  exact ⟨result.fst, wire⟩
+
+/--
+Length bound for the list of indices returned by `headContributionIndices`.  The
+construction processes every branch and, for each branch, contributes at most
+`tapeLength` many indices.  Consequently, the total number of indices is bounded
+by `branches.length * tapeLength`.-/
+lemma headContributionIndices_length_le (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates)
+    (j : Fin (M.tapeLength n)) :
+    let result := headContributionIndices (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+    result.snd.snd.length ≤
+      snapshot.branches.length * M.tapeLength n := by
+  classical
+  unfold headContributionIndices
+  obtain ⟨builder, hMono', wires⟩ :=
+    headContributionWires (M := M) (n := n) (sc := sc)
+      (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+  -- The list of indices is obtained by mapping over `attach`, hence it shares
+  -- the same length as the original list of wire tokens returned by
+  -- `headContributionWires`.
+  have hlenAttach : wires.val.attach.length = wires.val.length :=
+    List.length_attach _
+  have hlen : (wires.val.attach.map
+      (fun w =>
+        (w.1.toFin (n := n) (g := builder.circuit.gates)
+          (wires.property (by simpa using w.2))))).length =
+      wires.val.length := by
+    -- Mapping over `attach` preserves the recorded length.
+    have hmap := List.length_map
+      (fun w =>
+        (w.1.toFin (n := n) (g := builder.circuit.gates)
+          (wires.property (by simpa using w.2)))) wires.val.attach
+    simpa [hlenAttach] using hmap
+  -- Reinterpret the bound supplied by `headContributionWires` in terms of the
+  -- indices list.
+  have hwire := headContributionWires_length_le (M := M) (n := n) (sc := sc)
+      (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+  -- Finish by rewriting through the previously recorded length equality.
+  simpa [hlen] using hwire
+
+/--
+Gate-count estimate for `headBuilderStep`.  The helper adds the gates required
+to materialise the branch/head conjunctions and subsequently appends a big OR.
+Both stages grow at most linearly with the number of processed branches.-/
+lemma headBuilderStep_gate_le (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates)
+    (j : Fin (M.tapeLength n)) :
+    let result := headBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+    result.fst.circuit.gates ≤
+      b.circuit.gates + 3 * (snapshot.branches.length * M.tapeLength n) + 1 := by
+  classical
+  unfold headBuilderStep
+  -- Instantiate the bounds on the intermediate builder produced by the
+  -- contribution enumeration.
+  set indices := headContributionIndices (M := M) (n := n) (sc := sc)
+    (snapshot := snapshot) (b := b) (hMono := hMono) (j := j) with hindices
+  have hGateIndices := headContributionWires_gate_le (M := M) (n := n)
+      (sc := sc) (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+  -- The list of indices has length at most `branches.length * tapeLength`.
+  have hLen := headContributionIndices_length_le (M := M) (n := n) (sc := sc)
+      (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+  -- Apply the linear gate bound for `appendBigOr`.
+  have hBigOr := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le_linear
+    (b := indices.fst) (ws := indices.snd.snd)
+  -- Rewrite all bounds in terms of the concrete quantities.
+  have hGateIndices' :
+      indices.fst.circuit.gates ≤
+        b.circuit.gates + snapshot.branches.length * M.tapeLength n := by
+    simpa [hindices] using hGateIndices
+  have hLen' : indices.snd.snd.length ≤
+      snapshot.branches.length * M.tapeLength n := by
+    simpa [hindices] using hLen
+  -- Combine the contributions of both stages.
+  -- Bound the number of gates contributed by the `bigOr` aggregation.
+  have hBigOrBound :
+      (StraightLineCircuit.EvalBuilder.appendBigOr (b := indices.fst)
+          indices.snd.snd).fst.circuit.gates ≤
+        indices.fst.circuit.gates + 2 * indices.snd.snd.length + 1 := hBigOr
+  -- Translate the intermediate bounds to the ambient builder `b`.
+  have hAddIndices :
+      indices.fst.circuit.gates + 2 * indices.snd.snd.length + 1 ≤
+        (b.circuit.gates + snapshot.branches.length * M.tapeLength n) +
+          2 * (snapshot.branches.length * M.tapeLength n) + 1 := by
+    have hMul :
+        2 * indices.snd.snd.length ≤
+          2 * (snapshot.branches.length * M.tapeLength n) :=
+      Nat.mul_le_mul_left _ hLen'
+    have := Nat.add_le_add hGateIndices' (Nat.add_le_add_right hMul 1)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+      Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      using this
+  -- Combine both inequalities and simplify the arithmetic.
+  have hTotal := Nat.le_trans hBigOrBound hAddIndices
+  simpa [headBuilderStep, hindices, Nat.mul_comm, Nat.mul_left_comm,
+    Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    using hTotal
+
+/-- Existing branch wires remain unaffected after invoking `headBuilderStep`. -/
+lemma headBuilderStep_preserves_branch_eval (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates)
+    (j : Fin (M.tapeLength n)) (x : Point n)
+    {qs : M.state × Bool} {w : StraightLineCircuit.Wire n}
+    (hmem : (qs, w) ∈ snapshot.branches) :
+    let result := headBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+    StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x)
+        (w.toFin (n := n) (g := result.fst.circuit.gates)
+          (by
+            -- Lift the bound on `w` through the auxiliary builder and the final
+            -- `bigOr` aggregation.
+            have hbase : w.bound ≤ snapshot.builder.circuit.gates :=
+              snapshot.branches_le hmem
+            have hb : w.bound ≤ b.circuit.gates := Nat.le_trans hbase hMono
+            have hIndices : w.bound ≤ indices.fst.circuit.gates :=
+              Nat.le_trans hb indices.snd.fst
+            have hAppend := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+              (b := indices.fst) (ws := indices.snd.snd)
+            exact Nat.le_trans hIndices hAppend)) =
+      StraightLineCircuit.evalWire (C := b.circuit) (x := x)
+        (w.toFin (n := n) (g := b.circuit.gates)
+          (Nat.le_trans (snapshot.branches_le hmem) hMono)) := by
+  classical
+  unfold headBuilderStep
+  -- Unpack the auxiliary builder produced by `headContributionIndices`.
+  set indices := headContributionIndices (M := M) (n := n) (sc := sc)
+    (snapshot := snapshot) (b := b) (hMono := hMono) (j := j) with hindices
+  have hBound : w.bound ≤ indices.fst.circuit.gates := by
+    have hw := snapshot.branches_le hmem
+    have hb := Nat.le_trans hw hMono
+    exact Nat.le_trans hb indices.snd.fst
+  -- Evaluate the preserved wire across the final `appendBigOr` call.
+  have hPres := StraightLineCircuit.EvalBuilder.appendBigOr_evalWire_preserved
+    (b := indices.fst) (ws := indices.snd.snd) (w := w)
+    (hw := hBound) (x := x)
+  simpa [indices, hindices]
+    using hPres
+
+lemma StraightConfig.headSnapshot_exists_wire (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) :
+    ∃ w, (i, w) ∈ (StraightConfig.headSnapshot (M := M) (n := n) sc).heads := by
+  classical
+  set snapshot := StraightConfig.headSnapshot (M := M) (n := n) sc
+  have hi : i ∈ tapeIndexList (M := M) n := by
+    simpa [tapeIndexList] using List.mem_finRange i
+  have hPairs := StraightConfig.headSnapshot_heads_pairs
+    (M := M) (n := n) (sc := sc)
+  have hiMap : i ∈ snapshot.heads.map Prod.fst := by
+    simpa [snapshot, hPairs] using hi
+  obtain ⟨entry, hmem, hfst⟩ := List.mem_map.1 hiMap
+  rcases entry with ⟨j, w⟩
+  have : j = i := by simpa using hfst
+  subst this
+  exact ⟨w, by simpa [snapshot] using hmem⟩
+
 /-- Enumerate all tape indices as a list. -/
 def tapeIndexList (M : TM) (n : ℕ) : List (Fin (M.tapeLength n)) :=
   List.finRange (M.tapeLength n)
+
+/--
+Snapshot extending `TapeSnapshot` with the wires computing the successor head
+indicator.  The list `heads` stores, for every tape index, the wire token
+produced by the straight-line construction together with a proof that the
+tokens remain within the bounds of the accumulated builder.-/
+structure StraightConfig.HeadSnapshot (sc : StraightConfig M n)
+    extends StraightConfig.TapeSnapshot (M := M) (n := n) sc where
+  heads : List (Fin (M.tapeLength n) × StraightLineCircuit.Wire n)
+  heads_le :
+    ∀ {i : Fin (M.tapeLength n)} {w : StraightLineCircuit.Wire n},
+      (i, w) ∈ heads → w.bound ≤ builder.circuit.gates
+
+/--
+Auxiliary recursion building the list of head wires.  Starting from an
+evaluation-aware builder `b` extending the tape snapshot, the helper iterates
+`headBuilderStep` over the supplied index list, returning the extended builder
+and the collected wires together with the usual bound witnesses.-/
+def StraightConfig.headSnapshotAux (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc) :
+    ∀ (indices : List (Fin (M.tapeLength n)))
+      (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+      (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates),
+        Σ' (b' : StraightLineCircuit.EvalBuilder n sc.circuit),
+            (snapshot.builder.circuit.gates ≤ b'.circuit.gates) ×
+            (b.circuit.gates ≤ b'.circuit.gates) ×
+            { heads : List (Fin (M.tapeLength n) × StraightLineCircuit.Wire n) //
+                ∀ {i : Fin (M.tapeLength n)} {w : StraightLineCircuit.Wire n},
+                  (i, w) ∈ heads → w.bound ≤ b'.circuit.gates }
+  | [], b, hMono =>
+      ⟨ b, hMono, le_rfl, ⟨[], by intro i w h; cases h⟩ ⟩
+  | j :: rest, b, hMono => by
+      classical
+      -- Materialise the contribution of head index `j`.
+      let step := headBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+      obtain ⟨bNext, wire⟩ := step
+      -- The gate count is monotone across the call to `headBuilderStep`.
+      have hMonoStep : b.circuit.gates ≤ bNext.circuit.gates := by
+        unfold headBuilderStep at step
+        set indices := headContributionIndices (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) (b := b) (hMono := hMono) (j := j) with hindices
+        have hIndices : b.circuit.gates ≤ indices.fst.circuit.gates :=
+          indices.snd.fst
+        have hAppend := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+          (b := indices.fst) (ws := indices.snd.snd)
+        have hTotal := Nat.le_trans hIndices hAppend
+        simpa [step, headBuilderStep, indices, hindices]
+          using hTotal
+      have hMonoSnapshot : snapshot.builder.circuit.gates ≤ bNext.circuit.gates :=
+        Nat.le_trans hMono hMonoStep
+      -- Recursively process the tail of the index list.
+      obtain ⟨bRest, hMonoRest, hChain, restList⟩ :=
+        StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) rest bNext hMonoSnapshot
+      -- The freshly produced wire stays within bounds of the new builder.
+      have hWireBound : wire.bound ≤ bRest.circuit.gates := by
+        have hWireNext : wire.bound ≤ bNext.circuit.gates := by
+          unfold headBuilderStep at step
+          set indices := headContributionIndices (M := M) (n := n) (sc := sc)
+            (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+            with hindices
+          set result := StraightLineCircuit.EvalBuilder.appendBigOr
+            (b := indices.fst) indices.snd.snd with hresult
+          have hBound := StraightLineCircuit.Wire.ofFin_bound
+            (n := n) (g := result.fst.circuit.gates) result.snd
+          have : wire.bound = result.fst.circuit.gates := by
+            simpa [step, headBuilderStep, indices, hindices, result, hresult]
+              using hBound
+          have : wire.bound = bNext.circuit.gates := by
+            simpa [step, headBuilderStep, result, indices, hindices, hresult]
+              using this
+          exact le_of_eq this
+        exact Nat.le_trans hWireNext hChain
+      refine ⟨ bRest
+             , hMonoRest
+             , Nat.le_trans hMonoStep hChain
+             , ⟨ (j, wire) :: restList.val, ?_ ⟩ ⟩
+      intro i w hmem
+      have hmem' := List.mem_cons.1 hmem
+      cases hmem' with
+      | inl hhead =>
+          cases hhead with
+          | rfl =>
+              exact hWireBound
+      | inr htail =>
+          exact restList.property htail
+
+/-- The helper enumerates precisely the indices supplied to it. -/
+lemma StraightConfig.headSnapshotAux_heads_pairs (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (indices : List (Fin (M.tapeLength n)))
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates) :
+    let result := StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) indices b hMono
+    result.snd.snd.snd.val.map Prod.fst = indices := by
+  classical
+  induction indices with
+  | nil =>
+      intro b hMono
+      simp [StraightConfig.headSnapshotAux]
+  | cons j rest ih =>
+      intro b hMono
+      -- Mirror the structure of `headSnapshotAux` to align with the recursion.
+      have step := headBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+      obtain ⟨bNext, _wire⟩ := step
+      have hMonoStep : b.circuit.gates ≤ bNext.circuit.gates := by
+        unfold headBuilderStep at step
+        set indices := headContributionIndices (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) (b := b) (hMono := hMono) (j := j) with hindices
+        have hIndices : b.circuit.gates ≤ indices.fst.circuit.gates :=
+          indices.snd.fst
+        have hAppend := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+          (b := indices.fst) (ws := indices.snd.snd)
+        have hTotal := Nat.le_trans hIndices hAppend
+        simpa [step, headBuilderStep, indices, hindices]
+          using hTotal
+      have hMonoSnapshot : snapshot.builder.circuit.gates ≤ bNext.circuit.gates :=
+        Nat.le_trans hMono hMonoStep
+      obtain ⟨bRest, hMonoRest, hChain, restList⟩ :=
+        StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) rest bNext hMonoSnapshot
+      have hTail := ih (b := bNext) (hMono := hMonoSnapshot)
+      simp [StraightConfig.headSnapshotAux, step, hMonoStep, hMonoSnapshot,
+        List.map_cons, hTail]
+
+/-- Processing `indices` adds at most a linear number of gates proportional to
+the length of the list. -/
+lemma StraightConfig.headSnapshotAux_gate_le (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (indices : List (Fin (M.tapeLength n)))
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates) :
+    let result := StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) indices b hMono
+    result.fst.circuit.gates ≤
+      b.circuit.gates + indices.length *
+        (3 * (snapshot.branches.length * M.tapeLength n) + 1) := by
+  classical
+  induction indices with
+  | nil =>
+      intro b hMono
+      simp [StraightConfig.headSnapshotAux]
+  | cons j rest ih =>
+      intro b hMono
+      -- Replicate the structure of the helper to align the induction.
+      have step := headBuilderStep (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+      obtain ⟨bNext, _wire⟩ := step
+      have hMonoStep : b.circuit.gates ≤ bNext.circuit.gates := by
+        unfold headBuilderStep at step
+        set indices := headContributionIndices (M := M) (n := n) (sc := sc)
+          (snapshot := snapshot) (b := b) (hMono := hMono) (j := j) with hindices
+        have hIndices : b.circuit.gates ≤ indices.fst.circuit.gates :=
+          indices.snd.fst
+        have hAppend := StraightLineCircuit.EvalBuilder.appendBigOr_gate_le
+          (b := indices.fst) (ws := indices.snd.snd)
+        have hTotal := Nat.le_trans hIndices hAppend
+        simpa [step, headBuilderStep, indices, hindices]
+          using hTotal
+      have hMonoSnapshot : snapshot.builder.circuit.gates ≤ bNext.circuit.gates :=
+        Nat.le_trans hMono hMonoStep
+      -- Apply the induction hypothesis to the tail.
+      have hRec := ih (b := bNext) (hMono := hMonoSnapshot)
+      -- Account for the gates introduced at the current step.
+      have hStep := headBuilderStep_gate_le (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono) (j := j)
+      -- Combine both contributions.
+      have hCombined :=
+        Nat.le_trans hRec
+          (Nat.add_le_add_left hStep (rest.length *
+            (3 * (snapshot.branches.length * M.tapeLength n) + 1)))
+      -- Simplify the arithmetic on the right-hand side.
+      have hrewrite :
+          (b.circuit.gates +
+              (3 * (snapshot.branches.length * M.tapeLength n) + 1)) +
+            rest.length * (3 * (snapshot.branches.length * M.tapeLength n) + 1) =
+          b.circuit.gates + (rest.length + 1) *
+              (3 * (snapshot.branches.length * M.tapeLength n) + 1) := by
+        simp [Nat.mul_add, Nat.mul_succ, Nat.succ_eq_add_one, Nat.add_comm,
+          Nat.add_left_comm, Nat.add_assoc]
+      have hlen : (j :: rest).length = rest.length + 1 := rfl
+      have hTarget :
+          (StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+              (snapshot := snapshot) (j :: rest) b hMono).fst.circuit.gates ≤
+            b.circuit.gates + (rest.length + 1) *
+              (3 * (snapshot.branches.length * M.tapeLength n) + 1) := by
+        simpa [StraightConfig.headSnapshotAux, step, hMonoStep, hMonoSnapshot,
+          hrewrite]
+          using hCombined
+      simpa [hlen]
+        using hTarget
+
+/-- Assemble the full head snapshot by iterating over all tape indices. -/
+def StraightConfig.headSnapshot (sc : StraightConfig M n) :
+    StraightConfig.HeadSnapshot (M := M) (n := n) sc := by
+  classical
+  let base := StraightConfig.tapeSnapshot (M := M) (n := n) sc
+  let indices := tapeIndexList (M := M) n
+  obtain ⟨bFinal, hMono, _hChain, heads⟩ :=
+    StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+      (snapshot := base) indices base.builder (Nat.le_refl _)
+  refine
+    { builder := bFinal
+      , symbol := base.symbol
+      , symbol_le := Nat.le_trans base.symbol_le hMono
+      , branches := base.branches
+      , branches_le := ?_
+      , write := base.write
+      , write_le := Nat.le_trans base.write_le hMono
+      , tapes := base.tapes
+      , tapes_le := ?_
+      , heads := heads.val
+      , heads_le := fun hmem => heads.property hmem }
+  · intro qs w hmem
+    exact Nat.le_trans (base.branches_le hmem) hMono
+  · intro i w hmem
+    exact Nat.le_trans (base.tapes_le hmem) hMono
+
+/-- The constructed head wires cover every tape index exactly once. -/
+lemma StraightConfig.headSnapshot_heads_pairs (sc : StraightConfig M n) :
+    (StraightConfig.headSnapshot (M := M) (n := n) sc).heads.map Prod.fst =
+      tapeIndexList (M := M) n := by
+  classical
+  unfold StraightConfig.headSnapshot
+  set base := StraightConfig.tapeSnapshot (M := M) (n := n) sc with hbase
+  set indices := tapeIndexList (M := M) n with hindices
+  obtain ⟨bFinal, hMono, _hChain, heads⟩ :=
+    StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+      (snapshot := base) indices base.builder (Nat.le_refl _)
+  have := StraightConfig.headSnapshotAux_heads_pairs (M := M) (n := n)
+      (sc := sc) (snapshot := base) (indices := indices)
+      (b := base.builder) (hMono := Nat.le_refl _)
+  simpa [base, hbase, indices, hindices]
+    using this
+
+lemma StraightConfig.headSnapshot_heads_length (sc : StraightConfig M n) :
+    (StraightConfig.headSnapshot (M := M) (n := n) sc).heads.length =
+      M.tapeLength n := by
+  classical
+  have := congrArg List.length
+    (StraightConfig.headSnapshot_heads_pairs (M := M) (n := n) (sc := sc))
+  simpa [List.length_map, length_tapeIndexList]
+    using this
+
+/-- Gate-count bound for the complete head snapshot. -/
+lemma StraightConfig.headSnapshot_gate_le (sc : StraightConfig M n) :
+    (StraightConfig.headSnapshot (M := M) (n := n) sc).builder.circuit.gates ≤
+      sc.circuit.gates +
+        (6 * M.tapeLength n + 8 * stateCard M + 2) +
+        M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) := by
+  classical
+  unfold StraightConfig.headSnapshot
+  set base := StraightConfig.tapeSnapshot (M := M) (n := n) sc with hbase
+  set indices := tapeIndexList (M := M) n with hindices
+  obtain ⟨bFinal, hMono, _hChain, heads⟩ :=
+    StraightConfig.headSnapshotAux (M := M) (n := n) (sc := sc)
+      (snapshot := base) indices base.builder (Nat.le_refl _)
+  have hAux := StraightConfig.headSnapshotAux_gate_le (M := M) (n := n)
+      (sc := sc) (snapshot := base) (indices := indices)
+      (b := base.builder) (hMono := Nat.le_refl _)
+  have hBase := StraightConfig.tapeSnapshot_gate_le (M := M) (n := n) (sc := sc)
+  have hLen : indices.length = M.tapeLength n := by
+    simpa [indices, hindices, tapeIndexList]
+      using List.length_finRange (M.tapeLength n)
+  have hBranchesLen : base.branches.length = 2 * stateCard M := by
+    have := StraightConfig.tapeSnapshot_branches_pairs (M := M) (n := n)
+      (sc := sc)
+    have := congrArg List.length this
+    have hPairs : (stateSymbolPairs M).length = 2 * stateCard M :=
+      length_stateSymbolPairs (M := M)
+    simpa [base, hbase, tapeIndexList, hPairs]
+      using this
+  have hAux' : bFinal.circuit.gates ≤
+      base.builder.circuit.gates + M.tapeLength n *
+        (3 * (base.branches.length * M.tapeLength n) + 1) := by
+    simpa [indices, hindices, hLen]
+      using hAux
+  have hBranchesRewrite :
+      3 * (base.branches.length * M.tapeLength n) + 1 =
+        6 * stateCard M * M.tapeLength n + 1 := by
+    have : base.branches.length = 2 * stateCard M := hBranchesLen
+    simp [this, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+      Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+  have hAux'' : bFinal.circuit.gates ≤
+      base.builder.circuit.gates +
+        M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) := by
+    simpa [hBranchesRewrite] using hAux'
+  have hBase' : base.builder.circuit.gates ≤
+      sc.circuit.gates + 6 * M.tapeLength n + 8 * stateCard M + 2 := by
+    simpa [base, hbase] using hBase
+  have hTotal :=
+    Nat.le_trans hAux''
+      (Nat.add_le_add_right hBase' (M.tapeLength n *
+        (6 * stateCard M * M.tapeLength n + 1)))
+  simpa [base, hbase, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    using hTotal
+
+/--
+Retrieve the straight-line wires computing the successor tape directly as
+`Fin`-indexed handles.  The result packages the tape snapshot together with a
+lookup function returning, for each tape index, the corresponding wire of the
+augmented builder.
+-/
+noncomputable def StraightConfig.nextTapeBuilder (sc : StraightConfig M n) :
+    Σ' snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc,
+      Fin (M.tapeLength n) → Fin (n + snapshot.builder.circuit.gates) := by
+  classical
+  refine ⟨StraightConfig.tapeSnapshot (M := M) (n := n) sc, ?_⟩
+  intro i
+  set snapshot := StraightConfig.tapeSnapshot (M := M) (n := n) sc
+  let wire := Classical.choose
+    (tapeSnapshot_exists_wire (M := M) (n := n) (sc := sc) i)
+  have hmem := Classical.choose_spec
+    (tapeSnapshot_exists_wire (M := M) (n := n) (sc := sc) i)
+  exact wire.toFin (n := n) (g := snapshot.builder.circuit.gates)
+    (snapshot.tapes_le (by simpa [snapshot] using hmem))
+
+/--
+Extract the `Fin`-indexed handles for the head snapshot.  Each index of the
+returned function points to the wire computing the successor head indicator for
+the corresponding tape position.
+-/
+noncomputable def StraightConfig.nextHeadBuilder (sc : StraightConfig M n) :
+    Σ' snapshot : StraightConfig.HeadSnapshot (M := M) (n := n) sc,
+      Fin (M.tapeLength n) → Fin (n + snapshot.builder.circuit.gates) := by
+  classical
+  refine ⟨StraightConfig.headSnapshot (M := M) (n := n) sc, ?_⟩
+  intro i
+  set snapshot := StraightConfig.headSnapshot (M := M) (n := n) sc
+  let wire := Classical.choose
+    (StraightConfig.headSnapshot_exists_wire (M := M) (n := n) (sc := sc) i)
+  have hmem := Classical.choose_spec
+    (StraightConfig.headSnapshot_exists_wire (M := M) (n := n) (sc := sc) i)
+  exact wire.toFin (n := n) (g := snapshot.builder.circuit.gates)
+    (snapshot.heads_le (by simpa [snapshot] using hmem))
 
 /-- Circuit returning the bit currently scanned by the head. -/
 noncomputable def symbol (M : TM) {n : ℕ}
@@ -4122,6 +5328,20 @@ def headAccumulator (M : TM) {n : ℕ}
     (pairs : List (M.state × Bool)) (conf : TM.Configuration M n)
     (j : Fin (M.tapeLength n)) : Bool :=
   pairs.foldl (headFoldFun (M := M) (conf := conf) (j := j)) false
+
+lemma headContribution_fold_eq_any (M : TM) {n : ℕ}
+    (move : TM.Move) (j : Fin (M.tapeLength n))
+    (f : Fin (M.tapeLength n) → Bool) :
+    (tapeIndexList (M := M) n).foldl (fun acc i =>
+        if nextHeadIndex (M := M) (n := n) i move = j then acc || f i else acc)
+      false =
+      List.any (tapeIndexList (M := M) n)
+        (fun i => (nextHeadIndex (M := M) (n := n) i move = j) && f i) := by
+  classical
+  simpa [tapeIndexList]
+    using List.foldl_filter_or_eq_any (l := List.finRange (M.tapeLength n))
+      (p := fun i => nextHeadIndex (M := M) (n := n) i move = j)
+      (f := fun i => f i)
 
 @[simp] lemma writeAccumulator_nil (M : TM) {n : ℕ}
     (conf : TM.Configuration M n) :
@@ -8020,6 +9240,43 @@ open Complexity
 
 variable {M : TM} {c : ℕ}
 
+/--
+### Elementary power inequalities used in the polynomial bounds
+
+The subsequent sections reason repeatedly about expressions of the form
+`(n + k) ^ m`.  The two lemmas below isolate the monotonicity properties of
+exponentiation with respect to the base and show that powers of two eventually
+dominate their exponent.  Packaging the arguments here keeps the later
+calculations focused on the combinatorial structure of the construction.
+-/
+
+/-- Exponentiation is monotone in the base when the exponent is fixed. -/
+lemma pow_le_pow_of_le_base {a b k : ℕ} (hBase : a ≤ b) : a ^ k ≤ b ^ k := by
+  induction k with
+  | zero =>
+      simp
+  | succ k ih =>
+      have hMulLeft : a ^ k * a ≤ a ^ k * b :=
+        Nat.mul_le_mul_left _ hBase
+      have hMulRight : a ^ k * b ≤ b ^ k * b :=
+        Nat.mul_le_mul_right _ ih
+      simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using Nat.le_trans hMulLeft hMulRight
+
+/-- Powers of two dominate their exponent. -/
+lemma self_le_pow_two (k : ℕ) : k ≤ 2 ^ k := by
+  induction k with
+  | zero =>
+      simp
+  | succ k ih =>
+      have hOne_le : 1 ≤ 2 ^ k :=
+        Nat.succ_le_of_lt (Nat.pow_pos (by decide) _)
+      have hStep : k + 1 ≤ 2 ^ k + 2 ^ k :=
+        Nat.le_trans (Nat.add_le_add_left hOne_le k)
+          (Nat.add_le_add_right ih (2 ^ k))
+      simpa [Nat.pow_succ, two_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using hStep
+
 /-- Exponent used when turning the run-time bound `runTime n ≤ n^c + c` into a
 uniform polynomial estimate.  Making the exponent at least one avoids special
 cases in elementary inequalities such as `n ≤ n^k`. -/
@@ -8149,6 +9406,29 @@ lemma one_le_polyBase (n : ℕ) : 1 ≤ polyBase (c := c) n := by
   unfold polyBase
   have hk : 1 ≤ runtimeExponent c := one_le_runtimeExponent (c := c)
   exact Nat.le_trans hk (Nat.le_add_left _ _)
+
+lemma polyBase_le_shifted_pow (n : ℕ) :
+    polyBase (M := M) (c := c) n ≤ (n + 2) ^ (runtimeExponent c + 1) := by
+  classical
+  set k := runtimeExponent c
+  have hMain : n ^ k ≤ (n + 2) ^ k := by
+    have : n ≤ n + 2 := Nat.le_add_right _ _
+    simpa [k] using
+      pow_le_pow_of_le_base (a := n) (b := n + 2) (k := k) this
+  have hTwo : 2 ≤ n + 2 :=
+    Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le n))
+  have hConst : k ≤ (n + 2) ^ k :=
+    le_trans (self_le_pow_two k)
+      (pow_le_pow_of_le_base (a := 2) (b := n + 2) (k := k) hTwo)
+  have hSum : polyBase (M := M) (c := c) n ≤ 2 * (n + 2) ^ k := by
+    have := Nat.add_le_add hMain hConst
+    simpa [polyBase, k, two_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
+  have hTwoMul : 2 * (n + 2) ^ k ≤ (n + 2) ^ (k + 1) := by
+    have := Nat.mul_le_mul_left ((n + 2) ^ k) hTwo
+    simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
+  exact le_trans hSum hTwoMul
 
 lemma tapeLength_pos (M : TM) (n : ℕ) :
     1 ≤ M.tapeLength n := by
@@ -8810,6 +10090,55 @@ lemma runTime_le_polyBase {n : ℕ}
         using htotal
 
 end AffineIterBounds
+
+/--
+Rewriting the polynomial run-time hypothesis as a bound of the form
+`(n + 2) ^ k`.  The shift by two keeps the base at least two, which allows us to
+absorb the additive constant present in `polyBase`.
+-/
+lemma runTime_le_shifted_pow
+    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
+    ∀ n, M.runTime n ≤ (n + 2) ^ (runtimeExponent c + 1) := by
+  intro n
+  have hPoly := runTime_le_polyBase (M := M) (c := c) (n := n) hRun
+  exact le_trans hPoly
+    (polyBase_le_shifted_pow (M := M) (c := c) (n := n))
+
+/--
+Straightforward corollary of `tapeLength_le_poly` giving a shifted power bound
+for the tape length.  The argument mirrors the run-time estimate and absorbs the
+constant factor coming from the linear term into the exponent.
+-/
+lemma tapeLength_le_shifted_pow
+    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
+    ∀ n, M.tapeLength (M := M) n ≤ (n + 2) ^ (runtimeExponent c + 3) := by
+  intro n
+  have hTape := tapeLength_le_poly (M := M) (c := c) (n := n) hRun
+  classical
+  set k := runtimeExponent c
+  have hBound :
+      3 * polyBase (M := M) (c := c) n ≤ 3 * (n + 2) ^ (k + 1) := by
+    exact Nat.mul_le_mul_left _
+      (polyBase_le_shifted_pow (M := M) (c := c) (n := n))
+  have hTwo : 2 ≤ n + 2 :=
+    Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le n))
+  have hSquare_ge_four : 4 ≤ (n + 2) ^ 2 := by
+    have hTwoPow : (2 : ℕ) ^ 2 = 4 := by decide
+    have := pow_le_pow_of_le_base (a := 2) (b := n + 2) (k := 2) hTwo
+    simpa [hTwoPow] using this
+  have hThree_le : 3 ≤ (n + 2) ^ 2 :=
+    le_trans (by decide : (3 : ℕ) ≤ 4) hSquare_ge_four
+  have hAbsorb :=
+    Nat.mul_le_mul_right ((n + 2) ^ (k + 1)) hThree_le
+  have hRewrite :
+      (n + 2) ^ (k + 3) = (n + 2) ^ (k + 1) * (n + 2) ^ 2 := by
+    simp [Nat.pow_add, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc]
+  have hFinalize : 3 * (n + 2) ^ (k + 1) ≤ (n + 2) ^ (k + 3) := by
+    simpa [hRewrite, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using hAbsorb
+  exact
+    le_trans hTape (le_trans hBound hFinalize)
 
 /--
 Helper coefficient absorbing the linear contribution of the initial gate-count

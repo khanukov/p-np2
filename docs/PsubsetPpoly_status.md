@@ -81,15 +81,16 @@
 2. **Свести новые провода ленты к единому билдеру.** Лемма `tapeSnapshot_gate_le` уже даёт линейную оценку, но требуется собрать её с `tapeBuilderStep` и зафиксировать итоговый прирост, который будет фигурировать в `StraightConfig.step_gateGrowth`. 【F:Pnp2/PsubsetPpoly.lean†L1889-L2133】【F:Pnp2/PsubsetPpoly.lean†L2604-L2720】
 3. **Закрыть спецификацию шага без ущерба для шаринга.** При доказательстве `StraightConfig.step_spec` допустимо временно воспользоваться локальными `sorry` для второстепенных подлемм, но каждое из них следует оперативно заменить ссылкой на существующие построители (`append_evalWire_preserved`, `headContribution_fold_eq_any` и т.п.), чтобы финальный текст снова стал `sorry`-free. 【F:Pnp2/Circuit/StraightLine.lean†L1006-L1133】【F:Pnp2/PsubsetPpoly.lean†L4263-L4275】
 
-- [ ] **Линейная рекурсия по количеству вентилей.**
+- [x] **Линейная рекурсия по количеству вентилей.** 【F:Pnp2/PsubsetPpoly.lean†L4208-L4272】
   - [x] Ввести числовую инварианту `straightTotalGateCount` и доказать, что переход к `StraightConfig.step` увеличивает её не более чем на `K ⋅ M.tapeLength n`. 【F:Pnp2/PsubsetPpoly.lean†L145-L157】【F:Pnp2/PsubsetPpoly.lean†L3799-L3811】
-  - [ ] Связать `straightTotalGateCount` с уже существующей `totalGateCount` через перевод `StraightConfig` → `ConfigCircuits` (обе стороны должны получать одинаковые суммы за счёт шаринга проводов).
+- [x] Связать `straightTotalGateCount` с уже существующей `totalGateCount` через перевод `StraightConfig` → `ConfigCircuits` (обе стороны должны получать одинаковые суммы за счёт шаринга проводов). 【F:Pnp2/PsubsetPpoly.lean†L296-L469】【F:Pnp2/PsubsetPpoly.lean†L332-L469】
   - [x] Сформулировать и доказать индуктивную лемму `straightGateCount_iterate_le`, применяющую предыдущий пункт к `Nat.iterate` и дающую оценку `≤ gateCount initial + K ⋅ M.tapeLength n ⋅ t`. Новая константа `straightStepGateGrowthBound` фиксирует шаговый прирост, а лемма `straightTotalGateCount_iterate_le` сводит рост к линейной функции по числу итераций. 【F:Pnp2/PsubsetPpoly.lean†L3876-L3940】
 
-- [ ] **Полиномиальное доминирование.**
+- [x] **Полиномиальное доминирование.**
   - [x] Получить явные неравенства `M.tapeLength n ≤ (n + 2) ^ c₁` и `M.runTime n ≤ (n + 2) ^ c₂` из существующих лемм (`runTime_le_polyBase`, вспомогательные утверждения про движение головы) или добавить их при необходимости. Новые оценки `runTime_le_shifted_pow` и `tapeLength_le_shifted_pow` сводят гипотезу `runTime n ≤ n^c + c` к чистым степеням, позволяя в последующих шагах прямо умножать их при переходе к полному числу шагов. 【F:Pnp2/PsubsetPpoly.lean†L8775-L8806】【F:Pnp2/PsubsetPpoly.lean†L9464-L9506】
   - [x] Из леммы `straightGateCount_iterate_le` вывести верхнюю грань на `totalGateCount (runtimeCircuits M n)` вида `≤ K' ⋅ (n + 1)^{c₁ + c₂}` и переписать её в формате `n^k + k` (с явным `k` и доказательством для всех `n`).
-  - [ ] Обновить доказательство `sizeOf_acceptCircuit_le_gatePolyBound`, заменив `gatePolyBound` на новую компактную оценку или, при сохранении `gatePolyBound`, показать её доминацию полученной формулой.
+  - [x] Обновить доказательство `sizeOf_acceptCircuit_le_gatePolyBound`, заменив `gatePolyBound` на новую компактную оценку или, при сохранении `gatePolyBound`, показать её доминацию полученной формулой. 【F:Pnp2/PsubsetPpoly.lean†L10836-L10879】
+  - Дополнительно зафиксировано итоговое утверждение `sizeOf_acceptCircuit_le_gatePolyBound`, завершающее перенос оценки на семейство схем. 【F:Pnp2/PsubsetPpoly.lean†L10930-L10967】
 
 - [ ] **Снятие аксиомы.**
   - [ ] Переписать `ComplexityClasses.lean`, заменив ссылку на аксиому `P_subset_Ppoly` на новую теорему `PsubsetPpoly.main` (или аналогично названное утверждение).

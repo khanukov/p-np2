@@ -3868,6 +3868,77 @@ lemma straightTotalGateCount_step_le (sc : StraightConfig M n) :
   simpa [straightTotalGateCount]
     using StraightConfig.step_gateGrowth (M := M) (n := n) (sc := sc)
 
+/--
+Increment added to the gate count by a single straight-line step.  The constant
+depends only on the machine parameters (number of states and tape length for the
+current input size) and will be iterated in `straightTotalGateCount_iterate_le`.
+-/
+def straightStepGateGrowthBound (M : TM) (n : ℕ) : ℕ :=
+  (6 * M.tapeLength n + 8 * stateCard M + 2) +
+    M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) +
+    stateCard M * (4 * stateCard M + 1)
+
+lemma straightTotalGateCount_step_le' (sc : StraightConfig M n) :
+    straightTotalGateCount (StraightConfig.step (M := M) (n := n) sc) ≤
+      straightTotalGateCount sc + straightStepGateGrowthBound (M := M) (n := n) := by
+  simpa [straightStepGateGrowthBound]
+    using straightTotalGateCount_step_le (M := M) (n := n) (sc := sc)
+
+/--
+Linear bound for the gate count after iterating the straight-line step `t`
+times.  Each iteration contributes at most
+`straightStepGateGrowthBound M n` additional gates, yielding a simple affine
+estimate with respect to the number of simulated machine steps.
+-/
+lemma straightTotalGateCount_iterate_le (t : ℕ) (sc : StraightConfig M n) :
+    straightTotalGateCount
+        (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc) ≤
+      straightTotalGateCount sc +
+        t * straightStepGateGrowthBound (M := M) (n := n) := by
+  classical
+  induction t with
+  | zero =>
+      simp
+  | succ t ih =>
+      set Δ := straightStepGateGrowthBound (M := M) (n := n) with hΔ
+      have hStep := straightTotalGateCount_step_le'
+        (M := M) (n := n)
+        (sc := Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)
+      have hIH := Nat.add_le_add_right ih Δ
+      have hIter :
+          straightTotalGateCount
+              (Nat.iterate (StraightConfig.step (M := M) (n := n)) (Nat.succ t) sc) =
+            straightTotalGateCount
+              (StraightConfig.step (M := M) (n := n)
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)) := by
+        simp [Nat.iterate_succ, Function.comp]
+      have hBound :
+          straightTotalGateCount
+              (StraightConfig.step (M := M) (n := n)
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)) ≤
+            straightTotalGateCount
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc) + Δ := by
+        simpa [hΔ] using hStep
+      have hAccum :
+          straightTotalGateCount
+                (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc) + Δ ≤
+            (straightTotalGateCount sc +
+                t * straightStepGateGrowthBound (M := M) (n := n)) + Δ := by
+        simpa [hΔ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+          using hIH
+      have hSucc :
+          (straightTotalGateCount sc +
+              t * straightStepGateGrowthBound (M := M) (n := n)) + Δ =
+            straightTotalGateCount sc +
+              Nat.succ t * straightStepGateGrowthBound (M := M) (n := n) := by
+        simp [hΔ, Nat.succ_mul, Nat.mul_succ, Nat.add_comm, Nat.add_left_comm,
+          Nat.add_assoc]
+      have :=
+        le_trans (by simpa [hIter] using hBound)
+          (le_trans hAccum (by simpa [hSucc]))
+      simpa [hΔ]
+        using this
+
 
 /-!
 ### Head builder infrastructure

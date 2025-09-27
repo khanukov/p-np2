@@ -83,7 +83,7 @@
 - [ ] **Линейная рекурсия по количеству вентилей.**
   - [x] Ввести числовую инварианту `straightTotalGateCount` и доказать, что переход к `StraightConfig.step` увеличивает её не более чем на `K ⋅ M.tapeLength n`. 【F:Pnp2/PsubsetPpoly.lean†L145-L157】【F:Pnp2/PsubsetPpoly.lean†L3799-L3811】
   - [ ] Связать `straightTotalGateCount` с уже существующей `totalGateCount` через перевод `StraightConfig` → `ConfigCircuits` (обе стороны должны получать одинаковые суммы за счёт шаринга проводов).
-  - [ ] Сформулировать и доказать индуктивную лемму `straightGateCount_iterate_le`, применяющую предыдущий пункт к `Nat.iterate` и дающую оценку `≤ gateCount initial + K ⋅ M.tapeLength n ⋅ t`.
+  - [x] Сформулировать и доказать индуктивную лемму `straightGateCount_iterate_le`, применяющую предыдущий пункт к `Nat.iterate` и дающую оценку `≤ gateCount initial + K ⋅ M.tapeLength n ⋅ t`. Новая константа `straightStepGateGrowthBound` фиксирует шаговый прирост, а лемма `straightTotalGateCount_iterate_le` сводит рост к линейной функции по числу итераций. 【F:Pnp2/PsubsetPpoly.lean†L3876-L3940】
 
 - [ ] **Полиномиальное доминирование.**
   - [x] Получить явные неравенства `M.tapeLength n ≤ (n + 2) ^ c₁` и `M.runTime n ≤ (n + 2) ^ c₂` из существующих лемм (`runTime_le_polyBase`, вспомогательные утверждения про движение головы) или добавить их при необходимости. Новые оценки `runTime_le_shifted_pow` и `tapeLength_le_shifted_pow` сводят гипотезу `runTime n ≤ n^c + c` к чистым степеням, позволяя в последующих шагах прямо умножать их при переходе к полному числу шагов. 【F:Pnp2/PsubsetPpoly.lean†L8775-L8806】【F:Pnp2/PsubsetPpoly.lean†L9464-L9506】

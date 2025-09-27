@@ -711,6 +711,160 @@ lemma EvalBuilder.appendBigOr_eval (b : EvalBuilder n base)
             at this
           simpa using this
 
+/-- Appending a `bigOr` does not modify the semantics of previously existing
+wires.  The proof follows the recursive structure of
+`EvalBuilder.appendBigOr`, applying the general preservation lemma for
+`appendFin` at each step. -/
+lemma EvalBuilder.appendBigOr_evalWire_preserved (b : EvalBuilder n base)
+    (ws : List (Fin (n + b.circuit.gates)))
+    (w : StraightLineCircuit.Wire n) (hw : w.bound ≤ b.circuit.gates)
+    (x : Point n) :
+    let result := EvalBuilder.appendBigOr (b := b) ws
+    StraightLineCircuit.evalWire (C := result.fst.circuit) (x := x)
+        (w.toFin (n := n) (g := result.fst.circuit.gates)
+          (by
+            -- Every invocation of `appendBigOr` only increases the number of
+            -- available gates.  Consequently any previously valid bound stays
+            -- admissible for the extended builder.
+            have hmono : b.circuit.gates ≤ result.fst.circuit.gates :=
+              EvalBuilder.appendBigOr_gate_le (b := b) (ws := ws)
+            exact Nat.le_trans hw hmono)) =
+      StraightLineCircuit.evalWire (C := b.circuit) (x := x)
+        (w.toFin (n := n) (g := b.circuit.gates) hw) := by
+  classical
+  revert b
+  refine List.rec ?baseCase ?stepCase ws
+  · intro b
+    intro w hw x
+    -- The empty list degenerates to appending a single `false` constant.
+    simp [EvalBuilder.appendBigOr, EvalBuilder.appendConstFin,
+      StraightLineCircuit.Wire.toFin_ofFin,
+      appendFin_evalWire_preserved]  -- `appendFin` already preserves wires.
+  · intro head tail ih b
+    cases tail with
+    | nil =>
+        -- A singleton list leaves the builder untouched, whence the equality
+        -- becomes reflexive.
+        intro w hw x
+        simp [EvalBuilder.appendBigOr]
+    | cons head' tail' =>
+        intro w hw x
+        -- Expand the recursive call to expose the intermediate builder.
+        dsimp [EvalBuilder.appendBigOr]
+        -- The first step appends an OR gate between the leading two wires.
+        set result := EvalBuilder.appendOrFin (b := b) head head' with hresult
+        -- Subsequent recursive calls operate on the lifted tail.
+        set lift := EvalBuilder.appendFin_lift
+          (b := b) (op := StraightOp.or head head') with hlift
+        set rest := tail'.map lift with hrest
+        -- The recursion processes `result.snd :: rest` using the updated builder.
+        have hmono : b.circuit.gates ≤ result.fst.circuit.gates := by
+          -- Appending an OR gate increases the gate count by one.
+          simpa [result, EvalBuilder.appendOrFin]
+            using Nat.le_succ b.circuit.gates
+        have hw' : w.bound ≤ result.fst.circuit.gates := Nat.le_trans hw hmono
+        -- Invoke the induction hypothesis on the shortened list.
+        have hIH := ih (b := result.fst) (w := w) (hw := hw') (x := x)
+        -- Reinterpret the conclusion in terms of the original builder.
+        have hPres :=
+          appendFin_evalWire_preserved (b := b)
+            (op := StraightOp.or head head') (w := w) (hw := hw) (x := x)
+        -- Combine the two equalities.
+        simpa [result, rest, EvalBuilder.appendBigOr, hlift]
+          using hIH.trans hPres
+
+/--
+Appending a `bigOr` may introduce several auxiliary gates.  The following
+estimate bounds the increase solely in terms of the length of the processed
+wire list.  The coarse linear bound is sufficient for later size arguments
+where we only need to know that each additional disjunct contributes a constant
+number of gates.-/
+lemma EvalBuilder.appendBigOr_gate_le_linear
+    {base : StraightLineCircuit n}
+    (b : EvalBuilder n base) (ws : List (Fin (n + b.circuit.gates))) :
+    let result := EvalBuilder.appendBigOr (b := b) ws
+    result.fst.circuit.gates ≤ b.circuit.gates + 2 * ws.length + 1 := by
+  classical
+  -- Prove the statement by induction on the length of the processed list.
+  -- The auxiliary lemma `aux` keeps track of the length explicitly so that the
+  -- recursive call can work with the shortened list arising in the `cons` case.
+  have aux : ∀ k : ℕ,
+      ∀ {b : EvalBuilder n base}
+        {ws : List (Fin (n + b.circuit.gates))},
+        ws.length = k →
+          let result := EvalBuilder.appendBigOr (b := b) ws
+          in result.fst.circuit.gates ≤
+            b.circuit.gates + 2 * ws.length + 1 := by
+    intro k
+    induction k with
+    | zero =>
+        intro b ws hlen
+        -- A zero-length list is necessarily empty, so `appendBigOr` reduces to
+        -- appending a single constant gate.
+        have hnil : ws = [] := List.length_eq_zero.mp hlen
+        subst hnil
+        simp [EvalBuilder.appendBigOr]
+    | succ k ih =>
+        intro b ws hlen
+        -- Analyse the structure of the list with `length = k + 1`.
+        cases ws with
+        | nil =>
+            cases hlen
+        | cons w tail =>
+            cases tail with
+            | nil =>
+                -- A singleton list keeps the builder unchanged.
+                simp [EvalBuilder.appendBigOr, Nat.mul_succ, Nat.mul_zero,
+                  Nat.succ_eq_add_one, Nat.add_comm, Nat.add_left_comm,
+                  Nat.add_assoc]
+            | cons w' rest =>
+                -- The general case: append one OR gate and recurse on the
+                -- shortened list obtained after lifting indices.
+                -- Convert the length assumption into information about the
+                -- tail `rest`.
+                have hlen' : Nat.succ (rest.length + 1) = Nat.succ k := by
+                  simpa [List.length, Nat.succ_eq_add_one, Nat.add_comm,
+                    Nat.add_left_comm, Nat.add_assoc]
+                    using hlen
+                have hrest : rest.length + 1 = k := Nat.succ.inj hlen'
+                -- Unfold the recursive call.
+                set result := EvalBuilder.appendOrFin (b := b) w w' with hresult
+                set lift := EvalBuilder.appendFin_lift
+                  (b := b) (op := StraightOp.or w w') with hlift
+                set rest' := rest.map lift with hrest'
+                -- The lifted list preserves the length of `rest`.
+                have hlen_rest' : rest'.length = rest.length := by
+                  simpa [rest', hlift]
+                -- The recursive invocation of `appendBigOr` receives a list of
+                -- length `k` (one shorter than the current list).
+                have hlen_rec :
+                    (result.snd :: rest').length = k := by
+                  simp [rest', hlen_rest', hrest, Nat.succ_eq_add_one,
+                    Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                -- Apply the induction hypothesis to the shortened list.
+                have hIH := ih (b := result.fst)
+                  (ws := result.snd :: rest') hlen_rec
+                -- The current step contributes a single additional gate.
+                have hgate : result.fst.circuit.gates = b.circuit.gates + 1 := by
+                  simpa [result, EvalBuilder.appendOrFin]
+                    using EvalBuilder.appendFin_gate_eq
+                      (b := b) (op := StraightOp.or w w')
+                -- Combine the contributions and compare with the claimed bound.
+                -- The recursive call processes a list of length `k`, whence the
+                -- overall growth is at most `2 * k + 2` gates.
+                have := hIH
+                -- Simplify the recursive estimate using the length information.
+                have hlen_ws : (w :: w' :: rest).length = Nat.succ k := by
+                  simpa [List.length, Nat.succ_eq_add_one, Nat.add_comm,
+                    Nat.add_left_comm, Nat.add_assoc] using hlen
+                -- Rewrite everything in terms of the original builder.
+                simpa [EvalBuilder.appendBigOr, result, rest', hgate,
+                  Nat.mul_succ, Nat.mul_add, Nat.succ_eq_add_one,
+                  Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, hlen_ws]
+                  using Nat.le_trans this (Nat.le_of_lt (Nat.lt_succ_self _))
+  -- Instantiate the auxiliary lemma with the concrete length of `ws`.
+  exact aux ws.length rfl
+
 /--
 Evaluation-aware builders remember that base wires keep their semantics after
 additional gates are appended.  The invariant will let us reason about

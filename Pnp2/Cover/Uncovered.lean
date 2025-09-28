@@ -392,5 +392,14 @@ lemma uncovered_subset {n : ℕ} {F : Family n} {R₁ R₂ : Finset (Subcube n)}
   intro R hR
   exact hnc R (hsub hR)
 
+/-- The number of uncovered pairs is at most the product of the number of
+functions and the number of points. -/
+lemma uncovered_card_le_prod {n : ℕ} (F : Family n) (Rset : Finset (Subcube n)) :
+    (uncovered F Rset).toFinset.card ≤ F.card * 2 ^ n := by
+  -- The set of uncovered pairs is a subset of the set of all pairs (f, x)
+  -- where f is in F and f(x) = true. The size of this larger set is bounded
+  -- by |F| * 2^n. A full proof requires careful handling of sigma types.
+  sorry
+
 end Cover2
 

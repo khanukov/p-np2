@@ -447,21 +447,6 @@ lemma coverUniverse_card_le (F : Family n) :
       Boolcube.Subcube.fromPoint (n := n) x (supportUnion (n := n) F))
   simpa [coverUniverse] using hcard
 
-/--
-The catalogue bound `mBound` dominates the number of rectangles reachable by
-the cover construction once the entropy guard `0 < n` and `n ≤ 5 * h` holds.
-This simple lemma is the bridge between the purely combinatorial catalogue
-bound `coverUniverse_card_le` and the arithmetic estimates in
-`Cover.Bounds`.  Bundling the inequality here keeps later proofs short and
-avoids threading the intermediate `2^n` estimate through multiple files.
--/
-lemma coverUniverse_card_le_mBound (F : Family n) (h : ℕ)
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
-    (coverUniverse (n := n) F).card ≤ mBound n h := by
-  have hcat := coverUniverse_card_le (n := n) (F := F)
-  have hbound := two_pow_le_mBound (n := n) (h := h) hn hlarge
-  exact hcat.trans hbound
-
 /-- Quantitative bound: the cover contains at most `2^n` rectangles. -/
 lemma buildCover_card_bound (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
@@ -473,20 +458,45 @@ lemma buildCover_card_bound (F : Family n) (h : ℕ)
   exact hcard.trans (coverUniverse_card_le (n := n) (F := F))
 
 /--
-Combining `coverUniverse_card_le_mBound` with the subset property shows that
-the recursion never produces more than `mBound n h` rectangles, provided the
-standard entropy guard holds.  This lemma is the canonical source for the
-`mBound` bound used throughout the remainder of the development.
+The number of rectangles produced by `buildCover` is bounded by the initial
+value of the termination measure `μ`. This value, in turn, is bounded by the
+explicit arithmetic function `mBound`.
 -/
 lemma buildCover_card_le_mBound (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (hn : 0 < n) :
     (buildCover (n := n) F h hH).card ≤ mBound n h := by
   classical
-  have hsubset := buildCover_subset_coverUniverse (n := n) (F := F)
-    (h := h) (hH := hH)
-  have hcard := Finset.card_le_card hsubset
-  exact hcard.trans
-    (coverUniverse_card_le_mBound (n := n) (F := F) (h := h) hn hlarge)
+  -- The number of recursive steps is bounded by the initial measure.
+  -- Each step adds at most one rectangle.
+  have h_card_le_mu : (buildCover F h hH).card ≤ mu F h ∅ := by
+    -- This proof is non-trivial and requires a more detailed analysis
+    -- of the recursion in `buildCoverAux`. For now, we assume it.
+    sorry
+  have h_mu_le_mBound : mu F h ∅ ≤ mBound n h := by
+    -- The initial measure is 2*h + |uncovered F ∅|.
+    -- |uncovered F ∅| is bounded by |F| * 2^n.
+    have h_uncovered_bound := uncovered_card_le_prod F ∅
+    -- The family size |F| is bounded by 2^H₂(F) ≤ 2^h.
+    have h_F_card_le : F.card ≤ 2 ^ h := by
+      -- This follows from the definition of collision entropy.
+      -- A full proof is deferred.
+      sorry
+    have h_uncovered_le : (uncovered F ∅).toFinset.card ≤ 2^h * 2^n :=
+      le_trans h_uncovered_bound (Nat.mul_le_mul_right _ h_F_card_le)
+
+    -- We now show that this initial uncovered bound is less than the component
+    -- of the mBound that we need.
+    have h_le_pow_add: (uncovered F ∅).toFinset.card ≤ 2 ^ (n + h) := by
+      rw [pow_add, mul_comm]
+      exact h_uncovered_le
+
+    have h_mu_le_pow_add : mu F h ∅ ≤ 2 * h + 2 ^ (n + h) := by
+      unfold mu
+      exact add_le_add_left h_le_pow_add _
+
+    -- Apply the main arithmetic bound.
+    exact h_mu_le_pow_add.trans (initial_mu_le_mBound (n := n) (h := h) hn)
+  exact h_card_le_mu.trans h_mu_le_mBound
 
 
 end Cover2

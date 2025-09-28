@@ -59,7 +59,7 @@
 
 Ниже собран минимальный набор технических пунктов, который нужно закрыть, чтобы план выше превратился в рабочий Lean-код. Формат чекбоксов позволяет отслеживать прогресс прямо в репозитории.
 
-- [ ] **Прямолинейный шаг (`StraightConfig.step`).**
+- [x] **Прямолинейный шаг (`StraightConfig.step`).**
   - [x] Реализовать функцию `StraightConfig.step` в `Pnp2/PsubsetPpoly.lean`, используя `StraightLineCircuit.Builder` для аккумулирования вентилей без дублирования существующих проводов.
   - [x] Построить вспомогательные билдеры `nextTapeBuilder`, `nextHeadBuilder`, `nextStateBuilder`, которые поверх снапшотов (`branchSnapshot`, `writeSnapshot`) возвращают новые токены `Wire` с контролем индексов. 【F:Pnp2/PsubsetPpoly.lean†L4841-L4872】【F:Pnp2/PsubsetPpoly.lean†L3435-L3677】
     - [x] Прямая реализация лентного снапшота `tapeSnapshot` с леммой `tapeSnapshot_step_spec`, связывающей полученные провода с лентой `TM.stepConfig`.
@@ -68,7 +68,7 @@
   - [x] На основе `headBranchBuilder` построить список вкладов `headContributionIndices`, отфильтрованный по целевому индексу головы и готовый к передаче в `appendBigOr`. В частности, доказана линейная оценка `headContributionIndices_length_le` и введён агрегатор `headBuilderStep`. 【F:Pnp2/PsubsetPpoly.lean†L3937-L4010】
   - [x] Зафиксирован инвариант `headBuilderStep_preserves_branch_eval`, показывающий, что существующие ветвевые провода сохраняют своё значение после добавления головы; это прямой аналог состояния для билдеров и подготовка к `StraightConfig.step_spec`. 【F:Pnp2/PsubsetPpoly.lean†L4199-L4238】
 - [x] Выведен булев эквивалент для фильтрованных дизъюнкций по головным индексам (`headContribution_fold_eq_any`), позволяющий переписать складывание через `foldl` в форму `List.any`. Лемма будет использована при доказательстве семантики прямолинейного шага. 【F:Pnp2/PsubsetPpoly.lean†L28-L43】【F:Pnp2/PsubsetPpoly.lean†L4263-L4275】
-  - [ ] Доказать лемму `StraightConfig.step_spec`, переносящую `Spec` по аналогии со `step_spec`, но через прямолинейный API (использовать `append_evalWire_preserved`, `appendBigOr_eval`).
+  - [x] Доказать лемму `StraightConfig.step_spec`, переносящую `Spec` по аналогии со `step_spec`, но через прямолинейный API (использовать `append_evalWire_preserved`, `appendBigOr_eval`). 【F:Pnp2/PsubsetPpoly.lean†L4126-L4161】
   - [x] Добавить лемму `StraightConfig.step_gateGrowth` вида `gateCount (StraightConfig.step …) ≤ gateCount … + K ⋅ M.tapeLength n` с явной константой `K`; в доказательстве задокументировать вклад каждой подсхемы. 【F:Pnp2/PsubsetPpoly.lean†L3778-L3844】
   - [x] Построить снимок головы `headSnapshot` и оценку `headSnapshot_gate_le`, обеспечивающие готовую заготовку для интеграции головы в прямолинейный шаг. 【F:Pnp2/PsubsetPpoly.lean†L4200-L4466】
   - [x] Получить явные линейные границы на вспомогательные снапшоты (`branchSnapshot_gate_le`, `writeSnapshot_gate_le`, `tapeSnapshot_gate_le`), чтобы подготовить анализ шага.
@@ -95,7 +95,8 @@
 - [ ] **Снятие аксиомы.**
   - [ ] Переписать `ComplexityClasses.lean`, заменив ссылку на аксиому `P_subset_Ppoly` на новую теорему `PsubsetPpoly.main` (или аналогично названное утверждение).
   - [ ] Обновить `docs/master_blueprint.md`, TODO-лист и связанные разделы документации, отражая факт, что аксиома снята и оценивая зависимости других файлов.
-  - [ ] Прогнать `lake build` / `lean --make` и убедиться, что удаление аксиомы не ломает существующие теоремы (`NP_not_in_P_poly`, финальный аргумент `P ≠ NP`).
+- [ ] Прогнать `lake build` / `lean --make` и убедиться, что удаление аксиомы не ломает существующие теоремы (`NP_not_in_P_poly`, финальный аргумент `P ≠ NP`).
+    *Проверка останется в очереди до тех пор, пока аксиома не будет полностью заменена доказанной теоремой.*
 
 ### Проверка полноты плана
 

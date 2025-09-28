@@ -77,6 +77,26 @@ lemma pow_le_mBound (n h : ℕ) (hn : 0 < n) :
   have := Nat.mul_le_mul_left (2 ^ (10 * h)) hfactor
   simpa [mBound, one_mul] using this
 
+/--
+Bounding `mBound` against the exponentially many candidate rectangles
+constructed by `buildCover`.  Every recursive step inserts a subcube of the
+form `Subcube.fromPoint x (supportUnion F)`, so there are at most `2^n`
+distinct candidates.  Once the coarse guard `n ≤ 5 * h` holds, the subexponential
+budget `mBound n h` comfortably dominates this count.
+-/
+lemma two_pow_le_mBound {n h : ℕ} (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    2 ^ n ≤ mBound n h := by
+  -- Compare the exponents `n` and `5 * h` using the linear guard.
+  have hpow₁ : 2 ^ n ≤ 2 ^ (5 * h) :=
+    Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hlarge
+  -- Trivially, `5 * h ≤ 10 * h`, hence the power remains bounded by the larger
+  -- exponent appearing in `mBound`.
+  have hpow₂ : 2 ^ (5 * h) ≤ 2 ^ (10 * h) :=
+    Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ))
+      (Nat.mul_le_mul_right h (by decide : (5 : ℕ) ≤ 10))
+  -- Finally use the generic inequality `2^(10*h) ≤ mBound n h`.
+  exact hpow₁.trans (hpow₂.trans (pow_le_mBound (n := n) (h := h) hn))
+
 /-- A simpler power bound obtained by weakening the exponent. -/
 lemma pow_le_mBound_simple (n h : ℕ) (hn : 0 < n) :
     2 ^ h ≤ mBound n h := by
@@ -167,7 +187,8 @@ lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
   dsimp [mBound]
   have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
     Nat.mul_le_mul_right (h + 2) hn
-  exact Nat.mul_le_mul hfac (le_rfl)
+  have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
 /-- Increasing the budget by one never decreases the bound. -/
 lemma mBound_le_succ (n h : ℕ) : mBound n h ≤ mBound n (h + 1) :=
@@ -186,7 +207,7 @@ lemma two_mul_mBound_le_succ (n h : ℕ) :
     exact add_le_add_left h1 (10 * h)
   -- Use monotonicity of exponentiation with a positive base.
   have hpow : 2 ^ (10 * h + 1) ≤ 2 ^ (10 * h + 10) :=
-    Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+    Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hexp
   -- Combine growth of both factors.
   have hmul := Nat.mul_le_mul hfac hpow
   -- Multiply by the common dimension factor.
@@ -196,8 +217,6 @@ lemma two_mul_mBound_le_succ (n h : ℕ) :
     simp [mBound, pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
   have rhs_eq : n * ((h + 3) * 2 ^ (10 * h + 10)) = mBound n (h + 1) := by
     have : 10 * (h + 1) = 10 * h + 10 := by ring
-    -- `Nat.mul_left_comm` is unnecessary here; removing it satisfies the
-    -- linter without altering the simplification.
     simp [mBound, pow_add, this, Nat.mul_comm, Nat.mul_assoc]
   simpa [lhs_eq, rhs_eq] using hmain
 
@@ -317,10 +336,8 @@ lemma card_subcube (n : ℕ) :
   have hcard := Fintype.card_congr e
   have hpow : Fintype.card (Fin n → Option Bool) = 3 ^ n := by
     classical
-    have hcard_fun :
-        Fintype.card (Fin n → Option Bool) =
-          (Fintype.card (Option Bool)) ^ Fintype.card (Fin n) :=
-      Fintype.card_fun
+    have hcard_fun :=
+        Fintype.card_fun (α := Fin n) (β := Option Bool)
     have hnum : (Fintype.card (Option Bool)) ^ Fintype.card (Fin n) = 3 ^ n := by
       simp [Fintype.card_fin, Fintype.card_option]
     exact hcard_fun.trans hnum

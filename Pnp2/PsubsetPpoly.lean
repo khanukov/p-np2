@@ -4151,6 +4151,27 @@ lemma StraightConfig.step_spec (sc : StraightConfig M n)
   simpa [StraightConfig.toConfigCircuits, StraightConfig.step]
     using hStep
 
+/-- Iterating the straight-line step preserves the specification of the
+simulated configuration.  This is the straight-line counterpart of
+`iterate_spec` for tree circuits. -/
+lemma StraightConfig.iterate_spec
+    {sc : StraightConfig M n} {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    ∀ t,
+      Spec (M := M) (n := n)
+        (Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)
+        (fun x => Nat.iterate (TM.stepConfig (M := M) (n := n)) t (f x)) := by
+  classical
+  intro t
+  induction t with
+  | zero => simpa using hsc
+  | succ t ih =>
+      simpa [Nat.iterate_succ, Function.comp, TM.stepConfig]
+        using StraightConfig.step_spec (M := M) (n := n)
+          (sc := Nat.iterate (StraightConfig.step (M := M) (n := n)) t sc)
+          (f := fun x => Nat.iterate (TM.stepConfig (M := M) (n := n)) t (f x))
+          ih
+
 /--
 Gate-count bound for the straight-line successor configuration.  The wrapper
 `StraightConfig.step` merely exposes the wires produced by
@@ -4417,6 +4438,188 @@ lemma straightTotalGateCount_runtime_le (M : TM) (n : ℕ) :
     (t := M.runTime n) (sc := StraightConfig.initial (M := M) n)
   simpa [straightTotalGateCount_initial, Nat.add_comm]
     using hIter
+
+/--
+Polynomial bound on the number of gates appearing in the straight-line
+simulation after `M.runTime n` steps.-/
+lemma straightTotalGateCount_runtime_le_shifted_pow
+    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
+    ∀ n,
+      straightTotalGateCount
+          (Nat.iterate (StraightConfig.step (M := M) (n := n)) (M.runTime n)
+            (StraightConfig.initial (M := M) n)) ≤
+        ((6 * stateCard M + 7) +
+            (8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1)) + 2) *
+          (n + 2) ^ (3 * runtimeExponent c + 7) := by
+  intro n
+  classical
+  let a := runtimeExponent c
+  set A := 6 * stateCard M + 7 with hA
+  set B := 8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1) with hB
+  set C := A + B + 2 with hC
+  have hTotal := straightTotalGateCount_runtime_le (M := M) (n := n)
+  have hRunBound := runTime_le_shifted_pow (M := M) (c := c) hRun n
+  have hStepBound :=
+    straightStepGateGrowthBound_le_shifted_pow (M := M) (c := c) hRun n
+  have hProduct :
+      M.runTime n * straightStepGateGrowthBound (M := M) (n := n) ≤
+        (n + 2) ^ (a + 1) *
+          (A * (n + 2) ^ (2 * (a + 3)) + B) := by
+    have hMulRun :=
+      Nat.mul_le_mul_right
+        (straightStepGateGrowthBound (M := M) (n := n)) hRunBound
+    have hMulStep :=
+      Nat.mul_le_mul_left ((n + 2) ^ (a + 1)) hStepBound
+    exact Nat.le_trans hMulRun hMulStep
+  have hExpanded :
+      (n + 2) ^ (a + 1) *
+          (A * (n + 2) ^ (2 * (a + 3)) + B) =
+        A * (n + 2) ^ (a + 1 + 2 * (a + 3)) +
+          B * (n + 2) ^ (a + 1) := by
+    simp [Nat.mul_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.pow_add, Nat.pow_mul,
+      Nat.pow_succ]
+  have hExpEq : a + 1 + 2 * (a + 3) = 3 * a + 7 := by
+    simp [Nat.mul_add, Nat.add_mul, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc, two_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+  have hProduct' :
+      M.runTime n * straightStepGateGrowthBound (M := M) (n := n) ≤
+        A * (n + 2) ^ (3 * a + 7) + B * (n + 2) ^ (a + 1) := by
+    simpa [hExpanded, hExpEq]
+      using hProduct
+  have hCombined :
+      straightTotalGateCount
+          (Nat.iterate (StraightConfig.step (M := M) (n := n)) (M.runTime n)
+            (StraightConfig.initial (M := M) n)) ≤
+        2 + A * (n + 2) ^ (3 * a + 7) + B * (n + 2) ^ (a + 1) := by
+    have := Nat.add_le_add_left hProduct' 2
+    exact Nat.le_trans hTotal (by
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this)
+  have hExpLe : a + 1 ≤ 3 * a + 7 := by
+    have : a + 1 ≤ a + 1 + 2 * (a + 3) := Nat.le_add_right _ _
+    simpa [hExpEq] using this
+  have hBasePos : 1 ≤ n + 2 :=
+    Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le n))
+  have hPowMono :
+      (n + 2) ^ (a + 1) ≤ (n + 2) ^ (3 * a + 7) :=
+    Nat.pow_le_pow_of_le_right hBasePos hExpLe
+  have hTwoLe : 2 ≤ 2 * (n + 2) ^ (3 * a + 7) := by
+    have hPowPos : 0 < (n + 2) ^ (3 * a + 7) :=
+      Nat.pow_pos (Nat.succ_pos _) _
+    have hOneLe : 1 ≤ (n + 2) ^ (3 * a + 7) :=
+      Nat.succ_le_of_lt hPowPos
+    have := Nat.mul_le_mul_left 2 hOneLe
+    simpa [two_mul] using this
+  have hSecondTerm :
+      B * (n + 2) ^ (a + 1) ≤ B * (n + 2) ^ (3 * a + 7) :=
+    Nat.mul_le_mul_left _ hPowMono
+  have hFinal :
+      2 + A * (n + 2) ^ (3 * a + 7) + B * (n + 2) ^ (a + 1) ≤
+        C * (n + 2) ^ (3 * a + 7) := by
+    have hTerm₂ := Nat.add_le_add_left hSecondTerm _
+    have hTerm₁ :
+        A * (n + 2) ^ (3 * a + 7) ≤ A * (n + 2) ^ (3 * a + 7) :=
+      Nat.le_refl _
+    have hSum :=
+      Nat.add_le_add hTerm₁
+        (by
+          have := Nat.add_le_add_left hSecondTerm _
+          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+            using this)
+    have hConst := Nat.add_le_add_right hTwoLe _
+    have := Nat.add_le_add hConst hSum
+    simpa [C, hC, A, hA, B, hB, Nat.mul_add, Nat.add_comm, Nat.add_left_comm,
+      Nat.add_assoc, two_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
+  exact Nat.le_trans hCombined hFinal
+
+/-- Constant controlling the polynomial bound on the straight-line gate count
+after simulating the full run time of `M`.  The definition packages the rather
+verbose sum appearing in `straightTotalGateCount_runtime_le_shifted_pow`. -/
+def straightRuntimeGateCoeff (M : TM) : ℕ :=
+  (6 * stateCard M + 7) +
+    (8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1)) + 2
+
+/-- Exponent governing the polynomial bound obtained from the run-time
+hypothesis `runTime n ≤ n^c + c`.  The quantity originates from repeatedly
+bounding auxiliary terms by a uniform shifted power of `n + 2`. -/
+def straightRuntimeGateExp (c : ℕ) : ℕ := 3 * runtimeExponent c + 7
+
+/-- Straight-line configuration obtained after simulating `M` for `runTime n`
+steps.  The definition mirrors the tree-level construction but retains sharing
+between intermediate gates, which is crucial for polynomial gate bounds. -/
+noncomputable def straightRuntimeConfig (M : TM) (n : ℕ) : StraightConfig M n :=
+  Nat.iterate (StraightConfig.step (M := M) (n := n)) (M.runTime n)
+    (StraightConfig.initial (M := M) n)
+
+/-- The straight-line simulation of `M` for `runTime n` steps matches the actual
+Turing-machine execution.  We prove this by iterating the one-step correctness
+lemma `StraightConfig.step_spec` starting from the initial specification. -/
+lemma straightRuntime_spec (M : TM) (n : ℕ) :
+    StraightConfig.Spec (M := M) (n := n) (straightRuntimeConfig (M := M) n)
+      (fun x => TM.run (M := M) (n := n) x) := by
+  classical
+  unfold straightRuntimeConfig
+  have hInit := StraightConfig.initial_spec (M := M) (n := n)
+  have hIter := StraightConfig.iterate_spec (M := M) (n := n)
+    (sc := StraightConfig.initial (M := M) n)
+    (f := fun x => M.initialConfig x) hInit (M.runTime n)
+  simpa [TM.run, TM.runConfig]
+    using hIter
+
+/-- Gate-count bound for the straight-line configuration after the full
+simulation.  This is a direct restatement of
+`straightTotalGateCount_runtime_le_shifted_pow` in terms of the runtime
+configuration defined above. -/
+lemma straightRuntime_gate_le_shifted_pow
+    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) (n : ℕ) :
+    (straightRuntimeConfig (M := M) n).circuit.gates ≤
+      straightRuntimeGateCoeff (M := M) *
+        (n + 2) ^ straightRuntimeGateExp (c := c) := by
+  have hBound := straightTotalGateCount_runtime_le_shifted_pow
+    (M := M) (n := n) (c := c) hRun
+  simpa [straightRuntimeConfig, straightRuntimeGateCoeff,
+    straightRuntimeGateExp, straightTotalGateCount]
+    using hBound n
+
+/-- Straight-line circuit deciding acceptance after running the simulation for
+`runTime n` steps.  The construction reuses the circuit stored in the runtime
+configuration and merely redirects the output to the accepting state wire. -/
+noncomputable def straightAcceptCircuit (M : TM) (n : ℕ) : StraightLineCircuit n :=
+  let cfg := straightRuntimeConfig (M := M) n
+  { cfg.circuit with output := cfg.state (stateIndex M M.accept) }
+
+/-- The straight-line acceptance circuit agrees with the Turing machine. -/
+lemma straightAcceptCircuit_spec (M : TM) (n : ℕ) :
+    ∀ x, StraightLineCircuit.eval (straightAcceptCircuit (M := M) (n := n)) x =
+      TM.accepts (M := M) (n := n) x := by
+  classical
+  intro x
+  have hSpec := straightRuntime_spec (M := M) (n := n)
+  have hState := hSpec.state_eq (x := x) (i := stateIndex M M.accept)
+  have hIndicator :
+      stateIndicator M (TM.run (M := M) (n := n) x) (stateIndex M M.accept) =
+        decide ((TM.run (M := M) (n := n) x).state = M.accept) := by
+    simp [stateIndicator, stateIndex, stateEquiv, Equiv.apply_symm_apply]
+  have hEval :
+      StraightLineCircuit.evalWire (C := (straightRuntimeConfig (M := M) n).circuit)
+        (x := x) ((straightRuntimeConfig (M := M) n).state (stateIndex M M.accept)) =
+        stateIndicator M (TM.run (M := M) (n := n) x) (stateIndex M M.accept) :=
+    hState
+  have hOutput : StraightLineCircuit.eval
+      (straightAcceptCircuit (M := M) (n := n)) x =
+      StraightLineCircuit.evalWire (C := (straightRuntimeConfig (M := M) n).circuit)
+        (x := x)
+        ((straightRuntimeConfig (M := M) n).state (stateIndex M M.accept)) := by
+    simp [straightAcceptCircuit]
+  simpa [TM.accepts, hIndicator, hOutput] using hEval
+
+/-- Gate count of the straight-line acceptance circuit.  Redirecting the output
+wire does not alter the number of gates. -/
+lemma straightAcceptCircuit_gates (M : TM) (n : ℕ) :
+    (straightAcceptCircuit (M := M) (n := n)).gates =
+      (straightRuntimeConfig (M := M) n).circuit.gates := by
+  simp [straightAcceptCircuit]
 
 
 /-!
@@ -10888,503 +11091,115 @@ def gateBoundExponent (M : TM) : ℕ := affineFactorPolyCoeff M + 3
 /-- Constant offset appearing in the exponent of the final bound. -/
 def gateBoundOffset (M : TM) : ℕ := affineIterLeadCoeff M + 5
 
-lemma sizeOf_acceptCircuit_le_poly
-    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
-    sizeOf (acceptCircuit (M := M) (n := n)) ≤
-      (gateBoundBase (M := M) (c := c) (n := n)) ^
-        (gateBoundExponent M *
-            polyBase (M := M) (c := c) n + gateBoundOffset M) := by
-  classical
-  set P := polyBase (M := M) (c := c) n
-  set B := gateBoundBase (M := M) (c := c) (n := n)
-  have hBase_ge : P ≤ B := by
-    unfold B gateBoundBase
-    exact Nat.le_max_left _ _
-  have hLead : affineIterLeadCoeff M ≤ B ^ (affineIterLeadCoeff M + 1) := by
-    unfold B gateBoundBase
-    exact const_le_pow_max P (affineIterLeadCoeff M)
-  have hPow4 : P ^ 4 ≤ B ^ 4 :=
-    pow_le_pow_of_le_base (a := P) (b := B) (k := 4) hBase_ge
-  have hCoeff : affineFactorPolyCoeff M ≤ B ^ (affineFactorPolyCoeff M + 1) := by
-    unfold B gateBoundBase
-    exact const_le_pow_max P (affineFactorPolyCoeff M)
-  have hP_sq : P ^ 2 ≤ B ^ 2 :=
-    pow_le_pow_of_le_base (a := P) (b := B) (k := 2) hBase_ge
-  have hCoeffMul : affineFactorPolyCoeff M * P ^ 2 ≤
-      B ^ (affineFactorPolyCoeff M + 3) := by
-    have hmul := Nat.mul_le_mul hCoeff hP_sq
-    -- Simplify the product using the standard power rules.
-    simpa [B, gateBoundBase, Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm,
-      Nat.mul_assoc, Nat.pow_succ, Nat.pow_two]
-      using hmul
-  have hPowCoeff :
-      (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
-        B ^ ((affineFactorPolyCoeff M + 3) * P) := by
-    have := pow_le_pow_of_le_base (a := affineFactorPolyCoeff M * P ^ 2)
-      (b := B ^ (affineFactorPolyCoeff M + 3)) (k := P) hCoeffMul
-    simpa [Nat.pow_mul] using this
-  have hpre := sizeOf_acceptCircuit_le_pre
-    (M := M) (n := n) (c := c) hRun
-  -- Combine all auxiliary estimates: replace each factor of the preliminary
-  -- bound with its counterpart expressed solely in terms of `B`.
-  have hstep₁ :
-      sizeOf (acceptCircuit (M := M) (n := n)) ≤
-        B ^ (affineIterLeadCoeff M + 1) * (P ^ 4) *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P := by
-    have := Nat.mul_le_mul (Nat.mul_le_mul hLead (Nat.le_refl _))
-      (Nat.le_refl _)
-    exact Nat.le_trans hpre this
-  have hstep₂ :
-      sizeOf (acceptCircuit (M := M) (n := n)) ≤
-        B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P := by
-    have := Nat.mul_le_mul (Nat.mul_le_mul (Nat.le_refl _ ) hPow4)
-      (Nat.le_refl _)
-    exact Nat.le_trans hstep₁ this
-  have hstep₃ :
-      sizeOf (acceptCircuit (M := M) (n := n)) ≤
-        B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
-          B ^ ((affineFactorPolyCoeff M + 3) * P) := by
-    have := Nat.mul_le_mul (Nat.mul_le_mul (Nat.le_refl _) (Nat.le_refl _))
-      hPowCoeff
-    exact Nat.le_trans hstep₂ this
-  -- Finish by collecting the exponents.
-  simpa [B, gateBoundBase, gateBoundExponent, gateBoundOffset, P,
-    Nat.mul_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, Nat.pow_add,
-    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-    using hstep₃
-
 /--
-Convenient packaging of the final bound on the accepting circuit.  The
-definition mirrors the right-hand side of
-`sizeOf_acceptCircuit_le_poly` and will be reused when constructing the
-`InPpoly` witness associated with a polynomial-time Turing machine.
--/
+Polynomial upper bound for the straight-line acceptance circuit.  The bound is
+expressed purely in terms of the input length, making the subsequent
+normalisation to `n ^ k + k` straightforward.-/
 def gatePolyBound (M : TM) (c n : ℕ) : ℕ :=
-  (gateBoundBase (M := M) (c := c) n) ^
-    (gateBoundExponent M *
-        polyBase (M := M) (c := c) n + gateBoundOffset M)
+  straightRuntimeGateCoeff (M := M) *
+    (n + 2) ^ straightRuntimeGateExp (c := c)
 
-@[simp] lemma gatePolyBound_def (M : TM) (c n : ℕ) :
-    gatePolyBound (M := M) (c := c) n =
-      (gateBoundBase (M := M) (c := c) n) ^
-        (gateBoundExponent M *
-            polyBase (M := M) (c := c) n + gateBoundOffset M) := rfl
-
-/--
-Restatement of `sizeOf_acceptCircuit_le_poly` using the packaged definition
-`gatePolyBound`.  The lemma emphasises that the complicated expression bounding
-the accepting circuit will be treated as an opaque polynomial candidate in the
-final construction.
--/
-lemma acceptCircuit_preBound_le_gatePolyBound (M : TM) (c n : ℕ) :
-    let P := polyBase (M := M) (c := c) n
-    let B := gateBoundBase (M := M) (c := c) n
-    affineIterLeadCoeff M * P ^ 4 *
-        (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
+lemma straightAcceptCircuit_le_gatePolyBound
+    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) (n : ℕ) :
+    (straightAcceptCircuit (M := M) (n := n)).gates ≤
       gatePolyBound (M := M) (c := c) n := by
-  classical
-  intro P B
-  have hBase_ge : P ≤ B := by
-    unfold B gateBoundBase
-    exact Nat.le_max_left _ _
-  have hLead : affineIterLeadCoeff M ≤ B ^ (affineIterLeadCoeff M + 1) := by
-    unfold B gateBoundBase
-    exact const_le_pow_max P (affineIterLeadCoeff M)
-  have hPow4 : P ^ 4 ≤ B ^ 4 :=
-    pow_le_pow_of_le_base (a := P) (b := B) (k := 4) hBase_ge
-  have hCoeff : affineFactorPolyCoeff M ≤ B ^ (affineFactorPolyCoeff M + 1) := by
-    unfold B gateBoundBase
-    exact const_le_pow_max P (affineFactorPolyCoeff M)
-  have hP_sq : P ^ 2 ≤ B ^ 2 :=
-    pow_le_pow_of_le_base (a := P) (b := B) (k := 2) hBase_ge
-  have hCoeffMul : affineFactorPolyCoeff M * P ^ 2 ≤
-      B ^ (affineFactorPolyCoeff M + 3) := by
-    have hmul := Nat.mul_le_mul hCoeff hP_sq
-    simpa [B, gateBoundBase, Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm,
-      Nat.mul_assoc, Nat.pow_succ, Nat.pow_two]
-      using hmul
-  have hPowCoeff :
-      (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
-        B ^ ((affineFactorPolyCoeff M + 3) * P) := by
-    have := pow_le_pow_of_le_base (a := affineFactorPolyCoeff M * P ^ 2)
-      (b := B ^ (affineFactorPolyCoeff M + 3)) (k := P) hCoeffMul
-    simpa [Nat.pow_mul] using this
-  have hstep₁ :
-      affineIterLeadCoeff M * P ^ 4 *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
-        B ^ (affineIterLeadCoeff M + 1) * P ^ 4 *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P := by
-    have hMulLead :=
-      Nat.mul_le_mul hLead (Nat.le_refl (P ^ 4))
-    have :=
-      Nat.mul_le_mul hMulLead
-        (Nat.le_refl ((affineFactorPolyCoeff M * P ^ 2) ^ P))
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using this
-  have hstep₂ :
-      B ^ (affineIterLeadCoeff M + 1) * P ^ 4 *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
-        B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P := by
-    have hPow4Mul :=
-      Nat.mul_le_mul_left (B ^ (affineIterLeadCoeff M + 1)) hPow4
-    have :=
-      Nat.mul_le_mul hPow4Mul
-        (Nat.le_refl ((affineFactorPolyCoeff M * P ^ 2) ^ P))
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using this
-  have hstep₃ :
-      B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
-          (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
-        B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
-          B ^ ((affineFactorPolyCoeff M + 3) * P) := by
-    have :=
-      Nat.mul_le_mul_left (B ^ (affineIterLeadCoeff M + 1) * B ^ 4) hPowCoeff
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using this
-  have hConst :
-      B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
-          B ^ ((affineFactorPolyCoeff M + 3) * P) =
-        gatePolyBound (M := M) (c := c) n := by
-    simp [gatePolyBound_def, gateBoundExponent, gateBoundOffset, B,
-      Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
-      Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
-  exact
-    Nat.le_trans hstep₁
-      (Nat.le_trans hstep₂
-        (Nat.le_trans hstep₃ (by simpa [hConst])))
+  have h := straightRuntime_gate_le_shifted_pow
+    (M := M) (n := n) (c := c) hRun
+  simpa [gatePolyBound, straightAcceptCircuit_gates]
+    using h
 
-lemma sizeOf_acceptCircuit_le_gatePolyBound
-    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
-    sizeOf (acceptCircuit (M := M) (n := n)) ≤
-      gatePolyBound (M := M) (c := c) n := by
-  have hPre := sizeOf_acceptCircuit_le_pre (M := M) (n := n) (c := c) hRun
-  have hGate :=
-    acceptCircuit_preBound_le_gatePolyBound (M := M) (c := c) (n := n)
-  simpa using Nat.le_trans hPre hGate
-
-/--
-The gate-count bound `gatePolyBound` is controlled by an explicit function of
-`n`.  While the resulting estimate is not yet in the canonical `n^k + k`
-format required by `InPpoly`, it already replaces all occurrences of the
-auxiliary quantities (`polyBase`, `gateBoundBase`) with straightforward
-polynomials in `n`.  Subsequent lemmas will normalise this expression further.
--/
-lemma gatePolyBound_le_explicit (M : TM) (c n : ℕ) :
-    gatePolyBound (M := M) (c := c) n ≤
-      ((n + 1) ^ runtimeExponent c * (n + runtimeExponent c + 1) + 2) ^
-        (gateBoundExponent M *
-            ((n + 1) ^ runtimeExponent c * (n + runtimeExponent c + 1)) +
-          gateBoundOffset M) := by
+/-- The packaged gate bound `gatePolyBound` is dominated by a uniform polynomial
+of the form `n ^ k + k`.  The proof isolates small input lengths and then uses
+monotonicity of exponentiation for `n ≥ 2`.-/
+lemma gatePolyBound_poly (M : TM) (c : ℕ) :
+    ∃ k, ∀ n, gatePolyBound (M := M) (c := c) n ≤ n ^ k + k := by
   classical
-  set B := gateBoundBase (M := M) (c := c) n
-  set P :=
-    (n + 1) ^ runtimeExponent c * (n + runtimeExponent c + 1) + 2
-  set Q :=
-    (n + 1) ^ runtimeExponent c * (n + runtimeExponent c + 1)
-  have hBase : B ≤ P :=
-    gateBoundBase_le_poly (M := M) (c := c) (n := n)
-  -- First enlarge the base of the power using monotonicity.
-  have hBasePow :
-      B ^ (gateBoundExponent M * polyBase (M := M) (c := c) n +
-          gateBoundOffset M) ≤
-        P ^ (gateBoundExponent M * polyBase (M := M) (c := c) n +
-          gateBoundOffset M) :=
-    Nat.pow_le_pow_of_le_base (a := B) (b := P)
-      (k := gateBoundExponent M * polyBase (M := M) (c := c) n +
-          gateBoundOffset M) hBase
-  have hPoly :
-      polyBase (M := M) (c := c) n ≤ Q := by
-    simpa [Q]
-      using polyBase_le_mul_pow (M := M) (c := c) (n := n)
-  -- Upgrade the exponent to the simplified expression.
-  have hExp :
-      gateBoundExponent M * polyBase (M := M) (c := c) n +
-          gateBoundOffset M ≤
-        gateBoundExponent M * Q + gateBoundOffset M := by
-    have hMul :=
-      Nat.mul_le_mul_left (gateBoundExponent M) hPoly
-    exact Nat.add_le_add hMul (Nat.le_refl _)
-  have hPos : 1 ≤ P := by
-    have : 2 ≤ P := by
-      have : (2 : ℕ) ≤ 2 + Q := by
-        exact Nat.le_add_left _ _
-      simpa [P, Q, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+  set C := straightRuntimeGateCoeff (M := M)
+  set E := straightRuntimeGateExp (c := c)
+  set C' := C * 3 ^ E
+  set k := C' + E + 1
+  refine ⟨k, ?_⟩
+  intro n
+  have hConst_le : C * 2 ^ E ≤ k := by
+    have hBase : (2 : ℕ) ≤ 3 := by decide
+    have hThree : C * 2 ^ E ≤ C * 3 ^ E :=
+      Nat.mul_le_mul_left _ (pow_le_pow_of_le_base hBase E)
+    have hAdd : C * 3 ^ E ≤ C * 3 ^ E + E + 1 := Nat.le_add_right _ _
+    simpa [C', k, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      using le_trans hThree hAdd
+  have hSmall : ∀ n ≤ 1, gatePolyBound (M := M) (c := c) n ≤ k := by
+    intro n hn
+    cases n with
+    | zero =>
+        simpa [gatePolyBound] using hConst_le
+    | succ n =>
+        cases n with
+        | zero =>
+            have : C * 3 ^ E ≤ k := by
+              simpa [C', k, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                using Nat.le_add_right (C * 3 ^ E) (E + 1)
+            simpa [gatePolyBound]
+        | succ n =>
+            cases hn
+  by_cases hTwo : 2 ≤ n
+  · -- Large inputs: dominate by a power of `n`.
+    have hBase : n + 2 ≤ 3 * n := by
+      have hAdd₁ : n + 2 ≤ n + n := Nat.add_le_add_left hTwo _
+      have hAdd₂ : n + n ≤ n + (n + n) := Nat.le_add_left _ _
+      have : 3 * n = n + (n + n) := by
+        simp [three_mul, two_mul, Nat.mul_comm, Nat.mul_left_comm,
+          Nat.mul_assoc]
+      simpa [this]
+        using le_trans hAdd₁ hAdd₂
+    have hPow : (n + 2) ^ E ≤ (3 * n) ^ E :=
+      pow_le_pow_of_le_base hBase E
+    have hGate : gatePolyBound (M := M) (c := c) n ≤ C' * n ^ E := by
+      have := Nat.mul_le_mul_left C hPow
+      have hRewrite : (3 * n) ^ E = 3 ^ E * n ^ E := by
+        simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.pow_mul]
+      simpa [gatePolyBound, C', hRewrite, Nat.mul_comm, Nat.mul_left_comm,
+        Nat.mul_assoc]
         using this
-    exact Nat.succ_le_succ (Nat.le_trans (Nat.zero_le _) this)
-  have hExpPow :
-      P ^ (gateBoundExponent M * polyBase (M := M) (c := c) n +
-          gateBoundOffset M) ≤
-        P ^ (gateBoundExponent M * Q + gateBoundOffset M) :=
-    Nat.pow_le_pow_of_le_right hPos hExp
-  have :=
-    Nat.le_trans hBasePow hExpPow
-  simpa [gatePolyBound_def, B, P, Q]
-    using this
-
-/--
-Auxiliary polynomial dominating both `polyBase` and the constant `2` required
-by `gateBoundBase`.  The expression grows like `(n + runtimeExponent c + 2)` to
-the power `runtimeExponent c + 1`, which will later be convenient when
-normalising the final size bounds.-/
-def dominantBase (c n : ℕ) : ℕ :=
-  2 * (n + runtimeExponent c + 2) ^ (runtimeExponent c + 1)
-
-/--
-The auxiliary base is always at least one.  We record the slightly stronger
-fact that it actually dominates the constant `2`, which will be handy when
-applying monotonicity properties of exponentiation.
--/
-lemma one_le_dominantBase (c n : ℕ) : 1 ≤ dominantBase c n := by
-  classical
-  unfold dominantBase
-  have hpowpos :
-      0 < (n + runtimeExponent c + 2) ^ (runtimeExponent c + 1) := by
-    have hbase : 0 < n + runtimeExponent c + 2 := Nat.succ_pos _
-    exact Nat.pow_pos hbase _
-  have hpow :
-      1 ≤ (n + runtimeExponent c + 2) ^ (runtimeExponent c + 1) :=
-    Nat.succ_le_of_lt hpowpos
-  have hMul :
-      2 ≤
-        2 * (n + runtimeExponent c + 2) ^ (runtimeExponent c + 1) := by
-    have :=
-      Nat.mul_le_mul_left (2)
-        hpow
-    simpa [two_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using this
-  exact Nat.le_trans (by decide : 1 ≤ 2) hMul
-
-/--
-`dominantBase` grows no faster than a single power of the shifted input size.
-The inequality trades the leading coefficient `2` for an extra factor of the
-base, a manoeuvre that will be convenient when normalising the final
-polynomial bounds for the accepting circuit. -/
-lemma dominantBase_le_shifted_pow (c n : ℕ) :
-    dominantBase c n ≤
-      (n + runtimeExponent c + 2) ^ (runtimeExponent c + 2) := by
-  classical
-  unfold dominantBase
-  set X := n + runtimeExponent c + 2 with hX
-  have hTwo : (2 : ℕ) ≤ X := by
-    have hx : runtimeExponent c + 2 ≤ X := by
-      have := Nat.le_add_left (runtimeExponent c + 2) n
-      simpa [hX, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
-    exact le_trans (by decide : 2 ≤ runtimeExponent c + 2) hx
-  have hPowSucc : X ^ (runtimeExponent c + 2) =
-      X ^ (runtimeExponent c + 1) * X := by
-    have := Nat.pow_succ (X) (runtimeExponent c + 1)
-    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
-  -- Rewrite both sides of the inequality using the recorded identities.
-  have hLHS : 2 * X ^ (runtimeExponent c + 1) =
-      X ^ (runtimeExponent c + 1) * 2 := by
-    simp [Nat.mul_comm, Nat.mul_left_comm]
-  have hRHS : X ^ (runtimeExponent c + 1) * X =
-      X ^ (runtimeExponent c + 2) := by
-    simpa [hPowSucc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using (rfl : X ^ (runtimeExponent c + 1) * X =
-        X ^ (runtimeExponent c + 1) * X)
-  have hineq :
-      X ^ (runtimeExponent c + 1) * 2 ≤
-        X ^ (runtimeExponent c + 1) * X :=
-    Nat.mul_le_mul_left _ hTwo
-  -- Assemble the final inequality by rewriting through `hLHS` and `hRHS`.
-  have : 2 * X ^ (runtimeExponent c + 1) ≤ X ^ (runtimeExponent c + 2) := by
-    simpa [hLHS, hRHS, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using hineq
-  simpa [hX, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-    using this
-
-/--
-`polyBase` is bounded by the auxiliary polynomial `dominantBase`.
--/
-lemma polyBase_le_dominantBase (c n : ℕ) :
-    polyBase (c := c) n ≤ dominantBase c n := by
-  classical
-  set R := runtimeExponent c
-  set B := n + R + 2
-  have hPow : n ^ R ≤ B ^ (R + 1) := by
-    have hLe : n ≤ B := by
-      have := Nat.le_add_right n (R + 2)
-      simpa [B, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
-    have hMono := pow_le_pow_of_le_base (a := n) (b := B) (k := R) hLe
-    have hPos : 1 ≤ B := by
-      have : (0 : ℕ) ≤ n := Nat.zero_le _
-      exact Nat.succ_le_succ (Nat.add_le_add this (Nat.zero_le _))
-    simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using Nat.mul_le_mul_right _ hMono
-  have hConst : R ≤ B ^ (R + 1) := by
-    have hLe : R ≤ B := by
-      have := Nat.le_add_right R (n + 2)
-      simpa [B, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
-    have : B ≤ B ^ (R + 1) := by
-      have := Nat.mul_le_mul_left B
-        (pow_le_pow_of_le_base (a := B) (b := B) (k := R)
-          (Nat.le_refl _))
-      simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    have hPowBase : C' ≤ n ^ C' := by
+      have hTwoPow : C' ≤ 2 ^ C' := by
+        simpa [C'] using self_le_pow_two C'
+      have hPowDom := pow_le_pow_of_le_base hTwo C'
+      exact le_trans hTwoPow hPowDom
+    have hLarge : C' * n ^ E ≤ n ^ (C' + E) := by
+      have := Nat.mul_le_mul_right (n := n ^ E) hPowBase
+      simpa [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
         using this
-    exact Nat.le_trans hLe this
-  have hBound : n ^ R + R ≤ 2 * B ^ (R + 1) := by
-    have h₁ : n ^ R ≤ B ^ (R + 1) := hPow
-    have h₂ : R ≤ B ^ (R + 1) := hConst
-    have := Nat.add_le_add h₁ h₂
-    simpa [two_mul, dominantBase, B, R] using this
-  simpa [polyBase, dominantBase, B, R, Nat.add_comm, Nat.add_left_comm,
-    Nat.add_assoc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-    using hBound
-
-/--
-`gateBoundBase` is dominated by the auxiliary polynomial `dominantBase`.
--/
-lemma gateBoundBase_le_dominantBase (M : TM) (c n : ℕ) :
-    gateBoundBase (M := M) (c := c) n ≤ dominantBase c n := by
-  classical
-  have hpoly : polyBase (c := c) n ≤ dominantBase c n :=
-    polyBase_le_dominantBase (c := c) (n := n)
-  have htwo : 2 ≤ dominantBase c n := by
-    have hpos : 0 < (n + runtimeExponent c + 2) ^ (runtimeExponent c + 1) := by
-      have : 0 < n + runtimeExponent c + 2 := Nat.succ_pos _
-      exact Nat.pow_pos this _
-    have : 2 ≤ 2 * (n + runtimeExponent c + 2) ^ (runtimeExponent c + 1) := by
-      have := Nat.mul_le_mul_left (2)
-        (Nat.succ_le_of_lt hpos)
-      simpa [two_mul] using this
-    simpa [dominantBase, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
-      Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
-  exact (max_le_iff.mpr ⟨hpoly, htwo⟩)
-
-/--
-The packaged gate bound `gatePolyBound` can be controlled entirely through the
-auxiliary base `dominantBase`.  This lemma upgrades both the base and the
-exponent appearing in `gatePolyBound` to the dominating polynomial expression,
-streamlining later normalisation steps.
--/
-lemma gatePolyBound_le_dominantBase_pow (M : TM) (c n : ℕ) :
-    gatePolyBound (M := M) (c := c) n ≤
-      (dominantBase c n) ^
-        (gateBoundExponent M * dominantBase c n + gateBoundOffset M) := by
-  classical
-  set B := gateBoundBase (M := M) (c := c) n
-  set D := dominantBase c n
-  have hBase : B ≤ D :=
-    gateBoundBase_le_dominantBase (M := M) (c := c) (n := n)
-  have hPowBase :
-      B ^
-          (gateBoundExponent M *
-              polyBase (M := M) (c := c) n + gateBoundOffset M) ≤
-        D ^
-          (gateBoundExponent M *
-              polyBase (M := M) (c := c) n + gateBoundOffset M) :=
-    pow_le_pow_of_le_base (a := B) (b := D)
-      (k := gateBoundExponent M *
-              polyBase (M := M) (c := c) n + gateBoundOffset M) hBase
-  have hPoly : polyBase (c := c) n ≤ D :=
-    polyBase_le_dominantBase (c := c) (n := n)
-  have hExp :
-      gateBoundExponent M * polyBase (M := M) (c := c) n + gateBoundOffset M ≤
-        gateBoundExponent M * D + gateBoundOffset M := by
-    have hMul := Nat.mul_le_mul_left (gateBoundExponent M) hPoly
-    exact Nat.add_le_add hMul (Nat.le_refl _)
-  have hPos : 1 ≤ D := one_le_dominantBase (c := c) (n := n)
-  have hPowExp :
-      D ^
-          (gateBoundExponent M * polyBase (M := M) (c := c) n +
-            gateBoundOffset M) ≤
-        D ^
-          (gateBoundExponent M * D + gateBoundOffset M) :=
-    Nat.pow_le_pow_of_le_right hPos hExp
-  have := Nat.le_trans hPowBase hPowExp
-  simpa [gatePolyBound_def, B, D]
-    using this
-
-/--
-The helper `dominantBase` is itself dominated by the shifted power appearing in
-its definition.  Upgrading both the base and the exponent yields a compact
-expression that no longer carries the prefactor `2`.  Although the resulting
-bound is still coarse, isolating the final polynomial `n ↦ n + runtimeExponent c
-+ 2` will make later normalisation steps more mechanical.
--/
-lemma gatePolyBound_le_shifted_pow (M : TM) (c n : ℕ) :
-    gatePolyBound (M := M) (c := c) n ≤
-      ((n + runtimeExponent c + 2) ^ (runtimeExponent c + 2)) ^
-        (gateBoundExponent M *
-            (n + runtimeExponent c + 2) ^ (runtimeExponent c + 2) +
-          gateBoundOffset M) := by
-  classical
-  -- Abbreviations for the two auxiliary bases.  `D` is the compact base
-  -- introduced above, while `S` keeps only the shifted power, eliminating the
-  -- leading factor `2`.
-  set D := dominantBase c n
-  set S := (n + runtimeExponent c + 2) ^ (runtimeExponent c + 2)
-  -- Start from the domination by `dominantBase` proved previously.
-  have hDom := gatePolyBound_le_dominantBase_pow
-    (M := M) (c := c) (n := n)
-  -- The monotonicity of exponentiation in the base allows us to replace `D`
-  -- with the larger quantity `S`.
-  have hBaseLe : D ≤ S := by
-    simpa [D, S]
-      using dominantBase_le_shifted_pow (c := c) (n := n)
-  have hBase :=
-    Nat.pow_le_pow_of_le_base (a := D) (b := S)
-      (k := gateBoundExponent M * D + gateBoundOffset M) hBaseLe
-  -- In turn, the exponent can be enlarged because the new base `S` is at least
-  -- one.
-  have hPos : 1 ≤ S := by
-    have : 0 < S := by
-      have hBase : 0 < n + runtimeExponent c + 2 := Nat.succ_pos _
-      exact Nat.pow_pos hBase _
-    exact Nat.succ_le_of_lt this
-  have hMul : gateBoundExponent M * D ≤ gateBoundExponent M * S :=
-    Nat.mul_le_mul_left _ hBaseLe
-  have hExp :
-      gateBoundExponent M * D + gateBoundOffset M ≤
-        gateBoundExponent M * S + gateBoundOffset M :=
-    Nat.add_le_add hMul (Nat.le_refl _)
-  have hExpMono :=
-    Nat.pow_le_pow_of_le_right hPos hExp
-  -- Combine the two relaxations.
-  have := Nat.le_trans hDom (Nat.le_trans hBase hExpMono)
-  simpa [gatePolyBound_def, D, S]
-    using this
-
-/--
-Helper lemma translating the specification of the accepting circuit into the
-language-level predicate used by `InPpoly`.
--/
-lemma acceptCircuit_correct_language (M : TM) (n : ℕ)
-    (x : Boolcube.Bitstring n) :
-    Circuit.eval (acceptCircuit (M := M) (n := n)) x =
-      (Complexity.TM.accepts (M := M) (n := n) x) :=
-  acceptCircuit_spec (M := M) (n := n) x
-
-/--
-Given a polynomial bound for `gatePolyBound`, we can extract an `InPpoly`
-witness for the language decided by a polynomial-time Turing machine.  The
-explicit polynomial domination is postponed to dedicated lemmas below, so that
-the combinatorial part of the construction is isolated from the heavy
-arithmetic manipulations.
--/
+    have hExpLe : C' + E ≤ k := by
+      simp [C', k, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    have hOne : 1 ≤ n := le_trans (by decide : 1 ≤ 2) hTwo
+    have hFinal : gatePolyBound (M := M) (c := c) n ≤ n ^ k :=
+      le_trans hGate (le_trans hLarge
+        (Nat.pow_le_pow_of_le_right hOne hExpLe))
+    exact le_trans hFinal (Nat.le_add_right _ _)
+  · -- Small inputs: fall back to the explicit bound `k`.
+    have hn : n ≤ 1 := by
+      exact Nat.le_of_lt_succ (lt_of_not_ge hTwo)
+    have := hSmall n hn
+    exact le_trans this (Nat.le_add_right _ _)
 noncomputable def inPpoly_of_polyBound
     {L : Complexity.Language} {M : TM} {c : ℕ}
     (hRun : ∀ n, M.runTime n ≤ n ^ c + c)
     (hCorrect : ∀ n (x : Boolcube.Bitstring n),
-      Complexity.TM.accepts (M := M) (n := n) x = L n x)
-    (hPoly : ∃ k, ∀ n, gatePolyBound (M := M) (c := c) n ≤ n ^ k + k) :
+      Complexity.TM.accepts (M := M) (n := n) x = L n x) :
     Complexity.InPpoly L := by
   classical
   refine
     { polyBound := fun n => gatePolyBound (M := M) (c := c) n
-      , polyBound_poly := hPoly
-      , circuits := fun n => acceptCircuit (M := M) (n := n)
+      , polyBound_poly := gatePolyBound_poly (M := M) (c := c)
+      , circuits := fun n => straightAcceptCircuit (M := M) (n := n)
       , size_ok := ?_, correct := ?_ }
   · intro n
-    simpa [gatePolyBound_def]
-      using sizeOf_acceptCircuit_le_gatePolyBound (M := M) (n := n) (c := c)
-        hRun
+    simpa [gatePolyBound]
+      using straightAcceptCircuit_le_gatePolyBound (M := M) (c := c)
+        hRun n
   · intro n x
     simpa [hCorrect n x]
-      using acceptCircuit_correct_language (M := M) (n := n) x
+      using straightAcceptCircuit_spec (M := M) (n := n) x
 
 
 

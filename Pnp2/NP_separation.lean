@@ -57,7 +57,7 @@ lemma P_ne_NP_of_MCSP_bound :
     (∃ ε > 0, MCSP_lower_bound ε) → P ≠ NP := by
   intro h
   have hNP : NP ⊄ Ppoly := magnification_AC0_MCSP h
-  -- The axiom `P_subset_Ppoly` is the only classical ingredient needed
+  -- The inclusion `P ⊆ P/poly` is the only classical ingredient needed
   -- for the final contradiction.
   have hP : P ⊆ Ppoly := P_subset_Ppoly
   exact P_ne_NP_of_NP_not_subset_Ppoly hNP hP

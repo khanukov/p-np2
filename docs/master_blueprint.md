@@ -7,7 +7,7 @@ This note summarises the long-term plan towards a formal proof that `P ≠ NP`. 
 ## 0. Foundation
 
 * Maintain the Lean library of Boolean functions, subcubes, entropy, and sunflower technology.  ✅ Completed in `Pnp2/`.
-* Record outstanding axioms explicitly (`ComplexityClasses.P_subset_Ppoly`, `NPSeparation.*`).
+* Record outstanding axioms explicitly (`NPSeparation.magnification_AC0_MCSP`, `NPSeparation.FCE_implies_MCSP`).
 
 ## 1. From restricted to general models
 
@@ -23,7 +23,7 @@ Develop a meet-in-the-middle SAT algorithm for compositions `ACC⁰ ∘ MCSP`, o
 
 ## 4. Uniformisation
 
-Convert the non-uniform separation into `P ≠ NP` through the classical implication `NP ⊄ P/poly` + `P ⊆ P/poly`.  The set-theoretic deduction is now formalised; it awaits only the removal of `P_subset_Ppoly` and the magnification/cover bridges.  The groundwork for the uniform side now lives in `TM/Encoding.lean`, `Circuit/Family.lean`, and `PsubsetPpoly.lean`.
+Convert the non-uniform separation into `P ≠ NP` through the classical implication `NP ⊄ P/poly` + `P ⊆ P/poly`.  The set-theoretic deduction is now formalised; after the constructive proof of `P ⊆ P/poly` the bridge waits only for the magnification/cover axioms to be discharged.  The groundwork for the uniform side lives in `TM/Encoding.lean`, `Circuit/Family.lean`, and `PsubsetPpoly.lean`.
 
 ## 5. Proof-complexity lock-in (optional)
 
@@ -47,6 +47,6 @@ Explore connections between `MCSP` hardness, pseudorandom generators, and one-wa
 * ✅ Sunflower lemma (`Sunflower/Sunflower.lean`) and agreement lemmas (`Agreement.lean`).
 * ✅ Entropy monotonicity and bounds (`entropy.lean`, `bound.lean`, `cover_numeric.lean`).
 * ✅ Low-sensitivity decision-tree cover (`low_sensitivity_cover.lean`).
-* ⚠️ Pending: replace the axioms in `ComplexityClasses.lean` and `NP_separation.lean` with constructive proofs (magnification and the cover→`MCSP` bridge).
+* ⚠️ Pending: replace the axioms in `NP_separation.lean` with constructive proofs (magnification and the cover→`MCSP` bridge).
 
 The blueprint remains a living document; contributors should update this file whenever milestones are reached or research priorities shift.

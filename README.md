@@ -1,5 +1,5 @@
 # P≠NP formalization repository
-> **Status (2025-09-24)**: All combinatorial and entropy proofs in `Pnp2/` are complete.  The only remaining axioms sit in the complexity bridge (`ComplexityClasses.lean`, `NP_separation.lean`).
+> **Status (2025-09-24)**: All combinatorial and entropy proofs in `Pnp2/` are complete.  The classical inclusion `P ⊆ P/poly` is now proven constructively; the only remaining axioms sit in the magnification bridge (`NP_separation.lean`).
 
 This project develops, in Lean 4, the infrastructure required for the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma asserts that Boolean-function families with small collision entropy admit a subexponential cover by monochromatic subcubes.  Establishing this result is a key milestone on the roadmap towards a formal separation `P ≠ NP`.
 
@@ -32,7 +32,7 @@ Every file that participates in the cover construction now has full proofs.  Cla
 ### Complexity interface
 * `canonical_circuit.lean`, `Algorithms/` – canonical circuits and executable experiments.
 * `acc_mcsp_sat.lean` – meet-in-the-middle SAT outline.
-* `ComplexityClasses.lean`, `NP_separation.lean` – axiomatic bridge from the FCE-Lemma to `P ≠ NP` (remaining axioms: `P_subset_Ppoly`, `magnification_AC0_MCSP`, `FCE_implies_MCSP`).
+* `ComplexityClasses.lean`, `NP_separation.lean` – bridge from the FCE-Lemma to `P ≠ NP` (remaining axioms: `magnification_AC0_MCSP`, `FCE_implies_MCSP`).
 * `TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean` – groundwork for the classical inclusion `P ⊆ P/poly`.
 
 ### Documentation and experiments
@@ -91,9 +91,8 @@ Enumerations for `n ≤ 8` are documented in `results_n*.md`.
 
 ## Current status and open tasks
 
-The constructive cover (`buildCover`, `familyEntropyCover`, `decisionTree_cover`) is completely formalised.  Outstanding work is concentrated in the complexity bridge:
+The constructive cover (`buildCover`, `familyEntropyCover`, `decisionTree_cover`) is completely formalised.  Outstanding work is concentrated in the magnification bridge:
 
-* Prove `P ⊆ P/poly` (currently axiomatic in `ComplexityClasses.lean`).
 * Replace the assumptions `magnification_AC0_MCSP` and `FCE_implies_MCSP` in `NP_separation.lean` with formal proofs.
 * Strengthen the experimental numeric bounds in `cover_numeric.lean` (the current `2^n` cap is a safe placeholder).
 

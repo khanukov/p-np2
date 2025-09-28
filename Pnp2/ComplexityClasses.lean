@@ -1,4 +1,6 @@
 import Pnp2.canonical_circuit
+import Pnp2.Circuit.StraightLine
+import Pnp2.PsubsetPpoly
 import Pnp2.TM.Encoding
 
 /-!
@@ -65,19 +67,25 @@ family of circuits of polynomial size deciding it. -/
 structure InPpoly (L : Language) where
   polyBound : ℕ → ℕ
   polyBound_poly : ∃ k, ∀ n, polyBound n ≤ n^k + k
-  circuits : ∀ n, Circuit n
-  size_ok : ∀ n, sizeOf (circuits n) ≤ polyBound n
+  circuits : ∀ n, StraightLineCircuit n
+  size_ok : ∀ n, (circuits n).gates ≤ polyBound n
   correct : ∀ n (x : Bitstring n),
-    Circuit.eval (circuits n) x = L n x
+    StraightLineCircuit.eval (circuits n) x = L n x
 
 /-- The non-uniform class `P/poly`. -/
 def Ppoly : Set Language := { L | ∃ h : InPpoly L, True }
 
-/-!
-`P ⊆ Ppoly` is a classical counting argument: every polytime Turing
-machine can be translated into a polynomial-size circuit family.  We
-keep this implication as an axiom so that later developments can rely
-on the standard complexity-theoretic fact without redoing the
-construction here.
--/
-axiom P_subset_Ppoly : P ⊆ Ppoly
+/--
+Every polynomial-time decidable language admits a family of
+polynomial-size straight-line circuits.  The proof packages the
+constructive simulation developed in `PsubsetPpoly.lean`: given a
+Turing machine `M` running in time `n^c + c`, we obtain a straight-line
+acceptance circuit whose gate count is bounded by the uniform polynomial
+`gatePolyBound`.  The helper `Complexity.inPpoly_of_polyBound` exposes
+this bound as an `InPpoly` witness, yielding the classical inclusion
+`P ⊆ P/poly` without any axioms.-/
+theorem P_subset_Ppoly : P ⊆ Ppoly := by
+  intro L hL
+  rcases hL with ⟨M, c, hRun, hCorrect⟩
+  refine ⟨Complexity.inPpoly_of_polyBound (M := M) (c := c)
+      hRun hCorrect, trivial⟩

@@ -128,6 +128,114 @@ def evalWire (C : StraightLineCircuit n) (x : Point n) :
     eval C x = evalWire (C := C) (x := x) C.output := rfl
 
 /--
+Translate the straight-line representation of a wire into the inductive
+Boolean-circuit datatype.  The auxiliary recursion mirrors `evalWireAux` and
+rebuilds the referenced gates as tree circuits, thereby enabling us to reuse
+the standard `Boolcube.Circuit` tooling when relating the straight-line and
+tree-based models of computation.-/
+mutual
+  def toCircuitWireAux (C : StraightLineCircuit n) :
+      ∀ {g : ℕ}, g ≤ C.gates → Fin (n + g) → Circuit n
+    | g, hg, i =>
+        if h : (i : ℕ) < n then
+          Circuit.var ⟨i, h⟩
+        else
+          let j : ℕ := (i : ℕ) - n
+          have hInputs : n ≤ (i : ℕ) := Nat.le_of_not_lt h
+          have hj_lt : j < g :=
+            Nat.sub_lt_of_le_of_lt hInputs (by simpa using i.is_lt)
+          have hj_total : j < C.gates := Nat.lt_of_lt_of_le hj_lt hg
+          toCircuitGateAux (C := C) (g := j) hj_total
+
+  /-- Auxiliary component of `toCircuitWireAux` reconstructing a single gate. -/
+  def toCircuitGateAux (C : StraightLineCircuit n) :
+      ∀ {g : ℕ}, g < C.gates → Circuit n
+    | g, hg =>
+        match C.gate ⟨g, hg⟩ with
+        | StraightOp.const b => Circuit.const b
+        | StraightOp.not i =>
+            Circuit.not
+              (toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) i)
+        | StraightOp.and i j =>
+            Circuit.and
+              (toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) i)
+              (toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) j)
+        | StraightOp.or i j =>
+            Circuit.or
+              (toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) i)
+              (toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) j)
+  termination_by
+    toCircuitWireAux g _ _ => g
+    toCircuitGateAux g _ => g
+end
+
+/-- Interpret a wire of a straight-line circuit as an ordinary Boolean circuit. -/
+def toCircuitWire (C : StraightLineCircuit n) :
+    Fin (n + C.gates) → Circuit n :=
+  fun i => toCircuitWireAux (C := C) (g := C.gates) (hg := le_rfl) i
+
+/-- Translate the designated output wire of a straight-line circuit. -/
+def toCircuit (C : StraightLineCircuit n) : Circuit n :=
+  toCircuitWire (C := C) C.output
+
+/--
+Evaluation of the translated objects agrees with the straight-line semantics.
+-/
+mutual
+  theorem eval_toCircuitWireAux (C : StraightLineCircuit n) :
+      ∀ {g : ℕ} {hg : g ≤ C.gates} {i : Fin (n + g)} {x : Point n},
+        Circuit.eval (toCircuitWireAux (C := C) (g := g) (hg := hg) i) x =
+          StraightLineCircuit.evalWireAux (C := C) (x := x) (g := g) (hg := hg) i
+    | g, hg, i, x => by
+        classical
+        by_cases h : (i : ℕ) < n
+        · have hi : (⟨(i : ℕ), h⟩ : Fin n) = ⟨i, h⟩ := rfl
+          simpa [toCircuitWireAux, h, StraightLineCircuit.evalWireAux, hi]
+        · set j : ℕ := (i : ℕ) - n with hj
+          have hInputs : n ≤ (i : ℕ) := Nat.le_of_not_lt h
+          have hj_lt : j < g := by
+            have := i.is_lt
+            have := Nat.sub_lt_of_le_of_lt hInputs (by simpa [hj] using this)
+            simpa [hj] using this
+          have hj_total : j < C.gates := Nat.lt_of_lt_of_le hj_lt hg
+          have hGate := eval_toCircuitGateAux (C := C) (g := j) (hg := hj_total)
+              (x := x)
+          simp [toCircuitWireAux, h, hj, StraightLineCircuit.evalWireAux,
+            hInputs, hj_lt, hGate]
+
+  theorem eval_toCircuitGateAux (C : StraightLineCircuit n) :
+      ∀ {g : ℕ} {hg : g < C.gates} {x : Point n},
+        Circuit.eval (toCircuitGateAux (C := C) (g := g) hg) x =
+          StraightLineCircuit.evalGateAux (C := C) (x := x) (g := g) hg
+    | g, hg, x => by
+        classical
+        cases hOp : C.gate ⟨g, hg⟩ with
+        | const b =>
+            simp [toCircuitGateAux, hOp, StraightLineCircuit.evalGateAux]
+        | not i =>
+            simp [toCircuitGateAux, hOp, StraightLineCircuit.evalGateAux,
+              StraightOp.eval, eval_toCircuitWireAux]
+        | and i j =>
+            simp [toCircuitGateAux, hOp, StraightLineCircuit.evalGateAux,
+              StraightOp.eval, eval_toCircuitWireAux]
+        | or i j =>
+            simp [toCircuitGateAux, hOp, StraightLineCircuit.evalGateAux,
+              StraightOp.eval, eval_toCircuitWireAux]
+end
+
+@[simp] lemma eval_toCircuitWire (C : StraightLineCircuit n) (x : Point n)
+    (i : Fin (n + C.gates)) :
+    Circuit.eval (toCircuitWire (C := C) i) x =
+      StraightLineCircuit.evalWire (C := C) (x := x) i := by
+  simpa [toCircuitWire, StraightLineCircuit.evalWire]
+    using eval_toCircuitWireAux (C := C) (hg := le_rfl) (i := i) (x := x)
+
+@[simp] lemma eval_toCircuit (C : StraightLineCircuit n) (x : Point n) :
+    Circuit.eval (toCircuit (C := C)) x = StraightLineCircuit.eval C x := by
+  simpa [toCircuit, StraightLineCircuit.eval_eq_evalWire, toCircuitWire]
+    using eval_toCircuitWire (C := C) (x := x) C.output
+
+/--
 Evaluation of an input wire ignores the gate structure and simply projects
 the corresponding bit of the assignment `x`.  The lemma is phrased in terms of
 the canonical embedding of `Fin n` into the extended index set `Fin (n +

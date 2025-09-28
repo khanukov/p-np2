@@ -281,6 +281,335 @@ structure Spec (sc : StraightConfig M n)
   state_eq : ∀ x i, evalState sc x i = stateIndicator M (f x) i
 
 /--
+Reinterpret a straight-line configuration as an ordinary family of Boolean
+circuits by unfolding every stored wire through
+`StraightLineCircuit.toCircuitWire`.  This translation provides the missing
+bridge between the sharing-aware straight-line world and the tree-based
+interface used in the remainder of the development.-/
+def toConfigCircuits (sc : StraightConfig M n) : ConfigCircuits M n where
+  tape := fun i => StraightLineCircuit.toCircuitWire (C := sc.circuit) (sc.tape i)
+  head := fun i => StraightLineCircuit.toCircuitWire (C := sc.circuit) (sc.head i)
+  state := fun i => StraightLineCircuit.toCircuitWire (C := sc.circuit) (sc.state i)
+
+/--
+Semantic compatibility between the straight-line and tree-based encodings of a
+configuration.  The statement follows immediately from the translation lemma
+`StraightLineCircuit.eval_toCircuitWire`.
+-/
+lemma Spec.toConfigCircuits {sc : StraightConfig M n}
+    {f : Point n → TM.Configuration M n}
+    (h : Spec (M := M) (n := n) sc f) :
+    ConfigCircuits.Spec (M := M) (n := n)
+      (StraightConfig.toConfigCircuits (M := M) (n := n) sc) f := by
+  classical
+  refine ⟨?_, ?_, ?_⟩
+  · intro x i
+    have := h.tape_eq (x := x) (i := i)
+    simpa [toConfigCircuits, evalTape,
+      StraightLineCircuit.eval_toCircuitWire]
+      using this
+  · intro x i
+    have := h.head_eq (x := x) (i := i)
+    simpa [toConfigCircuits, evalHead,
+      StraightLineCircuit.eval_toCircuitWire]
+      using this
+  · intro x i
+    have := h.state_eq (x := x) (i := i)
+    simpa [toConfigCircuits, evalState,
+      StraightLineCircuit.eval_toCircuitWire]
+      using this
+
+/-- Recover a straight-line specification from the corresponding tree-style
+translation.  The statement is the converse of `Spec.toConfigCircuits` and
+follows immediately from `StraightLineCircuit.eval_toCircuitWire`. -/
+lemma Spec.ofConfigCircuits {sc : StraightConfig M n}
+    {f : Point n → TM.Configuration M n}
+    (h : ConfigCircuits.Spec (M := M) (n := n)
+      (StraightConfig.toConfigCircuits (M := M) (n := n) sc) f) :
+    Spec (M := M) (n := n) sc f := by
+  classical
+  refine ⟨?_, ?_, ?_⟩
+  · intro x i
+    have := h.tape_eq (x := x) (i := i)
+    simpa [toConfigCircuits, evalTape,
+      StraightLineCircuit.eval_toCircuitWire]
+      using this
+  · intro x i
+    have := h.head_eq (x := x) (i := i)
+    simpa [toConfigCircuits, evalHead,
+      StraightLineCircuit.eval_toCircuitWire]
+      using this
+  · intro x i
+    have := h.state_eq (x := x) (i := i)
+    simpa [toConfigCircuits, evalState,
+      StraightLineCircuit.eval_toCircuitWire]
+      using this
+
+/--
+Auxiliary gate-count estimates for the translation to tree circuits.  We prove
+simultaneously that every translated wire uses at most `4 ^ (g + 3)` gates while
+the concrete gates reconstructed during the recursion stay below
+`4 ^ (g + 4)`.  The slightly offset exponents provide the slack needed to absorb
+the additional gate contributed by the Boolean operator at the current layer.
+-/
+mutual
+  lemma toCircuitWireAux_gateCount_le_pow (C : StraightLineCircuit n) :
+      ∀ {g : ℕ} {hg : g ≤ C.gates} {i : Fin (n + g)},
+        Circuit.gateCount
+            (StraightLineCircuit.toCircuitWireAux (C := C) (g := g) (hg := hg) i)
+          ≤ 4 ^ (g + 3)
+    | g, hg, i => by
+        classical
+        by_cases h : (i : ℕ) < n
+        · have : Circuit.gateCount (Circuit.var ⟨i, h⟩ : Circuit n) = 1 := by simp
+          have hpow : (1 : ℕ) ≤ 4 ^ (g + 3) := by
+            have : 0 < 4 := by decide
+            exact Nat.succ_le_of_lt (Nat.pow_pos this (g + 3))
+          simpa [StraightLineCircuit.toCircuitWireAux, h, Circuit.gateCount]
+            using hpow
+        · set j : ℕ := (i : ℕ) - n with hj
+          have hInputs : n ≤ (i : ℕ) := Nat.le_of_not_lt h
+          have hj_lt : j < g := by
+            have := i.is_lt
+            have := Nat.sub_lt_of_le_of_lt hInputs (by simpa [hj] using this)
+            simpa [hj] using this
+          have hj_total : j < C.gates := Nat.lt_of_lt_of_le hj_lt hg
+          have hGate := toCircuitGateAux_gateCount_le_pow (C := C)
+            (g := j) (hg := hj_total)
+          have hj_le : j + 4 ≤ g + 3 := by
+            simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+              using Nat.succ_le_succ
+                (Nat.succ_le_succ
+                  (Nat.succ_le_succ (Nat.succ_le_of_lt hj_lt)))
+          have hPow :=
+            Nat.pow_le_pow_of_le_right (by decide : 0 < 4) hj_le
+          exact Nat.le_trans hGate hPow
+
+  lemma toCircuitGateAux_gateCount_le_pow (C : StraightLineCircuit n) :
+      ∀ {g : ℕ} {hg : g < C.gates},
+        Circuit.gateCount
+            (StraightLineCircuit.toCircuitGateAux (C := C) (g := g) hg)
+          ≤ 4 ^ (g + 4)
+    | g, hg => by
+        classical
+        cases hOp : C.gate ⟨g, hg⟩ with
+        | const b =>
+            have : Circuit.gateCount (Circuit.const b : Circuit n) = 1 := by simp
+            have hpow : (1 : ℕ) ≤ 4 ^ (g + 4) := by
+              have : 0 < 4 := by decide
+              exact Nat.succ_le_of_lt (Nat.pow_pos this (g + 4))
+            simpa [StraightLineCircuit.toCircuitGateAux, hOp, Circuit.gateCount]
+              using hpow
+        | not i =>
+            set child :=
+              Circuit.gateCount
+                (StraightLineCircuit.toCircuitWireAux (C := C) (g := g)
+                  (hg := Nat.le_of_lt hg) i)
+              with hchild_def
+            have hchild_le : child ≤ 4 ^ (g + 3) := by
+              simpa [child, hchild_def] using
+                toCircuitWireAux_gateCount_le_pow (C := C)
+                  (g := g) (hg := Nat.le_of_lt hg) (i := i)
+            have hsum : child + 1 ≤ 4 ^ (g + 3) + 1 :=
+              Nat.add_le_add_right hchild_le 1
+            have hpos : 1 ≤ 4 ^ (g + 3) :=
+              Nat.succ_le_of_lt (Nat.pow_pos (by decide) (g + 3))
+            have hle : 4 ^ (g + 3) + 1 ≤ 2 * 4 ^ (g + 3) := by
+              simpa [two_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                using Nat.add_le_add_left hpos (4 ^ (g + 3))
+            have hmul : 2 * 4 ^ (g + 3) ≤ 4 ^ (g + 4) := by
+              have : 2 ≤ 4 := by decide
+              simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm,
+                Nat.mul_assoc] using Nat.mul_le_mul_right (4 ^ (g + 3)) this
+            have : child + 1 ≤ 4 ^ (g + 4) :=
+              Nat.le_trans (Nat.le_trans hsum hle) hmul
+            simpa [child, hchild_def, StraightLineCircuit.toCircuitGateAux,
+              hOp, Circuit.gateCount, Nat.add_comm, Nat.add_left_comm,
+              Nat.add_assoc] using this
+        | and i j =>
+            set ci :=
+              Circuit.gateCount
+                (StraightLineCircuit.toCircuitWireAux (C := C) (g := g)
+                  (hg := Nat.le_of_lt hg) i)
+              with hci_def
+            set cj :=
+              Circuit.gateCount
+                (StraightLineCircuit.toCircuitWireAux (C := C) (g := g)
+                  (hg := Nat.le_of_lt hg) j)
+              with hcj_def
+            have hi_le : ci ≤ 4 ^ (g + 3) := by
+              simpa [ci, hci_def] using
+                toCircuitWireAux_gateCount_le_pow (C := C)
+                  (g := g) (hg := Nat.le_of_lt hg) (i := i)
+            have hj_le : cj ≤ 4 ^ (g + 3) := by
+              simpa [cj, hcj_def] using
+                toCircuitWireAux_gateCount_le_pow (C := C)
+                  (g := g) (hg := Nat.le_of_lt hg) (i := j)
+            have hsum : ci + cj ≤ 2 * 4 ^ (g + 3) := by
+              have := Nat.add_le_add hi_le hj_le
+              simpa [two_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                using this
+            have hsum' : ci + cj + 1 ≤ 2 * 4 ^ (g + 3) + 1 :=
+              Nat.add_le_add_right hsum 1
+            have hpos : 1 ≤ 4 ^ (g + 3) :=
+              Nat.succ_le_of_lt (Nat.pow_pos (by decide) (g + 3))
+            have hTwo : 2 * 4 ^ (g + 3) + 1 ≤ 3 * 4 ^ (g + 3) := by
+              simpa [two_mul, Nat.mul_add, Nat.add_comm, Nat.add_left_comm,
+                Nat.add_assoc]
+                using Nat.add_le_add_left hpos (2 * 4 ^ (g + 3))
+            have hThree : 3 * 4 ^ (g + 3) ≤ 4 ^ (g + 4) := by
+              have : 3 ≤ 4 := by decide
+              simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+                using Nat.mul_le_mul_right (4 ^ (g + 3)) this
+            have : ci + cj + 1 ≤ 4 ^ (g + 4) :=
+              Nat.le_trans (Nat.le_trans hsum' hTwo) hThree
+            simpa [ci, hci_def, cj, hcj_def, StraightLineCircuit.toCircuitGateAux,
+              hOp, Circuit.gateCount, Nat.add_comm, Nat.add_left_comm,
+              Nat.add_assoc] using this
+        | or i j =>
+            set ci :=
+              Circuit.gateCount
+                (StraightLineCircuit.toCircuitWireAux (C := C) (g := g)
+                  (hg := Nat.le_of_lt hg) i)
+              with hci_def
+            set cj :=
+              Circuit.gateCount
+                (StraightLineCircuit.toCircuitWireAux (C := C) (g := g)
+                  (hg := Nat.le_of_lt hg) j)
+              with hcj_def
+            have hi_le : ci ≤ 4 ^ (g + 3) := by
+              simpa [ci, hci_def] using
+                toCircuitWireAux_gateCount_le_pow (C := C)
+                  (g := g) (hg := Nat.le_of_lt hg) (i := i)
+            have hj_le : cj ≤ 4 ^ (g + 3) := by
+              simpa [cj, hcj_def] using
+                toCircuitWireAux_gateCount_le_pow (C := C)
+                  (g := g) (hg := Nat.le_of_lt hg) (i := j)
+            have hsum : ci + cj ≤ 2 * 4 ^ (g + 3) := by
+              have := Nat.add_le_add hi_le hj_le
+              simpa [two_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                using this
+            have hsum' : ci + cj + 1 ≤ 2 * 4 ^ (g + 3) + 1 :=
+              Nat.add_le_add_right hsum 1
+            have hpos : 1 ≤ 4 ^ (g + 3) :=
+              Nat.succ_le_of_lt (Nat.pow_pos (by decide) (g + 3))
+            have hTwo : 2 * 4 ^ (g + 3) + 1 ≤ 3 * 4 ^ (g + 3) := by
+              simpa [two_mul, Nat.mul_add, Nat.add_comm, Nat.add_left_comm,
+                Nat.add_assoc]
+                using Nat.add_le_add_left hpos (2 * 4 ^ (g + 3))
+            have hThree : 3 * 4 ^ (g + 3) ≤ 4 ^ (g + 4) := by
+              have : 3 ≤ 4 := by decide
+              simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+                using Nat.mul_le_mul_right (4 ^ (g + 3)) this
+            have : ci + cj + 1 ≤ 4 ^ (g + 4) :=
+              Nat.le_trans (Nat.le_trans hsum' hTwo) hThree
+            simpa [ci, hci_def, cj, hcj_def, StraightLineCircuit.toCircuitGateAux,
+              hOp, Circuit.gateCount, Nat.add_comm, Nat.add_left_comm,
+              Nat.add_assoc] using this
+end
+
+lemma toCircuitWire_gateCount_le (C : StraightLineCircuit n)
+    (i : Fin (n + C.gates)) :
+    Circuit.gateCount (StraightLineCircuit.toCircuitWire (C := C) i) ≤
+      4 ^ (C.gates + 3) :=
+  toCircuitWireAux_gateCount_le_pow (C := C) (hg := le_rfl) (i := i)
+
+/--
+Translate a straight-line configuration into tree circuits without blowing up the
+gate count more than exponentially in the number of straight-line gates.  Each
+wire becomes a tree circuit of size at most `4 ^ (straightTotalGateCount sc + 3)`.
+Consequently the total gate count of the induced `ConfigCircuits` is controlled
+by the number of tracked tape cells and states.-/
+lemma totalGateCount_toConfigCircuits_le (sc : StraightConfig M n) :
+    totalGateCount (M := M) (n := n)
+        (StraightConfig.toConfigCircuits (M := M) (n := n) sc) ≤
+      ((2 * M.tapeLength n) + stateCard M) *
+        4 ^ (straightTotalGateCount (M := M) (n := n) sc + 3) := by
+  classical
+  -- The exponential factor bounding every translated wire.
+  set B := 4 ^ (straightTotalGateCount (M := M) (n := n) sc + 3)
+  -- Tape portion: each cell circuit is bounded by `B`.
+  have htape_sum :
+      tapeGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        ≤ ∑ _ : Fin (M.tapeLength n), B := by
+    refine Finset.sum_le_sum ?_
+    intro i _
+    simpa [B, straightTotalGateCount, StraightConfig.toConfigCircuits]
+      using StraightLineCircuit.toCircuitWire_gateCount_le
+        (C := sc.circuit) (i := sc.tape i)
+  have htape_const :
+      (∑ _ : Fin (M.tapeLength n), B) = M.tapeLength n * B := by
+    simp [B, Finset.card_univ, Nat.smul_def]
+  have htape :
+      tapeGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        ≤ M.tapeLength n * B := by
+    simpa [htape_const] using htape_sum
+  -- Head portion obeys the same bound, sharing the tape index set.
+  have hhead_sum :
+      headGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        ≤ ∑ _ : Fin (M.tapeLength n), B := by
+    refine Finset.sum_le_sum ?_
+    intro i _
+    simpa [B, straightTotalGateCount, StraightConfig.toConfigCircuits]
+      using StraightLineCircuit.toCircuitWire_gateCount_le
+        (C := sc.circuit) (i := sc.head i)
+  have hhead :
+      headGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        ≤ M.tapeLength n * B := by
+    simpa [htape_const] using hhead_sum
+  -- State portion: the index set has size `stateCard M`.
+  have hstate_sum :
+      stateGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        ≤ ∑ _ : Fin (stateCard M), B := by
+    refine Finset.sum_le_sum ?_
+    intro i _
+    simpa [B, straightTotalGateCount, StraightConfig.toConfigCircuits]
+      using StraightLineCircuit.toCircuitWire_gateCount_le
+        (C := sc.circuit) (i := sc.state i)
+  have hstate_const :
+      (∑ _ : Fin (stateCard M), B) = stateCard M * B := by
+    simp [B, Finset.card_univ, Nat.smul_def]
+  have hstate :
+      stateGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        ≤ stateCard M * B := by
+    simpa [hstate_const] using hstate_sum
+  -- Combine the three bounds.
+  have htotal :=
+    Nat.add_le_add (Nat.add_le_add htape hhead) hstate
+  have hLHS :
+      tapeGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        +
+        headGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        +
+        stateGateCount (M := M) (n := n)
+          (StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+        = totalGateCount (M := M) (n := n)
+            (StraightConfig.toConfigCircuits (M := M) (n := n) sc) := rfl
+  have hRHS :
+      M.tapeLength n * B + M.tapeLength n * B + stateCard M * B =
+        ((2 * M.tapeLength n) + stateCard M) * B := by
+    have htape_eq : M.tapeLength n * B + M.tapeLength n * B =
+        (2 * M.tapeLength n) * B := by
+      simp [two_mul, Nat.mul_add, Nat.add_comm, Nat.add_left_comm,
+        Nat.add_assoc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    calc
+      M.tapeLength n * B + M.tapeLength n * B + stateCard M * B
+          = (2 * M.tapeLength n) * B + stateCard M * B := by
+            simpa [htape_eq]
+      _ = ((2 * M.tapeLength n) + stateCard M) * B := by
+            simp [Nat.mul_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+              Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  simpa [hLHS, hRHS, B, straightTotalGateCount] using htotal
+
+/--
 Total number of gates appearing in a straight-line configuration.  Since all
 components share the same underlying circuit, this is simply the gate count of
 `sc.circuit`.  The wrapper keeps the intended quantity explicit in subsequent
@@ -3952,6 +4281,23 @@ lemma straightTotalGateCount_iterate_le (t : ℕ) (sc : StraightConfig M n) :
         using this
 
 /--
+Specialisation of `straightTotalGateCount_iterate_le` to the initial straight
+configuration.  The statement exposes the constant `2` coming from
+`straightTotalGateCount_initial`, making the ubiquitous bound on
+`Nat.iterate` immediately available in downstream arguments.-/
+lemma straightTotalGateCount_initial_iterate_le (M : TM) (n t : ℕ) :
+    straightTotalGateCount
+        (Nat.iterate (StraightConfig.step (M := M) (n := n)) t
+          (StraightConfig.initial (M := M) n)) ≤
+      2 +
+        t * straightStepGateGrowthBound (M := M) (n := n) := by
+  simpa [straightTotalGateCount_initial, Nat.add_comm, Nat.add_left_comm,
+    Nat.add_assoc]
+    using
+      straightTotalGateCount_iterate_le (M := M) (n := n) (t := t)
+        (sc := StraightConfig.initial (M := M) n)
+
+/--
 Global gate-count bound for the straight-line simulation after the full runtime
 of the machine.  Each iteration contributes at most
 `straightStepGateGrowthBound M n` fresh gates, so `M.runTime n` repetitions grow
@@ -4055,6 +4401,29 @@ lemma headBranchBuilderAux_wires_length (sc : StraightConfig M n)
         Nat.add_left_comm, Nat.add_assoc]
 
 /--
+`headBranchBuilderAux` preserves the order of the processed head indices.
+Projecting the recorded pairs back to their first component therefore yields the
+original list of indices verbatim.  This auxiliary lemma complements
+`headBranchBuilderAux_wires_length` by capturing the structural information
+required in later counting arguments.-/
+lemma headBranchBuilderAux_wires_pairs (sc : StraightConfig M n)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (branchFin : Fin (n + b.circuit.gates)) :
+    ∀ indices,
+      let result := headBranchBuilderAux (M := M) (n := n) (sc := sc)
+            (b := b) branchFin indices
+      result.snd.snd.snd.val.map Prod.fst = indices := by
+  classical
+  intro indices
+  induction indices with
+  | nil =>
+      simp [headBranchBuilderAux]
+  | cons i rest ih =>
+      -- Unfold the helper so that the recursive structure mirrors the goal.
+      simp [headBranchBuilderAux, ih, List.map_cons, Nat.succ_eq_add_one,
+        Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+
+/--
 Recursively extend the supplied builder by AND gates computing
 `branch ∧ headᵢ` for all tape indices `i`.  The helper keeps the interpretation
 of the original branch wire intact and records every freshly created wire
@@ -4155,6 +4524,38 @@ lemma headBranchBuilder_wires_length (sc : StraightConfig M n)
       (branchFin := branch.toFin (n := n) (g := b.circuit.gates)
         (Nat.le_trans hBranch hMono)) indices
   simpa [indices, hlen, hwires]
+
+/--
+The list of wires produced by `headBranchBuilder` enumerates each tape position
+exactly once and preserves the natural order of the indices.  Consequently, the
+first components of the recorded pairs recover the canonical list
+`tapeIndexList`.  This bookkeeping fact is frequently used to translate
+combinatorial arguments about the straight-line construction into elementary
+reasoning over tape indices.-/
+lemma headBranchBuilder_wires_pairs (sc : StraightConfig M n)
+    (snapshot : StraightConfig.TapeSnapshot (M := M) (n := n) sc)
+    (b : StraightLineCircuit.EvalBuilder n sc.circuit)
+    (hMono : snapshot.builder.circuit.gates ≤ b.circuit.gates)
+    (branch : StraightLineCircuit.Wire n)
+    (hBranch : branch.bound ≤ snapshot.builder.circuit.gates) :
+    let result := headBranchBuilder (M := M) (n := n) (sc := sc)
+        (snapshot := snapshot) (b := b) (hMono := hMono)
+        (branch := branch) (hBranch := hBranch)
+    result.snd.snd.snd.val.map Prod.fst = tapeIndexList (M := M) n := by
+  classical
+  unfold headBranchBuilder
+  set indices := tapeIndexList (M := M) n
+  obtain ⟨bFinal, branchRest, hMonoFinal, wires⟩ :=
+    headBranchBuilderAux (M := M) (n := n) (sc := sc)
+      (b := b)
+      (branch.toFin (n := n) (g := b.circuit.gates)
+        (Nat.le_trans hBranch hMono)) indices
+  have hPairs := headBranchBuilderAux_wires_pairs (M := M) (n := n) (sc := sc)
+      (b := b)
+      (branchFin := branch.toFin (n := n) (g := b.circuit.gates)
+        (Nat.le_trans hBranch hMono)) indices
+  simpa [indices]
+    using hPairs
 
 namespace List
 
@@ -10474,11 +10875,92 @@ Restatement of `sizeOf_acceptCircuit_le_poly` using the packaged definition
 the accepting circuit will be treated as an opaque polynomial candidate in the
 final construction.
 -/
+lemma acceptCircuit_preBound_le_gatePolyBound (M : TM) (c n : ℕ) :
+    let P := polyBase (M := M) (c := c) n
+    let B := gateBoundBase (M := M) (c := c) n
+    affineIterLeadCoeff M * P ^ 4 *
+        (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
+      gatePolyBound (M := M) (c := c) n := by
+  classical
+  intro P B
+  have hBase_ge : P ≤ B := by
+    unfold B gateBoundBase
+    exact Nat.le_max_left _ _
+  have hLead : affineIterLeadCoeff M ≤ B ^ (affineIterLeadCoeff M + 1) := by
+    unfold B gateBoundBase
+    exact const_le_pow_max P (affineIterLeadCoeff M)
+  have hPow4 : P ^ 4 ≤ B ^ 4 :=
+    pow_le_pow_of_le_base (a := P) (b := B) (k := 4) hBase_ge
+  have hCoeff : affineFactorPolyCoeff M ≤ B ^ (affineFactorPolyCoeff M + 1) := by
+    unfold B gateBoundBase
+    exact const_le_pow_max P (affineFactorPolyCoeff M)
+  have hP_sq : P ^ 2 ≤ B ^ 2 :=
+    pow_le_pow_of_le_base (a := P) (b := B) (k := 2) hBase_ge
+  have hCoeffMul : affineFactorPolyCoeff M * P ^ 2 ≤
+      B ^ (affineFactorPolyCoeff M + 3) := by
+    have hmul := Nat.mul_le_mul hCoeff hP_sq
+    simpa [B, gateBoundBase, Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc, Nat.pow_succ, Nat.pow_two]
+      using hmul
+  have hPowCoeff :
+      (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
+        B ^ ((affineFactorPolyCoeff M + 3) * P) := by
+    have := pow_le_pow_of_le_base (a := affineFactorPolyCoeff M * P ^ 2)
+      (b := B ^ (affineFactorPolyCoeff M + 3)) (k := P) hCoeffMul
+    simpa [Nat.pow_mul] using this
+  have hstep₁ :
+      affineIterLeadCoeff M * P ^ 4 *
+          (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
+        B ^ (affineIterLeadCoeff M + 1) * P ^ 4 *
+          (affineFactorPolyCoeff M * P ^ 2) ^ P := by
+    have hMulLead :=
+      Nat.mul_le_mul hLead (Nat.le_refl (P ^ 4))
+    have :=
+      Nat.mul_le_mul hMulLead
+        (Nat.le_refl ((affineFactorPolyCoeff M * P ^ 2) ^ P))
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
+  have hstep₂ :
+      B ^ (affineIterLeadCoeff M + 1) * P ^ 4 *
+          (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
+        B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
+          (affineFactorPolyCoeff M * P ^ 2) ^ P := by
+    have hPow4Mul :=
+      Nat.mul_le_mul_left (B ^ (affineIterLeadCoeff M + 1)) hPow4
+    have :=
+      Nat.mul_le_mul hPow4Mul
+        (Nat.le_refl ((affineFactorPolyCoeff M * P ^ 2) ^ P))
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
+  have hstep₃ :
+      B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
+          (affineFactorPolyCoeff M * P ^ 2) ^ P ≤
+        B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
+          B ^ ((affineFactorPolyCoeff M + 3) * P) := by
+    have :=
+      Nat.mul_le_mul_left (B ^ (affineIterLeadCoeff M + 1) * B ^ 4) hPowCoeff
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
+  have hConst :
+      B ^ (affineIterLeadCoeff M + 1) * B ^ 4 *
+          B ^ ((affineFactorPolyCoeff M + 3) * P) =
+        gatePolyBound (M := M) (c := c) n := by
+    simp [gatePolyBound_def, gateBoundExponent, gateBoundOffset, B,
+      Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
+      Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+  exact
+    Nat.le_trans hstep₁
+      (Nat.le_trans hstep₂
+        (Nat.le_trans hstep₃ (by simpa [hConst])))
+
 lemma sizeOf_acceptCircuit_le_gatePolyBound
     (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
     sizeOf (acceptCircuit (M := M) (n := n)) ≤
-      gatePolyBound (M := M) (c := c) n :=
-  sizeOf_acceptCircuit_le_poly (M := M) (n := n) (c := c) hRun
+      gatePolyBound (M := M) (c := c) n := by
+  have hPre := sizeOf_acceptCircuit_le_pre (M := M) (n := n) (c := c) hRun
+  have hGate :=
+    acceptCircuit_preBound_le_gatePolyBound (M := M) (c := c) (n := n)
+  simpa using Nat.le_trans hPre hGate
 
 /--
 The gate-count bound `gatePolyBound` is controlled by an explicit function of

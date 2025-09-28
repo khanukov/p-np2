@@ -8,8 +8,8 @@
   - [x] Add basic circuit bookkeeping (`Circuit/Family.lean`) and initialise the configuration-circuit framework (`PsubsetPpoly.lean`).
   - [ ] Tighten the gate-count bounds so that `gatePolyBound` is dominated by a genuine polynomial; see `docs/PsubsetPpoly_status.md` for the current obstruction and proposed plan.
     - [ ] Закрыть чеклист из раздела «Развёрнутый чеклист реализации» (`StraightConfig.step`, линейная рекурсия, финальная доминация, снятие аксиомы).
-      - [ ] Спроектировать вспомогательный билдер `headBranchBuilder`, который аккумулирует провода `branch ∧ headᵢ` без потери шаринга и фиксирует точный прирост числа вентилей.
-      - [ ] На его основе вывести список `headContributionIndices`, пригодный для скармливания в `appendBigOr` при построении прямолинейной головы.
+      - [x] Спроектировать вспомогательный билдер `headBranchBuilder`, который аккумулирует провода `branch ∧ headᵢ` без потери шаринга и фиксирует точный прирост числа вентилей. 【F:Pnp2/PsubsetPpoly.lean†L5037-L5098】
+      - [x] На его основе вывести список `headContributionIndices`, пригодный для скармливания в `appendBigOr` при построении прямолинейной головы. 【F:Pnp2/PsubsetPpoly.lean†L5104-L5144】
     - [ ] Зафиксировать итоговую теорему в `ComplexityClasses.lean` и удалить аксиому `P_subset_Ppoly`.
 - [ ] **[models]** Define circuit models for the magnification theorems (`Circuit/Depth.lean`, `Circuit/Oracle.lean` for the MMW’19 route, or `Circuit/General.lean` for OPS’21).
 - [ ] **[mcsp]** Introduce the decision/search/gap variants of `MCSP` (`MCSP/Core.lean`, `MCSP/Search.lean`, `MCSP/Gap.lean`).

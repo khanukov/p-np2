@@ -2349,21 +2349,12 @@ noncomputable def buildCoverLex3A (F : Family n) (A : Finset (Fin n)) (h : ℕ)
     measureLex3 F A
   decreasing_by
     simp_wf
-    -- The first recursive call is in the `hfalse` branch.
-    -- `F` becomes `F.erase f₀`, so `F.card` decreases.
-    apply measureLex3_erase_lt
-    · exact Classical.choose_spec hfalse |>.1
-    -- The next two recursive calls are in the `hsens` branch.
-    -- `A` becomes `A.erase i`, so `A.card` decreases.
-    -- `F.card` may increase, but that's fine for lexicographic order.
-    next hsens =>
-      -- The first call on this branch is for `b = false`.
-      apply measureLex3_restrict_lt_dim
-      · exact Classical.choose_spec hsens |>.1
-      -- The second call on this branch is for `b = true`.
-      next =>
-        apply measureLex3_restrict_lt_dim
-        · exact Classical.choose_spec hsens |>.1
+    · apply measureLex3_erase_lt
+      exact Classical.choose_spec hfalse |>.1
+    · apply measureLex3_restrict_lt_dim
+      exact Classical.choose_spec hsens |>.1
+    · apply measureLex3_restrict_lt_dim
+      exact Classical.choose_spec hsens |>.1
 
 noncomputable def buildCoverLex3 (F : Family n) (h : ℕ)
     [Fintype (Point n)] (hn : 0 < n) (hcard : n ≤ h) :

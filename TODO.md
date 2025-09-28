@@ -3,14 +3,11 @@
 
 ## Complexity bridge (no-PH roadmap)
 
-- [ ] **[classic]** Develop the standard simulation of polynomial-time Turing machines by polynomial-size circuit families (`TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean`), then replace the axiom `P_subset_Ppoly` in `ComplexityClasses.lean`.
+- [x] **[classic]** Develop the standard simulation of polynomial-time Turing machines by polynomial-size circuit families (`TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean`) and replace the axiom `P_subset_Ppoly` in `ComplexityClasses.lean` with the constructive theorem `P_subset_Ppoly`. 【F:Pnp2/PsubsetPpoly.lean†L10836-L10967】【F:Pnp2/ComplexityClasses.lean†L1-L120】
   - [x] Introduce an explicit single-tape TM model with configurations (`TM/Encoding.lean`).
   - [x] Add basic circuit bookkeeping (`Circuit/Family.lean`) and initialise the configuration-circuit framework (`PsubsetPpoly.lean`).
-  - [ ] Tighten the gate-count bounds so that `gatePolyBound` is dominated by a genuine polynomial; see `docs/PsubsetPpoly_status.md` for the current obstruction and proposed plan.
-    - [ ] Закрыть чеклист из раздела «Развёрнутый чеклист реализации» (`StraightConfig.step`, линейная рекурсия, финальная доминация, снятие аксиомы).
-      - [x] Спроектировать вспомогательный билдер `headBranchBuilder`, который аккумулирует провода `branch ∧ headᵢ` без потери шаринга и фиксирует точный прирост числа вентилей. 【F:Pnp2/PsubsetPpoly.lean†L5037-L5098】
-      - [x] На его основе вывести список `headContributionIndices`, пригодный для скармливания в `appendBigOr` при построении прямолинейной головы. 【F:Pnp2/PsubsetPpoly.lean†L5104-L5144】
-    - [ ] Зафиксировать итоговую теорему в `ComplexityClasses.lean` и удалить аксиому `P_subset_Ppoly`.
+  - [x] Tighten the gate-count bounds so that `gatePolyBound` is dominated by a genuine polynomial and discharge the checklist in `docs/PsubsetPpoly_status.md` (linear recursion, final domination, axiom removal). 【F:Pnp2/PsubsetPpoly.lean†L8775-L9506】【F:Pnp2/PsubsetPpoly.lean†L10836-L10967】
+  - [x] Seal the complexity bridge by exporting the theorem in `ComplexityClasses.lean` and eliminating the axiom `P_subset_Ppoly`. 【F:Pnp2/ComplexityClasses.lean†L1-L120】
 - [ ] **[models]** Define circuit models for the magnification theorems (`Circuit/Depth.lean`, `Circuit/Oracle.lean` for the MMW’19 route, or `Circuit/General.lean` for OPS’21).
 - [ ] **[mcsp]** Introduce the decision/search/gap variants of `MCSP` (`MCSP/Core.lean`, `MCSP/Search.lean`, `MCSP/Gap.lean`).
 - [ ] **[bridge]** Strengthen the cover/locality files (`table_locality.lean`, `sat_cover.lean`, `acc_mcsp_sat.lean`) and derive lower bounds for (search-)`MCSP` (`MCSP/LowerBoundsFromCovers.lean`).
@@ -24,7 +21,6 @@
 
 ## Remaining axioms (as of 2025-09-24)
 
-- `ComplexityClasses.P_subset_Ppoly`
 - `NPSeparation.magnification_AC0_MCSP`
 - `NPSeparation.FCE_implies_MCSP`
 

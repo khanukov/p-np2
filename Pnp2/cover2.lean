@@ -334,7 +334,7 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
-      Rset.card ≤ Fintype.card (Subcube n) := by
+      Rset.card ≤ 2 ^ n := by
   classical
   refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
   · intro R hR f hf
@@ -351,7 +351,7 @@ establishes `Fintype.card (Subcube n) ≤ mBound n h`.
 -/
 lemma cover_exists_mBound {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
@@ -361,7 +361,9 @@ lemma cover_exists_mBound {F : Family n} {h : ℕ}
   obtain ⟨Rset, hmono, hcov, hcard⟩ :=
     cover_exists_bound (n := n) (F := F) (h := h) hH
   refine ⟨Rset, hmono, hcov, ?_⟩
-  -- Replace the coarse cardinality bound with the stronger `mBound` estimate.
+  -- Upgrade the `2^n` bound to `mBound` using the numeric guard.
+  have hM : (2 : ℕ) ^ n ≤ mBound n h :=
+    two_pow_le_mBound (n := n) (h := h) hn hlarge
   exact hcard.trans hM
 
 end Cover2

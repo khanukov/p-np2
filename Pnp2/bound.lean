@@ -19,7 +19,7 @@ used by subsequent documentation or tests.
 
 import Pnp2.cover2
 import Pnp2.family_entropy_cover
-import Mathlib.Data.Real.Log
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic
 
 open Classical
@@ -213,12 +213,11 @@ variable {n h : ℕ} (F : Family n)
 
 /-- The size bound from `familyEntropyCover` yields a sub-exponential cover. -/
 theorem FCE_lemma (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h)
-    (hn : n ≥ n₀ h) :
-    (Boolcube.familyEntropyCover (F := F) (h := h) hH hM).rects.card <
+    (hn_pos : 0 < n) (hlarge : n ≤ 5 * h) (hn : n ≥ n₀ h) :
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge).rects.card <
       Nat.pow 2 (n / 100) := by
   have hcard :=
-    (Boolcube.familyEntropyCover (F := F) (h := h) hH hM).bound
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge).bound
   have hsub := mBound_lt_subexp (h := h) (n := n) hn
   exact lt_of_le_of_lt hcard hsub
 
@@ -228,16 +227,17 @@ theorem FCE_lemma (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     large enough. -/
 theorem family_collision_entropy_lemma
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h)
+    (hn_pos : 0 < n) (hlarge : n ≤ 5 * h)
     (hn : n ≥ n₀ h) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (n / 100) := by
   classical
-  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH hM
+  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge
   have hlt : FC.rects.card < Nat.pow 2 (n / 100) :=
-    FCE_lemma (F := F) (h := h) (hH := hH) (hM := hM) (hn := hn)
+    FCE_lemma (F := F) (h := h) (hH := hH)
+      (hn_pos := hn_pos) (hlarge := hlarge) (hn := hn)
   have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
   refine ⟨FC.rects, FC.mono, FC.covers, hle⟩
 

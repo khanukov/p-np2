@@ -39,7 +39,7 @@ keeps the bound generous in low dimensions.  The constant
 formal inequalities rather than optimising numerical constants.
 -/
 def coverBound (n s : ℕ) : ℕ :=
-  Nat.pow 2 (coverConst * (s + 2) * (n + 2))
+  3 ^ n * Nat.pow 2 (coverConst * (s + 2) * (n + 2))
 
 --! ### Auxiliary numerical lemmas
 
@@ -130,7 +130,8 @@ lemma coverBound_mono_s {n : ℕ} : Monotone (fun s => coverBound n s) := by
   have hcoeff : coverConst * (s + 2) ≤ coverConst * (t + 2) :=
     Nat.mul_le_mul_left _ hstep
   have hmul := Nat.mul_le_mul_right (n + 2) hcoeff
-  have := pow_two_le_pow_two_of_le hmul
+  have hpow := pow_two_le_pow_two_of_le hmul
+  have := Nat.mul_le_mul_left (3 ^ n) hpow
   simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
     using this
 
@@ -173,7 +174,21 @@ lemma pow_log_bound_le_coverBound {n s : ℕ} :
     simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
   -- Monotonicity of powers of two in the exponent yields the desired bound.
   have hpow' := pow_two_le_pow_two_of_le hcoeff
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow'
+  have hpos : 0 < 3 ^ n := by
+    have := Nat.pow_pos (by decide : 0 < 3) (n := n)
+    simpa using this
+  have hfactor :
+      2 ^ (coverConst * (s + 2) * (n + 2))
+        ≤ 3 ^ n * 2 ^ (coverConst * (s + 2) * (n + 2)) := by
+    have hfac : (1 : ℕ) ≤ 3 ^ n := Nat.succ_le_of_lt hpos
+    have hmul :=
+      Nat.mul_le_mul_right
+        (k := 2 ^ (coverConst * (s + 2) * (n + 2))) hfac
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using hmul
+  have hchain := hpow'.trans hfactor
+  simpa [coverBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using hchain
 
 /--
 Even the crude enumeration of all vertices of the Boolean cube respects the
@@ -204,7 +219,20 @@ lemma pow_card_point_le_coverBound {n s : ℕ} :
   have hle : n ≤ coverConst * 2 * (n + 2) := hstep₁.trans hstep₂
   have hexp : n ≤ coverConst * (s + 2) * (n + 2) := hle.trans hcoeff
   -- Monotonicity of powers of two turns the exponent inequality into the claim.
-  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+  have hpow := Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+  have hpos : 0 < 3 ^ n := by
+    have := Nat.pow_pos (by decide : 0 < 3) (n := n)
+    simpa using this
+  have hfactor : 2 ^ (coverConst * (s + 2) * (n + 2))
+      ≤ 3 ^ n * 2 ^ (coverConst * (s + 2) * (n + 2)) := by
+    have hfac : (1 : ℕ) ≤ 3 ^ n := Nat.succ_le_of_lt hpos
+    have hmul :=
+      Nat.mul_le_mul_right
+        (k := 2 ^ (coverConst * (s + 2) * (n + 2))) hfac
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
+  have hchain := hpow.trans hfactor
+  simpa [coverBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using hchain
 
 /--
 The quadratic factor `n * (n + 3)` appearing in `Cover2.mBound n (n + 1)`
@@ -297,12 +325,27 @@ lemma mBound_le_coverBound {n s : ℕ} :
         ≤ coverConst * 2 * (n + 2) := by
       simpa [hcoeff] using hadd
     have hpow := pow_two_le_pow_two_of_le hexp
-    have : n * (n + 3) * 2 ^ (10 * (n + 1))
+    have hbase : n * (n + 3) * 2 ^ (10 * (n + 1))
         ≤ 2 ^ (coverConst * 2 * (n + 2)) := hmul'.trans hpow
+    have hchain :
+        n * (n + 3) * 2 ^ (10 * (n + 1))
+          ≤ 3 ^ n * 2 ^ (coverConst * 2 * (n + 2)) := by
+      have hpos : 0 < 3 ^ n := by
+        have := Nat.pow_pos (by decide : 0 < 3) (n := n)
+        simpa using this
+      have hfac :
+          2 ^ (coverConst * 2 * (n + 2))
+            ≤ 3 ^ n * 2 ^ (coverConst * 2 * (n + 2)) := by
+        have hge : (1 : ℕ) ≤ 3 ^ n := Nat.succ_le_of_lt hpos
+        have hmul :=
+          Nat.mul_le_mul_right
+            (k := 2 ^ (coverConst * 2 * (n + 2))) hge
+        simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
+      exact hbase.trans hfac
     simpa [Cover2.mBound, coverBound, coverConst, Nat.succ_eq_add_one,
       Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
       add_comm, add_left_comm, add_assoc]
-      using this
+      using hchain
   have hmono' := hmono (Nat.zero_le s)
   exact hzero.trans hmono'
 

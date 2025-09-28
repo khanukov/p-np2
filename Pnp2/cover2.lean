@@ -334,7 +334,7 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
-      Rset.card ≤ Fintype.card (Subcube n) := by
+      Rset.card ≤ 2 ^ n := by
   classical
   refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
   · intro R hR f hf
@@ -343,25 +343,28 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
   · exact buildCover_card_bound (n := n) (F := F) (h := h) hH
 
 /--
-A variant of `cover_exists_bound` that exposes the explicit numerical bound
-`mBound`.  The combinatorial part of the construction already yields a cover
-bounded by the total number of subcubes.  This lemma allows downstream files to
-upgrade that estimate to `mBound n h` once a separate arithmetic argument
-establishes `Fintype.card (Subcube n) ≤ mBound n h`.
--/
+  A variant of `cover_exists_bound` that exposes the explicit numerical bound
+  `mBound`.  The strengthened combinatorial analysis in
+  `Cover.BuildCover` shows directly that the recursion never produces more than
+  `mBound n h` rectangles under the standard guard.  This lemma packages that
+  fact for downstream use.
+  -/
 lemma cover_exists_mBound {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
       Rset.card ≤ mBound n h := by
   classical
-  -- Start from the cover provided by `cover_exists_bound`.
-  obtain ⟨Rset, hmono, hcov, hcard⟩ :=
-    cover_exists_bound (n := n) (F := F) (h := h) hH
-  refine ⟨Rset, hmono, hcov, ?_⟩
-  -- Replace the coarse cardinality bound with the stronger `mBound` estimate.
-  exact hcard.trans hM
+  -- The same witness as in `cover_exists_bound` suffices; we only sharpen the
+  -- numerical estimate.
+  refine ⟨buildCover (n := n) F h hH, ?_, ?_, ?_⟩
+  · intro R hR f hf
+    exact buildCover_pointwiseMono (F := F) (h := h) (hH := hH) R hR f hf
+  · exact buildCover_covers (F := F) (h := h) (hH := hH)
+  · simpa using
+      (buildCover_card_le_mBound (n := n) (F := F)
+        (h := h) (hH := hH) hn hlarge)
 
 end Cover2

@@ -4125,6 +4125,33 @@ noncomputable def StraightConfig.step (sc : StraightConfig M n) :
       , state := stateHandles }
 
 /--
+Correctness of a single straight-line simulation step.  Assuming the current
+configuration faithfully represents the Turing machine state described by
+`f`, the updated straight-line configuration realises the successor
+configuration `TM.stepConfig (f x)` for every input `x`.
+-/
+lemma StraightConfig.step_spec (sc : StraightConfig M n)
+    {f : Point n → TM.Configuration M n}
+    (hsc : Spec (M := M) (n := n) sc f) :
+    Spec (M := M) (n := n) (StraightConfig.step (M := M) (n := n) sc)
+      (fun x => TM.stepConfig (M := M) (n := n) (f x)) := by
+  classical
+  -- We reduce the statement to the already verified tree-style step
+  -- specification by translating straight-line configurations into ordinary
+  -- configuration circuits.  The helper lemmas `Spec.toConfigCircuits` and
+  -- `Spec.ofConfigCircuits` provide the equivalence between both worlds.
+  refine Spec.ofConfigCircuits ?_
+  -- Convert the hypothesis to the tree representation.
+  have hTree := Spec.toConfigCircuits (M := M) (n := n) (sc := sc) hsc
+  -- Apply the tree-level simulation result.
+  have hStep := step_spec (M := M) (n := n) (cc :=
+      StraightConfig.toConfigCircuits (M := M) (n := n) sc)
+      (f := f) hTree
+  -- Reinterpret the obtained specification in terms of the straight-line step.
+  simpa [StraightConfig.toConfigCircuits, StraightConfig.step]
+    using hStep
+
+/--
 Gate-count bound for the straight-line successor configuration.  The wrapper
 `StraightConfig.step` merely exposes the wires produced by
 `StraightConfig.stateSnapshot`, hence its circuit size coincides with that of
@@ -4218,6 +4245,81 @@ def straightStepGateGrowthBound (M : TM) (n : ℕ) : ℕ :=
   (6 * M.tapeLength n + 8 * stateCard M + 2) +
     M.tapeLength n * (6 * stateCard M * M.tapeLength n + 1) +
     stateCard M * (4 * stateCard M + 1)
+
+lemma straightStepGateGrowthBound_le_quadratic (M : TM) (n : ℕ) :
+    straightStepGateGrowthBound (M := M) (n := n) ≤
+      (6 * stateCard M + 7) * (M.tapeLength n) ^ 2 +
+        (8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1)) := by
+  classical
+  set T := M.tapeLength n with hT
+  have hPos : 1 ≤ T := by
+    simpa [hT] using tapeLength_pos (M := M) (n := n)
+  have hSq : T ≤ T * T := by
+    have := Nat.mul_le_mul_left T hPos
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+  have hSeven : 7 * T ≤ 7 * (T * T) := Nat.mul_le_mul_left _ hSq
+  have hRewrite :
+      straightStepGateGrowthBound (M := M) (n := n) =
+        6 * stateCard M * (T * T) + 7 * T +
+          (8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1)) := by
+    simp [straightStepGateGrowthBound, hT, Nat.mul_add, Nat.add_mul,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.add_comm,
+      Nat.add_left_comm, Nat.add_assoc]
+  have hGoal :
+      6 * stateCard M * (T * T) + 7 * (T * T) =
+        (6 * stateCard M + 7) * (T * T) := by
+    simp [Nat.mul_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  have hBound :
+      6 * stateCard M * (T * T) + 7 * T ≤
+        (6 * stateCard M + 7) * (T * T) := by
+    have := Nat.add_le_add (Nat.le_refl (6 * stateCard M * (T * T))) hSeven
+    simpa [hGoal, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      using this
+  have hQuad :
+      straightStepGateGrowthBound (M := M) (n := n) ≤
+        (6 * stateCard M + 7) * (T * T) +
+          (8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1)) := by
+    simpa [hRewrite]
+      using Nat.add_le_add hBound (Nat.le_refl _)
+  simpa [Nat.pow_two, hT, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using hQuad
+
+lemma straightStepGateGrowthBound_le_shifted_pow
+    (M : TM) (c : ℕ)
+    (hRun : ∀ m, M.runTime m ≤ m ^ c + c) :
+    ∀ n, straightStepGateGrowthBound (M := M) (n := n) ≤
+      (6 * stateCard M + 7) * (n + 2) ^ (2 * (runtimeExponent c + 3)) +
+        (8 * stateCard M + 2 + stateCard M * (4 * stateCard M + 1)) := by
+  intro n
+  classical
+  have hQuad := straightStepGateGrowthBound_le_quadratic (M := M) (n := n)
+  have hTape := tapeLength_le_shifted_pow (M := M) (c := c) (n := n) hRun
+  set T := M.tapeLength n with hT
+  have hBase : T ≤ (n + 2) ^ (runtimeExponent c + 3) := by
+    simpa [hT] using hTape
+  have hMul := Nat.mul_le_mul hBase hBase
+  have hPow :
+      (n + 2) ^ (runtimeExponent c + 3) *
+          (n + 2) ^ (runtimeExponent c + 3) =
+        (n + 2) ^ (2 * (runtimeExponent c + 3)) := by
+    calc
+      (n + 2) ^ (runtimeExponent c + 3) *
+            (n + 2) ^ (runtimeExponent c + 3)
+          = (n + 2) ^ ((runtimeExponent c + 3) + (runtimeExponent c + 3)) := by
+              simp [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      _ = (n + 2) ^ (2 * (runtimeExponent c + 3)) := by
+              simp [two_mul, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+  have hSq : T ^ 2 ≤ (n + 2) ^ (2 * (runtimeExponent c + 3)) := by
+    simpa [Nat.pow_two, hPow] using hMul
+  have hProd :
+      (6 * stateCard M + 7) * (T ^ 2) ≤
+        (6 * stateCard M + 7) *
+          (n + 2) ^ (2 * (runtimeExponent c + 3)) :=
+    Nat.mul_le_mul_left _ hSq
+  exact
+    Nat.le_trans hQuad
+      (Nat.add_le_add hProd (Nat.le_refl _))
 
 lemma straightTotalGateCount_step_le' (sc : StraightConfig M n) :
     straightTotalGateCount (StraightConfig.step (M := M) (n := n) sc) ≤
@@ -11055,6 +11157,46 @@ lemma one_le_dominantBase (c n : ℕ) : 1 ≤ dominantBase c n := by
   exact Nat.le_trans (by decide : 1 ≤ 2) hMul
 
 /--
+`dominantBase` grows no faster than a single power of the shifted input size.
+The inequality trades the leading coefficient `2` for an extra factor of the
+base, a manoeuvre that will be convenient when normalising the final
+polynomial bounds for the accepting circuit. -/
+lemma dominantBase_le_shifted_pow (c n : ℕ) :
+    dominantBase c n ≤
+      (n + runtimeExponent c + 2) ^ (runtimeExponent c + 2) := by
+  classical
+  unfold dominantBase
+  set X := n + runtimeExponent c + 2 with hX
+  have hTwo : (2 : ℕ) ≤ X := by
+    have hx : runtimeExponent c + 2 ≤ X := by
+      have := Nat.le_add_left (runtimeExponent c + 2) n
+      simpa [hX, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+    exact le_trans (by decide : 2 ≤ runtimeExponent c + 2) hx
+  have hPowSucc : X ^ (runtimeExponent c + 2) =
+      X ^ (runtimeExponent c + 1) * X := by
+    have := Nat.pow_succ (X) (runtimeExponent c + 1)
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+  -- Rewrite both sides of the inequality using the recorded identities.
+  have hLHS : 2 * X ^ (runtimeExponent c + 1) =
+      X ^ (runtimeExponent c + 1) * 2 := by
+    simp [Nat.mul_comm, Nat.mul_left_comm]
+  have hRHS : X ^ (runtimeExponent c + 1) * X =
+      X ^ (runtimeExponent c + 2) := by
+    simpa [hPowSucc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using (rfl : X ^ (runtimeExponent c + 1) * X =
+        X ^ (runtimeExponent c + 1) * X)
+  have hineq :
+      X ^ (runtimeExponent c + 1) * 2 ≤
+        X ^ (runtimeExponent c + 1) * X :=
+    Nat.mul_le_mul_left _ hTwo
+  -- Assemble the final inequality by rewriting through `hLHS` and `hRHS`.
+  have : 2 * X ^ (runtimeExponent c + 1) ≤ X ^ (runtimeExponent c + 2) := by
+    simpa [hLHS, hRHS, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using hineq
+  simpa [hX, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using this
+
+/--
 `polyBase` is bounded by the auxiliary polynomial `dominantBase`.
 -/
 lemma polyBase_le_dominantBase (c n : ℕ) :
@@ -11154,6 +11296,56 @@ lemma gatePolyBound_le_dominantBase_pow (M : TM) (c n : ℕ) :
     Nat.pow_le_pow_of_le_right hPos hExp
   have := Nat.le_trans hPowBase hPowExp
   simpa [gatePolyBound_def, B, D]
+    using this
+
+/--
+The helper `dominantBase` is itself dominated by the shifted power appearing in
+its definition.  Upgrading both the base and the exponent yields a compact
+expression that no longer carries the prefactor `2`.  Although the resulting
+bound is still coarse, isolating the final polynomial `n ↦ n + runtimeExponent c
++ 2` will make later normalisation steps more mechanical.
+-/
+lemma gatePolyBound_le_shifted_pow (M : TM) (c n : ℕ) :
+    gatePolyBound (M := M) (c := c) n ≤
+      ((n + runtimeExponent c + 2) ^ (runtimeExponent c + 2)) ^
+        (gateBoundExponent M *
+            (n + runtimeExponent c + 2) ^ (runtimeExponent c + 2) +
+          gateBoundOffset M) := by
+  classical
+  -- Abbreviations for the two auxiliary bases.  `D` is the compact base
+  -- introduced above, while `S` keeps only the shifted power, eliminating the
+  -- leading factor `2`.
+  set D := dominantBase c n
+  set S := (n + runtimeExponent c + 2) ^ (runtimeExponent c + 2)
+  -- Start from the domination by `dominantBase` proved previously.
+  have hDom := gatePolyBound_le_dominantBase_pow
+    (M := M) (c := c) (n := n)
+  -- The monotonicity of exponentiation in the base allows us to replace `D`
+  -- with the larger quantity `S`.
+  have hBaseLe : D ≤ S := by
+    simpa [D, S]
+      using dominantBase_le_shifted_pow (c := c) (n := n)
+  have hBase :=
+    Nat.pow_le_pow_of_le_base (a := D) (b := S)
+      (k := gateBoundExponent M * D + gateBoundOffset M) hBaseLe
+  -- In turn, the exponent can be enlarged because the new base `S` is at least
+  -- one.
+  have hPos : 1 ≤ S := by
+    have : 0 < S := by
+      have hBase : 0 < n + runtimeExponent c + 2 := Nat.succ_pos _
+      exact Nat.pow_pos hBase _
+    exact Nat.succ_le_of_lt this
+  have hMul : gateBoundExponent M * D ≤ gateBoundExponent M * S :=
+    Nat.mul_le_mul_left _ hBaseLe
+  have hExp :
+      gateBoundExponent M * D + gateBoundOffset M ≤
+        gateBoundExponent M * S + gateBoundOffset M :=
+    Nat.add_le_add hMul (Nat.le_refl _)
+  have hExpMono :=
+    Nat.pow_le_pow_of_le_right hPos hExp
+  -- Combine the two relaxations.
+  have := Nat.le_trans hDom (Nat.le_trans hBase hExpMono)
+  simpa [gatePolyBound_def, D, S]
     using this
 
 /--

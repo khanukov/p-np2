@@ -37,7 +37,7 @@ lemma coverFamily_spec {n h : ℕ} (F : Family n)
         ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
       (coverFamily (n := n) F h hH).card ≤
-        Fintype.card (Subcube n) := by
+        2 ^ n := by
   classical
   -- Unpack the existential witness returned by `cover_exists_bound`.
   simpa [coverFamily] using
@@ -69,8 +69,8 @@ The canonical cover also satisfies the explicit size bound.
 -/
 lemma coverFamily_spec_bound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (coverFamily (n := n) F h hH).card ≤
-      Fintype.card (Subcube n) :=
+      (coverFamily (n := n) F h hH).card ≤
+      2 ^ n :=
   (coverFamily_spec (n := n) (h := h) (F := F) hH).2.2
 
 /--
@@ -81,7 +81,7 @@ construction from the arithmetic reasoning about the size bound.
 -/
 lemma coverFamily_spec_mBound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
     (∀ R ∈ coverFamily (n := n) F h hH,
         ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
@@ -90,6 +90,9 @@ lemma coverFamily_spec_mBound {n h : ℕ} (F : Family n)
   -- Start from the basic specification and strengthen the cardinality bound.
   obtain hspec := coverFamily_spec (n := n) (h := h) (F := F) hH
   refine ⟨hspec.1, hspec.2.1, ?_⟩
+  -- The numerical guard ensures `mBound` dominates the `2^n` catalogue bound.
+  have hM : (2 : ℕ) ^ n ≤ mBound n h :=
+    Cover2.two_pow_le_mBound (n := n) (h := h) hn hlarge
   exact hspec.2.2.trans hM
 
 /-- Convenience wrapper extracting only the cardinality estimate from
@@ -97,8 +100,8 @@ lemma coverFamily_spec_mBound {n h : ℕ} (F : Family n)
 already known or irrelevant for the caller. -/
 lemma coverFamily_card_le_mBound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hM : Fintype.card (Subcube n) ≤ mBound n h) :
+    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
     (coverFamily (n := n) F h hH).card ≤ mBound n h :=
-  (coverFamily_spec_mBound (n := n) (h := h) (F := F) hH hM).2.2
+  (coverFamily_spec_mBound (n := n) (h := h) (F := F) hH hn hlarge).2.2
 
 end Cover2

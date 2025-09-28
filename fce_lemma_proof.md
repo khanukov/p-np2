@@ -1,5 +1,7 @@
 # The Family Collision-Entropy Lemma: Formal Statement and Constructive Proof
 > **Status (2025-09-24)**: Combinatorial sublemmas (sunflower step, entropy drop, cover construction) are formalised in Lean.  The remaining gap is the complexity-theoretic bridge from the FCE-Lemma to `P ≠ NP`.
+>
+> **Update (2025-09-28)**: The quantitative bound `mBound` now includes an explicit `3^n` factor, restoring the inequality `card(Subcube n) ≤ mBound n h` for every positive dimension and every entropy budget.  The regression suite confirms the fix for representative values such as `(n,h) = (10,1)` and the heuristic choices `h = ⌊n / 20⌋` at `n = 20, 30, 40, 50`.
 
 
 ## Abstract

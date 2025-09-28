@@ -347,29 +347,116 @@ lemma buildCover_covers (F : Family n) (h : ℕ)
   -- The definition of `buildCover` unfolds to a call to `buildCoverAux` on `∅`.
   simpa [buildCover] using haux
 
+
+
 /-!
-Quantitative bounds on the size of the cover were previously postulated via an
-axiom.  For the purposes of the current development we only require a very
-coarse estimate: the number of rectangles produced by `buildCover` can never
-exceed the total number of subcubes.  This observation is completely
-elementary but removes the remaining axiom and keeps the API usable.  A future
-refinement may replace this lemma with a sharper bound that depends on the
-entropy budget `h`.
+Quantitative bounds for the cover are now derived from the explicit catalogue of
+rectangles that `extendCover` may insert.  Every step freezes the coordinates
+from `supportUnion F`, hence there are at most `2^n` distinct candidates.
 -/
-/--
-Cardinality bound for the cover constructed by `buildCover`.
-The returned set is a finset of subcubes, hence its cardinality is bounded by
-the size of the ambient type `Subcube n`.
--/
+
+/-- Catalogue of rectangles reachable by the cover construction. -/
+noncomputable def coverUniverse (F : Family n) : Finset (Subcube n) :=
+  (Finset.univ.image fun x : Boolcube.Point n =>
+    Boolcube.Subcube.fromPoint (n := n) x (supportUnion (n := n) F))
+
+/-- `extendCover` never leaves the catalogue `coverUniverse`. -/
+lemma extendCover_subset_coverUniverse (F : Family n)
+    (Rset : Finset (Subcube n))
+    (hsubset : Rset ⊆ coverUniverse (n := n) F) :
+    extendCover (n := n) F Rset ⊆ coverUniverse (n := n) F := by
+  classical
+  intro R hR
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      have hmem : R ∈ Rset := by simpa [extendCover, hfu] using hR
+      exact hsubset hmem
+  | some p =>
+      have hmem : R ∈ Rset ∪
+          {Boolcube.Subcube.fromPoint (n := n) p.2 (supportUnion (n := n) F)} := by
+        simpa [extendCover, hfu] using hR
+      rcases Finset.mem_union.mp hmem with hRset | hnew
+      · exact hsubset hRset
+      · have hsingle : R =
+            Boolcube.Subcube.fromPoint (n := n) p.2 (supportUnion (n := n) F) :=
+          by simpa using Finset.mem_singleton.mp hnew
+        subst hsingle
+        refine Finset.mem_image.mpr ?_
+        refine ⟨p.2, ?_, rfl⟩
+        simpa using (Finset.mem_univ (a := p.2))
+
+/-- `buildCoverAux` remains inside `coverUniverse` provided the starting set does. -/
+lemma buildCoverAux_subset_coverUniverse (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    ∀ Rset,
+      Rset ⊆ coverUniverse (n := n) F →
+        buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset ⊆
+          coverUniverse (n := n) F := by
+  classical
+  intro Rset
+  refine (μRel_wf (n := n) (F := F) h).induction Rset
+    (C := fun Rset =>
+      Rset ⊆ coverUniverse (n := n) F →
+        buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset ⊆
+          coverUniverse (n := n) F) ?step
+  intro Rset IH hsubset R hR
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      have hbase :
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset = Rset :=
+        buildCoverAux_none (n := n) (F := F) (h := h) (hH := hH)
+          (Rset := Rset) hfu
+      have hmem : R ∈ Rset := by simpa [hbase] using hR
+      exact hsubset hmem
+  | some p =>
+      have hrec :=
+        buildCoverAux_unfold (n := n) (F := F) (h := h)
+          (hH := hH) (Rset := Rset)
+      have hR' : R ∈
+          buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
+            (extendCover (n := n) F Rset) := by
+        simpa [hrec, hfu] using hR
+      have hdrop : μRel (n := n) (F := F) h
+          (extendCover (n := n) F Rset) Rset := by
+        have hne : firstUncovered (n := n) F Rset ≠ none := by simp [hfu]
+        simpa [μRel] using
+          mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
+      have hsubset' : extendCover (n := n) F Rset ⊆ coverUniverse (n := n) F :=
+        extendCover_subset_coverUniverse (F := F) (Rset := Rset) hsubset
+      exact (IH (extendCover (n := n) F Rset) hdrop hsubset') hR'
+
+/-- The final cover is contained in the catalogue of admissible rectangles. -/
+lemma buildCover_subset_coverUniverse (F : Family n) (h : ℕ)
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
+    buildCover (n := n) F h hH ⊆ coverUniverse (n := n) F := by
+  classical
+  have haux := buildCoverAux_subset_coverUniverse
+    (n := n) (F := F) (h := h) (hH := hH) (Rset := (∅ : Finset (Subcube n)))
+  have hsubset : (∅ : Finset (Subcube n)) ⊆ coverUniverse (n := n) F := by
+    intro R hR; cases hR
+  have := haux hsubset
+  simpa [buildCover] using this
+
+/-- The catalogue contains at most `2^n` rectangles. -/
+lemma coverUniverse_card_le (F : Family n) :
+    (coverUniverse (n := n) F).card ≤ 2 ^ n := by
+  classical
+  have hcard := Finset.card_image_le
+    (s := (Finset.univ : Finset (Boolcube.Point n)))
+    (f := fun x : Boolcube.Point n =>
+      Boolcube.Subcube.fromPoint (n := n) x (supportUnion (n := n) F))
+  simpa [coverUniverse] using hcard
+
+/-- Quantitative bound: the cover contains at most `2^n` rectangles. -/
 lemma buildCover_card_bound (F : Family n) (h : ℕ)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ)) :
-    (buildCover (n := n) F h hH).card ≤ Fintype.card (Subcube n) := by
+    (buildCover (n := n) F h hH).card ≤ 2 ^ n := by
   classical
-  -- `card_le_univ` provides the required inequality for any finite set.
-  have hbound :=
-    (Finset.card_le_univ (s := buildCover (n := n) F h hH) :
-      (buildCover (n := n) F h hH).card ≤ Fintype.card (Subcube n))
-  simpa using hbound
+  have hsubset := buildCover_subset_coverUniverse (n := n) (F := F)
+    (h := h) (hH := hH)
+  have hcard := Finset.card_le_card hsubset
+  exact hcard.trans (coverUniverse_card_le (n := n) (F := F))
+
 
 end Cover2
 

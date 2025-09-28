@@ -39,7 +39,7 @@ keeps the bound generous in low dimensions.  The constant
 formal inequalities rather than optimising numerical constants.
 -/
 def coverBound (n s : ℕ) : ℕ :=
-  Nat.pow 2 (coverConst * (s + 2) * (n + 2))
+  3 ^ n * Nat.pow 2 (coverConst * (s + 2) * (n + 2))
 
 --! ### Auxiliary numerical lemmas
 
@@ -130,7 +130,8 @@ lemma coverBound_mono_s {n : ℕ} : Monotone (fun s => coverBound n s) := by
   have hcoeff : coverConst * (s + 2) ≤ coverConst * (t + 2) :=
     Nat.mul_le_mul_left _ hstep
   have hmul := Nat.mul_le_mul_right (n + 2) hcoeff
-  have := pow_two_le_pow_two_of_le hmul
+  have hpow := pow_two_le_pow_two_of_le hmul
+  have := Nat.mul_le_mul_left (3 ^ n) hpow
   simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
     using this
 
@@ -173,7 +174,8 @@ lemma pow_log_bound_le_coverBound {n s : ℕ} :
     simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
   -- Monotonicity of powers of two in the exponent yields the desired bound.
   have hpow' := pow_two_le_pow_two_of_le hcoeff
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow'
+  have := Nat.mul_le_mul_left (3 ^ n) hpow'
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
 
 /--
 Even the crude enumeration of all vertices of the Boolean cube respects the
@@ -204,7 +206,10 @@ lemma pow_card_point_le_coverBound {n s : ℕ} :
   have hle : n ≤ coverConst * 2 * (n + 2) := hstep₁.trans hstep₂
   have hexp : n ≤ coverConst * (s + 2) * (n + 2) := hle.trans hcoeff
   -- Monotonicity of powers of two turns the exponent inequality into the claim.
-  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+  have hpow := Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) hexp
+  exact
+    (Nat.mul_le_mul_left (3 ^ n) hpow)
+      |> by simpa [coverBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
 /--
 The quadratic factor `n * (n + 3)` appearing in `Cover2.mBound n (n + 1)`
@@ -299,6 +304,7 @@ lemma mBound_le_coverBound {n s : ℕ} :
     have hpow := pow_two_le_pow_two_of_le hexp
     have : n * (n + 3) * 2 ^ (10 * (n + 1))
         ≤ 2 ^ (coverConst * 2 * (n + 2)) := hmul'.trans hpow
+    have := Nat.mul_le_mul_left (3 ^ n) this
     simpa [Cover2.mBound, coverBound, coverConst, Nat.succ_eq_add_one,
       Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
       add_comm, add_left_comm, add_assoc]

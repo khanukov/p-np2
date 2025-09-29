@@ -550,6 +550,87 @@ lemma family_H₂_le (n m : ℕ) :
         (Real.logb_pow (b := 2) (x := 2) (k := m * (Nat.log n + 1) + 1))
     simpa [Entropy.H₂, family, hpow] using hxlog
 
+/-- For `n ≥ 1` the logarithmic factor appearing in the circuit counting
+bound grows at most linearly with `n`.  The constants are deliberately
+generous – the proof only needs the existence of some absolute
+dominating factor. -/
+lemma log_add_one_le_three_mul {n : ℕ} (hn : 1 ≤ n) :
+    Nat.log n + 1 ≤ 3 * n := by
+  cases' n with n
+  · cases hn
+  -- The library proves that `Nat.log (Nat.succ n)` is bounded by the
+  -- identity function.  Combining this with the trivial inequality
+  -- `Nat.succ n + 1 ≤ 3 * Nat.succ n` yields the advertised estimate.
+  · have hlog : Nat.log (Nat.succ n) ≤ Nat.succ n := by
+      simpa using (Nat.log_le_self (2) (Nat.succ n))
+    have htwo : (1 : ℕ) ≤ 2 * Nat.succ n := by
+      exact Nat.succ_le_of_lt
+        (Nat.mul_pos (by decide : 0 < 2) (Nat.succ_pos n))
+    have hlin : Nat.succ n + 1 ≤ Nat.succ n + 2 * Nat.succ n :=
+      Nat.add_le_add_left htwo (Nat.succ n)
+    have hrewrite : Nat.succ n + 2 * Nat.succ n = 3 * Nat.succ n := by
+      simp [two_mul, three_mul, add_comm, add_left_comm, add_assoc]
+    have hsum : Nat.succ n + 1 ≤ 3 * Nat.succ n := by
+      simpa [hrewrite] using hlin
+    have : Nat.log (Nat.succ n) + 1 ≤ Nat.succ n + 1 :=
+      Nat.add_le_add_right hlog 1
+    exact this.trans hsum
+
+/-- An explicit polynomial upper bound for the exponent appearing in the
+cardinality estimate of the circuit family `family n (n^c)`.  The bound
+`6 · n^{c+1}` is intentionally coarse but suffices for the entropy
+arguments downstream. -/
+lemma pow_family_exponent_bound {n c : ℕ} (hn : 1 ≤ n) :
+    n ^ c * (Nat.log n + 1) + 1 ≤ 6 * n ^ (c + 1) := by
+  have hlog := log_add_one_le_three_mul (n := n) hn
+  -- First control the main product `n^c * (log n + 1)`.
+  have hmain : n ^ c * (Nat.log n + 1) ≤ 3 * n ^ (c + 1) := by
+    simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using Nat.mul_le_mul_left (n ^ c) hlog
+  -- The previous inequality persists after adding `1` to both sides.
+  have hsum : n ^ c * (Nat.log n + 1) + 1 ≤ 3 * n ^ (c + 1) + 1 :=
+    Nat.add_le_add_right hmain 1
+  -- Since `n ≥ 1`, the power `n^(c+1)` is positive and therefore at
+  -- least `1`.  This lets us absorb the trailing `+1` into the same
+  -- leading polynomial factor.
+  have hposn : 0 < n := lt_of_lt_of_le (Nat.zero_lt_succ _) hn
+  have hpowpos : 0 < n ^ (c + 1) := Nat.pow_pos hposn _
+  have hone_le_pow : (1 : ℕ) ≤ 3 * n ^ (c + 1) :=
+    Nat.succ_le_of_lt (Nat.mul_pos (by decide : 0 < 3) hpowpos)
+  have hstep : 3 * n ^ (c + 1) + 1 ≤ 3 * n ^ (c + 1) + 3 * n ^ (c + 1) :=
+    Nat.add_le_add_left hone_le_pow _
+  have hrewrite : 3 * n ^ (c + 1) + 3 * n ^ (c + 1) = 6 * n ^ (c + 1) := by
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm,
+      Nat.add_assoc] using (Nat.add_mul 3 3 (n ^ (c + 1))).symm
+  exact hsum.trans (by simpa [hrewrite] using hstep)
+
+/-- The family of Boolean functions realised by circuits of size at most
+`n^c` obeys a crude exponential bound whose exponent grows like
+`O(n^{c+1})`.  This packages `family_card_le` with the polynomial
+estimate from `pow_family_exponent_bound`. -/
+lemma pow_family_card_le {n c : ℕ} (hn : 1 ≤ n) :
+    (family n (n ^ c)).card ≤ 2 ^ (6 * n ^ (c + 1)) := by
+  classical
+  have hcard := family_card_le (n := n) (m := n ^ c)
+  have hexp := pow_family_exponent_bound (n := n) (c := c) hn
+  have hmono := Left.pow_le_pow_right' (a := 2)
+      (n := n ^ c * (Nat.log n + 1) + 1) (m := 6 * n ^ (c + 1))
+      (ha := by decide) hexp
+  exact hcard.trans hmono
+
+/-- The collision entropy of the family of size-`≤ n^c` circuits is also
+polynomially bounded.  This is the `ℝ`-valued counterpart of
+`pow_family_exponent_bound` needed for the analytic formulation of the
+family collision-entropy lemma. -/
+lemma pow_family_H₂_le {n c : ℕ} (hn : 1 ≤ n) :
+    Entropy.H₂ (family n (n ^ c)) ≤ (6 * n ^ (c + 1) : ℝ) := by
+  classical
+  have hbound := family_H₂_le (n := n) (m := n ^ c)
+  have hcast : ((n ^ c * (Nat.log n + 1) + 1 : ℕ) : ℝ)
+      ≤ (6 * n ^ (c + 1) : ℝ) := by
+    exact_mod_cast pow_family_exponent_bound (n := n) (c := c) hn
+  exact hbound.trans hcast
+
 end Circuit
 end Boolcube
 

@@ -21,6 +21,18 @@ def constFamily : Family 1 :=
 def trueFamily : Family 1 :=
   ({fun (_ : Point 1) => true} : Finset (BFunc 1))
 
+/-- Positivity helper for `coverBound` specialised to test instances. -/
+private lemma coverBound_pos' (n s : ℕ) : 0 < coverBound n s := by
+  have hthree : 0 < 3 ^ n := Nat.pow_pos (by decide : 0 < (3 : ℕ)) (n := n)
+  have htwo : 0 < 2 ^ (coverConst * (s + 2) * (n + 2)) := by
+    have hbase : 0 < (2 : ℕ) := by decide
+    exact Nat.pow_pos hbase (n := coverConst * (s + 2) * (n + 2))
+  simpa [coverBound] using Nat.mul_pos hthree htwo
+
+/-- A convenient variant stating that `coverBound` always exceeds `1`. -/
+private lemma one_le_coverBound' (n s : ℕ) : 1 ≤ coverBound n s :=
+  Nat.succ_le_of_lt (coverBound_pos' n s)
+
 /-- Constructing a cover for a constant `false` family. -/
 example : True := by
   classical
@@ -97,12 +109,13 @@ example : True := by
       simpa [constFamily] using Finset.mem_singleton.mp hf
     simp [h]
   let cover := CoverRes.const (F := constFamily) (b := false) hconst
+  have hk := one_le_coverBound' 1 0
   have _h :=
     CoverRes.as_cover (n := 1) (F := constFamily) (k := 1)
-      (k' := Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1))) cover
+      (k' := coverBound 1 0) cover
       (by
-        -- The target bound simplifies to `1`, matching the size of the cover.
-        simp [coverConst])
+        -- Relax the bound to `coverBound 1 0`, which is comfortably larger.
+        exact hk)
   exact trivial
 
 -- Bounding the depth of the generated tree via the number of rectangles.
@@ -134,22 +147,20 @@ example : True := by
         simpa [trueFamily] using Finset.mem_singleton.mp hf
       simp [h])
   -- Repackage the cover with the larger bound expected by `depth_le_coverConst`.
-  have hpow : 1 ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) := by
-    have hpos : 0 < Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
-      pow_pos (by decide) _
-    exact Nat.succ_le_of_lt hpos
+  have hpow := one_le_coverBound' 1 0
   let cover : CoverRes (F := trueFamily)
-      (Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1))) :=
+      (coverBound 1 0) :=
     { rects := cover0.rects
       , mono := cover0.mono
       , covers := cover0.covers
       , card_le := le_trans cover0.card_le hpow }
   have _ :
       DecisionTree.depth (CoverRes.toDecisionTree (n := 1) (F := trueFamily) cover)
-        ≤ 1 * Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        ≤ 1 * coverBound 1 0 :=
     by
-      simpa [coverConst] using
-        (CoverRes.depth_le_coverConst (n := 1) (s := 0) (F := trueFamily) cover)
+      simpa using
+        (CoverRes.depth_le_card_mul (n := 1) (F := trueFamily)
+          (k := coverBound 1 0) cover)
   exact trivial
 
 -- Obtaining a cover for a constant family via `decisionTree_cover_of_constant`.
@@ -165,7 +176,7 @@ example : True := by
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     decisionTree_cover_of_constant (n := 1) (F := constFamily) (s := 0) hconst
   exact trivial
 
@@ -188,7 +199,7 @@ noncomputable example : True := by
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ mixedFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ mixedFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     decisionTree_cover_of_constFamily (n := 1) (F := mixedFamily) (s := 0)
       hconst
   exact trivial
@@ -200,7 +211,7 @@ example : True := by
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ (∅ : Family 1), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ (∅ : Family 1), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     decisionTree_cover_empty (n := 1) (s := 0)
   exact trivial
 
@@ -214,15 +225,12 @@ example : True := by
       simpa [constFamily] using Finset.mem_singleton.mp hf
     simpa [h]
   let cover := CoverResP.const (F := constFamily) (b := false) hconst
-  have hpow : 1 ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) := by
-    have hpos : 0 < Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
-      pow_pos (by decide) _
-    exact Nat.succ_le_of_lt hpos
+  have hpow := one_le_coverBound' 1 0
   have _ :
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     decisionTree_cover_of_coverResP (n := 1) (F := constFamily) (s := 0)
       (cover := cover) hpow
   exact trivial
@@ -238,15 +246,12 @@ example : True := by
     simp [h]
   let cover := CoverRes.const (F := constFamily) (b := false) hconst
   -- The cardinality bound simplifies to `1` as before.
-  have hpow : 1 ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) := by
-    have hpos : 0 < Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
-      pow_pos (by decide) _
-    exact Nat.succ_le_of_lt hpos
+  have hpow := one_le_coverBound' 1 0
   have _ :
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     decisionTree_cover_of_coverRes (n := 1) (F := constFamily) (s := 0)
       (cover := cover) hpow
   exact trivial
@@ -257,16 +262,12 @@ example : True := by
   classical
   have hn : 0 < 1 := by decide
   have hcard : (1 : Nat) ≤ 1 := le_rfl
-  have hk : Cover2.mBound 1 (1 + 1) ≤
-      Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) := by
-    have hlog2 : Nat.log2 2 = 1 := by simpa using (Nat.log2_two_pow (n := 1))
-    have : (4194304 : ℕ) ≤ 1073741824 := by decide
-    simpa [Cover2.mBound, coverConst, hlog2] using this
+  have hk := mBound_le_coverBound (n := 1) (s := 3)
   have _ :
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 3 :=
     decisionTree_cover_of_buildCover (n := 1) (s := 3) (h := 1)
       (F := constFamily) (hn := hn) (hcard := hcard) (hk := hk)
   exact trivial
@@ -274,16 +275,12 @@ example : True := by
 -- The convenience variant chooses `h = n` automatically.
 example : True := by
   classical
-  have hk : Cover2.mBound 1 (1 + 1) ≤
-      Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) := by
-    have hlog2 : Nat.log2 2 = 1 := by simpa using (Nat.log2_two_pow (n := 1))
-    have : (4194304 : ℕ) ≤ 1073741824 := by decide
-    simpa [Cover2.mBound, coverConst, hlog2] using this
+  have hk := mBound_le_coverBound (n := 1) (s := 3)
   have _ :
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ constFamily, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 3 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 3 :=
     decisionTree_cover_of_buildCover_choose_h (n := 1) (s := 3)
       (F := constFamily) (hk := hk)
   exact trivial
@@ -294,15 +291,12 @@ example : True := by
   -- A family with a single constant `false` function on zero variables.
   let constFamily0 : Family 0 :=
     ({fun (_ : Point 0) => false} : Finset (BFunc 0))
-  have hk : Cover2.mBound 0 (0 + 1) ≤
-      Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 0)) := by
-    -- Both sides simplify: `mBound 0 1 = 0` and `log2 1 = 0`.
-    simp [Cover2.mBound, coverConst]
+  have hk := mBound_le_coverBound (n := 0) (s := 0)
   have _ :
       ∃ Rset : Finset (Subcube 0),
         (∀ f ∈ constFamily0, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ constFamily0, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 0)) :=
+        Rset.card ≤ coverBound 0 0 :=
     decisionTree_cover_of_buildCover_choose_h (n := 0) (s := 0)
       (F := constFamily0) (hk := hk)
   exact trivial
@@ -339,7 +333,7 @@ example : True := by
       ∃ Rset : Finset (Subcube 1),
         (∀ f ∈ (∅ : Family 1), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
         (∀ f ∈ (∅ : Family 1), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-        Rset.card ≤ Nat.pow 2 (coverConst * 0 * Nat.log2 (Nat.succ 1)) :=
+        Rset.card ≤ coverBound 1 0 :=
     BoolFunc.decisionTree_cover_empty (n := 1) (s := 0)
   exact trivial
 

@@ -327,21 +327,7 @@ lemma mBound_le_coverBound {n s : ℕ} :
     have hpow := pow_two_le_pow_two_of_le hexp
     have hbase : n * (n + 3) * 2 ^ (10 * (n + 1))
         ≤ 2 ^ (coverConst * 2 * (n + 2)) := hmul'.trans hpow
-    have hchain :
-        n * (n + 3) * 2 ^ (10 * (n + 1))
-          ≤ 3 ^ n * 2 ^ (coverConst * 2 * (n + 2)) := by
-      have hpos : 0 < 3 ^ n := by
-        have := Nat.pow_pos (by decide : 0 < 3) (n := n)
-        simpa using this
-      have hfac :
-          2 ^ (coverConst * 2 * (n + 2))
-            ≤ 3 ^ n * 2 ^ (coverConst * 2 * (n + 2)) := by
-        have hge : (1 : ℕ) ≤ 3 ^ n := Nat.succ_le_of_lt hpos
-        have hmul :=
-          Nat.mul_le_mul_right
-            (k := 2 ^ (coverConst * 2 * (n + 2))) hge
-        simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
-      exact hbase.trans hfac
+    have hchain := Nat.mul_le_mul_left (3 ^ n) hbase
     simpa [Cover2.mBound, coverBound, coverConst, Nat.succ_eq_add_one,
       Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
       add_comm, add_left_comm, add_assoc]
@@ -364,203 +350,17 @@ noncomputable def decisionTreeBudget (n s : ℕ) : ℕ :=
       - (Real.logb 2 n +
           Real.logb 2 ((s : ℝ) * Real.logb 2 (n + 1) + 3)) / (coverConst : ℝ))
 
-/--
-Numerical bound for the ``large‑`$s$'' regime.
+/-
 
-If the sensitivity parameter `s` dominates the dimension `n` (precisely,
-`n + 2 ≤ s`), the crude combinatorial estimate `Cover2.mBound` for a budget
-`h = n + 1` already fits under the final target `2^(coverConst * s * log₂(n+1))`.
+When the sensitivity parameter dominates the dimension (`n + 2 ≤ s`), the
+expanded combinatorial catalogue `Cover2.mBound n (n + 1)` already lies below
+the analytic target `coverBound n s`.  The proof is a direct calculation that
+enlarges the polynomial factor and compares the exponential terms.
 
-This lemma is a minimal, yet fully formal, replacement for the false claim
-`mBound n (n + 1) ≤ 2^(coverConst * s * log₂(n+1))` without any assumption on
-`s`.  The inequality is easy for large `s`, and this version integrates with the
-existing recursive cover construction (`buildCoverLex3`) which currently always
-operates with the budget `h = n`.
+This inequality feeds the global comparison lemma `mBound_le_coverBound`, which
+uses the monotonicity of `coverBound` in `s` to remove the large‑`s` guard from
+the cover construction.
 -/
-lemma mBound_le_pow_of_budget_choice_bigS
-  {n s : ℕ} (hn : 1 ≤ n) (hs : n + 2 ≤ s) :
-  Cover2.mBound n (n + 1)
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-  -- Throughout the proof we abbreviate `log₂ (n + 1)` by `L`.
-  set L := Nat.log2 (n + 1) with hLdef
-
-  ----------------------------------------------------------------------------
-  -- Step 1: polynomial factor `n * (n + 3)` is bounded by `(n + 1)^4`.
-  have h₁ : n ≤ (n + 1) ^ 2 := by
-    -- Here `n ≤ n + 1` and `(n + 1) ≤ (n + 1)^2` since `1 ≤ n + 1`.
-    have hle : n + 1 ≤ (n + 1) ^ 2 := by
-      have hpos : 1 ≤ n + 1 := Nat.succ_le_succ (Nat.zero_le _)
-      have := Nat.mul_le_mul_left (n + 1) hpos
-      simpa [pow_two] using this
-    exact (Nat.le_succ _).trans hle
-  have h₂ : n + 3 ≤ (n + 1) ^ 2 := by
-    -- First use `n + 3 ≤ 2 * (n + 1)` (valid for `n ≥ 1`).
-    have hstep : n + 3 ≤ 2 * (n + 1) := by
-      have h3 : 3 ≤ n + 2 := Nat.succ_le_succ (Nat.succ_le_succ hn)
-      have := Nat.add_le_add_left h3 n
-      simpa [two_mul, add_comm, add_left_comm, add_assoc] using this
-    -- Then bound `2 * (n + 1)` by `(n + 1)^2` since `2 ≤ n + 1`.
-    have hsq : 2 * (n + 1) ≤ (n + 1) ^ 2 := by
-      have hpos : 2 ≤ n + 1 := Nat.succ_le_succ hn
-      have := Nat.mul_le_mul_left (n + 1) hpos
-      simpa [pow_two, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
-    exact hstep.trans hsq
-  have hpoly : n * (n + 3) ≤ (n + 1) ^ 4 := by
-    -- Multiply the two inequalities and simplify `(n+1)^2 * (n+1)^2`.
-    have := Nat.mul_le_mul h₁ h₂
-    -- The product `(n+1)^2 * (n+1)^2` is `(n+1)^(2+2) = (n+1)^4`.
-    calc
-      n * (n + 3) ≤ (n + 1) ^ 2 * (n + 1) ^ 2 := by simpa using this
-      _ = (n + 1) ^ (2 + 2) := by
-        simpa [pow_add] using (pow_add (n + 1) 2 2).symm
-      _ = (n + 1) ^ 4 := by simp
-
-  ----------------------------------------------------------------------------
-  -- Step 2: incorporate the exponential factor `2^(10*(n+1))` from `mBound`.
-  have hpoly' :
-      n * (n + 3) * 2 ^ (10 * (n + 1))
-        ≤ (n + 1) ^ 4 * 2 ^ (10 * (n + 1)) :=
-    Nat.mul_le_mul_right _ hpoly
-
-  ----------------------------------------------------------------------------
-  -- Step 3: estimate `(n + 1)^4` using the integer logarithm `L`.
-  -- First show `n + 1 ≤ 2^(L+1)` via properties of `Nat.log` and `Nat.log2`.
-  have hpow_base : n + 1 ≤ 2 ^ (L + 1) := by
-    have hlt : n + 1 < 2 ^ (Nat.log 2 (n + 1) + 1) :=
-      Nat.lt_pow_succ_log_self (b := 2) (x := n + 1) Nat.one_lt_two
-    have hle : n + 1 ≤ 2 ^ (Nat.log 2 (n + 1) + 1) := Nat.le_of_lt hlt
-    simpa [hLdef, Nat.log2_eq_log_two, add_comm] using hle
-  -- Raise both sides of the previous inequality to the fourth power.
-  have hpow₀ : (n + 1) ^ 4 ≤ (2 ^ (L + 1)) ^ 4 :=
-    pow_le_pow_of_le_base hpow_base
-  have hpow : (n + 1) ^ 4 ≤ 2 ^ (4 * L + 4) := by
-    -- Rewrite `(2^(L+1))^4` as `2^((L+1)*4)` and simplify the product.
-    have htmp : (n + 1) ^ 4 ≤ 2 ^ ((L + 1) * 4) := by
-      simpa [pow_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow₀
-    -- Convert `((L + 1) * 4)` to `4 * L + 4` using `Nat.succ_mul`.
-    have haux : (L + 1) * 4 = L * 4 + 4 := by
-      simpa using (Nat.succ_mul L 4)
-    have htmp' : (n + 1) ^ 4 ≤ 2 ^ (L * 4 + 4) := by
-      simpa [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using htmp
-    -- Reorder the sum to the canonical `4 * L + 4` form.
-    simpa [Nat.mul_comm, add_comm, add_left_comm, add_assoc] using htmp'
-
-  -- Combine with the extra factor `2^(10*(n+1))`.
-  have hpow' :
-      (n + 1) ^ 4 * 2 ^ (10 * (n + 1))
-        ≤ 2 ^ (4 * L + 4) * 2 ^ (10 * (n + 1)) :=
-    Nat.mul_le_mul_right _ hpow
-
-  ----------------------------------------------------------------------------
-  -- Step 4: merge both inequalities into a single power of two.
-  have hbound := hpoly'.trans hpow'
-  have hpowadd :
-      2 ^ (4 * L + 4) * 2 ^ (10 * (n + 1))
-        = 2 ^ (4 * L + 4 + 10 * (n + 1)) := by
-    -- Merge the exponents using `pow_add` and tidy up multiplications.
-    simp [pow_add, add_comm, add_left_comm, add_assoc,
-          Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-  have hbound' :
-      n * (n + 3) * 2 ^ (10 * (n + 1))
-        ≤ 2 ^ (4 * L + 4 + 10 * (n + 1)) := by
-    simpa [hpowadd] using hbound
-
-  ----------------------------------------------------------------------------
-  -- Step 5: compare the exponents.
-  -- First prove `L ≥ 1`, a simple consequence of `n ≥ 1`.
-  have hLpos : 1 ≤ L := by
-    have hmono : Nat.log 2 2 ≤ Nat.log 2 (n + 1) :=
-      Nat.log_mono_right (b := 2) (Nat.succ_le_succ hn)
-    have hlog2 : Nat.log2 2 = 1 := by
-      -- `log₂ 2 = 1` follows from the general lemma `Nat.log2_two_pow`.
-      simpa using (Nat.log2_two_pow (n := 1))
-    have : Nat.log2 2 ≤ Nat.log2 (n + 1) := by
-      simpa [Nat.log2_eq_log_two] using hmono
-    simpa [hLdef, hlog2] using this
-
-  -- From `L ≥ 1` we infer `10*(n+1) ≤ 10*(n+1)*L`.
-  have hten : 10 * (n + 1) ≤ 10 * (n + 1) * L := by
-    have := Nat.mul_le_mul_left (10 * (n + 1)) hLpos
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
-
-  -- Bring in the remaining constant `4` and collect terms with a factor `L`.
-  have hcoeff : 4 + 4 * L + 10 * (n + 1)
-      ≤ 4 + (4 + 10 * (n + 1)) * L := by
-    have := Nat.add_le_add_left hten (4 * L)
-    have := Nat.add_le_add_left this 4
-    simpa [add_comm, add_left_comm, add_assoc, left_distrib, right_distrib,
-          Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
-
-  -- Absorb the remaining `4` into the coefficient by bounding `4 ≤ 6*L`.
-  have hfour : 4 ≤ 6 * L := by
-    have : 4 ≤ 6 := by decide
-    have hmul := Nat.mul_le_mul_left 6 hLpos
-    exact this.trans hmul
-  have hcoeff' : 4 + (4 + 10 * (n + 1)) * L
-      ≤ 10 * (n + 2) * L := by
-    -- First add the terms and then rewrite the coefficient explicitly.
-    have htmp := Nat.add_le_add_right hfour ((4 + 10 * (n + 1)) * L)
-    have htmp' : 6 * L + (4 + 10 * (n + 1)) * L =
-        (6 + (4 + 10 * (n + 1))) * L := by
-      simp [add_mul, add_comm, add_left_comm, add_assoc,
-            Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-    -- Simplify the numeric coefficient `6 + (4 + 10 * (n + 1))` to `10 * (n + 2)`.
-    have hcoeff_add : 6 + (4 + 10 * (n + 1)) = 10 * (n + 2) := by
-      -- Evaluate both sides to the common normal form `10 * n + 20`.
-      have hLHS : 6 + (4 + 10 * (n + 1)) = 10 * n + 20 := by
-        simp [Nat.mul_add, Nat.mul_succ, add_comm, add_left_comm, add_assoc,
-              Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      have hRHS : 10 * (n + 2) = 10 * n + 20 := by
-        simp [Nat.mul_add, add_comm, add_left_comm, add_assoc]
-      simpa [hLHS, hRHS]
-    have hcoeff_mul := congrArg (fun t => t * L) hcoeff_add
-    have hcoeff_mul' : 6 * L + (4 + 10 * (n + 1)) * L
-        = 10 * (n + 2) * L := by simpa [htmp'] using hcoeff_mul
-    simpa [hcoeff_mul'] using htmp
-
-  -- Finally apply the assumption `s ≥ n + 2` to compare with the target exponent.
-  have hexp : 4 + 4 * L + 10 * (n + 1) ≤ 10 * s * L := by
-    have := hcoeff.trans hcoeff'
-    have hs' : 10 * (n + 2) * L ≤ 10 * s * L :=
-      Nat.mul_le_mul (Nat.mul_le_mul_left 10 hs) (le_of_eq rfl)
-    exact this.trans hs'
-
-  -- Monotonicity of `2^x` in the exponent for base `2`.
-  have hpowexp := pow_le_pow_right' (a := (2 : ℕ)) (by decide : (1 : ℕ) ≤ 2) hexp
-  have hpowexp' : 2 ^ (4 * L + 4 + 10 * (n + 1))
-      ≤ 2 ^ (coverConst * s * L) := by
-    simpa [coverConst, add_comm, add_left_comm, add_assoc] using hpowexp
-
-  -- Combine everything: polynomial bound followed by exponent comparison.
-  have hfinal := hbound'.trans hpowexp'
-
-  -- Reintroduce definitions to match the statement exactly.
-  simpa [Cover2.mBound, coverConst, hLdef, Nat.succ_eq_add_one,
-    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
-    add_comm, add_left_comm, add_assoc] using hfinal
-
-/--
-The inequality `Cover2.mBound n (n + 1) ≤ 2^(coverConst * s * log₂ (n + 1))`
-is generally false for small sensitivity parameters.  As a concrete witness,
-the instance `n = 1`, `s = 1` already violates it.  This counterexample
-justifies why the preceding lemma restricts to the large‑`s` regime.
--/
-lemma mBound_le_pow_of_budget_choice_smallS_false :
-  ¬ Cover2.mBound 1 (1 + 1)
-      ≤ Nat.pow 2 (coverConst * 1 * Nat.log2 (Nat.succ 1)) := by
-  -- Evaluate both sides numerically and compare.
-  have hLHS : Cover2.mBound 1 (1 + 1) = 4194304 := by
-    simp [Cover2.mBound]
-  have hlog2 : Nat.log2 2 = 1 := by
-    simpa using (Nat.log2_two_pow (n := 1))
-  have hRHS : Nat.pow 2 (coverConst * 1 * Nat.log2 (Nat.succ 1)) = 1024 := by
-    simp [coverConst, hlog2]
-  have hnum : ¬ (4194304 ≤ 1024) := by decide
-  -- Rewrite the goal into the explicit inequality and discharge it.
-  rw [hLHS, hRHS]
-  exact hnum
-
--- The next lemma links explicit decision trees with the cover construction.
 -- The combinatorial result of Gopalan–Moshkovitz–Oliveira shows that a single
 -- decision tree of depth `O(s * log n)` suffices to compute every function in
 -- the family of low-sensitivity Boolean functions.  Each leaf of such a tree
@@ -569,7 +369,7 @@ lemma mBound_le_pow_of_budget_choice_smallS_false :
 -- exponential in `s * log₂ (n + 1)`.
 
 
-/-! ### Branching on a large insensitive subcube
+/- ### Branching on a large insensitive subcube
 
 The following construction performs a single "shortcut" step in the eventual
 decision tree.  Given a point `x` and a global sensitivity bound, the lemma
@@ -1802,7 +1602,7 @@ monochromatic for each function individually.  The cardinality bound follows
 from `card_subcube_le_mBound`.
 -/
 noncomputable def CoverResP.pointCover (F : Family n) (h : ℕ)
-    (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    (hn : 0 < n) :
     CoverResP (F := F) (k := Cover2.mBound n h) := by
   classical
   refine
@@ -1851,7 +1651,7 @@ noncomputable def CoverResP.pointCover (F : Family n) (h : ℕ)
       have : (2 : ℕ) ≤ 3 := by decide
       exact Nat.pow_le_pow_left this n
     have hsub : Fintype.card (Boolcube.Subcube n) ≤ Cover2.mBound n h :=
-      Cover2.card_subcube_le_mBound (n := n) (h := h) hn hbase
+      Cover2.card_subcube_le_mBound (n := n) (h := h) hn
     -- Chain the inequalities together.
     have hpts_le_subcube :
         ((Finset.univ : Finset (Point n)).image
@@ -1871,11 +1671,11 @@ reuses `CoverResP.pointCover` but expresses its cardinality bound in terms of
 branching is introduced.
 -/
 noncomputable def CoverResP.pointCover_succ (F : Family n) (h : ℕ)
-    (hn : 0 < n) (hbase : n ≤ 5 * h) :
+    (hn : 0 < n) :
     CoverResP (F := F) (k := Cover2.mBound n (h + 1)) := by
   classical
   -- Start from the basic point cover.
-  let cover := CoverResP.pointCover (F := F) (h := h) hn hbase
+  let cover := CoverResP.pointCover (F := F) (h := h) hn
   -- Upgrade the cardinality bound using monotonicity of `mBound`.
   have hle : Cover2.mBound n h ≤ Cover2.mBound n (h + 1) :=
     Cover2.mBound_le_succ (n := n) (h := h)
@@ -3258,15 +3058,15 @@ bound `k'` also suffices for the final inequality.
 lemma decisionTree_cover_of_coverResP {n s k : Nat} {F : Family n}
     [Fintype (Point n)]
     (cover : CoverResP (F := F) k)
-    (hk : k ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    (hk : k ≤ coverBound n s) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   -- Reveal the rectangle set and relax the cardinality bound via `CoverResP.as_cover`.
   obtain ⟨Rset, hmono, hcov, hcard⟩ :=
     CoverResP.as_cover (n := n) (F := F) (k := k)
-      (k' := Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) cover hk
+      (k' := coverBound n s) cover hk
   exact ⟨Rset, hmono, hcov, hcard⟩
 
 /--
@@ -3278,11 +3078,11 @@ cover satisfying the required cardinality bound.
 lemma decisionTree_cover_of_coverRes {n s k : Nat} {F : Family n}
     [Fintype (Point n)]
     (cover : CoverRes (F := F) k)
-    (hk : k ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+    (hk : k ≤ coverBound n s) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   -- Convert to the pointwise structure and invoke the previous lemma.
   have coverP : CoverResP (F := F) k := CoverRes.toCoverResP (F := F) (k := k) cover
@@ -3316,11 +3116,11 @@ required by `decisionTree_cover`.
 lemma decisionTree_cover_of_buildCover {n s h : Nat} (F : Family n)
     [Fintype (Point n)] (hn : 0 < n) (hcard : n ≤ h)
     (hk : Cover2.mBound n (h + 1)
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+      ≤ coverBound n s) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   -- Construct the structured cover via `buildCoverLex3` and expose it.
   let cover := buildCoverLex3 (F := F) (h := h) hn hcard
@@ -3336,11 +3136,11 @@ budget to `h = n`.  This automatically satisfies the technical requirement
 lemma decisionTree_cover_of_buildCover_choose_h_pos {n s : Nat} (F : Family n)
     [Fintype (Point n)] (hn : 0 < n)
     (hk : Cover2.mBound n (n + 1)
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+      ≤ coverBound n s) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   -- Instantiate `h` with `n` in the general lemma.
   simpa using
@@ -3355,14 +3155,18 @@ lemma decisionTree_cover_of_constant
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
   -- Package the full-cube cover and discharge the cardinality constraint.
   rcases hconst with ⟨b, hb⟩
   let cover := CoverResP.const (F := F) (b := b) hb
-  have hpow : 1 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-    have hpos : 0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-      pow_pos (by decide) _
+  have hpow : 1 ≤ coverBound n s := by
+    have hthree : 0 < 3 ^ n := pow_pos (by decide : 0 < (3 : ℕ)) _
+    have htwo : 0 < 2 ^ (coverConst * (s + 2) * (n + 2)) :=
+      pow_pos (by decide : 0 < (2 : ℕ)) _
+    have hpos : 0 < coverBound n s := by
+      simpa [coverBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using Nat.mul_pos hthree htwo
     exact Nat.succ_le_of_lt hpos
   -- Invoke the generic wrapper to obtain the final existential cover.
   exact decisionTree_cover_of_coverResP (n := n) (s := s)
@@ -3379,13 +3183,17 @@ lemma decisionTree_cover_of_constFamily
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
   -- Build the singleton cover and lift it through the generic wrapper.
   let cover := CoverResP.constFamily (F := F) hconst
-  have hpow : 1 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
-    have hpos : 0 < Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-      pow_pos (by decide) _
+  have hpow : 1 ≤ coverBound n s := by
+    have hthree : 0 < 3 ^ n := pow_pos (by decide : 0 < (3 : ℕ)) _
+    have htwo : 0 < 2 ^ (coverConst * (s + 2) * (n + 2)) :=
+      pow_pos (by decide : 0 < (2 : ℕ)) _
+    have hpos : 0 < coverBound n s := by
+      simpa [coverBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        using Nat.mul_pos hthree htwo
     exact Nat.succ_le_of_lt hpos
   exact
     decisionTree_cover_of_coverResP (n := n) (s := s) (F := F)
@@ -3401,12 +3209,11 @@ lemma decisionTree_cover_empty
   ∃ Rset : Finset (Subcube n),
     (∀ f ∈ (∅ : Family n), ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
     (∀ f ∈ (∅ : Family n), ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-    Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+    Rset.card ≤ coverBound n s := by
   classical
   -- Use the universal empty cover and apply the wrapper.
   let cover := CoverResP.empty (n := n)
-  have hpow : 0 ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) :=
-    Nat.zero_le _
+  have hpow : 0 ≤ coverBound n s := Nat.zero_le _
   exact decisionTree_cover_of_coverResP (n := n) (s := s)
     (F := (∅ : Family n)) (cover := cover) hpow
 
@@ -3419,11 +3226,11 @@ A wrapper around `decisionTree_cover_of_buildCover` that selects the budget
 lemma decisionTree_cover_of_buildCover_choose_h {n s : Nat} (F : Family n)
     [Fintype (Point n)]
     (hk : Cover2.mBound n (n + 1)
-      ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n))) :
+      ≤ coverBound n s) :
     ∃ Rset : Finset (Subcube n),
       (∀ f ∈ F, ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   by_cases hzero : n = 0
   · -- With no variables all functions are constant; use the dedicated lemma.
@@ -3948,14 +3755,12 @@ theorem decisionTree_cover
   · subst hF
     obtain ⟨Rset, hmono, hcov, hcard⟩ :=
       decisionTree_cover_empty (n := n) (s := s)
-    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
-    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+    refine ⟨Rset, hmono, hcov, hcard⟩
   -- Constant families are handled by the full cube.
   by_cases hconst : ∀ f ∈ F, ∀ x y, f x = f y
   · obtain ⟨Rset, hmono, hcov, hcard⟩ :=
       decisionTree_cover_of_constFamily (n := n) (F := F) (s := s) hconst
-    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
-    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+    refine ⟨Rset, hmono, hcov, hcard⟩
   -- Choose a function that is not constant to witness `n > 0` and `s > 0`.
   obtain ⟨f₀, hf₀F, hnonconst⟩ : ∃ f ∈ F, ¬ ∀ x y, f x = f y := by
     have := Classical.not_forall.mp hconst
@@ -3974,14 +3779,11 @@ theorem decisionTree_cover
   -- Large-sensitivity regime: reuse the combinatorial cover builder.
   by_cases hbig : n + 2 ≤ s
   ·
-    have hk :=
-      mBound_le_pow_of_budget_choice_bigS (n := n) (s := s)
-        (hn := Nat.succ_le_of_lt hn) (hs := hbig)
+    have hk := mBound_le_coverBound (n := n) (s := s)
     obtain ⟨Rset, hmono, hcov, hcard⟩ :=
       decisionTree_cover_of_buildCover_choose_h (n := n) (s := s)
         (F := F) (hk := hk)
-    refine ⟨Rset, hmono, hcov, hcard.trans ?_⟩
-    simpa using pow_log_bound_le_coverBound (n := n) (s := s)
+    exact ⟨Rset, hmono, hcov, hcard⟩
   -- Small-sensitivity fallback: enumerate all vertices of the cube.
   ·
     obtain ⟨Rset, hmono, hcov, hcard⟩ :=

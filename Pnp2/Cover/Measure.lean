@@ -1,12 +1,16 @@
 import Pnp2.Cover.Uncovered
+import Pnp2.entropy
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Real.Archimedean
 import Mathlib.Tactic
 
 open Classical
 open Finset
+open Real
 open BoolFunc (Family BFunc)
 open Boolcube (Point Subcube)
 
@@ -1153,5 +1157,669 @@ lemma mu_gt_of_firstUncovered_some {F : Family n} {Rset : Finset (Subcube n)}
   -- Conclude that `μ` exceeds `2 * h` by at least one.
   have := Nat.lt_add_of_pos_right (n := 2 * h) hpos
   simpa [mu] using this
+
+/-!
+### Families and supports of uncovered functions
+
+To prepare the lexicographic termination argument promised in
+`docs/fce_lemma_modernization.md` we collect a few auxiliary constructions.
+They live in this file so that the future refactor of `buildCover` can lean on
+them without threading additional definitions through the recursion file.
+-/
+
+/--
+`uncoveredFamily F Rset` consists of those functions in `F` that still witness
+an uncovered `1`-input with respect to the current rectangle set `Rset`.
+-/
+noncomputable def uncoveredFamily {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) : Family n :=
+  F.filter fun f => ∃ x : Point n, f x = true ∧ NotCovered (n := n) (Rset := Rset) x
+
+/--
+Membership in the uncovered family exposes the witnessing uncovered point. -/
+@[simp] lemma mem_uncoveredFamily {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {f : BFunc n} :
+    f ∈ uncoveredFamily (n := n) (F := F) (Rset := Rset) ↔
+      f ∈ F ∧ ∃ x : Point n, f x = true ∧
+        NotCovered (n := n) (Rset := Rset) x := by
+  classical
+  unfold uncoveredFamily
+  constructor
+  · intro hf
+    exact Finset.mem_filter.mp hf
+  · rintro ⟨hfF, hx⟩
+    exact Finset.mem_filter.mpr ⟨hfF, hx⟩
+
+/--
+Filtering description of the uncovered family after inserting a rectangle. -/
+lemma uncoveredFamily_union_singleton_eq_filter {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) (R : Subcube n) :
+    uncoveredFamily (n := n) (F := F) (Rset := Rset ∪ {R}) =
+      (uncoveredFamily (n := n) (F := F) (Rset := Rset)).filter
+        (fun f => ∃ x : Point n, f x = true ∧
+          NotCovered (n := n) (Rset := Rset ∪ {R}) x) := by
+  classical
+  ext f; constructor
+  · intro hf
+    rcases (mem_uncoveredFamily (F := F)
+        (Rset := Rset ∪ {R}) (f := f)).1 hf with ⟨hfF, x, hx, hnc⟩
+    have hnc' : NotCovered (n := n) (Rset := Rset) x :=
+      NotCovered.union_left (R₁ := Rset) (R₂ := {R}) (x := x) hnc
+    refine Finset.mem_filter.mpr ?_
+    exact ⟨(mem_uncoveredFamily (F := F) (Rset := Rset) (f := f)).2
+        ⟨hfF, x, hx, hnc'⟩, ⟨x, hx, hnc⟩⟩
+  · intro hf
+    rcases Finset.mem_filter.mp hf with ⟨hfOld, hpred⟩
+    rcases (mem_uncoveredFamily (F := F) (Rset := Rset) (f := f)).1 hfOld with
+      ⟨hfF, _x, _hx, _hnc⟩
+    rcases hpred with ⟨x, hx, hnc⟩
+    exact (mem_uncoveredFamily (F := F)
+      (Rset := Rset ∪ {R}) (f := f)).2 ⟨hfF, x, hx, hnc⟩
+
+/--
+If all `1`-inputs are already covered, the uncovered family is empty.
+This is the key bridge between the coverage predicate and the
+lexicographic measure: once coverage is established, both components of
+`μLex` collapse to zero.
+-/
+lemma uncoveredFamily_eq_empty_of_allCovered {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    uncoveredFamily (n := n) (F := F) (Rset := Rset) = (∅ : Family n) := by
+  classical
+  apply Finset.eq_empty_iff_forall_notMem.mpr
+  intro f hf
+  rcases (mem_uncoveredFamily (F := F) (Rset := Rset) (f := f)).1 hf with
+    ⟨hfF, x, hxTrue, hnc⟩
+  -- The coverage hypothesis supplies a rectangle containing `x`.
+  obtain ⟨R, hR, hxR⟩ := hcov f hfF x hxTrue
+  -- Yet `x` was assumed to be uncovered, yielding a contradiction.
+  exact (hnc R hR) hxR
+
+/--
+Collision entropy of the uncovered family decreases when a rectangle is added. -/
+lemma H₂_uncoveredFamily_union_singleton_le {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) (R : Subcube n) :
+    BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset ∪ {R})) ≤
+      BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) := by
+  classical
+  have hrewrite :=
+    uncoveredFamily_union_singleton_eq_filter (n := n) (F := F)
+      (Rset := Rset) (R := R)
+  simpa [hrewrite] using
+    (BoolFunc.H₂_filter_le
+      (F := uncoveredFamily (n := n) (F := F) (Rset := Rset))
+      (P := fun f => ∃ x : Point n, f x = true ∧
+        NotCovered (n := n) (Rset := Rset ∪ {R}) x))
+
+/-- The uncovered family is a subfamily of the original one. -/
+lemma uncoveredFamily_card_le {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) :
+    (uncoveredFamily (n := n) (F := F) (Rset := Rset)).card ≤ F.card := by
+  classical
+  unfold uncoveredFamily
+  -- Filtering cannot increase the cardinality of a finset.
+  simpa using
+    (Finset.card_filter_le (s := F)
+      (p := fun f => ∃ x : Point n, f x = true ∧
+        NotCovered (n := n) (Rset := Rset) x))
+
+/--
+Collect the distinct supports of the functions that are still uncovered.
+-/
+noncomputable def uncoveredSupports {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) : Finset (Finset (Fin n)) :=
+  ((uncovered (n := n) F Rset).toFinset).image fun p => BoolFunc.support p.1
+
+/--
+Explicit description of membership in `uncoveredSupports`.
+-/
+lemma mem_uncoveredSupports {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {S : Finset (Fin n)} :
+    S ∈ uncoveredSupports (n := n) (F := F) (Rset := Rset) ↔
+      ∃ f ∈ F, ∃ x : Point n, f x = true ∧
+        NotCovered (n := n) (Rset := Rset) x ∧
+          BoolFunc.support f = S := by
+  classical
+  unfold uncoveredSupports
+  constructor
+  · intro hS
+    rcases Finset.mem_image.mp hS with ⟨p, hp, rfl⟩
+    have hp' : p ∈ uncovered (n := n) F Rset := by
+      simpa using (Set.mem_toFinset.mp hp)
+    rcases hp' with ⟨hf, hx, hnc⟩
+    exact ⟨p.1, hf, p.2, hx, hnc, rfl⟩
+  · rintro ⟨f, hf, x, hx, hnc, rfl⟩
+    refine Finset.mem_image.mpr ?_
+    refine ⟨⟨f, x⟩, ?_, rfl⟩
+    have hp : (⟨f, x⟩ : Σ _ : BFunc n, Point n) ∈ uncovered (n := n) F Rset :=
+      ⟨hf, hx, hnc⟩
+    simpa using (Set.mem_toFinset.mpr hp)
+
+/--
+Every uncovered support is, of course, a support of a function in `F`.
+-/
+lemma uncoveredSupports_subset_supports {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} :
+    uncoveredSupports (n := n) (F := F) (Rset := Rset) ⊆ BoolFunc.Family.supports F := by
+  classical
+  intro S hS
+  rcases (mem_uncoveredSupports (F := F) (Rset := Rset) (S := S)).1 hS with
+    ⟨f, hf, _x, _hx, _hnc, rfl⟩
+  exact (BoolFunc.Family.mem_supports (F := F) (s := BoolFunc.support f)).2 ⟨f, hf, rfl⟩
+
+/-- Cardinality of the distinct uncovered supports. -/
+@[simp] noncomputable def supportMass {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) : ℕ :=
+  (uncoveredSupports (n := n) (F := F) (Rset := Rset)).card
+
+/-- `supportMass` is bounded by the total support catalogue of `F`. -/
+lemma supportMass_le_supports_card {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) :
+    supportMass (n := n) (F := F) (Rset := Rset) ≤
+      (BoolFunc.Family.supports F).card := by
+  classical
+  unfold supportMass
+  exact Finset.card_le_card
+    (uncoveredSupports_subset_supports (n := n) (F := F) (Rset := Rset))
+
+/--
+If all `1`-inputs are already covered, no uncovered supports remain.
+-/
+lemma supportMass_eq_zero_of_allCovered {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    supportMass (n := n) (F := F) (Rset := Rset) = 0 := by
+  classical
+  have huncov :
+      uncovered (n := n) F Rset = (∅ : Set (Σ _ : BFunc n, Point n)) :=
+    uncovered_eq_empty_of_allCovered (n := n) (F := F) (Rset := Rset) hcov
+  have hFalse : ∀ S, S ∈ uncoveredSupports (n := n) (F := F) (Rset := Rset) → False := by
+    classical
+    intro S hS
+    rcases (mem_uncoveredSupports (F := F) (Rset := Rset) (S := S)).1 hS with
+      ⟨f, hfF, x, hx, hnc, _hsupp⟩
+    have hNo : ∀ p, p ∉ uncovered (n := n) F Rset :=
+      (Set.eq_empty_iff_forall_notMem.mp huncov)
+    have hxUncov : (⟨f, x⟩ : Σ _ : BFunc n, Point n) ∈ uncovered (n := n) F Rset :=
+      ⟨hfF, hx, hnc⟩
+    exact (hNo _ hxUncov).elim
+  have hSupports :
+      uncoveredSupports (n := n) (F := F) (Rset := Rset) = ∅ := by
+    classical
+    apply Finset.eq_empty_iff_forall_notMem.mpr
+    intro S
+    exact hFalse S
+  unfold supportMass
+  simpa [hSupports]
+
+/--
+Adding a rectangle cannot introduce new uncovered supports.  This is the
+`support` analogue of `uncovered_subset_of_union_singleton` and is a key
+monotonicity fact for the lexicographic termination measure: the first
+component `supportMass` never increases when we enlarge the rectangle set.
+-/
+lemma uncoveredSupports_subset_of_union_singleton {n : ℕ}
+    {F : Family n} {Rset : Finset (Subcube n)} {R : Subcube n} :
+    uncoveredSupports (n := n) (F := F) (Rset := Rset ∪ {R}) ⊆
+      uncoveredSupports (n := n) (F := F) (Rset := Rset) := by
+  classical
+  intro S hS
+  rcases Finset.mem_image.mp hS with ⟨p, hp, rfl⟩
+  have hp' : p ∈ uncovered (n := n) F (Rset ∪ {R}) := by
+    simpa using (Set.mem_toFinset.mp hp)
+  have hp_subset : p ∈ uncovered (n := n) F Rset :=
+    uncovered_subset_of_union_singleton
+      (F := F) (Rset := Rset) (R := R) hp'
+  refine Finset.mem_image.mpr ?_
+  exact ⟨p, by simpa using (Set.mem_toFinset.mpr hp_subset), rfl⟩
+
+/--
+The quantity `supportMass` never increases when we insert a rectangle into the
+current cover.  Together with the analogous statement for the entropy surplus
+this lemma will allow us to order recursion steps lexicographically.
+-/
+lemma supportMass_union_singleton_le {n : ℕ}
+    {F : Family n} {Rset : Finset (Subcube n)} {R : Subcube n} :
+    supportMass (n := n) (F := F) (Rset := Rset ∪ {R}) ≤
+      supportMass (n := n) (F := F) (Rset := Rset) := by
+  classical
+  have hsubset :=
+    uncoveredSupports_subset_of_union_singleton
+      (n := n) (F := F) (Rset := Rset) (R := R)
+  simpa [supportMass] using Finset.card_le_card hsubset
+
+/--
+Specialisation of `supportMass_union_singleton_le` to the convenience wrapper
+`extendCover`.  The support mass is monotone along the recursion.
+-/
+lemma supportMass_extendCover_le {n : ℕ}
+    {F : Family n} {Rset : Finset (Subcube n)} :
+    supportMass (n := n) (F := F) (Rset := extendCover (n := n) F Rset) ≤
+      supportMass (n := n) (F := F) (Rset := Rset) := by
+  classical
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      simpa [extendCover, hfu]
+  | some p =>
+      have hlem :
+          supportMass (n := n) (F := F)
+            (Rset := Rset ∪ {Boolcube.Subcube.fromPoint (n := n) p.2
+              (supportUnion (n := n) F)}) ≤
+            supportMass (n := n) (F := F) (Rset := Rset) := by
+        simpa using
+          (supportMass_union_singleton_le
+            (n := n) (F := F) (Rset := Rset)
+            (R := Boolcube.Subcube.fromPoint (n := n) p.2
+              (supportUnion (n := n) F)))
+      simpa [extendCover, hfu] using hlem
+
+/--
+Entropy surplus of the uncovered family above the target budget `h`.
+-/
+noncomputable def entropySurplus {n : ℕ} (F : Family n) (h : ℕ)
+    (Rset : Finset (Subcube n)) : ℕ :=
+  Nat.ceil
+    (max
+      (BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) - (h : ℝ))
+      0)
+
+/-- The surplus vanishes once the entropy budget is met. -/
+lemma entropySurplus_eq_zero_of_le {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hH : BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) ≤ (h : ℝ)) :
+    entropySurplus (n := n) (F := F) (h := h) (Rset := Rset) = 0 := by
+  classical
+  unfold entropySurplus
+  have hmax :
+      max
+          (BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) - (h : ℝ))
+          0 = 0 :=
+    max_eq_right (sub_nonpos.mpr hH)
+  simpa [hmax]
+
+/--
+When all `1`-inputs are covered, the entropy surplus vanishes.  This
+lemma will be used when analysing the base case of the recursive cover
+construction: once no uncovered witnesses remain, the lexicographic
+measure collapses to `(0, 0)`.
+-/
+lemma entropySurplus_eq_zero_of_allCovered {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    entropySurplus (n := n) (F := F) (h := h) (Rset := Rset) = 0 := by
+  classical
+  have hEmpty :=
+    uncoveredFamily_eq_empty_of_allCovered (n := n) (F := F)
+      (Rset := Rset) hcov
+  have hH₂ :
+      BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) = 0 := by
+    simpa [BoolFunc.H₂, hEmpty]
+  have hle :
+      BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) ≤ (h : ℝ) := by
+    refine hH₂ ▸ ?_
+    exact (by exact_mod_cast (Nat.zero_le h) : (0 : ℝ) ≤ (h : ℝ))
+  exact entropySurplus_eq_zero_of_le (n := n) (F := F) (Rset := Rset) (h := h) hle
+
+/--
+`entropySurplus` is monotone when adjoining a rectangle: the surplus cannot
+increase because the underlying uncovered family only shrinks.  This is the
+entropy analogue of `supportMass_union_singleton_le` and complements it when we
+later combine both quantities into the lexicographic measure `muLex`.
+-/
+lemma entropySurplus_union_singleton_le {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) (R : Subcube n) (h : ℕ) :
+    entropySurplus (n := n) (F := F) (h := h) (Rset := Rset ∪ {R}) ≤
+      entropySurplus (n := n) (F := F) (h := h) (Rset := Rset) := by
+  classical
+  -- First control the raw collision entropy of the uncovered family.
+  have hH₂ :=
+    H₂_uncoveredFamily_union_singleton_le
+      (n := n) (F := F) (Rset := Rset) (R := R)
+  -- Rewrite in terms of the surplus and reduce to an inequality on real
+  -- numbers before applying `Nat.ceil` monotonicity.
+  unfold entropySurplus
+  set a : ℝ :=
+      BoolFunc.H₂
+        (uncoveredFamily (n := n) (F := F) (Rset := Rset ∪ {R})) with ha
+  set b : ℝ :=
+      BoolFunc.H₂ (uncoveredFamily (n := n) (F := F) (Rset := Rset)) with hb
+  refine Nat.ceil_mono ?_
+  -- Compare the arguments of `Nat.ceil` directly.  The subtraction by `h`
+  -- preserves the inequality on `a` and `b`.
+  have hsub : a - (h : ℝ) ≤ b - (h : ℝ) :=
+    sub_le_sub_right (by simpa [ha, hb] using hH₂) (h : ℝ)
+  -- The map `x ↦ max x 0` is monotone, hence the comparison lifts to the
+  -- truncated surplus.
+  by_cases hnonpos : a - (h : ℝ) ≤ 0
+  · -- In the non-positive case the surplus on the left collapses to zero.
+    have hmax_left : max (a - (h : ℝ)) 0 = (0 : ℝ) :=
+      max_eq_right hnonpos
+    have hnonneg : 0 ≤ max (b - (h : ℝ)) 0 := by
+      -- `0` is always bounded by the maximum of `b - h` and zero.
+      have hzero : (0 : ℝ) ≤ 0 := le_rfl
+      simpa using (le_max_of_le_right (b := b - (h : ℝ)) (c := (0 : ℝ)) hzero)
+    simpa [hmax_left] using hnonneg
+  · -- Otherwise the surplus is strictly positive, so the max reduces to the
+    -- plain difference and we can chain inequalities directly.
+    have hpos : 0 < a - (h : ℝ) := lt_of_not_ge hnonpos
+    have hmax_left : max (a - (h : ℝ)) 0 = a - (h : ℝ) :=
+      max_eq_left (le_of_lt hpos)
+    have hle : a - (h : ℝ) ≤ max (b - (h : ℝ)) 0 :=
+      (hsub.trans (le_max_left _ _))
+    simpa [hmax_left] using hle
+
+/--
+Inserting the rectangle produced by `extendCover` cannot increase the entropy
+surplus.  When `firstUncovered` fails we are in the base case and the surplus
+stays unchanged; otherwise we appeal to
+`entropySurplus_union_singleton_le` with the freshly adjoined subcube.
+-/
+lemma entropySurplus_extendCover_le {n : ℕ}
+    {F : Family n} {Rset : Finset (Subcube n)} {h : ℕ} :
+    entropySurplus (n := n) (F := F) (h := h)
+        (Rset := extendCover (n := n) F Rset) ≤
+      entropySurplus (n := n) (F := F) (h := h) (Rset := Rset) := by
+  classical
+  cases hfu : firstUncovered (n := n) F Rset with
+  | none =>
+      -- No uncovered points remain; `extendCover` is the identity.
+      simpa [extendCover, hfu]
+  | some p =>
+      -- Reduce to the general monotonicity result for adjoining a rectangle.
+      have hmono :
+          entropySurplus (n := n) (F := F) (h := h)
+              (Rset := Rset ∪ {Boolcube.Subcube.fromPoint (n := n) p.2
+                (supportUnion (n := n) F)}) ≤
+            entropySurplus (n := n) (F := F) (h := h) (Rset := Rset) := by
+        simpa using
+          (entropySurplus_union_singleton_le (n := n) (F := F)
+            (Rset := Rset) (R := Boolcube.Subcube.fromPoint (n := n) p.2
+              (supportUnion (n := n) F)) (h := h))
+      simpa [extendCover, hfu] using hmono
+
+/--
+Cardinality of the current set of uncovered witnesses.
+-/
+@[simp] noncomputable def uncoveredCard {n : ℕ} (F : Family n)
+    (Rset : Finset (Subcube n)) : ℕ :=
+  (uncovered (n := n) F Rset).toFinset.card
+
+/--
+Once every `1`‑input is covered the uncovered witness set is empty, hence the
+cardinality collapses to zero.
+-/
+lemma uncoveredCard_eq_zero_of_allCovered {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    uncoveredCard (n := n) (F := F) Rset = 0 := by
+  classical
+  have hμ := mu_of_allCovered (n := n) (F := F)
+      (Rset := Rset) (h := 0) hcov
+  unfold mu at hμ
+  simpa [uncoveredCard] using hμ
+
+/--
+Extending the cover strictly reduces the number of uncovered witnesses whenever
+`firstUncovered` succeeds.
+-/
+lemma uncoveredCard_extendCover_lt {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hne : firstUncovered (n := n) F Rset ≠ none) :
+    uncoveredCard (n := n) (F := F)
+        (extendCover (n := n) F Rset) <
+      uncoveredCard (n := n) (F := F) Rset := by
+  classical
+  -- Reinterpret the strict drop for `μ` as a drop on the uncovered cardinality.
+  have hμ :=
+    mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
+  -- Rewrite the statement in terms of natural number addition and cancel the
+  -- constant `2 * h` using the standard arithmetic lemma.
+  have hcards :
+      2 * h + uncoveredCard (n := n) (F := F)
+          (extendCover (n := n) F Rset) <
+        2 * h + uncoveredCard (n := n) (F := F) Rset := by
+    simpa [mu, uncoveredCard] using hμ
+  exact Nat.lt_of_add_lt_add_left hcards
+
+/--
+Lexicographic measure pairing support mass with entropy surplus.
+-/
+@[simp] noncomputable def muLex {n : ℕ} (F : Family n) (h : ℕ)
+    (Rset : Finset (Subcube n)) : ℕ × ℕ :=
+  (supportMass (n := n) (F := F) (Rset := Rset),
+    entropySurplus (n := n) (F := F) (h := h) (Rset := Rset))
+
+/--
+As soon as every `1`‑input is covered, the lexicographic measure
+`μLex` degenerates to `(0, 0)`.
+-/
+lemma muLex_eq_zero_of_allCovered {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    muLex (n := n) (F := F) (h := h) Rset = (0, 0) := by
+  classical
+  have hsupport :=
+    supportMass_eq_zero_of_allCovered (n := n) (F := F)
+      (Rset := Rset) hcov
+  have hentropy :=
+    entropySurplus_eq_zero_of_allCovered (n := n) (F := F)
+      (Rset := Rset) (h := h) hcov
+  unfold muLex
+  refine Prod.ext ?_ ?_
+  · exact hsupport
+  · exact hentropy
+
+/--
+We order lexicographically on the two components of `μLex`.
+-/
+abbrev muLexOrder : (ℕ × ℕ) → (ℕ × ℕ) → Prop :=
+  (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).rel
+
+/--
+`μLex` inherits well-foundedness from the standard lexicographic order on
+`ℕ × ℕ`.
+-/
+lemma muLex_wf {n : ℕ} (F : Family n) (h : ℕ) :
+    WellFounded fun R₁ R₂ : Finset (Subcube n) =>
+      muLexOrder (muLex (n := n) (F := F) (h := h) R₁)
+        (muLex (n := n) (F := F) (h := h) R₂) := by
+  classical
+  refine (InvImage.wf
+      (f := fun Rset : Finset (Subcube n) =>
+        muLex (n := n) (F := F) (h := h) Rset)
+      ?_)
+  exact (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).wf
+
+/--
+If the support mass drops, the lexicographic measure drops immediately.
+-/
+lemma muLex_order_of_supportMass_lt {n : ℕ} {F : Family n} {h : ℕ}
+    {R₁ R₂ : Finset (Subcube n)}
+    (hlt : supportMass (n := n) (F := F) (Rset := R₁) <
+      supportMass (n := n) (F := F) (Rset := R₂)) :
+    muLexOrder (muLex (n := n) (F := F) (h := h) R₁)
+      (muLex (n := n) (F := F) (h := h) R₂) := by
+  dsimp [muLexOrder, muLex, Prod.lex]
+  exact Prod.Lex.left _ _ hlt
+
+/--
+With equal support mass, a drop in entropy surplus still yields progress.
+-/
+lemma muLex_order_of_entropy_lt {n : ℕ} {F : Family n} {h : ℕ}
+    {R₁ R₂ : Finset (Subcube n)}
+    (hs : supportMass (n := n) (F := F) (Rset := R₁) =
+      supportMass (n := n) (F := F) (Rset := R₂))
+    (hlt : entropySurplus (n := n) (F := F) (h := h) (Rset := R₁) <
+      entropySurplus (n := n) (F := F) (h := h) (Rset := R₂)) :
+    muLexOrder (muLex (n := n) (F := F) (h := h) R₁)
+      (muLex (n := n) (F := F) (h := h) R₂) := by
+  dsimp [muLexOrder, muLex, Prod.lex] at *
+  -- `Prod.Lex.right` requires the first coordinates to agree; rewrite using `hs`.
+  have hlex : Prod.Lex Nat.lt_wfRel.rel Nat.lt_wfRel.rel
+      (supportMass (n := n) (F := F) (Rset := R₂),
+        entropySurplus (n := n) (F := F) (h := h) (Rset := R₁))
+      (supportMass (n := n) (F := F) (Rset := R₂),
+        entropySurplus (n := n) (F := F) (h := h) (Rset := R₂)) :=
+    @Prod.Lex.right ℕ ℕ Nat.lt_wfRel.rel Nat.lt_wfRel.rel
+      (supportMass (n := n) (F := F) (Rset := R₂))
+      (entropySurplus (n := n) (F := F) (h := h) (Rset := R₁))
+      (entropySurplus (n := n) (F := F) (h := h) (Rset := R₂)) hlt
+  simpa [hs] using hlex
+
+/--
+Augmented lexicographic measure carrying the uncovered witness count as a final
+tie-breaker.  The first two components coincide with `muLex`, ensuring that the
+new measure refines the intended potential while preserving a straightforward
+termination proof.
+-/
+@[simp] noncomputable def muLexTriple {n : ℕ} (F : Family n) (h : ℕ)
+    (Rset : Finset (Subcube n)) : (ℕ × ℕ) × ℕ :=
+  (muLex (n := n) (F := F) (h := h) Rset,
+    uncoveredCard (n := n) (F := F) Rset)
+
+/--  Once every `1`‑input is covered the augmented measure collapses to zero. -/
+lemma muLexTriple_eq_zero_of_allCovered {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hcov : AllOnesCovered (n := n) F Rset) :
+    muLexTriple (n := n) (F := F) (h := h) Rset = ((0, 0), 0) := by
+  classical
+  have hlex := muLex_eq_zero_of_allCovered
+    (n := n) (F := F) (Rset := Rset) (h := h) hcov
+  have hcard := uncoveredCard_eq_zero_of_allCovered
+    (n := n) (F := F) (Rset := Rset) hcov
+  unfold muLexTriple
+  refine Prod.ext ?_ ?_
+  · exact hlex
+  · simpa using hcard
+
+/--
+From a vanishing augmented measure we recover that every `1`-input is covered.
+This is the converse to `muLexTriple_eq_zero_of_allCovered` and is useful when
+reasoning backwards from termination of the recursion.
+-/
+lemma allOnesCovered_of_muLexTriple_eq {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hμ : muLexTriple (n := n) (F := F) (h := h) Rset = ((0, 0), 0)) :
+    AllOnesCovered (n := n) F Rset := by
+  classical
+  have hcard :
+      uncoveredCard (n := n) (F := F) Rset = 0 := by
+    have := congrArg Prod.snd hμ
+    simpa [muLexTriple] using this
+  have hμzero : mu (n := n) (F := F) 0 Rset = 0 := by
+    simpa [mu, uncoveredCard] using hcard
+  exact allOnesCovered_of_mu_eq
+    (n := n) (F := F) (Rset := Rset) (h := 0) hμzero
+
+/--
+Lexicographic order on the augmented measure `(μLex, uncoveredCard)`.
+-/
+abbrev muLexTripleOrder : ((ℕ × ℕ) × ℕ) → ((ℕ × ℕ) × ℕ) → Prop :=
+  (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).rel
+
+/--
+The augmented lexicographic measure inherits well-foundedness from the standard
+lexicographic order on natural numbers.
+-/
+lemma muLexTriple_wf {n : ℕ} (F : Family n) (h : ℕ) :
+    WellFounded fun R₁ R₂ : Finset (Subcube n) =>
+      muLexTripleOrder (muLexTriple (n := n) (F := F) (h := h) R₁)
+        (muLexTriple (n := n) (F := F) (h := h) R₂) := by
+  classical
+  refine (InvImage.wf
+      (f := fun Rset : Finset (Subcube n) =>
+        muLexTriple (n := n) (F := F) (h := h) Rset)
+      ?_)
+  exact (Prod.lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel) Nat.lt_wfRel).wf
+
+/--
+Applying `extendCover` strictly decreases the augmented lexicographic measure.
+If the support mass drops we use the first component; otherwise we fall back to
+the entropy surplus, and finally to the raw uncovered witness count.
+-/
+lemma muLexTriple_extendCover_lt {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)} {h : ℕ}
+    (hne : firstUncovered (n := n) F Rset ≠ none) :
+    muLexTripleOrder (muLexTriple (n := n) (F := F) (h := h)
+        (extendCover (n := n) F Rset))
+      (muLexTriple (n := n) (F := F) (h := h) Rset) := by
+  classical
+  set μNew := muLex (n := n) (F := F) (h := h)
+      (extendCover (n := n) F Rset) with hμNew
+  set μOld := muLex (n := n) (F := F) (h := h)
+      (Rset := Rset) with hμOld
+  set ucNew := uncoveredCard (n := n) (F := F)
+      (extendCover (n := n) F Rset) with hucNew
+  set ucOld := uncoveredCard (n := n) (F := F) (Rset := Rset) with hucOld
+  have hsm_le := supportMass_extendCover_le
+      (n := n) (F := F) (Rset := Rset)
+  have hes_le := entropySurplus_extendCover_le
+      (n := n) (F := F) (Rset := Rset) (h := h)
+  have hcard_lt := uncoveredCard_extendCover_lt
+    (n := n) (F := F) (Rset := Rset) (h := h) hne
+  -- Inspect the behaviour of the support mass.
+  by_cases hsm_lt : supportMass (n := n) (F := F)
+      (Rset := extendCover (n := n) F Rset) <
+      supportMass (n := n) (F := F) (Rset := Rset)
+  · -- Strict drop on the first component of `μLex`.
+    have hlex : muLexOrder μNew μOld := by
+      simpa [muLex, hμNew, hμOld] using
+        (muLex_order_of_supportMass_lt (n := n) (F := F) (h := h)
+          (R₁ := extendCover (n := n) F Rset) (R₂ := Rset) hsm_lt)
+    have hGoal :
+        Prod.Lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).rel Nat.lt_wfRel.rel
+          (μNew, ucNew) (μOld, ucOld) := by
+      refine Prod.Lex.left (b₁ := ucNew) (b₂ := ucOld) ?_
+      simpa [muLexOrder] using hlex
+    simpa [muLexTripleOrder, muLexTriple, hμNew, hμOld, hucNew, hucOld]
+      using hGoal
+  -- Otherwise the support mass remains constant.
+  have hsm_eq : supportMass (n := n) (F := F)
+      (Rset := extendCover (n := n) F Rset) =
+      supportMass (n := n) (F := F) (Rset := Rset) := by
+    exact le_antisymm hsm_le (le_of_not_gt hsm_lt)
+  -- Check whether the entropy surplus decreases.
+  by_cases hes_lt : entropySurplus (n := n) (F := F) (h := h)
+      (Rset := extendCover (n := n) F Rset) <
+      entropySurplus (n := n) (F := F) (h := h) (Rset := Rset)
+  · have hlex : muLexOrder μNew μOld := by
+      refine muLex_order_of_entropy_lt
+        (n := n) (F := F) (h := h)
+        (R₁ := extendCover (n := n) F Rset) (R₂ := Rset)
+        ?_ ?_
+      · simpa [muLex, hμNew, hμOld] using hsm_eq
+      · simpa [muLex, hμNew, hμOld] using hes_lt
+    have hGoal :
+        Prod.Lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).rel Nat.lt_wfRel.rel
+          (μNew, ucNew) (μOld, ucOld) := by
+      refine Prod.Lex.left (b₁ := ucNew) (b₂ := ucOld) ?_
+      simpa [muLexOrder] using hlex
+    simpa [muLexTripleOrder, muLexTriple, hμNew, hμOld, hucNew, hucOld]
+      using hGoal
+  -- When both components of `μLex` stay constant, the uncovered cardinality
+  -- must drop strictly.
+  have hes_eq : entropySurplus (n := n) (F := F) (h := h)
+      (Rset := extendCover (n := n) F Rset) =
+      entropySurplus (n := n) (F := F) (h := h) (Rset := Rset) := by
+    exact le_antisymm hes_le (le_of_not_gt hes_lt)
+  have hμ_eq : μNew = μOld := by
+    ext
+    · simpa [muLex, hμNew, hμOld] using hsm_eq
+    · simpa [muLex, hμNew, hμOld] using hes_eq
+  have huc_lt : ucNew < ucOld := by
+    simpa [hucNew, hucOld] using hcard_lt
+  have hGoalOld :
+      Prod.Lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).rel Nat.lt_wfRel.rel
+        (μOld, ucNew) (μOld, ucOld) := by
+    refine Prod.Lex.right (a := μOld) (b₁ := ucNew) (b₂ := ucOld) ?_
+    simpa using huc_lt
+  have hGoal :
+      Prod.Lex (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).rel Nat.lt_wfRel.rel
+        (μNew, ucNew) (μOld, ucOld) := by
+    simpa [hμ_eq]
+      using hGoalOld
+  simpa [muLexTripleOrder, muLexTriple, hμNew, hμOld, hucNew, hucOld]
+    using hGoal
 
 end Cover2

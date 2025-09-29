@@ -13,7 +13,7 @@ set_option linter.unreachableTactic false
 namespace CoverComputeTest
 
 /-- `mBound` expands to the expected arithmetic expression. -/
-example : mBound 1 0 = 2 := by
+example : mBound 1 0 = 6 := by
   simp [mBound]
 
 /-- `mBound` is positive whenever `n > 0`. -/

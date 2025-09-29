@@ -3,12 +3,12 @@ bound.lean
 ===========
 
 Pure *arithmetic* lemmas that translate the explicit counting bound
-`|𝓡| ≤ n·(h+2)·2^(10 h)` (proved in `cover2.lean`) into the convenient
+`|𝓡| ≤ n·3^n·(h+2)·2^(10 h)` (proved in `cover2.lean`) into the convenient
 *sub‑exponential* tail bound that appears in every prose version of the
 Family Collision‑Entropy Lemma:
 
-> for sufficiently large `n` we have  
-> `n·(h+2)·2^(10 h) < 2^{n / 100}`.
+> for sufficiently large `n` we have
+> `n·3^n·(h+2)·2^(10 h) < 2^{n / 100}`.
 
 The file is intentionally **isolated** from the combinatorial logic:
 its only imports are earlier modules for the *definitions* of `mBound`
@@ -32,9 +32,9 @@ namespace Bound
 
 /-- A *convenience constant* `n₀(h)` such that  
     for all `n ≥ n₀(h)` we have  
-    `n·(h+2)·2^(10 h) < 2^{n/100}`.  
+    `n·3^n·(h+2)·2^(10 h) < 2^{n/100}`.
 
-    The closed‑form we pick (far from optimal) is  
+    The closed‑form we pick (far from optimal) is
     `n₀(h) = 10 000 · (h + 2) · 2^(10 h)`.  -/
 def n₀ (h : ℕ) : ℕ :=
   10000 * (h + 2) * Nat.pow 2 (10 * h)
@@ -76,59 +76,21 @@ lemma aux_growth (h : ℕ) :
 -- namespace for easier reuse.
 
 lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
-    0 < mBound n h := by
-  have hpos₁ : 0 < h + 2 := Nat.succ_pos _
-  have hpos₂ : 0 < 2 ^ (10 * h) := pow_pos (by decide) _
-  have hmul : 0 < n * (h + 2) := Nat.mul_pos hn hpos₁
-  have := Nat.mul_pos hmul hpos₂
-  simpa [mBound] using this
+    0 < mBound n h := Cover2.mBound_pos (n := n) (h := h) hn
 
 lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
-    2 ≤ mBound n h := by
-  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
-  have hh2 : 2 ≤ h + 2 := by
-    have := Nat.zero_le h
-    exact Nat.succ_le_succ (Nat.succ_le_succ this)
-  have hfactor : 2 ≤ n * (h + 2) := by
-    have := Nat.mul_le_mul hn1 hh2 (by decide) (Nat.zero_le _)
-    simpa [one_mul] using this
-  have hpow : 1 ≤ 2 ^ (10 * h) :=
-    Nat.one_le_pow (2) (10 * h) (by decide)
-  have := Nat.mul_le_mul hfactor hpow
-  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+    2 ≤ mBound n h := Cover2.two_le_mBound (n := n) (h := h) hn
 
-lemma three_le_mBound (n h : ℕ) (hn : 0 < n) (hh : 1 ≤ h) :
-    3 ≤ mBound n h := by
-  have hn1 : 1 ≤ n := Nat.succ_le_of_lt hn
-  have h3 : 3 ≤ h + 2 := by
-    have hh' : (1 : ℤ) ≤ h := by exact_mod_cast hh
-    have : (3 : ℤ) ≤ h + 2 := by nlinarith
-    exact_mod_cast this
-  have hfac1 : h + 2 ≤ n * (h + 2) := by
-    have := Nat.mul_le_mul_right (h + 2) hn1
-    simpa [one_mul] using this
-  have hfac : 3 ≤ n * (h + 2) := le_trans h3 hfac1
-  have hpow : 1 ≤ 2 ^ (10 * h) := Nat.one_le_pow (2) (10 * h) (by decide)
-  have := Nat.mul_le_mul hfac hpow
-  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+lemma three_le_mBound (n h : ℕ) (hn : 0 < n) :
+    3 ≤ mBound n h := Cover2.three_le_mBound (n := n) (h := h) hn
 
 lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
   intro h₁ h₂ hh
-  dsimp [mBound]
-  have hfac : n * (h₁ + 2) ≤ n * (h₂ + 2) :=
-    Nat.mul_le_mul_left _ (Nat.add_le_add_right hh 2)
-  have hpow : 2 ^ (10 * h₁) ≤ 2 ^ (10 * h₂) := by
-    have := Nat.mul_le_mul_left 10 hh
-    exact Nat.pow_le_pow_of_le_left (by decide : 1 ≤ (2 : ℕ)) this
-  exact Nat.mul_le_mul hfac hpow
+  exact Cover2.mBound_mono (n := n) hh
 
 lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
-    mBound n₁ h ≤ mBound n₂ h := by
-  dsimp [mBound]
-  have hfac : n₁ * (h + 2) ≤ n₂ * (h + 2) :=
-    Nat.mul_le_mul_right (h + 2) hn
-  have := Nat.mul_le_mul hfac (le_rfl : 2 ^ (10 * h) ≤ 2 ^ (10 * h))
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+    mBound n₁ h ≤ mBound n₂ h :=
+  Cover2.mBound_mono_left (n₁ := n₁) (n₂ := n₂) (h := h) hn
 
 /-- Main numeric inequality: the explicit bound *is* sub‑exponential. -/
 lemma mBound_lt_subexp
@@ -178,9 +140,11 @@ lemma mBound_lt_subexp
     have hb : (1 : ℝ) < 2 := by norm_num
     -- Expand the logarithm of `mBound`.
     have hlog : Real.logb 2 (mBound n h : ℝ) =
-        Real.logb 2 (n : ℝ) + Real.logb 2 (h + 2 : ℝ) + 10 * h := by
+        Real.logb 2 (n : ℝ) + Real.logb 2 (3 ^ n : ℝ) +
+          Real.logb 2 (h + 2 : ℝ) + 10 * h := by
+      have hpow3 : (0 : ℝ) < (3 : ℝ) := by norm_num
       simp [mBound, Real.logb_mul, npos.ne', hpos.ne',
-        Real.logb_pow hb]
+        Real.logb_pow hb, Real.logb_pow hpow3]
     -- Use the bound on `n` given by `hn`.
     have hbase : Real.logb 2 (n : ℝ) ≥
         Real.logb 2 (10000 * (h + 2) * (2 : ℝ) ^ (10 * h)) := by
@@ -213,11 +177,11 @@ variable {n h : ℕ} (F : Family n)
 
 /-- The size bound from `familyEntropyCover` yields a sub-exponential cover. -/
 theorem FCE_lemma (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn_pos : 0 < n) (hlarge : n ≤ 5 * h) (hn : n ≥ n₀ h) :
-    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge).rects.card <
+    (hn_pos : 0 < n) (hn : n ≥ n₀ h) :
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos).rects.card <
       Nat.pow 2 (n / 100) := by
   have hcard :=
-    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge).bound
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos).bound
   have hsub := mBound_lt_subexp (h := h) (n := n) hn
   exact lt_of_le_of_lt hcard hsub
 
@@ -227,17 +191,17 @@ theorem FCE_lemma (hH : BoolFunc.H₂ F ≤ (h : ℝ))
     large enough. -/
 theorem family_collision_entropy_lemma
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn_pos : 0 < n) (hlarge : n ≤ 5 * h)
+    (hn_pos : 0 < n)
     (hn : n ≥ n₀ h) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2 (n / 100) := by
   classical
-  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge
+  let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos
   have hlt : FC.rects.card < Nat.pow 2 (n / 100) :=
     FCE_lemma (F := F) (h := h) (hH := hH)
-      (hn_pos := hn_pos) (hlarge := hlarge) (hn := hn)
+      (hn_pos := hn_pos) (hn := hn)
   have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
   refine ⟨FC.rects, FC.mono, FC.covers, hle⟩
 

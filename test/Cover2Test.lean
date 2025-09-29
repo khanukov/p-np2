@@ -80,7 +80,7 @@ lemma constFalse_entropy : BoolFunc.H₂ constFalseFamily ≤ (0 : ℝ) := by
     _ ≤ (0 : ℝ) := le_rfl
 
 /-- `mBound` is computed via the wrapper definition. -/
-example : mBound 1 0 = 2 := by
+example : mBound 1 0 = 6 := by
   simp [mBound]
 
 /-- `mBound` is nonnegative for all inputs. -/

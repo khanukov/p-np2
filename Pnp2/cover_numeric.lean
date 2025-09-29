@@ -16,16 +16,15 @@ variable {N Nδ : ℕ} (F : Family N)
 -/
 
 /--
-`minCoverSize F h hH hn_pos hlarge` is the size of the cover returned by
+`minCoverSize F h hH hn_pos` is the size of the cover returned by
 `familyEntropyCover` when the family has collision entropy at most `h`.
 The witness cover is obtained via classical choice, so the definition is
-noncomputable but entirely constructive.  The extra hypotheses ensure that
-the arithmetic guard `n ≤ 5 * h` required for the `mBound` estimate holds.
+noncomputable but entirely constructive.
 -/
 noncomputable def minCoverSize (F : Family N) (h : ℕ)
     (hH : H₂ F ≤ (h : ℝ))
-    (hn_pos : 0 < N) (hlarge : N ≤ 5 * h) : ℕ :=
-  (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos hlarge).rects.card
+    (hn_pos : 0 < N) : ℕ :=
+  (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos).rects.card
 
 /--
 Basic entropy-based bound on `minCoverSize`.  The cover extracted from
@@ -34,22 +33,22 @@ arithmetic inequality `hM` is available.  This coarse bound suffices for the
 numerical considerations in this module.
 -/
 lemma buildCover_size_bound (h₀ : H₂ F ≤ (N - Nδ : ℝ))
-    (hn_pos : 0 < N) (hlarge : N ≤ 5 * (N - Nδ)) :
-    minCoverSize F (h := N - Nδ) h₀ hn_pos hlarge ≤ mBound N (N - Nδ) := by
+    (hn_pos : 0 < N) :
+    minCoverSize F (h := N - Nδ) h₀ hn_pos ≤ mBound N (N - Nδ) := by
   classical
   -- The bound is provided directly by `familyEntropyCover`.
   simpa [minCoverSize] using
-    (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀ hn_pos hlarge).bound
+    (Boolcube.familyEntropyCover (F := F) (h := N - Nδ) h₀ hn_pos).bound
 
 /-- Convenience wrapper exposing the numeric bound on the minimal cover
     size.  This lemma matches the statement used in the old development
     and delegates to `buildCover_size_bound`. -/
 lemma minCoverSize_bound
     (h₀ : H₂ F ≤ (N - Nδ : ℝ))
-    (hn_pos : 0 < N) (hlarge : N ≤ 5 * (N - Nδ)) :
-    minCoverSize F (h := N - Nδ) h₀ hn_pos hlarge ≤ mBound N (N - Nδ) :=
+    (hn_pos : 0 < N) :
+    minCoverSize F (h := N - Nδ) h₀ hn_pos ≤ mBound N (N - Nδ) :=
   buildCover_size_bound (F := F) (Nδ := Nδ)
-    (h₀ := h₀) (hn_pos := hn_pos) (hlarge := hlarge)
+    (h₀ := h₀) (hn_pos := hn_pos)
 
 /--
 Simple numeric bound on `minCoverSize` without the dimension positivity
@@ -58,10 +57,10 @@ assumption.  The bound is immediate when `N = 0`, otherwise we reuse
 -/
 lemma numeric_bound
     (h₀ : H₂ F ≤ (N - Nδ : ℝ))
-    (hn_pos : 0 < N) (hlarge : N ≤ 5 * (N - Nδ)) :
-    minCoverSize F (h := N - Nδ) h₀ hn_pos hlarge ≤ mBound N (N - Nδ) :=
+    (hn_pos : 0 < N) :
+    minCoverSize F (h := N - Nδ) h₀ hn_pos ≤ mBound N (N - Nδ) :=
   buildCover_size_bound (F := F) (Nδ := Nδ)
-    (h₀ := h₀) (hn_pos := hn_pos) (hlarge := hlarge)
+    (h₀ := h₀) (hn_pos := hn_pos)
 
 /-!  `buildCover_card n` denotes the size of the cover returned by the
 experimental algorithm on families of dimension `n`.  The precise

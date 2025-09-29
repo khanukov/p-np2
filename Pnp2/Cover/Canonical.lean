@@ -84,7 +84,7 @@ construction from the arithmetic reasoning about the size bound.
 -/
 lemma coverFamily_spec_mBound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hn : 0 < n) :
     (∀ R ∈ coverFamily (n := n) F h hH,
         ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       AllOnesCovered (n := n) F (coverFamily (n := n) F h hH) ∧
@@ -96,15 +96,15 @@ lemma coverFamily_spec_mBound {n h : ℕ} (F : Family n)
   -- Rewrite `coverFamily` as `buildCover` to reuse the strengthened bound.
   simpa [coverFamily]
     using (buildCover_card_le_mBound (n := n) (F := F) (h := h)
-      (hH := hH) hn hlarge)
+      (hH := hH) hn)
 
 /-- Convenience wrapper extracting only the cardinality estimate from
 `coverFamily_spec_mBound`.  This form is handy when the other properties are
 already known or irrelevant for the caller. -/
 lemma coverFamily_card_le_mBound {n h : ℕ} (F : Family n)
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hn : 0 < n) :
     (coverFamily (n := n) F h hH).card ≤ mBound n h :=
-  (coverFamily_spec_mBound (n := n) (h := h) (F := F) hH hn hlarge).2.2
+  (coverFamily_spec_mBound (n := n) (h := h) (F := F) hH hn).2.2
 
 end Cover2

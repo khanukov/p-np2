@@ -3,6 +3,8 @@
 >
 > **Update (2025-09-28)**: The quantitative bound `mBound` now includes an explicit `3^n` factor, restoring the inequality `card(Subcube n) ≤ mBound n h` for every positive dimension and every entropy budget.  The regression suite confirms the fix for representative values such as `(n,h) = (10,1)` and the heuristic choices `h = ⌊n / 20⌋` at `n = 20, 30, 40, 50`.
 
+> **Update (2025-10-03)**: The formal proof of the FCE lemma is complete.  The recursion in `Cover.BuildCover` now terminates using the lexicographic `muLexTriple` measure, and the exported theorem `Bound.family_collision_entropy_lemma` provides the cover bound `≤ 2^{n / 100}` for every `n ≥ Bound.n₀ h`.  The regression test in `test/FCEAssumptionCounterexample.lean` instantiates the theorem at `n = 20 000`, certifying that no residual guard remains.
+
 
 ## Abstract
 

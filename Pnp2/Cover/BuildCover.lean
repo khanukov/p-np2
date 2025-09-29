@@ -5,17 +5,15 @@ import Pnp2.Cover.Measure
 import Pnp2.Cover.Bounds
 
 /-!
-This file supplies the recursive core of the covering construction.  The
-original development used a trivial stub for `buildCover` that merely
-performed a single call to `extendCover`.  Rewriting the function using a
-well‑founded recursion on the measure `μ` avoids difficult termination issues
-for the accompanying lemmas.
-
-The actual correctness proofs are substantial and remain works in progress.
-We nevertheless expose the intended API so that other parts of the repository
-can already rely on the interface.  Lemmas that still await a complete proof
-are currently stated as axioms.  They can be filled in once the missing
-arguments have been formalised.
+This file supplies the recursive core of the covering construction.  Earlier
+drafts contained only a stub for `buildCover` and postponed the termination
+argument.  We now run the recursion on the augmented lexicographic measure from
+`Measure.lean`.  Its components track the number of uncovered supports, the
+entropy surplus, and a final tie-breaker given by the raw count of uncovered
+witnesses.  The lemmas below show that each recursive step strictly decreases
+this measure, yielding a fully formalised recursion without appealing to any
+axioms.  The implementation stays close to the blueprint outlined in the
+documentation and exposes the intended API for downstream developments.
 -/
 
 open Classical
@@ -27,29 +25,24 @@ namespace Cover2
 
 variable {n : ℕ}
 
-/--  Auxiliary relation stating that one rectangle set has a smaller measure
-than another.  This relation is well‑founded because the measure takes values
-in the natural numbers. -/
+/--  Auxiliary relation stating that one rectangle set has a smaller augmented
+measure than another. -/
 def μRel (F : Family n) (h : ℕ) :
     Finset (Subcube n) → Finset (Subcube n) → Prop :=
-  fun R₁ R₂ => mu (n := n) F h R₁ < mu (n := n) F h R₂
+  fun R₁ R₂ =>
+    muLexTripleOrder (muLexTriple (n := n) (F := F) (h := h) R₁)
+      (muLexTriple (n := n) (F := F) (h := h) R₂)
 
-/--  `μRel` is a well‑founded relation, enabling recursion on the measure. -/
+/--  `μRel` is a well‑founded relation, enabling recursion on the lexicographic
+measure. -/
 lemma μRel_wf (F : Family n) (h : ℕ) :
     WellFounded (μRel (n := n) (F := F) h) := by
-  -- The relation `μRel` is the inverse image of `<` on `ℕ` under the measure
-  -- `μ`.  Well‑foundedness therefore follows from the well‑foundedness of
-  -- `<` on the natural numbers.
-  simpa [μRel] using
-    (InvImage.wf (f := fun Rset : Finset (Subcube n) => mu (n := n) F h Rset)
-      Nat.lt_wfRel.wf)
-
-/--  A rectangle set cannot have a strictly smaller measure than itself. -/
-lemma μRel_irrefl (F : Family n) (h : ℕ) (Rset : Finset (Subcube n)) :
-    ¬ μRel (n := n) (F := F) h Rset Rset := by
-  intro hlt
-  -- The measure `μ` takes values in `ℕ`, where `<` is irreflexive.
-  exact lt_irrefl _ hlt
+  -- This is an `InvImage` of the well-founded lexicographic order on `ℕ³`.
+  change
+      WellFounded fun R₁ R₂ : Finset (Subcube n) =>
+        muLexTripleOrder (muLexTriple (n := n) (F := F) (h := h) R₁)
+          (muLexTriple (n := n) (F := F) (h := h) R₂)
+  simpa [muLexTriple] using muLexTriple_wf (n := n) (F := F) (h := h)
 
 /-!
 ### Recursive cover construction
@@ -76,7 +69,7 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
               -- `simp` suffices; no rewrite is required after the computation.
               simp [hfu]
             simpa [μRel, R'] using
-              (mu_extendCover_lt (n := n) (F := F)
+              (muLexTriple_extendCover_lt (n := n) (F := F)
                 (Rset := Rset) (h := h) hne)
           rec R' hdrop)
 
@@ -108,7 +101,7 @@ noncomputable def buildCoverAux (F : Family n) (h : ℕ)
                   -- From the assumption that `firstUncovered` returns `some _`.
                   simp [_hfc]
                 simpa [μRel, R'] using
-                  (mu_extendCover_lt (n := n) (F := F)
+                  (muLexTriple_extendCover_lt (n := n) (F := F)
                     (Rset := Rset) (h := h) hne)
               rec R' hdrop)
         Rset)
@@ -228,7 +221,8 @@ lemma buildCoverAux_pointwiseMono (F : Family n) (h : ℕ)
       have hR' : R ∈
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
-        simpa [hrec, hfu] using hR
+        simp [hrec, hfu] at hR
+        exact hR
       -- The measure drops strictly after adding the new rectangle.
       have hdrop : μRel (n := n) (F := F) h
           (extendCover (n := n) F Rset) Rset := by
@@ -236,7 +230,8 @@ lemma buildCoverAux_pointwiseMono (F : Family n) (h : ℕ)
           -- Under hypothesis `hfu`, the result is `some _`, hence `≠ none`.
           simp [hfu]
         simpa [μRel] using
-          mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
+          muLexTriple_extendCover_lt (n := n) (F := F)
+            (Rset := Rset) (h := h) hne
       -- The extended set retains pointwise monochromaticity.
       have hMono' :
           ∀ R ∈ extendCover (n := n) F Rset, ∀ g ∈ F,
@@ -276,7 +271,8 @@ lemma buildCoverAux_covers (F : Family n) (h : ℕ)
         (buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset) := by
   classical
   intro Rset
-  -- We prove the statement by well-founded induction over the measure `μ`.
+  -- We prove the statement by well-founded induction over the lexicographic
+  -- measure introduced above.
   refine (μRel_wf (n := n) (F := F) h).induction Rset
     (C := fun Rset =>
       AllOnesCovered (n := n) F
@@ -300,7 +296,7 @@ lemma buildCoverAux_covers (F : Family n) (h : ℕ)
       -- Recursive case: extend the cover and apply the inductive hypothesis on
       -- the strictly smaller measure.
       -- In this branch `firstUncovered` produced a witness, so `extendCover`
-      -- indeed removes at least that point and therefore decreases `μ`.
+      -- indeed removes at least that point and therefore decreases the measure.
       have h1 : buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset =
           match firstUncovered (n := n) F Rset with
           | none   => Rset
@@ -320,7 +316,8 @@ lemma buildCoverAux_covers (F : Family n) (h : ℕ)
           -- The uncovered point is present, so the option is not `none`.
           simp [hfu]
         simpa [μRel] using
-          mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
+          muLexTriple_extendCover_lt (n := n) (F := F)
+            (Rset := Rset) (h := h) hne
       -- Apply the inductive hypothesis to the strictly smaller measure.
       have hIH := IH (extendCover (n := n) F Rset) hdrop
       -- Rewrite using the unfolding equation to obtain the desired result.
@@ -369,7 +366,9 @@ lemma extendCover_subset_coverUniverse (F : Family n)
   intro R hR
   cases hfu : firstUncovered (n := n) F Rset with
   | none =>
-      have hmem : R ∈ Rset := by simpa [extendCover, hfu] using hR
+      have hmem : R ∈ Rset := by
+        simp [extendCover, hfu] at hR
+        exact hR
       exact hsubset hmem
   | some p =>
       have hmem : R ∈ Rset ∪
@@ -379,11 +378,11 @@ lemma extendCover_subset_coverUniverse (F : Family n)
       · exact hsubset hRset
       · have hsingle : R =
             Boolcube.Subcube.fromPoint (n := n) p.2 (supportUnion (n := n) F) :=
-          by simpa using Finset.mem_singleton.mp hnew
+          Finset.mem_singleton.mp hnew
         subst hsingle
         refine Finset.mem_image.mpr ?_
         refine ⟨p.2, ?_, rfl⟩
-        simpa using (Finset.mem_univ (a := p.2))
+        exact Finset.mem_univ _
 
 /-- `buildCoverAux` remains inside `coverUniverse` provided the starting set does. -/
 lemma buildCoverAux_subset_coverUniverse (F : Family n) (h : ℕ)
@@ -406,7 +405,9 @@ lemma buildCoverAux_subset_coverUniverse (F : Family n) (h : ℕ)
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH) Rset = Rset :=
         buildCoverAux_none (n := n) (F := F) (h := h) (hH := hH)
           (Rset := Rset) hfu
-      have hmem : R ∈ Rset := by simpa [hbase] using hR
+      have hmem : R ∈ Rset := by
+        simp [hbase] at hR
+        exact hR
       exact hsubset hmem
   | some p =>
       have hrec :=
@@ -415,12 +416,14 @@ lemma buildCoverAux_subset_coverUniverse (F : Family n) (h : ℕ)
       have hR' : R ∈
           buildCoverAux (n := n) (F := F) (h := h) (_hH := hH)
             (extendCover (n := n) F Rset) := by
-        simpa [hrec, hfu] using hR
+        simp [hrec, hfu] at hR
+        exact hR
       have hdrop : μRel (n := n) (F := F) h
           (extendCover (n := n) F Rset) Rset := by
         have hne : firstUncovered (n := n) F Rset ≠ none := by simp [hfu]
         simpa [μRel] using
-          mu_extendCover_lt (n := n) (F := F) (Rset := Rset) (h := h) hne
+          muLexTriple_extendCover_lt (n := n) (F := F)
+            (Rset := Rset) (h := h) hne
       have hsubset' : extendCover (n := n) F Rset ⊆ coverUniverse (n := n) F :=
         extendCover_subset_coverUniverse (F := F) (Rset := Rset) hsubset
       exact (IH (extendCover (n := n) F Rset) hdrop hsubset') hR'
@@ -449,17 +452,17 @@ lemma coverUniverse_card_le (F : Family n) :
 
 /--
 The catalogue bound `mBound` dominates the number of rectangles reachable by
-the cover construction once the entropy guard `0 < n` and `n ≤ 5 * h` holds.
-This simple lemma is the bridge between the purely combinatorial catalogue
-bound `coverUniverse_card_le` and the arithmetic estimates in
-`Cover.Bounds`.  Bundling the inequality here keeps later proofs short and
-avoids threading the intermediate `2^n` estimate through multiple files.
+the cover construction once the dimension is positive.  This simple lemma
+bridges the purely combinatorial catalogue bound `coverUniverse_card_le` with
+the arithmetic estimates in `Cover.Bounds`.  Bundling the inequality here keeps
+later proofs short and avoids threading the intermediate `2^n` estimate through
+multiple files.
 -/
 lemma coverUniverse_card_le_mBound (F : Family n) (h : ℕ)
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hn : 0 < n) :
     (coverUniverse (n := n) F).card ≤ mBound n h := by
   have hcat := coverUniverse_card_le (n := n) (F := F)
-  have hbound := two_pow_le_mBound (n := n) (h := h) hn hlarge
+  have hbound := two_pow_le_mBound (n := n) (h := h) hn
   exact hcat.trans hbound
 
 /-- Quantitative bound: the cover contains at most `2^n` rectangles. -/
@@ -479,14 +482,14 @@ standard entropy guard holds.  This lemma is the canonical source for the
 `mBound` bound used throughout the remainder of the development.
 -/
 lemma buildCover_card_le_mBound (F : Family n) (h : ℕ)
-    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hH : BoolFunc.H₂ F ≤ (h : ℝ)) (hn : 0 < n) :
     (buildCover (n := n) F h hH).card ≤ mBound n h := by
   classical
   have hsubset := buildCover_subset_coverUniverse (n := n) (F := F)
     (h := h) (hH := hH)
   have hcard := Finset.card_le_card hsubset
   exact hcard.trans
-    (coverUniverse_card_le_mBound (n := n) (F := F) (h := h) hn hlarge)
+    (coverUniverse_card_le_mBound (n := n) (F := F) (h := h) hn)
 
 
 end Cover2

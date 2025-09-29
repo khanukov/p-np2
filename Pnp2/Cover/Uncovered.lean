@@ -196,6 +196,19 @@ lemma uncovered_insert_subset {n : ℕ} {F : Family n}
   rcases h with ⟨hf, hx, _hnot, hnc⟩
   exact ⟨hf, hx, hnc⟩
 
+/--
+If we enlarge the rectangle set, the collection of uncovered pairs can only
+shrink.  This monotonicity lemma is convenient when comparing different stages
+of the cover construction.-/
+lemma uncovered_subset_of_subset {n : ℕ} {F : Family n}
+    {R₁ R₂ : Finset (Subcube n)} (hsub : R₁ ⊆ R₂) :
+    uncovered (n := n) F R₂ ⊆ uncovered (n := n) F R₁ := by
+  intro p hp
+  rcases hp with ⟨hf, hx, hnc⟩
+  refine ⟨hf, hx, ?_⟩
+  -- More rectangles only reduce the set of uncovered points.
+  exact NotCovered.monotone (n := n) (R₁ := R₁) (R₂ := R₂) hsub hnc
+
 /-!
 `firstUncovered` is a tiny search routine: it returns some element of the
 uncovered set if one exists, and `none` otherwise.  The use of the axiom of

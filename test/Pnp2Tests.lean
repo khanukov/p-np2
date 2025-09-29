@@ -233,7 +233,7 @@ example {n s : ℕ} [Fintype (Point n)] :
           ∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ f ∈ ({fun _ : Point n => true} : Family n),
           ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (coverConst * s * Nat.log2 (Nat.succ n)) := by
+      Rset.card ≤ coverBound n s := by
   classical
   -- Build the constant witness required by `decisionTree_cover_of_constant`.
   have hconst : ∃ b, ∀ f ∈ ({fun _ : Point n => true} : Family n), ∀ x, f x = b :=

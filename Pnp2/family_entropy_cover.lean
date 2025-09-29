@@ -54,7 +54,7 @@ interface for downstream modules.
 noncomputable def familyEntropyCover
     {n : ℕ} (F : Family n) {h : ℕ}
     (hH : H₂ F ≤ (h : ℝ))
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hn : 0 < n) :
     FamilyCover F h := by
   classical
   refine
@@ -66,9 +66,9 @@ noncomputable def familyEntropyCover
   · -- All `1`-inputs are covered by construction.
     intro f hf x hx
     exact Cover2.coverFamily_spec_cover (F := F) (h := h) (hH := hH) f hf x hx
-  · -- Cardinality bound supplied by `coverFamily` and upgraded via the arithmetic guard.
+  · -- Cardinality bound supplied by `coverFamily` and upgraded via the arithmetic argument.
     exact Cover2.coverFamily_card_le_mBound
-      (F := F) (h := h) (hH := hH) hn hlarge
+      (F := F) (h := h) (hH := hH) hn
 
 /-!
 `familyEntropyCover` is defined using `cover_exists`, just like
@@ -80,8 +80,8 @@ underlying cover used elsewhere in the development.
 @[simp] lemma familyEntropyCover_rects_eq_coverFamily
     {n : ℕ} (F : Family n) {h : ℕ}
     (hH : H₂ F ≤ (h : ℝ))
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
-    (familyEntropyCover (F := F) (h := h) hH hn hlarge).rects
+    (hn : 0 < n) :
+    (familyEntropyCover (F := F) (h := h) hH hn).rects
       = Cover2.coverFamily (F := F) (h := h) hH := by
   simp [familyEntropyCover]
 
@@ -98,16 +98,15 @@ subcube is monochromatic for every function in `F`, and together they cover all
 lemma entropyCover {n : ℕ} (F : Family n) {h : ℕ} :
     BoolFunc.measure F ≤ h →
     0 < n →
-    n ≤ 5 * h →
     ∃ R : Finset (Subcube n),
       (∀ C ∈ R, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor C g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ C ∈ R, x ∈ₛ C) ∧
       R.card ≤ Cover2.mBound n h := by
-  intro hμ hn hlarge
+  intro hμ hn
   classical
   -- Translate the measure bound into a real entropy bound.
   have hH : BoolFunc.H₂ F ≤ (h : ℝ) :=
     BoolFunc.H₂_le_of_measure_le (F := F) (h := h) hμ
   -- Package the canonical cover with all required properties.
-  let FC := familyEntropyCover (F := F) (h := h) hH hn hlarge
+  let FC := familyEntropyCover (F := F) (h := h) hH hn
   exact ⟨FC.rects, FC.mono, FC.covers, FC.bound⟩

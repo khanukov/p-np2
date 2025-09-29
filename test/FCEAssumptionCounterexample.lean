@@ -2,6 +2,7 @@ import Pnp2.BoolFunc
 import Pnp2.entropy
 import Pnp2.Cover.Bounds
 import Pnp2.Cover.Canonical
+import Pnp2.bound
 
 open Classical
 open BoolFunc
@@ -73,7 +74,7 @@ example :
     (Cover2.coverFamily_card_le_mBound (n := 6) (h := 2)
       (F := singletonFamily 6)
       (hH := hH)
-      (hn := by decide) (hlarge := by decide))
+      (hn := by decide))
 
 /--
 The strengthened `buildCover` bound is definitionally the same as the
@@ -91,7 +92,7 @@ example :
     norm_num
   simpa using
     (Cover2.buildCover_card_le_mBound (n := 6) (F := singletonFamily 6)
-      (h := 2) (hH := hH) (hn := by decide) (hlarge := by decide))
+      (h := 2) (hH := hH) (hn := by decide))
 
 /--
 Sanity checks for the explicit arithmetic lemma `two_pow_le_mBound`.  These
@@ -101,3 +102,33 @@ inequalities.
 example : (2 : ℕ) ^ 10 ≤ Cover2.mBound 10 3 := by decide
 example : (2 : ℕ) ^ 15 ≤ Cover2.mBound 15 4 := by decide
 example : (2 : ℕ) ^ 20 ≤ Cover2.mBound 20 5 := by decide
+
+/--
+The formal Family Collision–Entropy Lemma works without the legacy guard
+`n ≤ C ⋅ h`.  Instantiating it for the singleton family at
+`n = Bound.n₀ 0 = 20 000` exercises the final statement and checks that the
+resulting cover is bounded by the cubic truth-table bound `2^{3n + 2}`.
+-/
+example :
+    ∃ Rset : Finset (Boolcube.Subcube (Bound.n₀ 0)),
+      (∀ R ∈ Rset, ∀ g ∈ singletonFamily (Bound.n₀ 0),
+          Boolcube.Subcube.monochromaticFor R g) ∧
+      (∀ f ∈ singletonFamily (Bound.n₀ 0), ∀ x,
+          f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (3 * Bound.n₀ 0 + 2) := by
+  classical
+  -- Abbreviate the dimension to keep subsequent rewrites readable.
+  set n := Bound.n₀ 0
+  -- The entropy bound is immediate for the singleton family.
+  have hH : H₂ (singletonFamily n) ≤ (0 : ℝ) := by
+    simpa [singleton_entropy] using (show (0 : ℝ) ≤ 0 from le_rfl)
+  -- The hypotheses on the ambient dimension follow from the explicit formula.
+  have hn_pos : 0 < n := by
+    simpa [n, Bound.n₀]
+  -- The exported theorem packages the full cover specification.
+  simpa [n] using
+    (Bound.family_collision_entropy_lemma
+      (F := singletonFamily n)
+      (h := 0)
+      (hH := hH)
+      (hn_pos := hn_pos))

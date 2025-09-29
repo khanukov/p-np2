@@ -351,7 +351,7 @@ lemma cover_exists_bound {F : Family n} {h : ℕ}
   -/
 lemma cover_exists_mBound {F : Family n} {h : ℕ}
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn : 0 < n) (hlarge : n ≤ 5 * h) :
+    (hn : 0 < n) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ f ∈ F, Boolcube.Subcube.monochromaticFor R f) ∧
       AllOnesCovered (n := n) F Rset ∧
@@ -365,6 +365,6 @@ lemma cover_exists_mBound {F : Family n} {h : ℕ}
   · exact buildCover_covers (F := F) (h := h) (hH := hH)
   · simpa using
       (buildCover_card_le_mBound (n := n) (F := F)
-        (h := h) (hH := hH) hn hlarge)
+        (h := h) (hH := hH) hn)
 
 end Cover2

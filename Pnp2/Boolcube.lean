@@ -179,6 +179,451 @@ end Subcube
 abbrev BoolFun (n : ℕ) := Point n → Bool
 abbrev Family  (n : ℕ) := Finset (BoolFun n)
 
+/-! ## Coordinate partitions of the Boolean cube
+
+The formal proof of Lemма B-5 repeatedly splits the ambient indices into a
+"left" and a "right" block.  The auxiliary definitions below package this
+partition together with the basic structural facts (disjointness and
+coverage).  Although the subsequent applications target circuit families,
+the constructions are purely combinatorial and therefore live in the generic
+`Boolcube` namespace.
+-/
+
+namespace Coords
+
+/-- The finset of the first `k` coordinates of `Fin n`.  When `k ≥ n` this is
+simply the whole set of indices. -/
+def left (n k : ℕ) : Finset (Fin n) :=
+  Finset.univ.filter fun i : Fin n => (i : ℕ) < k
+
+/-- The complementary block of coordinates starting at position `k`. -/
+def right (n k : ℕ) : Finset (Fin n) :=
+  Finset.univ.filter fun i : Fin n => k ≤ (i : ℕ)
+
+@[simp] lemma mem_left {n k : ℕ} {i : Fin n} :
+    i ∈ left n k ↔ (i : ℕ) < k := by
+  classical
+  simp [left]
+
+@[simp] lemma mem_right {n k : ℕ} {i : Fin n} :
+    i ∈ right n k ↔ k ≤ (i : ℕ) := by
+  classical
+  simp [right]
+
+lemma left_union_right (n k : ℕ) :
+    left n k ∪ right n k = (Finset.univ : Finset (Fin n)) := by
+  classical
+  ext i
+  by_cases hi : (i : ℕ) < k
+  · have : ¬ k ≤ (i : ℕ) := by exact not_le_of_gt hi
+    simp [left, right, hi, this]
+  · have hle : k ≤ (i : ℕ) := le_of_not_gt hi
+    simp [left, right, hi, hle]
+
+lemma left_disjoint_right (n k : ℕ) :
+    Disjoint (left n k) (right n k) := by
+  classical
+  refine Finset.disjoint_left.mpr ?_
+  intro i hiL hiR
+  have hlt : (i : ℕ) < k := by simpa [left] using hiL
+  have hge : k ≤ (i : ℕ) := by simpa [right] using hiR
+  exact (lt_of_lt_of_le hlt hge).false.elim
+
+/--
+The left block contains exactly `min k n` indices.  This explicit cardinality
+is repeatedly used to convert combinatorial statements about free coordinates
+into quantitative bounds involving the ambient parameters `k` and `n`.
+-/
+lemma card_left (n k : ℕ) : (left n k).card = min k n := by
+  classical
+  by_cases hk : k ≤ n
+  · -- When `k ≤ n`, the first `k` indices are available inside `Fin n`.
+    -- They are enumerated by attaching the range `0,…,k-1` to the finset of
+    -- naturals.  The helper `attachFin` takes care of the coercions.
+    have hcond : ∀ m ∈ Finset.range k, m < n := by
+      intro m hm
+      have hm' : m < k := Finset.mem_range.mp hm
+      exact lt_of_lt_of_le hm' hk
+    have hattach :
+        left n k = (Finset.range k).attachFin (n := n) hcond := by
+      ext i; constructor
+      · intro hi
+        have hi' : (i : ℕ) ∈ Finset.range k :=
+          Finset.mem_range.mpr ((mem_left (n := n) (k := k) (i := i)).1 hi)
+        simpa [left] using (Finset.mem_attachFin (s := Finset.range k)
+          (n := n) hcond).2 hi'
+      · intro hi
+        have hi' : (i : ℕ) ∈ Finset.range k :=
+          (Finset.mem_attachFin (s := Finset.range k) (n := n) hcond).1 hi
+        exact (mem_left (n := n) (k := k) (i := i)).2 (Finset.mem_range.mp hi')
+    have hcard := Finset.card_attachFin (s := Finset.range k) (n := n) hcond
+    have hrange : (Finset.range k).card = k := Finset.card_range k
+    simpa [hattach, hcard, hrange, Nat.min_eq_left hk]
+  · -- When `k ≥ n`, every index of `Fin n` lies in the left block.
+    have hk' : n ≤ k := le_of_not_ge hk
+    have hleft : left n k = (Finset.univ : Finset (Fin n)) := by
+      ext i; constructor
+      · intro _; exact Finset.mem_univ _
+      · intro _
+        exact (mem_left (n := n) (k := k) (i := i)).2
+          (lt_of_lt_of_le i.is_lt hk')
+    simpa [hleft, Nat.min_eq_right hk', Fintype.card_fin] using
+      (Finset.card_univ : _ = Fintype.card (Fin n))
+
+/--
+Right blocks complement the left ones: their cardinality is the difference
+between `n` and the size of the left block.  This lemma is the workhorse behind
+all subsequent bounds on the number of free right coordinates.
+-/
+lemma card_right (n k : ℕ) : (right n k).card = n - min k n := by
+  classical
+  have hdisj := left_disjoint_right (n := n) (k := k)
+  have hunion := left_union_right (n := n) (k := k)
+  have hsum :
+      (left n k).card + (right n k).card = n := by
+    have hcard_union :=
+      (Finset.card_union_of_disjoint (s := left n k) (t := right n k) hdisj).symm
+    have hsum' :
+        (left n k).card + (right n k).card
+          = ((Finset.univ : Finset (Fin n))).card := by
+      simpa [hunion, add_comm, add_left_comm, add_assoc] using hcard_union
+    simpa using hsum'
+  have htarget : min k n + (right n k).card = n := by
+    simpa [card_left] using hsum
+  have hcanonical : min k n + (n - min k n) = n :=
+    Nat.add_sub_of_le (Nat.min_le_right _ _)
+  have := htarget.trans hcanonical.symm
+  exact Nat.add_left_cancel this
+
+end Coords
+
+namespace Subcube
+
+open Coords
+
+/-- Fixed left coordinates of a subcube. -/
+def fixedLeft (R : Subcube n) (k : ℕ) : Finset (Fin n) :=
+  R.support.filter fun i => (i : ℕ) < k
+
+/-- Fixed right coordinates of a subcube. -/
+def fixedRight (R : Subcube n) (k : ℕ) : Finset (Fin n) :=
+  R.support.filter fun i => k ≤ (i : ℕ)
+
+/-- Free left coordinates, i.e. indices in the left block that the subcube
+does not fix. -/
+def freeLeft (R : Subcube n) (k : ℕ) : Finset (Fin n) :=
+  (Coords.left n k).filter fun i => (R.fix i).isNone
+
+/-- Free right coordinates of a subcube. -/
+def freeRight (R : Subcube n) (k : ℕ) : Finset (Fin n) :=
+  (Coords.right n k).filter fun i => (R.fix i).isNone
+
+@[simp] lemma mem_fixedLeft {R : Subcube n} {k : ℕ} {i : Fin n} :
+    i ∈ fixedLeft (n := n) R k ↔ (R.fix i).isSome ∧ (i : ℕ) < k := by
+  classical
+  simp [fixedLeft, support]
+
+@[simp] lemma mem_fixedRight {R : Subcube n} {k : ℕ} {i : Fin n} :
+    i ∈ fixedRight (n := n) R k ↔ (R.fix i).isSome ∧ k ≤ (i : ℕ) := by
+  classical
+  simp [fixedRight, support]
+
+@[simp] lemma mem_freeLeft {R : Subcube n} {k : ℕ} {i : Fin n} :
+    i ∈ freeLeft (n := n) R k ↔ (i : ℕ) < k ∧ (R.fix i).isNone := by
+  classical
+  simp [freeLeft, Coords.left]
+
+@[simp] lemma mem_freeRight {R : Subcube n} {k : ℕ} {i : Fin n} :
+    i ∈ freeRight (n := n) R k ↔ k ≤ (i : ℕ) ∧ (R.fix i).isNone := by
+  classical
+  simp [freeRight, Coords.right]
+
+lemma fixedLeft_disjoint_freeLeft (R : Subcube n) (k : ℕ) :
+    Disjoint (fixedLeft (n := n) R k) (freeLeft (n := n) R k) := by
+  classical
+  refine Finset.disjoint_left.mpr ?_
+  intro i hiFix hiFree
+  cases hfix : R.fix i with
+  | none =>
+      have hsome : (R.fix i).isSome := (mem_fixedLeft (R := R) (k := k)).1 hiFix |>.1
+      simp [hfix] at hsome
+  | some b =>
+      have hnone : (R.fix i).isNone := (mem_freeLeft (R := R) (k := k)).1 hiFree |>.2
+      simp [hfix] at hnone
+
+lemma fixedRight_disjoint_freeRight (R : Subcube n) (k : ℕ) :
+    Disjoint (fixedRight (n := n) R k) (freeRight (n := n) R k) := by
+  classical
+  refine Finset.disjoint_left.mpr ?_
+  intro i hiFix hiFree
+  cases hfix : R.fix i with
+  | none =>
+      have hsome : (R.fix i).isSome := (mem_fixedRight (R := R) (k := k)).1 hiFix |>.1
+      simp [hfix] at hsome
+  | some b =>
+      have hnone : (R.fix i).isNone := (mem_freeRight (R := R) (k := k)).1 hiFree |>.2
+      simp [hfix] at hnone
+
+lemma fixedLeft_union_freeLeft (R : Subcube n) (k : ℕ) :
+    fixedLeft (n := n) R k ∪ freeLeft (n := n) R k = Coords.left n k := by
+  classical
+  ext i; by_cases hi : (i : ℕ) < k
+  · cases hfix : R.fix i with
+    | none =>
+        simp [Coords.left, fixedLeft, freeLeft, hi, hfix, support]
+    | some b =>
+        simp [Coords.left, fixedLeft, freeLeft, hi, hfix, support]
+  · have hnot : ¬ i ∈ Coords.left n k := by
+      simp [Coords.left, hi]
+    simp [Coords.left, fixedLeft, freeLeft, hi, support]
+
+lemma fixedRight_union_freeRight (R : Subcube n) (k : ℕ) :
+    fixedRight (n := n) R k ∪ freeRight (n := n) R k = Coords.right n k := by
+  classical
+  ext i; by_cases hi : k ≤ (i : ℕ)
+  · cases hfix : R.fix i with
+    | none =>
+        simp [Coords.right, fixedRight, freeRight, hi, hfix, support]
+    | some b =>
+        simp [Coords.right, fixedRight, freeRight, hi, hfix, support]
+  · have hnot : ¬ i ∈ Coords.right n k := by
+      simp [Coords.right, hi]
+    simp [Coords.right, fixedRight, freeRight, hi, support]
+
+lemma card_fixedLeft_add_card_freeLeft (R : Subcube n) (k : ℕ) :
+    (fixedLeft (n := n) R k).card + (freeLeft (n := n) R k).card
+      = (Coords.left n k).card := by
+  classical
+  have hdisj := fixedLeft_disjoint_freeLeft (R := R) (k := k)
+  have hunion := fixedLeft_union_freeLeft (R := R) (k := k)
+  simpa [hunion] using
+    (Finset.card_union_of_disjoint (s := fixedLeft (n := n) R k)
+      (t := freeLeft (n := n) R k) hdisj).symm
+
+/--
+The left block of fixed coordinates is bounded by the size of the block itself.
+This estimate is frequently used to control the enumeration complexity on the
+left half of the cube.
+-/
+lemma card_fixedLeft_le_left (R : Subcube n) (k : ℕ) :
+    (fixedLeft (n := n) R k).card ≤ (Coords.left n k).card := by
+  classical
+  refine Finset.card_le_card ?_
+  intro i hi
+  have hi' := (mem_fixedLeft (R := R) (k := k) (i := i)).1 hi
+  exact (Coords.mem_left (n := n) (k := k) (i := i)).2 hi'.2
+
+/--
+Direct corollary of `card_fixedLeft_le_left`: the number of fixed left
+coordinates never exceeds `min k n`.
+-/
+lemma card_fixedLeft_le (R : Subcube n) (k : ℕ) :
+    (fixedLeft (n := n) R k).card ≤ min k n := by
+  simpa [Coords.card_left] using card_fixedLeft_le_left (n := n) (R := R) (k := k)
+
+/--
+The count of free left coordinates is bounded by the size of the left block.
+-/
+lemma card_freeLeft_le_left (R : Subcube n) (k : ℕ) :
+    (freeLeft (n := n) R k).card ≤ (Coords.left n k).card := by
+  classical
+  refine Finset.card_le_card ?_
+  intro i hi
+  have hi' := (mem_freeLeft (R := R) (k := k) (i := i)).1 hi
+  exact (Coords.mem_left (n := n) (k := k) (i := i)).2 hi'.1
+
+/--
+The number of free left coordinates is at most `min k n`.
+-/
+lemma card_freeLeft_le (R : Subcube n) (k : ℕ) :
+    (freeLeft (n := n) R k).card ≤ min k n := by
+  simpa [Coords.card_left] using card_freeLeft_le_left (n := n) (R := R) (k := k)
+
+/--
+When the left block consists of at most `k` coordinates, free coordinates are
+bounded by `k`.  This specialised form will later translate cardinality bounds
+into running-time estimates of the enumeration procedure.
+-/
+lemma card_freeLeft_le_of_le (R : Subcube n) {k : ℕ} (hk : k ≤ n) :
+    (freeLeft (n := n) R k).card ≤ k := by
+  have := card_freeLeft_le_left (n := n) (R := R) (k := k)
+  simpa [Coords.card_left, Nat.min_eq_left hk] using this
+
+/--
+From `fixedLeft + freeLeft = left` we deduce the handy identity
+`freeLeft = left - fixedLeft`.  It will be instrumental when translating
+lower bounds on fixed coordinates into upper bounds on the free ones.
+-/
+lemma card_freeLeft_eq_left_sub_fixed (R : Subcube n) (k : ℕ) :
+    (freeLeft (n := n) R k).card
+      = (Coords.left n k).card - (fixedLeft (n := n) R k).card := by
+  classical
+  have hsum :
+      (Coords.left n k).card
+        = (fixedLeft (n := n) R k).card + (freeLeft (n := n) R k).card := by
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+      (card_fixedLeft_add_card_freeLeft (n := n) (R := R) (k := k)).symm
+  have hcalc := congrArg (fun t => t - (fixedLeft (n := n) R k).card) hsum
+  have hfree :
+      (fixedLeft (n := n) R k).card + (freeLeft (n := n) R k).card
+          - (fixedLeft (n := n) R k).card
+        = (freeLeft (n := n) R k).card :=
+      Nat.add_sub_cancel_left (fixedLeft (n := n) R k).card (freeLeft (n := n) R k).card
+  have : (Coords.left n k).card - (fixedLeft (n := n) R k).card
+      = (freeLeft (n := n) R k).card := by
+    simpa [hfree] using hcalc
+  exact this.symm
+
+lemma card_fixedRight_add_card_freeRight (R : Subcube n) (k : ℕ) :
+    (fixedRight (n := n) R k).card + (freeRight (n := n) R k).card
+      = (Coords.right n k).card := by
+  classical
+  have hdisj := fixedRight_disjoint_freeRight (R := R) (k := k)
+  have hunion := fixedRight_union_freeRight (R := R) (k := k)
+  simpa [hunion] using
+    (Finset.card_union_of_disjoint (s := fixedRight (n := n) R k)
+      (t := freeRight (n := n) R k) hdisj).symm
+
+/--
+Fixed right coordinates form a subset of the right block, hence their
+cardinality does not exceed the block size.
+-/
+lemma card_fixedRight_le_right (R : Subcube n) (k : ℕ) :
+    (fixedRight (n := n) R k).card ≤ (Coords.right n k).card := by
+  classical
+  refine Finset.card_le_card ?_
+  intro i hi
+  have hi' := (mem_fixedRight (R := R) (k := k) (i := i)).1 hi
+  exact (Coords.mem_right (n := n) (k := k) (i := i)).2 hi'.2
+
+/--
+Right-hand counterpart to `card_fixedLeft_le`: fixed right coordinates are at
+most `n - min k n`.
+-/
+lemma card_fixedRight_le (R : Subcube n) (k : ℕ) :
+    (fixedRight (n := n) R k).card ≤ n - min k n := by
+  simpa [Coords.card_right] using
+    card_fixedRight_le_right (n := n) (R := R) (k := k)
+
+/--
+Right-hand analogue of `card_freeLeft_le_of_le`: when `k ≤ n`, the free right
+coordinates occupy at most `n - k` slots.
+-/
+lemma card_freeRight_le_of_le (R : Subcube n) {k : ℕ} (hk : k ≤ n) :
+    (freeRight (n := n) R k).card ≤ n - k := by
+  classical
+  have hsubset :
+      (freeRight (n := n) R k) ⊆ Coords.right n k := by
+    intro i hi
+    have hi' := (mem_freeRight (R := R) (k := k) (i := i)).1 hi
+    exact (Coords.mem_right (n := n) (k := k) (i := i)).2 hi'.1
+  have hcard := Finset.card_le_card hsubset
+  simpa [Coords.card_right, Nat.min_eq_left hk] using hcard
+
+/--
+Even without the inequality `k ≤ n`, the number of free right coordinates never
+exceeds the size of the right block `n - min k n`.
+-/
+lemma card_freeRight_le (R : Subcube n) (k : ℕ) :
+    (freeRight (n := n) R k).card ≤ n - min k n := by
+  classical
+  have hsubset : (freeRight (n := n) R k) ⊆ Coords.right n k := by
+    intro i hi
+    have hi' := (mem_freeRight (R := R) (k := k) (i := i)).1 hi
+    exact (Coords.mem_right (n := n) (k := k) (i := i)).2 hi'.1
+  have hcard := Finset.card_le_card hsubset
+  simpa [Coords.card_right] using hcard
+
+/--
+Identity mirroring `card_freeLeft_eq_left_sub_fixed` on the right block.
+-/
+lemma card_freeRight_eq_right_sub_fixed (R : Subcube n) (k : ℕ) :
+    (freeRight (n := n) R k).card
+      = (Coords.right n k).card - (fixedRight (n := n) R k).card := by
+  classical
+  have hsum :
+      (Coords.right n k).card
+        = (fixedRight (n := n) R k).card + (freeRight (n := n) R k).card := by
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+      (card_fixedRight_add_card_freeRight (n := n) (R := R) (k := k)).symm
+  have hcalc := congrArg (fun t => t - (fixedRight (n := n) R k).card) hsum
+  have hfree :
+      (fixedRight (n := n) R k).card + (freeRight (n := n) R k).card
+          - (fixedRight (n := n) R k).card
+        = (freeRight (n := n) R k).card :=
+      Nat.add_sub_cancel_left (fixedRight (n := n) R k).card (freeRight (n := n) R k).card
+  have : (Coords.right n k).card - (fixedRight (n := n) R k).card
+      = (freeRight (n := n) R k).card := by
+    simpa [hfree] using hcalc
+  exact this.symm
+
+/-! ### Enumeration cost for free coordinates -/
+
+/--
+`enumerationCostLeft R k` encodes the brute-force cost of iterating over every
+assignment to the free left coordinates of the rectangle `R`.  Formally it is
+the power of two whose exponent is the number of free coordinates in the left
+block.
+-/
+def enumerationCostLeft (R : Subcube n) (k : ℕ) : ℕ :=
+  Nat.pow 2 (freeLeft (n := n) R k).card
+
+/--
+Right-hand analogue of `Subcube.enumerationCostLeft`.  It measures the number
+of candidate assignments required to enumerate all free right coordinates.
+-/
+def enumerationCostRight (R : Subcube n) (k : ℕ) : ℕ :=
+  Nat.pow 2 (freeRight (n := n) R k).card
+
+@[simp] lemma enumerationCostLeft_def (R : Subcube n) (k : ℕ) :
+    R.enumerationCostLeft k = Nat.pow 2 (freeLeft (n := n) R k).card := rfl
+
+@[simp] lemma enumerationCostRight_def (R : Subcube n) (k : ℕ) :
+    R.enumerationCostRight k = Nat.pow 2 (freeRight (n := n) R k).card := rfl
+
+/--
+Upper bounds on the number of free left coordinates translate into identical
+upper bounds on the brute-force enumeration cost.
+-/
+lemma enumerationCostLeft_le_of_card_le (R : Subcube n) {k m : ℕ}
+    (h : (freeLeft (n := n) R k).card ≤ m) :
+    R.enumerationCostLeft k ≤ Nat.pow 2 m := by
+  simpa [enumerationCostLeft] using
+    Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) h
+
+/--
+Right-hand version of `enumerationCostLeft_le_of_card_le`.
+-/
+lemma enumerationCostRight_le_of_card_le (R : Subcube n) {k m : ℕ}
+    (h : (freeRight (n := n) R k).card ≤ m) :
+    R.enumerationCostRight k ≤ Nat.pow 2 m := by
+  simpa [enumerationCostRight] using
+    Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) h
+
+/--
+Express the left enumeration cost via the number of fixed coordinates.  This is
+often more convenient in applications where lower bounds on fixed coordinates
+are available.
+-/
+lemma enumerationCostLeft_eq_pow_left_sub_fixed (R : Subcube n) (k : ℕ) :
+    R.enumerationCostLeft k
+      = Nat.pow 2 ((Coords.left n k).card - (fixedLeft (n := n) R k).card) := by
+  simpa [enumerationCostLeft] using
+    congrArg (fun t => Nat.pow 2 t)
+      (card_freeLeft_eq_left_sub_fixed (n := n) (R := R) (k := k))
+
+/--
+Right-hand counterpart of `enumerationCostLeft_eq_pow_left_sub_fixed`.
+-/
+lemma enumerationCostRight_eq_pow_right_sub_fixed (R : Subcube n) (k : ℕ) :
+    R.enumerationCostRight k
+      = Nat.pow 2 ((Coords.right n k).card - (fixedRight (n := n) R k).card) := by
+  simpa [enumerationCostRight] using
+    congrArg (fun t => Nat.pow 2 t)
+      (card_freeRight_eq_right_sub_fixed (n := n) (R := R) (k := k))
+
+end Subcube
+
 /-! ### Slicing families by a coordinate -/
 
 def coordSlice (i : Fin n) (b : Bool) (F : Finset (Point n)) :

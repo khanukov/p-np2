@@ -10,12 +10,12 @@ show how to build tiny test families, and demonstrate automatic facts that
 already follow from the (still partial!) library.
 
 > **Important**
-> Several key lemmas (`EntropyDrop`, `sunflower_exists`, `cover_exists`, …)
-> are still assumed as axioms rather than proved constructively.
-> Consequently any computation depending on them is *opaque* — Lean knows
-> that some object exists but cannot reduce it.  Examples invoking such
-> lemmas are marked `/- non‑computable demo -/` and serve purely as
-> *type‑checking* witnesses rather than concrete data dumps.
+> Several high‑level constructions (such as the collision‑entropy cover or
+> the sunflower step) rely on classical choice.  They now come with full
+> proofs, but the resulting witnesses are *non‑computable*, so Lean cannot
+> reduce them to explicit data.  Examples invoking such lemmas are marked
+> `/- non‑computable demo -/` and serve purely as *type‑checking* witnesses
+> rather than concrete data dumps.
 -/
 
 import Pnp2.BoolFunc

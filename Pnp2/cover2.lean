@@ -173,8 +173,8 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
   -- Freeze the sunflower core to obtain a covering subcube.
   let x₀ : Boolcube.Point n := fun _ => false
   let R : Boolcube.Subcube n := Boolcube.Subcube.fromPoint x₀ S.core
-  -- Bounding the cardinality and dimension is the intricate part of the argument.
-  -- We leave the two key properties as placeholders for future work.
+  -- Bounding the cardinality and dimension is the intricate part of the argument;
+  -- the following proof carries out the combinatorial bookkeeping directly.
   have h_filter_ge :
       (F.filter fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true).card ≥ t := by
     -- We embed the `t` selected functions into the filtered family and count them.

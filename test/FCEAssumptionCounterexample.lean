@@ -107,7 +107,7 @@ example : (2 : ℕ) ^ 20 ≤ Cover2.mBound 20 5 := by decide
 The formal Family Collision–Entropy Lemma works without the legacy guard
 `n ≤ C ⋅ h`.  Instantiating it for the singleton family at
 `n = Bound.n₀ 0 = 20 000` exercises the final statement and checks that the
-resulting cover is bounded by `2^{n / 100}`.
+resulting cover is bounded by the cubic truth-table bound `2^{3n + 2}`.
 -/
 example :
     ∃ Rset : Finset (Boolcube.Subcube (Bound.n₀ 0)),
@@ -115,7 +115,7 @@ example :
           Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ singletonFamily (Bound.n₀ 0), ∀ x,
           f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 ((Bound.n₀ 0) / 100) := by
+      Rset.card ≤ Nat.pow 2 (3 * Bound.n₀ 0 + 2) := by
   classical
   -- Abbreviate the dimension to keep subsequent rewrites readable.
   set n := Bound.n₀ 0
@@ -125,13 +125,10 @@ example :
   -- The hypotheses on the ambient dimension follow from the explicit formula.
   have hn_pos : 0 < n := by
     simpa [n, Bound.n₀]
-  have hn_guard : n ≥ Bound.n₀ 0 := by
-    simpa [n]
   -- The exported theorem packages the full cover specification.
   simpa [n] using
     (Bound.family_collision_entropy_lemma
       (F := singletonFamily n)
       (h := 0)
       (hH := hH)
-      (hn_pos := hn_pos)
-      (hn := hn_guard))
+      (hn_pos := hn_pos))

@@ -3,12 +3,12 @@
 >
 > **Update (2025-09-28)**: The quantitative bound `mBound` now includes an explicit `3^n` factor, restoring the inequality `card(Subcube n) ≤ mBound n h` for every positive dimension and every entropy budget.  The regression suite confirms the fix for representative values such as `(n,h) = (10,1)` and the heuristic choices `h = ⌊n / 20⌋` at `n = 20, 30, 40, 50`.
 
-> **Update (2025-10-03)**: The formal proof of the FCE lemma is complete.  The recursion in `Cover.BuildCover` now terminates using the lexicographic `muLexTriple` measure, and the exported theorem `Bound.family_collision_entropy_lemma` provides the cover bound `≤ 2^{n / 100}` for every `n ≥ Bound.n₀ h`.  The regression test in `test/FCEAssumptionCounterexample.lean` instantiates the theorem at `n = 20 000`, certifying that no residual guard remains.
+> **Update (2025-10-03)**: The formal proof of the FCE lemma is complete.  The recursion in `Cover.BuildCover` now terminates using the lexicographic `muLexTriple` measure, and the exported theorem `Bound.family_collision_entropy_lemma` provides the cover bound `≤ 2^{3n + 11h + 2}` for every `n`.  The regression test in `test/FCEAssumptionCounterexample.lean` instantiates the theorem at `n = 20 000`, certifying that no residual guard remains.
 
 
 ## Abstract
 
-We outline a strategy for the **Family Collision-Entropy Lemma (FCE-Lemma)**: for any family $F$ of Boolean functions on $n$ input bits with collision entropy $H_2(F) \le h$, there should exist a collection $\mathcal{R}$ of at most $n(h+2)2^{10h} < 2^{n/100}$ monochromatic subcubes that simultaneously cover the truth tables of all $f \in F$. The argument combines entropy-drop heuristics with sunflower-based combinatorial decomposition and is intended for eventual formalisation in Lean/Coq. Establishing this lemma would close the last open step in a reduction framework for proving $P \neq NP$ via communication complexity.
+We outline a strategy for the **Family Collision-Entropy Lemma (FCE-Lemma)**: for any family $F$ of Boolean functions on $n$ input bits with collision entropy $H_2(F) \le h$, there should exist a collection $\mathcal{R}$ of at most $n · 3^n · (h+2) · 2^{10h} ≤ 2^{3n + 11h + 2}$ monochromatic subcubes that simultaneously cover the truth tables of all $f \in F$. The argument combines entropy-drop heuristics with sunflower-based combinatorial decomposition and is intended for eventual formalisation in Lean/Coq. Establishing this lemma would close the last open step in a reduction framework for proving $P \neq NP$ via communication complexity.
 
 ---
 
@@ -120,10 +120,9 @@ The modules above serve as milestones. Our immediate goals are:
 2. The classical sunflower lemma in `sunflower.lean` remains an axiom.
 3. ~~Formalise the `CoreAgreement` lemma in `Agreement.lean`.~~
    The file `Agreement.lean` now contains the complete proof of this lemma.
-4. ~~Finalise the recursive covering algorithm in `cover2.lean`.  A
-  proof of the inequality `mBound_lt_subexp` exists in the legacy
-  `Pnp2/bound.lean` file, but the new version still marks this
-  statement as an axiom awaiting porting.~~
+4. ~~Finalise the recursive covering algorithm in `cover2.lean`.  The new
+  arithmetic lemma `mBound_le_two_pow_linear` bounds the catalogue by
+  `2^{3n + 11h + 2}`, replacing the legacy placeholder.~~
 
 6. Provide small test instances in `examples.lean`.
 

@@ -27,7 +27,7 @@ Every file that participates in the cover construction now has full proofs.  Cla
 * `family_entropy_cover.lean` – bundled `FamilyCover` record exposing `buildCover` together with the explicit `mBound` bound.
 * `Cover/Compute.lean`, `Algorithms/SatCover.lean` – constructive (exponential-time) enumerators used for experimentation and a SAT solver stub.
 * `low_sensitivity_cover.lean`, `low_sensitivity.lean`, `merge_low_sens.lean`, `cover_size.lean`, `sat_cover.lean` – decision-tree cover for smooth families and tools to combine entropy and sensitivity arguments.
-* `cover_numeric.lean`, `bound.lean` – numeric bounds for the experimental cover and the asymptotic inequality `mBound_lt_subexp`.
+* `cover_numeric.lean`, `bound.lean` – numeric bounds for the experimental cover and the inequality `mBound_le_two_pow_linear`.
 
 ### Complexity interface
 * `canonical_circuit.lean`, `Algorithms/` – canonical circuits and executable experiments.

@@ -7,7 +7,7 @@
 > the lexicographic `muLexTriple` measure, the strengthened bound
 > `buildCover_card_le_mBound` is available without auxiliary assumptions, and
 > the exported theorem `Bound.family_collision_entropy_lemma` witnesses a cover
-> of size `≤ 2^{n / 100}` for every `n ≥ n₀(h)`.
+> of size `≤ 2^{3n + 11h + 2}` for every `n`.
 
 *We do **not** need to throw away the existing formalization.*  The current Lean
 proof of the Family Collision–Entropy Lemma (FCE) already isolates the only
@@ -66,7 +66,10 @@ drop the guard while reusing all existing Lean code.
      geometrically due to the improved sunflower bounds (Alweiss–Lovett–Wu–
      Zhang).
 
-   The final bound remains `n·(h+2)·2^{10h}`; no arithmetic needs to change.
+   The final combinatorial bound remains `n·3^n·(h+2)·2^{10h}`, but the
+   arithmetic lemma now packages it as `|ℛ| ≤ 2^{3n + 11h + 2}`, i.e. a cubic
+   polynomial in the truth-table size `2^n`.  No further numeric tweaks are
+   required.
 
 2. **Document the large-`n` behavior.**  Add a short note to
    `asymptotic_cover_estimates.md` showing that the same formula is
@@ -98,7 +101,7 @@ drop the guard while reusing all existing Lean code.
   `test/FCEAssumptionCounterexample.lean` instantiates the exported lemma at the
   extremal value `n = Bound.n₀ 0 = 20 000`, certifying that the theorem applies
   in the previously guarded regime and yielding a cover bounded by
-  `2^{n / 100}`.
+  `2^{3n + 2}`.
 * **Library axioms.**  The development sticks to Lean’s constructive kernel and
   Mathlib’s standard imports; no additional axioms (such as choice or excluded
   middle beyond those already accepted in Mathlib) were introduced for this

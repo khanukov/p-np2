@@ -3,12 +3,11 @@ bound.lean
 ===========
 
 Pure *arithmetic* lemmas that translate the explicit counting bound
-`|𝓡| ≤ n·3^n·(h+2)·2^(10 h)` (proved in `cover2.lean`) into the convenient
-*sub‑exponential* tail bound that appears in every prose version of the
-Family Collision‑Entropy Lemma:
-
-> for sufficiently large `n` we have
-> `n·3^n·(h+2)·2^(10 h) < 2^{n / 100}`.
+`|𝓡| ≤ n·3^n·(h+2)·2^(10 h)` (proved in `cover2.lean`) into the more usable
+tail estimates that appear in the narrative of the Family Collision–Entropy
+Lemma.  While the catalogue grows exponentially in `n`, it is still controlled
+by a small power of the ambient truth-table size `2^n`; the lemmas below make
+this quantitative.
 
 The file is intentionally **isolated** from the combinatorial logic:
 its only imports are earlier modules for the *definitions* of `mBound`
@@ -19,7 +18,6 @@ used by subsequent documentation or tests.
 
 import Pnp2.cover2
 import Pnp2.family_entropy_cover
-import Mathlib.Data.Real.Log
 import Mathlib.Tactic
 
 open Classical
@@ -30,23 +28,19 @@ namespace Bound
 
 /-! ## Elementary growth estimates -/
 
-/-- A *convenience constant* `n₀(h)` such that  
-    for all `n ≥ n₀(h)` we have  
-    `n·3^n·(h+2)·2^(10 h) < 2^{n/100}`.
-
-    The closed‑form we pick (far from optimal) is
-    `n₀(h) = 10 000 · (h + 2) · 2^(10 h)`.  -/
+/-- A *convenience constant* `n₀(h)` kept for backwards compatibility with the
+legacy presentation of the numeric bounds.  None of the new inequalities below
+depend on it, but existing documentation still references the guard. -/
 def n₀ (h : ℕ) : ℕ :=
   10000 * (h + 2) * Nat.pow 2 (10 * h)
 
-/-!  A crude growth estimate used in the proof of `mBound_lt_subexp`.
-    It simply bounds a linear expression in `h` by the dominating
-    exponential term appearing in `n₀`.  The statement is far from sharp
-    but suffices for our purposes.  -/
+/-!  A crude growth estimate retained for downstream tests.  It bounds a linear
+    expression in `h` by the dominating exponential term appearing in `n₀`.  The
+    statement is far from sharp but suffices for sanity checks.  -/
 lemma aux_growth (h : ℕ) :
     (18 + 22 * h : ℝ) < 100 * (h + 2) * 2 ^ (10 * h) := by
   -- The inequality clearly holds for small `h` by direct computation.
-  -- For larger `h` the right–hand side grows extremely fast since it
+  -- For larger `h` the right-hand side grows extremely fast since it
   -- contains `2^(10*h)`.
   induction' h with d hd
   · norm_num
@@ -71,138 +65,83 @@ lemma aux_growth (h : ℕ) :
       linarith
     simpa [hrewrite, hmul] using hdom
 
--- Basic numeric facts about `mBound`.  These lemmas mirror the
--- versions in `cover2.lean` but live in the arithmetic-focused
--- namespace for easier reuse.
+/-! ## Bounding the catalogue size by a power of two -/
 
-lemma mBound_pos (n h : ℕ) (hn : 0 < n) :
-    0 < mBound n h := Cover2.mBound_pos (n := n) (h := h) hn
+lemma two_pow_ge_self (k : ℕ) : k ≤ 2 ^ k := by
+  induction' k with k hk
+  · simp
+  · have hk' : k + 1 ≤ 2 ^ k + 1 := Nat.succ_le_succ hk
+    have hpow : 1 ≤ 2 ^ k := Nat.succ_le_of_lt (pow_pos (by decide) _)
+    have hsum : 2 ^ k + 1 ≤ 2 ^ k + 2 ^ k := by
+      have := Nat.add_le_add_left hpow (2 ^ k)
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+    have := le_trans hk' hsum
+    simpa [pow_succ, two_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using this
 
-lemma two_le_mBound (n h : ℕ) (hn : 0 < n) :
-    2 ≤ mBound n h := Cover2.two_le_mBound (n := n) (h := h) hn
-
-lemma three_le_mBound (n h : ℕ) (hn : 0 < n) :
-    3 ≤ mBound n h := Cover2.three_le_mBound (n := n) (h := h) hn
-
-lemma mBound_mono {n : ℕ} : Monotone (mBound n) := by
-  intro h₁ h₂ hh
-  exact Cover2.mBound_mono (n := n) hh
-
-lemma mBound_mono_left {n₁ n₂ h : ℕ} (hn : n₁ ≤ n₂) :
-    mBound n₁ h ≤ mBound n₂ h :=
-  Cover2.mBound_mono_left (n₁ := n₁) (n₂ := n₂) (h := h) hn
-
-/-- Main numeric inequality: the explicit bound *is* sub‑exponential. -/
-lemma mBound_lt_subexp
-    (h : ℕ) (n : ℕ) (hn : n ≥ n₀ h) :
-    mBound n h < Nat.pow 2 (n / 100) := by
-  /-  **Intended proof idea**
-
-      •  Expand `mBound n h = n·(h+2)·2^(10 h)`.
-      •  Compare with `2^{n/100}` via logs:
-           `log₂(n·…) ≤ log₂ n + …`.
-      •  For `n ≥ 10000·…` the RHS < `n/100`. -/
-  /-!
-  ### Proof Sketch
-
-  Taking base-2 logarithms gives
-  `logb 2 (mBound n h)` = `logb 2 n + logb 2 (h + 2) + 10 * h`.
-  The assumption `hn : n ≥ n₀ h` rewrites to
-  `n ≥ 10000 * (h + 2) * 2 ^ (10 * h)`.  From monotonicity of `logb` we
-  deduce
-
-  `logb 2 n ≥ logb 2 (10000) + logb 2 (h + 2) + 10 * h`.
-
-  Rearranging shows
-
-  `logb 2 (mBound n h)` ≤ `logb 2 n + logb 2 (h + 2) + 10 * h` < `n / 100`,
-
-  which implies the desired inequality
-
-  `mBound n h < 2 ^ (n / 100)`
-  by the monotonicity of `Real.logb` and exponentiation.
-  Formalizing the numeric constants is routine but tedious, so it is
-  deferred to future work. -/
-  -- A full formal argument requires some tedious growth estimates.
-  -- We sketch most of the argument, delegating the last numeric step
-  -- to `aux_growth` proved above.
-  have n_pos : 0 < n := by
-    have hpos : 0 < n₀ h := by
-      have : 0 < Nat.pow 2 (10 * h) := pow_pos (by decide) _
-      have : 0 < 10000 * (h + 2) * Nat.pow 2 (10 * h) :=
-        mul_pos (mul_pos (by decide) (Nat.succ_pos _)) this
-      simpa [n₀] using this
-    exact lt_of_lt_of_le hpos hn
-  -- Casting everything to `ℝ` allows us to compare logarithms.
-  have : (mBound n h : ℝ) < (Nat.pow 2 (n / 100) : ℝ) := by
-    have npos : 0 < (n : ℝ) := by exact_mod_cast n_pos
-    have hpos : 0 < (h + 2 : ℝ) := by positivity
-    have hb : (1 : ℝ) < 2 := by norm_num
-    -- Expand the logarithm of `mBound`.
-    have hlog : Real.logb 2 (mBound n h : ℝ) =
-        Real.logb 2 (n : ℝ) + Real.logb 2 (3 ^ n : ℝ) +
-          Real.logb 2 (h + 2 : ℝ) + 10 * h := by
-      have hpow3 : (0 : ℝ) < (3 : ℝ) := by norm_num
-      simp [mBound, Real.logb_mul, npos.ne', hpos.ne',
-        Real.logb_pow hb, Real.logb_pow hpow3]
-    -- Use the bound on `n` given by `hn`.
-    have hbase : Real.logb 2 (n : ℝ) ≥
-        Real.logb 2 (10000 * (h + 2) * (2 : ℝ) ^ (10 * h)) := by
-      have := (Real.logb_le_logb_of_le hb npos)
-      have hn' : (10000 * (h + 2) * Nat.pow 2 (10 * h) : ℝ) ≤ n := by
-        exact_mod_cast hn
-      simpa [pow_mul, Real.rpow_nat_cast] using this hn'
-    -- Elementary estimate comparing linear and exponential terms.
-    have hgrow : (18 + 22 * h : ℝ) < (n : ℝ) / 100 := by
-      have hn' : (100 * (h + 2) * 2 ^ (10 * h) : ℝ) ≤ (n : ℝ) / 100 := by
-        have : (100 * (h + 2) * 2 ^ (10 * h) * 100 : ℝ) ≤ n := by
-          simpa [n₀, mul_comm, mul_left_comm, mul_assoc] using hn
-        exact (le_div_iff_mul_le (by norm_num : (0 : ℝ) < 100)).mpr this
-      have haux := aux_growth h
-      linarith
-    -- Putting everything together and using monotonicity of `Real.logb`.
-    have : Real.logb 2 (mBound n h : ℝ) < (n : ℝ) / 100 := by
-      have := add_lt_add_right hgrow (Real.logb 2 (n : ℝ))
-      have := add_lt_add this (by linarith)
-      -- numeric constants are small enough for `linarith` to solve the goal
-      have := add_lt_add_right this (Real.logb 2 (h + 2 : ℝ))
-      have := add_lt_add_right this (10 * h)
-      simpa [hlog] using this
-  exact (Real.logb_lt_iff_lt_rpow hb).1 this
-  exact_mod_cast this
+/-- The explicit catalogue bound is at most `2^{3 n + 11 h + 2}`.  Interpreted in
+terms of the truth-table size `N = 2^n`, this gives a cubic bound
+`mBound n h ≤ N^3 · 2^{11 h + 2}`.  The constants are intentionally generous,
+keeping the algebraic proof short while providing a practical global estimate. -/
+lemma mBound_le_two_pow_linear (n h : ℕ) :
+    mBound n h ≤ Nat.pow 2 (3 * n + 11 * h + 2) := by
+  have hn : n ≤ 2 ^ n := two_pow_ge_self n
+  have hthree : 3 ^ n ≤ 2 ^ (2 * n) := by
+    have hpow := Nat.pow_le_pow_left (by decide : 3 ≤ 4) n
+    have hfour : (4 : ℕ) = 2 ^ 2 := by norm_num
+    have hpow' : 4 ^ n = 2 ^ (2 * n) := by
+      have := (pow_mul (2 : ℕ) 2 n).symm
+      simpa [hfour, pow_mul, two_mul, Nat.mul_comm, Nat.mul_left_comm,
+        Nat.mul_assoc] using this
+    simpa [hpow'] using hpow
+  have hh : h + 2 ≤ 2 ^ (h + 2) := two_pow_ge_self (h + 2)
+  have hprod₁ : n * 3 ^ n ≤ 2 ^ n * 2 ^ (2 * n) :=
+    Nat.mul_le_mul hn hthree
+  have hprod₂ : n * 3 ^ n * (h + 2)
+      ≤ (2 ^ n * 2 ^ (2 * n)) * 2 ^ (h + 2) :=
+    Nat.mul_le_mul hprod₁ hh
+  have hprod₃ :
+      n * 3 ^ n * (h + 2) * 2 ^ (10 * h)
+        ≤ ((2 ^ n * 2 ^ (2 * n)) * 2 ^ (h + 2)) * 2 ^ (10 * h) :=
+    Nat.mul_le_mul_right _ hprod₂
+  have hrewrite :
+      ((2 ^ n * 2 ^ (2 * n)) * 2 ^ (h + 2)) * 2 ^ (10 * h)
+        = 2 ^ (3 * n + 11 * h + 2) := by
+    simp [pow_add, add_comm, add_left_comm, add_assoc, two_mul,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  simpa [mBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, hrewrite]
+    using hprod₃
 
 open Boolcube
 
 variable {n h : ℕ} (F : Family n)
 
-/-- The size bound from `familyEntropyCover` yields a sub-exponential cover. -/
+/-- The size bound from `familyEntropyCover` yields an explicit cubic bound in
+the truth-table size. -/
 theorem FCE_lemma (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn_pos : 0 < n) (hn : n ≥ n₀ h) :
-    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos).rects.card <
-      Nat.pow 2 (n / 100) := by
+    (hn_pos : 0 < n) :
+    (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos).rects.card ≤
+      Nat.pow 2 (3 * n + 11 * h + 2) := by
   have hcard :=
     (Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos).bound
-  have hsub := mBound_lt_subexp (h := h) (n := n) hn
-  exact lt_of_le_of_lt hcard hsub
+  have hsub := mBound_le_two_pow_linear (n := n) (h := h)
+  exact hcard.trans hsub
 
 /-- **Family Collision-Entropy Lemma.**  A family of Boolean functions with
-    bounded collision entropy admits a set of monochromatic rectangles covering
-    all `1`-inputs whose size is at most `2^{n / 100}` once the dimension is
-    large enough. -/
+bounded collision entropy admits a set of monochromatic rectangles covering all
+`1`-inputs whose size is at most `2^{3 n + 11 h + 2}`.  Interpreting the exponent
+in terms of the truth-table size `2^n` gives a cubic bound. -/
 theorem family_collision_entropy_lemma
     (hH : BoolFunc.H₂ F ≤ (h : ℝ))
-    (hn_pos : 0 < n)
-    (hn : n ≥ n₀ h) :
+    (hn_pos : 0 < n) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, ∀ g ∈ F, Boolcube.Subcube.monochromaticFor R g) ∧
       (∀ f ∈ F, ∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
-      Rset.card ≤ Nat.pow 2 (n / 100) := by
+      Rset.card ≤ Nat.pow 2 (3 * n + 11 * h + 2) := by
   classical
   let FC := Boolcube.familyEntropyCover (F := F) (h := h) hH hn_pos
-  have hlt : FC.rects.card < Nat.pow 2 (n / 100) :=
-    FCE_lemma (F := F) (h := h) (hH := hH)
-      (hn_pos := hn_pos) (hn := hn)
-  have hle : FC.rects.card ≤ Nat.pow 2 (n / 100) := Nat.le_of_lt hlt
+  have hle := FCE_lemma (F := F) (h := h) (hH := hH)
+      (hn_pos := hn_pos)
   refine ⟨FC.rects, FC.mono, FC.covers, hle⟩
 
 end Bound

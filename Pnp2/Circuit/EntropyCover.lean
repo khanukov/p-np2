@@ -11,6 +11,59 @@ open scoped BigOperators
 
 namespace Boolcube
 namespace Circuit
+open Cover2
+
+/-- The simple projection onto coordinate `i`.  We package it once to keep the
+upcoming lemmas readable. -/
+@[simp] def projection (n : ℕ) (i : Fin n) : BFunc n := fun x => x i
+
+/-- The coordinate projection depends on the very coordinate it reads, hence it
+belongs to the support. -/
+lemma mem_support_projection {n : ℕ} (i : Fin n) :
+    i ∈ BoolFunc.support (projection (n := n) i) := by
+  classical
+  -- Use the characterisation of the support via the Boolean flip on `i`.
+  refine (BoolFunc.mem_support_iff (f := projection (n := n) i) (i := i)).2 ?_
+  -- Choose the all-`false` vector and flip the `i`-th coordinate.
+  refine ⟨fun _ => false, ?_⟩
+  -- The projection evaluates to `false` on the base point and to `true` on the
+  -- updated point, so the values differ.
+  simp [projection, BoolFunc.Point.update]
+
+/-- Every coordinate projection is implemented by the size-one circuit
+`Circuit.var`.  Therefore the projection belongs to the polynomial circuit
+family. -/
+lemma projection_mem_powFamily {n c : ℕ} (i : Fin n) :
+    projection (n := n) i ∈ powFamily n c := by
+  classical
+  -- The witnessing circuit is simply `Circuit.var i`.
+  refine (mem_powFamily (n := n) (c := c)).2 ?_
+  refine ⟨Circuit.var i, ?_, ?_⟩
+  · -- One gate suffices, and `1 ≤ n^c` for any non-trivial `n`.
+    have hn : 1 ≤ n := Nat.succ_le_of_lt i.is_lt
+    have hpow : 1 ≤ n ^ c := Nat.one_le_pow_of_one_le hn _
+    simpa [Circuit.gateCount]
+  · -- Evaluation of `Circuit.var` is exactly the coordinate projection.
+    intro x
+    simp [projection, Circuit.eval]
+
+/-- The union of supports of the polynomial circuit family covers every
+coordinate: each coordinate projection lies in the family and contributes its
+index. -/
+lemma supportUnion_powFamily_eq_univ (n c : ℕ) :
+    supportUnion (powFamily n c) = (Finset.univ : Finset (Fin n)) := by
+  classical
+  ext i; constructor
+  · intro _; exact Finset.mem_univ _
+  · intro _
+    -- Witness the membership via the coordinate projection.
+    have hmem : i ∈ BoolFunc.support (projection (n := n) i) :=
+      mem_support_projection (n := n) i
+    have hproj : projection (n := n) i ∈ powFamily n c :=
+      projection_mem_powFamily (n := n) (c := c) i
+    -- Unfold the definition of `supportUnion` to expose the existential.  The
+    -- projection provides the required witness.
+    simp [supportUnion, hproj, hmem]
 
 /-- The length bound used by the encoding of circuits of size `≤ n^c`. -/
 def encodingLength (n c : ℕ) : ℕ := 4 * n ^ c
@@ -170,6 +223,73 @@ lemma powFamily_H₂_le {n c : ℕ} :
   simpa [BoolFunc.H₂, Real.logb_pow, powFamilyEntropyBound, Nat.cast_pow,
     Nat.cast_ofNat, Nat.cast_add, Nat.cast_mul] using hlog
 
+/-- Every rectangle produced by the canonical cover for `powFamily` freezes all
+coordinates.  Consequently both the left and the right enumeration budgets of
+size `0` are satisfied for any choice of the cut `k`. -/
+lemma coverFamily_powFamily_respects_budgets {n c k : ℕ} :
+    ∀ R ∈ coverFamily (F := powFamily n c)
+        (h := powFamilyEntropyBound n c)
+        (powFamily_H₂_le (n := n) (c := c)),
+      Subcube.respectsEnumerationBudgets (n := n) R k 0 0 := by
+  classical
+  intro R hR
+  -- Rectangles of the canonical cover belong to `coverUniverse`.
+  have hsubset :=
+    buildCover_subset_coverUniverse (n := n)
+      (F := powFamily n c) (h := powFamilyEntropyBound n c)
+      (hH := powFamily_H₂_le (n := n) (c := c))
+  have hRsubset : R ∈ coverUniverse (n := n) (powFamily n c) := by
+    have hbuild : R ∈ buildCover (n := n) (powFamily n c)
+        (powFamilyEntropyBound n c)
+        (powFamily_H₂_le (n := n) (c := c)) := by
+      simpa [coverFamily]
+        using hR
+    exact hsubset hbuild
+  -- Unpack the definition of `coverUniverse`: each rectangle is obtained by
+  -- freezing the full support of the family around some point `x`.
+  rcases Finset.mem_image.mp hRsubset with ⟨x, -, rfl⟩
+  -- For `powFamily` the support union is the entire set of coordinates.
+  have hsupport := supportUnion_powFamily_eq_univ (n := n) (c := c)
+  -- Compute the set of free left coordinates explicitly: the fix function is
+  -- always `some`, hence no index survives the filter.
+  have hleft_card :
+      (Subcube.freeLeft (n := n)
+          (Subcube.fromPoint (n := n) x Finset.univ) k).card = 0 := by
+    refine Finset.card_eq_zero.mpr ?_
+    intro i hi
+    have : ((Subcube.fromPoint (n := n) x Finset.univ).fix i).isNone :=
+      (Subcube.mem_freeLeft (R := Subcube.fromPoint (n := n) x Finset.univ)
+        (k := k) (i := i)).1 hi |>.2
+    -- Contradiction: every coordinate is fixed because we freeze `Finset.univ`.
+    simpa [Subcube.fromPoint] using this
+  -- Symmetric reasoning for the right block.
+  have hright_card :
+      (Subcube.freeRight (n := n)
+          (Subcube.fromPoint (n := n) x Finset.univ) k).card = 0 := by
+    refine Finset.card_eq_zero.mpr ?_
+    intro i hi
+    have : ((Subcube.fromPoint (n := n) x Finset.univ).fix i).isNone :=
+      (Subcube.mem_freeRight (R := Subcube.fromPoint (n := n) x Finset.univ)
+        (k := k) (i := i)).1 hi |>.2
+    simpa [Subcube.fromPoint] using this
+  -- Translate the equalities back to the rectangle currently under
+  -- consideration and discharge the budget predicates.
+  have hleft_card_R :
+      (Subcube.freeLeft (n := n)
+          (Subcube.fromPoint (n := n) x (supportUnion (powFamily n c))) k).card = 0 := by
+    simpa [hsupport]
+      using hleft_card
+  have hright_card_R :
+      (Subcube.freeRight (n := n)
+          (Subcube.fromPoint (n := n) x (supportUnion (powFamily n c))) k).card = 0 := by
+    simpa [hsupport]
+      using hright_card
+  refine ⟨?_, ?_⟩
+  · -- Left budget.
+    simpa [Subcube.respectsLeftBudget, hleft_card_R]
+  · -- Right budget.
+    simpa [Subcube.respectsRightBudget, hright_card_R]
+
 /-- Existence of a cover for the entire polynomial-size circuit family. -/
 theorem powFamily_cover {n c : ℕ} (hn : 0 < n) :
     ∃ Rset : Finset (Subcube n),
@@ -235,6 +355,63 @@ theorem powFamily_cover_for_member_doubleExp {n c : ℕ} {f : BFunc n}
   have hbound := powFamilyExponentBound_le_doubleExp (n := n) (c := c) hn
   exact hcard.trans
     (Nat.pow_le_pow_of_le_left (by decide : 1 ≤ 2) hbound)
+
+/-- Version of `powFamily_cover_for_member` that additionally records the
+enumeration budgets: every rectangle in the cover fixes all coordinates and
+therefore respects the trivial budgets `(0, 0)` regardless of the chosen
+partition `k`. -/
+theorem powFamily_cover_for_member_respects_budgets
+    {n c : ℕ} {f : BFunc n}
+    (hf : f ∈ powFamily n c) (hn : 0 < n) (k : ℕ) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2
+        (3 * n + 11 * powFamilyEntropyBound n c + 2) ∧
+      (∀ R ∈ Rset, Subcube.respectsEnumerationBudgets (n := n) R k 0 0) := by
+  classical
+  -- Start from the canonical cover for the whole family and filter it down to
+  -- the rectangles relevant for `f`, exactly as in `powFamily_cover_for_member`.
+  let hH := powFamily_H₂_le (n := n) (c := c)
+  let R0 := coverFamily (F := powFamily n c)
+      (h := powFamilyEntropyBound n c) hH
+  let Rset := R0.filter fun R => ∀ x, f x = true → x ∈ₛ R
+  have hmono :=
+    coverFamily_pointwiseMono (n := n) (F := powFamily n c)
+      (h := powFamilyEntropyBound n c) hH
+  have hcover :=
+    coverFamily_spec_cover (n := n) (F := powFamily n c)
+      (h := powFamilyEntropyBound n c) hH
+  have hcard :=
+    coverFamily_card_le_mBound (n := n) (F := powFamily n c)
+      (h := powFamilyEntropyBound n c) hH hn
+  have hbudget :=
+    coverFamily_powFamily_respects_budgets (n := n) (c := c) (k := k)
+  refine ⟨Rset, ?_, ?_, ?_, ?_⟩
+  · -- Monochromaticity descends to the filtered cover.
+    intro R hR x hx
+    have hmem : R ∈ R0 := (Finset.mem_filter.mp hR).1
+    exact hmono R hmem f hf x hx
+  · -- Coverage persists after filtering thanks to the predicate itself.
+    intro x hx
+    rcases hcover f hf x hx with ⟨R, hR, hxR⟩
+    refine ⟨R, ?_, hxR⟩
+    have hcond : ∀ y, f y = true → y ∈ₛ R := by
+      intro y hy
+      have hmonoR := hmono R hR f hf
+      have := Subcube.mem_monochromaticFor (R := R) (f := f) hy hmonoR
+      simpa using this
+    exact Finset.mem_filter.mpr ⟨hR, hcond⟩
+  · -- Cardinality bound inherited from the whole family via `mBound`.
+    have hcard_filtered : Rset.card ≤ R0.card := Finset.card_filter_le _ _
+    have hbound := Bound.mBound_le_two_pow_linear
+      (n := n) (h := powFamilyEntropyBound n c)
+    exact hcard_filtered.trans (hcard.trans hbound)
+  · -- Budgets: every rectangle in the canonical cover freezes all coordinates,
+    -- hence the filtered cover inherits the property.
+    intro R hR
+    have hmem : R ∈ R0 := (Finset.mem_filter.mp hR).1
+    exact hbudget R hmem
 
 end Circuit
 end Boolcube

@@ -115,6 +115,52 @@ lemma eval_agree_of_support_subset_core
   simpa using
     (BoolFunc.eval_eq_of_agree_on_support (f := f) (x := x) (y := y) h_agree)
 
+/--
+`CoreClosed` families become monochromatic on the subcube obtained by freezing a
+large enough set of coordinates.  Concretely, if all functions of `F` evaluate
+to `true` on the witness point `x₀` and the sunflower core contains at least
+`n - ℓ` coordinates, then every point agreeing with `x₀` on the core is also a
+`true`-input for all functions of `F`.
+-/
+lemma coreClosed_all_true_on_core
+    {n t ℓ : ℕ} (F : Family n)
+    (Pts : Finset (Boolcube.Point n))
+    (S : SunflowerFam n t)
+    (x₀ : Boolcube.Point n)
+    (hx₀ : x₀ ∈ Pts)
+    (hPts_true : ∀ f ∈ F, ∀ x ∈ Pts, f x = true)
+    [Agreement.CoreClosed ℓ F]
+    (hcore : n - ℓ ≤ S.core.card) :
+    ∀ {f : BFunc n}, f ∈ F →
+      ∀ {x : Boolcube.Point n},
+        (∀ i ∈ S.core, x i = x₀ i) → f x = true := by
+  classical
+  -- The subcube fixing the sunflower core around `x₀` is monochromatic for `F`.
+  have hmono :=
+    Agreement.coreAgreement (n := n) (ℓ := ℓ) (F := F)
+      (x₁ := x₀) (x₂ := x₀) (I := S.core)
+      (h_size := hcore)
+      (h_agree := by intro _ _; rfl)
+      (h_val1 := fun f hf => hPts_true f hf x₀ hx₀)
+  rcases hmono with ⟨b, hb⟩
+  -- Membership of `x₀` in the frozen subcube is immediate.
+  have hx₀_mem : x₀ ∈ₛ Agreement.Subcube.fromPoint x₀ S.core := by
+    intro i _; simp [Agreement.Subcube.fromPoint]
+  -- Record the colour of the subcube in terms of evaluation at `x₀`.
+  have hb_eval : ∀ {f : BFunc n}, f ∈ F → f x₀ = b :=
+    fun {f} hf => hb f hf hx₀_mem
+  -- Specialise to an arbitrary point agreeing with `x₀` on the core.
+  intro f hf x hx
+  have hx_mem : x ∈ₛ Agreement.Subcube.fromPoint x₀ S.core := by
+    intro i hi
+    simpa [Agreement.Subcube.fromPoint] using hx i hi
+  -- Use monochromaticity and evaluation at `x₀`.
+  have hx_val : f x = b := hb f hf hx_mem
+  have hx₀_val : f x₀ = true := hPts_true f hf x₀ hx₀
+  have hb_true : b = true := by
+    simpa [hb_eval hf] using hx₀_val
+  simpa [hx_val, hb_true]
+
 /-
 `sunflower_step` extracts a small subcube on which many functions of the family
 are forced to evaluate to `true`.  The statement mirrors the classical lemma
@@ -123,27 +169,24 @@ support size `p` and the family of supports is large enough, a subcube of
 positive dimension hosts `t` functions that are constantly `true`.
 
 The argument below follows the combinatorial skeleton of the classical proof.
-We assume that whenever a sunflower is extracted from the supports, each petal
-corresponds to a function whose behaviour depends only on the sunflower core.
-For the time being we additionally assume that every function evaluates to
-`true` on the all‑`false` input; once the combinatorial argument is fully
-ported this extra hypothesis will become redundant.
+The additional `CoreClosed` assumption provides the missing control: once the
+sunflower core contains at least `n - ℓ` coordinates, every function in the
+family is forced to evaluate to `true` on the subcube determined by that core.
+Instead of postulating that all functions agree on the all-`false` input we work
+with an explicit finite set `Pts` of common `1`-inputs.  This matches the
+construction in the cover recursion, where the sunflower step operates on a
+nonempty pool of uncovered witnesses.
 -/
-lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
+lemma sunflower_step {n : ℕ} (F : Family n)
+    (Pts : Finset (Boolcube.Point n)) (p t ℓ : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : Sunflower.threshold p t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p)
-    -- Hypothesis capturing the missing combinatorial argument: for any sunflower
-    -- extracted from the supports, each petal corresponds to a function that is
-    -- constant on points agreeing on the sunflower core.
-    (h_agree :
-      ∀ (S : SunflowerFam n t), S.petals ⊆ Family.supports F →
-        ∀ A ∈ S.petals,
-          ∃ f ∈ F, BoolFunc.support f = A ∧
-            (∀ x y : Boolcube.Point n,
-                (∀ i ∈ S.core, x i = y i) → f x = f y))
-    -- Every function in the family evaluates to `true` on the all‑`false` input.
-    (h_true : ∀ f ∈ F, f (fun _ : Fin n => false) = true) :
+    (hPts_nonempty : Pts.Nonempty)
+    (hPts_true : ∀ f ∈ F, ∀ x ∈ Pts, f x = true)
+    [Agreement.CoreClosed ℓ F]
+    (h_core_le : ∀ (S : SunflowerFam n t),
+        S.petals ⊆ Family.supports F → n - ℓ ≤ S.core.card) :
     ∃ (R : Boolcube.Subcube n),
       ((F.filter fun f => ∀ x : Boolcube.Point n,
           Boolcube.Subcube.Mem R x → f x = true).card ≥ t) ∧
@@ -161,20 +204,28 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
       simpa [Sunflower.threshold] using h_big
     exact SunflowerFam.exists_of_large_family_classic
       (F := 𝓢) (w := p) (t := t) hp ht h_sizes hbig'
-  -- Select, for each petal, a function from the family with that support and
-  -- agreeing on points that share the core coordinates.
+  -- Select, for each petal, a function from the family with that support.
   have exists_f :
-      ∀ A ∈ S.petals, ∃ f ∈ F, BoolFunc.support f = A ∧
-        (∀ x y : Boolcube.Point n,
-            (∀ i ∈ S.core, x i = y i) → f x = f y) :=
-    h_agree S hSsub
+      ∀ A ∈ S.petals, ∃ f ∈ F, BoolFunc.support f = A := by
+    intro A hA
+    rcases Family.mem_supports.mp (hSsub hA) with ⟨f, hf, hfSupp⟩
+    exact ⟨f, hf, hfSupp⟩
   classical
-  choose f hfF hfSupp hfAgree using exists_f
+  choose f hfF hfSupp using exists_f
   -- Freeze the sunflower core to obtain a covering subcube.
-  let x₀ : Boolcube.Point n := fun _ => false
+  obtain ⟨x₀, hx₀⟩ := hPts_nonempty
   let R : Boolcube.Subcube n := Boolcube.Subcube.fromPoint x₀ S.core
-  -- Bounding the cardinality and dimension is the intricate part of the argument;
-  -- the following proof carries out the combinatorial bookkeeping directly.
+  -- Monochromaticity on the frozen core follows from core closedness.
+  have hcore_le := h_core_le S hSsub
+  have hcore_true :
+      ∀ {g : BFunc n}, g ∈ F →
+        ∀ {x : Boolcube.Point n},
+          (∀ i ∈ S.core, x i = x₀ i) → g x = true :=
+    coreClosed_all_true_on_core (F := F) (Pts := Pts) (S := S)
+      (x₀ := x₀) (hx₀ := hx₀) (hPts_true := hPts_true)
+      (ℓ := ℓ) (hcore := hcore_le)
+  -- Bounding the cardinality and dimension is the intricate part of the argument.
+  -- We leave the two key properties as placeholders for future work.
   have h_filter_ge :
       (F.filter fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true).card ≥ t := by
     -- We embed the `t` selected functions into the filtered family and count them.
@@ -208,26 +259,12 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
       rcases Finset.mem_image.1 hg with ⟨a, ha, rfl⟩
       have hgF : f a.1 a.2 ∈ F := hfF _ a.2
       have htrue : ∀ x : Boolcube.Point n, R.Mem x → (f a.1 a.2) x = true := by
-        -- Points of `R` agree with `x₀` on the sunflower core.
         intro x hx
-        -- Agreement on the core coordinates provided by `hx`.
-        have h_agree_core : ∀ i ∈ S.core, x i = x₀ i := by
+        have hx_core : ∀ i ∈ S.core, x i = x₀ i := by
           intro i hi
-          -- Membership in `R` fixes the value on the sunflower core.
           have hx' := hx i
           simpa [R, Boolcube.Subcube.fromPoint, hi] using hx'
-        -- Evaluation of the chosen function only depends on the core
-        -- coordinates, so agreement on the core suffices to relate `x`
-        -- and the base point `x₀`.
-        have hx_eq : (f a.1 a.2) x = (f a.1 a.2) x₀ :=
-          hfAgree _ a.2 x x₀ h_agree_core
-        -- By assumption every function in `F` is `true` on the all-`false`
-        -- point, in particular the selected one.
-        have hx0_true : (f a.1 a.2) x₀ = true := by
-          have hfmem : f a.1 a.2 ∈ F := hfF _ a.2
-          simpa [x₀] using h_true _ hfmem
-        -- Combining both facts yields the required evaluation.
-        simpa [hx_eq] using hx0_true
+        exact hcore_true (g := f a.1 a.2) (hfF _ a.2) (x := x) hx_core
       -- Package the membership proof for the filter.
       have : f a.1 a.2 ∈ F.filter
           (fun g => ∀ x : Boolcube.Point n, R.Mem x → g x = true) := by
@@ -274,6 +311,131 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
       simpa [R] using (Boolcube.Subcube.dim_fromPoint (x := x₀) (K := S.core))
     exact hdim_eq.symm ▸ hdim'
   exact ⟨R, h_filter_ge, h_dim⟩
+
+
+/--
+Applying `sunflower_step` typically requires restricting the family to those
+functions that already evaluate to `true` on a prescribed finite set `Pts` of
+common witnesses.  The wrapper below packages this refactoring: it instantiates
+`sunflower_step` on the filtered family `F.filter (λ f, ∀ x ∈ Pts, f x = true)`
+and rewrites the outcome back in terms of the original family.  This keeps the
+eventual call sites focused on the combinatorial bounds rather than on the
+boilerplate surrounding the filter construction.
+-/
+lemma sunflower_step_filtered {n : ℕ} (F : Family n)
+    (Pts : Finset (Boolcube.Point n)) (p t ℓ : ℕ)
+    (hp : 0 < p) (ht : 2 ≤ t)
+    (h_big :
+        Sunflower.threshold p t <
+          (Family.supports
+            (F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true)).card)
+    (h_support :
+        ∀ f ∈ F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true,
+          (BoolFunc.support f).card = p)
+    (hPts_nonempty : Pts.Nonempty)
+    [Agreement.CoreClosed ℓ F]
+    (h_core_le :
+        ∀ S : SunflowerFam n t,
+          S.petals ⊆
+              Family.supports
+                (F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true) →
+          n - ℓ ≤ S.core.card) :
+    ∃ (R : Boolcube.Subcube n),
+      ((F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true).filter
+          fun g : BFunc n =>
+            ∀ x : Boolcube.Point n, Boolcube.Subcube.Mem R x → g x = true).card ≥ t ∧
+      1 ≤ Boolcube.Subcube.dim R := by
+  classical
+  -- Rephrase the filtered family once and for all.
+  let F₀ : Family n := F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true
+  -- Every member of `F₀` already satisfies the witness predicate by definition.
+  have hPts_true :
+      ∀ f ∈ F₀, ∀ x ∈ Pts, f x = true := by
+    intro f hf
+    have hf' : f ∈ F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true :=
+      by simpa [F₀] using hf
+    exact (Finset.mem_filter.mp hf').2
+  -- Core-closedness descends to the filtered family since it is a subfamily of `F`.
+  haveI : Agreement.CoreClosed ℓ F₀ :=
+  { closed_under_ball := by
+      intro f hf x y hx hdist
+      have hf' : f ∈ F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true :=
+        by simpa [F₀] using hf
+      have hfF : f ∈ F := (Finset.mem_filter.mp hf').1
+      exact
+        Agreement.CoreClosed.closed_under_ball (F := F)
+          (ℓ := ℓ) (f := f) hfF hx hdist }
+  -- Prepare the bounds for the specialised call of `sunflower_step`.
+  have h_big' : Sunflower.threshold p t < (Family.supports F₀).card := by
+    simpa [F₀] using h_big
+  have h_support' : ∀ f ∈ F₀, (BoolFunc.support f).card = p := by
+    intro f hf
+    have hf' : f ∈ F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true :=
+      by simpa [F₀] using hf
+    simpa [F₀] using h_support f hf'
+  have h_core_le' :
+      ∀ S : SunflowerFam n t, S.petals ⊆ Family.supports F₀ →
+        n - ℓ ≤ S.core.card := by
+    intro S hS
+    have hS' : S.petals ⊆
+        Family.supports (F.filter fun f : BFunc n => ∀ x ∈ Pts, f x = true) :=
+      by simpa [F₀] using hS
+    simpa [F₀] using h_core_le S hS'
+  -- Invoke the base sunflower lemma on the filtered family and translate
+  -- the result back into the original notation.
+  obtain ⟨R, hcount, hdim⟩ :=
+    sunflower_step (F := F₀) (Pts := Pts)
+      (p := p) (t := t) (ℓ := ℓ)
+      hp ht h_big' h_support' hPts_nonempty hPts_true h_core_le'
+  refine ⟨R, ?_, hdim⟩
+  simpa [F₀] using hcount
+
+/--
+`firstUncovered` conveniently provides a nonempty pool of witness points on
+which all functions of the filtered family evaluate to `true`.  This helper
+instantiates `sunflower_step_filtered` with that witness pool, thereby
+refactoring downstream invocations of the sunflower lemma to the new interface
+without leaving behind any ad-hoc hypotheses.
+-/
+lemma sunflower_step_firstUncovered {n : ℕ} (F : Family n)
+    {Rset : Finset (Boolcube.Subcube n)}
+    {p : Σ _ : BFunc n, Boolcube.Point n}
+    (hp : firstUncovered (n := n) F Rset = some p)
+    (pCard t ℓ : ℕ) (hp_pos : 0 < pCard) (ht : 2 ≤ t)
+    (h_big :
+        Sunflower.threshold pCard t <
+          (Family.supports
+            (F.filter fun f : BFunc n =>
+              ∀ x ∈ witnessSingleton (n := n) p, f x = true)).card)
+    (h_support :
+        ∀ f ∈ F.filter fun f : BFunc n =>
+            ∀ x ∈ witnessSingleton (n := n) p, f x = true,
+          (BoolFunc.support f).card = pCard)
+    [Agreement.CoreClosed ℓ F]
+    (h_core_le :
+        ∀ S : SunflowerFam n t,
+          S.petals ⊆
+              Family.supports
+                (F.filter fun f : BFunc n =>
+                  ∀ x ∈ witnessSingleton (n := n) p, f x = true) →
+          n - ℓ ≤ S.core.card) :
+    ∃ R : Boolcube.Subcube n,
+      ((F.filter fun f : BFunc n =>
+            ∀ x ∈ witnessSingleton (n := n) p, f x = true).filter
+          fun g : BFunc n =>
+            ∀ x : Boolcube.Point n, Boolcube.Subcube.Mem R x → g x = true).card ≥ t ∧
+      1 ≤ Boolcube.Subcube.dim R := by
+  classical
+  obtain ⟨hPts, -, -, -⟩ :=
+    firstUncovered_witness_data (n := n) (F := F)
+      (Rset := Rset) (p := p) hp
+  -- With the witness pool at hand the filtered sunflower lemma applies directly.
+  exact
+    sunflower_step_filtered (F := F)
+      (Pts := witnessSingleton (n := n) p)
+      (p := pCard) (t := t) (ℓ := ℓ)
+      hp_pos ht h_big h_support hPts h_core_le
+
 
 
 /-

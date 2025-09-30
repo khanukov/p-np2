@@ -44,26 +44,55 @@ lemma aux_growth (h : ℕ) :
   -- contains `2^(10*h)`.
   induction' h with d hd
   · norm_num
-  · have hd' : (18 + 22 * d : ℝ) < 100 * (d + 2) * 2 ^ (10 * d) := hd
-    -- The step from `d` to `d+1` multiplies the RHS by a factor of
-    -- `1024 * (d + 3) / (d + 2)` which easily dominates the additive
-    -- increase on the LHS.
-    have hrewrite : (18 + 22 * (d + 1) : ℝ)
-        = (18 + 22 * d) + 22 := by ring
-    have hmul :
-        100 * (d + 3) * 2 ^ (10 * (d + 1))
-          = 1024 * (100 * (d + 2) * 2 ^ (10 * d)) := by
-      ring_nf [pow_succ]
-    have hdom :
-        (18 + 22 * d : ℝ) + 22
+  · -- Use the induction hypothesis for `d` and compare to the next step.
+    have hd' : (18 + 22 * d : ℝ) < 100 * (d + 2) * 2 ^ (10 * d) := hd
+    -- First, bound the linear growth on the left by a large multiple of the
+    -- previous step.
+    have hbound :
+        (18 + 22 * (d + 1) : ℝ) ≤ 1024 * (18 + 22 * d) := by
+      have hdiff :
+          1024 * (18 + 22 * d) - (18 + 22 * (d + 1))
+            = (18 + 22 * d) * 1023 - 22 := by
+        ring
+      -- The right-hand side is clearly positive: `(18 + 22*d) ≥ 18` and the
+      -- massive factor `1023` dominates the small subtraction.
+      have hnonneg :
+          0 ≤ (18 + 22 * d : ℝ) * 1023 - 22 := by
+        have hge : (18 : ℝ) ≤ 18 + 22 * d := by
+          have : (0 : ℝ) ≤ 22 * d := by positivity
+          linarith
+        have hmul_ge :
+            (18 : ℝ) * 1023 ≤ (18 + 22 * d) * 1023 := by
+          exact mul_le_mul_of_nonneg_right hge (by norm_num : (0 : ℝ) ≤ 1023)
+        have hconst : (0 : ℝ) ≤ (18 : ℝ) * 1023 - 22 := by norm_num
+        exact le_trans hconst (sub_le_sub_right hmul_ge 22)
+      exact sub_nonneg.mp (by simpa [hdiff] using hnonneg)
+    -- Strengthen the RHS via the induction hypothesis.
+    have hlt :
+        1024 * (18 + 22 * d)
           < 1024 * (100 * (d + 2) * 2 ^ (10 * d)) := by
-      have := hd'
-      have h22 : (22 : ℝ) < 1024 := by norm_num
-      have hpos : (0 : ℝ) ≤ 100 * (d + 2) * 2 ^ (10 * d) := by positivity
-      have := add_lt_add_of_lt_of_le this (mul_nonneg (by norm_num) hpos)
-      -- squeeze numeric constants; `linarith` closes the goal
-      linarith
-    simpa [hrewrite, hmul] using hdom
+      have hpos : (0 : ℝ) < 1024 := by norm_num
+      simpa [mul_comm, mul_left_comm, mul_assoc] using
+        (mul_lt_mul_of_pos_left hd' hpos)
+    -- Finally, compare the catalogue growth at successive steps.
+    have hstep :
+        1024 * (100 * (d + 2) * 2 ^ (10 * d))
+          ≤ 100 * (d + 3) * 2 ^ (10 * (d + 1)) := by
+      have hbase :
+          (100 * (d + 2) * 2 ^ (10 * d) : ℝ)
+            ≤ 100 * (d + 3) * 2 ^ (10 * d) := by
+        have hle : (d + 2 : ℝ) ≤ d + 3 := by norm_num
+        have hpos : (0 : ℝ) ≤ 100 * 2 ^ (10 * d) := by positivity
+        simpa [mul_comm, mul_left_comm, mul_assoc] using
+          (mul_le_mul_of_nonneg_left hle hpos)
+      have :
+          1024 * (100 * (d + 2) * 2 ^ (10 * d))
+            ≤ 1024 * (100 * (d + 3) * 2 ^ (10 * d)) := by
+        have hpos : (0 : ℝ) ≤ 1024 := by norm_num
+        simpa [mul_comm, mul_left_comm, mul_assoc] using
+          (mul_le_mul_of_nonneg_left hbase hpos)
+      simpa [pow_add, pow_succ, mul_comm, mul_left_comm, mul_assoc] using this
+    exact lt_of_le_of_lt hbound (lt_of_lt_of_le hlt hstep)
 
 /-! ## Bounding the catalogue size by a power of two -/
 

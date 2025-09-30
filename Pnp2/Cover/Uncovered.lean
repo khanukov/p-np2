@@ -255,6 +255,80 @@ lemma mem_uncovered_of_firstUncovered_some {n : ℕ} {F : Family n} {R : Finset 
   · cases hp
     exact Classical.choose_spec h
 
+/--
+Singleton set capturing the point component of a witness returned by
+`firstUncovered`.  Working with an explicit `Finset` keeps the downstream
+applications of `sunflower_step` close to the informal argument, where the
+recursion freezes a concrete uncovered point to anchor the sunflower core.
+-/
+def witnessSingleton {n : ℕ} (p : Σ _ : BFunc n, Point n) : Finset (Point n) :=
+  {p.2}
+
+@[simp] lemma mem_witnessSingleton {n : ℕ} {p : Σ _ : BFunc n, Point n}
+    {x : Point n} :
+    x ∈ witnessSingleton (n := n) p ↔ x = p.2 := by
+  classical
+  simpa [witnessSingleton]
+
+lemma witnessSingleton_nonempty {n : ℕ} (p : Σ _ : BFunc n, Point n) :
+    (witnessSingleton (n := n) p).Nonempty := by
+  classical
+  simpa [witnessSingleton] using Finset.singleton_nonempty p.2
+
+/--
+The witness extracted by `firstUncovered` supplies both a nonempty pool of
+common `1`-inputs and a nonempty subfamily of functions agreeing on that pool.
+This lemma packages the observation so that the sunflower step can be invoked
+without manually reassembling these ingredients each time.
+-/
+lemma firstUncovered_witness_data {n : ℕ} {F : Family n}
+    {Rset : Finset (Subcube n)}
+    {p : Σ _ : BFunc n, Point n}
+    (hp : firstUncovered (n := n) F Rset = some p) :
+    (witnessSingleton (n := n) p).Nonempty ∧
+    (F.filter fun f => f p.2 = true).Nonempty ∧
+    (∀ f ∈ F.filter fun f => f p.2 = true,
+        ∀ x ∈ witnessSingleton (n := n) p, f x = true) ∧
+    (∀ x ∈ witnessSingleton (n := n) p,
+        NotCovered (n := n) (Rset := Rset) x) := by
+  classical
+  -- The uncovered witness provides the required structural information.
+  have hpU :=
+    mem_uncovered_of_firstUncovered_some (n := n)
+      (F := F) (R := Rset) (p := p) hp
+  rcases hpU with ⟨hpF, hp_true, hp_nc⟩
+  -- 1) The singleton set of the witness point is nonempty.
+  have hPts : (witnessSingleton (n := n) p).Nonempty :=
+    witnessSingleton_nonempty (n := n) p
+  -- 2) The filtered subfamily contains the witnessing function.
+  have hG : (F.filter fun f => f p.2 = true).Nonempty := by
+    refine ⟨p.1, ?_⟩
+    -- Membership amounts to belonging to `F` and evaluating to `true` on `p.2`.
+    refine Finset.mem_filter.mpr ?_
+    exact ⟨hpF, hp_true⟩
+  -- 3) Every function of the subfamily is `true` on the witness set.
+  have htrue :
+      ∀ f ∈ F.filter fun f => f p.2 = true,
+        ∀ x ∈ witnessSingleton (n := n) p, f x = true := by
+    intro f hf x hx
+    -- Rewrite `x` as the underlying witness point.
+    have hx' : x = p.2 := by
+      simpa [witnessSingleton] using
+        (mem_witnessSingleton (n := n) (p := p) (x := x)).1 hx
+    -- Extract the defining property of the filtered family.
+    rcases Finset.mem_filter.mp hf with ⟨_, hf_true⟩
+    simpa [hx'] using hf_true
+  -- 4) The witness point itself remains uncovered by `Rset`.
+  have hnc :
+      ∀ x ∈ witnessSingleton (n := n) p,
+        NotCovered (n := n) (Rset := Rset) x := by
+    intro x hx
+    have hx' : x = p.2 := by
+      simpa [witnessSingleton] using
+        (mem_witnessSingleton (n := n) (p := p) (x := x)).1 hx
+    simpa [hx', witnessSingleton] using hp_nc
+  exact ⟨hPts, hG, htrue, hnc⟩
+
 /-- Every `1`-input of every `f ∈ F` lies inside some rectangle of `Rset`. -/
 @[simp] def AllOnesCovered {n : ℕ} (F : Family n)
     (Rset : Finset (Subcube n)) : Prop :=

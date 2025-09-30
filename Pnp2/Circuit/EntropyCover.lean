@@ -362,13 +362,14 @@ therefore respects the trivial budgets `(0, 0)` regardless of the chosen
 partition `k`. -/
 theorem powFamily_cover_for_member_respects_budgets
     {n c : ℕ} {f : BFunc n}
-    (hf : f ∈ powFamily n c) (hn : 0 < n) (k : ℕ) :
+    (hf : f ∈ powFamily n c) (hn : 0 < n) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
       (∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
       Rset.card ≤ Nat.pow 2
         (3 * n + 11 * powFamilyEntropyBound n c + 2) ∧
-      (∀ R ∈ Rset, Subcube.respectsEnumerationBudgets (n := n) R k 0 0) := by
+      (∀ k : ℕ, ∀ R ∈ Rset,
+          Subcube.respectsEnumerationBudgets (n := n) R k 0 0) := by
   classical
   -- Start from the canonical cover for the whole family and filter it down to
   -- the rectangles relevant for `f`, exactly as in `powFamily_cover_for_member`.
@@ -385,8 +386,12 @@ theorem powFamily_cover_for_member_respects_budgets
   have hcard :=
     coverFamily_card_le_mBound (n := n) (F := powFamily n c)
       (h := powFamilyEntropyBound n c) hH hn
-  have hbudget :=
-    coverFamily_powFamily_respects_budgets (n := n) (c := c) (k := k)
+  -- Every rectangle of the canonical family freezes all coordinates; the
+  -- property holds uniformly for any choice of the split `k`.
+  have hbudget :
+      ∀ k : ℕ, ∀ R ∈ R0,
+          Subcube.respectsEnumerationBudgets (n := n) R k 0 0 :=
+    fun k => coverFamily_powFamily_respects_budgets (n := n) (c := c) (k := k)
   refine ⟨Rset, ?_, ?_, ?_, ?_⟩
   · -- Monochromaticity descends to the filtered cover.
     intro R hR x hx
@@ -408,10 +413,52 @@ theorem powFamily_cover_for_member_respects_budgets
       (n := n) (h := powFamilyEntropyBound n c)
     exact hcard_filtered.trans (hcard.trans hbound)
   · -- Budgets: every rectangle in the canonical cover freezes all coordinates,
-    -- hence the filtered cover inherits the property.
-    intro R hR
+    -- hence the filtered cover inherits the property for every split `k`.
+    intro k R hR
     have hmem : R ∈ R0 := (Finset.mem_filter.mp hR).1
-    exact hbudget R hmem
+    exact hbudget k R hmem
+
+/--
+**Lemma B‑5 (single-function version).**
+
+If a Boolean function `f : 𝔹ⁿ → Bool` is computable by a circuit of size at most
+`n^c`, then for every sufficiently large `n` (controlled by `coverThreshold c`)
+there exists a family of rectangular subcubes with the following properties:
+
+* every rectangle is monochromatic for `f` (colour `true` or `false`),
+* every `1`-input of `f` lies in at least one rectangle,
+* the number of rectangles is bounded by `2^{2^n - 2^{n/2}}` (choose `δ = 1/2`),
+* every rectangle fixes **all** coordinates, hence respects the enumeration
+  budgets on both halves of any partition of the variables.
+
+The last item is stronger than the statement of Lemma B‑5: the construction
+enforces zero free bits on either side, so enumeration terminates in constant
+time.  We expose the guarantee with explicit budgets `(0, 0)` for later reuse.
+-/
+theorem lemma_B5 {n c : ℕ} {f : BFunc n}
+    (hf : f ∈ powFamily n c) (hn : coverThreshold c ≤ n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (2 ^ n - 2 ^ (n / 2)) ∧
+      (∀ k : ℕ, ∀ R ∈ Rset,
+          Subcube.respectsEnumerationBudgets (n := n) R k 0 0) := by
+  classical
+  obtain ⟨_, htwo⟩ := coverThreshold_spec (c := c) (n := n) hn
+  have hnpos : 0 < n := lt_of_lt_of_le (by decide : 0 < 2) htwo
+  -- Start from the canonical cover with explicit budget control.
+  obtain ⟨Rset, hmono, hcover, hcard, hbud⟩ :=
+    powFamily_cover_for_member_respects_budgets
+      (n := n) (c := c) (f := f) hf hnpos
+  -- Upgrade the polynomial exponent bound to the double-exponential form.
+  have hdouble :
+      Rset.card ≤ Nat.pow 2 (2 ^ n - 2 ^ (n / 2)) := by
+    have hbound := powFamilyExponentBound_le_doubleExp (n := n) (c := c) hn
+    exact hcard.trans
+      (Nat.pow_le_pow_of_le_left (by decide : 1 ≤ 2) hbound)
+  refine ⟨Rset, hmono, hcover, hdouble, ?_⟩
+  intro k R hR
+  exact hbud k R hR
 
 end Circuit
 end Boolcube

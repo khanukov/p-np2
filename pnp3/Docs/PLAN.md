@@ -5,7 +5,8 @@
 ## Часть A. Базовые определения и ядро SAL
 
 - **Цель**: реализовать определения подкубов, ошибок аппроксимации, частичных решающих деревьев (PDT) и атласов. Доказать леммы `shrinkage_to_common_PDT` и `PDT_to_atlas`, их композицию `SAL_Core`.
-- **Файлы**: `Core/BooleanBasics.lean`, `Core/PDT.lean`, `Core/Atlas.lean`, `Core/SAL_Core.lean`.
+- **Файлы**: `Core/BooleanBasics.lean`, `Core/PDT.lean`, `Core/Atlas.lean`, `Core/SAL_Core.lean`,
+  `ThirdPartyFacts/Facts_Switching.lean` (интерфейс shrinkage для AC⁰).
 - **Тесты**: `Tests/Parity_Counterexample.lean`, `Tests/SAL_Smoke_AC0.lean`.
 
 ## Часть B. Счёт и ёмкость

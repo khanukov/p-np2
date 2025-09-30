@@ -1,4 +1,5 @@
 import Pnp2.Circuit.Family
+import Pnp2.Circuit.Numeric
 import Pnp2.family_entropy_cover
 import Pnp2.bound
 import Mathlib.Data.Nat.Log
@@ -215,6 +216,25 @@ theorem powFamily_cover_for_member {n c : ℕ} {f : BFunc n}
   · have := Finset.card_filter_le (s := Rset)
       (p := fun R => ∀ x, f x = true → x ∈ₛ R)
     exact this.trans hcard
+
+/-- A refined version of `powFamily_cover_for_member` which packages the
+double-exponential cardinality estimate obtained in
+`powFamilyExponentBound_le_doubleExp`. -/
+theorem powFamily_cover_for_member_doubleExp {n c : ℕ} {f : BFunc n}
+    (hf : f ∈ powFamily n c) (hn : coverThreshold c ≤ n) :
+    ∃ Rset : Finset (Subcube n),
+      (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧
+      (∀ x, f x = true → ∃ R ∈ Rset, x ∈ₛ R) ∧
+      Rset.card ≤ Nat.pow 2 (2 ^ n - 2 ^ (n / 2)) := by
+  classical
+  obtain ⟨_, htwo⟩ := coverThreshold_spec (c := c) (n := n) hn
+  have hnpos : 0 < n := lt_of_lt_of_le (by decide : 0 < 2) htwo
+  obtain ⟨Rset, hmono, hcover, hcard⟩ :=
+    powFamily_cover_for_member (n := n) (c := c) (f := f) hf hnpos
+  refine ⟨Rset, hmono, hcover, ?_⟩
+  have hbound := powFamilyExponentBound_le_doubleExp (n := n) (c := c) hn
+  exact hcard.trans
+    (Nat.pow_le_pow_of_le_left (by decide : 1 ≤ 2) hbound)
 
 end Circuit
 end Boolcube

@@ -125,14 +125,18 @@ positive dimension hosts `t` functions that are constantly `true`.
 The argument below follows the combinatorial skeleton of the classical proof.
 We assume that whenever a sunflower is extracted from the supports, each petal
 corresponds to a function whose behaviour depends only on the sunflower core.
-For the time being we additionally assume that every function evaluates to
-`true` on the all‑`false` input; once the combinatorial argument is fully
-ported this extra hypothesis will become redundant.
+Instead of postulating that all functions agree on the all-`false` input we work
+with an explicit finite set `Pts` of common `1`-inputs.  This matches the
+construction in the cover recursion, where the sunflower step operates on a
+nonempty pool of uncovered witnesses.
 -/
-lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
+lemma sunflower_step {n : ℕ} (F : Family n)
+    (Pts : Finset (Boolcube.Point n)) (p t : ℕ)
     (hp : 0 < p) (ht : 2 ≤ t)
     (h_big : Sunflower.threshold p t < (Family.supports F).card)
     (h_support : ∀ f ∈ F, (BoolFunc.support f).card = p)
+    (hPts_nonempty : Pts.Nonempty)
+    (hPts_true : ∀ f ∈ F, ∀ x ∈ Pts, f x = true)
     -- Hypothesis capturing the missing combinatorial argument: for any sunflower
     -- extracted from the supports, each petal corresponds to a function that is
     -- constant on points agreeing on the sunflower core.
@@ -141,9 +145,7 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
         ∀ A ∈ S.petals,
           ∃ f ∈ F, BoolFunc.support f = A ∧
             (∀ x y : Boolcube.Point n,
-                (∀ i ∈ S.core, x i = y i) → f x = f y))
-    -- Every function in the family evaluates to `true` on the all‑`false` input.
-    (h_true : ∀ f ∈ F, f (fun _ : Fin n => false) = true) :
+                (∀ i ∈ S.core, x i = y i) → f x = f y)) :
     ∃ (R : Boolcube.Subcube n),
       ((F.filter fun f => ∀ x : Boolcube.Point n,
           Boolcube.Subcube.Mem R x → f x = true).card ≥ t) ∧
@@ -171,7 +173,7 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
   classical
   choose f hfF hfSupp hfAgree using exists_f
   -- Freeze the sunflower core to obtain a covering subcube.
-  let x₀ : Boolcube.Point n := fun _ => false
+  obtain ⟨x₀, hx₀⟩ := hPts_nonempty
   let R : Boolcube.Subcube n := Boolcube.Subcube.fromPoint x₀ S.core
   -- Bounding the cardinality and dimension is the intricate part of the argument.
   -- We leave the two key properties as placeholders for future work.
@@ -225,7 +227,7 @@ lemma sunflower_step {n : ℕ} (F : Family n) (p t : ℕ)
         -- point, in particular the selected one.
         have hx0_true : (f a.1 a.2) x₀ = true := by
           have hfmem : f a.1 a.2 ∈ F := hfF _ a.2
-          simpa [x₀] using h_true _ hfmem
+          exact hPts_true _ hfmem _ hx₀
         -- Combining both facts yields the required evaluation.
         simpa [hx_eq] using hx0_true
       -- Package the membership proof for the filter.

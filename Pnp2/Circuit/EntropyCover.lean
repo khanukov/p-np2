@@ -419,7 +419,7 @@ theorem powFamily_cover_for_member_respects_budgets
     exact hbudget k R hmem
 
 /--
-**Lemma B‑5 (single-function version).**
+**Small-circuit double-exponential cover (Lemma B‑5).**
 
 If a Boolean function `f : 𝔹ⁿ → Bool` is computable by a circuit of size at most
 `n^c`, then for every sufficiently large `n` (controlled by `coverThreshold c`)
@@ -435,7 +435,7 @@ The last item is stronger than the statement of Lemma B‑5: the construction
 enforces zero free bits on either side, so enumeration terminates in constant
 time.  We expose the guarantee with explicit budgets `(0, 0)` for later reuse.
 -/
-theorem lemma_B5 {n c : ℕ} {f : BFunc n}
+theorem smallCircuit_doubleExp_cover {n c : ℕ} {f : BFunc n}
     (hf : f ∈ powFamily n c) (hn : coverThreshold c ≤ n) :
     ∃ Rset : Finset (Subcube n),
       (∀ R ∈ Rset, Subcube.monochromaticFor R f) ∧

@@ -560,6 +560,23 @@ lemma card_freeLeft_le_of_le (R : Subcube n) {k : ℕ} (hk : k ≤ n) :
   simpa [Coords.card_left, Nat.min_eq_left hk] using this
 
 /--
+Number of assignments needed to enumerate the free left coordinates of a
+subcube.  This definition packages the count as a power of two, matching the
+complexity bounds required by Lemma B‑5. -/
+def leftEnumerationCount (R : Subcube n) (k : ℕ) : ℕ :=
+  Nat.pow 2 ((freeLeft (n := n) R k).card)
+
+/--
+Enumerating the left block never exceeds `2^k` steps once at least `k` left
+coordinates are available.  This converts the cardinality control of
+`card_freeLeft_le_of_le` into a ready-to-use enumeration bound. -/
+lemma leftEnumerationCount_le (R : Subcube n) {k : ℕ}
+    (hk : k ≤ n) :
+    leftEnumerationCount (n := n) R k ≤ Nat.pow 2 k := by
+  have := card_freeLeft_le_of_le (n := n) (R := R) (k := k) hk
+  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) this
+
+/--
 From `fixedLeft + freeLeft = left` we deduce the handy identity
 `freeLeft = left - fixedLeft`.  It will be instrumental when translating
 lower bounds on fixed coordinates into upper bounds on the free ones.
@@ -643,6 +660,20 @@ lemma card_freeRight_le (R : Subcube n) (k : ℕ) :
     exact (Coords.mem_right (n := n) (k := k) (i := i)).2 hi'.1
   have hcard := Finset.card_le_card hsubset
   simpa [Coords.card_right] using hcard
+
+/-- Enumeration complexity for the right block.  The definition mirrors
+`leftEnumerationCount` and will later bound the cost of enumerating the free
+right coordinates. -/
+def rightEnumerationCount (R : Subcube n) (k : ℕ) : ℕ :=
+  Nat.pow 2 ((freeRight (n := n) R k).card)
+
+/-- Enumerating the right block fits within `2^{n-k}` steps once the right block
+is determined by `k` left coordinates. -/
+lemma rightEnumerationCount_le (R : Subcube n) {k : ℕ}
+    (hk : k ≤ n) :
+    rightEnumerationCount (n := n) R k ≤ Nat.pow 2 (n - k) := by
+  have := card_freeRight_le_of_le (n := n) (R := R) (k := k) hk
+  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) this
 
 /--
 Identity mirroring `card_freeLeft_eq_left_sub_fixed` on the right block.

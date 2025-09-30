@@ -1,9 +1,14 @@
 # The Family Collision-Entropy Lemma: Formal Statement and Constructive Proof
-> **Status (2025-09-24)**: Combinatorial sublemmas (sunflower step, entropy drop, cover construction) are formalised in Lean.  The remaining gap is the complexity-theoretic bridge from the FCE-Lemma to `P ≠ NP`.
->
-> **Update (2025-09-28)**: The quantitative bound `mBound` now includes an explicit `3^n` factor, restoring the inequality `card(Subcube n) ≤ mBound n h` for every positive dimension and every entropy budget.  The regression suite confirms the fix for representative values such as `(n,h) = (10,1)` and the heuristic choices `h = ⌊n / 20⌋` at `n = 20, 30, 40, 50`.
+> **Critical warning (2025-10-04).** The parity family $F = \{p, \bar p\}$ contradicts the claimed subexponential bound on common monochromatic subcubes: any such cover must contain at least $2^{n-1}$ points.  Поэтому формулировка FCE-леммы и все нижеследующие рассуждения рассматривайте как нереализуемый план, а не как установленный результат.【F:docs/fce_parity_counterexample.md†L1-L78】
 
-> **Update (2025-10-03)**: The formal proof of the FCE lemma is complete.  The recursion in `Cover.BuildCover` now terminates using the lexicographic `muLexTriple` measure, and the exported theorem `Bound.family_collision_entropy_lemma` provides the cover bound `≤ 2^{3n + 11h + 2}` for every `n`.  The regression test in `test/FCEAssumptionCounterexample.lean` instantiates the theorem at `n = 20 000`, certifying that no residual guard remains.
+> **Catalogue (2025-10-05).** См. [каталог контрпримеров](docs/fce_counterexample_catalog.md) для систематического списка семейств,
+> которые опровергают требование об общем покрытии; любая новая формулировка леммы должна явно обходить эти случаи.
+
+> **Historical status (2025-09-24)**: Combinatorial sublemmas (sunflower step, entropy drop, cover construction) are formalised in Lean.  The remaining gap is the complexity-theoretic bridge from the FCE-Lemma to `P ≠ NP`.
+
+> **Historical update (2025-09-28)**: The quantitative bound `mBound` now includes an explicit `3^n` factor, restoring the inequality `card(Subcube n) ≤ mBound n h` for every positive dimension and every entropy budget.  The regression suite confirms the fix for representative values such as `(n,h) = (10,1)` and the heuristic choices `h = ⌊n / 20⌋` at `n = 20, 30, 40, 50`.
+
+> **Historical update (2025-10-03)**: The formal proof of the FCE lemma is complete.  The recursion in `Cover.BuildCover` now terminates using the lexicographic `muLexTriple` measure, and the exported theorem `Bound.family_collision_entropy_lemma` provides the cover bound `≤ 2^{3n + 11h + 2}` for every `n`.  The regression test in `test/FCEAssumptionCounterexample.lean` instantiates the theorem at `n = 20 000`, certifying that no residual guard remains.
 
 
 ## Abstract

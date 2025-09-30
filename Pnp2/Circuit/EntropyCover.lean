@@ -317,7 +317,7 @@ theorem powFamily_cover_for_member {n c : ℕ} {f : BFunc n}
         (3 * n + 11 * powFamilyEntropyBound n c + 2) := by
   classical
   rcases powFamily_cover (n := n) (c := c) hn with ⟨Rset, hmono, hcover, hcard⟩
-  refine ⟨Rset.filter fun R => ∀ x, f x = true → x ∈ₛ R,
+  refine ⟨Rset.filter fun R => ∃ x, f x = true ∧ x ∈ₛ R,
     ?_, ?_, ?_⟩
   · intro R hR x hx
     have hmem : R ∈ Rset := (Finset.mem_filter.mp hR).1
@@ -326,15 +326,11 @@ theorem powFamily_cover_for_member {n c : ℕ} {f : BFunc n}
   · intro x hx
     rcases hcover f hf x hx with ⟨R, hR, hxR⟩
     refine ⟨R, ?_, hxR⟩
-    have hcond : ∀ y, f y = true → y ∈ₛ R := by
-      intro y hy
-      have hmonoR := hmono R hR f hf
-      have hx' := hmonoR hy
-      have := Subcube.mem_monochromaticFor (R := R) (f := f) hy hmonoR
-      simpa using this
-    exact Finset.mem_filter.mpr ⟨hR, hcond⟩
+    refine Finset.mem_filter.mpr ?_
+    refine ⟨hR, ?_⟩
+    exact ⟨x, hx, hxR⟩
   · have := Finset.card_filter_le (s := Rset)
-      (p := fun R => ∀ x, f x = true → x ∈ₛ R)
+      (p := fun R => ∃ x, f x = true ∧ x ∈ₛ R)
     exact this.trans hcard
 
 /-- A refined version of `powFamily_cover_for_member` which packages the
@@ -376,7 +372,7 @@ theorem powFamily_cover_for_member_respects_budgets
   let hH := powFamily_H₂_le (n := n) (c := c)
   let R0 := coverFamily (F := powFamily n c)
       (h := powFamilyEntropyBound n c) hH
-  let Rset := R0.filter fun R => ∀ x, f x = true → x ∈ₛ R
+  let Rset := R0.filter fun R => ∃ x, f x = true ∧ x ∈ₛ R
   have hmono :=
     coverFamily_pointwiseMono (n := n) (F := powFamily n c)
       (h := powFamilyEntropyBound n c) hH
@@ -401,12 +397,7 @@ theorem powFamily_cover_for_member_respects_budgets
     intro x hx
     rcases hcover f hf x hx with ⟨R, hR, hxR⟩
     refine ⟨R, ?_, hxR⟩
-    have hcond : ∀ y, f y = true → y ∈ₛ R := by
-      intro y hy
-      have hmonoR := hmono R hR f hf
-      have := Subcube.mem_monochromaticFor (R := R) (f := f) hy hmonoR
-      simpa using this
-    exact Finset.mem_filter.mpr ⟨hR, hcond⟩
+    exact Finset.mem_filter.mpr ⟨hR, ⟨x, hx, hxR⟩⟩
   · -- Cardinality bound inherited from the whole family via `mBound`.
     have hcard_filtered : Rset.card ≤ R0.card := Finset.card_filter_le _ _
     have hbound := Bound.mBound_le_two_pow_linear

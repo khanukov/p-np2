@@ -4,6 +4,8 @@
 
 Formal Proof Plan for the Family Collision-Entropy Lemma (FCE-Lemma)
 
+**Update (PNP3):** В каталоге `pnp3/` запущен новый конвейер, который заменяет FCE-подход на схему Switching-Atlas Lemma → hardness magnification. Подробности и чек-листы см. в `pnp3/Docs/PLAN.md`.
+
 Background and Significance
 
 The Family Collision-Entropy Lemma (FCE-Lemma) is a combinatorial statement proposed as the last crucial step in a potential proof that P ≠ NP. In essence, it asserts that if we have a class $F$ of boolean functions on $n$ inputs whose collision entropy $H_2(F)$ is bounded by a small constant $h$, then one can cover the truth tables of all functions in $F$ by a subexponential number of simple combinatorial regions (rectangles/subcubes) under certain constraints. Here collision entropy $H_2(F)$ intuitively measures how “spread out” or “uniform” the family $F$ is – a low $H_2$ means the family has significant structure or bias (e.g. each function might be very biased towards 0 or 1). The lemma generalizes earlier results that handled the special case of a single boolean function, showing that if such a function has small collision entropy it can be covered by a subexponential number of monochromatic rectangles. The FCE-Lemma extends this to an entire family of functions $F \subseteq {0,1}^{{0,1}^n}$ with $H_2(F)\le h$, requiring a unified cover that works for every function in $F$.

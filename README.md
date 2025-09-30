@@ -37,6 +37,7 @@ Every file that participates in the cover construction now has full proofs.  Cla
 
 ### Documentation and experiments
 * `docs/` – research notes and blueprints updated during the September 2025 audit.
+* `pnp3/` – новая ветка программы, реализующая конвейер Switching-Atlas Lemma → hardness magnification; содержит каркас Lean-файлов и документацию плана миграции.
 * `experiments/` – Python tooling for enumerating small Boolean circuits (`lemma_b_search.py`, `single_gate_count.py`, `collision_entropy.py`, `capacity_drop.py`, `sunflower_step.py`) with logged results in `results_n*.md`.
 * `Task_description.md`, `fce_lemma_proof.md` – background notes on the FCE-Lemma programme.
 

@@ -371,6 +371,8 @@ end Coords
 
 namespace Subcube
 
+variable {n : ℕ}
+
 open Coords
 
 /-- Fixed left coordinates of a subcube. -/
@@ -577,6 +579,46 @@ lemma leftEnumerationCount_le (R : Subcube n) {k : ℕ}
   exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) this
 
 /--
+The statement `R.respectsLeftBudget k L` asserts that no more than `L` left
+coordinates remain free inside the subcube.  This is precisely the condition
+needed to enumerate all admissible assignments within `2^L` steps.
+-/
+def respectsLeftBudget (R : Subcube n) (k L : ℕ) : Prop :=
+  (freeLeft (n := n) R k).card ≤ L
+
+/--
+Analogous notion for the right block: `R.respectsRightBudget k L` bounds the
+number of unconstrained right coordinates by `L`, ensuring that enumerating the
+right half requires at most `2^L` steps.
+-/
+def respectsRightBudget (R : Subcube n) (k L : ℕ) : Prop :=
+  (freeRight (n := n) R k).card ≤ L
+
+/--
+Combining both sides yields the exact predicate used in Lemma B‑5: the
+subcube simultaneously respects the left and right enumeration budgets.  The
+parameters `k` and `LLeft`, `LRight` encode, respectively, the cut between the
+two halves and the maximal number of free bits tolerated on each side.
+-/
+def respectsEnumerationBudgets (R : Subcube n)
+    (k LLeft LRight : ℕ) : Prop :=
+  respectsLeftBudget (n := n) R k LLeft ∧
+    respectsRightBudget (n := n) R k LRight
+
+/--
+Once `R` respects a left budget `L`, the explicit enumeration complexity is
+bounded by `2^L`.  This lemma packages the conversion from the combinatorial
+statement about free coordinates to the algorithmic upper bound required by the
+definition of "эффективная перечислимость" in Лемме B‑5.
+-/
+lemma leftEnumerationCount_le_of_budget (R : Subcube n) {k L : ℕ}
+    (h : respectsLeftBudget (n := n) R k L) :
+    leftEnumerationCount (n := n) R k ≤ Nat.pow 2 L := by
+  unfold respectsLeftBudget at h
+  unfold leftEnumerationCount
+  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) h
+
+/--
 From `fixedLeft + freeLeft = left` we deduce the handy identity
 `freeLeft = left - fixedLeft`.  It will be instrumental when translating
 lower bounds on fixed coordinates into upper bounds on the free ones.
@@ -674,6 +716,32 @@ lemma rightEnumerationCount_le (R : Subcube n) {k : ℕ}
     rightEnumerationCount (n := n) R k ≤ Nat.pow 2 (n - k) := by
   have := card_freeRight_le_of_le (n := n) (R := R) (k := k) hk
   exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) this
+
+/--
+Symmetric version of `leftEnumerationCount_le_of_budget` for the right block.
+-/
+lemma rightEnumerationCount_le_of_budget (R : Subcube n) {k L : ℕ}
+    (h : respectsRightBudget (n := n) R k L) :
+    rightEnumerationCount (n := n) R k ≤ Nat.pow 2 L := by
+  unfold respectsRightBudget at h
+  unfold rightEnumerationCount
+  exact Nat.pow_le_pow_right (by decide : 0 < (2 : ℕ)) h
+
+/--
+When both budgets are respected, the enumeration complexity on each side is
+controlled simultaneously.  This form will be used in the final statement of
+Леммы B‑5 to argue, что каждый прямоугольник покрытия перечислим за указанные
+времена как по левой, так и по правой половине входа.
+-/
+lemma enumerationCounts_le_of_budgets (R : Subcube n)
+    {k LLeft LRight : ℕ}
+    (h : respectsEnumerationBudgets (n := n) R k LLeft LRight) :
+    leftEnumerationCount (n := n) R k ≤ Nat.pow 2 LLeft ∧
+      rightEnumerationCount (n := n) R k ≤ Nat.pow 2 LRight := by
+  refine ⟨leftEnumerationCount_le_of_budget (n := n) (R := R)
+      (k := k) (L := LLeft) h.1,
+    rightEnumerationCount_le_of_budget (n := n) (R := R)
+      (k := k) (L := LRight) h.2⟩
 
 /--
 Identity mirroring `card_freeLeft_eq_left_sub_fixed` on the right block.

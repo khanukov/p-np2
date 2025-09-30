@@ -1,25 +1,37 @@
-/--
-# Atlas словарей подкубов
+/-
+  pnp3/Core/Atlas.lean
 
-Этот файл будет содержать определения структуры `Atlas`, состоящей из общего словаря подкубов и допускаемой ошибки `ε`.
-
-*Предстоящие задачи*:
-- определить структуру `Atlas` с полями `dict : List (Subcube n)` и `ε : ℚ`;
-- определить выбор поднаборов `R_f` для отдельных функций и их ошибки;
-- подготовить вспомогательные леммы для конверсии PDT → Atlas.
-
-Пока что здесь размещены только декларации и комментарии.
+  Атлас = общий словарь подкубов + допустимая ошибка ε.
+  Предикат WorksFor: для каждого f из семейства есть поднабор словаря, аппроксимирующий f с ошибкой ≤ ε.
 -/
+import Std.Data.List.Basic
+import PnP3.Core.BooleanBasics
+import PnP3.Core.PDT
 
-namespace Pnp3
+namespace PnP3.Core
 
-/-- TODO: определить структуру атласа. -/
-axiom Atlas (n : ℕ) : Type
+open PnP3.Core
 
-/-- TODO: размер словаря. -/
-axiom dict_size {n : ℕ} : Atlas n → ℕ
+structure Atlas (n : Nat) where
+  dict    : List (Subcube n)
+  epsilon : Q
+deriving Repr
 
-/-- TODO: параметр ошибки. -/
-axiom epsilon {n : ℕ} : Atlas n → ℚ
+/-- Подмножество (как предикат) списка: каждый элемент xs присутствует в ys. -/
+def listSubset {α} [DecidableEq α] (xs ys : List α) : Prop :=
+  ∀ a, xs.contains a = true → ys.contains a = true
 
-end Pnp3
+/-- Атлас "работает" для семейства F:
+    для каждого f ∈ F существует подсписок R_f ⊆ dict, такой что errU f R_f ≤ ε. -/
+def WorksFor {n : Nat}
+    (A : Atlas n) (F : List (BitVec n → Bool)) : Prop :=
+  ∀ f, f ∈ F →
+    ∃ (Rf : List (Subcube n)),
+      listSubset Rf A.dict ∧
+      errU f Rf ≤ A.epsilon
+
+/-- Атлас, построенный из PDT: словарь = листья PDT. -/
+def Atlas.ofPDT {n : Nat} (t : PDT n) (ε : Q) : Atlas n :=
+  { dict := PDT.leaves t, epsilon := ε }
+
+end PnP3.Core

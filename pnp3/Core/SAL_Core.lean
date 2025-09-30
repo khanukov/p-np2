@@ -1,29 +1,56 @@
-/--
-# Switching-Atlas Lemma (ядро)
+/-
+  pnp3/Core/SAL_Core.lean
 
-Здесь будет оформлена композиция `shrinkage_to_common_PDT` и `PDT_to_atlas`.
-
-*Текущие планы*:
-- определить предпосылку `Shrinkage` для семейства функций;
-- построить общий PDT и оценить его глубину;
-- преобразовать PDT в атлас и получить оценку размера словаря;
-- связать шаги в единую теорему `SAL_Core`.
-
-Пока что файл содержит только аксиоматические заглушки, чтобы зафиксировать целевые сигнатуры.
+  Ядро Switching-Atlas Lemma (SAL).
+  Абстрагируем Shrinkage как наличие общего PDT малой глубины и выбора листьев для каждого f с малой ошибкой.
+  Тогда SAL строит общий атлас из листьев PDT и утверждает, что он "работает" для семейства.
 -/
+import Std.Data.List.Basic
+import PnP3.Core.BooleanBasics
+import PnP3.Core.PDT
+import PnP3.Core.Atlas
 
-namespace Pnp3
+namespace PnP3.Core
 
-/-- TODO: формальное определение условия shrinkage. -/
-axiom Shrinkage (n : ℕ) : Type
+open PnP3.Core
 
-/-- TODO: лемма shrinkage_to_common_PDT. -/
-axiom shrinkage_to_common_PDT {n : ℕ} : Shrinkage n → PDT n
+/-- Семейство функций как список (для удобства перебора). -/
+abbrev Family (n : Nat) := List (BitVec n → Bool)
 
-/-- TODO: лемма PDT_to_atlas. -/
-axiom PDT_to_atlas {n : ℕ} : PDT n → Atlas n
+/-- Абстрактная "усадка" (Shrinkage):
+    существует ОБЩЕЕ PDT глубины ≤ t и для каждого f ∈ F задан поднабор листьев (Rf),
+    дающий ошибку ≤ ε. -/
+structure Shrinkage (n : Nat) [DecidableEq (Subcube n)] where
+  F        : Family n
+  t        : Nat
+  ε        : Q
+  tree     : PDT n
+  depth_le : PDT.depth tree ≤ t
+  Rsel     : (BitVec n → Bool) → List (Subcube n)  -- выбор подмножеств листьев для каждого f
+  Rsel_sub : ∀ f, f ∈ F → listSubset (Rsel f) (PDT.leaves tree)
+  err_le   : ∀ f, f ∈ F → errU f (Rsel f) ≤ ε
 
-/-- TODO: главная лемма SAL_Core. -/
-axiom SAL_Core {n : ℕ} : Shrinkage n → Atlas n
+/-- SAL: из Shrinkage строим атлас с dict = листья PDT, ε = заданное, который "работает" для F. -/
+theorem SAL_from_Shrinkage {n : Nat} [DecidableEq (Subcube n)]
+  (S : Shrinkage n) :
+  WorksFor (Atlas.ofPDT S.tree S.ε) S.F := by
+  intro f hf
+  -- Возьмём R_f как предписано shrinkage'ем
+  refine ⟨S.Rsel f, ?subset, ?err⟩
+  · -- R_f ⊆ leaves(tree)
+    exact S.Rsel_sub f hf
+  · -- errU f R_f ≤ ε
+    exact S.err_le f hf
 
-end Pnp3
+/-- Удобная оболочка: сам атлас из Shrinkage. -/
+def Atlas.fromShrinkage {n : Nat} [DecidableEq (Subcube n)]
+  (S : Shrinkage n) : Atlas n :=
+  Atlas.ofPDT S.tree S.ε
+
+/-- Параметрический факт о размере словаря:
+    число листьев PDT не превосходит `2^{depth}`. -/
+theorem leaves_count_bound {n : Nat} (t : PDT n) :
+  (PDT.leaves t).length ≤ Nat.pow 2 (PDT.depth t) :=
+  PDT.leaves_length_le_pow_depth t
+
+end PnP3.Core

@@ -10,14 +10,15 @@
 * обеспечивает регрессионную проверку для вспомогательных лемм о покрытии
   `errU`, `listSubset` и т.п.
 -/
-import PnP3.Core.BooleanBasics
-import PnP3.Core.PDT
-import PnP3.Core.Atlas
-import PnP3.Core.SAL_Core
+import Core.BooleanBasics
+import Core.PDT
+import Core.Atlas
+import Core.SAL_Core
 
-open PnP3.Core
+open Core
 
-namespace PnP3.Tests
+namespace Pnp3
+namespace Tests
 
 /-- Константная функция нуля на одном бите. -/
 @[simp] def f₀ : BitVec 1 → Bool := fun _ => false
@@ -27,12 +28,67 @@ def trivialSubcube : Subcube 1 := fun _ => none
 
 def trivialTree : PDT 1 := PDT.leaf trivialSubcube
 
+/-- Удобное обозначение для единственного индекса в `Fin 1`. -/
+@[simp] def idx0 : Fin 1 := ⟨0, by decide⟩
+
+/-- Подкуб, фиксирующий нулевой бит равным `false`. -/
+def zeroSubcube : Subcube 1 :=
+  fun j => if h : j = idx0 then some false else trivialSubcube j
+
+/-- Для удобства: список фиксаций, задающий `zeroSubcube`. -/
+@[simp] def zeroFixes : List (BitFix 1) := [(idx0, false)]
+
 /-- Полезная вспомогательная оценка: глубина нашего дерева нулевая. -/
 lemma depth_trivialTree : PDT.depth trivialTree = 0 := by
   simp [trivialTree, PDT.depth]
 
 /-- Для подкубов конечного размера у нас имеется decidable equality. -/
 instance : DecidableEq (Subcube 1) := inferInstance
+
+/-- Присваивание нулевого бита `false` даёт подкуб `zeroSubcube`. -/
+lemma assign_trivial_eq_zeroSubcube :
+    Subcube.assign trivialSubcube idx0 false = some zeroSubcube := by
+  classical
+  have hfree : trivialSubcube idx0 = none := rfl
+  simp [Subcube.assign, zeroSubcube, trivialSubcube, idx0, hfree]
+
+/-- Вектор `x = 0` удовлетворяет подкубу `zeroSubcube`. -/
+lemma zeroSubcube_contains_zero :
+    mem zeroSubcube (fun _ : BitVec 1 => false) := by
+  classical
+  have hassignMany :
+      Subcube.assignMany trivialSubcube zeroFixes = some zeroSubcube := by
+    simpa [zeroFixes] using assign_trivial_eq_zeroSubcube
+  have htop : mem trivialSubcube (fun _ : BitVec 1 => false) := by
+    simpa [trivialSubcube] using (mem_top (x := fun _ : BitVec 1 => false))
+  have hcond : ∀ u ∈ zeroFixes, (fun _ : BitVec 1 => false) u.1 = u.2 := by
+    intro u hu
+    -- В списке всего одна фиксация, проверка сводится к очевидному равенству.
+    have : u = (idx0, false) := by
+      simpa [zeroFixes] using hu
+    subst this
+    simp
+  exact
+    (mem_assignMany_iff (β := trivialSubcube) (γ := zeroSubcube)
+      (updates := zeroFixes) hassignMany (x := fun _ : BitVec 1 => false)).2
+      ⟨htop, hcond⟩
+
+/-- Напротив, вектор `x = 1` не принадлежит подкубу `zeroSubcube`. -/
+lemma zeroSubcube_excludes_one :
+    ¬ mem zeroSubcube (fun _ : BitVec 1 => true) := by
+  classical
+  have hassignMany :
+      Subcube.assignMany trivialSubcube zeroFixes = some zeroSubcube := by
+    simpa [zeroFixes] using assign_trivial_eq_zeroSubcube
+  intro hmem
+  have hdecomp :=
+    (mem_assignMany_iff (β := trivialSubcube) (γ := zeroSubcube)
+      (updates := zeroFixes) hassignMany (x := fun _ : BitVec 1 => true)).1 hmem
+  -- Достаём условие на конкретную фиксацию и получаем противоречие.
+  have hbit : (fun _ : BitVec 1 => true) idx0 = false := by
+    have := hdecomp.2 (idx0, false) (by simp [zeroFixes])
+    simpa using this
+  simpa using hbit
 
 /--
 Конструкция shrinkage для игрушечного примера. Мы намеренно выбираем
@@ -67,4 +123,5 @@ lemma sal_smoke_ac0 :
   classical
   simpa using SAL_from_Shrinkage shrinkage₀
 
-end PnP3.Tests
+end Tests
+end Pnp3

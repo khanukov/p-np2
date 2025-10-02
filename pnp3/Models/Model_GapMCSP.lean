@@ -1,17 +1,7 @@
-/--
-# Модель GapMCSP
-
-Определяет язык `(Gap)MCSP` в терминах параметров `N`, `s_low`, `s_high` и связи между таблицами истинности и размерами схем.
-
-*Запланировано*:
-- формализовать структуру с входом длины `N = 2^n`;
-- задать YES/NO зоны в зависимости от порогов размера схем;
-- связать с атласом и нижними оценками из других файлов.
-
-Пока это скелет, фиксирующий основные обозначения.
--/
+import Mathlib.Data.Nat.Basic
 
 namespace Pnp3
+namespace Models
 
 /-- TODO: структура параметров GapMCSP. -/
 axiom GapMCSPParams : Type
@@ -19,4 +9,5 @@ axiom GapMCSPParams : Type
 /-- TODO: язык GapMCSP для заданных параметров. -/
 axiom GapMCSP (params : GapMCSPParams) : Type
 
+end Models
 end Pnp3

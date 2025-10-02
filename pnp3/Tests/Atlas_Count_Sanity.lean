@@ -7,8 +7,10 @@
 -/
 
 namespace Pnp3
+namespace Tests
 
 /-- TODO: проверить корректность комбинаторных оценок. -/
 axiom atlas_count_sanity : Prop
 
+end Tests
 end Pnp3

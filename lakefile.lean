@@ -6,29 +6,28 @@ package pnp2
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.22.0-rc2"
 
 @[default_target]
-lean_lib Pnp2 where
-  -- The main library now lives entirely under `Pnp2`.
-  srcDir := "."
-  roots := #[`Pnp2]
-
-lean_exe tests where
-  root := `Main
-  srcDir := "test"
-  supportInterpreter := true
+lean_lib PnP3 where
+  srcDir := "pnp3"
+  globs := #[
+    `Core.BooleanBasics,
+    `Core.PDT,
+    `Core.Atlas,
+    `Core.SAL_Core,
+    `Counting.Count_EasyFuncs,
+    `Counting.Atlas_to_LB_Core,
+    `Models.Model_GapMCSP,
+    `LowerBounds.LB_Formulas,
+    `LowerBounds.LB_LocalCircuits,
+    `Magnification.Facts_Magnification,
+    `Magnification.Bridge_to_Magnification,
+    `ThirdPartyFacts.Facts_Switching
+  ]
 
 @[test_driver]
-lean_lib Tests where
-
-  -- Only build the modules that compile successfully. Some of the legacy
-  -- tests relied on the old `Pnp` namespace and no longer work after the
-  -- migration, so we exclude them from the test library.
+lean_lib PnP3Tests where
+  srcDir := "pnp3/Tests"
   globs := #[
-    `CoverExtra,
-    `Cover2Test,
-    `Pnp2Tests,
-    `SatCoverTest,
-    `CoverComputeTest,
-    `CoverResBaseTest,
-    `SunflowerTest
+    `Tests.SAL_Smoke_AC0,
+    `Tests.Atlas_Count_Sanity,
+    `Tests.Parity_Counterexample
   ]
-  srcDir := "test"

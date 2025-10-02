@@ -7,8 +7,10 @@
 -/
 
 namespace Pnp3
+namespace Tests
 
 /-- TODO: формализовать контрпример паритета. -/
 axiom parity_counterexample : Prop
 
+end Tests
 end Pnp3

@@ -11,12 +11,13 @@
   следует существование объекта `Shrinkage`, который затем конвейер SAL
   превращает в общий атлас.
 -/
-import PnP3.Core.BooleanBasics
-import PnP3.Core.SAL_Core
+import Core.BooleanBasics
+import Core.SAL_Core
 
-namespace PnP3.ThirdPartyFacts
+namespace Pnp3
+namespace ThirdPartyFacts
 
-open PnP3.Core
+open Core
 
 /-- Параметры класса AC⁰, которые обычно фигурируют в switching-леммах.
 
@@ -62,10 +63,16 @@ axiom shrinkage_for_AC0
 /-- Удобная оболочка: сразу извлекаем атлас из факта shrinkage.  Эта
 функция подчёркивает, что на практике мы используем именно словарь подкубов,
 а не сам PDT. -/
-def atlas_from_AC0
-    (params : AC0Parameters) (F : Family params.n) : Atlas params.n :=
-  match shrinkage_for_AC0 params F with
-  | ⟨_t, ⟨_ε, ⟨S, _⟩⟩⟩ => Atlas.fromShrinkage S
+noncomputable def atlas_from_AC0
+    (params : AC0Parameters) (F : Family params.n) : Atlas params.n := by
+  classical
+  let h := shrinkage_for_AC0 params F
+  let t := Classical.choose h
+  let h₁ := Classical.choose_spec h
+  let ε := Classical.choose h₁
+  let h₂ := Classical.choose_spec h₁
+  let S := Classical.choose h₂
+  exact Atlas.fromShrinkage S
 
 /-- Свойство корректности атласа, полученного из внешнего shrinkage.
     Оно напрямую следует из `SAL_from_Shrinkage`. -/
@@ -73,17 +80,21 @@ theorem atlas_from_AC0_works
     (params : AC0Parameters) (F : Family params.n) :
     WorksFor (atlas_from_AC0 params F) F := by
   classical
-  -- Разворачиваем аксиому и применяем SAL.
-  obtain ⟨t, ht⟩ := shrinkage_for_AC0 params F
-  obtain ⟨ε, hε⟩ := ht
-  obtain ⟨S, hS⟩ := hε
+  let h := shrinkage_for_AC0 params F
+  let t := Classical.choose h
+  let h₁ := Classical.choose_spec h
+  let ε := Classical.choose h₁
+  let h₂ := Classical.choose_spec h₁
+  let S := Classical.choose h₂
+  obtain ⟨hF, _ht, _hε, _htBound, _hεBound⟩ := Classical.choose_spec h₂
   have hworks : WorksFor (Atlas.fromShrinkage S) S.F :=
     SAL_from_Shrinkage S
-  -- Из заключения аксиомы следует `S.F = F`.
-  rcases hS with ⟨hF, _ht, _hε, _htBound, _hεBound⟩
-  -- Приводим всё к нужному виду.
-  have : Atlas.fromShrinkage S = atlas_from_AC0 params F := rfl
-  -- Переупорядочиваем `WorksFor` с учётом `hF`.
-  simpa [this, hF] using hworks
+  have hdict : Atlas.fromShrinkage S = atlas_from_AC0 params F := rfl
+  have hworks' : WorksFor (atlas_from_AC0 params F) S.F := by
+    simpa [hdict] using hworks
+  have hworks'' : WorksFor (atlas_from_AC0 params F) F := by
+    simpa using hF ▸ hworks'
+  exact hworks''
 
-end PnP3.ThirdPartyFacts
+end ThirdPartyFacts
+end Pnp3

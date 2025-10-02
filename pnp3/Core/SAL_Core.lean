@@ -5,14 +5,13 @@
   Абстрагируем Shrinkage как наличие общего PDT малой глубины и выбора листьев для каждого f с малой ошибкой.
   Тогда SAL строит общий атлас из листьев PDT и утверждает, что он "работает" для семейства.
 -/
-import Std.Data.List.Basic
-import PnP3.Core.BooleanBasics
-import PnP3.Core.PDT
-import PnP3.Core.Atlas
+import Mathlib.Data.List.Basic
+import Core.BooleanBasics
+import Core.PDT
+import Core.Atlas
 
-namespace PnP3.Core
-
-open PnP3.Core
+namespace Pnp3
+namespace Core
 
 /-- Семейство функций как список (для удобства перебора). -/
 abbrev Family (n : Nat) := List (BitVec n → Bool)
@@ -38,7 +37,7 @@ theorem SAL_from_Shrinkage {n : Nat} [DecidableEq (Subcube n)]
   -- Возьмём R_f как предписано shrinkage'ем
   refine ⟨S.Rsel f, ?subset, ?err⟩
   · -- R_f ⊆ leaves(tree)
-    exact S.Rsel_sub f hf
+    simpa [Atlas.ofPDT, listSubset] using S.Rsel_sub f hf
   · -- errU f R_f ≤ ε
     exact S.err_le f hf
 
@@ -53,4 +52,5 @@ theorem leaves_count_bound {n : Nat} (t : PDT n) :
   (PDT.leaves t).length ≤ Nat.pow 2 (PDT.depth t) :=
   PDT.leaves_length_le_pow_depth t
 
-end PnP3.Core
+end Core
+end Pnp3

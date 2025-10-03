@@ -1,4 +1,14 @@
-/--
+import Core.BooleanBasics
+import Core.PDT
+import Core.Atlas
+import Core.SAL_Core
+
+open Core
+
+namespace Pnp3
+namespace Tests
+
+/-!
 # Smoke-тест SAL для игрушечного примера AC⁰
 
 В этом файле мы не обращаемся к внешней multi-switching лемме. Вместо этого
@@ -10,15 +20,6 @@
 * обеспечивает регрессионную проверку для вспомогательных лемм о покрытии
   `errU`, `listSubset` и т.п.
 -/
-import Core.BooleanBasics
-import Core.PDT
-import Core.Atlas
-import Core.SAL_Core
-
-open Core
-
-namespace Pnp3
-namespace Tests
 
 /-- Константная функция нуля на одном бите. -/
 @[simp] def f₀ : BitVec 1 → Bool := fun _ => false

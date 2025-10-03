@@ -1,4 +1,6 @@
+import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Card
+import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.List.Basic
 import Core.BooleanBasics
@@ -42,13 +44,12 @@ abbrev Q := Rat
 abbrev Domain (m : Nat) := Core.BitVec m
 
 /--
-  Хаммингово расстояние между двумя булевыми функциями на пространстве
-  `Domain m`.  Мы явно перебираем все точки пространства (список `allBitVec m`)
-  и считаем количество расхождений.
+  Хаммингово расстояние между двумя функциями: число точек, где они различны.
+  Формально это мощность фильтра `Finset`, выделяющего несовпадающие элементы
+  пространства `Domain m`.
 -/
 def distU {m : Nat} (f g : Domain m → Bool) : Nat :=
-  let xs := allBitVec m
-  xs.foldl (fun acc x => acc + (if f x ≠ g x then 1 else 0)) 0
+  ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)).card
 
 /--
   Класс функций, которые являются объединением не более чем `k` подкубов
@@ -73,22 +74,39 @@ def ApproxClass {m : Nat}
   { f | ∃ g, g ∈ UnionClass R k ∧
         (distU f g : Q) ≤ ε * ((Nat.pow 2 m : Nat) : Q) }
 
-/-- Техническое равенство: выражаем `distU` через ту же свёртку, что
-  используется в определении `errU`.  Это позволит напрямую связывать
-  «вероятностную» ошибку с подсчётами Хэмминга. -/
-lemma distU_eq_fold
-    {m : Nat} (f g : Domain m → Bool) :
-    distU f g =
-      (allBitVec m).foldl
-        (fun acc x => acc + b2n (boolXor (f x) (g x))) 0 := by
-  classical
-  have hpoint : ∀ x, (if f x ≠ g x then 1 else 0)
-      = b2n (boolXor (f x) (g x)) := by
-    intro x
-    by_cases hfg : f x = g x
-    · simp [boolXor, hfg, b2n]
-    · simp [boolXor, hfg, b2n] at *
-  simpa [distU, hpoint]
+/-- Нулевая ошибка на расстоянии соответствует точному совпадению функций. -/
+lemma distU_eq_zero_of_eq
+    {m : Nat} {f g : Domain m → Bool} (h : f = g) :
+    distU f g = 0 := by
+  subst h
+  simp [distU]
+
+/-- Обратное направление: нулевая дистанция означает, что функции совпадают. -/
+lemma distU_eq_zero_iff
+    {m : Nat} {f g : Domain m → Bool} :
+    distU f g = 0 ↔ f = g := by
+  constructor
+  · intro h
+    have hempty :
+        ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)) =
+          (∅ : Finset (Domain m)) := by
+      exact Finset.card_eq_zero.mp h
+    funext x
+    have hx_mem : x ∈ (Finset.univ : Finset (Domain m)) := by
+      simpa using (Finset.mem_univ x)
+    have hx_not :
+        x ∉ ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)) := by
+      simpa [hempty] using (Finset.not_mem_empty x)
+    have hx_contra : f x ≠ g x → False := by
+      intro hne
+      have hx_filter :
+          x ∈ ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)) :=
+        Finset.mem_filter.mpr ⟨hx_mem, hne⟩
+      exact hx_not hx_filter
+    by_contra hne
+    exact hx_contra hne
+  · intro h
+    simpa [distU, h]
 
 /-- Связываем `errU` с `distU`: ошибка аппроксимации равна числу несовпадений,
   делённому на размер пространства `2^m`. -/
@@ -98,20 +116,8 @@ lemma errU_eq_distU_div_pow
       (distU f (fun x => coveredB S x) : Q) /
         ((Nat.pow 2 m : Nat) : Q) := by
   classical
-  unfold errU
-  set xs := allBitVec m
-  set mismatches :=
-    xs.foldl
-      (fun acc x => acc + b2n (boolXor (f x) (coveredB S x))) 0
-  have hdist :
-      distU f (fun x => coveredB S x) =
-        xs.foldl
-          (fun acc x => acc + b2n (boolXor (f x) (coveredB S x))) 0 := by
-    simpa [xs, mismatches, distU_eq_fold]
-  have hmismatch : mismatches =
-      distU f (fun x => coveredB S x) := by
-    simpa [mismatches] using hdist.symm
-  simp [mismatches, hmismatch]
+  unfold errU distU
+  simp
 
 /-- Если ошибка аппроксимации мала, то и расстояние `distU` удовлетворяет
   соответствующей границе. -/
@@ -140,6 +146,34 @@ lemma distU_le_of_errU_le
   simpa [div_mul_eq_mul_div, hden_ne, mul_left_comm, mul_assoc]
     using hmul
 
+/-- Обратное неравенство: если расстояние `distU` малое, то и ошибка `errU`
+    не превосходит `ε`. -/
+lemma errU_le_of_distU_le
+    {m : Nat} (f : Domain m → Bool) (S : List (Subcube m))
+    (ε : Q)
+    (h : (distU f (fun x => coveredB S x) : Q)
+          ≤ ε * ((Nat.pow 2 m : Nat) : Q)) :
+    errU (n := m) f S ≤ ε := by
+  classical
+  have hpow_pos : 0 < ((Nat.pow 2 m : Nat) : Q) := by
+    have hNat : 0 < Nat.pow 2 m := by
+      induction m with
+      | zero => simp
+      | succ m ih =>
+          have : 0 < 2 := by decide
+          simpa [Nat.pow_succ] using Nat.mul_pos this ih
+    exact_mod_cast hNat
+  have hden_ne : ((Nat.pow 2 m : Nat) : Q) ≠ 0 := by
+    exact_mod_cast (ne_of_gt hpow_pos)
+  have hmul :=
+    mul_le_mul_of_nonneg_right h (inv_nonneg.mpr (le_of_lt hpow_pos))
+  have hdiv :
+      (distU f (fun x => coveredB S x) : Q)
+          / ((Nat.pow 2 m : Nat) : Q) ≤ ε := by
+    simpa [div_eq_mul_inv, hden_ne, mul_comm, mul_left_comm, mul_assoc]
+      using hmul
+  simpa [errU_eq_distU_div_pow] using hdiv
+
 /-- Обобщённое включение: если существует поднабор словаря, аппроксимирующий
   функцию `f` с ошибкой ≤ `ε`, то `f` принадлежит классу `ApproxClass`. -/
 lemma approx_mem_of_errU_le
@@ -153,6 +187,64 @@ lemma approx_mem_of_errU_le
   refine ⟨(fun x => coveredB S x), ?_, ?_⟩
   · exact ⟨S, hlen, hsubset, rfl⟩
   · exact distU_le_of_errU_le (f := f) (S := S) (ε := ε) herr
+
+/-- Из принадлежности классу `ApproxClass` извлекаем явный набор подкубов,
+    аппроксимирующий функцию `f` с ошибкой `ε`. -/
+lemma errU_exists_of_mem_approx
+    {m : Nat} (R : List (Subcube m)) (k : Nat) (ε : Q)
+    {f : Domain m → Bool}
+    (hf : f ∈ ApproxClass (R := R) (k := k) (ε := ε)) :
+    ∃ S : List (Subcube m),
+      S.length ≤ k ∧ listSubset S R ∧ errU (n := m) f S ≤ ε := by
+  classical
+  rcases hf with ⟨g, hg_union, hdist⟩
+  rcases hg_union with ⟨S, hlen, hsubset, hfun⟩
+  refine ⟨S, hlen, hsubset, ?_⟩
+  have hdist' :
+      (distU f (fun x => coveredB S x) : Q)
+        ≤ ε * ((Nat.pow 2 m : Nat) : Q) := by
+    simpa [hfun] using hdist
+  exact errU_le_of_distU_le (f := f) (S := S) (ε := ε) hdist'
+
+/-- Любая функция из `UnionClass` автоматически лежит в `ApproxClass` при ε = 0. -/
+lemma union_subset_approx_zero
+    {m : Nat} (R : List (Subcube m)) (k : Nat) :
+    UnionClass R k ⊆ ApproxClass (R := R) (k := k) (ε := 0) := by
+  classical
+  intro f hf
+  refine ⟨f, ?_, ?_⟩
+  · simpa using hf
+  · have hdist : distU f f = 0 :=
+      distU_eq_zero_of_eq (m := m) (f := f) (g := f) rfl
+    have hco : (distU f f : Q) = 0 := by exact_mod_cast hdist
+    have : (distU f f : Q) ≤ 0 := by simpa [hco]
+    simpa using this
+
+/-- Обратное включение: при `ε = 0` аппроксимация совпадает с исходным
+  объединением подкубов. -/
+lemma approx_subset_union_zero
+    {m : Nat} (R : List (Subcube m)) (k : Nat) :
+    ApproxClass (R := R) (k := k) (ε := 0) ⊆ UnionClass R k := by
+  classical
+  intro f hf
+  rcases hf with ⟨g, hg_union, hdist⟩
+  have hdist' : (distU f g : Q) ≤ 0 := by
+    simpa using hdist
+  have hnonneg : (0 : Q) ≤ (distU f g : Q) := by
+    exact_mod_cast (Nat.zero_le (distU f g))
+  have hzero : (distU f g : Q) = 0 := le_antisymm hdist' hnonneg
+  have hdistNat : distU f g = 0 := by
+    exact_mod_cast hzero
+  have hfg : f = g := (distU_eq_zero_iff (f := f) (g := g)).mp hdistNat
+  simpa [hfg] using hg_union
+
+/-- Полное равенство классов при нулевой ошибке. -/
+lemma approx_zero_eq_union
+    {m : Nat} (R : List (Subcube m)) (k : Nat) :
+    ApproxClass (R := R) (k := k) (ε := 0) = UnionClass R k := by
+  apply Set.Subset.antisymm
+  · exact approx_subset_union_zero (R := R) (k := k)
+  · exact union_subset_approx_zero (R := R) (k := k)
 
 /--
   Размер словаря.  Отдельное определение помогает сделать последующие

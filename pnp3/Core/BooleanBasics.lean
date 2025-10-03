@@ -8,6 +8,9 @@
   - coveredB  : индикатор "x покрыт объединением подкубов"
   - errU      : ошибка аппроксимации по равномерному распределению (через полный перебор)
 -/
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
 import Mathlib.Data.List.Basic
 import Mathlib.Data.List.FinRange
 import Mathlib.Tactic
@@ -341,30 +344,12 @@ def vecOfNat (n : Nat) (k : Nat) : BitVec n :=
 def allBitVec (n : Nat) : List (BitVec n) :=
   (List.range (Nat.pow 2 n)).map (vecOfNat n)
 
-/-- Ошибка аппроксимации: доля входов, где f(x) ≠ coveredB Rset x. -/
+/- Ошибка аппроксимации: доля входов, где f(x) ≠ coveredB Rset x. -/
 def errU {n : Nat} (f : BitVec n → Bool) (Rset : List (Subcube n)) : Q :=
-  let xs := allBitVec n
-  let mismatches : Nat :=
-    xs.foldl (fun acc x => acc + b2n (boolXor (f x) (coveredB Rset x))) 0
-  ((mismatches : Int) : Q) / ((Nat.pow 2 n : Int) : Q)
-
-/--
-`foldl` с добавлением функции, всюду равной нулю, возвращает исходный аккумулятор.
-Этот технический лемматик используется при подсчёте ошибок: если на каждом
-входе `f` совпадает с аппроксимацией, то суммарное число несовпадений нулевое.
--/
-private lemma foldl_add_eq_self {α : Type _} (g : α → Nat)
-    (hg : ∀ x, g x = 0) :
-    ∀ (xs : List α) (a : Nat),
-      xs.foldl (fun acc x => acc + g x) a = a := by
-  intro xs
-  induction xs with
-  | nil => intro a; simp
-  | cons x xs ih =>
-      intro a
-      have hx : g x = 0 := hg x
-      have := ih (a + g x)
-      simpa [List.foldl, hx] using this
+  let mismatches :=
+    ((Finset.univ : Finset (BitVec n)).filter
+      (fun x => f x ≠ coveredB Rset x)).card
+  ((mismatches : Nat) : Q) / ((Nat.pow 2 n : Nat) : Q)
 
 /-- Если функция `f` совпадает с покрытием `coveredB`, то ошибка аппроксимации
 равна нулю. -/
@@ -373,19 +358,20 @@ lemma errU_eq_zero_of_agree {n : Nat}
     (h : ∀ x, f x = coveredB Rset x) :
     errU f Rset = 0 := by
   unfold errU
-  set xs := allBitVec n
   set mismatches :=
-    xs.foldl (fun acc x => acc + b2n (boolXor (f x) (coveredB Rset x))) 0
-  have hg : ∀ x, b2n (boolXor (f x) (coveredB Rset x)) = 0 := by
-    intro x
-    have hx : f x = coveredB Rset x := h x
-    simp [boolXor, hx]
-  have hfold := foldl_add_eq_self
-    (fun x => b2n (boolXor (f x) (coveredB Rset x))) hg xs 0
+    ((Finset.univ : Finset (BitVec n)).filter
+      (fun x => f x ≠ coveredB Rset x)).card
+  have hfilter :
+      ((Finset.univ : Finset (BitVec n)).filter
+        (fun x => f x ≠ coveredB Rset x)) = (∅ : Finset (BitVec n)) := by
+    ext x
+    constructor
+    · intro hx
+      rcases Finset.mem_filter.mp hx with ⟨_, hneq⟩
+      exact (hneq (h x)).elim
+    · intro hx; simpa using hx
   have hmismatch : mismatches = 0 := by
-    change xs.foldl
-        (fun acc x => acc + b2n (boolXor (f x) (coveredB Rset x))) 0 = 0
-    exact hfold
+    simpa [mismatches, hfilter]
   simp [mismatches, hmismatch]
 
 /-- Частный случай: пустой набор подкубов идеально аппроксимирует константный
@@ -396,10 +382,23 @@ lemma errU_eq_zero_of_agree {n : Nat}
   intro x
   simp
 
-/-- Вспомогательный факт: размер подкуба с k фиксированными битами равен 2^(n-k).
-    (Используется далее для вероятностных оценок; доказательство можно добавить позже.) -/
+/-- Решимость принадлежности точки подкубу: определяется через булев индикатор. -/
+instance mem_decidable {n : Nat} (β : Subcube n) :
+    DecidablePred (fun x : BitVec n => mem β x) := by
+  intro x
+  unfold mem
+  infer_instance
+
+/--
+Размер подкуба выражается через число фиксированных координат.  Формально:
+существует `t ≤ n` (количество зафиксированных позиций), такое что число точек
+подкуба равно `2^(n - t)`.  Пока оставляем это утверждение в виде аксиомы —
+реальное доказательство можно импортировать из `mathlib` или перенести из
+предыдущей версии проекта.
+-/
 axiom subcube_card_pow {n : Nat} (β : Subcube n) :
-  True  -- placeholder; при необходимости позже заменим на реальное утверждение
+  ∃ t : Nat, t ≤ n ∧
+    Fintype.card {x : BitVec n // mem β x} = Nat.pow 2 (n - t)
 
 end Core
 end Pnp3

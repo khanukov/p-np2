@@ -13,6 +13,7 @@ lean_lib PnP3 where
     `Core.PDT,
     `Core.Atlas,
     `Core.SAL_Core,
+    `Counting.BinomialBounds,
     `Counting.Count_EasyFuncs,
     `Counting.Atlas_to_LB_Core,
     `Models.Model_GapMCSP,
@@ -27,7 +28,6 @@ lean_lib PnP3 where
 lean_lib PnP3Tests where
   srcDir := "pnp3/Tests"
   globs := #[
-    `Tests.SAL_Smoke_AC0,
-    `Tests.Atlas_Count_Sanity,
-    `Tests.Parity_Counterexample
+    `Atlas_Count_Sanity,
+    `Atlas_Counterexample_Search
   ]

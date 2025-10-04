@@ -336,6 +336,125 @@ lemma covered_cons {n : Nat} (β : Subcube n) (R : List (Subcube n))
     · exact ⟨β, by simp, h⟩
     · rcases h with ⟨γ, hγ, hx⟩; exact ⟨γ, by simp [hγ], hx⟩
 
+/-- Удаление дубликатов не меняет факт покрытия точки объединением подкубов. -/
+lemma covered_dedup {n : Nat} [DecidableEq (Subcube n)]
+    (R : List (Subcube n)) (x : BitVec n) :
+    covered (R.dedup) x ↔ covered R x := by
+  classical
+  constructor
+  · intro h
+    rcases h with ⟨β, hβ, hx⟩
+    refine ⟨β, ?_, hx⟩
+    have : β ∈ R.dedup := by simpa using hβ
+    exact (List.mem_dedup.mp this)
+  · intro h
+    rcases h with ⟨β, hβ, hx⟩
+    refine ⟨β, ?_, hx⟩
+    exact (List.mem_dedup.mpr hβ)
+
+/-- Булев индикатор покрытия также не чувствителен к дубликатам. -/
+lemma coveredB_dedup {n : Nat} [DecidableEq (Subcube n)]
+    (R : List (Subcube n)) (x : BitVec n) :
+    coveredB (R.dedup) x = coveredB R x := by
+  classical
+  by_cases hcov : covered R x
+  · have hcov' : covered (R.dedup) x :=
+      (covered_dedup (n := n) R x).mpr hcov
+    have htrue : coveredB R x = true :=
+      (covered_iff (Rset := R) x).mp hcov
+    have htrue' : coveredB (R.dedup) x = true :=
+      (covered_iff (Rset := R.dedup) x).mp hcov'
+    simp [htrue, htrue']
+  · have hcov' : ¬ covered (R.dedup) x := by
+      intro h'; exact hcov ((covered_dedup (n := n) R x).mp h')
+    have hfalse : coveredB R x = false := by
+      cases hcase : coveredB R x with
+      | false => rfl
+      | true =>
+          have : covered R x :=
+            (covered_iff (Rset := R) x).mpr (by simpa [hcase])
+          exact (hcov this).elim
+    have hfalse' : coveredB (R.dedup) x = false := by
+      cases hcase : coveredB (R.dedup) x with
+      | false => rfl
+      | true =>
+          have : covered (R.dedup) x :=
+            (covered_iff (Rset := R.dedup) x).mpr (by simpa [hcase])
+          exact (hcov' this).elim
+    simp [hfalse, hfalse']
+
+/--
+  Если два списка содержат одни и те же элементы (с точностью до перестановки
+  и кратности), то их булевые индикаторы покрытия совпадают.
+-/
+lemma coveredB_eq_of_mem_equiv {n : Nat}
+    {R₁ R₂ : List (Subcube n)}
+    (h : ∀ β, β ∈ R₁ ↔ β ∈ R₂) :
+    (fun x => coveredB R₁ x) = fun x => coveredB R₂ x :=
+  by
+    classical
+    funext x
+    have hcovered : covered R₁ x ↔ covered R₂ x := by
+      constructor
+      · intro hx
+        rcases hx with ⟨β, hβ, hmem⟩
+        have hβ' : β ∈ R₂ := (h β).1 hβ
+        exact ⟨β, hβ', hmem⟩
+      · intro hx
+        rcases hx with ⟨β, hβ, hmem⟩
+        have hβ' : β ∈ R₁ := (h β).2 hβ
+        exact ⟨β, hβ', hmem⟩
+    by_cases hcov : covered R₁ x
+    · -- Обе функции возвращают `true`.
+      have hcov' : covered R₂ x := (hcovered.mp hcov)
+      have htrue₁ : coveredB R₁ x = true :=
+        (covered_iff (Rset := R₁) x).mp hcov
+      have htrue₂ : coveredB R₂ x = true :=
+        (covered_iff (Rset := R₂) x).mp hcov'
+      simp [htrue₁, htrue₂]
+    · -- Обе функции возвращают `false`.
+      have hcov' : ¬ covered R₂ x := by
+        intro hx
+        exact hcov (hcovered.mpr hx)
+      have hfalse₁ : coveredB R₁ x = false := by
+        by_cases hb : coveredB R₁ x = true
+        · have hx := (covered_iff (Rset := R₁) x).mpr hb
+          exact (hcov hx).elim
+        · cases hcase : coveredB R₁ x with
+          | false => simp [hcase]
+          | true => cases hb hcase
+      have hfalse₂ : coveredB R₂ x = false := by
+        by_cases hb : coveredB R₂ x = true
+        · have hx := (covered_iff (Rset := R₂) x).mpr hb
+          exact (hcov' hx).elim
+        · cases hcase : coveredB R₂ x with
+          | false => simp [hcase]
+          | true => cases hb hcase
+      simp [hfalse₁, hfalse₂]
+
+/--
+  Если финитные множества уникальных элементов списков совпадают, то и
+  функции покрытия идентичны.  В сочетании с предыдущей леммой это позволяет
+  рассуждать в терминах `List.toFinset`, не отслеживая явные биекции между
+  списками.
+-/
+lemma coveredB_eq_of_toFinset_eq {n : Nat}
+    {R₁ R₂ : List (Subcube n)}
+    (h : R₁.toFinset = R₂.toFinset) :
+    (fun x => coveredB R₁ x) = fun x => coveredB R₂ x := by
+  classical
+  refine coveredB_eq_of_mem_equiv (n := n) ?_
+  intro β
+  constructor <;> intro hβ
+  · have hβ' : β ∈ R₁.toFinset := by
+      simpa [List.mem_toFinset] using hβ
+    have hβ'' : β ∈ R₂.toFinset := by simpa [h] using hβ'
+    simpa [List.mem_toFinset] using hβ''
+  · have hβ' : β ∈ R₂.toFinset := by
+      simpa [List.mem_toFinset] using hβ
+    have hβ'' : β ∈ R₁.toFinset := by simpa [h] using hβ'
+    simpa [List.mem_toFinset] using hβ''
+
 /-- Построить BitVec длины n из числа k (по двоичным битам). -/
 def vecOfNat (n : Nat) (k : Nat) : BitVec n :=
   fun i => Nat.testBit k i.val
@@ -350,6 +469,25 @@ def errU {n : Nat} (f : BitVec n → Bool) (Rset : List (Subcube n)) : Q :=
     ((Finset.univ : Finset (BitVec n)).filter
       (fun x => f x ≠ coveredB Rset x)).card
   ((mismatches : Nat) : Q) / ((Nat.pow 2 n : Nat) : Q)
+
+/-- Ошибка аппроксимации не меняется при удалении дубликатов подкубов. -/
+lemma errU_dedup {n : Nat} [DecidableEq (Subcube n)]
+    (f : BitVec n → Bool) (R : List (Subcube n)) :
+    errU f (R.dedup) = errU f R := by
+  classical
+  unfold errU
+  have hfun :
+      (fun x : BitVec n => f x ≠ coveredB (R.dedup) x) =
+        (fun x : BitVec n => f x ≠ coveredB R x) := by
+    funext x
+    have hcov := coveredB_dedup (n := n) (R := R) (x := x)
+    have hiff : f x = coveredB (R.dedup) x ↔ f x = coveredB R x := by
+      constructor <;> intro hfx
+      · exact hfx.trans hcov
+      · exact hfx.trans hcov.symm
+    have hnot := not_congr hiff
+    exact propext hnot
+  simp [hfun]
 
 /-- Если функция `f` совпадает с покрытием `coveredB`, то ошибка аппроксимации
 равна нулю. -/
@@ -390,15 +528,172 @@ instance mem_decidable {n : Nat} (β : Subcube n) :
   infer_instance
 
 /--
-Размер подкуба выражается через число фиксированных координат.  Формально:
-существует `t ≤ n` (количество зафиксированных позиций), такое что число точек
-подкуба равно `2^(n - t)`.  Пока оставляем это утверждение в виде аксиомы —
-реальное доказательство можно импортировать из `mathlib` или перенести из
-предыдущей версии проекта.
+  Размер подкуба равен `2^(n - t)`, где `t` — число фиксированных координат.
+  Мы явно строим биекцию между функциями в подкубе и булевыми присваиваниями
+  на множестве свободных координат.
 -/
-axiom subcube_card_pow {n : Nat} (β : Subcube n) :
-  ∃ t : Nat, t ≤ n ∧
-    Fintype.card {x : BitVec n // mem β x} = Nat.pow 2 (n - t)
+theorem subcube_card_pow {n : Nat} (β : Subcube n) :
+    ∃ t : Nat, t ≤ n ∧
+        Fintype.card {x : BitVec n // mem β x} = Nat.pow 2 (n - t) :=
+  by
+    classical
+    -- Индексы, на которых подкуб фиксирует значение, и свободные индексы.
+    let FixedIndex : Type := {i : Fin n // ∃ b : Bool, β i = some b}
+    let FreeIndex : Type := {i : Fin n // β i = none}
+    -- Удобные преобразования между ``≠ none`` и существованием `some`.
+    have exists_of_ne_none : ∀ {i : Fin n}, β i ≠ none → ∃ b, β i = some b := by
+      intro i h
+      cases hβ : β i with
+      | none => exact (h hβ).elim
+      | some b => exact ⟨b, rfl⟩
+    have ne_none_of_exists : ∀ {i : Fin n}, (∃ b, β i = some b) → β i ≠ none :=
+      by
+        intro i h
+        rcases h with ⟨b, hb⟩
+        intro hnone
+        simpa [hb] using hnone
+    -- Finset-представление фиксированных и свободных координат.
+    let fixedSet :=
+      (Finset.univ : Finset (Fin n)).filter fun i => β i ≠ none
+    let freeSet :=
+      (Finset.univ : Finset (Fin n)).filter fun i => β i = none
+    -- `FixedIndex` эквивалентен подтипу `fixedSet`.
+    have fixedEquiv : FixedIndex ≃ {i : Fin n // i ∈ fixedSet} :=
+      { toFun := fun i =>
+          ⟨i.1, by
+              have hi : β i.1 ≠ none := ne_none_of_exists i.2
+              refine Finset.mem_filter.mpr ?_
+              exact ⟨Finset.mem_univ _, hi⟩⟩
+        , invFun := fun i =>
+            ⟨i.1, by
+                have hi : β i.1 ≠ none := (Finset.mem_filter.mp i.2).2
+                exact exists_of_ne_none (i := i.1) hi⟩
+        , left_inv := by intro i; ext; rfl
+        , right_inv := by intro i; ext; rfl }
+    have freeEquiv : FreeIndex ≃ {i : Fin n // i ∈ freeSet} :=
+      { toFun := fun i =>
+          ⟨i.1, by
+              refine Finset.mem_filter.mpr ?_
+              exact ⟨Finset.mem_univ _, i.2⟩⟩
+        , invFun := fun i =>
+            ⟨i.1, by
+                exact (Finset.mem_filter.mp i.2).2⟩
+        , left_inv := by intro i; ext; rfl
+        , right_inv := by intro i; ext; rfl }
+    have hfixed_card : Fintype.card FixedIndex = fixedSet.card := by
+      simpa using Fintype.card_congr fixedEquiv
+    have hfree_card : Fintype.card FreeIndex = freeSet.card := by
+      simpa using Fintype.card_congr freeEquiv
+    -- Разбиение `Fin n` на две части.
+    have hsplit : freeSet.card + fixedSet.card = (Finset.univ : Finset (Fin n)).card := by
+      have := Finset.filter_card_add_filter_neg_card_eq_card
+        (s := (Finset.univ : Finset (Fin n)))
+        (p := fun i : Fin n => β i = none)
+      simpa [freeSet, fixedSet] using this
+    -- Количество фиксированных координат и его ограничение.
+    let t : Nat := fixedSet.card
+    have ht_le : t ≤ n := by
+      have := Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+        (p := fun i : Fin n => β i ≠ none)
+      simpa [t, fixedSet, Finset.card_fin] using this
+    -- Число свободных координат выражается через `n - t`.
+    have hfree_count : freeSet.card = n - t := by
+      have hsum : freeSet.card + t = n := by
+        simpa [t, Finset.card_fin] using hsplit
+      have hsum' : freeSet.card + t = (n - t) + t := by
+        calc
+          freeSet.card + t = n := hsum
+          _ = (n - t) + t := (Nat.sub_add_cancel ht_le).symm
+      exact Nat.add_right_cancel hsum'
+    -- Сопоставляем элементы подкуба присваиваниям свободных координат.
+    let encode : {x : BitVec n // mem β x} → FreeIndex → Bool :=
+      fun x i => x.1 i.1
+    let decodeFun : (FreeIndex → Bool) → BitVec n :=
+      fun f i =>
+        if h : β i = none then
+          f ⟨i, h⟩
+        else
+          Classical.choose (exists_of_ne_none (i := i) h)
+    -- Вспомогательные леммы: удобно сворачивать определение `decodeFun`.
+    have decode_eval_none (f : FreeIndex → Bool) (i : Fin n)
+        (h : β i = none) : decodeFun f i = f ⟨i, h⟩ := by
+      simp [decodeFun, h]
+    have decode_eval_some (f : FreeIndex → Bool) (i : Fin n)
+        {b : Bool} (h : β i = some b) : decodeFun f i = b := by
+      have hne : β i ≠ none := by
+        intro hnone; simpa [hnone] using h
+      have hspec := Classical.choose_spec (exists_of_ne_none (i := i) hne)
+      have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b := by
+        have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
+          simpa [h] using hspec
+        exact Option.some.inj this
+      simp [decodeFun, h, hne, hval]
+    let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=
+      fun f =>
+        let g := decodeFun f
+        have hmem : mem β g := by
+          refine (memB_eq_true_iff (β := β) (x := g)).mpr ?_
+          intro i b hi
+          cases hβ : β i with
+          | none =>
+              -- Противоречие: `β i` одновременно `none` и `some b`.
+              cases (hβ ▸ hi)
+          | some b' =>
+              have hb' : b' = b := by
+                have : some b' = some b := by simpa [hβ] using hi
+                exact Option.some.inj this
+              -- Удобно переписать цель через `decodeFun` и свернуть сопоставление.
+              change decodeFun f i = b
+              have : decodeFun f i = b' := decode_eval_some f i hβ
+              simpa [hb'] using this
+        ⟨g, hmem⟩
+    have left_inv_decode : Function.LeftInverse decode encode := by
+      intro x
+      apply Subtype.ext
+      funext i
+      cases hβ : β i with
+      | none =>
+          -- Свободная координата: декодер возвращает исходный бит.
+          change decodeFun (encode x) i = x.1 i
+          have hdecode := decode_eval_none (encode x) i hβ
+          simpa [encode] using hdecode
+      | some b =>
+          have hmem : x.1 i = b :=
+            (memB_eq_true_iff (β := β) (x := x.1)).1 x.2 i b hβ
+          change decodeFun (encode x) i = x.1 i
+          have hdecode := decode_eval_some (encode x) i hβ
+          simpa [encode, hmem] using hdecode
+    have right_inv_decode : Function.RightInverse decode encode := by
+      intro f
+      funext i
+      cases i with
+      | mk i hi =>
+          -- На свободной координате декодер просто возвращает соответствующий бит.
+          change decodeFun f i = f ⟨i, hi⟩
+          simpa using decode_eval_none f i hi
+    let witnessEquiv : {x : BitVec n // mem β x} ≃ (FreeIndex → Bool) :=
+      { toFun := encode
+        , invFun := decode
+        , left_inv := left_inv_decode
+        , right_inv := right_inv_decode }
+    have hcube_card :
+        Fintype.card {x : BitVec n // mem β x}
+          = Fintype.card (FreeIndex → Bool) :=
+      Fintype.card_congr witnessEquiv
+    have hfun_card :
+        Fintype.card (FreeIndex → Bool)
+          = 2 ^ Fintype.card FreeIndex := by
+      simpa using (Fintype.card_fun FreeIndex Bool)
+    have hfreeIndex_card : Fintype.card FreeIndex = n - t := by
+      simpa [hfree_card, hfree_count]
+    have hfinal :
+        Fintype.card {x : BitVec n // mem β x} = 2 ^ (n - t) := by
+      calc
+        Fintype.card {x : BitVec n // mem β x}
+            = Fintype.card (FreeIndex → Bool) := hcube_card
+        _ = 2 ^ Fintype.card FreeIndex := hfun_card
+        _ = 2 ^ (n - t) := by simpa [hfreeIndex_card, Fintype.card_bool]
+    exact ⟨t, ht_le, hfinal⟩
 
 end Core
 end Pnp3

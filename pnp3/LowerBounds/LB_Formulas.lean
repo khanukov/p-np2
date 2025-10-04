@@ -165,7 +165,7 @@ theorem no_bounded_atlas_of_large_family
 noncomputable def BoundedAtlasScenario.ofShrinkage
     {n : Nat} [DecidableEq (Core.Subcube n)]
     (S : Core.Shrinkage n) (k : Nat)
-    (hlen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k)
+    (hlen : ∀ f ∈ S.F, ((S.Rsel f).dedup).length ≤ k)
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
     BoundedAtlasScenario n :=
   { atlas := Core.Atlas.fromShrinkage S
@@ -181,14 +181,15 @@ noncomputable def BoundedAtlasScenario.ofShrinkage
       -- Используем данные shrinkage: список `S.Rsel f` подмножеством словаря,
       -- имеет ограниченную длину и даёт требуемую ошибку.
       intro f hf
-      refine ⟨S.Rsel f, ?_, ?_, ?_⟩
+      refine ⟨(S.Rsel f).dedup, ?_, ?_, ?_⟩
       · exact hlen f hf
-      · -- После конструирования словаря через `Atlas.fromShrinkage`
-        -- подмножественное отношение к листьям PDT переписывается напрямую.
+      · -- После удаления дубликатов отношение подмножества сохраняется.
         have hsubset := S.Rsel_sub f hf
-        convert hsubset using 1 <;>
+        have hsubset' := Core.listSubset_dedup (h := hsubset)
+        convert hsubset' using 1 <;>
           simp [Core.listSubset, Core.Atlas.fromShrinkage, Core.Atlas.ofPDT]
-      · simpa using S.err_le f hf }
+      · -- Ошибка не возрастает: `dedup` лишь убирает повторы листьев.
+        simpa using ThirdPartyFacts.err_le_of_dedup (S := S) hf }
 
 /--
   Для shrinkage-сертификата полезно знать, что словарь полученного атласа
@@ -217,7 +218,7 @@ lemma dictLen_fromShrinkage_le_pow
 -/
 theorem no_shrinkage_of_large_family
     {n : Nat} (S : Core.Shrinkage n) (k : Nat)
-    (hlen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k)
+    (hlen : ∀ f ∈ S.F, ((S.Rsel f).dedup).length ≤ k)
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2)
     (Y : Finset (Core.BitVec n → Bool))
     (hYsubset :
@@ -250,9 +251,10 @@ noncomputable def scenarioFromShrinkage
     classical
     let witness := ThirdPartyFacts.leaf_budget_from_shrinkage S
     let k := Classical.choose witness
-    have hk : ∀ f ∈ S.F, (S.Rsel f).length ≤ k := by
+    have hkSpec := Classical.choose_spec witness
+    have hk : ∀ f ∈ S.F, ((S.Rsel f).dedup).length ≤ k := by
       intro f hf
-      simpa using Classical.choose_spec witness hf
+      simpa using hkSpec.2 hf
     exact ⟨k, BoundedAtlasScenario.ofShrinkage S k hk hε0 hε1⟩
 
 /--
@@ -288,9 +290,10 @@ noncomputable def scenarioFromAC0
     have hε_nonneg : (0 : Core.Q) ≤ S.ε := hε' ▸ hε0
     let leafWitness := ThirdPartyFacts.leaf_budget_from_shrinkage S
     let k := Classical.choose leafWitness
-    have hkLen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k := by
+    have hkSpec := Classical.choose_spec leafWitness
+    have hkLen : ∀ f ∈ S.F, ((S.Rsel f).dedup).length ≤ k := by
       intro f hf
-      simpa using Classical.choose_spec leafWitness hf
+      simpa using hkSpec.2 hf
     let base :=
       BoundedAtlasScenario.ofShrinkage S k hkLen hε_nonneg hε_le_half
     have hFamily : base.family = S.F := rfl
@@ -338,9 +341,10 @@ noncomputable def scenarioFromLocalCircuit
     have hε_nonneg : (0 : Core.Q) ≤ S.ε := hε' ▸ hε0
     let leafWitness := ThirdPartyFacts.leaf_budget_from_shrinkage S
     let k := Classical.choose leafWitness
-    have hkLen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k := by
+    have hkSpec := Classical.choose_spec leafWitness
+    have hkLen : ∀ f ∈ S.F, ((S.Rsel f).dedup).length ≤ k := by
       intro f hf
-      simpa using Classical.choose_spec leafWitness hf
+      simpa using hkSpec.2 hf
     let base :=
       BoundedAtlasScenario.ofShrinkage S k hkLen hε_nonneg hε_le_half
     have hFamily : base.family = S.F := rfl

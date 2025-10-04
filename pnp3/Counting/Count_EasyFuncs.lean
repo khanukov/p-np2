@@ -1,27 +1,82 @@
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Nat.Basic
+import Core.BooleanBasics
 
 /-!
   pnp3/Counting/Count_EasyFuncs.lean
 
-  Счётные утверждения о «простых» булевых функциях.  Основной внешний
-  факт, который нам требуется, — верхняя граница на количество функций
-  размера ≤ s (например, реализуемых малыми схемами).  Как и в других
-  местах части B, мы пока фиксируем его в виде аксиомы с подробным
-  комментарием.  В дальнейшем планируется либо вывести эту оценку в Lean,
-  либо импортировать готовую теорему из mathlib/литературы.
+  В классических оценках сложности схем часто требуется грубая верхняя
+  граница на число булевых функций, которые могут быть реализованы малыми
+  схемами.  Даже без сложной комбинаторики достаточно помнить, что всего
+  булевых функций на `n` переменных ровно `2^{2^n}`: каждая функция задаётся
+  таблицей истинности длины `2^n`, и каждая такая таблица — произвольная
+  последовательность из нулей и единиц.  Следовательно, любое подсемейство
+  (в том числе множество «простых» функций) не может содержать больше
+  элементов.
+
+  Ниже мы формализуем именно эту тривиальную, но полезную границу.  Она
+  заменяет прежнюю аксиому `count_small_circuits_bound`, делая часть B
+  полностью конструктивной даже до подключения настоящих оценок роста
+  числа схем.  Впоследствии, когда появятся более тонкие асимптотические
+  формулы, их можно будет встроить поверх этой базовой заготовки.
 -/
 
 namespace Pnp3
 namespace Counting
 
+open scoped BigOperators
+
 /--
-  Оценка числа функций размера ≤ `s` на входах длины `n`.  Аналитически
-  ожидаем верхнюю границу вида `2^{C ⋅ s log s}` (для подходящего абсолютного
-  константного `C`).  Для связки частей B и C нам достаточно знать, что
-  существует конечная константа `Bound`, зависящая только от `(n, s)`,
-  которая ограничивает мощность такого семейства функций.
+  Полное число булевых функций на `n` переменных.  Оно равно `2^{2^n}` и
+  служит универсальной верхней оценкой для любого подсемейства — в том
+  числе и для функций, реализуемых малыми схемами.
 -/
-axiom count_small_circuits_bound (n s : Nat) : ∃ _Bound : Nat, True
+@[simp] def allBooleanFunctionsBound (n : Nat) : Nat := 2 ^ Nat.pow 2 n
+
+lemma card_bitvec (n : Nat) :
+    Fintype.card (Core.BitVec n) = 2 ^ n := by
+  classical
+  -- `Core.BitVec n` — это `Fin n → Bool`, поэтому число всех битовых векторов — `2^n`.
+  simpa [Core.BitVec, Fintype.card_fun, Fintype.card_fin] using
+    (Fintype.card_fun (α := Fin n) (β := Bool))
+
+lemma card_boolean_functions (n : Nat) :
+    Fintype.card (Core.BitVec n → Bool) = allBooleanFunctionsBound n := by
+  classical
+  -- Число всех функций `BitVec n → Bool` равно `2^{|BitVec n|}`.
+  have h :=
+    (Fintype.card_fun (α := Core.BitVec n) (β := Bool))
+  -- Подставляем вычисленную ранее мощность `BitVec n`.
+  simpa [allBooleanFunctionsBound, card_bitvec, Core.BitVec] using h
+
+/--
+  Любое конечное семейство булевых функций на `n` переменных не может быть
+  больше полного множества `2^{2^n}`.  Это чисто комбинаторное утверждение,
+  полученное из очевидного факта `|F| ≤ |универса|`.
+-/
+lemma card_family_le_allBooleanFunctions (n : Nat)
+    (F : Finset (Core.BitVec n → Bool)) :
+    F.card ≤ allBooleanFunctionsBound n := by
+  classical
+  -- Сравниваем с универсальным Finset, чья мощность равна `Fintype.card`.
+  have h := Finset.card_le_univ (s := F)
+  -- Переписываем правую часть через явную формулу `2^{2^n}`.
+  simpa [card_boolean_functions] using h
+
+/--
+  Тривиальная верхняя оценка на число «простых» функций: их не может быть
+  больше всех возможных булевых функций.  Этого достаточно, чтобы в частях
+  B и C использовать конкретную константу вместо ранее постулированной
+  аксиомы.
+-/
+theorem count_small_circuits_bound (n s : Nat) :
+    ∃ Bound : Nat,
+      Bound = allBooleanFunctionsBound n ∧
+        ∀ F : Finset (Core.BitVec n → Bool), F.card ≤ Bound := by
+  refine ⟨allBooleanFunctionsBound n, rfl, ?_⟩
+  intro F
+  exact card_family_le_allBooleanFunctions n F
 
 end Counting
 end Pnp3

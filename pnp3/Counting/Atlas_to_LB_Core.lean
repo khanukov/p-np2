@@ -1,8 +1,10 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Algebra.Order.Field.Basic
+import Mathlib.Algebra.Order.Floor.Defs
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.List.Basic
+import Mathlib.Data.List.Dedup
 import Core.BooleanBasics
 import Core.Atlas
 import Counting.BinomialBounds
@@ -21,9 +23,9 @@ import Counting.BinomialBounds
   * `covering_power_bound` — утверждение о существовании верхней границы
     на мощность `ApproxClass` через параметры `(D, k, ε, m)`.
 
-  Фактические численные оценки сейчас инкапсулированы в аксиомы, вынесенные
-  в `BinomialBounds.lean`.  Это позволяет строить логику части C, не дожидаясь
-  полного аналитического развития.
+  Все численные оценки берутся из строго доказанных лемм файла
+  `BinomialBounds.lean`, поэтому логика части C использует исключительно
+  проверенные внутри Lean факты без каких-либо аксиом.
 -/
 
 namespace Pnp3
@@ -50,6 +52,60 @@ abbrev Domain (m : Nat) := Core.BitVec m
 -/
 def distU {m : Nat} (f g : Domain m → Bool) : Nat :=
   ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)).card
+
+/-- Множество точек, на которых функции `f` и `g` различаются.  Это «маска»
+  для восстановления функции по центру шара. -/
+def mismatchSet {m : Nat} (g : Domain m → Bool) (f : Domain m → Bool) :
+    Finset (Domain m) :=
+  (Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)
+
+@[simp] lemma mem_mismatchSet {m : Nat}
+    (g : Domain m → Bool) (f : Domain m → Bool) (x : Domain m) :
+    x ∈ mismatchSet (m := m) g f ↔ f x ≠ g x := by
+  classical
+  simp [mismatchSet]
+
+/-- Переключаем функцию `g` на точках из `S`, оставляя остальные значения
+  без изменений. -/
+def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
+    Domain m → Bool :=
+  fun x => if x ∈ S then ! g x else g x
+
+@[simp] lemma mismatchSet_flipOn {m : Nat}
+    (g : Domain m → Bool) (S : Finset (Domain m)) :
+    mismatchSet (m := m) g (flipOn g S) = S := by
+  classical
+  ext x
+  by_cases hx : x ∈ S
+  · by_cases hg : g x
+    · simp [mismatchSet, flipOn, hx, hg]
+    · simp [mismatchSet, flipOn, hx, hg]
+  · by_cases hg : g x
+    · simp [mismatchSet, flipOn, hx, hg]
+    · simp [mismatchSet, flipOn, hx, hg]
+
+private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
+  cases b <;> cases c <;> simp at h <;> simp [h]
+
+@[simp] lemma flipOn_mismatchSet {m : Nat}
+    (g : Domain m → Bool) (f : Domain m → Bool) :
+    flipOn g (mismatchSet (m := m) g f) = f := by
+  classical
+  funext x
+  by_cases hx : f x = g x
+  · have hx' : x ∉ mismatchSet (m := m) g f := by
+      simpa [mismatchSet, hx]
+    simp [flipOn, hx, hx']
+  · have hx' : x ∈ mismatchSet (m := m) g f := by
+      simpa [mismatchSet, hx] using hx
+    have hflip : f x = ! g x := bool_eq_not_of_ne hx
+    simp [flipOn, hx', hflip]
+
+lemma distU_card_mismatch {m : Nat}
+    (g : Domain m → Bool) (f : Domain m → Bool) :
+    distU f g = (mismatchSet (m := m) g f).card := by
+  classical
+  simp [distU, mismatchSet]
 
 /--
   Класс функций, которые являются объединением не более чем `k` подкубов
@@ -289,29 +345,245 @@ noncomputable instance instFintypeApproxSubtype
   classical
   infer_instance
 
-/--
+/-
   Верхняя оценка на число различных объединений `≤ k` подкубов словаря.
-  Аксиома фиксирует существование конечного `Bound`, совпадающего со значением
-  `unionBound (|R|, k)` из файла `BinomialBounds`.  В дальнейшем, когда
-  комбинаторная часть будет полностью формализована, этот факт заменится на
-  доказательство через биномиальные коэффициенты.
+  Ранее она была зафиксирована в виде аксиомы, но после полной формализации
+  биномиальных оценок мы можем предъявить явный перебор: любой кандидат
+  задаётся подмножеством словаря мощности ≤ `k`, а число таких подмножеств
+  ограничено `unionBound (dictLen R) k`.
 -/
-axiom unionClass_card_bound
+theorem unionClass_card_bound
   {m : Nat} (R : List (Subcube m)) (k : Nat) :
   Fintype.card (UnionSubtype (R := R) (k := k))
-    ≤ unionBound (dictLen R) k
+    ≤ unionBound (dictLen R) k := by
+  classical
+  -- Тип элементов словаря без дубликатов и соответствующий домен подсчёта.
+  set DictSubtype := {β : Subcube m // β ∈ R.toFinset}
+  let Domain := {S : Finset DictSubtype // S.card ≤ k}
+  -- Получаем список подкубов из конечного множества без повторов.
+  let toList : Finset DictSubtype → List (Subcube m) := fun S =>
+    S.1.toList.map Subtype.val
+  -- Отображение домена подсчёта в семейство `UnionClass`.
+  let toUnion : Domain → UnionSubtype (R := R) (k := k) :=
+    fun S =>
+      ⟨fun x => coveredB (toList S.1) x, by
+        refine ⟨toList S.1, ?_, ?_, rfl⟩
+        · -- Длина списка совпадает с кардинальностью подмножества.
+          have hlen : (toList S.1).length = S.1.card := by
+            unfold toList
+            simpa [List.length_map] using
+              (Finset.length_toList (s := S.1))
+          simpa [hlen] using S.2
+        · -- Каждый подкуб списка принадлежит исходному словарю.
+          intro β hβ
+          have hmem : β ∈ toList S.1 :=
+            mem_of_contains (xs := toList S.1) hβ
+          rcases List.mem_map.1 hmem with ⟨δ, hδ, rfl⟩
+          have hδS : δ ∈ S.1 := by
+            simpa [Finset.mem_toList] using hδ
+          have hδR : δ.val ∈ R := List.mem_toFinset.mp δ.property
+          exact contains_of_mem (xs := R) hδR⟩
+  -- Сюръективность: любой элемент `UnionClass` получается из некоторого подмножества.
+  have hsurj : Function.Surjective toUnion := by
+    intro g
+    rcases g.property with ⟨S, hS_len, hS_subset, hcover⟩
+    -- Удаляем дубликаты и поднимаем их до финсета.
+    set T := S.dedup
+    have hT_subset : listSubset T R := by
+      simpa [T] using
+        (listSubset_dedup (xs := S) (ys := R) hS_subset)
+    have hsubset_fin : T.toFinset ⊆ R.toFinset := by
+      simpa [T] using
+        (listSubset_toFinset_subset (xs := T) (ys := R) hT_subset)
+    -- Инъективная упаковка элементов `T` в словарь.
+    let embedding : {β // β ∈ T.toFinset} ↪ DictSubtype :=
+      { toFun := fun β => ⟨β.1, hsubset_fin β.2⟩
+        , inj' := by
+            intro β₁ β₂ hβ
+            apply Subtype.ext
+            simpa using congrArg Subtype.val hβ }
+    let subset : Finset DictSubtype :=
+      (T.toFinset).attach.map embedding
+    -- Бюджет подмножества ограничен `k`.
+    have hsubset_card : subset.card ≤ k := by
+      classical
+      have hattach := Finset.card_attach (s := T.toFinset)
+      have hmap :=
+        Finset.card_map (f := embedding) (s := (T.toFinset).attach)
+      have hcard_eq : subset.card = T.toFinset.card := by
+        simpa [subset, hattach] using hmap
+      have hsubset_TS : T.toFinset ⊆ S.toFinset := by
+        intro β hβ
+        have hβlist : β ∈ T := List.mem_toFinset.mp hβ
+        have hβS : β ∈ S := by
+          simpa [T] using List.mem_dedup.mp hβlist
+        exact List.mem_toFinset.mpr hβS
+      have hcard_le : T.toFinset.card ≤ S.toFinset.card := by
+        refine Finset.card_le_card ?_
+        intro β hβ
+        exact hsubset_TS hβ
+      have hS_card : S.toFinset.card ≤ S.length :=
+        toFinset_card_le_length (xs := S)
+      have : T.toFinset.card ≤ k :=
+        Nat.le_trans (Nat.le_trans hcard_le hS_card) hS_len
+      simpa [hcard_eq] using this
+    refine ⟨⟨subset, hsubset_card⟩, ?_⟩
+    -- Связываем значения списков через равенство соответствующих финсетов.
+    have hsubset_image :
+        subset.image (fun δ : DictSubtype => δ.val) = T.toFinset := by
+      apply Finset.ext
+      intro β
+      constructor
+      · intro hβ
+        rcases Finset.mem_image.1 hβ with ⟨δ, hδsubset, hδβ⟩
+        rcases Finset.mem_map.1 hδsubset with ⟨γ, hγattach, rfl⟩
+        rcases γ with ⟨γ, hγ⟩
+        have hγmem : γ ∈ T.toFinset := hγ
+        have hγβ : γ = β := by
+          simpa [embedding] using hδβ
+        simpa [hγβ] using hγmem
+      · intro hβ
+        have hattach : ⟨β, hβ⟩ ∈ (T.toFinset).attach := by
+          simpa using hβ
+        have hδsubset : embedding ⟨β, hβ⟩ ∈ subset := by
+          refine (Finset.mem_map.2 ?_)
+          refine ⟨⟨β, hβ⟩, hattach, rfl⟩
+        exact Finset.mem_image.2 ⟨embedding ⟨β, hβ⟩, hδsubset, rfl⟩
+    have hlist_finset :
+        (toList subset).toFinset = subset.image (fun δ : DictSubtype => δ.val) := by
+      classical
+      simpa [toList] using
+        (Core.toList_mapSubtype_val_toFinset (S := subset))
+    have hvals : (toList subset).toFinset = T.toFinset := by
+      simpa [hsubset_image] using hlist_finset
+    -- Функция покрытия совпадает с исходной.
+    apply Subtype.ext
+    funext x
+    have hcov_subset : coveredB (toList subset) x = coveredB T x := by
+      have := coveredB_eq_of_toFinset_eq (n := m) (R₁ := toList subset)
+          (R₂ := T) (by simpa [toList] using hvals)
+      simpa [toList] using congrArg (fun f => f x) this
+    have hcov_dedup : coveredB T x = coveredB S x := by
+      simpa [T] using coveredB_dedup (n := m) (R := S) (x := x)
+    have hgoal : coveredB (toList subset) x = coveredB S x :=
+      hcov_subset.trans hcov_dedup
+    have hg_eq : g.1 x = coveredB S x := by simpa [hcover]
+    have hfinal : coveredB (toList subset) x = g.1 x :=
+      hgoal.trans hg_eq.symm
+    simpa [toList] using hfinal
+  -- Мощность домена подсчёта совпадает с `unionBound`.
+  have hdomain_card :
+      Fintype.card Domain = unionBound (R.toFinset.card) k := by
+    classical
+    have h :=
+      (card_subsets_le_unionBound (α := DictSubtype) (k := k))
+    have hdict_card : Fintype.card DictSubtype = R.toFinset.card := by
+      simpa [DictSubtype] using Fintype.card_coe (R.toFinset)
+    calc
+      Fintype.card Domain
+          = unionBound (Fintype.card DictSubtype) k := h
+      _ = unionBound (R.toFinset.card) k := by simpa [hdict_card]
+  -- Сюръективность даёт верхнюю границу через мощность домена.
+  have hcard_le :
+      Fintype.card (UnionSubtype (R := R) (k := k))
+        ≤ Fintype.card Domain :=
+    Fintype.card_le_of_surjective toUnion hsurj
+  -- Переписываем мощность домена через `unionBound` и увеличиваем словарь до длины списка.
+  have :
+      Fintype.card (UnionSubtype (R := R) (k := k))
+        ≤ unionBound (R.toFinset.card) k := by
+    simpa [hdomain_card] using hcard_le
+  have hmono : unionBound (R.toFinset.card) k ≤ unionBound (dictLen R) k := by
+    have hcard_le_len : R.toFinset.card ≤ dictLen R :=
+      by simpa [dictLen] using toFinset_card_le_length (xs := R)
+    exact unionBound_mono_left (k := k) hcard_le_len
+  exact this.trans hmono
 
 /--
   Верхняя оценка на размер хаммингового шара около фиксированной функции `g`.
-  Аналитическая часть спрятана в значении `hammingBallBound`.  Как только в
-  проект будет добавлена строгая энтропийная оценка, эту аксиому можно будет
-  заменить на доказанную лемму.
+  В отличие от ранних версий проекта мы доказываем её напрямую: подтип
+  `HammingBallSubtype` вложен в множество всех булевых функций на `Domain m`,
+  а потому его мощность не превосходит `2^(2^m)` — именно эту величину и
+  возвращает `hammingBallBound`.
 -/
-axiom hammingBall_card_bound
+theorem hammingBall_card_bound
   {m : Nat} (g : Domain m → Bool) (ε : Q)
   (hε0 : (0 : Q) ≤ ε) (hε1 : ε ≤ (1 : Q) / 2) :
   Fintype.card (HammingBallSubtype (m := m) (g := g) (ε := ε))
-    ≤ hammingBallBound (Nat.pow 2 m) ε hε0 hε1
+    ≤ hammingBallBound (Nat.pow 2 m) ε hε0 hε1 :=
+by
+  classical
+  -- Бюджет ошибок в натуральных единицах.
+  let budget := hammingBallBudget (Nat.pow 2 m) ε
+  -- Отображаем элемент шара в множество рассогласований, снабжённое доказательством
+  -- того, что его размер не превышает `budget`.
+  let toSubset :
+      HammingBallSubtype (m := m) (g := g) (ε := ε) →
+        {S : Finset (Domain m) // S.card ≤ budget} :=
+    fun f => by
+      refine ⟨mismatchSet (m := m) g f.1, ?_⟩
+      -- Основная оценка: число рассогласований не превосходит `⌈ε⋅2^m⌉`.
+      have hdist : (distU f.1 g : Q)
+          ≤ ε * ((Nat.pow 2 m : Nat) : Q) := f.2
+      let q : Q := ε * ((Nat.pow 2 m : Nat) : Q)
+      have hceil_le : (distU f.1 g : Q) ≤ Int.ceil q :=
+        le_trans hdist (by
+          have hceil : q ≤ (Int.ceil q : Q) := by
+            simpa using (Int.le_ceil (a := q))
+          exact hceil)
+      have hmul_nonneg : (0 : Q) ≤ q := by
+        have hpow_nonneg : (0 : Q) ≤ ((Nat.pow 2 m : Nat) : Q) := by
+          exact_mod_cast (Nat.zero_le _)
+        exact mul_nonneg hε0 hpow_nonneg
+      have hceil_nonneg : (0 : ℤ) ≤ Int.ceil q := by
+        have : (0 : Q) ≤ Int.ceil q :=
+          le_trans hmul_nonneg (by
+            have hceil : q ≤ (Int.ceil q : Q) := by
+              simpa using (Int.le_ceil (a := q))
+            exact hceil)
+        exact_mod_cast this
+      have hdist_int : (distU f.1 g : ℤ) ≤ Int.ceil q := by
+        exact_mod_cast hceil_le
+      have htoNat :
+          distU f.1 g ≤ Int.toNat (Int.ceil q) := by
+        have hcomp :
+            Int.ofNat (distU f.1 g)
+              ≤ Int.ofNat (Int.toNat (Int.ceil q)) := by
+          simpa [Int.toNat_of_nonneg hceil_nonneg]
+            using hdist_int
+        exact Int.ofNat_le.mp hcomp
+      have hcard := distU_card_mismatch (m := m) (g := g) (f := f.1)
+      simpa [budget, hcard] using htoNat
+  have h_inj : Function.Injective toSubset := by
+    intro f₁ f₂ h
+    have hsets :
+        mismatchSet (m := m) g f₁.1 = mismatchSet (m := m) g f₂.1 := by
+      simpa using congrArg Subtype.val h
+    apply Subtype.ext
+    have hf₁ := flipOn_mismatchSet (m := m) (g := g) (f := f₁.1)
+    have hf₂ := flipOn_mismatchSet (m := m) (g := g) (f := f₂.1)
+    calc
+      f₁.1 = flipOn g (mismatchSet (m := m) g f₁.1) := by simpa using hf₁.symm
+      _ = flipOn g (mismatchSet (m := m) g f₂.1) := by simpa [hsets]
+      _ = f₂.1 := by simpa using hf₂
+  have hcard_le :
+      Fintype.card (HammingBallSubtype (m := m) (g := g) (ε := ε)) ≤
+        Fintype.card {S : Finset (Domain m) // S.card ≤ budget} :=
+    Fintype.card_le_of_injective toSubset h_inj
+  have cardDomain : Fintype.card (Domain m) = Nat.pow 2 m := by
+    classical
+    simpa [Domain, Core.BitVec, Fintype.card_fun, Fintype.card_bool,
+      Fintype.card_fin]
+  have hbound :
+      Fintype.card {S : Finset (Domain m) // S.card ≤ budget}
+        = unionBound (Nat.pow 2 m) budget := by
+    simpa [cardDomain] using
+      (card_subsets_le_unionBound (α := Domain m) (k := budget))
+  have hcap :
+      unionBound (Nat.pow 2 m) budget
+        = hammingBallBound (Nat.pow 2 m) ε hε0 hε1 := rfl
+  simpa [hbound, hcap]
+    using hcard_le
 
 /--
   Каждой ε-аппроксимируемой функции сопоставляем пару: выбранный центр `g`
@@ -459,11 +731,7 @@ theorem covering_power_bound_by_size
     capacityBound D k (Nat.pow 2 m) ε hε0 hε1 := by
   -- Используем общую границу и переписываем правую часть через условие `|R| = D`.
   have h := covering_power_bound (R := R) (k := k) (ε := ε) hε0 hε1
-  have hcap :
-      capacityBound (dictLen R) k (Nat.pow 2 m) ε hε0 hε1 =
-        capacityBound D k (Nat.pow 2 m) ε hε0 hε1 := by
-    simp [hR]
-  simpa [hcap] using h
+  simpa [hR] using h
 
 /-- Удобная форма через `Nat.card`: совпадает с предыдущей теоремой. -/
 lemma approxClass_card_le_capacity
@@ -478,17 +746,82 @@ lemma approxClass_card_le_capacity
       (hR := hR) hε0 hε1)
 
 /--
-  Обобщённый критерий несовместимости.  Если семейство `Y` имеет мощность,
-  превышающую ёмкость, то никакой словарь размера `D` не может ε-аппроксимировать
-  все функции из `Y` выбором ≤ k подкубов.  Формальное содержание — внешняя
-  аксиома, которая будет заменена на строгий вывод после интеграции части C.
+  Явная численная форма границы: использует доказанные выше оценки
+  `unionBound_le_pow_mul` и `capacityBound_le_pow_mul`.  Такая версия
+  удобна при автоматическом поиске контрпримеров — все параметры выражены
+  через чисто арифметические функции от `D`, `k` и размера пространства `m`.
 -/
-axiom incompatibility
-  {m D : Nat} (k : Nat) (ε : Q)
-  (hε0 : (0 : Q) ≤ ε) (hε1 : ε ≤ (1 : Q) / 2)
-  (CardY : Nat)
-  (hLarge : CardY >
-    capacityBound D k (Nat.pow 2 m) ε hε0 hε1) : True
+lemma approxClass_card_le_explicit
+  {m D : Nat} (R : List (Subcube m)) (k : Nat) (ε : Q)
+  (hR : dictLen R = D)
+  (hε0 : (0 : Q) ≤ ε) (hε1 : ε ≤ (1 : Q) / 2) :
+  Nat.card (ApproxSubtype (R := R) (k := k) (ε := ε)) ≤
+    (k.succ) * (Nat.max 1 D) ^ k * 2 ^ (Nat.pow 2 m) :=
+by
+  have hcap := approxClass_card_le_capacity
+    (R := R) (k := k) (ε := ε) (hR := hR) hε0 hε1
+  have hexp := capacityBound_le_pow_mul
+    (D := D) (k := k) (N := Nat.pow 2 m) (ε := ε) hε0 hε1
+  exact Nat.le_trans hcap hexp
+
+/--
+  Если все элементы конечного множества `Y` лежат в `ApproxClass`, то его
+  мощность не превосходит ёмкости словаря.  Это чисто счётный вариант леммы
+  `family_card_le_capacity`, применимый до упаковки данных в сценарий SAL.
+  Он понадобится античекеру, чтобы немедленно получить противоречие из
+  предположения о «слишком большом» семействе входов.
+-/
+theorem approx_subset_card_le_capacity
+    {m D : Nat} (R : List (Subcube m)) (k : Nat) (ε : Q)
+    (hR : dictLen R = D)
+    (hε0 : (0 : Q) ≤ ε) (hε1 : ε ≤ (1 : Q) / 2)
+    (Y : Finset (Domain m → Bool))
+    (hY : ∀ f ∈ Y, f ∈ ApproxClass (R := R) (k := k) (ε := ε)) :
+    Y.card ≤ capacityBound D k (Nat.pow 2 m) ε hε0 hε1 :=
+by
+  classical
+  -- Рассматриваем отображение из элементов множества `Y` в `ApproxSubtype`.
+  let embed : {f // f ∈ Y} →
+      ApproxSubtype (R := R) (k := k) (ε := ε) := fun f => ⟨f.1, hY f.1 f.2⟩
+  have hinj : Function.Injective embed := by
+    intro f g hfg
+    apply Subtype.ext
+    simpa using congrArg Subtype.val hfg
+  -- Через мощность `Subtype` переписываем кардинальность `Y`.
+  have h_card_coe : Fintype.card {f // f ∈ Y} = Y.card :=
+    Fintype.card_coe (s := Y)
+  -- Применяем инъективность, чтобы оценить `Y.card` через `ApproxSubtype`.
+  have h_le_sub :
+      Y.card ≤ Fintype.card (ApproxSubtype (R := R) (k := k) (ε := ε)) := by
+    simpa [h_card_coe] using
+      (Fintype.card_le_of_injective embed hinj)
+  have h_le :
+      Y.card ≤ Nat.card (ApproxSubtype (R := R) (k := k) (ε := ε)) := by
+    simpa [Nat.card_eq_fintype_card] using h_le_sub
+  -- Завершаем, подставляя найденную ранее границу на `ApproxSubtype`.
+  have hcap :=
+    (approxClass_card_le_capacity (R := R) (k := k) (ε := ε)
+      (hR := hR) hε0 hε1)
+  exact h_le.trans hcap
+
+/--
+  Обобщённый критерий несовместимости: если конечное семейство `Y` содержит
+  только ε-аппроксимируемые функции, но его мощность превышает ёмкость, то
+  такое семейство существовать не может.  Этого результата достаточно, чтобы
+  этап C немедленно получал противоречие от любого «малого» решателя.
+-/
+theorem incompatibility
+    {m D : Nat} (R : List (Subcube m)) (k : Nat) (ε : Q)
+    (hR : dictLen R = D)
+    (hε0 : (0 : Q) ≤ ε) (hε1 : ε ≤ (1 : Q) / 2)
+    (Y : Finset (Domain m → Bool))
+    (hY : ∀ f ∈ Y, f ∈ ApproxClass (R := R) (k := k) (ε := ε))
+    (hLarge : capacityBound D k (Nat.pow 2 m) ε hε0 hε1 < Y.card) : False :=
+by
+  have h_le := approx_subset_card_le_capacity (R := R) (k := k) (ε := ε)
+      (hR := hR) hε0 hε1 Y hY
+  have hcontr := Nat.lt_of_le_of_lt h_le hLarge
+  exact (Nat.lt_irrefl _ hcontr)
 
 end Counting
 end Pnp3

@@ -1,59 +1,33 @@
 # P≠NP formalization repository
-> **Status (2025-09-24)**: All combinatorial and entropy proofs in `Pnp2/` are complete.  The classical inclusion `P ⊆ P/poly` is now proven constructively; the only remaining axioms sit in the magnification bridge (`NP_separation.lean`).
+> **Status (2025-09-24)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  The previous `Pnp2/` development is kept for historical context and reproducibility of the FCE-Lemma programme.
 
-This project develops, in Lean 4, the infrastructure required for the **Family Collision‑Entropy Lemma (FCE‑Lemma)**.  The lemma asserts that Boolean-function families with small collision entropy admit a subexponential cover by monochromatic subcubes.  Establishing this result is a key milestone on the roadmap towards a formal separation `P ≠ NP`.
+This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for (Gap)MCSP and, eventually, into a full separation.
 
-The final bridge now follows the classical route “`NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`” without appealing to any collapse of the polynomial hierarchy.  Remaining axioms concentrate on magnification for `MCSP` and on the constructive cover itself.
+Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  Those files remain available under `Pnp2/` as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era.
 
-Every file that participates in the cover construction now has full proofs.  Classical complexity-theoretic statements that are not yet formalised appear as explicit axioms and are tracked in `TODO.md`.
+## Repository layout
 
-## Layout
+### Core PNP3 development (`pnp3/`)
+* `Core/` – core combinatorics of subcubes, partial decision trees, and the SAL atlas infrastructure.
+* `Counting/` – capacity bounds for atlases together with approximation lemmas.
+* `ThirdPartyFacts/` – external inputs (multi-switching theorems, lightweight function counts, etc.).
+* `Models/` – formal interfaces for (Gap)MCSP variants and related promise problems.
+* `LowerBounds/` – lower-bound derivations for formulas and depth-limited circuits based on SAL.
+* `Magnification/` – magnification bridges and literature interfaces culminating in the final separation statements.
+* `Complexity/` – wrappers around standard complexity classes used by the magnification step.
+* `Tests/` – executable Lean regression tests (parity sanity checks, smoke tests, etc.).
+* `Docs/` – textual notes, milestone checklists, and bibliographic references for the SAL pipeline.
 
-### Foundations
-* `BoolFunc.lean` – points, Boolean functions, subcubes, and basic probability utilities (`prob`, `prob_restrict_false`, `prob_restrict_true`).
-* `BoolFunc/Support.lean` – support lemmas such as `eval_eq_of_agree_on_support`.
-* `BoolFunc/Sensitivity.lean` – sensitivity, block sensitivity, and helper facts for decision trees.
-* `Boolcube.lean` – subcube structures, enumeration helpers (`toFinset`, `size`), and the combinatorial split lemma `exists_coord_card_drop`.
-* `DecisionTree.lean` – finite decision trees with depth/leaf bounds and `subcube_of_path` extraction.
+### Supporting material
+* `experiments/` – Python tooling for enumerating small Boolean circuits, computing entropy statistics, and replaying classic experiments.  The scripts double as sanity checks for analytic bounds derived in `pnp3/`.
+* `scripts/` – helper shell/Lean scripts (`scripts/check.sh`, smoke tests, cache warmers).
+* `docs/` (root) – research notes predating PNP3; they are superseded by `pnp3/Docs/` but remain for context.
+* `Task_description.md`, `TODO.md` – current task boards and migration checklists.
+* `Pnp2/` – archived source of the FCE-Lemma programme (fully proved cover construction, constructive `P ⊆ P/poly`, and magnification axioms).  These files are no longer actively extended but provide provenance for the transition to PNP3.
 
-### Entropy and combinatorics
-* `entropy.lean`, `collentropy.lean`, `CollentropyBasic.lean` – collision entropy for families and single functions, including the monotonicity lemma `H₂_restrict_le`.
-* `sunflower.lean`, `Sunflower/…` – a fully formalised sunflower lemma (`sunflower_exists_classic`) and refinements for scattered families (`RSpread`).
-* `Agreement.lean` – the core-agreement lemma used by the sunflower step.
+## Toolchain and build
 
-### Cover pipeline
-* `Cover/Measure.lean`, `Cover/Uncovered.lean`, `Cover/Lifting.lean`, `Cover/SubcubeAdapters.lean`, `Cover/Bounds.lean`, `Cover/CoarseBound.lean`, `Cover/BuildCover.lean` – termination measure, search helpers, lifting lemmas, and the well-founded recursion implementing `buildCover`.
-* `cover2.lean` – high-level orchestration (`sunflower_step`, `buildCover_covers`, `buildCover_card_bound`).
-* `family_entropy_cover.lean` – bundled `FamilyCover` record exposing `buildCover` together with the explicit `mBound` bound.
-* `Cover/Compute.lean`, `Algorithms/SatCover.lean` – constructive (exponential-time) enumerators used for experimentation and a SAT solver stub.
-* `low_sensitivity_cover.lean`, `low_sensitivity.lean`, `merge_low_sens.lean`, `cover_size.lean`, `sat_cover.lean` – decision-tree cover for smooth families and tools to combine entropy and sensitivity arguments.
-* `cover_numeric.lean`, `bound.lean` – numeric bounds for the experimental cover and the inequality `mBound_le_two_pow_linear`.
-
-### Complexity interface
-* `canonical_circuit.lean`, `Algorithms/` – canonical circuits and executable experiments.
-* `acc_mcsp_sat.lean` – meet-in-the-middle SAT outline.
-* `ComplexityClasses.lean`, `NP_separation.lean` – bridge from the FCE-Lemma to `P ≠ NP` (remaining axioms: `magnification_AC0_MCSP`, `FCE_implies_MCSP`).
-* `TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean` – groundwork for the classical inclusion `P ⊆ P/poly`.
-
-### Documentation and experiments
-* `docs/` – research notes and blueprints updated during the September 2025 audit.
-* `pnp3/` – новая ветка программы, реализующая конвейер Switching-Atlas Lemma → hardness magnification; содержит каркас Lean-файлов и документацию плана миграции.
-* `experiments/` – Python tooling for enumerating small Boolean circuits (`lemma_b_search.py`, `single_gate_count.py`, `collision_entropy.py`, `capacity_drop.py`, `sunflower_step.py`) with logged results in `results_n*.md`.
-* `Task_description.md`, `fce_lemma_proof.md` – background notes on the FCE-Lemma programme.
-
-## Logic conventions
-
-All Prop-level arguments freely use classical reasoning:
-
-* `Classical` is routinely opened and noncomputable sections are used when convenient.
-* Standard mathlib axioms such as `funext`, `propext`, and `Classical.choice` are part of the accepted toolkit.
-* Noncomputable definitions are permitted because the project is about existence proofs, not extraction of efficient programs.
-
-Whenever a constructive variant is desirable for later tooling, the documentation marks it explicitly.
-
-## Building
-
-The development targets **Lean 4** together with **mathlib4** ≥ 4.22.0-rc2.  Install `elan` (which also provides the `lake` tool) and run
+The project targets **Lean 4** together with **mathlib4** ≥ 4.22.0-rc2.  Install `elan` (which also provides the `lake` tool) and run
 
 ```bash
 elan toolchain install $(cat lean-toolchain)
@@ -68,33 +42,29 @@ lake build
 
 If the cache download is blocked, rerun `lake build` to compile mathlib from source.
 
-Smoke tests:
+### Smoke tests
 
 ```bash
-lean --run Pnp2/examples.lean     # runnable examples
+lean --run pnp3/Tests/Smoke.lean    # PNP3 regression tests
 lake env lean --run scripts/smoke.lean
-lake test                         # unit-style tests for helper executables
-./scripts/check.sh                # full build + smoke test
+lake test                           # helper executables
+./scripts/check.sh                  # full build + smoke test
 ```
 
-## Experiments
+The archived `Pnp2/` tests can still be invoked via `lean --run Pnp2/examples.lean` when required.
 
-Prototype scripts in `experiments/` require Python 3:
+## Development conventions
 
-```bash
-python3 experiments/lemma_b_search.py 4 2      # exhaustive gate enumeration
-python3 experiments/capacity_drop.py 6 3       # capacity-drop statistics
-python3 experiments/collision_entropy.py 3 1   # collision entropy tables
-python3 experiments/sunflower_step.py --t 3 0,1 0,2 1,2
-```
+* Classical reasoning is freely available (we routinely open `Classical`).
+* Noncomputable definitions are permitted whenever they simplify existence proofs; constructive variants are documented explicitly when downstream tooling needs them.
+* Extensive file headers describe goals, dependencies, and completion criteria.  Follow the TODO markers inside `pnp3/` modules when contributing new proofs.
 
-Enumerations for `n ≤ 8` are documented in `results_n*.md`.
+## Historical note: from FCE to SAL
 
-## Current status and open tasks
+The shift from the FCE-Lemma pipeline (`Pnp2/`) to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
 
-The constructive cover (`buildCover`, `familyEntropyCover`, `decisionTree_cover`) is completely formalised.  Outstanding work is concentrated in the magnification bridge:
+1. The constructive cover machinery is preserved for reproducibility but no longer drives the main separation strategy.
+2. SAL-based magnification aligns better with contemporary lower-bound techniques and offers a clearer path to hardness for (Gap)MCSP.
+3. All new development happens inside `pnp3/`, while the `Pnp2/` directory serves as a reference implementation of earlier results.
 
-* Replace the assumptions `magnification_AC0_MCSP` and `FCE_implies_MCSP` in `NP_separation.lean` with formal proofs.
-* Strengthen the experimental numeric bounds in `cover_numeric.lean` (the current `2^n` cap is a safe placeholder).
-
-See `TODO.md` for a detailed task list and progress tracker.
+For detailed migration plans and milestone tracking, consult `pnp3/Docs/PLAN.md` and the root `TODO.md`.

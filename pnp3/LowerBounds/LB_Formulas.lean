@@ -6,6 +6,8 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Counting.Atlas_to_LB_Core
 import Counting.Count_EasyFuncs
+import ThirdPartyFacts.LeafBudget
+import ThirdPartyFacts.Facts_Switching
 
 /-!
   pnp3/LowerBounds/LB_Formulas.lean
@@ -161,7 +163,8 @@ theorem no_bounded_atlas_of_large_family
   листьев, используемых для каждой функции.
 -/
 noncomputable def BoundedAtlasScenario.ofShrinkage
-    {n : Nat} (S : Core.Shrinkage n) (k : Nat)
+    {n : Nat} [DecidableEq (Core.Subcube n)]
+    (S : Core.Shrinkage n) (k : Nat)
     (hlen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k)
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
     BoundedAtlasScenario n :=
@@ -180,10 +183,11 @@ noncomputable def BoundedAtlasScenario.ofShrinkage
       intro f hf
       refine ⟨S.Rsel f, ?_, ?_, ?_⟩
       · exact hlen f hf
-      · -- Цель переформулируем напрямую через листья PDT, чтобы воспользоваться
-        -- условием shrinkage о подмножестве словаря.
-        change Core.listSubset (S.Rsel f) (Core.PDT.leaves S.tree)
-        simpa using S.Rsel_sub f hf
+      · -- После конструирования словаря через `Atlas.fromShrinkage`
+        -- подмножественное отношение к листьям PDT переписывается напрямую.
+        have hsubset := S.Rsel_sub f hf
+        convert hsubset using 1 <;>
+          simp [Core.listSubset, Core.Atlas.fromShrinkage, Core.Atlas.ofPDT]
       · simpa using S.err_le f hf }
 
 /--
@@ -229,6 +233,128 @@ theorem no_shrinkage_of_large_family
       no_bounded_atlas_of_large_family
         (sc := BoundedAtlasScenario.ofShrinkage S k hlen hε0 hε1)
         (Y := Y) hYsubset hLarge
+
+/--
+  ### Автоматический переход от Shrinkage к ограниченному сценарию
+
+  Комбинируем SAL и внешний факт о бюджете листьев, получая готовый
+  объект `BoundedAtlasScenario` и общую границу `k`.  Это базовый клей
+  между частями A и B: дальше можно напрямую применять Covering-Power.
+-/
+noncomputable def scenarioFromShrinkage
+    {n : Nat} [DecidableEq (Core.Subcube n)]
+    (S : Core.Shrinkage n)
+    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
+    Σ' k : Nat, BoundedAtlasScenario n :=
+  by
+    classical
+    let witness := ThirdPartyFacts.leaf_budget_from_shrinkage S
+    let k := Classical.choose witness
+    have hk : ∀ f ∈ S.F, (S.Rsel f).length ≤ k := by
+      intro f hf
+      simpa using Classical.choose_spec witness hf
+    exact ⟨k, BoundedAtlasScenario.ofShrinkage S k hk hε0 hε1⟩
+
+/--
+  Специализация к случаю AC⁰: из shrinkage-конструкции, предоставленной
+  внешним фактом, автоматически получаем ограниченный сценарий.  Лемма
+  также заботится об условиях `0 ≤ ε ≤ 1/2`, необходимых для применения
+  ёмкостных оценок.
+-/
+noncomputable def scenarioFromAC0
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    Σ' k : Nat, BoundedAtlasScenario params.n :=
+  by
+    classical
+    letI := inferInstanceAs (DecidableEq (Core.Subcube params.n))
+    let shrinkWitness := ThirdPartyFacts.shrinkage_for_AC0 params F
+    let t := Classical.choose shrinkWitness
+    let rest₁ := Classical.choose_spec shrinkWitness
+    let ε := Classical.choose rest₁
+    let rest₂ := Classical.choose_spec rest₁
+    let S := Classical.choose rest₂
+    have hspec := Classical.choose_spec rest₂
+    rcases hspec with ⟨hF, hchain⟩
+    rcases hchain with ⟨ht, hchain⟩
+    rcases hchain with ⟨hε, hchain⟩
+    rcases hchain with ⟨htBound, hchain⟩
+    rcases hchain with ⟨hε0, hεBound⟩
+    let hε' : ε = S.ε := hε.symm
+    have hε_le_half_base :=
+      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
+        params.n (ε := ε) hεBound
+    have hε_le_half : S.ε ≤ (1 : Core.Q) / 2 := hε' ▸ hε_le_half_base
+    have hε_nonneg : (0 : Core.Q) ≤ S.ε := hε' ▸ hε0
+    let leafWitness := ThirdPartyFacts.leaf_budget_from_shrinkage S
+    let k := Classical.choose leafWitness
+    have hkLen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k := by
+      intro f hf
+      simpa using Classical.choose_spec leafWitness hf
+    let base :=
+      BoundedAtlasScenario.ofShrinkage S k hkLen hε_nonneg hε_le_half
+    have hFamily : base.family = S.F := rfl
+    refine ⟨k, { base with family := F, works := ?_, bounded := ?_ }⟩
+    ·
+      have hworksBase : WorksFor base.atlas S.F := by
+        simpa [hFamily] using base.works
+      exact hF ▸ hworksBase
+    · intro f hf
+      have hfS : f ∈ S.F := hF ▸ hf
+      have hfBase : f ∈ base.family := by
+        simpa [hFamily] using hfS
+      have hbounded := base.bounded f hfBase
+      simpa [hFamily] using hbounded
+
+/--
+  Аналог конструкции `scenarioFromAC0`, но для shrinkage факта о
+  локальных схемах.  Логика полностью идентична: извлекаем общий PDT,
+  приводим ошибку к формату SAL и упаковываем в ограниченный сценарий.
+-/
+noncomputable def scenarioFromLocalCircuit
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    Σ' k : Nat, BoundedAtlasScenario params.n :=
+  by
+    classical
+    letI := inferInstanceAs (DecidableEq (Core.Subcube params.n))
+    let shrinkWitness := ThirdPartyFacts.shrinkage_for_localCircuit params F
+    let t := Classical.choose shrinkWitness
+    let rest₁ := Classical.choose_spec shrinkWitness
+    let ε := Classical.choose rest₁
+    let rest₂ := Classical.choose_spec rest₁
+    let S := Classical.choose rest₂
+    have hspec := Classical.choose_spec rest₂
+    rcases hspec with ⟨hF, hchain⟩
+    rcases hchain with ⟨ht, hchain⟩
+    rcases hchain with ⟨hε, hchain⟩
+    rcases hchain with ⟨htBound, hchain⟩
+    rcases hchain with ⟨hε0, hεBound⟩
+    let hε' : ε = S.ε := hε.symm
+    have hε_le_half_base :=
+      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
+        params.n (ε := ε) hεBound
+    have hε_le_half : S.ε ≤ (1 : Core.Q) / 2 := hε' ▸ hε_le_half_base
+    have hε_nonneg : (0 : Core.Q) ≤ S.ε := hε' ▸ hε0
+    let leafWitness := ThirdPartyFacts.leaf_budget_from_shrinkage S
+    let k := Classical.choose leafWitness
+    have hkLen : ∀ f ∈ S.F, (S.Rsel f).length ≤ k := by
+      intro f hf
+      simpa using Classical.choose_spec leafWitness hf
+    let base :=
+      BoundedAtlasScenario.ofShrinkage S k hkLen hε_nonneg hε_le_half
+    have hFamily : base.family = S.F := rfl
+    refine ⟨k, { base with family := F, works := ?_, bounded := ?_ }⟩
+    ·
+      have hworksBase : WorksFor base.atlas S.F := by
+        simpa [hFamily] using base.works
+      exact hF ▸ hworksBase
+    · intro f hf
+      have hfS : f ∈ S.F := hF ▸ hf
+      have hfBase : f ∈ base.family := by
+        simpa [hFamily] using hfS
+      have hbounded := base.bounded f hfBase
+      simpa [hFamily] using hbounded
 
 
 end LowerBounds

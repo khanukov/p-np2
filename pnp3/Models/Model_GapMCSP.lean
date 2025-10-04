@@ -1,13 +1,39 @@
 import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
+/-!
+  pnp3/Models/Model_GapMCSP.lean
+
+  На шаге C нам требуется лишь минималистичная модель параметров GapMCSP.
+  Мы фиксируем число входных переменных `n` для функции, чью таблицу истинности
+  длины `N = 2^n` рассматривает MCSP, а также два порога размеров схем —
+  `sYES` и `sNO`, отвечающие за YES- и NO-слои gap-версии задачи.
+
+  Эти данные будут использоваться в ядре нижней оценки: гипотеза о существовании
+  «малого» решателя GapMCSP формулируется через такие параметры, а далее
+  связывается с SAL и Covering-Power.
+-/
 namespace Pnp3
 namespace Models
 
-/-- TODO: структура параметров GapMCSP. -/
-axiom GapMCSPParams : Type
+/--
+  Параметры GapMCSP.  Нам достаточно знать количество переменных `n` и два
+  порога размера схем `sYES < sNO`, задающих разрыв (gap) между YES- и NO-слоями.
 
-/-- TODO: язык GapMCSP для заданных параметров. -/
-axiom GapMCSP (params : GapMCSPParams) : Type
+  * `n` — число входных переменных функции. Таблица истинности имеет длину `2^n`.
+  * `sYES` — верхняя граница на размер схемы, свидетельствующей ответ YES.
+  * `sNO` — нижняя граница на размер схемы для NO-инстансов; по определению
+    требуем `sYES + 1 ≤ sNO`, чтобы gap был ненулевым.
+-/
+structure GapMCSPParams where
+  n : Nat
+  sYES : Nat
+  sNO : Nat
+  gap_ok : sYES + 1 ≤ sNO
+  deriving Repr
+
+/-- Длина входа MCSP: `N = 2^n`. Это основная числовая характеристика задачи. -/
+def inputLen (p : GapMCSPParams) : Nat := Nat.pow 2 p.n
 
 end Models
 end Pnp3

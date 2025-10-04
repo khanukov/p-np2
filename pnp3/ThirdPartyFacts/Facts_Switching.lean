@@ -11,8 +11,16 @@
   следует существование объекта `Shrinkage`, который затем конвейер SAL
   превращает в общий атлас.
 -/
+import Mathlib.Algebra.Order.Field.Basic
 import Core.BooleanBasics
 import Core.SAL_Core
+
+/-!
+  В дополнение к основному shrinkage-факту нам понадобится ещё одна
+  элементарная арифметическая оценка: если ошибка аппроксимации
+  ограничена как `ε ≤ 1/(n+2)`, то автоматически `ε ≤ 1/2`.  Это
+  полезно при связке с энтропийными оценками (Covering-Power).
+-/
 
 namespace Pnp3
 namespace ThirdPartyFacts
@@ -31,6 +39,28 @@ structure AC0Parameters where
   n : Nat
   M : Nat
   d : Nat
+  deriving Repr
+
+/--
+  Параметры для класса «локальных схем».  Мы сохраняем только наиболее
+  необходимые числовые характеристики:
+
+  * `n` — число входных бит (длина таблицы истинности).
+  * `M` — общий размер схемы (например, число вентилей).
+  * `ℓ` — параметр локальности: каждое выходное значение зависит не более
+    чем от `ℓ` входов.
+  * `depth` — число слоёв (глубина схемы).
+
+  В дальнейшем эта структура служит лишь для записи тех величин, которые
+  фигурируют в внешнем факте о shrinkage для локальных схем.  Дополнительные
+  ограничения (например, на тип вентилей) можно будет добавить позже, не
+  меняя интерфейс Lean.
+-/
+structure LocalCircuitParameters where
+  n      : Nat
+  M      : Nat
+  ℓ      : Nat
+  depth  : Nat
   deriving Repr
 
 /-- Уточняющая структура, описывающая гарантии shrinkage.
@@ -58,7 +88,43 @@ axiom shrinkage_for_AC0
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
         t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
-        ε ≤ (1 : Q) / (Nat.pow 2 (Nat.log2 (params.n + 2)))
+        (0 : Q) ≤ ε ∧
+        ε ≤ (1 : Q) / (params.n + 2)
+
+/--
+  Внешний факт для локальных схем: после применения подходящих ограничений
+  схема становится «малой» PDT.  Конкретные численные границы отражают
+  стандартные оценки: глубина дерева пропорциональна произведению локальности
+  и логарифмических факторов по размеру и глубине схемы.
+-/
+axiom shrinkage_for_localCircuit
+    (params : LocalCircuitParameters) (F : Family params.n) :
+    ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
+      S.F = F ∧ S.t = t ∧ S.ε = ε ∧
+        t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ∧
+        (0 : Q) ≤ ε ∧
+        ε ≤ (1 : Q) / (params.n + 2)
+
+/--
+  Техническая лемма: при любом `n` имеем `1 / (n + 2) ≤ 1 / 2`.
+  Доказательство — аккуратная алгебра на ℚ: сводим утверждение к
+  очевидному неравенству `2 ≤ n + 2` и раскрываем деление.
+-/
+lemma inv_nat_succ_succ_le_half (n : Nat) :
+    (1 : Q) / (n + 2) ≤ (1 : Q) / 2 := by
+  have hNat : (2 : Q) ≤ (n + 2 : Q) := by
+    exact_mod_cast (Nat.le_add_left 2 n)
+  have hpos : (0 : Q) < (2 : Q) := by norm_num
+  simpa using
+    (one_div_le_one_div_of_le (a := (2 : Q)) (b := (n + 2 : Q)) hpos hNat)
+
+/--
+  Из оценки `ε ≤ 1 / (n + 2)` немедленно следует `ε ≤ 1 / 2`.
+  Это условие нужно для дальнейших энтропийных оценок шара Хэмминга.
+-/
+lemma eps_le_half_of_eps_le_inv_nplus2 (n : Nat) {ε : Q}
+    (h : ε ≤ (1 : Q) / (n + 2)) : ε ≤ (1 : Q) / 2 :=
+  h.trans (inv_nat_succ_succ_le_half n)
 
 /-- Удобная оболочка: сразу извлекаем атлас из факта shrinkage.  Эта
 функция подчёркивает, что на практике мы используем именно словарь подкубов,
@@ -86,14 +152,15 @@ theorem atlas_from_AC0_works
   let ε := Classical.choose h₁
   let h₂ := Classical.choose_spec h₁
   let S := Classical.choose h₂
-  obtain ⟨hF, _ht, _hε, _htBound, _hεBound⟩ := Classical.choose_spec h₂
+  have hspec := Classical.choose_spec h₂
+  have hF : S.F = F := hspec.left
   have hworks : WorksFor (Atlas.fromShrinkage S) S.F :=
     SAL_from_Shrinkage S
   have hdict : Atlas.fromShrinkage S = atlas_from_AC0 params F := rfl
   have hworks' : WorksFor (atlas_from_AC0 params F) S.F := by
     simpa [hdict] using hworks
   have hworks'' : WorksFor (atlas_from_AC0 params F) F := by
-    simpa using hF ▸ hworks'
+    simpa [hF] using hworks'
   exact hworks''
 
 end ThirdPartyFacts

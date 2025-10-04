@@ -4,6 +4,8 @@
   Атлас = общий словарь подкубов + допустимая ошибка ε.
   Предикат WorksFor: для каждого f из семейства есть поднабор словаря, аппроксимирующий f с ошибкой ≤ ε.
 -/
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
 import Mathlib.Data.List.Basic
 import Core.BooleanBasics
 import Core.PDT
@@ -88,6 +90,109 @@ lemma listSubset_cons_of_mem {α} [DecidableEq α]
   · have hb' : xs.contains b = true := by
       simpa [List.contains_cons, hba] using hb
     exact h _ hb'
+
+/--
+  Удаление дубликатов в левой части отношения `listSubset` сохраняет его.
+  Это позволит пользоваться «очищенными» списками при оценке бюджета
+  листьев, не теряя информацию о подмножественном включении.
+-/
+lemma listSubset_dedup {α} [DecidableEq α]
+    {xs ys : List α} (h : listSubset xs ys) :
+    listSubset xs.dedup ys := by
+  intro a ha
+  classical
+  have hmem : a ∈ xs.dedup := mem_of_contains (xs := xs.dedup) ha
+  have hmem_xs : a ∈ xs := (List.mem_dedup.mp hmem)
+  have hcontains : xs.contains a = true := contains_of_mem (xs := xs) hmem_xs
+  exact h _ hcontains
+
+/--
+  Переводим утверждение о подсписке в включение финитных множеств.
+  В частности, если `xs` содержится в `ys`, то и множество элементов
+  `xs.toFinset` входит в `ys.toFinset`.
+-/
+lemma listSubset_toFinset_subset {α} [DecidableEq α]
+    {xs ys : List α} (h : listSubset xs ys) :
+    xs.toFinset ⊆ ys.toFinset :=
+  by
+    classical
+    intro a ha
+    have hmem : a ∈ xs := by
+      simpa [List.mem_toFinset] using ha
+    have hcontains : xs.contains a = true :=
+      contains_of_mem (xs := xs) hmem
+    have hcontains' := h a hcontains
+    have hmem' : a ∈ ys :=
+      mem_of_contains (xs := ys) hcontains'
+    simpa [List.mem_toFinset] using hmem'
+
+/--
+  Для конечного подмножества элементов подтипа списочное представление
+  `toList.map Subtype.val` содержит те же уникальные элементы, что и образ
+  финсета под отображением `Subtype.val`.  Это даёт удобный мост между
+  `Finset`-представлением словаря и списками, которыми пользуется `coveredB`.
+-/
+lemma toList_mapSubtype_val_toFinset {α} [DecidableEq α]
+    {p : α → Prop} [DecidablePred p]
+    (S : Finset {a : α // p a}) :
+    (S.toList.map Subtype.val).toFinset
+      = S.image (fun x => x.1) := by
+  classical
+  apply Finset.ext
+  intro a
+  constructor
+  · intro ha
+    have ha_list : a ∈ S.toList.map Subtype.val := by
+      simpa [List.mem_toFinset] using ha
+    rcases List.mem_map.1 ha_list with ⟨x, hx, rfl⟩
+    have hx_fin : x ∈ S := by
+      simpa [Finset.mem_toList] using hx
+    exact Finset.mem_image.2 ⟨x, hx_fin, rfl⟩
+  · intro ha
+    rcases Finset.mem_image.1 ha with ⟨x, hxS, rfl⟩
+    have hx_list : x ∈ S.toList := by
+      simpa [Finset.mem_toList] using hxS
+    have hx_map : x.val ∈ S.toList.map Subtype.val :=
+      List.mem_map.2 ⟨x, hx_list, rfl⟩
+    exact (List.mem_toFinset.mpr hx_map)
+
+/--
+  Мощность множества уникальных элементов списка не превосходит длину
+  исходного списка.  Техническое неравенство используется при оценке
+  бюджета листьев через `List.toFinset`.
+-/
+lemma toFinset_card_le_length {α} [DecidableEq α] :
+    ∀ xs : List α, xs.toFinset.card ≤ xs.length
+  | [] => by
+      simp
+  | (a :: xs) =>
+      by
+        classical
+        have hrec := toFinset_card_le_length xs
+        by_cases hmem : a ∈ xs
+        · -- Вставка существующего элемента не меняет мощность множества.
+          have hset : (a :: xs).toFinset = xs.toFinset := by
+            simpa [List.toFinset_cons, hmem]
+          have hle : xs.toFinset.card ≤ xs.length := hrec
+          have : xs.toFinset.card ≤ (a :: xs).length := by
+            simpa [List.length_cons] using
+              Nat.le_trans hle (Nat.le_succ _)
+          simpa [hset]
+        · -- Добавление нового элемента увеличивает мощность на единицу.
+          have hnot : a ∉ xs.toFinset := by
+            simpa [List.mem_toFinset] using hmem
+          have hset :
+              (a :: xs).toFinset = insert a xs.toFinset := by
+            simpa [List.toFinset_cons, hmem]
+          have hcard :
+              (a :: xs).toFinset.card = xs.toFinset.card + 1 := by
+            simpa [hset, hnot] using card_insert (s := xs.toFinset) (a := a)
+          have hcard' :
+              (insert a xs.toFinset).card = xs.toFinset.card + 1 := by
+            simpa [hset]
+              using hcard
+          have hlen := Nat.succ_le_succ hrec
+          simpa [List.length_cons, hcard', Nat.succ_eq_add_one] using hlen
 
 /-- Атлас "работает" для семейства F:
     для каждого f ∈ F существует подсписок R_f ⊆ dict, такой что errU f R_f ≤ ε. -/

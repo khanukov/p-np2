@@ -249,5 +249,23 @@ lemma approx_zero_eq_union_sample :
   classical
   simpa using approx_zero_eq_union (R := sampleDict) (k := 1)
 
+/-- Простая проверка монотонности `unionBound` по бюджету подкубов. -/
+lemma unionBound_mono_sample : unionBound 3 1 ≤ unionBound 3 2 := by
+  simpa using
+    (Counting.unionBound_mono_right (D := 3) (k₁ := 1) (k₂ := 2)
+      (by decide : (1 : Nat) ≤ 2))
+
+/-- Проверка на конкретном примере: увеличение ε расширяет хамминговый шар. -/
+lemma hammingBallBound_mono_sample :
+    hammingBallBound 4 ((1 : ℚ) / 8) (by norm_num) (by norm_num) ≤
+      hammingBallBound 4 ((1 : ℚ) / 4) (by norm_num) (by norm_num) := by
+  have hε : (1 : ℚ) / 8 ≤ (1 : ℚ) / 4 := by norm_num
+  simpa using
+    (Counting.hammingBallBound_mono (N := 4)
+      (ε := (1 : ℚ) / 8) (ε' := (1 : ℚ) / 4)
+      (hε0 := by norm_num) (hε'0 := by norm_num)
+      (hε1 := by norm_num) (hε'1 := by norm_num)
+      (hε := hε))
+
 end Tests
 end Pnp3

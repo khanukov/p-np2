@@ -1870,6 +1870,34 @@ lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
             simpa [hb_eq] using hbneq
           simpa [hmask, hbne]
 
+/--
+Если ограничение объявило литерал удовлетворённым, то после `override` он
+действительно вычисляется в `true`.
+-/
+lemma literalStatus_eval_override_true {n : Nat} {ρ : Restriction n}
+    {ℓ : Literal n} {x : BitVec n}
+    (h : ρ.literalStatus ℓ = LiteralStatus.satisfied) :
+    Literal.eval ℓ (ρ.override x) = true := by
+  classical
+  obtain hmask : ρ.mask ℓ.idx = some ℓ.value :=
+    (literalStatus_eq_satisfied (ρ := ρ) (ℓ := ℓ)).1 h
+  unfold Literal.eval
+  simp [Restriction.override, hmask]
+
+/--
+Если литерал помечен как ложный, то после применения `override` он остаётся
+ложным.
+-/
+lemma literalStatus_eval_override_false {n : Nat} {ρ : Restriction n}
+    {ℓ : Literal n} {x : BitVec n}
+    (h : ρ.literalStatus ℓ = LiteralStatus.falsified) :
+    Literal.eval ℓ (ρ.override x) = false := by
+  classical
+  obtain ⟨b, hmask, hb⟩ :=
+    (literalStatus_eq_falsified (ρ := ρ) (ℓ := ℓ)).1 h
+  unfold Literal.eval
+  simp [Restriction.override, hmask, hb]
+
 /-- Список литералов, оставшихся свободными после применения ограничения. -/
 @[simp] def freeLiterals {n : Nat} (ρ : Restriction n) (C : CnfClause n) :
     List (Literal n) :=

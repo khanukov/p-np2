@@ -77,6 +77,50 @@ lemma listSubset.mem {α} [DecidableEq α]
   have hcontains' := h a hcontains
   exact mem_of_contains (xs := ys) hcontains'
 
+/--
+  Если каждый элемент `xs` принадлежит `ys` (в обычном смысле списочного
+  членства), то выполняется и отношение `listSubset`.  Эта вспомогательная
+  лемма позволяет работать с привычными "математическими" включениями, не
+  заботясь о том, какая конкретная реализация `DecidableEq` используется для
+  функций `contains`.
+-/
+lemma listSubset_of_mem {α} [DecidableEq α]
+    {xs ys : List α} (h : ∀ ⦃a : α⦄, a ∈ xs → a ∈ ys) :
+    listSubset xs ys := by
+  intro a ha
+  classical
+  have hmem : a ∈ xs := mem_of_contains (xs := xs) ha
+  have hy : a ∈ ys := h hmem
+  exact contains_of_mem (xs := ys) hy
+
+/-- Эквивалентность между определением `listSubset` и привычным включением. -/
+lemma listSubset_iff_mem {α} [DecidableEq α] (xs ys : List α) :
+    listSubset xs ys ↔ ∀ ⦃a : α⦄, a ∈ xs → a ∈ ys := by
+  constructor
+  · intro h a ha
+    exact listSubset.mem h ha
+  · intro h
+    exact listSubset_of_mem h
+
+/--
+  От выбранной реализации `DecidableEq` значение `listSubset` не зависит.  Мы
+  переводим утверждение через обычное включение множеств, где доказательство не
+  использует конкретные решения равенства.
+-/
+lemma listSubset_congr_decEq {α} (inst₁ inst₂ : DecidableEq α)
+    (xs ys : List α) :
+    @listSubset α inst₁ xs ys ↔ @listSubset α inst₂ xs ys := by
+  classical
+  -- Эквивалентность достигается через промежуточную форму "каждый элемент xs
+  -- содержится в ys".
+  have h₁ : @listSubset α inst₁ xs ys ↔ ∀ ⦃a : α⦄, a ∈ xs → a ∈ ys := by
+    letI := inst₁
+    exact listSubset_iff_mem (xs := xs) (ys := ys)
+  have h₂ : @listSubset α inst₂ xs ys ↔ ∀ ⦃a : α⦄, a ∈ xs → a ∈ ys := by
+    letI := inst₂
+    exact listSubset_iff_mem (xs := xs) (ys := ys)
+  exact h₁.trans h₂.symm
+
 
 /-- Добавление элемента, уже содержащегося в `ys`, сохраняет отношение `listSubset`. -/
 lemma listSubset_cons_of_mem {α} [DecidableEq α]

@@ -1396,6 +1396,16 @@ lemma totalWeight_zero (p : Q) : totalWeight 0 p = 1 := by
 продолжения (`*`, `0`, `1`), чьи веса складываются в точности в соответствии с
 леммой `weight_cons_sum`.
 -/
+lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+1)))
+    (h_g_sum : ∀ ρ, ((g ρ).map (fun τ => τ.weight p)).sum = (p + 1 - p) * ρ.weight p) :
+    ∀ L : List (Restriction n),
+      ((L.flatMap g).map (fun τ => τ.weight p)).sum = (p + 1 - p) * (L.map (fun ρ => ρ.weight p)).sum := by
+  intro L
+  induction L with
+  | nil => simp
+  | cons ρ L' ih =>
+    simp [List.flatMap_cons, List.map_append, List.sum_append, List.map_cons, List.sum_cons, h_g_sum, ih, mul_add]
+
 lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p = (p + (1 - p)) * totalWeight n p := by
   classical
@@ -1404,75 +1414,17 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
     [Restriction.cons none ρ,
      Restriction.cons (some false) ρ,
      Restriction.cons (some true) ρ]
-  -- Покажем, что сумма весов после `flatMap` масштабируется на `(p + (1 - p))`.
-  have haux : ∀ L : List (Restriction n),
-      ((L.flatMap g).map (fun τ => τ.weight p)).sum =
-        (p + (1 - p)) * (L.map fun ρ => ρ.weight p).sum := by
-    intro L
-    induction L with
-    | nil =>
-        simp [g]
-    | cons ρ L ih =>
-        have hρlist :
-            ((g ρ).map (fun τ => τ.weight p)).sum
-              = (Restriction.cons none ρ).weight p
-                  + (Restriction.cons (some false) ρ).weight p
-                  + (Restriction.cons (some true) ρ).weight p := by
-          simp [g, List.map_cons, List.sum_cons, add_comm, add_left_comm,
-            add_assoc]
-        have hρ :
-            ((g ρ).map (fun τ => τ.weight p)).sum
-              = (p + (1 - p)) * ρ.weight p := by
-          calc
-            ((g ρ).map (fun τ => τ.weight p)).sum
-                = (Restriction.cons none ρ).weight p
-                    + (Restriction.cons (some false) ρ).weight p
-                    + (Restriction.cons (some true) ρ).weight p := hρlist
-            _ = (p + (1 - p)) * ρ.weight p :=
-                weight_cons_sum (ρ := ρ) (p := p)
-        have hflat :
-            ((List.flatMap g (ρ :: L)).map (fun τ => τ.weight p)).sum
-              = ((g ρ).map (fun τ => τ.weight p)).sum
-                  + ((List.flatMap g L).map (fun τ => τ.weight p)).sum := by
-          -- Свёртка по `flatMap`: для списка `(ρ :: L)` получаем конкатенацию.
-          change (((g ρ ++ List.flatMap g L).map fun τ => τ.weight p).sum)
-              = _
-          simpa [List.map_append, List.sum_append]
-        have hmap_cons :
-            ((ρ :: L).map fun ρ => ρ.weight p).sum
-              = ρ.weight p + (L.map fun ρ => ρ.weight p).sum := by
-          simp [List.map_cons, List.sum_cons]
-        have htail :
-            ((g ρ).map (fun τ => τ.weight p)).sum
-              + ((List.flatMap g L).map (fun τ => τ.weight p)).sum
-                = (p + (1 - p)) *
-                    (ρ.weight p + (L.map fun ρ => ρ.weight p).sum) := by
-          calc
-            ((g ρ).map (fun τ => τ.weight p)).sum
-                  + ((List.flatMap g L).map (fun τ => τ.weight p)).sum
-                = (p + (1 - p)) * ρ.weight p
-                    + ((List.flatMap g L).map (fun τ => τ.weight p)).sum := by
-                      rw [hρ]
-            _ = (p + (1 - p)) * ρ.weight p
-                    + (p + (1 - p)) * (L.map fun ρ => ρ.weight p).sum := by
-                      rw [ih]
-            _ = (p + (1 - p)) *
-                    (ρ.weight p + (L.map fun ρ => ρ.weight p).sum) := by
-                      ring
-        calc
-          ((List.flatMap g (ρ :: L)).map (fun τ => τ.weight p)).sum
-              = ((g ρ).map (fun τ => τ.weight p)).sum
-                  + ((List.flatMap g L).map (fun τ => τ.weight p)).sum := hflat
-          _ = (p + (1 - p)) *
-                (ρ.weight p + (L.map fun ρ => ρ.weight p).sum) := htail
-          _ = (p + (1 - p)) * ((ρ :: L).map fun ρ => ρ.weight p).sum := by
-                    rw [hmap_cons]
-  -- Применяем результат к списку `enumerate n`.
-  have hfold := haux (Restriction.enumerate n)
+  have h_g_sum : ∀ ρ, ((g ρ).map (fun τ => τ.weight p)).sum = (p + 1 - p) * ρ.weight p := by
+    intro ρ; simp_rw [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_zero]; exact weight_cons_sum ρ p
+
+  let haux := sum_weights_flatMap_g p g h_g_sum (enumerate n)
+  
+  simp_rw [totalWeight, enumerate, List.flatMap_singleton_eq_map, haux]
   -- Преобразуем обе части к определению `totalWeight`.
-  change (((Restriction.enumerate n).flatMap g).map (fun τ => τ.weight p)).sum
-      = (p + (1 - p)) * ((Restriction.enumerate n).map fun ρ => ρ.weight p).sum
-  exact hfold
+  change (((enumerate n).flatMap g).map (fun τ => τ.weight p)).sum
+      = (p + (1 - p)) * (map (fun ρ => ρ.weight p) (enumerate n)).sum
+  rw [haux]
+  simp [totalWeight]
 
   /-- Явная формула для суммы весов: она образует геометрическую прогрессию. -/
   lemma totalWeight_closed_form (n : Nat) (p : Q) :

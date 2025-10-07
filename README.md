@@ -38,6 +38,7 @@ to fetch the compiler.  Afterwards build the project with
 ```bash
 lake exe cache get
 lake build
+# or simply `./scripts/lake_build.sh`
 ```
 
 If the cache download is blocked, rerun `lake build` to compile mathlib from source.

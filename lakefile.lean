@@ -32,6 +32,7 @@ lean_lib PnP3 where
     `Magnification.Facts_Magnification,
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
+    `ThirdPartyFacts.BaseSwitching,
     `ThirdPartyFacts.Facts_Switching,
     `ThirdPartyFacts.LeafBudget
   ]
@@ -44,5 +45,6 @@ lean_lib PnP3Tests where
     `Atlas_Counterexample_Search,
     `LB_Smoke_Scenario,
     `LB_Core_Contradiction,
-    `Magnification_Core_Contradiction
+    `Magnification_Core_Contradiction,
+    `Switching_Basics
   ]

@@ -14,6 +14,7 @@
 import Mathlib.Algebra.Order.Field.Basic
 import Core.BooleanBasics
 import Core.SAL_Core
+import AC0.Formulas
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -23,6 +24,40 @@ import Core.SAL_Core
 -/
 
 namespace Pnp3
+
+namespace Core
+
+/-- Подкуб, задающий ровно точку `x`. -/
+@[simp] def pointSubcube {n : Nat} (x : BitVec n) : Subcube n :=
+  fun i => some (x i)
+
+/-- Точка всегда принадлежит своему точечному подкубу. -/
+@[simp] lemma mem_pointSubcube_self {n : Nat} (x : BitVec n) :
+    mem (pointSubcube x) x := by
+  classical
+  apply (mem_iff (β := pointSubcube x) (x := x)).mpr
+  intro i b hb
+  have hsome : some (x i) = some b := by
+    simpa [pointSubcube] using hb
+  exact Option.some.inj hsome
+
+/-- Принадлежность точечному подкубу означает точное совпадение вектора. -/
+@[simp] lemma mem_pointSubcube_iff {n : Nat} {x y : BitVec n} :
+    mem (pointSubcube x) y ↔ x = y := by
+  classical
+  constructor
+  · intro hmem
+    have hprop := (mem_iff (β := pointSubcube x) (x := y)).mp hmem
+    funext i
+    have : pointSubcube x i = some (x i) := by simp [pointSubcube]
+    have hy := hprop i (x i) this
+    exact hy.symm
+  · intro hxy
+    subst hxy
+    exact mem_pointSubcube_self x
+
+end Core
+
 namespace ThirdPartyFacts
 
 open Core
@@ -115,8 +150,9 @@ lemma inv_nat_succ_succ_le_half (n : Nat) :
   have hNat : (2 : Q) ≤ (n + 2 : Q) := by
     exact_mod_cast (Nat.le_add_left 2 n)
   have hpos : (0 : Q) < (2 : Q) := by norm_num
-  simpa using
+  have hdiv :=
     (one_div_le_one_div_of_le (a := (2 : Q)) (b := (n + 2 : Q)) hpos hNat)
+  exact hdiv
 
 /--
   Из оценки `ε ≤ 1 / (n + 2)` немедленно следует `ε ≤ 1 / 2`.
@@ -157,10 +193,10 @@ theorem atlas_from_AC0_works
   have hworks : WorksFor (Atlas.fromShrinkage S) S.F :=
     SAL_from_Shrinkage S
   have hdict : Atlas.fromShrinkage S = atlas_from_AC0 params F := rfl
-  have hworks' : WorksFor (atlas_from_AC0 params F) S.F := by
-    simpa [hdict] using hworks
-  have hworks'' : WorksFor (atlas_from_AC0 params F) F := by
-    simpa [hF] using hworks'
+  have hworks' := hworks
+  simp [hdict] at hworks'
+  have hworks'' := hworks'
+  simp [hF] at hworks''
   exact hworks''
 
 end ThirdPartyFacts

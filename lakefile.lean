@@ -23,6 +23,7 @@ lean_lib PnP3 where
     `Counting.BinomialBounds,
     `Counting.Count_EasyFuncs,
     `Counting.Atlas_to_LB_Core,
+    `AC0.Formulas,
     `Complexity.Interfaces,
     `Models.Model_GapMCSP,
     `LowerBounds.LB_Formulas,

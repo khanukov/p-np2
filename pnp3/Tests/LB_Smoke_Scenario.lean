@@ -44,18 +44,79 @@ by
         -- Глубина листа равна нулю, потому условие выполнено автоматически.
         simp [trivialTree, PDT.depth]
       Rsel := fun _ => []
-      Rsel_sub := ?subset
-      err_le := ?err } <;> intro f hf
-  · -- Пустой список всегда является подсписком словаря.
-    simp [Core.listSubset_nil, trivialTree, PDT.leaves]
-  · -- В семействе лишь функция `f₀`, для неё ошибка равна нулю.
-    have hf' : f = f₀ := by
-      simpa using hf
+      Rsel_sub := ?_ 
+      err_le := ?_ }
+  · intro f β hf hβ
+    -- Пустой список листьев: предположение `β ∈ []` невозможно.
+    cases hβ
+  · intro f hf
+    have hf' : f = f₀ := List.mem_singleton.mp hf
     subst hf'
-    have hzero : Core.errU f₀ ([] : List (Subcube 1)) = 0 := by
-      change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
-      simpa using (Core.errU_false_nil (n := 1))
-    simpa [hzero]
+    have hzero : Core.errU f₀ ([] : List (Subcube 1)) = 0 :=
+      Core.errU_false_nil (n := 1)
+    have hle : Core.errU f₀ ([] : List (Subcube 1)) ≤ 0 := by
+      calc
+        Core.errU f₀ ([] : List (Subcube 1)) = 0 := hzero
+        _ ≤ 0 := le_rfl
+    exact hle
+
+/-- Общий PDT, полученный из тривиального shrinkage. -/
+def trivialCommonPDT : Core.CommonPDT 1 [f₀] :=
+  Core.shrinkage_to_commonPDT trivialShrinkage
+
+@[simp] lemma trivialCommonPDT_selectors_f₀ :
+    trivialCommonPDT.selectors f₀ = [] := by
+  classical
+  change trivialShrinkage.Rsel f₀ = []
+  simp [trivialShrinkage]
+
+  private lemma trivialCommonPDT_hlen
+      (f : Core.BitVec 1 → Bool) (hf : f ∈ [f₀]) :
+      ((trivialCommonPDT.selectors f).dedup).length ≤ 0 :=
+  by
+    classical
+    have hf' : f = f₀ := List.mem_singleton.mp hf
+    subst hf'
+    have hlen : ((trivialCommonPDT.selectors f₀).dedup).length = 0 := by
+      simp [trivialCommonPDT_selectors_f₀]
+    have hle : ((trivialCommonPDT.selectors f₀).dedup).length ≤ 0 := by
+      calc
+        ((trivialCommonPDT.selectors f₀).dedup).length = 0 := hlen
+        _ ≤ 0 := Nat.le_refl 0
+    exact hle
+
+  @[simp] lemma trivialCommonPDT_epsilon :
+      trivialCommonPDT.epsilon = (0 : Core.Q) := by
+    classical
+    change trivialShrinkage.ε = 0
+    simp [trivialShrinkage]
+
+  private lemma trivialCommonPDT_epsilon_nonneg :
+      (0 : Core.Q) ≤ trivialCommonPDT.epsilon := by
+    have heq : trivialCommonPDT.epsilon = (0 : Core.Q) := by
+      simp [trivialCommonPDT_epsilon]
+    have h0 : (0 : Core.Q) ≤ 0 := by norm_num
+    exact heq.symm ▸ h0
+
+  private lemma trivialCommonPDT_epsilon_le_half :
+      trivialCommonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    have heq : trivialCommonPDT.epsilon = (0 : Core.Q) := by
+      simp [trivialCommonPDT_epsilon]
+    have h0 : (0 : Core.Q) ≤ (1 : Core.Q) / 2 := by norm_num
+    exact heq.symm ▸ h0
+
+/-- Готовый сценарий, полученный из тривиального общего PDT. -/
+def trivialScenarioCommon : BoundedAtlasScenario 1 :=
+  LowerBounds.BoundedAtlasScenario.ofCommonPDT
+    (n := 1)
+    (F := [f₀])
+    (C := trivialCommonPDT)
+    0
+    (by
+      intro f hf
+      exact trivialCommonPDT_hlen f hf)
+    trivialCommonPDT_epsilon_nonneg
+    trivialCommonPDT_epsilon_le_half
 
 /--
   Дымовая проверка: убеждаемся, что автоматический переход
@@ -85,21 +146,21 @@ theorem scenarioFromShrinkage_smoke :
       Core.errU f₀ S = 0 :=
 by
   classical
-  let result :=
+  set result :=
     LowerBounds.scenarioFromShrinkage
       (S := trivialShrinkage)
       (by simp [trivialShrinkage])
       (by simp [trivialShrinkage])
-  have hFamily : result.2.family = [f₀] := by
-    unfold result
-    simp [LowerBounds.scenarioFromShrinkage,
-      LowerBounds.BoundedAtlasScenario.ofShrinkage, trivialShrinkage,
-      Core.Atlas.fromShrinkage, Core.Atlas.ofPDT]
-  have hEps : result.2.atlas.epsilon = 0 := by
-    unfold result
-    simp [LowerBounds.scenarioFromShrinkage,
-      LowerBounds.BoundedAtlasScenario.ofShrinkage, trivialShrinkage,
-      Core.Atlas.fromShrinkage, Core.Atlas.ofPDT]
+  have hFamily : result.2.family = [f₀] :=
+    (LowerBounds.scenarioFromShrinkage_family_eq
+      (S := trivialShrinkage)
+      (hε0 := by simp [trivialShrinkage])
+      (hε1 := by simp [trivialShrinkage]))
+  have hEps : result.2.atlas.epsilon = 0 :=
+    (LowerBounds.scenarioFromShrinkage_epsilon_eq
+      (S := trivialShrinkage)
+      (hε0 := by simp [trivialShrinkage])
+      (hε1 := by simp [trivialShrinkage]))
   have hWitness :
       ∃ S : List (Subcube 1),
         S = [] ∧
@@ -107,12 +168,119 @@ by
         Core.listSubset S result.2.atlas.dict ∧
         Core.errU f₀ S = 0 := by
     refine ⟨[], rfl, ?_, ?_, ?_⟩
-    · simp
-    · simp [Core.listSubset_nil]
+    · change 0 ≤ result.1
+      exact Nat.zero_le _
+    · exact Core.listSubset_nil (ys := result.2.atlas.dict)
     ·
       change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
-      simpa using (Core.errU_false_nil (n := 1))
+      exact (Core.errU_false_nil (n := 1))
   exact And.intro hFamily (And.intro hEps hWitness)
+
+/--
+  Та же проверка, но через новый интерфейс `ofCommonPDT`: стартуем с общего
+  PDT, извлечённого из shrinkage, и убеждаемся, что построенный сценарий
+  совпадает с ожидаемыми параметрами.
+-/
+lemma scenarioFromCommonPDT_smoke :
+    let sc := trivialScenarioCommon
+    sc.family = [f₀] ∧ sc.atlas.epsilon = 0 ∧ sc.k = 0 ∧
+      ∃ S : List (Subcube 1),
+        S = [] ∧
+        Core.listSubset S sc.atlas.dict ∧
+        Core.errU f₀ S = 0 :=
+by
+  classical
+  set sc := trivialScenarioCommon
+  have hfam : sc.family = [f₀] := by
+    -- Конструкция `trivialScenarioCommon` фиксирует семейство `[f₀]`.
+    simp [sc, trivialScenarioCommon, LowerBounds.BoundedAtlasScenario.ofCommonPDT]
+  have heps : sc.atlas.epsilon = 0 := by
+    -- Ошибка равна ε исходного shrinkage, то есть нулю.
+    simp [sc, trivialScenarioCommon, LowerBounds.BoundedAtlasScenario.ofCommonPDT,
+      Core.CommonPDT.toAtlas, Core.Atlas.ofPDT, trivialCommonPDT_epsilon]
+  have hk : sc.k = 0 := by
+    -- При построении сценария мы явно указали `k = 0`.
+    simp [sc, trivialScenarioCommon, LowerBounds.BoundedAtlasScenario.ofCommonPDT]
+  have hsubset : Core.listSubset ([] : List (Subcube 1)) sc.atlas.dict := by
+    -- Пустой набор листьев всегда является подсписком.
+    exact Core.listSubset_nil (ys := sc.atlas.dict)
+  have herr : Core.errU f₀ ([] : List (Subcube 1)) = 0 := by
+    -- При отсутствии выбранных листьев ошибка обнуляется.
+    change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
+    exact (Core.errU_false_nil (n := 1))
+  exact And.intro hfam (And.intro heps (And.intro hk ⟨[], rfl, hsubset, herr⟩))
+
+/--
+  Новая лемма `scenarioFromCommonPDT_k_le_pow` даёт ожидаемую границу на `k`
+  для тривиального примера: значение `k = 0` не превосходит `2^0`.
+-/
+lemma scenarioFromCommonPDT_k_le_pow_smoke :
+    (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).1
+      ≤ Nat.pow 2 trivialCommonPDT.depthBound :=
+by
+  classical
+  have hk :=
+    LowerBounds.scenarioFromCommonPDT_k_le_pow
+      (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+      (hε0 := trivialCommonPDT_epsilon_nonneg)
+      (hε1 := trivialCommonPDT_epsilon_le_half)
+  simp [trivialCommonPDT, trivialShrinkage] at hk
+  exact hk
+
+/--
+  Проверка новой конструкции `scenarioFromCommonPDT`: получаем сценарий из
+  тривиального общего PDT и убеждаемся, что семейство и ошибка совпадают с
+  ожидаемыми значениями.  Возвращённый параметр `k` (в данном примере равный 1)
+  допустим: пустой список листьев удовлетворяет требуемым ограничениям.
+-/
+lemma scenarioFromCommonPDT_sigma_smoke :
+    (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).2.family = [f₀] ∧
+    (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).2.atlas.epsilon = 0 ∧
+    ∃ S : List (Subcube 1),
+      S = [] ∧
+      S.length ≤ (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).1 ∧
+      Core.listSubset S (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).2.atlas.dict ∧
+      Core.errU f₀ S = 0 :=
+by
+  classical
+  set result :=
+    LowerBounds.scenarioFromCommonPDT
+      (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+      (hε0 := trivialCommonPDT_epsilon_nonneg)
+      (hε1 := trivialCommonPDT_epsilon_le_half)
+    with hresult
+  have hfam : result.2.family = [f₀] :=
+    (LowerBounds.scenarioFromCommonPDT_family
+      (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+      (hε0 := trivialCommonPDT_epsilon_nonneg)
+      (hε1 := trivialCommonPDT_epsilon_le_half))
+  have heps : result.2.atlas.epsilon = 0 :=
+    (LowerBounds.scenarioFromCommonPDT_epsilon
+      (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+      (hε0 := trivialCommonPDT_epsilon_nonneg)
+      (hε1 := trivialCommonPDT_epsilon_le_half))
+  refine And.intro hfam (And.intro heps ?hwit)
+  refine ⟨[], rfl, ?hlen, ?hsubset, ?herr⟩
+  · change 0 ≤ result.1
+    exact Nat.zero_le _
+  · exact Core.listSubset_nil (ys := result.2.atlas.dict)
+  · change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
+    exact (Core.errU_false_nil (n := 1))
 
 end
 

@@ -14,6 +14,7 @@
 import Mathlib.Algebra.Order.Field.Basic
 import Core.BooleanBasics
 import Core.SAL_Core
+import AC0.Formulas
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна

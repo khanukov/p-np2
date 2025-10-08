@@ -23,6 +23,40 @@ import Core.SAL_Core
 -/
 
 namespace Pnp3
+
+namespace Core
+
+/-- Подкуб, задающий ровно точку `x`. -/
+@[simp] def pointSubcube {n : Nat} (x : BitVec n) : Subcube n :=
+  fun i => some (x i)
+
+/-- Точка всегда принадлежит своему точечному подкубу. -/
+@[simp] lemma mem_pointSubcube_self {n : Nat} (x : BitVec n) :
+    mem (pointSubcube x) x := by
+  classical
+  apply (mem_iff (β := pointSubcube x) (x := x)).mpr
+  intro i b hb
+  have hsome : some (x i) = some b := by
+    simpa [pointSubcube] using hb
+  exact Option.some.inj hsome
+
+/-- Принадлежность точечному подкубу означает точное совпадение вектора. -/
+@[simp] lemma mem_pointSubcube_iff {n : Nat} {x y : BitVec n} :
+    mem (pointSubcube x) y ↔ x = y := by
+  classical
+  constructor
+  · intro hmem
+    have hprop := (mem_iff (β := pointSubcube x) (x := y)).mp hmem
+    funext i
+    have : pointSubcube x i = some (x i) := by simp [pointSubcube]
+    have hy := hprop i (x i) this
+    exact hy.symm
+  · intro hxy
+    subst hxy
+    exact mem_pointSubcube_self x
+
+end Core
+
 namespace ThirdPartyFacts
 
 open Core

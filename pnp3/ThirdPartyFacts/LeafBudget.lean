@@ -41,27 +41,33 @@ lemma dedup_length_le_of_subset [DecidableEq α]
   classical
   have hsubset : xs.toFinset ⊆ ys.toFinset := by
     intro a ha
-    have hmem : a ∈ xs := by
-      simpa [List.mem_toFinset] using ha
+    -- переводим принадлежность `Finset` обратно в список
+    have hmem : a ∈ xs := (List.mem_toFinset.mp ha)
     have hcontains : xs.contains a = true :=
       Core.contains_of_mem (xs := xs) hmem
     have hycontains := h a hcontains
     have hymem : a ∈ ys := Core.mem_of_contains (xs := ys) hycontains
-    simpa [List.mem_toFinset] using hymem
+    exact List.mem_toFinset.mpr hymem
   have hcard_le : xs.toFinset.card ≤ ys.toFinset.card :=
     Finset.card_le_card hsubset
   have hxcard : xs.toFinset.card = xs.dedup.length := by
     change xs.toFinset.1.card = xs.dedup.length
-    simpa [List.toFinset_val]
+    simp [List.toFinset_val]
   have hycard : ys.toFinset.card = ys.dedup.length := by
     change ys.toFinset.1.card = ys.dedup.length
-    simpa [List.toFinset_val]
+    simp [List.toFinset_val]
   have hy_le : ys.dedup.length ≤ ys.length :=
     (List.dedup_sublist (l := ys)).length_le
   have hx_le : xs.dedup.length ≤ ys.toFinset.card := by
-    simpa [hxcard] using hcard_le
+    have hcard_le' := hcard_le
+    -- заменяем кардинал `Finset` на длину очищенного списка
+    rw [hxcard] at hcard_le'
+    exact hcard_le'
   have hy_bound : ys.toFinset.card ≤ ys.length := by
-    simpa [hycard] using hy_le
+    have hy_le' := hy_le
+    -- подменяем левую часть на кардинал `Finset`
+    rw [← hycard] at hy_le'
+    exact hy_le'
   exact hx_le.trans hy_bound
 
 end Aux
@@ -90,7 +96,7 @@ theorem leaf_budget_from_commonPDT {n : Nat}
       exact C.selectors_sub (F := F) (f := f) (β := β) hf hβ
     have hbound := Aux.dedup_length_le_of_subset (xs := C.selectors f)
       (ys := Core.PDT.leaves C.tree) hsubset
-    simpa using hbound
+    exact hbound
 
 /--
   Обратно к shrinkage сертификату: подставляем извлечённый `CommonPDT` и
@@ -103,9 +109,24 @@ theorem leaf_budget_from_shrinkage {n : Nat}
       ∀ {f : Core.BitVec n → Bool},
         f ∈ S.F → ((S.Rsel f).dedup).length ≤ k := by
   classical
-  simpa [Core.Shrinkage.commonPDT_selectors (S := S)] using
-    (leaf_budget_from_commonPDT (n := n)
-      (F := S.F) (C := S.commonPDT))
+  obtain ⟨k, hk₁, hk₂⟩ :=
+    (leaf_budget_from_commonPDT (n := n) (F := S.F) (C := S.commonPDT))
+  refine ⟨k, ?_, ?_⟩
+  · have hk₁'' : k ≤ (Core.PDT.leaves S.tree).length := by
+      calc
+        k ≤ (Core.PDT.leaves S.commonPDT.tree).length := hk₁
+        _ = (Core.PDT.leaves S.tree).length := by
+              simp [Core.Shrinkage.commonPDT_tree]
+    exact hk₁''
+  · intro f hf
+    have hk₂' : ((S.Rsel f).dedup).length ≤ k := by
+      calc
+        ((S.Rsel f).dedup).length
+            = ((S.commonPDT.selectors f).dedup).length := by
+                  simp [Core.Shrinkage.commonPDT_selectors]
+        _ ≤ k := by
+              exact hk₂ hf
+    exact hk₂'
 
 /--
   Очищение списка листьев не ухудшает ошибку аппроксимации.  Сначала доказываем
@@ -128,10 +149,12 @@ lemma err_le_of_dedup_commonPDT {n : Nat}
 lemma err_le_of_dedup {n : Nat} [DecidableEq (Subcube n)]
     (S : Core.Shrinkage n) {f : Core.BitVec n → Bool} (hf : f ∈ S.F) :
   Core.errU f ((S.Rsel f).dedup) ≤ S.ε := by
-  simpa [Core.Shrinkage.commonPDT_selectors (S := S),
-      Core.Shrinkage.commonPDT_epsilon (S := S)]
-    using (err_le_of_dedup_commonPDT
-      (C := S.commonPDT) (F := S.F) (f := f) hf)
+  have h :=
+    (err_le_of_dedup_commonPDT (C := S.commonPDT) (F := S.F) (f := f) hf)
+  have h' := h
+  -- Автоматически переписываем селекторы и ε через shrinkage-поля.
+  simp at h'
+  exact h'
 
 /--
   Корреляция с оценкой на число листьев: полученную границу можно сразу
@@ -164,11 +187,12 @@ lemma leaf_budget_le_pow_depth {n : Nat} [DecidableEq (Subcube n)]
         ((S.Rsel f).dedup).length ≤ Nat.pow 2 S.t := by
   classical
   intro f hf
-  have :=
+  have h :=
     leaf_budget_le_pow_depth_commonPDT
       (n := n) (F := S.F) (C := S.commonPDT) (f := f) hf
-  simpa [Core.Shrinkage.commonPDT_selectors (S := S),
-      Core.Shrinkage.commonPDT_depthBound (S := S)] using this
+  have h' := h
+  simp at h'
+  exact h'
 
 end ThirdPartyFacts
 end Pnp3

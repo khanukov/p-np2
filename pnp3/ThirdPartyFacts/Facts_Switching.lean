@@ -115,8 +115,9 @@ lemma inv_nat_succ_succ_le_half (n : Nat) :
   have hNat : (2 : Q) ≤ (n + 2 : Q) := by
     exact_mod_cast (Nat.le_add_left 2 n)
   have hpos : (0 : Q) < (2 : Q) := by norm_num
-  simpa using
+  have hdiv :=
     (one_div_le_one_div_of_le (a := (2 : Q)) (b := (n + 2 : Q)) hpos hNat)
+  exact hdiv
 
 /--
   Из оценки `ε ≤ 1 / (n + 2)` немедленно следует `ε ≤ 1 / 2`.
@@ -157,10 +158,10 @@ theorem atlas_from_AC0_works
   have hworks : WorksFor (Atlas.fromShrinkage S) S.F :=
     SAL_from_Shrinkage S
   have hdict : Atlas.fromShrinkage S = atlas_from_AC0 params F := rfl
-  have hworks' : WorksFor (atlas_from_AC0 params F) S.F := by
-    simpa [hdict] using hworks
-  have hworks'' : WorksFor (atlas_from_AC0 params F) F := by
-    simpa [hF] using hworks'
+  have hworks' := hworks
+  simp [hdict] at hworks'
+  have hworks'' := hworks'
+  simp [hF] at hworks''
   exact hworks''
 
 end ThirdPartyFacts

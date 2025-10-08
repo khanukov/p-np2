@@ -61,14 +61,14 @@ lemma zeroSubcube_contains_zero :
   classical
   have hassignMany :
       Subcube.assignMany trivialSubcube zeroFixes = some zeroSubcube := by
-    simpa [zeroFixes] using assign_trivial_eq_zeroSubcube
+    simp [zeroFixes] using assign_trivial_eq_zeroSubcube
   have htop : mem trivialSubcube (fun _ : BitVec 1 => false) := by
-    simpa [trivialSubcube] using (mem_top (x := fun _ : BitVec 1 => false))
+    simp [trivialSubcube] using (mem_top (x := fun _ : BitVec 1 => false))
   have hcond : ∀ u ∈ zeroFixes, (fun _ : BitVec 1 => false) u.1 = u.2 := by
     intro u hu
     -- В списке всего одна фиксация, проверка сводится к очевидному равенству.
     have : u = (idx0, false) := by
-      simpa [zeroFixes] using hu
+      simp [zeroFixes] using hu
     subst this
     simp
   exact
@@ -82,7 +82,7 @@ lemma zeroSubcube_excludes_one :
   classical
   have hassignMany :
       Subcube.assignMany trivialSubcube zeroFixes = some zeroSubcube := by
-    simpa [zeroFixes] using assign_trivial_eq_zeroSubcube
+    simp [zeroFixes] using assign_trivial_eq_zeroSubcube
   intro hmem
   have hdecomp :=
     (mem_assignMany_iff (β := trivialSubcube) (γ := zeroSubcube)
@@ -90,8 +90,8 @@ lemma zeroSubcube_excludes_one :
   -- Достаём условие на конкретную фиксацию и получаем противоречие.
   have hbit : (fun _ : BitVec 1 => true) idx0 = false := by
     have := hdecomp.2 (idx0, false) (by simp [zeroFixes])
-    simpa using this
-  simpa using hbit
+    exact this
+  exact hbit
 
 /--
 Конструкция shrinkage для игрушечного примера. Мы намеренно выбираем
@@ -103,17 +103,18 @@ lemma zeroSubcube_excludes_one :
   , t        := 0
   , ε        := 0
   , tree     := trivialTree
-  , depth_le := by simpa [depth_trivialTree]
+  , depth_le := by
+      simp [depth_trivialTree]
   , Rsel     := fun _ => []
   , Rsel_sub := by
       intro f β hf hβ
       -- Пустой список листьев: противоречие с предположением о принадлежности.
-      simpa using hβ
+      cases hβ
   , err_le   := by
       intro f hf
-      have hf' : f = f₀ := by simpa using hf
+      have hf' : f = f₀ := List.mem_singleton.mp hf
       subst hf'
-      simpa using (show (0 : Q) ≤ 0 from le_rfl)
+      exact (show (0 : Q) ≤ 0 from le_rfl)
 }
 
 /-- Атлас, полученный из shrinkage, содержит единственный подкуб. -/
@@ -125,13 +126,13 @@ lemma zeroSubcube_excludes_one :
 lemma sal_smoke_ac0 :
     WorksFor (Atlas.fromShrinkage shrinkage₀) [f₀] := by
   classical
-  simpa using SAL_from_Shrinkage shrinkage₀
+  exact SAL_from_Shrinkage shrinkage₀
 
 /-- Эквивалентная формулировка через промежуточный объект `CommonPDT`. -/
 lemma sal_smoke_ac0_via_commonPDT :
     WorksFor ((Core.shrinkage_to_commonPDT shrinkage₀).toAtlas) [f₀] := by
   classical
-  simpa using
+  exact
     (Core.commonPDT_to_atlas (C := Core.shrinkage_to_commonPDT shrinkage₀))
 
 /-- Проверяем, что новая лемма о бюджете листьев для `CommonPDT` даёт ту же
@@ -149,7 +150,8 @@ lemma commonPDT_leaf_budget_smoke :
   rcases h with ⟨k, hk, hbound⟩
   refine ⟨k, hk, ?_⟩
   have hf : f₀ ∈ ([f₀] : List (BitVec 1 → Bool)) := by simp
-  simpa using hbound (f := f₀) hf
+  have hbound' := hbound (f := f₀) hf
+  exact hbound'
 
 /-- Ошибка после `dedup` не превосходит исходного значения `ε`. -/
 lemma commonPDT_err_dedup_smoke :
@@ -158,13 +160,14 @@ lemma commonPDT_err_dedup_smoke :
       ≤ (Core.shrinkage_to_commonPDT shrinkage₀).epsilon := by
   classical
   have hf : f₀ ∈ ([f₀] : List (BitVec 1 → Bool)) := by simp
-  simpa using
+  have herr :=
     (err_le_of_dedup_commonPDT
       (n := 1)
       (F := [f₀])
       (C := Core.shrinkage_to_commonPDT shrinkage₀)
       (f := f₀)
       hf)
+  exact herr
 
 end Tests
 end Pnp3

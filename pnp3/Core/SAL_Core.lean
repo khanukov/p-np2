@@ -64,7 +64,10 @@ theorem worksFor (C : CommonPDT n F) : WorksFor C.toAtlas F := by
       intro β hβ
       exact C.selectors_sub (F := F) (f := f) (β := β) hf hβ
     have hmem' : ∀ β ∈ C.selectors f, β ∈ C.toAtlas.dict := by
-      simpa [CommonPDT.toAtlas, Atlas.ofPDT] using hmem
+      intro β hβ
+      have hmem'' := hmem β hβ
+      simp [CommonPDT.toAtlas, Atlas.ofPDT] at hmem''
+      exact hmem''
     classical
     -- Сначала строим доказательство `listSubset` относительно текущего экземпляра
     -- `DecidableEq`.  Далее переведём его к каноническому, который ожидает
@@ -80,8 +83,9 @@ theorem worksFor (C : CommonPDT n F) : WorksFor C.toAtlas F := by
       ((listSubset_congr_decEq (inst₁ := inst₁)
             (inst₂ := fun a b => Fintype.decidablePiFintype a b)
             (C.selectors f) (C.toAtlas.dict)).1 hsubset_inst)
-  · simpa [CommonPDT.toAtlas, Atlas.ofPDT] using
-      C.err_le (F := F) hf
+  · have herr := C.err_le (F := F) hf
+    simp [CommonPDT.toAtlas, Atlas.ofPDT] at herr
+    exact herr
 
 end CommonPDT
 
@@ -112,7 +116,7 @@ def Shrinkage.commonPDT {n : Nat} [DecidableEq (Subcube n)]
     exact listSubset.mem hsubset hβ
   err_le := by
     intro f hf
-    simpa using S.err_le f hf
+    exact S.err_le f hf
 
 @[simp] lemma Shrinkage.commonPDT_tree {n : Nat} [DecidableEq (Subcube n)]
     (S : Shrinkage n) : S.commonPDT.tree = S.tree := rfl
@@ -142,8 +146,9 @@ theorem commonPDT_to_atlas {n : Nat} [DecidableEq (Subcube n)]
 theorem SAL_from_Shrinkage {n : Nat} [DecidableEq (Subcube n)]
   (S : Shrinkage n) :
   WorksFor (Atlas.ofPDT S.tree S.ε) S.F := by
-  simpa [CommonPDT.toAtlas, Atlas.ofPDT] using
-    (commonPDT_to_atlas (C := S.commonPDT))
+  have h := (commonPDT_to_atlas (C := S.commonPDT))
+  simp [CommonPDT.toAtlas, Atlas.ofPDT] at h
+  exact h
 
 /-- Удобная оболочка: сам атлас из Shrinkage. -/
 def Atlas.fromShrinkage {n : Nat} [DecidableEq (Subcube n)]

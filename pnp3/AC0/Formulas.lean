@@ -71,10 +71,23 @@ namespace Clause
 
 variable {n : Nat}
 
+/-- Удобная оболочка вокруг `List.any`: значение списка литералов на входе. -/
+@[simp] def evalList (lits : List (Literal n)) (x : Core.BitVec n) : Bool :=
+  lits.any (fun ℓ => Literal.holds ℓ x)
+
+@[simp] lemma evalList_nil (x : Core.BitVec n) : evalList ([] : List (Literal n)) x = false := by
+  unfold evalList
+  simp
+
+@[simp] lemma evalList_singleton (ℓ : Literal n) (x : Core.BitVec n) :
+    evalList [ℓ] x = Literal.holds ℓ x := by
+  unfold evalList
+  simp
+
 /-- Значение клаузы на входе `x`.  Используем `List.any`, который
     возвращает `true`, если хотя бы один литерал удовлетворён. -/
 @[simp] def eval (C : Clause n) (x : Core.BitVec n) : Bool :=
-  C.lits.any (fun ℓ => Literal.holds ℓ x)
+  evalList C.lits x
 
 /-- Результат ограничения клаузы подкубом: `satisfied` означает, что
     дизъюнкция стала тождественно истинной; `falsified` — тождественно
@@ -117,6 +130,20 @@ private def restrictList (β : Subcube n) :
 /-- Ограничение клаузы подкубом. -/
 @[simp] def restrict (C : Clause n) (β : Subcube n) : RestrictResult n :=
   restrictList (β := β) C.lits
+
+namespace RestrictResult
+
+variable {n : Nat}
+
+/-- Интерпретация результата ограничения: для удовлетворённой/опровержённой
+    клаузы возвращаем константы, в противном случае оцениваем остаток. -/
+@[simp] def eval (res : RestrictResult n) (x : Core.BitVec n) : Bool :=
+  match res with
+  | RestrictResult.satisfied => true
+  | RestrictResult.falsified => false
+  | RestrictResult.pending lits => Clause.evalList lits x
+
+end RestrictResult
 
 end Clause
 
@@ -172,6 +199,19 @@ private def restrictList (β : Subcube n) :
 
 @[simp] def restrict (T : Term n) (β : Subcube n) : RestrictResult n :=
   restrictList (β := β) T.lits
+
+namespace RestrictResult
+
+variable {n : Nat}
+
+/-- Интерпретация результата ограничения для термов. -/
+@[simp] def eval (res : RestrictResult n) (x : Core.BitVec n) : Bool :=
+  match res with
+  | RestrictResult.satisfied => true
+  | RestrictResult.falsified => false
+  | RestrictResult.pending lits => Term.eval ⟨lits⟩ x
+
+end RestrictResult
 
 end Term
 

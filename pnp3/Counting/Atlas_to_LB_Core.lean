@@ -376,13 +376,11 @@ theorem unionClass_card_bound
           simpa [hlen] using S.2
         · -- Каждый подкуб списка принадлежит исходному словарю.
           intro β hβ
-          have hmem : β ∈ toList S.1 :=
-            mem_of_contains (xs := toList S.1) hβ
-          rcases List.mem_map.1 hmem with ⟨δ, hδ, rfl⟩
+          rcases List.mem_map.1 hβ with ⟨δ, hδ, rfl⟩
           have hδS : δ ∈ S.1 := by
             simpa [Finset.mem_toList] using hδ
           have hδR : δ.val ∈ R := List.mem_toFinset.mp δ.property
-          exact contains_of_mem (xs := R) hδR⟩
+          exact hδR⟩
   -- Сюръективность: любой элемент `UnionClass` получается из некоторого подмножества.
   have hsurj : Function.Surjective toUnion := by
     intro g

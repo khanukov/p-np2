@@ -60,31 +60,16 @@ def toAtlas (C : CommonPDT n F) : Atlas n :=
 theorem worksFor (C : CommonPDT n F) : WorksFor C.toAtlas F := by
   intro f hf
   refine ⟨C.selectors f, ?_, ?_⟩
-  · have hmem : ∀ β ∈ C.selectors f, β ∈ PDT.leaves C.tree := by
+  · have hsubset : listSubset (C.selectors f) (C.toAtlas.dict) := by
       intro β hβ
-      exact C.selectors_sub (F := F) (f := f) (β := β) hf hβ
-    have hmem' : ∀ β ∈ C.selectors f, β ∈ C.toAtlas.dict := by
-      intro β hβ
-      have hmem'' := hmem β hβ
-      simp [CommonPDT.toAtlas, Atlas.ofPDT] at hmem''
-      exact hmem''
-    classical
-    -- Сначала строим доказательство `listSubset` относительно текущего экземпляра
-    -- `DecidableEq`.  Далее переведём его к каноническому, который ожидает
-    -- определение `WorksFor`.
-    let inst₁ : DecidableEq (Subcube n) := inferInstance
-    have hsubset_inst :
-        @listSubset (Subcube n) inst₁ (C.selectors f) (C.toAtlas.dict) := by
-      letI := inst₁
-      exact
-        (listSubset_iff_mem (xs := C.selectors f) (ys := C.toAtlas.dict)).2 hmem'
-    -- Переходим к каноническому экземпляру `DecidableEq`.
-    exact
-      ((listSubset_congr_decEq (inst₁ := inst₁)
-            (inst₂ := fun a b => Fintype.decidablePiFintype a b)
-            (C.selectors f) (C.toAtlas.dict)).1 hsubset_inst)
+      have hmem := C.selectors_sub (F := F) (f := f) (β := β) hf hβ
+      change β ∈ (Atlas.ofPDT C.tree C.epsilon).dict
+      dsimp [Atlas.ofPDT]
+      exact hmem
+    exact hsubset
   · have herr := C.err_le (F := F) hf
-    simp [CommonPDT.toAtlas, Atlas.ofPDT] at herr
+    change errU f (C.selectors f) ≤ (Atlas.ofPDT C.tree C.epsilon).epsilon
+    dsimp [Atlas.ofPDT]
     exact herr
 
 end CommonPDT

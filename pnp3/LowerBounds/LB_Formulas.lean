@@ -95,7 +95,7 @@ lemma approxSubtypeOf_injective
   have hfun := congrArg Subtype.val h
   apply Subtype.ext
   change f₁.1 = f₂.1
-  simpa [approxSubtypeOf] using hfun
+  exact hfun
 
 /--
   Мощность семейства функций, для которых работает атлас,
@@ -124,8 +124,7 @@ theorem family_card_le_capacity
           (Counting.ApproxSubtype (R := sc.atlas.dict)
             (k := sc.k) (ε := sc.atlas.epsilon)) := by
     classical
-    simpa [hdomain.symm]
-      using h_inj
+    exact (hdomain ▸ h_inj)
   exact Nat.le_trans h_inj' h_cover
 
 /-- Удобная запись величины ёмкости в текущем сценарии. -/
@@ -191,16 +190,18 @@ noncomputable def BoundedAtlasScenario.ofCommonPDT
               have hsel : β ∈ C.selectors f := List.mem_dedup.mp hβ
               have hleaf : β ∈ Core.PDT.leaves C.tree :=
                 C.selectors_sub (F := F) (f := f) (β := β) hf hsel
-              simpa [Core.CommonPDT.toAtlas, Core.Atlas.ofPDT] using hleaf
+              change β ∈ Core.PDT.leaves C.tree
+              exact hleaf
             exact
               ((Core.listSubset_iff_mem
                     (xs := (C.selectors f).dedup)
                     (ys := C.toAtlas.dict)).2)
                 hsubset_mem
           ·
-            simpa using
+            have herr :=
               (ThirdPartyFacts.err_le_of_dedup_commonPDT
-                (n := n) (F := F) (C := C) (f := f) hf) }
+                (n := n) (F := F) (C := C) (f := f) hf)
+            exact herr }
 
 noncomputable def BoundedAtlasScenario.ofShrinkage
     {n : Nat}
@@ -212,9 +213,20 @@ noncomputable def BoundedAtlasScenario.ofShrinkage
     classical
     refine BoundedAtlasScenario.ofCommonPDT (C := S.commonPDT) k ?hlen ?hε0 ?hε1
     · intro f hf
-      simpa [Core.Shrinkage.commonPDT_selectors] using hlen f hf
-    · simpa [Core.Shrinkage.commonPDT_epsilon] using hε0
-    · simpa [Core.Shrinkage.commonPDT_epsilon] using hε1
+      have htmp := hlen f hf
+      change ((S.commonPDT.selectors f).dedup).length ≤ k
+      dsimp [Core.Shrinkage.commonPDT_selectors]
+      exact htmp
+    ·
+      have htmp := hε0
+      change (0 : Core.Q) ≤ S.commonPDT.epsilon
+      dsimp [Core.Shrinkage.commonPDT_epsilon]
+      exact htmp
+    ·
+      have htmp := hε1
+      change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+      dsimp [Core.Shrinkage.commonPDT_epsilon]
+      exact htmp
 
 /-
   ### От shrinkage к сценарию ограниченного атласа
@@ -244,8 +256,7 @@ noncomputable def scenarioFromCommonPDT
     have hkSpec := Classical.choose_spec witness
     have hlen : ∀ f ∈ F, ((C.selectors f).dedup).length ≤ k := by
       intro f hf
-      have hkLen := hkSpec.2 hf
-      simpa using hkLen
+      exact hkSpec.2 hf
     exact ⟨k, BoundedAtlasScenario.ofCommonPDT (C := C) k hlen hε0 hε1⟩
 
 /--
@@ -272,7 +283,9 @@ lemma scenarioFromCommonPDT_k_le_pow
   change k ≤ Nat.pow 2 C.depthBound
   have hk_spec := Classical.choose_spec witness
   have hk_leaves : k ≤ (Core.PDT.leaves C.tree).length := by
-    simpa [hk] using hk_spec.1
+    have htmp := hk_spec.1
+    simp [hk] at htmp
+    exact htmp
   have hlen_bound :
       (Core.PDT.leaves C.tree).length ≤ Nat.pow 2 (Core.PDT.depth C.tree) :=
     Core.leaves_count_bound (t := C.tree)
@@ -311,13 +324,14 @@ lemma dictLen_fromShrinkage_le_pow
     Counting.dictLen (Core.Atlas.fromShrinkage S).dict ≤ Nat.pow 2 S.t :=
   by
     classical
-    have :=
+    have hbound :=
       dictLen_fromCommonPDT_le_pow
         (n := n) (F := S.F) (C := S.commonPDT)
-    simpa [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
+    have hbound' := hbound
+    simp [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
       Core.CommonPDT.toAtlas, Core.Shrinkage.commonPDT_depthBound,
-      Core.Shrinkage.commonPDT_tree]
-      using this
+      Core.Shrinkage.commonPDT_tree] at hbound'
+    exact hbound'
 
 /-- У `scenarioFromCommonPDT` семейство во втором компоненте равно исходному `F`. -/
 @[simp]
@@ -351,9 +365,10 @@ lemma scenarioFromCommonPDT_dictLen_le_pow
   have hbound := dictLen_fromCommonPDT_le_pow (n := n) (F := F) (C := C)
   -- В полученном сценарии атлас совпадает с `C.toAtlas`, поэтому оценка
   -- на длину словаря переносится напрямую.
-  simpa [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
-    Core.CommonPDT.toAtlas]
-    using hbound
+  have hbound' := hbound
+  simp [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
+    Core.CommonPDT.toAtlas] at hbound'
+  exact hbound'
 
 /--
   Версия критерия несовместимости, заточенная под shrinkage: если для
@@ -403,37 +418,64 @@ theorem no_shrinkage_of_large_family
               (C := S.commonPDT) k
               (hlen := by
                 intro f hf
-                simpa [Core.Shrinkage.commonPDT_selectors] using hlen f hf)
+                have htmp := hlen f hf
+                change ((S.commonPDT.selectors f).dedup).length ≤ k
+                dsimp [Core.Shrinkage.commonPDT_selectors]
+                exact htmp)
               (hε0 := by
-                simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
+                have htmp := hε0
+                change (0 : Core.Q) ≤ S.commonPDT.epsilon
+                dsimp [Core.Shrinkage.commonPDT_epsilon]
+                exact htmp)
               (hε1 := by
-                simpa [Core.Shrinkage.commonPDT_epsilon] using hε1)) :=
+                have htmp := hε1
+                change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+                dsimp [Core.Shrinkage.commonPDT_epsilon]
+                exact htmp)) :=
       by
-        simpa using hYsubset
+        exact hYsubset
     have hLarge' :
         scenarioCapacity
             (sc := BoundedAtlasScenario.ofCommonPDT
               (C := S.commonPDT) k
               (hlen := by
                 intro f hf
-                simpa [Core.Shrinkage.commonPDT_selectors] using hlen f hf)
+                have htmp := hlen f hf
+                change ((S.commonPDT.selectors f).dedup).length ≤ k
+                dsimp [Core.Shrinkage.commonPDT_selectors]
+                exact htmp)
               (hε0 := by
-                simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
+                have htmp := hε0
+                change (0 : Core.Q) ≤ S.commonPDT.epsilon
+                dsimp [Core.Shrinkage.commonPDT_epsilon]
+                exact htmp)
               (hε1 := by
-                simpa [Core.Shrinkage.commonPDT_epsilon] using hε1))
+                have htmp := hε1
+                change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+                dsimp [Core.Shrinkage.commonPDT_epsilon]
+                exact htmp))
           < Y.card :=
       by
-        simpa using hLarge
+        exact hLarge
     exact
       no_commonPDT_of_large_family
         (C := S.commonPDT) (k := k)
         (hlen := by
           intro f hf
-          simpa [Core.Shrinkage.commonPDT_selectors] using hlen f hf)
+          have htmp := hlen f hf
+          change ((S.commonPDT.selectors f).dedup).length ≤ k
+          dsimp [Core.Shrinkage.commonPDT_selectors]
+          exact htmp)
         (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
+          have htmp := hε0
+          change (0 : Core.Q) ≤ S.commonPDT.epsilon
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
         (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1)
+          have htmp := hε1
+          change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
         (Y := Y)
         hsubset' hLarge'
 
@@ -452,13 +494,17 @@ noncomputable def scenarioFromShrinkage
     Σ' _ : Nat, BoundedAtlasScenario n :=
   by
     classical
+    have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+      dsimp [Core.Shrinkage.commonPDT_epsilon]
+      exact hε0
+    have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+      dsimp [Core.Shrinkage.commonPDT_epsilon]
+      exact hε1
     exact
       scenarioFromCommonPDT
         (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
-        (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1)
+        (hε0 := hε0')
+        (hε1 := hε1')
 
 /--
   Специализация к случаю AC⁰: из shrinkage-конструкции, предоставленной
@@ -499,22 +545,34 @@ noncomputable def scenarioFromAC0
       scenarioFromCommonPDT
         (n := params.n) (F := S.F) (C := S.commonPDT)
         (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε_nonneg)
+          have htmp := hε_nonneg
+          change (0 : Core.Q) ≤ S.commonPDT.epsilon
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
         (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε_le_half)
+          have htmp := hε_le_half
+          change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
     have base_family : base.2.family = S.F := by
       simp [base, scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT]
     refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
     ·
       have hworksBase : WorksFor base.2.atlas S.F := by
-        simpa [base_family] using base.2.works
+        have htmp := base.2.works
+        simp [base_family] at htmp
+        exact htmp
       exact hF ▸ hworksBase
     · intro f hf
       have hfS : f ∈ S.F := hF ▸ hf
       have hfBase : f ∈ base.2.family := by
-        simpa [base_family] using hfS
+        have htmp := hfS
+        simp [base_family] at htmp
+        exact htmp
       have hbounded := base.2.bounded f hfBase
-      simpa [base_family] using hbounded
+      have htmp := hbounded
+      simp [base_family] at htmp
+      exact htmp
 
 /-- Семейство функций в сценарии, построенном из факта `AC⁰ → shrinkage`,
   совпадает с исходным списком `F`.  Это удобное переписывание для дальнейших
@@ -578,22 +636,34 @@ noncomputable def scenarioFromLocalCircuit
       scenarioFromCommonPDT
         (n := params.n) (F := S.F) (C := S.commonPDT)
         (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε_nonneg)
+          have htmp := hε_nonneg
+          change (0 : Core.Q) ≤ S.commonPDT.epsilon
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
         (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε_le_half)
+          have htmp := hε_le_half
+          change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
     have base_family : base.2.family = S.F := by
       simp [base, scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT]
     refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
     ·
       have hworksBase : WorksFor base.2.atlas S.F := by
-        simpa [base_family] using base.2.works
+        have htmp := base.2.works
+        simp [base_family] at htmp
+        exact htmp
       exact hF ▸ hworksBase
     · intro f hf
       have hfS : f ∈ S.F := hF ▸ hf
       have hfBase : f ∈ base.2.family := by
-        simpa [base_family] using hfS
+        have htmp := hfS
+        simp [base_family] at htmp
+        exact htmp
       have hbounded := base.2.bounded f hfBase
-      simpa [base_family] using hbounded
+      have htmp := hbounded
+      simp [base_family] at htmp
+      exact htmp
 
 /-- Семейство в сценарии для локальных схем совпадает с исходным списком `F`. -/
 @[simp]
@@ -627,15 +697,23 @@ lemma scenarioFromShrinkage_k_le_pow
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
     (scenarioFromShrinkage (n := n) S hε0 hε1).1 ≤ Nat.pow 2 S.t := by
   classical
-  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon]
-    using
-      scenarioFromCommonPDT_k_le_pow
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
-        (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1)
+  have hbound :=
+    scenarioFromCommonPDT_k_le_pow
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := by
+        have htmp := hε0
+        change (0 : Core.Q) ≤ S.commonPDT.epsilon
+        dsimp [Core.Shrinkage.commonPDT_epsilon]
+        exact htmp)
+      (hε1 := by
+        have htmp := hε1
+        change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+        dsimp [Core.Shrinkage.commonPDT_epsilon]
+        exact htmp)
+  have hbound' := hbound
+  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
+    Core.Shrinkage.commonPDT_epsilon] at hbound'
+  exact hbound'
 
 /--
   Аналогичная оценка для длины словаря: `scenarioFromShrinkage` наследует
@@ -648,15 +726,23 @@ lemma scenarioFromShrinkage_dictLen_le_pow
         (scenarioFromShrinkage (n := n) S hε0 hε1).2.atlas.dict
       ≤ Nat.pow 2 S.t := by
   classical
-  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon]
-    using
-      scenarioFromCommonPDT_dictLen_le_pow
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
-        (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1)
+  have hbound :=
+    scenarioFromCommonPDT_dictLen_le_pow
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := by
+        have htmp := hε0
+        change (0 : Core.Q) ≤ S.commonPDT.epsilon
+        dsimp [Core.Shrinkage.commonPDT_epsilon]
+        exact htmp)
+      (hε1 := by
+        have htmp := hε1
+        change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+        dsimp [Core.Shrinkage.commonPDT_epsilon]
+        exact htmp)
+  have hbound' := hbound
+  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
+    Core.Shrinkage.commonPDT_epsilon] at hbound'
+  exact hbound'
 
 @[simp]
 lemma scenarioFromShrinkage_family_eq
@@ -664,14 +750,26 @@ lemma scenarioFromShrinkage_family_eq
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
     (scenarioFromShrinkage (n := n) S hε0 hε1).2.family = S.F := by
   classical
-  simpa [scenarioFromShrinkage]
-    using
-      (scenarioFromCommonPDT_family
+  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε0
+  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε1
+  have hfamily :=
+    scenarioFromCommonPDT_family
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hε0') (hε1 := hε1')
+  change
+    (scenarioFromCommonPDT
         (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
-        (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1))
+        (hε0 := hε0') (hε1 := hε1')).2.family = S.F
+    at hfamily
+  change
+    (scenarioFromCommonPDT
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.family = S.F
+  exact hfamily
 
 @[simp]
 lemma scenarioFromShrinkage_epsilon_eq
@@ -679,14 +777,26 @@ lemma scenarioFromShrinkage_epsilon_eq
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
     (scenarioFromShrinkage (n := n) S hε0 hε1).2.atlas.epsilon = S.ε := by
   classical
-  simpa [scenarioFromShrinkage]
-    using
-      (scenarioFromCommonPDT_epsilon
+  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε0
+  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε1
+  have heps :=
+    scenarioFromCommonPDT_epsilon
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hε0') (hε1 := hε1')
+  change
+    (scenarioFromCommonPDT
         (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
-        (hε1 := by
-          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1))
+        (hε0 := hε0') (hε1 := hε1')).2.atlas.epsilon = S.ε
+    at heps
+  change
+    (scenarioFromCommonPDT
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.atlas.epsilon = S.ε
+  exact heps
 
 /--
   Параметр `k` в сценарии AC⁰ не превышает `2^{(log₂(M+2))^{d+1}}`.  Получаем
@@ -712,7 +822,9 @@ lemma scenarioFromAC0_k_le_pow
   rcases hchain with ⟨htBound, hchain⟩
   rcases hchain with ⟨hε0, hεBound⟩
   have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    simpa using (hε_eq ▸ hε0)
+    have htmp := hε0
+    have hrewrite : ε = S.ε := hε_eq.symm
+    exact hrewrite ▸ htmp
   have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
     (hε_eq ▸
       ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
@@ -725,7 +837,8 @@ lemma scenarioFromAC0_k_le_pow
   have hbound_pow :
       Nat.pow 2 S.t ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
     have : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-      simpa using (ht_eq.symm ▸ htBound)
+      have htmp := htBound
+      exact ht_eq ▸ htmp
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
   exact hk_base.trans hbound_pow
 
@@ -752,7 +865,9 @@ lemma scenarioFromAC0_dictLen_le_pow
   rcases hchain with ⟨htBound, hchain⟩
   rcases hchain with ⟨hε0, hεBound⟩
   have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    simpa using (hε_eq ▸ hε0)
+    have htmp := hε0
+    have hrewrite : ε = S.ε := hε_eq.symm
+    exact hrewrite ▸ htmp
   have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
     (hε_eq ▸
       ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
@@ -765,7 +880,8 @@ lemma scenarioFromAC0_dictLen_le_pow
   have hbound_pow :
       Nat.pow 2 S.t ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
     have : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-      simpa using (ht_eq.symm ▸ htBound)
+      have htmp := htBound
+      exact ht_eq ▸ htmp
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
   exact hdict_base.trans hbound_pow
 
@@ -792,7 +908,9 @@ lemma scenarioFromLocalCircuit_k_le_pow
   rcases hchain with ⟨htBound, hchain⟩
   rcases hchain with ⟨hε0, hεBound⟩
   have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    simpa using (hε_eq ▸ hε0)
+    have htmp := hε0
+    have hrewrite : ε = S.ε := hε_eq.symm
+    exact hrewrite ▸ htmp
   have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
     (hε_eq ▸
       ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
@@ -805,7 +923,8 @@ lemma scenarioFromLocalCircuit_k_le_pow
   have hbound_pow :
       Nat.pow 2 S.t ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
     have : S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) := by
-      simpa using (ht_eq.symm ▸ htBound)
+      have htmp := htBound
+      exact ht_eq ▸ htmp
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
   exact hk_base.trans hbound_pow
 
@@ -832,7 +951,9 @@ lemma scenarioFromLocalCircuit_dictLen_le_pow
   rcases hchain with ⟨htBound, hchain⟩
   rcases hchain with ⟨hε0, hεBound⟩
   have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    simpa using (hε_eq ▸ hε0)
+    have htmp := hε0
+    have hrewrite : ε = S.ε := hε_eq.symm
+    exact hrewrite ▸ htmp
   have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
     (hε_eq ▸
       ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
@@ -845,7 +966,8 @@ lemma scenarioFromLocalCircuit_dictLen_le_pow
   have hbound_pow :
       Nat.pow 2 S.t ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
     have : S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) := by
-      simpa using (ht_eq.symm ▸ htBound)
+      have htmp := htBound
+      exact ht_eq ▸ htmp
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
   exact hdict_base.trans hbound_pow
 

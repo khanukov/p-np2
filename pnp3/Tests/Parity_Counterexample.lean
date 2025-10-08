@@ -261,14 +261,12 @@ theorem parity_counterexample :
       have hsubset_parity : listSubset (C.selectors parity₁) [β] := by
         intro γ hγ
         have := C.selectors_sub (F := parityFamily)
-          (f := parity₁) (β := γ) parity_mem_family
-          (Core.mem_of_contains hγ)
+          (f := parity₁) (β := γ) parity_mem_family hγ
         simpa [htree] using this
       have hsubset_parityᶜ : listSubset (C.selectors parity₁ᶜ) [β] := by
         intro γ hγ
         have := C.selectors_sub (F := parityFamily)
-          (f := parity₁ᶜ) (β := γ) parityᶜ_mem_family
-          (Core.mem_of_contains hγ)
+          (f := parity₁ᶜ) (β := γ) parityᶜ_mem_family hγ
         simpa [htree] using this
       have hdedup_parity := dedup_subset_singleton
         (xs := C.selectors parity₁) (β := β) hsubset_parity

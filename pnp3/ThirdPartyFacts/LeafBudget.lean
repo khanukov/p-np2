@@ -41,12 +41,8 @@ lemma dedup_length_le_of_subset [DecidableEq α]
   classical
   have hsubset : xs.toFinset ⊆ ys.toFinset := by
     intro a ha
-    -- переводим принадлежность `Finset` обратно в список
-    have hmem : a ∈ xs := (List.mem_toFinset.mp ha)
-    have hcontains : xs.contains a = true :=
-      Core.contains_of_mem (xs := xs) hmem
-    have hycontains := h a hcontains
-    have hymem : a ∈ ys := Core.mem_of_contains (xs := ys) hycontains
+    have hmem : a ∈ xs := List.mem_toFinset.mp ha
+    have hymem : a ∈ ys := h hmem
     exact List.mem_toFinset.mpr hymem
   have hcard_le : xs.toFinset.card ≤ ys.toFinset.card :=
     Finset.card_le_card hsubset

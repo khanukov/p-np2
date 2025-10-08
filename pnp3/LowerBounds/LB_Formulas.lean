@@ -329,6 +329,16 @@ lemma scenarioFromCommonPDT_family
     (scenarioFromCommonPDT (n := n) (F := F) (C := C) hε0 hε1).2.family = F := by
   rfl
 
+@[simp]
+lemma scenarioFromCommonPDT_epsilon
+    {n : Nat} {F : Core.Family n}
+    (C : Core.CommonPDT n F)
+    (hε0 : (0 : Core.Q) ≤ C.epsilon)
+    (hε1 : C.epsilon ≤ (1 : Core.Q) / 2) :
+    (scenarioFromCommonPDT (n := n) (F := F) (C := C) hε0 hε1).2.atlas.epsilon =
+      C.epsilon := by
+  rfl
+
 lemma scenarioFromCommonPDT_dictLen_le_pow
     {n : Nat} {F : Core.Family n}
     (C : Core.CommonPDT n F)
@@ -647,6 +657,36 @@ lemma scenarioFromShrinkage_dictLen_le_pow
           simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
         (hε1 := by
           simpa [Core.Shrinkage.commonPDT_epsilon] using hε1)
+
+@[simp]
+lemma scenarioFromShrinkage_family_eq
+    {n : Nat} (S : Core.Shrinkage n)
+    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
+    (scenarioFromShrinkage (n := n) S hε0 hε1).2.family = S.F := by
+  classical
+  simpa [scenarioFromShrinkage]
+    using
+      (scenarioFromCommonPDT_family
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := by
+          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
+        (hε1 := by
+          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1))
+
+@[simp]
+lemma scenarioFromShrinkage_epsilon_eq
+    {n : Nat} (S : Core.Shrinkage n)
+    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
+    (scenarioFromShrinkage (n := n) S hε0 hε1).2.atlas.epsilon = S.ε := by
+  classical
+  simpa [scenarioFromShrinkage]
+    using
+      (scenarioFromCommonPDT_epsilon
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := by
+          simpa [Core.Shrinkage.commonPDT_epsilon] using hε0)
+        (hε1 := by
+          simpa [Core.Shrinkage.commonPDT_epsilon] using hε1))
 
 /--
   Параметр `k` в сценарии AC⁰ не превышает `2^{(log₂(M+2))^{d+1}}`.  Получаем

@@ -58,6 +58,56 @@ by
       simpa using (Core.errU_false_nil (n := 1))
     simpa [hzero]
 
+/-- Общий PDT, полученный из тривиального shrinkage. -/
+def trivialCommonPDT : Core.CommonPDT 1 [f₀] :=
+  Core.shrinkage_to_commonPDT trivialShrinkage
+
+@[simp] lemma trivialCommonPDT_selectors_f₀ :
+    trivialCommonPDT.selectors f₀ = [] := by
+  classical
+  change trivialShrinkage.Rsel f₀ = []
+  simp [trivialShrinkage]
+
+private lemma trivialCommonPDT_hlen
+    (f : Core.BitVec 1 → Bool) (hf : f ∈ [f₀]) :
+    ((trivialCommonPDT.selectors f).dedup).length ≤ 0 :=
+by
+  classical
+  have hf' : f = f₀ := by simpa using hf
+  subst hf'
+  simpa [trivialCommonPDT_selectors_f₀] using (Nat.zero_le 0)
+
+@[simp] lemma trivialCommonPDT_epsilon :
+    trivialCommonPDT.epsilon = (0 : Core.Q) := by
+  classical
+  change trivialShrinkage.ε = 0
+  simp [trivialShrinkage]
+
+private lemma trivialCommonPDT_epsilon_nonneg :
+    (0 : Core.Q) ≤ trivialCommonPDT.epsilon :=
+by
+  have : (0 : Core.Q) ≤ 0 := by norm_num
+  simpa [trivialCommonPDT_epsilon] using this
+
+private lemma trivialCommonPDT_epsilon_le_half :
+    trivialCommonPDT.epsilon ≤ (1 : Core.Q) / 2 :=
+by
+  have : (0 : Core.Q) ≤ (1 : Core.Q) / 2 := by norm_num
+  simpa [trivialCommonPDT_epsilon] using this
+
+/-- Готовый сценарий, полученный из тривиального общего PDT. -/
+def trivialScenarioCommon : BoundedAtlasScenario 1 :=
+  LowerBounds.BoundedAtlasScenario.ofCommonPDT
+    (n := 1)
+    (F := [f₀])
+    (C := trivialCommonPDT)
+    0
+    (by
+      intro f hf
+      exact trivialCommonPDT_hlen f hf)
+    trivialCommonPDT_epsilon_nonneg
+    trivialCommonPDT_epsilon_le_half
+
 /--
   Дымовая проверка: убеждаемся, что автоматический переход
   `scenarioFromShrinkage` не теряет информацию об исходном семействе
@@ -86,21 +136,25 @@ theorem scenarioFromShrinkage_smoke :
       Core.errU f₀ S = 0 :=
 by
   classical
-  let result :=
+  set result :=
     LowerBounds.scenarioFromShrinkage
       (S := trivialShrinkage)
       (by simp [trivialShrinkage])
       (by simp [trivialShrinkage])
   have hFamily : result.2.family = [f₀] := by
-    unfold result
-    simp [LowerBounds.scenarioFromShrinkage,
-      LowerBounds.BoundedAtlasScenario.ofShrinkage, trivialShrinkage,
-      Core.Atlas.fromShrinkage, Core.Atlas.ofPDT]
+    simpa [result]
+      using
+        (LowerBounds.scenarioFromShrinkage_family_eq
+          (S := trivialShrinkage)
+          (hε0 := by simp [trivialShrinkage])
+          (hε1 := by simp [trivialShrinkage]))
   have hEps : result.2.atlas.epsilon = 0 := by
-    unfold result
-    simp [LowerBounds.scenarioFromShrinkage,
-      LowerBounds.BoundedAtlasScenario.ofShrinkage, trivialShrinkage,
-      Core.Atlas.fromShrinkage, Core.Atlas.ofPDT]
+    simpa [result, trivialShrinkage]
+      using
+        (LowerBounds.scenarioFromShrinkage_epsilon_eq
+          (S := trivialShrinkage)
+          (hε0 := by simp [trivialShrinkage])
+          (hε1 := by simp [trivialShrinkage]))
   have hWitness :
       ∃ S : List (Subcube 1),
         S = [] ∧
@@ -108,8 +162,13 @@ by
         Core.listSubset S result.2.atlas.dict ∧
         Core.errU f₀ S = 0 := by
     refine ⟨[], rfl, ?_, ?_, ?_⟩
-    · simp
-    · simp [Core.listSubset_nil]
+    ·
+      have hnonneg : 0 ≤ result.1 := Nat.zero_le _
+      simpa [result]
+        using hnonneg
+    ·
+      simpa [result]
+        using (Core.listSubset_nil (ys := result.2.atlas.dict))
     ·
       change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
       simpa using (Core.errU_false_nil (n := 1))
@@ -121,23 +180,7 @@ by
   совпадает с ожидаемыми параметрами.
 -/
 lemma scenarioFromCommonPDT_smoke :
-    let C := Core.shrinkage_to_commonPDT trivialShrinkage
-    let sc :=
-      LowerBounds.BoundedAtlasScenario.ofCommonPDT
-        (n := 1)
-        (F := [f₀])
-        (C := C)
-        0
-        (by
-          intro f hf
-          have hf' : f = f₀ := by simpa using hf
-          subst hf'
-          simp [C, trivialShrinkage])
-        (by
-          simpa [C, trivialShrinkage])
-        (by
-          simpa [C, trivialShrinkage] using
-            (show (0 : Core.Q) ≤ (1 : Core.Q) / 2 by norm_num))
+    let sc := trivialScenarioCommon
     sc.family = [f₀] ∧ sc.atlas.epsilon = 0 ∧ sc.k = 0 ∧
       ∃ S : List (Subcube 1),
         S = [] ∧
@@ -145,43 +188,45 @@ lemma scenarioFromCommonPDT_smoke :
         Core.errU f₀ S = 0 :=
 by
   classical
-  intro C sc
-  refine And.intro ?hfam (And.intro ?heps (And.intro ?hk ?hwit))
-  · simp [sc]
-  · simp [sc, C, trivialShrinkage]
-  · simp [sc]
-  · refine ⟨[], rfl, ?_, ?_⟩
-    · simp [sc, Core.listSubset_nil]
-    ·
-      change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
-      simpa using (Core.errU_false_nil (n := 1))
+  set sc := trivialScenarioCommon
+  have hfam : sc.family = [f₀] := by
+    -- Конструкция `trivialScenarioCommon` фиксирует семейство `[f₀]`.
+    simp [sc, trivialScenarioCommon, LowerBounds.BoundedAtlasScenario.ofCommonPDT]
+  have heps : sc.atlas.epsilon = 0 := by
+    -- Ошибка равна ε исходного shrinkage, то есть нулю.
+    simp [sc, trivialScenarioCommon, LowerBounds.BoundedAtlasScenario.ofCommonPDT,
+      Core.CommonPDT.toAtlas, Core.Atlas.ofPDT, trivialCommonPDT_epsilon]
+  have hk : sc.k = 0 := by
+    -- При построении сценария мы явно указали `k = 0`.
+    simp [sc, trivialScenarioCommon, LowerBounds.BoundedAtlasScenario.ofCommonPDT]
+  have hsubset : Core.listSubset ([] : List (Subcube 1)) sc.atlas.dict := by
+    -- Пустой набор листьев всегда является подсписком.
+    simp [sc, trivialScenarioCommon, Core.listSubset_nil,
+      LowerBounds.BoundedAtlasScenario.ofCommonPDT]
+  have herr : Core.errU f₀ ([] : List (Subcube 1)) = 0 := by
+    -- При отсутствии выбранных листьев ошибка обнуляется.
+    change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
+    simpa using (Core.errU_false_nil (n := 1))
+  exact And.intro hfam (And.intro heps (And.intro hk ⟨[], rfl, hsubset, herr⟩))
 
 /--
   Новая лемма `scenarioFromCommonPDT_k_le_pow` даёт ожидаемую границу на `k`
   для тривиального примера: значение `k = 0` не превосходит `2^0`.
 -/
 lemma scenarioFromCommonPDT_k_le_pow_smoke :
-    let C := Core.shrinkage_to_commonPDT trivialShrinkage
     (LowerBounds.scenarioFromCommonPDT
-        (n := 1) (F := [f₀]) (C := C)
-        (hε0 := by
-          simpa [C, trivialShrinkage])
-        (hε1 := by
-          simpa [C, trivialShrinkage] using
-            (show (0 : Core.Q) ≤ (1 : Core.Q) / 2 by norm_num))).1
-      ≤ Nat.pow 2 C.depthBound :=
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).1
+      ≤ Nat.pow 2 trivialCommonPDT.depthBound :=
 by
   classical
-  intro C
-  simpa [C, trivialShrinkage]
+  simpa [trivialCommonPDT, trivialShrinkage, Core.Shrinkage.commonPDT_depthBound]
     using
       LowerBounds.scenarioFromCommonPDT_k_le_pow
-        (n := 1) (F := [f₀]) (C := C)
-        (hε0 := by
-          simpa [C, trivialShrinkage])
-        (hε1 := by
-          simpa [C, trivialShrinkage] using
-            (show (0 : Core.Q) ≤ (1 : Core.Q) / 2 by norm_num))
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)
 
 /--
   Проверка новой конструкции `scenarioFromCommonPDT`: получаем сценарий из
@@ -190,33 +235,56 @@ by
   допустим: пустой список листьев удовлетворяет требуемым ограничениям.
 -/
 lemma scenarioFromCommonPDT_sigma_smoke :
-    let C := Core.shrinkage_to_commonPDT trivialShrinkage
-    let result :=
-      LowerBounds.scenarioFromCommonPDT
-        (n := 1) (F := [f₀]) (C := C)
-        (hε0 := by
-          simpa [C, trivialShrinkage])
-        (hε1 := by
-          simpa [C, trivialShrinkage] using
-            (show (0 : Core.Q) ≤ (1 : Core.Q) / 2 by norm_num))
-    result.2.family = [f₀] ∧ result.2.atlas.epsilon = 0 ∧
-      ∃ S : List (Subcube 1),
-        S = [] ∧
-        S.length ≤ result.1 ∧
-        Core.listSubset S result.2.atlas.dict ∧
-        Core.errU f₀ S = 0 :=
+    (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).2.family = [f₀] ∧
+    (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).2.atlas.epsilon = 0 ∧
+    ∃ S : List (Subcube 1),
+      S = [] ∧
+      S.length ≤ (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).1 ∧
+      Core.listSubset S (LowerBounds.scenarioFromCommonPDT
+        (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+        (hε0 := trivialCommonPDT_epsilon_nonneg)
+        (hε1 := trivialCommonPDT_epsilon_le_half)).2.atlas.dict ∧
+      Core.errU f₀ S = 0 :=
 by
   classical
-  intro C result
-  obtain ⟨k, sc⟩ := result
-  refine And.intro ?hfam (And.intro ?heps ?hwit)
-  · simp [result, C, trivialShrinkage]
-  · simp [result, C, trivialShrinkage]
+  set result :=
+    LowerBounds.scenarioFromCommonPDT
+      (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+      (hε0 := trivialCommonPDT_epsilon_nonneg)
+      (hε1 := trivialCommonPDT_epsilon_le_half)
+    with hresult
+  have hfam : result.2.family = [f₀] := by
+    simpa [hresult]
+      using
+        (LowerBounds.scenarioFromCommonPDT_family
+          (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+          (hε0 := trivialCommonPDT_epsilon_nonneg)
+          (hε1 := trivialCommonPDT_epsilon_le_half))
+  have heps : result.2.atlas.epsilon = 0 := by
+    simpa [hresult, trivialCommonPDT_epsilon]
+      using
+        (LowerBounds.scenarioFromCommonPDT_epsilon
+          (n := 1) (F := [f₀]) (C := trivialCommonPDT)
+          (hε0 := trivialCommonPDT_epsilon_nonneg)
+          (hε1 := trivialCommonPDT_epsilon_le_half))
+  refine And.intro ?hfam' (And.intro ?heps' ?hwit)
+  · simpa [hresult] using hfam
+  · simpa [hresult] using heps
   · refine ⟨[], rfl, ?hlen, ?hsubset, ?herr⟩
     ·
-      have hk : 0 ≤ k := Nat.zero_le _
-      simpa [List.length_nil] using hk
-    · simp [result, C, trivialShrinkage, Core.listSubset_nil]
+      have hnonneg : 0 ≤ result.1 := Nat.zero_le _
+      simpa [hresult] using hnonneg
+    ·
+      simpa [hresult, Core.listSubset_nil]
     · change Core.errU (fun _ : Core.BitVec 1 => false) [] = 0
       simpa using (Core.errU_false_nil (n := 1))
 

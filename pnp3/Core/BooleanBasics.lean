@@ -1155,6 +1155,109 @@ lemma assign_some_of_mem_freeIndicesList {ρ : Restriction n} {i : Fin n}
   refine ⟨⟨fun j => if j = i then some b else ρ.mask j⟩, ?_⟩
   simp [Restriction.assign, Subcube.assign, hmask]
 
+/-!
+  Фиксация свободной координаты уменьшает число свободных позиций ровно на
+  единицу: новый список свободных индексов получается фильтрацией старого по
+  условию `≠ i`.
+-/
+lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
+    {b : Bool} {ρ' : Restriction n}
+    (hmem : i ∈ ρ.freeIndicesList)
+    (hassign : ρ.assign i b = some ρ') :
+    ρ'.freeCount = ρ.freeCount - 1 := by
+  classical
+  have hmask := assign_mask_eq (ρ := ρ) (ρ' := ρ') (i := i) (b := b) hassign
+  have hmask_i : ρ'.mask i = some b := by
+    have := hmask i
+    simp at this
+    exact this
+  have hmask_fun :
+      (fun j => decide (ρ'.mask j = none))
+        = fun j => decide (ρ.mask j = none) && decide (j ≠ i) := by
+    funext j
+    have hmask_j := hmask j
+    by_cases hij : j = i
+    · subst hij
+      simp [hmask_i]
+    · have : ρ'.mask j = ρ.mask j := by
+        simp [hmask_j, hij]
+      simp [this, hij]
+  have hfilter_eq :
+      ρ'.freeIndicesList =
+        (List.finRange n).filter
+          (fun j => decide (ρ.mask j = none) && decide (j ≠ i)) := by
+    unfold Restriction.freeIndicesList
+    exact congrArg (fun g => (List.finRange n).filter g) hmask_fun
+  have hfinset_eq :
+      (Finset.univ.filter fun j => ρ'.mask j = none) =
+        (Finset.univ.filter fun j => ρ.mask j = none).erase i := by
+    apply Finset.ext
+    intro j
+    have hmask_j := hmask j
+    by_cases hij : j = i
+    · subst hij
+      simp [Finset.mem_filter, Finset.mem_erase, hmask_i]
+    · simp [Finset.mem_filter, Finset.mem_erase, hmask_j, hij]
+  have hmask_none : ρ.mask i = none :=
+    (Restriction.mem_freeIndicesList (ρ := ρ) (i := i)).1 hmem
+  have hi_mem_set : i ∈ (Finset.univ.filter fun j => ρ.mask j = none) := by
+    simp [Finset.mem_filter, hmask_none]
+  have hcard_eq :
+      (Finset.univ.filter fun j => ρ'.mask j = none).card + 1 =
+        (Finset.univ.filter fun j => ρ.mask j = none).card := by
+    have hcard := Finset.card_erase_add_one hi_mem_set
+    have hcard' :
+        ((Finset.univ.filter fun j => ρ.mask j = none).erase i).card + 1 =
+          (Finset.univ.filter fun j => ρ.mask j = none).card := hcard
+    have hcard'' := hcard'
+    rw [← hfinset_eq] at hcard''
+    exact hcard''
+  have hcount_formula :
+      ∀ σ : Restriction n,
+        σ.freeCount =
+          (Finset.univ.filter fun j => σ.mask j = none).card := by
+    intro σ
+    unfold Restriction.freeCount Restriction.freeIndicesList
+    set L := (List.finRange n).filter (fun j => decide (σ.mask j = none)) with hL
+    have hsub : L.Sublist (List.finRange n) := by
+      simpa [hL] using List.filter_sublist
+        (l := List.finRange n) (p := fun j => decide (σ.mask j = none))
+    have hnodup : L.Nodup :=
+      List.Sublist.nodup hsub (List.nodup_finRange n)
+    have hcard := List.card_toFinset L
+    have hdedup : L.dedup = L := (List.dedup_eq_self).2 hnodup
+    have hlen_to_card : L.length = L.toFinset.card := by
+      have hlen_dedup : L.dedup.length = L.length :=
+        congrArg List.length hdedup
+      have hcard' : L.toFinset.card = L.length := Eq.trans hcard hlen_dedup
+      exact hcard'.symm
+    have hfilter_toFinset :=
+      List.toFinset_filter (List.finRange n)
+        (fun j => decide (σ.mask j = none))
+    have hfinrange := List.toFinset_finRange n
+    have hfinset_card :
+        L.toFinset =
+          (Finset.univ.filter fun j => σ.mask j = none) := by
+      simpa [hL, hfilter_toFinset, hfinrange]
+    have hlen :=
+      calc
+        L.length = L.toFinset.card := hlen_to_card
+        _ = (Finset.univ.filter fun j => σ.mask j = none).card := by
+              simp [hfinset_card]
+    have hlen' := hlen
+    simp [hL] at hlen'
+    exact hlen'
+  have hcount_eq := hcount_formula ρ
+  have hcount_eq' := hcount_formula ρ'
+  have hsucc_eq : Nat.succ ρ'.freeCount = ρ.freeCount := by
+    have htmp := hcard_eq
+    simp [Nat.succ_eq_add_one, hcount_eq, hcount_eq'] at htmp
+    exact htmp
+  have hpred := congrArg Nat.pred hsucc_eq
+  have hfinal := hpred
+  simp [Nat.pred_eq_sub_one] at hfinal
+  exact hfinal
+
 /--
 Добавляем новую координату в ограничение: значение `choice` назначается
 нулевой позиции, а остальные индексы копируются из исходного `ρ`.

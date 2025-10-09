@@ -64,9 +64,8 @@ lemma sum_choose_le_pow (D k : Nat) :
               ≤ (∑ i ∈ Finset.range (D.succ), Nat.choose D i) :=
         Finset.sum_le_sum_of_subset_of_nonneg hsubset (by
           intro i _hi _; exact Nat.zero_le _)
-      have hsum_eq : (∑ i ∈ Finset.range (D.succ), Nat.choose D i) = 2 ^ D := by
-        -- `Nat.sum_range_choose` уже даёт нужное равенство; раскрываем определение `Nat.succ`.
-        simpa [Nat.succ_eq_add_one] using (Nat.sum_range_choose (n := D))
+      have hsum_eq : (∑ i ∈ Finset.range (D.succ), Nat.choose D i) = 2 ^ D :=
+        Nat.sum_range_choose (n := D)
       exact hmono.trans hsum_eq.le
     · -- Если `k > D`, то хвост суммы обнуляется, и мы получаем точное равенство.
       push_neg at h
@@ -83,17 +82,24 @@ lemma sum_choose_le_pow (D k : Nat) :
       have hsplit :=
         Finset.sum_range_add_sum_Ico (f := fun i ↦ Nat.choose D i)
           (m := D.succ) (n := k.succ) (Nat.succ_le_succ h.le)
-      have : (∑ i ∈ Finset.range (k.succ), Nat.choose D i)
-          = (∑ i ∈ Finset.range (D.succ), Nat.choose D i) :=
-        by
-          have : (∑ i ∈ Finset.range (D.succ), Nat.choose D i)
-              = (∑ i ∈ Finset.range (k.succ), Nat.choose D i) := by
-            simpa [htail, Nat.succ_eq_add_one, add_comm] using hsplit
-          exact this.symm
-      have hsum_eq : (∑ i ∈ Finset.range (D.succ), Nat.choose D i) = 2 ^ D := by
-        simpa [Nat.succ_eq_add_one] using (Nat.sum_range_choose (n := D))
+      have heq : (∑ i ∈ Finset.range (k.succ), Nat.choose D i)
+          = (∑ i ∈ Finset.range (D.succ), Nat.choose D i) := by
+        calc
+          (∑ i ∈ Finset.range (k.succ), Nat.choose D i)
+              = (∑ i ∈ Finset.range (D.succ), Nat.choose D i)
+                  + (∑ i ∈ Finset.Ico (D.succ) (k.succ), Nat.choose D i) :=
+                by
+                  simpa using hsplit.symm
+          _ = (∑ i ∈ Finset.range (D.succ), Nat.choose D i) + 0 := by
+                rw [htail]
+          _ = (∑ i ∈ Finset.range (D.succ), Nat.choose D i) := by
+                simp
+      have hsum_eq : (∑ i ∈ Finset.range (D.succ), Nat.choose D i) = 2 ^ D :=
+        Nat.sum_range_choose (n := D)
       have hsum_le : (∑ i ∈ Finset.range (k.succ), Nat.choose D i) ≤ 2 ^ D := by
-        simpa [this, hsum_eq]
+        have htarget : (∑ i ∈ Finset.range (D.succ), Nat.choose D i) ≤ 2 ^ D :=
+          hsum_eq.le
+        exact heq ▸ htarget
       exact hsum_le
 
 /--

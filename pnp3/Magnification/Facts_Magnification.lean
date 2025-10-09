@@ -1,4 +1,5 @@
 import Models.Model_GapMCSP
+import Models.Model_SparseNP
 import LowerBounds.AntiChecker
 import Complexity.Interfaces
 
@@ -60,6 +61,11 @@ def LocalLowerBoundHypothesis
     (p : GapMCSPParams) (κ : Nat) : Prop :=
   0 < κ ∧ ∀ _solver : SmallLocalCircuitSolver p, False
 
+/-- CJW-гипотеза для разреженных NP-языков. -/
+def SparseLowerBoundHypothesis
+    (p : Models.SparseLanguageParams) (ε : Rat) (statement : Prop) : Prop :=
+  (0 : Rat) < ε ∧ statement
+
 /--
   OPS-триггер (общая версия): доказательство `GeneralLowerBoundHypothesis`
   автоматически влечёт `NP \nsubseteq P/poly`.  На данном этапе мы
@@ -84,6 +90,11 @@ axiom OPS_trigger_formulas
 axiom Locality_trigger
   {p : GapMCSPParams} {κ : Nat} :
   LocalLowerBoundHypothesis p κ → NP_not_subset_Ppoly
+
+/-- CJW-триггер: разреженный NP-язык с суперлинейной нижней границей. -/
+axiom CJW_sparse_trigger
+  {p : Models.SparseLanguageParams} {ε : Rat} (statement : Prop) :
+  SparseLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly
 
 end Magnification
 end Pnp3

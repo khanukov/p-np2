@@ -25,7 +25,7 @@ open Models
 theorem LB_Formulas_core
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
   classical
-  obtain ⟨F, Y, hWitness⟩ := antiChecker_exists_large_Y (p := p) solver
+  obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset (p := p) solver
   classical
   -- Раскрываем обозначения, возвращённые античекером.
   dsimp only at hWitness
@@ -33,17 +33,21 @@ theorem LB_Formulas_core
   set scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
   set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
     solver.same_n.symm ▸ Y
-  rcases hWitness with ⟨hYsubset, hYlarge⟩
-  -- Применяем критерий шага B к полученному сценарию и большому подсемейству.
+  set Tsolver : Finset (Core.BitVec solver.ac0.n) :=
+    solver.same_n.symm ▸ T
+  rcases hWitness with
+    ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
+  -- Используем тестовую версию критерия: атлас не может покрыть большое семейство.
   refine
-    no_bounded_atlas_of_large_family (sc := scWitness) (Y := Ysolver)
-      ?_ ?_
+    no_bounded_atlas_on_testset_of_large_family
+      (sc := scWitness) (T := Tsolver) (Y := Ysolver)
+      ?subset ?approx ?large
   · -- Подмножество напрямую приходит из античекера.
-    simpa [Ysolver, scWitness]
-      using hYsubset
-  · -- Мощность семейства превосходит ёмкость атласа, что и приводит к конфликту.
-    simpa [Ysolver, scWitness]
-      using hYlarge
+    exact hYsubset
+  · -- Каждая функция из `Y` согласуется с объединением словаря вне `T`.
+    exact hApprox
+  · -- Мощность `Y` превосходит тестовую ёмкость, поэтому покрытие невозможно.
+    exact hTestLarge
 
 end LowerBounds
 end Pnp3

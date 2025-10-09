@@ -345,6 +345,62 @@ noncomputable instance instFintypeApproxSubtype
   classical
   infer_instance
 
+private def subsetSubtypeEquivPowerset
+    {α : Type*} [DecidableEq α] (T : Finset α) :
+    {S : Finset α // S ⊆ T} ≃ {S : Finset α // S ∈ T.powerset} :=
+  { toFun :=
+      fun S =>
+        ⟨S.1,
+          by
+            have hsubset := S.2
+            exact Finset.mem_powerset.mpr hsubset⟩,
+    invFun :=
+      fun S =>
+        ⟨S.1,
+          by
+            have hmem := Finset.mem_powerset.mp S.2
+            exact hmem⟩,
+    left_inv :=
+      by
+        intro S
+        cases' S with S hS
+        rfl,
+    right_inv :=
+      by
+        intro S
+        cases' S with S hS
+        rfl }
+
+noncomputable instance instFintypeSubsetSubtype
+    {α : Type*} [DecidableEq α] (T : Finset α) :
+    Fintype {S : Finset α // S ⊆ T} :=
+  Fintype.ofEquiv _ (subsetSubtypeEquivPowerset (T := T)).symm
+lemma subsetsSubtype_card_eq_pow
+    {α : Type*} [DecidableEq α] (T : Finset α) :
+    Fintype.card {S : Finset α // S ⊆ T} = 2 ^ T.card :=
+  by
+    classical
+    have hcongr :
+        Fintype.card {S : Finset α // S ⊆ T} =
+          Fintype.card {S : Finset α // S ∈ T.powerset} := by
+      refine Fintype.card_congr ?hEquiv
+      exact subsetSubtypeEquivPowerset (T := T)
+    have hcard :
+        Fintype.card {S : Finset α // S ∈ T.powerset} = T.powerset.card := by
+      exact Fintype.card_coe (s := T.powerset)
+    have hpow : T.powerset.card = 2 ^ T.card := Finset.card_powerset T
+    calc
+      Fintype.card {S : Finset α // S ⊆ T}
+          = Fintype.card {S : Finset α // S ∈ T.powerset} := hcongr
+      _ = T.powerset.card := hcard
+      _ = 2 ^ T.card := hpow
+
+private def sigmaConstEquiv (α β : Type*) : (Σ _ : α, β) ≃ α × β :=
+  { toFun := fun x => ⟨x.1, x.2⟩,
+    invFun := fun x => ⟨x.1, x.2⟩,
+    left_inv := by intro x; cases x; rfl,
+    right_inv := by intro x; cases x; rfl }
+
 /-
   Верхняя оценка на число различных объединений `≤ k` подкубов словаря.
   Ранее она была зафиксирована в виде аксиомы, но после полной формализации
@@ -716,6 +772,190 @@ theorem covering_power_bound
       simpa [Cap, capacityBound, hBall] using this
   -- Теперь окончательно ограничиваем мощность `ApproxClass`.
   exact Nat.le_trans h_inj h_witness_cap
+
+/--
+  Семейство функций, которые совпадают с некоторым объединением подкубов
+  на всех точках вне тестового набора `T`.  На самих точках `T` поведение
+  допускается произвольное.
+-/
+def ApproxOnTestset
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m)) :
+    Set (Domain m → Bool) :=
+  { f | ∃ g, g ∈ UnionClass R k ∧ mismatchSet (m := m) g f ⊆ T }
+
+/-- Полезный синоним для подтипа функций, удовлетворяющих условию тест-набора. -/
+abbrev ApproxOnTestsetSubtype
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m)) :=
+  {f : Domain m → Bool // f ∈ ApproxOnTestset (R := R) (k := k) (T := T)}
+
+noncomputable instance instFintypeApproxOnTestsetSubtype
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m)) :
+    Fintype (ApproxOnTestsetSubtype (R := R) (k := k) (T := T)) := by
+  classical
+  infer_instance
+
+/--
+  Отображение, сопоставляющее функции из `ApproxOnTestsetSubtype` их
+  каноническому свидетелю: выбранному объединению и множеству точек, где
+  функция отличается от объединения.  Множество всегда лежит внутри `T`.
+-/
+noncomputable def approxOnTestsetWitness
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m)) :
+    ApproxOnTestsetSubtype (R := R) (k := k) (T := T) →
+      Σ g : UnionSubtype (R := R) (k := k),
+        {S : Finset (Domain m) // S ⊆ T} :=
+  by
+    intro f
+    classical
+    rcases f with ⟨fFun, hf⟩
+    let g := Classical.choose hf
+    have hWitness := Classical.choose_spec hf
+    have hgUnion : g ∈ UnionClass R k := hWitness.1
+    have hsubset : mismatchSet (m := m) g fFun ⊆ T := hWitness.2
+    refine ⟨⟨g, hgUnion⟩, ⟨mismatchSet (m := m) g fFun, hsubset⟩⟩
+
+lemma approxOnTestsetWitness_injective
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m)) :
+    Function.Injective
+      (approxOnTestsetWitness (R := R) (k := k) (T := T)) :=
+  by
+    intro f₁ f₂ hEq
+    classical
+    cases' f₁ with f₁ h₁
+    cases' f₂ with f₂ h₂
+    dsimp [approxOnTestsetWitness] at hEq
+    have hgEq := congrArg Sigma.fst hEq
+    have hsubsetEq := congrArg Sigma.snd hEq
+    set g₁ := Classical.choose h₁
+    set g₂ := Classical.choose h₂
+    have hggRaw := congrArg Subtype.val hgEq
+    have hgg : g₁ = g₂ := by
+      have htmp := hggRaw
+      simp [g₁, g₂] at htmp
+      exact htmp
+    have hsetRaw := congrArg Subtype.val hsubsetEq
+    have hset' :
+        mismatchSet (m := m) g₁ f₁ = mismatchSet (m := m) g₂ f₂ := by
+      have htmp := hsetRaw
+      simp [g₁, g₂] at htmp
+      exact htmp
+    apply Subtype.ext
+    have hf₁ := flipOn_mismatchSet (m := m) g₁ f₁
+    have hf₂ := flipOn_mismatchSet (m := m) g₂ f₂
+    have step₁ :
+        f₁ = flipOn g₁ (mismatchSet (m := m) g₁ f₁) := hf₁.symm
+    have step₂a :
+        flipOn g₁ (mismatchSet (m := m) g₁ f₁) =
+          flipOn g₁ (mismatchSet (m := m) g₂ f₂) :=
+      congrArg (fun S => flipOn g₁ S) hset'
+    have step₂b :
+        flipOn g₁ (mismatchSet (m := m) g₂ f₂) =
+          flipOn g₂ (mismatchSet (m := m) g₂ f₂) :=
+      by
+        have htmp := congrArg
+            (fun g => flipOn g (mismatchSet (m := m) g₂ f₂)) hgg
+        exact htmp
+    have step₃ : flipOn g₂ (mismatchSet (m := m) g₂ f₂) = f₂ := hf₂
+    exact step₁.trans (step₂a.trans (step₂b.trans step₃))
+
+lemma approxOnTestset_card_le
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m)) :
+    Fintype.card
+        (ApproxOnTestsetSubtype (R := R) (k := k) (T := T))
+      ≤ unionBound (dictLen R) k * 2 ^ T.card :=
+  by
+    classical
+    have h_inj :=
+      (Fintype.card_le_of_injective
+        (approxOnTestsetWitness (R := R) (k := k) (T := T))
+        (approxOnTestsetWitness_injective (R := R) (k := k) (T := T)))
+    have h_sigma_card :
+        Fintype.card
+            (Σ g : UnionSubtype (R := R) (k := k),
+              {S : Finset (Domain m) // S ⊆ T})
+          =
+            Fintype.card (UnionSubtype (R := R) (k := k)) *
+              Fintype.card {S : Finset (Domain m) // S ⊆ T} := by
+      have hcongr :=
+        (Fintype.card_congr
+          (sigmaConstEquiv
+            (UnionSubtype (R := R) (k := k))
+            ({S : Finset (Domain m) // S ⊆ T})))
+      have hprod :=
+        (Fintype.card_prod (UnionSubtype (R := R) (k := k))
+          ({S : Finset (Domain m) // S ⊆ T}))
+      exact Eq.trans hcongr hprod
+    have h_subsets := subsetsSubtype_card_eq_pow (T := T)
+    have hpow :
+        Fintype.card (UnionSubtype (R := R) (k := k)) * 2 ^ T.card ≤
+          unionBound (dictLen R) k * 2 ^ T.card :=
+      Nat.mul_le_mul_right (2 ^ T.card)
+        (unionClass_card_bound (R := R) (k := k))
+    have h_sigma_pow_eq :
+        Fintype.card
+            (Σ g : UnionSubtype (R := R) (k := k),
+              {S : Finset (Domain m) // S ⊆ T})
+          = Fintype.card (UnionSubtype (R := R) (k := k)) * 2 ^ T.card := by
+      have hprodEq :=
+        congrArg
+          (fun n => Fintype.card (UnionSubtype (R := R) (k := k)) * n)
+          h_subsets
+      exact Eq.trans h_sigma_card hprodEq
+    have h_sigma_pow :
+        Fintype.card
+            (Σ g : UnionSubtype (R := R) (k := k),
+              {S : Finset (Domain m) // S ⊆ T})
+          ≤ unionBound (dictLen R) k * 2 ^ T.card :=
+      h_sigma_pow_eq.symm ▸ hpow
+    exact h_inj.trans h_sigma_pow
+
+lemma approxOnTestset_subset_card_le
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m))
+    (Y : Finset (Domain m → Bool))
+    (hY : ∀ f ∈ Y, f ∈ ApproxOnTestset (R := R) (k := k) (T := T)) :
+    Y.card ≤ unionBound (dictLen R) k * 2 ^ T.card :=
+  by
+    classical
+    let embed : {f // f ∈ Y} →
+        ApproxOnTestsetSubtype (R := R) (k := k) (T := T) :=
+      fun f => ⟨f.1, hY f.1 f.2⟩
+    have hinj : Function.Injective embed := by
+      intro f₁ f₂ hEq
+      apply Subtype.ext
+      have := congrArg Subtype.val hEq
+      exact this
+    have h_card_coe : Fintype.card {f // f ∈ Y} = Y.card :=
+      Fintype.card_coe (s := Y)
+    have h_le_sub :
+        Y.card ≤
+          Fintype.card
+            (ApproxOnTestsetSubtype (R := R) (k := k) (T := T)) := by
+      have hcard := Fintype.card_le_of_injective embed hinj
+      have hcard' := hcard
+      rw [h_card_coe] at hcard'
+      exact hcard'
+    have hcap := approxOnTestset_card_le (R := R) (k := k) (T := T)
+    exact h_le_sub.trans hcap
+
+theorem incompatibility_on_testset
+    {m : Nat} (R : List (Subcube m)) (k : Nat)
+    (T : Finset (Domain m))
+    (Y : Finset (Domain m → Bool))
+    (hY : ∀ f ∈ Y, f ∈ ApproxOnTestset (R := R) (k := k) (T := T))
+    (hLarge : unionBound (dictLen R) k * 2 ^ T.card < Y.card) : False :=
+  by
+    have h_le :=
+      approxOnTestset_subset_card_le (R := R) (k := k) (T := T)
+        (Y := Y) hY
+    have hcontr := Nat.lt_of_le_of_lt h_le hLarge
+    exact Nat.lt_irrefl _ hcontr
 
 /--
   Удобная переформулировка: если заранее известно, что словарь имеет

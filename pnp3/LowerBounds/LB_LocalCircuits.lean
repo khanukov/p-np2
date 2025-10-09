@@ -27,21 +27,24 @@ open Models
 theorem LB_LocalCircuits_core
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) : False := by
   classical
-  obtain ⟨F, Y, hWitness⟩ := antiChecker_exists_large_Y_local (p := p) solver
+  obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset_local (p := p) solver
   classical
   dsimp only at hWitness
   set Fsolver : Core.Family solver.params.n := solver.same_n.symm ▸ F
   set scWitness := (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
   set Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
     solver.same_n.symm ▸ Y
-  rcases hWitness with ⟨hYsubset, hYlarge⟩
+  set Tsolver : Finset (Core.BitVec solver.params.n) :=
+    solver.same_n.symm ▸ T
+  rcases hWitness with
+    ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
   refine
-    no_bounded_atlas_of_large_family (sc := scWitness) (Y := Ysolver)
-      ?_ ?_
-  ·
-    simpa [Ysolver, scWitness] using hYsubset
-  ·
-    simpa [Ysolver, scWitness] using hYlarge
+    no_bounded_atlas_on_testset_of_large_family
+      (sc := scWitness) (T := Tsolver) (Y := Ysolver)
+      ?subset ?approx ?large
+  · exact hYsubset
+  · exact hApprox
+  · exact hTestLarge
 
 end LowerBounds
 end Pnp3

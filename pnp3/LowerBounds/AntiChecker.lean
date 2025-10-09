@@ -1,4 +1,5 @@
 import Mathlib.Data.Finset.Basic
+import Counting.Atlas_to_LB_Core
 import Core.SAL_Core
 import LowerBounds.LB_Formulas
 import Models.Model_GapMCSP
@@ -76,6 +77,36 @@ axiom antiChecker_exists_large_Y
         scenarioCapacity (sc := scWitness) < Ysolver.card
 
 /--
+  Усиленная форма античекера: кроме богатого семейства `Y` мы получаем малый
+  тест-набор `T`, на котором любая функция из `Y` совпадает с некоторым
+  объединением словаря `scWitness.atlas.dict`.  Это превращает гипотезу о малом
+  решателе в конкретное утверждение о покрытии тест-набора локальными атласами.
+-/
+axiom antiChecker_exists_testset
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
+  ∃ (F : Family (Models.inputLen p))
+    (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
+    (T : Finset (Core.BitVec (Models.inputLen p))),
+      let Fsolver : Family solver.ac0.n :=
+        (solver.same_n.symm ▸ F)
+      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+        (solver.same_n.symm ▸ Y)
+      let Tsolver : Finset (Core.BitVec solver.ac0.n) :=
+        (solver.same_n.symm ▸ T)
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+        Tsolver.card ≤ Models.polylogBudget solver.ac0.n ∧
+        (∀ f ∈ Ysolver,
+          f ∈ Counting.ApproxOnTestset
+            (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+        Counting.unionBound
+            (Counting.dictLen scWitness.atlas.dict)
+            scWitness.k
+            * 2 ^ Tsolver.card
+          < Ysolver.card
+
+/--
   Версия античекера для локальных схем.  Она утверждает существование
   богатого подсемейства, которое будет использовано в `LB_LocalCircuits_core`.
 -/
@@ -91,6 +122,36 @@ axiom antiChecker_exists_large_Y_local
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
         scenarioCapacity (sc := scWitness) < Ysolver.card
+
+/--
+  Усиленная локальная версия античекера с явным тест-набором.  Здесь `T`
+  ограничивает точки, на которых функции из `Y` могут отличаться от
+  соответствующих объединений словаря локальной схемы.
+-/
+axiom antiChecker_exists_testset_local
+  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
+  ∃ (F : Family (Models.inputLen p))
+    (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
+    (T : Finset (Core.BitVec (Models.inputLen p))),
+      let Fsolver : Family solver.params.n :=
+        (solver.same_n.symm ▸ F)
+      let scWitness :=
+        (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
+        (solver.same_n.symm ▸ Y)
+      let Tsolver : Finset (Core.BitVec solver.params.n) :=
+        (solver.same_n.symm ▸ T)
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+        Tsolver.card ≤ Models.polylogBudget solver.params.n ∧
+        (∀ f ∈ Ysolver,
+          f ∈ Counting.ApproxOnTestset
+            (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+        Counting.unionBound
+            (Counting.dictLen scWitness.atlas.dict)
+            scWitness.k
+            * 2 ^ Tsolver.card
+          < Ysolver.card
 
 end LowerBounds
 end Pnp3

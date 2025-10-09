@@ -36,6 +36,8 @@ open Pnp3.Core
 open Pnp3.Counting
 open Finset
 
+noncomputable section
+
 /--
   Сценарий «малого атласа»: словарь `atlas.dict` аппроксимирует
   семейство функций `family`, причём для каждой функции достаточно
@@ -134,6 +136,15 @@ noncomputable def scenarioCapacity {n : Nat} (sc : BoundedAtlasScenario n) : Nat
     sc.atlas.epsilon sc.hε0 sc.hε1
 
 /--
+  Ёмкость для тест-набора: число кандидатных функций, которые можно построить из
+  словаря, умноженное на количество способов ошибиться на `T`.  Именно эта величина
+  фигурирует в «тестовой» версии Covering-Power.
+-/
+def testsetCapacity {n : Nat} (sc : BoundedAtlasScenario n)
+    (T : Finset (Core.BitVec n)) : Nat :=
+  Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k * 2 ^ T.card
+
+/--
   Если множество `Y` функций содержится в семействе, обслуживаемом
   атласом, и при этом его размер превышает ёмкость, то получаем
   противоречие.  Именно так в части C будут извлекаться нижние оценки.
@@ -151,6 +162,31 @@ theorem no_bounded_atlas_of_large_family
       exact Nat.le_trans hYleFamily hFamily
     have hcontr := Nat.lt_of_le_of_lt hY_le_cap hLarge
     exact (Nat.lt_irrefl _ hcontr)
+
+/--
+  Версия критерия с тест-набором: если все функции из `Y` совпадают с объединением
+  словаря за пределами `T`, а мощность `Y` превосходит тестовую ёмкость, то атлас
+  не может покрыть такое семейство.  Граница `testsetCapacity` напрямую использует
+  комбинаторику `ApproxOnTestset` из части B.
+-/
+theorem no_bounded_atlas_on_testset_of_large_family
+    {n : Nat} (sc : BoundedAtlasScenario n)
+    (T : Finset (Core.BitVec n))
+    (Y : Finset (Core.BitVec n → Bool))
+    (_hYsubset : Y ⊆ familyFinset sc)
+    (hApprox : ∀ f ∈ Y,
+      f ∈ Counting.ApproxOnTestset
+        (R := sc.atlas.dict) (k := sc.k) (T := T))
+    (hLarge : testsetCapacity (sc := sc) (T := T) < Y.card) : False :=
+  by
+    classical
+    have hBound :=
+      Counting.approxOnTestset_subset_card_le
+        (R := sc.atlas.dict) (k := sc.k) (T := T) (Y := Y) hApprox
+    have hContr := Nat.lt_of_le_of_lt hBound hLarge
+    exact Nat.lt_irrefl _ hContr
+
+end
 
 /--
   ### От общего PDT к сценарию ограниченного атласа
@@ -1453,6 +1489,131 @@ lemma scenarioFromLocalCircuit_stepAB_summary
     refine And.intro hfamily' (And.intro hk' (And.intro hdict'
       (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
     exact hcap
+
+/--
+  Удобная структура, упаковывающая численные параметры сценария SAL.
+  Поле `budget` фиксирует универсальную границу на число листьев, а
+  вспомогательные поля собирают совпадение семейства и оценку ошибки.
+-/
+structure ScenarioBudget (n : Nat) (F : Core.Family n) : Type where
+  /-- Универсальная граница на число селекторов и длину словаря. -/
+  budget : Nat
+  /-- Ограниченный сценарий SAL для семейства `F`. -/
+  scenario : BoundedAtlasScenario n
+  /-- Совпадение семейства внутри сценария с исходным списком. -/
+  family_eq : scenario.family = F
+  /-- Число селекторов не превосходит `budget`. -/
+  k_le_budget : scenario.k ≤ budget
+  /-- Длина словаря также ограничена `budget`. -/
+  dict_le_budget : Counting.dictLen scenario.atlas.dict ≤ budget
+  /-- Дополнительная граница на погрешность `ε ≤ 1/(n+2)`. -/
+  epsilon_le_inv : scenario.atlas.epsilon ≤ (1 : Core.Q) / (n + 2)
+
+namespace ScenarioBudget
+
+variable {n : Nat} {F : Core.Family n}
+
+/-- Неотрицательность ошибки следует из самого ограниченного сценария. -/
+lemma epsilon_nonneg (pack : ScenarioBudget n F) :
+    (0 : Core.Q) ≤ pack.scenario.atlas.epsilon :=
+  pack.scenario.hε0
+
+/-- Условие `ε ≤ 1/2` также доступно напрямую из сценария. -/
+lemma epsilon_le_half (pack : ScenarioBudget n F) :
+    pack.scenario.atlas.epsilon ≤ (1 : Core.Q) / 2 :=
+  pack.scenario.hε1
+
+/-- Атлас, упакованный в паспорте сценария. -/
+def atlas (pack : ScenarioBudget n F) : Core.Atlas n :=
+  pack.scenario.atlas
+
+end ScenarioBudget
+
+/--
+  Построение паспорта для сценария, полученного из AC⁰ shrinkage.
+  Бюджет `2^{(\log_2(M+2))^{d+1}}` повторяет параметры multi-switching лемм.
+-/
+noncomputable def scenarioBudgetFromAC0
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    ScenarioBudget params.n F :=
+  by
+    classical
+    let packData := scenarioFromAC0 params F
+    let bound := Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1))
+    have summaryPack :=
+      scenarioFromAC0_stepAB_summary (params := params) (F := F)
+    have hfamily_raw := summaryPack.1
+    have hrest₁ := summaryPack.2
+    have hk_raw := hrest₁.1
+    have hrest₂ := hrest₁.2
+    have hdict_raw := hrest₂.1
+    have hrest₃ := hrest₂.2
+    have _hε0_raw := hrest₃.1
+    have hrest₄ := hrest₃.2
+    have _hε_half_raw := hrest₄.1
+    have hrest₅ := hrest₄.2
+    have hε_inv_raw := hrest₅.1
+    have hfamily' := hfamily_raw
+    change packData.2.family = F at hfamily'
+    have hk_pack := hk_raw
+    change packData.2.k ≤ bound at hk_pack
+    have hdict_pack := hdict_raw
+    change Counting.dictLen packData.2.atlas.dict ≤ bound at hdict_pack
+    have hε_inv := hε_inv_raw
+    change packData.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) at hε_inv
+    refine
+      { budget := bound
+        scenario := packData.2
+        family_eq := hfamily'
+        k_le_budget := hk_pack
+        dict_le_budget := ?_
+        epsilon_le_inv := ?_ }
+    · exact hdict_pack
+    · exact hε_inv
+
+/--
+  Паспортизованный сценарий для локальных схем: бюджет равен
+  $2^{\ell (\log_2(M+2) + \text{depth} + 1)}$.
+-/
+noncomputable def scenarioBudgetFromLocal
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    ScenarioBudget params.n F :=
+  by
+    classical
+    let packData := scenarioFromLocalCircuit params F
+    let bound := Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1))
+    have summaryPack :=
+      scenarioFromLocalCircuit_stepAB_summary (params := params) (F := F)
+    have hfamily_raw := summaryPack.1
+    have hrest₁ := summaryPack.2
+    have hk_raw := hrest₁.1
+    have hrest₂ := hrest₁.2
+    have hdict_raw := hrest₂.1
+    have hrest₃ := hrest₂.2
+    have _hε0_raw := hrest₃.1
+    have hrest₄ := hrest₃.2
+    have _hε_half_raw := hrest₄.1
+    have hrest₅ := hrest₄.2
+    have hε_inv_raw := hrest₅.1
+    have hfamily' := hfamily_raw
+    change packData.2.family = F at hfamily'
+    have hk_pack := hk_raw
+    change packData.2.k ≤ bound at hk_pack
+    have hdict_pack := hdict_raw
+    change Counting.dictLen packData.2.atlas.dict ≤ bound at hdict_pack
+    have hε_inv := hε_inv_raw
+    change packData.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) at hε_inv
+    refine
+      { budget := bound
+        scenario := packData.2
+        family_eq := hfamily'
+        k_le_budget := hk_pack
+        dict_le_budget := ?_
+        epsilon_le_inv := ?_ }
+    · exact hdict_pack
+    · exact hε_inv
 
 end LowerBounds
 end Pnp3

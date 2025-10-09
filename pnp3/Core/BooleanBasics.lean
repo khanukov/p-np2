@@ -25,7 +25,7 @@ lemma flatMap_singleton_eq_map {α β : Type _} (f : α → β) :
     ∀ L : List α, L.flatMap (fun x => [f x]) = L.map f
   | [] => by simp
   | x :: L => by
-      simpa [List.flatMap_cons, List.map_cons,
+      simp [List.flatMap_cons, List.map_cons,
         flatMap_singleton_eq_map (f := f) (L := L)]
 
 end List

@@ -1,4 +1,5 @@
 import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.Log
 import Mathlib.Tactic
 
 /-!
@@ -34,6 +35,16 @@ structure GapMCSPParams where
 
 /-- Длина входа MCSP: `N = 2^n`. Это основная числовая характеристика задачи. -/
 def inputLen (p : GapMCSPParams) : Nat := Nat.pow 2 p.n
+
+/--
+  Полилогарифмический бюджет, используемый в части C для ограничения размера
+  тест-наборов античекера.  Определение выбрано произвольным, но удобным:
+  четвёртая степень `log₂ (N + 1)`, увеличенная на единицу для избежания нулевых
+  значений.  Такой бюджет достаточно мал (polylog `N`) и положителен для любых
+  ненулевых `N`.
+-/
+def polylogBudget (N : Nat) : Nat :=
+  (Nat.succ (Nat.log2 (Nat.succ N))) ^ 4
 
 end Models
 end Pnp3

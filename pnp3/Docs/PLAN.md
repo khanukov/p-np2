@@ -18,11 +18,13 @@
 ## Часть C. Модель GapMCSP и нижние оценки
 
 - **Цель**: определить язык GapMCSP, параметры YES/NO и вывести нижние оценки для формул и локальных схем на основе SAL.
-- **Файлы**: `Models/Model_GapMCSP.lean`, `LowerBounds/LB_Formulas.lean`, `LowerBounds/LB_LocalCircuits.lean`.
+- **Файлы**: `Models/Model_GapMCSP.lean`, `Models/Model_SparseNP.lean`,
+  `LowerBounds/LB_Formulas.lean`, `LowerBounds/LB_LocalCircuits.lean`,
+  `LowerBounds/LB_GeneralFromLocal.lean`.
 
 ## Часть D. Магнификация
 
-- **Цель**: записать внешние триггеры OPS/JACM и связать их с полученными нижними оценками.
+- **Цель**: записать внешние триггеры OPS/JACM/CJW и связать их с полученными нижними оценками.
 - **Файлы**: `Magnification/Facts_Magnification.lean`, `Magnification/Bridge_to_Magnification.lean`.
 
 ## Внешние факты

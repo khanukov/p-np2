@@ -54,10 +54,24 @@ open ComplexityInterfaces
   как только античекер и shrinkage будут формально доказаны, строка ниже
   мгновенно превратится в полноценное разделение `P` и `NP`.
 -/
- theorem P_ne_NP_final : P_ne_NP := by
-  have hδ : (0 : Rat) < (1 : Rat) := by exact zero_lt_one
-  simpa [canonicalGapParams]
-    using P_ne_NP_from_formulas_bridge (p := canonicalGapParams) (δ := (1 : Rat)) hδ
+theorem P_ne_NP_final : P_ne_NP := by
+  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
+  have kit : PipelineBridgeKit canonicalGapParams :=
+    pipelineBridgeKit (p := canonicalGapParams)
+  exact
+    P_ne_NP_from_pipeline_kit_formulas
+      (p := canonicalGapParams) (kit := kit) (δ := (1 : Rat)) hδ
+
+/--
+  Та же финальная строка, использующая новую связку Locality-Lift → OPS.
+-/
+theorem P_ne_NP_final_general : P_ne_NP := by
+  have hε : (0 : Rat) < (1 : Rat) := zero_lt_one
+  have kit : PipelineBridgeKit canonicalGapParams :=
+    pipelineBridgeKit (p := canonicalGapParams)
+  exact
+    P_ne_NP_from_pipeline_kit_general_circuits
+      (p := canonicalGapParams) (kit := kit) (ε := (1 : Rat)) hε
 
 end Magnification
 end Pnp3

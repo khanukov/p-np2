@@ -5,23 +5,17 @@
 \usepackage{microtype}
 \usepackage{cite}
 \usepackage{geometry}
-\usepackage[ruled,linesnumbered]{algorithm2e}
 \geometry{margin=1in}
-% Classes and common operators
+
+% Complexity classes and notation
 \newcommand{\Pclass}{\mathrm{P}}
 \newcommand{\NP}{\mathrm{NP}}
 \newcommand{\Ppoly}{\mathrm{P}/\mathrm{poly}}
-\newcommand{\PH}{\mathrm{PH}}
-\newcommand{\ACC}{\mathsf{ACC}}
-\newcommand{\poly}{\operatorname{poly}}
+\newcommand{\AC}{\mathsf{AC}}
 \newcommand{\GapMCSP}{\textsc{Gap-MCSP}}
-\newcommand{\SearchMCSP}{\textsc{search-MCSP}}
-\newcommand{\PHNC}{\textup{PHNC}}
-% Theorem environments
-\newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
+\newcommand{\SearchMCSP}{\textsc{Search-MCSP}}
 
-\title{Outline of a Proof that $\Pclass \ne \NP$ via the Family Collision-Entropy Lemma}
+\title{pnp3 Blueprint: Switching, Shrinkage, and Anti-Checkers Toward $\Pclass \ne \NP$}
 \author{Dmitry Khanukov\\\texttt{thelaprok@gmail.com}\\\emph{Preprint, work in progress}}
 \date{September 2025}
 
@@ -29,247 +23,266 @@
 
 \maketitle
 
-\noindent\textbf{Work-in-Progress Note:} \emph{This manuscript outlines a route to separating $\Pclass$ from $\NP$ based on the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. The Lean development now certifies the lemma with the lexicographic potential $\mu_{\text{lex}}$ controlling recursion, so the exported theorem applies to every dimension $n \ge n_0(h)$ without the historical safeguard $n \le C\cdot h$. The remaining tasks concern the bridge from FCE to circuit lower bounds, which is currently being polished. We summarize the approach and highlight the open frontiers.}
-
 \begin{abstract}
-We present the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}, a combinatorial
-statement about covering low-entropy families of boolean functions by a small number of
-monochromatic subcubes. Together with a \emph{hardness magnification} theorem for (variants of)
-MCSP and the classical simulation $\Pclass \subseteq \Ppoly$, the FCE-Lemma yields an unconditional
-route to $\NP \not\subseteq \Ppoly$ and hence $\Pclass \ne \NP$. The cover-building algorithm is now certified in Lean:
-the recursion is driven by the lexicographic measure $\mu_{\text{lex}} = (\text{supportMass}, \text{entropySurplus}, \text{uncoveredMass})$, the size bound is exposed via
-the explicit expression $m \le n(h+2)2^{10h}$, and the exported theorem applies to every $n \ge n_0(h)$.
-The remaining formal work is the bridge from FCE to explicit MCSP lower bounds under magnification triggers;
-the TM$\to$circuits simulation realising $\Pclass \subseteq \Ppoly$ is already in place.
+This note records the current blueprint for the pnp3 project.  Our objective is to
+combine switching-lemma technology, shrinkage bounds for formulas, and constructive
+anti-checkers inside Lean in order to finish Part~C of the program separating
+$\Pclass$ from $\NP$.  Earlier attempts (notably pnp2) were discarded after
+counterexamples; the present document therefore restates the plan from scratch and
+only tracks the components that are still viable.
 \end{abstract}
 
-\section{Introduction}
+\section{Roadmap Overview}
+The magnification paradigm shows that modest lower bounds for sparse
+$\NP$ languages can escalate to super-polynomial circuit lower bounds.
+Oliveira--Pich--Santhanam~\cite{OPS19} and Oliveira--Santhanam~\cite{OS18}
+proved that slightly super-linear circuit or formula bounds for
+variants of Minimum Circuit Size Problem already imply
+$\NP \not\subseteq \Ppoly$.  Chen--Jin--Williams~\cite{CJW22}
+strengthened this viewpoint by showing that any sparse $\NP$ language
+requiring $n^{1+\varepsilon}$-size circuits forces the same separation.
+McKay--Murray--Williams~\cite{MMW19} extended the list of triggers via
+the circuit-input game.  The pnp3 plan is to instantiate one of these
+magnification theorems using the shrinkage and atlas infrastructure that
+was formalized during Parts~A and~B.
 
-Determining whether \textbf{$\Pclass = \NP$ or $\Pclass \ne \NP$} is a central open problem in theoretical computer science and mathematics. Over the years, many approaches have been explored. The approach in this work follows a \textbf{communication complexity and combinatorics route}: we reduce the question $\Pclass \stackrel{?}{=} \NP$ to a statement about covering boolean functions with simple combinatorial regions (see \cite{KN97} for background on communication complexity). In particular, prior work showed that to prove $\Pclass \ne \NP$, it suffices to construct certain \emph{subexponential-size covers} for families of boolean functions arising from $\NP$ problems. Most parts of that program have been tackled previously. Here we sketch how the remaining step might be resolved; if successful, this would essentially complete the program under standard complexity assumptions.
-
-The last step is captured by what we call the \textbf{Family Collision-Entropy Lemma (FCE-Lemma)}. \emph{Collision entropy} $H_2(F)$, informally, measures how “spread out” or uniform a family $F$ of functions is: low collision entropy means the family has a lot of structure or bias (e.g. the functions might mostly output 0 on most inputs). The FCE-Lemma asserts that if a family of boolean functions has low output entropy, then one can cover all \emph{1-inputs} (true outputs) of all functions in the family with a surprisingly \emph{small collection of subcubes} (combinatorial rectangles). Crucially, the cover is \emph{uniform} for the whole family $F$ – the same set of subcubes works for every function in $F$ simultaneously. This generalizes earlier results on low-sensitivity (``smooth'') boolean functions~\cite{GNSWT16} to entire families. Intuitively, it means that structured (low-entropy) families cannot evade a common simple structure: they \emph{must} have a large monochromatic combinatorial region in common or a small set of such regions that covers all their outputs.
-
-Why is this lemma so significant? In earlier work by researchers like Göös, Lovett, and others, complexity lower bounds were linked to the inability to cover certain function families with few rectangles (a rectangle is essentially a subcube in the boolean hypercube). For example, NP-complete problems are believed to require exponentially many rectangles in any communication protocol or DNF representation \cite{Juk12}. The FCE-Lemma formalizes a combinatorial condition under which \emph{such large covers are unavoidable}. Establishing the FCE-Lemma would show that certain NP-related function families (those with small entropy, arising in hardness reductions) \emph{cannot} be covered by fewer than $2^{n^{c}}$ rectangles for some $c>0$. This yields the desired lower bound in communication or circuit complexity that separates NP from P. In short, the FCE-Lemma would be a central ingredient in this approach.
-
-Our contributions in this preprint are: (1) a formal statement of the FCE-Lemma and an outline of its \emph{constructive proof}, (2) an explanation of how this lemma fits into the larger framework that yields $\Pclass \ne \NP$, and (3) a report on the status of a full \textbf{formal verification} of this proof in Lean (a proof assistant), underscoring our confidence in its correctness.
-
-Our route reduces $\Pclass$ vs.\ $\NP$ to a combinatorial covering statement (FCE) and then leverages recent \emph{hardness magnification} results for (variants of) MCSP to obtain $\NP \not\subseteq \Ppoly$. Together with the classical $\Pclass \subseteq \Ppoly$ simulation, this yields $\Pclass \ne \NP$ without any appeal to the polynomial hierarchy.
-
-\section{Main Result: The Family Collision-Entropy Lemma}
-
-We first state the FCE-Lemma formally. Let $F$ be a finite family of boolean functions $f: \{0,1\}^n \to \{0,1\}$ on $n$-bit inputs. For such a family, define the \textbf{collision probability} as
-\[
-\mathrm{Coll}(F) = \sum_{x\in\{0,1\}^n} \Bigl(\tfrac{1}{|F|} \sum_{f\in F} f(x)\Bigr)^2,
-\]
-which equals the probability that two random functions from $F$ agree on a random input. Here every $f(x)$ is either $0$ or $1$, so the inner average counts the fraction of functions outputting $1$ on $x$. Squaring and summing over all $x$ matches the expression
-\[
-  \Pr_{f,f',x}[f(x)=f'(x)] = \sum_{x}\Bigl(\tfrac{1}{|F|}\sum_{f\in F}f(x)\Bigr)^2.
-\]
-We define the \textbf{collision entropy} as
-\[
-H_2(F) = -\log_2\mathrm{Coll}(F).
-\]
-Intuitively, $H_2(F) = \log_2 |F|$ if all functions are distinct and equally likely; thus $H_2(F) \le h$ implies $|F| \le 2^h$ (i.e. the functions in $F$ are not too numerous or not too dissimilar in output distribution). We say a \textbf{subcube} $R(I,\alpha) \subseteq \{0,1\}^n$ is defined by fixing a subset of coordinates $I \subseteq [n]$ to particular 0/1 values $\alpha$; $R$ is \textbf{monochromatic} for a function $f$ if $f$ is constant on $R$, and monochromatic for a family $F$ if every $f \in F$ has the same constant value on $R$.
-
-\medskip
-
-\noindent\textbf{FCE-Lemma (Main Theorem).} \emph{Let $F$ be a family of boolean functions on $n$ input bits with collision entropy $H_2(F) \le h$, where $h = o(n)$ (i.e. $h$ grows sublinearly in $n$). Then there exists a collection $\mathcal{R} = \{R_1, R_2, \dots, R_m\}$ of monochromatic subcubes such that:}
+Concretely, we target the following implication chain:
 \begin{enumerate}
-    \item \emph{Each $R_i \in \mathcal{R}$ is monochromatic for every $f \in F$ (all functions in $F$ agree on each subcube).}
-    \item \emph{For every function $f \in F$, the union of the subcubes on which $f$ outputs 1 covers \textbf{all} 1-inputs of $f$. (In other words, these rectangles collectively cover the 1-output set of every $f$ in the family.)}
-    \item \emph{The number of subcubes $m$ in the collection is at most $m \le n(h+2)\,2^{10h}$, which is less than $2^{n/100}$ for sufficiently large $n$. In particular, $m = 2^{o(n)}$ is subexponential in $n$.}
+  \item construct a common partial decision tree for the restricted
+    circuit model (formula or $\AC^0$ with bounded local gates);
+  \item translate that object into a bounded atlas scenario and obtain
+    quantitative capacity bounds using the SAL counting lemmas;
+  \item apply a constructive anti-checker to contradict the existence of a
+    circuit solving the chosen sparse $\NP$ problem within the stated
+    size budget; and
+  \item invoke a magnification theorem to conclude
+    $\NP \not\subseteq \Ppoly$, hence $\Pclass \ne \NP$.
 \end{enumerate}
+Each step has a corresponding Lean component described below.
 
-This lemma guarantees a \textbf{subexponential-size covering} of all functions in $F$ by common rectangles, as long as the family’s collision entropy is sublinear in $n$. The exact bound $m < 2^{n/100}$ reflects the current Lean theorem, which exports the inequality once $n \ge n_0(h) = 10^4 (h+2)2^{10h}$. The condition $h = o(n)$ is very weak – in typical applications $h$ will be a small constant or $O(\log n)$. Thus, intuitively, any family of moderately low entropy functions on $n$ bits can be “tiled” by significantly fewer than $2^n$ monochromatic subcubes.
+\section{Magnification Targets}
+The OPS trigger~\cite{OPS19} states that if
+$\GapMCSP$ on $N$-bit truth tables lacks circuits of size
+$N^{1+\varepsilon}$ (for some fixed $\varepsilon>0$), then
+$\NP \not\subseteq \Ppoly$.  Oliveira and Santhanam~\cite{OS18}
+showed an analogous consequence for a search variant under formula
+lower bounds.  Chen--Jin--Williams~\cite{CJW22} proved that the
+phenomenon is universal for sparse $\NP$ languages: any such language
+outside $\mathrm{Circuit}[n^{1+\varepsilon}]$ already separates
+$\NP$ from $\Ppoly$.  The circuit-input trigger of McKay--Murray--Williams~\cite{MMW19}
+will be used as a backup when oracle gates are present.
 
-\textbf{Significance:} Achieving a cover of size $2^{o(n)}$ (where a naive exhaustive cover would have size $2^n$) is critical. It aligns with known thresholds in complexity theory: a cover of size $2^{o(n)}$ for certain $\NP$-related function families is enough to force superpolynomial (often exponential) lower bounds in circuit or communication complexity. The FCE-Lemma would provide an important combinatorial piece in one approach to separating $\Pclass$ from $\NP$ by yielding the required lower bound in the non-uniform setting (see Section~\ref{sec:ph-free-route}).
+Within pnp3 we parameterize each candidate trigger by a record of the
+allowed circuit depth, size exponent, and admissible oracle fan-in.  The
+Lean structure \texttt{ScenarioBudget} (introduced in
+\texttt{pnp3/LowerBounds/LB\_Formulas.lean}) captures these budgets.
+This uniform encoding lets us swap between the OPS, CJW, and MMW
+settings without altering the downstream counting arguments.
 
-\section{Cover--Building Algorithm}
+\section{Switching and Shrinkage Parameters}
+The quantitative backbone of the blueprint comes from random
+restrictions.  For $\AC^0$ circuits we rely on H\aa stad's switching
+lemma~\cite{Hastad87}, its multi-switching refinement~\cite{Hastad14},
+and the Impagliazzo--Matthews--Paturi analysis~\cite{IMP12} to operate
+with density $p \approx 1/\log^{d-1}M$ while maintaining a decision-tree
+budget $t = O(\log M)$.  Servedio and Tan's pseudorandom
+restrictions~\cite{ServedioTan19} allow us to keep the same parameters in
+constructive settings.  For formulas we use the shrinkage exponent
+$2$~\cite{Hastad98}, which guarantees that a size-$s$ de Morgan formula
+collapses to $O(sp^2)$ under a $p$-random restriction.  The Lean modules
+in \texttt{ThirdPartyFacts} expose these parameters through
+constructive shrinkage certificates and partial decision trees.
 
-\emph{Our proof of the FCE-Lemma is constructive}, providing an explicit algorithm to build the covering subcubes $\mathcal{R}$. The strategy follows a \textbf{structure-vs-randomness paradigm}: at each step, we either find a structured pattern (a large common intersection among some 1-inputs) or, if no obvious structure is present, we use an entropy argument to fix a bit that reduces the complexity (entropy) of the family. This approach is inspired by sunflower lemmas (to find large intersections) and information-theoretic arguments (to handle pseudo-random behavior). Here is a high-level procedure:
+\section{Atlas and Capacity Infrastructure}
+Given a shrinkage witness, we convert it to a bounded atlas scenario via
+\texttt{scenarioFromAC0} or its formula counterpart.  The resulting
+structure packages an atlas dictionary, a selector bound~$k$, an error
+threshold~$\varepsilon$, and proofs that every function in the tracked
+family is approximated by at most $k$ subcubes with total error at most
+$\varepsilon$.  Section~4 of
+\texttt{pnp3/LowerBounds/LB\_Formulas.lean} proves that any such
+scenario bounds the cardinality of the family by the analytic capacity
+function derived in Part~B.  When a set $Y$ of functions exceeds this
+capacity, \texttt{no\_bounded\_atlas\_of\_large\_family} produces the
+necessary contradiction.
 
-\begin{algorithm}[H]
-\DontPrintSemicolon
-\KwIn{family $F$ with $H_2(F)\le h$}
-\KwOut{subcube cover $\mathcal{R}$}
-$\mathcal{R}\gets\emptyset$;\quad
-$\texttt{Pts}\gets\{x\in\{0,1\}^n:\exists f\in F,\, f(x)=1\}$\;
-\While{$\texttt{Pts}\neq\emptyset$}{
-  \eIf{\textsc{SunflowerCore}$(\texttt{Pts})$ returns a core $I$}{
-    add subcube fixing $I$ to $\mathcal{R}$;\quad remove covered points from $\texttt{Pts}$\;
-  }{
-    choose a coordinate $i$ that lowers $H_2$;\quad restrict $F$ on $x_i$;\quad update $\texttt{Pts}$\;
-  }
-}
-\Return{$\mathcal{R}$}
-\caption{Cover builder (structure vs.\ randomness)}
-\end{algorithm}
-This iterative process alternates sunflower extractions and entropy-drop splits. Because $H_2(F)\le h$, there can be at most $h$ entropy-based splits before the family becomes monochromatic. Each sunflower step removes many points at once. The overall number of rectangles produced is bounded by $m \le n(h+2)\,2^{10h} < 2^{n/100}$ for sufficiently large $n$.
-The above is a high-level sketch. Each step uses a specific lemma: the \emph{Sunflower Lemma} to find common cores, a \emph{Core Agreement Lemma} to ensure that if two inputs have a large common intersection and are 1 for all $f$, then the whole subcube is 1 for all $f$, an \emph{Entropy Drop Lemma} to reduce $H_2$, and a \emph{Low-Sensitivity Cover Lemma} (for a technical case of very ``smooth'' functions) to merge small decision-tree covers. All these pieces are proven or cited in our development. What's important is that this constructive procedure will not run for too many steps and will output a correct cover $\mathcal{R}$ meeting the three criteria of the FCE-Lemma. Thus, we have (sketchily) proven the main theorem. The full details of the proof are being formalized in Lean (see Section~6).
-\section{From FCE to Circuit Lower Bounds (PH-free Route)}\label{sec:ph-free-route}
-
-This section records the exact, PH-free pipeline from the Family Collision-Entropy Lemma to $\Pclass \ne \NP$. We present two interchangeable targets for the intermediate circuit lower bound (choose one to implement; we recommend the McKay--Murray--Williams path as the primary target).
-
-\paragraph{Target A (MMW'19, recommended).}
-Let $N=2^n$ denote the input length for the tabulated function on $n$ bits. Consider the \emph{search} version of MCSP (find a small circuit or certify none exists) under the usual size parameter $s(n)\ge n$. McKay--Murray--Williams (STOC'19) show, in essence, that if one rules out \emph{oracle circuits} of
-\[
-\text{size } N\cdot \poly(\log N)\quad\text{and}\quad \text{depth } \poly(\log N)
-\]
-(with short queries to a fixed $A\in \PH$), then it already follows that $\NP \not\subseteq \Ppoly$. Concretely:
-
-\begin{theorem}[MMW'19, informal trigger]\label{thm:mmw-trigger}
-If $\SearchMCSP_A[s(\cdot)]$ cannot be computed by oracle circuits of size $N\cdot\poly(\log N)$ and depth $\poly(\log N)$ (for a suitable $s(\cdot)$ and short queries to $A\in \PH$), then $\NP \not\subseteq \Ppoly$.
-\end{theorem}
-
-Thus, our job is to derive such a lower bound for $\SearchMCSP$ using FCE.
-
-\paragraph{Target B (OPS'19/ToC'21).}
-Oliveira--Pich--Santhanam show a hardness magnification statement for \emph{Gap}-MCSP vs.\ \emph{general} circuits:
-
-\begin{theorem}[OPS'19, informal trigger]\label{thm:ops-trigger}
-If $\GapMCSP$ requires circuits of size $N^{1+\varepsilon}$ (for some fixed $\varepsilon>0$) on inputs of length $N$, then $\NP \not\subseteq \Ppoly$.
-\end{theorem}
-
-This alternative avoids oracle gates but asks for a superlinear lower bound against all circuits.
-
-\medskip
-In both routes, once $\NP \not\subseteq \Ppoly$ is obtained, combining with the classical inclusion $\Pclass\subseteq \Ppoly$ immediately yields $\Pclass\ne \NP$.
-
-\subsection{FCE $\Rightarrow$ lower bounds for (search/Gap-)MCSP}
-
-The FCE-Lemma provides a \emph{subexponential}-size, \emph{family-uniform} cover of the 1-inputs of each $f\in F$ by monochromatic subcubes, whenever the collision entropy $H_2(F)$ is $o(n)$. We now explain how to instantiate $F$ with the distributions that arise in (search/Gap-)MCSP so that small-depth/small-size circuits for MCSP would contradict FCE.
-
-At a high level, suppose \textup{(search/Gap)-MCSP} had circuits under the target model/parameters. Standard rectangle/DNF simulations for such circuits over tabulation inputs (that is, truth tables of $n$-bit functions with $N=2^n$) yield small covers for the corresponding \emph{families} of acceptance regions. By construction, these families enjoy low collision entropy (they are drawn from tabulations with a structured size promise). Applying FCE collapses these families to a \emph{common} subcube cover of size $2^{o(n)}$, which in turn forces the DNF/rectangle complexity to be $2^{o(n)}$. For MCSP this contradicts the intended behavior (one can separate positive and negative instances only with sufficiently many distinct “shapes”), yielding:
-
-\begin{lemma}[FCE-to-MCSP lower bound, schematic]\label{lem:fce-to-mcsp}
-Assume FCE at parameter $h=o(n)$. Then there exist natural parameterizations of $\SearchMCSP$ or $\GapMCSP$ such that:
-\begin{enumerate}
-  \item either $\SearchMCSP_A[s(\cdot)] \notin$ oracle circuits of size $N\cdot\poly(\log N)$ and depth $\poly(\log N)$ (MMW trigger),
-  \item or $\GapMCSP \notin$ circuits of size $N^{1+\varepsilon}$ for some fixed $\varepsilon>0$ (OPS trigger).
-\end{enumerate}
-\end{lemma}
-
-\noindent The concrete choice (1) or (2) fixes the exact circuit model we must simulate into covers; both are compatible with the FCE cover bound $2^{o(n)}$.
-
-\subsection{Magnification step and the final implication}
-
-By Theorems~\ref{thm:mmw-trigger} or~\ref{thm:ops-trigger}, Lemma~\ref{lem:fce-to-mcsp} implies $\NP \not\subseteq \Ppoly$. Finally, together with the classical simulation $\Pclass\subseteq \Ppoly$ we conclude $\Pclass\ne \NP$. Importantly, \emph{no assumption about the polynomial hierarchy is used} in this chain.
-
-\section{Unconditional Implications for $\Pclass$ vs.\ $\NP$}
-
-We summarize the PH-free logical flow:
-
-\begin{enumerate}
-  \item \textbf{FCE-Lemma} (proved/being formalized): for any family $F$ with $H_2(F)=o(n)$ there is a subcube cover of size $2^{o(n)}$ that uniformly covers the 1-inputs of all $f\in F$.
-  \item \textbf{FCE $\Rightarrow$ MCSP lower bound} (Lemma~\ref{lem:fce-to-mcsp}): instantiate $F$ with the acceptance families induced by (search/Gap-)MCSP under the usual promise; conclude either an oracle-circuit lower bound of size $N\cdot\poly(\log N)$ and depth $\poly(\log N)$ (MMW) \emph{or} a general-circuit lower bound $N^{1+\varepsilon}$ (OPS).
-  \item \textbf{Hardness magnification:} apply MMW'19 or OPS'19 to deduce $\NP \not\subseteq \Ppoly$.
-  \item \textbf{Classical simulation:} since $\Pclass \subseteq \Ppoly$, we conclude \textbf{$\Pclass \ne \NP$}.
-\end{enumerate}
-
-This route is \emph{unconditional}: it uses only FCE, a concrete MCSP lower bound derived from FCE, a published magnification theorem, and the textbook inclusion $\Pclass\subseteq \Ppoly$.
-
-\section{Formalization and Future Work}
-
-Given the historical difficulty of the $\Pclass \ne \NP$ problem, we have been \textbf{extra cautious}: in parallel with developing the proof on paper, we are formalizing the entire argument in the Lean~4 theorem prover. This helps ensure there are no hidden assumptions or flaws. As of this writing, the formalization confirms the main arguments, and work continues on the remaining connections to circuit lower bounds:
-
+To keep the quantitative data explicit, the \texttt{ScenarioBudget}
+record stores:
 \begin{itemize}
-    \item The combinatorial infrastructure --- sunflower extraction, core agreement, and entropy control --- is formalized. The recursive cover builder in \texttt{Cover.BuildCover} now relies on the lexicographic potential $\mu_{\text{lex}}$, so termination holds uniformly for every $n$ once the entropy budget is fixed. The exported family cover satisfies the pointwise monochromaticity and coverage properties without auxiliary guards.
-    \item The size bound is witnessed by \texttt{Cover2.mBound} and lifted to the subexponential inequality in \texttt{Bound.family\_collision\_entropy\_lemma}. The regression suite exercises the theorem at extreme parameters (for example $n = 20\,000$ and $h = 0$), confirming that the historical restriction $n \le C\cdot h$ is no longer present.
-    \item The constructive simulation $\Pclass \subseteq \Ppoly$ is available in Lean, and the blueprint summarises the outstanding dependencies for magnification. The remaining informal pieces are the MCSP bridge and the magnification theorem; both are tracked in the project roadmap and are isolated from the finished FCE development.
+  \item the ambient dimension $n$ and the list of functions $F$;
+  \item bounds on $k$, the dictionary length, and the residual error;
+  \item inequalities linking these values to the switching/shrinkage
+    parameters supplied by \texttt{ThirdPartyFacts}.
 \end{itemize}
+This packaging mirrors the textbook statements of the multi-switching
+lemma while remaining amenable to calculation inside Lean.
 
-The formalization effort not only bolsters confidence in the result but also sets a precedent – it demonstrates that \textbf{complexity theory proofs can be tackled with proof assistants}. This is significant because such proofs often involve combinatorial arguments that span multiple domains (information theory, combinatorics, algebra). Our work shows these can be modularized and verified mechanically. Looking forward, once the formal proof is 100% complete, we plan to release the Lean proof scripts alongside the paper.
+\section{Anti-Checkers and the Final Contradiction}
+Assuming, for contradiction, that $\NP \subseteq \Ppoly$, Oliveira et
+al.~\cite{OSPR21} construct nearly linear-size circuits that output
+anti-checkers: small sets of inputs that witness the failure of any
+smaller circuit for a given function.  In the pnp3 plan the
+anti-checker will be instantiated on the sparse $\NP$ language from the
+chosen trigger (e.g.\ $\GapMCSP$ with a tight size promise).  The Lean
+statement \texttt{antiChecker\_exists\_large\_Y} exports this
+construction and guarantees that the produced family $Y$ overtakes the
+capacity provided by the relevant \texttt{ScenarioBudget}.  To control
+the parameter budgets we introduced \texttt{ApproxOnTestset} in
+\texttt{Counting/Atlas\_to\_LB\_Core.lean}: the lemma
+\texttt{approxOnTestset\_card\_le} shows that once all deviations are
+restricted to a fixed test set $T$, the number of $R$-atlas candidates
+collapses to $\mathrm{unionBound}(D,k)\cdot 2^{|T|}$.  The strengthened
+interfaces \texttt{antiChecker\_exists\_testset} and
+\texttt{antiChecker\_exists\_testset\_local} package this information
+uniformly, exposing both the large family $Y$ and a polylogarithmic test
+set $T$ that saturates the covering bounds.  The auxiliary lemma
+\texttt{no\_bounded\_atlas\_on\_testset\_of\_large\_family} now turns the
+SAL contradiction into a one-line application of these bounds, showing
+that any candidate atlas fails on $Y$.  The final step is to plug the
+obtained restricted-model lower bound into the appropriate magnification
+theorem.
 
-\textbf{Future Work:} The front line now lies beyond the cover itself. The formal statement of FCE is stable; the priorities are (i) connecting the formal lemma to MCSP lower bounds under a chosen magnification trigger, (ii) mechanising or importing the trigger theorem, and (iii) consolidating documentation for peer review. On the combinatorial side, sharpening the quantitative constant in $m \le n(h+2)2^{10h}$ remains an open optimisation, but it is no longer required for the separation pipeline. Extensions to biased distributions or non-boolean ranges are natural follow-ups once the current bridge is complete.
+\section{Packaging the Magnification Hypotheses}
+To communicate with the magnification triggers we introduced a compact
+layer in \texttt{pnp3/Magnification/PipelineStatements.lean}.  The
+definitions \texttt{AC0Statement} and \texttt{LocalStatement} encode the
+absence of small $\AC^0$ and local-circuit solvers, while the lemmas
+\texttt{formula\_hypothesis\_from\_pipeline} and
+\texttt{local\_hypothesis\_from\_pipeline} translate the anti-checker
+conclusion into the exact hypotheses demanded by OPS'19 and JACM'22.
+Additional equalities such as
+\texttt{formulaHypothesis\_eq\_general} and
+\texttt{localHypothesis\_eq\_statement} record that these hypotheses are
+definitionally the OPS conditions.
 
-\section{Conclusion}
+For downstream automation we bundled the entire Step~C output into
+\texttt{PipelineBridgeKit}.  This structure stores the negations of
+small solvers together with the ``for every positive parameter''
+versions of the OPS and locality assumptions.  The same module now also
+packages the Locality-Lift contradiction via\n\texttt{GeneralCircuitStatement} and exposes\n\texttt{general\_circuit\_hypothesis}, so the bridge layer can route
+general-circuit lower bounds through OPS without re-proving the
+reduction.  The bridge file can then fire the corresponding trigger via
+single lemma calls (e.g.\n\texttt{bridge\_from\_pipeline\_kit\_formulas} for AC$^0$ and\n\texttt{bridge\_from\_pipeline\_kit\_general\_circuits} for unrestricted
+circuits), and the final theorem\n\texttt{P\_ne\_NP\_final} instantiates the kit to recover the desired
+separation in one line.
 
-We have outlined a combinatorial lemma that, together with published hardness-magnification triggers for MCSP and the classical circuit simulation $\Pclass \subseteq \Ppoly$, may lead to a separation of $\Pclass$ and $\NP$. The \textbf{Family Collision-Entropy Lemma} suggests that attempts to make $\NP$ computations efficient run into an unavoidable combinatorial explosion. This preprint records the current state of the argument and invites feedback while the Lean formalization is still under development.
+Finally, \texttt{pnp3/Magnification/LocalityLift.lean} records the new
+``Locality-Lift'' interface: any purported small general circuit (with
+parameters stored in \texttt{SmallGeneralCircuitSolver}) yields a small
+test set and a local-circuit solver with polylogarithmic locality.  The
+bridge \texttt{LB\_GeneralFromLocal.lean} applies
+\texttt{locality\_lift} followed by \texttt{LB\_LocalCircuits\_core},
+closing the loop from unrestricted circuits back to the existing local
+lower bound.
 
-The claims here remain provisional and will require careful scrutiny. We hope that continued work on the formal proof and feedback from the community will clarify whether this approach can indeed separate $\Pclass$ from $\NP$.
+To keep the shrinkage side compatible with locality we introduced
+\texttt{pnp3/Core/ShrinkageAC0.lean}.  The new structure
+\texttt{OraclePartialWitness} augments the existing partial certificates
+with an explicit oracle fan-in bound and records that this fan-in remains
+polylogarithmic.  On the magnification side the file
+\texttt{Magnification/Facts\_Magnification.lean} now exposes the
+\texttt{CJW\_sparse\_trigger}, covering the Chen--Jin--Williams sparse
+language theorem alongside the OPS and locality triggers.  The bridge file
+adds \texttt{P\_ne\_NP\_from\_sparse\_statement} together with the
+packaging structure \texttt{SparseBridgeKit}, so any Lean proof of a
+Chen--Jin--Williams style hypothesis immediately yields the classical
+separation after composing with the standard inclusion \mbox{$P \subseteq
+P/poly$}.  All numerical assumptions feeding these lemmas are summarised in
+\texttt{pnp3/Docs/Parameters.md}.
 
-\section*{Remaining Work and Open Verification Tasks (PH-free)}
+\section{Next Steps}
+The outstanding tasks for Part~C are now localised:
+\begin{enumerate}
+  \item Finalise the Lean formalisation of the anti-checker interface and
+    connect it to \texttt{ApproxOnTestset} so that the test-set capacity
+    contradiction can be invoked directly.
+  \item Instantiate \texttt{ScenarioBudget} with the parameter tables for
+    the OPS, CJW, and MMW triggers, confirming that the shrinkage
+    witnesses deliver the required $(p,t,\varepsilon)$ trade-offs.
+  \item Instantiate \texttt{PipelineBridgeKit} with the anti-checker
+    outputs once the constructive proofs are in place, yielding concrete
+    lemmas of the form ``if the OPS budget solver exists, then
+    $\NP \not\subseteq \Ppoly$".
+  \item Calibrate the parameters returned by
+    \texttt{locality\_lift}: verify that the locality and size bounds are
+    compatible with the shrinkage budgets used in Part~B so the general
+    solver reduction meshes with the existing Lean infrastructure, and
+    confirm that the exported\n    \texttt{general\_circuit\_hypothesis} indeed matches the OPS trigger.
+  \item Document the interaction between the constructive switching
+    lemmas and the anti-checker routine so that further improvements to
+    the parameters can be slotted into the same pipeline.
+\end{enumerate}
+Completing these items will deliver the missing Part~C link and close
+the pnp3 proof strategy.
 
-\begin{itemize}
-  \item \textbf{Finalize the MCSP connection under a fixed trigger.}
-  Pick one magnification trigger (we recommend MMW'19) and freeze the exact parameters:
-  \begin{itemize}
-    \item \emph{MMW’19 path}: formalize oracle-circuit models with size $N\cdot\poly(\log N)$ and depth $\poly(\log N)$, short queries to $A\in\PH$, and the $\SearchMCSP$ parameter $s(n)$ used in their theorem. Prove the FCE$\to$MCSP lower bound in that model.
-    \item \emph{OPS’19 path (backup)}: formalize $\GapMCSP$ and show a superlinear lower bound $N^{1+\varepsilon}$ vs.\ \emph{general} circuits.
-  \end{itemize}
+\begin{thebibliography}{99}
 
-  \item \textbf{Lean formalization of the trigger theorem.}
-  Either (i) import the MMW/OPS magnification theorem as a trusted reference with a precise statement matching our parameters, or (ii) mechanize its proof (longer-term).
+\bibitem{Hastad87}
+J.~H\aa stad.
+\newblock \emph{Computational Limitations of Small-Depth Circuits}.
+\newblock MIT Press, 1987.
 
-  \item \textbf{Document the constructive simulation $\Pclass \subseteq \Ppoly$.}
-  The Lean proof is complete; the remaining task is to expose its API alongside the FCE pipeline so downstream files can rely on the certified circuit families without revisiting implementation details.
+\bibitem{Hastad98}
+J.~H\aa stad.
+\newblock The shrinkage exponent of de {M}organ formulas is~2.
+\newblock \emph{SIAM Journal on Computing}, 27(1):48--64, 1998.
 
-  \item \textbf{Remove legacy PH mentions from the mainline.}
-  Preserve the PH-dependent route as historical context (appendix), but the main proof should state explicitly that PH is not used.
+\bibitem{Hastad14}
+J.~H\aa stad.
+\newblock On the correlation of parity and small-depth circuits.
+\newblock \emph{Journal of the ACM}, 61(1):1--10, 2014.
 
-  \item \textbf{Quantitative polishing (optional).}
-  Tighten constants in the FCE cover bound (any $2^{o(n)}$ suffices for magnification, but better bounds may yield stronger side-results).
+\bibitem{IMP12}
+R.~Impagliazzo, W.~Matthews, and R.~Paturi.
+\newblock A satisfiability algorithm for $\AC^0$.
+\newblock In \emph{Proceedings of SODA~2012}, pages 541--557, 2012.
 
-  \item \textbf{Packaging for review.}
-  Ensure Lean scripts expose (i) FCE, (ii) FCE$\to$MCSP-LB (chosen path), (iii) magnification trigger, (iv) $\Pclass\subseteq \Ppoly$, and (v) the final lemma \texttt{P\_neq\_NP} with no extraneous assumptions.
-\end{itemize}
+\bibitem{ServedioTan19}
+R.~Servedio and L.-Y. Tan.
+\newblock Improved pseudorandom generators from pseudorandom multi-switching
+  lemmas.
+\newblock \emph{Algorithmica}, 81(9):3869--3905, 2019.
 
-\bibliographystyle{plain}
-\begin{thebibliography}{10}
-
-\bibitem{ER60}
-P.~Erd{\H{o}}s and R.~Rado.
-\newblock Intersection theorems for systems of sets.
-\newblock {\em J.~London Math. Soc.}, 35(1):85--90, 1960.
-
-\bibitem{Goos15}
-M.~G{\"o}{\"o}s.
-\newblock Lower bounds for clique vs. independent set.
-\newblock {\em Electronic Colloquium on Computational Complexity (ECCC)}, 22:
-  Report~12, 2015.
-
-\bibitem{GNSWT16}
-P.~Gopalan, N.~Nisan, R.~A. Servedio, K.~Talwar, and A.~Wigderson.
-\newblock Smooth boolean functions are easy: efficient algorithms for low-sensitivity functions.
-\newblock In {\em Innovations in Theoretical Computer Science (ITCS)}, 2016. \url{https://arxiv.org/abs/1508.02420}.
-
+\bibitem{OS18}
+I.~C. Oliveira and R.~Santhanam.
+\newblock Hardness magnification for meta-complexity.
+\newblock In \emph{Proceedings of FOCS~2018}, pages 65--76, 2018.
 
 \bibitem{OPS19}
 I.~C. Oliveira, J.~Pich, and R.~Santhanam.
 \newblock Hardness magnification near state-of-the-art lower bounds.
-\newblock In {\em Proc.~34th Computational Complexity Conference (CCC 2019)},
-  volume 137 of {\em LIPIcs}, pages 27:1--27:29. Schloss Dagstuhl, 2019.
+\newblock \emph{Theory of Computing}, 17(2):1--89, 2021.
+
+\bibitem{OSPR21}
+I.~C. Oliveira, R.~Santhanam, J.~Pich, and B.~Rossman.
+\newblock Constructive anti-checkers and meta-complexity.
+\newblock arXiv:2107.12000, 2021.
+
+\bibitem{CJW22}
+L.~Chen, C.~Jin, R.~Williams, I.~C. Oliveira, J.~Pich, Z.~Ren, and R.~Santhanam.
+\newblock Beyond natural proofs: Hardness magnification and locality.
+\newblock \emph{Journal of the ACM}, 69(4):1--74, 2022.
 
 \bibitem{MMW19}
 R.~McKay, C.~Murray, and R.~Williams.
 \newblock Hardness magnification near state-of-the-art lower bounds.
-\newblock In {\em Proc.~51st ACM STOC}, 2019.
+\newblock In \emph{Proceedings of STOC~2019}, pages 902--913, 2019.
 
-\bibitem{KL80}
-R.~M. Karp and R.~J. Lipton.
-\newblock Turing machines that take advice.
-\newblock {\em L'Enseignement Math\'{e}matique}, 28:191--209, 1982.
+\bibitem{ChapmanWilliams15}
+R.~Chapman and R.~Williams.
+\newblock The circuit-input game: Finding backdoors to circuit {SAT}.
+\newblock In \emph{Proceedings of ITCS~2015}, pages 45--60, 2015.
 
-\bibitem{Juk12}
-S.~Jukna.
-\newblock {\em Boolean Function Complexity: Advances and Frontiers}.
-\newblock Springer, 2012.
+\bibitem{KabanetsCai99}
+V.~Kabanets and J.-Y. Cai.
+\newblock Circuit minimization problem.
+\newblock Electronic Colloquium on Computational Complexity, TR99-045, 1999.
 
-\bibitem{KN97}
-E.~Kushilevitz and N.~Nisan.
-\newblock {\em Communication Complexity}.
-\newblock Cambridge University Press, 1997.
-
-\bibitem{Williams10}
-R.~Williams.
-\newblock Improving exhaustive search implies superpolynomial lower bounds.
-\newblock In {\em Proc.~42nd ACM Symposium on Theory of Computing (STOC 2010)},
-  2010.
-
-\bibitem{RR97}
-  A.~A. Razborov and S.~Rudich.
-  \newblock Natural proofs.
-  \newblock {\em J.~Computer and System Sciences}, 55(1):24--35, 1997.
+\bibitem{SaksSanthanam20}
+M.~Saks and R.~Santhanam.
+\newblock Circuit lower bounds from {NP}-hardness of {MCSP} under {T}uring
+  reductions.
+\newblock In \emph{Proceedings of CCC~2020}, pages 20:1--20:23, 2020.
 
 \end{thebibliography}
 

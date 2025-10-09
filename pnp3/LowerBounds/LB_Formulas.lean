@@ -4,6 +4,7 @@ import Mathlib.Tactic
 import Core.Atlas
 import Core.BooleanBasics
 import Core.SAL_Core
+import Core.ShrinkageWitness
 import Counting.Atlas_to_LB_Core
 import Counting.Count_EasyFuncs
 import ThirdPartyFacts.LeafBudget
@@ -260,6 +261,54 @@ noncomputable def scenarioFromCommonPDT
     exact ⟨k, BoundedAtlasScenario.ofCommonPDT (C := C) k hlen hε0 hε1⟩
 
 /--
+  Первая компонента пары в `scenarioFromCommonPDT` совпадает с полем `k`
+  построенного сценария.  Далее мы будем активно использовать это
+  переписывание, чтобы переносить численные границы на длину списков
+  селекторов.
+-/
+@[simp]
+lemma scenarioFromCommonPDT_k_eq
+    {n : Nat} {F : Core.Family n}
+    (C : Core.CommonPDT n F)
+    (hε0 : (0 : Core.Q) ≤ C.epsilon)
+    (hε1 : C.epsilon ≤ (1 : Core.Q) / 2) :
+    (scenarioFromCommonPDT (n := n) (F := F) (C := C) hε0 hε1).2.k =
+      (scenarioFromCommonPDT (n := n) (F := F) (C := C) hε0 hε1).1 := by
+  classical
+  unfold scenarioFromCommonPDT
+  set witness :=
+      ThirdPartyFacts.leaf_budget_from_commonPDT
+        (n := n) (F := F) (C := C) with hwitness
+  set k := Classical.choose witness with hk
+  simp [witness, hk, BoundedAtlasScenario.ofCommonPDT]
+
+/--
+  Версия построения сценария напрямую из частичного свидетельства: сначала
+  переводим его в `CommonPDT`, затем применяем предыдущую конструкцию.
+-/
+noncomputable def scenarioFromPartialCertificate
+    {n : Nat} {F : Core.Family n} {ℓ : Nat}
+    (C : Core.PartialCertificate n ℓ F)
+    (hε0 : (0 : Core.Q) ≤ C.epsilon)
+    (hε1 : C.epsilon ≤ (1 : Core.Q) / 2) :
+    Σ' _ : Nat, BoundedAtlasScenario n :=
+  by
+    classical
+    have h0 : (0 : Core.Q) ≤ (Core.PartialCertificate.toCommonPDT
+        (n := n) (ℓ := ℓ) (F := F) C).epsilon := by
+      change (0 : Core.Q) ≤ C.epsilon
+      exact hε0
+    have h1 : (Core.PartialCertificate.toCommonPDT
+        (n := n) (ℓ := ℓ) (F := F) C).epsilon ≤ (1 : Core.Q) / 2 := by
+      change C.epsilon ≤ (1 : Core.Q) / 2
+      exact hε1
+    exact
+      scenarioFromCommonPDT
+        (n := n) (F := F)
+        (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C)
+        h0 h1
+
+/--
   Полезная граница на параметр `k`, возвращаемый конструкцией
   `scenarioFromCommonPDT`.  Он не превышает `2^{depthBound}` — число, которое
   ограничивает количество листьев исходного PDT.  Именно это значение
@@ -369,6 +418,112 @@ lemma scenarioFromCommonPDT_dictLen_le_pow
   simp [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
     Core.CommonPDT.toAtlas] at hbound'
   exact hbound'
+
+/--
+  Верхняя граница на параметр `k` для сценария, построенного из частичного
+  свидетельства.
+-/
+lemma scenarioFromPartialCertificate_k_le_pow
+    {n : Nat} {F : Core.Family n} {ℓ : Nat}
+    (C : Core.PartialCertificate n ℓ F)
+    (hε0 : (0 : Core.Q) ≤ C.epsilon)
+    (hε1 : C.epsilon ≤ (1 : Core.Q) / 2) :
+    (scenarioFromPartialCertificate (n := n) (F := F) (ℓ := ℓ)
+        (C := C) hε0 hε1).1
+      ≤ Nat.pow 2 (C.depthBound + ℓ) :=
+  by
+    classical
+    have hcommon := scenarioFromCommonPDT_k_le_pow
+      (n := n) (F := F)
+      (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C)
+      (hε0 := by
+        change (0 : Core.Q) ≤ C.epsilon
+        exact hε0)
+      (hε1 := by
+        change C.epsilon ≤ (1 : Core.Q) / 2
+        exact hε1)
+    have hrewrite : Nat.pow 2
+        (Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C).depthBound
+          = Nat.pow 2 (C.depthBound + ℓ) := by
+      change Nat.pow 2 (C.depthBound + ℓ) = Nat.pow 2 (C.depthBound + ℓ)
+      exact rfl
+    have htarget : (scenarioFromCommonPDT (n := n) (F := F)
+        (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C)
+        (hε0 := by
+          change (0 : Core.Q) ≤ C.epsilon
+          exact hε0)
+        (hε1 := by
+          change C.epsilon ≤ (1 : Core.Q) / 2
+          exact hε1)).1
+        ≤ Nat.pow 2 (C.depthBound + ℓ) :=
+      Eq.subst
+        (motive := fun s =>
+          (scenarioFromCommonPDT (n := n) (F := F)
+              (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ)
+                (F := F) C)
+              (hε0 := by
+                change (0 : Core.Q) ≤ C.epsilon
+                exact hε0)
+              (hε1 := by
+                change C.epsilon ≤ (1 : Core.Q) / 2
+                exact hε1)).1
+            ≤ s)
+        hrewrite hcommon
+    -- Переводим доказательство обратно к сценарию из частичного свидетельства.
+    unfold scenarioFromPartialCertificate
+    exact htarget
+
+/-- Длина словаря в сценарии из частичного свидетельства контролируется тем же образом. -/
+lemma scenarioFromPartialCertificate_dictLen_le_pow
+    {n : Nat} {F : Core.Family n} {ℓ : Nat}
+    (C : Core.PartialCertificate n ℓ F)
+    (hε0 : (0 : Core.Q) ≤ C.epsilon)
+    (hε1 : C.epsilon ≤ (1 : Core.Q) / 2) :
+    Counting.dictLen
+        (scenarioFromPartialCertificate (n := n) (F := F) (ℓ := ℓ)
+            (C := C) hε0 hε1).2.atlas.dict
+      ≤ Nat.pow 2 (C.depthBound + ℓ) :=
+  by
+    classical
+    have hcommon := scenarioFromCommonPDT_dictLen_le_pow
+      (n := n) (F := F)
+      (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C)
+      (hε0 := by
+        change (0 : Core.Q) ≤ C.epsilon
+        exact hε0)
+      (hε1 := by
+        change C.epsilon ≤ (1 : Core.Q) / 2
+        exact hε1)
+    have hrewrite : Nat.pow 2
+        (Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C).depthBound
+          = Nat.pow 2 (C.depthBound + ℓ) := by
+      change Nat.pow 2 (C.depthBound + ℓ) = Nat.pow 2 (C.depthBound + ℓ)
+      exact rfl
+    have htarget : Counting.dictLen
+        (scenarioFromCommonPDT (n := n) (F := F)
+            (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C)
+            (hε0 := by
+              change (0 : Core.Q) ≤ C.epsilon
+              exact hε0)
+            (hε1 := by
+              change C.epsilon ≤ (1 : Core.Q) / 2
+              exact hε1)).2.atlas.dict
+        ≤ Nat.pow 2 (C.depthBound + ℓ) :=
+      Eq.subst
+        (motive := fun s =>
+          Counting.dictLen
+            (scenarioFromCommonPDT (n := n) (F := F)
+                (C := Core.PartialCertificate.toCommonPDT (n := n) (ℓ := ℓ) (F := F) C)
+                (hε0 := by
+                  change (0 : Core.Q) ≤ C.epsilon
+                  exact hε0)
+                (hε1 := by
+                  change C.epsilon ≤ (1 : Core.Q) / 2
+                  exact hε1)).2.atlas.dict
+            ≤ s)
+        hrewrite hcommon
+    unfold scenarioFromPartialCertificate
+    exact htarget
 
 /--
   Версия критерия несовместимости, заточенная под shrinkage: если для
@@ -506,6 +661,84 @@ noncomputable def scenarioFromShrinkage
         (hε0 := hε0')
         (hε1 := hε1')
 
+@[simp]
+lemma scenarioFromShrinkage_family_eq
+    {n : Nat} (S : Core.Shrinkage n)
+    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
+    (scenarioFromShrinkage (n := n) S hε0 hε1).2.family = S.F := by
+  classical
+  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε0
+  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε1
+  have hfamily :=
+    scenarioFromCommonPDT_family
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hε0') (hε1 := hε1')
+  change
+    (scenarioFromCommonPDT
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.family = S.F
+    at hfamily
+  change
+    (scenarioFromCommonPDT
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.family = S.F
+  exact hfamily
+
+@[simp]
+lemma scenarioFromShrinkage_epsilon_eq
+    {n : Nat} (S : Core.Shrinkage n)
+    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
+    (scenarioFromShrinkage (n := n) S hε0 hε1).2.atlas.epsilon = S.ε := by
+  classical
+  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε0
+  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε1
+  have heps :=
+    scenarioFromCommonPDT_epsilon
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hε0') (hε1 := hε1')
+  change
+    (scenarioFromCommonPDT
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.atlas.epsilon = S.ε
+    at heps
+  change
+    (scenarioFromCommonPDT
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.atlas.epsilon = S.ε
+  exact heps
+
+/--
+  Первая компонента пары `scenarioFromShrinkage` совпадает с полем `k`
+  внутри построенного сценария.  Это напрямую следует из предыдущей леммы
+  для `scenarioFromCommonPDT`.
+-/
+@[simp]
+lemma scenarioFromShrinkage_k_eq
+    {n : Nat} (S : Core.Shrinkage n)
+    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
+    (scenarioFromShrinkage (n := n) S hε0 hε1).2.k =
+      (scenarioFromShrinkage (n := n) S hε0 hε1).1 := by
+  classical
+  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε0
+  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    dsimp [Core.Shrinkage.commonPDT_epsilon]
+    exact hε1
+  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_epsilon]
+    using
+      (scenarioFromCommonPDT_k_eq
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1'))
+
 /--
   Специализация к случаю AC⁰: из shrinkage-конструкции, предоставленной
   внешним фактом, автоматически получаем ограниченный сценарий.  Лемма
@@ -518,61 +751,50 @@ noncomputable def scenarioFromAC0
     Σ' _ : Nat, BoundedAtlasScenario params.n :=
   by
     classical
-    let shrinkWitness := ThirdPartyFacts.shrinkage_for_AC0 params F
-    let t := Classical.choose shrinkWitness
-    let rest₁ := Classical.choose_spec shrinkWitness
-    let ε := Classical.choose rest₁
-    let rest₂ := Classical.choose_spec rest₁
-    let S := Classical.choose rest₂
-    have hspec := Classical.choose_spec rest₂
-    have hF : S.F = F := hspec.1
-    have hchain := hspec.2
-    have ht : S.t = t := hchain.1
-    have hchain' := hchain.2
-    have hε : S.ε = ε := hchain'.1
-    have hchain'' := hchain'.2
-    have htBound : t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := hchain''.1
-    have hchain''' := hchain''.2
-    have hε0 : (0 : Core.Q) ≤ ε := hchain'''.1
-    have hεBound : ε ≤ (1 : Core.Q) / (params.n + 2) := hchain'''.2
-    let hε' : ε = S.ε := hε.symm
-    have hε_le_half_base :=
-      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
-        params.n (ε := ε) hεBound
-    have hε_le_half : S.ε ≤ (1 : Core.Q) / 2 := hε' ▸ hε_le_half_base
-    have hε_nonneg : (0 : Core.Q) ≤ S.ε := hε' ▸ hε0
+    let S := ThirdPartyFacts.certificate_from_AC0 params F
+    let hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
+      (params := params) (F := F)
+    let hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
+      (params := params) (F := F)
     let base :=
-      scenarioFromCommonPDT
-        (n := params.n) (F := S.F) (C := S.commonPDT)
-        (hε0 := by
-          have htmp := hε_nonneg
-          change (0 : Core.Q) ≤ S.commonPDT.epsilon
-          dsimp [Core.Shrinkage.commonPDT_epsilon]
-          exact htmp)
-        (hε1 := by
-          have htmp := hε_le_half
-          change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
-          dsimp [Core.Shrinkage.commonPDT_epsilon]
-          exact htmp)
-    have base_family : base.2.family = S.F := by
-      simp [base, scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT]
+      scenarioFromShrinkage (n := params.n) (S := S) hε0 hε1
+    have hFamily : base.2.family = S.F :=
+      scenarioFromShrinkage_family_eq
+        (n := params.n) (S := S) hε0 hε1
+    have hSF : S.F = F :=
+      ThirdPartyFacts.certificate_from_AC0_family
+        (params := params) (F := F)
     refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
     ·
-      have hworksBase : WorksFor base.2.atlas S.F := by
-        have htmp := base.2.works
-        simp [base_family] at htmp
-        exact htmp
-      exact hF ▸ hworksBase
+      have hworksS : WorksFor base.2.atlas S.F :=
+        Eq.subst (motive := fun fam => WorksFor base.2.atlas fam)
+          (Eq.symm hFamily) base.2.works
+      exact Eq.subst (motive := fun fam => WorksFor base.2.atlas fam)
+        hSF hworksS
     · intro f hf
-      have hfS : f ∈ S.F := hF ▸ hf
-      have hfBase : f ∈ base.2.family := by
-        have htmp := hfS
-        simp [base_family] at htmp
-        exact htmp
-      have hbounded := base.2.bounded f hfBase
-      have htmp := hbounded
-      simp [base_family] at htmp
-      exact htmp
+      have hfS : f ∈ S.F :=
+        Eq.subst (motive := fun fam => f ∈ fam) (Eq.symm hSF) hf
+      have hfBase : f ∈ base.2.family :=
+        Eq.subst (motive := fun fam => f ∈ fam) (Eq.symm hFamily) hfS
+      exact base.2.bounded f hfBase
+
+/--
+  Первая компонента пары `scenarioFromAC0` совпадает с параметром `k` внутри
+  построенного сценария.  Это упрощает перенос численных оценок на поле `k`.
+-/
+@[simp]
+lemma scenarioFromAC0_k_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    (scenarioFromAC0 params F).2.k = (scenarioFromAC0 params F).1 := by
+  classical
+  unfold scenarioFromAC0
+  set S := ThirdPartyFacts.certificate_from_AC0 params F
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
+    (params := params) (F := F)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
+    (params := params) (F := F)
+  simp [S, hε0, hε1, scenarioFromShrinkage_k_eq]
 
 /-- Семейство функций в сценарии, построенном из факта `AC⁰ → shrinkage`,
   совпадает с исходным списком `F`.  Это удобное переписывание для дальнейших
@@ -584,18 +806,6 @@ lemma scenarioFromAC0_family_eq
     (scenarioFromAC0 params F).2.family = F := by
   classical
   unfold scenarioFromAC0
-  set shrinkWitness := ThirdPartyFacts.shrinkage_for_AC0 params F
-  set t := Classical.choose shrinkWitness
-  set rest₁ := Classical.choose_spec shrinkWitness
-  set ε := Classical.choose rest₁
-  set rest₂ := Classical.choose_spec rest₁
-  set S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  rcases hspec with ⟨hF, hchain⟩
-  rcases hchain with ⟨ht, hchain⟩
-  rcases hchain with ⟨hε, hchain⟩
-  rcases hchain with ⟨htBound, hchain⟩
-  rcases hchain with ⟨hε0, hεBound⟩
   simp
 
 /--
@@ -609,29 +819,15 @@ noncomputable def scenarioFromLocalCircuit
     Σ' _ : Nat, BoundedAtlasScenario params.n :=
   by
     classical
-    let shrinkWitness := ThirdPartyFacts.shrinkage_for_localCircuit params F
-    let t := Classical.choose shrinkWitness
-    let rest₁ := Classical.choose_spec shrinkWitness
-    let ε := Classical.choose rest₁
-    let rest₂ := Classical.choose_spec rest₁
-    let S := Classical.choose rest₂
-    have hspec := Classical.choose_spec rest₂
-    have hF : S.F = F := hspec.1
-    have hchain := hspec.2
-    have ht : S.t = t := hchain.1
-    have hchain' := hchain.2
-    have hε : S.ε = ε := hchain'.1
-    have hchain'' := hchain'.2
-    have htBound : t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) := hchain''.1
-    have hchain''' := hchain''.2
-    have hε0 : (0 : Core.Q) ≤ ε := hchain'''.1
-    have hεBound : ε ≤ (1 : Core.Q) / (params.n + 2) := hchain'''.2
-    let hε' : ε = S.ε := hε.symm
-    have hε_le_half_base :=
-      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
-        params.n (ε := ε) hεBound
-    have hε_le_half : S.ε ≤ (1 : Core.Q) / 2 := hε' ▸ hε_le_half_base
-    have hε_nonneg : (0 : Core.Q) ≤ S.ε := hε' ▸ hε0
+    let witness := ThirdPartyFacts.localCircuitWitness params F
+    let S := witness.shrinkage
+    have hF : S.F = F := witness.family_eq
+    have hε_le_half : S.ε ≤ (1 : Core.Q) / 2 := by
+      have hbase := witness.epsilon_le_inv
+      have hhalf := ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
+        params.n (ε := S.ε) hbase
+      exact hhalf
+    have hε_nonneg : (0 : Core.Q) ≤ S.ε := witness.epsilon_nonneg
     let base :=
       scenarioFromCommonPDT
         (n := params.n) (F := S.F) (C := S.commonPDT)
@@ -673,19 +869,9 @@ lemma scenarioFromLocalCircuit_family_eq
     (scenarioFromLocalCircuit params F).2.family = F := by
   classical
   unfold scenarioFromLocalCircuit
-  set shrinkWitness := ThirdPartyFacts.shrinkage_for_localCircuit params F
-  set t := Classical.choose shrinkWitness
-  set rest₁ := Classical.choose_spec shrinkWitness
-  set ε := Classical.choose rest₁
-  set rest₂ := Classical.choose_spec rest₁
-  set S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  rcases hspec with ⟨hF, hchain⟩
-  rcases hchain with ⟨ht, hchain⟩
-  rcases hchain with ⟨hε, hchain⟩
-  rcases hchain with ⟨htBound, hchain⟩
-  rcases hchain with ⟨hε0, hεBound⟩
-  simp
+  set witness := ThirdPartyFacts.localCircuitWitness params F
+  set S := witness.shrinkage
+  simp [scenarioFromLocalCircuit, witness, S]
 
 /--
   Для сценария, построенного из shrinkage, параметр `k` не превышает числа
@@ -744,60 +930,6 @@ lemma scenarioFromShrinkage_dictLen_le_pow
     Core.Shrinkage.commonPDT_epsilon] at hbound'
   exact hbound'
 
-@[simp]
-lemma scenarioFromShrinkage_family_eq
-    {n : Nat} (S : Core.Shrinkage n)
-    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
-    (scenarioFromShrinkage (n := n) S hε0 hε1).2.family = S.F := by
-  classical
-  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
-    dsimp [Core.Shrinkage.commonPDT_epsilon]
-    exact hε0
-  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
-    dsimp [Core.Shrinkage.commonPDT_epsilon]
-    exact hε1
-  have hfamily :=
-    scenarioFromCommonPDT_family
-      (n := n) (F := S.F) (C := S.commonPDT)
-      (hε0 := hε0') (hε1 := hε1')
-  change
-    (scenarioFromCommonPDT
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1')).2.family = S.F
-    at hfamily
-  change
-    (scenarioFromCommonPDT
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1')).2.family = S.F
-  exact hfamily
-
-@[simp]
-lemma scenarioFromShrinkage_epsilon_eq
-    {n : Nat} (S : Core.Shrinkage n)
-    (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
-    (scenarioFromShrinkage (n := n) S hε0 hε1).2.atlas.epsilon = S.ε := by
-  classical
-  have hε0' : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
-    dsimp [Core.Shrinkage.commonPDT_epsilon]
-    exact hε0
-  have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
-    dsimp [Core.Shrinkage.commonPDT_epsilon]
-    exact hε1
-  have heps :=
-    scenarioFromCommonPDT_epsilon
-      (n := n) (F := S.F) (C := S.commonPDT)
-      (hε0 := hε0') (hε1 := hε1')
-  change
-    (scenarioFromCommonPDT
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1')).2.atlas.epsilon = S.ε
-    at heps
-  change
-    (scenarioFromCommonPDT
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1')).2.atlas.epsilon = S.ε
-  exact heps
-
 /--
   Параметр `k` в сценарии AC⁰ не превышает `2^{(log₂(M+2))^{d+1}}`.  Получаем
   его из границы `t ≤ (log₂(M+2))^{d+1}`, предоставленной внешним фактом.
@@ -809,38 +941,34 @@ lemma scenarioFromAC0_k_le_pow
       ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
   classical
   unfold scenarioFromAC0
-  set shrinkWitness := ThirdPartyFacts.shrinkage_for_AC0 params F with hwit
-  let t := Classical.choose shrinkWitness
-  set rest₁ := Classical.choose_spec shrinkWitness with hrest₁
-  let ε := Classical.choose rest₁
-  set rest₂ := Classical.choose_spec rest₁ with hrest₂
-  let S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  rcases hspec with ⟨hF, hchain⟩
-  rcases hchain with ⟨ht_eq, hchain⟩
-  rcases hchain with ⟨hε_eq, hchain⟩
-  rcases hchain with ⟨htBound, hchain⟩
-  rcases hchain with ⟨hε0, hεBound⟩
-  have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    have htmp := hε0
-    have hrewrite : ε = S.ε := hε_eq.symm
-    exact hrewrite ▸ htmp
-  have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
-    (hε_eq ▸
-      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
-        params.n (ε := ε) hεBound)
+  set S := ThirdPartyFacts.certificate_from_AC0 params F
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
+    (params := params) (F := F)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
+    (params := params) (F := F)
   have hk_base :=
     scenarioFromShrinkage_k_le_pow
-      (n := params.n) (S := S)
-      (hε0 := hε_nonneg)
-      (hε1 := hε_half)
-  have hbound_pow :
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  have htBound :=
+    ThirdPartyFacts.certificate_from_AC0_depth_bound
+      (params := params) (F := F)
+  have hpow_bound :
       Nat.pow 2 S.t ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
-    have : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+    have hS : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
       have htmp := htBound
-      exact ht_eq ▸ htmp
-    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
-  exact hk_base.trans hbound_pow
+      change Core.Shrinkage.depthBound (S := S)
+          ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) at htmp
+      have hrewrite := htmp
+      simp [Core.Shrinkage.depthBound] at hrewrite
+      exact hrewrite
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hS
+  have hresult := hk_base.trans hpow_bound
+  have hrewrite :
+      (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
+        = (scenarioFromAC0 params F).1 := by
+    simp [scenarioFromAC0, S, hε0, hε1]
+  have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
+  exact hfinal
 
 /--
   Оценка на длину словаря в AC⁰-сценарии: она не превосходит того же `2^{(log₂(M+2))^{d+1}}`.
@@ -852,38 +980,147 @@ lemma scenarioFromAC0_dictLen_le_pow
       ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
   classical
   unfold scenarioFromAC0
-  set shrinkWitness := ThirdPartyFacts.shrinkage_for_AC0 params F with hwit
-  let t := Classical.choose shrinkWitness
-  set rest₁ := Classical.choose_spec shrinkWitness with hrest₁
-  let ε := Classical.choose rest₁
-  set rest₂ := Classical.choose_spec rest₁ with hrest₂
-  let S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  rcases hspec with ⟨hF, hchain⟩
-  rcases hchain with ⟨ht_eq, hchain⟩
-  rcases hchain with ⟨hε_eq, hchain⟩
-  rcases hchain with ⟨htBound, hchain⟩
-  rcases hchain with ⟨hε0, hεBound⟩
-  have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    have htmp := hε0
-    have hrewrite : ε = S.ε := hε_eq.symm
-    exact hrewrite ▸ htmp
-  have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
-    (hε_eq ▸
-      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
-        params.n (ε := ε) hεBound)
+  set S := ThirdPartyFacts.certificate_from_AC0 params F
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
+    (params := params) (F := F)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
+    (params := params) (F := F)
   have hdict_base :=
     scenarioFromShrinkage_dictLen_le_pow
-      (n := params.n) (S := S)
-      (hε0 := hε_nonneg)
-      (hε1 := hε_half)
-  have hbound_pow :
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  have htBound :=
+    ThirdPartyFacts.certificate_from_AC0_depth_bound
+      (params := params) (F := F)
+  have hpow_bound :
       Nat.pow 2 S.t ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
-    have : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+    have hS : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
       have htmp := htBound
-      exact ht_eq ▸ htmp
-    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
-  exact hdict_base.trans hbound_pow
+      change Core.Shrinkage.depthBound (S := S)
+          ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) at htmp
+      have hrewrite := htmp
+      simp [Core.Shrinkage.depthBound] at hrewrite
+      exact hrewrite
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hS
+  have hresult := hdict_base.trans hpow_bound
+  have hrewrite :
+      Counting.dictLen
+          (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
+        = Counting.dictLen (scenarioFromAC0 params F).2.atlas.dict := by
+    simp [scenarioFromAC0, S, hε0, hε1]
+  have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
+  exact hfinal
+
+/--
+  Полезное переписывание: погрешность атласа в `scenarioFromAC0` совпадает
+  с ε shrinkage-сертификата, предоставленного фактом `certificate_from_AC0`.
+  Это связывает шаг A (усадка) со сценарием шага B на уровне точных чисел. -/
+@[simp]
+lemma scenarioFromAC0_epsilon_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    (scenarioFromAC0 params F).2.atlas.epsilon
+      = (ThirdPartyFacts.certificate_from_AC0 params F).ε := by
+  classical
+  unfold scenarioFromAC0
+  set S := ThirdPartyFacts.certificate_from_AC0 params F
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
+    (params := params) (F := F)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
+    (params := params) (F := F)
+  set base := scenarioFromShrinkage (n := params.n) S hε0 hε1
+  have hbase : base.2.atlas.epsilon = S.ε :=
+    scenarioFromShrinkage_epsilon_eq
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  -- Конструкция `scenarioFromAC0` меняет только поле `family`, поэтому ε
+  -- совпадает с ε базового сценария `base`.
+  have hsc :
+      (scenarioFromAC0 params F).2.atlas.epsilon = base.2.atlas.epsilon := by
+    unfold scenarioFromAC0
+    simp [S, hε0, hε1, base]
+  exact hsc.trans hbase
+
+/--
+  Совокупное описание ограниченного сценария из `scenarioFromAC0`.
+  Мы собираем в одну точку все численные границы, необходимые для шага B:
+
+  * параметр `k` не превосходит `2^{(log₂(M+2))^{d+1}}`;
+  * длина словаря ограничена тем же числом;
+  * погрешность лежит в диапазоне `0 ≤ ε ≤ 1/2` и дополнительно
+    `ε ≤ 1/(n+2)`.
+
+  Такая формулировка подчёркивает, что шаг A уже поставляет именно те
+  данные, которые требуются Covering/Leaf-Budget анализу шага B. -/
+lemma scenarioFromAC0_completeBounds
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    let bound := Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1))
+    let sc := scenarioFromAC0 params F
+    sc.1 ≤ bound ∧
+      Counting.dictLen sc.2.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.2.atlas.epsilon ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro bound sc
+  -- Первая граница: параметр `k` ограничен степенью двух от глубины PDT.
+  have hk := scenarioFromAC0_k_le_pow (params := params) (F := F)
+  -- Вторая граница: длина словаря не превосходит того же значения.
+  have hdict := scenarioFromAC0_dictLen_le_pow (params := params) (F := F)
+  -- Погрешность неотрицательна и ≤ 1/2 по определению сценария.
+  have hε0 := sc.2.hε0
+  have hε1 := sc.2.hε1
+  -- Для верхней оценки через `1/(n+2)` переписываем ε через shrinkage-сертификат.
+  have heq := scenarioFromAC0_epsilon_eq (params := params) (F := F)
+  have hεInv := ThirdPartyFacts.certificate_from_AC0_eps_bound
+    (params := params) (F := F)
+  have hεInv' : sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    have hrewrite :
+        sc.2.atlas.epsilon = (ThirdPartyFacts.certificate_from_AC0 params F).ε := by
+      exact heq
+    have hgoal := Eq.subst
+      (motive := fun ε => ε ≤ (1 : Core.Q) / (params.n + 2))
+      (Eq.symm hrewrite) hεInv
+    exact hgoal
+  refine And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv')))
+  · -- Вставляем объявленный параметр `bound`.
+    change sc.1 ≤ bound
+    exact hk
+  · change Counting.dictLen sc.2.atlas.dict ≤ bound
+    exact hdict
+
+/--
+  Сводное существование ограниченного атласа из AC⁰-свидетельства.  Мы упаковываем
+  конструкцию `scenarioFromAC0` в экзистенциальную форму: существует `k` и сценарий
+  с семейством `F`, где все численные границы совпадают с теми, что требуются для шага B.
+-/
+theorem exists_boundedAtlas_from_AC0
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
+      sc.family = F ∧
+      k ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) ∧
+      Counting.dictLen sc.atlas.dict
+        ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  let sc := scenarioFromAC0 params F
+  have hfamily : sc.2.family = F := by
+    dsimp [sc]
+    exact scenarioFromAC0_family_eq (params := params) (F := F)
+  have h_bounds :=
+    scenarioFromAC0_completeBounds (params := params) (F := F)
+  dsimp [sc] at h_bounds
+  rcases h_bounds with ⟨hk, hrest⟩
+  rcases hrest with ⟨hdict, hrest⟩
+  rcases hrest with ⟨hε0, hrest⟩
+  rcases hrest with ⟨hε1, hεInv⟩
+  refine ⟨sc.1, sc.2, ?_⟩
+  refine And.intro ?_ (And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv))))
+  · exact hfamily
+  · exact hk
+  · exact hdict
 
 /--
   Локальные схемы дают аналогичную границу: `k ≤ 2^{ℓ · (log₂(M+2) + depth + 1)}`.
@@ -895,38 +1132,42 @@ lemma scenarioFromLocalCircuit_k_le_pow
       ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
   classical
   unfold scenarioFromLocalCircuit
-  set shrinkWitness := ThirdPartyFacts.shrinkage_for_localCircuit params F with hwit
-  let t := Classical.choose shrinkWitness
-  set rest₁ := Classical.choose_spec shrinkWitness with hrest₁
-  let ε := Classical.choose rest₁
-  set rest₂ := Classical.choose_spec rest₁ with hrest₂
-  let S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  rcases hspec with ⟨hF, hchain⟩
-  rcases hchain with ⟨ht_eq, hchain⟩
-  rcases hchain with ⟨hε_eq, hchain⟩
-  rcases hchain with ⟨htBound, hchain⟩
-  rcases hchain with ⟨hε0, hεBound⟩
-  have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    have htmp := hε0
-    have hrewrite : ε = S.ε := hε_eq.symm
-    exact hrewrite ▸ htmp
+  set witness := ThirdPartyFacts.localCircuitWitness params F
+  set S := witness.shrinkage
+  have hε_nonneg : (0 : Core.Q) ≤ S.ε := witness.epsilon_nonneg
   have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
-    (hε_eq ▸
-      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
-        params.n (ε := ε) hεBound)
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
+      params.n (ε := S.ε) witness.epsilon_le_inv
+  have hcommon_nonneg : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    change (0 : Core.Q) ≤ S.ε
+    exact hε_nonneg
+  have hcommon_half : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    change S.ε ≤ (1 : Core.Q) / 2
+    exact hε_half
+  set base :=
+    scenarioFromCommonPDT
+      (n := params.n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hcommon_nonneg) (hε1 := hcommon_half)
   have hk_base :=
-    scenarioFromShrinkage_k_le_pow
-      (n := params.n) (S := S)
-      (hε0 := hε_nonneg)
-      (hε1 := hε_half)
-  have hbound_pow :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
-    have : S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) := by
-      have htmp := htBound
-      exact ht_eq ▸ htmp
-    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
-  exact hk_base.trans hbound_pow
+    scenarioFromCommonPDT_k_le_pow
+      (n := params.n) (F := S.F)
+      (C := S.commonPDT)
+      (hε0 := hcommon_nonneg) (hε1 := hcommon_half)
+  have hpow_bound :
+      base.1 ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
+    have hdepth_bound : base.1 ≤ Nat.pow 2 S.commonPDT.depthBound := hk_base
+    have hrewrite : Nat.pow 2 S.commonPDT.depthBound = Nat.pow 2 S.t := by
+      simp [Core.Shrinkage.commonPDT_depthBound]
+    have htarget : base.1 ≤ Nat.pow 2 S.t := by
+      exact Eq.subst (motive := fun x => base.1 ≤ x) hrewrite.symm hdepth_bound
+    have hbound_pow :
+        Nat.pow 2 S.t ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
+      have hdepth := witness.depth_le
+      exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepth
+    exact htarget.trans hbound_pow
+  have hsc : (scenarioFromLocalCircuit params F).1 = base.1 := by
+    simp [scenarioFromLocalCircuit, witness, S, base]
+  exact Eq.subst (motive := fun x => x ≤ _) (Eq.symm hsc) hpow_bound
 
 /--
   И для длины словаря в локальных схемах действует та же оценка.
@@ -938,39 +1179,280 @@ lemma scenarioFromLocalCircuit_dictLen_le_pow
       ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
   classical
   unfold scenarioFromLocalCircuit
-  set shrinkWitness := ThirdPartyFacts.shrinkage_for_localCircuit params F with hwit
-  let t := Classical.choose shrinkWitness
-  set rest₁ := Classical.choose_spec shrinkWitness with hrest₁
-  let ε := Classical.choose rest₁
-  set rest₂ := Classical.choose_spec rest₁ with hrest₂
-  let S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  rcases hspec with ⟨hF, hchain⟩
-  rcases hchain with ⟨ht_eq, hchain⟩
-  rcases hchain with ⟨hε_eq, hchain⟩
-  rcases hchain with ⟨htBound, hchain⟩
-  rcases hchain with ⟨hε0, hεBound⟩
-  have hε_nonneg : (0 : Core.Q) ≤ S.ε := by
-    have htmp := hε0
-    have hrewrite : ε = S.ε := hε_eq.symm
-    exact hrewrite ▸ htmp
+  set witness := ThirdPartyFacts.localCircuitWitness params F
+  set S := witness.shrinkage
+  have hε_nonneg : (0 : Core.Q) ≤ S.ε := witness.epsilon_nonneg
   have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
-    (hε_eq ▸
-      ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
-        params.n (ε := ε) hεBound)
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
+      params.n (ε := S.ε) witness.epsilon_le_inv
+  have hcommon_nonneg : (0 : Core.Q) ≤ S.commonPDT.epsilon := by
+    change (0 : Core.Q) ≤ S.ε
+    exact hε_nonneg
+  have hcommon_half : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
+    change S.ε ≤ (1 : Core.Q) / 2
+    exact hε_half
+  set base :=
+    scenarioFromCommonPDT
+      (n := params.n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hcommon_nonneg) (hε1 := hcommon_half)
   have hdict_base :=
-    scenarioFromShrinkage_dictLen_le_pow
-      (n := params.n) (S := S)
+    scenarioFromCommonPDT_dictLen_le_pow
+      (n := params.n) (F := S.F)
+      (C := S.commonPDT)
+      (hε0 := hcommon_nonneg) (hε1 := hcommon_half)
+  have hpow_bound :
+      Counting.dictLen base.2.atlas.dict
+        ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
+    have hlen := hdict_base
+    have hrewrite : Nat.pow 2 S.commonPDT.depthBound = Nat.pow 2 S.t := by
+      simp [Core.Shrinkage.commonPDT_depthBound]
+    have htarget :
+        Counting.dictLen base.2.atlas.dict ≤ Nat.pow 2 S.t := by
+      exact Eq.subst (motive := fun x => Counting.dictLen base.2.atlas.dict ≤ x)
+        hrewrite.symm hlen
+    have hbound_pow :
+        Nat.pow 2 S.t ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
+      have hdepth := witness.depth_le
+      exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepth
+    exact htarget.trans hbound_pow
+  have hsc :
+      Counting.dictLen (scenarioFromLocalCircuit params F).2.atlas.dict
+        = Counting.dictLen base.2.atlas.dict := by
+    simp [scenarioFromLocalCircuit, witness, S, base]
+  exact Eq.subst (motive := fun x => x ≤ _) hsc hpow_bound
+
+@[simp]
+lemma scenarioFromLocalCircuit_epsilon_eq
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    (scenarioFromLocalCircuit params F).2.atlas.epsilon
+      = (ThirdPartyFacts.localCircuitWitness params F).shrinkage.ε := by
+  classical
+  unfold scenarioFromLocalCircuit
+  set witness := ThirdPartyFacts.localCircuitWitness params F
+  set S := witness.shrinkage
+  have hε_nonneg : (0 : Core.Q) ≤ S.ε := witness.epsilon_nonneg
+  have hε_half : S.ε ≤ (1 : Core.Q) / 2 :=
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2
+      params.n (ε := S.ε) witness.epsilon_le_inv
+  set base :=
+    scenarioFromCommonPDT
+      (n := params.n) (F := S.F) (C := S.commonPDT)
       (hε0 := hε_nonneg)
       (hε1 := hε_half)
-  have hbound_pow :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
-    have : S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) := by
-      have htmp := htBound
-      exact ht_eq ▸ htmp
-    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) this
-  exact hdict_base.trans hbound_pow
+  have hbase : base.2.atlas.epsilon = S.commonPDT.epsilon := by
+    dsimp [base]
+    exact scenarioFromCommonPDT_epsilon
+      (C := S.commonPDT)
+      (hε0 := hε_nonneg)
+      (hε1 := hε_half)
+  have hcommon : S.commonPDT.epsilon = S.ε := rfl
+  have hrewrite :
+      (scenarioFromLocalCircuit (params := params) (F := F)).2.atlas.epsilon
+        = base.2.atlas.epsilon := by
+    simp [scenarioFromLocalCircuit, witness, S, base]
+  have hresult := Eq.trans hbase hcommon
+  exact Eq.trans hrewrite hresult
 
--- Дополнительные оценки будут добавлены ниже при необходимости.
+/--
+  Поле `k` в `scenarioFromLocalCircuit` совпадает с первой компонентой пары.
+  Это повторяет довод для AC⁰ и позволяет напрямую ограничивать число
+  селекторов в сценарии локальных схем.
+-/
+@[simp]
+lemma scenarioFromLocalCircuit_k_eq
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    (scenarioFromLocalCircuit params F).2.k =
+      (scenarioFromLocalCircuit params F).1 := by
+  classical
+  unfold scenarioFromLocalCircuit
+  set witness := ThirdPartyFacts.localCircuitWitness params F
+  set S := witness.shrinkage
+  simp [witness, S, scenarioFromCommonPDT_k_eq]
+
+lemma scenarioFromLocalCircuit_completeBounds
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    let bound := Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2)
+      + params.depth + 1))
+    let sc := scenarioFromLocalCircuit params F
+    sc.1 ≤ bound ∧
+      Counting.dictLen sc.2.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.2.atlas.epsilon ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro bound sc
+  have hk := scenarioFromLocalCircuit_k_le_pow
+    (params := params) (F := F)
+  have hdict := scenarioFromLocalCircuit_dictLen_le_pow
+    (params := params) (F := F)
+  have hε0 := sc.2.hε0
+  have hε1 := sc.2.hε1
+  have heq := scenarioFromLocalCircuit_epsilon_eq
+    (params := params) (F := F)
+  let witness := ThirdPartyFacts.localCircuitWitness params F
+  let S := witness.shrinkage
+  have hεBound := witness.epsilon_le_inv
+  have hεInv : sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    have hrewrite : sc.2.atlas.epsilon = S.ε := heq
+    have htarget : S.ε ≤ (1 : Core.Q) / (params.n + 2) := hεBound
+    exact hrewrite ▸ htarget
+  refine And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv)))
+  · change sc.1 ≤ bound
+    exact hk
+  · change Counting.dictLen sc.2.atlas.dict ≤ bound
+    exact hdict
+
+/--
+  Экзистенциальная форма ограниченного атласа для локальных схем.  Аналогично
+  AC⁰-случаю, получаем конкретный сценарий и численные границы напрямую из
+  `scenarioFromLocalCircuit`.
+-/
+theorem exists_boundedAtlas_from_localCircuit
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
+      sc.family = F ∧
+      k ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) ∧
+      Counting.dictLen sc.atlas.dict
+        ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  let sc := scenarioFromLocalCircuit params F
+  have hfamily : sc.2.family = F := by
+    dsimp [sc]
+    exact scenarioFromLocalCircuit_family_eq (params := params) (F := F)
+  have h_bounds :=
+    scenarioFromLocalCircuit_completeBounds (params := params) (F := F)
+  dsimp [sc] at h_bounds
+  rcases h_bounds with ⟨hk, hrest⟩
+  rcases hrest with ⟨hdict, hrest⟩
+  rcases hrest with ⟨hε0, hrest⟩
+  rcases hrest with ⟨hε1, hεInv⟩
+  refine ⟨sc.1, sc.2, ?_⟩
+  refine And.intro ?_ (And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv))))
+  · exact hfamily
+  · exact hk
+  · exact hdict
+
+/--
+  Сводное описание сценария, полученного из AC⁰ shrinkage: все численные
+  границы из шага A совмещаются с оценкой мощности семейства из шага B.
+-/
+lemma scenarioFromAC0_stepAB_summary
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n) :
+    let pack := scenarioFromAC0 params F
+    let sc := pack.2
+    let bound := Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1))
+    sc.family = F ∧
+      sc.k ≤ bound ∧
+      Counting.dictLen sc.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) ∧
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k
+          (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 :=
+  by
+    classical
+    intro pack sc bound
+    have hfamily := scenarioFromAC0_family_eq (params := params) (F := F)
+    have hbounds_raw := scenarioFromAC0_completeBounds
+      (params := params) (F := F)
+    have hbounds :
+        pack.1 ≤ bound ∧
+          Counting.dictLen pack.2.atlas.dict ≤ bound ∧
+          (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
+          pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+          pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+      simpa [pack, bound] using hbounds_raw
+    have hfamily' : sc.family = F := by
+      simpa [pack, sc] using hfamily
+    rcases hbounds with ⟨hk_base, hrest⟩
+    rcases hrest with ⟨hdict_base, hrest⟩
+    rcases hrest with ⟨hε0_base, hrest⟩
+    rcases hrest with ⟨hε1_base, hεInv_base⟩
+    have hkEq := scenarioFromAC0_k_eq (params := params) (F := F)
+    have hkEq' : pack.2.k = pack.1 := by
+      simpa [pack] using hkEq
+    have hk' : sc.k ≤ bound := by
+      simpa [pack, sc, hkEq'] using hk_base
+    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
+      simpa [pack, sc, bound] using hdict_base
+    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
+      simpa [pack, sc] using hε0_base
+    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
+      simpa [pack, sc] using hε1_base
+    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+      simpa [pack, sc] using hεInv_base
+    have hcap := family_card_le_capacity (sc := sc)
+    refine And.intro hfamily' (And.intro hk' (And.intro hdict'
+      (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+    exact hcap
+
+/--
+  Локальные схемы обладают той же структурой: сценарий шага A автоматически
+  удовлетворяет ёмкостной границе из шага B.
+-/
+lemma scenarioFromLocalCircuit_stepAB_summary
+    (params : ThirdPartyFacts.LocalCircuitParameters)
+    (F : Core.Family params.n) :
+    let pack := scenarioFromLocalCircuit params F
+    let sc := pack.2
+    let bound := Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2)
+      + params.depth + 1))
+    sc.family = F ∧
+      sc.k ≤ bound ∧
+      Counting.dictLen sc.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) ∧
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k
+          (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 :=
+  by
+    classical
+    intro pack sc bound
+    have hfamily := scenarioFromLocalCircuit_family_eq
+      (params := params) (F := F)
+    have hbounds_raw := scenarioFromLocalCircuit_completeBounds
+      (params := params) (F := F)
+    have hbounds :
+        pack.1 ≤ bound ∧
+          Counting.dictLen pack.2.atlas.dict ≤ bound ∧
+          (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
+          pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+          pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+      simpa [pack, bound] using hbounds_raw
+    have hfamily' : sc.family = F := by
+      simpa [pack, sc] using hfamily
+    rcases hbounds with ⟨hk_base, hrest⟩
+    rcases hrest with ⟨hdict_base, hrest⟩
+    rcases hrest with ⟨hε0_base, hrest⟩
+    rcases hrest with ⟨hε1_base, hεInv_base⟩
+    have hkEq := scenarioFromLocalCircuit_k_eq
+      (params := params) (F := F)
+    have hkEq' : pack.2.k = pack.1 := by
+      simpa [pack] using hkEq
+    have hk' : sc.k ≤ bound := by
+      simpa [pack, sc, hkEq'] using hk_base
+    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
+      simpa [pack, sc, bound] using hdict_base
+    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
+      simpa [pack, sc] using hε0_base
+    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
+      simpa [pack, sc] using hε1_base
+    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+      simpa [pack, sc] using hεInv_base
+    have hcap := family_card_le_capacity (sc := sc)
+    refine And.intro hfamily' (And.intro hk' (And.intro hdict'
+      (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+    exact hcap
+
 end LowerBounds
 end Pnp3

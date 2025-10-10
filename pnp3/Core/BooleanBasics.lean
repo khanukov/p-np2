@@ -159,9 +159,13 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     intro i b hib
     have hi := hall i (List.mem_finRange _)
     -- Раскрываем определение `memB` и используем предыдущую эквивалентность.
-    have hi' : (if x i = b then true else false) = true := by
-      simpa [memB, hib] using hi
-    exact (ite_true_false_eq_true_iff).mp hi'
+    -- Приводим булеву проверку из определения `memB` к каноничному виду.
+    have hi' : x i = b := by
+      -- Приводим булеву проверку из определения `memB` к равенству значений.
+      have htmp := hi
+      simp [memB, hib] at htmp
+      exact htmp
+    exact hi'
   · intro h
     -- Покажем, что для каждого индекса из `finRange` выполняется проверка в `memB`.
     have hall : ∀ i ∈ List.finRange n,
@@ -179,7 +183,9 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
 /-- Удобная пропозициональная версия условия принадлежности. -/
 lemma mem_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     mem β x ↔ ∀ i : Fin n, ∀ b : Bool, β i = some b → x i = b := by
-  simpa [mem] using memB_eq_true_iff (β := β) (x := x)
+  -- Переписываем определение `mem` и применяем булеву характеристику.
+  change memB β x = true ↔ ∀ i : Fin n, ∀ b : Bool, β i = some b → x i = b
+  exact memB_eq_true_iff (β := β) (x := x)
 
 /-- Тривиальный подкуб, у которого все координаты свободны, содержит любую точку. -/
 @[simp] lemma mem_top {n : Nat} (x : BitVec n) :
@@ -594,9 +600,10 @@ lemma errU_eq_zero_of_agree {n : Nat}
     · intro hx
       rcases Finset.mem_filter.mp hx with ⟨_, hneq⟩
       exact (hneq (h x)).elim
-    · intro hx; simpa using hx
+    · intro hx; cases hx
   have hmismatch : mismatches = 0 := by
-    simpa [mismatches, hfilter]
+    -- После упрощения фильтра остаётся пустое множество, чья мощность равна нулю.
+    simp [mismatches, hfilter]
   simp [mismatches, hmismatch]
 
 /-- Частный случай: пустой набор подкубов идеально аппроксимирует константный
@@ -638,7 +645,10 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
         intro i h
         rcases h with ⟨b, hb⟩
         intro hnone
-        simpa [hb] using hnone
+        -- Совмещая два описания `β i`, получаем невозможное равенство `some b = none`.
+        have hcontr : some b = none := by
+          exact hb ▸ hnone
+        cases hcontr
     -- Finset-представление фиксированных и свободных координат.
     let fixedSet :=
       (Finset.univ : Finset (Fin n)).filter fun i => β i ≠ none

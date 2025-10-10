@@ -203,7 +203,12 @@ lemma mem_assign_iff {n : Nat} {β : Subcube n} {i : Fin n} {b : Bool}
       -- Координата была свободной: вычислим явную форму `γ`.
       have hassign' :
           some (fun j => if j = i then some b else β j) = some γ := by
-        simpa [Subcube.assign, hβ] using hassign
+        -- Сначала вычисляем явный результат присваивания.
+        have hassignβ :
+            Subcube.assign β i b =
+              some (fun j => if j = i then some b else β j) := by
+          simp [Subcube.assign, hβ]
+        exact Eq.subst (motive := fun t => t = some γ) hassignβ hassign
       have hγ : γ = fun j => if j = i then some b else β j :=
         (Option.some.inj hassign').symm
       subst hγ
@@ -215,17 +220,23 @@ lemma mem_assign_iff {n : Nat} {β : Subcube n} {i : Fin n} {b : Bool}
           intro j c hj
           by_cases hji : j = i
           · subst hji
-            have : False := by simpa [hβ] using hj
+            -- После подстановки `β i = none` получаем противоречие.
+            have : False := by
+              have hnoneEq :=
+                Eq.subst (motive := fun t => t = some c) hβ hj
+              cases hnoneEq
             exact False.elim this
-          · have : (if j = i then some b else β j) = some c := by
-              simpa [hji, hj]
-            exact hγ' j c this
+          · have hif : (if j = i then some b else β j) = β j := by
+              simp [hji]
+            have htmp : (if j = i then some b else β j) = some c :=
+              Eq.trans hif hj
+            exact hγ' j c htmp
         have hβmem : mem β x :=
           (mem_iff (β := β) (x := x)).2 hβprop
         have hi : x i = b := by
           have : (if i = i then some b else β i) = some b := by simp
           have hinst := hγ' i b this
-          simpa using hinst
+          exact hinst
         exact ⟨hβmem, hi⟩
       · intro hx
         rcases hx with ⟨hβmem, hib⟩
@@ -235,34 +246,46 @@ lemma mem_assign_iff {n : Nat} {β : Subcube n} {i : Fin n} {b : Bool}
         intro j c hj
         by_cases hji : j = i
         · subst hji
-          have hj' : some b = some c := by simpa using hj
-          have hb' : b = c := by simpa using Option.some.inj hj'
+          have hj' := hj
+          -- После подстановки `j = i` сокращаем условие до равенства значений.
+          simp at hj'
+          have hb' : b = c := hj'
           have : c = b := hb'.symm
           simp [this, hib]
-        · have : β j = some c := by simpa [hji] using hj
+        · have : β j = some c := by
+            -- Условие напрямую переписывается, когда `j ≠ i`.
+            have htmp := hj
+            simp [hji] at htmp
+            exact htmp
           exact hβ' j c this
   | some bOld =>
       -- Координата уже фиксирована. Возможны два случая: согласие или конфликт.
       have hb' : b = bOld := by
         by_contra hbneq
-        have : Subcube.assign β i b = none := by
+        have hnone : Subcube.assign β i b = none := by
           simp [Subcube.assign, hβ, hbneq]
-        have hcontra : none = some γ := by
-          simpa [Subcube.assign, hβ, hbneq] using hassign
+        have hcontra : none = some γ :=
+          Eq.subst (motive := fun t => t = some γ) hnone hassign
         cases hcontra
       have hγ : γ = β := by
-        have hassign' : some β = some γ := by
-          simpa [Subcube.assign, hβ, hb'] using hassign
-        exact (Option.some.inj hassign').symm
+        have hassign' : Subcube.assign β i b = some β := by
+          simp [Subcube.assign, hβ, hb']
+        have hsome : some γ = some β := hassign.symm.trans hassign'
+        exact (Option.some.inj hsome.symm).symm
       constructor
       · intro hγmem
-        have hβmem : mem β x := by simpa [hγ] using hγmem
+        have hβmem : mem β x := by
+          -- Используем равенство `γ = β` для переноса принадлежности.
+          exact Eq.subst (motive := fun δ => mem δ x) hγ hγmem
         have hprop := (mem_iff (β := β) (x := x)).1 hβmem
-        have hi : x i = bOld := by simpa using hprop i bOld hβ
-        have hi' : x i = b := by simpa [hb'] using hi
+        have hi : x i = bOld := hprop i bOld hβ
+        have hi' : x i = b := by
+          -- Переписываем значение через равенство `b = bOld`.
+          exact hi.trans hb'.symm
         exact ⟨hβmem, hi'⟩
       · intro hx
-        exact (by simpa [hγ] using hx.1)
+        -- Опять переносим принадлежность через равенство `γ = β`.
+        exact Eq.subst (motive := fun δ => mem δ x) hγ.symm hx.1
 
 /--
 Если серия присваиваний `assignMany` успешно завершилась, то принадлежность
@@ -279,7 +302,10 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
   | nil =>
       -- Пустой список: получаем тот же подкуб без дополнительных условий.
       have hγ : β = γ := by
-        simpa [Subcube.assignMany] using hassign
+        -- Единственный результат: присваивание ничего не меняет.
+        have htmp := hassign
+        simp [Subcube.assignMany] at htmp
+        exact htmp
       subst hγ
       simp
   | cons ub rest ih =>
@@ -289,10 +315,17 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
       cases hstep : Subcube.assign β i b with
       | none =>
           -- Конфликт невозможен, ведь результат объявлен как `some γ`.
-          simpa [Subcube.assignMany, hstep] using hassign
+          have hnone :
+              Subcube.assignMany β (⟨i, b⟩ :: rest) = none := by
+            simp [Subcube.assignMany, hstep]
+          have hcontr :=
+            Eq.subst (motive := fun t => t = some γ) hnone hassign
+          cases hcontr
       | some β' =>
           have hrest : Subcube.assignMany β' rest = some γ := by
-            simpa [Subcube.assignMany, hstep] using hassign
+            have htmp := hassign
+            simp [Subcube.assignMany, hstep] at htmp
+            exact htmp
           have htail := ih (β := β') (γ := γ) hrest
           -- Эквивалентность для первого шага: принадлежность β' ↔ (β ∧ нужный бит).
           have hhead :=
@@ -301,9 +334,44 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
           -- Склеиваем два эквивалента и приводим результат к компактному виду.
           have hcombined :
               mem γ x ↔ (mem β x ∧ x i = b) ∧ ∀ u ∈ rest, x u.1 = u.2 := by
-            simpa [hhead, and_left_comm, and_assoc] using htail
+            constructor
+            · intro hγmem
+              have htail' := htail.mp hγmem
+              rcases htail' with ⟨hβ', hrestProp⟩
+              have hβmem := hhead.mp hβ'
+              exact ⟨hβmem, hrestProp⟩
+            · intro hgoal
+              rcases hgoal with ⟨⟨hβmem, hib⟩, hrestProp⟩
+              have hβ' := hhead.mpr ⟨hβmem, hib⟩
+              exact htail.mpr ⟨hβ', hrestProp⟩
           -- Завершаем преобразование, переписывая условие на список.
-          simpa [List.forall_mem_cons, and_left_comm, and_assoc] using hcombined
+          constructor
+          · intro hγmem
+            have hparts := hcombined.mp hγmem
+            rcases hparts with ⟨⟨hβmem, hib⟩, hrestProp⟩
+            refine ⟨hβmem, ?_⟩
+            intro u hu
+            have hunion := List.mem_cons.mp hu
+            rcases hunion with hheadEq | htailMem
+            · -- Для первого элемента списка получаем нужный бит напрямую.
+              cases hheadEq
+              simp [hib]
+            · exact hrestProp u htailMem
+          · intro hgoal
+            rcases hgoal with ⟨hβmem, hlist⟩
+            have hib : x i = b := by
+              have hmem : ⟨i, b⟩ ∈ (⟨i, b⟩ :: rest) := by
+                simp
+              have hheadCase := hlist ⟨i, b⟩ hmem
+              change x i = b at hheadCase
+              exact hheadCase
+            have hrestProp : ∀ u ∈ rest, x u.1 = u.2 := by
+              intro u hu
+              have hcase := hlist u (List.mem_cons.mpr (Or.inr hu))
+              exact hcase
+            have hcombined' : (mem β x ∧ x i = b) ∧ ∀ u ∈ rest, x u.1 = u.2 :=
+              ⟨⟨hβmem, hib⟩, hrestProp⟩
+            exact hcombined.mpr hcombined'
 
 
 /-- Индикатор покрытия x объединением подкубов из списка Rset. -/
@@ -346,7 +414,7 @@ lemma covered_cons {n : Nat} (β : Subcube n) (R : List (Subcube n))
     rcases h with ⟨γ, hγ, hx⟩
     simp at hγ
     rcases hγ with hγ | hγ
-    · left; subst hγ; simpa [mem] using hx
+    · left; subst hγ; exact hx
     · right; exact ⟨γ, hγ, hx⟩
   · intro h
     rcases h with h | h
@@ -362,7 +430,7 @@ lemma covered_dedup {n : Nat} [DecidableEq (Subcube n)]
   · intro h
     rcases h with ⟨β, hβ, hx⟩
     refine ⟨β, ?_, hx⟩
-    have : β ∈ R.dedup := by simpa using hβ
+    have : β ∈ R.dedup := hβ
     exact (List.mem_dedup.mp this)
   · intro h
     rcases h with ⟨β, hβ, hx⟩
@@ -389,14 +457,14 @@ lemma coveredB_dedup {n : Nat} [DecidableEq (Subcube n)]
       | false => rfl
       | true =>
           have : covered R x :=
-            (covered_iff (Rset := R) x).mpr (by simpa [hcase])
+            (covered_iff (Rset := R) x).mpr hcase
           exact (hcov this).elim
     have hfalse' : coveredB (R.dedup) x = false := by
       cases hcase : coveredB (R.dedup) x with
       | false => rfl
       | true =>
           have : covered (R.dedup) x :=
-            (covered_iff (Rset := R.dedup) x).mpr (by simpa [hcase])
+            (covered_iff (Rset := R.dedup) x).mpr hcase
           exact (hcov' this).elim
     simp [hfalse, hfalse']
 
@@ -463,14 +531,16 @@ lemma coveredB_eq_of_toFinset_eq {n : Nat}
   refine coveredB_eq_of_mem_equiv (n := n) ?_
   intro β
   constructor <;> intro hβ
-  · have hβ' : β ∈ R₁.toFinset := by
-      simpa [List.mem_toFinset] using hβ
-    have hβ'' : β ∈ R₂.toFinset := by simpa [h] using hβ'
-    simpa [List.mem_toFinset] using hβ''
-  · have hβ' : β ∈ R₂.toFinset := by
-      simpa [List.mem_toFinset] using hβ
-    have hβ'' : β ∈ R₁.toFinset := by simpa [h] using hβ'
-    simpa [List.mem_toFinset] using hβ''
+  · have hβ' : β ∈ R₁.toFinset := List.mem_toFinset.mpr hβ
+    have hβ'' : β ∈ R₂.toFinset := by
+      -- Переносим членство через равенство множеств.
+      exact h ▸ hβ'
+    exact List.mem_toFinset.mp hβ''
+  · have hβ' : β ∈ R₂.toFinset := List.mem_toFinset.mpr hβ
+    have hβ'' : β ∈ R₁.toFinset := by
+      -- Обратное направление равенства множеств.
+      exact h.symm ▸ hβ'
+    exact List.mem_toFinset.mp hβ''
 
 /-- Построить BitVec длины n из числа k (по двоичным битам). -/
 def vecOfNat (n : Nat) (k : Nat) : BitVec n :=

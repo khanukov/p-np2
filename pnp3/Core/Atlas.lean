@@ -165,7 +165,7 @@ lemma toFinset_card_le_length {α} [DecidableEq α] :
           have hlist : a ∈ xs := List.mem_toFinset.mp hfin
           exact hmem hlist
         have hset : (a :: xs).toFinset = insert a xs.toFinset := by
-          simp [List.toFinset_cons, hmem]
+          simp [List.toFinset_cons]
         have hcard_insert :
             (insert a xs.toFinset).card = xs.toFinset.card + 1 :=
           Finset.card_insert_of_notMem (s := xs.toFinset) (a := a) hnot

@@ -78,11 +78,11 @@ def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
   ext x
   by_cases hx : x ∈ S
   · by_cases hg : g x
-    · simp [mismatchSet, flipOn, hx, hg]
-    · simp [mismatchSet, flipOn, hx, hg]
+    · simp [mismatchSet, flipOn, hx]
+    · simp [mismatchSet, flipOn, hx]
   · by_cases hg : g x
-    · simp [mismatchSet, flipOn, hx, hg]
-    · simp [mismatchSet, flipOn, hx, hg]
+    · simp [mismatchSet, flipOn, hx]
+    · simp [mismatchSet, flipOn, hx]
 
 private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
   cases b <;> cases c <;> simp at h <;> simp [h]
@@ -94,10 +94,10 @@ private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
   funext x
   by_cases hx : f x = g x
   · have hx' : x ∉ mismatchSet (m := m) g f := by
-      simpa [mismatchSet, hx]
+      simp [mismatchSet, hx]
     simp [flipOn, hx, hx']
   · have hx' : x ∈ mismatchSet (m := m) g f := by
-      simpa [mismatchSet, hx] using hx
+      simp [mismatchSet, hx]
     have hflip : f x = ! g x := bool_eq_not_of_ne hx
     simp [flipOn, hx', hflip]
 
@@ -149,10 +149,10 @@ lemma distU_eq_zero_iff
       exact Finset.card_eq_zero.mp h
     funext x
     have hx_mem : x ∈ (Finset.univ : Finset (Domain m)) := by
-      simpa using (Finset.mem_univ x)
+      simp
     have hx_not :
         x ∉ ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)) := by
-      simpa [hempty] using (Finset.not_mem_empty x)
+      simp [hempty]
     have hx_contra : f x ≠ g x → False := by
       intro hne
       have hx_filter :
@@ -162,7 +162,7 @@ lemma distU_eq_zero_iff
     by_contra hne
     exact hx_contra hne
   · intro h
-    simpa [distU, h]
+    simp [distU, h]
 
 /-- Связываем `errU` с `distU`: ошибка аппроксимации равна числу несовпадений,
   делённому на размер пространства `2^m`. -/

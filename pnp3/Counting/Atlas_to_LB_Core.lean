@@ -834,13 +834,13 @@ lemma approxOnTestsetWitness_injective
     have hggRaw := congrArg Subtype.val hgEq
     have hgg : g₁ = g₂ := by
       have htmp := hggRaw
-      simp [g₁, g₂] at htmp
+      simp at htmp
       exact htmp
     have hsetRaw := congrArg Subtype.val hsubsetEq
     have hset' :
         mismatchSet (m := m) g₁ f₁ = mismatchSet (m := m) g₂ f₂ := by
       have htmp := hsetRaw
-      simp [g₁, g₂] at htmp
+      simp at htmp
       exact htmp
     apply Subtype.ext
     have hf₁ := flipOn_mismatchSet (m := m) g₁ f₁

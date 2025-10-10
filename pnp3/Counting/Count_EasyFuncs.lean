@@ -56,7 +56,7 @@ lemma card_bitvec (n : Nat) :
           = (Fintype.card Bool) ^ Fintype.card (Core.BitVec n) := hcard
       _ = 2 ^ Fintype.card (Core.BitVec n) := by simp
       _ = allBooleanFunctionsBound n := by
-            simp [allBooleanFunctionsBound, card_bitvec]
+            simp [allBooleanFunctionsBound]
 
 /--
   Любое конечное семейство булевых функций на `n` переменных не может быть

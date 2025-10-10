@@ -316,7 +316,7 @@ lemma scenarioFromCommonPDT_k_eq
       ThirdPartyFacts.leaf_budget_from_commonPDT
         (n := n) (F := F) (C := C) with hwitness
   set k := Classical.choose witness with hk
-  simp [witness, hk, BoundedAtlasScenario.ofCommonPDT]
+  simp [BoundedAtlasScenario.ofCommonPDT]
 
 /--
   Версия построения сценария напрямую из частичного свидетельства: сначала
@@ -830,7 +830,7 @@ lemma scenarioFromAC0_k_eq
     (params := params) (F := F)
   set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
     (params := params) (F := F)
-  simp [S, hε0, hε1, scenarioFromShrinkage_k_eq]
+  simp [scenarioFromShrinkage_k_eq]
 
 /-- Семейство функций в сценарии, построенном из факта `AC⁰ → shrinkage`,
   совпадает с исходным списком `F`.  Это удобное переписывание для дальнейших
@@ -1072,7 +1072,7 @@ lemma scenarioFromAC0_epsilon_eq
   have hsc :
       (scenarioFromAC0 params F).2.atlas.epsilon = base.2.atlas.epsilon := by
     unfold scenarioFromAC0
-    simp [S, hε0, hε1, base]
+    simp [S, base]
   exact hsc.trans hbase
 
 /--
@@ -1305,7 +1305,7 @@ lemma scenarioFromLocalCircuit_k_eq
   unfold scenarioFromLocalCircuit
   set witness := ThirdPartyFacts.localCircuitWitness params F
   set S := witness.shrinkage
-  simp [witness, S, scenarioFromCommonPDT_k_eq]
+  simp [scenarioFromCommonPDT_k_eq]
 
 lemma scenarioFromLocalCircuit_completeBounds
     (params : ThirdPartyFacts.LocalCircuitParameters)

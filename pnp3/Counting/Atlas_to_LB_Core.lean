@@ -78,11 +78,11 @@ def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
   ext x
   by_cases hx : x ∈ S
   · by_cases hg : g x
-    · simp [mismatchSet, flipOn, hx, hg]
-    · simp [mismatchSet, flipOn, hx, hg]
+    · simp [mismatchSet, flipOn, hx]
+    · simp [mismatchSet, flipOn, hx]
   · by_cases hg : g x
-    · simp [mismatchSet, flipOn, hx, hg]
-    · simp [mismatchSet, flipOn, hx, hg]
+    · simp [mismatchSet, flipOn, hx]
+    · simp [mismatchSet, flipOn, hx]
 
 private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
   cases b <;> cases c <;> simp at h <;> simp [h]
@@ -94,10 +94,10 @@ private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
   funext x
   by_cases hx : f x = g x
   · have hx' : x ∉ mismatchSet (m := m) g f := by
-      simpa [mismatchSet, hx]
+      simp [mismatchSet, hx]
     simp [flipOn, hx, hx']
   · have hx' : x ∈ mismatchSet (m := m) g f := by
-      simpa [mismatchSet, hx] using hx
+      simp [mismatchSet, hx]
     have hflip : f x = ! g x := bool_eq_not_of_ne hx
     simp [flipOn, hx', hflip]
 
@@ -149,10 +149,10 @@ lemma distU_eq_zero_iff
       exact Finset.card_eq_zero.mp h
     funext x
     have hx_mem : x ∈ (Finset.univ : Finset (Domain m)) := by
-      simpa using (Finset.mem_univ x)
+      simp
     have hx_not :
         x ∉ ((Finset.univ : Finset (Domain m)).filter (fun x => f x ≠ g x)) := by
-      simpa [hempty] using (Finset.not_mem_empty x)
+      simp [hempty]
     have hx_contra : f x ≠ g x → False := by
       intro hne
       have hx_filter :
@@ -162,7 +162,7 @@ lemma distU_eq_zero_iff
     by_contra hne
     exact hx_contra hne
   · intro h
-    simpa [distU, h]
+    simp [distU, h]
 
 /-- Связываем `errU` с `distU`: ошибка аппроксимации равна числу несовпадений,
   делённому на размер пространства `2^m`. -/
@@ -269,12 +269,13 @@ lemma union_subset_approx_zero
   classical
   intro f hf
   refine ⟨f, ?_, ?_⟩
-  · simpa using hf
+  · exact hf
   · have hdist : distU f f = 0 :=
       distU_eq_zero_of_eq (m := m) (f := f) (g := f) rfl
     have hco : (distU f f : Q) = 0 := by exact_mod_cast hdist
-    have : (distU f f : Q) ≤ 0 := by simpa [hco]
-    simpa using this
+    have : (distU f f : Q) ≤ 0 * ((Nat.pow 2 m : Nat) : Q) := by
+      simp [hco, zero_mul]
+    exact this
 
 /-- Обратное включение: при `ε = 0` аппроксимация совпадает с исходным
   объединением подкубов. -/
@@ -284,13 +285,10 @@ lemma approx_subset_union_zero
   classical
   intro f hf
   rcases hf with ⟨g, hg_union, hdist⟩
-  have hdist' : (distU f g : Q) ≤ 0 := by
-    simpa using hdist
-  have hnonneg : (0 : Q) ≤ (distU f g : Q) := by
-    exact_mod_cast (Nat.zero_le (distU f g))
-  have hzero : (distU f g : Q) = 0 := le_antisymm hdist' hnonneg
   have hdistNat : distU f g = 0 := by
-    exact_mod_cast hzero
+    have h := hdist
+    simp [zero_mul] at h
+    exact h
   have hfg : f = g := (distU_eq_zero_iff (f := f) (g := g)).mp hdistNat
   simpa [hfg] using hg_union
 
@@ -836,13 +834,13 @@ lemma approxOnTestsetWitness_injective
     have hggRaw := congrArg Subtype.val hgEq
     have hgg : g₁ = g₂ := by
       have htmp := hggRaw
-      simp [g₁, g₂] at htmp
+      simp at htmp
       exact htmp
     have hsetRaw := congrArg Subtype.val hsubsetEq
     have hset' :
         mismatchSet (m := m) g₁ f₁ = mismatchSet (m := m) g₂ f₂ := by
       have htmp := hsetRaw
-      simp [g₁, g₂] at htmp
+      simp at htmp
       exact htmp
     apply Subtype.ext
     have hf₁ := flipOn_mismatchSet (m := m) g₁ f₁

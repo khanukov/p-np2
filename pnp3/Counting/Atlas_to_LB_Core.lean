@@ -269,12 +269,13 @@ lemma union_subset_approx_zero
   classical
   intro f hf
   refine ⟨f, ?_, ?_⟩
-  · simpa using hf
+  · exact hf
   · have hdist : distU f f = 0 :=
       distU_eq_zero_of_eq (m := m) (f := f) (g := f) rfl
     have hco : (distU f f : Q) = 0 := by exact_mod_cast hdist
-    have : (distU f f : Q) ≤ 0 := by simpa [hco]
-    simpa using this
+    have : (distU f f : Q) ≤ 0 * ((Nat.pow 2 m : Nat) : Q) := by
+      simp [hco, zero_mul]
+    exact this
 
 /-- Обратное включение: при `ε = 0` аппроксимация совпадает с исходным
   объединением подкубов. -/
@@ -284,13 +285,10 @@ lemma approx_subset_union_zero
   classical
   intro f hf
   rcases hf with ⟨g, hg_union, hdist⟩
-  have hdist' : (distU f g : Q) ≤ 0 := by
-    simpa using hdist
-  have hnonneg : (0 : Q) ≤ (distU f g : Q) := by
-    exact_mod_cast (Nat.zero_le (distU f g))
-  have hzero : (distU f g : Q) = 0 := le_antisymm hdist' hnonneg
   have hdistNat : distU f g = 0 := by
-    exact_mod_cast hzero
+    have h := hdist
+    simp [zero_mul] at h
+    exact h
   have hfg : f = g := (distU_eq_zero_iff (f := f) (g := g)).mp hdistNat
   simpa [hfg] using hg_union
 

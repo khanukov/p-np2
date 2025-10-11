@@ -159,9 +159,13 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     intro i b hib
     have hi := hall i (List.mem_finRange _)
     -- Раскрываем определение `memB` и используем предыдущую эквивалентность.
-    have hi' : (if x i = b then true else false) = true := by
-      simpa [memB, hib] using hi
-    exact (ite_true_false_eq_true_iff).mp hi'
+    -- Приводим булеву проверку из определения `memB` к каноничному виду.
+    have hi' : x i = b := by
+      -- Приводим булеву проверку из определения `memB` к равенству значений.
+      have htmp := hi
+      simp [memB, hib] at htmp
+      exact htmp
+    exact hi'
   · intro h
     -- Покажем, что для каждого индекса из `finRange` выполняется проверка в `memB`.
     have hall : ∀ i ∈ List.finRange n,
@@ -179,7 +183,9 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
 /-- Удобная пропозициональная версия условия принадлежности. -/
 lemma mem_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     mem β x ↔ ∀ i : Fin n, ∀ b : Bool, β i = some b → x i = b := by
-  simpa [mem] using memB_eq_true_iff (β := β) (x := x)
+  -- Переписываем определение `mem` и применяем булеву характеристику.
+  change memB β x = true ↔ ∀ i : Fin n, ∀ b : Bool, β i = some b → x i = b
+  exact memB_eq_true_iff (β := β) (x := x)
 
 /-- Тривиальный подкуб, у которого все координаты свободны, содержит любую точку. -/
 @[simp] lemma mem_top {n : Nat} (x : BitVec n) :
@@ -203,7 +209,12 @@ lemma mem_assign_iff {n : Nat} {β : Subcube n} {i : Fin n} {b : Bool}
       -- Координата была свободной: вычислим явную форму `γ`.
       have hassign' :
           some (fun j => if j = i then some b else β j) = some γ := by
-        simpa [Subcube.assign, hβ] using hassign
+        -- Сначала вычисляем явный результат присваивания.
+        have hassignβ :
+            Subcube.assign β i b =
+              some (fun j => if j = i then some b else β j) := by
+          simp [Subcube.assign, hβ]
+        exact Eq.subst (motive := fun t => t = some γ) hassignβ hassign
       have hγ : γ = fun j => if j = i then some b else β j :=
         (Option.some.inj hassign').symm
       subst hγ
@@ -215,17 +226,23 @@ lemma mem_assign_iff {n : Nat} {β : Subcube n} {i : Fin n} {b : Bool}
           intro j c hj
           by_cases hji : j = i
           · subst hji
-            have : False := by simpa [hβ] using hj
+            -- После подстановки `β i = none` получаем противоречие.
+            have : False := by
+              have hnoneEq :=
+                Eq.subst (motive := fun t => t = some c) hβ hj
+              cases hnoneEq
             exact False.elim this
-          · have : (if j = i then some b else β j) = some c := by
-              simpa [hji, hj]
-            exact hγ' j c this
+          · have hif : (if j = i then some b else β j) = β j := by
+              simp [hji]
+            have htmp : (if j = i then some b else β j) = some c :=
+              Eq.trans hif hj
+            exact hγ' j c htmp
         have hβmem : mem β x :=
           (mem_iff (β := β) (x := x)).2 hβprop
         have hi : x i = b := by
           have : (if i = i then some b else β i) = some b := by simp
           have hinst := hγ' i b this
-          simpa using hinst
+          exact hinst
         exact ⟨hβmem, hi⟩
       · intro hx
         rcases hx with ⟨hβmem, hib⟩
@@ -235,34 +252,46 @@ lemma mem_assign_iff {n : Nat} {β : Subcube n} {i : Fin n} {b : Bool}
         intro j c hj
         by_cases hji : j = i
         · subst hji
-          have hj' : some b = some c := by simpa using hj
-          have hb' : b = c := by simpa using Option.some.inj hj'
+          have hj' := hj
+          -- После подстановки `j = i` сокращаем условие до равенства значений.
+          simp at hj'
+          have hb' : b = c := hj'
           have : c = b := hb'.symm
           simp [this, hib]
-        · have : β j = some c := by simpa [hji] using hj
+        · have : β j = some c := by
+            -- Условие напрямую переписывается, когда `j ≠ i`.
+            have htmp := hj
+            simp [hji] at htmp
+            exact htmp
           exact hβ' j c this
   | some bOld =>
       -- Координата уже фиксирована. Возможны два случая: согласие или конфликт.
       have hb' : b = bOld := by
         by_contra hbneq
-        have : Subcube.assign β i b = none := by
+        have hnone : Subcube.assign β i b = none := by
           simp [Subcube.assign, hβ, hbneq]
-        have hcontra : none = some γ := by
-          simpa [Subcube.assign, hβ, hbneq] using hassign
+        have hcontra : none = some γ :=
+          Eq.subst (motive := fun t => t = some γ) hnone hassign
         cases hcontra
       have hγ : γ = β := by
-        have hassign' : some β = some γ := by
-          simpa [Subcube.assign, hβ, hb'] using hassign
-        exact (Option.some.inj hassign').symm
+        have hassign' : Subcube.assign β i b = some β := by
+          simp [Subcube.assign, hβ, hb']
+        have hsome : some γ = some β := hassign.symm.trans hassign'
+        exact (Option.some.inj hsome.symm).symm
       constructor
       · intro hγmem
-        have hβmem : mem β x := by simpa [hγ] using hγmem
+        have hβmem : mem β x := by
+          -- Используем равенство `γ = β` для переноса принадлежности.
+          exact Eq.subst (motive := fun δ => mem δ x) hγ hγmem
         have hprop := (mem_iff (β := β) (x := x)).1 hβmem
-        have hi : x i = bOld := by simpa using hprop i bOld hβ
-        have hi' : x i = b := by simpa [hb'] using hi
+        have hi : x i = bOld := hprop i bOld hβ
+        have hi' : x i = b := by
+          -- Переписываем значение через равенство `b = bOld`.
+          exact hi.trans hb'.symm
         exact ⟨hβmem, hi'⟩
       · intro hx
-        exact (by simpa [hγ] using hx.1)
+        -- Опять переносим принадлежность через равенство `γ = β`.
+        exact Eq.subst (motive := fun δ => mem δ x) hγ.symm hx.1
 
 /--
 Если серия присваиваний `assignMany` успешно завершилась, то принадлежность
@@ -279,7 +308,10 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
   | nil =>
       -- Пустой список: получаем тот же подкуб без дополнительных условий.
       have hγ : β = γ := by
-        simpa [Subcube.assignMany] using hassign
+        -- Единственный результат: присваивание ничего не меняет.
+        have htmp := hassign
+        simp [Subcube.assignMany] at htmp
+        exact htmp
       subst hγ
       simp
   | cons ub rest ih =>
@@ -289,10 +321,17 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
       cases hstep : Subcube.assign β i b with
       | none =>
           -- Конфликт невозможен, ведь результат объявлен как `some γ`.
-          simpa [Subcube.assignMany, hstep] using hassign
+          have hnone :
+              Subcube.assignMany β (⟨i, b⟩ :: rest) = none := by
+            simp [Subcube.assignMany, hstep]
+          have hcontr :=
+            Eq.subst (motive := fun t => t = some γ) hnone hassign
+          cases hcontr
       | some β' =>
           have hrest : Subcube.assignMany β' rest = some γ := by
-            simpa [Subcube.assignMany, hstep] using hassign
+            have htmp := hassign
+            simp [Subcube.assignMany, hstep] at htmp
+            exact htmp
           have htail := ih (β := β') (γ := γ) hrest
           -- Эквивалентность для первого шага: принадлежность β' ↔ (β ∧ нужный бит).
           have hhead :=
@@ -301,9 +340,44 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
           -- Склеиваем два эквивалента и приводим результат к компактному виду.
           have hcombined :
               mem γ x ↔ (mem β x ∧ x i = b) ∧ ∀ u ∈ rest, x u.1 = u.2 := by
-            simpa [hhead, and_left_comm, and_assoc] using htail
+            constructor
+            · intro hγmem
+              have htail' := htail.mp hγmem
+              rcases htail' with ⟨hβ', hrestProp⟩
+              have hβmem := hhead.mp hβ'
+              exact ⟨hβmem, hrestProp⟩
+            · intro hgoal
+              rcases hgoal with ⟨⟨hβmem, hib⟩, hrestProp⟩
+              have hβ' := hhead.mpr ⟨hβmem, hib⟩
+              exact htail.mpr ⟨hβ', hrestProp⟩
           -- Завершаем преобразование, переписывая условие на список.
-          simpa [List.forall_mem_cons, and_left_comm, and_assoc] using hcombined
+          constructor
+          · intro hγmem
+            have hparts := hcombined.mp hγmem
+            rcases hparts with ⟨⟨hβmem, hib⟩, hrestProp⟩
+            refine ⟨hβmem, ?_⟩
+            intro u hu
+            have hunion := List.mem_cons.mp hu
+            rcases hunion with hheadEq | htailMem
+            · -- Для первого элемента списка получаем нужный бит напрямую.
+              cases hheadEq
+              simp [hib]
+            · exact hrestProp u htailMem
+          · intro hgoal
+            rcases hgoal with ⟨hβmem, hlist⟩
+            have hib : x i = b := by
+              have hmem : ⟨i, b⟩ ∈ (⟨i, b⟩ :: rest) := by
+                simp
+              have hheadCase := hlist ⟨i, b⟩ hmem
+              change x i = b at hheadCase
+              exact hheadCase
+            have hrestProp : ∀ u ∈ rest, x u.1 = u.2 := by
+              intro u hu
+              have hcase := hlist u (List.mem_cons.mpr (Or.inr hu))
+              exact hcase
+            have hcombined' : (mem β x ∧ x i = b) ∧ ∀ u ∈ rest, x u.1 = u.2 :=
+              ⟨⟨hβmem, hib⟩, hrestProp⟩
+            exact hcombined.mpr hcombined'
 
 
 /-- Индикатор покрытия x объединением подкубов из списка Rset. -/
@@ -346,7 +420,7 @@ lemma covered_cons {n : Nat} (β : Subcube n) (R : List (Subcube n))
     rcases h with ⟨γ, hγ, hx⟩
     simp at hγ
     rcases hγ with hγ | hγ
-    · left; subst hγ; simpa [mem] using hx
+    · left; subst hγ; exact hx
     · right; exact ⟨γ, hγ, hx⟩
   · intro h
     rcases h with h | h
@@ -362,7 +436,7 @@ lemma covered_dedup {n : Nat} [DecidableEq (Subcube n)]
   · intro h
     rcases h with ⟨β, hβ, hx⟩
     refine ⟨β, ?_, hx⟩
-    have : β ∈ R.dedup := by simpa using hβ
+    have : β ∈ R.dedup := hβ
     exact (List.mem_dedup.mp this)
   · intro h
     rcases h with ⟨β, hβ, hx⟩
@@ -389,14 +463,14 @@ lemma coveredB_dedup {n : Nat} [DecidableEq (Subcube n)]
       | false => rfl
       | true =>
           have : covered R x :=
-            (covered_iff (Rset := R) x).mpr (by simpa [hcase])
+            (covered_iff (Rset := R) x).mpr hcase
           exact (hcov this).elim
     have hfalse' : coveredB (R.dedup) x = false := by
       cases hcase : coveredB (R.dedup) x with
       | false => rfl
       | true =>
           have : covered (R.dedup) x :=
-            (covered_iff (Rset := R.dedup) x).mpr (by simpa [hcase])
+            (covered_iff (Rset := R.dedup) x).mpr hcase
           exact (hcov' this).elim
     simp [hfalse, hfalse']
 
@@ -463,14 +537,16 @@ lemma coveredB_eq_of_toFinset_eq {n : Nat}
   refine coveredB_eq_of_mem_equiv (n := n) ?_
   intro β
   constructor <;> intro hβ
-  · have hβ' : β ∈ R₁.toFinset := by
-      simpa [List.mem_toFinset] using hβ
-    have hβ'' : β ∈ R₂.toFinset := by simpa [h] using hβ'
-    simpa [List.mem_toFinset] using hβ''
-  · have hβ' : β ∈ R₂.toFinset := by
-      simpa [List.mem_toFinset] using hβ
-    have hβ'' : β ∈ R₁.toFinset := by simpa [h] using hβ'
-    simpa [List.mem_toFinset] using hβ''
+  · have hβ' : β ∈ R₁.toFinset := List.mem_toFinset.mpr hβ
+    have hβ'' : β ∈ R₂.toFinset := by
+      -- Переносим членство через равенство множеств.
+      exact h ▸ hβ'
+    exact List.mem_toFinset.mp hβ''
+  · have hβ' : β ∈ R₂.toFinset := List.mem_toFinset.mpr hβ
+    have hβ'' : β ∈ R₁.toFinset := by
+      -- Обратное направление равенства множеств.
+      exact h.symm ▸ hβ'
+    exact List.mem_toFinset.mp hβ''
 
 /-- Построить BitVec длины n из числа k (по двоичным битам). -/
 def vecOfNat (n : Nat) (k : Nat) : BitVec n :=
@@ -524,9 +600,10 @@ lemma errU_eq_zero_of_agree {n : Nat}
     · intro hx
       rcases Finset.mem_filter.mp hx with ⟨_, hneq⟩
       exact (hneq (h x)).elim
-    · intro hx; simpa using hx
+    · intro hx; cases hx
   have hmismatch : mismatches = 0 := by
-    simpa [mismatches, hfilter]
+    -- После упрощения фильтра остаётся пустое множество, чья мощность равна нулю.
+    simp [mismatches, hfilter]
   simp [mismatches, hmismatch]
 
 /-- Частный случай: пустой набор подкубов идеально аппроксимирует константный
@@ -568,7 +645,10 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
         intro i h
         rcases h with ⟨b, hb⟩
         intro hnone
-        simpa [hb] using hnone
+        -- Совмещая два описания `β i`, получаем невозможное равенство `some b = none`.
+        have hcontr : some b = none := by
+          exact hb ▸ hnone
+        cases hcontr
     -- Finset-представление фиксированных и свободных координат.
     let fixedSet :=
       (Finset.univ : Finset (Fin n)).filter fun i => β i ≠ none
@@ -1055,6 +1135,41 @@ lemma override_idem (ρ : Restriction n) (x : BitVec n) :
   | none => none
   | some β => some ⟨β⟩
 
+/--
+  Сбрасываем координату `i` в состояние «звезда».  Эта операция понадобится
+  при обратной реконструкции исходного ограничения из закодированного
+  свидетеля switching-леммы: мы будем восстанавливать исходные звёзды,
+  последовательно отменяя ранее сделанные присваивания.
+-/
+@[simp] def unassign (ρ : Restriction n) (i : Fin n) : Restriction n :=
+  ⟨fun j => if j = i then none else ρ.mask j⟩
+
+@[simp] lemma unassign_mask (ρ : Restriction n) (i : Fin n) (j : Fin n) :
+    (ρ.unassign i).mask j = if j = i then none else ρ.mask j := by
+  rfl
+
+/-- Если координата `i` уже свободна, то операция `unassign` ничего не
+  меняет. -/
+lemma unassign_of_free {ρ : Restriction n} {i : Fin n}
+    (hfree : ρ.mask i = none) :
+    ρ.unassign i = ρ := by
+  cases' ρ with mask
+  apply congrArg Restriction.mk
+  funext j
+  classical
+  change (if j = i then none else mask j) = mask j
+  by_cases hj : j = i
+  · cases hj
+    have hmask : mask i = none := hfree
+    simp [hmask]
+  · simp [hj]
+
+
+/--
+  Присваивание свободной координаты, а затем её явное освобождение возвращает
+  исходное ограничение.  Важный шаг при доказательстве инъективности
+  кодирования «плохих» ограничений.
+-/
 lemma assign_mask_eq {ρ : Restriction n} {i : Fin n} {b : Bool}
     {ρ' : Restriction n} (h : ρ.assign i b = some ρ') :
     ∀ j : Fin n, ρ'.mask j = (if j = i then some b else ρ.mask j) := by
@@ -1098,6 +1213,41 @@ lemma assign_override_eq {ρ : Restriction n} {i : Fin n} {b : Bool}
   by_cases hij : j = i
   · subst hij; simp [Restriction.override, hmask]
   · simp [Restriction.override, hmask, hij]
+
+/--
+  Присваивание свободной координаты, а затем её явное освобождение возвращает
+  исходное ограничение.  Важный шаг при доказательстве инъективности
+  кодирования «плохих» ограничений.
+-/
+lemma unassign_assign_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
+    {ρ' : Restriction n} (hassign : ρ.assign i b = some ρ')
+    (hfree : ρ.mask i = none) :
+    ρ'.unassign i = ρ := by
+  classical
+  cases' ρ with mask
+  cases' ρ' with mask'
+  have hmask :=
+    assign_mask_eq (ρ := ⟨mask⟩) (ρ' := ⟨mask'⟩) (i := i) (b := b) hassign
+  apply congrArg Restriction.mk
+  funext j
+  have hmask_i : mask i = none := hfree
+  have hmask_j := hmask j
+  change (if j = i then none else mask' j) = mask j
+  by_cases hj : j = i
+  · cases hj
+    have hβ : mask' i = some b := by
+      simpa [if_pos rfl] using hmask_j
+    have hgoal : (if i = i then none else mask' i) = mask i := by
+      have hmask_i_free : mask i = none := hmask_i
+      simp [hβ, hmask_i_free]
+    exact hgoal
+  · have hβ : mask' j = mask j := by
+      have hIf : (if j = i then some b else mask j) = mask j := by
+        simp [hj]
+      exact Eq.trans hmask_j hIf
+    have hgoal : (if j = i then none else mask' j) = mask j := by
+      simp [hj, hβ]
+    exact hgoal
 
 lemma mask_eq_some_of_not_none {ρ : Restriction n} {i : Fin n}
     (h : ρ.mask i ≠ none) : ∃ b : Bool, ρ.mask i = some b := by
@@ -1372,6 +1522,117 @@ def hasDecisionTreeOfDepth
     match ρ.mask i with
     | none => p
     | some _ => ((1 : Q) - p) / 2
+
+/--
+  Вес ограничения после `unassign` отличается ровно в коэффициент
+  `\frac{2p}{1-p}`. Остальные множители совпадают покоординатно, поскольку
+  операция затрагивает только выбранную позицию `i`.
+-/
+lemma weight_unassign_mul (ρ : Restriction n) (i : Fin n) (p : Q)
+    {b : Bool} (hmask : ρ.mask i = some b) (hp : p ≠ 1) :
+    Restriction.weight (ρ.unassign i) p
+      = ((2 * p) / (1 - p)) * Restriction.weight ρ p := by
+  classical
+  let F : Option Bool → Q :=
+    fun
+    | none => p
+    | some _ => ((1 : Q) - p) / 2
+  have hmem : (i : Fin n) ∈ (Finset.univ : Finset (Fin n)) := by
+    exact Finset.mem_univ i
+  have hunassign_prod :=
+    (Finset.mul_prod_erase (s := (Finset.univ : Finset (Fin n)))
+      (f := fun j => F ((ρ.unassign i).mask j))
+      (a := i) hmem).symm
+  have hρ_prod :=
+    (Finset.mul_prod_erase (s := (Finset.univ : Finset (Fin n)))
+      (f := fun j => F (ρ.mask j))
+      (a := i) hmem).symm
+  have hmask_eq :
+      ∀ j ∈ Finset.univ.erase i,
+        (ρ.unassign i).mask j = ρ.mask j := by
+    intro j hj
+    obtain ⟨hji, _⟩ := Finset.mem_erase.mp hj
+    have hneq : j ≠ i := hji
+    simp [Restriction.unassign_mask, hneq]
+  have htail :
+      (∏ j ∈ Finset.univ.erase i,
+        F ((ρ.unassign i).mask j))
+        = ∏ j ∈ Finset.univ.erase i,
+            F (ρ.mask j) := by
+    refine Finset.prod_congr rfl ?_
+    intro j hj
+    have hmask_eq' := hmask_eq j hj
+    have hcongr := congrArg F hmask_eq'
+    simpa [F] using hcongr
+  have hρ_weight : Restriction.weight ρ p
+      = F (ρ.mask i)
+          * ∏ j ∈ Finset.univ.erase i,
+              F (ρ.mask j) := by
+    simpa [Restriction.weight, F]
+      using hρ_prod
+  have hunassign_weight : Restriction.weight (ρ.unassign i) p
+      = F ((ρ.unassign i).mask i)
+          * ∏ j ∈ Finset.univ.erase i,
+              F ((ρ.unassign i).mask j) := by
+    simpa [Restriction.weight, F]
+      using hunassign_prod
+  have hdenom : 1 - p ≠ 0 := by
+    exact sub_ne_zero.mpr ((ne_comm).mp hp)
+  have hcoeff : ((2 * p) / (1 - p)) * ((1 - p) / 2) = p := by
+    have htwo : (2 : Q) ≠ 0 := by
+      norm_num
+    -- Умножаем обе части на общий знаменатель и сводим к полиному.
+    have hzero :
+        ((2 * p) / (1 - p)) * ((1 - p) / 2) - p = 0 := by
+      field_simp [hdenom, htwo]
+    exact sub_eq_zero.mp hzero
+  have hmain_F : ((2 * p) / (1 - p))
+        * (F (ρ.mask i)
+            * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j))
+        = p * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := by
+    have hFi : F (ρ.mask i) = ((1 - p) / 2) := by
+      simp [F, hmask]
+    have hscaled := congrArg
+      (fun x => x * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j)) hcoeff
+    calc
+      ((2 * p) / (1 - p))
+          * (F (ρ.mask i)
+              * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j))
+          = ((2 * p) / (1 - p))
+              * (((1 - p) / 2)
+                  * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j)) := by
+                    simp [hFi]
+      _ = (((2 * p) / (1 - p)) * ((1 - p) / 2))
+              * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := by
+                    simp [mul_left_comm, mul_assoc]
+      _ = p * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := by
+                    exact hscaled
+  have hscaled_weight : ((2 * p) / (1 - p)) * Restriction.weight ρ p
+      = p * ∏ j ∈ Finset.univ.erase i,
+          F (ρ.mask j) := by
+    have htmp := hmain_F
+    simp [← hρ_weight, mul_left_comm, mul_assoc] at htmp
+    exact htmp
+  have hunassign_mask : (ρ.unassign i).mask i = none := by simp
+  have hstep1 : F ((ρ.unassign i).mask i)
+      * ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j)
+        = p * ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j) := by
+    simp [F, hunassign_mask]
+  have hstep2 : ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j)
+      = ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := htail
+  calc
+    Restriction.weight (ρ.unassign i) p
+        = F ((ρ.unassign i).mask i)
+            * ∏ j ∈ Finset.univ.erase i,
+                F ((ρ.unassign i).mask j) := hunassign_weight
+    _ = p * ∏ j ∈ Finset.univ.erase i,
+            F ((ρ.unassign i).mask j) := hstep1
+    _ = p * ∏ j ∈ Finset.univ.erase i,
+            F (ρ.mask j) := by
+          have htmp := congrArg (fun x => p * x) hstep2
+          exact htmp
+    _ = ((2 * p) / (1 - p)) * Restriction.weight ρ p :=
+          hscaled_weight.symm
 
 lemma weight_cons (choice : Option Bool) (ρ : Restriction n) (p : Q) :
     (Restriction.cons choice ρ).weight p =
@@ -2043,7 +2304,7 @@ inductive ClauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n)
               have := (mem_freeLiterals (ρ := ρ) (C := C) (ℓ := ℓ)).1 hℓ
               exact this.2
           , nonempty := by
-              simpa using hfree
+              exact hfree
           , noSatisfied := by
               intro ℓ hℓ hstat
               exact hsat ⟨ℓ, hℓ, hstat⟩ }
@@ -2055,7 +2316,10 @@ lemma ClausePendingWitness.exists_unassigned
   classical
   obtain ⟨ℓ, freeTail, hfree⟩ := List.exists_cons_of_ne_nil w.nonempty
   have hℓmem : ℓ ∈ w.free := by
-    simpa [hfree] using List.mem_cons_self ℓ freeTail
+    classical
+    have hmem : ℓ ∈ ℓ :: freeTail := List.mem_cons_self (a := ℓ) (l := freeTail)
+    have := congrArg (fun l => ℓ ∈ l) hfree
+    exact Eq.mpr this hmem
   exact ⟨ℓ, w.subset _ hℓmem, w.unassigned _ hℓmem⟩
 
 lemma clauseStatus_pending_exists_literal {n : Nat} {ρ : Restriction n}
@@ -2064,9 +2328,778 @@ lemma clauseStatus_pending_exists_literal {n : Nat} {ρ : Restriction n}
       ∃ ℓ ∈ C.literals, ρ.literalStatus ℓ = LiteralStatus.unassigned := by
   intro _; exact ClausePendingWitness.exists_unassigned w
 
+lemma ClausePendingWitness.mask_idx_eq_none {n : Nat}
+    {ρ : Restriction n} {C : CnfClause n}
+    {w : ClausePendingWitness ρ C} {ℓ : Literal n}
+    (hℓ : ℓ ∈ w.free) : ρ.mask ℓ.idx = none := by
+  classical
+  have hstatus := w.unassigned ℓ hℓ
+  exact (literalStatus_eq_unassigned (ρ := ρ) (ℓ := ℓ)).1 hstatus
+
+lemma ClausePendingWitness.literal_idx_mem_freeIndicesList {n : Nat}
+    {ρ : Restriction n} {C : CnfClause n}
+    {w : ClausePendingWitness ρ C} {ℓ : Literal n}
+    (hℓ : ℓ ∈ w.free) : ℓ.idx ∈ ρ.freeIndicesList := by
+  classical
+  have hmask := ClausePendingWitness.mask_idx_eq_none
+    (ρ := ρ) (C := C) (w := w) (ℓ := ℓ) hℓ
+  exact (Restriction.mem_freeIndicesList (ρ := ρ) (i := ℓ.idx)).2 hmask
+
+/--
+`PendingClauseSelection` описывает первую «живую» (pending) клаузу в списке
+`clauses`.  Мы сохраняем явное разбиение списка на префикс удовлетворённых
+клауз, саму живую клаузу и оставшийся хвост, а также свидетеля её незавершённости.
+-/
+structure PendingClauseSelection {n : Nat}
+    (ρ : Restriction n) (clauses : List (CnfClause n)) where
+  /-- Список клауз до первой «живой» клаузы.  Все элементы здесь удовлетворены.
+  -/
+  leadingClauses : List (CnfClause n)
+  /-- Первая клауза, статус которой — `pending`. -/
+  clause : CnfClause n
+  /-- Хвост после выбранной клаузы. -/
+  suffix : List (CnfClause n)
+  /-- Свидетель того, что выбранная клауза действительно «живая». -/
+  witness : ClausePendingWitness ρ clause
+  /-- Каждая клауза в префиксе удовлетворена текущим ограничением. -/
+  leadingSatisfied : ∀ C ∈ leadingClauses, ρ.clauseStatus C = ClauseStatus.satisfied
+  /-- Статус выбранной клаузы равен `pending` с указанным свидетелем. -/
+  pendingStatusEq : ρ.clauseStatus clause = ClauseStatus.pending witness
+  /-- Полное восстановление исходного списка клауз. -/
+  clausesDecomposition : clauses = leadingClauses ++ clause :: suffix
+  deriving Repr
+
+/--
+Поиск первой «живой» клаузы в списке.  Возвращает разбиение списка и свидетеля,
+если такая клауза существует; иначе возвращает `none`.  Если встречается
+фальсифицированная клауза, функция немедленно завершает поиск, поскольку формула
+уже обращается в `false`.
+-/
+def firstPendingClause?
+    {n : Nat} (ρ : Restriction n) :
+    ∀ clauses : List (CnfClause n),
+      Option (PendingClauseSelection (ρ := ρ) clauses)
+  | [] => none
+  | C :: rest =>
+      match hstatus : ρ.clauseStatus C with
+      | ClauseStatus.pending w =>
+          some {
+            leadingClauses := [],
+            clause := C,
+            suffix := rest,
+            witness := w,
+            leadingSatisfied := by
+              intro C' hmem
+              have : C' ∈ ([] : List (CnfClause n)) := hmem
+              cases this
+            pendingStatusEq := hstatus,
+            clausesDecomposition := rfl }
+      | ClauseStatus.satisfied =>
+          match firstPendingClause? (ρ := ρ) rest with
+          | none => none
+          | some selection =>
+              some {
+                leadingClauses := C :: selection.leadingClauses,
+                clause := selection.clause,
+                suffix := selection.suffix,
+                witness := selection.witness,
+                leadingSatisfied := by
+                  intro D hmem
+                  obtain h | h := List.mem_cons.mp hmem
+                  · subst h
+                    exact hstatus
+                  · exact selection.leadingSatisfied D h
+                pendingStatusEq := selection.pendingStatusEq,
+                clausesDecomposition := by
+                  have hrest : rest =
+                      selection.leadingClauses ++ selection.clause :: selection.suffix :=
+                      selection.clausesDecomposition
+                  have : C :: rest =
+                      (C :: selection.leadingClauses) ++ selection.clause :: selection.suffix := by
+                      simp [List.cons_append, hrest]
+                  exact this }
+      | ClauseStatus.falsified => none
+
 end Restriction
 
+namespace ClausePendingWitness
+
+variable {n : Nat} {ρ : Restriction n} {C : CnfClause n}
+
+/--
+Выбор конкретного свободного литерала и значения, в которое он был поставлен
+на рассматриваемой ветви канонического решающего дерева.  Индекс указывает на
+позицию литерала в списке `w.free`, фиксируя тем самым «сохранённый» литерал,
+а поле `value` — на значение переменной вдоль ветви.
+-/
+structure Selection (w : Restriction.ClausePendingWitness ρ C) where
+  /-- Позиция выбранного литерала в списке `w.free`. -/
+  index : Fin w.free.length
+  /-- Значение переменной на ветви, используемой при кодировании. -/
+  value : Bool
+  deriving Repr
+
+namespace Selection
+
+variable {w : Restriction.ClausePendingWitness ρ C}
+
+/-- Выбранный литерал из списка `w.free`. -/
+@[simp] def literal (choice : Selection w) : Literal n :=
+  w.free.get choice.index
+
+lemma literal_mem_free (choice : Selection w) :
+    choice.literal ∈ w.free := by
+  classical
+  dsimp [Selection.literal]
+  exact List.get_mem (l := w.free) choice.index
+
+lemma mask_idx_eq_none (choice : Selection w) :
+    ρ.mask choice.literal.idx = none :=
+  Restriction.ClausePendingWitness.mask_idx_eq_none
+    (ρ := ρ) (C := C) (w := w) (ℓ := choice.literal)
+    (literal_mem_free (choice := choice))
+
+lemma literal_idx_mem_freeIndicesList (choice : Selection w) :
+    choice.literal.idx ∈ ρ.freeIndicesList :=
+  Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+    (ρ := ρ) (C := C) (w := w) (ℓ := choice.literal)
+    (literal_mem_free (choice := choice))
+
+/--
+Результат успешного присваивания выбранного литерала.  Мы явно возвращаем как
+новое ограничение, так и свидетельство того, что `Restriction.assign` вернул
+`some`.
+-/
+noncomputable def assignResult (choice : Selection w) :
+    {ρ' : Restriction n //
+      ρ.assign choice.literal.idx choice.value = some ρ'} := by
+  classical
+  have hmem := literal_idx_mem_freeIndicesList (choice := choice)
+  have hassign :=
+    Restriction.assign_some_of_mem_freeIndicesList
+      (ρ := ρ) (i := choice.literal.idx) (b := choice.value) hmem
+  refine ⟨Classical.choose hassign, ?_⟩
+  exact Classical.choose_spec hassign
+
+/-- Новое ограничение после фиксации выбранного литерала. -/
+noncomputable def nextRestriction (choice : Selection w) : Restriction n :=
+  (assignResult (ρ := ρ) (C := C) (w := w) choice).1
+
+@[simp] lemma assign_eq (choice : Selection w) :
+    ρ.assign choice.literal.idx choice.value = some (nextRestriction choice) := by
+  classical
+  have hassign := (assignResult (ρ := ρ) (C := C) (w := w) choice).2
+  dsimp [nextRestriction] at hassign
+  exact hassign
+
+/--
+  В новой маске выбранная координата фиксирована значением `choice.value`.
+-/
+lemma mask_idx_eq_some (choice : Selection w) :
+    (nextRestriction choice).mask choice.literal.idx = some choice.value := by
+  classical
+  have hassign := Selection.assign_eq
+    (ρ := ρ) (C := C) (w := w) (choice := choice)
+  have hmask := Restriction.assign_mask_eq (ρ := ρ)
+    (ρ' := nextRestriction (ρ := ρ) (C := C) (w := w) choice)
+    (i := choice.literal.idx) (b := choice.value) hassign
+    choice.literal.idx
+  have hgoal : (if choice.literal.idx = choice.literal.idx then some choice.value
+      else ρ.mask choice.literal.idx) = some choice.value := by
+    simp
+  exact Eq.trans hmask hgoal
+
+/--
+  Остальные координаты маски не изменяются.
+-/
+lemma mask_idx_eq_of_ne (choice : Selection w) {j : Fin n}
+    (hne : j ≠ choice.literal.idx) :
+    (nextRestriction choice).mask j = ρ.mask j := by
+  classical
+  have hassign := Selection.assign_eq
+    (ρ := ρ) (C := C) (w := w) (choice := choice)
+  have hmask := Restriction.assign_mask_eq (ρ := ρ)
+    (ρ' := nextRestriction (ρ := ρ) (C := C) (w := w) choice)
+    (i := choice.literal.idx) (b := choice.value) hassign j
+  have hgoal : (if j = choice.literal.idx then some choice.value
+        else ρ.mask j) = ρ.mask j := if_neg hne
+  exact Eq.trans hmask hgoal
+
+/--
+  Число свободных координат в новом ограничении уменьшается на единицу.
+-/
+lemma freeCount_nextRestriction (choice : Selection w) :
+    (nextRestriction choice).freeCount = ρ.freeCount - 1 := by
+  classical
+  have hassign := Selection.assign_eq
+    (ρ := ρ) (C := C) (w := w) (choice := choice)
+  have hmem := literal_idx_mem_freeIndicesList (ρ := ρ) (C := C) (w := w)
+    (choice := choice)
+  have hcount := Restriction.freeCount_assign_of_mem (ρ := ρ)
+    (ρ' := nextRestriction (ρ := ρ) (C := C) (w := w) choice)
+    (i := choice.literal.idx) (b := choice.value) hmem hassign
+  exact hcount
+
+/--
+  Операция `unassign` восстанавливает исходное ограничение: мы сразу
+  возвращаем «звёздочку» на выбранной координате.
+-/
+lemma unassign_nextRestriction (choice : Selection w) :
+    (nextRestriction choice).unassign choice.literal.idx = ρ := by
+  classical
+  have hassign := Selection.assign_eq
+    (ρ := ρ) (C := C) (w := w) (choice := choice)
+  have hfree := mask_idx_eq_none (ρ := ρ) (C := C) (w := w) (choice := choice)
+  exact Restriction.unassign_assign_of_free (ρ := ρ)
+    (ρ' := nextRestriction (ρ := ρ) (C := C) (w := w) choice)
+    (i := choice.literal.idx) (b := choice.value) hassign hfree
+
+/--
+  После присваивания выбранная координата перестаёт быть свободной.
+-/
+lemma not_mem_freeIndicesList_nextRestriction (choice : Selection w) :
+    choice.literal.idx ∉ (nextRestriction choice).freeIndicesList := by
+  classical
+  intro hmem
+  have hmask_none :=
+    (Restriction.mem_freeIndicesList
+      (ρ := nextRestriction (ρ := ρ) (C := C) (w := w) choice)
+      (i := choice.literal.idx)).1 hmem
+  have hmask_some := mask_idx_eq_some (ρ := ρ) (C := C) (w := w) (choice := choice)
+  have hcontr : some choice.value = (none : Option Bool) :=
+    Eq.trans (Eq.symm hmask_some) hmask_none
+  cases hcontr
+
+
+end Selection
+
+end ClausePendingWitness
+
+/--
+`SelectionTrace clauses ρ t` фиксирует последовательность из `t` шагов
+канонического ветвления для списка клауз `clauses`, начиная с ограничения `ρ`.
+Каждый шаг хранит выбранную «живую» клаузу, конкретный литерал внутри неё и
+оставшийся хвост трассы, построенный уже для обновлённого ограничения.
+-/
+inductive SelectionTrace {n : Nat} (clauses : List (CnfClause n))
+    : Restriction n → Nat → Type
+  | nil {ρ : Restriction n} : SelectionTrace clauses ρ 0
+  | cons {ρ : Restriction n}
+      (selection : Restriction.PendingClauseSelection (ρ := ρ) clauses)
+      (choice : ClausePendingWitness.Selection selection.witness)
+      {t : Nat}
+      (rest : SelectionTrace clauses
+          (ClausePendingWitness.Selection.nextRestriction
+            (ρ := ρ)
+            (C := selection.clause)
+            (w := selection.witness)
+            (choice := choice)) t) :
+      SelectionTrace clauses ρ (Nat.succ t)
+
+namespace SelectionTrace
+
+variable {n : Nat} {clauses : List (CnfClause n)}
+
+/-- Множитель `\frac{2p}{1-p}`, возникающий при восстановлении звёзд. -/
+@[simp] def branchFactor (p : Q) : Q := (2 * p) / (1 - p)
+
+/--
+Итоговое ограничение после применения всей трассы.  Для пустой трассы оно
+совпадает с исходным `ρ`, а для непустой — с ограничением на последнем шаге.
+-/
+@[simp] noncomputable def finalRestriction {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) : Restriction n :=
+  match trace with
+  | SelectionTrace.nil => ρ
+  | SelectionTrace.cons _ _ rest => finalRestriction rest
+
+/--
+Список зафиксированных пар (индекс, значение) вдоль трассы.  Порядок соответствует
+порядку появления шагов.
+-/
+@[simp] noncomputable def assignedBitFixes {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) : List (BitFix n) :=
+  match trace with
+  | SelectionTrace.nil => []
+  | SelectionTrace.cons _ choice rest =>
+      (choice.literal.idx, choice.value) :: assignedBitFixes rest
+
+/--
+Список позиций выбранных литералов внутри соответствующих клауз.  Порядок
+совпадает с порядком шагов трассы и будет использоваться в штрих-коде.
+-/
+@[simp] noncomputable def literalPositions {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) : List Nat :=
+  match trace with
+  | SelectionTrace.nil => []
+  | SelectionTrace.cons _ choice rest =>
+      choice.index.1 :: literalPositions rest
+
+/--
+Длина списка `assignedBitFixes` совпадает с числом шагов трассы.
+-/
+lemma assignedBitFixes_length {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) :
+    (assignedBitFixes trace).length = t := by
+  induction trace with
+  | nil =>
+      simp [assignedBitFixes]
+  | @cons ρ selection choice t rest ih =>
+      simp [assignedBitFixes, ih]
+
+/--
+Длина списка позиций также равна длине трассы.
+-/
+lemma literalPositions_length {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) :
+    (literalPositions trace).length = t := by
+  induction trace with
+  | nil =>
+      simp [literalPositions]
+  | @cons ρ selection choice t rest ih =>
+      simp [literalPositions, ih]
+
+/--
+Последовательное восстановление исходного ограничения: разбираем список фиксаций
+с конца и вызываем `unassign` на каждой записанной координате.
+-/
+@[simp] def reconstructRestriction (ρ : Restriction n)
+    : List (BitFix n) → Restriction n
+  | [] => ρ
+  | fix :: rest =>
+      (reconstructRestriction ρ rest).unassign fix.1
+
+/--
+Применяя `reconstructRestriction` к итоговому ограничению и списку фиксаций,
+возвращаемся к исходной маске `ρ`.
+-/
+lemma reconstruct_eq_original {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) :
+    reconstructRestriction (finalRestriction trace)
+        (assignedBitFixes trace) = ρ := by
+  induction trace with
+  | nil =>
+      simp [assignedBitFixes, reconstructRestriction]
+  | @cons ρ selection choice t rest ih =>
+      have hnext := ih
+      have hstep :
+          reconstructRestriction
+              (finalRestriction (SelectionTrace.cons selection choice rest))
+              (assignedBitFixes (SelectionTrace.cons selection choice rest))
+            =
+              (ClausePendingWitness.Selection.nextRestriction
+                (ρ := ρ)
+                (C := selection.clause)
+                (w := selection.witness)
+                (choice := choice)).unassign choice.literal.idx := by
+        simp [assignedBitFixes, reconstructRestriction, finalRestriction, hnext]
+      have hundo :=
+        ClausePendingWitness.Selection.unassign_nextRestriction
+          (ρ := ρ)
+          (C := selection.clause)
+          (w := selection.witness)
+          (choice := choice)
+      exact Eq.trans hstep hundo
+
+/--
+Структура штрих-кода: финальное ограничение, пары (индекс, значение) и позиции
+выбранных литералов.  Эти данные позволяют восстановить исходное ограничение и
+служат для последующего подсчёта количества «плохих» ограничений.
+-/
+structure Barcode (n : Nat) where
+  /-- Окончательное ограничение после применения всех шагов трассы. -/
+  finalRestriction : Restriction n
+  /-- Пары (индекс, значение) в порядке появления вдоль трассы. -/
+  assignedFixes : List (BitFix n)
+  /-- Номера выбранных литералов в соответствующих клаузах. -/
+  literalPositions : List Nat
+  deriving Repr
+
+/--
+Кодирование трассы: собираем итоговое ограничение, список фиксаций и позиции
+литералов.  Эти данные образуют «штрих-код» ветви канонического разбора.
+-/
+@[simp] noncomputable def encode {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) : Barcode n :=
+  { finalRestriction := finalRestriction trace
+    , assignedFixes := assignedBitFixes trace
+    , literalPositions := literalPositions trace }
+
+/--
+Декодирование штрих-кода: последовательное применение `unassign` восстанавливает
+исходное ограничение.
+-/
+@[simp] noncomputable def decode {n : Nat} (code : Barcode n) : Restriction n :=
+  reconstructRestriction (ρ := code.finalRestriction) code.assignedFixes
+
+/--
+Длина списка фиксаций в коде равна длине трассы, породившей этот код.
+-/
+lemma encode_assignedFixes_length {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) :
+    (encode trace).assignedFixes.length = t := by
+  change (assignedBitFixes trace).length = t
+  exact assignedBitFixes_length (trace := trace)
+
+/--
+Длина списка позиций в коде совпадает с длиной исходной трассы.
+-/
+lemma encode_literalPositions_length {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) :
+    (encode trace).literalPositions.length = t := by
+  change (literalPositions trace).length = t
+  exact literalPositions_length (trace := trace)
+
+/--
+Декодирование штрих-кода, полученного из трассы, возвращает исходное ограничение.
+-/
+lemma decode_encode {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) :
+    decode (encode trace) = ρ := by
+  change
+    reconstructRestriction (finalRestriction trace)
+      (assignedBitFixes trace) = ρ
+  exact reconstruct_eq_original (trace := trace)
+
+/--
+  Вес исходного ограничения выражается через вес финальной маски и фактор
+  `(branchFactor p)^t`, где `t` — длина трассы.
+-/
+lemma weight_eq_branchFactor_pow {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) (p : Q) (hp : p ≠ 1) :
+    Restriction.weight (ρ := ρ) (p := p) = (branchFactor p) ^ t
+      * Restriction.weight (ρ := finalRestriction trace) (p := p) := by
+  classical
+  induction trace with
+  | nil =>
+      simp [branchFactor]
+  | @cons ρ selection choice t rest ih =>
+      -- Обозначим промежуточное ограничение после текущего шага.
+      let σ := ClausePendingWitness.Selection.nextRestriction
+        (ρ := ρ)
+        (C := selection.clause)
+        (w := selection.witness)
+        (choice := choice)
+      have hmask_raw :=
+        ClausePendingWitness.Selection.mask_idx_eq_some
+          (ρ := ρ)
+          (C := selection.clause)
+          (w := selection.witness)
+          (choice := choice)
+      -- Сопоставляем веса `ρ` и `σ`.
+      have hunassign :=
+        ClausePendingWitness.Selection.unassign_nextRestriction
+          (ρ := ρ)
+          (C := selection.clause)
+          (w := selection.witness)
+          (choice := choice)
+      have hmaskσ : σ.mask choice.literal.idx = some choice.value := by
+        have htmp := hmask_raw
+        simp [σ] at htmp
+        exact htmp
+      have hmul_raw :
+          Restriction.weight
+              (ρ := σ.unassign choice.literal.idx) (p := p)
+            = ((2 * p) / (1 - p))
+              * Restriction.weight (ρ := σ) (p := p) :=
+        Restriction.weight_unassign_mul
+          (ρ := σ)
+          (i := choice.literal.idx)
+          (p := p)
+          (b := choice.value)
+          (hmask := hmaskσ)
+          (hp := hp)
+      have hratio_raw : Restriction.weight (ρ := ρ) (p := p)
+          = ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p) := by
+        have hcongr := congrArg
+          (fun τ => Restriction.weight (ρ := τ) (p := p)) hunassign
+        exact Eq.trans (Eq.symm hcongr) hmul_raw
+      have hratio : Restriction.weight (ρ := ρ) (p := p)
+          = branchFactor p * Restriction.weight (ρ := σ) (p := p) := by
+        have hrewrite :
+            ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
+              = branchFactor p * Restriction.weight (ρ := σ) (p := p) := by
+          change ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
+              = ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
+          simp [branchFactor]
+        exact hratio_raw.trans hrewrite
+      -- Индуктивное выражение для веса `σ`.
+      have hrec_raw := ih
+      have hrec : Restriction.weight (ρ := σ) (p := p)
+          = (branchFactor p) ^ t
+            * Restriction.weight (ρ := finalRestriction rest) (p := p) := by
+        have htmp := hrec_raw
+        simp [σ] at htmp
+        exact htmp
+      -- Преобразуем результирующую формулу.
+      have hfinal :
+          finalRestriction (SelectionTrace.cons selection choice rest)
+            = finalRestriction rest := rfl
+      have hweight_swap := congrArg
+        (fun τ => Restriction.weight (ρ := τ) (p := p)) hfinal.symm
+      have hpow := (pow_succ (branchFactor p) t).symm
+      calc
+        Restriction.weight (ρ := ρ) (p := p)
+            = branchFactor p * Restriction.weight (ρ := σ) (p := p) := hratio
+        _ = branchFactor p *
+              ((branchFactor p) ^ t
+                * Restriction.weight (ρ := finalRestriction rest) (p := p)) := by
+              -- заменяем вес `σ` по индуктивному предположению
+              rw [hrec]
+        _ = (branchFactor p) ^ (Nat.succ t)
+              * Restriction.weight
+                  (ρ := finalRestriction
+                    (SelectionTrace.cons selection choice rest))
+                  (p := p) := by
+              -- аккуратно сворачиваем множители
+              calc
+                branchFactor p *
+                    ((branchFactor p) ^ t
+                      * Restriction.weight (ρ := finalRestriction rest) (p := p))
+                    = (branchFactor p * (branchFactor p) ^ t)
+                        * Restriction.weight (ρ := finalRestriction rest) (p := p) :=
+                      (mul_assoc (branchFactor p) ((branchFactor p) ^ t)
+                        (Restriction.weight (ρ := finalRestriction rest) (p := p))).symm
+                _ = ((branchFactor p) ^ t * branchFactor p)
+                        * Restriction.weight (ρ := finalRestriction rest) (p := p) := by
+                      refine congrArg
+                        (fun x =>
+                          x * Restriction.weight (ρ := finalRestriction rest) (p := p))
+                        ?_
+                      exact mul_comm (branchFactor p) ((branchFactor p) ^ t)
+                _ = (branchFactor p) ^ (Nat.succ t)
+                        * Restriction.weight (ρ := finalRestriction rest) (p := p) := by
+                      refine congrArg
+                        (fun x =>
+                          x * Restriction.weight (ρ := finalRestriction rest) (p := p))
+                        hpow
+                _ = (branchFactor p) ^ (Nat.succ t)
+                        * Restriction.weight
+                            (ρ := finalRestriction
+                              (SelectionTrace.cons selection choice rest))
+                            (p := p) := by
+                      refine congrArg
+                        (fun w => (branchFactor p) ^ (Nat.succ t) * w)
+                        hweight_swap
+
+/--
+  Переписываем формулу выше непосредственно для закодированного ограничения.
+-/
+lemma decode_encode_weight {ρ : Restriction n} {t : Nat}
+    (trace : SelectionTrace clauses ρ t) (p : Q) (hp : p ≠ 1) :
+    Restriction.weight (ρ := decode (encode trace)) (p := p)
+      = (branchFactor p) ^ t
+      * Restriction.weight (ρ := finalRestriction trace) (p := p) := by
+  have hdecode := decode_encode (trace := trace)
+  have hrewrite := congrArg
+    (fun τ => Restriction.weight (ρ := τ) (p := p)) hdecode
+  have hbase := weight_eq_branchFactor_pow
+    (trace := trace) (p := p) (hp := hp)
+  exact Eq.trans hrewrite hbase
+
+end SelectionTrace
+
 namespace CNF
+
+/--
+Путь канонического разветвления для КНФ.  Конструкция хранит последовательность
+шагов, на каждом из которых выбирается первая «живая» клауза и конкретный
+свободный литерал внутри неё.  Хвостовой путь строится относительно полученного
+после присваивания ограничения.
+-/
+inductive CanonicalTrace {n w : Nat} (F : CNF n w) :
+    Restriction n → Nat → Type
+  | nil {ρ : Restriction n} : CanonicalTrace (F := F) ρ 0
+  | cons {ρ : Restriction n} {t : Nat}
+      (selection : Restriction.PendingClauseSelection
+        (ρ := ρ) F.clauses)
+      (choice : ClausePendingWitness.Selection selection.witness)
+      (tail : CanonicalTrace (F := F)
+        (ClausePendingWitness.Selection.nextRestriction
+          (ρ := ρ) (C := selection.clause) (w := selection.witness) choice)
+        t) :
+      CanonicalTrace (F := F) ρ (Nat.succ t)
+
+namespace CanonicalTrace
+
+variable {n w : Nat} {F : CNF n w}
+
+/--
+Преобразование канонической трассы в универсальную `SelectionTrace`.  Мы просто
+забываем о принадлежности к конкретной формуле и используем ранее определённую
+структуру, parametrized только списком клауз. -/
+@[simp] noncomputable def toSelectionTrace {ρ : Restriction n} {t : Nat}
+    (trace : CanonicalTrace (F := F) ρ t) :
+    SelectionTrace F.clauses ρ t :=
+  match trace with
+  | CanonicalTrace.nil => SelectionTrace.nil
+  | CanonicalTrace.cons selection choice tail =>
+      SelectionTrace.cons selection choice
+        (toSelectionTrace (trace := tail))
+
+/--
+Полученный штрих-код: используем универсальное кодирование `SelectionTrace`
+для трассы, ассоциированной с текущей канонической ветвью. -/
+@[simp] noncomputable def barcode {ρ : Restriction n} {t : Nat}
+    (trace : CanonicalTrace (F := F) ρ t) : SelectionTrace.Barcode n :=
+  SelectionTrace.encode (clauses := F.clauses)
+    (trace := toSelectionTrace (trace := trace))
+
+/-- Длина списка присваиваний в штрих-коде равна длине исходной трассы. -/
+lemma barcode_assignedFixes_length {ρ : Restriction n} {t : Nat}
+    (trace : CanonicalTrace (F := F) ρ t) :
+    (barcode (trace := trace)).assignedFixes.length = t := by
+  simpa using
+    (SelectionTrace.encode_assignedFixes_length
+      (clauses := F.clauses)
+      (trace := toSelectionTrace (trace := trace)))
+
+/-- Аналогично для списка позиций литералов. -/
+lemma barcode_literalPositions_length {ρ : Restriction n} {t : Nat}
+    (trace : CanonicalTrace (F := F) ρ t) :
+    (barcode (trace := trace)).literalPositions.length = t := by
+  simpa using
+    (SelectionTrace.encode_literalPositions_length
+      (clauses := F.clauses)
+      (trace := toSelectionTrace (trace := trace)))
+
+/-- Декодирование штрих-кода возвращает исходное ограничение. -/
+lemma decode_barcode {ρ : Restriction n} {t : Nat}
+    (trace : CanonicalTrace (F := F) ρ t) :
+    SelectionTrace.decode (barcode (trace := trace)) = ρ := by
+  simpa using
+    (SelectionTrace.decode_encode
+      (clauses := F.clauses)
+      (trace := toSelectionTrace (trace := trace)))
+
+/-- Итоговое ограничение после применения всех шагов пути. -/
+
+noncomputable def finalRestriction :
+    {ρ : Restriction n} → {t : Nat} →
+      CanonicalTrace (F := F) ρ t → Restriction n
+  | ρ, _, CanonicalTrace.nil => ρ
+  | ρ, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
+
+/--
+Список индексов переменных, которые фиксируются вдоль пути, в том порядке, в
+котором происходят присваивания.
+-/
+noncomputable def indicesList :
+    {ρ : Restriction n} → {t : Nat} →
+      CanonicalTrace (F := F) ρ t → List (Fin n)
+  | _, _, CanonicalTrace.nil => []
+  | _, _, CanonicalTrace.cons _ choice tail =>
+      choice.literal.idx :: indicesList tail
+
+/--
+Список значений, в которые устанавливаются выбранные переменные.  Порядок
+совпадает с порядком `indicesList`.
+-/
+noncomputable def valuesList :
+    {ρ : Restriction n} → {t : Nat} →
+      CanonicalTrace (F := F) ρ t → List Bool
+  | _, _, CanonicalTrace.nil => []
+  | _, _, CanonicalTrace.cons _ choice tail =>
+      choice.value :: valuesList tail
+
+/--
+Список внутренних позиций выбранных литералов внутри соответствующих клауз.
+Эти значения пригодятся для дальнейшего кодирования сведений о ветви.
+-/
+noncomputable def positionList :
+    {ρ : Restriction n} → {t : Nat} →
+      CanonicalTrace (F := F) ρ t → List Nat
+  | _, _, CanonicalTrace.nil => []
+  | _, _, CanonicalTrace.cons _ choice tail =>
+      choice.index.1 :: positionList tail
+
+@[simp] lemma indicesList_length :
+    ∀ {ρ : Restriction n} {t : Nat}
+      (trace : CanonicalTrace (F := F) ρ t),
+        (indicesList trace).length = t
+  | _, _, CanonicalTrace.nil => by
+      simp [indicesList]
+  | ρ, Nat.succ t, CanonicalTrace.cons selection choice tail => by
+      have htail := indicesList_length (trace := tail)
+      calc
+        (indicesList (CanonicalTrace.cons selection choice tail)).length
+            = (choice.literal.idx :: indicesList tail).length := rfl
+        _ = Nat.succ (indicesList tail).length := by
+            simp
+        _ = Nat.succ t := by
+            exact congrArg Nat.succ htail
+
+@[simp] lemma valuesList_length :
+    ∀ {ρ : Restriction n} {t : Nat}
+      (trace : CanonicalTrace (F := F) ρ t),
+        (valuesList trace).length = t
+  | _, _, CanonicalTrace.nil => by
+      simp [valuesList]
+  | ρ, Nat.succ t, CanonicalTrace.cons selection choice tail => by
+      have htail := valuesList_length (trace := tail)
+      calc
+        (valuesList (CanonicalTrace.cons selection choice tail)).length
+            = (choice.value :: valuesList tail).length := rfl
+        _ = Nat.succ (valuesList tail).length := by
+            simp
+        _ = Nat.succ t := by
+            exact congrArg Nat.succ htail
+
+@[simp] lemma positionList_length :
+    ∀ {ρ : Restriction n} {t : Nat}
+      (trace : CanonicalTrace (F := F) ρ t),
+        (positionList trace).length = t
+  | _, _, CanonicalTrace.nil => by
+      simp [positionList]
+  | ρ, Nat.succ t, CanonicalTrace.cons selection choice tail => by
+      have htail := positionList_length (trace := tail)
+      calc
+        (positionList (CanonicalTrace.cons selection choice tail)).length
+            = (choice.index.1 :: positionList tail).length := rfl
+        _ = Nat.succ (positionList tail).length := by
+            simp
+        _ = Nat.succ t := by
+            exact congrArg Nat.succ htail
+
+lemma foldr_unassign_eq_start :
+    ∀ {ρ : Restriction n} {t : Nat}
+      (trace : CanonicalTrace (F := F) ρ t),
+        (indicesList trace).foldr
+          (fun idx acc => acc.unassign idx)
+          (finalRestriction trace)
+          = ρ
+  | ρ, _, CanonicalTrace.nil => by
+      simp [indicesList, finalRestriction]
+  | ρ, Nat.succ t, CanonicalTrace.cons selection choice tail => by
+      have htail :=
+        foldr_unassign_eq_start (trace := tail)
+      have hcalc :
+          (indicesList (CanonicalTrace.cons selection choice tail)).foldr
+              (fun idx acc => acc.unassign idx)
+              (finalRestriction (CanonicalTrace.cons selection choice tail))
+            = ((indicesList tail).foldr
+                  (fun idx acc => acc.unassign idx)
+                  (finalRestriction tail)).unassign choice.literal.idx := by
+          simp [indicesList, finalRestriction]
+      have hrewrite :=
+        congrArg (fun σ => σ.unassign choice.literal.idx) htail
+      have hunassign :=
+        ClausePendingWitness.Selection.unassign_nextRestriction
+          (ρ := ρ) (C := selection.clause) (w := selection.witness)
+          (choice := choice)
+      calc
+        (indicesList (CanonicalTrace.cons selection choice tail)).foldr
+            (fun idx acc => acc.unassign idx)
+            (finalRestriction (CanonicalTrace.cons selection choice tail))
+          = ((indicesList tail).foldr
+                (fun idx acc => acc.unassign idx)
+                (finalRestriction tail)).unassign choice.literal.idx := hcalc
+        _ = ((ClausePendingWitness.Selection.nextRestriction
+                (ρ := ρ) (C := selection.clause) (w := selection.witness) choice).unassign
+                choice.literal.idx) := hrewrite
+        _ = ρ := hunassign
+
+end CanonicalTrace
 
 /-- Вероятность (по `𝓡_p`) того, что глубина PDT после ограничения больше `t`. -/
 @[simp] def failureProbability

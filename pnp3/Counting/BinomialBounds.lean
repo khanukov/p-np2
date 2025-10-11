@@ -89,7 +89,7 @@ lemma sum_choose_le_pow (D k : Nat) :
               = (∑ i ∈ Finset.range (D.succ), Nat.choose D i)
                   + (∑ i ∈ Finset.Ico (D.succ) (k.succ), Nat.choose D i) :=
                 by
-                  simpa using hsplit.symm
+                  simp [hsplit]
           _ = (∑ i ∈ Finset.range (D.succ), Nat.choose D i) + 0 := by
                 rw [htail]
           _ = (∑ i ∈ Finset.range (D.succ), Nat.choose D i) := by
@@ -143,8 +143,8 @@ lemma unionBound_le_pow_mul (D k : Nat) :
     set M := Nat.max 1 D with hMdef
     have hM_pos : 0 < M := by
       -- Из `1 ≤ M` следует положительность.
-      have hM_ge : 1 ≤ M := by
-        simpa [hMdef] using (le_max_left (1 : Nat) D)
+      have hM_ge_aux : 1 ≤ Nat.max 1 D := le_max_left (1 : Nat) D
+      have hM_ge : 1 ≤ M := hMdef.symm ▸ hM_ge_aux
       have : 0 < (1 : Nat) := by decide
       exact lt_of_lt_of_le this hM_ge
     -- Каждая отдельная биномиальная компонента ограничена сверху `M^k`.
@@ -155,8 +155,10 @@ lemma unionBound_le_pow_mul (D k : Nat) :
         -- Из принадлежности диапазону получаем `i ≤ k`.
         have hi_le : i ≤ k := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
         -- Сначала применяем оценку `choose ≤ M^i`.
-        have hchoose : Nat.choose D i ≤ M ^ i := by
-          simpa [hMdef] using choose_le_pow_max D i
+        have hchoose_aux := choose_le_pow_max D i
+        have hpow : (Nat.max 1 D) ^ i = M ^ i := by
+          simp [hMdef]
+        have hchoose : Nat.choose D i ≤ M ^ i := hpow ▸ hchoose_aux
         -- Затем используем монотонность степени по показателю.
         have hmono := Nat.pow_le_pow_right hM_pos hi_le
         exact hchoose.trans hmono
@@ -174,9 +176,23 @@ lemma unionBound_le_pow_mul (D k : Nat) :
         have := Finset.sum_const_nat
           (s := Finset.range (k.succ)) (m := M ^ k)
           (f := fun _ : Nat => M ^ k) hconst
-        simpa [Finset.card_range] using this
+        convert this using 1
+        simp [Finset.card_range]
     -- Финальный вывод — переписать исходные обозначения.
-    simpa [unionBound, hMdef, hsum_const] using hsum
+    have hsum' :
+        (∑ i ∈ Finset.range (k.succ), Nat.choose D i)
+          ≤ k.succ * M ^ k :=
+      by
+        calc
+          (∑ i ∈ Finset.range (k.succ), Nat.choose D i)
+              ≤ (∑ _i ∈ Finset.range (k.succ), M ^ k) := hsum
+          _ = k.succ * M ^ k := hsum_const
+    have hfinal : unionBound D k ≤ k.succ * M ^ k := by
+      change (∑ i ∈ Finset.range (k.succ), Nat.choose D i) ≤ k.succ * M ^ k
+      exact hsum'
+    have hpow : M ^ k = (Nat.max 1 D) ^ k := by
+      simp [hMdef]
+    exact hpow ▸ hfinal
 
 
 /--
@@ -194,7 +210,7 @@ lemma sum_fin_eq_sum_range {β : Type*} [AddCommMonoid β]
       Finset.sum_bij (fun (i : Fin (k.succ)) (_ : i ∈ (Finset.univ : Finset _)) => (i : ℕ))
         (fun i _ => Finset.mem_range.mpr i.isLt)
         (fun i _ j _ h => by
-          ext; simpa using h)
+          ext; exact h)
         ?_ (fun i _ => rfl)
     intro j hj
     refine ⟨⟨j, Finset.mem_range.mp hj⟩, ?_, rfl⟩
@@ -212,9 +228,8 @@ lemma card_subsets_exact_choose (α : Type*) [Fintype α] [DecidableEq α]
     classical
     have hcard :
         Fintype.card {S : Finset α // S.card = i} =
-          (Finset.univ.filter fun (S : Finset α) => S.card = i).card := by
-      simpa using
-        (Fintype.card_subtype (fun (S : Finset α) => S.card = i))
+          (Finset.univ.filter fun (S : Finset α) => S.card = i).card :=
+      Fintype.card_subtype (fun (S : Finset α) => S.card = i)
     have hfilter_eq :
         (Finset.univ.filter fun (S : Finset α) => S.card = i)
           = (Finset.univ : Finset α).powersetCard i := by
@@ -223,12 +238,29 @@ lemma card_subsets_exact_choose (α : Type*) [Fintype α] [DecidableEq α]
       · rcases Finset.mem_filter.1 hS with ⟨-, hcardS⟩
         have hsubset : S ⊆ (Finset.univ : Finset α) := by
           intro x _hx; simp
-        simpa [Finset.mem_powersetCard, hsubset, hcardS]
+        exact Finset.mem_powersetCard.2 ⟨hsubset, hcardS⟩
       · have hcardS : S.card = i :=
           (Finset.mem_powersetCard.1 hS).2
-        simp [Finset.mem_filter, hcardS]
+        refine Finset.mem_filter.2 ?_
+        refine ⟨by simp, hcardS⟩
     have hpow := Finset.card_powersetCard i (Finset.univ : Finset α)
-    simpa [hcard, hfilter_eq, Finset.card_univ] using hpow
+    have hpow' :
+        ((Finset.univ : Finset α).powersetCard i).card =
+          Nat.choose (Fintype.card α) i :=
+      by
+        have :
+            Nat.choose (Finset.card (Finset.univ : Finset α)) i =
+              Nat.choose (Fintype.card α) i :=
+          by
+            simp [Finset.card_univ]
+        exact Eq.trans hpow this
+    calc
+      Fintype.card {S : Finset α // S.card = i}
+          = (Finset.univ.filter fun (S : Finset α) => S.card = i).card :=
+            hcard
+      _ = ((Finset.univ : Finset α).powersetCard i).card :=
+            congrArg Finset.card hfilter_eq
+      _ = Nat.choose (Fintype.card α) i := hpow'
 
 /--
   Разделяем семейство всех подмножеств мощности ≤ `k` по точной мощности
@@ -248,7 +280,7 @@ lemma card_subsets_le_unionBound (α : Type*) [Fintype α] [DecidableEq α]
       fun x =>
         ⟨x.2.1, by
           have hx : (x.1 : Nat) ≤ k := Nat.lt_succ_iff.mp x.1.isLt
-          simpa [x.2.2] using hx⟩
+          exact x.2.2.symm ▸ hx⟩
     have hleft : Function.LeftInverse fromSigma toSigma := by
       intro S
       rcases S with ⟨S, hS⟩
@@ -256,40 +288,40 @@ lemma card_subsets_le_unionBound (α : Type*) [Fintype α] [DecidableEq α]
     have hright : Function.RightInverse fromSigma toSigma := by
       intro x
       rcases x with ⟨i, ⟨S, hS⟩⟩
-      ext <;> simp [toSigma, fromSigma, hS, Nat.lt_succ_iff]
+      ext <;> simp [toSigma, fromSigma, hS]
     let e : {S : Finset α // S.card ≤ k} ≃
         Σ i : Fin (k.succ), {S : Finset α // S.card = (i : Nat)} :=
       ⟨toSigma, fromSigma, hleft, hright⟩
     have hcard_equiv := Fintype.card_congr e
     have hsigma :
         Fintype.card (Σ i : Fin (k.succ), {S : Finset α // S.card = (i : Nat)}) =
-          ∑ i : Fin (k.succ), Fintype.card {S : Finset α // S.card = (i : Nat)} := by
-      classical
-      simpa using
-        (Fintype.card_sigma (fun i : Fin (k.succ) =>
-          {S : Finset α // S.card = (i : Nat)}))
+          ∑ i : Fin (k.succ), Fintype.card {S : Finset α // S.card = (i : Nat)} :=
+      by
+        classical
+        exact
+          Fintype.card_sigma
+            (α := fun i : Fin (k.succ) => {S : Finset α // S.card = (i : Nat)})
     have hsum_range :
         (∑ i : Fin (k.succ),
             Fintype.card {S : Finset α // S.card = (i : Nat)})
           = ∑ i ∈ Finset.range (k.succ),
               Fintype.card {S : Finset α // S.card = i} :=
-      by
-        classical
-        simpa using
-          (sum_fin_eq_sum_range
-            (fun i => Fintype.card {S : Finset α // S.card = i}) k)
+      sum_fin_eq_sum_range
+        (fun i => Fintype.card {S : Finset α // S.card = i}) k
     have hchoose :
         ∑ i ∈ Finset.range (k.succ),
             Fintype.card {S : Finset α // S.card = i}
           = unionBound (Fintype.card α) k :=
       by
-        simp [unionBound, card_subsets_exact_choose]
+        unfold unionBound
+        refine Finset.sum_congr rfl ?_
+        intro i _hi
+        exact card_subsets_exact_choose (α := α) i
     refine
       (calc
         Fintype.card {S : Finset α // S.card ≤ k}
             = Fintype.card (Σ i : Fin (k.succ),
-                {S : Finset α // S.card = (i : Nat)}) := by
-                simpa using hcard_equiv
+                {S : Finset α // S.card = (i : Nat)}) := hcard_equiv
         _ = ∑ i : Fin (k.succ),
               Fintype.card {S : Finset α // S.card = (i : Nat)} := hsigma
         _ = ∑ i ∈ Finset.range (k.succ),
@@ -308,32 +340,47 @@ lemma unionBound_le_succ (D k : Nat) :
     -- Переписываем обе стороны через точное количество подмножеств множества `Fin D`.
     have hcardD :
         unionBound D k =
-          Fintype.card {S : Finset (Fin D) // S.card ≤ k} := by
-      have :=
-        (card_subsets_le_unionBound (α := Fin D) (k := k))
-      -- Учитываем, что `|Fin D| = D`.
-      simpa [Finset.card_fin] using this.symm
+          Fintype.card {S : Finset (Fin D) // S.card ≤ k} :=
+      by
+        have h := card_subsets_le_unionBound (α := Fin D) (k := k)
+        calc
+          unionBound D k
+              = unionBound (Fintype.card (Fin D)) k := by
+                  have hcardFin : Fintype.card (Fin D) = D := Fintype.card_fin _
+                  exact (congrArg (fun n => unionBound n k) hcardFin).symm
+          _ = Fintype.card {S : Finset (Fin D) // S.card ≤ k} := h.symm
     have hcardSucc :
         unionBound D.succ k =
-          Fintype.card {S : Finset (Fin D.succ) // S.card ≤ k} := by
-      have :=
-        (card_subsets_le_unionBound (α := Fin D.succ) (k := k))
-      simpa [Finset.card_fin] using this.symm
+          Fintype.card {S : Finset (Fin D.succ) // S.card ≤ k} :=
+      by
+        have h := card_subsets_le_unionBound (α := Fin D.succ) (k := k)
+        calc
+          unionBound D.succ k
+              = unionBound (Fintype.card (Fin D.succ)) k := by
+                  have hcardFin : Fintype.card (Fin D.succ) = D.succ :=
+                    Fintype.card_fin _
+                  exact (congrArg (fun n => unionBound n k) hcardFin).symm
+          _ = Fintype.card {S : Finset (Fin D.succ) // S.card ≤ k} := h.symm
     -- Инъективно расширяем каждое множество `S ⊆ Fin D` до `Fin (D.succ)` через `Fin.castSucc`.
     let lift (S : {S : Finset (Fin D) // S.card ≤ k}) :
         {T : Finset (Fin D.succ) // T.card ≤ k} :=
       ⟨Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S.1,
         by
           -- `Finset.map` по вложению сохраняет кардинальность.
-          simpa [Finset.card_map] using S.2⟩
+          have hmap_card :
+              (Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S.1).card =
+                S.1.card :=
+            Finset.card_map
+              (f := ⟨Fin.castSucc, Fin.castSucc_injective _⟩) (s := S.1)
+          exact hmap_card.symm ▸ S.2⟩
     -- Отображение `lift` является инъекцией.
     have h_inj : Function.Injective lift := by
       intro S₁ S₂ hS
       -- Сравниваем образы подмножеств и переходим к базовым элементам.
       have hsets :
           Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₁.1 =
-            Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₂.1 := by
-        simpa [lift] using congrArg Subtype.val hS
+            Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₂.1 :=
+        congrArg Subtype.val hS
       -- Проверяем, что каждое `x` принадлежит `S₁` тогда и только тогда, когда принадлежит `S₂`.
       ext x; constructor <;> intro hx
       · -- Используем соответствие через `Fin.castSucc` и равенство образов.
@@ -341,27 +388,33 @@ lemma unionBound_le_succ (D k : Nat) :
             Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₁.1 :=
           Finset.mem_map.mpr ⟨x, hx, rfl⟩
         have hx'' : Fin.castSucc x ∈
-            Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₂.1 := by
-          simpa [hsets] using hx'
+            Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₂.1 :=
+          hsets ▸ hx'
         rcases Finset.mem_map.1 hx'' with ⟨y, hy, hyx⟩
         have : y = x := Fin.castSucc_injective _ hyx
-        simpa [this] using hy
+        exact this ▸ hy
       · -- Аналогично, но меняем роли `S₁` и `S₂`.
         have hx' : Fin.castSucc x ∈
             Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₂.1 :=
           Finset.mem_map.mpr ⟨x, hx, rfl⟩
         have hx'' : Fin.castSucc x ∈
-            Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₁.1 := by
-          simpa [hsets] using hx'
+            Finset.map ⟨Fin.castSucc, Fin.castSucc_injective _⟩ S₁.1 :=
+          hsets.symm ▸ hx'
         rcases Finset.mem_map.1 hx'' with ⟨y, hy, hyx⟩
         have : y = x := Fin.castSucc_injective _ hyx
-        simpa [this] using hy
+        exact this ▸ hy
     -- Сравниваем мощности подмножеств при помощи полученной инъекции.
     have hcard_le :=
       Fintype.card_le_of_injective lift h_inj
     -- Возвращаемся к выражению через `unionBound`.
-    simpa [hcardD, hcardSucc, lift]
-      using hcard_le
+    have hconverted : unionBound D k ≤ unionBound D.succ k :=
+      by
+        calc
+          unionBound D k
+              = Fintype.card {S : Finset (Fin D) // S.card ≤ k} := hcardD
+          _ ≤ Fintype.card {S : Finset (Fin D.succ) // S.card ≤ k} := hcard_le
+          _ = unionBound D.succ k := hcardSucc.symm
+    exact hconverted
 
 /--
   Монотонность `unionBound` по размеру словаря: если `D₁ ≤ D₂`, то и
@@ -375,14 +428,26 @@ lemma unionBound_mono_left {D₁ D₂ k : Nat}
     have haux : ∀ d, unionBound D₁ k ≤ unionBound (D₁ + d) k := by
       intro d
       induction d with
-      | zero => simpa
-      | succ d ih =>
-          have hstep := unionBound_le_succ (D₁ + d) k
-          have hnext := le_trans ih hstep
-          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
-            Nat.succ_eq_add_one] using hnext
+      | zero =>
+          -- База: добавление нуля элементов не меняет оценку.
+          have hzero : unionBound D₁ k = unionBound (D₁ + 0) k := by
+            simp
+          exact hzero.le
+        | succ d ih =>
+            have hstep := unionBound_le_succ (D₁ + d) k
+            have hnext := le_trans ih hstep
+            have hrewrite : (D₁ + d).succ = D₁ + Nat.succ d := by
+              calc
+                (D₁ + d).succ = (D₁ + d) + 1 := Nat.succ_eq_add_one _
+                _ = D₁ + (d + 1) := Nat.add_assoc _ _ _
+                _ = D₁ + Nat.succ d :=
+                  congrArg (fun t => D₁ + t) (Nat.succ_eq_add_one d).symm
+            have hgoal : unionBound D₁ k ≤ unionBound (D₁ + Nat.succ d) k :=
+              hrewrite ▸ hnext
+            exact hgoal
     have hplus : D₁ + (D₂ - D₁) = D₂ := Nat.add_sub_of_le h
-    simpa [hplus] using haux (D₂ - D₁)
+    have hresult := haux (D₂ - D₁)
+    exact hplus ▸ hresult
 
 /-- Монотонность `unionBound` по бюджету `k`: разрешая больше подкубов,
 мы не уменьшаем число возможных объединений. -/
@@ -401,7 +466,9 @@ lemma unionBound_mono_right {D k₁ k₂ : Nat}
           ≤ (∑ i ∈ Finset.range (k₂.succ), Nat.choose D i) :=
       Finset.sum_le_sum_of_subset_of_nonneg hsubset (by
         intro i _ _; exact Nat.zero_le _)
-    simpa [unionBound] using hmono
+    change (∑ i ∈ Finset.range (k₁.succ), Nat.choose D i)
+        ≤ (∑ i ∈ Finset.range (k₂.succ), Nat.choose D i)
+    exact hmono
 
 /--
   Натуральный бюджет ошибок `⌈ε ⋅ N⌉`, измеряющий допустимое число
@@ -432,26 +499,34 @@ lemma hammingBallBound_spec
 положительности множителя `N`. -/
 lemma hammingBallBudget_mono
     (N : Nat) {ε ε' : Rat}
-    (hε0 : (0 : Rat) ≤ ε) (hε'0 : (0 : Rat) ≤ ε') (hε : ε ≤ ε') :
+    (hε'0 : (0 : Rat) ≤ ε') (hε : ε ≤ ε') :
     hammingBallBudget N ε ≤ hammingBallBudget N ε' :=
   by
     classical
     have hN_nonneg : (0 : Rat) ≤ (N : Rat) := by
       exact_mod_cast (Nat.zero_le N)
+    have hmul : ε * (N : Rat) ≤ ε' * (N : Rat) :=
+      mul_le_mul_of_nonneg_right hε hN_nonneg
     have hceil_le :
-        Int.ceil (ε * (N : Rat)) ≤ Int.ceil (ε' * (N : Rat)) := by
-      have hmul : ε * (N : Rat) ≤ ε' * (N : Rat) :=
-        mul_le_mul_of_nonneg_right hε hN_nonneg
-      simpa using (Int.ceil_le_ceil hmul)
+        Int.ceil (ε * (N : Rat)) ≤ Int.ceil (ε' * (N : Rat)) :=
+      Int.ceil_le_ceil hmul
+    have hmul_nonneg : (0 : Rat) ≤ ε' * (N : Rat) :=
+      mul_nonneg hε'0 hN_nonneg
     have hceil_nonneg :
-        (0 : ℤ) ≤ Int.ceil (ε' * (N : Rat)) := by
-      have hmul_nonneg : (0 : Rat) ≤ ε' * (N : Rat) :=
-        mul_nonneg hε'0 hN_nonneg
-      simpa using (Int.ceil_nonneg hmul_nonneg)
+        (0 : ℤ) ≤ Int.ceil (ε' * (N : Rat)) :=
+      Int.ceil_nonneg hmul_nonneg
     have htarget :
         Int.ceil (ε * (N : Rat)) ≤
           (Int.toNat (Int.ceil (ε' * (N : Rat))) : ℤ) := by
-      simpa [Int.toNat_of_nonneg hceil_nonneg] using hceil_le
+      have hcast :
+          ((Int.toNat (Int.ceil (ε' * (N : Rat)))) : ℤ)
+            = Int.ceil (ε' * (N : Rat)) :=
+        by
+          exact_mod_cast (Int.toNat_of_nonneg hceil_nonneg)
+      calc
+        Int.ceil (ε * (N : Rat))
+            ≤ Int.ceil (ε' * (N : Rat)) := hceil_le
+        _ = ((Int.toNat (Int.ceil (ε' * (N : Rat)))) : ℤ) := hcast.symm
     exact (Int.toNat_le.mpr htarget)
 
 /-- Монотонность оценки хаммингового шара по параметру ошибки. -/
@@ -464,11 +539,14 @@ lemma hammingBallBound_mono
       hammingBallBound N ε' hε'0 hε'1 :=
   by
     classical
-    have hbudget := hammingBallBudget_mono (N := N) hε0 hε'0 hε
-    simpa [hammingBallBound_spec] using
-      (unionBound_mono_right (D := N)
+    have hbudget := hammingBallBudget_mono (N := N) hε'0 hε
+    have hmono :=
+      unionBound_mono_right (D := N)
         (k₁ := hammingBallBudget N ε)
-        (k₂ := hammingBallBudget N ε') hbudget)
+        (k₂ := hammingBallBudget N ε') hbudget
+    change unionBound N (hammingBallBudget N ε)
+        ≤ unionBound N (hammingBallBudget N ε')
+    exact hmono
 
 /-- Даже уточнённая оценка не превосходит полного числа подмножеств `2^N`. -/
 lemma hammingBallBound_le_pow
@@ -476,8 +554,9 @@ lemma hammingBallBound_le_pow
     hammingBallBound N ε _h0 _h1 ≤ 2 ^ N :=
 by
   classical
-  simpa [hammingBallBound_spec] using
-    (unionBound_le_pow N (hammingBallBudget N ε))
+  have h := unionBound_le_pow N (hammingBallBudget N ε)
+  change unionBound N (hammingBallBudget N ε) ≤ 2 ^ N
+  exact h
 
 /--
   Главная сводная величина — произведение двух оценок.  Именно она
@@ -508,8 +587,9 @@ lemma capacityBound_le_pow_mul
         (unionBound_le_pow N (hammingBallBudget N ε))
     have hchain := le_trans hmul hball
     -- Переписываем обе стороны через определения `capacityBound` и `hammingBallBound`.
-    simpa [capacityBound, hammingBallBound_spec, Nat.mul_assoc,
-      Nat.mul_left_comm] using hchain
+    change unionBound D k * unionBound N (hammingBallBudget N ε)
+        ≤ (k.succ) * (Nat.max 1 D) ^ k * 2 ^ N
+    exact hchain
 
 end Counting
 end Pnp3

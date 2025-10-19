@@ -73,8 +73,8 @@ references (or reuse an existing verified formalization if available).
 | --- | --- | --- |
 | `Core/PDTPartial.lean` | Definition of partial decision trees and depth accounting lemmas. | ✅ |
 | `Core/ShrinkageWitness.lean` | Bridge from partial certificates to the existing `Shrinkage` interface. | ✅ |
-| `ThirdPartyFacts/HastadMSL.lean` | Formal statements of the (multi-)switching lemma with parameter bookkeeping. | **new** |
-| `Core/ShrinkageAC0.lean` | Inductive depth reduction proof producing a `PartialDT` certificate. | **new** |
+| `ThirdPartyFacts/HastadMSL.lean` | Statement-level interface for the (multi-)switching lemmas. | scaffold + fallback witness |
+| `Core/ShrinkageAC0.lean` | Glue code turning the witness into `HasAC0PartialWitness`. | scaffold + fallback witness |
 | `Core/SAL_AC0.lean` | Wrapper invoking `partial_to_atlas` to obtain the final atlas. | refactor of existing `SAL_Core` |
 
 Each module should come with extensive comments explaining the parameter chase,
@@ -108,19 +108,22 @@ Even though the Lean scaffolding for partial certificates and the SAL bridge is
 now in place, the current development still relies on external axioms for the
 core combinatorial bounds.  Concretely:
 
-* `partial_shrinkage_for_AC0` in
-  `ThirdPartyFacts/Facts_Switching.lean` remains an axiom.  We still have to
-  supply a bona fide Lean proof by porting the depth-2 switching lemma and the
-  multi-switching lemma, then running the inductive depth reduction described in
-  Sections “Depth 2” and “Inductive step”.
-* `shrinkage_for_localCircuit` is also axiomatic.  After finishing the AC⁰ case
-  we must adapt the same machinery to the `LocalCircuitParameters` interface and
-  re-establish the locality-specific depth bound.
-* The roadmap steps 2–5 above are only partially implemented: modules such as
-  `ThirdPartyFacts/HastadMSL.lean` and `Core/ShrinkageAC0.lean` currently expose
-  wrappers around axioms rather than proved theorems.  The remaining work is to
-  replace these wrappers with actual proofs and eliminate every `axiom` keyword
-  from the shrinkage pipeline.
+* `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` now compile
+  without axioms, but both simply repackage the “perfect” partial certificate
+  (depth `n`) delivered by `AC0.Formulas`.  The quantitative bounds therefore
+  hinge entirely on the structural inequality
+  `n ≤ (log₂ (M+2))^(d+1)` built into `AC0Parameters`, not on the analytical
+  content of switching lemmas.
+* The recent infrastructure additions—`PartialDT.splice`,
+  function-sensitive `refineSelectors`, monotonic upgrade lemmas for
+  `AC0PartialWitness`, and the `HasMultiSwitchingWitness` interface—match the
+  data requirements of a future multi-switching proof.  What remains is to feed
+  these combinators with an actual recursive construction (depth 2 base case +
+  inductive splice).
+* Completing steps 2–5 of the roadmap above is still mandatory: we must port the
+  classical switching and multi-switching lemmas, compute the depth/error
+  parameters explicitly, and replace the perfect-tree fallback by the genuine
+  quasi-polynomial witness.
 
 Removing these axioms and validating the resulting proofs with `lake test` will
 fully complete Step A and unlock the seamless connection with Step B without any

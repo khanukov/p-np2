@@ -62,8 +62,10 @@ def LocalLowerBoundHypothesis
   0 < κ ∧ ∀ _solver : SmallLocalCircuitSolver p, False
 
 /-- CJW-гипотеза для разреженных NP-языков. -/
+--  Имя параметра заменено на `_p`, чтобы подчеркнуть: само значение никогда
+--  не используется в формулировке и служит только маркером выбранной модели.
 def SparseLowerBoundHypothesis
-    (p : Models.SparseLanguageParams) (ε : Rat) (statement : Prop) : Prop :=
+    (_p : Models.SparseLanguageParams) (ε : Rat) (statement : Prop) : Prop :=
   (0 : Rat) < ε ∧ statement
 
 /--

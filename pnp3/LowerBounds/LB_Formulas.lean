@@ -5,6 +5,7 @@ import Core.Atlas
 import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
+import Core.ShrinkageAC0
 import Counting.Atlas_to_LB_Core
 import Counting.Count_EasyFuncs
 import ThirdPartyFacts.LeafBudget
@@ -366,11 +367,8 @@ lemma scenarioFromCommonPDT_k_le_pow
     with hwitness
   set k := Classical.choose witness with hk
   change k ≤ Nat.pow 2 C.depthBound
-  have hk_spec := Classical.choose_spec witness
   have hk_leaves : k ≤ (Core.PDT.leaves C.tree).length := by
-    have htmp := hk_spec.1
-    simp [hk] at htmp
-    exact htmp
+    simpa [hk] using (Classical.choose_spec witness).1
   have hlen_bound :
       (Core.PDT.leaves C.tree).length ≤ Nat.pow 2 (Core.PDT.depth C.tree) :=
     Core.leaves_count_bound (t := C.tree)
@@ -409,14 +407,12 @@ lemma dictLen_fromShrinkage_le_pow
     Counting.dictLen (Core.Atlas.fromShrinkage S).dict ≤ Nat.pow 2 S.t :=
   by
     classical
-    have hbound :=
-      dictLen_fromCommonPDT_le_pow
-        (n := n) (F := S.F) (C := S.commonPDT)
-    have hbound' := hbound
-    simp [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
+    simpa [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
       Core.CommonPDT.toAtlas, Core.Shrinkage.commonPDT_depthBound,
-      Core.Shrinkage.commonPDT_tree] at hbound'
-    exact hbound'
+      Core.Shrinkage.commonPDT_tree]
+      using
+        dictLen_fromCommonPDT_le_pow
+          (n := n) (F := S.F) (C := S.commonPDT)
 
 /-- У `scenarioFromCommonPDT` семейство во втором компоненте равно исходному `F`. -/
 @[simp]
@@ -447,13 +443,11 @@ lemma scenarioFromCommonPDT_dictLen_le_pow
         (scenarioFromCommonPDT (n := n) (F := F) (C := C) hε0 hε1).2.atlas.dict
       ≤ Nat.pow 2 C.depthBound := by
   classical
-  have hbound := dictLen_fromCommonPDT_le_pow (n := n) (F := F) (C := C)
   -- В полученном сценарии атлас совпадает с `C.toAtlas`, поэтому оценка
   -- на длину словаря переносится напрямую.
-  have hbound' := hbound
-  simp [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
-    Core.CommonPDT.toAtlas] at hbound'
-  exact hbound'
+  simpa [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
+    Core.CommonPDT.toAtlas]
+    using dictLen_fromCommonPDT_le_pow (n := n) (F := F) (C := C)
 
 /--
   Верхняя граница на параметр `k` для сценария, построенного из частичного
@@ -769,11 +763,11 @@ lemma scenarioFromShrinkage_k_eq
   have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
     dsimp [Core.Shrinkage.commonPDT_epsilon]
     exact hε1
-  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_epsilon]
-    using
-      (scenarioFromCommonPDT_k_eq
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1'))
+  dsimp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_epsilon]
+  exact
+    (scenarioFromCommonPDT_k_eq
+      (n := n) (F := S.F) (C := S.commonPDT)
+      (hε0 := hε0') (hε1 := hε1'))
 
 /--
   Специализация к случаю AC⁰: из shrinkage-конструкции, предоставленной
@@ -881,21 +875,15 @@ noncomputable def scenarioFromLocalCircuit
       simp [base, scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT]
     refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
     ·
-      have hworksBase : WorksFor base.2.atlas S.F := by
-        have htmp := base.2.works
-        simp [base_family] at htmp
-        exact htmp
+      have hworksBase : WorksFor base.2.atlas S.F :=
+        base_family ▸ base.2.works
       exact hF ▸ hworksBase
     · intro f hf
       have hfS : f ∈ S.F := hF ▸ hf
       have hfBase : f ∈ base.2.family := by
-        have htmp := hfS
-        simp [base_family] at htmp
-        exact htmp
+        simpa [base_family] using hfS
       have hbounded := base.2.bounded f hfBase
-      have htmp := hbounded
-      simp [base_family] at htmp
-      exact htmp
+      simpa [base_family] using hbounded
 
 /-- Семейство в сценарии для локальных схем совпадает с исходным списком `F`. -/
 @[simp]
@@ -907,7 +895,180 @@ lemma scenarioFromLocalCircuit_family_eq
   unfold scenarioFromLocalCircuit
   set witness := ThirdPartyFacts.localCircuitWitness params F
   set S := witness.shrinkage
-  simp [scenarioFromLocalCircuit, witness, S]
+  simp
+
+/--
+  Оракульный вариант шага A: фиксированный `OraclePartialWitness` задаёт сценарий
+  ограниченного атласа с явным бюджетом на число селекторов.  Мы сразу выбираем
+  полилогарифмическую границу `k = 2^{depthBound + polylogBudget (2^n)}`, чтобы
+  дальнейшие оценки шагов B–C работали «из коробки».
+-/
+noncomputable def scenarioFromOracleWitness
+    (params : ThirdPartyFacts.AC0Parameters)
+    (oracle : _root_.Pnp3.Core.OracleParameters)
+    (F : Core.Family params.n)
+    (W : _root_.Pnp3.Core.OraclePartialWitness params oracle F) :
+    Σ' _ : Nat, BoundedAtlasScenario params.n :=
+  by
+    classical
+    let k := Nat.pow 2
+      (W.certificate.depthBound + _root_.Pnp3.Models.polylogBudget (Nat.pow 2 params.n))
+    refine ⟨k, ?_⟩
+    refine
+      { atlas := W.atlas
+        , family := F
+        , k := k
+        , hε0 := by
+            have h := _root_.Pnp3.Core.OraclePartialWitness.shrinkage_error_nonneg
+              (params := params) (oracle := oracle) (F := F) (W := W)
+            simpa [_root_.Pnp3.Core.OraclePartialWitness.atlas] using h
+        , hε1 := by
+            have h := _root_.Pnp3.Core.OraclePartialWitness.shrinkage_error_le_half
+              (params := params) (oracle := oracle) (F := F) (W := W)
+            simpa [_root_.Pnp3.Core.OraclePartialWitness.atlas] using h
+        , works := _root_.Pnp3.Core.OraclePartialWitness.atlas_works
+            (params := params) (oracle := oracle) (F := F) (W := W)
+        , bounded := by
+            intro f hf
+            have hfS : f ∈ W.shrinkage.F := by
+              simpa using hf
+            refine ⟨(W.shrinkage.Rsel f).dedup, ?_, ?_, ?_⟩
+            ·
+              have hlen := _root_.Pnp3.Core.OraclePartialWitness.selectors_dedup_length_le_polylog
+                (params := params) (oracle := oracle) (F := F) (W := W)
+                (f := f) hf
+              simpa [k] using hlen
+            ·
+              have hsubset := W.shrinkage.Rsel_sub f hfS
+              refine Core.listSubset_of_mem ?_
+              intro β hβ
+              have hmem : β ∈ W.shrinkage.Rsel f :=
+                List.mem_dedup.mp hβ
+              exact hsubset hmem
+            ·
+              have herr := _root_.Pnp3.Core.OraclePartialWitness.selectors_dedup_error_le
+                (params := params) (oracle := oracle) (F := F) (W := W)
+                (f := f) hf
+              simpa [_root_.Pnp3.Core.OraclePartialWitness.atlas] using herr }
+
+@[simp]
+lemma scenarioFromOracleWitness_k_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (oracle : _root_.Pnp3.Core.OracleParameters)
+    (F : Core.Family params.n)
+    (W : _root_.Pnp3.Core.OraclePartialWitness params oracle F) :
+    (scenarioFromOracleWitness params oracle F W).2.k =
+      (scenarioFromOracleWitness params oracle F W).1 := by
+  classical
+  unfold scenarioFromOracleWitness
+  simp
+
+@[simp]
+lemma scenarioFromOracleWitness_family_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (oracle : _root_.Pnp3.Core.OracleParameters)
+    (F : Core.Family params.n)
+    (W : _root_.Pnp3.Core.OraclePartialWitness params oracle F) :
+    (scenarioFromOracleWitness params oracle F W).2.family = F := by
+  classical
+  unfold scenarioFromOracleWitness
+  simp
+
+/--
+  Сводная информация по сценарию, полученному из оракульного свидетеля.  Мы
+  фиксируем границы на `k`, длину словаря и ошибку `ε`, причём каждая из них
+  выражена через тот же полилогарифмический бюджет, что и в классическом случае
+  без оракулов.
+-/
+lemma scenarioFromOracleWitness_completeBounds
+    (params : ThirdPartyFacts.AC0Parameters)
+    (oracle : _root_.Pnp3.Core.OracleParameters)
+    (F : Core.Family params.n)
+    (W : _root_.Pnp3.Core.OraclePartialWitness params oracle F) :
+    let pack := scenarioFromOracleWitness params oracle F W
+    let sc := pack.2
+    let bound := Nat.pow 2
+      (W.certificate.depthBound + _root_.Pnp3.Models.polylogBudget (Nat.pow 2 params.n))
+    sc.k ≤ bound ∧
+      Counting.dictLen sc.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) :=
+  by
+    classical
+    intro pack sc bound
+    subst pack
+    subst sc
+    subst bound
+    refine And.intro ?_ (And.intro ?_ (And.intro ?_ (And.intro ?_ ?_)))
+    ·
+      have hkEq :
+          (scenarioFromOracleWitness params oracle F W).2.k =
+            Nat.pow 2
+              (W.certificate.depthBound +
+                _root_.Pnp3.Models.polylogBudget (Nat.pow 2 params.n)) := by
+        simp [scenarioFromOracleWitness]
+      exact hkEq.le
+    ·
+      simpa [scenarioFromOracleWitness, _root_.Pnp3.Core.OraclePartialWitness.atlas] using
+        _root_.Pnp3.Core.OraclePartialWitness.atlas_dict_length_le_polylog
+          (params := params) (oracle := oracle) (F := F) (W := W)
+    ·
+      simpa [scenarioFromOracleWitness, _root_.Pnp3.Core.OraclePartialWitness.atlas] using
+        _root_.Pnp3.Core.OraclePartialWitness.shrinkage_error_nonneg
+          (params := params) (oracle := oracle) (F := F) (W := W)
+    ·
+      simpa [scenarioFromOracleWitness, _root_.Pnp3.Core.OraclePartialWitness.atlas] using
+        _root_.Pnp3.Core.OraclePartialWitness.shrinkage_error_le_half
+          (params := params) (oracle := oracle) (F := F) (W := W)
+    ·
+      simpa [scenarioFromOracleWitness, _root_.Pnp3.Core.OraclePartialWitness.atlas] using
+        _root_.Pnp3.Core.OraclePartialWitness.shrinkage_error_le_inv
+          (params := params) (oracle := oracle) (F := F) (W := W)
+
+/--
+  Полная «паспортизация» оракульного свидетеля: кроме численных оценок мы
+  сразу получаем ёмкостную границу на семейство функций, аппроксимируемое SAL.
+-/
+lemma scenarioFromOracleWitness_stepAB_summary
+    (params : ThirdPartyFacts.AC0Parameters)
+    (oracle : _root_.Pnp3.Core.OracleParameters)
+    (F : Core.Family params.n)
+    (W : _root_.Pnp3.Core.OraclePartialWitness params oracle F) :
+    let pack := scenarioFromOracleWitness params oracle F W
+    let sc := pack.2
+    let bound := Nat.pow 2
+      (W.certificate.depthBound + _root_.Pnp3.Models.polylogBudget (Nat.pow 2 params.n))
+    sc.family = F ∧
+      sc.k ≤ bound ∧
+      Counting.dictLen sc.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) ∧
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k
+          (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 :=
+  by
+    classical
+    intro pack sc bound
+    subst pack
+    subst sc
+    subst bound
+    have hfamily :=
+      scenarioFromOracleWitness_family_eq
+        (params := params) (oracle := oracle) (F := F) (W := W)
+    have hbounds :=
+      scenarioFromOracleWitness_completeBounds
+        (params := params) (oracle := oracle) (F := F) (W := W)
+    rcases hbounds with ⟨hk, hrest⟩
+    rcases hrest with ⟨hdict, hrest⟩
+    rcases hrest with ⟨hε0, hrest⟩
+    rcases hrest with ⟨hε1, hεInv⟩
+    have hcap := family_card_le_capacity
+      (sc := (scenarioFromOracleWitness params oracle F W).2)
+    refine And.intro hfamily (And.intro hk (And.intro hdict
+      (And.intro hε0 (And.intro hε1 (And.intro hεInv ?_)))))
+    exact hcap
 
 /--
   Для сценария, построенного из shrinkage, параметр `k` не превышает числа
@@ -919,23 +1080,21 @@ lemma scenarioFromShrinkage_k_le_pow
     (hε0 : (0 : Core.Q) ≤ S.ε) (hε1 : S.ε ≤ (1 : Core.Q) / 2) :
     (scenarioFromShrinkage (n := n) S hε0 hε1).1 ≤ Nat.pow 2 S.t := by
   classical
-  have hbound :=
-    scenarioFromCommonPDT_k_le_pow
-      (n := n) (F := S.F) (C := S.commonPDT)
-      (hε0 := by
-        have htmp := hε0
-        change (0 : Core.Q) ≤ S.commonPDT.epsilon
-        dsimp [Core.Shrinkage.commonPDT_epsilon]
-        exact htmp)
-      (hε1 := by
-        have htmp := hε1
-        change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
-        dsimp [Core.Shrinkage.commonPDT_epsilon]
-        exact htmp)
-  have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
-  exact hbound'
+  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
+    Core.Shrinkage.commonPDT_epsilon]
+    using
+      scenarioFromCommonPDT_k_le_pow
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := by
+          have htmp := hε0
+          change (0 : Core.Q) ≤ S.commonPDT.epsilon
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
+        (hε1 := by
+          have htmp := hε1
+          change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
 
 /--
   Аналогичная оценка для длины словаря: `scenarioFromShrinkage` наследует
@@ -948,23 +1107,21 @@ lemma scenarioFromShrinkage_dictLen_le_pow
         (scenarioFromShrinkage (n := n) S hε0 hε1).2.atlas.dict
       ≤ Nat.pow 2 S.t := by
   classical
-  have hbound :=
-    scenarioFromCommonPDT_dictLen_le_pow
-      (n := n) (F := S.F) (C := S.commonPDT)
-      (hε0 := by
-        have htmp := hε0
-        change (0 : Core.Q) ≤ S.commonPDT.epsilon
-        dsimp [Core.Shrinkage.commonPDT_epsilon]
-        exact htmp)
-      (hε1 := by
-        have htmp := hε1
-        change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
-        dsimp [Core.Shrinkage.commonPDT_epsilon]
-        exact htmp)
-  have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
-  exact hbound'
+  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
+    Core.Shrinkage.commonPDT_epsilon]
+    using
+      scenarioFromCommonPDT_dictLen_le_pow
+        (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := by
+          have htmp := hε0
+          change (0 : Core.Q) ≤ S.commonPDT.epsilon
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
+        (hε1 := by
+          have htmp := hε1
+          change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
+          dsimp [Core.Shrinkage.commonPDT_epsilon]
+          exact htmp)
 
 /--
   Параметр `k` в сценарии AC⁰ не превышает `2^{(log₂(M+2))^{d+1}}`.  Получаем
@@ -1002,7 +1159,7 @@ lemma scenarioFromAC0_k_le_pow
   have hrewrite :
       (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
         = (scenarioFromAC0 params F).1 := by
-    simp [scenarioFromAC0, S, hε0, hε1]
+    simp [scenarioFromAC0, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
@@ -1042,7 +1199,7 @@ lemma scenarioFromAC0_dictLen_le_pow
       Counting.dictLen
           (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
         = Counting.dictLen (scenarioFromAC0 params F).2.atlas.dict := by
-    simp [scenarioFromAC0, S, hε0, hε1]
+    simp [scenarioFromAC0, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
@@ -1397,38 +1554,25 @@ lemma scenarioFromAC0_stepAB_summary
   by
     classical
     intro pack sc bound
+    subst pack
+    subst sc
+    subst bound
     have hfamily := scenarioFromAC0_family_eq (params := params) (F := F)
-    have hbounds_raw := scenarioFromAC0_completeBounds
+    have hbounds := scenarioFromAC0_completeBounds
       (params := params) (F := F)
-    have hbounds :
-        pack.1 ≤ bound ∧
-          Counting.dictLen pack.2.atlas.dict ≤ bound ∧
-          (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, bound] using hbounds_raw
-    have hfamily' : sc.family = F := by
-      simpa [pack, sc] using hfamily
     rcases hbounds with ⟨hk_base, hrest⟩
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
     have hkEq := scenarioFromAC0_k_eq (params := params) (F := F)
-    have hkEq' : pack.2.k = pack.1 := by
-      simpa [pack] using hkEq
-    have hk' : sc.k ≤ bound := by
-      simpa [pack, sc, hkEq'] using hk_base
-    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-      simpa [pack, sc, bound] using hdict_base
-    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
-      simpa [pack, sc] using hε0_base
-    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
-      simpa [pack, sc] using hε1_base
-    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, sc] using hεInv_base
-    have hcap := family_card_le_capacity (sc := sc)
-    refine And.intro hfamily' (And.intro hk' (And.intro hdict'
-      (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+    have hk' :
+        (scenarioFromAC0 params F).2.k ≤
+          Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) :=
+      (hkEq ▸ hk_base)
+    have hcap := family_card_le_capacity
+      (sc := (scenarioFromAC0 params F).2)
+    refine And.intro hfamily (And.intro hk' (And.intro hdict_base
+      (And.intro hε0_base (And.intro hε1_base (And.intro hεInv_base ?_)))))
     exact hcap
 
 /--
@@ -1454,40 +1598,27 @@ lemma scenarioFromLocalCircuit_stepAB_summary
   by
     classical
     intro pack sc bound
+    subst pack
+    subst sc
+    subst bound
     have hfamily := scenarioFromLocalCircuit_family_eq
       (params := params) (F := F)
-    have hbounds_raw := scenarioFromLocalCircuit_completeBounds
+    have hbounds := scenarioFromLocalCircuit_completeBounds
       (params := params) (F := F)
-    have hbounds :
-        pack.1 ≤ bound ∧
-          Counting.dictLen pack.2.atlas.dict ≤ bound ∧
-          (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, bound] using hbounds_raw
-    have hfamily' : sc.family = F := by
-      simpa [pack, sc] using hfamily
     rcases hbounds with ⟨hk_base, hrest⟩
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
     have hkEq := scenarioFromLocalCircuit_k_eq
       (params := params) (F := F)
-    have hkEq' : pack.2.k = pack.1 := by
-      simpa [pack] using hkEq
-    have hk' : sc.k ≤ bound := by
-      simpa [pack, sc, hkEq'] using hk_base
-    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-      simpa [pack, sc, bound] using hdict_base
-    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
-      simpa [pack, sc] using hε0_base
-    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
-      simpa [pack, sc] using hε1_base
-    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, sc] using hεInv_base
-    have hcap := family_card_le_capacity (sc := sc)
-    refine And.intro hfamily' (And.intro hk' (And.intro hdict'
-      (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+    have hk' :
+        (scenarioFromLocalCircuit params F).2.k ≤
+          Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) :=
+      (hkEq ▸ hk_base)
+    have hcap := family_card_le_capacity
+      (sc := (scenarioFromLocalCircuit params F).2)
+    refine And.intro hfamily (And.intro hk' (And.intro hdict_base
+      (And.intro hε0_base (And.intro hε1_base (And.intro hεInv_base ?_)))))
     exact hcap
 
 /--
@@ -1527,7 +1658,196 @@ lemma epsilon_le_half (pack : ScenarioBudget n F) :
 def atlas (pack : ScenarioBudget n F) : Core.Atlas n :=
   pack.scenario.atlas
 
+/-- Ёмкость текущего сценария как вспомогательная аббревиатура. -/
+noncomputable def capacity (pack : ScenarioBudget n F) : Nat :=
+  scenarioCapacity pack.scenario
+
+/--
+  Оценка ёмкости монотонна по бюджету: если `dictLen` и `k` не превосходят
+  `pack.budget`, то можно заменить их на `pack.budget` в формуле
+  `capacityBound`.
+-/
+lemma capacity_le_budget (pack : ScenarioBudget n F) :
+    pack.capacity ≤
+      Counting.capacityBound pack.budget pack.budget (Nat.pow 2 n)
+        pack.scenario.atlas.epsilon pack.scenario.hε0 pack.scenario.hε1 :=
+  by
+    classical
+    have hUnionD :
+        Counting.unionBound
+            (Counting.dictLen pack.scenario.atlas.dict)
+            pack.scenario.k
+          ≤
+            Counting.unionBound pack.budget pack.scenario.k := by
+      simpa using
+        Counting.unionBound_mono_left
+          (D₁ := Counting.dictLen pack.scenario.atlas.dict)
+          (D₂ := pack.budget)
+          pack.dict_le_budget
+    have hUnionK :
+        Counting.unionBound pack.budget pack.scenario.k
+          ≤
+            Counting.unionBound pack.budget pack.budget := by
+      simpa using
+        Counting.unionBound_mono_right
+          (D := pack.budget)
+          (k₁ := pack.scenario.k)
+          (k₂ := pack.budget)
+          pack.k_le_budget
+    have hUnion := hUnionD.trans hUnionK
+    let ball :=
+      Counting.hammingBallBound (Nat.pow 2 n)
+        pack.scenario.atlas.epsilon pack.scenario.hε0 pack.scenario.hε1
+    have hMul := Nat.mul_le_mul_right ball hUnion
+    simpa [capacity, scenarioCapacity, Counting.capacityBound, ball]
+      using hMul
+
+/--
+  Из структуры `ScenarioBudget` мгновенно следует ограничение на мощность
+  семейства: она не превосходит оценку `capacityBound` с заменой параметров
+  на общий бюджет.
+-/
+lemma family_card_le_budget_capacity (pack : ScenarioBudget n F) :
+    (familyFinset pack.scenario).card ≤
+      Counting.capacityBound pack.budget pack.budget (Nat.pow 2 n)
+        pack.scenario.atlas.epsilon pack.scenario.hε0 pack.scenario.hε1 :=
+  by
+    classical
+    have hbase := family_card_le_capacity (sc := pack.scenario)
+    have hmono := pack.capacity_le_budget
+    have hbase' :
+        (familyFinset pack.scenario).card ≤ pack.capacity := by
+      simpa [capacity, scenarioCapacity] using hbase
+    exact hbase'.trans hmono
+
+/--
+  Тестовая ёмкость также монотонно возрастает при увеличении бюджета.
+  Воспользуемся монотонностью `unionBound` по каждому аргументу и
+  перенесём границу на `pack.budget`.
+-/
+lemma testsetCapacity_le_budget (pack : ScenarioBudget n F)
+    (T : Finset (Core.BitVec n)) :
+    testsetCapacity (sc := pack.scenario) T ≤
+      Counting.unionBound pack.budget pack.budget * 2 ^ T.card :=
+  by
+    classical
+    have hUnionD :
+        Counting.unionBound (Counting.dictLen pack.scenario.atlas.dict)
+            pack.scenario.k
+          ≤
+            Counting.unionBound pack.budget pack.scenario.k := by
+      simpa using
+        Counting.unionBound_mono_left
+          (D₁ := Counting.dictLen pack.scenario.atlas.dict)
+          (D₂ := pack.budget)
+          pack.dict_le_budget
+    have hUnionK :
+        Counting.unionBound pack.budget pack.scenario.k
+          ≤
+            Counting.unionBound pack.budget pack.budget := by
+      simpa using
+        Counting.unionBound_mono_right
+          (D := pack.budget)
+          (k₁ := pack.scenario.k)
+          (k₂ := pack.budget)
+          pack.k_le_budget
+    have hUnion := hUnionD.trans hUnionK
+    have hMul := Nat.mul_le_mul_right (2 ^ T.card) hUnion
+    simpa [testsetCapacity] using hMul
+
+/--
+  Если подсемейство `Y` подчиняется бюджету `ScenarioBudget`, то его
+  мощность не может превысить ёмкостную оценку от `pack.budget`.
+-/
+lemma no_large_family (pack : ScenarioBudget n F)
+    (Y : Finset (Core.BitVec n → Bool))
+    (hYsubset : Y ⊆ familyFinset pack.scenario)
+    (hLarge :
+      Counting.capacityBound pack.budget pack.budget (Nat.pow 2 n)
+        pack.scenario.atlas.epsilon pack.scenario.hε0 pack.scenario.hε1
+        < Y.card) :
+    False :=
+  by
+    classical
+    have hY_le_family : Y.card ≤ (familyFinset pack.scenario).card :=
+      Finset.card_le_card hYsubset
+    have hFamily_le_capacity :=
+      pack.family_card_le_budget_capacity
+    have hContr :=
+      Nat.lt_of_le_of_lt (hY_le_family.trans hFamily_le_capacity) hLarge
+    exact Nat.lt_irrefl _ hContr
+
+/--
+  Версия критерия с тест-набором: если `Y` обслуживается сценарием и
+  превосходит тестовую ёмкость при замене параметров на `pack.budget`,
+  то такой сценарий невозможен.
+-/
+lemma no_large_family_on_testset (pack : ScenarioBudget n F)
+    (T : Finset (Core.BitVec n))
+    (Y : Finset (Core.BitVec n → Bool))
+    (hYsubset : Y ⊆ familyFinset pack.scenario)
+    (hApprox : ∀ f ∈ Y,
+      f ∈ Counting.ApproxOnTestset
+        (R := pack.scenario.atlas.dict)
+        (k := pack.scenario.k) (T := T))
+    (hLarge :
+      Counting.unionBound pack.budget pack.budget * 2 ^ T.card < Y.card) :
+    False :=
+  by
+    classical
+    have hTest_le := pack.testsetCapacity_le_budget (T := T)
+    have hLarge' :
+        testsetCapacity (sc := pack.scenario) T < Y.card :=
+      Nat.lt_of_le_of_lt hTest_le hLarge
+    exact
+      no_bounded_atlas_on_testset_of_large_family
+        (sc := pack.scenario)
+        (T := T) (Y := Y) hYsubset hApprox hLarge'
+
 end ScenarioBudget
+
+/--
+  Паспортизованный сценарий для оракульного свидетеля: бюджет
+  $2^{\text{depthBound} + \text{polylogBudget}(2^n)}$ сразу согласуется
+  с оценками на селекторы и словарь из `scenarioFromOracleWitness`.
+-/
+noncomputable def scenarioBudgetFromOracle
+    (params : ThirdPartyFacts.AC0Parameters)
+    (oracle : _root_.Pnp3.Core.OracleParameters)
+    (F : Core.Family params.n)
+    (W : _root_.Pnp3.Core.OraclePartialWitness params oracle F) :
+    ScenarioBudget params.n F :=
+  by
+    classical
+    let pack := scenarioFromOracleWitness params oracle F W
+    let bound := Nat.pow 2
+      (W.certificate.depthBound + _root_.Pnp3.Models.polylogBudget (Nat.pow 2 params.n))
+    have summary := scenarioFromOracleWitness_stepAB_summary
+      (params := params) (oracle := oracle) (F := F) (W := W)
+    have summary' : pack.2.family = F ∧
+        pack.2.k ≤ bound ∧
+        Counting.dictLen pack.2.atlas.dict ≤ bound ∧
+        (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) ∧
+        (familyFinset pack.2).card ≤
+          Counting.capacityBound (Counting.dictLen pack.2.atlas.dict) pack.2.k
+            (Nat.pow 2 params.n) pack.2.atlas.epsilon pack.2.hε0 pack.2.hε1 := by
+      simpa [pack, bound] using summary
+    rcases summary' with ⟨hfamily, hrest⟩
+    rcases hrest with ⟨hk, hrest⟩
+    rcases hrest with ⟨hdict, hrest⟩
+    rcases hrest with ⟨_, hrest⟩
+    rcases hrest with ⟨_, hrest⟩
+    rcases hrest with ⟨hεInv, _⟩
+    refine
+      { budget := bound
+        , scenario := pack.2
+        , family_eq := hfamily
+        , k_le_budget := hk
+        , dict_le_budget := hdict
+        , epsilon_le_inv := hεInv }
+
 
 /--
   Построение паспорта для сценария, полученного из AC⁰ shrinkage.
@@ -1572,6 +1892,7 @@ noncomputable def scenarioBudgetFromAC0
     · exact hdict_pack
     · exact hε_inv
 
+
 /--
   Паспортизованный сценарий для локальных схем: бюджет равен
   $2^{\ell (\log_2(M+2) + \text{depth} + 1)}$.
@@ -1614,6 +1935,7 @@ noncomputable def scenarioBudgetFromLocal
         epsilon_le_inv := ?_ }
     · exact hdict_pack
     · exact hε_inv
+
 
 end LowerBounds
 end Pnp3

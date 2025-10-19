@@ -16,6 +16,8 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
 import AC0.Formulas
+import ThirdPartyFacts.SwitchingParameters
+import ThirdPartyFacts.HastadMSL
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -25,39 +27,6 @@ import AC0.Formulas
 -/
 
 namespace Pnp3
-
-namespace Core
-
-/-- Подкуб, задающий ровно точку `x`. -/
-@[simp] def pointSubcube {n : Nat} (x : BitVec n) : Subcube n :=
-  fun i => some (x i)
-
-/-- Точка всегда принадлежит своему точечному подкубу. -/
-@[simp] lemma mem_pointSubcube_self {n : Nat} (x : BitVec n) :
-    mem (pointSubcube x) x := by
-  classical
-  apply (mem_iff (β := pointSubcube x) (x := x)).mpr
-  intro i b hb
-  have hsome : some (x i) = some b := by
-    exact hb
-  exact Option.some.inj hsome
-
-/-- Принадлежность точечному подкубу означает точное совпадение вектора. -/
-@[simp] lemma mem_pointSubcube_iff {n : Nat} {x y : BitVec n} :
-    mem (pointSubcube x) y ↔ x = y := by
-  classical
-  constructor
-  · intro hmem
-    have hprop := (mem_iff (β := pointSubcube x) (x := y)).mp hmem
-    funext i
-    have : pointSubcube x i = some (x i) := by simp [pointSubcube]
-    have hy := hprop i (x i) this
-    exact hy.symm
-  · intro hxy
-    subst hxy
-    exact mem_pointSubcube_self x
-
-end Core
 
 namespace ThirdPartyFacts
 
@@ -71,50 +40,13 @@ open Core
 
 В более сложных вариантах добавляются ограничения на ширину DNF, число слоёв
 OR/AND и пр., но для текущего интерфейса достаточно этих трёх чисел. -/
-structure AC0Parameters where
-  n : Nat
-  M : Nat
-  d : Nat
-  deriving Repr
-
-/--
-  Параметры для класса «локальных схем».  Мы сохраняем только наиболее
-  необходимые числовые характеристики:
-
-  * `n` — число входных бит (длина таблицы истинности).
-  * `M` — общий размер схемы (например, число вентилей).
-  * `ℓ` — параметр локальности: каждое выходное значение зависит не более
-    чем от `ℓ` входов.
-  * `depth` — число слоёв (глубина схемы).
-
-  В дальнейшем эта структура служит лишь для записи тех величин, которые
-  фигурируют в внешнем факте о shrinkage для локальных схем.  Дополнительные
-  ограничения (например, на тип вентилей) можно будет добавить позже, не
-  меняя интерфейс Lean.
--/
-structure LocalCircuitParameters where
-  n      : Nat
-  M      : Nat
-  ℓ      : Nat
-  depth  : Nat
-  deriving Repr
-
-/-- Уточняющая структура, описывающая гарантии shrinkage.
-
-`depthBound` и `errorBound` — ожидаемые верхние оценки на глубину PDT и ошибку
-аппроксимации, получаемые из multi-switching леммы.  Мы оставляем их в явном
-виде, чтобы позднее подставлять сюда конкретные полиномиальные/квазиполиномиальные
-формулы. -/
-structure ShrinkageBounds where
-  depthBound : Nat
-  errorBound : Q
-  deriving Repr
-
-/--
+/-
   Усиленная версия shrinkage-факта: вместо полного PDT возвращается частичный
   сертификат с контролируемой глубиной хвостов.  Такой формат ближе к
   классическому изложению multi-switching-леммы и непосредственно пригоден для
-  шага B, где важно знать глубину ствола и высоту хвостов по отдельности.
+  шага B, где важно знать глубину ствола и высоту хвостов по отдельности.  На
+  текущем этапе мы рассматриваем это утверждение как внешнюю предпосылку и
+  используем его для извлечения явных свидетелей.
 -/
 axiom partial_shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n) :
@@ -123,6 +55,41 @@ axiom partial_shrinkage_for_AC0
       C.depthBound + ℓ ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2)
+
+/--
+  Constructive variant of `partial_shrinkage_for_AC0`: if the canonical point
+  enumeration already fits under the desired depth bound, we can assemble the
+  certificate without appealing to the external axiom.  This lemma is useful as
+  a sanity check and for early experiments where the combinatorial shrinking is
+  replaced by exhaustive enumeration.
+-/
+lemma partial_shrinkage_for_AC0_of_pointBound
+    (params : AC0Parameters) (F : Family params.n)
+    (hdepth : Nat.pow 2 params.n
+        ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) :
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ ≤ Nat.log2 (params.M + 2) ∧
+      C.depthBound + ℓ ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
+      (0 : Core.Q) ≤ C.epsilon ∧
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  refine ⟨0, pointPartialCertificate params.n F, ?_⟩
+  refine And.intro ?hlevel ?hrest
+  · exact Nat.zero_le _
+  · refine And.intro ?hdepthBound ?herrBounds
+    · have hcanon :=
+        pointPartialCertificate_depth_le (n := params.n) (F := F)
+      have hfinal := Nat.le_trans hcanon hdepth
+      simpa [pointPartialCertificate, Nat.add_comm, Nat.add_left_comm,
+        Nat.add_assoc] using hfinal
+    · refine And.intro ?hε_nonneg ?hε_le
+      · simp [pointPartialCertificate]
+      · have hden : (0 : Core.Q) < (params.n + 2 : Core.Q) := by
+          have : (0 : Nat) < params.n + 2 := Nat.succ_pos (params.n + 1)
+          exact_mod_cast this
+        have hbound : (0 : Core.Q) ≤ (1 : Core.Q) / (params.n + 2 : Core.Q) :=
+          div_nonneg (by exact zero_le_one) (le_of_lt hden)
+        simpa [pointPartialCertificate] using hbound
 
 /--
 `AC0PartialWitness` собирает в одном месте весь набор параметров, выдаваемых
@@ -145,6 +112,24 @@ structure AC0PartialWitness
   epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
   /-- Верхняя оценка ошибки `ε ≤ 1/(n+2)`. -/
   epsilon_le_inv : certificate.epsilon ≤ (1 : Core.Q) / (params.n + 2)
+
+/--
+Превращаем частичный свидетель в структуру `MultiSwitchingWitness`.  Отдельный
+хелпер позволяет избегать дублирования при дальнейших преобразованиях: любые
+дополнительные оценки из `AC0PartialWitness` автоматически переносятся в итоговый
+объект, пригодный для последующего перехода к SAL.
+-/
+noncomputable def AC0PartialWitness.toMultiSwitching
+    {params : AC0Parameters} {F : Family params.n}
+    (W : AC0PartialWitness params F) :
+    MultiSwitchingWitness params F :=
+  MultiSwitchingWitness.ofPartialCertificate
+    (params := params) (F := F) (ℓ := W.level)
+    W.certificate
+    W.level_le_log
+    W.depth_le
+    W.epsilon_nonneg
+    W.epsilon_le_inv
 
 /--
 Из внешнего факта `partial_shrinkage_for_AC0` конструируем объект `AC0PartialWitness`.
@@ -223,6 +208,17 @@ lemma partialCertificate_epsilon_le_inv
   change (ac0PartialWitness params F).certificate.epsilon
       ≤ (1 : Core.Q) / (params.n + 2)
   exact (ac0PartialWitness params F).epsilon_le_inv
+
+/--
+Multi-switching свидетель, полученный напрямую из аксиомы
+`partial_shrinkage_for_AC0`.  Благодаря этому глобальная аксиома в модуле
+`HastadMSL` больше не требуется: все необходимые данные извлекаются из
+частичного сертификата и упаковываются в структуру `MultiSwitchingWitness`.
+-/
+noncomputable def hastad_multiSwitching
+    (params : AC0Parameters) (F : Family params.n) :
+    MultiSwitchingWitness params F :=
+  (ac0PartialWitness params F).toMultiSwitching
 
 /-- Заготовка для "внешнего" факта: псевдослучайная multi-switching лемма
 Servedio–Tan/Håstad.  Возвращает объект `Shrinkage`, совместимый с конвейером

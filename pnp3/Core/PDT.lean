@@ -7,6 +7,7 @@
   Определяем: leaves, depth.
 -/
 import Mathlib.Data.List.Basic
+import Mathlib.Data.List.Range
 import Core.BooleanBasics
 
 namespace Pnp3
@@ -26,6 +27,49 @@ def PDT.depth {n : Nat} : PDT n → Nat
 def PDT.leaves {n : Nat} : PDT n → List (Subcube n)
 | .leaf R         => [R]
 | .node _ t0 t1   => (PDT.leaves t0) ++ (PDT.leaves t1)
+
+/--
+  Построить PDT с заданным списком листьев.  Мы используем простую рекурсию:
+  первый элемент списка становится левым листом, а оставшаяся часть формирует
+  правое поддерево.  В случае `n = 0` такое дерево вырождается, поскольку
+  существует лишь один подкуб, и дополнительные элементы списка идентичны.
+-/
+def PDT.ofLeafList : ∀ {n : Nat}, List (Subcube n) → PDT n
+| 0, [] => PDT.leaf (fun _ => none)
+| 0, β :: _ => PDT.leaf β
+| Nat.succ n, [] => PDT.leaf (fun _ => none)
+| Nat.succ n, [β] => PDT.leaf β
+| Nat.succ n, β :: γ :: rest =>
+    let idx : Fin (Nat.succ n) := ⟨0, Nat.succ_pos _⟩
+    PDT.node idx (PDT.leaf β) (PDT.ofLeafList (γ :: rest))
+
+@[simp] lemma PDT.leaves_ofLeafList_nil {n : Nat} :
+    PDT.leaves (PDT.ofLeafList ([] : List (Subcube n))) =
+      [fun _ : Fin n => none] := by
+  cases n with
+  | zero => simp [PDT.ofLeafList, PDT.leaves]
+  | succ n => simp [PDT.ofLeafList, PDT.leaves]
+
+@[simp] lemma PDT.leaves_ofLeafList_singleton {n : Nat} {β : Subcube n} :
+    PDT.leaves (PDT.ofLeafList [β]) = [β] := by
+  cases n with
+  | zero => simp [PDT.ofLeafList, PDT.leaves]
+  | succ n => simp [PDT.ofLeafList, PDT.leaves]
+
+lemma PDT.leaves_ofLeafList_nonempty {n : Nat}
+    {L : List (Subcube (Nat.succ n))} (hL : L ≠ []) :
+    PDT.leaves (PDT.ofLeafList L) = L := by
+  classical
+  cases L with
+  | nil => cases hL rfl
+  | cons β rest =>
+      cases rest with
+      | nil => simp [PDT.ofLeafList, PDT.leaves]
+      | cons γ rest' =>
+          have htail : (γ :: rest') ≠ [] := by
+            intro h; cases h
+          simp [PDT.ofLeafList, PDT.leaves,
+            PDT.leaves_ofLeafList_nonempty (n := n) (L := γ :: rest') htail]
 
 /--
   Операция "уточнения" PDT: каждому листу дерева `t` сопоставляем хвост
@@ -63,7 +107,7 @@ def PDT.refine {n : Nat}
                   (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
             exact Eq.subst (motive := fun s => β ∈ s)
               (Eq.symm hdef) hmemAppend
-      tails β hmemTree
+          tails β hmemTree
       PDT.node i (PDT.refine t0 tails0) (PDT.refine t1 tails1)
 
 /--
@@ -242,6 +286,49 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
     simpa [Nat.pow_succ, Nat.mul_comm, Nat.succ_eq_add_one] using haux
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
+
+/--
+  The depth of a tree reconstructed from a list of leaves never exceeds the
+  length of that list.  Each additional element extends the right spine of
+  `PDT.ofLeafList` by at most one level.
+-/
+lemma PDT.depth_ofLeafList_le_length {n : Nat}
+    (L : List (Subcube n)) :
+    PDT.depth (PDT.ofLeafList L) ≤ L.length := by
+  classical
+  induction L with
+  | nil =>
+      cases n with
+      | zero =>
+          simp [PDT.ofLeafList, PDT.depth]
+      | succ _ =>
+          simp [PDT.ofLeafList, PDT.depth]
+  | cons β rest ih =>
+      cases n with
+      | zero =>
+          cases rest with
+          | nil =>
+              simp [PDT.ofLeafList, PDT.depth]
+          | cons _ tail =>
+              simp [PDT.ofLeafList, PDT.depth]
+      | succ n =>
+          cases rest with
+          | nil =>
+              simp [PDT.ofLeafList, PDT.depth]
+          | cons γ rest' =>
+              have hdepth := ih
+              have hsucc :
+                  PDT.depth (PDT.ofLeafList (β :: γ :: rest'))
+                    = Nat.succ (PDT.depth (PDT.ofLeafList (γ :: rest'))) := by
+                have hnonneg :
+                    0 ≤ PDT.depth (PDT.ofLeafList (γ :: rest')) := Nat.zero_le _
+                simp [PDT.ofLeafList, PDT.depth, Nat.max_eq_right hnonneg]
+              have hlen :
+                  (β :: γ :: rest').length =
+                    Nat.succ ((γ :: rest').length) := by
+                simp
+              exact hsucc ▸
+                (Nat.succ_le_succ hdepth).trans_eq hlen.symm
 
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,

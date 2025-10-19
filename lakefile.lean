@@ -41,6 +41,8 @@ lean_lib PnP3 where
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
     `ThirdPartyFacts.BaseSwitching,
+    `ThirdPartyFacts.SwitchingParameters,
+    `ThirdPartyFacts.HastadMSL,
     `ThirdPartyFacts.Facts_Switching,
     `ThirdPartyFacts.LeafBudget
   ]

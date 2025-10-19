@@ -783,7 +783,8 @@ lemma scenarioFromShrinkage_k_eq
 -/
 noncomputable def scenarioFromAC0
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     Σ' _ : Nat, BoundedAtlasScenario params.n :=
   by
     classical
@@ -821,7 +822,8 @@ noncomputable def scenarioFromAC0
 @[simp]
 lemma scenarioFromAC0_k_eq
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     (scenarioFromAC0 params F).2.k = (scenarioFromAC0 params F).1 := by
   classical
   unfold scenarioFromAC0
@@ -838,7 +840,8 @@ lemma scenarioFromAC0_k_eq
 @[simp]
 lemma scenarioFromAC0_family_eq
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     (scenarioFromAC0 params F).2.family = F := by
   classical
   unfold scenarioFromAC0
@@ -851,7 +854,8 @@ lemma scenarioFromAC0_family_eq
 -/
 noncomputable def scenarioFromLocalCircuit
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     Σ' _ : Nat, BoundedAtlasScenario params.n :=
   by
     classical
@@ -901,7 +905,8 @@ noncomputable def scenarioFromLocalCircuit
 @[simp]
 lemma scenarioFromLocalCircuit_family_eq
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     (scenarioFromLocalCircuit params F).2.family = F := by
   classical
   unfold scenarioFromLocalCircuit
@@ -972,7 +977,8 @@ lemma scenarioFromShrinkage_dictLen_le_pow
 -/
 lemma scenarioFromAC0_k_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     (scenarioFromAC0 params F).1
       ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
   classical
@@ -1011,7 +1017,8 @@ lemma scenarioFromAC0_k_le_pow
 -/
 lemma scenarioFromAC0_dictLen_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     Counting.dictLen (scenarioFromAC0 params F).2.atlas.dict
       ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
   classical
@@ -1053,7 +1060,8 @@ lemma scenarioFromAC0_dictLen_le_pow
 @[simp]
 lemma scenarioFromAC0_epsilon_eq
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     (scenarioFromAC0 params F).2.atlas.epsilon
       = (ThirdPartyFacts.certificate_from_AC0 params F).ε := by
   classical
@@ -1088,7 +1096,8 @@ lemma scenarioFromAC0_epsilon_eq
   данные, которые требуются Covering/Leaf-Budget анализу шага B. -/
 lemma scenarioFromAC0_completeBounds
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     let bound := Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1))
     let sc := scenarioFromAC0 params F
     sc.1 ≤ bound ∧
@@ -1131,7 +1140,8 @@ lemma scenarioFromAC0_completeBounds
 -/
 theorem exists_boundedAtlas_from_AC0
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
       sc.family = F ∧
       k ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) ∧
@@ -1163,7 +1173,8 @@ theorem exists_boundedAtlas_from_AC0
 -/
 lemma scenarioFromLocalCircuit_k_le_pow
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     (scenarioFromLocalCircuit params F).1
       ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
   classical
@@ -1210,7 +1221,8 @@ lemma scenarioFromLocalCircuit_k_le_pow
 -/
 lemma scenarioFromLocalCircuit_dictLen_le_pow
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     Counting.dictLen (scenarioFromLocalCircuit params F).2.atlas.dict
       ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) := by
   classical
@@ -1260,7 +1272,8 @@ lemma scenarioFromLocalCircuit_dictLen_le_pow
 @[simp]
 lemma scenarioFromLocalCircuit_epsilon_eq
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     (scenarioFromLocalCircuit params F).2.atlas.epsilon
       = (ThirdPartyFacts.localCircuitWitness params F).shrinkage.ε := by
   classical
@@ -1298,7 +1311,8 @@ lemma scenarioFromLocalCircuit_epsilon_eq
 @[simp]
 lemma scenarioFromLocalCircuit_k_eq
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     (scenarioFromLocalCircuit params F).2.k =
       (scenarioFromLocalCircuit params F).1 := by
   classical
@@ -1309,7 +1323,8 @@ lemma scenarioFromLocalCircuit_k_eq
 
 lemma scenarioFromLocalCircuit_completeBounds
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     let bound := Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2)
       + params.depth + 1))
     let sc := scenarioFromLocalCircuit params F
@@ -1348,7 +1363,8 @@ lemma scenarioFromLocalCircuit_completeBounds
 -/
 theorem exists_boundedAtlas_from_localCircuit
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
       sc.family = F ∧
       k ≤ Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) ∧
@@ -1381,7 +1397,8 @@ theorem exists_boundedAtlas_from_localCircuit
 -/
 lemma scenarioFromAC0_stepAB_summary
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     let pack := scenarioFromAC0 params F
     let sc := pack.2
     let bound := Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1))
@@ -1437,7 +1454,8 @@ lemma scenarioFromAC0_stepAB_summary
 -/
 lemma scenarioFromLocalCircuit_stepAB_summary
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     let pack := scenarioFromLocalCircuit params F
     let sc := pack.2
     let bound := Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2)
@@ -1535,7 +1553,8 @@ end ScenarioBudget
 -/
 noncomputable def scenarioBudgetFromAC0
     (params : ThirdPartyFacts.AC0Parameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasAC0PartialWitness params F] :
     ScenarioBudget params.n F :=
   by
     classical
@@ -1578,7 +1597,8 @@ noncomputable def scenarioBudgetFromAC0
 -/
 noncomputable def scenarioBudgetFromLocal
     (params : ThirdPartyFacts.LocalCircuitParameters)
-    (F : Core.Family params.n) :
+    (F : Core.Family params.n)
+    [ThirdPartyFacts.HasLocalCircuitWitness params F] :
     ScenarioBudget params.n F :=
   by
     classical

@@ -63,7 +63,7 @@ def PDT.refine {n : Nat}
                   (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
             exact Eq.subst (motive := fun s => β ∈ s)
               (Eq.symm hdef) hmemAppend
-      tails β hmemTree
+          tails β hmemTree
       PDT.node i (PDT.refine t0 tails0) (PDT.refine t1 tails1)
 
 /--

@@ -67,10 +67,12 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
 axiom antiChecker_exists_large_Y
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
+    (inst : HasAC0PartialWitness solver.ac0 (solver.same_n.symm ▸ F))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
       let Fsolver : Family solver.ac0.n :=
         (solver.same_n.symm ▸ F)
-      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let instWitness : HasAC0PartialWitness solver.ac0 Fsolver := inst
+      let scWitness := (@scenarioFromAC0 solver.ac0 Fsolver instWitness).2
       let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -85,11 +87,13 @@ axiom antiChecker_exists_large_Y
 axiom antiChecker_exists_testset
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
+    (inst : HasAC0PartialWitness solver.ac0 (solver.same_n.symm ▸ F))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
     (T : Finset (Core.BitVec (Models.inputLen p))),
       let Fsolver : Family solver.ac0.n :=
         (solver.same_n.symm ▸ F)
-      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let instWitness : HasAC0PartialWitness solver.ac0 Fsolver := inst
+      let scWitness := (@scenarioFromAC0 solver.ac0 Fsolver instWitness).2
       let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       let Tsolver : Finset (Core.BitVec solver.ac0.n) :=
@@ -113,11 +117,13 @@ axiom antiChecker_exists_testset
 axiom antiChecker_exists_large_Y_local
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
   ∃ (F : Family (Models.inputLen p))
+    (inst : HasLocalCircuitWitness solver.params (solver.same_n.symm ▸ F))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
       let Fsolver : Family solver.params.n :=
         (solver.same_n.symm ▸ F)
+      let instWitness : HasLocalCircuitWitness solver.params Fsolver := inst
       let scWitness :=
-        (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+        (@scenarioFromLocalCircuit solver.params Fsolver instWitness).2
       let Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -131,12 +137,14 @@ axiom antiChecker_exists_large_Y_local
 axiom antiChecker_exists_testset_local
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
   ∃ (F : Family (Models.inputLen p))
+    (inst : HasLocalCircuitWitness solver.params (solver.same_n.symm ▸ F))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
     (T : Finset (Core.BitVec (Models.inputLen p))),
       let Fsolver : Family solver.params.n :=
         (solver.same_n.symm ▸ F)
+      let instWitness : HasLocalCircuitWitness solver.params Fsolver := inst
       let scWitness :=
-        (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+        (@scenarioFromLocalCircuit solver.params Fsolver instWitness).2
       let Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       let Tsolver : Finset (Core.BitVec solver.params.n) :=

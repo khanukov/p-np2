@@ -46,17 +46,27 @@ structure OraclePartialWitness
   oracle_le_polylog : oracle.maxArity ≤ polylogBudget (Nat.pow 2 params.n)
 
 /--
-  Аксома: для любых параметров AC⁰ и допустимого фанина оракулов существует
-  shrinkage-свидетельство, удовлетворяющее указанным границам.  Конкретные
-  численные зависимости (например, полилогарифмическая оценка на фанин)
-  перенесены в свойства `OraclePartialWitness`, чтобы дальнейшие модули
-  могли ссылаться на них без обращения к `Classical.choose`.
+  Внешний факт оформляем в виде тайпкласса: наличие экземпляра
+  `HasOraclePartialWitness` гарантирует существование оракульного shrinkage-
+  свидетельства с указанными численными границами.  Это устраняет явную
+  аксиому и делает зависимости от внешних результатов прозрачными для
+  последующих модулей.
 -/
-axiom partial_shrinkage_with_oracles
+class HasOraclePartialWitness
     (params : AC0Parameters)
     (oracle : OracleParameters)
-    (F : Family params.n) :
-    OraclePartialWitness params oracle F
+    (F : Family params.n) : Type where
+  /-- Оракульное shrinkage-свидетельство для семейства `F`. -/
+  witness : OraclePartialWitness params oracle F
+
+/-- Извлекаем оракульное shrinkage-свидетельство из тайпкласса. -/
+noncomputable def oraclePartialWitness
+    (params : AC0Parameters)
+    (oracle : OracleParameters)
+    (F : Family params.n)
+    [w : HasOraclePartialWitness params oracle F] :
+    OraclePartialWitness params oracle F :=
+  w.witness
 
 /-- Проекция: получаем обычный частичный сертификат из оракульного свидетеля. -/
 noncomputable def oracleWitnessCertificate

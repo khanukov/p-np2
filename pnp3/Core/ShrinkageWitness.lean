@@ -122,6 +122,202 @@ namespace PartialCertificate
 variable {n ℓ : Nat} {F : Family n}
 
 /--
+  Уточняем селекторы частичного сертификата, разбивая каждый лист `β`
+  на семейство более мелких подкубов `refine β f`.  Технически это ровно
+  операция `List.bind` над исходным списком листьев, но мы позволяем
+  уточнению зависеть от рассматриваемой функции `f`.  Конструкция
+  пригодится при рекурсивном применении switching-лемм: после
+  «дораскрытия» хвостов необходимо заменить каждый лист на все листья
+  вновь появившегося поддерева, причём конкретный выбор может зависеть
+  от ограничения функции на данный лист.
+-/
+def refineSelectors (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n)) :
+    (BitVec n → Bool) → List (Subcube n) :=
+  fun f =>
+    (C.selectors f).foldr (fun β acc => refine β f ++ acc) []
+
+private lemma mem_refineSelectors_list
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    (f : BitVec n → Bool) :
+    ∀ {L : List (Subcube n)} {β : Subcube n},
+      β ∈ List.foldr (fun γ acc => refine γ f ++ acc) [] L ↔
+        ∃ γ ∈ L, β ∈ refine γ f
+  | [], β => by simp
+  | γ :: rest, β => by
+      constructor
+      · intro hβ
+        have hcases : β ∈ refine γ f ∨
+            β ∈ List.foldr (fun γ acc => refine γ f ++ acc) [] rest := by
+          simpa [List.foldr, List.mem_append] using hβ
+        cases hcases with
+        | inl hγ =>
+            exact ⟨γ, by simp, hγ⟩
+        | inr hrest =>
+            rcases (mem_refineSelectors_list refine f).1 hrest with
+              ⟨δ, hδmem, hβδ⟩
+            exact ⟨δ, by simp [List.mem_cons, hδmem], hβδ⟩
+      · rintro ⟨δ, hδmem, hβδ⟩
+        have hcases : δ = γ ∨ δ ∈ rest := by
+          simpa [List.mem_cons] using hδmem
+        have htarget :
+            β ∈ refine γ f ++ List.foldr (fun γ acc => refine γ f ++ acc) [] rest := by
+          cases hcases with
+          | inl hδγ =>
+              subst hδγ
+              exact List.mem_append.mpr (Or.inl hβδ)
+          | inr hδrest =>
+              have hrest :
+                  β ∈ List.foldr (fun γ acc => refine γ f ++ acc) [] rest :=
+                (mem_refineSelectors_list refine f).2 ⟨δ, hδrest, hβδ⟩
+              exact List.mem_append.mpr (Or.inr hrest)
+        change β ∈ refine γ f ++ List.foldr (fun γ acc => refine γ f ++ acc) [] rest
+        exact htarget
+
+@[simp] lemma mem_refineSelectors_iff
+    (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    {f : BitVec n → Bool} {β : Subcube n} :
+    β ∈ C.refineSelectors refine f ↔
+      ∃ γ ∈ C.selectors f, β ∈ refine γ f := by
+  classical
+  unfold refineSelectors
+  exact (mem_refineSelectors_list (refine := refine)
+    (f := f) (L := C.selectors f) (β := β))
+
+lemma mem_refineSelectors
+    (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    {f : BitVec n → Bool} {β γ : Subcube n}
+    (hβ : β ∈ C.selectors f) (hγ : γ ∈ refine β f) :
+    γ ∈ C.refineSelectors refine f := by
+  classical
+  exact (C.mem_refineSelectors_iff (refine := refine)).2 ⟨β, hβ, hγ⟩
+
+lemma refineSelectors_subset
+    (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    {P : (BitVec n → Bool) → Subcube n → Prop}
+    (hbase : ∀ {f : BitVec n → Bool} {β γ : Subcube n},
+      f ∈ F → β ∈ C.selectors f → γ ∈ refine β f → P f γ)
+    {f : BitVec n → Bool} {γ : Subcube n}
+    (hf : f ∈ F) (hγ : γ ∈ C.refineSelectors refine f) :
+    P f γ := by
+  rcases (C.mem_refineSelectors_iff refine).1 hγ with ⟨β, hβ, hγβ⟩
+  exact hbase hf hβ hγβ
+
+/--
+  Пропозициональная версия утверждения: покрытие точки `x` уточнённым
+  списком селекторов эквивалентно покрытию исходным списком.  Условие
+  `hcover` формулирует точное соответствие между листом `β` и его
+  «раскрытием» `refine β f`: объединение новых подкубов совпадает с самим
+  `β`.  Именно такая ситуация возникает при разворачивании хвостов PDT,
+  когда каждый лист заменяется на листья дочернего дерева.
+-/
+lemma covered_refineSelectors
+    (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    (hcover : ∀ β f x, coveredB (refine β f) x = memB β x)
+    {f : BitVec n → Bool} {x : BitVec n} :
+    covered (C.refineSelectors refine f) x ↔
+      covered (C.selectors f) x := by
+  classical
+  constructor
+  · intro hcov
+    rcases hcov with ⟨γ, hγ, hmemγ⟩
+    rcases (C.mem_refineSelectors_iff (refine := refine)).1 hγ with
+      ⟨β, hβ, hγβ⟩
+    have hcovered : coveredB (refine β f) x = true := by
+      have hx : covered (refine β f) x := ⟨γ, hγβ, hmemγ⟩
+      exact (covered_iff (Rset := refine β f) (x := x)).mp hx
+    have hmemB : memB β x = true := by
+      simpa [hcover β f x] using hcovered
+    have hmem : mem β x := (mem_iff_memB (β := β) (x := x)).mpr hmemB
+    exact ⟨β, hβ, hmem⟩
+  · rintro ⟨β, hβ, hmemβ⟩
+    have hmemB : memB β x = true :=
+      (mem_iff_memB (β := β) (x := x)).mp hmemβ
+    have hcovered : coveredB (refine β f) x = true := by
+      simpa [hcover β f x] using hmemB
+    rcases (covered_iff (Rset := refine β f) (x := x)).mpr hcovered with
+      ⟨γ, hγ, hmemγ⟩
+    have hsel := C.mem_refineSelectors
+      (refine := refine) (hβ := hβ) (hγ := hγ)
+    exact ⟨γ, hsel, hmemγ⟩
+
+/--
+  Булева версия `covered_refineSelectors`.  Она удобна для переписывания
+  функций покрытия внутри доказательств про ошибку `errU`, где важно
+  именно булево значение `coveredB`.
+-/
+lemma coveredB_refineSelectors
+    (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    (hcover : ∀ β f x, coveredB (refine β f) x = memB β x)
+    (f : BitVec n → Bool) (x : BitVec n) :
+    coveredB (C.refineSelectors refine f) x =
+      coveredB (C.selectors f) x := by
+  classical
+  have htrue :
+      coveredB (C.refineSelectors refine f) x = true ↔
+        coveredB (C.selectors f) x = true := by
+    calc
+      coveredB (C.refineSelectors refine f) x = true ↔
+          covered (C.refineSelectors refine f) x :=
+            (covered_iff (Rset := C.refineSelectors refine f) (x := x)).symm
+      _ ↔ covered (C.selectors f) x :=
+            covered_refineSelectors (C := C) (refine := refine)
+              (hcover := hcover)
+      _ ↔ coveredB (C.selectors f) x = true :=
+            (covered_iff (Rset := C.selectors f) (x := x))
+  -- Перебираем два возможных булевых значения и исключаем несовместимые
+  -- комбинации с помощью эквивалентности `htrue`.
+  by_cases hselTrue : coveredB (C.selectors f) x = true
+  · have hrefTrue : coveredB (C.refineSelectors refine f) x = true :=
+      (htrue.mpr hselTrue)
+    simp [hrefTrue, hselTrue]
+  · have hselFalse : coveredB (C.selectors f) x = false := by
+      cases hcase : coveredB (C.selectors f) x with
+      | false => rfl
+      | true =>
+          have hcaseTrue : coveredB (C.selectors f) x = true := by
+            simp [hcase]
+          exact (hselTrue hcaseTrue).elim
+    have hrefFalse : coveredB (C.refineSelectors refine f) x = false := by
+      cases href : coveredB (C.refineSelectors refine f) x with
+      | false => rfl
+      | true =>
+          have hrefTrue : coveredB (C.refineSelectors refine f) x = true := by
+            simp [href]
+          have hcaseTrue : coveredB (C.selectors f) x = true :=
+            (htrue.mp hrefTrue)
+          exact (hselTrue hcaseTrue).elim
+    simp [hrefFalse, hselFalse]
+
+/--
+  Ошибка аппроксимации не меняется, если каждый лист `β` заменён на
+  эквивалентный набор подкубов `refine β f`.  Формально это следует из
+  совпадения булевых функций покрытия, установленного выше.
+-/
+lemma errU_refineSelectors_eq
+    (C : PartialCertificate n ℓ F)
+    (refine : Subcube n → (BitVec n → Bool) → List (Subcube n))
+    (hcover : ∀ β f x, coveredB (refine β f) x = memB β x)
+    (f : BitVec n → Bool) :
+    errU f (C.refineSelectors refine f) = errU f (C.selectors f) := by
+  classical
+  have hfun :
+      (fun x : BitVec n => f x ≠ coveredB (C.refineSelectors refine f) x)
+        = (fun x : BitVec n => f x ≠ coveredB (C.selectors f) x) := by
+    funext x
+    have hcoverEq :=
+      coveredB_refineSelectors (C := C) (refine := refine)
+        (hcover := hcover) (f := f) (x := x)
+    simp [hcoverEq]
+  unfold errU
+  simp [hfun]
+
+/--
 Из частичного свидетельства сразу получаем `CommonPDT`.  Глубина полного дерева
 ограничена суммой глубины ствола и максимально допустимой глубины хвостов.
 -/

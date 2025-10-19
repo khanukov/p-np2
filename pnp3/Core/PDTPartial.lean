@@ -107,6 +107,58 @@ lemma realize_leaves_length_le (Q : PartialDT n ℓ) :
   exact Nat.le_trans hbound
     (Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepth)
 
+/--
+  «Склейка» двух частичных PDT: к каждому хвосту `Q` приписываем дополнительный
+  частичный разбор.  Новый объект имеет тот же ствол, а глубина хвостов растёт
+  не более чем на `ℓ₂`.  Такая конструкция понадобится при рекурсивном
+  построении multi-switching дерева, когда на каждом шаге требуется уточнить
+  хвосты свежеполученными частичными сертификатами.
+-/
+def splice {ℓ₁ ℓ₂ : Nat} (Q : PartialDT n ℓ₁)
+    (R : ∀ β : Subcube n, β ∈ PDT.leaves Q.trunk → PartialDT n ℓ₂)
+    (htrunk : ∀ β hβ, (R β hβ).trunk = Q.tails β hβ) :
+    PartialDT n (ℓ₁ + ℓ₂) where
+  trunk := Q.trunk
+  tails := fun β hβ => (R β hβ).realize
+  tail_depth_le := by
+    intro β hβ
+    have hdepth := PartialDT.depth_realize_le (Q := R β hβ)
+    have hbound :
+        PDT.depth (R β hβ).trunk ≤ ℓ₁ := by
+      simpa [htrunk β hβ] using Q.tail_depth_le β hβ
+    have := Nat.add_le_add_right hbound ℓ₂
+    exact Nat.le_trans hdepth this
+
+@[simp] lemma splice_trunk {ℓ₁ ℓ₂ : Nat}
+    (Q : PartialDT n ℓ₁)
+    (R : ∀ β : Subcube n, β ∈ PDT.leaves Q.trunk → PartialDT n ℓ₂)
+    (htrunk : ∀ β hβ, (R β hβ).trunk = Q.tails β hβ) :
+    (splice (Q := Q) R htrunk).trunk = Q.trunk := rfl
+
+@[simp] lemma splice_tails {ℓ₁ ℓ₂ : Nat}
+    (Q : PartialDT n ℓ₁)
+    (R : ∀ β : Subcube n, β ∈ PDT.leaves Q.trunk → PartialDT n ℓ₂)
+    (htrunk : ∀ β hβ, (R β hβ).trunk = Q.tails β hβ)
+    (β : Subcube n) (hβ : β ∈ PDT.leaves Q.trunk) :
+    (splice (Q := Q) R htrunk).tails β hβ = (R β hβ).realize := rfl
+
+lemma splice_tail_depth_le {ℓ₁ ℓ₂ : Nat}
+    (Q : PartialDT n ℓ₁)
+    (R : ∀ β : Subcube n, β ∈ PDT.leaves Q.trunk → PartialDT n ℓ₂)
+    (htrunk : ∀ β hβ, (R β hβ).trunk = Q.tails β hβ)
+    (β : Subcube n) (hβ : β ∈ PDT.leaves Q.trunk) :
+    PDT.depth ((splice (Q := Q) R htrunk).tails β hβ)
+      ≤ ℓ₁ + ℓ₂ := by
+  have := (splice (Q := Q) R htrunk).tail_depth_le β hβ
+  simpa using this
+
+@[simp] lemma realize_splice {ℓ₁ ℓ₂ : Nat}
+    (Q : PartialDT n ℓ₁)
+    (R : ∀ β : Subcube n, β ∈ PDT.leaves Q.trunk → PartialDT n ℓ₂)
+    (htrunk : ∀ β hβ, (R β hβ).trunk = Q.tails β hβ) :
+    (splice (Q := Q) R htrunk).realize
+      = PDT.refine Q.trunk (fun β hβ => (R β hβ).realize) := rfl
+
 end PartialDT
 
 end Core

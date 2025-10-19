@@ -367,10 +367,8 @@ lemma scenarioFromCommonPDT_k_le_pow
   set k := Classical.choose witness with hk
   change k ≤ Nat.pow 2 C.depthBound
   have hk_spec := Classical.choose_spec witness
-  have hk_leaves : k ≤ (Core.PDT.leaves C.tree).length := by
-    have htmp := hk_spec.1
-    simp [hk] at htmp
-    exact htmp
+  have hk_leaves : k ≤ (Core.PDT.leaves C.tree).length :=
+    hk.symm ▸ hk_spec.1
   have hlen_bound :
       (Core.PDT.leaves C.tree).length ≤ Nat.pow 2 (Core.PDT.depth C.tree) :=
     Core.leaves_count_bound (t := C.tree)
@@ -412,11 +410,9 @@ lemma dictLen_fromShrinkage_le_pow
     have hbound :=
       dictLen_fromCommonPDT_le_pow
         (n := n) (F := S.F) (C := S.commonPDT)
-    have hbound' := hbound
-    simp [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
-      Core.CommonPDT.toAtlas, Core.Shrinkage.commonPDT_depthBound,
-      Core.Shrinkage.commonPDT_tree] at hbound'
-    exact hbound'
+    change Counting.dictLen (Core.Atlas.ofPDT S.tree S.ε).dict ≤ Nat.pow 2 S.t
+    simpa [Core.CommonPDT.toAtlas, Core.Atlas.ofPDT, Core.Atlas.fromShrinkage]
+      using hbound
 
 /-- У `scenarioFromCommonPDT` семейство во втором компоненте равно исходному `F`. -/
 @[simp]
@@ -451,8 +447,7 @@ lemma scenarioFromCommonPDT_dictLen_le_pow
   -- В полученном сценарии атлас совпадает с `C.toAtlas`, поэтому оценка
   -- на длину словаря переносится напрямую.
   have hbound' := hbound
-  simp [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
-    Core.CommonPDT.toAtlas] at hbound'
+  simp [Core.CommonPDT.toAtlas] at hbound'
   exact hbound'
 
 /--
@@ -769,11 +764,14 @@ lemma scenarioFromShrinkage_k_eq
   have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
     dsimp [Core.Shrinkage.commonPDT_epsilon]
     exact hε1
-  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_epsilon]
-    using
-      (scenarioFromCommonPDT_k_eq
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1'))
+  change
+    (scenarioFromCommonPDT (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).2.k =
+      (scenarioFromCommonPDT (n := n) (F := S.F) (C := S.commonPDT)
+        (hε0 := hε0') (hε1 := hε1')).1
+  exact scenarioFromCommonPDT_k_eq
+    (n := n) (F := S.F) (C := S.commonPDT)
+    (hε0 := hε0') (hε1 := hε1')
 
 /--
   Специализация к случаю AC⁰: из shrinkage-конструкции, предоставленной
@@ -887,18 +885,18 @@ noncomputable def scenarioFromLocalCircuit
     ·
       have hworksBase : WorksFor base.2.atlas S.F := by
         have htmp := base.2.works
-        simp [base_family] at htmp
+        simp at htmp
         exact htmp
       exact hF ▸ hworksBase
     · intro f hf
       have hfS : f ∈ S.F := hF ▸ hf
       have hfBase : f ∈ base.2.family := by
         have htmp := hfS
-        simp [base_family] at htmp
+        simp at htmp
         exact htmp
       have hbounded := base.2.bounded f hfBase
       have htmp := hbounded
-      simp [base_family] at htmp
+      simp at htmp
       exact htmp
 
 /-- Семейство в сценарии для локальных схем совпадает с исходным списком `F`. -/
@@ -912,7 +910,7 @@ lemma scenarioFromLocalCircuit_family_eq
   unfold scenarioFromLocalCircuit
   set witness := ThirdPartyFacts.localCircuitWitness params F
   set S := witness.shrinkage
-  simp [scenarioFromLocalCircuit, witness, S]
+  simp
 
 /--
   Для сценария, построенного из shrinkage, параметр `k` не превышает числа
@@ -937,10 +935,7 @@ lemma scenarioFromShrinkage_k_le_pow
         change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
         dsimp [Core.Shrinkage.commonPDT_epsilon]
         exact htmp)
-  have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
-  exact hbound'
+  exact hbound
 
 /--
   Аналогичная оценка для длины словаря: `scenarioFromShrinkage` наследует
@@ -966,10 +961,7 @@ lemma scenarioFromShrinkage_dictLen_le_pow
         change S.commonPDT.epsilon ≤ (1 : Core.Q) / 2
         dsimp [Core.Shrinkage.commonPDT_epsilon]
         exact htmp)
-  have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
-  exact hbound'
+  exact hbound
 
 /--
   Параметр `k` в сценарии AC⁰ не превышает `2^{(log₂(M+2))^{d+1}}`.  Получаем
@@ -1008,7 +1000,7 @@ lemma scenarioFromAC0_k_le_pow
   have hrewrite :
       (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
         = (scenarioFromAC0 params F).1 := by
-    simp [scenarioFromAC0, S, hε0, hε1]
+    simp [scenarioFromAC0, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
@@ -1049,7 +1041,7 @@ lemma scenarioFromAC0_dictLen_le_pow
       Counting.dictLen
           (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
         = Counting.dictLen (scenarioFromAC0 params F).2.atlas.dict := by
-    simp [scenarioFromAC0, S, hε0, hε1]
+    simp [scenarioFromAC0, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
@@ -1414,35 +1406,38 @@ lemma scenarioFromAC0_stepAB_summary
   by
     classical
     intro pack sc bound
-    have hfamily := scenarioFromAC0_family_eq (params := params) (F := F)
-    have hbounds_raw := scenarioFromAC0_completeBounds
-      (params := params) (F := F)
+    have hfamily' : sc.family = F := by
+      change (scenarioFromAC0 params F).2.family = F
+      exact scenarioFromAC0_family_eq (params := params) (F := F)
     have hbounds :
         pack.1 ≤ bound ∧
-          Counting.dictLen pack.2.atlas.dict ≤ bound ∧
-          (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, bound] using hbounds_raw
-    have hfamily' : sc.family = F := by
-      simpa [pack, sc] using hfamily
+          Counting.dictLen sc.atlas.dict ≤ bound ∧
+          (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+          sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+          sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+      change
+        (scenarioFromAC0 params F).1 ≤
+            Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) ∧
+          Counting.dictLen (scenarioFromAC0 params F).2.atlas.dict ≤
+            Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) ∧
+          (0 : Core.Q) ≤ (scenarioFromAC0 params F).2.atlas.epsilon ∧
+          (scenarioFromAC0 params F).2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+          (scenarioFromAC0 params F).2.atlas.epsilon
+            ≤ (1 : Core.Q) / (params.n + 2)
+      exact scenarioFromAC0_completeBounds (params := params) (F := F)
     rcases hbounds with ⟨hk_base, hrest⟩
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
-    have hkEq := scenarioFromAC0_k_eq (params := params) (F := F)
-    have hkEq' : pack.2.k = pack.1 := by
-      simpa [pack] using hkEq
-    have hk' : sc.k ≤ bound := by
-      simpa [pack, sc, hkEq'] using hk_base
-    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-      simpa [pack, sc, bound] using hdict_base
-    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
-      simpa [pack, sc] using hε0_base
-    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
-      simpa [pack, sc] using hε1_base
-    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, sc] using hεInv_base
+    have hkEq : sc.k = pack.1 := by
+      change
+        (scenarioFromAC0 params F).2.k = (scenarioFromAC0 params F).1
+      exact scenarioFromAC0_k_eq (params := params) (F := F)
+    have hk' : sc.k ≤ bound := hkEq.symm ▸ hk_base
+    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := hdict_base
+    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := hε0_base
+    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := hε1_base
+    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := hεInv_base
     have hcap := family_card_le_capacity (sc := sc)
     refine And.intro hfamily' (And.intro hk' (And.intro hdict'
       (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
@@ -1472,37 +1467,39 @@ lemma scenarioFromLocalCircuit_stepAB_summary
   by
     classical
     intro pack sc bound
-    have hfamily := scenarioFromLocalCircuit_family_eq
-      (params := params) (F := F)
-    have hbounds_raw := scenarioFromLocalCircuit_completeBounds
-      (params := params) (F := F)
+    have hfamily' : sc.family = F := by
+      change (scenarioFromLocalCircuit params F).2.family = F
+      exact scenarioFromLocalCircuit_family_eq (params := params) (F := F)
     have hbounds :
         pack.1 ≤ bound ∧
-          Counting.dictLen pack.2.atlas.dict ≤ bound ∧
-          (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
-          pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, bound] using hbounds_raw
-    have hfamily' : sc.family = F := by
-      simpa [pack, sc] using hfamily
+          Counting.dictLen sc.atlas.dict ≤ bound ∧
+          (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+          sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+          sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+      change
+        (scenarioFromLocalCircuit params F).1 ≤
+            Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) ∧
+          Counting.dictLen (scenarioFromLocalCircuit params F).2.atlas.dict ≤
+            Nat.pow 2 (params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)) ∧
+          (0 : Core.Q) ≤ (scenarioFromLocalCircuit params F).2.atlas.epsilon ∧
+          (scenarioFromLocalCircuit params F).2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+          (scenarioFromLocalCircuit params F).2.atlas.epsilon
+            ≤ (1 : Core.Q) / (params.n + 2)
+      exact scenarioFromLocalCircuit_completeBounds (params := params) (F := F)
     rcases hbounds with ⟨hk_base, hrest⟩
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
-    have hkEq := scenarioFromLocalCircuit_k_eq
-      (params := params) (F := F)
-    have hkEq' : pack.2.k = pack.1 := by
-      simpa [pack] using hkEq
-    have hk' : sc.k ≤ bound := by
-      simpa [pack, sc, hkEq'] using hk_base
-    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-      simpa [pack, sc, bound] using hdict_base
-    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
-      simpa [pack, sc] using hε0_base
-    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
-      simpa [pack, sc] using hε1_base
-    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-      simpa [pack, sc] using hεInv_base
+    have hkEq : sc.k = pack.1 := by
+      change
+        (scenarioFromLocalCircuit params F).2.k =
+          (scenarioFromLocalCircuit params F).1
+      exact scenarioFromLocalCircuit_k_eq (params := params) (F := F)
+    have hk' : sc.k ≤ bound := hkEq.symm ▸ hk_base
+    have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := hdict_base
+    have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := hε0_base
+    have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := hε1_base
+    have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := hεInv_base
     have hcap := family_card_le_capacity (sc := sc)
     refine And.intro hfamily' (And.intro hk' (And.intro hdict'
       (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))

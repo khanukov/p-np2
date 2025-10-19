@@ -63,7 +63,7 @@ def LocalLowerBoundHypothesis
 
 /-- CJW-гипотеза для разреженных NP-языков. -/
 def SparseLowerBoundHypothesis
-    (p : Models.SparseLanguageParams) (ε : Rat) (statement : Prop) : Prop :=
+    (_p : Models.SparseLanguageParams) (ε : Rat) (statement : Prop) : Prop :=
   (0 : Rat) < ε ∧ statement
 
 /--

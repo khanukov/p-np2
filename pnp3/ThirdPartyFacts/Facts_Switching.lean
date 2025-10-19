@@ -15,7 +15,9 @@ import Mathlib.Algebra.Order.Field.Basic
 import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
+import Core.ShrinkageAC0
 import AC0.Formulas
+import ThirdPartyFacts.AC0Witness
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -26,196 +28,16 @@ import AC0.Formulas
 
 namespace Pnp3
 
-namespace Core
-
-/-- Подкуб, задающий ровно точку `x`. -/
-@[simp] def pointSubcube {n : Nat} (x : BitVec n) : Subcube n :=
-  fun i => some (x i)
-
-/-- Точка всегда принадлежит своему точечному подкубу. -/
-@[simp] lemma mem_pointSubcube_self {n : Nat} (x : BitVec n) :
-    mem (pointSubcube x) x := by
-  classical
-  apply (mem_iff (β := pointSubcube x) (x := x)).mpr
-  intro i b hb
-  have hsome : some (x i) = some b := by
-    exact hb
-  exact Option.some.inj hsome
-
-/-- Принадлежность точечному подкубу означает точное совпадение вектора. -/
-@[simp] lemma mem_pointSubcube_iff {n : Nat} {x y : BitVec n} :
-    mem (pointSubcube x) y ↔ x = y := by
-  classical
-  constructor
-  · intro hmem
-    have hprop := (mem_iff (β := pointSubcube x) (x := y)).mp hmem
-    funext i
-    have : pointSubcube x i = some (x i) := by simp [pointSubcube]
-    have hy := hprop i (x i) this
-    exact hy.symm
-  · intro hxy
-    subst hxy
-    exact mem_pointSubcube_self x
-
-end Core
-
 namespace ThirdPartyFacts
 
 open Core
 
-/-- Параметры класса AC⁰, которые обычно фигурируют в switching-леммах.
-
-* `n` — число входных переменных.
-* `M` — размер формулы/схемы (число вентилей, листьев и т.д.).
-* `d` — глубина схемы (число слоёв).
-
-В более сложных вариантах добавляются ограничения на ширину DNF, число слоёв
-OR/AND и пр., но для текущего интерфейса достаточно этих трёх чисел. -/
-structure AC0Parameters where
-  n : Nat
-  M : Nat
-  d : Nat
-  deriving Repr
-
-/--
-  Параметры для класса «локальных схем».  Мы сохраняем только наиболее
-  необходимые числовые характеристики:
-
-  * `n` — число входных бит (длина таблицы истинности).
-  * `M` — общий размер схемы (например, число вентилей).
-  * `ℓ` — параметр локальности: каждое выходное значение зависит не более
-    чем от `ℓ` входов.
-  * `depth` — число слоёв (глубина схемы).
-
-  В дальнейшем эта структура служит лишь для записи тех величин, которые
-  фигурируют в внешнем факте о shrinkage для локальных схем.  Дополнительные
-  ограничения (например, на тип вентилей) можно будет добавить позже, не
-  меняя интерфейс Lean.
+/-,
+Параметры класса AC⁰, используемые далее, заданы в модуле
+`ThirdPartyFacts.AC0Witness` (см. `AC0Parameters`).  Мы оставляем здесь
+напоминание о семантике полей: `n` — число переменных, `M` — размер формулы,
+`d` — глубина схемы.
 -/
-structure LocalCircuitParameters where
-  n      : Nat
-  M      : Nat
-  ℓ      : Nat
-  depth  : Nat
-  deriving Repr
-
-/-- Уточняющая структура, описывающая гарантии shrinkage.
-
-`depthBound` и `errorBound` — ожидаемые верхние оценки на глубину PDT и ошибку
-аппроксимации, получаемые из multi-switching леммы.  Мы оставляем их в явном
-виде, чтобы позднее подставлять сюда конкретные полиномиальные/квазиполиномиальные
-формулы. -/
-structure ShrinkageBounds where
-  depthBound : Nat
-  errorBound : Q
-  deriving Repr
-
-/-!
-  Усиленная версия shrinkage-факта: вместо полного PDT возвращается частичный
-  сертификат с контролируемой глубиной хвостов.  Такой формат ближе к
-  классическому изложению multi-switching-леммы и непосредственно пригоден для
-  шага B, где важно знать глубину ствола и высоту хвостов по отдельности.
--/
-/--
-`AC0PartialWitness` собирает в одном месте весь набор параметров, выдаваемых
-частичным shrinkage-фактом для AC⁰.  Помимо самого частичного PDT и глубины
-хвостов мы сохраняем численные оценки, необходимые для шага B, что избавляет
-от многократного обращения к `Classical.choose`.
--/
-structure AC0PartialWitness
-    (params : AC0Parameters) (F : Family params.n) where
-  /-- Максимальная глубина хвостов частичного дерева. -/
-  level          : Nat
-  /-- Частичный shrinkage-сертификат. -/
-  certificate    : Core.PartialCertificate params.n level F
-  /-- Ограничение `level ≤ log₂(M+2)`. -/
-  level_le_log   : level ≤ Nat.log2 (params.M + 2)
-  /-- Верхняя граница на суммарную глубину. -/
-  depth_le       : certificate.depthBound + level
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
-  /-- Неотрицательность ошибки. -/
-  epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
-  /-- Верхняя оценка ошибки `ε ≤ 1/(n+2)`. -/
-  epsilon_le_inv : certificate.epsilon ≤ (1 : Core.Q) / (params.n + 2)
-
-/--
-  Внешний факт оформляем в виде тайпкласса: предоставление экземпляра
-  `HasAC0PartialWitness` означает, что для заданного семейства `F`
-  существует частичный shrinkage-свидетель, удовлетворяющий всем
-  численным ограничениям.  Такой подход устраняет глобальную аксиому и
-  позволяет явно передавать зависимость от внешнего результата во все
-  утверждения, которые его используют.
--/
-class HasAC0PartialWitness
-    (params : AC0Parameters) (F : Family params.n) : Type where
-  /-- Частичный shrinkage-свидетель с контролируемой глубиной и ошибкой. -/
-  witness : AC0PartialWitness params F
-
-/-- Удобно извлекать свидетель shrinkage из тайпкласса по умолчанию. -/
-noncomputable def ac0PartialWitness
-    (params : AC0Parameters) (F : Family params.n)
-    [w : HasAC0PartialWitness params F] :
-    AC0PartialWitness params F :=
-  w.witness
-
-/-- Высота хвостов частичного PDT из AC⁰-свидетельства. -/
-noncomputable def partialCertificate_level_from_AC0
-    (params : AC0Parameters) (F : Family params.n)
-    [HasAC0PartialWitness params F] : Nat :=
-  (ac0PartialWitness params F).level
-
-/-- Сам частичный shrinkage-сертификат, предоставленный экземпляром `HasAC0PartialWitness`. -/
-noncomputable def partialCertificate_from_AC0
-    (params : AC0Parameters) (F : Family params.n)
-    [HasAC0PartialWitness params F] :
-    Core.PartialCertificate params.n
-      (partialCertificate_level_from_AC0 params F) F :=
-  (ac0PartialWitness params F).certificate
-
-/-- Ограничение на глубину хвостов: `ℓ ≤ log₂(M+2)`. -/
-lemma partialCertificate_level_from_AC0_le
-    (params : AC0Parameters) (F : Family params.n)
-    [HasAC0PartialWitness params F] :
-    partialCertificate_level_from_AC0 params F ≤ Nat.log2 (params.M + 2) := by
-  classical
-  change (ac0PartialWitness params F).level ≤ Nat.log2 (params.M + 2)
-  exact (ac0PartialWitness params F).level_le_log
-
-/-- Граница на суммарную глубину: `depthBound + ℓ` ограничена классической оценкой. -/
-lemma partialCertificate_depthBound_add_level_le
-    (params : AC0Parameters) (F : Family params.n)
-    [HasAC0PartialWitness params F] :
-    (partialCertificate_from_AC0 params F).depthBound
-        + partialCertificate_level_from_AC0 params F
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-  classical
-  change
-      (ac0PartialWitness params F).certificate.depthBound
-        + (ac0PartialWitness params F).level
-        ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
-  exact (ac0PartialWitness params F).depth_le
-
-/-- Неотрицательность ошибки частичного сертификата. -/
-lemma partialCertificate_epsilon_nonneg
-    (params : AC0Parameters) (F : Family params.n)
-    [HasAC0PartialWitness params F] :
-    (0 : Core.Q) ≤ (partialCertificate_from_AC0 params F).epsilon := by
-  classical
-  change (0 : Core.Q)
-      ≤ (ac0PartialWitness params F).certificate.epsilon
-  exact (ac0PartialWitness params F).epsilon_nonneg
-
-/-- Оценка ошибки сверху: `ε ≤ 1/(n+2)`. -/
-lemma partialCertificate_epsilon_le_inv
-    (params : AC0Parameters) (F : Family params.n)
-    [HasAC0PartialWitness params F] :
-    (partialCertificate_from_AC0 params F).epsilon
-      ≤ (1 : Core.Q) / (params.n + 2) := by
-  classical
-  change (ac0PartialWitness params F).certificate.epsilon
-      ≤ (1 : Core.Q) / (params.n + 2)
-  exact (ac0PartialWitness params F).epsilon_le_inv
-
 /-- Заготовка для "внешнего" факта: псевдослучайная multi-switching лемма
 Servedio–Tan/Håstad.  Возвращает объект `Shrinkage`, совместимый с конвейером
 SAL.  Параметры оценок записаны максимально прозрачно; их значения будут

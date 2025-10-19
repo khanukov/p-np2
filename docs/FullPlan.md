@@ -71,15 +71,23 @@ final theorem `P_ne_NP_final` holds unconditionally.
   counting pipeline operates on the deduplicated lists.  Remaining work focuses
   on sharpening the quantitative bound via multi-switching analytics.
 
-### 1.3 Shrinkage for AC⁰/local circuits (status: **axiom**, difficulty 8/10)
+### 1.3 Shrinkage for AC⁰/local circuits (status: **placeholder witness**, difficulty 8/10)
 
-* **File:** `ThirdPartyFacts/Facts_Switching.lean` (`shrinkage_for_AC0` and its
-  local analogue).
-* **Goal:** formalize the multi-switching lemma to obtain shallow PDTs with
-  controlled error.  Early milestones can target depth-2 formulas before moving
-  to the full `d`-layer setting.
-* **DoD:** fully proved shrinkage lemmas matching the current interface
-  (parameter bounds on depth `t` and error `ε`).
+* **Files:** `ThirdPartyFacts/HastadMSL.lean`, `Core/ShrinkageAC0.lean`,
+  `ThirdPartyFacts/Facts_Switching.lean`.
+* **Current state:** the multi-switching lemma is encoded through a typeclass
+  interface and currently instantiated by a "perfect" partial witness (the full
+  depth‑`n` PDT extracted from `AC0.Formulas`).  No Lean axioms remain, but the
+  depth bound is therefore vacuous: we rely on the structural inequality
+  `n ≤ (log₂ (M+2))^(d+1)` baked into `AC0Parameters` rather than a genuine
+  shrinkage argument.
+* **Goal:** replace the fallback witness with a constructive multi-switching
+  proof delivering depth `O((log M)^{d+1})` and error `O(1/(n+2))`.  Early
+  milestones can target depth‑2 formulas before moving to the full `d`-layer
+  setting.
+* **DoD:** fully proved shrinkage lemmas matching the current interface,
+  eliminating the perfect-tree fallback and recovering the textbook
+  quasi-polynomial bounds.
 
 ## 2. Stage B — Covering-Power and counting
 

@@ -40,8 +40,10 @@ lean_lib PnP3 where
     `Magnification.LocalityLift,
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
+    `ThirdPartyFacts.AC0Witness,
     `ThirdPartyFacts.BaseSwitching,
     `ThirdPartyFacts.Facts_Switching,
+    `ThirdPartyFacts.HastadMSL,
     `ThirdPartyFacts.LeafBudget
   ]
 

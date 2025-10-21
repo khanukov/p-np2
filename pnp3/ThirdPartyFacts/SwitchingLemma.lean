@@ -203,8 +203,8 @@ lemma countAliveTerms_le (F : DNF n) (ρ : Restriction n) :
     countAliveTerms F ρ ≤ F.terms.length := by
   unfold countAliveTerms
   -- countP counts elements satisfying a predicate, so it's ≤ length
-  -- This is a general property: counting elements ≤ total elements
-  sorry  -- Should be a standard library lemma
+  -- General property: length of filtered list ≤ length of original list
+  sorry  -- Should be a standard library lemma about countP
 
 /-- If countAliveTerms is 0, firstAliveTerm? returns none -/
 lemma firstAliveTerm?_none_of_countAliveTerms_zero (F : DNF n) (ρ : Restriction n)

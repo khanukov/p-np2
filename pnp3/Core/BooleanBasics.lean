@@ -1718,7 +1718,7 @@ lemma weight_nonneg (ρ : Restriction n) {p : Q}
   intro i _
   cases hmask : ρ.mask i with
   | none =>
-      simp
+      simp [hp₀]
   | some _ =>
       have hsub : 0 ≤ (1 - p) := sub_nonneg.mpr hp₁
       have : 0 ≤ (1 - p) / 2 := by

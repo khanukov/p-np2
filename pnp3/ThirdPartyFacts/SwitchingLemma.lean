@@ -612,6 +612,22 @@ lemma ac0_parameters_t_pos (M k S n d : Nat) (_hS : 0 < S) (_hn : 0 < n) (_hd : 
     _ ≤ 4 * (Nat.log2 (M + 2) + 1) * (Nat.log2 S + 1 + Nat.log2 ((n + 2) * d) + 1) := by
       apply Nat.le_mul_of_pos_right; exact hfactor
 
+/-- При 0 < p < 1 имеем 0 < 1 - p. -/
+lemma one_sub_p_pos {p : Q} (hp : 0 < p) (hp1 : p < 1) : 0 < 1 - p := by
+  linarith
+
+/-- Коэффициент (1-p)/(2p) положителен при 0 < p < 1. -/
+lemma weight_ratio_pos {p : Q} (hp : 0 < p) (hp1 : p < 1) : 0 < (1 - p) / (2 * p) := by
+  apply div_pos
+  · exact one_sub_p_pos hp hp1
+  · apply mul_pos; norm_num; exact hp
+
+/-- Вес barcode неотрицателен (следует из общей леммы). -/
+lemma barcodeWeight_nonneg' {p : Q} (bc : Barcode n t)
+    (hp : 0 ≤ p) (hp1 : p ≤ 1) :
+    0 ≤ barcodeWeight p bc :=
+  barcodeWeight_nonneg bc p hp hp1
+
 /--
   При выбранных параметрах вероятность провала достаточно мала.
 

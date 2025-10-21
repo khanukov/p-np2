@@ -163,7 +163,7 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     have hi' : x i = b := by
       -- Приводим булеву проверку из определения `memB` к равенству значений.
       have htmp := hi
-      simp [memB, hib] at htmp
+      simp [hib] at htmp
       exact htmp
     exact hi'
   · intro h
@@ -330,7 +330,7 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
       | some β' =>
           have hrest : Subcube.assignMany β' rest = some γ := by
             have htmp := hassign
-            simp [Subcube.assignMany, hstep] at htmp
+            simp [hstep] at htmp
             exact htmp
           have htail := ih (β := β') (γ := γ) hrest
           -- Эквивалентность для первого шага: принадлежность β' ↔ (β ∧ нужный бит).

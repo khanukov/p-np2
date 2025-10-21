@@ -1,9 +1,70 @@
 import Core.BooleanBasics
+import AC0.Formulas
 import Mathlib.Data.Fin.Basic
 
 open Pnp3
 open Core
 open scoped Classical
+
+-- This block ensures the basic width-monotonicity lemmas for restrictions behave
+-- as expected on a hand-crafted example.  Такие проверки помогают нам не
+-- ошибиться, прежде чем подключать более тяжёлую комбинаторику switching-лемм.
+
+namespace WidthSanity
+
+/-!
+  На этой площадке мы работаем только с объектами из пространства `AC0`.
+  Чтобы избежать двусмысленности между `Core.Literal` и `AC0.Literal`,
+  все конструкции пишем с явно указанным пространством имён.
+-/
+
+open AC0
+
+private def lit0 : AC0.Literal 3 := ⟨⟨0, by decide⟩, true⟩
+private def lit1 : AC0.Literal 3 := ⟨⟨1, by decide⟩, false⟩
+
+private def clause : AC0.Clause 3 := ⟨[lit0, lit1]⟩
+
+private def subcube : Subcube 3 :=
+  fun
+  | ⟨0, _⟩ => some false -- первый литерал конфликтует
+  | ⟨1, _⟩ => none       -- второй остаётся свободным
+  | ⟨2, _⟩ => none
+
+lemma clause_restrict_pending_width_le :
+    (Clause.restrict (C := clause) (β := subcube)).pendingWidth ≤ clause.width := by
+  classical
+  cases hres : Clause.restrict (C := clause) (β := subcube) with
+  | satisfied =>
+      -- В случае тождественной истинности остаточная ширина равна нулю.
+      simpa [Clause.RestrictResult.pendingWidth, clause, Clause.width, hres]
+  | falsified =>
+      -- Противоположный случай: пустая дизъюнкция также даёт ширину 0.
+      simpa [Clause.RestrictResult.pendingWidth, clause, Clause.width, hres]
+  | pending pending =>
+      -- Интересная ветка: применяем новую оценку ширины и разворачиваем определения.
+      have := Clause.restrict_pending_width_le (C := clause) (β := subcube)
+        (pending := pending) hres
+      simpa [Clause.RestrictResult.pendingWidth, clause, Clause.width, hres]
+        using this
+
+private def term : AC0.Term 3 := ⟨[lit0, lit1]⟩
+
+lemma term_restrict_pending_width_le :
+    (Term.restrict (T := term) (β := subcube)).pendingWidth ≤ term.width := by
+  classical
+  cases hres : Term.restrict (T := term) (β := subcube) with
+  | satisfied =>
+      simpa [Term.RestrictResult.pendingWidth, term, Term.width, hres]
+  | falsified =>
+      simpa [Term.RestrictResult.pendingWidth, term, Term.width, hres]
+  | pending pending =>
+      have := Term.restrict_pending_width_le (T := term) (β := subcube)
+        (pending := pending) hres
+      simpa [Term.RestrictResult.pendingWidth, term, Term.width, hres]
+        using this
+
+end WidthSanity
 
 namespace Pnp3.Tests
 
@@ -214,5 +275,53 @@ lemma sum_weights_mask_none_zero_example :
       = (1 / 3 : Rat) := by
   simpa using
     (Restriction.sum_weights_mask_none_zero (n := 0) (p := (1 / 3 : Rat)))
+
+--
+-- Дополнительная проверка новых конструктивных лемм для ограничений AC⁰-формул:
+-- подкуб, фиксирующий первую переменную в `true`, превращает простые формулы в
+-- константы.  Это обеспечивает корректность вспомогательных лемм, используемых
+-- в конструктивном доказательстве multi-switching-леммы.
+--
+section AC0Restriction
+
+open AC0
+
+private def litAC0 : AC0.Literal 2 := ⟨⟨0, by decide⟩, true⟩
+
+private def clauseAC0 : AC0.Clause 2 := ⟨[litAC0]⟩
+
+private def termAC0 : AC0.Term 2 := ⟨[litAC0]⟩
+
+private def cnfAC0 : AC0.CNF 2 := ⟨[clauseAC0]⟩
+
+private def dnfAC0 : AC0.DNF 2 := ⟨[termAC0]⟩
+
+private def beta : Core.Subcube 2
+  | ⟨0, _⟩ => some true
+  | _       => none
+
+private def vecTrue : Core.BitVec 2
+  | ⟨0, _⟩ => true
+  | _       => false
+
+lemma clauseAC0_restrict_satisfied :
+    Clause.restrict (β := beta) clauseAC0 =
+      Clause.RestrictResult.satisfied := by
+  classical
+  have hβ : beta ⟨0, by decide⟩ = some true := by simp [beta]
+  simpa [clauseAC0, litAC0, hβ] using
+    Clause.restrict_singleton_satisfied (β := beta)
+      (i := ⟨0, by decide⟩) (b := true) (h := hβ)
+
+lemma termAC0_restrict_satisfied :
+    Term.restrict (β := beta) termAC0 =
+      Term.RestrictResult.satisfied := by
+  classical
+  have hβ : beta ⟨0, by decide⟩ = some true := by simp [beta]
+  simpa [termAC0, litAC0, hβ] using
+    Term.restrict_singleton_satisfied (β := beta)
+      (i := ⟨0, by decide⟩) (b := true) (h := hβ)
+
+end AC0Restriction
 
 end Pnp3.Tests

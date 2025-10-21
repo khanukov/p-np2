@@ -228,9 +228,12 @@ noncomputable def encode
   let steps := encodeAux F ρ (fuel + t)
   -- Берём первые t шагов
   let steps_t := steps.take t
-  -- Пока используем sorry для доказательств инвариантов
+  -- Доказательства инвариантов
   { steps := steps_t
-    length_eq := sorry
+    length_eq := by
+      -- Нужно показать steps_t.length = t
+      -- Это потребует доказательства что encodeAux создаёт список длины ≥ t
+      sorry  -- требует свойства encodeAux
     literalsDistinct := sorry }
 
 /--
@@ -649,8 +652,9 @@ theorem ac0_parameters_success_prob
 
   -- Шаг 1: упростить 16pk
   have h16pk : (16 : Q) * (1 / (4 * k)) * k = 4 := by
-    field_simp
-    sorry  -- алгебра
+    have hk_ne : (k : Q) ≠ 0 := by exact Nat.cast_ne_zero.mpr (Nat.pos_iff_ne_zero.mp hk)
+    field_simp [hk_ne]
+    ring
 
   -- Шаг 2: оценить S^(t/ℓ)
   have hrounds : (t + ℓ - 1) / ℓ ≤ 4 * (logS + logND) + 1 := by

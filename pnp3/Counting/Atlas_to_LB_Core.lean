@@ -84,8 +84,20 @@ def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
     · simp [mismatchSet, flipOn, hx]
     · simp [mismatchSet, flipOn, hx]
 
+--  Уточнение: прежняя версия леммы пользовалась `simp`, но линтер настаивал,
+--  что прямой `simp`-шаг выглядит избыточным.  Явный перебор всех четырёх
+--  булевых случаев делает преобразование прозрачным и избавляет от жалоб
+--  линтера, сохраняя читаемость.
 private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
-  cases b <;> cases c <;> simp at h <;> simp [h]
+  cases b with
+  | false =>
+      cases c with
+      | false => cases h rfl
+      | true => simp
+  | true =>
+      cases c with
+      | false => simp
+      | true => cases h rfl
 
 @[simp] lemma flipOn_mismatchSet {m : Nat}
     (g : Domain m → Bool) (f : Domain m → Bool) :
@@ -506,23 +518,26 @@ theorem unionClass_card_bound
       classical
       simpa [toList] using
         (Core.toList_mapSubtype_val_toFinset (S := subset))
-    have hvals : (toList subset).toFinset = T.toFinset := by
-      simpa [hsubset_image] using hlist_finset
+    have hvals : (toList subset).toFinset = T.toFinset :=
+      hlist_finset.trans hsubset_image
     -- Функция покрытия совпадает с исходной.
     apply Subtype.ext
     funext x
     have hcov_subset : coveredB (toList subset) x = coveredB T x := by
-      have := coveredB_eq_of_toFinset_eq (n := m) (R₁ := toList subset)
-          (R₂ := T) (by simpa [toList] using hvals)
-      simpa [toList] using congrArg (fun f => f x) this
+      have hfun :=
+        coveredB_eq_of_toFinset_eq (n := m)
+          (R₁ := toList subset) (R₂ := T) hvals
+      exact congrArg (fun f => f x) hfun
     have hcov_dedup : coveredB T x = coveredB S x := by
-      simpa [T] using coveredB_dedup (n := m) (R := S) (x := x)
+      change coveredB (S.dedup) x = coveredB S x
+      exact coveredB_dedup (n := m) (R := S) (x := x)
     have hgoal : coveredB (toList subset) x = coveredB S x :=
       hcov_subset.trans hcov_dedup
-    have hg_eq : g.1 x = coveredB S x := by simpa [hcover]
+    have hg_eq : g.1 x = coveredB S x :=
+      congrArg (fun f => f x) hcover
     have hfinal : coveredB (toList subset) x = g.1 x :=
       hgoal.trans hg_eq.symm
-    simpa [toList] using hfinal
+    exact hfinal
   -- Мощность домена подсчёта совпадает с `unionBound`.
   have hdomain_card :
       Fintype.card Domain = unionBound (R.toFinset.card) k := by
@@ -530,26 +545,27 @@ theorem unionClass_card_bound
     have h :=
       (card_subsets_le_unionBound (α := DictSubtype) (k := k))
     have hdict_card : Fintype.card DictSubtype = R.toFinset.card := by
-      simpa [DictSubtype] using Fintype.card_coe (R.toFinset)
+      change Fintype.card {β : Subcube m // β ∈ R.toFinset} = R.toFinset.card
+      exact Fintype.card_coe (R.toFinset)
     calc
       Fintype.card Domain
           = unionBound (Fintype.card DictSubtype) k := h
-      _ = unionBound (R.toFinset.card) k := by simpa [hdict_card]
+      _ = unionBound (R.toFinset.card) k := by rw [hdict_card]
   -- Сюръективность даёт верхнюю границу через мощность домена.
   have hcard_le :
       Fintype.card (UnionSubtype (R := R) (k := k))
         ≤ Fintype.card Domain :=
     Fintype.card_le_of_surjective toUnion hsurj
   -- Переписываем мощность домена через `unionBound` и увеличиваем словарь до длины списка.
-  have :
+  have hcard_union :
       Fintype.card (UnionSubtype (R := R) (k := k))
-        ≤ unionBound (R.toFinset.card) k := by
-    simpa [hdomain_card] using hcard_le
+        ≤ unionBound (R.toFinset.card) k :=
+    (hdomain_card ▸ hcard_le)
   have hmono : unionBound (R.toFinset.card) k ≤ unionBound (dictLen R) k := by
     have hcard_le_len : R.toFinset.card ≤ dictLen R :=
       by simpa [dictLen] using toFinset_card_le_length (xs := R)
     exact unionBound_mono_left (k := k) hcard_le_len
-  exact this.trans hmono
+  exact hcard_union.trans hmono
 
 /--
   Верхняя оценка на размер хаммингового шара около фиксированной функции `g`.
@@ -609,33 +625,39 @@ by
   have h_inj : Function.Injective toSubset := by
     intro f₁ f₂ h
     have hsets :
-        mismatchSet (m := m) g f₁.1 = mismatchSet (m := m) g f₂.1 := by
-      simpa using congrArg Subtype.val h
+        mismatchSet (m := m) g f₁.1 = mismatchSet (m := m) g f₂.1 :=
+      congrArg Subtype.val h
     apply Subtype.ext
     have hf₁ := flipOn_mismatchSet (m := m) (g := g) (f := f₁.1)
     have hf₂ := flipOn_mismatchSet (m := m) (g := g) (f := f₂.1)
     calc
-      f₁.1 = flipOn g (mismatchSet (m := m) g f₁.1) := by simpa using hf₁.symm
-      _ = flipOn g (mismatchSet (m := m) g f₂.1) := by simpa [hsets]
-      _ = f₂.1 := by simpa using hf₂
+      f₁.1 = flipOn g (mismatchSet (m := m) g f₁.1) := hf₁.symm
+      _ = flipOn g (mismatchSet (m := m) g f₂.1) :=
+        congrArg (fun S => flipOn g S) hsets
+      _ = f₂.1 := hf₂
   have hcard_le :
       Fintype.card (HammingBallSubtype (m := m) (g := g) (ε := ε)) ≤
         Fintype.card {S : Finset (Domain m) // S.card ≤ budget} :=
     Fintype.card_le_of_injective toSubset h_inj
   have cardDomain : Fintype.card (Domain m) = Nat.pow 2 m := by
     classical
-    simpa [Domain, Core.BitVec, Fintype.card_fun, Fintype.card_bool,
-      Fintype.card_fin]
+    simp [Domain, Core.BitVec, Fintype.card_bool, Fintype.card_fin]
   have hbound :
       Fintype.card {S : Finset (Domain m) // S.card ≤ budget}
-        = unionBound (Nat.pow 2 m) budget := by
-    simpa [cardDomain] using
-      (card_subsets_le_unionBound (α := Domain m) (k := budget))
+        = unionBound (Nat.pow 2 m) budget :=
+    (cardDomain ▸ card_subsets_le_unionBound (α := Domain m) (k := budget))
   have hcap :
       unionBound (Nat.pow 2 m) budget
         = hammingBallBound (Nat.pow 2 m) ε hε0 hε1 := rfl
-  simpa [hbound, hcap]
-    using hcard_le
+  have hcard_bound :
+      Fintype.card (HammingBallSubtype (m := m) (g := g) (ε := ε)) ≤
+        unionBound (Nat.pow 2 m) budget :=
+    (hbound ▸ hcard_le)
+  have hcard_cap :
+      Fintype.card (HammingBallSubtype (m := m) (g := g) (ε := ε)) ≤
+        hammingBallBound (Nat.pow 2 m) ε hε0 hε1 :=
+    (hcap ▸ hcard_bound)
+  exact hcard_cap
 
 /--
   Каждой ε-аппроксимируемой функции сопоставляем пару: выбранный центр `g`
@@ -691,8 +713,11 @@ lemma card_witness
           (HammingBallSubtype (m := m) (g := g.1) (ε := ε)) :=
     by
       classical
-      simpa using (Fintype.card_sigma (fun g =>
-        HammingBallSubtype (m := m) (g := g.1) (ε := ε)))
+      have hsigma :=
+        Fintype.card_sigma
+          (α := fun g : UnionSubtype (R := R) (k := k) =>
+            HammingBallSubtype (m := m) (g := g.1) (ε := ε))
+      exact hsigma
 
 /--
   Основное утверждение «Covering Power»: мощность ε-аппроксимируемых функций
@@ -722,8 +747,8 @@ theorem covering_power_bound
         ≤ hBall :=
     by
       intro g
-      simpa using hammingBall_card_bound (m := m) (g := g.1)
-        (ε := ε) hε0 hε1
+      exact
+        hammingBall_card_bound (m := m) (g := g.1) (ε := ε) hε0 hε1
   -- Переписываем оценку на сумму мощностей шаров.
   have h_sum_le :
       ∑ g : UnionSubtype (R := R) (k := k),
@@ -740,8 +765,13 @@ theorem covering_power_bound
         Fintype.card (UnionSubtype (R := R) (k := k)) * hBall :=
     by
       classical
-      simpa using Finset.sum_const_nat hBall
-        (Finset.univ : Finset (UnionSubtype (R := R) (k := k)))
+      have hsum :=
+        Finset.sum_const_nat
+          (s := (Finset.univ : Finset (UnionSubtype (R := R) (k := k))))
+          (f := fun _ : UnionSubtype (R := R) (k := k) => hBall)
+          (m := hBall)
+          (by intro _ _; rfl)
+      exact hsum
   -- Соединяем предыдущие равенства.
   have h_witness_le :
       Fintype.card

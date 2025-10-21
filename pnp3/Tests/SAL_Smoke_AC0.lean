@@ -3,6 +3,7 @@ import Core.PDT
 import Core.Atlas
 import Core.SAL_Core
 import ThirdPartyFacts.LeafBudget
+import ThirdPartyFacts.Facts_Switching
 
 open Core
 open ThirdPartyFacts
@@ -25,6 +26,9 @@ namespace Tests
 
 /-- Константная функция нуля на одном бите. -/
 @[simp] def f₀ : BitVec 1 → Bool := fun _ => false
+
+/-- Константная функция единицы на одном бите. -/
+@[simp] def f₁ : BitVec 1 → Bool := fun _ => true
 
 /-- Тривиальный PDT: один лист, соответствующий всему кубу. -/
 def trivialSubcube : Subcube 1 := fun _ => none
@@ -168,6 +172,180 @@ lemma commonPDT_err_dedup_smoke :
       (f := f₀)
       hf)
   exact herr
+
+/--
+Конструктивный shrinkage из `partial_shrinkage_for_AC0_of_constant` покрывает
+тот же пример, что и ручной свидетель `shrinkage₀`. В частности, полученный
+атлас работает для семейства `[f₀]`.
+-/
+lemma partial_shrinkage_constant_smoke :
+    WorksFor (Atlas.fromShrinkage
+      (Core.PartialCertificate.toShrinkage
+        (n := 1) (ℓ := 0) (F := [f₀])
+        (Classical.choose
+          (partial_shrinkage_for_AC0_of_constant
+            (params := { n := 1, M := 0, d := 0 })
+            (F := [f₀])
+            (hconst := by
+              intro f hf
+              have hf' : f = f₀ := List.mem_singleton.mp hf
+              subst hf'
+              refine ⟨false, ?_⟩
+              intro x
+              simp [f₀]
+            ))))) [f₀] := by
+  classical
+  -- Фиксируем параметры и константное семейство.
+  let params : AC0Parameters := { n := 1, M := 0, d := 0 }
+  have hconst : ∀ {f : BitVec 1 → Bool}, f ∈ ([f₀] : Family params.n) → ∃ b, ∀ x, f x = b := by
+    intro f hf
+    have hf' : f = f₀ := List.mem_singleton.mp hf
+    subst hf'
+    exact ⟨false, by intro x; simp [f₀]⟩
+  -- Получаем частичный сертификат и превращаем его в shrinkage.
+  let witness := ThirdPartyFacts.ac0PartialWitness_of_constant
+    (params := params) (F := ([f₀] : Family params.n))
+    (hconst := by
+      intro f hf
+      have hf' : f = f₀ := List.mem_singleton.mp hf
+      subst hf'
+      exact ⟨false, by intro x; simp [f₀]⟩)
+  let shrinkage := Core.PartialCertificate.toShrinkage
+    (n := params.n) (ℓ := witness.level) (F := ([f₀] : Family params.n))
+    witness.certificate
+  -- Применяем общий факт SAL.
+  simpa [params, shrinkage]
+    using (SAL_from_Shrinkage shrinkage)
+
+/--
+Конструктивный свидетель для пары константных функций `[f₀, f₁]` также имеет нулевой
+ствол и корректно покрывает обе функции: селекторы для `f₀` пусты, а для `f₁`
+содержат весь куб.  Этот тест проверяет, что вспомогательный хелпер
+`ac0PartialWitness_of_constant` корректно работает на семействах большего
+размера и выдаёт ожидаемые покрывающие наборы подкубов.
+-/
+lemma partial_shrinkage_constant_pair_smoke :
+    WorksFor (Atlas.fromShrinkage
+      (Core.PartialCertificate.toShrinkage
+        (n := 1) (ℓ := 0) (F := [f₀, f₁])
+        (ThirdPartyFacts.ac0PartialWitness_of_constant
+          (params := { n := 1, M := 0, d := 0 })
+          (F := ([f₀, f₁] : Family 1))
+          (by
+            intro f hf
+            have hf' : f = f₀ ∨ f = f₁ := by
+              simp [Family, List.mem_cons] at hf
+              exact hf
+            cases hf' with
+            | inl hzero =>
+                subst hzero
+                exact ⟨false, by intro x; simp [f₀]⟩
+            | inr hone =>
+                subst hone
+                exact ⟨true, by intro x; simp [f₁]⟩)).certificate))
+      [f₀, f₁] := by
+  classical
+  -- Для удобства зададим параметры и семейство явными именами.
+  let params : AC0Parameters := { n := 1, M := 0, d := 0 }
+  let F : Family params.n := [f₀, f₁]
+  have hconst : ∀ f ∈ F, ∃ b : Bool, ∀ x, f x = b := by
+    intro f hf
+    have hf' : f = f₀ ∨ f = f₁ := by
+      simpa [F, Family, List.mem_cons] using hf
+    cases hf' with
+    | inl hzero =>
+        subst hzero
+        exact ⟨false, by intro x; simp [f₀]⟩
+    | inr hone =>
+        subst hone
+        exact ⟨true, by intro x; simp [f₁]⟩
+  -- Конструируем свидетель с помощью хелпера.
+  let witness := ThirdPartyFacts.ac0PartialWitness_of_constant
+    (params := params) (F := F) hconst
+  -- Убедимся, что глубина ствола равна нулю.
+  have hlevel : witness.level = 0 := rfl
+  -- Распакуем определение сертификата, чтобы явно увидеть селекторы.
+  have hcert :=
+    partial_shrinkage_for_AC0_of_constant
+      (params := params) (F := F)
+      (by
+        intro f hf
+        have hf' : f = f₀ ∨ f = f₁ := by
+          simpa [F, Family, List.mem_cons] using hf
+        cases hf' with
+        | inl hzero =>
+            subst hzero
+            exact ⟨false, by intro x; simp [f₀]⟩
+        | inr hone =>
+            subst hone
+            exact ⟨true, by intro x; simp [f₁]⟩)
+  have hwitness_eq : witness.certificate =
+      (Classical.choose hcert) := rfl
+  -- Вычисляем селекторы для каждой функции.
+  have hsel₀ : witness.certificate.selectors f₀ = [] := by
+    simp [witness, params, F, ThirdPartyFacts.ac0PartialWitness_of_constant,
+      hconst, hcert, hwitness_eq, partial_shrinkage_for_AC0_of_constant,
+      f₀, f₁]
+  have hsel₁ : witness.certificate.selectors f₁ = [fun _ => none] := by
+    simp [witness, params, F, ThirdPartyFacts.ac0PartialWitness_of_constant,
+      hconst, hcert, hwitness_eq, partial_shrinkage_for_AC0_of_constant,
+      f₀, f₁]
+  -- Проверяем, что покрытие действительно совпадает с исходными функциями.
+  have hcover₀ : ∀ x, Core.coveredB (witness.certificate.selectors f₀) x = false := by
+    intro x
+    simpa [hsel₀, Core.coveredB]
+  have hcover₁ : ∀ x, Core.coveredB (witness.certificate.selectors f₁) x = true := by
+    intro x
+    have hmem : Core.mem (fun _ => none) x := by
+      simpa [Core.mem, Core.Subcube, Option.map, Option.bind] using (Core.mem_top (x := x))
+    have hmemB : Core.memB (fun _ => none) x = true := by
+      simpa [Core.memB, hmem]
+    simpa [hsel₁, Core.coveredB, hmemB]
+  -- Формируем shrinkage и передаём его в SAL.
+  let shrinkage := Core.PartialCertificate.toShrinkage
+    (n := params.n) (ℓ := witness.level) (F := F) witness.certificate
+  have hworks := SAL_from_Shrinkage (C := shrinkage)
+  -- Переписываем результат в нужную форму.
+  simpa [params, F, witness, shrinkage, hlevel, hcover₀, hcover₁]
+    using hworks
+
+/--
+  Даже когда `partial_shrinkage_for_AC0` недоступна, мы можем собрать shrinkage
+  напрямую из точечного атласа (`pointPartialCertificate`) при условии, что
+  размер куба `2^n` укладывается в требуемое ограничение
+  `(log₂(M+2))^(d+1)`.  Этот smoke-тест проверяет, что конструкция из леммы
+  `partial_shrinkage_for_AC0_of_pointBound` корректно интегрируется в SAL.
+-/
+lemma point_certificate_smoke :
+    ∃ ℓ (C : Core.PartialCertificate 1 ℓ ([f₀, f₁] : Family 1)),
+      WorksFor (Atlas.fromShrinkage
+        (Core.PartialCertificate.toShrinkage
+          (n := 1) (ℓ := ℓ) (F := [f₀, f₁]) C))
+        ([f₀, f₁] : Family 1) := by
+  classical
+  -- Параметры соответствуют кубу размерности 1 и формуле размера 2.
+  let params : AC0Parameters := { n := 1, M := 2, d := 0 }
+  let F : Family params.n := [f₀, f₁]
+  -- Гарантируем, что канонический атлас точек удовлетворяет требуемой оценке.
+  have hdepth : Nat.pow 2 params.n
+      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+    simp [params]
+  -- Получаем сертификат из леммы `partial_shrinkage_for_AC0_of_pointBound`.
+  obtain ⟨ℓ, C, hℓ, hdepthBound, hεnonneg, hεbound⟩ :=
+    ThirdPartyFacts.partial_shrinkage_for_AC0_of_pointBound
+      (params := params) (F := F) hdepth
+  -- Преобразуем сертификат в shrinkage.
+  let shrinkage :=
+    Core.PartialCertificate.toShrinkage (n := params.n) (ℓ := ℓ) (F := F) C
+  -- Применяем SAL к построенному shrinkage.
+  have hworks := SAL_from_Shrinkage (S := shrinkage)
+  -- Переводим утверждение в требуемую форму.
+  have hfamily : shrinkage.F = F :=
+    Core.PartialCertificate.toShrinkage_family
+      (n := params.n) (ℓ := ℓ) (F := F) C
+  refine ⟨ℓ, C, ?_⟩
+  simpa [params, F, shrinkage, Atlas.fromShrinkage, hfamily]
+    using hworks
 
 end Tests
 end Pnp3

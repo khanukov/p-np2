@@ -16,6 +16,8 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
 import AC0.Formulas
+import ThirdPartyFacts.SwitchingParameters
+import ThirdPartyFacts.HastadMSL
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -25,39 +27,6 @@ import AC0.Formulas
 -/
 
 namespace Pnp3
-
-namespace Core
-
-/-- Подкуб, задающий ровно точку `x`. -/
-@[simp] def pointSubcube {n : Nat} (x : BitVec n) : Subcube n :=
-  fun i => some (x i)
-
-/-- Точка всегда принадлежит своему точечному подкубу. -/
-@[simp] lemma mem_pointSubcube_self {n : Nat} (x : BitVec n) :
-    mem (pointSubcube x) x := by
-  classical
-  apply (mem_iff (β := pointSubcube x) (x := x)).mpr
-  intro i b hb
-  have hsome : some (x i) = some b := by
-    exact hb
-  exact Option.some.inj hsome
-
-/-- Принадлежность точечному подкубу означает точное совпадение вектора. -/
-@[simp] lemma mem_pointSubcube_iff {n : Nat} {x y : BitVec n} :
-    mem (pointSubcube x) y ↔ x = y := by
-  classical
-  constructor
-  · intro hmem
-    have hprop := (mem_iff (β := pointSubcube x) (x := y)).mp hmem
-    funext i
-    have : pointSubcube x i = some (x i) := by simp [pointSubcube]
-    have hy := hprop i (x i) this
-    exact hy.symm
-  · intro hxy
-    subst hxy
-    exact mem_pointSubcube_self x
-
-end Core
 
 namespace ThirdPartyFacts
 
@@ -71,50 +40,13 @@ open Core
 
 В более сложных вариантах добавляются ограничения на ширину DNF, число слоёв
 OR/AND и пр., но для текущего интерфейса достаточно этих трёх чисел. -/
-structure AC0Parameters where
-  n : Nat
-  M : Nat
-  d : Nat
-  deriving Repr
-
-/--
-  Параметры для класса «локальных схем».  Мы сохраняем только наиболее
-  необходимые числовые характеристики:
-
-  * `n` — число входных бит (длина таблицы истинности).
-  * `M` — общий размер схемы (например, число вентилей).
-  * `ℓ` — параметр локальности: каждое выходное значение зависит не более
-    чем от `ℓ` входов.
-  * `depth` — число слоёв (глубина схемы).
-
-  В дальнейшем эта структура служит лишь для записи тех величин, которые
-  фигурируют в внешнем факте о shrinkage для локальных схем.  Дополнительные
-  ограничения (например, на тип вентилей) можно будет добавить позже, не
-  меняя интерфейс Lean.
--/
-structure LocalCircuitParameters where
-  n      : Nat
-  M      : Nat
-  ℓ      : Nat
-  depth  : Nat
-  deriving Repr
-
-/-- Уточняющая структура, описывающая гарантии shrinkage.
-
-`depthBound` и `errorBound` — ожидаемые верхние оценки на глубину PDT и ошибку
-аппроксимации, получаемые из multi-switching леммы.  Мы оставляем их в явном
-виде, чтобы позднее подставлять сюда конкретные полиномиальные/квазиполиномиальные
-формулы. -/
-structure ShrinkageBounds where
-  depthBound : Nat
-  errorBound : Q
-  deriving Repr
-
-/--
+/-
   Усиленная версия shrinkage-факта: вместо полного PDT возвращается частичный
   сертификат с контролируемой глубиной хвостов.  Такой формат ближе к
   классическому изложению multi-switching-леммы и непосредственно пригоден для
-  шага B, где важно знать глубину ствола и высоту хвостов по отдельности.
+  шага B, где важно знать глубину ствола и высоту хвостов по отдельности.  На
+  текущем этапе мы рассматриваем это утверждение как внешнюю предпосылку и
+  используем его для извлечения явных свидетелей.
 -/
 axiom partial_shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n) :
@@ -123,6 +55,157 @@ axiom partial_shrinkage_for_AC0
       C.depthBound + ℓ ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2)
+
+/-!
+  В качестве первого шага к полной конструктивной multi-switching лемме
+  реализуем частный случай: семейство `F` состоит из константных функций.
+  В этой ситуации частичный shrinkage-сертификат строится вручную: ствол —
+  одиночный лист, покрывающий весь булев куб, хвосты отсутствуют, а селекторы
+  либо пусты (для константы `0`), либо содержат единственный лист (для
+  константы `1`).  Несмотря на простоту случая, аккуратно прописанная версия
+  полезна в тестах и позволяет проверять пайплайн SAL без обращения к
+  аксиоме.
+-/
+lemma partial_shrinkage_for_AC0_of_constant
+    (params : AC0Parameters) (F : Family params.n)
+    (hconst : ∀ {f : Core.BitVec params.n → Bool}, f ∈ F →
+        ∃ b : Bool, ∀ x, f x = b) :
+    ∃ (C : Core.PartialCertificate params.n 0 F),
+      C.depthBound ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
+      (0 : Core.Q) ≤ C.epsilon ∧
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  -- Ствол частичного дерева: единственный лист, соответствующий всему кубу.
+  let β₀ : Core.Subcube params.n := fun _ => none
+  let trunk : Core.PDT params.n := Core.PDT.leaf β₀
+  let selectorsFun : (Core.BitVec params.n → Bool) → List (Core.Subcube params.n) :=
+    fun f =>
+      if h : ∀ x, f x = true then [β₀] else []
+  -- Определяем частичный сертификат. У хвостов глубина нулевая, поэтому
+  -- `PartialDT.ofPDT` подходит идеально.
+  let certificate : Core.PartialCertificate params.n 0 F :=
+    { witness := Core.PartialDT.ofPDT trunk
+      depthBound := 0
+      epsilon := 0
+      trunk_depth_le := by
+        -- Глубина листа равна нулю.
+        simp [Core.PartialDT.ofPDT, trunk, Core.PDT.depth]
+      selectors := selectorsFun
+      selectors_sub := by
+        intro f β hf hβ
+        -- Для функций семейства существует булевое значение, задающее константу.
+        obtain ⟨b, hb⟩ := hconst hf
+        have hβ' : β = β₀ := by
+          by_cases hbTrue : b = true
+          · -- Положительная ветка: список селекторов состоит из одного листа.
+            have hAll : ∀ x, f x = true := by
+              intro x; simpa [hbTrue] using hb x
+            have := hβ
+            simpa [selectorsFun, hAll] using this
+          · -- Отрицательная ветка невозможна: список селекторов пуст.
+            have hnot : ¬∀ x, f x = true := by
+              intro hAll
+              have hfx := hb (fun _ => false)
+              have htrue := hAll (fun _ => false)
+              have : b = true := (Eq.symm hfx).trans htrue
+              exact hbTrue this
+            have : False := by
+              have := hβ
+              simp [selectorsFun, hnot] at this
+            exact this.elim
+        subst hβ'
+        -- Покажем, что единственный лист действительно принадлежит реализованному дереву.
+        have hLeaves : Core.PDT.leaves (Core.PartialDT.ofPDT trunk).realize = [β₀] := by
+          simp [Core.PartialDT.realize_ofPDT, trunk, Core.PDT.leaves]
+        have hmem : β₀ ∈ [β₀] := by simp
+        simpa [hLeaves]
+      err_le := by
+        intro f hf
+        obtain ⟨b, hb⟩ := hconst hf
+        have hval : ∀ x, f x = b := hb
+        -- Достаточно показать, что покрытие `selectors f` совпадает с константой `b`.
+        have hcover : ∀ x, Core.coveredB (selectorsFun f) x = b := by
+          intro x
+          by_cases hbIsTrue : b = true
+          · -- Положительный случай: единственный лист покрывает весь куб.
+            have hmem : Core.mem β₀ x := by
+              simpa [β₀] using (Core.mem_top (x := x))
+            have hmemB : Core.memB β₀ x = true := by
+              simpa [Core.mem, β₀] using hmem
+            have hAll : ∀ x, f x = true := by
+              intro x'; simpa [hbIsTrue] using hb x'
+            have hcovTrue : Core.coveredB (selectorsFun f) x = true := by
+              simp [selectorsFun, hAll, hmemB, Core.coveredB, β₀]
+            simpa [hbIsTrue] using hcovTrue
+          · -- Отрицательный случай: список пуст, покрытие равно `false`.
+            have hnot : ¬∀ x, f x = true := by
+              intro hAll
+              have hfx := hb (fun _ => false)
+              have htrue := hAll (fun _ => false)
+              have : b = true := (Eq.symm hfx).trans htrue
+              exact hbIsTrue this
+            have hcovFalse : Core.coveredB (selectorsFun f) x = false := by
+              simp [selectorsFun, hnot, Core.coveredB]
+            cases hbVal : b with
+            | false => simpa [hbVal] using hcovFalse
+            | true => exact (hbIsTrue hbVal).elim
+        -- Ошибка равна нулю, потому что функции совпадают на всех точках.
+        have herr := Core.errU_eq_zero_of_agree (f := f)
+          (Rset := selectorsFun f) (h := fun x => by
+            simpa [hcover x, hval x])
+        have herr' : Core.errU f (selectorsFun f) = 0 := herr
+        simpa [herr'] using (show (0 : Core.Q) ≤ 0 from le_rfl)
+    }
+  -- Подставляем построенный сертификат и убеждаемся, что численные ограничения выполняются.
+  refine ⟨certificate, ?_⟩
+  refine And.intro ?depthBound ?epsBounds
+  · -- Полная глубина равна нулю, поэтому подходит любая верхняя оценка.
+    have hpow : (0 : Nat) ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) :=
+      Nat.zero_le _
+    simpa [certificate] using hpow
+  · refine And.intro ?epsNonneg ?epsLe
+    · simp [certificate]
+    · have hden : (0 : Core.Q) < (params.n + 2 : Core.Q) := by
+        have : (0 : Nat) < params.n + 2 := Nat.succ_pos (params.n + 1)
+        exact_mod_cast this
+      have hfrac : (0 : Core.Q) ≤ (1 : Core.Q) / (params.n + 2 : Core.Q) :=
+        div_nonneg (show (0 : Core.Q) ≤ 1 by exact zero_le_one) (le_of_lt hden)
+      simpa [certificate] using hfrac
+
+/--
+  Constructive variant of `partial_shrinkage_for_AC0`: if the canonical point
+  enumeration already fits under the desired depth bound, we can assemble the
+  certificate without appealing to the external axiom.  This lemma is useful as
+  a sanity check and for early experiments where the combinatorial shrinking is
+  replaced by exhaustive enumeration.
+-/
+lemma partial_shrinkage_for_AC0_of_pointBound
+    (params : AC0Parameters) (F : Family params.n)
+    (hdepth : Nat.pow 2 params.n
+        ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) :
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ ≤ Nat.log2 (params.M + 2) ∧
+      C.depthBound + ℓ ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
+      (0 : Core.Q) ≤ C.epsilon ∧
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  refine ⟨0, pointPartialCertificate params.n F, ?_⟩
+  refine And.intro ?hlevel ?hrest
+  · exact Nat.zero_le _
+  · refine And.intro ?hdepthBound ?herrBounds
+    · have hcanon :=
+        pointPartialCertificate_depth_le (n := params.n) (F := F)
+      have hfinal := Nat.le_trans hcanon hdepth
+      simpa [pointPartialCertificate, Nat.add_comm, Nat.add_left_comm,
+        Nat.add_assoc] using hfinal
+    · refine And.intro ?hε_nonneg ?hε_le
+      · simp [pointPartialCertificate]
+      · have hden : (0 : Core.Q) < (params.n + 2 : Core.Q) := by
+          have : (0 : Nat) < params.n + 2 := Nat.succ_pos (params.n + 1)
+          exact_mod_cast this
+        have hbound : (0 : Core.Q) ≤ (1 : Core.Q) / (params.n + 2 : Core.Q) :=
+          div_nonneg (by exact zero_le_one) (le_of_lt hden)
+        simpa [pointPartialCertificate] using hbound
 
 /--
 `AC0PartialWitness` собирает в одном месте весь набор параметров, выдаваемых
@@ -145,6 +228,24 @@ structure AC0PartialWitness
   epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
   /-- Верхняя оценка ошибки `ε ≤ 1/(n+2)`. -/
   epsilon_le_inv : certificate.epsilon ≤ (1 : Core.Q) / (params.n + 2)
+
+/--
+Превращаем частичный свидетель в структуру `MultiSwitchingWitness`.  Отдельный
+хелпер позволяет избегать дублирования при дальнейших преобразованиях: любые
+дополнительные оценки из `AC0PartialWitness` автоматически переносятся в итоговый
+объект, пригодный для последующего перехода к SAL.
+-/
+noncomputable def AC0PartialWitness.toMultiSwitching
+    {params : AC0Parameters} {F : Family params.n}
+    (W : AC0PartialWitness params F) :
+    MultiSwitchingWitness params F :=
+  MultiSwitchingWitness.ofPartialCertificate
+    (params := params) (F := F) (ℓ := W.level)
+    W.certificate
+    W.level_le_log
+    W.depth_le
+    W.epsilon_nonneg
+    W.epsilon_le_inv
 
 /--
 Из внешнего факта `partial_shrinkage_for_AC0` конструируем объект `AC0PartialWitness`.
@@ -171,6 +272,40 @@ noncomputable def ac0PartialWitness
   · exact hprop.right.left
   · exact hprop.right.right.left
   · exact hprop.right.right.right
+
+/--
+  Constructive partial witness for constant families: wraps the certificate
+  produced by `partial_shrinkage_for_AC0_of_constant` into the structured record
+  used across the SAL pipeline.  This avoids any appeal to the multi-switching
+  axiom in simple smoke tests.
+-/
+noncomputable def ac0PartialWitness_of_constant
+    (params : AC0Parameters) (F : Family params.n)
+    (hconst : ∀ f ∈ F, ∃ b : Bool, ∀ x, f x = b) :
+    AC0PartialWitness params F := by
+  classical
+  have hconst' : ∀ {f : Core.BitVec params.n → Bool}, f ∈ F →
+      ∃ b : Bool, ∀ x, f x = b := by
+    intro f hf; exact hconst f hf
+  let hexists :=
+    partial_shrinkage_for_AC0_of_constant
+      (params := params) (F := F) hconst'
+  let C := Classical.choose hexists
+  have hprop := Classical.choose_spec hexists
+  have hdepth :
+      C.depthBound ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) :=
+    hprop.left
+  have hε_nonneg : (0 : Core.Q) ≤ C.epsilon :=
+    hprop.right.left
+  have hε_le : C.epsilon ≤ (1 : Core.Q) / (params.n + 2) :=
+    hprop.right.right
+  refine
+    { level := 0
+      certificate := C
+      level_le_log := by exact Nat.zero_le _
+      depth_le := by simpa using hdepth
+      epsilon_nonneg := hε_nonneg
+      epsilon_le_inv := hε_le }
 
 /-- Высота хвостов частичного PDT из AC⁰-свидетельства. -/
 noncomputable def partialCertificate_level_from_AC0
@@ -223,6 +358,17 @@ lemma partialCertificate_epsilon_le_inv
   change (ac0PartialWitness params F).certificate.epsilon
       ≤ (1 : Core.Q) / (params.n + 2)
   exact (ac0PartialWitness params F).epsilon_le_inv
+
+/--
+Multi-switching свидетель, полученный напрямую из аксиомы
+`partial_shrinkage_for_AC0`.  Благодаря этому глобальная аксиома в модуле
+`HastadMSL` больше не требуется: все необходимые данные извлекаются из
+частичного сертификата и упаковываются в структуру `MultiSwitchingWitness`.
+-/
+noncomputable def hastad_multiSwitching
+    (params : AC0Parameters) (F : Family params.n) :
+    MultiSwitchingWitness params F :=
+  (ac0PartialWitness params F).toMultiSwitching
 
 /-- Заготовка для "внешнего" факта: псевдослучайная multi-switching лемма
 Servedio–Tan/Håstad.  Возвращает объект `Shrinkage`, совместимый с конвейером

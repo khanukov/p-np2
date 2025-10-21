@@ -162,8 +162,10 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     -- Приводим булеву проверку из определения `memB` к каноничному виду.
     have hi' : x i = b := by
       -- Приводим булеву проверку из определения `memB` к равенству значений.
+      -- После раскрытия `β i` получаем выражение вида `if _ then true else false = true`,
+      -- которое эквивалентно требуемому равенству.
       have htmp := hi
-      simp [memB, hib] at htmp
+      simp [hib] at htmp
       exact htmp
     exact hi'
   · intro h
@@ -330,7 +332,7 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
       | some β' =>
           have hrest : Subcube.assignMany β' rest = some γ := by
             have htmp := hassign
-            simp [Subcube.assignMany, hstep] at htmp
+            simp [hstep] at htmp
             exact htmp
           have htail := ih (β := β') (γ := γ) hrest
           -- Эквивалентность для первого шага: принадлежность β' ↔ (β ∧ нужный бит).
@@ -512,14 +514,18 @@ lemma coveredB_eq_of_mem_equiv {n : Nat}
         · have hx := (covered_iff (Rset := R₁) x).mpr hb
           exact (hcov hx).elim
         · cases hcase : coveredB R₁ x with
-          | false => simp [hcase]
+          | false =>
+              -- Булево значение уже сведено к `false`, равенство очевидно.
+              rfl
           | true => cases hb hcase
       have hfalse₂ : coveredB R₂ x = false := by
         by_cases hb : coveredB R₂ x = true
         · have hx := (covered_iff (Rset := R₂) x).mpr hb
           exact (hcov' hx).elim
         · cases hcase : coveredB R₂ x with
-          | false => simp [hcase]
+          | false =>
+              -- Аналогично предыдущему случаю, равенство выполняется по определению.
+              rfl
           | true => cases hb hcase
       simp [hfalse₁, hfalse₂]
 
@@ -555,6 +561,33 @@ def vecOfNat (n : Nat) (k : Nat) : BitVec n :=
 /-- Полный список всех BitVec длины n. -/
 def allBitVec (n : Nat) : List (BitVec n) :=
   (List.range (Nat.pow 2 n)).map (vecOfNat n)
+
+/--
+Список `bitVecList n` — это перечень всех булевых векторов длины `n`, полученный
+из конечного множества `Finset.univ`.  В отличие от `allBitVec`, определённого
+через двоичную нумерацию, это представление удобно тем, что автоматически
+содержит каждую точку ровно по одному разу, а значит, membership-леммы сводятся
+к факту `Finset.mem_univ`.
+-/
+noncomputable def bitVecList (n : Nat) : List (BitVec n) :=
+  (Finset.univ : Finset (BitVec n)).toList
+
+lemma mem_bitVecList {n : Nat} (x : BitVec n) : x ∈ bitVecList n := by
+  classical
+  unfold bitVecList
+  exact Finset.mem_toList.mpr (Finset.mem_univ x)
+
+lemma bitVecList_ne_nil (n : Nat) : bitVecList n ≠ [] := by
+  classical
+  have hx : (fun _ : Fin n => false) ∈ bitVecList n :=
+    mem_bitVecList (x := fun _ => false)
+  intro hnil
+  exact List.ne_nil_of_mem hx hnil
+
+/--
+  Фильтрация `bitVecList` по значению функции `f` выделяет именно те векторы,
+  на которых `f` возвращает `true`.  Это прямое следствие определения `List.filter`.
+-/
 
 /- Ошибка аппроксимации: доля входов, где f(x) ≠ coveredB Rset x. -/
 def errU {n : Nat} (f : BitVec n → Bool) (Rset : List (Subcube n)) : Q :=
@@ -613,6 +646,120 @@ lemma errU_eq_zero_of_agree {n : Nat}
   apply errU_eq_zero_of_agree
   intro x
   simp
+
+/-- Подкуб, задающий ровно точку `x`. -/
+@[simp] def pointSubcube {n : Nat} (x : BitVec n) : Subcube n :=
+  fun i => some (x i)
+
+/-- Точка всегда принадлежит своему точечному подкубу. -/
+@[simp] lemma mem_pointSubcube_self {n : Nat} (x : BitVec n) :
+    mem (pointSubcube x) x := by
+  classical
+  apply (mem_iff (β := pointSubcube x) (x := x)).mpr
+  intro i b hb
+  have hsome : some (x i) = some b := by exact hb
+  exact Option.some.inj hsome
+
+/-- Принадлежность точечному подкубу означает точное совпадение вектора. -/
+@[simp] lemma mem_pointSubcube_iff {n : Nat} {x y : BitVec n} :
+    mem (pointSubcube x) y ↔ x = y := by
+  classical
+  constructor
+  · intro hmem
+    have hprop := (mem_iff (β := pointSubcube x) (x := y)).mp hmem
+    funext i
+    have : pointSubcube x i = some (x i) := by simp [pointSubcube]
+    have hy := hprop i (x i) this
+    exact hy.symm
+  · intro hxy; subst hxy; exact mem_pointSubcube_self x
+
+/--
+  Для каждой функции `f : BitVec n → Bool` сформируем список «точечных» селекторов —
+  подкубов, фиксирующих все координаты и соответствующих точкам, где `f x = true`.
+  Такое представление особенно удобно при конструктивном доказательстве
+  multi-switching: оно даёт явный список листьев, покрывающий все единичные значения
+  функции без ошибки.
+-/
+noncomputable def pointSelectors {n : Nat} (f : BitVec n → Bool) :
+    List (Subcube n) :=
+  ((bitVecList n).filter (fun x => f x = true)).map pointSubcube
+
+lemma mem_pointSelectors {n : Nat} {f : BitVec n → Bool} {x : BitVec n} :
+    pointSubcube x ∈ pointSelectors f ↔ f x = true := by
+  classical
+  unfold pointSelectors
+  constructor
+  · intro hx
+    obtain ⟨y, hyFilter, hyEq⟩ := List.mem_map.mp hx
+    have hyProp := (List.mem_filter.mp hyFilter).right
+    have hyx : y = x := by
+      funext i
+      have hcomp := congrArg (fun β : Subcube n => β i) hyEq
+      simp [pointSubcube] at hcomp
+      exact hcomp
+    have hyTrue : f y = true := by
+      exact of_decide_eq_true hyProp
+    subst hyx
+    exact hyTrue
+  · intro hfx
+    have hxFilter : x ∈ (bitVecList n).filter (fun y => f y = true) :=
+      List.mem_filter.mpr ⟨mem_bitVecList x, by simp [hfx]⟩
+    exact List.mem_map.mpr ⟨x, hxFilter, rfl⟩
+
+/--
+  Покрытие, построенное из `pointSelectors`, совпадает с исходной функцией.
+  В частности, если `f x = true`, то соответствующий точечный подкуб попадает в список,
+  а если `f x = false`, то никакой точечный подкуб, содержащий `x`, не включается.
+-/
+lemma coveredB_pointSelectors {n : Nat} (f : BitVec n → Bool) (x : BitVec n) :
+    coveredB (pointSelectors f) x = f x := by
+  classical
+  by_cases hfx : f x = true
+  · have hxMem : pointSubcube x ∈ pointSelectors f :=
+      (mem_pointSelectors (n := n) (f := f) (x := x)).2 hfx
+    have hxCovered : covered (pointSelectors f) x := by
+      refine ⟨pointSubcube x, ?_, ?_⟩
+      · exact hxMem
+      · exact mem_pointSubcube_self x
+    have hxBool := (covered_iff (Rset := pointSelectors f) (x := x)).1 hxCovered
+    rw [hfx]
+    exact hxBool
+  · have hfxFalse : f x = false := by
+      cases hx : f x with
+      | false => exact rfl
+      | true => cases hfx hx
+    have hxNot : pointSubcube x ∉ pointSelectors f := by
+      intro hmem
+      have := (mem_pointSelectors (n := n) (f := f) (x := x)).1 hmem
+      cases hfx this
+    have hxAny : coveredB (pointSelectors f) x = true → False := by
+      intro hcovered
+      have : covered (pointSelectors f) x :=
+        (covered_iff (Rset := pointSelectors f) (x := x)).2 hcovered
+      rcases this with ⟨β, hβ, hmem⟩
+      obtain ⟨y, hyFilter, hyEq⟩ := List.mem_map.mp hβ
+      subst hyEq
+      have hyx : y = x :=
+        (mem_pointSubcube_iff (x := y) (y := x)).mp hmem
+      subst hyx
+      exact hxNot hβ
+    have hxBool : coveredB (pointSelectors f) x = false := by
+      cases hval : coveredB (pointSelectors f) x with
+      | false => exact rfl
+      | true =>
+          have htrue : coveredB (pointSelectors f) x = true := hval
+          exact False.elim (hxAny htrue)
+    rw [hfxFalse]
+    exact hxBool
+
+/-- Ошибка аппроксимации `pointSelectors` равна нулю: точечные подкубы полностью
+совпадают с функцией. -/
+lemma errU_pointSelectors_eq_zero {n : Nat} (f : BitVec n → Bool) :
+    errU f (pointSelectors f) = 0 := by
+  classical
+  apply errU_eq_zero_of_agree
+  intro x
+  exact (coveredB_pointSelectors (n := n) (f := f) (x := x)).symm
 
 /-- Решимость принадлежности точки подкубу: определяется через булев индикатор. -/
 instance mem_decidable {n : Nat} (β : Subcube n) :
@@ -718,13 +865,21 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have decode_eval_some (f : FreeIndex → Bool) (i : Fin n)
         {b : Bool} (h : β i = some b) : decodeFun f i = b := by
       have hne : β i ≠ none := by
-        intro hnone; simpa [hnone] using h
+        intro hnone
+        -- Совмещаем `β i = none` с имеющимся `β i = some b` и получаем противоречие.
+        have : none = some b := hnone ▸ h
+        cases this
       have hspec := Classical.choose_spec (exists_of_ne_none (i := i) hne)
-      have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b := by
-        have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
-          simpa [h] using hspec
-        exact Option.some.inj this
-      simp [decodeFun, h, hne, hval]
+      have hspec_eq :
+          some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b :=
+        (Eq.trans h.symm hspec).symm
+      have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b :=
+        Option.some.inj hspec_eq
+      have hdecode :
+          decodeFun f i = Classical.choose (exists_of_ne_none (i := i) hne) := by
+        simp [decodeFun, h]
+      -- Сопоставляем полученные равенства и переносим результат на нужное значение `b`.
+      exact hdecode.trans hval
     let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=
       fun f =>
         let g := decodeFun f
@@ -737,12 +892,13 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
               cases (hβ ▸ hi)
           | some b' =>
               have hb' : b' = b := by
-                have : some b' = some b := by simpa [hβ] using hi
-                exact Option.some.inj this
+                have hsome : some b' = some b := Eq.trans hβ.symm hi
+                exact Option.some.inj hsome
               -- Удобно переписать цель через `decodeFun` и свернуть сопоставление.
               change decodeFun f i = b
-              have : decodeFun f i = b' := decode_eval_some f i hβ
-              simpa [hb'] using this
+              have hdecode : decodeFun f i = b' := decode_eval_some f i hβ
+              -- Переписываем через доказанное равенство `b' = b`.
+              exact hdecode.trans hb'
         ⟨g, hmem⟩
     have left_inv_decode : Function.LeftInverse decode encode := by
       intro x
@@ -751,15 +907,14 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
       cases hβ : β i with
       | none =>
           -- Свободная координата: декодер возвращает исходный бит.
-          change decodeFun (encode x) i = x.1 i
           have hdecode := decode_eval_none (encode x) i hβ
-          simpa [encode] using hdecode
+          have htarget : encode x ⟨i, hβ⟩ = x.1 i := rfl
+          exact hdecode.trans htarget
       | some b =>
           have hmem : x.1 i = b :=
             (memB_eq_true_iff (β := β) (x := x.1)).1 x.2 i b hβ
-          change decodeFun (encode x) i = x.1 i
           have hdecode := decode_eval_some (encode x) i hβ
-          simpa [encode, hmem] using hdecode
+          exact hdecode.trans hmem.symm
     have right_inv_decode : Function.RightInverse decode encode := by
       intro f
       funext i
@@ -767,7 +922,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
       | mk i hi =>
           -- На свободной координате декодер просто возвращает соответствующий бит.
           change decodeFun f i = f ⟨i, hi⟩
-          simpa using decode_eval_none f i hi
+          exact decode_eval_none f i hi
     let witnessEquiv : {x : BitVec n // mem β x} ≃ (FreeIndex → Bool) :=
       { toFun := encode
         , invFun := decode
@@ -780,16 +935,18 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have hfun_card :
         Fintype.card (FreeIndex → Bool)
           = 2 ^ Fintype.card FreeIndex := by
-      simpa using (Fintype.card_fun FreeIndex Bool)
+      classical
+      simp
     have hfreeIndex_card : Fintype.card FreeIndex = n - t := by
-      simpa [hfree_card, hfree_count]
+      simp [hfree_card, hfree_count]
     have hfinal :
         Fintype.card {x : BitVec n // mem β x} = 2 ^ (n - t) := by
       calc
         Fintype.card {x : BitVec n // mem β x}
             = Fintype.card (FreeIndex → Bool) := hcube_card
         _ = 2 ^ Fintype.card FreeIndex := hfun_card
-        _ = 2 ^ (n - t) := by simpa [hfreeIndex_card, Fintype.card_bool]
+        _ = 2 ^ (n - t) := by
+              simp [hfreeIndex_card]
 
     exact ⟨t, ht_le, hfinal⟩
 
@@ -829,7 +986,7 @@ structure Literal (n : Nat) where
 namespace Literal
 
 @[simp] lemma mk_eta {n : Nat} (ℓ : Literal n) :
-    Literal.mk ℓ.idx ℓ.value = ℓ := by cases ℓ <;> rfl
+    Literal.mk ℓ.idx ℓ.value = ℓ := by cases ℓ; rfl
 
 /-- Булева оценка литерала на точке `x`. -/
 @[simp] def eval {n : Nat} (ℓ : Literal n) (x : BitVec n) : Bool :=
@@ -903,7 +1060,7 @@ lemma eval_eq_false_iff {n : Nat} (C : CnfClause n) (x : BitVec n) :
     C.eval x = false ↔ ∀ ℓ ∈ C.literals, Literal.eval ℓ x = false := by
   classical
   unfold eval
-  simpa using List.any_eq_false
+  simp [List.any_eq_false]
 
 lemma holds_of_mem_eval_true {n : Nat} {C : CnfClause n} {x : BitVec n}
     {ℓ : Literal n} (hmem : ℓ ∈ C.literals) (hval : Literal.eval ℓ x = true) :
@@ -953,7 +1110,7 @@ lemma eval_eq_false_iff {n w : Nat} (F : CNF n w) (x : BitVec n) :
     F.eval x = false ↔ ∃ C ∈ F.clauses, C.eval x = false := by
   classical
   unfold eval
-  simpa using List.all_eq_false
+  simp [List.all_eq_false]
 
 end CNF
 
@@ -991,7 +1148,7 @@ lemma eval_eq_false_iff {n : Nat} (T : DnfTerm n) (x : BitVec n) :
     T.eval x = false ↔ ∃ ℓ ∈ T.literals, Literal.eval ℓ x = false := by
   classical
   unfold eval
-  simpa using List.all_eq_false
+  simp [List.all_eq_false]
 
 end DnfTerm
 
@@ -1025,7 +1182,7 @@ lemma eval_eq_false_iff {n w : Nat} (F : DNF n w) (x : BitVec n) :
     F.eval x = false ↔ ∀ T ∈ F.terms, T.eval x = false := by
   classical
   unfold eval
-  simpa using List.any_eq_false
+  simp [List.any_eq_false]
 
 end DNF
 
@@ -1092,12 +1249,14 @@ lemma override_mem (ρ : Restriction n) (x : BitVec n) :
   intro i b hβ
   unfold override
   cases hρ : ρ.mask i with
-  | none => simpa [hρ] using hβ
+  | none =>
+      -- Ветвь невозможна: `ρ.mask i` не может быть одновременно `none` и `some b`.
+      cases (hρ ▸ hβ)
   | some b' =>
       have hb : b' = b := by
-        have hsome : some b' = some b := by simpa [hρ] using hβ
+        have hsome : some b' = some b := hρ.symm.trans hβ
         exact Option.some.inj hsome
-      simp [hρ, hb]
+      simp [hb]
 
 /-- Если `x` удовлетворяет ограничению, `override` не меняет вектор. -/
 lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
@@ -1109,19 +1268,22 @@ lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
   | none => rfl
   | some b =>
       have hx := (mem_iff (β := ρ.mask) (x := x)).1 h i b ?_
-      · simpa [hρ, hx]
-      · simpa [hρ]
+      · simp [hx]
+      · exact hρ
 
 /-- Совместимость эквивалентна тождественности `override`. -/
 lemma compatible_iff_override_eq {ρ : Restriction n} {x : BitVec n} :
     ρ.compatible x = true ↔ ρ.override x = x := by
   constructor
   · intro hcompat
-    have hmem : mem ρ.mask x := hcompat
-    simpa using ρ.override_eq_of_mem hmem
+    have hmem : mem ρ.mask x := (compatible_iff (ρ := ρ) (x := x)).1 hcompat
+    exact ρ.override_eq_of_mem hmem
   · intro hover
     have hmem : mem ρ.mask (ρ.override x) := ρ.override_mem x
-    simpa [hover] using hmem
+    have hcompat_override : ρ.compatible (ρ.override x) = true :=
+      (compatible_iff (ρ := ρ) (x := ρ.override x)).2 hmem
+    -- Подставляем равенство `ρ.override x = x` в найденную совместимость.
+    exact hover ▸ hcompat_override
 
 /-- Повторное применение `override` стабилизируется. -/
 lemma override_idem (ρ : Restriction n) (x : BitVec n) :
@@ -1177,7 +1339,7 @@ lemma assign_mask_eq {ρ : Restriction n} {i : Fin n} {b : Bool}
   dsimp [assign] at h
   cases hassign : Subcube.assign ρ.mask i b with
   | none => simp [hassign] at h
-  | some β =>
+    | some β =>
       have hβ : Restriction.mk β = ρ' := by
         simpa [assign, hassign] using h
       subst hβ
@@ -1235,11 +1397,9 @@ lemma unassign_assign_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
   change (if j = i then none else mask' j) = mask j
   by_cases hj : j = i
   · cases hj
-    have hβ : mask' i = some b := by
-      simpa [if_pos rfl] using hmask_j
     have hgoal : (if i = i then none else mask' i) = mask i := by
       have hmask_i_free : mask i = none := hmask_i
-      simp [hβ, hmask_i_free]
+      simp [hmask_i_free]
     exact hgoal
   · have hβ : mask' j = mask j := by
       have hIf : (if j = i then some b else mask j) = mask j := by
@@ -1252,7 +1412,7 @@ lemma unassign_assign_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
 lemma mask_eq_some_of_not_none {ρ : Restriction n} {i : Fin n}
     (h : ρ.mask i ≠ none) : ∃ b : Bool, ρ.mask i = some b := by
   cases hmask : ρ.mask i with
-  | none => cases h <| by simpa [hmask]
+  | none => exact False.elim (h hmask)
   | some b => exact ⟨b, rfl⟩
 
 /-/
@@ -1397,15 +1557,13 @@ lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
     have hlen' := hlen
     simp [hL] at hlen'
     exact hlen'
-  have hcount_eq := hcount_formula ρ
-  have hcount_eq' := hcount_formula ρ'
-  have hsucc_eq : Nat.succ ρ'.freeCount = ρ.freeCount := by
-    have htmp := hcard_eq
-    simp [Nat.succ_eq_add_one, hcount_eq, hcount_eq'] at htmp
-    exact htmp
-  have hpred := congrArg Nat.pred hsucc_eq
-  have hfinal := hpred
-  simp [Nat.pred_eq_sub_one] at hfinal
+  have hcount_eq := (hcount_formula ρ).symm
+  have hcount_eq' := (hcount_formula ρ').symm
+  have hsucc_eq : ρ'.freeCount + 1 = ρ.freeCount := by
+    simpa [hcount_eq, hcount_eq'] using hcard_eq
+  have hfinal : ρ'.freeCount = ρ.freeCount - 1 := by
+    have htmp := congrArg (fun m => m - 1) hsucc_eq
+    simpa [Nat.add_sub_cancel] using htmp
   exact hfinal
 
 /--
@@ -1448,7 +1606,7 @@ lemma restrict_agree_of_compatible (ρ : Restriction n)
     ρ.restrict f x = f x := by
   unfold restrict
   have hover := (ρ.compatible_iff_override_eq).mp h
-  simpa [hover]
+  simp [hover]
 
 lemma restrict_override (ρ : Restriction n) (f : BitVec n → Bool)
     (x : BitVec n) : ρ.restrict f (ρ.override x) = f (ρ.override x) := by
@@ -1464,7 +1622,7 @@ lemma isConstantOn_iff {ρ : Restriction n} {f : BitVec n → Bool} :
       (∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y) := by
   classical
   unfold isConstantOn
-  simpa using (decide_eq_true_iff
+  exact (decide_eq_true_iff
     (p := ∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y))
 
 lemma isConstantOn_of_no_free (ρ : Restriction n) (f : BitVec n → Bool)
@@ -1477,9 +1635,8 @@ lemma isConstantOn_of_no_free (ρ : Restriction n) (f : BitVec n → Bool)
   have hconst : ∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y := by
     intro x y
     unfold Restriction.restrict
-    simpa using congrArg f (hover x y)
-  have := (Restriction.isConstantOn_iff (ρ := ρ) (f := f)).mpr hconst
-  simpa using this
+    exact congrArg f (hover x y)
+  exact (Restriction.isConstantOn_iff (ρ := ρ) (f := f)).mpr hconst
 
 lemma isConstantOn_of_freeCount_eq_zero (ρ : Restriction n)
     (f : BitVec n → Bool) (hcount : ρ.freeCount = 0) : ρ.isConstantOn f = true := by
@@ -1553,7 +1710,7 @@ lemma weight_unassign_mul (ρ : Restriction n) (i : Fin n) (p : Q)
     intro j hj
     obtain ⟨hji, _⟩ := Finset.mem_erase.mp hj
     have hneq : j ≠ i := hji
-    simp [Restriction.unassign_mask, hneq]
+    simp [hneq]
   have htail :
       (∏ j ∈ Finset.univ.erase i,
         F ((ρ.unassign i).mask j))
@@ -1604,20 +1761,21 @@ lemma weight_unassign_mul (ρ : Restriction n) (i : Fin n) (p : Q)
                     simp [hFi]
       _ = (((2 * p) / (1 - p)) * ((1 - p) / 2))
               * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := by
-                    simp [mul_left_comm, mul_assoc]
+                    simpa using
+                      (mul_assoc ((2 * p) / (1 - p)) ((1 - p) / 2)
+                        (∏ j ∈ Finset.univ.erase i, F (ρ.mask j))).symm
       _ = p * ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := by
                     exact hscaled
   have hscaled_weight : ((2 * p) / (1 - p)) * Restriction.weight ρ p
       = p * ∏ j ∈ Finset.univ.erase i,
           F (ρ.mask j) := by
     have htmp := hmain_F
-    simp [← hρ_weight, mul_left_comm, mul_assoc] at htmp
-    exact htmp
+    simpa [← hρ_weight] using htmp
   have hunassign_mask : (ρ.unassign i).mask i = none := by simp
   have hstep1 : F ((ρ.unassign i).mask i)
       * ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j)
         = p * ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j) := by
-    simp [F, hunassign_mask]
+    simp [F]
   have hstep2 : ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j)
       = ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := htail
   calc
@@ -1642,9 +1800,9 @@ lemma weight_cons (choice : Option Bool) (ρ : Restriction n) (p : Q) :
   classical
   cases choice with
   | none =>
-      simp [weight, Fin.prod_univ_succ, cons_mask_zero, cons_mask_succ]
+      simp [weight, Fin.prod_univ_succ]
   | some b =>
-      simp [weight, Fin.prod_univ_succ, cons_mask_zero, cons_mask_succ]
+      simp [weight, Fin.prod_univ_succ]
 
 /--
 Вес ограничения всегда неотрицателен при условии `0 ≤ p ≤ 1`.  В каждой точке
@@ -1675,42 +1833,40 @@ lemma weight_cons_sum (ρ : Restriction n) (p : Q) :
       + (Restriction.cons (some true) ρ).weight p
         = (p + (1 - p)) * ρ.weight p := by
   classical
-  set w := ρ.weight p
-  have hnone : (Restriction.cons none ρ).weight p = p * w := by
-    simpa [w] using (weight_cons (choice := none) (ρ := ρ) (p := p))
-  have hfalse : (Restriction.cons (some false) ρ).weight p = ((1 - p) / 2) * w := by
-    simpa [w] using (weight_cons (choice := some false) (ρ := ρ) (p := p))
-  have htrue : (Restriction.cons (some true) ρ).weight p = ((1 - p) / 2) * w := by
-    simpa [w] using (weight_cons (choice := some true) (ρ := ρ) (p := p))
+  have hnone := weight_cons (choice := none) (ρ := ρ) (p := p)
+  have hfalse := weight_cons (choice := some false) (ρ := ρ) (p := p)
+  have htrue := weight_cons (choice := some true) (ρ := ρ) (p := p)
   have hhalves : ((1 - p) / 2 + (1 - p) / 2) = (1 - p) := by
     ring
   have hsum :
       (Restriction.cons none ρ).weight p
         + (Restriction.cons (some false) ρ).weight p
         + (Restriction.cons (some true) ρ).weight p
-          = p * w + ((1 - p) / 2) * w + ((1 - p) / 2) * w := by
+          = p * ρ.weight p + ((1 - p) / 2) * ρ.weight p
+              + ((1 - p) / 2) * ρ.weight p := by
     calc
       (Restriction.cons none ρ).weight p
           + (Restriction.cons (some false) ρ).weight p
           + (Restriction.cons (some true) ρ).weight p
-        = p * w + (Restriction.cons (some false) ρ).weight p
+        = p * ρ.weight p + (Restriction.cons (some false) ρ).weight p
             + (Restriction.cons (some true) ρ).weight p := by
-              simpa [hnone]
-      _ = p * w + ((1 - p) / 2) * w + (Restriction.cons (some true) ρ).weight p := by
-              simpa [hfalse]
-      _ = p * w + ((1 - p) / 2) * w + ((1 - p) / 2) * w := by
-              simpa [htrue]
+              rw [hnone]
+      _ = p * ρ.weight p + ((1 - p) / 2) * ρ.weight p
+            + (Restriction.cons (some true) ρ).weight p := by
+              rw [hfalse]
+      _ = p * ρ.weight p + ((1 - p) / 2) * ρ.weight p
+            + ((1 - p) / 2) * ρ.weight p := by
+              rw [htrue]
   calc
     (Restriction.cons none ρ).weight p
         + (Restriction.cons (some false) ρ).weight p
         + (Restriction.cons (some true) ρ).weight p
-          = p * w + ((1 - p) / 2) * w + ((1 - p) / 2) * w := hsum
-    _ = (p + ((1 - p) / 2 + (1 - p) / 2)) * w := by
+          = p * ρ.weight p + ((1 - p) / 2) * ρ.weight p
+              + ((1 - p) / 2) * ρ.weight p := hsum
+    _ = (p + ((1 - p) / 2 + (1 - p) / 2)) * ρ.weight p := by
             ring
-    _ = (p + (1 - p)) * w := by
-            simpa [hhalves]
     _ = (p + (1 - p)) * ρ.weight p := by
-            simpa [w]
+            simp [hhalves]
 
 /-- Полный список всех ограничений размера `n`. -/
 @[simp] def enumerate : (n : Nat) → List (Restriction n)
@@ -1774,30 +1930,27 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
         (((ρ :: L').flatMap g).map (fun τ => τ.weight p)).sum
           = ((g ρ).map (fun τ => τ.weight p)).sum
               + ((L'.flatMap g).map (fun τ => τ.weight p)).sum := by
-      simp [List.flatMap_cons, List.map_append, List.sum_append, List.map_cons, List.sum_cons,
-        add_comm, add_left_comm, add_assoc]
+      simp [List.flatMap_cons, List.map_append, List.sum_append]
     have hsum_left :
         ((g ρ).map (fun τ => τ.weight p)).sum
             + ((L'.flatMap g).map (fun τ => τ.weight p)).sum
             = (p + (1 - p)) * ρ.weight p
               + ((L'.flatMap g).map (fun τ => τ.weight p)).sum := by
-      simpa [hρ] using congrArg (fun x => x + ((L'.flatMap g).map (fun τ => τ.weight p)).sum) hρ
+      exact congrArg
+        (fun x => x + ((L'.flatMap g).map (fun τ => τ.weight p)).sum) hρ
     have hsum_right :
         (p + (1 - p)) * ρ.weight p
             + ((L'.flatMap g).map (fun τ => τ.weight p)).sum
             = (p + (1 - p)) * ρ.weight p
               + (p + (1 - p)) * (L'.map fun ρ => ρ.weight p).sum := by
-      simpa [htail] using congrArg (fun x => (p + (1 - p)) * ρ.weight p + x) htail
+      exact congrArg
+        (fun x => (p + (1 - p)) * ρ.weight p + x) htail
     have hsum_rewrite := hsum_left.trans hsum_right
     have hsum_factor :
         (p + (1 - p)) * ρ.weight p
             + (p + (1 - p)) * (L'.map fun ρ => ρ.weight p).sum
             = (p + (1 - p)) * (ρ.weight p + (L'.map fun ρ => ρ.weight p).sum) := by
       ring
-    have hmap_cons :
-        ((ρ :: L').map (fun ρ => ρ.weight p)).sum
-          = ρ.weight p + (L'.map fun ρ => ρ.weight p).sum := by
-      simp [List.map_cons, List.sum_cons]
     calc
       (((ρ :: L').flatMap g).map (fun τ => τ.weight p)).sum
           = ((g ρ).map (fun τ => τ.weight p)).sum
@@ -1807,7 +1960,7 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
       _ = (p + (1 - p)) *
               (ρ.weight p + (L'.map fun ρ => ρ.weight p).sum) := hsum_factor
       _ = (p + (1 - p)) * ((ρ :: L').map (fun ρ => ρ.weight p)).sum := by
-                simpa [hmap_cons, add_comm]
+                simp [List.map_cons, List.sum_cons]
 
 lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p = (p + (1 - p)) * totalWeight n p := by
@@ -1823,8 +1976,7 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
         = (Restriction.cons none ρ).weight p
           + (Restriction.cons (some false) ρ).weight p
           + (Restriction.cons (some true) ρ).weight p := by
-      simp [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_comm, add_left_comm,
-        add_assoc]
+      simp [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_assoc]
     calc
       ((g ρ).map (fun τ => τ.weight p)).sum
           = (Restriction.cons none ρ).weight p
@@ -1839,7 +1991,7 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p
         = ((enumerate (Nat.succ n)).map (fun ρ => ρ.weight p)).sum := rfl
     _ = (((enumerate n).flatMap g).map (fun τ => τ.weight p)).sum := by
-          simp [totalWeight, enumerate, g, List.flatMap_singleton_eq_map]
+          simp [enumerate, g]
     _ = (p + (1 - p)) * ((enumerate n).map (fun ρ => ρ.weight p)).sum := haux
     _ = (p + (1 - p)) * totalWeight n p := by
           simp [totalWeight]
@@ -1849,7 +2001,7 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
       totalWeight n p = (p + (1 - p)) ^ n := by
   induction n with
   | zero =>
-      simp [totalWeight_zero]
+      simp
   | succ n ih =>
       calc
         totalWeight (Nat.succ n) p
@@ -1858,16 +2010,17 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
         _ = (p + (1 - p)) * (p + (1 - p)) ^ n := by
                 rw [ih]
         _ = (p + (1 - p)) ^ n * (p + (1 - p)) := by
-                simpa [mul_comm]
+                simp
         _ = (p + (1 - p)) ^ Nat.succ n := by
-                simpa [pow_succ] using (pow_succ (p + (1 - p)) n).symm
+                simp [pow_succ]
 
 /-- Полная масса распределения равна 1: `𝓡_p` корректно нормирована. -/
 lemma totalWeight_eq_one (n : Nat) (p : Q) : totalWeight n p = 1 := by
   have hnorm : p + (1 - p) = (1 : Q) := by ring
   have hclosed := totalWeight_closed_form n p
   have hone : (p + (1 - p)) ^ n = 1 := by
-    simpa [hnorm] using (one_pow n : (1 : Q) ^ n = 1)
+    have hpow := congrArg (fun x : Q => x ^ n) hnorm
+    exact hpow.trans (one_pow n)
   exact hclosed.trans hone
 
 /--
@@ -1938,7 +2091,7 @@ lemma sum_weights_mask_none_zero (n : Nat) (p : Q) :
           (fun ρ => (cons none ρ).weight p)).sum
         = ((enumerate n).map fun ρ => p * ρ.weight p).sum := by
     induction enumerate n with
-    | nil => simp [hweight]
+    | nil => simp
     | cons ρ L ih =>
         have hw := hweight ρ
         calc
@@ -2034,11 +2187,11 @@ lemma sum_weights_mask_none (n : Nat) :
           classical
           by_cases hnone : Q ρ
           · have hmask : ρ.mask i' = none := hnone
-            simp [g, P, Q, hmask, Restriction.cons_mask_succ, hnone]
+            simp [g, P, Q, hmask]
           · have hmask : ρ.mask i' ≠ none := hnone
             obtain ⟨b, hb⟩ := Restriction.mask_eq_some_of_not_none
               (ρ := ρ) (i := i') hmask
-            simp [g, P, Q, Restriction.cons_mask_succ, hb, hnone]
+            simp [g, P, Q, hb]
         -- Переносим фильтрацию с расширенного списка на исходный.
         have hfiltered :
             List.filter P (enumerate (Nat.succ (Nat.succ n)))
@@ -2076,7 +2229,7 @@ lemma sum_weights_mask_none (n : Nat) :
                   have hIH := ih i' p
                   simpa [Q] using hIH
           _ = p * ((p + (1 - p)) * totalWeight n p) := by
-                  simp [mul_assoc, mul_comm, mul_left_comm]
+                  ring
           _ = p * totalWeight (Nat.succ n) p := by
                   rw [totalWeight_succ n p]
 /- Если на каждом элементе списка `f x ≤ g x`, то и суммы `map f` и `map g`
@@ -2093,7 +2246,7 @@ lemma sum_map_le_sum_map {α : Type _} (L : List α)
         intro y hy
         exact h y (by simp [hy])
       have ih' := ih hxs
-      simpa [List.map_cons, List.sum_cons, add_comm, add_left_comm, add_assoc]
+      simpa [List.map_cons, add_comm, add_left_comm, add_assoc]
         using add_le_add hx ih'
 
 lemma foldl_select_sum_aux {α : Type _} (L : List α) (f : α → Q)
@@ -2105,10 +2258,10 @@ lemma foldl_select_sum_aux {α : Type _} (L : List α) (f : α → Q)
   | nil => simp
   | cons x xs ih =>
       by_cases hx : P x
-      · have := ih (acc := acc + f x)
-        simp [hx, ih, add_comm, add_left_comm, add_assoc]
-      · have := ih (acc := acc)
-        simp [hx, ih]
+      · have hstep := ih (acc := acc + f x)
+        simp [hx, hstep, add_assoc]
+      · have hstep := ih (acc := acc)
+        simp [hx, hstep]
 
 lemma foldl_select_sum {α : Type _} (L : List α) (f : α → Q) (P : α → Prop)
     [DecidablePred P] :
@@ -2150,38 +2303,35 @@ lemma literalStatus_eq_satisfied {n : Nat} {ρ : Restriction n}
     {ℓ : Literal n} :
     ρ.literalStatus ℓ = LiteralStatus.satisfied ↔ ρ.mask ℓ.idx = some ℓ.value := by
   classical
-  unfold literalStatus
   cases hmask : ρ.mask ℓ.idx with
-  | none => simp [hmask]
+  | none => simp [literalStatus, hmask]
   | some b =>
       by_cases hb : b = ℓ.value
-      · subst hb; simp [hmask]
+      · subst hb; simp [literalStatus, hmask]
       · have hb' : b ≠ ℓ.value := hb
-        simp [hmask, hb, hb']
+        simp [literalStatus, hmask, hb, hb']
 
 lemma literalStatus_eq_unassigned {n : Nat} {ρ : Restriction n}
     {ℓ : Literal n} :
     ρ.literalStatus ℓ = LiteralStatus.unassigned ↔ ρ.mask ℓ.idx = none := by
   classical
-  unfold literalStatus
   cases hmask : ρ.mask ℓ.idx with
-  | none => simp [hmask]
+  | none => simp [literalStatus, hmask]
   | some b =>
       by_cases hb : b = ℓ.value
-      · simp [hmask, hb]
-      · simp [hmask, hb]
+      · simp [literalStatus, hmask, hb]
+      · simp [literalStatus, hmask, hb]
 
 lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
     {ℓ : Literal n} :
     ρ.literalStatus ℓ = LiteralStatus.falsified ↔
       ∃ b : Bool, ρ.mask ℓ.idx = some b ∧ b ≠ ℓ.value := by
   classical
-  unfold literalStatus
   cases hmask : ρ.mask ℓ.idx with
-  | none => simp [hmask]
+  | none => simp [literalStatus, hmask]
   | some b =>
       by_cases hb : b = ℓ.value
-      · simp [hmask, hb]
+      · simp [literalStatus, hmask, hb]
       · constructor
         · intro _
           exact ⟨b, rfl, hb⟩
@@ -2190,8 +2340,10 @@ lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
             simpa [hmask] using hb'
           have hb_eq : b = b' := Option.some.inj hb_eq'
           have hbne : b ≠ ℓ.value := by
-            simpa [hb_eq] using hbneq
-          simpa [hmask, hbne]
+            intro h
+            apply hbneq
+            simpa [hb_eq] using h
+          simp [literalStatus, hmask, hbne]
 
 /--
 Если ограничение объявило литерал удовлетворённым, то после `override` он
@@ -2260,7 +2412,7 @@ lemma freeLiterals_eq_nil_iff {n : Nat} {ρ : Restriction n}
   · intro hnone
     classical
     cases hfree : ρ.freeLiterals C with
-    | nil => simpa [hfree]
+    | nil => simp [hfree]
     | cons ℓ₀ free =>
         have heq := congrArg (fun l => ℓ₀ ∈ l) hfree.symm
         have hmem : ℓ₀ ∈ ρ.freeLiterals C :=
@@ -2793,10 +2945,8 @@ lemma weight_eq_branchFactor_pow {ρ : Restriction n} {t : Nat}
           (C := selection.clause)
           (w := selection.witness)
           (choice := choice)
-      have hmaskσ : σ.mask choice.literal.idx = some choice.value := by
-        have htmp := hmask_raw
-        simp [σ] at htmp
-        exact htmp
+      dsimp [σ] at hmask_raw
+      have hmaskσ : σ.mask choice.literal.idx = some choice.value := hmask_raw
       have hmul_raw :
           Restriction.weight
               (ρ := σ.unassign choice.literal.idx) (p := p)
@@ -2821,16 +2971,14 @@ lemma weight_eq_branchFactor_pow {ρ : Restriction n} {t : Nat}
               = branchFactor p * Restriction.weight (ρ := σ) (p := p) := by
           change ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
               = ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
-          simp [branchFactor]
+          rfl
         exact hratio_raw.trans hrewrite
       -- Индуктивное выражение для веса `σ`.
       have hrec_raw := ih
+      dsimp [σ] at hrec_raw
       have hrec : Restriction.weight (ρ := σ) (p := p)
           = (branchFactor p) ^ t
-            * Restriction.weight (ρ := finalRestriction rest) (p := p) := by
-        have htmp := hrec_raw
-        simp [σ] at htmp
-        exact htmp
+            * Restriction.weight (ρ := finalRestriction rest) (p := p) := hrec_raw
       -- Преобразуем результирующую формулу.
       have hfinal :
           finalRestriction (SelectionTrace.cons selection choice rest)

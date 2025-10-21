@@ -73,11 +73,17 @@ final theorem `P_ne_NP_final` holds unconditionally.
 
 ### 1.3 Shrinkage for AC⁰/local circuits (status: **axiom**, difficulty 8/10)
 
-* **File:** `ThirdPartyFacts/Facts_Switching.lean` (`shrinkage_for_AC0` and its
-  local analogue).
+* **File:** `ThirdPartyFacts/Facts_Switching.lean` (`partial_shrinkage_for_AC0`,
+  `shrinkage_for_AC0`, and the local analogue).
 * **Goal:** formalize the multi-switching lemma to obtain shallow PDTs with
   controlled error.  Early milestones can target depth-2 formulas before moving
   to the full `d`-layer setting.
+* **Current status:** the Lean interface packages the axiom
+  `partial_shrinkage_for_AC0` into the structured witness
+  `MultiSwitchingWitness`, so downstream code no longer refers to a standalone
+  `hastad_multiSwitching` assumption.  A constructive fallback exists for the
+  canonical point enumeration, but the general combinatorial proof is still
+  outstanding.
 * **DoD:** fully proved shrinkage lemmas matching the current interface
   (parameter bounds on depth `t` and error `ε`).
 

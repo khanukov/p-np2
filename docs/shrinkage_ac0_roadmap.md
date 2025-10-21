@@ -38,10 +38,12 @@ Servedio–Tan):
    the restricted family fails to admit a common `ℓ`-PDT of depth `t` is bounded
    by `S^{⌈t/ℓ⌉} (C·p·k)^t`.
 
-`ThirdPartyFacts/HastadMSL.lean` will host clean statement-level imports of both
-lemmas, exposing only the combinatorial interface we need. No new axioms should
-be introduced; instead, we commit to porting the proof scripts verbatim from the
-references (or reuse an existing verified formalization if available).
+`ThirdPartyFacts/HastadMSL.lean` now contains the interface object
+`MultiSwitchingWitness` together with helper constructors (for example the
+canonical point trunk).  The actual existence proof is still deferred to
+`ThirdPartyFacts/Facts_Switching.lean`, where it is packaged through the
+axiomatic input `partial_shrinkage_for_AC0`.  Once the switching lemmas are
+formalised, `Facts_Switching` will be refactored to discharge this assumption.
 
 ## Inductive depth reduction strategy
 
@@ -73,8 +75,8 @@ references (or reuse an existing verified formalization if available).
 | --- | --- | --- |
 | `Core/PDTPartial.lean` | Definition of partial decision trees and depth accounting lemmas. | ✅ |
 | `Core/ShrinkageWitness.lean` | Bridge from partial certificates to the existing `Shrinkage` interface. | ✅ |
-| `ThirdPartyFacts/HastadMSL.lean` | Formal statements of the (multi-)switching lemma with parameter bookkeeping. | **new** |
-| `Core/ShrinkageAC0.lean` | Inductive depth reduction proof producing a `PartialDT` certificate. | **new** |
+| `ThirdPartyFacts/HastadMSL.lean` | Interface for the (multi-)switching lemma, currently fed by the axiom `partial_shrinkage_for_AC0`. | interface ready |
+| `Core/ShrinkageAC0.lean` | Inductive depth reduction proof producing a `PartialDT` certificate. | axiomatic wrapper |
 | `Core/SAL_AC0.lean` | Wrapper invoking `partial_to_atlas` to obtain the final atlas. | refactor of existing `SAL_Core` |
 
 Each module should come with extensive comments explaining the parameter chase,
@@ -109,18 +111,19 @@ now in place, the current development still relies on external axioms for the
 core combinatorial bounds.  Concretely:
 
 * `partial_shrinkage_for_AC0` in
-  `ThirdPartyFacts/Facts_Switching.lean` remains an axiom.  We still have to
-  supply a bona fide Lean proof by porting the depth-2 switching lemma and the
-  multi-switching lemma, then running the inductive depth reduction described in
-  Sections “Depth 2” and “Inductive step”.
+  `ThirdPartyFacts/Facts_Switching.lean` remains the lone assumption on the AC⁰
+  side.  The axiom already feeds into `MultiSwitchingWitness` via the helper
+  `ac0PartialWitness`, and a constructive fallback is available for the
+  canonical point enumeration, but the genuine switching proof still needs to be
+  imported.
 * `shrinkage_for_localCircuit` is also axiomatic.  After finishing the AC⁰ case
   we must adapt the same machinery to the `LocalCircuitParameters` interface and
   re-establish the locality-specific depth bound.
-* The roadmap steps 2–5 above are only partially implemented: modules such as
-  `ThirdPartyFacts/HastadMSL.lean` and `Core/ShrinkageAC0.lean` currently expose
-  wrappers around axioms rather than proved theorems.  The remaining work is to
-  replace these wrappers with actual proofs and eliminate every `axiom` keyword
-  from the shrinkage pipeline.
+* The roadmap steps 2–5 above are only partially implemented: `Core/ShrinkageAC0`
+  threads the assumptions through to SAL, yet its quantitative bounds ultimately
+  depend on the pending proof of the multi-switching lemma.  Eliminating the
+  axioms will require the depth-2 base case, the inductive lift, and the
+  quantitative bookkeeping promised earlier in this document.
 
 Removing these axioms and validating the resulting proofs with `lake test` will
 fully complete Step A and unlock the seamless connection with Step B without any

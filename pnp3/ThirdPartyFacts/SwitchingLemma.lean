@@ -466,9 +466,9 @@ structure MultiBarcode (S n t ℓ : Nat) where
   правильном выборе t.
 -/
 theorem multi_switching_bound
-    (𝓕 : FamilyCNF S n w) (k ℓ t : Nat) (p : Q)
-    (hwidth : w ≤ k)
-    (hp : 0 < p) (hp1 : p < 1) :
+    (_𝓕 : FamilyCNF S n w) (k ℓ t : Nat) (p : Q)
+    (_hwidth : w ≤ k)
+    (_hp : 0 < p) (_hp1 : p < 1) :
     ∃ failureProb : Q,
       failureProb ≤ (S : Q) ^ ((t + ℓ - 1) / ℓ) * (16 * p * k : Q) ^ t := by
   -- Количество раундов

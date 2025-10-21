@@ -369,7 +369,7 @@ lemma scenarioFromCommonPDT_k_le_pow
   have hk_spec := Classical.choose_spec witness
   have hk_leaves : k ≤ (Core.PDT.leaves C.tree).length := by
     have htmp := hk_spec.1
-    simp [hk] at htmp
+    simp at htmp
     exact htmp
   have hlen_bound :
       (Core.PDT.leaves C.tree).length ≤ Nat.pow 2 (Core.PDT.depth C.tree) :=
@@ -413,7 +413,7 @@ lemma dictLen_fromShrinkage_le_pow
       dictLen_fromCommonPDT_le_pow
         (n := n) (F := S.F) (C := S.commonPDT)
     have hbound' := hbound
-    simp [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
+    simp [Core.Atlas.ofPDT,
       Core.CommonPDT.toAtlas, Core.Shrinkage.commonPDT_depthBound,
       Core.Shrinkage.commonPDT_tree] at hbound'
     exact hbound'
@@ -451,8 +451,7 @@ lemma scenarioFromCommonPDT_dictLen_le_pow
   -- В полученном сценарии атлас совпадает с `C.toAtlas`, поэтому оценка
   -- на длину словаря переносится напрямую.
   have hbound' := hbound
-  simp [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
-    Core.CommonPDT.toAtlas] at hbound'
+  simp [Core.CommonPDT.toAtlas] at hbound'
   exact hbound'
 
 /--
@@ -890,11 +889,11 @@ noncomputable def scenarioFromLocalCircuit
       have hfS : f ∈ S.F := hF ▸ hf
       have hfBase : f ∈ base.2.family := by
         have htmp := hfS
-        simp [base_family] at htmp
+        simp at htmp
         exact htmp
       have hbounded := base.2.bounded f hfBase
       have htmp := hbounded
-      simp [base_family] at htmp
+      simp at htmp
       exact htmp
 
 /-- Семейство в сценарии для локальных схем совпадает с исходным списком `F`. -/
@@ -907,7 +906,7 @@ lemma scenarioFromLocalCircuit_family_eq
   unfold scenarioFromLocalCircuit
   set witness := ThirdPartyFacts.localCircuitWitness params F
   set S := witness.shrinkage
-  simp [scenarioFromLocalCircuit, witness, S]
+  simp
 
 /--
   Для сценария, построенного из shrinkage, параметр `k` не превышает числа
@@ -933,8 +932,7 @@ lemma scenarioFromShrinkage_k_le_pow
         dsimp [Core.Shrinkage.commonPDT_epsilon]
         exact htmp)
   have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
+  simp [Core.Shrinkage.commonPDT_depthBound] at hbound'
   exact hbound'
 
 /--
@@ -962,8 +960,7 @@ lemma scenarioFromShrinkage_dictLen_le_pow
         dsimp [Core.Shrinkage.commonPDT_epsilon]
         exact htmp)
   have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
+  simp [Core.Shrinkage.commonPDT_depthBound] at hbound'
   exact hbound'
 
 /--

@@ -58,25 +58,25 @@ theorem shrinkage_for_AC0
   by
     classical
     -- извлекаем частичный сертификат и переводим его в shrinkage
-    let ℓ := partialCertificate_level_from_AC0 params F
+    let tail := partialCertificate_tailDepth_from_AC0 params F
     let C := partialCertificate_from_AC0 params F
     let S := Core.PartialCertificate.toShrinkage (n := params.n)
-      (ℓ := ℓ) (F := F) C
-    refine ⟨C.depthBound + ℓ, C.epsilon, S, ?_⟩
+      (ℓ := tail) (F := F) C
+    refine ⟨C.depthBound + tail, C.epsilon, S, ?_⟩
     -- сначала равенство семейства
     have hF : S.F = F := Core.PartialCertificate.toShrinkage_family
-      (n := params.n) (ℓ := ℓ) (F := F) C
+      (n := params.n) (ℓ := tail) (F := F) C
     refine And.intro hF ?_
     -- затем равенство глубины и ошибки
-    have ht : S.t = C.depthBound + ℓ :=
+    have ht : S.t = C.depthBound + tail :=
       Core.PartialCertificate.toShrinkage_depth
-        (n := params.n) (ℓ := ℓ) (F := F) C
+        (n := params.n) (ℓ := tail) (F := F) C
     have hε : S.ε = C.epsilon :=
       Core.PartialCertificate.toShrinkage_epsilon
-        (n := params.n) (ℓ := ℓ) (F := F) C
+        (n := params.n) (ℓ := tail) (F := F) C
     refine And.intro ht ?_
     -- оставшиеся численные границы
-    have htBound := partialCertificate_depthBound_add_level_le
+    have htBound := partialCertificate_depthBound_add_tail_le
       (params := params) (F := F)
     have hε0 := partialCertificate_epsilon_nonneg
       (params := params) (F := F)
@@ -164,7 +164,7 @@ noncomputable def certificate_from_AC0
   let witness := ac0PartialWitness params F
   Core.PartialCertificate.toShrinkage
     (n := params.n)
-    (ℓ := witness.level)
+    (ℓ := witness.tailDepth)
     (F := F)
     witness.certificate
 
@@ -185,7 +185,7 @@ lemma certificate_from_AC0_family
   let witness := ac0PartialWitness params F
   have h := Core.PartialCertificate.toShrinkage_family
     (n := params.n)
-    (ℓ := witness.level)
+    (ℓ := witness.tailDepth)
     (F := F)
     witness.certificate
   have hgoal := h
@@ -215,7 +215,7 @@ lemma certificate_from_AC0_depth_bound
   have hbound := witness.depth_le
   have hrewrite := Core.PartialCertificate.toShrinkage_depth
     (n := params.n)
-    (ℓ := witness.level)
+    (ℓ := witness.tailDepth)
     (F := F)
     witness.certificate
   have htarget := Eq.subst
@@ -237,7 +237,7 @@ lemma certificate_from_AC0_eps_bound
   have hbound := witness.epsilon_le_inv
   have hrewrite := Core.PartialCertificate.toShrinkage_epsilon
     (n := params.n)
-    (ℓ := witness.level)
+    (ℓ := witness.tailDepth)
     (F := F)
     witness.certificate
   have htarget := Eq.subst
@@ -258,7 +258,7 @@ lemma certificate_from_AC0_eps_nonneg
   have h := witness.epsilon_nonneg
   have hrewrite := Core.PartialCertificate.toShrinkage_epsilon
     (n := params.n)
-    (ℓ := witness.level)
+    (ℓ := witness.tailDepth)
     (F := F)
     witness.certificate
   have hgoal := Eq.subst

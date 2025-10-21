@@ -28,7 +28,7 @@ structure AC0Parameters where
   n : Nat
   M : Nat
   d : Nat
-  depthBudget_ge_n :
+  depthBudget_bound :
     n ≤ Nat.pow (Nat.log2 (M + 2)) (d + 1)
   deriving Repr
 
@@ -40,10 +40,10 @@ structure AC0Parameters where
 @[simp] def AC0Parameters.depthBudget (params : AC0Parameters) : Nat :=
   Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
 
-@[simp] lemma AC0Parameters.depthBudget_le
+@[simp] lemma AC0Parameters.depthBudget_bound_iff
     (params : AC0Parameters) :
     params.n ≤ params.depthBudget :=
-  params.depthBudget_ge_n
+  params.depthBudget_bound
 
 /-- Удобное обозначение: линейное расширение параметров по размеру и глубине. -/
 lemma AC0Parameters.depthBudget_mono_M
@@ -87,8 +87,8 @@ def AC0Parameters.withBounds (params : AC0Parameters)
   { n := params.n
     M := M
     d := d
-    depthBudget_ge_n :=
-      (params.depthBudget_le).trans
+    depthBudget_bound :=
+      Nat.le_trans params.depthBudget_bound
         (params.depthBudget_mono (hM := hM) (hd := hd)) }
 
 /-- Parameters for "local" circuits.  These are needed by the locality bridge
@@ -115,11 +115,23 @@ no downstream file has to change after the refactor.
 -/
 structure AC0PartialWitness
     (params : AC0Parameters) (F : Family params.n) where
+  /-- Upper bound on the depth of the common trunk. -/
   level          : Nat
-  certificate    : Core.PartialCertificate params.n level F
+  /-- Depth bound for the individual tails of the partial decision tree. -/
+  tailDepth      : Nat
+  /-- Partial certificate whose tails have depth at most `tailDepth`. -/
+  certificate    : Core.PartialCertificate params.n tailDepth F
+  /-- The trunk depth promised by the certificate does not exceed `level`. -/
+  depthBound_le_level : certificate.depthBound ≤ level
+  /-- Quantitative bound matching the roadmap: `level ≤ log₂ (M+2)`. -/
   level_le_log   : level ≤ Nat.log2 (params.M + 2)
-  depth_le       : certificate.depthBound + level
+  /--
+  Total depth control: the depth of the refined decision tree is bounded by the
+  quasi-polynomial budget `(log₂ (M+2))^(d+1)`.
+  -/
+  depth_le       : certificate.depthBound + tailDepth
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+  /-- Error parameters re-exported from the partial certificate. -/
   epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
   epsilon_le_inv : certificate.epsilon ≤ (1 : Core.Q) / (params.n + 2)
 
@@ -149,11 +161,16 @@ noncomputable def partialCertificate_level_from_AC0
     [HasAC0PartialWitness params F] : Nat :=
   (ac0PartialWitness params F).level
 
+/-- Extract the tail-depth budget carried by the AC⁰ witness. -/
+noncomputable def partialCertificate_tailDepth_from_AC0
+    [HasAC0PartialWitness params F] : Nat :=
+  (ac0PartialWitness params F).tailDepth
+
 /-- Recover the partial certificate itself from the witness. -/
 noncomputable def partialCertificate_from_AC0
     [HasAC0PartialWitness params F] :
     Core.PartialCertificate params.n
-      (partialCertificate_level_from_AC0 params F) F :=
+      (partialCertificate_tailDepth_from_AC0 params F) F :=
   (ac0PartialWitness params F).certificate
 
 lemma partialCertificate_level_from_AC0_le
@@ -161,13 +178,25 @@ lemma partialCertificate_level_from_AC0_le
     partialCertificate_level_from_AC0 params F ≤ Nat.log2 (params.M + 2) :=
   (ac0PartialWitness params F).level_le_log
 
-/-- The trunk depth bound transported from the witness. -/
-lemma partialCertificate_depthBound_add_level_le
+/--
+Total depth bound transported from the witness (trunk depth + tail depth).
+-/
+lemma partialCertificate_depthBound_add_tail_le
     [HasAC0PartialWitness params F] :
     (partialCertificate_from_AC0 params F).depthBound
-        + partialCertificate_level_from_AC0 params F
+        + partialCertificate_tailDepth_from_AC0 params F
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) :=
   (ac0PartialWitness params F).depth_le
+
+/--
+The trunk depth reported by the certificate does not exceed the advertised
+level.
+-/
+lemma partialCertificate_depthBound_le_level
+    [HasAC0PartialWitness params F] :
+    (partialCertificate_from_AC0 params F).depthBound
+      ≤ partialCertificate_level_from_AC0 params F :=
+  (ac0PartialWitness params F).depthBound_le_level
 
 /-- The witness always delivers a nonnegative error parameter. -/
 lemma partialCertificate_epsilon_nonneg
@@ -216,7 +245,7 @@ lemma level_log_bound_mono {M' : Nat}
 -/
 lemma depth_bound_mono_M {M' : Nat}
     (W : AC0PartialWitness params F) (hM : params.M ≤ M') :
-    W.certificate.depthBound + W.level
+    W.certificate.depthBound + W.tailDepth
       ≤ Nat.pow (Nat.log2 (M' + 2)) (params.d + 1) := by
   have hbase : Nat.log2 (params.M + 2) ≤ Nat.log2 (M' + 2) := by
     have hle : params.M + 2 ≤ M' + 2 := Nat.add_le_add_right hM 2
@@ -274,7 +303,9 @@ def upgrade (W : AC0PartialWitness params F)
     AC0PartialWitness
       (AC0Parameters.withBounds params (hM := hM) (hd := hd)) F :=
   { level := W.level
+    tailDepth := W.tailDepth
     certificate := W.certificate
+    depthBound_le_level := W.depthBound_le_level
     level_le_log := level_log_bound_mono (params := params) (F := F)
       (W := W) hM
     depth_le := by
@@ -307,53 +338,6 @@ noncomputable def upgradeInstance
       (W := ac0PartialWitness params F) hM hd⟩
 
 end AC0PartialWitness
-
-section DefaultWitness
-
-open AC0
-
-variable (params : AC0Parameters) (F : Family params.n)
-
-/--
-  Тривиальный shrinkage-сертификат: берём полное PDT глубины `n`, построенное
-  в `AC0.Formulas`, и упаковываем его в структуру `AC0PartialWitness`.  Благодаря
-  полю `depthBudget_ge_n` в `AC0Parameters` требуемая оценка глубины выполняется
-  автоматически.
--/
-noncomputable def defaultAC0Witness : AC0PartialWitness params F :=
-  { level := 0
-    certificate := AC0.perfectCertificate F
-    level_le_log := by exact Nat.zero_le _
-    depth_le := by
-      have hbound := params.depthBudget_le
-      have hdepth : (AC0.perfectCertificate F).depthBound = params.n := by simp
-      have hsum : (AC0.perfectCertificate F).depthBound + 0 = params.n := by
-        simpa [Nat.zero_add] using hdepth
-      simpa [hsum]
-        using hbound
-    epsilon_nonneg := by simp
-    epsilon_le_inv := by
-      have hnonneg : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
-        have hnum : (0 : Q) ≤ (1 : Q) := by norm_num
-        have hden : (0 : Q) ≤ (params.n + 2 : Q) := by
-          exact_mod_cast Nat.zero_le (params.n + 2)
-        exact div_nonneg hnum hden
-      have heps : (AC0.perfectCertificate F).epsilon = 0 := by simp
-      simpa [heps]
-        using hnonneg
-  }
-
-/--
-  Базовый экземпляр `HasAC0PartialWitness`, доступный без дополнительных
-  допущений.  Он опирается на полный PDT и пригоден как безопасная заглушка
-  до тех пор, пока не подключено более сильное shrinkage-доказательство.
--/
-noncomputable instance instHasAC0PartialWitness
-    (params : AC0Parameters) (F : Family params.n) :
-    HasAC0PartialWitness params F :=
-  ⟨defaultAC0Witness (params := params) (F := F)⟩
-
-end DefaultWitness
 
 end ThirdPartyFacts
 end Pnp3

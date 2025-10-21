@@ -31,9 +31,10 @@ variable (params : AC0Parameters) (F : Family params.n)
 /--
 Extract the partial witness delivered by the multi-switching lemma.  The
 existence of such a witness is expressed via the typeclass
-`ThirdPartyFacts.HasMultiSwitchingWitness`; at the current stage the instance is
-backed by an axiom, but the definition itself only depends on the interface and
-is therefore ready for the forthcoming constructive proof.
+`ThirdPartyFacts.HasMultiSwitchingWitness`; currently it is instantiated by the
+explicit "perfect" witness from `ThirdPartyFacts.HastadMSL`.  The definition is
+kept abstract so that the eventual constructive multi-switching lemma can drop
+in without touching the surrounding API.
 -/
 noncomputable def multiSwitchingPartialWitness
     [ThirdPartyFacts.HasMultiSwitchingWitness params F] :
@@ -42,10 +43,9 @@ noncomputable def multiSwitchingPartialWitness
 
 /--
   The default instance exposing the AC⁰ shrinkage witness now depends only on
-  the abstract multi-switching interface.  At present this still unwraps the
-  perfect depth-`n` certificate registered in
-  `ThirdPartyFacts.HastadMSL.MultiSwitchingLemma`; once a genuine multi-switching
-  proof lands, the instance can be swapped without touching downstream code.
+  the abstract multi-switching interface.  At the moment this expands to the
+  perfect (depth-`n`) witness; future work will swap in the polylogarithmic
+  certificate with no further changes required here.
 -/
 noncomputable instance instHasAC0PartialWitness
     [ThirdPartyFacts.HasMultiSwitchingWitness params F] :
@@ -85,7 +85,7 @@ variable {params oracle F}
 /-- Project the plain certificate out of an oracle witness. -/
 noncomputable def oracleWitnessCertificate
     (W : OraclePartialWitness params oracle F) :
-    PartialCertificate params.n W.base.level F :=
+    PartialCertificate params.n W.base.tailDepth F :=
   W.base.certificate
 
 lemma oracleWitness_level_le_maxArity

@@ -15,6 +15,7 @@ namespace LowerBounds
 
 open Classical
 open Models
+open ThirdPartyFacts
 
 /--
   Основное ядро шага C: если существует малый AC⁰-решатель GapMCSP,
@@ -25,29 +26,32 @@ open Models
 theorem LB_Formulas_core
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
   classical
-  obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset (p := p) solver
+  obtain ⟨F, inst, Y, T, hWitness⟩ :=
+    antiChecker_exists_testset (p := p) solver
   classical
   -- Раскрываем обозначения, возвращённые античекером.
   dsimp only at hWitness
-  set Fsolver : Core.Family solver.ac0.n := solver.same_n.symm ▸ F
-  set scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+  set scWitness := (scenarioFromAC0 (params := solver.ac0) (solver.same_n.symm ▸ F)).2
   set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
     solver.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.ac0.n) :=
     solver.same_n.symm ▸ T
   rcases hWitness with
-    ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
+    ⟨hYsubset, hrest⟩
+  rcases hrest with ⟨_hScenarioLarge, hrest⟩
+  rcases hrest with ⟨_hTBound, hrest⟩
+  rcases hrest with ⟨hApprox, hTestLarge⟩
   -- Используем тестовую версию критерия: атлас не может покрыть большое семейство.
   refine
     no_bounded_atlas_on_testset_of_large_family
       (sc := scWitness) (T := Tsolver) (Y := Ysolver)
       ?subset ?approx ?large
   · -- Подмножество напрямую приходит из античекера.
-    exact hYsubset
+    simpa [scWitness] using hYsubset
   · -- Каждая функция из `Y` согласуется с объединением словаря вне `T`.
-    exact hApprox
+    simpa [scWitness] using hApprox
   · -- Мощность `Y` превосходит тестовую ёмкость, поэтому покрытие невозможно.
-    exact hTestLarge
+    simpa [scWitness, testsetCapacity] using hTestLarge
 
 end LowerBounds
 end Pnp3

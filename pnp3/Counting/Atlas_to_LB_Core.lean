@@ -85,7 +85,11 @@ def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
     · simp [mismatchSet, flipOn, hx]
 
 private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
-  cases b <;> cases c <;> simp at h <;> simp [h]
+  cases b <;> cases c
+  · cases h rfl
+  · simp
+  · simp
+  · cases h rfl
 
 @[simp] lemma flipOn_mismatchSet {m : Nat}
     (g : Domain m → Bool) (f : Domain m → Bool) :
@@ -162,7 +166,8 @@ lemma distU_eq_zero_iff
     by_contra hne
     exact hx_contra hne
   · intro h
-    simp [distU, h]
+    cases h
+    simp [distU]
 
 /-- Связываем `errU` с `distU`: ошибка аппроксимации равна числу несовпадений,
   делённому на размер пространства `2^m`. -/

@@ -18,6 +18,7 @@ namespace LowerBounds
 
 open Classical
 open Models
+open ThirdPartyFacts
 
 /--
   Противоречие для локальных схем: гипотеза о существовании малого решателя
@@ -27,24 +28,27 @@ open Models
 theorem LB_LocalCircuits_core
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) : False := by
   classical
-  obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset_local (p := p) solver
+  obtain ⟨F, inst, Y, T, hWitness⟩ :=
+    antiChecker_exists_testset_local (p := p) solver
   classical
   dsimp only at hWitness
-  set Fsolver : Core.Family solver.params.n := solver.same_n.symm ▸ F
-  set scWitness := (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+  set scWitness :=
+    (scenarioFromLocalCircuit (params := solver.params) (solver.same_n.symm ▸ F)).2
   set Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
     solver.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.n) :=
     solver.same_n.symm ▸ T
-  rcases hWitness with
-    ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
+  rcases hWitness with ⟨hYsubset, hrest⟩
+  rcases hrest with ⟨_hScenarioLarge, hrest⟩
+  rcases hrest with ⟨_hTBound, hrest⟩
+  rcases hrest with ⟨hApprox, hTestLarge⟩
   refine
     no_bounded_atlas_on_testset_of_large_family
       (sc := scWitness) (T := Tsolver) (Y := Ysolver)
       ?subset ?approx ?large
-  · exact hYsubset
-  · exact hApprox
-  · exact hTestLarge
+  · simpa [scWitness] using hYsubset
+  · simpa [scWitness] using hApprox
+  · simpa [scWitness, testsetCapacity] using hTestLarge
 
 end LowerBounds
 end Pnp3

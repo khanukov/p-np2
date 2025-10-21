@@ -63,7 +63,7 @@ def PDT.refine {n : Nat}
                   (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
             exact Eq.subst (motive := fun s => β ∈ s)
               (Eq.symm hdef) hmemAppend
-      tails β hmemTree
+          tails β hmemTree
       PDT.node i (PDT.refine t0 tails0) (PDT.refine t1 tails1)
 
 /--
@@ -243,11 +243,27 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
 
-/-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
-    1) листья попарно не пересекаются,
-    2) объединение листьев покрывает весь рассматриваемый регион.
-    На данном шаге держим это как пропозиционное место для будущих лемм. -/
-def PDT.WellFormed {n : Nat} (_t : PDT n) : Prop := True  -- placeholder
+/-- Инвариант корректности PDT: разные листья не пересекаются и каждая точка
+    куба покрывается некоторым листом.  Это свойство гарантирует, что дерево
+    действительно задаёт разбиение пространства входов. -/
+def PDT.WellFormed {n : Nat} (t : PDT n) : Prop :=
+  (∀ ⦃β γ : Subcube n⦄,
+      β ∈ PDT.leaves t → γ ∈ PDT.leaves t → β ≠ γ →
+        Core.subcubeDisjoint β γ) ∧
+  (∀ x : BitVec n, Core.covered (PDT.leaves t) x)
+
+lemma WellFormed.disjoint {n : Nat} {t : PDT n}
+    (h : PDT.WellFormed t)
+    {β γ : Subcube n}
+    (hβ : β ∈ PDT.leaves t) (hγ : γ ∈ PDT.leaves t)
+    (hne : β ≠ γ) :
+    Core.subcubeDisjoint β γ :=
+  (And.left h) hβ hγ hne
+
+lemma WellFormed.covered {n : Nat} {t : PDT n}
+    (h : PDT.WellFormed t) (x : BitVec n) :
+    Core.covered (PDT.leaves t) x :=
+  (And.right h) x
 
 end Core
 end Pnp3

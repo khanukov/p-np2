@@ -582,6 +582,26 @@ lemma ac0_parameters_p_lt_one (M k S n d : Nat) (hk : 0 < k) :
   · -- 0 < 4 * k
     exact mul_pos (by norm_num : (0 : Q) < 4) (Nat.cast_pos.mpr hk)
 
+/-- Параметр ℓ всегда положителен. -/
+lemma ac0_parameters_ell_pos (M k S n d : Nat) :
+    0 < (ac0_parameters M k S n d).2.1 := by
+  unfold ac0_parameters
+  simp only
+  -- ℓ = Nat.log2 (M + 2) + 1 ≥ 1
+  omega
+
+/-- Параметр t всегда положителен когда S > 0, n > 0, d > 0. -/
+lemma ac0_parameters_t_pos (M k S n d : Nat) (hS : 0 < S) (hn : 0 < n) (hd : 0 < d) :
+    0 < (ac0_parameters M k S n d).2.2 := by
+  unfold ac0_parameters
+  simp only
+  -- t = 4 * ℓ * (Nat.log2 S + 1 + Nat.log2 ((n + 2) * d) + 1)
+  have hℓ : 0 < Nat.log2 (M + 2) + 1 := by omega
+  have hfactor : 0 < Nat.log2 S + 1 + Nat.log2 ((n + 2) * d) + 1 := by omega
+  calc 0 < 4 * (Nat.log2 (M + 2) + 1) := by omega
+    _ ≤ 4 * (Nat.log2 (M + 2) + 1) * (Nat.log2 S + 1 + Nat.log2 ((n + 2) * d) + 1) := by
+      apply Nat.le_mul_of_pos_right; exact hfactor
+
 /--
   При выбранных параметрах вероятность провала достаточно мала.
 

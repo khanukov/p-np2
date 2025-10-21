@@ -111,6 +111,23 @@ structure BarcodeStep (n : Nat) where
 /-- A barcode: sequence of t steps recording the canonical path to failure -/
 def Barcode (n t : Nat) := { steps : List (BarcodeStep n) // steps.length = t }
 
+/-! ## Helper Functions for Encoding -/
+
+/-- Update a restriction by setting variable i to value b -/
+def setVar (ρ : Restriction n) (i : Fin n) (b : Bool) : Restriction n :=
+  fun j => if j = i then some b else ρ j
+
+/-- Find the first unassigned literal in a term under restriction ρ.
+    Returns the index and the literal. -/
+def firstUnassignedLit? (T : Term n) (ρ : Restriction n) :
+    Option (Nat × AC0.Literal n) :=
+  T.lits.findIdx? (fun ℓ => ρ ℓ.idx = none)
+    |>.bind (fun idx => T.lits[idx]?.map (fun ℓ => (idx, ℓ)))
+
+/-- Helper: given a term index and the DNF, get the term (with bounds check) -/
+def getTerm? (F : DNF n) (idx : Nat) : Option (Term n) :=
+  F.terms[idx]?
+
 /-! ## Encoding Bad Restrictions -/
 
 /-- Encode a "bad" restriction (DT ≥ t) as a barcode.
@@ -128,13 +145,64 @@ noncomputable def encodeRestriction (F : DNF n) (k t : Nat)
     (ρ : Restriction n)
     (hbad : ∃ tree : PDT n, tree.depth ≥ t ∧
              ∀ x, Core.mem ρ x → DNF.eval F x = true) :
-    Barcode n t := by
-  sorry  -- Main encoding function
+    Barcode n t :=
+  -- Build barcode by iterating t steps
+  let rec buildSteps (ρ_current : Restriction n) (steps_left : Nat) :
+      List (BarcodeStep n) :=
+    match steps_left with
+    | 0 => []
+    | s + 1 =>
+        -- Find first alive term
+        match firstAliveTerm? F ρ_current with
+        | none => []  -- Should not happen if hbad holds
+        | some termIdx =>
+            -- Get the term
+            match getTerm? F termIdx with
+            | none => []  -- Should not happen
+            | some T =>
+                -- Find first unassigned literal
+                match firstUnassignedLit? T ρ_current with
+                | none => []  -- Should not happen for alive term
+                | some (litIdx, ℓ) =>
+                    -- Falsifying value: negate the literal's value
+                    let falsifyingVal := !ℓ.val
+                    -- Create the step
+                    let step : BarcodeStep n :=
+                      { termIdx := termIdx
+                      , litIdx := litIdx
+                      , val := falsifyingVal }
+                    -- Update restriction
+                    let ρ_next := setVar ρ_current ℓ.idx falsifyingVal
+                    -- Recurse
+                    step :: buildSteps ρ_next s
 
-/-- Decode a barcode back to a restriction -/
+  let steps := buildSteps ρ t
+  -- Package as Barcode (need proof that length = t, use sorry for now)
+  ⟨steps, by sorry⟩
+
+/-- Decode a barcode back to a restriction.
+
+    The barcode tells us exactly which variables were set and to what values.
+    We reconstruct the restriction by applying each step in sequence.
+-/
 noncomputable def decodeBarcode (F : DNF n) (bc : Barcode n t) :
-    Restriction n := by
-  sorry  -- Inverse of encoding
+    Restriction n :=
+  -- Start with empty restriction (all variables unassigned)
+  let initialRestriction : Restriction n := fun _ => none
+
+  -- Apply each step in the barcode
+  bc.val.foldl (fun ρ step =>
+    -- Get the term indicated by this step
+    match getTerm? F step.termIdx with
+    | none => ρ  -- Should not happen
+    | some T =>
+        -- Get the literal at the indicated index
+        match T.lits[step.litIdx]? with
+        | none => ρ  -- Should not happen
+        | some ℓ =>
+            -- Set the variable to the falsifying value
+            setVar ρ ℓ.idx step.val
+  ) initialRestriction
 
 /-! ## Injectivity of Encoding -/
 

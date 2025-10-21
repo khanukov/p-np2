@@ -84,26 +84,16 @@ def canonicalDTDepth (F : CNF n w) (ρ : Restriction n) (fuel : Nat) : Nat :=
 def hasCanonicalDTDepthGE (F : CNF n w) (ρ : Restriction n) (t : Nat) : Prop :=
   ∃ fuel : Nat, canonicalDTDepth F ρ fuel ≥ t
 
-/-- Монотонность по fuel: большее топливо даёт не меньшую глубину. -/
+/--
+  Монотонность по fuel: большее топливо даёт не меньшую глубину.
+
+  Это технический результат для корректности определения hasCanonicalDTDepthGE.
+  Доказательство требует детального разбора match-выражений в canonicalDTDepth.
+-/
 lemma canonicalDTDepth_mono (F : CNF n w) (ρ : Restriction n)
     (fuel₁ fuel₂ : Nat) (h : fuel₁ ≤ fuel₂) :
     canonicalDTDepth F ρ fuel₁ ≤ canonicalDTDepth F ρ fuel₂ := by
-  induction fuel₂ generalizing fuel₁ with
-  | zero =>
-      have : fuel₁ = 0 := Nat.eq_zero_of_le_zero h
-      rw [this]
-  | succ fuel₂' ih =>
-      cases fuel₁ with
-      | zero => exact Nat.zero_le _
-      | succ fuel₁' =>
-          simp only [canonicalDTDepth]
-          split
-          · exact Nat.zero_le _
-          · rename_i selection
-            have h' : fuel₁' ≤ fuel₂' := Nat.le_of_succ_le_succ h
-            have ih0 := ih fuel₁' h'
-            have ih1 := ih fuel₁' h'
-            sorry  -- apply ih to both branches and use Nat.add_le_add
+  sorry  -- Требуется детальная работа с разворачиванием match-выражений
 
 /-- Если при fuel достигается глубина t, то и при большем fuel тоже. -/
 lemma hasCanonicalDTDepthGE_mono (F : CNF n w) (ρ : Restriction n) (t : Nat)
@@ -215,6 +205,15 @@ noncomputable def decode (bc : Barcode n t) : Restriction n :=
     (Restriction.free n)
 
 /--
+  Количество зафиксированных переменных в decode(barcode) равно длине barcode.
+
+  Это следует из literalsDistinct: каждый шаг фиксирует новую переменную.
+-/
+lemma decode_freeCount (bc : Barcode n t) :
+    (decode bc).freeCount = n - t := by
+  sorry  -- Индукция по bc.steps с использованием literalsDistinct
+
+/--
   **КЛЮЧЕВАЯ ТЕОРЕМА**: decode ∘ encode = id
 
   Это обеспечивает инъективность кодирования, что необходимо для
@@ -268,10 +267,14 @@ noncomputable def barcodeWeight (p : Q) (bc : Barcode n t) : Q :=
 
 /--
   Вес полностью свободного ограничения равен p^n.
+
+  Доказательство: Restriction.free имеет mask i = none для всех i,
+  поэтому каждый множитель в произведении равен p, итого p^n.
 -/
 lemma weight_free (n : Nat) (p : Q) :
     Restriction.weight (Restriction.free n) p = p ^ n := by
-  sorry
+  unfold Restriction.weight Restriction.free
+  simp only [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
 
 /--
   Оценка веса одного barcode.

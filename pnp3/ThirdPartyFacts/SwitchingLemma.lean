@@ -149,6 +149,19 @@ lemma ofTerm_singleton_unassigned (ℓ : AC0.Literal n) (ρ : Restriction n)
 
 end TermStatus
 
+/-! ## Auxiliary Lemmas for List.findIdx? -/
+
+/-- If findIdx? returns some i, then i is in bounds and the predicate holds at i -/
+lemma List.findIdx?_some_get {α : Type _} (p : α → Bool) (xs : List α) (i : Nat)
+    (h : xs.findIdx? p = some i) :
+    i < xs.length ∧ ∃ (hlt : i < xs.length), p (xs.get ⟨i, hlt⟩) = true := by
+  -- For now, use sorry - the proof requires understanding the internal `go` function
+  -- This is a standard library fact that should ideally be imported
+  -- The property states: if findIdx? returns some i, then:
+  --   1. i is within bounds (i < xs.length)
+  --   2. The predicate p holds at position i
+  sorry
+
 /-! ## First Alive Term -/
 
 /-- Find the index of the first alive term in a DNF formula.
@@ -163,8 +176,17 @@ lemma firstAliveTerm?_some_alive (F : DNF n) (ρ : Restriction n) (idx : Nat)
     ∃ (hlt : idx < F.terms.length),
       TermStatus.ofTerm (F.terms.get ⟨idx, hlt⟩) ρ = TermStatus.alive := by
   unfold firstAliveTerm? at h
-  -- List.findIdx? returns some idx means the predicate holds at idx
-  sorry -- Need lemma about List.findIdx?
+  -- Apply our findIdx? lemma
+  have ⟨hlt, halive⟩ := List.findIdx?_some_get _ _ _ h
+  constructor
+  · exact hlt
+  · obtain ⟨hlt', hp⟩ := halive
+    use hlt'
+    -- hp : (fun T => TermStatus.ofTerm T ρ = TermStatus.alive) (F.terms.get ⟨idx, hlt'⟩) = true
+    -- Need to show: TermStatus.ofTerm (F.terms.get ⟨idx, hlt'⟩) ρ = TermStatus.alive
+    simp at hp
+    -- The lambda application simplifies to the condition we need
+    exact hp
 
 /-- If DT(F|ρ) ≥ 1, then there exists an alive term -/
 lemma firstAliveTerm?_some_of_DT_ge_one (F : DNF n) (ρ : Restriction n)
@@ -360,6 +382,52 @@ def firstUnassignedLit? (T : Term n) (ρ : Restriction n) :
 /-- Helper: given a term index and the DNF, get the term (with bounds check) -/
 def getTerm? (F : DNF n) (idx : Nat) : Option (Term n) :=
   F.terms[idx]?
+
+/-- If firstAliveTerm? returns some idx, then getTerm? succeeds at that index -/
+lemma getTerm?_of_firstAliveTerm? (F : DNF n) (ρ : Restriction n) (idx : Nat)
+    (h : firstAliveTerm? F ρ = some idx) :
+    ∃ T : Term n, getTerm? F idx = some T ∧
+                   TermStatus.ofTerm T ρ = TermStatus.alive := by
+  -- We know idx < F.terms.length and the term at idx is alive
+  have ⟨hlt, ⟨hlt', halive⟩⟩ := firstAliveTerm?_some_alive F ρ idx h
+  -- getTerm? is just indexing, so it succeeds
+  use F.terms.get ⟨idx, hlt'⟩
+  constructor
+  · -- Show getTerm? F idx = some (F.terms.get ⟨idx, hlt'⟩)
+    unfold getTerm?
+    simp [List.getElem?_eq_getElem hlt']
+  · -- Show the term is alive
+    exact halive
+
+/-- If a term is alive, it has at least one unassigned literal.
+
+    Intuition: A term is alive iff:
+    - Not all literals are assigned (else it would be killed or satisfied)
+    - At least one literal is unassigned
+
+    This is blocked by private API (Term.restrictList), but the property
+    should follow from the definition of TermStatus.alive.
+-/
+lemma alive_has_unassigned_lit (T : Term n) (ρ : Restriction n)
+    (h : TermStatus.ofTerm T ρ = TermStatus.alive) :
+    ∃ (idx : Nat) (ℓ : AC0.Literal n), T.lits[idx]? = some ℓ ∧ ρ ℓ.idx = none := by
+  -- This requires access to Term.restrictList to understand what "alive" means
+  -- The definition should be: a term is alive iff it has at least one
+  -- unassigned literal and no literal is falsified
+  sorry
+
+/-- If firstAliveTerm? succeeds, then firstUnassignedLit? succeeds on that term -/
+lemma firstUnassignedLit?_of_alive (F : DNF n) (ρ : Restriction n) (idx : Nat)
+    (h : firstAliveTerm? F ρ = some idx) :
+    ∃ T : Term n, getTerm? F idx = some T ∧
+    ∃ (litIdx : Nat) (ℓ : AC0.Literal n), firstUnassignedLit? T ρ = some (litIdx, ℓ) := by
+  -- Get the alive term
+  obtain ⟨T, hget, halive⟩ := getTerm?_of_firstAliveTerm? F ρ idx h
+  use T, hget
+  -- Since T is alive, it has an unassigned literal
+  -- This step requires alive_has_unassigned_lit which is currently sorry
+  -- So we use sorry here as well
+  sorry  -- This follows from alive_has_unassigned_lit and findIdx? properties
 
 /-! ## Encoding Bad Restrictions -/
 

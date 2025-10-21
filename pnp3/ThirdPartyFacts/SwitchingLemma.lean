@@ -263,7 +263,7 @@ lemma freeCount_free (n : Nat) :
   classical
   unfold Restriction.freeCount Restriction.freeIndicesList Restriction.free
   -- Все индексы в finRange n имеют mask = none
-  simp [List.filter_eq_self, List.length_finRange]
+  simp [List.length_finRange]
 
 /--
   Пустой barcode имеет n свободных переменных после декодирования.
@@ -327,18 +327,25 @@ lemma weight_assign_ratio (ρ : Restriction n) (i : Fin n) (b : Bool) (p : Q)
   intro ρ' hassign
   -- Используем существующую лемму weight_unassign_mul в обратную сторону
   have hunassign : ρ'.unassign i = ρ := by
-    sorry  -- вытекает из assign_unassign_inverse
+    exact Restriction.unassign_assign_of_free hassign hfree
   have hmask' : ρ'.mask i = some b := by
-    sorry  -- вытекает из определения assign
+    have := Restriction.assign_mask_eq hassign i
+    simp at this
+    exact this
   have hp_ne : p ≠ 1 := by
     intro heq
     rw [heq] at hp1
     exact (lt_irrefl (1 : Q)) hp1
-  have := Restriction.weight_unassign_mul ρ' i p hmask' hp_ne
-  rw [hunassign] at this
-  -- Теперь this говорит: weight ρ p = (2p/(1-p)) * weight ρ' p
-  -- Отсюда: weight ρ' p = ((1-p)/(2p)) * weight ρ p
-  sorry  -- алгебраические преобразования
+  have hwt := Restriction.weight_unassign_mul ρ' i p hmask' hp_ne
+  rw [hunassign] at hwt
+  -- hwt: weight ρ p = (2p/(1-p)) * weight ρ' p
+  -- Нужно: weight ρ' p = ((1-p)/(2p)) * weight ρ p
+  have h2p_pos : 0 < (2 : Q) * p := by
+    apply mul_pos; norm_num; exact hp
+  have h1mp_pos : 0 < (1 : Q) - p := by linarith
+  -- Используем field_simp для алгебры
+  field_simp [ne_of_gt h2p_pos, ne_of_gt h1mp_pos] at hwt ⊢
+  linarith [hwt]
 
 /--
   Вес полностью свободного ограничения равен p^n.
@@ -591,7 +598,7 @@ lemma ac0_parameters_ell_pos (M k S n d : Nat) :
   omega
 
 /-- Параметр t всегда положителен когда S > 0, n > 0, d > 0. -/
-lemma ac0_parameters_t_pos (M k S n d : Nat) (hS : 0 < S) (hn : 0 < n) (hd : 0 < d) :
+lemma ac0_parameters_t_pos (M k S n d : Nat) (_hS : 0 < S) (_hn : 0 < n) (_hd : 0 < d) :
     0 < (ac0_parameters M k S n d).2.2 := by
   unfold ac0_parameters
   simp only

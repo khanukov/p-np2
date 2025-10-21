@@ -7,6 +7,8 @@ import Mathlib.Data.Rat.Floor
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Data.Rat.Init
+import Mathlib.Data.Real.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Base
 
 /-!
   pnp3/Counting/BinomialBounds.lean
@@ -29,17 +31,166 @@ import Mathlib.Data.Rat.Init
 
 open scoped BigOperators
 
+/--
+  Удобное обозначение для двоичного логарифма на вещественных числах.  Lean
+  не предоставляет отдельной константы `log₂`, поэтому мы фиксируем её как
+  частный случай `Real.logb` с основанием `2`.
+-/
+noncomputable def log₂ (x : ℝ) : ℝ := Real.logb 2 x
+
 namespace Pnp3
 namespace Counting
 
+open Set
+
 /--
   Бинарная энтропия `H(ε)` из аналитической оценки объёма хаммингового
-  шара.  Пока мы используем её как чистый символ (возвращаем просто `ε`),
-  важен лишь факт, что она присутствует в формуле.  Когда будет подключена
-  строгая аналитика, определение можно заменить на настоящее выражение
-  через логарифмы.
+  шара.  В отличие от прежней заглушки, функция теперь соответствует
+  классической формуле `-ε log₂ ε - (1-ε) log₂ (1-ε)` (при `ε ∈ (0,1)`), а
+  на вырожденных концах `ε = 0, 1` по определению равна нулю.  Такое
+  определение удобно подставлять в степенные оценки `2^{n·H(ε)}`.
 -/
-@[reducible] def Hbin (ε : Rat) : Rat := ε
+noncomputable def Hbin (ε : ℚ) : ℝ :=
+  if ε = 0 ∨ ε = 1 then 0
+  else
+    let p : ℝ := ε
+    let q : ℝ := ((1 : ℚ) - ε : ℝ)
+    (-p * log₂ p) - (q * log₂ q)
+
+lemma Hbin_of_mem_openUnitInterval {ε : ℚ}
+    (hε : ε ∈ Set.Ioo (0 : ℚ) 1) :
+    Hbin ε = -(ε : ℝ) * log₂ (ε : ℝ)
+      - ((1 : ℚ) - ε : ℝ) * log₂ ((1 : ℚ) - ε : ℝ) :=
+  by
+    have h0 : ε ≠ 0 := (ne_of_gt hε.1)
+    have h1 : ε ≠ 1 := (ne_of_lt hε.2)
+    have : ¬(ε = 0 ∨ ε = 1) := by
+      intro h
+      rcases h with h | h
+      · exact h0 h
+      · exact h1 h
+    simp [Hbin, this]
+
+lemma Hbin_zero : Hbin 0 = 0 := by
+  simp [Hbin]
+
+lemma Hbin_one : Hbin 1 = 0 := by
+  simp [Hbin]
+
+/-- Рациональное отношение `k/n`, удобное для энтропийных оценок. -/
+def ratioQ (k n : Nat) : ℚ := (k : ℚ) / n
+
+/-- При `0 < k < n` величина `k/n` лежит в интервале `(0,1)`. -/
+lemma ratioQ_mem_openUnitInterval {n k : Nat}
+    (hkpos : 0 < k) (hklt : k < n) :
+    ratioQ k n ∈ Set.Ioo (0 : ℚ) 1 := by
+  have hnpos : 0 < (n : ℚ) := by
+    exact_mod_cast (Nat.lt_of_le_of_lt (Nat.zero_le _) hklt)
+  constructor
+  · have hkposQ : 0 < (k : ℚ) := by exact_mod_cast hkpos
+    simpa [ratioQ] using div_pos hkposQ hnpos
+  · have hkltQ : (k : ℚ) < n := by exact_mod_cast hklt
+    have := (div_lt_one hnpos).2 hkltQ
+    simpa [ratioQ] using this
+
+/-- Перевод `k/n` в вещественные числа. -/
+lemma ratioQ_cast (n k : Nat) :
+    (ratioQ k n : ℝ) = (k : ℝ) / n := by
+  simp [ratioQ]
+
+/-- Формула для `1 - k/n` в вещественных числах. -/
+lemma one_sub_ratioQ_cast {n k : Nat} (hnpos : 0 < n) (hk : k ≤ n) :
+    ((1 : ℚ) - ratioQ k n : ℝ) = ((n - k : Nat) : ℝ) / n := by
+  have : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hnpos)
+  have hsub : ((n - k : Nat) : ℝ) = (n : ℝ) - k := by
+    simpa using (Nat.cast_sub hk)
+  calc
+    ((1 : ℚ) - ratioQ k n : ℝ)
+        = (1 : ℝ) - (k : ℝ) / n := by simp [ratioQ]
+    _ = ((n : ℝ) / n) - (k : ℝ) / n := by
+        have hdiv : (n : ℝ) / n = (1 : ℝ) := by simpa [this] using div_self this
+        simpa [hdiv]
+    _ = ((n : ℝ) - k) / n := by ring
+    _ = ((n - k : Nat) : ℝ) / n := by simpa [hsub]
+
+/--
+  Auxiliary inequality underlying the entropy bound for binomial coefficients.
+  It is a restatement of the classical argument using the binomial theorem:
+  the term corresponding to `k` in the expansion of `(a + b)^n` is dominated by
+  the whole sum when `a,b ≥ 0`.  The specific choice of `a = k/n` and
+  `b = (n-k)/n` leads to the familiar estimate
+  `choose(n,k) ≤ (n^n) / (k^k · (n-k)^{n-k})`.
+-/
+lemma choose_mul_pow_mul_pow_le_one
+    {n k : Nat} (hk : k ≤ n) (hnpos : 0 < n) :
+    (Nat.choose n k : ℝ)
+        * ((k : ℝ) / n) ^ k
+        * (((n : ℝ) - k) / n) ^ (n - k)
+      ≤ 1 := by
+  classical
+  have hn_ne : (n : ℝ) ≠ 0 := by exact_mod_cast (ne_of_gt hnpos)
+  -- Parameters of the binomial expansion.
+  set a : ℝ := (k : ℝ) / n
+  set b : ℝ := ((n : ℝ) - k) / n
+  have hn_nonneg : 0 ≤ (n : ℝ) := by exact_mod_cast (Nat.zero_le n)
+  have ha_nonneg : 0 ≤ a := by
+    have hk_nonneg : 0 ≤ (k : ℝ) := by exact_mod_cast Nat.zero_le k
+    exact div_nonneg hk_nonneg hn_nonneg
+  have hk_le : (k : ℝ) ≤ (n : ℝ) := by exact_mod_cast hk
+  have hb_nonneg : 0 ≤ b := by
+    have hnum : 0 ≤ (n : ℝ) - k := sub_nonneg.mpr hk_le
+    exact div_nonneg hnum hn_nonneg
+  have ha_b_sum : a + b = 1 := by
+    have hsum : (k : ℝ) + ((n : ℝ) - k) = (n : ℝ) := by ring
+    have : a + b = ((k : ℝ) + ((n : ℝ) - k)) / n := by
+      simpa [a, b] using (add_div (k : ℝ) ((n : ℝ) - k) n).symm
+    simpa [hsum, hn_ne] using this
+  -- Rephrase `(a + b)^n` using the binomial expansion.
+  have hsum_range :
+      (∑ i ∈ Finset.range (Nat.succ n),
+          a ^ i * b ^ (n - i) * (Nat.choose n i : ℝ))
+        = 1 := by
+    have hx : 1 =
+        (∑ i ∈ Finset.range (Nat.succ n),
+            a ^ i * b ^ (n - i) * (Nat.choose n i : ℝ)) := by
+      simpa [ha_b_sum, mul_comm, mul_left_comm, mul_assoc]
+        using add_pow a b n
+    simpa using hx.symm
+  have hterm_nonneg :
+      ∀ i ∈ Finset.range (Nat.succ n),
+        0 ≤ a ^ i * b ^ (n - i) * (Nat.choose n i : ℝ) := by
+    intro i hi
+    have ha_pow_nonneg : 0 ≤ a ^ i := pow_nonneg ha_nonneg _
+    have hb_pow_nonneg : 0 ≤ b ^ (n - i) := pow_nonneg hb_nonneg _
+    have hchoose_nonneg : 0 ≤ (Nat.choose n i : ℝ) := by
+      exact_mod_cast Nat.zero_le _
+    have hprod_nonneg : 0 ≤ a ^ i * b ^ (n - i) :=
+      mul_nonneg ha_pow_nonneg hb_pow_nonneg
+    exact mul_nonneg hprod_nonneg hchoose_nonneg
+  have hk_mem : k ∈ Finset.range (Nat.succ n) := by
+    have hk_lt_succ : k < n.succ := Nat.lt_succ_of_le hk
+    exact Finset.mem_range.mpr hk_lt_succ
+  have hsingle :=
+    Finset.single_le_sum (f := fun i : Nat =>
+        a ^ i * b ^ (n - i) * (Nat.choose n i : ℝ))
+      (by
+        intro i hi
+        exact hterm_nonneg i hi)
+      hk_mem
+  -- Convert the inequality on sums to the required statement.
+  have hterm_aux :
+      a ^ k * b ^ (n - k) * (Nat.choose n k : ℝ) ≤ 1 := by
+    have := hsingle
+    simpa [hsum_range] using this
+  have hrew :
+      (Nat.choose n k : ℝ) * a ^ k * b ^ (n - k)
+        = a ^ k * b ^ (n - k) * (Nat.choose n k : ℝ) := by
+    simp [mul_comm, mul_left_comm, mul_assoc]
+  have hterm_le :
+      (Nat.choose n k : ℝ) * a ^ k * b ^ (n - k) ≤ 1 := by
+    simpa [hrew] using hterm_aux
+  simpa [a, b]
+    using hterm_le
 
 /--
   Суммарная верхняя оценка на число подмножеств словаря размера `D`,

@@ -103,8 +103,8 @@ lemma hasCanonicalDTDepthGE_mono (F : CNF n w) (ρ : Restriction n) (t : Nat)
   use max fuel fuel₀
   constructor
   · exact Nat.le_max_left _ _
-  · have := canonicalDTDepth_mono F ρ fuel₀ (max fuel fuel₀) (Nat.le_max_right _ _)
-    exact Nat.le_trans hfuel₀ this
+  · have hmono := canonicalDTDepth_mono F ρ fuel₀ (max fuel fuel₀) (Nat.le_max_right _ _)
+    exact Nat.le_trans hfuel₀ hmono
 
 /-!
   ## Section 2: Barcode Structure
@@ -135,6 +135,26 @@ structure Barcode (n t : Nat) where
   length_eq : steps.length = t
   literalsDistinct : (steps.map (fun s => s.lit.idx)).Nodup
   deriving Repr
+
+/-- Количество различных литералов в barcode не превышает n. -/
+lemma Barcode.literalIndices_card_le (bc : Barcode n t) :
+    (bc.steps.map (fun s => s.lit.idx)).length ≤ n := by
+  simp only [List.length_map, bc.length_eq]
+  sorry  -- Требует доказательства t ≤ n из literalsDistinct
+
+/-- Если t > n, то barcode с таким t невозможен (литералы должны быть distinct). -/
+lemma Barcode.t_le_n (bc : Barcode n t) (hn : 0 < n) : t ≤ n := by
+  -- Из literalsDistinct следует, что длина списка индексов ≤ кардинальность Fin n
+  have hnodup := bc.literalsDistinct
+  have hlen := bc.length_eq
+  rw [← hlen]
+  sorry  -- List.Nodup.length_le_card с Fin n
+
+/-- Пустой barcode (t = 0). -/
+def Barcode.empty (n : Nat) : Barcode n 0 where
+  steps := []
+  length_eq := rfl
+  literalsDistinct := List.nodup_nil
 
 /-!
   ## Section 3: Encoding & Decoding
@@ -205,6 +225,14 @@ noncomputable def decode (bc : Barcode n t) : Restriction n :=
     (Restriction.free n)
 
 /--
+  Декодирование пустого barcode даёт полностью свободное ограничение.
+-/
+lemma decode_empty (n : Nat) :
+    decode (Barcode.empty n) = Restriction.free n := by
+  unfold decode Barcode.empty
+  simp only [List.foldl_nil]
+
+/--
   Количество зафиксированных переменных в decode(barcode) равно длине barcode.
 
   Это следует из literalsDistinct: каждый шаг фиксирует новую переменную.
@@ -259,13 +287,6 @@ lemma weight_assign_ratio (ρ : Restriction n) (i : Fin n) (b : Bool) (p : Q)
   sorry  -- алгебраические преобразования
 
 /--
-  Вес ограничения, закодированного в barcode.
-  Начинаем с веса p^n (полностью свободное) и умножаем на (1-p)/(2p) за каждый шаг.
--/
-noncomputable def barcodeWeight (p : Q) (bc : Barcode n t) : Q :=
-  Restriction.weight (decode bc) p
-
-/--
   Вес полностью свободного ограничения равен p^n.
 
   Доказательство: Restriction.free имеет mask i = none для всех i,
@@ -275,6 +296,22 @@ lemma weight_free (n : Nat) (p : Q) :
     Restriction.weight (Restriction.free n) p = p ^ n := by
   unfold Restriction.weight Restriction.free
   simp only [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
+
+/--
+  Вес ограничения, закодированного в barcode.
+  Начинаем с веса p^n (полностью свободное) и умножаем на (1-p)/(2p) за каждый шаг.
+-/
+noncomputable def barcodeWeight (p : Q) (bc : Barcode n t) : Q :=
+  Restriction.weight (decode bc) p
+
+/--
+  Вес пустого barcode равен p^n.
+-/
+lemma barcodeWeight_empty (n : Nat) (p : Q) :
+    barcodeWeight p (Barcode.empty n) = p ^ n := by
+  unfold barcodeWeight
+  rw [decode_empty]
+  exact weight_free n p
 
 /--
   Оценка веса одного barcode.

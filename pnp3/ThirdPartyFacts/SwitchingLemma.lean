@@ -256,6 +256,30 @@ def maxTermIdx (bc : Barcode n t) : Nat :=
 def termIndices (bc : Barcode n t) : List Nat :=
   bc.steps.map (·.termIdx)
 
+/-! ### Basic properties of Barcode operations -/
+
+/-- Empty barcode has empty steps -/
+@[simp] lemma empty_steps : (empty n).steps = [] := rfl
+
+/-- Getting any index from empty barcode returns none -/
+@[simp] lemma empty_get? (i : Nat) : (empty n).get? i = none := by
+  unfold get? empty
+  simp [steps]
+
+/-- Max term index of empty barcode is 0 -/
+@[simp] lemma empty_maxTermIdx : (empty n).maxTermIdx = 0 := by
+  unfold maxTermIdx empty
+  simp [steps]
+
+/-- Term indices of empty barcode is empty list -/
+@[simp] lemma empty_termIndices : (empty n).termIndices = [] := by
+  unfold termIndices empty
+  simp [steps]
+
+/-- Length of a barcode's steps equals t -/
+lemma steps_length (bc : Barcode n t) : bc.steps.length = t :=
+  bc.property
+
 end Barcode
 
 /-! ## Helper Functions for Restrictions -/
@@ -323,6 +347,28 @@ lemma setVar_comm (ρ : Restriction n) (i j : Fin n) (bi bj : Bool) (h : i ≠ j
       simp [hi]
     · simp [hi, hj]
 
+/-- Setting a variable to the same value it already has is idempotent -/
+lemma setVar_idempotent (ρ : Restriction n) (i : Fin n) (b : Bool)
+    (h : ρ i = some b) :
+    setVar ρ i b = ρ := by
+  ext j
+  unfold setVar
+  by_cases heq : j = i
+  · subst heq
+    simp [h]
+  · simp [heq]
+
+/-- Setting a variable changes at most that variable -/
+lemma setVar_eq_or_same (ρ : Restriction n) (i j : Fin n) (b : Bool) :
+    setVar ρ i b j = some b ∨ setVar ρ i b j = ρ j := by
+  unfold setVar
+  by_cases h : j = i
+  · subst h
+    left
+    simp
+  · right
+    simp [h]
+
 /-! ## Properties of restriction relations -/
 
 /-- setVar extends the original restriction when the variable is unassigned or agrees -/
@@ -371,6 +417,40 @@ lemma Extension_trans {ρ₁ ρ₂ ρ₃ : Restriction n}
     rw [h₂]
     exact h₃
   exact (h₁₂ i h₂').trans h₂
+
+/-- Compatible relation is symmetric -/
+lemma compatible_symm {ρ₁ ρ₂ : Restriction n}
+    (h : compatible ρ₁ ρ₂) :
+    compatible ρ₂ ρ₁ := by
+  intro i h₂ h₁
+  exact (h i h₁ h₂).symm
+
+/-- Compatible relation is reflexive -/
+@[simp] lemma compatible_refl (ρ : Restriction n) :
+    compatible ρ ρ := by
+  intro i _ _
+  rfl
+
+/-- If ρ₁ extends ρ₂, they are compatible -/
+lemma Extension_compatible {ρ₁ ρ₂ : Restriction n}
+    (h : Extension ρ₁ ρ₂) :
+    compatible ρ₁ ρ₂ := by
+  intro i h₁ h₂
+  exact h i h₂
+
+/-- Empty restriction extends to any restriction -/
+lemma emptyRestriction_Extension (ρ : Restriction n) :
+    Extension ρ (emptyRestriction n) := by
+  intro i hi
+  unfold emptyRestriction at hi
+  contradiction
+
+/-- setVar always extends the empty restriction -/
+lemma setVar_emptyRestriction_Extension (i : Fin n) (b : Bool) :
+    Extension (setVar (emptyRestriction n) i b) (emptyRestriction n) := by
+  intro j hj
+  unfold emptyRestriction at hj
+  contradiction
 
 /-- Find the first unassigned literal in a term under restriction ρ.
     Returns the index and the literal. -/

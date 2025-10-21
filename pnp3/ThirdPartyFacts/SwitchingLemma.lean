@@ -207,7 +207,16 @@ noncomputable def decodeBarcode (F : DNF n) (bc : Barcode n t) :
 /-! ## Injectivity of Encoding -/
 
 /-- The encoding is injective: different bad restrictions yield different barcodes.
-    More precisely, if two restrictions have the same barcode, they must be equal. -/
+    More precisely, if two restrictions have the same barcode, they must be equal.
+
+    Proof sketch:
+    - The encoding process is deterministic: at each step, we pick the *first*
+      alive term and the *first* unassigned literal in that term
+    - If ρ₁ ≠ ρ₂, there exists a first variable i where they differ
+    - At the step where we would set variable i, the encodings must produce
+      different barcodes (different term, different literal, or different value)
+    - Therefore same barcode implies same restriction
+-/
 theorem encode_injective (F : DNF n) (k t : Nat)
     (ρ₁ ρ₂ : Restriction n)
     (hbad₁ : ∃ tree : PDT n, tree.depth ≥ t ∧
@@ -216,15 +225,28 @@ theorem encode_injective (F : DNF n) (k t : Nat)
              ∀ x, Core.mem ρ₂ x → DNF.eval F x = true)
     (heq : encodeRestriction F k t ρ₁ hbad₁ = encodeRestriction F k t ρ₂ hbad₂) :
     ρ₁ = ρ₂ := by
-  sorry  -- Key theorem: injectivity
+  -- Proof by contradiction: assume ρ₁ ≠ ρ₂
+  -- Find first variable where they differ
+  -- Show encoding must differ at that step
+  sorry
 
-/-- Decoding inverts encoding -/
+/-- Decoding inverts encoding.
+
+    Proof sketch:
+    - encodeRestriction builds a barcode by setting variables step by step
+    - decodeBarcode reconstructs the restriction by applying those same steps
+    - Each step in the barcode records (termIdx, litIdx, val)
+    - Decoding retrieves the literal from F.terms[termIdx].lits[litIdx]
+    - And sets that literal's variable to val
+    - This exactly reconstructs the original restriction ρ
+-/
 theorem decode_encode_id (F : DNF n) (k t : Nat)
     (ρ : Restriction n)
     (hbad : ∃ tree : PDT n, tree.depth ≥ t ∧
              ∀ x, Core.mem ρ x → DNF.eval F x = true) :
     decodeBarcode F (encodeRestriction F k t ρ hbad) = ρ := by
-  sorry  -- Round-trip property
+  -- Unfold definitions and prove by induction on t
+  sorry
 
 /-! ## Probability Measure on Restrictions -/
 
@@ -243,12 +265,35 @@ structure RandomRestriction (n : Nat) (p : ℚ) where
 
     Pr[DT(F|ρ) ≥ t] ≤ (5·p·k)^t
 
-    Proof sketch:
-    1. Define "bad" set B_t := {ρ : DT(F|ρ) ≥ t}
-    2. Construct injection encode: B_t → Barcodes
-    3. Count barcodes: |Barcodes| ≤ m^t · k^t (m = number of terms)
-    4. Weight analysis: each barcode has weight ≤ (p/2)^t in R_p
-    5. Union bound over barcodes gives result
+    Proof sketch (barcode injection method):
+
+    1. **Define bad set**: B_t := {ρ : DT(F|ρ) ≥ t}
+
+    2. **Injection**: Use encodeRestriction to inject B_t → Barcodes
+       - Each bad ρ maps to a unique barcode (by encode_injective)
+       - Therefore |B_t| ≤ |Barcodes|
+
+    3. **Count barcodes**: Each barcode is a sequence of t steps
+       - Step i picks: term index (≤ m choices), literal index (≤ k choices), value (2 choices)
+       - Total: |Barcodes| ≤ (m · k · 2)^t ≤ (2mk)^t
+
+    4. **Weight each barcode**: For a fixed barcode bc:
+       - ρ := decodeBarcode(bc) sets exactly t variables (to specific values)
+       - Pr[ρ ⊆ ρ_random] = product of t probabilities
+       - Each variable: Pr[set to specific value] = (1-p)/2
+       - Therefore: Pr[bc] ≤ ((1-p)/2)^t ≤ (1/2)^t (using p ≤ 1)
+
+    5. **Union bound**:
+       Pr[DT ≥ t] = Pr[⋃_{bc} decode(bc)]
+                  ≤ Σ_{bc} Pr[bc]
+                  ≤ (2mk)^t · (1/2)^t
+                  = m^t · k^t
+
+       With careful analysis of "alive" terms, we get the sharper bound (5pk)^t
+
+    Note: The constant 5 comes from a more refined weight analysis that accounts
+    for the fact that only "alive" terms contribute, and the probability of keeping
+    a term alive decreases exponentially with its width.
 -/
 theorem switching_base
     (n k t : Nat)
@@ -258,6 +303,12 @@ theorem switching_base
     (hwidth : ∀ T ∈ F.terms, T.lits.length ≤ k) :
     -- Probability that DT(F|ρ) ≥ t is at most (5·p·k)^t
     True := by  -- Placeholder; full probability statement needs Mathlib probability
+  -- The actual proof would:
+  -- 1. Define the probability space of restrictions
+  -- 2. Use encode_injective to establish |B_t| ≤ |Barcodes|
+  -- 3. Count barcodes combinatorially
+  -- 4. Analyze weight of each barcode in R_p
+  -- 5. Apply union bound
   sorry
 
 /-! ## Multi-Switching (Segmented Version) for Families -/
@@ -273,6 +324,43 @@ theorem switching_base
 
     The extra factor S^⌈t/ℓ⌉ comes from choosing which formula to "focus on"
     at the start of each segment of ℓ steps.
+
+    Proof sketch (segmented barcode method):
+
+    1. **Segmentation**: Divide the t steps into ⌈t/ℓ⌉ segments of length ≤ ℓ
+       - Segment 1: steps 1 to min(ℓ, t)
+       - Segment 2: steps ℓ+1 to min(2ℓ, t)
+       - ...
+       - Last segment: may be shorter than ℓ
+
+    2. **Focus formula per segment**: At the start of each segment j:
+       - Pick one formula F_i(j) from the family to "focus on"
+       - Run the base encoding for ℓ steps on F_i(j)
+       - This gives a partial barcode for segment j
+
+    3. **Extended barcode**: Augment each step with formula choice
+       - Original barcode: (termIdx, litIdx, val)
+       - Segmented barcode: [(i₁, bc₁), (i₂, bc₂), ..., (i_s, bc_s)]
+         where i_j ∈ [1..S] is the formula choice for segment j
+         and bc_j is the barcode for that segment
+
+    4. **Count extended barcodes**:
+       - Choices per segment: S (which formula) × (m·k·2)^ℓ (barcode for ℓ steps)
+       - Total segments: ⌈t/ℓ⌉
+       - Total count: [S · (m·k·2)^ℓ]^⌈t/ℓ⌉
+                    = S^⌈t/ℓ⌉ · (m·k·2)^t
+
+    5. **Weight analysis**: Same as base case
+       - Each extended barcode still sets t variables total
+       - Pr[bc] ≤ ((1-p)/2)^t ≤ (p/2)^t (with refined analysis)
+
+    6. **Union bound**:
+       Pr[PDT_ℓ ≥ t] ≤ S^⌈t/ℓ⌉ · (m·k·2)^t · (p/2)^t
+                     ≈ S^⌈t/ℓ⌉ · (5·p·k)^t
+
+    Key insight: The segmented approach allows different formulas to be "hard"
+    at different stages, capturing the complexity of families better than
+    treating each formula independently.
 -/
 theorem switching_multi_segmented
     (n k t ℓ S : Nat)
@@ -284,6 +372,12 @@ theorem switching_multi_segmented
     (hℓ_pos : 0 < ℓ) :
     -- Probability that PDT_ℓ(F|ρ) ≥ t is at most S^⌈t/ℓ⌉ · (5·p·k)^t
     True := by
+  -- The actual proof would:
+  -- 1. Define segmented encoding for families
+  -- 2. Prove injectivity of segmented encoding
+  -- 3. Count segmented barcodes
+  -- 4. Analyze weight (same as base case for total depth)
+  -- 5. Apply union bound with S^⌈t/ℓ⌉ factor
   sorry
 
 end SwitchingLemma

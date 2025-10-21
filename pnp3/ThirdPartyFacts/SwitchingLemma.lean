@@ -136,25 +136,48 @@ structure Barcode (n t : Nat) where
   literalsDistinct : (steps.map (fun s => s.lit.idx)).Nodup
   deriving Repr
 
+/-- Если t > n, то barcode с таким t невозможен (литералы должны быть distinct). -/
+lemma Barcode.t_le_n (bc : Barcode n t) : t ≤ n := by
+  -- Из literalsDistinct следует, что длина списка индексов ≤ кардинальность Fin n
+  have hnodup := bc.literalsDistinct
+  have hlen := bc.length_eq
+  -- Список индексов имеет length = t
+  have hmap_len : (bc.steps.map (fun s => s.lit.idx)).length = t := by
+    simp only [List.length_map, hlen]
+  -- Все индексы из Fin n, и они Nodup, значит их не более n
+  rw [← hmap_len]
+  -- Используем Mathlib лемму: Nodup список элементов Fintype имеет длину ≤ card
+  have : (bc.steps.map (fun s => s.lit.idx)).length ≤ Fintype.card (Fin n) := by
+    exact List.Nodup.length_le_card hnodup
+  simp only [Fintype.card_fin] at this
+  exact this
+
 /-- Количество различных литералов в barcode не превышает n. -/
 lemma Barcode.literalIndices_card_le (bc : Barcode n t) :
     (bc.steps.map (fun s => s.lit.idx)).length ≤ n := by
   simp only [List.length_map, bc.length_eq]
-  sorry  -- Требует доказательства t ≤ n из literalsDistinct
-
-/-- Если t > n, то barcode с таким t невозможен (литералы должны быть distinct). -/
-lemma Barcode.t_le_n (bc : Barcode n t) (hn : 0 < n) : t ≤ n := by
-  -- Из literalsDistinct следует, что длина списка индексов ≤ кардинальность Fin n
-  have hnodup := bc.literalsDistinct
-  have hlen := bc.length_eq
-  rw [← hlen]
-  sorry  -- List.Nodup.length_le_card с Fin n
+  exact Barcode.t_le_n bc
 
 /-- Пустой barcode (t = 0). -/
 def Barcode.empty (n : Nat) : Barcode n 0 where
   steps := []
   length_eq := rfl
   literalsDistinct := List.nodup_nil
+
+/-- Список шагов пустого barcode пуст. -/
+@[simp]
+lemma Barcode.empty_steps (n : Nat) :
+    (Barcode.empty n).steps = [] := rfl
+
+/-- Длина списка шагов barcode равна t. -/
+@[simp]
+lemma Barcode.steps_length (bc : Barcode n t) :
+    bc.steps.length = t := bc.length_eq
+
+/-- Индексы литералов в barcode попарно различны. -/
+@[simp]
+lemma Barcode.indices_nodup (bc : Barcode n t) :
+    (bc.steps.map (fun s => s.lit.idx)).Nodup := bc.literalsDistinct
 
 /-!
   ## Section 3: Encoding & Decoding
@@ -242,6 +265,20 @@ lemma decode_freeCount (bc : Barcode n t) :
   sorry  -- Индукция по bc.steps с использованием literalsDistinct
 
 /--
+  Вес ограничения, закодированного в barcode.
+  Начинаем с веса p^n (полностью свободное) и умножаем на (1-p)/(2p) за каждый шаг.
+-/
+noncomputable def barcodeWeight (p : Q) (bc : Barcode n t) : Q :=
+  Restriction.weight (decode bc) p
+
+/--
+  Вес неотрицателен для любого barcode.
+-/
+lemma barcodeWeight_nonneg (bc : Barcode n t) (p : Q) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
+    0 ≤ barcodeWeight p bc :=
+  Restriction.weight_nonneg (decode bc) hp0 hp1
+
+/--
   **КЛЮЧЕВАЯ ТЕОРЕМА**: decode ∘ encode = id
 
   Это обеспечивает инъективность кодирования, что необходимо для
@@ -296,13 +333,6 @@ lemma weight_free (n : Nat) (p : Q) :
     Restriction.weight (Restriction.free n) p = p ^ n := by
   unfold Restriction.weight Restriction.free
   simp only [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
-
-/--
-  Вес ограничения, закодированного в barcode.
-  Начинаем с веса p^n (полностью свободное) и умножаем на (1-p)/(2p) за каждый шаг.
--/
-noncomputable def barcodeWeight (p : Q) (bc : Barcode n t) : Q :=
-  Restriction.weight (decode bc) p
 
 /--
   Вес пустого barcode равен p^n.
@@ -504,6 +534,36 @@ def ac0_parameters (M k S n d : Nat) : (Q × Nat × Nat) :=
   let ℓ := Nat.log2 (M + 2) + 1  -- ceiling approximation
   let t := 4 * ℓ * (Nat.log2 S + 1 + Nat.log2 ((n + 2) * d) + 1)
   (p, ℓ, t)
+
+/-- Параметр p положителен при k > 0. -/
+lemma ac0_parameters_p_pos (M k S n d : Nat) (hk : 0 < k) :
+    0 < (ac0_parameters M k S n d).1 := by
+  unfold ac0_parameters
+  simp only
+  -- Нужно показать: 0 < 1 / (4 * k)
+  apply div_pos
+  · exact one_pos
+  · have : (0 : Q) < 4 := by norm_num
+    have : (0 : Q) < (k : Q) := by exact Nat.cast_pos.mpr hk
+    exact mul_pos (by norm_num : (0 : Q) < 4) this
+
+/-- Параметр p меньше 1 при k > 0. -/
+lemma ac0_parameters_p_lt_one (M k S n d : Nat) (hk : 0 < k) :
+    (ac0_parameters M k S n d).1 < 1 := by
+  unfold ac0_parameters
+  simp only
+  -- Нужно показать: 1 / (4 * k) < 1
+  rw [div_lt_one]
+  · -- 1 < 4 * k
+    have : (1 : Q) ≤ (k : Q) := by exact Nat.one_le_cast.mpr hk
+    calc (1 : Q) < 4 := by norm_num
+      _ ≤ 4 * (k : Q) := by {
+        have : (1 : Q) ≤ (k : Q) := this
+        calc (4 : Q) = 4 * 1 := by ring
+          _ ≤ 4 * (k : Q) := by exact mul_le_mul_of_nonneg_left this (by norm_num : (0 : Q) ≤ 4)
+      }
+  · -- 0 < 4 * k
+    exact mul_pos (by norm_num : (0 : Q) < 4) (Nat.cast_pos.mpr hk)
 
 /--
   При выбранных параметрах вероятность провала достаточно мала.

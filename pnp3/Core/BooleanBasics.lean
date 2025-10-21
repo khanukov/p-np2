@@ -1427,7 +1427,7 @@ lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
       List.filter_sublist (l := List.finRange n)
         (p := fun j => decide (σ.mask j = none))
     have hsub : L.Sublist (List.finRange n) := by
-      convert hsub_raw using 1 <;> simp [hL]
+      convert hsub_raw using 1
     have hnodup : L.Nodup :=
       List.Sublist.nodup hsub (List.nodup_finRange n)
     have hcard := List.card_toFinset L
@@ -1447,8 +1447,7 @@ lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
     have hfinset_card :
         L.toFinset =
           (Finset.univ.filter fun j => σ.mask j = none) := by
-      convert hfinset_card_raw using 1 <;>
-        simp [hL, hfilter_toFinset, hfinrange]
+      convert hfinset_card_raw using 1; simp
     have hlen :=
       calc
         L.length = L.toFinset.card := hlen_to_card
@@ -1509,7 +1508,7 @@ lemma restrict_agree_of_compatible (ρ : Restriction n)
     ρ.restrict f x = f x := by
   unfold restrict
   have hover := (ρ.compatible_iff_override_eq).mp h
-  simpa [hover]
+  simp [hover]
 
 lemma restrict_override (ρ : Restriction n) (f : BitVec n → Bool)
     (x : BitVec n) : ρ.restrict f (ρ.override x) = f (ρ.override x) := by
@@ -1525,8 +1524,7 @@ lemma isConstantOn_iff {ρ : Restriction n} {f : BitVec n → Bool} :
       (∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y) := by
   classical
   unfold isConstantOn
-  simpa using (decide_eq_true_iff
-    (p := ∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y))
+  simp [decide_eq_true_iff]
 
 lemma isConstantOn_of_no_free (ρ : Restriction n) (f : BitVec n → Bool)
     (hfree : ∀ i : Fin n, ρ.mask i ≠ none) : ρ.isConstantOn f = true := by
@@ -1720,7 +1718,7 @@ lemma weight_nonneg (ρ : Restriction n) {p : Q}
   intro i _
   cases hmask : ρ.mask i with
   | none =>
-      simpa [hmask, hp₀]
+      simp [hmask, hp₀]
   | some _ =>
       have hsub : 0 ≤ (1 - p) := sub_nonneg.mpr hp₁
       have : 0 ≤ (1 - p) / 2 := by
@@ -1740,11 +1738,11 @@ lemma weight_cons_sum (ρ : Restriction n) (p : Q) :
   have hfalse_eq := weight_cons (choice := some false) (ρ := ρ) (p := p)
   have htrue_eq := weight_cons (choice := some true) (ρ := ρ) (p := p)
   have hnone : (Restriction.cons none ρ).weight p = p * w := by
-    convert hnone_eq using 1 <;> simp [w]
+    convert hnone_eq using 1
   have hfalse : (Restriction.cons (some false) ρ).weight p = ((1 - p) / 2) * w := by
-    convert hfalse_eq using 1 <;> simp [w]
+    convert hfalse_eq using 1
   have htrue : (Restriction.cons (some true) ρ).weight p = ((1 - p) / 2) * w := by
-    convert htrue_eq using 1 <;> simp [w]
+    convert htrue_eq using 1
   have hhalves : ((1 - p) / 2 + (1 - p) / 2) = (1 - p) := by
     ring
   have hsum :
@@ -1837,20 +1835,19 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
         (((ρ :: L').flatMap g).map (fun τ => τ.weight p)).sum
           = ((g ρ).map (fun τ => τ.weight p)).sum
               + ((L'.flatMap g).map (fun τ => τ.weight p)).sum := by
-      simp [List.flatMap_cons, List.map_append, List.sum_append, List.map_cons, List.sum_cons,
-        add_comm, add_left_comm, add_assoc]
+      simp
     have hsum_left :
         ((g ρ).map (fun τ => τ.weight p)).sum
             + ((L'.flatMap g).map (fun τ => τ.weight p)).sum
             = (p + (1 - p)) * ρ.weight p
               + ((L'.flatMap g).map (fun τ => τ.weight p)).sum := by
-      simpa [hρ] using congrArg (fun x => x + ((L'.flatMap g).map (fun τ => τ.weight p)).sum) hρ
+      simp only [hρ]
     have hsum_right :
         (p + (1 - p)) * ρ.weight p
             + ((L'.flatMap g).map (fun τ => τ.weight p)).sum
             = (p + (1 - p)) * ρ.weight p
               + (p + (1 - p)) * (L'.map fun ρ => ρ.weight p).sum := by
-      simpa [htail] using congrArg (fun x => (p + (1 - p)) * ρ.weight p + x) htail
+      simp only [htail]
     have hsum_rewrite := hsum_left.trans hsum_right
     have hsum_factor :
         (p + (1 - p)) * ρ.weight p
@@ -1870,7 +1867,7 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
       _ = (p + (1 - p)) *
               (ρ.weight p + (L'.map fun ρ => ρ.weight p).sum) := hsum_factor
       _ = (p + (1 - p)) * ((ρ :: L').map (fun ρ => ρ.weight p)).sum := by
-                simpa [hmap_cons, add_comm]
+                simp [hmap_cons, add_comm]
 
 lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p = (p + (1 - p)) * totalWeight n p := by
@@ -1921,16 +1918,16 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
         _ = (p + (1 - p)) * (p + (1 - p)) ^ n := by
                 rw [ih]
         _ = (p + (1 - p)) ^ n * (p + (1 - p)) := by
-                simpa [mul_comm]
+                simp [mul_comm]
         _ = (p + (1 - p)) ^ Nat.succ n := by
-                simpa [pow_succ] using (pow_succ (p + (1 - p)) n).symm
+                simp [pow_succ, (pow_succ (p + (1 - p)) n).symm]
 
 /-- Полная масса распределения равна 1: `𝓡_p` корректно нормирована. -/
 lemma totalWeight_eq_one (n : Nat) (p : Q) : totalWeight n p = 1 := by
   have hnorm : p + (1 - p) = (1 : Q) := by ring
   have hclosed := totalWeight_closed_form n p
   have hone : (p + (1 - p)) ^ n = 1 := by
-    simpa [hnorm] using (one_pow n : (1 : Q) ^ n = 1)
+    simp [hnorm, (one_pow n : (1 : Q) ^ n = 1)]
   exact hclosed.trans hone
 
 /--
@@ -1973,11 +1970,11 @@ lemma sum_weights_mask_none_zero (n : Nat) (p : Q) :
                     simp [List.filter_append]
             _ = [cons none ρ]
                   ++ List.filter P (L.flatMap g) := by
-                    simpa [hhead]
+                    simp [hhead]
             _ = cons none ρ :: List.filter P (L.flatMap g) := by
                     simp
             _ = cons none ρ :: L.map (cons none) := by
-                    simpa [P, g, ih]
+                    simp [P, g, ih]
             _ = List.map (cons none) (ρ :: L) := by
                     simp
     simpa using haux (enumerate n)
@@ -2067,7 +2064,7 @@ lemma sum_weights_mask_none (n : Nat) :
       cases i using Fin.cases with
       | zero =>
           -- Единственный индекс — нулевой, используем предыдущую лемму.
-          simpa using sum_weights_mask_none_zero (n := 0) (p := p)
+          simp [sum_weights_mask_none_zero (n := 0) (p := p)]
       | succ j => exact False.elim (Fin.elim0 j)
   | succ n ih =>
       intro i p

@@ -170,11 +170,67 @@ structure BarcodeStep (n : Nat) where
 /-- A barcode: sequence of t steps recording the canonical path to failure -/
 def Barcode (n t : Nat) := { steps : List (BarcodeStep n) // steps.length = t }
 
-/-! ## Helper Functions for Encoding -/
+namespace Barcode
+
+variable {n t : Nat}
+
+/-- Empty barcode (for t = 0) -/
+def empty (n : Nat) : Barcode n 0 := ⟨[], rfl⟩
+
+/-- Get the list of steps from a barcode -/
+def steps (bc : Barcode n t) : List (BarcodeStep n) := bc.val
+
+/-- Proof that the length is correct -/
+def length_eq (bc : Barcode n t) : bc.steps.length = t := bc.property
+
+/-- Get the i-th step (if it exists) -/
+def get? (bc : Barcode n t) (i : Nat) : Option (BarcodeStep n) :=
+  bc.steps[i]?
+
+/-- Count how many distinct variables appear in a barcode -/
+def distinctVars (bc : Barcode n t) : Finset (Fin n) :=
+  bc.steps.foldl (fun acc step =>
+    match bc.steps[step.termIdx]? with
+    | none => acc
+    | some _ => acc
+  ) ∅
+
+/-- Maximum term index that appears in the barcode -/
+def maxTermIdx (bc : Barcode n t) : Nat :=
+  bc.steps.foldl (fun max step => Nat.max max step.termIdx) 0
+
+/-- All term indices that appear in the barcode -/
+def termIndices (bc : Barcode n t) : List Nat :=
+  bc.steps.map (·.termIdx)
+
+end Barcode
+
+/-! ## Helper Functions for Restrictions -/
+
+/-- Empty restriction (all variables unassigned) -/
+def emptyRestriction (n : Nat) : Restriction n := fun _ => none
+
+/-- Count how many variables are assigned in a restriction -/
+def countAssigned (ρ : Restriction n) : Nat :=
+  (List.finRange n).countP (fun i => ρ i ≠ none)
+
+/-- Get all assigned variables -/
+def assignedVars (ρ : Restriction n) : List (Fin n) :=
+  (List.finRange n).filter (fun i => ρ i ≠ none)
+
+/-- Check if two restrictions are compatible (agree on common variables) -/
+def compatible (ρ₁ ρ₂ : Restriction n) : Prop :=
+  ∀ i, ρ₁ i ≠ none → ρ₂ i ≠ none → ρ₁ i = ρ₂ i
+
+/-- A restriction is an extension of another if it assigns more variables consistently -/
+def Extension (ρ₁ ρ₂ : Restriction n) : Prop :=
+  ∀ i, ρ₂ i ≠ none → ρ₁ i = ρ₂ i
 
 /-- Update a restriction by setting variable i to value b -/
 def setVar (ρ : Restriction n) (i : Fin n) (b : Bool) : Restriction n :=
   fun j => if j = i then some b else ρ j
+
+/-! ## Properties of setVar -/
 
 /-- Setting a variable gives it that value -/
 @[simp] lemma setVar_same (ρ : Restriction n) (i : Fin n) (b : Bool) :
@@ -213,6 +269,55 @@ lemma setVar_comm (ρ : Restriction n) (i j : Fin n) (bi bj : Bool) (h : i ≠ j
     · subst hj
       simp [hi]
     · simp [hi, hj]
+
+/-! ## Properties of restriction relations -/
+
+/-- setVar extends the original restriction when the variable is unassigned or agrees -/
+lemma setVar_Extension (ρ : Restriction n) (i : Fin n) (b : Bool)
+    (h : ρ i = none ∨ ρ i = some b) :
+    Extension (setVar ρ i b) ρ := by
+  intro j hj
+  by_cases heq : j = i
+  · subst heq
+    cases h with
+    | inl h_none => rw [h_none] at hj; contradiction
+    | inr h_some => unfold setVar; simp; exact h_some.symm
+  · unfold setVar
+    simp [heq]
+
+/-- Compatible restrictions can be extended compatibly -/
+lemma compatible_setVar {ρ₁ ρ₂ : Restriction n} (i : Fin n) (b : Bool)
+    (hc : compatible ρ₁ ρ₂) (h₁ : ρ₁ i = none ∨ ρ₁ i = some b)
+    (h₂ : ρ₂ i = none ∨ ρ₂ i = some b) :
+    compatible (setVar ρ₁ i b) (setVar ρ₂ i b) := by
+  intro j hj₁ hj₂
+  unfold setVar at hj₁ hj₂ ⊢
+  by_cases h : j = i
+  · subst h; simp
+  · simp [h] at hj₁ hj₂ ⊢
+    exact hc j hj₁ hj₂
+
+/-- Empty restriction is compatible with all restrictions -/
+lemma emptyRestriction_compatible (ρ : Restriction n) :
+    compatible (emptyRestriction n) ρ := by
+  intro i hi
+  unfold emptyRestriction at hi
+  contradiction
+
+/-- Extension is reflexive -/
+lemma Extension_refl (ρ : Restriction n) : Extension ρ ρ := by
+  intro i _; rfl
+
+/-- Extension is transitive -/
+lemma Extension_trans {ρ₁ ρ₂ ρ₃ : Restriction n}
+    (h₁₂ : Extension ρ₁ ρ₂) (h₂₃ : Extension ρ₂ ρ₃) :
+    Extension ρ₁ ρ₃ := by
+  intro i h₃
+  have h₂ : ρ₂ i = ρ₃ i := h₂₃ i h₃
+  have h₂' : ρ₂ i ≠ none := by
+    rw [h₂]
+    exact h₃
+  exact (h₁₂ i h₂').trans h₂
 
 /-- Find the first unassigned literal in a term under restriction ρ.
     Returns the index and the literal. -/

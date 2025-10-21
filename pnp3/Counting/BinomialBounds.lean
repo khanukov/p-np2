@@ -108,10 +108,10 @@ lemma one_sub_ratioQ_cast {n k : Nat} (hnpos : 0 < n) (hk : k ≤ n) :
     ((1 : ℚ) - ratioQ k n : ℝ)
         = (1 : ℝ) - (k : ℝ) / n := by simp [ratioQ]
     _ = ((n : ℝ) / n) - (k : ℝ) / n := by
-        have hdiv : (n : ℝ) / n = (1 : ℝ) := by simpa [this] using div_self this
-        simpa [hdiv]
+        have hdiv : (n : ℝ) / n = (1 : ℝ) := by simp [this]; exact div_self this
+        simp [hdiv]
     _ = ((n : ℝ) - k) / n := by ring
-    _ = ((n - k : Nat) : ℝ) / n := by simpa [hsub]
+    _ = ((n - k : Nat) : ℝ) / n := by simp [hsub]
 
 /--
   Auxiliary inequality underlying the entropy bound for binomial coefficients.

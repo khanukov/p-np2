@@ -46,7 +46,8 @@ lean_lib PnP3 where
     `ThirdPartyFacts.BaseSwitching,
     `ThirdPartyFacts.Facts_Switching,
     `ThirdPartyFacts.HastadMSL,
-    `ThirdPartyFacts.LeafBudget
+    `ThirdPartyFacts.LeafBudget,
+    `ThirdPartyFacts.SwitchingLemma
   ]
 
 @[test_driver]

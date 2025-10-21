@@ -5,6 +5,26 @@ This repository hosts the third major iteration of our Lean 4 formalisation eff
 
 Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  Those files remain available under `Pnp2/` as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era.
 
+## Quick Start
+
+```bash
+# One-time setup (choose one):
+./setup.sh             # With sudo access
+./setup-no-sudo.sh     # Without sudo
+
+# Build and test
+./test.sh
+
+# Or manually:
+lake build
+lake test
+```
+
+**New here?** See:
+- [**SETUP_README.md**](SETUP_README.md) - Detailed setup instructions
+- [**DEVELOPMENT.md**](DEVELOPMENT.md) - Development guide and architecture
+- [`pnp3/Docs/PLAN.md`](pnp3/Docs/PLAN.md) - Project roadmap
+
 ## Repository layout
 
 ### Core PNP3 development (`pnp3/`)

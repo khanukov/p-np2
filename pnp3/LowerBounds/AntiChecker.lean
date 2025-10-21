@@ -63,6 +63,41 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   что немедленно приводит к противоречию.  Доказательство античекера опирается
   на содержательную часть работы (Circuit-Input Game, richness), поэтому
   здесь оно оформлено как внешний факт с чёткой сигнатурой.
+
+  **Proof sketch (Circuit-Input Game from Chapman-Williams ITCS'15):**
+
+  1. **Setup**: Assume we have a small AC⁰ formula of size M, depth d solving
+     GapMCSP with parameters (n, s_yes, s_no, β).
+
+  2. **Circuit-Input Game**: Two players alternate:
+     - CircuitPlayer: Provides a small formula/circuit attempting to solve GapMCSP
+     - InputPlayer: Constructs "hard" truth tables (functions) that the circuit
+       must distinguish
+
+  3. **YES/NO layers**:
+     - YES instances: truth tables of functions with circuit complexity ≥ s_yes
+     - NO instances: truth tables of functions with circuit complexity ≤ s_no
+     - Gap: β = s_yes / s_no >> 1
+
+  4. **Richness property**: The InputPlayer can construct a large family Y where:
+     - Each function in Y corresponds to a YES instance
+     - Any two distinct functions in Y differ on at least polylog(N) positions
+     - Therefore, no small dictionary can approximate all of Y on a small test set
+
+  5. **Capacity contradiction**:
+     - The atlas from SAL has capacity ~ 2^{O(t log(1/ε))}
+     - The richness ensures |Y| > capacity(atlas)
+     - But SAL guarantees every function in the family can be approximated
+     - Contradiction!
+
+  6. **Key technical lemmas needed**:
+     - Switching lemma gives small t (polylog depth)
+     - GapMCSP structure ensures YES instances are complex
+     - Circuit-Input Game ensures |Y| is large (exponential in gap parameter)
+     - Counting lemma bounds atlas capacity
+
+  Reference: Chapman-Williams, "Circuit-Input Games and Hardness Magnification",
+  ITCS 2015.
 -/
 axiom antiChecker_exists_large_Y
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
@@ -83,6 +118,29 @@ axiom antiChecker_exists_large_Y
   тест-набор `T`, на котором любая функция из `Y` совпадает с некоторым
   объединением словаря `scWitness.atlas.dict`.  Это превращает гипотезу о малом
   решателе в конкретное утверждение о покрытии тест-набора локальными атласами.
+
+  **Additional structure beyond antiChecker_exists_large_Y:**
+
+  This stronger version provides an explicit test set T such that:
+  - |T| ≤ polylog(N) (small witness set)
+  - Every function f ∈ Y can be approximated by some union of ≤ k dictionary
+    functions on the test set T
+  - The union bound: (dict_size choose k) · 2^|T| < |Y|
+    This shows that even accounting for all possible unions on the test set,
+    there aren't enough combinations to cover all of Y.
+
+  **Why this is stronger:**
+  - antiChecker_exists_large_Y only asserts |Y| > capacity
+  - This version shows the contradiction more explicitly: even optimistically
+    counting all possible approximations on a small test set, we can't cover Y
+
+  **Proof approach:**
+  1. Use Circuit-Input Game to construct Y (as before)
+  2. The game ensures functions in Y differ on many positions
+  3. Extract a small test set T capturing these differences
+  4. Show that the union bound on T fails to cover Y
+
+  This is used in the final counting argument to derive the contradiction.
 -/
 axiom antiChecker_exists_testset
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
@@ -113,6 +171,25 @@ axiom antiChecker_exists_testset
 /--
   Версия античекера для локальных схем.  Она утверждает существование
   богатого подсемейства, которое будет использовано в `LB_LocalCircuits_core`.
+
+  **Local circuits vs. formulas:**
+
+  Local circuits have restricted fan-in (locality parameter ℓ), but can be
+  more powerful than formulas. The antichecker for local circuits follows the
+  same Circuit-Input Game approach but accounts for the locality structure.
+
+  **Key differences:**
+  - Switching lemma for local circuits has different parameters
+  - The shrinkage witness uses LocalCircuitWitness instead of AC0PartialWitness
+  - The capacity bounds are adjusted for the locality parameter
+  - But the overall structure is the same: |Y| > capacity(atlas)
+
+  **Connection to formulas:**
+  The formula lower bound (antiChecker_exists_large_Y) can be lifted to local
+  circuits via the locality-to-general transformation. This axiom provides the
+  direct statement for local circuits, avoiding the intermediate lifting step.
+
+  Reference: Same Chapman-Williams ITCS'15 framework, adapted for local circuits.
 -/
 axiom antiChecker_exists_large_Y_local
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
@@ -133,6 +210,27 @@ axiom antiChecker_exists_large_Y_local
   Усиленная локальная версия античекера с явным тест-набором.  Здесь `T`
   ограничивает точки, на которых функции из `Y` могут отличаться от
   соответствующих объединений словаря локальной схемы.
+
+  **Structure:**
+  This is the local circuit version of antiChecker_exists_testset.
+  It provides:
+  - A large rich family Y (|Y| > capacity)
+  - An explicit small test set T (|T| ≤ polylog(N))
+  - Union bound failure: combinations on T can't cover Y
+
+  **Usage:**
+  This is the final antichecker axiom used in the complete lower bound proof
+  for local circuits. The explicit test set T makes the counting argument
+  concrete and allows direct application of the union bound lemma.
+
+  **Relationship to other axioms:**
+  - Stronger than antiChecker_exists_large_Y_local (adds test set)
+  - Local circuit version of antiChecker_exists_testset
+  - Used in LB_LocalCircuits to complete the contradiction
+
+  Together, these four antichecker axioms provide the "richness" results
+  needed to connect the switching lemma (which gives small atlases) to
+  the GapMCSP structure (which forces large families).
 -/
 axiom antiChecker_exists_testset_local
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :

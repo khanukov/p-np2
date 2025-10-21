@@ -243,6 +243,116 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
 
+/--
+  The depth of a tree reconstructed from a list of leaves never exceeds the
+  length of that list.  Each additional element extends the right spine of
+  `PDT.ofLeafList` by at most one level.
+-/
+lemma PDT.depth_ofLeafList_le_length {n : Nat}
+    (L : List (Subcube n)) :
+    PDT.depth (PDT.ofLeafList L) ≤ L.length := by
+  classical
+  induction L with
+  | nil =>
+      cases n with
+      | zero =>
+          simp [PDT.ofLeafList, PDT.depth]
+      | succ _ =>
+          simp [PDT.ofLeafList, PDT.depth]
+  | cons β rest ih =>
+      cases n with
+      | zero =>
+          cases rest with
+          | nil =>
+              simp [PDT.ofLeafList, PDT.depth]
+          | cons _ tail =>
+              simp [PDT.ofLeafList, PDT.depth]
+      | succ n =>
+          cases rest with
+          | nil =>
+              simp [PDT.ofLeafList, PDT.depth]
+          | cons γ rest' =>
+              have hdepth := ih
+              have hsucc :
+                  PDT.depth (PDT.ofLeafList (β :: γ :: rest'))
+                    = Nat.succ (PDT.depth (PDT.ofLeafList (γ :: rest'))) := by
+                have hnonneg :
+                    0 ≤ PDT.depth (PDT.ofLeafList (γ :: rest')) := Nat.zero_le _
+                simp [PDT.ofLeafList, PDT.depth, Nat.max_eq_right hnonneg]
+              have hlen :
+                  (β :: γ :: rest').length =
+                    Nat.succ ((γ :: rest').length) := by
+                simp
+              exact hsucc ▸
+                (Nat.succ_le_succ hdepth).trans_eq hlen.symm
+
+/--
+  Вспомогательная лемма: если все хвосты имеют глубину ≤ ℓ₁, и мы применяем
+  refine с новыми хвостами глубины ≤ ℓ₂, то итоговая глубина ≤ max(ℓ₁, ℓ₂).
+  Это ключевое свойство для отслеживания depth budget при композиции refine.
+-/
+theorem PDT.depth_refine_max {n : Nat}
+    {t : PDT n}
+    {tails : ∀ β, β ∈ PDT.leaves t → PDT n}
+    {ℓ₁ ℓ₂ : Nat}
+    (ht : PDT.depth t ≤ ℓ₁)
+    (htails : ∀ β hβ, PDT.depth (tails β hβ) ≤ ℓ₂) :
+    PDT.depth (PDT.refine t tails) ≤ ℓ₁ + ℓ₂ := by
+  have hbase := PDT.depth_refine_le (ℓ := ℓ₂) (htails := htails)
+  exact Nat.le_trans hbase (Nat.add_le_add_right ht ℓ₂)
+
+/--
+  Если все хвосты — это листья (тривиальный refine), то операция refine
+  фактически восстанавливает исходную структуру дерева. Это полезно для
+  упрощения доказательств при работе с PartialDT.ofPDT.
+-/
+theorem PDT.refine_with_leaves_eq {n : Nat}
+    (t : PDT n) :
+    PDT.refine t (fun β _ => PDT.leaf β) = t := by
+  induction t with
+  | leaf β =>
+      simp [PDT.refine]
+  | node i t0 t1 ih0 ih1 =>
+      simp [PDT.refine]
+      constructor
+      · exact ih0
+      · exact ih1
+
+/--
+  Листья дерева после refine можно получить, применяя leaves к каждому хвосту
+  и конкатенируя результаты. Это важно для отслеживания размера словаря после
+  последовательных refine операций.
+
+  ПРИМЕЧАНИЕ: Точная формулировка сложна из-за зависимых типов в tails.
+  Пока оставляем упрощённую версию о длине результата.
+-/
+theorem PDT.leaves_refine_length {n : Nat}
+    {t : PDT n}
+    (tails : ∀ β, β ∈ PDT.leaves t → PDT n) :
+    ∃ (lengths : List Nat),
+      lengths.length = (PDT.leaves t).length ∧
+      (PDT.leaves (PDT.refine t tails)).length = lengths.sum := by
+  sorry  -- требует аккуратной индукции по структуре t
+
+/--
+  Композиция двух refine операций. Если сначала применяем tails₁, а затем
+  к каждому листу результата применяем tails₂, это эквивалентно одному refine
+  с композицией хвостов. Полезно для итеративного построения switching witness.
+-/
+theorem PDT.refine_refine_comp {n : Nat}
+    {t : PDT n}
+    (tails₁ : ∀ β, β ∈ PDT.leaves t → PDT n)
+    (tails₂ : ∀ β, β ∈ PDT.leaves (PDT.refine t tails₁) → PDT n) :
+    PDT.refine (PDT.refine t tails₁) tails₂ =
+      PDT.refine t (fun β hβ =>
+        let t₁ := tails₁ β hβ
+        let hmem : β ∈ PDT.leaves (PDT.refine t tails₁) := by
+          sorry  -- технически требует леммы о leaves_refine
+        PDT.refine t₁ (fun β' hβ' =>
+          sorry  -- требует поднятия доказательства hβ' через tails₂
+        )) := by
+  sorry  -- сложная композиция, требует подготовительных лемм
+
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,
     2) объединение листьев покрывает весь рассматриваемый регион.

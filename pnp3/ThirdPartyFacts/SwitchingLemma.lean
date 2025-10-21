@@ -370,6 +370,97 @@ lemma barcodeWeight_empty (n : Nat) (p : Q) :
   rw [decode_empty]
   exact weight_free n p
 
+/-- If a variable is free, assign always succeeds. -/
+lemma assign_some_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
+    (hfree : ρ.mask i = none) :
+    ∃ ρ', ρ.assign i b = some ρ' := by
+  classical
+  unfold Restriction.assign
+  simp [Subcube.assign, hfree]
+
+/-- After assigning a free variable, other free variables remain free
+    if they have distinct indices. -/
+lemma mask_free_after_assign {ρ ρ' : Restriction n} {i j : Fin n} {b : Bool}
+    (hassign : ρ.assign i b = some ρ')
+    (hfree : ρ.mask j = none)
+    (hne : i ≠ j) :
+    ρ'.mask j = none := by
+  classical
+  unfold Restriction.assign at hassign
+  cases h : Subcube.assign ρ.mask i b with
+  | none => simp [h] at hassign
+  | some β =>
+      simp [h] at hassign
+      cases hassign
+      simp [Subcube.assign] at h
+      cases hmask : ρ.mask i with
+      | none =>
+          simp [hmask] at h
+          cases h
+          simp [hfree]
+          intro heq
+          exact hne (heq.symm)
+      | some bOld =>
+          simp [hmask] at h
+          obtain ⟨_, hβ⟩ := h
+          rw [← hβ]
+          exact hfree
+
+/-- Helper lemma: folding assign operations over a list of steps
+    multiplies the weight by ((1-p)/(2p))^(length of list). -/
+lemma foldl_steps_weight (steps : List (TraceStep n)) (ρ : Restriction n) (p : Q)
+    (hp : 0 < p) (hp1 : p < 1)
+    (hnodup : (steps.map (fun s => s.lit.idx)).Nodup)
+    (hfree : ∀ s ∈ steps, ρ.mask s.lit.idx = none) :
+    let ρ_final := steps.foldl (fun ρ step =>
+      match ρ.assign step.lit.idx step.direction with
+      | none => ρ
+      | some ρ' => ρ') ρ
+    Restriction.weight ρ_final p = ((1 - p) / (2 * p))^steps.length * Restriction.weight ρ p := by
+  induction steps generalizing ρ with
+  | nil =>
+      simp [List.foldl]
+  | cons step rest IH =>
+      simp only [List.foldl, List.length]
+      have hfree_step : ρ.mask step.lit.idx = none := by
+        apply hfree
+        simp
+      -- Prove that assign must succeed
+      have ⟨ρ', hassign⟩ := assign_some_of_free (b := step.direction) hfree_step
+      -- Rewrite the match with hassign
+      rw [hassign]
+      -- Apply weight_assign_ratio for this step
+      have hwt := weight_assign_ratio ρ step.lit.idx step.direction p hfree_step hp hp1 ρ' hassign
+      -- Prepare for IH
+      have hnodup_rest : (rest.map (fun s => s.lit.idx)).Nodup := by
+        exact List.Nodup.of_cons hnodup
+      have hstep_notin : step.lit.idx ∉ (rest.map (fun s => s.lit.idx)) := by
+        have := List.nodup_cons.mp hnodup
+        exact this.1
+      have hfree_rest : ∀ s ∈ rest, ρ'.mask s.lit.idx = none := by
+        intro s hs
+        have hfree_s := hfree s (List.mem_cons_of_mem step hs)
+        have hne : step.lit.idx ≠ s.lit.idx := by
+          intro heq
+          have hmem : s.lit.idx ∈ rest.map (fun s => s.lit.idx) := by
+            simp [List.mem_map]
+            exact ⟨s, hs, rfl⟩
+          rw [← heq] at hmem
+          exact absurd hmem hstep_notin
+        exact mask_free_after_assign hassign hfree_s hne
+      -- Apply IH
+      have IH_result := IH ρ' hnodup_rest hfree_rest
+      rw [IH_result]
+      -- Combine the results
+      have hlen : (step :: rest).length = rest.length + 1 := by simp
+      calc ((1 - p) / (2 * p)) ^ rest.length * Restriction.weight ρ' p
+          = ((1 - p) / (2 * p)) ^ rest.length * (((1 - p) / (2 * p)) * Restriction.weight ρ p) := by rw [hwt]
+        _ = ((1 - p) / (2 * p)) ^ rest.length * ((1 - p) / (2 * p)) * Restriction.weight ρ p := by ring
+        _ = ((1 - p) / (2 * p)) ^ (rest.length + 1) * Restriction.weight ρ p := by
+            rw [← pow_succ]
+        _ = ((1 - p) / (2 * p)) ^ (step :: rest).length * Restriction.weight ρ p := by
+            rw [← hlen]
+
 /--
   Оценка веса одного barcode.
   При каждой фиксации переменной вес умножается на (1-p)/(2p).
@@ -381,17 +472,23 @@ lemma barcodeWeight_empty (n : Nat) (p : Q) :
 theorem barcodeWeight_bound
     (p : Q) (k t : Nat)
     (hp : 0 < p) (hp1 : p < 1)
-    (hpk : p = 1 / (4 * k))  -- оптимальный выбор
+    (_hpk : p = 1 / (4 * k))  -- оптимальный выбор
     (bc : Barcode n t) :
     barcodeWeight p bc ≤ p^n * ((1 - p) / (2 * p))^t := by
   unfold barcodeWeight decode
-  -- decode применяет foldl assign к Restriction.free n
-  -- Индукция по bc.steps
-  have hstart : Restriction.weight (Restriction.free n) p = p ^ n :=
-    weight_free n p
-  -- После каждого шага вес умножается на (1-p)/(2p)
-  -- Инвариант: после i шагов вес ≤ p^n * ((1-p)/(2p))^i
-  sorry
+  -- All variables are free at the start
+  have hfree : ∀ s ∈ bc.steps, (Restriction.free n).mask s.lit.idx = none := by
+    intro s _
+    simp
+  -- Apply the helper lemma
+  have hweight := foldl_steps_weight bc.steps (Restriction.free n) p hp hp1 bc.literalsDistinct hfree
+  rw [hweight]
+  -- Substitute the starting weight
+  rw [weight_free]
+  -- Use the length constraint
+  rw [bc.length_eq]
+  -- Use commutativity of multiplication
+  rw [mul_comm]
 
 /--
   Количество различных barcodes длины t с литералами из k-CNF.
@@ -613,7 +710,7 @@ lemma ac0_parameters_t_pos (M k S n d : Nat) (_hS : 0 < S) (_hn : 0 < n) (_hd : 
       apply Nat.le_mul_of_pos_right; exact hfactor
 
 /-- При 0 < p < 1 имеем 0 < 1 - p. -/
-lemma one_sub_p_pos {p : Q} (hp : 0 < p) (hp1 : p < 1) : 0 < 1 - p := by
+lemma one_sub_p_pos {p : Q} (_hp : 0 < p) (hp1 : p < 1) : 0 < 1 - p := by
   linarith
 
 /-- Коэффициент (1-p)/(2p) положителен при 0 < p < 1. -/

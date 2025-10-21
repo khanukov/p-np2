@@ -256,6 +256,23 @@ lemma decode_empty (n : Nat) :
   simp only [List.foldl_nil]
 
 /--
+  Полностью свободное ограничение имеет n свободных переменных.
+-/
+lemma freeCount_free (n : Nat) :
+    (Restriction.free n).freeCount = n := by
+  classical
+  unfold Restriction.freeCount Restriction.freeIndicesList Restriction.free
+  -- Все индексы в finRange n имеют mask = none
+  simp [List.filter_eq_self, List.length_finRange]
+
+/--
+  Пустой barcode имеет n свободных переменных после декодирования.
+-/
+lemma decode_freeCount_empty (n : Nat) :
+    (decode (Barcode.empty n)).freeCount = n := by
+  rw [decode_empty, freeCount_free]
+
+/--
   Количество зафиксированных переменных в decode(barcode) равно длине barcode.
 
   Это следует из literalsDistinct: каждый шаг фиксирует новую переменную.

@@ -80,6 +80,44 @@ lemma alive_iff_exists_star (T : Term n) (ρ : Restriction n) :
     ∃ ℓ ∈ T.lits, ρ ℓ.idx = none ∧ ∀ ℓ' ∈ T.lits, ρ ℓ'.idx ≠ some (!ℓ'.val) := by
   sorry  -- Technical lemma to be proven
 
+/-- If a term is killed, all its literals are falsified -/
+lemma killed_iff_exists_falsified (T : Term n) (ρ : Restriction n) :
+    ofTerm T ρ = TermStatus.killed ↔
+    ∃ ℓ ∈ T.lits, ρ ℓ.idx = some (!ℓ.val) := by
+  unfold ofTerm
+  cases hres : Term.restrict T ρ with
+  | satisfied =>
+    constructor
+    · intro h; contradiction
+    · intro ⟨ℓ, _, _⟩; sorry
+  | falsified =>
+    constructor
+    · intro _; sorry  -- Need to connect restriction result to literal values
+    · intro _; rfl
+  | pending lits =>
+    constructor
+    · intro h; contradiction
+    · intro ⟨ℓ, _, _⟩; sorry
+
+/-- If a term is satisfied, at least one of its literals is satisfied -/
+lemma satisfied_iff_exists_satisfied (T : Term n) (ρ : Restriction n) :
+    ofTerm T ρ = TermStatus.satisfied ↔
+    ∃ ℓ ∈ T.lits, ρ ℓ.idx = some ℓ.val := by
+  unfold ofTerm
+  cases hres : Term.restrict T ρ with
+  | satisfied =>
+    constructor
+    · intro _; sorry  -- Need to connect restriction result to literal values
+    · intro _; rfl
+  | falsified =>
+    constructor
+    · intro h; contradiction
+    · intro ⟨ℓ, _, _⟩; sorry
+  | pending lits =>
+    constructor
+    · intro h; contradiction
+    · intro ⟨ℓ, _, _⟩; sorry
+
 end TermStatus
 
 /-! ## First Alive Term -/
@@ -89,11 +127,32 @@ end TermStatus
 def firstAliveTerm? (F : DNF n) (ρ : Restriction n) : Option Nat :=
   F.terms.findIdx? (fun T => TermStatus.ofTerm T ρ = TermStatus.alive)
 
+/-- If firstAliveTerm? returns some index, that term is alive -/
+lemma firstAliveTerm?_some_alive (F : DNF n) (ρ : Restriction n) (idx : Nat)
+    (h : firstAliveTerm? F ρ = some idx) :
+    idx < F.terms.length ∧
+    ∃ (hlt : idx < F.terms.length),
+      TermStatus.ofTerm (F.terms.get ⟨idx, hlt⟩) ρ = TermStatus.alive := by
+  unfold firstAliveTerm? at h
+  sorry  -- Follows from List.findIdx? properties
+
 /-- If DT(F|ρ) ≥ 1, then there exists an alive term -/
 lemma firstAliveTerm?_some_of_DT_ge_one (F : DNF n) (ρ : Restriction n)
     (h : ∃ t : PDT n, t.depth ≥ 1 ∧ ∀ x, Core.mem ρ x → DNF.eval F x = true) :
     firstAliveTerm? F ρ ≠ none := by
   sorry  -- Key lemma: if DT ≥ 1, must have an alive term
+
+/-- Count alive terms in a DNF formula under a restriction -/
+def countAliveTerms (F : DNF n) (ρ : Restriction n) : Nat :=
+  F.terms.countP (fun T => TermStatus.ofTerm T ρ = TermStatus.alive)
+
+/-- If there are no alive terms, the formula is decided -/
+lemma no_alive_terms_decided (F : DNF n) (ρ : Restriction n)
+    (h : countAliveTerms F ρ = 0) :
+    ∀ x, Core.mem ρ x → (DNF.eval F x = true ∨ DNF.eval F x = false) := by
+  intro x _
+  -- All terms are either killed or satisfied, so formula has definite value
+  sorry
 
 /-! ## Barcode: Canonical Failure Trace -/
 
@@ -116,6 +175,44 @@ def Barcode (n t : Nat) := { steps : List (BarcodeStep n) // steps.length = t }
 /-- Update a restriction by setting variable i to value b -/
 def setVar (ρ : Restriction n) (i : Fin n) (b : Bool) : Restriction n :=
   fun j => if j = i then some b else ρ j
+
+/-- Setting a variable gives it that value -/
+@[simp] lemma setVar_same (ρ : Restriction n) (i : Fin n) (b : Bool) :
+    setVar ρ i b i = some b := by
+  simp [setVar]
+
+/-- Setting a variable doesn't affect other variables -/
+@[simp] lemma setVar_other (ρ : Restriction n) (i j : Fin n) (b : Bool) (h : j ≠ i) :
+    setVar ρ i b j = ρ j := by
+  unfold setVar
+  split
+  · rename_i heq
+    subst heq
+    contradiction
+  · rfl
+
+/-- Setting a variable twice keeps the last value -/
+@[simp] lemma setVar_setVar_same (ρ : Restriction n) (i : Fin n) (b₁ b₂ : Bool) :
+    setVar (setVar ρ i b₁) i b₂ = setVar ρ i b₂ := by
+  ext j
+  unfold setVar
+  by_cases h : j = i
+  · subst h
+    simp
+  · simp [h]
+
+/-- Setting different variables commutes -/
+lemma setVar_comm (ρ : Restriction n) (i j : Fin n) (bi bj : Bool) (h : i ≠ j) :
+    setVar (setVar ρ i bi) j bj = setVar (setVar ρ j bj) i bi := by
+  ext k
+  unfold setVar
+  by_cases hi : k = i
+  · subst hi
+    simp [h, Ne.symm h]
+  · by_cases hj : k = j
+    · subst hj
+      simp [hi]
+    · simp [hi, hj]
 
 /-- Find the first unassigned literal in a term under restriction ρ.
     Returns the index and the literal. -/

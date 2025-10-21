@@ -410,7 +410,30 @@ noncomputable def encodeRestriction (F : DNF n) (k t : Nat)
                     step :: buildSteps ρ_next s
 
   let steps := buildSteps ρ t
-  -- Package as Barcode (need proof that length = t, use sorry for now)
+  -- Package as Barcode (need proof that length = t)
+  -- **CRITICAL ISSUE**: This proof is currently missing!
+  --
+  -- What needs to be proven:
+  --   If hbad holds (DT(F|ρ) ≥ t), then buildSteps ρ t returns a list of length exactly t.
+  --
+  -- Why this is non-trivial:
+  --   buildSteps can return [] prematurely if:
+  --   1. No alive term exists (line 390)
+  --   2. getTerm? fails (line 394)
+  --   3. No unassigned literal in alive term (line 398)
+  --
+  -- What needs to be shown:
+  --   The hypothesis hbad guarantees that at each step i < t, there exists:
+  --   - At least one alive term in F under ρ_i (the restriction after i steps)
+  --   - That alive term has at least one unassigned literal
+  --
+  -- Key lemma needed:
+  --   If DT(F|ρ) ≥ t, then DT(F|ρ') ≥ t-1 where ρ' is ρ after one encoding step.
+  --   Base case: If DT(F|ρ) ≥ 1, then there exists an alive term (see line 173).
+  --
+  -- Current status:
+  --   This is the main mathematical gap in Step A.
+  --   Either prove this lemma, or find a counterexample showing the algorithm fails.
   ⟨steps, by sorry⟩
 
 /-- Decode a barcode back to a restriction.

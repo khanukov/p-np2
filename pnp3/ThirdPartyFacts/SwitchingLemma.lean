@@ -198,10 +198,32 @@ lemma firstAliveTerm?_some_of_DT_ge_one (F : DNF n) (ρ : Restriction n)
 def countAliveTerms (F : DNF n) (ρ : Restriction n) : Nat :=
   F.terms.countP (fun T => TermStatus.ofTerm T ρ = TermStatus.alive)
 
+/-- countAliveTerms is bounded by the number of terms -/
+lemma countAliveTerms_le (F : DNF n) (ρ : Restriction n) :
+    countAliveTerms F ρ ≤ F.terms.length := by
+  unfold countAliveTerms
+  -- countP counts elements satisfying a predicate, so it's ≤ length
+  -- This is a general property: counting elements ≤ total elements
+  sorry  -- Should be a standard library lemma
+
+/-- If countAliveTerms is 0, firstAliveTerm? returns none -/
+lemma firstAliveTerm?_none_of_countAliveTerms_zero (F : DNF n) (ρ : Restriction n)
+    (h : countAliveTerms F ρ = 0) :
+    firstAliveTerm? F ρ = none := by
+  unfold firstAliveTerm? countAliveTerms at *
+  -- If countP is 0, then no element satisfies the predicate
+  -- So findIdx? should return none
+  cases hf : F.terms.findIdx? (fun T => TermStatus.ofTerm T ρ = TermStatus.alive) with
+  | none => rfl
+  | some idx =>
+      -- This is a contradiction: if findIdx? found something,
+      -- then countP should be > 0
+      sorry  -- Need library lemma about countP and findIdx?
+
 /-- If there are no alive terms, the formula is decided.
     Note: This is trivially true since DNF.eval returns Bool. -/
 lemma no_alive_terms_decided (F : DNF n) (ρ : Restriction n)
-    (h : countAliveTerms F ρ = 0) :
+    (_ : countAliveTerms F ρ = 0) :
     ∀ x, Core.mem ρ x → (DNF.eval F x = true ∨ DNF.eval F x = false) := by
   intro x _
   -- DNF.eval always returns a Bool, which is either true or false
@@ -341,7 +363,7 @@ lemma setVar_comm (ρ : Restriction n) (i j : Fin n) (bi bj : Bool) (h : i ≠ j
   unfold setVar
   by_cases hi : k = i
   · subst hi
-    simp [h, Ne.symm h]
+    simp [h]
   · by_cases hj : k = j
     · subst hj
       simp [hi]
@@ -459,9 +481,56 @@ def firstUnassignedLit? (T : Term n) (ρ : Restriction n) :
   T.lits.findIdx? (fun ℓ => ρ ℓ.idx = none)
     |>.bind (fun idx => T.lits[idx]?.map (fun ℓ => (idx, ℓ)))
 
+/-- If firstUnassignedLit? returns some pair, the literal is unassigned -/
+lemma firstUnassignedLit?_unassigned (T : Term n) (ρ : Restriction n)
+    (litIdx : Nat) (ℓ : AC0.Literal n)
+    (h : firstUnassignedLit? T ρ = some (litIdx, ℓ)) :
+    ρ ℓ.idx = none := by
+  unfold firstUnassignedLit? at h
+  cases hfind : T.lits.findIdx? (fun ℓ => ρ ℓ.idx = none) with
+  | none =>
+      simp [hfind] at h
+  | some idx =>
+      simp [hfind] at h
+      cases hget : T.lits[idx]? with
+      | none =>
+          simp [hget] at h
+      | some ℓ' =>
+          simp [hget] at h
+          -- h is now (idx, ℓ') = (litIdx, ℓ)
+          -- So idx = litIdx and ℓ' = ℓ
+          cases h
+          -- Now we need to show that ρ ℓ'.idx = none
+          -- This should follow from the fact that findIdx? found idx
+          -- where the predicate is (fun ℓ => ρ ℓ.idx = none)
+          sorry  -- Need List.findIdx? lemma about predicate holding
+
 /-- Helper: given a term index and the DNF, get the term (with bounds check) -/
 def getTerm? (F : DNF n) (idx : Nat) : Option (Term n) :=
   F.terms[idx]?
+
+/-- getTerm? succeeds iff index is in bounds -/
+lemma getTerm?_eq_some_iff (F : DNF n) (idx : Nat) :
+    (∃ T, getTerm? F idx = some T) ↔ idx < F.terms.length := by
+  constructor
+  · intro ⟨T, h⟩
+    unfold getTerm? at h
+    -- If getElem? returns some, the index must be in bounds
+    by_contra hnot
+    simp at hnot
+    -- If idx ≥ length, then getElem? returns none
+    have : idx ≥ F.terms.length := hnot
+    simp [this] at h
+  · intro h
+    use F.terms[idx]
+    unfold getTerm?
+    simp [List.getElem?_eq_getElem h]
+
+/-- getTerm? returns the correct element -/
+lemma getTerm?_eq_some (F : DNF n) (idx : Nat) (hlt : idx < F.terms.length) :
+    getTerm? F idx = some (F.terms[idx]) := by
+  unfold getTerm?
+  simp [List.getElem?_eq_getElem hlt]
 
 /-- If firstAliveTerm? returns some idx, then getTerm? succeeds at that index -/
 lemma getTerm?_of_firstAliveTerm? (F : DNF n) (ρ : Restriction n) (idx : Nat)

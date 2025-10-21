@@ -512,14 +512,14 @@ lemma coveredB_eq_of_mem_equiv {n : Nat}
         · have hx := (covered_iff (Rset := R₁) x).mpr hb
           exact (hcov hx).elim
         · cases hcase : coveredB R₁ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       have hfalse₂ : coveredB R₂ x = false := by
         by_cases hb : coveredB R₂ x = true
         · have hx := (covered_iff (Rset := R₂) x).mpr hb
           exact (hcov' hx).elim
         · cases hcase : coveredB R₂ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       simp [hfalse₁, hfalse₂]
 
@@ -724,7 +724,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
         have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
           simpa [h] using hspec
         exact Option.some.inj this
-      simp [decodeFun, h, hne, hval]
+      simp [decodeFun, h]
     let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=
       fun f =>
         let g := decodeFun f
@@ -1097,7 +1097,7 @@ lemma override_mem (ρ : Restriction n) (x : BitVec n) :
       have hb : b' = b := by
         have hsome : some b' = some b := by simpa [hρ] using hβ
         exact Option.some.inj hsome
-      simp [hρ, hb]
+      simp [hb]
 
 /-- Если `x` удовлетворяет ограничению, `override` не меняет вектор. -/
 lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
@@ -1239,7 +1239,7 @@ lemma unassign_assign_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
       simpa [if_pos rfl] using hmask_j
     have hgoal : (if i = i then none else mask' i) = mask i := by
       have hmask_i_free : mask i = none := hmask_i
-      simp [hβ, hmask_i_free]
+      simp [hmask_i_free]
     exact hgoal
   · have hβ : mask' j = mask j := by
       have hIf : (if j = i then some b else mask j) = mask j := by

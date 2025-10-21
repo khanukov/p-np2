@@ -628,6 +628,18 @@ lemma barcodeWeight_nonneg' {p : Q} (bc : Barcode n t)
     0 ≤ barcodeWeight p bc :=
   barcodeWeight_nonneg bc p hp hp1
 
+/-- Вес пустого barcode положителен при p > 0. -/
+lemma barcodeWeight_empty_pos (n : Nat) (p : Q) (hp : 0 < p) :
+    0 < barcodeWeight p (Barcode.empty n) := by
+  rw [barcodeWeight_empty]
+  exact pow_pos hp n
+
+/-- Вес свободного restriction положителен при p > 0. -/
+lemma weight_free_pos (n : Nat) (p : Q) (hp : 0 < p) :
+    0 < Restriction.weight (Restriction.free n) p := by
+  rw [weight_free]
+  exact pow_pos hp n
+
 /--
   При выбранных параметрах вероятность провала достаточно мала.
 

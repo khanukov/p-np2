@@ -1524,7 +1524,7 @@ lemma isConstantOn_iff {ρ : Restriction n} {f : BitVec n → Bool} :
       (∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y) := by
   classical
   unfold isConstantOn
-  simp [decide_eq_true_iff]
+  simp
 
 lemma isConstantOn_of_no_free (ρ : Restriction n) (f : BitVec n → Bool)
     (hfree : ∀ i : Fin n, ρ.mask i ≠ none) : ρ.isConstantOn f = true := by
@@ -1718,7 +1718,7 @@ lemma weight_nonneg (ρ : Restriction n) {p : Q}
   intro i _
   cases hmask : ρ.mask i with
   | none =>
-      simp [hmask, hp₀]
+      simp
   | some _ =>
       have hsub : 0 ≤ (1 - p) := sub_nonneg.mpr hp₁
       have : 0 ≤ (1 - p) / 2 := by
@@ -1867,7 +1867,7 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
       _ = (p + (1 - p)) *
               (ρ.weight p + (L'.map fun ρ => ρ.weight p).sum) := hsum_factor
       _ = (p + (1 - p)) * ((ρ :: L').map (fun ρ => ρ.weight p)).sum := by
-                simp [hmap_cons, add_comm]
+                simp only [hmap_cons]
 
 lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p = (p + (1 - p)) * totalWeight n p := by
@@ -1918,9 +1918,9 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
         _ = (p + (1 - p)) * (p + (1 - p)) ^ n := by
                 rw [ih]
         _ = (p + (1 - p)) ^ n * (p + (1 - p)) := by
-                simp [mul_comm]
+                simp only [mul_comm]
         _ = (p + (1 - p)) ^ Nat.succ n := by
-                simp [pow_succ, (pow_succ (p + (1 - p)) n).symm]
+                simp only [(pow_succ (p + (1 - p)) n).symm]
 
 /-- Полная масса распределения равна 1: `𝓡_p` корректно нормирована. -/
 lemma totalWeight_eq_one (n : Nat) (p : Q) : totalWeight n p = 1 := by
@@ -1974,7 +1974,7 @@ lemma sum_weights_mask_none_zero (n : Nat) (p : Q) :
             _ = cons none ρ :: List.filter P (L.flatMap g) := by
                     simp
             _ = cons none ρ :: L.map (cons none) := by
-                    simp [P, g, ih]
+                    simp only [ih]
             _ = List.map (cons none) (ρ :: L) := by
                     simp
     simpa using haux (enumerate n)
@@ -2064,7 +2064,7 @@ lemma sum_weights_mask_none (n : Nat) :
       cases i using Fin.cases with
       | zero =>
           -- Единственный индекс — нулевой, используем предыдущую лемму.
-          simp [sum_weights_mask_none_zero (n := 0) (p := p)]
+          exact sum_weights_mask_none_zero (n := 0) (p := p)
       | succ j => exact False.elim (Fin.elim0 j)
   | succ n ih =>
       intro i p
@@ -2251,7 +2251,7 @@ lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
           have hb_eq : b = b' := Option.some.inj hb_eq'
           have hbne : b ≠ ℓ.value := by
             simpa [hb_eq] using hbneq
-          simpa [hmask, hbne]
+          simp [hmask, hbne]
 
 /--
 Если ограничение объявило литерал удовлетворённым, то после `override` он
@@ -2320,7 +2320,7 @@ lemma freeLiterals_eq_nil_iff {n : Nat} {ρ : Restriction n}
   · intro hnone
     classical
     cases hfree : ρ.freeLiterals C with
-    | nil => simpa [hfree]
+    | nil => simp [hfree]
     | cons ℓ₀ free =>
         have heq := congrArg (fun l => ℓ₀ ∈ l) hfree.symm
         have hmem : ℓ₀ ∈ ρ.freeLiterals C :=
@@ -3038,7 +3038,7 @@ noncomputable def finalRestriction :
     {ρ : Restriction n} → {t : Nat} →
       CanonicalTrace (F := F) ρ t → Restriction n
   | ρ, _, CanonicalTrace.nil => ρ
-  | ρ, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
+  | _, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
 
 /--
 Список индексов переменных, которые фиксируются вдоль пути, в том порядке, в
@@ -3251,7 +3251,7 @@ lemma failureProbability_eq_failureSet_sum
               (fun ρ => ρ.weight p)).sum := by
             simpa using hfilter
     _ = ((F.failureSet t).map fun ρ => ρ.weight p).sum := by
-            simpa [failureSet]
+            simp [failureSet]
 
 /--
 Вероятность неудачи не превосходит полной массы распределения случайных

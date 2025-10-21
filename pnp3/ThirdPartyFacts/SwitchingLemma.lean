@@ -118,6 +118,35 @@ lemma satisfied_iff_exists_satisfied (T : Term n) (ρ : Restriction n) :
     · intro h; contradiction
     · intro ⟨ℓ, _, _⟩; sorry
 
+/-- Empty term (no literals) is always satisfied -/
+lemma ofTerm_nil (ρ : Restriction n) :
+    ofTerm ⟨[]⟩ ρ = TermStatus.satisfied := by
+  unfold ofTerm
+  -- Term.restrict for empty list should give satisfied
+  rfl
+
+/-- If a term has just one literal that is falsified, the term is killed -/
+lemma ofTerm_singleton_falsified (ℓ : AC0.Literal n) (ρ : Restriction n)
+    (h : ρ ℓ.idx = some (!ℓ.val)) :
+    ofTerm ⟨[ℓ]⟩ ρ = TermStatus.killed := by
+  unfold ofTerm
+  -- Need to reason about Term.restrict, but it's defined via private restrictList
+  sorry
+
+/-- If a term has just one literal that is satisfied, the term is satisfied -/
+lemma ofTerm_singleton_satisfied (ℓ : AC0.Literal n) (ρ : Restriction n)
+    (h : ρ ℓ.idx = some ℓ.val) :
+    ofTerm ⟨[ℓ]⟩ ρ = TermStatus.satisfied := by
+  unfold ofTerm
+  sorry
+
+/-- If a term has just one literal that is unassigned, the term is alive -/
+lemma ofTerm_singleton_unassigned (ℓ : AC0.Literal n) (ρ : Restriction n)
+    (h : ρ ℓ.idx = none) :
+    ofTerm ⟨[ℓ]⟩ ρ = TermStatus.alive := by
+  unfold ofTerm
+  sorry
+
 end TermStatus
 
 /-! ## First Alive Term -/
@@ -134,7 +163,8 @@ lemma firstAliveTerm?_some_alive (F : DNF n) (ρ : Restriction n) (idx : Nat)
     ∃ (hlt : idx < F.terms.length),
       TermStatus.ofTerm (F.terms.get ⟨idx, hlt⟩) ρ = TermStatus.alive := by
   unfold firstAliveTerm? at h
-  sorry  -- Follows from List.findIdx? properties
+  -- List.findIdx? returns some idx means the predicate holds at idx
+  sorry -- Need lemma about List.findIdx?
 
 /-- If DT(F|ρ) ≥ 1, then there exists an alive term -/
 lemma firstAliveTerm?_some_of_DT_ge_one (F : DNF n) (ρ : Restriction n)
@@ -146,13 +176,14 @@ lemma firstAliveTerm?_some_of_DT_ge_one (F : DNF n) (ρ : Restriction n)
 def countAliveTerms (F : DNF n) (ρ : Restriction n) : Nat :=
   F.terms.countP (fun T => TermStatus.ofTerm T ρ = TermStatus.alive)
 
-/-- If there are no alive terms, the formula is decided -/
+/-- If there are no alive terms, the formula is decided.
+    Note: This is trivially true since DNF.eval returns Bool. -/
 lemma no_alive_terms_decided (F : DNF n) (ρ : Restriction n)
     (h : countAliveTerms F ρ = 0) :
     ∀ x, Core.mem ρ x → (DNF.eval F x = true ∨ DNF.eval F x = false) := by
   intro x _
-  -- All terms are either killed or satisfied, so formula has definite value
-  sorry
+  -- DNF.eval always returns a Bool, which is either true or false
+  cases DNF.eval F x <;> simp
 
 /-! ## Barcode: Canonical Failure Trace -/
 

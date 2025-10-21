@@ -243,6 +243,10 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
 
+/-
+  TODO: This lemma requires PDT.ofLeafList which is not yet implemented.
+  Commenting out for now.
+
 /--
   The depth of a tree reconstructed from a list of leaves never exceeds the
   length of that list.  Each additional element extends the right spine of
@@ -285,6 +289,7 @@ lemma PDT.depth_ofLeafList_le_length {n : Nat}
                 simp
               exact hsucc ▸
                 (Nat.succ_le_succ hdepth).trans_eq hlen.symm
+-/
 
 /--
   Вспомогательная лемма: если все хвосты имеют глубину ≤ ℓ₁, и мы применяем

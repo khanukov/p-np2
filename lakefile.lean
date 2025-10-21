@@ -41,6 +41,7 @@ lean_lib PnP3 where
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
     `ThirdPartyFacts.BaseSwitching,
+    `ThirdPartyFacts.SwitchingLemma,
     `ThirdPartyFacts.Facts_Switching,
     `ThirdPartyFacts.LeafBudget
   ]
@@ -54,5 +55,6 @@ lean_lib PnP3Tests where
     `LB_Smoke_Scenario,
     `LB_Core_Contradiction,
     `Magnification_Core_Contradiction,
-    `Switching_Basics
+    `Switching_Basics,
+    `SwitchingLemma_Test
   ]

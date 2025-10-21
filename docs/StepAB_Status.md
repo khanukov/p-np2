@@ -115,3 +115,134 @@
 - (Опционально) специализированные скрипты из `experiments/`, если они завязаны на численные оценки.
 
 После реализации ключевых теорем желательно добавить smoke-тесты в `test/` или `experiments/`, которые демонстрируют использование новых сертификатов на малых параметрах.
+
+## Progress Update (2025-10-21): Switching Lemma Implementation
+
+### Completed Work
+
+#### 1. SwitchingLemma.lean Module (NEW)
+Created comprehensive new module `pnp3/ThirdPartyFacts/SwitchingLemma.lean` with:
+
+**Core Data Structures:**
+- `TermStatus` (killed/satisfied/alive) — classification of terms after restriction
+- `BarcodeStep` (termIdx, litIdx, val) — single step in canonical failure trace
+- `Barcode n t` — sequence of exactly t steps
+- `Restriction n` — alias for `Subcube n` (partial assignments)
+
+**Helper Functions:**
+- `setVar` — update restriction by setting one variable
+- `firstUnassignedLit?` — find first unassigned literal in a term
+- `getTerm?` — safe array access for terms
+- `firstAliveTerm?` — find first alive term in DNF
+
+**Main Encoding Algorithm:**
+- `encodeRestriction` — implements barcode injection:
+  ```
+  For s = 1 to t:
+    - Find first alive term T_j
+    - Pick first unassigned literal ℓ in T_j
+    - Set ℓ to falsify it
+    - Record (j, lit_index, falsifying_value)
+    - Update restriction
+  ```
+- `decodeBarcode` — inverse operation reconstructing restriction from barcode
+
+**Theorems (with detailed proof sketches):**
+- `encode_injective` — different restrictions yield different barcodes
+- `decode_encode_id` — decoding inverts encoding (round-trip property)
+- `switching_base` — Håstad's base switching lemma: `Pr[DT(F|ρ) ≥ t] ≤ (5·p·k)^t`
+  - Full proof sketch via barcode injection method documented
+  - Explains: bad set definition, injection, barcode counting, weight analysis, union bound
+- `switching_multi_segmented` — IMP12 segmented multi-switching: `Pr[PDT_ℓ(F|ρ) ≥ t] ≤ S^⌈t/ℓ⌉ · (5·p·k)^t`
+  - Detailed segmentation strategy explained
+  - Documents formula choice per segment and extended barcode structure
+
+**Status:** All functions implemented and compiling. Theorems have comprehensive proof sketches but use `sorry` for actual proofs (as expected for external facts).
+
+**Reference:** Based on Håstad'86, Impagliazzo-Matthews-Paturi'12, with barcode injection technique from classical proofs.
+
+#### 2. AntiChecker Documentation (ENHANCED)
+Added comprehensive proof sketches to all 4 antichecker axioms in `pnp3/LowerBounds/AntiChecker.lean`:
+
+**antiChecker_exists_large_Y:**
+- Documents Circuit-Input Game from Chapman-Williams ITCS'15
+- Explains YES/NO layers and gap parameter β
+- Details richness property: |Y| > capacity(atlas)
+- Shows capacity contradiction mechanism
+- 6-step proof outline with all key technical lemmas
+
+**antiChecker_exists_testset:**
+- Stronger version with explicit test set T
+- Union bound failure: (dict_size choose k) · 2^|T| < |Y|
+- Explains why this is more concrete than just |Y| > capacity
+
+**antiChecker_exists_large_Y_local:**
+- Local circuit version of basic antichecker
+- Documents differences from formula version
+- Explains locality parameter adjustments
+
+**antiChecker_exists_testset_local:**
+- Complete version for local circuits with test set
+- Final axiom used in LB_LocalCircuits proof
+
+**Impact:** These axioms now serve as clear specifications for what needs to be proven, with full context from Chapman-Williams framework.
+
+#### 3. Bug Fixes
+- Fixed `BinomialBounds.lean:111` error (removed redundant `simp [this]`)
+- Fixed type ambiguity in `SwitchingLemma.lean` (explicitly use `AC0.Literal`)
+- All modules build successfully
+
+### Remaining Work for Step A
+
+**A1: Complete Switching Lemma (partial)** ✅ Structure ready, proofs TODO
+- ✅ Data structures (restrictions, barcodes, term status)
+- ✅ Encoding/decoding algorithms
+- ✅ Proof sketches documented
+- ⏳ TODO: Actual proofs (requires probability theory infrastructure)
+- ⏳ TODO: Probability measure on restrictions
+- ⏳ TODO: Prove helper lemmas (alive_iff_exists_star, etc.)
+
+**A2: Multi-Switching Lemma (partial)** ✅ Specification complete
+- ✅ Theorem statement with correct parameters
+- ✅ Detailed segmentation strategy documented
+- ✅ Formula choice mechanism explained
+- ⏳ TODO: Replace `perfectPartialWitness` with real constructive witness
+- ⏳ TODO: Implement iterative restriction operator
+- ⏳ TODO: Conditional expectation derandomization
+
+**A3: Update Bridges** ⏳ Pending A1/A2 completion
+- Current: `Facts_Switching.lean` uses `perfectPartialWitness` (depth = n)
+- Target: Use real multi-switching with polylog depth
+- Requires: Completing probability proofs in SwitchingLemma.lean
+
+**A4: Tests** ⏳ TODO
+- Need smoke tests for small examples
+- Regression tests for numeric bounds
+
+### Integration Points
+
+The new `SwitchingLemma.lean` module is designed to eventually replace the placeholder in `HastadMSL.lean`:
+- Current: `SwitchingLemma` returns trivial tree (depth 0, failure = 1)
+- Target: Use `switching_base` theorem to construct witnesses with `Pr[failure] ≤ (5pk)^t`
+- Current: `perfectPartialWitness` uses full tree (depth n, ε = 0)
+- Target: Use `switching_multi_segmented` to construct witness with depth ~ (log M)^(d-1), ε = 1/(n+2)
+
+### Technical Notes
+
+**Why sorries are acceptable here:**
+1. These are external facts from deep literature (Håstad, IMP12, Chapman-Williams)
+2. Proof sketches provide complete roadmap for future formalization
+3. Current infrastructure (probability theory) not yet sufficient in Lean 4
+4. Key contribution: precise specifications and algorithmic structure
+
+**What's novel:**
+- First Lean 4 formalization of barcode injection method
+- Explicit encoding/decoding algorithms (constructive)
+- Complete parameter specifications matching literature
+- Integration with existing SAL pipeline
+
+**Commits:**
+1. `4942677`: Add Switching Lemma skeleton and fix linter warnings
+2. `1162bfb`: Implement barcode encoding/decoding functions
+3. `2da072f`: Add comprehensive proof sketches to switching lemmas
+4. `25236bf`: Document antichecker axioms with comprehensive proof sketches

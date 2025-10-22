@@ -249,6 +249,20 @@ lemma encodeAux_length_ge
   sorry
 
 /--
+  Helper: если переменная i зафиксирована (mask i = some b), то она не появится в encodeAux.
+
+  Интуитивно: firstPendingClause выбирает только свободные переменные (mask = none).
+-/
+lemma encodeAux_not_mem_of_fixed
+    (F : CNF n w) (ρ : Restriction n) (i : Fin n) (b : Bool) (fuel : Nat)
+    (hfixed : ρ.mask i = some b) :
+    i ∉ (encodeAux F ρ fuel).map (fun s => s.lit.idx) := by
+  -- Proof by induction on fuel
+  -- Key insight: firstPendingClause.witness.free only contains unassigned literals
+  -- If ρ.mask i = some b, then i cannot be in witness.free
+  sorry
+
+/--
   Все индексы литералов в encodeAux различны (no duplicates).
 
   Интуитивно: каждый шаг фиксирует переменную, которая была свободна.
@@ -259,15 +273,10 @@ lemma encodeAux_literalsDistinct
     (F : CNF n w) (ρ : Restriction n) (fuel : Nat) :
     ((encodeAux F ρ fuel).map (fun s => s.lit.idx)).Nodup := by
   -- Proof strategy:
-  -- Induction on fuel. Base case (fuel = 0) is trivial (empty list).
-  -- Inductive step: Show that the new literal idx is not in the tail,
-  -- because after assignment the variable becomes fixed and won't appear
-  -- in pending clauses of the recursive call.
-  --
-  -- Key lemmas needed:
-  -- - After ρ.assign i b, the variable i is no longer free
-  -- - firstPendingClause only selects from free variables
-  -- - Therefore recursive encodeAux calls won't use i
+  -- Induction on fuel. Base case trivial.
+  -- Inductive step: after assign, the variable becomes fixed,
+  -- so by encodeAux_not_mem_of_fixed it won't appear in recursive call.
+  -- Combined with IH gives Nodup for the cons.
   sorry
 
 noncomputable def encode

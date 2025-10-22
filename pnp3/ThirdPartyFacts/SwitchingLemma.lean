@@ -309,7 +309,24 @@ theorem decode_encode_id
     (F : CNF n w) (ρ : Restriction n) (t : Nat)
     (hdeep : hasCanonicalDTDepthGE F ρ t) :
     decode (encode F ρ t hdeep) = ρ := by
-  sorry  -- индукция по шагам трассы
+  -- Proof strategy:
+  -- This theorem is critical for injectivity of the barcode encoding.
+  --
+  -- Potential issue: decode starts from Restriction.free n, but encode
+  -- can start from arbitrary ρ. For the round-trip property to hold,
+  -- either:
+  -- 1. ρ must equal Restriction.free n (restrict theorem), OR
+  -- 2. decode should be modified to start from ρ, OR
+  -- 3. The barcode encoding captures enough information to reconstruct ρ
+  --    from the free restriction
+  --
+  -- Assuming (3), the proof would proceed by:
+  -- 1. Induction on the trace steps in the barcode
+  -- 2. Show that each encoded step corresponds to a variable fixed in ρ
+  -- 3. Use foldl_steps properties to show decode reconstructs exactly ρ
+  -- 4. Key lemma: applying assignments from barcode to Restriction.free n
+  --    yields the same result as the original ρ
+  sorry
 
 /-!
   ## Section 4: Weight Bounds

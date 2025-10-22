@@ -34,6 +34,7 @@ lean_lib PnP3 where
     `Models.Model_SparseNP,
     `LowerBounds.LB_Formulas,
     `LowerBounds.AntiChecker,
+    `LowerBounds.AntiChecker_Correctness_Spec,
     `LowerBounds.LB_Formulas_Core,
     `LowerBounds.LB_LocalCircuits,
     `LowerBounds.LB_GeneralFromLocal,
@@ -44,6 +45,7 @@ lean_lib PnP3 where
     `Magnification.FinalResult,
     `ThirdPartyFacts.BaseSwitching,
     `ThirdPartyFacts.Facts_Switching,
+    `ThirdPartyFacts.Depth2_Switching_Spec,
     `ThirdPartyFacts.LeafBudget
   ]
 

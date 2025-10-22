@@ -93,7 +93,17 @@ def hasCanonicalDTDepthGE (F : CNF n w) (ρ : Restriction n) (t : Nat) : Prop :=
 lemma canonicalDTDepth_mono (F : CNF n w) (ρ : Restriction n)
     (fuel₁ fuel₂ : Nat) (h : fuel₁ ≤ fuel₂) :
     canonicalDTDepth F ρ fuel₁ ≤ canonicalDTDepth F ρ fuel₂ := by
-  sorry  -- Требуется детальная работа с разворачиванием match-выражений
+  -- Proof strategy:
+  -- Induction on fuel₁. Base case (fuel₁ = 0) is trivial.
+  -- Inductive step: unfold canonicalDTDepth for both fuel₁' and fuel₂',
+  -- case-split on firstPendingClause? and the two assignments,
+  -- then apply IH to show monotonicity in each branch.
+  --
+  -- Technical challenge: After unfolding and case-splitting,
+  -- the match expressions need to be rewritten using the case hypotheses
+  -- before omega can handle the arithmetic. This requires careful handling
+  -- of dependent pattern matching.
+  sorry
 
 /-- Если при fuel достигается глубина t, то и при большем fuel тоже. -/
 lemma hasCanonicalDTDepthGE_mono (F : CNF n w) (ρ : Restriction n) (t : Nat)

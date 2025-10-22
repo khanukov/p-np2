@@ -462,17 +462,12 @@ lemma foldl_steps_weight (steps : List (TraceStep n)) (ρ : Restriction n) (p : 
             rw [← hlen]
 
 /--
-  Оценка веса одного barcode.
+  Оценка веса одного barcode (общая версия для любого p).
   При каждой фиксации переменной вес умножается на (1-p)/(2p).
-
-  Доказательство: decode начинает с free restriction (вес p^n) и применяет
-  t операций assign. Каждая операция умножает вес на (1-p)/(2p).
-  Итого: p^n * ((1-p)/(2p))^t.
 -/
-theorem barcodeWeight_bound
-    (p : Q) (k t : Nat)
+theorem barcodeWeight_bound_general
+    (p : Q) (t : Nat)
     (hp : 0 < p) (hp1 : p < 1)
-    (_hpk : p = 1 / (4 * k))  -- оптимальный выбор
     (bc : Barcode n t) :
     barcodeWeight p bc ≤ p^n * ((1 - p) / (2 * p))^t := by
   unfold barcodeWeight decode
@@ -489,6 +484,22 @@ theorem barcodeWeight_bound
   rw [bc.length_eq]
   -- Use commutativity of multiplication
   rw [mul_comm]
+
+/--
+  Оценка веса одного barcode.
+  При каждой фиксации переменной вес умножается на (1-p)/(2p).
+
+  Доказательство: decode начинает с free restriction (вес p^n) и применяет
+  t операций assign. Каждая операция умножает вес на (1-p)/(2p).
+  Итого: p^n * ((1-p)/(2p))^t.
+-/
+theorem barcodeWeight_bound
+    (p : Q) (k t : Nat)
+    (hp : 0 < p) (hp1 : p < 1)
+    (_hpk : p = 1 / (4 * k))  -- оптимальный выбор
+    (bc : Barcode n t) :
+    barcodeWeight p bc ≤ p^n * ((1 - p) / (2 * p))^t :=
+  barcodeWeight_bound_general p t hp hp1 bc
 
 /--
   Количество различных barcodes длины t с литералами из k-CNF.
@@ -570,14 +581,17 @@ theorem single_switching_bound
   -- Шаг 3: каждый barcode имеет вес ≤ p^n * ((1-p)/(2p))^t
   have hweight : ∀ bc ∈ barcodes,
       barcodeWeight p bc ≤ p^n * ((1 - p) / (2 * p))^t := by
-    intro bc _
-    sorry  -- используем barcodeWeight_bound
+    intro bc _hbc
+    -- Используем общую версию barcodeWeight_bound
+    exact barcodeWeight_bound_general p t hp hp1 bc
   -- Шаг 4: сумма ≤ (# barcodes) * (max weight)
   have htotal : (barcodes.sum fun bc => barcodeWeight p bc) ≤
-      (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) := by sorry
+      (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) := by
+    sorry  -- Стандартная лемма: сумма ограниченных значений ≤ card * max
   -- Шаг 5: упрощаем с hcard : barcodes.card ≤ (2*k)^t
   have hbound : (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) ≤
-      ((2 * k : Q) ^ t) * (p^n * ((1 - p) / (2 * p))^t) := by sorry
+      ((2 * k : Q) ^ t) * (p^n * ((1 - p) / (2 * p))^t) := by
+    sorry  -- Монотонность умножения
   -- Шаг 6: алгебраические преобразования к (16*p*k)^t
   sorry
 

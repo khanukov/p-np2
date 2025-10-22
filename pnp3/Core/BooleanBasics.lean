@@ -780,16 +780,16 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have hfun_card :
         Fintype.card (FreeIndex → Bool)
           = 2 ^ Fintype.card FreeIndex := by
-      simpa using (Fintype.card_fun FreeIndex Bool)
+      simp [Fintype.card_fun]
     have hfreeIndex_card : Fintype.card FreeIndex = n - t := by
-      simpa [hfree_card, hfree_count]
+      simp [hfree_card, hfree_count]
     have hfinal :
         Fintype.card {x : BitVec n // mem β x} = 2 ^ (n - t) := by
       calc
         Fintype.card {x : BitVec n // mem β x}
             = Fintype.card (FreeIndex → Bool) := hcube_card
         _ = 2 ^ Fintype.card FreeIndex := hfun_card
-        _ = 2 ^ (n - t) := by simpa [hfreeIndex_card, Fintype.card_bool]
+        _ = 2 ^ (n - t) := by simp [hfreeIndex_card, Fintype.card_bool]
 
     exact ⟨t, ht_le, hfinal⟩
 
@@ -903,7 +903,7 @@ lemma eval_eq_false_iff {n : Nat} (C : CnfClause n) (x : BitVec n) :
     C.eval x = false ↔ ∀ ℓ ∈ C.literals, Literal.eval ℓ x = false := by
   classical
   unfold eval
-  simpa using List.any_eq_false
+  simp [List.any_eq_false]
 
 lemma holds_of_mem_eval_true {n : Nat} {C : CnfClause n} {x : BitVec n}
     {ℓ : Literal n} (hmem : ℓ ∈ C.literals) (hval : Literal.eval ℓ x = true) :
@@ -953,7 +953,7 @@ lemma eval_eq_false_iff {n w : Nat} (F : CNF n w) (x : BitVec n) :
     F.eval x = false ↔ ∃ C ∈ F.clauses, C.eval x = false := by
   classical
   unfold eval
-  simpa using List.all_eq_false
+  simp [List.all_eq_false]
 
 end CNF
 
@@ -991,7 +991,7 @@ lemma eval_eq_false_iff {n : Nat} (T : DnfTerm n) (x : BitVec n) :
     T.eval x = false ↔ ∃ ℓ ∈ T.literals, Literal.eval ℓ x = false := by
   classical
   unfold eval
-  simpa using List.all_eq_false
+  simp [List.all_eq_false]
 
 end DnfTerm
 
@@ -1025,7 +1025,7 @@ lemma eval_eq_false_iff {n w : Nat} (F : DNF n w) (x : BitVec n) :
     F.eval x = false ↔ ∀ T ∈ F.terms, T.eval x = false := by
   classical
   unfold eval
-  simpa using List.any_eq_false
+  simp [List.any_eq_false]
 
 end DNF
 

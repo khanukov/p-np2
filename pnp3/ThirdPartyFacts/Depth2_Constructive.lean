@@ -252,6 +252,33 @@ lemma depth_buildAndPDT {n : Nat} (indices : List (Fin n)) :
       sorry  -- Need to show depth of node is 1 + depth of right child
 
 /--
+Direct definition: subcube with both i and j set to true.
+This is simpler than using restrictToPattern for proofs.
+-/
+def restrictBothToTrue (n : Nat) (i j : Fin n) : Subcube n :=
+  fun k => if k = i ∨ k = j then some true else none
+
+/--
+Lemma: memB for subcube with both variables true.
+-/
+lemma memB_restrictBothToTrue {n : Nat} (i j : Fin n) (h_ne : i ≠ j) (x : Core.BitVec n) :
+    memB (restrictBothToTrue n i j) x = (x i && x j) := by
+  unfold memB restrictBothToTrue
+  simp [List.all_iff_forall]
+  constructor
+  · intro h
+    have hi := h i (List.mem_finRange _)
+    have hj := h j (List.mem_finRange _)
+    simp at hi hj
+    exact ⟨hi, hj⟩
+  · intro ⟨hi, hj⟩ k _
+    by_cases hk : k = i ∨ k = j
+    · cases hk with
+      | inl hki => subst hki; simp [hi]
+      | inr hkj => subst hkj; simp [hj]
+    · simp [hk]
+
+/--
 Lemma: A point x is in restrictAllToTrue iff all indexed variables are true.
 -/
 lemma memB_restrictAllToTrue {n : Nat} (indices : List (Fin n)) (x : Core.BitVec n) :
@@ -289,7 +316,7 @@ theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ 
   -- Build tree: branch on i, then on j
   let β_i_false := restrictToFalse n i
   let β_j_false := restrictToFalse n j
-  let β_both_true := restrictToPattern n [(i, true), (j, true)]
+  let β_both_true := restrictBothToTrue n i j
 
   -- Inner tree (for when x[i]=true): branch on j
   let inner_tree := PDT.node j
@@ -343,8 +370,10 @@ theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ 
       -- f x = x i && x j
       -- coveredB [β_both_true] x = memB β_both_true x
       -- β_both_true restricts both i and j to true
-      simp [f, coveredB, β_both_true, restrictToPattern, memB]
-      sorry  -- Need to prove memB agrees with Bool.and for pattern [(i,true), (j,true)]
+      simp [f, coveredB, β_both_true]
+      rw [memB_restrictBothToTrue _ _ _ h_ne]
+      -- Now both sides are x i && x j
+      rfl
   }, rfl, rfl, rfl⟩
 
 theorem partial_shrinkage_single_term {n : Nat} (indices : List (Fin n))

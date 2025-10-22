@@ -66,16 +66,36 @@ A point x is in restrictToFalse n i iff x i = false.
 -/
 lemma memB_restrictToFalse {n : Nat} (i : Fin n) (x : Core.BitVec n) :
     memB (restrictToFalse n i) x = (x i == false) := by
-  simp [memB, restrictToFalse]
-  sorry  -- This is true by definition of memB
+  unfold memB restrictToFalse
+  simp [List.all_iff_forall]
+  constructor
+  · intro h
+    specialize h i (List.mem_finRange _)
+    simp at h
+    exact h
+  · intro hi j _
+    by_cases hj : j = i
+    · subst hj
+      simp [hi]
+    · simp [hj]
 
 /--
 A point x is in restrictToTrue n i iff x i = true.
 -/
 lemma memB_restrictToTrue {n : Nat} (i : Fin n) (x : Core.BitVec n) :
     memB (restrictToTrue n i) x = (x i == true) := by
-  simp [memB, restrictToTrue]
-  sorry  -- This is true by definition of memB
+  unfold memB restrictToTrue
+  simp [List.all_iff_forall]
+  constructor
+  · intro h
+    specialize h i (List.mem_finRange _)
+    simp at h
+    exact h
+  · intro hi j _
+    by_cases hj : j = i
+    · subst hj
+      simp [hi]
+    · simp [hj]
 
 /-! ### Single literal case -/
 
@@ -117,8 +137,8 @@ theorem partial_shrinkage_single_literal {n : Nat} (i : Fin n) :
   have h_depth : PDT.depth tree = 1 := by
     simp [tree, PDT.depth]
 
-  -- Create PartialDT with ℓ=1 (we'll use ofPDT which gives ℓ=0, then adjust)
-  -- Actually, for exact representation, we can use ℓ=0 since tails are just leaves
+  -- Key insight: selectors should only include subcubes where f evaluates to true
+  -- For f(x) = x[i], this is only when x[i] = true, so selectors = [β_true]
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
     depthBound := 1
@@ -126,24 +146,37 @@ theorem partial_shrinkage_single_literal {n : Nat} (i : Fin n) :
     trunk_depth_le := by
       simp [PartialDT.ofPDT]
       exact Nat.le_of_eq h_depth
-    selectors := fun g => if g = f then [β_false, β_true] else []
+    selectors := fun g => if g = f then [β_true] else []
     selectors_sub := by
       intro g γ hg hγ
       simp [F] at hg
       subst hg
       simp at hγ
-      -- γ ∈ [β_false, β_true]
-      -- (PartialDT.ofPDT tree).realize = tree (by realize_ofPDT)
-      -- PDT.leaves tree = [β_false, β_true] (by definition of node)
-      simp [PartialDT.realize_ofPDT, tree, PDT.leaves]
-      exact hγ
+      -- γ ∈ [β_true], so γ = β_true
+      cases hγ
+      -- Need to show β_true ∈ PDT.leaves tree = [β_false, β_true]
+      rw [PartialDT.realize_ofPDT]
+      have : PDT.leaves tree = [β_false, β_true] := by
+        simp [tree]
+      rw [this]
+      right; rfl
     err_le := by
       intro g hg
       simp [F] at hg
       subst hg
-      -- Show errU f [β_false, β_true] ≤ 0
-      -- Strategy: show errU = 0 by proving perfect coverage
-      sorry  -- Requires detailed reasoning about memB and coveredB
+      -- Show errU f [β_true] ≤ 0
+      simp
+      -- Use errU_eq_zero_of_agree: if f x = coveredB [β_true] x for all x, then errU = 0
+      apply le_of_eq
+      apply errU_eq_zero_of_agree
+      intro x
+      -- Need: f x = coveredB [β_true] x
+      -- f x = x i (by definition of singleLiteral)
+      -- coveredB [β_true] x = memB (restrictToTrue n i) x = (x i == true)
+      simp [f, singleLiteral, β_true, coveredB]
+      rw [memB_restrictToTrue]
+      -- Now need: x i = (x i == true)
+      cases x i <;> simp
   }, rfl, rfl, rfl⟩
 
 /--

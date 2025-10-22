@@ -19,6 +19,8 @@ lean_lib PnP3 where
     `Core.BooleanBasics,
     `Core.PDTPartial,
     `Core.PDT,
+    `Core.PDTExtras,
+    `Core.SubcubeExtras,
     `Core.Atlas,
     `Core.SAL_Core,
     `Core.ShrinkageWitness,
@@ -42,6 +44,7 @@ lean_lib PnP3 where
     `Magnification.FinalResult,
     `ThirdPartyFacts.BaseSwitching,
     `ThirdPartyFacts.Facts_Switching,
+    `ThirdPartyFacts.ConstructiveSwitching,
     `ThirdPartyFacts.LeafBudget
   ]
 

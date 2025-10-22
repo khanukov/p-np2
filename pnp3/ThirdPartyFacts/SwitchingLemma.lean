@@ -748,7 +748,15 @@ theorem single_switching_bound
   -- Шаг 4: сумма ≤ (# barcodes) * (max weight)
   have htotal : (barcodes.sum fun bc => barcodeWeight p bc) ≤
       (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) := by
-    sorry  -- Standard sum bound lemma (техническая деталь с typeclasses)
+    -- Standard sum bound: Σ f(x) ≤ Σ M = |S| * M when f(x) ≤ M for all x
+    trans (barcodes.sum fun _bc => p^n * ((1 - p) / (2 * p))^t)
+    · -- First: sum of f ≤ sum of constant M
+      apply Finset.sum_le_sum
+      intro bc hbc
+      exact hweight bc hbc
+    · -- Second: sum of constant = card * constant
+      rw [Finset.sum_const]
+      simp [nsmul_eq_mul]
   -- Шаг 5: упрощаем с hcard : barcodes.card ≤ (2*k)^t
   have hbound : (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) ≤
       ((2 * k : Q) ^ t) * (p^n * ((1 - p) / (2 * p))^t) := by

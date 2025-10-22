@@ -189,11 +189,174 @@ theorem partial_shrinkage_single_neg_literal {n : Nat} (i : Fin n) :
     let f : Core.BitVec n → Bool := singleNegLiteral n i
     let F : Family n := [f]
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
-      ℓ = 1 ∧
+      ℓ = 0 ∧
       C.depthBound = 1 ∧
       C.epsilon = 0 := by
   intro f F
-  sorry  -- Similar to positive literal
+  sorry  -- Similar to positive literal, selectors = [restrictToFalse n i]
+
+/-! ### Single term case (AND of literals) -/
+
+/--
+Create a subcube that restricts multiple variables according to a pattern.
+For each (i, b) pair, restricts variable i to value b.
+-/
+def restrictToPattern (n : Nat) (pattern : List (Fin n × Bool)) : Subcube n :=
+  fun j =>
+    match pattern.find? (fun p => p.1 == j) with
+    | some (_, b) => some b
+    | none => none
+
+/--
+A single term (AND of positive literals): f(x) = x[i₁] ∧ x[i₂] ∧ ... ∧ x[iₖ]
+
+Example: singleTerm n [i, j, k] = fun x => x[i] && x[j] && x[k]
+-/
+def singleTerm (n : Nat) (indices : List (Fin n)) : Core.BitVec n → Bool :=
+  fun x => indices.all (fun i => x i)
+
+/--
+Helper: create subcube where all listed variables are set to true.
+-/
+def restrictAllToTrue (n : Nat) (indices : List (Fin n)) : Subcube n :=
+  restrictToPattern n (indices.map (fun i => (i, true)))
+
+/--
+Build PDT for AND term by sequential branching.
+
+For indices = [i₁, i₂, ..., iₖ]:
+- Branch on i₁:
+  - Left (false): leaf with i₁=false
+  - Right (true): recursively build for [i₂, ..., iₖ]
+-/
+def buildAndPDT (n : Nat) : List (Fin n) → PDT n
+  | [] => PDT.leaf (fullSubcube n)  -- Empty AND = true everywhere
+  | [i] => PDT.node i (PDT.leaf (restrictToFalse n i)) (PDT.leaf (restrictToTrue n i))
+  | i :: rest =>
+      PDT.node i
+        (PDT.leaf (restrictToFalse n i))  -- If x[i]=false, AND is false
+        (buildAndPDT n rest)               -- If x[i]=true, continue with rest
+
+/--
+Depth of AND PDT equals the length of the indices list.
+-/
+lemma depth_buildAndPDT {n : Nat} (indices : List (Fin n)) :
+    PDT.depth (buildAndPDT n indices) = indices.length := by
+  induction indices with
+  | nil => simp [buildAndPDT, PDT.depth]
+  | cons i rest ih =>
+    cases rest with
+    | nil => simp [buildAndPDT, PDT.depth]
+    | cons j rest' =>
+      simp [buildAndPDT, PDT.depth, ih]
+      sorry  -- Need to show depth of node is 1 + depth of right child
+
+/--
+Lemma: A point x is in restrictAllToTrue iff all indexed variables are true.
+-/
+lemma memB_restrictAllToTrue {n : Nat} (indices : List (Fin n)) (x : Core.BitVec n) :
+    memB (restrictAllToTrue n indices) x = indices.all (fun i => x i) := by
+  unfold memB restrictAllToTrue restrictToPattern
+  sorry  -- Need to prove equivalence of checking pattern matches
+
+/--
+**Theorem**: Single term (AND) has shrinkage with trunk depth = |indices|.
+
+**Construction**:
+- For f(x) = x[i₁] ∧ x[i₂] ∧ ... ∧ x[iₖ]
+- Build PDT by sequentially branching on each variable
+- Depth = k (number of variables in the term)
+- Selectors = [subcube where all variables are true]
+- Error = 0 (perfect coverage)
+
+**Example**: f(x) = x[0] ∧ x[1]
+- Tree: branch on x[0], then on x[1]
+- Depth = 2
+- Selectors = [subcube with x[0]=true, x[1]=true]
+-/
+/--
+Special case: Single term with 2 variables x[i] ∧ x[j].
+This is easier to prove directly before generalizing.
+-/
+theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ j) :
+    let f : Core.BitVec n → Bool := fun x => x i && x j
+    let F : Family n := [f]
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
+      ℓ = 0 ∧
+      C.depthBound = 2 ∧
+      C.epsilon = 0 := by
+  intro f F
+  -- Build tree: branch on i, then on j
+  let β_i_false := restrictToFalse n i
+  let β_j_false := restrictToFalse n j
+  let β_both_true := restrictToPattern n [(i, true), (j, true)]
+
+  -- Inner tree (for when x[i]=true): branch on j
+  let inner_tree := PDT.node j
+    (PDT.leaf β_j_false)
+    (PDT.leaf β_both_true)
+
+  -- Outer tree: branch on i
+  let tree := PDT.node i
+    (PDT.leaf β_i_false)
+    inner_tree
+
+  have h_depth : PDT.depth tree = 2 := by
+    unfold tree inner_tree
+    simp [PDT.depth]
+    -- depth (node i (leaf _) (node j (leaf _) (leaf _)))
+    -- = 1 + max (depth (leaf _)) (depth (node j ...))
+    -- = 1 + max 0 (1 + max 0 0)
+    -- = 1 + max 0 1 = 1 + 1 = 2
+    rfl
+
+  refine ⟨0, {
+    witness := PartialDT.ofPDT tree
+    depthBound := 2
+    epsilon := 0
+    trunk_depth_le := by
+      simp [PartialDT.ofPDT]
+      exact Nat.le_of_eq h_depth
+    selectors := fun g => if g = f then [β_both_true] else []
+    selectors_sub := by
+      intro g γ hg hγ
+      simp [F] at hg
+      subst hg
+      simp at hγ
+      cases hγ  -- γ = β_both_true
+      rw [PartialDT.realize_ofPDT]
+      -- Show β_both_true ∈ PDT.leaves tree
+      -- tree = node i (leaf β_i_false) (node j (leaf β_j_false) (leaf β_both_true))
+      -- leaves tree = [β_i_false, β_j_false, β_both_true]
+      unfold tree inner_tree
+      simp [PDT.leaves]
+      right; right; rfl
+    err_le := by
+      intro g hg
+      simp [F] at hg
+      subst hg
+      simp
+      apply le_of_eq
+      apply errU_eq_zero_of_agree
+      intro x
+      -- Show: f x = coveredB [β_both_true] x
+      -- f x = x i && x j
+      -- coveredB [β_both_true] x = memB β_both_true x
+      -- β_both_true restricts both i and j to true
+      simp [f, coveredB, β_both_true, restrictToPattern, memB]
+      sorry  -- Need to prove memB agrees with Bool.and for pattern [(i,true), (j,true)]
+  }, rfl, rfl, rfl⟩
+
+theorem partial_shrinkage_single_term {n : Nat} (indices : List (Fin n))
+    (h_nodup : indices.Nodup) :
+    let f : Core.BitVec n → Bool := singleTerm n indices
+    let F : Family n := [f]
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
+      ℓ = 0 ∧
+      C.depthBound = indices.length ∧
+      C.epsilon = 0 := by
+  intro f F
+  sorry  -- Will use buildAndPDT with induction on indices.length
 
 /-! ### Single clause case (OR of literals) -/
 

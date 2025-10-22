@@ -640,11 +640,11 @@ theorem single_switching_bound
   -- Шаг 4: сумма ≤ (# barcodes) * (max weight)
   have htotal : (barcodes.sum fun bc => barcodeWeight p bc) ≤
       (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) := by
-    sorry  -- Стандартная лемма: сумма ограниченных значений ≤ card * max
+    sorry  -- Standard sum bound lemma (техническая деталь с typeclasses)
   -- Шаг 5: упрощаем с hcard : barcodes.card ≤ (2*k)^t
   have hbound : (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) ≤
       ((2 * k : Q) ^ t) * (p^n * ((1 - p) / (2 * p))^t) := by
-    sorry  -- Монотонность умножения
+    sorry  -- Монотонность умножения (техническая деталь с casts)
   -- Шаг 6: алгебраические преобразования к (16*p*k)^t
   sorry
 

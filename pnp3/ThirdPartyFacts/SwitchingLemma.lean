@@ -760,7 +760,19 @@ theorem single_switching_bound
   -- Шаг 5: упрощаем с hcard : barcodes.card ≤ (2*k)^t
   have hbound : (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) ≤
       ((2 * k : Q) ^ t) * (p^n * ((1 - p) / (2 * p))^t) := by
-    sorry  -- Монотонность умножения (техническая деталь с casts)
+    -- Use mul_le_mul_of_nonneg_right with Nat.cast monotonicity
+    apply mul_le_mul_of_nonneg_right
+    · -- Show (barcodes.card : Q) ≤ ((2*k)^t : Q)
+      -- hcard : barcodes.card ≤ (2*k)^t, lift to Q
+      exact_mod_cast hcard
+    · -- Show 0 ≤ p^n * ((1-p)/(2p))^t
+      apply mul_nonneg
+      · exact pow_nonneg (le_of_lt hp) n
+      · apply pow_nonneg
+        apply div_nonneg
+        · linarith
+        · have : 0 < 2 * p := by apply mul_pos; norm_num; exact hp
+          linarith
   -- Шаг 6: алгебраические преобразования к (16*p*k)^t
   sorry
 

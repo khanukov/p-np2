@@ -676,8 +676,26 @@ lemma buildSteps_len_eq {n : Nat} (F : DNF n) :
       rfl
   | succ ρ j T litIdx lit t' hAlive hTerm hUnas hTail ih =>
       -- Inductive case: t = t' + 1
-      -- The proof requires understanding the recursive structure of buildSteps
-      -- For now, we'll use sorry to mark this as to-be-completed
+      -- We need to show: (buildSteps F ρ (t' + 1)).length = t' + 1
+      --
+      -- Strategy: buildSteps is defined via a recursive loop that matches on
+      -- firstAliveTerm?, getTerm?, and firstUnassignedLit?. The CanonDTGe.succ
+      -- constructor provides witnesses that all these return Some, which means
+      -- the loop will construct exactly one step and recurse with t'.
+      --
+      -- The recursive structure of buildSteps with nested pattern matching
+      -- makes this difficult to prove directly. We'll need to carefully unfold
+      -- and rewrite step by step, or use a helper lemma about the loop structure.
+      --
+      -- For now, we mark this as sorry and note that the proof structure is:
+      -- 1. Unfold buildSteps definition
+      -- 2. Show that loop ρ (t' + 1) matches the s+1 case
+      -- 3. Use hAlive to show firstAliveTerm? branch is some j
+      -- 4. Use hTerm to show getTerm? branch is some T
+      -- 5. Use hUnas to show firstUnassignedLit? branch is some (litIdx, lit)
+      -- 6. Show result is step :: loop ρ_next t' for appropriate ρ_next
+      -- 7. Apply IH to show loop ρ_next t' has length t'
+      -- 8. Conclude 1 + t' = t' + 1
       sorry
 
 /-- Encode a "bad" restriction (with canonical depth ≥ t) as a barcode.

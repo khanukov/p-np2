@@ -228,6 +228,26 @@ noncomputable def encodeAux
           | none => [step]
           | some ρ' => step :: encodeAux F ρ' fuel'
 
+/--
+  Ключевое свойство: если canonicalDTDepth ≥ t, то encodeAux создаёт список длины ≥ t.
+
+  Интуитивно: каждый шаг в canonical DT соответствует одному шагу в trace,
+  поэтому глубина t означает как минимум t шагов в encode.
+-/
+lemma encodeAux_length_ge
+    (F : CNF n w) (ρ : Restriction n) (fuel t : Nat)
+    (hdepth : canonicalDTDepth F ρ fuel ≥ t) :
+    (encodeAux F ρ fuel).length ≥ t := by
+  -- Proof strategy:
+  -- Induction on fuel. The key insight is that encodeAux follows the same
+  -- branching structure as canonicalDTDepth, choosing the deeper branch.
+  -- Each recursive call in canonicalDTDepth corresponds to adding a step
+  -- in encodeAux.
+  --
+  -- Technical challenge: Need to relate the max operation in canonicalDTDepth
+  -- with the choice of direction in encodeAux (depth0 ≤ depth1).
+  sorry
+
 noncomputable def encode
     (F : CNF n w) (ρ : Restriction n) (t : Nat)
     (hdeep : hasCanonicalDTDepthGE F ρ t) :
@@ -242,9 +262,26 @@ noncomputable def encode
   { steps := steps_t
     length_eq := by
       -- Нужно показать steps_t.length = t
-      -- Это потребует доказательства что encodeAux создаёт список длины ≥ t
-      sorry  -- требует свойства encodeAux
-    literalsDistinct := sorry }
+      -- Используем encodeAux_length_ge
+      unfold_let steps_t steps
+      -- List.length_take: если list.length ≥ n, то (list.take n).length = n
+      have hfuel_spec := Classical.choose_spec hdeep
+      have hlen : (encodeAux F ρ (fuel + t)).length ≥ t := by
+        apply encodeAux_length_ge
+        -- Нужно: canonicalDTDepth F ρ (fuel + t) ≥ t
+        -- У нас есть: canonicalDTDepth F ρ fuel ≥ t из hfuel_spec
+        -- И используем canonicalDTDepth_mono
+        calc canonicalDTDepth F ρ (fuel + t)
+            ≥ canonicalDTDepth F ρ fuel := by
+              apply canonicalDTDepth_mono
+              omega
+          _ ≥ t := hfuel_spec
+      exact List.length_take_of_le hlen
+    literalsDistinct := by
+      -- Нужно показать: литералы в steps_t различны
+      -- Это требует анализа encodeAux: каждый шаг фиксирует переменную,
+      -- которая была свободна, поэтому индексы не повторяются
+      sorry }
 
 /--
   Декодирование: восстанавливаем ограничение из barcode.

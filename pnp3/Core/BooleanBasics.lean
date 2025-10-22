@@ -163,7 +163,7 @@ lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
     have hi' : x i = b := by
       -- Приводим булеву проверку из определения `memB` к равенству значений.
       have htmp := hi
-      simp [memB, hib] at htmp
+      simp [hib] at htmp
       exact htmp
     exact hi'
   · intro h
@@ -330,7 +330,7 @@ lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
       | some β' =>
           have hrest : Subcube.assignMany β' rest = some γ := by
             have htmp := hassign
-            simp [Subcube.assignMany, hstep] at htmp
+            simp [hstep] at htmp
             exact htmp
           have htail := ih (β := β') (γ := γ) hrest
           -- Эквивалентность для первого шага: принадлежность β' ↔ (β ∧ нужный бит).
@@ -718,11 +718,11 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have decode_eval_some (f : FreeIndex → Bool) (i : Fin n)
         {b : Bool} (h : β i = some b) : decodeFun f i = b := by
       have hne : β i ≠ none := by
-        intro hnone; simpa [hnone] using h
+        intro hnone; simp [hnone] at h
       have hspec := Classical.choose_spec (exists_of_ne_none (i := i) hne)
       have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b := by
         have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
-          simpa [h] using hspec
+          simp [h, hspec]
         exact Option.some.inj this
       simp [decodeFun, h, hne, hval]
     let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=

@@ -238,15 +238,23 @@ lemma encodeAux_length_ge
     (F : CNF n w) (ρ : Restriction n) (fuel t : Nat)
     (hdepth : canonicalDTDepth F ρ fuel ≥ t) :
     (encodeAux F ρ fuel).length ≥ t := by
-  -- Proof strategy:
-  -- Induction on fuel. The key insight is that encodeAux follows the same
-  -- branching structure as canonicalDTDepth, choosing the deeper branch.
-  -- Each recursive call in canonicalDTDepth corresponds to adding a step
-  -- in encodeAux.
-  --
-  -- Technical challenge: Need to relate the max operation in canonicalDTDepth
-  -- with the choice of direction in encodeAux (depth0 ≤ depth1).
   sorry
+  -- Proof strategy:
+  -- Induction on t:
+  -- Base case t = 0: trivial (any list length ≥ 0)
+  -- Inductive case t' + 1:
+  --   If fuel = 0: canonicalDTDepth = 0, contradicting hdepth ≥ t' + 1
+  --   If fuel = succ fuel':
+  --     Both canonicalDTDepth and encodeAux check firstPendingClause?
+  --     Case no pending: canonicalDTDepth = 0, contradiction
+  --     Case pending exists with selection:
+  --       canonicalDTDepth = 1 + max(depth0, depth1) ≥ t' + 1
+  --       So max(depth0, depth1) ≥ t'
+  --       encodeAux chooses direction (b) based on depth0 ≤ depth1
+  --       The chosen direction has depth ≥ t', apply IH to get length ≥ t'
+  --       encodeAux = (selection, b) :: (recursive call on chosen branch)
+  --       So total length ≥ 1 + t' = t' + 1
+  -- Key technical challenge: prove that chosen direction always has sufficient depth
 
 /--
   Helper: если переменная i зафиксирована (mask i = some b), то она не появится в encodeAux.

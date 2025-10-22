@@ -276,15 +276,6 @@ lemma decode_freeCount_empty (n : Nat) :
   rw [decode_empty, freeCount_free]
 
 /--
-  Количество зафиксированных переменных в decode(barcode) равно длине barcode.
-
-  Это следует из literalsDistinct: каждый шаг фиксирует новую переменную.
--/
-lemma decode_freeCount (bc : Barcode n t) :
-    (decode bc).freeCount = n - t := by
-  sorry  -- Индукция по bc.steps с использованием literalsDistinct
-
-/--
   Вес ограничения, закодированного в barcode.
   Начинаем с веса p^n (полностью свободное) и умножаем на (1-p)/(2p) за каждый шаг.
 -/
@@ -460,6 +451,68 @@ lemma foldl_steps_weight (steps : List (TraceStep n)) (ρ : Restriction n) (p : 
             rw [← pow_succ]
         _ = ((1 - p) / (2 * p)) ^ (step :: rest).length * Restriction.weight ρ p := by
             rw [← hlen]
+
+/-- Helper lemma: folding assign operations decreases freeCount by the list length. -/
+lemma foldl_steps_freeCount (steps : List (TraceStep n)) (ρ : Restriction n)
+    (hnodup : (steps.map (fun s => s.lit.idx)).Nodup)
+    (hfree : ∀ s ∈ steps, ρ.mask s.lit.idx = none) :
+    let ρ_final := steps.foldl (fun ρ step =>
+      match ρ.assign step.lit.idx step.direction with
+      | none => ρ
+      | some ρ' => ρ') ρ
+    ρ_final.freeCount = ρ.freeCount - steps.length := by
+  induction steps generalizing ρ with
+  | nil =>
+      simp [List.foldl]
+  | cons step rest IH =>
+      simp only [List.foldl, List.length]
+      have hfree_step : ρ.mask step.lit.idx = none := by
+        apply hfree
+        simp
+      -- Prove that assign must succeed
+      have ⟨ρ', hassign⟩ := assign_some_of_free (b := step.direction) hfree_step
+      -- Rewrite the match with hassign
+      rw [hassign]
+      -- freeCount decreases by 1
+      have hmem : step.lit.idx ∈ ρ.freeIndicesList := by
+        exact Restriction.mem_freeIndicesList.mpr hfree_step
+      have hcount := Restriction.freeCount_assign_of_mem hmem hassign
+      -- Prepare for IH
+      have hnodup_rest : (rest.map (fun s => s.lit.idx)).Nodup := by
+        exact List.Nodup.of_cons hnodup
+      have hstep_notin : step.lit.idx ∉ (rest.map (fun s => s.lit.idx)) := by
+        have := List.nodup_cons.mp hnodup
+        exact this.1
+      have hfree_rest : ∀ s ∈ rest, ρ'.mask s.lit.idx = none := by
+        intro s hs
+        have hfree_s := hfree s (List.mem_cons_of_mem step hs)
+        have hne : step.lit.idx ≠ s.lit.idx := by
+          intro heq
+          have hmem : s.lit.idx ∈ rest.map (fun s => s.lit.idx) := by
+            simp [List.mem_map]
+            exact ⟨s, hs, rfl⟩
+          rw [← heq] at hmem
+          exact absurd hmem hstep_notin
+        exact mask_free_after_assign hassign hfree_s hne
+      -- Apply IH
+      have IH_result := IH ρ' hnodup_rest hfree_rest
+      rw [IH_result, hcount]
+      -- Arithmetic: (ρ.freeCount - 1) - rest.length = ρ.freeCount - (rest.length + 1)
+      omega
+
+/--
+  Количество зафиксированных переменных в decode(barcode) равно длине barcode.
+
+  Это следует из literalsDistinct: каждый шаг фиксирует новую переменную.
+-/
+lemma decode_freeCount (bc : Barcode n t) :
+    (decode bc).freeCount = n - t := by
+  unfold decode
+  have hfree : ∀ s ∈ bc.steps, (Restriction.free n).mask s.lit.idx = none := by
+    intro s _
+    simp
+  have := foldl_steps_freeCount bc.steps (Restriction.free n) bc.literalsDistinct hfree
+  rw [this, freeCount_free, bc.length_eq]
 
 /--
   Оценка веса одного barcode (общая версия для любого p).

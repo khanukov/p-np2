@@ -42,7 +42,11 @@ theorem partial_shrinkage_empty_family {n : Nat} :
     witness := PartialDT.ofPDT tree
     depthBound := 0
     epsilon := 0
-    trunk_depth_le := by sorry  -- PDT.depth (PartialDT.ofPDT tree).trunk ≤ 0
+    trunk_depth_le := by
+      -- PDT.depth (PartialDT.ofPDT tree).trunk = PDT.depth tree
+      -- tree = PDT.leaf β, so depth = 0
+      change PDT.depth tree ≤ 0
+      rfl
     selectors := fun _ => []
     selectors_sub := by
       intro f γ hf _
@@ -76,8 +80,12 @@ theorem partial_shrinkage_for_AC0_empty
   · -- 0 ≤ epsilon
     simp [hε]
   · -- epsilon ≤ 1/(n+2)
-    simp [hε]
-    sorry  -- 0 ≤ 1 / (params.n + 2), needs rational arithmetic
+    rw [hε]
+    -- Need to show 0 ≤ 1 / (params.n + 2)
+    apply div_nonneg
+    · norm_num
+    · have : (0 : Nat) ≤ params.n + 2 := by omega
+      exact_mod_cast this
 
 /-! ## Конструктивные доказательства для одноэлементных семейств -/
 
@@ -117,10 +125,35 @@ theorem partial_shrinkage_constant {n : Nat} (c : Bool) :
     witness := PartialDT.ofPDT tree
     depthBound := 0
     epsilon := 0
-    trunk_depth_le := by sorry  -- PDT.depth (PartialDT.ofPDT tree).trunk ≤ 0
+    trunk_depth_le := by
+      -- Same as before: PDT.depth (PDT.leaf β) = 0
+      change PDT.depth tree ≤ 0
+      simp [tree, PDT.depth]
     selectors := fun g => if g = f then [β] else []
-    selectors_sub := by sorry  -- β ∈ PDT.leaves for g = f
-    err_le := by sorry  -- errU bound for constant function
+    selectors_sub := by
+      intro g γ hg hγ
+      simp [F] at hg
+      subst hg
+      -- Now g = f, and we have γ ∈ selectors f
+      -- selectors f = [β] (since f = f), so γ ∈ [β], thus γ = β
+      -- Need to show: β ∈ PDT.leaves (PartialDT.ofPDT tree).realize
+      have : γ = β := by
+        -- selectors f = if f = f then [β] else [] = [β]
+        -- γ ∈ [β] means γ = β
+        simp at hγ
+        assumption
+      subst this
+      -- Now show β ∈ PDT.leaves (PartialDT.ofPDT tree).realize
+      simp [PartialDT.ofPDT, PartialDT.realize, tree, PDT.refine, PDT.leaves]
+    err_le := by
+      intro g hg
+      simp [F] at hg
+      subst hg
+      -- g = f is constant, selectors f = [β] where β is full subcube
+      -- errU for constant function with full subcube should be 0
+      simp [errU]
+      -- Need to show: all x covered correctly by β
+      sorry
   }, rfl, rfl, ?_⟩
   norm_num
 
@@ -145,9 +178,16 @@ theorem partial_shrinkage_for_AC0_constant
   · -- depthBound + ℓ ≤ (log₂(M+2))^(d+1)
     simp [hℓ, hdepth]
   · -- 0 ≤ epsilon
-    sorry  -- C.epsilon = 0, so 0 ≤ C.epsilon
+    -- From hε : C.epsilon ≤ 1/2, we want 0 ≤ C.epsilon
+    -- Actually, epsilon is always non-negative for certificates
+    -- We can derive this from the fact that errU is non-negative
+    sorry  -- Need to prove 0 ≤ C.epsilon; this is a property of valid certificates
   · -- epsilon ≤ 1/(n+2)
-    sorry  -- C.epsilon ≤ 1/2 ≤ 1/(n+2) for typical params
+    -- We have hε : C.epsilon ≤ 1/2
+    -- Need to show: C.epsilon ≤ 1/(n+2)
+    -- The certificate is constructed with epsilon := 0 in partial_shrinkage_constant
+    -- Therefore C.epsilon = 0, which is ≤ 1/(n+2) for any n
+    sorry  -- Need: C.epsilon = 0 from construction, or prove directly that constant function has 0 error
 
 /-! ## Основной результат: класс конструктивно доказуемых случаев -/
 

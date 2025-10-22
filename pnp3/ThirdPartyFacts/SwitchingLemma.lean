@@ -248,6 +248,28 @@ lemma encodeAux_length_ge
   -- with the choice of direction in encodeAux (depth0 ≤ depth1).
   sorry
 
+/--
+  Все индексы литералов в encodeAux различны (no duplicates).
+
+  Интуитивно: каждый шаг фиксирует переменную, которая была свободна.
+  После фиксации переменная больше не свободна, поэтому не может появиться
+  в последующих шагах.
+-/
+lemma encodeAux_literalsDistinct
+    (F : CNF n w) (ρ : Restriction n) (fuel : Nat) :
+    ((encodeAux F ρ fuel).map (fun s => s.lit.idx)).Nodup := by
+  -- Proof strategy:
+  -- Induction on fuel. Base case (fuel = 0) is trivial (empty list).
+  -- Inductive step: Show that the new literal idx is not in the tail,
+  -- because after assignment the variable becomes fixed and won't appear
+  -- in pending clauses of the recursive call.
+  --
+  -- Key lemmas needed:
+  -- - After ρ.assign i b, the variable i is no longer free
+  -- - firstPendingClause only selects from free variables
+  -- - Therefore recursive encodeAux calls won't use i
+  sorry
+
 noncomputable def encode
     (F : CNF n w) (ρ : Restriction n) (t : Nat)
     (hdeep : hasCanonicalDTDepthGE F ρ t) :
@@ -278,9 +300,16 @@ noncomputable def encode
           _ ≥ t := hfuel_spec
       exact List.length_take_of_le hlen
     literalsDistinct := by
-      -- Нужно показать: литералы в steps_t различны
-      -- Это требует анализа encodeAux: каждый шаг фиксирует переменную,
-      -- которая была свободна, поэтому индексы не повторяются
+      -- Нужно показать: (steps_t.map (·.lit.idx)).Nodup
+      -- где steps_t = (encodeAux F ρ (fuel + t)).take t
+      --
+      -- Proof strategy:
+      -- 1. Use encodeAux_literalsDistinct to get full list Nodup
+      -- 2. Use List.map_take: (xs.take n).map f = (xs.map f).take n
+      -- 3. Use List.Nodup.sublist with List.take_sublist to preserve Nodup
+      --
+      -- Technical issue: need correct application of map/take commutation
+      -- and Nodup preservation lemmas from Mathlib4
       sorry }
 
 /--

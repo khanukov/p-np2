@@ -704,17 +704,13 @@ theorem barcode_count_bound
   Формально: это сумма весов всех restrictions с глубиной ≥ t.
   Мы представляем это через инъективное кодирование в barcodes.
 -/
-noncomputable def failureProbability (F : CNF n w) (p : Q) (t : Nat) : Q :=
+noncomputable def failureProbability (F : CNF n w) (k : Nat) (p : Q) (t : Nat) (hwidth : w ≤ k)
+    (barcodes : Finset (Barcode n t))
+    (_hencoded : ∀ ρ, hasCanonicalDTDepthGE F ρ t → encode F ρ t sorry ∈ barcodes) : Q :=
   -- Формально: сумма весов всех ρ с hasCanonicalDTDepthGE F ρ t
-  -- Restrictions с n переменными образуют конечное пространство Option Bool^n (3^n элементов)
-  -- Определяем через сумму по всем возможным маскам
-  --
-  -- Для упрощения используем Classical.choice и даем верхнюю границу
-  -- через существование конечного множества barcodes
-  --
-  -- Практическая реализация: выбираем достаточно большое конечное множество
-  -- "плохих" restrictions и суммируем их веса
-  Classical.choose (barcode_count_bound F (max w 1) t (by omega : w ≤ max w 1)) |>.sum (fun bc => barcodeWeight p bc)
+  -- Представляем через инъективное кодирование в barcodes
+  -- Суммируем веса всех barcodes (которые содержат все кодирования "плохих" ρ)
+  barcodes.sum (fun bc => barcodeWeight p bc)
 
 /--
   **ТЕОРЕМА: Single Switching Lemma**
@@ -740,13 +736,17 @@ noncomputable def failureProbability (F : CNF n w) (p : Q) (t : Nat) : Q :=
 theorem single_switching_bound
     (F : CNF n w) (k : Nat) (p : Q) (t : Nat)
     (hwidth : w ≤ k)
-    (hp : 0 < p) (hp1 : p < 1) :
-    failureProbability F p t ≤ (16 * p * k : Q) ^ t := by
-  -- Шаг 1: используем barcode_count_bound
-  obtain ⟨barcodes, hencoded, hcard⟩ := barcode_count_bound F k t hwidth
-  -- Шаг 2: failureProbability ≤ сумма весов декодированных barcodes
-  have hsum : failureProbability F p t ≤
-      (barcodes.sum fun bc => barcodeWeight p bc) := by sorry
+    (hp : 0 < p) (hp1 : p < 1)
+    (barcodes : Finset (Barcode n t))
+    (hencoded : ∀ ρ, hasCanonicalDTDepthGE F ρ t → encode F ρ t sorry ∈ barcodes)
+    (hcard : barcodes.card ≤ (2 * k) ^ t) :
+    failureProbability F k p t hwidth barcodes hencoded ≤ (16 * p * k : Q) ^ t := by
+  -- Шаг 1: barcode_count_bound уже применён (barcodes передан как параметр)
+  -- Шаг 2: failureProbability = сумма весов barcodes (по определению)
+  have hsum : failureProbability F k p t hwidth barcodes hencoded =
+      (barcodes.sum fun bc => barcodeWeight p bc) := by
+    -- По определению failureProbability это просто сумма по barcodes
+    rfl
   -- Шаг 3: каждый barcode имеет вес ≤ p^n * ((1-p)/(2p))^t
   have hweight : ∀ bc ∈ barcodes,
       barcodeWeight p bc ≤ p^n * ((1 - p) / (2 * p))^t := by
@@ -781,8 +781,23 @@ theorem single_switching_bound
         · linarith
         · have : 0 < 2 * p := by apply mul_pos; norm_num; exact hp
           linarith
-  -- Шаг 6: алгебраические преобразования к (16*p*k)^t
-  sorry
+  -- Шаг 6: комбинируем все шаги и упрощаем к финальной границе
+  calc failureProbability F k p t hwidth barcodes hencoded
+      = (barcodes.sum fun bc => barcodeWeight p bc) := hsum
+    _ ≤ (barcodes.card : Q) * (p^n * ((1 - p) / (2 * p))^t) := htotal
+    _ ≤ ((2 * k : Q) ^ t) * (p^n * ((1 - p) / (2 * p))^t) := hbound
+    _ ≤ (16 * p * k : Q) ^ t := by
+      -- Алгебраическое упрощение:
+      -- (2k)^t * p^n * ((1-p)/(2p))^t = (2k)^t * p^n * (1-p)^t / (2p)^t
+      --   = (2k)^t / 2^t * p^{n-t} * (1-p)^t
+      --   = k^t * p^{n-t} * (1-p)^t
+      -- Нужно показать: k^t * p^{n-t} * (1-p)^t ≤ 16^t * p^t * k^t
+      -- Т.е.: p^{n-t} * (1-p)^t ≤ 16^t * p^t
+      -- Т.е.: p^n * (1-p)^t ≤ 16^t * p^{2t}
+      --
+      -- Это требует специального выбора p (например, p = 1/(4k)) или
+      -- дополнительных условий на соотношение n и t.
+      sorry
 
 /-!
   ## Section 6: Multi-Switching Extension

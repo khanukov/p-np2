@@ -107,18 +107,40 @@ lemma Subcube.compatible_symm {n : Nat} {β₁ β₂ : Subcube n}
   · rw [hβ1, hβ2] at hi
     exact hi.symm
 
-/- Совместимость транзитивна (только когда средний подкуб не создает "пробелов")
+/-!
+## Примечание о транзитивности совместимости
 
-   Примечание: Полная транзитивность требует более сильного определения compatible.
-   Текущее определение не транзитивно в случае (some, none, some).
-   Для практического применения рассмотрим усиление определения или
-   добавление дополнительных условий.
+Совместимость НЕ ЯВЛЯЕТСЯ ТРАНЗИТИВНОЙ для текущего определения `Subcube.compatible`.
 
-lemma Subcube.compatible_trans {n : Nat} {β₁ β₂ β₃ : Subcube n}
-    (h12 : Subcube.compatible β₁ β₂)
-    (h23 : Subcube.compatible β₂ β₃) :
-    Subcube.compatible β₁ β₃ := by
-  sorry  -- Unprovable: case (some val₁, none, some val₃) cannot prove val₁ = val₃
+**Контрпример:**
+- Пусть β₁ i = some true
+- Пусть β₂ i = none
+- Пусть β₃ i = some false
+
+Тогда:
+- `compatible β₁ β₂` выполнено (some, none → True)
+- `compatible β₂ β₃` выполнено (none, some → True)
+- НО `compatible β₁ β₃` НЕ выполнено (some true, some false → true = false, противоречие!)
+
+**Причина:** Определение `compatible` разрешает "пробелы" (none) в среднем подкубе,
+что нарушает транзитивность.
+
+**Возможные решения:**
+1. Усилить определение `compatible`: требовать, чтобы хотя бы один подкуб был "менее специфичным"
+2. Добавить дополнительные условия для случаев, когда нужна транзитивность
+3. Использовать альтернативное определение совместимости для специальных случаев
+
+**Статус:** Текущее определение достаточно для использования в проекте.
+Транзитивность не требуется ни в одном из существующих доказательств.
+
+**Невозможная лемма (для документации):**
+```lean
+-- UNPROVABLE with current definition:
+-- lemma Subcube.compatible_trans {n : Nat} {β₁ β₂ β₃ : Subcube n}
+--     (h12 : Subcube.compatible β₁ β₂)
+--     (h23 : Subcube.compatible β₂ β₃) :
+--     Subcube.compatible β₁ β₃
+```
 -/
 
 end Core

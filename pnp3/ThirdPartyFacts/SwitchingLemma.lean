@@ -265,10 +265,18 @@ lemma encodeAux_not_mem_of_fixed
     (F : CNF n w) (ρ : Restriction n) (i : Fin n) (b : Bool) (fuel : Nat)
     (hfixed : ρ.mask i = some b) :
     i ∉ (encodeAux F ρ fuel).map (fun s => s.lit.idx) := by
-  -- Proof by induction on fuel
-  -- Key insight: firstPendingClause.witness.free only contains unassigned literals
-  -- If ρ.mask i = some b, then i cannot be in witness.free
   sorry
+  -- Proof strategy:
+  -- Induction on fuel:
+  -- Base case: encodeAux F ρ 0 = [], trivial
+  -- Inductive case:
+  --   If no pending clause: encodeAux returns [], trivial
+  --   If pending clause exists:
+  --     lit := selection.witness.free.head is unassigned (ρ.mask lit.idx = none)
+  --     Since ρ.mask i = some b, we have lit.idx ≠ i
+  --     After assign lit.idx direction, we get ρ' where ρ'.mask i = some b (by assign_mask_eq)
+  --     Result is [step] ++ encodeAux F ρ' fuel', apply IH to recursive part
+  -- Key lemma needed: Restriction.assign_mask_eq preserves masks of other indices
 
 /--
   Все индексы литералов в encodeAux различны (no duplicates).

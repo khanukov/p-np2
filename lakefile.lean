@@ -20,6 +20,7 @@ lean_lib PnP3 where
     `Core.PDTPartial,
     `Core.PDT,
     `Core.PDTExtras,
+    `Core.SubcubeExtras,
     `Core.Atlas,
     `Core.SAL_Core,
     `Core.ShrinkageWitness,

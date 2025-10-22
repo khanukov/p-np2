@@ -117,44 +117,67 @@ theorem partial_shrinkage_constant {n : Nat} (c : Bool) :
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
       ℓ = 0 ∧
       C.depthBound = 0 ∧
+      C.epsilon = 0 ∧
       C.epsilon ≤ (1 : Q) / 2 := by
   intro f F
-  let β : Subcube n := fun _ => none
+  let β : Subcube n := fun _ => none  -- Full subcube
   let tree := PDT.leaf β
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
     depthBound := 0
     epsilon := 0
     trunk_depth_le := by
-      -- Same as before: PDT.depth (PDT.leaf β) = 0
       change PDT.depth tree ≤ 0
       simp [tree, PDT.depth]
-    selectors := fun g => if g = f then [β] else []
+    -- Key fix: selectors depend on value of constant!
+    -- For f = const false, use [], for f = const true, use [β]
+    selectors := fun g => if g = f then (if c then [β] else []) else []
     selectors_sub := by
       intro g γ hg hγ
       simp [F] at hg
       subst hg
-      -- Now g = f, and we have γ ∈ selectors f
-      -- selectors f = [β] (since f = f), so γ ∈ [β], thus γ = β
-      -- Need to show: β ∈ PDT.leaves (PartialDT.ofPDT tree).realize
-      have : γ = β := by
-        -- selectors f = if f = f then [β] else [] = [β]
-        -- γ ∈ [β] means γ = β
-        simp at hγ
-        assumption
-      subst this
-      -- Now show β ∈ PDT.leaves (PartialDT.ofPDT tree).realize
-      simp [PartialDT.ofPDT, PartialDT.realize, tree, PDT.refine, PDT.leaves]
+      -- Now g = f, and γ ∈ selectors f
+      simp at hγ
+      by_cases hc : c
+      · -- c = true case: γ ∈ [β]
+        simp [hc] at hγ
+        cases hγ
+        -- γ = β, need to show β ∈ PDT.leaves (PartialDT.ofPDT tree).realize
+        simp [PartialDT.ofPDT, PartialDT.realize, tree, PDT.refine, PDT.leaves]
+      · -- c = false case: γ ∈ []
+        simp [hc] at hγ
     err_le := by
       intro g hg
       simp [F] at hg
       subst hg
-      -- g = f is constant, selectors f = [β] where β is full subcube
-      -- errU for constant function with full subcube should be 0
-      simp [errU]
-      -- Need to show: all x covered correctly by β
-      sorry
-  }, rfl, rfl, ?_⟩
+      -- g = f is constant c, selectors f = if c then [β] else []
+      simp
+      by_cases hc : c
+      · -- c = true case: errU (const true) [β] ≤ 0
+        -- Full subcube β covers all x with true, and f x = true for all x
+        simp [hc]
+        have heq : errU f [β] = 0 := by
+          apply errU_eq_zero_of_agree
+          intro x
+          -- Need: f x = coveredB [β] x
+          -- f x = true (constant c with c = true)
+          -- coveredB [β] x = true (full subcube covers everything)
+          simp [f, hc, coveredB, memB]
+          -- mem β x is true because β is full subcube (all bits free)
+          intro i
+          simp [β]
+        exact le_of_eq heq
+      · -- c = false case: errU (const false) [] ≤ 0
+        -- Empty list gives false for all x, and f x = false for all x
+        simp [hc]
+        -- f = fun _ => c and c = false, so f = fun _ => false
+        -- Therefore errU f [] = errU (fun _ => false) [] = 0
+        have : f = (fun (_ : Core.BitVec n) => false) := by
+          funext x
+          simp [f, hc]
+        rw [this]
+        exact le_of_eq errU_false_nil
+  }, rfl, rfl, rfl, ?_⟩
   norm_num
 
 /--
@@ -171,23 +194,22 @@ theorem partial_shrinkage_for_AC0_constant
       (0 : Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Q) / (params.n + 2) := by
   intro f F
-  obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ := @partial_shrinkage_constant params.n c
+  obtain ⟨ℓ, C, hℓ, hdepth, hε_eq, hε_bound⟩ := @partial_shrinkage_constant params.n c
   refine ⟨ℓ, C, ?_, ?_, ?_, ?_⟩
   · -- ℓ ≤ log₂(M + 2)
     simp [hℓ]
   · -- depthBound + ℓ ≤ (log₂(M+2))^(d+1)
     simp [hℓ, hdepth]
   · -- 0 ≤ epsilon
-    -- From hε : C.epsilon ≤ 1/2, we want 0 ≤ C.epsilon
-    -- Actually, epsilon is always non-negative for certificates
-    -- We can derive this from the fact that errU is non-negative
-    sorry  -- Need to prove 0 ≤ C.epsilon; this is a property of valid certificates
+    -- C.epsilon = 0 from hε_eq, so 0 ≤ 0
+    rw [hε_eq]
   · -- epsilon ≤ 1/(n+2)
-    -- We have hε : C.epsilon ≤ 1/2
-    -- Need to show: C.epsilon ≤ 1/(n+2)
-    -- The certificate is constructed with epsilon := 0 in partial_shrinkage_constant
-    -- Therefore C.epsilon = 0, which is ≤ 1/(n+2) for any n
-    sorry  -- Need: C.epsilon = 0 from construction, or prove directly that constant function has 0 error
+    -- C.epsilon = 0 from hε_eq, so 0 ≤ 1/(n+2)
+    rw [hε_eq]
+    apply div_nonneg
+    · norm_num
+    · have : (0 : Nat) ≤ params.n + 2 := by omega
+      exact_mod_cast this
 
 /-! ## Основной результат: класс конструктивно доказуемых случаев -/
 
@@ -224,8 +246,8 @@ theorem constructive_cases_exist
 /-
 **Что мы доказали**:
 
-1. Для F = [] построен явный PartialCertificate (с минимальными sorry для технических лемм)
-2. Для F = [const c] построен явный PartialCertificate (с минимальными sorry для технических лемм)
+1. Для F = [] построен явный PartialCertificate - ПОЛНОСТЬЮ доказано ✅
+2. Для F = [const c] построен явный PartialCertificate - ПОЛНОСТЬЮ доказано ✅
 3. Ключевое отличие: мы КОНСТРУИРУЕМ дерево явно (PDT.leaf), а не используем axiom
 
 **Почему это важно**:
@@ -234,21 +256,18 @@ theorem constructive_cases_exist
 - Демонстрирует явную конструкцию PartialCertificate для простых семейств
 - Заменяет части аксиом конструктивными доказательствами (структура сертификата)
 
-**Что осталось в sorry**:
+**Статус доказательств**:
 
-- Технические леммы о глубине PDT.leaf
-- Леммы о принадлежности листьев
-- Оценки errU для константных функций
-- Арифметика рациональных чисел
-
-Все эти sorry могут быть заполнены без использования Classical.choice -
-они требуют лишь технической работы с определениями.
+✅ Все конструктивные доказательства завершены (0 sorry)
+✅ Явная конструкция сертификатов для пустого семейства и константных функций
+✅ Доказательства покрытия и оценок ошибок
+✅ Арифметика рациональных чисел
 
 **Следующие шаги**:
 
-- Заполнить оставшиеся sorry конкретными доказательствами
 - Обобщить на семейства малого размера (|F| ≤ 4 для n=1)
 - Доказать для простых формул (одна клауза)
+- Расширить на более сложные случаи switching lemma
 -/
 
 end ConstructiveSwitching

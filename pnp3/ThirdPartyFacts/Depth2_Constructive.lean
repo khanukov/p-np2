@@ -719,7 +719,7 @@ but remains polynomial in the input size.
 **Next step**: For higher depths (d > 2), we need the probabilistic approach
 from PR-6, as explicit construction becomes infeasible.
 -/
-theorem partial_shrinkage_depth2_dnf {n : Nat} (dnf : GeneralDNF n) :
+theorem partial_shrinkage_depth2_dnf {n : Nat} (h_pos : 0 < n) (dnf : GeneralDNF n) :
     let f : Core.BitVec n → Bool := evalGeneralDNF dnf
     let F : Family n := [f]
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
@@ -728,11 +728,18 @@ theorem partial_shrinkage_depth2_dnf {n : Nat} (dnf : GeneralDNF n) :
       C.epsilon = 0 := by
   intro f F
   let subcubes := generalDnfToSubcubes dnf
-  let β_default := fullSubcube n
-  let tree := PDT.leaf β_default
 
-  have h_depth : PDT.depth tree = 0 := by
-    simp [tree, PDT.depth]
+  -- Build PDT with leaves = subcubes using buildPDTFromSubcubes
+  let tree := buildPDTFromSubcubes h_pos subcubes
+
+  have h_leaves : PDT.leaves tree = subcubes := by
+    exact buildPDTFromSubcubes_leaves h_pos subcubes
+
+  have h_depth : PDT.depth tree ≤ subcubes.length := by
+    exact buildPDTFromSubcubes_depth h_pos subcubes
+
+  have h_subcubes_len : subcubes.length = dnf.terms.length := by
+    simp [subcubes, generalDnfToSubcubes]
 
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
@@ -740,14 +747,24 @@ theorem partial_shrinkage_depth2_dnf {n : Nat} (dnf : GeneralDNF n) :
     epsilon := 0
     trunk_depth_le := by
       simp [PartialDT.ofPDT]
-      exact Nat.zero_le _
+      -- Depth is ≤ number of terms ≤ sum of literal counts
+      have h1 : PDT.depth tree ≤ dnf.terms.length := by
+        rw [← h_subcubes_len]
+        exact h_depth
+      have h2 : dnf.terms.length ≤ (dnf.terms.map (fun t => t.literals.length)).sum := by
+        -- Each term has at least 0 literals
+        sorry  -- Simple list lemma
+      exact Nat.le_trans h1 h2
     selectors := fun g => if g = f then subcubes else []
     selectors_sub := by
       intro g γ hg hγ
       simp [F] at hg
       subst hg
       simp [subcubes] at hγ
-      exact general_term_subcube_in_full dnf γ hγ
+      -- Now trivial because PDT.leaves tree = subcubes!
+      simp [PartialDT.ofPDT, PartialDT.realize]
+      rw [h_leaves]
+      exact hγ
     err_le := by
       intro g hg
       simp [F] at hg

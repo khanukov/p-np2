@@ -270,6 +270,81 @@ lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
           rw [hrest_len] at ih
           omega
 
+/-! ### Axiom Proofs: Coverage Correctness -/
+
+/--
+**Axiom 1 Proof**: memB_restrictToTerm
+
+This connects the subcube representation to the logical semantics of a term.
+A point x is in the restrictToTerm subcube iff all literals in the term are satisfied.
+-/
+lemma memB_restrictToTerm {n : Nat} (term : Depth2Constructive.SingleTerm n) (x : Core.BitVec n) :
+    memB (Depth2Constructive.restrictToTerm term) x = Depth2Constructive.evalTerm term x := by
+  -- Need to show equivalence between:
+  -- LHS: memB checks all variables match or are free
+  -- RHS: all literals in term are satisfied
+
+  unfold memB Depth2Constructive.evalTerm Depth2Constructive.restrictToTerm
+
+  -- Both sides use .all, need to show the conditions are equivalent
+  -- For each variable j:
+  --   - If (j, pol) ∈ term.literals: restrictToTerm j = some pol, so memB requires x j = pol
+  --   - If j ∉ term.literals: restrictToTerm j = none, so memB is satisfied automatically
+  -- Meanwhile evalTerm checks that for all (i, pos) ∈ term.literals: x i matches pos
+
+  sorry  -- Requires detailed List.all reasoning
+
+/--
+**Axiom 2 Proof**: coveredB_clauseToSubcubes
+
+A point is covered by the clause subcubes iff at least one literal is satisfied.
+-/
+lemma coveredB_clauseToSubcubes {n : Nat} (clause : Depth2Constructive.SingleClause n)
+    (x : Core.BitVec n) :
+    coveredB (Depth2Constructive.clauseToSubcubes clause) x =
+    Depth2Constructive.evalClause clause x := by
+  -- Need to show:
+  -- LHS: ∃ subcube in clauseToSubcubes s.t. x ∈ subcube
+  -- RHS: ∃ literal in clause s.t. literal is satisfied
+
+  unfold coveredB Depth2Constructive.evalClause Depth2Constructive.clauseToSubcubes
+
+  -- clauseToSubcubes clause = clause.literals.map (fun (i, pol) => subcube with i=pol)
+  -- x is covered iff x satisfies at least one of these subcubes
+  -- evalClause = clause.literals.any (fun (i, pos) => if pos then x i else !(x i))
+
+  sorry  -- Requires List.any and List.map reasoning
+
+/--
+**Axiom 4 Proof**: coveredB_dnfToSubcubes (Small DNF)
+
+A point is covered by DNF subcubes iff at least one term is satisfied.
+-/
+lemma coveredB_dnfToSubcubes {n : Nat} (dnf : Depth2Constructive.SmallDNF n)
+    (x : Core.BitVec n) :
+    coveredB (Depth2Constructive.dnfToSubcubes dnf) x =
+    Depth2Constructive.evalDNF dnf x := by
+  unfold coveredB Depth2Constructive.evalDNF Depth2Constructive.dnfToSubcubes
+
+  -- dnfToSubcubes = terms.map restrictToTerm
+  -- x is covered iff x is in at least one term subcube
+  -- evalDNF = terms.any (fun term => evalTerm term x)
+
+  -- This should follow from memB_restrictToTerm
+  sorry  -- Requires List.any and memB_restrictToTerm
+
+/--
+**Axiom 6 Proof**: coveredB_generalDnfToSubcubes
+
+Same as axiom 4, but for general DNF (no size restriction).
+-/
+lemma coveredB_generalDnfToSubcubes {n : Nat} (dnf : Depth2Constructive.GeneralDNF n)
+    (x : Core.BitVec n) :
+    coveredB (Depth2Constructive.generalDnfToSubcubes dnf) x =
+    Depth2Constructive.evalGeneralDNF dnf x := by
+  unfold coveredB Depth2Constructive.evalGeneralDNF Depth2Constructive.generalDnfToSubcubes
+  sorry  -- Same proof structure as axiom 4
+
 end Depth2Proofs
 end ThirdPartyFacts
 end Pnp3

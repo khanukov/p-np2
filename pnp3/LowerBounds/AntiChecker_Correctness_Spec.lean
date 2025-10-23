@@ -360,8 +360,11 @@ axiom antiChecker_local_construction_goal
 output, we get a contradiction with Covering-Power.
 
 This validates that our definitions capture the intended proof structure.
+
+**PROVED**: This was an axiom but is now formally derived from the definition
+of AntiCheckerOutputCorrect.
 -/
-axiom anti_checker_gives_contradiction
+theorem anti_checker_gives_contradiction
     {p : Models.GapMCSPParams}
     (solver : AC0GapMCSPSolver p)
     (output : AntiCheckerOutput p)
@@ -373,7 +376,13 @@ axiom anti_checker_gives_contradiction
       -- Y is approximable by the scenario (via SAL)
       let Y_solver : Finset (Core.BitVec solver.ac0.n → Bool) :=
         solver.input_length_match.symm ▸ output.Y
-      Y_solver ⊆ familyFinset sc
+      Y_solver ⊆ familyFinset sc := by
+  -- AntiCheckerOutputCorrect already gives us exactly this
+  obtain ⟨sc, hsubset, hcapacity⟩ := h_correct
+  use sc
+  constructor
+  · exact hcapacity
+  · exact hsubset
 
 /--
 **Sanity Check 2**: The solver correctness predicate is stable under

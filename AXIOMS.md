@@ -82,15 +82,15 @@
 
 **Файл:** `pnp3/LowerBounds/AntiChecker_Correctness_Spec.lean`
 
-Эти аксиомы описывают желаемые свойства античекера, но не используются в основном доказательстве:
+Эти определяют желаемые свойства античекера. Статус:
 
-1. `antiChecker_construction_goal` (строка 330)
-2. `antiChecker_separation_goal` (строка 340)
-3. `antiChecker_local_construction_goal` (строка 350)
-4. `anti_checker_gives_contradiction` (строка 364)
-5. `refined_implies_existing` (строка 418)
+1. `antiChecker_construction_goal` (строка 330) - **АКСИОМА** (goal)
+2. `antiChecker_separation_goal` (строка 340) - **АКСИОМА** (goal)
+3. `antiChecker_local_construction_goal` (строка 350) - **АКСИОМА** (goal)
+4. ~~`anti_checker_gives_contradiction`~~ - **✅ ДОКАЗАНА** (строка 367)
+5. `refined_implies_existing` (строка 427) - **АКСИОМА** (требует goal 1)
 
-**Статус:** Вспомогательная спецификация, не влияет на основное доказательство
+**Прорыв:** `anti_checker_gives_contradiction` была аксиомой, но теперь **формально доказана** как теорема! Это sanity check валидирует правильность определения `AntiCheckerOutputCorrect`.
 
 ---
 

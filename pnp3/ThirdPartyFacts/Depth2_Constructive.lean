@@ -353,13 +353,98 @@ def buildTermPDT {n : Nat} (term : SingleTerm n) : PDT n :=
   PDT.leaf β_term
 
 /--
+Helper lemma: if find? succeeds, the result satisfies the predicate and is in the list.
+-/
+lemma find?_some_mem {α : Type _} (p : α → Bool) (xs : List α) (a : α) :
+    xs.find? p = some a → p a = true ∧ a ∈ xs := by
+  intro h
+  induction xs with
+  | nil => simp [List.find?] at h
+  | cons x rest ih =>
+      simp [List.find?] at h
+      by_cases hp : p x
+      · simp [hp] at h
+        cases h
+        constructor
+        · exact hp
+        · left; rfl
+      · simp [hp] at h
+        have ⟨hpa, ha_in⟩ := ih h
+        constructor
+        · exact hpa
+        · right; exact ha_in
+
+/--
 Lemma: A point x satisfies memB (restrictToTerm term) iff evalTerm term x = true.
 
 This is the key lemma connecting the PDT representation to the logical semantics.
-For now, we axiomatize it as it requires detailed reasoning about List.find? and membership.
 -/
-axiom memB_restrictToTerm {n : Nat} (term : SingleTerm n) (x : Core.BitVec n) :
-    memB (restrictToTerm term) x = evalTerm term x
+theorem memB_restrictToTerm {n : Nat} (term : SingleTerm n) (x : Core.BitVec n) :
+    memB (restrictToTerm term) x = evalTerm term x := by
+  unfold memB restrictToTerm evalTerm
+  simp [List.all_iff_forall]
+
+  constructor
+  · -- Forward direction: memB → evalTerm
+    intro h_memB
+    intro (i, pol) h_in_literals
+    -- We need to show: (if pol then x i else !(x i)) = true
+    -- restrictToTerm finds the polarity for i in the literals
+    have h_restrict : (match term.literals.find? (fun (j, _) => j = i) with
+                        | some (_, pol') => some pol'
+                        | none => none) = some pol := by
+      -- Since (i, pol) is in literals, find? should find an entry with index i
+      -- We need to show this entry has polarity pol
+      induction term.literals with
+      | nil => contradiction
+      | cons (i', pol') rest ih =>
+          simp [List.find?]
+          by_cases hi : i' = i
+          · -- Found a match at the head
+            subst hi
+            simp
+            simp at h_in_literals
+            cases h_in_literals with
+            | inl h =>
+                -- This is the element we're looking for
+                cases h
+                rfl
+            | inr h =>
+                -- It's also in the rest, but we take the first match
+                rfl
+          · -- No match, recurse
+            simp [hi]
+            apply ih
+            simp at h_in_literals
+            cases h_in_literals with
+            | inl h =>
+                cases h
+                contradiction
+            | inr h => exact h
+
+    -- Now use h_memB with the constraint at position i
+    specialize h_memB i (List.mem_finRange _)
+    rw [h_restrict] at h_memB
+    simp at h_memB
+    exact h_memB
+
+  · -- Backward direction: evalTerm → memB
+    intro h_evalTerm j h_j_in_range
+    -- Need to show the memB condition for variable j
+    cases h_find : term.literals.find? (fun (k, _) => k = j) with
+    | none =>
+        -- j is not constrained, subcube is free at j
+        simp [h_find]
+    | some (k, pol) =>
+        -- j is constrained to pol
+        simp [h_find]
+        -- find? returned (k, pol), so k = j by the predicate
+        have ⟨h_pred, h_mem⟩ := find?_some_mem (fun (k', _) => k' = j) term.literals (k, pol) h_find
+        simp at h_pred
+        subst h_pred
+        -- Now (j, pol) ∈ term.literals
+        specialize h_evalTerm (j, pol) h_mem
+        exact h_evalTerm
 
 /--
 **Theorem**: Single term (conjunction) has simple shrinkage with trunk depth ≤ k.
@@ -456,10 +541,46 @@ def clauseToSubcubes {n : Nat} (clause : SingleClause n) : List (Subcube n) :=
 Lemma: A point x is covered by clauseToSubcubes iff evalClause evaluates to true.
 
 This establishes that the disjunction of subcubes correctly represents the clause.
-For now, we axiomatize it as it requires detailed reasoning about List.any and coverage.
 -/
-axiom coveredB_clauseToSubcubes {n : Nat} (clause : SingleClause n) (x : Core.BitVec n) :
-    coveredB (clauseToSubcubes clause) x = evalClause clause x
+theorem coveredB_clauseToSubcubes {n : Nat} (clause : SingleClause n) (x : Core.BitVec n) :
+    coveredB (clauseToSubcubes clause) x = evalClause clause x := by
+  unfold coveredB clauseToSubcubes evalClause
+  -- Both sides are List.any, need to show the predicates are equivalent
+  -- LHS: (clause.literals.map ...).any (fun β => memB β x)
+  -- RHS: clause.literals.any (fun (i, pos) => if pos then x i else !(x i))
+
+  -- Use the fact that List.any commutes with List.map
+  have h_any_map : (clause.literals.map (fun (i, pol) => fun j => if j = i then some pol else none)).any (fun β => memB β x) =
+      clause.literals.any (fun (i, pol) => memB (fun j => if j = i then some pol else none) x) := by
+    induction clause.literals with
+    | nil => rfl
+    | cons lit rest ih =>
+        simp [List.map, List.any]
+        rw [ih]
+
+  rw [h_any_map]
+
+  -- Now show that for each literal (i, pol), memB of the subcube equals the literal check
+  congr 1
+  ext (i, pol)
+
+  -- Need: memB (fun j => if j = i then some pol else none) x = (if pol then x i else !(x i))
+  unfold memB
+  simp [List.all_iff_forall]
+
+  constructor
+  · intro h
+    -- If all variables satisfy the subcube check, then specifically variable i must satisfy it
+    specialize h i (List.mem_finRange _)
+    simp at h
+    exact h
+  · intro h_lit
+    -- If the literal is satisfied, show all variables satisfy memB
+    intro j _
+    by_cases hj : j = i
+    · subst hj
+      simp [h_lit]
+    · simp [hj]
 
 /--
 **ELIMINATED**: Previously this was axiom `literal_subcube_in_full`, but it's no longer needed!
@@ -572,13 +693,32 @@ def dnfToSubcubes {n : Nat} (dnf : SmallDNF n) : List (Subcube n) :=
   dnf.terms.map restrictToTerm
 
 /--
-Axiom: A point x is covered by dnfToSubcubes iff evalDNF evaluates to true.
+Theorem: A point x is covered by dnfToSubcubes iff evalDNF evaluates to true.
 
 This establishes that the union of term subcubes correctly represents the DNF.
-For now, we axiomatize it as it requires detailed reasoning about List.any and coverage.
 -/
-axiom coveredB_dnfToSubcubes {n : Nat} (dnf : SmallDNF n) (x : Core.BitVec n) :
-    coveredB (dnfToSubcubes dnf) x = evalDNF dnf x
+theorem coveredB_dnfToSubcubes {n : Nat} (dnf : SmallDNF n) (x : Core.BitVec n) :
+    coveredB (dnfToSubcubes dnf) x = evalDNF dnf x := by
+  unfold coveredB dnfToSubcubes evalDNF
+  -- Both sides use List.any, need to relate them via memB_restrictToTerm
+  -- LHS: (dnf.terms.map restrictToTerm).any (fun β => memB β x)
+  -- RHS: dnf.terms.any (fun term => evalTerm term x)
+
+  -- Use the fact that List.any commutes with List.map
+  have h_any_map : (dnf.terms.map restrictToTerm).any (fun β => memB β x) =
+      dnf.terms.any (fun term => memB (restrictToTerm term) x) := by
+    induction dnf.terms with
+    | nil => rfl
+    | cons term rest ih =>
+        simp [List.map, List.any]
+        rw [ih]
+
+  rw [h_any_map]
+
+  -- Now show that for each term, memB (restrictToTerm term) x = evalTerm term x
+  congr 1
+  ext term
+  exact memB_restrictToTerm term x
 
 /--
 **ELIMINATED**: Previously this was axiom `term_subcube_in_full`, but it's no longer needed!
@@ -688,10 +828,27 @@ def generalDnfToSubcubes {n : Nat} (dnf : GeneralDNF n) : List (Subcube n) :=
   dnf.terms.map restrictToTerm
 
 /--
-Axiom: Coverage correctness for general DNF.
+Theorem: Coverage correctness for general DNF.
 -/
-axiom coveredB_generalDnfToSubcubes {n : Nat} (dnf : GeneralDNF n) (x : Core.BitVec n) :
-    coveredB (generalDnfToSubcubes dnf) x = evalGeneralDNF dnf x
+theorem coveredB_generalDnfToSubcubes {n : Nat} (dnf : GeneralDNF n) (x : Core.BitVec n) :
+    coveredB (generalDnfToSubcubes dnf) x = evalGeneralDNF dnf x := by
+  unfold coveredB generalDnfToSubcubes evalGeneralDNF
+  -- Same proof structure as coveredB_dnfToSubcubes
+  -- Use the fact that List.any commutes with List.map
+  have h_any_map : (dnf.terms.map restrictToTerm).any (fun β => memB β x) =
+      dnf.terms.any (fun term => memB (restrictToTerm term) x) := by
+    induction dnf.terms with
+    | nil => rfl
+    | cons term rest ih =>
+        simp [List.map, List.any]
+        rw [ih]
+
+  rw [h_any_map]
+
+  -- Show that for each term, memB (restrictToTerm term) x = evalTerm term x
+  congr 1
+  ext term
+  exact memB_restrictToTerm term x
 
 /--
 **ELIMINATED**: Previously this was axiom `general_term_subcube_in_full`, but it's no longer needed!

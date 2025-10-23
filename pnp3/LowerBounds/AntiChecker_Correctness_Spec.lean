@@ -127,30 +127,44 @@ def SolverComplete {n : Nat} (S : SolverFunction n) (s_NO : Nat) : Prop :=
     inst.circuit_complexity > s_NO → S inst.f = false
 
 /--
-Full correctness = soundness + completeness.
+**IMPORTANT NOTE**: The original lemma `solver_correct_iff_sound_and_complete`
+has been REMOVED because it is not provable without additional assumptions.
+
+**Why this lemma is incorrect**:
+
+Counterexample: A trivial solver that always outputs NO satisfies both
+SolverSound and SolverComplete (vacuously), but does NOT satisfy SolverCorrect
+because it fails on YES instances.
+
+Specifically:
+- SolverSound: "If S says YES, then complexity < s_YES" ✓ (vacuously true: S never says YES)
+- SolverComplete: "If complexity > s_NO, then S says NO" ✓ (always outputs NO)
+- But SolverCorrect requires: "If complexity < s_YES, then S says YES" ✗ (fails!)
+
+**What would be needed**: To prove the biimplication, we would need an additional
+assumption that S is "non-trivial" (i.e., it actually accepts some YES instances).
+However, this is difficult to formalize without circular reasoning.
+
+**Impact**: This lemma was never used in the actual proof pipeline. The main
+results use SolverCorrect directly (see AC0GapMCSPSolver.correct field).
+
+**References**:
+- Goldreich (2006): "Computational Complexity: A Conceptual Perspective", Ch. 2
+- Arora-Barak (2009): "Computational Complexity: A Modern Approach", Ch. 2.7
+
+For the actual proof, we rely on the strong correctness definition (SolverCorrect)
+rather than decomposing into soundness and completeness.
 -/
+
+/-
+-- REMOVED LEMMA (not provable without additional assumptions)
 lemma solver_correct_iff_sound_and_complete {n : Nat}
     (S : SolverFunction n) (s_YES s_NO : Nat) :
     SolverCorrect S s_YES s_NO ↔
       SolverSound S s_YES ∧ SolverComplete S s_NO := by
-  constructor
-  · intro ⟨hyes, hno⟩
-    constructor
-    · -- Soundness
-      intro inst hs
-      by_contra h
-      push_neg at h
-      -- If S says yes but f is not easy, derive contradiction
-      -- This requires knowing that S is deterministic and respects complexity
-      sorry
-    · -- Completeness
-      exact hno
-  · intro ⟨hsound, hcomplete⟩
-    constructor
-    · intro inst hyes
-      -- Need to show S accepts YES instances
-      sorry
-    · exact hcomplete
+  -- This is NOT provable: see counterexample above
+  sorry
+-/
 
 /-! ### AC⁰ solver interface -/
 

@@ -35,7 +35,7 @@ A Blueprint for $P \neq NP$ via Switching--Atlas Lemma, Capacity Bounds, and Har
 \renewcommand{\thetheoremC}{}
 \newtheorem*{condmain}{Theorem D (Conditional Main Theorem)}
 
-\newcommand{\AC}{\mathrm{AC^0}}
+\newcommand{\AC}{\mathrm{AC}^{0}}
 \newcommand{\NP}{\mathrm{NP}}
 \newcommand{\PP}{\mathrm{P}}
 \newcommand{\Ppoly}{\mathrm{P/poly}}
@@ -58,9 +58,13 @@ external axiom packaging the classical $\AC$ switching lemma. \textbf{Step~C} (t
 \emph{anti-checker} lower bounds for \GapMCSP) and \textbf{Step~D} (OPS'20/CJW'22
 \emph{magnification triggers}) are stated in detail and can be either imported from the
 literature or formalized within the same framework. Under these standard assumptions, we
-obtain $NP \not\subseteq \Ppoly$; combined with $P \subseteq \Ppoly$, this
-yields $P \neq NP$.
+conditionally derive $NP \not\subseteq \Ppoly$; combined with $P \subseteq \Ppoly$, this
+conditionally yields $P \neq NP$.
 \end{abstract}
+
+\medskip
+
+\noindent\textbf{Keywords:} $P \neq NP$, Lean~4, formal verification, computational complexity, hardness magnification.
 
 \section{Introduction}
 The $P$ vs.\ $NP$ problem is the central challenge in computational complexity. Recent
@@ -113,7 +117,7 @@ Steps C and D rely on well-known results.
 \medskip
 
 \noindent\textbf{Lean artifacts.} The Lean code and build instructions (including a \#print axioms
-log for Steps A--B modules) are available at: \texttt{[GitHub URL]}, commit \texttt{[hash]}.
+log for Steps A--B modules) are available at: \texttt{https://github.com/khanukov/p-np2}, commit \texttt{b646e1bafa8c6bc19d3cf2f6000bf3f35d4a95e8}.
 
 \section{Preliminaries}
 
@@ -185,10 +189,10 @@ selectors stay inside the leaf dictionary and the original error bounds remain v
 binary trees yield the $2^{t}$ upper bound on both $k$ and the dictionary length.
 \end{proof}
 
-\paragraph{Instantiation for $\AC^0$ and locality.} Interfaces in
+\paragraph{Instantiation for $\AC$ and locality.} Interfaces in
 \texttt{ThirdPartyFacts/Facts\_Switching.lean:236--304} and \texttt{Core/ShrinkageAC0.lean} package external
 switching results into shrinkage witnesses with explicit bounds on depth, selector budget, and error.
-For depth-$d$, size-$M$ $\AC^0$ formulas the axiom \texttt{shrinkage\_for\_AC0} provides a certificate with
+For depth-$d$, size-$M$ $\AC$ formulas the axiom \texttt{shrinkage\_for\_AC0} provides a certificate with
 \begin{align*}
   t &\le (\logtwo(M+2))^{d+1},\qquad & \ell &\le (\logtwo(M+2))^{d+1}, \
   0 &\le \varepsilon \le \frac{1}{n+2} & &\le \frac{1}{2}.
@@ -201,7 +205,7 @@ in \texttt{LowerBounds/LB\_Formulas.lean:1089--1160}. The local-circuit interfac
 yields analogous bounds with $t \le \kappa (\logtwo(M+2) + d + 1)$ and the same $\varepsilon$ constraint.
 
 \paragraph{Lean status.} The SAL core (Theorem~A) is proved entirely within Lean without
-additional assumptions. The interfaces to $\AC^0$ and locality currently rely on the external
+additional assumptions. The interfaces to $\AC$ and locality currently rely on the external
 axioms \texttt{partial\_shrinkage\_for\_AC0}, \texttt{partial\_shrinkage\_with\_oracles}, and 
 \texttt{shrinkage\_for\_localCircuit}, which encapsulate the classical multi-switching lemmas needed
 for Step~A.
@@ -287,7 +291,7 @@ Assume the axioms \texttt{antiChecker\_exists\_large\_Y}, \texttt{antiChecker\_e
 
 \begin{proof}[Proof sketch]
 Lean formalizes the contradiction arguments in \texttt{LowerBounds/LB\_Formulas\_Core.lean:20--50}
-for depth-2/\AC^0$^{\!*}$ solvers and in \texttt{LowerBounds/LB\_LocalCircuits.lean:24--54} for
+for depth-2/$\mathrm{AC}^{0\!*}$ solvers and in \texttt{LowerBounds/LB\_LocalCircuits.lean:24--54} for
 local circuits. In each case the anti-checker axioms output $Y$ and a test set $T$ whose
 cardinalities overflow the capacity bound of Theorem~B once the SAL parameters from Theorem~A are
 substituted (Lemma~\ref{lem:SAL2capacity}).
@@ -297,7 +301,7 @@ substituted (Lemma~\ref{lem:SAL2capacity}).
 The axioms above expose precisely the families and test sets consumed by Step~B:
 \begin{itemize}[leftmargin=*,nosep]
   \item \texttt{antiChecker\_exists\_large\_Y} and \texttt{antiChecker\_exists\_testset}
-        (\texttt{LowerBounds/AntiChecker.lean:67--108}) handle $\AC^0$/depth-2 solvers;
+        (\texttt{LowerBounds/AntiChecker.lean:67--108}) handle $\AC$/depth-2 solvers;
   \item \texttt{antiChecker\_exists\_large\_Y\_local} and
         \texttt{antiChecker\_exists\_testset\_local}
         (\texttt{LowerBounds/AntiChecker.lean:113--171}) cover $\kappa$-local circuits.
@@ -320,7 +324,7 @@ Instantiations with concrete GapMCSP parameters appear in
 \label{sec:magnification}
 The Step~C lower bounds match the hypotheses of the OPS'20 and CJW'22 magnification theorems.
 
-\paragraph{OPS'20 depth-2 trigger.}
+\paragraph{The OPS'20 depth-2 trigger.}
 \begin{description}[leftmargin=*,style=nextline]
   \item[Instance family] \GapMCSP on inputs of length $N=2^n$ with thresholds
         $(s_{\mathrm{YES}}(n), s_{\mathrm{NO}}(n))$.
@@ -331,7 +335,7 @@ The Step~C lower bounds match the hypotheses of the OPS'20 and CJW'22 magnificat
 Encoded in Lean by the axioms \texttt{OPS\_trigger\_formulas} and \texttt{OPS\_trigger\_general}
 (\texttt{Magnification/Facts\_Magnification.lean:120--196}).
 
-\paragraph{CJW'22 locality trigger.}
+\paragraph{The CJW'22 locality trigger.}
 \begin{description}[leftmargin=*,style=nextline]
   \item[Instance family] The same \GapMCSP promise on length-$N$ inputs.
   \item[Circuit model] $\kappa$-local circuits of size $N(\log N)^\kappa$ for constant $\kappa>0$.
@@ -355,7 +359,7 @@ concludes $\PP \neq \NP$.
   \texttt{shrinkage\_for\_localCircuit}. The SAL core itself is fully proved.
   \item \textbf{Step B.} Completely formalized with no axioms or \textsc{sorry}.
   \item \textbf{Step C.} Four axioms describe the anti-checker output (rich subfamilies and optional
-  test sets) for $\AC^0$ and local circuits; the counting consequences are fully checked.
+  test sets) for $\AC$ and local circuits; the counting consequences are fully checked.
   \item \textbf{Step D.} Ten axioms encode the magnification triggers, the locality lift, and the
   interface to the previously formalized complexity-class facts.
 \end{itemize}
@@ -374,14 +378,14 @@ We provide a self-contained Lean~4 project with:
   \item Structured interfaces for external results, each annotated as an axiom with source references.
   \item Unit tests and smoke tests for PDT/atlas infrastructure.
 \end{itemize}
-Artifacts: \texttt{[GitHub URL]}, commit \texttt{[hash]}, build: \texttt{lake build}. The file
+Artifacts: \texttt{https://github.com/khanukov/p-np2}, commit \texttt{b646e1bafa8c6bc19d3cf2f6000bf3f35d4a95e8}, build: \texttt{lake build}. The file
 \texttt{docs/PNP\_Proof\_Audit\_2025-10-22.md} summarizes the axiom inventory and verification
 status of every module.
 
 \section{Outlook}
 To obtain a fully self-contained proof we must eliminate the remaining axioms:
 \begin{enumerate}[leftmargin=*,nosep]
-  \item formalize the multi-switching lemma for $\AC^0$ (including the oracle and locality
+  \item formalize the multi-switching lemma for $\AC$ (including the oracle and locality
   extensions) to discharge the Step~A assumptions;
   \item mechanize the anti-checker game and richness arguments underlying Step~C; and
   \item import or formalize the OPS/CJW magnification triggers and the locality lift used in Step~D.

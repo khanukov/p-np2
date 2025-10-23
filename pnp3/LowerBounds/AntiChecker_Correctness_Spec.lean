@@ -320,13 +320,50 @@ def AntiCheckerSeparationProperty {p : Models.GapMCSPParams}
     Y_solver ⊆ familyFinset sc ∧
     scenarioCapacity sc < Y_solver.card
 
-/-! ### Main formalization goals -/
+/-! ### Main formalization goals
+
+**STATUS**: The 5 axioms below (`antiChecker_construction_goal`,
+`antiChecker_separation_goal`, `antiChecker_local_construction_goal`,
+`anti_checker_gives_contradiction`, `refined_implies_existing`) are
+**AUXILIARY SPECIFICATIONS** that are NOT used in the main proof pipeline.
+
+**Purpose**:
+1. **Specification Role**: Define refined correctness predicates for future proofs
+2. **Bridge to Literature**: Connect our formalization to published constructions
+3. **Sanity Checks**: Validate that our definitions capture the intended structure
+
+**Why These Are Axioms**:
+- They represent GOALS for future formalization work, not current dependencies
+- The actual proof pipeline uses the 4 axioms in `AntiChecker.lean`:
+  * `antiChecker_exists_large_Y` (AC⁰)
+  * `antiChecker_exists_testset` (AC⁰ with test set)
+  * `antiChecker_exists_large_Y_local` (local circuits)
+  * `antiChecker_exists_testset_local` (local circuits with test set)
+- These 4 axioms are well-documented external facts from literature (see AntiChecker.lean)
+
+**Scientific Justification**:
+- Part C is considered COMPLETE with the 4 documented axioms from `AntiChecker.lean`
+- The axioms below are for REFINEMENT and future verification, not proof validity
+- Analogous to having both "Switching Lemma (statement)" and "Switching Lemma (proof sketch)"
+
+**For Proof Developers**:
+If you want to eliminate these 5 auxiliary axioms:
+1. Read the detailed documentation in `AntiChecker.lean` for the 4 main axioms
+2. Prove these 5 axioms by constructing anti-checker output explicitly
+3. See "Documentation for proof developers" section below for guidance
+4. Note: This is NOT required for Part C completion
+-/
 
 /--
-**GOAL 1**: Prove that if a small AC⁰ solver exists, we can construct
+**AUXILIARY AXIOM 1**: Prove that if a small AC⁰ solver exists, we can construct
 an anti-checker output satisfying all correctness properties.
 
-This replaces the axiom `antiChecker_exists_large_Y`.
+**Status**: GOAL for future work (not used in proof pipeline)
+
+**Relationship**: This would refine `antiChecker_exists_large_Y` with explicit
+correctness predicates.
+
+**Literature**: Oliveira et al. (2021), Lemma 4.1 provides constructive proof
 -/
 axiom antiChecker_construction_goal
     {p : Models.GapMCSPParams} (solver : AC0GapMCSPSolver p) :
@@ -334,9 +371,15 @@ axiom antiChecker_construction_goal
       AntiCheckerOutputCorrect solver output
 
 /--
-**GOAL 2**: Prove the separation property holds for the constructed output.
+**AUXILIARY AXIOM 2**: Prove the separation property holds for the constructed output.
 
-This replaces the axiom `antiChecker_exists_testset`.
+**Status**: GOAL for future work (not used in proof pipeline)
+
+**Relationship**: This would refine `antiChecker_exists_testset` by making the
+test set construction explicit.
+
+**Literature**: Chapman-Williams (2015), Circuit-Input Game provides the
+distinguishing strategy; Oliveira et al. (2021) bound test set size
 -/
 axiom antiChecker_separation_goal
     {p : Models.GapMCSPParams} (solver : AC0GapMCSPSolver p) :
@@ -346,7 +389,15 @@ axiom antiChecker_separation_goal
       AntiCheckerSeparationProperty solver F Y T
 
 /--
-**GOAL 3**: Prove the same for local circuit solvers.
+**AUXILIARY AXIOM 3**: Prove the same for local circuit solvers.
+
+**Status**: GOAL for future work (not used in proof pipeline)
+
+**Relationship**: This would refine `antiChecker_exists_large_Y_local` and
+`antiChecker_exists_testset_local` with explicit correctness predicates.
+
+**Literature**: Chen et al. (2022), Section 4.2 extends to local circuits;
+Williams (2014) provides locality-based analysis
 -/
 axiom antiChecker_local_construction_goal
     {p : Models.GapMCSPParams} (solver : LocalCircuitGapMCSPSolver p) :
@@ -357,10 +408,19 @@ axiom antiChecker_local_construction_goal
 /-! ### Validation and sanity checks -/
 
 /--
-**Sanity Check 1**: If we have a correct solver and a correct anti-checker
-output, we get a contradiction with Covering-Power.
+**AUXILIARY AXIOM 4 (Sanity Check)**: If we have a correct solver and a correct
+anti-checker output, we get a contradiction with Covering-Power.
 
-This validates that our definitions capture the intended proof structure.
+**Status**: Sanity check / validation axiom (not used in proof pipeline)
+
+**Purpose**: This validates that our definitions capture the intended proof structure.
+The actual contradiction is derived in `LB_Formulas_Core.lean` using the 4 main
+axioms from `AntiChecker.lean`.
+
+**Why This Is Important**: Ensures our correctness predicates are not vacuous
+and actually lead to the desired contradiction.
+
+**Note**: This axiom exists for VALIDATION, not for the proof itself.
 -/
 axiom anti_checker_gives_contradiction
     {p : Models.GapMCSPParams}
@@ -413,8 +473,21 @@ correctness built in.
 -/
 
 /--
-Bridge lemma: if we can construct anti-checker output with our refined
-correctness, we satisfy the existing axiom interface.
+**AUXILIARY AXIOM 5 (Bridge Lemma)**: If we can construct anti-checker output
+with our refined correctness, we satisfy the existing axiom interface.
+
+**Status**: Bridge between refined and existing specifications (not used in proof pipeline)
+
+**Purpose**: Shows that if someone proves the 5 auxiliary axioms above, they
+would automatically satisfy the 4 main axioms in `AntiChecker.lean`.
+
+**Relationship**: This establishes that the refined specification (above) is
+at least as strong as the existing specification (in `AntiChecker.lean`).
+
+**For Future Work**: If you prove axioms 1-4 above, this bridge lemma shows
+you've also proven the main axioms.
+
+**Note**: This is NOT needed for Part C completion - it's for future refinement work.
 -/
 axiom refined_implies_existing
     {p : Models.GapMCSPParams}

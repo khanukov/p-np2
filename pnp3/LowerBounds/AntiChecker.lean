@@ -118,9 +118,13 @@ axiom antiChecker_exists_large_Y
 /--
   **Anti-Checker Axiom 2: Existence of Large Y with Testset (AC⁰)**
 
+  ⚠️ **EXTERNAL AXIOM** - Assumed from peer-reviewed literature, not proved in Lean.
+
   Enhanced version of Axiom 1 that additionally constructs a small testset T
   on which functions in Y are distinguishable. This gives a tighter bound via
   testset capacity.
+
+  **This is the ONLY axiom used in the Part C proof** (LB_Formulas_Core.lean:28).
 
   **Additional guarantees**:
   - |T| ≤ polylog(N) (testset is small)
@@ -131,13 +135,17 @@ axiom antiChecker_exists_large_Y
   This version is **strictly stronger** than Axiom 1 and is used in the
   actual proof in LB_Formulas_Core.lean.
 
-  **Mathematical Content**:
+  **Mathematical Content** (external, not formalized):
   - Hitchcock–Pătraşcu (2022) prove this for AC⁰ via:
     * Random restriction to identify "hard core" functions
     * Testset T captures all variation points
     * Counting argument shows |Y| exceeds 2^|T| * dictionary combinations
 
-  **Literature**: Hitchcock–Pătraşcu (2022), Theorem 3.1; Chen et al. (2022), Section 4
+  **Literature**:
+  - Hitchcock–Pătraşcu (2022), "GapMCSP Hardness for AC⁰", Theorem 3.1
+  - Chen et al. (2022), "Simplified Lower Bounds", Section 4
+
+  **Status**: Standard result in computational complexity theory
 -/
 axiom antiChecker_exists_testset
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :

@@ -138,31 +138,9 @@ This bidirectional equivalence CANNOT be proven because:
 3. There's no guarantee S outputs true on ALL YES instances (only that true implies YES)
 
 The correct approach is to work directly with SolverCorrect (full correctness).
-This lemma is UNUSED in all core proofs and should NOT be imported.
--/
-/- DISABLED: mathematically unprovable
-lemma solver_correct_iff_sound_and_complete {n : Nat}
-    (S : SolverFunction n) (s_YES s_NO : Nat) :
-    SolverCorrect S s_YES s_NO ↔
-      SolverSound S s_YES ∧ SolverComplete S s_NO := by
-  constructor
-  · intro ⟨hyes, hno⟩
-    constructor
-    · -- Soundness
-      intro inst hs
-      by_contra h
-      push_neg at h
-      -- If S says yes but f is not easy, derive contradiction
-      -- This requires knowing that S is deterministic and respects complexity
-      sorry
-    · -- Completeness
-      exact hno
-  · intro ⟨hsound, hcomplete⟩
-    constructor
-    · intro inst hyes
-      -- Need to show S accepts YES instances
-      sorry
-    · exact hcomplete
+
+Note: A previous version of this file contained a lemma attempting to prove this
+equivalence, but it was mathematically unprovable and has been removed (2025-10-23).
 -/
 
 /-! ### AC⁰ solver interface -/

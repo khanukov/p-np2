@@ -76,24 +76,17 @@ LB_Formulas_core (Part C main theorem)
 
 ## Sorry-анализ
 
-### Part C (LowerBounds):
+### Part C (LowerBounds): ✅ **0 SORRY В ВСЕХ ФАЙЛАХ!**
+
 - `AntiChecker.lean`: 0 sorry ✅
 - `LB_Formulas.lean`: 0 sorry ✅
 - `LB_Formulas_Core.lean`: 0 sorry ✅
-- `AntiChecker_Correctness_Spec.lean`: 2 sorry (в закомментированной лемме) ⚠️
+- `AntiChecker_Correctness_Spec.lean`: 0 sorry ✅
 
-**Детали**:
-```lean
-/- DISABLED: математически непровабельна без дополнительных предположений
-lemma solver_correct_iff_sound_and_complete {n : Nat}
-    (S : SolverFunction n) (s_YES s_NO : Nat) :
-    SolverCorrect S s_YES s_NO ↔
-      SolverSound S s_YES ∧ SolverComplete S s_NO := by
-  sorry  -- Невозможно доказать обратное направление без монотонности
--/
-```
-
-**Оценка**: ✅ Не влияет на основное доказательство (закомментирована и не используется)
+**Обновление (2025-10-23):**
+- Закомментированная лемма `solver_correct_iff_sound_and_complete` с 2 sorry **УДАЛЕНА**
+- Документация обновлена - указано, что лемма была математически непровабельна
+- **Результат**: Part C теперь полностью свободна от sorry!
 
 ## Цепочка зависимостей основного доказательства
 

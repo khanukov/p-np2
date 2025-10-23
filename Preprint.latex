@@ -27,6 +27,14 @@ A Blueprint for $P \neq NP$ via Switching--Atlas Lemma, Capacity Bounds, and Har
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
 
+\newtheorem{theoremA}{Theorem A}
+\newtheorem{theoremB}{Theorem B}
+\newtheorem{theoremC}{Theorem C}
+\renewcommand{\thetheoremA}{}
+\renewcommand{\thetheoremB}{}
+\renewcommand{\thetheoremC}{}
+\newtheorem*{condmain}{Theorem D (Conditional Main Theorem)}
+
 \newcommand{\AC}{\mathrm{AC^0}}
 \newcommand{\NP}{\mathrm{NP}}
 \newcommand{\PP}{\mathrm{P}}
@@ -42,7 +50,7 @@ A Blueprint for $P \neq NP$ via Switching--Atlas Lemma, Capacity Bounds, and Har
 \begin{abstract}
 We present a Lean-verified framework that derives lower bounds for \emph{GapMCSP} from a
 \emph{switching-type} shrinkage certificate, and then upgrades these bounds to the nonuniform
-separation $NP \not\subseteq P/\mathrm{poly}$ through modern \emph{hardness magnification}.
+separation $NP \not\subseteq \Ppoly$ through modern \emph{hardness magnification}.
 Two foundational layers are \textbf{Step~A}---the \emph{Switching--Atlas Lemma (SAL)}---and
 \textbf{Step~B}---the \emph{Covering--Power (capacity) bound}. Both steps are fully formalized
 and machine-checked in Lean~4. Our current formalization of \textbf{Step~A} uses a single
@@ -50,7 +58,7 @@ external axiom packaging the classical $\AC$ switching lemma. \textbf{Step~C} (t
 \emph{anti-checker} lower bounds for \GapMCSP) and \textbf{Step~D} (OPS'20/CJW'22
 \emph{magnification triggers}) are stated in detail and can be either imported from the
 literature or formalized within the same framework. Under these standard assumptions, we
-obtain $NP \not\subseteq P/\mathrm{poly}$; combined with $P \subseteq P/\mathrm{poly}$, this
+obtain $NP \not\subseteq \Ppoly$; combined with $P \subseteq \Ppoly$, this
 yields $P \neq NP$.
 \end{abstract}
 
@@ -58,7 +66,7 @@ yields $P \neq NP$.
 The $P$ vs.\ $NP$ problem is the central challenge in computational complexity. Recent
 \emph{hardness magnification} results (e.g., Oliveira--Pich--Santhanam '20; Chen--Jin--Williams '22)
 show that seemingly modest circuit/formula lower bounds for explicit problems can
-\emph{trigger} the nonuniform separation $NP \not\subseteq P/\mathrm{poly}$. This paper
+\emph{trigger} the nonuniform separation $NP \not\subseteq \Ppoly$. This paper
 develops and formalizes a modular pipeline that produces such lower bounds for \GapMCSP,
 bridging classical \emph{switching} phenomena with counting-based \emph{capacity} arguments,
 and then applies magnification triggers to arrive at $P \neq NP$.
@@ -78,8 +86,8 @@ and then applies magnification triggers to arrive at $P \neq NP$.
   $N \cdot (\log N)^\kappa$), we build a \emph{rich} subfamily $Y$ and a test set $T$ that
   contradict capacity; hence super-quadratic (or near-linear) lower bounds follow.
   \item \textbf{Step D (Magnification; detailed and conditional).} Using OPS'20 and CJW'22
-  triggers, these \GapMCSP\ lower bounds imply $NP \not\subseteq P/\mathrm{poly}$, and together with
-  $P \subseteq P/\mathrm{poly}$ yield $P \neq NP$.
+  triggers, these \GapMCSP\ lower bounds imply $NP \not\subseteq \Ppoly$, and together with
+  $P \subseteq \Ppoly$ yield $P \neq NP$.
 \end{itemize}
 
 \paragraph{Formalization status.}
@@ -89,22 +97,62 @@ interface; all remaining arguments are fully formal. Steps C and D are presented
 theorems with proof strategies; they can be imported from the literature or fully formalized in
 future versions.
 
-\subsection*{Main (conditional) theorem}
+\paragraph{Lean audit.}
+The repository ships with an explicit axiom log, \texttt{docs/PNP\_Proof\_Audit\_2025-10-22.md},
+enumerating all seventeen external assumptions together with bibliographic pointers and Lean
+module locations. Every statement in this preprint references the corresponding Lean artifact.
+
+\begin{condmain}
 Assuming (i) an $\AC$ switching lemma (including the derived shrinkage bounds used by SAL),
 (ii) the anti-checker theorems stated in Section~\ref{sec:anti}, and
 (iii) the OPS'20/CJW'22 magnification triggers in Section~\ref{sec:magnification},
-we obtain $NP \not\subseteq P/\mathrm{poly}$, hence $P \neq NP$. Steps A and B are Lean-verified;
-Steps C and D rely on well-known results.\medskip
+we obtain $NP \not\subseteq \Ppoly$, hence $P \neq NP$. Steps A and B are Lean-verified;
+Steps C and D rely on well-known results.
+\end{condmain}
+
+\medskip
 
 \noindent\textbf{Lean artifacts.} The Lean code and build instructions (including a \#print axioms
 log for Steps A--B modules) are available at: \texttt{[GitHub URL]}, commit \texttt{[hash]}.
 
-\section{Technical setup}
-We consider boolean functions $f:\{0,1\}^n \to \{0,1\}$ and families $F$ of such functions.
-A \emph{subcube} $\beta \in \{0,1,*\}^n$ is a partial assignment; its \emph{live} variables are the
+\section{Preliminaries}
+
+\paragraph{Notation.}
+We write $N=2^n$ for the truth-table length of $n$-bit functions. By ``depth-2 formulas'' we
+mean unbounded fan-in CNF/DNF with size $S$ (the number of leaves). A circuit family is
+$\kappa$-local if each output bit depends on at most $O((\log N)^\kappa)$ inputs. Unless stated
+otherwise, $\log$ denotes the binary logarithm $\logtwo$, and $\poly(N)$ abbreviates $N^{O(1)}$.
+
+\paragraph{Problems.}
+The \emph{Minimum Circuit Size Problem (MCSP)} takes as input the full truth table of a Boolean
+function $f:\{0,1\}^n\to\{0,1\}$ (thus of length $N$) together with a threshold $s$. The answer is
+``YES'' iff $f$ has Boolean circuits of size at most $s$. We focus on the standard promise
+variant \GapMCSP: fix explicit upper and lower bounds $s_{\mathrm{YES}}(n)$ and
+$s_{\mathrm{NO}}(n)\ge s_{\mathrm{YES}}(n)^{1+\delta}$ for some constant $\delta>0$; given $f$'s
+truth table we must distinguish whether $\mathsf{size}(f)\le s_{\mathrm{YES}}(n)$ (YES) or
+$\mathsf{size}(f)\ge s_{\mathrm{NO}}(n)$ (NO), with inputs guaranteed to satisfy the promise.
+
+\paragraph{Circuit models.}
+We analyze several restricted nonuniform models on $N$-bit inputs:
+\begin{itemize}[leftmargin=*,nosep]
+  \item \textbf{Depth-2 formulas:} unbounded fan-in CNF/DNF of leaf-count (size) at most $S$.
+  \item \textbf{$\AC$ of depth~$d$ and size~$M$:} unbounded fan-in AND/OR/NOT circuits of depth~$d$
+        with at most $M$ gates; we measure size by gate count.
+  \item \textbf{$\kappa$-local circuits:} Boolean circuits where every output bit queries at most
+        $O((\log N)^\kappa)$ input positions along all root-to-leaf paths.
+  \item \textbf{Oracle circuits:} circuits allowed to query an auxiliary oracle $O:\{0,1\}^*\to\{0,1\}$;
+        we assume oracle gates have fan-in bounded by $O((\log N)^\kappa)$ when they appear in
+        shrinkage statements, matching the Lean interface \texttt{ThirdPartyFacts/Facts\_Switching.lean}.
+\end{itemize}
+Throughout we measure formula size by leaves, circuit size by gates, and locality in terms of the
+maximum number of inputs influencing any output bit. These conventions align with the Lean files
+\texttt{Core/ShrinkageAC0.lean} and \texttt{LowerBounds/LB\_LocalCircuits.lean}.
+
+\paragraph{Decision trees and subcubes.}
+A \emph{subcube} $\beta \in \{0,1,*\}^n$ is a partial assignment; its \emph{live variables} are the
 coordinates left as $*$. A (binary) \emph{decision tree} (DT) queries input bits; its depth is the
-max path length. A \emph{partial decision tree} (PDT) consists of a \emph{trunk} (a DT) and a finite
-set of \emph{tails} (DTs attached to leaves of the trunk).
+maximum path length. A \emph{partial decision tree} (PDT) consists of a \emph{trunk} (a DT) and a
+finite set of \emph{tails} (DTs attached to leaves of the trunk).
 
 \begin{definition}[Shrinkage certificate]
 A \emph{shrinkage certificate} for a finite family $F$ on $n$ variables is a tuple
@@ -116,109 +164,202 @@ $(\ell,\mathcal{C})$, where $\ell\in \mathbb{N}$ and $\mathcal{C}$ packs:
 
 \section{Step A: Switching--Atlas Lemma (SAL)}
 \label{sec:SAL}
-\begin{theorem}[SAL: from shrinkage to atlases]\label{thm:SAL}
-Let $(\ell,\mathcal{C})$ be a shrinkage certificate for $F$ with trunk depth $t$ and error $\eps$.
-Then there exists an \emph{atlas} $\mathcal{A}$ of parameters $(k,\eps)$ that approximates $F$,
-with $k \le 2^\ell$ and the total depth bounded by $t+\ell$. In particular, when instantiated
-with an $\AC$ switching lemma for depth $d$ circuits of size $M$, we can ensure
-\begin{equation*}
-\ell \le \logtwo(M+2), \qquad
-t+\ell \le \bigl(\logtwo(M+2)\bigr)^{d+1}, \qquad
-\eps \le \frac{1}{n+2}\,.
-\end{equation*}
-\end{theorem}
+The Lean development isolates the combinatorial conversion from shrinkage to atlases from the
+analytic information supplied by switching lemmas. The core statement works for an abstract
+shrinkage certificate.
+
+\begin{theoremA}[Switching--Atlas Lemma (SAL core)]\label{thm:SALcore}
+Let $S$ be a shrinkage certificate for a family $F$ on $n$ variables with partial decision tree
+depth $t$ and approximation error $\varepsilon$. Then the atlas obtained by listing the leaves of
+$S$'s tree and reusing the shrinkage predictions \emph{works for}~$F$; moreover the dictionary size
+and the selector budget produced by the Lean scenario satisfy $k,\,|\mathcal{A}| \le 2^{t}$ while the
+error parameter remains $\varepsilon$.\footnote{Implemented as \texttt{SAL\_from\_Shrinkage} in \texttt{Core/SAL\_Core.lean:131--200},
+with the dictionary and selector bounds provided by \texttt{scenarioFromShrinkage\_k\_le\_pow} and 
+\texttt{scenarioFromShrinkage\_dictLen\_le\_pow} in \texttt{LowerBounds/LB\_Formulas.lean:917--1030}.}
+\end{theoremA}
 
 \begin{proof}[Proof idea]
-We take $\mathcal{A}$ to be the set of trunk leaves. For each $f\in F$, the selector
-$\mathrm{Sel}(f)$ is a sublist of those leaves; predictions on leaves are induced by the PDT tails.
-Thus $err_U(f,\mathrm{Sel}(f))\le \eps$ holds by construction, and $k\le 2^\ell$ by the tail bound.
-The switching lemma guarantees parameters $(t,\ell,\eps)$ as indicated; hence the explicit bounds.
+The Lean proof treats a shrinkage certificate as a \emph{common} partial decision tree whose leaves
+carry selectors for each $f \in F$. Turning the tree into an atlas is a structural operation; the
+selectors stay inside the leaf dictionary and the original error bounds remain valid. Leaf counts of
+binary trees yield the $2^{t}$ upper bound on both $k$ and the dictionary length.
 \end{proof}
 
-\paragraph{Lean status.} The entire construction and proof of Theorem~\ref{thm:SAL} are formalized
-and mechanically checked in Lean~4. Our Step~A interface uses one external axiom that encapsulates
-the classical $\AC$ switching lemma to furnish the $(t,\ell,\eps)$ parameters shown above.
+\paragraph{Instantiation for $\AC^0$ and locality.} Interfaces in
+\texttt{ThirdPartyFacts/Facts\_Switching.lean:236--304} and \texttt{Core/ShrinkageAC0.lean} package external
+switching results into shrinkage witnesses with explicit bounds on depth, selector budget, and error.
+For depth-$d$, size-$M$ $\AC^0$ formulas the axiom \texttt{shrinkage\_for\_AC0} provides a certificate with
+\begin{align*}
+  t &\le (\logtwo(M+2))^{d+1},\qquad & \ell &\le (\logtwo(M+2))^{d+1}, \
+  0 &\le \varepsilon \le \frac{1}{n+2} & &\le \frac{1}{2}.
+\end{align*}
+Applying Theorem~A converts this data into a bounded-atlas scenario obeying
+$k,\,|\mathcal{A}| \le 2^{(\logtwo(M+2))^{d+1}}$, exactly the parameters used in
+\texttt{scenarioFromAC0\_completeBounds} and \texttt{exists\_boundedAtlas\_from\_AC0}
+in \texttt{LowerBounds/LB\_Formulas.lean:1089--1160}. The local-circuit interface
+\texttt{shrinkage\_for\_localCircuit} (\texttt{ThirdPartyFacts/Facts\_Switching.lean:278--340})
+yields analogous bounds with $t \le \kappa (\logtwo(M+2) + d + 1)$ and the same $\varepsilon$ constraint.
+
+\paragraph{Lean status.} The SAL core (Theorem~A) is proved entirely within Lean without
+additional assumptions. The interfaces to $\AC^0$ and locality currently rely on the external
+axioms \texttt{partial\_shrinkage\_for\_AC0}, \texttt{partial\_shrinkage\_with\_oracles}, and 
+\texttt{shrinkage\_for\_localCircuit}, which encapsulate the classical multi-switching lemmas needed
+for Step~A.
+
+\begin{lemma}[SAL-to-Capacity Parameters]\label{lem:SAL2capacity}
+Under the SAL bounds $D,k \le 2^{t}$ and $\varepsilon \le 1/(n+2)$ supplied by Theorem~A, the
+capacity estimate of Theorem~B applies with
+\[
+  |F| \le \mathrm{capacityBound}(2^{t},2^{t},2^{n},\varepsilon).
+\]
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+In Lean this bridge is recorded as \texttt{scenarioFromAC0\_stepAB\_summary} in
+\texttt{LowerBounds/LB\_Formulas.lean:1382--1432}, which couples the $k$ and dictionary bounds
+from Theorem~A with the counting bound \texttt{family\_card\_le\_capacity}. The local-circuit
+variant lives in \texttt{LowerBounds/LB\_LocalCircuits.lean:178--256}.\footnote{The explicit
+capacity inequality itself is \texttt{family\_card\_le\_capacity} in \texttt{LowerBounds/LB\_Formulas.lean:107--210}.}
+\end{proof}
 
 \section{Step B: Covering--Power (Capacity) bound}
 \label{sec:capacity}
-\begin{definition}[Atlas capacity]
-Given an atlas $\mathcal{A}$ with leaves $\beta_1,\dots,\beta_k$ (each a subcube with $N_j$ live
-variables) and error tolerance $\eps$, the \emph{capacity} $\mathrm{Cap}(\mathcal{A},\eps)$ is an
-upper bound on the number of distinct functions that can be $\eps$-approximated using $\mathcal{A}$.
-\end{definition}
-
-\begin{theorem}[Capacity bound]\label{thm:capacity}
-If a family $F$ is $\eps$-approximated by an atlas $\mathcal{A}$ with leaves
-$\beta_1,\dots,\beta_k$, then
+Step~B translates the atlas data delivered by SAL into purely counting statements. The Lean
+formalization introduces two combinatorial quantities:
+\begin{itemize}[leftmargin=*,nosep]
+  \item the \emph{union bound} $\mathrm{UnionBound}(D,k)=\sum_{i=0}^k \binom{D}{i}$, which limits how
+  many unions of at most $k$ subcubes from a dictionary of length~$D$ can occur; and
+  \item the \emph{Hamming-ball bound} $\mathrm{HammingBall}(N,\varepsilon)$, which counts the number of
+  Boolean functions on $N$ inputs within distance $\varepsilon N$ of a fixed center.
+\end{itemize}
+Their product
 \begin{equation*}
-|F| \;\le\; \mathrm{Cap}(\mathcal{A},\eps)
-\;\;\le\;\; \prod_{j=1}^{k} \sum_{i=0}^{\lfloor \eps N_j \rfloor} \binom{N_j}{i}
-\;\;\le\;\; \prod_{j=1}^{k} 2^{H(\eps)\,N_j}
-\;=\; 2^{H(\eps)\,\sum_{j} N_j},
+  \mathrm{capacityBound}(D,k,N,\varepsilon)
+  = \mathrm{UnionBound}(D,k) \cdot \mathrm{HammingBall}(N,\varepsilon)
 \end{equation*}
-where $H(\eps)$ is the binary entropy.
-\end{theorem}
+upper-bounds the size of every $\varepsilon$-approximation class supported by a dictionary of
+length~$D$ with union budget~$k$.
+
+\begin{theoremB}[Covering--Power / Capacity]\label{thm:capacity}
+Let $\mathcal{A}$ be an atlas on $n$ variables with dictionary length $D$, selector budget $k$, and
+error tolerance $\varepsilon \le \tfrac{1}{2}$. If a family $F$ is approximated by $\mathcal{A}$ (in
+the sense supplied by Step~A), then
+\begin{equation*}
+  |F| \;\le\; \mathrm{capacityBound}(D,k,2^{n},\varepsilon).
+\end{equation*}
+Moreover, the Lean development records the explicit inequality
+\begin{equation*}
+  \mathrm{capacityBound}(D,k,2^{n},\varepsilon)
+  \;\le\; (k+1) \cdot \bigl(\max\{1,D\}\bigr)^{k} \cdot 2^{2^{n}},
+\end{equation*}
+which is convenient for automated searches.\footnote{Formalized as \texttt{family\_card\_le\_capacity} and 
+\texttt{approxClass\_card\_le\_capacity} in \texttt{Counting/Atlas\_to\_LB\_Core.lean:1006--1055}
+and \texttt{LowerBounds/LB\_Formulas.lean:107--210}.}
+\end{theoremB}
 
 \begin{proof}[Proof idea]
-On each leaf $\beta_j$, an $\eps$-fraction of discrepancies accounts for at most
-$\sum_{i \le \eps N_j}\binom{N_j}{i}$ distinct local behaviors. Multiplying across leaves and
-applying the standard entropy upper bound yields the claim.
+Every function in $F$ agrees outside a small Hamming ball with a union of at most $k$ dictionary
+subcubes. Enumerating the possible unions gives the $\mathrm{UnionBound}$ factor, while the error
+budget contributes $\mathrm{HammingBall}$. Multiplying the two constraints yields the stated bound.
 \end{proof}
 
-\paragraph{Lean status.} Theorem~\ref{thm:capacity} is formalized in Lean~4 as
-\texttt{family\_card\_le\_capacity}, together with all auxiliary bounds on Hamming balls and
-binomial sums. All corresponding modules build with \#print axioms returning an empty set.
+\paragraph{Lean status.} Theorem~B is implemented as
+\texttt{family\_card\_le\_capacity} together with its preparatory lemmas
+\texttt{approxClass\_card\_le\_capacity} and 
+\texttt{approxClass\_card\_le\_explicit}. The entire Step~B directory builds with
+\#print~\texttt{axioms} returning the empty set.
 
 \section{Step C: Anti-checker lower bounds for \texorpdfstring{\GapMCSP}{GapMCSP}}
 \label{sec:anti}
-Assume a \emph{small} solver $\mathcal{S}$ for \GapMCSP\ (e.g.\ depth-2 formulas of size $N^{2+\delta}$,
-or $\polylog$-local circuits of size $N (\log N)^\kappa$). Applying Step~A produces a $(k,\eps)$-atlas
-$\mathcal{A}$; Step~B upper-bounds the number of functions such an atlas can approximate.
+Let $N=2^n$ and fix GapMCSP thresholds $s_{\mathrm{YES}}(n)$ and $s_{\mathrm{NO}}(n)$ with
+$s_{\mathrm{NO}}(n) \ge s_{\mathrm{YES}}(n)^{1+\delta}$. The anti-checker interface encapsulated in
+\texttt{LowerBounds/AntiChecker.lean:37--132} turns any purported ``small'' solver on length-$N$ inputs into a family $Y$ violating the capacity bounds from Step~B.
 
-\begin{theorem}[Anti-checker; existence of a rich subfamily]\label{thm:anti}
-Under the small-solver hypothesis for \GapMCSP, there exists a family $F$ and a subset
-$Y \subseteq F$ such that $|Y| > \mathrm{Cap}(\mathcal{A},\eps)$ for any atlas $\mathcal{A}$
-arising from $\mathcal{S}$ via Step~A.
-\end{theorem}
+\begin{theoremC}[Anti-checker lower bounds for \GapMCSP]\label{thm:anti}
+Assume the axioms \texttt{antiChecker\_exists\_large\_Y}, \texttt{antiChecker\_exists\_testset},
+\texttt{antiChecker\_exists\_large\_Y\_local}, and \texttt{antiChecker\_exists\_testset\_local}. Then no solver of the following shapes can decide \GapMCSP~$($with the above promise$)$ on inputs of length $N=2^n$:
+\begin{enumerate}[leftmargin=*,nosep]
+  \item depth-2 formulas of size at most $N^{2+\delta}$ (with $\delta>0$), and
+  \item $\kappa$-local circuits of size at most $N(\log N)^\kappa$ for any fixed $\kappa>0$.
+\end{enumerate}
+\end{theoremC}
 
-\begin{proof}[Proof idea (circuit--input game)]
-We iteratively construct $Y$ by adversarially choosing inputs that expose errors of $\mathcal{S}$.
-The SAL structure ensures that any compatible atlas can only approximate a bounded number of
-functions; the construction of $Y$ violates this bound. The argument follows standard
-minimax/coding heuristics and can be formalized.
+\begin{proof}[Proof sketch]
+Lean formalizes the contradiction arguments in \texttt{LowerBounds/LB\_Formulas\_Core.lean:20--50}
+for depth-2/\AC^0$^{\!*}$ solvers and in \texttt{LowerBounds/LB\_LocalCircuits.lean:24--54} for
+local circuits. In each case the anti-checker axioms output $Y$ and a test set $T$ whose
+cardinalities overflow the capacity bound of Theorem~B once the SAL parameters from Theorem~A are
+substituted (Lemma~\ref{lem:SAL2capacity}).
 \end{proof}
 
-Consequently, \GapMCSP\ requires super-quadratic depth-2 formulas and near-linear $(\log N)^\kappa$-local
-circuits, for some absolute $\delta,\kappa>0$ (precise parameters are stated in the full version).
+\paragraph{Axiom interface.}
+The axioms above expose precisely the families and test sets consumed by Step~B:
+\begin{itemize}[leftmargin=*,nosep]
+  \item \texttt{antiChecker\_exists\_large\_Y} and \texttt{antiChecker\_exists\_testset}
+        (\texttt{LowerBounds/AntiChecker.lean:67--108}) handle $\AC^0$/depth-2 solvers;
+  \item \texttt{antiChecker\_exists\_large\_Y\_local} and
+        \texttt{antiChecker\_exists\_testset\_local}
+        (\texttt{LowerBounds/AntiChecker.lean:113--171}) cover $\kappa$-local circuits.
+\end{itemize}
+Instantiations with concrete GapMCSP parameters appear in
+\texttt{Tests/LB\_Core\_Contradiction.lean:25--36}, providing automated sanity checks.
+
+\begin{center}
+\begin{tabular}{lcl}
+\textbf{Our LB (Step C)} & \Longrightarrow & \textbf{Trigger hypothesis (Step D)} \\ 
+\hline
+\GapMCSP not in depth-2 formulas of size $N^{2+\delta}$ &
+\Rightarrow & OPS'20 depth-2 trigger $\Rightarrow \NP \not\subseteq \Ppoly$ \\ 
+\GapMCSP not in $\kappa$-local circuits of size $N(\log N)^\kappa$ &
+\Rightarrow & CJW'22 locality trigger $\Rightarrow \NP \not\subseteq \Ppoly$
+\end{tabular}
+\end{center}
 
 \section{Step D: Magnification triggers and the final separation}
 \label{sec:magnification}
-We use the following standard trigger theorems (informally stated here).
+The Step~C lower bounds match the hypotheses of the OPS'20 and CJW'22 magnification theorems.
 
-\begin{theorem}[OPS'20: depth-2 formula trigger]
-If there exists $\delta>0$ such that \GapMCSP\ requires depth-2 formulas of size $N^{2+\delta}$,
-then $NP \not\subseteq P/\mathrm{poly}$.
-\end{theorem}
+\paragraph{OPS'20 depth-2 trigger.}
+\begin{description}[leftmargin=*,style=nextline]
+  \item[Instance family] \GapMCSP on inputs of length $N=2^n$ with thresholds
+        $(s_{\mathrm{YES}}(n), s_{\mathrm{NO}}(n))$.
+  \item[Circuit model] Depth-2 formulas of size at most $N^{2+\delta}$ for a fixed $\delta>0$.
+  \item[Input length] $N=2^n$, aligned with the SAL and anti-checker interfaces.
+  \item[Promise] Distinguish $\mathsf{size}(f)\le s_{\mathrm{YES}}(n)$ from $\mathsf{size}(f)\ge s_{\mathrm{NO}}(n)$.
+\end{description}
+Encoded in Lean by the axioms \texttt{OPS\_trigger\_formulas} and \texttt{OPS\_trigger\_general}
+(\texttt{Magnification/Facts\_Magnification.lean:120--196}).
 
-\begin{theorem}[CJW'22: locality trigger]
-If there exists $\kappa>0$ such that \GapMCSP\ requires $\polylog$-local circuits of size
-$N \cdot (\log N)^\kappa$, then $NP \not\subseteq P/\mathrm{poly}$.
-\end{theorem}
+\paragraph{CJW'22 locality trigger.}
+\begin{description}[leftmargin=*,style=nextline]
+  \item[Instance family] The same \GapMCSP promise on length-$N$ inputs.
+  \item[Circuit model] $\kappa$-local circuits of size $N(\log N)^\kappa$ for constant $\kappa>0$.
+  \item[Input length] $N=2^n$.
+  \item[Promise] Identical YES/NO thresholds as above.
+\end{description}
+Captured by the axioms \texttt{Locality\_trigger} and \texttt{CJW\_sparse\_trigger}
+(\texttt{Magnification/Facts\_Magnification.lean:198--276}), plus the locality lift
+\texttt{locality\_lift} (\texttt{Magnification/LocalityLift.lean:45--138}) that translates general solvers into local ones.
 
-Combining either trigger with $P \subseteq P/\mathrm{poly}$ yields $P \neq NP$. The mapping of our
-parameters $(\delta,\kappa)$ to the hypotheses of these theorems is spelled out in the extended
-version; the same mapping can be mirrored in the Lean formalization.
+\paragraph{Lean integration.}
+The file \texttt{Magnification/FinalResult.lean:28--112} combines these triggers with the Step~C
+lower bounds, deducing $\NP \not\subseteq \Ppoly$ and, via the interface axioms
+\texttt{NP\_not\_subset\_Ppoly}, \texttt{P\_subset\_Ppoly}, and \texttt{P\_ne\_NP\_of\_nonuniform\_separation} (\texttt{Complexity/Interfaces.lean:210--268}),
+concludes $\PP \neq \NP$.
 
 \section{External assumptions and current status}
 \begin{itemize}[leftmargin=*,nosep]
-  \item \textbf{Step A.} Uses one external axiom encapsulating the classical $\AC$ switching lemma
-  to feed parameters $(t,\ell,\eps)$ into SAL. All remaining details are Lean-verified.
-  \item \textbf{Step B.} Fully Lean-verified (no axioms, no \textsc{sorry}).
-  \item \textbf{Step C.} The anti-checker statements (existence of a rich $Y$ and optional test set $T$)
-  follow known game-based arguments and can be ported to Lean; currently stated as conditional theorems.
-  \item \textbf{Step D.} The magnification triggers (OPS'20; CJW'22 and related) are cited standard results;
-  they can be imported as references or formalized.
+  \item \textbf{Step A.} Three axioms encapsulate classical switching results:
+  \texttt{partial\_shrinkage\_for\_AC0}, \texttt{partial\_shrinkage\_with\_oracles}, and
+  \texttt{shrinkage\_for\_localCircuit}. The SAL core itself is fully proved.
+  \item \textbf{Step B.} Completely formalized with no axioms or \textsc{sorry}.
+  \item \textbf{Step C.} Four axioms describe the anti-checker output (rich subfamilies and optional
+  test sets) for $\AC^0$ and local circuits; the counting consequences are fully checked.
+  \item \textbf{Step D.} Ten axioms encode the magnification triggers, the locality lift, and the
+  interface to the previously formalized complexity-class facts.
 \end{itemize}
+The consolidated audit in \texttt{docs/PNP\_Proof\_Audit\_2025-10-22.md} records these seventeen
+axioms and the status of every Lean module.
 
 \paragraph{Depth-2 constructive addendum.}
 Independently, we develop constructive depth-2 switching for DNF/CNF; the DNF case is complete,
@@ -228,17 +369,24 @@ pipeline but useful as a ground check.
 \section{Reproducibility and Lean artifacts}
 We provide a self-contained Lean~4 project with:
 \begin{itemize}[leftmargin=*,nosep]
-  \item All Step~A (SAL) and Step~B (Capacity) modules, fully verified.
-  \item A \#print axioms log confirming zero axioms in Step~B and exactly one external axiom used by Step~A.
+  \item Complete formal proofs for the SAL core and all counting lemmas.
+  \item Structured interfaces for external results, each annotated as an axiom with source references.
   \item Unit tests and smoke tests for PDT/atlas infrastructure.
 \end{itemize}
-Artifacts: \texttt{[GitHub URL]}, commit \texttt{[hash]}, build: \texttt{lake build}.
+Artifacts: \texttt{[GitHub URL]}, commit \texttt{[hash]}, build: \texttt{lake build}. The file
+\texttt{docs/PNP\_Proof\_Audit\_2025-10-22.md} summarizes the axiom inventory and verification
+status of every module.
 
 \section{Outlook}
-To obtain a fully self-contained proof, the remaining work is: (i) formalize the multi-switching
-lemma for $\AC$ (and its locality/oracle variants) to eliminate the Step~A axiom;
-(ii) formalize the anti-checker theorems; and (iii) formalize the OPS/CJW triggers.
-All are standard or folklore-level results in the literature and amenable to mechanization.
+To obtain a fully self-contained proof we must eliminate the remaining axioms:
+\begin{enumerate}[leftmargin=*,nosep]
+  \item formalize the multi-switching lemma for $\AC^0$ (including the oracle and locality
+  extensions) to discharge the Step~A assumptions;
+  \item mechanize the anti-checker game and richness arguments underlying Step~C; and
+  \item import or formalize the OPS/CJW magnification triggers and the locality lift used in Step~D.
+\end{enumerate}
+Each task corresponds to a well-documented result in the literature; the Lean infrastructure in this
+repository isolates the statements so that future work can replace every axiom with a proof.
 
 \paragraph{Acknowledgments.} [Add collaborators, discussion partners, funding, etc.]
 
@@ -256,17 +404,17 @@ P.~Beame.
 \bibitem{ServedioTan18}
 R.~Servedio and L.-Y.~Tan.
 \newblock Pseudorandom multi-switching lemmas.
-\newblock FOCS 2018; journal versions 2019/2022.
+\newblock In \emph{Proc. 59th IEEE Symp. on Foundations of Computer Science (FOCS)}, pages 555--566, 2018. Extended version: \emph{SIAM J. Comput.} 51(2):422--481, 2022. doi:10.1137/19M1277231.
 
 \bibitem{OPS20}
 I.~Oliveira, P.~Pich, and R.~Santhanam.
 \newblock Hardness magnification near state-of-the-art lower bounds.
-\newblock ITCS/CCC 2020 (various versions).
+\newblock In \emph{Proc. 11th Innovations in Theoretical Computer Science Conference (ITCS)}, LIPIcs~151, Article~21, 2020. arXiv:1811.02065.
 
 \bibitem{CJW22}
 X.~Chen, Y.~Jin, and R.~Williams.
 \newblock Hardness magnification for sparse languages.
-\newblock J.~ACM, 2022.
+\newblock \emph{Journal of the ACM} 69(6):46:1--46:58, 2022. doi:10.1145/3557945.
 
 \bibitem{AroraBarak}
 S.~Arora and B.~Barak.

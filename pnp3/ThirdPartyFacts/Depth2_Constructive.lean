@@ -140,6 +140,42 @@ def intersectSubcubes {n : Nat} (subcubes : List (Subcube n)) : Option (Subcube 
     (some (fullSubcube n))
 
 /--
+Lemma: intersection with fullSubcube is identity.
+-/
+lemma intersectSubcube_fullSubcube_right {n : Nat} (β : Subcube n) :
+    intersectSubcube β (fullSubcube n) = some β := by
+  unfold intersectSubcube fullSubcube
+  -- Check compatibility is always true
+  have h_compat : (List.finRange n).all fun i =>
+      match β i, (fun _ => none : Subcube n) i with
+      | some b₁, some b₂ => b₁ == b₂
+      | _, _ => true := by
+    simp [List.all_iff_forall]
+    intro i _
+    cases β i <;> simp
+  simp [h_compat]
+  -- Show resulting function equals β
+  ext i
+  cases β i <;> simp
+
+/--
+Lemma: intersection with fullSubcube on the left is identity.
+-/
+lemma intersectSubcube_fullSubcube_left {n : Nat} (β : Subcube n) :
+    intersectSubcube (fullSubcube n) β = some β := by
+  unfold intersectSubcube fullSubcube
+  have h_compat : (List.finRange n).all fun i =>
+      match (fun _ => none : Subcube n) i, β i with
+      | some b₁, some b₂ => b₁ == b₂
+      | _, _ => true := by
+    simp [List.all_iff_forall]
+    intro i _
+    cases β i <;> simp
+  simp [h_compat]
+  ext i
+  cases β i <;> simp
+
+/--
 Generate all combinations of selecting one element from each list.
 Cartesian product of lists.
 -/
@@ -199,7 +235,14 @@ lemma cartesianProduct_mem {α : Type _} (lists : List (List α)) (combo : List 
       | succ j =>
           simp
           have h_ys := ih ys hys ⟨j, by simp at i; omega⟩
-          sorry  -- Need more list indexing reasoning
+          constructor
+          · -- Show (x :: ys)[succ j]? = some ((x :: ys)[succ j])
+            rfl
+          · -- Show ∃ h, (x :: ys)[succ j] ∈ (xs :: rest)[succ j]? .getD []
+            obtain ⟨h_getIdx, h_j_lt, h_mem⟩ := h_ys
+            exists Nat.succ_lt_succ h_j_lt
+            simp
+            exact h_mem
 
 /--
 Lemma: if we have elements from each list, we can construct a member of cartesianProduct.
@@ -994,8 +1037,20 @@ theorem partial_shrinkage_small_dnf {n : Nat} (h_pos : 0 < n) (dnf : SmallDNF n)
         rw [← h_subcubes_len]
         exact h_depth
       have h2 : dnf.terms.length ≤ (dnf.terms.map (fun t => t.literals.length)).sum := by
-        -- Each term has at least 0 literals, so length ≤ sum
-        sorry  -- This requires a small lemma about list lengths and sums
+        -- Each term contributes at least 1 to the count (1 term = at least 1 in sum if non-empty)
+        -- For a conservative bound, we use that sum is always ≥ 0, and if list is empty both sides are 0
+        induction dnf.terms with
+        | nil => simp
+        | cons t rest ih =>
+            simp [List.map, List.sum_cons]
+            cases ht : t.literals.length with
+            | zero =>
+                -- If this term has 0 literals, we still have rest.length + 1 ≤ 0 + sum_rest
+                -- This requires rest.length ≤ sum_rest, which is ih
+                omega
+            | succ n =>
+                -- If this term has n+1 literals, then rest.length + 1 ≤ (n+1) + sum_rest
+                omega
       exact Nat.le_trans h1 h2
     selectors := fun g => if g = f then subcubes else []
     selectors_sub := by
@@ -1124,8 +1179,14 @@ theorem partial_shrinkage_depth2_dnf {n : Nat} (h_pos : 0 < n) (dnf : GeneralDNF
         rw [← h_subcubes_len]
         exact h_depth
       have h2 : dnf.terms.length ≤ (dnf.terms.map (fun t => t.literals.length)).sum := by
-        -- Each term has at least 0 literals
-        sorry  -- Simple list lemma
+        -- Each term contributes to the count
+        induction dnf.terms with
+        | nil => simp
+        | cons t rest ih =>
+            simp [List.map, List.sum_cons]
+            cases ht : t.literals.length with
+            | zero => omega
+            | succ n => omega
       exact Nat.le_trans h1 h2
     selectors := fun g => if g = f then subcubes else []
     selectors_sub := by
@@ -1223,8 +1284,7 @@ lemma memB_intersectSubcubes_of_all {n : Nat} (subcubes : List (Subcube n)) (x :
         simp [intersectSubcubes]
         exists β
         constructor
-        · simp [intersectSubcube, fullSubcube]
-          sorry -- Need to show intersection with fullSubcube is identity
+        · exact intersectSubcube_fullSubcube_right β
         · exact h_all β (List.mem_cons_self _ _)
       · have h_rest : ∀ β' ∈ rest, memB β' x = true := by
           intro β' hβ'
@@ -1256,11 +1316,58 @@ theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.B
     -- β is in filterMap intersectSubcubes of cartesian product
     rw [List.all_eq_true]
     intro clause h_clause
-    -- Need to show evalClause clause x = true
-    -- β came from intersection of subcubes, one per clause
-    -- If x ∈ β and β = ∩ of subcubes, then x ∈ each subcube
-    sorry  -- Technical: extract from filterMap/cartesianProduct that β came from
-           -- appropriate subcubes, then use memB_of_intersectSubcube iteratively
+
+    -- Extract combo from filterMap
+    have h_filterMap : ∃ combo ∈ cartesianProduct (cnf.clauses.map clauseToSubcubes),
+        intersectSubcubes combo = some β := by
+      -- β ∈ (cartesianProduct ...).filterMap intersectSubcubes
+      -- By definition of filterMap, ∃ combo such that intersectSubcubes combo = some β
+      have : β ∈ List.filterMap intersectSubcubes (cartesianProduct (cnf.clauses.map clauseToSubcubes)) := h_in
+      -- Use filterMap membership: if b ∈ filterMap f xs, then ∃ a ∈ xs, f a = some b
+      induction (cartesianProduct (cnf.clauses.map clauseToSubcubes)) with
+      | nil =>
+          simp [List.filterMap] at this
+      | cons combo rest ih =>
+          simp [List.filterMap] at this
+          cases h_int : intersectSubcubes combo with
+          | none =>
+              simp [h_int] at this
+              obtain ⟨combo', h_combo', h_some⟩ := ih this
+              exists combo'
+              constructor
+              · right; exact h_combo'
+              · exact h_some
+          | some β' =>
+              simp [h_int] at this
+              cases this with
+              | inl h_eq =>
+                  subst h_eq
+                  exists combo
+                  constructor
+                  · left; rfl
+                  · exact h_int
+              | inr h_rest =>
+                  obtain ⟨combo', h_combo', h_some⟩ := ih h_rest
+                  exists combo'
+                  constructor
+                  · right; exact h_combo'
+                  · exact h_some
+
+    obtain ⟨combo, h_combo_in, h_combo_int⟩ := h_filterMap
+
+    -- Now we need to show clause evaluation
+    -- combo is from cartesianProduct of clause subcubes
+    -- β is intersection of combo, and x ∈ β
+    -- So x must be in each subcube in combo
+    -- In particular, x is in the subcube for this clause
+    rw [← coveredB_clauseToSubcubes]
+    rw [coveredB, List.any_eq_true]
+
+    -- Find the subcube in combo corresponding to clause
+    -- This is technical: need to extract from combo structure
+    -- For now, we use that if intersection contains x, at least one path works
+    -- The full proof requires showing combo structure matches clause structure
+    sorry -- Still needs detailed combo/clause correspondence
 
   · -- Backward: if satisfies all clauses, then covered by some intersection
     intro h_all
@@ -1276,10 +1383,72 @@ theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.B
       rw [coveredB, List.any_eq_true] at h_clause_sat
       exact h_clause_sat
 
-    -- The intersection of chosen subcubes should contain x
-    -- This requires constructive choice or skolemization
-    sorry  -- Technical: use choice to extract subcubes, show they're in cartesianProduct,
-           -- compute intersection using memB_intersectSubcubes_of_all, show result in filterMap
+    -- Use classical choice to pick one subcube per clause
+    by_cases h_empty : cnf.clauses = []
+    · -- If no clauses, the result follows trivially
+      subst h_empty
+      simp [cartesianProduct, List.filterMap, intersectSubcubes]
+      exists fullSubcube n
+      constructor
+      · left; rfl
+      · rw [memB_eq_true_iff]
+        intro i b hβ
+        unfold fullSubcube at hβ
+        contradiction
+
+    · -- Non-empty clauses: use choice to extract witnesses
+      -- Build a combo by choosing one subcube per clause
+      have h_combo_exists : ∃ combo : List (Subcube n),
+          combo.length = cnf.clauses.length ∧
+          (∀ i : Fin cnf.clauses.length,
+            ∃ h_i : i.val < (cnf.clauses.map clauseToSubcubes).length,
+              combo[i]? = (cnf.clauses.map clauseToSubcubes)[i.val]?.bind
+                (fun subcubes => subcubes.find? (fun β => memB β x))) ∧
+          (∀ β ∈ combo, memB β x = true) := by
+        sorry -- Technical: constructive extraction using choice
+
+      obtain ⟨combo, h_len, h_combo_struct, h_combo_mem⟩ := h_combo_exists
+
+      -- Show combo is in cartesianProduct
+      have h_combo_in : combo ∈ cartesianProduct (cnf.clauses.map clauseToSubcubes) := by
+        sorry -- Technical: show combo structure matches cartesianProduct structure
+
+      -- Compute intersection
+      obtain ⟨β_int, h_int, h_mem_int⟩ := memB_intersectSubcubes_of_all combo x h_combo_mem
+
+      -- Show β_int is in filterMap
+      exists β_int
+      constructor
+      · -- Show β_int ∈ filterMap
+        have : β_int ∈ List.filterMap intersectSubcubes (cartesianProduct (cnf.clauses.map clauseToSubcubes)) := by
+          -- Show combo is in cartesianProduct and intersects to β_int
+          induction (cartesianProduct (cnf.clauses.map clauseToSubcubes)) with
+          | nil =>
+              simp at h_combo_in
+          | cons c rest ih =>
+              simp [List.filterMap]
+              by_cases hc : c = combo
+              · subst hc
+                simp [h_int]
+                left; rfl
+              · cases intersectSubcubes c with
+                | none =>
+                    simp
+                    apply ih
+                    simp [List.mem_cons] at h_combo_in
+                    cases h_combo_in with
+                    | inl h_eq => contradiction
+                    | inr h_rest => exact h_rest
+                | some β' =>
+                    simp
+                    right
+                    apply ih
+                    simp [List.mem_cons] at h_combo_in
+                    cases h_combo_in with
+                    | inl h_eq => contradiction
+                    | inr h_rest => exact h_rest
+        exact this
+      · exact h_mem_int
 
 /--
 **Theorem**: General depth-2 CNF has constructive shrinkage.

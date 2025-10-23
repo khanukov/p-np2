@@ -32,6 +32,7 @@
 
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Log
 import Core.BooleanBasics
 import Core.PDT
 import AC0.Formulas
@@ -259,9 +260,9 @@ It can be proven by noting that if 2^k ≤ a ≤ b, then 2^k ≤ b, so log2(a) �
 -/
 lemma depth_bound_monotonic (M₁ M₂ : Nat) (h : M₁ ≤ M₂) :
     Nat.log2 (M₁ + 2) ≤ Nat.log2 (M₂ + 2) := by
-  -- Monotonicity of log2: standard mathematical fact
-  -- For proof, show: if a ≤ b then ⌊log₂(a)⌋ ≤ ⌊log₂(b)⌋
-  sorry  -- Trivial mathematical fact, exact Mathlib lemma name varies by version
+  -- Monotonicity of log2: use Nat.log_mono_right with base 2
+  apply Nat.log_mono_right
+  omega
 
 /-! ### Documentation for proof developers -/
 

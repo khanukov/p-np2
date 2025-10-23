@@ -21,9 +21,8 @@ Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-En
 ### Supporting material
 * `experiments/` – Python tooling for enumerating small Boolean circuits, computing entropy statistics, and replaying classic experiments.  The scripts double as sanity checks for analytic bounds derived in `pnp3/`.
 * `scripts/` – helper shell/Lean scripts (`scripts/check.sh`, smoke tests, cache warmers).
-* `docs/` (root) – research notes predating PNP3; they are superseded by `pnp3/Docs/` but remain for context.
-* `Task_description.md`, `TODO.md` – current task boards and migration checklists.
-* `Pnp2/` – archived source of the FCE-Lemma programme (fully proved cover construction, constructive `P ⊆ P/poly`, and magnification axioms).  These files are no longer actively extended but provide provenance for the transition to PNP3.
+* `TODO.md` – current task tracking and migration checklists.
+* `Pnp2/` – archived source of the FCE-Lemma programme (fully proved cover construction, constructive `P ⊆ P/poly`, and magnification axioms).  Historical documentation is in `Pnp2/docs/`.  These files are no longer actively extended but provide provenance for the transition to PNP3.
 
 ## Toolchain and build
 

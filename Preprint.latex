@@ -13,8 +13,8 @@
 \title{%
 A Blueprint for $P \neq NP$ via Switching--Atlas Lemma, Capacity Bounds, and Hardness Magnification\\[2mm]
 \large (with fully formalized Steps A and B in Lean~4; Steps C and D conditional on standard results)}
-\author{Author: \texttt{[Your Name]}\\
-\small Artifacts repository: \texttt{[GitHub URL to pnp3]}
+\author{Author: \texttt{Dmitry Khanukov}\\
+\small Artifacts repository: \texttt{https://github.com/khanukov/p-np2}
 }
 \date{\today}
 
@@ -388,8 +388,6 @@ To obtain a fully self-contained proof we must eliminate the remaining axioms:
 \end{enumerate}
 Each task corresponds to a well-documented result in the literature; the Lean infrastructure in this
 repository isolates the statements so that future work can replace every axiom with a proof.
-
-\paragraph{Acknowledgments.} [Add collaborators, discussion partners, funding, etc.]
 
 \begin{thebibliography}{99}
 \bibitem{Hastad86}

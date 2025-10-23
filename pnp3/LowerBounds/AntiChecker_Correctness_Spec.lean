@@ -127,8 +127,20 @@ def SolverComplete {n : Nat} (S : SolverFunction n) (s_NO : Nat) : Prop :=
     inst.circuit_complexity > s_NO → S inst.f = false
 
 /--
+NOTE: The following lemma is mathematically unprovable without additional monotonicity
+assumptions about circuit complexity. It is kept commented out for documentation purposes.
+
 Full correctness = soundness + completeness.
+
+This bidirectional equivalence CANNOT be proven because:
+1. SolverCorrect guarantees behavior on ALL YES and NO instances
+2. SolverSound + SolverComplete only guarantees behavior when S outputs specific values
+3. There's no guarantee S outputs true on ALL YES instances (only that true implies YES)
+
+The correct approach is to work directly with SolverCorrect (full correctness).
+This lemma is UNUSED in all core proofs and should NOT be imported.
 -/
+/- DISABLED: mathematically unprovable
 lemma solver_correct_iff_sound_and_complete {n : Nat}
     (S : SolverFunction n) (s_YES s_NO : Nat) :
     SolverCorrect S s_YES s_NO ↔
@@ -151,6 +163,7 @@ lemma solver_correct_iff_sound_and_complete {n : Nat}
       -- Need to show S accepts YES instances
       sorry
     · exact hcomplete
+-/
 
 /-! ### AC⁰ solver interface -/
 

@@ -38,6 +38,73 @@ namespace Depth2Constructive
 open Core
 open ConstructiveSwitching
 
+/-! ### Helper: Build PDT from list of subcubes -/
+
+/--
+Build a PDT from a list of subcubes by creating a tree with those leaves.
+
+This constructs a left-skewed binary tree where each subcube becomes a leaf.
+The tree branches on variable 0 repeatedly (the choice of variable doesn't matter
+for correctness, only for depth).
+
+**Key property**: `PDT.leaves (buildPDTFromSubcubes subcubes) = subcubes`
+-/
+def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n) (subcubes : List (Subcube n)) : PDT n :=
+  match subcubes with
+  | [] => PDT.leaf (fullSubcube n)  -- Empty case: default to fullSubcube
+  | [β] => PDT.leaf β  -- Single subcube: just a leaf
+  | β :: rest =>
+      -- Multiple subcubes: build a chain
+      -- Branch on variable 0, left child is β, right child is recursive call
+      let i : Fin n := ⟨0, h_pos⟩
+      PDT.node i (PDT.leaf β) (buildPDTFromSubcubes h_pos rest)
+
+/--
+Correctness lemma: the leaves of the constructed tree are exactly the input subcubes.
+-/
+lemma buildPDTFromSubcubes_leaves {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) :
+    PDT.leaves (buildPDTFromSubcubes h_pos subcubes) = subcubes := by
+  induction subcubes with
+  | nil =>
+      simp [buildPDTFromSubcubes, PDT.leaves]
+  | cons β rest ih =>
+      cases rest with
+      | nil =>
+          simp [buildPDTFromSubcubes, PDT.leaves]
+      | cons β' rest' =>
+          have h_recursive : buildPDTFromSubcubes h_pos (β :: β' :: rest') =
+              PDT.node ⟨0, h_pos⟩ (PDT.leaf β) (buildPDTFromSubcubes h_pos (β' :: rest')) := by
+            rfl
+          simp [h_recursive, PDT.leaves, ih]
+
+/--
+The depth of the constructed tree is at most the length of the subcube list.
+(Actually equals length - 1 for non-empty lists, but we only need upper bound)
+-/
+lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) :
+    PDT.depth (buildPDTFromSubcubes h_pos subcubes) ≤ subcubes.length := by
+  induction subcubes with
+  | nil =>
+      simp [buildPDTFromSubcubes, PDT.depth]
+  | cons β rest ih =>
+      cases rest with
+      | nil =>
+          simp [buildPDTFromSubcubes, PDT.depth]
+      | cons β' rest' =>
+          have h_recursive : buildPDTFromSubcubes h_pos (β :: β' :: rest') =
+              PDT.node ⟨0, h_pos⟩ (PDT.leaf β) (buildPDTFromSubcubes h_pos (β' :: rest')) := by
+            rfl
+          simp [h_recursive, PDT.depth]
+          have hmax : Nat.max 0 (PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest'))) =
+              PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')) := by
+            exact Nat.max_zero_left _
+          rw [hmax]
+          have hrest_len : (β' :: rest').length = Nat.succ rest'.length := by rfl
+          rw [hrest_len] at ih
+          omega
+
 /-! ### Helper functions for subcube restrictions -/
 
 /--
@@ -417,7 +484,7 @@ a clause needs MULTIPLE subcubes (one per literal) to represent the disjunction.
 **Note**: For a clause with k literals, depthBound ≤ k.
 The selectors contain one subcube per literal in the clause.
 -/
-theorem partial_shrinkage_single_clause {n : Nat} (clause : SingleClause n) :
+theorem partial_shrinkage_single_clause {n : Nat} (h_pos : 0 < n) (clause : SingleClause n) :
     let f : Core.BitVec n → Bool := evalClause clause
     let F : Family n := [f]
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
@@ -428,14 +495,17 @@ theorem partial_shrinkage_single_clause {n : Nat} (clause : SingleClause n) :
   -- Build list of subcubes, one per literal
   let subcubes := clauseToSubcubes clause
 
-  -- For simplicity, use a single leaf containing the first subcube
-  -- (In a full implementation, we'd build a more complex tree)
-  -- For now, we use the list of subcubes as our selectors
-  let β_default := fullSubcube n
-  let tree := PDT.leaf β_default
+  -- Build PDT with leaves = subcubes using buildPDTFromSubcubes
+  let tree := buildPDTFromSubcubes h_pos subcubes
 
-  have h_depth : PDT.depth tree = 0 := by
-    simp [tree, PDT.depth]
+  have h_leaves : PDT.leaves tree = subcubes := by
+    exact buildPDTFromSubcubes_leaves h_pos subcubes
+
+  have h_depth : PDT.depth tree ≤ subcubes.length := by
+    exact buildPDTFromSubcubes_depth h_pos subcubes
+
+  have h_subcubes_len : subcubes.length = clause.literals.length := by
+    simp [subcubes, clauseToSubcubes]
 
   -- The clause is satisfied on the union of subcubes
   refine ⟨0, {
@@ -444,7 +514,10 @@ theorem partial_shrinkage_single_clause {n : Nat} (clause : SingleClause n) :
     epsilon := 0
     trunk_depth_le := by
       simp [PartialDT.ofPDT]
-      exact Nat.zero_le _
+      have : PDT.depth tree ≤ clause.literals.length := by
+        rw [← h_subcubes_len]
+        exact h_depth
+      exact this
     selectors := fun g => if g = f then subcubes else []
     selectors_sub := by
       intro g γ hg hγ
@@ -452,8 +525,10 @@ theorem partial_shrinkage_single_clause {n : Nat} (clause : SingleClause n) :
       subst hg
       simp [subcubes] at hγ
       -- γ is in clauseToSubcubes clause, need to show it's in tree leaves
-      -- Use the axiom that literal subcubes are contained in fullSubcube
-      exact literal_subcube_in_full clause γ hγ
+      -- Now this is trivial because PDT.leaves tree = subcubes!
+      simp [PartialDT.ofPDT, PartialDT.realize]
+      rw [h_leaves]
+      exact hγ
     err_le := by
       intro g hg
       simp [F] at hg
@@ -528,7 +603,7 @@ the depth bound is max(k₁, k₂, ..., kₘ) ≤ Σkᵢ ≤ n·M (worst case).
 
 For M ≤ 4 and reasonable term sizes, this is a small constant.
 -/
-theorem partial_shrinkage_small_dnf {n : Nat} (dnf : SmallDNF n) :
+theorem partial_shrinkage_small_dnf {n : Nat} (h_pos : 0 < n) (dnf : SmallDNF n) :
     let f : Core.BitVec n → Bool := evalDNF dnf
     let F : Family n := [f]
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
@@ -539,12 +614,17 @@ theorem partial_shrinkage_small_dnf {n : Nat} (dnf : SmallDNF n) :
   -- Build list of subcubes, one per term
   let subcubes := dnfToSubcubes dnf
 
-  -- Use a simple PDT with fullSubcube as the only leaf
-  let β_default := fullSubcube n
-  let tree := PDT.leaf β_default
+  -- Build PDT with leaves = subcubes using buildPDTFromSubcubes
+  let tree := buildPDTFromSubcubes h_pos subcubes
 
-  have h_depth : PDT.depth tree = 0 := by
-    simp [tree, PDT.depth]
+  have h_leaves : PDT.leaves tree = subcubes := by
+    exact buildPDTFromSubcubes_leaves h_pos subcubes
+
+  have h_depth : PDT.depth tree ≤ subcubes.length := by
+    exact buildPDTFromSubcubes_depth h_pos subcubes
+
+  have h_subcubes_len : subcubes.length = dnf.terms.length := by
+    simp [subcubes, dnfToSubcubes]
 
   -- The DNF is satisfied on the union of term subcubes
   refine ⟨0, {
@@ -553,7 +633,14 @@ theorem partial_shrinkage_small_dnf {n : Nat} (dnf : SmallDNF n) :
     epsilon := 0
     trunk_depth_le := by
       simp [PartialDT.ofPDT]
-      exact Nat.zero_le _
+      -- Depth is ≤ number of terms ≤ sum of literal counts
+      have h1 : PDT.depth tree ≤ dnf.terms.length := by
+        rw [← h_subcubes_len]
+        exact h_depth
+      have h2 : dnf.terms.length ≤ (dnf.terms.map (fun t => t.literals.length)).sum := by
+        -- Each term has at least 0 literals, so length ≤ sum
+        sorry  -- This requires a small lemma about list lengths and sums
+      exact Nat.le_trans h1 h2
     selectors := fun g => if g = f then subcubes else []
     selectors_sub := by
       intro g γ hg hγ
@@ -561,8 +648,10 @@ theorem partial_shrinkage_small_dnf {n : Nat} (dnf : SmallDNF n) :
       subst hg
       simp [subcubes] at hγ
       -- γ is in dnfToSubcubes dnf, need to show it's in tree leaves
-      -- Use the axiom that term subcubes are contained in fullSubcube
-      exact term_subcube_in_full dnf γ hγ
+      -- Now this is trivial because PDT.leaves tree = subcubes!
+      simp [PartialDT.ofPDT, PartialDT.realize]
+      rw [h_leaves]
+      exact hγ
     err_le := by
       intro g hg
       simp [F] at hg

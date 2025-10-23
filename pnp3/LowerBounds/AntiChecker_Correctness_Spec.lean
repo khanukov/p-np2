@@ -416,10 +416,21 @@ theorem antiChecker_construction_goal
 /--
 **AUXILIARY AXIOM 2**: Prove the separation property holds for the constructed output.
 
-**Status**: GOAL for future work (not used in proof pipeline)
+**Status**: ⚠️ GOAL for future work (not currently provable from existing axioms)
 
 **Relationship**: This would refine `antiChecker_exists_testset` by making the
 test set construction explicit.
+
+**Challenge**: The distinguishability property (∀ f₁ f₂ ∈ Y, f₁ ≠ f₂ → ∃ x ∈ T, f₁ x ≠ f₂ x)
+requires showing that distinct functions in Y can be distinguished on the test set T.
+While `antiChecker_exists_testset` provides:
+- Each f ∈ Y approximates on T (f ∈ ApproxOnTestset)
+- Union bound: unionBound * 2^|T| < |Y|
+- Test set size: |T| ≤ polylogBudget
+
+The distinguishability property is not directly derivable from these properties alone.
+It would require formalizing the Circuit-Input Game strategy from Chapman-Williams (2015),
+which is beyond the scope of current axiomatization.
 
 **Literature**: Chapman-Williams (2015), Circuit-Input Game provides the
 distinguishing strategy; Oliveira et al. (2021) bound test set size

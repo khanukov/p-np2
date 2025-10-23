@@ -462,13 +462,15 @@ axiom coveredB_clauseToSubcubes {n : Nat} (clause : SingleClause n) (x : Core.Bi
     coveredB (clauseToSubcubes clause) x = evalClause clause x
 
 /--
-Axiom: Each literal subcube is contained in the fullSubcube.
-This is intuitively true since fullSubcube leaves all variables free,
-while literal subcubes only restrict one variable.
+**ELIMINATED**: Previously this was axiom `literal_subcube_in_full`, but it's no longer needed!
+
+With proper multi-leaf PDT construction via `buildPDTFromSubcubes`, the containment
+property `selectors_sub` is proven trivially since `PDT.leaves tree = subcubes` exactly.
+
+This axiom was impossible to prove with the old single-leaf construction, but with
+multi-leaf PDTs, it becomes a tautology. See `partial_shrinkage_single_clause` below
+for the trivial proof that replaced this axiom.
 -/
-axiom literal_subcube_in_full {n : Nat} (clause : SingleClause n) (γ : Subcube n) :
-    γ ∈ clauseToSubcubes clause →
-    γ ∈ PartialDT.realize (PartialDT.ofPDT (PDT.leaf (fullSubcube n)))
 
 /--
 **Theorem**: Single clause (disjunction) has simple shrinkage with trunk depth ≤ k.
@@ -579,13 +581,11 @@ axiom coveredB_dnfToSubcubes {n : Nat} (dnf : SmallDNF n) (x : Core.BitVec n) :
     coveredB (dnfToSubcubes dnf) x = evalDNF dnf x
 
 /--
-Axiom: Each term subcube is contained in the fullSubcube.
-This is intuitively true since fullSubcube leaves all variables free,
-while term subcubes only restrict variables appearing in that term.
+**ELIMINATED**: Previously this was axiom `term_subcube_in_full`, but it's no longer needed!
+
+With proper multi-leaf PDT construction via `buildPDTFromSubcubes`, this axiom is
+completely unnecessary. See `partial_shrinkage_small_dnf` below for the trivial proof.
 -/
-axiom term_subcube_in_full {n : Nat} (dnf : SmallDNF n) (γ : Subcube n) :
-    γ ∈ dnfToSubcubes dnf →
-    γ ∈ PartialDT.realize (PartialDT.ofPDT (PDT.leaf (fullSubcube n)))
 
 /--
 **Theorem**: Small DNF (M ≤ 4 terms) has simple shrinkage.
@@ -694,11 +694,10 @@ axiom coveredB_generalDnfToSubcubes {n : Nat} (dnf : GeneralDNF n) (x : Core.Bit
     coveredB (generalDnfToSubcubes dnf) x = evalGeneralDNF dnf x
 
 /--
-Axiom: Subcubes from general DNF are contained in fullSubcube.
+**ELIMINATED**: Previously this was axiom `general_term_subcube_in_full`, but it's no longer needed!
+
+Multi-leaf PDT construction eliminates this axiom entirely. See `partial_shrinkage_depth2_dnf`.
 -/
-axiom general_term_subcube_in_full {n : Nat} (dnf : GeneralDNF n) (γ : Subcube n) :
-    γ ∈ generalDnfToSubcubes dnf →
-    γ ∈ PartialDT.realize (PartialDT.ofPDT (PDT.leaf (fullSubcube n)))
 
 /--
 **Theorem**: General depth-2 DNF has constructive shrinkage.
@@ -963,15 +962,17 @@ This axiom provides the full AC⁰ switching result, including:
 - ✅ PR-5: General depth-2 (arbitrary DNF/CNF) with constructive proofs, epsilon = 0
 - ✅ PR-6: Interface specification for depth > 2 (probabilistic layer)
 
-**Axioms introduced (8 total for depth-2)**:
-1. `memB_restrictToTerm` - Term subcube correctness
-2. `coveredB_clauseToSubcubes` - Clause subcube correctness
-3. `literal_subcube_in_full` - Literal subcubes in fullSubcube
-4. `coveredB_dnfToSubcubes` - Small DNF correctness
-5. `term_subcube_in_full` - Term subcubes in fullSubcube (small DNF)
-6. `coveredB_generalDnfToSubcubes` - General DNF correctness
-7. `general_term_subcube_in_full` - General DNF subcubes in fullSubcube
-8. `coveredB_generalCnfToSubcubes` - General CNF correctness
+**Axioms status (originally 8, now 5 remain)**:
+1. `memB_restrictToTerm` - ⏳ Term subcube correctness (provable)
+2. `coveredB_clauseToSubcubes` - ⏳ Clause subcube correctness (provable)
+3. ~~`literal_subcube_in_full`~~ - ✅ **ELIMINATED** (trivial with multi-leaf PDT)
+4. `coveredB_dnfToSubcubes` - ⏳ Small DNF correctness (provable)
+5. ~~`term_subcube_in_full`~~ - ✅ **ELIMINATED** (trivial with multi-leaf PDT)
+6. `coveredB_generalDnfToSubcubes` - ⏳ General DNF correctness (provable)
+7. ~~`general_term_subcube_in_full`~~ - ✅ **ELIMINATED** (trivial with multi-leaf PDT)
+8. `coveredB_generalCnfToSubcubes` - ⏳ General CNF correctness (provable)
+
+**Major achievement**: 3 axioms (37.5%) eliminated via proper PDT construction!
 
 **Impact**:
 - Depth-2 switching is now PROVEN constructively (epsilon = 0, explicit witnesses)
@@ -979,9 +980,10 @@ This axiom provides the full AC⁰ switching result, including:
 - Provides concrete building blocks for AC⁰ lower bounds
 
 **Remaining work for Step A (Switching Lemma)**:
-1. **Prove the 8 axioms above**: Convert from axioms to proven lemmas
-   - These are all straightforward but tedious list/coverage reasoning
-   - Estimated: 1-2 weeks for all 8 proofs
+1. **Prove the 5 remaining axioms**: Convert from axioms to proven lemmas
+   - All are coverage correctness lemmas (List.any/List.all reasoning)
+   - 3 axioms already eliminated via multi-leaf PDT construction!
+   - Estimated: 1 week for remaining 5 proofs (proof scaffolding exists)
 
 2. **Extend to depth-3**: Use one round of restriction + depth-2 constructive
    - Hybrid approach: probabilistic first round, then constructive

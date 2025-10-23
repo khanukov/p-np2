@@ -222,6 +222,7 @@ variant lives in \texttt{LowerBounds/LB\_LocalCircuits.lean:178--256}.\footnote{
 capacity inequality itself is \texttt{family\_card\_le\_capacity} in \texttt{LowerBounds/LB\_Formulas.lean:107--210}.}
 \end{proof}
 
+
 \section{Step B: Covering--Power (Capacity) bound}
 \label{sec:capacity}
 Step~B translates the atlas data delivered by SAL into purely counting statements. The Lean

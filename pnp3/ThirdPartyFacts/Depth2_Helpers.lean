@@ -50,19 +50,29 @@ lemma errU_eq_zero_iff
     -- Contrapositive: if they disagree somewhere, error > 0
     by_contra hdisagree
     unfold errU at herr
-    have : ((Finset.univ : Finset (BitVec n)).filter
+    have hcard_pos : ((Finset.univ : Finset (BitVec n)).filter
         (fun y => f y ≠ coveredB Rset y)).card > 0 := by
       apply Finset.card_pos.mpr
       use x
       simp [hdisagree]
     -- But this contradicts error = 0
     simp at herr
-    have : ((Finset.univ : Finset (BitVec n)).filter
+    -- Extract that card = 0 from division = 0
+    have hcard_zero : ((Finset.univ : Finset (BitVec n)).filter
         (fun y => f y ≠ coveredB Rset y)).card = 0 := by
-      have h := Nat.eq_zero_of_le_zero ?_
-      · exact h
-      · have : (0 : Q) ≤ 0 := by simp
-        sorry  -- Need to show: division = 0 implies numerator = 0
+      -- Since 2^n > 0, we can use field_simp
+      have h2n_pos : (Nat.pow 2 n : Q) ≠ 0 := by
+        norm_cast
+        apply Nat.pow_pos
+        omega
+      -- From card / 2^n = 0, derive card = 0
+      have : ((((Finset.univ : Finset (BitVec n)).filter
+          (fun y => f y ≠ coveredB Rset y)).card : Nat) : Q) = 0 := by
+        field_simp [h2n_pos] at herr
+        exact herr
+      -- Cast back to Nat
+      norm_cast at this
+      exact this
     omega
   · exact errU_eq_zero_of_agree f Rset
 

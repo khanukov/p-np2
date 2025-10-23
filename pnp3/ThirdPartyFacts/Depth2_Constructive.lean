@@ -108,6 +108,139 @@ lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
 /-! ### Helper functions for subcube restrictions -/
 
 /--
+Compute the intersection of two subcubes.
+Returns `none` if the subcubes are incompatible (would require different values for same variable).
+-/
+def intersectSubcube {n : Nat} (β₁ β₂ : Subcube n) : Option (Subcube n) :=
+  -- Check if subcubes are compatible
+  let compatible := (List.finRange n).all fun i =>
+    match β₁ i, β₂ i with
+    | some b₁, some b₂ => b₁ == b₂  -- Must agree on fixed values
+    | _, _ => true  -- At least one is free, so compatible
+
+  if compatible then
+    some (fun i =>
+      match β₁ i, β₂ i with
+      | some b, _ => some b  -- β₁ fixes it
+      | _, some b => some b  -- β₂ fixes it
+      | none, none => none)  -- Both free
+  else
+    none
+
+/--
+Compute the intersection of a list of subcubes.
+Returns `none` if any pair is incompatible.
+-/
+def intersectSubcubes {n : Nat} (subcubes : List (Subcube n)) : Option (Subcube n) :=
+  subcubes.foldl
+    (fun acc β =>
+      match acc with
+      | none => none
+      | some β_acc => intersectSubcube β_acc β)
+    (some (fullSubcube n))
+
+/--
+Generate all combinations of selecting one element from each list.
+Cartesian product of lists.
+-/
+def cartesianProduct {α : Type _} : List (List α) → List (List α)
+  | [] => [[]]
+  | xs :: rest =>
+      let rest_product := cartesianProduct rest
+      xs.flatMap fun x =>
+        rest_product.map fun ys => x :: ys
+
+/--
+Lemma: if a point is in both subcubes, it's in their intersection (if compatible).
+-/
+lemma memB_intersectSubcube {n : Nat} (β₁ β₂ : Subcube n) (x : Core.BitVec n) :
+    memB β₁ x = true → memB β₂ x = true →
+    ∃ β, intersectSubcube β₁ β₂ = some β ∧ memB β x = true := by
+  intro h₁ h₂
+  -- If x satisfies both β₁ and β₂, they must be compatible at x
+  have h_compat : (List.finRange n).all fun i =>
+      match β₁ i, β₂ i with
+      | some b₁, some b₂ => b₁ == b₂
+      | _, _ => true := by
+    simp [List.all_iff_forall]
+    intro i _
+    cases h₁_i : β₁ i with
+    | none => simp
+    | some b₁ =>
+        cases h₂_i : β₂ i with
+        | none => simp
+        | some b₂ =>
+            -- x satisfies β₁, so x i = b₁
+            have : memB β₁ x = true := h₁
+            rw [memB_eq_true_iff] at this
+            have hx₁ : x i = b₁ := this i b₁ h₁_i
+            -- x satisfies β₂, so x i = b₂
+            have : memB β₂ x = true := h₂
+            rw [memB_eq_true_iff] at this
+            have hx₂ : x i = b₂ := this i b₂ h₂_i
+            -- Therefore b₁ = b₂
+            rw [← hx₁, ← hx₂]
+            simp
+
+  unfold intersectSubcube
+  simp [h_compat]
+  refine ⟨_, rfl, ?_⟩
+  -- Show memB of intersection
+  rw [memB_eq_true_iff]
+  intro i b hβ
+  rw [memB_eq_true_iff] at h₁ h₂
+  cases h₁_i : β₁ i with
+  | some b₁ =>
+      simp [h₁_i] at hβ
+      cases hβ
+      exact h₁ i b₁ h₁_i
+  | none =>
+      cases h₂_i : β₂ i with
+      | some b₂ =>
+          simp [h₁_i, h₂_i] at hβ
+          cases hβ
+          exact h₂ i b₂ h₂_i
+      | none =>
+          simp [h₁_i, h₂_i] at hβ
+
+/--
+Lemma: if x is in intersection, it's in both original subcubes.
+-/
+lemma memB_of_intersectSubcube {n : Nat} (β₁ β₂ β : Subcube n) (x : Core.BitVec n) :
+    intersectSubcube β₁ β₂ = some β → memB β x = true →
+    memB β₁ x = true ∧ memB β₂ x = true := by
+  intro h_int h_mem
+  unfold intersectSubcube at h_int
+  split at h_int
+  · cases h_int
+    constructor
+    · -- Show memB β₁ x
+      rw [memB_eq_true_iff] at h_mem ⊢
+      intro i b hβ₁
+      specialize h_mem i
+      cases hβ₂ : β₂ i with
+      | none =>
+          simp [hβ₁, hβ₂] at h_mem
+          exact h_mem b hβ₁
+      | some b₂ =>
+          simp [hβ₁, hβ₂] at h_mem
+          exact h_mem b hβ₁
+    · -- Show memB β₂ x
+      rw [memB_eq_true_iff] at h_mem ⊢
+      intro i b hβ₂
+      specialize h_mem i
+      cases hβ₁ : β₁ i with
+      | none =>
+          simp [hβ₁, hβ₂] at h_mem
+          exact h_mem b hβ₂
+      | some b₁ =>
+          simp [hβ₁, hβ₂] at h_mem
+          exact h_mem b hβ₂
+  · contradiction
+
+/-! ### Helper functions for subcube restrictions -/
+
+/--
 Create a subcube that restricts variable i to false.
 All other variables remain free (none).
 -/
@@ -957,23 +1090,77 @@ For CNF, the representation is more complex than DNF:
 - Each clause Cᵢ = L₁ ∨ L₂ ∨ ... ∨ Lₖ (disjunction of literals)
 - The satisfying assignments form the INTERSECTION of clause satisfying sets
 
-This is trickier than DNF and may require more sophisticated PDT construction.
-For now, we provide a conservative encoding that may not be optimal.
+Implementation:
+1. For each clause, get its list of subcubes (clauseToSubcubes)
+2. Generate all combinations: pick one subcube from each clause's list
+3. For each combination, compute the intersection of those subcubes
+4. Keep only non-empty intersections
+
+Example:
+- CNF = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₃)
+- Clause 1 subcubes: [x₁=true, x₂=true]
+- Clause 2 subcubes: [x₁=false, x₃=true]
+- Combinations:
+  - x₁=true ∩ x₁=false → empty (incompatible)
+  - x₁=true ∩ x₃=true → x₁=true ∧ x₃=true ✓
+  - x₂=true ∩ x₁=false → x₂=true ∧ x₁=false ✓
+  - x₂=true ∩ x₃=true → x₂=true ∧ x₃=true ✓
+- Result: [x₁=true ∧ x₃=true, x₂=true ∧ x₁=false, x₂=true ∧ x₃=true]
 -/
 def generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) : List (Subcube n) :=
-  -- Conservative approach: enumerate all satisfying assignments
-  -- In practice, this would need more sophisticated analysis
-  -- For now, use fullSubcube as placeholder
-  [fullSubcube n]
+  -- Get subcube lists for each clause
+  let clauseSubcubeLists := cnf.clauses.map clauseToSubcubes
+
+  -- Generate all combinations (cartesian product)
+  let combinations := cartesianProduct clauseSubcubeLists
+
+  -- For each combination, compute intersection and keep non-empty ones
+  combinations.filterMap intersectSubcubes
 
 /--
-Axiom: Coverage correctness for general CNF.
+Theorem: Coverage correctness for general CNF.
 
-Note: This axiom is conservative. A proper implementation would need
-to compute the intersection of clause-satisfying subcubes.
+The key insight: x satisfies CNF iff x is in intersection of subcubes from each clause.
 -/
-axiom coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.BitVec n) :
-    coveredB (generalCnfToSubcubes cnf) x = evalGeneralCNF cnf x
+theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.BitVec n) :
+    coveredB (generalCnfToSubcubes cnf) x = evalGeneralCNF cnf x := by
+  unfold coveredB generalCnfToSubcubes evalGeneralCNF
+  -- LHS: ∃ β ∈ (cartesianProduct ...).filterMap intersectSubcubes, memB β x
+  -- RHS: cnf.clauses.all (fun clause => evalClause clause x)
+
+  -- We need: (∃ β in filtered intersections, x ∈ β) ↔ (∀ clause, x satisfies clause)
+
+  constructor
+  · -- Forward: if covered by intersection, then satisfies all clauses
+    intro h_covered
+    rw [List.any_eq_true] at h_covered
+    obtain ⟨β, h_in, h_memB⟩ := h_covered
+    -- β is in filterMap intersectSubcubes of cartesian product
+    -- This means β is intersection of subcubes, one from each clause
+    sorry  -- Need: from h_in, extract that β covers combination from each clause
+           -- Then use memB_of_intersectSubcube to show x satisfies each clause
+
+  · -- Backward: if satisfies all clauses, then covered by some intersection
+    intro h_all
+    rw [List.all_eq_true] at h_all
+    -- For each clause, x satisfies it, so by coveredB_clauseToSubcubes,
+    -- ∃ subcube from that clause containing x
+
+    -- Use choice to pick one subcube from each clause
+    have h_exists : ∀ clause ∈ cnf.clauses,
+        ∃ β ∈ clauseToSubcubes clause, memB β x = true := by
+      intro clause h_clause
+      have h_clause_sat : evalClause clause x = true := h_all clause h_clause
+      rw [← coveredB_clauseToSubcubes] at h_clause_sat
+      rw [coveredB, List.any_eq_true] at h_clause_sat
+      exact h_clause_sat
+
+    -- Now we need to construct the combination and show its intersection contains x
+    sorry  -- This requires:
+           -- 1. Extract the choice of subcubes
+           -- 2. Show they form a valid combination in cartesianProduct
+           -- 3. Use memB_intersectSubcube to show intersection exists and contains x
+           -- 4. Show this intersection is in the filterMap result
 
 /--
 **Theorem**: General depth-2 CNF has constructive shrinkage.

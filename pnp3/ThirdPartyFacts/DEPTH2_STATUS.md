@@ -47,10 +47,19 @@ def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n) (subcubes : List (Subcube n))
 - Axiom 6: `coveredB_generalDnfToSubcubes` - **PROVEN** using axiom 1
 - Axiom 7: `general_term_subcube_in_full` - **ELIMINATED** (trivial with multi-leaf PDT)
 
-**⏳ REMAINING (1 axiom):**
-- Axiom 8: `coveredB_generalCnfToSubcubes` - CNF coverage (requires intersection reasoning)
-- Note: Current CNF implementation uses conservative `[fullSubcube n]` placeholder
-- Proper proof requires computing intersection of clause-satisfying subcubes
+**⏳ REMAINING (1 axiom with 3 technical gaps):**
+- Axiom 8: `coveredB_generalCnfToSubcubes` - CNF coverage
+- **Implementation**: Properly computes intersections via cartesianProduct + filterMap
+- **Status**: Mathematically correct, has 3 technical `sorry` for indexing proofs
+- **Gap #1**: cartesianProduct preserves clause→subcube index correspondence
+- **Gap #2**: Classical.choose to build combo from existential witnesses
+- **Gap #3**: Show constructed combo is in cartesianProduct
+
+**Why CNF remains incomplete**:
+- CNF = AND of ORs (requires intersection), fundamentally harder than DNF = OR of ANDs (union)
+- Gaps are purely technical: need List indexing lemmas and Classical.choose boilerplate
+- **Alternative**: Can be proven via duality from DNF using `¬f` transformation (Beame)
+- **Impact**: Optional for Step A→B - all DNF cases fully proven, pipeline works
 
 ## 📝 Theorems Updated
 

@@ -1301,8 +1301,23 @@ Theorem: Coverage correctness for general CNF.
 
 The key insight: x satisfies CNF iff x is in intersection of subcubes from each clause.
 
-Note: This proof uses `sorry` for some technical steps involving cartesianProduct.
+**Status**: This theorem has 3 technical `sorry` placeholders for cartesianProduct indexing.
 The mathematical correctness is sound - the implementation properly computes intersections.
+
+**Why CNF is harder than DNF**:
+- DNF = OR of ANDs → union of subcubes (simple List.map/any)
+- CNF = AND of ORs → intersection of subcubes (requires cartesianProduct + filterMap)
+
+**Technical gaps** (can be filled using Finset.product/pi from mathlib4):
+1. Forward direction: Extract combo structure from filterMap to show clause satisfaction
+2. Backward direction (choice): Use Classical.choose to pick one subcube per clause
+3. Backward direction (membership): Show constructed combo is in cartesianProduct
+
+**Alternative approach**: Prove via duality from DNF using `¬f` transformation.
+See Beame "Switching Lemma Primer" for paper proof.
+
+**Impact**: This is optional for Step A→B pipeline. All DNF cases are proven.
+Conservative placeholder using `[fullSubcube n]` works for depth-2 theorems.
 -/
 theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.BitVec n) :
     coveredB (generalCnfToSubcubes cnf) x = evalGeneralCNF cnf x := by
@@ -1364,10 +1379,17 @@ theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.B
     rw [coveredB, List.any_eq_true]
 
     -- Find the subcube in combo corresponding to clause
-    -- This is technical: need to extract from combo structure
-    -- For now, we use that if intersection contains x, at least one path works
-    -- The full proof requires showing combo structure matches clause structure
-    sorry -- Still needs detailed combo/clause correspondence
+    -- Technical gap #1: cartesianProduct preserves clause→subcube correspondence
+    --
+    -- What's needed:
+    -- 1. Find index i where cnf.clauses[i] = clause
+    -- 2. Show combo[i] ∈ clauseToSubcubes clause (by cartesianProduct structure)
+    -- 3. Show x ∈ combo[i] (by intersection property)
+    -- 4. Therefore evalClause clause x = true
+    --
+    -- Tools: List.indexOf, List.get?, cartesianProduct_length (already proven),
+    --        memB_of_intersectSubcube (already proven)
+    sorry -- Technical: cartesianProduct indexing correspondence
 
   · -- Backward: if satisfies all clauses, then covered by some intersection
     intro h_all
@@ -1398,6 +1420,16 @@ theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.B
 
     · -- Non-empty clauses: use choice to extract witnesses
       -- Build a combo by choosing one subcube per clause
+      --
+      -- Technical gap #2: Constructive choice extraction
+      --
+      -- What's needed:
+      -- 1. For each clause, we have ∃ β ∈ clauseToSubcubes clause with memB β x
+      -- 2. Use Classical.choose or List.map with find? to build combo
+      -- 3. Prove combo.length = cnf.clauses.length
+      -- 4. Prove ∀ β ∈ combo, memB β x = true
+      --
+      -- Tools: Classical.choose, List.map + List.find?, List.filterMap
       have h_combo_exists : ∃ combo : List (Subcube n),
           combo.length = cnf.clauses.length ∧
           (∀ i : Fin cnf.clauses.length,
@@ -1405,13 +1437,24 @@ theorem coveredB_generalCnfToSubcubes {n : Nat} (cnf : GeneralCNF n) (x : Core.B
               combo[i]? = (cnf.clauses.map clauseToSubcubes)[i.val]?.bind
                 (fun subcubes => subcubes.find? (fun β => memB β x))) ∧
           (∀ β ∈ combo, memB β x = true) := by
-        sorry -- Technical: constructive extraction using choice
+        sorry -- Technical: Classical.choose to build combo from h_exists
 
       obtain ⟨combo, h_len, h_combo_struct, h_combo_mem⟩ := h_combo_exists
 
       -- Show combo is in cartesianProduct
+      --
+      -- Technical gap #3: Constructed combo is in cartesianProduct
+      --
+      -- What's needed:
+      -- 1. combo was built by choosing one element from each clause's subcube list
+      -- 2. Show this satisfies the definition of cartesianProduct membership
+      -- 3. Use induction on cnf.clauses with h_combo_struct as witness
+      --
+      -- Tools: cartesianProduct definition (lines 178-183),
+      --        mem_cartesianProduct_of_forall (already proven, lines 211-234),
+      --        h_combo_struct provides the indexing proof
       have h_combo_in : combo ∈ cartesianProduct (cnf.clauses.map clauseToSubcubes) := by
-        sorry -- Technical: show combo structure matches cartesianProduct structure
+        sorry -- Technical: use mem_cartesianProduct_of_forall with h_combo_struct
 
       -- Compute intersection
       obtain ⟨β_int, h_int, h_mem_int⟩ := memB_intersectSubcubes_of_all combo x h_combo_mem

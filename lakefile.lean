@@ -20,6 +20,7 @@ lean_lib PnP3 where
     `Core.PDTPartial,
     `Core.PDT,
     `Core.PDTExtras,
+    `Core.PDTSugar,
     `Core.SubcubeExtras,
     `Core.Atlas,
     `Core.SAL_Core,
@@ -45,6 +46,7 @@ lean_lib PnP3 where
     `ThirdPartyFacts.BaseSwitching,
     `ThirdPartyFacts.Facts_Switching,
     `ThirdPartyFacts.ConstructiveSwitching,
+    `ThirdPartyFacts.Depth2_Constructive,
     `ThirdPartyFacts.LeafBudget
   ]
 

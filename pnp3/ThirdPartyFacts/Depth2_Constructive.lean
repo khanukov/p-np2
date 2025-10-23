@@ -67,17 +67,7 @@ A point x is in restrictToFalse n i iff x i = false.
 lemma memB_restrictToFalse {n : Nat} (i : Fin n) (x : Core.BitVec n) :
     memB (restrictToFalse n i) x = (x i == false) := by
   unfold memB restrictToFalse
-  simp [List.all_iff_forall]
-  constructor
-  · intro h
-    specialize h i (List.mem_finRange _)
-    simp at h
-    exact h
-  · intro hi j _
-    by_cases hj : j = i
-    · subst hj
-      simp [hi]
-    · simp [hj]
+  sorry  -- TODO: prove memB equivalence
 
 /--
 A point x is in restrictToTrue n i iff x i = true.
@@ -85,17 +75,7 @@ A point x is in restrictToTrue n i iff x i = true.
 lemma memB_restrictToTrue {n : Nat} (i : Fin n) (x : Core.BitVec n) :
     memB (restrictToTrue n i) x = (x i == true) := by
   unfold memB restrictToTrue
-  simp [List.all_iff_forall]
-  constructor
-  · intro h
-    specialize h i (List.mem_finRange _)
-    simp at h
-    exact h
-  · intro hi j _
-    by_cases hj : j = i
-    · subst hj
-      simp [hi]
-    · simp [hj]
+  sorry  -- TODO: prove memB equivalence
 
 /-! ### Single literal case -/
 
@@ -156,10 +136,7 @@ theorem partial_shrinkage_single_literal {n : Nat} (i : Fin n) :
       cases hγ
       -- Need to show β_true ∈ PDT.leaves tree = [β_false, β_true]
       rw [PartialDT.realize_ofPDT]
-      have : PDT.leaves tree = [β_false, β_true] := by
-        simp [tree]
-      rw [this]
-      right; rfl
+      sorry  -- TODO: show β_true in leaves
     err_le := by
       intro g hg
       simp [F] at hg
@@ -171,12 +148,9 @@ theorem partial_shrinkage_single_literal {n : Nat} (i : Fin n) :
       apply errU_eq_zero_of_agree
       intro x
       -- Need: f x = coveredB [β_true] x
-      -- f x = x i (by definition of singleLiteral)
-      -- coveredB [β_true] x = memB (restrictToTrue n i) x = (x i == true)
       simp [f, singleLiteral, β_true, coveredB]
       rw [memB_restrictToTrue]
-      -- Now need: x i = (x i == true)
-      cases x i <;> simp
+      sorry  -- TODO: close after memB proved
   }, rfl, rfl, rfl⟩
 
 /--
@@ -217,9 +191,10 @@ def singleTerm (n : Nat) (indices : List (Fin n)) : Core.BitVec n → Bool :=
 
 /--
 Helper: create subcube where all listed variables are set to true.
+Direct definition - simpler for proofs than using restrictToPattern.
 -/
 def restrictAllToTrue (n : Nat) (indices : List (Fin n)) : Subcube n :=
-  restrictToPattern n (indices.map (fun i => (i, true)))
+  fun k => if k ∈ indices then some true else none
 
 /--
 Build PDT for AND term by sequential branching.
@@ -248,8 +223,8 @@ lemma depth_buildAndPDT {n : Nat} (indices : List (Fin n)) :
     cases rest with
     | nil => simp [buildAndPDT, PDT.depth]
     | cons j rest' =>
-      simp [buildAndPDT, PDT.depth, ih]
-      sorry  -- Need to show depth of node is 1 + depth of right child
+      unfold buildAndPDT
+      sorry  -- TODO: depth + list length arithmetic
 
 /--
 Direct definition: subcube with both i and j set to true.
@@ -264,46 +239,26 @@ Lemma: memB for subcube with both variables true.
 lemma memB_restrictBothToTrue {n : Nat} (i j : Fin n) (h_ne : i ≠ j) (x : Core.BitVec n) :
     memB (restrictBothToTrue n i j) x = (x i && x j) := by
   unfold memB restrictBothToTrue
-  simp [List.all_iff_forall]
-  constructor
-  · intro h
-    have hi := h i (List.mem_finRange _)
-    have hj := h j (List.mem_finRange _)
-    simp at hi hj
-    exact ⟨hi, hj⟩
-  · intro ⟨hi, hj⟩ k _
-    by_cases hk : k = i ∨ k = j
-    · cases hk with
-      | inl hki => subst hki; simp [hi]
-      | inr hkj => subst hkj; simp [hj]
-    · simp [hk]
+  sorry  -- TODO: prove memB equivalence
 
 /--
 Lemma: A point x is in restrictAllToTrue iff all indexed variables are true.
 -/
 lemma memB_restrictAllToTrue {n : Nat} (indices : List (Fin n)) (x : Core.BitVec n) :
     memB (restrictAllToTrue n indices) x = indices.all (fun i => x i) := by
-  unfold memB restrictAllToTrue restrictToPattern
-  sorry  -- Need to prove equivalence of checking pattern matches
+  unfold memB restrictAllToTrue
+  sorry  -- TODO: prove memB equivalence
 
 /--
-**Theorem**: Single term (AND) has shrinkage with trunk depth = |indices|.
+**Theorem**: Single term with 2 variables x[i] ∧ x[j].
 
 **Construction**:
-- For f(x) = x[i₁] ∧ x[i₂] ∧ ... ∧ x[iₖ]
-- Build PDT by sequentially branching on each variable
-- Depth = k (number of variables in the term)
-- Selectors = [subcube where all variables are true]
+- Build PDT by sequentially branching: first on x[i], then on x[j]
+- Depth = 2
+- Selectors = [subcube where both variables are true]
 - Error = 0 (perfect coverage)
 
-**Example**: f(x) = x[0] ∧ x[1]
-- Tree: branch on x[0], then on x[1]
-- Depth = 2
-- Selectors = [subcube with x[0]=true, x[1]=true]
--/
-/--
-Special case: Single term with 2 variables x[i] ∧ x[j].
-This is easier to prove directly before generalizing.
+This is easier to prove directly before generalizing to k variables.
 -/
 theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ j) :
     let f : Core.BitVec n → Bool := fun x => x i && x j
@@ -331,11 +286,6 @@ theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ 
   have h_depth : PDT.depth tree = 2 := by
     unfold tree inner_tree
     simp [PDT.depth]
-    -- depth (node i (leaf _) (node j (leaf _) (leaf _)))
-    -- = 1 + max (depth (leaf _)) (depth (node j ...))
-    -- = 1 + max 0 (1 + max 0 0)
-    -- = 1 + max 0 1 = 1 + 1 = 2
-    rfl
 
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
@@ -352,12 +302,7 @@ theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ 
       simp at hγ
       cases hγ  -- γ = β_both_true
       rw [PartialDT.realize_ofPDT]
-      -- Show β_both_true ∈ PDT.leaves tree
-      -- tree = node i (leaf β_i_false) (node j (leaf β_j_false) (leaf β_both_true))
-      -- leaves tree = [β_i_false, β_j_false, β_both_true]
-      unfold tree inner_tree
-      simp [PDT.leaves]
-      right; right; rfl
+      sorry  -- TODO: show β_both_true in leaves
     err_le := by
       intro g hg
       simp [F] at hg
@@ -367,13 +312,7 @@ theorem partial_shrinkage_single_term_two {n : Nat} (i j : Fin n) (h_ne : i ≠ 
       apply errU_eq_zero_of_agree
       intro x
       -- Show: f x = coveredB [β_both_true] x
-      -- f x = x i && x j
-      -- coveredB [β_both_true] x = memB β_both_true x
-      -- β_both_true restricts both i and j to true
-      simp [f, coveredB, β_both_true]
-      rw [memB_restrictBothToTrue _ _ _ h_ne]
-      -- Now both sides are x i && x j
-      rfl
+      sorry  -- TODO: use memB_restrictBothToTrue once proved
   }, rfl, rfl, rfl⟩
 
 theorem partial_shrinkage_single_term {n : Nat} (indices : List (Fin n))

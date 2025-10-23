@@ -1,3 +1,6 @@
+import Core.PDT
+import Core.BooleanBasics
+
 /-!
   pnp3/Core/PDTSugar.lean
 
@@ -11,8 +14,6 @@
 
   **Used in:** Depth2_Constructive.lean for PR-1 (single literal)
 -/
-import Core.PDT
-import Core.BooleanBasics
 
 namespace Pnp3
 namespace Core

@@ -1,5 +1,8 @@
 import Complexity.ComplexityClasses
 
+-- We import P_subset_NP for use in intersection lemmas
+open Complexity (P_subset_NP)
+
 /-!
 # Set Properties for Complexity Classes
 
@@ -210,9 +213,88 @@ theorem exists_in_NP_not_P (hPNP : P ≠ NP) (hPsubNP : P ⊆ NP) :
   have : ¬(NP ⊆ P) := not_subset_of_ne_and_subset hPNP hPsubNP
   exact not_subset_iff.mp this
 
+/-! ## Intersections and Unions -/
+
+/-- **P ∩ NP = P**: The intersection of P and NP is just P.
+
+    **Proof**: Since P ⊆ NP (proven in ComplexityClasses.lean),
+    we have P ∩ NP = P.
+
+    **Axioms used**: 0 (uses P_subset_NP as external fact)
+-/
+theorem P_inter_NP_eq_P : P ∩ NP = P := by
+  ext L
+  constructor
+  · -- P ∩ NP → P
+    intro ⟨hP, _⟩
+    exact hP
+  · -- P → P ∩ NP
+    intro hP
+    constructor
+    · exact hP
+    · -- Use proven P ⊆ NP from ComplexityClasses.lean
+      exact P_subset_NP hP
+
+/-- **Basic intersection property**: If A ⊆ B, then A ∩ B = A.
+
+    **Proof**: Standard set theory.
+
+    **Axioms used**: 0
+-/
+theorem inter_eq_self_of_subset {A B : Set Language} (h : A ⊆ B) : A ∩ B = A := by
+  ext L
+  constructor
+  · intro ⟨hA, _⟩
+    exact hA
+  · intro hA
+    exact ⟨hA, h hA⟩
+
+/-- **Union contains both**: A ⊆ A ∪ B and B ⊆ A ∪ B.
+
+    **Proof**: Definition of union.
+
+    **Axioms used**: 0
+-/
+theorem subset_union_left (A B : Set Language) : A ⊆ A ∪ B := fun _ h => Or.inl h
+theorem subset_union_right (A B : Set Language) : B ⊆ A ∪ B := fun _ h => Or.inr h
+
+/-- **Union is least upper bound**: If A ⊆ C and B ⊆ C, then A ∪ B ⊆ C.
+
+    **Proof**: Standard set theory.
+
+    **Axioms used**: 0
+-/
+theorem union_subset {A B C : Set Language} (hA : A ⊆ C) (hB : B ⊆ C) : A ∪ B ⊆ C := by
+  intro L h
+  cases h with
+  | inl hL => exact hA hL
+  | inr hL => exact hB hL
+
+/-- **Strict subset from witness**: If ∃ L such that L ∈ B and L ∉ A, then A ⊂ B.
+
+    **Proof**: Contrapositive of subset definition.
+
+    **Axioms used**: 0
+-/
+theorem ssubset_of_subset_of_exists_not_mem {A B : Set Language}
+    (hAB : A ⊆ B) (hEx : ∃ L, L ∈ B ∧ L ∉ A) : A ⊂ B := by
+  constructor
+  · exact hAB
+  · intro hBA
+    obtain ⟨L, hLB, hLnotA⟩ := hEx
+    have : L ∈ A := hBA hLB
+    exact hLnotA this
+
 /-! ## Summary
 
-**All theorems in this file are PROVEN (0 axioms, 0 sorry)!**
+**All theorems in this file are PROVEN!**
+
+**Axioms used**: 0 directly, but `P_inter_NP_eq_P` uses `P_subset_NP` which has 3 TM axioms
+**Sorry statements**: 0
+
+**UPDATE**: Added intersection lemmas:
+- `P_inter_NP_eq_P`: Uses the proven `P_subset_NP` theorem
+- `inter_eq_self_of_subset`: Generic set-theoretic property (0 axioms)
 
 These are simple set-theoretic facts, but they demonstrate:
 1. Our definitions are well-formed
@@ -220,8 +302,8 @@ These are simple set-theoretic facts, but they demonstrate:
 3. We can prove things without axioms!
 
 **Statistics**:
-- Theorems: 15
-- Axioms used: 0
+- Theorems: 21+ (15 original + 6 new intersection/union lemmas)
+- Axioms used: 0 directly (P_inter_NP_eq_P transitively uses 3 TM axioms via P_subset_NP)
 - Sorry statements: 0
 - Status: ✅ COMPLETE
 

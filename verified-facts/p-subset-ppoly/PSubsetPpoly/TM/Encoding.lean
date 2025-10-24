@@ -1,7 +1,7 @@
 import PSubsetPpoly.Boolcube
 
-/--
-`Pnp2.TM.Encoding` provides a lightweight operational model for the
+/-!
+`PSubsetPpoly.TM.Encoding` provides a lightweight operational model for the
 deterministic Turing machines mentioned in `ComplexityClasses.lean`.
 The model is intentionally simple: we use a single binary tape together
 with a finite control.  Despite the simplicity, the definitions below
@@ -169,7 +169,7 @@ def run {n : ℕ} (x : Boolcube.Point n) : Configuration (M := M) n :=
 
 /-- Acceptance predicate: the state after `runTime n` steps equals the
 designated accepting state. -/
-def accepts (n : ℕ) (x : Boolcube.Point n) : Bool := by
+noncomputable def accepts (n : ℕ) (x : Boolcube.Point n) : Bool := by
   classical
   let c := M.run (n := n) x
   exact decide (c.state = M.accept)

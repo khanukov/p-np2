@@ -1,4 +1,4 @@
-import PSubsetPpoly.canonical_circuit
+-- import PSubsetPpoly.canonical_circuit  -- Not needed for P ⊆ P/poly proof
 import PSubsetPpoly.Circuit.StraightLine
 import PSubsetPpoly.PsubsetPpoly
 import PSubsetPpoly.TM.Encoding

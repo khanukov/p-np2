@@ -1,21 +1,31 @@
 /-!
   pnp3/Complexity/Interfaces.lean
 
-  Интерфейс к «классической» части доказательства.  Здесь мы не повторяем
-  полную формализацию классов `P`, `NP` и `P/poly` из разработки `pnp2`,
-  а лишь фиксируем их последствия в виде именованных утверждений.  Это
-  позволяет шагу D ссылаться на доказанный в `pnp2` факт `P ⊆ P/poly`
-  и на целевое утверждение `P ≠ NP` без дублирования кода.
+  **Legacy interface** to complexity classes for magnification machinery.
 
-  * `NP_not_subset_Ppoly` — сокращённая запись утверждения `NP ⊄ P/poly`.
-  * `P_subset_Ppoly` — интерфейс к уже формализованному включению `P ⊆ P/poly`.
-  * `P_ne_NP` — целевое утверждение `P ≠ NP`.
-  * `P_ne_NP_of_nonuniform_separation` — классический вывод из двух пунктов
-    выше.  В версии `pnp2` он доказан напрямую (см. `NP_separation.lean`).
+  ## Status (Phase 1 - In Progress)
 
-  На уровне текущего каталога `pnp3/` эти утверждения считаются внешними
-  фактами (аксиомами) и используются при связывании магнификации с итоговым
-  разделением классов.
+  This file provides abstract Props for compatibility with existing magnification code.
+  Full definitions of P, NP, P/poly are now in `Complexity/ComplexityClasses.lean`.
+
+  **Axiom Status:**
+  * `NP_not_subset_Ppoly` — ⚠️ AXIOM (will be derived from GapMCSP hardness + magnification)
+  * `P_subset_Ppoly` — ⚠️ AXIOM (proven in Pnp2, can be ported, ~11K LOC)
+  * `P_subset_Ppoly_proof` — ⚠️ AXIOM (instance of above)
+  * `P_ne_NP` — ⚠️ AXIOM (target theorem, will be derived)
+  * `P_ne_NP_of_nonuniform_separation` — ✅ **NOW PROVEN** in `NP_Separation.lean`!
+
+  ## Migration Plan
+
+  Phase 1 (current): Create real definitions in ComplexityClasses.lean
+  Phase 2 (next): Migrate magnification files to use Set Language instead of Props
+  Phase 3 (later): Remove this file entirely
+
+  ## New Developments
+
+  See:
+  - `Complexity/ComplexityClasses.lean` - full definitions of P, NP, P/poly
+  - `Complexity/NP_Separation.lean` - **PROOF** of P≠NP logical step (no axioms!)
 -/
 
 namespace Pnp3

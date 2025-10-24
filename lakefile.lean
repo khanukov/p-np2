@@ -29,7 +29,7 @@ lean_lib PnP3 where
     `Counting.Count_EasyFuncs,
     `Counting.Atlas_to_LB_Core,
     `AC0.Formulas,
-    `Complexity.Interfaces,
+    Glob.submodules `Complexity,
     `Models.Model_GapMCSP,
     `Models.Model_SparseNP,
     `LowerBounds.LB_Formulas,

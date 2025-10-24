@@ -40,5 +40,11 @@ lean_lib PnP3 where
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
     `ThirdPartyFacts.Facts_Switching,
-    `ThirdPartyFacts.LeafBudget
+    `ThirdPartyFacts.LeafBudget,
+    `Tests.SmokeTests
   ]
+
+@[test_driver]
+lean_exe test where
+  root := `Tests.TestDriver
+  srcDir := "pnp3"

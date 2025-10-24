@@ -41,7 +41,8 @@ lean_lib PnP3 where
     `Magnification.FinalResult,
     `ThirdPartyFacts.Facts_Switching,
     `ThirdPartyFacts.LeafBudget,
-    `Tests.SmokeTests
+    `Tests.SmokeTests,
+    `Tests.UnitTests
   ]
 
 @[test_driver]

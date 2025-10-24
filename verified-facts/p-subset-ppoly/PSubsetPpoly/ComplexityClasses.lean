@@ -1,6 +1,6 @@
 import PSubsetPpoly.canonical_circuit
 import PSubsetPpoly.Circuit.StraightLine
-import PSubsetPpoly.Core
+import PSubsetPpoly.PsubsetPpoly
 import PSubsetPpoly.TM.Encoding
 
 /-!

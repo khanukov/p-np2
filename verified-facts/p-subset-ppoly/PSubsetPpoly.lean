@@ -1,3 +1,5 @@
+import PSubsetPpoly.ComplexityClasses
+
 /-!
 # P ⊆ P/poly: Verified Proof
 
@@ -27,8 +29,6 @@ Proved constructively by simulating Turing machines with straight-line circuits.
 
 ✅ Fully proven - no axioms, no sorry statements
 -/
-
-import PSubsetPpoly.ComplexityClasses
 
 /-!
 ## Main Export

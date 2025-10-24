@@ -1,3 +1,5 @@
+import Complexity.ComplexityClasses
+
 /-!
   pnp3/Complexity/PsubsetPpoly_Examples.lean
 
@@ -58,7 +60,6 @@
   We now show P⊆P/poly holds for several concrete simple languages.
 -/
 
-import Complexity.ComplexityClasses
 
 namespace Pnp3
 namespace Complexity
@@ -172,7 +173,6 @@ section ImportStrategy
 **Option 1: Import Pnp2 (eliminates axiom)**
 
 ```lean
-import Pnp2.PsubsetPpoly
 
 -- Then we could prove:
 theorem P_subset_Ppoly_from_Pnp2 : P ⊆ Ppoly := by

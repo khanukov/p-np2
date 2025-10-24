@@ -1,3 +1,7 @@
+import Complexity.Interfaces
+import Complexity.ComplexityClasses
+import Complexity.NP_Separation
+
 /-!
   pnp3/Complexity/PropSetBridge.lean
 
@@ -50,9 +54,6 @@
 
 -/
 
-import Complexity.Interfaces
-import Complexity.ComplexityClasses
-import Complexity.NP_Separation
 
 namespace Pnp3
 namespace Complexity

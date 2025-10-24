@@ -1,3 +1,5 @@
+import Complexity.ComplexityClasses
+
 /-!
 # Non-uniform Separation and P ≠ NP
 
@@ -33,7 +35,6 @@ or Karp-Lipton collapse theorems.
 - Formalized independently from Håstad, Williams, OPS, CJW results
 -/
 
-import Pnp3.Complexity.ComplexityClasses
 
 namespace Pnp3
 namespace Complexity

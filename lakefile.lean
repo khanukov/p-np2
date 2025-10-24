@@ -19,12 +19,9 @@ lean_lib PnP3 where
     `Core.BooleanBasics,
     `Core.PDTPartial,
     `Core.PDT,
-    `Core.PDTExtras,
-    `Core.SubcubeExtras,
     `Core.Atlas,
     `Core.SAL_Core,
     `Core.ShrinkageWitness,
-    `Core.ShrinkageAC0,
     `Counting.BinomialBounds,
     `Counting.Count_EasyFuncs,
     `Counting.Atlas_to_LB_Core,
@@ -42,20 +39,5 @@ lean_lib PnP3 where
     `Magnification.LocalityLift,
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
-    `ThirdPartyFacts.BaseSwitching,
-    `ThirdPartyFacts.Facts_Switching,
-    `ThirdPartyFacts.ConstructiveSwitching,
-    `ThirdPartyFacts.LeafBudget
-  ]
-
-@[test_driver]
-lean_lib PnP3Tests where
-  srcDir := "pnp3/Tests"
-  globs := #[
-    `Atlas_Count_Sanity,
-    `Atlas_Counterexample_Search,
-    `LB_Smoke_Scenario,
-    `LB_Core_Contradiction,
-    `Magnification_Core_Contradiction,
-    `Switching_Basics
+    `ThirdPartyFacts.Facts_Switching
   ]

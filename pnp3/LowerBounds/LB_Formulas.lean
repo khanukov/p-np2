@@ -8,6 +8,7 @@ import Core.ShrinkageWitness
 import Counting.Atlas_to_LB_Core
 import Counting.Count_EasyFuncs
 import ThirdPartyFacts.Facts_Switching
+import ThirdPartyFacts.LeafBudget
 
 /-!
   pnp3/LowerBounds/LB_Formulas.lean

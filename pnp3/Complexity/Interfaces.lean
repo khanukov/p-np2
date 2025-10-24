@@ -1,5 +1,5 @@
--- Import verified P ⊆ P/poly proof from Pnp2
-import Pnp2.ComplexityClasses
+-- Import verified P ⊆ P/poly proof from standalone verified-facts subproject
+import PSubsetPpoly.ComplexityClasses
 
 /-!
   pnp3/Complexity/Interfaces.lean
@@ -30,13 +30,13 @@ namespace ComplexityInterfaces
 axiom NP_not_subset_Ppoly : Prop
 
 /-- Интерфейс к доказанному включению `P ⊆ P/poly`.
-    Теперь это конкретное утверждение из Pnp2. -/
-def P_subset_Ppoly : Prop := (Pnp2.P ⊆ Pnp2.Ppoly)
+    Импортировано из изолированного верифицированного подпроекта PSubsetPpoly. -/
+def P_subset_Ppoly : Prop := (PSubsetPpoly.P ⊆ PSubsetPpoly.Ppoly)
 
-/-- Доказательство включения `P ⊆ P/poly`, импортированное из Pnp2.
-    Это полностью верифицированный факт без аксиом
-    (✅ 507KB доказательства + зависимости). -/
-def P_subset_Ppoly_proof : P_subset_Ppoly := Pnp2.P_subset_Ppoly
+/-- Доказательство включения `P ⊆ P/poly`, импортированное из PSubsetPpoly.
+    Это полностью верифицированный факт без аксиом и sorry
+    (✅ 507KB доказательства + зависимости из verified-facts/p-subset-ppoly). -/
+def P_subset_Ppoly_proof : P_subset_Ppoly := PSubsetPpoly.P_subset_Ppoly
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
 axiom P_ne_NP : Prop

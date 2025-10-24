@@ -1,7 +1,15 @@
 # P≠NP formalization repository
-> **Status (2025-09-24)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  The previous `Pnp2/` development is kept for historical context and reproducibility of the FCE-Lemma programme.
+> **Status (2025-10-24)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  The previous `Pnp2/` development is kept for historical context and reproducibility of the FCE-Lemma programme.
 
-This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for (Gap)MCSP and, eventually, into a full separation.
+This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for (Gap)MCSP and, eventually, into a full separation.
+
+## Scientific contribution
+
+We introduce and Lean-verify a constructive bridge from shrinkage to a uniform atlas of subcubes for whole families of Boolean functions (Switching-Atlas Lemma, SAL) and prove a general Covering-Power capacity bound. **To the best of our knowledge**, this SAL packaging and its end-to-end Lean verification are new contributions to both formal methods and complexity theory.
+
+**Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external results (multi-switching, anti-checkers, magnification triggers) that are currently axiomatized. All internal glue and combinatorics are machine-checked.
+
+**Documentation**: See [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for axiom tracking.
 
 Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  Those files remain available under `Pnp2/` as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era.
 
@@ -26,7 +34,7 @@ Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-En
 
 ## Toolchain and build
 
-The project targets **Lean 4** together with **mathlib4** ≥ 4.22.0-rc2.  Install `elan` (which also provides the `lake` tool) and run
+The project targets **Lean 4** together with **mathlib4** ≥ 4.22.0-rc2.  Install `elan` (which also provides the `lake` tool) and run
 
 ```bash
 elan toolchain install $(cat lean-toolchain)
@@ -60,7 +68,7 @@ The archived `Pnp2/` tests can still be invoked via `lean --run Pnp2/examples.le
 
 ## Historical note: from FCE to SAL
 
-The shift from the FCE-Lemma pipeline (`Pnp2/`) to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
+The shift from the FCE-Lemma pipeline (`Pnp2/`) to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
 
 1. The constructive cover machinery is preserved for reproducibility but no longer drives the main separation strategy.
 2. SAL-based magnification aligns better with contemporary lower-bound techniques and offers a clearer path to hardness for (Gap)MCSP.

@@ -5,6 +5,9 @@ package pnp2
 
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.22.0-rc2"
 
+-- Verified fact: P ⊆ P/poly (isolated subproject)
+require «p-subset-ppoly» from "."/  "verified-facts"/"p-subset-ppoly"
+
 lean_lib Pnp2 where
   srcDir := "Pnp2"
   globs := #[

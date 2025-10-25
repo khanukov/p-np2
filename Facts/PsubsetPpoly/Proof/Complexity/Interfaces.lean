@@ -10,9 +10,10 @@ stating the inclusion `P ⊆ P/poly`.
 This file provides a tiny, self-contained replacement for the original
 interface.  We model languages as predicates on finite bitstrings and
 introduce lightweight placeholders for the classes `P` and `P/poly`.
-The proof of the inclusion is packaged as an axiom—the external proof
-plays the role of justification—so the rest of the code base can depend
-on the statement without having to recompile the original sources.
+The actual inclusion is proved separately in
+`Proof/Complexity/PsubsetPpoly.lean`, allowing the rest of the code base to
+depend on the named theorem without having to recompile the external
+simulation-heavy sources.
 
 The entire development lives inside the namespace
 `Facts.PsubsetPpoly`.  This mirrors the structure of the standalone
@@ -67,18 +68,12 @@ def Ppoly (L : Language) : Prop := ∃ _ : InPpoly L, True
 
 end Complexity
 
-/- The external proof establishes the classical inclusion `P ⊆ P/poly`.
-We record it as an axiom inside the dedicated namespace
-`Facts.PsubsetPpoly.Proof`.  Downstream modules import this statement
-via `FactPsubsetPpoly` without depending on the heavyweight original
-sources. -/
-namespace Proof
-
-open Complexity
-
-axiom complexity_P_subset_Ppoly : ∀ {L}, P L → Ppoly L
-
-end Proof
-
+/-!
+The constructive inclusion `P ⊆ P/poly` is proved in
+`Proof/Complexity/PsubsetPpoly.lean`.  We keep the proof separate so this file
+can remain a lightweight interface layer that only introduces the basic
+complexity-language vocabulary.  Downstream projects that need the actual
+theorem can import the bridge module directly.
+-/
 end PsubsetPpoly
 end Facts

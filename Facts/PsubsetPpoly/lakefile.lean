@@ -13,5 +13,6 @@ lean_lib FactPsubsetPpoly where
   srcDir := "."
   globs := #[
     Glob.one `Proof.Complexity.Interfaces,
+    Glob.one `Proof.Complexity.PsubsetPpoly,
     Glob.one `FactPsubsetPpoly
   ]

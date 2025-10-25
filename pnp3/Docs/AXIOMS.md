@@ -520,18 +520,18 @@ axiom NP_not_subset_Ppoly : Prop
 
 ---
 
-### AXIOM I.2: `P_subset_Ppoly`
+### FACT I.2: `P_subset_Ppoly`
 
-**Location**: `pnp3/Complexity/Interfaces.lean:28`
+**Location**: `pnp3/Complexity/Interfaces.lean:33`
 
 **Statement**:
 ```lean
-axiom P_subset_Ppoly : Prop
+def P_subset_Ppoly : Prop := Facts.PsubsetPpoly.Statement
 ```
 
-**Mathematical Content**: Proposition stating P ⊆ P/poly.
+**Mathematical Content**: Alias to the imported proposition representing P ⊆ P/poly.
 
-**Status**: ✅ **Proven in pnp2/** (standard result)
+**Status**: ✅ **Resolved via import** — the proposition is defined directly through the fact package `Facts/PsubsetPpoly`.
 
 **Literature References**:
 - Standard result in complexity theory
@@ -541,18 +541,19 @@ axiom P_subset_Ppoly : Prop
 
 ---
 
-### AXIOM I.3: `P_subset_Ppoly_proof`
+### FACT I.3: `P_subset_Ppoly_proof`
 
-**Location**: `pnp3/Complexity/Interfaces.lean:31`
+**Location**: `pnp3/Complexity/Interfaces.lean:36`
 
 **Statement**:
 ```lean
-axiom P_subset_Ppoly_proof : P_subset_Ppoly
+theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
+  Facts.PsubsetPpoly.complexity_P_subset_Ppoly
 ```
 
-**Mathematical Content**: Proof that P ⊆ P/poly.
+**Mathematical Content**: Imported witness of the inclusion packaged by the fact module.
 
-**Status**: ✅ **Available from pnp2/**
+**Status**: ✅ **Resolved via import** — pulled from the isolated proof package.
 
 **Criticality**: 🟢 LOW - Interface to existing proof
 
@@ -560,7 +561,7 @@ axiom P_subset_Ppoly_proof : P_subset_Ppoly
 
 ### AXIOM I.4: `P_ne_NP`
 
-**Location**: `pnp3/Complexity/Interfaces.lean:34`
+**Location**: `pnp3/Complexity/Interfaces.lean:40`
 
 **Statement**:
 ```lean
@@ -577,7 +578,7 @@ axiom P_ne_NP : Prop
 
 ### AXIOM I.5: `P_ne_NP_of_nonuniform_separation`
 
-**Location**: `pnp3/Complexity/Interfaces.lean:40`
+**Location**: `pnp3/Complexity/Interfaces.lean:46`
 
 **Statement**:
 ```lean
@@ -611,8 +612,8 @@ axiom P_ne_NP_of_nonuniform_separation
 - 🟡 **HIGH** (needed for completeness): 6 axioms
   - A.2, C.8, C.9, D.2, D.3, D.5
 
-- 🟢 **MEDIUM/LOW** (alternatives or interfaces): 7 axioms
-  - A.3, A.4, A.5, D.4, I.2, I.3, I.5
+- 🟢 **MEDIUM/LOW** (alternatives or interfaces): 5 аксиом
+  - A.3, A.4, A.5, D.4, I.5
 
 ### By Source:
 - **Håstad 1986** (Switching Lemma): 3 axioms (A.1, A.3, A.4)

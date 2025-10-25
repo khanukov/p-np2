@@ -13,7 +13,14 @@ converted into the abstract language inclusion statement.  Because no other
 definitions are introduced here, downstream projects can import this file to
 reuse the final theorem without accumulating any extra baggage from the
 intermediate construction.
+
+Here we explicitly expose the surrounding `Facts.PsubsetPpoly` namespace so the
+inclusion theorem does not collide with the equally named statement in the
+legacy codebase.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 namespace Proof
 
@@ -32,3 +39,6 @@ theorem complexity_P_subset_Ppoly :
   refine ⟨Complexity.inPpoly_of_polyBound (M := M) (c := c) hRun hCorrect, trivial⟩
 
 end Proof
+
+end PsubsetPpoly
+end Facts

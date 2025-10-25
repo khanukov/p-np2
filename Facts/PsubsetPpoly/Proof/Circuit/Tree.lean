@@ -7,7 +7,14 @@ The standalone `P ⊆ P/poly` proof only requires the bare-bones circuit syntax
 and its evaluation semantics to talk about the tree-shaped gadgets appearing in
 the simulation.  We therefore keep exactly those ingredients here and omit the
 canonicalisation and counting infrastructure of the original development.
+
+As part of the collision clean-up we nest the whole development under
+`Facts.PsubsetPpoly` so the exported symbols remain distinct from their
+`Pnp2` counterparts.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 namespace Boolcube
 
@@ -42,3 +49,6 @@ noncomputable def eval {n : ℕ} : Circuit n → Point n → Bool
 end Circuit
 
 end Boolcube
+
+end PsubsetPpoly
+end Facts

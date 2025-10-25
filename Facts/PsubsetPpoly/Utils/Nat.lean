@@ -6,6 +6,14 @@ These statements are kept minimal and are intended to support the gate-count
 bookkeeping developed for straight-line circuits with sharing.
 -/
 
+namespace Facts
+namespace PsubsetPpoly
+
+/-!
+The helper lemmas live in a dedicated namespace so they do not overlap with the
+legacy `Pnp2` utilities when both projects share the same Lean environment.
+-/
+
 namespace Nat
 
 /--
@@ -19,4 +27,7 @@ lemma sub_lt_of_le_of_lt {a b c : ℕ} (hb : b ≤ a) (h : a < b + c) : a - b < 
   exact Nat.lt_of_add_lt_add_left hbound
 
 end Nat
+
+end PsubsetPpoly
+end Facts
 

@@ -15,9 +15,13 @@ an evaluation function, and expose the elementary notion of size (simply the
 number of gates).  Later developments will relate this representation to the
 existing tree-based circuits and use it to organise the gate-count recurrence
 appearing in the `P ⊆ P/poly` formalisation.
+
+As before, everything is nested inside `Facts.PsubsetPpoly` so the symbols do
+not collide with the similarly named components from `Pnp2`.
 -/
 
-open Boolcube
+namespace Facts
+namespace PsubsetPpoly
 
 namespace Boolcube
 
@@ -1216,3 +1220,5 @@ end Builder
 end StraightLineCircuit
 end Boolcube
 
+end PsubsetPpoly
+end Facts

@@ -1,13 +1,11 @@
 import ExampleProofs.Examples
 
-open Facts
-open Complexity
-open TM
-
 namespace Facts
 namespace PsubsetPpoly
 namespace Tests
 
+open Complexity
+open TM
 open scoped Classical
 
 /--

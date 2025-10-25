@@ -7,7 +7,14 @@ This module packages the long gate-count argument into a compact statement that
 produces the `InPpoly` witness used by the final inclusion theorem.  It lives on top
 of `Proof.Simulation.Core`, reusing the straight-line simulation and its quantitative
 estimates.
+
+To avoid clashes with the legacy `Pnp2` library we keep the definitions inside
+`Facts.PsubsetPpoly`.  The standalone project remains usable in isolation, but
+when imported into `pnp3` the fresh namespace prevents duplicate identifiers.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 open Boolcube
 open TM
@@ -192,4 +199,7 @@ noncomputable def inPpoly_of_polyBound
 
 end Complexity
 end Proof
+
+end PsubsetPpoly
+end Facts
 

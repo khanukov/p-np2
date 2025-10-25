@@ -12,12 +12,20 @@ stays focused on the non-uniform simulation.  The module only fixes the
 terminology for languages, polynomial-time Turing machines and polynomial-size
 straight-line circuits.
 
+To keep the interface compatible with the main `pnp3` development we house it
+inside the `Facts.PsubsetPpoly` namespace.  That way, even ubiquitous symbols
+like `Complexity.P` become `Facts.PsubsetPpoly.Complexity.P`, avoiding clashes
+with the pre-existing `Pnp2` definitions.
+
 A *language* is a predicate on bitstrings of a given length; we model
 bitstrings as functions `Fin n → Bool`.  `TM` refers to the single-tape binary
 machines developed in `Turing/Encoding.lean`.  Using these we define membership in
 `P`.  Non-uniform polynomial size is captured via families of Boolean circuits,
 yielding `P/poly`.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 open Boolcube
 
@@ -65,3 +73,6 @@ this bound as an `InPpoly` witness, yielding the classical inclusion
 
 
 end Complexity
+
+end PsubsetPpoly
+end Facts

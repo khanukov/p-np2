@@ -7,7 +7,15 @@ The model is intentionally simple: we use a single binary tape together
 with a finite control.  Despite the simplicity, the definitions below
 are powerful enough to support the classical simulation of
 polynomial-time machines by polynomial-size circuits.
+
+As part of the collision-avoidance effort we wrap the whole development in the
+`Facts.PsubsetPpoly` namespace.  This keeps the exported symbols isolated from
+the `Pnp2` Turing machine library while preserving the standalone usability of
+this proof bundle.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 /--
 Direction of the tape head movement.  We explicitly keep a `stay` case
@@ -176,3 +184,6 @@ def accepts (n : ℕ) (x : Boolcube.Point n) : Bool :=
   decide ((M.run (n := n) x).state = M.accept)
 
 end TM
+
+end PsubsetPpoly
+end Facts

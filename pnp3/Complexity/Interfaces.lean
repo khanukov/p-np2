@@ -14,7 +14,7 @@ import ThirdPartyFacts.PsubsetPpoly
     внешним пакетом (см. `ThirdPartyFacts/PsubsetPpoly.lean`).
   * `P_ne_NP` — целевое утверждение `P ≠ NP`.
   * `P_ne_NP_of_nonuniform_separation` — классический вывод из двух пунктов
-    выше.  В версии `pnp2` он доказан напрямую (см. `NP_separation.lean`).
+    выше.  В ранней библиотеке проекта эта теорема доказана напрямую (см. `NP_separation.lean`).
 
   На уровне текущего каталога `pnp3/` мы продолжаем рассматривать эти
   утверждения как внешние факты.  Включение `P ⊆ P/poly` поступает из
@@ -45,7 +45,7 @@ axiom P_ne_NP : Prop
 
 /--
   Классический вывод: если `NP ⊄ P/poly`, но `P ⊆ P/poly`, то `P ≠ NP`.
-  Подробное доказательство реализовано в `Pnp2/NP_separation.lean`.
+  Подробное доказательство реализовано в отдельной библиотеке (см. `NP_separation.lean`).
 -/
 axiom P_ne_NP_of_nonuniform_separation
   (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) : P_ne_NP

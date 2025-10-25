@@ -1,4 +1,7 @@
 import Proof.Bitstring
+import Mathlib.Data.Fintype.Basic
+
+universe u
 
 /-!
 `Turing/Encoding` provides a lightweight operational model for the
@@ -10,7 +13,7 @@ polynomial-time machines by polynomial-size circuits.
 
 As part of the collision-avoidance effort we wrap the whole development in the
 `Facts.PsubsetPpoly` namespace.  This keeps the exported symbols isolated from
-the `Pnp2` Turing machine library while preserving the standalone usability of
+the Turing machine library shipped with the main repository while preserving the standalone usability of
 this proof bundle.
 -/
 
@@ -40,9 +43,9 @@ standard definitions every time.
 -/
 structure TM where
   /-- Finite set of control states. -/
-  state : Type
-  stateFintype : Fintype state
-  stateDecEq : DecidableEq state
+  state : Type u
+  [stateFintype : Fintype state]
+  [stateDecEq : DecidableEq state]
   /-- The start state. -/
   start : state
   /-- The unique accepting state.  Reaching this state after the allotted
@@ -55,7 +58,6 @@ structure TM where
   /-- A time bound specified as `n ↦ n^c + c` in the applications. -/
   runTime : ℕ → ℕ
 
-attribute [simp] TM.stateFintype
 attribute [instance] TM.stateFintype
 attribute [instance] TM.stateDecEq
 

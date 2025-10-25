@@ -11,8 +11,8 @@ that the standalone fact exposes a tiny self-contained API.
 
 We wrap every definition into the `Facts.PsubsetPpoly` namespace so that the
 objects never collide with the homonymous infrastructure that already lives in
-`Pnp2`.  The standalone proof remains independent, but once imported into the
-big project its names are guaranteed to stay distinct.
+the larger codebase.  The standalone proof remains independent, but once
+imported into the big project its names are guaranteed to stay distinct.
 -/
 
 namespace Facts

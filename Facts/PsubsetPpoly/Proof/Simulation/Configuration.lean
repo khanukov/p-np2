@@ -14,7 +14,7 @@ lemmas needed by the main simulation.
 
 As part of the integration clean-up we deliberately work inside
 `Facts.PsubsetPpoly`.  This ensures that the numerous helper structures from the
-standalone fact never collide with the homonymous ones in `Pnp2`.
+standalone fact never collide with the homonymous ones maintained in the main repository.
 -/
 
 namespace Facts

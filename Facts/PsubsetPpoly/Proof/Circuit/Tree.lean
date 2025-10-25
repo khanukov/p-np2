@@ -9,8 +9,7 @@ the simulation.  We therefore keep exactly those ingredients here and omit the
 canonicalisation and counting infrastructure of the original development.
 
 As part of the collision clean-up we nest the whole development under
-`Facts.PsubsetPpoly` so the exported symbols remain distinct from their
-`Pnp2` counterparts.
+`Facts.PsubsetPpoly` so the exported symbols remain distinct from their counterparts from the broader development.
 -/
 
 namespace Facts

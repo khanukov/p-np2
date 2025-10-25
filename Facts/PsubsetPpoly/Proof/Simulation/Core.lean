@@ -13,7 +13,7 @@ step.  The heavy lifting happens here; subsequent modules only package the
 resulting constructions into global circuit families and polynomial bounds.
 
 All definitions are now hosted in `Facts.PsubsetPpoly`, ensuring that the names
-do not collide with the earlier `Pnp2` formalisation when both projects share a
+do not collide with the earlier formalisation provided in the main repository when both projects share a
 Lean environment.
 -/
 

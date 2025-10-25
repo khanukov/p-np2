@@ -1,7 +1,7 @@
-import Pnp2.Boolcube
+import Proof.Bitstring
 
-/--
-`Pnp2.TM.Encoding` provides a lightweight operational model for the
+/-!
+`Turing/Encoding` provides a lightweight operational model for the
 deterministic Turing machines mentioned in `ComplexityClasses.lean`.
 The model is intentionally simple: we use a single binary tape together
 with a finite control.  Despite the simplicity, the definitions below
@@ -33,7 +33,8 @@ standard definitions every time.
 structure TM where
   /-- Finite set of control states. -/
   state : Type
-  [stateFintype : Fintype state]
+  stateFintype : Fintype state
+  stateDecEq : DecidableEq state
   /-- The start state. -/
   start : state
   /-- The unique accepting state.  Reaching this state after the allotted
@@ -47,6 +48,8 @@ structure TM where
   runTime : ℕ → ℕ
 
 attribute [simp] TM.stateFintype
+attribute [instance] TM.stateFintype
+attribute [instance] TM.stateDecEq
 
 namespace TM
 
@@ -169,9 +172,7 @@ def run {n : ℕ} (x : Boolcube.Point n) : Configuration (M := M) n :=
 
 /-- Acceptance predicate: the state after `runTime n` steps equals the
 designated accepting state. -/
-def accepts (n : ℕ) (x : Boolcube.Point n) : Bool := by
-  classical
-  let c := M.run (n := n) x
-  exact decide (c.state = M.accept)
+def accepts (n : ℕ) (x : Boolcube.Point n) : Bool :=
+  decide ((M.run (n := n) x).state = M.accept)
 
 end TM

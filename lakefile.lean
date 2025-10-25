@@ -12,6 +12,22 @@ lean_lib Pnp2 where
     `NP_separation
   ]
 
+lean_lib FactPsubsetPpoly where
+  srcDir := "Facts/PsubsetPpoly"
+  globs := #[
+    Glob.one `Utils.Nat,
+    Glob.one `Proof.Bitstring,
+    Glob.one `Proof.Circuit.Tree,
+    Glob.one `Proof.Circuit.StraightLine,
+    Glob.one `Proof.Circuit.Family,
+    Glob.one `Proof.Turing.Encoding,
+    Glob.one `Proof.Complexity.Interfaces,
+    Glob.one `Proof.Complexity.PsubsetPpoly,
+    Glob.submodules `Proof.Simulation,
+    Glob.submodules `ExampleProofs,
+    Glob.one `FactPsubsetPpoly
+  ]
+
 @[default_target]
 lean_lib PnP3 where
   srcDir := "pnp3"

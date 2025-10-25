@@ -1,3 +1,5 @@
+import FactPsubsetPpoly
+
 /-!
   pnp3/Complexity/Interfaces.lean
 
@@ -8,14 +10,16 @@
   и на целевое утверждение `P ≠ NP` без дублирования кода.
 
   * `NP_not_subset_Ppoly` — сокращённая запись утверждения `NP ⊄ P/poly`.
-  * `P_subset_Ppoly` — интерфейс к уже формализованному включению `P ⊆ P/poly`.
+  * `P_subset_Ppoly` — импортированное включение `P ⊆ P/poly`, реализованное в
+    пакете `Facts/PsubsetPpoly` через переиспользование доказательства из `pnp2`.
   * `P_ne_NP` — целевое утверждение `P ≠ NP`.
   * `P_ne_NP_of_nonuniform_separation` — классический вывод из двух пунктов
     выше.  В версии `pnp2` он доказан напрямую (см. `NP_separation.lean`).
 
   На уровне текущего каталога `pnp3/` эти утверждения считаются внешними
-  фактами (аксиомами) и используются при связывании магнификации с итоговым
-  разделением классов.
+  фактами, за исключением `P_subset_Ppoly`, которое теперь ссылается на
+  независимый пакет `Facts/PsubsetPpoly`.  Они используются при связывании
+  магнификации с итоговым разделением классов.
 -/
 
 namespace Pnp3
@@ -24,11 +28,13 @@ namespace ComplexityInterfaces
 /-- Заглушка для утверждения `NP ⊄ P/poly`. -/
 axiom NP_not_subset_Ppoly : Prop
 
-/-- Интерфейс к доказанному в `pnp2` включению `P ⊆ P/poly`. -/
-axiom P_subset_Ppoly : Prop
 
-/-- Доказательство включения `P ⊆ P/poly`, заимствованное из `pnp2`. -/
-axiom P_subset_Ppoly_proof : P_subset_Ppoly
+/-- Интерфейс к доказанному в `pnp2` включению `P ⊆ P/poly`. -/
+def P_subset_Ppoly : Prop := Facts.PsubsetPpoly.Statement
+
+/-- Доказательство включения `P ⊆ P/poly`, заимствованное из пакета фактов. -/
+theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
+  Facts.PsubsetPpoly.complexity_P_subset_Ppoly
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
 axiom P_ne_NP : Prop

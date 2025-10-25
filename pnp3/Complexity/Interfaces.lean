@@ -18,17 +18,20 @@
   разделением классов.
 -/
 
+import FactPsubsetPpoly
+
 namespace Pnp3
 namespace ComplexityInterfaces
 
 /-- Заглушка для утверждения `NP ⊄ P/poly`. -/
 axiom NP_not_subset_Ppoly : Prop
 
-/-- Интерфейс к доказанному в `pnp2` включению `P ⊆ P/poly`. -/
-axiom P_subset_Ppoly : Prop
+/-- Интерфейс к доказанному включению `P ⊆ P/poly` из пакета Facts/PsubsetPpoly. -/
+def P_subset_Ppoly : Prop := Complexity.P ⊆ Complexity.Ppoly
 
-/-- Доказательство включения `P ⊆ P/poly`, заимствованное из `pnp2`. -/
-axiom P_subset_Ppoly_proof : P_subset_Ppoly
+/-- Доказательство включения `P ⊆ P/poly` из пакета Facts/PsubsetPpoly. -/
+theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
+  Facts.PsubsetPpoly.complexity_P_subset_Ppoly
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
 axiom P_ne_NP : Prop

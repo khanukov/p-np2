@@ -1,10 +1,11 @@
-import Pnp2.Boolcube
+import Proof.Bitstring
+import Proof.Circuit.Tree
 import Utils.Nat
 
 /-!
-`Pnp2.Circuit.StraightLine` introduces a DAG-style representation of Boolean
+`Proof.Circuit.StraightLine` introduces a DAG-style representation of Boolean
 circuits.  Unlike the tree-based datatype `Boolcube.Circuit` used elsewhere in
-this repository, the straight-line representation keeps an explicit list of
+this package, the straight-line representation keeps an explicit list of
 primitive gates where each gate may feed into later ones multiple times.  This
 matches the classical notion of *straight-line programs* and provides a natural
 setting for reasoning about circuit size in the presence of sharing.
@@ -539,17 +540,6 @@ def liftBase (b : Builder n base) (i : Fin (n + base.gates)) :
     exact Nat.lt_of_lt_of_le this hle⟩
 
 /--
-Token corresponding to a base wire.  The bound is instantiated with the number
-of gates of the original circuit, meaning that the token may be interpreted in
-any extension produced by the builder.
--/
-def baseWire (b : Builder n base) (i : Fin (n + base.gates)) : Wire n :=
-  { idx := i
-    , bound := base.gates
-    , bound_lt := by
-        simpa using i.is_lt }
-
-/--
 Append a new gate to the current circuit, returning both the updated builder and
 the wire token pointing to the freshly created gate.  The token records the
 total number of gates of the new circuit as its bound, which is the minimal
@@ -581,22 +571,6 @@ def append (b : Builder n base) (op : StraightOp (n + b.circuit.gates)) :
 @[simp] lemma append_bound (b : Builder n base)
     (op : StraightOp (n + b.circuit.gates)) :
     (b.append op).snd.bound = (StraightLineCircuit.snoc b.circuit op).gates := rfl
-
-/--
-Interpret the wire token returned by `append` as the last gate of the updated
- circuit.  The coercion reduces to `Fin.last`, which greatly simplifies
-evaluation lemmas.
--/
-lemma append_wire_toFin (b : Builder n base)
-    (op : StraightOp (n + b.circuit.gates)) :
-    let result := b.append op
-    result.snd.toFin (n := n) (g := result.fst.circuit.gates) (by
-      simpa [append_circuit] using le_rfl) =
-      Fin.last (n + (b.circuit.gates + 1)) := by
-  -- Expand the definitions to expose the numeric components of the token.
-  unfold append
-  simp [Wire.toFin, StraightLineCircuit.snoc, Nat.add_comm, Nat.add_left_comm,
-    Nat.add_assoc]
 
 /--
 Evaluation of the freshly appended gate: the resulting wire computes exactly the
@@ -684,56 +658,31 @@ def appendFin_lift (b : Builder n base) (op : StraightOp (n + b.circuit.gates)) 
       using (StraightLineCircuit.liftWire (C := b.circuit) w)
 
 /--
-Shorthand constructors for appending primitive Boolean gates.  These helpers are
-purely notational but greatly improve readability when constructing elaborate
-layers.
--/
-def appendConst (b : Builder n base) (val : Bool) : Builder n base × Wire n :=
-  b.append (StraightOp.const val)
-
-def appendNot (b : Builder n base)
-    (w : Fin (n + b.circuit.gates)) : Builder n base × Wire n :=
-  b.append (StraightOp.not w)
-
-def appendAnd (b : Builder n base)
-    (u v : Fin (n + b.circuit.gates)) : Builder n base × Wire n :=
-  b.append (StraightOp.and u v)
-
-def appendOr (b : Builder n base)
-    (u v : Fin (n + b.circuit.gates)) : Builder n base × Wire n :=
-  b.append (StraightOp.or u v)
-
-/--
-Variant of `appendConst` returning the resulting wire as a `Fin` index.  The
-type of the ambient circuit is expressed via `snoc` to reflect the newly
-inserted gate.
+Shorthand constructors for appending primitive Boolean gates that immediately
+return the resulting wire as a `Fin` index.  The codomain is expressed via
+`snoc` to make the growth of the circuit explicit, matching the way these
+helpers are consumed in the `P ⊆ P/poly` development.
 -/
 def appendConstFin (b : Builder n base) (val : Bool) :
     Builder n base × Fin (n + (StraightLineCircuit.snoc b.circuit
       (StraightOp.const val)).gates) :=
   b.appendFin (StraightOp.const val)
 
-/--
-Variant of `appendNot` returning the freshly created wire as a `Fin` index.
--/
+/-- Append a NOT gate and return the resulting wire as a `Fin` index. -/
 def appendNotFin (b : Builder n base)
     (w : Fin (n + b.circuit.gates)) :
     Builder n base × Fin (n + (StraightLineCircuit.snoc b.circuit
       (StraightOp.not w)).gates) :=
   b.appendFin (StraightOp.not w)
 
-/--
-Variant of `appendAnd` returning the resulting wire as a `Fin` index.
--/
+/-- Append an AND gate and return the resulting wire as a `Fin` index. -/
 def appendAndFin (b : Builder n base)
     (u v : Fin (n + b.circuit.gates)) :
     Builder n base × Fin (n + (StraightLineCircuit.snoc b.circuit
       (StraightOp.and u v)).gates) :=
   b.appendFin (StraightOp.and u v)
 
-/--
-Variant of `appendOr` returning the resulting wire as a `Fin` index.
--/
+/-- Append an OR gate and return the resulting wire as a `Fin` index. -/
 def appendOrFin (b : Builder n base)
     (u v : Fin (n + b.circuit.gates)) :
     Builder n base × Fin (n + (StraightLineCircuit.snoc b.circuit

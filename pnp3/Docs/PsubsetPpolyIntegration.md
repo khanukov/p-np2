@@ -32,7 +32,7 @@ previous revision of this file.
 Every declaration in the standalone proof is wrapped in the umbrella namespace
 `Facts.PsubsetPpoly`.  This prevents duplicate names such as
 `Boolcube.StraightLineCircuit` or `TM` from colliding with their legacy
-counterparts in `Pnp2`.  The wrapper module
+counterparts from earlier development efforts.  The wrapper module
 `pnp3/ThirdPartyFacts/PsubsetPpoly.lean` now imports
 `Facts.PsubsetPpoly.FactPsubsetPpoly` directly and re-exports the final theorem
 to the rest of the project, replacing the placeholder axioms used previously.

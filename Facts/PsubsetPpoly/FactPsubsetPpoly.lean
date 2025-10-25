@@ -1,19 +1,18 @@
-import Proof.Simulation
-import Proof.Complexity.PsubsetPpoly
+import Proof.Complexity.Interfaces
 
 /-!
-# Fact: `P ⊆ P/poly`
+# External fact `P ⊆ P/poly`
 
-This module exposes the classical inclusion of polynomial-time languages into
-non-uniform polynomial size.  It re-exports the standalone development housed in
-`Facts/PsubsetPpoly/Proof`, presenting a minimal interface for downstream
-projects.
+This module exposes the lightweight interface defined in
+`Proof/Complexity/Interfaces.lean`.  It merely re-exports the theorem
+recording the inclusion so that downstream projects can depend on the
+named statement without pulling in any additional infrastructure.
 -/
 
 namespace Facts
 namespace PsubsetPpoly
 
-export Complexity (inPpoly_of_polyBound)
+export Complexity (Bitstring Language P Ppoly)
 export Proof (complexity_P_subset_Ppoly)
 
 end PsubsetPpoly

@@ -10,7 +10,7 @@ richer counting theory; the standalone fact keeps only the helper definitions
 that appear in the proof of `P ⊆ P/poly`.
 
 Everything is encapsulated in `Facts.PsubsetPpoly` so that the names never
-interfere with the broader `Pnp2` project.  This is the only change required to
+interfere with the broader code base.  This is the only change required to
 allow a clean integration of the standalone fact with the main development.
 -/
 

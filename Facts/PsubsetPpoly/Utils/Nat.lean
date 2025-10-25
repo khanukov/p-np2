@@ -11,7 +11,7 @@ namespace PsubsetPpoly
 
 /-!
 The helper lemmas live in a dedicated namespace so they do not overlap with the
-legacy `Pnp2` utilities when both projects share the same Lean environment.
+legacy utilities from the main repository when both projects share the same Lean environment.
 -/
 
 namespace Nat

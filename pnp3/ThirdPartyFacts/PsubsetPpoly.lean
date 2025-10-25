@@ -3,34 +3,36 @@
 
   Формальный интерфейс к внешнему факту `P ⊆ P/poly`.  После помещения
   всех определений стоечного пакета в пространство имён `Facts.PsubsetPpoly`
-  конфликт имён с `Pnp2` исчезает, и мы можем напрямую импортировать
+  возможные конфликты имён с прежними формализациями исчезают, и мы можем напрямую импортировать
   доказательство из каталога `Facts/PsubsetPpoly`.
 -/
 
-import Facts.PsubsetPpoly.FactPsubsetPpoly
+import FactPsubsetPpoly
 
 namespace Pnp3
 namespace ThirdPartyFacts
 namespace PsubsetPpoly
 
-/-- Чтобы сделать источники явными, работаем в пространстве имён
-`Facts.PsubsetPpoly`.  Оно содержит определения классов сложности и
-доказательство включения. -/
-open Facts
+-- Чтобы сделать источники явными, работаем в пространстве имён
+-- `Facts.PsubsetPpoly`.  Оно содержит определения классов сложности и
+-- доказательство включения.
 open Facts.PsubsetPpoly
 
 /--
-  Формулировка внешнего утверждения «`P ⊆ P/poly`».
+  Формулируем внешнее утверждение «`P ⊆ P/poly`» как явно квантифицированное
+  включение классов: для любого языка `L`, если он лежит в `P`, то он лежит в
+  `P/poly`.
 -/
-def statement : Prop := Complexity.P ⊆ Complexity.Ppoly
+def statement : Prop := ∀ L, Complexity.P L → Complexity.Ppoly L
 
 /--
   Доказательство включения `P ⊆ P/poly`, предоставленное модулем
   `Facts/PsubsetPpoly`.
 -/
 theorem proof : statement := by
+  intro L hL
   -- Оборачиваем импортированную теорему в локальное пространство имён.
-  exact Proof.complexity_P_subset_Ppoly
+  exact Proof.complexity_P_subset_Ppoly hL
 
 end PsubsetPpoly
 

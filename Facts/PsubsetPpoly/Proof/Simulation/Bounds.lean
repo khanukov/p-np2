@@ -8,7 +8,7 @@ produces the `InPpoly` witness used by the final inclusion theorem.  It lives on
 of `Proof.Simulation.Core`, reusing the straight-line simulation and its quantitative
 estimates.
 
-To avoid clashes with the legacy `Pnp2` library we keep the definitions inside
+To avoid clashes with the legacy library maintained in the main repository we keep the definitions inside
 `Facts.PsubsetPpoly`.  The standalone project remains usable in isolation, but
 when imported into `pnp3` the fresh namespace prevents duplicate identifiers.
 -/

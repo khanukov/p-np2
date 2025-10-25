@@ -1,6 +1,6 @@
 import Proof.Bitstring
 import Proof.Circuit.Tree
-import Utils.Nat
+import Facts.PsubsetPpoly.Utils.Nat
 
 /-!
 `Proof.Circuit.StraightLine` introduces a DAG-style representation of Boolean

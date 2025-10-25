@@ -27,6 +27,24 @@ previous revision of this file.
    modules for the usual maintenance backlog, but the `ThirdPartyFacts`
    component successfully links against the namespaced proof.
 
+## Quick sanity check
+
+To confirm that the constructive witness is visible inside `pnp3`, open a Lean
+file (or start `lean --run` / `lake env lean`) and evaluate
+
+```lean
+#check Pnp3.ThirdPartyFacts.PsubsetPpoly.proof
+```
+
+Lean should report the type
+
+```
+Pnp3.ThirdPartyFacts.PsubsetPpoly.statement
+```
+
+showing that the imported value is a fully elaborated proof term rather than an
+axiom placeholder.
+
 ## What changed
 
 Every declaration in the standalone proof is wrapped in the umbrella namespace

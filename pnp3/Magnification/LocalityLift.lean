@@ -1,19 +1,16 @@
-import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Finset.Basic
 import Core.BooleanBasics
 import LowerBounds.AntiChecker
 import Models.Model_GapMCSP
-import ThirdPartyFacts.Facts_Switching
+import Magnification.LocalityInterfaces
+import ThirdPartyFacts.LocalityLift
 
 /-!
-  pnp3/Magnification/LocalityLift.lean
-
-  Этот модуль содержит абстрактный интерфейс «Locality-Lift»: из гипотезы о
-  существовании небольшого (в общем смысле) решателя GapMCSP и малого
-  тест-набора `T` строится решатель в модели локальных схем.  Реализация этой
-  леммы будет происходить за пределами Lean; здесь мы фиксируем лишь точную
-  сигнатуру, чтобы остальные части цепочки A→B→C могли обращаться к ней как к
-  готовому факту.
+  `Magnification.LocalityLift` is now a thin façade that delegates the heavy
+  lifting to the stand-alone package located in `Facts/LocalityLift`.  The module
+  keeps the historical notation used throughout the pipeline while importing the
+  verified interfaces from the external package via
+  `ThirdPartyFacts.LocalityLift`.
 -/
 
 namespace Pnp3
@@ -21,43 +18,26 @@ namespace Magnification
 
 open Models
 open LowerBounds
+open ThirdPartyFacts
 
-/--
-  Параметры общего (неограниченного) решателя: храним число входов `n`,
-  размер схемы `size` и глубину `depth`.  Этой информации достаточно, чтобы
-  контролировать перенос параметров в локальную модель.
--/
-structure GeneralCircuitParameters where
-  n     : Nat
-  size  : Nat
-  depth : Nat
-  deriving Repr
+/-- Convenience alias to the external locality-lift interface. -/
+@[inline] def locality_lift
+  {p : Models.GapMCSPParams}
+  (solver : SmallGeneralCircuitSolver p) :
+    ∃ (T : Finset (Core.BitVec (Models.inputLen p)))
+      (loc : LowerBounds.SmallLocalCircuitSolver p),
+        T.card ≤ Models.polylogBudget (Models.inputLen p) ∧
+        loc.params.M ≤ solver.params.size * (T.card.succ) ∧
+        loc.params.ℓ ≤ Models.polylogBudget (Models.inputLen p) ∧
+        loc.params.depth ≤ solver.params.depth :=
+  ThirdPartyFacts.locality_lift (p := p) (solver := solver)
 
-/--
-  Гипотеза о существовании малого общего решателя для GapMCSP.  Как и в
-  остальных оболочках (`SmallAC0Solver`, `SmallLocalCircuitSolver`), мы
-  фиксируем только параметры, не вдаваясь в реализацию схемы.
--/
-structure SmallGeneralCircuitSolver (p : GapMCSPParams) where
-  params : GeneralCircuitParameters
-  same_n : params.n = inputLen p
-  deriving Repr
-
-/--
-  Формализация шага Locality-Lift: из общего решателя и тест-набора `T`
-  получаем локальный решатель сопоставимых размеров.  Точные зависимости
-  между параметрами вынесены в виде неравенств.  Факт будет обоснован в
-  математической части; здесь он оформлен как аксиома для дальнейших модулей.
--/
-axiom locality_lift
-  {p : GapMCSPParams}
-  (general : SmallGeneralCircuitSolver p) :
-    ∃ (T : Finset (Core.BitVec (inputLen p)))
-      (loc : SmallLocalCircuitSolver p),
-        T.card ≤ Models.polylogBudget (inputLen p) ∧
-        loc.params.M ≤ general.params.size * (T.card.succ) ∧
-        loc.params.ℓ ≤ Models.polylogBudget (inputLen p) ∧
-        loc.params.depth ≤ general.params.depth
+/-- Contrapositive wrapper delegating to the external package. -/
+@[inline] def no_general_solver_of_no_local
+  {p : Models.GapMCSPParams}
+  (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver p, False) :
+  ∀ _solver : SmallGeneralCircuitSolver p, False :=
+  ThirdPartyFacts.no_general_solver_of_no_local (p := p) H
 
 end Magnification
 end Pnp3

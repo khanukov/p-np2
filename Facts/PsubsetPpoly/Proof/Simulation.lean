@@ -6,7 +6,13 @@ import Proof.Simulation.Bounds
 Bridging module that re-exports the layered simulation development.  Downstream
 clients can simply import `Proof.Simulation` to access the configuration
 encoding, the straight-line simulation core, and the final gate-count bounds.
+
+We wrap the re-exports inside `Facts.PsubsetPpoly` to maintain a dedicated
+namespace for the standalone fact when it is imported into other developments.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 namespace Proof
 
@@ -17,3 +23,6 @@ organisation and does not introduce additional theory.
 -/
 
 end Proof
+
+end PsubsetPpoly
+end Facts

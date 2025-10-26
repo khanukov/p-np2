@@ -478,43 +478,58 @@ axiom NP_not_subset_Ppoly : Prop
 
 ---
 
-### I.2: `P_subset_Ppoly` (Prop) 📝 PLACEHOLDER
-
-**Location**: `pnp3/Complexity/Interfaces.lean:28`
-
-**Full Statement**:
-```lean
-axiom P_subset_Ppoly : Prop
-```
-
-**Mathematical Content**: Proposition stating P ⊆ P/poly.
-
-**Status**: 📝 **Abstract Prop placeholder** for interface design
-
-**Note**: Distinct from I.3 and duplicate in ComplexityClasses.lean
-
-**Criticality**: 📝 **INTERFACE** - Placeholder Prop
-
----
-
-### I.3: `P_subset_Ppoly_proof` ✅ PROVEN IN PNP2
+### I.2: `P_subset_Ppoly` (Prop) ✅ IMPORTED FACT
 
 **Location**: `pnp3/Complexity/Interfaces.lean:31`
 
 **Full Statement**:
 ```lean
-axiom P_subset_Ppoly_proof : P_subset_Ppoly
+abbrev P_subset_Ppoly : Prop := ThirdPartyFacts.P_subset_Ppoly
 ```
 
-**Mathematical Content**: Proof that P ⊆ P/poly.
+**Mathematical Content**: Proposition stating P ⊆ P/poly, delegated to the
+third-party module `ThirdPartyFacts/PsubsetPpoly.lean`.
 
-**Literature Reference**: Standard result (any complexity textbook, e.g., Arora-Barak, Theorem 6.11)
+**Status**: ✅ **Definition reexports the imported proof** — теперь alias
+подключён к namespaced-пакету `Facts/PsubsetPpoly`, и Lean напрямую
+использует готовое доказательство без аксиом.
 
-**Status**: ✅ **PROVEN in Pnp2/ComplexityClasses.lean:87-92** (constructive TM→circuits simulation)
+**Note**: Используется как именованное напоминание о внешней зависимости.
 
-**Why Axiom Here**: Interface design - pnp3 isolated from Pnp2 for modularity
+**Criticality**: 🟢 **LOW** - Standard fact, supplied externally
+
+---
+
+### I.3: `P_subset_Ppoly_proof` ✅ IMPORTED WITNESS
+
+**Location**: `pnp3/Complexity/Interfaces.lean:38`
+
+**Full Statement**:
+```lean
+@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
+  ThirdPartyFacts.P_subset_Ppoly_proof
+```
+
+**Mathematical Content**: Proof witness for P ⊆ P/poly, зафиксированный как
+ссылка на внешнее доказательство.
+
+**Literature Reference**: Реальное доказательство можно взять, например, из
+каталога `Pnp2/` или `Facts/PsubsetPpoly/`.
+
+**Status**: ✅ **Supplied by ThirdPartyFacts** — благодаря выделенному
+пространству имён `Facts.PsubsetPpoly` конфликтов больше нет, и модуль
+`ThirdPartyFacts/PsubsetPpoly.lean` напрямую импортирует доказательство.
+
+**Why Present Here**: Документирует, что шаг D опирается на внешний результат.
 
 **Criticality**: 🟢 **LOW** - Interface to existing proof
+
+#### Integration notes (external proof)
+
+`Facts/PsubsetPpoly` теперь целиком namespaced как `Facts.PsubsetPpoly`, поэтому
+никаких коллизий с историческими модулями `Pnp2` не возникает.  Обновлённый
+процесс описан в `Docs/PsubsetPpolyIntegration.md` и уже используется в сборке
+`pnp3`.
 
 ---
 

@@ -15,9 +15,13 @@ an evaluation function, and expose the elementary notion of size (simply the
 number of gates).  Later developments will relate this representation to the
 existing tree-based circuits and use it to organise the gate-count recurrence
 appearing in the `P ⊆ P/poly` formalisation.
+
+As before, everything is nested inside `Facts.PsubsetPpoly` so the symbols do
+not collide with the similarly named components from the larger development.
 -/
 
-open Boolcube
+namespace Facts
+namespace PsubsetPpoly
 
 namespace Boolcube
 
@@ -72,7 +76,7 @@ polynomial bounds for the Turing-machine simulation.
 -/
 @[simp] def size (C : StraightLineCircuit n) : ℕ := C.gates
 
-/--
+/-
 Internal helper used by `eval`.  The value `evalWireAux C x g hg i` computes the
 Boolean carried by wire `i` assuming that only the first `g` gates of `C` are
 available.  The proof `hg` witnesses that those gates lie within the circuit.
@@ -128,7 +132,7 @@ def evalWire (C : StraightLineCircuit n) (x : Point n) :
 @[simp] lemma eval_eq_evalWire (C : StraightLineCircuit n) (x : Point n) :
     eval C x = evalWire (C := C) (x := x) C.output := rfl
 
-/--
+/-
 Translate the straight-line representation of a wire into the inductive
 Boolean-circuit datatype.  The auxiliary recursion mirrors `evalWireAux` and
 rebuilds the referenced gates as tree circuits, thereby enabling us to reuse
@@ -179,7 +183,7 @@ def toCircuitWire (C : StraightLineCircuit n) :
 def toCircuit (C : StraightLineCircuit n) : Circuit n :=
   toCircuitWire (C := C) C.output
 
-/--
+/-
 Evaluation of the translated objects agrees with the straight-line semantics.
 -/
 mutual
@@ -318,7 +322,7 @@ def snoc (C : StraightLineCircuit n) (op : StraightOp (n + C.gates)) :
     Nat.add_assoc]
 
 
-/--
+/-
 Evaluation of existing wires is unaffected by appending a new gate.  The proof
 proceeds by a simultaneous induction on the number of available gates,
 following the recursive structure of `evalWireAux` and `evalGateAux`.
@@ -1216,3 +1220,5 @@ end Builder
 end StraightLineCircuit
 end Boolcube
 
+end PsubsetPpoly
+end Facts

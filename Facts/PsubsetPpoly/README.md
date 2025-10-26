@@ -28,6 +28,29 @@ infrastructure.  For convenience the module `FactPsubsetPpoly` re-exports both
 the constructive witness `Complexity.inPpoly_of_polyBound` and the final bridge
 theorem for one-line imports.
 
+## Building the package locally
+
+This directory ships with its own `lean-toolchain`, so running `lake build`
+here automatically pins Lean (and the bundled Lake binary) to
+`leanprover/lean4:v4.22.0-rc2`.  A typical build session therefore looks like
+
+```bash
+cd Facts/PsubsetPpoly
+lake build
+```
+
+On the very first invocation Lake will clone the Mathlib ecosystem
+dependencies declared in `manifest.json` — notably `mathlib4`, `aesop`,
+`ProofWidgets4`, and their helper libraries.  The download is sizeable (several
+hundred megabytes) and Lake currently prints only a few status lines while the
+underlying `git clone` runs, so allow a few minutes for the initial setup.  All
+subsequent builds reuse the cached copies stored under `.lake/` and finish
+quickly.
+
+After the dependencies are available the usual compilation traces appear.  You
+should see Lake unpacking the Mathlib cache and eventually reporting
+“`Build completed successfully.`”.
+
 ## Testing
 
 The package ships with illustrative tests under `ExampleProofs/Examples.lean`.  They

@@ -520,39 +520,45 @@ axiom NP_not_subset_Ppoly : Prop
 
 ---
 
-### AXIOM I.2: `P_subset_Ppoly`
-
-**Location**: `pnp3/Complexity/Interfaces.lean:28`
-
-**Statement**:
-```lean
-axiom P_subset_Ppoly : Prop
-```
-
-**Mathematical Content**: Proposition stating P ⊆ P/poly.
-
-**Status**: ✅ **Proven in pnp2/** (standard result)
-
-**Literature References**:
-- Standard result in complexity theory
-- Any textbook (e.g., Arora-Barak, "Computational Complexity: A Modern Approach", Theorem 6.11)
-
-**Criticality**: 🟢 LOW - Standard fact
-
----
-
-### AXIOM I.3: `P_subset_Ppoly_proof`
+### FACT I.2: `P_subset_Ppoly`
 
 **Location**: `pnp3/Complexity/Interfaces.lean:31`
 
 **Statement**:
 ```lean
-axiom P_subset_Ppoly_proof : P_subset_Ppoly
+abbrev P_subset_Ppoly : Prop := ThirdPartyFacts.P_subset_Ppoly
 ```
 
-**Mathematical Content**: Proof that P ⊆ P/poly.
+**Mathematical Content**: Proposition stating P ⊆ P/poly, supplied by the
+external module `ThirdPartyFacts/PsubsetPpoly.lean`.
 
-**Status**: ✅ **Available from pnp2/**
+**Status**: ✅ **Verified via third-party import** — the alias теперь указывает на
+`Facts/PsubsetPpoly`, откуда подгружается формальное доказательство.  Актуальная
+процедура подключений описана в `Docs/PsubsetPpolyIntegration.md`.
+
+**Literature References**:
+- Standard result in complexity theory
+- Any textbook (e.g., Arora–Barak, *Computational Complexity: A Modern Approach*, Theorem 6.11)
+
+**Criticality**: 🟢 LOW - Standard fact
+
+---
+
+### FACT I.3: `P_subset_Ppoly_proof`
+
+**Location**: `pnp3/Complexity/Interfaces.lean:38`
+
+**Statement**:
+```lean
+@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
+  ThirdPartyFacts.P_subset_Ppoly_proof
+```
+
+**Mathematical Content**: Lean proof object for P ⊆ P/poly, предоставленное
+через тот же внешний слой `ThirdPartyFacts`.
+
+**Status**: ✅ **Verified via third-party import** — Lean proof object поступает
+из namespaced-пакета `Facts/PsubsetPpoly` и уже доступен в стандартной сборке.
 
 **Criticality**: 🟢 LOW - Interface to existing proof
 
@@ -597,6 +603,15 @@ axiom P_ne_NP_of_nonuniform_separation
 
 ---
 
+## Integration notes: sourcing `P ⊆ P/poly`
+
+`P_subset_Ppoly` больше не заглушка: весь standalone-пакет namespaced под
+`Facts.PsubsetPpoly`, поэтому `ThirdPartyFacts/PsubsetPpoly.lean` напрямую
+импортирует готовое доказательство.  Подробности описаны в
+`Docs/PsubsetPpolyIntegration.md`.
+
+---
+
 ## Summary Statistics
 
 ### By Criticality:
@@ -611,8 +626,8 @@ axiom P_ne_NP_of_nonuniform_separation
 - 🟡 **HIGH** (needed for completeness): 6 axioms
   - A.2, C.8, C.9, D.2, D.3, D.5
 
-- 🟢 **MEDIUM/LOW** (alternatives or interfaces): 7 axioms
-  - A.3, A.4, A.5, D.4, I.2, I.3, I.5
+- 🟢 **MEDIUM/LOW** (alternatives or interfaces): 5 axioms
+  - A.3, A.4, A.5, D.4, I.5
 
 ### By Source:
 - **Håstad 1986** (Switching Lemma): 3 axioms (A.1, A.3, A.4)

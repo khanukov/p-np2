@@ -10,14 +10,12 @@ examples double as regression tests: they exercise the public API and provide
 hand-checkable reference points for the `P ⊆ P/poly` theorem.
 -/
 
-open Facts
-open Complexity
-open TM
-
 namespace Facts
 namespace PsubsetPpoly
 namespace Tests
 
+open Complexity
+open TM
 open scoped Classical
 
 /--

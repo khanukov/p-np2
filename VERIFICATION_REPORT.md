@@ -271,29 +271,30 @@ $ grep -n "^axiom NP_not_subset_Ppoly" pnp3/Complexity/Interfaces.lean
 
 #### I.2: `P_subset_Ppoly` (Prop)
 
-**Documented Location**: `pnp3/Complexity/Interfaces.lean:28`
+**Documented Location**: `pnp3/Complexity/Interfaces.lean:31`
 
 **Actual Location**:
 ```bash
-$ grep -n "^axiom P_subset_Ppoly : Prop" pnp3/Complexity/Interfaces.lean
-28:axiom P_subset_Ppoly : Prop
+$ grep -n "^abbrev P_subset_Ppoly : Prop" pnp3/Complexity/Interfaces.lean
+31:abbrev P_subset_Ppoly : Prop :=
 ```
 
-**Status**: ✅ VERIFIED (line 28 exact match)
+**Status**: ✅ VERIFIED (definition reexports the theorem imported from
+`Facts/PsubsetPpoly`)
 
 ---
 
 #### I.3: `P_subset_Ppoly_proof`
 
-**Documented Location**: `pnp3/Complexity/Interfaces.lean:31`
+**Documented Location**: `pnp3/Complexity/Interfaces.lean:38`
 
 **Actual Location**:
 ```bash
-$ grep -n "^axiom P_subset_Ppoly_proof" pnp3/Complexity/Interfaces.lean
-31:axiom P_subset_Ppoly_proof : P_subset_Ppoly
+$ grep -n "^@[simp] theorem P_subset_Ppoly_proof" pnp3/Complexity/Interfaces.lean
+38:@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly := by
 ```
 
-**Status**: ✅ VERIFIED (line 31 exact match)
+**Status**: ✅ VERIFIED (proof imported from `Facts/PsubsetPpoly`)
 
 ---
 

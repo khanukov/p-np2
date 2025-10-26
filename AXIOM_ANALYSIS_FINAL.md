@@ -96,13 +96,17 @@ python3 analyze_imports.py
 - File: `pnp3/Complexity/Interfaces.lean:25`
 - Status: This is what we derive (not an assumption)
 
-**I.2** `P_subset_Ppoly : Prop` 📝 PLACEHOLDER
+**I.2** `P_subset_Ppoly : Prop` ✅ IMPORTED FACT
 - File: `pnp3/Complexity/Interfaces.lean:28`
-- Status: Abstract Prop placeholder
+- Status: Абстрактное Prop-утверждение теперь развёрнуто через
+  `Facts/PsubsetPpoly`, так что Lean видит конкретное доказательство
+  включения P ⊆ P/poly.
 
-**I.3** `P_subset_Ppoly_proof` 🔴 **CRITICAL**
+**I.3** `P_subset_Ppoly_proof` ✅ IMPORTED WITNESS
 - File: `pnp3/Complexity/Interfaces.lean:31`
-- Status: ✅ Claimed proven in `Pnp2/PsubsetPpoly.lean`
+- Status: Lean-предикат теперь напрямую импортирован из
+  `Facts/PsubsetPpoly` и участвует в доказательствах без дополнительных
+  аксиом.
 - Used in: `P_ne_NP_from_pipeline_kit_formulas`
 
 **I.4** `P_ne_NP : Prop` 📝 GOAL
@@ -135,7 +139,7 @@ P_ne_NP_final (FinalResult.lean:57)
       │                   └─→ approxOnTestset_subset_card_le ✅ PROVEN
       │                       └─→ approxOnTestsetWitness_injective ✅ PROVEN
       ├─→ P_ne_NP_of_nonuniform_separation [AXIOM I.5] 🔴
-      └─→ P_subset_Ppoly_proof [AXIOM I.3] 🔴
+      └─→ P_subset_Ppoly_proof ✅ (imported)
 ```
 
 ### Critical Path Axioms (5):
@@ -143,7 +147,7 @@ P_ne_NP_final (FinalResult.lean:57)
 1. **A.1**: `partial_shrinkage_for_AC0` - Håstad 1986 (Switching Lemma)
 2. **C.7**: `antiChecker_exists_testset` - OPS 2019 (Anti-checker with test set)
 3. **D.2**: `OPS_trigger_formulas` - OPS 2019 (Magnification trigger)
-4. **I.3**: `P_subset_Ppoly_proof` - ✅ Proven in Pnp2 (standard result)
+4. **I.3**: `P_subset_Ppoly_proof` - ✅ Imported from `Facts/PsubsetPpoly`
 5. **I.5**: `P_ne_NP_of_nonuniform_separation` - ✅ Proven in Pnp2 (logical inference)
 
 **External axioms from literature**: 3

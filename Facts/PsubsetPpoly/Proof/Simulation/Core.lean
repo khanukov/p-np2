@@ -11,7 +11,14 @@ quantitative lemmas that turn the configuration encodings from
 `Proof.Simulation.Configuration` into an explicit simulation of a Turing machine
 step.  The heavy lifting happens here; subsequent modules only package the
 resulting constructions into global circuit families and polynomial bounds.
+
+All definitions are now hosted in `Facts.PsubsetPpoly`, ensuring that the names
+do not collide with the earlier formalisation provided in the main repository when both projects share a
+Lean environment.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 open Boolcube
 open TM
@@ -8442,3 +8449,5 @@ lemma branchSnapshot_branches_length (sc : StraightConfig M n) :
   simpa [symbolResult]
     using hlen (by rfl)
 
+end PsubsetPpoly
+end Facts

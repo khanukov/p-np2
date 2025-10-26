@@ -11,7 +11,14 @@ circuit encodings that describe single Turing-machine configurations.  It
 provides both tree-style circuit families (`ConfigCircuits`) and their
 straight-line counterparts (`StraightConfig`), together with the translation
 lemmas needed by the main simulation.
+
+As part of the integration clean-up we deliberately work inside
+`Facts.PsubsetPpoly`.  This ensures that the numerous helper structures from the
+standalone fact never collide with the homonymous ones maintained in the main repository.
 -/
+
+namespace Facts
+namespace PsubsetPpoly
 
 open Boolcube
 open TM
@@ -2732,3 +2739,8 @@ def tapeSnapshotAux (sc : StraightConfig M n)
             exact restList.property htail
 
 end StraightConfig
+
+end Complexity
+
+end PsubsetPpoly
+end Facts

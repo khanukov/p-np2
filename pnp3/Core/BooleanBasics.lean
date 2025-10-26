@@ -606,6 +606,47 @@ lemma errU_eq_zero_of_agree {n : Nat}
     simp [mismatches, hfilter]
   simp [mismatches, hmismatch]
 
+/--
+Если число несовпадений не превосходит `badBound`, то и ошибка аппроксимации
+ограничена `badBound / 2^n`.  Это базовый инструмент: достаточно контролировать
+кардинальность множества плохих точек, чтобы получить оценку на `errU`.
+-/
+lemma errU_le_of_mismatch_card_le {n : Nat}
+    (f : BitVec n → Bool) (Rset : List (Subcube n))
+    {badBound : Nat}
+    (hmismatch_le :
+      ((Finset.univ : Finset (BitVec n)).filter
+          (fun x => f x ≠ coveredB Rset x)).card ≤ badBound) :
+    errU f Rset ≤ (badBound : Q) / ((Nat.pow 2 n : Nat) : Q) := by
+  classical
+  unfold errU
+  -- Обозначим знаменатель и зафиксируем его положительность.
+  set denom : Q := ((Nat.pow 2 n : Nat) : Q) with hdenom
+  have hdenom_pos : 0 < denom := by
+    have htwo_pos : 0 < (2 : Q) := by norm_num
+    have hpow := pow_pos htwo_pos n
+    simpa [denom, Nat.cast_pow] using hpow
+  have hdenom_inv_nonneg : 0 ≤ denom⁻¹ := inv_nonneg.mpr hdenom_pos.le
+  -- Переведём ограничение на количество плохих точек в рациональное неравенство.
+  have hmismatch_q :
+      ((Finset.univ : Finset (BitVec n)).filter
+          (fun x => f x ≠ coveredB Rset x)).card ≤ badBound := hmismatch_le
+  have hmismatch_cast :
+      (((Finset.univ : Finset (BitVec n)).filter
+            (fun x => f x ≠ coveredB Rset x)).card : Q)
+        ≤ (badBound : Q) := by exact_mod_cast hmismatch_q
+  -- Переходим от отношения целых чисел к отношению дробей.
+  calc
+    (((Finset.univ : Finset (BitVec n)).filter
+          (fun x => f x ≠ coveredB Rset x)).card : Q) / denom
+        = (((Finset.univ : Finset (BitVec n)).filter
+            (fun x => f x ≠ coveredB Rset x)).card : Q) * denom⁻¹ := by
+              simp [denom, div_eq_mul_inv]
+    _ ≤ (badBound : Q) * denom⁻¹ :=
+          mul_le_mul_of_nonneg_right hmismatch_cast hdenom_inv_nonneg
+    _ = (badBound : Q) / denom := by
+          simp [denom, div_eq_mul_inv]
+
 /-- Частный случай: пустой набор подкубов идеально аппроксимирует константный
 нуль. -/
 @[simp] lemma errU_false_nil {n : Nat} :

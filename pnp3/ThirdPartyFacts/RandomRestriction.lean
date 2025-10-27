@@ -12,6 +12,7 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
 import Mathlib.MeasureTheory.ProbabilityMassFunction.Basic
 import Mathlib.Tactic
+import Counting.BinomialBounds
 import Core.BooleanBasics
 import Core.PDT
 import Core.ShrinkageWitness
@@ -186,6 +187,641 @@ lemma nonempty {n ℓ : Nat} (hℓ : ℓ ≤ n) :
 
 noncomputable instance instFintype (n ℓ : Nat) : Fintype (Axis n ℓ) :=
   Fintype.ofFinite _
+
+/-- Если фиксированное множество `S` содержится в опоре оси, то разность
+`support \ S` описывает именно те координаты, которые нужно выбрать сверх `S`.
+Следующая пара лемм зафиксирует полезные свойства этой конструкции. -/
+namespace SupportSuperset
+
+variable {S : Finset (Fin n)}
+
+@[simp] lemma sdiff_union (A : Axis n ℓ) (hS : S ⊆ A.support) :
+    S ∪ (A.support \ S) = A.support := by
+  classical
+  ext i; constructor <;> intro hi
+  · rcases Finset.mem_union.mp hi with hiS | hiDiff
+    · exact hS hiS
+    · rcases Finset.mem_sdiff.mp hiDiff with ⟨hiSup, _⟩; exact hiSup
+  · by_cases hiS : i ∈ S
+    · exact Finset.mem_union.mpr (Or.inl hiS)
+    · have hiDiff : i ∈ A.support \ S := by
+        exact Finset.mem_sdiff.mpr ⟨hi, hiS⟩
+      exact Finset.mem_union.mpr (Or.inr hiDiff)
+
+@[simp] lemma sdiff_card (A : Axis n ℓ) (hS : S ⊆ A.support) :
+    (A.support \ S).card = ℓ - S.card := by
+  classical
+  have hdisjoint : Disjoint S (A.support \ S) := by
+    refine Finset.disjoint_left.mpr ?_
+    intro i hiS hiDiff
+    rcases Finset.mem_sdiff.mp hiDiff with ⟨_, hiNot⟩
+    exact hiNot hiS
+  have hunion := sdiff_union (n := n) (ℓ := ℓ) (S := S) A hS
+  have hcard_union := Finset.card_union hdisjoint
+  have hcard_support : (A.support).card = ℓ := A.card
+  have hsum : ℓ = S.card + (A.support \ S).card := by
+    simpa [hunion, hcard_support] using hcard_union.symm
+  have hresult : ℓ - S.card = (A.support \ S).card := by
+    simpa [hsum] using (Nat.add_sub_cancel S.card ((A.support \ S).card))
+  simpa using hresult.symm
+
+/-- Если ось содержит `S` и не пересекается с `T`, то дополнительные координаты
+находятся вне `S ∪ T`. -/
+lemma sdiff_subset_compl_union {T : Finset (Fin n)}
+    (A : Axis n ℓ) (hS : S ⊆ A.support)
+    (hT : Disjoint T A.support) :
+    A.support \ S ⊆ (S ∪ T)ᶜ := by
+  classical
+  intro i hi
+  obtain ⟨hiSup, hiNot⟩ := Finset.mem_sdiff.mp hi
+  have hiT : i ∉ T := by
+    have hdis := Finset.disjoint_left.mp hT
+    exact fun hmem => hdis hmem hiSup
+  have hiUnion : i ∉ S ∪ T := by
+    intro hiUnion
+    rcases Finset.mem_union.mp hiUnion with hiS | hiT'
+    · exact hiNot hiS
+    · exact hiT hiT'
+  simpa [Finset.mem_compl] using hiUnion
+
+namespace SupportSuperset
+
+variable {S : Finset (Fin n)}
+
+/-- Преобразование «подмножеств дополнения» в оси: биекция между осями,
+содержащими `S`, и выбором дополнительных координат в `Sᶜ`. -/
+noncomputable def axisEquivComplement (hSℓ : S.card ≤ ℓ) :
+    {A : Axis n ℓ // S ⊆ A.support}
+      ≃ {T : Finset (Fin n) // T ⊆ Sᶜ ∧ T.card = ℓ - S.card} :=
+  by
+    classical
+    refine
+      { toFun := ?toFun
+        , invFun := ?invFun
+        , left_inv := ?left
+        , right_inv := ?right }
+    · intro A
+      refine ⟨A.1.support \ S, ?_, ?_⟩
+      · intro i hi
+        have hi' := Finset.mem_sdiff.mp hi
+        exact (Finset.mem_compl).2 hi'.2
+      · simpa using sdiff_card (n := n) (ℓ := ℓ) (S := S) A.1 A.2
+    · intro T
+      rcases T with ⟨Tset, hsubset, hcard⟩
+      have hdisjoint : Disjoint S Tset := by
+        refine Finset.disjoint_left.mpr ?_
+        intro i hiS hiT
+        have : i ∈ Sᶜ := hsubset hiT
+        exact (Finset.mem_compl).1 this hiS
+      have hcard_union := Finset.card_union hdisjoint
+      have hsum := Nat.add_sub_of_le hSℓ
+      have hcard_union' : (S ∪ Tset).card = S.card + Tset.card := by
+        simpa using hcard_union
+      have htarget : (S ∪ Tset).card = ℓ := by
+        have hcalc : S.card + Tset.card = ℓ := by
+          simpa [hcard, Nat.add_comm, Nat.add_left_comm] using hsum
+        simpa [hcard_union', hcalc]
+      refine ⟨⟨S ∪ Tset, ?_⟩, ?_⟩
+      · simpa [htarget]
+      · intro i hiS
+        exact Finset.mem_union.mpr (Or.inl hiS)
+    · intro A
+      cases' A with A hsubset
+      ext i
+      change i ∈ S ∪ (A.support \ S) ↔ i ∈ A.support
+      simpa using sdiff_union (n := n) (ℓ := ℓ) (S := S) A hsubset
+    · intro T
+      rcases T with ⟨Tset, hsubset, hcard⟩
+      ext i
+      constructor
+      · intro hi
+        rcases Finset.mem_sdiff.mp hi with ⟨hiUnion, hiS⟩
+        have hiIn : i ∈ S ∪ Tset := hiUnion
+        have hiCases := Finset.mem_union.mp hiIn
+        rcases hiCases with hiS' | hiT
+        · exact (False.elim (hiS hiS'))
+        · exact hiT
+      · intro hiT
+        have hiUnion : i ∈ S ∪ Tset := Finset.mem_union.mpr (Or.inr hiT)
+        have hiNot : i ∉ S := by
+          have : i ∈ Sᶜ := hsubset hiT
+          exact (Finset.mem_compl).1 this
+        exact Finset.mem_sdiff.mpr ⟨hiUnion, hiNot⟩
+
+/--
+  Фиксируя мощность добавленных координат, переходим к подтипу на дополнении.
+  Это позволяет применить классическую формулу для биномиальных коэффициентов.
+-/
+noncomputable def complementSubtypeEquiv (k : Nat) :
+    {T : Finset (Fin n) // T ⊆ Sᶜ ∧ T.card = k}
+      ≃ {U : Finset {i : Fin n // i ∈ Sᶜ} // U.card = k} :=
+  by
+    classical
+    refine
+      { toFun := ?toFun
+        , invFun := ?invFun
+        , left_inv := ?left
+        , right_inv := ?right }
+    · intro T
+      rcases T with ⟨Tset, hsubset, hcard⟩
+      -- Элементы `Tset` автоматически лежат в дополнении, формируем подтип.
+      let emb : {i // i ∈ Tset} ↪ {i : Fin n // i ∈ Sᶜ} :=
+        { toFun := fun x => ⟨x.1, by
+            have hx := hsubset x.property
+            simpa using hx⟩
+          , inj' := by
+              intro x y hxy
+              have := congrArg Subtype.val hxy
+              simpa using this }
+      have hcard_map :
+          (Finset.map emb Tset.attach).card = Tset.card := by
+        simpa using
+          (Finset.card_map (f := emb) Tset.attach)
+      refine ⟨Finset.map emb Tset.attach, ?_⟩
+      simpa [hcard_map, hcard]
+    · intro U
+      rcases U with ⟨Uset, hcard⟩
+      let emb : {i : Fin n // i ∈ Sᶜ} ↪ Fin n :=
+        { toFun := Subtype.val
+          , inj' := by
+              intro x y hxy
+              cases x; cases y; cases hxy; rfl }
+      have hsubset : (Finset.map emb Uset) ⊆ Sᶜ := by
+        intro i hi
+        rcases Finset.mem_map.mp hi with ⟨x, hx, rfl⟩
+        exact x.property
+      have hcard_map :
+          (Finset.map emb Uset).card = Uset.card := by
+        simpa using (Finset.card_map (f := emb) Uset)
+      refine ⟨Finset.map emb Uset, ⟨hsubset, ?_⟩⟩
+      simpa [hcard_map, hcard]
+    · intro T
+      rcases T with ⟨Tset, hsubset, hcard⟩
+      ext i
+      constructor
+      · intro hi
+        rcases Finset.mem_map.mp hi with ⟨x, hx, rfl⟩
+        have : x.1 ∈ Tset := by
+          simpa using x.property
+        refine Finset.mem_attach.2 ?_
+        simpa using this
+      · intro hi
+        rcases Finset.mem_attach.1 hi with ⟨i', hi', rfl⟩
+        refine Finset.mem_map.mpr ?_
+        refine ⟨⟨i', hi'⟩, ?_, rfl⟩
+        simp
+    · intro U
+      rcases U with ⟨Uset, hcard⟩
+      ext i; constructor
+      · intro hi
+        rcases Finset.mem_map.mp hi with ⟨x, hx, rfl⟩
+        exact hx
+      · intro hi
+        refine Finset.mem_map.mpr ?_
+        exact ⟨⟨i, hi⟩, hi, rfl⟩
+
+/-- Точное количество осей, содержащих `S`: выбираем ℓ - |S| координат из дополнения. -/
+lemma axis_superset_card (hSℓ : S.card ≤ ℓ) :
+    Fintype.card {A : Axis n ℓ // S ⊆ A.support}
+      = Nat.choose (n - S.card) (ℓ - S.card) := by
+  classical
+  -- Сначала переписываем задачу через множество подмножеств дополнения.
+  have hsubset :=
+    Fintype.card_congr
+      (axisEquivComplement (n := n) (ℓ := ℓ) (S := S) hSℓ)
+  -- Затем используем биекцию с подтипом на дополнении и стандартное число сочетаний.
+  have hcompl :=
+    Fintype.card_congr
+      (complementSubtypeEquiv (n := n) (ℓ := ℓ) (S := S)
+        (k := ℓ - S.card))
+  -- Переводим задачу в чисто комбинаторную формулу на подтипе.
+  have hchoose :=
+    Counting.card_subsets_exact_choose
+      (α := {i : Fin n // i ∈ Sᶜ}) (i := ℓ - S.card)
+  have hcompl_card :
+      Fintype.card {i : Fin n // i ∈ Sᶜ} = n - S.card := by
+    have hcard := Finset.card_compl (s := S)
+    simpa [Finset.mem_compl, hcard] using
+      (Fintype.card_coe (s := Sᶜ : Finset (Fin n)))
+  have hchoose' :
+      Fintype.card {U : Finset {i : Fin n // i ∈ Sᶜ} // U.card = ℓ - S.card}
+        = Nat.choose (n - S.card) (ℓ - S.card) := by
+    simpa [hcompl_card] using hchoose
+  -- Сводим вместе.
+  refine hsubset.trans ?_
+  refine hcompl.trans ?_
+  exact hchoose'
+
+/-- Число осей, содержащих `S` и не затрагивающих `T`, выражается через
+биномиальный коэффициент по дополнению `S ∪ T`. -/
+lemma axis_superset_disjoint_card {T : Finset (Fin n)}
+    (hSℓ : S.card ≤ ℓ) (hST : Disjoint S T) :
+    Fintype.card {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+      = Nat.choose (n - S.card - T.card) (ℓ - S.card) := by
+  classical
+  have hsubset :
+      Fintype.card {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+        = Fintype.card
+            {U : Finset (Fin n) // U ⊆ (S ∪ T)ᶜ ∧ U.card = ℓ - S.card} := by
+    refine Fintype.card_congr ?_
+    exact axisEquivComplementDisjoint
+      (n := n) (ℓ := ℓ) (S := S) (T := T) hSℓ hST
+  have hcompl :
+      Fintype.card
+          {U : Finset (Fin n) // U ⊆ (S ∪ T)ᶜ ∧ U.card = ℓ - S.card}
+        = Fintype.card
+            {U : Finset {i : Fin n // i ∈ (S ∪ T)ᶜ} // U.card = ℓ - S.card} := by
+    refine Fintype.card_congr ?_
+    exact complementSubtypeEquiv
+      (n := n) (ℓ := ℓ) (S := S ∪ T) (k := ℓ - S.card)
+  have hchoose :
+      Fintype.card
+          {U : Finset {i : Fin n // i ∈ (S ∪ T)ᶜ} // U.card = ℓ - S.card}
+        = Nat.choose (n - (S ∪ T).card) (ℓ - S.card) := by
+    have := Counting.card_subsets_exact_choose
+      (α := {i : Fin n // i ∈ (S ∪ T)ᶜ}) (i := ℓ - S.card)
+    simpa using this
+  have hunion_card : (S ∪ T).card = S.card + T.card := by
+    simpa [Finset.card_union] using Finset.card_union hST.symm
+  have hcompl_card :
+      Fintype.card {i : Fin n // i ∈ (S ∪ T)ᶜ} = n - S.card - T.card := by
+    have hcard := Finset.card_compl (s := S ∪ T)
+    simpa [Finset.mem_compl, hunion_card, Nat.add_comm, Nat.add_left_comm]
+      using (Fintype.card_coe (s := (S ∪ T)ᶜ : Finset (Fin n)))
+  have hchoose' :
+      Fintype.card
+          {U : Finset {i : Fin n // i ∈ (S ∪ T)ᶜ} // U.card = ℓ - S.card}
+        = Nat.choose (n - S.card - T.card) (ℓ - S.card) := by
+    simpa [hcompl_card] using hchoose
+  calc
+    Fintype.card {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+        = Fintype.card
+            {U : Finset (Fin n) // U ⊆ (S ∪ T)ᶜ ∧ U.card = ℓ - S.card} := hsubset
+    _ = Fintype.card
+          {U : Finset {i : Fin n // i ∈ (S ∪ T)ᶜ} // U.card = ℓ - S.card} := hcompl
+    _ = Nat.choose (n - S.card - T.card) (ℓ - S.card) := hchoose'
+
+/-- Биекция между осями, содержащими `S` и избегающими `T`, и выбором дополнительных
+координат из дополнения `S ∪ T`. -/
+noncomputable def axisEquivComplementDisjoint
+    {T : Finset (Fin n)} (hSℓ : S.card ≤ ℓ) (hST : Disjoint S T) :
+    {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support} ≃
+      {U : Finset (Fin n) // U ⊆ (S ∪ T)ᶜ ∧ U.card = ℓ - S.card} := by
+  classical
+  refine
+    { toFun := ?toFun
+      , invFun := ?invFun
+      , left_inv := ?left
+      , right_inv := ?right }
+  · intro A
+    refine ⟨A.1.support \ S, ?_, ?_⟩
+    · have hS := A.property.1
+      have hdis := A.property.2
+      exact SupportSuperset.sdiff_subset_compl_union
+        (n := n) (ℓ := ℓ) (S := S) (T := T) A.1 hS hdis
+    · simpa using SupportSuperset.sdiff_card
+        (n := n) (ℓ := ℓ) (S := S) A.1 A.2
+  · intro U
+    rcases U with ⟨Uset, hsubset, hcard⟩
+    have hsubsetS : Uset ⊆ Sᶜ := by
+      intro i hi
+      have hiCompl : i ∈ (S ∪ T)ᶜ := hsubset hi
+      have hiNotUnion : i ∉ S ∪ T := (Finset.mem_compl).1 hiCompl
+      have hiNotS : i ∉ S := by
+        intro hiS
+        exact hiNotUnion (Finset.mem_union.mpr (Or.inl hiS))
+      exact (Finset.mem_compl).2 hiNotS
+    have hsubsetT : Uset ⊆ Tᶜ := by
+      intro i hi
+      have hiCompl : i ∈ (S ∪ T)ᶜ := hsubset hi
+      have hiNotUnion : i ∉ S ∪ T := (Finset.mem_compl).1 hiCompl
+      have hiNotT : i ∉ T := by
+        intro hiT
+        exact hiNotUnion (Finset.mem_union.mpr (Or.inr hiT))
+      exact (Finset.mem_compl).2 hiNotT
+    have hdisSU : Disjoint S Uset := by
+      refine Finset.disjoint_left.mpr ?_
+      intro i hiS hiU
+      have hiCompl : i ∈ (S ∪ T)ᶜ := hsubset hiU
+      have hiNotUnion : i ∉ S ∪ T := (Finset.mem_compl).1 hiCompl
+      exact hiNotUnion (Finset.mem_union.mpr (Or.inl hiS))
+    have hdisTU : Disjoint T Uset := by
+      refine Finset.disjoint_left.mpr ?_
+      intro i hiT hiU
+      have hiCompl : i ∈ (S ∪ T)ᶜ := hsubset hiU
+      have hiNotUnion : i ∉ S ∪ T := (Finset.mem_compl).1 hiCompl
+      exact hiNotUnion (Finset.mem_union.mpr (Or.inr hiT))
+    have hsum_union : (S ∪ Uset).card = S.card + Uset.card := by
+      simpa using Finset.card_union hdisSU
+    have hcard_support : (S ∪ Uset).card = ℓ := by
+      have hcalc : S.card + Uset.card = ℓ := by
+        simpa [hcard] using (Nat.add_sub_of_le hSℓ)
+      simpa [hsum_union, Nat.add_comm] using hcalc
+    have hdisjointT : Disjoint T (S ∪ Uset) := by
+      refine Finset.disjoint_left.mpr ?_
+      intro i hiT hiUnion
+      rcases Finset.mem_union.mp hiUnion with hiS | hiU
+      · exact (Finset.disjoint_left.mp hST) hiS hiT
+      · exact (Finset.disjoint_left.mp hdisTU) hiT hiU
+    refine ⟨⟨S ∪ Uset, hcard_support⟩, ?_, ?_⟩
+    · intro i hiS
+      exact Finset.mem_union.mpr (Or.inl hiS)
+    · exact hdisjointT
+  · intro A
+    cases' A with A hA
+    rcases hA with ⟨hsubset, hdis⟩
+    apply Subtype.ext
+    ext i; constructor
+    · intro hi
+      rcases Finset.mem_union.mp hi with hiS | hiDiff
+      · exact hsubset hiS
+      · rcases Finset.mem_sdiff.mp hiDiff with ⟨hiSup, _⟩; exact hiSup
+    · intro hiSup
+      by_cases hiS : i ∈ S
+      · exact Finset.mem_union.mpr (Or.inl hiS)
+      · have hiDiff : i ∈ A.support \ S :=
+          Finset.mem_sdiff.mpr ⟨hiSup, hiS⟩
+        exact Finset.mem_union.mpr (Or.inr hiDiff)
+  · intro U
+    rcases U with ⟨Uset, hsubset, hcard⟩
+    apply Subtype.ext
+    ext i; constructor
+    · intro hi
+      rcases Finset.mem_sdiff.mp hi with ⟨hiUnion, hiS⟩
+      rcases Finset.mem_union.mp hiUnion with hiS' | hiU
+      · exact False.elim (hiS hiS')
+      · exact hiU
+    · intro hiU
+      have hiCompl : i ∈ (S ∪ T)ᶜ := hsubset hiU
+      have hiNotS : i ∉ S := by
+        have hiNotUnion : i ∉ S ∪ T := (Finset.mem_compl).1 hiCompl
+        exact fun hiS => hiNotUnion (Finset.mem_union.mpr (Or.inl hiS))
+      refine Finset.mem_sdiff.mpr ?_
+      refine ⟨Finset.mem_union.mpr (Or.inr hiU), ?_⟩
+      exact hiNotS
+
+end SupportSuperset
+
+namespace ExactRestriction
+
+variable {S : Finset (Fin n)}
+
+/-- Вариант `support_sdiff_union` для точной рестрикции. -/
+@[simp] lemma axis_sdiff_union (ρ : ExactRestriction n ℓ) (hS : S ⊆ ρ.axis.support) :
+    S ∪ (ρ.axis.support \ S) = ρ.axis.support :=
+  SupportSuperset.sdiff_union (n := n) (ℓ := ℓ) (S := S) ρ.axis hS
+
+/-- Кардинальность «дополнительных» координат точной рестрикции. -/
+@[simp] lemma axis_sdiff_card (ρ : ExactRestriction n ℓ) (hS : S ⊆ ρ.axis.support) :
+    (ρ.axis.support \ S).card = ℓ - S.card :=
+  SupportSuperset.sdiff_card (n := n) (ℓ := ℓ) (S := S) ρ.axis hS
+
+/--
+  Подсчёт точных рестрикций, ось которых содержит фиксированное множество `S`.
+  Комбинаторно это выбор оси (биномиальный коэффициент) и произвольного
+  назначения значений (полному кубу соответствуют `2^n` вариантов).
+-/
+lemma superset_card (hSℓ : S.card ≤ ℓ) :
+    Fintype.card {ρ : ExactRestriction n ℓ // S ⊆ ρ.axis.support}
+      = Nat.choose (n - S.card) (ℓ - S.card)
+          * Fintype.card (BitVec n) := by
+  classical
+  -- Через эквивалентность `ExactRestriction ≃ Axis × BitVec` сводим задачу к
+  -- подсчёту осей и независимому выбору значений.
+  let e := ExactRestriction.equivAxisBitVec n ℓ
+  have hcongr :=
+    Fintype.card_congr
+      { toFun := fun ρ =>
+          let data := e ρ.1
+          ⟨⟨data.1, by simpa [data] using ρ.2⟩, data.2⟩
+        , invFun := fun p =>
+            let ρ := e.symm ⟨p.1.1, p.2⟩
+            ⟨ρ, by
+              have : ρ.axis = p.1.1 := by rfl
+              simpa [this] using p.1.2⟩
+        , left_inv := by
+            intro ρ
+            ext <;> simp [e]
+        , right_inv := by
+            intro p
+            ext <;> simp [e] }
+  have hcard_prod :
+      Fintype.card
+          ({A : Axis n ℓ // S ⊆ A.support} × BitVec n)
+        = Fintype.card {A : Axis n ℓ // S ⊆ A.support}
+            * Fintype.card (BitVec n) := by
+    simpa using (Fintype.card_prod
+      (α := {A : Axis n ℓ // S ⊆ A.support}) (β := BitVec n))
+  have haxis := SupportSuperset.axis_superset_card
+      (n := n) (ℓ := ℓ) (S := S) hSℓ
+  calc
+    Fintype.card {ρ : ExactRestriction n ℓ // S ⊆ ρ.axis.support}
+        = Fintype.card (({A : Axis n ℓ // S ⊆ A.support} × BitVec n)) := by
+            simpa using hcongr
+    _ = Fintype.card {A : Axis n ℓ // S ⊆ A.support}
+          * Fintype.card (BitVec n) := hcard_prod
+    _ = Nat.choose (n - S.card) (ℓ - S.card)
+          * Fintype.card (BitVec n) := by
+          simpa using congrArg (fun k => k * Fintype.card (BitVec n)) haxis
+
+/-- Подсчёт рестрикций, чьи оси содержат `S` и избегают `T`. Значения фиксируемых
+координат выбираются произвольно, что добавляет множитель `2^n`. -/
+lemma superset_disjoint_card {T : Finset (Fin n)}
+    (hSℓ : S.card ≤ ℓ) (hST : Disjoint S T) :
+    Fintype.card
+        {ρ : ExactRestriction n ℓ //
+          S ⊆ ρ.axis.support ∧ Disjoint T ρ.axis.support}
+      = Nat.choose (n - S.card - T.card) (ℓ - S.card)
+          * Fintype.card (BitVec n) := by
+  classical
+  let e := ExactRestriction.equivAxisBitVec n ℓ
+  have hcongr :
+      Fintype.card
+          {ρ : ExactRestriction n ℓ //
+            S ⊆ ρ.axis.support ∧ Disjoint T ρ.axis.support}
+        = Fintype.card
+            (({A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+                × BitVec n)) := by
+    refine Fintype.card_congr ?_
+    refine
+      { toFun := fun ρ =>
+          let data := e ρ.1
+          ⟨⟨data.1, by
+              have haxis : (e ρ.1).1.support = ρ.1.axis.support := rfl
+              have hS := ρ.2.1
+              have hT := ρ.2.2
+              simpa [data, haxis]⟩,
+            data.2⟩
+        , invFun := fun p =>
+            let ρ := e.symm ⟨p.1.1, p.2⟩
+            ⟨ρ, by
+              have haxis : ρ.axis = p.1.1 := by rfl
+              have hS : S ⊆ ρ.axis.support := by
+                simpa [haxis] using p.1.2.1
+              have hT : Disjoint T ρ.axis.support := by
+                simpa [haxis] using p.1.2.2
+              exact ⟨hS, hT⟩⟩
+        , left_inv := by
+            intro ρ
+            cases ρ with
+            | mk ρ hρ =>
+                simp [e]
+        , right_inv := by
+            intro p
+            cases p
+            cases' p_fst with A hA
+            simp [e] }
+  have hcard_prod :
+      Fintype.card
+          (({A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+              × BitVec n))
+        = Fintype.card
+            {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+            * Fintype.card (BitVec n) := by
+    simpa using (Fintype.card_prod
+      (α := {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support})
+      (β := BitVec n))
+  have haxis := axis_superset_disjoint_card
+      (n := n) (ℓ := ℓ) (S := S) (T := T) hSℓ hST
+  calc
+    Fintype.card
+        {ρ : ExactRestriction n ℓ //
+          S ⊆ ρ.axis.support ∧ Disjoint T ρ.axis.support}
+        = Fintype.card
+            (({A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+                × BitVec n)) := by
+              simpa using hcongr
+    _ = Fintype.card
+          {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+            * Fintype.card (BitVec n) := hcard_prod
+    _ = Nat.choose (n - S.card - T.card) (ℓ - S.card)
+          * Fintype.card (BitVec n) := by
+          simpa using congrArg (fun k => k * Fintype.card (BitVec n)) haxis
+
+/-- Подсчёт рестрикций, где ось содержит `S`, избегает `T`, а значения на `T`
+фиксированы функцией `assign`. -/
+lemma superset_disjoint_values_card {T : Finset (Fin n)}
+    (assign : Fin n → Bool) (hSℓ : S.card ≤ ℓ) (hST : Disjoint S T) :
+    Fintype.card
+        {ρ : ExactRestriction n ℓ //
+          S ⊆ ρ.axis.support ∧ Disjoint T ρ.axis.support ∧
+          ∀ i ∈ T, ρ.values i = assign i}
+      = Nat.choose (n - S.card - T.card) (ℓ - S.card)
+          * Nat.pow 2 (n - T.card) := by
+  classical
+  let e := ExactRestriction.equivAxisBitVec n ℓ
+  have hcongr :
+      Fintype.card
+          {ρ : ExactRestriction n ℓ //
+            S ⊆ ρ.axis.support ∧ Disjoint T ρ.axis.support ∧
+            ∀ i ∈ T, ρ.values i = assign i}
+        = Fintype.card
+            (({A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+                × {σ : BitVec n // ∀ i ∈ T, σ i = assign i})) := by
+    refine Fintype.card_congr ?_
+    refine
+      { toFun := fun ρ =>
+          let data := e ρ.1
+          ⟨⟨data.1, by
+              have haxis : (e ρ.1).1.support = ρ.1.axis.support := rfl
+              have hS := ρ.2.1
+              have hT := ρ.2.2.1
+              simpa [data, haxis]⟩,
+            ⟨data.2, by
+                intro i hi
+                simpa [data] using ρ.2.2.2 i hi⟩⟩
+        , invFun := fun p =>
+            let ρ := e.symm ⟨p.1.1, p.2.1⟩
+            ⟨ρ, by
+              have haxis : ρ.axis = p.1.1 := by rfl
+              have hS : S ⊆ ρ.axis.support := by
+                simpa [haxis] using p.1.2.1
+              have hT : Disjoint T ρ.axis.support := by
+                simpa [haxis] using p.1.2.2
+              have hvals : ∀ i ∈ T, ρ.values i = assign i := by
+                intro i hi
+                simpa [ExactRestriction.equivAxisBitVec, e] using p.2.2 i hi
+              exact ⟨hS, hT, hvals⟩⟩
+        , left_inv := by
+            intro ρ
+            cases ρ with
+            | mk ρ hρ =>
+                simp [e]
+        , right_inv := by
+            intro p
+            rcases p with ⟨⟨A, hA⟩, ⟨σ, hσ⟩⟩
+            simp [e, hA, hσ] }
+  have hcard_prod :
+      Fintype.card
+          (({A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+              × {σ : BitVec n // ∀ i ∈ T, σ i = assign i}))
+        = Fintype.card
+            {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+            * Fintype.card {σ : BitVec n // ∀ i ∈ T, σ i = assign i} := by
+    simpa using (Fintype.card_prod
+      (α := {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support})
+      (β := {σ : BitVec n // ∀ i ∈ T, σ i = assign i}))
+  have haxis := axis_superset_disjoint_card
+      (n := n) (ℓ := ℓ) (S := S) (T := T) hSℓ hST
+  have hvalues := bitVec_fixed_card (n := n) (T := T) assign
+  calc
+    Fintype.card
+        {ρ : ExactRestriction n ℓ //
+          S ⊆ ρ.axis.support ∧ Disjoint T ρ.axis.support ∧
+          ∀ i ∈ T, ρ.values i = assign i}
+        = Fintype.card
+            (({A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+                × {σ : BitVec n // ∀ i ∈ T, σ i = assign i})) := by
+              simpa using hcongr
+    _ = Fintype.card
+          {A : Axis n ℓ // S ⊆ A.support ∧ Disjoint T A.support}
+            * Fintype.card {σ : BitVec n // ∀ i ∈ T, σ i = assign i} := hcard_prod
+    _ = Nat.choose (n - S.card - T.card) (ℓ - S.card)
+          * Nat.pow 2 (n - T.card) := by
+          simpa [hvalues] using
+            congrArg (fun k => k * Nat.pow 2 (n - T.card)) haxis
+
+end ExactRestriction
+
+/-- Количество назначений `BitVec n`, фиксирующих координаты из `T`, равно `2^(n-|T|)`. -/
+lemma bitVec_fixed_card {T : Finset (Fin n)} (assign : Fin n → Bool) :
+    Fintype.card {σ : BitVec n // ∀ i ∈ T, σ i = assign i}
+      = Nat.pow 2 (n - T.card) := by
+  classical
+  let complSubtype := {i : Fin n // i ∈ Tᶜ}
+  have hcompl_card : Fintype.card complSubtype = n - T.card := by
+    have hcard := Finset.card_compl (s := T)
+    simpa [Finset.mem_compl, hcard] using
+      (Fintype.card_coe (s := Tᶜ : Finset (Fin n)))
+  have hEquiv :
+      {σ : BitVec n // ∀ i ∈ T, σ i = assign i} ≃ (complSubtype → Bool) :=
+    { toFun := fun σ i => σ.1 i
+      , invFun := fun τ =>
+          ⟨fun j => dite (j ∈ T) (fun _ => assign j)
+              (fun hj => τ ⟨j, by simpa [Finset.mem_compl] using hj⟩), by
+                intro j hj
+                simp [hj]⟩
+      , left_inv := by
+          intro σ
+          ext j
+          by_cases hj : j ∈ T
+          · simp [hj]
+          · simp [hj]
+      , right_inv := by
+          intro τ
+          funext j
+          rcases j with ⟨j, hj⟩
+          simp [hj] }
+  have hfun_card : Fintype.card (complSubtype → Bool)
+      = Nat.pow 2 (Fintype.card complSubtype) := by
+    simpa using (Fintype.card_fun (α := complSubtype) (β := Bool))
+  have htarget : Fintype.card (complSubtype → Bool)
+      = Nat.pow 2 (n - T.card) := by
+    simpa [hcompl_card] using hfun_card
+  calc
+    Fintype.card {σ : BitVec n // ∀ i ∈ T, σ i = assign i}
+        = Fintype.card (complSubtype → Bool) := Fintype.card_congr hEquiv
+    _ = Nat.pow 2 (n - T.card) := htarget
 
 /--
   Чтобы строить решающие деревья, полезно нумеровать свободные координаты
@@ -2198,6 +2834,120 @@ lemma toLeaf_eq_iff_mem {ρ : ExactRestriction n ℓ}
   simpa [toLeaf] using
     (Axis.leafForPoint_eq_iff_mem (n := n) (ℓ := ℓ)
       (A := ρ.axis) (β := β) hβ (x := ρ.values))
+
+/--
+  Точное ограничение можно рассматривать как объект `Restriction`: мы просто
+  забываем, какие координаты считаются «живыми», и запоминаем соответствующий
+  подкуб.  Это определение понадобится при связке вероятностных рассуждений
+  с уже существующей инфраструктурой решающих деревьев из `Core.BooleanBasics`.
+-/
+@[simp] def toRestriction (ρ : ExactRestriction n ℓ) : Restriction n :=
+  ⟨ρ.toSubcube⟩
+
+@[simp] lemma toRestriction_mask (ρ : ExactRestriction n ℓ) (i : Fin n) :
+    ρ.toRestriction.mask i = ρ.toSubcube i := rfl
+
+/-- На свободных координатах маска точного ограничения возвращает `none`. -/
+@[simp] lemma toRestriction_mask_mem_support (ρ : ExactRestriction n ℓ)
+    {i : Fin n} (hi : i ∈ ρ.axis.support) :
+    ρ.toRestriction.mask i = none := by
+  classical
+  simpa [toRestriction_mask] using
+    (Axis.subcube_isNone_iff (A := ρ.axis) (σ := ρ.values) (i := i)).mpr hi
+
+/-- На фиксированных координатах маска совпадает со значением `ρ.values`. -/
+@[simp] lemma toRestriction_mask_not_mem_support (ρ : ExactRestriction n ℓ)
+    {i : Fin n} (hi : i ∉ ρ.axis.support) :
+    ρ.toRestriction.mask i = some (ρ.values i) := by
+  classical
+  simpa [toRestriction_mask] using
+    (Axis.subcube_apply_not_mem (A := ρ.axis) (σ := ρ.values) (i := i) hi)
+
+/-- Список свободных координат точного ограничения совпадает с опорой оси. -/
+@[simp] lemma toRestriction_freeIndicesList_toFinset
+    (ρ : ExactRestriction n ℓ) :
+    ρ.toRestriction.freeIndicesList.toFinset = ρ.axis.support := by
+  classical
+  apply Finset.ext
+  intro i
+  constructor
+  · intro hi
+    have hi_list : i ∈ ρ.toRestriction.freeIndicesList :=
+      List.mem_toFinset.mp hi
+    have hmask : ρ.toRestriction.mask i = none :=
+      (Restriction.mem_freeIndicesList (ρ := ρ.toRestriction) (i := i)).1 hi_list
+    have hsubcube : ρ.toSubcube i = none := by
+      simpa [ExactRestriction.toRestriction_mask] using hmask
+    simpa [ExactRestriction.freeCoordinate] using hsubcube
+  · intro hi
+    have hmask : ρ.toRestriction.mask i = none :=
+      (ExactRestriction.toRestriction_mask_mem_support (ρ := ρ) (i := i) hi)
+    have hi_list : i ∈ ρ.toRestriction.freeIndicesList :=
+      (Restriction.mem_freeIndicesList (ρ := ρ.toRestriction) (i := i)).2 hmask
+    exact List.mem_toFinset.mpr hi_list
+
+/-- Число свободных координат у точной рестрикции равно `ℓ`. -/
+@[simp] lemma toRestriction_freeCount (ρ : ExactRestriction n ℓ) :
+    ρ.toRestriction.freeCount = ℓ := by
+  classical
+  have hnodup := Restriction.freeIndicesList_nodup (ρ := ρ.toRestriction)
+  have hdedup : ρ.toRestriction.freeIndicesList.dedup
+      = ρ.toRestriction.freeIndicesList := (List.dedup_eq_self).2 hnodup
+  have hcard := List.card_toFinset (ρ.toRestriction.freeIndicesList)
+  have hlen :
+      (ρ.toRestriction.freeIndicesList.toFinset).card
+        = ρ.toRestriction.freeIndicesList.length := by
+    simpa [hdedup] using hcard
+  calc
+    ρ.toRestriction.freeCount
+        = ρ.toRestriction.freeIndicesList.length := rfl
+    _ = (ρ.toRestriction.freeIndicesList.toFinset).card := by simpa [hlen]
+    _ = ρ.axis.support.card := by
+          simpa [ExactRestriction.toRestriction_freeIndicesList_toFinset]
+    _ = ℓ := ρ.axis.card
+
+/-- Исходная таблица значений совместима с получившимся `Restriction`. -/
+@[simp] lemma toRestriction_compatible_values (ρ : ExactRestriction n ℓ) :
+    ρ.toRestriction.compatible ρ.values = true := by
+  classical
+  have hmem : mem ρ.toSubcube ρ.values := by
+    refine (Axis.mem_subcube_iff_fixed (A := ρ.axis)
+      (σ := ρ.values) (x := ρ.values)).2 ?_
+    intro _ _
+    rfl
+  simpa [Restriction.compatible, toRestriction_mask] using hmem
+
+/--
+  Применение точного ограничения к вектору `x` оставляет свободные координаты
+  равными `x i`, а фиксированные — совпадающими с `ρ.values`.  Формула напрямую
+  разворачивает определение `Restriction.override` и ранее установленные факты
+  о маске `ρ.toRestriction`.
+-/
+lemma toRestriction_override (ρ : ExactRestriction n ℓ) (x : BitVec n)
+    (i : Fin n) :
+    ρ.toRestriction.override x i
+      = if i ∈ ρ.axis.support then x i else ρ.values i := by
+  classical
+  by_cases hi : i ∈ ρ.axis.support
+  · have hmask := toRestriction_mask_mem_support
+        (ρ := ρ) (i := i) hi
+    simp [Restriction.override, hmask, hi]
+  · have hmask := toRestriction_mask_not_mem_support
+        (ρ := ρ) (i := i) hi
+    simp [Restriction.override, hmask, hi]
+
+/--
+  Подстановка `ρ.values` в качестве аргумента к `override` восстанавливает
+  исходный вектор: на свободных координатах возвращается исходное значение,
+  а фиксированные копируются без изменений.
+-/
+@[simp] lemma toRestriction_override_values (ρ : ExactRestriction n ℓ) :
+    ρ.toRestriction.override ρ.values = ρ.values := by
+  classical
+  funext i
+  by_cases hi : i ∈ ρ.axis.support
+  · simpa [toRestriction_override, hi]
+  · simpa [toRestriction_override, hi]
 
 /--
   Множество точных рестрикций с фиксированной осью `A`, чей лист совпадает с `β`,

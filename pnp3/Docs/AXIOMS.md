@@ -474,7 +474,7 @@ axiom CJW_sparse_trigger
 
 ### AXIOM D.5: `locality_lift`
 
-**Location**: `pnp3/Magnification/LocalityLift.lean:52`
+**Location**: `Facts/LocalityLift/Interface/Statement.lean`
 
 **Statement**:
 ```lean
@@ -496,6 +496,13 @@ axiom locality_lift
 **Why this is external**:
 - Technical lifting theorem
 - Requires careful parameter tracking
+- Packaged as a dedicated Lake project (`Facts/LocalityLift`) so that future
+  proof efforts can happen in isolation before being reintegrated.
+- ⏸️ **Current status**: работа над доказательством приостановлена до тех пор,
+  пока Step A не предоставит формализованный факт A.2
+  (`shrinkage_for_localCircuit`).  Все точки интеграции задокументированы в
+  подпроекте и модуле `ThirdPartyFacts/LocalityLift.lean`, так что вернуться к
+  задаче можно сразу после появления шринкаж-результата.
 
 **Criticality**: 🟡 HIGH - Bridge to general circuits
 

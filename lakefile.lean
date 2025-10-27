@@ -5,6 +5,7 @@ package pnp2
 
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.22.0-rc2"
 require fact_psubset_ppoly from "./Facts/PsubsetPpoly"
+require fact_locality_lift from "./Facts/LocalityLift"
 
 lean_lib Pnp2 where
   srcDir := "Pnp2"
@@ -35,12 +36,14 @@ lean_lib PnP3 where
     `LowerBounds.LB_Formulas_Core,
     `LowerBounds.LB_LocalCircuits,
     `LowerBounds.LB_GeneralFromLocal,
+    `Magnification.LocalityInterfaces,
     `Magnification.Facts_Magnification,
     `Magnification.PipelineStatements,
     `Magnification.LocalityLift,
     `Magnification.Bridge_to_Magnification,
     `Magnification.FinalResult,
     `ThirdPartyFacts.Facts_Switching,
+    `ThirdPartyFacts.LocalityLift,
     `ThirdPartyFacts.PsubsetPpoly,
     `ThirdPartyFacts.LeafBudget,
     `Tests.SmokeTests,

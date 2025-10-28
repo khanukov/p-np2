@@ -1747,6 +1747,813 @@ lemma badMass_le_formulaExplicit (F : Core.CNF n w) (ℓ t : Nat)
     (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
   exact hmass.trans hexplicit
 
+/--
+  Уточняем предыдущую оценку, явно подставляя количество точных рестрикций
+  `|Axis n ℓ × BitVec n| = \binom{n}{ℓ} · 2^n`.  Такая форма полезна при дальнейших
+  числовых оценках, поскольку знаменатель теперь выражен через привычные
+  биномиальные коэффициенты и степени двойки.-/
+lemma badMass_le_formulaExplicit_nat (F : Core.CNF n w) (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ ((1 : ℝ≥0∞)
+          / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.map fun C =>
+                (∑ k in Finset.Icc t
+                        (Nat.min ℓ (clauseIndexFinset (n := n) C).card),
+                    (Nat.choose (clauseIndexFinset (n := n) C).card k
+                        * Nat.choose
+                            (n - (clauseIndexFinset (n := n) C).card)
+                            (ℓ - k)
+                        * Nat.pow 2
+                            (n - (clauseIndexFinset (n := n) C).card + k)
+                      : ℝ≥0∞))).sum := by
+  classical
+  have hmass := badMass_le_formulaExplicit
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  -- Переписываем нормирующий множитель через явные формулы для мощности множества рестрикций.
+  have hrewrite :
+      ((1 : ℝ≥0∞) / Fintype.card (Axis n ℓ × BitVec n))
+        = ((1 : ℝ≥0∞)
+            / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))) := by
+    simpa [RandomRestriction.axis_bitvec_card_ennreal (n := n) (ℓ := ℓ)]
+  simpa [hrewrite] using hmass
+
+/--
+  Универсальный профиль для вклада одной клаузы в оценку `badMass`, зависящий
+  только от глобальных параметров `n`, `w`, `ℓ` и `t`.  В дальнейшем мы покажем,
+  что каждая конкретная клауза даёт не больший вклад, чем этот профиль, что
+  позволит вынести число клауз за знак суммы.
+-/
+def clauseWidthProfile (n w ℓ t : Nat) : ℝ≥0∞ :=
+  ∑ k in Finset.Icc t (Nat.min ℓ w),
+      ((Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 k : Nat) : ℝ≥0∞)
+
+/--
+  Нормированный профиль: масса вклада одной клаузы после деления на вес
+  отдельной точной рестрикции `1 / (\binom{n}{ℓ} · 2^n)`.
+-/
+def clauseWidthProfileNormalized (n w ℓ t : Nat) : ℝ≥0∞ :=
+  clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)
+    / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))
+
+/--
+  Вероятностный вес события «фиксированное подмножество из `k` литералов клаузы`
+  остаётся свободным», нормированный относительно распределения
+  `restrictionUniform`.  Это определение изолирует «базовый» множитель, не
+  зависящий от конкретной клаузы, и облегчает дальнейшее сравнение с
+  классическими p-biased оценками.
+-/
+def exactRestrictionHitWeight (n ℓ k : Nat) : ℝ≥0∞ :=
+  ((Nat.choose n (ℓ - k) : ℝ≥0∞) * (2 ^ k : ℝ≥0∞))
+    / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))
+
+/--
+  Нормированный профиль «распадается» на произведение количества подмножеств
+  ширины `k` и универсального веса события `exactRestrictionHitWeight`.  Такой
+  вид подчёркивает вероятностную природу оценки: суммирование происходит по
+  всем потенциальным наборам «живых» литералов.
+-/
+lemma clauseWidthProfileNormalized_eq_sum_hitWeight (n w ℓ t : Nat) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      =
+        ∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+            * exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k) := by
+  classical
+  unfold clauseWidthProfileNormalized clauseWidthProfile
+  simp [Finset.mul_sum, Finset.sum_mul, exactRestrictionHitWeight,
+    div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+
+/--
+  Грубая оценка для универсального веса: если мы фиксируем подмножество из `k`
+  свободных литералов, то соответствующий вклад не превосходит произведения
+  «локального» биномиального коэффициента `choose ℓ k` и нормирующего фактора
+  `2^k / 2^n`.  Эта форма убирает зависимость от всей формулы и позволяет
+  дальше сравнивать с классической `p`-biased моделью. -/
+lemma exactRestrictionHitWeight_le_choose
+    (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k)
+      ≤ ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞))
+          / (2 ^ n : ℝ≥0∞) := by
+  classical
+  -- Сначала переносим оценку из `Nat` в `ℝ≥0∞`.
+  have hchoose_le :
+      (Nat.choose n (ℓ - k) : ℝ≥0∞)
+        ≤ (Nat.choose n ℓ : ℝ≥0∞) * (Nat.choose ℓ (ℓ - k) : ℝ≥0∞) := by
+    exact_mod_cast Counting.choose_sub_le_mul (n := n) (ℓ := ℓ) (k := k) hk hℓn
+  -- Коэффициент `choose n ℓ` положителен, поэтому можно домножить на обратный.
+  have hchoose_pos : (0 : ℝ≥0∞) < (Nat.choose n ℓ : ℝ≥0∞) := by
+    exact_mod_cast Nat.choose_pos hℓn
+  have hratio' :
+      (Nat.choose n (ℓ - k) : ℝ≥0∞) * (Nat.choose n ℓ : ℝ≥0∞)⁻¹
+        ≤ (Nat.choose ℓ (ℓ - k) : ℝ≥0∞) := by
+    have hnonneg : 0 ≤ (Nat.choose n ℓ : ℝ≥0∞)⁻¹ := by
+      exact inv_nonneg.mpr (le_of_lt hchoose_pos)
+    have := mul_le_mul_of_nonneg_right hchoose_le hnonneg
+    simpa [mul_comm, mul_left_comm, mul_assoc] using this
+  have hratio :
+      (Nat.choose n (ℓ - k) : ℝ≥0∞) * (Nat.choose n ℓ : ℝ≥0∞)⁻¹
+        ≤ (Nat.choose ℓ k : ℝ≥0∞) := by
+    simpa [Nat.choose_symm (n := ℓ) (k := k) hk]
+      using hratio'
+  -- Переходим к нормированному весу и домножаем на геометрический фактор.
+  have hpow_nonneg : 0 ≤ (2 ^ k : ℝ≥0∞) := by
+    exact_mod_cast (Nat.zero_le (2 ^ k))
+  have hmul := mul_le_mul_of_nonneg_left hratio hpow_nonneg
+  -- Выписываем определение веса и сокращаем общий нормирующий множитель.
+  unfold exactRestrictionHitWeight
+  -- После упрощения получаем целевое неравенство.
+  simpa [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    using hmul
+
+/--
+  Улучшенная оценка для универсального веса: вместо локального
+  коэффициента `choose ℓ k` мы используем отношение `ℓ / (n - ℓ + 1)`,
+  которое соответствует классической p-biased модели. -/
+lemma exactRestrictionHitWeight_le_density
+    (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k)
+      ≤ ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+          * ((2 ^ k : ℝ≥0∞) / (2 ^ n : ℝ≥0∞)) := by
+  classical
+  have hchoose := Counting.choose_sub_ratio_le_pow
+    (n := n) (ℓ := ℓ) (k := k) hk hℓn
+  have hnum := mul_le_mul_of_nonneg_right hchoose
+    (show 0 ≤ (2 ^ k : ℝ≥0∞) from by exact_mod_cast Nat.zero_le (2 ^ k))
+  have hchoose_pos_nat : 0 < Nat.choose n ℓ := by
+    by_cases hℓ0 : ℓ = 0
+    · simp [hℓ0]
+    · have hpos : 0 < ℓ := Nat.pos_of_ne_zero hℓ0
+      exact Nat.choose_pos hpos hℓn
+  have hchoose_pos : (0 : ℝ≥0∞) < (Nat.choose n ℓ : ℝ≥0∞) := by
+    exact_mod_cast hchoose_pos_nat
+  have hpow_pos : (0 : ℝ≥0∞) < (2 ^ n : ℝ≥0∞) := by
+    exact_mod_cast Nat.pos_pow_of_pos _ (by decide : 0 < 2)
+  have hden_inv_nonneg :
+      0 ≤ ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))⁻¹ :=
+    (inv_nonneg).mpr (le_of_lt (mul_pos_of_pos_of_pos hchoose_pos hpow_pos))
+  have hbound :=
+    mul_le_mul_of_nonneg_right hnum hden_inv_nonneg
+  have hrewrite := by
+    simp [exactRestrictionHitWeight, div_eq_mul_inv, mul_comm, mul_left_comm,
+      mul_assoc]
+  have htarget :=
+    calc
+      exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k)
+          = ((Nat.choose n (ℓ - k) : ℝ≥0∞) * (2 ^ k : ℝ≥0∞))
+              * ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))⁻¹ := by
+                simpa [exactRestrictionHitWeight, div_eq_mul_inv, mul_comm,
+                  mul_left_comm, mul_assoc]
+      _ ≤ ((Nat.choose n ℓ : ℝ≥0∞)
+              * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+              * (2 ^ k : ℝ≥0∞))
+              * ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))⁻¹ := by
+            simpa [mul_comm, mul_left_comm, mul_assoc]
+              using hbound
+      _ = ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+              * ((2 ^ k : ℝ≥0∞) / (2 ^ n : ℝ≥0∞)) := by
+            have hden_ne :
+                (Nat.choose n ℓ : ℝ≥0∞) ≠ 0 := hchoose_pos.ne'
+            have hpow_ne : (2 ^ n : ℝ≥0∞) ≠ 0 := hpow_pos.ne'
+            simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc,
+              hden_ne, hpow_ne]
+  exact htarget
+/--
+  Переписываем профиль через «локальные» биномиальные коэффициенты.
+  Каждое слагаемое ограничивается произведением `choose w k` и оценки из
+  `exactRestrictionHitWeight_le_choose`. В результате получаем форму, в
+  которой глобальная нормировка `1 / 2^n` вынесена за знак суммы. -/
+lemma clauseWidthProfileNormalized_le_local
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+            * ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)
+                / (2 ^ n : ℝ≥0∞)) := by
+  classical
+  -- Сводим задачу к покомпонентному сравнению слагаемых.
+  refine (clauseWidthProfileNormalized_eq_sum_hitWeight (n := n)
+      (w := w) (ℓ := ℓ) (t := t)).trans_le ?_
+  refine Finset.sum_le_sum ?_
+  intro k hk
+  -- Принадлежность диапазону `Icc` гарантирует `k ≤ ℓ`.
+  have hk_le_min : k ≤ Nat.min ℓ w := (Finset.mem_Icc.mp hk).2
+  have hkℓ : k ≤ ℓ := le_trans hk_le_min (Nat.min_le_left _ _)
+  -- Применяем локальную оценку для универсального веса.
+  have hterm := exactRestrictionHitWeight_le_choose
+      (n := n) (ℓ := ℓ) (k := k) hkℓ hℓn
+  -- Множитель `choose w k` неотрицателен, так что мы можем домножить неравенство.
+  have hnonneg : 0 ≤ (Nat.choose w k : ℝ≥0∞) := by
+    exact_mod_cast (Nat.zero_le (Nat.choose w k))
+  have := mul_le_mul_of_nonneg_left hterm hnonneg
+  -- Убираем лишние скобки, чтобы получить ровно то слагаемое, что стоит в сумме.
+  simpa [mul_comm, mul_left_comm, mul_assoc, div_eq_mul_inv]
+    using this
+
+/--
+  Эквивалентная форма предыдущей оценки: выносим общий множитель `1 / 2^n`
+  и оставляем внутри суммы лишь комбинацию «локальных» величин. -/
+lemma clauseWidthProfileNormalized_le_local_factored
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞)
+                * (Nat.choose ℓ k : ℝ≥0∞)
+                * (2 ^ k : ℝ≥0∞) := by
+  classical
+  -- Сначала применяем предыдущую лемму.
+  have hlocal := clauseWidthProfileNormalized_le_local
+      (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn
+  -- Переписываем правую часть, вынося константу `1 / 2^n` за знак суммы.
+  have hrewrite :
+      (∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+            * ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)
+                / (2 ^ n : ℝ≥0∞)))
+        = ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose w k : ℝ≥0∞)
+                  * (Nat.choose ℓ k : ℝ≥0∞)
+                  * (2 ^ k : ℝ≥0∞) := by
+    -- Каждое слагаемое разделяется на общий множитель.
+    have hconst :
+        ∀ k ∈ Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+              * ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)
+                  / (2 ^ n : ℝ≥0∞))
+            = ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+                * ((Nat.choose w k : ℝ≥0∞)
+                    * (Nat.choose ℓ k : ℝ≥0∞)
+                    * (2 ^ k : ℝ≥0∞)) := by
+      intro k hk
+      simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    -- Теперь сводим обе стороны к сумме по одной и той же функции.
+    have := Finset.sum_congr rfl hconst
+    simpa [Finset.mul_sum, mul_comm, mul_left_comm, mul_assoc]
+      using this
+  -- Заключительный шаг: подставляем переписанную правую часть.
+  simpa [hrewrite]
+    using hlocal
+
+/--
+  Используем «p-biased» оценку универсального веса и выносим общий множитель
+  `1 / 2^n`, что приводит к сумме по степеням `(2ℓ / (n - ℓ + 1))^k`. -/
+lemma clauseWidthProfileNormalized_le_density
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞)
+                * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+                * (2 ^ k : ℝ≥0∞) := by
+  classical
+  have hsum := clauseWidthProfileNormalized_eq_sum_hitWeight
+    (n := n) (w := w) (ℓ := ℓ) (t := t)
+  refine hsum.trans_le ?_
+  refine Finset.sum_le_sum ?_
+  intro k hk
+  have hk_le : k ≤ Nat.min ℓ w := (Finset.mem_Icc.mp hk).2
+  have hkℓ : k ≤ ℓ := le_trans hk_le (Nat.min_le_left _ _)
+  have hkw : k ≤ w := le_trans hk_le (Nat.min_le_right _ _)
+  have hweight := exactRestrictionHitWeight_le_density
+    (n := n) (ℓ := ℓ) (k := k) hkℓ hℓn
+  have hnonneg : 0 ≤ (Nat.choose w k : ℝ≥0∞) := by
+    exact_mod_cast Nat.zero_le (Nat.choose w k)
+  have := mul_le_mul_of_nonneg_left hweight hnonneg
+  have hrewrite :
+      ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+          * ((2 ^ k : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+        = ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+            * (2 ^ k : ℝ≥0∞) := by
+    simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+  simpa [div_eq_mul_inv, hrewrite, mul_comm, mul_left_comm, mul_assoc]
+    using this
+
+/-!
+### Дополнительная оценка через фиксированную мощность `t`
+
+Используя лемму `choose_add_le_mul`, можно вынести из суммы постоянный
+биномиальный коэффициент `choose w t`.  Это позволяет переписать нормированную
+массу через меньший параметр `t` и подготовить почву для классической формы
+switching-оценки.
+-/
+
+/--
+  Ограничиваем нормированный профиль через фиксированную мощность `t`: число
+  клауз ширины ≥ `t` оценивается биномиальным коэффициентом `choose w t`, а вся
+  геометрическая часть сводится к сумме по остаточным индексам `k - t`.
+-/
+lemma clauseWidthProfileNormalized_le_choose_factor
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose (w - t) (k - t) : ℝ≥0∞)
+                * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ (k - t) := by
+  classical
+  -- Обозначим геометрический множитель и упростим исходную оценку.
+  set θ := ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞) with hθdef
+  have hdensity := clauseWidthProfileNormalized_le_density
+    (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn
+  have hpow_rewrite :
+      ∀ k, ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+          * (2 ^ k : ℝ≥0∞)
+        = θ ^ k := by
+    intro k
+    have := (mul_pow
+      ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) (2 : ℝ≥0∞) k).symm
+    simpa [θ, hθdef, mul_comm, mul_left_comm, mul_assoc] using this
+  have hdensity' : clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞) * θ ^ k := by
+    refine hdensity.trans ?_
+    have hrewrite :
+        (∑ k in Finset.Icc t (Nat.min ℓ w),
+            (Nat.choose w k : ℝ≥0∞)
+              * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+              * (2 ^ k : ℝ≥0∞))
+          = ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞) * θ ^ k := by
+      refine Finset.sum_congr rfl ?_
+      intro k hk
+      simpa [hpow_rewrite, mul_comm, mul_left_comm, mul_assoc]
+    simpa [hrewrite] using le_of_eq rfl
+  -- Покомпонентная оценка каждого слагаемого с помощью `choose_add_le_mul`.
+  have hterm :
+      ∀ k ∈ Finset.Icc t (Nat.min ℓ w),
+        (Nat.choose w k : ℝ≥0∞) * θ ^ k
+          ≤ (Nat.choose w t : ℝ≥0∞) * θ ^ t
+              * ((Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)) := by
+    intro k hk
+    have hk_bounds := Finset.mem_Icc.mp hk
+    have htk : t ≤ k := hk_bounds.1
+    have hk_le_w : k ≤ w :=
+      le_trans hk_bounds.2 (Nat.min_le_right ℓ w)
+    have hk_choose :
+        Nat.choose w k ≤ Nat.choose w t * Nat.choose (w - t) (k - t) := by
+      have hj : k - t ≤ w - t := Nat.sub_le_sub_right hk_le_w t
+      have := choose_add_le_mul (w := w) (t := t) (j := k - t) htw hj
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, Nat.add_sub_cancel]
+        using this
+    have hchoose_cast :
+        (Nat.choose w k : ℝ≥0∞)
+          ≤ (Nat.choose w t : ℝ≥0∞)
+              * (Nat.choose (w - t) (k - t) : ℝ≥0∞) :=
+      by exact_mod_cast hk_choose
+    have hpow_nonneg : 0 ≤ θ ^ k := by
+      simpa using pow_nonneg (by exact bot_le : (0 : ℝ≥0∞) ≤ θ) k
+    have hmul := mul_le_mul_of_nonneg_right hchoose_cast hpow_nonneg
+    have hpow_split : θ ^ k = θ ^ t * θ ^ (k - t) := by
+      have hrewrite : k = t + (k - t) := Nat.add_sub_of_le htk
+      simp [hrewrite, pow_add, mul_comm, mul_left_comm, mul_assoc]
+    simpa [hpow_split, mul_comm, mul_left_comm, mul_assoc]
+      using hmul
+  -- Суммируем оценки и выносим общий множитель `choose w t * θ^t`.
+  have hsum := Finset.sum_le_sum (by
+    intro k hk; simpa using hterm k hk)
+  have hsum_factored :
+      (∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w t : ℝ≥0∞) * θ ^ t
+            * ((Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)))
+        = (Nat.choose w t : ℝ≥0∞) * θ ^ t
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+    simp [Finset.mul_sum, mul_comm, mul_left_comm, mul_assoc]
+  have hsum_le :
+      (∑ k in Finset.Icc t (Nat.min ℓ w), (Nat.choose w k : ℝ≥0∞) * θ ^ k)
+        ≤ (Nat.choose w t : ℝ≥0∞) * θ ^ t
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+    simpa [hsum_factored] using hsum
+  -- Возвращаемся к нормированному профилю и домножаем на общий коэффициент.
+  have hconst_nonneg :
+      0 ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞)) := by
+    have : 0 ≤ (1 : ℝ≥0∞) := zero_le_one
+    simpa using this
+  have htarget :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞) * θ ^ k
+        ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ((Nat.choose w t : ℝ≥0∞) * θ ^ t)
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+    have := mul_le_mul_of_nonneg_left hsum_le hconst_nonneg
+    simpa [mul_comm, mul_left_comm, mul_assoc] using this
+  refine hdensity'.trans ?_
+  simpa [θ, hθdef, mul_comm, mul_left_comm, mul_assoc]
+    using htarget
+
+/-!
+  Следующие вспомогательные леммы завершают работу с «геометрическим» хвостом
+  в факторизованной оценке.  Нам нужно показать, что сумма
+
+  `∑_{k = t}^{w} C(w - t, k - t) · θ^{k - t}`
+
+  не превосходит `(1 + θ)^{w - t}`.  Формально это комбинация двух фактов:
+
+  * расширение диапазона до полного `Icc t w` (с сохранением неравенства);
+  * переписывание суммы через `Finset.range` и применение биномиальной
+    теоремы (`Nat.add_pow`).
+-/
+
+/--
+  Чисто комбинаторный изоморфизм: суммирование по `Finset.Icc t (t + m)`
+  эквивалентно суммированию по `Finset.range (m.succ)` после сдвига индекса.
+  В дальнейшем этот переход позволит напрямую применить биномиальную теорему
+  `Nat.add_pow`.
+-/
+lemma sum_Icc_choose_shift_eq (t m : Nat) (θ : ℝ≥0∞) :
+    (∑ k in Finset.Icc t (t + m),
+        (Nat.choose m (k - t) : ℝ≥0∞) * θ ^ (k - t))
+      = ∑ j in Finset.range (Nat.succ m),
+          (Nat.choose m j : ℝ≥0∞) * θ ^ j := by
+  classical
+  -- Функция `j ↦ j + t` даёт биекцию между диапазонами суммирования.
+  refine
+    Finset.sum_bij (fun j _ ↦ j + t) (fun j hj ↦ ?_) (fun j hj ↦ ?_)
+      (fun k hk ↦ ?_) (fun j₁ hj₁ j₂ hj₂ h ↦ ?_)
+  · -- Образ действительно лежит в `Icc t (t + m)`.
+    rcases Finset.mem_range.mp hj with hj_lt
+    refine Finset.mem_Icc.mpr ?_
+    constructor
+    · exact Nat.le_add_right _ _
+    · -- Используем `hj_lt : j < m + 1`.
+      have hj_le : j ≤ m := Nat.lt_succ_iff.mp hj_lt
+      exact Nat.add_le_add_left hj_le _
+  · -- Экспонента и биномиальный коэффициент превращаются в форму с `j`.
+    rcases Finset.mem_range.mp hj with hj_lt
+    have hrewrite : j + t - t = j := Nat.add_sub_cancel _ _
+    simpa [hrewrite, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc]
+  · -- Для любого `k` из `Icc` строим обратный индекс `k - t`.
+    rcases Finset.mem_Icc.mp hk with ⟨hk_lower, hk_upper⟩
+    have hk' : k - t ≤ m := by
+      -- Из `k ≤ t + m` выводим `k - t ≤ m` через `Nat.sub_le_iff_le_add`.
+      have hk_upper' : k ≤ m + t := by simpa [add_comm] using hk_upper
+      exact (Nat.sub_le_iff_le_add).2 hk_upper'
+    have hk_range : k - t ∈ Finset.range (Nat.succ m) :=
+      Finset.mem_range.mpr (Nat.lt_succ_of_le hk')
+    refine ⟨k - t, hk_range, ?_⟩
+    -- Проверяем, что обратное отображение возвращает исходный элемент.
+    have hk_pos : t ≤ k := hk_lower
+    simpa [Nat.add_sub_of_le hk_pos, add_comm, add_left_comm, add_assoc]
+  · -- Инъективность отображения `j ↦ j + t`.
+    apply Nat.add_right_cancel
+    exact h
+
+/--
+  Геометрический хвост из леммы `clauseWidthProfileNormalized_le_choose_factor`
+  оценивается сверху биномиальной степенью `(1 + θ)^{w - t}`.  Этот шаг
+  завершает переход от «полу-явной» суммы к компактной экспоненциальной
+  границе.
+-/
+lemma clauseWidthProfileNormalized_tail_le_pow
+    (w ℓ t : Nat) (θ : ℝ≥0∞) (htw : t ≤ w) :
+    (∑ k in Finset.Icc t (Nat.min ℓ w),
+        (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+      ≤ (1 + θ) ^ (w - t) := by
+  classical
+  -- Сначала расширяем диапазон суммирования до `Icc t w`.
+  have hsubset :
+      Finset.Icc t (Nat.min ℓ w) ⊆ Finset.Icc t w := by
+    intro k hk
+    have hk_bounds := Finset.mem_Icc.mp hk
+    refine Finset.mem_Icc.mpr ?_
+    constructor
+    · exact hk_bounds.1
+    · exact le_trans hk_bounds.2 (Nat.min_le_right _ _)
+  have hsum_le :=
+    Finset.sum_le_sum_of_subset_of_nonneg
+      (f := fun k ↦ (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+      hsubset (by
+        intro _ _; exact bot_le)
+  -- Переписываем сумму по `Icc t w` через диапазон `0..(w - t)`.
+  have hrewrite :
+      (∑ k in Finset.Icc t w,
+          (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+        = ∑ j in Finset.range (Nat.succ (w - t)),
+            (Nat.choose (w - t) j : ℝ≥0∞) * θ ^ j := by
+    -- Учитываем равенство `w = t + (w - t)` для применения леммы.
+    have hw : t + (w - t) = w := Nat.add_sub_of_le htw
+    simpa [hw] using sum_Icc_choose_shift_eq (t := t) (m := w - t) (θ := θ)
+  -- Биномиальная теорема сворачивает сумму в `(1 + θ)^{w - t}`.
+  have hbinom :=
+    (Nat.add_pow (θ) (1 : ℝ≥0∞) (w - t)).symm
+  have hpow :
+      (∑ j in Finset.range (Nat.succ (w - t)),
+          (Nat.choose (w - t) j : ℝ≥0∞) * θ ^ j)
+        = (1 + θ) ^ (w - t) := by
+    simpa [Nat.succ_eq_add_one, add_comm, add_left_comm, add_assoc, one_pow,
+      mul_comm, mul_left_comm, mul_assoc]
+      using hbinom
+  -- Объединяем шаги: исходная сумма ≤ расширенная = биномиальная степень.
+  calc
+    (∑ k in Finset.Icc t (Nat.min ℓ w),
+        (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+        ≤ ∑ k in Finset.Icc t w,
+            (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := hsum_le
+    _ = ∑ j in Finset.range (Nat.succ (w - t)),
+          (Nat.choose (w - t) j : ℝ≥0∞) * θ ^ j := hrewrite
+    _ = (1 + θ) ^ (w - t) := hpow
+
+/--
+  Итоговая «геометрическая» граница: нормированный профиль глубины 1
+  ограничен произведением `choose w t · θ^t · (1 + θ)^{w - t}`, где
+  `θ := (ℓ / (n - ℓ + 1)) * 2`.  По сути это классическая форма
+  вероятностной оценки для случайных рестрикций.
+-/
+lemma clauseWidthProfileNormalized_le_choose_geom
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))) ^ (w - t) := by
+  classical
+  -- Сохраняем обозначение `θ`, как и в предыдущей лемме.
+  set θ := ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞) with hθdef
+  have hfactor := clauseWidthProfileNormalized_le_choose_factor
+    (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn htℓ htw
+  have htail := clauseWidthProfileNormalized_tail_le_pow
+    (w := w) (ℓ := ℓ) (t := t) (θ := θ) htw
+  -- Переходим к оценке, подставляя `(1 + θ)^{w - t}` вместо хвоста суммы.
+  have hconst_nonneg :
+      0 ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * θ ^ t := by
+    -- Все множители находятся в `ℝ≥0∞`, поэтому автоматически неотрицательны.
+    exact bot_le
+  have hbound :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * θ ^ t
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)
+        ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * (Nat.choose w t : ℝ≥0∞)
+            * θ ^ t
+            * (1 + θ) ^ (w - t) := by
+    -- Неравенство следует из монотонности умножения слева на неотрицательный множитель.
+    have := mul_le_mul_of_nonneg_left htail hconst_nonneg
+    simpa [mul_comm, mul_left_comm, mul_assoc] using this
+  -- Склеиваем промежуточные результаты.
+  refine hfactor.trans ?_
+  simpa [θ, hθdef, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc]
+    using hbound
+
+lemma clauseExplicit_term_le_profile
+    {F : Core.CNF n w} {C : Core.CnfClause n}
+    (hC : C ∈ F.clauses) (ℓ t k : Nat)
+    (hk : k ∈ Finset.Icc t (Nat.min ℓ (clauseIndexFinset (n := n) C).card)) :
+    ((Nat.choose (clauseIndexFinset (n := n) C).card k
+          * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+          * Nat.pow 2
+              (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+        : ℝ≥0∞)
+      ≤ ((Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 (n + k) : Nat)
+            : ℝ≥0∞) := by
+  classical
+  have hwidth := clauseIndexFinset_card_le_width_of_mem
+    (n := n) (w := w) (F := F) (C := C) hC
+  have hchoose_clause :
+      Nat.choose (clauseIndexFinset (n := n) C).card k
+        ≤ Nat.choose w k :=
+    Counting.choose_le_of_le
+      (m := (clauseIndexFinset (n := n) C).card) (n := w) (k := k)
+      (by exact hwidth)
+  have hchoose_rest :
+      Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+        ≤ Nat.choose n (ℓ - k) :=
+    Counting.choose_le_of_le
+      (m := n - (clauseIndexFinset (n := n) C).card) (n := n)
+      (k := ℓ - k)
+      (Nat.sub_le _ _)
+  have hpow_le :
+      Nat.pow 2 (n - (clauseIndexFinset (n := n) C).card + k)
+        ≤ Nat.pow 2 (n + k) := by
+    have hmono :
+        n - (clauseIndexFinset (n := n) C).card + k ≤ n + k := by
+      exact Nat.add_le_add_right
+        (Nat.sub_le _ _) _
+    exact Nat.pow_le_pow_of_le_left
+      (by decide : (0 : Nat) < 2)
+      hmono
+  -- Переходим к неравенству на ℕ и затем поднимаем его в ℝ≥0∞.
+  have hnat :
+      Nat.choose (clauseIndexFinset (n := n) C).card k
+          * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+          * Nat.pow 2 (n - (clauseIndexFinset (n := n) C).card + k)
+        ≤ Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 (n + k) := by
+    have hmul :=
+      mul_le_mul hchoose_clause
+        (mul_le_mul hchoose_rest hpow_le
+          (Nat.zero_le _) (Nat.zero_le _))
+        (Nat.zero_le _) (Nat.zero_le _)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
+  exact_mod_cast hnat
+
+lemma clauseExplicit_sum_le_profile
+    {F : Core.CNF n w} {C : Core.CnfClause n}
+    (hC : C ∈ F.clauses) (ℓ t : Nat) :
+    (∑ k in Finset.Icc t (Nat.min ℓ (clauseIndexFinset (n := n) C).card),
+        ((Nat.choose (clauseIndexFinset (n := n) C).card k
+            * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+            * Nat.pow 2
+                (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+              : ℝ≥0∞))
+      ≤ clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+  classical
+  have hsubset :
+      Finset.Icc t (Nat.min ℓ (clauseIndexFinset (n := n) C).card)
+        ⊆ Finset.Icc t (Nat.min ℓ w) := by
+    intro k hk
+    have hk_le :
+        k ≤ Nat.min ℓ (clauseIndexFinset (n := n) C).card :=
+      (Finset.mem_Icc.mp hk).2
+    have hmin_le :
+        Nat.min ℓ (clauseIndexFinset (n := n) C).card
+          ≤ Nat.min ℓ w :=
+      Nat.min_le_min le_rfl
+        (clauseIndexFinset_card_le_width_of_mem
+          (n := n) (w := w) (F := F) (C := C) hC)
+    have hk_upper : k ≤ Nat.min ℓ w :=
+      le_trans hk_le hmin_le
+    have hk_lower : t ≤ k := (Finset.mem_Icc.mp hk).1
+    exact Finset.mem_Icc.mpr ⟨hk_lower, hk_upper⟩
+  refine
+    Finset.sum_le_sum_of_subset_of_nonneg
+      (f := fun k =>
+        ((Nat.choose (clauseIndexFinset (n := n) C).card k
+            * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+            * Nat.pow 2
+                (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+              : ℝ≥0∞))
+      (g := fun k =>
+        ((Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 (n + k) : Nat)
+            : ℝ≥0∞))
+      hsubset ?_
+  · intro k hk
+    exact clauseExplicit_term_le_profile
+      (n := n) (w := w) (F := F) (C := C) hC ℓ t k hk
+  · intro k hk
+    exact zero_le _
+
+lemma List.sum_map_le_length_mul
+    {α : Type _} (l : List α) (f : α → ℝ≥0∞) (a : ℝ≥0∞)
+    (hle : ∀ x ∈ l, f x ≤ a) :
+    (l.map f).sum ≤ (l.length : ℝ≥0∞) * a := by
+  classical
+  induction l with
+  | nil =>
+      simp
+  | cons x xs ih =>
+      have hx_le : f x ≤ a := hle _ (List.mem_cons_self _ _)
+      have htail : (xs.map f).sum ≤ (xs.length : ℝ≥0∞) * a :=
+        ih (by
+          intro y hy
+          exact hle y (List.mem_cons_of_mem _ hy))
+      calc
+        ((x :: xs).map f).sum
+            = f x + (xs.map f).sum := by simp
+        _ ≤ a + (xs.map f).sum := by exact add_le_add_right hx_le _
+        _ ≤ a + (xs.length : ℝ≥0∞) * a :=
+          add_le_add_left htail _
+        _ = ((Nat.succ xs.length : Nat) : ℝ≥0∞) * a := by
+          simp [Nat.succ_eq_add_one, add_comm, add_left_comm, add_assoc,
+            mul_add, add_mul]
+
+/--
+  Выносим число клауз за знак суммы: каждая клауза даёт вклад, не превосходящий
+  `clauseWidthProfile`, поэтому суммарная величина ограничена произведением
+  `(#clauses) · clauseWidthProfile`.
+-/
+lemma badMass_le_clauseCount_profile (F : Core.CNF n w) (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ ((1 : ℝ≥0∞)
+            / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.length : ℝ≥0∞)
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)) := by
+  classical
+  have hmass := badMass_le_formulaExplicit_nat
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  have hprofile :
+      (F.clauses.map fun C =>
+          (∑ k in Finset.Icc t
+              (Nat.min ℓ (clauseIndexFinset (n := n) C).card),
+            ((Nat.choose (clauseIndexFinset (n := n) C).card k
+                * Nat.choose
+                    (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+                * Nat.pow 2
+                    (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+                  : ℝ≥0∞)))
+        .sum
+        ≤ (F.clauses.length : ℝ≥0∞)
+            * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+    refine List.sum_map_le_length_mul _ _ _ ?_
+    intro C hC
+    exact clauseExplicit_sum_le_profile
+      (n := n) (w := w) (F := F) (C := C) hC ℓ t
+  have hnonneg :
+      0 ≤ ((1 : ℝ≥0∞)
+              / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))) := by
+    have : 0 ≤ (1 : ℝ≥0∞) := zero_le_one
+    simpa using this
+  refine hmass.trans ?_
+  have :=
+    mul_le_mul_of_nonneg_left hprofile hnonneg
+  simpa [clauseWidthProfile]
+    using this
+
+lemma badMass_le_clauseCount_profileNormalized (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ (F.clauses.length : ℝ≥0∞)
+          * clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+  classical
+  have hbase := badMass_le_clauseCount_profile
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  have hrewrite :
+      ((1 : ℝ≥0∞)
+          / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.length : ℝ≥0∞)
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t))
+        = (F.clauses.length : ℝ≥0∞)
+            * clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+    unfold clauseWidthProfileNormalized
+    have hdiv :
+        (((1 : ℝ≥0∞)
+            / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t))
+          = clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)
+              / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)) := by
+      rfl
+    calc
+      ((1 : ℝ≥0∞)
+          / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.length : ℝ≥0∞)
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t))
+        = (F.clauses.length : ℝ≥0∞)
+            * (((1 : ℝ≥0∞)
+                  / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+                  * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)) := by
+          ring_nf
+      _ = (F.clauses.length : ℝ≥0∞)
+            * (clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)
+                / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))) := by
+          simpa [hdiv]
+
+  simpa [hrewrite] using hbase
+
+/--
+  Комбинируем оценку `badMass ≤ (#clauses) · clauseWidthProfileNormalized` с
+  новой геометрической границей, получая полностью явное неравенство через
+  параметры `n`, `ℓ`, `t` и `w`.
+-/
+lemma badMass_le_clauseCount_choose_geom (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t)
+    (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ (F.clauses.length : ℝ≥0∞)
+          * (((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+              * (Nat.choose w t : ℝ≥0∞)
+              * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+              * (1 + (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))) ^ (w - t)) := by
+  classical
+  -- Сначала используем уже полученную границу через нормированный профиль.
+  have hprofile := badMass_le_clauseCount_profileNormalized
+    (n := n) (w := w) (F := F) (ℓ := ℓ) (t := t) hsubset
+  -- Затем подставляем экспоненциальную оценку для самого профиля.
+  have hgeom := clauseWidthProfileNormalized_le_choose_geom
+    (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn htℓ htw
+  -- Умножение слева на `(F.clauses.length)` сохраняет неравенство, поскольку работаем в `ℝ≥0∞`.
+  have hconst_nonneg : 0 ≤ (F.clauses.length : ℝ≥0∞) := by exact bot_le
+  have hbound := mul_le_mul_of_nonneg_left hgeom hconst_nonneg
+  -- Завершаем оценку композицией неравенств.
+  refine hprofile.trans ?_
+  simpa [mul_comm, mul_left_comm, mul_assoc]
+    using hbound
+
 end Depth1Switching
 end ThirdPartyFacts
 end Pnp3

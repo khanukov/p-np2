@@ -40,6 +40,19 @@ abbrev BitVec (n : Nat) := Fin n → Bool
 abbrev Subcube (n : Nat) := Fin n → Option Bool
 
 /--
+Мощность пространства булевых векторов длины `n` равна `2^n`.  Это прямое
+следствие общей формулы `Fintype.card_fun`: функции из конечного множества `Fin n`
+в `Bool` полностью характеризуются значениями на каждой координате, поэтому их
+число — степень мощности цели по числу координат.-/
+@[simp] lemma card_bitVec (n : Nat) :
+    Fintype.card (BitVec n) = 2 ^ n := by
+  classical
+  -- Применяем общую формулу для мощностей множеств функций и раскрываем
+  -- кардинальности конечных типов `Bool` и `Fin n`.
+  simpa [BitVec, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
+    using (Fintype.card_fun (α := Fin n) (β := Bool))
+
+/--
 `Subcube.assign β i b` пытается зафиксировать `i`-й бит подкуба `β` значением `b`.
 
 * Если координата `i` ещё не фиксирована (`β i = none`), мы создаём новый

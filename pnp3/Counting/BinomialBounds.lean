@@ -4,6 +4,9 @@ import Mathlib.Data.Int.Basic
 import Mathlib.Algebra.Order.Floor.Defs
 import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Data.Rat.Floor
+import Mathlib.Data.ENNReal.Basic
+import Mathlib.Data.ENNReal.Inv
+import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Data.Rat.Init
@@ -27,7 +30,7 @@ import Mathlib.Data.Rat.Init
   численные ограничения, задействованные в теореме `Counting.covering_power_bound`.
 -/
 
-open scoped BigOperators
+open scoped BigOperators ENNReal
 
 namespace Pnp3
 namespace Counting
@@ -193,6 +196,309 @@ lemma unionBound_le_pow_mul (D k : Nat) :
     have hpow : M ^ k = (Nat.max 1 D) ^ k := by
       simp [hMdef]
     exact hpow ▸ hfinal
+
+/-!
+### Монотонность биномиальных коэффициентов по верхнему аргументу
+
+Следующий блок фиксирует простые, но часто полезные наблюдения: при возрастании
+верхнего аргумента `n` биномиальные коэффициенты `Nat.choose n k` растут.
+Эти факты потребуются в switching-лемме глубины 1, когда мы будем заменять
+индивидуальные ширины клауз грубой глобальной шириной `w` и контролировать
+оставшиеся суммы без оглядки на конкретную формулу.
+-/
+
+lemma choose_le_succ (n k : Nat) :
+    Nat.choose n k ≤ Nat.choose n.succ k := by
+  classical
+  cases hk : k with
+  | zero =>
+      simp [hk]
+  | succ k' =>
+      have hrec := Nat.choose_succ_succ n k'
+      -- Для `k = k' + 1` применяем стандартную рекуррентную формулу и
+      -- сравниваем с суммой `a + b ≥ b`.
+      have hle :
+          Nat.choose n (Nat.succ k')
+            ≤ Nat.choose n k' + Nat.choose n (Nat.succ k') := by
+        exact Nat.le_add_left _ _
+      simpa [hk, hrec, Nat.succ_eq_add_one, add_comm, add_left_comm,
+        add_assoc] using hle
+
+/--
+  Монотонность биномиального коэффициента по верхнему аргументу.  Для фиксированного
+  `k` величина `Nat.choose n k` не убывает при увеличении `n`.  Доказательство —
+  прямая индукция по доказательству `m ≤ n`, где на каждом шаге применяется
+  лемма `choose_le_succ`.
+-/
+lemma choose_le_of_le {k m n : Nat} (hmn : m ≤ n) :
+    Nat.choose m k ≤ Nat.choose n k := by
+  classical
+  induction hmn with
+  | refl => simpa
+  | @step n hmn ih =>
+      exact ih.trans (choose_le_succ n k)
+
+/--
+  Комбинаторное равенство, связывающее биномиальные коэффициенты с «сдвигом»
+  на `k` элементов.  Оно происходит из стандартной формулы
+  `choose_mul` и удобно тем, что позволяет переписать
+  `Nat.choose n (ℓ - k)` через произведение
+  `Nat.choose n ℓ * Nat.choose ℓ k` с точным учётом остаточного множителя.
+  В дальнейшем это равенство поможет контролировать вероятность того, что
+  точное ограничение оставляет фиксированное подмножество литералов живым. -/
+lemma choose_mul_sub (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    Nat.choose n ℓ * Nat.choose ℓ (ℓ - k)
+      = Nat.choose n (ℓ - k) * Nat.choose (n - (ℓ - k)) k := by
+  classical
+  -- Применяем стандартную формулу `choose_mul` к параметрам `(n, ℓ, ℓ - k)`.
+  have hsubset : ℓ - k ≤ ℓ := Nat.sub_le _ _
+  simpa [Nat.sub_sub_self hk] using
+    (Nat.choose_mul (n := n) (k := ℓ) (s := ℓ - k) hℓn hsubset)
+
+/--
+  Непосредственное следствие `choose_mul_sub`: после учёта положительного
+  множителя `(n - ℓ + k).choose k` мы получаем верхнюю границу на
+  `choose n (ℓ - k)` через произведение `choose n ℓ * choose ℓ k`.
+  Эта форма пригодится при вероятностных оценках: мы грубо ограничиваем
+  количество рестрикций, в которых фиксированное подмножество `k` литералов
+  остаётся свободным. -/
+lemma choose_sub_le_mul (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    Nat.choose n (ℓ - k) ≤ Nat.choose n ℓ * Nat.choose ℓ (ℓ - k) := by
+  classical
+  -- Начинаем с точной формулы `choose_mul_sub`.
+  have hmul := choose_mul_sub (n := n) (ℓ := ℓ) (k := k) hk hℓn
+  -- Показываем, что множитель слева не меньше единицы.
+  have hdenom_pos : 1 ≤ Nat.choose (n - (ℓ - k)) k := by
+    -- Из `ℓ ≤ n` следует `ℓ - k ≤ n`, значит биномиальный коэффициент положителен.
+    have hle' : ℓ - k ≤ n := by
+      exact le_trans (Nat.sub_le _ _) hℓn
+    have hk_le : k ≤ n - (ℓ - k) := by
+      -- Рассматриваем суммы `k + (ℓ - k)` и `n - (ℓ - k) + (ℓ - k)`.
+      have hleft : k + (ℓ - k) = ℓ := by
+        simpa [Nat.add_comm] using (Nat.sub_add_cancel hk)
+      have hright : (n - (ℓ - k)) + (ℓ - k) = n :=
+        Nat.sub_add_cancel hle'
+      have hineq : k + (ℓ - k) ≤ (n - (ℓ - k)) + (ℓ - k) := by
+        simpa [hleft, hright] using hℓn
+      exact Nat.le_of_add_le_add_right hineq
+    have hpos : 0 < Nat.choose (n - (ℓ - k)) k :=
+      Nat.choose_pos hk_le
+    exact Nat.succ_le_of_lt hpos
+  -- Умножаем меньший множитель на фактор ≥ 1 и подставляем равенство.
+  have hle :
+      Nat.choose n (ℓ - k)
+        ≤ Nat.choose n (ℓ - k) * Nat.choose (n - (ℓ - k)) k := by
+    simpa [Nat.mul_comm] using
+      (Nat.mul_le_mul_left (Nat.choose n (ℓ - k)) hdenom_pos)
+  -- Итоговое неравенство получаем из равенства `hmul`.
+  simpa [hmul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    using hle
+
+/--
+  Простая монотонность: произведение `ℓ - k` на остаток `n - ℓ + 1`
+  не превосходит произведения `ℓ` на расширенный остаток `n - ℓ + k + 1`.
+  Обе оценки непосредственно следуют из монотонности по каждому аргументу.
+-/
+lemma sub_mul_le_mul_add (n ℓ k : Nat) :
+    (ℓ - k) * (n - ℓ + 1) ≤ ℓ * (n - ℓ + k + 1) := by
+  have hleft : ℓ - k ≤ ℓ := Nat.sub_le _ _
+  have hright : n - ℓ + 1 ≤ n - ℓ + k + 1 := by
+    have : n - ℓ + 1 ≤ n - ℓ + 1 + k := Nat.le_add_right _ _
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+  exact Nat.mul_le_mul hleft hright
+
+/--
+  Версия рекуррентного соотношения для «сдвига» вниз на один шаг: если мы
+  уменьшаем число свободных литералов с `ℓ - k` до `ℓ - (k+1)`, то отношение
+  биномиальных коэффициентов выражается через фактор `(ℓ - k)/(n - ℓ + k + 1)`.
+-/
+lemma choose_sub_succ_mul
+    (n ℓ k : Nat) (hk : k < ℓ) (hℓn : ℓ ≤ n) :
+    (ℓ - k) * Nat.choose n (ℓ - k)
+      = (n - ℓ + k + 1) * Nat.choose n (ℓ - Nat.succ k) := by
+  classical
+  have hk_succ_le : Nat.succ k ≤ ℓ := Nat.succ_le_of_lt hk
+  have hleft : ℓ - Nat.succ k + 1 = ℓ - k := by
+    calc
+      ℓ - Nat.succ k + 1
+          = Nat.succ (ℓ - Nat.succ k) := rfl
+      _ = Nat.succ ℓ - Nat.succ k := (Nat.succ_sub hk_succ_le).symm
+      _ = ℓ - k := by simpa [Nat.succ_eq_add_one]
+            using (Nat.succ_sub_succ ℓ k)
+  have hright : n - (ℓ - Nat.succ k) = n - ℓ + k + 1 := by
+    calc
+      n - (ℓ - Nat.succ k)
+          = ((n - ℓ) + ℓ) - (ℓ - Nat.succ k) := by
+              simpa [Nat.sub_add_cancel hℓn, Nat.add_comm, Nat.add_left_comm,
+                Nat.add_assoc]
+      _ = (n - ℓ) + (ℓ - (ℓ - Nat.succ k)) :=
+              Nat.add_sub_assoc (Nat.sub_le _ _) (n - ℓ)
+      _ = (n - ℓ) + Nat.succ k := by
+              simpa using (Nat.sub_sub_self hk_succ_le)
+      _ = n - ℓ + k + 1 := by
+              simp [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+                Nat.succ_eq_add_one]
+  have h := Nat.choose_succ_right_eq (n := n) (k := ℓ - Nat.succ k)
+  simpa [hleft, hright, Nat.succ_eq_add_one, Nat.mul_comm,
+    Nat.mul_left_comm, Nat.mul_assoc]
+    using h
+
+/--
+  «p-biased» оценка отношения биномиальных коэффициентов: при фиксированных
+  `n` и `ℓ ≤ n` каждая ступень `k` не превосходит степени
+  `(ℓ / (n - ℓ + 1))^k`.  Доказательство — индукция по `k`, используя
+  классическую рекуррентную формулу `choose_succ_right_eq` и факт
+  `sub_mul_le_mul_add` для контроля одной ступени.
+-/
+lemma choose_sub_ratio_le_pow
+    (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    (Nat.choose n (ℓ - k) : ℝ≥0∞)
+      ≤ (Nat.choose n ℓ : ℝ≥0∞)
+          * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k := by
+  classical
+  revert ℓ
+  induction' k with k ih
+  · intro ℓ hk hℓn
+    simpa [Nat.sub_zero, pow_zero]
+  · intro ℓ hk hℓn
+    have hk_lt : k < ℓ := Nat.succ_le.mp hk
+    have hk_le : k ≤ ℓ := Nat.le_of_lt hk_lt
+    set ρ := ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) with hρ
+    have ρ_nonneg : 0 ≤ ρ := by simpa [hρ] using (bot_le : (0 : ℝ≥0∞) ≤ ρ)
+    have hchoose_nonneg : 0 ≤ (Nat.choose n (ℓ - k) : ℝ≥0∞) := by
+      simpa using (bot_le : (0 : ℝ≥0∞) ≤ (Nat.choose n (ℓ - k) : ℝ≥0∞))
+    have hy_pos : (0 : ℝ≥0∞) < (n - ℓ + k + 1 : ℝ≥0∞) := by
+      exact_mod_cast (Nat.succ_pos (n - ℓ + k))
+    have hx_pos : (0 : ℝ≥0∞) < (n - ℓ + 1 : ℝ≥0∞) := by
+      exact_mod_cast (Nat.succ_pos (n - ℓ))
+    have hy_ne : (n - ℓ + k + 1 : ℝ≥0∞) ≠ 0 := hy_pos.ne'
+    have hy_ne_top : (n - ℓ + k + 1 : ℝ≥0∞) ≠ ∞ := by
+      simpa using (show (↑(n - ℓ + k + 1) : ℝ≥0∞) ≠ ∞ from by simp)
+    have hx_ne : (n - ℓ + 1 : ℝ≥0∞) ≠ 0 := hx_pos.ne'
+    have hx_ne_top : (n - ℓ + 1 : ℝ≥0∞) ≠ ∞ := by
+      simpa using (show (↑(n - ℓ + 1) : ℝ≥0∞) ≠ ∞ from by simp)
+    have hnat := sub_mul_le_mul_add (n := n) (ℓ := ℓ) (k := k)
+    have hnat_cast :
+        ((ℓ - k : ℝ≥0∞) * (n - ℓ + 1 : ℝ≥0∞))
+          ≤ (ℓ : ℝ≥0∞) * (n - ℓ + k + 1 : ℝ≥0∞) := by
+      exact_mod_cast hnat
+    have htemp_div :
+        ((ℓ - k : ℝ≥0∞) * (n - ℓ + 1 : ℝ≥0∞))
+          / (n - ℓ + k + 1 : ℝ≥0∞)
+          ≤ (ℓ : ℝ≥0∞) := by
+      exact
+        (ENNReal.div_le_iff (h1 := hy_ne) (h2 := hy_ne_top)).2 hnat_cast
+    have hratio :
+        ((ℓ - k : ℝ≥0∞) / (n - ℓ + k + 1 : ℝ≥0∞))
+          ≤ ρ := by
+      refine
+        (ENNReal.le_div_iff_mul_le (h0 := Or.inl hx_ne)
+            (ht := Or.inl hx_ne_top)).2 ?_
+      simpa [hρ, div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+        using htemp_div
+    have hk_eq :
+        (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞)
+          = (Nat.choose n (ℓ - k) : ℝ≥0∞)
+              * ((ℓ - k : ℝ≥0∞)
+                  / (n - ℓ + k + 1 : ℝ≥0∞)) := by
+      have hmul_nat :=
+        choose_sub_succ_mul (n := n) (ℓ := ℓ) (k := k) hk_lt hℓn
+      have hcast :
+          ((ℓ - k : ℝ≥0∞) * (Nat.choose n (ℓ - k) : ℝ≥0∞))
+            = (n - ℓ + k + 1 : ℝ≥0∞)
+                * (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞) := by
+        simpa [mul_comm, mul_left_comm, mul_assoc]
+          using (by exact_mod_cast hmul_nat : _)
+      have hy_ne : (n - ℓ + k + 1 : ℝ≥0∞) ≠ 0 := hy_pos.ne'
+      have hy_cancel :
+          (n - ℓ + k + 1 : ℝ≥0∞)
+              * (n - ℓ + k + 1 : ℝ≥0∞)⁻¹
+            = 1 := ENNReal.mul_inv_cancel hy_ne hy_ne_top
+      calc
+        (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞)
+            = (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞) * 1 := by
+                simpa
+        _ = (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞)
+                * ((n - ℓ + k + 1 : ℝ≥0∞)
+                    * (n - ℓ + k + 1 : ℝ≥0∞)⁻¹) := by
+                simpa [hy_cancel, mul_comm, mul_left_comm, mul_assoc]
+                    using
+                      (congrArg
+                          (fun x =>
+                            (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞) * x)
+                          hy_cancel.symm)
+        _ = ((n - ℓ + k + 1 : ℝ≥0∞)
+                * (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞))
+                * (n - ℓ + k + 1 : ℝ≥0∞)⁻¹ := by
+                    simp [mul_comm, mul_left_comm, mul_assoc]
+        _ = ((ℓ - k : ℝ≥0∞)
+                * (Nat.choose n (ℓ - k) : ℝ≥0∞))
+                * (n - ℓ + k + 1 : ℝ≥0∞)⁻¹ := by
+                    simpa [hcast, mul_comm, mul_left_comm, mul_assoc]
+        _ = (Nat.choose n (ℓ - k) : ℝ≥0∞)
+                * ((ℓ - k : ℝ≥0∞)
+                    / (n - ℓ + k + 1 : ℝ≥0∞)) := by
+                    simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    have hk_bound :
+        (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞)
+          ≤ (Nat.choose n (ℓ - k) : ℝ≥0∞) * ρ := by
+      have hmul := mul_le_mul_of_nonneg_left hratio hchoose_nonneg
+      simpa [hk_eq, mul_comm, mul_left_comm, mul_assoc]
+        using hmul
+    have hIH := ih ℓ hk_le hℓn
+    have hIH_mul := mul_le_mul_of_nonneg_right hIH ρ_nonneg
+    have hpow_succ :
+        (Nat.choose n ℓ : ℝ≥0∞) * ρ ^ k * ρ
+          = (Nat.choose n ℓ : ℝ≥0∞) * ρ ^ Nat.succ k := by
+      simp [hρ, pow_succ, mul_comm, mul_left_comm, mul_assoc]
+    have hfinal :
+        (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞)
+          ≤ (Nat.choose n ℓ : ℝ≥0∞) * ρ ^ Nat.succ k := by
+      calc
+        (Nat.choose n (ℓ - Nat.succ k) : ℝ≥0∞)
+            ≤ (Nat.choose n (ℓ - k) : ℝ≥0∞) * ρ := hk_bound
+        _ ≤ (Nat.choose n ℓ : ℝ≥0∞) * ρ ^ k * ρ := hIH_mul
+        _ = (Nat.choose n ℓ : ℝ≥0∞) * ρ ^ Nat.succ k := hpow_succ
+    simpa [hρ] using hfinal
+
+
+/--
+  Простая оценка «сдвига» биномиального коэффициента по верхнему индексу.
+  Для фиксированных `w` и `t ≤ w` увеличение верхнего аргумента на `j` не
+  превосходит произведения `choose w t` и биномиального коэффициента от
+  остатка `w - t`.  Это классическое равенство Vandermonde`а, переписанное в
+  виде неравенства за счёт множителя `choose (t + j) t ≥ 1`.
+-/
+lemma choose_add_le_mul
+    (w t j : Nat) (htw : t ≤ w) (hj : j ≤ w - t) :
+    Nat.choose w (t + j) ≤ Nat.choose w t * Nat.choose (w - t) j := by
+  classical
+  -- Обрабатываем частный случай `j = 0` отдельно.
+  by_cases hjzero : j = 0
+  · subst hjzero
+    simpa using (Nat.mul_one (Nat.choose w t)).le
+  -- Общий случай опирается на формулу Vandermonde`а.
+  have ht_le : t ≤ t + j := Nat.le_add_right _ _
+  have htj_le : t + j ≤ w := by
+    have := Nat.add_le_add_left hj t
+    have hrewrite : t + (w - t) = w := Nat.add_sub_of_le htw
+    simpa [hrewrite] using this
+  have hmul :=
+    Nat.choose_mul (n := w) (k := t + j) (s := t)
+      (by exact htj_le) (by exact ht_le)
+  have hrewrite :
+      Nat.choose w (t + j) * Nat.choose (t + j) t
+        = Nat.choose w t * Nat.choose (w - t) j := by
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, Nat.add_sub_cancel]
+      using hmul
+  have hpos : 0 < Nat.choose (t + j) t := by
+    simpa using Nat.choose_pos ht_le
+  have hone : 1 ≤ Nat.choose (t + j) t := Nat.succ_le_of_lt hpos
+  have hle :
+      Nat.choose w (t + j)
+        ≤ Nat.choose w (t + j) * Nat.choose (t + j) t := by
+    simpa [Nat.mul_comm] using Nat.mul_le_mul_left (Nat.choose w (t + j)) hone
+  simpa [hrewrite, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hle
 
 
 /--

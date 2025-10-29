@@ -1747,6 +1747,1611 @@ lemma badMass_le_formulaExplicit (F : Core.CNF n w) (ℓ t : Nat)
     (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
   exact hmass.trans hexplicit
 
+/--
+  Уточняем предыдущую оценку, явно подставляя количество точных рестрикций
+  `|Axis n ℓ × BitVec n| = \binom{n}{ℓ} · 2^n`.  Такая форма полезна при дальнейших
+  числовых оценках, поскольку знаменатель теперь выражен через привычные
+  биномиальные коэффициенты и степени двойки.-/
+lemma badMass_le_formulaExplicit_nat (F : Core.CNF n w) (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ ((1 : ℝ≥0∞)
+          / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.map fun C =>
+                (∑ k in Finset.Icc t
+                        (Nat.min ℓ (clauseIndexFinset (n := n) C).card),
+                    (Nat.choose (clauseIndexFinset (n := n) C).card k
+                        * Nat.choose
+                            (n - (clauseIndexFinset (n := n) C).card)
+                            (ℓ - k)
+                        * Nat.pow 2
+                            (n - (clauseIndexFinset (n := n) C).card + k)
+                      : ℝ≥0∞))).sum := by
+  classical
+  have hmass := badMass_le_formulaExplicit
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  -- Переписываем нормирующий множитель через явные формулы для мощности множества рестрикций.
+  have hrewrite :
+      ((1 : ℝ≥0∞) / Fintype.card (Axis n ℓ × BitVec n))
+        = ((1 : ℝ≥0∞)
+            / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))) := by
+    simpa [RandomRestriction.axis_bitvec_card_ennreal (n := n) (ℓ := ℓ)]
+  simpa [hrewrite] using hmass
+
+/--
+  Универсальный профиль для вклада одной клаузы в оценку `badMass`, зависящий
+  только от глобальных параметров `n`, `w`, `ℓ` и `t`.  В дальнейшем мы покажем,
+  что каждая конкретная клауза даёт не больший вклад, чем этот профиль, что
+  позволит вынести число клауз за знак суммы.
+-/
+def clauseWidthProfile (n w ℓ t : Nat) : ℝ≥0∞ :=
+  ∑ k in Finset.Icc t (Nat.min ℓ w),
+      ((Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 k : Nat) : ℝ≥0∞)
+
+/--
+  Нормированный профиль: масса вклада одной клаузы после деления на вес
+  отдельной точной рестрикции `1 / (\binom{n}{ℓ} · 2^n)`.
+-/
+def clauseWidthProfileNormalized (n w ℓ t : Nat) : ℝ≥0∞ :=
+  clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)
+    / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))
+
+/--
+  Вероятностный вес события «фиксированное подмножество из `k` литералов клаузы`
+  остаётся свободным», нормированный относительно распределения
+  `restrictionUniform`.  Это определение изолирует «базовый» множитель, не
+  зависящий от конкретной клаузы, и облегчает дальнейшее сравнение с
+  классическими p-biased оценками.
+-/
+def exactRestrictionHitWeight (n ℓ k : Nat) : ℝ≥0∞ :=
+  ((Nat.choose n (ℓ - k) : ℝ≥0∞) * (2 ^ k : ℝ≥0∞))
+    / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))
+
+/--
+  Нормированный профиль «распадается» на произведение количества подмножеств
+  ширины `k` и универсального веса события `exactRestrictionHitWeight`.  Такой
+  вид подчёркивает вероятностную природу оценки: суммирование происходит по
+  всем потенциальным наборам «живых» литералов.
+-/
+lemma clauseWidthProfileNormalized_eq_sum_hitWeight (n w ℓ t : Nat) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      =
+        ∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+            * exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k) := by
+  classical
+  unfold clauseWidthProfileNormalized clauseWidthProfile
+  simp [Finset.mul_sum, Finset.sum_mul, exactRestrictionHitWeight,
+    div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+
+/--
+  Грубая оценка для универсального веса: если мы фиксируем подмножество из `k`
+  свободных литералов, то соответствующий вклад не превосходит произведения
+  «локального» биномиального коэффициента `choose ℓ k` и нормирующего фактора
+  `2^k / 2^n`.  Эта форма убирает зависимость от всей формулы и позволяет
+  дальше сравнивать с классической `p`-biased моделью. -/
+lemma exactRestrictionHitWeight_le_choose
+    (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k)
+      ≤ ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞))
+          / (2 ^ n : ℝ≥0∞) := by
+  classical
+  -- Сначала переносим оценку из `Nat` в `ℝ≥0∞`.
+  have hchoose_le :
+      (Nat.choose n (ℓ - k) : ℝ≥0∞)
+        ≤ (Nat.choose n ℓ : ℝ≥0∞) * (Nat.choose ℓ (ℓ - k) : ℝ≥0∞) := by
+    exact_mod_cast Counting.choose_sub_le_mul (n := n) (ℓ := ℓ) (k := k) hk hℓn
+  -- Коэффициент `choose n ℓ` положителен, поэтому можно домножить на обратный.
+  have hchoose_pos : (0 : ℝ≥0∞) < (Nat.choose n ℓ : ℝ≥0∞) := by
+    exact_mod_cast Nat.choose_pos hℓn
+  have hratio' :
+      (Nat.choose n (ℓ - k) : ℝ≥0∞) * (Nat.choose n ℓ : ℝ≥0∞)⁻¹
+        ≤ (Nat.choose ℓ (ℓ - k) : ℝ≥0∞) := by
+    have hnonneg : 0 ≤ (Nat.choose n ℓ : ℝ≥0∞)⁻¹ := by
+      exact inv_nonneg.mpr (le_of_lt hchoose_pos)
+    have := mul_le_mul_of_nonneg_right hchoose_le hnonneg
+    simpa [mul_comm, mul_left_comm, mul_assoc] using this
+  have hratio :
+      (Nat.choose n (ℓ - k) : ℝ≥0∞) * (Nat.choose n ℓ : ℝ≥0∞)⁻¹
+        ≤ (Nat.choose ℓ k : ℝ≥0∞) := by
+    simpa [Nat.choose_symm (n := ℓ) (k := k) hk]
+      using hratio'
+  -- Переходим к нормированному весу и домножаем на геометрический фактор.
+  have hpow_nonneg : 0 ≤ (2 ^ k : ℝ≥0∞) := by
+    exact_mod_cast (Nat.zero_le (2 ^ k))
+  have hmul := mul_le_mul_of_nonneg_left hratio hpow_nonneg
+  -- Выписываем определение веса и сокращаем общий нормирующий множитель.
+  unfold exactRestrictionHitWeight
+  -- После упрощения получаем целевое неравенство.
+  simpa [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    using hmul
+
+/--
+  Улучшенная оценка для универсального веса: вместо локального
+  коэффициента `choose ℓ k` мы используем отношение `ℓ / (n - ℓ + 1)`,
+  которое соответствует классической p-biased модели. -/
+lemma exactRestrictionHitWeight_le_density
+    (n ℓ k : Nat) (hk : k ≤ ℓ) (hℓn : ℓ ≤ n) :
+    exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k)
+      ≤ ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+          * ((2 ^ k : ℝ≥0∞) / (2 ^ n : ℝ≥0∞)) := by
+  classical
+  have hchoose := Counting.choose_sub_ratio_le_pow
+    (n := n) (ℓ := ℓ) (k := k) hk hℓn
+  have hnum := mul_le_mul_of_nonneg_right hchoose
+    (show 0 ≤ (2 ^ k : ℝ≥0∞) from by exact_mod_cast Nat.zero_le (2 ^ k))
+  have hchoose_pos_nat : 0 < Nat.choose n ℓ := by
+    by_cases hℓ0 : ℓ = 0
+    · simp [hℓ0]
+    · have hpos : 0 < ℓ := Nat.pos_of_ne_zero hℓ0
+      exact Nat.choose_pos hpos hℓn
+  have hchoose_pos : (0 : ℝ≥0∞) < (Nat.choose n ℓ : ℝ≥0∞) := by
+    exact_mod_cast hchoose_pos_nat
+  have hpow_pos : (0 : ℝ≥0∞) < (2 ^ n : ℝ≥0∞) := by
+    exact_mod_cast Nat.pos_pow_of_pos _ (by decide : 0 < 2)
+  have hden_inv_nonneg :
+      0 ≤ ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))⁻¹ :=
+    (inv_nonneg).mpr (le_of_lt (mul_pos_of_pos_of_pos hchoose_pos hpow_pos))
+  have hbound :=
+    mul_le_mul_of_nonneg_right hnum hden_inv_nonneg
+  have hrewrite := by
+    simp [exactRestrictionHitWeight, div_eq_mul_inv, mul_comm, mul_left_comm,
+      mul_assoc]
+  have htarget :=
+    calc
+      exactRestrictionHitWeight (n := n) (ℓ := ℓ) (k := k)
+          = ((Nat.choose n (ℓ - k) : ℝ≥0∞) * (2 ^ k : ℝ≥0∞))
+              * ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))⁻¹ := by
+                simpa [exactRestrictionHitWeight, div_eq_mul_inv, mul_comm,
+                  mul_left_comm, mul_assoc]
+      _ ≤ ((Nat.choose n ℓ : ℝ≥0∞)
+              * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+              * (2 ^ k : ℝ≥0∞))
+              * ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))⁻¹ := by
+            simpa [mul_comm, mul_left_comm, mul_assoc]
+              using hbound
+      _ = ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+              * ((2 ^ k : ℝ≥0∞) / (2 ^ n : ℝ≥0∞)) := by
+            have hden_ne :
+                (Nat.choose n ℓ : ℝ≥0∞) ≠ 0 := hchoose_pos.ne'
+            have hpow_ne : (2 ^ n : ℝ≥0∞) ≠ 0 := hpow_pos.ne'
+            simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc,
+              hden_ne, hpow_ne]
+  exact htarget
+/--
+  Переписываем профиль через «локальные» биномиальные коэффициенты.
+  Каждое слагаемое ограничивается произведением `choose w k` и оценки из
+  `exactRestrictionHitWeight_le_choose`. В результате получаем форму, в
+  которой глобальная нормировка `1 / 2^n` вынесена за знак суммы. -/
+lemma clauseWidthProfileNormalized_le_local
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+            * ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)
+                / (2 ^ n : ℝ≥0∞)) := by
+  classical
+  -- Сводим задачу к покомпонентному сравнению слагаемых.
+  refine (clauseWidthProfileNormalized_eq_sum_hitWeight (n := n)
+      (w := w) (ℓ := ℓ) (t := t)).trans_le ?_
+  refine Finset.sum_le_sum ?_
+  intro k hk
+  -- Принадлежность диапазону `Icc` гарантирует `k ≤ ℓ`.
+  have hk_le_min : k ≤ Nat.min ℓ w := (Finset.mem_Icc.mp hk).2
+  have hkℓ : k ≤ ℓ := le_trans hk_le_min (Nat.min_le_left _ _)
+  -- Применяем локальную оценку для универсального веса.
+  have hterm := exactRestrictionHitWeight_le_choose
+      (n := n) (ℓ := ℓ) (k := k) hkℓ hℓn
+  -- Множитель `choose w k` неотрицателен, так что мы можем домножить неравенство.
+  have hnonneg : 0 ≤ (Nat.choose w k : ℝ≥0∞) := by
+    exact_mod_cast (Nat.zero_le (Nat.choose w k))
+  have := mul_le_mul_of_nonneg_left hterm hnonneg
+  -- Убираем лишние скобки, чтобы получить ровно то слагаемое, что стоит в сумме.
+  simpa [mul_comm, mul_left_comm, mul_assoc, div_eq_mul_inv]
+    using this
+
+/--
+  Эквивалентная форма предыдущей оценки: выносим общий множитель `1 / 2^n`
+  и оставляем внутри суммы лишь комбинацию «локальных» величин. -/
+lemma clauseWidthProfileNormalized_le_local_factored
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞)
+                * (Nat.choose ℓ k : ℝ≥0∞)
+                * (2 ^ k : ℝ≥0∞) := by
+  classical
+  -- Сначала применяем предыдущую лемму.
+  have hlocal := clauseWidthProfileNormalized_le_local
+      (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn
+  -- Переписываем правую часть, вынося константу `1 / 2^n` за знак суммы.
+  have hrewrite :
+      (∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+            * ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)
+                / (2 ^ n : ℝ≥0∞)))
+        = ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose w k : ℝ≥0∞)
+                  * (Nat.choose ℓ k : ℝ≥0∞)
+                  * (2 ^ k : ℝ≥0∞) := by
+    -- Каждое слагаемое разделяется на общий множитель.
+    have hconst :
+        ∀ k ∈ Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w k : ℝ≥0∞)
+              * ((Nat.choose ℓ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)
+                  / (2 ^ n : ℝ≥0∞))
+            = ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+                * ((Nat.choose w k : ℝ≥0∞)
+                    * (Nat.choose ℓ k : ℝ≥0∞)
+                    * (2 ^ k : ℝ≥0∞)) := by
+      intro k hk
+      simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    -- Теперь сводим обе стороны к сумме по одной и той же функции.
+    have := Finset.sum_congr rfl hconst
+    simpa [Finset.mul_sum, mul_comm, mul_left_comm, mul_assoc]
+      using this
+  -- Заключительный шаг: подставляем переписанную правую часть.
+  simpa [hrewrite]
+    using hlocal
+
+/--
+  Используем «p-biased» оценку универсального веса и выносим общий множитель
+  `1 / 2^n`, что приводит к сумме по степеням `(2ℓ / (n - ℓ + 1))^k`. -/
+lemma clauseWidthProfileNormalized_le_density
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞)
+                * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+                * (2 ^ k : ℝ≥0∞) := by
+  classical
+  have hsum := clauseWidthProfileNormalized_eq_sum_hitWeight
+    (n := n) (w := w) (ℓ := ℓ) (t := t)
+  refine hsum.trans_le ?_
+  refine Finset.sum_le_sum ?_
+  intro k hk
+  have hk_le : k ≤ Nat.min ℓ w := (Finset.mem_Icc.mp hk).2
+  have hkℓ : k ≤ ℓ := le_trans hk_le (Nat.min_le_left _ _)
+  have hkw : k ≤ w := le_trans hk_le (Nat.min_le_right _ _)
+  have hweight := exactRestrictionHitWeight_le_density
+    (n := n) (ℓ := ℓ) (k := k) hkℓ hℓn
+  have hnonneg : 0 ≤ (Nat.choose w k : ℝ≥0∞) := by
+    exact_mod_cast Nat.zero_le (Nat.choose w k)
+  have := mul_le_mul_of_nonneg_left hweight hnonneg
+  have hrewrite :
+      ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+          * ((2 ^ k : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+        = ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+            * (2 ^ k : ℝ≥0∞) := by
+    simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+  simpa [div_eq_mul_inv, hrewrite, mul_comm, mul_left_comm, mul_assoc]
+    using this
+
+/-!
+### Дополнительная оценка через фиксированную мощность `t`
+
+Используя лемму `choose_add_le_mul`, можно вынести из суммы постоянный
+биномиальный коэффициент `choose w t`.  Это позволяет переписать нормированную
+массу через меньший параметр `t` и подготовить почву для классической формы
+switching-оценки.
+-/
+
+/--
+  Ограничиваем нормированный профиль через фиксированную мощность `t`: число
+  клауз ширины ≥ `t` оценивается биномиальным коэффициентом `choose w t`, а вся
+  геометрическая часть сводится к сумме по остаточным индексам `k - t`.
+-/
+lemma clauseWidthProfileNormalized_le_choose_factor
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose (w - t) (k - t) : ℝ≥0∞)
+                * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ (k - t) := by
+  classical
+  -- Обозначим геометрический множитель и упростим исходную оценку.
+  set θ := ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞) with hθdef
+  have hdensity := clauseWidthProfileNormalized_le_density
+    (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn
+  have hpow_rewrite :
+      ∀ k, ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+          * (2 ^ k : ℝ≥0∞)
+        = θ ^ k := by
+    intro k
+    have := (mul_pow
+      ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) (2 : ℝ≥0∞) k).symm
+    simpa [θ, hθdef, mul_comm, mul_left_comm, mul_assoc] using this
+  have hdensity' : clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞) * θ ^ k := by
+    refine hdensity.trans ?_
+    have hrewrite :
+        (∑ k in Finset.Icc t (Nat.min ℓ w),
+            (Nat.choose w k : ℝ≥0∞)
+              * ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) ^ k
+              * (2 ^ k : ℝ≥0∞))
+          = ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞) * θ ^ k := by
+      refine Finset.sum_congr rfl ?_
+      intro k hk
+      simpa [hpow_rewrite, mul_comm, mul_left_comm, mul_assoc]
+    simpa [hrewrite] using le_of_eq rfl
+  -- Покомпонентная оценка каждого слагаемого с помощью `choose_add_le_mul`.
+  have hterm :
+      ∀ k ∈ Finset.Icc t (Nat.min ℓ w),
+        (Nat.choose w k : ℝ≥0∞) * θ ^ k
+          ≤ (Nat.choose w t : ℝ≥0∞) * θ ^ t
+              * ((Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)) := by
+    intro k hk
+    have hk_bounds := Finset.mem_Icc.mp hk
+    have htk : t ≤ k := hk_bounds.1
+    have hk_le_w : k ≤ w :=
+      le_trans hk_bounds.2 (Nat.min_le_right ℓ w)
+    have hk_choose :
+        Nat.choose w k ≤ Nat.choose w t * Nat.choose (w - t) (k - t) := by
+      have hj : k - t ≤ w - t := Nat.sub_le_sub_right hk_le_w t
+      have := choose_add_le_mul (w := w) (t := t) (j := k - t) htw hj
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, Nat.add_sub_cancel]
+        using this
+    have hchoose_cast :
+        (Nat.choose w k : ℝ≥0∞)
+          ≤ (Nat.choose w t : ℝ≥0∞)
+              * (Nat.choose (w - t) (k - t) : ℝ≥0∞) :=
+      by exact_mod_cast hk_choose
+    have hpow_nonneg : 0 ≤ θ ^ k := by
+      simpa using pow_nonneg (by exact bot_le : (0 : ℝ≥0∞) ≤ θ) k
+    have hmul := mul_le_mul_of_nonneg_right hchoose_cast hpow_nonneg
+    have hpow_split : θ ^ k = θ ^ t * θ ^ (k - t) := by
+      have hrewrite : k = t + (k - t) := Nat.add_sub_of_le htk
+      simp [hrewrite, pow_add, mul_comm, mul_left_comm, mul_assoc]
+    simpa [hpow_split, mul_comm, mul_left_comm, mul_assoc]
+      using hmul
+  -- Суммируем оценки и выносим общий множитель `choose w t * θ^t`.
+  have hsum := Finset.sum_le_sum (by
+    intro k hk; simpa using hterm k hk)
+  have hsum_factored :
+      (∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose w t : ℝ≥0∞) * θ ^ t
+            * ((Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)))
+        = (Nat.choose w t : ℝ≥0∞) * θ ^ t
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+    simp [Finset.mul_sum, mul_comm, mul_left_comm, mul_assoc]
+  have hsum_le :
+      (∑ k in Finset.Icc t (Nat.min ℓ w), (Nat.choose w k : ℝ≥0∞) * θ ^ k)
+        ≤ (Nat.choose w t : ℝ≥0∞) * θ ^ t
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+    simpa [hsum_factored] using hsum
+  -- Возвращаемся к нормированному профилю и домножаем на общий коэффициент.
+  have hconst_nonneg :
+      0 ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞)) := by
+    have : 0 ≤ (1 : ℝ≥0∞) := zero_le_one
+    simpa using this
+  have htarget :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * ∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose w k : ℝ≥0∞) * θ ^ k
+        ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ((Nat.choose w t : ℝ≥0∞) * θ ^ t)
+            * ∑ k in Finset.Icc t (Nat.min ℓ w),
+                (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+    have := mul_le_mul_of_nonneg_left hsum_le hconst_nonneg
+    simpa [mul_comm, mul_left_comm, mul_assoc] using this
+  refine hdensity'.trans ?_
+  simpa [θ, hθdef, mul_comm, mul_left_comm, mul_assoc]
+    using htarget
+
+/--
+  Переводим сумму геометрических коэффициентов в явное выражение через
+  `(1 + θ)^(w - t)`.  Это делает оценку более компактной и подчёркивает
+  экспоненциальное убывание по `t`.
+-/
+lemma clauseWidthProfileNormalized_le_choose_geom
+    (n w ℓ t : Nat) (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w) :
+    clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+      ≤
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1
+              + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t) := by
+  classical
+  -- Начинаем с более грубой оценки, где сумма ещё присутствует явно.
+  have hfactor := clauseWidthProfileNormalized_le_choose_factor
+    (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn htℓ htw
+  set θ := ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞) with hθdef
+  -- Уточняем суммарное неравенство, заменяя сумму на `(1 + θ)^(w - t)`.
+  have hsum_bound :
+      (∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+        ≤ (1 + θ) ^ (w - t) := by
+    have hsubset :
+        Finset.Icc t (Nat.min ℓ w) ⊆ Finset.Icc t w := by
+      intro k hk
+      have hk_bounds := Finset.mem_Icc.mp hk
+      exact Finset.mem_Icc.mpr
+        ⟨hk_bounds.1, le_trans hk_bounds.2 (Nat.min_le_right _ _)⟩
+    have hnonneg :
+        ∀ k ∈ Finset.Icc t w,
+          0 ≤ (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t) := by
+      intro k hk
+      exact zero_le _
+    have hsum_le :
+        (∑ k in Finset.Icc t (Nat.min ℓ w),
+            (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+          ≤ (∑ k in Finset.Icc t w,
+              (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)) :=
+      Finset.sum_le_sum_of_subset_of_nonneg hsubset hnonneg
+    have hrewrite :
+        (∑ k in Finset.Icc t w,
+            (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+          = (∑ j ∈ Finset.range (w - t).succ,
+              (Nat.choose (w - t) j : ℝ≥0∞) * θ ^ j) := by
+      have := Counting.sum_Icc_choose_shift_eq (t := t) (d := w - t) (θ := θ)
+      have hrewrite_target : t + (w - t) = w := Nat.add_sub_of_le htw
+      simpa [θ, hθdef, hrewrite_target, Nat.add_comm, Nat.add_left_comm,
+        Nat.add_assoc]
+        using this
+    have hbinom := Counting.sum_range_choose_mul_pow_eq
+      (d := w - t) (θ := θ)
+    calc
+      (∑ k in Finset.Icc t (Nat.min ℓ w),
+          (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+          ≤ (∑ k in Finset.Icc t w,
+              (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t)) :=
+        hsum_le
+      _ = (∑ j ∈ Finset.range (w - t).succ,
+              (Nat.choose (w - t) j : ℝ≥0∞) * θ ^ j) := hrewrite
+      _ = (1 + θ) ^ (w - t) := hbinom
+  -- В исходной оценке заменяем сумму на полученное экспоненциальное выражение.
+  have hconst_nonneg :
+      0 ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * (Nat.choose w t : ℝ≥0∞)
+            * θ ^ t := by
+    exact zero_le _
+  have hmul := mul_le_mul_of_nonneg_left hsum_bound hconst_nonneg
+  have htarget :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * θ ^ t
+          * (∑ k in Finset.Icc t (Nat.min ℓ w),
+              (Nat.choose (w - t) (k - t) : ℝ≥0∞) * θ ^ (k - t))
+        ≤ ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * (Nat.choose w t : ℝ≥0∞)
+            * θ ^ t
+            * (1 + θ) ^ (w - t) := by
+    simpa [mul_comm, mul_left_comm, mul_assoc]
+      using hmul
+  refine hfactor.trans ?_
+  simpa [θ, hθdef, mul_comm, mul_left_comm, mul_assoc]
+    using htarget
+
+lemma clauseExplicit_term_le_profile
+    {F : Core.CNF n w} {C : Core.CnfClause n}
+    (hC : C ∈ F.clauses) (ℓ t k : Nat)
+    (hk : k ∈ Finset.Icc t (Nat.min ℓ (clauseIndexFinset (n := n) C).card)) :
+    ((Nat.choose (clauseIndexFinset (n := n) C).card k
+          * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+          * Nat.pow 2
+              (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+        : ℝ≥0∞)
+      ≤ ((Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 (n + k) : Nat)
+            : ℝ≥0∞) := by
+  classical
+  have hwidth := clauseIndexFinset_card_le_width_of_mem
+    (n := n) (w := w) (F := F) (C := C) hC
+  have hchoose_clause :
+      Nat.choose (clauseIndexFinset (n := n) C).card k
+        ≤ Nat.choose w k :=
+    Counting.choose_le_of_le
+      (m := (clauseIndexFinset (n := n) C).card) (n := w) (k := k)
+      (by exact hwidth)
+  have hchoose_rest :
+      Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+        ≤ Nat.choose n (ℓ - k) :=
+    Counting.choose_le_of_le
+      (m := n - (clauseIndexFinset (n := n) C).card) (n := n)
+      (k := ℓ - k)
+      (Nat.sub_le _ _)
+  have hpow_le :
+      Nat.pow 2 (n - (clauseIndexFinset (n := n) C).card + k)
+        ≤ Nat.pow 2 (n + k) := by
+    have hmono :
+        n - (clauseIndexFinset (n := n) C).card + k ≤ n + k := by
+      exact Nat.add_le_add_right
+        (Nat.sub_le _ _) _
+    exact Nat.pow_le_pow_of_le_left
+      (by decide : (0 : Nat) < 2)
+      hmono
+  -- Переходим к неравенству на ℕ и затем поднимаем его в ℝ≥0∞.
+  have hnat :
+      Nat.choose (clauseIndexFinset (n := n) C).card k
+          * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+          * Nat.pow 2 (n - (clauseIndexFinset (n := n) C).card + k)
+        ≤ Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 (n + k) := by
+    have hmul :=
+      mul_le_mul hchoose_clause
+        (mul_le_mul hchoose_rest hpow_le
+          (Nat.zero_le _) (Nat.zero_le _))
+        (Nat.zero_le _) (Nat.zero_le _)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
+  exact_mod_cast hnat
+
+lemma clauseExplicit_sum_le_profile
+    {F : Core.CNF n w} {C : Core.CnfClause n}
+    (hC : C ∈ F.clauses) (ℓ t : Nat) :
+    (∑ k in Finset.Icc t (Nat.min ℓ (clauseIndexFinset (n := n) C).card),
+        ((Nat.choose (clauseIndexFinset (n := n) C).card k
+            * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+            * Nat.pow 2
+                (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+              : ℝ≥0∞))
+      ≤ clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+  classical
+  have hsubset :
+      Finset.Icc t (Nat.min ℓ (clauseIndexFinset (n := n) C).card)
+        ⊆ Finset.Icc t (Nat.min ℓ w) := by
+    intro k hk
+    have hk_le :
+        k ≤ Nat.min ℓ (clauseIndexFinset (n := n) C).card :=
+      (Finset.mem_Icc.mp hk).2
+    have hmin_le :
+        Nat.min ℓ (clauseIndexFinset (n := n) C).card
+          ≤ Nat.min ℓ w :=
+      Nat.min_le_min le_rfl
+        (clauseIndexFinset_card_le_width_of_mem
+          (n := n) (w := w) (F := F) (C := C) hC)
+    have hk_upper : k ≤ Nat.min ℓ w :=
+      le_trans hk_le hmin_le
+    have hk_lower : t ≤ k := (Finset.mem_Icc.mp hk).1
+    exact Finset.mem_Icc.mpr ⟨hk_lower, hk_upper⟩
+  refine
+    Finset.sum_le_sum_of_subset_of_nonneg
+      (f := fun k =>
+        ((Nat.choose (clauseIndexFinset (n := n) C).card k
+            * Nat.choose (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+            * Nat.pow 2
+                (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+              : ℝ≥0∞))
+      (g := fun k =>
+        ((Nat.choose w k * Nat.choose n (ℓ - k) * Nat.pow 2 (n + k) : Nat)
+            : ℝ≥0∞))
+      hsubset ?_
+  · intro k hk
+    exact clauseExplicit_term_le_profile
+      (n := n) (w := w) (F := F) (C := C) hC ℓ t k hk
+  · intro k hk
+    exact zero_le _
+
+lemma List.sum_map_le_length_mul
+    {α : Type _} (l : List α) (f : α → ℝ≥0∞) (a : ℝ≥0∞)
+    (hle : ∀ x ∈ l, f x ≤ a) :
+    (l.map f).sum ≤ (l.length : ℝ≥0∞) * a := by
+  classical
+  induction l with
+  | nil =>
+      simp
+  | cons x xs ih =>
+      have hx_le : f x ≤ a := hle _ (List.mem_cons_self _ _)
+      have htail : (xs.map f).sum ≤ (xs.length : ℝ≥0∞) * a :=
+        ih (by
+          intro y hy
+          exact hle y (List.mem_cons_of_mem _ hy))
+      calc
+        ((x :: xs).map f).sum
+            = f x + (xs.map f).sum := by simp
+        _ ≤ a + (xs.map f).sum := by exact add_le_add_right hx_le _
+        _ ≤ a + (xs.length : ℝ≥0∞) * a :=
+          add_le_add_left htail _
+        _ = ((Nat.succ xs.length : Nat) : ℝ≥0∞) * a := by
+          simp [Nat.succ_eq_add_one, add_comm, add_left_comm, add_assoc,
+            mul_add, add_mul]
+
+/--
+  Выносим число клауз за знак суммы: каждая клауза даёт вклад, не превосходящий
+  `clauseWidthProfile`, поэтому суммарная величина ограничена произведением
+  `(#clauses) · clauseWidthProfile`.
+-/
+lemma badMass_le_clauseCount_profile (F : Core.CNF n w) (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ ((1 : ℝ≥0∞)
+            / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.length : ℝ≥0∞)
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)) := by
+  classical
+  have hmass := badMass_le_formulaExplicit_nat
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  have hprofile :
+      (F.clauses.map fun C =>
+          (∑ k in Finset.Icc t
+              (Nat.min ℓ (clauseIndexFinset (n := n) C).card),
+            ((Nat.choose (clauseIndexFinset (n := n) C).card k
+                * Nat.choose
+                    (n - (clauseIndexFinset (n := n) C).card) (ℓ - k)
+                * Nat.pow 2
+                    (n - (clauseIndexFinset (n := n) C).card + k) : Nat)
+                  : ℝ≥0∞)))
+        .sum
+        ≤ (F.clauses.length : ℝ≥0∞)
+            * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+    refine List.sum_map_le_length_mul _ _ _ ?_
+    intro C hC
+    exact clauseExplicit_sum_le_profile
+      (n := n) (w := w) (F := F) (C := C) hC ℓ t
+  have hnonneg :
+      0 ≤ ((1 : ℝ≥0∞)
+              / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))) := by
+    have : 0 ≤ (1 : ℝ≥0∞) := zero_le_one
+    simpa using this
+  refine hmass.trans ?_
+  have :=
+    mul_le_mul_of_nonneg_left hprofile hnonneg
+  simpa [clauseWidthProfile]
+    using this
+
+lemma badMass_le_clauseCount_profileNormalized (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ (F.clauses.length : ℝ≥0∞)
+          * clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+  classical
+  have hbase := badMass_le_clauseCount_profile
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  have hrewrite :
+      ((1 : ℝ≥0∞)
+          / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.length : ℝ≥0∞)
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t))
+        = (F.clauses.length : ℝ≥0∞)
+            * clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t) := by
+    unfold clauseWidthProfileNormalized
+    have hdiv :
+        (((1 : ℝ≥0∞)
+            / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t))
+          = clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)
+              / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)) := by
+      rfl
+    calc
+      ((1 : ℝ≥0∞)
+          / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+          * ((F.clauses.length : ℝ≥0∞)
+              * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t))
+        = (F.clauses.length : ℝ≥0∞)
+            * (((1 : ℝ≥0∞)
+                  / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞)))
+                  * clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)) := by
+          ring_nf
+      _ = (F.clauses.length : ℝ≥0∞)
+            * (clauseWidthProfile (n := n) (w := w) (ℓ := ℓ) (t := t)
+                / ((Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞))) := by
+          simpa [hdiv]
+
+  simpa [hrewrite] using hbase
+
+/--
+  Глобальная оценка для массы «плохих» рестрикций через число клауз и
+  экспоненциальный множитель `(1 + θ)^(w - t)`.  Это точная форма
+  switching-оценки в модели exact-ℓ с явным p-biased параметром `θ`.
+-/
+lemma badMass_le_clauseCount_geom (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t)
+    (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ (F.clauses.length : ℝ≥0∞)
+          * ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t) := by
+  classical
+  have hbase := badMass_le_clauseCount_profileNormalized
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) hsubset
+  have hprofile := clauseWidthProfileNormalized_le_choose_geom
+    (n := n) (w := w) (ℓ := ℓ) (t := t) hℓn htℓ htw
+  have hnonneg : 0 ≤ (F.clauses.length : ℝ≥0∞) := by exact zero_le _
+  have hmult := mul_le_mul_of_nonneg_left hprofile hnonneg
+  have hrewrite :
+      (F.clauses.length : ℝ≥0∞)
+          * clauseWidthProfileNormalized (n := n) (w := w) (ℓ := ℓ) (t := t)
+        ≤ (F.clauses.length : ℝ≥0∞)
+            * ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * (Nat.choose w t : ℝ≥0∞)
+            * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+            * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+                ^ (w - t) := by
+    simpa [mul_comm, mul_left_comm, mul_assoc]
+      using hmult
+  refine hbase.trans ?_
+  exact hrewrite
+
+/--
+  Удобная переформулировка геометрической оценки: если известна верхняя
+  граница на p-biased множитель, то массу «плохих» рестрикций сразу можно
+  сравнить с выражением `(p · t)^t`.  Эта форма непосредственно фигурирует в
+  классической switching-лемме, поэтому выделяем её как отдельную лемму.
+-/
+lemma badMass_le_clauseCount_pt (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t)
+    (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w)
+    (p : ℝ≥0∞)
+    (hp :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t)
+        ≤ (p * (t : ℝ≥0∞)) ^ t) :
+    badMass (n := n) (w := w) F ℓ t
+      ≤ (F.clauses.length : ℝ≥0∞)
+          * (p * (t : ℝ≥0∞)) ^ t := by
+  classical
+  have hgeom := badMass_le_clauseCount_geom
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
+    hsubset hℓn htℓ htw
+  have hnonneg : 0 ≤ (F.clauses.length : ℝ≥0∞) := by exact zero_le _
+  have hbound := mul_le_mul_of_nonneg_left hp hnonneg
+  have hrewrite :
+      (F.clauses.length : ℝ≥0∞)
+          * ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t)
+        ≤ (F.clauses.length : ℝ≥0∞)
+            * (p * (t : ℝ≥0∞)) ^ t := by
+    simpa [mul_comm, mul_left_comm, mul_assoc]
+      using hbound
+  exact hgeom.trans hrewrite
+
+/--
+  Сумма по всем осям от численности элементов, чья ось совпадает с фиксированной
+  функцией `f`, равна мощности исходного множества.  Этот комбинаторный факт
+  позволяет разбить `badSet` на попарно несовпадающие «файберы» по оси и
+  агрегировать вероятностные оценки по отдельным осям.-/
+lemma sum_card_filter_eq_card {α β : Type _} [Fintype β]
+    [DecidableEq α] [DecidableEq β]
+    (s : Finset α) (f : α → β) :
+    ∑ b : β, (s.filter fun a => f a = b).card = s.card := by
+  classical
+  -- Представляем мощность фильтра через сумму индикаторов.
+  have hfilter (b : β) :
+      (s.filter fun a => f a = b).card
+        = ∑ a in s, if f a = b then 1 else 0 := by
+    refine Finset.card_eq_sum_ones.trans ?_
+    refine Finset.sum_congr rfl ?_
+    intro a ha
+    by_cases hf : f a = b
+    · simp [hf]
+    · simp [hf]
+  -- Меняем порядок суммирования и считаем вклад каждого `a ∈ s`.
+  have hswap :
+      (∑ b : β, ∑ a in s, if f a = b then 1 else 0)
+        = ∑ a in s, ∑ b : β, if f a = b then 1 else 0 :=
+    Finset.sum_comm
+  have hinner (a : α) (ha : a ∈ s) :
+      (∑ b : β, if f a = b then 1 else 0) = 1 := by
+    classical
+    -- Приводим сумму к мощности фильтра и показываем, что она равна единице.
+    have hsum_eq :
+        (∑ b : β, if f a = b then 1 else 0)
+          = (Finset.univ.filter fun b : β => f a = b).card := by
+      refine (Finset.card_eq_sum_ones).symm.trans ?_
+      refine Finset.sum_congr rfl ?_
+      intro b hb
+      by_cases hf : f a = b
+      · simp [hf]
+      · simp [hf]
+    have hfilter_eq :
+        Finset.univ.filter (fun b : β => f a = b) = {f a} := by
+      ext b
+      constructor
+      · intro hb
+        have : b = f a := by
+          simpa using (Finset.mem_filter.mp hb).2
+        simp [this]
+      · intro hb
+        have hb' : b = f a := by
+          simpa using hb
+        have hb_mem : b ∈ (Finset.univ : Finset β) := by simp
+        exact Finset.mem_filter.mpr ⟨hb_mem, by simpa [hb']⟩
+    have hcard : (Finset.univ.filter fun b : β => f a = b).card = 1 := by
+      simpa [hfilter_eq]
+        using (Finset.card_singleton (f a))
+    simpa [hsum_eq, hcard]
+  -- Собираем равенства: каждая точка учитывается ровно один раз.
+  calc
+    ∑ b : β, (s.filter fun a => f a = b).card
+        = ∑ b : β, ∑ a in s, if f a = b then 1 else 0 :=
+          Finset.sum_congr rfl (fun b _ => hfilter b)
+    _ = ∑ a in s, ∑ b : β, if f a = b then 1 else 0 := hswap
+    _ = ∑ _a in s, 1 := by
+      refine Finset.sum_congr rfl ?_
+      intro a ha
+      simpa using hinner a ha
+    _ = s.card := by
+      simpa using (Finset.card_eq_sum_ones (s := s))
+
+/--
+  «Плохие» точные рестрикции можно разбить по осям.  Сумма мощностей файберов
+  по всем осям равна общей мощности `badSet`.  Это ключевой шаг для перехода
+  от глобальной вероятностной оценки к заключению о существовании конкретной
+  удачной оси.-/
+lemma badSet_card_eq_sum_axis (F : Core.CNF n w) (ℓ t : Nat) :
+    (badSet (n := n) (w := w) F ℓ t).card
+      = ∑ A : Axis n ℓ,
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ => ρ.axis = A)).card := by
+  classical
+  have :=
+    sum_card_filter_eq_card
+      (s := badSet (n := n) (w := w) F ℓ t)
+      (f := fun ρ : ExactRestriction n ℓ => ρ.axis)
+  simpa using this
+
+/--
+  Вероятностную оценку `badMass` можно распределить по осям: существует ось, на
+  которой условная вероятность «плохой» рестрикции не превышает среднюю
+  глобальную оценку `(p · t)^t`.  Этот факт переводит неравенство из
+  `badMass_le_clauseCount_pt` в утверждение о конкретном выборе оси.-/
+lemma exists_axis_badMass_le (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t))
+    (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w)
+    (p : ℝ≥0∞)
+    (hp :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t)
+        ≤ (p * (t : ℝ≥0∞)) ^ t) :
+    ∃ A : Axis n ℓ,
+      ∑ ρ in (badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ
+        ≤ ((F.clauses.length : ℝ≥0∞)
+            * (p * (t : ℝ≥0∞)) ^ t)
+            / (Nat.choose n ℓ : ℝ≥0∞) := by
+  classical
+  set bad := badSet (n := n) (w := w) F ℓ t with hbad_def
+  -- Вес одного элемента в равномерном распределении.
+  set mass : ℝ≥0∞ := (1 : ℝ≥0∞) / Fintype.card (Axis n ℓ × BitVec n)
+    with hmass_def
+  have hmass_apply :
+      ∀ ρ : ExactRestriction n ℓ, restrictionUniform n ℓ ρ = mass := by
+    intro ρ
+    simpa [mass, hmass_def]
+      using restrictionUniform_apply (n := n) (ℓ := ℓ) ρ
+  -- Масса «плохих» рестрикций выражается через число элементов.
+  have hbadMass_card := badMass_eq_card
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
+  -- Разбиваем мощность `bad` по осям.
+  have hbad_card_split := badSet_card_eq_sum_axis
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
+  -- Выражение для массы файбера над конкретной осью.
+  have hfiber_mass (A : Axis n ℓ) :
+      ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ
+        = mass * ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞) := by
+    classical
+    have hconst :
+        ∑ _ρ in bad.filter (fun ρ => ρ.axis = A), mass
+          = ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞) * mass := by
+      simpa [nsmul_eq_mul]
+        using Finset.sum_const (s := bad.filter fun ρ => ρ.axis = A) (a := mass)
+    simpa [mass, hmass_apply]
+      using hconst.symm
+  -- Масса «плохого» множества равна сумме масс файберов.
+  have hmass_split :
+      badMass (n := n) (w := w) F ℓ t
+        = ∑ A : Axis n ℓ,
+            ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ := by
+    -- Используем формулу через мощности и константный вес `mass`.
+    have hbad_mass_eq :
+        badMass (n := n) (w := w) F ℓ t = mass * (bad.card : ℝ≥0∞) := by
+      simpa [mass, hmass_def]
+        using hbadMass_card
+    have hsplit :
+        (bad.card : ℝ≥0∞)
+          = ∑ A : Axis n ℓ,
+              ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞) := by
+      simpa using congrArg (fun k : ℕ => (k : ℝ≥0∞)) hbad_card_split
+    calc
+      badMass (n := n) (w := w) F ℓ t
+          = mass * (bad.card : ℝ≥0∞) := hbad_mass_eq
+      _ = mass *
+          (∑ A : Axis n ℓ,
+              ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞)) := by
+                simpa [hsplit]
+      _ = ∑ A : Axis n ℓ,
+            mass * ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞) := by
+                classical
+                simpa using
+                  (Finset.mul_sum
+                    (s := (Finset.univ : Finset (Axis n ℓ)))
+                    (f := fun A =>
+                      ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞))
+                    mass)
+      _ = ∑ A : Axis n ℓ,
+            ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ := by
+                simp [hfiber_mass]
+  -- Глобальная оценка массы.
+  have hglobal := badMass_le_clauseCount_pt
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
+    hsubset hℓn htℓ htw (p := p) hp
+  -- Средняя масса равна `badMass / |Axis|`. Существование оси с малой массой
+  -- следует из простого усреднения.
+  set target : ℝ≥0∞ :=
+      ((F.clauses.length : ℝ≥0∞)
+          * (p * (t : ℝ≥0∞)) ^ t)
+        / (Nat.choose n ℓ : ℝ≥0∞) with htarget_def
+  classical
+  by_contra hcontr
+  have hstrict :
+      ∀ A : Axis n ℓ,
+        target <
+          ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ :=
+    by
+      intro A
+      have := (forall_not_of_not_exists hcontr) A
+      exact lt_of_not_ge this
+  -- Сумма масс строго больше `target * |Axis|`.
+  have hsum_gt :
+      (∑ A : Axis n ℓ,
+          ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ)
+        > ∑ _A : Axis n ℓ, target := by
+    have hle : ∀ A : Axis n ℓ,
+        target ≤
+          ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ :=
+      fun A => le_of_lt (hstrict A)
+    obtain ⟨A₀, _⟩ := RandomRestriction.Axis.nonempty (n := n) (ℓ := ℓ) hℓn
+    have hlt : target <
+        ∑ ρ in bad.filter (fun ρ => ρ.axis = A₀), restrictionUniform n ℓ ρ :=
+      hstrict A₀
+    refine Finset.sum_lt_sum ?hle ?hlt
+    · intro A _
+      exact hle A
+    · refine ⟨A₀, ?_⟩
+      constructor
+      · simp
+      · exact hlt
+  -- Значение `|Axis|` известно: оно равно биномиальному коэффициенту.
+  have hcard_axis :
+      ((Finset.univ : Finset (Axis n ℓ)).card : ℝ≥0∞)
+        = Nat.choose n ℓ := by
+    classical
+    have hcard_nat :
+        (Finset.univ : Finset (Axis n ℓ)).card = Nat.choose n ℓ := by
+      simpa using RandomRestriction.axis_card_choose (n := n) (ℓ := ℓ)
+    simpa [hcard_nat]
+  -- Противоречие: сумма масс равна `badMass`, которая не превосходит `target`.
+  have hsum_eq :
+      ∑ A : Axis n ℓ,
+          ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ
+        = badMass (n := n) (w := w) F ℓ t := hmass_split.symm
+  have htarget_sum :
+      (∑ _A : Axis n ℓ, target)
+        = (F.clauses.length : ℝ≥0∞) * (p * (t : ℝ≥0∞)) ^ t := by
+    simp [target, htarget_def, hcard_axis, mul_comm, mul_left_comm, mul_assoc]
+  have hfinal :
+      badMass (n := n) (w := w) F ℓ t
+        > (F.clauses.length : ℝ≥0∞) * (p * (t : ℝ≥0∞)) ^ t := by
+    simpa [hsum_eq, htarget_sum]
+      using hsum_gt
+  exact (not_lt_of_ge hglobal hfinal)
+
+/--
+  Разбиение «плохих» рестрикций, фиксированных на одной оси `A`, по листьям
+  совершенного ствола: суммируя мощности фильтров `toLeaf = β` по всем
+  подкубам, получаем исходное число элементов в файбере над осью.  Отдельная
+  версия с суммированием по всем подкубам удобна тем, что напрямую следует из
+  комбинаторной леммы `sum_card_filter_eq_card`, а позднее мы сузим сумму до
+  собственно листьев.-/
+lemma badSet_axis_card_eq_sum_leaves (F : Core.CNF n w) (ℓ t : Nat)
+    (A : Axis n ℓ) :
+    ((badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ => ρ.axis = A)).card
+      = ∑ β : Subcube n,
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+  classical
+  set axisBad :=
+      (badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ => ρ.axis = A) with haxisBad
+  have hsum :=
+    (sum_card_filter_eq_card
+      (s := axisBad)
+      (f := fun ρ : ExactRestriction n ℓ =>
+        ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ)).symm
+  -- Переписываем сумму, раскрывая определение `axisBad` и сводя двойную фильтрацию
+  -- к одному условию.
+  refine hsum.trans ?_
+  refine Finset.sum_congr rfl ?_
+  intro β _
+  -- Двойное фильтрование по оси и листу эквивалентно единственному фильтру
+  -- с конъюнкцией условий.
+  simpa [axisBad, haxisBad, and_left_comm, and_assoc]
+    using (Finset.filter_filter
+      (s := badSet (n := n) (w := w) F ℓ t)
+      (p := fun ρ : ExactRestriction n ℓ => ρ.axis = A)
+      (q := fun ρ : ExactRestriction n ℓ =>
+        ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).symm
+
+/--
+  Любой лист совершенного ствола задаёт не более `2^(n - ℓ)` «плохих» точных
+  рестрикций с фиксированной осью `A`: это прямое следствие того, что
+  полное множество таких рестрикций биективно соответствует `2^(n - ℓ)`
+  назначениям фиксированных координат.-/
+lemma badSet_axis_leaf_card_le (F : Core.CNF n w) (ℓ t : Nat)
+    (A : Axis n ℓ) {β : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n) (ℓ := ℓ) A) :
+    ((badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ =>
+          ρ.axis = A
+            ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card
+      ≤ Nat.pow 2 (n - ℓ) := by
+  classical
+  -- Полный файбер по `A` и `β` содержит ровно `2^(n - ℓ)` рестрикций.
+  have hfull := RandomRestriction.ExactRestriction.axisLeafFiber_card
+    (n := n) (ℓ := ℓ) (A := A) (β := β) hβ
+  -- Фильтр «плохих» рестрикций — подмножество полного файбера, значит его
+  -- мощность не превосходит `2^(n - ℓ)`.
+  have hsubset :
+      (badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ =>
+            ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)
+        ⊆ Finset.univ.filter
+            (fun ρ : ExactRestriction n ℓ =>
+              ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β) := by
+    intro ρ hρ
+    refine Finset.mem_filter.mpr ?_
+    constructor
+    · simp
+    · exact (Finset.mem_filter.mp hρ).2
+  have hcard_le := Finset.card_le_of_subset hsubset
+  -- Переписываем правую часть через известную формулу `axisLeafFiber_card`.
+  have htarget :
+      (Finset.univ.filter
+          (fun ρ : ExactRestriction n ℓ =>
+            ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card
+        = Nat.pow 2 (n - ℓ) := by
+    simpa using hfull
+  simpa [htarget] using hcard_le
+
+/--
+  Множество «плохих» листьев заданной оси: те листы совершенного ствола,
+  для которых существует точная рестрикция из `badSet` с указанным листом.-/
+def badLeafFamily (F : Core.CNF n w) (ℓ t : Nat) (A : Axis n ℓ) :
+    Finset (Subcube n) :=
+  ((Axis.leafList (n := n) (ℓ := ℓ) A).toFinset.filter fun β =>
+      0 < ((badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ =>
+          ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card)
+
+lemma mem_badLeafFamily {F : Core.CNF n w} {ℓ t : Nat} {A : Axis n ℓ}
+    {β : Subcube n} :
+    β ∈ badLeafFamily (n := n) (w := w) F ℓ t A ↔
+      β ∈ Axis.leafList (n := n) (ℓ := ℓ) A ∧
+        0 < ((badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ =>
+            ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+  classical
+  constructor
+  · intro hβ
+    rcases Finset.mem_filter.mp hβ with ⟨hleaf, hpos⟩
+    exact ⟨List.mem_toFinset.mp hleaf, hpos⟩
+  · rintro ⟨hleaf, hpos⟩
+    refine Finset.mem_filter.mpr ?_
+    exact ⟨List.mem_toFinset.mpr hleaf, hpos⟩
+
+lemma badLeafFamily_subset_leafList {F : Core.CNF n w} {ℓ t : Nat}
+    {A : Axis n ℓ} :
+    badLeafFamily (n := n) (w := w) F ℓ t A
+      ⊆ (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset := by
+  classical
+  intro β hβ
+  exact (Finset.mem_filter.mp hβ).1
+
+lemma badSet_axis_leaf_card_eq_zero_of_not_mem (F : Core.CNF n w)
+    (ℓ t : Nat) (A : Axis n ℓ) {β : Subcube n}
+    (hβ : β ∉ Axis.leafList (n := n) (ℓ := ℓ) A) :
+    ((badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ =>
+          ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card
+      = 0 := by
+  classical
+  -- Любая точная рестрикция попадает в лист из `leafList`; значит, фильтр пуст.
+  have hmem :
+      ∀ ρ ∈ (badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ =>
+            ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β), False := by
+    intro ρ hρ
+    have hleaf := RandomRestriction.ExactRestriction.toLeaf_mem (ρ := ρ)
+    have haxis : ρ.axis = A := (Finset.mem_filter.mp hρ).2.1
+    have := (Finset.mem_filter.mp hρ).2.2
+    have hβ_mem : β ∈ Axis.leafList (n := n) (ℓ := ℓ) A := by
+      simpa [haxis, this] using hleaf
+    exact (hβ hβ_mem).elim
+  have hsubset :
+      (badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ =>
+            ρ.axis = A ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)
+        = (∅ : Finset (ExactRestriction n ℓ)) := by
+    ext ρ
+    constructor
+    · intro hρ; exact (hmem ρ hρ).elim
+    · intro hρ; cases hρ
+  simpa [hsubset]
+    using (Finset.card_eq_zero.mpr (by simpa [hsubset]))
+
+lemma badSet_axis_card_eq_sum_leafList (F : Core.CNF n w) (ℓ t : Nat)
+    (A : Axis n ℓ) :
+    ((badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ => ρ.axis = A)).card
+      = ∑ β in (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset,
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+  classical
+  have hsum := badSet_axis_card_eq_sum_leaves
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) (A := A)
+  -- Термы вне `leafList` дают нулевой вклад.
+  have hzero :
+      ∀ β : Subcube n,
+        β ∉ Axis.leafList (n := n) (ℓ := ℓ) A →
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card = 0 := by
+    intro β hβ_not
+    exact badSet_axis_leaf_card_eq_zero_of_not_mem
+      (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) (A := A) hβ_not
+  have hrewrite :
+      ∑ β : Subcube n,
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card
+        = ∑ β in (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset,
+            ((badSet (n := n) (w := w) F ℓ t).filter
+                (fun ρ : ExactRestriction n ℓ =>
+                  ρ.axis = A
+                    ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+    refine Finset.sum_subset_of_eq_zero_on_sdiff
+      (s := (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset)
+      (t := (Finset.univ : Finset (Subcube n)))
+      ?hsubset ?hz ?hrewrite
+    · intro β hβ
+      simp [Finset.mem_univ] at hβ
+    · intro β hβ_not
+      have hβ_not' : β ∉ Axis.leafList (n := n) (ℓ := ℓ) A := by
+        intro hβ_mem
+        exact hβ_not (List.mem_toFinset.mpr hβ_mem)
+      exact hzero β hβ_not'
+    · intro β hβ_mem
+      simp [List.mem_toFinset] at hβ_mem
+  simpa [hsum, hrewrite]
+
+lemma badSet_axis_card_leaves_le (F : Core.CNF n w) (ℓ t : Nat)
+    (A : Axis n ℓ) :
+    ((badSet (n := n) (w := w) F ℓ t).filter
+        (fun ρ : ExactRestriction n ℓ => ρ.axis = A)).card
+      ≤ (badLeafFamily (n := n) (w := w) F ℓ t A).card * Nat.pow 2 (n - ℓ) := by
+  classical
+  have hsum := badSet_axis_card_eq_sum_leafList
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) (A := A)
+  set badLeaves := badLeafFamily (n := n) (w := w) F ℓ t A with hbadLeaves
+  -- Ограничиваем сумму только листьями с ненулевым вкладом.
+  have hsupport :
+      ∀ β ∈ (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset,
+        ((badSet (n := n) (w := w) F ℓ t).filter
+            (fun ρ : ExactRestriction n ℓ =>
+              ρ.axis = A
+                ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card ≠ 0 →
+          β ∈ badLeaves := by
+    intro β hβ hcard_ne
+    have hpos :
+        0 < ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+      exact Nat.pos_of_ne_zero hcard_ne
+    have hleaf : β ∈ Axis.leafList (n := n) (ℓ := ℓ) A :=
+      List.mem_toFinset.mp hβ
+    have : β ∈ badLeaves := by
+      have hmem := (mem_badLeafFamily
+        (F := F) (ℓ := ℓ) (t := t) (A := A) (β := β)).2 ⟨hleaf, hpos⟩
+      simpa [hbadLeaves] using hmem
+    exact this
+  -- Переписываем сумму через `badLeaves` и применяем грубую оценку.
+  have hsum_support :
+      ((badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ => ρ.axis = A)).card
+        = ∑ β in badLeaves,
+            ((badSet (n := n) (w := w) F ℓ t).filter
+                (fun ρ : ExactRestriction n ℓ =>
+                  ρ.axis = A
+                    ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+    refine Finset.sum_subset_of_eq_zero_on_sdiff
+      (s := badLeaves)
+      (t := (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset)
+      ?hsubset ?hz ?hsum_eq
+    · exact badLeafFamily_subset_leafList (F := F) (ℓ := ℓ) (t := t) (A := A)
+    · intro β hβ_mem
+      have hcard :=
+        (Finset.mem_sdiff.mp hβ_mem).2
+      have hβ_not : β ∉ badLeaves := hcard
+      have hβ_leaf : β ∈ (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset :=
+        (Finset.mem_sdiff.mp hβ_mem).1
+      have hcard_zero :
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card = 0 := by
+        by_contra hneq
+        have hmem := hsupport β hβ_leaf hneq
+        exact hβ_not hmem
+      simpa [hcard_zero]
+    · intro β hβ_mem
+      simp [hbadLeaves] at hβ_mem
+      exact hβ_mem
+  have hbound := Finset.sum_le_card_nsmul
+    (s := badLeaves)
+    (f := fun β =>
+      ((badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ =>
+            ρ.axis = A
+              ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card)
+    (nsmul := Nat.pow 2 (n - ℓ))
+    (fun β hβ => by
+      have hleaf :=
+        (mem_badLeafFamily (F := F) (ℓ := ℓ) (t := t) (A := A) (β := β)).1
+          (by simpa [hbadLeaves] using hβ)
+      have hβ_leaf : β ∈ Axis.leafList (n := n) (ℓ := ℓ) A := hleaf.1
+      have hcard_le := badSet_axis_leaf_card_le
+        (F := F) (ℓ := ℓ) (t := t) (A := A) (β := β) hβ_leaf
+      simpa using hcard_le)
+  -- Объединяем полученные равенства и оценки.
+  have hcard_badLeaves :
+      (∑ β in badLeaves,
+          ((badSet (n := n) (w := w) F ℓ t).filter
+              (fun ρ : ExactRestriction n ℓ =>
+                ρ.axis = A
+                  ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card)
+        ≤ badLeaves.card * Nat.pow 2 (n - ℓ) := hbound
+  simpa [hsum, hsum_support, hbadLeaves]
+    using hcard_badLeaves
+
+/--
+  Любой «плохой» лист даёт хотя бы одну «плохую» рестрикцию, поэтому их число
+  не превосходит мощности соответствующего файбера множества `badSet`.
+-/
+lemma badLeafFamily_card_le_badSet_axis_card (F : Core.CNF n w) (ℓ t : Nat)
+    (A : Axis n ℓ) :
+    (badLeafFamily (n := n) (w := w) F ℓ t A).card
+      ≤ ((badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ => ρ.axis = A)).card := by
+  classical
+  set badLeaves := badLeafFamily (n := n) (w := w) F ℓ t A with hbadLeaves
+  -- Раскладываем мощность файбера через сумму по листьям и исключаем нулевые члены.
+  have hsum := badSet_axis_card_eq_sum_leafList
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t) (A := A)
+  have hsubset := badLeafFamily_subset_leafList
+    (n := n) (w := w) (F := F) (ℓ := ℓ) (t := t) (A := A)
+  have hzero :
+      ∀ β ∈ (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset,
+        ((badSet (n := n) (w := w) F ℓ t).filter
+            (fun ρ : ExactRestriction n ℓ =>
+              ρ.axis = A
+                ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card ≠ 0 →
+          β ∈ badLeaves := by
+    intro β hβ hcard_ne
+    have hpos :
+        0 < ((badSet (n := n) (w := w) F ℓ t).filter
+            (fun ρ : ExactRestriction n ℓ =>
+              ρ.axis = A
+                ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card :=
+      Nat.pos_of_ne_zero hcard_ne
+    have hleaf : β ∈ Axis.leafList (n := n) (ℓ := ℓ) A :=
+      List.mem_toFinset.mp hβ
+    have hmem := (mem_badLeafFamily
+      (n := n) (w := w) (F := F) (ℓ := ℓ) (t := t) (A := A) (β := β)).2
+      ⟨hleaf, hpos⟩
+    simpa [hbadLeaves] using hmem
+  have hsum_bad :
+      ((badSet (n := n) (w := w) F ℓ t).filter
+          (fun ρ : ExactRestriction n ℓ => ρ.axis = A)).card
+        = ∑ β in badLeaves,
+            ((badSet (n := n) (w := w) F ℓ t).filter
+                (fun ρ : ExactRestriction n ℓ =>
+                  ρ.axis = A
+                    ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+    have := hsum
+    have hrestrict :
+        ∑ β in (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset,
+            ((badSet (n := n) (w := w) F ℓ t).filter
+                (fun ρ : ExactRestriction n ℓ =>
+                  ρ.axis = A
+                    ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card
+          = ∑ β in badLeaves,
+              ((badSet (n := n) (w := w) F ℓ t).filter
+                  (fun ρ : ExactRestriction n ℓ =>
+                    ρ.axis = A
+                      ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+      refine Finset.sum_subset_of_eq_zero_on_sdiff
+        (s := badLeaves)
+        (t := (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset)
+        ?hsubset ?hz ?hfun
+      · exact hsubset
+      · intro β hβ_mem
+        have hβ_leaf : β ∈ (Axis.leafList (n := n) (ℓ := ℓ) A).toFinset :=
+          (Finset.mem_sdiff.mp hβ_mem).1
+        have hβ_not : β ∉ badLeaves := (Finset.mem_sdiff.mp hβ_mem).2
+        have hcard_zero :
+            ((badSet (n := n) (w := w) F ℓ t).filter
+                (fun ρ : ExactRestriction n ℓ =>
+                  ρ.axis = A
+                    ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card = 0 := by
+          by_contra hne
+          have := hzero β hβ_leaf hne
+          exact hβ_not this
+        simp [hcard_zero]
+      · intro β hβ_mem
+        simp [hbadLeaves] at hβ_mem
+        exact hβ_mem
+    simpa [hrestrict]
+      using this
+  -- Каждому плохому листу соответствует хотя бы одна рестрикция.
+  have hpos :
+      ∀ β ∈ badLeaves,
+        1 ≤ ((badSet (n := n) (w := w) F ℓ t).filter
+            (fun ρ : ExactRestriction n ℓ =>
+              ρ.axis = A
+                ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card := by
+    intro β hβ
+    have hmem := (mem_badLeafFamily
+      (n := n) (w := w) (F := F) (ℓ := ℓ) (t := t) (A := A) (β := β)).1
+        (by simpa [hbadLeaves] using hβ)
+    exact Nat.succ_le_of_lt hmem.2
+  have hsum_le :
+      ∑ β in badLeaves, (1 : Nat)
+        ≤ ∑ β in badLeaves,
+            ((badSet (n := n) (w := w) F ℓ t).filter
+                (fun ρ : ExactRestriction n ℓ =>
+                  ρ.axis = A
+                    ∧ ExactRestriction.toLeaf (n := n) (ℓ := ℓ) ρ = β)).card :=
+    Finset.sum_le_sum fun β hβ => hpos β hβ
+  have hcard_eq : badLeaves.card = ∑ β in badLeaves, (1 : Nat) := by
+    simpa using (Finset.card_eq_sum_ones (s := badLeaves)).symm
+  -- Переводим заключение в требуемую форму.
+  have hle := hcard_eq.trans_le hsum_le
+  simpa [hsum_bad, hbadLeaves]
+    using hle
+
+
+/--
+  На некоторой оси число «плохих» листьев контролируется формулой
+  `(p · t)^t · 2^n`.  Эта оценка напрямую следует из вероятностного bound'а для
+  массы `badSet` и того факта, что каждый плохой лист несёт хотя бы одну
+  рестрикцию.-/
+lemma exists_axis_badLeaves_card_le (F : Core.CNF n w)
+    (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t)
+    (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w)
+    (p : ℝ≥0∞)
+    (hp :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t)
+        ≤ (p * (t : ℝ≥0∞)) ^ t) :
+    ∃ A : Axis n ℓ,
+      ((badLeafFamily (n := n) (w := w) F ℓ t A).card : ℝ≥0∞)
+        ≤ (F.clauses.length : ℝ≥0∞)
+            * (p * (t : ℝ≥0∞)) ^ t
+            * (2 ^ n : ℝ≥0∞) := by
+  classical
+  obtain ⟨A, hmass_le⟩ := exists_axis_badMass_le
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
+    hsubset hℓn htℓ htw (p := p) hp
+  set bad := badSet (n := n) (w := w) F ℓ t with hbad_def
+  set mass : ℝ≥0∞ :=
+      (1 : ℝ≥0∞) / (Fintype.card (Axis n ℓ × BitVec n) : ℝ≥0∞)
+    with hmass_def
+  -- Каждая точная рестрикция имеет одинаковый вес в модели `restrictionUniform`.
+  have hmass_apply :
+      ∀ ρ : ExactRestriction n ℓ,
+        restrictionUniform n ℓ ρ = mass := by
+    intro ρ
+    simpa [mass, hmass_def]
+      using restrictionUniform_apply (n := n) (ℓ := ℓ) ρ
+  -- Масса «плохого» файла над фиксированной осью.
+  have hfiber_mass :
+      ∑ ρ in bad.filter (fun ρ => ρ.axis = A), restrictionUniform n ℓ ρ
+        = mass * ((bad.filter fun ρ => ρ.axis = A).card : ℝ≥0∞) := by
+    have := Finset.sum_const (s := bad.filter fun ρ => ρ.axis = A) (a := mass)
+    simpa [hmass_apply, nsmul_eq_mul, mul_comm, mul_left_comm, mul_assoc]
+      using this.symm
+  -- Выражение из леммы `exists_axis_badMass_le` через известные коэффициенты.
+  set target : ℝ≥0∞ :=
+      ((F.clauses.length : ℝ≥0∞)
+          * (p * (t : ℝ≥0∞)) ^ t)
+        / (Nat.choose n ℓ : ℝ≥0∞)
+    with htarget_def
+  have hmass_card :
+      ((bad.filter fun ρ : ExactRestriction n ℓ => ρ.axis = A).card : ℝ≥0∞)
+        ≤ (F.clauses.length : ℝ≥0∞)
+            * (p * (t : ℝ≥0∞)) ^ t
+            * (2 ^ n : ℝ≥0∞) := by
+    -- Начинаем с неравенства на массу и пошагово избавляемся от знаменателей.
+    have hbase := congrArg₂ HAdd.hAdd rfl hfiber_mass
+    have hmass_le' :
+        mass * ((bad.filter fun ρ : ExactRestriction n ℓ => ρ.axis = A).card
+          : ℝ≥0∞)
+          ≤ target := by
+      simpa [hbad_def, target, htarget_def]
+        using hmass_le
+    have hchoose_nonneg : 0 ≤ (Nat.choose n ℓ : ℝ≥0∞) := by exact zero_le _
+    have hmul_choose :=
+      mul_le_mul_of_nonneg_right hmass_le' hchoose_nonneg
+    have hcardAxis := RandomRestriction.axis_card_choose (n := n) (ℓ := ℓ)
+    have hcardVec := Core.card_bitVec (n := n)
+    have hchoose_mass :
+        (Nat.choose n ℓ : ℝ≥0∞) * mass
+          = (1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞) := by
+      simp [mass, hmass_def, Fintype.card_prod, hcardAxis, hcardVec,
+        mul_comm, mul_left_comm, mul_assoc, div_eq_mul_inv]
+    have hchoose_target :
+        (Nat.choose n ℓ : ℝ≥0∞) * target
+          = (F.clauses.length : ℝ≥0∞)
+              * (p * (t : ℝ≥0∞)) ^ t := by
+      simp [target, htarget_def, div_eq_mul_inv, mul_comm, mul_left_comm,
+        mul_assoc]
+    have hafter_choose :
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ((bad.filter fun ρ : ExactRestriction n ℓ => ρ.axis = A).card
+                : ℝ≥0∞)
+          ≤ (F.clauses.length : ℝ≥0∞)
+              * (p * (t : ℝ≥0∞)) ^ t := by
+      simpa [hchoose_mass, hchoose_target, mul_comm, mul_left_comm, mul_assoc]
+        using hmul_choose
+    have hpow_nonneg : 0 ≤ (2 ^ n : ℝ≥0∞) := by exact zero_le _
+    have hmul_pow :=
+      mul_le_mul_of_nonneg_right hafter_choose hpow_nonneg
+    have hpow_ne : (2 ^ n : ℝ≥0∞) ≠ 0 := by
+      have hpos : (0 : ℝ≥0∞) < (2 ^ n : ℝ≥0∞) := by exact_mod_cast pow_pos (by decide : 0 < 2) n
+      exact ne_of_gt hpos
+    have hpow_cancel :
+        ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+            * ((bad.filter fun ρ : ExactRestriction n ℓ => ρ.axis = A).card
+                : ℝ≥0∞)
+            * (2 ^ n : ℝ≥0∞)
+          = ((bad.filter fun ρ : ExactRestriction n ℓ => ρ.axis = A).card
+              : ℝ≥0∞) := by
+      simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc, hpow_ne]
+    simpa [hpow_cancel, mul_comm, mul_left_comm, mul_assoc]
+      using hmul_pow
+  -- Применяем оценку к числу листьев.
+  have hleaf_le_card := badLeafFamily_card_le_badSet_axis_card
+    (n := n) (w := w) (F := F) (ℓ := ℓ) (t := t) (A := A)
+  have hleaf_le_card' :
+      ((badLeafFamily (n := n) (w := w) F ℓ t A).card : ℝ≥0∞)
+        ≤ ((bad.filter fun ρ : ExactRestriction n ℓ => ρ.axis = A).card
+            : ℝ≥0∞) := by
+    exact_mod_cast hleaf_le_card
+  exact ⟨A, hleaf_le_card'.trans hmass_card⟩
+
+
+/--
+  Переводим bound на число плохих листьев в оценку `errU`, используя
+  конструкцию `selectorsFromTails`.  Параметр `badBound` — любая натуральная
+  величина, доминирующая над оценкой из предыдущей леммы.
+-/
+lemma exists_axis_errU_le (F : Core.CNF n w) (ℓ t : Nat)
+    (hsubset :
+      badSet (n := n) (w := w) F ℓ t
+        ⊆ formulaBadFamily (n := n) (ℓ := ℓ) (w := w) F t)
+    (hℓn : ℓ ≤ n) (htℓ : t ≤ ℓ) (htw : t ≤ w)
+    (p : ℝ≥0∞)
+    (hp :
+      ((1 : ℝ≥0∞) / (2 ^ n : ℝ≥0∞))
+          * (Nat.choose w t : ℝ≥0∞)
+          * (((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞)) ^ t
+          * (1 + ((ℓ : ℝ≥0∞) / (n - ℓ + 1 : ℝ≥0∞)) * (2 : ℝ≥0∞))
+              ^ (w - t)
+        ≤ (p * (t : ℝ≥0∞)) ^ t)
+    (badBound : Nat)
+    (hbound :
+      (F.clauses.length : ℝ≥0∞)
+          * (p * (t : ℝ≥0∞)) ^ t
+          * (2 ^ n : ℝ≥0∞)
+        ≤ (badBound : ℝ≥0∞))
+    (tailSelectors : ∀ A : Axis n ℓ,
+        ∀ β, β ∈ Axis.leafList (n := n) (ℓ := ℓ) A →
+          (BitVec n → Bool) → List (Subcube n))
+    (hmismatch : ∀ A x,
+        F.eval x ≠ coveredB
+          (selectorsFromTails (n := n) (ℓ := ℓ) (A := A)
+            (tailSelectors := tailSelectors A) F.eval) x →
+        Axis.leafForPoint (n := n) (ℓ := ℓ) A x
+          ∈ badLeafFamily (n := n) (w := w) F ℓ t A) :
+    ∃ A : Axis n ℓ,
+      errU F.eval
+        (selectorsFromTails (n := n) (ℓ := ℓ) (A := A)
+          (tailSelectors := tailSelectors A) F.eval)
+        ≤ (badBound : Q) / ((Nat.pow 2 ℓ : Nat) : Q) := by
+  classical
+  obtain ⟨A, hleaf_le⟩ := exists_axis_badLeaves_card_le
+    (n := n) (ℓ := ℓ) (w := w) (F := F) (t := t)
+    hsubset hℓn htℓ htw (p := p) hp
+  have hleaf_bound :
+      ((badLeafFamily (n := n) (w := w) F ℓ t A).card : ℝ≥0∞)
+        ≤ (badBound : ℝ≥0∞) := hleaf_le.trans hbound
+  have hcard_nat :
+      (badLeafFamily (n := n) (w := w) F ℓ t A).card ≤ badBound := by
+    exact_mod_cast hleaf_bound
+  have herr := RandomRestriction.errU_selectorsFromTails_le_of_badLeaves
+    (n := n) (ℓ := ℓ) (A := A)
+    (tailSelectors := tailSelectors A)
+    (f := F.eval)
+    (badLeaves := badLeafFamily (n := n) (w := w) F ℓ t A)
+    (hsubset := badLeafFamily_subset_leafList
+      (n := n) (w := w) (F := F) (ℓ := ℓ) (t := t) (A := A))
+    (hmismatch := hmismatch A)
+  have hleaves_q :
+      ((badLeafFamily (n := n) (w := w) F ℓ t A).card : Q)
+        ≤ (badBound : Q) := by exact_mod_cast hcard_nat
+  have hdenom_pos :
+      0 < ((Nat.pow 2 ℓ : Nat) : Q) := by
+    have htwo_pos : 0 < (2 : Q) := by norm_num
+    have hpow := pow_pos htwo_pos ℓ
+    simpa [Nat.cast_pow] using hpow
+  have hdenom_nonneg :
+      0 ≤ ((Nat.pow 2 ℓ : Nat) : Q)⁻¹ := inv_nonneg.mpr hdenom_pos.le
+  have hdiv_le :
+      ((badLeafFamily (n := n) (w := w) F ℓ t A).card : Q)
+          / ((Nat.pow 2 ℓ : Nat) : Q)
+        ≤ (badBound : Q) / ((Nat.pow 2 ℓ : Nat) : Q) := by
+    have := mul_le_mul_of_nonneg_right hleaves_q hdenom_nonneg
+    simpa [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+      using this
+  refine ⟨A, herr.trans hdiv_le⟩
+
 end Depth1Switching
 end ThirdPartyFacts
 end Pnp3
+

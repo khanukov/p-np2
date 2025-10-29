@@ -412,6 +412,41 @@ lemma axis_superset_card (hSℓ : S.card ≤ ℓ) :
   refine hcompl.trans ?_
   exact hchoose'
 
+/--
+  В частности, если закреплённое множество пусто, подтип со свойством
+  `∅ ⊆ A.support` совпадает с самим `Axis n ℓ`, и его мощность равна
+  биномиальному коэффициенту `\binom{n}{ℓ}`.-/
+@[simp] lemma axis_card_choose (n ℓ : Nat) :
+    Fintype.card (Axis n ℓ) = Nat.choose n ℓ := by
+  classical
+  -- Применяем предыдущую лемму к `S = ∅` и сводим подтип к исходному типу.
+  have hcard := axis_superset_card
+    (n := n) (ℓ := ℓ) (S := (∅ : Finset (Fin n))) (hSℓ := by simp)
+  have htrivial :
+      {A : Axis n ℓ // (∅ : Finset (Fin n)) ⊆ A.support} ≃ Axis n ℓ := by
+    refine
+      { toFun := fun A => A.1
+        , invFun := fun A => ⟨A, by simp⟩
+        , left_inv := ?left
+        , right_inv := ?right } <;> intro A <;> cases A <;> simp
+  simpa using (Fintype.card_congr htrivial).trans hcard
+
+/--
+  Число точных рестрикций раскладывается в произведение: выбираем ось
+  (`\binom{n}{ℓ}` вариантов) и назначение значений на всех `n` координатах
+  (`2^n` вариантов).-/
+@[simp] lemma axis_bitvec_card (n ℓ : Nat) :
+    Fintype.card (Axis n ℓ × BitVec n) = Nat.choose n ℓ * 2 ^ n := by
+  classical
+  simpa [axis_card_choose (n := n) (ℓ := ℓ), Core.card_bitVec (n := n)]
+    using (Fintype.card_prod (Axis n ℓ) (BitVec n))
+
+/-- Переписываем предыдущее равенство в числовом виде `ℝ≥0∞`. -/
+@[simp] lemma axis_bitvec_card_ennreal (n ℓ : Nat) :
+    (Fintype.card (Axis n ℓ × BitVec n) : ℝ≥0∞)
+      = (Nat.choose n ℓ : ℝ≥0∞) * (2 ^ n : ℝ≥0∞) := by
+  exact_mod_cast axis_bitvec_card (n := n) (ℓ := ℓ)
+
 /-- Число осей, содержащих `S` и не затрагивающих `T`, выражается через
 биномиальный коэффициент по дополнению `S ∪ T`. -/
 lemma axis_superset_disjoint_card {T : Finset (Fin n)}

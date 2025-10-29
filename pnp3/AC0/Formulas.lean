@@ -82,6 +82,34 @@ variable {n : Nat}
 @[simp] def holds (ℓ : Literal n) (x : Core.BitVec n) : Bool :=
   decide (x ℓ.idx = ℓ.val)
 
+/-- Перевод литерала AC⁰ в основной `Core`-формат. -/
+@[simp] def toCore (ℓ : Literal n) : Core.Literal n :=
+  ⟨ℓ.idx, ℓ.val⟩
+
+/-- Обратное преобразование из core-литерала. -/
+@[simp] def ofCore (ℓ : Core.Literal n) : Literal n :=
+  ⟨ℓ.idx, ℓ.value⟩
+
+@[simp] lemma toCore_ofCore (ℓ : Core.Literal n) :
+    toCore (ofCore (n := n) ℓ) = ℓ := by
+  cases ℓ
+  rfl
+
+@[simp] lemma ofCore_toCore (ℓ : Literal n) :
+    ofCore (n := n) (toCore (n := n) ℓ) = ℓ := by
+  cases ℓ
+  rfl
+
+@[simp] lemma toCore_idx (ℓ : Literal n) : (toCore (n := n) ℓ).idx = ℓ.idx := rfl
+
+@[simp] lemma toCore_value (ℓ : Literal n) : (toCore (n := n) ℓ).value = ℓ.val := rfl
+
+/-- Core-оценка литерала, полученного из AC⁰-представления, совпадает с `holds`. -/
+@[simp] lemma toCore_eval (ℓ : Literal n) (x : Core.BitVec n) :
+    (toCore (n := n) ℓ).eval x = holds ℓ x := by
+  classical
+  simp [toCore, holds, Core.Literal.eval]
+
 /-- Удобное представление литерала как пары `BitFix`. -/
 @[simp] def toBitFix (ℓ : Literal n) : BitFix n :=
   (ℓ.idx, ℓ.val)
@@ -113,6 +141,29 @@ namespace Clause
 
 variable {n : Nat}
 
+/-- Ширина клаузы — число литералов в списке `lits`.  Этим определением мы
+    будем пользоваться при переносе AC⁰-клауз в core-представление: ширина
+    не меняется при отображении `map Literal.toCore`. -/
+@[simp] def width (C : Clause n) : Nat := C.lits.length
+
+/-- Перевод AC⁰-клаузы в формат `Core.CnfClause`. -/
+@[simp] def toCore (C : Clause n)
+    (hnodup : (C.lits.map (·.idx)).Nodup) : Core.CnfClause n :=
+  { literals := C.lits.map Literal.toCore
+    nodupIdx := by
+      simpa [List.map_map, Literal.toCore_idx] using hnodup }
+
+@[simp] lemma toCore_literals (C : Clause n)
+    (hnodup : (C.lits.map (·.idx)).Nodup) :
+    (toCore (n := n) C hnodup).literals = C.lits.map Literal.toCore := rfl
+
+/-- Ширина core-клаузы, полученной из AC⁰-клаузы, совпадает с длиной исходного
+    списка литералов. -/
+@[simp] lemma toCore_width (C : Clause n)
+    (hnodup : (C.lits.map (·.idx)).Nodup) :
+    (Clause.toCore (n := n) C hnodup).width = C.width := by
+  simp [Clause.width, Core.CnfClause.width, Clause.toCore]
+
 /-- Удобная оболочка вокруг `List.any`: значение списка литералов на входе. -/
 @[simp] def evalList (lits : List (Literal n)) (x : Core.BitVec n) : Bool :=
   lits.any (fun ℓ => Literal.holds ℓ x)
@@ -130,6 +181,20 @@ variable {n : Nat}
     возвращает `true`, если хотя бы один литерал удовлетворён. -/
 @[simp] def eval (C : Clause n) (x : Core.BitVec n) : Bool :=
   evalList C.lits x
+
+/-- Оценка core-клаузы, полученной из AC⁰-клаузы, совпадает с исходной функцией. -/
+@[simp] lemma toCore_eval (C : Clause n)
+    (hnodup : (C.lits.map (·.idx)).Nodup) (x : Core.BitVec n) :
+    (Clause.toCore (n := n) C hnodup).eval x = Clause.eval C x := by
+  classical
+  have hfun : ∀ ℓ ∈ C.lits,
+      ((fun ℓ' : Core.Literal n => ℓ'.eval x) ∘ Literal.toCore (n := n)) ℓ
+        = Literal.holds ℓ x := by
+    intro ℓ hℓ
+    simp [Function.comp, Literal.toCore_eval]
+  have hAny := List.any_congr (l := C.lits) hfun
+  simpa [Clause.toCore, Clause.eval, Clause.evalList, Core.CnfClause.eval,
+    List.any_map] using hAny
 
 /-- Результат ограничения клаузы подкубом: `satisfied` означает, что
     дизъюнкция стала тождественно истинной; `falsified` — тождественно
@@ -738,6 +803,183 @@ lemma restrictEval_eq_eval (F : CNF n) (β : Subcube n) {x : Core.BitVec n}
           (p := fun C => Clause.RestrictResult.eval (Clause.restrict C β) x)
           (q := fun C => Clause.eval C x) hpointwise
 
+/--
+  Вспомогательная функция: преобразует список AC⁰-клауз в список core-клауз,
+  поддерживая доказательства ограничений на ширину и отсутствие повторяющихся
+  индексов.  Реализация устроена рекурсивно, чтобы избежать явного использования
+  `List.attach` и всегда иметь под рукой свидетельство принадлежности текущей
+  клаузы исходному списку.
+-/
+private def toCoreClausesAux (w : Nat)
+    : ∀ (clauses : List (Clause n)),
+        (∀ C ∈ clauses, Clause.width C ≤ w) →
+        (∀ C ∈ clauses, (C.lits.map (·.idx)).Nodup) →
+        List (Core.CnfClause n)
+  | [], _, _ => []
+  | C :: rest, hwidth, hnodup =>
+      Clause.toCore (n := n) C (hnodup C (by simp))
+        :: toCoreClausesAux w rest
+            (fun D hD => hwidth D (by simp [List.mem_cons, hD]))
+            (fun D hD => hnodup D (by simp [List.mem_cons, hD]))
+
+@[simp] lemma toCoreClausesAux_nil (w : Nat)
+    (hwidth : ∀ C ∈ ([] : List (Clause n)), Clause.width C ≤ w)
+    (hnodup : ∀ C ∈ ([] : List (Clause n)), (C.lits.map (·.idx)).Nodup) :
+    toCoreClausesAux (n := n) w [] hwidth hnodup = [] := rfl
+
+@[simp] lemma toCoreClausesAux_cons (w : Nat) (C : Clause n)
+    (rest : List (Clause n))
+    (hwidth : ∀ D ∈ C :: rest, Clause.width D ≤ w)
+    (hnodup : ∀ D ∈ C :: rest, (D.lits.map (·.idx)).Nodup) :
+    toCoreClausesAux (n := n) w (C :: rest) hwidth hnodup
+      = Clause.toCore (n := n) C (hnodup C (by simp))
+          :: toCoreClausesAux (n := n) w rest
+              (fun D hD => hwidth D (by simp [List.mem_cons, hD]))
+              (fun D hD => hnodup D (by simp [List.mem_cons, hD])) := rfl
+
+/--
+  Любой элемент списка core-клауз, полученного функцией `toCoreClausesAux`, имеет
+  ширину, не превосходящую заданного порога `w`.
+-/
+lemma toCoreClausesAux_mem_width (w : Nat)
+    (clauses : List (Clause n))
+    (hwidth : ∀ C ∈ clauses, Clause.width C ≤ w)
+    (hnodup : ∀ C ∈ clauses, (C.lits.map (·.idx)).Nodup)
+    {C : Core.CnfClause n}
+    (hC : C ∈ toCoreClausesAux (n := n) w clauses hwidth hnodup) :
+    C.width ≤ w := by
+  classical
+  induction clauses generalizing C with
+  | nil => cases hC
+  | cons C₀ rest ih =>
+      have hwidth_tail : ∀ D ∈ rest, Clause.width D ≤ w := by
+        intro D hD
+        exact hwidth D (by simp [List.mem_cons, hD])
+      have hnodup_tail : ∀ D ∈ rest, (D.lits.map (·.idx)).Nodup := by
+        intro D hD
+        exact hnodup D (by simp [List.mem_cons, hD])
+      simp [toCoreClausesAux, hwidth_tail, hnodup_tail] at hC
+      rcases hC with hC | hC
+      · subst hC
+        simpa [Clause.toCore_width]
+          using hwidth C₀ (by simp : C₀ ∈ C₀ :: rest)
+      · exact ih hwidth_tail hnodup_tail hC
+
+/--
+  После преобразования в core-представление оценка списка клауз через `List.all`
+  совпадает с исходной AC⁰-оценкой.
+-/
+lemma toCoreClausesAux_all_eval (w : Nat)
+    (clauses : List (Clause n))
+    (hwidth : ∀ C ∈ clauses, Clause.width C ≤ w)
+    (hnodup : ∀ C ∈ clauses, (C.lits.map (·.idx)).Nodup)
+    (x : Core.BitVec n) :
+    List.all (toCoreClausesAux (n := n) w clauses hwidth hnodup)
+        (fun C => Core.CnfClause.eval C x)
+      = List.all clauses (fun C => Clause.eval C x) := by
+  classical
+  induction clauses with
+  | nil => simp [toCoreClausesAux]
+  | cons C rest ih =>
+      have hwidth_tail : ∀ D ∈ rest, Clause.width D ≤ w := by
+        intro D hD
+        exact hwidth D (by simp [List.mem_cons, hD])
+      have hnodup_tail : ∀ D ∈ rest, (D.lits.map (·.idx)).Nodup := by
+        intro D hD
+        exact hnodup D (by simp [List.mem_cons, hD])
+      -- Раскрываем определение `toCoreClausesAux` и переводим обе стороны к
+      -- явной форме через головной элемент и хвост.
+      change
+        List.all
+            (Clause.toCore (n := n) C (hnodup C (by simp))
+              :: toCoreClausesAux (n := n) w rest
+                (fun D hD => hwidth D (by simp [List.mem_cons, hD]))
+                (fun D hD => hnodup D (by simp [List.mem_cons, hD])))
+            (fun C => Core.CnfClause.eval C x)
+          =
+            (Clause.eval C x && List.all rest (fun C => Clause.eval C x))
+      have hheadEval :
+          Core.CnfClause.eval
+              (Clause.toCore (n := n) C (hnodup C (by simp))) x
+            = Clause.eval C x := by
+        simpa using Clause.toCore_eval (n := n) (C := C)
+          (hnodup := hnodup C (by simp [List.mem_cons])) (x := x)
+      -- Эксплицитно переписываем оценку головы через `List.any`, чтобы
+      -- сопоставить функции в `List.all_cons` по обе стороны равенства.
+      have hheadAny :
+          C.lits.any
+              (((fun ℓ : Core.Literal n => decide (x ℓ.idx = ℓ.value))
+                  ∘ Literal.toCore (n := n)))
+            = C.lits.any (fun ℓ => Literal.holds ℓ x) := by
+        simpa [Clause.eval, Clause.evalList, Literal.holds, Function.comp,
+          Clause.toCore, Core.CnfClause.eval, Core.Literal.eval, List.any_map]
+          using hheadEval
+      have htailEval :
+          List.all
+              (toCoreClausesAux (n := n) w rest
+                (fun D hD => hwidth D (by simp [List.mem_cons, hD]))
+                (fun D hD => hnodup D (by simp [List.mem_cons, hD])))
+              (fun C => Core.CnfClause.eval C x)
+            = List.all rest (fun C => Clause.eval C x) :=
+        ih hwidth_tail hnodup_tail
+      -- Аналогично переписываем хвост в терминах `List.any`, чтобы
+      -- сопоставить обобщённую оценку `htailEval` с нужным выражением.
+      have htailAny :
+          List.all
+              (toCoreClausesAux (n := n) w rest
+                (fun D hD => hwidth D (by simp [List.mem_cons, hD]))
+                (fun D hD => hnodup D (by simp [List.mem_cons, hD])))
+              (fun C => C.literals.any (fun ℓ => decide (x ℓ.idx = ℓ.value)))
+            = List.all rest
+                (fun C => C.lits.any (fun ℓ => decide (x ℓ.idx = ℓ.val))) := by
+        simpa [Clause.eval, Clause.evalList, Literal.holds, Clause.toCore,
+          Core.CnfClause.eval, Core.Literal.eval, Function.comp, List.any_map]
+          using htailEval
+      -- После подстановки равенств для головы и хвоста обе стороны
+      -- сводятся к тождеству `Clause.eval C x && _ = Clause.eval C x && _`.
+      -- Используем `simp`, чтобы довести выражение до рефлексивного равенства.
+      -- После подстановки `hheadAny` и `htail` обе стороны совпадают.
+      simp [List.all_cons, toCoreClausesAux, hwidth_tail, hnodup_tail,
+        hheadAny, htailAny]
+
+/--
+  Преобразование AC⁰-КНФ в core-КНФ фиксированной ширины.  Доказательства
+  ограничений передаются параметрами `hwidth` и `hnodup`.
+-/
+@[simp] def toCore (F : CNF n) (w : Nat)
+    (hwidth : ∀ C ∈ F.clauses, Clause.width C ≤ w)
+    (hnodup : ∀ C ∈ F.clauses, (C.lits.map (·.idx)).Nodup) :
+    Core.CNF n w where
+  clauses := toCoreClausesAux (n := n) w F.clauses hwidth hnodup
+  width_le := by
+    intro C hC
+    exact toCoreClausesAux_mem_width (n := n) w F.clauses hwidth hnodup
+      (C := C) hC
+
+/-- Оценка core-КНФ, полученной из AC⁰-КНФ, совпадает с исходной функцией. -/
+@[simp] lemma toCore_eval (F : CNF n) (w : Nat)
+    (hwidth : ∀ C ∈ F.clauses, Clause.width C ≤ w)
+    (hnodup : ∀ C ∈ F.clauses, (C.lits.map (·.idx)).Nodup)
+    (x : Core.BitVec n) :
+    (CNF.toCore (n := n) F w hwidth hnodup).eval x = eval F x := by
+  classical
+  cases F with
+  | mk clauses =>
+      -- Сначала используем предыдущее равенство с `Core.CnfClause.eval`,
+      -- после чего переписываем обе стороны через явные `List.any`.
+      have hallEval :=
+        toCoreClausesAux_all_eval (n := n) w clauses hwidth hnodup x
+      have hallAny :
+          List.all
+              (toCoreClausesAux (n := n) w clauses hwidth hnodup)
+              (fun C => C.literals.any (fun ℓ => decide (x ℓ.idx = ℓ.value)))
+            = List.all clauses
+                (fun C => C.lits.any (fun ℓ => decide (x ℓ.idx = ℓ.val))) := by
+        simpa [Clause.eval, Clause.evalList, Literal.holds, Clause.toCore,
+          Core.CnfClause.eval, Core.Literal.eval, Function.comp, List.any_map]
+          using hallEval
+      simp [CNF.toCore, CNF.eval, hallAny]
+
 end CNF
 
 namespace DNF
@@ -785,6 +1027,222 @@ lemma restrictEval_eq_eval (F : DNF n) (β : Subcube n) {x : Core.BitVec n}
           (q := fun T => Term.eval T x) hpointwise
 
 end DNF
+
+
+/-!
+### Схемы AC⁰ как деревья вентилей
+
+Для дальнейшей индукции по глубине AC⁰ удобно зафиксировать модель схем в виде
+дерева вентилей с неограниченным фан-ином.  Листьями выступают литералы (или
+константы), а внутренние узлы — вентиль `AND` или `OR`.
+-/
+
+/-- Схема AC⁰: листья — литералы и константы, внутренние узлы — AND/OR. -/
+inductive AC0Circuit (n : Nat) : Type
+  | const : Bool → AC0Circuit n
+  | literal : Literal n → AC0Circuit n
+  | andGate : List (AC0Circuit n) → AC0Circuit n
+  | orGate  : List (AC0Circuit n) → AC0Circuit n
+  deriving Inhabited, Repr
+
+namespace AC0Circuit
+
+variable {n : Nat}
+
+/-- Оценка схемы AC⁰ на входе `x`: листья — константы/литералы, внутренние
+    вершины агрегируют значения потомков при помощи `foldr`. -/
+@[simp] def eval : AC0Circuit n → Core.BitVec n → Bool
+  | const b, _ => b
+  | literal ℓ, x => Literal.holds ℓ x
+  | andGate cs, x => cs.foldr (fun C acc => eval C x && acc) true
+  | orGate cs, x => cs.foldr (fun C acc => eval C x || acc) false
+
+/-- Конъюнкция значений подформул, вынесенная в отдельный помощник для удобства
+    переписываний. -/
+@[simp] def evalListAnd (cs : List (AC0Circuit n)) (x : Core.BitVec n) : Bool :=
+  cs.foldr (fun C acc => eval (n := n) C x && acc) true
+
+/-- Дизъюнкция значений подформул в аналогичном формате. -/
+@[simp] def evalListOr (cs : List (AC0Circuit n)) (x : Core.BitVec n) : Bool :=
+  cs.foldr (fun C acc => eval (n := n) C x || acc) false
+
+@[simp] lemma eval_const (b : Bool) (x : Core.BitVec n) :
+    eval (const (n := n) b) x = b := by
+  simp [eval]
+
+@[simp] lemma eval_literal (ℓ : Literal n) (x : Core.BitVec n) :
+    eval (literal (n := n) ℓ) x = Literal.holds ℓ x := by
+  simp [eval]
+
+@[simp] lemma eval_andGate (cs : List (AC0Circuit n)) (x : Core.BitVec n) :
+    eval (andGate (n := n) cs) x
+      = evalListAnd (n := n) cs x := by
+  simpa [eval, evalListAnd]
+
+@[simp] lemma eval_orGate (cs : List (AC0Circuit n)) (x : Core.BitVec n) :
+    eval (orGate (n := n) cs) x
+      = evalListOr (n := n) cs x := by
+  simpa [eval, evalListOr]
+
+@[simp] lemma eval_andGate_nil (x : Core.BitVec n) :
+    eval (andGate (n := n) []) x = true := by
+  simp [eval, evalListAnd]
+
+@[simp] lemma eval_orGate_nil (x : Core.BitVec n) :
+    eval (orGate (n := n) []) x = false := by
+  simp [eval, evalListOr]
+
+@[simp] lemma eval_andGate_cons (C : AC0Circuit n) (cs : List (AC0Circuit n))
+    (x : Core.BitVec n) :
+    eval (andGate (n := n) (C :: cs)) x
+      = (eval C x && eval (andGate (n := n) cs) x) := by
+  simp [eval_andGate, evalListAnd]
+
+@[simp] lemma eval_orGate_cons (C : AC0Circuit n) (cs : List (AC0Circuit n))
+    (x : Core.BitVec n) :
+    eval (orGate (n := n) (C :: cs)) x
+      = (eval C x || eval (orGate (n := n) cs) x) := by
+  simp [eval_orGate, evalListOr]
+
+/--
+  Ограничение схемы AC⁰ подкубом `β`.  Мы рекурсивно обходим дерево
+  схемы и заменяем фиксированные литералы на константы, в то время как
+  остальные узлы остаются прежними.  Такое определение удобно для
+  дальнейшего анализа switching-леммы: после фиксации переменных мы
+  можем рассуждать о глубине и размере оставшейся схемы, не меняя
+  синтаксическую форму.
+-/
+@[simp] def restrict (C : AC0Circuit n) (β : Core.Subcube n) : AC0Circuit n :=
+  match C with
+  | const b => const (n := n) b
+  | literal ℓ =>
+      match β ℓ.idx with
+      | some b =>
+          if h : b = ℓ.val then
+            const (n := n) true
+          else
+            const (n := n) false
+      | none => literal (n := n) ℓ
+  | andGate cs => andGate (n := n) (cs.map fun C => restrict C β)
+  | orGate cs  => orGate (n := n) (cs.map fun C => restrict C β)
+
+/--
+  Ограничение не меняет значение схемы на точках, совместимых с подкубом.
+  Это фундаментальная лемма: она гарантирует, что после замены части
+  переменных константами схема вычисляет ту же функцию на всех
+  продолжениях `β`.
+-/
+lemma restrict_eval_mem :
+    ∀ (C : AC0Circuit n) (β : Core.Subcube n) {x : Core.BitVec n},
+      Core.mem β x → eval (restrict (n := n) C β) x = eval C x
+  | const b, β, x, hx => by
+      simp [restrict]
+  | literal ℓ, β, x, hx => by
+      classical
+      cases hβ : β ℓ.idx with
+      | none =>
+          simp [restrict, hβ]
+      | some b =>
+          have hx_idx : x ℓ.idx = b :=
+            (Core.mem_iff (β := β) (x := x)).mp hx ℓ.idx b hβ
+          by_cases hb : b = ℓ.val
+          · subst hb
+            simp [Literal.holds, restrict, hβ, hx_idx]
+          · have hne : x ℓ.idx ≠ ℓ.val := by
+              intro hcontr
+              exact hb (by simpa [hx_idx] using hcontr)
+            simp [Literal.holds, restrict, hβ, hx_idx, hb, hne]
+  | andGate [], β, x, hx => by
+      simp [restrict, eval_andGate, evalListAnd]
+  | andGate (C :: cs), β, x, hx => by
+      classical
+      have hC := restrict_eval_mem (C := C) (β := β) (x := x) hx
+      have hrest := restrict_eval_mem (C := andGate cs) (β := β) (x := x) hx
+      have hrest' :
+          eval (andGate (n := n) (cs.map fun D => restrict (n := n) D β)) x
+            = eval (andGate (n := n) cs) x := by
+        simpa [restrict] using hrest
+      have hrest_fold :
+          List.foldr (fun C acc => eval (n := n) C x && acc) true
+              (cs.map fun D => restrict (n := n) D β)
+            = List.foldr (fun C acc => eval (n := n) C x && acc) true cs := by
+        simpa [eval_andGate, evalListAnd] using hrest'
+      simp [restrict, eval_andGate_cons, hC, hrest_fold]
+  | orGate [], β, x, hx => by
+      simp [restrict, eval_orGate, evalListOr]
+  | orGate (C :: cs), β, x, hx => by
+      classical
+      have hC := restrict_eval_mem (C := C) (β := β) (x := x) hx
+      have hrest := restrict_eval_mem (C := orGate cs) (β := β) (x := x) hx
+      have hrest' :
+          eval (orGate (n := n) (cs.map fun D => restrict (n := n) D β)) x
+            = eval (orGate (n := n) cs) x := by
+        simpa [restrict] using hrest
+      have hrest_fold :
+          List.foldr (fun C acc => eval (n := n) C x || acc) false
+              (cs.map fun D => restrict (n := n) D β)
+            = List.foldr (fun C acc => eval (n := n) C x || acc) false cs := by
+        simpa [eval_orGate, evalListOr] using hrest'
+      simp [restrict, eval_orGate_cons, hC, hrest_fold]
+/-- Размер схемы AC⁰: суммарное число узлов. -/
+@[simp] def size : AC0Circuit n → Nat
+  | const _ => 1
+  | literal _ => 1
+  | andGate cs => 1 + (cs.map size).sum
+  | orGate cs  => 1 + (cs.map size).sum
+
+@[simp] lemma size_const (b : Bool) :
+    size (const (n := n) b) = 1 := by
+  simp [size]
+
+@[simp] lemma size_literal (ℓ : Literal n) :
+    size (literal (n := n) ℓ) = 1 := by
+  simp [size]
+
+lemma size_andGate (cs : List (AC0Circuit n)) :
+    size (andGate (n := n) cs) = 1 + (cs.map size).sum := by
+  simp [size]
+
+lemma size_orGate (cs : List (AC0Circuit n)) :
+    size (orGate (n := n) cs) = 1 + (cs.map size).sum := by
+  simp [size]
+
+/-- Глубина схемы: число слоёв вентилей.  Используем свёртку по списку, чтобы
+    выделить максимум глубин среди потомков. -/
+@[simp] def depth : AC0Circuit n → Nat
+  | const _ => 0
+  | literal _ => 0
+  | andGate cs => Nat.succ (cs.foldl (fun acc C => Nat.max acc (depth C)) 0)
+  | orGate cs  => Nat.succ (cs.foldl (fun acc C => Nat.max acc (depth C)) 0)
+
+/-- Удобное обозначение для «максимальной глубины» в списке подформул. -/
+@[simp] def depthList (cs : List (AC0Circuit n)) : Nat :=
+  cs.foldl (fun acc C => Nat.max acc (depth (n := n) C)) 0
+
+@[simp] lemma depth_andGate (cs : List (AC0Circuit n)) :
+    depth (andGate (n := n) cs)
+      = Nat.succ (depthList (n := n) cs) := by
+  simp [depth, depthList]
+
+@[simp] lemma depth_orGate (cs : List (AC0Circuit n)) :
+    depth (orGate (n := n) cs)
+      = Nat.succ (depthList (n := n) cs) := by
+  simp [depth, depthList]
+
+lemma size_pos (C : AC0Circuit n) : 0 < size (n := n) C := by
+  cases C with
+  | const _ => simp [size]
+  | literal _ => simp [size]
+  | andGate cs =>
+      -- `size` равно `Nat.succ _`, поэтому используем `Nat.succ_pos`.
+      simpa [size, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+        Nat.succ_eq_add_one] using Nat.succ_pos ((cs.map size).sum)
+  | orGate cs =>
+      -- Тот же аргумент для дизъюнктивного вентиля.
+      simpa [size, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc,
+        Nat.succ_eq_add_one] using Nat.succ_pos ((cs.map size).sum)
+
+end AC0Circuit
 
 end AC0
 end Pnp3

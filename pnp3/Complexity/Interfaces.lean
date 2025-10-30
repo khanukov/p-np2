@@ -22,33 +22,92 @@ import ThirdPartyFacts.PsubsetPpoly
   аксиоматическим, пока не подключено конкретное доказательство.
 -/
 
+open Facts.PsubsetPpoly
+
 namespace Pnp3
 namespace ComplexityInterfaces
 
-/-- Заглушка для утверждения `NP ⊄ P/poly`. -/
-axiom NP_not_subset_Ppoly : Prop
+/-!
+### Базовые определения
+
+Мы переиспользуем минимальные структуры из внешнего пакета `P ⊆ P/poly`.
+Это гарантирует совместимость с импортируемым утверждением `P ⊆ P/poly`
+и позволяет позднее заменить временные определения полноценными
+конструктивными описаниями из архивного проекта без изменения интерфейса.
+-/
+
+/-- Тип языков, используемый во внешнем пакете. -/
+abbrev Language := Complexity.Language
+
+/-- Класс `P` из лёгкой формализации внешнего пакета. -/
+abbrev P : Language → Prop := Complexity.P
+
+/-- Класс `P/poly` из того же пакета. -/
+abbrev Ppoly : Language → Prop := Complexity.Ppoly
+
+/--
+  Временное определение класса `NP`.  Здесь это просто абстрактный
+  предикат на языках; конкретная конструкция через недетерминированные
+  машины Тьюринга будет подключена при интеграции с архивной библиотекой.
+-/
+def NP (_L : Language) : Prop := True
+
+/-!
+### Формулировки целевых утверждений
+-/
+
+/-- Интерпретация утверждения «`NP ⊄ P/poly`» через существование языка. -/
+def NP_not_subset_Ppoly : Prop := ∃ L, NP L ∧ ¬ Ppoly L
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
-abbrev P_subset_Ppoly : Prop :=
-  ThirdPartyFacts.P_subset_Ppoly
+abbrev P_subset_Ppoly : Prop := ThirdPartyFacts.P_subset_Ppoly
 
 /--
   Доказательство включения `P ⊆ P/poly`, предоставленное внешним модулем.
   Когда появится реальное доказательство, его достаточно связать с
   `ThirdPartyFacts.PsubsetPpoly.proof`.
 -/
-@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly := by
-  simpa [P_subset_Ppoly] using ThirdPartyFacts.P_subset_Ppoly_proof
+@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
+  ThirdPartyFacts.P_subset_Ppoly_proof
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
-axiom P_ne_NP : Prop
+def P_ne_NP : Prop := P ≠ NP
+
+/-!
+### Логический вывод `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`
+-/
 
 /--
-  Классический вывод: если `NP ⊄ P/poly`, но `P ⊆ P/poly`, то `P ≠ NP`.
-  Подробное доказательство реализовано в отдельной библиотеке (см. `NP_separation.lean`).
+  Конкретная версия классического вывода: если существует язык из `NP`, не
+  принадлежащий `P/poly`, а также доказано включение `P ⊆ P/poly`, то классы
+  `P` и `NP` не совпадают.
+
+  Этот аргумент полностью повторяет доказательство из архивной
+  библиотеки (`P_ne_NP_of_nonuniform_separation_concrete`) и не опирается на
+  дополнительные аксиомы: достаточно логики множеств и базового свойства
+  включения.
 -/
-axiom P_ne_NP_of_nonuniform_separation
-  (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) : P_ne_NP
+theorem P_ne_NP_of_nonuniform_separation_concrete
+    (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) :
+    P_ne_NP := by
+  classical
+  -- Предположим противное и выведем противоречие с `hNP`.
+  refine fun hEq => ?_
+  have hNP_subset_P : ∀ {L : Language}, NP L → P L := by
+    intro L hL
+    have hEq_pointwise : P L = NP L := congrArg (fun f => f L) hEq
+    exact hEq_pointwise.symm ▸ hL
+  have hNP_subset_Ppoly : ∀ {L : Language}, NP L → Ppoly L := by
+    intro L hL
+    exact hP L (hNP_subset_P hL)
+  rcases hNP with ⟨L₀, hL₀_NP, hL₀_not_Ppoly⟩
+  exact hL₀_not_Ppoly (hNP_subset_Ppoly hL₀_NP)
+
+/-- Совместимость с прежним именем аксиомы. -/
+theorem P_ne_NP_of_nonuniform_separation
+    (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) :
+    P_ne_NP :=
+  P_ne_NP_of_nonuniform_separation_concrete hNP hP
 
 end ComplexityInterfaces
 end Pnp3

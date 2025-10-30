@@ -1,5 +1,5 @@
 # P≠NP formalization repository
-> **Status (2025-10-24)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  The previous `Pnp2/` development is kept for historical context and reproducibility of the FCE-Lemma programme.
+> **Status (2025-10-24)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  Earlier constructive pipelines remain archived for provenance but are no longer part of the active build.
 
 This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for (Gap)MCSP and, eventually, into a full separation.
 
@@ -11,7 +11,7 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 
 **Documentation**: See [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for axiom tracking.
 
-Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  Those files remain available under `Pnp2/` as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era.
+Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  The corresponding sources are kept offline as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era when needed.
 
 ## Repository layout
 
@@ -30,7 +30,7 @@ Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-En
 * `experiments/` – Python tooling for enumerating small Boolean circuits, computing entropy statistics, and replaying classic experiments.  The scripts double as sanity checks for analytic bounds derived in `pnp3/`.
 * `scripts/` – helper shell/Lean scripts (`scripts/check.sh`, smoke tests, cache warmers).
 * `TODO.md` – current task tracking and migration checklists.
-* `Pnp2/` – archived source of the FCE-Lemma programme (fully proved cover construction, constructive `P ⊆ P/poly`, and magnification axioms).  Historical documentation is in `Pnp2/docs/`.  These files are no longer actively extended but provide provenance for the transition to PNP3.
+
 
 ## Toolchain and build
 
@@ -58,7 +58,7 @@ lake test                           # helper executables
 ./scripts/check.sh                  # full build + smoke test
 ```
 
-The archived `Pnp2/` tests can still be invoked via `lean --run Pnp2/examples.lean` when required.
+
 
 ## Development conventions
 
@@ -68,10 +68,10 @@ The archived `Pnp2/` tests can still be invoked via `lean --run Pnp2/examples.le
 
 ## Historical note: from FCE to SAL
 
-The shift from the FCE-Lemma pipeline (`Pnp2/`) to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
+The shift from the FCE-Lemma pipeline to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
 
 1. The constructive cover machinery is preserved for reproducibility but no longer drives the main separation strategy.
 2. SAL-based magnification aligns better with contemporary lower-bound techniques and offers a clearer path to hardness for (Gap)MCSP.
-3. All new development happens inside `pnp3/`, while the `Pnp2/` directory serves as a reference implementation of earlier results.
+3. All new development happens inside `pnp3/`, while the legacy directories only serve as archival references for earlier results.
 
 For detailed migration plans and milestone tracking, consult `pnp3/Docs/PLAN.md` and the root `TODO.md`.

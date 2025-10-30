@@ -2,9 +2,9 @@
 
 This directory packages the classical Erdős–Rado sunflower lemma as a
 self-contained Lake project.  The development mirrors the original
-formalisation from the archival `Pnp2` repository but is reorganised so
-that other projects can import the lemma without pulling in the rest of
-the historical code base.
+formalisation from the archival boolean complexity prototype but is
+reorganised so that other projects can import the lemma without pulling in the
+rest of the historical code base.
 
 ## Layout
 
@@ -34,7 +34,8 @@ Sunflower.sunflower_exists_classic
 ```
 together with the `SunflowerFam` structure used by the constructive cover
 algorithm.  The auxiliary module also provides the `RSpread` predicate
-that appears in the entropy-based arguments elsewhere in `Pnp2`.
+that appears in the entropy-based arguments of the archival boolean complexity
+prototype.
 
 ## Building the package locally
 

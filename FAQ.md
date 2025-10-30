@@ -113,7 +113,7 @@ The entire development is open source and self-contained.
 
 **A:** This repository contains three iterations:
 
-- **PNP1/PNP2**: Family Collision-Entropy (FCE) Lemma approach (archived in `Pnp2/`)
+- **PNP1/PNP2**: Family Collision-Entropy (FCE) Lemma approach (archived in the legacy library)
 - **PNP3**: Current SAL-based approach (active in `pnp3/`)
 
 The shift reflects lessons learned during 2025 audit. PNP2 files remain available for historical context and reproducibility, but active development focuses on PNP3.

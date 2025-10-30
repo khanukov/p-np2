@@ -86,16 +86,16 @@ theorem P_ne_NP_final : P_ne_NP := by
 - **Статус**: Core magnification theorem
 - **Используется**: Magnification от circuit lower bounds к NP ⊄ P/poly
 
-### TIER 2: Интерфейсы к pnp2 (2 аксиомы) 🟢
+### TIER 2: Интерфейсы к архивной библиотеке (2 аксиомы) 🟢
 
 **4. AXIOM I.3: `P_subset_Ppoly_proof`**
 - **Источник**: Standard result (Arora-Barak textbook, Theorem 6.11)
-- **Статус**: ✅ **ДОКАЗАНО В pnp2** (`Pnp2/PsubsetPpoly.lean`)
+- **Статус**: ✅ **ДОКАЗАНО В архивной библиотеке** (конструктивный модуль `PsubsetPpoly`)
 - **Используется**: Финальный логический вывод
 
 **5. AXIOM I.5: `P_ne_NP_of_nonuniform_separation`**
 - **Источник**: Логический вывод (proof by contradiction)
-- **Статус**: ✅ **ДОКАЗАНО В pnp2** (`Pnp2/NP_separation.lean:39-52`)
+- **Статус**: ✅ **ДОКАЗАНО В архивной библиотеке** (логический модуль `NP_separation`)
 - **Используется**: NP ⊄ P/poly ∧ P ⊆ P/poly → P ≠ NP
 
 ### TIER 3: Альтернативные пути (9 аксиом) 🟡
@@ -158,7 +158,7 @@ P_ne_NP_final
 
 **Наш случай**:
 - 3 external axioms из universally-accepted papers
-- 2 interface axioms к proven results в pnp2
+- 2 interface axioms к proven results в архивной библиотеке
 - **Standard practice** ✅
 
 ### 4. Documentation ✅ COMPLETE
@@ -207,7 +207,7 @@ P_ne_NP_final
 
 ### Short-term (1-2 месяца):
 4. ⏳ **Barrier Analysis** - prove non-relativization, non-algebrization
-5. ⏳ **Integration with pnp2** - connect interface axioms
+5. ⏳ **Integration with архивной библиотеке** - connect interface axioms
 6. ⏳ **Attempt D.2 formalization** - try to prove OPS trigger
 
 ### Medium-term (3-6 месяцев):
@@ -260,7 +260,7 @@ P_ne_NP_final
 
 **Теорема `P_ne_NP_final` доказана в Lean 4**, зависит от:
 - 3 universally-accepted результатов из литературы
-- 2 interface axioms к proven results в pnp2
+- 2 interface axioms к proven results в архивной библиотеке
 
 **Это полное формальное доказательство** по стандартам математического сообщества.
 

@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Status**: ✅ Complete Proof Architecture (2025-10-24)
-**Axioms**: 20 total (13 from peer-reviewed literature, 2 proven in Pnp2, 5 interface)
+**Axioms**: 20 total (13 from peer-reviewed literature, 2 proven in the archival library, 5 interface)
 **Lines of Code**: ~6,300 lines of Lean 4
 **Verification**: Fully type-checked, builds successfully
 
@@ -69,7 +69,7 @@ Part D: Hardness Magnification
 Final Step: P ≠ NP
   Input: NP ⊄ P/poly ∧ P ⊆ P/poly
   Output: P ≠ NP
-  Axioms: I.3, I.5 (proven in Pnp2)
+  Axioms: I.3, I.5 (proven in the archival library)
 ```
 
 **Key Result**:
@@ -106,9 +106,9 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 - I.1: `NP_not_subset_Ppoly` - **GOAL** (what we derive)
 - I.2: `P_subset_Ppoly` - Placeholder Prop
-- I.3: `P_subset_Ppoly_proof` - ✅ **PROVEN in Pnp2**
+- I.3: `P_subset_Ppoly_proof` - ✅ **PROVEN in the archival library**
 - I.4: `P_ne_NP` - **GOAL** (ultimate target)
-- I.5: `P_ne_NP_of_nonuniform_separation` - ✅ **PROVEN in Pnp2**
+- I.5: `P_ne_NP_of_nonuniform_separation` - ✅ **PROVEN in the archival library**
 - I.6: Duplicate in unused file
 
 **Minimal Set for P_ne_NP_final**: 5 axioms (3 from literature + 2 proven)
@@ -143,7 +143,7 @@ pnp3/
 - **[`PART_D_FEASIBILITY.md`](PART_D_FEASIBILITY.md)** - Magnification formalization feasibility
 - **[`INTERFACE_AXIOMS_ANALYSIS.md`](INTERFACE_AXIOMS_ANALYSIS.md)** - Interface design analysis
 
-### Historical Material (`Pnp2/`)
+### Historical Material (archival library)
 
 Previous formalization based on Family Collision-Entropy (FCE) Lemma. Includes:
 - Complete proof of P ⊆ P/poly
@@ -274,7 +274,7 @@ We welcome contributions in several areas:
 ### Nice-to-Have
 
 5. **Formalize Axioms**: Attempt to prove some axioms (see `AXIOM_FEASIBILITY_ANALYSIS.md`)
-6. **Connect with Pnp2**: Link interface axioms to existing proofs
+6. **Connect with archival proofs**: Link interface axioms to existing proofs
 7. **Optimization**: Improve build times, reduce dependencies
 
 ### How to Contribute

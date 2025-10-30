@@ -151,12 +151,12 @@ theorem antiChecker_construction_goal
 **I.2: `P_subset_Ppoly : Prop`** ⚠️ INTERFACE
 - **Файл**: `Complexity/Interfaces.lean:28`
 - **Статус**: Abstract Prop
-- **Конкретное**: Доказано в pnp2
+- **Конкретное**: Доказано в архивной библиотеке
 
 **I.3: `P_subset_Ppoly_proof`** ⚠️ INTERFACE
 - **Файл**: `Complexity/Interfaces.lean:31`
 - **Статус**: ❌ Axiom в pnp3
-- **Конкретное**: Доказано в pnp2 (`Pnp2/ComplexityClasses.lean:87-91`)
+- **Конкретное**: Доказано в архивной библиотеке (конструктивное доказательство)
 
 **I.4: `P_ne_NP : Prop`** ⚠️ GOAL
 - **Файл**: `Complexity/Interfaces.lean:34`
@@ -166,7 +166,7 @@ theorem antiChecker_construction_goal
 **I.5: `P_ne_NP_of_nonuniform_separation`** ⚠️ INTERFACE
 - **Файл**: `Complexity/Interfaces.lean:40`
 - **Статус**: ❌ Axiom в pnp3 (abstract Props)
-- **Конкретное**: Доказано в pnp2 (`Pnp2/NP_separation.lean:39-52`)
+- **Конкретное**: Доказано в архивной библиотеке (логический вывод)
 
 **I.6: `P_subset_Ppoly` (дубликат в ComplexityClasses.lean)** ⚠️
 - **Файл**: `Complexity/ComplexityClasses.lean`
@@ -202,7 +202,7 @@ P_ne_NP_final
 **Из них реально недоказанные из литературы: 3 axioms**
 - A.1, C.7, D.2
 
-**Interface axioms (доказаны в pnp2): 2 axioms**
+**Interface axioms (доказаны в архивной библиотеке): 2 axioms**
 - I.3, I.5
 
 ### 2. Что означают "sorry" в ComplexityClasses.lean?
@@ -226,7 +226,7 @@ def InPpoly (L : Language) : Prop :=
 - Это НЕ настоящие доказательства
 
 **Решение**: Либо:
-1. Импортировать полные определения из pnp2 (требует много dependencies)
+1. Импортировать полные определения из архивной библиотеки (требует много dependencies)
 2. Оставить Interfaces.lean с abstract Props (текущий design - правильный!)
 
 ---
@@ -427,7 +427,7 @@ def AntiCheckerSeparationProperty ... : Prop :=
 
 **Interface**:
 4. **I.3, I.5** - ~10-20 hours
-   - Import from pnp2 OR
+  - Import from the archival library OR
    - Reimplement minimal versions
 
 **Total estimate**: 750-1420 hours (5-9 months full-time work)

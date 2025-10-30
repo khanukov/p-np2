@@ -514,7 +514,7 @@ third-party module `ThirdPartyFacts/PsubsetPpoly.lean`.
 ссылка на внешнее доказательство.
 
 **Literature Reference**: Реальное доказательство можно взять, например, из
-каталога `Pnp2/` или `Facts/PsubsetPpoly/`.
+архивного конструктивного каталога или `Facts/PsubsetPpoly/`.
 
 **Status**: ✅ **Supplied by ThirdPartyFacts** — благодаря выделенному
 пространству имён `Facts.PsubsetPpoly` конфликтов больше нет, и модуль
@@ -527,7 +527,7 @@ third-party module `ThirdPartyFacts/PsubsetPpoly.lean`.
 #### Integration notes (external proof)
 
 `Facts/PsubsetPpoly` теперь целиком namespaced как `Facts.PsubsetPpoly`, поэтому
-никаких коллизий с историческими модулями `Pnp2` не возникает.  Обновлённый
+никаких коллизий с историческими архивами не возникает.  Обновлённый
 процесс описан в `Docs/PsubsetPpolyIntegration.md` и уже используется в сборке
 `pnp3`.
 
@@ -564,7 +564,7 @@ axiom P_ne_NP_of_nonuniform_separation
 
 **Literature Reference**: Standard separation argument (any complexity theory textbook)
 
-**Status**: ✅ **PROVEN in Pnp2/NP_separation.lean:39-52** AND in pnp3/Complexity/ComplexityClasses.lean:124-143
+**Status**: ✅ **PROVEN in the archival library** AND in pnp3/Complexity/ComplexityClasses.lean:124-143
 
 **Why Axiom Here**: Interface design with abstract Props (cannot prove without concrete definitions)
 
@@ -618,7 +618,7 @@ axiom P_subset_Ppoly : P ⊆ Ppoly
 
 | Status | Count | Axioms |
 |--------|-------|--------|
-| ✅ **Proven in Pnp2** | 2 | I.3, I.5 |
+| ✅ **Proven in archival library** | 2 | I.3, I.5 |
 | ✅ **Proven in pnp3** | 1 | I.5 (also in ComplexityClasses.lean) |
 | ⚠️ **Goals** | 2 | I.1, I.4 (what we derive) |
 | 📝 **Placeholders** | 2 | I.2, I.6 (interface design) |
@@ -630,8 +630,8 @@ axiom P_subset_Ppoly : P ⊆ Ppoly
 1. A.1 (`partial_shrinkage_for_AC0`) - Switching Lemma
 2. C.7 (`antiChecker_exists_testset`) - Anti-Checker with test set
 3. D.2 (`OPS_trigger_formulas`) - Magnification trigger
-4. I.3 (`P_subset_Ppoly_proof`) - P ⊆ P/poly (proven in Pnp2)
-5. I.5 (`P_ne_NP_of_nonuniform_separation`) - Logical inference (proven in Pnp2)
+4. I.3 (`P_subset_Ppoly_proof`) - P ⊆ P/poly (proven in archival library)
+5. I.5 (`P_ne_NP_of_nonuniform_separation`) - Logical inference (proven in archival library)
 
 **Of these, 2 are proven** (I.3, I.5), **3 are from peer-reviewed literature** (A.1, C.7, D.2).
 
@@ -654,9 +654,9 @@ axiom P_subset_Ppoly : P ⊆ Ppoly
 
 1. **All axioms represent well-established results**: Every external axiom (13 total) comes from peer-reviewed publications in top venues (STOC, CCC, FOCS, JACM).
 
-2. **Interface axioms (I.1-I.6) by design**: Used for modularity between pnp3 and Pnp2 modules. Two are proven in Pnp2, two are goals, two are placeholders.
+2. **Interface axioms (I.1-I.6) by design**: Used for modularity between pnp3 and the archival library. Two are proven in that archive, two are goals, two are placeholders.
 
-3. **No circular dependencies**: Goals (I.1, I.4) are derived, not assumed. Proven axioms (I.3, I.5) represent external facts from Pnp2.
+3. **No circular dependencies**: Goals (I.1, I.4) are derived, not assumed. Proven axioms (I.3, I.5) represent external facts from the archival library.
 
 4. **ComplexityClasses.lean duplicate**: I.6 is duplicate of I.3 in an unused file with sorry errors. Not part of active proof chain.
 

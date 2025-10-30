@@ -155,22 +155,22 @@ error: declaration uses 'sorry'
 
 ---
 
-### Вариант 2: Соединить с Pnp2 ⚠️ **ВОЗМОЖНО** (10-20 часов)
+### Вариант 2: Соединить с архивной библиотекой ⚠️ **ВОЗМОЖНО** (10-20 часов)
 
 **Что делать**:
-1. Добавить Pnp2 как dependency для PnP3 в lakefile
-2. Изменить Interfaces.lean чтобы использовать concrete types из Pnp2
-3. Написать magnification proof используя Pnp2 infrastructure
+1. Добавить архивную библиотеку как dependency для PnP3 в lakefile
+2. Изменить Interfaces.lean чтобы использовать concrete types из архивной библиотеки
+3. Написать magnification proof используя инфраструктуру архивной библиотеки
 
 **Pros**:
 - ✅ Получаем concrete NP, P/poly definitions
 - ✅ Можем потенциально доказать magnification
 
 **Cons**:
-- ❌ Нарушает модульность (pnp3 → Pnp2 dependency)
+- ❌ Нарушает модульность (pnp3 → зависимость от архивной библиотеки)
 - ❌ Все равно нужно 50-100 часов на reduction proof
 - ❌ Может создать circular dependencies
-- ❌ Требует TM/circuit infrastructure из Pnp2
+- ❌ Требует TM/circuit infrastructure из архивной библиотеки
 
 **Сложность**: 10 часов (setup) + 50-100 часов (magnification proof)
 
@@ -189,12 +189,12 @@ error: declaration uses 'sorry'
 
 **Pros**:
 - ✅ Self-contained в pnp3
-- ✅ Не зависит от Pnp2
+- ✅ Не зависит от архивной библиотеки
 - ✅ Complete formalization
 
 **Cons**:
 - ❌ ОГРОМНАЯ работа (100-200 часов)
-- ❌ Дублирует код из Pnp2
+- ❌ Дублирует код из архивной библиотеки
 - ❌ Требует probability theory для some reductions
 - ❌ Может все равно остаться 1-2 axioms
 
@@ -290,7 +290,7 @@ def FormulaLowerBoundHypothesis (p : GapMCSPParams) (δ : Rat) : Prop :=
 
 | Компонент | Часы | Примечание |
 |-----------|------|------------|
-| Concrete NP/P/poly | 20-30 | Or import from Pnp2 |
+| Concrete NP/P/poly | 20-30 | Or import from архивной библиотекой |
 | SAT formalization | 10-15 | Standard |
 | Circuit-to-solver | 15-25 | Technical |
 | Reduction proof | 10-20 | Check correctness |
@@ -356,7 +356,7 @@ def FormulaLowerBoundHypothesis (p : GapMCSPParams) (δ : Rat) : Prop :=
    - Результат: Demo что formalization possible
    - Оставить 4 axioms
 
-2. **Вариант B**: Связать с Pnp2 и доказать I.3, I.5 ✅
+2. **Вариант B**: Связать с архивной библиотекой и доказать I.3, I.5 ✅
    - Время: 10-20 часов
    - Результат: Убрать 2 interface axioms
    - Всего: 18 axioms вместо 20
@@ -406,7 +406,7 @@ def FormulaLowerBoundHypothesis (p : GapMCSPParams) (δ : Rat) : Prop :=
 
 **С текущей архитектурой**: ❌ НЕЛЬЗЯ (abstract Props)
 
-**С доработками**: ✅ МОЖНО (либо Pnp2 connection, либо rebuild infrastructure)
+**С доработками**: ✅ МОЖНО (либо архивной библиотекой connection, либо rebuild infrastructure)
 
 ### Что Мешает?
 
@@ -424,7 +424,7 @@ def FormulaLowerBoundHypothesis (p : GapMCSPParams) (δ : Rat) : Prop :=
 **Почему**:
 1. Mathematical content PROVEN (OPS 2019)
 2. Standard practice (reference literature)
-3. Focus на valuable work (not duplicate Pnp2)
+3. Focus на valuable work (not duplicate архивной библиотекой)
 4. 5 axioms = excellent result!
 
 **Если хочется improvement**: 🤔 Доказать 1-2 axioms (20-50 часов) как demo

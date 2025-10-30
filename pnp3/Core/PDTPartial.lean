@@ -97,6 +97,18 @@ lemma leafDict_length_le_pow_depth (Q : PartialDT n ℓ) :
   change (PDT.leaves Q.trunk).length ≤ Nat.pow 2 (PDT.depth Q.trunk)
   exact PDT.leaves_length_le_pow_depth Q.trunk
 
+/--
+  Лист хвоста частичного дерева остаётся листом и после раскрытия всех
+  хвостов.  Это прямое применение леммы `PDT.mem_leaves_refine_of_mem_tail`.
+-/
+lemma mem_realize_of_mem_tail (Q : PartialDT n ℓ)
+    {β₀ : Subcube n} (hβ₀ : β₀ ∈ PDT.leaves Q.trunk)
+    {β : Subcube n}
+    (hβ : β ∈ PDT.leaves (Q.tails β₀ hβ₀)) :
+    β ∈ PDT.leaves Q.realize := by
+  change β ∈ PDT.leaves (PDT.refine Q.trunk Q.tails)
+  exact PDT.mem_leaves_refine_of_mem_tail hβ₀ hβ
+
 /-- Глубина реализованного дерева также контролирует число листьев. -/
 lemma realize_leaves_length_le (Q : PartialDT n ℓ) :
     (PDT.leaves Q.realize).length ≤ Nat.pow 2 (PDT.depth Q.trunk + ℓ) := by

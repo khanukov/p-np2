@@ -1,10 +1,10 @@
 /-
   Facts/Sunflower/FactSunflower/Proof/Sunflower/RSpread.lean
 
-  Basic facts about `R`-spread families.  The statements match the
-  auxiliary lemmas from the archival `Pnp2` project but are placed in
-  the standalone fact package so that downstream users can import them
-  without additional dependencies.
+  Basic facts about `R`-spread families.  The statements match the auxiliary
+  lemmas from the archival boolean complexity prototype but are placed in the
+  standalone fact package so that downstream users can import them without
+  additional dependencies.
 -/
 
 import Mathlib.Analysis.SpecialFunctions.Pow.Real

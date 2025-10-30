@@ -1,18 +1,12 @@
 import Lake
 open Lake DSL
 
-package pnp2
+package pnp3
 
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.22.0-rc2"
 require fact_psubset_ppoly from "./Facts/PsubsetPpoly"
 require fact_locality_lift from "./Facts/LocalityLift"
-
-lean_lib Pnp2 where
-  srcDir := "Pnp2"
-  globs := #[
-    `ComplexityClasses,
-    `NP_separation
-  ]
+require fact_sunflower from "./Facts/Sunflower"
 
 @[default_target]
 lean_lib PnP3 where

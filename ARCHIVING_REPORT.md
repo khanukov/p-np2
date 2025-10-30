@@ -139,8 +139,8 @@ lake build pnp3/Magnification/FinalResult.lean
 1. `partial_shrinkage_for_AC0` (A.1)
 2. `antiChecker_exists_testset` (C.7)
 3. `OPS_trigger_formulas` (D.2)
-4. `P_subset_Ppoly_proof` (I.3) - claimed proven in pnp2
-5. `P_ne_NP_of_nonuniform_separation` (I.5) - claimed proven in pnp2
+4. `P_subset_Ppoly_proof` (I.3) - claimed proven in the archival library
+5. `P_ne_NP_of_nonuniform_separation` (I.5) - claimed proven in the archival library
 
 ---
 

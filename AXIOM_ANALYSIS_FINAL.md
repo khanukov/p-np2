@@ -115,7 +115,7 @@ python3 analyze_imports.py
 
 **I.5** `P_ne_NP_of_nonuniform_separation` 🔴 **CRITICAL**
 - File: `pnp3/Complexity/Interfaces.lean:40`
-- Status: ✅ Claimed proven in `Pnp2/NP_separation.lean:39-52`
+- Status: ✅ Claimed proven in the archival library
 - Used in: Final logical step
 
 ---
@@ -148,10 +148,10 @@ P_ne_NP_final (FinalResult.lean:57)
 2. **C.7**: `antiChecker_exists_testset` - OPS 2019 (Anti-checker with test set)
 3. **D.2**: `OPS_trigger_formulas` - OPS 2019 (Magnification trigger)
 4. **I.3**: `P_subset_Ppoly_proof` - ✅ Imported from `Facts/PsubsetPpoly`
-5. **I.5**: `P_ne_NP_of_nonuniform_separation` - ✅ Proven in Pnp2 (logical inference)
+5. **I.5**: `P_ne_NP_of_nonuniform_separation` - ✅ Proven in the archival library (logical inference)
 
 **External axioms from literature**: 3
-**Interface axioms (proven in Pnp2)**: 2
+**Interface axioms (proven in the archival library)**: 2
 
 ### Non-Critical Axioms (11):
 
@@ -281,8 +281,8 @@ Total: 16 axioms
 │  │  ├─ C.7: Anti-checker (OPS 2019)
 │  │  └─ D.2: Magnification (OPS 2019)
 │  └─ Interface (claimed proven): 2
-│     ├─ I.3: P ⊆ P/poly (Pnp2)
-│     └─ I.5: Logical inference (Pnp2)
+│     ├─ I.3: P ⊆ P/poly (archival library)
+│     └─ I.5: Logical inference (archival library)
 └─ Non-critical: 11 axioms
    └─ Alternative paths (local, general, sparse)
 ```
@@ -301,10 +301,10 @@ Total: 16 axioms
 ### Immediate:
 1. ✅ **Archiving complete** - Non-critical files moved
 2. ✅ **Verification complete** - All proofs checked
-3. ⏳ **Document interface axioms** - Verify claims about Pnp2
+3. ⏳ **Document interface axioms** - Verify claims about the archival library
 
 ### Future:
-1. **Verify Pnp2 proofs** - Check that I.3 and I.5 are actually proven
+1. **Verify archival proofs** - Check that I.3 and I.5 are actually proven
 2. **Consider formalizing external axioms** - Long-term goal
 3. **Document classical logic usage** - For peer review
 

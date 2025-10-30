@@ -9,7 +9,7 @@ This wrapper exposes the key statements from the standalone sunflower
 package.  Downstream projects can simply import `FactSunflower` to gain
 access to the named threshold, the existence theorem, and the auxiliary
 structures used in the cover algorithm without pulling in the historical
-`Pnp2` sources.
+boolean complexity prototype.
 -/
 
 namespace Facts

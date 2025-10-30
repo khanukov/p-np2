@@ -3,9 +3,9 @@
 --  Classical sunflower lemma with the standard threshold `(p - 1)^w * w!`.
 --  We provide the basic definitions and a constructive proof of the full
 --  combinatorial lemma, including the two-petal base case.  This file is a
---  standalone copy of the original development from the archival `Pnp2`
---  project, reorganised so that downstream applications can import the lemma
---  without depending on the historical code base.
+--  standalone copy of the original development from the archival boolean
+--  complexity prototype, reorganised so that downstream applications can
+--  import the lemma without depending on the historical code base.
 --
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Finset.Basic

@@ -27,6 +27,71 @@ noncomputable def leafSelectorPool
         packages A hβ F.eval)
 
 /--
+  Нормализованное обозначение для «сырого» списка селекторов, появляющихся в
+  объединённом хвосте на листе `β`.  Определение просто переназывает
+  существующий `leafSelectorPool`, но подчёркивает, что мы пока не устраняем
+  дубликаты и не выполняем дизъюнктную нормализацию.  В дальнейшем этот список
+  будет входной точкой для алгоритма `refineDisjoint`.-/
+noncomputable def rawCombinedTailSelectors
+    {n M τ w t : Nat}
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (A : Axis n (axisLength n M))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) A) : List (Subcube n) :=
+  leafSelectorPool (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) A hβ
+
+/--
+  Любой селектор, появившийся в значении `combinedTailSelectors`, автоматически
+  входит в «сырой» список `rawCombinedTailSelectors`.  Формула повторяет
+  предыдущий результат `mem_leafSelectorPool_of_mem_combined`, но записана через
+  новое обозначение, чтобы дальнейшие доказательства могли ссылаться на неё
+  без раскрытия определений.-/
+lemma mem_rawCombinedTailSelectors_of_mem_combined
+    {n M τ w t : Nat}
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    {A : Axis n (axisLength n M)}
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) A)
+    {f : BitVec n → Bool}
+    (hf : f ∈ cnfFamily
+        (Fs := flattenedCNFs (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          packages))
+    {γ : Subcube n}
+    (hγ : γ ∈ combinedTailSelectors (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        packages A hβ f) :
+    γ ∈ rawCombinedTailSelectors (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) A hβ := by
+  unfold rawCombinedTailSelectors
+  exact CombinedTailCertificate.mem_leafSelectorPool_of_mem_combined
+    (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) (A := A) (β := β) hβ (f := f) hf (γ := γ) hγ
+
+/--
+  Элемент «сырого» списка селекторов всегда приходит из некоторого пакета
+  глубины 1 и порождён конкретной формулой из `flattenedCNFs`.  Результат
+  напрямую обобщает ранее доказанную лемму `exists_pkg_mem_of_mem_pool` и будет
+  использоваться при связывании `rawCombinedTailSelectors` с хвостовыми
+  сертификатами пакетов.-/
+lemma exists_pkg_mem_of_mem_rawCombinedTailSelectors
+    {n M τ w t : Nat}
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    {A : Axis n (axisLength n M)}
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) A)
+    {γ : Subcube n}
+    (hγ : γ ∈ rawCombinedTailSelectors (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) A hβ) :
+    ∃ (pkg : Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))
+      (hmem : pkg ∈ packages)
+      (F : Core.CNF n w) (hF : F ∈ pkg.input.Fs),
+        γ ∈ combinedTailSelectors (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          packages A hβ F.eval := by
+  unfold rawCombinedTailSelectors at hγ
+  exact exists_pkg_mem_of_mem_pool (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) (A := A) (β := β) hβ (γ := γ) hγ
+
+/--
   Версия «пула» селекторов без повторений.  Для дальнейшей нормализации
   достаточно знать множество подкубов, поэтому мы убираем дубликаты с помощью
   `List.dedup`.  Подразумевается, что `Subcube` имеет решаемое равенство — это
@@ -508,6 +573,392 @@ noncomputable def leafSelectorTailSupport {n M τ w t : Nat}
   (leafSelectorFinset (n := n) (M := M) (τ := τ) (w := w) (t := t)
       (packages := packages) C.witness.axis hβ).sup
     (fun γ => selectorTailSupport (n := n) β γ)
+
+/--
+  Список координат глобальной хвостовой поддержки.  Порядок фиксируется
+  произвольным образом (через `Finset`), однако мы гарантируем отсутствие
+  повторов, что позволяет безопасно использовать его в индуктивных процедурах
+  вроде `Subcube.refineByCoords`.-/
+noncomputable def leafSelectorTailSupportList {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) : List (Fin n) :=
+  (leafSelectorTailSupport (n := n) (M := M) (τ := τ) (w := w) (t := t)
+      (packages := packages) C hβ).1.toList
+
+lemma leafSelectorTailSupportList_nodup {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) :
+    (leafSelectorTailSupportList (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ).Nodup := by
+  classical
+  simpa [leafSelectorTailSupportList]
+    using (leafSelectorTailSupport (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ).2.nodup_toList
+
+lemma leafSelectorTailSupportList_toFinset {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) :
+    (leafSelectorTailSupportList (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ).toFinset
+      = leafSelectorTailSupport (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) C hβ := by
+  classical
+  ext i
+  constructor
+  · intro hi
+    have hi_list : i ∈ (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ).1.toList :=
+      (List.mem_toFinset).1 hi
+    have hi_multiset := (Multiset.mem_toList).1 hi_list
+    exact (Finset.mem_def).2 hi_multiset
+  · intro hi
+    have hi_multiset : i ∈ (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ).1 :=
+      (Finset.mem_def).1 hi
+    have hi_list : i ∈ (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ).1.toList :=
+      Multiset.mem_toList.mpr hi_multiset
+    exact (List.mem_toFinset).2 hi_list
+
+lemma refineBySupport_assignMany {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β γ : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis)
+    (hmem : γ ∈ Core.Subcube.refineByCoords β
+        (leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+          (w := w) (t := t) (packages := packages) C hβ)) :
+    ∃ updates : List (BitFix n),
+      updates.Nodup ∧
+      (∀ pair ∈ updates, pair.1 ∈ leafSelectorTailSupport (n := n) (M := M)
+          (τ := τ) (w := w) (t := t) (packages := packages) C hβ) ∧
+      Subcube.assignMany β updates = some γ := by
+  classical
+  have hnodup := leafSelectorTailSupportList_nodup
+    (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) C hβ
+  obtain ⟨updates, hnodup_updates, hsubset, hassign⟩ :=
+    Core.Subcube.mem_refineByCoords_assignMany
+      (β := β) (γ := γ)
+      (coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ)
+      hnodup hmem
+  refine ⟨updates, hnodup_updates, ?subset, hassign⟩
+  intro pair hpair
+  have hfinset := hsubset pair hpair
+  have hcoords := leafSelectorTailSupportList_toFinset
+    (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) C hβ
+  simpa [hcoords]
+
+/--
+  Дизъюнктная нормализация селекторов на листе `β`.  Мы разбиваем исходный
+  подкуб `β` по всем координатам глобальной поддержки и сохраняем только те
+  уточнения, которые лежат в одном из селекторов объединённого семейства.
+  Полученный список попарно несовместен и служит входом для функции
+  `PDT.ofDisjointLeaves` при построении `globalTail`.
+-/
+noncomputable def refineDisjoint {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) : List (Subcube n) :=
+  let coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages) C hβ
+  let base := Core.Subcube.refineByCoords β coords
+  base.filter (fun γ =>
+    ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C.witness.axis hβ,
+      Core.Subcube.subset (n := n) γ selector)
+
+lemma mem_refineDisjoint {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β γ : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) :
+    γ ∈ refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ ↔
+      γ ∈ Core.Subcube.refineByCoords β
+        (leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+          (w := w) (t := t) (packages := packages) C hβ)
+        ∧ ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w) (t := t)
+            (packages := packages) C.witness.axis hβ,
+          Core.Subcube.subset (n := n) γ selector := by
+  classical
+  unfold refineDisjoint
+  set coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages) C hβ with hcoords
+  set base := Core.Subcube.refineByCoords β coords with hbase
+  constructor
+  · intro hmem
+    have hmem_base : γ ∈ base := by
+      have := List.mem_of_mem_filter hmem
+      simpa [hbase] using this
+    have hpredicate :
+        ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w) (t := t)
+            (packages := packages) C.witness.axis hβ,
+          Core.Subcube.subset (n := n) γ selector := by
+      obtain ⟨_, hcond⟩ := List.mem_filter.mp hmem
+      simpa [hbase] using hcond
+    simpa [hcoords, hbase]
+      using And.intro (by simpa [hbase] using hmem_base) hpredicate
+  · rintro ⟨hmem_base, hpredicate⟩
+    have :
+        γ ∈ base ∧
+          ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w)
+              (t := t) (packages := packages) C.witness.axis hβ,
+            Core.Subcube.subset (n := n) γ selector := by
+      exact And.intro (by simpa [hcoords, hbase] using hmem_base) hpredicate
+    simpa [hcoords, hbase] using List.mem_filter.mpr this
+
+lemma refineDisjoint_cover {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis)
+    {x : BitVec n}
+    (hxβ : Core.Subcube.mem (n := n) β x)
+    (hx : ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C.witness.axis hβ,
+      Core.Subcube.mem (n := n) selector x) :
+    ∃ γ ∈ refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ,
+      Core.Subcube.mem (n := n) γ x := by
+  classical
+  obtain ⟨selector, hselector, hxselector⟩ := hx
+  set coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages) C hβ with hcoords_def
+  set base := Core.Subcube.refineByCoords β coords with hbase_def
+  have hcoords_nodup := leafSelectorTailSupportList_nodup
+    (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) C hβ
+  obtain ⟨γ, hγ_base, hγx, _⟩ :=
+    Core.Subcube.exists_mem_refineByCoords_of_mem
+      (n := n) (β := β) (coords := coords) (x := x) hxβ
+  have hsubset_γ_β : Core.Subcube.subset (n := n) γ β :=
+    Core.Subcube.subset_of_mem_refineByCoords
+      (n := n) (β := β) (γ := γ)
+      (coords := coords) hcoords_nodup hγ_base
+  have hsubset_γ_selector : Core.Subcube.subset (n := n) γ selector := by
+    intro y hyγ
+    refine (Core.Subcube.mem_iff (n := n) (β := selector) (x := y)).2 ?_
+    intro i b hselib
+    have hxsel :=
+      (Core.Subcube.mem_iff (n := n) (β := selector) (x := x)).1
+        hxselector i b hselib
+    by_cases hβi : β i = none
+    · have hpair_assign :
+        (i, b) ∈ selectorTailAssignments (n := n) β selector := by
+        have hassign :=
+          (mem_selectorAssignments (n := n) (γ := selector)
+            (pair := (i, b))).2 (by simpa using hselib)
+        exact
+          (mem_selectorTailAssignments (n := n) (β := β) (γ := selector)
+            (pair := (i, b))).2 ⟨hassign, hβi⟩
+      have hi_support : i ∈ selectorTailSupport (n := n) β selector := by
+        refine (mem_selectorTailSupport (n := n) (β := β) (γ := selector)
+          (i := i)).2 ?_
+        exact ⟨b, hpair_assign⟩
+      have hentry :
+          (selector, selectorTailAssignments (n := n) β selector)
+            ∈ leafSelectorTailAssignments (n := n) (M := M) (τ := τ)
+              (w := w) (t := t) (packages := packages)
+              C.witness.axis hβ :=
+        mem_leafSelectorTailAssignments_of_mem_set
+          (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) (A := C.witness.axis) hβ hselector
+      have hi_global : i ∈ leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+          (w := w) (t := t) (packages := packages) C hβ :=
+        selectorTailSupport_subset_leafSelectorTailSupport
+          (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) C hβ hentry hi_support
+      have hi_list : i ∈ coords := by
+        have : coords =
+            (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+                (w := w) (t := t) (packages := packages) C hβ).1.toList := by
+          simpa [hcoords_def, leafSelectorTailSupportList]
+        have himulti : i ∈
+            (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+                (w := w) (t := t) (packages := packages) C hβ).1 :=
+          (Finset.mem_def).1 hi_global
+        have hilist' := Multiset.mem_toList.mpr himulti
+        simpa [this] using hilist'
+      have hγi := Core.Subcube.mem_refineByCoords_value_of_mem
+        (n := n) β γ (coords := coords) (x := x)
+        hcoords_nodup hxβ hγ_base hγx hi_list hβi
+      have hγival : γ i = some b := by
+        simpa [hxsel] using hγi
+      have hyval :=
+        (Core.Subcube.mem_iff (n := n) (β := γ) (x := y)).1 hyγ i b hγival
+      simpa [hyval]
+    · have hyβ := hsubset_γ_β y hyγ
+      have hβval : β i = some b := by
+        cases hvalue : β i with
+        | none => contradiction
+        | some c =>
+            have hxβ_val :=
+              (Core.Subcube.mem_iff (n := n) (β := β) (x := x)).1 hxβ i c
+                (by simpa [hvalue])
+            have hcb : c = b := by
+              simpa [hxsel] using hxβ_val
+            exact by simpa [hvalue, hcb]
+      have hyval :=
+        (Core.Subcube.mem_iff (n := n) (β := β) (x := y)).1 hyβ i b
+          (by simpa [hβval])
+      simpa using hyval
+  have hpredicate :
+      ∃ selector' ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) C.witness.axis hβ,
+        Core.Subcube.subset (n := n) γ selector' :=
+    ⟨selector, hselector, hsubset_γ_selector⟩
+  have hmem_filter :
+      γ ∈ refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ := by
+    have := List.mem_filter.mpr ⟨hγ_base, hpredicate⟩
+    simpa [refineDisjoint, hcoords_def, hbase_def]
+      using this
+  exact ⟨γ, hmem_filter, hγx⟩
+
+lemma refineDisjoint_pairwise_disjoint {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) :
+    (refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ).Pairwise
+      (Core.Subcube.disjoint (n := n)) := by
+  classical
+  set coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages) C hβ
+  have hpair := Core.Subcube.refineByCoords_pairwise_disjoint
+      (n := n) (β := β) (coords := coords)
+  have hsub := List.filter_sublist
+      (l := Core.Subcube.refineByCoords β coords)
+      (p := fun γ =>
+        ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ)
+            (w := w) (t := t) (packages := packages) C.witness.axis hβ,
+          Core.Subcube.subset (n := n) γ selector)
+  exact hpair.sublist hsub
+
+lemma refineDisjoint_subset_leaf {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β γ : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis)
+    (hγ : γ ∈ refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ) :
+    Core.Subcube.subset (n := n) γ β := by
+  classical
+  obtain ⟨hmem_base, -⟩ :=
+    (mem_refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C (β := β) (γ := γ) hβ).1 hγ
+  have hcoords := leafSelectorTailSupportList_nodup
+    (n := n) (M := M) (τ := τ) (w := w) (t := t)
+    (packages := packages) C hβ
+  have := Core.Subcube.subset_of_mem_refineByCoords
+    (n := n) (β := β) (γ := γ)
+    (coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages) C hβ)
+    hcoords hmem_base
+  simpa using this
+
+lemma exists_selector_of_mem_refineDisjoint {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β γ : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis)
+    (hγ : γ ∈ refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ) :
+    ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C.witness.axis hβ,
+      Core.Subcube.subset (n := n) γ selector := by
+  classical
+  obtain ⟨-, hsubset⟩ :=
+    (mem_refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C (β := β) (γ := γ) hβ).1 hγ
+  exact hsubset
+
+lemma refineDisjoint_length_le_support {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n}
+    (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis) :
+    (refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+        (packages := packages) C hβ).length
+      ≤ 2 ^ (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ).card := by
+  classical
+  set coords := leafSelectorTailSupportList (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages) C hβ with hcoords
+  set base := Core.Subcube.refineByCoords β coords with hbase
+  have hfilter :
+      (refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) C hβ).length
+        ≤ base.length := by
+    simpa [refineDisjoint, hcoords, hbase]
+      using List.length_filter_le base
+        (fun γ =>
+          ∃ selector ∈ leafSelectorSet (n := n) (M := M) (τ := τ)
+              (w := w) (t := t) (packages := packages) C.witness.axis hβ,
+            Core.Subcube.subset (n := n) γ selector)
+  have hbase_len : base.length ≤ 2 ^ coords.length := by
+    simpa [hbase]
+      using Core.Subcube.length_refineByCoords_le_pow_two
+        (n := n) (β := β) (coords := coords)
+  have hcard :
+      coords.length
+        = (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+            (w := w) (t := t) (packages := packages) C hβ).card := by
+    classical
+    have : coords =
+        (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+            (w := w) (t := t) (packages := packages) C hβ).1.toList := by
+      simpa [hcoords, leafSelectorTailSupportList]
+    subst this
+    simpa [Finset.card, Multiset.card] using
+      (leafSelectorTailSupport (n := n) (M := M) (τ := τ)
+          (w := w) (t := t) (packages := packages) C hβ).1.length_toList
+  have htotal :
+      (refineDisjoint (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) C hβ).length
+        ≤ 2 ^ coords.length :=
+    hfilter.trans hbase_len
+  simpa [hcard] using htotal
 
 /--
   Любая координата, появляющаяся в глобальной поддержке `leafSelectorTailSupport`,
@@ -1846,6 +2297,299 @@ namespace TailAssignmentBundle
 
 variable {n : Nat} {β γ : Subcube n}
 
+/--
+  Лист, соответствующий селектору `γ`, действительно присутствует в дереве,
+  построенном функцией `TailAssignmentBundle.toPDT`.  Доказательство идёт по
+  длине списка присваиваний: базовый случай сводится к пустому списку и
+  равенству `γ = β`, а переход использует информацию `popHead` и индуктивную
+  гипотезу для хвостового пакета.-/
+lemma mem_leaves_toPDT
+    (bundle : TailAssignmentBundle (n := n) β γ) :
+    γ ∈ PDT.leaves (TailAssignmentBundle.toPDT
+      (n := n) (β := β) (γ := γ) bundle) := by
+  classical
+  -- Индукция по длине списка `assignments`.
+  refine (Nat.rec (motive := fun m => ∀ {β γ}
+      {bundle : TailAssignmentBundle (n := n) β γ},
+        bundle.assignments.length = m →
+          γ ∈ PDT.leaves (TailAssignmentBundle.toPDT
+            (n := n) (β := β) (γ := γ) bundle))
+    (by
+      -- База: список присваиваний пуст.
+      intro β γ bundle hlen
+      have hnil : bundle.assignments = [] := by
+        have : bundle.assignments.length = 0 := by simpa using hlen
+        exact (List.length_eq_zero.mp this)
+      -- Получаем `γ = β` из свойства `assignMany_eq`.
+      have hassign := bundle.assignMany_eq
+      have hβγ : β = γ := by
+        simpa [hnil, Subcube.assignMany] using hassign
+      have hγβ : γ = β := hβγ.symm
+      -- При пустом списке `toPDT` возвращает лист `β`.
+      have hpop : bundle.popHead = none :=
+        (TailAssignmentBundle.popHead_eq_none
+          (n := n) (β := β) (γ := γ) bundle).2 hnil
+      -- Теперь упрощаем определение дерева и проверяем принадлежность листу.
+      have htree : TailAssignmentBundle.toPDT
+          (n := n) (β := β) (γ := γ) bundle = PDT.leaf β := by
+        -- В ветке `none` дерево сводится к единственному листу `β`.
+        simpa [TailAssignmentBundle.toPDT, hpop, hnil, hγβ]
+      simpa [htree, hγβ] using List.mem_singleton_self β)
+    (by
+      -- Переход: список непуст, снимаем голову и применяем ИГ к хвосту.
+      intro m ih β γ bundle hlen
+      classical
+      cases hassign : bundle.assignments with
+      | nil =>
+          -- Противоречие: длина непустого списка не может быть нулевой.
+          have : (0 : Nat) = Nat.succ m := by
+            simpa [hassign] using hlen
+          cases this
+      | cons pair rest =>
+          -- Длина хвоста равна `m`.
+          have hlen_rest : rest.length = m := by
+            simpa [hassign] using
+              Nat.succ.inj (by simpa [hassign] using hlen)
+          -- Уточняем результат `popHead` и выписываем соответствующий шаг.
+          have hpop_none : bundle.popHead ≠ none := by
+            intro hnone
+            have hcontra :=
+              (TailAssignmentBundle.popHead_eq_none
+                (n := n) (β := β) (γ := γ) bundle).1 hnone
+            simpa [hassign] using hcontra
+          cases hstep : bundle.popHead with
+          | none => exact (hpop_none hstep).elim
+          | some step =>
+              -- Связь между данными шага и исходным списком.
+              obtain ⟨pair', rest', hassign', hp, htail⟩ :=
+                TailAssignmentBundle.popHead_eq_some
+                  (n := n) (β := β) (γ := γ)
+                  (bundle := bundle) (step := step) hstep
+              -- Списки совпадают, поэтому `pair' = pair`, `rest' = rest`.
+              have hcons := by
+                simpa [hassign] using hassign'
+              obtain ⟨hp_eq, hrest_eq⟩ := List.cons.inj hcons
+              -- Переписываем данные шага через известные равенства.
+              subst hp_eq
+              subst hrest_eq
+              -- Индуктивная гипотеза для хвоста.
+              have htail_len :
+                  step.tail.assignments.length = m := by
+                simpa [htail] using hlen_rest
+              have hmem_tail : γ ∈ PDT.leaves
+                  (TailAssignmentBundle.toPDT
+                    (n := n) (β := step.next) (γ := γ) step.tail) :=
+                ih (β := step.next) (γ := γ)
+                  (bundle := step.tail) htail_len
+              -- Обозначения для ветвей дерева.
+              set tailTree := TailAssignmentBundle.toPDT
+                (n := n) (β := step.next) (γ := γ) step.tail with htailTree
+              set zeroBranch := if step.pair.2 = false then tailTree
+                  else PDT.leaf (fun j : Fin n => if j = step.pair.1 then
+                      some (Bool.not step.pair.2) else β j) with hzero
+              set oneBranch := if step.pair.2 = true then tailTree
+                  else PDT.leaf (fun j : Fin n => if j = step.pair.1 then
+                      some (Bool.not step.pair.2) else β j) with hone
+              -- Переписываем цель через явное выражение для `toPDT`.
+              have htree : TailAssignmentBundle.toPDT
+                  (n := n) (β := β) (γ := γ) bundle
+                  = PDT.node step.pair.1 zeroBranch oneBranch := by
+                have hpair_val := show step.pair = pair from by
+                  -- После подстановок `pair` совпадает со `step.pair`.
+                  simpa using hp
+                -- Упрощаем определение `toPDT`.
+                simp [TailAssignmentBundle.toPDT, hstep, hassign,
+                  hpair_val, hzero, hone, htailTree]
+              -- Завершаем: `γ` принадлежит объединению листьев узла.
+              have hnode_mem : γ ∈ PDT.leaves
+                  (PDT.node step.pair.1 zeroBranch oneBranch) := by
+                -- Ветви обрабатываются через стандартную формулу для листьев узла.
+                classical
+                cases step.pair.2 with
+                | false =>
+                    have : γ ∈ PDT.leaves zeroBranch := by
+                      simpa [hzero] using hmem_tail
+                    have hmem_append : γ ∈
+                        (PDT.leaves zeroBranch)
+                          ++ (PDT.leaves oneBranch) :=
+                      List.mem_append.mpr (Or.inl this)
+                    simpa [PDT.leaves, hzero, hone]
+                      using hmem_append
+                | true =>
+                    have : γ ∈ PDT.leaves oneBranch := by
+                      simpa [hone] using hmem_tail
+                    have hmem_append : γ ∈
+                        (PDT.leaves zeroBranch)
+                          ++ (PDT.leaves oneBranch) :=
+                      List.mem_append.mpr (Or.inr this)
+                    simpa [PDT.leaves, hzero, hone]
+                      using hmem_append
+              simpa [htree] using hnode_mem))
+    (bundle.assignments.length) rfl
+
+/--
+  Глубина дерева, построенного `TailAssignmentBundle.toPDT`, ограничена длиной
+  исходного списка присваиваний.  Доказательство повторяет индукцию из
+  предыдущей леммы и использует тот факт, что при разборе головы список
+  хвостовых присваиваний укорачивается на один элемент.-/
+lemma depth_toPDT_le_length
+    (bundle : TailAssignmentBundle (n := n) β γ) :
+    PDT.depth (TailAssignmentBundle.toPDT
+      (n := n) (β := β) (γ := γ) bundle)
+      ≤ bundle.assignments.length := by
+  classical
+  -- Индукция по длине списка присваиваний.
+  refine (Nat.rec (motive := fun m => ∀ {β γ}
+      {bundle : TailAssignmentBundle (n := n) β γ},
+        bundle.assignments.length = m →
+          PDT.depth (TailAssignmentBundle.toPDT
+            (n := n) (β := β) (γ := γ) bundle) ≤ m)
+    (by
+      -- Пустой список: дерево состоит из одного листа, глубина равна нулю.
+      intro β γ bundle hlen
+      have hnil : bundle.assignments = [] := by
+        have : bundle.assignments.length = 0 := by simpa using hlen
+        exact List.length_eq_zero.mp this
+      have htree : TailAssignmentBundle.toPDT
+          (n := n) (β := β) (γ := γ) bundle = PDT.leaf β := by
+        simpa [TailAssignmentBundle.toPDT, hnil]
+          using (TailAssignmentBundle.popHead_eq_none
+            (n := n) (β := β) (γ := γ) bundle).mpr hnil
+      simpa [htree, hlen, hnil]
+        using (Nat.zero_le 0 : (0 : Nat) ≤ 0))
+    (by
+      intro m ih β γ bundle hlen
+      classical
+      -- Список непуст: снимаем голову и применяем предположение индукции.
+      cases hassign : bundle.assignments with
+      | nil =>
+          have : (0 : Nat) = Nat.succ m := by
+            simpa [hassign] using hlen
+          cases this
+      | cons pair rest =>
+          -- Длина хвоста равна `m`.
+          have hlen_rest : rest.length = m := by
+            simpa [hassign] using
+              Nat.succ.inj (by simpa [hassign] using hlen)
+          -- Раскрываем результат `popHead`.
+          have hpop : bundle.popHead ≠ none := by
+            intro hnone
+            have := (TailAssignmentBundle.popHead_eq_none
+              (n := n) (β := β) (γ := γ) bundle).1 hnone
+            simpa [hassign] using this
+          cases hstep : bundle.popHead with
+          | none => exact (hpop hstep).elim
+          | some step =>
+              obtain ⟨pair', rest', hassign', hp, htail⟩ :=
+                TailAssignmentBundle.popHead_eq_some
+                  (n := n) (β := β) (γ := γ)
+                  (bundle := bundle) (step := step) hstep
+              have hcons := by simpa [hassign] using hassign'
+              obtain ⟨hpair_eq, hrest_eq⟩ := List.cons.inj hcons
+              subst hpair_eq
+              subst hrest_eq
+              -- Применяем предположение индукции к хвостовому пакету.
+              have htail_len :
+                  step.tail.assignments.length = m := by
+                simpa [htail] using hlen_rest
+              have hdepth_tail : PDT.depth
+                  (TailAssignmentBundle.toPDT
+                    (n := n) (β := step.next) (γ := γ) step.tail)
+                    ≤ m :=
+                ih (β := step.next) (γ := γ)
+                  (bundle := step.tail) htail_len
+              -- Глубина листовых ветвей не превосходит глубины хвоста.
+              have hdepth_zero :
+                  PDT.depth
+                      (if step.pair.2 = false then
+                          TailAssignmentBundle.toPDT
+                            (n := n) (β := step.next) (γ := γ) step.tail
+                        else
+                          PDT.leaf
+                            (fun j : Fin n =>
+                              if j = step.pair.1 then
+                                some (Bool.not step.pair.2)
+                              else β j))
+                    ≤ m := by
+                split_ifs
+                · simpa using hdepth_tail
+                · have : (0 : Nat) ≤ m := Nat.zero_le _
+                  simpa [PDT.depth] using this
+              have hdepth_one :
+                  PDT.depth
+                      (if step.pair.2 = true then
+                          TailAssignmentBundle.toPDT
+                            (n := n) (β := step.next) (γ := γ) step.tail
+                        else
+                          PDT.leaf
+                            (fun j : Fin n =>
+                              if j = step.pair.1 then
+                                some (Bool.not step.pair.2)
+                              else β j))
+                    ≤ m := by
+                split_ifs
+                · simpa using hdepth_tail
+                · have : (0 : Nat) ≤ m := Nat.zero_le _
+                  simpa [PDT.depth] using this
+              -- Теперь оцениваем глубину корневого узла.
+              have hmax :
+                  Nat.max
+                      (PDT.depth
+                        (if step.pair.2 = false then
+                            TailAssignmentBundle.toPDT
+                              (n := n) (β := step.next) (γ := γ) step.tail
+                          else
+                            PDT.leaf
+                              (fun j : Fin n =>
+                                if j = step.pair.1 then
+                                  some (Bool.not step.pair.2)
+                                else β j)))
+                      (PDT.depth
+                        (if step.pair.2 = true then
+                            TailAssignmentBundle.toPDT
+                              (n := n) (β := step.next) (γ := γ) step.tail
+                          else
+                            PDT.leaf
+                              (fun j : Fin n =>
+                                if j = step.pair.1 then
+                                  some (Bool.not step.pair.2)
+                                else β j)))
+                    ≤ m :=
+                Nat.max_le hdepth_zero hdepth_one
+              -- Переписываем целевое дерево через определение `toPDT`.
+              have htree : TailAssignmentBundle.toPDT
+                  (n := n) (β := β) (γ := γ) bundle
+                  = PDT.node step.pair.1
+                      (if step.pair.2 = false then
+                          TailAssignmentBundle.toPDT
+                            (n := n) (β := step.next) (γ := γ) step.tail
+                        else
+                          PDT.leaf
+                            (fun j : Fin n =>
+                              if j = step.pair.1 then
+                                some (Bool.not step.pair.2)
+                              else β j))
+                      (if step.pair.2 = true then
+                          TailAssignmentBundle.toPDT
+                            (n := n) (β := step.next) (γ := γ) step.tail
+                        else
+                          PDT.leaf
+                            (fun j : Fin n =>
+                              if j = step.pair.1 then
+                                some (Bool.not step.pair.2)
+                              else β j)) := by
+                simp [TailAssignmentBundle.toPDT, hstep, hassign]
+              -- Завершаем оценку глубины.
+              have hsucc :
+                  PDT.depth (TailAssignmentBundle.toPDT
+                      (n := n) (β := β) (γ := γ) bundle)
+                    ≤ Nat.succ m := by
+                simpa [htree, PDT.depth]
+                  using Nat.succ_le_succ hmax
+              -- Переводим длину обратно к `Nat.succ m`.
+              simpa [hassign] using hsucc))
+    (bundle.assignments.length) rfl
+
 /-- Разбор `popHead`: результат `none` эквивалентен пустому списку присваиваний. -/
 @[simp] lemma popHead_eq_none (bundle : TailAssignmentBundle (n := n) β γ) :
     bundle.popHead = none ↔ bundle.assignments = [] := by
@@ -1894,6 +2638,39 @@ lemma popHead_tail_length_lt
   obtain ⟨pair, rest, hassign, rfl, rtail⟩ := popHead_eq_some
     (n := n) (β := β) (γ := γ) (bundle := bundle) (step := step) hstep
   simpa [hassign, rtail] using Nat.lt_succ_self rest.length
+
+/--
+  После снятия головы списка присваиваний никакая пара из хвоста не использует
+  ту же координату, что и голова.  Свойство `coord_unique` сразу даёт
+  требуемое различие индексов.-/
+lemma tail_coord_ne_head
+    {bundle : TailAssignmentBundle (n := n) β γ}
+    {step : HeadStep (n := n) (β := β) (γ := γ)}
+    (hstep : bundle.popHead = some step)
+    {pair : BitFix n} (hmem : pair ∈ step.tail.assignments) :
+    pair.1 ≠ step.pair.1 := by
+  classical
+  obtain ⟨headPair, rest, hassign, hpair, htail⟩ :=
+    popHead_eq_some (n := n) (β := β) (γ := γ)
+      (bundle := bundle) (step := step) hstep
+  have hassign_cons : bundle.assignments = step.pair :: rest := by
+    simpa [hassign, hpair]
+  have hrest : pair ∈ rest := by
+    simpa [htail] using hmem
+  have hmem_bundle : pair ∈ bundle.assignments := by
+    simpa [hassign_cons] using List.mem_cons_of_mem step.pair hrest
+  intro hcoord
+  have hpair_eq : pair = step.pair :=
+    bundle.coord_unique hmem_bundle
+      (by
+        have : step.pair ∈ bundle.assignments := by
+          simpa [hassign_cons] using List.mem_cons_self step.pair rest
+        exact this)
+      (by simpa [hcoord])
+  have hnot_mem : step.pair ∉ rest :=
+    (List.nodup_cons.mp (by simpa [hassign_cons] using bundle.nodup)).1
+  have : step.pair ∈ rest := by simpa [hpair_eq] using hrest
+  exact hnot_mem this
 
 /--
   Пакет, построенный непосредственно из списка `selectorTailAssignments β γ`.
@@ -2094,4 +2871,82 @@ noncomputable def leafSelectorTailBundles
   · intro hmem
     refine List.mem_map.2 ?_
     exact ⟨entry.1, hmem, by cases entry; rfl⟩
+
+/--
+  Каждый элемент из списка `leafSelectorTailBundles` даёт дерево `toPDT`, в
+  котором исходный селектор присутствует среди листьев.  Мы комбинируем
+  предыдущую лемму о `TailAssignmentBundle.mem_leaves_toPDT` с определением
+  списка через `List.map`.-/
+lemma mem_leafSelectorTailBundles_leaves
+    {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis)
+    {entry : Sigma fun γ : Subcube n => TailAssignmentBundle (n := n) β γ}
+    (hentry : entry ∈ leafSelectorTailBundles (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ) :
+    entry.1 ∈ PDT.leaves
+      (TailAssignmentBundle.toPDT (n := n) (β := β) (γ := entry.1) entry.2) := by
+  classical
+  unfold leafSelectorTailBundles at hentry
+  obtain ⟨γ, hγ, rfl⟩ := List.mem_map.1 hentry
+  -- После раскрытия определения остаётся воспользоваться базовой леммой.
+  simpa using
+    (TailAssignmentBundle.mem_leaves_toPDT
+      (n := n) (β := β) (γ := γ)
+      (bundle := TailAssignmentBundle.ofSelectorTailAssignments
+        (n := n) (β := β) (γ := γ)))
+
+/--
+  Глубина любого дерева из `leafSelectorTailBundles` контролируется мощностью
+  объединённой поддержки хвостовых присваиваний.  Это связывает локальные
+  списки присваиваний с глобальным бюджетом координат и подготовит оценку
+  глубины для будущего `globalTail`.-/
+lemma leafSelectorTailBundles_depth_le_support
+    {n M τ w t : Nat}
+    [DecidableEq (Subcube n)] [DecidableEq (Fin n)]
+    {packages : List (Budgeted (n := n) (M := M) (τ := τ) (w := w) (t := t))}
+    (C : CombinedTailCertificate (n := n) (M := M) (τ := τ)
+      (w := w) (t := t) (packages := packages))
+    {β : Subcube n} (hβ : β ∈ Axis.leafList (n := n)
+      (ℓ := axisLength n M) C.witness.axis)
+    {entry : Sigma fun γ : Subcube n => TailAssignmentBundle (n := n) β γ}
+    (hentry : entry ∈ leafSelectorTailBundles (n := n) (M := M) (τ := τ)
+        (w := w) (t := t) (packages := packages) C hβ) :
+    PDT.depth (TailAssignmentBundle.toPDT
+        (n := n) (β := β) (γ := entry.1) entry.2)
+      ≤ (leafSelectorSupport (n := n) (M := M) (τ := τ) (w := w) (t := t)
+          (packages := packages) C.witness.axis hβ).card := by
+  classical
+  -- Раскрываем определение списка пакетов и фиксируем исходный селектор.
+  obtain ⟨γ, hγ, rfl⟩ := List.mem_map.1 hentry
+  -- Оценка глубины через длину списка присваиваний для выбранного селектора.
+  have hlen :
+      (selectorTailAssignments (n := n) β γ).length
+        ≤ (leafSelectorSupport (n := n) (M := M) (τ := τ) (w := w) (t := t)
+            (packages := packages) C.witness.axis hβ).card :=
+    length_selectorTailAssignments_le_leafSelectorSupport
+      (n := n) (M := M) (τ := τ) (w := w) (t := t)
+      (packages := packages) C hβ (γ := γ) hγ
+  -- Переписываем длину через поле `assignments` выбранного пакета.
+  have hassign_len :
+      (TailAssignmentBundle.ofSelectorTailAssignments
+          (n := n) (β := β) (γ := γ)).assignments.length
+        = (selectorTailAssignments (n := n) β γ).length := by
+    simp [TailAssignmentBundle.assignments_ofSelectorTailAssignments]
+  have hassign_le :
+      (TailAssignmentBundle.ofSelectorTailAssignments
+          (n := n) (β := β) (γ := γ)).assignments.length
+        ≤ (leafSelectorSupport (n := n) (M := M) (τ := τ) (w := w) (t := t)
+            (packages := packages) C.witness.axis hβ).card := by
+    simpa [hassign_len] using hlen
+  -- Применяем оценку глубины для фиксированного `TailAssignmentBundle`.
+  refine (TailAssignmentBundle.depth_toPDT_le_length
+      (n := n) (β := β) (γ := γ)
+      (bundle := TailAssignmentBundle.ofSelectorTailAssignments
+        (n := n) (β := β) (γ := γ))).trans ?_
+  simpa using hassign_le
 

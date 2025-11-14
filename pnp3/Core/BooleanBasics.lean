@@ -85,6 +85,13 @@ abbrev BitVec (n : Nat) := Fin n → Bool
 abbrev Subcube (n : Nat) := Fin n → Option Bool
 
 /--
+"Пустой" подкуб без фиксированных координат.  Иногда удобно явно указать
+исходный регион, из которого мы будем последовательно выделять хвостовые
+ветви.  Функция возвращает отображение, тождественно равное `none`.
+-/
+@[simp] def Subcube.empty (n : Nat) : Subcube n := fun _ => none
+
+/--
 Мощность пространства булевых векторов длины `n` равна `2^n`.  Это прямое
 следствие общей формулы `Fintype.card_fun`: функции из конечного множества `Fin n`
 в `Bool` полностью характеризуются значениями на каждой координате, поэтому их
@@ -155,6 +162,65 @@ cases hstep : Subcube.assign β i b with
 | some β' => simp [Subcube.assignMany, hstep]
 
 /--
+Если присваивание `Subcube.assign` успешно возвращает подкуб `γ`, то на целевой
+координате `i` действительно стоит значение `b`.  Остальные координаты нас не
+интересуют, поэтому результат формулируется в самой компактной форме.  Эта
+лемма удобно разворачивает `Option`-равенство и пригодится при анализе
+ветвлений в `TailAssignmentBundle.toPDT`.-/
+lemma assign_eq_some_value {n : Nat} {β γ : Subcube n}
+    {i : Fin n} {b : Bool}
+    (hassign : Subcube.assign β i b = some γ) :
+    γ i = some b := by
+  classical
+  -- Разбираем варианты по значению `β i`.
+  cases hβ : β i with
+  | none =>
+      -- Свободная координата: `assign` явно выставляет значение `b`.
+      have hγopt : some γ
+          = some (fun j : Fin n => if j = i then some b else β j) := by
+        -- Раскрываем `Subcube.assign` и получаем описание результата.
+        simpa [Subcube.assign, hβ] using hassign.symm
+      have hγ : γ = fun j : Fin n => if j = i then some b else β j :=
+        Option.some.inj hγopt
+      -- Подставляем найденное описание и упрощаем значение `γ` на координате `i`.
+      have := congrArg (fun f : Subcube n => f i) hγ
+      simpa [hβ] using this
+  | some bOld =>
+      -- Координата уже фиксирована.  Совместимость возможна только при `b = bOld`.
+      have hb : b = bOld := by
+        -- Если значения различны, то `assign` вернул бы `none`, что невозможно.
+        by_contra hbneq
+        have : Subcube.assign β i b = none := by
+          simp [Subcube.assign, hβ, hbneq]
+        simpa [hassign] using this
+      have hγβopt : some γ = Subcube.assign β i b := hassign.symm
+      have hγβ : γ = β := by
+        -- Под одинаковыми значениями возвращается исходный подкуб.
+        have : some γ = some β := by
+          simpa [Subcube.assign, hβ, hb] using hγβopt
+        exact Option.some.inj this
+      simpa [hγβ, hβ, hb]
+
+/--
+Если координата `i` уже зафиксирована значением `b`, операция `Subcube.assign`
+возвращает исходный подкуб без изменений.  Этот факт полезен при индукции по
+списку присваиваний: присваивание одинакового значения можно отбросить без
+изменения результата.-/
+@[simp] lemma assign_of_some {n : Nat} {β : Subcube n}
+  {i : Fin n} {b : Bool} (hfixed : β i = some b) :
+  Subcube.assign β i b = some β := by
+classical
+cases hβ : β i with
+| none =>
+    have : (none : Option Bool) = some b := by simpa [hβ] using hfixed
+    cases this
+| some bOld =>
+    have hb : bOld = b := by
+      have : some bOld = some b := by simpa [hβ] using hfixed
+      exact Option.some.inj this
+    simp [Subcube.assign, hβ, hb]
+
+/--
 Если координата `i` в подкубе `β` свободна, то операция `Subcube.assign` возвращает
 явный результат: новый подкуб, в котором на `i` установлен бит `b`, а остальные
 координаты не меняются.  Эта форма записи удобна при конструировании хвостов,
@@ -168,6 +234,73 @@ cases hstep : Subcube.assign β i b with
 simp [Subcube.assign, hfree]
 
 /--
+При присваивании координаты `j` остальные координаты подкуба не изменяются.
+Лемма пригодится всякий раз, когда нужно отследить значение на чужой
+координате после шага `assign` в индукции.-/
+lemma assign_preserve_ne {n : Nat} {β δ : Subcube n}
+    {j i : Fin n} {b : Bool}
+    (hassign : Subcube.assign β j b = some δ)
+    (hneq : j ≠ i) :
+    δ i = β i := by
+  classical
+  cases hβ : β j with
+  | none =>
+      have hδ : δ = fun k : Fin n => if k = j then some b else β k := by
+        have := hassign
+        simp [Subcube.assign, hβ] at this
+        exact this.symm
+      have hij : i ≠ j := by
+        intro hij
+        exact hneq hij.symm
+      simp [hδ, hij]
+  | some bOld =>
+      have hb : b = bOld := by
+        classical
+        by_contra hbneq
+        have : False := by
+          have := hassign
+          simpa [Subcube.assign, hβ, hbneq] using this
+        exact (False.elim this)
+      have hδ : δ = β := by
+        have := hassign
+        simp [Subcube.assign, hβ, hb] at this
+        exact this.symm
+      simp [hδ]
+
+/--
+Если присваиваем координату, которая уже содержала значение `b`, то результат
+совпадает с исходным подкубом.  Эта вспомогательная формулировка удобна в
+доказательствах сохранения значений на фиксированной координате.-/
+lemma assign_eq_of_fixed {n : Nat} {β δ : Subcube n}
+    {i : Fin n} {b c : Bool}
+    (hfixed : β i = some b)
+    (hassign : Subcube.assign β i c = some δ) :
+    δ = β := by
+  classical
+  have hc : c = b := by
+    by_contra hneq
+    have : False := by
+      have := hassign
+      simpa [Subcube.assign, hfixed, hneq] using this
+    exact (False.elim this)
+  have := hassign
+  have hδ := by
+    simpa [Subcube.assign, hfixed, hc] using this
+  exact hδ.symm
+
+/--
+Комбинируем предыдущую лемму с фактом `β i = some b`: результат присваивания
+сохраняет то же значение на координате `i`.-/
+lemma assign_preserve_fixed {n : Nat} {β δ : Subcube n}
+    {i : Fin n} {b c : Bool}
+    (hfixed : β i = some b)
+    (hassign : Subcube.assign β i c = some δ) :
+    δ i = some b := by
+  have hδ := assign_eq_of_fixed (β := β) (δ := δ) (i := i)
+    (b := b) (c := c) hfixed hassign
+  simpa [hδ, hfixed]
+
+/--
 Развёрнутое описание обработки головы списка.  Лемма пригодится при индуктивных
 доказательствах свойств `assignMany`.
 -/
@@ -177,6 +310,20 @@ simp [Subcube.assign, hfree]
     match Subcube.assign β i b with
     | none      => none
     | some β'   => Subcube.assignMany β' rest := rfl
+
+/--
+  Переписываем обработку головы списка через `Option.bind`.  Такой формат
+  полезен, когда нужно явно раскрыть существование промежуточного подкуба в
+  индуктивных рассуждениях.-/
+lemma assignMany_cons_bind {n : Nat} (β : Subcube n)
+    (i : Fin n) (b : Bool) (rest : List (BitFix n)) :
+    Subcube.assignMany β ((i, b) :: rest)
+      = (Subcube.assign β i b).bind
+          (fun β' => Subcube.assignMany β' rest) := by
+  by_cases hassign : Subcube.assign β i b = none
+  · simp [assignMany_cons, hassign]
+  · obtain ⟨β', hβ'⟩ := Option.ne_none_iff_exists'.mp hassign
+    simp [assignMany_cons, hβ', Option.bind]
 
 /--
 Последовательное применение присваиваний разбивается на две стадии: сначала
@@ -202,6 +349,258 @@ induction updates₁ generalizing β with
     | some β' =>
         simp [Subcube.assignMany, hassign, ih]
 
+/-!
+### Нормализация подкубов по списку координат
+
+Ниже вводим вспомогательные определения, которые будут использованы для
+дизъюнктной нормализации семейства хвостов.  Функция
+`splitCoordinate` разбивает подкуб по свободной координате, а
+`refineByCoords` рекурсивно применяет это разбиение ко всему списку
+координат.  Полученные конструкции позволяют последовательно фиксировать все
+значимые биты и готовят почву для определения `refineDisjoint`.
+-/
+
+
+namespace Subcube
+
+variable {n : Nat}
+
+/--
+  Разбиваем подкуб `β` по координате `i`.  Если координата свободна, получаем две
+  ветви (с присвоением `0` и `1`), иначе оставляем исходный подкуб без изменений.
+-/
+def splitCoordinate (β : Subcube n) (i : Fin n) : List (Subcube n) :=
+  if h : β i = none then
+    ([false, true].map fun b => Subcube.assign β i b).filterMap id
+  else
+    [β]
+
+@[simp] lemma splitCoordinate_of_not_free {β : Subcube n}
+    {i : Fin n} (hfixed : β i ≠ none) :
+    splitCoordinate β i = [β] := by
+  classical
+  have : ¬ (β i = none) := hfixed
+  simp [splitCoordinate, this]
+
+@[simp] lemma splitCoordinate_of_free {β : Subcube n}
+    {i : Fin n} (hfree : β i = none) :
+    splitCoordinate β i
+      = [fun j : Fin n => if j = i then some false else β j,
+          fun j : Fin n => if j = i then some true else β j] := by
+  classical
+  simp [splitCoordinate, hfree, assign_of_none, List.filterMap, List.map]
+
+/--
+  Любой элемент в результате `splitCoordinate` получается либо как исходный
+  подкуб (если координата уже была фиксирована), либо как результат применения
+  `Subcube.assign` с некоторым булевым значением.
+-/
+lemma mem_splitCoordinate {β : Subcube n} {i : Fin n} {γ : Subcube n} :
+    γ ∈ splitCoordinate β i →
+      (β i ≠ none ∧ γ = β) ∨ ∃ b : Bool, Subcube.assign β i b = some γ := by
+  classical
+  by_cases hfree : β i = none
+  · intro hmem
+    have hrewrite := splitCoordinate_of_free (β := β) (i := i) hfree
+    simp [hrewrite] at hmem
+    rcases hmem with hfalse | htrue
+    · have hassign_false := assign_of_none (n := n) (β := β) (i := i)
+        (b := false) hfree
+      refine Or.inr ⟨false, ?_⟩
+      simpa [hfalse] using hassign_false
+    · have hassign_true := assign_of_none (n := n) (β := β) (i := i)
+        (b := true) hfree
+      refine Or.inr ⟨true, ?_⟩
+      simpa [htrue] using hassign_true
+  · intro hmem
+    have hrewrite := splitCoordinate_of_not_free (β := β) (i := i) hfree
+    have hmem' : γ ∈ [β] := by simpa [hrewrite] using hmem
+    have hγ : γ = β := List.mem_singleton.mp hmem'
+    exact Or.inl ⟨hfree, hγ⟩
+
+/--
+  Рекурсивное уточнение подкуба по списку координат.  На каждом шаге вызываем
+  `splitCoordinate`, а затем продолжаем обработку хвостового списка для каждого
+  полученного подкуба.
+-/
+private def listBind {α β} : List α → (α → List β) → List β
+  | [], _ => []
+  | x :: xs, f => f x ++ listBind xs f
+
+lemma mem_listBind {α β} {xs : List α} {f : α → List β} {y : β} :
+    y ∈ listBind xs f ↔ ∃ x ∈ xs, y ∈ f x := by
+  induction xs with
+  | nil => simp [listBind]
+  | cons x xs ih =>
+      constructor
+      · intro hmem
+        have hcases := List.mem_append.mp hmem
+        cases hcases with
+        | inl hfx => exact ⟨x, by simp, hfx⟩
+        | inr hrest =>
+            obtain ⟨x', hx', hy⟩ := (ih.1 hrest)
+            exact ⟨x', List.mem_cons_of_mem _ hx', hy⟩
+      · rintro ⟨x', hx', hy⟩
+        have hx_or : x' = x ∨ x' ∈ xs := List.mem_cons.mp hx'
+        cases hx_or with
+        | inl hx_eq =>
+            subst hx_eq
+            exact List.mem_append_left _ hy
+        | inr hx_rest =>
+            have : y ∈ listBind xs f := (ih.2 ⟨x', hx_rest, hy⟩)
+            exact List.mem_append_right _ this
+
+def refineByCoords : Subcube n → List (Fin n) → List (Subcube n)
+  | β, [] => [β]
+  | β, i :: rest =>
+      listBind (splitCoordinate β i) (fun γ => refineByCoords γ rest)
+
+@[simp] lemma refineByCoords_nil (β : Subcube n) :
+    refineByCoords β [] = [β] := rfl
+
+@[simp] lemma mem_refineByCoords_cons {β : Subcube n}
+    {i : Fin n} {rest : List (Fin n)} {γ : Subcube n} :
+    γ ∈ refineByCoords β (i :: rest)
+      ↔ ∃ δ ∈ splitCoordinate β i,
+          γ ∈ refineByCoords δ rest := by
+  classical
+  constructor
+  · intro hmem
+    unfold refineByCoords at hmem
+    have hmem' := (mem_listBind (y := γ)).1 hmem
+    rcases hmem' with ⟨δ, hδ, hγ⟩
+    exact ⟨δ, hδ, hγ⟩
+  · rintro ⟨δ, hδ, hmem⟩
+    unfold refineByCoords
+    exact (mem_listBind (y := γ)).2 ⟨δ, hδ, hmem⟩
+
+/--
+  Если список координат не содержит повторов, то любой элемент
+  `refineByCoords β coords` можно получить последовательным применением
+  `Subcube.assign` по некоторому подсписку координат.  Дополнительно фиксируем
+  отсутствие дубликатов среди присваиваний, что пригодится при построении
+  `TailAssignmentBundle`.
+-/
+lemma mem_refineByCoords_assignMany
+    {β γ : Subcube n} {coords : List (Fin n)}
+    (hcoords : coords.Nodup)
+    (hmem : γ ∈ refineByCoords β coords) :
+    ∃ updates : List (BitFix n),
+      updates.Nodup ∧
+      (∀ pair ∈ updates, pair.1 ∈ coords.toFinset) ∧
+      Subcube.assignMany β updates = some γ := by
+  classical
+  have hmain :
+      coords.Nodup →
+        γ ∈ refineByCoords β coords →
+          ∃ updates : List (BitFix n),
+            updates.Nodup ∧
+              (∀ pair ∈ updates, pair.1 ∈ coords.toFinset) ∧
+                Subcube.assignMany β updates = some γ := by
+    refine List.recOn (motive := fun coords =>
+      ∀ {β γ : Subcube n},
+        coords.Nodup →
+          γ ∈ refineByCoords β coords →
+            ∃ updates : List (BitFix n),
+              updates.Nodup ∧
+                (∀ pair ∈ updates, pair.1 ∈ coords.toFinset) ∧
+                  Subcube.assignMany β updates = some γ) coords ?base ?step
+    · intro β γ hnodup hmem
+      have hmem' : γ ∈ [β] := by simpa [refineByCoords_nil] using hmem
+      have : γ = β := List.mem_singleton.mp hmem'
+      refine ⟨[], List.nodup_nil, by simp, ?_⟩
+      simpa [this]
+    · intro i rest ih β γ hnodup hmem
+      have hsplit : ∃ δ ∈ splitCoordinate β i, γ ∈ refineByCoords δ rest := by
+        have := (mem_refineByCoords_cons (β := β) (i := i)
+          (rest := rest) (γ := γ)).1 hmem
+        simpa using this
+      rcases hsplit with ⟨δ, hδ, hγδ⟩
+      have hi_not_mem : i ∉ rest := (List.nodup_cons.mp hnodup).1
+      have hrest_nodup : rest.Nodup := (List.nodup_cons.mp hnodup).2
+      have hcases := mem_splitCoordinate (β := β) (i := i) (γ := δ) hδ
+      refine hcases.elim ?fixed ?free
+      · rintro ⟨_, rfl⟩
+        obtain ⟨updates, hnodup_updates, hsubset, hassign⟩ :=
+          ih hrest_nodup hγδ
+        refine ⟨updates, hnodup_updates, ?subset, hassign⟩
+        intro pair hpair
+        have hx_list : pair.1 ∈ rest := by
+          have hx_finset := hsubset pair hpair
+          exact (List.mem_toFinset).1 hx_finset
+        have hx_cons : pair.1 ∈ i :: rest := List.mem_cons_of_mem _ hx_list
+        exact (List.mem_toFinset).2 hx_cons
+      · rintro ⟨b, hassignβ⟩
+        obtain ⟨updates, hnodup_updates, hsubset, hassign⟩ :=
+          ih hrest_nodup hγδ
+        have hnotin : (i, b) ∉ updates := by
+          intro hmem_pair
+          have hx_finset := hsubset (i, b) hmem_pair
+          have hx_list : i ∈ rest := (List.mem_toFinset).1 hx_finset
+          exact hi_not_mem hx_list
+        have hnodup_cons : ((i, b) :: updates).Nodup :=
+          List.nodup_cons.2 ⟨hnotin, hnodup_updates⟩
+        have hsubset_cons :
+            ∀ pair ∈ (i, b) :: updates, pair.1 ∈ (i :: rest).toFinset := by
+          intro pair hpair
+          obtain rfl | htail := List.mem_cons.mp hpair
+          · have : i ∈ i :: rest := List.mem_cons_self (a := i) (l := rest)
+            simpa using (List.mem_toFinset).2 this
+          · have hx_finset := hsubset _ htail
+            have hx_list : pair.1 ∈ rest := (List.mem_toFinset).1 hx_finset
+            have hx_cons : pair.1 ∈ i :: rest :=
+              List.mem_cons_of_mem _ hx_list
+            exact (List.mem_toFinset).2 hx_cons
+        have hassign_cons :
+            Subcube.assignMany β ((i, b) :: updates) = some γ := by
+          have hassign_step : Subcube.assign β i b = some δ := hassignβ
+          have hassign_tail : Subcube.assignMany δ updates = some γ := hassign
+          simp [assignMany_cons, hassign_step, hassign_tail]
+        exact ⟨(i, b) :: updates, hnodup_cons, hsubset_cons, hassign_cons⟩
+  exact hmain hcoords hmem
+
+/--
+Уточнение подкуба не меняет уже зафиксированные координаты: если `β i = some b`,
+то любой результат `γ` в `refineByCoords β coords` сохраняет то же значение
+на позиции `i`.  Доказательство — простая индукция по списку координат.-/
+lemma mem_refineByCoords_preserve_value
+    {β γ : Subcube n} {coords : List (Fin n)}
+    {i : Fin n} {b : Bool}
+    (hfixed : β i = some b)
+    (hmem : γ ∈ refineByCoords β coords) :
+    γ i = some b := by
+  classical
+  induction coords generalizing β with
+  | nil =>
+      have : γ = β := by simpa [refineByCoords_nil] using hmem
+      simpa [this, hfixed]
+  | cons j rest ih =>
+      obtain ⟨δ, hδ, hδmem⟩ :=
+        (mem_refineByCoords_cons (β := β) (i := j)
+          (rest := rest) (γ := γ)).1 hmem
+      have hδval : δ i = some b := by
+        have hcases := mem_splitCoordinate (β := β) (i := j) (γ := δ) hδ
+        cases hcases with
+        | inl hfixed' =>
+            have hδeq : δ = β := hfixed'.2
+            simpa [hδeq, hfixed]
+        | inr hassign =>
+            rcases hassign with ⟨c, hassign⟩
+            by_cases hji : j = i
+            · -- При изменении той же координаты `assign` возвращает исходный подкуб.
+              have hassign' : Subcube.assign β i c = some δ := by
+                simpa [hji] using hassign
+              exact assign_preserve_fixed (β := β) (δ := δ) (i := i)
+                (b := b) (c := c) hfixed hassign'
+            · -- Когда `j ≠ i`, значение на интересующей координате не меняется.
+              have hδraw := assign_preserve_ne (β := β) (δ := δ)
+                (j := j) (i := i) (b := c) hassign hji
+              simpa [hδraw, hfixed]
+      have := ih (β := δ) hδval hδmem
+      simpa using this
+
+
+end Subcube
 /-- Bool → Nat (true ↦ 1, false ↦ 0). -/
 @[inline] def b2n (b : Bool) : Nat := if b then 1 else 0
 
@@ -245,6 +644,7 @@ lemma mem_iff_memB {n : Nat} (β : Subcube n) (x : BitVec n) :
 
 Формулируем это через удобную пропозицию: если `β i = some b`, то `x i = b`.
 -/
+
 lemma memB_eq_true_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
   memB β x = true ↔ ∀ i : Fin n, ∀ b : Bool, β i = some b → x i = b := by
 classical
@@ -388,11 +788,298 @@ cases hβ : β i with
       -- Опять переносим принадлежность через равенство `γ = β`.
       exact Eq.subst (motive := fun δ => mem δ x) hγ.symm hx.1
 
+/-!
+### Отношение включения подкубов
+
+Дальнейшие конструкции часто используют тот факт, что все «хвостовые» подкубы
+являются уточнением исходного листа.  Чтобы формализовать это наблюдение,
+вводим отношение включения `subset` и собираем базовые свойства: рефлексивность,
+транзитивность и совместимость с операциями `assign` / `assignMany`.  Эти
+инструменты позволят автоматически переносить принадлежность точек из более
+жёсткого подкуба в менее жёсткий.
+-/
+
+namespace Subcube
+
+variable {n : Nat}
+
+/-- `subset β γ` означает, что любой вектор, удовлетворяющий ограничениям `β`,
+    также удовлетворяет ограничениям `γ`.  Эквивалентно, подкуб `β` содержится в
+    `γ` как множество точек `Bool^n`. -/
+def subset (β γ : Subcube n) : Prop := ∀ x : BitVec n, mem β x → mem γ x
+
+@[simp] lemma subset_refl (β : Subcube n) : subset (n := n) β β := by
+  intro x hx; exact hx
+
+lemma subset_trans {β γ δ : Subcube n} :
+    subset (n := n) β γ → subset (n := n) γ δ → subset (n := n) β δ := by
+  intro hβγ hγδ x hx
+  exact hγδ x (hβγ x hx)
+
+/-- После успешного присваивания `assign` полученный подкуб сильнее исходного. -/
+lemma subset_of_assign {β γ : Subcube n} {i : Fin n} {b : Bool}
+    (hassign : Subcube.assign β i b = some γ) :
+    subset (n := n) γ β := by
+  intro x hxγ
+  have hx := (mem_assign_iff (n := n) (β := β) (i := i) (b := b)
+    (γ := γ) hassign x).1 hxγ
+  exact hx.1
+
+/-- Последовательное присваивание также порождает подкуб, вложенный в исходный. -/
+lemma subset_of_assignMany {β γ : Subcube n} {updates : List (BitFix n)}
+    (hassign : Subcube.assignMany β updates = some γ) :
+    subset (n := n) γ β := by
+  classical
+  revert β
+  induction updates with
+  | nil =>
+      intro β hassign x hx
+      have : some β = some γ := by simpa [Subcube.assignMany] using hassign
+      have hβγ : β = γ := Option.some.inj this
+      simpa [hβγ]
+  | cons pair rest ih =>
+      rcases pair with ⟨i, b⟩
+      intro β hassign x hxγ
+      cases hassign_head : Subcube.assign β i b with
+      | none =>
+          simp [Subcube.assignMany, hassign_head] at hassign
+      | some β' =>
+          have hassign_tail :
+              Subcube.assignMany β' rest = some γ := by
+            simpa [Subcube.assignMany, hassign_head] using hassign
+          have hsubset_tail :
+              subset (n := n) γ β' := ih hassign_tail
+          have hsubset_head :
+              subset (n := n) β' β :=
+            subset_of_assign (n := n) (β := β) (γ := β') (i := i) (b := b)
+              hassign_head
+          have hxβ' : mem β' x := hsubset_tail x hxγ
+          exact hsubset_head x hxβ'
+
+/-- Любой элемент `refineByCoords β coords` является уточнением исходного `β`. -/
+lemma subset_of_mem_refineByCoords {β γ : Subcube n}
+    {coords : List (Fin n)}
+    (hcoords : coords.Nodup)
+    (hmem : γ ∈ refineByCoords (n := n) β coords) :
+    subset (n := n) γ β := by
+  classical
+  obtain ⟨updates, -, -, hassign⟩ :=
+    mem_refineByCoords_assignMany (n := n) (β := β) (γ := γ)
+      (coords := coords) hcoords hmem
+  exact subset_of_assignMany (n := n) (β := β) (γ := γ)
+    (updates := updates) hassign
+
+lemma length_refineByCoords_le_pow_two {β : Subcube n}
+    (coords : List (Fin n)) :
+    (refineByCoords (n := n) β coords).length ≤ 2 ^ coords.length := by
+  classical
+  induction coords generalizing β with
+  | nil =>
+      simpa
+  | cons i rest ih =>
+      by_cases hfree : β i = none
+      · have hsplit := splitCoordinate_of_free (β := β) (i := i) hfree
+        set βFalse : Subcube n := fun j => if j = i then some false else β j
+        set βTrue : Subcube n := fun j => if j = i then some true else β j
+        have hfalse :
+            (refineByCoords (n := n) βFalse rest).length
+              ≤ 2 ^ rest.length := by
+          simpa [βFalse] using ih (β := βFalse)
+        have htrue :
+            (refineByCoords (n := n) βTrue rest).length
+              ≤ 2 ^ rest.length := by
+          simpa [βTrue] using ih (β := βTrue)
+        have hlen :
+            (refineByCoords (n := n) β (i :: rest)).length
+              ≤ 2 ^ rest.length + 2 ^ rest.length := by
+          simpa [refineByCoords, listBind, hsplit, List.length_append,
+            βFalse, βTrue]
+            using Nat.add_le_add hfalse htrue
+        have hmul :
+            2 ^ rest.length + 2 ^ rest.length
+              = 2 * 2 ^ rest.length :=
+          (Nat.two_mul (2 ^ rest.length)).symm
+        have htarget :
+            (refineByCoords (n := n) β (i :: rest)).length
+              ≤ 2 * 2 ^ rest.length := by
+          simpa [hmul] using hlen
+        have : 2 * 2 ^ rest.length = 2 ^ (Nat.succ rest.length) := by
+          simpa [pow_succ, Nat.mul_comm]
+        have hgoal :
+            (refineByCoords (n := n) β (i :: rest)).length
+              ≤ 2 ^ (Nat.succ rest.length) := by
+          simpa [this] using htarget
+        simpa using hgoal
+      · have hsplit := splitCoordinate_of_not_free (β := β) (i := i) hfree
+        have hstep :
+            (refineByCoords (n := n) β (i :: rest)).length
+              ≤ 2 ^ rest.length := by
+          simpa [refineByCoords, listBind, hsplit]
+            using ih (β := β)
+        have hmul :
+            2 ^ rest.length ≤ 2 ^ (Nat.succ rest.length) := by
+          simpa [pow_succ, Nat.mul_comm]
+            using (Nat.mul_le_mul_left (2 ^ rest.length)
+              (by decide : 1 ≤ 2))
+        exact hstep.trans hmul
+
+
+end Subcube
+
+-- Если точка `x` принадлежит исходному подкубу `β`, то можно выбрать
+-- конкретное уточнение `γ` из `refineByCoords β coords`, которое также
+-- содержит `x`.  Более того, все зафиксированные координаты `γ` согласованы со
+-- значениями `x`.  Это позволяет при построении покрытия `refineDisjoint`
+-- перейти от исходного селектора к соответствующему листу нормализованного
+-- дерева.
+namespace Subcube
+
+lemma exists_mem_refineByCoords_of_mem {n : Nat} {β : Subcube n}
+    {coords : List (Fin n)} {x : BitVec n}
+    (hx : mem (n := n) β x) :
+    ∃ γ ∈ refineByCoords (n := n) β coords,
+      mem (n := n) γ x ∧
+        ∀ {i : Fin n} {b : Bool}, γ i = some b → x i = b := by
+  classical
+  revert β
+  induction coords with
+  | nil =>
+      intro β hx
+      refine ⟨β, ?_, hx, ?_⟩
+      · simpa [refineByCoords_nil]
+      · intro i b hγ
+        have hprop := (mem_iff (n := n) (β := β) (x := x)).1 hx
+        have : β i = some b := by simpa using hγ
+        exact hprop i b this
+  | cons i rest ih =>
+      intro β hx
+      by_cases hfree : β i = none
+      · set δ := fun j : Fin n => if j = i then some (x i) else β j
+        have hassign : assign (n := n) β i (x i) = some δ := by
+          simpa [δ] using assign_of_none (n := n) (β := β) (i := i) (b := x i)
+            hfree
+        have hmemδ : mem (n := n) δ x := by
+          have := (mem_assign_iff (n := n) (β := β) (γ := δ)
+              (i := i) (b := x i) hassign x).2
+          simpa using this ⟨hx, rfl⟩
+        obtain ⟨γ, hγ_rest, hγx, hγprop⟩ := ih (β := δ) hmemδ
+        refine ⟨γ, ?_, hγx, hγprop⟩
+        exact
+          (mem_refineByCoords_cons (β := β) (i := i) (rest := rest) (γ := γ)).2
+            ⟨δ, by
+                cases hxbool : x i with
+                | false =>
+                    simp [δ, hxbool, hfree, splitCoordinate_of_free]
+                | true =>
+                    simp [δ, hxbool, hfree, splitCoordinate_of_free],
+              hγ_rest⟩
+      · have hfixed : β i ≠ none := hfree
+        obtain ⟨γ, hγ_rest, hγx, hγprop⟩ := ih (β := β) hx
+        refine ⟨γ, ?_, hγx, hγprop⟩
+        exact
+          (mem_refineByCoords_cons (β := β) (i := i) (rest := rest) (γ := γ)).2
+            ⟨β, by simpa [splitCoordinate_of_not_free, hfixed]
+                using List.mem_singleton.mpr rfl,
+              hγ_rest⟩
+
+/--
+Если `γ` получен из `refineByCoords β coords` и точка `x` принадлежит и `β`, и
+`γ`, то каждая свободная координата `i` из списка `coords` получает значение
+`x i` в подкубе `γ`.  Лемма усиливает контроль над листами дерева уточнений и
+необходима для доказательства покрытия `refineDisjoint`.-/
+lemma mem_refineByCoords_value_of_mem {n : Nat}
+    (β γ : Subcube n) {coords : List (Fin n)} {x : BitVec n}
+    (hcoords : coords.Nodup)
+    (hxβ : mem (n := n) β x)
+    (hmem : γ ∈ refineByCoords (n := n) β coords)
+    (hxγ : mem (n := n) γ x)
+    {i : Fin n} (hi : i ∈ coords) (hβi : β i = none) :
+    γ i = some (x i) := by
+  classical
+  classical
+  classical
+  have aux :
+      ∀ (coords : List (Fin n)), coords.Nodup →
+        ∀ {β γ : Subcube n} {x : BitVec n},
+          mem (n := n) β x →
+          γ ∈ refineByCoords (n := n) β coords →
+          mem (n := n) γ x →
+          ∀ {i : Fin n}, i ∈ coords → β i = none → γ i = some (x i)
+    := by
+      intro coords
+      induction coords with
+      | nil =>
+          intro _ β γ x hxβ hmem hxγ i hi _
+          cases hi
+      | cons j rest ih =>
+          intro hcoords β γ x hxβ hmem hxγ i hi hβi
+          classical
+          let j0 := j
+          have hsplit :=
+            (mem_refineByCoords_cons (β := β) (i := j0) (rest := rest) (γ := γ)).1
+              hmem
+          rcases hsplit with ⟨δ, hδ, hγ_rest⟩
+          have hrest_nodup : rest.Nodup := (List.nodup_cons.mp hcoords).2
+          have hi_cases := List.mem_cons.mp hi
+          rcases hi_cases with hhead | htail
+          · subst hhead
+            have hcases := mem_splitCoordinate (β := β) (i := j0) (γ := δ) hδ
+            have hassign : ∃ b : Bool, assign (n := n) β j0 b = some δ := by
+              rcases hcases with hfixed | hassign
+              · have hcontr : False := by
+                  have := hβi
+                  exact hfixed.1 this
+                exact (False.elim hcontr)
+              · exact hassign
+            rcases hassign with ⟨b, hassign⟩
+            have hsubset : subset (n := n) γ δ :=
+              subset_of_mem_refineByCoords (n := n) (β := δ) (γ := γ)
+                (coords := rest) hrest_nodup hγ_rest
+            have hxδ : mem (n := n) δ x := hsubset x hxγ
+            have hxpair :=
+              (mem_assign_iff (n := n) (β := β) (γ := δ)
+                  (i := j0) (b := b) hassign x).1 hxδ
+            have hxeq : x j0 = b := hxpair.2
+            have hδval : δ j0 = some b :=
+              assign_eq_some_value (n := n) (β := β) (γ := δ) (i := j0) (b := b)
+                hassign
+            have hγval :=
+              mem_refineByCoords_preserve_value (n := n) (β := δ) (γ := γ)
+                (coords := rest) (i := j0) (b := b) hδval hγ_rest
+            have hγval' : γ j0 = some (x j0) := by
+              simpa [hxeq] using hγval
+            exact hγval'
+          · have hsubset : subset (n := n) γ δ :=
+              subset_of_mem_refineByCoords (n := n) (β := δ) (γ := γ)
+                (coords := rest) hrest_nodup hγ_rest
+            have hxδ : mem (n := n) δ x := hsubset x hxγ
+            have hδi : δ i = none := by
+              have hcases := mem_splitCoordinate (β := β) (i := j0) (γ := δ) hδ
+              rcases hcases with hfixed | hassign
+              · have hδeq : δ = β := hfixed.2
+                simpa [hδeq, hβi]
+              · rcases hassign with ⟨b, hassign⟩
+                have hneq : j0 ≠ i := by
+                  intro hji; subst hji
+                  exact (List.nodup_cons.mp hcoords).1 htail
+                have hδeq : δ i = β i :=
+                  assign_preserve_ne (n := n) (β := β) (δ := δ)
+                    (j := j0) (i := i) (b := b) hassign hneq
+                simpa [hδeq, hβi]
+            exact ih hrest_nodup (β := δ) (γ := γ) (x := x)
+              hxδ hγ_rest hxγ htail hδi
+  exact aux coords hcoords (β := β) (γ := γ) (x := x) hxβ hmem hxγ hi hβi
+
+end Subcube
 /--
 Если серия присваиваний `assignMany` успешно завершилась, то принадлежность
 построенному подкубу эквивалентна исходной принадлежности и выполнению всех
 зафиксированных битов.
 -/
+
+
+
+
 lemma mem_assignMany_iff {n : Nat} {β γ : Subcube n}
   {updates : List (BitFix n)}
   (hassign : Subcube.assignMany β updates = some γ)
@@ -474,6 +1161,97 @@ induction updates generalizing β γ with
             ⟨⟨hβmem, hib⟩, hrestProp⟩
           exact hcombined.mpr hcombined'
 
+
+namespace Subcube
+
+variable {n : Nat}
+
+/--
+Два подкуба дизъюнктны, если они не имеют общих булевых точек.  Формулируем
+через пропозициональную принадлежность `mem`, чтобы сразу применять готовые
+леммы о присваиваниях и покрытии.-/
+def disjoint (β γ : Subcube n) : Prop := ∀ x, mem β x → mem γ x → False
+
+lemma disjoint_symm {β γ : Subcube n} :
+    disjoint (n := n) β γ → disjoint (n := n) γ β := by
+  intro h x hxγ hxβ
+  exact h x hxβ hxγ
+
+/--
+Если две ветви фиксируют одну и ту же координату противоположными значениями,
+то их пересечение пусто: одно и то же булево значение не может одновременно быть
+и `true`, и `false`.-/
+lemma disjoint_of_opposite {β γ : Subcube n} {i : Fin n}
+    {b₁ b₂ : Bool} (hβ : β i = some b₁) (hγ : γ i = some b₂)
+    (hne : b₁ ≠ b₂) :
+    disjoint (n := n) β γ := by
+  intro x hxβ hxγ
+  have hxβ' := (mem_iff (β := β) (x := x)).1 hxβ i b₁ hβ
+  have hxγ' := (mem_iff (β := γ) (x := x)).1 hxγ i b₂ hγ
+  have hvals : b₁ = b₂ := hxβ'.symm.trans hxγ'
+  exact hne hvals
+
+/--
+Список подкубов, построенный `refineByCoords`, попарно дизъюнктен.  Каждый шаг
+разбиения либо сохраняет исходный подкуб (если координата уже зафиксирована),
+либо делит его на две несовместимые ветви по значениям свободной координаты.-/
+lemma refineByCoords_pairwise_disjoint {β : Subcube n}
+    {coords : List (Fin n)} :
+    (refineByCoords (n := n) β coords).Pairwise (disjoint (n := n)) := by
+  classical
+  induction coords generalizing β with
+  | nil =>
+      simp [refineByCoords_nil, List.pairwise_singleton]
+  | cons i rest ih =>
+      by_cases hfree : β i = none
+      ·
+        have hsplit := splitCoordinate_of_free (β := β) (i := i) hfree
+        have hrewrite :
+            refineByCoords (n := n) β (i :: rest)
+              = refineByCoords (n := n)
+                  (fun j : Fin n => if j = i then some false else β j) rest
+                ++ refineByCoords (n := n)
+                  (fun j : Fin n => if j = i then some true else β j) rest := by
+          simp [refineByCoords, listBind, hsplit]
+        have hfalse_pair := ih
+          (β := fun j : Fin n => if j = i then some false else β j)
+        have htrue_pair := ih
+          (β := fun j : Fin n => if j = i then some true else β j)
+        have hcross :
+            ∀ γ ∈ refineByCoords (n := n)
+                  (fun j : Fin n => if j = i then some false else β j) rest,
+              ∀ δ ∈ refineByCoords (n := n)
+                  (fun j : Fin n => if j = i then some true else β j) rest,
+                disjoint (n := n) γ δ := by
+          intro γ hγ δ hδ
+          have hγ_val : γ i = some false :=
+            mem_refineByCoords_preserve_value
+              (n := n)
+              (β := fun j : Fin n => if j = i then some false else β j)
+              (γ := γ) (coords := rest)
+              (i := i) (b := false)
+              (by simp)
+              hγ
+          have hδ_val : δ i = some true :=
+            mem_refineByCoords_preserve_value
+              (n := n)
+              (β := fun j : Fin n => if j = i then some true else β j)
+              (γ := δ) (coords := rest)
+              (i := i) (b := true)
+              (by simp)
+              hδ
+          exact disjoint_of_opposite (n := n) hγ_val hδ_val (by decide)
+        have hpair := List.pairwise_append.mpr
+          ⟨hfalse_pair, htrue_pair, hcross⟩
+        simpa [hrewrite] using hpair
+      ·
+        have hrewrite :
+            refineByCoords (n := n) β (i :: rest)
+              = refineByCoords (n := n) β rest := by
+          simp [refineByCoords, listBind, splitCoordinate_of_not_free, hfree]
+        simpa [hrewrite] using ih
+
+end Subcube
 
 /-- Индикатор покрытия x объединением подкубов из списка Rset. -/
 def coveredB {n : Nat} (Rset : List (Subcube n)) (x : BitVec n) : Bool :=

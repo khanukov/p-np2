@@ -112,14 +112,15 @@
      локальный хвостовой сертификат.
 
 2. **Дизъюнктная нормализация.**
-   * **Предлагаемый файл:** новый модуль `MultiSwitching/SelectorRefinement.lean`
-     (либо отдельный раздел в `SelectorPool`).
-   * Реализовать функцию `refineDisjoint β : List (Subcube n) → List (Subcube n)`
-     с доказательствами:
+  * **Предлагаемый файл:** новый модуль `MultiSwitching/SelectorRefinement.lean`
+    (либо отдельный раздел в `SelectorPool`).
+  * Реализовать функцию `refineDisjoint β : List (Subcube n) → List (Subcube n)`
+    с доказательствами:
        - `pairwise_disjoint_refine` (листья попарно несовместны);
        - `cover_of_refine` (объединение равно исходному списку);
        - `subset_of_mem_refine` (каждый элемент списка лежит в `β`);
        - `length_refine_le` (оценка количества листьев через размер поддержки).
+      ✅ Получена оценка длины: см. `refineDisjoint_length_le_support`.
    * Для контроля бюджета глубины использовать уже доказанные оценки длин
      списков `selectorTailAssignments` и мощностей `leafSelectorTailSupport`.
 
@@ -141,6 +142,62 @@
          `kβ = length (refineDisjoint β …)`).
      Здесь `τ` — исходный бюджет глубины хвостов, а надбавка контролируется
      леммой `length_selectorTailAssignments_le_leafSelectorSupport`.
+  * ✅ Подготовлена вспомогательная лемма
+    `TailAssignmentBundle.mem_leaves_toPDT` (файл
+    `MultiSwitching/SelectorPool.lean`), показывающая, что дерево,
+    построенное по хвостовым присваиваниям конкретного селектора,
+    действительно содержит этот селектор среди листьев.  Дополнительно
+    `mem_leafSelectorTailBundles_leaves` связывает эту лемму с
+    объединённым списком `leafSelectorTailBundles`, устраняя ручную
+    распаковку `List.map`.
+  * ✅ Получена оценка глубины для деревьев из
+    `leafSelectorTailBundles`: `leafSelectorTailBundles_depth_le_support`
+    (там же) показывает, что глубина каждого такого хвоста не превосходит
+    мощности глобальной поддержки `leafSelectorSupport`.  Это связывает
+    локальные списки присваиваний с общим бюджетом координат и готовит
+    почву для контроля глубины будущего `globalTail` без обращения к
+    конкретным пакетам глубины 1.
+  * ✅ В `Core/BooleanBasics.lean` введён общий инструмент
+    `Subcube.refineByCoords`, рекурсивно разбивающий подкуб по списку
+    координат и восстанавливающий соответствующие присваивания
+    (`mem_refineByCoords_assignMany`).  На стороне
+    `SelectorPool.lean` добавлена упаковка `leafSelectorTailSupportList`
+    вместе с леммой `refineBySupport_assignMany`, позволяющей напрямую
+    применять общую конструкцию к глобальной поддержке хвостов.  Это
+    закрывает подготовительный этап для алгоритма `refineDisjoint` и
+    фиксирует список координат без повторов, вдоль которых потребуется
+    нормализовать селекторы.
+  * ✅ В `Core/BooleanBasics.lean` закрыта лемма `assign_eq_some_value`,
+    разворачивающая успешный вызов `Subcube.assign` в утверждение о значении
+    нужной координаты.  Эта деталь позволяет напрямую поднимать сведения об
+    отдельных присваиваниях в рассуждениях про `TailAssignmentBundle`.
+  * ✅ Для `TailAssignmentBundle.popHead` добавлена лемма `tail_coord_ne_head`
+    (файл `SelectorPool.lean`), гарантирующая, что после отделения головы
+    никакая пара из хвоста не использует исходную координату.  Свойство
+    пригодится при конструировании дизъюнктных списков и контроле поддержки
+    глобальных хвостов.
+  * ✅ В `SelectorPool.lean` введено обозначение `rawCombinedTailSelectors`
+    вместе с леммами `mem_rawCombinedTailSelectors_of_mem_combined` и
+    `exists_pkg_mem_of_mem_rawCombinedTailSelectors`.  Они зафиксируют «сырой»
+    список селекторов для листа `β` и позволяют напрямую восстанавливать пакет
+    глубины 1, породивший конкретный селектор, не раскрывая `List.bind` вручную.
+  * ✅ В `Core/BooleanBasics.lean` введено отношение включения подкубов
+    `Subcube.subset` и доказаны вспомогательные свойства (`subset_of_assign`,
+    `subset_of_assignMany`, `subset_of_mem_refineByCoords`), позволяющие без
+    раскрытия определений переносить принадлежность точек вдоль цепочек
+    присваиваний.
+  * ✅ В `SelectorPool.lean` реализована функция
+    `refineDisjoint … C hβ`, возвращающая подсписок
+    `Core.Subcube.refineByCoords β …`, и получены базовые свойства:
+    `mem_refineDisjoint`, `refineDisjoint_pairwise_disjoint`,
+    `refineDisjoint_subset_leaf` и
+    `exists_selector_of_mem_refineDisjoint`.  Дополнительно закрыта лемма
+    `refineDisjoint_cover`, использующая новое утверждение
+    `Core.Subcube.mem_refineByCoords_value_of_mem` и показывающая, что каждая
+    точка из исходного селектора попадает в некоторый элемент нормализованного
+    списка.  Таким образом, дизъюнктная нормализация теперь построена и
+    контролирует как покрытие координат (`β` остаётся стволом), так и связь
+    каждого листа с исходным селектором.
 
 4. **Контроль ошибки.**
    * Показать, что `errU` от `globalTail β` не превосходит `totalBadBound`.

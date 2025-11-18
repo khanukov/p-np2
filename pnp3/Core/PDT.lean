@@ -371,6 +371,125 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
 
+/--
+  Построение PDT, повторяющего рекурсивное разбиение
+  `Core.Subcube.refineByCoords`. Узел добавляется только при свободной
+  координате: в этом случае мы ветвимся по двум значениям бита и продолжаем
+  обработку хвоста списка.-/
+def Subcube.refineByCoordsPDT {n : Nat} (β : Subcube n) :
+    List (Fin n) → PDT n
+  | [] => PDT.leaf β
+  | i :: rest =>
+      match β.splitCoordinate i with
+      | [] => PDT.leaf β
+      | γ :: tail =>
+          match tail with
+          | [] => Subcube.refineByCoordsPDT γ rest
+          | γ' :: _ =>
+              PDT.node i (Subcube.refineByCoordsPDT γ rest)
+                (Subcube.refineByCoordsPDT γ' rest)
+
+@[simp] lemma Subcube.refineByCoordsPDT_nil {n : Nat}
+    (β : Subcube n) :
+    Subcube.refineByCoordsPDT (n := n) β [] = PDT.leaf β := rfl
+
+/-- Листья дерева `refineByCoordsPDT` совпадают со значением `refineByCoords`. -/
+lemma Subcube.leaves_refineByCoordsPDT {n : Nat}
+    (β : Subcube n) (coords : List (Fin n)) :
+    PDT.leaves (Subcube.refineByCoordsPDT (n := n) β coords)
+      = Subcube.refineByCoords (n := n) β coords := by
+  classical
+  induction coords generalizing β with
+  | nil =>
+      simp [Subcube.refineByCoordsPDT, Core.Subcube.refineByCoords, PDT.leaves]
+  | cons i rest ih =>
+      by_cases hfree : β i = none
+      ·
+        have hsplit := Core.Subcube.splitCoordinate_of_free
+          (β := β) (i := i) hfree
+        have hrewrite := Core.Subcube.refineByCoords_cons_of_free
+          (β := β) (i := i) (rest := rest) hfree
+        have hfalse := ih (β := fun j => if j = i then some false else β j)
+        have htrue := ih (β := fun j => if j = i then some true else β j)
+        simp [Subcube.refineByCoordsPDT, hsplit, hrewrite, hfalse, htrue, PDT.leaves]
+      ·
+        have hsplit := Core.Subcube.splitCoordinate_of_not_free
+          (β := β) (i := i) hfree
+        have hrewrite := Core.Subcube.refineByCoords_cons_of_not_free
+          (β := β) (i := i) (rest := rest) hfree
+        have htree :
+            Subcube.refineByCoordsPDT (n := n) β (i :: rest)
+              = Subcube.refineByCoordsPDT (n := n) β rest := by
+          simp [Subcube.refineByCoordsPDT, hsplit]
+        have hlist :
+            Core.Subcube.refineByCoords (n := n) β (i :: rest)
+              = Core.Subcube.refineByCoords (n := n) β rest := by
+          simpa [hrewrite]
+        simpa [htree, hlist] using ih (β := β)
+
+/-- Глубина дерева `refineByCoordsPDT` ограничена длиной списка координат. -/
+lemma Subcube.depth_refineByCoordsPDT_le {n : Nat}
+    (β : Subcube n) : ∀ coords : List (Fin n),
+      PDT.depth (Subcube.refineByCoordsPDT (n := n) β coords)
+        ≤ coords.length := by
+  classical
+  intro coords
+  induction coords generalizing β with
+  | nil =>
+      simp [Subcube.refineByCoordsPDT, PDT.depth]
+  | cons i rest ih =>
+      by_cases hfree : β i = none
+      ·
+        have hfalse := ih (β := fun j => if j = i then some false else β j)
+        have htrue := ih (β := fun j => if j = i then some true else β j)
+        have hmax : Nat.max
+            (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                (fun j : Fin n => if j = i then some false else β j) rest))
+            (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                (fun j : Fin n => if j = i then some true else β j) rest))
+            ≤ rest.length := by
+          exact max_le_iff.mpr ⟨hfalse, htrue⟩
+        have hsucc := Nat.succ_le_succ hmax
+        have hlen : rest.length + 1 = (i :: rest).length := by simp
+        have hsplit := Core.Subcube.splitCoordinate_of_free
+          (β := β) (i := i) hfree
+        have hdepth_node :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              = Nat.succ
+                  (Nat.max
+                    (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                        (fun j : Fin n => if j = i then some false else β j) rest))
+                    (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                        (fun j : Fin n => if j = i then some true else β j) rest))) := by
+          simp [Subcube.refineByCoordsPDT, hsplit, PDT.depth]
+        have hbound :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              ≤ rest.length + 1 := by
+          exact Eq.subst (motive := fun t => t ≤ rest.length + 1)
+            hdepth_node.symm hsucc
+        have hgoal :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              ≤ (i :: rest).length := by
+          exact Eq.subst (motive := fun t =>
+              PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest)) ≤ t)
+            hlen.symm hbound
+        exact hgoal
+      ·
+        have hsplit := Core.Subcube.splitCoordinate_of_not_free
+          (β := β) (i := i) hfree
+        have htree :
+            Subcube.refineByCoordsPDT (n := n) β (i :: rest)
+              = Subcube.refineByCoordsPDT (n := n) β rest := by
+          simp [Subcube.refineByCoordsPDT, hsplit]
+        have hdepth_rest := ih (β := β)
+        have hle_succ : rest.length ≤ (i :: rest).length := by
+          simpa [Nat.succ_eq_add_one] using Nat.le_succ (rest.length)
+        have hbound :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              ≤ rest.length := by
+          simpa [htree] using hdepth_rest
+        exact hbound.trans hle_succ
+
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,
     2) объединение листьев покрывает весь рассматриваемый регион.

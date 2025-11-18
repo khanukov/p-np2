@@ -268,6 +268,65 @@ lemma assign_preserve_ne {n : Nat} {β δ : Subcube n}
       simp [hδ]
 
 /--
+  Присваивания по двум различным свободным координатам коммутируют: неважно,
+  в каком порядке применять `Subcube.assign`, если обе координаты изначально
+  свободны.  Формула записана через `Option.bind`, что упрощает дальнейшее
+  использование вместе с леммой `assignMany_cons_bind`.-/
+lemma assign_bind_swap_of_none {n : Nat} {β : Subcube n}
+    {i j : Fin n} {b c : Bool}
+    (hij : i ≠ j)
+    (hfree_i : β i = none)
+    (hfree_j : β j = none) :
+    (Subcube.assign β i b).bind (fun β' => Subcube.assign β' j c)
+      = (Subcube.assign β j c).bind (fun β' => Subcube.assign β' i b) := by
+  classical
+  have hassign_i :
+      Subcube.assign β i b
+        = some (fun k : Fin n => if k = i then some b else β k) :=
+    assign_of_none (β := β) (i := i) (b := b) hfree_i
+  have hassign_j :
+      Subcube.assign β j c
+        = some (fun k : Fin n => if k = j then some c else β k) :=
+    assign_of_none (β := β) (i := j) (b := c) hfree_j
+  have hβi_ne : (fun k => if k = j then some c else β k) i = none := by
+    by_cases hji : i = j
+    · exact (hij hji).elim
+    · simp [hji, hfree_i]
+  have hβj_ne : (fun k => if k = i then some b else β k) j = none := by
+    by_cases hji : j = i
+    · have : i = j := hji.symm
+      exact (hij this).elim
+    · simp [hji, hfree_j]
+  have hassign_i_then_j :
+      Subcube.assign
+          (fun k => if k = i then some b else β k) j c
+        = some
+            (fun k => if k = j then some c else if k = i then some b else β k) := by
+    have := assign_of_none (β := fun k => if k = i then some b else β k)
+      (i := j) (b := c) hβj_ne
+    simpa [this]
+  have hassign_j_then_i :
+      Subcube.assign
+          (fun k => if k = j then some c else β k) i b
+        = some
+            (fun k => if k = i then some b else if k = j then some c else β k) := by
+    have := assign_of_none (β := fun k => if k = j then some c else β k)
+      (i := i) (b := b) hβi_ne
+    simpa [this]
+  have hfun_eq :
+      (fun k => if k = j then some c else if k = i then some b else β k)
+        = (fun k => if k = i then some b else if k = j then some c else β k) := by
+    funext k
+    by_cases hk : k = i
+    · simp [hk, hij]
+    · by_cases hjk : k = j
+      · have hji : j ≠ i := fun h => hij h.symm
+        simp [hk, hjk, hji]
+      · simp [hk, hjk]
+  simp [Option.bind, hassign_i, hassign_j,
+    hassign_i_then_j, hassign_j_then_i, hfun_eq]
+
+/--
 Если присваиваем координату, которая уже содержала значение `b`, то результат
 совпадает с исходным подкубом.  Эта вспомогательная формулировка удобна в
 доказательствах сохранения значений на фиксированной координате.-/
@@ -348,6 +407,212 @@ induction updates₁ generalizing β with
         simp [Subcube.assignMany, hassign]
     | some β' =>
         simp [Subcube.assignMany, hassign, ih]
+
+/--
+  Перестановка первых двух присваиваний безопасна: если координаты различны и
+  изначально свободны, то порядок их обработки в `assignMany` не влияет на
+  результат.-/
+lemma assignMany_swap_head {n : Nat} {β : Subcube n}
+    {i j : Fin n} {b c : Bool} {rest : List (BitFix n)}
+    (hij : i ≠ j)
+    (hfree_i : β i = none)
+    (hfree_j : β j = none) :
+    Subcube.assignMany β ((i, b) :: (j, c) :: rest)
+      = Subcube.assignMany β ((j, c) :: (i, b) :: rest) := by
+  classical
+  have hswap :=
+    assign_bind_swap_of_none (n := n) (β := β)
+      (i := i) (j := j) (b := b) (c := c) hij hfree_i hfree_j
+  -- Сначала раскроем обе стороны до канонического вида с вложенными `bind`.
+  have hleft :
+      Subcube.assignMany β ((i, b) :: (j, c) :: rest)
+        = ((Subcube.assign β i b).bind fun β' => Subcube.assign β' j c).bind
+            fun β'' => Subcube.assignMany β'' rest := by
+    cases hassign : Subcube.assign β i b with
+    | none =>
+        simp [assignMany_cons_bind, hassign]
+    | some β' =>
+        cases hassign' : Subcube.assign β' j c with
+        | none =>
+            simp [assignMany_cons_bind, hassign, hassign']
+        | some β'' =>
+            simp [assignMany_cons_bind, hassign, hassign']
+  have hright :
+      Subcube.assignMany β ((j, c) :: (i, b) :: rest)
+        = ((Subcube.assign β j c).bind fun β' => Subcube.assign β' i b).bind
+            fun β'' => Subcube.assignMany β'' rest := by
+    cases hassign : Subcube.assign β j c with
+    | none =>
+        simp [assignMany_cons_bind, hassign]
+    | some β' =>
+        cases hassign' : Subcube.assign β' i b with
+        | none =>
+            simp [assignMany_cons_bind, hassign, hassign']
+        | some β'' =>
+            simp [assignMany_cons_bind, hassign, hassign']
+  -- Теперь переносим `hswap` на канонический вид и замыкаем равенство.
+  have hswap' :=
+    congrArg
+      (fun o => o.bind fun β'' => Subcube.assignMany β'' rest)
+      hswap
+  exact hleft.trans <| hswap'.trans hright.symm
+
+/--
+  Если список присваиваний не содержит дубликатов, а совпадение координат
+  между двумя элементами списка немедленно влечёт равенство самих пар, то
+  координаты различных элементов действительно различны.  Такая форма
+  `Pairwise` часто нужна перед применением `assignMany_move_to_front`, где
+  требуется получить явное условие на различие координат из сведений о
+  `Nodup` и уникальности координат.-/
+lemma pairwise_coord_unique_of_nodup {n : Nat}
+    {updates : List (BitFix n)}
+    (hnodup : updates.Nodup)
+    (hcoord_unique : ∀ {pair₁ pair₂ : BitFix n},
+        pair₁ ∈ updates → pair₂ ∈ updates →
+          pair₁.1 = pair₂.1 → pair₁ = pair₂) :
+    updates.Pairwise (fun pair₁ pair₂ => pair₁.1 ≠ pair₂.1) := by
+  classical
+  induction updates with
+  | nil =>
+      simp
+  | cons head tail ih =>
+      have htail : tail.Nodup := (List.nodup_cons.1 hnodup).2
+      have hhead_not_mem : head ∉ tail := (List.nodup_cons.1 hnodup).1
+      -- Индуктивная гипотеза: хвост уже обладает нужным свойством.
+      have htail_pairwise : tail.Pairwise _ :=
+        ih htail fun {pair₁ pair₂} h₁ h₂ hcoord =>
+          hcoord_unique
+            (by exact List.mem_cons_of_mem _ h₁)
+            (by exact List.mem_cons_of_mem _ h₂) hcoord
+      -- Проверяем, что координата головы не встречается в хвосте.
+      have hhead_tail : ∀ {entry : BitFix n}, entry ∈ tail → head.1 ≠ entry.1 := by
+        intro entry hentry hcoord
+        have : head = entry :=
+          hcoord_unique (by simp) (List.mem_cons_of_mem _ hentry) hcoord
+        have : entry ∉ tail := by
+          simpa [this] using hhead_not_mem
+        exact (this hentry).elim
+      -- Собираем условие `Pairwise` для всего списка.
+      refine List.pairwise_cons.2 ?_
+      refine ⟨?_, htail_pairwise⟩
+      intro entry hentry
+      exact hhead_tail hentry
+
+/--
+  If every coordinate in the concatenation `front ++ pair :: suffix` is free in
+  `β` and the list is pairwise coordinate-distinct, we may bring `pair` to the
+  head without changing the result of `assignMany`.
+-/
+lemma assignMany_move_to_front {n : Nat} {pair : BitFix n}
+    {front suffix : List (BitFix n)} {β : Subcube n}
+    (hfree : ∀ entry ∈ pair :: (front ++ suffix), β entry.1 = none)
+    (hcoord : (pair :: (front ++ suffix)).Pairwise
+        (fun entry₁ entry₂ => entry₁.1 ≠ entry₂.1)) :
+    Subcube.assignMany β (front ++ (pair :: suffix))
+      = Subcube.assignMany β (pair :: (front ++ suffix)) := by
+  classical
+  induction front generalizing β with
+  | nil =>
+      simp [List.nil_append]
+  | cons head rest ih =>
+      -- Раскладываем попарную независимость координат на полезные компоненты.
+      have hpair_tail_mem :
+          ∀ entry ∈ head :: rest ++ suffix, pair.1 ≠ entry.1 := by
+        simpa [List.cons_append, List.append_assoc]
+          using (List.pairwise_cons.1 hcoord).1
+      have htail_pairwise :
+          (head :: rest ++ suffix).Pairwise
+            (fun entry₁ entry₂ => entry₁.1 ≠ entry₂.1) := by
+        simpa [List.cons_append, List.append_assoc]
+          using (List.pairwise_cons.1 hcoord).2
+      have hhead_rest :
+          ∀ entry ∈ rest ++ suffix, head.1 ≠ entry.1 :=
+        (List.pairwise_cons.1 htail_pairwise).1
+      have hrest_pairwise :
+          (rest ++ suffix).Pairwise
+            (fun entry₁ entry₂ => entry₁.1 ≠ entry₂.1) :=
+        (List.pairwise_cons.1 htail_pairwise).2
+      have hpair_rest :
+          ∀ entry ∈ rest ++ suffix, pair.1 ≠ entry.1 := by
+        intro entry hentry
+        exact hpair_tail_mem entry (List.mem_cons.2 <| Or.inr hentry)
+      have hpair_head : pair.1 ≠ head.1 := by
+        have : head ∈ head :: rest ++ suffix := by simp
+        exact hpair_tail_mem head this
+      have hneq : head.1 ≠ pair.1 := by simpa [ne_comm] using hpair_head
+      have htail_coord :
+          (pair :: (rest ++ suffix)).Pairwise
+            (fun entry₁ entry₂ => entry₁.1 ≠ entry₂.1) := by
+        refine List.pairwise_cons.2 ?_
+        exact ⟨hpair_rest, hrest_pairwise⟩
+      -- Свобода координат для головы и выбранной пары.
+      have hhead_mem : head ∈ pair :: ((head :: rest) ++ suffix) := by
+        simp [List.cons_append, List.append_assoc]
+      have hpair_mem : pair ∈ pair :: ((head :: rest) ++ suffix) := by simp
+      have hfree_head : β head.1 = none := hfree head hhead_mem
+      have hfree_pair : β pair.1 = none := hfree pair hpair_mem
+      -- Свобода для хвостовой части, оцениваемой в исходном подкубе.
+      have htail_freeβ : ∀ entry ∈ pair :: (rest ++ suffix), β entry.1 = none := by
+        intro entry hentry
+        rcases List.mem_cons.1 hentry with hentry | hentry
+        · subst hentry; exact hfree_pair
+        · have hmem_front : entry ∈ (head :: rest) ++ suffix := by
+            have : entry ∈ head :: rest ++ suffix :=
+              List.mem_cons.2 (Or.inr hentry)
+            simpa [List.cons_append, List.append_assoc] using this
+          exact hfree entry (List.mem_cons.2 <| Or.inr hmem_front)
+      -- После фиксации головы координата head.1 заблокирована, но остальные
+      -- координаты остаются свободными, что позволяет рекурсивно применять IH.
+      set βHead : Subcube n := fun j => if j = head.1 then some head.2 else β j with hβHead
+      have hassign : Subcube.assign β head.1 head.2 = some βHead := by
+        simpa [βHead] using
+          assign_of_none (n := n) (β := β) (i := head.1) (b := head.2) hfree_head
+      have hcoord_head_tail :
+          ∀ entry ∈ pair :: (rest ++ suffix), entry.1 ≠ head.1 := by
+        intro entry hentry
+        rcases List.mem_cons.1 hentry with hentry | hentry
+        · subst hentry; simpa [ne_comm] using hneq
+        · simpa [ne_comm] using hhead_rest entry hentry
+      have htail_freeβHead :
+          ∀ entry ∈ pair :: (rest ++ suffix), βHead entry.1 = none := by
+        intro entry hentry
+        have hfree_entry := htail_freeβ entry hentry
+        have hneq_head := hcoord_head_tail entry hentry
+        have : βHead entry.1 = β entry.1 := by simp [βHead, hneq_head]
+        simpa [this] using hfree_entry
+      -- Применяем индукционное предположение к хвосту.
+      have hmove_rest :=
+        ih (β := βHead) htail_freeβHead htail_coord
+      -- Укладываем равенства в два шага: сперва нормализуем хвост, затем
+      -- меняем местами голову и выбранную пару.
+      have htail_eq :
+          Subcube.assignMany β (head :: (rest ++ (pair :: suffix)))
+            = Subcube.assignMany β (head :: (pair :: (rest ++ suffix))) := by
+        calc
+          Subcube.assignMany β (head :: (rest ++ (pair :: suffix)))
+              = Subcube.assignMany βHead (rest ++ (pair :: suffix)) := by
+                simp [Subcube.assignMany, hassign, βHead]
+          _ = Subcube.assignMany βHead (pair :: (rest ++ suffix)) := hmove_rest
+          _ = Subcube.assignMany β (head :: (pair :: (rest ++ suffix))) := by
+                simp [Subcube.assignMany, hassign, βHead]
+      have hswap :=
+        assignMany_swap_head (n := n) (β := β)
+          (i := head.1) (j := pair.1)
+          (b := head.2) (c := pair.2)
+          (rest := rest ++ suffix) hneq hfree_head hfree_pair
+      have hswap' :
+          Subcube.assignMany β (head :: (pair :: (rest ++ suffix)))
+            = Subcube.assignMany β (pair :: (head :: rest ++ suffix)) := by
+        simpa [List.cons_append, List.append_assoc]
+          using hswap
+      calc
+        Subcube.assignMany β ((head :: rest) ++ (pair :: suffix))
+            = Subcube.assignMany β (head :: (rest ++ (pair :: suffix))) := by
+                simp [List.cons_append, List.append_assoc]
+        _ = Subcube.assignMany β (head :: (pair :: (rest ++ suffix))) := htail_eq
+        _ = Subcube.assignMany β (pair :: (head :: rest ++ suffix)) := hswap'
+        _ = Subcube.assignMany β (pair :: ((head :: rest) ++ suffix)) := by
+                simp [List.cons_append, List.append_assoc]
 
 /-!
 ### Нормализация подкубов по списку координат
@@ -456,7 +721,8 @@ def refineByCoords : Subcube n → List (Fin n) → List (Subcube n)
       listBind (splitCoordinate β i) (fun γ => refineByCoords γ rest)
 
 @[simp] lemma refineByCoords_nil (β : Subcube n) :
-    refineByCoords β [] = [β] := rfl
+  refineByCoords β [] = [β] := rfl
+
 
 @[simp] lemma mem_refineByCoords_cons {β : Subcube n}
     {i : Fin n} {rest : List (Fin n)} {γ : Subcube n} :
@@ -473,6 +739,44 @@ def refineByCoords : Subcube n → List (Fin n) → List (Subcube n)
   · rintro ⟨δ, hδ, hmem⟩
     unfold refineByCoords
     exact (mem_listBind (y := γ)).2 ⟨δ, hδ, hmem⟩
+
+/-- Разворачивает явное выражение для свободной координаты. -/
+lemma refineByCoords_cons_of_free {β : Subcube n}
+    {i : Fin n} {rest : List (Fin n)}
+    (hfree : β i = none) :
+    refineByCoords β (i :: rest)
+      = refineByCoords (fun j : Fin n => if j = i then some false else β j) rest
+        ++ refineByCoords (fun j : Fin n => if j = i then some true else β j) rest := by
+  classical
+  have hsplit := splitCoordinate_of_free (β := β) (i := i) hfree
+  calc
+    refineByCoords β (i :: rest)
+        = listBind (β.splitCoordinate i) (fun γ => refineByCoords γ rest) := rfl
+    _ = listBind
+          [fun j : Fin n => if j = i then some false else β j,
+            fun j : Fin n => if j = i then some true else β j]
+          (fun γ => refineByCoords γ rest) := by simpa [hsplit]
+    _ = (refineByCoords (fun j => if j = i then some false else β j) rest)
+          ++ listBind
+            [fun j : Fin n => if j = i then some true else β j]
+            (fun γ => refineByCoords γ rest) := rfl
+    _ = refineByCoords (fun j => if j = i then some false else β j) rest
+        ++ refineByCoords (fun j => if j = i then some true else β j) rest := by
+          simp [listBind]
+
+/-- Если координата уже зафиксирована, рекурсия просто пропускает её. -/
+lemma refineByCoords_cons_of_not_free {β : Subcube n}
+    {i : Fin n} {rest : List (Fin n)}
+    (hfixed : β i ≠ none) :
+    refineByCoords β (i :: rest)
+      = refineByCoords β rest := by
+  classical
+  have hsplit := splitCoordinate_of_not_free (β := β) (i := i) hfixed
+  calc
+    refineByCoords β (i :: rest)
+        = listBind (β.splitCoordinate i) (fun γ => refineByCoords γ rest) := rfl
+    _ = listBind [β] (fun γ => refineByCoords γ rest) := by simpa [hsplit]
+    _ = refineByCoords β rest := by simp [listBind]
 
 /--
   Если список координат не содержит повторов, то любой элемент

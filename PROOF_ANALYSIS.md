@@ -57,27 +57,23 @@ axiom depth2_constructive_switching       -- Depth2_Switching_Spec.lean:227
 
 **C. Magnification Triggers (Part D)**:
 ```lean
-axiom OPS_trigger_general                 -- Facts_Magnification.lean:74
-axiom OPS_trigger_formulas                -- Facts_Magnification.lean:82
-axiom Locality_trigger                    -- Facts_Magnification.lean:90
-axiom CJW_sparse_trigger                  -- Facts_Magnification.lean:95
+axiom OPS_trigger_general                 -- Facts_Magnification.lean:83
+axiom Locality_trigger                    -- Facts_Magnification.lean:105
+axiom CJW_sparse_trigger                  -- Facts_Magnification.lean:110
 axiom locality_lift                       -- LocalityLift.lean:52
 ```
 **Источник**: Oliveira-Pich-Santhanam (2018), Chen-Jin-Williams (2019), Williams (2014)
-**Статус**: Недоказано в формализации ❌
+**Статус**: Недоказано в формализации ❌ (при этом `OPS_trigger_formulas` доказана как специализация `OPS_trigger_general`)
 
 **D. Complexity Class Interfaces (Part D)**:
 ```lean
-axiom NP_not_subset_Ppoly : Prop          -- Interfaces.lean:25
-axiom P_subset_Ppoly : Prop               -- Interfaces.lean:28
-axiom P_subset_Ppoly_proof                -- Interfaces.lean:31
-axiom P_ne_NP : Prop                      -- Interfaces.lean:34
-axiom P_ne_NP_of_nonuniform_separation    -- Interfaces.lean:40
+theorem P_subset_Ppoly_proof : P_subset_Ppoly -- Interfaces.lean:31
+theorem P_ne_NP_of_nonuniform_separation     -- Interfaces.lean:40
 ```
-**Источник**: Определения из теории сложности
-**Статус**: Интерфейс (доказательства доступны в архивной библиотеке) ⚠️
+**Источник**: импортированные доказательства из `Facts/PsubsetPpoly`
+**Статус**: ✅ доказано (больше не считается аксиомой)
 
-#### **ИТОГО: 19 аксиом** (из которых 14 - внешние факты из литературы)
+#### **ИТОГО: 10 активных аксиом** (все приходятся на switching/anti-checker/magnification)
 
 ### 2. ⚠️ Барьеры доказательства P≠NP
 
@@ -129,7 +125,7 @@ axiom P_ne_NP_of_nonuniform_separation    -- Interfaces.lean:40
 - ⚠️ Lower bounds (зависит от anti-checker axioms)
 - ⚠️ Magnification bridge (зависит от trigger axioms)
 
-### Недоказанные внешние факты: **19 аксиом**
+### Недоказанные внешние факты: **10 аксиом**
 
 #### Критичность аксиом:
 
@@ -137,13 +133,13 @@ axiom P_ne_NP_of_nonuniform_separation    -- Interfaces.lean:40
 1. `partial_shrinkage_for_AC0` - основа SAL
 2. `antiChecker_exists_large_Y` - основа lower bounds
 3. `OPS_trigger_general` - основа magnification
-4. `P_ne_NP_of_nonuniform_separation` - финальный шаг
 
 **ВАЖНЫЕ (нужны для полноты)**:
-5-14. Остальные 10 аксиом
+- Остальные переключательные и античекерные варианты + локальные/разреженные триггеры
 
 **ИНТЕРФЕЙСНЫЕ (определения)**:
-15-19. Complexity class interfaces
+- Нет: классовые интерфейсы импортированы как теоремы (`P_subset_Ppoly_proof`,
+  `P_ne_NP_of_nonuniform_separation`).
 
 ---
 

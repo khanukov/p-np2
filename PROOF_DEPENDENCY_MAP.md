@@ -26,15 +26,15 @@ P_ne_NP_final
 ```
 P_ne_NP_from_pipeline_kit_formulas
   ├─→ bridge_from_pipeline_kit_formulas → NP_not_subset_Ppoly
-  ├─→ P_ne_NP_of_nonuniform_separation [AXIOM I.5]
-  └─→ P_subset_Ppoly_proof [AXIOM I.3]
+  ├─→ P_ne_NP_of_nonuniform_separation (theorem)
+  └─→ P_subset_Ppoly_proof (theorem)
 ```
 
 ### Уровень 3: МАГНИФИКАЦИЯ (Part D)
 ```
 bridge_from_pipeline_kit_formulas
   ├─→ kit.formula_hypothesis → FormulaLowerBoundHypothesis
-  └─→ OPS_trigger_formulas [AXIOM D.2]
+  └─→ OPS_trigger_formulas (теорема ← OPS_trigger_general [AXIOM D.1])
       └─→ FormulaLowerBoundHypothesis → NP_not_subset_Ppoly
 ```
 
@@ -106,20 +106,20 @@ scenarioFromAC0
 - **Используется**: LB_Formulas_core (противоречие)
 - **Критичность**: 🔴 BLOCKING - без этого нет Part C
 
-**3. AXIOM D.2: `OPS_trigger_formulas`**
-- **Источник**: Oliveira-Pich-Santhanam 2019
+**3. AXIOM D.1: `OPS_trigger_general`**
+- **Источник**: Oliveira-Pich-Santhanam 2019 (основной триггер)
+- **Используется**: bridge_from_pipeline_kit_formulas через `OPS_trigger_formulas`
+- **Статус**: 🔴 BLOCKING — пока хранится как внешний факт
+
+**4. THEOREM D.2: `OPS_trigger_formulas`**
+- **Источник**: Oliveira-Pich-Santhanam 2019 (специализация общего триггера)
 - **Используется**: bridge_from_pipeline_kit_formulas (магнификация)
-- **Критичность**: 🔴 BLOCKING - без этого нет Part D
+- **Статус**: ✅ **Доказано в Lean** (см. `Facts_Magnification.as_general`)
 
-**4. AXIOM I.3: `P_subset_Ppoly_proof`**
-- **Источник**: Standard result (доказано в архивной библиотеке)
-- **Используется**: финальный шаг P_ne_NP
-- **Критичность**: 🟢 EASY - стандартный результат
-
-**5. AXIOM I.5: `P_ne_NP_of_nonuniform_separation`**
-- **Источник**: Логический вывод (NP ⊄ P/poly ∧ P ⊆ P/poly → P ≠ NP)
-- **Используется**: финальный шаг P_ne_NP
-- **Критичность**: 🟢 TRIVIAL - простой логический вывод
+**5. Complexity interfaces**
+- **`P_subset_Ppoly_proof`, `P_ne_NP_of_nonuniform_separation`**
+- **Источник**: импортированные теоремы (`Facts/PsubsetPpoly`)
+- **Статус**: ✅ доказано; не считаются аксиомами
 
 ---
 
@@ -131,24 +131,16 @@ scenarioFromAC0
 
 1. **A.1: partial_shrinkage_for_AC0** - Switching Lemma (Håstad 1986)
 2. **C.7: antiChecker_exists_testset** - Anti-checker with test set (OPS 2019)
-3. **D.2: OPS_trigger_formulas** - Magnification trigger (OPS 2019)
+3. **D.1: OPS_trigger_general** - Магнификационный триггер OPS (2019)
 
 **Возможность формализации**:
 - A.1: 🔴 EXTREMELY HARD (требует probability theory, ~100+ hours work)
 - C.7: 🔴 VERY HARD (требует circuit analysis, ~50+ hours)
-- D.2: 🟡 MEDIUM (complexity theory reduction, ~20 hours)
 
-### 🟢 TIER 2: ЛЕГКО ДОКАЗУЕМЫЕ (2 аксиомы)
+### 🟢 TIER 2: Закрытые интерфейсные шаги
 
-Эти можно доказать относительно быстро:
-
-4. **I.3: P_subset_Ppoly_proof** - P ⊆ P/poly
-   - **Можно взять из архивной библиотеки** ✅
-   - **Сложность**: TRIVIAL (уже доказано)
-
-5. **I.5: P_ne_NP_of_nonuniform_separation** - Логический вывод
-   - **Можно доказать за 10 минут** ✅
-   - **Сложность**: TRIVIAL (простая логика)
+- `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation` уже импортированы
+  как теоремы, поэтому в активный список аксиом не входят.
 
 ### 🟡 TIER 3: АЛЬТЕРНАТИВНЫЕ ПУТИ (14 аксиом)
 
@@ -252,14 +244,15 @@ scenarioFromAC0
 
 **Результат**: Детальная документация оставшихся axioms
 
-### Фаза 3: "Attempt D.2 Formalization" (2-3 недели)
+### Фаза 3: "Attempt D.1 Formalization" (2-3 недели)
 
-**Задача**: Попытаться доказать OPS_trigger_formulas
+**Задача**: Попытаться формализовать общий триггер `OPS_trigger_general`
+  (формульная версия уже доказана как специализация).
 
 **Подход**:
-- Изучить proof в OPS 2019 paper
-- Попытаться формализовать reduction
-- Если слишком сложно - оставить как axiom
+- Изучить proof в OPS 2019 paper (Theorem 5.1)
+- Формализовать редукцию/античекерную конструкцию в Lean
+- Если слишком сложно — импортировать готовое доказательство как внешний модуль
 
 **Возможный результат**: 3 → 2 аксиомы
 
@@ -340,48 +333,24 @@ scenarioFromAC0
 
 ## 🎯 ИТОГОВАЯ РЕКОМЕНДАЦИЯ
 
-### ШАГ 1 (ПРЯМО СЕЙЧАС): Доказать I.5 и подключить I.3
+### ШАГ 1 (ГОТОВО): Интерфейсы импортированы
 
-**Код**:
-```lean
--- Interfaces.lean
-theorem P_ne_NP_of_nonuniform_separation
-  (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) : P_ne_NP := by
-  -- Proof by contradiction
-  by_contra h_P_eq_NP
-  -- If P = NP, then NP ⊆ P/poly (since P ⊆ P/poly)
-  have hNP_subset : NP_subset_Ppoly := ...
-  -- Contradiction with hNP
-  exact absurd hNP_subset hNP
+- `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation` импортированы из
+  `Facts/PsubsetPpoly` и больше не являются аксиомами.
+- Критический путь к `P_ne_NP_final` больше не содержит «TODO: import».
 
--- Import proof from the archival library
-theorem P_subset_Ppoly_proof : P_subset_Ppoly := by
-  -- Reference to the legacy formalization
-  sorry -- TODO: import from archival sources
-```
+### ШАГ 2 (ТЕКУЩИЙ ФРОНТ): Внешние аксиомы
 
-**Результат**:
-- **FORMAL PROOF**: Theorem `P_ne_NP_final` доказана modulo 3 axioms ✅
-- **3 axioms**: A.1 (switching), C.7 (anti-checker), D.2 (magnification)
-- **All 3**: Well-established results from literature
-- **Status**: COMPLETE FORMAL PROOF (by mathematical standards) ✅
+- Остались 3 ключевые внешние факта: `partial_shrinkage_for_AC0`,
+  `antiChecker_exists_testset`, `OPS_trigger_general`.
+- Все три имеют опубликованные доказательства (Håstad 1986; OPS 2019) и
+  документированы в `AXIOMS_FINAL_LIST.md`.
 
-### ШАГ 2 (СЛЕДУЮЩИЕ ДНИ): Документировать оставшиеся аксиомы
+### ШАГ 3 (ДОЛГОСРОЧНО): Полная формализация триггера
 
-**Создать**:
-- `pnp3/Docs/AXIOM_A1_VALIDATION.md` - Switching lemma
-- `pnp3/Docs/AXIOM_C7_VALIDATION.md` - Anti-checker
-- `pnp3/Docs/AXIOM_D2_VALIDATION.md` - Magnification
-
-**В каждом файле**:
-- Exact theorem from paper
-- Informal proof (2-3 pages)
-- Why our formalization is correct
-
-### ШАГ 3 (ОПЦИОНАЛЬНО): Попытаться формализовать D.2
-
-Если найдем подход - отлично (2 → 1 axiom)
-Если нет - тоже ОК (останется 3 axioms)
+- `OPS_trigger_formulas` уже доказан как специализация `OPS_trigger_general`.
+- Для полного устранения Part D осталось формализовать сам общий триггер или
+  заменить его импортом из внешней библиотеки.
 
 ---
 

@@ -116,7 +116,9 @@ into `NP_not_subset_Ppoly`.
 **Location**: `pnp3/Magnification/Facts_Magnification.lean:82`
 
 **Summary**: Formula-specific OPS trigger yielding `NP_not_subset_Ppoly` from an
-`N^{2+δ}` lower bound.
+`N^{2+δ}` lower bound.  Реализован как частный случай `OPS_trigger_general`
+через подстановку `statement := ∀ _ : SmallAC0Solver p, False`; текстовое
+обоснование см. в `pnp3/Docs/OPS_trigger_formulas.md`.
 
 ### D.3: `Locality_trigger`
 

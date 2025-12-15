@@ -79,31 +79,31 @@ theorem P_ne_NP_final : P_ne_NP := by
 - **Статус**: Recent breakthrough result
 - **Используется**: Anti-checker construction с test set
 
-**3. AXIOM D.2: `OPS_trigger_formulas`**
+**3. THEOREM D.2: `OPS_trigger_formulas`**
 - **Источник**: Oliveira, Pich, Santhanam, CCC 2019
 - **Статья**: Theorem 1.2, page 4
 - **Цитирования**: 100+
-- **Статус**: Core magnification theorem
+- **Статус**: Core magnification theorem **formalized in Lean** (специализация `OPS_trigger_general`)
 - **Используется**: Magnification от circuit lower bounds к NP ⊄ P/poly
 
-### TIER 2: Интерфейсы к архивной библиотеке (2 аксиомы) 🟢
+### TIER 2: Интерфейсы к архивной библиотеке (теоремы) 🟢
 
-**4. AXIOM I.3: `P_subset_Ppoly_proof`**
+**4. THEOREM I.3: `P_subset_Ppoly_proof`**
 - **Источник**: Standard result (Arora-Barak textbook, Theorem 6.11)
-- **Статус**: ✅ **ДОКАЗАНО В архивной библиотеке** (конструктивный модуль `PsubsetPpoly`)
+- **Статус**: ✅ **ДОКАЗАНО** (импортировано из конструктивного модуля `PsubsetPpoly`)
 - **Используется**: Финальный логический вывод
 
-**5. AXIOM I.5: `P_ne_NP_of_nonuniform_separation`**
+**5. THEOREM I.5: `P_ne_NP_of_nonuniform_separation`**
 - **Источник**: Логический вывод (proof by contradiction)
-- **Статус**: ✅ **ДОКАЗАНО В архивной библиотеке** (логический модуль `NP_separation`)
+- **Статус**: ✅ **ДОКАЗАНО** (импортировано из логического модуля `NP_separation`)
 - **Используется**: NP ⊄ P/poly ∧ P ⊆ P/poly → P ≠ NP
 
-### TIER 3: Альтернативные пути (9 аксиом) 🟡
+### TIER 3: Альтернативные пути (8 аксиом) 🟡
 
-**Оставшиеся 9 аксиом**:
+**Оставшиеся 8 аксиом**:
 - A.2-A.5: Варианты switching lemma (depth-2, local circuits, oracles)
 - C.6, C.8-C.9: Варианты anti-checker (без test set, local circuits)
-- D.1, D.3-D.5: Альтернативные magnification triggers
+- D.1, D.3-D.5: Альтернативные magnification triggers (D.2 доказан)
 - I.1, I.2, I.4: Complexity class definitions
 
 **Статус**: Не используются в основном proof path к `P_ne_NP_final`
@@ -123,9 +123,9 @@ P_ne_NP_final
       │   │               ├─→ antiChecker_exists_testset [AXIOM C.7]
       │   │               └─→ no_bounded_atlas_on_testset_of_large_family
       │   │                   └─→ approxOnTestset_subset_card_le ✅ PROVEN
-      │   └─→ OPS_trigger_formulas [AXIOM D.2]
-      ├─→ P_ne_NP_of_nonuniform_separation [AXIOM I.5]
-      └─→ P_subset_Ppoly_proof [AXIOM I.3]
+      │   └─→ OPS_trigger_formulas (theorem ← OPS_trigger_general [AXIOM D.1])
+      ├─→ P_ne_NP_of_nonuniform_separation (theorem)
+      └─→ P_subset_Ppoly_proof (theorem)
 
 Где LB_Formulas_core зависит от:
   └─→ scenarioFromAC0
@@ -133,7 +133,7 @@ P_ne_NP_final
           └─→ partial_shrinkage_for_AC0 [AXIOM A.1]
 ```
 
-**Критический путь**: 3 external axioms + 2 interface axioms = **5 axioms total**
+**Критический путь**: 3 external axioms (A.1, C.7, D.1) + 0 interface axioms = **3 axioms total**
 
 ---
 

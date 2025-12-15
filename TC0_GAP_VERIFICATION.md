@@ -140,15 +140,28 @@ axiom antiChecker_exists_large_Y
 
 **File**: `pnp3/Magnification/Facts_Magnification.lean`
 
-**AXIOM D.1, D.2**:
+**AXIOM D.1 + theorem D.2**:
 ```lean
 axiom OPS_trigger_general
   {p : GapMCSPParams} {ε : Rat} (statement : Prop) :
   GeneralLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly
 
-axiom OPS_trigger_formulas
+theorem OPS_trigger_formulas_from_general
   {p : GapMCSPParams} {δ : Rat} :
-  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly
+  GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) →
+    NP_not_subset_Ppoly :=
+by
+  intro h
+  exact OPS_trigger_general (p := p) (ε := δ)
+    (statement := ∀ _ : SmallAC0Solver p, False) h
+
+theorem OPS_trigger_formulas
+  {p : GapMCSPParams} {δ : Rat} :
+  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly :=
+by
+  intro h
+  exact OPS_trigger_formulas_from_general (p := p) (δ := δ)
+    (FormulaLowerBoundHypothesis.as_general (p := p) (δ := δ) h)
 ```
 
 **Что это использует?**:

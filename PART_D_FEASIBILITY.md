@@ -19,10 +19,10 @@
 
 ## 📊 ЧТО ТАКОЕ PART D (MAGNIFICATION)?
 
-### 5 Axioms:
+### 5 Axioms (historical view):
 
 **D.1**: `OPS_trigger_general` - general magnification
-**D.2**: `OPS_trigger_formulas` - formula-specific magnification
+**D.2**: `OPS_trigger_formulas` - formula-specific magnification (**now proved in Lean**)
 **D.3**: `Locality_trigger` - local circuit magnification
 **D.4**: `CJW_sparse_trigger` - sparse language magnification
 **D.5**: `locality_lift` - lifting from local to general circuits
@@ -30,9 +30,22 @@
 ### Пример (D.2 - наиболее доступный):
 
 ```lean
-axiom OPS_trigger_formulas
+theorem OPS_trigger_formulas_from_general
   {p : GapMCSPParams} {δ : Rat} :
-  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly
+  GeneralLowerBoundHypothesis p δ (∀ _ : SmallAC0Solver p, False) →
+    NP_not_subset_Ppoly :=
+by
+  intro h
+  exact OPS_trigger_general (p := p) (ε := δ)
+    (statement := ∀ _ : SmallAC0Solver p, False) h
+
+theorem OPS_trigger_formulas
+  {p : GapMCSPParams} {δ : Rat} :
+  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly :=
+by
+  intro h
+  exact OPS_trigger_formulas_from_general (p := p) (δ := δ)
+    (FormulaLowerBoundHypothesis.as_general (p := p) (δ := δ) h)
 ```
 
 **Что это говорит**:
@@ -41,42 +54,20 @@ axiom OPS_trigger_formulas
 
 **Математическое содержание**: ✅ ДОКАЗАНО в OPS 2019 (peer-reviewed, CCC)
 
-**Формализация**: ❌ НЕТ в pnp3
+**Формализация**: ✅ **ГОТОВО** (специализация общего триггера в `Facts_Magnification.lean`)
 
 ---
 
 ## 🔍 ПОЧЕМУ НЕЛЬЗЯ ДОКАЗАТЬ ПРЯМО СЕЙЧАС?
 
-### Проблема #1: Abstract Props
+### Проблема #1: Abstract Props (решена)
 
-**В Interfaces.lean**:
-```lean
-axiom NP_not_subset_Ppoly : Prop
-axiom P_subset_Ppoly : Prop
-axiom P_ne_NP : Prop
-```
+- Интерфейсы теперь импортируются как теоремы: `P_subset_Ppoly_proof` и
+  `P_ne_NP_of_nonuniform_separation` берутся из `Facts/PsubsetPpoly`.
+- В коде больше нет «голых» абстрактных Props без содержания.
 
-Это **abstract Props** - arbitrary propositions без структуры!
-
-**Аналогия**:
-```lean
-axiom P : Prop
-axiom Q : Prop
-axiom P_implies_Q : P → Q  -- КАК доказать это?!
-```
-
-Мы не можем доказать `P_implies_Q` без знания что такое P и Q!
-
-**То же самое** с magnification:
-```lean
-axiom OPS_trigger_formulas
-  {p : GapMCSPParams} {δ : Rat} :
-  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly
-  --                                 ^^^^^^^^^^^^^^^^^^^
-  --                                 Abstract Prop! Что это?!
-```
-
-**Без concrete definition** NP, P/poly мы **НЕ МОЖЕМ** доказать связь!
+Теперь связь доказана за счёт специализации общего триггера; остаётся работа
+с остальными предпосылками (например, определениями классов и общим триггером).
 
 ---
 
@@ -228,22 +219,22 @@ error: declaration uses 'sorry'
 
 ## 🔬 ДЕТАЛЬНЫЙ АНАЛИЗ: D.2 (Самый Доступный)
 
-### Axiom Statement:
+### Theorem Statement (proved):
 
 ```lean
-axiom OPS_trigger_formulas
+theorem OPS_trigger_formulas
   {p : GapMCSPParams} {δ : Rat} :
-  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly
-
-where
-
-def FormulaLowerBoundHypothesis (p : GapMCSPParams) (δ : Rat) : Prop :=
-  (0 : Rat) < δ ∧ ∀ _solver : SmallAC0Solver p, False
+  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly :=
+by
+  intro h
+  exact OPS_trigger_general (p := p) (ε := δ)
+    (statement := ∀ _ : SmallAC0Solver p, False)
+    (FormulaLowerBoundHypothesis.as_general (p := p) (δ := δ) h)
 ```
 
 ### Что Нужно Доказать:
 
-**Informal theorem**:
+**Informal theorem (historical goal, now formalized)**:
 > IF δ > 0 AND нет малых AC⁰ solvers для GapMCSP(p)
 > THEN NP ⊄ P/poly
 

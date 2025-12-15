@@ -27,14 +27,13 @@ pnp3/LowerBounds/AntiChecker.lean:237:axiom antiChecker_exists_testset
 pnp3/LowerBounds/AntiChecker.lean:305:axiom antiChecker_exists_large_Y_local
 pnp3/LowerBounds/AntiChecker.lean:371:axiom antiChecker_exists_testset_local
 pnp3/Magnification/Facts_Magnification.lean:74:axiom OPS_trigger_general
-pnp3/Magnification/Facts_Magnification.lean:82:axiom OPS_trigger_formulas
 pnp3/Magnification/Facts_Magnification.lean:90:axiom Locality_trigger
 pnp3/Magnification/Facts_Magnification.lean:95:axiom CJW_sparse_trigger
 pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
 pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 ```
 
-**Total**: 10 axioms (matches documentation).
+**Total**: 9 axioms (matches documentation).
 
 ### Per-Module Breakdown
 
@@ -42,8 +41,8 @@ pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 |------|----------|-------|-------|
 | `ThirdPartyFacts/Facts_Switching.lean` | 2 | 2 | Switching lemmas |
 | `LowerBounds/AntiChecker.lean` | 4 | 4 | Anti-checker axioms |
-| `Magnification/Facts_Magnification.lean` | 4 | 4 | Magnification triggers |
-| **TOTAL** | **10** | **10** | ✅|
+| `Magnification/Facts_Magnification.lean` | 3 | 3 | Magnification triggers |
+| **TOTAL** | **9** | **9** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.

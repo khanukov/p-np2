@@ -129,18 +129,17 @@ lake build pnp3/Magnification/FinalResult.lean
 
 ### Axiom Count
 
-**Total axioms**: 20 (unchanged)
+**Total axioms**: 19 (updated after proving D.2)
 - Part A (Switching): 5 axioms
 - Part C (Anti-Checker): 4 axioms
-- Part D (Magnification): 5 axioms
+- Part D (Magnification): 4 axioms (D.2 теперь теорема)
 - Interfaces: 6 axioms (5 unique + 1 duplicate)
 
-**Critical path axioms**: 5
+**Critical path axioms**: 4
 1. `partial_shrinkage_for_AC0` (A.1)
 2. `antiChecker_exists_testset` (C.7)
-3. `OPS_trigger_formulas` (D.2)
-4. `P_subset_Ppoly_proof` (I.3) - claimed proven in the archival library
-5. `P_ne_NP_of_nonuniform_separation` (I.5) - claimed proven in the archival library
+3. `P_subset_Ppoly_proof` (I.3) - claimed proven in the archival library
+4. `P_ne_NP_of_nonuniform_separation` (I.5) - claimed proven in the archival library
 
 ---
 

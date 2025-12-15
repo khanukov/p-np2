@@ -76,12 +76,50 @@ axiom OPS_trigger_general
   GeneralLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly
 
 /--
-  OPS-триггер для формул (`N^{2+δ}`): если выполнена соответствующая
-  гипотеза, получаем `NP \nsubseteq P/poly`.
--/
-axiom OPS_trigger_formulas
+  Удобное переписывание: формульная гипотеза уже является частным случаем
+  общей OPS-гипотезы при `statement := ∀ _ : SmallAC0Solver p, False`.
+  Отдельная лемма избавляет от ручного раскрытия определений в дальнейших
+  шагах пайплайна.
+--/
+theorem FormulaLowerBoundHypothesis.as_general
   {p : GapMCSPParams} {δ : Rat} :
-  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly
+  FormulaLowerBoundHypothesis p δ →
+    GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) :=
+by
+  intro hHyp
+  -- Определения совпадают буквально: `(0 < δ) ∧ statement`.
+  simpa [FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
+
+/--
+  Специализация общего триггера OPS к утверждению
+  `statement := ∀ _ : SmallAC0Solver p, False`.  Удобно использовать,
+  когда нужная форма `GeneralLowerBoundHypothesis` уже получена (например,
+  из конструкций шага C), без повторного раскрытия определений.
+-/
+theorem OPS_trigger_formulas_from_general
+  {p : GapMCSPParams} {δ : Rat} :
+  GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) →
+    NP_not_subset_Ppoly :=
+by
+  intro hGeneral
+  exact OPS_trigger_general (p := p) (ε := δ)
+    (statement := ∀ _solver : SmallAC0Solver p, False) hGeneral
+
+/--
+  OPS-триггер для формул (`N^{2+δ}`): частный случай `OPS_trigger_general`,
+  получаемый подстановкой утверждения `statement := ∀ _ : SmallAC0Solver p,
+  False`.  Сведение выполняется через лемму `FormulaLowerBoundHypothesis.as_general`.
+-/
+theorem OPS_trigger_formulas
+  {p : GapMCSPParams} {δ : Rat} :
+  FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly := by
+  intro hHyp
+  -- Переводим гипотезу в универсальную форму с выбранным утверждением.
+  have hGeneral :
+      GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) :=
+    hHyp
+  -- Применяем специализированную версию триггера, не раскрывая определения.
+  exact OPS_trigger_formulas_from_general (p := p) (δ := δ) hGeneral
 
 /--
   Барьер локальности из JACM’22: невозможность локальных схем размера

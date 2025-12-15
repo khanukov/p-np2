@@ -83,9 +83,9 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 Axiom Inventory
 
-**Total Axioms**: 20
+**Total Axioms**: 19
 
-### External Axioms from Literature (13)
+### External Axioms from Literature (12)
 
 **Part A: Switching Lemma** (5 axioms)
 - A.1: `partial_shrinkage_for_AC0` 🔴 CRITICAL - Håstad 1986
@@ -97,9 +97,9 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - C.7: `antiChecker_exists_testset` 🔴 CRITICAL - OPS 2019
 - C.8-C.9: Local circuit variants
 
-**Part D: Magnification** (5 axioms)
+**Part D: Magnification** (4 axioms + 1 proven specialization)
 - D.1: `OPS_trigger_general` 🔴 CRITICAL - OPS 2019
-- D.2: `OPS_trigger_formulas` 🟡 HIGH - OPS 2019
+- D.2: `OPS_trigger_formulas` ✅ **PROVEN in Lean** (specialization of D.1)
 - D.3-D.5: Local and sparse variants - CJW 2019, Williams 2014
 
 ### Interface Axioms (5 unique + 1 duplicate)

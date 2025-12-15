@@ -109,7 +109,8 @@ Oliveira–Pich–Santhanam (2019/2021).
 **Location**: `pnp3/Magnification/Facts_Magnification.lean:74`
 
 **Summary**: Abstract OPS trigger converting a general lower-bound hypothesis
-into `NP_not_subset_Ppoly`.
+into `NP_not_subset_Ppoly`.  Расширенный конспект и план снятия аксиомы см. в
+`pnp3/Docs/OPS_trigger_general.md`.
 
 ### D.2: `OPS_trigger_formulas`
 

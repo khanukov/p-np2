@@ -93,8 +93,11 @@ by
   classical
   have hHyp : GeneralLowerBoundHypothesis p ε (AC0Statement p) :=
     general_hypothesis_from_pipeline (p := p) (ε := ε) hε
-  exact OPS_trigger_general (p := p) (ε := ε)
-    (statement := AC0Statement p) hHyp
+  -- Переписываем гипотезу в формульном виде и применяем конструктивный триггер.
+  have hFormula : FormulaLowerBoundHypothesis p ε := by
+    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
+      using hHyp
+  exact OPS_trigger_formulas (p := p) (δ := ε) hFormula
 
 /--
   Мост, использующий Locality-Lift: положительное `ε` и запрет общих схем
@@ -107,8 +110,10 @@ by
   classical
   have hHyp : GeneralLowerBoundHypothesis p ε (GeneralCircuitStatement p) :=
     general_hypothesis_from_locality (p := p) (ε := ε) hε
-  exact OPS_trigger_general (p := p) (ε := ε)
-    (statement := GeneralCircuitStatement p) hHyp
+  have hHyp' : GeneralLowerBoundHypothesis p ε
+      (∀ _solver : SmallGeneralCircuitSolver p, False) := by
+    simpa [GeneralCircuitStatement] using hHyp
+  exact OPS_trigger_general_circuits (p := p) (ε := ε) hHyp'
 
 /--
   Удобная версия моста, использующая заранее собранный `PipelineBridgeKit`.
@@ -120,8 +125,11 @@ theorem bridge_from_pipeline_kit_general
 by
   classical
   have hHyp := kit.general_hypothesis (ε := ε) hε
-  exact OPS_trigger_general (p := p) (ε := ε)
-    (statement := AC0Statement p) hHyp
+  -- Сужаемся до формульной гипотезы и запускаем конструктивный триггер.
+  have hFormula : FormulaLowerBoundHypothesis p ε := by
+    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
+      using hHyp
+  exact OPS_trigger_formulas (p := p) (δ := ε) hFormula
 
 /--
   Версия Locality-Lift для заранее собранного комплекта `PipelineBridgeKit`.
@@ -133,8 +141,10 @@ theorem bridge_from_pipeline_kit_general_circuits
 by
   classical
   have hHyp := kit.general_circuit_hypothesis (ε := ε) hε
-  exact OPS_trigger_general (p := p) (ε := ε)
-    (statement := GeneralCircuitStatement p) hHyp
+  have hHyp' : GeneralLowerBoundHypothesis p ε
+      (∀ _solver : SmallGeneralCircuitSolver p, False) := by
+    simpa [GeneralCircuitStatement] using hHyp
+  exact OPS_trigger_general_circuits (p := p) (ε := ε) hHyp'
 
 /--
   Шаг D.1: лемма `bridge_from_LB_Formulas` принимает положительное значение `δ`

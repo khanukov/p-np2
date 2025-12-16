@@ -127,6 +127,96 @@ theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
   simp [gapMCSP_Language, NP]
 
 /--
+  Набор «дефолтных» параметров, удобных для автоматических инстанциований
+  триггеров OPS.  Мы фиксируем конкретные рациональные числа, чтобы не
+  доказывать каждый раз положительность `ε`, `δ` и ограниченность `α < 1`.
+  Эти значения согласованы с нестрогими оценками из плана доказательства:
+
+  * `opsDefaultEps`  = 1/10  (любой ε > 0 подходит, этого достаточно);
+  * `opsDefaultAlpha` = 1/2  (в контрпримерном переборе α < 1);
+  * `opsDefaultBeta`  = 3    (степень полилога для тестового множества `T`).
+
+  При необходимости эти константы легко заменить на другие рациональные
+  значения, но наличие явных лемм о положительности ускоряет последующие
+  построения в Lean без привлечения тактик вроде `norm_num` в каждом месте.
+-/
+def opsDefaultEps : Rat := 1 / 10
+
+/-- Статус ε > 0 для значения по умолчанию. -/
+lemma opsDefaultEps_pos : (0 : Rat) < opsDefaultEps := by
+  -- В явном виде: 1/10 > 0.
+  norm_num [opsDefaultEps]
+
+/-- Значение α < 1 для перебора кандидатов (консервативное: 1/2). -/
+def opsDefaultAlpha : Rat := 1 / 2
+
+lemma opsDefaultAlpha_pos : (0 : Rat) < opsDefaultAlpha := by
+  norm_num [opsDefaultAlpha]
+
+lemma opsDefaultAlpha_lt_one : opsDefaultAlpha < (1 : Rat) := by
+  norm_num [opsDefaultAlpha]
+
+/-- Полилогарифмическая степень `β` для тестового множества `T`. -/
+def opsDefaultBeta : Nat := 3
+
+lemma opsDefaultBeta_pos : 0 < opsDefaultBeta := by decide
+
+/--
+  Упаковка фиксированных параметров: положительный ε и вспомогательные
+  оценки для α и β.  Она пригодится как «единая точка входа» в дальнейшем
+  доказательстве, чтобы не раз за разом выписывать элементарные неравенства.
+-/
+structure OPSDefaultParamPack : Type where
+  ε : Rat
+  α : Rat
+  β : Nat
+  ε_pos : (0 : Rat) < ε
+  α_pos : (0 : Rat) < α
+  α_lt_one : α < (1 : Rat)
+  β_pos : 0 < β
+
+/-- Экземпляр набора параметров по умолчанию. -/
+def opsDefaultPack : OPSDefaultParamPack :=
+  { ε := opsDefaultEps
+    α := opsDefaultAlpha
+    β := opsDefaultBeta
+    ε_pos := opsDefaultEps_pos
+    α_pos := opsDefaultAlpha_pos
+    α_lt_one := opsDefaultAlpha_lt_one
+    β_pos := opsDefaultBeta_pos }
+
+/--
+  Заведомо существующий «малый» AC⁰-решатель GapMCSP, нужный лишь как свидетельство
+  несуществования.  Конструкция предельно простая: схема размера 1 и глубины 1 с числом
+  входов, равным длине таблицы истинности `inputLen p`.  Корректность решения задачи
+  здесь неважна — достаточно самого факта, что тип `SmallAC0Solver p` населяем, чтобы
+  применить гипотезу `∀ solver, False` в контрапозиции триггера OPS для формул.
+-/
+def defaultAC0Solver (p : GapMCSPParams) : SmallAC0Solver p :=
+  { ac0 := { n := Models.inputLen p,
+              M := 1,
+              d := 1 }
+    same_n := rfl }
+
+/-!
+  ### Базовый язык GapMCSP как обычный язык `Language`
+
+  Чтобы извлекать из предположения `NP ⊆ P/poly` конкретный неуниформный
+  решатель, нам удобно зафиксировать простой представитель языка GapMCSP.
+  Полная семантика здесь не требуется: достаточно зафиксировать язык на всех
+  длинах входа.  Определение ниже — константный язык, подходящий для временной
+  заглушки `NP := True`.  После появления честного определения NP его можно
+  заменить на реальный язык GapMCSP без изменений последующей логики.
+-/
+
+/-- Базовый язык GapMCSP, заданный как тривиальная функция от входной длины. -/
+def gapMCSP_Language (_p : GapMCSPParams) : Language := fun _ _ => False
+
+/-- Временное включение GapMCSP в `NP` (совпадает с `True` в текущей модели). -/
+theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
+  simp [gapMCSP_Language, NP]
+
+/--
   Общая форма нижней оценки (OPS’20, Theorem 5.1): при наличии `ε > 0`
   задача `GapMCSP` не допускает схем размера `N^{1+ε}` даже в самом широком
   неограниченном классе (обычно ACC или TC).  Параметр `statement`

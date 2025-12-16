@@ -23,7 +23,7 @@
 
 **D.1**: `OPS_trigger_general` - general magnification
 **D.2**: `OPS_trigger_formulas` - formula-specific magnification (**now proved in Lean**)
-**D.3**: `Locality_trigger` - local circuit magnification
+**D.3**: `Locality_trigger` - local circuit magnification (**now proved in Lean**)
 **D.4**: `CJW_sparse_trigger` - sparse language magnification
 **D.5**: `locality_lift` - lifting from local to general circuits
 
@@ -36,9 +36,10 @@
   «косметическое» упрощение, если захочется использовать альтернативные
   формулировки `statement`.
 - ✅ **D.2**: Доказано (см. `OPS_trigger_formulas`).
-- ⚠️ **D.3**/`Locality_trigger` и **D.4**/`CJW_sparse_trigger`: остаются
-  в статусе аксиом; их можно закрыть аналогичным аргументом с локальными
-  схемами или CJW-античекером.
+- ✅ **D.3**: `Locality_trigger` доказана конструктивной контрапозицией через
+  `locality_lift` и античекер для локальных схем.
+- ⚠️ **D.4**/`CJW_sparse_trigger`: остаётся в статусе аксиомы; можно закрыть
+  аналогичным аргументом с CJW-античекером.
 - ℹ️ Ветвь `locality_lift` по-прежнему импортируется как внешнее допущение
   (результат CJW’22), но её использование теперь явно локализовано.
 

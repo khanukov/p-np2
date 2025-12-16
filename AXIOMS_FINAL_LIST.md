@@ -3,21 +3,21 @@
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
 **Revision Date**: 2025-10-24
-**Total Active Axioms (`pnp3/`)**: 10
+**Total Active Axioms (`pnp3/`)**: 7
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The current `pnp3/` proof development depends on ten externally justified
+The current `pnp3/` proof development depends on seven externally justified
 statements.  They fall into three natural families:
 
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 2 | Håstad (1986), Williams (2014) |
 | Part C — Anti-checker lower bounds | `LowerBounds/AntiChecker.lean` | 4 | Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021) |
-| Part D — Magnification triggers | `Magnification/Facts_Magnification.lean` | 4 | OPS (2019), CJW (2022) |
+| Part D — Magnification triggers | `Magnification/Facts_Magnification.lean` | 1 | CJW (2022) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -49,14 +49,14 @@ Archived copies of the older switching/magnification axioms remain in
    - Sources for 3–6: Lipton–Young (1994), Chapman–Williams (2015),
      Oliveira–Pich–Santhanam (2019/2021).
 
-### Part D — Magnification Bridges (2 axioms + 1 theorem)
+### Part D — Magnification Bridges (1 axiom + 2 theorems)
 
 7. **`OPS_trigger_general`** — `pnp3/Magnification/Facts_Magnification.lean`
    - ✅ **PROVEN**: general OPS trigger (lower-bound hypothesis ⇒ `NP_not_subset_Ppoly`).
 8. **`Locality_trigger`** — same file
-   - Local circuit barrier (`N·(log N)^κ`).
+   - ✅ **PROVEN**: locality barrier (`N·(log N)^κ`) established via constructive contraposition.
 9. **`CJW_sparse_trigger`** — same file
-    - CJW sparse-language trigger.
+    - CJW sparse-language trigger (still axiomatic).
    - Sources: Oliveira–Pich–Santhanam (2019), Chapman–Jansen–Williams (2022).
 
 **Proven specialization**:
@@ -91,5 +91,6 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
-- **2025-10-24** — Updated totals to 10 axioms, reclassified complexity
-  interfaces as theorems, and documented retirement of depth-2 switching files.
+- **2025-10-24** — Updated totals to 7 axioms, marked `Locality_trigger` as
+  proven, reclassified complexity interfaces as theorems, and documented
+  retirement of depth-2 switching files.

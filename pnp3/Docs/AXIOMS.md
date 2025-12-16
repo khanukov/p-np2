@@ -126,7 +126,8 @@ into `NP_not_subset_Ppoly`.  Расширенный конспект и план
 **Location**: `pnp3/Magnification/Facts_Magnification.lean:90`
 
 **Summary**: Locality barrier implying `NP_not_subset_Ppoly` from a
-`N·(log N)^κ` lower bound for local circuits.
+`N·(log N)^κ` lower bound for local circuits.  ✅ Fully proved via
+contraposition (locality lift + anti-checker), replacing the former axiom.
 
 ### D.4: `CJW_sparse_trigger`
 

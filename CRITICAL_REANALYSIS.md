@@ -21,7 +21,7 @@ anti-checker с тестовым множеством (C.2) и магнифик�
 |-----------|---------|------------|
 | Part A | `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit` | Switching-леммы |
 | Part C | `antiChecker_exists_large_Y`, `antiChecker_exists_testset`,<br>`antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local` | Anti-checker игры |
-| Part D | `Locality_trigger`, `CJW_sparse_trigger` | Magnification |
+| Part D | `CJW_sparse_trigger` | Magnification |
 
 Интерфейсные утверждения `P_subset_Ppoly_proof` и
 `P_ne_NP_of_nonuniform_separation` являются теоремами, а не аксиомами.
@@ -30,9 +30,9 @@ anti-checker с тестовым множеством (C.2) и магнифик�
 
 - `pnp3/Complexity/Interfaces.lean` — содержит доказанные теоремы, заглушек нет.
 - `pnp3/LowerBounds/AntiChecker.lean` — четыре аксиомы, остальные факты доказаны.
-- `pnp3/Magnification/Facts_Magnification.lean` — два триггера остаются аксиомами
-  (`Locality_trigger`, `CJW_sparse_trigger`), общий триггер `OPS_trigger_general`
-  доказан, формульный триггер получен как специализация.
+- `pnp3/Magnification/Facts_Magnification.lean` — один триггер остаётся аксиомой
+  (`CJW_sparse_trigger`); `OPS_trigger_general`, `OPS_trigger_formulas` и
+  `Locality_trigger` доказаны.
 - `ThirdPartyFacts/Facts_Switching.lean` — две базовые switching-аксиомы.
 
 ## 4. Риски и приоритеты
@@ -42,7 +42,7 @@ anti-checker с тестовым множеством (C.2) и магнифик�
 2. **Anti-checker (Part C)** — требует серьёзной комбинаторной инфраструктуры, но
    потенциально выполнимо при долгосрочном финансировании.
 3. **Magnification (Part D)** — наилучший кандидат для ближайших проектов; цель —
-   закрыть оставшиеся триггеры (`Locality_trigger`, `CJW_sparse_trigger`).
+   закрыть оставшийся триггер (`CJW_sparse_trigger`).
 
 ## 5. Рекомендации
 

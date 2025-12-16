@@ -57,11 +57,11 @@ axiom depth2_constructive_switching       -- Depth2_Switching_Spec.lean:227
 
 **C. Magnification Triggers (Part D)**:
 ```lean
-axiom Locality_trigger                    -- Facts_Magnification.lean:730
+theorem Locality_trigger                  -- Facts_Magnification.lean:730
 axiom CJW_sparse_trigger                  -- Facts_Magnification.lean:735
 ```
 **Источник**: Chen-Jin-Williams (2019), Williams (2014)
-**Статус**: Недоказано в формализации ❌ (но `OPS_trigger_general` теперь доказана в Lean и используется как теорема)
+**Статус**: `Locality_trigger` доказана; остаётся закрыть разреженный триггер ❌
 
 **D. Complexity Class Interfaces (Part D)**:
 ```lean
@@ -71,7 +71,7 @@ theorem P_ne_NP_of_nonuniform_separation     -- Interfaces.lean:40
 **Источник**: импортированные доказательства из `Facts/PsubsetPpoly`
 **Статус**: ✅ доказано (больше не считается аксиомой)
 
-#### **ИТОГО: 8 активных аксиом** (все приходятся на switching/anti-checker/magnification)
+#### **ИТОГО: 7 активных аксиом** (switching + anti-checker + CJW sparse)
 
 ### 2. ⚠️ Барьеры доказательства P≠NP
 

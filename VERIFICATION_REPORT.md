@@ -26,13 +26,12 @@ pnp3/LowerBounds/AntiChecker.lean:171:axiom antiChecker_exists_large_Y
 pnp3/LowerBounds/AntiChecker.lean:237:axiom antiChecker_exists_testset
 pnp3/LowerBounds/AntiChecker.lean:305:axiom antiChecker_exists_large_Y_local
 pnp3/LowerBounds/AntiChecker.lean:371:axiom antiChecker_exists_testset_local
-pnp3/Magnification/Facts_Magnification.lean:730:axiom Locality_trigger
-pnp3/Magnification/Facts_Magnification.lean:735:axiom CJW_sparse_trigger
+pnp3/Magnification/Facts_Magnification.lean:768:axiom CJW_sparse_trigger
 pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
 pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 ```
 
-**Total**: 8 axioms (matches documentation).
+**Total**: 7 axioms (matches documentation).
 
 ### Per-Module Breakdown
 
@@ -40,8 +39,8 @@ pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 |------|----------|-------|-------|
 | `ThirdPartyFacts/Facts_Switching.lean` | 2 | 2 | Switching lemmas |
 | `LowerBounds/AntiChecker.lean` | 4 | 4 | Anti-checker axioms |
-| `Magnification/Facts_Magnification.lean` | 2 | 2 | Magnification triggers |
-| **TOTAL** | **8** | **8** | ✅|
+| `Magnification/Facts_Magnification.lean` | 1 | 1 | Sparse magnification trigger |
+| **TOTAL** | **7** | **7** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.
@@ -52,9 +51,9 @@ not participate in the build or documentation metrics.
 
 | Document | Status |
 |----------|--------|
-| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 10 axioms, notes archived items |
+| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 7 axioms, notes archived items |
 | `AXIOMS_FINAL_LIST.md` | ✅ Updated executive summary for publication |
-| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 10 axioms |
+| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 7 axioms |
 | `CRITICAL_REANALYSIS.md` | ✅ Critical-path description matches code |
 
 No mismatches detected.

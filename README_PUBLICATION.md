@@ -97,10 +97,10 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - C.5: `antiChecker_exists_large_Y_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
 - C.6: `antiChecker_exists_testset_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
 
-**Part D: Magnification** (2 axioms + 1 proven trigger)
+**Part D: Magnification** (1 axiom + 2 proven triggers)
 - D.1: `OPS_trigger_general` ✅ **PROVEN in Lean** (general trigger now a theorem)
-- D.2: `Locality_trigger` 🟡 HIGH - CJW 2022
-- D.3: `CJW_sparse_trigger` 🟡 HIGH - CJW 2022
+- D.2: `Locality_trigger` ✅ **PROVEN in Lean** (local circuit trigger)
+- D.3: `CJW_sparse_trigger` 🟡 HIGH - CJW 2022 (still axiomatic)
 - Specialization `OPS_trigger_formulas` remains proved constructively as a corollary of D.1
 
 ### Interface Axioms (5 unique + 1 duplicate)
@@ -112,7 +112,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - I.5: `P_ne_NP_of_nonuniform_separation` - ✅ **PROVEN in the archival library**
 - I.6: Duplicate in unused file
 
-**Minimal Set for P_ne_NP_final**: 5 axioms (3 from literature + 2 proven)
+**Minimal Set for P_ne_NP_final**: 4 axioms (switching + anti-checker + CJW sparse)
 
 **Complete Documentation**: See [`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md) for full details.
 

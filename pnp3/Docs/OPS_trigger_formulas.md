@@ -39,8 +39,8 @@ GapMCSP. Материал следует классическому феноме
   локальных схем с барьером \(N · (\log N)^\kappa\).
 
 Эти результаты опубликованы (CCC’19, FOCS’19, JACM’22) и служат источниками для
-триггеров `OPS_trigger_general`, `OPS_trigger_formulas`, `Locality_trigger` и
-`CJW_sparse_trigger`.
+триггеров `OPS_trigger_general`, `OPS_trigger_formulas`, `Locality_trigger`
+(доказан в Lean) и `CJW_sparse_trigger`.
 
 ## Доказательство импликации (эскиз от противного)
 

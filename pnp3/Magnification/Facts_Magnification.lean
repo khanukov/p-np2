@@ -3,6 +3,7 @@ import Models.Model_SparseNP
 import LowerBounds.AntiChecker
 import LowerBounds.LB_GeneralFromLocal
 import Magnification.LocalityInterfaces
+import Magnification.LocalityLift
 import Complexity.Interfaces
 import Counting.BinomialBounds
 import Mathlib
@@ -726,10 +727,42 @@ by
 /--
   Барьер локальности из JACM’22: невозможность локальных схем размера
   `N · (log N)^κ` приводит к `NP \nsubseteq P/poly`.
+
+  Доказательство следует стандартной схеме контрапозиции.
+  Предположим, что `NP ⊆ P/poly`.  Тогда для языка `GapMCSP`
+  существует неуниформный решатель `solver_gen` полиномиального размера
+  (функция `generalCircuitSolver_of_Ppoly`).  Применяя `locality_lift`,
+  локализуем его в эквивалентный решатель `solver_loc` с ограниченной
+  локальностью и сопоставимыми ресурсами.  Однако гипотеза нижней
+  границы `LocalLowerBoundHypothesis` объявляет невозможным существование
+  такого локального решателя, получаем противоречие.  Формальное
+  отрицание включения `NP ⊆ P/poly` извлекается через логическую лемму
+  `NP_not_subset_Ppoly_of_contra`.
 -/
-axiom Locality_trigger
+theorem Locality_trigger
   {p : GapMCSPParams} {κ : Nat} :
-  LocalLowerBoundHypothesis p κ → NP_not_subset_Ppoly
+  LocalLowerBoundHypothesis p κ → NP_not_subset_Ppoly := by
+  intro hHyp
+  classical
+  -- Сохраняем компоненты гипотезы: положительность `κ` и запрет локальных решателей.
+  have hκ : 0 < κ := hHyp.1
+  have hNoLocal : ∀ solver : SmallLocalCircuitSolver p, False := hHyp.2
+  -- Строим явное противоречие с предположением `NP ⊆ P/poly`.
+  have hContra :
+      ((∀ L : ComplexityInterfaces.Language,
+        ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) := by
+    intro hAll
+    -- Из включения извлекаем неуниформный решатель для GapMCSP.
+    have hPpoly : ComplexityInterfaces.Ppoly (gapMCSP_Language p) :=
+      hAll _ (gapMCSP_in_NP p)
+    have solver_gen : SmallGeneralCircuitSolver p :=
+      generalCircuitSolver_of_Ppoly (p := p) hPpoly
+    -- Локализуем общий решатель и противоречим запрету локальных схем.
+    obtain ⟨T, solver_loc, hT, hM, hℓ, hdepth⟩ :=
+      Magnification.locality_lift (p := p) (solver := solver_gen)
+    exact hNoLocal solver_loc
+  -- Логически превращаем противоречие в вывод `NP \nsubseteq P/poly`.
+  exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 
 /-- CJW-триггер: разреженный NP-язык с суперлинейной нижней границей. -/
 axiom CJW_sparse_trigger

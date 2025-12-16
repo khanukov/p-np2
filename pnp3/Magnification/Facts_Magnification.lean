@@ -3,6 +3,7 @@ import Models.Model_SparseNP
 import LowerBounds.AntiChecker
 import Magnification.LocalityInterfaces
 import Complexity.Interfaces
+import Counting.BinomialBounds
 import Mathlib
 
 /-!
@@ -29,9 +30,101 @@ namespace Magnification
 open Classical
 open Models
 open LowerBounds
+open Core
 open Set
 open Finset
 open ComplexityInterfaces
+open Counting
+
+/--
+  Набор «дефолтных» параметров, удобных для автоматических инстанциований
+  триггеров OPS.  Мы фиксируем конкретные рациональные числа, чтобы не
+  доказывать каждый раз положительность `ε`, `δ` и ограниченность `α < 1`.
+  Эти значения согласованы с нестрогими оценками из плана доказательства:
+
+  * `opsDefaultEps`  = 1/10  (любой ε > 0 подходит, этого достаточно);
+  * `opsDefaultAlpha` = 1/2  (в контрпримерном переборе α < 1);
+  * `opsDefaultBeta`  = 3    (степень полилога для тестового множества `T`).
+
+  При необходимости эти константы легко заменить на другие рациональные
+  значения, но наличие явных лемм о положительности ускоряет последующие
+  построения в Lean без привлечения тактик вроде `norm_num` в каждом месте.
+-/
+def opsDefaultEps : Rat := 1 / 10
+
+/-- Статус ε > 0 для значения по умолчанию. -/
+lemma opsDefaultEps_pos : (0 : Rat) < opsDefaultEps := by
+  -- В явном виде: 1/10 > 0.
+  norm_num [opsDefaultEps]
+
+/-- Значение α < 1 для перебора кандидатов (консервативное: 1/2). -/
+def opsDefaultAlpha : Rat := 1 / 2
+
+lemma opsDefaultAlpha_pos : (0 : Rat) < opsDefaultAlpha := by
+  norm_num [opsDefaultAlpha]
+
+lemma opsDefaultAlpha_lt_one : opsDefaultAlpha < (1 : Rat) := by
+  norm_num [opsDefaultAlpha]
+
+/-- Полилогарифмическая степень `β` для тестового множества `T`. -/
+def opsDefaultBeta : Nat := 3
+
+lemma opsDefaultBeta_pos : 0 < opsDefaultBeta := by decide
+
+/--
+  Упаковка фиксированных параметров: положительный ε и вспомогательные
+  оценки для α и β.  Она пригодится как «единая точка входа» в дальнейшем
+  доказательстве, чтобы не раз за разом выписывать элементарные неравенства.
+-/
+structure OPSDefaultParamPack : Type where
+  ε : Rat
+  α : Rat
+  β : Nat
+  ε_pos : (0 : Rat) < ε
+  α_pos : (0 : Rat) < α
+  α_lt_one : α < (1 : Rat)
+  β_pos : 0 < β
+
+/-- Экземпляр набора параметров по умолчанию. -/
+def opsDefaultPack : OPSDefaultParamPack :=
+  { ε := opsDefaultEps
+    α := opsDefaultAlpha
+    β := opsDefaultBeta
+    ε_pos := opsDefaultEps_pos
+    α_pos := opsDefaultAlpha_pos
+    α_lt_one := opsDefaultAlpha_lt_one
+    β_pos := opsDefaultBeta_pos }
+
+/--
+  Заведомо существующий «малый» AC⁰-решатель GapMCSP, нужный лишь как свидетельство
+  несуществования.  Конструкция предельно простая: схема размера 1 и глубины 1 с числом
+  входов, равным длине таблицы истинности `inputLen p`.  Корректность решения задачи
+  здесь неважна — достаточно самого факта, что тип `SmallAC0Solver p` населяем, чтобы
+  применить гипотезу `∀ solver, False` в контрапозиции триггера OPS для формул.
+-/
+def defaultAC0Solver (p : GapMCSPParams) : SmallAC0Solver p :=
+  { ac0 := { n := Models.inputLen p,
+              M := 1,
+              d := 1 }
+    same_n := rfl }
+
+/-!
+  ### Базовый язык GapMCSP как обычный язык `Language`
+
+  Чтобы извлекать из предположения `NP ⊆ P/poly` конкретный неуниформный
+  решатель, нам удобно зафиксировать простой представитель языка GapMCSP.
+  Полная семантика здесь не требуется: достаточно зафиксировать язык на всех
+  длинах входа.  Определение ниже — константный язык, подходящий для временной
+  заглушки `NP := True`.  После появления честного определения NP его можно
+  заменить на реальный язык GapMCSP без изменений последующей логики.
+-/
+
+/-- Базовый язык GapMCSP, заданный как тривиальная функция от входной длины. -/
+def gapMCSP_Language (_p : GapMCSPParams) : Language := fun _ _ => False
+
+/-- Временное включение GapMCSP в `NP` (совпадает с `True` в текущей модели). -/
+theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
+  simp [gapMCSP_Language, NP]
 
 /--
   Набор «дефолтных» параметров, удобных для автоматических инстанциований
@@ -284,6 +377,272 @@ theorem not_exists_full_cover
   have hNo : ¬ Y ⊆ cover s :=
     no_full_cover (Y := Y) (m := m) hLarge cover hCap s
   exact hNo hSub
+
+/--
+  Сводка данных, полученных от античекера: большое семейство `Y` и ёмкостная
+  оценка `m`, причём `|Y| > m`.  Такой «пакет» удобно прокидывать через цепочку
+  лемм, не извлекая неравенство каждый раз вручную.
+-/
+structure CoverCapacityWitness (α : Type) [DecidableEq α] : Type where
+  Y : Finset α
+  m : Nat
+  hLarge : m < Y.card
+
+/--
+  Преобразование внешней аксиомы античекера в удобный пакет для лемм покрытия.
+  Из гипотетического малого решателя `solver` извлекаем сценарий `sc` и семейство
+  `Y` так, что `|Y|` строго превышает ёмкость `scenarioCapacity sc`.  Леммы
+  `witness_uncovered_for_each` и `witness_not_exists_full_cover` затем можно
+  применять без повторной распаковки `let`-связок из формулировки аксиомы
+  `antiChecker_exists_large_Y`.
+-/
+noncomputable def coverWitness_from_antiChecker
+    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    Σ' sc : BoundedAtlasScenario solver.ac0.n,
+      CoverCapacityWitness (Core.BitVec solver.ac0.n → Bool) := by
+  classical
+  -- Шаг 1: извлекаем конкретные `F` и `Y` из экзистенциальной формулировки.
+  let hExist := antiChecker_exists_large_Y (p := p) solver
+  -- Сначала выбираем семейство `F`.
+  let F : Family (Models.inputLen p) := Classical.choose hExist
+  -- Затем выбираем подсемейство `Y` для выбранного `F`.
+  have hExistY :
+      ∃ Y : Finset (Core.BitVec (Models.inputLen p) → Bool),
+        let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+        let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+        let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card :=
+    Classical.choose_spec hExist
+  let Y : Finset (Core.BitVec (Models.inputLen p) → Bool) := Classical.choose hExistY
+  have h :
+      let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card :=
+    Classical.choose_spec hExistY
+  set Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+  set scSolver : BoundedAtlasScenario solver.ac0.n :=
+    (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+  -- Переписываем вывод аксиомы в явном виде, убирая `let`-связки.
+  have hCap : Ysolver ⊆ familyFinset (sc := scSolver) ∧
+      scenarioCapacity (sc := scSolver) < Ysolver.card := by
+    simpa only [Fsolver, scSolver, Ysolver] using h
+  -- Переносим сценарий обратно к длине `inputLen p`, избегая дальнейших приведения типов.
+  -- Мощность `Ysolver` строго превосходит ёмкость соответствующего сценария.
+  refine
+    ⟨scSolver,
+      { Y := Ysolver
+        m := scenarioCapacity (sc := scSolver)
+        hLarge := hCap.2 }⟩
+
+/--
+  Расширенная упаковка античекера с тестовым множеством `T`.  В отличие от
+  `coverWitness_from_antiChecker`, здесь ёмкость покрытия берётся из более
+  точной оценки `unionBound * 2^{|T|}`, получаемой из strengthened anti-checker
+  (`antiChecker_exists_testset`).  Кроме `Y` и `m` возвращается само тестовое
+  множество `T`, что удобно при подключении лемм `ApproxOnTestset` из части B.
+-/
+noncomputable def coverWitness_from_antiChecker_testset
+    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    Σ' sc : BoundedAtlasScenario solver.ac0.n,
+      Σ' T : Finset (Core.BitVec solver.ac0.n),
+        CoverCapacityWitness (Core.BitVec solver.ac0.n → Bool) := by
+  classical
+  -- Шаг 1. Распаковываем усиленную аксиому античекера с тестовым множеством.
+  let hExist := antiChecker_exists_testset (p := p) solver
+  -- Сначала выбираем семейство `F`.
+  let F : Family (Models.inputLen p) := Classical.choose hExist
+  -- Затем выбираем подсемейство `Y` и тестовое множество `T` для фиксированного `F`.
+  have hExistY :
+      ∃ Y : Finset (Core.BitVec (Models.inputLen p) → Bool),
+        ∃ T : Finset (Core.BitVec (Models.inputLen p)),
+          let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+          let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+          let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+          let Tsolver : Finset (Core.BitVec solver.ac0.n) := solver.same_n.symm ▸ T
+          Ysolver ⊆ familyFinset (sc := scWitness) ∧
+            scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+            Tsolver.card ≤ Models.polylogBudget solver.ac0.n ∧
+            (∀ f ∈ Ysolver,
+              f ∈ Counting.ApproxOnTestset
+                (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+            Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
+              2 ^ Tsolver.card < Ysolver.card :=
+    Classical.choose_spec hExist
+  let Y : Finset (Core.BitVec (Models.inputLen p) → Bool) := Classical.choose hExistY
+  have hExistT :
+      ∃ T : Finset (Core.BitVec (Models.inputLen p)),
+        let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+        let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+        let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+        let Tsolver : Finset (Core.BitVec solver.ac0.n) := solver.same_n.symm ▸ T
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+          Tsolver.card ≤ Models.polylogBudget solver.ac0.n ∧
+          (∀ f ∈ Ysolver,
+            f ∈ Counting.ApproxOnTestset
+              (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+          Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
+            2 ^ Tsolver.card < Ysolver.card :=
+    Classical.choose_spec hExistY
+  let T : Finset (Core.BitVec (Models.inputLen p)) := Classical.choose hExistT
+  have hProps :
+      let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+      let Tsolver : Finset (Core.BitVec solver.ac0.n) := solver.same_n.symm ▸ T
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+        Tsolver.card ≤ Models.polylogBudget solver.ac0.n ∧
+        (∀ f ∈ Ysolver,
+          f ∈ Counting.ApproxOnTestset
+            (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+        Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
+          2 ^ Tsolver.card < Ysolver.card :=
+    Classical.choose_spec hExistT
+  -- Шаг 2. Переводим все объекты на длину `solver.ac0.n`.
+  let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+  let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+  let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) := solver.same_n.symm ▸ Y
+  let Tsolver : Finset (Core.BitVec solver.ac0.n) := solver.same_n.symm ▸ T
+  -- Шаг 3. Переписываем свойства, разворачивая только `let`-связки (без лишних упрощений).
+  have hProps' := hProps
+  dsimp [Fsolver, scWitness, Ysolver, Tsolver] at hProps'
+  rcases hProps' with ⟨hSubset, hCap, hT, hApprox, hUnion⟩
+  -- Шаг 4. Формируем пакет для покрытий: `m = unionBound * 2^{|T|}`.
+  refine ⟨scWitness, Tsolver, ?_⟩
+  refine
+    { Y := Ysolver
+      m := Counting.unionBound (Counting.dictLen scWitness.atlas.dict)
+            scWitness.k * 2 ^ Tsolver.card
+      hLarge := ?_ }
+  -- Прямое следствие из усиленной ёмкостной оценки античекера.
+  simpa using hUnion
+
+/--
+  Вариант `coverWitness_from_antiChecker`, сразу приводящий все индексы к
+  канонической длине `inputLen p`.  Это снижает шум с `Eq.rec` при стыковке с
+  леммами, которые ожидают сценарий и покрытие именно на длине `inputLen p`.
+
+  Технически Lean различает типы `Scenario solver.ac0.n` и `Scenario (inputLen p)`;
+  равенство `solver.same_n` служит мостом между ними, но не применяется
+  автоматически.  Здесь мы «переносим» (transport) свидетельство покрытия по
+  этому равенству один раз, чтобы далее использовать его без дополнительных
+  приведений типов.
+-/
+noncomputable def coverWitness_from_antiChecker_inputLen
+    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    Σ' sc : BoundedAtlasScenario (Models.inputLen p),
+      CoverCapacityWitness (Core.BitVec (Models.inputLen p) → Bool) := by
+  classical
+  -- Переписываем результат базовой функции по равенству `same_n`, чтобы
+  -- получить сценарий и семейство строго на длине `inputLen p`.
+  simpa using
+    (solver.same_n ▸ coverWitness_from_antiChecker (p := p) solver)
+
+/--
+  Версия `coverWitness_from_antiChecker_testset`, сразу приводящая все индексы
+  к канонической длине `inputLen p`.  Тестовое множество `T` и пакет ёмкости
+  возвращаются уже в «нормализованном» виде, что избавляет от последующих
+  приведения типов.
+-/
+noncomputable def coverWitness_from_antiChecker_testset_inputLen
+    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    Σ' sc : BoundedAtlasScenario (Models.inputLen p),
+      Σ' T : Finset (Core.BitVec (Models.inputLen p)),
+        CoverCapacityWitness (Core.BitVec (Models.inputLen p) → Bool) := by
+  classical
+  simpa using
+    (solver.same_n ▸ coverWitness_from_antiChecker_testset (p := p) solver)
+
+/--
+  Любое семейство покрытий `cover s` с мощностью не более `m` пропускает
+  некоторый элемент из `Y`.  Это прямое применение ёмкостного аргумента к
+  сохранённым в `CoverCapacityWitness` данным; пригодится при стыковке с
+  античекером, который обеспечивает требуемое неравенство `m < |Y|`.
+-/
+theorem witness_uncovered_for_each
+    {α σ : Type} [DecidableEq α] (w : CoverCapacityWitness α)
+    (cover : σ → Finset α) (hCap : ∀ s, (cover s).card ≤ w.m) :
+    ∀ s, ∃ y ∈ w.Y, y ∉ cover s :=
+  exists_uncovered_for_each (Y := w.Y) (m := w.m) w.hLarge cover hCap
+
+/--
+  Следствие `witness_uncovered_for_each`: при наличии ёмкостного пакета нет
+  кандидата `s`, полностью покрывающего `Y`.
+-/
+theorem witness_no_full_cover
+    {α σ : Type} [DecidableEq α] (w : CoverCapacityWitness α)
+    (cover : σ → Finset α) (hCap : ∀ s, (cover s).card ≤ w.m) :
+    ∀ s, ¬ w.Y ⊆ cover s :=
+  no_full_cover (Y := w.Y) (m := w.m) w.hLarge cover hCap
+
+/--
+  Ещё одна форма: из ёмкостного пакета следует, что не существует кандидата
+  `s`, покрывающего всё семейство `Y`.
+-/
+theorem witness_not_exists_full_cover
+    {α σ : Type} [DecidableEq α] (w : CoverCapacityWitness α)
+    (cover : σ → Finset α) (hCap : ∀ s, (cover s).card ≤ w.m) :
+    ¬ ∃ s, w.Y ⊆ cover s :=
+  not_exists_full_cover (Y := w.Y) (m := w.m) w.hLarge cover hCap
+
+/--
+  Удобная форма `witness_uncovered_for_each`, сразу применимая к свидетельству
+  античекера на канонической длине `inputLen p`.  Мы извлекаем пакет данных
+  `(sc, w)` из `coverWitness_from_antiChecker_inputLen` и «скармливаем» его
+  ёмкостной лемме: при любом семействе покрытий `cover`, ограниченном мощностью
+  `w.m`, находится элемент `y ∈ w.Y`, который не покрывается данным кандидатом.
+
+  Эта форма избавляет от ручного раскрытия `Σ'`-структуры и повторных переписок
+  по равенству `solver.same_n` при стыковке с дальнейшими шагами триггера OPS.
+-/
+theorem uncovered_from_antiChecker_inputLen
+    {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    {σ : Type} [DecidableEq σ]
+    (cover : σ → Finset (Core.BitVec (Models.inputLen p) → Bool))
+  (hCap : ∀ s, (cover s).card ≤
+      (coverWitness_from_antiChecker_inputLen (p := p) solver).2.m) :
+  ∀ s, ∃ y ∈ (coverWitness_from_antiChecker_inputLen (p := p) solver).2.Y,
+    y ∉ cover s := by
+  classical
+  -- Распаковываем пакет античекера и применяем ёмкостную лемму.
+  set cw := coverWitness_from_antiChecker_inputLen (p := p) solver
+  -- Сохраняем исходное ограничение мощности, чтобы переписать его после раскрытия `cw`.
+  have hCap' : ∀ s, (cover s).card ≤ cw.2.m := hCap
+  -- Открываем `cw` и переписываем ограничение мощности к форме `w.m`.
+  rcases cw with ⟨sc, w⟩
+  have hCap'' : ∀ s, (cover s).card ≤ w.m := by
+    simpa using hCap'
+  simpa using
+    witness_uncovered_for_each (w := w) cover hCap''
+
+/--
+  Версия ёмкостного вывода, использующая усиленный античекер с тестовым
+  множеством.  Полезна, когда верхняя оценка числа покрываемых функций
+  выводится как `unionBound * 2^{|T|}`: она напрямую применяет лемму о покрытии
+  к данным `coverWitness_from_antiChecker_testset_inputLen` без ручных переписок.
+-/
+theorem uncovered_from_antiChecker_testset_inputLen
+    {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    {σ : Type} [DecidableEq σ]
+    (cover : σ → Finset (Core.BitVec (Models.inputLen p) → Bool))
+    (hCap : ∀ s, (cover s).card ≤
+        (coverWitness_from_antiChecker_testset_inputLen (p := p) solver).2.2.m) :
+    ∀ s, ∃ y ∈ (coverWitness_from_antiChecker_testset_inputLen (p := p) solver).2.2.Y,
+      y ∉ cover s := by
+  classical
+  -- Распаковываем расширенный пакет античекера с тестовым множеством.
+  set cw := coverWitness_from_antiChecker_testset_inputLen (p := p) solver
+  have hCap' : ∀ s, (cover s).card ≤ cw.2.2.m := hCap
+  rcases cw with ⟨sc, T, w⟩
+  have hCap'' : ∀ s, (cover s).card ≤ w.m := by
+    simpa using hCap'
+  simpa using
+    witness_uncovered_for_each (w := w) cover hCap''
 
 /--
   Из предположения `P/poly` для языка GapMCSP извлекается явный экземпляр

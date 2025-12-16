@@ -140,11 +140,17 @@ axiom antiChecker_exists_large_Y
 
 **File**: `pnp3/Magnification/Facts_Magnification.lean`
 
-**AXIOM D.1 + theorem D.2**:
+**Доказанный триггер D.1 и теорема D.2**:
 ```lean
-axiom OPS_trigger_general
+theorem OPS_trigger_general
   {p : GapMCSPParams} {ε : Rat} (statement : Prop) :
-  GeneralLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly
+  GeneralLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly :=
+by
+  intro hHyp
+  refine NP_not_subset_Ppoly_of_contra ?hContra
+  intro hPpoly
+  exact OPS_trigger_general_contra (p := p) (ε := ε)
+    (statement := statement) hPpoly hHyp
 
 theorem OPS_trigger_formulas_from_general
   {p : GapMCSPParams} {δ : Rat} :

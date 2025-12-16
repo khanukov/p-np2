@@ -83,24 +83,25 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 Axiom Inventory
 
-**Total Axioms**: 19
+**Total Axioms**: 8 (all external literature facts)
 
-### External Axioms from Literature (12)
+### External Axioms from Literature (8)
 
-**Part A: Switching Lemma** (5 axioms)
+**Part A: Switching Lemma** (2 axioms)
 - A.1: `partial_shrinkage_for_AC0` 🔴 CRITICAL - Håstad 1986
 - A.2: `shrinkage_for_localCircuit` 🟡 HIGH - Williams 2014
-- A.3-A.5: Variants and extensions
 
 **Part C: Anti-Checker** (4 axioms)
-- C.6: `antiChecker_exists_large_Y` 🔴 CRITICAL - OPS 2019
-- C.7: `antiChecker_exists_testset` 🔴 CRITICAL - OPS 2019
-- C.8-C.9: Local circuit variants
+- C.3: `antiChecker_exists_large_Y` 🔴 CRITICAL - OPS 2019
+- C.4: `antiChecker_exists_testset` 🔴 CRITICAL - OPS 2019
+- C.5: `antiChecker_exists_large_Y_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
+- C.6: `antiChecker_exists_testset_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
 
-**Part D: Magnification** (4 axioms + 1 proven specialization)
-- D.1: `OPS_trigger_general` 🔴 CRITICAL - OPS 2019
-- D.2: `OPS_trigger_formulas` ✅ **PROVEN in Lean** (specialization of D.1)
-- D.3-D.5: Local and sparse variants - CJW 2019, Williams 2014
+**Part D: Magnification** (2 axioms + 1 proven trigger)
+- D.1: `OPS_trigger_general` ✅ **PROVEN in Lean** (general trigger now a theorem)
+- D.2: `Locality_trigger` 🟡 HIGH - CJW 2022
+- D.3: `CJW_sparse_trigger` 🟡 HIGH - CJW 2022
+- Specialization `OPS_trigger_formulas` remains proved constructively as a corollary of D.1
 
 ### Interface Axioms (5 unique + 1 duplicate)
 

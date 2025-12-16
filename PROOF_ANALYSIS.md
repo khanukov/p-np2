@@ -57,13 +57,11 @@ axiom depth2_constructive_switching       -- Depth2_Switching_Spec.lean:227
 
 **C. Magnification Triggers (Part D)**:
 ```lean
-axiom OPS_trigger_general                 -- Facts_Magnification.lean:83
-axiom Locality_trigger                    -- Facts_Magnification.lean:105
-axiom CJW_sparse_trigger                  -- Facts_Magnification.lean:110
-axiom locality_lift                       -- LocalityLift.lean:52
+axiom Locality_trigger                    -- Facts_Magnification.lean:730
+axiom CJW_sparse_trigger                  -- Facts_Magnification.lean:735
 ```
-**Источник**: Oliveira-Pich-Santhanam (2018), Chen-Jin-Williams (2019), Williams (2014)
-**Статус**: Недоказано в формализации ❌ (при этом `OPS_trigger_formulas` доказана как специализация `OPS_trigger_general`)
+**Источник**: Chen-Jin-Williams (2019), Williams (2014)
+**Статус**: Недоказано в формализации ❌ (но `OPS_trigger_general` теперь доказана в Lean и используется как теорема)
 
 **D. Complexity Class Interfaces (Part D)**:
 ```lean
@@ -73,7 +71,7 @@ theorem P_ne_NP_of_nonuniform_separation     -- Interfaces.lean:40
 **Источник**: импортированные доказательства из `Facts/PsubsetPpoly`
 **Статус**: ✅ доказано (больше не считается аксиомой)
 
-#### **ИТОГО: 10 активных аксиом** (все приходятся на switching/anti-checker/magnification)
+#### **ИТОГО: 8 активных аксиом** (все приходятся на switching/anti-checker/magnification)
 
 ### 2. ⚠️ Барьеры доказательства P≠NP
 
@@ -125,14 +123,14 @@ theorem P_ne_NP_of_nonuniform_separation     -- Interfaces.lean:40
 - ⚠️ Lower bounds (зависит от anti-checker axioms)
 - ⚠️ Magnification bridge (зависит от trigger axioms)
 
-### Недоказанные внешние факты: **10 аксиом**
+### Недоказанные внешние факты: **8 аксиом**
 
 #### Критичность аксиом:
 
 **КРИТИЧЕСКИЕ (блокируют всё доказательство)**:
 1. `partial_shrinkage_for_AC0` - основа SAL
-2. `antiChecker_exists_large_Y` - основа lower bounds
-3. `OPS_trigger_general` - основа magnification
+2. `shrinkage_for_localCircuit` - расширение shrinkage на локальные схемы
+3. `antiChecker_exists_large_Y` - основа lower bounds
 
 **ВАЖНЫЕ (нужны для полноты)**:
 - Остальные переключательные и античекерные варианты + локальные/разреженные триггеры

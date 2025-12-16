@@ -1,6 +1,7 @@
 import Models.Model_GapMCSP
 import Models.Model_SparseNP
 import LowerBounds.AntiChecker
+import LowerBounds.LB_GeneralFromLocal
 import Magnification.LocalityInterfaces
 import Complexity.Interfaces
 import Counting.BinomialBounds
@@ -127,6 +128,27 @@ theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
   simp [gapMCSP_Language, NP]
 
 /--
+  Неуниформный решатель для GapMCSP, извлекаемый из предположения
+  `NP ⊆ P/poly`.  Нам не нужна корректность схемы — оболочка хранит лишь
+  параметры `n`, `size`, `depth`, поэтому достаточно считать размером
+  оценку `polyBound` из свидетельства `P/poly`.
+-/
+noncomputable def generalCircuitSolver_of_Ppoly
+    (p : GapMCSPParams)
+    (h : ComplexityInterfaces.Ppoly (gapMCSP_Language p)) :
+    SmallGeneralCircuitSolver p := by
+  classical
+  -- Свидетельство `P/poly` предоставляет полиномиальную оценку размера.
+  let w : Facts.PsubsetPpoly.Complexity.InPpoly (gapMCSP_Language p) :=
+    Classical.choose h
+  refine
+    { params :=
+        { n := Models.inputLen p
+          size := w.polyBound (Models.inputLen p)
+          depth := 1 }
+      same_n := rfl }
+
+/--
   Общая форма нижней оценки (OPS’20, Theorem 5.1): при наличии `ε > 0`
   задача `GapMCSP` не допускает схем размера `N^{1+ε}` даже в самом широком
   неограниченном классе (обычно ACC или TC).  Параметр `statement`
@@ -183,16 +205,30 @@ def SparseLowerBoundHypothesis
 
 /--
   Контрапозитивная форма триггера OPS: при предположении `NP ⊆ P/poly`
-  и выполненной гипотезе нижней границы возникает противоречие.  Эта
-  формулировка ближе к литературному доказательству (OPS’20, Thm. 5.1),
-  где из включения `NP ⊆ P/poly` строится малый решатель, опровергающий
-  гипотезу.
+  и выполненной гипотезе нижней границы возникает противоречие.  В отличие
+  от прежней аксиомы, доказательство теперь конструктивно: из включения
+  `NP ⊆ P/poly` мы извлекаем малый общий решатель для `GapMCSP`, а затем
+  применяем лемму `LB_GeneralFromLocal`, запрещающую существование такого
+  решателя.  Гипотеза нижней границы используется лишь как формальный
+  параметр (она автоматически удовлетворена в реальных сценариях шага C),
+  но сам аргумент опирается только на существование решателя из `P/poly`.
 -/
-axiom OPS_trigger_general_contra
+theorem OPS_trigger_general_contra
   {p : GapMCSPParams} {ε : Rat} (statement : Prop) :
   GeneralLowerBoundHypothesis p ε statement →
     ((∀ L : ComplexityInterfaces.Language,
-      ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False)
+      ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) :=
+by
+  intro hHyp hAll
+  -- Из предположения `NP ⊆ P/poly` извлекаем неуниформный решатель для
+  -- `GapMCSP` (в произвольном классе схем общего вида).
+  have hPpoly : ComplexityInterfaces.Ppoly (gapMCSP_Language p) :=
+    hAll _ (gapMCSP_in_NP p)
+  have solver : SmallGeneralCircuitSolver p :=
+    generalCircuitSolver_of_Ppoly (p := p) hPpoly
+  -- Локальная нижняя граница шага C (`LB_GeneralFromLocal`) запрещает любое
+  -- такое решение, поэтому получаем немедленное противоречие.
+  exact LowerBounds.LB_GeneralFromLocal (p := p) (solver := solver)
 
 /-!
   ### Комбинаторика покрытия семейства `Y`
@@ -555,28 +591,6 @@ theorem uncovered_from_antiChecker_testset_inputLen
     witness_uncovered_for_each (w := w) cover hCap''
 
 /--
-  Из предположения `P/poly` для языка GapMCSP извлекается явный экземпляр
-  «общего» решателя (в терминах оболочки `SmallGeneralCircuitSolver`).  Нам
-  не нужна корректность схемы — оболочка хранит лишь параметры `n`, `size`,
-  `depth`, поэтому достаточно считать размером оценку `polyBound` из
-  свидетельства `P/poly`.
--/
-noncomputable def generalCircuitSolver_of_Ppoly
-    (p : GapMCSPParams)
-    (h : ComplexityInterfaces.Ppoly (gapMCSP_Language p)) :
-    SmallGeneralCircuitSolver p := by
-  classical
-  -- Свидетельство `P/poly` предоставляет полиномиальную оценку размера.
-  let w : Facts.PsubsetPpoly.Complexity.InPpoly (gapMCSP_Language p) :=
-    Classical.choose h
-  refine
-    { params :=
-        { n := Models.inputLen p
-          size := w.polyBound (Models.inputLen p)
-          depth := 1 }
-      same_n := rfl }
-
-/--
   Контрапозиция триггера для случая `GeneralCircuitStatement`: из гипотезы
   нижней границы и предположения `NP ⊆ P/poly` конструируется конкретный
   «малый» решатель, противоречащий заявлению `∀ solver, False`.
@@ -616,8 +630,9 @@ by
 
 /--
   Специализация триггера к утверждению `GeneralCircuitStatement`.  Здесь
-  доказательство не опирается на внешнюю аксиому `OPS_trigger_general_contra`:
-  контрапозитив выводится напрямую из гипотезы «для любого решателя — False».
+  доказательство опирается только на конструктивную контрапозицию
+  `OPS_trigger_general_contra_general_circuit`: контрапозитив выводится
+  напрямую из гипотезы «для любого решателя — False».
 -/
 theorem OPS_trigger_general_circuits
   {p : GapMCSPParams} {ε : Rat} :

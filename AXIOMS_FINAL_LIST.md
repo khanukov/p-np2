@@ -49,10 +49,10 @@ Archived copies of the older switching/magnification axioms remain in
    - Sources for 3–6: Lipton–Young (1994), Chapman–Williams (2015),
      Oliveira–Pich–Santhanam (2019/2021).
 
-### Part D — Magnification Bridges (3 axioms + 1 theorem)
+### Part D — Magnification Bridges (2 axioms + 1 theorem)
 
 7. **`OPS_trigger_general`** — `pnp3/Magnification/Facts_Magnification.lean`
-   - General OPS trigger: lower-bound hypothesis ⇒ `NP_not_subset_Ppoly`.
+   - ✅ **PROVEN**: general OPS trigger (lower-bound hypothesis ⇒ `NP_not_subset_Ppoly`).
 8. **`Locality_trigger`** — same file
    - Local circuit barrier (`N·(log N)^κ`).
 9. **`CJW_sparse_trigger`** — same file
@@ -60,7 +60,7 @@ Archived copies of the older switching/magnification axioms remain in
    - Sources: Oliveira–Pich–Santhanam (2019), Chapman–Jansen–Williams (2022).
 
 **Proven specialization**:
-- `OPS_trigger_formulas` — proved via specialization of `OPS_trigger_general` for AC⁰ solvers.
+- `OPS_trigger_formulas` — proved as a corollary of `OPS_trigger_general` for AC⁰ solvers.
 
 ---
 

@@ -109,5 +109,49 @@ theorem P_ne_NP_of_nonuniform_separation
     P_ne_NP :=
   P_ne_NP_of_nonuniform_separation_concrete hNP hP
 
+/--
+  Удобная форма для работы от противного: если из предположения
+  `∀ L, NP L → P/poly` можно вывести противоречие, то автоматически
+  существует язык из `NP`, не лежащий в `P/poly`.
+
+  Важно, что наше временное определение `NP` редуцируется к `True`,
+  поэтому `¬ (NP L → Ppoly L)` сводится к `¬ Ppoly L`.  Это позволяет
+  легко распаковать контрпример из отрицания универсального включения.
+-/
+theorem NP_not_subset_Ppoly_of_contra
+    (hContra : (∀ L : Language, NP L → Ppoly L) → False) :
+    NP_not_subset_Ppoly :=
+by
+  classical
+  -- Отрицание универсального включения даёт конкретный язык `L`.
+  have hNotAll : ¬ (∀ L : Language, NP L → Ppoly L) := by
+    intro hAll
+    exact hContra hAll
+  rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+  -- Поскольку `NP L` сводится к `True`, отрицание импликации означает
+  -- `¬ Ppoly L`.
+  have hNotPpoly : ¬ Ppoly L := by
+    simpa [NP] using hNotImp
+  -- Формируем требуемый контрпример.
+  refine ⟨L, ?_, hNotPpoly⟩
+  simp [NP]
+
+/-- Эквивалентная форма `NP_not_subset_Ppoly` через отрицание включения. -/
+theorem NP_not_subset_Ppoly_iff_not_forall :
+    NP_not_subset_Ppoly ↔ ¬ (∀ L : Language, NP L → Ppoly L) :=
+by
+  constructor
+  · intro hSep
+    classical
+    rcases hSep with ⟨L, hNP, hNotPpoly⟩
+    intro hAll
+    exact hNotPpoly (hAll L hNP)
+  · intro hNotAll
+    classical
+    rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+    have hNotPpoly : ¬ Ppoly L := by simpa [NP] using hNotImp
+    refine ⟨L, ?_, hNotPpoly⟩
+    simp [NP]
+
 end ComplexityInterfaces
 end Pnp3

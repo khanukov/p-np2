@@ -25,9 +25,9 @@ $ rg "^axiom " -g"*.lean" pnp3
 pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
 pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 
-pnp3/LowerBounds/AntiChecker.lean:237:axiom antiChecker_exists_testset
-pnp3/LowerBounds/AntiChecker.lean:305:axiom antiChecker_exists_large_Y_local
-pnp3/LowerBounds/AntiChecker.lean:371:axiom antiChecker_exists_testset_local
+pnp3/LowerBounds/AntiChecker.lean:137:axiom antiChecker_exists_large_Y
+pnp3/LowerBounds/AntiChecker.lean:283:axiom antiChecker_exists_large_Y_local
+pnp3/LowerBounds/AntiChecker.lean:349:axiom antiChecker_exists_testset_local
 ```
 
 **Total**: 5 axioms (matches documentation).

@@ -89,9 +89,12 @@ restricted by a locality parameter.
 
 **Summary**: Local-circuit analogue of C.1 tailored to the locality budget.
 
-### C.4: `antiChecker_exists_testset_local`
+### C.4 (proved): `antiChecker_exists_testset_local`
 
 **Location**: `pnp3/LowerBounds/AntiChecker.lean:349`
+
+**Status**: **Theorem.** Derived from C.3 via the capacity contradiction (no
+additional axioms).
 
 **Summary**: Local version of the test-set refinement.
 

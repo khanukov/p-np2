@@ -43,7 +43,6 @@ def main : IO Unit := do
   IO.println "  - A.2: shrinkage_for_localCircuit (Williams / COS 2022)"
   IO.println "  - C.3: antiChecker_exists_large_Y (OPS 2019)"
   IO.println "  - C.4: antiChecker_exists_large_Y_local (OPS / CJW 2022)"
-  IO.println "  - C.5: antiChecker_exists_testset_local (OPS / CJW 2022)"
   IO.println ""
 
   IO.println "==================================="

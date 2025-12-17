@@ -83,9 +83,9 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 Axiom Inventory
 
-**Total Axioms**: 8 (all external literature facts)
+**Total Axioms**: 6 (all external literature facts)
 
-### External Axioms from Literature (8)
+### External Axioms from Literature (6)
 
 **Part A: Switching Lemma** (2 axioms)
 - A.1: `partial_shrinkage_for_AC0` 🔴 CRITICAL - Håstad 1986
@@ -97,22 +97,18 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - C.5: `antiChecker_exists_large_Y_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
 - C.6: `antiChecker_exists_testset_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
 
-**Part D: Magnification** (1 axiom + 2 proven triggers)
+**Part D: Magnification** (all triggers proven)
 - D.1: `OPS_trigger_general` ✅ **PROVEN in Lean** (general trigger now a theorem)
 - D.2: `Locality_trigger` ✅ **PROVEN in Lean** (local circuit trigger)
-- D.3: `CJW_sparse_trigger` 🟡 HIGH - CJW 2022 (still axiomatic)
+- D.3: `CJW_sparse_trigger` ✅ **PROVEN in Lean** (sparse-language trigger)
 - Specialization `OPS_trigger_formulas` remains proved constructively as a corollary of D.1
 
-### Interface Axioms (5 unique + 1 duplicate)
+### Interface Axioms
 
-- I.1: `NP_not_subset_Ppoly` - **GOAL** (what we derive)
-- I.2: `P_subset_Ppoly` - Placeholder Prop
-- I.3: `P_subset_Ppoly_proof` - ✅ **PROVEN in the archival library**
-- I.4: `P_ne_NP` - **GOAL** (ultimate target)
-- I.5: `P_ne_NP_of_nonuniform_separation` - ✅ **PROVEN in the archival library**
-- I.6: Duplicate in unused file
+- `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
+  remaining interface axioms. Targets `NP_not_subset_Ppoly` and `P_ne_NP` stay as goals.
 
-**Minimal Set for P_ne_NP_final**: 4 axioms (switching + anti-checker + CJW sparse)
+**Minimal Set for P_ne_NP_final**: 6 axioms (switching + anti-checker)
 
 **Complete Documentation**: See [`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md) for full details.
 

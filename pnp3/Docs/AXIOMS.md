@@ -134,7 +134,8 @@ contraposition (locality lift + anti-checker), replacing the former axiom.
 **Location**: `pnp3/Magnification/Facts_Magnification.lean:95`
 
 **Summary**: Sparse-language trigger (CJW) showing that super-linear sparse
-lower bounds magnify to `NP_not_subset_Ppoly`.
+lower bounds magnify to `NP_not_subset_Ppoly`. ✅ **PROVEN** via конструктивный
+перебор положительных примеров (см. `defaultSparseSolver`).
 
 **Literature for D.1–D.4**: Oliveira–Pich–Santhanam (2019), Chapman–Jansen–Williams (2022).
 

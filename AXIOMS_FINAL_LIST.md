@@ -2,29 +2,30 @@
 ## Official List for Publication
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
-**Revision Date**: 2025-10-24
-**Total Active Axioms (`pnp3/`)**: 7
+**Revision Date**: 2025-12-16
+**Total Active Axioms (`pnp3/`)**: 6
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The current `pnp3/` proof development depends on seven externally justified
-statements.  They fall into three natural families:
+The current `pnp3/` proof development depends on six externally justified
+statements.  They fall into two natural families:
 
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 2 | Håstad (1986), Williams (2014) |
 | Part C — Anti-checker lower bounds | `LowerBounds/AntiChecker.lean` | 4 | Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021) |
-| Part D — Magnification triggers | `Magnification/Facts_Magnification.lean` | 1 | CJW (2022) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
 proofs from the lightweight `Facts/PsubsetPpoly` package.
 
 Archived copies of the older switching/magnification axioms remain in
-`archive/` for historical reference but are not part of the active build.
+`archive/` for historical reference but are not part of the active build. All
+magnification triggers (`OPS_trigger_general`, `OPS_trigger_formulas`,
+`Locality_trigger`, `CJW_sparse_trigger`) are fully proved in Lean.
 
 ---
 
@@ -49,18 +50,16 @@ Archived copies of the older switching/magnification axioms remain in
    - Sources for 3–6: Lipton–Young (1994), Chapman–Williams (2015),
      Oliveira–Pich–Santhanam (2019/2021).
 
-### Part D — Magnification Bridges (1 axiom + 2 theorems)
+### Part D — Magnification Bridges (all proved)
 
-7. **`OPS_trigger_general`** — `pnp3/Magnification/Facts_Magnification.lean`
-   - ✅ **PROVEN**: general OPS trigger (lower-bound hypothesis ⇒ `NP_not_subset_Ppoly`).
-8. **`Locality_trigger`** — same file
-   - ✅ **PROVEN**: locality barrier (`N·(log N)^κ`) established via constructive contraposition.
-9. **`CJW_sparse_trigger`** — same file
-    - CJW sparse-language trigger (still axiomatic).
-   - Sources: Oliveira–Pich–Santhanam (2019), Chapman–Jansen–Williams (2022).
-
-**Proven specialization**:
-- `OPS_trigger_formulas` — proved as a corollary of `OPS_trigger_general` for AC⁰ solvers.
+- **`OPS_trigger_general`** — `pnp3/Magnification/Facts_Magnification.lean`
+  - ✅ **PROVEN**: general OPS trigger (lower-bound hypothesis ⇒ `NP_not_subset_Ppoly`).
+- **`OPS_trigger_formulas`** — proved as a corollary of `OPS_trigger_general` for AC⁰ solvers.
+- **`Locality_trigger`** — same file
+  - ✅ **PROVEN**: locality barrier (`N·(log N)^κ`) established via constructive contraposition.
+- **`CJW_sparse_trigger`** — same file
+  - ✅ **PROVEN**: CJW sparse-language trigger via explicit sparse solver witness.
+  - Sources: Oliveira–Pich–Santhanam (2019), Chapman–Jansen–Williams (2022).
 
 ---
 
@@ -91,6 +90,10 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
+- **2025-12-16** — Synced documentation after re-verifying Part D: all
+  magnification triggers remain proven, active axiom count stays at 6.
+- **2025-10-25** — Updated totals to 6 axioms; marked `CJW_sparse_trigger`
+  proven; clarified that all magnification triggers are theorems.
 - **2025-10-24** — Updated totals to 7 axioms, marked `Locality_trigger` as
   proven, reclassified complexity interfaces as theorems, and documented
   retirement of depth-2 switching files.

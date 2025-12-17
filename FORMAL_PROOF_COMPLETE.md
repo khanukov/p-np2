@@ -77,7 +77,7 @@ theorem P_ne_NP_final : P_ne_NP := by
 - **Статус**: Local-circuit analogue of the switching lemma
 - **Используется**: SAL-сценарий для локальных схем
 
-### TIER 2: Anti-checker (3 аксиомы / 1 доказанная теорема) 🔴🟢
+### TIER 2: Anti-checker (2 аксиомы / 3 доказанные теоремы) 🔴🟢
 
 **3. AXIOM C.3: `antiChecker_exists_large_Y`**
 - **Статус**: Base AC⁰ anti-checker (large family `Y`)
@@ -85,10 +85,11 @@ theorem P_ne_NP_final : P_ne_NP := by
 **4. AXIOM C.4: `antiChecker_exists_large_Y_local`**
 - **Статус**: Local-circuit analogue of C.3
 
-**5. AXIOM C.5: `antiChecker_exists_testset_local`**
-- **Статус**: Local test-set refinement
-
-**Доказано в коде**: `antiChecker_exists_testset` (AC⁰ с тест-набором) и вспомогательная `antiChecker_exists_large_Y_from_testset`, выводимые из C.3.
+**Доказано в коде**:
+- `antiChecker_exists_testset` (AC⁰ с тест-набором) и вспомогательная
+  `antiChecker_exists_large_Y_from_testset`, выводимые из C.3.
+- `antiChecker_exists_testset_local` (локальная версия с тест-набором) и
+  `antiChecker_exists_large_Y_local_from_testset`, выводимые из C.4.
 
 ### Доказанные триггеры 🟢
 

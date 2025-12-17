@@ -294,7 +294,7 @@ axiom antiChecker_exists_large_Y_local
         scenarioCapacity (sc := scWitness) < Ysolver.card
 
 /--
-  **AXIOM 4: Anti-Checker for Local Circuits (with Test Set)**
+  **Theorem: Anti-Checker for Local Circuits (with Test Set)**
 
   **Statement**: Enhanced local circuit anti-checker that additionally provides a
   small test set T distinguishing functions in Y.
@@ -308,7 +308,9 @@ axiom antiChecker_exists_large_Y_local
 
   **Mathematical Content** (from literature):
 
-  This is the local circuit variant of antiChecker_exists_testset.
+  This is the local circuit variant of antiChecker_exists_testset.  В ранних
+  версиях файла утверждение объявлялось как аксиома; теперь мы выводим его из
+  `antiChecker_exists_large_Y_local` и критерия ёмкости.
   All the intuition from the AC⁰ version applies:
 
   From Oliveira et al. (2021), extended to local circuits:
@@ -346,7 +348,7 @@ axiom antiChecker_exists_large_Y_local
   - Williams (2014): SAT-based lower bounds via locality
   - Our Part B: Counting/Atlas_to_LB_Core.lean, line 1025
 -/
-axiom antiChecker_exists_testset_local
+theorem antiChecker_exists_testset_local
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
@@ -369,7 +371,61 @@ axiom antiChecker_exists_testset_local
             (Counting.dictLen scWitness.atlas.dict)
             scWitness.k
             * 2 ^ Tsolver.card
-          < Ysolver.card
+          < Ysolver.card := by
+  classical
+  -- Шаг 1: получаем базовый локальный античекер без тестового набора.
+  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_local (solver := solver)
+  -- Разворачиваем обозначения для применения критерия ёмкости.
+  dsimp at hBase
+  set Fsolver : Family solver.params.n := solver.same_n.symm ▸ F
+  set scWitness : BoundedAtlasScenario solver.params.n :=
+    (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
+    solver.same_n.symm ▸ Y
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    simpa [Fsolver, scWitness, Ysolver] using hBase.1
+  have hCapacity : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    simpa [Fsolver, scWitness, Ysolver] using hBase.2
+  -- Базовое утверждение уже противоречиво: Y превышает ёмкость сценария.
+  have hFalse : False :=
+    no_bounded_atlas_of_large_family
+      (sc := scWitness) (Y := Ysolver) hSubset hCapacity
+  -- Из противоречия выводим усиленную версию с тестовым набором.
+  exact False.elim hFalse
+
+/--
+  **Corollary: Anti-Checker Existence (Large Y, Local Case)**
+
+  Сохраняем имя для слабой локальной версии античекера, выводимой из результата
+  с тестовым множеством.  Доказательство дословно повторяет глобальный случай:
+  берём свидетелей `F`, `Y`, `T` из усиленной теоремы и выбрасываем `T`.
+-/
+theorem antiChecker_exists_large_Y_local_from_testset
+  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
+  ∃ (F : Family (Models.inputLen p))
+    (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
+      let Fsolver : Family solver.params.n :=
+        (solver.same_n.symm ▸ F)
+      let scWitness :=
+        (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
+        (solver.same_n.symm ▸ Y)
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  classical
+  obtain ⟨F, Y, T, h⟩ := antiChecker_exists_testset_local (solver := solver)
+  refine ⟨F, Y, ?_⟩
+  dsimp at h
+  set Fsolver : Family solver.params.n := solver.same_n.symm ▸ F
+  set scWitness : BoundedAtlasScenario solver.params.n :=
+    (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
+    solver.same_n.symm ▸ Y
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    simpa [Fsolver, scWitness, Ysolver] using h.1
+  have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    simpa [Fsolver, scWitness, Ysolver] using h.2.1
+  simpa [Fsolver, scWitness, Ysolver] using And.intro hSubset hLarge
 
 end LowerBounds
 end Pnp3

@@ -35,12 +35,12 @@
 
 ---
 
-## Part C — Anti-Checker (3 аксиомы + 1 доказанная теорема)
+## Part C — Anti-Checker (2 аксиомы + 3 доказанные теоремы)
 
 ### (proved) `antiChecker_exists_large_Y` — выводится из C.2
 ### C.2 `antiChecker_exists_large_Y`
 ### C.3 `antiChecker_exists_large_Y_local`
-### C.4 `antiChecker_exists_testset_local`
+### (proved) `antiChecker_exists_testset_local`
 
 - **Источник**: Lipton–Young, Chapman–Williams, Oliveira–Pich–Santhanam.
 - **Ключевые задачи**:

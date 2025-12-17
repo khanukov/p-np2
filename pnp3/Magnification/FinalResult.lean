@@ -14,7 +14,8 @@ import Complexity.Interfaces
     параметра `δ` немедленно даёт `P ≠ NP` (опираясь на античекер и
     Covering-Power);
   * внешние факты `shrinkage_for_AC0`, `leaf_budget_from_shrinkage` и
-    `antiChecker_exists_large_Y`, обеспечивающие отсутствие малых AC⁰
+    `antiChecker_exists_testset` (из него сразу следует теорема
+    `antiChecker_exists_large_Y`), обеспечивающие отсутствие малых AC⁰
     решателей для фиксированного набора параметров.
 
   Здесь мы выбираем конкретный набор параметров (для определённости

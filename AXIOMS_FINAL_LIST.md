@@ -3,20 +3,20 @@
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
 **Revision Date**: 2025-12-16
-**Total Active Axioms (`pnp3/`)**: 6
+**Total Active Axioms (`pnp3/`)**: 5
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The current `pnp3/` proof development depends on six externally justified
+The current `pnp3/` proof development depends on five externally justified
 statements.  They fall into two natural families:
 
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 2 | Håstad (1986), Williams (2014) |
-| Part C — Anti-checker lower bounds | `LowerBounds/AntiChecker.lean` | 4 | Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021) |
+| Part C — Anti-checker lower bounds | `LowerBounds/AntiChecker.lean` | 3 | Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -39,15 +39,15 @@ magnification triggers (`OPS_trigger_general`, `OPS_trigger_formulas`,
 2. **`shrinkage_for_localCircuit`** — same file, local-circuit variant.
    - Source: Williams (2014), Chen–Oliveira–Santhanam (2022).
 
-### Part C — Anti-Checker Lower Bounds (4 axioms)
+### Part C — Anti-Checker Lower Bounds (3 axioms)
 
-3. **`antiChecker_exists_large_Y`** — `pnp3/LowerBounds/AntiChecker.lean`
-   - Exponential indistinguishable set against AC⁰ solvers.
-4. **`antiChecker_exists_testset`** — same file
+- **`antiChecker_exists_large_Y`** — now a **theorem** in
+  `pnp3/LowerBounds/AntiChecker.lean`, derived from the stronger test-set axiom.
+3. **`antiChecker_exists_testset`** — same file
    - Supplies a polylogarithmic test set separating functions in `Y`.
-5. **`antiChecker_exists_large_Y_local`** — local solver version.
-6. **`antiChecker_exists_testset_local`** — local solver + test set.
-   - Sources for 3–6: Lipton–Young (1994), Chapman–Williams (2015),
+4. **`antiChecker_exists_large_Y_local`** — local solver version.
+5. **`antiChecker_exists_testset_local`** — local solver + test set.
+   - Sources for 3–5: Lipton–Young (1994), Chapman–Williams (2015),
      Oliveira–Pich–Santhanam (2019/2021).
 
 ### Part D — Magnification Bridges (all proved)
@@ -90,10 +90,13 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
+- **2025-12-17** — Marked `antiChecker_exists_large_Y` as a theorem (derived
+  from the test-set axiom) and reduced the active axiom count to 5.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all
   magnification triggers remain proven, active axiom count stays at 6.
-- **2025-10-25** — Updated totals to 6 axioms; marked `CJW_sparse_trigger`
-  proven; clarified that all magnification triggers are theorems.
+- **2025-10-25** — Historical update: totals moved to 6 axioms; marked
+  `CJW_sparse_trigger` proven; clarified that all magnification triggers are
+  theorems (superseded by the 5-axiom count above).
 - **2025-10-24** — Updated totals to 7 axioms, marked `Locality_trigger` as
   proven, reclassified complexity interfaces as theorems, and documented
   retirement of depth-2 switching files.

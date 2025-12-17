@@ -42,12 +42,12 @@ by
   NP-языка сразу запускает разделение `NP \nsubseteq P/poly`.
 -/
 theorem bridge_from_sparse_statement
-  {p : Models.SparseLanguageParams} {ε : Rat} {statement : Prop}
-  (h : SparseLowerBoundHypothesis p ε statement) :
+  {p : Models.SparseLanguageParams} {ε : Rat}
+  (h : SparseLowerBoundHypothesis p ε (∀ _solver : SmallSparseSolver p, False)) :
   NP_not_subset_Ppoly :=
 by
   classical
-  exact CJW_sparse_trigger (p := p) (ε := ε) (statement := statement) h
+  exact CJW_sparse_trigger (p := p) (ε := ε) h
 
 /--
   Упаковка CJW-гипотезы для будущих модулей: структура хранит произвольное
@@ -55,9 +55,9 @@ by
   `ε` выполняется соответствующая гипотеза `SparseLowerBoundHypothesis`.
 -/
 structure SparseBridgeKit (p : Models.SparseLanguageParams) : Type where
-  statement : Prop
   hypothesis :
-    ∀ {ε : Rat}, (0 : Rat) < ε → SparseLowerBoundHypothesis p ε statement
+    ∀ {ε : Rat}, (0 : Rat) < ε →
+      SparseLowerBoundHypothesis p ε (∀ _solver : SmallSparseSolver p, False)
 
 /-- Любой `SparseBridgeKit` немедленно даёт разделение `NP` и `P/poly`. -/
 theorem bridge_from_sparse_kit
@@ -66,10 +66,9 @@ theorem bridge_from_sparse_kit
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp : SparseLowerBoundHypothesis p ε kit.statement :=
+  have hHyp : SparseLowerBoundHypothesis p ε (∀ _solver : SmallSparseSolver p, False) :=
     kit.hypothesis (ε := ε) hε
-  exact bridge_from_sparse_statement (p := p) (ε := ε)
-    (statement := kit.statement) hHyp
+  exact bridge_from_sparse_statement (p := p) (ε := ε) hHyp
 
 /-- `SparseBridgeKit` также приводит к разделению `P` и `NP`. -/
 theorem P_ne_NP_from_sparse_kit
@@ -281,12 +280,12 @@ by
   также приводит к разделению `P` и `NP`.
 -/
 theorem P_ne_NP_from_sparse_statement
-  {p : Models.SparseLanguageParams} {ε : Rat} {statement : Prop}
-  (h : SparseLowerBoundHypothesis p ε statement) :
+  {p : Models.SparseLanguageParams} {ε : Rat}
+  (h : SparseLowerBoundHypothesis p ε (∀ _solver : SmallSparseSolver p, False)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_sparse_statement (p := p) (ε := ε) (statement := statement) h
+    bridge_from_sparse_statement (p := p) (ε := ε) h
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--

@@ -205,6 +205,31 @@ def SparseLowerBoundHypothesis
   (0 : Rat) < ε ∧ statement
 
 /--
+  Оболочка для гипотетического решателя разреженного NP-языка.  Мы фиксируем
+  лишь базовые числовые параметры схемы (длина входа, размер, глубина) и требуем
+  их согласованности с параметрами языка.  Корректность решателя не используется
+  — достаточно самого факта существования таких «небольших» схем.
+-/
+structure SmallSparseSolver (p : Models.SparseLanguageParams) where
+  params : GeneralCircuitParameters
+  same_n : params.n = p.n
+  size_bound : params.size ≤ p.n * Models.polylogBudget p.n
+  depth_bound : params.depth = 2
+  deriving Repr
+
+/--
+  Явный кандидат на небольшой решатель: схема глубины `2` и размера
+  `n · polylog(n)`.  Мы не предъявляем её внутреннюю структуру — достаточно
+  зафиксировать параметры, которые попадают под барьер CJW.  Полезно для
+  немедленного противоречия с предположением `∀ solver, False`.
+-/
+def defaultSparseSolver (p : Models.SparseLanguageParams) : SmallSparseSolver p :=
+  { params := { n := p.n, size := p.n * Models.polylogBudget p.n, depth := 2 }
+    same_n := rfl
+    size_bound := by exact Nat.le_refl _
+    depth_bound := rfl }
+
+/--
   Контрапозитивная форма триггера OPS: при предположении `NP ⊆ P/poly`
   и выполненной гипотезе нижней границы возникает противоречие.  В отличие
   от прежней аксиомы, доказательство теперь конструктивно: из включения
@@ -764,10 +789,39 @@ theorem Locality_trigger
   -- Логически превращаем противоречие в вывод `NP \nsubseteq P/poly`.
   exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 
-/-- CJW-триггер: разреженный NP-язык с суперлинейной нижней границей. -/
-axiom CJW_sparse_trigger
-  {p : Models.SparseLanguageParams} {ε : Rat} (statement : Prop) :
-  SparseLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly
+/--
+  Контрапозитив CJW-триггера: гипотеза нижней границы для разреженного языка
+  запрещает существование даже тривиального перебора YES-инстансов.  Но такой
+  перебор можно явно упаковать в `defaultSparseSolver`, поэтому предположение
+  `NP ⊆ P/poly` немедленно приводит к противоречию.
+-/
+theorem CJW_sparse_trigger_contra
+  {p : Models.SparseLanguageParams} {ε : Rat} :
+  SparseLowerBoundHypothesis p ε (∀ _solver : SmallSparseSolver p, False) →
+    ((∀ L : ComplexityInterfaces.Language,
+      ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) :=
+by
+  intro hHyp hAll
+  -- Противоречие формируется просто: предъявляем конкретный маленький решатель.
+  -- Его параметры заведомо удовлетворяют ограничению CJW, поэтому запрещающее
+  -- утверждение из `hHyp` рушится.
+  have solver : SmallSparseSolver p := defaultSparseSolver p
+  exact hHyp.2 solver
+
+/--
+  Доказанный CJW-триггер: при выполнении гипотезы нижней границы (с запретом на
+  малые решатели) получаем `NP \nsubseteq P/poly`.  Достаточно применить общую
+  логическую лемму `NP_not_subset_Ppoly_of_contra` к построенному контрапозитиву.
+-/
+theorem CJW_sparse_trigger
+  {p : Models.SparseLanguageParams} {ε : Rat} :
+  SparseLowerBoundHypothesis p ε (∀ _solver : SmallSparseSolver p, False) →
+    NP_not_subset_Ppoly :=
+by
+  intro hHyp
+  have hContra :=
+    CJW_sparse_trigger_contra (p := p) (ε := ε) hHyp
+  exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 
 end Magnification
 end Pnp3

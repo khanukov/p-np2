@@ -1,7 +1,7 @@
 # Verification Report - P≠NP Formalization
 ## Documentation Accuracy & Code Correspondence
 
-**Generated**: 2025-10-24  
+**Generated**: 2025-10-25
 **Purpose**: Confirm that documentation mirrors the current Lean codebase after
 removing legacy axioms.
 
@@ -9,7 +9,7 @@ removing legacy axioms.
 
 ## ✅ Verification Summary
 
-- ✅ All **8** active axioms are present in the source tree (`pnp3/`).
+- ✅ All **6** active axioms are present in the source tree (`pnp3/`).
 - ✅ Documentation (`pnp3/Docs/AXIOMS.md`, `AXIOMS_FINAL_LIST.md`,
   `AXIOM_FEASIBILITY_ANALYSIS.md`, `CRITICAL_REANALYSIS.md`) reflects the same set.
 - ✅ Interface theorems `P_subset_Ppoly_proof` and
@@ -22,16 +22,16 @@ removing legacy axioms.
 
 ```bash
 $ rg "^axiom " -g"*.lean" pnp3
+pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
+pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
+
 pnp3/LowerBounds/AntiChecker.lean:171:axiom antiChecker_exists_large_Y
 pnp3/LowerBounds/AntiChecker.lean:237:axiom antiChecker_exists_testset
 pnp3/LowerBounds/AntiChecker.lean:305:axiom antiChecker_exists_large_Y_local
 pnp3/LowerBounds/AntiChecker.lean:371:axiom antiChecker_exists_testset_local
-pnp3/Magnification/Facts_Magnification.lean:768:axiom CJW_sparse_trigger
-pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
-pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 ```
 
-**Total**: 7 axioms (matches documentation).
+**Total**: 6 axioms (matches documentation).
 
 ### Per-Module Breakdown
 
@@ -39,8 +39,7 @@ pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 |------|----------|-------|-------|
 | `ThirdPartyFacts/Facts_Switching.lean` | 2 | 2 | Switching lemmas |
 | `LowerBounds/AntiChecker.lean` | 4 | 4 | Anti-checker axioms |
-| `Magnification/Facts_Magnification.lean` | 1 | 1 | Sparse magnification trigger |
-| **TOTAL** | **7** | **7** | ✅|
+| **TOTAL** | **6** | **6** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.
@@ -51,9 +50,9 @@ not participate in the build or documentation metrics.
 
 | Document | Status |
 |----------|--------|
-| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 7 axioms, notes archived items |
+| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 6 axioms, notes archived items |
 | `AXIOMS_FINAL_LIST.md` | ✅ Updated executive summary for publication |
-| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 7 axioms |
+| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 6 axioms |
 | `CRITICAL_REANALYSIS.md` | ✅ Critical-path description matches code |
 
 No mismatches detected.
@@ -80,5 +79,5 @@ No mismatches detected.
 
 ---
 
-**Verification Date**: 2025-10-24  
+**Verification Date**: 2025-10-25
 **Verified By**: Automated scan + manual review

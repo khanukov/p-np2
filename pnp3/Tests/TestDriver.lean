@@ -40,8 +40,10 @@ def main : IO Unit := do
 
   IO.println "Critical Axioms (see AXIOM_ANALYSIS_FINAL.md):"
   IO.println "  - A.1: partial_shrinkage_for_AC0 (Håstad 1986)"
-  IO.println "  - C.7: antiChecker_exists_testset (OPS 2019)"
-  IO.println "  - D.2: OPS_trigger_formulas (OPS 2019)"
+  IO.println "  - A.2: shrinkage_for_localCircuit (Williams / COS 2022)"
+  IO.println "  - C.3: antiChecker_exists_large_Y (OPS 2019)"
+  IO.println "  - C.4: antiChecker_exists_large_Y_local (OPS / CJW 2022)"
+  IO.println "  - C.5: antiChecker_exists_testset_local (OPS / CJW 2022)"
   IO.println ""
 
   IO.println "==================================="

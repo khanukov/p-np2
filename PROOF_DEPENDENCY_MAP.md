@@ -63,14 +63,14 @@ PipelineBridgeKit = pipelineBridgeKit
 formula_hypothesis_from_pipeline
   └─→ LB_Formulas_statement
       └─→ LB_Formulas_core
-          ├─→ antiChecker_exists_testset [AXIOM C.7]
+          ├─→ antiChecker_exists_testset (PROVEN, relies on AXIOM `antiChecker_exists_large_Y`)
           └─→ no_bounded_atlas_on_testset_of_large_family
               └─→ approxOnTestset_subset_card_le (Part B)
 ```
 ```
 ac0_statement_from_pipeline
   └─→ LB_Formulas_core
-      └─→ antiChecker_exists_testset [AXIOM C.7]
+      └─→ antiChecker_exists_testset (PROVEN, relies on AXIOM `antiChecker_exists_large_Y`)
 ```
 ```
 local_statement_from_pipeline
@@ -110,11 +110,11 @@ locality_lift
 2. `shrinkage_for_localCircuit` — Williams (2014), Chen–Oliveira–Santhanam (2022).
 
 ### Part C — Anti-checker lower bounds (3)
-3. `antiChecker_exists_testset`
+3. `antiChecker_exists_large_Y`
 4. `antiChecker_exists_large_Y_local`
 5. `antiChecker_exists_testset_local`
    - Sources: Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021).
-   - `antiChecker_exists_large_Y` now proved from the stronger test-set axiom.
+   - `antiChecker_exists_testset` теперь доказана из п.3.
 
 Интерфейсные леммы `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation` импортированы как теоремы и не считаются аксиомами.
 

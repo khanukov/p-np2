@@ -91,11 +91,12 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - A.1: `partial_shrinkage_for_AC0` 🔴 CRITICAL - Håstad 1986
 - A.2: `shrinkage_for_localCircuit` 🟡 HIGH - Williams 2014
 
-**Part C: Anti-Checker** (3 axioms + 1 proved)
-- C.3: `antiChecker_exists_testset` 🔴 CRITICAL - OPS 2019
+**Part C: Anti-Checker** (3 axioms + 2 proved)
+- C.3: `antiChecker_exists_large_Y` 🔴 CRITICAL - OPS 2019 (base anti-checker)
 - C.4: `antiChecker_exists_large_Y_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
 - C.5: `antiChecker_exists_testset_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
-- Proven: `antiChecker_exists_large_Y` (derived from `antiChecker_exists_testset`)
+- Proven: `antiChecker_exists_testset` (AC⁰ test-set version, derived internally)
+- Proven: `antiChecker_exists_large_Y_from_testset` (helper corollary)
 
 **Part D: Magnification** (all triggers proven)
 - D.1: `OPS_trigger_general` ✅ **PROVEN in Lean** (general trigger now a theorem)

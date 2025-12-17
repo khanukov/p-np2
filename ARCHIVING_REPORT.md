@@ -138,7 +138,7 @@ lake build pnp3/Magnification/FinalResult.lean
 
 **Current active set (live tree)**:
 - Total active axioms: 5 (2 switching + 3 anti-checker; magnification and interfaces proved)
-- Critical path in the live build: `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`, `antiChecker_exists_testset`, `antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local`.
+- Critical path in the live build: `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`, `antiChecker_exists_large_Y`, `antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local`.
 
 ---
 

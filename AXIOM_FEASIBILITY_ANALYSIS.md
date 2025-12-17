@@ -37,8 +37,8 @@
 
 ## Part C — Anti-Checker (3 аксиомы + 1 доказанная теорема)
 
-### (proved) `antiChecker_exists_large_Y` — выводится из C.2
-### C.2 `antiChecker_exists_testset`
+### C.1 `antiChecker_exists_large_Y` (базовый античекер, аксиома)
+### (proved) `antiChecker_exists_testset` — выводится из C.1
 ### C.3 `antiChecker_exists_large_Y_local`
 ### C.4 `antiChecker_exists_testset_local`
 

@@ -5,7 +5,7 @@
 ```
 P_ne_NP_final
   └─ bridge_to_magnification
-      ├─ antiChecker_exists_testset        (AXIOM C.2)
+      ├─ antiChecker_exists_large_Y        (AXIOM C.2)
       ├─ partial_shrinkage_for_AC0         (AXIOM A.1)
       └─ OPS_trigger_formulas              (THEOREM D.2)
 ```
@@ -20,7 +20,7 @@ anti-checker с тестовым множеством (C.2) и магнифик�
 | Категория | Аксиомы | Назначение |
 |-----------|---------|------------|
 | Part A | `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit` | Switching-леммы |
-| Part C | `antiChecker_exists_testset`,<br>`antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local` | Anti-checker игры (глобальный `large_Y` теперь теорема) |
+| Part C | `antiChecker_exists_large_Y`,<br>`antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local` | Anti-checker игры (глобальный `large_Y` базовый факт; версия с тестами доказана) |
 | Part D | — | Магнификационные триггеры доказаны |
 
 Интерфейсные утверждения `P_subset_Ppoly_proof` и

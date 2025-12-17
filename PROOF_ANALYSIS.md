@@ -25,7 +25,7 @@
 
 Текущий инвентарь насчитывает **5** внешних аксиом, все из Parts A/C:
 - Switching/shrinkage (2): `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`.
-- Anti-checker (3): `antiChecker_exists_testset`, `antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local`.
+- Anti-checker (3): `antiChecker_exists_large_Y`, `antiChecker_exists_large_Y_local`, `antiChecker_exists_testset_local`.
 - `antiChecker_exists_large_Y` теперь доказана из усиленной аксиомы с тестовым множеством.
 
 Part D не содержит активных аксиом: `OPS_trigger_general`, `OPS_trigger_formulas`, `Locality_trigger` и `CJW_sparse_trigger` доказаны.

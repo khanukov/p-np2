@@ -61,7 +61,7 @@ theorem P_ne_NP_final : P_ne_NP := by
 
 ## 🔴 ВНЕШНИЕ АКСИОМЫ (External Facts from Literature)
 
-Доказательство зависит от **14 внешних аксиом**, которые представляют well-established результаты из литературы:
+Доказательство зависит от **13 внешних аксиом**, которые представляют well-established результаты из литературы:
 
 ### TIER 1: Абсолютно необходимые (3 аксиомы) 🔴
 
@@ -72,12 +72,12 @@ theorem P_ne_NP_final : P_ne_NP := by
 - **Статус**: Universally accepted fundamental result
 - **Используется**: Создание SAL-сценария из AC⁰ схемы
 
-**2. AXIOM C.7: `antiChecker_exists_testset`**
+**2. AXIOM C.7: `antiChecker_exists_large_Y`**
 - **Источник**: Oliveira, Pich, Santhanam, "Hardness Magnification Near State-Of-The-Art Lower Bounds", CCC 2019
-- **Статья**: Lemma 4.1 (full version), pages 18-20
+- **Статья**: Lemma 4.1 (base anti-checker), pages 18-20
 - **Цитирования**: 100+
 - **Статус**: Recent breakthrough result
-- **Используется**: Anti-checker construction с test set
+- **Используется**: Базовый античекер (без тест-набора) для шага C
 
 **3. THEOREM D.2: `OPS_trigger_formulas`**
 - **Источник**: Oliveira, Pich, Santhanam, CCC 2019
@@ -120,7 +120,7 @@ P_ne_NP_final
       │   │   └─→ formula_hypothesis_from_pipeline
       │   │       └─→ LB_Formulas_statement
       │   │           └─→ LB_Formulas_core
-      │   │               ├─→ antiChecker_exists_testset [AXIOM C.7]
+      │   │               ├─→ antiChecker_exists_testset (proved from AXIOM C.7)
       │   │               └─→ no_bounded_atlas_on_testset_of_large_family
       │   │                   └─→ approxOnTestset_subset_card_le ✅ PROVEN
       │   └─→ OPS_trigger_formulas (theorem ← OPS_trigger_general [AXIOM D.1])

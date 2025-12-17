@@ -71,29 +71,28 @@ restricted by a locality parameter.
 
 ## Part C: Anti-Checker Lower Bounds
 
-### C.1 (proved): `antiChecker_exists_large_Y`
+### C.1: `antiChecker_exists_large_Y`
 
-**Location**: `pnp3/LowerBounds/AntiChecker.lean:171`
+**Location**: `pnp3/LowerBounds/AntiChecker.lean:137`
 
-**Status**: **Theorem.** Derived inside `AntiChecker.lean` from the stronger
-axiom `antiChecker_exists_testset` by forgetting the test set.
+**Status**: **Axiom.** Базовый античекер (без тестового набора) — единственная
+глобальная аксиома шага C.
 
-### C.2: `antiChecker_exists_testset`
+### C.2 (proved): `antiChecker_exists_testset`
 
-**Location**: `pnp3/LowerBounds/AntiChecker.lean:237`
+**Location**: `pnp3/LowerBounds/AntiChecker.lean:158`
 
-**Summary**: Strengthens C.1 by producing a small test set witnessing the
-indistinguishability of functions in `Y`.
+**Status**: **Theorem.** Усиленная версия с тест-набором, выводится из C.1.
 
 ### C.3: `antiChecker_exists_large_Y_local`
 
-**Location**: `pnp3/LowerBounds/AntiChecker.lean:305`
+**Location**: `pnp3/LowerBounds/AntiChecker.lean:309`
 
 **Summary**: Local-circuit analogue of C.1 tailored to the locality budget.
 
 ### C.4: `antiChecker_exists_testset_local`
 
-**Location**: `pnp3/LowerBounds/AntiChecker.lean:371`
+**Location**: `pnp3/LowerBounds/AntiChecker.lean:355`
 
 **Summary**: Local version of the test-set refinement.
 

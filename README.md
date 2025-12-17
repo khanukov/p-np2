@@ -1,5 +1,5 @@
 # P≠NP formalization repository
-> **Status (2025-10-24)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  Earlier constructive pipelines remain archived for provenance but are no longer part of the active build.
+> **Status (2025-12-17)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  Earlier constructive pipelines remain archived for provenance but are no longer part of the active build.
 
 This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for (Gap)MCSP and, eventually, into a full separation.
 

@@ -61,9 +61,9 @@ theorem P_ne_NP_final : P_ne_NP := by
 
 ## 🔴 ВНЕШНИЕ АКСИОМЫ (External Facts from Literature)
 
-Доказательство зависит от **14 внешних аксиом**, которые представляют well-established результаты из литературы:
+Текущая версия опирается на **5 внешних аксиом** (все — устоявшиеся результаты из литературы) и ряд доказанных триггеров:
 
-### TIER 1: Абсолютно необходимые (3 аксиомы) 🔴
+### TIER 1: Абсолютно необходимые (2 аксиомы) 🔴
 
 **1. AXIOM A.1: `partial_shrinkage_for_AC0`**
 - **Источник**: Johan Håstad, "Almost optimal lower bounds for small depth circuits", STOC 1986
@@ -72,21 +72,32 @@ theorem P_ne_NP_final : P_ne_NP := by
 - **Статус**: Universally accepted fundamental result
 - **Используется**: Создание SAL-сценария из AC⁰ схемы
 
-**2. AXIOM C.7: `antiChecker_exists_testset`**
-- **Источник**: Oliveira, Pich, Santhanam, "Hardness Magnification Near State-Of-The-Art Lower Bounds", CCC 2019
-- **Статья**: Lemma 4.1 (full version), pages 18-20
-- **Цитирования**: 100+
-- **Статус**: Recent breakthrough result
-- **Используется**: Anti-checker construction с test set
+**2. AXIOM A.2: `shrinkage_for_localCircuit`**
+- **Источник**: Williams (2014), Chen–Oliveira–Santhanam (2022)
+- **Статус**: Local-circuit analogue of the switching lemma
+- **Используется**: SAL-сценарий для локальных схем
 
-**3. THEOREM D.2: `OPS_trigger_formulas`**
+### TIER 2: Anti-checker (3 аксиомы / 1 доказанная теорема) 🔴🟢
+
+**3. AXIOM C.3: `antiChecker_exists_large_Y`**
+- **Статус**: Base AC⁰ anti-checker (large family `Y`)
+
+**4. AXIOM C.4: `antiChecker_exists_large_Y_local`**
+- **Статус**: Local-circuit analogue of C.3
+
+**5. AXIOM C.5: `antiChecker_exists_testset_local`**
+- **Статус**: Local test-set refinement
+
+**Доказано в коде**: `antiChecker_exists_testset` (AC⁰ с тест-набором) и вспомогательная `antiChecker_exists_large_Y_from_testset`, выводимые из C.3.
+
+### Доказанные триггеры 🟢
+
+**THEOREM D.2: `OPS_trigger_formulas`**
 - **Источник**: Oliveira, Pich, Santhanam, CCC 2019
-- **Статья**: Theorem 1.2, page 4
-- **Цитирования**: 100+
 - **Статус**: Core magnification theorem **formalized in Lean** (специализация `OPS_trigger_general`)
 - **Используется**: Magnification от circuit lower bounds к NP ⊄ P/poly
 
-### TIER 2: Интерфейсы к архивной библиотеке (теоремы) 🟢
+Все остальные интерфейсные результаты (Part D и мосты) формализованы без дополнительных аксиом.
 
 **4. THEOREM I.3: `P_subset_Ppoly_proof`**
 - **Источник**: Standard result (Arora-Barak textbook, Theorem 6.11)

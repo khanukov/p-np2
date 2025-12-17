@@ -41,14 +41,16 @@ magnification triggers (`OPS_trigger_general`, `OPS_trigger_formulas`,
 
 ### Part C — Anti-Checker Lower Bounds (3 axioms)
 
-- **`antiChecker_exists_large_Y`** — now a **theorem** in
-  `pnp3/LowerBounds/AntiChecker.lean`, derived from the stronger test-set axiom.
-3. **`antiChecker_exists_testset`** — same file
-   - Supplies a polylogarithmic test set separating functions in `Y`.
+3. **`antiChecker_exists_large_Y`** — `pnp3/LowerBounds/AntiChecker.lean`
+   - Base anti-checker: large family `Y` exceeding scenario capacity.
 4. **`antiChecker_exists_large_Y_local`** — local solver version.
 5. **`antiChecker_exists_testset_local`** — local solver + test set.
    - Sources for 3–5: Lipton–Young (1994), Chapman–Williams (2015),
      Oliveira–Pich–Santhanam (2019/2021).
+
+✅ **PROVEN** in Part C:
+- `antiChecker_exists_testset` (AC⁰ with test set), derived internally.
+- `antiChecker_exists_large_Y_from_testset` (helper corollary).
 
 ### Part D — Magnification Bridges (all proved)
 

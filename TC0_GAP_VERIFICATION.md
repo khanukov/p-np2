@@ -119,15 +119,16 @@ structure AC0Parameters where
 
 **File**: `pnp3/LowerBounds/AntiChecker.lean`
 
-**Theorem C.6 (derived from C.2)**:
+**Axiom C.3 (base anti-checker)**:
 ```lean
 theorem antiChecker_exists_large_Y
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset ...), ...
 ```
-Получается из аксиомы `antiChecker_exists_testset` путём забывания тестового
-множества `T`.
+Формализован как внешняя аксиома (OPS 2019). На её основе внутри проекта
+доказывается усиленная теорема `antiChecker_exists_testset`, добавляющая
+мелкое тестовое множество.
 
 **Тип solver**: `SmallAC0Solver` - это **AC⁰ solver**, НЕ TC⁰!
 

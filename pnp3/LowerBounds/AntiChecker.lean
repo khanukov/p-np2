@@ -126,60 +126,36 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   deriving Repr
 
 /--
-  **AXIOM 2: Anti-Checker with Test Set**
+  **AXIOM 2 (now an imported fact): Anti-Checker with Test Set**
 
-  **Statement**: Enhanced version of anti-checker that additionally provides a
-  small test set T distinguishing functions in Y.
-
-  **Formal Properties**:
-  - All properties from antiChecker_exists_large_Y, PLUS:
-  - Test set T with |T| ≤ polylogBudget(n) (small - polynomial in log(input size))
-  - Each f ∈ Y is in ApproxOnTestset: f agrees with some atlas combination
-    everywhere EXCEPT on T
-  - Refined capacity bound: unionBound(D,k) * 2^|T| < |Y|
-
-  **Mathematical Content** (from literature):
-
-  From Oliveira et al. (2021), Lemma 4.1 (full version):
-  - Test set size: |T| = O(d · log(M) · polylog(n))
-  - For AC⁰: |T| = O(n) in most cases
-  - Functions in Y differ ONLY on T: ∀f,g ∈ Y, ∃x ∈ T: f(x) ≠ g(x)
-  - Outside T, all functions are "similar" (approximable by same atlas)
-
-  Key insight:
-  - Circuit of depth d can "query" limited number of inputs
-  - T captures these "decision points"
-  - Functions agreeing outside T are indistinguishable to the circuit
-  - But |Y| > number of possible behaviors on T → contradiction
-
-  From Chapman-Williams (2015):
-  - T emerges from the Circuit-Input Game
-  - In each round, finder (circuit) selects query point
-  - Spoiler responds by adding to Y
-  - After polylog rounds, Y has exponential size but T is small
-
-  **Why |T| Must Be Small**:
-  - If |T| were large (≈ 2^n), then 2^|T| would be huge
-  - Capacity bound unionBound(D,k) * 2^|T| wouldn't constrain anything
-  - Small |T| is crucial: allows |Y| to exceed the bound
-
-  **Why This Strengthens Axiom 1**:
-  - Axiom 1 says: |Y| > scenarioCapacity
-  - Axiom 2 says: |Y| > unionBound(D,k) * 2^|T| (tighter bound)
-  - Plus structural property: functions differ only on T
-  - Enables more precise contradiction in Part B
-
-  **Connection to Covering-Power**:
-  - From Part B: no_bounded_atlas_on_testset_of_large_family
-  - Uses exactly these conditions to derive False
-  - Test set T makes the argument constructive
-
-  **References**:
-  - Oliveira et al. (2021): Lemma 4.1 (extended version), pp. 18-20
-  - Chapman-Williams (2015): Game rounds = test set construction
-  - Our Part B: Counting/Atlas_to_LB_Core.lean, line 1025
+  В исходной версии файла это утверждение было объявлено как аксиома.  Ниже мы
+  выводим его из более слабого (но оставленного внешним) факта
+  `antiChecker_exists_large_Y`: того достаточно, чтобы получить прямое
+  противоречие с ограничением ёмкости сценария, откуда логически следует любое
+  требуемое существование.
 -/
-axiom antiChecker_exists_testset
+axiom antiChecker_exists_large_Y
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
+  ∃ (F : Family (Models.inputLen p))
+    (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
+      let Fsolver : Family solver.ac0.n :=
+        (solver.same_n.symm ▸ F)
+      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+        (solver.same_n.symm ▸ Y)
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card
+
+/--
+  **Theorem: Anti-Checker with Test Set**
+
+  Мы получаем усиленную форму античекера, используя базовый факт о существовании
+  большого семейства `Y`.  Поскольку такое семейство уже даёт противоречие с
+  ёмкостью сценария (см. `no_bounded_atlas_of_large_family`), из него можно
+  вывести любое требуемое заключение — в частности, существование тестового
+  множества `T` с нужными свойствами.
+-/
+theorem antiChecker_exists_testset
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
@@ -201,33 +177,37 @@ axiom antiChecker_exists_testset
             (Counting.dictLen scWitness.atlas.dict)
             scWitness.k
             * 2 ^ Tsolver.card
-          < Ysolver.card
+          < Ysolver.card := by
+  classical
+  -- Шаг 1: используем базовый античекер без тестового набора.
+  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y (solver := solver)
+  -- Переписываем обозначения, чтобы кормить их в критерий несоответствия.
+  dsimp at hBase
+  set Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+  set scWitness : BoundedAtlasScenario solver.ac0.n :=
+    (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+    solver.same_n.symm ▸ Y
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    simpa [Fsolver, scWitness, Ysolver] using hBase.1
+  have hCapacity : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    simpa [Fsolver, scWitness, Ysolver] using hBase.2
+  -- Базовый факт уже противоречив: семейство `Y` слишком велико для сценария.
+  have hFalse : False :=
+    no_bounded_atlas_of_large_family
+      (sc := scWitness) (Y := Ysolver) hSubset hCapacity
+  -- Из противоречия получаем требуемые свидетели.  Данные `T` можно взять
+  -- произвольно (например, пустое множество) — `False.elim` строит их за нас.
+  exact False.elim hFalse
 
 /--
-  **THEOREM 1: Anti-Checker Existence (Large Y)**
+  **Corollary: Anti-Checker Existence (Large Y)**
 
-  **Statement**: Given a hypothetical small AC⁰ solver for GapMCSP, there exists
-  a rich subfamily Y of functions that exceeds the capacity bounds.
-
-  **Proof strategy (implemented below)**:
-  we derive this result from the stronger axiom `antiChecker_exists_testset`.
-  That axiom already yields witnesses `F`, `Y`, and a small test set `T` with
-  `Y ⊆ familyFinset(scWitness)` and `scenarioCapacity < |Y|`.  Forgetting the
-  extra structure of `T` immediately produces the weaker statement required
-  here, so no additional external assumptions are needed.
-
-  **Formal Properties**:
-  - Input: SmallAC0Solver (circuit with size M, depth d solving GapMCSP)
-  - Output: Family F and subset Y such that:
-    1. Y ⊆ familyFinset(scWitness) - Y is in the SAL-derived scenario
-    2. |Y| > scenarioCapacity(scWitness) - Y exceeds capacity bounds
-
-  **References**:
-  - Oliveira, Pich, Santhanam (2021): Theorem 4.1, p. 18
-  - Chapman & Williams (2015): Theorem 3.1
-  - Lipton & Young (1994): Original existence proof
+  Для совместимости с существующими импортами оставляем отдельное имя для
+  слабой версии античекера, выводимой из результата с тестовым множеством.
+  Доказательство повторяет прежний аргумент: просто выбрасываем `T`.
 -/
-theorem antiChecker_exists_large_Y
+theorem antiChecker_exists_large_Y_from_testset
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),

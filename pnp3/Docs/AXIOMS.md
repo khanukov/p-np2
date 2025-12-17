@@ -7,12 +7,12 @@ Last updated: 2025-10-24
 
 ## Overview
 
-After the October cleanup the active `pnp3/` tree contains **10 external axioms**.
-They are grouped exactly along the three analytical steps of the pipeline:
+After the latest cleanup the active `pnp3/` tree contains **5 external axioms**.
+They are grouped along the analytical steps of the pipeline:
 
 - **Part A (Switching / Shrinkage)**: 2 axioms
-- **Part C (Anti-Checker lower bounds)**: 4 axioms
-- **Part D (Magnification triggers)**: 4 axioms
+- **Part C (Anti-Checker lower bounds)**: 3 axioms
+- **Part D (Magnification triggers)**: 0 axioms — all triggers are theorems
 - **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` and `P ≠ NP` are now
   imported as proven theorems from the lightweight `Facts/PsubsetPpoly` package.
 
@@ -71,12 +71,12 @@ restricted by a locality parameter.
 
 ## Part C: Anti-Checker Lower Bounds
 
-### C.1: `antiChecker_exists_large_Y`
+### C.1 (proved): `antiChecker_exists_large_Y`
 
 **Location**: `pnp3/LowerBounds/AntiChecker.lean:171`
 
-**Summary**: Guarantees an exponential-size indistinguishable set `Y` against
-small AC⁰ solvers, packaged as a family inside the SAL framework.
+**Status**: **Theorem.** Derived inside `AntiChecker.lean` from the stronger
+axiom `antiChecker_exists_testset` by forgetting the test set.
 
 ### C.2: `antiChecker_exists_testset`
 
@@ -103,6 +103,8 @@ Oliveira–Pich–Santhanam (2019/2021).
 ---
 
 ## Part D: Magnification Bridges
+
+All triggers in this section are **theorems**; no remaining axioms stay active.
 
 ### D.1: `OPS_trigger_general`
 

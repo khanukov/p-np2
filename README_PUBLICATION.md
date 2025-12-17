@@ -83,19 +83,19 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 Axiom Inventory
 
-**Total Axioms**: 6 (all external literature facts)
+**Total Axioms**: 5 (all external literature facts)
 
-### External Axioms from Literature (6)
+### External Axioms from Literature (5)
 
 **Part A: Switching Lemma** (2 axioms)
 - A.1: `partial_shrinkage_for_AC0` 🔴 CRITICAL - Håstad 1986
 - A.2: `shrinkage_for_localCircuit` 🟡 HIGH - Williams 2014
 
-**Part C: Anti-Checker** (4 axioms)
-- C.3: `antiChecker_exists_large_Y` 🔴 CRITICAL - OPS 2019
-- C.4: `antiChecker_exists_testset` 🔴 CRITICAL - OPS 2019
-- C.5: `antiChecker_exists_large_Y_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
-- C.6: `antiChecker_exists_testset_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
+**Part C: Anti-Checker** (3 axioms + 1 proved)
+- C.3: `antiChecker_exists_testset` 🔴 CRITICAL - OPS 2019
+- C.4: `antiChecker_exists_large_Y_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
+- C.5: `antiChecker_exists_testset_local` 🔴 CRITICAL - OPS 2019 / CJW 2022
+- Proven: `antiChecker_exists_large_Y` (derived from `antiChecker_exists_testset`)
 
 **Part D: Magnification** (all triggers proven)
 - D.1: `OPS_trigger_general` ✅ **PROVEN in Lean** (general trigger now a theorem)
@@ -108,7 +108,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
   remaining interface axioms. Targets `NP_not_subset_Ppoly` and `P_ne_NP` stay as goals.
 
-**Minimal Set for P_ne_NP_final**: 6 axioms (switching + anti-checker)
+**Minimal Set for P_ne_NP_final**: 5 axioms (switching + anti-checker)
 
 **Complete Documentation**: See [`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md) for full details.
 

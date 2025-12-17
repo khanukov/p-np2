@@ -126,61 +126,6 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   deriving Repr
 
 /--
-  **AXIOM 1: Anti-Checker Existence (Large Y)**
-
-  **Statement**: Given a hypothetical small AC⁰ solver for GapMCSP, there exists
-  a rich subfamily Y of functions that exceeds the capacity bounds.
-
-  **Formal Properties**:
-  - Input: SmallAC0Solver (circuit with size M, depth d solving GapMCSP)
-  - Output: Family F and subset Y such that:
-    1. Y ⊆ familyFinset(scWitness) - Y is in the SAL-derived scenario
-    2. |Y| > scenarioCapacity(scWitness) - Y exceeds capacity bounds
-
-  **Mathematical Content** (from literature):
-
-  From Oliveira et al. (2021), Lemma 4.1:
-  - For any AC⁰ circuit S of size M and depth d
-  - There exists |Y| ≥ 2^(Ω(n/d)) distinct Boolean functions
-  - All functions in Y:
-    * Have circuit_complexity > s_NO (hard functions)
-    * Are "indistinguishable" by S (same computational path)
-    * Cannot be jointly approximated by SAL-atlas from S
-
-  From Chapman-Williams (2015):
-  - Circuit-Input Game: spoiler constructs Y, finder (circuit) fails to distinguish
-  - |Y| grows exponentially: 2^(n/poly(d))
-  - Key insight: limited depth → limited "query budget" → large indistinguishable set
-
-  **Why This Is an Axiom**:
-  - Proof requires probabilistic method or explicit diagonalization
-  - Construction is non-trivial: ~50 pages in original papers
-  - Well-established result (multiple independent proofs)
-  - Focus of this formalization is the PIPELINE, not reproving known results
-
-  **Formalization Note**:
-  - scWitness = SAL-derived bounded atlas from solver via scenarioFromAC0
-  - Capacity bound from Part B: capacityBound(D, k, 2^n, ε)
-  - Contradiction: |Y| > capacity yet Y ⊆ family
-
-  **References**:
-  - Oliveira, Pich, Santhanam (2021): Theorem 4.1, p. 18
-  - Chapman & Williams (2015): Theorem 3.1
-  - Lipton & Young (1994): Original existence proof
--/
-axiom antiChecker_exists_large_Y
-  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
-  ∃ (F : Family (Models.inputLen p))
-    (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
-      let Fsolver : Family solver.ac0.n :=
-        (solver.same_n.symm ▸ F)
-      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
-        (solver.same_n.symm ▸ Y)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card
-
-/--
   **AXIOM 2: Anti-Checker with Test Set**
 
   **Statement**: Enhanced version of anti-checker that additionally provides a
@@ -257,6 +202,59 @@ axiom antiChecker_exists_testset
             scWitness.k
             * 2 ^ Tsolver.card
           < Ysolver.card
+
+/--
+  **THEOREM 1: Anti-Checker Existence (Large Y)**
+
+  **Statement**: Given a hypothetical small AC⁰ solver for GapMCSP, there exists
+  a rich subfamily Y of functions that exceeds the capacity bounds.
+
+  **Proof strategy (implemented below)**:
+  we derive this result from the stronger axiom `antiChecker_exists_testset`.
+  That axiom already yields witnesses `F`, `Y`, and a small test set `T` with
+  `Y ⊆ familyFinset(scWitness)` and `scenarioCapacity < |Y|`.  Forgetting the
+  extra structure of `T` immediately produces the weaker statement required
+  here, so no additional external assumptions are needed.
+
+  **Formal Properties**:
+  - Input: SmallAC0Solver (circuit with size M, depth d solving GapMCSP)
+  - Output: Family F and subset Y such that:
+    1. Y ⊆ familyFinset(scWitness) - Y is in the SAL-derived scenario
+    2. |Y| > scenarioCapacity(scWitness) - Y exceeds capacity bounds
+
+  **References**:
+  - Oliveira, Pich, Santhanam (2021): Theorem 4.1, p. 18
+  - Chapman & Williams (2015): Theorem 3.1
+  - Lipton & Young (1994): Original existence proof
+-/
+theorem antiChecker_exists_large_Y
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
+  ∃ (F : Family (Models.inputLen p))
+    (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
+      let Fsolver : Family solver.ac0.n :=
+        (solver.same_n.symm ▸ F)
+      let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+      let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+        (solver.same_n.symm ▸ Y)
+      Ysolver ⊆ familyFinset (sc := scWitness) ∧
+        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  classical
+  obtain ⟨F, Y, T, h⟩ := antiChecker_exists_testset (solver := solver)
+  refine ⟨F, Y, ?_⟩
+  -- Разворачиваем `let`-связки из усиленного античекера, чтобы извлечь
+  -- первые два утверждения (подмножество и несоответствие ёмкости).
+  dsimp at h
+  set Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+  set scWitness : BoundedAtlasScenario solver.ac0.n :=
+    (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+    solver.same_n.symm ▸ Y
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    simpa [Fsolver, scWitness, Ysolver] using h.1
+  have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    simpa [Fsolver, scWitness, Ysolver] using h.2.1
+  -- Пересобираем требуемое утверждение в исходном формате с `let`-обозначениями.
+  simpa [Fsolver, scWitness, Ysolver] using And.intro hSubset hLarge
 
 /--
   **AXIOM 3: Anti-Checker for Local Circuits (Large Y)**

@@ -103,18 +103,18 @@ locality_lift
 
 ## 🔴 АКТИВНЫЕ АКСИОМЫ (минимальный набор)
 
-Всего: **6** (только Parts A/C; Part D целиком доказан).
+Всего: **5** (только Parts A/C; Part D целиком доказан).
 
 ### Part A — Switching/Shrinkage (2)
 1. `partial_shrinkage_for_AC0` — Håstad (1986), Servedio–Tan (2019).
 2. `shrinkage_for_localCircuit` — Williams (2014), Chen–Oliveira–Santhanam (2022).
 
-### Part C — Anti-checker lower bounds (4)
-3. `antiChecker_exists_large_Y`
-4. `antiChecker_exists_testset`
-5. `antiChecker_exists_large_Y_local`
-6. `antiChecker_exists_testset_local`
+### Part C — Anti-checker lower bounds (3)
+3. `antiChecker_exists_testset`
+4. `antiChecker_exists_large_Y_local`
+5. `antiChecker_exists_testset_local`
    - Sources: Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021).
+   - `antiChecker_exists_large_Y` now proved from the stronger test-set axiom.
 
 Интерфейсные леммы `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation` импортированы как теоремы и не считаются аксиомами.
 
@@ -124,4 +124,3 @@ locality_lift
 
 - Все триггеры (`OPS_trigger_general`, `OPS_trigger_formulas`, `Locality_trigger`, `CJW_sparse_trigger`) доказаны в `pnp3/Magnification/Facts_Magnification.lean`.
 - Мосты (`Bridge_to_Magnification.lean`) используют только доказанные триггеры и аксиомы Parts A/C; в блоке D нет незакрытых допущений.
-

@@ -591,34 +591,5 @@ lemma capacityBound_le_pow_mul
         ≤ (k.succ) * (Nat.max 1 D) ^ k * 2 ^ N
     exact hchain
 
-/--
-  Полная монотонность `capacityBound` по всем параметрам.  Если словарь, бюджет
-  подкубов или допустимая ошибка увеличиваются, то итоговая ёмкость не убывает.
-  Этот факт удобно применять в части C, когда реальные параметры SAL заменяются
-  грубыми оценками сверху.
--/
-lemma capacityBound_mono
-    {D₁ D₂ k₁ k₂ N : Nat} {ε₁ ε₂ : Rat}
-    (hD : D₁ ≤ D₂) (hk : k₁ ≤ k₂)
-    (hε₁0 : (0 : Rat) ≤ ε₁) (hε₂0 : (0 : Rat) ≤ ε₂)
-    (hε : ε₁ ≤ ε₂) (hε₂1 : ε₂ ≤ (1 : Rat) / 2) :
-    capacityBound D₁ k₁ N ε₁ hε₁0 (le_trans hε hε₂1)
-      ≤ capacityBound D₂ k₂ N ε₂ hε₂0 hε₂1 :=
-  by
-    classical
-    -- Монотонность словаря и бюджета подкубов.
-    have hUnionD := unionBound_mono_left (k := k₂) hD
-    have hUnionK := unionBound_mono_right (D := D₁) hk
-    have hUnion : unionBound D₁ k₁ ≤ unionBound D₂ k₂ :=
-      le_trans hUnionK hUnionD
-    -- Монотонность по ошибке в оценке хаммингового шара.
-    have hBall :=
-      hammingBallBound_mono (N := N)
-        (ε := ε₁) (ε' := ε₂)
-        hε₁0 hε₂0 (le_trans hε hε₂1) hε₂1 hε
-    -- Конечный вывод: произведение двух неотрицательных величин монотонно.
-    have hmul := Nat.mul_le_mul hUnion hBall
-    simpa [capacityBound] using hmul
-
 end Counting
 end Pnp3

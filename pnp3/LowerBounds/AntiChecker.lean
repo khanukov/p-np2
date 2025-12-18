@@ -1,4 +1,5 @@
 import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Nat.Log
 import Counting.Atlas_to_LB_Core
 import Core.SAL_Core
 import LowerBounds.LB_Formulas
@@ -106,6 +107,94 @@ open Models
 open ThirdPartyFacts
 
 /--
+  Количественное условие «малости» для параметров AC⁰: глубина частичного
+  дерева решений, оцениваемая величиной `(log₂ (M + 2))^(d + 1)`, не должна
+  превосходить длину входа `n`.  В дальнейшем этот предикат будет использоваться
+  для грубых оценок ёмкости `scenarioFromAC0` и связывает параметры схемы с
+  размером таблицы истинности.
+-/
+def AC0SmallEnough (ac0 : ThirdPartyFacts.AC0Parameters) : Prop :=
+  Nat.pow (Nat.log2 (ac0.M + 2)) (ac0.d + 1) ≤ ac0.n
+
+/-- Мощность полного множества булевых функций от `n` переменных: `2^(2^n)`. -/
+lemma card_univ_bool_functions (n : Nat) :
+    (Finset.univ : Finset (Core.BitVec n → Bool)).card = 2 ^ (2 ^ n) :=
+  by
+    classical
+    have hfun : Fintype.card (Core.BitVec n → Bool) = 2 ^ (2 ^ n) := by
+      -- Используем формулу `card (α → β) = (card β)^(card α)`.
+      have hbitvec : Fintype.card (Core.BitVec n) = 2 ^ n := by
+        simp [Core.BitVec, Fintype.card_fun, Fintype.card_fin]
+      simp [Fintype.card_fun, hbitvec, Core.BitVec]
+    simpa [hfun] using
+      (Finset.card_univ :
+        (Finset.univ : Finset (Core.BitVec n → Bool)).card =
+          Fintype.card (Core.BitVec n → Bool))
+
+/-- Полное семейство всех булевых функций от `n` переменных, записанное как
+список.  Используем `Finset.univ.toList`, чтобы избежать дубликатов и сразу
+получить совместимость с `Family` (которое реализовано как список функций). -/
+noncomputable def allFunctionsFamily (n : Nat) : Core.Family n :=
+  (Finset.univ : Finset (Core.BitVec n → Bool)).toList
+
+@[simp] lemma allFunctionsFamily_toFinset (n : Nat) :
+    (allFunctionsFamily n).toFinset =
+      (Finset.univ : Finset (Core.BitVec n → Bool)) :=
+  by
+    classical
+    ext f
+    constructor
+    · intro hf
+      have hf_list : f ∈ (Finset.univ : Finset (Core.BitVec n → Bool)).toList := by
+        simpa [allFunctionsFamily] using hf
+      have hf_univ : f ∈ (Finset.univ : Finset (Core.BitVec n → Bool)) := by
+        simpa [Finset.mem_toList] using hf_list
+      simpa using hf_univ
+    · intro hf
+      have hf_univ : f ∈ (Finset.univ : Finset (Core.BitVec n → Bool)) := by
+        simpa using hf
+      have hf_list : f ∈ (Finset.univ : Finset (Core.BitVec n → Bool)).toList := by
+        simpa [Finset.mem_toList] using hf_univ
+      simpa [allFunctionsFamily] using hf_list
+
+/--
+  Если запустить конвейер SAL (`scenarioFromAC0`) на полном семействе всех
+  булевых функций, то поле `family` ограниченного сценария совпадает с `univ`.
+  Следовательно, и `familyFinset` вычисляется в точности как `Finset.univ`.
+-/
+lemma familyFinset_scenarioFromAC0_allFunctions
+    (params : ThirdPartyFacts.AC0Parameters) :
+    familyFinset
+        (sc := (scenarioFromAC0 (params := params)
+          (allFunctionsFamily params.n)).2)
+      = (Finset.univ : Finset (Core.BitVec params.n → Bool)) :=
+  by
+    classical
+    have hfamily := scenarioFromAC0_family_eq
+      (params := params) (F := allFunctionsFamily params.n)
+    have hfamily' :
+        (scenarioFromAC0 (params := params) (allFunctionsFamily params.n)).2.family =
+          allFunctionsFamily params.n := by
+      simpa using hfamily
+    simpa [familyFinset, hfamily', allFunctionsFamily_toFinset]
+
+/--
+  Кардинальность семейства, полученного из `scenarioFromAC0` на полном списке
+  функций, совпадает с числом всех булевых функций `2^(2^n)`.
+-/
+lemma familyFinset_card_scenarioFromAC0_allFunctions
+    (params : ThirdPartyFacts.AC0Parameters) :
+    (familyFinset
+        (sc := (scenarioFromAC0 (params := params)
+          (allFunctionsFamily params.n)).2)).card =
+      2 ^ (2 ^ params.n) :=
+  by
+    classical
+    have hfin := familyFinset_scenarioFromAC0_allFunctions
+      (params := params)
+    simpa [hfin] using card_univ_bool_functions (n := params.n)
+
+/--
   Гипотеза «малый AC⁰-решатель» для GapMCSP на входной длине `N = 2^p.n`.
   Мы фиксируем набор параметров AC⁰ и требуем, чтобы число входных переменных
   совпадало с длиной таблицы истинности рассматриваемой функции.
@@ -113,6 +202,7 @@ open ThirdPartyFacts
 structure SmallAC0Solver (p : Models.GapMCSPParams) where
   ac0 : ThirdPartyFacts.AC0Parameters
   same_n : ac0.n = Models.inputLen p
+  small : AC0SmallEnough ac0
   deriving Repr
 
 /--

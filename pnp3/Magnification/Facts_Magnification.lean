@@ -108,7 +108,20 @@ def defaultAC0Solver (p : GapMCSPParams) : SmallAC0Solver p :=
   { ac0 := { n := Models.inputLen p,
               M := 1,
               d := 1 }
-    same_n := rfl }
+    same_n := rfl
+    small := by
+      -- Для параметров `M = 1`, `d = 1` имеем `log₂(3)^2 = 1`, поэтому
+      -- неравенство сводится к `1 ≤ inputLen p`, что верно для любой длины.
+      have hlog : Nat.log2 (1 + 2) = 1 := by decide
+      have hpow : Nat.pow (Nat.log2 (1 + 2)) (1 + 1) = 1 := by
+        simpa [hlog]
+      -- `inputLen p = 2^(p.n)` положительно, значит ≥ 1.
+      have hpos : 0 < Models.inputLen p := by
+        -- Положительность `2^n` для любого `n`.
+        have : (0 : Nat) < 2 := by decide
+        simpa [Models.inputLen] using Nat.pow_pos this (Models.GapMCSPParams.n p)
+      have hge_one : 1 ≤ Models.inputLen p := Nat.succ_le_of_lt hpos
+      simpa [hpow] using hge_one }
 
 /-!
   ### Базовый язык GapMCSP как обычный язык `Language`

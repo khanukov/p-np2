@@ -569,6 +569,35 @@ noncomputable def capacityBound
   (h0 : (0 : Rat) ≤ ε) (h1 : ε ≤ (1 : Rat) / 2) : Nat :=
   unionBound D k * hammingBallBound N ε h0 h1
 
+/-- Монотонность ёмкости: увеличение словаря `D`, бюджета листьев `k` и
+допустимой ошибки `ε` не уменьшает верхнюю границу `capacityBound`.  Лемма
+используется в части C, чтобы заменять конкретные параметры SAL грубыми
+оценками сверху. -/
+lemma capacityBound_mono
+    {D₁ D₂ k₁ k₂ N : Nat} {ε₁ ε₂ : Rat}
+    (hD : D₁ ≤ D₂) (hk : k₁ ≤ k₂)
+    (hε₁0 : (0 : Rat) ≤ ε₁) (hε₂0 : (0 : Rat) ≤ ε₂)
+    (hε : ε₁ ≤ ε₂) (hε₂1 : ε₂ ≤ (1 : Rat) / 2) :
+    capacityBound D₁ k₁ N ε₁ hε₁0 (le_trans hε hε₂1) ≤
+      capacityBound D₂ k₂ N ε₂ hε₂0 hε₂1 :=
+  by
+    classical
+    -- Монотонность словаря и бюджета листьев для `unionBound`.
+    have hUnion :
+        unionBound D₁ k₁ ≤ unionBound D₂ k₂ :=
+      le_trans
+        (unionBound_mono_left (k := k₁) hD)
+        (unionBound_mono_right (D := D₂) hk)
+    -- Монотонность ошибки для оценки хаммингового шара.
+    have hBall :
+        hammingBallBound N ε₁ hε₁0 (le_trans hε hε₂1) ≤
+          hammingBallBound N ε₂ hε₂0 hε₂1 :=
+      hammingBallBound_mono
+        (N := N)
+        (hε0 := hε₁0) (hε'0 := hε₂0)
+        (hε1 := le_trans hε hε₂1) (hε'1 := hε₂1) hε
+    -- Итоговое произведение тоже не убывает.
+    exact Nat.mul_le_mul hUnion hBall
 /--
   Комбинируя оценку `unionBound_le_pow_mul` с неравенством
   `hammingBallBound ≤ 2^N`, получаем удобную верхнюю границу для всей ёмкости.

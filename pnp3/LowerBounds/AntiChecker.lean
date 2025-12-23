@@ -1,5 +1,6 @@
 import Mathlib.Data.Finset.Basic
 import Counting.Atlas_to_LB_Core
+import Counting.Count_EasyFuncs
 import Core.SAL_Core
 import LowerBounds.LB_Formulas
 import Models.Model_GapMCSP
@@ -136,7 +137,7 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   противоречие с ограничением ёмкости сценария, откуда логически следует любое
   требуемое существование.
 -/
-axiom antiChecker_exists_large_Y
+theorem antiChecker_exists_large_Y
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
@@ -146,7 +147,72 @@ axiom antiChecker_exists_large_Y
       let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card
+        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  classical
+  -- Берём полное семейство всех функций на `n` переменных.
+  let F : Family (Models.inputLen p) :=
+    Counting.allFunctionsFamily (Models.inputLen p)
+  let Y : Finset (Core.BitVec (Models.inputLen p) → Bool) :=
+    Counting.allFunctionsFinset (Models.inputLen p)
+  refine ⟨F, Y, ?_⟩
+  -- Переносим данные в тип `solver.ac0.n`.
+  dsimp
+  set Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+  set scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+    solver.same_n.symm ▸ Y
+  -- Семейство в сценарии совпадает с полным множеством функций.
+  have hfamily :
+      familyFinset (sc := scWitness) = Ysolver := by
+    -- В сценарии `scenarioFromAC0` семейство равно `Fsolver`.
+    have hsc := scenarioFromAC0_family_eq (params := solver.ac0) (F := Fsolver)
+    -- Переводим в Finset и разворачиваем `allFunctionsFamily`.
+    simp [Fsolver, Ysolver, F, Y, hsc, Counting.allFunctionsFamily_toFinset]
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    -- Подмножество по равенству множеств.
+    simpa [hfamily] using (Finset.Subset.refl Ysolver)
+  -- Строгая оценка ёмкости: используем внешний интерфейс из Counting.
+  have hCapacity : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    -- Раскрываем `scenarioCapacity` и переписываем мощность `Y`.
+    have hBounds := scenarioFromAC0_completeBounds
+      (params := solver.ac0) (F := Fsolver)
+    -- Из `AC0SmallEnough` получаем `t ≤ n`, значит `2^t ≤ 2^n`.
+    have hsmall := solver.small
+    -- Вводим удобные обозначения, чтобы упростить арифметику.
+    let bound :=
+      Nat.pow 2 (Nat.pow (Nat.log2 (solver.ac0.M + 2)) (solver.ac0.d + 1))
+    -- `bound ≤ 2^n` следует из `AC0SmallEnough`.
+    have hbound_le :
+        bound ≤ Nat.pow 2 solver.ac0.n := by
+      -- Используем монотонность степени по показателю.
+      have hpow :
+          Nat.pow (Nat.log2 (solver.ac0.M + 2)) (solver.ac0.d + 1)
+            ≤ solver.ac0.n := hsmall
+      exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hpow
+    -- Распаковываем необходимые поля из полного описания сценария.
+    dsimp [bound] at hBounds
+    rcases hBounds with ⟨hk, hrest⟩
+    rcases hrest with ⟨hdict, hrest⟩
+    rcases hrest with ⟨hε0, hrest⟩
+    rcases hrest with ⟨hε1, hεInv⟩
+    -- Используем внешнюю строгую оценку для `capacityBound`.
+    have hCap :=
+      Counting.capacityBound_lt_allBooleanFunctions
+        (n := solver.ac0.n)
+        (D := Counting.dictLen scWitness.atlas.dict)
+        (k := scWitness.k)
+        (ε := scWitness.atlas.epsilon)
+        (hε0 := hε0)
+        (hε1 := hε1)
+        (hD := hdict.trans hbound_le)
+        (hk := hk.trans hbound_le)
+        (hε := hεInv)
+    -- Переписываем цель через `scenarioCapacity` и `allFunctionsFinset`.
+    -- Обе стороны живут в пространстве функций `BitVec n → Bool`.
+    simpa
+      [scenarioCapacity, Ysolver, Y, Counting.card_allFunctionsFinset,
+        Counting.allBooleanFunctionsBound] using hCap
+  exact And.intro hSubset hCapacity
 
 /--
   Базовое противоречие: аксиома `antiChecker_exists_large_Y` немедленно уничтожает

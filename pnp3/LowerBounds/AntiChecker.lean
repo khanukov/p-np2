@@ -113,6 +113,8 @@ open ThirdPartyFacts
 structure SmallAC0Solver (p : Models.GapMCSPParams) where
   ac0 : ThirdPartyFacts.AC0Parameters
   same_n : ac0.n = Models.inputLen p
+  /-- Quantitative smallness assumption on the AC⁰ parameters. -/
+  small : ThirdPartyFacts.AC0SmallEnough ac0
   deriving Repr
 
 /--
@@ -145,6 +147,50 @@ axiom antiChecker_exists_large_Y
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
         scenarioCapacity (sc := scWitness) < Ysolver.card
+
+/--
+  Базовое противоречие: аксиома `antiChecker_exists_large_Y` немедленно уничтожает
+  гипотезу «существует solver».  Лемма фиксирует сам факт противоречия, чтобы
+  позже заменить аксиому на явное доказательство `False`.
+-/
+theorem antiChecker_largeY_implies_false
+    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
+  classical
+  obtain ⟨F, Y, h⟩ := antiChecker_exists_large_Y (solver := solver)
+  dsimp at h
+  -- Приводим семейства к нужной длине входа через равенство из solver.
+  let Fsolver : Family solver.ac0.n := solver.same_n.symm ▸ F
+  let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+    solver.same_n.symm ▸ Y
+  -- Сценарий SAL, соответствующий solver-у.
+  let scWitness : BoundedAtlasScenario solver.ac0.n :=
+    (scenarioFromAC0 (params := solver.ac0) (F := Fsolver)).2
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    simpa [Fsolver, Ysolver, scWitness] using h.1
+  have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    simpa [Fsolver, Ysolver, scWitness] using h.2
+  -- Прямое противоречие с Covering-Power: семейство слишком велико.
+  exact no_bounded_atlas_of_large_family
+    (sc := scWitness) (Y := Ysolver) hSubset hLarge
+
+/--
+  Обратное направление: любое противоречие даёт нужных свидетелей.  Это поможет,
+  когда `False` будет доказан конструктивно и аксиома станет ненужной.
+-/
+theorem antiChecker_exists_large_Y_of_false
+    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) (hFalse : False) :
+    ∃ (F : Family (Models.inputLen p))
+      (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
+        let Fsolver : Family solver.ac0.n := (solver.same_n.symm ▸ F)
+        let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+        let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+          (solver.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card :=
+  by
+    -- Из противоречия можно вывести любое утверждение; дополнительно устраняем
+    -- зависимость от `same_n`, чтобы избежать сложных равенств размеров.
+    exact False.elim hFalse
 
 /--
   **Theorem: Anti-Checker with Test Set**

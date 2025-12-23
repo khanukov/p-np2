@@ -569,6 +569,26 @@ noncomputable def capacityBound
   (h0 : (0 : Rat) ≤ ε) (h1 : ε ≤ (1 : Rat) / 2) : Nat :=
   unionBound D k * hammingBallBound N ε h0 h1
 
+/-- Монотонность `capacityBound` по словарю, бюджету и допустимой ошибке. -/
+lemma capacityBound_mono
+    {D D' k k' N : Nat} {ε ε' : Rat}
+    (h0 : (0 : Rat) ≤ ε) (h1 : ε ≤ (1 : Rat) / 2)
+    (h0' : (0 : Rat) ≤ ε') (h1' : ε' ≤ (1 : Rat) / 2)
+    (hD : D ≤ D') (hk : k ≤ k') (hε : ε ≤ ε') :
+    capacityBound D k N ε h0 h1 ≤
+      capacityBound D' k' N ε' h0' h1' :=
+  by
+    classical
+    have hUnionD : unionBound D k ≤ unionBound D' k :=
+      unionBound_mono_left (k := k) hD
+    have hUnion : unionBound D k ≤ unionBound D' k' :=
+      le_trans hUnionD (unionBound_mono_right (D := D') hk)
+    have hBall :
+        hammingBallBound N ε h0 h1 ≤
+          hammingBallBound N ε' h0' h1' :=
+      hammingBallBound_mono (N := N) h0 h0' h1 h1' hε
+    exact Nat.mul_le_mul hUnion hBall
+
 /--
   Комбинируя оценку `unionBound_le_pow_mul` с неравенством
   `hammingBallBound ≤ 2^N`, получаем удобную верхнюю границу для всей ёмкости.

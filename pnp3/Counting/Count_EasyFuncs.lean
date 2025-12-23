@@ -2,6 +2,7 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Nat.Basic
 import Core.BooleanBasics
+import Core.SAL_Core
 
 /-!
   pnp3/Counting/Count_EasyFuncs.lean
@@ -46,17 +47,52 @@ lemma card_bitvec (n : Nat) :
     _ = 2 ^ n := by
           simp [Fintype.card_fin]
 
-  lemma card_boolean_functions (n : Nat) :
-      Fintype.card (Core.BitVec n → Bool) = allBooleanFunctionsBound n := by
+lemma card_boolean_functions (n : Nat) :
+    Fintype.card (Core.BitVec n → Bool) = allBooleanFunctionsBound n := by
+  classical
+  -- Число всех функций `BitVec n → Bool` равно `2^{|BitVec n|}`.
+  have hcard := Fintype.card_fun (α := Core.BitVec n) (β := Bool)
+  calc
+    Fintype.card (Core.BitVec n → Bool)
+        = (Fintype.card Bool) ^ Fintype.card (Core.BitVec n) := hcard
+    _ = 2 ^ Fintype.card (Core.BitVec n) := by simp
+    _ = allBooleanFunctionsBound n := by
+          simp [allBooleanFunctionsBound]
+
+/--
+  Полное множество всех булевых функций на `n` переменных, представленных
+  как конечное множество.  Это удобный источник семейства для построения
+  «большого» сценария, приводящего к противоречию с ограниченной ёмкостью.
+-/
+@[simp] def allFunctionsFinset (n : Nat) :
+    Finset (Core.BitVec n → Bool) := Finset.univ
+
+@[simp] lemma card_allFunctionsFinset (n : Nat) :
+    (allFunctionsFinset n).card = 2 ^ (2 ^ n) :=
+  by
     classical
-    -- Число всех функций `BitVec n → Bool` равно `2^{|BitVec n|}`.
-    have hcard := Fintype.card_fun (α := Core.BitVec n) (β := Bool)
     calc
-      Fintype.card (Core.BitVec n → Bool)
-          = (Fintype.card Bool) ^ Fintype.card (Core.BitVec n) := hcard
-      _ = 2 ^ Fintype.card (Core.BitVec n) := by simp
-      _ = allBooleanFunctionsBound n := by
-            simp [allBooleanFunctionsBound]
+      (allFunctionsFinset n).card
+          = Fintype.card (Core.BitVec n → Bool) := by
+              simp [allFunctionsFinset]
+      _ = allBooleanFunctionsBound n := card_boolean_functions n
+      _ = 2 ^ (2 ^ n) := by simp [allBooleanFunctionsBound]
+
+/--
+  Полное семейство всех булевых функций на `n` переменных в формате `Family`
+  (список).  Реализовано через список элементов `Finset.univ`, так что порядок
+  не важен, а данные удобны для последующей работы с `familyFinset`.
+-/
+noncomputable def allFunctionsFamily (n : Nat) : Core.Family n :=
+  (allFunctionsFinset n).toList
+
+@[simp] lemma allFunctionsFamily_toFinset (n : Nat) :
+    (allFunctionsFamily n).toFinset = allFunctionsFinset n :=
+  by
+    classical
+    -- `toList` перечисляет элементы `univ` без повторов, поэтому восстановление
+    -- через `toFinset` сразу возвращает исходный `Finset`.
+    simp [allFunctionsFamily, allFunctionsFinset]
 
 /--
   Любое конечное семейство булевых функций на `n` переменных не может быть

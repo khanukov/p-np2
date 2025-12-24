@@ -61,7 +61,7 @@ theorem P_ne_NP_final : P_ne_NP := by
 
 ## 🔴 ВНЕШНИЕ АКСИОМЫ (External Facts from Literature)
 
-Текущая версия опирается на **5 внешних аксиом** (все — устоявшиеся результаты из литературы) и ряд доказанных триггеров:
+Текущая версия опирается на **3 внешние аксиомы** (все — устоявшиеся результаты из литературы) и ряд доказанных триггеров:
 
 ### TIER 1: Абсолютно необходимые (2 аксиомы) 🔴
 
@@ -77,19 +77,17 @@ theorem P_ne_NP_final : P_ne_NP := by
 - **Статус**: Local-circuit analogue of the switching lemma
 - **Используется**: SAL-сценарий для локальных схем
 
-### TIER 2: Anti-checker (2 аксиомы / 3 доказанные теоремы) 🔴🟢
+### TIER 2: Anti-checker (1 аксиома / 4 доказанные теоремы) 🔴🟢
 
-**3. AXIOM C.3: `antiChecker_exists_large_Y`**
-- **Статус**: Base AC⁰ anti-checker (large family `Y`)
-
-**4. AXIOM C.4: `antiChecker_exists_large_Y_local`**
-- **Статус**: Local-circuit analogue of C.3
+**3. AXIOM C.3: `antiChecker_exists_large_Y_local`**
+- **Статус**: Local-circuit analogue of the AC⁰ anti-checker
 
 **Доказано в коде**:
+- `antiChecker_exists_large_Y` (AC⁰ large-Y), выводится из `noSmallAC0Solver`.
 - `antiChecker_exists_testset` (AC⁰ с тест-набором) и вспомогательная
-  `antiChecker_exists_large_Y_from_testset`, выводимые из C.3.
+  `antiChecker_exists_large_Y_from_testset`, выводимые из AC⁰ части.
 - `antiChecker_exists_testset_local` (локальная версия с тест-набором) и
-  `antiChecker_exists_large_Y_local_from_testset`, выводимые из C.4.
+  `antiChecker_exists_large_Y_local_from_testset`, выводимые из C.3.
 
 ### Доказанные триггеры 🟢
 

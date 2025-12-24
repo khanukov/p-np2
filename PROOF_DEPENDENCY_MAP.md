@@ -63,14 +63,14 @@ PipelineBridgeKit = pipelineBridgeKit
 formula_hypothesis_from_pipeline
   └─→ LB_Formulas_statement
       └─→ LB_Formulas_core
-          ├─→ antiChecker_exists_testset (PROVEN, relies on AXIOM `antiChecker_exists_large_Y`)
+          ├─→ antiChecker_exists_testset (PROVEN, relies on internal `noSmallAC0Solver`)
           └─→ no_bounded_atlas_on_testset_of_large_family
               └─→ approxOnTestset_subset_card_le (Part B)
 ```
 ```
 ac0_statement_from_pipeline
   └─→ LB_Formulas_core
-      └─→ antiChecker_exists_testset (PROVEN, relies on AXIOM `antiChecker_exists_large_Y`)
+      └─→ antiChecker_exists_testset (PROVEN, relies on internal `noSmallAC0Solver`)
 ```
 ```
 local_statement_from_pipeline
@@ -103,17 +103,17 @@ locality_lift
 
 ## 🔴 АКТИВНЫЕ АКСИОМЫ (минимальный набор)
 
-Всего: **4** (только Parts A/C; Part D целиком доказан).
+Всего: **3** (только Parts A/C; Part D целиком доказан).
 
 ### Part A — Switching/Shrinkage (2)
 1. `partial_shrinkage_for_AC0` — Håstad (1986), Servedio–Tan (2019).
 2. `shrinkage_for_localCircuit` — Williams (2014), Chen–Oliveira–Santhanam (2022).
 
-### Part C — Anti-checker lower bounds (2)
-3. `antiChecker_exists_large_Y`
-4. `antiChecker_exists_large_Y_local`
+### Part C — Anti-checker lower bounds (1)
+3. `antiChecker_exists_large_Y_local`
    - Sources: Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021).
-   - `antiChecker_exists_testset` и `antiChecker_exists_testset_local` теперь доказаны из базовых форм.
+   - `antiChecker_exists_large_Y`, `antiChecker_exists_testset` и
+     `antiChecker_exists_testset_local` теперь доказаны из базовых форм.
 
 Интерфейсные леммы `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation` импортированы как теоремы и не считаются аксиомами.
 

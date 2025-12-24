@@ -1,12 +1,13 @@
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Int.Basic
-import Mathlib.Algebra.Order.Floor.Defs
 import Mathlib.Algebra.Order.Floor.Ring
+import Mathlib.Algebra.Order.Floor.Defs
 import Mathlib.Data.Rat.Floor
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Data.Rat.Init
+import Mathlib.Tactic
 
 /-!
   pnp3/Counting/BinomialBounds.lean
@@ -115,6 +116,53 @@ lemma choose_le_pow_max (D i : Nat) :
     have hmono : D ≤ Nat.max 1 D := by
       exact le_max_of_le_right (le_rfl)
     exact (Nat.choose_le_pow D i).trans (Nat.pow_le_pow_left hmono i)
+
+/-!
+  ### Дополнительные грубые оценки
+
+  Для устранения оставшегося аксиоматического блока в античекере нам нужны
+  ещё более жёсткие (но элементарные) оценки.  Мы сознательно избегаем
+  энтропии и вероятностных аргументов: достаточно грубой комбинаторики
+  «число подмножеств ≤ число k-кортежей».
+
+  Эти оценки используются только в пункте `capacityBound < 2^N`, поэтому их
+  можно считать «техническими».  Важно, что все они доказуемы внутри Lean
+  без внешних аксиом.
+-/
+
+/-! #### Сумма биномиальных коэффициентов ≤ (t+1)·N^t -/
+
+/--
+  Грубая оценка биномиальной суммы через максимальный член.
+
+  Если `N ≥ 1`, то каждая компонента `C(N, i)` ограничена сверху `N^i`, а при
+  `i ≤ t` получаем `N^i ≤ N^t`.  Отсюда сумма по `i = 0..t` не превосходит
+  `(t+1) · N^t`.
+-/
+lemma sum_choose_le_mul_pow
+    (N t : Nat) (hN : 1 ≤ N) :
+    (∑ i ∈ Finset.range (t.succ), Nat.choose N i) ≤ (t.succ) * N ^ t := by
+  classical
+  -- Для каждого `i ≤ t` применяем `choose ≤ N^i ≤ N^t`.
+  have hterm :
+      ∀ i ∈ Finset.range (t.succ), Nat.choose N i ≤ N ^ t := by
+    intro i hi
+    have hi_le : i ≤ t := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+    have hchoose : Nat.choose N i ≤ N ^ i := Nat.choose_le_pow N i
+    have hmono : N ^ i ≤ N ^ t := by
+      exact Nat.pow_le_pow_right hN hi_le
+    exact hchoose.trans hmono
+  have hsum :=
+    Finset.sum_le_sum fun i hi => hterm i hi
+  have hsum_const :
+      (∑ _i ∈ Finset.range (t.succ), N ^ t) = t.succ * N ^ t := by
+    -- Сумма констант по диапазону равна `(t+1) * const`.
+    simp [Finset.card_range]
+  calc
+    (∑ i ∈ Finset.range (t.succ), Nat.choose N i)
+        ≤ (∑ _i ∈ Finset.range (t.succ), N ^ t) := hsum
+    _ = t.succ * N ^ t := hsum_const
+
 
 /--
   Удобное обозначение для счётной части словаря: мы просто рассматриваем
@@ -493,6 +541,288 @@ lemma hammingBallBound_spec
     hammingBallBound N ε _h0 _h1 =
       unionBound N (hammingBallBudget N ε) :=
   rfl
+
+/-! #### Специализация для unionBound -/
+
+/--
+  Упрощённая оценка `unionBound`: вместо `(max 1 D)^k` можно использовать `D^k`,
+  если `D ≥ 1`.
+-/
+lemma unionBound_le_mul_pow
+    (D k : Nat) (hD : 1 ≤ D) :
+    unionBound D k ≤ (k.succ) * D ^ k := by
+  simpa [unionBound] using sum_choose_le_mul_pow D k hD
+
+/-! #### Оценки для hammingBallBound -/
+
+/-- Если `ε ≤ 1/2`, то бюджет ошибок не превышает `N`. -/
+lemma hammingBallBudget_le_self
+    (N : Nat) {ε : Rat} (hε1 : ε ≤ (1 : Rat) / 2) :
+    hammingBallBudget N ε ≤ N := by
+  classical
+  have hN_nonneg : (0 : Rat) ≤ (N : Rat) := by
+    exact_mod_cast (Nat.zero_le N)
+  -- Из `ε ≤ 1/2` следует `ε ≤ 1`, значит `ε * N ≤ N`.
+  have hε1' : ε ≤ (1 : Rat) := by
+    have hhalf_le : (1 : Rat) / 2 ≤ (1 : Rat) := by norm_num
+    exact hε1.trans hhalf_le
+  have hmul : ε * (N : Rat) ≤ (N : Rat) := by
+    have hmul' : ε * (N : Rat) ≤ (1 : Rat) * (N : Rat) := by
+      exact mul_le_mul_of_nonneg_right hε1' hN_nonneg
+    simpa using hmul'
+  have hceil :
+      Int.ceil (ε * (N : Rat)) ≤ Int.ceil (N : Rat) :=
+    Int.ceil_le_ceil hmul
+  -- `ceil` от целого равен самому целому.
+  have hceil' : Int.ceil (ε * (N : Rat)) ≤ (N : Int) := by
+    simpa using hceil
+  -- Переводим неравенство в `Nat`.
+  have hceil_nat :
+      Int.toNat (Int.ceil (ε * (N : Rat))) ≤ N := by
+    simpa [Int.toNat_le] using hceil'
+  simpa [hammingBallBudget] using hceil_nat
+
+/--
+  Специализированная оценка для нашего ключевого значения
+  `ε = 1/(n+2)`.  В этом случае бюджет ошибок не превосходит
+  `N/(n+2) + 1`, где `N = 2^n`.
+
+  Это ровно тот уровень точности, который нужен для строгого разрыва
+  `capacityBound < 2^N` в античекере.
+-/
+lemma hammingBallBudget_le_div_add_one (n : Nat) :
+    hammingBallBudget (Nat.pow 2 n) ((1 : Rat) / (n + 2))
+      ≤ Nat.pow 2 n / (n + 2) + 1 := by
+  classical
+  set N := Nat.pow 2 n
+  -- Переводим задачу в оценку `ceil`.
+  dsimp [hammingBallBudget]
+  -- Переписываем выражение `1/(n+2) * N` как обычную дробь.
+  -- Связываем `ceil` и `floor` на рациональном числе `N/(n+2)`.
+  have hceil_floor :
+      Int.ceil ((N : Rat) / (n + 2))
+        ≤ Int.floor ((N : Rat) / (n + 2)) + 1 := by
+    simpa using (Int.ceil_le_floor_add_one ((N : Rat) / (n + 2)))
+  -- `floor` рациональной дроби совпадает с целой частью `N / (n+2)`.
+  have hfloor :
+      Int.floor ((N : Rat) / (n + 2)) = (N : Int) / (n + 2) := by
+    simpa using (Rat.floor_intCast_div_natCast (n := (N : Int)) (d := n + 2))
+  -- Подставляем найденные переписывания.
+  have hceil :
+      Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat))
+        ≤ (N / (n + 2) + 1 : Int) := by
+    -- Переводим правую часть через `Int.natCast_div`.
+    have hdiv :
+        ((N / (n + 2) : Nat) : Int) = (N : Int) / (n + 2) := by
+      simpa using (Int.natCast_div N (n + 2))
+    have hceil_eq :
+        Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat))
+          = Int.ceil ((N : Rat) / (n + 2)) := by
+      simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    calc
+      Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat))
+          = Int.ceil ((N : Rat) / (n + 2)) := hceil_eq
+      _ ≤ Int.floor ((N : Rat) / (n + 2)) + 1 := hceil_floor
+      _ = (N : Int) / (n + 2) + 1 := by
+            simpa [hfloor]
+      _ = (N / (n + 2) : Int) + 1 := by
+            -- Переписываем целое деление через `natCast_div`.
+            simpa [hdiv]
+  have hceil_nat :
+      Int.toNat (Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat)))
+        ≤ N / (n + 2) + 1 := by
+    simpa [Int.toNat_le] using hceil
+  simpa [N] using hceil_nat
+
+/-!
+  Следующий технический шаг: подставляем точный бюджет из
+  `hammingBallBudget_le_div_add_one` в оценку для `hammingBallBound`.
+  Нам важно получить явную верхнюю границу вида
+
+  `hammingBallBound ≤ (t+1) * N^t` при `t = N/(n+2)+1`.
+-/
+lemma hammingBallBound_twoPow_le_mul_pow_div_add_one (n : Nat)
+    (hε0 : (0 : Rat) ≤ (1 : Rat) / (n + 2))
+    (hε1 : (1 : Rat) / (n + 2) ≤ (1 : Rat) / 2) :
+    hammingBallBound (Nat.pow 2 n) ((1 : Rat) / (n + 2)) hε0 hε1
+      ≤ (Nat.pow 2 n / (n + 2) + 2)
+          * (Nat.pow 2 n) ^ (Nat.pow 2 n / (n + 2) + 1) := by
+  classical
+  -- Зафиксируем основное обозначение `N = 2^n`.
+  set N := Nat.pow 2 n
+  -- Из `hammingBallBudget_le_div_add_one` получаем верхнюю границу на бюджет.
+  have hbudget :
+      hammingBallBudget N ((1 : Rat) / (n + 2)) ≤ N / (n + 2) + 1 := by
+    simpa [N] using hammingBallBudget_le_div_add_one n
+  -- Монотонность `unionBound` по бюджету даёт переход к `N/(n+2)+1`.
+  have hmono :
+      unionBound N (hammingBallBudget N ((1 : Rat) / (n + 2)))
+        ≤ unionBound N (N / (n + 2) + 1) :=
+    unionBound_mono_right (D := N) hbudget
+  -- Нам нужна положительность `N`, чтобы применить `unionBound_le_mul_pow`.
+  have hN : 1 ≤ N := by
+    have hpos : 0 < N := by
+      have htwo : 0 < (2 : Nat) := by decide
+      simpa [N] using Nat.pow_pos htwo n
+    exact Nat.succ_le_iff.mpr hpos
+  -- Применяем грубую оценку для `unionBound`.
+  have hbound :
+      unionBound N (N / (n + 2) + 1)
+        ≤ (N / (n + 2) + 1).succ * N ^ (N / (n + 2) + 1) :=
+    unionBound_le_mul_pow N (N / (n + 2) + 1) hN
+  -- Склеиваем все шаги и переводим `(t+1).succ` в `t+2`.
+  have hchain := le_trans hmono hbound
+  have hsucc :
+      (N / (n + 2) + 1).succ = N / (n + 2) + 2 := by
+    calc
+      (N / (n + 2) + 1).succ = N / (n + 2) + 1 + 1 := by
+        simp [Nat.succ_eq_add_one]
+      _ = N / (n + 2) + (1 + 1) := by
+        simp [Nat.add_assoc]
+      _ = N / (n + 2) + 2 := by
+        simp
+  -- Возвращаемся к `hammingBallBound` и переписываем итог.
+  dsimp [hammingBallBound, N] at hchain
+  simpa [N, hsucc] using hchain
+
+/-!
+  Вспомогательная «чисто арифметическая» лемма: для достаточно больших `n`
+  экспонента `2^n` превосходит квадратичный многочлен `n (n+2)`.
+
+  Эта оценка будет ключом для перехода от грубого «полиномиального»
+  множителя к строгому разрыву с `2^(2^n)` в дальнейших доказательствах.
+-/
+lemma twoPow_gt_mul (n : Nat) (hn : 8 ≤ n) :
+    n * (n + 2) < Nat.pow 2 n := by
+  -- Делаем индукцию, начиная с `n = 8`.
+  refine Nat.le_induction ?base ?step n hn
+  · -- База: `n = 8` проверяется вычислением.
+    decide
+  · -- Шаг: из `2^n > n(n+2)` выводим `2^(n+1) > (n+1)(n+3)`.
+    intro k hk ih
+    have hk2 : 2 ≤ k := by
+      exact le_trans (by decide : 2 ≤ 8) hk
+    -- Оцениваем `(k+1)(k+3)` через `2*k*(k+2)`.
+    have hbound : (k + 1) * (k + 3) ≤ 2 * (k * (k + 2)) := by
+      nlinarith [hk2]
+    -- Удваиваем индукционную гипотезу: `2 * (k*(k+2)) < 2 * 2^k`.
+    have hdouble :
+        2 * (k * (k + 2)) < 2 * (Nat.pow 2 k) := by
+      exact Nat.mul_lt_mul_of_pos_left ih (by decide : 0 < (2 : Nat))
+    -- Переходим к `2^(k+1) = 2 * 2^k`.
+    have hpow : 2 * Nat.pow 2 k = Nat.pow 2 (k + 1) := by
+      simp [Nat.pow_succ, Nat.mul_comm]
+    -- Склеиваем: `(k+1)(k+3) ≤ 2*k*(k+2) < 2^(k+1)`.
+    exact lt_of_le_of_lt hbound (hdouble.trans_eq hpow)
+
+/-- Вспомогательная оценка: при `n ≥ 8` верно `2 * n * (n + 2) ≤ 2^n`. -/
+lemma twoPow_ge_twoMul_mul (n : Nat) (hn : 8 ≤ n) :
+    2 * n * (n + 2) ≤ Nat.pow 2 n := by
+  -- Индукция начиная с `n = 8`.
+  refine Nat.le_induction ?base ?step n hn
+  · -- База: `n = 8` проверяется вычислением.
+    decide
+  · -- Шаг: используем оценку `(k+1)(k+3) ≤ 2*k*(k+2)` при `k ≥ 2`.
+    intro k hk ih
+    have hk2 : 2 ≤ k := by
+      exact le_trans (by decide : 2 ≤ 8) hk
+    have hbound : (k + 1) * (k + 3) ≤ 2 * (k * (k + 2)) := by
+      nlinarith [hk2]
+    -- Из индукционной гипотезы получаем `4 * k * (k+2) ≤ 2^(k+1)`.
+    have hdouble :
+        2 * (2 * (k * (k + 2))) ≤ 2 * (Nat.pow 2 k) := by
+      have ih' : 2 * (k * (k + 2)) ≤ Nat.pow 2 k := by
+        simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using ih
+      exact Nat.mul_le_mul_left 2 ih'
+    have hpow : 2 * Nat.pow 2 k = Nat.pow 2 (k + 1) := by
+      simp [Nat.pow_succ, Nat.mul_comm]
+    have hchain :
+        2 * (k + 1) * (k + 3) ≤ 2 * (2 * (k * (k + 2))) := by
+      -- Домножаем `hbound` на 2 и раскрываем ассоциативность.
+      simpa [Nat.mul_assoc] using (Nat.mul_le_mul_left 2 hbound)
+    exact
+      (le_trans hchain (hdouble.trans_eq hpow))
+
+/-- Строгая верхняя граница: при `n ≥ 8` оценка хаммингового шара
+  заметно меньше `2^(2^n)`. -/
+lemma hammingBallBound_twoPow_lt_twoPowPow (n : Nat) (hn : 8 ≤ n)
+    (hε0 : (0 : Rat) ≤ (1 : Rat) / (n + 2))
+    (hε1 : (1 : Rat) / (n + 2) ≤ (1 : Rat) / 2) :
+    hammingBallBound (Nat.pow 2 n) ((1 : Rat) / (n + 2)) hε0 hε1
+      < Nat.pow 2 (Nat.pow 2 n) := by
+  classical
+  -- Вводим обозначения `N = 2^n` и `t = N/(n+2)`.
+  set N := Nat.pow 2 n
+  set t := N / (n + 2)
+  -- Переходим к явной верхней границе из предыдущей леммы.
+  have hbound :
+      hammingBallBound N ((1 : Rat) / (n + 2)) hε0 hε1
+        ≤ (t + 2) * N ^ (t + 1) := by
+    simpa [N, t] using
+      (hammingBallBound_twoPow_le_mul_pow_div_add_one n hε0 hε1)
+  -- Базовые факты о положительности степеней.
+  have hNpos : 0 < N := by
+    have htwo : 0 < (2 : Nat) := by decide
+    simpa [N] using Nat.pow_pos htwo n
+  -- Свойство деления: `(n+2) * t ≤ N`.
+  have hmul_le : (n + 2) * t ≤ N := by
+    have h := Nat.mul_div_le N (n + 2)
+    simpa [t, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
+  -- Из `n*(n+2) ≤ N` получаем `n ≤ t`.
+  have hn_le_t : n ≤ t := by
+    have hmul : n * (n + 2) ≤ N := le_of_lt (twoPow_gt_mul n hn)
+    have hpos : 0 < n + 2 := by
+      exact Nat.succ_pos (n + 1)
+    have hdiv : n ≤ N / (n + 2) := (Nat.le_div_iff_mul_le hpos).2 hmul
+    simpa [t] using hdiv
+  -- Ключевое сравнение показателей: `n*(t+2) < N`.
+  have hExp : n * (t + 2) < N := by
+    by_cases ht : t = n
+    · simpa [t, ht, N] using twoPow_gt_mul n hn
+    · have hlt : n < t := lt_of_le_of_ne hn_le_t (Ne.symm ht)
+      have h2lt : 2 * n < 2 * t := by
+        exact Nat.mul_lt_mul_of_pos_left hlt (by decide : 0 < (2 : Nat))
+      have hlt_mul : n * t + 2 * n < n * t + 2 * t := by
+        exact Nat.add_lt_add_left h2lt (n * t)
+      have hlt_mul' : n * (t + 2) < (n + 2) * t := by
+        simpa [Nat.mul_add, Nat.add_mul, Nat.add_assoc, Nat.mul_comm,
+          Nat.mul_left_comm, Nat.mul_assoc] using hlt_mul
+      exact lt_of_lt_of_le hlt_mul' hmul_le
+  -- Из `n*(t+2) < N` следует `t+2 < N`, что нужно для умножения.
+  have ht_lt : t + 2 < N := by
+    have hn_pos : 0 < n := by
+      exact Nat.succ_le_iff.mp (le_trans (by decide : 1 ≤ 8) hn)
+    have hle : t + 2 ≤ n * (t + 2) := Nat.le_mul_of_pos_left _ hn_pos
+    exact lt_of_le_of_lt hle hExp
+  -- Убираем множитель `(t+2)` заменой на `N`.
+  have hmul_pow :
+      (t + 2) * N ^ (t + 1) < N ^ (t + 2) := by
+    have hpowpos : 0 < N ^ (t + 1) := by
+      exact Nat.pow_pos hNpos
+    have hmul_lt := Nat.mul_lt_mul_of_pos_right ht_lt hpowpos
+    simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul_lt
+  -- Переводим степень `N^(t+2)` в `2^(n*(t+2))` и сравниваем с `2^N`.
+  have hpow_lt : N ^ (t + 2) < Nat.pow 2 N := by
+    have hpow_lt' : Nat.pow 2 (n * (t + 2)) < Nat.pow 2 N :=
+      (Nat.pow_lt_pow_iff_right (by decide : 1 < (2 : Nat))).2 hExp
+    simpa [N, Nat.pow_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hpow_lt'
+  -- Собираем итоговую цепочку.
+  exact lt_of_le_of_lt hbound (lt_trans hmul_pow hpow_lt)
+
+/--
+  Грубая оценка на объём хаммингового шара: сводим к `unionBound` и затем
+  применяем `sum_choose_le_mul_pow`.
+-/
+lemma hammingBallBound_le_mul_pow
+    (N : Nat) (ε : Rat)
+    (hN : 1 ≤ N)
+    (hε0 : (0 : Rat) ≤ ε) (hε1 : ε ≤ (1 : Rat) / 2) :
+    hammingBallBound N ε hε0 hε1
+      ≤ (hammingBallBudget N ε).succ * N ^ (hammingBallBudget N ε) := by
+  classical
+  -- Раскрываем определение и применяем `unionBound_le_mul_pow`.
+  dsimp [hammingBallBound]
+  exact unionBound_le_mul_pow N (hammingBallBudget N ε) hN
 
 /-- Увеличение допустимой ошибки `ε` не уменьшает натуральный бюджет
 рассогласований.  Лемма напрямую следует из монотонности потолка и

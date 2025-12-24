@@ -120,7 +120,60 @@ def defaultAC0Solver (p : GapMCSPParams) : SmallAC0Solver p :=
             Nat.pow_pos (by decide : 0 < (2 : Nat))
           exact Nat.succ_le_of_lt (by simpa [Models.inputLen] using hpowPos)
         -- Склеиваем равенство с оценкой `hlen`.
-        simpa [ThirdPartyFacts.AC0SmallEnough, hpow] using hlen }
+        simpa [ThirdPartyFacts.AC0SmallEnough, hpow] using hlen
+    union_small :=
+      by
+        -- Для `M = 1`, `d = 1` получаем `bound = 2`.
+        have hpow : Nat.log2 3 ^ 2 = 1 := by native_decide
+        -- `unionBound 2 2 ≤ 4`, а правая часть ≥ `2^2 = 4` при `n ≥ 8`.
+        have hleft : Counting.unionBound 2 2 ≤ 4 := by
+          simpa using (Counting.unionBound_le_pow 2 2)
+        have hden_pos : 0 < Models.inputLen p + 2 := by
+          exact Nat.succ_pos (Models.inputLen p + 1)
+        -- `2 ≤ 2^N / (N+2)` при `N = 2^n`, `n ≥ 8`.
+        have hdiv_ge : 2 ≤
+            Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2) := by
+          have hN_ge : 8 ≤ Models.inputLen p := by
+            -- Из `n ≥ 8` получаем `2^n ≥ 2^8`.
+            have hpow := Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+            have hpow' : Nat.pow 2 8 ≤ Models.inputLen p := by
+              simpa [Models.inputLen] using hpow
+            have h8 : 8 ≤ Nat.pow 2 8 := by decide
+            exact le_trans h8 hpow'
+          have hmul : 2 * (Models.inputLen p + 2) ≤
+              Nat.pow 2 (Models.inputLen p) := by
+            -- Усиливаем до `2 * N * (N+2) ≤ 2^N` и убираем множитель `N`.
+            have hmul_big :
+                2 * (Models.inputLen p) * (Models.inputLen p + 2) ≤
+                  Nat.pow 2 (Models.inputLen p) := by
+              -- Применяем оценку `twoPow_ge_twoMul_mul` на уровне `N`.
+              exact twoPow_ge_twoMul_mul _ hN_ge
+            -- Так как `N ≥ 1`, имеем `2*(N+2) ≤ 2*N*(N+2)`.
+            have hNpos : 1 ≤ Models.inputLen p := by
+              have hpowPos : 0 < Models.inputLen p := by
+                simpa [Models.inputLen] using
+                  (Nat.pow_pos (n := p.n) (by decide : 0 < (2 : Nat)))
+              exact Nat.succ_le_iff.mpr hpowPos
+            have hmul_le :
+                2 * (Models.inputLen p + 2)
+                  ≤ 2 * (Models.inputLen p) * (Models.inputLen p + 2) := by
+              nlinarith [hNpos]
+            exact hmul_le.trans hmul_big
+          exact (Nat.le_div_iff_mul_le hden_pos).2 hmul
+        have hmono :
+            Nat.pow 2 2 ≤
+              Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
+          exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdiv_ge
+        have hU : Counting.unionBound 2 2 ≤
+            Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
+          exact hleft.trans hmono
+        have hU' :
+            Counting.unionBound
+              (2 ^ Nat.log2 3 ^ 2)
+              (2 ^ Nat.log2 3 ^ 2)
+              ≤ Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
+          simpa [hpow] using hU
+        simpa using hU' }
 
 /-!
   ### Базовый язык GapMCSP как обычный язык `Language`
@@ -373,11 +426,11 @@ structure CoverCapacityWitness (α : Type) [DecidableEq α] : Type where
   hLarge : m < Y.card
 
 /--
-  Преобразование внешней аксиомы античекера в удобный пакет для лемм покрытия.
-  Из гипотетического малого решателя `solver` извлекаем сценарий `sc` и семейство
-  `Y` так, что `|Y|` строго превышает ёмкость `scenarioCapacity sc`.  Леммы
+  Преобразование античекера в удобный пакет для лемм покрытия.  Из гипотетического
+  малого решателя `solver` извлекаем сценарий `sc` и семейство `Y` так, что `|Y|`
+  строго превышает ёмкость `scenarioCapacity sc`.  Леммы
   `witness_uncovered_for_each` и `witness_not_exists_full_cover` затем можно
-  применять без повторной распаковки `let`-связок из формулировки аксиомы
+  применять без повторной распаковки `let`-связок из формулировки теоремы
   `antiChecker_exists_large_Y`.
 -/
 noncomputable def coverWitness_from_antiChecker

@@ -19,6 +19,7 @@ lean_lib PnP3 where
     `Core.SAL_Core,
     `Core.ShrinkageWitness,
     `Counting.BinomialBounds,
+    `Counting.CapacityGap,
     `Counting.Count_EasyFuncs,
     `Counting.Atlas_to_LB_Core,
     `AC0.Formulas,

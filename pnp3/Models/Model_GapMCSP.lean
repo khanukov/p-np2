@@ -31,6 +31,8 @@ structure GapMCSPParams where
   sYES : Nat
   sNO : Nat
   gap_ok : sYES + 1 ≤ sNO
+  /-- В дальнейших оценках предполагаем «достаточно большой» размер таблицы. -/
+  n_large : 8 ≤ n
   deriving Repr
 
 /-- Длина входа MCSP: `N = 2^n`. Это основная числовая характеристика задачи. -/

@@ -82,10 +82,13 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
 
-- **5 critical axioms** in the direct path to P_ne_NP_final
-- **11 additional axioms** in alternative paths
+- **3 active axioms** in the live `pnp3/` tree
+  (2 switching + 1 local anti-checker)
 - **0 sorry/admit** statements in active code
 - All axioms are **explicitly documented and categorized**
+
+You can also run `scripts/check.sh` to rebuild, smoke-test, and verify the
+axiom inventory via `rg "^axiom " -g"*.lean" pnp3`.
 
 ### Q: Can I reproduce your results?
 

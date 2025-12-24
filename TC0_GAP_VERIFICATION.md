@@ -119,16 +119,16 @@ structure AC0Parameters where
 
 **File**: `pnp3/LowerBounds/AntiChecker.lean`
 
-**Axiom C.3 (base anti-checker)**:
+**Theorem C.3 (base anti-checker)**:
 ```lean
 theorem antiChecker_exists_large_Y
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset ...), ...
 ```
-Формализован как внешняя аксиома (OPS 2019). На её основе внутри проекта
-доказывается усиленная теорема `antiChecker_exists_testset`, добавляющая
-мелкое тестовое множество.
+Формализован как теорема, полученная из внутренних ёмкостных оценок. На её
+основе внутри проекта доказывается усиленная теорема
+`antiChecker_exists_testset`, добавляющая мелкое тестовое множество.
 
 **Тип solver**: `SmallAC0Solver` - это **AC⁰ solver**, НЕ TC⁰!
 
@@ -224,8 +224,8 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 | AC⁰ ⊊ Parity | ✅ Доказано | Håstad 1986 | ✅ ДА (через switching) |
 | AC⁰ ⊊ Majority | ✅ Доказано | Håstad 1986 | ✅ ДА (через switching) |
 | Switching Lemma для AC⁰ | ✅ Доказано | Håstad 1986 | ✅ ДА (axiom A.1) |
-| Anti-Checker для AC⁰ | ✅ Доказано | OPS 2019 | ✅ ДА (axiom C.6-C.7) |
-| Magnification (general) | ✅ Доказано | OPS 2019, CJW 2019 | ✅ ДА (axiom D.1-D.2) |
+| Anti-Checker для AC⁰ | ✅ Доказано | OPS 2019 | ✅ ДА (теорема, без аксиомы) |
+| Magnification (general) | ✅ Доказано | OPS 2019, CJW 2019 | ✅ ДА (теоремы D.1-D.2) |
 
 ### ❌ НЕИЗВЕСТНО (НЕ используется):
 

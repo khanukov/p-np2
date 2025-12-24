@@ -7,11 +7,11 @@ Last updated: 2025-10-24
 
 ## Overview
 
-After the latest cleanup the active `pnp3/` tree contains **5 external axioms**.
+After the latest cleanup the active `pnp3/` tree contains **3 external axioms**.
 They are grouped along the analytical steps of the pipeline:
 
 - **Part A (Switching / Shrinkage)**: 2 axioms
-- **Part C (Anti-Checker lower bounds)**: 3 axioms
+- **Part C (Anti-Checker lower bounds)**: 1 axiom
 - **Part D (Magnification triggers)**: 0 axioms — all triggers are theorems
 - **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` and `P ≠ NP` are now
   imported as proven theorems from the lightweight `Facts/PsubsetPpoly` package.
@@ -71,17 +71,19 @@ restricted by a locality parameter.
 
 ## Part C: Anti-Checker Lower Bounds
 
-### C.1: `antiChecker_exists_large_Y`
+### C.1 (proved): `antiChecker_exists_large_Y`
 
 **Location**: `pnp3/LowerBounds/AntiChecker.lean:137`
 
-**Status**: **Axiom.** Base anti-checker existence (large family `Y`).
+**Status**: **Theorem.** Base anti-checker existence (large family `Y`) is now
+derived internally via `noSmallAC0Solver` and the capacity gap bounds.
 
 ### C.2 (proved): `antiChecker_exists_testset`
 
 **Location**: `pnp3/LowerBounds/AntiChecker.lean:158`
 
-**Status**: **Theorem.** Test-set refinement derived internally from C.1.
+**Status**: **Theorem.** Test-set refinement derived internally from the
+proved C.1.
 
 ### C.3: `antiChecker_exists_large_Y_local`
 

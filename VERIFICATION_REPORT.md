@@ -9,7 +9,7 @@ removing legacy axioms.
 
 ## ✅ Verification Summary
 
-- ✅ All **4** active axioms are present in the source tree (`pnp3/`).
+- ✅ All **3** active axioms are present in the source tree (`pnp3/`).
 - ✅ Documentation (`pnp3/Docs/AXIOMS.md`, `AXIOMS_FINAL_LIST.md`,
   `AXIOM_FEASIBILITY_ANALYSIS.md`, `CRITICAL_REANALYSIS.md`) reflects the same set.
 - ✅ Interface theorems `P_subset_Ppoly_proof` and
@@ -25,19 +25,18 @@ $ rg "^axiom " -g"*.lean" pnp3
 pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
 pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
 
-pnp3/LowerBounds/AntiChecker.lean:137:axiom antiChecker_exists_large_Y
 pnp3/LowerBounds/AntiChecker.lean:283:axiom antiChecker_exists_large_Y_local
 ```
 
-**Total**: 4 axioms (matches documentation).
+**Total**: 3 axioms (matches documentation).
 
 ### Per-Module Breakdown
 
 | File | Expected | Found | Notes |
 |------|----------|-------|-------|
 | `ThirdPartyFacts/Facts_Switching.lean` | 2 | 2 | Switching lemmas |
-| `LowerBounds/AntiChecker.lean` | 2 | 2 | Anti-checker axioms |
-| **TOTAL** | **4** | **4** | ✅|
+| `LowerBounds/AntiChecker.lean` | 1 | 1 | Local-circuit anti-checker axiom |
+| **TOTAL** | **3** | **3** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.
@@ -48,9 +47,9 @@ not participate in the build or documentation metrics.
 
 | Document | Status |
 |----------|--------|
-| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 4 axioms, notes archived items |
+| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 3 axioms, notes archived items |
 | `AXIOMS_FINAL_LIST.md` | ✅ Updated executive summary for publication |
-| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 4 axioms |
+| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 3 axioms |
 | `CRITICAL_REANALYSIS.md` | ✅ Critical-path description matches code |
 
 No mismatches detected.

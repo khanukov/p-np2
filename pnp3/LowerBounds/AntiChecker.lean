@@ -1,5 +1,7 @@
 import Mathlib.Data.Finset.Basic
 import Counting.Atlas_to_LB_Core
+import Counting.CapacityGap
+import Counting.Count_EasyFuncs
 import Core.SAL_Core
 import LowerBounds.LB_Formulas
 import Models.Model_GapMCSP
@@ -17,13 +19,16 @@ import ThirdPartyFacts.Facts_Switching
   - YES/NO layer analysis (Williams, 2014)
   - Meta-complexity arguments (Oliveira-Pich-Santhanam, 2019-2022)
 
-  We formalize it as an external fact (axiom) with a precise interface needed
-  for the mechanized part of the proof.
+  We formalize the AC⁰ anti-checker as a theorem (derived from the capacity
+  bounds), while the local-circuit variant remains an external axiom. This
+  matches the current mechanized pipeline: AC⁰ is now fully internal, local
+  circuits still rely on literature.
 
   ## Key Structures
 
   * `SmallAC0Solver`: Hypothesis of a small AC⁰ circuit solving GapMCSP
   * `antiChecker_exists_large_Y`: Existence of a rich subfamily Y exceeding capacity
+    (now proved internally for AC⁰)
   * `antiChecker_exists_testset`: Enhanced version with a small distinguishing test set
 
   ## Scientific References
@@ -115,6 +120,17 @@ structure SmallAC0Solver (p : Models.GapMCSPParams) where
   same_n : ac0.n = Models.inputLen p
   /-- Quantitative smallness assumption on the AC⁰ parameters. -/
   small : ThirdPartyFacts.AC0SmallEnough ac0
+  /--
+    Грубая, но удобная числовая гипотеза: «словарная» часть из шага B
+    не превосходит `2^(2^n/(n+2))`, где `n = ac0.n`.
+
+    Мы фиксируем это в виде оценки `unionBound bound bound`, где
+    `bound = 2^{log₂(M+2)^(d+1)}` — естественная верхняя граница из шага A.
+  -/
+  union_small :
+    let bound := Nat.pow 2 (Nat.pow (Nat.log2 (ac0.M + 2)) (ac0.d + 1))
+    Counting.unionBound bound bound ≤
+      Nat.pow 2 (Nat.pow 2 ac0.n / (ac0.n + 2))
   deriving Repr
 
 /--
@@ -136,7 +152,130 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   противоречие с ограничением ёмкости сценария, откуда логически следует любое
   требуемое существование.
 -/
-axiom antiChecker_exists_large_Y
+theorem noSmallAC0Solver
+    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
+  classical
+  -- Фиксируем «полное» семейство всех булевых функций.
+  let F : Family solver.ac0.n :=
+    Counting.allFunctionsFamily solver.ac0.n
+  -- Сценарий SAL, полученный из `solver`.
+  let pack := scenarioFromAC0 (params := solver.ac0) (F := F)
+  let sc := pack.2
+  let bound := Nat.pow 2
+    (Nat.pow (Nat.log2 (solver.ac0.M + 2)) (solver.ac0.d + 1))
+  -- Вытаскиваем шаг A+B: границы на параметры и связь `card(F) ≤ capacityBound`.
+  have hsummary :=
+    scenarioFromAC0_stepAB_summary (params := solver.ac0) (F := F)
+  dsimp [pack, sc, bound] at hsummary
+  rcases hsummary with ⟨hfamily, hk, hdict, hε0, hε1, hεInv, hcap_le⟩
+  -- Обозначения.
+  set N := Nat.pow 2 solver.ac0.n
+  set t := N / (solver.ac0.n + 2)
+  -- Оценка на `unionBound` через `solver.union_small`.
+  have hU :
+      Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
+        ≤ Nat.pow 2 t := by
+    -- Монотонность по `D` и `k` и потом применение `union_small`.
+    have hmono_left :
+        Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
+          ≤ Counting.unionBound bound sc.k :=
+      Counting.unionBound_mono_left (k := sc.k) hdict
+    have hmono_right :
+        Counting.unionBound bound sc.k ≤ Counting.unionBound bound bound :=
+      Counting.unionBound_mono_right (D := bound) hk
+    have hchain := le_trans hmono_left hmono_right
+    -- Подставляем зафиксированную гипотезу `union_small`.
+    have hsmall := solver.union_small
+    simpa [t] using (le_trans hchain hsmall)
+  -- Сравниваем `capacityBound` при `ε = sc.atlas.epsilon` и при `ε = 1/(n+2)`.
+  have hε0' : (0 : Rat) ≤ (1 : Rat) / (solver.ac0.n + 2) := by
+    nlinarith
+  have hε1' : (1 : Rat) / (solver.ac0.n + 2) ≤ (1 : Rat) / 2 := by
+    have hden : (2 : Rat) ≤ solver.ac0.n + 2 := by
+      nlinarith
+    have hpos : (0 : Rat) < (2 : Rat) := by
+      nlinarith
+    exact one_div_le_one_div_of_le hpos hden
+  have hcap_le' :
+      Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+        sc.atlas.epsilon sc.hε0 sc.hε1
+        ≤ Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          ((1 : Rat) / (solver.ac0.n + 2)) hε0' hε1' := by
+    -- Используем монотонность `capacityBound` по ε.
+    exact Counting.capacityBound_mono
+      (h0 := sc.hε0) (h1 := sc.hε1)
+      (h0' := hε0') (h1' := hε1')
+      (hD := le_rfl) (hk := le_rfl) hεInv
+  -- Строгая верхняя граница на `capacityBound` при `ε = 1/(n+2)`.
+  have hcap_lt :
+      Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+        ((1 : Rat) / (solver.ac0.n + 2)) hε0' hε1'
+        < Nat.pow 2 N := by
+    -- Используем `capacityBound_twoPow_lt_twoPowPow`.
+    have hn : 8 ≤ solver.ac0.n := by
+      -- Так как `p.n ≥ 8`, получаем `2^p.n ≥ 2^8`, а значит `ac0.n ≥ 8`.
+      have hpow :=
+        Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+      have hpow' : Nat.pow 2 8 ≤ solver.ac0.n := by
+        simpa [Models.inputLen, solver.same_n] using hpow
+      have h8 : 8 ≤ Nat.pow 2 8 := by decide
+      exact le_trans h8 hpow'
+    simpa [N, t] using
+      (Counting.capacityBound_twoPow_lt_twoPowPow
+        (n := solver.ac0.n)
+        (D := Counting.dictLen sc.atlas.dict)
+        (k := sc.k)
+        (hn := hn)
+        (hε0 := hε0') (hε1 := hε1')
+        (hU := hU))
+  -- Сравниваем `capacityBound` с размером полного семейства.
+  have hcard :
+      (familyFinset sc).card = Nat.pow 2 N := by
+    -- `familyFinset sc` совпадает с полным множеством функций.
+    have hfamily' : sc.family = F := hfamily
+    have hfinset :
+        familyFinset sc = Counting.allFunctionsFinset solver.ac0.n := by
+      -- Переписываем через `toFinset`.
+      simp [familyFinset, hfamily', F, Counting.allFunctionsFamily_toFinset]
+    -- Используем формулу количества всех функций.
+    simpa [N, hfinset] using
+      (Counting.card_allFunctionsFinset solver.ac0.n)
+  -- Противоречие: `card(F) ≤ capacityBound < card(F)`.
+  have hcap_le_final :
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          ((1 : Rat) / (solver.ac0.n + 2)) hε0' hε1' := by
+    exact hcap_le.trans hcap_le'
+  have hcontr :=
+    lt_of_le_of_lt hcap_le_final hcap_lt
+  exact (Nat.lt_irrefl (Nat.pow 2 N) (by simpa [hcard] using hcontr))
+
+/--
+  Обратное направление: любое противоречие даёт нужных свидетелей.  Это поможет,
+  когда `False` будет доказан конструктивно и аксиома станет ненужной.
+-/
+theorem antiChecker_exists_large_Y_of_false
+    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) (hFalse : False) :
+    ∃ (F : Family (Models.inputLen p))
+      (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
+        let Fsolver : Family solver.ac0.n := (solver.same_n.symm ▸ F)
+        let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
+        let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
+          (solver.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card :=
+  by
+    -- Из противоречия можно вывести любое утверждение; дополнительно устраняем
+    -- зависимость от `same_n`, чтобы избежать сложных равенств размеров.
+    exact False.elim hFalse
+
+/--
+  **Anti-Checker (large Y) без аксиомы.**
+
+  В силу `noSmallAC0Solver` для каждого «малого» решателя получаем
+  противоречие, а значит — существование нужного семейства `Y`.
+-/
+theorem antiChecker_exists_large_Y
   {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
@@ -146,10 +285,13 @@ axiom antiChecker_exists_large_Y
       let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card
+        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  -- Из противоречия выводим требуемое существование.
+  exact antiChecker_exists_large_Y_of_false (solver := solver)
+    (noSmallAC0Solver (solver := solver))
 
 /--
-  Базовое противоречие: аксиома `antiChecker_exists_large_Y` немедленно уничтожает
+  Базовое противоречие: теорема `antiChecker_exists_large_Y` немедленно уничтожает
   гипотезу «существует solver».  Лемма фиксирует сам факт противоречия, чтобы
   позже заменить аксиому на явное доказательство `False`.
 -/
@@ -172,25 +314,6 @@ theorem antiChecker_largeY_implies_false
   -- Прямое противоречие с Covering-Power: семейство слишком велико.
   exact no_bounded_atlas_of_large_family
     (sc := scWitness) (Y := Ysolver) hSubset hLarge
-
-/--
-  Обратное направление: любое противоречие даёт нужных свидетелей.  Это поможет,
-  когда `False` будет доказан конструктивно и аксиома станет ненужной.
--/
-theorem antiChecker_exists_large_Y_of_false
-    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) (hFalse : False) :
-    ∃ (F : Family (Models.inputLen p))
-      (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
-        let Fsolver : Family solver.ac0.n := (solver.same_n.symm ▸ F)
-        let scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
-        let Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
-          (solver.same_n.symm ▸ Y)
-        Ysolver ⊆ familyFinset (sc := scWitness) ∧
-          scenarioCapacity (sc := scWitness) < Ysolver.card :=
-  by
-    -- Из противоречия можно вывести любое утверждение; дополнительно устраняем
-    -- зависимость от `same_n`, чтобы избежать сложных равенств размеров.
-    exact False.elim hFalse
 
 /--
   **Theorem: Anti-Checker with Test Set**

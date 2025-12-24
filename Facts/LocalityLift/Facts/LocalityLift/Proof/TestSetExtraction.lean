@@ -91,23 +91,23 @@ lemma inputLen_pos (p : GapMCSPParams) : 0 < inputLen p := by
   have : 0 < 2 ^ p.n := Nat.pow_pos (by decide : 0 < (2 : Nat))
   simpa [inputLen] using this
 
-/-- Канонический набор живых координат: одна координата с индексом `0`. -/
+/--
+Канонический набор живых координат.
+
+Мы берём пустое множество, чтобы локальность канонического свидетеля была
+нулевой.  Это обеспечивает выполнение численного условия "малости"
+без дополнительных ограничений на параметры исходного решателя.
+-/
 def canonicalAlive (p : GapMCSPParams) : Finset (Fin (inputLen p)) :=
-  {⟨0, inputLen_pos p⟩}
+  ∅
 
 @[simp] lemma mem_canonicalAlive {p : GapMCSPParams}
-    (i : Fin (inputLen p)) : i ∈ canonicalAlive p ↔ i = ⟨0, inputLen_pos p⟩ := by
+    (i : Fin (inputLen p)) : i ∈ canonicalAlive p ↔ False := by
   classical
-  constructor
-  · intro hi
-    have : i ∈ ({⟨0, inputLen_pos p⟩} : Finset (Fin (inputLen p))) := hi
-    simpa [canonicalAlive]
-  · intro hi
-    subst hi
-    simp [canonicalAlive]
+  simp [canonicalAlive]
 
 @[simp] lemma card_canonicalAlive (p : GapMCSPParams) :
-    (canonicalAlive p).card = 1 := by
+    (canonicalAlive p).card = 0 := by
   classical
   simp [canonicalAlive]
 

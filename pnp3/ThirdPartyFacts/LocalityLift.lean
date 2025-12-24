@@ -85,6 +85,11 @@ open Magnification
     same_n := by
       simpa [fromFactsLocalParameters, toFactsParams,
         Facts.LocalityLift.inputLen, Models.inputLen] using solver.same_n
+    small := by
+      -- Внешний интерфейс уже хранит численное условие "малости".
+      simpa [Facts.LocalityLift.LocalCircuitSmallEnough,
+        ThirdPartyFacts.LocalCircuitSmallEnough, fromFactsLocalParameters]
+        using solver.small
   }
 
 /-- Convert internal local solvers into the external wrapper. -/
@@ -103,6 +108,10 @@ open Magnification
     same_n := by
       simpa [toFactsParams, Facts.LocalityLift.inputLen, Models.inputLen]
         using solver.same_n
+    small := by
+      simpa [Facts.LocalityLift.LocalCircuitSmallEnough,
+        ThirdPartyFacts.LocalCircuitSmallEnough, toFactsParams]
+        using solver.small
   }
 
 /-- Specialised version of the locality-lift interface for the internal types. -/

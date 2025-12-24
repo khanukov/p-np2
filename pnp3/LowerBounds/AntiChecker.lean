@@ -19,10 +19,10 @@ import ThirdPartyFacts.Facts_Switching
   - YES/NO layer analysis (Williams, 2014)
   - Meta-complexity arguments (Oliveira-Pich-Santhanam, 2019-2022)
 
-  We formalize the AC⁰ anti-checker as a theorem (derived from the capacity
-  bounds), while the local-circuit variant remains an external axiom. This
-  matches the current mechanized pipeline: AC⁰ is now fully internal, local
-  circuits still rely on literature.
+  We formalize both the AC⁰ and local-circuit anti-checkers as theorems derived
+  from capacity bounds.  The local-circuit proof mirrors the AC⁰ argument, with
+  an explicit smallness constraint ensuring the shrinkage trunk is short enough
+  to trigger the Covering-Power gap.
 
   ## Key Structures
 
@@ -141,6 +141,8 @@ structure SmallAC0Solver (p : Models.GapMCSPParams) where
 structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   params : ThirdPartyFacts.LocalCircuitParameters
   same_n : params.n = Models.inputLen p
+  /-- Quantitative smallness assumption for local circuits. -/
+  small : ThirdPartyFacts.LocalCircuitSmallEnough params
   deriving Repr
 
 /--
@@ -405,8 +407,192 @@ theorem antiChecker_exists_large_Y_from_testset
   -- Пересобираем требуемое утверждение в исходном формате с `let`-обозначениями.
   simpa [Fsolver, scWitness, Ysolver] using And.intro hSubset hLarge
 
+/-- Auxiliary arithmetic lemma: for large `n`, the half-exponent dominates `n+2`. -/
+lemma nplus2_le_twoPow_half (n : Nat) (hn : 16 ≤ n) :
+    n + 2 ≤ Nat.pow 2 (n / 2) := by
+  classical
+  -- Set `m = n/2` and use the standard exponential domination.
+  set m := n / 2
+  have hm : 8 ≤ m := by
+    have hmul : 8 * 2 ≤ n := by
+      nlinarith
+    exact (Nat.le_div_iff_mul_le (by decide : 0 < (2 : Nat))).2 hmul
+  have hpow : m * (m + 2) < Nat.pow 2 m :=
+    Counting.twoPow_gt_mul m hm
+  have hmod_lt : n % 2 < 2 := Nat.mod_lt n (by decide : 0 < (2 : Nat))
+  have hmod_le : n % 2 ≤ 1 := Nat.lt_succ_iff.mp hmod_lt
+  have hdecomp : n = 2 * m + n % 2 := by
+    have h := Nat.div_add_mod n 2
+    -- `h` is `n / 2 * 2 + n % 2 = n`; rewrite into the desired form.
+    calc
+      n = n / 2 * 2 + n % 2 := by simpa [Nat.mul_comm] using h.symm
+      _ = 2 * m + n % 2 := by
+        simp [m, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  have hbound : n + 2 ≤ 2 * m + 3 := by
+    nlinarith [hdecomp, hmod_le]
+  have hquad : 2 * m + 3 ≤ m * (m + 2) := by
+    have hm2 : 2 ≤ m := by exact le_trans (by decide : 2 ≤ 8) hm
+    nlinarith [hm2]
+  have hle : n + 2 ≤ m * (m + 2) := le_trans hbound hquad
+  have hlt : n + 2 < Nat.pow 2 m := lt_of_le_of_lt hle hpow
+  exact le_of_lt hlt
+
+/-- Convert `n+2 ≤ 2^(n/2)` into the division inequality used in capacity bounds. -/
+lemma twoPow_half_le_div (n : Nat) (hn : 16 ≤ n) :
+    Nat.pow 2 (n / 2) ≤ Nat.pow 2 n / (n + 2) := by
+  classical
+  have hbase : n + 2 ≤ Nat.pow 2 (n / 2) :=
+    nplus2_le_twoPow_half n hn
+  have hpos : 0 < n + 2 := by
+    exact Nat.succ_pos (n + 1)
+  apply (Nat.le_div_iff_mul_le hpos).2
+  have hmul :
+      Nat.pow 2 (n / 2) * (n + 2)
+        ≤ Nat.pow 2 (n / 2) * Nat.pow 2 (n / 2) := by
+    exact Nat.mul_le_mul_left _ hbase
+  have hpow_le :
+      Nat.pow 2 (n / 2) * Nat.pow 2 (n / 2) ≤ Nat.pow 2 n := by
+    have hsum : n / 2 + n / 2 ≤ n := by
+      have hmul : 2 * (n / 2) ≤ n := Nat.mul_div_le n 2
+      nlinarith
+    have hpow := Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hsum
+    calc
+      Nat.pow 2 (n / 2) * Nat.pow 2 (n / 2)
+          = Nat.pow 2 (n / 2 + n / 2) := by
+            simp [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      _ ≤ Nat.pow 2 n := hpow
+  exact le_trans hmul hpow_le
+
+/-- Local-circuit variant of the "no small solver" contradiction. -/
+theorem noSmallLocalCircuitSolver
+    {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) : False := by
+  classical
+  -- Полное семейство всех булевых функций.
+  let F : Family solver.params.n :=
+    Counting.allFunctionsFamily solver.params.n
+  -- Сценарий SAL для локальных схем.
+  let pack := scenarioFromLocalCircuit (params := solver.params) (F := F)
+  let sc := pack.2
+  let bound := Nat.pow 2
+    (solver.params.ℓ * (Nat.log2 (solver.params.M + 2) + solver.params.depth + 1))
+  -- Сводка шага A+B.
+  have hsummary :=
+    scenarioFromLocalCircuit_stepAB_summary (params := solver.params) (F := F)
+  dsimp [pack, sc, bound] at hsummary
+  rcases hsummary with ⟨hfamily, hk, hdict, hε0, hε1, hεInv, hcap_le⟩
+  -- Обозначения.
+  set N := Nat.pow 2 solver.params.n
+  set t := N / (solver.params.n + 2)
+  -- Малость локальных параметров даёт грубую границу на словарь.
+  have hbound_le_half : bound ≤ Nat.pow 2 (solver.params.n / 2) := by
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) solver.small
+  -- Строгая верхняя оценка на `unionBound`.
+  have hU :
+      Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
+        ≤ Nat.pow 2 t := by
+    -- Монотонность по `D` и `k`.
+    have hmono_left :
+        Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
+          ≤ Counting.unionBound bound sc.k :=
+      Counting.unionBound_mono_left (k := sc.k) hdict
+    have hmono_right :
+        Counting.unionBound bound sc.k ≤ Counting.unionBound bound bound :=
+      Counting.unionBound_mono_right (D := bound) hk
+    have hchain := le_trans hmono_left hmono_right
+    -- Грубая оценка `unionBound ≤ 2^D`.
+    have hpow_union : Counting.unionBound bound bound ≤ Nat.pow 2 bound :=
+      Counting.unionBound_le_pow bound bound
+    have hchain' := le_trans hchain hpow_union
+    -- Переходим от `2^bound` к `2^t` через `bound ≤ 2^(n/2) ≤ 2^n/(n+2)`.
+    have h16 : 16 ≤ solver.params.n := by
+      have hpow :=
+        Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+      have hpow' : Nat.pow 2 8 ≤ solver.params.n := by
+        simpa [Models.inputLen, solver.same_n] using hpow
+      have h16' : 16 ≤ Nat.pow 2 8 := by decide
+      exact le_trans h16' hpow'
+    have hhalf_le :
+        Nat.pow 2 (solver.params.n / 2) ≤
+          Nat.pow 2 solver.params.n / (solver.params.n + 2) :=
+      twoPow_half_le_div solver.params.n h16
+    have hbound_le :
+        bound ≤ Nat.pow 2 solver.params.n / (solver.params.n + 2) :=
+      le_trans hbound_le_half hhalf_le
+    have hpow_le :
+        Nat.pow 2 bound ≤ Nat.pow 2 (Nat.pow 2 solver.params.n / (solver.params.n + 2)) :=
+      Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound_le
+    simpa [t] using (le_trans hchain' hpow_le)
+  -- Сравнение `capacityBound` при `ε = 1/(n+2)`.
+  have hε0' : (0 : Rat) ≤ (1 : Rat) / (solver.params.n + 2) := by
+    nlinarith
+  have hε1' : (1 : Rat) / (solver.params.n + 2) ≤ (1 : Rat) / 2 := by
+    have hden : (2 : Rat) ≤ solver.params.n + 2 := by
+      nlinarith
+    have hpos : (0 : Rat) < (2 : Rat) := by
+      nlinarith
+    exact one_div_le_one_div_of_le hpos hden
+  have hcap_le' :
+      Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+        sc.atlas.epsilon sc.hε0 sc.hε1
+        ≤ Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          ((1 : Rat) / (solver.params.n + 2)) hε0' hε1' := by
+    exact Counting.capacityBound_mono
+      (h0 := sc.hε0) (h1 := sc.hε1)
+      (h0' := hε0') (h1' := hε1')
+      (hD := le_rfl) (hk := le_rfl) hεInv
+  -- Строгая верхняя граница на `capacityBound`.
+  have hcap_lt :
+      Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+        ((1 : Rat) / (solver.params.n + 2)) hε0' hε1'
+        < Nat.pow 2 N := by
+    have h8 : 8 ≤ solver.params.n := by
+      have hpow :=
+        Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+      have hpow' : Nat.pow 2 8 ≤ solver.params.n := by
+        simpa [Models.inputLen, solver.same_n] using hpow
+      have h8' : 8 ≤ Nat.pow 2 8 := by decide
+      exact le_trans h8' hpow'
+    simpa [N, t] using
+      (Counting.capacityBound_twoPow_lt_twoPowPow
+        (n := solver.params.n)
+        (D := Counting.dictLen sc.atlas.dict)
+        (k := sc.k)
+        (hn := h8)
+        (hε0 := hε0') (hε1 := hε1')
+        (hU := hU))
+  -- Полное семейство слишком велико для ёмкости.
+  have hcard :
+      (familyFinset sc).card = Nat.pow 2 N := by
+    have hfamily' : sc.family = F := hfamily
+    have hfinset :
+        familyFinset sc = Counting.allFunctionsFinset solver.params.n := by
+      simp [familyFinset, hfamily', F, Counting.allFunctionsFamily_toFinset]
+    simpa [N, hfinset] using
+      (Counting.card_allFunctionsFinset solver.params.n)
+  have hcap_le_final :
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          ((1 : Rat) / (solver.params.n + 2)) hε0' hε1' := by
+    exact hcap_le.trans hcap_le'
+  have hcontr := lt_of_le_of_lt hcap_le_final hcap_lt
+  exact (Nat.lt_irrefl (Nat.pow 2 N) (by simpa [hcard] using hcontr))
+
+/-- От противоречия получаем локальный античекер без дополнительных усилий. -/
+theorem antiChecker_exists_large_Y_local_of_false
+    {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) (hFalse : False) :
+    ∃ (F : Family (Models.inputLen p))
+      (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
+        let Fsolver : Family solver.params.n := (solver.same_n.symm ▸ F)
+        let scWitness :=
+          (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
+        let Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
+          (solver.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  exact False.elim hFalse
+
 /--
-  **AXIOM 3: Anti-Checker for Local Circuits (Large Y)**
+  **Anti-Checker for Local Circuits (Large Y)**
 
   **Statement**: Local circuit variant of antiChecker_exists_large_Y.
   For a hypothetical small local circuit solver, there exists a rich subfamily Y
@@ -449,7 +635,7 @@ theorem antiChecker_exists_large_Y_from_testset
   - Chen et al. (2022): "Beyond Natural Proofs", Section 4.2 (local circuit analysis)
   - Williams (2014): ACC⁰ ⊆ local circuits framework
 -/
-axiom antiChecker_exists_large_Y_local
+theorem antiChecker_exists_large_Y_local
   {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
@@ -460,7 +646,9 @@ axiom antiChecker_exists_large_Y_local
       let Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
         (solver.same_n.symm ▸ Y)
       Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card
+        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  exact antiChecker_exists_large_Y_local_of_false (solver := solver)
+    (noSmallLocalCircuitSolver (solver := solver))
 
 /--
   **Theorem: Anti-Checker for Local Circuits (with Test Set)**

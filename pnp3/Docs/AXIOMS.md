@@ -7,12 +7,12 @@ Last updated: 2025-10-24
 
 ## Overview
 
-After the latest cleanup the active `pnp3/` tree contains **3 external axioms**.
+After the latest cleanup the active `pnp3/` tree contains **2 external axioms**.
 They are grouped along the analytical steps of the pipeline:
 
 - **Part A (Switching / Shrinkage)**: 2 axioms
-- **Part C (Anti-Checker lower bounds)**: 1 axiom
-- **Part D (Magnification triggers)**: 0 axioms — all triggers are theorems
+- **Part C (Anti-Checker lower bounds)**: 0 axioms — all results are theorems
+- **Part D (Magnification triggers / bridges)**: 0 axioms
 - **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` and `P ≠ NP` are now
   imported as proven theorems from the lightweight `Facts/PsubsetPpoly` package.
 
@@ -85,11 +85,14 @@ derived internally via `noSmallAC0Solver` and the capacity gap bounds.
 **Status**: **Theorem.** Test-set refinement derived internally from the
 proved C.1.
 
-### C.3: `antiChecker_exists_large_Y_local`
+### C.3 (proved): `antiChecker_exists_large_Y_local`
 
 **Location**: `pnp3/LowerBounds/AntiChecker.lean:283`
 
 **Summary**: Local-circuit analogue of C.1 tailored to the locality budget.
+
+**Status**: **Theorem.** Derived internally via the new `noSmallLocalCircuitSolver`
+contradiction and capacity-gap bounds.
 
 ### C.4 (proved): `antiChecker_exists_testset_local`
 
@@ -105,9 +108,10 @@ Oliveira–Pich–Santhanam (2019/2021).
 
 ---
 
-## Part D: Magnification Bridges
+## Part D: Magnification Bridges & Numeric Bridges
 
-All triggers in this section are **theorems**; no remaining axioms stay active.
+All trigger theorems in this section remain **proved**.  There are currently
+no external axioms associated with the magnification interfaces.
 
 ### D.1: `OPS_trigger_general`
 

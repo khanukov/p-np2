@@ -22,10 +22,68 @@ def PDT.depth {n : Nat} : PDT n → Nat
 | .leaf _           => 0
 | .node _ t0 t1     => Nat.succ (Nat.max (PDT.depth t0) (PDT.depth t1))
 
+/--
+  Применение отображения к каждому листу PDT.  Это полезно, когда мы
+  заранее построили «скелет» дерева, а затем хотим переопределить
+  подкубы в листьях (например, чтобы зафиксировать дополнительный бит
+  или перенумеровать координаты).  Рекурсивное определение повторяет
+  структуру дерева: на листе применяем функцию `f`, на узле спускаемся в
+  поддеревья и также обрабатываем их листы.
+-/
+def PDT.mapLeaves {n : Nat} (f : Subcube n → Subcube n) : PDT n → PDT n
+| .leaf β       => PDT.leaf (f β)
+| .node i t0 t1 => PDT.node i (mapLeaves f t0) (mapLeaves f t1)
+
+/--
+  Отображение листьев не меняет глубину дерева: оно не добавляет новых
+  ветвлений, а лишь переопределяет содержимое существующих листов.
+-/
+lemma PDT.depth_mapLeaves {n : Nat}
+    (f : Subcube n → Subcube n) :
+    ∀ t : PDT n, PDT.depth (PDT.mapLeaves f t) = PDT.depth t
+| .leaf _ => rfl
+| .node _ t0 t1 => by
+    simp [PDT.mapLeaves, PDT.depth, depth_mapLeaves f t0,
+      depth_mapLeaves f t1]
+
+/-- Применение тождественного отображения оставляет PDT неизменным. -/
+@[simp] lemma PDT.mapLeaves_id {n : Nat}
+    (t : PDT n) : PDT.mapLeaves (fun β => β) t = t := by
+  induction t with
+  | leaf β => simp [PDT.mapLeaves]
+  | node i t0 t1 ih0 ih1 =>
+      simp [PDT.mapLeaves, ih0, ih1]
+
+/-- Комбинация отображений листьев соответствует композиции функций. -/
+lemma PDT.mapLeaves_comp {n : Nat}
+    {f g : Subcube n → Subcube n}
+    (t : PDT n) :
+    PDT.mapLeaves f (PDT.mapLeaves g t)
+      = PDT.mapLeaves (fun β => f (g β)) t := by
+  induction t with
+  | leaf β => simp [PDT.mapLeaves]
+  | node i t0 t1 ih0 ih1 =>
+      simp [PDT.mapLeaves, ih0, ih1]
+
 /-- Список листьев PDT (их подкубы). -/
 def PDT.leaves {n : Nat} : PDT n → List (Subcube n)
 | .leaf R         => [R]
 | .node _ t0 t1   => (PDT.leaves t0) ++ (PDT.leaves t1)
+
+/--
+  Листья дерева после применения `mapLeaves` — это просто образ листьев
+  исходного дерева.  Доказательство — прямое разматывание рекурсии.
+-/
+lemma PDT.leaves_mapLeaves {n : Nat}
+    (f : Subcube n → Subcube n) :
+    ∀ t : PDT n,
+      PDT.leaves (PDT.mapLeaves f t)
+        = (PDT.leaves t).map f
+| .leaf _ => rfl
+| .node _ t0 t1 => by
+    have h0 := leaves_mapLeaves (n := n) (f := f) t0
+    have h1 := leaves_mapLeaves (n := n) (f := f) t1
+    simp [PDT.mapLeaves, PDT.leaves, h0, h1, List.map_append]
 
 /--
   Операция "уточнения" PDT: каждому листу дерева `t` сопоставляем хвост
@@ -198,6 +256,76 @@ theorem PDT.depth_refine_le {n : Nat}
         have hgoal := htarget
         simpa [PDT.refine, PDT.depth] using hgoal
 
+/--
+  Любой лист уточняющего хвоста остаётся листом и после применения `PDT.refine`.
+  Доказательство проводится по индукции по структуре дерева: лист обрабатывается
+  тривиально, для узла рассматриваются два поддерева, после чего используется
+  предположение индукции.
+-/
+lemma PDT.mem_leaves_refine_of_mem_tail {n : Nat}
+    {t : PDT n}
+    {tails : ∀ β, β ∈ PDT.leaves t → PDT n}
+    {β₀ : Subcube n} (hβ₀ : β₀ ∈ PDT.leaves t)
+    {β : Subcube n}
+    (hβ : β ∈ PDT.leaves (tails β₀ hβ₀)) :
+    β ∈ PDT.leaves (PDT.refine t tails) := by
+  classical
+  induction t with
+  | leaf γ =>
+      have hγ : γ ∈ PDT.leaves (PDT.leaf γ) := by
+        simp [PDT.leaves]
+      have hβ₀_eq : β₀ = γ := by
+        simpa [PDT.leaves] using List.mem_singleton.mp hβ₀
+      subst hβ₀_eq
+      have hproof : hβ₀ = hγ := Subsingleton.elim _ _
+      subst hproof
+      simpa [PDT.refine] using hβ
+  | node i t0 t1 ih0 ih1 =>
+      have hβ₀_mem : β₀ ∈ (PDT.leaves t0) ++ (PDT.leaves t1) := by
+        simpa [PDT.leaves] using hβ₀
+      have hβ₀_cases := List.mem_append.mp hβ₀_mem
+      let tails0 : ∀ β, β ∈ PDT.leaves t0 → PDT n :=
+        fun β hβ =>
+          let hmemAppend : β ∈ (PDT.leaves t0) ++ (PDT.leaves t1) :=
+            List.mem_append.mpr (Or.inl hβ)
+          let hmemTree : β ∈ PDT.leaves (PDT.node i t0 t1) := by
+            have hdef :
+                PDT.leaves (PDT.node i t0 t1) =
+                  (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
+            exact Eq.subst (motive := fun s => β ∈ s)
+              (Eq.symm hdef) hmemAppend
+          tails β hmemTree
+      let tails1 : ∀ β, β ∈ PDT.leaves t1 → PDT n :=
+        fun β hβ =>
+          let hmemAppend : β ∈ (PDT.leaves t0) ++ (PDT.leaves t1) :=
+            List.mem_append.mpr (Or.inr hβ)
+          let hmemTree : β ∈ PDT.leaves (PDT.node i t0 t1) := by
+            have hdef :
+                PDT.leaves (PDT.node i t0 t1) =
+                  (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
+            exact Eq.subst (motive := fun s => β ∈ s)
+              (Eq.symm hdef) hmemAppend
+          tails β hmemTree
+      have hleaves :
+          PDT.leaves (PDT.refine (PDT.node i t0 t1) tails)
+            = PDT.leaves (PDT.node i
+                (PDT.refine t0 tails0) (PDT.refine t1 tails1)) := rfl
+      cases hβ₀_cases with
+      | inl hleft =>
+          have hmem_left :
+              β ∈ PDT.leaves (PDT.refine t0 tails0) :=
+            ih0 hleft hβ
+          have : β ∈ PDT.leaves (PDT.refine (PDT.node i t0 t1) tails) := by
+            simp [hleaves, PDT.leaves, hmem_left]
+          exact this
+      | inr hright =>
+          have hmem_right :
+              β ∈ PDT.leaves (PDT.refine t1 tails1) :=
+            ih1 hright hβ
+          have : β ∈ PDT.leaves (PDT.refine (PDT.node i t0 t1) tails) := by
+            simp [hleaves, PDT.leaves, hmem_right]
+          exact this
+
 /-- Количество листьев не превосходит `2 ^ depth`.
 
     Это простое упражнение по индукции: лист даёт один подкуб, а у узла
@@ -242,6 +370,125 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
     simpa [Nat.pow_succ, Nat.mul_comm, Nat.succ_eq_add_one] using haux
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
+
+/--
+  Построение PDT, повторяющего рекурсивное разбиение
+  `Core.Subcube.refineByCoords`. Узел добавляется только при свободной
+  координате: в этом случае мы ветвимся по двум значениям бита и продолжаем
+  обработку хвоста списка.-/
+def Subcube.refineByCoordsPDT {n : Nat} (β : Subcube n) :
+    List (Fin n) → PDT n
+  | [] => PDT.leaf β
+  | i :: rest =>
+      match β.splitCoordinate i with
+      | [] => PDT.leaf β
+      | γ :: tail =>
+          match tail with
+          | [] => Subcube.refineByCoordsPDT γ rest
+          | γ' :: _ =>
+              PDT.node i (Subcube.refineByCoordsPDT γ rest)
+                (Subcube.refineByCoordsPDT γ' rest)
+
+@[simp] lemma Subcube.refineByCoordsPDT_nil {n : Nat}
+    (β : Subcube n) :
+    Subcube.refineByCoordsPDT (n := n) β [] = PDT.leaf β := rfl
+
+/-- Листья дерева `refineByCoordsPDT` совпадают со значением `refineByCoords`. -/
+lemma Subcube.leaves_refineByCoordsPDT {n : Nat}
+    (β : Subcube n) (coords : List (Fin n)) :
+    PDT.leaves (Subcube.refineByCoordsPDT (n := n) β coords)
+      = Subcube.refineByCoords (n := n) β coords := by
+  classical
+  induction coords generalizing β with
+  | nil =>
+      simp [Subcube.refineByCoordsPDT, Core.Subcube.refineByCoords, PDT.leaves]
+  | cons i rest ih =>
+      by_cases hfree : β i = none
+      ·
+        have hsplit := Core.Subcube.splitCoordinate_of_free
+          (β := β) (i := i) hfree
+        have hrewrite := Core.Subcube.refineByCoords_cons_of_free
+          (β := β) (i := i) (rest := rest) hfree
+        have hfalse := ih (β := fun j => if j = i then some false else β j)
+        have htrue := ih (β := fun j => if j = i then some true else β j)
+        simp [Subcube.refineByCoordsPDT, hsplit, hrewrite, hfalse, htrue, PDT.leaves]
+      ·
+        have hsplit := Core.Subcube.splitCoordinate_of_not_free
+          (β := β) (i := i) hfree
+        have hrewrite := Core.Subcube.refineByCoords_cons_of_not_free
+          (β := β) (i := i) (rest := rest) hfree
+        have htree :
+            Subcube.refineByCoordsPDT (n := n) β (i :: rest)
+              = Subcube.refineByCoordsPDT (n := n) β rest := by
+          simp [Subcube.refineByCoordsPDT, hsplit]
+        have hlist :
+            Core.Subcube.refineByCoords (n := n) β (i :: rest)
+              = Core.Subcube.refineByCoords (n := n) β rest := by
+          simpa [hrewrite]
+        simpa [htree, hlist] using ih (β := β)
+
+/-- Глубина дерева `refineByCoordsPDT` ограничена длиной списка координат. -/
+lemma Subcube.depth_refineByCoordsPDT_le {n : Nat}
+    (β : Subcube n) : ∀ coords : List (Fin n),
+      PDT.depth (Subcube.refineByCoordsPDT (n := n) β coords)
+        ≤ coords.length := by
+  classical
+  intro coords
+  induction coords generalizing β with
+  | nil =>
+      simp [Subcube.refineByCoordsPDT, PDT.depth]
+  | cons i rest ih =>
+      by_cases hfree : β i = none
+      ·
+        have hfalse := ih (β := fun j => if j = i then some false else β j)
+        have htrue := ih (β := fun j => if j = i then some true else β j)
+        have hmax : Nat.max
+            (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                (fun j : Fin n => if j = i then some false else β j) rest))
+            (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                (fun j : Fin n => if j = i then some true else β j) rest))
+            ≤ rest.length := by
+          exact max_le_iff.mpr ⟨hfalse, htrue⟩
+        have hsucc := Nat.succ_le_succ hmax
+        have hlen : rest.length + 1 = (i :: rest).length := by simp
+        have hsplit := Core.Subcube.splitCoordinate_of_free
+          (β := β) (i := i) hfree
+        have hdepth_node :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              = Nat.succ
+                  (Nat.max
+                    (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                        (fun j : Fin n => if j = i then some false else β j) rest))
+                    (PDT.depth (Subcube.refineByCoordsPDT (n := n)
+                        (fun j : Fin n => if j = i then some true else β j) rest))) := by
+          simp [Subcube.refineByCoordsPDT, hsplit, PDT.depth]
+        have hbound :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              ≤ rest.length + 1 := by
+          exact Eq.subst (motive := fun t => t ≤ rest.length + 1)
+            hdepth_node.symm hsucc
+        have hgoal :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              ≤ (i :: rest).length := by
+          exact Eq.subst (motive := fun t =>
+              PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest)) ≤ t)
+            hlen.symm hbound
+        exact hgoal
+      ·
+        have hsplit := Core.Subcube.splitCoordinate_of_not_free
+          (β := β) (i := i) hfree
+        have htree :
+            Subcube.refineByCoordsPDT (n := n) β (i :: rest)
+              = Subcube.refineByCoordsPDT (n := n) β rest := by
+          simp [Subcube.refineByCoordsPDT, hsplit]
+        have hdepth_rest := ih (β := β)
+        have hle_succ : rest.length ≤ (i :: rest).length := by
+          simpa [Nat.succ_eq_add_one] using Nat.le_succ (rest.length)
+        have hbound :
+            PDT.depth (Subcube.refineByCoordsPDT (n := n) β (i :: rest))
+              ≤ rest.length := by
+          simpa [htree] using hdepth_rest
+        exact hbound.trans hle_succ
 
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,

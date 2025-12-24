@@ -39,5 +39,15 @@ lemma one_le_polylogBudget (N : Nat) : 1 ≤ polylogBudget N := by
   have := pow_ge_one (Nat.log2 (N + 1) + 1) 4 (log2_succ_le_base N)
   simpa [polylogBudget] using this
 
+/--
+If the locality is zero, the smallness predicate holds automatically.
+This lemma is used in the canonical witness, where we intentionally keep
+no alive coordinates.
+-/
+lemma localSmallEnough_of_zero
+    (params : LocalCircuitParameters) (hℓ : params.ℓ = 0) :
+    LocalCircuitSmallEnough params := by
+  simp [LocalCircuitSmallEnough, hℓ]
+
 end LocalityLift
 end Facts

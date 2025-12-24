@@ -61,12 +61,25 @@ structure LocalCircuitParameters where
   depth : Nat
   deriving Repr
 
+/--
+Smallness predicate for local solvers.
+
+We require that the effective trunk bound appearing in shrinkage estimates
+is at most half of the input length.  This numeric assumption is the same as
+in the main `pnp3` pipeline and is strong enough to drive the local
+anti-checker contradiction.
+-/
+def LocalCircuitSmallEnough (params : LocalCircuitParameters) : Prop :=
+  params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ≤ params.n / 2
+
 /-- Wrapper asserting the existence of a small local solver. -/
 structure SmallLocalCircuitSolver (p : GapMCSPParams) where
   /-- Concrete parameters of the local solver. -/
   params : LocalCircuitParameters
   /-- The local solver shares the truth-table length with the instance. -/
   same_n : params.n = inputLen p
+  /-- The numeric smallness condition for locality-based anti-checkers. -/
+  small : LocalCircuitSmallEnough params
   deriving Repr
 
 end LocalityLift

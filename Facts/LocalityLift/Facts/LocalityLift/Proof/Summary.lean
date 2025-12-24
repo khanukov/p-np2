@@ -61,6 +61,17 @@ structure ShrinkageSummary
   depth : Nat
   /-- Глубина не превосходит глубину исходной схемы. -/
   depth_le : depth ≤ general.params.depth
+  /--
+  Численное условие "малости" для локального решателя, получаемого из
+  данной сводки.  Это требование обеспечивает корректность применения
+  локального античекера в основной цепочке доказательств.
+  -/
+  smallEnough :
+    LocalCircuitSmallEnough
+      { n := inputLen p
+        , M := general.params.size * sizeMultiplier
+        , ℓ := locality
+        , depth := depth }
 
 lemma sizeMultiplier_le_alive_card_succ
     {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
@@ -94,7 +105,13 @@ lemma sizeMultiplier_le_alive_card_succ
 def summaryOfAlive
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
     (alive : Finset (Fin (inputLen p)))
-    (alive_card_le : alive.card ≤ polylogBudget (inputLen p)) :
+    (alive_card_le : alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
     ShrinkageSummary general := by
   classical
   refine
@@ -110,42 +127,80 @@ def summaryOfAlive
       , locality_eq := rfl
       , locality_le := alive_card_le
       , depth := general.params.depth
-      , depth_le := le_rfl }
+      , depth_le := le_rfl
+      , smallEnough := by
+          simpa using smallEnough }
   -- Через лемму `card_testSetOfAlive` мощность тест-набора совпадает с `alive.card`.
   simpa [card_testSetOfAlive alive] using alive_card_le
 
 @[simp] lemma summaryOfAlive_sizeMultiplier
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
-    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p)) :
-    (summaryOfAlive (p := p) general alive hle).sizeMultiplier = alive.card.succ := rfl
+    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p))
+    (hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
+    (summaryOfAlive (p := p) general alive hle hsmall).sizeMultiplier = alive.card.succ := rfl
 
 @[simp] lemma summaryOfAlive_testSet
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
-    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p)) :
-    (summaryOfAlive (p := p) general alive hle).testSet = testSetOfAlive alive := rfl
+    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p))
+    (hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
+    (summaryOfAlive (p := p) general alive hle hsmall).testSet = testSetOfAlive alive := rfl
 
 @[simp] lemma summaryOfAlive_testSet_eq
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
-    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p)) :
-    (summaryOfAlive (p := p) general alive hle).testSet_eq = rfl := rfl
+    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p))
+    (hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
+    (summaryOfAlive (p := p) general alive hle hsmall).testSet_eq = rfl := rfl
 
 @[simp] lemma summaryOfAlive_alive
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
-    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p)) :
-    (summaryOfAlive (p := p) general alive hle).alive = alive := rfl
+    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p))
+    (hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
+    (summaryOfAlive (p := p) general alive hle hsmall).alive = alive := rfl
 
 @[simp] lemma summaryOfAlive_locality
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
-    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p)) :
-    (summaryOfAlive (p := p) general alive hle).locality = alive.card := rfl
+    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p))
+    (hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
+    (summaryOfAlive (p := p) general alive hle hsmall).locality = alive.card := rfl
 
 @[simp] lemma summaryOfAlive_locality_eq
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
-    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p)) :
-    (summaryOfAlive (p := p) general alive hle).locality_eq = rfl := rfl
+    (alive : Finset (Fin (inputLen p))) (hle : alive.card ≤ polylogBudget (inputLen p))
+    (hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * alive.card.succ
+          , ℓ := alive.card
+          , depth := general.params.depth }) :
+    (summaryOfAlive (p := p) general alive hle hsmall).locality_eq = rfl := rfl
 
 /--
-Консервативное резюме, построенное из одноточечного набора живых координат.
+Консервативное резюме, построенное из пустого набора живых координат.
 Пока у нас нет настоящего shrinkage-свидетеля, этого достаточно, чтобы
 поддерживать конструктивный свидетель и проверять численные неравенства.
 -/
@@ -154,11 +209,24 @@ def canonicalSummary
     ShrinkageSummary general := by
   classical
   have hcard : (canonicalAlive p).card ≤ polylogBudget (inputLen p) := by
-    have : (canonicalAlive p).card = 1 := card_canonicalAlive p
-    have hpoly : 1 ≤ polylogBudget (inputLen p) :=
-      one_le_polylogBudget (inputLen p)
-    simpa [this] using hpoly
-  exact summaryOfAlive (p := p) general (canonicalAlive p) hcard
+    have : (canonicalAlive p).card = 0 := card_canonicalAlive p
+    -- Из `0 = card` достаточно получить `0 ≤ polylogBudget`.
+    simpa [this] using (Nat.zero_le (polylogBudget (inputLen p)))
+  have hsmall :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * (canonicalAlive p).card.succ
+          , ℓ := (canonicalAlive p).card
+          , depth := general.params.depth } := by
+    -- Локальность равна нулю, поэтому условие "малости" тривиально.
+    have hℓ : (canonicalAlive p).card = 0 := card_canonicalAlive p
+    simpa [hℓ] using
+      (localSmallEnough_of_zero
+        { n := inputLen p
+          , M := general.params.size * (canonicalAlive p).card.succ
+          , ℓ := (canonicalAlive p).card
+          , depth := general.params.depth } hℓ)
+  exact summaryOfAlive (p := p) general (canonicalAlive p) hcard hsmall
 
 @[simp] lemma canonicalSummary_testSet
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :

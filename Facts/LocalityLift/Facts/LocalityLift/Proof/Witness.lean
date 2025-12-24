@@ -5,7 +5,7 @@ import Facts.LocalityLift.Proof.ShrinkageWitness
 ## Полезные свойства консервативного свидетеля
 
 Поскольку в текущей версии пакета мы всё ещё опираемся на канонический
-шринкаж-сертификат (одноточечный тест-набор), разработчикам удобно иметь
+шринкаж-сертификат (пустой тест-набор), разработчикам удобно иметь
 "факты по умолчанию" о полученном свидетеле.  В частности, далее часто
 возникает необходимость понять, какие именно координаты помечены как живые
 и какой тест-набор экспортируется наружу.  Чтобы не раскручивать определения
@@ -24,7 +24,7 @@ import Facts.LocalityLift.Proof.ShrinkageWitness
 Этот модуль использует абстракцию `LocalityBlueprint`, объявленную в
 `Proof/Blueprint.lean`, чтобы построить фактический свидетель локализации,
 экспортируемый интерфейсом.  В текущей версии используется канонический
-одноточечный чертёж; позже он будет заменён результатами шринкаж-анализа.
+пустой чертёж; позже он будет заменён результатами шринкаж-анализа.
 -/
 
 namespace Facts
@@ -180,7 +180,7 @@ lemma localityWitness_alive_canonical
 /--
 Тест-набор, возвращаемый консервативным свидетелем, совпадает с
 `testSetOfAlive (canonicalAlive p)`.  Лемма облегчает проверку численных
-границ, поскольку мощность тест-набора немедленно переписывается в `1`.
+границ, поскольку мощность тест-набора немедленно переписывается в `0`.
 -/
 lemma localityWitness_testSet_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
@@ -199,32 +199,29 @@ lemma localityWitness_testSet_canonical
 
 /--
 Размер локального решателя в каноническом свидетеле равен размеру исходного
-решателя, умноженному на `2` (что соответствует формуле с множителем
-`|T| + 1` при `|T| = 1`).  Это явное равенство полезно для sanity-check-ов и
-для чтения логов `lake test`.
+решателя, умноженному на `|T| + 1`.  В нашем консервативном варианте
+`|T| = 0`, поэтому множитель равен `1`.
 -/
 lemma localityWitness_size_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
     (localityWitness (p := p) general).localParams.M =
-        general.params.size * 2 := by
+        general.params.size *
+          (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate
+            (p := p) general).sizeMultiplier := by
   classical
-  have hsummary :
-      (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general).summary =
-        canonicalSummary (p := p) general := rfl
   have h :=
     localityWitnessOfCertificate_size
       (certificate := ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
       (general := general) (generalEval := fun _ => false)
-  simpa [localityWitness, localityWitnessOfCertificate, hsummary, card_canonicalAlive]
-    using h
+  simpa [localityWitness, localityWitnessOfCertificate] using h
 
 /--
-Локальность канонического свидетеля действительно равна `1`, поскольку живых
-координат ровно одна.  Это прямое следствие предыдущей леммы про `alive`.
+Локальность канонического свидетеля действительно равна `0`, поскольку живых
+координат нет.  Это прямое следствие предыдущей леммы про `alive`.
 -/
 lemma localityWitness_locality_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    (localityWitness (p := p) general).localParams.ℓ = 1 := by
+    (localityWitness (p := p) general).localParams.ℓ = 0 := by
   classical
   have hsummary :
       (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general).summary =
@@ -258,4 +255,3 @@ lemma localityWitness_depth_canonical
 
 end LocalityLift
 end Facts
-

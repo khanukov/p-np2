@@ -109,6 +109,19 @@ structure LocalCircuitParameters where
   depth  : Nat
   deriving Repr
 
+/--
+  Предикат «малости» для локальных схем.  Мы требуем, чтобы суммарная длина
+  «ствола» в shrinkage-свидетельстве была существенно меньше входной длины.
+  Конкретно, ограничиваем произведение локальности на логарифмические факторы:
+
+  `ℓ * (log₂(M+2) + depth + 1) ≤ n / 2`.
+
+  Эта форма напрямую согласуется с оценкой на глубину PDT из
+  `shrinkage_for_localCircuit` и даёт запас для применения Covering-Power.
+-/
+def LocalCircuitSmallEnough (params : LocalCircuitParameters) : Prop :=
+  params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ≤ params.n / 2
+
 /-- Уточняющая структура, описывающая гарантии shrinkage.
 
 `depthBound` и `errorBound` — ожидаемые верхние оценки на глубину PDT и ошибку

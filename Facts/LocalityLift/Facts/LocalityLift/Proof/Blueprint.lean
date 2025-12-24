@@ -53,6 +53,8 @@ structure LocalityWitness
   locality_le : localParams.ℓ ≤ polylogBudget (inputLen p)
   /-- The depth of the local solver does not exceed that of the general solver. -/
   depth_le : localParams.depth ≤ general.params.depth
+  /-- The numeric smallness condition needed by the anti-checker step. -/
+  smallEnough : LocalCircuitSmallEnough localParams
 
 namespace LocalityWitness
 
@@ -61,7 +63,8 @@ def toLocalSolver
     {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
     (w : LocalityWitness general) : SmallLocalCircuitSolver p :=
   { params := w.localParams
-    same_n := w.same_n }
+    same_n := w.same_n
+    small := w.smallEnough }
 
 @[simp] lemma toLocalSolver_params
     {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
@@ -102,6 +105,13 @@ structure LocalityBlueprint
   depth             : Nat
   /-- Глубина не превосходит глубину исходного решателя. -/
   depth_le          : depth ≤ general.params.depth
+  /-- Численное условие "малости" для получаемого локального решателя. -/
+  smallEnough :
+    LocalCircuitSmallEnough
+      { n := inputLen p
+        , M := localSize
+        , ℓ := locality
+        , depth := depth }
 
 namespace ShrinkageSummary
 
@@ -130,7 +140,9 @@ def toBlueprint
           simpa using summary.locality_eq
       , locality_le := summary.locality_le
       , depth := summary.depth
-      , depth_le := summary.depth_le }
+      , depth_le := summary.depth_le
+      , smallEnough := by
+          simpa using summary.smallEnough }
   -- Монотонность по второму множителю даёт нужную оценку размера.
   exact (Nat.mul_le_mul_left _ summary.sizeMultiplier_le)
 
@@ -180,7 +192,9 @@ def LocalityBlueprint.toWitness
       , locality_le := by
           simpa using blueprint.locality_le
       , depth_le := by
-          simpa using blueprint.depth_le }
+          simpa using blueprint.depth_le
+      , smallEnough := by
+          simpa using blueprint.smallEnough }
 
 /--
 Консервативный чертёж, основанный на одноточечном тест-наборе, строится через

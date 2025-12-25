@@ -27,9 +27,9 @@ open ThirdPartyFacts
     ∃ (T : Finset (Core.BitVec (Models.inputLen p)))
       (loc : LowerBounds.SmallLocalCircuitSolver p),
         T.card ≤ Models.polylogBudget (Models.inputLen p) ∧
-        loc.params.M ≤ solver.params.size * (T.card.succ) ∧
-        loc.params.ℓ ≤ Models.polylogBudget (Models.inputLen p) ∧
-        loc.params.depth ≤ solver.params.depth :=
+        loc.params.params.M ≤ solver.params.params.size * (T.card.succ) ∧
+        loc.params.params.ℓ ≤ Models.polylogBudget (Models.inputLen p) ∧
+        loc.params.params.depth ≤ solver.params.params.depth :=
   ThirdPartyFacts.locality_lift (p := p) (solver := solver)
 
 /-- Contrapositive wrapper delegating to the external package. -/

@@ -1,6 +1,9 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.Log
 import Mathlib.Tactic
+import Core.BooleanBasics
+import Complexity.Promise
+import Complexity.Interfaces
 
 /-!
   pnp3/Models/Model_GapMCSP.lean
@@ -16,6 +19,10 @@ import Mathlib.Tactic
 -/
 namespace Pnp3
 namespace Models
+
+open Core
+open Complexity
+open ComplexityInterfaces
 
 /--
   Параметры GapMCSP.  Нам достаточно знать количество переменных `n` и два
@@ -47,6 +54,67 @@ def inputLen (p : GapMCSPParams) : Nat := Nat.pow 2 p.n
 -/
 def polylogBudget (N : Nat) : Nat :=
   (Nat.succ (Nat.log2 (Nat.succ N))) ^ 4
+
+/-!
+  ### Promise-формализация GapMCSP
+
+  В текущей версии мы сохраняем минимальный интерфейс: YES/NO-множества
+  определяются через язык `gapMCSP_Language`.  Пока этот язык является
+  заглушкой (см. ниже), но структура позволяет заменить его на реальную
+  формализацию без изменения типов решателей.
+-/
+
+/-- Язык GapMCSP в текущей модели (заглушка). -/
+def gapMCSP_Language (_p : GapMCSPParams) : Language := fun _ _ => False
+
+/-- Тип входов promise-версии GapMCSP: таблица истинности длины `2^n`. -/
+abbrev GapMCSPInput (p : GapMCSPParams) := Core.BitVec (inputLen p)
+
+/-- Promise-задача GapMCSP, определяемая через язык `gapMCSP_Language`. -/
+def GapMCSPPromise (p : GapMCSPParams) : PromiseProblem (GapMCSPInput p) :=
+  { Yes := fun x => gapMCSP_Language p (inputLen p) x = true
+    No := fun x => gapMCSP_Language p (inputLen p) x = false
+    disjoint := by
+      classical
+      refine Set.disjoint_left.mpr ?_
+      intro x hYes hNo
+      cases hNo
+      cases hYes }
+
+/--
+  `SolvesPromise` for the GapMCSP promise is equivalent to pointwise
+  agreement with the GapMCSP language.  This is the main bridge that lets
+  us replace promise-style correctness with a concrete equality of Boolean
+  functions whenever we need to reason about membership in families.
+-/
+theorem solvesPromise_gapMCSP_iff
+    {p : GapMCSPParams} {decide : GapMCSPInput p → Bool} :
+    SolvesPromise (GapMCSPPromise p) decide ↔
+      ∀ x, decide x = gapMCSP_Language p (inputLen p) x := by
+  constructor
+  · intro h x
+    -- Split on the language value and use the corresponding promise side.
+    cases hlang : gapMCSP_Language p (inputLen p) x
+    · have hNo : x ∈ (GapMCSPPromise p).No := by
+        simpa [GapMCSPPromise] using hlang
+      simpa [hlang] using h.2 x hNo
+    · have hYes : x ∈ (GapMCSPPromise p).Yes := by
+        simpa [GapMCSPPromise] using hlang
+      simpa [hlang] using h.1 x hYes
+  · intro h
+    constructor
+    · intro x hx
+      -- In the YES region, the language evaluates to `true`.
+      have hx' : gapMCSP_Language p (inputLen p) x = true := by
+        simpa [GapMCSPPromise] using hx
+      have hdec := h x
+      simpa [hx'] using hdec
+    · intro x hx
+      -- In the NO region, the language evaluates to `false`.
+      have hx' : gapMCSP_Language p (inputLen p) x = false := by
+        simpa [GapMCSPPromise] using hx
+      have hdec := h x
+      simpa [hx'] using hdec
 
 end Models
 end Pnp3

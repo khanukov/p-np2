@@ -1,7 +1,7 @@
 # External Axioms in P≠NP Formalization
 ## Complete Reference List
 
-Last updated: 2025-10-24
+Last updated: 2025-12-25
 
 ---
 

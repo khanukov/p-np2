@@ -54,14 +54,14 @@ open Magnification
   {
     params :=
       {
-        n := solver.params.n
-        size := solver.params.size
-        depth := solver.params.depth
+        n := solver.params.params.n
+        size := solver.params.params.size
+        depth := solver.params.params.depth
       }
     same_n := by
       -- both input length predicates reduce to `Nat.pow 2 p.n`
       simpa [toFactsParams, Facts.LocalityLift.inputLen, Models.inputLen]
-        using solver.same_n
+        using solver.params.same_n
   }
 
 /-- Push external local parameters back to the internal record. -/
@@ -75,11 +75,11 @@ open Magnification
     depth := params.depth
   }
 
-/-- Convert external local solvers into the internal wrapper. -/
-@[simp] def fromFactsLocalSolver
+/-- Convert external local solvers into the internal parameter wrapper. -/
+@[simp] def fromFactsLocalParams
     {p : Models.GapMCSPParams}
     (solver : Facts.LocalityLift.SmallLocalCircuitSolver (toFactsParams p)) :
-    LowerBounds.SmallLocalCircuitSolver p :=
+    LowerBounds.SmallLocalCircuitParams p :=
   {
     params := fromFactsLocalParameters solver.params
     same_n := by
@@ -100,18 +100,18 @@ open Magnification
   {
     params :=
       {
-        n := solver.params.n
-        M := solver.params.M
-        ℓ := solver.params.ℓ
-        depth := solver.params.depth
+        n := solver.params.params.n
+        M := solver.params.params.M
+        ℓ := solver.params.params.ℓ
+        depth := solver.params.params.depth
       }
     same_n := by
       simpa [toFactsParams, Facts.LocalityLift.inputLen, Models.inputLen]
-        using solver.same_n
+        using solver.params.same_n
     small := by
       simpa [Facts.LocalityLift.LocalCircuitSmallEnough,
         ThirdPartyFacts.LocalCircuitSmallEnough, toFactsParams]
-        using solver.small
+        using solver.params.small
   }
 
 /-- Specialised version of the locality-lift interface for the internal types. -/
@@ -121,20 +121,27 @@ def locality_lift
     ∃ (T : Finset (Core.BitVec (Models.inputLen p)))
       (loc : LowerBounds.SmallLocalCircuitSolver p),
         T.card ≤ Models.polylogBudget (Models.inputLen p) ∧
-        loc.params.M ≤ solver.params.size * (T.card.succ) ∧
-        loc.params.ℓ ≤ Models.polylogBudget (Models.inputLen p) ∧
-        loc.params.depth ≤ solver.params.depth := by
+        loc.params.params.M ≤ solver.params.params.size * (T.card.succ) ∧
+        loc.params.params.ℓ ≤ Models.polylogBudget (Models.inputLen p) ∧
+        loc.params.params.depth ≤ solver.params.params.depth := by
   classical
   obtain ⟨T, locFacts, hT, hM, hℓ, hdepth⟩ :=
     Facts.LocalityLift.locality_lift (toFactsGeneralSolver solver)
-  refine ⟨T, fromFactsLocalSolver (p := p) locFacts, ?_, ?_, ?_, ?_⟩
+  let localParams : LowerBounds.SmallLocalCircuitParams p :=
+    fromFactsLocalParams (p := p) locFacts
+  let localSolver : LowerBounds.SmallLocalCircuitSolver p :=
+    { params := localParams
+      decide := solver.decide
+      correct := solver.correct }
+  refine ⟨T, localSolver, ?_, ?_, ?_, ?_⟩
   · simpa [polylogBudget_toFacts, inputLen_toFacts]
       using hT
-  · simpa [fromFactsLocalSolver]
+  · simpa [localParams, localSolver, fromFactsLocalParams]
       using hM
-  · simpa [polylogBudget_toFacts, inputLen_toFacts, fromFactsLocalSolver]
+  · simpa [polylogBudget_toFacts, inputLen_toFacts, localParams, localSolver,
+      fromFactsLocalParams]
       using hℓ
-  · simpa [fromFactsLocalSolver]
+  · simpa [localParams, localSolver, fromFactsLocalParams]
       using hdepth
 
 /-- Contrapositive wrapper specialised to the internal types. -/
@@ -147,7 +154,14 @@ def no_general_solver_of_no_local
   have : ∀ solver' : Facts.LocalityLift.SmallLocalCircuitSolver (toFactsParams p),
       False := by
     intro solver'
-    exact H (fromFactsLocalSolver (p := p) solver')
+    -- Используем стандартную локализацию и корректность из внешнего witness.
+    let localParams : LowerBounds.SmallLocalCircuitParams p :=
+      fromFactsLocalParams (p := p) solver'
+    let localSolver : LowerBounds.SmallLocalCircuitSolver p :=
+      { params := localParams
+        decide := solver.decide
+        correct := solver.correct }
+    exact H localSolver
   have h := Facts.LocalityLift.no_general_solver_of_no_local (p := toFactsParams p) this
   simpa using h (toFactsGeneralSolver solver)
 

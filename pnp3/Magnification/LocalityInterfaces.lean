@@ -1,3 +1,5 @@
+import Complexity.Promise
+import Core.BooleanBasics
 import Models.Model_GapMCSP
 
 /-!
@@ -11,6 +13,7 @@ namespace Pnp3
 namespace Magnification
 
 open Models
+open Complexity
 
 /-- Parameters of a general (non-local) GapMCSP solver. -/
 structure GeneralCircuitParameters where
@@ -19,11 +22,17 @@ structure GeneralCircuitParameters where
   depth : Nat
   deriving Repr
 
-/-- Wrapper expressing the existence of a small general solver. -/
-structure SmallGeneralCircuitSolver (p : Models.GapMCSPParams) where
+/-- Параметры «малого» общего решателя GapMCSP. -/
+structure SmallGeneralCircuitParams (p : Models.GapMCSPParams) where
   params : GeneralCircuitParameters
   same_n : params.n = Models.inputLen p
   deriving Repr
+
+/-- Корректный общий решатель GapMCSP. -/
+structure SmallGeneralCircuitSolver (p : Models.GapMCSPParams) where
+  params : SmallGeneralCircuitParams p
+  decide : Core.BitVec (Models.inputLen p) → Bool
+  correct : SolvesPromise (Models.GapMCSPPromise p) decide
 
 end Magnification
 end Pnp3

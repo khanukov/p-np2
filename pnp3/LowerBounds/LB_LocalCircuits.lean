@@ -30,12 +30,13 @@ theorem LB_LocalCircuits_core
   obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset_local (p := p) solver
   classical
   dsimp only at hWitness
-  set Fsolver : Core.Family solver.params.n := solver.same_n.symm ▸ F
-  set scWitness := (scenarioFromLocalCircuit (params := solver.params) Fsolver).2
-  set Ysolver : Finset (Core.BitVec solver.params.n → Bool) :=
-    solver.same_n.symm ▸ Y
-  set Tsolver : Finset (Core.BitVec solver.params.n) :=
-    solver.same_n.symm ▸ T
+  set Fsolver : Core.Family solver.params.params.n := solver.params.same_n.symm ▸ F
+  set scWitness :=
+    (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+    solver.params.same_n.symm ▸ Y
+  set Tsolver : Finset (Core.BitVec solver.params.params.n) :=
+    solver.params.same_n.symm ▸ T
   rcases hWitness with
     ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
   refine
@@ -48,4 +49,3 @@ theorem LB_LocalCircuits_core
 
 end LowerBounds
 end Pnp3
-

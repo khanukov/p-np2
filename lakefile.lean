@@ -23,6 +23,7 @@ lean_lib PnP3 where
     `Counting.Count_EasyFuncs,
     `Counting.Atlas_to_LB_Core,
     `AC0.Formulas,
+    `Complexity.Promise,
     `Complexity.Interfaces,
     `Models.Model_GapMCSP,
     `Models.Model_SparseNP,

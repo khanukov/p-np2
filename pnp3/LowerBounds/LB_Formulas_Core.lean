@@ -29,12 +29,12 @@ theorem LB_Formulas_core
   classical
   -- Раскрываем обозначения, возвращённые античекером.
   dsimp only at hWitness
-  set Fsolver : Core.Family solver.ac0.n := solver.same_n.symm ▸ F
-  set scWitness := (scenarioFromAC0 (params := solver.ac0) Fsolver).2
-  set Ysolver : Finset (Core.BitVec solver.ac0.n → Bool) :=
-    solver.same_n.symm ▸ Y
-  set Tsolver : Finset (Core.BitVec solver.ac0.n) :=
-    solver.same_n.symm ▸ T
+  set Fsolver : Core.Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+  set scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+  set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+    solver.params.same_n.symm ▸ Y
+  set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
+    solver.params.same_n.symm ▸ T
   rcases hWitness with
     ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
   -- Используем тестовую версию критерия: атлас не может покрыть большое семейство.

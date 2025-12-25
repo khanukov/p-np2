@@ -12,6 +12,8 @@ theorem, so we restrict the build to those modules. -/
 lean_lib FactPsubsetPpoly where
   srcDir := "."
   globs := #[
+    Glob.one `Proof.Bitstring,
+    Glob.one `Proof.Turing.Encoding,
     Glob.one `Proof.Complexity.Interfaces,
     Glob.one `FactPsubsetPpoly
   ]

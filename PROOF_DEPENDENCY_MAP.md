@@ -1,7 +1,7 @@
 # Полная карта зависимостей доказательства P≠NP
 ## От аксиом к финальной теореме
 
-Last updated: 2025-12-16
+Last updated: 2025-12-25
 
 ---
 
@@ -75,7 +75,7 @@ ac0_statement_from_pipeline
 ```
 local_statement_from_pipeline
   └─→ LB_LocalCircuits_core
-      └─→ antiChecker_exists_testset_local (PROVEN, relies on AXIOM `antiChecker_exists_large_Y_local`)
+      └─→ antiChecker_exists_testset_local (PROVEN, relies on internal `noSmallLocalCircuitSolver`)
 ```
 
 ### Уровень 0: CORE INFRASTRUCTURE (Parts A+B)
@@ -103,19 +103,14 @@ locality_lift
 
 ## 🔴 АКТИВНЫЕ АКСИОМЫ (минимальный набор)
 
-Всего: **3** (только Parts A/C; Part D целиком доказан).
+Всего: **2** (только Part A; Parts C/D целиком доказаны).
 
 ### Part A — Switching/Shrinkage (2)
 1. `partial_shrinkage_for_AC0` — Håstad (1986), Servedio–Tan (2019).
 2. `shrinkage_for_localCircuit` — Williams (2014), Chen–Oliveira–Santhanam (2022).
 
-### Part C — Anti-checker lower bounds (1)
-3. `antiChecker_exists_large_Y_local`
-   - Sources: Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021).
-   - `antiChecker_exists_large_Y`, `antiChecker_exists_testset` и
-     `antiChecker_exists_testset_local` теперь доказаны из базовых форм.
-
-Интерфейсные леммы `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation` импортированы как теоремы и не считаются аксиомами.
+Интерфейсные леммы `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation`
+импортированы как теоремы и не считаются аксиомами.
 
 ---
 

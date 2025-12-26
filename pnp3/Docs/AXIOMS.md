@@ -1,7 +1,7 @@
 # External Axioms in P≠NP Formalization
 ## Complete Reference List
 
-Last updated: 2025-12-25
+Last updated: 2025-12-26
 
 ---
 
@@ -13,8 +13,9 @@ They are grouped along the analytical steps of the pipeline:
 - **Part A (Switching / Shrinkage)**: 2 axioms
 - **Part C (Anti-Checker lower bounds)**: 0 axioms — all results are theorems
 - **Part D (Magnification triggers / bridges)**: 0 axioms
-- **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` and `P ≠ NP` are now
-  imported as proven theorems from the lightweight `Facts/PsubsetPpoly` package.
+- **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` is imported from the
+  lightweight `Facts/PsubsetPpoly` package, while `P ≠ NP` is derived in
+  `Complexity/Interfaces.lean` from `P_subset_Ppoly` and `NP_not_subset_Ppoly`.
 
 All references below point to the current source files under `pnp3/`.
 Legacy axioms that lived in `Core/ShrinkageAC0.lean` and
@@ -118,8 +119,8 @@ no external axioms associated with the magnification interfaces.
 **Location**: `pnp3/Magnification/Facts_Magnification.lean:74`
 
 **Summary**: Abstract OPS trigger converting a general lower-bound hypothesis
-into `NP_not_subset_Ppoly`.  Расширенный конспект и план снятия аксиомы см. в
-`pnp3/Docs/OPS_trigger_general.md`.
+into `NP_not_subset_Ppoly`.  Расширенный конспект и исторический план снятия
+аксиомы см. в `pnp3/Docs/OPS_trigger_general.md`.
 
 ### D.2: `OPS_trigger_formulas`
 
@@ -153,14 +154,16 @@ lower bounds magnify to `NP_not_subset_Ppoly`. ✅ **PROVEN** via констру
 ## Complexity Interfaces (Proven Facts)
 
 The interface file `pnp3/Complexity/Interfaces.lean` no longer declares axioms.
-Both statements listed below are bona fide theorems imported from the
-self-contained package `Facts/PsubsetPpoly`.
+The inclusion `P ⊆ P/poly` is imported from the self-contained package
+`Facts/PsubsetPpoly`, while the classical implication to `P ≠ NP` is proved
+locally from `NP_not_subset_Ppoly` and `P_subset_Ppoly`.
 
 - `@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly`
   - Witness of the inclusion `P ⊆ P/poly`.  Source:
     `Facts/PsubsetPpoly/Proof/Complexity/PsubsetPpoly.lean`.
 - `theorem P_ne_NP_of_nonuniform_separation`
-  - Classical deduction `NP_not_subset_Ppoly → P_subset_Ppoly → P_ne_NP`.
+  - Classical deduction `NP_not_subset_Ppoly → P_subset_Ppoly → P_ne_NP`
+    packaged inside the interface.
 
 ---
 

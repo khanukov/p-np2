@@ -35,4 +35,5 @@ Every declaration in the standalone proof is wrapped in the umbrella namespace
 counterparts from earlier development efforts.  The wrapper module
 `pnp3/ThirdPartyFacts/PsubsetPpoly.lean` now imports
 `Facts.PsubsetPpoly.FactPsubsetPpoly` directly and re-exports the final theorem
-to the rest of the project, replacing the placeholder axioms used previously.
+to the rest of the project, keeping the interface aligned with the namespaced
+proof.

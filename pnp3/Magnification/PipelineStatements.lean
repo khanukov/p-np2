@@ -39,20 +39,27 @@ open LowerBounds
   параметров GapMCSP.  Именно его ожидает формулировка OPS-теоремы.
 -/
 def AC0Statement (p : GapMCSPParams) : Prop :=
-  ∀ _solver : SmallAC0Solver p, False
+  ∀ _solver : SmallAC0Solver p,
+    ThirdPartyFacts.FamilyIsAC0 _solver.params.ac0
+      (Counting.allFunctionsFamily _solver.params.ac0.n) → False
 
 /--
   Утверждение «не существует малой локальной схемы-решателя».  Это
   условие используется в JACM’22 (барьер локальности).
 -/
 def LocalStatement (p : GapMCSPParams) : Prop :=
-  ∀ _solver : SmallLocalCircuitSolver p, False
+  ∀ _solver : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit _solver.params.params
+      (Counting.allFunctionsFamily _solver.params.params.n) → False
 
 /--
   Утверждение «не существует малого общего решателя».
 -/
 def GeneralCircuitStatement (p : GapMCSPParams) : Prop :=
-  ∀ _solver : SmallGeneralCircuitSolver p, False
+  ∀ _solver : SmallGeneralCircuitSolver p,
+    (∀ loc : SmallLocalCircuitSolver p,
+      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+        (Counting.allFunctionsFamily loc.params.params.n)) → False
 
 /--
   Переписываем гипотезу OPS для формул через упаковку `AC0Statement`.
@@ -76,14 +83,18 @@ lemma localHypothesis_eq_statement (p : GapMCSPParams) (κ : Nat) :
 -/
 lemma ac0_statement_from_pipeline (p : GapMCSPParams) :
     AC0Statement p :=
-  LB_Formulas_core (p := p)
+  by
+    intro solver hF_all
+    exact LB_Formulas_core (p := p) (solver := solver) hF_all
 
 /--
   Аналогичный вывод для локальных схем.
 -/
 lemma local_statement_from_pipeline (p : GapMCSPParams) :
     LocalStatement p :=
-  LB_LocalCircuits_core (p := p)
+  by
+    intro solver hF_all
+    exact LB_LocalCircuits_core (p := p) (solver := solver) hF_all
 
 /--
   Противоречие для произвольных схем: Locality-Lift и локальная нижняя
@@ -93,7 +104,8 @@ lemma general_statement_from_locality (p : GapMCSPParams) :
     GeneralCircuitStatement p :=
   by
     intro solver
-    exact LB_GeneralFromLocal (p := p) (solver := solver)
+    intro hF_all
+    exact LB_GeneralFromLocal (p := p) (solver := solver) hF_all
 
 /--
   Переход к стандартной гипотезе OPS’19 для формул: достаточно иметь
@@ -104,8 +116,8 @@ lemma formula_hypothesis_from_pipeline
     FormulaLowerBoundHypothesis p δ :=
   by
     refine And.intro hδ ?hStatement
-    intro solver
-    exact ac0_statement_from_pipeline (p := p) solver
+    intro solver hF_all
+    exact ac0_statement_from_pipeline (p := p) solver hF_all
 
 /--
   Версия барьера локальности: положительный параметр `κ` и вывод шага C
@@ -116,8 +128,8 @@ lemma local_hypothesis_from_pipeline
     LocalLowerBoundHypothesis p κ :=
   by
     refine And.intro hκ ?hStatement
-    intro solver
-    exact local_statement_from_pipeline (p := p) solver
+    intro solver hF_all
+    exact local_statement_from_pipeline (p := p) solver hF_all
 
 /--
   Универсальная OPS-гипотеза, полученная напрямую из запрета общих схем.

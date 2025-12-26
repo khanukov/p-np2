@@ -258,7 +258,10 @@ def GeneralLowerBoundHypothesis
 -/
 def FormulaLowerBoundHypothesis
     (p : GapMCSPParams) (δ : Rat) : Prop :=
-  (0 : Rat) < δ ∧ ∀ _solver : SmallAC0Solver p, False
+  (0 : Rat) < δ ∧
+    ∀ solver : SmallAC0Solver p,
+      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+        (Counting.allFunctionsFamily solver.params.ac0.n) → False
 
 /--
   Упрощённое построение гипотезы нижней границы при фиксированном `ε` по
@@ -275,7 +278,9 @@ lemma general_hypothesis_default {p : GapMCSPParams} {statement : Prop}
   используем сразу готовое доказательство положительности.
 -/
 lemma formula_hypothesis_default {p : GapMCSPParams}
-    (h : ∀ _solver : SmallAC0Solver p, False) :
+    (h : ∀ solver : SmallAC0Solver p,
+      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+        (Counting.allFunctionsFamily solver.params.ac0.n) → False) :
     FormulaLowerBoundHypothesis p opsDefaultPack.ε :=
   ⟨opsDefaultPack.ε_pos, h⟩
 
@@ -287,7 +292,10 @@ lemma formula_hypothesis_default {p : GapMCSPParams}
 -/
 def LocalLowerBoundHypothesis
     (p : GapMCSPParams) (κ : Nat) : Prop :=
-  0 < κ ∧ ∀ _solver : SmallLocalCircuitSolver p, False
+  0 < κ ∧
+    ∀ solver : SmallLocalCircuitSolver p,
+      ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
+        (Counting.allFunctionsFamily solver.params.params.n) → False
 
 /-- CJW-гипотеза для разреженных NP-языков. -/
 def SparseLowerBoundHypothesis
@@ -330,7 +338,10 @@ def defaultSparseSolver (p : Models.SparseLanguageParams) : SmallSparseSolver p 
   но сам аргумент опирается только на существование решателя из `P/poly`.
 -/
 theorem OPS_trigger_general_contra
-  {p : GapMCSPParams} {ε : Rat} (statement : Prop) :
+  {p : GapMCSPParams} {ε : Rat} (statement : Prop)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   GeneralLowerBoundHypothesis p ε statement →
     ((∀ L : ComplexityInterfaces.Language,
       ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) :=
@@ -344,7 +355,7 @@ by
     generalCircuitSolver_of_Ppoly (p := p) hPpoly
   -- Локальная нижняя граница шага C (`LB_GeneralFromLocal`) запрещает любое
   -- такое решение, поэтому получаем немедленное противоречие.
-  exact LowerBounds.LB_GeneralFromLocal (p := p) (solver := solver)
+  exact LowerBounds.LB_GeneralFromLocal (p := p) (solver := solver) hF_all
 
 /-!
   ### Комбинаторика покрытия семейства `Y`
@@ -459,42 +470,50 @@ structure CoverCapacityWitness (α : Type) [DecidableEq α] : Type where
   `antiChecker_exists_large_Y`.
 -/
 noncomputable def coverWitness_from_antiChecker
-    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) :
     Σ' sc : BoundedAtlasScenario solver.params.ac0.n,
       CoverCapacityWitness (Core.BitVec solver.params.ac0.n → Bool) := by
   classical
   -- Шаг 1: извлекаем конкретные `F` и `Y` из экзистенциальной формулировки.
-  let hExist := antiChecker_exists_large_Y (p := p) solver
+  let hExist := antiChecker_exists_large_Y (p := p) solver hF_all
   -- Сначала выбираем семейство `F`.
   let F : Family (Models.inputLen p) := Classical.choose hExist
   -- Затем выбираем подсемейство `Y` для выбранного `F`.
   have hExistY :
       ∃ Y : Finset (Core.BitVec (Models.inputLen p) → Bool),
         let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-        let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-          solver.params.same_n.symm ▸ Y
-        Ysolver ⊆ familyFinset (sc := scWitness) ∧
-          scenarioCapacity (sc := scWitness) < Ysolver.card :=
+        ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+          let scWitness :=
+            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+          let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+            solver.params.same_n.symm ▸ Y
+          Ysolver ⊆ familyFinset (sc := scWitness) ∧
+            scenarioCapacity (sc := scWitness) < Ysolver.card :=
     Classical.choose_spec hExist
   let Y : Finset (Core.BitVec (Models.inputLen p) → Bool) := Classical.choose hExistY
   have h :
       let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-      let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-        solver.params.same_n.symm ▸ Y
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card :=
+      ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+        let scWitness :=
+          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+          solver.params.same_n.symm ▸ Y
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card :=
     Classical.choose_spec hExistY
   set Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+  let hF := Classical.choose h
+  let hrest := Classical.choose_spec h
   set scSolver : BoundedAtlasScenario solver.params.ac0.n :=
-    (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   -- Переписываем вывод аксиомы в явном виде, убирая `let`-связки.
   have hCap : Ysolver ⊆ familyFinset (sc := scSolver) ∧
       scenarioCapacity (sc := scSolver) < Ysolver.card := by
-    simpa only [Fsolver, scSolver, Ysolver] using h
+    simpa only [Fsolver, scSolver, Ysolver] using hrest
   -- Переносим сценарий обратно к длине `inputLen p`, избегая дальнейших приведения типов.
   -- Мощность `Ysolver` строго превосходит ёмкость соответствующего сценария.
   refine
@@ -503,6 +522,7 @@ noncomputable def coverWitness_from_antiChecker
         m := scenarioCapacity (sc := scSolver)
         hLarge := hCap.2 }⟩
 
+set_option maxHeartbeats 2000000
 /--
   Расширенная упаковка античекера с тестовым множеством `T`.  В отличие от
   `coverWitness_from_antiChecker`, здесь ёмкость покрытия берётся из более
@@ -511,21 +531,21 @@ noncomputable def coverWitness_from_antiChecker
   множество `T`, что удобно при подключении лемм `ApproxOnTestset` из части B.
 -/
 noncomputable def coverWitness_from_antiChecker_testset
-    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) :
     Σ' sc : BoundedAtlasScenario solver.params.ac0.n,
       Σ' T : Finset (Core.BitVec solver.params.ac0.n),
         CoverCapacityWitness (Core.BitVec solver.params.ac0.n → Bool) := by
   classical
-  -- Шаг 1. Распаковываем усиленную аксиому античекера с тестовым множеством.
-  let hExist := antiChecker_exists_testset (p := p) solver
-  -- Сначала выбираем семейство `F`.
+  let hExist := antiChecker_exists_testset (p := p) solver hF_all
   let F : Family (Models.inputLen p) := Classical.choose hExist
-  -- Затем выбираем подсемейство `Y` и тестовое множество `T` для фиксированного `F`.
-  have hExistY :
-      ∃ Y : Finset (Core.BitVec (Models.inputLen p) → Bool),
-        ∃ T : Finset (Core.BitVec (Models.inputLen p)),
-          let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-          let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+  have hExistY : ∃ Y : Finset (Core.BitVec (Models.inputLen p) → Bool),
+      ∃ T : Finset (Core.BitVec (Models.inputLen p)),
+        let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+        ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+          let scWitness :=
+            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
           let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
             solver.params.same_n.symm ▸ Y
           let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
@@ -543,7 +563,28 @@ noncomputable def coverWitness_from_antiChecker_testset
   have hExistT :
       ∃ T : Finset (Core.BitVec (Models.inputLen p)),
         let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-        let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+        ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+          let scWitness :=
+            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+          let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+            solver.params.same_n.symm ▸ Y
+          let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
+            solver.params.same_n.symm ▸ T
+          Ysolver ⊆ familyFinset (sc := scWitness) ∧
+            scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+            Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
+            (∀ f ∈ Ysolver,
+              f ∈ Counting.ApproxOnTestset
+                (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+            Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
+              2 ^ Tsolver.card < Ysolver.card :=
+    Classical.choose_spec hExistY
+  let T : Finset (Core.BitVec (Models.inputLen p)) := Classical.choose hExistT
+  have hWitness :
+      let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+      ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+        let scWitness :=
+          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
         let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
           solver.params.same_n.symm ▸ Y
         let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
@@ -556,43 +597,28 @@ noncomputable def coverWitness_from_antiChecker_testset
               (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
           Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
             2 ^ Tsolver.card < Ysolver.card :=
-    Classical.choose_spec hExistY
-  let T : Finset (Core.BitVec (Models.inputLen p)) := Classical.choose hExistT
-  have hProps :
-      let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-      let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-        solver.params.same_n.symm ▸ Y
-      let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
-        solver.params.same_n.symm ▸ T
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card ∧
-        Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
-        (∀ f ∈ Ysolver,
-          f ∈ Counting.ApproxOnTestset
-            (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
-        Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
-          2 ^ Tsolver.card < Ysolver.card :=
     Classical.choose_spec hExistT
-  -- Шаг 2. Переводим все объекты на длину `solver.params.ac0.n`.
-  let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-  let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-  let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+  set Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+  have hWitness' := hWitness
+  dsimp [Fsolver] at hWitness'
+  let hF := Classical.choose hWitness'
+  let hrest := Classical.choose_spec hWitness'
+  set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
+    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+  set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
-  let Tsolver : Finset (Core.BitVec solver.params.ac0.n) := solver.params.same_n.symm ▸ T
-  -- Шаг 3. Переписываем свойства, разворачивая только `let`-связки (без лишних упрощений).
-  have hProps' := hProps
-  dsimp [Fsolver, scWitness, Ysolver, Tsolver] at hProps'
-  rcases hProps' with ⟨hSubset, hCap, hT, hApprox, hUnion⟩
-  -- Шаг 4. Формируем пакет для покрытий: `m = unionBound * 2^{|T|}`.
+  set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
+    solver.params.same_n.symm ▸ T
+  have hrest' := hrest
+  dsimp [scWitness, Ysolver, Tsolver] at hrest'
+  rcases hrest' with ⟨hSubset, _hCap, _hT, _hApprox, hUnion⟩
   refine ⟨scWitness, Tsolver, ?_⟩
   refine
     { Y := Ysolver
       m := Counting.unionBound (Counting.dictLen scWitness.atlas.dict)
             scWitness.k * 2 ^ Tsolver.card
-      hLarge := ?_ }
-  -- Прямое следствие из усиленной ёмкостной оценки античекера.
-  simpa using hUnion
+      hLarge := hUnion }
+set_option maxHeartbeats 200000
 
 /--
   Вариант `coverWitness_from_antiChecker`, сразу приводящий все индексы к
@@ -607,14 +633,16 @@ noncomputable def coverWitness_from_antiChecker_testset
   приведений типов.
 -/
 noncomputable def coverWitness_from_antiChecker_inputLen
-    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) :
     Σ' sc : BoundedAtlasScenario (Models.inputLen p),
       CoverCapacityWitness (Core.BitVec (Models.inputLen p) → Bool) := by
   classical
   -- Переписываем результат базовой функции по равенству `same_n`, чтобы
   -- получить сценарий и семейство строго на длине `inputLen p`.
   simpa using
-    (solver.params.same_n ▸ coverWitness_from_antiChecker (p := p) solver)
+    (solver.params.same_n ▸ coverWitness_from_antiChecker (p := p) solver hF_all)
 
 /--
   Версия `coverWitness_from_antiChecker_testset`, сразу приводящая все индексы
@@ -623,13 +651,15 @@ noncomputable def coverWitness_from_antiChecker_inputLen
   приведения типов.
 -/
 noncomputable def coverWitness_from_antiChecker_testset_inputLen
-    {p : GapMCSPParams} (solver : SmallAC0Solver p) :
+    {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) :
     Σ' sc : BoundedAtlasScenario (Models.inputLen p),
       Σ' T : Finset (Core.BitVec (Models.inputLen p)),
         CoverCapacityWitness (Core.BitVec (Models.inputLen p) → Bool) := by
   classical
   simpa using
-    (solver.params.same_n ▸ coverWitness_from_antiChecker_testset (p := p) solver)
+    (solver.params.same_n ▸ coverWitness_from_antiChecker_testset (p := p) solver hF_all)
 
 /--
   Любое семейство покрытий `cover s` с мощностью не более `m` пропускает
@@ -675,15 +705,17 @@ theorem witness_not_exists_full_cover
 -/
 theorem uncovered_from_antiChecker_inputLen
     {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n))
     {σ : Type} [DecidableEq σ]
     (cover : σ → Finset (Core.BitVec (Models.inputLen p) → Bool))
   (hCap : ∀ s, (cover s).card ≤
-      (coverWitness_from_antiChecker_inputLen (p := p) solver).2.m) :
-  ∀ s, ∃ y ∈ (coverWitness_from_antiChecker_inputLen (p := p) solver).2.Y,
+      (coverWitness_from_antiChecker_inputLen (p := p) solver hF_all).2.m) :
+  ∀ s, ∃ y ∈ (coverWitness_from_antiChecker_inputLen (p := p) solver hF_all).2.Y,
     y ∉ cover s := by
   classical
   -- Распаковываем пакет античекера и применяем ёмкостную лемму.
-  set cw := coverWitness_from_antiChecker_inputLen (p := p) solver
+  set cw := coverWitness_from_antiChecker_inputLen (p := p) solver hF_all
   -- Сохраняем исходное ограничение мощности, чтобы переписать его после раскрытия `cw`.
   have hCap' : ∀ s, (cover s).card ≤ cw.2.m := hCap
   -- Открываем `cw` и переписываем ограничение мощности к форме `w.m`.
@@ -701,15 +733,17 @@ theorem uncovered_from_antiChecker_inputLen
 -/
 theorem uncovered_from_antiChecker_testset_inputLen
     {p : GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n))
     {σ : Type} [DecidableEq σ]
     (cover : σ → Finset (Core.BitVec (Models.inputLen p) → Bool))
     (hCap : ∀ s, (cover s).card ≤
-        (coverWitness_from_antiChecker_testset_inputLen (p := p) solver).2.2.m) :
-    ∀ s, ∃ y ∈ (coverWitness_from_antiChecker_testset_inputLen (p := p) solver).2.2.Y,
+        (coverWitness_from_antiChecker_testset_inputLen (p := p) solver hF_all).2.2.m) :
+    ∀ s, ∃ y ∈ (coverWitness_from_antiChecker_testset_inputLen (p := p) solver hF_all).2.2.Y,
       y ∉ cover s := by
   classical
   -- Распаковываем расширенный пакет античекера с тестовым множеством.
-  set cw := coverWitness_from_antiChecker_testset_inputLen (p := p) solver
+  set cw := coverWitness_from_antiChecker_testset_inputLen (p := p) solver hF_all
   have hCap' : ∀ s, (cover s).card ≤ cw.2.2.m := hCap
   rcases cw with ⟨sc, T, w⟩
   have hCap'' : ∀ s, (cover s).card ≤ w.m := by
@@ -723,8 +757,15 @@ theorem uncovered_from_antiChecker_testset_inputLen
   «малый» решатель, противоречащий заявлению `∀ solver, False`.
 -/
 theorem OPS_trigger_general_contra_general_circuit
-  {p : GapMCSPParams} {ε : Rat} :
-  GeneralLowerBoundHypothesis p ε (∀ _solver : SmallGeneralCircuitSolver p, False) →
+  {p : GapMCSPParams} {ε : Rat}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
+  GeneralLowerBoundHypothesis p ε
+      (∀ _solver : SmallGeneralCircuitSolver p,
+        (∀ loc : SmallLocalCircuitSolver p,
+          ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+            (Counting.allFunctionsFamily loc.params.params.n)) → False) →
     ((∀ L : ComplexityInterfaces.Language,
       ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) :=
 by
@@ -736,7 +777,7 @@ by
   have solver : SmallGeneralCircuitSolver p :=
     generalCircuitSolver_of_Ppoly (p := p) hPpoly
   -- Гипотеза шагов A–C запрещает любой такой решатель.
-  exact (hHyp.2) solver
+  exact (hHyp.2) solver hF_all
 
 /--
   OPS-триггер (общая версия): доказательство `GeneralLowerBoundHypothesis`
@@ -745,13 +786,16 @@ by
   `NP_not_subset_Ppoly_of_contra`.
 -/
 theorem OPS_trigger_general
-  {p : GapMCSPParams} {ε : Rat} (statement : Prop) :
+  {p : GapMCSPParams} {ε : Rat} (statement : Prop)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   GeneralLowerBoundHypothesis p ε statement → NP_not_subset_Ppoly :=
 by
   intro hHyp
   -- Сначала получаем явное противоречие с предположением `NP ⊆ P/poly`.
   have hContra :=
-    OPS_trigger_general_contra (p := p) (ε := ε) (statement := statement) hHyp
+    OPS_trigger_general_contra (p := p) (ε := ε) (statement := statement) hF_all hHyp
   -- Затем применяем общую логическую лемму из `ComplexityInterfaces`.
   exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 
@@ -762,15 +806,26 @@ by
   напрямую из гипотезы «для любого решателя — False».
 -/
 theorem OPS_trigger_general_circuits
-  {p : GapMCSPParams} {ε : Rat} :
-  GeneralLowerBoundHypothesis p ε (∀ _solver : SmallGeneralCircuitSolver p, False) →
+  {p : GapMCSPParams} {ε : Rat}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
+  GeneralLowerBoundHypothesis p ε
+      (∀ _solver : SmallGeneralCircuitSolver p,
+        (∀ loc : SmallLocalCircuitSolver p,
+          ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+            (Counting.allFunctionsFamily loc.params.params.n)) → False) →
     NP_not_subset_Ppoly :=
 by
   intro hHyp
   -- Контрапозитив, построенный в `OPS_trigger_general_contra_general_circuit`.
-  have hContra := OPS_trigger_general_contra_general_circuit (p := p) (ε := ε) hHyp
-  -- Применяем общую логическую лемму.
-  exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
+  exact OPS_trigger_general (p := p) (ε := ε)
+    (statement :=
+      (∀ _solver : SmallGeneralCircuitSolver p,
+        (∀ loc : SmallLocalCircuitSolver p,
+          ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+            (Counting.allFunctionsFamily loc.params.params.n)) → False))
+    hF_all hHyp
 
 /--
   Быстрая инстанциация конструктивного триггера для общих схем при
@@ -778,14 +833,24 @@ by
   из шага C, чтобы не упаковывать вручную положительность `ε`.
 -/
 theorem OPS_trigger_general_circuits_default
-  {p : GapMCSPParams} :
-  (∀ _solver : SmallGeneralCircuitSolver p, False) → NP_not_subset_Ppoly :=
+  {p : GapMCSPParams}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
+  (∀ _solver : SmallGeneralCircuitSolver p,
+    (∀ loc : SmallLocalCircuitSolver p,
+      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+        (Counting.allFunctionsFamily loc.params.params.n)) → False) →
+    NP_not_subset_Ppoly :=
 by
   intro hNoSolver
   have hHyp : GeneralLowerBoundHypothesis p opsDefaultPack.ε
-      (∀ _solver : SmallGeneralCircuitSolver p, False) :=
+      (∀ _solver : SmallGeneralCircuitSolver p,
+        (∀ loc : SmallLocalCircuitSolver p,
+          ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+            (Counting.allFunctionsFamily loc.params.params.n)) → False) :=
     ⟨opsDefaultPack.ε_pos, hNoSolver⟩
-  exact OPS_trigger_general_circuits (p := p) (ε := opsDefaultPack.ε) hHyp
+  exact OPS_trigger_general_circuits (p := p) (ε := opsDefaultPack.ε) hF_all hHyp
 
 /--
   Контрапозиция формульного триггера без привлечения общей аксиомы D.1: гипотеза
@@ -794,16 +859,26 @@ by
   гипотезу в общий формат и применяем `OPS_trigger_general_contra`.
 -/
 theorem OPS_trigger_formulas_contra
-  {p : GapMCSPParams} {δ : Rat} :
+  {p : GapMCSPParams} {δ : Rat}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   FormulaLowerBoundHypothesis p δ →
     ((∀ L : ComplexityInterfaces.Language,
       ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) :=
 by
   intro hHyp hAll
-  have hGeneral : GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) := by
+  have hGeneral :
+      GeneralLowerBoundHypothesis p δ
+        (∀ solver : SmallAC0Solver p,
+          ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+            (Counting.allFunctionsFamily solver.params.ac0.n) → False) := by
     simpa [FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis] using hHyp
   exact OPS_trigger_general_contra (p := p) (ε := δ)
-    (statement := ∀ _solver : SmallAC0Solver p, False) hGeneral hAll
+    (statement := ∀ solver : SmallAC0Solver p,
+      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+        (Counting.allFunctionsFamily solver.params.ac0.n) → False)
+    hF_all hGeneral hAll
 
 /--
   OPS-триггер для формул (`N^{2+δ}`): конструктивное получение
@@ -812,11 +887,14 @@ by
   лемму `NP_not_subset_Ppoly_of_contra`.
 -/
 theorem OPS_trigger_formulas
-  {p : GapMCSPParams} {δ : Rat} :
+  {p : GapMCSPParams} {δ : Rat}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   FormulaLowerBoundHypothesis p δ → NP_not_subset_Ppoly := by
   intro hHyp
   -- Контрапозиция выводится напрямую из гипотезы `∀ solver, False`.
-  have hContra := OPS_trigger_formulas_contra (p := p) (δ := δ) hHyp
+  have hContra := OPS_trigger_formulas_contra (p := p) (δ := δ) hF_all hHyp
   exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 
 /--
@@ -828,7 +906,10 @@ theorem OPS_trigger_formulas
 theorem FormulaLowerBoundHypothesis.as_general
   {p : GapMCSPParams} {δ : Rat} :
   FormulaLowerBoundHypothesis p δ →
-    GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) :=
+    GeneralLowerBoundHypothesis p δ
+      (∀ solver : SmallAC0Solver p,
+        ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+          (Counting.allFunctionsFamily solver.params.ac0.n) → False) :=
 by
   intro hHyp
   -- Определения совпадают буквально: `(0 < δ) ∧ statement`.
@@ -841,15 +922,21 @@ by
   из конструкций шага C), без повторного раскрытия определений.
 -/
 theorem OPS_trigger_formulas_from_general
-  {p : GapMCSPParams} {δ : Rat} :
-  GeneralLowerBoundHypothesis p δ (∀ _solver : SmallAC0Solver p, False) →
+  {p : GapMCSPParams} {δ : Rat}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
+  GeneralLowerBoundHypothesis p δ
+    (∀ solver : SmallAC0Solver p,
+      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+        (Counting.allFunctionsFamily solver.params.ac0.n) → False) →
     NP_not_subset_Ppoly :=
 by
   intro hGeneral
   -- Сужаемся до формульной гипотезы и применяем конструктивный контрапозитив.
   have hFormula : FormulaLowerBoundHypothesis p δ := by
     simpa [FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis] using hGeneral
-  exact OPS_trigger_formulas (p := p) (δ := δ) hFormula
+  exact OPS_trigger_formulas (p := p) (δ := δ) hF_all hFormula
 
 /--
   Барьер локальности из JACM’22: невозможность локальных схем размера
@@ -867,13 +954,20 @@ by
   `NP_not_subset_Ppoly_of_contra`.
 -/
 theorem Locality_trigger
-  {p : GapMCSPParams} {κ : Nat} :
+  {p : GapMCSPParams} {κ : Nat}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   LocalLowerBoundHypothesis p κ → NP_not_subset_Ppoly := by
   intro hHyp
   classical
   -- Сохраняем компоненты гипотезы: положительность `κ` и запрет локальных решателей.
   have hκ : 0 < κ := hHyp.1
-  have hNoLocal : ∀ solver : SmallLocalCircuitSolver p, False := hHyp.2
+  have hNoLocal :
+      ∀ solver : SmallLocalCircuitSolver p,
+        ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
+          (Counting.allFunctionsFamily solver.params.params.n) → False :=
+    hHyp.2
   -- Строим явное противоречие с предположением `NP ⊆ P/poly`.
   have hContra :
       ((∀ L : ComplexityInterfaces.Language,
@@ -887,7 +981,7 @@ theorem Locality_trigger
     -- Локализуем общий решатель и противоречим запрету локальных схем.
     obtain ⟨T, solver_loc, hT, hM, hℓ, hdepth⟩ :=
       Magnification.locality_lift (p := p) (solver := solver_gen)
-    exact hNoLocal solver_loc
+    exact hNoLocal solver_loc (hF_all solver_loc)
   -- Логически превращаем противоречие в вывод `NP \nsubseteq P/poly`.
   exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 

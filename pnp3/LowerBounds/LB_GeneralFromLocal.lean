@@ -25,10 +25,13 @@ open Magnification
 -/
 theorem LB_GeneralFromLocal
   {p : Models.GapMCSPParams}
-  (solver : SmallGeneralCircuitSolver p) : False := by
+  (solver : SmallGeneralCircuitSolver p)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) : False := by
   classical
   obtain ⟨T, loc, hT, hM, hℓ, hdepth⟩ := locality_lift solver
-  exact LB_LocalCircuits_core (p := p) (solver := loc)
+  exact LB_LocalCircuits_core (p := p) (solver := loc) (hF_all loc)
 
 end LowerBounds
 end Pnp3

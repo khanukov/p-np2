@@ -176,19 +176,22 @@ structure SmallLocalCircuitSolver (p : Models.GapMCSPParams) where
   требуемое существование.
 -/
 theorem noSmallAC0Solver
-    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
+    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF : FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
   classical
   -- Фиксируем «полное» семейство всех булевых функций.
   let F : Family solver.params.ac0.n :=
     Counting.allFunctionsFamily solver.params.ac0.n
   -- Сценарий SAL, полученный из `solver`.
-  let pack := scenarioFromAC0 (params := solver.params.ac0) (F := F)
+  let pack := scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)
   let sc := pack.2
   let bound := Nat.pow 2
     (Nat.pow (Nat.log2 (solver.params.ac0.M + 2)) (solver.params.ac0.d + 1))
   -- Вытаскиваем шаг A+B: границы на параметры и связь `card(F) ≤ capacityBound`.
   have hsummary :=
-    scenarioFromAC0_stepAB_summary (params := solver.params.ac0) (F := F)
+    scenarioFromAC0_stepAB_summary
+      (params := solver.params.ac0) (F := F) (hF := hF)
   dsimp [pack, sc, bound] at hsummary
   rcases hsummary with ⟨hfamily, hk, hdict, hε0, hε1, hεInv, hcap_le⟩
   -- Корректность solver: его решение совпадает с языком GapMCSP на всех входах.
@@ -329,11 +332,13 @@ theorem antiChecker_exists_large_Y_of_false
     ∃ (F : Family (Models.inputLen p))
       (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
         let Fsolver : Family solver.params.ac0.n := (solver.params.same_n.symm ▸ F)
-        let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-          (solver.params.same_n.symm ▸ Y)
-        Ysolver ⊆ familyFinset (sc := scWitness) ∧
-          scenarioCapacity (sc := scWitness) < Ysolver.card :=
+        ∃ hF : FamilyIsAC0 solver.params.ac0 Fsolver,
+          let scWitness :=
+            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+          let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+            (solver.params.same_n.symm ▸ Y)
+          Ysolver ⊆ familyFinset (sc := scWitness) ∧
+            scenarioCapacity (sc := scWitness) < Ysolver.card :=
   by
     -- Из противоречия можно вывести любое утверждение; дополнительно устраняем
     -- зависимость от `same_n`, чтобы избежать сложных равенств размеров.
@@ -346,19 +351,23 @@ theorem antiChecker_exists_large_Y_of_false
   противоречие, а значит — существование нужного семейства `Y`.
 -/
 theorem antiChecker_exists_large_Y
-  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p)
+  (hF_all : FamilyIsAC0 solver.params.ac0
+    (Counting.allFunctionsFamily solver.params.ac0.n)) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
       let Fsolver : Family solver.params.ac0.n :=
         (solver.params.same_n.symm ▸ F)
-      let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-        (solver.params.same_n.symm ▸ Y)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+      ∃ hF : FamilyIsAC0 solver.params.ac0 Fsolver,
+        let scWitness :=
+          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card := by
   -- Из противоречия выводим требуемое существование.
   exact antiChecker_exists_large_Y_of_false (solver := solver)
-    (noSmallAC0Solver (solver := solver))
+    (noSmallAC0Solver (solver := solver) (hF := hF_all))
 
 /--
   Базовое противоречие: теорема `antiChecker_exists_large_Y` немедленно уничтожает
@@ -366,21 +375,24 @@ theorem antiChecker_exists_large_Y
   позже заменить аксиому на явное доказательство `False`.
 -/
 theorem antiChecker_largeY_implies_false
-    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
+    {p : Models.GapMCSPParams} (solver : SmallAC0Solver p)
+    (hF_all : FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
   classical
-  obtain ⟨F, Y, h⟩ := antiChecker_exists_large_Y (solver := solver)
+  obtain ⟨F, Y, h⟩ := antiChecker_exists_large_Y (solver := solver) hF_all
   dsimp at h
   -- Приводим семейства к нужной длине входа через равенство из solver.
   let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
   let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   -- Сценарий SAL, соответствующий solver-у.
+  obtain ⟨hF, hrest⟩ := h
   let scWitness : BoundedAtlasScenario solver.params.ac0.n :=
-    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver)).2
+    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
-    simpa [Fsolver, Ysolver, scWitness] using h.1
+    simpa [Fsolver, Ysolver, scWitness] using hrest.1
   have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
-    simpa [Fsolver, Ysolver, scWitness] using h.2
+    simpa [Fsolver, Ysolver, scWitness] using hrest.2
   -- Прямое противоречие с Covering-Power: семейство слишком велико.
   exact no_bounded_atlas_of_large_family
     (sc := scWitness) (Y := Ysolver) hSubset hLarge
@@ -395,42 +407,47 @@ theorem antiChecker_largeY_implies_false
   множества `T` с нужными свойствами.
 -/
 theorem antiChecker_exists_testset
-  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p)
+  (hF_all : FamilyIsAC0 solver.params.ac0
+    (Counting.allFunctionsFamily solver.params.ac0.n)) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
     (T : Finset (Core.BitVec (Models.inputLen p))),
       let Fsolver : Family solver.params.ac0.n :=
         (solver.params.same_n.symm ▸ F)
-      let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-        (solver.params.same_n.symm ▸ Y)
-      let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
-        (solver.params.same_n.symm ▸ T)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card ∧
-        Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
-        (∀ f ∈ Ysolver,
-          f ∈ Counting.ApproxOnTestset
-            (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
-        Counting.unionBound
-            (Counting.dictLen scWitness.atlas.dict)
-            scWitness.k
-            * 2 ^ Tsolver.card
-          < Ysolver.card := by
+      ∃ hF : FamilyIsAC0 solver.params.ac0 Fsolver,
+        let scWitness :=
+          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
+          (solver.params.same_n.symm ▸ T)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+          Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
+          (∀ f ∈ Ysolver,
+            f ∈ Counting.ApproxOnTestset
+              (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+          Counting.unionBound
+              (Counting.dictLen scWitness.atlas.dict)
+              scWitness.k
+              * 2 ^ Tsolver.card
+            < Ysolver.card := by
   classical
   -- Шаг 1: используем базовый античекер без тестового набора.
-  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y (solver := solver)
+  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y (solver := solver) hF_all
   -- Переписываем обозначения, чтобы кормить их в критерий несоответствия.
   dsimp at hBase
   set Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+  obtain ⟨hF, hBase'⟩ := hBase
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
-    (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
-    simpa [Fsolver, scWitness, Ysolver] using hBase.1
+    simpa [Fsolver, scWitness, Ysolver] using hBase'.1
   have hCapacity : scenarioCapacity (sc := scWitness) < Ysolver.card := by
-    simpa [Fsolver, scWitness, Ysolver] using hBase.2
+    simpa [Fsolver, scWitness, Ysolver] using hBase'.2
   -- Базовый факт уже противоречив: семейство `Y` слишком велико для сценария.
   have hFalse : False :=
     no_bounded_atlas_of_large_family
@@ -447,32 +464,38 @@ theorem antiChecker_exists_testset
   Доказательство повторяет прежний аргумент: просто выбрасываем `T`.
 -/
 theorem antiChecker_exists_large_Y_from_testset
-  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) :
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p)
+  (hF_all : FamilyIsAC0 solver.params.ac0
+    (Counting.allFunctionsFamily solver.params.ac0.n)) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
       let Fsolver : Family solver.params.ac0.n :=
         (solver.params.same_n.symm ▸ F)
-      let scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-        (solver.params.same_n.symm ▸ Y)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+      ∃ hF : FamilyIsAC0 solver.params.ac0 Fsolver,
+        let scWitness :=
+          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card := by
   classical
-  obtain ⟨F, Y, T, h⟩ := antiChecker_exists_testset (solver := solver)
+  obtain ⟨F, Y, T, h⟩ := antiChecker_exists_testset (solver := solver) hF_all
   refine ⟨F, Y, ?_⟩
   -- Разворачиваем `let`-связки из усиленного античекера, чтобы извлечь
   -- первые два утверждения (подмножество и несоответствие ёмкости).
   dsimp at h
   set Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
+  obtain ⟨hF, hrest⟩ := h
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
-    (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
-    simpa [Fsolver, scWitness, Ysolver] using h.1
+    simpa [Fsolver, scWitness, Ysolver] using hrest.1
   have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
-    simpa [Fsolver, scWitness, Ysolver] using h.2.1
+    simpa [Fsolver, scWitness, Ysolver] using hrest.2.1
   -- Пересобираем требуемое утверждение в исходном формате с `let`-обозначениями.
+  refine ⟨hF, ?_⟩
   simpa [Fsolver, scWitness, Ysolver] using And.intro hSubset hLarge
 
 /-- Auxiliary arithmetic lemma: for large `n`, the half-exponent dominates `n+2`. -/
@@ -533,20 +556,23 @@ lemma twoPow_half_le_div (n : Nat) (hn : 16 ≤ n) :
 
 /-- Local-circuit variant of the "no small solver" contradiction. -/
 theorem noSmallLocalCircuitSolver
-    {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) : False := by
+    {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p)
+    (hF : FamilyIsLocalCircuit solver.params.params
+      (Counting.allFunctionsFamily solver.params.params.n)) : False := by
   classical
   -- Полное семейство всех булевых функций.
   let F : Family solver.params.params.n :=
     Counting.allFunctionsFamily solver.params.params.n
   -- Сценарий SAL для локальных схем.
-  let pack := scenarioFromLocalCircuit (params := solver.params.params) (F := F)
+  let pack := scenarioFromLocalCircuit (params := solver.params.params) (F := F) (hF := hF)
   let sc := pack.2
   let bound := Nat.pow 2
     (solver.params.params.ℓ *
       (Nat.log2 (solver.params.params.M + 2) + solver.params.params.depth + 1))
   -- Сводка шага A+B.
   have hsummary :=
-    scenarioFromLocalCircuit_stepAB_summary (params := solver.params.params) (F := F)
+    scenarioFromLocalCircuit_stepAB_summary
+      (params := solver.params.params) (F := F) (hF := hF)
   dsimp [pack, sc, bound] at hsummary
   rcases hsummary with ⟨hfamily, hk, hdict, hε0, hε1, hεInv, hcap_le⟩
   -- Обозначения.
@@ -653,12 +679,13 @@ theorem antiChecker_exists_large_Y_local_of_false
     ∃ (F : Family (Models.inputLen p))
       (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
         let Fsolver : Family solver.params.params.n := (solver.params.same_n.symm ▸ F)
-        let scWitness :=
-          (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
-        let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
-          (solver.params.same_n.symm ▸ Y)
-        Ysolver ⊆ familyFinset (sc := scWitness) ∧
-          scenarioCapacity (sc := scWitness) < Ysolver.card := by
+        ∃ hF : FamilyIsLocalCircuit solver.params.params Fsolver,
+          let scWitness :=
+            (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+          let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+            (solver.params.same_n.symm ▸ Y)
+          Ysolver ⊆ familyFinset (sc := scWitness) ∧
+            scenarioCapacity (sc := scWitness) < Ysolver.card := by
   exact False.elim hFalse
 
 /--
@@ -706,19 +733,22 @@ theorem antiChecker_exists_large_Y_local_of_false
   - Williams (2014): ACC⁰ ⊆ local circuits framework
 -/
 theorem antiChecker_exists_large_Y_local
-  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
+  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p)
+  (hF_all : FamilyIsLocalCircuit solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
       let Fsolver : Family solver.params.params.n :=
         (solver.params.same_n.symm ▸ F)
-      let scWitness :=
-        (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
-        (solver.params.same_n.symm ▸ Y)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+      ∃ hF : FamilyIsLocalCircuit solver.params.params Fsolver,
+        let scWitness :=
+          (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card := by
   exact antiChecker_exists_large_Y_local_of_false (solver := solver)
-    (noSmallLocalCircuitSolver (solver := solver))
+    (noSmallLocalCircuitSolver (solver := solver) (hF := hF_all))
 
 /--
   **Theorem: Anti-Checker for Local Circuits (with Test Set)**
@@ -776,43 +806,47 @@ theorem antiChecker_exists_large_Y_local
   - Our Part B: Counting/Atlas_to_LB_Core.lean, line 1025
 -/
 theorem antiChecker_exists_testset_local
-  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
+  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p)
+  (hF_all : FamilyIsLocalCircuit solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool))
     (T : Finset (Core.BitVec (Models.inputLen p))),
       let Fsolver : Family solver.params.params.n :=
         (solver.params.same_n.symm ▸ F)
-      let scWitness :=
-        (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
-        (solver.params.same_n.symm ▸ Y)
-      let Tsolver : Finset (Core.BitVec solver.params.params.n) :=
-        (solver.params.same_n.symm ▸ T)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card ∧
-        Tsolver.card ≤ Models.polylogBudget solver.params.params.n ∧
-        (∀ f ∈ Ysolver,
-          f ∈ Counting.ApproxOnTestset
-            (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
-        Counting.unionBound
-            (Counting.dictLen scWitness.atlas.dict)
-            scWitness.k
-            * 2 ^ Tsolver.card
-          < Ysolver.card := by
+      ∃ hF : FamilyIsLocalCircuit solver.params.params Fsolver,
+        let scWitness :=
+          (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        let Tsolver : Finset (Core.BitVec solver.params.params.n) :=
+          (solver.params.same_n.symm ▸ T)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+          Tsolver.card ≤ Models.polylogBudget solver.params.params.n ∧
+          (∀ f ∈ Ysolver,
+            f ∈ Counting.ApproxOnTestset
+              (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+          Counting.unionBound
+              (Counting.dictLen scWitness.atlas.dict)
+              scWitness.k
+              * 2 ^ Tsolver.card
+            < Ysolver.card := by
   classical
   -- Шаг 1: получаем базовый локальный античекер без тестового набора.
-  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_local (solver := solver)
+  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_local (solver := solver) hF_all
   -- Разворачиваем обозначения для применения критерия ёмкости.
   dsimp at hBase
   set Fsolver : Family solver.params.params.n := solver.params.same_n.symm ▸ F
+  obtain ⟨hF, hBase'⟩ := hBase
   set scWitness : BoundedAtlasScenario solver.params.params.n :=
-    (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
+    (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
-    simpa [Fsolver, scWitness, Ysolver] using hBase.1
+    simpa [Fsolver, scWitness, Ysolver] using hBase'.1
   have hCapacity : scenarioCapacity (sc := scWitness) < Ysolver.card := by
-    simpa [Fsolver, scWitness, Ysolver] using hBase.2
+    simpa [Fsolver, scWitness, Ysolver] using hBase'.2
   -- Базовое утверждение уже противоречиво: Y превышает ёмкость сценария.
   have hFalse : False :=
     no_bounded_atlas_of_large_family
@@ -828,30 +862,35 @@ theorem antiChecker_exists_testset_local
   берём свидетелей `F`, `Y`, `T` из усиленной теоремы и выбрасываем `T`.
 -/
 theorem antiChecker_exists_large_Y_local_from_testset
-  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) :
+  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p)
+  (hF_all : FamilyIsLocalCircuit solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (Models.inputLen p))
     (Y : Finset (Core.BitVec (Models.inputLen p) → Bool)),
       let Fsolver : Family solver.params.params.n :=
         (solver.params.same_n.symm ▸ F)
-      let scWitness :=
-        (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
-      let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
-        (solver.params.same_n.symm ▸ Y)
-      Ysolver ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Ysolver.card := by
+      ∃ hF : FamilyIsLocalCircuit solver.params.params Fsolver,
+        let scWitness :=
+          (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card := by
   classical
-  obtain ⟨F, Y, T, h⟩ := antiChecker_exists_testset_local (solver := solver)
+  obtain ⟨F, Y, T, h⟩ := antiChecker_exists_testset_local (solver := solver) hF_all
   refine ⟨F, Y, ?_⟩
   dsimp at h
   set Fsolver : Family solver.params.params.n := solver.params.same_n.symm ▸ F
+  obtain ⟨hF, hrest⟩ := h
   set scWitness : BoundedAtlasScenario solver.params.params.n :=
-    (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
+    (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
-    simpa [Fsolver, scWitness, Ysolver] using h.1
+    simpa [Fsolver, scWitness, Ysolver] using hrest.1
   have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
-    simpa [Fsolver, scWitness, Ysolver] using h.2.1
+    simpa [Fsolver, scWitness, Ysolver] using hrest.2.1
+  refine ⟨hF, ?_⟩
   simpa [Fsolver, scWitness, Ysolver] using And.intro hSubset hLarge
 
 end LowerBounds

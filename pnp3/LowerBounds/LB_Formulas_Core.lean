@@ -23,19 +23,24 @@ open Models
   малый решатель невозможен.
 -/
 theorem LB_Formulas_core
-  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p) : False := by
+  {p : Models.GapMCSPParams} (solver : SmallAC0Solver p)
+  (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+    (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
   classical
-  obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset (p := p) solver
+  obtain ⟨F, Y, T, hWitness⟩ :=
+    antiChecker_exists_testset (p := p) solver hF_all
   classical
   -- Раскрываем обозначения, возвращённые античекером.
   dsimp only at hWitness
   set Fsolver : Core.Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-  set scWitness := (scenarioFromAC0 (params := solver.params.ac0) Fsolver).2
+  obtain ⟨hF, hrest⟩ := hWitness
+  set scWitness :=
+    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
     solver.params.same_n.symm ▸ T
-  rcases hWitness with
+  rcases hrest with
     ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
   -- Используем тестовую версию критерия: атлас не может покрыть большое семейство.
   refine

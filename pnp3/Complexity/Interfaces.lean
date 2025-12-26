@@ -1,11 +1,13 @@
+import Mathlib.Data.Fin.Tuple.Basic
 import ThirdPartyFacts.PsubsetPpoly
 /-!
   pnp3/Complexity/Interfaces.lean
 
   Интерфейс к «классической» части доказательства.  Здесь мы не повторяем
-  полную формализацию классов `P`, `NP` и `P/poly`,
-  а лишь фиксируем их последствия в виде именованных утверждений.  Это
-  позволяет шагу D ссылаться на внешний факт `P ⊆ P/poly`
+  полную формализацию классов `P` и `P/poly`,
+  а также используем компактное, но полноценное определение `NP`
+  через полиномиальный верификатор.  Это позволяет шагу D ссылаться на
+  внешний факт `P ⊆ P/poly`
   и на целевое утверждение `P ≠ NP` без дублирования кода.
 
   * `NP_not_subset_Ppoly` — сокращённая запись утверждения `NP ⊄ P/poly`.
@@ -31,12 +33,15 @@ namespace ComplexityInterfaces
 
 Мы переиспользуем минимальные структуры из внешнего пакета `P ⊆ P/poly`.
 Это гарантирует совместимость с импортируемым утверждением `P ⊆ P/poly`
-и позволяет позднее заменить временные определения полноценными
-конструктивными описаниями из архивного проекта без изменения интерфейса.
+и даёт единую точку входа для стандартного определения `NP` через
+полиномиальный верификатор, не меняя интерфейс шагов D.
 -/
 
 /-- Тип языков, используемый во внешнем пакете. -/
 abbrev Language := Complexity.Language
+
+/-- Битстроки фиксированной длины, согласованные с внешним пакетом. -/
+abbrev Bitstring := Facts.PsubsetPpoly.Bitstring
 
 /-- Класс `P` из лёгкой формализации внешнего пакета. -/
 abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
@@ -44,12 +49,54 @@ abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
 /-- Класс `P/poly` из того же пакета. -/
 abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
 
+/-- Конкатенация входа и сертификата в единый битстринг длины `n + m`. -/
+def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m) :
+    Bitstring (n + m) :=
+  Fin.append x w
+
+/-- Полиномиальная граница длины сертификата: `n ↦ n^c + c`. -/
+def verifierBound (c : Nat) (n : Nat) : Nat := n ^ c + c
+
 /--
-  Временное определение класса `NP`.  Здесь это просто абстрактный
-  предикат на языках; конкретная конструкция через недетерминированные
-  машины Тьюринга будет подключена при интеграции с архивной библиотекой.
+  Полноценное определение класса `NP` через полиномиальный верификатор.
+  Мы используем тот же стиль полиномиальной оценки, что и для `P` в
+  лёгком пакете (`n^c + c`), и кодируем пару `(x, w)` простой конкатенацией.
 -/
-def NP (_L : Language) : Prop := True
+def NP (L : Language) : Prop :=
+  ∃ (V : Language) (c : Nat),
+    Facts.PsubsetPpoly.Complexity.polyTimeDecider.{0} V ∧
+    (∀ n (x : Bitstring n),
+      L n x = true ↔
+        ∃ w : Bitstring (verifierBound c n),
+          V (n + verifierBound c n) (concatBitstring x w) = true)
+
+/-!
+### Базовый пример: пустой язык лежит в NP
+-/
+
+/-- Язык, который отвергает все входы. -/
+def falseLanguage : Language := fun _ _ => false
+
+/-- Тьюрингова машина, которая всегда отклоняет вход. -/
+def rejectTM : Facts.PsubsetPpoly.TM.{0} where
+  state := Bool
+  start := false
+  accept := true
+  step := fun s _ => (s, false, Facts.PsubsetPpoly.Move.stay)
+  runTime := fun _ => 0
+
+lemma rejectTM_accepts (n : Nat) (x : Bitstring n) :
+    Facts.PsubsetPpoly.TM.accepts (M := rejectTM) (n := n) x = false := by
+  simp [Facts.PsubsetPpoly.TM.accepts, Facts.PsubsetPpoly.TM.run,
+    Facts.PsubsetPpoly.TM.runConfig, rejectTM]
+
+theorem polyTimeDecider_falseLanguage :
+    Facts.PsubsetPpoly.Complexity.polyTimeDecider.{0} falseLanguage := by
+  refine ⟨rejectTM, 0, ?_, ?_⟩
+  · intro n
+    simp [rejectTM]
+  · intro n x
+    simpa [falseLanguage] using (rejectTM_accepts n x)
 
 /-!
 ### Формулировки целевых утверждений
@@ -115,9 +162,9 @@ theorem P_ne_NP_of_nonuniform_separation
   `∀ L, NP L → P/poly` можно вывести противоречие, то автоматически
   существует язык из `NP`, не лежащий в `P/poly`.
 
-  Важно, что наше временное определение `NP` редуцируется к `True`,
-  поэтому `¬ (NP L → Ppoly L)` сводится к `¬ Ppoly L`.  Это позволяет
-  легко распаковать контрпример из отрицания универсального включения.
+  В отличие от ранней версии, здесь используется полноценное определение `NP`,
+  поэтому для извлечения контрпримера применяется классическая логика
+  (разбор по случаям).
 -/
 theorem NP_not_subset_Ppoly_of_contra
     (hContra : (∀ L : Language, NP L → Ppoly L) → False) :
@@ -129,13 +176,15 @@ by
     intro hAll
     exact hContra hAll
   rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
-  -- Поскольку `NP L` сводится к `True`, отрицание импликации означает
-  -- `¬ Ppoly L`.
-  have hNotPpoly : ¬ Ppoly L := by
-    simpa [NP] using hNotImp
-  -- Формируем требуемый контрпример.
-  refine ⟨L, ?_, hNotPpoly⟩
-  simp [NP]
+  by_cases hNP : NP L
+  · have hNotPpoly : ¬ Ppoly L := by
+      intro hP
+      exact hNotImp (fun _ => hP)
+    exact ⟨L, hNP, hNotPpoly⟩
+  · have hImp : NP L → Ppoly L := by
+      intro h
+      exact (False.elim (hNP h))
+    exact (False.elim (hNotImp hImp))
 
 /-- Эквивалентная форма `NP_not_subset_Ppoly` через отрицание включения. -/
 theorem NP_not_subset_Ppoly_iff_not_forall :
@@ -150,9 +199,15 @@ by
   · intro hNotAll
     classical
     rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
-    have hNotPpoly : ¬ Ppoly L := by simpa [NP] using hNotImp
-    refine ⟨L, ?_, hNotPpoly⟩
-    simp [NP]
+    by_cases hNP : NP L
+    · have hNotPpoly : ¬ Ppoly L := by
+        intro hP
+        exact hNotImp (fun _ => hP)
+      exact ⟨L, hNP, hNotPpoly⟩
+    · have hImp : NP L → Ppoly L := by
+        intro h
+        exact (False.elim (hNP h))
+      exact (False.elim (hNotImp hImp))
 
 end ComplexityInterfaces
 end Pnp3

@@ -173,9 +173,15 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
           simpa [hpow] using hU
         simpa using hU' }
 
-/-- Временное включение GapMCSP в `NP` (совпадает с `True` в текущей модели). -/
+/--
+  Включение GapMCSP в `NP` для текущей модели: язык пустой, поэтому
+  достаточно постоянного отвергающего верификатора.
+-/
 theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
-  simp [gapMCSP_Language, NP]
+  refine ⟨ComplexityInterfaces.falseLanguage, 0,
+    ComplexityInterfaces.polyTimeDecider_falseLanguage, ?_⟩
+  intro n x
+  simp [gapMCSP_Language, ComplexityInterfaces.falseLanguage]
 
 /--
   Неуниформный решатель для GapMCSP, извлекаемый из предположения

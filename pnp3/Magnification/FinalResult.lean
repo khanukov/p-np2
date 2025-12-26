@@ -56,24 +56,30 @@ open ComplexityInterfaces
   как только античекер и shrinkage будут формально доказаны, строка ниже
   мгновенно превратится в полноценное разделение `P` и `NP`.
 -/
-theorem P_ne_NP_final : P_ne_NP := by
+theorem P_ne_NP_final
+    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver canonicalGapParams,
+      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+        (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
   have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
   have kit : PipelineBridgeKit canonicalGapParams :=
     pipelineBridgeKit (p := canonicalGapParams)
   exact
     P_ne_NP_from_pipeline_kit_formulas
-      (p := canonicalGapParams) (kit := kit) (δ := (1 : Rat)) hδ
+      (p := canonicalGapParams) (kit := kit) (δ := (1 : Rat)) hδ hF_all
 
 /--
   Та же финальная строка, использующая новую связку Locality-Lift → OPS.
 -/
-theorem P_ne_NP_final_general : P_ne_NP := by
+theorem P_ne_NP_final_general
+    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver canonicalGapParams,
+      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+        (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
   have hε : (0 : Rat) < (1 : Rat) := zero_lt_one
   have kit : PipelineBridgeKit canonicalGapParams :=
     pipelineBridgeKit (p := canonicalGapParams)
   exact
     P_ne_NP_from_pipeline_kit_general_circuits
-      (p := canonicalGapParams) (kit := kit) (ε := (1 : Rat)) hε
+      (p := canonicalGapParams) (kit := kit) (ε := (1 : Rat)) hε hF_all
 
 end Magnification
 end Pnp3

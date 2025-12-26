@@ -31,11 +31,14 @@ open ComplexityInterfaces
 -/
 theorem bridge_from_general_statement
   {p : GapMCSPParams} {ε : Rat} {statement : Prop}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n))
   (h : GeneralLowerBoundHypothesis p ε statement) :
   NP_not_subset_Ppoly :=
 by
   classical
-  exact OPS_trigger_general (p := p) (ε := ε) (statement := statement) h
+  exact OPS_trigger_general (p := p) (ε := ε) (statement := statement) hF_all h
 
 /--
   Мост для CJW-гипотезы: суперлинейная нижняя граница для разреженного
@@ -86,7 +89,10 @@ by
   OPS-триггер.
 -/
 theorem bridge_from_pipeline_general
-  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε) :
+  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly :=
 by
   classical
@@ -96,30 +102,33 @@ by
   have hFormula : FormulaLowerBoundHypothesis p ε := by
     simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
       using hHyp
-  exact OPS_trigger_formulas (p := p) (δ := ε) hFormula
+  exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--
   Мост, использующий Locality-Lift: положительное `ε` и запрет общих схем
   (через `general_hypothesis_from_locality`) дают разделение `NP` и `P/poly`.
 -/
 theorem bridge_from_general_circuits
-  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε) :
+  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly :=
 by
   classical
   have hHyp : GeneralLowerBoundHypothesis p ε (GeneralCircuitStatement p) :=
     general_hypothesis_from_locality (p := p) (ε := ε) hε
-  have hHyp' : GeneralLowerBoundHypothesis p ε
-      (∀ _solver : SmallGeneralCircuitSolver p, False) := by
-    simpa [GeneralCircuitStatement] using hHyp
-  exact OPS_trigger_general_circuits (p := p) (ε := ε) hHyp'
+  exact OPS_trigger_general_circuits (p := p) (ε := ε) hF_all hHyp
 
 /--
   Удобная версия моста, использующая заранее собранный `PipelineBridgeKit`.
 -/
 theorem bridge_from_pipeline_kit_general
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {ε : Rat} (hε : (0 : Rat) < ε) :
+  {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly :=
 by
   classical
@@ -128,22 +137,22 @@ by
   have hFormula : FormulaLowerBoundHypothesis p ε := by
     simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
       using hHyp
-  exact OPS_trigger_formulas (p := p) (δ := ε) hFormula
+  exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--
   Версия Locality-Lift для заранее собранного комплекта `PipelineBridgeKit`.
 -/
 theorem bridge_from_pipeline_kit_general_circuits
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {ε : Rat} (hε : (0 : Rat) < ε) :
+  {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly :=
 by
   classical
   have hHyp := kit.general_circuit_hypothesis (ε := ε) hε
-  have hHyp' : GeneralLowerBoundHypothesis p ε
-      (∀ _solver : SmallGeneralCircuitSolver p, False) := by
-    simpa [GeneralCircuitStatement] using hHyp
-  exact OPS_trigger_general_circuits (p := p) (ε := ε) hHyp'
+  exact OPS_trigger_general_circuits (p := p) (ε := ε) hF_all hHyp
 
 /--
   Шаг D.1: лемма `bridge_from_LB_Formulas` принимает положительное значение `δ`
@@ -151,57 +160,73 @@ by
   обеспечена теоремой `LB_Formulas_core` из шага C.
 -/
 theorem bridge_from_LB_Formulas
-  {p : GapMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) :
+  {p : GapMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly := by
   classical
   have hHyp : FormulaLowerBoundHypothesis p δ :=
     formula_hypothesis_from_pipeline (p := p) (δ := δ) hδ
-  exact OPS_trigger_formulas (p := p) (δ := δ) hHyp
+  exact OPS_trigger_formulas (p := p) (δ := δ) hF_all hHyp
 
 /--
   Мост, полагающийся на набор выводов `PipelineBridgeKit`.
 -/
 theorem bridge_from_pipeline_kit_formulas
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {δ : Rat} (hδ : (0 : Rat) < δ) :
+  {δ : Rat} (hδ : (0 : Rat) < δ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly :=
 by
   classical
   have hHyp := kit.formula_hypothesis (δ := δ) hδ
-  exact OPS_trigger_formulas (p := p) (δ := δ) hHyp
+  exact OPS_trigger_formulas (p := p) (δ := δ) hF_all hHyp
 
 /--
   Шаг D.1 (локальная версия): при `κ > 0` барьер локальности JACM’22
   срабатывает на тех же гипотезах, что и лемма `LB_LocalCircuits_core`.
 -/
 theorem bridge_from_LB_Local
-  {p : GapMCSPParams} {κ : Nat} (hκ : 0 < κ) :
+  {p : GapMCSPParams} {κ : Nat} (hκ : 0 < κ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly := by
   classical
   have hHyp : LocalLowerBoundHypothesis p κ :=
     local_hypothesis_from_pipeline (p := p) (κ := κ) hκ
-  exact Locality_trigger (p := p) (κ := κ) hHyp
+  exact Locality_trigger (p := p) (κ := κ) hF_all hHyp
 
 /--
   Версия моста для `PipelineBridgeKit` и локальных схем.
 -/
 theorem bridge_from_pipeline_kit_local
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {κ : Nat} (hκ : 0 < κ) :
+  {κ : Nat} (hκ : 0 < κ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   NP_not_subset_Ppoly :=
 by
   classical
   have hHyp := kit.local_hypothesis (κ := κ) hκ
-  exact Locality_trigger (p := p) (κ := κ) hHyp
+  exact Locality_trigger (p := p) (κ := κ) hF_all hHyp
 
 /--
   Шаг D.2: комбинация предыдущего шага с классическим включением `P ⊆ P/poly`
   немедленно даёт `P ≠ NP`.
 -/
 theorem P_ne_NP_from_formulas_bridge
-  {p : GapMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) :
+  {p : GapMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP := by
-  have hNP : NP_not_subset_Ppoly := bridge_from_LB_Formulas (p := p) (δ := δ) hδ
+  have hNP : NP_not_subset_Ppoly :=
+    bridge_from_LB_Formulas (p := p) (δ := δ) hδ hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -209,22 +234,28 @@ theorem P_ne_NP_from_formulas_bridge
 -/
 theorem P_ne_NP_from_pipeline_kit_formulas
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {δ : Rat} (hδ : (0 : Rat) < δ) :
+  {δ : Rat} (hδ : (0 : Rat) < δ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_pipeline_kit_formulas (p := p) (kit := kit) (δ := δ) hδ
+    bridge_from_pipeline_kit_formulas (p := p) (kit := kit) (δ := δ) hδ hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
   Общий вывод `P ≠ NP` из Locality-Lift.
 -/
 theorem P_ne_NP_from_general_circuits
-  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε) :
+  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_general_circuits (p := p) (ε := ε) hε
+    bridge_from_general_circuits (p := p) (ε := ε) hε hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -233,11 +264,14 @@ by
 -/
 theorem P_ne_NP_from_pipeline_kit_general_circuits
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {ε : Rat} (hε : (0 : Rat) < ε) :
+  {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_pipeline_kit_general_circuits (p := p) (kit := kit) (ε := ε) hε
+    bridge_from_pipeline_kit_general_circuits (p := p) (kit := kit) (ε := ε) hε hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -245,9 +279,12 @@ by
   приводят к отличию `P` от `NP`.
 -/
 theorem P_ne_NP_from_local_bridge
-  {p : GapMCSPParams} {κ : Nat} (hκ : 0 < κ) :
+  {p : GapMCSPParams} {κ : Nat} (hκ : 0 < κ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP := by
-  have hNP : NP_not_subset_Ppoly := bridge_from_LB_Local (p := p) (κ := κ) hκ
+  have hNP : NP_not_subset_Ppoly := bridge_from_LB_Local (p := p) (κ := κ) hκ hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -255,11 +292,14 @@ theorem P_ne_NP_from_local_bridge
 -/
 theorem P_ne_NP_from_pipeline_kit_local
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {κ : Nat} (hκ : 0 < κ) :
+  {κ : Nat} (hκ : 0 < κ)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_pipeline_kit_local (p := p) (kit := kit) (κ := κ) hκ
+    bridge_from_pipeline_kit_local (p := p) (kit := kit) (κ := κ) hκ hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -268,11 +308,14 @@ by
 -/
 theorem P_ne_NP_from_general_bridge
   {p : GapMCSPParams} {ε : Rat} {statement : Prop}
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n))
   (h : GeneralLowerBoundHypothesis p ε statement) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_general_statement (p := p) (ε := ε) (statement := statement) h
+    bridge_from_general_statement (p := p) (ε := ε) (statement := statement) hF_all h
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -293,11 +336,15 @@ by
   положительное `ε`.
 -/
 theorem P_ne_NP_from_pipeline_general
-  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε) :
+  {p : GapMCSPParams} {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
     bridge_from_pipeline_general (p := p) (ε := ε) hε
+      (hF_all := hF_all)
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 /--
@@ -305,11 +352,14 @@ by
 -/
 theorem P_ne_NP_from_pipeline_kit_general
   {p : GapMCSPParams} (kit : PipelineBridgeKit p)
-  {ε : Rat} (hε : (0 : Rat) < ε) :
+  {ε : Rat} (hε : (0 : Rat) < ε)
+  (hF_all : ∀ loc : SmallLocalCircuitSolver p,
+    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
+      (Counting.allFunctionsFamily loc.params.params.n)) :
   P_ne_NP :=
 by
   have hNP : NP_not_subset_Ppoly :=
-    bridge_from_pipeline_kit_general (p := p) (kit := kit) (ε := ε) hε
+    bridge_from_pipeline_kit_general (p := p) (kit := kit) (ε := ε) hε hF_all
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 end Magnification

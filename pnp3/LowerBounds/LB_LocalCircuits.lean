@@ -25,19 +25,23 @@ open Models
   SAL-сценария.  Значит, такой решатель не может существовать.
 -/
 theorem LB_LocalCircuits_core
-  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p) : False := by
+  {p : Models.GapMCSPParams} (solver : SmallLocalCircuitSolver p)
+  (hF_all : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) : False := by
   classical
-  obtain ⟨F, Y, T, hWitness⟩ := antiChecker_exists_testset_local (p := p) solver
+  obtain ⟨F, Y, T, hWitness⟩ :=
+    antiChecker_exists_testset_local (p := p) solver hF_all
   classical
   dsimp only at hWitness
   set Fsolver : Core.Family solver.params.params.n := solver.params.same_n.symm ▸ F
+  obtain ⟨hF, hrest⟩ := hWitness
   set scWitness :=
-    (scenarioFromLocalCircuit (params := solver.params.params) Fsolver).2
+    (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.params.n) :=
     solver.params.same_n.symm ▸ T
-  rcases hWitness with
+  rcases hrest with
     ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
   refine
     no_bounded_atlas_on_testset_of_large_family

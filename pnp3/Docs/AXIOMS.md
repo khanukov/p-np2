@@ -28,12 +28,13 @@ section for details.
 
 ### A.1: `partial_shrinkage_for_AC0`
 
-**Location**: `pnp3/ThirdPartyFacts/Facts_Switching.lean:119`
+**Location**: `pnp3/ThirdPartyFacts/Facts_Switching.lean` (see `partial_shrinkage_for_AC0`)
 
 **Statement**:
 ```lean
 axiom partial_shrinkage_for_AC0
-    (params : AC0Parameters) (F : Family params.n) :
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
       C.depthBound + ℓ ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
@@ -42,8 +43,9 @@ axiom partial_shrinkage_for_AC0
 ```
 
 **Role**: Håstad-style switching lemma delivering a partial PDT certificate with
-explicit depth and error bounds. Required for the combinatorial part of the
-pipeline.
+explicit depth and error bounds. The new hypothesis `hF` enforces that the
+family `F` действительно реализуется схемами AC⁰; без этого условия аксиома
+становится ложной (например, для PARITY).
 
 **Literature**: Håstad (1986), Servedio–Tan (2019).
 
@@ -51,20 +53,22 @@ pipeline.
 
 ### A.2: `shrinkage_for_localCircuit`
 
-**Location**: `pnp3/ThirdPartyFacts/Facts_Switching.lean:278`
+**Location**: `pnp3/ThirdPartyFacts/Facts_Switching.lean` (see `shrinkage_for_localCircuit`)
 
 **Statement**:
 ```lean
 axiom shrinkage_for_localCircuit
-    (params : LocalCircuitParameters) (F : Family params.n) :
-    ∃ (C : Core.CommonPDT params.n F),
-      Core.depthBound C ≤ params.M + 1 ∧
-      (0 : Core.Q) ≤ C.epsilon ∧
-      C.epsilon ≤ (1 : Core.Q) / (params.n + 2)
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (hF : FamilyIsLocalCircuit params F) :
+    ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
+      S.F = F ∧ S.t = t ∧ S.ε = ε ∧
+        t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ∧
+        (0 : Q) ≤ ε ∧
+        ε ≤ (1 : Q) / (params.n + 2)
 ```
 
-**Role**: Local-circuit variant of the switching lemma, used when the solver is
-restricted by a locality parameter.
+**Role**: Local-circuit variant of the switching lemma. The hypothesis `hF`
+guarantees that the family is действительно вычислимо локальными схемами.
 
 **Literature**: Williams (2014), Chen–Oliveira–Santhanam (2022).
 

@@ -1,5 +1,4 @@
 import ThirdPartyFacts.PsubsetPpoly
-
 /-!
   pnp3/Complexity/Interfaces.lean
 
@@ -40,10 +39,10 @@ namespace ComplexityInterfaces
 abbrev Language := Complexity.Language
 
 /-- Класс `P` из лёгкой формализации внешнего пакета. -/
-abbrev P : Language → Prop := Complexity.P
+abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
 
 /-- Класс `P/poly` из того же пакета. -/
-abbrev Ppoly : Language → Prop := Complexity.Ppoly
+abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
 
 /--
   Временное определение класса `NP`.  Здесь это просто абстрактный
@@ -60,18 +59,20 @@ def NP (_L : Language) : Prop := True
 def NP_not_subset_Ppoly : Prop := ∃ L, NP L ∧ ¬ Ppoly L
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
-abbrev P_subset_Ppoly : Prop := ThirdPartyFacts.P_subset_Ppoly
+def P_subset_Ppoly : Prop :=
+  ∀ L, Facts.PsubsetPpoly.P.{0} L → Facts.PsubsetPpoly.Ppoly L
 
 /--
   Доказательство включения `P ⊆ P/poly`, предоставленное внешним модулем.
   Когда появится реальное доказательство, его достаточно связать с
   `ThirdPartyFacts.PsubsetPpoly.proof`.
 -/
-@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly :=
-  ThirdPartyFacts.P_subset_Ppoly_proof
+@[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly := by
+  intro L hL
+  exact (ThirdPartyFacts.P_subset_Ppoly_proof (L := L) hL)
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
-def P_ne_NP : Prop := P ≠ NP
+def P_ne_NP : Prop := Facts.PsubsetPpoly.P.{0} ≠ NP
 
 /-!
 ### Логический вывод `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`
@@ -93,9 +94,9 @@ theorem P_ne_NP_of_nonuniform_separation_concrete
   classical
   -- Предположим противное и выведем противоречие с `hNP`.
   refine fun hEq => ?_
-  have hNP_subset_P : ∀ {L : Language}, NP L → P L := by
+  have hNP_subset_P : ∀ {L : Language}, NP L → Facts.PsubsetPpoly.P.{0} L := by
     intro L hL
-    have hEq_pointwise : P L = NP L := congrArg (fun f => f L) hEq
+    have hEq_pointwise : Facts.PsubsetPpoly.P.{0} L = NP L := congrArg (fun f => f L) hEq
     exact hEq_pointwise.symm ▸ hL
   have hNP_subset_Ppoly : ∀ {L : Language}, NP L → Ppoly L := by
     intro L hL

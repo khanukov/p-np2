@@ -10,11 +10,9 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 
 ### How this closes the loop (conditionally)
 
-Plugging SAL + Covering-Power into standard anti-checker and magnification frameworks (e.g., OPS'21, Chen-Williams-Jin) produces a Lean-verified **conditional derivation** of NP ⊈ P/poly and hence P ≠ NP, assuming external results are available as axioms:
+Plugging SAL + Covering-Power into standard anti-checker and magnification frameworks (e.g., OPS'21, Chen-Williams-Jin) produces a Lean-verified **conditional derivation** of NP ⊈ P/poly and hence P ≠ NP, assuming the external switching/shrinkage results are available as axioms:
 
-- Multi-switching lemmas for AC⁰ circuits
-- Existence of large anti-checker families Y and small test sets
-- Magnification triggers (locality lifts, succinct problem hardness)
+- Multi-switching / shrinkage lemmas for AC⁰ and local circuits
 
 The entire glue and all internal combinatorics are machine-checked; only explicitly marked axioms remain. See the OPS'21 ToC paper and magnification surveys for the surrounding framework.
 
@@ -38,7 +36,7 @@ We are not aware of prior works that:
 
 ### Conditional final result
 
-From external facts (multi-switching for AC⁰; anti-checker for MCSP-like problems; magnification triggers), the derivation NP ⊈ P/poly ⇒ P ≠ NP follows. All "stitching" is formally verified.
+From the external switching facts (Part A), the derivation NP ⊈ P/poly ⇒ P ≠ NP follows. All "stitching" is formally verified.
 
 ### Novelty
 
@@ -48,9 +46,8 @@ First Lean-verified composition of shrinkage → atlas → capacity using a unif
 
 To achieve an unconditional separation:
 
-1. **Formalize multi-switching** and anti-checker constructions (OPS/MCSP branch)
-2. **Formalize magnification triggers** (Chen/OPS/CJW branch)
-3. **Replace all axioms** with constructive proofs
+1. **Formalize multi-switching/shrinkage** (Part A)
+2. **Replace all axioms** with constructive proofs
 
 See ITCS'20 magnification survey and related work for theoretical background.
 

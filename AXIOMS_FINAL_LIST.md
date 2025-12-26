@@ -2,21 +2,20 @@
 ## Official List for Publication
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
-**Revision Date**: 2025-12-18
-**Total Active Axioms (`pnp3/`)**: 3
+**Revision Date**: 2025-12-25
+**Total Active Axioms (`pnp3/`)**: 2
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The current `pnp3/` proof development depends on three externally justified
-statements.  They fall into two natural families:
+The current `pnp3/` proof development depends on two externally justified
+statements.  They fall into a single family:
 
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 2 | Håstad (1986), Williams (2014) |
-| Part C — Anti-checker lower bounds | `LowerBounds/AntiChecker.lean` | 1 | Lipton–Young (1994), Chapman–Williams (2015), OPS (2019/2021) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -39,18 +38,15 @@ magnification triggers (`OPS_trigger_general`, `OPS_trigger_formulas`,
 2. **`shrinkage_for_localCircuit`** — same file, local-circuit variant.
    - Source: Williams (2014), Chen–Oliveira–Santhanam (2022).
 
-### Part C — Anti-Checker Lower Bounds (1 axiom)
+### Part C — Anti-Checker Lower Bounds (0 axioms)
 
-3. **`antiChecker_exists_large_Y_local`** — local solver version.
-   - Source: Lipton–Young (1994), Chapman–Williams (2015),
-     Oliveira–Pich–Santhanam (2019/2021).
-
-✅ **PROVEN** in Part C:
+✅ **PROVEN** in Part C (all anti-checker results are theorems):
 - `antiChecker_exists_large_Y` (AC⁰ large-Y), derived internally.
 - `antiChecker_exists_testset` (AC⁰ with test set), derived internally.
 - `antiChecker_exists_large_Y_from_testset` (helper corollary).
 - `antiChecker_exists_testset_local` (local test-set refinement) and
   `antiChecker_exists_large_Y_local_from_testset`.
+- `antiChecker_exists_large_Y_local` (local-circuit base statement).
 
 ### Part D — Magnification Bridges (all proved)
 
@@ -93,7 +89,7 @@ They are excluded from the active build and from the totals above.
 ## Change Log
 
 - **2025-12-18** — Marked `antiChecker_exists_large_Y` as a theorem (derived
-  from the capacity-gap contradiction), reducing the active axiom count to 3.
+  from the capacity-gap contradiction), reducing the active axiom count to 2.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all
   magnification triggers remain proven, active axiom count stays at 6.
 - **2025-10-25** — Historical update: totals moved to 6 axioms; marked

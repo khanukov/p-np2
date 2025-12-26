@@ -7,7 +7,7 @@ This repository hosts the third major iteration of our Lean 4 formalisation effo
 
 We introduce and Lean-verify a constructive bridge from shrinkage to a uniform atlas of subcubes for whole families of Boolean functions (Switching-Atlas Lemma, SAL) and prove a general Covering-Power capacity bound. **To the best of our knowledge**, this SAL packaging and its end-to-end Lean verification are new contributions to both formal methods and complexity theory.
 
-**Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external results (multi-switching, anti-checkers, magnification triggers) that are currently axiomatized. All internal glue and combinatorics are machine-checked.
+**Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage results that are currently axiomatized. All anti-checker and magnification bridges are machine-checked theorems.
 
 **Documentation**: See [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for axiom tracking.
 

@@ -79,7 +79,7 @@ Result: 25 critical modules, 19 non-critical modules
 - `Counting/Count_EasyFuncs.lean` - Function counting
 
 ### Lower Bounds (5 files)
-- `LowerBounds/AntiChecker.lean` - Anti-checker construction [4 axioms]
+- `LowerBounds/AntiChecker.lean` - Anti-checker construction (all theorems)
 - `LowerBounds/LB_Formulas.lean` - Formula lower bounds
 - `LowerBounds/LB_Formulas_Core.lean` - **KEY** Core contradiction
 - `LowerBounds/LB_GeneralFromLocal.lean` - General from local circuits
@@ -87,9 +87,9 @@ Result: 25 critical modules, 19 non-critical modules
 
 ### Magnification (5 files)
 - `Magnification/Bridge_to_Magnification.lean` - Bridge to magnification
-- `Magnification/Facts_Magnification.lean` - Magnification axioms [4 axioms]
+- `Magnification/Facts_Magnification.lean` - Magnification theorems (no axioms)
 - `Magnification/FinalResult.lean` - **TARGET** P_ne_NP_final
-- `Magnification/LocalityLift.lean` - Locality lifting [1 axiom]
+- `Magnification/LocalityLift.lean` - Locality lifting (no axioms)
 - `Magnification/PipelineStatements.lean` - Pipeline integration
 
 ### Third Party Facts (2 files)
@@ -97,7 +97,7 @@ Result: 25 critical modules, 19 non-critical modules
 - `ThirdPartyFacts/LeafBudget.lean` - Leaf budget bounds
 
 ### Complexity & Models (3 files)
-- `Complexity/Interfaces.lean` - Complexity class interfaces [5 axioms]
+- `Complexity/Interfaces.lean` - Complexity class interfaces (theorems only)
 - `Models/Model_GapMCSP.lean` - GapMCSP model
 - `Models/Model_SparseNP.lean` - Sparse NP model
 
@@ -137,8 +137,8 @@ lake build pnp3/Magnification/FinalResult.lean
 - Interfaces: 6 axioms (5 unique + 1 duplicate)
 
 **Current active set (live tree)**:
-- Total active axioms: 3 (2 switching + 1 anti-checker; magnification and interfaces proved)
-- Critical path in the live build: `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`, `antiChecker_exists_large_Y_local` (AC⁰ anti-checker and both test-set refinements now proved internally).
+- Total active axioms: 2 (switching/shrinkage only; anti-checker, magnification, and interfaces proved)
+- Critical path in the live build: `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`.
 
 ---
 

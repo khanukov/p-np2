@@ -1,7 +1,7 @@
 # Verification Report - P≠NP Formalization
 ## Documentation Accuracy & Code Correspondence
 
-**Generated**: 2025-12-18
+**Generated**: 2025-12-25
 **Purpose**: Confirm that documentation mirrors the current Lean codebase after
 removing legacy axioms.
 
@@ -9,7 +9,7 @@ removing legacy axioms.
 
 ## ✅ Verification Summary
 
-- ✅ All **3** active axioms are present in the source tree (`pnp3/`).
+- ✅ All **2** active axioms are present in the source tree (`pnp3/`).
 - ✅ Documentation (`pnp3/Docs/AXIOMS.md`, `AXIOMS_FINAL_LIST.md`,
   `AXIOM_FEASIBILITY_ANALYSIS.md`, `CRITICAL_REANALYSIS.md`) reflects the same set.
 - ✅ Interface theorems `P_subset_Ppoly_proof` and
@@ -22,21 +22,18 @@ removing legacy axioms.
 
 ```bash
 $ rg "^axiom " -g"*.lean" pnp3
-pnp3/ThirdPartyFacts/Facts_Switching.lean:119:axiom partial_shrinkage_for_AC0
-pnp3/ThirdPartyFacts/Facts_Switching.lean:278:axiom shrinkage_for_localCircuit
-
-pnp3/LowerBounds/AntiChecker.lean:283:axiom antiChecker_exists_large_Y_local
+pnp3/ThirdPartyFacts/Facts_Switching.lean:142:axiom partial_shrinkage_for_AC0
+pnp3/ThirdPartyFacts/Facts_Switching.lean:301:axiom shrinkage_for_localCircuit
 ```
 
-**Total**: 3 axioms (matches documentation).
+**Total**: 2 axioms (matches documentation).
 
 ### Per-Module Breakdown
 
 | File | Expected | Found | Notes |
 |------|----------|-------|-------|
 | `ThirdPartyFacts/Facts_Switching.lean` | 2 | 2 | Switching lemmas |
-| `LowerBounds/AntiChecker.lean` | 1 | 1 | Local-circuit anti-checker axiom |
-| **TOTAL** | **3** | **3** | ✅|
+| **TOTAL** | **2** | **2** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.
@@ -47,9 +44,9 @@ not participate in the build or documentation metrics.
 
 | Document | Status |
 |----------|--------|
-| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 3 axioms, notes archived items |
+| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 2 axioms, notes archived items |
 | `AXIOMS_FINAL_LIST.md` | ✅ Updated executive summary for publication |
-| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 3 axioms |
+| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 2 axioms |
 | `CRITICAL_REANALYSIS.md` | ✅ Critical-path description matches code |
 
 No mismatches detected.
@@ -61,9 +58,9 @@ No mismatches detected.
 - `archive/pnp3/Core/ShrinkageAC0.lean`, `archive/pnp3/ThirdPartyFacts/Depth2_*.lean`,
   and `old_attempts/OldAttempts/NP_separation.lean` keep historical axioms for
   reference. They remain excluded from the `lakefile` build.
-- `Facts/PsubsetPpoly/Proof/Complexity/Interfaces.lean` still declares an axiom
-  internally but is superseded by the constructive theorem in the same package.
-  The exported API (`ThirdPartyFacts/PsubsetPpoly.lean`) uses the proven result.
+- `Facts/PsubsetPpoly/Proof/Complexity/Interfaces.lean` and its bridge
+  `Proof/Complexity/PsubsetPpoly.lean` now provide constructive theorems, so the
+  exported API does not rely on axioms.
 
 ---
 
@@ -76,5 +73,5 @@ No mismatches detected.
 
 ---
 
-**Verification Date**: 2025-10-25
+**Verification Date**: 2025-12-25
 **Verified By**: Automated scan + manual review

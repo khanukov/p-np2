@@ -22,17 +22,15 @@ Classical switching lemmas provide depth shrinkage for individual formulas. SAL 
 **A:** We use them as external interfaces following the contemporary framework (OPS'21 and related work). This is the standard modern "pipeline" from weak lower bounds to strong separations, e.g., NP ⊈ P/poly.
 
 **Current status:**
-- Anti-checker and magnification interfaces are **axiomatized**
-- The pipeline glue is **fully verified in Lean**
-- Roadmap: Formalize the external results to remove axioms
+- Anti-checker and magnification interfaces are **proved in Lean**
+- The remaining axioms are **switching/shrinkage** results (Part A)
+- Roadmap: Formalize the switching lemmas to remove the last axioms
 
 ### Q: Why is this a "conditional" result?
 
-**A:** The derivation P ≠ NP relies on several external results that are currently axiomatized in Lean:
+**A:** The derivation P ≠ NP currently relies on external switching/shrinkage results that are axiomatized in Lean:
 
-1. **Multi-switching lemmas** for AC⁰ circuits (Håstad-style)
-2. **Anti-checker existence** for MCSP-like problems
-3. **Magnification triggers** (locality lifts, hardness amplification)
+1. **Multi-switching/shrinkage lemmas** for AC⁰ and local circuits (Håstad-style)
 
 These results are well-established in the literature but not yet formalized in Lean. Our contribution is the **verified infrastructure** that connects these pieces.
 
@@ -82,8 +80,8 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
 
-- **3 active axioms** in the live `pnp3/` tree
-  (2 switching + 1 local anti-checker)
+- **2 active axioms** in the live `pnp3/` tree
+  (switching/shrinkage only)
 - **0 sorry/admit** statements in active code
 - All axioms are **explicitly documented and categorized**
 

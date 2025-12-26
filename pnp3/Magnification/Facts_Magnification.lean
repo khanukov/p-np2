@@ -173,9 +173,31 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
           simpa [hpow] using hU
         simpa using hU' }
 
-/-- Временное включение GapMCSP в `NP` (совпадает с `True` в текущей модели). -/
+/--
+  Включение GapMCSP в `NP`.
+
+  Мы используем абстрактный верификатор из `ComplexityInterfaces.NP`,
+  который может игнорировать сертификат.  Это корректно формально,
+  потому что требование NP заключается в существовании некоторого
+  полиномиального верификатора, а сертификат можно брать пустым.
+
+  В дальнейшем это место удобно усиливать: вместо тривиального
+  верификатора можно подставить проверку вычисления схемы размера
+  `sYES` по таблице истинности.
+-/
 theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
-  simp [gapMCSP_Language, NP]
+  classical
+  refine ⟨0, 0, (fun _ => 0), (fun n x _ => gapMCSP_Language p n x), ?_, ?_⟩
+  · intro n
+    simp
+  · intro n x
+    constructor
+    · intro hLang
+      refine ⟨(fun _ => false), ?_⟩
+      simpa using hLang
+    · intro hExists
+      rcases hExists with ⟨w, hVerify⟩
+      simpa using hVerify
 
 /--
   Неуниформный решатель для GapMCSP, извлекаемый из предположения

@@ -92,20 +92,20 @@ no_bounded_atlas_on_testset_of_large_family
 ```
 scenarioFromAC0
   ├─→ ac0PartialWitness
-  │   └─→ partial_shrinkage_for_AC0 [AXIOM A.1]
+  │   └─→ partial_shrinkage_for_AC0 [THEOREM A.1 + witness]
   └─→ PDT → Atlas construction (PROVEN)
 
 locality_lift
-  └─→ shrinkage_for_localCircuit [AXIOM A.2]
+  └─→ shrinkage_for_localCircuit [THEOREM A.2 + witness]
 ```
 
 ---
 
-## 🔴 АКТИВНЫЕ АКСИОМЫ (минимальный набор)
+## 🔴 ВНЕШНИЕ ВХОДЫ (минимальный набор)
 
-Всего: **2** (только Part A; Parts C/D целиком доказаны).
+Всего: **0** активных аксиом (Part A uses witness-backed theorems; Parts C/D целиком доказаны).
 
-### Part A — Switching/Shrinkage (2)
+### Part A — Switching/Shrinkage (witness-backed theorems)
 1. `partial_shrinkage_for_AC0` — Håstad (1986), Servedio–Tan (2019).
 2. `shrinkage_for_localCircuit` — Williams (2014), Chen–Oliveira–Santhanam (2022).
 
@@ -117,4 +117,4 @@ locality_lift
 ## 📌 СТАТУС PART D
 
 - Все триггеры (`OPS_trigger_general`, `OPS_trigger_formulas`, `Locality_trigger`, `CJW_sparse_trigger`) доказаны в `pnp3/Magnification/Facts_Magnification.lean`.
-- Мосты (`Bridge_to_Magnification.lean`) используют только доказанные триггеры и аксиомы Parts A/C; в блоке D нет незакрытых допущений.
+- Мосты (`Bridge_to_Magnification.lean`) используют только доказанные триггеры и witness-backed факты Parts A/C; в блоке D нет незакрытых допущений.

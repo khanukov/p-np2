@@ -248,7 +248,7 @@ def provided
   Provider.witness
 
 /-- Канонический источник shrinkage-свидетеля (используется по умолчанию). -/
-instance canonicalProvider
+instance (priority := 100) canonicalProvider
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
     Provider (p := p) general :=
   ⟨canonical (p := p) general⟩
@@ -344,8 +344,8 @@ def toLocalityCertificate
   summary_testSet_eq_restriction (w := certificate.toShrinkageWitness)
 
 /-- Канонический сертификат: функция общего решателя берётся константной,
-что делает условие стабильности тривиальным.  Такой объект используется до
-тех пор, пока не появится настоящее shrinkage-доказательство. -/
+    что делает условие стабильности тривиальным.  Такой объект используется до
+    тех пор, пока не появится настоящее shrinkage-доказательство. -/
 def canonicalCertificate
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
     ShrinkageCertificate (p := p) general (fun _ => false) := by
@@ -359,6 +359,39 @@ def canonicalCertificate
       , stable := ?_ }
   intro x
   simp
+
+/-!
+## Механизм подстановки shrinkage-сертификата
+
+В отличие от численного `ShrinkageWitness`, полноценный сертификат зависит
+от выбранной семантики `generalEval`.  Чтобы оставить точку расширения для
+будущих подключений, вводим отдельный типкласс-провайдер.
+-/
+
+/-- Типкласс, предоставляющий shrinkage-сертификат для заданного `generalEval`. -/
+class Provider
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (generalEval : BitVec (inputLen p) → Bool) : Type where
+  /-- Сертификат shrinkage, связанный с данным решателем и оценкой. -/
+  certificate : ShrinkageCertificate (p := p) general generalEval
+
+/-- Текущий shrinkage-сертификат, выбранный через `Provider`. -/
+def provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (generalEval : BitVec (inputLen p) → Bool)
+    [Provider (p := p) general generalEval] :
+    ShrinkageCertificate (p := p) general generalEval :=
+  Provider.certificate
+
+/--
+Канонический источник сертификата для тривиальной оценки `fun _ => false`.
+Этот инстанс полезен для примеров и тестов: он демонстрирует, как
+использовать `Provider`, не требуя реального shrinkage-доказательства.
+-/
+instance (priority := 100) canonicalProvider
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
+    Provider (p := p) general (fun _ => false) :=
+  ⟨canonicalCertificate (p := p) general⟩
 
 end ShrinkageCertificate
 

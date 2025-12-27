@@ -38,9 +38,9 @@ def main : IO Unit := do
   IO.println s!"Total: {unitTestCount} unit tests passed"
   IO.println ""
 
-  IO.println "Critical Axioms (see AXIOM_ANALYSIS_FINAL.md):"
-  IO.println "  - A.1: partial_shrinkage_for_AC0 (Håstad 1986)"
-  IO.println "  - A.2: shrinkage_for_localCircuit (Williams / COS 2022)"
+  IO.println "Critical External Inputs (see AXIOM_ANALYSIS_FINAL.md):"
+  IO.println "  - A.1: partial_shrinkage_for_AC0 (theorem; requires AC0CircuitWitness)"
+  IO.println "  - A.2: shrinkage_for_localCircuit (theorem; requires LocalCircuitWitness)"
   IO.println "    (Local anti-checker large-Y is now proven internally.)"
   IO.println ""
 

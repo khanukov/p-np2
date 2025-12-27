@@ -43,6 +43,45 @@ def localityWitnessOfCertificate
   certificate.toLocalityCertificate.toWitness
 
 /--
+Локализационный сертификат, извлекаемый через `ShrinkageCertificate.Provider`.
+Эта вспомогательная функция пригодится, когда понадобятся не только численные
+оценки, но и семантическое свойство локализованности функции `generalEval`.
+-/
+def localityCertificateOfProvidedCertificate
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    {generalEval : BitVec (inputLen p) → Bool}
+    [ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := p) general generalEval] :
+    LocalityCertificate (p := p) general generalEval :=
+  let providedCertificate :=
+    -- Извлекаем shrinkage-сертификат из typeclass-инстанса `Provider`.
+    -- Это удобно для подключения будущих доказательных сертификатов без
+    -- изменения интерфейса вызова.
+    ShrinkageWitness.ShrinkageCertificate.provided
+      (p := p) (general := general) (generalEval := generalEval)
+  -- Переводим shrinkage-сертификат в локализационный, сохраняя семантическое
+  -- утверждение о локализованности `generalEval`.
+  providedCertificate.toLocalityCertificate
+
+/--
+Свидетель локализации, извлекаемый из shrinkage-сертификата через типкласс
+`ShrinkageCertificate.Provider`.  Функция предназначена для будущих подключений
+реальных сертификатов без изменения интерфейса.
+По умолчанию инстанс доступен только для константной функции `fun _ => false`;
+в реальных сценариях его следует заменить содержательным `Provider`.
+-/
+def localityWitnessOfProvidedCertificate
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    {generalEval : BitVec (inputLen p) → Bool}
+    [ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := p) general generalEval] :
+    LocalityWitness general :=
+  localityWitnessOfCertificate
+    (certificate :=
+      ShrinkageWitness.ShrinkageCertificate.provided
+        (p := p) (general := general) (generalEval := generalEval))
+
+/--
 Упаковка численного shrinkage-свидетеля в итоговый `LocalityWitness`.
 Эта функция полезна, когда мы уже имеем `ShrinkageWitness` (например, из
 рестрикции) и хотим быстро получить локальный решатель, не раскрывая

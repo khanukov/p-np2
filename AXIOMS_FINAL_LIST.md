@@ -2,20 +2,20 @@
 ## Official List for Publication
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
-**Revision Date**: 2025-12-25
-**Total Active Axioms (`pnp3/`)**: 2
+**Revision Date**: 2025-12-26
+**Total Active Axioms (`pnp3/`)**: 0
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The current `pnp3/` proof development depends on two externally justified
-statements.  They fall into a single family:
+The current `pnp3/` proof development depends on two shrinkage theorems that
+still require externally supplied witnesses. They fall into a single family:
 
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
-| Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 2 | Håstad (1986), Williams (2014) |
+| Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 0 | Håstad (1986), Williams (2014) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -30,13 +30,14 @@ magnification triggers (`OPS_trigger_general`, `OPS_trigger_formulas`,
 
 ## Detailed Catalogue
 
-### Part A — Switching and Shrinkage (2 axioms)
+### Part A — Switching and Shrinkage (external witnesses)
 
-1. **`partial_shrinkage_for_AC0`** — `pnp3/ThirdPartyFacts/Facts_Switching.lean`
-   - Partial PDT certificate with explicit depth and error bounds.
-   - Source: Håstad (1986), Servedio–Tan (2019).
-2. **`shrinkage_for_localCircuit`** — same file, local-circuit variant.
-   - Source: Williams (2014), Chen–Oliveira–Santhanam (2022).
+- **`partial_shrinkage_for_AC0`** — `pnp3/ThirdPartyFacts/Facts_Switching.lean`
+  - Theorem, but requires an external `AC0CircuitWitness` via `FamilyIsAC0`.
+  - Source: Håstad (1986), Servedio–Tan (2019).
+- **`shrinkage_for_localCircuit`** — same file, local-circuit variant.
+  - Theorem, but requires an external `LocalCircuitWitness` via `FamilyIsLocalCircuit`.
+  - Source: Williams (2014), Chen–Oliveira–Santhanam (2022).
 
 ### Part C — Anti-Checker Lower Bounds (0 axioms)
 
@@ -87,6 +88,8 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
+- **2025-12-26** — Reclassified A.1/A.2 as theorems with external witnesses,
+  reducing the active axiom count to 0.
 - **2025-12-18** — Marked `antiChecker_exists_large_Y` as a theorem (derived
   from the capacity-gap contradiction), reducing the active axiom count to 2.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all

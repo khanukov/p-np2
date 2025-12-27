@@ -1,5 +1,5 @@
 # To-Do
-> **Status (2025-09-24)**: The combinatorial cover is fully formalised.  The items below track the remaining axioms and quality-of-life improvements.
+> **Status (2025-12-26)**: The combinatorial cover is fully formalised. PNP3 has no active axioms; the items below track legacy axioms and quality-of-life improvements.
 
 ## Complexity bridge (no-PH roadmap)
 

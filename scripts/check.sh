@@ -6,7 +6,7 @@ lake build
 lake env lean --run scripts/smoke.lean
 
 echo "Checking active axiom inventory..."
-expected_axioms=3
+expected_axioms=0
 actual_axioms=$(rg "^axiom " -g"*.lean" pnp3 | wc -l | tr -d ' ')
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."

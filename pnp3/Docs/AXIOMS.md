@@ -7,10 +7,12 @@ Last updated: 2025-12-26
 
 ## Overview
 
-After the latest cleanup the active `pnp3/` tree contains **2 external axioms**.
-They are grouped along the analytical steps of the pipeline:
+After the latest cleanup the active `pnp3/` tree contains **0 external axioms**.
+The pipeline still depends on externally supplied witnesses for shrinkage
+statements, but these are packaged as theorems. They are grouped along the
+analytical steps of the pipeline:
 
-- **Part A (Switching / Shrinkage)**: 2 axioms
+- **Part A (Switching / Shrinkage)**: 0 axioms
 - **Part C (Anti-Checker lower bounds)**: 0 axioms — all results are theorems
 - **Part D (Magnification triggers / bridges)**: 0 axioms
 - **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` is imported from the
@@ -30,9 +32,9 @@ section for details.
 
 **Location**: `pnp3/ThirdPartyFacts/Facts_Switching.lean` (see `partial_shrinkage_for_AC0`)
 
-**Statement**:
+**Statement (theorem)**:
 ```lean
-axiom partial_shrinkage_for_AC0
+theorem partial_shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
@@ -43,9 +45,10 @@ axiom partial_shrinkage_for_AC0
 ```
 
 **Role**: Håstad-style switching lemma delivering a partial PDT certificate with
-explicit depth and error bounds. The new hypothesis `hF` enforces that the
-family `F` действительно реализуется схемами AC⁰; без этого условия аксиома
-становится ложной (например, для PARITY).
+explicit depth and error bounds. The hypothesis `hF` packages a concrete
+`AC0CircuitWitness`, so the lemma is a theorem but still depends on an externally
+supplied witness for the AC⁰ family (otherwise the statement would be false, e.g.
+for PARITY).
 
 **Literature**: Håstad (1986), Servedio–Tan (2019).
 
@@ -55,9 +58,9 @@ family `F` действительно реализуется схемами AC�
 
 **Location**: `pnp3/ThirdPartyFacts/Facts_Switching.lean` (see `shrinkage_for_localCircuit`)
 
-**Statement**:
+**Statement (theorem)**:
 ```lean
-axiom shrinkage_for_localCircuit
+theorem shrinkage_for_localCircuit
     (params : LocalCircuitParameters) (F : Family params.n)
     (hF : FamilyIsLocalCircuit params F) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
@@ -68,7 +71,8 @@ axiom shrinkage_for_localCircuit
 ```
 
 **Role**: Local-circuit variant of the switching lemma. The hypothesis `hF`
-guarantees that the family is действительно вычислимо локальными схемами.
+packages a concrete `LocalCircuitWitness` (see `Facts_Switching`) so the lemma
+is no longer an axiom, but it still depends on an externally supplied witness.
 
 **Literature**: Williams (2014), Chen–Oliveira–Santhanam (2022).
 

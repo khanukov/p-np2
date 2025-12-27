@@ -17,15 +17,17 @@ exports the minimal interface required by the magnification pipeline:
 конструктивную реализацию** теоремы: мы строим явный свидетель локальности
 с одноточечным тест-набором, удовлетворяющим полилогарифмической границе, что
 позволяет устранить явную аксиому из кода.  Это решение служит «заглушкой» до
-момента, когда будет формализован шринкаж-факт A.2 (`shrinkage_for_localCircuit`).
-Вся инфраструктура для полноценного доказательства уже подготовлена — сразу
-после появления результата шага A можно будет заменить базовый свидетель на
-доказанный через локализацию и мультиплексоры вариант, не изменяя интерфейсов.
+момента, когда будет формализовано shrinkage-свидетельство для A.2
+(`shrinkage_for_localCircuit`). Вся инфраструктура для полноценного доказательства
+уже подготовлена — сразу после появления результата шага A можно будет заменить
+базовый свидетель на доказанный через локализацию и мультиплексоры вариант, не
+изменяя интерфейсов.
 
 > **Статус на момент публикации.** Работа над доказательством locality lift
-> приостановлена до завершения формализации A.2.  Все необходимые точки
-> интеграции отмечены в коде и документации: возобновить проект можно будет
-> с немедленного подключения шринкаж-свидетеля без дополнительной подготовки.
+> приостановлена до появления формализованного shrinkage-свидетеля для A.2.
+> Все необходимые точки интеграции отмечены в коде и документации: возобновить
+> проект можно будет с немедленного подключения shrinkage-свидетеля без
+> дополнительной подготовки.
 
 ## Roadmap
 
@@ -79,12 +81,14 @@ referenced, and how the parameters are expected to transform.
 
 * **(Blocked until Step A completes.)** Formalise the shrinkage and
   multi-switching lemmas relied upon by Williams and Murray–Williams, ideally in
-  separate `Facts/Switching` and `Facts/Shrinkage` packages.  This delivers the
-  external fact A.2 (`shrinkage_for_localCircuit`) required by the builder.
+  separate `Facts/Switching` and `Facts/Shrinkage` packages.  This supplies the
+  shrinkage witness for A.2 (`shrinkage_for_localCircuit`) required by the
+  builder.
 * Implement the deterministic extraction of the test-set `T` and the local
   solver `loc`, keeping the explicit bounds `hT`, `hM`, `hℓ`, and `hdepth`.  The
-  helper modules are already scaffolded; once A.2 is available, the remaining
-  proofs can be inserted where indicated by the comments.
+  helper modules are already scaffolded; once the A.2 shrinkage witness is
+  available, the remaining proofs can be inserted where indicated by the
+  comments.
 * Integrate automated sanity checks (small toy instances, arithmetic lemmas on
   `polylogBudget`, …) to validate the interface before wiring the fact back into
   the main proof pipeline.
@@ -99,7 +103,9 @@ we record the exact external statements the proof will rely on:*
    currently exposed in `ThirdPartyFacts/Facts_Switching.lean` under the name
    `shrinkage_for_localCircuit`. Intuitively, it asserts that after suitable
    restrictions the dependency set compresses to a polylogarithmic subset of
-   coordinates, with controlled PDT depth and small error.
+   coordinates, with controlled PDT depth and small error. The theorem itself
+   is available, but it still needs an external `LocalCircuitWitness` packaged
+   in `FamilyIsLocalCircuit`.
 
 2. **(No SAL/AC⁰ shrinkage dependency for this lemma.)**  
    The locality-lift proof can be carried out *only* with the local shrinkage
@@ -161,7 +167,7 @@ relevant file.
 | --- | --- | --- |
 | ☑ | Formalise the shrinkage witness interface (`ShrinkageWitness`) specialised to GapMCSP solvers and connect it to the blueprint layer.<br/>The module now also provides `ShrinkageCertificate`, a canonical certificate, and the bridge to semantic localisation certificates. | `Proof/Summary.lean`, `Proof/Blueprint.lean`, `Proof/ShrinkageWitness.lean`, `Proof/Witness.lean` |
 | ☑ | Extract the deterministic test-set `T` from a shrinkage certificate and capture the localisation predicate `localizedOn alive general`.<br/>The helper modules now provide canonical test-set constructions for any restriction, glue them to shrinkage summaries, and expose a `localityWitnessOfCertificate` bridge that carries semantic data without unfolding definitions. | `Proof/TestSetExtraction.lean`, `Proof/Restriction.lean`, `Proof/Localization.lean`, `Proof/ShrinkageWitness.lean`, `Proof/Witness.lean` |
-| ◕ | Build the local solver by threading iterative ITE/multiplexer layers through the general solver DAG, keeping the size and depth bounds explicit (linear size budget prepared in `Proof/Builder.lean`).<br/>`LocalCircuitSkeleton` now packages shrinkage summaries together with the local evaluator, supplying immediate bridges to `LocalityCertificate` and `LocalityWitness`.  **Финальный шаг заблокирован до тех пор, пока не будет формализована A.2 (`shrinkage_for_localCircuit`)**: после появления доказанного shrinkage-свидетельства его нужно подставить вместо канонической заглушки и реализовать мультиплексорную трансформацию. | `ProofSketch/Outline.lean`, `Proof/Builder.lean` |
+| ◕ | Build the local solver by threading iterative ITE/multiplexer layers through the general solver DAG, keeping the size and depth bounds explicit (linear size budget prepared in `Proof/Builder.lean`).<br/>`LocalCircuitSkeleton` now packages shrinkage summaries together with the local evaluator, supplying immediate bridges to `LocalityCertificate` and `LocalityWitness`.  **Финальный шаг заблокирован до тех пор, пока не будет предоставлен shrinkage-свидетель для A.2 (`shrinkage_for_localCircuit`)**: после появления доказанного shrinkage-свидетельства его нужно подставить вместо канонической заглушки и реализовать мультиплексорную трансформацию. | `ProofSketch/Outline.lean`, `Proof/Builder.lean` |
 | ☑ | Replace the axiom `localityWitness` with an explicit construction (baseline witness with a canonical one-point test-set), factoring the conversion through the blueprint helper. | `Proof/TestSet.lean`, `Proof/Blueprint.lean`, `Proof/Witness.lean`, `Interface/Statement.lean` |
 
 Once all four items are checked, Step D in the main repository will depend only
@@ -175,7 +181,7 @@ mathematical statements it will influence so that researchers can respond
 without consulting the repository.
 
 1. **Turning shrinkage witnesses into deterministic test-sets.**
-   *Context.* The external fact `ThirdPartyFacts.Facts_Switching.shrinkage_for_localCircuit`
+   *Context.* The theorem `ThirdPartyFacts.Facts_Switching.shrinkage_for_localCircuit`
    promises a `ShrinkageWitness` whose `alive` coordinates collapse dependence to
    a set of at most `ℓ := ⌊log₂ (general.params.size + 2)⌋` variables and whose
    partial decision tree has depth `t = O((log general.params.size)^depth)` with

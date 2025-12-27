@@ -96,9 +96,8 @@ theorem bridge_from_pipeline_general
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp : GeneralLowerBoundHypothesis p ε (AC0Statement p) :=
-    general_hypothesis_from_pipeline (p := p) (ε := ε) hε
-  -- Берём формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  -- Используем формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  -- Она уже включает положительность `ε` и отрицание малых решателей.
   have hFormula : FormulaLowerBoundHypothesis p ε :=
     formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
@@ -131,8 +130,8 @@ theorem bridge_from_pipeline_kit_general
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp := kit.general_hypothesis (ε := ε) hε
   -- Берём формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  -- `kit` хранит доказательства шага C; используем их напрямую.
   have hFormula : FormulaLowerBoundHypothesis p ε :=
     formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula

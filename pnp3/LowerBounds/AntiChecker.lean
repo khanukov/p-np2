@@ -127,10 +127,10 @@ structure SmallAC0Params (p : Models.GapMCSPParams) where
     не превосходит `2^(2^n/(n+2))`, где `n = ac0.n`.
 
     Мы фиксируем это в виде оценки `unionBound bound bound`, где
-    `bound = 2^{M^2}` — естественная верхняя граница из шага A.
+    `bound = 2^{ac0DepthBound}` — естественная верхняя граница из шага A.
   -/
   union_small :
-    let bound := Nat.pow 2 (ac0.M * ac0.M)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound ac0)
     Counting.unionBound bound bound ≤
       Nat.pow 2 (Nat.pow 2 ac0.n / (ac0.n + 2))
   deriving Repr
@@ -186,7 +186,7 @@ theorem noSmallAC0Solver
   -- Сценарий SAL, полученный из `solver`.
   let pack := scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)
   let sc := pack.2
-  let bound := Nat.pow 2 (solver.params.ac0.M * solver.params.ac0.M)
+  let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound solver.params.ac0)
   -- Вытаскиваем шаг A+B: границы на параметры и связь `card(F) ≤ capacityBound`.
   have hsummary :=
     scenarioFromAC0_stepAB_summary

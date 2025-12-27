@@ -112,7 +112,7 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
     same_n := rfl
     small :=
       by
-        -- Для `M = 1` грубая оценка `M^2` равна 1.
+        -- Для `M = 1` грубая оценка `ac0DepthBound` равна 1.
         -- Длина входа `inputLen p = 2^{p.n}` не меньше 1 для любого `p.n`.
         -- `inputLen p = 2^{p.n}` всегда ≥ 1, так как основание ≥ 1.
         have hlen : (1 : Nat) ≤ Models.inputLen p := by
@@ -120,7 +120,7 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
             Nat.pow_pos (by decide : 0 < (2 : Nat))
           exact Nat.succ_le_of_lt (by simpa [Models.inputLen] using hpowPos)
         -- Склеиваем равенство с оценкой `hlen`.
-        simpa [ThirdPartyFacts.AC0SmallEnough] using hlen
+        simpa [ThirdPartyFacts.AC0SmallEnough, ThirdPartyFacts.ac0DepthBound] using hlen
     union_small :=
       by
         -- Для `M = 1` получаем `bound = 2`.

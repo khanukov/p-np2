@@ -77,6 +77,17 @@ structure AC0Parameters where
   d : Nat
   deriving Repr
 
+/--
+  Грубая численная оценка на глубину PDT для конструктивного depth-2 случая.
+
+  Сейчас мы используем только глубину-2 DNF, поэтому число подкубов
+  ограничено квадратично через `M`.  Позже, когда будет формализована
+  настоящая switching-лемма, эту функцию можно заменить более сильной
+  (polylog) оценкой и переподключить downstream без массового переписывания.
+-/
+def ac0DepthBound (params : AC0Parameters) : Nat :=
+  params.M * params.M
+
 /-- Полный подкуб (никаких фиксированных битов). -/
 @[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none
 
@@ -302,7 +313,7 @@ structure AC0FamilyWitness (params : AC0Parameters) (F : Family params.n) where
     Число схем в witness не превосходит `M`.
 
     Это явное требование, позволяющее получить грубую оценку
-    на суммарное число подкубов `≤ M^2` без обращения к switching-лемме.
+    на суммарное число подкубов `≤ ac0DepthBound` без обращения к switching-лемме.
   -/
   circuits_length_le :
     circuits.length ≤ params.M
@@ -321,12 +332,12 @@ def FamilyIsAC0 (params : AC0Parameters) (F : Family params.n) : Prop :=
 /--
   Предикат «малости» для AC⁰-параметров.  Он фиксирует грубое требование
   на рост размера `M` относительно числа входных переменных
-  `n`: даже после применения грубой оценки `M^2` результат остаётся
+  `n`: даже после применения грубой оценки `ac0DepthBound` результат остаётся
   не больше `n`.  Это честная оценка для конструктивного depth-2 случая,
   где глубина PDT строится как число подкубов.
 -/
 def AC0SmallEnough (ac0 : AC0Parameters) : Prop :=
-  ac0.M * ac0.M ≤ ac0.n
+  ac0DepthBound ac0 ≤ ac0.n
 
 /--
   Параметры для класса «локальных схем».  Мы сохраняем только наиболее
@@ -481,7 +492,7 @@ theorem partial_shrinkage_for_AC0
     (hF : FamilyIsAC0 params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
-      C.depthBound + ℓ ≤ params.M * params.M ∧
+      C.depthBound + ℓ ≤ ac0DepthBound params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
@@ -513,10 +524,10 @@ theorem partial_shrinkage_for_AC0
           = (witness.circuits.map AC0Circuit.size).sum := hlen
       _ ≤ (witness.circuits.map (fun _ => params.M)).sum := hsum
       _ = witness.circuits.length * params.M := hsum_const
-  have hlen_bound : allSubcubes.length ≤ params.M * params.M := by
+  have hlen_bound : allSubcubes.length ≤ ac0DepthBound params := by
     have hlen_circuits := witness.circuits_length_le
     have hmul := Nat.mul_le_mul_right params.M hlen_circuits
-    exact hlen_subcubes.trans hmul
+    exact hlen_subcubes.trans (by simpa [ac0DepthBound] using hmul)
   by_cases hpos : 0 < params.n
   · -- Случай n > 0: строим дерево по списку подкубов и сразу фиксируем глубину.
     let tree := buildPDTFromSubcubes hpos allSubcubes
@@ -633,7 +644,7 @@ structure AC0PartialWitness
   level_le_log   : level ≤ Nat.log2 (params.M + 2)
   /-- Верхняя граница на суммарную глубину. -/
   depth_le       : certificate.depthBound + level
-      ≤ params.M * params.M
+      ≤ ac0DepthBound params
   /-- Неотрицательность ошибки. -/
   epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
   /-- Верхняя оценка ошибки `ε ≤ 1/(n+2)`. -/
@@ -695,12 +706,12 @@ lemma partialCertificate_depthBound_add_level_le
     (hF : FamilyIsAC0 params F) :
     (partialCertificate_from_AC0 params F hF).depthBound
         + partialCertificate_level_from_AC0 params F hF
-      ≤ params.M * params.M := by
+      ≤ ac0DepthBound params := by
   classical
   change
       (ac0PartialWitness params F hF).certificate.depthBound
         + (ac0PartialWitness params F hF).level
-        ≤ params.M * params.M
+        ≤ ac0DepthBound params
   exact (ac0PartialWitness params F hF).depth_le
 
 /-- Неотрицательность ошибки частичного сертификата. -/
@@ -738,7 +749,7 @@ theorem shrinkage_for_AC0
     (hF : FamilyIsAC0 params F) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
-        t ≤ params.M * params.M ∧
+        t ≤ ac0DepthBound params ∧
         (0 : Q) ≤ ε ∧
         ε ≤ (1 : Q) / (params.n + 2) :=
   by
@@ -931,7 +942,7 @@ lemma certificate_from_AC0_depth_bound
     (hF : FamilyIsAC0 params F) :
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0 params F hF))
-      ≤ params.M * params.M := by
+      ≤ ac0DepthBound params := by
   classical
   let witness := ac0PartialWitness params F hF
   have hbound := witness.depth_le
@@ -941,10 +952,10 @@ lemma certificate_from_AC0_depth_bound
     (F := F)
     witness.certificate
   have htarget := Eq.subst
-    (motive := fun t => t ≤ params.M * params.M)
+    (motive := fun t => t ≤ ac0DepthBound params)
     (Eq.symm hrewrite) hbound
   change (certificate_from_AC0 params F hF).t
-      ≤ params.M * params.M
+      ≤ ac0DepthBound params
   dsimp [certificate_from_AC0, witness] at htarget ⊢
   exact htarget
 
@@ -1028,7 +1039,7 @@ lemma partial_from_AC0_trunk_depth_le
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     PDT.depth (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).trunk
-      ≤ params.M * params.M := by
+      ≤ ac0DepthBound params := by
   classical
   have hdepth :=
     Core.Shrinkage.depth_le_depthBound
@@ -1037,7 +1048,7 @@ lemma partial_from_AC0_trunk_depth_le
     certificate_from_AC0_depth_bound (params := params) (F := F) (hF := hF)
   have hbound' :
       Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF)
-        ≤ params.M * params.M := hbound
+        ≤ ac0DepthBound params := hbound
   have htree_depth :
       PDT.depth (certificate_from_AC0 params F hF).tree
         ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF) := by
@@ -1057,27 +1068,27 @@ lemma partial_from_AC0_trunk_depth_le
 
 /--
 Число листьев словаря из AC⁰-сертификата контролируется той же границей,
-что и глубина: `|R| ≤ 2^{M^2}`.  Лемма напрямую использует
+что и глубина: `|R| ≤ 2^{ac0DepthBound params}`.  Лемма напрямую использует
 оценку из `ShrinkageWitness`.
 -/
 lemma partial_from_AC0_leafDict_len_le
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).leafDict.length
-      ≤ Nat.pow 2 (params.M * params.M) := by
+      ≤ Nat.pow 2 (ac0DepthBound params) := by
   classical
   have hbase :=
     Core.Shrinkage.partial_leafDict_length_le_pow
       (S := certificate_from_AC0 params F hF)
   have hbound :
       Nat.pow 2 (Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF))
-        ≤ Nat.pow 2 (params.M * params.M) := by
+        ≤ Nat.pow 2 (ac0DepthBound params) := by
     have hdepthBound :=
       certificate_from_AC0_depth_bound (params := params) (F := F) (hF := hF)
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepthBound
   have hpartial_pow :
       Nat.pow 2 (certificate_from_AC0 params F hF).t
-        ≤ Nat.pow 2 (params.M * params.M) := by
+        ≤ Nat.pow 2 (ac0DepthBound params) := by
     have htmp := hbound
     simp [Core.Shrinkage.depthBound] at htmp
     exact htmp

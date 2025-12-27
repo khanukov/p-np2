@@ -972,15 +972,16 @@ lemma scenarioFromShrinkage_dictLen_le_pow
   exact hbound'
 
 /--
-  Параметр `k` в сценарии AC⁰ не превышает `2^{M^2}`.  Получаем
-  его из границы `t ≤ M^2`, предоставленной constructive shrinkage.
+  Параметр `k` в сценарии AC⁰ не превышает `2^{ac0DepthBound params}`.
+  Получаем его из границы `t ≤ ac0DepthBound params`, предоставленной
+  constructive shrinkage.
 -/
 lemma scenarioFromAC0_k_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
     (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
     (scenarioFromAC0 params F hF).1
-      ≤ Nat.pow 2 (params.M * params.M) := by
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
   classical
   unfold scenarioFromAC0
   set S := ThirdPartyFacts.certificate_from_AC0 params F hF
@@ -995,10 +996,11 @@ lemma scenarioFromAC0_k_le_pow
     ThirdPartyFacts.certificate_from_AC0_depth_bound
       (params := params) (F := F) (hF := hF)
   have hpow_bound :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (params.M * params.M) := by
-    have hS : S.t ≤ params.M * params.M := by
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
       have htmp := htBound
-      change Core.Shrinkage.depthBound (S := S) ≤ params.M * params.M at htmp
+      change Core.Shrinkage.depthBound (S := S)
+          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
       have hrewrite := htmp
       simp [Core.Shrinkage.depthBound] at hrewrite
       exact hrewrite
@@ -1012,14 +1014,15 @@ lemma scenarioFromAC0_k_le_pow
   exact hfinal
 
 /--
-  Оценка на длину словаря в AC⁰-сценарии: она не превосходит `2^{M^2}`.
+  Оценка на длину словаря в AC⁰-сценарии:
+  она не превосходит `2^{ac0DepthBound params}`.
 -/
 lemma scenarioFromAC0_dictLen_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
     (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
     Counting.dictLen (scenarioFromAC0 params F hF).2.atlas.dict
-      ≤ Nat.pow 2 (params.M * params.M) := by
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
   classical
   unfold scenarioFromAC0
   set S := ThirdPartyFacts.certificate_from_AC0 params F hF
@@ -1034,10 +1037,11 @@ lemma scenarioFromAC0_dictLen_le_pow
     ThirdPartyFacts.certificate_from_AC0_depth_bound
       (params := params) (F := F) (hF := hF)
   have hpow_bound :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (params.M * params.M) := by
-    have hS : S.t ≤ params.M * params.M := by
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
       have htmp := htBound
-      change Core.Shrinkage.depthBound (S := S) ≤ params.M * params.M at htmp
+      change Core.Shrinkage.depthBound (S := S)
+          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
       have hrewrite := htmp
       simp [Core.Shrinkage.depthBound] at hrewrite
       exact hrewrite
@@ -1085,7 +1089,7 @@ lemma scenarioFromAC0_epsilon_eq
   Совокупное описание ограниченного сценария из `scenarioFromAC0`.
   Мы собираем в одну точку все численные границы, необходимые для шага B:
 
-  * параметр `k` не превосходит `2^{M^2}`;
+  * параметр `k` не превосходит `2^{ac0DepthBound params}`;
   * длина словаря ограничена тем же числом;
   * погрешность лежит в диапазоне `0 ≤ ε ≤ 1/2` и дополнительно
     `ε ≤ 1/(n+2)`.
@@ -1096,7 +1100,7 @@ lemma scenarioFromAC0_completeBounds
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
     (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    let bound := Nat.pow 2 (params.M * params.M)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
     let sc := scenarioFromAC0 params F hF
     sc.1 ≤ bound ∧
       Counting.dictLen sc.2.atlas.dict ≤ bound ∧
@@ -1142,9 +1146,9 @@ theorem exists_boundedAtlas_from_AC0
     (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
     ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
       sc.family = F ∧
-      k ≤ Nat.pow 2 (params.M * params.M) ∧
+      k ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) ∧
       Counting.dictLen sc.atlas.dict
-        ≤ Nat.pow 2 (params.M * params.M) ∧
+        ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) ∧
       (0 : Core.Q) ≤ sc.atlas.epsilon ∧
       sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
       sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
@@ -1399,7 +1403,7 @@ lemma scenarioFromAC0_stepAB_summary
     (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
     let pack := scenarioFromAC0 params F hF
     let sc := pack.2
-    let bound := Nat.pow 2 (params.M * params.M)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
     sc.family = F ∧
       sc.k ≤ bound ∧
       Counting.dictLen sc.atlas.dict ≤ bound ∧
@@ -1557,7 +1561,7 @@ noncomputable def scenarioBudgetFromAC0
   by
     classical
     let packData := scenarioFromAC0 params F hF
-    let bound := Nat.pow 2 (params.M * params.M)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
     have summaryPack :=
       scenarioFromAC0_stepAB_summary (params := params) (F := F) (hF := hF)
     have hfamily_raw := summaryPack.1

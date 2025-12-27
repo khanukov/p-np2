@@ -112,20 +112,18 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
     same_n := rfl
     small :=
       by
-        -- Для `M = 1`, `d = 1` оценка `log₂(M+2)^(d+1)` равна 1.
+        -- Для `M = 1` грубая оценка `ac0DepthBound` равна 1.
         -- Длина входа `inputLen p = 2^{p.n}` не меньше 1 для любого `p.n`.
-        have hpow : Nat.log2 3 ^ 2 = 1 := by native_decide
         -- `inputLen p = 2^{p.n}` всегда ≥ 1, так как основание ≥ 1.
         have hlen : (1 : Nat) ≤ Models.inputLen p := by
           have hpowPos : 0 < 2 ^ Models.GapMCSPParams.n p :=
             Nat.pow_pos (by decide : 0 < (2 : Nat))
           exact Nat.succ_le_of_lt (by simpa [Models.inputLen] using hpowPos)
         -- Склеиваем равенство с оценкой `hlen`.
-        simpa [ThirdPartyFacts.AC0SmallEnough, hpow] using hlen
+        simpa [ThirdPartyFacts.AC0SmallEnough, ThirdPartyFacts.ac0DepthBound] using hlen
     union_small :=
       by
-        -- Для `M = 1`, `d = 1` получаем `bound = 2`.
-        have hpow : Nat.log2 3 ^ 2 = 1 := by native_decide
+        -- Для `M = 1` получаем `bound = 2`.
         -- `unionBound 2 2 ≤ 4`, а правая часть ≥ `2^2 = 4` при `n ≥ 8`.
         have hleft : Counting.unionBound 2 2 ≤ 4 := by
           simpa using (Counting.unionBound_le_pow 2 2)
@@ -170,10 +168,10 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
           exact hleft.trans hmono
         have hU' :
             Counting.unionBound
-              (2 ^ Nat.log2 3 ^ 2)
-              (2 ^ Nat.log2 3 ^ 2)
+              (2 ^ (1 * 1))
+              (2 ^ (1 * 1))
               ≤ Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
-          simpa [hpow] using hU
+          simpa using hU
         simpa using hU' }
 
 /--

@@ -1,3 +1,4 @@
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import LowerBounds.LB_Formulas_Core
 import LowerBounds.LB_LocalCircuits
 import LowerBounds.LB_GeneralFromLocal
@@ -42,6 +43,36 @@ def AC0Statement (p : GapMCSPParams) : Prop :=
     ThirdPartyFacts.FamilyIsAC0 _solver.params.ac0
       (Counting.allFunctionsFamily _solver.params.ac0.n) → False
 
+/-!
+  ### Явная привязка размера схемы к длине входа `N = 2^n`
+
+  Для триггеров магнификации нужна формулировка нижней оценки вида
+  `M ≤ N^{1+ε}`, где `N = inputLen p = 2^n` — длина входа задачи GapMCSP.
+  Мы вводим явное ограничение на размер схемы через вещественную степень,
+  чтобы зафиксировать параметрическое «рукопожатие» между `n` и `N`.
+-/
+
+/-- Ограничение на размер схемы в терминах входной длины `N = 2^n`. -/
+def sizeBoundByN (p : GapMCSPParams) (M : Nat) (ε : Rat) : Prop :=
+  (M : ℝ) ≤ Real.rpow (inputLen p : ℝ) ((1 : ℝ) + (ε : ℝ))
+
+/--
+  Усиленное AC⁰-утверждение: запрещаем решатели, чей размер удовлетворяет
+  явному bound `M ≤ N^{1+ε}`. Это формально фиксирует требование OPS.
+-/
+def AC0SizeBoundedStatement (p : GapMCSPParams) (ε : Rat) : Prop :=
+  ∀ solver : SmallAC0Solver p,
+    sizeBoundByN p solver.params.ac0.M ε →
+    ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n) → False
+
+/- Усиленное утверждение следует из базового запрета всех AC⁰-решателей. -/
+lemma ac0_sizeBound_statement_of_ac0_statement
+    (p : GapMCSPParams) {ε : Rat} :
+    AC0Statement p → AC0SizeBoundedStatement p ε := by
+  intro hBase solver _ hF_all
+  exact hBase solver hF_all
+
 /--
   Утверждение «не существует малой локальной схемы-решателя».  Это
   условие используется в JACM’22 (барьер локальности).
@@ -72,14 +103,11 @@ def GeneralLowerBoundHypothesis
 /--
   Специализированная версия для формул (OPS’20, Corollary 6.4).
   `FormulaLowerBoundHypothesis p δ` проверяет `δ > 0` и отсутствие
-  малых AC⁰-решателей.
+  AC⁰-решателей размера `M ≤ N^{1+δ}`.
 -/
 def FormulaLowerBoundHypothesis
     (p : GapMCSPParams) (δ : Rat) : Prop :=
-  (0 : Rat) < δ ∧
-    ∀ solver : SmallAC0Solver p,
-      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n) → False
+  (0 : Rat) < δ ∧ AC0SizeBoundedStatement p δ
 
 /--
   Вариант для локальных схем (JACM’22, Theorem 3.1).  Условие объединяет
@@ -94,11 +122,11 @@ def LocalLowerBoundHypothesis
 
 /--
   Переписываем гипотезу OPS для формул через упаковку `AC0Statement`.
-  Определения совпадают буквально, поэтому возвращается эквивалентность.
+  В новой версии формула опирается на явный размерный bound.
 -/
 lemma formulaHypothesis_eq_general (p : GapMCSPParams) (δ : Rat) :
     FormulaLowerBoundHypothesis p δ ↔
-      GeneralLowerBoundHypothesis p δ (AC0Statement p) := by
+      GeneralLowerBoundHypothesis p δ (AC0SizeBoundedStatement p δ) := by
   rfl
 
 /--
@@ -147,7 +175,9 @@ lemma formula_hypothesis_from_pipeline
     FormulaLowerBoundHypothesis p δ :=
   by
     refine And.intro hδ ?hStatement
-    intro solver hF_all
+    intro solver _hBound hF_all
+    -- Более сильное утверждение шага C запрещает любой решатель,
+    -- поэтому условие размера можно игнорировать.
     exact ac0_statement_from_pipeline (p := p) solver hF_all
 
 /--

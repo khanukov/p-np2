@@ -96,12 +96,9 @@ theorem bridge_from_pipeline_general
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp : GeneralLowerBoundHypothesis p ε (AC0Statement p) :=
-    general_hypothesis_from_pipeline (p := p) (ε := ε) hε
-  -- Переписываем гипотезу в формульном виде и применяем конструктивный триггер.
-  have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+  -- Гипотеза шага C автоматически даёт формульную гипотезу с явным размерным bound.
+  have hFormula : FormulaLowerBoundHypothesis p ε :=
+    formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--
@@ -132,11 +129,9 @@ theorem bridge_from_pipeline_kit_general
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp := kit.general_hypothesis (ε := ε) hε
-  -- Сужаемся до формульной гипотезы и запускаем конструктивный триггер.
-  have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+  -- Используем готовую формульную гипотезу, идущую напрямую из пайплайна.
+  have hFormula : FormulaLowerBoundHypothesis p ε :=
+    kit.formula_hypothesis (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--

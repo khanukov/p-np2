@@ -2,6 +2,7 @@ import LowerBounds.LB_Formulas_Core
 import LowerBounds.LB_LocalCircuits
 import LowerBounds.LB_GeneralFromLocal
 import Models.Model_GapMCSP
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
   pnp3/Magnification/PipelineStatements.lean
@@ -43,6 +44,33 @@ def AC0Statement (p : GapMCSPParams) : Prop :=
       (Counting.allFunctionsFamily _solver.params.ac0.n) → False
 
 /--
+  Явная «рукопожатная» связь между `n` и `N = 2^n` для ограничения размера:
+  мы выражаем ограничение вида `M ≤ N^{1+ε}` в вещественных числах.
+
+  * `M` берётся из `solver.params.ac0.M`.
+  * `N = inputLen p = 2^n`.
+  * `ε` — положительный параметр магнификации.
+
+  Замечание: мы используем `Real.rpow`, чтобы иметь право на нецелые экспоненты.
+  Это не требует вычисления или оценки; здесь это лишь формальная запись
+  ограничения, которое затем подаётся в триггеры OPS.
+-/
+def ac0SizeBound (p : GapMCSPParams) (ε : Rat) (solver : SmallAC0Solver p) : Prop :=
+  (solver.params.ac0.M : Real) ≤
+    Real.rpow (Models.inputLen p : Real) (1 + (ε : Real))
+
+/--
+  Утверждение «нет малых AC⁰-решателей *с явным bound* `M ≤ N^{1+ε}`».
+  Это уточняет `AC0Statement` и делает зависимость от `N = 2^n` частью
+  формальной гипотезы магнификации.
+-/
+def AC0BoundedStatement (p : GapMCSPParams) (ε : Rat) : Prop :=
+  ∀ solver : SmallAC0Solver p,
+    ac0SizeBound p ε solver →
+    ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n) → False
+
+/--
   Утверждение «не существует малой локальной схемы-решателя».  Это
   условие используется в JACM’22 (барьер локальности).
 -/
@@ -72,14 +100,11 @@ def GeneralLowerBoundHypothesis
 /--
   Специализированная версия для формул (OPS’20, Corollary 6.4).
   `FormulaLowerBoundHypothesis p δ` проверяет `δ > 0` и отсутствие
-  малых AC⁰-решателей.
+  малых AC⁰-решателей *с явным ограничением* `M ≤ N^{1+δ}`.
 -/
 def FormulaLowerBoundHypothesis
     (p : GapMCSPParams) (δ : Rat) : Prop :=
-  (0 : Rat) < δ ∧
-    ∀ solver : SmallAC0Solver p,
-      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n) → False
+  (0 : Rat) < δ ∧ AC0BoundedStatement p δ
 
 /--
   Вариант для локальных схем (JACM’22, Theorem 3.1).  Условие объединяет
@@ -98,7 +123,7 @@ def LocalLowerBoundHypothesis
 -/
 lemma formulaHypothesis_eq_general (p : GapMCSPParams) (δ : Rat) :
     FormulaLowerBoundHypothesis p δ ↔
-      GeneralLowerBoundHypothesis p δ (AC0Statement p) := by
+      GeneralLowerBoundHypothesis p δ (AC0BoundedStatement p δ) := by
   rfl
 
 /--
@@ -117,6 +142,16 @@ lemma ac0_statement_from_pipeline (p : GapMCSPParams) :
   by
     intro solver hF_all
     exact LB_Formulas_core (p := p) (solver := solver) hF_all
+
+/--
+  Из общего запрета «малых» решателей (шаг C) следует и запрет
+  решателей с явным bound `M ≤ N^{1+ε}`: это просто сужение множества
+  рассматриваемых решателей.
+-/
+lemma ac0_bounded_statement_from_pipeline (p : GapMCSPParams) (ε : Rat) :
+    AC0BoundedStatement p ε := by
+  intro solver _hSize hF_all
+  exact ac0_statement_from_pipeline (p := p) solver hF_all
 
 /--
   Аналогичный вывод для локальных схем.
@@ -147,8 +182,7 @@ lemma formula_hypothesis_from_pipeline
     FormulaLowerBoundHypothesis p δ :=
   by
     refine And.intro hδ ?hStatement
-    intro solver hF_all
-    exact ac0_statement_from_pipeline (p := p) solver hF_all
+    exact ac0_bounded_statement_from_pipeline (p := p) δ
 
 /--
   Версия барьера локальности: положительный параметр `κ` и вывод шага C

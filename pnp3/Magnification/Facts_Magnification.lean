@@ -255,9 +255,7 @@ lemma general_hypothesis_default {p : GapMCSPParams} {statement : Prop}
   используем сразу готовое доказательство положительности.
 -/
 lemma formula_hypothesis_default {p : GapMCSPParams}
-    (h : ∀ solver : SmallAC0Solver p,
-      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n) → False) :
+    (h : AC0BoundedStatement p opsDefaultPack.ε) :
     FormulaLowerBoundHypothesis p opsDefaultPack.ε :=
   ⟨opsDefaultPack.ε_pos, h⟩
 
@@ -814,14 +812,10 @@ by
   intro hHyp hAll
   have hGeneral :
       GeneralLowerBoundHypothesis p δ
-        (∀ solver : SmallAC0Solver p,
-          ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-            (Counting.allFunctionsFamily solver.params.ac0.n) → False) := by
+        (AC0BoundedStatement p δ) := by
     simpa [FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis] using hHyp
   exact OPS_trigger_general_contra (p := p) (ε := δ)
-    (statement := ∀ solver : SmallAC0Solver p,
-      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n) → False)
+    (statement := AC0BoundedStatement p δ)
     hF_all hGeneral hAll
 
 /--
@@ -851,9 +845,7 @@ theorem FormulaLowerBoundHypothesis.as_general
   {p : GapMCSPParams} {δ : Rat} :
   FormulaLowerBoundHypothesis p δ →
     GeneralLowerBoundHypothesis p δ
-      (∀ solver : SmallAC0Solver p,
-        ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-          (Counting.allFunctionsFamily solver.params.ac0.n) → False) :=
+      (AC0BoundedStatement p δ) :=
 by
   intro hHyp
   -- Определения совпадают буквально: `(0 < δ) ∧ statement`.
@@ -871,9 +863,7 @@ theorem OPS_trigger_formulas_from_general
     ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
       (Counting.allFunctionsFamily loc.params.params.n)) :
   GeneralLowerBoundHypothesis p δ
-    (∀ solver : SmallAC0Solver p,
-      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n) → False) →
+    (AC0BoundedStatement p δ) →
     NP_not_subset_Ppoly :=
 by
   intro hGeneral

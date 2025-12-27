@@ -98,10 +98,9 @@ by
   classical
   have hHyp : GeneralLowerBoundHypothesis p ε (AC0Statement p) :=
     general_hypothesis_from_pipeline (p := p) (ε := ε) hε
-  -- Переписываем гипотезу в формульном виде и применяем конструктивный триггер.
-  have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+  -- Берём формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  have hFormula : FormulaLowerBoundHypothesis p ε :=
+    formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--
@@ -133,10 +132,9 @@ theorem bridge_from_pipeline_kit_general
 by
   classical
   have hHyp := kit.general_hypothesis (ε := ε) hε
-  -- Сужаемся до формульной гипотезы и запускаем конструктивный триггер.
-  have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+  -- Берём формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  have hFormula : FormulaLowerBoundHypothesis p ε :=
+    formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--

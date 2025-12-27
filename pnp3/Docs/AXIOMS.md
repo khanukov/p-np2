@@ -118,6 +118,21 @@ Oliveira–Pich–Santhanam (2019/2021).
 All trigger theorems in this section remain **proved**.  There are currently
 no external axioms associated with the magnification interfaces.
 
+---
+
+## Models: Proven Facts
+
+### M.1 (proved): `gapMCSP_in_NP`
+
+**Location**: `pnp3/Models/Model_GapMCSP.lean`
+
+**Summary**: `GapMCSP ∈ NP` for fixed parameters `p`.  Верификатор задан
+невычислимо через прямую проверку существования схемы размера ≤ `sYES`,
+что эквивалентно полному перебору входов и сравнению `Circuit.eval` с
+`truthTableFunction`.  Сертификат имеет квадратичную длину
+`certificateLength n 2 = n^2 + 2`, а временной бюджет фиксируется как
+`(n + certificateLength n 2)^2 + 2`.  Новых аксиом не добавлено.
+
 ### D.1: `OPS_trigger_general`
 
 **Location**: `pnp3/Magnification/Facts_Magnification.lean:74`

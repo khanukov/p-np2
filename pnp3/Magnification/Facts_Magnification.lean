@@ -175,32 +175,6 @@ def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
         simpa using hU' }
 
 /--
-  Включение GapMCSP в `NP`.
-
-  Мы используем абстрактный верификатор из `ComplexityInterfaces.NP`,
-  который может игнорировать сертификат.  Это корректно формально,
-  потому что требование NP заключается в существовании некоторого
-  полиномиального верификатора, а сертификат можно брать пустым.
-
-  В дальнейшем это место удобно усиливать: вместо тривиального
-  верификатора можно подставить проверку вычисления схемы размера
-  `sYES` по таблице истинности.
--/
-theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
-  classical
-  refine ⟨0, 0, (fun _ => 0), (fun n x _ => gapMCSP_Language p n x), ?_, ?_⟩
-  · intro n
-    simp
-  · intro n x
-    constructor
-    · intro hLang
-      refine ⟨(fun _ => false), ?_⟩
-      simpa using hLang
-    · intro hExists
-      rcases hExists with ⟨w, hVerify⟩
-      simpa using hVerify
-
-/--
   Неуниформный решатель для GapMCSP, извлекаемый из предположения
   `NP ⊆ P/poly`.  Нам не нужна корректность схемы — оболочка хранит лишь
   параметры `n`, `size`, `depth`, поэтому достаточно считать размером
@@ -310,7 +284,7 @@ by
   -- Из предположения `NP ⊆ P/poly` извлекаем неуниформный решатель для
   -- `GapMCSP` (в произвольном классе схем общего вида).
   have hPpoly : ComplexityInterfaces.Ppoly (gapMCSP_Language p) :=
-    hAll _ (gapMCSP_in_NP p)
+    hAll _ (Models.gapMCSP_in_NP p)
   have solver : SmallGeneralCircuitSolver p :=
     generalCircuitSolver_of_Ppoly (p := p) hPpoly
   -- Локальная нижняя граница шага C (`LB_GeneralFromLocal`) запрещает любое
@@ -498,82 +472,41 @@ noncomputable def coverWitness_from_antiChecker_testset
       Σ' T : Finset (Core.BitVec solver.params.ac0.n),
         CoverCapacityWitness (Core.BitVec solver.params.ac0.n → Bool) := by
   classical
-  let hExist := antiChecker_exists_testset (p := p) solver hF_all
+  -- Шаг 1: достаём все свидетели через классический выбор.
+  -- Здесь `antiChecker_exists_testset` живёт в `Prop`, поэтому используем
+  -- `Classical.choose`, чтобы получить реальные термы.
+  let hExist := antiChecker_exists_testset (p := p) (solver := solver) hF_all
   let F : Family (Models.inputLen p) := Classical.choose hExist
-  have hExistY : ∃ Y : Finset (Core.BitVec (Models.inputLen p) → Bool),
-      ∃ T : Finset (Core.BitVec (Models.inputLen p)),
-        let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-        ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
-          let scWitness :=
-            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
-          let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-            solver.params.same_n.symm ▸ Y
-          let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
-            solver.params.same_n.symm ▸ T
-          Ysolver ⊆ familyFinset (sc := scWitness) ∧
-            scenarioCapacity (sc := scWitness) < Ysolver.card ∧
-            Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
-            (∀ f ∈ Ysolver,
-              f ∈ Counting.ApproxOnTestset
-                (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
-            Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
-              2 ^ Tsolver.card < Ysolver.card :=
-    Classical.choose_spec hExist
+  let hExistY := Classical.choose_spec hExist
   let Y : Finset (Core.BitVec (Models.inputLen p) → Bool) := Classical.choose hExistY
-  have hExistT :
-      ∃ T : Finset (Core.BitVec (Models.inputLen p)),
-        let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-        ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
-          let scWitness :=
-            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
-          let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-            solver.params.same_n.symm ▸ Y
-          let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
-            solver.params.same_n.symm ▸ T
-          Ysolver ⊆ familyFinset (sc := scWitness) ∧
-            scenarioCapacity (sc := scWitness) < Ysolver.card ∧
-            Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
-            (∀ f ∈ Ysolver,
-              f ∈ Counting.ApproxOnTestset
-                (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
-            Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
-              2 ^ Tsolver.card < Ysolver.card :=
-    Classical.choose_spec hExistY
+  let hExistT := Classical.choose_spec hExistY
   let T : Finset (Core.BitVec (Models.inputLen p)) := Classical.choose hExistT
-  have hWitness :
-      let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-      ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
-        let scWitness :=
-          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
-        let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
-          solver.params.same_n.symm ▸ Y
-        let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
-          solver.params.same_n.symm ▸ T
-        Ysolver ⊆ familyFinset (sc := scWitness) ∧
-          scenarioCapacity (sc := scWitness) < Ysolver.card ∧
-          Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n ∧
-          (∀ f ∈ Ysolver,
-            f ∈ Counting.ApproxOnTestset
-              (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
-          Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
-            2 ^ Tsolver.card < Ysolver.card :=
-    Classical.choose_spec hExistT
+  let hWitness := Classical.choose_spec hExistT
+  -- Разворачиваем зависимые `let`-связки из формулировки античекера.
+  dsimp at hWitness
+  -- Приводим семейства к нужной длине входа через `same_n`.
   set Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
-  have hWitness' := hWitness
-  dsimp [Fsolver] at hWitness'
-  let hF := Classical.choose hWitness'
-  let hrest := Classical.choose_spec hWitness'
+  -- Так как `hWitness` живёт в `Prop`, извлекаем компоненты через `choose`.
+  let hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver :=
+    Classical.choose hWitness
+  let hrest := Classical.choose_spec hWitness
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
     (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
     solver.params.same_n.symm ▸ T
+  -- Раскрываем оставшиеся `let`-связки в хвосте античекера и извлекаем
+  -- требуемую ёмкостную оценку `hUnion`.
   have hrest' := hrest
-  dsimp [scWitness, Ysolver, Tsolver] at hrest'
-  rcases hrest' with ⟨hSubset, _hCap, _hT, _hApprox, hUnion⟩
+  dsimp [Fsolver, scWitness, Ysolver, Tsolver] at hrest'
+  have hUnion :
+      Counting.unionBound (Counting.dictLen scWitness.atlas.dict) scWitness.k *
+        2 ^ Tsolver.card < Ysolver.card :=
+    hrest'.2.2.2.2
+  -- Формируем пакет `CoverCapacityWitness` с верхней оценкой покрытия.
   refine ⟨scWitness, Tsolver, ?_⟩
-  refine
+  exact
     { Y := Ysolver
       m := Counting.unionBound (Counting.dictLen scWitness.atlas.dict)
             scWitness.k * 2 ^ Tsolver.card
@@ -728,7 +661,7 @@ by
   intro hHyp hAll
   -- Из включения `NP ⊆ P/poly` получаем неуниформный решатель для GapMCSP.
   have hPpoly : ComplexityInterfaces.Ppoly (gapMCSP_Language p) :=
-    hAll _ (gapMCSP_in_NP p)
+    hAll _ (Models.gapMCSP_in_NP p)
   -- Оборачиваем решатель в оболочку `SmallGeneralCircuitSolver`.
   have solver : SmallGeneralCircuitSolver p :=
     generalCircuitSolver_of_Ppoly (p := p) hPpoly
@@ -907,7 +840,7 @@ theorem Locality_trigger
     intro hAll
     -- Из включения извлекаем неуниформный решатель для GapMCSP.
     have hPpoly : ComplexityInterfaces.Ppoly (gapMCSP_Language p) :=
-      hAll _ (gapMCSP_in_NP p)
+      hAll _ (Models.gapMCSP_in_NP p)
     have solver_gen : SmallGeneralCircuitSolver p :=
       generalCircuitSolver_of_Ppoly (p := p) hPpoly
     -- Локализуем общий решатель и противоречим запрету локальных схем.

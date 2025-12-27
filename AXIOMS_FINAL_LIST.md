@@ -80,7 +80,6 @@ Legacy files kept under `archive/` still mention the following axioms:
 - `depth2_switching_probabilistic`
 - `depth2_constructive_switching`
 - Duplicate `P_subset_Ppoly` declarations in `ComplexityClasses.lean`
-- `magnification_AC0_MCSP` and `FCE_implies_MCSP`
 
 They are excluded from the active build and from the totals above.
 

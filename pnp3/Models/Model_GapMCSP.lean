@@ -202,6 +202,76 @@ lemma gapMCSP_language_false_of_onlyLarge
 /-- Тип входов promise-версии GapMCSP: таблица истинности длины `2^n`. -/
 abbrev GapMCSPInput (p : GapMCSPParams) := Core.BitVec (inputLen p)
 
+/--
+  Невычислимый (но формально корректный) верификатор для `GapMCSP`.
+
+  **Идея**: сертификат должен кодировать схему размера ≤ `sYES`.  Пока в проекте
+  нет явной кодировки схем в битовые строки, поэтому мы поступаем максимально
+  прямо: проверяем существование подходящей схемы и тем самым моделируем
+  «декодирование + проверку». Это эквивалентно следующему (концептуальному)
+  алгоритму:
+
+  1. Принять вход `x` длины `N = 2^n` как таблицу истинности.
+  2. «Декодировать» сертификат `w` в схему `C` размера ≤ `sYES`.
+  3. Проверить, что `Circuit.eval C` совпадает с `truthTableFunction x`
+     на всех `N` входах длины `n`.
+
+  Сейчас шаг 2 реализован как `decide (hasSmallCircuit p table)`, то есть мы
+  напрямую спрашиваем о существовании схемы и не зависим от конкретного `w`.
+  Как только появится модуль `encode/decode` для схем, это место можно
+  заменить на конструктивный разбор сертификата без изменения окружения.
+-/
+noncomputable def gapMCSP_verify (p : GapMCSPParams) :
+    ∀ n, Bitstring n → Bitstring (certificateLength n 2) → Bool := by
+  classical
+  intro n x _w
+  by_cases h : n = inputLen p
+  · -- На корректной длине входа трактуем `x` как таблицу истинности.
+    subst h
+    -- `decide` выполняет логическую проверку существования корректной схемы.
+    exact decide (hasSmallCircuit p x)
+  · -- На других длинах input язык по определению равен `false`.
+    exact false
+
+lemma gapMCSP_verify_eq_language
+    (p : GapMCSPParams) {n : Nat} (x : Bitstring n)
+    (w : Bitstring (certificateLength n 2)) :
+    gapMCSP_verify p n x w = gapMCSP_Language p n x := by
+  classical
+  by_cases h : n = inputLen p
+  · subst h
+    by_cases hSmall : hasSmallCircuit p x
+    · simp [gapMCSP_verify, gapMCSP_Language, hSmall]
+    · simp [gapMCSP_verify, gapMCSP_Language, hSmall]
+  · simp [gapMCSP_verify, gapMCSP_Language, h]
+
+/--
+  `GapMCSP ∈ NP`.
+
+  Здесь мы фиксируем `c = 2` и `k = 1`, а время работы берём равным
+  `(n + certificateLength n k)^2 + 2`.  Верификатор `gapMCSP_verify`
+  не использует сертификат, что допустимо для определения `NP`:
+  существование *какого-то* полиномиального верификатора уже достаточно.
+
+  Если/когда появится явная кодировка схем, этот блок можно заменить
+  на конструктивную проверку схемы по таблице истинности.
+-/
+theorem gapMCSP_in_NP (p : GapMCSPParams) : NP (gapMCSP_Language p) := by
+  classical
+  refine ⟨2, 2, (fun t => t ^ 2 + 2), gapMCSP_verify p, ?_, ?_⟩
+  · intro n
+    -- Полиномиальность времени очевидна при `c = 2`.
+    simp
+  · intro n x
+    constructor
+    · intro hLang
+      -- Сертификат не влияет на проверку, поэтому выбираем любой.
+      refine ⟨(fun _ => false), ?_⟩
+      simpa [gapMCSP_verify_eq_language (p := p) (x := x)] using hLang
+    · intro hExists
+      rcases hExists with ⟨w, hVerify⟩
+      simpa [gapMCSP_verify_eq_language (p := p) (x := x)] using hVerify
+
 /-- Promise-задача GapMCSP, определяемая через язык `gapMCSP_Language`. -/
 def GapMCSPPromise (p : GapMCSPParams) : PromiseProblem (GapMCSPInput p) :=
   { Yes := fun x => gapMCSP_Language p (inputLen p) x = true

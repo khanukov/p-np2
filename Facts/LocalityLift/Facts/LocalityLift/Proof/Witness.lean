@@ -43,16 +43,149 @@ def localityWitnessOfCertificate
   certificate.toLocalityCertificate.toWitness
 
 /--
-Консервативный свидетель локальности получается из канонического
-shrinkage-сертификата с константной функцией.  Как только появится
-содержательный результат, достаточно будет заменить этот вызов на реальный
-сертификат, не меняя остальной код.
+Упаковка численного shrinkage-свидетеля в итоговый `LocalityWitness`.
+Эта функция полезна, когда мы уже имеем `ShrinkageWitness` (например, из
+рестрикции) и хотим быстро получить локальный решатель, не раскрывая
+структуру `LocalityBlueprint`.
+-/
+def localityWitnessOfShrinkage
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (witness : ShrinkageWitness general) : LocalityWitness general :=
+  witness.toWitness
+
+/--
+Текущий свидетель locality lift извлекается из shrinkage-свидетеля,
+предоставленного через типкласс `ShrinkageWitness.Provider`.  По умолчанию
+используется канонический свидетель, но его можно заменить, не меняя
+интерфейса `locality_lift`.
 -/
 def localityWitness
-    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
     LocalityWitness general :=
-  localityWitnessOfCertificate (generalEval := fun _ => false)
-    (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
+  localityWitnessOfShrinkage
+    (ShrinkageWitness.provided (p := p) general)
+
+/-!
+## Леммы о witness, построенном из `ShrinkageWitness`
+
+В отличие от варианта через `ShrinkageCertificate`, здесь мы работаем только
+с числовой частью shrinkage-данных.  Эти леммы фиксируют, что конструктор
+`localityWitnessOfShrinkage` буквально переупаковывает поля сводки.
+-/
+
+lemma localityWitnessOfShrinkage_alive
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (witness : ShrinkageWitness general) :
+    (localityWitnessOfShrinkage (p := p) (general := general) witness).alive
+      = witness.alive := by
+  classical
+  unfold localityWitnessOfShrinkage
+  simp [ShrinkageWitness.toWitness, ShrinkageWitness.toBlueprint,
+    ShrinkageSummary.toBlueprint, LocalityBlueprint.toWitness]
+
+lemma localityWitnessOfShrinkage_testSet
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (witness : ShrinkageWitness general) :
+    (localityWitnessOfShrinkage (p := p) (general := general) witness).testSet
+      = witness.testSet := by
+  classical
+  unfold localityWitnessOfShrinkage
+  simp [ShrinkageWitness.toWitness, ShrinkageWitness.toBlueprint,
+    ShrinkageSummary.toBlueprint, LocalityBlueprint.toWitness]
+
+lemma localityWitnessOfShrinkage_size
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (witness : ShrinkageWitness general) :
+    (localityWitnessOfShrinkage (p := p) (general := general) witness).localParams.M
+      = general.params.size * witness.summary.sizeMultiplier := by
+  classical
+  unfold localityWitnessOfShrinkage
+  simp [ShrinkageWitness.toWitness, ShrinkageWitness.toBlueprint,
+    ShrinkageSummary.toBlueprint, LocalityBlueprint.toWitness]
+
+lemma localityWitnessOfShrinkage_locality
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (witness : ShrinkageWitness general) :
+    (localityWitnessOfShrinkage (p := p) (general := general) witness).localParams.ℓ
+      = witness.summary.locality := by
+  classical
+  unfold localityWitnessOfShrinkage
+  simp [ShrinkageWitness.toWitness, ShrinkageWitness.toBlueprint,
+    ShrinkageSummary.toBlueprint, LocalityBlueprint.toWitness]
+
+lemma localityWitnessOfShrinkage_depth
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (witness : ShrinkageWitness general) :
+    (localityWitnessOfShrinkage (p := p) (general := general) witness).localParams.depth
+      = witness.summary.depth := by
+  classical
+  unfold localityWitnessOfShrinkage
+  simp [ShrinkageWitness.toWitness, ShrinkageWitness.toBlueprint,
+    ShrinkageSummary.toBlueprint, LocalityBlueprint.toWitness]
+
+/-!
+## Леммы о witness, выбранном через `Provider`
+
+Эти утверждения удобны в дальнейшем: они позволяют использовать свойства
+`ShrinkageWitness` напрямую, не раскрывая определение `localityWitness`.
+-/
+
+lemma localityWitness_alive_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).alive =
+      (ShrinkageWitness.provided (p := p) general).alive := by
+  classical
+  simpa [localityWitness] using
+    (localityWitnessOfShrinkage_alive
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.provided (p := p) general))
+
+lemma localityWitness_testSet_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).testSet =
+      (ShrinkageWitness.provided (p := p) general).testSet := by
+  classical
+  simpa [localityWitness] using
+    (localityWitnessOfShrinkage_testSet
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.provided (p := p) general))
+
+lemma localityWitness_size_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).localParams.M =
+      general.params.size *
+        (ShrinkageWitness.provided (p := p) general).summary.sizeMultiplier := by
+  classical
+  simpa [localityWitness] using
+    (localityWitnessOfShrinkage_size
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.provided (p := p) general))
+
+lemma localityWitness_locality_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).localParams.ℓ =
+      (ShrinkageWitness.provided (p := p) general).summary.locality := by
+  classical
+  simpa [localityWitness] using
+    (localityWitnessOfShrinkage_locality
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.provided (p := p) general))
+
+lemma localityWitness_depth_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).localParams.depth =
+      (ShrinkageWitness.provided (p := p) general).summary.depth := by
+  classical
+  simpa [localityWitness] using
+    (localityWitnessOfShrinkage_depth
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.provided (p := p) general))
 
 /--
 Для произвольного shrinkage-сертификата живые координаты в итоговом свидетеле
@@ -164,18 +297,16 @@ lemma localityWitnessOfCertificate_depth
 -/
 lemma localityWitness_alive_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    (localityWitness (p := p) general).alive = canonicalAlive p := by
+    (localityWitnessOfShrinkage (p := p)
+        (ShrinkageWitness.canonical (p := p) general)).alive =
+      canonicalAlive p := by
   classical
-  -- Переформулируем утверждение через универсальную лемму и канонический сертификат.
-  have hsummary :
-      (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general).summary =
-        canonicalSummary (p := p) general := rfl
+  -- Переформулируем утверждение через лемму о shrinkage-свидетеле.
   have h :=
-    localityWitnessOfCertificate_alive
-      (certificate := ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
-      (general := general) (generalEval := fun _ => false)
-  simpa [localityWitness, localityWitnessOfCertificate, hsummary]
-    using h
+    localityWitnessOfShrinkage_alive
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.canonical (p := p) general)
+  simpa [ShrinkageWitness.canonical, canonicalSummary_alive] using h
 
 /--
 Тест-набор, возвращаемый консервативным свидетелем, совпадает с
@@ -184,18 +315,15 @@ lemma localityWitness_alive_canonical
 -/
 lemma localityWitness_testSet_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    (localityWitness (p := p) general).testSet =
+    (localityWitnessOfShrinkage (p := p)
+        (ShrinkageWitness.canonical (p := p) general)).testSet =
       testSetOfAlive (canonicalAlive p) := by
   classical
-  have hsummary :
-      (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general).summary =
-        canonicalSummary (p := p) general := rfl
   have h :=
-    localityWitnessOfCertificate_testSet
-      (certificate := ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
-      (general := general) (generalEval := fun _ => false)
-  simpa [localityWitness, localityWitnessOfCertificate, hsummary]
-    using h
+    localityWitnessOfShrinkage_testSet
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.canonical (p := p) general)
+  simpa [ShrinkageWitness.canonical, canonicalSummary_testSet] using h
 
 /--
 Размер локального решателя в каноническом свидетеле равен размеру исходного
@@ -204,16 +332,16 @@ lemma localityWitness_testSet_canonical
 -/
 lemma localityWitness_size_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    (localityWitness (p := p) general).localParams.M =
+    (localityWitnessOfShrinkage (p := p)
+        (ShrinkageWitness.canonical (p := p) general)).localParams.M =
         general.params.size *
-          (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate
-            (p := p) general).sizeMultiplier := by
+          (ShrinkageWitness.canonical (p := p) general).sizeMultiplier := by
   classical
   have h :=
-    localityWitnessOfCertificate_size
-      (certificate := ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
-      (general := general) (generalEval := fun _ => false)
-  simpa [localityWitness, localityWitnessOfCertificate] using h
+    localityWitnessOfShrinkage_size
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.canonical (p := p) general)
+  simpa using h
 
 /--
 Локальность канонического свидетеля действительно равна `0`, поскольку живых
@@ -221,17 +349,14 @@ lemma localityWitness_size_canonical
 -/
 lemma localityWitness_locality_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    (localityWitness (p := p) general).localParams.ℓ = 0 := by
+    (localityWitnessOfShrinkage (p := p)
+        (ShrinkageWitness.canonical (p := p) general)).localParams.ℓ = 0 := by
   classical
-  have hsummary :
-      (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general).summary =
-        canonicalSummary (p := p) general := rfl
   have h :=
-    localityWitnessOfCertificate_locality
-      (certificate := ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
-      (general := general) (generalEval := fun _ => false)
-  simpa [localityWitness, localityWitnessOfCertificate, hsummary, card_canonicalAlive]
-    using h
+    localityWitnessOfShrinkage_locality
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.canonical (p := p) general)
+  simpa [ShrinkageWitness.canonical, canonicalSummary_locality, card_canonicalAlive] using h
 
 /--
 Глубина локального решателя в базовом свидетельстве совпадает с глубиной
@@ -240,18 +365,15 @@ lemma localityWitness_locality_canonical
 -/
 lemma localityWitness_depth_canonical
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    (localityWitness (p := p) general).localParams.depth =
+    (localityWitnessOfShrinkage (p := p)
+        (ShrinkageWitness.canonical (p := p) general)).localParams.depth =
       general.params.depth := by
   classical
-  have hsummary :
-      (ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general).summary =
-        canonicalSummary (p := p) general := rfl
   have h :=
-    localityWitnessOfCertificate_depth
-      (certificate := ShrinkageWitness.ShrinkageCertificate.canonicalCertificate (p := p) general)
-      (general := general) (generalEval := fun _ => false)
-  simpa [localityWitness, localityWitnessOfCertificate, hsummary]
-    using h
+    localityWitnessOfShrinkage_depth
+      (p := p) (general := general)
+      (witness := ShrinkageWitness.canonical (p := p) general)
+  simpa [ShrinkageWitness.canonical, canonicalSummary_depth] using h
 
 end LocalityLift
 end Facts

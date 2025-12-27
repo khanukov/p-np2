@@ -2,7 +2,7 @@
 ## Ответ на вопрос о TC⁰ lower bounds
 
 **Дата**: 2025-10-24
-**Вопрос**: Правда ли что наши axioms требуют НОВОГО math прорыва (TC⁰ lower bounds)?
+**Вопрос**: Правда ли что наши external inputs требуют НОВОГО math прорыва (TC⁰ lower bounds)?
 
 ---
 
@@ -92,10 +92,10 @@ Magnification from local circuits / sparse languages
 
 **File**: `pnp3/ThirdPartyFacts/Facts_Switching.lean`
 
-**AXIOM A.1**:
+**THEOREM A.1 (witness-backed)**:
 ```lean
-axiom partial_shrinkage_for_AC0
-    (params : AC0Parameters) (F : Family params.n) :
+theorem partial_shrinkage_for_AC0
+    (params : AC0Parameters) (F : Family params.n) (hF : FamilyIsAC0 params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ...
 ```
@@ -223,7 +223,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 |-----------|--------|--------|---------------|
 | AC⁰ ⊊ Parity | ✅ Доказано | Håstad 1986 | ✅ ДА (через switching) |
 | AC⁰ ⊊ Majority | ✅ Доказано | Håstad 1986 | ✅ ДА (через switching) |
-| Switching Lemma для AC⁰ | ✅ Доказано | Håstad 1986 | ✅ ДА (axiom A.1) |
+| Switching Lemma для AC⁰ | ✅ Доказано | Håstad 1986 | ✅ ДА (theorem A.1 + witness) |
 | Anti-Checker для AC⁰ | ✅ Доказано | OPS 2019 | ✅ ДА (теорема, без аксиомы) |
 | Magnification (general) | ✅ Доказано | OPS 2019, CJW 2019 | ✅ ДА (теоремы D.1-D.2) |
 
@@ -266,7 +266,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 
 ## 🔍 ЦИТАТЫ ИЗ НАШЕЙ ДОКУМЕНТАЦИИ
 
-### AXIOMS.md (AXIOM A.1):
+### AXIOMS.md (A.1 shrinkage input):
 
 > **Primary**: Johan Håstad, "Almost optimal lower bounds for small depth circuits", **STOC 1986**
 > - Theorem 1 (Switching Lemma): Page 6-7
@@ -274,7 +274,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 
 **Комментарий**: Если бы нужен был "новый прорыв", не было бы "universally accepted result"!
 
-### AXIOMS.md (AXIOM C.6):
+### AXIOMS.md (C.6 anti-checker theorem):
 
 > **Primary**: Oliveira, Pich, Santhanam, "Hardness Magnification Near State-Of-The-Art Lower Bounds", **CCC 2019**
 > - Lemma 4.1 (AC⁰ anti-checker): Pages 12-13
@@ -293,7 +293,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 
 ### Ответ на Вопрос
 
-**"Правда ли что axioms требуют нового math прорыва?"**
+**"Правда ли что external inputs требуют нового math прорыва?"**
 
 **❌ НЕТ, это НЕ ПРАВДА!**
 
@@ -302,7 +302,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 2. ✅ Switching Lemma для AC⁰ **УЖЕ ДОКАЗАН** (Håstad 1986)
 3. ✅ Anti-Checker для AC⁰ **УЖЕ ДОКАЗАН** (OPS 2019)
 4. ✅ Magnification **УЖЕ ДОКАЗАН** (OPS 2019, CJW 2019)
-5. ✅ Все axioms представляют **peer-reviewed results**
+5. ✅ Все external inputs представляют **peer-reviewed results**
 6. ❌ **НЕТ зависимости** от TC⁰ lower bounds
 
 ### Что Нужно vs Что Есть
@@ -316,18 +316,18 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 | Magnification | ✅ ДА | ✅ ЕСТЬ (OPS 2019) |
 | **Новый прорыв** | ❌ НЕТ | - |
 
-### Что Означают Axioms?
+### Что Означают External Inputs?
 
-**Axioms в нашей формализации представляют**:
+**External inputs в нашей формализации представляют**:
 1. ✅ Well-established results из литературы
 2. ✅ Peer-reviewed publications (STOC, CCC, FOCS)
 3. ✅ Universally accepted теоремы (>1000 citations)
 4. ❌ **НЕ** новые недоказанные утверждения
 5. ❌ **НЕ** открытые проблемы
 
-**Почему axioms, а не теоремы?**
-- Потому что мы **не формализовали доказательства**
-- Формализация Switching Lemma = 500-1000 часов (PhD project)
+**Почему external inputs, а не полностью внутренние теоремы?**
+- Потому что мы **не формализовали witness-конструкции**
+- Формализация Switching Lemma + witnesses = 500-1000 часов (PhD project)
 - Но математическое содержание **УЖЕ ДОКАЗАНО**!
 
 ---
@@ -343,9 +343,9 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 
 **Требуется**:
 - ✅ Verify correctness формализации
-- ✅ Check axioms match literature
+- ✅ Check external inputs match literature
 - ✅ Validate proof architecture
-- 🤔 Возможно: Formalize некоторые axioms (опционально)
+- 🤔 Возможно: Formalize witness-конструкции (опционально)
 
 ### Наш Статус:
 

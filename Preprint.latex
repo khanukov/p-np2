@@ -18,6 +18,10 @@ A Blueprint for $P \neq NP$ via Switching--Atlas Lemma, Capacity Bounds, and Har
 }
 \date{\today}
 
+% NOTE (2025-12-26): The repository now treats the shrinkage statements as
+% witness-backed theorems (no active axioms). Any axiom counts mentioned below
+% are historical; see AXIOM_ANALYSIS_FINAL.md for the current status.
+
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{proposition}[theorem]{Proposition}
@@ -383,7 +387,7 @@ Artifacts: \texttt{https://github.com/khanukov/p-np2}, commit \texttt{b646e1bafa
 status of every module.
 
 \section{Outlook}
-To obtain a fully self-contained proof we must eliminate the remaining axioms:
+To obtain a fully self-contained proof we must eliminate the remaining external inputs:
 \begin{enumerate}[leftmargin=*,nosep]
   \item formalize the multi-switching lemma for $\AC$ (including the oracle and locality
   extensions) to discharge the Step~A assumptions;

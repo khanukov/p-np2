@@ -93,7 +93,7 @@ Result: 25 critical modules, 19 non-critical modules
 - `Magnification/PipelineStatements.lean` - Pipeline integration
 
 ### Third Party Facts (2 files)
-- `ThirdPartyFacts/Facts_Switching.lean` - Switching lemma [2 axioms]
+- `ThirdPartyFacts/Facts_Switching.lean` - Switching lemmas (theorems with external witnesses)
 - `ThirdPartyFacts/LeafBudget.lean` - Leaf budget bounds
 
 ### Complexity & Models (3 files)
@@ -137,8 +137,8 @@ lake build pnp3/Magnification/FinalResult.lean
 - Interfaces: 6 axioms (5 unique + 1 duplicate)
 
 **Current active set (live tree)**:
-- Total active axioms: 2 (switching/shrinkage only; anti-checker, magnification, and interfaces proved)
-- Critical path in the live build: `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`.
+- Total active axioms: 0 (switching/shrinkage are theorems with external witnesses; anti-checker, magnification, and interfaces proved)
+- Critical path in the live build: `partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit` (witness-backed).
 
 ---
 

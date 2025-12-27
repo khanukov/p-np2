@@ -1,7 +1,7 @@
 # Verification Report - P≠NP Formalization
 ## Documentation Accuracy & Code Correspondence
 
-**Generated**: 2025-12-25
+**Generated**: 2025-12-26
 **Purpose**: Confirm that documentation mirrors the current Lean codebase after
 removing legacy axioms.
 
@@ -9,7 +9,7 @@ removing legacy axioms.
 
 ## ✅ Verification Summary
 
-- ✅ All **2** active axioms are present in the source tree (`pnp3/`).
+- ✅ There are **0** active axioms in the source tree (`pnp3/`).
 - ✅ Documentation (`pnp3/Docs/AXIOMS.md`, `AXIOMS_FINAL_LIST.md`,
   `AXIOM_FEASIBILITY_ANALYSIS.md`, `CRITICAL_REANALYSIS.md`) reflects the same set.
 - ✅ Interface theorems `P_subset_Ppoly_proof` and
@@ -22,18 +22,16 @@ removing legacy axioms.
 
 ```bash
 $ rg "^axiom " -g"*.lean" pnp3
-pnp3/ThirdPartyFacts/Facts_Switching.lean:142:axiom partial_shrinkage_for_AC0
-pnp3/ThirdPartyFacts/Facts_Switching.lean:301:axiom shrinkage_for_localCircuit
 ```
 
-**Total**: 2 axioms (matches documentation).
+**Total**: 0 axioms (matches documentation).
 
 ### Per-Module Breakdown
 
 | File | Expected | Found | Notes |
 |------|----------|-------|-------|
-| `ThirdPartyFacts/Facts_Switching.lean` | 2 | 2 | Switching lemmas |
-| **TOTAL** | **2** | **2** | ✅|
+| `ThirdPartyFacts/Facts_Switching.lean` | 0 | 0 | Switching theorems (witness-backed) |
+| **TOTAL** | **0** | **0** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.
@@ -44,9 +42,9 @@ not participate in the build or documentation metrics.
 
 | Document | Status |
 |----------|--------|
-| `pnp3/Docs/AXIOMS.md` | ✅ Lists the same 2 axioms, notes archived items |
+| `pnp3/Docs/AXIOMS.md` | ✅ Notes zero axioms, documents external witnesses |
 | `AXIOMS_FINAL_LIST.md` | ✅ Updated executive summary for publication |
-| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for 2 axioms |
+| `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for witness-backed theorems |
 | `CRITICAL_REANALYSIS.md` | ✅ Critical-path description matches code |
 
 No mismatches detected.

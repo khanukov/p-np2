@@ -23,12 +23,12 @@ Classical switching lemmas provide depth shrinkage for individual formulas. SAL 
 
 **Current status:**
 - Anti-checker and magnification interfaces are **proved in Lean**
-- The remaining axioms are **switching/shrinkage** results (Part A)
-- Roadmap: Formalize the switching lemmas to remove the last axioms
+- The remaining external inputs are **switching/shrinkage** witnesses (Part A)
+- Roadmap: Formalize the witness constructions to remove external inputs
 
 ### Q: Why is this a "conditional" result?
 
-**A:** The derivation P ≠ NP currently relies on external switching/shrinkage results that are axiomatized in Lean:
+**A:** The derivation P ≠ NP currently relies on external switching/shrinkage results that are represented as witness-backed theorems in Lean:
 
 1. **Multi-switching/shrinkage lemmas** for AC⁰ and local circuits (Håstad-style)
 
@@ -53,7 +53,7 @@ We use this phrasing to remain scientifically conservative. If prior work exists
 - Two years of community review
 - General acceptance
 
-Our work is currently a conditional derivation with axioms. We focus on the **scientific and methodological contributions**, not prize consideration.
+Our work is currently a conditional derivation with external inputs. We focus on the **scientific and methodological contributions**, not prize consideration.
 
 ### Q: What are "subcubes" and "atlases"?
 
@@ -72,7 +72,7 @@ This is analogous to how subcube-partition complexity differs from decision-tree
 1. **Mathematical certainty**: Machine-checked proofs eliminate human error
 2. **Reproducibility**: Anyone can run `lake build` and verify our claims
 3. **Modularity**: Clear interfaces between components
-4. **Transparency**: All assumptions are explicitly tracked as axioms
+4. **Transparency**: All assumptions are explicitly tracked as external inputs
 
 For a result as significant as P ≠ NP, even conditionally, this level of rigor is appropriate.
 
@@ -80,13 +80,13 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
 
-- **2 active axioms** in the live `pnp3/` tree
-  (switching/shrinkage only)
+- **0 active axioms** in the live `pnp3/` tree
+  (switching/shrinkage inputs are witness-backed theorems)
 - **0 sorry/admit** statements in active code
-- All axioms are **explicitly documented and categorized**
+- All external inputs are **explicitly documented and categorized**
 
 You can also run `scripts/check.sh` to rebuild, smoke-test, and verify the
-axiom inventory via `rg "^axiom " -g"*.lean" pnp3`.
+axiom inventory via `rg "^axiom " -g"*.lean" pnp3` (expected to be empty).
 
 ### Q: Can I reproduce your results?
 
@@ -123,7 +123,7 @@ The shift reflects lessons learned during 2025 audit. PNP2 files remain availabl
 
 **A:** We welcome contributions in several areas:
 
-1. **Formalizing axioms**: Help remove axioms by formalizing external results
+1. **Formalizing witnesses**: Help remove external inputs by formalizing witness constructions
 2. **Code review**: Check proofs and suggest improvements
 3. **Documentation**: Improve explanations and examples
 4. **Testing**: Verify builds on different platforms

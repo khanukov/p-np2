@@ -7,9 +7,9 @@ This repository hosts the third major iteration of our Lean 4 formalisation effo
 
 We introduce and Lean-verify a constructive bridge from shrinkage to a uniform atlas of subcubes for whole families of Boolean functions (Switching-Atlas Lemma, SAL) and prove a general Covering-Power capacity bound. **To the best of our knowledge**, this SAL packaging and its end-to-end Lean verification are new contributions to both formal methods and complexity theory.
 
-**Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage results that are currently axiomatized. All anti-checker and magnification bridges are machine-checked theorems.
+**Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage inputs: the theorems `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` both require externally supplied witnesses (`AC0CircuitWitness` and `LocalCircuitWitness`). All anti-checker and magnification bridges are machine-checked theorems.
 
-**Documentation**: See [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for axiom tracking.
+**Documentation**: See [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for external input tracking.
 
 Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  The corresponding sources are kept offline as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era when needed.
 

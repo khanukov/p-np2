@@ -86,19 +86,14 @@ import ThirdPartyFacts.Facts_Switching
 
   ## Formalization Strategy
 
-  These axioms represent **external facts from the literature**. We use axioms
-  rather than full proofs because:
-  1. The proofs require probabilistic arguments or non-constructive existence
-  2. Full formalization would require weeks/months of additional work
-  3. The results are well-established and peer-reviewed
-  4. Our focus is on the PIPELINE (Parts A+B+C+D), not reproving known results
-
-  This is analogous to assuming the Switching Lemma in Part A - we build on
-  established complexity theory.
+  These theorems were **proved internally** from the SAL capacity gap, so the
+  anti-checker block no longer relies on external axioms. The probabilistic
+  reasoning is packaged into the switching/shrinkage inputs in Part A; once
+  the SAL scenario exists, the anti-checker contradiction is fully formalized.
 
   ## Usage in Proof Pipeline
 
-  These axioms are used in `LB_Formulas_Core.lean` to derive:
+  These theorems are used in `LB_Formulas_Core.lean` to derive:
   - If small AC⁰ solver exists → contradiction via anti-checker
   - Therefore: GapMCSP ∉ AC⁰[poly size, const depth]
   - Combined with magnification → NP ⊄ P/poly → P ≠ NP
@@ -702,7 +697,7 @@ theorem antiChecker_exists_large_Y_local_of_false
 
   **Mathematical Content** (from literature):
 
-  This axiom follows the same anti-checker construction as the AC⁰ version, but
+  This theorem follows the same anti-checker construction as the AC⁰ version, but
   specialized to local circuits:
   - Local circuit: each gate depends on at most ℓ input variables
   - SAL conversion: scenarioFromLocalCircuit (instead of scenarioFromAC0)

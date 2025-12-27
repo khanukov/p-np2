@@ -12,7 +12,7 @@ import Complexity.Interfaces
 
 These tests verify that all critical components of the P≠NP proof compile successfully.
 In Lean, successful compilation itself serves as proof that all types are correct and all theorems
-are proven (or properly axiomatized).
+are proven (or properly witness-backed).
 
 This file imports all major modules and verifies key types exist.
 -/

@@ -56,8 +56,12 @@ def AC0Statement (p : GapMCSPParams) : Prop :=
   ограничения, которое затем подаётся в триггеры OPS.
 -/
 def ac0SizeBound (p : GapMCSPParams) (ε : Rat) (solver : SmallAC0Solver p) : Prop :=
-  (solver.params.ac0.M : Real) ≤
-    Real.rpow (Models.inputLen p : Real) (1 + (ε : Real))
+  -- В этом ограничении мы сознательно работаем с `N = inputLen p = 2^n`,
+  -- а не с числом переменных `n`. Это важно для проверки «рукопожатия»
+  -- между шагом C (нижние оценки) и шагом D (магнификация): триггеры OPS
+  -- формулируются в терминах размера входа `N`, а не числа переменных.
+  let N : Real := Models.inputLen p
+  (solver.params.ac0.M : Real) ≤ Real.rpow N (1 + (ε : Real))
 
 /--
   Утверждение «нет малых AC⁰-решателей *с явным bound* `M ≤ N^{1+ε}`».

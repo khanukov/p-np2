@@ -98,6 +98,9 @@ by
   classical
   -- Используем формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
   -- Она уже включает положительность `ε` и отрицание малых решателей.
+  -- Важно: здесь `N = inputLen p = 2^n` (размер таблицы истинности),
+  -- поэтому мы не подменяем `n` на `N` неявно — bound записан именно
+  -- через размер входа задачи GapMCSP.
   have hFormula : FormulaLowerBoundHypothesis p ε :=
     formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
@@ -132,6 +135,8 @@ by
   classical
   -- Берём формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
   -- `kit` хранит доказательства шага C; используем их напрямую.
+  -- Здесь также фиксируем, что `N = inputLen p`, т.е. bound является
+  -- ограничением относительно длины входа, а не относительно `n`.
   have hFormula : FormulaLowerBoundHypothesis p ε :=
     formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula

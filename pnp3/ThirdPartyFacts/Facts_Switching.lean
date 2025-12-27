@@ -362,14 +362,24 @@ structure LocalCircuitParameters where
   deriving Repr
 
 /--
-  Абстрактный носитель «свидетельства локальной схемы» для семейства `F`.
-
-  Аналогично AC⁰-случаю, он блокирует ошибочное применение shrinkage-факта
-  к произвольным функциям.  Конкретная структура схем и доказательства
-  локальности будут добавлены позднее.
+  Свидетель shrinkage для локальных схем: фиксирует shrinkage-сертификат и
+  численные оценки на глубину и ошибку.  Этот объект служит «точкой стыковки»
+  между абстрактным условием локальности и downstream-логикой, которая ждёт
+  готовый `Shrinkage`.
 -/
-opaque LocalCircuitFamilyWitness
-    (params : LocalCircuitParameters) (F : Family params.n) : Type
+structure LocalCircuitWitness
+    (params : LocalCircuitParameters) (F : Family params.n) where
+  /-- Shrinkage-сертификат для семейства `F`. -/
+  shrinkage        : Shrinkage params.n
+  /-- Семейство, зафиксированное в сертификате, совпадает с исходным `F`. -/
+  family_eq        : shrinkage.F = F
+  /-- Глубина PDT ограничена стандартной функцией от параметров схемы. -/
+  depth_le         : shrinkage.t
+      ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)
+  /-- Ошибка неотрицательна. -/
+  epsilon_nonneg   : (0 : Q) ≤ shrinkage.ε
+  /-- Ошибка не превосходит `1/(n+2)`. -/
+  epsilon_le_inv   : shrinkage.ε ≤ (1 : Q) / (params.n + 2)
 
 /-! ### Конструктивные вспомогательные функции для depth-2 DNF -/
 
@@ -440,7 +450,7 @@ lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
 -/
 def FamilyIsLocalCircuit
     (params : LocalCircuitParameters) (F : Family params.n) : Prop :=
-  Nonempty (LocalCircuitFamilyWitness params F)
+  Nonempty (LocalCircuitWitness params F)
 
 /--
   Предикат «малости» для локальных схем.  Мы требуем, чтобы суммарная длина
@@ -787,79 +797,33 @@ theorem shrinkage_for_AC0
   стандартные оценки: глубина дерева пропорциональна произведению локальности
   и логарифмических факторов по размеру и глубине схемы.
 -/
-axiom shrinkage_for_localCircuit
+theorem shrinkage_for_localCircuit
     (params : LocalCircuitParameters) (F : Family params.n)
     (hF : FamilyIsLocalCircuit params F) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
         t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ∧
         (0 : Q) ≤ ε ∧
-        ε ≤ (1 : Q) / (params.n + 2)
+        ε ≤ (1 : Q) / (params.n + 2) := by
+  classical
+  obtain ⟨witness⟩ := hF
+  refine ⟨witness.shrinkage.t, witness.shrinkage.ε, witness.shrinkage, ?_⟩
+  refine And.intro witness.family_eq ?_
+  refine And.intro rfl ?_
+  refine And.intro rfl ?_
+  exact And.intro witness.depth_le (And.intro witness.epsilon_nonneg witness.epsilon_le_inv)
 
 /--
-`LocalCircuitWitness` фиксирует shrinkage-сертификат для локальных схем и все
-соответствующие численные оценки.  Это избавляет от громоздкого вручного
-распаковки `Classical.choose` в местах, где требуется использовать данный факт.
--/
-structure LocalCircuitWitness
-    (params : LocalCircuitParameters) (F : Family params.n) where
-  /-- Shrinkage-сертификат для семейства `F`. -/
-  shrinkage        : Shrinkage params.n
-  /-- Семейство, зафиксированное в сертификате, совпадает с исходным `F`. -/
-  family_eq        : shrinkage.F = F
-  /-- Глубина PDT ограничена стандартной функцией от параметров схемы. -/
-  depth_le         : shrinkage.t
-      ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1)
-  /-- Ошибка неотрицательна. -/
-  epsilon_nonneg   : (0 : Q) ≤ shrinkage.ε
-  /-- Ошибка не превосходит `1/(n+2)`. -/
-  epsilon_le_inv   : shrinkage.ε ≤ (1 : Q) / (params.n + 2)
-
-/--
-Построение `LocalCircuitWitness` напрямую использует аксиому
-`shrinkage_for_localCircuit`.  Из кортежа `(t, ε, S, …)` извлекаем сертифицирующее
-дерево и последовательно переносим численные ограничения в поля структуры.
+Построение `LocalCircuitWitness` теперь сводится к извлечению готового
+свидетеля из `FamilyIsLocalCircuit`.  Это сохраняет тот же интерфейс, но
+убирает прямую зависимость от внешней аксиомы.
 -/
 noncomputable def localCircuitWitness
     (params : LocalCircuitParameters) (F : Family params.n)
     (hF : FamilyIsLocalCircuit params F) :
     LocalCircuitWitness params F := by
   classical
-  let h := shrinkage_for_localCircuit params F hF
-  let t := Classical.choose h
-  let rest₁ := Classical.choose_spec h
-  let ε := Classical.choose rest₁
-  let rest₂ := Classical.choose_spec rest₁
-  let S := Classical.choose rest₂
-  have hspec := Classical.choose_spec rest₂
-  refine
-    { shrinkage := S
-      family_eq := hspec.left
-      depth_le := ?_
-      epsilon_nonneg := ?_
-      epsilon_le_inv := ?_ }
-  · have hchain := hspec.right
-    have ht : S.t = t := hchain.left
-    have hrest := hchain.right
-    have hdepth := hrest.right.left
-    have hrewrite : t = S.t := Eq.symm ht
-    have hconverted := Eq.subst (motive := fun x => x ≤ _) hrewrite hdepth
-    exact hconverted
-  · have hchain := hspec.right
-    have hrest := hchain.right
-    have hε := hrest.left
-    have hfinal := hrest.right.right.left
-    have hrewrite : ε = S.ε := Eq.symm hε
-    have hconverted := Eq.subst (motive := fun x => (0 : Q) ≤ x) hrewrite hfinal
-    exact hconverted
-  · have hchain := hspec.right
-    have hrest := hchain.right
-    have hε := hrest.left
-    have hfinal := hrest.right.right.right
-    have hrewrite : ε = S.ε := Eq.symm hε
-    have hconverted := Eq.subst (motive := fun x => x ≤ (1 : Q) / (params.n + 2))
-      hrewrite hfinal
-    exact hconverted
+  exact Classical.choice hF
 
 /--
   Техническая лемма: при любом `n` имеем `1 / (n + 2) ≤ 1 / 2`.

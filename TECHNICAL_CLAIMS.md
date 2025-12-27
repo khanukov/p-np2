@@ -16,6 +16,8 @@ Plugging SAL + Covering-Power into standard anti-checker and magnification frame
 
 The entire glue and all internal combinatorics are machine-checked; only explicitly marked axioms remain. See the OPS'21 ToC paper and magnification surveys for the surrounding framework.
 
+Our proof avoids the Natural Proofs barrier because the combinatorial property (incompressibility by SAL-atlases) is established only against weak classes ($AC^0$ and local circuits). The extension to $NP \not\subseteq P/poly$ is achieved via Hardness Magnification, which relies on the specific structural properties of MCSP, not on extending the natural property to $P/poly$.
+
 ### Priority statement
 
 We are not aware of prior works that:

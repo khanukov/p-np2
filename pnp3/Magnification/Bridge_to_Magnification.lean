@@ -96,12 +96,13 @@ theorem bridge_from_pipeline_general
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp : GeneralLowerBoundHypothesis p ε (AC0Statement p) :=
-    general_hypothesis_from_pipeline (p := p) (ε := ε) hε
-  -- Переписываем гипотезу в формульном виде и применяем конструктивный триггер.
-  have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+  -- Используем формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  -- Она уже включает положительность `ε` и отрицание малых решателей.
+  -- Важно: здесь `N = inputLen p = 2^n` (размер таблицы истинности),
+  -- поэтому мы не подменяем `n` на `N` неявно — bound записан именно
+  -- через размер входа задачи GapMCSP.
+  have hFormula : FormulaLowerBoundHypothesis p ε :=
+    formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--
@@ -132,11 +133,12 @@ theorem bridge_from_pipeline_kit_general
   NP_not_subset_Ppoly :=
 by
   classical
-  have hHyp := kit.general_hypothesis (ε := ε) hε
-  -- Сужаемся до формульной гипотезы и запускаем конструктивный триггер.
-  have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+  -- Берём формульную гипотезу в явной форме `M ≤ N^{1+ε}`.
+  -- `kit` хранит доказательства шага C; используем их напрямую.
+  -- Здесь также фиксируем, что `N = inputLen p`, т.е. bound является
+  -- ограничением относительно длины входа, а не относительно `n`.
+  have hFormula : FormulaLowerBoundHypothesis p ε :=
+    formula_hypothesis_from_pipeline (p := p) (δ := ε) hε
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--

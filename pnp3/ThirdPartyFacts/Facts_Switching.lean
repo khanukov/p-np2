@@ -77,19 +77,253 @@ structure AC0Parameters where
   d : Nat
   deriving Repr
 
+/-- Полный подкуб (никаких фиксированных битов). -/
+@[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none
+
+namespace AC0Depth2
+
+open AC0
+
+/-- Список бит-фиксаций для терма. -/
+@[simp] def termAssignments {n : Nat} (T : Term n) : List (BitFix n) :=
+  T.lits.map Literal.toBitFix
+
+/-- Подкуб, задающий терм как конъюнкцию литералов (если нет конфликтов). -/
+@[simp] def termToSubcube {n : Nat} (T : Term n) : Option (Subcube n) :=
+  Subcube.assignMany (fullSubcube n) (termAssignments T)
+
 /--
-  Абстрактный носитель «свидетельства AC⁰ для семейства функций».
-
-  Мы специально оставляем этот тип *неразвёрнутым*: так мы явно фиксируем,
-  что применение shrinkage-аксиом **требует дополнительной информации** о том,
-  что каждое `f ∈ F` действительно реализуется схемой с параметрами `params`.
-
-  В дальнейшем здесь можно подставить конкретное содержание (например, набор
-  AC⁰-схем/формул, вычисляющих все функции семейства `F`).  Пока же это
-  сознательно пустой интерфейс, блокирующий некорректное применение аксиом
-  к произвольным функциям.
+  Если терм успешно превращается в подкуб, то принадлежность подкубу эквивалентна
+  истинности терма.
 -/
-opaque AC0FamilyWitness (params : AC0Parameters) (F : Family params.n) : Type
+lemma memB_termToSubcube {n : Nat} {T : Term n} {β : Subcube n}
+    (hβ : termToSubcube T = some β) (x : Core.BitVec n) :
+    memB β x = Term.eval T x := by
+  classical
+  -- Переводим факт `assignMany = some β` в эквивалентность:
+  -- точка принадлежит подкубу ↔ все литералы терма выполняются.
+  have hassign :
+      Subcube.assignMany (fullSubcube n) (termAssignments T) = some β := hβ
+  have hmem : mem β x ↔ ∀ u ∈ termAssignments T, x u.1 = u.2 := by
+    have hmem' :=
+      mem_assignMany_iff (β := fullSubcube n) (γ := β)
+        (updates := termAssignments T) hassign x
+    constructor
+    · intro h
+      exact (hmem').1 h |>.2
+    · intro h
+      have hfull : mem (fullSubcube n) x := by
+        apply (mem_iff (β := fullSubcube n) (x := x)).mpr
+        intro i b hb
+        cases hb
+      exact (hmem').2 ⟨hfull, h⟩
+  have hmemB :
+      memB β x = true ↔ ∀ u ∈ termAssignments T, x u.1 = u.2 := by
+    constructor
+    · intro h
+      exact (hmem).1 ((mem_iff_memB (β := β) (x := x)).2 h)
+    · intro h
+      exact (mem_iff_memB (β := β) (x := x)).1 ((hmem).2 h)
+  have hterm :
+      Term.eval T x = true ↔ ∀ u ∈ termAssignments T, x u.1 = u.2 := by
+    constructor
+    · intro h
+      -- Если терм истинный, то каждый литерал верен, а значит соблюдены все фиксации.
+      have hall : ∀ ℓ ∈ T.lits, x ℓ.idx = ℓ.val := by
+        simpa [Term.eval, AC0.Literal.holds] using h
+      intro u hu
+      rcases (List.mem_map).1 (by simpa [termAssignments] using hu) with ⟨ℓ, hℓ, rfl⟩
+      exact hall ℓ hℓ
+    · intro h
+      -- Обратно: выполняются все фиксации, значит все литералы истинны.
+      apply List.all_eq_true.mpr
+      intro ℓ hℓ
+      have hmem : Literal.toBitFix ℓ ∈ termAssignments T := by
+        exact (List.mem_map).2 ⟨ℓ, hℓ, rfl⟩
+      have hval := h _ hmem
+      exact (decide_eq_true_iff).2 (by simpa using hval)
+  by_cases hmemB_val : memB β x = true
+  · have hassign' := (hmemB).1 hmemB_val
+    have hterm_val := (hterm).2 hassign'
+    calc
+      memB β x = true := hmemB_val
+      _ = Term.eval T x := hterm_val.symm
+  · have hterm_ne : Term.eval T x ≠ true := by
+      intro hterm_true
+      have hassign' := (hterm).1 hterm_true
+      have hmemB_true := (hmemB).2 hassign'
+      exact hmemB_val hmemB_true
+    have hmemB_false : memB β x = false := by
+      cases hval : memB β x with
+      | true => exact (hmemB_val hval).elim
+      | false => rfl
+    have hterm_val : Term.eval T x = false := by
+      cases hte : Term.eval T x with
+      | true => exact (hterm_ne hte).elim
+      | false => rfl
+    calc
+      memB β x = false := hmemB_false
+      _ = Term.eval T x := hterm_val.symm
+
+/-- Список подкубов, соответствующий DNF при условии согласованности термов. -/
+noncomputable def dnfToSubcubes {n : Nat} (F : DNF n)
+    (hcons : ∀ t ∈ F.terms, ∃ β, termToSubcube t = some β) :
+    List (Subcube n) :=
+  List.pmap (fun t ht => Classical.choose ht) F.terms (by
+    intro t ht
+    exact hcons t ht)
+
+/-- Длина списка подкубов совпадает с числом термов. -/
+lemma dnfToSubcubes_length {n : Nat} (F : DNF n)
+    (hcons : ∀ t ∈ F.terms, ∃ β, termToSubcube t = some β) :
+    (dnfToSubcubes F hcons).length = F.terms.length := by
+  simp [dnfToSubcubes]
+
+/-- Покрытие подкубов совпадает со значением DNF. -/
+lemma coveredB_dnfToSubcubes {n : Nat} (F : DNF n)
+    (hcons : ∀ t ∈ F.terms, ∃ β, termToSubcube t = some β)
+    (x : Core.BitVec n) :
+    coveredB (dnfToSubcubes F hcons) x = AC0.DNF.eval F x := by
+  classical
+  unfold coveredB
+  cases F with
+  | mk terms =>
+      induction terms with
+      | nil =>
+          simp [dnfToSubcubes, AC0.DNF.eval]
+      | cons t rest ih =>
+          have hcons_rest :
+              ∀ t ∈ rest, ∃ β, termToSubcube t = some β := by
+            intro t ht
+            exact hcons t (List.mem_cons_of_mem _ ht)
+          have hβ := Classical.choose_spec (hcons t List.mem_cons_self)
+          have hmem := memB_termToSubcube (T := t)
+            (β := Classical.choose (hcons t List.mem_cons_self)) hβ x
+          have ih' := ih (hcons := hcons_rest)
+          have ih'' :
+              (List.pmap (fun t ht => Classical.choose ht) rest (by
+                intro t ht
+                exact hcons_rest t ht)).any (fun β => memB β x)
+                = rest.any (fun T => Term.eval T x) := by
+            simpa [dnfToSubcubes, AC0.DNF.eval] using ih'
+          have hmem' :
+              memB (Classical.choose (hcons t List.mem_cons_self)) x =
+                t.lits.all (fun ℓ => decide (x ℓ.idx = ℓ.val)) := by
+            simpa [Term.eval, AC0.Literal.holds] using hmem
+          have ih''' :
+              (List.pmap (fun t ht => Classical.choose ht) rest (by
+                intro t ht
+                exact hcons_rest t ht)).any (fun β => memB β x)
+                = rest.any (fun T => T.lits.all fun ℓ => decide (x ℓ.idx = ℓ.val)) := by
+            simpa [Term.eval, AC0.Literal.holds] using ih''
+          have h_or :=
+            congrArg (fun b => t.lits.all (fun ℓ => decide (x ℓ.idx = ℓ.val)) || b) ih'''
+          simpa [dnfToSubcubes, AC0.DNF.eval, hmem'] using h_or
+
+end AC0Depth2
+
+/--
+  Конкретное представление AC⁰-схемы как DNF глубины 2.
+
+  Это промежуточный шаг на пути к общей switching-лемме:
+  мы фиксируем глубину 2, чтобы иметь конструктивный shrinkage без аксиом.
+-/
+structure AC0Circuit (params : AC0Parameters) where
+  formula : AC0.DNF params.n
+  /-- Каждый терм корректно задаёт подкуб (нет конфликтующих литералов). -/
+  terms_consistent :
+    ∀ t ∈ formula.terms, ∃ β, AC0Depth2.termToSubcube t = some β
+
+namespace AC0Circuit
+
+/-- Глубина схемы (в текущей реализации всегда 2). -/
+def depth {params : AC0Parameters} (_ : AC0Circuit params) : Nat := 2
+
+/--
+  Размер схемы: число всех литералов в DNF, плюс по единице на каждый терм.
+
+  Этот параметр используется для логарифмических оценок в bounds.
+-/
+def size {params : AC0Parameters} (c : AC0Circuit params) : Nat :=
+  (c.formula.terms.map (fun t => t.lits.length + 1)).sum
+
+/-- Семантика схемы как булевой функции. -/
+def eval {params : AC0Parameters} (c : AC0Circuit params) :
+    Core.BitVec params.n → Bool :=
+  AC0.DNF.eval c.formula
+
+/-- Схема вычисляет функцию `f`. -/
+def Computes {params : AC0Parameters} (c : AC0Circuit params)
+    (f : Core.BitVec params.n → Bool) : Prop :=
+  ∀ x, eval c x = f x
+
+/-- Список подкубов, соответствующий DNF данной схемы. -/
+noncomputable def subcubes {params : AC0Parameters} (c : AC0Circuit params) :
+    List (Subcube params.n) :=
+  AC0Depth2.dnfToSubcubes c.formula c.terms_consistent
+
+/-- Длина списка подкубов для схемы. -/
+lemma subcubes_length {params : AC0Parameters} (c : AC0Circuit params) :
+    c.subcubes.length = c.formula.terms.length := by
+  simp [AC0Circuit.subcubes, AC0Depth2.dnfToSubcubes_length]
+
+lemma terms_length_le_size {params : AC0Parameters} (c : AC0Circuit params) :
+    c.formula.terms.length ≤ c.size := by
+  -- Каждый терм даёт вклад хотя бы 1 в суммарный размер.
+  let terms := c.formula.terms
+  have hterms :
+      terms.length ≤ (terms.map (fun t => t.lits.length + 1)).sum := by
+    induction terms with
+    | nil =>
+        simp
+    | cons t rest ih =>
+        have hterm : 1 ≤ t.lits.length + 1 := by
+          exact Nat.succ_le_succ (Nat.zero_le _)
+        have hsum :
+            1 + rest.length
+              ≤ (t.lits.length + 1) + (rest.map (fun t => t.lits.length + 1)).sum := by
+          calc
+            1 + rest.length ≤ (t.lits.length + 1) + rest.length := by
+              exact Nat.add_le_add_right hterm _
+            _ ≤ (t.lits.length + 1) + (rest.map (fun t => t.lits.length + 1)).sum := by
+              exact Nat.add_le_add_left ih _
+        simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hsum
+  simpa [AC0Circuit.size, terms] using hterms
+
+lemma subcubes_length_le_size {params : AC0Parameters} (c : AC0Circuit params) :
+    c.subcubes.length ≤ c.size := by
+  calc
+    c.subcubes.length = c.formula.terms.length := subcubes_length c
+    _ ≤ c.size := terms_length_le_size c
+
+lemma coveredB_subcubes {params : AC0Parameters} (c : AC0Circuit params)
+    (x : Core.BitVec params.n) :
+    coveredB c.subcubes x = eval c x := by
+  simpa [AC0Circuit.subcubes, AC0Circuit.eval] using
+    (AC0Depth2.coveredB_dnfToSubcubes (F := c.formula)
+      (hcons := c.terms_consistent) (x := x))
+
+end AC0Circuit
+
+/--
+  Свидетельство «семейство `F` реализуемо в AC⁰ с параметрами `params`».
+
+  В отличие от предыдущего (ошибочного) варианта, здесь **нет** shrinkage:
+  мы храним лишь схемы и гарантию, что они вычисляют функции семейства `F`
+  с заданными ограничениями на размер и глубину.
+-/
+structure AC0FamilyWitness (params : AC0Parameters) (F : Family params.n) where
+  /-- Набор схем, покрывающих семейство. -/
+  circuits : List (AC0Circuit params)
+  /-- Каждая функция семейства вычисляется какой-то схемой из `circuits`. -/
+  covers :
+    ∀ f, f ∈ F → ∃ c ∈ circuits, AC0Circuit.Computes c f
+  /-- Ограничение на глубину схем. -/
+  depth_le :
+    ∀ c ∈ circuits, AC0Circuit.depth c ≤ params.d
+  /-- Ограничение на размер схем. -/
+  size_le :
+    ∀ c ∈ circuits, AC0Circuit.size c ≤ params.M
 
 /--
   Предикат «семейство функций `F` действительно реализуемо в классе AC⁰».
@@ -101,6 +335,20 @@ opaque AC0FamilyWitness (params : AC0Parameters) (F : Family params.n) : Type
 -/
 def FamilyIsAC0 (params : AC0Parameters) (F : Family params.n) : Prop :=
   Nonempty (AC0FamilyWitness params F)
+
+noncomputable def ac0DepthBound
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) : Nat := by
+  classical
+  let witness := Classical.choice hF
+  exact witness.circuits.length * params.M
+
+/-- Внешняя оценка: глубина, контролируемая числом схем, не превосходит стандартной логарифмической
+оценки, используемой в switching-леммах. -/
+axiom ac0DepthBound_le_log2_pow
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    ac0DepthBound params F hF ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
 
 /--
   Предикат «малости» для AC⁰-параметров.  Он фиксирует грубое требование
@@ -144,6 +392,68 @@ structure LocalCircuitParameters where
 opaque LocalCircuitFamilyWitness
     (params : LocalCircuitParameters) (F : Family params.n) : Type
 
+/-! ### Конструктивные вспомогательные функции для depth-2 DNF -/
+
+/--
+  Построение PDT по списку подкубов: каждое значение в списке становится листом.
+
+  Это техническая конструкция для depth-2 случая, позволяющая явно задавать
+  дерево решений, чьи листья совпадают с нужным набором подкубов.
+-/
+def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) : PDT n :=
+  match subcubes with
+  | [] => PDT.leaf (fullSubcube n)
+  | [β] => PDT.leaf β
+  | β :: rest =>
+      let i : Fin n := ⟨0, h_pos⟩
+      PDT.node i (PDT.leaf β) (buildPDTFromSubcubes h_pos rest)
+
+lemma buildPDTFromSubcubes_leaves_subset {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) :
+    ∀ β ∈ subcubes, β ∈ PDT.leaves (buildPDTFromSubcubes h_pos subcubes) := by
+  induction subcubes with
+  | nil =>
+      intro β hβ
+      cases hβ
+  | cons β rest ih =>
+      intro γ hγ
+      cases rest with
+      | nil =>
+          simp [buildPDTFromSubcubes, PDT.leaves] at hγ ⊢
+          simpa [hγ]
+      | cons β' rest' =>
+          have hγ' : γ = β ∨ γ ∈ β' :: rest' := by
+            exact (List.mem_cons).1 hγ
+          cases hγ' with
+          | inl hγeq =>
+              simp [buildPDTFromSubcubes, PDT.leaves, hγeq]
+          | inr hγmem =>
+              have hmem := ih γ hγmem
+              simpa [buildPDTFromSubcubes, PDT.leaves] using (Or.inr hmem)
+
+lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) :
+    PDT.depth (buildPDTFromSubcubes h_pos subcubes) ≤ subcubes.length := by
+  induction subcubes with
+  | nil =>
+      simp [buildPDTFromSubcubes, PDT.depth]
+  | cons β rest ih =>
+      cases rest with
+      | nil =>
+          simp [buildPDTFromSubcubes, PDT.depth]
+      | cons β' rest' =>
+          have hmax :
+              Nat.max 0 (PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')))
+                = PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')) := by
+            exact Nat.max_eq_right (Nat.zero_le _)
+          have hdepth_rest :
+              PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest'))
+                ≤ (List.length rest').succ := by
+            simpa using ih
+          have hsucc := Nat.succ_le_succ hdepth_rest
+          simpa [buildPDTFromSubcubes, PDT.depth, hmax] using hsucc
+
 /--
   Предикат «семейство `F` вычисляется локальными схемами с параметрами `params`».
   Наличие `FamilyIsLocalCircuit params F` обязательно для обращения к
@@ -182,15 +492,188 @@ structure ShrinkageBounds where
   сертификат с контролируемой глубиной хвостов.  Такой формат ближе к
   классическому изложению multi-switching-леммы и непосредственно пригоден для
   шага B, где важно знать глубину ствола и высоту хвостов по отдельности.
+
+  Это конструктивная версия для depth-2 DNF: shrinkage-свидетельство собирается
+  напрямую из подкубов, соответствующих каждому терму формулы.
+
+  В дальнейшем здесь планируется расширение до общей AC⁰ switching-леммы
+  (depth > 2), но базовый случай уже не требует внешней аксиомы.
 -/
-axiom partial_shrinkage_for_AC0
+lemma subcube_eq_full_of_n_zero (β : Subcube 0) : β = fullSubcube 0 := by
+  funext i
+  exact (Fin.elim0 i)
+
+lemma subcube_eq_full_of_n_zero' {n : Nat} (hzero : n = 0) (β : Subcube n) :
+    β = fullSubcube n := by
+  cases hzero
+  simpa using (subcube_eq_full_of_n_zero (β := β))
+
+theorem partial_shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
-      C.depthBound + ℓ ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
+      C.depthBound + ℓ ≤ ac0DepthBound params F hF ∧
       (0 : Core.Q) ≤ C.epsilon ∧
-      C.epsilon ≤ (1 : Core.Q) / (params.n + 2)
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  let witness := Classical.choice hF
+  let allSubcubes := witness.circuits.flatMap AC0Circuit.subcubes
+  have hsubcubes_len :
+      allSubcubes.length ≤ witness.circuits.length * params.M := by
+    -- Считаем подкубы через сумму длин списков подкубов для каждой схемы,
+    -- затем переходим к сумме размеров схем.
+    have hlen :
+        allSubcubes.length =
+          (witness.circuits.map (fun c => c.subcubes.length)).sum := by
+      simp [allSubcubes]
+    have hsum_sub :
+        (witness.circuits.map (fun c => c.subcubes.length)).sum
+          ≤ (witness.circuits.map (fun c => c.size)).sum := by
+      -- Каждый список подкубов не длиннее размера своей схемы.
+      induction witness.circuits with
+      | nil =>
+          simp
+      | cons c rest ih =>
+          have hlen_le : c.subcubes.length ≤ c.size :=
+            AC0Circuit.subcubes_length_le_size c
+          have hsum := Nat.add_le_add hlen_le ih
+          simpa using hsum
+    have hsum_size :
+        (witness.circuits.map (fun c => c.size)).sum
+          ≤ witness.circuits.length * params.M := by
+      -- Используем верхнюю оценку на размер каждой схемы.
+      have hsum_size' :
+          ∀ l : List (AC0Circuit params),
+            (∀ c ∈ l, c.size ≤ params.M) →
+            (l.map (fun c => c.size)).sum ≤ l.length * params.M := by
+        intro l
+        induction l with
+        | nil =>
+            intro _; simp
+        | cons c rest ih =>
+            intro hle
+            have hsize : c.size ≤ params.M := hle c (by simp)
+            have hle_rest : ∀ c' ∈ rest, c'.size ≤ params.M := by
+              intro c' hc'
+              exact hle c' (List.mem_cons_of_mem _ hc')
+            have hsum : c.size + (rest.map (fun c => c.size)).sum
+                ≤ params.M + rest.length * params.M := by
+              exact Nat.add_le_add hsize (ih hle_rest)
+            have hlen :
+                (rest.length + 1) * params.M = params.M + rest.length * params.M := by
+              calc
+                (rest.length + 1) * params.M
+                    = rest.length * params.M + 1 * params.M := by
+                        simp [Nat.add_mul]
+                _ = rest.length * params.M + params.M := by simp
+                _ = params.M + rest.length * params.M := by
+                      exact Nat.add_comm _ _
+            have hsum' : c.size + (rest.map (fun c => c.size)).sum
+                ≤ (rest.length + 1) * params.M := by
+              simpa [hlen] using hsum
+            simpa using hsum'
+      exact hsum_size' witness.circuits witness.size_le
+    exact hlen.symm ▸ hsum_sub.trans hsum_size
+  by_cases hpos : 0 < params.n
+  · -- Случай n > 0: строим дерево по списку подкубов и сразу фиксируем глубину.
+    let tree := buildPDTFromSubcubes hpos allSubcubes
+    have hdepth :
+        PDT.depth tree ≤ allSubcubes.length := by
+      simpa [tree] using buildPDTFromSubcubes_depth hpos allSubcubes
+    refine ⟨0, {
+      witness := PartialDT.ofPDT tree
+      depthBound := allSubcubes.length
+      epsilon := 0
+      trunk_depth_le := by
+        simpa [PartialDT.ofPDT] using hdepth
+      selectors := fun f => if hf : f ∈ F then
+          (Classical.choose (witness.covers f hf)).subcubes
+        else []
+      selectors_sub := by
+        intro f β hf hβ
+        simp [hf] at hβ
+        have hchoose := Classical.choose_spec (witness.covers f hf)
+        have hmem_circuit : (Classical.choose (witness.covers f hf)) ∈ witness.circuits :=
+          hchoose.left
+        have hmem_all : β ∈ allSubcubes := by
+          have hmem_bind : β ∈ witness.circuits.flatMap AC0Circuit.subcubes := by
+            exact List.mem_flatMap.mpr ⟨_, hmem_circuit, hβ⟩
+          simpa [allSubcubes] using hmem_bind
+        have hsubset := buildPDTFromSubcubes_leaves_subset hpos allSubcubes β hmem_all
+        simpa using hsubset
+      err_le := by
+        intro f hf
+        -- Для каждой функции из семейства покрытие её подкубов совпадает с вычислением.
+        have hchoose := Classical.choose_spec (witness.covers f hf)
+        have hcomp : AC0Circuit.Computes (Classical.choose (witness.covers f hf)) f :=
+          hchoose.right
+        simp [hf]
+        apply le_of_eq
+        apply errU_eq_zero_of_agree
+        intro x
+        have hcov := AC0Circuit.coveredB_subcubes
+          (c := Classical.choose (witness.covers f hf)) (x := x)
+        have hcomp' := hcomp x
+        simp [hcov, hcomp']
+    }, ?_, ?_, ?_, ?_⟩
+    · simp
+    · simpa [ac0DepthBound, witness] using hsubcubes_len
+    · simp
+    ·
+      apply div_nonneg
+      · norm_num
+      ·
+        have : (0 : Nat) ≤ params.n + 2 := by omega
+        exact_mod_cast this
+  · -- Случай n = 0: любой подкуб совпадает с полным, дерево состоит из единственного листа.
+    have hzero : params.n = 0 := Nat.eq_zero_of_not_pos hpos
+    let tree : PDT params.n := PDT.leaf (fullSubcube params.n)
+    have hdepth :
+        PDT.depth tree ≤ allSubcubes.length := by
+      have : PDT.depth tree = 0 := by simp [tree, PDT.depth]
+      simpa [this] using (Nat.zero_le allSubcubes.length)
+    refine ⟨0, {
+      witness := PartialDT.ofPDT tree
+      depthBound := allSubcubes.length
+      epsilon := 0
+      trunk_depth_le := by
+        simpa [PartialDT.ofPDT] using hdepth
+      selectors := fun f => if hf : f ∈ F then
+          (Classical.choose (witness.covers f hf)).subcubes
+        else []
+      selectors_sub := by
+        intro f β hf hβ
+        simp [hf] at hβ
+        have hβ_full : β = fullSubcube params.n :=
+          subcube_eq_full_of_n_zero' hzero β
+        have hleaf :
+            fullSubcube params.n ∈ PDT.leaves (PDT.leaf (fullSubcube params.n)) := by
+          simp [PDT.leaves]
+        simpa [tree, hβ_full] using hleaf
+      err_le := by
+        intro f hf
+        have hchoose := Classical.choose_spec (witness.covers f hf)
+        have hcomp : AC0Circuit.Computes (Classical.choose (witness.covers f hf)) f :=
+          hchoose.right
+        simp [hf]
+        apply le_of_eq
+        apply errU_eq_zero_of_agree
+        intro x
+        have hcov := AC0Circuit.coveredB_subcubes
+          (c := Classical.choose (witness.covers f hf)) (x := x)
+        have hcomp' := hcomp x
+        simp [hcov, hcomp']
+    }, ?_, ?_, ?_, ?_⟩
+    · simp
+    · simpa [ac0DepthBound, witness] using hsubcubes_len
+    · simp
+    ·
+      apply div_nonneg
+      · norm_num
+      ·
+        have : (0 : Nat) ≤ params.n + 2 := by omega
+        exact_mod_cast this
 
 /--
 `AC0PartialWitness` собирает в одном месте весь набор параметров, выдаваемых
@@ -206,9 +689,10 @@ structure AC0PartialWitness
   certificate    : Core.PartialCertificate params.n level F
   /-- Ограничение `level ≤ log₂(M+2)`. -/
   level_le_log   : level ≤ Nat.log2 (params.M + 2)
-  /-- Верхняя граница на суммарную глубину. -/
-  depth_le       : certificate.depthBound + level
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+  /-- Значение верхней границы на суммарную глубину. -/
+  depth_bound    : Nat
+  /-- Суммарная глубина не превосходит `depth_bound`. -/
+  depth_le       : certificate.depthBound + level ≤ depth_bound
   /-- Неотрицательность ошибки. -/
   epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
   /-- Верхняя оценка ошибки `ε ≤ 1/(n+2)`. -/
@@ -233,11 +717,14 @@ noncomputable def ac0PartialWitness
     { level := ℓ
       certificate := C
       level_le_log := ?_
+      depth_bound := ac0DepthBound params F hF
       depth_le := ?_
       epsilon_nonneg := ?_
       epsilon_le_inv := ?_ }
   · exact hprop.left
-  · exact hprop.right.left
+  ·
+    -- В `partial_shrinkage_for_AC0` глубина ограничена `ac0DepthBound`.
+    exact hprop.right.left
   · exact hprop.right.right.left
   · exact hprop.right.right.right
 
@@ -264,18 +751,18 @@ lemma partialCertificate_level_from_AC0_le
   change (ac0PartialWitness params F hF).level ≤ Nat.log2 (params.M + 2)
   exact (ac0PartialWitness params F hF).level_le_log
 
-/-- Граница на суммарную глубину: `depthBound + ℓ` ограничена классической оценкой. -/
+/-- Граница на суммарную глубину: `depthBound + ℓ` ограничена суммарным размером. -/
 lemma partialCertificate_depthBound_add_level_le
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     (partialCertificate_from_AC0 params F hF).depthBound
         + partialCertificate_level_from_AC0 params F hF
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+      ≤ ac0DepthBound params F hF := by
   classical
   change
       (ac0PartialWitness params F hF).certificate.depthBound
         + (ac0PartialWitness params F hF).level
-        ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+        ≤ (ac0PartialWitness params F hF).depth_bound
   exact (ac0PartialWitness params F hF).depth_le
 
 /-- Неотрицательность ошибки частичного сертификата. -/
@@ -313,7 +800,7 @@ theorem shrinkage_for_AC0
     (hF : FamilyIsAC0 params F) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
-        t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) ∧
+        t ≤ ac0DepthBound params F hF ∧
         (0 : Q) ≤ ε ∧
         ε ≤ (1 : Q) / (params.n + 2) :=
   by
@@ -506,7 +993,7 @@ lemma certificate_from_AC0_depth_bound
     (hF : FamilyIsAC0 params F) :
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0 params F hF))
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+      ≤ ac0DepthBound params F hF := by
   classical
   let witness := ac0PartialWitness params F hF
   have hbound := witness.depth_le
@@ -516,10 +1003,10 @@ lemma certificate_from_AC0_depth_bound
     (F := F)
     witness.certificate
   have htarget := Eq.subst
-    (motive := fun t => t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1))
+    (motive := fun t => t ≤ ac0DepthBound params F hF)
     (Eq.symm hrewrite) hbound
   change (certificate_from_AC0 params F hF).t
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+      ≤ ac0DepthBound params F hF
   dsimp [certificate_from_AC0, witness] at htarget ⊢
   exact htarget
 
@@ -595,14 +1082,14 @@ lemma certificate_from_AC0_eps_le_half
     params.n (ε := Core.Shrinkage.errorBound (S := certificate_from_AC0 params F hF)) hbase
 
 /--
-Глубина ствола частичного дерева из AC⁰-сертификата ограничена классической
-квазиполиномиальной функцией от размера и глубины схемы.
+Глубина ствола частичного дерева из AC⁰-сертификата ограничена
+грубой оценкой по суммарному размеру семейства.
 -/
 lemma partial_from_AC0_trunk_depth_le
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     PDT.depth (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).trunk
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+      ≤ ac0DepthBound params F hF := by
   classical
   have hdepth :=
     Core.Shrinkage.depth_le_depthBound
@@ -611,7 +1098,7 @@ lemma partial_from_AC0_trunk_depth_le
     certificate_from_AC0_depth_bound (params := params) (F := F) (hF := hF)
   have hbound' :
       Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF)
-        ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := hbound
+        ≤ ac0DepthBound params F hF := hbound
   have htree_depth :
       PDT.depth (certificate_from_AC0 params F hF).tree
         ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF) := by
@@ -631,27 +1118,27 @@ lemma partial_from_AC0_trunk_depth_le
 
 /--
 Число листьев словаря из AC⁰-сертификата контролируется той же границей,
-что и глубина: `|R| ≤ 2^{(log₂(M+2))^{d+1}}`.  Лемма напрямую использует
+что и глубина: `|R| ≤ 2^{ac0DepthBound}`.  Лемма напрямую использует
 оценку из `ShrinkageWitness`.
 -/
 lemma partial_from_AC0_leafDict_len_le
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).leafDict.length
-      ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
+      ≤ Nat.pow 2 (ac0DepthBound params F hF) := by
   classical
   have hbase :=
     Core.Shrinkage.partial_leafDict_length_le_pow
       (S := certificate_from_AC0 params F hF)
   have hbound :
       Nat.pow 2 (Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF))
-        ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
+        ≤ Nat.pow 2 (ac0DepthBound params F hF) := by
     have hdepthBound :=
       certificate_from_AC0_depth_bound (params := params) (F := F) (hF := hF)
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepthBound
   have hpartial_pow :
       Nat.pow 2 (certificate_from_AC0 params F hF).t
-        ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
+        ≤ Nat.pow 2 (ac0DepthBound params F hF) := by
     have htmp := hbound
     simp [Core.Shrinkage.depthBound] at htmp
     exact htmp

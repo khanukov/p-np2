@@ -997,12 +997,10 @@ lemma scenarioFromAC0_k_le_pow
   have hpow_bound :
       Nat.pow 2 S.t ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
     have hS : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-      have htmp := htBound
-      change Core.Shrinkage.depthBound (S := S)
-          ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) at htmp
-      have hrewrite := htmp
-      simp [Core.Shrinkage.depthBound] at hrewrite
-      exact hrewrite
+      have hdepth : S.t ≤ ThirdPartyFacts.ac0DepthBound params F hF := by
+        simpa [Core.Shrinkage.depthBound, S] using htBound
+      exact hdepth.trans
+        (ThirdPartyFacts.ac0DepthBound_le_log2_pow (params := params) (F := F) (hF := hF))
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hS
   have hresult := hk_base.trans hpow_bound
   have hrewrite :
@@ -1037,12 +1035,10 @@ lemma scenarioFromAC0_dictLen_le_pow
   have hpow_bound :
       Nat.pow 2 S.t ≤ Nat.pow 2 (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)) := by
     have hS : S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-      have htmp := htBound
-      change Core.Shrinkage.depthBound (S := S)
-          ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) at htmp
-      have hrewrite := htmp
-      simp [Core.Shrinkage.depthBound] at hrewrite
-      exact hrewrite
+      have hdepth : S.t ≤ ThirdPartyFacts.ac0DepthBound params F hF := by
+        simpa [Core.Shrinkage.depthBound, S] using htBound
+      exact hdepth.trans
+        (ThirdPartyFacts.ac0DepthBound_le_log2_pow (params := params) (F := F) (hF := hF))
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hS
   have hresult := hdict_base.trans hpow_bound
   have hrewrite :

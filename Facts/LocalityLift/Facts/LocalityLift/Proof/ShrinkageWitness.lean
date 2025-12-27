@@ -77,6 +77,85 @@ def summary
     (w : ShrinkageWitness general) :
     (w.summary).locality = w.locality := rfl
 
+/-!
+## Строительство свидетеля из рестрикции
+
+В полноценном shrinkage-доказательстве основным объектом является удачная
+рестрикция входов.  По ней мы хотим автоматически сформировать числовую
+сводку `ShrinkageSummary`, а затем соединить её с самой рестрикцией, чтобы
+получить `ShrinkageWitness`.  Следующее определение фиксирует ровно эту
+логику: если мы знаем, что `alive` у рестрикции мало и что будущий локальный
+решатель удовлетворяет условию `SmallEnough`, то можем собрать свидетель
+без дополнительных заглушек.
+-/
+
+/-- Построение `ShrinkageWitness` из явной рестрикции и числовых оценок. -/
+def ofRestriction
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (restriction : Restriction (inputLen p))
+    (alive_card_le : restriction.alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * restriction.alive.card.succ
+          , ℓ := restriction.alive.card
+          , depth := general.params.depth }) :
+    ShrinkageWitness general := by
+  classical
+  refine
+    { toShrinkageSummary :=
+        summaryOfAlive (p := p) general restriction.alive alive_card_le ?_
+      , restriction := restriction
+      , restriction_alive := rfl }
+  simpa using smallEnough
+
+/-- В построении `ofRestriction` поле `restriction` совпадает с исходной рестрикцией. -/
+@[simp] lemma ofRestriction_restriction
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (restriction : Restriction (inputLen p))
+    (alive_card_le : restriction.alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * restriction.alive.card.succ
+          , ℓ := restriction.alive.card
+          , depth := general.params.depth }) :
+    (ofRestriction (p := p) general restriction alive_card_le smallEnough).restriction =
+      restriction := by
+  rfl
+
+/-- В построении `ofRestriction` поле `alive` совпадает с `restriction.alive`. -/
+@[simp] lemma ofRestriction_alive
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (restriction : Restriction (inputLen p))
+    (alive_card_le : restriction.alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * restriction.alive.card.succ
+          , ℓ := restriction.alive.card
+          , depth := general.params.depth }) :
+    (ofRestriction (p := p) general restriction alive_card_le smallEnough).alive =
+      restriction.alive := by
+  classical
+  simp [ofRestriction, summaryOfAlive]
+
+/-- Тест-набор, собранный из рестрикции, совпадает с `testSetOfAlive`. -/
+@[simp] lemma ofRestriction_testSet
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (restriction : Restriction (inputLen p))
+    (alive_card_le : restriction.alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * restriction.alive.card.succ
+          , ℓ := restriction.alive.card
+          , depth := general.params.depth }) :
+    (ofRestriction (p := p) general restriction alive_card_le smallEnough).testSet =
+      testSetOfAlive restriction.alive := by
+  classical
+  simp [ofRestriction, summaryOfAlive]
+
 @[simp] lemma summary_testSet_eq_restriction
     {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
     (w : ShrinkageWitness general) :
@@ -148,6 +227,33 @@ lemma canonical_multiplexerBudget_linear
   simpa using canonicalSummary_budget_eq_linear (general := general)
 
 /-!
+## Механизм подстановки shrinkage-свидетеля
+
+Пока полноценный анализ не готов, мы используем канонический свидетель.
+Однако важно оставить точку расширения: как только появится реальный
+shrinkage-сертификат, мы сможем предоставить другой источник свидетелей,
+не меняя интерфейс locality lift.  Для этого вводится типкласс `Provider`.
+-/
+
+/-- Типкласс, предоставляющий shrinkage-свидетель для конкретного решателя. -/
+class Provider
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) : Type where
+  /-- Свидетель shrinkage, связанный с данным решателем. -/
+  witness : ShrinkageWitness general
+
+/-- Текущий shrinkage-свидетель, выбранный через `Provider`. -/
+def provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [Provider (p := p) general] : ShrinkageWitness general :=
+  Provider.witness
+
+/-- Канонический источник shrinkage-свидетеля (используется по умолчанию). -/
+instance canonicalProvider
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
+    Provider (p := p) general :=
+  ⟨canonical (p := p) general⟩
+
+/-!
 ## Certificates with semantic data
 
 Для полноценного доказательства locality lift недостаточно численных оценок:
@@ -166,6 +272,45 @@ structure ShrinkageCertificate
   stable : ∀ x, generalEval (restriction.apply x) = generalEval x
 
 namespace ShrinkageCertificate
+
+/-- Построение shrinkage-сертификата из рестрикции и доказательства стабильности. -/
+def ofRestriction
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (generalEval : BitVec (inputLen p) → Bool)
+    (restriction : Restriction (inputLen p))
+    (alive_card_le : restriction.alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * restriction.alive.card.succ
+          , ℓ := restriction.alive.card
+          , depth := general.params.depth })
+    (stable : ∀ x, generalEval (restriction.apply x) = generalEval x) :
+    ShrinkageCertificate (p := p) general generalEval := by
+  classical
+  let w := ShrinkageWitness.ofRestriction (p := p) general restriction alive_card_le smallEnough
+  refine
+    { toShrinkageSummary := w.toShrinkageSummary
+      , restriction := restriction
+      , restriction_alive := rfl
+      , stable := stable }
+
+/-- Поле `restriction` в `ofRestriction` совпадает с переданным объектом. -/
+@[simp] lemma ofRestriction_restriction
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    (generalEval : BitVec (inputLen p) → Bool)
+    (restriction : Restriction (inputLen p))
+    (alive_card_le : restriction.alive.card ≤ polylogBudget (inputLen p))
+    (smallEnough :
+      LocalCircuitSmallEnough
+        { n := inputLen p
+          , M := general.params.size * restriction.alive.card.succ
+          , ℓ := restriction.alive.card
+          , depth := general.params.depth })
+    (stable : ∀ x, generalEval (restriction.apply x) = generalEval x) :
+    (ofRestriction (p := p) general generalEval restriction
+        alive_card_le smallEnough stable).restriction = restriction := by
+  rfl
 
 /-- Любой шринкаж-сертификат даёт локализационный сертификат: значение функции
     зависит только от координат `alive`. -/

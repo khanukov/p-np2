@@ -2,6 +2,7 @@ import LowerBounds.LB_Formulas_Core
 import LowerBounds.LB_LocalCircuits
 import LowerBounds.LB_GeneralFromLocal
 import Models.Model_GapMCSP
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
   pnp3/Magnification/PipelineStatements.lean
@@ -42,6 +43,28 @@ def AC0Statement (p : GapMCSPParams) : Prop :=
     ThirdPartyFacts.FamilyIsAC0 _solver.params.ac0
       (Counting.allFunctionsFamily _solver.params.ac0.n) → False
 
+/-!
+  ### Explicit size bound in terms of N = 2^n
+
+  The OPS-style hypotheses are traditionally phrased as: there exists ε > 0
+  such that GapMCSP has no AC⁰ solver of size ≤ N^{1+ε}, where N is the input
+  length.  To make the n ↔ N handshake explicit, we introduce a size bound
+  predicate using real exponents.  The inequality is stated in ℝ to avoid
+  rounding artifacts from integer exponents.
+-/
+
+/-- Explicit size bound: M ≤ N^{1+ε} with N = inputLen p. -/
+def ac0SizeBound (p : GapMCSPParams) (ε : Rat) (solver : SmallAC0Solver p) : Prop :=
+  (solver.params.ac0.M : Real) ≤
+    Real.rpow (inputLen p : Real) (1 + (ε : Real))
+
+/-- OPS-style statement: no AC⁰ solver with size bounded by N^{1+ε}. -/
+def AC0SizeBoundStatement (p : GapMCSPParams) (ε : Rat) : Prop :=
+  ∀ solver : SmallAC0Solver p,
+    ac0SizeBound p ε solver →
+    ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n) → False
+
 /--
   Утверждение «не существует малой локальной схемы-решателя».  Это
   условие используется в JACM’22 (барьер локальности).
@@ -72,14 +95,12 @@ def GeneralLowerBoundHypothesis
 /--
   Специализированная версия для формул (OPS’20, Corollary 6.4).
   `FormulaLowerBoundHypothesis p δ` проверяет `δ > 0` и отсутствие
-  малых AC⁰-решателей.
+  AC⁰-решателей размера ≤ N^{1+δ}, где N = 2^n — длина входа GapMCSP.
 -/
 def FormulaLowerBoundHypothesis
     (p : GapMCSPParams) (δ : Rat) : Prop :=
   (0 : Rat) < δ ∧
-    ∀ solver : SmallAC0Solver p,
-      ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n) → False
+    AC0SizeBoundStatement p δ
 
 /--
   Вариант для локальных схем (JACM’22, Theorem 3.1).  Условие объединяет
@@ -98,7 +119,7 @@ def LocalLowerBoundHypothesis
 -/
 lemma formulaHypothesis_eq_general (p : GapMCSPParams) (δ : Rat) :
     FormulaLowerBoundHypothesis p δ ↔
-      GeneralLowerBoundHypothesis p δ (AC0Statement p) := by
+      GeneralLowerBoundHypothesis p δ (AC0SizeBoundStatement p δ) := by
   rfl
 
 /--
@@ -147,7 +168,7 @@ lemma formula_hypothesis_from_pipeline
     FormulaLowerBoundHypothesis p δ :=
   by
     refine And.intro hδ ?hStatement
-    intro solver hF_all
+    intro solver _hBound hF_all
     exact ac0_statement_from_pipeline (p := p) solver hF_all
 
 /--

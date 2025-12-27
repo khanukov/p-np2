@@ -98,10 +98,11 @@ by
   classical
   have hHyp : GeneralLowerBoundHypothesis p ε (AC0Statement p) :=
     general_hypothesis_from_pipeline (p := p) (ε := ε) hε
-  -- Переписываем гипотезу в формульном виде и применяем конструктивный триггер.
+  -- Переписываем гипотезу в формульном виде: размерное условие уже более узкое.
   have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+    refine And.intro hHyp.1 ?_
+    intro solver hBound hF_all
+    exact hHyp.2 solver hF_all
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--
@@ -135,8 +136,9 @@ by
   have hHyp := kit.general_hypothesis (ε := ε) hε
   -- Сужаемся до формульной гипотезы и запускаем конструктивный триггер.
   have hFormula : FormulaLowerBoundHypothesis p ε := by
-    simpa [AC0Statement, FormulaLowerBoundHypothesis, GeneralLowerBoundHypothesis]
-      using hHyp
+    refine And.intro hHyp.1 ?_
+    intro solver hBound hF_all
+    exact hHyp.2 solver hF_all
   exact OPS_trigger_formulas (p := p) (δ := ε) hF_all hFormula
 
 /--

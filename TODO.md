@@ -1,29 +1,40 @@
 # To-Do
-> **Status (2025-12-26)**: The combinatorial cover is fully formalised. PNP3 has no active axioms; the items below track legacy axioms and quality-of-life improvements.
+> **Status (2025-12-26)**: The active `pnp3/` pipeline is fully formalised and has **zero active
+> axioms**. The only remaining conditionality comes from *external witnesses* attached to the
+> AC⁰/local switching (shrinkage) lemmas. The items below list the remaining work **within
+> `pnp3/`** only.
 
-## Complexity bridge (no-PH roadmap)
+## Switching / shrinkage completion (A1/A2)
 
-- [x] **[classic]** Develop the standard simulation of polynomial-time Turing machines by polynomial-size circuit families (`TM/Encoding.lean`, `Circuit/Family.lean`, `PsubsetPpoly.lean`) and replace the axiom `P_subset_Ppoly` in `ComplexityClasses.lean` with the constructive theorem `P_subset_Ppoly`. (Implemented in the legacy constructive library.)
-  - [x] Introduce an explicit single-tape TM model with configurations (`TM/Encoding.lean`).
-  - [x] Add basic circuit bookkeeping (`Circuit/Family.lean`) and initialise the configuration-circuit framework (`PsubsetPpoly.lean`).
-  - [x] Tighten the gate-count bounds so that `gatePolyBound` is dominated by a genuine polynomial and discharge the checklist in `docs/PsubsetPpoly_status.md` (linear recursion, final domination, axiom removal). (Handled within the legacy constructive modules.)
-  - [x] Seal the complexity bridge by exporting the theorem in `ComplexityClasses.lean` and eliminating the axiom `P_subset_Ppoly`. (Available via the archival constructive proofs.)
-- [ ] **[models]** Define circuit models for the magnification theorems (`Circuit/Depth.lean`, `Circuit/Oracle.lean` for the MMW’19 route, or `Circuit/General.lean` for OPS’21).
-- [ ] **[mcsp]** Introduce the decision/search/gap variants of `MCSP` (`MCSP/Core.lean`, `MCSP/Search.lean`, `MCSP/Gap.lean`).
-- [ ] **[bridge]** Strengthen the cover/locality files (`table_locality.lean`, `sat_cover.lean`, `acc_mcsp_sat.lean`) and derive lower bounds for (search-)`MCSP` (`MCSP/LowerBoundsFromCovers.lean`).
-- [ ] **[magnif]** Formalise the appropriate magnification theorem (`Magnification/MMW19.lean` or `Magnification/OPS21.lean`) and remove the axiom `magnification_AC0_MCSP`.
-- [ ] **[finish]** Replace the placeholder `FCE_implies_MCSP` with the constructive bridge and complete the final derivation of `P ≠ NP` via `NP ⊄ P/poly` + `P ⊆ P/poly`.
+> **Status (2025-12-26)**: SAL + counting + magnification are complete; Part A still relies on
+> `FamilyIsAC0`/`FamilyIsLocalCircuit` witnesses in
+> `pnp3/ThirdPartyFacts/Facts_Switching.lean`. The checklist below is the only open technical work
+> in the active pipeline.
 
-## Cover pipeline refinements (optional)
+- [ ] **[A1]** Import the depth-2 constructive switching lemmas from the `DEPTH2_STATUS.md` effort,
+  wire them into `ThirdPartyFacts/Facts_Switching.lean`, and replace the brute-force
+  `buildPDTFromSubcubes` proof in `partial_shrinkage_for_AC0` with the new constructive proof.
+  - [ ] Move the proven depth-2 lemmas (e.g. `partial_shrinkage_single_clause`,
+    `partial_shrinkage_small_dnf`, `depth2_dnf`, `depth2_cnf`) out of the archive and into the
+    active `pnp3/ThirdPartyFacts` tree.
+  - [ ] Add the missing glue lemmas to convert the depth-2 shrinkage output into a
+    `PartialCertificate`, including explicit depth and error bounds.
+  - [ ] Update `shrinkage_for_AC0` to rely on the new constructive proof while keeping the existing
+    interface stable for downstream modules.
+- [ ] **[A1 → A2]** Formalise the inductive AC⁰ switching lemma for depth `d > 2` (probabilistic or
+  combinatorial proof), and expose a helper lemma that packages the shrinkage output as a
+  `CommonPDT`/`Atlas` ready for SAL.
+- [ ] **[A2]** Formalise the local-circuit multi-switching argument needed for
+  `shrinkage_for_localCircuit` (Williams-style locality lift).
+  - [ ] Fill in the proof skeleton under `Facts/LocalityLift/ProofSketch/` and implement the
+    construction of the test set `T` together with the required polylog bounds.
+  - [ ] Replace the placeholder one-point witness in `Facts/LocalityLift` with the real shrinkage
+    witness, and re-export it through `pnp3/ThirdPartyFacts/LocalityLift.lean`.
+  - [ ] Prove `shrinkage_for_localCircuit` by composing the locality lift with the proven AC⁰
+    shrinkage lemma, yielding a `Shrinkage` object of depth `ℓ * (log₂(M+2) + d + 1)` (or tighter).
+- [ ] **[cleanup]** Remove the residual “external witness” notes in `AXIOMS.md`,
+  `AXIOM_ANALYSIS_FINAL.md`, and `FinalResult.lean` once the shrinkage lemmas are proven.
 
-- [ ] Strengthen the coarse numeric bound in the archival `cover_numeric` module (`buildCover_card = 2^n`) once sharper combinatorial estimates are available.
-- [ ] Provide a constructive variant of `firstUncovered` in the archival `Cover/Uncovered` module if executable tooling becomes a priority.  The current classical search is sufficient for the Prop-level results.
-
-## Remaining axioms (as of 2025-09-24)
-
-- `NPSeparation.magnification_AC0_MCSP`
-- `NPSeparation.FCE_implies_MCSP`
-
-## Outstanding `sorry`s (as of 2025-09-24)
+## Outstanding `sorry`s (as of 2025-12-26)
 
 - None – the Lean sources compile without placeholders.

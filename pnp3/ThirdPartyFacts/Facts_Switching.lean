@@ -562,16 +562,22 @@ lemma subcube_eq_full_of_n_zero' {n : Nat} (hzero : n = 0) (β : Subcube n) :
   cases hzero
   simpa using (subcube_eq_full_of_n_zero (β := β))
 
-theorem partial_shrinkage_for_AC0
+/--
+  Явная depth-2 shrinkage-конструкция на основе `AC0FamilyWitness`.
+
+  Вынесена в отдельную лемму, чтобы проще заменить её реальной
+  multi-switching-леммой: достаточно будет переподключить эту точку,
+  не трогая downstream-конвейер.
+-/
+theorem partial_shrinkage_for_AC0_from_witness
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (witness : AC0FamilyWitness params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
       C.depthBound + ℓ ≤ ac0DepthBound params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
-  obtain ⟨witness⟩ := hF
   let allSubcubes := witness.circuits.flatMap AC0Circuit.subcubes
   have hlen_subcubes :
       allSubcubes.length ≤ witness.circuits.length * params.M := by
@@ -587,7 +593,7 @@ theorem partial_shrinkage_for_AC0
       simpa using List.sum_replicate (n := witness.circuits.length) (a := params.M)
     have hlen :
         allSubcubes.length = (witness.circuits.map AC0Circuit.size).sum := by
-      -- длина flatMap совпадает с суммой длин подкубов
+      -- Длина flatMap совпадает с суммой длин подкубов.
       have hsize :
           (fun a : AC0Circuit params => a.formula.terms.length)
             = fun a => AC0Circuit.size a := by
@@ -702,6 +708,18 @@ theorem partial_shrinkage_for_AC0
       ·
         have : (0 : Nat) ≤ params.n + 2 := by omega
         exact_mod_cast this
+
+theorem partial_shrinkage_for_AC0
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ ≤ Nat.log2 (params.M + 2) ∧
+      C.depthBound + ℓ ≤ ac0DepthBound params ∧
+      (0 : Core.Q) ≤ C.epsilon ∧
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  obtain ⟨witness⟩ := hF
+  exact partial_shrinkage_for_AC0_from_witness params F witness
 
 /--
 `AC0PartialWitness` собирает в одном месте весь набор параметров, выдаваемых

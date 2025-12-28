@@ -77,6 +77,20 @@ structure AC0Parameters where
   d : Nat
   deriving Repr
 
+/-!
+  ⚠️ ВАЖНОЕ УТОЧНЕНИЕ О ТЕКУЩЕМ СТАДИЙНОМ УРОВНЕ
+
+  На данном этапе формализация AC⁰ используется **только в depth‑2 смысле**:
+  мы фактически моделируем DNF глубины 2 (OR‑от‑AND) с числом термов `M`.
+  Это временный, но полностью формальный «Stage‑1», где верхняя оценка
+  на глубину PDT грубо задаётся как `M²`.
+
+  Когда появится настоящая switching‑лемма (polylog‑оценка), этот блок
+  будет заменён на более сильный интерфейс, но **без массового переписывания**
+  downstream: именно поэтому внизу используются абстрактные оценочные
+  функции вроде `ac0DepthBound`.
+-/
+
 /--
   Грубая численная оценка на глубину PDT для конструктивного depth-2 случая.
 
@@ -381,6 +395,35 @@ structure LocalCircuitWitness
   /-- Ошибка не превосходит `1/(n+2)`. -/
   epsilon_le_inv   : shrinkage.ε ≤ (1 : Q) / (params.n + 2)
 
+/--
+  Удобный конструктор `LocalCircuitWitness`, превращающий готовый shrinkage-
+  сертификат в локальное свидетельство.
+
+  Этот вспомогательный блок полезен при интеграции будущих доказательств:
+  как только появится алгоритм, выдающий shrinkage для локальных схем, его
+  результат можно напрямую упаковать в `LocalCircuitWitness`, не дублируя
+  шаблонные проверки равенств и численных оценок.
+-/
+def localCircuitWitnessOfShrinkage
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (S : Shrinkage params.n)
+    (hF : S.F = F)
+    (ht :
+      S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1))
+    (hε0 : (0 : Q) ≤ S.ε)
+    (hε : S.ε ≤ (1 : Q) / (params.n + 2)) :
+    LocalCircuitWitness params F :=
+  { -- Передаём shrinkage-сертификат без изменений.
+    shrinkage := S
+    -- Семейство в сертификате совпадает с исходным `F`.
+    family_eq := hF
+    -- Глубина PDT ограничена стандартной функцией.
+    depth_le := ht
+    -- Ошибка неотрицательна.
+    epsilon_nonneg := hε0
+    -- Ошибка не превосходит `1/(n+2)`.
+    epsilon_le_inv := hε }
+
 /-! ### Конструктивные вспомогательные функции для depth-2 DNF -/
 
 /--
@@ -451,6 +494,28 @@ lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
 def FamilyIsLocalCircuit
     (params : LocalCircuitParameters) (F : Family params.n) : Prop :=
   Nonempty (LocalCircuitWitness params F)
+
+/--
+  `FamilyIsLocalCircuit` в текущем виде означает наличие shrinkage-сертификата
+  с нужными оценками на глубину и ошибку.
+-/
+lemma familyIsLocalCircuit_iff_shrinkage
+    (params : LocalCircuitParameters) (F : Family params.n) :
+    FamilyIsLocalCircuit params F ↔
+      ∃ (S : Shrinkage params.n),
+        S.F = F ∧
+        S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ∧
+        (0 : Q) ≤ S.ε ∧
+        S.ε ≤ (1 : Q) / (params.n + 2) := by
+  constructor
+  · intro hF
+    rcases hF with ⟨witness⟩
+    refine ⟨witness.shrinkage, witness.family_eq, ?_, ?_, ?_⟩
+    · exact witness.depth_le
+    · exact witness.epsilon_nonneg
+    · exact witness.epsilon_le_inv
+  · rintro ⟨S, hF, ht, hε0, hε⟩
+    exact ⟨localCircuitWitnessOfShrinkage params F S hF ht hε0 hε⟩
 
 /--
   Предикат «малости» для локальных схем.  Мы требуем, чтобы суммарная длина

@@ -65,6 +65,38 @@ open Magnification
         using solver.params.same_n
   }
 
+/-!
+  ## External shrinkage witnesses for locality lift
+
+  The `Facts.LocalityLift` package already exposes a typeclass-based hook
+  (`ShrinkageWitness.Provider`) for injecting a real shrinkage witness in place
+  of the canonical placeholder.  The goal of this section is to make that hook
+  usable inside the `pnp3` pipeline without touching the external package.
+
+  Concretely, downstream code can supply an instance of
+  `ExternalLocalityWitnessProvider`, and the `pnp3` bridge will automatically
+  route it into `Facts.LocalityLift`.  If no instance is provided, the external
+  package falls back to the canonical witness, keeping the current behaviour
+  unchanged while enabling a smooth upgrade path.
+-/
+
+/-- Optional external provider for a shrinkage witness in the `pnp3` pipeline. -/
+class ExternalLocalityWitnessProvider
+    {p : Models.GapMCSPParams}
+    (solver : Magnification.SmallGeneralCircuitSolver p) : Type where
+  /-- The concrete shrinkage witness for the corresponding external solver. -/
+  witness :
+    Facts.LocalityLift.ShrinkageWitness (toFactsGeneralSolver solver)
+
+/-- If an external witness is available, use it as the `Facts.LocalityLift` provider. -/
+instance (priority := 50) shrinkageWitnessProviderOfExternal
+    {p : Models.GapMCSPParams}
+    (solver : Magnification.SmallGeneralCircuitSolver p)
+    [ExternalLocalityWitnessProvider solver] :
+    Facts.LocalityLift.ShrinkageWitness.Provider
+      (p := toFactsParams p) (toFactsGeneralSolver solver) :=
+  ⟨(ExternalLocalityWitnessProvider.witness (solver := solver))⟩
+
 /-- Push external local parameters back to the internal record. -/
 @[simp] def fromFactsLocalParameters
     (params : Facts.LocalityLift.LocalCircuitParameters) :

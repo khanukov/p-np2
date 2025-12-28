@@ -192,6 +192,29 @@ lemma localityWitness_testSet_provided
       (p := p) (general := general)
       (witness := ShrinkageWitness.provided (p := p) general))
 
+/-- Тест-набор locality-witness из `Provider` совпадает с `testSetOfAlive`. -/
+lemma localityWitness_testSet_eq_testSetOfAlive_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).testSet
+      = testSetOfAlive (ShrinkageWitness.provided (p := p) general).alive := by
+  classical
+  have htest :=
+    localityWitness_testSet_provided (p := p) (general := general)
+  have hcanon :=
+    ShrinkageWitness.testSet_eq_testSetOfAlive
+      (w := ShrinkageWitness.provided (p := p) general)
+  simpa [htest] using hcanon
+
+/-- Удобная оболочка: тест-набор `localityWitness` удовлетворяет polylog-границе. -/
+lemma localityWitness_testSet_card_le_provided
+    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
+    [ShrinkageWitness.Provider (p := p) general] :
+    (localityWitness (p := p) general).testSet.card
+      ≤ polylogBudget (inputLen p) := by
+  -- Поле `testSet_card_le` у `LocalityWitness` уже хранит нужную оценку.
+  exact (localityWitness (p := p) general).testSet_card_le
+
 lemma localityWitness_size_provided
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
     [ShrinkageWitness.Provider (p := p) general] :

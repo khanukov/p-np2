@@ -431,6 +431,10 @@ def localCircuitWitnessOfShrinkage
 
   Это техническая конструкция для depth-2 случая, позволяющая явно задавать
   дерево решений, чьи листья совпадают с нужным набором подкубов.
+
+  ВАЖНО: в случае пустого списка мы сознательно возвращаем `fullSubcube`.
+  Поэтому корректное общее утверждение — «каждый подкуб из списка является
+  листом», а не равенство списков листьев (оно ломается при `[]`).
 -/
 def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n)
     (subcubes : List (Subcube n)) : PDT n :=
@@ -444,6 +448,10 @@ def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n)
 lemma buildPDTFromSubcubes_leaves_subset {n : Nat} (h_pos : 0 < n)
     (subcubes : List (Subcube n)) :
     ∀ β ∈ subcubes, β ∈ PDT.leaves (buildPDTFromSubcubes h_pos subcubes) := by
+  -- Мы доказываем только включение списка подкубов в список листьев.
+  -- Это максимально устойчиво к пустому случаю и совпадает с тем,
+  -- что реально нужно downstream: каждый выбранный selector
+  -- должен быть листом PDT.
   induction subcubes with
   | nil =>
       intro β hβ
@@ -485,6 +493,73 @@ lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
             simpa using ih
           have hsucc := Nat.succ_le_succ hdepth_rest
           simpa [buildPDTFromSubcubes, PDT.depth, hmax] using hsucc
+
+/-!
+  ### Glue-лемма: depth-2 схема → частичный сертификат для одиночного семейства
+
+  Эта лемма — первый «клей» между конструктивным depth-2 доказательством
+  и интерфейсом Step A. Мы явно строим PDT для одной схемы и упаковываем
+  его в `PartialCertificate` для семейства из одной функции.
+
+  Важное ограничение: здесь нужен `h_pos : 0 < n`, чтобы выбрать ветвящий
+  индекс при построении PDT. Для `n = 0` корректный частный случай можно
+  добавить позже (он тривиален, так как все подкубы совпадают с полным).
+-/
+
+/--
+Один AC⁰ (depth-2) circuit порождает точный partial shrinkage для семейства
+из одной функции. Ошибка `ε = 0`, глубина PDT не превосходит числа термов.
+-/
+theorem partial_shrinkage_single_circuit
+    {params : AC0Parameters} (h_pos : 0 < params.n)
+    (c : AC0Circuit params) :
+    let f : Core.BitVec params.n → Bool := AC0Circuit.eval c
+    let F : Family params.n := [f]
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ = 0 ∧
+      C.depthBound ≤ c.subcubes.length ∧
+      C.epsilon = 0 := by
+  intro f F
+  -- Берём список подкубов, соответствующий термам depth-2 DNF схемы.
+  let subcubes := c.subcubes
+  -- Строим PDT, чьи листья включают все эти подкубы.
+  let tree := buildPDTFromSubcubes h_pos subcubes
+  -- Глубина построенного дерева контролируется длиной списка.
+  have h_depth : PDT.depth tree ≤ subcubes.length := by
+    simpa [tree] using buildPDTFromSubcubes_depth h_pos subcubes
+  -- Каждый подкуб из списка является листом дерева.
+  have h_leaves :
+      ∀ β ∈ subcubes, β ∈ PDT.leaves tree := by
+    simpa [tree] using buildPDTFromSubcubes_leaves_subset h_pos subcubes
+  refine ⟨0, {
+    witness := PartialDT.ofPDT tree
+    depthBound := subcubes.length
+    epsilon := 0
+    -- Для ofPDT глубина ствола равна глубине исходного PDT.
+    trunk_depth_le := by
+      simpa [PartialDT.ofPDT] using h_depth
+    -- Селекторы: единственная функция получает список подкубов,
+    -- остальные — пустой список.
+    selectors := fun g => if g = f then subcubes else []
+    selectors_sub := by
+      intro g β hg hβ
+      simp [F] at hg
+      subst hg
+      simp [subcubes] at hβ
+      -- Любой подкуб из selectors является листом PDT.
+      simpa [PartialDT.realize_ofPDT] using h_leaves β hβ
+    err_le := by
+      intro g hg
+      simp [F] at hg
+      subst hg
+      simp
+      apply le_of_eq
+      apply errU_eq_zero_of_agree
+      intro x
+      -- покрытие subcubes совпадает с вычислением схемы
+      have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+      simp [f, subcubes, hcov]
+  }, rfl, Nat.le_refl _, rfl⟩
 
 /--
   Предикат «семейство `F` вычисляется локальными схемами с параметрами `params`».
@@ -609,6 +684,10 @@ theorem partial_shrinkage_for_AC0
     have hdepth :
         PDT.depth tree ≤ allSubcubes.length := by
       simpa [tree] using buildPDTFromSubcubes_depth hpos allSubcubes
+    -- Для удобства фиксируем сокращённые имена для выбранной схемы,
+    -- соответствующей конкретной функции `f`.
+    -- Это подчёркивает, что мы используем конструктивный depth-2
+    -- вывод из `AC0Circuit.coveredB_subcubes`.
     refine ⟨0, {
       witness := PartialDT.ofPDT tree
       depthBound := allSubcubes.length
@@ -621,29 +700,39 @@ theorem partial_shrinkage_for_AC0
       selectors_sub := by
         intro f β hf hβ
         simp [hf] at hβ
-        have hchoose := Classical.choose_spec (witness.covers f hf)
-        have hmem_circuit : (Classical.choose (witness.covers f hf)) ∈ witness.circuits :=
-          hchoose.left
+        -- Для функции `f` выбираем схему `c` из свидетельства.
+        let c := Classical.choose (witness.covers f hf)
+        have hc : c ∈ witness.circuits := (Classical.choose_spec (witness.covers f hf)).left
         have hmem_all : β ∈ allSubcubes := by
           have hmem_bind : β ∈ witness.circuits.flatMap AC0Circuit.subcubes := by
-            exact List.mem_flatMap.mpr ⟨_, hmem_circuit, hβ⟩
+            exact List.mem_flatMap.mpr ⟨_, hc, hβ⟩
           simpa [allSubcubes] using hmem_bind
-        have hsubset := buildPDTFromSubcubes_leaves_subset hpos allSubcubes β hmem_all
+        have hsubset :
+            β ∈ PDT.leaves tree := by
+          -- Любой подкуб из списка подкубов присутствует в листьях PDT.
+          simpa [tree] using
+            (buildPDTFromSubcubes_leaves_subset hpos allSubcubes β hmem_all)
         simpa using hsubset
       err_le := by
         intro f hf
         -- Для каждой функции из семейства покрытие её подкубов совпадает с вычислением.
-        have hchoose := Classical.choose_spec (witness.covers f hf)
-        have hcomp : AC0Circuit.Computes (Classical.choose (witness.covers f hf)) f :=
-          hchoose.right
+        -- Это ровно constructive-лемма `AC0Circuit.coveredB_subcubes`.
+        let c := Classical.choose (witness.covers f hf)
+        have hcomp : AC0Circuit.Computes c f :=
+          (Classical.choose_spec (witness.covers f hf)).right
         simp [hf]
         apply le_of_eq
         apply errU_eq_zero_of_agree
         intro x
-        have hcov := AC0Circuit.coveredB_subcubes
-          (c := Classical.choose (witness.covers f hf)) (x := x)
+        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
         have hcomp' := hcomp x
-        simp [hcov, hcomp']
+        calc
+          f x = AC0Circuit.eval c x := by
+            symm
+            exact hcomp'
+          _ = coveredB c.subcubes x := by
+            symm
+            exact hcov
     }, ?_, ?_, ?_, ?_⟩
     · simp
     · exact hlen_bound
@@ -912,45 +1001,6 @@ lemma eps_le_half_of_eps_le_inv_nplus2 (n : Nat) {ε : Q}
     (h : ε ≤ (1 : Q) / (n + 2)) : ε ≤ (1 : Q) / 2 :=
   h.trans (inv_nat_succ_succ_le_half n)
 
-/-- Удобная оболочка: сразу извлекаем атлас из факта shrinkage.  Эта
-функция подчёркивает, что на практике мы используем именно словарь подкубов,
-а не сам PDT. -/
-noncomputable def atlas_from_AC0
-    (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) : Atlas params.n := by
-  classical
-  let h := shrinkage_for_AC0 params F hF
-  let t := Classical.choose h
-  let h₁ := Classical.choose_spec h
-  let ε := Classical.choose h₁
-  let h₂ := Classical.choose_spec h₁
-  let S := Classical.choose h₂
-  exact Atlas.fromShrinkage S
-
-/-- Свойство корректности атласа, полученного из внешнего shrinkage.
-    Оно напрямую следует из `SAL_from_Shrinkage`. -/
-theorem atlas_from_AC0_works
-    (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    WorksFor (atlas_from_AC0 params F hF) F := by
-  classical
-  let h := shrinkage_for_AC0 params F hF
-  let t := Classical.choose h
-  let h₁ := Classical.choose_spec h
-  let ε := Classical.choose h₁
-  let h₂ := Classical.choose_spec h₁
-  let S := Classical.choose h₂
-  have hspec := Classical.choose_spec h₂
-  have hF_eq : S.F = F := hspec.left
-  have hworks : WorksFor (Atlas.fromShrinkage S) S.F :=
-    SAL_from_Shrinkage S
-  have hdict : Atlas.fromShrinkage S = atlas_from_AC0 params F hF := rfl
-  have hworks' := hworks
-  simp [hdict] at hworks'
-  have hworks'' := hworks'
-  simp [hF_eq] at hworks''
-  exact hworks''
-
 /--
   В дополнение к атласу полезно иметь явный shrinkage-сертификат, который
   сохраняет дерево и выбор листьев.  Он используется на шаге B.
@@ -1058,6 +1108,81 @@ lemma certificate_from_AC0_eps_le_half
     (params := params) (F := F) (hF := hF)
   exact eps_le_half_of_eps_le_inv_nplus2
     params.n (ε := Core.Shrinkage.errorBound (S := certificate_from_AC0 params F hF)) hbase
+
+/-- Полезный помощник: общий PDT, извлечённый из shrinkage-сертификата AC⁰.
+    Он напрямую использует частичный shrinkage-факт, но перепаковывает его
+    в формат `CommonPDT`, удобный для SAL и контроля глубины. -/
+noncomputable def commonPDT_from_AC0
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) : Core.CommonPDT params.n F := by
+  classical
+  -- Берём shrinkage, полученный из частичного сертификата AC⁰, и извлекаем
+  -- общий PDT через `Shrinkage.commonPDT`.
+  exact (certificate_from_AC0 params F hF).commonPDT
+
+/-- Глубина общего PDT, полученного из AC⁰, ограничена стандартной оценкой. -/
+lemma commonPDT_from_AC0_depth_le
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    (commonPDT_from_AC0 params F hF).depthBound ≤ ac0DepthBound params := by
+  classical
+  -- Глубина общего PDT совпадает с `t` shrinkage-сертификата,
+  -- а тот равен `depthBound + ℓ` у частичного свидетельства.
+  calc
+    (commonPDT_from_AC0 params F hF).depthBound
+        = (certificate_from_AC0 params F hF).t := by
+          simp [commonPDT_from_AC0]
+    _ ≤ ac0DepthBound params := by
+          simpa using
+            (certificate_from_AC0_depth_bound
+              (params := params) (F := F) (hF := hF))
+
+/-- Ошибка общего PDT неотрицательна. -/
+lemma commonPDT_from_AC0_epsilon_nonneg
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    (0 : Core.Q) ≤ (commonPDT_from_AC0 params F hF).epsilon := by
+  classical
+  have hε := certificate_from_AC0_eps_nonneg
+    (params := params) (F := F) (hF := hF)
+  simpa [commonPDT_from_AC0] using hε
+
+/-- Ошибка общего PDT ограничена `1 / (n + 2)`. -/
+lemma commonPDT_from_AC0_epsilon_le_inv
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    (commonPDT_from_AC0 params F hF).epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  have hε := certificate_from_AC0_eps_bound
+    (params := params) (F := F) (hF := hF)
+  simpa [commonPDT_from_AC0] using hε
+
+/-- Общий PDT, полученный из AC⁰ shrinkage, задаёт рабочий атлас. -/
+theorem commonPDT_from_AC0_works
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    WorksFor (Core.CommonPDT.toAtlas (commonPDT_from_AC0 params F hF)) F := by
+  classical
+  -- `CommonPDT.worksFor` — это ровно формулировка SAL для общего PDT.
+  simpa using (Core.CommonPDT.worksFor
+    (C := commonPDT_from_AC0 params F hF))
+
+/-- Удобная оболочка: сразу извлекаем атлас из факта shrinkage.  Эта
+функция подчёркивает, что на практике мы используем именно словарь подкубов,
+а не сам PDT. -/
+noncomputable def atlas_from_AC0
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) : Atlas params.n :=
+  Core.CommonPDT.toAtlas (commonPDT_from_AC0 params F hF)
+
+/-- Свойство корректности атласа, полученного из внешнего shrinkage.
+    Оно напрямую следует из `SAL_from_Shrinkage`. -/
+theorem atlas_from_AC0_works
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    WorksFor (atlas_from_AC0 params F hF) F := by
+  simpa [atlas_from_AC0] using (Core.CommonPDT.worksFor
+    (C := commonPDT_from_AC0 params F hF))
 
 /--
 Глубина ствола частичного дерева из AC⁰-сертификата ограничена классической

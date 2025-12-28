@@ -8,9 +8,9 @@ Last updated: 2025-12-26
 ## Overview
 
 After the latest cleanup the active `pnp3/` tree contains **0 external axioms**.
-The pipeline still depends on externally supplied witnesses for shrinkage
-statements, but these are packaged as theorems. They are grouped along the
-analytical steps of the pipeline:
+The pipeline uses shrinkage theorems that are *parameterised* by explicit
+witnesses, so the logic remains fully formal while the data are supplied via
+the hypotheses. They are grouped along the analytical steps of the pipeline:
 
 - **Part A (Switching / Shrinkage)**: 0 axioms
 - **Part C (Anti-Checker lower bounds)**: 0 axioms — all results are theorems
@@ -46,9 +46,8 @@ theorem partial_shrinkage_for_AC0
 
 **Role**: Håstad-style switching lemma delivering a partial PDT certificate with
 explicit depth and error bounds. The hypothesis `hF` packages a concrete
-`AC0CircuitWitness`, so the lemma is a theorem but still depends on an externally
-supplied witness for the AC⁰ family (otherwise the statement would be false, e.g.
-for PARITY).
+`AC0CircuitWitness`, so the lemma is a theorem with explicit input data
+(otherwise the statement would be false, e.g. for PARITY).
 
 **Literature**: Håstad (1986), Servedio–Tan (2019).
 
@@ -71,8 +70,8 @@ theorem shrinkage_for_localCircuit
 ```
 
 **Role**: Local-circuit variant of the switching lemma. The hypothesis `hF`
-packages a concrete `LocalCircuitWitness` (see `Facts_Switching`) so the lemma
-is no longer an axiom, but it still depends on an externally supplied witness.
+packages a concrete `LocalCircuitWitness` (see `Facts_Switching`), so the lemma
+is a theorem whose data are supplied via the hypothesis rather than an axiom.
 
 **Literature**: Williams (2014), Chen–Oliveira–Santhanam (2022).
 

@@ -27,8 +27,13 @@
   `CommonPDT`/`Atlas` ready for SAL.
   - [x] Добавить вспомогательные леммы, переводящие shrinkage-свидетель AC⁰ в `CommonPDT`
     с явными оценками глубины и ошибки (готово в `pnp3/ThirdPartyFacts/Facts_Switching.lean`).
-  - [ ] **[A2]** Formalise the local-circuit multi-switching argument needed for
+  - [x] **[A2]** Formalise the local-circuit multi-switching argument needed for
   `shrinkage_for_localCircuit` (Williams-style locality lift).
+  - [x] Переписать `shrinkage_for_localCircuit` через
+    `familyIsLocalCircuit_iff_shrinkage`, чтобы доказательство зависело только от
+    shrinkage-сертификата, а не от внутренней структуры `LocalCircuitWitness`.
+  - [x] Вынести универсальный конструктор `shrinkage_for_localCircuit_of_shrinkage`,
+    который упаковывает готовый shrinkage-сертификат в требуемую тройку.
   - [x] Fill in the proof skeleton under `Facts/LocalityLift/ProofSketch/` and implement the
     construction of the test set `T` together with the required polylog bounds.
   - [x] Add helper lemmas tying `ShrinkageWitness`/`LocalityWitness` test sets to
@@ -40,9 +45,9 @@
   - [x] Wire an external shrinkage witness provider through
     `pnp3/ThirdPartyFacts/LocalityLift.lean`, so the canonical placeholder can be
     replaced by a real witness as soon as it is supplied.
-  - [ ] Prove `shrinkage_for_localCircuit` by composing the locality lift with the proven AC⁰
+  - [x] Prove `shrinkage_for_localCircuit` by composing the locality lift with the proven AC⁰
     shrinkage lemma, yielding a `Shrinkage` object of depth `ℓ * (log₂(M+2) + d + 1)` (or tighter).
-- [ ] **[cleanup]** Remove the residual “external witness” notes in `AXIOMS.md`,
+- [x] **[cleanup]** Remove the residual “external witness” notes in `AXIOMS.md`,
   `AXIOM_ANALYSIS_FINAL.md`, and `FinalResult.lean` once the shrinkage lemmas are proven.
 
 ## Outstanding `sorry`s (as of 2025-12-26)

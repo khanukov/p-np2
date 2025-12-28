@@ -91,16 +91,35 @@ structure AC0Parameters where
   функции вроде `ac0DepthBound`.
 -/
 
-/--
-  Грубая численная оценка на глубину PDT для конструктивного depth-2 случая.
+/-!
+  ## AC⁰ shrinkage API: стабильный Stage‑1 вход
 
-  Сейчас мы используем только глубину-2 DNF, поэтому число подкубов
+  Этот блок является **точкой входа** для всего downstream‑пайплайна (SAL,
+  локальность, нижние оценки).  Мы сознательно фиксируем здесь Stage‑1
+  оценку `M²`, чтобы:
+
+  * иметь полностью формальный, воспроизводимый «начальный» слой;
+  * сохранить единый интерфейс для последующей замены `M² → polylog`;
+  * не ломать downstream‑доказательства при усилении оценки.
+
+  Важно: всё, что ниже в файле опирается только на `ac0DepthBound`, а не
+  на конкретную форму `M²`.  Поэтому future‑upgrade будет локальным.
+-/
+
+/--
+  Грубая численная оценка на глубину PDT для конструктивного depth‑2 случая.
+
+  Сейчас мы используем только глубину‑2 DNF, поэтому число подкубов
   ограничено квадратично через `M`.  Позже, когда будет формализована
-  настоящая switching-лемма, эту функцию можно заменить более сильной
+  настоящая switching‑лемма, эту функцию можно заменить более сильной
   (polylog) оценкой и переподключить downstream без массового переписывания.
 -/
 def ac0DepthBound (params : AC0Parameters) : Nat :=
   params.M * params.M
+
+/-- Явная форма Stage‑1: `ac0DepthBound = M²`. Полезно для разъяснений. -/
+@[simp] lemma ac0DepthBound_eq_M2 (params : AC0Parameters) :
+    ac0DepthBound params = params.M * params.M := rfl
 
 /-- Полный подкуб (никаких фиксированных битов). -/
 @[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none
@@ -374,6 +393,56 @@ structure LocalCircuitParameters where
   ℓ      : Nat
   depth  : Nat
   deriving Repr
+
+/--
+  Вспомогательный «подъём» параметров AC⁰ в параметры локальных схем.
+
+  Мы трактуем каждую AC⁰-схему как локальную, разрешая локальность
+  равной грубой оценке `ac0DepthBound`.  Такой выбор *не оптимален*, но
+  гарантирует, что глубинная оценка shrinkage для AC⁰ автоматически
+  укладывается в локальный бюджет `ℓ * (log₂(M+2) + depth + 1)`.
+
+  Эта упаковка нужна для аккуратного соединения лемм:
+  `shrinkage_for_AC0` → `shrinkage_for_localCircuit`.
+-/
+@[simp] def LocalCircuitParameters.ofAC0 (params : AC0Parameters) :
+    LocalCircuitParameters :=
+  { n := params.n
+    M := params.M
+    ℓ := ac0DepthBound params
+    depth := params.d }
+
+@[simp] lemma LocalCircuitParameters.ofAC0_n (params : AC0Parameters) :
+    (LocalCircuitParameters.ofAC0 params).n = params.n := rfl
+
+@[simp] lemma LocalCircuitParameters.ofAC0_M (params : AC0Parameters) :
+    (LocalCircuitParameters.ofAC0 params).M = params.M := rfl
+
+@[simp] lemma LocalCircuitParameters.ofAC0_ℓ (params : AC0Parameters) :
+    (LocalCircuitParameters.ofAC0 params).ℓ = ac0DepthBound params := rfl
+
+@[simp] lemma LocalCircuitParameters.ofAC0_depth (params : AC0Parameters) :
+    (LocalCircuitParameters.ofAC0 params).depth = params.d := rfl
+
+/--
+  Грубая, но универсальная оценка: выбранная локальность `ℓ = ac0DepthBound`
+  доминирует глубину shrinkage-дерева из AC⁰‑леммы.
+
+  Мы сознательно используем «широкий» запас: множитель
+  `log₂(M+2) + depth + 1` как минимум равен 1, поэтому
+  `ac0DepthBound ≤ ac0DepthBound * (...)`.
+-/
+lemma ac0DepthBound_le_local_depthBound (params : AC0Parameters) :
+    ac0DepthBound params ≤
+      (LocalCircuitParameters.ofAC0 params).ℓ *
+        (Nat.log2 (params.M + 2) + params.d + 1) := by
+  -- Фактор `log₂(M+2) + d + 1` строго положителен (там явно есть `+1`).
+  have hpos :
+      0 < Nat.log2 (params.M + 2) + params.d + 1 := by
+    exact Nat.succ_pos _
+  -- Из `0 < b` следует `a ≤ a * b` для натуральных.
+  simpa [LocalCircuitParameters.ofAC0] using
+    (Nat.le_mul_of_pos_right (ac0DepthBound params) hpos)
 
 /--
   Свидетель shrinkage для локальных схем: фиксирует shrinkage-сертификат и
@@ -946,11 +1015,97 @@ theorem shrinkage_for_AC0
     exact And.intro hε (And.intro htBound (And.intro hε0 hεBound))
 
 /--
+  Связка AC⁰ → локальные схемы (через выбор «запасной» локальности).
+
+  Идея: любое AC⁰‑семейство можно трактовать как локальное, если разрешить
+  локальность `ℓ := ac0DepthBound`.  Тогда shrinkage‑сертификат из леммы
+  `shrinkage_for_AC0` автоматически удовлетворяет локальной глубинной
+  оценке.  Это *не* финальная A2‑лемма (она должна давать куда лучшее
+  `ℓ`), но уже формализует «композицию» для случаев, когда AC⁰‑shrinkage
+  доступен напрямую.
+-/
+lemma familyIsLocalCircuit_of_AC0
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    FamilyIsLocalCircuit (LocalCircuitParameters.ofAC0 params) F := by
+  classical
+  -- Из AC⁰‑shrinkage извлекаем сертификат `S`.
+  obtain ⟨t, ε, S, hF', ht, hε, htBound, hε0, hεBound⟩ :=
+    shrinkage_for_AC0 params F hF
+  have hε0' : (0 : Q) ≤ S.ε := by
+    simpa [hε] using hε0
+  have hεBound' : S.ε ≤ (1 : Q) / (params.n + 2) := by
+    simpa [hε] using hεBound
+  -- Перепаковываем его в `LocalCircuitWitness` с «широкой» локальностью.
+  refine ⟨localCircuitWitnessOfShrinkage
+    (params := LocalCircuitParameters.ofAC0 params)
+    (F := F)
+    (S := S)
+    (hF := hF')
+    (ht := ?_)
+    (hε0 := hε0')
+    (hε := ?_)⟩
+  · -- Глубинная оценка берётся из AC⁰‑леммы и доминируется локальным budget.
+    -- Сначала перепишем `t` через `S.t`, а затем применим оценку.
+    -- `ht` говорит `S.t = t`, поэтому переносим bound на `S.t`.
+    have ht' : S.t ≤ ac0DepthBound params := by
+      -- `ht` есть равенство `S.t = t`.
+      -- Используем его, чтобы переписать `t ≤ ac0DepthBound`.
+      simpa [ht] using htBound
+    -- Применяем общую оценку `ac0DepthBound ≤ localBound`.
+    exact ht'.trans (ac0DepthBound_le_local_depthBound params)
+  · -- Локальный параметр `n` совпадает с AC⁰‑параметром.
+    -- Поэтому оценка `ε ≤ 1/(n+2)` совпадает буквально.
+    simpa [LocalCircuitParameters.ofAC0] using hεBound'
+
+
+/--
   Внешний факт для локальных схем: после применения подходящих ограничений
   схема становится «малой» PDT.  Конкретные численные границы отражают
   стандартные оценки: глубина дерева пропорциональна произведению локальности
   и логарифмических факторов по размеру и глубине схемы.
 -/
+lemma shrinkage_for_localCircuit_of_shrinkage
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (S : Shrinkage params.n)
+    (hF : S.F = F)
+    (ht :
+      S.t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1))
+    (hε0 : (0 : Q) ≤ S.ε)
+    (hε : S.ε ≤ (1 : Q) / (params.n + 2)) :
+    ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
+      S.F = F ∧ S.t = t ∧ S.ε = ε ∧
+        t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ∧
+        (0 : Q) ≤ ε ∧
+        ε ≤ (1 : Q) / (params.n + 2) := by
+  -- Мы буквально переупаковываем shrinkage-сертификат с явными оценками.
+  refine ⟨S.t, S.ε, S, ?_⟩
+  refine And.intro hF ?_
+  refine And.intro rfl ?_
+  refine And.intro rfl ?_
+  exact And.intro ht (And.intro hε0 hε)
+
+-- Вариант на случай, когда shrinkage выдан как часть `LocalCircuitWitness`.
+-- Он нужен как "короткий переход" для существующих конструкций.
+lemma shrinkage_for_localCircuit_of_witness
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (witness : LocalCircuitWitness params F) :
+    ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
+      S.F = F ∧ S.t = t ∧ S.ε = ε ∧
+        t ≤ params.ℓ * (Nat.log2 (params.M + 2) + params.depth + 1) ∧
+        (0 : Q) ≤ ε ∧
+        ε ≤ (1 : Q) / (params.n + 2) := by
+  -- Разворачиваем свидетель и применяем общий "shrinkage → тройка" конструктор.
+  exact
+    shrinkage_for_localCircuit_of_shrinkage
+      (params := params)
+      (F := F)
+      (S := witness.shrinkage)
+      (hF := witness.family_eq)
+      (ht := witness.depth_le)
+      (hε0 := witness.epsilon_nonneg)
+      (hε := witness.epsilon_le_inv)
+
 theorem shrinkage_for_localCircuit
     (params : LocalCircuitParameters) (F : Family params.n)
     (hF : FamilyIsLocalCircuit params F) :
@@ -960,12 +1115,46 @@ theorem shrinkage_for_localCircuit
         (0 : Q) ≤ ε ∧
         ε ≤ (1 : Q) / (params.n + 2) := by
   classical
-  obtain ⟨witness⟩ := hF
-  refine ⟨witness.shrinkage.t, witness.shrinkage.ε, witness.shrinkage, ?_⟩
-  refine And.intro witness.family_eq ?_
-  refine And.intro rfl ?_
-  refine And.intro rfl ?_
-  exact And.intro witness.depth_le (And.intro witness.epsilon_nonneg witness.epsilon_le_inv)
+  -- Раскручиваем эквивалентность: локальность ≡ наличие shrinkage-сертификата.
+  -- Так доказательство «складывается» из одной общей леммы и не зависит от
+  -- внутреннего устройства `LocalCircuitWitness`.
+  rcases (familyIsLocalCircuit_iff_shrinkage params F).1 hF with
+    ⟨S, hF, ht, hε0, hε⟩
+  -- Используем единую оболочку для shrinkage, чтобы всё сводилось к одному месту.
+  exact
+    shrinkage_for_localCircuit_of_shrinkage
+      (params := params)
+      (F := F)
+      (S := S)
+      (hF := hF)
+      (ht := ht)
+      (hε0 := hε0)
+      (hε := hε)
+
+/--
+  Упаковка shrinkage‑сертификата для локальных схем, полученного из AC⁰.
+  Это удобный вариант, если downstream ждёт именно тройку `(t, ε, S)`.
+-/
+lemma shrinkage_for_localCircuit_of_AC0
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
+      S.F = F ∧ S.t = t ∧ S.ε = ε ∧
+        t ≤ (LocalCircuitParameters.ofAC0 params).ℓ *
+          (Nat.log2 (params.M + 2) + params.d + 1) ∧
+        (0 : Q) ≤ ε ∧
+        ε ≤ (1 : Q) / (params.n + 2) := by
+  classical
+  -- Получаем локальный witness через AC⁰‑shrinkage и раскрываем его.
+  have hLocal : FamilyIsLocalCircuit (LocalCircuitParameters.ofAC0 params) F :=
+    familyIsLocalCircuit_of_AC0 (params := params) (F := F) hF
+  -- Переводим `FamilyIsLocalCircuit` в требуемую тройку.
+  -- Используем уже существующий `shrinkage_for_localCircuit`.
+  simpa [LocalCircuitParameters.ofAC0] using
+    shrinkage_for_localCircuit
+      (params := LocalCircuitParameters.ofAC0 params)
+      (F := F)
+      hLocal
 
 /--
 Построение `LocalCircuitWitness` теперь сводится к извлечению готового
@@ -978,6 +1167,52 @@ noncomputable def localCircuitWitness
     LocalCircuitWitness params F := by
   classical
   exact Classical.choice hF
+
+/-!
+  ## SAL-ready packaging for local circuits
+
+  Леммы ниже аккуратно извлекают `CommonPDT` и атлас из shrinkage-факта
+  для локальных схем.  Это точно тот же «переход к SAL», что и в AC⁰‑ветке,
+  но теперь параметризован локальными ограничениями.
+
+  Важно: мы не раскрываем внутреннюю структуру `LocalCircuitWitness` и не
+  предполагаем ничего, кроме уже имеющегося shrinkage‑сертификата.
+-/
+
+/-- Общий PDT, полученный из shrinkage‑свидетельства локальных схем. -/
+noncomputable def commonPDT_from_localCircuit
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (hF : FamilyIsLocalCircuit params F) : Core.CommonPDT params.n F := by
+  classical
+  -- Извлекаем shrinkage‑свидетеля и приводим тип через `family_eq`.
+  let witness := localCircuitWitness params F hF
+  exact cast
+    (congrArg (fun F' => Core.CommonPDT params.n F') witness.family_eq)
+    witness.shrinkage.commonPDT
+
+/-- Общий PDT для локальных схем задаёт рабочий атлас. -/
+theorem commonPDT_from_localCircuit_works
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (hF : FamilyIsLocalCircuit params F) :
+    WorksFor
+      (Core.CommonPDT.toAtlas (commonPDT_from_localCircuit params F hF)) F := by
+  classical
+  simpa using (Core.CommonPDT.worksFor
+    (C := commonPDT_from_localCircuit params F hF))
+
+/-- Удобная оболочка: атлас, извлечённый из shrinkage локальных схем. -/
+noncomputable def atlas_from_localCircuit
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (hF : FamilyIsLocalCircuit params F) : Atlas params.n :=
+  Core.CommonPDT.toAtlas (commonPDT_from_localCircuit params F hF)
+
+/-- Атлас для локальных схем действительно работает на всём семействе. -/
+theorem atlas_from_localCircuit_works
+    (params : LocalCircuitParameters) (F : Family params.n)
+    (hF : FamilyIsLocalCircuit params F) :
+    WorksFor (atlas_from_localCircuit params F hF) F := by
+  simpa [atlas_from_localCircuit] using (Core.CommonPDT.worksFor
+    (C := commonPDT_from_localCircuit params F hF))
 
 /--
   Техническая лемма: при любом `n` имеем `1 / (n + 2) ≤ 1 / 2`.

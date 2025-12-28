@@ -1064,12 +1064,242 @@ namespace Restriction
 
 variable {n : Nat}
 
+-- Для подсчётов удобно иметь `Fintype`-инстанс для всех рестрикций.
+instance (n : Nat) : Fintype (Restriction n) := by
+  classical
+  refine Fintype.ofEquiv (Subcube n) ?_
+  refine
+    { toFun := fun mask => { mask := mask }
+      invFun := Restriction.mask
+      left_inv := by intro mask; rfl
+      right_inv := by intro ρ; rfl }
+
+-- Кардинал всех рестрикций равен `3^n`, поскольку каждая координата имеет три
+-- варианта (`*`, `0`, `1`).  Это пригодится при комбинаторных подсчётах
+-- вероятности в Switching Lemma.
+lemma card_restriction (n : Nat) : Fintype.card (Restriction n) = 3 ^ n := by
+  classical
+  -- Сводим к `Subcube n = Fin n → Option Bool`.
+  let e : Restriction n ≃ Subcube n :=
+    { toFun := Restriction.mask
+      invFun := fun mask => { mask := mask }
+      left_inv := by intro ρ; rfl
+      right_inv := by intro mask; rfl }
+  -- Кардинал функции равен `|Option Bool|^n = 3^n`.
+  have hcard : Fintype.card (Subcube n) = 3 ^ n := by
+    simpa [Subcube, Fintype.card_fun, Fintype.card_bool] using
+      (Fintype.card_fun (α := Fin n) (β := Option Bool))
+  simpa [hcard] using (Fintype.card_congr e)
+
+
 /-- Полностью свободное ограничение. -/
 @[simp] def free (n : Nat) : Restriction n :=
   { mask := fun _ => none }
 
 /-- Три варианта для каждой координаты: `*`, `0`, `1`. -/
 @[simp] def optionChoices : List (Option Bool) := [none, some false, some true]
+
+/--
+Множество зафиксированных координат рестрикции.
+
+Мы используем фильтрацию по `Option.isSome`: координата принадлежит `fixedPositions`,
+если соответствующий бит подкуба задан явно.
+-/
+@[simp] def fixedPositions (ρ : Restriction n) : Finset (Fin n) :=
+  (Finset.univ : Finset (Fin n)).filter (fun i => (ρ.mask i).isSome)
+
+/--
+Множество свободных координат рестрикции.
+
+Это комплементарное множество к `fixedPositions`: координата свободна тогда и
+только тогда, когда в маске стоит `none`.
+-/
+@[simp] def freePositions (ρ : Restriction n) : Finset (Fin n) :=
+  (Finset.univ : Finset (Fin n)).filter (fun i => (ρ.mask i).isNone)
+
+/-- Число зафиксированных координат. -/
+@[simp] def fixedCount (ρ : Restriction n) : Nat :=
+  ρ.fixedPositions.card
+
+/-- Характеризация принадлежности `fixedPositions`. -/
+@[simp] lemma mem_fixedPositions {ρ : Restriction n} {i : Fin n} :
+    i ∈ ρ.fixedPositions ↔ (ρ.mask i).isSome := by
+  classical
+  simp [fixedPositions]
+
+/-- Характеризация принадлежности `freePositions`. -/
+@[simp] lemma mem_freePositions {ρ : Restriction n} {i : Fin n} :
+    i ∈ ρ.freePositions ↔ (ρ.mask i).isNone := by
+  classical
+  simp [freePositions]
+
+@[ext] lemma ext {ρ σ : Restriction n} (h : ∀ i, ρ.mask i = σ.mask i) : ρ = σ := by
+  cases ρ with
+  | mk ρmask =>
+      cases σ with
+      | mk σmask =>
+          have hmask : ρmask = σmask := funext h
+          cases hmask
+          rfl
+
+/--
+Построить рестрикцию с заранее заданным множеством свободных координат.
+
+Мы передаём функцию, которая назначает значения **только** на фиксированной
+части (дополнение `free`). На свободных координатах маска всегда `none`.
+-/
+def restrictionOfFree (free : Finset (Fin n))
+    (assign : {i : Fin n // i ∉ free} → Bool) : Restriction n :=
+  { mask := fun i =>
+      if h : i ∈ free then
+        none
+      else
+        some (assign ⟨i, h⟩) }
+
+lemma restrictionOfFree_mask_of_mem
+    (free : Finset (Fin n)) (assign : {i : Fin n // i ∉ free} → Bool)
+    {i : Fin n} (hmem : i ∈ free) :
+    (restrictionOfFree free assign).mask i = none := by
+  simp [restrictionOfFree, hmem]
+
+lemma restrictionOfFree_mask_of_not_mem
+    (free : Finset (Fin n)) (assign : {i : Fin n // i ∉ free} → Bool)
+    {i : Fin n} (hmem : i ∉ free) :
+    (restrictionOfFree free assign).mask i = some (assign ⟨i, hmem⟩) := by
+  simp [restrictionOfFree, hmem]
+
+/--
+У `restrictionOfFree` множество свободных координат совпадает с `free`.
+-/
+lemma freePositions_restrictionOfFree
+    (free : Finset (Fin n)) (assign : {i : Fin n // i ∉ free} → Bool) :
+    (restrictionOfFree free assign).freePositions = free := by
+  classical
+  ext i
+  by_cases hmem : i ∈ free
+  · -- На свободных координатах маска равна `none`.
+    simp [Restriction.freePositions, restrictionOfFree, hmem]
+  · -- Вне `free` маска равна `some`, значит `isNone` ложно.
+    simp [Restriction.freePositions, restrictionOfFree, hmem]
+
+/--
+Из рестрикции с фиксированным множеством свободных координат извлекаем
+значения на фиксированной части.
+-/
+def assignOfRestriction
+    (free : Finset (Fin n)) (ρ : Restriction n)
+    (_hfree : ρ.freePositions = free) :
+    {i : Fin n // i ∉ free} → Bool :=
+  fun i => (ρ.mask i.1).getD false
+
+/--
+Эквивалентность между функциями на фиксированной части и рестрикциями с
+фиксированным множеством свободных координат.
+-/
+noncomputable def restrictionOfFreeEquiv
+    (free : Finset (Fin n)) :
+    ({i : Fin n // i ∉ free} → Bool) ≃
+      {ρ : Restriction n // ρ.freePositions = free} :=
+  { toFun := fun assign => ⟨restrictionOfFree free assign,
+      freePositions_restrictionOfFree free assign⟩
+    invFun := fun ρ => assignOfRestriction free ρ.1 ρ.2
+    left_inv := by
+      intro assign
+      funext i
+      -- Для фиксированной координаты маска всегда `some`.
+      cases i with
+      | mk i hmem =>
+          simp [assignOfRestriction, restrictionOfFree, hmem]
+    right_inv := by
+      intro ρ
+      apply Subtype.ext
+      apply Restriction.ext
+      intro i
+      by_cases hmem : i ∈ free
+      · -- На свободных координатах обе маски равны `none`.
+        have hfree : i ∈ ρ.1.freePositions := by
+          have hmem' := hmem
+          rw [← ρ.2] at hmem'
+          exact hmem'
+        have hmask : (ρ.1.mask i).isNone :=
+          (Restriction.mem_freePositions (ρ := ρ.1) (i := i)).1 hfree
+        have hmask' : ρ.1.mask i = none := (Option.isNone_iff_eq_none).1 hmask
+        simp [restrictionOfFree, hmem, hmask']
+      · -- На фиксированной части извлекаем значение из `ρ`.
+        cases h : ρ.1.mask i with
+        | none =>
+            have hmem' : i ∈ ρ.1.freePositions := by
+              have hnone : (ρ.1.mask i).isNone := by simpa [h]
+              exact (Restriction.mem_freePositions (ρ := ρ.1) (i := i)).2 hnone
+            have hmem'' : i ∈ free := by
+              exact (Eq.ndrec (motive := fun s => i ∈ s) hmem' ρ.2)
+            exact (hmem hmem'').elim
+        | some b =>
+            simp [assignOfRestriction, restrictionOfFree, hmem, h]
+  }
+
+/--
+Число рестрикций с фиксированным множеством свободных координат.
+-/
+lemma restrictions_with_freePositions_card
+    (free : Finset (Fin n)) :
+    Fintype.card {ρ : Restriction n // ρ.freePositions = free}
+      = 2 ^ (n - free.card) := by
+  classical
+  -- Сводим к функциям на дополнении `free`.
+  have hcard :
+      Fintype.card {ρ : Restriction n // ρ.freePositions = free}
+        = Fintype.card ({i : Fin n // i ∉ free} → Bool) :=
+    Fintype.card_congr (restrictionOfFreeEquiv free).symm
+  have hfun :
+      Fintype.card ({i : Fin n // i ∉ free} → Bool)
+        = 2 ^ Fintype.card {i : Fin n // i ∉ free} := by
+    simp [Fintype.card_fun]
+  have hcomp :
+      Fintype.card {i : Fin n // i ∉ free} = n - free.card := by
+    -- Переписываем через кардинал комплемента `free` в `Fin n`.
+    have hsub :
+        Fintype.card {i : Fin n // i ∉ free}
+          = (Finset.univ.filter fun i => i ∉ free).card := by
+      simpa using (Fintype.card_subtype (p := fun i : Fin n => i ∉ free))
+    have hfilter :
+        (Finset.univ.filter fun i => i ∉ free) = (Finset.univ \ free) := by
+      ext i
+      simp [Finset.mem_sdiff]
+    have hsdiff :
+        (Finset.univ \ free).card = (Finset.univ : Finset (Fin n)).card - free.card := by
+      exact Finset.card_sdiff (by simp)
+    have huniv : (Finset.univ : Finset (Fin n)).card = n := by
+      simpa using (Finset.card_univ (α := Fin n))
+    calc
+      Fintype.card {i : Fin n // i ∉ free}
+          = (Finset.univ \ free).card := by simpa [hfilter] using hsub
+      _ = (Finset.univ : Finset (Fin n)).card - free.card := hsdiff
+      _ = n - free.card := by simpa [huniv]
+  calc
+    Fintype.card {ρ : Restriction n // ρ.freePositions = free}
+        = Fintype.card ({i : Fin n // i ∉ free} → Bool) := hcard
+    _ = 2 ^ Fintype.card {i : Fin n // i ∉ free} := hfun
+    _ = 2 ^ (n - free.card) := by simp [hcomp, Fintype.card_bool]
+
+/--
+Оценка сверху: число зафиксированных координат не превосходит `n`.
+Эта лемма будет использоваться при грубых комбинаторных оценках для
+числа рестрикций.
+-/
+lemma fixedCount_le (ρ : Restriction n) : ρ.fixedCount ≤ n := by
+  classical
+  -- `card` фильтра не превосходит `card` всего множества.
+  have hcard :
+      ρ.fixedPositions.card ≤ (Finset.univ : Finset (Fin n)).card := by
+    simpa [fixedPositions] using
+      (Finset.card_filter_le
+        (s := (Finset.univ : Finset (Fin n)))
+        (p := fun i => (ρ.mask i).isSome))
+  -- У универсума кардинал равен `n`.
+  have huniv : (Finset.univ : Finset (Fin n)).card = n := by
+    simpa using (Finset.card_univ (α := Fin n))
+  simpa [fixedCount, huniv] using hcard
 
 /-- Применение ограничения к вектору: зафиксированные координаты затираются. -/
 @[simp] def override (ρ : Restriction n) (x : BitVec n) : BitVec n :=
@@ -1255,9 +1485,7 @@ lemma mask_eq_some_of_not_none {ρ : Restriction n} {i : Fin n}
   | none => cases h <| by simpa [hmask]
   | some b => exact ⟨b, rfl⟩
 
-/-/
-Список свободных координат (там, где маска равна `none`).
--/
+/-- Список свободных координат (там, где маска равна `none`). -/
 def freeIndicesList (ρ : Restriction n) : List (Fin n) :=
   (List.finRange n).filter (fun i => decide (ρ.mask i = none))
 
@@ -1273,9 +1501,7 @@ def freeIndicesList (ρ : Restriction n) : List (Fin n) :=
     refine List.mem_filter.mpr ?_
     exact ⟨List.mem_finRange _, (decide_eq_true_iff (p := ρ.mask i = none)).mpr hnone⟩
 
-/-/
-Число свободных координат.
--/
+/-- Число свободных координат. -/
 @[simp] def freeCount (ρ : Restriction n) : Nat := ρ.freeIndicesList.length
 
 lemma freeCount_le (ρ : Restriction n) : ρ.freeCount ≤ n := by
@@ -1296,6 +1522,226 @@ lemma freeIndicesList_nodup (ρ : Restriction n) : ρ.freeIndicesList.Nodup := b
   unfold freeIndicesList
   simpa using (List.nodup_finRange n).filter
     (fun i => decide (ρ.mask i = none))
+
+/--
+Свободные координаты как `Finset`: `freePositions` совпадает с
+`freeIndicesList.toFinset`.
+
+Мы сознательно доказываем через поэлементное равенство: membership в `Finset`
+редуцируется к `mask i = none` (для списка) и к `Option.isNone` (для `Finset`),
+после чего используется `Option.isNone_iff_eq_none`.
+-/
+lemma freePositions_eq_toFinset_freeIndicesList (ρ : Restriction n) :
+    ρ.freeIndicesList.toFinset = ρ.freePositions := by
+  classical
+  ext i
+  -- Сводим обе стороны к утверждению о значении маски.
+  constructor
+  · intro hi
+    -- Левая часть: `i` в `freeIndicesList` ↔ `mask i = none`.
+    have hmask : ρ.mask i = none :=
+      (Restriction.mem_freeIndicesList (ρ := ρ) (i := i)).1 (by
+        -- В `Finset` membership означает membership в исходном списке.
+        simpa using hi)
+    -- Переводим `mask i = none` в `isNone` и возвращаемся к `freePositions`.
+    exact (Restriction.mem_freePositions (ρ := ρ) (i := i)).2
+      ((Option.isNone_iff_eq_none).2 hmask)
+  · intro hi
+    -- Правая часть: `i` в `freePositions` ↔ `mask i` равно `none`.
+    have hmask : ρ.mask i = none := by
+      -- В `freePositions` membership эквивалентен `isNone`.
+      have hnone : (ρ.mask i).isNone := (Restriction.mem_freePositions (ρ := ρ) (i := i)).1 hi
+      exact (Option.isNone_iff_eq_none).1 hnone
+    -- Возвращаемся к membership в списке и затем в `Finset`.
+    have hmem : i ∈ ρ.freeIndicesList :=
+      (Restriction.mem_freeIndicesList (ρ := ρ) (i := i)).2 hmask
+    simpa using hmem
+
+/--
+Число свободных координат, выраженное через `Finset.card`.
+
+Это удобная связка между списковым `freeCount` и `freePositions`.
+-/
+lemma freePositions_card_eq_freeCount (ρ : Restriction n) :
+    ρ.freePositions.card = ρ.freeCount := by
+  classical
+  -- `freeIndicesList` не содержит повторов, поэтому `toFinset.card` равен длине списка.
+  have hnodup := freeIndicesList_nodup (ρ := ρ)
+  have hcard : ρ.freeIndicesList.toFinset.card = ρ.freeIndicesList.length := by
+    simpa [List.dedup_eq_self.2 hnodup] using
+      (List.card_toFinset ρ.freeIndicesList)
+  -- Явно переписываем `freePositions` в сторону `freeIndicesList.toFinset`,
+  -- чтобы не зависеть от направления `simp`.
+  have hpos : ρ.freePositions = ρ.freeIndicesList.toFinset := by
+    simpa using (freePositions_eq_toFinset_freeIndicesList (ρ := ρ)).symm
+  -- Финализируем через длину списка.
+  calc
+    ρ.freePositions.card = ρ.freeIndicesList.toFinset.card := by
+      rw [hpos]
+    _ = ρ.freeIndicesList.length := hcard
+    _ = ρ.freeCount := rfl
+
+/--
+Число рестрикций, оставляющих ровно `s` свободных координат.
+-/
+lemma restrictions_with_freeCount_card
+    (s : Nat) :
+    Fintype.card {ρ : Restriction n // ρ.freeCount = s}
+      = Nat.choose n s * 2 ^ (n - s) := by
+  classical
+  -- Переформулируем через `freePositions.card = s`.
+  have hpos :
+      Fintype.card {ρ : Restriction n // ρ.freeCount = s}
+        = Fintype.card {ρ : Restriction n // ρ.freePositions.card = s} := by
+    refine Fintype.card_congr ?_
+    refine
+      { toFun := fun ρ => ⟨ρ.1, by simpa [freePositions_card_eq_freeCount] using ρ.2⟩
+        invFun := fun ρ => ⟨ρ.1, by simpa [freePositions_card_eq_freeCount] using ρ.2⟩
+        left_inv := by intro ρ; rfl
+        right_inv := by intro ρ; rfl }
+  -- Разбиваем по выбору множества свободных координат размера `s`.
+  let FreeSet := {free : Finset (Fin n) // free.card = s}
+  have hsplit :
+      Fintype.card {ρ : Restriction n // ρ.freePositions.card = s}
+        = Fintype.card (Σ free : FreeSet, {ρ : Restriction n // ρ.freePositions = free.1}) := by
+    refine Fintype.card_congr ?_
+    refine
+      { toFun := fun ρ =>
+          ⟨⟨ρ.1.freePositions, by simpa using ρ.2⟩, ⟨ρ.1, rfl⟩⟩
+        invFun := fun ρ =>
+          ⟨ρ.2.1, by
+            have hcard' :
+                ρ.2.1.freePositions.card = ρ.1.1.card := by
+              simpa using congrArg Finset.card ρ.2.2
+            exact hcard'.trans ρ.1.2⟩
+        left_inv := by intro ρ; rfl
+        right_inv := by
+          intro ρ
+          cases ρ with
+          | mk free rest =>
+              cases rest with
+              | mk ρ hfree =>
+                  cases free with
+                  | mk free hcard =>
+                      cases hfree
+                      rfl }
+  -- Кардинал сигмы: сумма по всем `free`.
+  have hsum :
+      Fintype.card (Σ free : FreeSet, {ρ : Restriction n // ρ.freePositions = free.1})
+        = ∑ free : FreeSet, Fintype.card {ρ : Restriction n // ρ.freePositions = free.1} := by
+    simpa using (Fintype.card_sigma (α := FreeSet)
+      (β := fun free => {ρ : Restriction n // ρ.freePositions = free.1}))
+  -- Число множеств размера `s` равно биному.
+  have hfree_card :
+      Fintype.card FreeSet = Nat.choose n s := by
+    have hcard :
+        Fintype.card FreeSet
+          = (Finset.univ.filter fun free : Finset (Fin n) => free.card = s).card := by
+      simpa [FreeSet] using
+        (Fintype.card_subtype (p := fun free : Finset (Fin n) => free.card = s))
+    have hfilter :
+        (Finset.univ.filter fun free : Finset (Fin n) => free.card = s)
+          = (Finset.univ : Finset (Fin n)).powersetCard s := by
+      ext free
+      simp [Finset.mem_powersetCard]
+    calc
+      Fintype.card FreeSet
+          = (Finset.univ.filter fun free : Finset (Fin n) => free.card = s).card := hcard
+      _ = ((Finset.univ : Finset (Fin n)).powersetCard s).card := by simpa [hfilter]
+      _ = Nat.choose n s := by
+          simpa [Finset.card_univ] using
+            (Finset.card_powersetCard (n := s) (s := (Finset.univ : Finset (Fin n))))
+  -- Теперь собираем всё вместе.
+  calc
+    Fintype.card {ρ : Restriction n // ρ.freeCount = s}
+        = Fintype.card {ρ : Restriction n // ρ.freePositions.card = s} := hpos
+    _ = Fintype.card (Σ free : FreeSet, {ρ : Restriction n // ρ.freePositions = free.1}) := hsplit
+    _ = ∑ free : FreeSet, Fintype.card {ρ : Restriction n // ρ.freePositions = free.1} := hsum
+    _ = ∑ _free : FreeSet, 2 ^ (n - s) := by
+          -- Для каждого `free` с `free.card = s` кардинал одинаковый.
+          refine Finset.sum_congr rfl ?_
+          intro free _hmem
+          have hcard : Fintype.card {ρ : Restriction n // ρ.freePositions = free.1}
+              = 2 ^ (n - free.1.card) := restrictions_with_freePositions_card (free := free.1)
+          simpa [free.2] using hcard
+    _ = Fintype.card FreeSet * 2 ^ (n - s) := by
+          simpa using (Finset.sum_const (2 ^ (n - s)) (s := (Finset.univ : Finset FreeSet)))
+    _ = Nat.choose n s * 2 ^ (n - s) := by
+          simpa [hfree_card]
+
+lemma fixedPositions_disjoint_freePositions (ρ : Restriction n) :
+    Disjoint ρ.fixedPositions ρ.freePositions := by
+  classical
+  refine Finset.disjoint_left.2 ?_
+  intro i hi_fixed hi_free
+  have hs : (ρ.mask i).isSome := (mem_fixedPositions (ρ := ρ) (i := i)).1 hi_fixed
+  have hn : (ρ.mask i).isNone := (mem_freePositions (ρ := ρ) (i := i)).1 hi_free
+  cases h : ρ.mask i with
+  | none =>
+      -- `isSome` противоречит `mask i = none`.
+      have : False := by
+        simpa [Option.isSome, Option.isNone, h] using hs
+      exact this
+  | some b =>
+      -- `isNone` противоречит `mask i = some b`.
+      have : False := by
+        simpa [Option.isSome, Option.isNone, h] using hn
+      exact this
+
+lemma fixed_union_free (ρ : Restriction n) :
+    ρ.fixedPositions ∪ ρ.freePositions = (Finset.univ : Finset (Fin n)) := by
+  classical
+  ext i
+  by_cases h : ρ.mask i = none
+  · simp [fixedPositions, freePositions, h]
+  · have hs : (ρ.mask i).isSome := by
+      cases hmask : ρ.mask i with
+      | none =>
+          cases h (by simp [hmask])
+      | some b =>
+          simp [hmask]
+    simp [fixedPositions, freePositions, h, hs]
+
+/--
+Разбиение координат на фиксированные и свободные:
+`fixedCount + freeCount = n`.
+
+Это базовая комбинаторная формула для подсчёта рестрикций.
+-/
+lemma fixedCount_add_freeCount (ρ : Restriction n) :
+    ρ.fixedCount + ρ.freeCount = n := by
+  classical
+  -- Используем стандартное разбиение через `filter`.
+  -- Здесь `p` выбирает фиксированные координаты (`isSome`), а `¬ p`
+  -- выбирает свободные (`isNone`).
+  have hcard :=
+    Finset.filter_card_add_filter_neg_card_eq_card
+      (s := (Finset.univ : Finset (Fin n)))
+      (p := fun i => (ρ.mask i).isSome)
+  have hneg :
+      (Finset.univ : Finset (Fin n)).filter (fun i => ¬ (ρ.mask i).isSome)
+        = ρ.freePositions := by
+    ext i
+    -- `¬ isSome` эквивалентно `isNone`, а у `freePositions` именно эта фильтрация.
+    cases h : ρ.mask i <;> simp [freePositions, h]
+  have hfixed :
+      (Finset.univ : Finset (Fin n)).filter (fun i => (ρ.mask i).isSome)
+        = ρ.fixedPositions := by
+    ext i
+    simp [fixedPositions]
+  -- Избавляемся от `simp` с большим числом переписок, чтобы не упираться
+  -- в лимит глубины.
+  have hcard' := hcard
+  -- Переписываем фильтры через `fixedPositions`/`freePositions`.
+  rw [hfixed, hneg] at hcard'
+  -- Приводим к `fixedCount` и `freePositions.card`.
+  have hcard'' : ρ.fixedCount + ρ.freePositions.card = (Finset.univ : Finset (Fin n)).card := by
+    simpa [fixedCount] using hcard'
+  -- Кардинал `Finset.univ` равен `n` для `Fin n`.
+  have huniv : (Finset.univ : Finset (Fin n)).card = n := by
+    simpa using (Finset.card_univ (α := Fin n))
+  have hcard_final : ρ.fixedCount + ρ.freePositions.card = n := hcard''.trans huniv
+  simpa [freePositions_card_eq_freeCount] using hcard_final
 
 lemma assign_some_of_mem_freeIndicesList {ρ : Restriction n} {i : Fin n}
     {b : Bool} (hmem : i ∈ ρ.freeIndicesList) :
@@ -1723,6 +2169,45 @@ lemma weight_cons_sum (ρ : Restriction n) (p : Q) :
            Restriction.cons (some false) ρ,
            Restriction.cons (some true) ρ])
         (enumerate n)
+
+/--
+Сумма постоянной функции по списку: полезна для подсчёта длин `flatMap`.
+-/
+lemma sum_map_const_nat {α : Type _} (c : Nat) :
+    ∀ L : List α, (L.map (fun _ => c)).sum = c * L.length
+  | [] => by simp
+  | _ :: L => by
+      -- На шаге индукции приводим сумму к `c + c * |L|`.
+      simp [sum_map_const_nat c L, Nat.mul_add, Nat.add_mul, Nat.add_comm,
+        Nat.add_left_comm, Nat.add_assoc, Nat.mul_comm, Nat.mul_left_comm,
+        Nat.mul_assoc]
+
+/--
+Число всех ограничений размера `n` равно `3^n`.
+
+Эта оценка используется в комбинаторных подсчётах: на каждом шаге
+к маске добавляется ровно три продолжения (`*`, `0`, `1`).
+-/
+lemma enumerate_length : ∀ n, (Restriction.enumerate n).length = 3 ^ n
+  | 0 => by
+      simp [Restriction.enumerate]
+  | Nat.succ n => by
+      have ih := enumerate_length n
+      have hsum :
+          ((Restriction.enumerate n).map (fun _ => 3)).sum
+            = 3 * (Restriction.enumerate n).length := by
+        simpa using
+          (sum_map_const_nat (α := Restriction n) (c := 3)
+            (L := Restriction.enumerate n))
+      calc
+        (Restriction.enumerate (Nat.succ n)).length
+            = ((Restriction.enumerate n).map (fun _ => 3)).sum := by
+                -- Каждая маска даёт ровно три продолжения.
+                simp [Restriction.enumerate, List.length_flatMap]
+        _ = 3 * (Restriction.enumerate n).length := hsum
+        _ = 3 * 3 ^ n := by simpa [ih]
+        _ = 3 ^ (Nat.succ n) := by
+              simp [pow_succ, Nat.mul_comm]
 
 /--
 Полная масса распределения `𝓡_p` на уровне `n` — сумма весов всех ограничений.

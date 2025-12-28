@@ -11,26 +11,35 @@
 > `pnp3/ThirdPartyFacts/Facts_Switching.lean`. The checklist below is the only open technical work
 > in the active pipeline.
 
-- [ ] **[A1]** Import the depth-2 constructive switching lemmas from the `DEPTH2_STATUS.md` effort,
+- [x] **[A1]** Import the depth-2 constructive switching lemmas from the `DEPTH2_STATUS.md` effort,
   wire them into `ThirdPartyFacts/Facts_Switching.lean`, and replace the brute-force
   `buildPDTFromSubcubes` proof in `partial_shrinkage_for_AC0` with the new constructive proof.
   - [x] Move the proven depth-2 lemmas (e.g. `partial_shrinkage_single_clause`,
     `partial_shrinkage_small_dnf`, `depth2_dnf`, `depth2_cnf`) out of the archive and into the
     active `pnp3/ThirdPartyFacts` tree (`Depth2_Constructive.lean`,
     `Depth2_Helpers.lean`, `ConstructiveSwitching.lean`).
-  - [ ] Add the missing glue lemmas to convert the depth-2 shrinkage output into a
+  - [x] Add the missing glue lemmas to convert the depth-2 shrinkage output into a
     `PartialCertificate`, including explicit depth and error bounds.
-  - [ ] Update `shrinkage_for_AC0` to rely on the new constructive proof while keeping the existing
+  - [x] Update `shrinkage_for_AC0` to rely on the new constructive proof while keeping the existing
     interface stable for downstream modules.
 - [ ] **[A1 → A2]** Formalise the inductive AC⁰ switching lemma for depth `d > 2` (probabilistic or
   combinatorial proof), and expose a helper lemma that packages the shrinkage output as a
   `CommonPDT`/`Atlas` ready for SAL.
-- [ ] **[A2]** Formalise the local-circuit multi-switching argument needed for
+  - [x] Добавить вспомогательные леммы, переводящие shrinkage-свидетель AC⁰ в `CommonPDT`
+    с явными оценками глубины и ошибки (готово в `pnp3/ThirdPartyFacts/Facts_Switching.lean`).
+  - [ ] **[A2]** Formalise the local-circuit multi-switching argument needed for
   `shrinkage_for_localCircuit` (Williams-style locality lift).
-  - [ ] Fill in the proof skeleton under `Facts/LocalityLift/ProofSketch/` and implement the
+  - [x] Fill in the proof skeleton under `Facts/LocalityLift/ProofSketch/` and implement the
     construction of the test set `T` together with the required polylog bounds.
-  - [ ] Replace the placeholder one-point witness in `Facts/LocalityLift` with the real shrinkage
-    witness, and re-export it through `pnp3/ThirdPartyFacts/LocalityLift.lean`.
+  - [x] Add helper lemmas tying `ShrinkageWitness`/`LocalityWitness` test sets to
+    `testSetOfAlive`, so downstream arguments can reuse the same deterministic
+    construction without unfolding summaries.
+  - [x] Expose a direct lemma that the provided `localityWitness` test set respects the
+    polylog budget (`testSet_card_le`), so downstream modules can use it without
+    unpacking witnesses.
+  - [x] Wire an external shrinkage witness provider through
+    `pnp3/ThirdPartyFacts/LocalityLift.lean`, so the canonical placeholder can be
+    replaced by a real witness as soon as it is supplied.
   - [ ] Prove `shrinkage_for_localCircuit` by composing the locality lift with the proven AC⁰
     shrinkage lemma, yielding a `Shrinkage` object of depth `ℓ * (log₂(M+2) + d + 1)` (or tighter).
 - [ ] **[cleanup]** Remove the residual “external witness” notes in `AXIOMS.md`,

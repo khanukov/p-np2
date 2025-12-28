@@ -168,6 +168,45 @@ def ofRestriction
     simpa [Restriction.testSet, w.restriction_alive]
   exact hleft.trans hright.symm
 
+@[simp] lemma restriction_testSet_eq
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (w : ShrinkageWitness general) :
+    w.restriction.testSet = w.testSet := by
+  classical
+  -- Используем уже доказанное равенство тест-набора с тест-набором сводки.
+  -- Это полезно, когда shrinkage-свидетель поставляет конкретную рестрикцию,
+  -- а в дальнейшем нужен тест-набор `T`.
+  have h := summary_testSet_eq_restriction (w := w)
+  -- По определению `ShrinkageWitness` тест-набор сводки совпадает с `w.testSet`.
+  simpa using h.symm
+
+/-- Тест-набор shrinkage-свидетеля всегда равен `testSetOfAlive w.alive`. -/
+@[simp] lemma testSet_eq_testSetOfAlive
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (w : ShrinkageWitness general) :
+    w.testSet = testSetOfAlive w.alive := by
+  classical
+  -- `testSet_eq` есть у сводки, а `summary_testSet` связывает её с `w.testSet`.
+  have hsummary : w.summary.testSet = testSetOfAlive w.alive := by
+    simpa [w.summary_alive] using w.summary.testSet_eq
+  simpa [summary_testSet] using hsummary
+
+/-- Мощность тест-набора, извлечённого из рестрикции shrinkage-свидетеля,
+    ограничена тем же полилогарифмическим бюджетом. -/
+lemma restriction_testSet_card_le
+    {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}
+    (w : ShrinkageWitness general) :
+    w.restriction.testSet.card ≤ polylogBudget (inputLen p) := by
+  classical
+  -- Переводим утверждение к тест-набору из числовой сводки.
+  have hsummary : w.testSet.card ≤ polylogBudget (inputLen p) := by
+    simpa using w.summary.testSet_card_le
+  -- Поля `testSet` сводки и рестрикции совпадают.
+  calc
+    w.restriction.testSet.card = w.testSet.card := by
+      simpa using congrArg Finset.card (restriction_testSet_eq (w := w))
+    _ ≤ polylogBudget (inputLen p) := hsummary
+
 /-- Переводим шринкаж-свидетель в чертёж локального решателя. -/
 def toBlueprint
     {p : GapMCSPParams} {general : SmallGeneralCircuitSolver p}

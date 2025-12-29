@@ -1,6 +1,7 @@
 import Magnification.FinalResult
 import Magnification.Bridge_to_Magnification
 import Complexity.Interfaces
+import ThirdPartyFacts.Facts_Switching
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -23,3 +24,8 @@ open Pnp3.Magnification
 
 -- Базовая логическая связка `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
 #print axioms P_ne_NP_of_nonuniform_separation
+
+-- Проверяем, что ключевые shrinkage-леммы не тянут лишних аксиом.
+-- Это именно те утверждения, которые в TODO помечены для перепроверки.
+#print axioms ThirdPartyFacts.partial_shrinkage_for_AC0
+#print axioms ThirdPartyFacts.shrinkage_for_localCircuit

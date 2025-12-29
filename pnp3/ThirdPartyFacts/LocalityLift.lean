@@ -75,8 +75,9 @@ open Magnification
 
   Concretely, downstream code can supply an instance of
   `ExternalLocalityWitnessProvider`, and the `pnp3` bridge will automatically
-  route it into `Facts.LocalityLift`.  If no instance is provided, the external
-  package falls back to the canonical witness, keeping the current behaviour
+  route it into `Facts.LocalityLift`.  When no custom instance is available,
+  this module installs a constructive default that reuses the canonical
+  shrinkage witness from the external package.  This keeps the current behaviour
   unchanged while enabling a smooth upgrade path.
 -/
 
@@ -87,6 +88,23 @@ class ExternalLocalityWitnessProvider
   /-- The concrete shrinkage witness for the corresponding external solver. -/
   witness :
     Facts.LocalityLift.ShrinkageWitness (toFactsGeneralSolver solver)
+
+/-! ### Default (constructive) witness -/
+
+/-- Canonical shrinkage witness, re-expressed in the `pnp3` bridge. -/
+def defaultLocalityWitness
+    {p : Models.GapMCSPParams}
+    (solver : Magnification.SmallGeneralCircuitSolver p) :
+    Facts.LocalityLift.ShrinkageWitness (toFactsGeneralSolver solver) :=
+  Facts.LocalityLift.ShrinkageWitness.canonical
+    (p := toFactsParams p) (general := toFactsGeneralSolver solver)
+
+/-- Provide the canonical witness unless a custom instance overrides it. -/
+instance (priority := 80) defaultExternalLocalityWitnessProvider
+    {p : Models.GapMCSPParams}
+    (solver : Magnification.SmallGeneralCircuitSolver p) :
+    ExternalLocalityWitnessProvider solver :=
+  ⟨defaultLocalityWitness (solver := solver)⟩
 
 /-- If an external witness is available, use it as the `Facts.LocalityLift` provider. -/
 instance (priority := 50) shrinkageWitnessProviderOfExternal

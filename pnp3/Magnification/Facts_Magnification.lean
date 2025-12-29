@@ -105,74 +105,36 @@ def opsDefaultPack : OPSDefaultParamPack :=
   не являющийся решателем; корректность и семантика задаются отдельно в
   типе `SmallAC0Solver`.
 -/
-def defaultAC0Params (p : GapMCSPParams) : SmallAC0Params p :=
+def defaultAC0Params
+    (p : GapMCSPParams)
+    (hUnion :
+      let bound := Nat.pow 2
+        (ThirdPartyFacts.ac0DepthBound { n := Models.inputLen p, M := 1, d := 1 })
+      Counting.unionBound bound bound ≤
+        Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2))) :
+    SmallAC0Params p :=
   { ac0 := { n := Models.inputLen p,
               M := 1,
               d := 1 }
     same_n := rfl
     small :=
       by
-        -- Для `M = 1` грубая оценка `ac0DepthBound` равна 1.
-        -- Длина входа `inputLen p = 2^{p.n}` не меньше 1 для любого `p.n`.
-        -- `inputLen p = 2^{p.n}` всегда ≥ 1, так как основание ≥ 1.
-        have hlen : (1 : Nat) ≤ Models.inputLen p := by
-          have hpowPos : 0 < 2 ^ Models.GapMCSPParams.n p :=
-            Nat.pow_pos (by decide : 0 < (2 : Nat))
-          exact Nat.succ_le_of_lt (by simpa [Models.inputLen] using hpowPos)
-        -- Склеиваем равенство с оценкой `hlen`.
-        simpa [ThirdPartyFacts.AC0SmallEnough, ThirdPartyFacts.ac0DepthBound] using hlen
+        -- Для `M = 1` нужно показать `1 ≤ polylogBudget (inputLen p)`.
+        have hpos : 0 < Models.polylogBudget (Models.inputLen p) := by
+          -- `polylogBudget` — степень положительного числа, значит положителен.
+          have hbase : 0 < Nat.succ (Nat.log2 (Nat.succ (Models.inputLen p))) := by
+            exact Nat.succ_pos _
+          simpa [Models.polylogBudget] using (Nat.pow_pos hbase 4)
+        have hle : (1 : Nat) ≤ Models.polylogBudget (Models.inputLen p) :=
+          Nat.succ_le_of_lt hpos
+        simpa [ThirdPartyFacts.AC0SmallEnough, ThirdPartyFacts.ac0DepthBound] using hle
     union_small :=
       by
-        -- Для `M = 1` получаем `bound = 2`.
-        -- `unionBound 2 2 ≤ 4`, а правая часть ≥ `2^2 = 4` при `n ≥ 8`.
-        have hleft : Counting.unionBound 2 2 ≤ 4 := by
-          simpa using (Counting.unionBound_le_pow 2 2)
-        have hden_pos : 0 < Models.inputLen p + 2 := by
-          exact Nat.succ_pos (Models.inputLen p + 1)
-        -- `2 ≤ 2^N / (N+2)` при `N = 2^n`, `n ≥ 8`.
-        have hdiv_ge : 2 ≤
-            Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2) := by
-          have hN_ge : 8 ≤ Models.inputLen p := by
-            -- Из `n ≥ 8` получаем `2^n ≥ 2^8`.
-            have hpow := Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
-            have hpow' : Nat.pow 2 8 ≤ Models.inputLen p := by
-              simpa [Models.inputLen] using hpow
-            have h8 : 8 ≤ Nat.pow 2 8 := by decide
-            exact le_trans h8 hpow'
-          have hmul : 2 * (Models.inputLen p + 2) ≤
-              Nat.pow 2 (Models.inputLen p) := by
-            -- Усиливаем до `2 * N * (N+2) ≤ 2^N` и убираем множитель `N`.
-            have hmul_big :
-                2 * (Models.inputLen p) * (Models.inputLen p + 2) ≤
-                  Nat.pow 2 (Models.inputLen p) := by
-              -- Применяем оценку `twoPow_ge_twoMul_mul` на уровне `N`.
-              exact twoPow_ge_twoMul_mul _ hN_ge
-            -- Так как `N ≥ 1`, имеем `2*(N+2) ≤ 2*N*(N+2)`.
-            have hNpos : 1 ≤ Models.inputLen p := by
-              have hpowPos : 0 < Models.inputLen p := by
-                simpa [Models.inputLen] using
-                  (Nat.pow_pos (n := p.n) (by decide : 0 < (2 : Nat)))
-              exact Nat.succ_le_iff.mpr hpowPos
-            have hmul_le :
-                2 * (Models.inputLen p + 2)
-                  ≤ 2 * (Models.inputLen p) * (Models.inputLen p + 2) := by
-              nlinarith [hNpos]
-            exact hmul_le.trans hmul_big
-          exact (Nat.le_div_iff_mul_le hden_pos).2 hmul
-        have hmono :
-            Nat.pow 2 2 ≤
-              Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
-          exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdiv_ge
-        have hU : Counting.unionBound 2 2 ≤
-            Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
-          exact hleft.trans hmono
-        have hU' :
-            Counting.unionBound
-              (2 ^ (1 * 1))
-              (2 ^ (1 * 1))
-              ≤ Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2)) := by
-          simpa using hU
-        simpa using hU' }
+        -- `union_small` теперь зависит от `ac0DepthBound = polylogBudget`.
+        -- Для `M = 1` мы принимаем эту численную оценку как явное предположение
+        -- (см. параметр `hUnion`), чтобы не скрывать в "дефолтных" параметрах
+        -- дополнительную, не доказанную лемму о росте `polylogBudget`.
+        simpa using hUnion }
 
 /--
   Неуниформный решатель для GapMCSP, извлекаемый из предположения
@@ -420,7 +382,9 @@ noncomputable def coverWitness_from_antiChecker
         let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
         ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
           let scWitness :=
-            (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+            (scenarioFromAC0
+                (params := solver.params.ac0) (F := Fsolver) (hF := hF)
+                (hSmall := solver.params.small)).2
           let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
             solver.params.same_n.symm ▸ Y
           Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -431,7 +395,9 @@ noncomputable def coverWitness_from_antiChecker
       let Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
       ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
         let scWitness :=
-          (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+          (scenarioFromAC0
+              (params := solver.params.ac0) (F := Fsolver) (hF := hF)
+              (hSmall := solver.params.small)).2
         let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
           solver.params.same_n.symm ▸ Y
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -441,7 +407,9 @@ noncomputable def coverWitness_from_antiChecker
   let hF := Classical.choose h
   let hrest := Classical.choose_spec h
   set scSolver : BoundedAtlasScenario solver.params.ac0.n :=
-    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+    (scenarioFromAC0
+        (params := solver.params.ac0) (F := Fsolver) (hF := hF)
+        (hSmall := solver.params.small)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   -- Переписываем вывод аксиомы в явном виде, убирая `let`-связки.
@@ -491,7 +459,9 @@ noncomputable def coverWitness_from_antiChecker_testset
     Classical.choose hWitness
   let hrest := Classical.choose_spec hWitness
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
-    (scenarioFromAC0 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
+    (scenarioFromAC0
+        (params := solver.params.ac0) (F := Fsolver) (hF := hF)
+        (hSmall := solver.params.small)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=

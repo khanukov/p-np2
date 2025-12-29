@@ -784,15 +784,16 @@ lemma scenarioFromShrinkage_k_eq
 noncomputable def scenarioFromAC0
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
     Σ' _ : Nat, BoundedAtlasScenario params.n :=
   by
     classical
-    let S := ThirdPartyFacts.certificate_from_AC0 params F hF
+    let S := ThirdPartyFacts.certificate_from_AC0 params F hF hSmall
     let hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     let hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     let base :=
       scenarioFromShrinkage (n := params.n) (S := S) hε0 hε1
     have hFamily : base.2.family = S.F :=
@@ -800,7 +801,7 @@ noncomputable def scenarioFromAC0
         (n := params.n) (S := S) hε0 hε1
     have hSF : S.F = F :=
       ThirdPartyFacts.certificate_from_AC0_family
-        (params := params) (F := F) (hF := hF)
+        (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
     ·
       have hworksS : WorksFor base.2.atlas S.F :=
@@ -823,15 +824,17 @@ noncomputable def scenarioFromAC0
 lemma scenarioFromAC0_k_eq
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    (scenarioFromAC0 params F hF).2.k = (scenarioFromAC0 params F hF).1 := by
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    (scenarioFromAC0 params F hF hSmall).2.k =
+      (scenarioFromAC0 params F hF hSmall).1 := by
   classical
   unfold scenarioFromAC0
-  set S := ThirdPartyFacts.certificate_from_AC0 params F hF
+  set S := ThirdPartyFacts.certificate_from_AC0 params F hF hSmall
   set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   simp [scenarioFromShrinkage_k_eq]
 
 /-- Семейство функций в сценарии, построенном из факта `AC⁰ → shrinkage`,
@@ -841,8 +844,9 @@ lemma scenarioFromAC0_k_eq
 lemma scenarioFromAC0_family_eq
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    (scenarioFromAC0 params F hF).2.family = F := by
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    (scenarioFromAC0 params F hF hSmall).2.family = F := by
   classical
   unfold scenarioFromAC0
   simp
@@ -979,22 +983,23 @@ lemma scenarioFromShrinkage_dictLen_le_pow
 lemma scenarioFromAC0_k_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    (scenarioFromAC0 params F hF).1
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    (scenarioFromAC0 params F hF hSmall).1
       ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
   classical
   unfold scenarioFromAC0
-  set S := ThirdPartyFacts.certificate_from_AC0 params F hF
+  set S := ThirdPartyFacts.certificate_from_AC0 params F hF hSmall
   set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have hk_base :=
     scenarioFromShrinkage_k_le_pow
       (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
   have htBound :=
     ThirdPartyFacts.certificate_from_AC0_depth_bound
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have hpow_bound :
       Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
     have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
@@ -1008,7 +1013,7 @@ lemma scenarioFromAC0_k_le_pow
   have hresult := hk_base.trans hpow_bound
   have hrewrite :
       (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
-        = (scenarioFromAC0 params F hF).1 := by
+        = (scenarioFromAC0 params F hF hSmall).1 := by
     simp [scenarioFromAC0, S, hε0, hε1]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
@@ -1020,22 +1025,23 @@ lemma scenarioFromAC0_k_le_pow
 lemma scenarioFromAC0_dictLen_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    Counting.dictLen (scenarioFromAC0 params F hF).2.atlas.dict
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    Counting.dictLen (scenarioFromAC0 params F hF hSmall).2.atlas.dict
       ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
   classical
   unfold scenarioFromAC0
-  set S := ThirdPartyFacts.certificate_from_AC0 params F hF
+  set S := ThirdPartyFacts.certificate_from_AC0 params F hF hSmall
   set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have hdict_base :=
     scenarioFromShrinkage_dictLen_le_pow
       (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
   have htBound :=
     ThirdPartyFacts.certificate_from_AC0_depth_bound
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have hpow_bound :
       Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
     have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
@@ -1050,7 +1056,7 @@ lemma scenarioFromAC0_dictLen_le_pow
   have hrewrite :
       Counting.dictLen
           (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
-        = Counting.dictLen (scenarioFromAC0 params F hF).2.atlas.dict := by
+        = Counting.dictLen (scenarioFromAC0 params F hF hSmall).2.atlas.dict := by
     simp [scenarioFromAC0, S, hε0, hε1]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
@@ -1063,16 +1069,17 @@ lemma scenarioFromAC0_dictLen_le_pow
 lemma scenarioFromAC0_epsilon_eq
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    (scenarioFromAC0 params F hF).2.atlas.epsilon
-      = (ThirdPartyFacts.certificate_from_AC0 params F hF).ε := by
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    (scenarioFromAC0 params F hF hSmall).2.atlas.epsilon
+      = (ThirdPartyFacts.certificate_from_AC0 params F hF hSmall).ε := by
   classical
   unfold scenarioFromAC0
-  set S := ThirdPartyFacts.certificate_from_AC0 params F hF
+  set S := ThirdPartyFacts.certificate_from_AC0 params F hF hSmall
   set hε0 := ThirdPartyFacts.certificate_from_AC0_eps_nonneg
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   set hε1 := ThirdPartyFacts.certificate_from_AC0_eps_le_half
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   set base := scenarioFromShrinkage (n := params.n) S hε0 hε1
   have hbase : base.2.atlas.epsilon = S.ε :=
     scenarioFromShrinkage_epsilon_eq
@@ -1080,7 +1087,8 @@ lemma scenarioFromAC0_epsilon_eq
   -- Конструкция `scenarioFromAC0` меняет только поле `family`, поэтому ε
   -- совпадает с ε базового сценария `base`.
   have hsc :
-      (scenarioFromAC0 params F hF).2.atlas.epsilon = base.2.atlas.epsilon := by
+      (scenarioFromAC0 params F hF hSmall).2.atlas.epsilon
+        = base.2.atlas.epsilon := by
     unfold scenarioFromAC0
     simp [S, base]
   exact hsc.trans hbase
@@ -1099,9 +1107,10 @@ lemma scenarioFromAC0_epsilon_eq
 lemma scenarioFromAC0_completeBounds
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
     let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
-    let sc := scenarioFromAC0 params F hF
+    let sc := scenarioFromAC0 params F hF hSmall
     sc.1 ≤ bound ∧
       Counting.dictLen sc.2.atlas.dict ≤ bound ∧
       (0 : Core.Q) ≤ sc.2.atlas.epsilon ∧
@@ -1110,19 +1119,23 @@ lemma scenarioFromAC0_completeBounds
   classical
   intro bound sc
   -- Первая граница: параметр `k` ограничен степенью двух от глубины PDT.
-  have hk := scenarioFromAC0_k_le_pow (params := params) (F := F) (hF := hF)
+  have hk := scenarioFromAC0_k_le_pow
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   -- Вторая граница: длина словаря не превосходит того же значения.
-  have hdict := scenarioFromAC0_dictLen_le_pow (params := params) (F := F) (hF := hF)
+  have hdict := scenarioFromAC0_dictLen_le_pow
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   -- Погрешность неотрицательна и ≤ 1/2 по определению сценария.
   have hε0 := sc.2.hε0
   have hε1 := sc.2.hε1
   -- Для верхней оценки через `1/(n+2)` переписываем ε через shrinkage-сертификат.
-  have heq := scenarioFromAC0_epsilon_eq (params := params) (F := F) (hF := hF)
+  have heq := scenarioFromAC0_epsilon_eq
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have hεInv := ThirdPartyFacts.certificate_from_AC0_eps_bound
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have hεInv' : sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
     have hrewrite :
-        sc.2.atlas.epsilon = (ThirdPartyFacts.certificate_from_AC0 params F hF).ε := by
+        sc.2.atlas.epsilon =
+          (ThirdPartyFacts.certificate_from_AC0 params F hF hSmall).ε := by
       exact heq
     have hgoal := Eq.subst
       (motive := fun ε => ε ≤ (1 : Core.Q) / (params.n + 2))
@@ -1143,7 +1156,8 @@ lemma scenarioFromAC0_completeBounds
 theorem exists_boundedAtlas_from_AC0
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
     ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
       sc.family = F ∧
       k ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) ∧
@@ -1153,12 +1167,14 @@ theorem exists_boundedAtlas_from_AC0
       sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
       sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
-  let sc := scenarioFromAC0 params F hF
+  let sc := scenarioFromAC0 params F hF hSmall
   have hfamily : sc.2.family = F := by
     dsimp [sc]
-    exact scenarioFromAC0_family_eq (params := params) (F := F) (hF := hF)
+    exact scenarioFromAC0_family_eq
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have h_bounds :=
-    scenarioFromAC0_completeBounds (params := params) (F := F) (hF := hF)
+    scenarioFromAC0_completeBounds
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   dsimp [sc] at h_bounds
   rcases h_bounds with ⟨hk, hrest⟩
   rcases hrest with ⟨hdict, hrest⟩
@@ -1400,8 +1416,9 @@ theorem exists_boundedAtlas_from_localCircuit
 lemma scenarioFromAC0_stepAB_summary
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
-    let pack := scenarioFromAC0 params F hF
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    let pack := scenarioFromAC0 params F hF hSmall
     let sc := pack.2
     let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
     sc.family = F ∧
@@ -1416,9 +1433,10 @@ lemma scenarioFromAC0_stepAB_summary
   by
     classical
     intro pack sc bound
-    have hfamily := scenarioFromAC0_family_eq (params := params) (F := F) (hF := hF)
+    have hfamily := scenarioFromAC0_family_eq
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hbounds_raw := scenarioFromAC0_completeBounds
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hbounds :
         pack.1 ≤ bound ∧
           Counting.dictLen pack.2.atlas.dict ≤ bound ∧
@@ -1432,7 +1450,8 @@ lemma scenarioFromAC0_stepAB_summary
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
-    have hkEq := scenarioFromAC0_k_eq (params := params) (F := F) (hF := hF)
+    have hkEq := scenarioFromAC0_k_eq
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hkEq' : pack.2.k = pack.1 := by
       simpa [pack] using hkEq
     have hk' : sc.k ≤ bound := by
@@ -1556,14 +1575,16 @@ end ScenarioBudget
 noncomputable def scenarioBudgetFromAC0
     (params : ThirdPartyFacts.AC0Parameters)
     (F : Core.Family params.n)
-    (hF : ThirdPartyFacts.FamilyIsAC0 params F) :
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
     ScenarioBudget params.n F :=
   by
     classical
-    let packData := scenarioFromAC0 params F hF
+    let packData := scenarioFromAC0 params F hF hSmall
     let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
     have summaryPack :=
-      scenarioFromAC0_stepAB_summary (params := params) (F := F) (hF := hF)
+      scenarioFromAC0_stepAB_summary
+        (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hfamily_raw := summaryPack.1
     have hrest₁ := summaryPack.2
     have hk_raw := hrest₁.1

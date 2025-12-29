@@ -16,6 +16,7 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
 import AC0.Formulas
+import Models.Model_GapMCSP
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -82,24 +83,24 @@ structure AC0Parameters where
 
   На данном этапе формализация AC⁰ используется **только в depth‑2 смысле**:
   мы фактически моделируем DNF глубины 2 (OR‑от‑AND) с числом термов `M`.
-  Это временный, но полностью формальный «Stage‑1», где верхняя оценка
-  на глубину PDT грубо задаётся как `M²`.
+  Для дальнейшей интеграции с пайплайном мы уже задаём верхнюю границу
+  глубины PDT через `polylogBudget`, однако конструктивная depth‑2 логика
+  по‑прежнему использует оценку `M²` и потому требует явной малости.
 
-  Когда появится настоящая switching‑лемма (polylog‑оценка), этот блок
-  будет заменён на более сильный интерфейс, но **без массового переписывания**
-  downstream: именно поэтому внизу используются абстрактные оценочные
-  функции вроде `ac0DepthBound`.
+  Когда появится настоящая switching‑лемма (polylog‑оценка), это ограничение
+  будет снято: `ac0DepthBound` останется прежней точкой входа, а proof‑слой
+  перестанет зависеть от гипотезы о сравнении `M²` с полилогарифмом.
 -/
 
 /-!
   ## AC⁰ shrinkage API: стабильный Stage‑1 вход
 
   Этот блок является **точкой входа** для всего downstream‑пайплайна (SAL,
-  локальность, нижние оценки).  Мы сознательно фиксируем здесь Stage‑1
-  оценку `M²`, чтобы:
+  локальность, нижние оценки).  Мы сознательно фиксируем здесь полилогарифмическую
+  границу `polylogBudget`, чтобы:
 
-  * иметь полностью формальный, воспроизводимый «начальный» слой;
-  * сохранить единый интерфейс для последующей замены `M² → polylog`;
+  * иметь единый интерфейс, согласованный с финальной целью;
+  * локализовать все будущие улучшения switching‑леммы;
   * не ломать downstream‑доказательства при усилении оценки.
 
   Важно: всё, что ниже в файле опирается только на `ac0DepthBound`, а не
@@ -107,19 +108,15 @@ structure AC0Parameters where
 -/
 
 /--
-  Грубая численная оценка на глубину PDT для конструктивного depth‑2 случая.
+  Полилогарифмическая оценка на глубину PDT, согласованная с финальной целью.
 
-  Сейчас мы используем только глубину‑2 DNF, поэтому число подкубов
-  ограничено квадратично через `M`.  Позже, когда будет формализована
-  настоящая switching‑лемма, эту функцию можно заменить более сильной
-  (polylog) оценкой и переподключить downstream без массового переписывания.
+  Конструктивный depth‑2 блок по‑прежнему строит дерево из `M²` подкубов,
+  поэтому в доказательствах ниже появляется явное условие малости
+  `M² ≤ polylogBudget`.  После формализации multi‑switching‑леммы эта
+  гипотеза исчезнет, а `ac0DepthBound` останется неизменным.
 -/
 def ac0DepthBound (params : AC0Parameters) : Nat :=
-  params.M * params.M
-
-/-- Явная форма Stage‑1: `ac0DepthBound = M²`. Полезно для разъяснений. -/
-@[simp] lemma ac0DepthBound_eq_M2 (params : AC0Parameters) :
-    ac0DepthBound params = params.M * params.M := rfl
+  Models.polylogBudget params.n
 
 /-- Полный подкуб (никаких фиксированных битов). -/
 @[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none
@@ -363,14 +360,18 @@ def FamilyIsAC0 (params : AC0Parameters) (F : Family params.n) : Prop :=
   Nonempty (AC0FamilyWitness params F)
 
 /--
-  Предикат «малости» для AC⁰-параметров.  Он фиксирует грубое требование
-  на рост размера `M` относительно числа входных переменных
-  `n`: даже после применения грубой оценки `ac0DepthBound` результат остаётся
-  не больше `n`.  Это честная оценка для конструктивного depth-2 случая,
-  где глубина PDT строится как число подкубов.
+  Предикат «малости» для AC⁰-параметров.  На текущем depth‑2 этапе мы
+  строим PDT из `M²` подкубов, поэтому для совместимости с
+  `ac0DepthBound = polylogBudget` явно требуем:
+
+  `M² ≤ polylogBudget n`.
+
+  После появления полноценной switching‑леммы это условие станет не нужно:
+  глубина PDT будет сама ограничена `polylogBudget n` без дополнительной
+  малости.
 -/
 def AC0SmallEnough (ac0 : AC0Parameters) : Prop :=
-  ac0DepthBound ac0 ≤ ac0.n
+  ac0.M * ac0.M ≤ ac0DepthBound ac0
 
 /--
   Параметры для класса «локальных схем».  Мы сохраняем только наиболее
@@ -708,7 +709,8 @@ lemma subcube_eq_full_of_n_zero' {n : Nat} (hzero : n = 0) (β : Subcube n) :
 
 theorem partial_shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
       C.depthBound + ℓ ≤ ac0DepthBound params ∧
@@ -746,7 +748,9 @@ theorem partial_shrinkage_for_AC0
   have hlen_bound : allSubcubes.length ≤ ac0DepthBound params := by
     have hlen_circuits := witness.circuits_length_le
     have hmul := Nat.mul_le_mul_right params.M hlen_circuits
-    exact hlen_subcubes.trans (by simpa [ac0DepthBound] using hmul)
+    have hlen_M2 : allSubcubes.length ≤ params.M * params.M := by
+      exact hlen_subcubes.trans (by simpa using hmul)
+    exact hlen_M2.trans hSmall
   by_cases hpos : 0 < params.n
   · -- Случай n > 0: строим дерево по списку подкубов и сразу фиксируем глубину.
     let tree := buildPDTFromSubcubes hpos allSubcubes
@@ -890,10 +894,11 @@ structure AC0PartialWitness
 -/
 noncomputable def ac0PartialWitness
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     AC0PartialWitness params F := by
   classical
-  let h := partial_shrinkage_for_AC0 params F hF
+  let h := partial_shrinkage_for_AC0 params F hF hSmall
   let ℓ := Classical.choose h
   let rest := Classical.choose_spec h
   let C := Classical.choose rest
@@ -913,60 +918,66 @@ noncomputable def ac0PartialWitness
 /-- Высота хвостов частичного PDT из AC⁰-свидетельства. -/
 noncomputable def partialCertificate_level_from_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) : Nat :=
-  (ac0PartialWitness params F hF).level
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) : Nat :=
+  (ac0PartialWitness params F hF hSmall).level
 
 /-- Сам частичный shrinkage-сертификат из факта `partial_shrinkage_for_AC0`. -/
 noncomputable def partialCertificate_from_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     Core.PartialCertificate params.n
-      (partialCertificate_level_from_AC0 params F hF) F :=
-  (ac0PartialWitness params F hF).certificate
+      (partialCertificate_level_from_AC0 params F hF hSmall) F :=
+  (ac0PartialWitness params F hF hSmall).certificate
 
 /-- Ограничение на глубину хвостов: `ℓ ≤ log₂(M+2)`. -/
 lemma partialCertificate_level_from_AC0_le
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    partialCertificate_level_from_AC0 params F hF ≤ Nat.log2 (params.M + 2) := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    partialCertificate_level_from_AC0 params F hF hSmall ≤ Nat.log2 (params.M + 2) := by
   classical
-  change (ac0PartialWitness params F hF).level ≤ Nat.log2 (params.M + 2)
-  exact (ac0PartialWitness params F hF).level_le_log
+  change (ac0PartialWitness params F hF hSmall).level ≤ Nat.log2 (params.M + 2)
+  exact (ac0PartialWitness params F hF hSmall).level_le_log
 
 /-- Граница на суммарную глубину: `depthBound + ℓ` ограничена классической оценкой. -/
 lemma partialCertificate_depthBound_add_level_le
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (partialCertificate_from_AC0 params F hF).depthBound
-        + partialCertificate_level_from_AC0 params F hF
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (partialCertificate_from_AC0 params F hF hSmall).depthBound
+        + partialCertificate_level_from_AC0 params F hF hSmall
       ≤ ac0DepthBound params := by
   classical
   change
-      (ac0PartialWitness params F hF).certificate.depthBound
-        + (ac0PartialWitness params F hF).level
+      (ac0PartialWitness params F hF hSmall).certificate.depthBound
+        + (ac0PartialWitness params F hF hSmall).level
         ≤ ac0DepthBound params
-  exact (ac0PartialWitness params F hF).depth_le
+  exact (ac0PartialWitness params F hF hSmall).depth_le
 
 /-- Неотрицательность ошибки частичного сертификата. -/
 lemma partialCertificate_epsilon_nonneg
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (0 : Core.Q) ≤ (partialCertificate_from_AC0 params F hF).epsilon := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (0 : Core.Q) ≤ (partialCertificate_from_AC0 params F hF hSmall).epsilon := by
   classical
   change (0 : Core.Q)
-      ≤ (ac0PartialWitness params F hF).certificate.epsilon
-  exact (ac0PartialWitness params F hF).epsilon_nonneg
+      ≤ (ac0PartialWitness params F hF hSmall).certificate.epsilon
+  exact (ac0PartialWitness params F hF hSmall).epsilon_nonneg
 
 /-- Оценка ошибки сверху: `ε ≤ 1/(n+2)`. -/
 lemma partialCertificate_epsilon_le_inv
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (partialCertificate_from_AC0 params F hF).epsilon
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (partialCertificate_from_AC0 params F hF hSmall).epsilon
       ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
-  change (ac0PartialWitness params F hF).certificate.epsilon
+  change (ac0PartialWitness params F hF hSmall).certificate.epsilon
       ≤ (1 : Core.Q) / (params.n + 2)
-  exact (ac0PartialWitness params F hF).epsilon_le_inv
+  exact (ac0PartialWitness params F hF hSmall).epsilon_le_inv
 
 /-- Заготовка для "внешнего" факта: псевдослучайная multi-switching лемма
 Servedio–Tan/Håstad.  Возвращает объект `Shrinkage`, совместимый с конвейером
@@ -979,7 +990,8 @@ SAL.  Параметры оценок записаны максимально п
 комбинаторным ядром и оценками размера атласа. -/
 theorem shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
         t ≤ ac0DepthBound params ∧
@@ -988,8 +1000,8 @@ theorem shrinkage_for_AC0
   by
     classical
     -- извлекаем частичный сертификат и переводим его в shrinkage
-    let ℓ := partialCertificate_level_from_AC0 params F hF
-    let C := partialCertificate_from_AC0 params F hF
+    let ℓ := partialCertificate_level_from_AC0 params F hF hSmall
+    let C := partialCertificate_from_AC0 params F hF hSmall
     let S := Core.PartialCertificate.toShrinkage (n := params.n)
       (ℓ := ℓ) (F := F) C
     refine ⟨C.depthBound + ℓ, C.epsilon, S, ?_⟩
@@ -1007,11 +1019,11 @@ theorem shrinkage_for_AC0
     refine And.intro ht ?_
     -- оставшиеся численные границы
     have htBound := partialCertificate_depthBound_add_level_le
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hε0 := partialCertificate_epsilon_nonneg
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hεBound := partialCertificate_epsilon_le_inv
-      (params := params) (F := F) (hF := hF)
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     exact And.intro hε (And.intro htBound (And.intro hε0 hεBound))
 
 /--
@@ -1026,12 +1038,13 @@ theorem shrinkage_for_AC0
 -/
 lemma familyIsLocalCircuit_of_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     FamilyIsLocalCircuit (LocalCircuitParameters.ofAC0 params) F := by
   classical
   -- Из AC⁰‑shrinkage извлекаем сертификат `S`.
   obtain ⟨t, ε, S, hF', ht, hε, htBound, hε0, hεBound⟩ :=
-    shrinkage_for_AC0 params F hF
+    shrinkage_for_AC0 params F hF hSmall
   have hε0' : (0 : Q) ≤ S.ε := by
     simpa [hε] using hε0
   have hεBound' : S.ε ≤ (1 : Q) / (params.n + 2) := by
@@ -1137,7 +1150,8 @@ theorem shrinkage_for_localCircuit
 -/
 lemma shrinkage_for_localCircuit_of_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
         t ≤ (LocalCircuitParameters.ofAC0 params).ℓ *
@@ -1147,7 +1161,7 @@ lemma shrinkage_for_localCircuit_of_AC0
   classical
   -- Получаем локальный witness через AC⁰‑shrinkage и раскрываем его.
   have hLocal : FamilyIsLocalCircuit (LocalCircuitParameters.ofAC0 params) F :=
-    familyIsLocalCircuit_of_AC0 (params := params) (F := F) hF
+    familyIsLocalCircuit_of_AC0 (params := params) (F := F) hF hSmall
   -- Переводим `FamilyIsLocalCircuit` в требуемую тройку.
   -- Используем уже существующий `shrinkage_for_localCircuit`.
   simpa [LocalCircuitParameters.ofAC0] using
@@ -1242,9 +1256,10 @@ lemma eps_le_half_of_eps_le_inv_nplus2 (n : Nat) {ε : Q}
 -/
 noncomputable def certificate_from_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     Core.Shrinkage params.n :=
-  let witness := ac0PartialWitness params F hF
+  let witness := ac0PartialWitness params F hF hSmall
   Core.PartialCertificate.toShrinkage
     (n := params.n)
     (ℓ := witness.level)
@@ -1253,12 +1268,13 @@ noncomputable def certificate_from_AC0
 
 lemma certificate_from_AC0_depth_bound
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     (Core.Shrinkage.depthBound
-      (S := certificate_from_AC0 params F hF))
+      (S := certificate_from_AC0 params F hF hSmall))
       ≤ ac0DepthBound params := by
   classical
-  let witness := ac0PartialWitness params F hF
+  let witness := ac0PartialWitness params F hF hSmall
   have hbound := witness.depth_le
   have hrewrite := Core.PartialCertificate.toShrinkage_depth
     (n := params.n)
@@ -1268,19 +1284,20 @@ lemma certificate_from_AC0_depth_bound
   have htarget := Eq.subst
     (motive := fun t => t ≤ ac0DepthBound params)
     (Eq.symm hrewrite) hbound
-  change (certificate_from_AC0 params F hF).t
+  change (certificate_from_AC0 params F hF hSmall).t
       ≤ ac0DepthBound params
   dsimp [certificate_from_AC0, witness] at htarget ⊢
   exact htarget
 
 lemma certificate_from_AC0_eps_bound
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     Core.Shrinkage.errorBound
-      (S := certificate_from_AC0 params F hF)
+      (S := certificate_from_AC0 params F hF hSmall)
       ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
-  let witness := ac0PartialWitness params F hF
+  let witness := ac0PartialWitness params F hF hSmall
   have hbound := witness.epsilon_le_inv
   have hrewrite := Core.PartialCertificate.toShrinkage_epsilon
     (n := params.n)
@@ -1290,17 +1307,19 @@ lemma certificate_from_AC0_eps_bound
   have htarget := Eq.subst
     (motive := fun ε => ε ≤ (1 : Core.Q) / (params.n + 2))
     (Eq.symm hrewrite) hbound
-  change (certificate_from_AC0 params F hF).ε ≤ (1 : Core.Q) / (params.n + 2)
+  change (certificate_from_AC0 params F hF hSmall).ε
+      ≤ (1 : Core.Q) / (params.n + 2)
   dsimp [certificate_from_AC0, witness] at htarget ⊢
   exact htarget
 
 /-- Семейство в сертификате AC⁰ совпадает с исходным списком `F`. -/
 lemma certificate_from_AC0_family
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (certificate_from_AC0 params F hF).F = F := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (certificate_from_AC0 params F hF hSmall).F = F := by
   classical
-  let witness := ac0PartialWitness params F hF
+  let witness := ac0PartialWitness params F hF hSmall
   have h := Core.PartialCertificate.toShrinkage_family
     (n := params.n)
     (ℓ := witness.level)
@@ -1313,11 +1332,12 @@ lemma certificate_from_AC0_family
 /-- Ошибка сертификата AC⁰ неотрицательна.  Это важное условие для части B. -/
 lemma certificate_from_AC0_eps_nonneg
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     (0 : Core.Q) ≤ Core.Shrinkage.errorBound
-      (S := certificate_from_AC0 params F hF) := by
+      (S := certificate_from_AC0 params F hF hSmall) := by
   classical
-  let witness := ac0PartialWitness params F hF
+  let witness := ac0PartialWitness params F hF hSmall
   have h := witness.epsilon_nonneg
   have hrewrite := Core.PartialCertificate.toShrinkage_epsilon
     (n := params.n)
@@ -1327,131 +1347,145 @@ lemma certificate_from_AC0_eps_nonneg
   have hgoal := Eq.subst
     (motive := fun ε => (0 : Core.Q) ≤ ε)
     (Eq.symm hrewrite) h
-  change (0 : Core.Q) ≤ (certificate_from_AC0 params F hF).ε
+  change (0 : Core.Q) ≤ (certificate_from_AC0 params F hF hSmall).ε
   dsimp [certificate_from_AC0, witness] at hgoal ⊢
   exact hgoal
 
 /-- Из внешней границы `ε ≤ 1/(n+2)` выводим привычное условие `ε ≤ 1/2`. -/
 lemma certificate_from_AC0_eps_le_half
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
     Core.Shrinkage.errorBound
-      (S := certificate_from_AC0 params F hF)
+      (S := certificate_from_AC0 params F hF hSmall)
       ≤ (1 : Core.Q) / 2 := by
   classical
   have hbase := certificate_from_AC0_eps_bound
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   exact eps_le_half_of_eps_le_inv_nplus2
-    params.n (ε := Core.Shrinkage.errorBound (S := certificate_from_AC0 params F hF)) hbase
+    params.n (ε := Core.Shrinkage.errorBound (S := certificate_from_AC0 params F hF hSmall))
+    hbase
 
 /-- Полезный помощник: общий PDT, извлечённый из shrinkage-сертификата AC⁰.
     Он напрямую использует частичный shrinkage-факт, но перепаковывает его
     в формат `CommonPDT`, удобный для SAL и контроля глубины. -/
 noncomputable def commonPDT_from_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) : Core.CommonPDT params.n F := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) : Core.CommonPDT params.n F := by
   classical
   -- Берём shrinkage, полученный из частичного сертификата AC⁰, и извлекаем
   -- общий PDT через `Shrinkage.commonPDT`.
-  exact (certificate_from_AC0 params F hF).commonPDT
+  exact (certificate_from_AC0 params F hF hSmall).commonPDT
 
 /-- Глубина общего PDT, полученного из AC⁰, ограничена стандартной оценкой. -/
 lemma commonPDT_from_AC0_depth_le
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (commonPDT_from_AC0 params F hF).depthBound ≤ ac0DepthBound params := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (commonPDT_from_AC0 params F hF hSmall).depthBound ≤ ac0DepthBound params := by
   classical
   -- Глубина общего PDT совпадает с `t` shrinkage-сертификата,
   -- а тот равен `depthBound + ℓ` у частичного свидетельства.
   calc
-    (commonPDT_from_AC0 params F hF).depthBound
-        = (certificate_from_AC0 params F hF).t := by
+    (commonPDT_from_AC0 params F hF hSmall).depthBound
+        = (certificate_from_AC0 params F hF hSmall).t := by
           simp [commonPDT_from_AC0]
     _ ≤ ac0DepthBound params := by
           simpa using
             (certificate_from_AC0_depth_bound
-              (params := params) (F := F) (hF := hF))
+              (params := params) (F := F) (hF := hF) (hSmall := hSmall))
 
 /-- Ошибка общего PDT неотрицательна. -/
 lemma commonPDT_from_AC0_epsilon_nonneg
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (0 : Core.Q) ≤ (commonPDT_from_AC0 params F hF).epsilon := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (0 : Core.Q) ≤ (commonPDT_from_AC0 params F hF hSmall).epsilon := by
   classical
   have hε := certificate_from_AC0_eps_nonneg
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   simpa [commonPDT_from_AC0] using hε
 
 /-- Ошибка общего PDT ограничена `1 / (n + 2)`. -/
 lemma commonPDT_from_AC0_epsilon_le_inv
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (commonPDT_from_AC0 params F hF).epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (commonPDT_from_AC0 params F hF hSmall).epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
   have hε := certificate_from_AC0_eps_bound
-    (params := params) (F := F) (hF := hF)
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   simpa [commonPDT_from_AC0] using hε
 
 /-- Общий PDT, полученный из AC⁰ shrinkage, задаёт рабочий атлас. -/
 theorem commonPDT_from_AC0_works
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    WorksFor (Core.CommonPDT.toAtlas (commonPDT_from_AC0 params F hF)) F := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    WorksFor (Core.CommonPDT.toAtlas (commonPDT_from_AC0 params F hF hSmall)) F := by
   classical
   -- `CommonPDT.worksFor` — это ровно формулировка SAL для общего PDT.
   simpa using (Core.CommonPDT.worksFor
-    (C := commonPDT_from_AC0 params F hF))
+    (C := commonPDT_from_AC0 params F hF hSmall))
 
 /-- Удобная оболочка: сразу извлекаем атлас из факта shrinkage.  Эта
 функция подчёркивает, что на практике мы используем именно словарь подкубов,
 а не сам PDT. -/
 noncomputable def atlas_from_AC0
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) : Atlas params.n :=
-  Core.CommonPDT.toAtlas (commonPDT_from_AC0 params F hF)
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) : Atlas params.n :=
+  Core.CommonPDT.toAtlas (commonPDT_from_AC0 params F hF hSmall)
 
 /-- Свойство корректности атласа, полученного из внешнего shrinkage.
     Оно напрямую следует из `SAL_from_Shrinkage`. -/
 theorem atlas_from_AC0_works
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    WorksFor (atlas_from_AC0 params F hF) F := by
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    WorksFor (atlas_from_AC0 params F hF hSmall) F := by
   simpa [atlas_from_AC0] using (Core.CommonPDT.worksFor
-    (C := commonPDT_from_AC0 params F hF))
+    (C := commonPDT_from_AC0 params F hF hSmall))
 
 /--
-Глубина ствола частичного дерева из AC⁰-сертификата ограничена классической
-грубой квадратичной оценкой от параметра `M`, поскольку мы строим дерево
-из всех подкубов depth-2 DNF.
+Глубина ствола частичного дерева из AC⁰-сертификата ограничена `ac0DepthBound`.
+Для текущего depth‑2 конструктивного случая это достигается через явную
+малость `M² ≤ polylogBudget`, но интерфейс уже согласован с polylog‑целью.
 -/
 lemma partial_from_AC0_trunk_depth_le
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    PDT.depth (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).trunk
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    PDT.depth (Core.Shrinkage.partial
+        (S := certificate_from_AC0 params F hF hSmall)).trunk
       ≤ ac0DepthBound params := by
   classical
   have hdepth :=
     Core.Shrinkage.depth_le_depthBound
-      (S := certificate_from_AC0 params F hF)
+      (S := certificate_from_AC0 params F hF hSmall)
   have hbound :=
-    certificate_from_AC0_depth_bound (params := params) (F := F) (hF := hF)
+    certificate_from_AC0_depth_bound (params := params) (F := F)
+      (hF := hF) (hSmall := hSmall)
   have hbound' :
-      Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF)
+      Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF hSmall)
         ≤ ac0DepthBound params := hbound
   have htree_depth :
-      PDT.depth (certificate_from_AC0 params F hF).tree
-        ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF) := by
+      PDT.depth (certificate_from_AC0 params F hF hSmall).tree
+        ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF hSmall) := by
     exact hdepth
   have hpartial :
-      PDT.depth (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).trunk
-        = PDT.depth (certificate_from_AC0 params F hF).tree := by
+      PDT.depth (Core.Shrinkage.partial
+        (S := certificate_from_AC0 params F hF hSmall)).trunk
+        = PDT.depth (certificate_from_AC0 params F hF hSmall).tree := by
     rfl
   have hchain :
-      PDT.depth (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).trunk
-        ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF) := by
+      PDT.depth (Core.Shrinkage.partial
+        (S := certificate_from_AC0 params F hF hSmall)).trunk
+        ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF hSmall) := by
     have htmp := htree_depth
     exact Eq.subst (motive := fun s => s ≤
-        Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF))
+        Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF hSmall))
       (Eq.symm hpartial) htmp
   exact hchain.trans hbound'
 
@@ -1462,21 +1496,24 @@ lemma partial_from_AC0_trunk_depth_le
 -/
 lemma partial_from_AC0_leafDict_len_le
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (Core.Shrinkage.partial (S := certificate_from_AC0 params F hF)).leafDict.length
+    (hF : FamilyIsAC0 params F)
+    (hSmall : AC0SmallEnough params) :
+    (Core.Shrinkage.partial
+        (S := certificate_from_AC0 params F hF hSmall)).leafDict.length
       ≤ Nat.pow 2 (ac0DepthBound params) := by
   classical
   have hbase :=
     Core.Shrinkage.partial_leafDict_length_le_pow
-      (S := certificate_from_AC0 params F hF)
+      (S := certificate_from_AC0 params F hF hSmall)
   have hbound :
-      Nat.pow 2 (Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF))
+      Nat.pow 2 (Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF hSmall))
         ≤ Nat.pow 2 (ac0DepthBound params) := by
     have hdepthBound :=
-      certificate_from_AC0_depth_bound (params := params) (F := F) (hF := hF)
+      certificate_from_AC0_depth_bound (params := params) (F := F)
+        (hF := hF) (hSmall := hSmall)
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepthBound
   have hpartial_pow :
-      Nat.pow 2 (certificate_from_AC0 params F hF).t
+      Nat.pow 2 (certificate_from_AC0 params F hF hSmall).t
         ≤ Nat.pow 2 (ac0DepthBound params) := by
     have htmp := hbound
     simp [Core.Shrinkage.depthBound] at htmp

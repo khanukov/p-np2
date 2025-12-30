@@ -3,18 +3,20 @@
 > axioms**. The only remaining conditionality comes from *external witnesses* attached to the
 > AC⁰/local switching (shrinkage) lemmas. The list below captures the **current, open work**.
 
-## Focus: replace the `M²` bound with polylog
+## Focus: discharge `AC0SmallEnough` and justify the strong bound
 
 - [ ] **Formalise the inductive AC⁰ switching lemma for depth `d > 2`.**
   - Target: a constructive (or finitary probabilistic) proof that produces a
-    `PartialCertificate`/`CommonPDT` with depth bounded by `polylogBudget n`.
+    `PartialCertificate`/`CommonPDT` with depth bounded by the strong
+    `ac0DepthBound_strong` (polylog in `M` and `d`).
   - Output: a lemma that packages the shrinkage output as a `CommonPDT`/`Atlas`
-    ready for SAL, replacing the depth-2-only bound used today.
+    ready for SAL, removing the temporary dependence on `AC0SmallEnough`.
 
-- [x] **Switch `ac0DepthBound` from `M^2` to `polylogBudget`.**
-  - `ThirdPartyFacts.ac0DepthBound` now returns `polylogBudget params.n`.
-  - `AC0SmallEnough` was updated to encode the temporary Stage‑1 requirement
-    `M^2 ≤ polylogBudget n` until the multi‑switching proof removes it.
+- [x] **Expose strong/weak depth bounds and default to the strong entry point.**
+  - `ThirdPartyFacts.ac0DepthBound` now returns `ac0DepthBound_strong`
+    (defined as `(log₂(M+2))^(d+1)`).
+  - `AC0SmallEnough` encodes the temporary Stage‑1 requirement
+    `ac0DepthBound_weak ≤ ac0DepthBound_strong`.
 
 - [ ] **Provide constructive witnesses for local circuits.**
   - Replace the placeholder `ExternalLocalityWitnessProvider` with a real

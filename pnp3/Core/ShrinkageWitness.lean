@@ -121,6 +121,20 @@ namespace PartialCertificate
 
 variable {n ℓ : Nat} {F : Family n}
 
+/-!
+  Дополнительные оценки глубины.
+
+  В дальнейшем (при индукции по глубине AC⁰ и «склейке» хвостов) удобно
+  знать, что реализованное дерево не может стать *меньше* ствола. Это
+  гарантирует, что общие префиксные вопросы не «схлопываются» после
+  уточнения хвостами.
+-/
+
+/-- Глубина реализованного дерева не меньше глубины ствола. -/
+lemma trunk_depth_le_realize (C : PartialCertificate n ℓ F) :
+    PDT.depth C.witness.trunk ≤ PDT.depth C.witness.realize := by
+  simpa using (PartialDT.depth_trunk_le_realize (Q := C.witness))
+
 /--
 Из частичного свидетельства сразу получаем `CommonPDT`.  Глубина полного дерева
 ограничена суммой глубины ствола и максимально допустимой глубины хвостов.
@@ -140,6 +154,19 @@ def toCommonPDT (C : PartialCertificate n ℓ F) : CommonPDT n F :=
     err_le := by
       intro f hf
       exact C.err_le hf }
+
+/-!
+  Важно также, что тот же факт автоматически переносится на `CommonPDT`,
+  получаемый из частичного сертификата.  Это удобно, когда в доказательстве
+  мы работаем уже с «полным» деревом, но хотим восстановить информацию о
+  минимальной глубине, задаваемой стволом.
+-/
+
+/-- Глубина ствола не больше глубины дерева в `CommonPDT`. -/
+lemma trunk_depth_le_commonPDT (C : PartialCertificate n ℓ F) :
+    PDT.depth C.witness.trunk ≤ PDT.depth C.toCommonPDT.tree := by
+  simpa [PartialCertificate.toCommonPDT] using
+    (trunk_depth_le_realize (C := C))
 
 /--
 Комбинируем частичное свидетельство в полноценный объект `Shrinkage`.

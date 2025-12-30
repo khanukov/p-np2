@@ -88,6 +88,17 @@ lemma depth_realize_le (Q : PartialDT n ℓ) :
   exact h
 
 /--
+  Глубина реализованного дерева не меньше глубины ствола.  Это комплементарная
+  оценка к `depth_realize_le` и удобна при индукционных «склейках» деревьев:
+  ствол никогда не «схлопывается» при уточнении хвостами.
+-/
+lemma depth_trunk_le_realize (Q : PartialDT n ℓ) :
+    PDT.depth Q.trunk ≤ PDT.depth Q.realize := by
+  -- Это прямое следствие монотонности уточнения (`PDT.depth_refine_ge`).
+  simpa [PartialDT.realize] using
+    (PDT.depth_refine_ge (t := Q.trunk) (tails := Q.tails))
+
+/--
 Число листьев частичного PDT не превосходит `2 ^ depth(trunk)`.  Это
 непосредственно следует из оценки для обычных PDT и понадобится при
 связке шага A (усадка) с шагом B (Covering/Leaf Budget).

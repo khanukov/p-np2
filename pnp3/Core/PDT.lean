@@ -198,6 +198,70 @@ theorem PDT.depth_refine_le {n : Nat}
         have hgoal := htarget
         simpa [PDT.refine, PDT.depth] using hgoal
 
+/-!
+  Дополнительная полезная оценка: глубина ствола *не уменьшается* после
+  уточнения. Этот факт пригодится при индукции по глубине: когда мы
+  «приклеиваем» хвосты к общему стволу, итоговое дерево всегда имеет
+  глубину не меньше глубины ствола.
+-/
+theorem PDT.depth_refine_ge {n : Nat}
+    (t : PDT n)
+    (tails : ∀ β, β ∈ PDT.leaves t → PDT n) :
+    PDT.depth t ≤ PDT.depth (PDT.refine t tails) := by
+  induction t with
+  | leaf β =>
+      -- У листа глубина 0, а уточнение даёт дерево глубины ≥ 0.
+      have hmem : β ∈ PDT.leaves (PDT.leaf β) := by
+        simp [PDT.leaves]
+      have hrefine : PDT.refine (PDT.leaf β) tails = tails β hmem := rfl
+      have hnonneg : 0 ≤ PDT.depth (tails β hmem) := Nat.zero_le _
+      simpa [PDT.depth, hrefine] using hnonneg
+  | node i t0 t1 ih0 ih1 =>
+      -- Для узла применяем И.П. к обеим ветвям.
+      let tails0 : ∀ β, β ∈ PDT.leaves t0 → PDT n := fun β hβ =>
+        let hmemAppend : β ∈ (PDT.leaves t0) ++ (PDT.leaves t1) :=
+          List.mem_append.mpr (Or.inl hβ)
+        let hmemTree : β ∈ PDT.leaves (PDT.node i t0 t1) := by
+          have hdef :
+              PDT.leaves (PDT.node i t0 t1) =
+                (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
+          exact Eq.subst (motive := fun s => β ∈ s)
+            (Eq.symm hdef) hmemAppend
+        tails β hmemTree
+      let tails1 : ∀ β, β ∈ PDT.leaves t1 → PDT n := fun β hβ =>
+        let hmemAppend : β ∈ (PDT.leaves t0) ++ (PDT.leaves t1) :=
+          List.mem_append.mpr (Or.inr hβ)
+        let hmemTree : β ∈ PDT.leaves (PDT.node i t0 t1) := by
+          have hdef :
+              PDT.leaves (PDT.node i t0 t1) =
+                (PDT.leaves t0) ++ (PDT.leaves t1) := rfl
+          exact Eq.subst (motive := fun s => β ∈ s)
+            (Eq.symm hdef) hmemAppend
+        tails β hmemTree
+      have h0 : PDT.depth t0 ≤ PDT.depth (PDT.refine t0 tails0) := ih0 tails0
+      have h1 : PDT.depth t1 ≤ PDT.depth (PDT.refine t1 tails1) := ih1 tails1
+      have h0' :
+          PDT.depth t0 ≤
+            Nat.max (PDT.depth (PDT.refine t0 tails0))
+              (PDT.depth (PDT.refine t1 tails1)) :=
+        Nat.le_trans h0 (Nat.le_max_left _ _)
+      have h1' :
+          PDT.depth t1 ≤
+            Nat.max (PDT.depth (PDT.refine t0 tails0))
+              (PDT.depth (PDT.refine t1 tails1)) :=
+        Nat.le_trans h1 (Nat.le_max_right _ _)
+      have hmax :
+          Nat.max (PDT.depth t0) (PDT.depth t1) ≤
+            Nat.max (PDT.depth (PDT.refine t0 tails0))
+              (PDT.depth (PDT.refine t1 tails1)) := by
+        exact (max_le_iff.mpr ⟨h0', h1'⟩)
+      have hrefine :
+          PDT.refine (PDT.node i t0 t1) tails =
+            PDT.node i (PDT.refine t0 tails0) (PDT.refine t1 tails1) := rfl
+      -- Раскрываем определение глубины узла.
+      simpa [PDT.depth, hrefine] using
+        (Nat.succ_le_succ hmax)
+
 /-- Количество листьев не превосходит `2 ^ depth`.
 
     Это простое упражнение по индукции: лист даёт один подкуб, а у узла

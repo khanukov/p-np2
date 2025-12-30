@@ -109,7 +109,7 @@ def defaultAC0Params
     (p : GapMCSPParams)
     (hUnion :
       let bound := Nat.pow 2
-        (ThirdPartyFacts.ac0DepthBound { n := Models.inputLen p, M := 1, d := 1 })
+        (ThirdPartyFacts.ac0DepthBound_strong { n := Models.inputLen p, M := 1, d := 1 })
       Counting.unionBound bound bound ≤
         Nat.pow 2 (Nat.pow 2 (Models.inputLen p) / (Models.inputLen p + 2))) :
     SmallAC0Params p :=
@@ -119,18 +119,18 @@ def defaultAC0Params
     same_n := rfl
     small :=
       by
-        -- Для `M = 1` нужно показать `1 ≤ polylogBudget (inputLen p)`.
-        have hpos : 0 < Models.polylogBudget (Models.inputLen p) := by
-          -- `polylogBudget` — степень положительного числа, значит положителен.
-          have hbase : 0 < Nat.succ (Nat.log2 (Nat.succ (Models.inputLen p))) := by
-            exact Nat.succ_pos _
-          simpa [Models.polylogBudget] using (Nat.pow_pos hbase 4)
-        have hle : (1 : Nat) ≤ Models.polylogBudget (Models.inputLen p) :=
-          Nat.succ_le_of_lt hpos
-        simpa [ThirdPartyFacts.AC0SmallEnough, ThirdPartyFacts.ac0DepthBound] using hle
+        -- Для `M = 1` достаточно показать, что сильная оценка не меньше 1.
+        -- Используем вычислимое `native_decide`, чтобы не разворачивать `log2`.
+        have hle : (1 : Nat) ≤
+            Nat.pow (Nat.log2 (1 + 2)) (1 + 1) := by
+          native_decide
+        simpa [ThirdPartyFacts.AC0SmallEnough,
+          ThirdPartyFacts.ac0DepthBound_weak,
+          ThirdPartyFacts.ac0DepthBound_strong] using hle
     union_small :=
       by
-        -- `union_small` теперь зависит от `ac0DepthBound = polylogBudget`.
+        -- `union_small` использует strong‑границу, так как `ac0DepthBound`
+        -- теперь по умолчанию равна `ac0DepthBound_strong`.
         -- Для `M = 1` мы принимаем эту численную оценку как явное предположение
         -- (см. параметр `hUnion`), чтобы не скрывать в "дефолтных" параметрах
         -- дополнительную, не доказанную лемму о росте `polylogBudget`.

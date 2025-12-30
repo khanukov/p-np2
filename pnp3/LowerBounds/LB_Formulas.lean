@@ -817,6 +817,44 @@ noncomputable def scenarioFromAC0
       exact base.2.bounded f hfBase
 
 /--
+  Версия `scenarioFromAC0`, использующая явную strong‑границу на число подкубов.
+  Она не зависит от предположения `AC0SmallEnough` и является прямой точкой
+  для будущей polylog‑леммы.
+-/
+noncomputable def scenarioFromAC0_with_bound
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    Σ' _ : Nat, BoundedAtlasScenario params.n := by
+  classical
+  let S := ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound
+  let hε0 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  let hε1 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_le_half
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  let base := scenarioFromShrinkage (n := params.n) (S := S) hε0 hε1
+  have hFamily : base.2.family = S.F :=
+    scenarioFromShrinkage_family_eq
+      (n := params.n) (S := S) hε0 hε1
+  have hSF : S.F = F :=
+    ThirdPartyFacts.certificate_from_AC0_with_bound_family
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
+  ·
+    have hworksS : WorksFor base.2.atlas S.F :=
+      Eq.subst (motive := fun fam => WorksFor base.2.atlas fam)
+        (Eq.symm hFamily) base.2.works
+    exact Eq.subst (motive := fun fam => WorksFor base.2.atlas fam)
+      hSF hworksS
+  · intro f hf
+    have hfS : f ∈ S.F :=
+      Eq.subst (motive := fun fam => f ∈ fam) (Eq.symm hSF) hf
+    have hfBase : f ∈ base.2.family :=
+      Eq.subst (motive := fun fam => f ∈ fam) (Eq.symm hFamily) hfS
+    exact base.2.bounded f hfBase
+
+/--
   Первая компонента пары `scenarioFromAC0` совпадает с параметром `k` внутри
   построенного сценария.  Это упрощает перенос численных оценок на поле `k`.
 -/
@@ -837,6 +875,23 @@ lemma scenarioFromAC0_k_eq
     (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   simp [scenarioFromShrinkage_k_eq]
 
+@[simp]
+lemma scenarioFromAC0_with_bound_k_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    (scenarioFromAC0_with_bound params F hF hBound).2.k =
+      (scenarioFromAC0_with_bound params F hF hBound).1 := by
+  classical
+  unfold scenarioFromAC0_with_bound
+  set S := ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_le_half
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  simp [scenarioFromShrinkage_k_eq]
+
 /-- Семейство функций в сценарии, построенном из факта `AC⁰ → shrinkage`,
   совпадает с исходным списком `F`.  Это удобное переписывание для дальнейших
   аргументов о подсемействах и мощностях. -/
@@ -849,6 +904,17 @@ lemma scenarioFromAC0_family_eq
     (scenarioFromAC0 params F hF hSmall).2.family = F := by
   classical
   unfold scenarioFromAC0
+  simp
+
+@[simp]
+lemma scenarioFromAC0_with_bound_family_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    (scenarioFromAC0_with_bound params F hF hBound).2.family = F := by
+  classical
+  unfold scenarioFromAC0_with_bound
   simp
 
 /--
@@ -1019,6 +1085,64 @@ lemma scenarioFromAC0_k_le_pow
   exact hfinal
 
 /--
+  Усиленная версия: параметр `k` в AC⁰-сценарии ограничен
+  `2^{ac0DepthBound_strong params}`.  Мы поднимаем уже полученную
+  оценку через условие `AC0SmallEnough`.
+-/
+lemma scenarioFromAC0_k_le_pow_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    (scenarioFromAC0 params F hF hSmall).1
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+  -- Берём слабую границу и поднимаем её монотонностью степени двойки.
+  have hweak := scenarioFromAC0_k_le_pow
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hbound := ThirdPartyFacts.ac0DepthBound_le_strong params
+  have hpow :=
+    Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound
+  exact hweak.trans hpow
+
+lemma scenarioFromAC0_with_bound_k_le_pow_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    (scenarioFromAC0_with_bound params F hF hBound).1
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+  classical
+  unfold scenarioFromAC0_with_bound
+  set S := ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_le_half
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hk_base :=
+    scenarioFromShrinkage_k_le_pow
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  have htBound :=
+    ThirdPartyFacts.certificate_from_AC0_with_bound_depth_bound
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hpow_bound :
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
+      have htmp := htBound
+      change Core.Shrinkage.depthBound (S := S)
+          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
+      have hrewrite := htmp
+      simp [Core.Shrinkage.depthBound] at hrewrite
+      exact hrewrite
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hS
+  have hresult := hk_base.trans hpow_bound
+  have hrewrite :
+      (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
+        = (scenarioFromAC0_with_bound params F hF hBound).1 := by
+    simp [scenarioFromAC0_with_bound, S, hε0, hε1]
+  have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
+  simpa [ThirdPartyFacts.ac0DepthBound] using hfinal
+
+/--
   Оценка на длину словаря в AC⁰-сценарии:
   она не превосходит `2^{ac0DepthBound params}`.
 -/
@@ -1062,6 +1186,65 @@ lemma scenarioFromAC0_dictLen_le_pow
   exact hfinal
 
 /--
+  Усиленная оценка длины словаря: `|dict| ≤ 2^{ac0DepthBound_strong params}`.
+  Лемма следует из слабой версии и монотонности степени двойки.
+-/
+lemma scenarioFromAC0_dictLen_le_pow_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    Counting.dictLen (scenarioFromAC0 params F hF hSmall).2.atlas.dict
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+  -- Используем слабую оценку и поднимаем её.
+  have hweak := scenarioFromAC0_dictLen_le_pow
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hbound := ThirdPartyFacts.ac0DepthBound_le_strong params
+  have hpow :=
+    Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound
+  exact hweak.trans hpow
+
+lemma scenarioFromAC0_with_bound_dictLen_le_pow_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    Counting.dictLen (scenarioFromAC0_with_bound params F hF hBound).2.atlas.dict
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+  classical
+  unfold scenarioFromAC0_with_bound
+  set S := ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_le_half
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hdict_base :=
+    scenarioFromShrinkage_dictLen_le_pow
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  have htBound :=
+    ThirdPartyFacts.certificate_from_AC0_with_bound_depth_bound
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hpow_bound :
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
+      have htmp := htBound
+      change Core.Shrinkage.depthBound (S := S)
+          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
+      have hrewrite := htmp
+      simp [Core.Shrinkage.depthBound] at hrewrite
+      exact hrewrite
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hS
+  have hresult := hdict_base.trans hpow_bound
+  have hrewrite :
+      Counting.dictLen
+          (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
+        = Counting.dictLen
+            (scenarioFromAC0_with_bound params F hF hBound).2.atlas.dict := by
+    simp [scenarioFromAC0_with_bound, S, hε0, hε1]
+  have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
+  simpa [ThirdPartyFacts.ac0DepthBound] using hfinal
+
+/--
   Полезное переписывание: погрешность атласа в `scenarioFromAC0` совпадает
   с ε shrinkage-сертификата, предоставленного фактом `certificate_from_AC0`.
   Это связывает шаг A (усадка) со сценарием шага B на уровне точных чисел. -/
@@ -1090,6 +1273,32 @@ lemma scenarioFromAC0_epsilon_eq
       (scenarioFromAC0 params F hF hSmall).2.atlas.epsilon
         = base.2.atlas.epsilon := by
     unfold scenarioFromAC0
+    simp [S, base]
+  exact hsc.trans hbase
+
+@[simp]
+lemma scenarioFromAC0_with_bound_epsilon_eq
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    (scenarioFromAC0_with_bound params F hF hBound).2.atlas.epsilon
+      = (ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound).ε := by
+  classical
+  unfold scenarioFromAC0_with_bound
+  set S := ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  set hε1 := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_le_half
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  set base := scenarioFromShrinkage (n := params.n) S hε0 hε1
+  have hbase : base.2.atlas.epsilon = S.ε :=
+    scenarioFromShrinkage_epsilon_eq
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  have hsc :
+      (scenarioFromAC0_with_bound params F hF hBound).2.atlas.epsilon
+        = base.2.atlas.epsilon := by
+    unfold scenarioFromAC0_with_bound
     simp [S, base]
   exact hsc.trans hbase
 
@@ -1149,6 +1358,91 @@ lemma scenarioFromAC0_completeBounds
     exact hdict
 
 /--
+  Полная сводка для сильной глубинной оценки.  Все численные ограничения
+  идентичны слабой версии, кроме того, что `bound` теперь строится
+  из `ac0DepthBound_strong`.
+-/
+lemma scenarioFromAC0_completeBounds_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
+    let sc := scenarioFromAC0 params F hF hSmall
+    sc.1 ≤ bound ∧
+      Counting.dictLen sc.2.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.2.atlas.epsilon ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro bound sc
+  -- Границы на `k` и словарь теперь берутся из сильных версий.
+  have hk := scenarioFromAC0_k_le_pow_strong
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hdict := scenarioFromAC0_dictLen_le_pow_strong
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  -- Эпсилон остаётся тем же.
+  have hε0 := sc.2.hε0
+  have hε1 := sc.2.hε1
+  have heq := scenarioFromAC0_epsilon_eq
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hεInv := ThirdPartyFacts.certificate_from_AC0_eps_bound
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hεInv' : sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    have hrewrite :
+        sc.2.atlas.epsilon =
+          (ThirdPartyFacts.certificate_from_AC0 params F hF hSmall).ε := by
+      exact heq
+    have hgoal := Eq.subst
+      (motive := fun ε => ε ≤ (1 : Core.Q) / (params.n + 2))
+      (Eq.symm hrewrite) hεInv
+    exact hgoal
+  refine And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv')))
+  · change sc.1 ≤ bound
+    exact hk
+  · change Counting.dictLen sc.2.atlas.dict ≤ bound
+    exact hdict
+
+lemma scenarioFromAC0_with_bound_completeBounds_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
+    let sc := scenarioFromAC0_with_bound params F hF hBound
+    sc.1 ≤ bound ∧
+      Counting.dictLen sc.2.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.2.atlas.epsilon ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro bound sc
+  have hk := scenarioFromAC0_with_bound_k_le_pow_strong
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hdict := scenarioFromAC0_with_bound_dictLen_le_pow_strong
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hε0 := sc.2.hε0
+  have hε1 := sc.2.hε1
+  have heq := scenarioFromAC0_with_bound_epsilon_eq
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hεInv := ThirdPartyFacts.certificate_from_AC0_with_bound_eps_bound
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hεInv' : sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    have hrewrite :
+        sc.2.atlas.epsilon =
+          (ThirdPartyFacts.certificate_from_AC0_with_bound params F hF hBound).ε := by
+      exact heq
+    have hgoal := Eq.subst
+      (motive := fun ε => ε ≤ (1 : Core.Q) / (params.n + 2))
+      (Eq.symm hrewrite) hεInv
+    exact hgoal
+  refine And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv')))
+  · change sc.1 ≤ bound
+    exact hk
+  · change Counting.dictLen sc.2.atlas.dict ≤ bound
+    exact hdict
+
+/--
   Сводное существование ограниченного атласа из AC⁰-свидетельства.  Мы упаковываем
   конструкцию `scenarioFromAC0` в экзистенциальную форму: существует `k` и сценарий
   с семейством `F`, где все численные границы совпадают с теми, что требуются для шага B.
@@ -1174,6 +1468,43 @@ theorem exists_boundedAtlas_from_AC0
       (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   have h_bounds :=
     scenarioFromAC0_completeBounds
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  dsimp [sc] at h_bounds
+  rcases h_bounds with ⟨hk, hrest⟩
+  rcases hrest with ⟨hdict, hrest⟩
+  rcases hrest with ⟨hε0, hrest⟩
+  rcases hrest with ⟨hε1, hεInv⟩
+  refine ⟨sc.1, sc.2, ?_⟩
+  refine And.intro ?_ (And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv))))
+  · exact hfamily
+  · exact hk
+  · exact hdict
+
+/--
+  Усиленная экзистенциальная формулировка: все границы выражены через
+  `ac0DepthBound_strong`.  Сценарий тот же, мы лишь переключаем числовую цель.
+-/
+theorem exists_boundedAtlas_from_AC0_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
+      sc.family = F ∧
+      k ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) ∧
+      Counting.dictLen sc.atlas.dict
+        ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  classical
+  let sc := scenarioFromAC0 params F hF hSmall
+  have hfamily : sc.2.family = F := by
+    dsimp [sc]
+    exact scenarioFromAC0_family_eq
+      (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have h_bounds :=
+    scenarioFromAC0_completeBounds_strong
       (params := params) (F := F) (hF := hF) (hSmall := hSmall)
   dsimp [sc] at h_bounds
   rcases h_bounds with ⟨hk, hrest⟩
@@ -1470,6 +1801,120 @@ lemma scenarioFromAC0_stepAB_summary
     exact hcap
 
 /--
+  Усиленная версия шага A+B: всё аналогично `scenarioFromAC0_stepAB_summary`,
+  но численные границы выражены через `ac0DepthBound_strong`.
+-/
+lemma scenarioFromAC0_stepAB_summary_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hSmall : ThirdPartyFacts.AC0SmallEnough params) :
+    let pack := scenarioFromAC0 params F hF hSmall
+    let sc := pack.2
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
+    sc.family = F ∧
+      sc.k ≤ bound ∧
+      Counting.dictLen sc.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) ∧
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k
+          (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 := by
+  classical
+  intro pack sc bound
+  have hfamily := scenarioFromAC0_family_eq
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hbounds_raw := scenarioFromAC0_completeBounds_strong
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hbounds :
+      pack.1 ≤ bound ∧
+        Counting.dictLen pack.2.atlas.dict ≤ bound ∧
+        (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    simpa [pack, bound] using hbounds_raw
+  have hfamily' : sc.family = F := by
+    simpa [pack, sc] using hfamily
+  rcases hbounds with ⟨hk_base, hrest⟩
+  rcases hrest with ⟨hdict_base, hrest⟩
+  rcases hrest with ⟨hε0_base, hrest⟩
+  rcases hrest with ⟨hε1_base, hεInv_base⟩
+  have hkEq := scenarioFromAC0_k_eq
+    (params := params) (F := F) (hF := hF) (hSmall := hSmall)
+  have hkEq' : pack.2.k = pack.1 := by
+    simpa [pack] using hkEq
+  have hk' : sc.k ≤ bound := by
+    simpa [pack, sc, hkEq'] using hk_base
+  have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
+    simpa [pack, sc, bound] using hdict_base
+  have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
+    simpa [pack, sc] using hε0_base
+  have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
+    simpa [pack, sc] using hε1_base
+  have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    simpa [pack, sc] using hεInv_base
+  have hcap := family_card_le_capacity (sc := sc)
+  refine And.intro hfamily' (And.intro hk' (And.intro hdict'
+    (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+  exact hcap
+
+lemma scenarioFromAC0_with_bound_stepAB_summary_strong
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family params.n)
+    (hF : ThirdPartyFacts.FamilyIsAC0 params F)
+    (hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF) :
+    let pack := scenarioFromAC0_with_bound params F hF hBound
+    let sc := pack.2
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
+    sc.family = F ∧
+      sc.k ≤ bound ∧
+      Counting.dictLen sc.atlas.dict ≤ bound ∧
+      (0 : Core.Q) ≤ sc.atlas.epsilon ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) ∧
+      (familyFinset sc).card ≤
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k
+          (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 := by
+  classical
+  intro pack sc bound
+  have hfamily := scenarioFromAC0_with_bound_family_eq
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hbounds_raw := scenarioFromAC0_with_bound_completeBounds_strong
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hbounds :
+      pack.1 ≤ bound ∧
+        Counting.dictLen pack.2.atlas.dict ≤ bound ∧
+        (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    simpa [pack, bound] using hbounds_raw
+  have hfamily' : sc.family = F := by
+    simpa [pack, sc] using hfamily
+  rcases hbounds with ⟨hk_base, hrest⟩
+  rcases hrest with ⟨hdict_base, hrest⟩
+  rcases hrest with ⟨hε0_base, hrest⟩
+  rcases hrest with ⟨hε1_base, hεInv_base⟩
+  have hkEq := scenarioFromAC0_with_bound_k_eq
+    (params := params) (F := F) (hF := hF) (hBound := hBound)
+  have hkEq' : pack.2.k = pack.1 := by
+    simpa [pack] using hkEq
+  have hk' : sc.k ≤ bound := by
+    simpa [pack, sc, hkEq'] using hk_base
+  have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
+    simpa [pack, sc, bound] using hdict_base
+  have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
+    simpa [pack, sc] using hε0_base
+  have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
+    simpa [pack, sc] using hε1_base
+  have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    simpa [pack, sc] using hεInv_base
+  have hcap := family_card_le_capacity (sc := sc)
+  refine And.intro hfamily' (And.intro hk' (And.intro hdict'
+    (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+  exact hcap
+
+/--
   Локальные схемы обладают той же структурой: сценарий шага A автоматически
   удовлетворяет ёмкостной границе из шага B.
 -/
@@ -1581,9 +2026,9 @@ noncomputable def scenarioBudgetFromAC0
   by
     classical
     let packData := scenarioFromAC0 params F hF hSmall
-    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
     have summaryPack :=
-      scenarioFromAC0_stepAB_summary
+      scenarioFromAC0_stepAB_summary_strong
         (params := params) (F := F) (hF := hF) (hSmall := hSmall)
     have hfamily_raw := summaryPack.1
     have hrest₁ := summaryPack.2

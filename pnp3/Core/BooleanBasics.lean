@@ -1669,6 +1669,85 @@ lemma restrictions_with_freeCount_card
     _ = Nat.choose n s * 2 ^ (n - s) := by
           simpa [hfree_card]
 
+/--
+Финитное множество рестрикций с ровно `s` свободными координатами.
+
+Это удобная обёртка для работы в стиле `R_s` (равномерное распределение по
+рестрикциям с фиксированным числом свободных координат), которая позволит
+обходиться без вероятностного формализма в multi‑switching.
+-/
+@[simp] def restrictionsWithFreeCount (s : Nat) : Finset (Restriction n) :=
+  (Finset.univ : Finset (Restriction n)).filter (fun ρ => ρ.freeCount = s)
+
+@[simp] lemma mem_restrictionsWithFreeCount {ρ : Restriction n} {s : Nat} :
+    ρ ∈ restrictionsWithFreeCount (n := n) s ↔ ρ.freeCount = s := by
+  classical
+  simp [restrictionsWithFreeCount]
+
+/--
+Кардинал `restrictionsWithFreeCount` совпадает с формулой из
+`restrictions_with_freeCount_card`.
+-/
+lemma restrictionsWithFreeCount_card (s : Nat) :
+    (restrictionsWithFreeCount (n := n) s).card
+      = Nat.choose n s * 2 ^ (n - s) := by
+  classical
+  have hcard :
+      (restrictionsWithFreeCount (n := n) s).card
+        = Fintype.card {ρ : Restriction n // ρ.freeCount = s} := by
+    simpa [restrictionsWithFreeCount] using
+      (Fintype.card_subtype (p := fun ρ : Restriction n => ρ.freeCount = s)).symm
+  calc
+    (restrictionsWithFreeCount (n := n) s).card
+        = Fintype.card {ρ : Restriction n // ρ.freeCount = s} := hcard
+    _ = Nat.choose n s * 2 ^ (n - s) := restrictions_with_freeCount_card (n := n) (s := s)
+
+/-- Кардинал `R_s` положителен, если `s ≤ n`. -/
+lemma restrictionsWithFreeCount_card_pos {s : Nat} (hs : s ≤ n) :
+    0 < (restrictionsWithFreeCount (n := n) s).card := by
+  -- Используем явную формулу `|R_s| = C(n,s) * 2^(n-s)`.
+  have hchoose : 0 < Nat.choose n s := Nat.choose_pos hs
+  have hpow : 0 < 2 ^ (n - s) := by
+    exact Nat.pow_pos (by decide : 0 < (2 : Nat))
+  have hmul : 0 < Nat.choose n s * 2 ^ (n - s) := Nat.mul_pos hchoose hpow
+  -- Переписываем по лемме `restrictionsWithFreeCount_card`.
+  have hcard := restrictionsWithFreeCount_card (n := n) (s := s)
+  -- Явно переписываем по равенству кардинала, избегая агрессивного `simp`.
+  exact hcard ▸ hmul
+
+/-- `R_s` непусто при `s ≤ n`. -/
+lemma restrictionsWithFreeCount_nonempty {s : Nat} (hs : s ≤ n) :
+    (restrictionsWithFreeCount (n := n) s).Nonempty := by
+  classical
+  -- Положительный кардинал эквивалентен непустоте финитного множества.
+  exact Finset.card_pos.mp (restrictionsWithFreeCount_card_pos (n := n) (s := s) hs)
+
+/--
+Комбинаторная лемма: если `s ⊆ t` и кардинал `s` строго меньше `t`,
+то в `t` обязательно есть элемент, не принадлежащий `s`.
+
+Эта форма удобно применяется к множеству "плохих" рестрикций внутри
+`restrictionsWithFreeCount`: из строгой оценки на кардинал сразу следует
+существование "хорошей" рестрикции.
+-/
+lemma exists_not_mem_of_subset_card_lt {α : Type} [DecidableEq α]
+    {s t : Finset α} (hsub : s ⊆ t) (hcard : s.card < t.card) :
+    ∃ x ∈ t, x ∉ s := by
+  classical
+  by_contra h
+  have hsubset : t ⊆ s := by
+    intro x hx
+    by_contra hxnot
+    exact h ⟨x, hx, hxnot⟩
+  have hcard_le : t.card ≤ s.card := by
+    simpa using (Finset.card_le_card hsubset)
+  have hcard_eq : s.card = t.card := by
+    apply le_antisymm
+    · simpa using (Finset.card_le_card hsub)
+    · exact hcard_le
+  have : s.card < s.card := by simpa [hcard_eq] using hcard
+  exact (lt_irrefl _ this)
+
 lemma fixedPositions_disjoint_freePositions (ρ : Restriction n) :
     Disjoint ρ.fixedPositions ρ.freePositions := by
   classical

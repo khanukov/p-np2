@@ -545,20 +545,68 @@ lemma ac0DepthBoundWitness_of_weak
   строится пошагово, мы даём **честную конструкцию** polylog‑свидетеля
   через уже доказанную сильную оценку `M²`.
 
+  Ниже фиксируем *целевую* форму multi‑switching (в комментариях), чтобы
+  дальнейшая формализация шла по стабильному контракту:
+
+  * Каноническое общее частичное дерево (CCDT) для семейства формул,
+    как в версии multi‑switching Håstad'14 / Servedio–Tan (Theorem 3.4).
+    В этой форме оценивается вероятность события
+    `depth(CCDT ℓ (F ↾ ρ)) ≥ t` через `M * (24 * p * k)^t`.
+
+  * Удобный выбор параметров: `p := 1/(48k)` даёт `(24pk)=1/2`,
+    а `ℓ := ⌈log₂(2M)⌉` совместим с индукционным «склеиванием» хвостов.
+
+  * Детализация доказательства будет строиться в стиле encoding/injection,
+    что совпадает с классическим подходом (см. также конспект О’Доннелла
+    по switching‑лемме и стандартный переход от вероятности к ∃‑свидетелю
+    через подсчёт плохих рестрикций).
+
+  * Для формализации мы будем использовать модель `R_s` (фиксированное число
+    свободных координат) и опираться на явные кардинальные оценки для
+    множества рестрикций `restrictionsWithFreeCount`. Это позволяет заменить
+    вероятностные рассуждения чистым подсчётом и сразу применять
+    `Classical.choose` для извлечения witness. Для финального шага удобно
+    применять лемму `exists_not_mem_of_subset_card_lt`: если "плохих"
+    рестрикций строго меньше, чем всего `R_s`, существует "хорошая" рестрикция.
+
+  Эти ссылки нужны именно как *технический ориентир* для доказательства
+  и будут отражены в отдельном модуле multi‑switching.
+
   Эта лемма не вводит новых допущений (нет аксиом и `sorry`) и является
   корректной в текущем окружении. Как только будет готово настоящее
   multi‑switching доказательство, достаточно заменить тело этой леммы
   на индуктивную конструкцию, не трогая downstream‑интерфейс.
 -/
 
+/--
+  Каркас индукции по глубине для будущей multi-switching леммы.
+
+  Сейчас эта лемма является **формальным шаблоном**: мы явно делаем разбор
+  глубины `params.d`, но возвращаем тот же конструктивный свидетель `M²`.
+  Такой каркас полезен тем, что показывает *точку расширения* и оставляет
+  downstream‑интерфейсы неизменными: при появлении multi-switching достаточно
+  заменить ветки `zero`/`succ` на реальные доказательства.
+-/
+lemma ac0PolylogBoundWitness_by_depth
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    AC0PolylogBoundWitness params F hF := by
+  classical
+  cases hdepth : params.d with
+  | zero =>
+      -- База индукции (depth=0). Пока используем конструктивное `M²`.
+      simpa using ac0DepthBoundWitness_of_weak params F hF
+  | succ d =>
+      -- Индуктивный шаг (depth=d+1). Здесь появится multi-switching.
+      simpa using ac0DepthBoundWitness_of_weak params F hF
+
 /-- Временная реализация multi‑switching интерфейса без аксиом. -/
 lemma ac0PolylogBoundWitness_of_multi_switching
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     AC0PolylogBoundWitness params F hF := by
-  -- Сейчас polylog‑свидетель совпадает со strong‑свидетельством, поэтому
-  -- достаточно конструктивной оценки `M²`.
-  exact ac0DepthBoundWitness_of_weak params F hF
+  -- Используем каркас глубинной индукции (пока возвращает `M²`).
+  exact ac0PolylogBoundWitness_by_depth params F hF
 
 /--
   Параметры для класса «локальных схем».  Мы сохраняем только наиболее
@@ -759,8 +807,8 @@ lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
   его в `PartialCertificate` для семейства из одной функции.
 
   Важное ограничение: здесь нужен `h_pos : 0 < n`, чтобы выбрать ветвящий
-  индекс при построении PDT. Для `n = 0` корректный частный случай можно
-  добавить позже (он тривиален, так как все подкубы совпадают с полным).
+  индекс при построении PDT. Полный случай `n = 0` разбирается ниже в
+  `partial_shrinkage_single_circuit_general`.
 -/
 
 /--
@@ -893,6 +941,66 @@ lemma subcube_eq_full_of_n_zero' {n : Nat} (hzero : n = 0) (β : Subcube n) :
     β = fullSubcube n := by
   cases hzero
   simpa using (subcube_eq_full_of_n_zero (β := β))
+
+/-
+  Полная версия «одиночного» shrinkage без предположения `0 < n`.
+
+  Это закрывает оставшийся технический пробел: когда входов нет (n = 0),
+  любая рестрикция совпадает с полным подкубом, а дерево решений состоит
+  из единственного листа.  В результате мы получаем ту же гарантию,
+  что и в case `n > 0`, но уже без дополнительной гипотезы.
+-/
+theorem partial_shrinkage_single_circuit_general
+    (params : AC0Parameters) (c : AC0Circuit params) :
+    let f : Core.BitVec params.n → Bool := AC0Circuit.eval c
+    let F : Family params.n := [f]
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ = 0 ∧
+      C.depthBound ≤ c.subcubes.length ∧
+      C.epsilon = 0 := by
+  classical
+  intro f F
+  by_cases hpos : 0 < params.n
+  · -- Для `n > 0` используем уже построенный PDT на списке подкубов.
+    simpa [f, F] using
+      (partial_shrinkage_single_circuit (params := params) hpos c)
+  · -- Случай `n = 0`: все подкубы совпадают с полным.
+    have hzero : params.n = 0 := Nat.eq_zero_of_not_pos hpos
+    let subcubes := c.subcubes
+    let tree : PDT params.n := PDT.leaf (fullSubcube params.n)
+    have hdepth : PDT.depth tree ≤ subcubes.length := by
+      have : PDT.depth tree = 0 := by simp [tree, PDT.depth]
+      simpa [this] using (Nat.zero_le subcubes.length)
+    have hleaves :
+        ∀ β ∈ subcubes, β ∈ PDT.leaves tree := by
+      intro β hβ
+      have hβ_full : β = fullSubcube params.n :=
+        subcube_eq_full_of_n_zero' hzero β
+      simp [tree, PDT.leaves, hβ_full]
+    refine ⟨0, {
+      witness := PartialDT.ofPDT tree
+      depthBound := subcubes.length
+      epsilon := 0
+      trunk_depth_le := by
+        simpa [PartialDT.ofPDT] using hdepth
+      selectors := fun g => if g = f then subcubes else []
+      selectors_sub := by
+        intro g β hg hβ
+        simp [F] at hg
+        subst hg
+        simp [subcubes] at hβ
+        simpa [PartialDT.realize_ofPDT] using hleaves β hβ
+      err_le := by
+        intro g hg
+        simp [F] at hg
+        subst hg
+        simp
+        apply le_of_eq
+        apply errU_eq_zero_of_agree
+        intro x
+        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+        simp [f, subcubes, hcov]
+    }, rfl, Nat.le_refl _, rfl⟩
 
 theorem partial_shrinkage_for_AC0_with_bound
     (params : AC0Parameters) (F : Family params.n)

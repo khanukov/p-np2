@@ -117,16 +117,6 @@ def defaultAC0Params
               M := 1,
               d := 1 }
     same_n := rfl
-    small :=
-      by
-        -- Для `M = 1` достаточно показать, что сильная оценка не меньше 1.
-        -- Используем вычислимое `native_decide`, чтобы не разворачивать `log2`.
-        have hle : (1 : Nat) ≤
-            Nat.pow (Nat.log2 (1 + 2)) (1 + 1) := by
-          native_decide
-        simpa [ThirdPartyFacts.AC0SmallEnough,
-          ThirdPartyFacts.ac0DepthBound_weak,
-          ThirdPartyFacts.ac0DepthBound_strong] using hle
     union_small :=
       by
         -- `union_small` использует strong‑границу, так как `ac0DepthBound`
@@ -384,7 +374,7 @@ noncomputable def coverWitness_from_antiChecker
           let scWitness :=
             (scenarioFromAC0
                 (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-                (hSmall := solver.params.small)).2
+                ).2
           let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
             solver.params.same_n.symm ▸ Y
           Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -397,7 +387,7 @@ noncomputable def coverWitness_from_antiChecker
         let scWitness :=
           (scenarioFromAC0
               (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-              (hSmall := solver.params.small)).2
+              ).2
         let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
           solver.params.same_n.symm ▸ Y
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -409,7 +399,7 @@ noncomputable def coverWitness_from_antiChecker
   set scSolver : BoundedAtlasScenario solver.params.ac0.n :=
     (scenarioFromAC0
         (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-        (hSmall := solver.params.small)).2
+        ).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   -- Переписываем вывод аксиомы в явном виде, убирая `let`-связки.
@@ -461,7 +451,7 @@ noncomputable def coverWitness_from_antiChecker_testset
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
     (scenarioFromAC0
         (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-        (hSmall := solver.params.small)).2
+        ).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=

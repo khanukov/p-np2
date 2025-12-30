@@ -2,7 +2,10 @@
 
 > **Status (2025-12-26)**: `pnp3/` конвейер полностью формализован и **не содержит аксиом**.
 > Единственная условность остаётся из-за **внешних свидетельств (witnesses)** в части A
-> (shrinkage/switching) и временного условия `AC0SmallEnough`.
+> (shrinkage/switching). Временное условие `AC0SmallEnough` устранено: сильная
+> граница `ac0DepthBound_strong` теперь определена как `max(M², polylog)`, что
+> делает pipeline независимым от допущения «малости», но ещё не даёт чистую
+> polylog‑оценку без `max`.
 > Этот файл фиксирует **что именно осталось доделать и как**, с привязкой к модулям,
 > теоремам и интерфейсам Lean.
 
@@ -12,7 +15,7 @@
 
 **Часть A (Switching/Atlas, shrinkage)**
 - Реализованы теоремы:
-  - `partial_shrinkage_for_AC0` (теорема, но с гипотезой `AC0SmallEnough`).
+  - `partial_shrinkage_for_AC0` (теорема без доп. гипотез о малости).
   - `shrinkage_for_localCircuit` (теорема, но зависит от `FamilyIsLocalCircuit` witness).
 - AC⁰ пока фактически реализуется как глубина 2 (DNF), с **слабой оценкой глубины** `M^2`.
 - В интерфейсах уже подготовлены параметры глубины `d` и сильная цель `polylog`.
@@ -50,10 +53,11 @@
    - Сейчас это **внешние входы**, а не автоматически построенные структуры.
 
 2. **Слабая глубинная оценка (Stage‑1: `M^2`)**
-   - Введено условие `AC0SmallEnough` (`M^2 ≤ polylogBudget(n)`), чтобы состыковать
-     слабую оценку с целевой `polylog`.
-   - Нужно заменить доказательство на полноценную multi-switching лемму, чтобы
-     `AC0SmallEnough` исчезло.
+   - Условие `AC0SmallEnough` удалено, но `ac0DepthBound_strong` теперь равна
+     `max(M², polylog)`. Это сохраняет корректность, однако не даёт чистой
+     polylog‑оценки без запаса.
+   - Нужно заменить доказательство на полноценную multi-switching лемму и
+     вернуть определение `ac0DepthBound_strong = polylog`.
 
 3. **Финальная гипотеза `hF_all`**
    - Она исчезнет автоматически, как только будет предоставлен real witness
@@ -64,7 +68,7 @@
 ## План работ (детальный, по модулям и шагам)
 
 ### 1) Реализовать multi-switching lemma для глубины `d > 2`
-**Цель:** получить сильную оценку `polylog` без `AC0SmallEnough`.
+**Цель:** получить сильную оценку `polylog` без `max(M², polylog)` в определении.
 
 **Модули:**
 - `pnp3/ThirdPartyFacts/Facts_Switching.lean`
@@ -77,8 +81,8 @@
      аккуратно формализовать объединение частичных сертификатов.
 2. **Вывести `PartialCertificate` с глубиной `ac0DepthBound_strong` (polylog).**
 3. **Переписать `partial_shrinkage_for_AC0`:**
-   - Удалить гипотезу `hSmall : AC0SmallEnough params`.
-   - Убрать промежуточные леммы вида `..._le_strong`.
+   - Удалить оставшиеся «max‑мосты» и доказать bound через multi-switching.
+   - Убрать промежуточные леммы вида `..._le_strong`, если станут избыточны.
 4. **Сделать `partial_shrinkage_for_AC0` источником witness для SAL.**
 
 **Ожидаемый результат:**
@@ -111,8 +115,9 @@
 
 ---
 
-### 3) Удалить `AC0SmallEnough` из конвейера
-**Цель:** убрать все искусственные мосты между weak и strong bounds.
+### 3) Удалить `max(M², polylog)` и вернуть чистый `polylog`
+**Цель:** после появления multi-switching убрать запас и оставить сильную
+оценку в чисто polylog‑виде.
 
 **Модули:**
 - `pnp3/ThirdPartyFacts/Facts_Switching.lean`
@@ -120,9 +125,9 @@
 - `pnp3/Bridge_to_Magnification.lean` (если где-то просачивается условие)
 
 **Шаги:**
-1. Удалить `AC0SmallEnough` из сигнатур (часто в `partial_shrinkage_for_AC0`).
-2. Удалить все леммы по подъёму `weak → strong`.
-3. Проверить импорты, чтобы downstream не требовал старых условий.
+1. Переопределить `ac0DepthBound_strong` как чистую `polylog`‑функцию.
+2. Удалить «max‑мосты» и леммы, поднимающие слабую оценку.
+3. Проверить импорты, чтобы downstream не требовал запасных оценок.
 
 ---
 
@@ -156,7 +161,8 @@
 ## Конкретные точки правки (кодовые якоря)
 
 - **`pnp3/ThirdPartyFacts/Facts_Switching.lean`**
-  - `partial_shrinkage_for_AC0` — сейчас зависит от `AC0SmallEnough`.
+  - `partial_shrinkage_for_AC0` — сильная граница строится через `max(M², polylog)`;
+    нужно заменить на чистую polylog‑оценку после multi-switching.
   - `partial_shrinkage_for_AC0_with_bound` — промежуточный артефакт Stage‑1.
   - `ac0DepthBound_weak/strong` — готовые границы, нужно сделать strong фактической.
 
@@ -172,7 +178,8 @@
 ## Текущий чеклист
 
 - [ ] Multi-switching (полилог) для AC⁰ depth `d>2`.
-- [ ] Удаление `AC0SmallEnough` и всех weak→strong мостов.
+- [x] Удаление `AC0SmallEnough` из сигнатур конвейера.
+- [ ] Замена `max(M², polylog)` на чистую polylog‑оценку.
 - [ ] Реальный `ExternalLocalityWitnessProvider`.
 - [ ] Удаление `hF_all` из `P_ne_NP_final`.
 - [ ] Финальная проверка `AxiomsAudit` и обновление документов.
@@ -186,4 +193,3 @@
 - Все части B, C, D считаются завершёнными и не требуют доработки.
 - Единственная «реальная» математика, остающаяся за пределами Lean, — это
   multi-switching lemma и конструкция witness-ов shrinkage.
-

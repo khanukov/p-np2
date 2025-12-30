@@ -36,8 +36,7 @@ theorem LB_Formulas_core
   obtain ⟨hF, hrest⟩ := hWitness
   set scWitness :=
     (scenarioFromAC0
-        (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-        (hSmall := solver.params.small)).2
+        (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   set Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=

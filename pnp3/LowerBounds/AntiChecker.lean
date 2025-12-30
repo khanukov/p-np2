@@ -115,8 +115,6 @@ open ThirdPartyFacts
 structure SmallAC0Params (p : Models.GapMCSPParams) where
   ac0 : ThirdPartyFacts.AC0Parameters
   same_n : ac0.n = Models.inputLen p
-  /-- Quantitative smallness assumption on the AC⁰ parameters. -/
-  small : ThirdPartyFacts.AC0SmallEnough ac0
   /--
     Грубая, но удобная числовая гипотеза: «словарная» часть из шага B
     не превосходит `2^(2^n/(n+2))`, где `n = ac0.n`.
@@ -182,14 +180,12 @@ theorem noSmallAC0Solver
   let pack :=
     scenarioFromAC0
       (params := solver.params.ac0) (F := F) (hF := hF)
-      (hSmall := solver.params.small)
   let sc := pack.2
   let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong solver.params.ac0)
   -- Вытаскиваем шаг A+B: границы на параметры и связь `card(F) ≤ capacityBound`.
   have hsummary :=
     scenarioFromAC0_stepAB_summary_strong
       (params := solver.params.ac0) (F := F) (hF := hF)
-      (hSmall := solver.params.small)
   dsimp [pack, sc, bound] at hsummary
   rcases hsummary with ⟨hfamily, hk, hdict, hε0, hε1, hεInv, hcap_le⟩
   -- Корректность solver: его решение совпадает с языком GapMCSP на всех входах.
@@ -333,8 +329,7 @@ theorem antiChecker_exists_large_Y_of_false
         ∃ hF : FamilyIsAC0 solver.params.ac0 Fsolver,
           let scWitness :=
             (scenarioFromAC0
-                (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-                (hSmall := solver.params.small)).2
+                (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
           let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
             (solver.params.same_n.symm ▸ Y)
           Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -362,7 +357,7 @@ theorem antiChecker_exists_large_Y
         let scWitness :=
           (scenarioFromAC0
               (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-              (hSmall := solver.params.small)).2
+              ).2
         let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
           (solver.params.same_n.symm ▸ Y)
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -392,7 +387,7 @@ theorem antiChecker_largeY_implies_false
   let scWitness : BoundedAtlasScenario solver.params.ac0.n :=
     (scenarioFromAC0
         (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-        (hSmall := solver.params.small)).2
+        ).2
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
     simpa [Fsolver, Ysolver, scWitness] using hrest.1
   have hLarge : scenarioCapacity (sc := scWitness) < Ysolver.card := by
@@ -423,7 +418,7 @@ theorem antiChecker_exists_testset
         let scWitness :=
           (scenarioFromAC0
               (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-              (hSmall := solver.params.small)).2
+              ).2
         let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
           (solver.params.same_n.symm ▸ Y)
         let Tsolver : Finset (Core.BitVec solver.params.ac0.n) :=
@@ -449,7 +444,7 @@ theorem antiChecker_exists_testset
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
     (scenarioFromAC0
         (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-        (hSmall := solver.params.small)).2
+        ).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
@@ -483,7 +478,7 @@ theorem antiChecker_exists_large_Y_from_testset
         let scWitness :=
           (scenarioFromAC0
               (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-              (hSmall := solver.params.small)).2
+              ).2
         let Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
           (solver.params.same_n.symm ▸ Y)
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
@@ -499,7 +494,7 @@ theorem antiChecker_exists_large_Y_from_testset
   set scWitness : BoundedAtlasScenario solver.params.ac0.n :=
     (scenarioFromAC0
         (params := solver.params.ac0) (F := Fsolver) (hF := hF)
-        (hSmall := solver.params.small)).2
+        ).2
   set Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool) :=
     solver.params.same_n.symm ▸ Y
   have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by

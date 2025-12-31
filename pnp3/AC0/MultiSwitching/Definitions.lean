@@ -1,6 +1,8 @@
 import Core.BooleanBasics
 import Core.PDT
 import Core.SAL_Core
+import AC0.MultiSwitching.Restrictions
+import AC0.MultiSwitching.Counting
 
 /-!
   pnp3/AC0/MultiSwitching/Definitions.lean
@@ -52,26 +54,6 @@ abbrev DnfFamily (n k : Nat) := List (kDNF n k)
 /-- Перевод семейства k‑DNF в `Core.Family` булевых функций. -/
 @[simp] def evalDnfFamily (F : DnfFamily n k) : Core.Family n :=
   F.map evalDNF
-
-/-!
-### Модель `R_s` (фиксированное число свободных координат)
-
-В multi‑switching мы предпочитаем работать не с вероятностью, а с
-равномерным распределением по рестрикциям с фиксированным числом
-свободных координат.  Это именно `R_s` в классических текстах.
-
-Здесь мы вводим короткое имя и простую лемму о принадлежности,
-чтобы downstream‑код использовал единый интерфейс.
--/
-
-/-- `R_s` — финитное множество рестрикций с ровно `s` свободными битами. -/
-@[simp] abbrev R_s (n s : Nat) : Finset (Restriction n) :=
-  Restriction.restrictionsWithFreeCount (n := n) s
-
-/-- Характеризация принадлежности `R_s`. -/
-@[simp] lemma mem_R_s {ρ : Restriction n} {s : Nat} :
-    ρ ∈ R_s (n := n) s ↔ ρ.freeCount = s := by
-  simp [R_s]
 
 /-!
 ### Lean‑friendly параметры для multi‑switching
@@ -278,6 +260,26 @@ instance {n k ℓ t : Nat} {F : FormulaFamily n k}
     (A : CCDTAlgorithm n k ℓ t F) (ρ : Restriction n) :
     BadEvent (A := A) ρ ↔ t ≤ PDT.depth (A.ccdt ρ) := by
   rfl
+
+/-!
+### Множество "плохих" рестрикций
+
+Эта обёртка связывает определение `BadEvent` с моделью `R_s`.
+Понадобится в encoding/injection: мы будем считать `Bad` и
+сравнивать его с `R_s`.
+-/
+
+/-- Множество `Bad` — "плохие" рестрикции в `R_s` для данного алгоритма. -/
+@[simp] def Bad {n k ℓ t : Nat} {F : FormulaFamily n k}
+    (A : CCDTAlgorithm n k ℓ t F) (s : Nat) :
+    Finset (Restriction n) :=
+  badRestrictions (n := n) s (BadEvent (A := A))
+
+@[simp] lemma mem_Bad {n k ℓ t : Nat} {F : FormulaFamily n k}
+    (A : CCDTAlgorithm n k ℓ t F) {s : Nat} {ρ : Restriction n} :
+    ρ ∈ Bad (A := A) s ↔ ρ ∈ R_s (n := n) s ∧ BadEvent (A := A) ρ := by
+  classical
+  simp [Bad, badRestrictions]
 
 lemma mem_evalFamily_iff {F : FormulaFamily n k} {f : Core.BitVec n → Bool} :
     f ∈ evalFamily F ↔ ∃ G ∈ F, evalCNF (n := n) (k := k) G = f := by

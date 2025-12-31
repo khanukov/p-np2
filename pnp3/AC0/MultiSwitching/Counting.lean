@@ -1,4 +1,4 @@
-import AC0.MultiSwitching.Definitions
+import AC0.MultiSwitching.Restrictions
 
 /-!
   pnp3/AC0/MultiSwitching/Counting.lean

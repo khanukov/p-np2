@@ -14,7 +14,7 @@ Plugging SAL + Covering-Power into standard anti-checker and magnification frame
 
 - Multi-switching / shrinkage lemmas for AC⁰ and local circuits
 
-The entire glue and all internal combinatorics are machine-checked; no axioms remain in the active tree, but external witnesses are still required. See the OPS'21 ToC paper and magnification surveys for the surrounding framework.
+The entire glue and all internal combinatorics are machine-checked; the only active axioms are **explicit placeholders** for the in-progress multi-switching canonical trace encoding (`AC0/MultiSwitching/Encoding.lean`). External witnesses are still required for the shrinkage theorems. See the OPS'21 ToC paper and magnification surveys for the surrounding framework.
 
 Our proof avoids the Natural Proofs barrier because the combinatorial property (incompressibility by SAL-atlases) is established only against weak classes ($AC^0$ and local circuits). The extension to $NP \not\subseteq P/poly$ is achieved via Hardness Magnification, which relies on the specific structural properties of MCSP, not on extending the natural property to $P/poly$.
 

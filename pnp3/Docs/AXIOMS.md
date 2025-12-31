@@ -7,12 +7,14 @@ Last updated: 2025-12-26
 
 ## Overview
 
-After the latest cleanup the active `pnp3/` tree contains **0 external axioms**.
+After the latest cleanup the active `pnp3/` tree contains **4 explicit
+placeholder axioms** (all confined to the multi-switching encoding scaffold).
 The pipeline uses shrinkage theorems that are *parameterised* by explicit
 witnesses, so the logic remains fully formal while the data are supplied via
 the hypotheses. They are grouped along the analytical steps of the pipeline:
 
 - **Part A (Switching / Shrinkage)**: 0 axioms
+- **Part A' (Multi-switching encoding placeholders)**: 4 axioms (temporary)
 - **Part C (Anti-Checker lower bounds)**: 0 axioms — all results are theorems
 - **Part D (Magnification triggers / bridges)**: 0 axioms
 - **Complexity interfaces**: 0 axioms — `P ⊆ P/poly` is imported from the
@@ -120,6 +122,20 @@ Oliveira–Pich–Santhanam (2019/2021).
 
 All trigger theorems in this section remain **proved**.  There are currently
 no external axioms associated with the magnification interfaces.
+
+---
+
+## Part A': Multi-switching encoding (placeholders)
+
+These axioms are **temporary stubs** used to keep the multi-switching API
+stable while the canonical trace encoding is developed. They are isolated to
+`pnp3/AC0/MultiSwitching/Encoding.lean` and do not participate in the current
+`P_ne_NP_final` derivation.
+
+- `BadTraceEvent` — placeholder predicate for the CNF canonical trace notion of badness.
+- `defaultCCDTAlgorithm` — placeholder CCDT algorithm for CNF families.
+- `canonicalTraceEncoding_witness` — placeholder encoding witness into `R_{s-t} × Aux`.
+- `exists_good_restriction_of_canonical_trace_encoding` — placeholder existence lemma.
 
 ---
 

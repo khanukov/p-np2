@@ -23,9 +23,16 @@ lean_lib PnP3 where
     Glob.one `Counting.Count_EasyFuncs,
     Glob.one `Counting.Atlas_to_LB_Core,
     Glob.one `AC0.Formulas,
+    -- Multi-switching core: include the shared restriction model plus
+    -- the canonical trace helper so downstream modules can import it
+    -- without missing `.olean` artifacts.
+    Glob.one `AC0.MultiSwitching.Restrictions,
     Glob.one `AC0.MultiSwitching.Definitions,
+    Glob.one `AC0.MultiSwitching.CanonicalTrace,
+    Glob.one `AC0.MultiSwitching.CanonicalDT,
     Glob.one `AC0.MultiSwitching.Counting,
     Glob.one `AC0.MultiSwitching.Encoding,
+    Glob.one `AC0.MultiSwitching.Main,
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
     Glob.one `Complexity.Reductions,

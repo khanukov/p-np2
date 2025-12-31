@@ -83,7 +83,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 External Input Inventory
 
-**Total Axioms**: 0 (no axioms in active `pnp3/`)
+**Total Axioms**: 4 (all are explicit placeholders in multi-switching encoding)
 
 ### External Theorem Inputs (non-axiom)
 
@@ -110,6 +110,8 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 - `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
   remaining interface axioms. The pipeline derives `NP_not_subset_Ppoly` and `P_ne_NP` as theorems.
+  The only active axioms live in `AC0/MultiSwitching/Encoding.lean` and are
+  clearly marked as placeholders for the canonical trace encoding.
 
 **Minimal Set for P_ne_NP_final**: External witnesses for A.1/A.2 shrinkage inputs
 

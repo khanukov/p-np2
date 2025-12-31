@@ -80,13 +80,15 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
 
-- **0 active axioms** in the live `pnp3/` tree
+- **4 active axioms** in the live `pnp3/` tree (all are explicit placeholders
+  in `pnp3/AC0/MultiSwitching/Encoding.lean`)
   (switching/shrinkage inputs are witness-backed theorems)
 - **0 sorry/admit** statements in active code
 - All external inputs are **explicitly documented and categorized**
 
 You can also run `scripts/check.sh` to rebuild, smoke-test, and verify the
-axiom inventory via `rg "^axiom " -g"*.lean" pnp3` (expected to be empty).
+axiom inventory via `rg "^axiom " -g"*.lean" pnp3` (expected to show the
+multi-switching placeholders).
 
 ### Q: Can I reproduce your results?
 

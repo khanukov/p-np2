@@ -1,7 +1,7 @@
 # P≠NP formalization repository
 > **Status (2025-12-17)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  Earlier constructive pipelines remain archived for provenance but are no longer part of the active build.
 
-This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for (Gap)MCSP and, eventually, into a full separation.
+This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for **Partial MCSP**.  The former GapMCSP pipeline now lives under `archive/`.
 
 ## Scientific contribution
 
@@ -19,7 +19,7 @@ Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-En
 * `Core/` – core combinatorics of subcubes, partial decision trees, and the SAL atlas infrastructure.
 * `Counting/` – capacity bounds for atlases together with approximation lemmas.
 * `ThirdPartyFacts/` – external inputs (multi-switching theorems, lightweight function counts, etc.).
-* `Models/` – formal interfaces for (Gap)MCSP variants and related promise problems.
+* `Models/` – formal interfaces for Partial MCSP, plus related promise problems.  Legacy GapMCSP models live under `archive/pnp3/Models/`.
 * `LowerBounds/` – lower-bound derivations for formulas and depth-limited circuits based on SAL.
 * `Magnification/` – magnification bridges and literature interfaces culminating in the final separation statements.
 * `Complexity/` – wrappers around standard complexity classes used by the magnification step.
@@ -71,7 +71,8 @@ lake test                           # helper executables
 The shift from the FCE-Lemma pipeline to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
 
 1. The constructive cover machinery is preserved for reproducibility but no longer drives the main separation strategy.
-2. SAL-based magnification aligns better with contemporary lower-bound techniques and offers a clearer path to hardness for (Gap)MCSP.
-3. All new development happens inside `pnp3/`, while the legacy directories only serve as archival references for earlier results.
+2. SAL-based magnification aligns better with contemporary lower-bound techniques and offers a clearer path to hardness for Partial MCSP, so the GapMCSP chain has been archived.
+3. The Partial MCSP track now drives the main pipeline (final result is in the partial branch), with GapMCSP kept only under `archive/` for legacy reference.
+4. All new development happens inside `pnp3/`, while the legacy directories only serve as archival references for earlier results.
 
-For detailed migration plans and milestone tracking, consult `pnp3/Docs/PLAN.md` and the root `TODO.md`.
+For detailed migration plans and milestone tracking, consult `archive/pnp3/Docs/PLAN.md` and the root `TODO.md`.

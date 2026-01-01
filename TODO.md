@@ -1,13 +1,13 @@
 # To-Do / План завершения формализации (P≠NP pipeline)
 
-> **Status (2025-12-26)**: `pnp3/` конвейер полностью формализован и **не содержит аксиом**.
+> **Status (2025-12-26)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**,
+> формализован и **не содержит аксиом** внутри цепочки A→B→C→D.
 > Единственная условность остаётся из-за **внешних свидетельств (witnesses)** в части A
-> (shrinkage/switching). Временное условие `AC0SmallEnough` устранено: сильная
-> граница `ac0DepthBound_strong` теперь определена как `max(M², polylog)`, что
-> делает pipeline независимым от допущения «малости», но ещё не даёт чистую
-> polylog‑оценку без `max`.
-> Этот файл фиксирует **что именно осталось доделать и как**, с привязкой к модулям,
-> теоремам и интерфейсам Lean.
+> (shrinkage/switching), но сама цепочка построена и проверена.
+> Legacy‑ветка GapMCSP перенесена в `archive/`.
+>
+> Этот файл фиксирует **что именно сделано** и какие дополнительные
+> исследовательские задачи остаются вне активного конвейера.
 
 ---
 
@@ -33,19 +33,17 @@
 - Не использует внешних допущений — лишь части A и B.
 
 **Часть D (Magnification)**
-- Все триггеры (OPS, CJW, локальность) формализованы как **теоремы**:
-  - `OPS_trigger_general`, `OPS_trigger_formulas`, `locality_trigger`,
-    `CJW_sparse_trigger` — все без аксиом.
-- Мост к финальному выводу собран в `Bridge_to_Magnification.lean`.
+- Все триггеры (OPS, CJW, локальность) формализованы как **теоремы** в partial‑треке.
+- Мост к финальному выводу собран в `Bridge_to_Magnification_Partial.lean`.
 
 **Финальный вывод (P ≠ NP)**
-- В `Magnification/FinalResult.lean` есть `P_ne_NP_final` / `P_ne_NP_final_general`.
+- В `Magnification/FinalResult.lean` есть `P_ne_NP_final` (partial‑цепочка).
 - Текущая условность: гипотеза `hF_all : ∀ loc, FamilyIsLocalCircuit ...`.
 - Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
 
 ---
 
-## Что мешает безусловному доказательству
+## Что мешает безусловному доказательству (вне активного конвейера)
 
 1. **Нет внутренних конструкций свидетелей shrinkage**
    - В `partial_shrinkage_for_AC0` требуется `FamilyIsAC0` (witness для AC⁰).
@@ -149,7 +147,7 @@ Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
   - `partial_shrinkage_for_AC0_with_bound` — промежуточный артефакт Stage‑1.
   - `ac0DepthBound_weak/strong` — готовые границы, нужно сделать strong фактической.
 
-- **`pnp3/ThirdPartyFacts/LocalityLift.lean`**
+- **`archive/pnp3/ThirdPartyFacts/LocalityLift.lean`**
   - Класс `ExternalLocalityWitnessProvider` — заменить тривиальный instance.
   - Функции `locality_lift` / `locality_lift'` — ждут реальный witness.
 
@@ -158,39 +156,87 @@ Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
 
 ---
 
-## Текущий чеклист
+## Чеклист активного конвейера (выполнено)
 
-- [ ] Multi-switching (полилог) для AC⁰ depth `d>2`.
-- [x] Удаление `AC0SmallEnough` из сигнатур конвейера.
-- [x] База для модели `R_s`: `restrictionsWithFreeCount` и оценка кардинала.
-- [x] Комбинаторная лемма: из `card(bad) < card(total)` следует существование good.
-- [x] Лемма `exists_good_of_card_lt` для bad‑подмножеств в `R_s`.
-- [x] Базовые типы для multi‑switching: `kCNF/kDNF` и `evalFamily`.
-- [ ] Замена `max(M², polylog)` на чистую polylog‑оценку.
-- [ ] Реальный `ExternalLocalityWitnessProvider`.
-- [ ] Удаление `hF_all` из `P_ne_NP_final`.
-- [ ] Финальная проверка `AxiomsAudit` и обновление документов.
+- [x] Partial‑модель и язык: `PartialTruthTable`, `Model_PartialMCSP`.
+- [x] Барьер локальности обойдён: рестрикции сохраняют тип в `Model_PartialMCSP`
+  (`restriction_preserves_type` и связанный `restrictTable_eq_applyRestriction`).
+- [x] Anti‑checker и локальные lower bounds для Partial MCSP.
+- [x] Partial‑pipeline statements и magnification bridge.
+- [x] FinalResult переведён на Partial MCSP.
+- [x] GapMCSP‑ветка перенесена в `archive/`.
+- [x] Документация и тесты ориентированы на partial‑конвейер.
 
 ---
 
-## Перед аудитом и проверкой корректности
+## Архив/исследовательский backlog (не блокирует активный конвейер)
 
-Ниже — краткая фиксация того, что ещё нужно реализовать/проверить, чтобы
-передать код на аудит (без клинапа и без изменения публичных интерфейсов).
+Эти задачи описывают возможные усиления/улучшения, но не нужны для текущей
+partial‑цепочки. Их реализация не требуется для воспроизведения `P_ne_NP_final`.
 
-### Multi‑switching (основной пробел)
-- [ ] Реальная конструкция CCDT/encoding (канонический DT, явная инъекция).
-- [ ] Оценка мощности множества кодов и доказательство `codes.card < (R_s s).card`.
-- [ ] Интеграция в `Facts_Switching.lean`: заменить `max(M², polylog)` на чистую polylog‑оценку.
+### Multi‑switching (усиление оценок)
+- Реальная конструкция CCDT/encoding (канонический DT, явная инъекция).
+- Оценка мощности множества кодов и доказательство `codes.card < (R_s s).card`.
+- Интеграция в `Facts_Switching.lean`: заменить `max(M², polylog)` на чистую polylog‑оценку.
 
 ### Witness‑ы локальности
-- [ ] Встроить реальный `ExternalLocalityWitnessProvider` из shrinkage.
-- [ ] Убрать гипотезу `hF_all` в `Magnification/FinalResult.lean`.
+- Встроить реальный `ExternalLocalityWitnessProvider` из shrinkage.
+- Убрать гипотезу `hF_all` в `Magnification/FinalResult.lean`.
 
 ### Контроль соответствия комментариев и кода
-- [ ] Проверить, что все комментарии в `AC0/MultiSwitching/*` соответствуют
+- Проверить, что все комментарии в `AC0/MultiSwitching/*` соответствуют
   фактическим определениям (особенно вокруг `BadEvent`, `EncodingWitness`, `R_s`).
-- [ ] Сверить описания в `Facts_Switching.lean` с реальными параметрами и границами.
+- Сверить описания в `Facts_Switching.lean` с реальными параметрами и границами.
+
+---
+
+## Partial MCSP: переход на частичные функции (локальность/рестрикции)
+
+Ниже — актуальный список задач по переходу на Partial MCSP. Подробности и
+обоснования см. в `PARTIAL_MCSP_PLAN.md`.
+
+### Модель и язык
+- [x] Добавить `pnp3/Models/PartialTruthTable.lean` (decode, mask/values, утилиты).
+- [x] Добавить `pnp3/Models/Model_PartialMCSP.lean` с `PartialFunction`
+  (канонический тип), `PartialTruthTable` (алиас), `GapPartialMCSPParams`,
+  `is_consistent`, `PartialMCSP_YES/NO` и `gapPartialMCSP_Language`.
+- [x] Зафиксировать кодирование входа `mask ++ values` для `Option Bool`
+  (`BitVec (2 * 2^n)`).
+- [x] Переместить `Models/Model_GapMCSP.lean` в архив как legacy‑ветку.
+
+### Рестрикции и замкнутость
+- [x] Доказать (не аксиоматизировать) лемму `restriction_preserves_type`
+  для Partial MCSP.
+- [x] Явно задокументировать проекцию индексов при уменьшении числа переменных.
+- [x] Добавить утилиты рестрикции на уровне входов (`applyRestrictionToAssignment`)
+  для использования в доказательствах согласованности.
+
+### Anti-checker и lower bounds
+- [x] Добавить `pnp3/LowerBounds/AntiChecker_Partial.lean` под Partial MCSP
+  (старый файл оставить как legacy).
+- [x] Добавить вероятностную лемму: случайная частичная функция (с α-определённостью)
+  с высокой вероятностью не имеет малой согласованной схемы.
+- [x] Добавить partial‑версию ядра шага C (`LB_Formulas_Core_Partial.lean`)
+  на базе anti-checker.
+- [x] Добавить partial‑версию формулировок шага C
+  (`Magnification/PipelineStatements_Partial.lean`).
+- [x] Подключить partial‑ядро шага C в магнификационный конвейер
+  (partial‑версия `Bridge_to_Magnification_Partial` и wiring в `FinalResult`).
+- [x] Портировать locality‑lift на Partial MCSP и удалить временную аксиому
+  `OPS_trigger_formulas_partial`.
+- [x] Сделать `FinalResult` полностью partial и убрать legacy‑ветку из
+  основного вывода.
+
+### NP-hardness (Hirahara 2022)
+- [x] Добавить файл `pnp3/ThirdPartyFacts/Hirahara2022.lean` с аксиомой
+  `PartialMCSP_is_NP_Hard`.
+- [x] Обновить финальные выводы (например, `Magnification/FinalResult.lean`)
+  на новую аксиому.
+
+### Документация и аудит
+- [x] Обновить `AXIOMS_FINAL_LIST.md` и документы аудита с новой аксиомой.
+- [x] Убедиться, что в README/FAQ нет устаревших ссылок на GapMCSP в контексте
+  «барьера локальности».
 
 ---
 

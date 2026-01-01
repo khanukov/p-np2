@@ -3,8 +3,8 @@ import LowerBounds.LB_Formulas
 import Core.SAL_Core
 import Core.BooleanBasics
 import ThirdPartyFacts.Facts_Switching
-import LowerBounds.AntiChecker
-import Magnification.Facts_Magnification
+import LowerBounds.AntiChecker_Partial
+import Magnification.Facts_Magnification_Partial
 import Complexity.Interfaces
 
 /-!

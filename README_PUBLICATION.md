@@ -53,7 +53,7 @@ Part B: Counting & Capacity Bounds
     ↓
 
 Part C: Anti-Checker Construction
-  Input: Small AC⁰ solver for GapMCSP
+  Input: Small AC⁰ solver for Partial MCSP (legacy GapMCSP chain is archived)
   Output: Large function family exceeding capacity
   Axioms: None (all anti-checker results proved in Lean)
 
@@ -83,7 +83,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 External Input Inventory
 
-**Total Axioms**: 4 (all are explicit placeholders in multi-switching encoding)
+**Total Axioms**: 5 (4 placeholder axioms in multi-switching encoding + 1 NP-hardness axiom)
 
 ### External Theorem Inputs (non-axiom)
 
@@ -105,6 +105,10 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - D.2: `Locality_trigger` ✅ **PROVEN in Lean** (local circuit trigger)
 - D.3: `CJW_sparse_trigger` ✅ **PROVEN in Lean** (sparse-language trigger)
 - Specialization `OPS_trigger_formulas` remains proved constructively as a corollary of D.1
+
+**Partial MCSP NP-hardness (axiom)**
+- `PartialMCSP_is_NP_Hard` — external axiom in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+  (Hirahara, FOCS 2022).
 
 ### Interface Axioms
 
@@ -128,7 +132,7 @@ pnp3/
 ├── Core/               # SAL infrastructure (subcubes, PDTs, atlases)
 ├── Counting/           # Capacity bounds (✅ fully proven)
 ├── ThirdPartyFacts/    # External inputs (switching lemma, etc.)
-├── Models/             # GapMCSP and problem interfaces
+├── Models/             # Partial MCSP interfaces (legacy GapMCSP archived)
 ├── LowerBounds/        # Anti-checker construction
 ├── Magnification/      # Hardness magnification triggers
 ├── Complexity/         # Complexity class interfaces

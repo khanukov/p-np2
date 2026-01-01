@@ -229,43 +229,6 @@ lemma exists_good_restriction_of_aux_encoding
     (codes := (R_s (n := n) t').product (auxCodes n t k' m))
     witness hcodes'
 
-/-!
-### Канонический encoding для CNF через CanonicalTrace (placeholder)
-
-Полная реализация proof‑by‑encoding для CNF будет добавлена позже.
-Пока оставляем этот блок как отдельную заглушку, чтобы не мешать сборке.
-
-⚠️ Важно: ниже стоят **аксиомы‑заглушки**. Они не используются в основной
-доказательной цепочке `P_ne_NP_final`, но считаются активными в дереве
-`pnp3/` и должны быть заменены конструктивными определениями/леммами,
-как только появится корректная реализация канонического trace‑encoding.
--/
-
-section CanonicalTraceEncoding
-
-open Core.CNF CanonicalTrace
-
-variable {F0 : CNF n k}
-
-axiom BadTraceEvent (t : Nat) (ρ : Restriction n) : Prop
-
-axiom defaultCCDTAlgorithm (F0 : CNF n k) (t ℓ : Nat) :
-  CCDTAlgorithm n k ℓ t [F0]
-
-axiom canonicalTraceEncoding_witness
-    (t s : Nat) :
-    EncodingWitness (A := defaultCCDTAlgorithm (F0 := F0) (t := t) (ℓ := s))
-      (s := s)
-      (codes := (R_s (n := n) (s - t)).product (auxCodes n t k 1))
-
-axiom exists_good_restriction_of_canonical_trace_encoding
-    (t s : Nat) (hcodes :
-      (R_s (n := n) (s - t)).card * (2 * n * k * 1) ^ t
-        < (R_s (n := n) s).card) :
-    ∃ ρ ∈ R_s (n := n) s, ¬ BadTraceEvent t ρ
-
-end CanonicalTraceEncoding
-
 end MultiSwitching
 end AC0
 end Pnp3

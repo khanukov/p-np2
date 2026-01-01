@@ -1,17 +1,18 @@
-import Magnification.Bridge_to_Magnification
-import Models.Model_GapMCSP
+import Magnification.Bridge_to_Magnification_Partial
+import Models.Model_PartialMCSP
 import Complexity.Interfaces
+import ThirdPartyFacts.Hirahara2022
 
 /-!
   # pnp3/Magnification/FinalResult.lean
 
   Финальный шаг текущего конвейера: фиксируем конкретные параметры для
-  задачи `GapMCSP` и выводим заявленное разделение классов `P` и `NP`.
+  задачи `PartialMCSP` и выводим заявленное разделение классов `P` и `NP`.
 
   На предыдущих этапах были построены:
 
-  * мост `P_ne_NP_from_formulas_bridge`, который из любого положительного
-    параметра `δ` немедленно даёт `P ≠ NP` (опираясь на античекер и
+  * мост `P_ne_NP_from_partial_formulas`, который из любого положительного
+    параметра `δ` немедленно даёт `P ≠ NP` (опираясь на partial-античекер и
     Covering-Power);
   * внешние факты `shrinkage_for_AC0`, `leaf_budget_from_shrinkage` и
     доказанная внутри проекта теорема `antiChecker_exists_large_Y`
@@ -37,19 +38,19 @@ open Models
 open ComplexityInterfaces
 
 /--
-  Конкретный набор параметров `GapMCSP`, который удовлетворяет условию
+  Конкретный набор параметров `PartialMCSP`, который удовлетворяет условию
   `sYES + 1 ≤ sNO` и базовому требованию `8 ≤ n`.  Для определённости
   фиксируем `n = 8`, порог малых схем `sYES = 1` и порог больших схем
   `sNO = 3`.
 -/
-@[simp] def canonicalGapParams : GapMCSPParams where
+@[simp] def canonicalPartialParams : GapPartialMCSPParams where
   n := 8
   sYES := 1
   sNO := 3
   gap_ok := by decide
   n_large := by decide
 
-/--
+/-!
   Финальный вывод текущей цепочки: из наличия положительного `δ`
   (конкретно `δ = 1`) и построенного ранее моста следует `P ≠ NP`.
 
@@ -57,30 +58,30 @@ open ComplexityInterfaces
   как только античекер и shrinkage будут формально доказаны, строка ниже
   мгновенно превратится в полноценное разделение `P` и `NP`.
 -/
+/--
+  В финальном файле явно фиксируем внешнюю аксиому NP-трудности Partial MCSP.
+  Это обновляет «выходной слой» проекта до новой частичной версии задачи и
+  даёт явную точку ссылки для дальнейшей интеграции в магнификационный
+  конвейер.
+-/
+theorem partial_mcsp_np_hard_witness :
+    ∃ p : GapPartialMCSPParams,
+      Complexity.Is_NP_Hard (gapPartialMCSP_Language p) :=
+  ThirdPartyFacts.PartialMCSP_is_NP_Hard
+
+/--
+  Финальный вывод для Partial MCSP: используем формульный мост для
+  фиксированного набора partial‑параметров.
+-/
 theorem P_ne_NP_final
-    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver canonicalGapParams,
+    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial
+      canonicalPartialParams,
       ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
         (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
   have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
-  have kit : PipelineBridgeKit canonicalGapParams :=
-    pipelineBridgeKit (p := canonicalGapParams)
   exact
-    P_ne_NP_from_pipeline_kit_formulas
-      (p := canonicalGapParams) (kit := kit) (δ := (1 : Rat)) hδ hF_all
-
-/--
-  Та же финальная строка, использующая новую связку Locality-Lift → OPS.
--/
-theorem P_ne_NP_final_general
-    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver canonicalGapParams,
-      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-        (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
-  have hε : (0 : Rat) < (1 : Rat) := zero_lt_one
-  have kit : PipelineBridgeKit canonicalGapParams :=
-    pipelineBridgeKit (p := canonicalGapParams)
-  exact
-    P_ne_NP_from_pipeline_kit_general_circuits
-      (p := canonicalGapParams) (kit := kit) (ε := (1 : Rat)) hε hF_all
+    P_ne_NP_from_partial_formulas
+      (p := canonicalPartialParams) (δ := (1 : Rat)) hδ hF_all
 
 end Magnification
 end Pnp3

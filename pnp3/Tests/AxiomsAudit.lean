@@ -1,5 +1,5 @@
 import Magnification.FinalResult
-import Magnification.Bridge_to_Magnification
+import Magnification.Bridge_to_Magnification_Partial
 import Complexity.Interfaces
 import ThirdPartyFacts.Facts_Switching
 
@@ -17,10 +17,10 @@ open Pnp3.Magnification
 
 -- Итоговые утверждения.
 #print axioms P_ne_NP_final
-#print axioms P_ne_NP_final_general
+#print axioms P_ne_NP_from_partial_formulas
 
 -- Мост от нижних оценок к `NP ⊄ P/poly`.
-#print axioms bridge_from_general_statement
+#print axioms NP_not_subset_Ppoly_from_partial_formulas
 
 -- Базовая логическая связка `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
 #print axioms P_ne_NP_of_nonuniform_separation

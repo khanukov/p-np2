@@ -3,24 +3,25 @@
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
 **Revision Date**: 2025-12-26
-**Total Active Axioms (`pnp3/`)**: 4
+**Total Active Axioms (`pnp3/`)**: 1
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The current `pnp3/` proof development depends on two shrinkage theorems that
-still require externally supplied witnesses, and it also contains a small set
-of **explicit placeholder axioms** for the in-progress multi-switching
-canonical trace encoding. These placeholders are isolated to
-`AC0/MultiSwitching/Encoding.lean` and do **not** participate in the final
-`P_ne_NP_final` derivation at present.
+The active `pnp3/` proof development uses a single external NP‑hardness axiom
+to anchor Partial MCSP. All other former placeholders have been moved to the
+`archive/` tree and are no longer part of the active build.
+
+The archived multi-switching placeholders are kept out of the active
+`pnp3/` build and therefore do **not** participate in the final
+`P_ne_NP_final` derivation.
 
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 0 | Håstad (1986), Williams (2014) |
-| Part A' — Multi-switching encoding (placeholder) | `AC0/MultiSwitching/Encoding.lean` | 4 | In-progress (canonical trace encoding) |
+| Partial MCSP NP-hardness | `ThirdPartyFacts/Hirahara2022.lean` | 1 | Hirahara (FOCS 2022) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -44,16 +45,17 @@ magnification triggers (`OPS_trigger_general`, `OPS_trigger_formulas`,
   - Theorem, but requires an external `LocalCircuitWitness` via `FamilyIsLocalCircuit`.
   - Source: Williams (2014), Chen–Oliveira–Santhanam (2022).
 
-### Part A' — Multi-switching encoding (placeholders)
+### Part A' — Multi-switching encoding (archived placeholders)
 
-These axioms are **temporary stubs** for the canonical trace encoding.
-They live in `pnp3/AC0/MultiSwitching/Encoding.lean` and must be replaced
-by constructive definitions/lemmas as the canonical encoding is finalized.
+The canonical trace encoding stubs have been moved to
+`archive/pnp3/AC0/MultiSwitching/Encoding_CanonicalTrace_Placeholders.lean`.
+They are not part of the active `pnp3/` build.
 
-- **`BadTraceEvent`** — placeholder predicate for the CNF canonical trace notion of badness.
-- **`defaultCCDTAlgorithm`** — placeholder CCDT algorithm for CNF families.
-- **`canonicalTraceEncoding_witness`** — placeholder encoding witness into `R_{s-t} × Aux`.
-- **`exists_good_restriction_of_canonical_trace_encoding`** — placeholder existence lemma.
+### Partial MCSP — NP-hardness (external, active)
+
+- **`PartialMCSP_is_NP_Hard`** — `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+  - Axiom: Partial MCSP NP-hardness (logical reductions).
+  - Source: Hirahara (FOCS 2022).
 
 ### Part C — Anti-Checker Lower Bounds (0 axioms)
 
@@ -104,13 +106,20 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
+- **2025-12-26** — Archived the canonical trace placeholder axioms from the
+  active `pnp3/` tree, leaving the Partial MCSP NP-hardness axiom as the
+  only active axiom.
+- **2025-12-26** — Added axiom `PartialMCSP_is_NP_Hard` (Hirahara 2022), bringing
+  the active axiom count to 5.
+- **2025-12-27** — Ported locality-lift to Partial MCSP and removed the
+  temporary partial OPS axiom, returning the active axiom count to 5.
 - **2025-12-26** — Added explicit placeholder axioms for multi-switching
   canonical trace encoding (4 total), and reclassified A.1/A.2 as theorems
   with external witnesses.
 - **2025-12-18** — Marked `antiChecker_exists_large_Y` as a theorem (derived
   from the capacity-gap contradiction), reducing the active axiom count to 2.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all
-  magnification triggers remain proven, active axiom count stays at 6.
+  magnification triggers remain proven.
 - **2025-10-25** — Historical update: totals moved to 6 axioms; marked
   `CJW_sparse_trigger` proven; clarified that all magnification triggers are
   theorems (superseded by the 5-axiom count above).

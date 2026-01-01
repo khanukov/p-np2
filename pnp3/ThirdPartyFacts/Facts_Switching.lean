@@ -16,7 +16,6 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
 import AC0.Formulas
-import Models.Model_GapMCSP
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -136,6 +135,19 @@ def ac0DepthBound (params : AC0Parameters) : Nat :=
     доступной через `ac0DepthBound_weak`.
   -/
   ac0DepthBound_strong params
+
+/--
+  Базовое условие «малости» AC⁰‑семейства.
+
+  Мы фиксируем его здесь, чтобы downstream‑код (anti‑checker, locality,
+  magnification) использовал единый предикат. Пока это **предположение**,
+  которое связывает размер семейства `M` с глубиной `ac0DepthBound`.
+
+  В дальнейшем это место можно усилять/изменять при улучшении
+  switching‑леммы, не трогая остальные файлы.
+-/
+def AC0SmallEnough (params : AC0Parameters) : Prop :=
+  params.M ≤ Nat.pow 2 (ac0DepthBound params)
 
 /-- Полный подкуб (никаких фиксированных битов). -/
 @[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none

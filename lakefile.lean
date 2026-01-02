@@ -28,8 +28,11 @@ lean_lib PnP3 where
     -- without missing `.olean` artifacts.
     Glob.one `AC0.MultiSwitching.Restrictions,
     Glob.one `AC0.MultiSwitching.Definitions,
+    Glob.one `AC0.MultiSwitching.BadEvents,
     Glob.one `AC0.MultiSwitching.CanonicalTrace,
     Glob.one `AC0.MultiSwitching.CanonicalDT,
+    Glob.one `AC0.MultiSwitching.Numerics,
+    Glob.one `AC0.MultiSwitching.Trace,
     Glob.one `AC0.MultiSwitching.Counting,
     Glob.one `AC0.MultiSwitching.Encoding,
     Glob.one `AC0.MultiSwitching.Main,

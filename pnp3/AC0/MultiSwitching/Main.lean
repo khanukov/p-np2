@@ -1,4 +1,5 @@
 import AC0.MultiSwitching.Encoding
+import AC0.MultiSwitching.Trace
 
 /-!
   pnp3/AC0/MultiSwitching/Main.lean

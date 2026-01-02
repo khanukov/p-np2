@@ -2,7 +2,6 @@ import Core.BooleanBasics
 import Core.PDT
 import Core.SAL_Core
 import AC0.MultiSwitching.Restrictions
-import AC0.MultiSwitching.Counting
 
 /-!
   pnp3/AC0/MultiSwitching/Definitions.lean
@@ -54,6 +53,92 @@ abbrev DnfFamily (n k : Nat) := List (kDNF n k)
 /-- Перевод семейства k‑DNF в `Core.Family` булевых функций. -/
 @[simp] def evalDnfFamily (F : DnfFamily n k) : Core.Family n :=
   F.map evalDNF
+
+/-!
+### Множество "плохих" рестрикций
+
+Базовая обёртка над `R_s`: фильтруем по вычислимому предикату.
+Это используется как в encoding, так и в оценках кардиналов.
+-/
+
+variable {n : Nat}
+
+/--
+Множество "плохих" рестрикций внутри `R_s`: это просто фильтр по предикату
+`bad`. По умолчанию используется `DecidablePred bad`, чтобы лемма была
+применима к любому вычислимому условию.
+-/
+@[simp] def badRestrictions (s : Nat) (bad : Restriction n → Prop)
+    [DecidablePred bad] : Finset (Restriction n) :=
+  (R_s (n := n) s).filter bad
+
+/-!
+  Простейшие свойства `badRestrictions`.
+
+  Эти леммы почти тривиальны, но они избавляют от повторения
+  однотипных аргументов `simp`/`filter` в будущих модулях.
+-/
+
+/-- Подмножество: `badRestrictions` лежит внутри `R_s`. -/
+lemma badRestrictions_subset {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] :
+    badRestrictions (n := n) s bad
+      ⊆ R_s (n := n) s := by
+  intro ρ hmem
+  have hmem' : ρ ∈ R_s (n := n) s ∧ bad ρ := by
+    simpa [badRestrictions] using hmem
+  exact hmem'.1
+
+/--
+Кардинал `badRestrictions` никогда не превосходит кардинал `R_s`.
+
+Это базовая оценка, которая в паре с *строгим* неравенством
+даёт существование "хорошей" рестрикции.
+-/
+lemma badRestrictions_card_le {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] :
+    (badRestrictions (n := n) s bad).card
+      ≤ (R_s (n := n) s).card := by
+  classical
+  -- `filter` всегда уменьшает кардинал.
+  simpa [badRestrictions] using
+    (Finset.card_filter_le (s := R_s (n := n) s)
+      (p := bad))
+
+@[simp] lemma mem_badRestrictions {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] {ρ : Restriction n} :
+    ρ ∈ badRestrictions (n := n) s bad
+      ↔ ρ ∈ R_s (n := n) s ∧ bad ρ := by
+  classical
+  simp [badRestrictions]
+
+/--
+Если "плохих" рестрикций строго меньше, чем всего `R_s`,
+то существует "хорошая" рестрикция в `R_s`.
+
+Это целевой комбинаторный шаг, который в дальнейшем будет
+применяться после доказательства оценки на `card (badRestrictions ...)`.
+-/
+lemma exists_good_of_card_lt {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad]
+    (hcard :
+      (badRestrictions (n := n) s bad).card
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ bad ρ := by
+  classical
+  have hsubset :
+      badRestrictions (n := n) s bad
+        ⊆ R_s (n := n) s := by
+    exact badRestrictions_subset (n := n) (s := s) (bad := bad)
+  rcases Restriction.exists_not_mem_of_subset_card_lt
+      (s := badRestrictions (n := n) s bad)
+      (t := R_s (n := n) s)
+      hsubset hcard with ⟨ρ, hρt, hρs⟩
+  refine ⟨ρ, hρt, ?_⟩
+  intro hbad
+  have : ρ ∈ badRestrictions (n := n) s bad := by
+    exact (mem_badRestrictions (n := n) (s := s) (bad := bad)).2 ⟨hρt, hbad⟩
+  exact hρs this
 
 /-!
 ### Lean‑friendly параметры для multi‑switching

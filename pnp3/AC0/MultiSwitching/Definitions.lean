@@ -143,78 +143,10 @@ lemma exists_good_of_card_lt {s : Nat} {bad : Restriction n → Prop}
 /-!
 ### Lean‑friendly параметры для multi‑switching
 
-В литературе часто пишут параметры как `ℓ = ⌈log₂(2M)⌉` и
-`t = ⌈log₂(M (n+2))⌉ + O(1)`.  В Lean удобнее фиксировать
-более простые выражения через `Nat.log2`, добавляя небольшой запас.
-
-Эти определения **не являются** частью доказательства switching‑леммы:
-они служат "контрактом" для downstream‑кода (в частности, в
-`Facts_Switching.lean`), чтобы имена параметров оставались стабильны.
+Определения параметров перенесены в `AC0.MultiSwitching.Params`.  Они не
+являются частью доказательства, а служат стабильным контрактом для
+downstream‑кода (например, для шага 3.2).
 -/
-
-/--
-`ℓParam M` — удобная версия `⌈log₂(2M)⌉` с запасом на округление.
-
-Лемма `pow_two_le` (ниже) позволит доказывать `2^(ℓParam M) ≥ 2M`
-без разборов случаев `M=0`.
--/
-def ℓParam (M : Nat) : Nat :=
-  Nat.log2 (2 * M + 1) + 1
-
-/--
-`tParam M n` — безопасный вариант `⌈log₂(M (n+2))⌉ + O(1)`.
-
-Добавка `+2` даёт запас, который обычно нужен при переходе от
-`log2` (с округлением вниз) к оценкам вида `2^t ≥ M(n+2)`.
--/
-def tParam (M n : Nat) : Nat :=
-  Nat.log2 (M * (n + 2) + 1) + 2
-
-/-!
-### Минимальные арифметические факты о параметрах
-
-Мы добавляем несколько простых лемм, чтобы downstream‑код мог
-использовать их "как есть" без ручного переписывания.
-Конкретная форма этих лемм подобрана так, чтобы последующие
-неравенства в оценках встречались в точности в нужном виде.
--/
-
-lemma pow_two_le_ℓParam (M : Nat) :
-    2 ^ (ℓParam M) ≥ 2 * M := by
-  -- Ключевой факт: `x < 2^(log2 x + 1)`.
-  have hlt : 2 * M + 1 < 2 ^ (Nat.log2 (2 * M + 1) + 1) := by
-    -- Используем общую лемму `lt_pow_succ_log_self` для `log 2`.
-    have hlog :
-        2 * M + 1 <
-          2 ^ (Nat.log 2 (2 * M + 1)).succ := by
-      exact Nat.lt_pow_succ_log_self Nat.one_lt_two (2 * M + 1)
-    -- Переписываем `log 2` как `log2`.
-    simpa [Nat.log2_eq_log_two, Nat.succ_eq_add_one] using hlog
-  -- Теперь ослабляем строгую оценку до `≤` и убираем `+1`.
-  have hle : 2 * M ≤ 2 ^ (Nat.log2 (2 * M + 1) + 1) := by
-    exact Nat.le_of_lt (Nat.lt_trans (Nat.lt_succ_self (2 * M)) hlt)
-  -- Подстановка определения `ℓParam`.
-  simpa [ℓParam] using hle
-
-lemma pow_two_le_tParam (M n : Nat) :
-    2 ^ (tParam M n) ≥ M * (n + 2) := by
-  -- Аналогично `pow_two_le_ℓParam`, но для `M*(n+2)`.
-  have hlt : M * (n + 2) + 1 < 2 ^ (Nat.log2 (M * (n + 2) + 1) + 1) := by
-    have hlog :
-        M * (n + 2) + 1 <
-          2 ^ (Nat.log 2 (M * (n + 2) + 1)).succ := by
-      exact Nat.lt_pow_succ_log_self Nat.one_lt_two (M * (n + 2) + 1)
-    simpa [Nat.log2_eq_log_two, Nat.succ_eq_add_one] using hlog
-  have hle : M * (n + 2) ≤ 2 ^ (Nat.log2 (M * (n + 2) + 1) + 1) := by
-    exact Nat.le_of_lt (Nat.lt_trans (Nat.lt_succ_self (M * (n + 2))) hlt)
-  -- `tParam` имеет дополнительный запас `+2`, так что достаточно ослабить.
-  have hmono :
-      2 ^ (Nat.log2 (M * (n + 2) + 1) + 1)
-        ≤ 2 ^ (Nat.log2 (M * (n + 2) + 1) + 2) := by
-    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) (Nat.le_succ _)
-  have hle' : M * (n + 2) ≤ 2 ^ (Nat.log2 (M * (n + 2) + 1) + 2) := by
-    exact Nat.le_trans hle hmono
-  simpa [tParam] using hle'
 
 /-!
 ### Refinement relation between subcubes

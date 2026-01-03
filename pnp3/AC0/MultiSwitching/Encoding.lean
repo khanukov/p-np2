@@ -4,6 +4,7 @@ import AC0.MultiSwitching.Definitions
 import AC0.MultiSwitching.CanonicalTrace
 import AC0.MultiSwitching.CanonicalDT
 import AC0.MultiSwitching.Trace
+import AC0.MultiSwitching.TraceBridge
 
 /-!
   pnp3/AC0/MultiSwitching/Encoding.lean
@@ -438,6 +439,18 @@ def BadInRsCNF {n w : Nat} (F : CNF n w) (s t : Nat) : Type :=
 def BadFamilyInRsCNF {n w : Nat} (F : FormulaFamily n w) (s t : Nat) : Type :=
   {ρ : Restriction n // ρ ∈ R_s (n := n) s ∧ BadFamily (F := F) t ρ}
 
+/-!
+### Детерминированная версия для семейства CNF
+
+Мы используем `BadFamily_deterministic` из `TraceBridge` и строим
+кодирование через «малый» алфавит `AuxTraceSmall`. Это подготовительная
+часть для Step 3.2: алфавит имеет размер `2*(w+1)`, что соответствует
+параметру `BParam`.
+-/
+
+def BadFamilyDetInRsCNF {n w : Nat} (F : FormulaFamily n w) (s t : Nat) : Type :=
+  {ρ : Restriction n // ρ ∈ R_s (n := n) s ∧ BadFamily_deterministic (F := F) t ρ}
+
 noncomputable def canonicalTraceOfBadFamily
     {n w t : Nat} {F : FormulaFamily n w} {ρ : Restriction n}
     (hbad : BadFamily (F := F) t ρ) :
@@ -456,6 +469,18 @@ noncomputable def familyTraceCodeSmallOfBad
   let j := firstBadIndex (F := F) (t := t) (ρ := ρ) hbad
   -- Каноническая трасса и её «минимальный» код.
   let trace := canonicalTraceOfBadFamily (F := F) (t := t) (ρ := ρ) hbad
+  let code : AuxTraceSmall w t := auxTraceSmallOfTrace (trace := trace)
+  exact ⟨Fin.ofNat (F.length + 1) j, code⟩
+
+noncomputable def familyTraceCodeSmallOfBadDet
+    {n w t : Nat} {F : FormulaFamily n w} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) :
+    FamilyTraceCodeSmall (F := F) t := by
+  classical
+  -- Канонический индекс плохой формулы.
+  let j := firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad
+  -- Детерминированная трасса и её «малый» код.
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
   let code : AuxTraceSmall w t := auxTraceSmallOfTrace (trace := trace)
   exact ⟨Fin.ofNat (F.length + 1) j, code⟩
 
@@ -512,6 +537,122 @@ noncomputable def encodeBadFamilyCNF
   refine ⟨⟨ρ', code⟩, ?_⟩
   refine Finset.mem_product.2 ?_
   exact ⟨hρ', by simp [auxFamilySimpleCodes, auxSimpleCodes]⟩
+
+/-!
+### Encoding для детерминированного BadFamily (тот же «толстый» алфавит)
+
+Эта версия полностью аналогична `encodeBadFamilyCNF`, но опирается на
+детерминированный предикат.  Она полезна для постепенного перехода
+к малому алфавиту: сейчас мы сохраняем инъекцию через `AuxSimple`,
+а затем заменим её на `AuxTraceSmall`.
+-/
+
+noncomputable def encodeBadFamilyDetCNF
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    BadFamilyDetInRsCNF (F := F) s t →
+      {c // c ∈ (R_s (n := n) (s - t)).product
+        (auxFamilySimpleCodes (F := F) t)} := by
+  classical
+  intro ρbad
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  let ρ' := Core.CNF.CanonicalTrace.finalRestriction trace
+  let aux := auxSimpleOfTrace (trace := trace)
+  let code := (Fin.ofNat (F.length + 1)
+    (firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad), aux)
+  have hρ' : ρ' ∈ R_s (n := n) (s - t) := by
+    have hbad' :
+        BadFamily (F := F) t ρ := badFamily_deterministic_implies_badFamily
+          (F := F) (t := t) (ρ := ρ) hbad
+    have htrace :
+        Core.CNF.CanonicalTrace
+          (F := F.get
+            ⟨firstBadIndex (F := F) (t := t) (ρ := ρ) hbad',
+              (firstBadIndex_spec (F := F) (t := t) (ρ := ρ) hbad').1⟩) ρ t :=
+      canonicalTraceOfBadFamily (F := F) (t := t) (ρ := ρ) hbad'
+    simpa [ρ'] using
+      (Core.CNF.CanonicalTrace.finalRestriction_mem_R_s
+        (F := F.get
+          ⟨firstBadIndex (F := F) (t := t) (ρ := ρ) hbad',
+            (firstBadIndex_spec (F := F) (t := t) (ρ := ρ) hbad').1⟩)
+        (ρ := ρ) (s := s) (t := t) hρs htrace)
+  refine ⟨⟨ρ', code⟩, ?_⟩
+  refine Finset.mem_product.2 ?_
+  exact ⟨hρ', by simp [auxFamilySimpleCodes, auxSimpleCodes]⟩
+
+noncomputable def decodeBadFamilyDetCNF
+    {n w t : Nat} (F : FormulaFamily n w) :
+    (Restriction n × (Fin (F.length + 1) × AuxSimple n t)) → Restriction n
+  | ⟨ρ', aux⟩ => decodeAuxSimple (ρ' := ρ') (aux := aux.2)
+
+lemma decode_encodeBadFamilyDetCNF
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF (F := F)
+        (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) ρbad).1
+      = ρbad.1 := by
+  classical
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  have hdecode := decodeAuxSimple_ofTrace (trace := trace)
+  simpa [encodeBadFamilyDetCNF, decodeBadFamilyDetCNF, trace] using hdecode
+
+lemma encodeBadFamilyDetCNF_injective
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    Function.Injective (encodeBadFamilyDetCNF (F := F) (s := s) (t := t)) := by
+  classical
+  intro x y hxy
+  have hx := decode_encodeBadFamilyDetCNF (F := F) (s := s) (t := t) x
+  have hy := decode_encodeBadFamilyDetCNF (F := F) (s := s) (t := t) y
+  have hρ :
+      decodeBadFamilyDetCNF (F := F) (t := t)
+          (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) x).1
+        =
+      decodeBadFamilyDetCNF (F := F) (t := t)
+          (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) y).1 := by
+    simpa [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
+
+/-!
+### Encoding для детерминированного BadFamily (малый алфавит)
+
+Здесь мы используем `FamilyTraceCodeSmall` и тем самым устраняем
+экспоненту по `n`. Эта версия нужна для финального шага 3.2.
+-/
+
+noncomputable def encodeBadFamilyDetCNF_small
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    BadFamilyDetInRsCNF (F := F) s t →
+      {c // c ∈ (R_s (n := n) (s - t)).product
+        (auxTraceFamilySmallCodes (F := F) t)} := by
+  classical
+  intro ρbad
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  let ρ' := Core.CNF.CanonicalTrace.finalRestriction trace
+  let code := familyTraceCodeSmallOfBadDet (F := F) (t := t) (ρ := ρ) hbad
+  have hρ' : ρ' ∈ R_s (n := n) (s - t) := by
+    -- Используем стандартную лемму о финальной рестрикции трассы.
+    have hbad' :
+        BadFamily (F := F) t ρ := badFamily_deterministic_implies_badFamily
+          (F := F) (t := t) (ρ := ρ) hbad
+    have htrace :
+        Core.CNF.CanonicalTrace
+          (F := F.get
+            ⟨firstBadIndex (F := F) (t := t) (ρ := ρ) hbad',
+              (firstBadIndex_spec (F := F) (t := t) (ρ := ρ) hbad').1⟩) ρ t :=
+      canonicalTraceOfBadFamily (F := F) (t := t) (ρ := ρ) hbad'
+    -- Из `htrace` получаем принадлежность.
+    simpa [ρ'] using
+      (Core.CNF.CanonicalTrace.finalRestriction_mem_R_s
+        (F := F.get
+          ⟨firstBadIndex (F := F) (t := t) (ρ := ρ) hbad',
+            (firstBadIndex_spec (F := F) (t := t) (ρ := ρ) hbad').1⟩)
+        (ρ := ρ) (s := s) (t := t) hρs htrace)
+  refine ⟨⟨ρ', code⟩, ?_⟩
+  refine Finset.mem_product.2 ?_
+  exact ⟨hρ', by simp [auxTraceFamilySmallCodes]⟩
 
 noncomputable def decodeBadFamilyCNF
     {n w t : Nat} (F : FormulaFamily n w) :

@@ -73,6 +73,53 @@ lemma badCNF_deterministic_implies_bad
   exact ⟨trace⟩
 
 /-!
+### Детерминированный `Bad` для семейства формул
+
+Мы переносим детерминированное определение на семейство CNF:
+«плохая» рестрикция — та, для которой существует формула,
+имеющая детерминированную каноническую трассу длины `t`.
+Для encoding удобнее всегда выбирать *первую* плохую формулу.
+-/
+
+def BadFamily_deterministic
+    {n w : Nat} (F : FormulaFamily n w) (t : Nat) (ρ : Restriction n) : Prop :=
+  ∃ i, ∃ hi : i < F.length,
+    BadCNF_deterministic (F := F.get ⟨i, hi⟩) t ρ
+
+lemma badFamily_deterministic_implies_badFamily
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n} :
+    BadFamily_deterministic (F := F) t ρ → BadFamily (F := F) t ρ := by
+  intro h
+  rcases h with ⟨i, hi, hbad⟩
+  exact ⟨i, hi, badCNF_deterministic_implies_bad (F := F.get ⟨i, hi⟩) (t := t) (ρ := ρ) hbad⟩
+
+noncomputable def firstBadIndexDet
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) : Nat := by
+  classical
+  exact Nat.find hbad
+
+lemma firstBadIndexDet_spec
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) :
+    ∃ hi : firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad < F.length,
+      BadCNF_deterministic
+        (F := F.get ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad, hi⟩)
+        t ρ := by
+  classical
+  simpa [firstBadIndexDet] using (Nat.find_spec hbad)
+
+noncomputable def firstBadTraceDet
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) :
+    Core.CNF.CanonicalTrace
+      (F := F.get
+        ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+          (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩) ρ t := by
+  classical
+  exact Classical.choose (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).2
+
+/-!
 ### Вспомогательный выбор ветви
 
 Из доказательства `depth(node) ≥ t+1` получаем, что глубина одной

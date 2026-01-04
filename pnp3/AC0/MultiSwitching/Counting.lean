@@ -319,6 +319,39 @@ lemma card_bad_lt_card_all_of_cnf_family_bound
   exact lt_of_le_of_lt
     (badRestrictions_card_le_cnf_family_aux (F := F) (s := s) (t := t)) hbound
 
+/-!
+### Детерминированный вариант: bound с расширенным кодом
+
+Здесь мы используем `FamilyTraceCodeVar`, поэтому база увеличивается
+на фактор `(2*n)^t * (2*(w+1))^t`. Это сохраняет инъективность и
+даёт прямую оценку для `BadFamily_deterministic`.
+-/
+
+lemma card_bad_lt_card_all_of_cnf_family_bound_det_var
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+      < (R_s (n := n) s).card := by
+  classical
+  exact lt_of_le_of_lt
+    (badRestrictions_card_le_cnf_family_aux_det_var (F := F) (s := s) (t := t)) hbound
+
+lemma exists_good_restriction_cnf_family_of_bound_det_var
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ BadFamily_deterministic (F := F) t ρ := by
+  classical
+  exact @exists_good_of_card_lt (n := n) (s := s)
+    (bad := BadFamily_deterministic (F := F) t)
+    (instDecidableBadFamilyDet (F := F) (t := t))
+    (card_bad_lt_card_all_of_cnf_family_bound_det_var (F := F) (s := s) (t := t) hbound)
+
 lemma exists_good_restriction_cnf_family_of_bound
     {n w s t : Nat} (F : FormulaFamily n w)
     (hbound :

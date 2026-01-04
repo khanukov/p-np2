@@ -82,22 +82,21 @@ theorem exists_good_restriction_step3_2
     (hbound_counting :
       (R_s (n := n) (sParam n w - tParam m n)).card
           * (F.length + 1) * (2 * n) ^ (tParam m n)
+          * (2 * (w + 1)) ^ (tParam m n)
         < (R_s (n := n) (sParam n w)).card) :
     ∃ ρ ∈ R_s (n := n) (sParam n w),
-      ¬ BadFamily (F := F) (tParam m n) ρ := by
+      ¬ BadFamily_deterministic (F := F) (tParam m n) ρ := by
   classical
   by_cases hN : 49 * (w + 1) ≤ n
   · -- Большая `n`: используем числовую оценку.
     -- Числовая оценка для Step 3.2 в финальной форме `< |R_s|`.
-    -- Дальше остаётся состыковать её с `Counting.lean`, заменив
-    -- `AuxSimple` (алфавит `2*n`) на компактный код с базой `BParam`.
     have _hnumeric :
         (R_s (n := n) (sParam n w - tParam m n)).card * (m + 1)
             * (BParam w) ^ (tParam m n)
           < (R_s (n := n) (sParam n w)).card := by
       exact numerical_bound_step3_2 (n := n) (w := w) (m := m) hN ht
-    -- Используем существующую комбинаторную лемму с переданным bound.
-    exact exists_good_restriction_cnf_family_of_bound (F := F)
+    -- Используем детерминированный вариант counting‑леммы с расширенным кодом.
+    exact exists_good_restriction_cnf_family_of_bound_det_var (F := F)
       (s := sParam n w) (t := tParam m n) hbound_counting
   · -- Малое `n`: `sParam = 0`, плохая трасса невозможна.
     have hs : sParam n w = 0 := sParam_eq_zero_of_lt (n := n) (w := w)
@@ -112,7 +111,11 @@ theorem exists_good_restriction_step3_2
     refine ⟨ρ, ?_, ?_⟩
     · simpa [hs] using hρ
     · intro hbad
-      have hlen := badFamily_length_le_freeCount (F := F) (t := tParam m n) (ρ := ρ) hbad
+      -- Переходим к недетерминированному `BadFamily` и применяем старую лемму.
+      have hbad' :
+          BadFamily (F := F) (tParam m n) ρ :=
+        badFamily_deterministic_implies_badFamily (F := F) (t := tParam m n) (ρ := ρ) hbad
+      have hlen := badFamily_length_le_freeCount (F := F) (t := tParam m n) (ρ := ρ) hbad'
       have hzero : ρ.freeCount = 0 := by
         -- Из принадлежности `R_s` получаем `freeCount = 0`.
         simpa using (mem_R_s (n := n) (s := 0)).1 hρ

@@ -607,6 +607,61 @@ lemma numerical_inequality_3_2_final (n w m : Nat)
   -- Сокращаем общий множитель `(2*s)^t`.
   exact (Nat.lt_of_mul_lt_mul_right hlt' hpos)
 
+/-!
+## Расширенная база: `(2*n) * BParam`
+
+Для «широкого» кодирования (когда мы явно записываем выбранную переменную)
+нужна оценка с базой `2*n * BParam`.  В отличие от компактного случая,
+получить её **без дополнительных гипотез** нельзя, поэтому мы оставляем
+в лемме явное условие `hsize` на подавление множителя.
+
+Эта форма согласуется с counting‑веткой, где база равна
+`(2*n)^t * (2*(w+1))^t = (2*n*BParam w)^t`.
+-/
+
+lemma numerical_inequality_3_2_final_expanded
+    (n w m : Nat)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam m n ≤ sParam n w)
+    (hsize :
+      (m + 1) * (2 * n * BParam w) ^ (tParam m n)
+        < (n - sParam n w + 1) ^ (tParam m n)) :
+    (R_s (n := n) (sParam n w - tParam m n)).card * (m + 1)
+        * (2 * n * BParam w) ^ (tParam m n)
+      < (R_s (n := n) (sParam n w)).card := by
+  set s : Nat := sParam n w
+  set t : Nat := tParam m n
+  have htpos : 0 < t := by
+    simpa [t, tParam] using
+      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2))))
+  have hspos : 0 < s := by
+    simpa [s] using (sParam_pos_of_le (n := n) (w := w) hN)
+  have hs : s ≤ n := by
+    simpa [s, sParam] using Nat.div_le_self n (49 * (w + 1))
+  have hcard :
+      (R_s (n := n) (s - t)).card * (n - s + 1) ^ t
+        ≤ (R_s (n := n) s).card * (2 * s) ^ t := by
+    simpa [s, t] using (card_R_s_mul_pow_le (n := n) (s := s) (t := t) hs ht)
+  have hlt :
+      (R_s (n := n) (s - t)).card * (m + 1) * (2 * n * BParam w) ^ t
+        < (R_s (n := n) s).card * (2 * s) ^ t := by
+    have hsize' :
+        (R_s (n := n) (s - t)).card
+            * ((m + 1) * (2 * n * BParam w) ^ t)
+          < (R_s (n := n) (s - t)).card * (n - s + 1) ^ t := by
+      exact Nat.mul_lt_mul_left _ hsize
+    exact lt_of_lt_of_le
+      (by
+        simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hsize')
+      hcard
+  have hpos : 0 < (2 * s) ^ t := by
+    have hpos' : 0 < 2 * s := Nat.mul_pos (by decide : 0 < (2 : Nat)) hspos
+    exact Nat.pow_pos hpos' _
+  -- Сокращаем общий множитель `(2*s)^t`.
+  exact (Nat.lt_of_mul_lt_mul_right
+    (by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hlt) hpos)
+
 end MultiSwitching
 end AC0
 end Pnp3

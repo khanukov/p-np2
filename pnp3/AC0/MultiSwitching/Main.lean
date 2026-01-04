@@ -1,5 +1,8 @@
 import AC0.MultiSwitching.Encoding
 import AC0.MultiSwitching.Trace
+import AC0.MultiSwitching.Counting
+import AC0.MultiSwitching.Numerics
+import AC0.MultiSwitching.Params
 
 /-!
   pnp3/AC0/MultiSwitching/Main.lean
@@ -44,6 +47,126 @@ lemma exists_good_restriction_of_aux_encoding_main
     ∃ ρ ∈ R_s (n := n) s, ¬ BadEvent (A := A) ρ := by
   exact exists_good_restriction_of_aux_encoding
     (A := A) (s := s) (t' := t') (k' := k') (m := m) witness hcodes
+
+/-!
+## Числовая оценка для большого `n`
+
+`numerical_inequality_3_2` формулируется в терминах базового алфавита
+`BParam` и даёт строгое неравенство с дополнительным множителем
+`(n - s + 1)^t` в правой части.  Мы фиксируем эту оценку как отдельную
+лемму‑обёртку, чтобы в дальнейшем было проще явно состыковать её с
+кодами из `Counting.lean` (см. комментарий в proof ниже).
+-/
+
+lemma numerical_bound_step3_2
+    {n w m : Nat}
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam m n ≤ sParam n w) :
+    (R_s (n := n) (sParam n w - tParam m n)).card * (m + 1)
+        * (BParam w) ^ (tParam m n)
+      < (R_s (n := n) (sParam n w)).card := by
+  exact numerical_inequality_3_2_final (n := n) (w := w) (m := m) hN ht
+
+/-!
+## Числовая оценка для расширенной базы
+
+Если мы используем расширенный код (с фактором `2*n` и `BParam`),
+то числовая оценка должна работать с базой `(2*n*BParam w)^t`.
+Эта лемма — удобная обёртка для `numerical_inequality_3_2_final_expanded`.
+-/
+
+lemma numerical_bound_step3_2_expanded
+    {n w m : Nat}
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam m n ≤ sParam n w)
+    (hsize :
+      (m + 1) * (2 * n * BParam w) ^ (tParam m n)
+        < (n - sParam n w + 1) ^ (tParam m n)) :
+    (R_s (n := n) (sParam n w - tParam m n)).card * (m + 1)
+        * (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n)
+      < (R_s (n := n) (sParam n w)).card
+          * (2 * sParam n w) ^ (tParam m n) := by
+  have hbase :
+      (m + 1) * (2 * n * BParam w) ^ (tParam m n)
+        < (n - sParam n w + 1) ^ (tParam m n) := hsize
+  have hnumeric := numerical_inequality_3_2_final_expanded
+    (n := n) (w := w) (m := m) hN ht hbase
+  -- Переписываем `(2*n*BParam)^t` как `(2*n)^t * (2*(w+1))^t`.
+  have hpow :
+      (2 * n * BParam w) ^ (tParam m n)
+        = (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n) := by
+    -- `BParam w = 2*(w+1)`, далее применяем `pow_mul_pow_eq`.
+    simpa [BParam, pow_mul_pow_eq, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  have hpow' :
+      (n * (2 * BParam w)) ^ (tParam m n)
+        = (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n) := by
+    calc
+      (n * (2 * BParam w)) ^ (tParam m n)
+          = (2 * n * BParam w) ^ (tParam m n) := by
+              simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      _ = (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n) := hpow
+  simpa [hpow', Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hnumeric
+
+/-!
+## Wrapper: Step 3.2 (CNF family)
+
+Мы выполняем разбиение по размеру `n`:
+
+* **малый `n`**: `sParam = 0`, тогда `BadFamily` невозможен при `t > 0`;
+* **большой `n`**: используем `numerical_inequality_3_2` и counting‑лемму.
+-/
+
+theorem exists_good_restriction_step3_2
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadFamily_deterministic (F := F) (tParam m n))]
+    (hbad_lt :
+      (badRestrictions (n := n) (sParam n w)
+        (BadFamily_deterministic (F := F) (tParam m n))).card
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadFamily_deterministic (F := F) (tParam m n) ρ := by
+  classical
+  by_cases hN : 49 * (w + 1) ≤ n
+  · -- Большая `n`: используем числовую оценку.
+    -- Для большой `n` уже дана оценка на количество плохих рестрикций.
+    exact exists_good_of_card_lt (n := n) (s := sParam n w)
+      (bad := BadFamily_deterministic (F := F) (tParam m n))
+      hbad_lt
+  · -- Малое `n`: `sParam = 0`, плохая трасса невозможна.
+    have hs : sParam n w = 0 := sParam_eq_zero_of_lt (n := n) (w := w)
+      (by
+        have hlt : n < 49 * (w + 1) := lt_of_not_ge hN
+        exact hlt)
+    -- Возьмём произвольную рестрикцию из `R_s` с `s=0`.
+    have hnonempty : (R_s (n := n) 0).Nonempty := by
+      -- `R_s` непусто при `0 ≤ n`.
+      exact R_s_nonempty (n := n) (s := 0) (by omega)
+    rcases hnonempty with ⟨ρ, hρ⟩
+    refine ⟨ρ, ?_, ?_⟩
+    · simpa [hs] using hρ
+    · intro hbad
+      -- Переходим к недетерминированному `BadFamily` и применяем старую лемму.
+      have hbad' :
+          BadFamily (F := F) (tParam m n) ρ :=
+        badFamily_deterministic_implies_badFamily (F := F) (t := tParam m n) (ρ := ρ) hbad
+      have hlen := badFamily_length_le_freeCount (F := F) (t := tParam m n) (ρ := ρ) hbad'
+      have hzero : ρ.freeCount = 0 := by
+        -- Из принадлежности `R_s` получаем `freeCount = 0`.
+        simpa using (mem_R_s (n := n) (s := 0)).1 hρ
+      have hzero' : ρ.freeIndicesList.length = 0 := by
+        simpa [Restriction.freeCount] using hzero
+      have htpos : 0 < tParam m n := by
+        simpa [tParam] using
+          (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2))))
+      -- Противоречие: `t ≤ 0` и `t > 0`.
+      have : tParam m n ≤ 0 := by
+        simpa [Restriction.freeCount, hzero'] using hlen
+      have htzero : tParam m n = 0 := Nat.eq_zero_of_le_zero this
+      have : (0 : Nat) < 0 := by
+        simpa [htzero] using htpos
+      exact (Nat.lt_irrefl 0 this)
 
 end MultiSwitching
 end AC0

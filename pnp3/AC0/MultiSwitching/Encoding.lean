@@ -4,6 +4,7 @@ import AC0.MultiSwitching.Definitions
 import AC0.MultiSwitching.CanonicalTrace
 import AC0.MultiSwitching.CanonicalDT
 import AC0.MultiSwitching.Trace
+import AC0.MultiSwitching.TraceBridge
 
 /-!
   pnp3/AC0/MultiSwitching/Encoding.lean
@@ -239,6 +240,21 @@ noncomputable def traceCodeOfTrace
   trace.map (traceStepCode (F := F) m)
 
 /-!
+### Вспомогательное извлечение `BitFix` из «широкого» кода
+
+Для декодирования достаточно пары `(индекс, значение)`. Мы извлекаем её
+из `TraceStepCode`, игнорируя `clauseIndex` и `literalIndex`.
+-/
+
+noncomputable def bitFixOfTraceStepCode
+    {n w m : Nat} (step : TraceStepCode n w m) : BitFix n :=
+  (step.1, step.2.1)
+
+noncomputable def auxSimpleOfTraceCode
+    {n w m t : Nat} (code : TraceCode n w m t) : AuxSimple n t :=
+  fun i => bitFixOfTraceStepCode (code.get i)
+
+/-!
 Код для семейства: добавляем индекс формулы (грубый `Fin (|F|+1)`),
 и саму трассу. Такой код достаточно компактный и используется и в
 подсчётах, и в инъективном декодировании.
@@ -283,6 +299,47 @@ def auxTraceFamilySmallCodes {n w : Nat} (F : FormulaFamily n w) (t : Nat)
       Fintype.card (AuxTraceFamilySmall (F := F) t) := by
   simp [auxTraceFamilySmallCodes]
 
+/-!
+### «Широкий» код для семейства
+
+Добавляем в шаги трассы переменную и индекс клаузы, чтобы сделать
+декодирование однозначным. База становится больше, но инъекция
+становится прямой.
+-/
+
+abbrev FamilyTraceCodeWide {n w : Nat} (F : FormulaFamily n w) (t : Nat) : Type :=
+  Fin (F.length + 1) × TraceCode n w (maxClauses F) t
+
+lemma card_FamilyTraceCodeWide {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
+    Fintype.card (FamilyTraceCodeWide (F := F) t) =
+      (F.length + 1) * (2 * n * (maxClauses F + 1) * (w + 1)) ^ t := by
+  classical
+  have hcard_trace :
+      Fintype.card (TraceCode n w (maxClauses F) t) =
+        (2 * n * (maxClauses F + 1) * (w + 1)) ^ t := by
+    simpa [TraceCode, TraceStepCode, card_Vector, Fintype.card_prod,
+      Fintype.card_bool, Fintype.card_fin, Nat.mul_comm, Nat.mul_left_comm,
+      Nat.mul_assoc] using
+      (card_TraceCode (n := n) (w := w) (m := maxClauses F) (t := t))
+  calc
+    Fintype.card (FamilyTraceCodeWide (F := F) t)
+        = (F.length + 1) * Fintype.card (TraceCode n w (maxClauses F) t) := by
+            simp [FamilyTraceCodeWide, Fintype.card_prod, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    _ = (F.length + 1) * (2 * n * (maxClauses F + 1) * (w + 1)) ^ t := by
+          simp [hcard_trace]
+
+def familyTraceCodeWideCodes {n w : Nat} (F : FormulaFamily n w) (t : Nat)
+    [Fintype (FamilyTraceCodeWide (F := F) t)] :
+    Finset (FamilyTraceCodeWide (F := F) t) :=
+  Finset.univ
+
+@[simp] lemma familyTraceCodeWideCodes_card {n w : Nat}
+    (F : FormulaFamily n w) (t : Nat)
+    [Fintype (FamilyTraceCodeWide (F := F) t)] :
+    (familyTraceCodeWideCodes (F := F) t).card =
+      Fintype.card (FamilyTraceCodeWide (F := F) t) := by
+  simp [familyTraceCodeWideCodes]
+
 lemma card_AuxSimple (n t : Nat) :
     Fintype.card (AuxSimple n t) = (2 * n) ^ t := by
   classical
@@ -304,6 +361,57 @@ def auxTraceSmallCodes (w t : Nat) [Fintype (AuxTraceSmall w t)] :
 @[simp] lemma auxTraceSmallCodes_card (w t : Nat) [Fintype (AuxTraceSmall w t)] :
     (auxTraceSmallCodes w t).card = Fintype.card (AuxTraceSmall w t) := by
   simp [auxTraceSmallCodes]
+
+/-!
+### «Расширенный» код шага: `AuxSimple × AuxTraceSmall`
+
+Чтобы обеспечить инъективность, мы храним **полный** список присвоений
+(переменная + значение) и дополнительно — позиции выбранных литералов.
+Это увеличивает базу, но делает декодирование однозначным.
+-/
+
+abbrev AuxTraceVar (n w t : Nat) : Type :=
+  AuxSimple n t × AuxTraceSmall w t
+
+lemma card_AuxTraceVar (n w t : Nat) :
+    Fintype.card (AuxTraceVar n w t) =
+      (2 * n) ^ t * (2 * (w + 1)) ^ t := by
+  classical
+  simp [AuxTraceVar, card_AuxTraceSmall, card_AuxSimple, Fintype.card_prod,
+    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+abbrev FamilyTraceCodeVar {n w : Nat} (F : FormulaFamily n w) (t : Nat) : Type :=
+  Fin (F.length + 1) × AuxTraceVar n w t
+
+lemma card_FamilyTraceCodeVar {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
+    Fintype.card (FamilyTraceCodeVar (F := F) t) =
+      (F.length + 1) * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
+  classical
+  -- Карта произведения: `Fin (len+1)` × `AuxTraceVar`.
+  -- Затем раскрываем `card_AuxTraceVar` и переставляем множители.
+  calc
+    Fintype.card (FamilyTraceCodeVar (F := F) t)
+        = Fintype.card (Fin (F.length + 1))
+            * Fintype.card (AuxTraceVar n w t) := by
+            simp [FamilyTraceCodeVar, Fintype.card_prod]
+    _ = (F.length + 1) * ((2 * n) ^ t * (2 * (w + 1)) ^ t) := by
+          -- Явно раскрываем `card_AuxTraceVar`, чтобы не зависеть от `simp`.
+          rw [card_AuxTraceVar]
+          simp
+    _ = (F.length + 1) * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
+          ac_rfl
+
+def familyTraceCodeVarCodes {n w : Nat} (F : FormulaFamily n w) (t : Nat)
+    [Fintype (FamilyTraceCodeVar (F := F) t)] :
+    Finset (FamilyTraceCodeVar (F := F) t) :=
+  Finset.univ
+
+@[simp] lemma familyTraceCodeVarCodes_card {n w : Nat}
+    (F : FormulaFamily n w) (t : Nat)
+    [Fintype (FamilyTraceCodeVar (F := F) t)] :
+    (familyTraceCodeVarCodes (F := F) t).card =
+      Fintype.card (FamilyTraceCodeVar (F := F) t) := by
+  simp [familyTraceCodeVarCodes]
 
 /-!
 ### Кодирование CanonicalTrace → AuxSimple
@@ -438,6 +546,18 @@ def BadInRsCNF {n w : Nat} (F : CNF n w) (s t : Nat) : Type :=
 def BadFamilyInRsCNF {n w : Nat} (F : FormulaFamily n w) (s t : Nat) : Type :=
   {ρ : Restriction n // ρ ∈ R_s (n := n) s ∧ BadFamily (F := F) t ρ}
 
+/-!
+### Детерминированная версия для семейства CNF
+
+Мы используем `BadFamily_deterministic` из `TraceBridge` и строим
+кодирование через «малый» алфавит `AuxTraceSmall`. Это подготовительная
+часть для Step 3.2: алфавит имеет размер `2*(w+1)`, что соответствует
+параметру `BParam`.
+-/
+
+def BadFamilyDetInRsCNF {n w : Nat} (F : FormulaFamily n w) (s t : Nat) : Type :=
+  {ρ : Restriction n // ρ ∈ R_s (n := n) s ∧ BadFamily_deterministic (F := F) t ρ}
+
 noncomputable def canonicalTraceOfBadFamily
     {n w t : Nat} {F : FormulaFamily n w} {ρ : Restriction n}
     (hbad : BadFamily (F := F) t ρ) :
@@ -456,6 +576,18 @@ noncomputable def familyTraceCodeSmallOfBad
   let j := firstBadIndex (F := F) (t := t) (ρ := ρ) hbad
   -- Каноническая трасса и её «минимальный» код.
   let trace := canonicalTraceOfBadFamily (F := F) (t := t) (ρ := ρ) hbad
+  let code : AuxTraceSmall w t := auxTraceSmallOfTrace (trace := trace)
+  exact ⟨Fin.ofNat (F.length + 1) j, code⟩
+
+noncomputable def familyTraceCodeSmallOfBadDet
+    {n w t : Nat} {F : FormulaFamily n w} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) :
+    FamilyTraceCodeSmall (F := F) t := by
+  classical
+  -- Канонический индекс плохой формулы.
+  let j := firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad
+  -- Детерминированная трасса и её «малый» код.
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
   let code : AuxTraceSmall w t := auxTraceSmallOfTrace (trace := trace)
   exact ⟨Fin.ofNat (F.length + 1) j, code⟩
 
@@ -512,6 +644,172 @@ noncomputable def encodeBadFamilyCNF
   refine ⟨⟨ρ', code⟩, ?_⟩
   refine Finset.mem_product.2 ?_
   exact ⟨hρ', by simp [auxFamilySimpleCodes, auxSimpleCodes]⟩
+
+/-!
+### Encoding для детерминированного BadFamily (тот же «толстый» алфавит)
+
+Эта версия полностью аналогична `encodeBadFamilyCNF`, но опирается на
+детерминированный предикат.  Она полезна для постепенного перехода
+к малому алфавиту: сейчас мы сохраняем инъекцию через `AuxSimple`,
+а затем заменим её на `AuxTraceSmall`.
+-/
+
+noncomputable def encodeBadFamilyDetCNF
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    BadFamilyDetInRsCNF (F := F) s t →
+      {c // c ∈ (R_s (n := n) (s - t)).product
+        (auxFamilySimpleCodes (F := F) t)} := by
+  classical
+  intro ρbad
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  let ρ' := Core.CNF.CanonicalTrace.finalRestriction trace
+  let aux := auxSimpleOfTrace (trace := trace)
+  let code := (Fin.ofNat (F.length + 1)
+    (firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad), aux)
+  have hρ' : ρ' ∈ R_s (n := n) (s - t) := by
+    simpa [ρ'] using
+      (Core.CNF.CanonicalTrace.finalRestriction_mem_R_s
+        (F := F.get
+          ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+            (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩)
+        (ρ := ρ) (s := s) (t := t) hρs trace)
+  refine ⟨⟨ρ', code⟩, ?_⟩
+  refine Finset.mem_product.2 ?_
+  exact ⟨hρ', by simp [auxFamilySimpleCodes, auxSimpleCodes]⟩
+
+noncomputable def decodeBadFamilyDetCNF
+    {n w t : Nat} (F : FormulaFamily n w) :
+    (Restriction n × (Fin (F.length + 1) × AuxSimple n t)) → Restriction n
+  | ⟨ρ', aux⟩ => decodeAuxSimple (ρ' := ρ') (aux := aux.2)
+
+lemma decode_encodeBadFamilyDetCNF
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF (F := F)
+        (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) ρbad).1
+      = ρbad.1 := by
+  classical
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  have hdecode := decodeAuxSimple_ofTrace (trace := trace)
+  simpa [encodeBadFamilyDetCNF, decodeBadFamilyDetCNF, trace] using hdecode
+
+lemma encodeBadFamilyDetCNF_injective
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    Function.Injective (encodeBadFamilyDetCNF (F := F) (s := s) (t := t)) := by
+  classical
+  intro x y hxy
+  have hx := decode_encodeBadFamilyDetCNF (F := F) (s := s) (t := t) x
+  have hy := decode_encodeBadFamilyDetCNF (F := F) (s := s) (t := t) y
+  have hρ :
+      decodeBadFamilyDetCNF (F := F) (t := t)
+          (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) x).1
+        =
+      decodeBadFamilyDetCNF (F := F) (t := t)
+          (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) y).1 := by
+    simpa [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
+
+/-!
+### Encoding для детерминированного BadFamily (малый алфавит)
+
+Здесь мы используем `FamilyTraceCodeSmall` и тем самым устраняем
+экспоненту по `n`. Эта версия нужна для финального шага 3.2.
+-/
+
+noncomputable def encodeBadFamilyDetCNF_small
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    BadFamilyDetInRsCNF (F := F) s t →
+      {c // c ∈ (R_s (n := n) (s - t)).product
+        (auxTraceFamilySmallCodes (F := F) t)} := by
+  classical
+  intro ρbad
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  let ρ' := Core.CNF.CanonicalTrace.finalRestriction trace
+  let code := familyTraceCodeSmallOfBadDet (F := F) (t := t) (ρ := ρ) hbad
+  have hρ' : ρ' ∈ R_s (n := n) (s - t) := by
+    -- Используем стандартную лемму о финальной рестрикции трассы.
+    -- Из `trace` получаем принадлежность.
+    simpa [ρ'] using
+      (Core.CNF.CanonicalTrace.finalRestriction_mem_R_s
+        (F := F.get
+          ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+            (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩)
+        (ρ := ρ) (s := s) (t := t) hρs trace)
+  refine ⟨⟨ρ', code⟩, ?_⟩
+  refine Finset.mem_product.2 ?_
+  exact ⟨hρ', by simp [auxTraceFamilySmallCodes]⟩
+
+/-!
+### Encoding для детерминированного BadFamily (расширенный код)
+
+Мы храним полный `AuxSimple` (переменная + значение) и дополнительно
+`AuxTraceSmall` (позиции литералов). Это гарантирует инъективность.
+-/
+
+noncomputable def encodeBadFamilyDetCNF_var
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    BadFamilyDetInRsCNF (F := F) s t →
+      {c // c ∈ (R_s (n := n) (s - t)).product
+        (familyTraceCodeVarCodes (F := F) t)} := by
+  classical
+  intro ρbad
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  let ρ' := Core.CNF.CanonicalTrace.finalRestriction trace
+  let aux := auxSimpleOfTrace (trace := trace)
+  let auxSmall := auxTraceSmallOfTrace (trace := trace)
+  let code : FamilyTraceCodeVar (F := F) t :=
+    ⟨Fin.ofNat (F.length + 1)
+        (firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad),
+      (aux, auxSmall)⟩
+  have hρ' : ρ' ∈ R_s (n := n) (s - t) := by
+    simpa [ρ'] using
+      (Core.CNF.CanonicalTrace.finalRestriction_mem_R_s
+        (F := F.get
+          ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+            (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩)
+        (ρ := ρ) (s := s) (t := t) hρs trace)
+  refine ⟨⟨ρ', code⟩, ?_⟩
+  refine Finset.mem_product.2 ?_
+  exact ⟨hρ', by simp [familyTraceCodeVarCodes]⟩
+
+noncomputable def decodeBadFamilyDetCNF_var
+    {n w t : Nat} (F : FormulaFamily n w) :
+    (Restriction n × FamilyTraceCodeVar (F := F) t) → Restriction n
+  | ⟨ρ', code⟩ => decodeAuxSimple (ρ' := ρ') (aux := code.2.1)
+
+lemma decode_encodeBadFamilyDetCNF_var
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF_var (F := F)
+        (encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) ρbad).1
+      = ρbad.1 := by
+  classical
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  have hdecode := decodeAuxSimple_ofTrace (trace := trace)
+  simpa [encodeBadFamilyDetCNF_var, decodeBadFamilyDetCNF_var, trace] using hdecode
+
+lemma encodeBadFamilyDetCNF_var_injective
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    Function.Injective (encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t)) := by
+  classical
+  intro x y hxy
+  have hx := decode_encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) x
+  have hy := decode_encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) y
+  have hρ :
+      decodeBadFamilyDetCNF_var (F := F) (t := t)
+          (encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) x).1
+        =
+      decodeBadFamilyDetCNF_var (F := F) (t := t)
+          (encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) y).1 := by
+    simpa [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
 
 noncomputable def decodeBadFamilyCNF
     {n w t : Nat} (F : FormulaFamily n w) :

@@ -232,6 +232,59 @@ lemma badRestrictions_card_le_cnf_family_aux_det
     _ = (R_s (n := n) (s - t)).card * (F.length + 1) * (2 * n) ^ t := by
           simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
+/-!
+## Детерминированный BadFamily с расширенным кодом
+
+Используем код `FamilyTraceCodeVar`, в котором хранится и полный список
+присвоений, и позиции литералов. База увеличивается до
+`(2*n)^t * (2*(w+1))^t`, но инъективность становится прямой.
+-/
+
+lemma badRestrictions_card_le_cnf_family_aux_det_var
+    {n w s t : Nat} (F : FormulaFamily n w) :
+    (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+      ≤ (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
+  classical
+  let codes := (R_s (n := n) (s - t)).product (familyTraceCodeVarCodes (F := F) t)
+  have henc :
+      Function.Injective (encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t)) :=
+    encodeBadFamilyDetCNF_var_injective (F := F) (s := s) (t := t)
+  have hcard :
+      (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+        ≤ codes.card := by
+    have hsub :
+        {ρ // ρ ∈ badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)}
+          ↪ {c // c ∈ codes} := by
+      refine ⟨fun ρbad => ?_, ?_⟩
+      · have hmem : ρbad.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic (F := F) t)).1 ρbad.2 |>.1
+        have hbad : BadFamily_deterministic (F := F) t ρbad.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic (F := F) t)).1 ρbad.2 |>.2
+        exact encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) ⟨ρbad.1, hmem, hbad⟩
+      · intro x y hxy
+        exact Subtype.ext (henc (by simpa using hxy))
+    have hcard' := Fintype.card_le_of_injective (f := hsub)
+    simpa using hcard'
+  have hcodes_card :
+      codes.card =
+        (R_s (n := n) (s - t)).card * (familyTraceCodeVarCodes (F := F) t).card := by
+    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  have haux :
+      (familyTraceCodeVarCodes (F := F) t).card =
+        (F.length + 1) * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
+    simp [familyTraceCodeVarCodes_card, card_FamilyTraceCodeVar,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  calc
+    (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+        ≤ codes.card := hcard
+    _ = (R_s (n := n) (s - t)).card * (familyTraceCodeVarCodes (F := F) t).card := hcodes_card
+    _ = (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
+          simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
 lemma card_bad_lt_card_all_of_cnf_family_bound_small
     {n w s t : Nat} (F : FormulaFamily n w)
     (hbound :

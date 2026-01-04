@@ -61,6 +61,16 @@ def traceDeterministic
       traceStepDeterministic (selection := selection) (choice := choice)
         ∧ traceDeterministic (F := F) tail
 
+lemma traceDeterministic_cast
+    {n w : Nat} {F : CNF n w} {ρ ρ' : Restriction n} {t : Nat}
+    (h : ρ = ρ')
+    (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
+    traceDeterministic (F := F) (ρ := ρ') (t := t)
+        (cast (by cases h; rfl) trace) ↔
+      traceDeterministic (F := F) (ρ := ρ) (t := t) trace := by
+  cases h
+  rfl
+
 def BadCNF_deterministic (F : CNF n w) (t : Nat) (ρ : Restriction n) : Prop :=
   ∃ trace : Core.CNF.CanonicalTrace (F := F) ρ t,
     traceDeterministic (F := F) (ρ := ρ) (t := t) trace
@@ -71,6 +81,53 @@ lemma badCNF_deterministic_implies_bad
   intro h
   rcases h with ⟨trace, _⟩
   exact ⟨trace⟩
+
+/-!
+### Детерминированный `Bad` для семейства формул
+
+Мы переносим детерминированное определение на семейство CNF:
+«плохая» рестрикция — та, для которой существует формула,
+имеющая детерминированную каноническую трассу длины `t`.
+Для encoding удобнее всегда выбирать *первую* плохую формулу.
+-/
+
+def BadFamily_deterministic
+    {n w : Nat} (F : FormulaFamily n w) (t : Nat) (ρ : Restriction n) : Prop :=
+  ∃ i, ∃ hi : i < F.length,
+    BadCNF_deterministic (F := F.get ⟨i, hi⟩) t ρ
+
+lemma badFamily_deterministic_implies_badFamily
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n} :
+    BadFamily_deterministic (F := F) t ρ → BadFamily (F := F) t ρ := by
+  intro h
+  rcases h with ⟨i, hi, hbad⟩
+  exact ⟨i, hi, badCNF_deterministic_implies_bad (F := F.get ⟨i, hi⟩) (t := t) (ρ := ρ) hbad⟩
+
+noncomputable def firstBadIndexDet
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) : Nat := by
+  classical
+  exact Nat.find hbad
+
+lemma firstBadIndexDet_spec
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) :
+    ∃ hi : firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad < F.length,
+      BadCNF_deterministic
+        (F := F.get ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad, hi⟩)
+        t ρ := by
+  classical
+  simpa [firstBadIndexDet] using (Nat.find_spec hbad)
+
+noncomputable def firstBadTraceDet
+    {n w : Nat} {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily_deterministic (F := F) t ρ) :
+    Core.CNF.CanonicalTrace
+      (F := F.get
+        ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+          (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩) ρ t := by
+  classical
+  exact Classical.choose (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).2
 
 /-!
 ### Вспомогательный выбор ветви
@@ -107,12 +164,11 @@ noncomputable def chooseFreeLiteralChoice
     (w : Restriction.ClausePendingWitness ρ C) (b : Bool) :
     ClausePendingWitness.Selection w := by
   classical
-  -- `w.free` непуст, значит он имеет вид `head :: tail`.
-  rcases Classical.choose_spec (List.exists_cons_of_ne_nil w.nonempty) with
-    ⟨tail, hfree⟩
-  -- Индекс 0 корректен по длине списка.
+  -- Индекс 0 корректен по длине списка (список непуст).
+  have hlen : 0 < w.free.length := by
+    exact List.length_pos_of_ne_nil w.nonempty
   refine
-    { index := ⟨0, by simpa [hfree]⟩
+    { index := ⟨0, hlen⟩
       value := b }
 
 lemma chooseFreeLiteralChoice_literal
@@ -121,10 +177,13 @@ lemma chooseFreeLiteralChoice_literal
     (chooseFreeLiteralChoice (w := w) b).literal =
       chooseFreeLiteral (w := w) := by
   classical
-  rcases Classical.choose_spec (List.exists_cons_of_ne_nil w.nonempty) with
-    ⟨tail, hfree⟩
-  -- При индексе 0 литерал совпадает с головой списка.
-  simp [chooseFreeLiteralChoice, chooseFreeLiteral, hfree]
+  cases hlist : w.free with
+  | nil =>
+      cases (w.nonempty (by simpa [hlist]))
+  | cons head tail =>
+      -- При индексе 0 литерал совпадает с головой списка.
+      dsimp [ClausePendingWitness.Selection.literal, chooseFreeLiteralChoice]
+      simp [chooseFreeLiteral, hlist]
 
 /-!
 ### Основная лемма: depth ≥ t → BadCNF
@@ -148,7 +207,7 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
       | none =>
           -- В этом случае дерево — лист, глубина 0 ⇒ противоречие.
           have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) = 0 := by
-            simp [canonicalDT_CNF_aux, hsel, PDT.depth]
+            cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
             have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
             exact (Nat.not_succ_le_zero _ hzero)
@@ -164,18 +223,67 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
           let choiceFalse := chooseFreeLiteralChoice (w := w) false
           let choiceTrue := chooseFreeLiteralChoice (w := w) true
           -- Поддеревья после присваивания выбранной переменной.
-          let ρ0 := ClausePendingWitness.Selection.nextRestriction
-            (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)
-          let ρ1 := ClausePendingWitness.Selection.nextRestriction
-            (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
           have hchoiceFalse : choiceFalse.literal = ℓ := by
             simpa [choiceFalse, ℓ, w] using
               chooseFreeLiteralChoice_literal (w := w) (b := false)
           have hchoiceTrue : choiceTrue.literal = ℓ := by
             simpa [choiceTrue, ℓ, w] using
               chooseFreeLiteralChoice_literal (w := w) (b := true)
+          have hassign0 :
+              ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 :
+              ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          have hchoiceFalseNext :
+              (ClausePendingWitness.Selection.nextRestriction
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)) = ρ0 := by
+            apply Option.some.inj
+            have hassign_choice :=
+              ClausePendingWitness.Selection.assign_eq
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)
+            have hchoice_idx : choiceFalse.literal.idx = ℓ.idx := by
+              simpa using congrArg Literal.idx hchoiceFalse
+            -- Переписываем индекс выбранного литерала.
+            have hassign_choice' := hassign_choice
+            rw [hchoice_idx] at hassign_choice'
+            calc
+              some (ClausePendingWitness.Selection.nextRestriction
+                  (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse))
+                  = ρ.assign ℓ.idx false := by
+                    simpa using hassign_choice'.symm
+              _ = some ρ0 := hassign0
+          have hchoiceTrueNext :
+              (ClausePendingWitness.Selection.nextRestriction
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)) = ρ1 := by
+            apply Option.some.inj
+            have hassign_choice :=
+              ClausePendingWitness.Selection.assign_eq
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)
+            have hchoice_idx : choiceTrue.literal.idx = ℓ.idx := by
+              simpa using congrArg Literal.idx hchoiceTrue
+            have hassign_choice' := hassign_choice
+            rw [hchoice_idx] at hassign_choice'
+            calc
+              some (ClausePendingWitness.Selection.nextRestriction
+                  (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue))
+                  = ρ.assign ℓ.idx true := by
+                    simpa using hassign_choice'.symm
+              _ = some ρ1 := hassign1
           -- Переписываем дерево в форме `node`.
-          have hdepth' :
+          have hdepth_root :
               PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
                 ≥ Nat.succ t := hdepth
           have hnode :
@@ -184,26 +292,30 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
                   (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
                   (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) := by
             -- Разворачиваем `canonicalDT_CNF_aux` и фиксируем те же параметры.
-            simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1,
-              choiceFalse, choiceTrue]
+            cases fuel with
+            | zero =>
+                have : PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ) = 0 := by
+                  simp [canonicalDT_CNF_aux, hsel, PDT.depth]
+                have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+                exact (False.elim (Nat.not_succ_le_zero _ hzero))
+            | succ fuel =>
+                simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
           have hbranch :
               PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) ≥ t
                 ∨ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) ≥ t := by
-            -- Используем формулу глубины для узла.
-            have hrewrite :
-                PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
-                  = Nat.succ
-                    (Nat.max
-                      (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0))
-                      (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))) := by
-              simpa [hnode, PDT.depth]
-            have hge :
-                Nat.max
-                  (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0))
-                  (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1)) ≥ t := by
-              have := (Nat.le_of_succ_le_succ (by simpa [hrewrite] using hdepth'))
-              simpa using this
-            exact (Nat.le_max_iff.mp hge)
+            -- Используем лемму про глубину узла.
+            have hdepth' :
+                PDT.depth
+                    (PDT.node ℓ.idx
+                      (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
+                      (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))
+                  ≥ Nat.succ t := by
+              simpa [hnode] using hdepth_root
+            exact (depth_ge_succ_iff
+              (i := ℓ.idx)
+              (L := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
+              (R := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1)
+              (t := t)).1 hdepth'
           -- Выбираем ветку и строим трассу длины `t` для хвоста.
           cases hbranch with
           | inl hleft =>
@@ -211,17 +323,25 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
                 badCNF_of_depth_ge_canonicalDT_aux (F := F)
                   (t := t) (fuel := fuel - 1) (ρ := ρ0) hleft
               rcases htail with ⟨tail⟩
-              refine ⟨Core.CNF.CanonicalTrace.cons selection ?_ tail⟩
-              -- Выбор соответствует ветви `false`.
-              exact choiceFalse
+              have tail' :
+                  Core.CNF.CanonicalTrace (F := F)
+                    (ClausePendingWitness.Selection.nextRestriction
+                      (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)) t := by
+                simpa [hchoiceFalseNext] using tail
+              refine ⟨Core.CNF.CanonicalTrace.cons
+                (selection := selection) (choice := choiceFalse) tail'⟩
           | inr hright =>
               have htail : BadCNF (F := F) t ρ1 :=
                 badCNF_of_depth_ge_canonicalDT_aux (F := F)
                   (t := t) (fuel := fuel - 1) (ρ := ρ1) hright
               rcases htail with ⟨tail⟩
-              refine ⟨Core.CNF.CanonicalTrace.cons selection ?_ tail⟩
-              -- Выбор соответствует ветви `true`.
-              exact choiceTrue
+              have tail' :
+                  Core.CNF.CanonicalTrace (F := F)
+                    (ClausePendingWitness.Selection.nextRestriction
+                      (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)) t := by
+                simpa [hchoiceTrueNext] using tail
+              refine ⟨Core.CNF.CanonicalTrace.cons
+                (selection := selection) (choice := choiceTrue) tail'⟩
 
 theorem badCNF_of_depth_ge_canonicalDT
     (F : CNF n w) {ρ : Restriction n} {t : Nat} :
@@ -253,7 +373,7 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
       cases hsel : Restriction.firstPendingClause? ρ F.clauses with
       | none =>
           have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) = 0 := by
-            simp [canonicalDT_CNF_aux, hsel, PDT.depth]
+            cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
             have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
             exact (Nat.not_succ_le_zero _ hzero)
@@ -267,61 +387,162 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
               (ρ := ρ) (C := selection.clause) (w := w) (ℓ := ℓ) hmem
           let choiceFalse := chooseFreeLiteralChoice (w := w) false
           let choiceTrue := chooseFreeLiteralChoice (w := w) true
-          let ρ0 := ClausePendingWitness.Selection.nextRestriction
-            (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)
-          let ρ1 := ClausePendingWitness.Selection.nextRestriction
-            (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
           have hchoiceFalse : choiceFalse.literal = ℓ := by
             simpa [choiceFalse, ℓ, w] using
               chooseFreeLiteralChoice_literal (w := w) (b := false)
           have hchoiceTrue : choiceTrue.literal = ℓ := by
             simpa [choiceTrue, ℓ, w] using
               chooseFreeLiteralChoice_literal (w := w) (b := true)
+          have hassign0 :
+              ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 :
+              ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          have hchoiceFalseNext :
+              (ClausePendingWitness.Selection.nextRestriction
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)) = ρ0 := by
+            apply Option.some.inj
+            have hassign_choice :=
+              ClausePendingWitness.Selection.assign_eq
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)
+            have hchoice_idx : choiceFalse.literal.idx = ℓ.idx := by
+              simpa using congrArg Literal.idx hchoiceFalse
+            have hassign_choice' := hassign_choice
+            rw [hchoice_idx] at hassign_choice'
+            calc
+              some (ClausePendingWitness.Selection.nextRestriction
+                  (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse))
+                  = ρ.assign ℓ.idx false := by
+                    simpa using hassign_choice'.symm
+              _ = some ρ0 := hassign0
+          have hchoiceTrueNext :
+              (ClausePendingWitness.Selection.nextRestriction
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)) = ρ1 := by
+            apply Option.some.inj
+            have hassign_choice :=
+              ClausePendingWitness.Selection.assign_eq
+                (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)
+            have hchoice_idx : choiceTrue.literal.idx = ℓ.idx := by
+              simpa using congrArg Literal.idx hchoiceTrue
+            have hassign_choice' := hassign_choice
+            rw [hchoice_idx] at hassign_choice'
+            calc
+              some (ClausePendingWitness.Selection.nextRestriction
+                  (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue))
+                  = ρ.assign ℓ.idx true := by
+                    simpa using hassign_choice'.symm
+              _ = some ρ1 := hassign1
           have hnode :
               canonicalDT_CNF_aux (F := F) fuel ρ =
                 PDT.node ℓ.idx
                   (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
                   (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) := by
-            simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1,
-              choiceFalse, choiceTrue]
+            cases fuel with
+            | zero =>
+                have : (PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ)) = 0 := by
+                  simp [canonicalDT_CNF_aux, hsel, PDT.depth]
+                have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+                exact (False.elim (Nat.not_succ_le_zero _ hzero))
+            | succ fuel =>
+                simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
           have hbranch :
               PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) ≥ t
                 ∨ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) ≥ t := by
-            have hrewrite :
-                PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
-                  = Nat.succ
-                    (Nat.max
-                      (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0))
-                      (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))) := by
-              simpa [hnode, PDT.depth]
-            have hge :
-                Nat.max
-                  (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0))
-                  (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1)) ≥ t := by
-              have := (Nat.le_of_succ_le_succ (by simpa [hrewrite] using hdepth))
-              simpa using this
-            exact (Nat.le_max_iff.mp hge)
+            have hdepth' :
+                PDT.depth
+                    (PDT.node ℓ.idx
+                      (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
+                      (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))
+                  ≥ Nat.succ t := by
+              simpa [hnode] using hdepth
+            exact (depth_ge_succ_iff (i := ℓ.idx) (L := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
+              (R := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) (t := t)).1 hdepth'
           cases hbranch with
           | inl hleft =>
               have htail :=
                 badCNF_deterministic_of_depth_ge_canonicalDT_aux (F := F)
                   (t := t) (fuel := fuel - 1) (ρ := ρ0) hleft
               rcases htail with ⟨tail, htail_det⟩
-              refine ⟨Core.CNF.CanonicalTrace.cons selection ?_ tail, ?_⟩
-              · exact choiceFalse
+              -- Приводим хвост к нужному типу через равенство `nextRestriction`.
+              have hcast_eq :
+                  Core.CNF.CanonicalTrace (F := F) ρ0 t =
+                    Core.CNF.CanonicalTrace (F := F)
+                      (ClausePendingWitness.Selection.nextRestriction
+                        (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)) t := by
+                simpa using
+                  congrArg
+                    (fun ρ =>
+                      Core.CNF.CanonicalTrace (F := F) ρ t)
+                    hchoiceFalseNext.symm
+              let tail' :
+                  Core.CNF.CanonicalTrace (F := F)
+                    (ClausePendingWitness.Selection.nextRestriction
+                      (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse)) t :=
+                cast hcast_eq tail
+              have htail_det' :
+                  traceDeterministic (F := F) (ρ := _)
+                    (t := t) tail' := by
+                have hcast :=
+                  (traceDeterministic_cast (F := F)
+                    (ρ := ρ0)
+                    (ρ' := ClausePendingWitness.Selection.nextRestriction
+                      (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceFalse))
+                    (t := t) (h := hchoiceFalseNext.symm) (trace := tail)).2 htail_det
+                simpa [tail'] using hcast
+              refine ⟨Core.CNF.CanonicalTrace.cons
+                (selection := selection) (choice := choiceFalse) tail', ?_⟩
               · constructor
                 · exact ⟨hsel, hchoiceFalse⟩
-                · simpa using htail_det
+                · exact htail_det'
           | inr hright =>
               have htail :=
                 badCNF_deterministic_of_depth_ge_canonicalDT_aux (F := F)
                   (t := t) (fuel := fuel - 1) (ρ := ρ1) hright
               rcases htail with ⟨tail, htail_det⟩
-              refine ⟨Core.CNF.CanonicalTrace.cons selection ?_ tail, ?_⟩
-              · exact choiceTrue
+              -- Приводим хвост к нужному типу через равенство `nextRestriction`.
+              have hcast_eq :
+                  Core.CNF.CanonicalTrace (F := F) ρ1 t =
+                    Core.CNF.CanonicalTrace (F := F)
+                      (ClausePendingWitness.Selection.nextRestriction
+                        (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)) t := by
+                simpa using
+                  congrArg
+                    (fun ρ =>
+                      Core.CNF.CanonicalTrace (F := F) ρ t)
+                    hchoiceTrueNext.symm
+              let tail' :
+                  Core.CNF.CanonicalTrace (F := F)
+                    (ClausePendingWitness.Selection.nextRestriction
+                      (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue)) t :=
+                cast hcast_eq tail
+              have htail_det' :
+                  traceDeterministic (F := F) (ρ := _)
+                    (t := t) tail' := by
+                have hcast :=
+                  (traceDeterministic_cast (F := F)
+                    (ρ := ρ1)
+                    (ρ' := ClausePendingWitness.Selection.nextRestriction
+                      (ρ := ρ) (C := selection.clause) (w := w) (choice := choiceTrue))
+                    (t := t) (h := hchoiceTrueNext.symm) (trace := tail)).2 htail_det
+                simpa [tail'] using hcast
+              refine ⟨Core.CNF.CanonicalTrace.cons
+                (selection := selection) (choice := choiceTrue) tail', ?_⟩
               · constructor
                 · exact ⟨hsel, hchoiceTrue⟩
-                · simpa using htail_det
+                · exact htail_det'
 
 theorem badCNF_deterministic_of_depth_ge_canonicalDT
     (F : CNF n w) {ρ : Restriction n} {t : Nat} :
@@ -341,11 +562,17 @@ theorem depth_ge_of_badCNF_deterministic_aux
     ∀ {t fuel : Nat} {ρ : Restriction n}
       (trace : Core.CNF.CanonicalTrace (F := F) ρ t),
       traceDeterministic (F := F) (ρ := ρ) (t := t) trace →
+      t ≤ fuel →
       t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
-  | 0, fuel, ρ, _, _ => by
+  | 0, fuel, ρ, _, _, _ => by
       simp [PDT.depth]
   | Nat.succ t, fuel, ρ,
-      Core.CNF.CanonicalTrace.cons selection choice tail, hdet => by
+      Core.CNF.CanonicalTrace.cons selection choice tail, hdet, hfuel => by
+      -- При `t+1 ≤ fuel` обязаны находиться в ветке `succ`.
+      cases fuel with
+      | zero =>
+          exact (Nat.not_succ_le_zero _ hfuel).elim
+      | succ fuel =>
       rcases hdet with ⟨⟨hsel, hchoice⟩, htail⟩
       -- Разворачиваем каноническое дерево по тем же параметрам.
       let w := selection.witness
@@ -363,18 +590,24 @@ theorem depth_ge_of_badCNF_deterministic_aux
         (Restriction.assign_some_of_mem_freeIndicesList
           (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
       have hnode :
-          canonicalDT_CNF_aux (F := F) fuel ρ =
+          canonicalDT_CNF_aux (F := F) (Nat.succ fuel) ρ =
             PDT.node ℓ.idx
-              (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
-              (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) := by
-        simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1]
+              (canonicalDT_CNF_aux (F := F) fuel ρ0)
+              (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
+        simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
       have hassign_choice :
           ρ.assign ℓ.idx choice.value =
             some (ClausePendingWitness.Selection.nextRestriction
               (ρ := ρ) (C := selection.clause) (w := w) (choice := choice)) := by
-        simpa [hchoice'] using
+        -- Сначала переписываем индекс выбранного литерала.
+        have hchoice_idx : choice.literal.idx = ℓ.idx := by
+          simpa using congrArg Literal.idx hchoice'
+        have hassign :=
           ClausePendingWitness.Selection.assign_eq
             (ρ := ρ) (C := selection.clause) (w := w) (choice := choice)
+        -- Переписываем `choice.literal.idx` в `ℓ.idx` без раскрытия `assign`.
+        rw [hchoice_idx] at hassign
+        exact hassign
       -- Сравниваем `nextRestriction` с выбранным поддеревом.
       have hρchoice :
           ClausePendingWitness.Selection.nextRestriction
@@ -397,7 +630,11 @@ theorem depth_ge_of_badCNF_deterministic_aux
                   some (ClausePendingWitness.Selection.nextRestriction
                     (ρ := ρ) (C := selection.clause) (w := w) (choice := choice)) := by
                 simpa [hval] using hassign_choice
-              exact h1.trans hassign0.symm
+              calc
+                some (ClausePendingWitness.Selection.nextRestriction
+                    (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
+                    = ρ.assign ℓ.idx false := by simpa using h1.symm
+                _ = some ρ0 := hassign0
             simpa [hval, hnext0]
         | true =>
             have hassign1 :
@@ -415,45 +652,52 @@ theorem depth_ge_of_badCNF_deterministic_aux
                   some (ClausePendingWitness.Selection.nextRestriction
                     (ρ := ρ) (C := selection.clause) (w := w) (choice := choice)) := by
                 simpa [hval] using hassign_choice
-              exact h1.trans hassign1.symm
+              calc
+                some (ClausePendingWitness.Selection.nextRestriction
+                    (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
+                    = ρ.assign ℓ.idx true := by simpa using h1.symm
+                _ = some ρ1 := hassign1
             simpa [hval, hnext1]
       have htail_depth :
-          t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1)
+          t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel
             (if choice.value = false then ρ0 else ρ1)) := by
         -- Индукционный шаг на хвосте.
+        have hfuel_tail : t ≤ fuel := by
+          -- Из `t+1 ≤ fuel+1` получаем `t ≤ fuel`.
+          omega
         have htail' :=
           depth_ge_of_badCNF_deterministic_aux (F := F)
-            (t := t) (fuel := fuel - 1)
+            (t := t) (fuel := fuel)
             (ρ := ClausePendingWitness.Selection.nextRestriction
               (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
-            tail htail
+            tail htail hfuel_tail
         simpa [hρchoice] using htail'
       -- Поднимаем на уровень `node`.
       have hdepth_node :
           t ≤
             Nat.max
-              (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0))
-              (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1)) := by
+              (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ0))
+              (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
         cases hval : choice.value with
         | false =>
             have htail' :
-                t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) := by
+                t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ0) := by
               simpa [hval] using htail_depth
-            exact Nat.le_max_left_of_le htail'
+            exact Nat.le_trans htail' (Nat.le_max_left _ _)
         | true =>
             have htail' :
-                t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) := by
+                t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
               simpa [hval] using htail_depth
-            exact Nat.le_max_right_of_le htail'
+            exact Nat.le_trans htail' (Nat.le_max_right _ _)
       have hdepth :
           Nat.succ t ≤
-            PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) := by
+            PDT.depth (canonicalDT_CNF_aux (F := F) (Nat.succ fuel) ρ) := by
         -- `depth(node) = succ (max ...)`.
-        have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
+        have : PDT.depth (canonicalDT_CNF_aux (F := F) (Nat.succ fuel) ρ)
               = Nat.succ
                   (Nat.max
-                    (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0))
-                    (PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))) := by
+                    (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ0))
+                    (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ1))) := by
           simpa [hnode, PDT.depth]
         simpa [this] using Nat.succ_le_succ hdepth_node
       exact hdepth
@@ -464,9 +708,12 @@ theorem depth_ge_of_badCNF_deterministic
     t ≤ PDT.depth (canonicalDT_CNF (F := F) ρ) := by
   intro hbad
   rcases hbad with ⟨trace, hdet⟩
+  have hfuel : t ≤ ρ.freeCount := by
+    -- Каноническая трасса длины `t` не может превышать число свободных координат.
+    exact Core.CNF.CanonicalTrace.length_le_freeCount (trace := trace)
   simpa [canonicalDT_CNF] using
     (depth_ge_of_badCNF_deterministic_aux (F := F)
-      (t := t) (fuel := ρ.freeCount) (ρ := ρ) trace hdet)
+      (t := t) (fuel := ρ.freeCount) (ρ := ρ) trace hdet hfuel)
 
 end MultiSwitching
 end AC0

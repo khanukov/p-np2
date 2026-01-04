@@ -1,4 +1,5 @@
 import Core.BooleanBasics
+import AC0.MultiSwitching.CanonicalTrace
 import AC0.MultiSwitching.Definitions
 
 /-!
@@ -156,6 +157,20 @@ noncomputable def traceOfBadCNF {F : CNF n w} {t : Nat} {ρ : Restriction n}
   CanonicalTrace.toTrace (trace := Classical.choice hbad)
 
 /-!
+## Базовая оценка: Bad → t ≤ freeCount
+
+Для канонической трассы длина не может превышать число свободных
+координат.  Это используется в "малой n" ветке.
+-/
+
+lemma badCNF_length_le_freeCount
+    {F : CNF n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadCNF (F := F) t ρ) :
+    t ≤ ρ.freeCount := by
+  rcases hbad with ⟨trace⟩
+  exact Core.CNF.CanonicalTrace.length_le_freeCount (trace := trace)
+
+/-!
 ## Bad-событие для семейства формул
 
 `BadFamily` означает, что **какая-то** формула из списка имеет
@@ -165,6 +180,13 @@ noncomputable def traceOfBadCNF {F : CNF n w} {t : Nat} {ρ : Restriction n}
 
 def BadFamily (F : FormulaFamily n w) (t : Nat) (ρ : Restriction n) : Prop :=
   ∃ i, ∃ hi : i < F.length, BadCNF (F := F.get ⟨i, hi⟩) t ρ
+
+lemma badFamily_length_le_freeCount
+    {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
+    (hbad : BadFamily (F := F) t ρ) :
+    t ≤ ρ.freeCount := by
+  rcases hbad with ⟨i, hi, hbad_i⟩
+  exact badCNF_length_le_freeCount (hbad := hbad_i)
 
 noncomputable def firstBadIndex
     {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}

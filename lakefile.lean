@@ -31,8 +31,11 @@ lean_lib PnP3 where
     Glob.one `AC0.MultiSwitching.BadEvents,
     Glob.one `AC0.MultiSwitching.CanonicalTrace,
     Glob.one `AC0.MultiSwitching.CanonicalDT,
+    -- Parameter block for Step 3.2 numerics/encodings.
+    Glob.one `AC0.MultiSwitching.Params,
     Glob.one `AC0.MultiSwitching.Numerics,
     Glob.one `AC0.MultiSwitching.Trace,
+    Glob.one `AC0.MultiSwitching.TraceBridge,
     Glob.one `AC0.MultiSwitching.Counting,
     Glob.one `AC0.MultiSwitching.Encoding,
     Glob.one `AC0.MultiSwitching.Main,

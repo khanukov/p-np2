@@ -53,6 +53,56 @@ lemma freeCount_finalRestriction
                   -- `a - 1 - t = a - (1 + t) = a - (t + 1)`.
                   simpa [Nat.sub_sub, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
 
+/-!
+## Длина трассы не превосходит `freeCount`
+
+Для канонической трассы длина не может превышать количество свободных
+координат: каждый шаг фиксирует хотя бы одну свободную позицию.
+-/
+
+lemma length_le_freeCount
+    {ρ : Restriction n} {t : Nat}
+    (trace : CanonicalTrace (F := F) ρ t) :
+    t ≤ ρ.freeCount := by
+  induction t generalizing ρ with
+  | zero =>
+      simp
+  | succ t ih =>
+      cases trace with
+      | cons selection choice tail =>
+          -- Обозначим следующую рестрикцию.
+          let ρ' :=
+            ClausePendingWitness.Selection.nextRestriction
+              (ρ := ρ) (C := selection.clause) (w := selection.witness) choice
+          have hmem :
+              choice.literal.idx ∈ ρ.freeIndicesList :=
+            ClausePendingWitness.Selection.literal_idx_mem_freeIndicesList
+              (choice := choice)
+          have hpos : 0 < ρ.freeCount :=
+            Restriction.freeCount_pos_of_mem_freeIndicesList hmem
+          have hih : t ≤ ρ'.freeCount := by
+            -- Из IH прямо получаем оценку на свободные координаты хвоста.
+            exact ih (ρ := ρ') (trace := tail)
+          have hstep :
+              ρ'.freeCount = ρ.freeCount - 1 := by
+            simpa [ρ'] using
+              ClausePendingWitness.Selection.freeCount_nextRestriction (choice := choice)
+          have hle : t ≤ ρ.freeCount - 1 := by
+            -- Переписываем `ρ'.freeCount` через `hstep`, не раскрывая `freeCount`.
+            have hih' := hih
+            rw [hstep] at hih'
+            exact hih'
+          have hle' : t + 1 ≤ ρ.freeCount := by
+            have hle1 : t + 1 ≤ (ρ.freeCount - 1) + 1 :=
+              Nat.add_le_add_right hle 1
+            have hcancel : (ρ.freeCount - 1) + 1 = ρ.freeCount :=
+              Nat.sub_add_cancel (Nat.succ_le_iff.mp hpos)
+            -- Явно заменяем правую часть через `hcancel`.
+            have hle1' := hle1
+            rw [hcancel] at hle1'
+            exact hle1'
+          simpa [Nat.succ_eq_add_one] using hle'
+
 /-- Каноническая трасса длины `t` переводит `R_s` в `R_{s-t}`. -/
 lemma finalRestriction_mem_R_s
     {ρ : Restriction n} {s t : Nat}

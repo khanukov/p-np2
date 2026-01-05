@@ -248,6 +248,179 @@ lemma badRestrictions_card_le_cnf_family_aux
           simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
 /-!
+### Семейство CNF (детерминированный BadFamily): оценка через Aux
+
+Здесь мы используем «полный» алфавит `Aux`, где каждый шаг хранит
+`BitFix` (переменная + значение), позицию литерала и индекс формулы.
+Эта версия нужна для Stage‑1: инъекция должна быть восстановимой.
+-/
+
+lemma badRestrictions_card_le_cnf_family_det_aux
+    {n w s t : Nat} (F : FormulaFamily n w) :
+    (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+      ≤ (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+  classical
+  let codes :=
+    (R_s (n := n) (s - t)).product
+      (auxCodes n t (w + 1) (F.length + 1))
+  have henc :
+      Function.Injective
+        (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t)) :=
+    encodeBadFamilyDetCNF_aux_injective (F := F) (s := s) (t := t)
+  have hcard :
+      (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+        ≤ codes.card := by
+    have hsub :
+        Fintype.card
+            {ρ // ρ ∈ badRestrictions (n := n) s
+              (BadFamily_deterministic (F := F) t)}
+          ≤ Fintype.card {c // c ∈ codes} := by
+      let toBadFamily :
+          {ρ // ρ ∈ badRestrictions (n := n) s
+            (BadFamily_deterministic (F := F) t)}
+            → BadFamilyDetInRsCNF (F := F) s t :=
+        fun ρbad =>
+          let hmem :=
+            (mem_badRestrictions (n := n) (s := s)
+              (bad := BadFamily_deterministic (F := F) t)).1
+              ρbad.property
+          ⟨ρbad.1, hmem.1, hmem.2⟩
+      have hsub_inj : Function.Injective toBadFamily := by
+        intro x y hxy
+        apply Subtype.ext
+        simpa using congrArg Subtype.val hxy
+      exact Fintype.card_le_of_injective
+        (fun ρbad =>
+          encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t)
+            (toBadFamily ρbad))
+        (fun x y hxy => hsub_inj (henc hxy))
+    have hbad :
+        Fintype.card
+            {ρ // ρ ∈ badRestrictions (n := n) s
+              (BadFamily_deterministic (F := F) t)}
+          = (badRestrictions (n := n) s
+              (BadFamily_deterministic (F := F) t)).card := by
+      simpa using
+        (Fintype.card_coe
+          (s := badRestrictions (n := n) s
+            (BadFamily_deterministic (F := F) t)))
+    have hcodes :
+        Fintype.card {c // c ∈ codes} = codes.card := by
+      simpa using (Fintype.card_coe (s := codes))
+    calc
+      (badRestrictions (n := n) s
+          (BadFamily_deterministic (F := F) t)).card
+          = Fintype.card
+              {ρ // ρ ∈ badRestrictions (n := n) s
+                (BadFamily_deterministic (F := F) t)} := by
+              simpa using hbad.symm
+      _ ≤ Fintype.card {c // c ∈ codes} := hsub
+      _ = codes.card := hcodes
+  have hcodes_card :
+      codes.card =
+        (R_s (n := n) (s - t)).card
+          * (auxCodes n t (w + 1) (F.length + 1)).card := by
+    simp [codes, Finset.card_product, Nat.mul_comm,
+      Nat.mul_left_comm, Nat.mul_assoc]
+  have haux :
+      (auxCodes n t (w + 1) (F.length + 1)).card
+        = (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using (card_Aux (n := n) (t := t) (k := w + 1) (m := F.length + 1))
+  calc
+    (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+        ≤ codes.card := hcard
+    _ = (R_s (n := n) (s - t)).card
+          * (auxCodes n t (w + 1) (F.length + 1)).card := hcodes_card
+    _ = (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+          simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+/-!
+### Canonical CCDT (BadEvent): counting bound через Aux-encoding
+
+Эта лемма закрывает Stage‑2 на уровне `BadEvent` для канонического CCDT:
+мы используем готовый `EncodingWitness` из `Encoding.lean` и общую
+комбинаторную оценку `badRestrictions_card_le_of_aux_encoding`.
+
+Результат имеет тот же формат, что и для детерминированного `BadFamily`,
+но теперь предикат «плохое событие» записан через стандартный интерфейс
+`BadEvent (A := canonicalCCDTAlgorithmCNF ...)`.
+-/
+
+lemma badRestrictions_card_le_canonicalCCDT_aux
+    {n w s t : Nat} (F : FormulaFamily n w) :
+    (badRestrictions (n := n) s
+        (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))).card
+      ≤ (R_s (n := n) (s - t)).card
+        * (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+  classical
+  -- Используем готовое кодирование для BadEvent канонического CCDT.
+  have witness :=
+    encodingWitness_canonicalCCDT_CNF (F := F) (t := t) (s := s)
+  -- Применяем общий bound для Aux‑encoding.
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+    (badRestrictions_card_le_of_aux_encoding
+      (A := canonicalCCDTAlgorithmCNF (F := F) t)
+      (s := s) (t' := s - t) (k' := w + 1) (m := F.length + 1)
+      (witness := witness))
+
+/-!
+### Canonical CCDT (BadEvent): existence‑шаг из Aux‑границы
+
+Если задана строгая оценка кардиналов для полного Aux‑кода, получаем
+существование хорошей рестрикции для канонического CCDT, то есть
+`¬ BadEvent (A := canonicalCCDTAlgorithmCNF ...)`.
+-/
+
+lemma exists_good_restriction_canonicalCCDT_of_bound_aux
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s,
+      ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
+  classical
+  -- Ограничиваем число плохих рестрикций через Aux‑код.
+  have hbad :
+      (badRestrictions (n := n) s
+        (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))).card
+        < (R_s (n := n) s).card := by
+    have hle := badRestrictions_card_le_canonicalCCDT_aux (F := F) (s := s) (t := t)
+    exact lt_of_le_of_lt hle hbound
+  -- Применяем общий критерий существования good‑рестрикции.
+  exact exists_good_of_card_lt
+    (n := n) (s := s)
+    (bad := BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t)) hbad
+
+/-!
+### Дет. BadFamily: existence‑шаг из Aux‑границы
+
+Если задана строгая оценка кардиналов для полного Aux‑кода,
+получаем существование хорошей рестрикции (¬BadFamily_deterministic).
+-/
+
+lemma exists_good_restriction_cnf_family_of_bound_det_aux
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ BadFamily_deterministic (F := F) t ρ := by
+  classical
+  -- Сначала ограничиваем число плохих рестрикций через Aux‑код.
+  have hbad :
+      (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
+        < (R_s (n := n) s).card := by
+    have hle := badRestrictions_card_le_cnf_family_det_aux (F := F) (s := s) (t := t)
+    exact lt_of_le_of_lt hle hbound
+  -- Затем применяем общий критерий существования good‑рестрикции.
+  exact exists_good_of_card_lt
+    (n := n) (s := s) (bad := BadFamily_deterministic (F := F) t) hbad
+
+/-!
 ## Детерминированный BadFamily (пока через «толстый» алфавит)
 
 Этот шаг полезен, чтобы отделить детерминизацию от смены алфавита.

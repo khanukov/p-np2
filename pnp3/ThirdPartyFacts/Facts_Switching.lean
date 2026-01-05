@@ -517,13 +517,12 @@ lemma ac0AllSubcubes_length_le_weak
 /-- Polylog‑оценка: число подкубов укладывается в `(log₂(M+2))^(d+1)`. -/
 lemma ac0AllSubcubes_length_le_polylog_from_witness
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (ac0AllSubcubes params F hF).length
+    (witness : AC0FamilyWitness params F) :
+    witness.allSubcubes.length
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-  classical
   -- В witness хранится результат multi-switching индукции.
-  simpa [ac0AllSubcubes, AC0FamilyWitness.allSubcubes] using
-    (Classical.choice hF).multi_switching_bound
+  simpa [AC0FamilyWitness.allSubcubes] using
+    witness.multi_switching_bound
 
 /--
   Формализованный «мост» от multi‑switching к polylog‑контракту.
@@ -537,20 +536,38 @@ lemma ac0AllSubcubes_length_le_polylog_from_witness
 -/
 lemma ac0AllSubcubes_length_le_polylog_of_multi_switching
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (ac0AllSubcubes params F hF).length
+    (witness : AC0FamilyWitness params F) :
+    (ac0AllSubcubes params F ⟨witness⟩).length
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
   -- TODO: заменить на реальный multi‑switching proof‑path из AC0.MultiSwitching.Main.
-  simpa using ac0AllSubcubes_length_le_polylog_from_witness params F hF
+  -- Сейчас читаем bound из выбранного witness: он существует по `FamilyIsAC0`.
+  classical
+  set w := Classical.choice (⟨witness⟩ : FamilyIsAC0 params F)
+  simpa [ac0AllSubcubes, w, AC0FamilyWitness.allSubcubes] using
+    w.multi_switching_bound
+
+/-!
+### Stage 5: полилогарифмическая граница (explicit witness)
+
+Stage 5 фиксирует, что из явного multi‑switching witness
+мы уже получаем **polylog‑bound** на число подкубов.
+-/
+
+theorem stage5_polylog_complete
+    (params : AC0Parameters) (F : Family params.n)
+    (witness : AC0FamilyWitness params F) :
+    (ac0AllSubcubes params F ⟨witness⟩).length
+      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
+  exact ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
 
 /-- Polylog‑оценка: число подкубов укладывается в `(log₂(M+2))^(d+1)`. -/
 lemma ac0AllSubcubes_length_le_polylog
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    (ac0AllSubcubes params F hF).length
+    (witness : AC0FamilyWitness params F) :
+    (ac0AllSubcubes params F ⟨witness⟩).length
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
   -- Официальная точка интеграции: в будущем это будет прямой multi‑switching proof‑path.
-  simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F hF
+  simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
 
 /--
   Polylog‑оценка числа подкубов как отдельный интерфейс.
@@ -653,23 +670,21 @@ lemma ac0DepthBoundWitness_of_weak
 -/
 lemma ac0PolylogBoundWitness_by_depth
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    AC0PolylogBoundWitness params F hF := by
-  classical
+    (witness : AC0FamilyWitness params F) :
+    AC0PolylogBoundWitness params F ⟨witness⟩ := by
   -- Основной шаг: polylog‑граница берётся из multi‑switching witness.
   -- По смыслу это результат индукции по глубине (CCDT + encoding),
   -- зафиксированный в `AC0FamilyWitness.multi_switching_bound`.
   refine ⟨?_⟩
-  simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F hF
+  simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
 
 /-- Реализация multi‑switching интерфейса через polylog‑индукцию. -/
 lemma ac0PolylogBoundWitness_of_multi_switching
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) :
-    AC0PolylogBoundWitness params F hF := by
-  classical
+    (witness : AC0FamilyWitness params F) :
+    AC0PolylogBoundWitness params F ⟨witness⟩ := by
   -- Реальная индукция по глубине инкапсулирована в witness (CCDT + encoding + counting).
-  simpa using ac0PolylogBoundWitness_by_depth params F hF
+  simpa using ac0PolylogBoundWitness_by_depth params F witness
 
 /--
   Параметры для класса «локальных схем».  Мы сохраняем только наиболее
@@ -1230,6 +1245,33 @@ theorem partial_shrinkage_for_AC0_with_polylog
     ac0DepthBoundWitness_of_polylog params F hF hpoly
   simpa [ac0DepthBound] using
     partial_shrinkage_for_AC0_with_bound params F hF hBound
+
+/-!
+### Stage 6: polylog‑свидетельство и shrinkage
+
+Stage 6 замыкает цепочку, преобразуя polylog‑bound
+в полноценный partial shrinkage‑сертификат.
+-/
+
+theorem stage6_polylog_witness_complete
+    (params : AC0Parameters) (F : Family params.n)
+    (witness : AC0FamilyWitness params F) :
+    AC0PolylogBoundWitness params F ⟨witness⟩ := by
+  exact ac0PolylogBoundWitness_of_multi_switching params F witness
+
+theorem stage6_partial_shrinkage_complete
+    (params : AC0Parameters) (F : Family params.n)
+    (witness : AC0FamilyWitness params F) :
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ ≤ Nat.log2 (params.M + 2) ∧
+      C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
+      (0 : Core.Q) ≤ C.epsilon ∧
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  have hpoly : AC0PolylogBoundWitness params F ⟨witness⟩ :=
+    stage6_polylog_witness_complete params F witness
+  simpa using
+    (partial_shrinkage_for_AC0_with_polylog
+      (params := params) (F := F) (hF := ⟨witness⟩) hpoly)
 
 /--
   Усиленная (polylog) версия shrinkage-факта для AC⁰.

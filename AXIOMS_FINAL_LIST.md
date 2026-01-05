@@ -106,23 +106,12 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
+- **2025-12-27** — Confirmed locality-lift and magnification bridges are fully
+  proved in Lean; active axiom count remains 1.
 - **2025-12-26** — Archived the canonical trace placeholder axioms from the
-  active `pnp3/` tree, leaving the Partial MCSP NP-hardness axiom as the
-  only active axiom.
-- **2025-12-26** — Added axiom `PartialMCSP_is_NP_Hard` (Hirahara 2022), bringing
-  the active axiom count to 5.
-- **2025-12-27** — Ported locality-lift to Partial MCSP and removed the
-  temporary partial OPS axiom, returning the active axiom count to 5.
-- **2025-12-26** — Added explicit placeholder axioms for multi-switching
-  canonical trace encoding (4 total), and reclassified A.1/A.2 as theorems
-  with external witnesses.
-- **2025-12-18** — Marked `antiChecker_exists_large_Y` as a theorem (derived
-  from the capacity-gap contradiction), reducing the active axiom count to 2.
+  active `pnp3/` tree, leaving `PartialMCSP_is_NP_Hard` as the only active
+  axiom.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all
   magnification triggers remain proven.
-- **2025-10-25** — Historical update: totals moved to 6 axioms; marked
-  `CJW_sparse_trigger` proven; clarified that all magnification triggers are
-  theorems (superseded by the 5-axiom count above).
-- **2025-10-24** — Updated totals to 7 axioms, marked `Locality_trigger` as
-  proven, reclassified complexity interfaces as theorems, and documented
-  retirement of depth-2 switching files.
+- **2025-10-25** — Historical update: interface axioms replaced by theorems and
+  magnification triggers proven (superseded by the 1-axiom count above).

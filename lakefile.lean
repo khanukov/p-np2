@@ -38,6 +38,7 @@ lean_lib PnP3 where
     Glob.one `AC0.MultiSwitching.TraceBridge,
     Glob.one `AC0.MultiSwitching.Counting,
     Glob.one `AC0.MultiSwitching.Encoding,
+    Glob.one `AC0.MultiSwitching.ShrinkageFromGood,
     Glob.one `AC0.MultiSwitching.Main,
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,

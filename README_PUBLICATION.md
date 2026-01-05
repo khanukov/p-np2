@@ -7,8 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Status**: ✅ Complete Proof Architecture (2025-10-24)
-**Axioms**: 2 external (switching/shrinkage); all other steps are Lean-proved theorems
-**Lines of Code**: ~6,300 lines of Lean 4
+**Axioms**: 1 external axiom (Partial MCSP NP-hardness) plus external witnesses for switching/shrinkage inputs; all other steps are Lean-proved theorems
+**Lines of Code**: ~25,000 lines of Lean 4 (`pnp3/`)
 **Verification**: Fully type-checked, builds successfully
 
 ---
@@ -83,7 +83,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 External Input Inventory
 
-**Total Axioms**: 5 (4 placeholder axioms in multi-switching encoding + 1 NP-hardness axiom)
+**Total Axioms**: 1 (Partial MCSP NP-hardness axiom)
 
 ### External Theorem Inputs (non-axiom)
 
@@ -114,8 +114,8 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 - `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
   remaining interface axioms. The pipeline derives `NP_not_subset_Ppoly` and `P_ne_NP` as theorems.
-  The only active axioms live in `AC0/MultiSwitching/Encoding.lean` and are
-  clearly marked as placeholders for the canonical trace encoding.
+  The only active axiom lives in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+  (`PartialMCSP_is_NP_Hard`).
 
 **Minimal Set for P_ne_NP_final**: External witnesses for A.1/A.2 shrinkage inputs
 

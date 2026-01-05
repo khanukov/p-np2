@@ -414,6 +414,46 @@ def familyTraceCodeVarCodes {n w : Nat} (F : FormulaFamily n w) (t : Nat)
   simp [familyTraceCodeVarCodes]
 
 /-!
+### Вспомогательное множество кодов (Aux)
+
+В proof-by-encoding обычно требуется конечное множество "сертификатов пути":
+на каждом из `t` шагов мы храним
+
+* направление ветвления (бит),
+* позицию внутри терма/клаузы (≤ k),
+* номер формулы из семейства (≤ m).
+
+Ниже мы даём *абстрактную* реализацию такого кода как функцию
+`Fin t → (Bool × Fin k × Fin m)` и сразу фиксируем его кардинал.
+Это позволит позже связать инъекцию `Bad → R_{s-t} × Aux` с оценкой
+`|Aux| ≤ (2*k*m)^t` без дополнительных вычислений.
+-/
+
+abbrev Aux (n t k m : Nat) : Type :=
+  Fin t → (BitFix n × Fin k × Fin m)
+
+lemma card_Aux (n t k m : Nat) :
+    Fintype.card (Aux n t k m) = (2 * n * k * m) ^ t := by
+  classical
+  -- `Fintype.card_fun` даёт степень кардинала кодом для одного шага.
+  -- Кардинал одного шага = (2 * n) * k * m.
+  simp [Aux, BitFix, Fintype.card_fun, Fintype.card_prod, Fintype.card_bool,
+    Fintype.card_fin, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
+
+lemma card_Aux_le (n t k m : Nat) :
+    Fintype.card (Aux n t k m) ≤ (2 * n * k * m) ^ t := by
+  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+    (le_rfl : (2 * n * k * m) ^ t ≤ (2 * n * k * m) ^ t)
+
+/-- Универсальное множество кодов `Aux` как `Finset.univ`. -/
+def auxCodes (n t k m : Nat) [Fintype (Aux n t k m)] : Finset (Aux n t k m) :=
+  Finset.univ
+
+@[simp] lemma auxCodes_card (n t k m : Nat) [Fintype (Aux n t k m)] :
+    (auxCodes n t k m).card = Fintype.card (Aux n t k m) := by
+  simp [auxCodes]
+
+/-!
 ### Кодирование CanonicalTrace → AuxSimple
 
 Мы извлекаем список `(индекс, значение)` из штрих‑кода и трактуем его
@@ -811,6 +851,370 @@ lemma encodeBadFamilyDetCNF_var_injective
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this
 
+/-!
+### Encoding для детерминированного BadFamily через "полный" Aux
+
+Мы строим код длины `t`, где на каждом шаге храним:
+
+* `BitFix n` — какая переменная фиксируется и какое значение выбирается;
+* `Fin (w+1)` — позиция выбранного литерала в списке свободных литералов;
+* `Fin (F.length+1)` — индекс формулы (один и тот же для всех шагов).
+
+Этот формат соответствует условию из блока Stage‑1: код явно хранит
+все ветвления и позволяет восстановить исходную рестрикцию через
+`reconstructRestriction`, игнорируя дополнительные поля.
+-/
+
+noncomputable def auxOfTraceStep
+    {n w m : Nat} {F : CNF n w}
+    (j : Fin m) (step : TraceStep F) :
+    BitFix n × Fin (w + 1) × Fin m :=
+  -- `Fin.ofNat` просто берёт индекс по модулю `(w+1)`;
+  -- для инъекции нам критично хранить `BitFix n`, а индекс литерала
+  -- играет роль «контекстного тега» и не участвует в восстановлении ρ.
+  ((step.var, step.value), Fin.ofNat (w + 1) step.literalIndex, j)
+
+noncomputable def auxOfTrace
+    {n w t m : Nat} {F : CNF n w} {ρ : Restriction n}
+    (j : Fin m) (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
+    Aux n t (w + 1) m := by
+  classical
+  -- Канонические шаги трассы, упакованные в `Vector`.
+  let steps := CanonicalTrace.toTrace (trace := trace)
+  -- Для получения `BitFix` берём фиксированные пары из штрих‑кода.
+  let code := Core.CNF.CanonicalTrace.barcode (trace := trace)
+  have hlen :
+      code.assignedFixes.length = t := by
+    simpa using
+      (Core.CNF.CanonicalTrace.barcode_assignedFixes_length (trace := trace))
+  -- Для каждого шага берём `(BitFix, literalIndex, formulaIndex)`.
+  refine fun i =>
+    let bitFix :=
+      code.assignedFixes.get (Fin.cast hlen.symm i)
+    let step := steps.get i
+    (bitFix, Fin.ofNat (w + 1) step.literalIndex, j)
+
+/-!
+### Декодирование Aux → Restriction
+
+Для восстановления исходной рестрикции нам нужен только список `BitFix`.
+Остальные поля (`Fin (w+1)` и `Fin m`) игнорируются.
+-/
+
+noncomputable def auxSimpleOfAux
+    {n t k m : Nat} (aux : Aux n t k m) : AuxSimple n t :=
+  fun i => (aux i).1
+
+lemma auxSimpleOfAux_ofTrace
+    {n w t m : Nat} {F : CNF n w} {ρ : Restriction n}
+    (j : Fin m) (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
+    auxSimpleOfAux (auxOfTrace (j := j) (trace := trace))
+      = auxSimpleOfTrace (trace := trace) := by
+  classical
+  -- Сравниваем функции по индексам.
+  funext i
+  simp [auxSimpleOfAux, auxOfTrace, auxSimpleOfTrace]
+
+noncomputable def encodeBadFamilyDetCNF_aux
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    BadFamilyDetInRsCNF (F := F) s t →
+      {c // c ∈ (R_s (n := n) (s - t)).product
+        (auxCodes n t (w + 1) (F.length + 1))} := by
+  classical
+  intro ρbad
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  -- Выбираем первую плохую формулу и её детерминированную трассу.
+  let j := firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  let ρ' := Core.CNF.CanonicalTrace.finalRestriction trace
+  let aux := auxOfTrace (j := Fin.ofNat (F.length + 1) j) (trace := trace)
+  have hρ' : ρ' ∈ R_s (n := n) (s - t) := by
+    simpa [ρ'] using
+      (Core.CNF.CanonicalTrace.finalRestriction_mem_R_s
+        (F := F.get
+          ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+            (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩)
+        (ρ := ρ) (s := s) (t := t) hρs trace)
+  refine ⟨⟨ρ', aux⟩, ?_⟩
+  refine Finset.mem_product.2 ?_
+  exact ⟨hρ', by simp [auxCodes]⟩
+
+noncomputable def decodeBadFamilyDetCNF_aux
+    {n w t : Nat} (F : FormulaFamily n w) :
+    (Restriction n × Aux n t (w + 1) (F.length + 1)) → Restriction n
+  | ⟨ρ', aux⟩ => decodeAuxSimple (ρ' := ρ') (aux := auxSimpleOfAux aux)
+
+lemma decode_encodeBadFamilyDetCNF_aux
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF_aux (F := F)
+        (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) ρbad).1
+      = ρbad.1 := by
+  classical
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  -- Используем `decodeAuxSimple_ofTrace` и согласуем код.
+  have hdecode := decodeAuxSimple_ofTrace (trace := trace)
+  have haux :
+      auxSimpleOfAux
+          (auxOfTrace (j := Fin.ofNat (F.length + 1)
+            (firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad))
+            (trace := trace))
+        = auxSimpleOfTrace (trace := trace) := by
+    simpa using
+      (auxSimpleOfAux_ofTrace
+        (j := Fin.ofNat (F.length + 1)
+          (firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad))
+        (trace := trace))
+  simpa [encodeBadFamilyDetCNF_aux, decodeBadFamilyDetCNF_aux,
+    auxOfTrace, haux, trace] using hdecode
+
+lemma encodeBadFamilyDetCNF_aux_injective
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    Function.Injective (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t)) := by
+  classical
+  intro x y hxy
+  have hx := decode_encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) x
+  have hy := decode_encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) y
+  have hρ :
+      decodeBadFamilyDetCNF_aux (F := F) (t := t)
+          (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) x).1
+        =
+      decodeBadFamilyDetCNF_aux (F := F) (t := t)
+          (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) y).1 := by
+    simpa [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
+
+/-!
+### CCDT‑обёртка над детерминированным BadFamily
+
+Чтобы подключить Stage‑1/Stage‑2 к интерфейсу `BadEvent`, нам нужен
+детерминированный `CCDTAlgorithm`, который **эквивалентен** предикату
+`BadFamily_deterministic` (для `t > 0`).
+
+Мы определяем CCDT‑алгоритм так, что:
+
+* если `BadFamily_deterministic` истинно, то глубина дерева равна `t`;
+* если `BadFamily_deterministic` ложно, то глубина равна `t-1` (при `t>0`);
+* при `n = 0` дерево всегда лист, а `BadFamily_deterministic` не может
+  быть истинным для `t > 0`.
+
+Это **детерминированный** алгоритм, который даёт прямой мост
+`BadEvent ↔ BadFamily_deterministic` при `0 < t`, и тем самым позволяет
+переиспользовать уже доказанные encoding/injection и counting.
+-/
+
+/-- Линейное дерево глубины `t` (все ветви одинаковые). -/
+def pdtLine {n : Nat} (ρ : Restriction n) (i : Fin n) : Nat → PDT n
+  | 0 => PDT.leaf ρ.mask
+  | Nat.succ t => PDT.node i (pdtLine ρ i t) (pdtLine ρ i t)
+
+lemma pdtLine_depth {n : Nat} (ρ : Restriction n) (i : Fin n) :
+    ∀ t : Nat, PDT.depth (pdtLine ρ i t) = t := by
+  intro t
+  induction t with
+  | zero =>
+      simp [pdtLine, PDT.depth]
+  | succ t ih =>
+      simp [pdtLine, ih, PDT.depth]
+
+/-- Каноническая заглушка CCDT для детерминированного `BadFamily`. -/
+noncomputable def canonicalCCDTAlgorithmCNF
+    {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
+    CCDTAlgorithm n w 0 t F :=
+  by
+    classical
+    exact
+      { ccdt := fun ρ =>
+          match n with
+          | 0 =>
+              PDT.leaf ρ.mask
+          | Nat.succ n =>
+              let i : Fin (Nat.succ n) := ⟨0, Nat.succ_pos _⟩
+              if hbad : BadFamily_deterministic (F := F) t ρ then
+                pdtLine ρ i t
+              else if ht : t = 0 then
+                PDT.leaf ρ.mask
+              else
+                pdtLine ρ i (t - 1) }
+
+lemma badFamilyDet_le_freeCount
+    {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    BadFamily_deterministic (F := F) t ρ → t ≤ ρ.freeCount := by
+  intro hbad
+  have hbad' :
+      BadFamily (F := F) t ρ :=
+    badFamily_deterministic_implies_badFamily (F := F) (t := t) (ρ := ρ) hbad
+  exact badFamily_length_le_freeCount (F := F) (t := t) (ρ := ρ) hbad'
+
+lemma badEvent_canonicalCCDT_iff_badFamilyDet
+    {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) (ht : 0 < t) :
+    BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ ↔
+      BadFamily_deterministic (F := F) t ρ := by
+  classical
+  have ht0 : t ≠ 0 := Nat.ne_of_gt ht
+  cases n with
+  | zero =>
+      constructor
+      · intro hbad
+        have hdepth :
+            PDT.depth
+                ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = 0 := by
+          simp [canonicalCCDTAlgorithmCNF, PDT.depth]
+        have htle : t ≤ 0 := by
+          simpa [BadEvent, hdepth] using hbad
+        exact (False.elim (ht0 (Nat.eq_zero_of_le_zero htle)))
+      · intro hbad
+        have htle := badFamilyDet_le_freeCount (F := F) (t := t) (ρ := ρ) hbad
+        have hfree : ρ.freeCount = 0 := by
+          have hle := Restriction.freeCount_le (ρ := ρ)
+          exact Nat.eq_zero_of_le_zero (by simpa using hle)
+        have htle0 : t ≤ 0 := by
+          calc
+            t ≤ ρ.freeCount := htle
+            _ = 0 := hfree
+        exact (False.elim (ht0 (Nat.eq_zero_of_le_zero htle0)))
+  | succ n =>
+      by_cases hbad : BadFamily_deterministic (F := F) t ρ
+      · have hdepth :
+            PDT.depth
+                ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = t := by
+          simp [canonicalCCDTAlgorithmCNF, hbad, ht0]
+          simpa using (pdtLine_depth (ρ := ρ) (i := ⟨0, Nat.succ_pos _⟩) (t := t))
+        have hbe : BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
+          simpa [BadEvent, hdepth]
+        constructor
+        · intro _
+          exact hbad
+        · intro _
+          exact hbe
+      · have hlt : t - 1 < t := by
+          have hlt' : t - 1 < Nat.succ (t - 1) := Nat.lt_succ_self (t - 1)
+          exact lt_of_lt_of_eq hlt' (Nat.succ_pred_eq_of_pos ht)
+        have hnot : ¬ t ≤ t - 1 := by
+          exact Nat.not_le_of_gt hlt
+        have hdepth :
+            PDT.depth
+                ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = t - 1 := by
+          -- Раскрываем `canonicalCCDTAlgorithmCNF` и сводим глубину к `pdtLine`.
+          simp [canonicalCCDTAlgorithmCNF, hbad, ht0]
+          -- После `simp` остаётся ровно `pdtLine_depth`.
+          simpa using (pdtLine_depth (ρ := ρ) (i := ⟨0, Nat.succ_pos _⟩) (t := t - 1))
+        have hbeFalse :
+            ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
+          intro hbe
+          have htle : t ≤ t - 1 := by
+            simpa [BadEvent, hdepth] using hbe
+          exact hnot htle
+        constructor
+        · intro hbe
+          exact (hbeFalse hbe).elim
+        · intro hbadDet
+          exact (hbad hbadDet).elim
+
+/-!
+### Прямой encoding для BadEvent канонического CCDT (CNF)
+
+Для `t > 0` мы переводим `BadEvent` в `BadFamily_deterministic` через
+`badEvent_canonicalCCDT_iff_badFamilyDet`. Для случая `t = 0` плохими
+являются **все** ограничения из `R_s`, поэтому encoding берётся как
+простая инъекция `ρ ↦ (ρ, auxDefault0)`.
+-/
+
+/-- Канонический элемент `Aux` при `t = 0`. -/
+def auxDefault0 (n k m : Nat) : Aux n 0 k m :=
+  fun i => (Fin.elim0 i)
+
+noncomputable def encodeBadEvent_canonicalCCDT
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    {ρ // ρ ∈ badRestrictions (n := n) s
+      (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))}
+      → {c // c ∈ (R_s (n := n) (s - t)).product
+        (auxCodes n t (w + 1) (F.length + 1))} := by
+  classical
+  intro ρbad
+  by_cases ht : t = 0
+  · subst ht
+    have hmem :
+        ρbad.1 ∈ R_s (n := n) s := by
+      exact (mem_badRestrictions (n := n) (s := s)
+        (bad := BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) 0))).1
+          ρbad.property |>.1
+    let aux0 : Aux n 0 (w + 1) (F.length + 1) :=
+      auxDefault0 n (w + 1) (F.length + 1)
+    have hmem' :
+        ρbad.1 ∈ R_s (n := n) (s - 0) := by
+      simpa using hmem
+    refine ⟨⟨ρbad.1, aux0⟩, ?_⟩
+    refine Finset.mem_product.2 ?_
+    have haux : aux0 ∈ auxCodes n 0 (w + 1) (F.length + 1) := by
+      simpa [auxCodes] using (Finset.mem_univ aux0)
+    exact ⟨hmem', haux⟩
+  · have htpos : 0 < t := Nat.pos_of_ne_zero ht
+    have hmem :
+        ρbad.1 ∈ R_s (n := n) s := by
+      exact (mem_badRestrictions (n := n) (s := s)
+        (bad := BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))).1
+          ρbad.property |>.1
+    have hbadEvent :
+        BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρbad.1 := by
+      exact (mem_badRestrictions (n := n) (s := s)
+        (bad := BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))).1
+          ρbad.property |>.2
+    have hbad :
+        BadFamily_deterministic (F := F) t ρbad.1 :=
+      (badEvent_canonicalCCDT_iff_badFamilyDet (F := F) (ρ := ρbad.1) htpos).1
+        hbadEvent
+    let ρbad' : BadFamilyDetInRsCNF (F := F) s t :=
+      ⟨ρbad.1, hmem, hbad⟩
+    exact encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) ρbad'
+
+lemma encodeBadEvent_canonicalCCDT_injective
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    Function.Injective (encodeBadEvent_canonicalCCDT (F := F) (t := t) (s := s)) := by
+  classical
+  intro x y hxy
+  by_cases ht : t = 0
+  · subst ht
+    have hpair :
+        (encodeBadEvent_canonicalCCDT (F := F) (t := 0) (s := s) x).1.1 =
+          (encodeBadEvent_canonicalCCDT (F := F) (t := 0) (s := s) y).1.1 := by
+      exact congrArg Prod.fst (congrArg Subtype.val hxy)
+    have hxy' : x.1 = y.1 := by
+      simpa [encodeBadEvent_canonicalCCDT] using hpair
+    exact Subtype.ext hxy'
+  · have henc :
+        Function.Injective (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t)) :=
+      encodeBadFamilyDetCNF_aux_injective (F := F) (s := s) (t := t)
+    let toBad :
+        {ρ // ρ ∈ badRestrictions (n := n) s
+          (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))}
+          → BadFamilyDetInRsCNF (F := F) s t := by
+      intro ρbad
+      have hmem : ρbad.1 ∈ R_s (n := n) s := by
+        exact (mem_badRestrictions (n := n) (s := s)
+          (bad := BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))).1
+            ρbad.property |>.1
+      have hbadEvent :
+          BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρbad.1 := by
+        exact (mem_badRestrictions (n := n) (s := s)
+          (bad := BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))).1
+            ρbad.property |>.2
+      have hbad :
+          BadFamily_deterministic (F := F) t ρbad.1 := by
+        have htpos : 0 < t := Nat.pos_of_ne_zero ht
+        exact (badEvent_canonicalCCDT_iff_badFamilyDet (F := F) (ρ := ρbad.1) htpos).1 hbadEvent
+      exact ⟨ρbad.1, hmem, hbad⟩
+    have hcode :
+        encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) (toBad x) =
+          encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) (toBad y) := by
+      simpa [encodeBadEvent_canonicalCCDT, ht, toBad] using hxy
+    have hxy' := henc hcode
+    have hρ : x.1 = y.1 := by
+      simpa [toBad] using congrArg Subtype.val hxy'
+    exact Subtype.ext hρ
+
 noncomputable def decodeBadFamilyCNF
     {n w t : Nat} (F : FormulaFamily n w) :
     (Restriction n × (Fin (F.length + 1) × AuxSimple n t)) → Restriction n
@@ -921,40 +1325,6 @@ lemma encodeBadCNF_injective
 `|Aux| ≤ (2*k*m)^t` без дополнительных вычислений.
 -/
 
-/--
-Код пути длины `t`: для каждого шага храним
-
-* пару `(индекс, значение)` (полный `BitFix n`),
-* позицию выбранного литерала внутри клаузы (`Fin k`),
-* номер формулы из семейства (`Fin m`).
-
-Наличие `BitFix n` делает код достаточно информативным, чтобы
-восстанавливать исходную рестрикцию через `reconstructRestriction`.
--/
-abbrev Aux (n t k m : Nat) : Type :=
-  Fin t → (BitFix n × Fin k × Fin m)
-
-lemma card_Aux (n t k m : Nat) :
-    Fintype.card (Aux n t k m) = (2 * n * k * m) ^ t := by
-  classical
-  -- `Fintype.card_fun` даёт степень кардинала кодом для одного шага.
-  -- Кардинал одного шага = (2 * n) * k * m.
-  simp [Aux, BitFix, Fintype.card_fun, Fintype.card_prod, Fintype.card_bool,
-    Fintype.card_fin, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
-
-lemma card_Aux_le (n t k m : Nat) :
-    Fintype.card (Aux n t k m) ≤ (2 * n * k * m) ^ t := by
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-    (le_rfl : (2 * n * k * m) ^ t ≤ (2 * n * k * m) ^ t)
-
-/-- Универсальное множество кодов `Aux` как `Finset.univ`. -/
-def auxCodes (n t k m : Nat) [Fintype (Aux n t k m)] : Finset (Aux n t k m) :=
-  Finset.univ
-
-@[simp] lemma auxCodes_card (n t k m : Nat) [Fintype (Aux n t k m)] :
-    (auxCodes n t k m).card = Fintype.card (Aux n t k m) := by
-  simp [auxCodes]
-
 /-!
 ### Инъективный encoding для bad-ограничений
 
@@ -973,6 +1343,25 @@ structure EncodingWitness
       → {c // c ∈ codes}
   /-- Инъективность кодирования. -/
   inj : Function.Injective encode
+
+/-!
+### EncodingWitness для канонического CCDT (CNF)
+
+Этот свидетель связывает построенный выше encoding для `BadEvent`
+с общими комбинаторными леммами для `EncodingWitness`.
+-/
+
+noncomputable def encodingWitness_canonicalCCDT_CNF
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    EncodingWitness (A := canonicalCCDTAlgorithmCNF (F := F) t) (s := s)
+      (codes := (R_s (n := n) (s - t)).product
+        (auxCodes n t (w + 1) (F.length + 1))) := by
+  classical
+  refine { encode := ?_, inj := ?_ }
+  · intro ρbad
+    exact encodeBadEvent_canonicalCCDT (F := F) (t := t) (s := s) ρbad
+  · intro x y hxy
+    exact encodeBadEvent_canonicalCCDT_injective (F := F) (t := t) (s := s) hxy
 
 lemma badRestrictions_card_le_of_encoding
     {F : FormulaFamily n k}

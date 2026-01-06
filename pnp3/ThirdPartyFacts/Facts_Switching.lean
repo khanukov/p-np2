@@ -527,24 +527,19 @@ lemma ac0AllSubcubes_length_le_polylog_from_witness
 /--
   Формализованный «мост» от multi‑switching к polylog‑контракту.
 
-  Сейчас это всего лишь прокси‑лемма, напрямую использующая поле witness.
-  В будущем вместо `Classical.choice` здесь будет стоять конструктивная
-  теорема из `AC0/MultiSwitching/Main.lean`, построенная через CCDT,
-  encoding/injection и подсчёты плохих рестрикций.  Эта лемма — официальный
-  «узел интеграции»: именно её тело нужно заменить на реальный proof‑path,
-  не меняя downstream‑клиентов.
+  Сейчас это прокси‑лемма, напрямую использующая поле witness.  Позднее
+  сюда будет подставлен конструктивный proof‑path из
+  `AC0/MultiSwitching/Main.lean`, построенный через CCDT,
+  encoding/injection и подсчёты плохих рестрикций.  Эта лемма остаётся
+  официальным «узлом интеграции» для downstream‑клиентов.
 -/
 lemma ac0AllSubcubes_length_le_polylog_of_multi_switching
     (params : AC0Parameters) (F : Family params.n)
     (witness : AC0FamilyWitness params F) :
-    (ac0AllSubcubes params F ⟨witness⟩).length
+    witness.allSubcubes.length
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-  -- TODO: заменить на реальный multi‑switching proof‑path из AC0.MultiSwitching.Main.
-  -- Сейчас читаем bound из выбранного witness: он существует по `FamilyIsAC0`.
-  classical
-  set w := Classical.choice (⟨witness⟩ : FamilyIsAC0 params F)
-  simpa [ac0AllSubcubes, w, AC0FamilyWitness.allSubcubes] using
-    w.multi_switching_bound
+  simpa [AC0FamilyWitness.allSubcubes] using
+    witness.multi_switching_bound
 
 /-!
 ### Stage 5: полилогарифмическая граница (explicit witness)
@@ -556,7 +551,7 @@ Stage 5 фиксирует, что из явного multi‑switching witness
 theorem stage5_polylog_complete
     (params : AC0Parameters) (F : Family params.n)
     (witness : AC0FamilyWitness params F) :
-    (ac0AllSubcubes params F ⟨witness⟩).length
+    witness.allSubcubes.length
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
   exact ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
 
@@ -564,7 +559,7 @@ theorem stage5_polylog_complete
 lemma ac0AllSubcubes_length_le_polylog
     (params : AC0Parameters) (F : Family params.n)
     (witness : AC0FamilyWitness params F) :
-    (ac0AllSubcubes params F ⟨witness⟩).length
+    witness.allSubcubes.length
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
   -- Официальная точка интеграции: в будущем это будет прямой multi‑switching proof‑path.
   simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
@@ -676,7 +671,12 @@ lemma ac0PolylogBoundWitness_by_depth
   -- По смыслу это результат индукции по глубине (CCDT + encoding),
   -- зафиксированный в `AC0FamilyWitness.multi_switching_bound`.
   refine ⟨?_⟩
-  simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
+  -- Здесь `ac0AllSubcubes` разворачивается в список подкубов
+  -- текущего witness, но по определению использует `Classical.choice`,
+  -- поэтому подставляем bound для выбранного witness.
+  classical
+  simpa [ac0AllSubcubes, AC0FamilyWitness.allSubcubes] using
+    (Classical.choice (⟨witness⟩ : FamilyIsAC0 params F)).multi_switching_bound
 
 /-- Реализация multi‑switching интерфейса через polylog‑индукцию. -/
 lemma ac0PolylogBoundWitness_of_multi_switching

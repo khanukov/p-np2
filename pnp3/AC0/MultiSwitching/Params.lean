@@ -23,7 +23,7 @@ namespace MultiSwitching
 
 * `sParam` фиксирует число свободных координат (exact‑p модель).
 * `BParam` фиксирует базу алфавита кодов на один шаг.
-* `tParam` — "безопасный" вариант `⌈log₂((m+1)(n+2))⌉ + 1`,
+* `tParam` — "безопасный" вариант `⌈log₂((m+1)(n+2))⌉ + 2`,
   удобный для перевода в оценку вида `2^t ≥ (m+1)(n+2)`.
 -/
 
@@ -45,7 +45,7 @@ def ℓParam (M : Nat) : Nat :=
   Nat.log2 (2 * M + 1) + 1
 
 def tParam (m n : Nat) : Nat :=
-  Nat.log2 ((m + 1) * (n + 2)) + 1
+  Nat.log2 ((m + 1) * (n + 2)) + 2
 
 /-!
 ## Простые леммы о `sParam`
@@ -138,7 +138,18 @@ lemma pow_two_le_tParam (m n : Nat) :
   have hle :
       (m + 1) * (n + 2) ≤ 2 ^ (Nat.log2 ((m + 1) * (n + 2)) + 1) := by
     exact Nat.le_of_lt hlt
-  simpa [tParam] using hle
+  -- Усиливаем оценку: `tParam` на единицу больше, чем `log2 + 1`.
+  have hmono :
+      2 ^ (Nat.log2 ((m + 1) * (n + 2)) + 1)
+        ≤ 2 ^ (tParam m n) := by
+    -- Монотонность `pow` по показателю.
+    have hle' :
+        Nat.log2 ((m + 1) * (n + 2)) + 1 ≤ tParam m n := by
+      -- `tParam = log2(...) + 2`.
+      simpa [tParam, Nat.succ_eq_add_one, Nat.add_assoc] using
+        (Nat.le_succ (Nat.log2 ((m + 1) * (n + 2)) + 1))
+    exact Nat.pow_le_pow_right (by decide : 1 ≤ (2 : Nat)) hle'
+  exact hle.trans hmono
 
 lemma m_plus_one_le_pow_two_tParam (m n : Nat) :
     m + 1 ≤ 2 ^ (tParam m n) := by

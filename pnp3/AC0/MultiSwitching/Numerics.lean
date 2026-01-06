@@ -561,9 +561,9 @@ lemma numerical_inequality_3_2 (n w m : Nat)
         * (n - sParam n w + 1) ^ (tParam m n) := by
   -- Сначала докажем строгую оценку `(m+1) * B^t < (n - s + 1)^t`.
   have htpos : 0 < tParam m n := by
-    -- `tParam = log2(...) + 1`.
+    -- `tParam = log2(...) + 2`.
     simpa [tParam] using
-      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2))))
+      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
   have hbase : 12 * BParam w < n - sParam n w + 1 :=
     base_absorbs_sParam_strict (n := n) (w := w) hN
   have hm : m + 1 ≤ 12 ^ (tParam m n) :=
@@ -605,9 +605,9 @@ lemma numerical_inequality_3_2_final (n w m : Nat)
   set t : Nat := tParam m n
   set B : Nat := BParam w
   have htpos : 0 < t := by
-    -- `tParam = log2(...) + 1`.
+    -- `tParam = log2(...) + 2`.
     simpa [t, tParam] using
-      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2))))
+      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
   have hspos : 0 < s := by
     -- `sParam` положителен при `n ≥ 49*(w+1)`.
     simpa [s] using (sParam_pos_of_le (n := n) (w := w) hN)
@@ -692,7 +692,7 @@ lemma numerical_inequality_3_2_final_expanded
   set t : Nat := tParam m n
   have htpos : 0 < t := by
     simpa [t, tParam] using
-      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2))))
+      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
   have hspos : 0 < s := by
     simpa [s] using (sParam_pos_of_le (n := n) (w := w) hN)
   have hs : s ≤ n := by

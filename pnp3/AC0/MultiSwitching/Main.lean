@@ -8,18 +8,17 @@ import AC0.MultiSwitching.ShrinkageFromGood
 /-!
   pnp3/AC0/MultiSwitching/Main.lean
 
-  Центральная точка входа для будущего multi-switching доказательства.
+  Центральная точка входа для multi-switching пайплайна.
 
-  Сейчас здесь собраны только "комбинаторные" шаги:
-  как из encoding получить существование хорошей рестрикции.
-  Реальное построение CCDT и глубинная индукция будут добавлены поверх
-  этих лемм в следующих итерациях.
+  Файл фиксирует теоремы «Stage 1–4» (encoding → counting → good restriction
+  → shrinkage) и выделяет **явные числовые леммы** для Step 3.2.
+  Это именно тот слой, который downstream‑код будет использовать как
+  интеграционный контракт: здесь сходятся CCDT‑конструкция, encoding/injection
+  и числовые оценки, давая полилогарифмическую оценку на количество подкубов.
 
-  TODO (bridge):
-  определить здесь теорему, которую затем будет использовать
-  `ThirdPartyFacts.Facts_Switching.ac0AllSubcubes_length_le_polylog_of_multi_switching`.
-  Эта теорема должна выдавать polylog‑оценку на `ac0AllSubcubes` на основе
-  полного multi‑switching доказательства (CCDT + encoding/injection + counting).
+  Реальная глубинная индукция (CCDT + encoding) по глубине
+  будет подключена поверх этих лемм, но интерфейсы Stage 1–4 уже
+  зафиксированы так, чтобы подмена на «полный» proof‑path была локальной.
 -/
 
 namespace Pnp3
@@ -96,11 +95,13 @@ theorem exists_good_restriction_canonicalCCDT_aux
 /-!
 ## Числовая оценка для большого `n`
 
-`numerical_inequality_3_2` формулируется в терминах базового алфавита
-`BParam` и даёт строгое неравенство с дополнительным множителем
-`(n - s + 1)^t` в правой части.  Мы фиксируем эту оценку как отдельную
-лемму‑обёртку, чтобы в дальнейшем было проще явно состыковать её с
-кодами из `Counting.lean` (см. комментарий в proof ниже).
+Мы используем "финальную" форму Step 3.2: после поглощения базы
+и множителей получаем прямую строгую оценку
+
+`|R_{s-t}| * (m+1) * B^t < |R_s|`.
+
+Эта лемма фиксирует результат для параметров `sParam`/`tParam`/`BParam`,
+чтобы дальше использовать его как готовый числовой вход в counting‑шаг.
 -/
 
 lemma numerical_bound_step3_2
@@ -176,9 +177,9 @@ theorem exists_good_restriction_step3_2_small_canonicalCCDT
   -- В итоге получаем хорошую рестрикцию для `BadFamily_deterministic`, а затем
   -- переводим её в `BadEvent` через канонический CCDT.
   have htpos : 0 < tParam F.length n := by
-    -- `tParam` всегда положителен: `log2(...) + 1`.
+    -- `tParam` всегда положителен: `log2(...) + 2`.
     simpa [tParam] using
-      (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2))))
+      (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2)) + 1))
   -- Stage 1 + 2 + 3: готовая лемма для `BadFamily_deterministic`.
   obtain ⟨ρ, hρ, hgood⟩ :=
     exists_good_restriction_step3_2_small
@@ -333,7 +334,7 @@ theorem exists_good_restriction_step3_2
         simpa [Restriction.freeCount] using hzero
       have htpos : 0 < tParam m n := by
         simpa [tParam] using
-          (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2))))
+          (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
       -- Противоречие: `t ≤ 0` и `t > 0`.
       have : tParam m n ≤ 0 := by
         simpa [Restriction.freeCount, hzero'] using hlen

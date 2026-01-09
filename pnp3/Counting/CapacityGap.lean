@@ -39,17 +39,18 @@ lemma capacityBound_twoPow_lt_twoPowPow
   have hball_bound :
       hammingBallBound N ((1 : Rat) / (n + 2)) hε0 hε1
         ≤ (t + 2) * N ^ (t + 1) := by
-    simpa [N, t] using
-      (hammingBallBound_twoPow_le_mul_pow_div_add_one n hε0 hε1)
+    dsimp [N, t]
+    exact hammingBallBound_twoPow_le_mul_pow_div_add_one n hε0 hε1
   -- Положительность `N`.
   have hNpos : 0 < N := by
     have htwo : 0 < (2 : Nat) := by decide
-    simpa [N] using Nat.pow_pos htwo n
+    dsimp [N]
+    exact Nat.pow_pos htwo
   -- Условие `t ≥ 2n`, необходимое для оценки показателей.
   have ht_ge : 2 * n ≤ t := by
     have hmul : 2 * n * (n + 2) ≤ N := by
-      simpa [N, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-        using (twoPow_ge_twoMul_mul n hn)
+      -- Прямо подставляем `N = 2^n`.
+      simpa [N] using (twoPow_ge_twoMul_mul n hn)
     have hpos : 0 < n + 2 := by
       exact Nat.succ_pos (n + 1)
     have hdiv :
@@ -119,7 +120,7 @@ lemma capacityBound_twoPow_lt_twoPowPow
     have hrewrite :
         (Nat.pow 2 t) * (N ^ (t + 2)) =
           Nat.pow 2 (t + n * (t + 2)) := by
-      simp [N, Nat.pow_mul, Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      simp [N, Nat.pow_mul, Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm]
     have hpow :
         Nat.pow 2 (t + n * (t + 2)) ≤ Nat.pow 2 N :=
       Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hsum_le

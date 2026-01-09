@@ -1018,7 +1018,7 @@ lemma definedCount_setDefined_le_succ {n : Nat} (T : PartialFunction n)
       · -- В этом случае `insert` не меняет множество.
         simp [definedCount, hmem']
       · -- Иначе кардинал увеличивается на 1.
-        simp [definedCount, hmem', Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        simp [definedCount, hmem', Nat.add_comm, Nat.add_assoc]
     exact hcard.trans hcard_insert
 
 /-- Число определённых позиций в исходной таблице ограничено числом после `setDefined`. -/
@@ -1043,7 +1043,7 @@ lemma definedCount_le_setDefined_succ {n : Nat} (T : PartialFunction n)
         definedCount (setDefined T i b) + 1 := by
     by_cases hmem : i ∈ definedPositions (setDefined T i b)
     · simp [definedCount, hmem]
-    · simp [definedCount, hmem, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+    · simp [definedCount, hmem, Nat.add_comm, Nat.add_left_comm]
   exact hcard.trans hcard_insert
 
 /-- `mergeLeft` определён не более чем на сумме определённых позиций. -/
@@ -1105,9 +1105,9 @@ lemma decodePartial_encodePartial {n : Nat} (T : PartialFunction n) :
     decodePartial (encodePartial T) = T := by
   funext i
   have hmask : Partial.maskPart (encodePartial T) i = (T i).isSome := by
-    simp [Partial.maskPart, encodePartial, Partial.maskIndex, maskIndex_lt_tableLen]
+    simp [Partial.maskPart, encodePartial, Partial.maskIndex]
   have hval : Partial.valPart (encodePartial T) i = (T i).getD false := by
-    simp [Partial.valPart, encodePartial, Partial.valIndex, valIndex_not_lt_tableLen]
+    simp [Partial.valPart, encodePartial, Partial.valIndex]
   cases hTi : T i <;> simp [decodePartial, hmask, hval, hTi]
 
 /--

@@ -72,8 +72,7 @@ locations. -/
 def tapeLength (n : ℕ) : ℕ := n + M.runTime n + 1
 
 lemma tapeLength_pos (n : ℕ) : 0 < M.tapeLength n := by
-  have : (0 : ℕ) < n + M.runTime n + 1 := by exact Nat.succ_pos _
-  simpa [TM.tapeLength] using this
+  simp [TM.tapeLength]
 
 /-- Configurations for inputs of length `n`.  The tape is modelled as a
 fixed-length binary vector. -/
@@ -112,7 +111,7 @@ def moveHead {n : ℕ} (c : Configuration (M := M) n)
     (m : Move) : Fin (M.tapeLength n) :=
   match m with
   | Move.left  =>
-      if h : (c.head : ℕ) = 0 then
+      if _ : (c.head : ℕ) = 0 then
         c.head
       else
         ⟨(c.head : ℕ) - 1, by
@@ -133,8 +132,7 @@ cells of the tape store the input bits; the remaining cells are blank. -/
 def initialConfig {n : ℕ} (x : Boolcube.Point n) : Configuration (M := M) n where
   state := M.start
   head := ⟨0, by
-    have : (0 : ℕ) < n + M.runTime n + 1 := Nat.succ_pos _
-    simpa [TM.tapeLength] using this⟩
+    simp [TM.tapeLength]⟩
   tape := fun j => if h : (j : ℕ) < n then x ⟨j, h⟩ else false
 
 @[simp]
@@ -153,8 +151,7 @@ lemma initial_tape_blank {n : ℕ} (x : Boolcube.Point n)
 @[simp]
 lemma initial_head {n : ℕ} (x : Boolcube.Point n) :
     (M.initialConfig x).head = ⟨0, by
-      have : (0 : ℕ) < n + M.runTime n + 1 := Nat.succ_pos _
-      simpa [TM.tapeLength] using this⟩ := rfl
+      simp [TM.tapeLength]⟩ := rfl
 
 @[simp]
 lemma initial_state {n : ℕ} (x : Boolcube.Point n) :

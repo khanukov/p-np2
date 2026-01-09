@@ -194,6 +194,54 @@ theorem exists_good_restriction_step3_2_small_canonicalCCDT
   exact hgood hbad'
 
 /-!
+## Stage 3.2 (малый алфавит): строгая оценка числа bad‑рестрикций
+
+Эта лемма явно фиксирует количественный результат для `BadEvent`:
+кардинал множества bad‑рестрикций строго меньше, чем `|R_s|`.
+
+Технически мы:
+* применяем bound для детерминированного `BadFamily` (малый encoding);
+* переводим его на `BadEvent` через эквивалентность
+  `badRestrictions_eq_canonicalCCDT_badFamilyDet`.
+-/
+
+lemma card_bad_lt_card_all_step3_2_small_canonicalCCDT
+    {n w : Nat} (F : FormulaFamily n w)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam F.length n ≤ sParam n w)
+    (henc_small :
+      Function.Injective
+        (encodeBadFamilyDetCNF_small (F := F)
+          (s := sParam n w) (t := tParam F.length n))) :
+    (badRestrictions (n := n) (sParam n w)
+        (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) (tParam F.length n)))).card
+      < (R_s (n := n) (sParam n w)).card := by
+  classical
+  have htpos : 0 < tParam F.length n := by
+    -- `tParam = log2(...) + 2` всегда положителен.
+    simpa [tParam] using
+      (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2)) + 1))
+  have hbound :
+      (R_s (n := n) (sParam n w - tParam F.length n)).card
+          * (F.length + 1) * (2 * (w + 1)) ^ (tParam F.length n)
+        < (R_s (n := n) (sParam n w)).card := by
+    -- Числовая оценка Stage 3.2 (малый алфавит).
+    have hnum := numerical_bound_step3_2
+      (n := n) (w := w) (m := F.length) hN ht
+    simpa [BParam, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hnum
+  have hbad_det :
+      (badRestrictions (n := n) (sParam n w)
+        (BadFamily_deterministic (F := F) (tParam F.length n))).card
+        < (R_s (n := n) (sParam n w)).card := by
+    exact card_bad_lt_card_all_of_cnf_family_bound_det_small
+      (F := F) (s := sParam n w) (t := tParam F.length n) henc_small hbound
+  -- Переносим bound с `BadFamily_deterministic` на `BadEvent`.
+  have hbad_event := hbad_det
+  rw [← badRestrictions_eq_canonicalCCDT_badFamilyDet
+    (F := F) (t := tParam F.length n) (s := sParam n w) htpos] at hbad_event
+  exact hbad_event
+
+/-!
 ## Stage 4 (малый алфавит): good restriction → Shrinkage
 
 Stage 4 у нас реализован конструктивно через точечные selectors:

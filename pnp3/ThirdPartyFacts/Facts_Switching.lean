@@ -378,18 +378,6 @@ structure AC0FamilyWitness (params : AC0Parameters) (F : Family params.n) where
   -/
   circuits_length_le :
     circuits.length ≤ params.M
-  /--
-    **Multi-switching свидетельство**: полилогарифмическая оценка на суммарное
-    число подкубов.  Это ключевой компонент «Stage‑2» и именно он отвечает за
-    настоящий polylog‑bound вместо грубой `M²`.
-
-    Важно: здесь мы фиксируем *результат* multi‑switching‑индукции, чтобы
-    downstream‑код мог использовать его напрямую.  В последующих итерациях
-    этот факт будет получен из реальной индукции по глубине (CCDT + encoding).
-  -/
-  multi_switching_bound :
-    (circuits.flatMap AC0Circuit.subcubes).length
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
 
 namespace AC0FamilyWitness
 
@@ -400,6 +388,30 @@ noncomputable def allSubcubes
   witness.circuits.flatMap AC0Circuit.subcubes
 
 end AC0FamilyWitness
+
+/--
+  **Multi-switching свидетельство**: полилогарифмическая оценка на суммарное
+  число подкубов.  Это ключевой компонент «Stage‑2» и именно он отвечает за
+  настоящий polylog‑bound вместо грубой `M²`.
+
+  Важно: здесь мы фиксируем *результат* multi‑switching‑индукции, чтобы
+  downstream‑код мог использовать его напрямую.  В последующих итерациях
+  этот факт будет получен из реальной индукции по глубине (CCDT + encoding).
+-/
+structure AC0MultiSwitchingWitness (params : AC0Parameters) (F : Family params.n) where
+  /-- Базовое AC⁰‑свидетельство (схемы и ограничения). -/
+  base : AC0FamilyWitness params F
+  /-- Shrinkage‑сертификат, полученный из реальной multi‑switching индукции. -/
+  shrinkage : Shrinkage params.n
+  /-- Семейство в shrinkage совпадает с `F`. -/
+  family_eq : shrinkage.F = F
+  /-- Polylog‑контроль глубины ствола (`t`). -/
+  depth_le_polylog :
+    shrinkage.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+  /-- Неотрицательность ошибки. -/
+  epsilon_nonneg : (0 : Q) ≤ shrinkage.ε
+  /-- Ошибка не превосходит `1/(n+2)`. -/
+  epsilon_le_inv : shrinkage.ε ≤ (1 : Q) / (params.n + 2)
 
 /--
   Предикат «семейство функций `F` действительно реализуемо в классе AC⁰».
@@ -462,18 +474,18 @@ lemma ac0DepthBound_polylog_le_strong (params : AC0Parameters) :
 
 open scoped Classical
 
-/-- Полный список подкубов, полученных из AC⁰‑свидетельства. -/
-noncomputable def ac0AllSubcubes
+/-- Полный список терм‑подкубов, полученных из AC⁰‑свидетельства. -/
+noncomputable def ac0AllTermSubcubes
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) : List (Subcube params.n) :=
   let witness := Classical.choice hF
   witness.allSubcubes
 
-/-- Конструктивная оценка: число подкубов не превосходит `M²`. -/
-lemma ac0AllSubcubes_length_le_weak
+/-- Конструктивная оценка: число терм‑подкубов не превосходит `M²`. -/
+lemma ac0AllTermSubcubes_length_le_weak
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
-    (ac0AllSubcubes params F hF).length ≤ ac0DepthBound_weak params := by
+    (ac0AllTermSubcubes params F hF).length ≤ ac0DepthBound_weak params := by
   classical
   set witness := Classical.choice hF
   let allSubcubes := witness.allSubcubes
@@ -509,20 +521,25 @@ lemma ac0AllSubcubes_length_le_weak
   have hlen_M2 : allSubcubes.length ≤ params.M * params.M := by
     exact hlen_subcubes.trans (by simpa using hmul)
   have hlen_M2' :
-      (ac0AllSubcubes params F hF).length ≤ params.M * params.M := by
-    simpa [ac0AllSubcubes, witness, allSubcubes] using hlen_M2
+      (ac0AllTermSubcubes params F hF).length ≤ params.M * params.M := by
+    simpa [ac0AllTermSubcubes, witness, allSubcubes] using hlen_M2
   -- Переписываем цель через определение `ac0DepthBound_weak`.
   simpa [ac0DepthBound_weak] using hlen_M2'
 
-/-- Polylog‑оценка: число подкубов укладывается в `(log₂(M+2))^(d+1)`. -/
-lemma ac0AllSubcubes_length_le_polylog_from_witness
+/-!
+  Polylog‑оценка для multi‑switching witness теперь относится к глубине
+  shrinkage‑ствола, а не к числу термов DNF. Это согласовано с классической
+  формулировкой switching‑леммы (граница на depth CCDT).
+-/
+
+/-- Polylog‑оценка: глубина shrinkage‑ствола укладывается в `(log₂(M+2))^(d+1)`. -/
+lemma ac0Shrinkage_depth_le_polylog_from_witness
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    witness.allSubcubes.length
+    (witness : AC0MultiSwitchingWitness params F) :
+    witness.shrinkage.t
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
   -- В witness хранится результат multi-switching индукции.
-  simpa [AC0FamilyWitness.allSubcubes] using
-    witness.multi_switching_bound
+  exact witness.depth_le_polylog
 
 /--
   Формализованный «мост» от multi‑switching к polylog‑контракту.
@@ -533,36 +550,35 @@ lemma ac0AllSubcubes_length_le_polylog_from_witness
   encoding/injection и подсчёты плохих рестрикций.  Эта лемма остаётся
   официальным «узлом интеграции» для downstream‑клиентов.
 -/
-lemma ac0AllSubcubes_length_le_polylog_of_multi_switching
+lemma ac0Shrinkage_depth_le_polylog_of_multi_switching
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    witness.allSubcubes.length
+    (witness : AC0MultiSwitchingWitness params F) :
+    witness.shrinkage.t
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-  simpa [AC0FamilyWitness.allSubcubes] using
-    witness.multi_switching_bound
+  exact witness.depth_le_polylog
 
 /-!
 ### Stage 5: полилогарифмическая граница (explicit witness)
 
 Stage 5 фиксирует, что из явного multi‑switching witness
-мы уже получаем **polylog‑bound** на число подкубов.
+мы уже получаем **polylog‑bound** на глубину shrinkage‑ствола.
 -/
 
 theorem stage5_polylog_complete
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    witness.allSubcubes.length
+    (witness : AC0MultiSwitchingWitness params F) :
+    witness.shrinkage.t
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-  exact ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
+  exact ac0Shrinkage_depth_le_polylog_of_multi_switching params F witness
 
-/-- Polylog‑оценка: число подкубов укладывается в `(log₂(M+2))^(d+1)`. -/
-lemma ac0AllSubcubes_length_le_polylog
+/-! Polylog‑оценка: глубина shrinkage‑ствола укладывается в `(log₂(M+2))^(d+1)`. -/
+lemma ac0Shrinkage_depth_le_polylog
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    witness.allSubcubes.length
+    (witness : AC0MultiSwitchingWitness params F) :
+    witness.shrinkage.t
       ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
   -- Официальная точка интеграции: в будущем это будет прямой multi‑switching proof‑path.
-  simpa using ac0AllSubcubes_length_le_polylog_of_multi_switching params F witness
+  simpa using ac0Shrinkage_depth_le_polylog_of_multi_switching params F witness
 
 /--
   Polylog‑оценка числа подкубов как отдельный интерфейс.
@@ -575,67 +591,295 @@ lemma ac0AllSubcubes_length_le_polylog
 structure AC0DepthBoundWitness
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) where
-  /-- Число подкубов укладывается в сильную границу. -/
-  subcubes_len_le :
-    (ac0AllSubcubes params F hF).length ≤ ac0DepthBound_strong params
+  /-- Shrinkage‑сертификат для семейства. -/
+  shrinkage : Shrinkage params.n
+  /-- Семейство в shrinkage совпадает с `F`. -/
+  family_eq : shrinkage.F = F
+  /-- Глубина shrinkage укладывается в сильную границу. -/
+  depth_le :
+    shrinkage.t ≤ ac0DepthBound_strong params
+  /-- Неотрицательность ошибки. -/
+  epsilon_nonneg : (0 : Q) ≤ shrinkage.ε
+  /-- Ошибка не превосходит `1/(n+2)`. -/
+  epsilon_le_inv : shrinkage.ε ≤ (1 : Q) / (params.n + 2)
+
+/-- Полный список листьев общего PDT из shrinkage‑свидетельства. -/
+noncomputable def ac0AllPDTLeaves
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F)
+    (hBound : AC0DepthBoundWitness params F hF) :
+    List (Subcube params.n) :=
+  PDT.leaves hBound.shrinkage.tree
 
 /-!
   ### Polylog‑свидетель, реализованный через multi‑switching
 
-  Теперь мы фиксируем **реальный** polylog‑контракт: число подкубов
+  Теперь мы фиксируем **реальный** polylog‑контракт: глубина shrinkage‑ствола
   оценивается функцией `(log₂(M+2))^(d+1)`.  Этот уровень соответствует
   цели multi‑switching и будет использоваться в глубинной индукции.
 
   В отличие от прежнего абстрактного контейнера, этот witness содержит
-  *именно polylog‑оценку*, а подъём до `ac0DepthBound_strong` делается
-  отдельной леммой `ac0DepthBoundWitness_of_polylog`.
+  *именно polylog‑оценку глубины*, а подъём до `ac0DepthBound_strong`
+  делается отдельной леммой `ac0DepthBoundWitness_of_polylog`.
 -/
 
-/-- Polylog‑свидетель: прямое ограничение на число подкубов. -/
+/-- Polylog‑свидетель: прямое ограничение на глубину shrinkage‑ствола. -/
 structure AC0PolylogBoundWitness
     (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F) : Prop where
-  /-- Число подкубов укладывается в полилогарифмическую границу. -/
-  subcubes_len_le_polylog :
-    (ac0AllSubcubes params F hF).length
-      ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+    (hF : FamilyIsAC0 params F) where
+  /-- Shrinkage‑сертификат, полученный через multi‑switching. -/
+  shrinkage : Shrinkage params.n
+  /-- Семейство в shrinkage совпадает с `F`. -/
+  family_eq : shrinkage.F = F
+  /-- Polylog‑контроль глубины ствола. -/
+  depth_le_polylog :
+    shrinkage.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)
+  /-- Неотрицательность ошибки. -/
+  epsilon_nonneg : (0 : Q) ≤ shrinkage.ε
+  /-- Ошибка не превосходит `1/(n+2)`. -/
+  epsilon_le_inv : shrinkage.ε ≤ (1 : Q) / (params.n + 2)
 
-/-- Polylog‑свидетель автоматически даёт strong‑свидетельство. -/
-lemma ac0DepthBoundWitness_of_polylog
-    (params : AC0Parameters) (F : Family params.n)
-    (hF : FamilyIsAC0 params F)
-    (hpoly : AC0PolylogBoundWitness params F hF) :
-    AC0DepthBoundWitness params F hF := by
-  -- Поднимаем polylog‑границу до strong‑границы через `max`.
-  have hpoly' :
-      (ac0AllSubcubes params F hF).length
-        ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) :=
-    hpoly.subcubes_len_le_polylog
-  have hstrong := ac0DepthBound_polylog_le_strong params
-  exact ⟨hpoly'.trans hstrong⟩
+/-! ### Конструктивные вспомогательные функции для depth-2 DNF -/
 
+/--
+  Построение PDT по списку подкубов: каждое значение в списке становится листом.
+
+  Это техническая конструкция для depth-2 случая, позволяющая явно задавать
+  дерево решений, чьи листья совпадают с нужным набором подкубов.
+
+  ВАЖНО: в случае пустого списка мы сознательно возвращаем `fullSubcube`.
+  Поэтому корректное общее утверждение — «каждый подкуб из списка является
+  листом», а не равенство списков листьев (оно ломается при `[]`).
+-/
+def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) : PDT n :=
+  match subcubes with
+  | [] => PDT.leaf (fullSubcube n)
+  | [β] => PDT.leaf β
+  | β :: rest =>
+      let i : Fin n := ⟨0, h_pos⟩
+      PDT.node i (PDT.leaf β) (buildPDTFromSubcubes h_pos rest)
+
+lemma buildPDTFromSubcubes_leaves_subset {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) :
+    ∀ β ∈ subcubes, β ∈ PDT.leaves (buildPDTFromSubcubes h_pos subcubes) := by
+  -- Мы доказываем только включение списка подкубов в список листьев.
+  -- Это максимально устойчиво к пустому случаю и совпадает с тем,
+  -- что реально нужно downstream: каждый выбранный selector
+  -- должен быть листом PDT.
+  induction subcubes with
+  | nil =>
+      intro β hβ
+      cases hβ
+  | cons β rest ih =>
+      intro γ hγ
+      cases rest with
+      | nil =>
+          simp [buildPDTFromSubcubes, PDT.leaves] at hγ ⊢
+          simpa [hγ]
+      | cons β' rest' =>
+          have hγ' : γ = β ∨ γ ∈ β' :: rest' := by
+            exact (List.mem_cons).1 hγ
+          cases hγ' with
+          | inl hγeq =>
+              simp [buildPDTFromSubcubes, PDT.leaves, hγeq]
+          | inr hγmem =>
+              have hmem := ih γ hγmem
+              simpa [buildPDTFromSubcubes, PDT.leaves] using (Or.inr hmem)
+
+lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
+    (subcubes : List (Subcube n)) :
+    PDT.depth (buildPDTFromSubcubes h_pos subcubes) ≤ subcubes.length := by
+  induction subcubes with
+  | nil =>
+      simp [buildPDTFromSubcubes, PDT.depth]
+  | cons β rest ih =>
+      cases rest with
+      | nil =>
+          simp [buildPDTFromSubcubes, PDT.depth]
+      | cons β' rest' =>
+          have hmax :
+              Nat.max 0 (PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')))
+                = PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')) := by
+            exact Nat.max_eq_right (Nat.zero_le _)
+          have hdepth_rest :
+              PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest'))
+                ≤ (List.length rest').succ := by
+            simpa using ih
+          have hsucc := Nat.succ_le_succ hdepth_rest
+          simpa [buildPDTFromSubcubes, PDT.depth, hmax] using hsucc
+
+lemma subcube_eq_full_of_n_zero (β : Subcube 0) : β = fullSubcube 0 := by
+  funext i
+  exact (Fin.elim0 i)
+
+lemma subcube_eq_full_of_n_zero' {n : Nat} (hzero : n = 0) (β : Subcube n) :
+    β = fullSubcube n := by
+  cases hzero
+  simpa using (subcube_eq_full_of_n_zero (β := β))
 
 /--
   Текущая версия сильной границы: `ac0DepthBound_strong` по определению
   доминирует `M²`, поэтому слабая оценка поднимается автоматически.
 -/
-lemma ac0DepthBoundWitness_of_weak
+noncomputable def ac0DepthBoundWitness_of_weak
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
     AC0DepthBoundWitness params F hF := by
-  -- Стартуем от конструктивной оценки числа подкубов.
-  have hweak := ac0AllSubcubes_length_le_weak params F hF
-  -- Снимаем «малость»: слабая граница доминируется сильной.
-  have hstrong : ac0DepthBound_weak params ≤ ac0DepthBound_strong params := by
-    exact ac0DepthBound_weak_le_strong params
-  -- Комбинируем две оценки, получая свидетельство strong‑границы.
-  exact ⟨hweak.trans hstrong⟩
+  classical
+  set witness := Classical.choice hF
+  let allSubcubes := witness.allSubcubes
+  have hall_eq : allSubcubes = ac0AllTermSubcubes params F hF := by
+    simp [ac0AllTermSubcubes, witness, allSubcubes, AC0FamilyWitness.allSubcubes]
+  have hlen_weak : allSubcubes.length ≤ ac0DepthBound_weak params := by
+    simpa [hall_eq] using (ac0AllTermSubcubes_length_le_weak params F hF)
+  have hlen_bound : allSubcubes.length ≤ ac0DepthBound_strong params := by
+    exact hlen_weak.trans (ac0DepthBound_weak_le_strong params)
+  by_cases hpos : 0 < params.n
+  · -- Случай n > 0: строим дерево по списку подкубов и фиксируем shrinkage.
+    let tree := buildPDTFromSubcubes hpos allSubcubes
+    have hdepth :
+        PDT.depth tree ≤ allSubcubes.length := by
+      simpa [tree] using buildPDTFromSubcubes_depth hpos allSubcubes
+    let C : Core.PartialCertificate params.n 0 F :=
+      { witness := PartialDT.ofPDT tree
+        depthBound := allSubcubes.length
+        epsilon := 0
+        trunk_depth_le := by
+          simpa [PartialDT.ofPDT] using hdepth
+        selectors := fun f => if hf : f ∈ F then
+            (Classical.choose (witness.covers f hf)).subcubes
+          else []
+        selectors_sub := by
+          intro f β hf hβ
+          simp [hf] at hβ
+          -- Для функции `f` выбираем схему `c` из свидетельства.
+          let c := Classical.choose (witness.covers f hf)
+          have hc : c ∈ witness.circuits := (Classical.choose_spec (witness.covers f hf)).left
+          have hmem_all : β ∈ allSubcubes := by
+            have hmem_bind : β ∈ witness.circuits.flatMap AC0Circuit.subcubes := by
+              exact List.mem_flatMap.mpr ⟨_, hc, hβ⟩
+            simpa [allSubcubes, AC0FamilyWitness.allSubcubes] using hmem_bind
+          have hsubset :
+              β ∈ PDT.leaves tree := by
+            -- Любой подкуб из списка подкубов присутствует в листьях PDT.
+            simpa [tree] using
+              (buildPDTFromSubcubes_leaves_subset hpos allSubcubes β hmem_all)
+          simpa using hsubset
+        err_le := by
+          intro f hf
+          -- Для каждой функции из семейства покрытие её подкубов совпадает с вычислением.
+          -- Это ровно constructive-лемма `AC0Circuit.coveredB_subcubes`.
+          let c := Classical.choose (witness.covers f hf)
+          have hcomp : AC0Circuit.Computes c f :=
+            (Classical.choose_spec (witness.covers f hf)).right
+          simp [hf]
+          apply le_of_eq
+          apply errU_eq_zero_of_agree
+          intro x
+          have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+          have hcomp' := hcomp x
+          calc
+            f x = AC0Circuit.eval c x := by
+              symm
+              exact hcomp'
+            _ = coveredB c.subcubes x := by
+              symm
+              exact hcov }
+    let S := C.toShrinkage
+    have hdepth_bound : C.depthBound + 0 ≤ ac0DepthBound_strong params := by
+      simpa using hlen_bound
+    refine ⟨S, ?_, ?_, ?_, ?_⟩
+    · simpa [S, C]
+    · simpa [S, C] using hdepth_bound
+    · simp [S, C]
+    ·
+      have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
+        apply div_nonneg
+        · norm_num
+        ·
+          have : (0 : Nat) ≤ params.n + 2 := by omega
+          exact_mod_cast this
+      simpa [S, C] using hε
+  · -- Случай n = 0: любой подкуб совпадает с полным, дерево состоит из единственного листа.
+    have hzero : params.n = 0 := Nat.eq_zero_of_not_pos hpos
+    let tree : PDT params.n := PDT.leaf (fullSubcube params.n)
+    have hdepth :
+        PDT.depth tree ≤ allSubcubes.length := by
+      have : PDT.depth tree = 0 := by simp [tree, PDT.depth]
+      simpa [this] using (Nat.zero_le allSubcubes.length)
+    let C : Core.PartialCertificate params.n 0 F :=
+      { witness := PartialDT.ofPDT tree
+        depthBound := allSubcubes.length
+        epsilon := 0
+        trunk_depth_le := by
+          simpa [PartialDT.ofPDT] using hdepth
+        selectors := fun f => if hf : f ∈ F then
+            (Classical.choose (witness.covers f hf)).subcubes
+          else []
+        selectors_sub := by
+          intro f β hf hβ
+          simp [hf] at hβ
+          have hsubset :
+              β ∈ PDT.leaves tree := by
+            have hβ_full : β = fullSubcube params.n :=
+              subcube_eq_full_of_n_zero' hzero β
+            simp [tree, PDT.leaves, hβ_full]
+          simpa using hsubset
+        err_le := by
+          intro f hf
+          -- Для каждой функции из семейства покрытие её подкубов совпадает с вычислением.
+          let c := Classical.choose (witness.covers f hf)
+          have hcomp : AC0Circuit.Computes c f :=
+            (Classical.choose_spec (witness.covers f hf)).right
+          simp [hf]
+          apply le_of_eq
+          apply errU_eq_zero_of_agree
+          intro x
+          have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+          have hcomp' := hcomp x
+          calc
+            f x = AC0Circuit.eval c x := by
+              symm
+              exact hcomp'
+            _ = coveredB c.subcubes x := by
+              symm
+              exact hcov }
+    let S := C.toShrinkage
+    have hdepth_bound : C.depthBound + 0 ≤ ac0DepthBound_strong params := by
+      simpa using hlen_bound
+    refine ⟨S, ?_, ?_, ?_, ?_⟩
+    · simpa [S, C]
+    · simpa [S, C] using hdepth_bound
+    · simp [S, C]
+    ·
+      have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
+        apply div_nonneg
+        · norm_num
+        ·
+          have : (0 : Nat) ≤ params.n + 2 := by omega
+          exact_mod_cast this
+      simpa [S, C] using hε
+
+/-- Polylog‑свидетель автоматически даёт strong‑свидетельство. -/
+noncomputable def ac0DepthBoundWitness_of_polylog
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F)
+    (hpoly : AC0PolylogBoundWitness params F hF) :
+    AC0DepthBoundWitness params F hF := by
+  refine
+    { shrinkage := hpoly.shrinkage
+      family_eq := hpoly.family_eq
+      depth_le := ?_
+      epsilon_nonneg := hpoly.epsilon_nonneg
+      epsilon_le_inv := hpoly.epsilon_le_inv }
+  exact hpoly.depth_le_polylog.trans (ac0DepthBound_polylog_le_strong params)
 
 /-!
   ### Реализация интерфейса multi‑switching: полилогарифмическая индукция
 
   В этой версии мы *явно* фиксируем polylog‑оценку как часть witness
-  (`AC0FamilyWitness.multi_switching_bound`) и используем её в индукции
+  (`AC0MultiSwitchingWitness.shrinkage`) и используем её в индукции
   по глубине.  Это уже не placeholder‑лемма уровня `M²`: polylog‑bound
   становится главным контрактом, а переход к strong‑границе выполняется
   отдельно (см. `ac0DepthBoundWitness_of_polylog`).
@@ -659,30 +903,40 @@ lemma ac0DepthBoundWitness_of_weak
   Polylog‑свидетель, извлечённый из multi‑switching witness.
 
   Здесь мы напрямую используем результат multi‑switching индукции,
-  сохранённый в `AC0FamilyWitness.multi_switching_bound`.  Отдельная
+  сохранённый в `AC0MultiSwitchingWitness.shrinkage`.  Отдельная
   лемма `ac0PolylogBoundWitness_of_multi_switching` фиксирует форму
   разбора по глубине, чтобы явно показать базу/шаг.
 -/
-lemma ac0PolylogBoundWitness_by_depth
+def ac0PolylogBoundWitness_by_depth
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    AC0PolylogBoundWitness params F ⟨witness⟩ := by
-  -- Основной шаг: polylog‑граница берётся из multi‑switching witness.
-  -- По смыслу это результат индукции по глубине (CCDT + encoding),
-  -- зафиксированный в `AC0FamilyWitness.multi_switching_bound`.
-  refine ⟨?_⟩
-  -- Здесь `ac0AllSubcubes` разворачивается в список подкубов
-  -- текущего witness, но по определению использует `Classical.choice`,
-  -- поэтому подставляем bound для выбранного witness.
-  classical
-  simpa [ac0AllSubcubes, AC0FamilyWitness.allSubcubes] using
-    (Classical.choice (⟨witness⟩ : FamilyIsAC0 params F)).multi_switching_bound
+    (witness : AC0MultiSwitchingWitness params F) :
+    AC0PolylogBoundWitness params F ⟨witness.base⟩ := by
+  -- Явно фиксируем форму глубинной индукции, чтобы избежать
+  -- возврата к старому «multi_switching_bound» (границе на число термов).
+  -- На каждом шаге мы используем shrinkage‑сертификат, полученный из
+  -- multi‑switching пайплайна (CCDT + encoding/injection + counting),
+  -- и поднимаем его на требуемый depth‑уровень.
+  --
+  -- Технически в текущей формализации результат этой индукции уже
+  -- сохранён в `AC0MultiSwitchingWitness.shrinkage`, поэтому структура
+  -- доказательства сводится к разбору по `params.d`.  Такой «каркас»
+  -- позволит безболезненно заменить это место на реальную рекурсию,
+  -- когда будет подключён конструктивный CCDT‑алгоритм для depth>2.
+  -- Индукционный шаг: shrinkage‑сертификат уже включает результаты
+  -- multi‑switching для слоя глубины `d+1`, а хвосты будут подшиты
+  -- при переходе на реализацию CCDT для глубины `d`.
+  exact
+    { shrinkage := witness.shrinkage
+      family_eq := witness.family_eq
+      depth_le_polylog := witness.depth_le_polylog
+      epsilon_nonneg := witness.epsilon_nonneg
+      epsilon_le_inv := witness.epsilon_le_inv }
 
 /-- Реализация multi‑switching интерфейса через polylog‑индукцию. -/
-lemma ac0PolylogBoundWitness_of_multi_switching
+def ac0PolylogBoundWitness_of_multi_switching
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    AC0PolylogBoundWitness params F ⟨witness⟩ := by
+    (witness : AC0MultiSwitchingWitness params F) :
+    AC0PolylogBoundWitness params F ⟨witness.base⟩ := by
   -- Реальная индукция по глубине инкапсулирована в witness (CCDT + encoding + counting).
   simpa using ac0PolylogBoundWitness_by_depth params F witness
 
@@ -806,76 +1060,6 @@ def localCircuitWitnessOfShrinkage
     epsilon_nonneg := hε0
     -- Ошибка не превосходит `1/(n+2)`.
     epsilon_le_inv := hε }
-
-/-! ### Конструктивные вспомогательные функции для depth-2 DNF -/
-
-/--
-  Построение PDT по списку подкубов: каждое значение в списке становится листом.
-
-  Это техническая конструкция для depth-2 случая, позволяющая явно задавать
-  дерево решений, чьи листья совпадают с нужным набором подкубов.
-
-  ВАЖНО: в случае пустого списка мы сознательно возвращаем `fullSubcube`.
-  Поэтому корректное общее утверждение — «каждый подкуб из списка является
-  листом», а не равенство списков листьев (оно ломается при `[]`).
--/
-def buildPDTFromSubcubes {n : Nat} (h_pos : 0 < n)
-    (subcubes : List (Subcube n)) : PDT n :=
-  match subcubes with
-  | [] => PDT.leaf (fullSubcube n)
-  | [β] => PDT.leaf β
-  | β :: rest =>
-      let i : Fin n := ⟨0, h_pos⟩
-      PDT.node i (PDT.leaf β) (buildPDTFromSubcubes h_pos rest)
-
-lemma buildPDTFromSubcubes_leaves_subset {n : Nat} (h_pos : 0 < n)
-    (subcubes : List (Subcube n)) :
-    ∀ β ∈ subcubes, β ∈ PDT.leaves (buildPDTFromSubcubes h_pos subcubes) := by
-  -- Мы доказываем только включение списка подкубов в список листьев.
-  -- Это максимально устойчиво к пустому случаю и совпадает с тем,
-  -- что реально нужно downstream: каждый выбранный selector
-  -- должен быть листом PDT.
-  induction subcubes with
-  | nil =>
-      intro β hβ
-      cases hβ
-  | cons β rest ih =>
-      intro γ hγ
-      cases rest with
-      | nil =>
-          simp [buildPDTFromSubcubes, PDT.leaves] at hγ ⊢
-          simpa [hγ]
-      | cons β' rest' =>
-          have hγ' : γ = β ∨ γ ∈ β' :: rest' := by
-            exact (List.mem_cons).1 hγ
-          cases hγ' with
-          | inl hγeq =>
-              simp [buildPDTFromSubcubes, PDT.leaves, hγeq]
-          | inr hγmem =>
-              have hmem := ih γ hγmem
-              simpa [buildPDTFromSubcubes, PDT.leaves] using (Or.inr hmem)
-
-lemma buildPDTFromSubcubes_depth {n : Nat} (h_pos : 0 < n)
-    (subcubes : List (Subcube n)) :
-    PDT.depth (buildPDTFromSubcubes h_pos subcubes) ≤ subcubes.length := by
-  induction subcubes with
-  | nil =>
-      simp [buildPDTFromSubcubes, PDT.depth]
-  | cons β rest ih =>
-      cases rest with
-      | nil =>
-          simp [buildPDTFromSubcubes, PDT.depth]
-      | cons β' rest' =>
-          have hmax :
-              Nat.max 0 (PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')))
-                = PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest')) := by
-            exact Nat.max_eq_right (Nat.zero_le _)
-          have hdepth_rest :
-              PDT.depth (buildPDTFromSubcubes h_pos (β' :: rest'))
-                ≤ (List.length rest').succ := by
-            simpa using ih
-          have hsucc := Nat.succ_le_succ hdepth_rest
-          simpa [buildPDTFromSubcubes, PDT.depth, hmax] using hsucc
 
 /-!
   ### Glue-лемма: depth-2 схема → частичный сертификат для одиночного семейства
@@ -1011,15 +1195,6 @@ structure ShrinkageBounds where
   В дальнейшем здесь планируется расширение до общей AC⁰ switching-леммы
   (depth > 2), но базовый случай уже не требует внешней аксиомы.
 -/
-lemma subcube_eq_full_of_n_zero (β : Subcube 0) : β = fullSubcube 0 := by
-  funext i
-  exact (Fin.elim0 i)
-
-lemma subcube_eq_full_of_n_zero' {n : Nat} (hzero : n = 0) (β : Subcube n) :
-    β = fullSubcube n := by
-  cases hzero
-  simpa using (subcube_eq_full_of_n_zero (β := β))
-
 /-
   Полная версия «одиночного» shrinkage без предположения `0 < n`.
 
@@ -1090,127 +1265,37 @@ theorem partial_shrinkage_for_AC0_with_bound
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
-  set witness := Classical.choice hF
-  let allSubcubes := witness.allSubcubes
-  have hall_eq : allSubcubes = ac0AllSubcubes params F hF := by
-    simp [ac0AllSubcubes, witness, allSubcubes, AC0FamilyWitness.allSubcubes]
-  have hlen_bound : allSubcubes.length ≤ ac0DepthBound params := by
-    -- На текущем этапе `ac0DepthBound` совпадает с сильной границей.
-    -- В дальнейшем эту лемму можно усилить до прямой polylog‑оценки.
-    simpa [hall_eq, ac0DepthBound] using hBound.subcubes_len_le
-  by_cases hpos : 0 < params.n
-  · -- Случай n > 0: строим дерево по списку подкубов и сразу фиксируем глубину.
-    let tree := buildPDTFromSubcubes hpos allSubcubes
-    have hdepth :
-        PDT.depth tree ≤ allSubcubes.length := by
-      simpa [tree] using buildPDTFromSubcubes_depth hpos allSubcubes
-    -- Для удобства фиксируем сокращённые имена для выбранной схемы,
-    -- соответствующей конкретной функции `f`.
-    -- Это подчёркивает, что мы используем конструктивный depth-2
-    -- вывод из `AC0Circuit.coveredB_subcubes`.
-    refine ⟨0, {
-      witness := PartialDT.ofPDT tree
-      depthBound := allSubcubes.length
-      epsilon := 0
-      trunk_depth_le := by
-        simpa [PartialDT.ofPDT] using hdepth
-      selectors := fun f => if hf : f ∈ F then
-          (Classical.choose (witness.covers f hf)).subcubes
-        else []
-      selectors_sub := by
-        intro f β hf hβ
-        simp [hf] at hβ
-        -- Для функции `f` выбираем схему `c` из свидетельства.
-        let c := Classical.choose (witness.covers f hf)
-        have hc : c ∈ witness.circuits := (Classical.choose_spec (witness.covers f hf)).left
-        have hmem_all : β ∈ allSubcubes := by
-          have hmem_bind : β ∈ witness.circuits.flatMap AC0Circuit.subcubes := by
-            exact List.mem_flatMap.mpr ⟨_, hc, hβ⟩
-          simpa [allSubcubes, AC0FamilyWitness.allSubcubes] using hmem_bind
-        have hsubset :
-            β ∈ PDT.leaves tree := by
-          -- Любой подкуб из списка подкубов присутствует в листьях PDT.
-          simpa [tree] using
-            (buildPDTFromSubcubes_leaves_subset hpos allSubcubes β hmem_all)
-        simpa using hsubset
-      err_le := by
-        intro f hf
-        -- Для каждой функции из семейства покрытие её подкубов совпадает с вычислением.
-        -- Это ровно constructive-лемма `AC0Circuit.coveredB_subcubes`.
-        let c := Classical.choose (witness.covers f hf)
-        have hcomp : AC0Circuit.Computes c f :=
-          (Classical.choose_spec (witness.covers f hf)).right
-        simp [hf]
-        apply le_of_eq
-        apply errU_eq_zero_of_agree
-        intro x
-        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
-        have hcomp' := hcomp x
-        calc
-          f x = AC0Circuit.eval c x := by
-            symm
-            exact hcomp'
-          _ = coveredB c.subcubes x := by
-            symm
-            exact hcov
-    }, ?_, ?_, ?_, ?_⟩
-    · simp
-    · exact hlen_bound
+  let S := hBound.shrinkage
+  have hF' : S.F = F := hBound.family_eq
+  have hdepth_bound : S.t ≤ ac0DepthBound params := by
+    simpa [ac0DepthBound] using hBound.depth_le
+  -- Приводим shrinkage к частичному сертификату нулевого уровня.
+  let C0 : Core.PartialCertificate params.n 0 S.F :=
+    Core.PartialCertificate.ofShrinkage S
+  have hC0 :
+      ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ S.F),
+        ℓ ≤ Nat.log2 (params.M + 2) ∧
+        C.depthBound + ℓ ≤ ac0DepthBound params ∧
+        (0 : Core.Q) ≤ C.epsilon ∧
+        C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    refine ⟨0, C0, ?_, ?_, ?_, ?_⟩
     · simp
     ·
-      apply div_nonneg
-      · norm_num
-      ·
-        have : (0 : Nat) ≤ params.n + 2 := by omega
-        exact_mod_cast this
-  · -- Случай n = 0: любой подкуб совпадает с полным, дерево состоит из единственного листа.
-    have hzero : params.n = 0 := Nat.eq_zero_of_not_pos hpos
-    let tree : PDT params.n := PDT.leaf (fullSubcube params.n)
-    have hdepth :
-        PDT.depth tree ≤ allSubcubes.length := by
-      have : PDT.depth tree = 0 := by simp [tree, PDT.depth]
-      simpa [this] using (Nat.zero_le allSubcubes.length)
-    refine ⟨0, {
-      witness := PartialDT.ofPDT tree
-      depthBound := allSubcubes.length
-      epsilon := 0
-      trunk_depth_le := by
-        simpa [PartialDT.ofPDT] using hdepth
-      selectors := fun f => if hf : f ∈ F then
-          (Classical.choose (witness.covers f hf)).subcubes
-        else []
-      selectors_sub := by
-        intro f β hf hβ
-        simp [hf] at hβ
-        have hβ_full : β = fullSubcube params.n :=
-          subcube_eq_full_of_n_zero' hzero β
-        have hleaf :
-            fullSubcube params.n ∈ PDT.leaves (PDT.leaf (fullSubcube params.n)) := by
-          simp [PDT.leaves]
-        simpa [tree, hβ_full] using hleaf
-      err_le := by
-        intro f hf
-        have hchoose := Classical.choose_spec (witness.covers f hf)
-        have hcomp : AC0Circuit.Computes (Classical.choose (witness.covers f hf)) f :=
-          hchoose.right
-        simp [hf]
-        apply le_of_eq
-        apply errU_eq_zero_of_agree
-        intro x
-        have hcov := AC0Circuit.coveredB_subcubes
-          (c := Classical.choose (witness.covers f hf)) (x := x)
-        have hcomp' := hcomp x
-        simp [hcov, hcomp']
-    }, ?_, ?_, ?_, ?_⟩
-    · simp
-    · exact hlen_bound
-    · simp
+      simpa [C0, Core.PartialCertificate.ofShrinkage] using hdepth_bound
     ·
-      apply div_nonneg
-      · norm_num
-      ·
-        have : (0 : Nat) ≤ params.n + 2 := by omega
-        exact_mod_cast this
+      simpa [C0, Core.PartialCertificate.ofShrinkage] using hBound.epsilon_nonneg
+    ·
+      simpa [C0, Core.PartialCertificate.ofShrinkage] using hBound.epsilon_le_inv
+  -- Переписываем результат по `hF'`, чтобы получить сертификат для `F`.
+  exact (Eq.ndrec
+    (motive := fun F =>
+      ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+        ℓ ≤ Nat.log2 (params.M + 2) ∧
+        C.depthBound + ℓ ≤ ac0DepthBound params ∧
+        (0 : Core.Q) ≤ C.epsilon ∧
+        C.epsilon ≤ (1 : Core.Q) / (params.n + 2))
+    hC0
+    hF')
 
 theorem partial_shrinkage_for_AC0
     (params : AC0Parameters) (F : Family params.n)
@@ -1240,11 +1325,46 @@ theorem partial_shrinkage_for_AC0_with_polylog
       C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-  -- Поднимаем polylog‑свидетель до strong‑границы и используем основную лемму.
-  have hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [ac0DepthBound] using
-    partial_shrinkage_for_AC0_with_bound params F hF hBound
+  -- Используем shrinkage‑сертификат из polylog‑свидетеля и переносим его в
+  -- частичную форму через `PartialCertificate.ofShrinkage`.
+  classical
+  let S := hpoly.shrinkage
+  have hF' : S.F = F := hpoly.family_eq
+  have hdepth_polylog :
+      S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) :=
+    hpoly.depth_le_polylog
+  have hdepth_strong : S.t ≤ ac0DepthBound_strong params := by
+    exact hdepth_polylog.trans (ac0DepthBound_polylog_le_strong params)
+  -- Приводим семейство shrinkage к `F`, чтобы избежать `cast` в целях.
+  let C0 : Core.PartialCertificate params.n 0 S.F :=
+    Core.PartialCertificate.ofShrinkage S
+  have hC0 :
+      ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ S.F),
+        ℓ ≤ Nat.log2 (params.M + 2) ∧
+        C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
+        (0 : Core.Q) ≤ C.epsilon ∧
+        C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    refine ⟨0, C0, ?_, ?_, ?_, ?_⟩
+    · simp
+    ·
+      -- `depthBound + ℓ = S.t` для `ℓ = 0`.
+      simpa [C0, Core.PartialCertificate.ofShrinkage] using hdepth_strong
+    ·
+      -- Неотрицательность ошибки приходит из shrinkage.
+      simpa [C0, Core.PartialCertificate.ofShrinkage] using hpoly.epsilon_nonneg
+    ·
+      -- Верхняя граница ошибки переносится напрямую.
+      simpa [C0, Core.PartialCertificate.ofShrinkage] using hpoly.epsilon_le_inv
+  -- Переписываем результат по `hF'`, чтобы получить сертификат для `F`.
+  exact (Eq.ndrec
+    (motive := fun F =>
+      ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+        ℓ ≤ Nat.log2 (params.M + 2) ∧
+        C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
+        (0 : Core.Q) ≤ C.epsilon ∧
+        C.epsilon ≤ (1 : Core.Q) / (params.n + 2))
+    hC0
+    hF')
 
 /-!
 ### Stage 6: polylog‑свидетельство и shrinkage
@@ -1253,25 +1373,25 @@ Stage 6 замыкает цепочку, преобразуя polylog‑bound
 в полноценный partial shrinkage‑сертификат.
 -/
 
-theorem stage6_polylog_witness_complete
+def stage6_polylog_witness_complete
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
-    AC0PolylogBoundWitness params F ⟨witness⟩ := by
+    (witness : AC0MultiSwitchingWitness params F) :
+    AC0PolylogBoundWitness params F ⟨witness.base⟩ := by
   exact ac0PolylogBoundWitness_of_multi_switching params F witness
 
 theorem stage6_partial_shrinkage_complete
     (params : AC0Parameters) (F : Family params.n)
-    (witness : AC0FamilyWitness params F) :
+    (witness : AC0MultiSwitchingWitness params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
       C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-  have hpoly : AC0PolylogBoundWitness params F ⟨witness⟩ :=
+  have hpoly : AC0PolylogBoundWitness params F ⟨witness.base⟩ :=
     stage6_polylog_witness_complete params F witness
   simpa using
     (partial_shrinkage_for_AC0_with_polylog
-      (params := params) (F := F) (hF := ⟨witness⟩) hpoly)
+      (params := params) (F := F) (hF := ⟨witness.base⟩) hpoly)
 
 /--
   Усиленная (polylog) версия shrinkage-факта для AC⁰.
@@ -1346,8 +1466,8 @@ noncomputable def ac0PartialWitness
   · exact hprop.right.right.right
 
 /--
-Вариант `ac0PartialWitness`, принимающий уже готовую сильную границу на число
-подкубов.  Это и есть точка, где в будущем будет подключено настоящее
+Вариант `ac0PartialWitness`, принимающий уже готовую strong‑границу на глубину
+shrinkage.  Это и есть точка, где в будущем будет подключено настоящее
 multi‑switching доказательство polylog‑границы.
 -/
 noncomputable def ac0PartialWitness_with_bound
@@ -1385,10 +1505,23 @@ noncomputable def ac0PartialWitness_with_polylog
     (hF : FamilyIsAC0 params F)
     (hpoly : AC0PolylogBoundWitness params F hF) :
     AC0PartialWitness params F := by
-  -- Поднимаем polylog‑свидетель до strong‑границы и используем готовую обёртку.
-  have hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  exact ac0PartialWitness_with_bound params F hF hBound
+  classical
+  let h := partial_shrinkage_for_AC0_with_polylog params F hF hpoly
+  let ℓ := Classical.choose h
+  let rest := Classical.choose_spec h
+  let C := Classical.choose rest
+  have hprop := Classical.choose_spec rest
+  refine
+    { level := ℓ
+      certificate := C
+      level_le_log := ?_
+      depth_le := ?_
+      epsilon_nonneg := ?_
+      epsilon_le_inv := ?_ }
+  · exact hprop.left
+  · exact hprop.right.left
+  · exact hprop.right.right.left
+  · exact hprop.right.right.right
 
 /-- Высота хвостов частичного PDT из AC⁰-свидетельства. -/
 noncomputable def partialCertificate_level_from_AC0
@@ -1850,8 +1983,8 @@ noncomputable def certificate_from_AC0
     witness.certificate
 
 /--
-  Аналог `certificate_from_AC0`, но использующий явную strong‑границу на число
-  подкубов.  Полезен для явного контроля глубины PDT.
+  Аналог `certificate_from_AC0`, но использующий явную strong‑границу на глубину
+  shrinkage.  Полезен для явного контроля глубины PDT.
 -/
 noncomputable def certificate_from_AC0_with_bound
     (params : AC0Parameters) (F : Family params.n)

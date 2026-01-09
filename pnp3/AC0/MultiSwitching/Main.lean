@@ -236,7 +236,7 @@ lemma card_bad_lt_card_all_step3_2_small_canonicalCCDT
     exact card_bad_lt_card_all_of_cnf_family_bound_det_small
       (F := F) (s := sParam n w) (t := tParam F.length n) henc_small hbound
   -- Переносим bound с `BadFamily_deterministic` на `BadEvent`.
-  simpa [badRestrictions_eq_canonicalCCDT_badFamilyDet
+  simpa [← badRestrictions_eq_canonicalCCDT_badFamilyDet
     (F := F) (t := tParam F.length n) (s := sParam n w) htpos] using hbad_det
 
 /-!

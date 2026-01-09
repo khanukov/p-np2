@@ -990,36 +990,175 @@ lemma encodeBadFamilyDetCNF_aux_injective
 ### CCDT‑обёртка над детерминированным BadFamily
 
 Чтобы подключить Stage‑1/Stage‑2 к интерфейсу `BadEvent`, нам нужен
-детерминированный `CCDTAlgorithm`, который **эквивалентен** предикату
+детерминированный `CCDTAlgorithm`, который **эквивалентен**
 `BadFamily_deterministic` (для `t > 0`).
 
-Мы определяем CCDT‑алгоритм так, что:
+Мы строим **честный** CCDT на основе канонических деревьев `canonicalDT_CNF`:
 
-* если `BadFamily_deterministic` истинно, то глубина дерева равна `t`;
-* если `BadFamily_deterministic` ложно, то глубина равна `t-1` (при `t>0`);
-* при `n = 0` дерево всегда лист, а `BadFamily_deterministic` не может
-  быть истинным для `t > 0`.
+* для каждой формулы в семействе считаем глубину её канонического дерева;
+* выбираем индекс, дающий **максимальную** глубину;
+* если семейство пустое — возвращаем лист.
 
-Это **детерминированный** алгоритм, который даёт прямой мост
-`BadEvent ↔ BadFamily_deterministic` при `0 < t`, и тем самым позволяет
-переиспользовать уже доказанные encoding/injection и counting.
+Это чисто детерминированная конструкция (выбор по максимуму),
+и мост `BadEvent ↔ BadFamily_deterministic` доказывается через леммы
+из `TraceBridge.lean`, связывающие глубину `canonicalDT_CNF` и
+детерминированные канонические трассы.
 -/
 
-/-- Линейное дерево глубины `t` (все ветви одинаковые). -/
-def pdtLine {n : Nat} (ρ : Restriction n) (i : Fin n) : Nat → PDT n
-  | 0 => PDT.leaf ρ.mask
-  | Nat.succ t => PDT.node i (pdtLine ρ i t) (pdtLine ρ i t)
+/--
+  Глубина канонического дерева для фиксированной формулы семейства.
 
-lemma pdtLine_depth {n : Nat} (ρ : Restriction n) (i : Fin n) :
-    ∀ t : Nat, PDT.depth (pdtLine ρ i t) = t := by
-  intro t
-  induction t with
-  | zero =>
-      simp [pdtLine, PDT.depth]
-  | succ t ih =>
-      simp [pdtLine, ih, PDT.depth]
+  Это чисто вспомогательная функция: мы фиксируем `F` и `ρ` и
+  рассматриваем глубину `canonicalDT_CNF` для каждого индекса семейства.
+  Такой вид удобен, когда нужно сравнивать глубины разных формул.
+-/
+noncomputable def canonicalDepthAt
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    Fin F.length → Nat :=
+  fun i => PDT.depth (canonicalDT_CNF (F := F.get i) ρ)
 
-/-- Каноническая заглушка CCDT для детерминированного `BadFamily`. -/
+/--
+  Максимизатор глубины на списке индексов.
+
+  * Если список пуст, возвращает `none`.
+  * Если список непуст, возвращает индекс с максимальной глубиной
+    канонического дерева `canonicalDT_CNF`.
+  * При равенстве глубин выбираем **последний** (по позиции в списке)
+    индекс — это фиксирует детерминированность и упрощает доказательства.
+
+  Мы реализуем это рекурсивно: сначала берём максимум на хвосте, затем
+  сравниваем его с головой и выбираем лучший.
+-/
+noncomputable def maxDepthIndexList
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    List (Fin F.length) → Option (Fin F.length)
+  | [] => none
+  | i :: rest =>
+      match maxDepthIndexList F ρ rest with
+      | none => some i
+      | some j =>
+          if canonicalDepthAt F ρ j ≤ canonicalDepthAt F ρ i then some i else some j
+
+/--
+  Максимизатор глубины на всём семействе.
+
+  Эквивалентен `maxDepthIndexList` на `List.finRange F.length`. Это
+  удобное определение, чтобы не таскать по коду явный список индексов.
+-/
+noncomputable def maxDepthIndex?
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    Option (Fin F.length) :=
+  maxDepthIndexList F ρ (List.finRange F.length)
+
+lemma maxDepthIndexList_spec
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    ∀ {xs i},
+      maxDepthIndexList F ρ xs = some i →
+      ∀ j ∈ xs, canonicalDepthAt F ρ j ≤ canonicalDepthAt F ρ i
+  | [], _, h => by
+      simp [maxDepthIndexList] at h
+  | x :: xs, i, h => by
+      classical
+      -- Разбираем вариант результата из хвоста.
+      cases hrest : maxDepthIndexList F ρ xs with
+      | none =>
+          -- В хвосте нет индексов, значит выбран `x`.
+          simp [maxDepthIndexList, hrest] at h
+          subst h
+          intro j hj
+          have hj' : j = x ∨ j ∈ xs := by
+            simpa using hj
+          cases hj' with
+          | inl hmem =>
+              subst hmem
+              simp [canonicalDepthAt]
+          | inr hmem =>
+              cases xs with
+              | nil =>
+                  simpa using hmem
+              | cons y tail =>
+                  have hne : maxDepthIndexList F ρ (y :: tail) ≠ none := by
+                    cases htail : maxDepthIndexList F ρ tail with
+                    | none =>
+                        simp [maxDepthIndexList, htail]
+                    | some j =>
+                        by_cases hcmp : canonicalDepthAt F ρ j ≤ canonicalDepthAt F ρ y
+                        · simp [maxDepthIndexList, htail, hcmp]
+                        · simp [maxDepthIndexList, htail, hcmp]
+                  exact (hne hrest).elim
+      | some j =>
+          -- Хвост дал кандидата `j`; сравниваем с `x`.
+          have hrest' :
+              ∀ j' ∈ xs,
+                canonicalDepthAt F ρ j' ≤ canonicalDepthAt F ρ j := by
+            exact maxDepthIndexList_spec F ρ (xs := xs) (i := j) hrest
+          simp [maxDepthIndexList, hrest] at h
+          by_cases hcmp :
+              canonicalDepthAt F ρ j ≤ canonicalDepthAt F ρ x
+          · -- Если `x` не хуже `j`, то новый максимум — `x`.
+            simp [hcmp] at h
+            subst h
+            intro j' hj'
+            have hj'' : j' = x ∨ j' ∈ xs := by
+              simpa using hj'
+            cases hj'' with
+            | inl hmem =>
+                subst hmem
+                simp [canonicalDepthAt]
+            | inr hmem =>
+                exact (hrest' _ hmem).trans hcmp
+          · -- Иначе максимум остаётся `j` из хвоста.
+            simp [hcmp] at h
+            subst h
+            intro j' hj'
+            have hj'' : j' = x ∨ j' ∈ xs := by
+              simpa using hj'
+            cases hj'' with
+            | inl hmem =>
+                subst hmem
+                exact le_of_lt (lt_of_not_ge hcmp)
+            | inr hmem =>
+                exact hrest' _ hmem
+
+lemma maxDepthIndex?_spec
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    ∀ {i},
+      maxDepthIndex? (F := F) (ρ := ρ) = some i →
+      ∀ j, canonicalDepthAt F ρ j ≤ canonicalDepthAt F ρ i := by
+  intro i h
+  have hspec :=
+    maxDepthIndexList_spec (F := F) (ρ := ρ) (xs := List.finRange F.length) (i := i) h
+  intro j
+  exact hspec j (by
+    simpa using (List.mem_finRange (n := F.length) j))
+
+lemma maxDepthIndex?_none_iff_length_zero
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    maxDepthIndex? (F := F) (ρ := ρ) = none ↔ F.length = 0 := by
+  classical
+  constructor
+  · intro hnone
+    by_contra hpos
+    cases hlist : List.finRange F.length with
+    | nil =>
+        have hlen : F.length = 0 := (List.finRange_eq_nil).1 hlist
+        exact hpos hlen
+    | cons i xs =>
+        have hne : maxDepthIndexList F ρ (i :: xs) ≠ none := by
+          cases htail : maxDepthIndexList F ρ xs with
+          | none =>
+              simp [maxDepthIndexList, htail]
+          | some j =>
+              by_cases hcmp : canonicalDepthAt F ρ j ≤ canonicalDepthAt F ρ i
+              · simp [maxDepthIndexList, htail, hcmp]
+              · simp [maxDepthIndexList, htail, hcmp]
+        exact (hne (by simpa [maxDepthIndex?, maxDepthIndexList, hlist] using hnone)).elim
+  · intro hlen
+    have hlist : List.finRange F.length = [] := by
+      simpa [List.finRange_eq_nil] using hlen
+    simp [maxDepthIndex?, maxDepthIndexList, hlist]
+
+/-- Канонический CCDT для семейства CNF через `canonicalDT_CNF`. -/
 noncomputable def canonicalCCDTAlgorithmCNF
     {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
     CCDTAlgorithm n w 0 t F :=
@@ -1027,26 +1166,13 @@ noncomputable def canonicalCCDTAlgorithmCNF
     classical
     exact
       { ccdt := fun ρ =>
-          match n with
-          | 0 =>
+          match maxDepthIndex? (F := F) (ρ := ρ) with
+          | none =>
+              -- Пустое семейство: дерево — лист.
               PDT.leaf ρ.mask
-          | Nat.succ n =>
-              let i : Fin (Nat.succ n) := ⟨0, Nat.succ_pos _⟩
-              if hbad : BadFamily_deterministic (F := F) t ρ then
-                pdtLine ρ i t
-              else if ht : t = 0 then
-                PDT.leaf ρ.mask
-              else
-                pdtLine ρ i (t - 1) }
-
-lemma badFamilyDet_le_freeCount
-    {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
-    BadFamily_deterministic (F := F) t ρ → t ≤ ρ.freeCount := by
-  intro hbad
-  have hbad' :
-      BadFamily (F := F) t ρ :=
-    badFamily_deterministic_implies_badFamily (F := F) (t := t) (ρ := ρ) hbad
-  exact badFamily_length_le_freeCount (F := F) (t := t) (ρ := ρ) hbad'
+          | some i =>
+              -- Выбираем формулу с максимальной глубиной канонического дерева.
+              canonicalDT_CNF (F := F.get i) ρ }
 
 lemma badEvent_canonicalCCDT_iff_badFamilyDet
     {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) (ht : 0 < t) :
@@ -1054,64 +1180,88 @@ lemma badEvent_canonicalCCDT_iff_badFamilyDet
       BadFamily_deterministic (F := F) t ρ := by
   classical
   have ht0 : t ≠ 0 := Nat.ne_of_gt ht
-  cases n with
-  | zero =>
-      constructor
-      · intro hbad
-        have hdepth :
-            PDT.depth
-                ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = 0 := by
-          simp [canonicalCCDTAlgorithmCNF, PDT.depth]
-        have htle : t ≤ 0 := by
-          simpa [BadEvent, hdepth] using hbad
-        exact (False.elim (ht0 (Nat.eq_zero_of_le_zero htle)))
-      · intro hbad
-        have htle := badFamilyDet_le_freeCount (F := F) (t := t) (ρ := ρ) hbad
-        have hfree : ρ.freeCount = 0 := by
-          have hle := Restriction.freeCount_le (ρ := ρ)
-          exact Nat.eq_zero_of_le_zero (by simpa using hle)
-        have htle0 : t ≤ 0 := by
-          calc
-            t ≤ ρ.freeCount := htle
-            _ = 0 := hfree
-        exact (False.elim (ht0 (Nat.eq_zero_of_le_zero htle0)))
-  | succ n =>
-      by_cases hbad : BadFamily_deterministic (F := F) t ρ
-      · have hdepth :
-            PDT.depth
-                ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = t := by
-          simp [canonicalCCDTAlgorithmCNF, hbad, ht0]
-          simpa using (pdtLine_depth (ρ := ρ) (i := ⟨0, Nat.succ_pos _⟩) (t := t))
-        have hbe : BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
-          simpa [BadEvent, hdepth]
-        constructor
-        · intro _
-          exact hbad
-        · intro _
-          exact hbe
-      · have hlt : t - 1 < t := by
-          have hlt' : t - 1 < Nat.succ (t - 1) := Nat.lt_succ_self (t - 1)
-          exact lt_of_lt_of_eq hlt' (Nat.succ_pred_eq_of_pos ht)
-        have hnot : ¬ t ≤ t - 1 := by
-          exact Nat.not_le_of_gt hlt
-        have hdepth :
-            PDT.depth
-                ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = t - 1 := by
-          -- Раскрываем `canonicalCCDTAlgorithmCNF` и сводим глубину к `pdtLine`.
-          simp [canonicalCCDTAlgorithmCNF, hbad, ht0]
-          -- После `simp` остаётся ровно `pdtLine_depth`.
-          simpa using (pdtLine_depth (ρ := ρ) (i := ⟨0, Nat.succ_pos _⟩) (t := t - 1))
-        have hbeFalse :
-            ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
-          intro hbe
-          have htle : t ≤ t - 1 := by
-            simpa [BadEvent, hdepth] using hbe
-          exact hnot htle
+  by_cases hnone :
+      maxDepthIndex? (F := F) (ρ := ρ) = none
+  · -- Пустое семейство: ни одна формула не может быть плохой при `t > 0`.
+    have hlen : F.length = 0 :=
+      (maxDepthIndex?_none_iff_length_zero (F := F) (ρ := ρ)).1 hnone
+    have hbeFalse :
+        ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
+      intro hbe
+      have hdepth :
+          PDT.depth ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = 0 := by
+        simp [canonicalCCDTAlgorithmCNF, hnone, PDT.depth]
+      have hle : t ≤ 0 := by
+        simpa [BadEvent, hdepth] using hbe
+      exact (ht0 (Nat.eq_zero_of_le_zero hle))
+    have hbadFalse : ¬ BadFamily_deterministic (F := F) t ρ := by
+      intro hbad
+      rcases hbad with ⟨i, hi, _⟩
+      exact (Nat.lt_asymm hi (by simpa [hlen] using hi)).elim
+    constructor
+    · intro hbe
+      exact (hbeFalse hbe).elim
+    · intro hbad
+      exact (hbadFalse hbad).elim
+  · -- Непустой случай: выбран индекс максимальной глубины.
+    cases hmax : maxDepthIndex? (F := F) (ρ := ρ) with
+    | none =>
+        exact (False.elim (hnone hmax))
+    | some i =>
+        have hspec := maxDepthIndex?_spec (F := F) (ρ := ρ) (i := i) hmax
         constructor
         · intro hbe
-          exact (hbeFalse hbe).elim
-        · intro hbadDet
-          exact (hbad hbadDet).elim
+          -- Глубина выбранной формулы ≥ t, значит есть детерминированная bad‑трасса.
+          have hdepth :
+              t ≤ canonicalDepthAt F ρ i := by
+            simpa [BadEvent, canonicalCCDTAlgorithmCNF, hmax, canonicalDepthAt] using hbe
+          have hbadC :
+              BadCNF_deterministic (F := F.get i) t ρ := by
+            exact badCNF_deterministic_of_depth_ge_canonicalDT
+              (F := F.get i) (t := t) (ρ := ρ) hdepth
+          exact ⟨i.1, i.2, hbadC⟩
+        · intro hbad
+          rcases hbad with ⟨j, hj, hbadC⟩
+          let j' : Fin F.length := ⟨j, hj⟩
+          have hdepth_j :
+              t ≤ canonicalDepthAt F ρ j' := by
+            exact depth_ge_of_badCNF_deterministic
+              (F := F.get j') (t := t) (ρ := ρ) hbadC
+          have hdepth_i :
+              canonicalDepthAt F ρ j' ≤ canonicalDepthAt F ρ i := hspec j'
+          have hdepth :
+              t ≤ canonicalDepthAt F ρ i := by
+            exact hdepth_j.trans hdepth_i
+          -- Возвращаемся к `BadEvent` для CCDT.
+          simpa [BadEvent, canonicalCCDTAlgorithmCNF, hmax, canonicalDepthAt] using hdepth
+
+lemma badRestrictions_eq_canonicalCCDT_badFamilyDet
+    {n w t s : Nat} (F : FormulaFamily n w) (ht : 0 < t)
+    [DecidablePred (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))]
+    [DecidablePred (BadFamily_deterministic (F := F) t)] :
+    badRestrictions (n := n) s
+        (BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t))
+      =
+    badRestrictions (n := n) s (BadFamily_deterministic (F := F) t) := by
+  classical
+  ext ρ
+  -- Равенство следует из эквивалентности `BadEvent ↔ BadFamily_deterministic`
+  -- на всех ограничениях в `R_s`.
+  constructor
+  · intro hmem
+    have hmem' :
+        ρ ∈ R_s (n := n) s ∧ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
+      simpa [mem_badRestrictions] using hmem
+    rcases hmem' with ⟨hRs, hbad⟩
+    exact (mem_badRestrictions).2 ⟨hRs,
+      (badEvent_canonicalCCDT_iff_badFamilyDet (F := F) (ρ := ρ) ht).1 hbad⟩
+  · intro hmem
+    have hmem' :
+        ρ ∈ R_s (n := n) s ∧ BadFamily_deterministic (F := F) t ρ := by
+      simpa [mem_badRestrictions] using hmem
+    rcases hmem' with ⟨hRs, hbad⟩
+    exact (mem_badRestrictions).2 ⟨hRs,
+      (badEvent_canonicalCCDT_iff_badFamilyDet (F := F) (ρ := ρ) ht).2 hbad⟩
 
 /-!
 ### Прямой encoding для BadEvent канонического CCDT (CNF)

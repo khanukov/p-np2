@@ -57,7 +57,7 @@ def traceDeterministic
     {ρ : Restriction n} → {t : Nat} →
       Core.CNF.CanonicalTrace (F := F) ρ t → Prop
   | _, _, Core.CNF.CanonicalTrace.nil => True
-  | ρ, _, Core.CNF.CanonicalTrace.cons selection choice tail =>
+  | _, _, Core.CNF.CanonicalTrace.cons selection choice tail =>
       traceStepDeterministic (selection := selection) (choice := choice)
         ∧ traceDeterministic (F := F) tail
 
@@ -179,7 +179,7 @@ lemma chooseFreeLiteralChoice_literal
   classical
   cases hlist : w.free with
   | nil =>
-      cases (w.nonempty (by simpa [hlist]))
+      cases (w.nonempty (by simp [hlist]))
   | cons head tail =>
       -- При индексе 0 литерал совпадает с головой списка.
       dsimp [ClausePendingWitness.Selection.literal, chooseFreeLiteralChoice]
@@ -209,8 +209,10 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
           have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) = 0 := by
             cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
-            have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
-            exact (Nat.not_succ_le_zero _ hzero)
+            -- Приводим глубину к нулю и получаем противоречие.
+            have hdepth' := hdepth
+            rw [this] at hdepth'
+            exact (Nat.not_succ_le_zero _ hdepth')
           exact (False.elim hcontr)
       | some selection =>
           -- Ветвление по первому свободному литералу.
@@ -295,11 +297,14 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
             cases fuel with
             | zero =>
                 have : PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ) = 0 := by
-                  simp [canonicalDT_CNF_aux, hsel, PDT.depth]
-                have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+                  simp [canonicalDT_CNF_aux, PDT.depth]
+                -- Упрощаем гипотезу о глубине и закрываем противоречие.
+                have hdepth' := hdepth
+                rw [this] at hdepth'
+                have hzero : Nat.succ t ≤ 0 := hdepth'
                 exact (False.elim (Nat.not_succ_le_zero _ hzero))
             | succ fuel =>
-                simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
+                simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
           have hbranch :
               PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) ≥ t
                 ∨ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) ≥ t := by
@@ -375,8 +380,10 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
           have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) = 0 := by
             cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
-            have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
-            exact (Nat.not_succ_le_zero _ hzero)
+            -- Упрощаем гипотезу о глубине листа.
+            have hdepth' := hdepth
+            rw [this] at hdepth'
+            exact (Nat.not_succ_le_zero _ hdepth')
           exact (False.elim hcontr)
       | some selection =>
           let w := selection.witness
@@ -453,11 +460,13 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
             cases fuel with
             | zero =>
                 have : (PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ)) = 0 := by
-                  simp [canonicalDT_CNF_aux, hsel, PDT.depth]
-                have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
-                exact (False.elim (Nat.not_succ_le_zero _ hzero))
+                  simp [canonicalDT_CNF_aux, PDT.depth]
+                -- Упрощаем гипотезу о глубине листа.
+                have hdepth' := hdepth
+                rw [this] at hdepth'
+                exact (False.elim (Nat.not_succ_le_zero _ hdepth'))
             | succ fuel =>
-                simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
+                simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
           have hbranch :
               PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) ≥ t
                 ∨ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) ≥ t := by
@@ -565,7 +574,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
       t ≤ fuel →
       t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
   | 0, fuel, ρ, _, _, _ => by
-      simp [PDT.depth]
+      simp
   | Nat.succ t, fuel, ρ,
       Core.CNF.CanonicalTrace.cons selection choice tail, hdet, hfuel => by
       -- При `t+1 ≤ fuel` обязаны находиться в ветке `succ`.
@@ -594,7 +603,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
             PDT.node ℓ.idx
               (canonicalDT_CNF_aux (F := F) fuel ρ0)
               (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
-        simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
+        simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
       have hassign_choice :
           ρ.assign ℓ.idx choice.value =
             some (ClausePendingWitness.Selection.nextRestriction
@@ -635,7 +644,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
                     (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
                     = ρ.assign ℓ.idx false := by simpa using h1.symm
                 _ = some ρ0 := hassign0
-            simpa [hval, hnext0]
+            simp [hnext0]
         | true =>
             have hassign1 :
                 ρ.assign ℓ.idx true = some ρ1 := by
@@ -657,7 +666,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
                     (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
                     = ρ.assign ℓ.idx true := by simpa using h1.symm
                 _ = some ρ1 := hassign1
-            simpa [hval, hnext1]
+            simp [hnext1]
       have htail_depth :
           t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel
             (if choice.value = false then ρ0 else ρ1)) := by
@@ -698,7 +707,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
                   (Nat.max
                     (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ0))
                     (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ1))) := by
-          simpa [hnode, PDT.depth]
+          simp [hnode, PDT.depth]
         simpa [this] using Nat.succ_le_succ hdepth_node
       exact hdepth
 

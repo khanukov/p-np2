@@ -85,7 +85,13 @@ def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
     · simp [mismatchSet, flipOn, hx]
 
 private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
-  cases b <;> cases c <;> simp at h <;> simp [h]
+  -- Перебираем случаи на булевых значениях; при `b = c` получаем противоречие,
+  -- а в остальных случаях равенство тривиально.
+  cases b <;> cases c
+  · exact (False.elim (h rfl))
+  · simp
+  · simp
+  · exact (False.elim (h rfl))
 
 @[simp] lemma flipOn_mismatchSet {m : Nat}
     (g : Domain m → Bool) (f : Domain m → Bool) :
@@ -188,9 +194,8 @@ lemma distU_le_of_errU_le
     have hNat : 0 < Nat.pow 2 m := by
       induction m with
       | zero => simp
-      | succ m ih =>
-          have hbase : 0 < 2 := by decide
-          simpa [Nat.pow_succ] using Nat.mul_pos hbase ih
+      | succ m _ =>
+          exact Nat.pow_pos (by decide : 0 < (2 : Nat))
     exact_mod_cast hNat
   have h' :
       (distU f (fun x => coveredB S x) : Q)
@@ -215,9 +220,8 @@ lemma errU_le_of_distU_le
     have hNat : 0 < Nat.pow 2 m := by
       induction m with
       | zero => simp
-      | succ m ih =>
-          have : 0 < 2 := by decide
-          simpa [Nat.pow_succ] using Nat.mul_pos this ih
+      | succ m _ =>
+          exact Nat.pow_pos (by decide : 0 < (2 : Nat))
     exact_mod_cast hNat
   have hden_ne : ((Nat.pow 2 m : Nat) : Q) ≠ 0 := by
     exact_mod_cast (ne_of_gt hpow_pos)
@@ -424,9 +428,7 @@ theorem unionClass_card_bound
         refine ⟨toList S.1, ?_, ?_, rfl⟩
         · -- Длина списка совпадает с кардинальностью подмножества.
           have hlen : (toList S.1).length = S.1.card := by
-            unfold toList
-            simpa [List.length_map] using
-              (Finset.length_toList (s := S.1))
+            simp [toList]
           simpa [hlen] using S.2
         · -- Каждый подкуб списка принадлежит исходному словарю.
           intro β hβ
@@ -496,7 +498,7 @@ theorem unionClass_card_bound
         simpa [hγβ] using hγmem
       · intro hβ
         have hattach : ⟨β, hβ⟩ ∈ (T.toFinset).attach := by
-          simpa using hβ
+          simp
         have hδsubset : embedding ⟨β, hβ⟩ ∈ subset := by
           refine (Finset.mem_map.2 ?_)
           refine ⟨⟨β, hβ⟩, hattach, rfl⟩
@@ -519,7 +521,8 @@ theorem unionClass_card_bound
       simpa [T] using coveredB_dedup (n := m) (R := S) (x := x)
     have hgoal : coveredB (toList subset) x = coveredB S x :=
       hcov_subset.trans hcov_dedup
-    have hg_eq : g.1 x = coveredB S x := by simpa [hcover]
+    have hg_eq : g.1 x = coveredB S x := by
+      simp [hcover]
     have hfinal : coveredB (toList subset) x = g.1 x :=
       hgoal.trans hg_eq.symm
     simpa [toList] using hfinal
@@ -534,7 +537,8 @@ theorem unionClass_card_bound
     calc
       Fintype.card Domain
           = unionBound (Fintype.card DictSubtype) k := h
-      _ = unionBound (R.toFinset.card) k := by simpa [hdict_card]
+      _ = unionBound (R.toFinset.card) k := by
+          simp [hdict_card]
   -- Сюръективность даёт верхнюю границу через мощность домена.
   have hcard_le :
       Fintype.card (UnionSubtype (R := R) (k := k))
@@ -615,17 +619,19 @@ by
     have hf₁ := flipOn_mismatchSet (m := m) (g := g) (f := f₁.1)
     have hf₂ := flipOn_mismatchSet (m := m) (g := g) (f := f₂.1)
     calc
-      f₁.1 = flipOn g (mismatchSet (m := m) g f₁.1) := by simpa using hf₁.symm
-      _ = flipOn g (mismatchSet (m := m) g f₂.1) := by simpa [hsets]
-      _ = f₂.1 := by simpa using hf₂
+      f₁.1 = flipOn g (mismatchSet (m := m) g f₁.1) := by
+        exact hf₁.symm
+      _ = flipOn g (mismatchSet (m := m) g f₂.1) := by
+        simp [hsets]
+      _ = f₂.1 := by
+        exact hf₂
   have hcard_le :
       Fintype.card (HammingBallSubtype (m := m) (g := g) (ε := ε)) ≤
         Fintype.card {S : Finset (Domain m) // S.card ≤ budget} :=
     Fintype.card_le_of_injective toSubset h_inj
   have cardDomain : Fintype.card (Domain m) = Nat.pow 2 m := by
     classical
-    simpa [Domain, Core.BitVec, Fintype.card_fun, Fintype.card_bool,
-      Fintype.card_fin]
+    simp [Domain, Core.BitVec, Fintype.card_bool, Fintype.card_fin]
   have hbound :
       Fintype.card {S : Finset (Domain m) // S.card ≤ budget}
         = unionBound (Nat.pow 2 m) budget := by
@@ -804,7 +810,7 @@ noncomputable def approxOnTestsetWitness
     {m : Nat} (R : List (Subcube m)) (k : Nat)
     (T : Finset (Domain m)) :
     ApproxOnTestsetSubtype (R := R) (k := k) (T := T) →
-      Σ g : UnionSubtype (R := R) (k := k),
+      Σ _g : UnionSubtype (R := R) (k := k),
         {S : Finset (Domain m) // S ⊆ T} :=
   by
     intro f

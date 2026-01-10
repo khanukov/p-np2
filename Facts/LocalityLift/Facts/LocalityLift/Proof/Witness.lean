@@ -204,7 +204,7 @@ lemma localityWitness_testSet_eq_testSetOfAlive_provided
   have hcanon :=
     ShrinkageWitness.testSet_eq_testSetOfAlive
       (w := ShrinkageWitness.provided (p := p) general)
-  simpa [htest] using hcanon
+  exact htest.trans hcanon
 
 /-- Удобная оболочка: тест-набор `localityWitness` удовлетворяет polylog-границе. -/
 lemma localityWitness_testSet_card_le_provided

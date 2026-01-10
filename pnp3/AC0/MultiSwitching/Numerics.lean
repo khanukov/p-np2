@@ -171,7 +171,7 @@ lemma card_R_s_mul_pow_le
           exact Nat.mul_le_mul_right _ hchoose
     _ = (Nat.choose n s * 2 ^ (n - s)) * (2 * s) ^ t := by
           have hpow_add : 2 ^ (n - s + t) = 2 ^ (n - s) * 2 ^ t := by
-            simpa [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+            simp [Nat.pow_add]
           have hmul_pow : 2 ^ t * s ^ t = (2 * s) ^ t := by
             simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
               (Nat.mul_pow 2 s t).symm
@@ -337,7 +337,7 @@ lemma base_absorbs_sParam (n w : Nat) :
             = ((k - 1) * (n / k) + (n / k)) - (n / k) := by
                 simp [hk_mul]
         _ = (k - 1) * (n / k) := by
-              simp [Nat.add_sub_cancel]
+              simp
     -- Теперь раскрываем `n` через `k*s + r`.
     calc
       (k - 1) * (n / k)
@@ -394,7 +394,7 @@ lemma base_absorbs_sParam_strict (n w : Nat)
       calc
         k * q - q
             = ((k - 1) * q + q) - q := by simp [hk_mul]
-        _ = (k - 1) * q := by simp [Nat.add_sub_cancel]
+        _ = (k - 1) * q := by simp
     calc
       (k - 1) * q
           = k * q - q := by simp [hsub]
@@ -453,18 +453,18 @@ lemma base_absorbs_sParam_strict_scaled (n w : Nat)
             nth_rewrite 1 [hk]
             rfl
       _ = (k - 1) * q + 1 * q := by
-            simp [Nat.add_mul, Nat.mul_assoc]
+            simp [Nat.add_mul]
       _ = (k - 1) * q + q := by simp
   have hsub : k * q - q = (k - 1) * q := by
     calc
       k * q - q
-          = ((k - 1) * q + q) - q := by simpa [hk_mul]
-      _ = (k - 1) * q := by simpa [Nat.add_sub_cancel]
+          = ((k - 1) * q + q) - q := by simp [hk_mul]
+      _ = (k - 1) * q := by simp
   -- Оценка `(k-1)*q ≤ n - q + 1` (как в `base_absorbs_sParam_strict`).
   have hrest : (k - 1) * q ≤ n - q + 1 := by
     calc
       (k - 1) * q
-          = k * q - q := by simpa [hsub]
+          = k * q - q := by simp [hsub]
       _ ≤ (k * q + n % k) - q := by
             exact Nat.sub_le_sub_right (Nat.le_add_right _ _) _
       _ = n - q := by
@@ -494,7 +494,7 @@ lemma base_absorbs_sParam_strict_scaled (n w : Nat)
             calc
               (k - 1) * q + (n % k + 1)
                   = (k * q - q) + (n % k + 1) := by
-                        simpa [hsub]
+                        simp [hsub]
               _ = (k * q + n % k) - q + 1 := by
                         omega
               _ = n - q + 1 := by
@@ -561,8 +561,12 @@ lemma numerical_inequality_3_2 (n w m : Nat)
   -- Сначала докажем строгую оценку `(m+1) * B^t < (n - s + 1)^t`.
   have htpos : 0 < tParam m n := by
     -- `tParam = log2(...) + 2`.
-    simpa [tParam] using
-      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
+    have hpos :
+        0 < Nat.log2 ((m + 1) * (n + 2)) + 2 :=
+      Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1)
+    -- Переписываем цель через определение `tParam`.
+    change 0 < Nat.log2 ((m + 1) * (n + 2)) + 2
+    exact hpos
   have hbase : 12 * BParam w < n - sParam n w + 1 :=
     base_absorbs_sParam_strict (n := n) (w := w) hN
   have hm : m + 1 ≤ 12 ^ (tParam m n) :=
@@ -605,8 +609,12 @@ lemma numerical_inequality_3_2_final (n w m : Nat)
   set B : Nat := BParam w
   have htpos : 0 < t := by
     -- `tParam = log2(...) + 2`.
-    simpa [t, tParam] using
-      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
+    have hpos :
+        0 < Nat.log2 ((m + 1) * (n + 2)) + 2 :=
+      Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1)
+    -- Переписываем цель через `t`.
+    change 0 < Nat.log2 ((m + 1) * (n + 2)) + 2
+    exact hpos
   have hspos : 0 < s := by
     -- `sParam` положителен при `n ≥ 49*(w+1)`.
     simpa [s] using (sParam_pos_of_le (n := n) (w := w) hN)
@@ -653,7 +661,7 @@ lemma numerical_inequality_3_2_final (n w m : Nat)
   have hmul_pow' : (2 * (B * s)) ^ t = B ^ t * (2 * s) ^ t := by
     calc
       (2 * (B * s)) ^ t = (2 * s * B) ^ t := by
-            simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+            simp [Nat.mul_comm, Nat.mul_left_comm]
       _ = B ^ t * (2 * s) ^ t := hmul_pow
   have hpos : 0 < (2 * s) ^ t := by
     have hpos' : 0 < 2 * s := Nat.mul_pos (by decide : 0 < (2 : Nat)) hspos
@@ -690,8 +698,12 @@ lemma numerical_inequality_3_2_final_expanded
   set s : Nat := sParam n w
   set t : Nat := tParam m n
   have htpos : 0 < t := by
-    simpa [t, tParam] using
-      (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
+    have hpos :
+        0 < Nat.log2 ((m + 1) * (n + 2)) + 2 :=
+      Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1)
+    -- Переписываем цель через `t`.
+    change 0 < Nat.log2 ((m + 1) * (n + 2)) + 2
+    exact hpos
   have hspos : 0 < s := by
     simpa [s] using (sParam_pos_of_le (n := n) (w := w) hN)
   have hs : s ≤ n := by

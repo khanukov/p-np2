@@ -57,7 +57,7 @@ def traceDeterministic
     {ρ : Restriction n} → {t : Nat} →
       Core.CNF.CanonicalTrace (F := F) ρ t → Prop
   | _, _, Core.CNF.CanonicalTrace.nil => True
-  | ρ, _, Core.CNF.CanonicalTrace.cons selection choice tail =>
+  | _, _, Core.CNF.CanonicalTrace.cons selection choice tail =>
       traceStepDeterministic (selection := selection) (choice := choice)
         ∧ traceDeterministic (F := F) tail
 
@@ -179,7 +179,7 @@ lemma chooseFreeLiteralChoice_literal
   classical
   cases hlist : w.free with
   | nil =>
-      cases (w.nonempty (by simpa [hlist]))
+      cases (w.nonempty (by simp [hlist]))
   | cons head tail =>
       -- При индексе 0 литерал совпадает с головой списка.
       dsimp [ClausePendingWitness.Selection.literal, chooseFreeLiteralChoice]
@@ -209,7 +209,8 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
           have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) = 0 := by
             cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
-            have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+            have hzero : Nat.succ t ≤ 0 := by
+              simpa [this] using hdepth
             exact (Nat.not_succ_le_zero _ hzero)
           exact (False.elim hcontr)
       | some selection =>
@@ -454,7 +455,8 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
             | zero =>
                 have : (PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ)) = 0 := by
                   simp [canonicalDT_CNF_aux, hsel, PDT.depth]
-                have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+                have hzero : Nat.succ t ≤ 0 := by
+                  simpa [this] using hdepth
                 exact (False.elim (Nat.not_succ_le_zero _ hzero))
             | succ fuel =>
                 simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]

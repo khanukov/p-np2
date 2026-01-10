@@ -13,6 +13,30 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 
 Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  The corresponding sources are kept offline as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era when needed.
 
+## Assumptions & External Facts
+
+The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are imported as external facts or require explicit witnesses. This section lists the critical dependencies so the documentation matches the actual proof chain.
+
+### External axioms / imported facts
+* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). This is the stated NP-hardness of Partial MCSP used as an external theorem in the final result.
+* `P_subset_Ppoly_proof` (imported from `pnp3/ThirdPartyFacts/PsubsetPpoly.lean`). This supplies the standard inclusion `P ⊆ P/poly` as an external proof object.
+
+### External witnesses (required hypotheses)
+* `AC0CircuitWitness` and `LocalCircuitWitness` are required to instantiate the shrinkage facts used by the SAL pipeline; these witnesses are supplied externally, while the downstream derivations are Lean-checked.
+* `FamilyIsLocalCircuit` witnesses are required in the magnification bridge for partial formulas (`P_ne_NP_from_partial_formulas`) to trigger the non-uniform separation step. In the current codebase this is still an external hypothesis: it is defined as a `Nonempty` wrapper around `LocalCircuitWitness`, and no global constructor is provided yet.
+
+### What is Lean-checked vs. external
+* Lean-checked: the logical pipeline from shrinkage/anti-checker assumptions to `NP ⊄ P/poly`, and the classical implication `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
+* External: NP-hardness of Partial MCSP, the `P ⊆ P/poly` proof object, and the shrinkage/locality witnesses needed to instantiate the SAL-based machinery.
+
+## Proof pipeline
+
+The current (conditional) proof chain used by the final result follows:
+
+`FinalResult → P_ne_NP_from_partial_formulas → NP_not_subset_Ppoly_from_partial_formulas → OPS_trigger_formulas_partial → …`
+
+The ellipsis (`…`) expands into the SAL + anti-checker pipeline, which ultimately depends on external shrinkage/locality witnesses.
+
 ## Repository layout
 
 ### Core PNP3 development (`pnp3/`)

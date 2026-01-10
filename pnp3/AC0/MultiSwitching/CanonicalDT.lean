@@ -92,9 +92,9 @@ noncomputable def canonicalDT_CNF_aux
 -/
 
 lemma canonicalDT_CNF_aux_branch_freeCount
-    {n w : Nat} {F : CNF n w} {fuel : Nat} {ρ : Restriction n}
+    {n w : Nat} {F : CNF n w} {_fuel : Nat} {ρ : Restriction n}
     {selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses}
-    (hsel : Restriction.firstPendingClause? ρ F.clauses = some selection) :
+    (_hsel : Restriction.firstPendingClause? ρ F.clauses = some selection) :
     let ℓ := chooseFreeLiteral (w := selection.witness)
     let hmem : ℓ ∈ selection.witness.free :=
       chooseFreeLiteral_mem (w := selection.witness)
@@ -179,7 +179,7 @@ lemma canonicalDT_CNF_aux_depth_le
               PDT.depth (canonicalDT_CNF_aux F (Nat.succ fuel) ρ) =
                 Nat.succ (Nat.max (PDT.depth (canonicalDT_CNF_aux F fuel ρ0))
                   (PDT.depth (canonicalDT_CNF_aux F fuel ρ1))) := by
-            simp [canonicalDT_CNF_aux, hsel, PDT.depth, ℓ, hmem, hfree, ρ0, ρ1]
+            simp [canonicalDT_CNF_aux, hsel, PDT.depth, ℓ, ρ0, ρ1]
           simpa [hdepth] using hsucc
 
 lemma canonicalDT_CNF_depth_le
@@ -268,7 +268,7 @@ noncomputable def canonicalDT_DNF_aux
 -/
 
 lemma canonicalDT_DNF_aux_branch_freeCount
-    {n w : Nat} {F : DNF n w} {fuel : Nat} {ρ : Restriction n}
+    {n w : Nat} {_F : DNF n w} {_fuel : Nat} {ρ : Restriction n}
     {T : DnfTerm n} {free : List (Literal n)} (hfree : free ≠ [])
     (hfreeEq : free = ρ.freeLiterals T) :
     let ℓ := chooseFirstLiteral (free := free) hfree
@@ -367,7 +367,7 @@ lemma canonicalDT_DNF_aux_depth_le
                   PDT.depth (canonicalDT_DNF_aux F (Nat.succ fuel) ρ) =
                     Nat.succ (Nat.max (PDT.depth (canonicalDT_DNF_aux F fuel ρ0))
                       (PDT.depth (canonicalDT_DNF_aux F fuel ρ1))) := by
-                simp [canonicalDT_DNF_aux, hterm, hfree, PDT.depth, ℓ, hmem, hstatus, hmask, hfreeIdx, ρ0, ρ1,
+                simp [canonicalDT_DNF_aux, hterm, hfree, PDT.depth, ℓ, ρ0, ρ1,
                   -Restriction.freeLiterals]
               simpa [hdepth] using hsucc
 
@@ -424,9 +424,9 @@ lemma canonicalCCDT_CNF_aux_depth_le
               ≤ fuel + fuel * rest.length := by
                     exact Nat.add_le_add_right htrunk _
           _ = fuel * rest.length + fuel := by
-                simp [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                simp [Nat.add_comm]
           _ = fuel * (rest.length + 1) := by
-                simp [Nat.mul_add, Nat.mul_one, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                simp [Nat.mul_add]
       -- собираем итоговую оценку
       exact Nat.le_trans hrefine hsum
 

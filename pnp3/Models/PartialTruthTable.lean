@@ -55,7 +55,9 @@ def valIndex {n : Nat} (i : Fin (tableLen n)) : Fin (inputLen n) :=
     have hlt : tableLen n + i.1 < tableLen n + tableLen n :=
       Nat.add_lt_add_left i.2 _
     -- А `tableLen + tableLen = 2 * tableLen`.
-    simpa [inputLen, two_mul] using hlt⟩
+    -- Переписываем цель через `inputLen` и закрываем её `hlt`.
+    -- Переписываем цель и завершаем одним `simp`.
+    convert hlt using 1; simp [inputLen, two_mul]⟩
 
 /-- Вытаскиваем маску из кодировки `mask ++ values`. -/
 def maskPart {n : Nat} (x : Core.BitVec (inputLen n)) : Core.BitVec (tableLen n) :=
@@ -666,7 +668,7 @@ lemma card_tablesWithDefinedSet_le_pow {n : Nat}
     simpa [hcard] using hle'
   -- Кардинал функций `S → Bool` равен `2^{|S|}`.
   have hcard_fun : Fintype.card (S → Bool) = 2 ^ S.card := by
-    simpa using (Fintype.card_fun (α := S) (β := Bool))
+    simp
   -- Собираем вместе.
   simpa [hcard, hcard_fun] using hle
 
@@ -759,7 +761,7 @@ theorem card_consistentPartial_withTotal {n : Nat} (f : TotalFunction n) :
   -- Кардинал масок равен `2^{|Fin (2^n)|}`.
   have hmask :
       Fintype.card (Core.BitVec (Partial.tableLen n)) = 2 ^ Partial.tableLen n := by
-    simpa using (Fintype.card_fun (α := Fin (Partial.tableLen n)) (β := Bool))
+    simp
   -- Переписываем кардиналы через эквивалентность и оценку для масок.
   simpa [hmask] using hEquiv.symm
 
@@ -896,7 +898,7 @@ theorem card_consistentTotal {n : Nat} (T : PartialFunction n) :
   have hfun :
       Fintype.card (undefinedIndex T → Bool) =
         2 ^ Fintype.card (undefinedIndex T) := by
-    simpa using (Fintype.card_fun (α := undefinedIndex T) (β := Bool))
+    simp
   -- Собираем равенства.
   calc
     Fintype.card {f : TotalFunction n // consistentTotal T f}
@@ -987,7 +989,8 @@ lemma definedCount_setDefined_le_succ {n : Nat} (T : PartialFunction n)
     -- Следовательно, `definedCount` не меняется, а значит ≤ `+1`.
     have hcount : definedCount (setDefined T i b) = definedCount T := by
       simp [definedCount, hEq]
-    simpa [hcount] using (Nat.le_succ (definedCount T))
+    -- Переписываем через `hcount` и применяем тривиальную оценку.
+    exact hcount.le.trans (Nat.le_succ _)
   · -- Если позиция была неопределённой, добавляем максимум одну позицию.
     have hsubset :
         definedPositions (setDefined T i b) ⊆

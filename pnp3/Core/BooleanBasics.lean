@@ -512,14 +512,14 @@ lemma coveredB_eq_of_mem_equiv {n : Nat}
         · have hx := (covered_iff (Rset := R₁) x).mpr hb
           exact (hcov hx).elim
         · cases hcase : coveredB R₁ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       have hfalse₂ : coveredB R₂ x = false := by
         by_cases hb : coveredB R₂ x = true
         · have hx := (covered_iff (Rset := R₂) x).mpr hb
           exact (hcov' hx).elim
         · cases hcase : coveredB R₂ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       simp [hfalse₁, hfalse₂]
 
@@ -722,9 +722,10 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
       have hspec := Classical.choose_spec (exists_of_ne_none (i := i) hne)
       have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b := by
         have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
-          simp [h, hspec]
+          -- `simp` по `h` уже раскрывает нужное равенство; дополнительных фактов не нужно.
+          simp [h]
         exact Option.some.inj this
-      simp [decodeFun, h, hne, hval]
+      simp [decodeFun, h]
     let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=
       fun f =>
         let g := decodeFun f
@@ -780,7 +781,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have hfun_card :
         Fintype.card (FreeIndex → Bool)
           = 2 ^ Fintype.card FreeIndex := by
-      simp [Fintype.card_fun]
+      simp
     have hfreeIndex_card : Fintype.card FreeIndex = n - t := by
       simp [hfree_card, hfree_count]
     have hfinal :
@@ -789,7 +790,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
         Fintype.card {x : BitVec n // mem β x}
             = Fintype.card (FreeIndex → Bool) := hcube_card
         _ = 2 ^ Fintype.card FreeIndex := hfun_card
-        _ = 2 ^ (n - t) := by simp [hfreeIndex_card, Fintype.card_bool]
+        _ = 2 ^ (n - t) := by simp [hfreeIndex_card]
 
     exact ⟨t, ht_le, hfinal⟩
 
@@ -829,7 +830,9 @@ structure Literal (n : Nat) where
 namespace Literal
 
 @[simp] lemma mk_eta {n : Nat} (ℓ : Literal n) :
-    Literal.mk ℓ.idx ℓ.value = ℓ := by cases ℓ <;> rfl
+    Literal.mk ℓ.idx ℓ.value = ℓ := by
+  cases ℓ
+  rfl
 
 /-- Булева оценка литерала на точке `x`. -/
 @[simp] def eval {n : Nat} (ℓ : Literal n) (x : BitVec n) : Bool :=
@@ -3542,7 +3545,7 @@ noncomputable def finalRestriction :
     {ρ : Restriction n} → {t : Nat} →
       CanonicalTrace (F := F) ρ t → Restriction n
   | ρ, _, CanonicalTrace.nil => ρ
-  | ρ, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
+  | _, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
 
 /--
 Список индексов переменных, которые фиксируются вдоль пути, в том порядке, в

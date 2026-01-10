@@ -81,7 +81,7 @@ lemma sizeMultiplier_le_alive_card_succ
   have h := summary.sizeMultiplier_le
   -- Переписываем мощность тест-набора через `alive`.
   have hcard : summary.testSet.card = summary.alive.card := by
-    simpa [summary.testSet_eq] using card_testSetOfAlive summary.alive
+    simp [summary.testSet_eq]
   simpa [hcard] using h
 
 @[simp] lemma testSet_card_le'
@@ -211,7 +211,7 @@ def canonicalSummary
   have hcard : (canonicalAlive p).card ≤ polylogBudget (inputLen p) := by
     have : (canonicalAlive p).card = 0 := card_canonicalAlive p
     -- Из `0 = card` достаточно получить `0 ≤ polylogBudget`.
-    simpa [this] using (Nat.zero_le (polylogBudget (inputLen p)))
+    simp [this]
   have hsmall :
       LocalCircuitSmallEnough
         { n := inputLen p

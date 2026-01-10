@@ -134,7 +134,11 @@ lemma pow_two_le_tParam (m n : Nat) :
         (m + 1) * (n + 2) <
           2 ^ (Nat.log 2 ((m + 1) * (n + 2))).succ := by
       exact Nat.lt_pow_succ_log_self Nat.one_lt_two ((m + 1) * (n + 2))
-    simpa [Nat.log2_eq_log_two, Nat.succ_eq_add_one] using hlog
+    have hlog' :
+        (m + 1) * (n + 2) <
+          2 ^ (Nat.log 2 ((m + 1) * (n + 2)) + 1) := by
+      convert hlog using 1
+    simpa [Nat.log2_eq_log_two] using hlog'
   have hle :
       (m + 1) * (n + 2) ≤ 2 ^ (Nat.log2 ((m + 1) * (n + 2)) + 1) := by
     exact Nat.le_of_lt hlt
@@ -146,8 +150,8 @@ lemma pow_two_le_tParam (m n : Nat) :
     have hle' :
         Nat.log2 ((m + 1) * (n + 2)) + 1 ≤ tParam m n := by
       -- `tParam = log2(...) + 2`.
-      simpa [tParam, Nat.succ_eq_add_one, Nat.add_assoc] using
-        (Nat.le_succ (Nat.log2 ((m + 1) * (n + 2)) + 1))
+      dsimp [tParam]
+      exact Nat.le_succ (Nat.log2 ((m + 1) * (n + 2)) + 1)
     exact Nat.pow_le_pow_right (by decide : 1 ≤ (2 : Nat)) hle'
   exact hle.trans hmono
 

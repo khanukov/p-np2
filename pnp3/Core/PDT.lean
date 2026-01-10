@@ -214,8 +214,8 @@ theorem PDT.depth_refine_ge {n : Nat}
       have hmem : β ∈ PDT.leaves (PDT.leaf β) := by
         simp [PDT.leaves]
       have hrefine : PDT.refine (PDT.leaf β) tails = tails β hmem := rfl
-      have hnonneg : 0 ≤ PDT.depth (tails β hmem) := Nat.zero_le _
-      simpa [PDT.depth, hrefine] using hnonneg
+      -- После раскрытия глубины в листе остаётся показать неотрицательность.
+      simp [PDT.depth, hrefine]
   | node i t0 t1 ih0 ih1 =>
       -- Для узла применяем И.П. к обеим ветвям.
       let tails0 : ∀ β, β ∈ PDT.leaves t0 → PDT n := fun β hβ =>

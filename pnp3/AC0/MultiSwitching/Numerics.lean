@@ -93,7 +93,7 @@ lemma choose_mul_pow_le
             ≤ Nat.choose n (s - t) * s * (n - s + 1) ^ t := hstep'
         _ ≤ Nat.choose n s * s ^ t * s := ih'
         _ = Nat.choose n s * s ^ Nat.succ t := by
-              simp [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+              simp [Nat.pow_succ, Nat.mul_comm, Nat.mul_assoc]
 
 /-!
 ## Ratio-оценка в `ℚ`
@@ -129,8 +129,7 @@ lemma choose_ratio_le_pow
   have hpow :
       (s : ℚ) ^ t / (n - s + 1 : ℚ) ^ t
         = ((s : ℚ) / (n - s + 1 : ℚ)) ^ t := by
-    simpa [div_pow] using
-      (div_pow (s : ℚ) (n - s + 1 : ℚ) t).symm
+    simp [div_pow]
   simpa [hpow] using hratio
 
 /-!
@@ -329,20 +328,20 @@ lemma base_absorbs_sParam (n w : Nat) :
               nth_rewrite 1 [hk]
               rfl
         _ = (k - 1) * (n / k) + 1 * (n / k) := by
-              simp [Nat.add_mul, Nat.mul_assoc]
+              simp [Nat.add_mul]
         _ = (k - 1) * (n / k) + (n / k) := by simp
     have hsub : k * (n / k) - (n / k) = (k - 1) * (n / k) := by
       -- `(k-1)*s + s - s = (k-1)*s`.
       calc
         k * (n / k) - (n / k)
             = ((k - 1) * (n / k) + (n / k)) - (n / k) := by
-                simpa [hk_mul]
+                simp [hk_mul]
         _ = (k - 1) * (n / k) := by
-              simpa [Nat.add_sub_cancel]
+              simp [Nat.add_sub_cancel]
     -- Теперь раскрываем `n` через `k*s + r`.
     calc
       (k - 1) * (n / k)
-          = k * (n / k) - (n / k) := by simpa [hsub]
+          = k * (n / k) - (n / k) := by simp [hsub]
       _ ≤ (k * (n / k) + n % k) - (n / k) := by
             -- добавляем `n%k` справа
             exact Nat.sub_le_sub_right (Nat.le_add_right _ _) _
@@ -389,16 +388,16 @@ lemma base_absorbs_sParam_strict (n w : Nat)
               nth_rewrite 1 [hk]
               rfl
         _ = (k - 1) * q + 1 * q := by
-              simp [Nat.add_mul, Nat.mul_assoc]
+              simp [Nat.add_mul]
         _ = (k - 1) * q + q := by simp
     have hsub : k * q - q = (k - 1) * q := by
       calc
         k * q - q
-            = ((k - 1) * q + q) - q := by simpa [hk_mul]
-        _ = (k - 1) * q := by simpa [Nat.add_sub_cancel]
+            = ((k - 1) * q + q) - q := by simp [hk_mul]
+        _ = (k - 1) * q := by simp [Nat.add_sub_cancel]
     calc
       (k - 1) * q
-          = k * q - q := by simpa [hsub]
+          = k * q - q := by simp [hsub]
       _ ≤ (k * q + n % k) - q := by
             exact Nat.sub_le_sub_right (Nat.le_add_right _ _) _
       _ = n - q := by

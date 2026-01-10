@@ -512,14 +512,14 @@ lemma coveredB_eq_of_mem_equiv {n : Nat}
         · have hx := (covered_iff (Rset := R₁) x).mpr hb
           exact (hcov hx).elim
         · cases hcase : coveredB R₁ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       have hfalse₂ : coveredB R₂ x = false := by
         by_cases hb : coveredB R₂ x = true
         · have hx := (covered_iff (Rset := R₂) x).mpr hb
           exact (hcov' hx).elim
         · cases hcase : coveredB R₂ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       simp [hfalse₁, hfalse₂]
 
@@ -714,17 +714,20 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     -- Вспомогательные леммы: удобно сворачивать определение `decodeFun`.
     have decode_eval_none (f : FreeIndex → Bool) (i : Fin n)
         (h : β i = none) : decodeFun f i = f ⟨i, h⟩ := by
+      -- После подстановки `h` декодер возвращает соответствующий бит.
       simp [decodeFun, h]
     have decode_eval_some (f : FreeIndex → Bool) (i : Fin n)
         {b : Bool} (h : β i = some b) : decodeFun f i = b := by
       have hne : β i ≠ none := by
         intro hnone; simp [hnone] at h
-      have hspec := Classical.choose_spec (exists_of_ne_none (i := i) hne)
       have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b := by
         have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
-          simp [h, hspec]
+          -- `simp` по `h` уже раскрывает нужное равенство; дополнительных фактов не нужно.
+          simp [h]
         exact Option.some.inj this
-      simp [decodeFun, h, hne, hval]
+      -- После подстановки `h` остаётся заменить выбранный элемент на `b`.
+      -- `simp` сводит цель к равенству выбранного значения с `b`.
+      simpa [decodeFun, h] using hval
     let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=
       fun f =>
         let g := decodeFun f
@@ -780,7 +783,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have hfun_card :
         Fintype.card (FreeIndex → Bool)
           = 2 ^ Fintype.card FreeIndex := by
-      simp [Fintype.card_fun]
+      simp
     have hfreeIndex_card : Fintype.card FreeIndex = n - t := by
       simp [hfree_card, hfree_count]
     have hfinal :
@@ -789,7 +792,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
         Fintype.card {x : BitVec n // mem β x}
             = Fintype.card (FreeIndex → Bool) := hcube_card
         _ = 2 ^ Fintype.card FreeIndex := hfun_card
-        _ = 2 ^ (n - t) := by simp [hfreeIndex_card, Fintype.card_bool]
+        _ = 2 ^ (n - t) := by simp [hfreeIndex_card]
 
     exact ⟨t, ht_le, hfinal⟩
 
@@ -829,7 +832,9 @@ structure Literal (n : Nat) where
 namespace Literal
 
 @[simp] lemma mk_eta {n : Nat} (ℓ : Literal n) :
-    Literal.mk ℓ.idx ℓ.value = ℓ := by cases ℓ <;> rfl
+    Literal.mk ℓ.idx ℓ.value = ℓ := by
+  cases ℓ
+  rfl
 
 /-- Булева оценка литерала на точке `x`. -/
 @[simp] def eval {n : Nat} (ℓ : Literal n) (x : BitVec n) : Bool :=
@@ -1087,8 +1092,8 @@ lemma card_restriction (n : Nat) : Fintype.card (Restriction n) = 3 ^ n := by
       right_inv := by intro mask; rfl }
   -- Кардинал функции равен `|Option Bool|^n = 3^n`.
   have hcard : Fintype.card (Subcube n) = 3 ^ n := by
-    simpa [Subcube, Fintype.card_fun, Fintype.card_bool] using
-      (Fintype.card_fun (α := Fin n) (β := Option Bool))
+    -- `simp` разворачивает `Subcube` в пространство функций и считает кардинал.
+    simp [Subcube]
   simpa [hcard] using (Fintype.card_congr e)
 
 
@@ -1228,9 +1233,11 @@ noncomputable def restrictionOfFreeEquiv
       · -- На фиксированной части извлекаем значение из `ρ`.
         cases h : ρ.1.mask i with
         | none =>
-            have hmem' : i ∈ ρ.1.freePositions := by
-              have hnone : (ρ.1.mask i).isNone := by simpa [h]
-              exact (Restriction.mem_freePositions (ρ := ρ.1) (i := i)).2 hnone
+            have hnone : (ρ.1.mask i).isNone := by
+              -- Уточняем `isNone` через значение маски.
+              simp [h]
+            have hmem' : i ∈ ρ.1.freePositions :=
+              (Restriction.mem_freePositions (ρ := ρ.1) (i := i)).2 hnone
             have hmem'' : i ∈ free := by
               exact (Eq.ndrec (motive := fun s => i ∈ s) hmem' ρ.2)
             exact (hmem hmem'').elim
@@ -1254,7 +1261,8 @@ lemma restrictions_with_freePositions_card
   have hfun :
       Fintype.card ({i : Fin n // i ∉ free} → Bool)
         = 2 ^ Fintype.card {i : Fin n // i ∉ free} := by
-    simp [Fintype.card_fun]
+    -- `simp` умеет считать кардинал функции в `Bool`.
+    simp
   have hcomp :
       Fintype.card {i : Fin n // i ∉ free} = n - free.card := by
     -- Переписываем через кардинал комплемента `free` в `Fin n`.
@@ -1270,17 +1278,22 @@ lemma restrictions_with_freePositions_card
         (Finset.univ \ free).card = (Finset.univ : Finset (Fin n)).card - free.card := by
       exact Finset.card_sdiff (by simp)
     have huniv : (Finset.univ : Finset (Fin n)).card = n := by
-      simpa using (Finset.card_univ (α := Fin n))
+      -- `simp` раскрывает кардинал универсального множества `Fin n`.
+      simp
     calc
       Fintype.card {i : Fin n // i ∉ free}
           = (Finset.univ \ free).card := by simpa [hfilter] using hsub
       _ = (Finset.univ : Finset (Fin n)).card - free.card := hsdiff
-      _ = n - free.card := by simpa [huniv]
+      _ = n - free.card := by
+          -- Подстановка `huniv` и упрощение.
+          simp [huniv]
   calc
     Fintype.card {ρ : Restriction n // ρ.freePositions = free}
         = Fintype.card ({i : Fin n // i ∉ free} → Bool) := hcard
     _ = 2 ^ Fintype.card {i : Fin n // i ∉ free} := hfun
-    _ = 2 ^ (n - free.card) := by simp [hcomp, Fintype.card_bool]
+    _ = 2 ^ (n - free.card) := by
+        -- После подстановки `hcomp` достаточно обычного `simp`.
+        simp [hcomp]
 
 /--
 Оценка сверху: число зафиксированных координат не превосходит `n`.
@@ -1298,7 +1311,8 @@ lemma fixedCount_le (ρ : Restriction n) : ρ.fixedCount ≤ n := by
         (p := fun i => (ρ.mask i).isSome))
   -- У универсума кардинал равен `n`.
   have huniv : (Finset.univ : Finset (Fin n)).card = n := by
-    simpa using (Finset.card_univ (α := Fin n))
+    -- Кардинал `Fin n` равен `n`.
+    simp
   simpa [fixedCount, huniv] using hcard
 
 /-- Применение ограничения к вектору: зафиксированные координаты затираются. -/
@@ -1322,12 +1336,16 @@ lemma override_mem (ρ : Restriction n) (x : BitVec n) :
   intro i b hβ
   unfold override
   cases hρ : ρ.mask i with
-  | none => simpa [hρ] using hβ
+  | none =>
+      -- При `none` гипотеза `hβ` невозможна.
+      have hcontra : (none : Option Bool) = some b := by
+        simpa [hρ] using hβ
+      cases hcontra
   | some b' =>
       have hb : b' = b := by
-        have hsome : some b' = some b := by simpa [hρ] using hβ
-        exact Option.some.inj hsome
-      simp [hρ, hb]
+        simpa [hρ] using hβ
+      -- В ветви `some` достаточно заменить `b'` на `b`.
+      simp [hb]
 
 /-- Если `x` удовлетворяет ограничению, `override` не меняет вектор. -/
 lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
@@ -1338,9 +1356,9 @@ lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
   cases hρ : ρ.mask i with
   | none => rfl
   | some b =>
-      have hx := (mem_iff (β := ρ.mask) (x := x)).1 h i b ?_
-      · simpa [hρ, hx]
-      · simpa [hρ]
+      -- Передаём явное значение маски, чтобы избежать лишних `simp`.
+      have hx := (mem_iff (β := ρ.mask) (x := x)).1 h i b hρ
+      simp [hρ, hx]
 
 /-- Совместимость эквивалентна тождественности `override`. -/
 lemma compatible_iff_override_eq {ρ : Restriction n} {x : BitVec n} :
@@ -1348,6 +1366,7 @@ lemma compatible_iff_override_eq {ρ : Restriction n} {x : BitVec n} :
   constructor
   · intro hcompat
     have hmem : mem ρ.mask x := hcompat
+    -- Подставляем доказательство совместимости и упрощаем.
     simpa using ρ.override_eq_of_mem hmem
   · intro hover
     have hmem : mem ρ.mask (ρ.override x) := ρ.override_mem x
@@ -3542,7 +3561,7 @@ noncomputable def finalRestriction :
     {ρ : Restriction n} → {t : Nat} →
       CanonicalTrace (F := F) ρ t → Restriction n
   | ρ, _, CanonicalTrace.nil => ρ
-  | ρ, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
+  | _, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
 
 /--
 Список индексов переменных, которые фиксируются вдоль пути, в том порядке, в

@@ -31,8 +31,7 @@ open Magnification
 @[simp] lemma inputLen_toFactsPartial (p : Models.GapPartialMCSPParams) :
     Facts.LocalityLift.inputLen (toFactsParamsPartial p) = Models.partialInputLen p := by
   simp [toFactsParamsPartial, Facts.LocalityLift.inputLen, Models.partialInputLen,
-    Partial.inputLen, Partial.tableLen, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm,
-    Nat.mul_assoc]
+    Partial.inputLen, Partial.tableLen, Nat.pow_succ, Nat.mul_comm]
 
 @[simp] lemma inputLen_toFactsPartial' (p : Models.GapPartialMCSPParams) :
     Facts.LocalityLift.inputLen { n := p.n + 1 } = Models.partialInputLen p := by
@@ -42,8 +41,8 @@ open Magnification
     Facts.LocalityLift.polylogBudget
         (Facts.LocalityLift.inputLen (toFactsParamsPartial p)) =
       Models.polylogBudget (Models.partialInputLen p) := by
-  simp [Facts.LocalityLift.polylogBudget, Models.polylogBudget, inputLen_toFactsPartial,
-    toFactsParamsPartial]
+  -- Сводим обе стороны к одинаковому числовому аргументу.
+  simp [Facts.LocalityLift.polylogBudget, Models.polylogBudget]
 
 @[simp] lemma polylogBudget_toFactsPartial' (p : Models.GapPartialMCSPParams) :
     Facts.LocalityLift.polylogBudget

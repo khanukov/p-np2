@@ -51,7 +51,7 @@ lemma freeCount_finalRestriction
                   exact congrArg (fun x => x - t) hstep
             _ = ρ.freeCount - (Nat.succ t) := by
                   -- `a - 1 - t = a - (1 + t) = a - (t + 1)`.
-                  simpa [Nat.sub_sub, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                  simp [Nat.sub_sub, Nat.add_comm]
 
 /-!
 ## Длина трассы не превосходит `freeCount`

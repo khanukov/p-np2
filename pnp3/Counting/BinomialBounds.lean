@@ -602,11 +602,12 @@ lemma hammingBallBudget_le_div_add_one (n : Nat) :
   have hceil_floor :
       Int.ceil ((N : Rat) / (n + 2))
         ≤ Int.floor ((N : Rat) / (n + 2)) + 1 := by
-    simpa using (Int.ceil_le_floor_add_one ((N : Rat) / (n + 2)))
+    exact Int.ceil_le_floor_add_one ((N : Rat) / (n + 2))
   -- `floor` рациональной дроби совпадает с целой частью `N / (n+2)`.
   have hfloor :
       Int.floor ((N : Rat) / (n + 2)) = (N : Int) / (n + 2) := by
-    simpa using (Rat.floor_intCast_div_natCast (n := (N : Int)) (d := n + 2))
+    simpa [Nat.cast_add] using
+      (Rat.floor_intCast_div_natCast (n := (N : Int)) (d := n + 2))
   -- Подставляем найденные переписывания.
   have hceil :
       Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat))
@@ -614,20 +615,20 @@ lemma hammingBallBudget_le_div_add_one (n : Nat) :
     -- Переводим правую часть через `Int.natCast_div`.
     have hdiv :
         ((N / (n + 2) : Nat) : Int) = (N : Int) / (n + 2) := by
-      simpa using (Int.natCast_div N (n + 2))
+      exact Int.natCast_div N (n + 2)
     have hceil_eq :
         Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat))
           = Int.ceil ((N : Rat) / (n + 2)) := by
-      simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+      simp [div_eq_mul_inv, mul_comm]
     calc
       Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat))
           = Int.ceil ((N : Rat) / (n + 2)) := hceil_eq
       _ ≤ Int.floor ((N : Rat) / (n + 2)) + 1 := hceil_floor
       _ = (N : Int) / (n + 2) + 1 := by
-            simpa [hfloor]
+            simp [hfloor]
       _ = (N / (n + 2) : Int) + 1 := by
             -- Переписываем целое деление через `natCast_div`.
-            simpa [hdiv]
+            simp
   have hceil_nat :
       Int.toNat (Int.ceil (((1 : Rat) / (n + 2)) * (N : Rat)))
         ≤ N / (n + 2) + 1 := by
@@ -663,7 +664,8 @@ lemma hammingBallBound_twoPow_le_mul_pow_div_add_one (n : Nat)
   have hN : 1 ≤ N := by
     have hpos : 0 < N := by
       have htwo : 0 < (2 : Nat) := by decide
-      simpa [N] using Nat.pow_pos htwo n
+      dsimp [N]
+      exact Nat.pow_pos htwo
     exact Nat.succ_le_iff.mpr hpos
   -- Применяем грубую оценку для `unionBound`.
   have hbound :
@@ -763,7 +765,8 @@ lemma hammingBallBound_twoPow_lt_twoPowPow (n : Nat) (hn : 8 ≤ n)
   -- Базовые факты о положительности степеней.
   have hNpos : 0 < N := by
     have htwo : 0 < (2 : Nat) := by decide
-    simpa [N] using Nat.pow_pos htwo n
+    dsimp [N]
+    exact Nat.pow_pos htwo
   -- Свойство деления: `(n+2) * t ≤ N`.
   have hmul_le : (n + 2) * t ≤ N := by
     have h := Nat.mul_div_le N (n + 2)

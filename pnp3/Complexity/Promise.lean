@@ -15,10 +15,10 @@ namespace Pnp3
 namespace Complexity
 
 /-- Promise-задача: фиксируем множества YES и NO. -/
-structure PromiseProblem (α : Type) :=
-  (Yes : Set α)
-  (No : Set α)
-  (disjoint : Disjoint Yes No)
+structure PromiseProblem (α : Type) where
+  Yes : Set α
+  No : Set α
+  disjoint : Disjoint Yes No
 
 /--
   Решатель корректен для promise-задачи, если он принимает все YES-инстансы

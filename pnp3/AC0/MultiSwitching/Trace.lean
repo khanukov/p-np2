@@ -128,10 +128,11 @@ noncomputable def toTrace
     (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
     Trace F t :=
   ⟨(stepsList trace).toArray, by
-    simpa [List.size_toArray, stepsList_length (trace := trace)]⟩
+    -- Длину массива извлекаем напрямую из `stepsList_length`.
+    simp [List.size_toArray, stepsList_length (trace := trace)]⟩
 
 @[simp] lemma clauseIndex_lt
-    {ρ : Restriction n} {t : Nat}
+    {ρ : Restriction n}
     (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
     (choice : ClausePendingWitness.Selection selection.witness) :
     (stepOfSelection (selection := selection) (choice := choice)).clauseIndex

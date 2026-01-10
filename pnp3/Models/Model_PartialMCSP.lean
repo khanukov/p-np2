@@ -110,7 +110,9 @@ def polylogBudget (N : Nat) : Nat :=
 def assignmentIndex {n : Nat} (x : Core.BitVec n) : Fin (Partial.tableLen n) := by
   have hpos : 0 < Partial.tableLen n := by
     have hbase : 0 < (2 : Nat) := by decide
-    simpa [Partial.tableLen] using (Nat.pow_pos hbase n)
+    -- Раскрываем `tableLen` прямо, чтобы избежать лишних симп-этапов.
+    dsimp [Partial.tableLen]
+    exact Nat.pow_pos hbase
   let _ : NeZero (Partial.tableLen n) := ⟨Nat.ne_of_gt hpos⟩
   exact Fin.ofNat (n := Partial.tableLen n) (bitVecToNat x)
 
@@ -123,7 +125,9 @@ def truthTableFunction {n : Nat} (table : Core.BitVec (Partial.tableLen n)) :
   by
     have hpos : 0 < Partial.tableLen n := by
       have hbase : 0 < (2 : Nat) := by decide
-      simpa [Partial.tableLen] using (Nat.pow_pos hbase n)
+      -- Аналогично для определения тотальной функции из таблицы.
+      dsimp [Partial.tableLen]
+      exact Nat.pow_pos hbase
     let _ : NeZero (Partial.tableLen n) := ⟨Nat.ne_of_gt hpos⟩
     exact table (Fin.ofNat (n := Partial.tableLen n) (bitVecToNat x))
 
@@ -241,7 +245,7 @@ theorem restriction_preserves_type_partial {p : GapPartialMCSPParams}
     ∃ (T' : PartialTruthTable p.n),
       T' = applyRestrictionToTable (decodePartial x) ρ := by
   exact ⟨restrictTable (p := p) x ρ, by
-    simpa [restrictTable_eq_applyRestriction]⟩
+    simp [restrictTable_eq_applyRestriction]⟩
 
 /-!
   ### Базовые леммы про согласованность
@@ -256,7 +260,7 @@ lemma is_consistent_forget {n : Nat} (C : Circuit n) (T : PartialTruthTable n)
     is_consistent C T → is_consistent C (forget T S) := by
   intro h x
   by_cases hmem : assignmentIndex x ∈ S
-  · simp [is_consistent, forget, hmem]
+  · simp [forget, hmem]
   · simpa [is_consistent, forget, hmem] using h x
 
 /-- Согласованность с двумя таблицами даёт согласованность с их объединением. -/

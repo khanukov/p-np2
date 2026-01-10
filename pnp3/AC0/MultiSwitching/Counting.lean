@@ -155,7 +155,7 @@ lemma badRestrictions_card_le_cnf_aux
           (s := badRestrictions (n := n) s (BadCNF (F := F) t)))
     have hcodes :
         Fintype.card {c // c ∈ codes} = codes.card := by
-      simpa using (Fintype.card_coe (s := codes))
+      simp [Fintype.card_coe]
     calc
       (badRestrictions (n := n) s (BadCNF (F := F) t)).card
           = Fintype.card
@@ -166,11 +166,11 @@ lemma badRestrictions_card_le_cnf_aux
   -- Разворачиваем кардинал продукта `codes`.
   have hcodes_card :
       codes.card = (R_s (n := n) (s - t)).card * (auxSimpleCodes n t).card := by
-    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [codes, Finset.card_product, Nat.mul_comm]
   -- Подставляем кардинал `AuxSimple`.
   have haux :
       (auxSimpleCodes n t).card = (2 * n) ^ t := by
-    simpa [Nat.mul_comm] using (card_AuxSimple (n := n) (t := t))
+    simp [Nat.mul_comm]
   calc
     (badRestrictions (n := n) s (BadCNF (F := F) t)).card
         ≤ codes.card := hcard
@@ -223,7 +223,7 @@ lemma badRestrictions_card_le_cnf_family_aux
           (s := badRestrictions (n := n) s (BadFamily (F := F) t)))
     have hcodes :
         Fintype.card {c // c ∈ codes} = codes.card := by
-      simpa using (Fintype.card_coe (s := codes))
+      simp [Fintype.card_coe]
     calc
       (badRestrictions (n := n) s (BadFamily (F := F) t)).card
           = Fintype.card
@@ -234,18 +234,18 @@ lemma badRestrictions_card_le_cnf_family_aux
   have hcodes_card :
       codes.card =
         (R_s (n := n) (s - t)).card * (auxFamilySimpleCodes (F := F) t).card := by
-    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [codes, Finset.card_product, Nat.mul_comm]
   have haux :
       (auxFamilySimpleCodes (F := F) t).card =
         (F.length + 1) * (2 * n) ^ t := by
-    simp [auxFamilySimpleCodes_card, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [auxFamilySimpleCodes_card, Nat.mul_comm]
   calc
     (badRestrictions (n := n) s (BadFamily (F := F) t)).card
         ≤ codes.card := hcard
     _ = (R_s (n := n) (s - t)).card * (auxFamilySimpleCodes (F := F) t).card :=
         hcodes_card
     _ = (R_s (n := n) (s - t)).card * (F.length + 1) * (2 * n) ^ t := by
-          simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+          simp [haux, Nat.mul_comm, Nat.mul_assoc]
 
 /-!
 ### Семейство CNF (детерминированный BadFamily): оценка через Aux

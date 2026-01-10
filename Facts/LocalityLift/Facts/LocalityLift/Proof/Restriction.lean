@@ -86,7 +86,7 @@ lemma localizedOn_of_stable (r : Restriction N)
   have hx : f x = f (r.apply x) := (hstable x).symm
   have hy : f y = f (r.apply y) := (hstable y).symm
   have happly : r.apply x = r.apply y := r.apply_eq_of_eq_on_alive hxy
-  simpa [hx, hy, happly]
+  simp [hx, hy, happly]
 
 /--
 Рестрикция, полученная из битового вектора: на свободных координатах значения
@@ -129,7 +129,7 @@ def testSet (r : Restriction N) : Finset (BitVec N) :=
 @[simp] lemma card_testSet (r : Restriction N) :
     r.testSet.card = r.alive.card := by
   classical
-  simpa [Restriction.testSet] using card_testSetOfAlive (alive := r.alive)
+  simp [Restriction.testSet]
 
 @[simp] lemma testSet_card_le_polylog
     {p : GapMCSPParams} (r : Restriction (inputLen p))

@@ -241,7 +241,7 @@ theorem restriction_preserves_type_partial {p : GapPartialMCSPParams}
     ∃ (T' : PartialTruthTable p.n),
       T' = applyRestrictionToTable (decodePartial x) ρ := by
   exact ⟨restrictTable (p := p) x ρ, by
-    simpa [restrictTable_eq_applyRestriction]⟩
+    simp [restrictTable_eq_applyRestriction]⟩
 
 /-!
   ### Базовые леммы про согласованность
@@ -256,7 +256,7 @@ lemma is_consistent_forget {n : Nat} (C : Circuit n) (T : PartialTruthTable n)
     is_consistent C T → is_consistent C (forget T S) := by
   intro h x
   by_cases hmem : assignmentIndex x ∈ S
-  · simp [is_consistent, forget, hmem]
+  · simp [forget, hmem]
   · simpa [is_consistent, forget, hmem] using h x
 
 /-- Согласованность с двумя таблицами даёт согласованность с их объединением. -/

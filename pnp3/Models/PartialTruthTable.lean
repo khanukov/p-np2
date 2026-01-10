@@ -100,7 +100,7 @@ lemma valIndex_not_lt_tableLen {n : Nat} (i : Fin (Partial.tableLen n)) :
   -- `valIndex i` равен `tableLen + i`, значит он не меньше `tableLen`.
   have hge : Partial.tableLen n ≤ (Partial.valIndex i).1 := by
     -- По определению `valIndex` первая компонента равна `tableLen + i`.
-    simp [Partial.valIndex, Nat.le_add_left]
+    simp [Partial.valIndex]
   exact Nat.not_lt.mpr hge
 
 /-!
@@ -120,7 +120,7 @@ lemma maskIndex_in_left_half {n : Nat} (i : Fin (Partial.tableLen n)) :
 lemma valIndex_in_right_half {n : Nat} (i : Fin (Partial.tableLen n)) :
     Partial.tableLen n ≤ (Partial.valIndex i : Fin (Partial.inputLen n)).1 := by
   -- По определению `valIndex` это `tableLen + i`.
-  simp [Partial.valIndex, Nat.le_add_left]
+  simp [Partial.valIndex]
 
 /--
 Кодирование частичной функции обратно в `mask ++ values`.
@@ -203,18 +203,14 @@ lemma encodePartial_decodePartial_maskIndex {n : Nat}
           cases hxb : x (Partial.maskIndex i) with
           | false =>
               have hxb' : x (Partial.maskIndex i) = false := hxb
-              have hmask : Partial.maskPart x i = false := by
-                simpa [Partial.maskPart, Partial.maskIndex] using hxb'
               have hxb'' : x ⟨i.1, lt_of_lt_of_le i.2 (Partial.tableLen_le_inputLen n)⟩ = false := by
                 simpa [Partial.maskIndex] using hxb'
-              simp [decodePartial, Partial.maskPart, Partial.maskIndex, hmask, hxb'']
+              simp [decodePartial, Partial.maskPart, Partial.maskIndex, hxb'']
           | true =>
               have hxb' : x (Partial.maskIndex i) = true := hxb
-              have hmask : Partial.maskPart x i = true := by
-                simpa [Partial.maskPart, Partial.maskIndex] using hxb'
               have hxb'' : x ⟨i.1, lt_of_lt_of_le i.2 (Partial.tableLen_le_inputLen n)⟩ = true := by
                 simpa [Partial.maskIndex] using hxb'
-              simp [decodePartial, Partial.maskPart, Partial.maskIndex, hmask, hxb'']
+              simp [decodePartial, Partial.maskPart, Partial.valPart, Partial.maskIndex, hxb'']
 
 lemma encodePartial_decodePartial_valIndex {n : Nat}
     (x : Core.BitVec (Partial.inputLen n)) (i : Fin (Partial.tableLen n)) :
@@ -226,7 +222,7 @@ lemma encodePartial_decodePartial_valIndex {n : Nat}
     exact valIndex_not_lt_tableLen i
   have hjNat :
       ((Partial.valIndex i : Fin (Partial.inputLen n)).1 - Partial.tableLen n) = i.1 := by
-    simp [Partial.valIndex, Nat.add_sub_cancel_left]
+    simp [Partial.valIndex]
   have hfin :
       (⟨(Partial.valIndex i : Fin (Partial.inputLen n)).1 - Partial.tableLen n,
         by
@@ -242,30 +238,24 @@ lemma encodePartial_decodePartial_valIndex {n : Nat}
           exact lt_of_add_lt_add_right hlt_decomp⟩ :
       Fin (Partial.tableLen n)) = i := by
     apply Fin.ext
-    simpa [hjNat]
+    simp [hjNat]
   calc
     encodePartial (decodePartial x) (Partial.valIndex i)
         = (decodePartial x i).getD false := by
-            simp [encodePartial, hlt, hfin, hjNat]
+            simp [encodePartial, hlt, hjNat]
     _ =
         (if x (Partial.maskIndex i) = true then x (Partial.valIndex i) else false) := by
           cases hxb : x (Partial.maskIndex i) with
           | false =>
               have hxb' : x (Partial.maskIndex i) = false := hxb
-              have hmask : Partial.maskPart x i = false := by
-                simpa [Partial.maskPart, Partial.maskIndex] using hxb'
               have hxb'' : x ⟨i.1, lt_of_lt_of_le i.2 (Partial.tableLen_le_inputLen n)⟩ = false := by
                 simpa [Partial.maskIndex] using hxb'
-              simp [decodePartial, Partial.maskPart, Partial.valPart, Partial.maskIndex,
-                Partial.valIndex, hmask, hxb'']
+              simp [decodePartial, Partial.maskPart, Partial.maskIndex, hxb'']
           | true =>
               have hxb' : x (Partial.maskIndex i) = true := hxb
-              have hmask : Partial.maskPart x i = true := by
-                simpa [Partial.maskPart, Partial.maskIndex] using hxb'
               have hxb'' : x ⟨i.1, lt_of_lt_of_le i.2 (Partial.tableLen_le_inputLen n)⟩ = true := by
                 simpa [Partial.maskIndex] using hxb'
-              simp [decodePartial, Partial.maskPart, Partial.valPart, Partial.maskIndex,
-                Partial.valIndex, hmask, hxb'']
+              simp [decodePartial, Partial.maskPart, Partial.valPart, Partial.maskIndex, hxb'']
 
 /-!
   ### Комбинаторные мощности
@@ -717,8 +707,8 @@ lemma consistentWithTotal_fromMask {n : Nat}
     consistentWithTotal (partialFromMask f mask) f := by
   intro i
   by_cases h : mask i
-  · simp [consistentWithTotal, partialFromMask, h]
-  · simp [consistentWithTotal, partialFromMask, h]
+  · simp [partialFromMask, h]
+  · simp [partialFromMask, h]
 
 /-- Маска, извлечённая из `partialFromMask`, совпадает с исходной маской. -/
 lemma maskOfPartial_fromMask {n : Nat}
@@ -737,15 +727,15 @@ lemma partialFromMask_maskOfPartial {n : Nat}
   | none =>
       -- В этом случае маска равна `false`.
       have : maskOfPartial T i = false := by simp [maskOfPartial, hT]
-      simp [partialFromMask, this, hT]
+      simp [partialFromMask, this]
   | some b =>
       -- В этом случае маска равна `true`, и значение совпадает с `f i`.
       have : maskOfPartial T i = true := by simp [maskOfPartial, hT]
       have hEq : b = f i := by
         have := hcons i
-        simp [consistentWithTotal, hT] at this
+        simp [hT] at this
         exact this
-      simp [partialFromMask, this, hT, hEq]
+      simp [partialFromMask, this, hEq]
 
 /-- Эквивалентность между масками и согласованными partial‑таблицами. -/
 noncomputable def consistentPartialEquiv {n : Nat} (f : TotalFunction n) :
@@ -830,7 +820,7 @@ lemma extendFromUndefined_consistent {n : Nat} (T : PartialFunction n)
   cases hT : T i with
   | none =>
       -- В этом случае условие согласованности тривиально.
-      simp [consistentTotal, hT]
+      simp
   | some b =>
       -- Здесь `i` не принадлежит `undefinedPositions`.
       have hmem : i ∉ undefinedPositions T := by
@@ -838,7 +828,7 @@ lemma extendFromUndefined_consistent {n : Nat} (T : PartialFunction n)
         have : (T i).isNone := (mem_undefinedPositions T).1 hmem
         simp [hT] at this
       -- Значение `extendFromUndefined` берётся из `T`.
-      simp [consistentTotal, extendFromUndefined, hT, hmem]
+      simp [extendFromUndefined, hT, hmem]
 
 /-- Ограничение после расширения возвращает исходную функцию. -/
 lemma restrict_extendFromUndefined {n : Nat} (T : PartialFunction n)
@@ -868,7 +858,7 @@ lemma extendFromUndefined_restrict {n : Nat} (T : PartialFunction n)
     | some b =>
         have hEq : f i = b := by
           have := hcons i
-          simp [consistentTotal, hT] at this
+          simp [hT] at this
           exact this
         simp [extendFromUndefined, hmem, hT, hEq]
 
@@ -991,10 +981,10 @@ lemma definedCount_setDefined_le_succ {n : Nat} (T : PartialFunction n)
           exact mem_definedPositions_setDefined T i b
         simpa [hmem, hji] using this
       · -- На других позициях статус определённости не меняется.
-        simpa [definedPositions_setDefined_ne (T := T) (b := b) hji]
+        simp [definedPositions_setDefined_ne (T := T) (b := b) hji]
     -- Следовательно, `definedCount` не меняется, а значит ≤ `+1`.
     have hcount : definedCount (setDefined T i b) = definedCount T := by
-      simpa [definedCount, hEq]
+      simp [definedCount, hEq]
     simpa [hcount] using (Nat.le_succ (definedCount T))
   · -- Если позиция была неопределённой, добавляем максимум одну позицию.
     have hsubset :
@@ -1018,7 +1008,7 @@ lemma definedCount_setDefined_le_succ {n : Nat} (T : PartialFunction n)
       · -- В этом случае `insert` не меняет множество.
         simp [definedCount, hmem']
       · -- Иначе кардинал увеличивается на 1.
-        simp [definedCount, hmem', Nat.add_comm, Nat.add_assoc]
+        simp [definedCount, hmem', Nat.add_comm]
     exact hcard.trans hcard_insert
 
 /-- Число определённых позиций в исходной таблице ограничено числом после `setDefined`. -/
@@ -1043,7 +1033,7 @@ lemma definedCount_le_setDefined_succ {n : Nat} (T : PartialFunction n)
         definedCount (setDefined T i b) + 1 := by
     by_cases hmem : i ∈ definedPositions (setDefined T i b)
     · simp [definedCount, hmem]
-    · simp [definedCount, hmem, Nat.add_comm, Nat.add_left_comm]
+    · simp [definedCount, hmem, Nat.add_comm]
   exact hcard.trans hcard_insert
 
 /-- `mergeLeft` определён не более чем на сумме определённых позиций. -/

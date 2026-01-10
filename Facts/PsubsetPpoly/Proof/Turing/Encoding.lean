@@ -91,7 +91,7 @@ variable {M}
 /-- Tape obtained by writing `b` at position `i`. -/
 def write {n : ℕ} (c : Configuration (M := M) n) (i : Fin (M.tapeLength n))
     (b : Bool) : Fin (M.tapeLength n) → Bool := fun j =>
-  if h : j = i then b else c.tape j
+  if _ : j = i then b else c.tape j
 
 @[simp]
 lemma write_self {n : ℕ} (c : Configuration (M := M) n)

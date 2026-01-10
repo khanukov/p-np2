@@ -63,7 +63,7 @@ namespace MultiplexerBudget
 @[simp] def linear (controls : Nat) : MultiplexerBudget :=
   { controls := controls
     , sizeMultiplier := controls.succ
-    , size_le := by simpa }
+    , size_le := by simp }
 
 @[simp] lemma linear_controls (k : Nat) : (linear k).controls = k := rfl
 
@@ -72,7 +72,7 @@ namespace MultiplexerBudget
 
 lemma linear_size_le (k : Nat) :
     (linear k).sizeMultiplier ≤ k.succ := by
-  simpa using (linear k).size_le
+  exact (linear k).size_le
 
 end MultiplexerBudget
 
@@ -214,4 +214,3 @@ end LocalityCertificate
 
 end LocalityLift
 end Facts
-

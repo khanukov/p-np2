@@ -85,7 +85,9 @@ def flipOn {m : Nat} (g : Domain m → Bool) (S : Finset (Domain m)) :
     · simp [mismatchSet, flipOn, hx]
 
 private lemma bool_eq_not_of_ne {b c : Bool} (h : b ≠ c) : b = ! c := by
-  cases b <;> cases c <;> simp at h <;> simp [h]
+  -- Перебираем случаи на булевых значениях; при `b = c` получаем противоречие,
+  -- а в остальных случаях равенство тривиально.
+  cases b <;> cases c <;> simp at h <;> try cases h <;> simp
 
 @[simp] lemma flipOn_mismatchSet {m : Nat}
     (g : Domain m → Bool) (f : Domain m → Bool) :
@@ -804,7 +806,7 @@ noncomputable def approxOnTestsetWitness
     {m : Nat} (R : List (Subcube m)) (k : Nat)
     (T : Finset (Domain m)) :
     ApproxOnTestsetSubtype (R := R) (k := k) (T := T) →
-      Σ g : UnionSubtype (R := R) (k := k),
+      Σ _g : UnionSubtype (R := R) (k := k),
         {S : Finset (Domain m) // S ⊆ T} :=
   by
     intro f

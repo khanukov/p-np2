@@ -18,12 +18,11 @@
 - **Да**, `M²` — отличный промежуточный, полностью формальный stage для depth‑2.
 
 **Почему (аккуратная формулировка):**
-- `AC0SmallEnough : M² ≤ ac0DepthBound_strong` ⇒ слабая оценка
-  встраивается в polylog‑цель и позволяет перейти к strong‑границам.
-- При типичном `M = n^k` условие малости перестаёт работать (кроме малых `k`).
-- Значит, финальные теоремы, вероятно, становятся слабее или не применимы к
-  нужным диапазонам параметров (зависит от того, что именно обозначает `M`
-  и где требуется `AC0SmallEnough`).
+- Stage‑1 даёт **честный, но грубый** сертификат (например, depthBound ≤ M² для depth‑2 DNF).
+- Stage‑2 даёт **сильный** сертификат (polylog‑depthBound), который **заменяет**
+  Stage‑1 на нужных параметрах, а не «доминируется» неравенством `M² ≤ polylog`.
+- При типичном `M = n^k` условие малости перестаёт работать (кроме малых `k`),
+  поэтому Stage‑1 не может быть финальным для целей P≠NP.
 
 **Вывод:**
 - Слабая оценка `M²` закреплена как **Stage‑1 (axiom‑free depth‑2)** через
@@ -73,7 +72,8 @@ def ac0DepthBound (params : AC0Parameters) : Nat := ac0DepthBound_strong params
 
 Downstream использует `ac0DepthBound` как **верхнюю границу**, а Stage‑1
 использует `ac0DepthBound_weak` и свидетелей `AC0SmallEnough`/`AC0DepthBoundWitness`
-для конструктивного перехода к сильной цели.
+для конструктивного baseline. Stage‑2 **заменяет** этот путь на реальное
+multi‑switching‑доказательство, а не «встраивает» Stage‑1 по неравенству.
 
 ---
 
@@ -106,7 +106,9 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 1) **DNF в `Facts_Switching` vs CNF‑pipeline в `MultiSwitching`.**
    Сейчас witness строится на DNF‑термах/подкубах (`AC0Circuit.subcubes`),
    но текущий multi‑switching pipeline формально закрывает CNF‑ветку.
-   Это нужно **явно согласовать** (см. «Шаг 1.1–1.2»).
+   Это нужно **явно согласовать** и **перепривязать целевой объект**:
+   polylog‑цель должна быть про depthBound/PartialDT, а не про длину списка
+   DNF‑термов. Иначе multi‑switching лемма доказывает «не тот объект».
 
 2) **Encoding с “толстым” алфавитом (с `n`) ломает Numerics.**
    Encoding на `BitFix n` даёт фактор `2 * n` в базе степени и не совместим
@@ -133,7 +135,8 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 ### 1.1. Архитектура (рекомендуется: DNF через CNF‑дуальность)
 
 Оптимальный путь без ломки интерфейсов: **оставить основную логику в CNF**
-и получить DNF‑результат через дуальность.
+и получить DNF‑результат через дуальность, но **polylog‑цель должна быть
+переформулирована как bound на shrinkage/PartialDT**, а не на `allSubcubes.length`.
 
 - Вводим перевод DNF → CNF для отрицания:
   - терм ↔ клауза при отрицании литералов;
@@ -156,8 +159,11 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 - либо переключить `AC0PolylogBoundWitness` на CNF‑представление,
 - либо оставить DNF‑интерфейс, но доказывать его через CNF‑pipeline + дуальность.
 
-**Definition of Done:** `ac0AllSubcubes_length_le_polylog_of_multi_switching`
-доказывается из CNF‑pipeline без внешних witness.
+**Definition of Done:** polylog‑bound доказывается для **depthBound**
+сертификата shrinkage/PartialDT, а не для длины списка подкубов.
+Если требуется оставить старое имя `ac0AllSubcubes_length_le_polylog_of_multi_switching`,
+его смысл нужно пересмотреть и связать с depthBound через корректное
+преобразование, а не через «количество DNF‑термов».
 
 ## Стратегия доказательства (индукция по глубине)
 
@@ -308,11 +314,24 @@ delta‑биты.
 - **Финальное внедрение:** заменить внешний witness в
   `ThirdPartyFacts/Facts_Switching.lean` на результат `partial_shrinkage_for_AC0_with_polylog`.
 
+## Шаг 9. Развести типы для Stage‑1/Stage‑2 (depth‑2 DNF vs AC0Formula d)
+
+Чтобы глубинная индукция была честной, нужна **явная граница между моделями**:
+
+- `AC0Depth2Circuit` (текущий DNF depth‑2, Stage‑1 baseline с M²).
+- `AC0Formula d` (общая глубина, Stage‑2 multi‑switching).
+
+`FamilyIsAC0`/witness для реального AC⁰ должен ссылаться на `AC0Formula d`,
+иначе polylog‑индукция «доказывает не тот тип».
+
 ## Expected Outcome (Definition of Done)
 
-- `partial_shrinkage_for_AC0` доказан **без внешних witness**.
+- `partial_shrinkage_for_AC0` доказан **без внешних witness** и возвращает
+  **shrinkage/PartialDT‑сертификат** с polylog‑bound на глубину.
 - `#print axioms ThirdPartyFacts.partial_shrinkage_for_AC0`
   больше не показывает `ac0PolylogBoundWitness_of_multi_switching`.
+- `AC0PolylogBoundWitness` и downstream используют **depthBound**, а не
+  `allSubcubes.length` как целевой объект.
 - Все downstream‑факты (`shrinkage_for_localCircuit`, magnification и т.д.)
   продолжают компилироваться без изменений.
 

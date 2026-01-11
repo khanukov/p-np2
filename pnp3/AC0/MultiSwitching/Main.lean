@@ -178,8 +178,7 @@ theorem exists_good_restriction_step3_2_small_canonicalCCDT
   -- переводим её в `BadEvent` через канонический CCDT.
   have htpos : 0 < tParam F.length n := by
     -- `tParam` всегда положителен: `log2(...) + 2`.
-    simpa [tParam] using
-      (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2)) + 1))
+    simp [tParam]
   -- Stage 1 + 2 + 3: готовая лемма для `BadFamily_deterministic`.
   obtain ⟨ρ, hρ, hgood⟩ :=
     exists_good_restriction_step3_2_small
@@ -219,8 +218,7 @@ lemma card_bad_lt_card_all_step3_2_small_canonicalCCDT
   classical
   have htpos : 0 < tParam F.length n := by
     -- `tParam = log2(...) + 2` всегда положителен.
-    simpa [tParam] using
-      (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2)) + 1))
+    simp [tParam]
   have hbound :
       (R_s (n := n) (sParam n w - tParam F.length n)).card
           * (F.length + 1) * (2 * (w + 1)) ^ (tParam F.length n)
@@ -326,7 +324,7 @@ lemma numerical_bound_step3_2_expanded
     calc
       (n * (2 * BParam w)) ^ (tParam m n)
           = (2 * n * BParam w) ^ (tParam m n) := by
-              simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+              simp [Nat.mul_comm, Nat.mul_assoc]
       _ = (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n) := hpow
   simpa [hpow', Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hnumeric
 
@@ -367,13 +365,10 @@ theorem exists_good_restriction_step3_2
     have htzero_le : tParam F.length n ≤ 0 := by
       simpa [hs] using ht
     have htpos : 0 < tParam F.length n := by
-      simpa [tParam] using
-        (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2)) + 1))
+      simp [tParam]
     have hcontr : False := by
       have htzero : tParam F.length n = 0 := Nat.eq_zero_of_le_zero htzero_le
-      have : (0 : Nat) < 0 := by
-        simpa [htzero] using htpos
-      exact (Nat.lt_irrefl 0 this)
+      exact (Nat.lt_irrefl 0 (by simpa [htzero] using htpos))
     -- Возьмём произвольную рестрикцию из `R_s` с `s=0`.
     have hnonempty : (R_s (n := n) 0).Nonempty := by
       -- `R_s` непусто при `0 ≤ n`.

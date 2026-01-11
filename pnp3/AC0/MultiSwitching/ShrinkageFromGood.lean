@@ -103,7 +103,8 @@ lemma coveredB_selectorsOfFunction
         exact this.symm
       subst hx
       have : False := by
-        simpa [hfx'] using hy
+        -- Невозможность согласованности следует из `hfx`.
+        exact hfx hy
       exact this.elim
     · have hcovB' : coveredB (selectorsOfFunction (f := f)) x = false := by
         cases hval : coveredB (selectorsOfFunction (f := f)) x with
@@ -111,6 +112,7 @@ lemma coveredB_selectorsOfFunction
             exact (False.elim (hcovB hval))
         | false =>
             simp
+      -- Переписываем `f x` через `hfx'`.
       simpa [hfx'] using hcovB'
 
 lemma selectorsOfFunction_sub_leaves
@@ -229,8 +231,8 @@ theorem shrinkage_from_restriction
   -- Переходим к Shrinkage через `PartialCertificate.toShrinkage`.
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
-  · simp [S, hℓ, hdepth]
+  · simp [S]
+  · simp [S, hdepth, hℓ]
   · simp [S, hε]
 
 theorem shrinkage_from_good_restriction
@@ -296,8 +298,8 @@ theorem shrinkage_depth2_cnf_of_bound
     partialCertificate_depth2_cnf_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
-  · simp [S, hℓ, hdepth]
+  · simp [S]
+  · simp [S, hdepth, hℓ]
   · simp [S, hε]
 
 /-!
@@ -331,8 +333,8 @@ theorem shrinkage_depth2_cnf_family_of_bound
     partialCertificate_depth2_cnf_family_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
-  · simp [S, hℓ, hdepth]
+  · simp [S]
+  · simp [S, hdepth, hℓ]
   · simp [S, hε]
 
 end MultiSwitching

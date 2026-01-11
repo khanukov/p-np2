@@ -52,7 +52,11 @@ def vectorEquivListVector (α : Type) (n : Nat) :
           _ = n := v.size_toArray⟩
     invFun := fun v =>
       ⟨v.1.toArray, by
-        simpa [List.size_toArray] using v.2⟩
+        have hlen := v.2
+        calc
+          v.1.toArray.size = v.1.length := by
+            simp [List.size_toArray]
+          _ = n := hlen⟩
     left_inv := by
       intro v
       cases v with
@@ -73,8 +77,9 @@ instance instFintypeVector (α : Type) (n : Nat) [Fintype α] :
 lemma card_Vector (α : Type) (n : Nat) [Fintype α] :
     Fintype.card (Vector α n) = Fintype.card α ^ n := by
   classical
-  simpa using
-    (Fintype.card_congr (vectorEquivListVector α n)).trans (card_vector (α := α) n)
+  exact
+    (Fintype.card_congr (vectorEquivListVector α n)).trans
+      (card_vector (α := α) n)
 
 /-!
 ## Простая CNF-инъекция через каноническую трассу (depth‑2)
@@ -316,10 +321,8 @@ lemma card_FamilyTraceCodeWide {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
   have hcard_trace :
       Fintype.card (TraceCode n w (maxClauses F) t) =
         (2 * n * (maxClauses F + 1) * (w + 1)) ^ t := by
-    simpa [TraceCode, TraceStepCode, card_Vector, Fintype.card_prod,
-      Fintype.card_bool, Fintype.card_fin, Nat.mul_comm, Nat.mul_left_comm,
-      Nat.mul_assoc] using
-      (card_TraceCode (n := n) (w := w) (m := maxClauses F) (t := t))
+    -- `card_TraceCode` уже содержит нужную формулу; `simp` замыкает цель.
+    simp [card_TraceCode]
   calc
     Fintype.card (FamilyTraceCodeWide (F := F) t)
         = (F.length + 1) * Fintype.card (TraceCode n w (maxClauses F) t) := by
@@ -441,7 +444,7 @@ lemma card_Aux (n t k m : Nat) :
 
 lemma card_Aux_le (n t k m : Nat) :
     Fintype.card (Aux n t k m) ≤ (2 * n * k * m) ^ t := by
-  simp [card_Aux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
 /-- Универсальное множество кодов `Aux` как `Finset.univ`. -/
 def auxCodes (n t k m : Nat) [Fintype (Aux n t k m)] : Finset (Aux n t k m) :=
@@ -641,12 +644,8 @@ def auxFamilySimpleCodes
   classical
   have hcard_fun :
       Fintype.card (Fin t → Fin n × Bool) = (n * 2) ^ t := by
-    have hcard_fun_base :
-        Fintype.card (Fin t → Fin n × Bool) =
-          (Fintype.card (Fin n × Bool)) ^ (Fintype.card (Fin t)) :=
-      Fintype.card_fun (α := Fin t) (β := Fin n × Bool)
-    simpa [Fintype.card_prod, Fintype.card_bool, Fintype.card_fin, Nat.mul_comm,
-      Nat.mul_left_comm, Nat.mul_assoc] using hcard_fun_base
+    -- `simp` раскрывает `Fintype.card_fun` и кардиналы произведения.
+    simp [Fintype.card_prod, Fintype.card_bool, Fintype.card_fin]
   calc
     (auxFamilySimpleCodes (F := F) t).card
         = (F.length + 1) * Fintype.card (Fin t → Fin n × Bool) := by
@@ -1188,13 +1187,14 @@ lemma badEvent_canonicalCCDT_iff_badFamilyDet
       have hdepth :
           PDT.depth ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) = 0 := by
         simp [canonicalCCDTAlgorithmCNF, hnone, PDT.depth]
-      have hle : t ≤ 0 := by
-        simpa [BadEvent, hdepth] using hbe
-      exact (ht0 (Nat.eq_zero_of_le_zero hle))
+      have hle := hbe
+      simp [BadEvent, hdepth] at hle
+      exact ht0 hle
     have hbadFalse : ¬ BadFamily_deterministic (F := F) t ρ := by
       intro hbad
       rcases hbad with ⟨i, hi, _⟩
-      exact (Nat.lt_asymm hi (by simpa [hlen] using hi)).elim
+      have hi' := hi
+      simp [hlen] at hi'
     constructor
     · intro hbe
       exact (hbeFalse hbe).elim
@@ -1531,18 +1531,18 @@ lemma badRestrictions_card_le_of_encoding
       Fintype.card {ρ // ρ ∈ badRestrictions (n := n) s (BadEvent (A := A))} =
         (badRestrictions (n := n) s (BadEvent (A := A))).card := by
     classical
-    simpa using
-      (Fintype.card_coe
-        (s := badRestrictions (n := n) s (BadEvent (A := A))))
+    -- Кардинал подтипа `↔` кардинал `Finset` по `Fintype.card_coe`.
+    exact Fintype.card_coe (s := badRestrictions (n := n) s (BadEvent (A := A)))
   have hcodes :
       Fintype.card {c // c ∈ codes} = codes.card := by
     classical
-    simpa using (Fintype.card_coe (s := codes))
+    -- Аналогично для `codes`.
+    exact Fintype.card_coe (s := codes)
   -- Собираем оценку, явно переписывая кардиналы.
   calc
     (badRestrictions (n := n) s (BadEvent (A := A))).card
         = Fintype.card {ρ // ρ ∈ badRestrictions (n := n) s (BadEvent (A := A))} := by
-            simpa using hbad.symm
+            exact hbad.symm
     _ ≤ Fintype.card {c // c ∈ codes} := by
           exact hcard
     _ = codes.card := by

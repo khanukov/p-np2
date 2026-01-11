@@ -211,7 +211,8 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
           have hcontr : False := by
             have hzero : Nat.succ t ≤ 0 := by
               -- После подстановки глубина листа равна нулю.
-              simpa [this] using hdepth
+              have hdepth' := hdepth
+              simp [this] at hdepth'
             exact (Nat.not_succ_le_zero _ hzero)
           exact (False.elim hcontr)
       | some selection =>
@@ -300,7 +301,8 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
                   simp [canonicalDT_CNF_aux, PDT.depth]
                 have hzero : Nat.succ t ≤ 0 := by
                   -- В случае листа глубина равна нулю.
-                  simpa [this] using hdepth
+                  have hdepth' := hdepth
+                  simp [this] at hdepth'
                 exact (False.elim (Nat.not_succ_le_zero _ hzero))
             | succ fuel =>
                 simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
@@ -383,7 +385,8 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
           have hcontr : False := by
             have hzero : Nat.succ t ≤ 0 := by
               -- После подстановки глубина листа равна нулю.
-              simpa [this] using hdepth
+              have hdepth' := hdepth
+              simp [this] at hdepth'
             exact (Nat.not_succ_le_zero _ hzero)
           exact (False.elim hcontr)
       | some selection =>
@@ -464,7 +467,8 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
                   simp [canonicalDT_CNF_aux, PDT.depth]
                 have hzero : Nat.succ t ≤ 0 := by
                   -- В случае листа глубина равна нулю.
-                  simpa [this] using hdepth
+                  have hdepth' := hdepth
+                  simp [this] at hdepth'
                 exact (False.elim (Nat.not_succ_le_zero _ hzero))
             | succ fuel =>
                 simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]

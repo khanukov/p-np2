@@ -326,8 +326,8 @@ lemma badRestrictions_card_le_cnf_family_det_aux
   have haux :
       (auxCodes n t (w + 1) (F.length + 1)).card
         = (2 * n * (w + 1) * (F.length + 1)) ^ t := by
-    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-      using (card_Aux (n := n) (t := t) (k := w + 1) (m := F.length + 1))
+    -- Явно раскрываем `auxCodes` и подставляем `card_Aux`.
+    simp [auxCodes, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
   calc
     (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
         ≤ codes.card := hcard

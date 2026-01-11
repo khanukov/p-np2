@@ -224,6 +224,11 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 **вне степени** `(C * k)^t`. Это согласуется с текущей архитектурой
 `|Bad| ≤ |R_{s-t}| * M * (BParam w)^t` и упрощает Numerics.
 
+**Про константы:** если строгая Step 3.2 не закрывается при
+`sParam := n/(48*(w+1))`, допускается увеличить константу
+(`48 → 96/192`) для получения строгого неравенства. Это не ломает
+polylog‑характер оценки, а даёт запас в натуральной арифметике.
+
 ## Шаг 2. CCDT‑алгоритм и bad‑событие (детерминированно)
 
 - Рассматриваем семейство формул `F` размера `M`, глубины `d+1`.
@@ -242,9 +247,8 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
   `BadEvent(ρ) → ∃ trace длины t`, где trace — **каноническая трасса**
   этого дерева. Для кодирования используем именно канонический trace.
 
-**Важно:** определения `BadFamily/GoodFamily` и counting‑леммы должны ссылаться
-на `BadEvent` как на первичное понятие (каноническое дерево), а не на
-недетерминированный квантор по произвольным трассам.
+**Важно:** вводим детерминированный предикат `BadEvent_det` через
+`canonicalCCDT`. Все counting/encoding строятся **только** для `BadEvent_det`.
 
 ## Шаг 3. Множество плохих рестрикций
 
@@ -322,7 +326,17 @@ w := ⌈log₂(M(n+2))⌉ + c
 
 Дальше требуется вывести строгое `|Bad| < |R_s|`. В проекте это делается так:
 
-- Применяем `numerical_inequality_3_2` для `BParam` без `n` в базе.
+**Цель Step 3.2 (строгое неравенство):**
+
+```
+|R_{s-t}| * (|F|+1) * (2*(w+1))^t < |R_s|
+```
+
+Только такое утверждение даёт `|Bad| < |R_s|` напрямую. Все варианты
+с дополнительным множителем `(n-s+1)^t` — промежуточные оценки.
+
+- Применяем `numerical_inequality_3_2` для `BParam` без `n` в базе
+  именно к цели выше.
 - Добавляем/используем лемму `tParam m n ≤ sParam n w`
   (держать в `Numerics.lean`, как часть Step 3.2).
   Зафиксировать как лемму `tParam_le_sParam_of_big_n` (вариант 4A).
@@ -399,6 +413,22 @@ w := ⌈log₂(M(n+2))⌉ + c
 доказывает «не тот объект».
 Если остаётся старое имя `ac0AllSubcubes_length_le_polylog_*`, то
 оно **строго означает листья PDT**, а не DNF‑термы.
+
+## Definition of Done (конкретные леммы/файлы)
+
+- `Encoding.lean`:
+  - `encodeBadFamilyCNF_small`, `decodeBadFamilyCNF_small`,
+    `decode_encode_small`, `injective_encodeBadFamilyCNF_small`.
+- `Counting.lean`:
+  - `card_bad_inter_Rs_le_small :
+     |Bad ∩ R_s| ≤ |R_{s-t}| * (|F|+1) * (2*(w+1))^t`.
+- `Numerics.lean`:
+  - `step3_2_strict :
+     |R_{s-t}| * (|F|+1) * (2*(w+1))^t < |R_s|`
+    (с case‑split по `48*(w+1) ≤ n`).
+- `Main.lean`:
+  - `exists_good_restriction_small :
+     ∃ ρ ∈ R_s, ¬ BadEvent_det ρ`.
 
 ## Шаг 9. Развести типы для Stage‑1/Stage‑2 (depth‑2 DNF vs AC0Formula d)
 

@@ -97,6 +97,27 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 закрытия внешнего witness. Пишем максимально явно, чтобы по нему можно было
 реализовать доказательство в Lean без дополнительных домыслов.
 
+## Критические несостыковки, которые нужно закрыть до финальной интеграции
+
+Ниже перечислены три узких места, без явного закрытия которых реальная индукция
+не замкнётся в Lean или окажется математически неверной для снятия
+`multi_switching_bound`.
+
+1) **DNF в `Facts_Switching` vs CNF‑pipeline в `MultiSwitching`.**
+   Сейчас witness строится на DNF‑термах/подкубах (`AC0Circuit.subcubes`),
+   но текущий multi‑switching pipeline формально закрывает CNF‑ветку.
+   Это нужно **явно согласовать** (см. «Шаг 1.1–1.2»).
+
+2) **Encoding с “толстым” алфавитом (с `n`) ломает Numerics.**
+   Encoding на `BitFix n` даёт фактор `2 * n` в базе степени и не совместим
+   с `numerical_inequality_3_2`, где база должна быть независима от `n`.
+   Нужен Håstad‑style small encoding через `Stars(w, t)` (см. «Шаг 3»).
+
+3) **BadEvent должен быть детерминированным (CCDT‑глубина).**
+   Для инъекции с малым алфавитом bad‑событие должно быть определено как
+   `depth(CCDT) ≥ t`, а не как «существует трасса длины t». Связь
+   `BadEvent → ∃ trace` оставляем как вспомогательную лемму (см. «Шаг 2»).
+
 ## Выбор shrinkage‑факта для замены
 
 - Из двух внешних shrinkage‑фактов (A.1 и A.2) **проще полностью формализовать**
@@ -106,6 +127,37 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 - Замена A.1 автоматически усиливает A.2 через
   `familyIsLocalCircuit_of_AC0_polylog`, поэтому **фокус на A.1** минимизирует
   общую работу.
+
+## Шаг 1. Согласовать объект polylog‑bound (DNF ↔ CNF)
+
+### 1.1. Архитектура (рекомендуется: DNF через CNF‑дуальность)
+
+Оптимальный путь без ломки интерфейсов: **оставить основную логику в CNF**
+и получить DNF‑результат через дуальность.
+
+- Вводим перевод DNF → CNF для отрицания:
+  - терм ↔ клауза при отрицании литералов;
+  - `CNF_of_not_DNF` без экспоненциального роста.
+- Лемма: `depth(DT(F|ρ)) = depth(DT((¬F)|ρ))`.
+
+Это позволяет использовать CNF‑pipeline и получать DNF‑bound без изменений
+в downstream.
+
+### 1.2. Lean‑реализация (точки интеграции)
+
+Создать модуль `pnp3/AC0/MultiSwitching/Duality.lean`:
+
+- перевод `Term` → `Clause` через отрицание;
+- `CNF_of_not_DNF`;
+- равенство глубин decision tree для `F` и `¬F`.
+
+Далее в `ThirdPartyFacts/Facts_Switching.lean`:
+
+- либо переключить `AC0PolylogBoundWitness` на CNF‑представление,
+- либо оставить DNF‑интерфейс, но доказывать его через CNF‑pipeline + дуальность.
+
+**Definition of Done:** `ac0AllSubcubes_length_le_polylog_of_multi_switching`
+доказывается из CNF‑pipeline без внешних witness.
 
 ## Стратегия доказательства (индукция по глубине)
 
@@ -131,7 +183,7 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
   Лемма `pow_two_le_tParam` даёт `2^t ≥ M (n+2)`.
   Это гарантирует малость `O(M · 2^{-t}) < 1/(n+2)`.
 
-## Шаг 1. CCDT‑алгоритм и плохое событие
+## Шаг 2. CCDT‑алгоритм и bad‑событие (детерминированно)
 
 - Рассматриваем семейство формул `F` размера `M`, глубины `d+1`.
 - Представляем верхний слой как CNF‑конъюнкцию подформул.
@@ -140,10 +192,13 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
   - Фиксируем первый свободный литерал.
   - Ветвим по обоим значениям (PDT.node).
   - Останавливаемся через `ℓ` шагов, если не завершили раньше.
-- Плохое событие: `BadEvent(ρ)` = «глубина ствола ≥ t».
+- **BadEvent фиксируем как детерминированное условие:**
+  `BadEvent(ρ) := depth(CCDT(F|ρ)) ≥ t`.
   Это `DecidablePred`, что упрощает фильтрации по `ρ`.
+- В `TraceBridge.lean` доказываем вспомогательную лемму:
+  `BadEvent(ρ) → ∃ trace длины t` (для кодирования).
 
-## Шаг 2. Множество плохих рестрикций
+## Шаг 3. Множество плохих рестрикций
 
 - Берём `R_s` — рестрикции с ровно `s` свободными битами.
 - Выбор `s`: можно связать его с `t` (например, `s := tParam(M, n)`).
@@ -151,33 +206,42 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 - Определяем `Bad = {ρ ∈ R_s | BadEvent(ρ)}`.
   Цель: показать `Bad ⊊ R_s`, то есть существует хорошая рестрикция.
 
-## Шаг 3. Encoding & Injection (кодирование плохих случаев)
+## Шаг 4. Encoding & Injection с малым алфавитом (Håstad‑style)
 
-**Общий принцип:** injective‑кодирование bad‑рестрикций в конечное множество,
-размер которого можно явно оценить.
+**Ключевой момент:** код **не должен содержать `Fin n`** на каждом шаге,
+иначе база в оценке мощности будет содержать `n` и Numerics не закроется.
+Нужен классический “small alphabet” encoding через `Stars`.
 
-1) **Финальная рестрикция после t шагов.**
-   - Если `ρ ∈ Bad`, то первые `t` ветвлений CCDT определяют трассу длины `t`.
-   - Применяя эти `t` фиксаций к `ρ`, получаем `β = finalRestriction ρ`.
-   - Леммы `freeCount_finalRestriction` и `finalRestriction_mem_R_s`
-     дают `β ∈ R_{s-t}`.
+### 4.1. Структура кода
 
-2) **Код пути (Aux).**
-   - Вводим конечное множество `Aux(n, t, k, m)` — все возможные трассы длины `t`.
-   - Каждый шаг хранит:
-     - какой литерал фиксировали (`BitFix n`),
-     - позицию литерала в клаузе (≤ `k`),
-     - индекс формулы (≤ `m`).
-   - В итоге `|Aux| = (2 * n * k * m)^t`.
+Вводим `Stars(w, t)` — последовательности непустых подмножеств `Fin w`
+с суммарным размером `t`, и доказываем грубую оценку:
+`|Stars(w, t)| ≤ (C * w)^t` (важна форма `w^t`, а не константа).
 
-3) **Определение кодирования.**
-   - `encode(ρ) := (β, code(ρ)) ∈ R_{s-t} × Aux`.
-   - Детерминизм CCDT ⇒ `encode` инъективно.
+Кодирование имеет вид:
 
-**Итог:** `|Bad| ≤ |R_{s-t}| · |Aux|`,
-формализовано как `badRestrictions_card_le_of_aux_encoding`.
+```
+encodeBadSmall :
+  Bad ∩ R_s → R_{s-t} × Stars(w+1, t) × BitVec t × Fin (m+1)
+```
 
-## Шаг 4. Сравнение мощностей и существование хорошей рестрикции
+Здесь `R_{s-t}` — модифицированная финальная рестрикция (после применения
+вспомогательных назначений, как в классическом proof‑by‑encoding),
+`Stars` хранит “звёздные позиции” внутри ширины `w`, а `BitVec t` —
+delta‑биты.
+
+### 4.2. Что заменить в текущем encoding‑слое
+
+- Удалить (или вывести как черновой) код, зависящий от `BitFix n`.
+- Добавить модуль `AC0/MultiSwitching/Stars.lean` с оценкой
+  `card_Stars_le`.
+- Добавить `EncodingSmall` (или секцию в `Encoding.lean`) с
+  `encodeBadSmall` и `Function.Injective`.
+
+**Итог:** получаем оценку вида
+`|Bad| ≤ |R_{s-t}| · (BParam w)^t`, где `BParam` **не зависит от n**.
+
+## Шаг 5. Сравнение мощностей и связь с Numerics (Step 3.2)
 
 Используем:
 
@@ -186,17 +250,13 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 
 Дальше требуется вывести строгое `|Bad| < |R_s|`. В проекте это делается так:
 
-- Из `2^t ≥ M(n+2)` и грубых оценок на `k, m ≤ M` получаем оценку
-  `|Bad| ≤ |R_{s-t}| · (2 n k m)^t`.
-- Затем применяем лемму `exists_good_of_card_lt` (в `Counting`) и выводим
-  существование `ρ* ∈ R_s` с `¬ BadEvent(ρ*)`.
+- Применяем `numerical_inequality_3_2` для `BParam` без `n` в базе.
+- Добавляем/используем лемму `tParam m n ≤ sParam n w`
+  (держать в `Numerics.lean`, как часть Step 3.2).
+- Затем применяем `exists_good_of_card_lt` (в `Counting`) и получаем
+  `ρ* ∈ R_s` с `¬ BadEvent(ρ*)`.
 
-Ссылки на Lean‑реализацию:
-
-- `badRestrictions_card_le_of_aux_encoding`
-- `exists_good_restriction_of_aux_encoding`
-
-## Шаг 5. Построение `PartialCertificate` из хорошей рестрикции
+## Шаг 6. Построение `PartialCertificate` из хорошей рестрикции
 
 Пусть `ρ* ∈ R_s` — найденная хорошая рестрикция:
 
@@ -211,7 +271,18 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
 - Получаем `C : PartialCertificate(ℓ, F)`, удовлетворяющий `WorksFor F`.
 - Из `C` строим `Shrinkage` (через `Core.PartialCertificate.toShrinkage`).
 
-## Шаг 6. Проверка границ и финальная интеграция
+## Шаг 7. Реальная индукция по глубине (d > 2)
+
+Нужно явно собрать шаг индукции:
+
+- multi‑switching даёт `Good ρ*` для слоя глубины 2;
+- хвосты строятся с помощью индукционного предположения для глубины `d`;
+- доказываем формулу `depth(trunk ⊕ tails) = trunkDepth + max tailDepth`.
+
+Рекомендуемый файл: `pnp3/AC0/MultiSwitching/DepthInduction.lean`
+(или интегрировать в `Main.lean`, если там уже есть каркас).
+
+## Шаг 8. Проверка границ и финальная интеграция
 
 Далее надо проверить все условия в формулировке `partial_shrinkage_for_AC0`:
 

@@ -86,7 +86,11 @@ lemma coveredB_selectorsOfFunction
       (covered_iff (Rset := selectorsOfFunction (f := f)) (x := x)).1 hcov
     simpa [hfx] using hcovB
   · have hfx' : f x = false := by
-      cases hval : f x <;> simp [hval] at hfx <;> simp [hval]
+      cases hval : f x with
+      | true =>
+          exact (False.elim (hfx hval))
+      | false =>
+          simp
     by_cases hcovB : coveredB (selectorsOfFunction (f := f)) x = true
     · have hcov :
           covered (selectorsOfFunction (f := f)) x :=
@@ -102,8 +106,11 @@ lemma coveredB_selectorsOfFunction
         simpa [hfx'] using hy
       exact this.elim
     · have hcovB' : coveredB (selectorsOfFunction (f := f)) x = false := by
-        cases hval : coveredB (selectorsOfFunction (f := f)) x <;>
-          simp [hval] at hcovB; simp [hval]
+        cases hval : coveredB (selectorsOfFunction (f := f)) x with
+        | true =>
+            exact (False.elim (hcovB hval))
+        | false =>
+            simp
       simpa [hfx'] using hcovB'
 
 lemma selectorsOfFunction_sub_leaves
@@ -222,9 +229,9 @@ theorem shrinkage_from_restriction
   -- Переходим к Shrinkage через `PartialCertificate.toShrinkage`.
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simpa [S, hℓ] using (PartialCertificate.toShrinkage_family (C := C))
-  · simpa [S, hℓ, hdepth] using (PartialCertificate.toShrinkage_depth (C := C))
-  · simpa [S, hε] using (PartialCertificate.toShrinkage_epsilon (C := C))
+  · simp [S, hℓ]
+  · simp [S, hℓ, hdepth]
+  · simp [S, hε]
 
 theorem shrinkage_from_good_restriction
     {n k t : Nat} (F : FormulaFamily n k)
@@ -289,9 +296,9 @@ theorem shrinkage_depth2_cnf_of_bound
     partialCertificate_depth2_cnf_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simpa [S, hℓ] using (PartialCertificate.toShrinkage_family (C := C))
-  · simpa [S, hℓ, hdepth] using (PartialCertificate.toShrinkage_depth (C := C))
-  · simpa [S, hε] using (PartialCertificate.toShrinkage_epsilon (C := C))
+  · simp [S, hℓ]
+  · simp [S, hℓ, hdepth]
+  · simp [S, hε]
 
 /-!
 ### Семейство CNF: certificate/shrinkage из counting bound
@@ -324,9 +331,9 @@ theorem shrinkage_depth2_cnf_family_of_bound
     partialCertificate_depth2_cnf_family_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simpa [S, hℓ] using (PartialCertificate.toShrinkage_family (C := C))
-  · simpa [S, hℓ, hdepth] using (PartialCertificate.toShrinkage_depth (C := C))
-  · simpa [S, hε] using (PartialCertificate.toShrinkage_epsilon (C := C))
+  · simp [S, hℓ]
+  · simp [S, hℓ, hdepth]
+  · simp [S, hε]
 
 end MultiSwitching
 end AC0

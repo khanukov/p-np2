@@ -60,7 +60,7 @@ noncomputable def generalCircuitSolver_of_Ppoly_partial
               gapPartialMCSP_Language p (Models.partialInputLen p) x :=
             w.correct _ _
           have hNo : gapPartialMCSP_Language p (Models.partialInputLen p) x = false := hx
-          simpa [hLang, hNo] }
+          simp [hLang, hNo] }
 
 /-!
   ### OPS trigger (partial, formulas)

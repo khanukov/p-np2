@@ -443,9 +443,7 @@ lemma ac0DepthBound_weak_le_strong (params : AC0Parameters) :
   -- `ac0DepthBound_strong` определена как `max`, поэтому слабая граница
   -- автоматически не превосходит сильной.
   -- Этот шаг фиксирует мост между Stage‑1 (M²) и Stage‑2 (polylog‑таргет).
-  simpa [ac0DepthBound_strong] using
-    (Nat.le_max_left (ac0DepthBound_weak params)
-      (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)))
+  simp [ac0DepthBound_strong]
 
 /--
   Полилогарифмическая цель также доминируется сильной оценкой.
@@ -459,9 +457,7 @@ lemma ac0DepthBound_polylog_le_strong (params : AC0Parameters) :
       ac0DepthBound_strong params := by
   -- Сильная оценка определена как `max`, так что polylog‑слагаемое
   -- автоматически не превосходит `ac0DepthBound_strong`.
-  simpa [ac0DepthBound_strong] using
-    (Nat.le_max_right (ac0DepthBound_weak params)
-      (Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1)))
+  simp [ac0DepthBound_strong]
 
 /-!
   ## Промежуточные границы для AC⁰‑подкубов
@@ -500,7 +496,7 @@ lemma ac0AllTermSubcubes_length_le_weak
     have hsum_const :
         (witness.circuits.map (fun _ => params.M)).sum =
           witness.circuits.length * params.M := by
-      simpa using List.sum_replicate (n := witness.circuits.length) (a := params.M)
+      simp [List.sum_replicate]
     have hlen :
         allSubcubes.length = (witness.circuits.map AC0Circuit.size).sum := by
       -- Длина flatMap совпадает с суммой длин подкубов каждой схемы.
@@ -676,7 +672,7 @@ lemma buildPDTFromSubcubes_leaves_subset {n : Nat} (h_pos : 0 < n)
       cases rest with
       | nil =>
           simp [buildPDTFromSubcubes, PDT.leaves] at hγ ⊢
-          simpa [hγ]
+          simp [hγ]
       | cons β' rest' =>
           have hγ' : γ = β ∨ γ ∈ β' :: rest' := by
             exact (List.mem_cons).1 hγ
@@ -790,10 +786,14 @@ noncomputable def ac0DepthBoundWitness_of_weak
     have hdepth_bound : C.depthBound + 0 ≤ ac0DepthBound_strong params := by
       simpa using hlen_bound
     refine ⟨S, ?_, ?_, ?_, ?_⟩
-    · simpa [S, C]
-    · simpa [S, C] using hdepth_bound
     · simp [S, C]
     ·
+      -- Переписываем границу по глубине через поля shrinkage.
+      simpa [S, C] using hdepth_bound
+    · simp [S, C]
+    ·
+      -- Ошибка shrinkage равна нулю, поэтому достаточно показать
+      -- неотрицательность правой части.
       have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
         apply div_nonneg
         · norm_num
@@ -807,7 +807,7 @@ noncomputable def ac0DepthBoundWitness_of_weak
     have hdepth :
         PDT.depth tree ≤ allSubcubes.length := by
       have : PDT.depth tree = 0 := by simp [tree, PDT.depth]
-      simpa [this] using (Nat.zero_le allSubcubes.length)
+      simp [this]
     let C : Core.PartialCertificate params.n 0 F :=
       { witness := PartialDT.ofPDT tree
         depthBound := allSubcubes.length
@@ -849,10 +849,14 @@ noncomputable def ac0DepthBoundWitness_of_weak
     have hdepth_bound : C.depthBound + 0 ≤ ac0DepthBound_strong params := by
       simpa using hlen_bound
     refine ⟨S, ?_, ?_, ?_, ?_⟩
-    · simpa [S, C]
-    · simpa [S, C] using hdepth_bound
     · simp [S, C]
     ·
+      -- Переписываем границу по глубине через поля shrinkage.
+      simpa [S, C] using hdepth_bound
+    · simp [S, C]
+    ·
+      -- Ошибка shrinkage равна нулю, поэтому достаточно показать
+      -- неотрицательность правой части.
       have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
         apply div_nonneg
         · norm_num
@@ -1223,7 +1227,7 @@ theorem partial_shrinkage_single_circuit_general
     let tree : PDT params.n := PDT.leaf (fullSubcube params.n)
     have hdepth : PDT.depth tree ≤ subcubes.length := by
       have : PDT.depth tree = 0 := by simp [tree, PDT.depth]
-      simpa [this] using (Nat.zero_le subcubes.length)
+      simp [this]
     have hleaves :
         ∀ β ∈ subcubes, β ∈ PDT.leaves tree := by
       intro β hβ

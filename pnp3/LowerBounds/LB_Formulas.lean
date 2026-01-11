@@ -369,7 +369,7 @@ lemma scenarioFromCommonPDT_k_le_pow
   have hk_spec := Classical.choose_spec witness
   have hk_leaves : k ≤ (Core.PDT.leaves C.tree).length := by
     have htmp := hk_spec.1
-    simp [hk] at htmp
+    simp at htmp
     exact htmp
   have hlen_bound :
       (Core.PDT.leaves C.tree).length ≤ Nat.pow 2 (Core.PDT.depth C.tree) :=
@@ -407,16 +407,15 @@ lemma dictLen_fromCommonPDT_le_pow
 lemma dictLen_fromShrinkage_le_pow
     {n : Nat} (S : Core.Shrinkage n) :
     Counting.dictLen (Core.Atlas.fromShrinkage S).dict ≤ Nat.pow 2 S.t :=
-  by
-    classical
-    have hbound :=
-      dictLen_fromCommonPDT_le_pow
-        (n := n) (F := S.F) (C := S.commonPDT)
-    have hbound' := hbound
-    simp [Core.Atlas.fromShrinkage, Core.Atlas.ofPDT,
-      Core.CommonPDT.toAtlas, Core.Shrinkage.commonPDT_depthBound,
-      Core.Shrinkage.commonPDT_tree] at hbound'
-    exact hbound'
+by
+  classical
+  have hbound :=
+    dictLen_fromCommonPDT_le_pow
+      (n := n) (F := S.F) (C := S.commonPDT)
+  have hbound' := hbound
+  simp [Core.Atlas.ofPDT, Core.CommonPDT.toAtlas,
+    Core.Shrinkage.commonPDT_depthBound, Core.Shrinkage.commonPDT_tree] at hbound'
+  exact hbound'
 
 /-- У `scenarioFromCommonPDT` семейство во втором компоненте равно исходному `F`. -/
 @[simp]
@@ -451,8 +450,7 @@ lemma scenarioFromCommonPDT_dictLen_le_pow
   -- В полученном сценарии атлас совпадает с `C.toAtlas`, поэтому оценка
   -- на длину словаря переносится напрямую.
   have hbound' := hbound
-  simp [scenarioFromCommonPDT, BoundedAtlasScenario.ofCommonPDT,
-    Core.CommonPDT.toAtlas] at hbound'
+  simp [Core.CommonPDT.toAtlas] at hbound'
   exact hbound'
 
 /--
@@ -1000,18 +998,18 @@ noncomputable def scenarioFromLocalCircuit
     ·
       have hworksBase : WorksFor base.2.atlas S.F := by
         have htmp := base.2.works
-        simp [base_family] at htmp
+        simp at htmp
         exact htmp
       exact hF ▸ hworksBase
     · intro f hf
       have hfS : f ∈ S.F := hF ▸ hf
       have hfBase : f ∈ base.2.family := by
         have htmp := hfS
-        simp [base_family] at htmp
+        simp at htmp
         exact htmp
       have hbounded := base.2.bounded f hfBase
       have htmp := hbounded
-      simp [base_family] at htmp
+      simp at htmp
       exact htmp
 
 /-- Семейство в сценарии для локальных схем совпадает с исходным списком `F`. -/
@@ -1025,7 +1023,7 @@ lemma scenarioFromLocalCircuit_family_eq
   unfold scenarioFromLocalCircuit
   set witness := ThirdPartyFacts.localCircuitWitness params F hF
   set S := witness.shrinkage
-  simp [scenarioFromLocalCircuit, witness, S]
+  simp
 
 /--
   Для сценария, построенного из shrinkage, параметр `k` не превышает числа
@@ -1051,8 +1049,7 @@ lemma scenarioFromShrinkage_k_le_pow
         dsimp [Core.Shrinkage.commonPDT_epsilon]
         exact htmp)
   have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
+  simp [Core.Shrinkage.commonPDT_depthBound] at hbound'
   exact hbound'
 
 /--
@@ -1080,8 +1077,7 @@ lemma scenarioFromShrinkage_dictLen_le_pow
         dsimp [Core.Shrinkage.commonPDT_epsilon]
         exact htmp)
   have hbound' := hbound
-  simp [scenarioFromShrinkage, Core.Shrinkage.commonPDT_depthBound,
-    Core.Shrinkage.commonPDT_epsilon] at hbound'
+  simp [Core.Shrinkage.commonPDT_depthBound] at hbound'
   exact hbound'
 
 /--
@@ -1123,7 +1119,7 @@ lemma scenarioFromAC0_k_le_pow
   have hrewrite :
       (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
         = (scenarioFromAC0 params F hF).1 := by
-    simp [scenarioFromAC0, S, hε0, hε1]
+    simp [scenarioFromAC0, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
@@ -1181,7 +1177,7 @@ lemma scenarioFromAC0_with_bound_k_le_pow_strong
   have hrewrite :
       (scenarioFromShrinkage (n := params.n) S hε0 hε1).1
         = (scenarioFromAC0_with_bound params F hF hBound).1 := by
-    simp [scenarioFromAC0_with_bound, S, hε0, hε1]
+    simp [scenarioFromAC0_with_bound, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   simpa [ThirdPartyFacts.ac0DepthBound] using hfinal
 
@@ -1238,7 +1234,7 @@ lemma scenarioFromAC0_dictLen_le_pow
       Counting.dictLen
           (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
         = Counting.dictLen (scenarioFromAC0 params F hF).2.atlas.dict := by
-    simp [scenarioFromAC0, S, hε0, hε1]
+    simp [scenarioFromAC0, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
@@ -1297,7 +1293,7 @@ lemma scenarioFromAC0_with_bound_dictLen_le_pow_strong
           (scenarioFromShrinkage (n := params.n) S hε0 hε1).2.atlas.dict
         = Counting.dictLen
             (scenarioFromAC0_with_bound params F hF hBound).2.atlas.dict := by
-    simp [scenarioFromAC0_with_bound, S, hε0, hε1]
+    simp [scenarioFromAC0_with_bound, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   simpa [ThirdPartyFacts.ac0DepthBound] using hfinal
 

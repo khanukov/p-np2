@@ -147,14 +147,13 @@ def partialTables (n : Nat) : Finset (PartialTable n) := Finset.univ
 lemma card_totalTables (n : Nat) :
     (totalTables n).card = 2 ^ Partial.tableLen n := by
   classical
-  simpa [totalTables, TotalTable] using
-    (Fintype.card_fun (α := Fin (Partial.tableLen n)) (β := Bool))
+  simp [totalTables, TotalTable, TotalFunction]
 
 /-- Кардинал всех partial‑таблиц равен `3^{2^n}`. -/
 lemma card_partialTables (n : Nat) :
     (partialTables n).card = 3 ^ Partial.tableLen n := by
   classical
-  simpa [partialTables, PartialTable] using (Models.card_partialTables n)
+  simp [partialTables, PartialTable]
 
 /-- Множество partial‑таблиц, согласованных с фиксированной `f`. -/
 def consistentPartials {n : Nat} (f : TotalTable n) : Set (PartialTable n) :=
@@ -167,8 +166,8 @@ abbrev ConsistentPartialSubtype {n : Nat} (f : TotalTable n) :=
 /-- Кардинал согласованных partial‑таблиц равен `2^{2^n}`. -/
 lemma card_consistentPartials {n : Nat} (f : TotalTable n) :
     Fintype.card (ConsistentPartialSubtype f) = 2 ^ Partial.tableLen n := by
-  simpa [ConsistentPartialSubtype, TotalTable, PartialTable] using
-    (card_consistentPartial_withTotal (f := f))
+  have hcard := card_consistentPartial_withTotal (f := f)
+  simpa [ConsistentPartialSubtype, TotalTable, PartialTable] using hcard
 
 /-- Эквивалентная форма: `2^{2^n}` как `2^(2^n)`. -/
 lemma card_consistentPartials_eq (n : Nat) (f : TotalTable n) :
@@ -209,9 +208,10 @@ lemma consistentPartialsFinset_subset {n : Nat} (f : TotalTable n) :
   classical
   intro T hT
   -- Фильтрация по `consistentWithTotal` не выводит из `partialTables`.
-  have : T ∈ (partialTables n) := by
-    simpa [consistentPartialsFinset, partialTables] using (Finset.mem_filter.mp hT).1
-  exact this
+  have hmem :
+      T ∈ partialTables n ∧ consistentWithTotal T f := by
+    simpa [consistentPartialsFinset, partialTables] using hT
+  exact hmem.1
 
 /-- Кардинал `consistentPartialsFinset` не больше `3^{2^n}`. -/
 lemma card_consistentPartialsFinset_le_all {n : Nat} (f : TotalTable n) :
@@ -832,15 +832,21 @@ theorem noSmallAC0Solver_partial
         familyFinset sc =
           Counting.allFunctionsFinset solver.params.ac0.n := by
       classical
-      have hfamily' : sc.family = F := by
-        simpa [pack, sc] using hfamily
+      have hfamily'' : sc.family = F := by
+        simp [pack, sc]
       calc
         familyFinset sc = sc.family.toFinset := rfl
-        _ = F.toFinset := by simpa [hfamily']
+        _ = F.toFinset := by
+            simp [hfamily'']
         _ = Counting.allFunctionsFinset solver.params.ac0.n := by
-          simpa [F] using
-            (Counting.allFunctionsFamily_toFinset solver.params.ac0.n)
-    simpa [hfinset, hDecideEq_ac0] using hLanguageMem
+            simp [F]
+    have hLanguageMem'' : gap_lang_ac0 ∈ familyFinset sc := by
+      rw [hfinset]
+      exact hLanguageMem
+    have hLanguageMem' : decide_ac0 ∈ familyFinset sc := by
+      rw [hDecideEq_ac0]
+      exact hLanguageMem''
+    exact hLanguageMem'
   -- Этот witness пригодится, чтобы избежать неявных inhabited-аргументов.
   have hfamily_nonempty : (familyFinset sc).Nonempty := by
     exact ⟨decide_ac0, hDecideMem⟩
@@ -923,8 +929,7 @@ theorem noSmallAC0Solver_partial
       -- Переписываем через `toFinset`.
       simp [familyFinset, hfamily', F, Counting.allFunctionsFamily_toFinset]
     -- Используем формулу количества всех функций.
-    simpa [N, hfinset] using
-      (Counting.card_allFunctionsFinset solver.params.ac0.n)
+    simp [N, hfinset]
   have hcard_pos : 0 < (familyFinset sc).card := by
     exact Finset.card_pos.mpr hfamily_nonempty
   -- Противоречие: `card(F) ≤ capacityBound < card(F)`.
@@ -935,7 +940,9 @@ theorem noSmallAC0Solver_partial
     exact hcap_le.trans hcap_le'
   have hcontr :=
     lt_of_le_of_lt hcap_le_final hcap_lt
-  exact (Nat.lt_irrefl (Nat.pow 2 N) (by simpa [hcard] using hcontr))
+  have hcontr' : False := by
+    simp [hcard] at hcontr
+  exact hcontr'
 
 /-- Обратное направление: любое противоречие даёт нужных свидетелей. -/
 theorem antiChecker_exists_large_Y_partial_of_false
@@ -1139,15 +1146,16 @@ theorem noSmallLocalCircuitSolver_partial
     have hfinset :
         familyFinset sc = Counting.allFunctionsFinset solver.params.params.n := by
       simp [familyFinset, hfamily', F, Counting.allFunctionsFamily_toFinset]
-    simpa [N, hfinset] using
-      (Counting.card_allFunctionsFinset solver.params.params.n)
+    simp [N, hfinset]
   have hcap_le_final :
       (familyFinset sc).card ≤
         Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
           ((1 : Rat) / (solver.params.params.n + 2)) hε0' hε1' := by
     exact hcap_le.trans hcap_le'
   have hcontr := lt_of_le_of_lt hcap_le_final hcap_lt
-  exact (Nat.lt_irrefl (Nat.pow 2 N) (by simpa [hcard] using hcontr))
+  have hcontr' : False := by
+    simp [hcard] at hcontr
+  exact hcontr'
 
 theorem antiChecker_exists_large_Y_local_partial_of_false
     {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) (hFalse : False) :

@@ -767,11 +767,7 @@ lemma scenarioFromShrinkage_k_eq
   have hε1' : S.commonPDT.epsilon ≤ (1 : Core.Q) / 2 := by
     dsimp [Core.Shrinkage.commonPDT_epsilon]
     exact hε1
-  simpa [scenarioFromShrinkage, Core.Shrinkage.commonPDT_epsilon]
-    using
-      (scenarioFromCommonPDT_k_eq
-        (n := n) (F := S.F) (C := S.commonPDT)
-        (hε0 := hε0') (hε1 := hε1'))
+  simp [scenarioFromShrinkage]
 
 /--
   Специализация к случаю AC⁰: из shrinkage-конструкции, предоставленной
@@ -915,9 +911,7 @@ lemma scenarioFromAC0_with_polylog_k_eq
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog] using
-    (scenarioFromAC0_with_bound_k_eq
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  simp [scenarioFromAC0_with_polylog]
 
 /-- Семейство функций в сценарии, построенном из факта `AC⁰ → shrinkage`,
   совпадает с исходным списком `F`.  Это удобное переписывание для дальнейших
@@ -954,9 +948,7 @@ lemma scenarioFromAC0_with_polylog_family_eq
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog] using
-    (scenarioFromAC0_with_bound_family_eq
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  simp [scenarioFromAC0_with_polylog]
 
 /--
   Аналог конструкции `scenarioFromAC0`, но для shrinkage факта о
@@ -1179,7 +1171,8 @@ lemma scenarioFromAC0_with_bound_k_le_pow_strong
         = (scenarioFromAC0_with_bound params F hF hBound).1 := by
     simp [scenarioFromAC0_with_bound, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
-  simpa [ThirdPartyFacts.ac0DepthBound] using hfinal
+  simp [ThirdPartyFacts.ac0DepthBound] at hfinal
+  exact hfinal
 
 lemma scenarioFromAC0_with_polylog_k_le_pow_strong
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1191,9 +1184,10 @@ lemma scenarioFromAC0_with_polylog_k_le_pow_strong
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog] using
-    (scenarioFromAC0_with_bound_k_le_pow_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  have hk :=
+    scenarioFromAC0_with_bound_k_le_pow_strong
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  simpa [scenarioFromAC0_with_polylog] using hk
 
 /--
   Оценка на длину словаря в AC⁰-сценарии:
@@ -1295,7 +1289,8 @@ lemma scenarioFromAC0_with_bound_dictLen_le_pow_strong
             (scenarioFromAC0_with_bound params F hF hBound).2.atlas.dict := by
     simp [scenarioFromAC0_with_bound, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
-  simpa [ThirdPartyFacts.ac0DepthBound] using hfinal
+  simp [ThirdPartyFacts.ac0DepthBound] at hfinal
+  exact hfinal
 
 lemma scenarioFromAC0_with_polylog_dictLen_le_pow_strong
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1307,9 +1302,10 @@ lemma scenarioFromAC0_with_polylog_dictLen_le_pow_strong
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog] using
-    (scenarioFromAC0_with_bound_dictLen_le_pow_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  have hdict :=
+    scenarioFromAC0_with_bound_dictLen_le_pow_strong
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  simpa [scenarioFromAC0_with_polylog] using hdict
 
 /--
   Полезное переписывание: погрешность атласа в `scenarioFromAC0` совпадает
@@ -1380,9 +1376,11 @@ lemma scenarioFromAC0_with_polylog_epsilon_eq
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog, ThirdPartyFacts.certificate_from_AC0_with_polylog]
-    using (scenarioFromAC0_with_bound_epsilon_eq
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  have heps :=
+    scenarioFromAC0_with_bound_epsilon_eq
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  dsimp [scenarioFromAC0_with_polylog, ThirdPartyFacts.certificate_from_AC0_with_polylog]
+  exact heps
 
 /--
   Совокупное описание ограниченного сценария из `scenarioFromAC0`.
@@ -1539,9 +1537,10 @@ lemma scenarioFromAC0_with_polylog_completeBounds_strong
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog] using
-    (scenarioFromAC0_with_bound_completeBounds_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  have hbounds :=
+    scenarioFromAC0_with_bound_completeBounds_strong
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  simpa [scenarioFromAC0_with_polylog] using hbounds
 
 /--
   Сводное существование ограниченного атласа из AC⁰-свидетельства.  Мы упаковываем
@@ -1865,8 +1864,6 @@ lemma scenarioFromAC0_stepAB_summary
   by
     classical
     intro pack sc bound
-    have hfamily := scenarioFromAC0_family_eq
-      (params := params) (F := F) (hF := hF) 
     have hbounds_raw := scenarioFromAC0_completeBounds
       (params := params) (F := F) (hF := hF) 
     have hbounds :
@@ -1877,19 +1874,17 @@ lemma scenarioFromAC0_stepAB_summary
           pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
       simpa [pack, bound] using hbounds_raw
     have hfamily' : sc.family = F := by
-      simpa [pack, sc] using hfamily
+      simp [pack, sc]
     rcases hbounds with ⟨hk_base, hrest⟩
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
-    have hkEq := scenarioFromAC0_k_eq
-      (params := params) (F := F) (hF := hF) 
-    have hkEq' : pack.2.k = pack.1 := by
-      simpa [pack] using hkEq
+    have hkEq' : sc.k = pack.1 := by
+      simp [pack, sc]
     have hk' : sc.k ≤ bound := by
-      simpa [pack, sc, hkEq'] using hk_base
+      simpa [hkEq'] using hk_base
     have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-      simpa [pack, sc, bound] using hdict_base
+      simpa [pack, sc] using hdict_base
     have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
       simpa [pack, sc] using hε0_base
     have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
@@ -1924,8 +1919,6 @@ lemma scenarioFromAC0_stepAB_summary_strong
           (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 := by
   classical
   intro pack sc bound
-  have hfamily := scenarioFromAC0_family_eq
-    (params := params) (F := F) (hF := hF) 
   have hbounds_raw := scenarioFromAC0_completeBounds_strong
     (params := params) (F := F) (hF := hF) 
   have hbounds :
@@ -1936,19 +1929,17 @@ lemma scenarioFromAC0_stepAB_summary_strong
         pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
     simpa [pack, bound] using hbounds_raw
   have hfamily' : sc.family = F := by
-    simpa [pack, sc] using hfamily
+    simp [pack, sc]
   rcases hbounds with ⟨hk_base, hrest⟩
   rcases hrest with ⟨hdict_base, hrest⟩
   rcases hrest with ⟨hε0_base, hrest⟩
   rcases hrest with ⟨hε1_base, hεInv_base⟩
-  have hkEq := scenarioFromAC0_k_eq
-    (params := params) (F := F) (hF := hF) 
-  have hkEq' : pack.2.k = pack.1 := by
-    simpa [pack] using hkEq
+  have hkEq' : sc.k = pack.1 := by
+    simp [pack, sc]
   have hk' : sc.k ≤ bound := by
-    simpa [pack, sc, hkEq'] using hk_base
+    simpa [hkEq'] using hk_base
   have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-    simpa [pack, sc, bound] using hdict_base
+    simpa [pack, sc] using hdict_base
   have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
     simpa [pack, sc] using hε0_base
   have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
@@ -1979,8 +1970,6 @@ lemma scenarioFromAC0_with_bound_stepAB_summary_strong
           (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 := by
   classical
   intro pack sc bound
-  have hfamily := scenarioFromAC0_with_bound_family_eq
-    (params := params) (F := F) (hF := hF) (hBound := hBound)
   have hbounds_raw := scenarioFromAC0_with_bound_completeBounds_strong
     (params := params) (F := F) (hF := hF) (hBound := hBound)
   have hbounds :
@@ -1991,19 +1980,17 @@ lemma scenarioFromAC0_with_bound_stepAB_summary_strong
         pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
     simpa [pack, bound] using hbounds_raw
   have hfamily' : sc.family = F := by
-    simpa [pack, sc] using hfamily
+    simp [pack, sc]
   rcases hbounds with ⟨hk_base, hrest⟩
   rcases hrest with ⟨hdict_base, hrest⟩
   rcases hrest with ⟨hε0_base, hrest⟩
   rcases hrest with ⟨hε1_base, hεInv_base⟩
-  have hkEq := scenarioFromAC0_with_bound_k_eq
-    (params := params) (F := F) (hF := hF) (hBound := hBound)
-  have hkEq' : pack.2.k = pack.1 := by
-    simpa [pack] using hkEq
+  have hkEq' : sc.k = pack.1 := by
+    simp [pack, sc]
   have hk' : sc.k ≤ bound := by
-    simpa [pack, sc, hkEq'] using hk_base
+    simpa [hkEq'] using hk_base
   have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-    simpa [pack, sc, bound] using hdict_base
+    simpa [pack, sc] using hdict_base
   have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
     simpa [pack, sc] using hε0_base
   have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
@@ -2035,9 +2022,10 @@ lemma scenarioFromAC0_with_polylog_stepAB_summary_strong
   classical
   let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
     ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [scenarioFromAC0_with_polylog] using
-    (scenarioFromAC0_with_bound_stepAB_summary_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  have hsummary :=
+    scenarioFromAC0_with_bound_stepAB_summary_strong
+      (params := params) (F := F) (hF := hF) (hBound := hBound)
+  simpa [scenarioFromAC0_with_polylog] using hsummary
 
 /--
   Локальные схемы обладают той же структурой: сценарий шага A автоматически
@@ -2063,8 +2051,6 @@ lemma scenarioFromLocalCircuit_stepAB_summary
   by
     classical
     intro pack sc bound
-    have hfamily := scenarioFromLocalCircuit_family_eq
-      (params := params) (F := F) (hF := hF)
     have hbounds_raw := scenarioFromLocalCircuit_completeBounds
       (params := params) (F := F) (hF := hF)
     have hbounds :
@@ -2075,19 +2061,17 @@ lemma scenarioFromLocalCircuit_stepAB_summary
           pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
       simpa [pack, bound] using hbounds_raw
     have hfamily' : sc.family = F := by
-      simpa [pack, sc] using hfamily
+      simp [pack, sc]
     rcases hbounds with ⟨hk_base, hrest⟩
     rcases hrest with ⟨hdict_base, hrest⟩
     rcases hrest with ⟨hε0_base, hrest⟩
     rcases hrest with ⟨hε1_base, hεInv_base⟩
-    have hkEq := scenarioFromLocalCircuit_k_eq
-      (params := params) (F := F) (hF := hF)
-    have hkEq' : pack.2.k = pack.1 := by
-      simpa [pack] using hkEq
+    have hkEq' : sc.k = pack.1 := by
+      simp [pack, sc]
     have hk' : sc.k ≤ bound := by
-      simpa [pack, sc, hkEq'] using hk_base
+      simpa [hkEq'] using hk_base
     have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
-      simpa [pack, sc, bound] using hdict_base
+      simpa [pack, sc] using hdict_base
     have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
       simpa [pack, sc] using hε0_base
     have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by

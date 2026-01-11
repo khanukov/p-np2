@@ -219,6 +219,11 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
   Лемма `pow_two_le_tParam` даёт `2^t ≥ M (n+2)`.
   Это гарантирует малость `O(M · 2^{-t}) < 1/(n+2)`.
 
+**Фиксируем версию multi‑switching:** реализуем Håstad Theorem 3.4
+с `ℓ := log(2M)` (в терминах `ℓParam`), чтобы множитель `M` оставался
+**вне степени** `(C * k)^t`. Это согласуется с текущей архитектурой
+`|Bad| ≤ |R_{s-t}| * M * (BParam w)^t` и упрощает Numerics.
+
 ## Шаг 2. CCDT‑алгоритм и bad‑событие (детерминированно)
 
 - Рассматриваем семейство формул `F` размера `M`, глубины `d+1`.
@@ -229,12 +234,15 @@ rg -n "AC0SmallEnough|ac0DepthBound_weak|ac0DepthBound_strong|ac0DepthBound" pnp
   - Ветвим по обоим значениям (PDT.node).
   - Останавливаемся через `ℓ` шагов, если не завершили раньше.
 - **BadEvent фиксируем как детерминированное условие:**
-  `BadEvent(ρ) := depth(CCDT(F|ρ)) ≥ t`.
+  `BadEvent(ρ) := depth(CCDTℓ(F|ρ)) ≥ t`, где `CCDTℓ` — **множество**
+  общих ℓ‑partial DT (как в определении CCDTℓ в классике).
+  Глубина определяется как `max` по множеству.
   Это `DecidablePred`, что упрощает фильтрации по `ρ`.
-- В `TraceBridge.lean` доказываем эквивалентную связь:
-  `BadEvent(ρ) ↔ ∃ trace длины t` (каноническая трасса существует и
-  соответствует глубине CCDT). Для кодирования используем направление
-  `BadEvent → ∃ trace`, но **BadEvent остаётся первичным**.
+- В `TraceBridge.lean` доказываем связь:
+  `BadEvent(ρ) ↔ ∃ T ∈ CCDTℓ(F|ρ), depth(T) ≥ t`,
+  а затем извлекаем трассу длины `t` из такого дерева.
+  Для кодирования используем направление `BadEvent → ∃ trace`,
+  но **BadEvent остаётся первичным** и не требует уникальности CCDT.
 
 **Важно:** определения `BadFamily/GoodFamily` и counting‑леммы должны ссылаться
 на `BadEvent` как на первичное понятие, а не на недетерминированный квантор.
@@ -265,6 +273,11 @@ w := ⌈log₂(M(n+2))⌉ + c
 Это фиксирует источник параметра `w`, который дальше используется в `BParam w`
 и `sParam n w`. Без этого шага Step 3.2 нельзя корректно применить к объектам
 общей глубины.
+
+**Уточнение:** truncation нужно привязать к конкретному объекту:
+для CNF — клаузы верхнего слоя, для DNF — термы верхнего слоя. Ошибка
+должна суммироваться в ε shrinkage‑сертификата, а не «теряться» в середине
+индукции.
 
 ## Шаг 4. Encoding & Injection с малым алфавитом (AuxTraceSmall)
 
@@ -297,6 +310,10 @@ w := ⌈log₂(M(n+2))⌉ + c
 
 **Итог:** получаем оценку вида
 `|Bad| ≤ |R_{s-t}| · (BParam w)^t`, где `BParam` **не зависит от n**.
+
+**Замечание о witness:** encoding строится от **свидетеля bad‑события**:
+из `BadEvent` (через Classical.choose) извлекаем дерево/трассу,
+и уже по нему строим код. Это корректно и не требует уникальности CCDT.
 
 ## Шаг 5. Сравнение мощностей и связь с Numerics (Step 3.2)
 
@@ -371,6 +388,12 @@ w := ⌈log₂(M(n+2))⌉ + c
   (`AC0PolylogBoundWitness` и `ac0DepthBoundWitness_of_polylog`).
 - **Финальное внедрение:** заменить внешний witness в
   `ThirdPartyFacts/Facts_Switching.lean` на результат `partial_shrinkage_for_AC0_with_polylog`.
+
+**Обязательная смена цели в Facts_Switching:**
+`AC0PolylogBoundWitness` должен быть перепривязан к `Shrinkage.t` /
+`PartialDT.depth` (или `PDT.leaves ≤ 2^depth`), а не к
+`circuits.flatMap AC0Circuit.subcubes`. Иначе multi‑switching
+доказывает «не тот объект».
 
 ## Шаг 9. Развести типы для Stage‑1/Stage‑2 (depth‑2 DNF vs AC0Formula d)
 

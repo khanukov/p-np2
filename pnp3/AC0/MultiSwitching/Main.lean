@@ -140,7 +140,7 @@ theorem exists_good_restriction_step3_2_small
         < (R_s (n := n) (sParam n w)).card := by
     have hnum := numerical_bound_step3_2
       (n := n) (w := w) (m := F.length) hN ht
-    simpa [BParam, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hnum
+    simpa [BParam, Nat.mul_comm, Nat.mul_assoc] using hnum
   exact exists_good_restriction_cnf_family_of_bound_det_small
     (F := F) (s := sParam n w) (t := tParam F.length n) henc hbound
 
@@ -228,7 +228,7 @@ lemma card_bad_lt_card_all_step3_2_small_canonicalCCDT
     -- Числовая оценка Stage 3.2 (малый алфавит).
     have hnum := numerical_bound_step3_2
       (n := n) (w := w) (m := F.length) hN ht
-    simpa [BParam, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hnum
+    simpa [BParam, Nat.mul_comm, Nat.mul_assoc] using hnum
   have hbad_det :
       (badRestrictions (n := n) (sParam n w)
         (BadFamily_deterministic (F := F) (tParam F.length n))).card
@@ -319,7 +319,7 @@ lemma numerical_bound_step3_2_expanded
       (2 * n * BParam w) ^ (tParam m n)
         = (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n) := by
     -- `BParam w = 2*(w+1)`, далее применяем `pow_mul_pow_eq`.
-    simpa [BParam, pow_mul_pow_eq, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [BParam, pow_mul_pow_eq, Nat.mul_comm, Nat.mul_assoc]
   have hpow' :
       (n * (2 * BParam w)) ^ (tParam m n)
         = (2 * n) ^ (tParam m n) * (2 * (w + 1)) ^ (tParam m n) := by
@@ -348,20 +348,32 @@ theorem exists_good_restriction_step3_2
       (badRestrictions (n := n) (sParam n w)
         (BadFamily_deterministic (F := F) (tParam m n))).card
         < (R_s (n := n) (sParam n w)).card) :
-    ∃ ρ ∈ R_s (n := n) (sParam n w),
-      ¬ BadFamily_deterministic (F := F) (tParam m n) ρ := by
+  ∃ ρ ∈ R_s (n := n) (sParam n w),
+    ¬ BadFamily_deterministic (F := F) (tParam m n) ρ := by
   classical
+  subst hm
   by_cases hN : 49 * (w + 1) ≤ n
   · -- Большая `n`: используем числовую оценку.
     -- Для большой `n` уже дана оценка на количество плохих рестрикций.
     exact exists_good_of_card_lt (n := n) (s := sParam n w)
-      (bad := BadFamily_deterministic (F := F) (tParam m n))
+      (bad := BadFamily_deterministic (F := F) (tParam F.length n))
       hbad_lt
   · -- Малое `n`: `sParam = 0`, плохая трасса невозможна.
     have hs : sParam n w = 0 := sParam_eq_zero_of_lt (n := n) (w := w)
       (by
         have hlt : n < 49 * (w + 1) := lt_of_not_ge hN
         exact hlt)
+    -- Из `tParam ≤ sParam` и `sParam = 0` получаем противоречие с `tParam > 0`.
+    have htzero_le : tParam F.length n ≤ 0 := by
+      simpa [hs] using ht
+    have htpos : 0 < tParam F.length n := by
+      simpa [tParam] using
+        (Nat.succ_pos (Nat.log2 ((F.length + 1) * (n + 2)) + 1))
+    have hcontr : False := by
+      have htzero : tParam F.length n = 0 := Nat.eq_zero_of_le_zero htzero_le
+      have : (0 : Nat) < 0 := by
+        simpa [htzero] using htpos
+      exact (Nat.lt_irrefl 0 this)
     -- Возьмём произвольную рестрикцию из `R_s` с `s=0`.
     have hnonempty : (R_s (n := n) 0).Nonempty := by
       -- `R_s` непусто при `0 ≤ n`.
@@ -369,27 +381,9 @@ theorem exists_good_restriction_step3_2
     rcases hnonempty with ⟨ρ, hρ⟩
     refine ⟨ρ, ?_, ?_⟩
     · simpa [hs] using hρ
-    · intro hbad
-      -- Переходим к недетерминированному `BadFamily` и применяем старую лемму.
-      have hbad' :
-          BadFamily (F := F) (tParam m n) ρ :=
-        badFamily_deterministic_implies_badFamily (F := F) (t := tParam m n) (ρ := ρ) hbad
-      have hlen := badFamily_length_le_freeCount (F := F) (t := tParam m n) (ρ := ρ) hbad'
-      have hzero : ρ.freeCount = 0 := by
-        -- Из принадлежности `R_s` получаем `freeCount = 0`.
-        simpa using (mem_R_s (n := n) (s := 0)).1 hρ
-      have hzero' : ρ.freeIndicesList.length = 0 := by
-        simpa [Restriction.freeCount] using hzero
-      have htpos : 0 < tParam m n := by
-        simpa [tParam] using
-          (Nat.succ_pos (Nat.log2 ((m + 1) * (n + 2)) + 1))
-      -- Противоречие: `t ≤ 0` и `t > 0`.
-      have : tParam m n ≤ 0 := by
-        simpa [Restriction.freeCount, hzero'] using hlen
-      have htzero : tParam m n = 0 := Nat.eq_zero_of_le_zero this
-      have : (0 : Nat) < 0 := by
-        simpa [htzero] using htpos
-      exact (Nat.lt_irrefl 0 this)
+    · intro _hbad
+      -- В малом случае противоречие следует уже из числовых ограничений.
+      exact (False.elim hcontr)
 
 /-!
 ## Stage 4 (общий/расширенный вариант): Stage 3 → Shrinkage

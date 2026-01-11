@@ -307,7 +307,7 @@ lemma badRestrictions_card_le_cnf_family_det_aux
             (BadFamily_deterministic (F := F) t)))
     have hcodes :
         Fintype.card {c // c ∈ codes} = codes.card := by
-      simpa using (Fintype.card_coe (s := codes))
+      simp
     calc
       (badRestrictions (n := n) s
           (BadFamily_deterministic (F := F) t)).card
@@ -484,7 +484,7 @@ lemma badRestrictions_card_le_cnf_family_aux_det
           (s := badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)))
     have hcodes :
         Fintype.card {c // c ∈ codes} = codes.card := by
-      simpa using (Fintype.card_coe (s := codes))
+      simp
     calc
       (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
           = Fintype.card
@@ -495,17 +495,17 @@ lemma badRestrictions_card_le_cnf_family_aux_det
   have hcodes_card :
       codes.card =
         (R_s (n := n) (s - t)).card * (auxFamilySimpleCodes (F := F) t).card := by
-    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_assoc]
   have haux :
       (auxFamilySimpleCodes (F := F) t).card =
         (F.length + 1) * (2 * n) ^ t := by
-    simp [auxFamilySimpleCodes_card, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [auxFamilySimpleCodes_card, Nat.mul_comm]
   calc
     (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
         ≤ codes.card := hcard
     _ = (R_s (n := n) (s - t)).card * (auxFamilySimpleCodes (F := F) t).card := hcodes_card
     _ = (R_s (n := n) (s - t)).card * (F.length + 1) * (2 * n) ^ t := by
-          simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+          simp [haux, Nat.mul_comm, Nat.mul_assoc]
 
 /-!
 ## Детерминированный BadFamily с расширенным кодом
@@ -572,7 +572,7 @@ lemma badRestrictions_card_le_cnf_family_aux_det_var
           (s := badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)))
     have hcodes :
         Fintype.card {c // c ∈ codes} = codes.card := by
-      simpa using (Fintype.card_coe (s := codes))
+      simp
     calc
       (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
           = Fintype.card
@@ -583,23 +583,23 @@ lemma badRestrictions_card_le_cnf_family_aux_det_var
   have hcodes_card :
       codes.card =
         (R_s (n := n) (s - t)).card * (familyTraceCodeVarCodes (F := F) t).card := by
-    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_assoc]
   have haux :
       (familyTraceCodeVarCodes (F := F) t).card =
         (F.length + 1) * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
     calc
       (familyTraceCodeVarCodes (F := F) t).card
           = Fintype.card (FamilyTraceCodeVar (F := F) t) := by
-            simpa using (familyTraceCodeVarCodes_card (F := F) t)
+            exact familyTraceCodeVarCodes_card (F := F) t
       _ = (F.length + 1) * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
-            simpa using (card_FamilyTraceCodeVar (F := F) t)
+            exact card_FamilyTraceCodeVar (F := F) t
   calc
     (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
         ≤ codes.card := hcard
     _ = (R_s (n := n) (s - t)).card * (familyTraceCodeVarCodes (F := F) t).card := hcodes_card
     _ = (R_s (n := n) (s - t)).card * (F.length + 1)
           * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
-          simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+          simp [haux, Nat.mul_comm, Nat.mul_assoc]
 
 lemma card_bad_lt_card_all_of_cnf_family_bound_small
     {n w s t : Nat} (F : FormulaFamily n w)
@@ -732,7 +732,7 @@ lemma badRestrictions_card_le_cnf_family_aux_det_small
           (s := badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)))
     have hcodes :
         Fintype.card {c // c ∈ codes} = codes.card := by
-      simpa using (Fintype.card_coe (s := codes))
+      simp
     calc
       (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
           = Fintype.card
@@ -743,22 +743,22 @@ lemma badRestrictions_card_le_cnf_family_aux_det_small
   have hcodes_card :
       codes.card =
         (R_s (n := n) (s - t)).card * (auxTraceFamilySmallCodes (F := F) t).card := by
-    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_assoc]
   have haux :
       (auxTraceFamilySmallCodes (F := F) t).card =
         (F.length + 1) * (2 * (w + 1)) ^ t := by
     calc
       (auxTraceFamilySmallCodes (F := F) t).card
           = Fintype.card (AuxTraceFamilySmall (F := F) t) := by
-            simpa using (auxTraceFamilySmallCodes_card (F := F) t)
+            exact auxTraceFamilySmallCodes_card (F := F) t
       _ = (F.length + 1) * (2 * (w + 1)) ^ t := by
-            simpa using (card_AuxTraceFamilySmall (F := F) t)
+            exact card_AuxTraceFamilySmall (F := F) t
   calc
     (badRestrictions (n := n) s (BadFamily_deterministic (F := F) t)).card
         ≤ codes.card := hcard
     _ = (R_s (n := n) (s - t)).card * (auxTraceFamilySmallCodes (F := F) t).card := hcodes_card
     _ = (R_s (n := n) (s - t)).card * (F.length + 1) * (2 * (w + 1)) ^ t := by
-          simp [haux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+          simp [haux, Nat.mul_comm, Nat.mul_assoc]
 
 lemma card_bad_lt_card_all_of_cnf_family_bound_det_small
     {n w s t : Nat} (F : FormulaFamily n w)

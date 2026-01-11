@@ -270,8 +270,7 @@ lemma card_AuxTraceSmall (w t : Nat) :
     Fintype.card (AuxTraceSmall w t) = (2 * (w + 1)) ^ t := by
   classical
   simp [AuxTraceSmall, AuxStepSmall, card_Vector, Fintype.card_prod,
-    Fintype.card_bool, Fintype.card_fin, Nat.mul_comm, Nat.mul_left_comm,
-    Nat.mul_assoc]
+    Fintype.card_bool, Fintype.card_fin, Nat.mul_comm]
 
 abbrev FamilyTraceCodeSmall {n w : Nat} (F : FormulaFamily n w) (t : Nat) : Type :=
   Fin (F.length + 1) × AuxTraceSmall w t
@@ -285,7 +284,7 @@ lemma card_AuxTraceFamilySmall {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
   classical
   simp [AuxTraceFamilySmall, FamilyTraceCodeSmall, AuxTraceSmall, AuxStepSmall,
     Fintype.card_prod, card_Vector, Fintype.card_fin, Fintype.card_bool,
-    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc, card_AuxTraceSmall]
+    Nat.mul_comm]
 
 def auxTraceFamilySmallCodes {n w : Nat} (F : FormulaFamily n w) (t : Nat)
     [Fintype (AuxTraceFamilySmall (F := F) t)] :
@@ -324,7 +323,7 @@ lemma card_FamilyTraceCodeWide {n w : Nat} (F : FormulaFamily n w) (t : Nat) :
   calc
     Fintype.card (FamilyTraceCodeWide (F := F) t)
         = (F.length + 1) * Fintype.card (TraceCode n w (maxClauses F) t) := by
-            simp [FamilyTraceCodeWide, Fintype.card_prod, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+            simp [FamilyTraceCodeWide, Fintype.card_prod]
     _ = (F.length + 1) * (2 * n * (maxClauses F + 1) * (w + 1)) ^ t := by
           simp [hcard_trace]
 
@@ -344,8 +343,8 @@ lemma card_AuxSimple (n t : Nat) :
     Fintype.card (AuxSimple n t) = (2 * n) ^ t := by
   classical
   -- `BitFix n = Fin n × Bool`, поэтому кардинал одного шага = 2 * n.
-  simp [AuxSimple, BitFix, Fintype.card_fun, Fintype.card_prod,
-    Fintype.card_bool, Fintype.card_fin, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  simp [AuxSimple, BitFix, Fintype.card_prod,
+    Fintype.card_bool, Fintype.card_fin, Nat.mul_comm]
 
 def auxSimpleCodes (n t : Nat) [Fintype (AuxSimple n t)] : Finset (AuxSimple n t) :=
   Finset.univ
@@ -377,8 +376,8 @@ lemma card_AuxTraceVar (n w t : Nat) :
     Fintype.card (AuxTraceVar n w t) =
       (2 * n) ^ t * (2 * (w + 1)) ^ t := by
   classical
-  simp [AuxTraceVar, card_AuxTraceSmall, card_AuxSimple, Fintype.card_prod,
-    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+  simp [AuxTraceVar, card_AuxTraceSmall, Fintype.card_prod,
+    Nat.mul_comm]
 
 abbrev FamilyTraceCodeVar {n w : Nat} (F : FormulaFamily n w) (t : Nat) : Type :=
   Fin (F.length + 1) × AuxTraceVar n w t
@@ -437,13 +436,12 @@ lemma card_Aux (n t k m : Nat) :
   classical
   -- `Fintype.card_fun` даёт степень кардинала кодом для одного шага.
   -- Кардинал одного шага = (2 * n) * k * m.
-  simp [Aux, BitFix, Fintype.card_fun, Fintype.card_prod, Fintype.card_bool,
+  simp [Aux, BitFix, Fintype.card_prod, Fintype.card_bool,
     Fintype.card_fin, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
 
 lemma card_Aux_le (n t k m : Nat) :
     Fintype.card (Aux n t k m) ≤ (2 * n * k * m) ^ t := by
-  simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-    (le_rfl : (2 * n * k * m) ^ t ≤ (2 * n * k * m) ^ t)
+  simp [card_Aux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
 /-- Универсальное множество кодов `Aux` как `Finset.univ`. -/
 def auxCodes (n t k m : Nat) [Fintype (Aux n t k m)] : Finset (Aux n t k m) :=
@@ -549,13 +547,12 @@ lemma decodeAuxSimple_ofTrace
           List.ofFn
             (fun i : Fin t =>
               code.assignedFixes.get (Fin.cast hlen.symm i)) := by
-            simp [auxSimpleOfTrace, code, hlen]
+            simp [auxSimpleOfTrace, code]
       _ = List.ofFn
             (fun i : Fin code.assignedFixes.length =>
               code.assignedFixes.get i) := hcongr
       _ = code.assignedFixes := by
-            simpa using
-              (List.ofFn_get (l := code.assignedFixes))
+            simp
   -- Дальше используем тот факт, что `decode` штрих‑кода восстанавливает `ρ`.
   have hdecode :
       Core.SelectionTrace.decode
@@ -654,7 +651,7 @@ def auxFamilySimpleCodes
     (auxFamilySimpleCodes (F := F) t).card
         = (F.length + 1) * Fintype.card (Fin t → Fin n × Bool) := by
             simp [auxFamilySimpleCodes, auxSimpleCodes_card, AuxSimple, BitFix,
-              Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+              Nat.mul_comm]
     _ = (F.length + 1) * (n * 2) ^ t := by
           simp [hcard_fun]
     _ = (F.length + 1) * (2 * n) ^ t := by
@@ -748,7 +745,7 @@ lemma encodeBadFamilyDetCNF_injective
         =
       decodeBadFamilyDetCNF (F := F) (t := t)
           (encodeBadFamilyDetCNF (F := F) (s := s) (t := t) y).1 := by
-    simpa [hxy]
+    simp [hxy]
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this
 
@@ -847,7 +844,7 @@ lemma encodeBadFamilyDetCNF_var_injective
         =
       decodeBadFamilyDetCNF_var (F := F) (t := t)
           (encodeBadFamilyDetCNF_var (F := F) (s := s) (t := t) y).1 := by
-    simpa [hxy]
+    simp [hxy]
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this
 
@@ -982,7 +979,7 @@ lemma encodeBadFamilyDetCNF_aux_injective
         =
       decodeBadFamilyDetCNF_aux (F := F) (t := t)
           (encodeBadFamilyDetCNF_aux (F := F) (s := s) (t := t) y).1 := by
-    simpa [hxy]
+    simp [hxy]
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this
 
@@ -1075,7 +1072,7 @@ lemma maxDepthIndexList_spec
           | inr hmem =>
               cases xs with
               | nil =>
-                  simpa using hmem
+                  cases hmem
               | cons y tail =>
                   have hne : maxDepthIndexList F ρ (y :: tail) ≠ none := by
                     cases htail : maxDepthIndexList F ρ tail with
@@ -1130,7 +1127,7 @@ lemma maxDepthIndex?_spec
     maxDepthIndexList_spec (F := F) (ρ := ρ) (xs := List.finRange F.length) (i := i) h
   intro j
   exact hspec j (by
-    simpa using (List.mem_finRange (n := F.length) j))
+    simp [List.mem_finRange])
 
 lemma maxDepthIndex?_none_iff_length_zero
     {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
@@ -1395,7 +1392,7 @@ lemma encodeBadFamilyCNF_injective
         =
       decodeBadFamilyCNF (F := F) (t := t)
           (encodeBadFamilyCNF (F := F) (s := s) (t := t) y).1 := by
-    simpa [hxy]
+    simp [hxy]
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this
 
@@ -1425,7 +1422,10 @@ noncomputable def encodeBadCNF
 noncomputable def decodeBadCNF
     {n w t : Nat} (F : CNF n w) :
     (Restriction n × AuxSimple n t) → Restriction n
-  | ⟨ρ', aux⟩ => decodeAuxSimple (ρ' := ρ') (aux := aux)
+  | ⟨ρ', aux⟩ =>
+      -- `F` не участвует в вычислении, но сохраняем его ради унифицированного интерфейса.
+      have _ := F
+      decodeAuxSimple (ρ' := ρ') (aux := aux)
 
 lemma decode_encodeBadCNF
     {n w t s : Nat} (F : CNF n w)
@@ -1454,7 +1454,7 @@ lemma encodeBadCNF_injective
       (decodeBadCNF (F := F) (t := t) (encodeBadCNF (F := F) (s := s) (t := t) x).1)
         =
       (decodeBadCNF (F := F) (t := t) (encodeBadCNF (F := F) (s := s) (t := t) y).1) := by
-    simpa [hxy]
+    simp [hxy]
   -- Согласуем через `hx`/`hy`.
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this

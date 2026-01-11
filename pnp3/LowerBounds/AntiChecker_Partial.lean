@@ -201,7 +201,7 @@ noncomputable def consistentPartialsFinset {n : Nat} (f : TotalTable n) :
 lemma mem_consistentPartialsFinset {n : Nat} (f : TotalTable n) (T : PartialTable n) :
     T ∈ consistentPartialsFinset (f := f) ↔ consistentWithTotal T f := by
   classical
-  simp [consistentPartialsFinset, partialTables, TotalTable, PartialTable]
+  simp [consistentPartialsFinset, partialTables, PartialTable]
 
 /-- `consistentPartialsFinset` — подмножество `partialTables`. -/
 lemma consistentPartialsFinset_subset {n : Nat} (f : TotalTable n) :
@@ -243,7 +243,7 @@ lemma card_consistentPartialsFinset_eq_pow {n : Nat} (f : TotalTable n) :
     (consistentPartialsFinset (f := f)).card = 2 ^ (2 ^ n) := by
   have hEq := card_consistentPartialsFinset_eq_subtype (f := f)
   have hCard := card_consistentPartials_eq (n := n) (f := f)
-  simpa [hEq, hCard]
+  simp [hEq, hCard]
 
 /-!
   ### Дополнительные арифметические леммы
@@ -271,7 +271,7 @@ lemma nplus2_le_twoPow_half (n : Nat) (hn : 16 ≤ n) :
     calc
       n = n / 2 * 2 + n % 2 := by simpa [Nat.mul_comm] using h.symm
       _ = 2 * m + n % 2 := by
-        simp [m, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        simp [m, Nat.mul_comm]
   have hbound : n + 2 ≤ 2 * m + 3 := by
     nlinarith [hdecomp, hmod_le]
   have hquad : 2 * m + 3 ≤ m * (m + 2) := by
@@ -303,7 +303,7 @@ lemma twoPow_half_le_div (n : Nat) (hn : 16 ≤ n) :
     calc
       Nat.pow 2 (n / 2) * Nat.pow 2 (n / 2)
           = Nat.pow 2 (n / 2 + n / 2) := by
-            simp [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+            simp [Nat.pow_add]
       _ ≤ Nat.pow 2 n := hpow
   exact le_trans hmul hpow_le
 
@@ -827,7 +827,7 @@ theorem noSmallAC0Solver_partial
     have hLanguageMem :
         gap_lang_ac0 ∈
           Counting.allFunctionsFinset solver.params.ac0.n := by
-      simpa using (Finset.mem_univ gap_lang_ac0)
+      simp
     have hfinset :
         familyFinset sc =
           Counting.allFunctionsFinset solver.params.ac0.n := by

@@ -210,6 +210,7 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
             cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
             have hzero : Nat.succ t ≤ 0 := by
+              -- После подстановки глубина листа равна нулю.
               simpa [this] using hdepth
             exact (Nat.not_succ_le_zero _ hzero)
           exact (False.elim hcontr)
@@ -296,11 +297,13 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
             cases fuel with
             | zero =>
                 have : PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ) = 0 := by
-                  simp [canonicalDT_CNF_aux, hsel, PDT.depth]
-                have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+                  simp [canonicalDT_CNF_aux, PDT.depth]
+                have hzero : Nat.succ t ≤ 0 := by
+                  -- В случае листа глубина равна нулю.
+                  simpa [this] using hdepth
                 exact (False.elim (Nat.not_succ_le_zero _ hzero))
             | succ fuel =>
-                simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
+                simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
           have hbranch :
               PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) ≥ t
                 ∨ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) ≥ t := by
@@ -311,7 +314,9 @@ theorem badCNF_of_depth_ge_canonicalDT_aux
                       (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
                       (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))
                   ≥ Nat.succ t := by
-              simpa [hnode] using hdepth_root
+              have hdepth' := hdepth_root
+              simp [hnode] at hdepth'
+              exact hdepth'
             exact (depth_ge_succ_iff
               (i := ℓ.idx)
               (L := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
@@ -376,7 +381,9 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
           have : PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ) = 0 := by
             cases fuel <;> simp [canonicalDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
-            have hzero : Nat.succ t ≤ 0 := by simpa [this] using hdepth
+            have hzero : Nat.succ t ≤ 0 := by
+              -- После подстановки глубина листа равна нулю.
+              simpa [this] using hdepth
             exact (Nat.not_succ_le_zero _ hzero)
           exact (False.elim hcontr)
       | some selection =>
@@ -454,12 +461,13 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
             cases fuel with
             | zero =>
                 have : (PDT.depth (canonicalDT_CNF_aux (F := F) 0 ρ)) = 0 := by
-                  simp [canonicalDT_CNF_aux, hsel, PDT.depth]
+                  simp [canonicalDT_CNF_aux, PDT.depth]
                 have hzero : Nat.succ t ≤ 0 := by
+                  -- В случае листа глубина равна нулю.
                   simpa [this] using hdepth
                 exact (False.elim (Nat.not_succ_le_zero _ hzero))
             | succ fuel =>
-                simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
+                simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
           have hbranch :
               PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0) ≥ t
                 ∨ PDT.depth (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) ≥ t := by
@@ -469,7 +477,9 @@ theorem badCNF_deterministic_of_depth_ge_canonicalDT_aux
                       (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
                       (canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1))
                   ≥ Nat.succ t := by
-              simpa [hnode] using hdepth
+              have hdepth'' := hdepth
+              simp [hnode] at hdepth''
+              exact hdepth''
             exact (depth_ge_succ_iff (i := ℓ.idx) (L := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ0)
               (R := canonicalDT_CNF_aux (F := F) (fuel - 1) ρ1) (t := t)).1 hdepth'
           cases hbranch with
@@ -567,7 +577,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
       t ≤ fuel →
       t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ)
   | 0, fuel, ρ, _, _, _ => by
-      simp [PDT.depth]
+      simp
   | Nat.succ t, fuel, ρ,
       Core.CNF.CanonicalTrace.cons selection choice tail, hdet, hfuel => by
       -- При `t+1 ≤ fuel` обязаны находиться в ветке `succ`.
@@ -596,7 +606,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
             PDT.node ℓ.idx
               (canonicalDT_CNF_aux (F := F) fuel ρ0)
               (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
-        simp [canonicalDT_CNF_aux, hsel, ℓ, hmem, hfree, ρ0, ρ1, w]
+        simp [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, w]
       have hassign_choice :
           ρ.assign ℓ.idx choice.value =
             some (ClausePendingWitness.Selection.nextRestriction
@@ -637,7 +647,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
                     (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
                     = ρ.assign ℓ.idx false := by simpa using h1.symm
                 _ = some ρ0 := hassign0
-            simpa [hval, hnext0]
+            simp [hnext0]
         | true =>
             have hassign1 :
                 ρ.assign ℓ.idx true = some ρ1 := by
@@ -659,7 +669,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
                     (ρ := ρ) (C := selection.clause) (w := w) (choice := choice))
                     = ρ.assign ℓ.idx true := by simpa using h1.symm
                 _ = some ρ1 := hassign1
-            simpa [hval, hnext1]
+            simp [hnext1]
       have htail_depth :
           t ≤ PDT.depth (canonicalDT_CNF_aux (F := F) fuel
             (if choice.value = false then ρ0 else ρ1)) := by
@@ -700,7 +710,7 @@ theorem depth_ge_of_badCNF_deterministic_aux
                   (Nat.max
                     (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ0))
                     (PDT.depth (canonicalDT_CNF_aux (F := F) fuel ρ1))) := by
-          simpa [hnode, PDT.depth]
+          simp [hnode, PDT.depth]
         simpa [this] using Nat.succ_le_succ hdepth_node
       exact hdepth
 

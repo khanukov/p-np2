@@ -1072,10 +1072,9 @@ lemma scenarioFromShrinkage_dictLen_le_pow
   simp [Core.Shrinkage.commonPDT_depthBound] at hbound'
   exact hbound'
 
-/--
-  Параметр `k` в сценарии AC⁰ не превышает `2^{ac0DepthBound params}`.
-  Получаем его из границы `t ≤ ac0DepthBound params`, предоставленной
-  constructive shrinkage.
+/-!
+  Параметр `k` в сценарии AC⁰ не превышает `2^{ac0DepthBound_strong params}`.
+  Это согласовано с тем, что shrinkage‑сертификат теперь даёт strong‑границу.
 -/
 lemma scenarioFromAC0_k_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1083,7 +1082,7 @@ lemma scenarioFromAC0_k_le_pow
     (hF : ThirdPartyFacts.FamilyIsAC0 params F)
     :
     (scenarioFromAC0 params F hF).1
-      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
   classical
   unfold scenarioFromAC0
   set S := ThirdPartyFacts.certificate_from_AC0 params F hF
@@ -1098,11 +1097,11 @@ lemma scenarioFromAC0_k_le_pow
     ThirdPartyFacts.certificate_from_AC0_depth_bound
       (params := params) (F := F) (hF := hF) 
   have hpow_bound :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
-    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound_strong params := by
       have htmp := htBound
       change Core.Shrinkage.depthBound (S := S)
-          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
+          ≤ ThirdPartyFacts.ac0DepthBound_strong params at htmp
       have hrewrite := htmp
       simp [Core.Shrinkage.depthBound] at hrewrite
       exact hrewrite
@@ -1115,10 +1114,9 @@ lemma scenarioFromAC0_k_le_pow
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
   exact hfinal
 
-/--
-  Усиленная версия: параметр `k` в AC⁰-сценарии ограничен
-  `2^{ac0DepthBound_strong params}`.  Мы поднимаем уже полученную
-  оценку через `ac0DepthBound_le_strong`.
+/-!
+  Усиленная версия: bound остаётся `2^{ac0DepthBound_strong params}`.
+  Базовая лемма уже формулируется в strong‑терминах.
 -/
 lemma scenarioFromAC0_k_le_pow_strong
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1127,13 +1125,8 @@ lemma scenarioFromAC0_k_le_pow_strong
     :
     (scenarioFromAC0 params F hF).1
       ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
-  -- Берём слабую границу и поднимаем её монотонностью степени двойки.
-  have hweak := scenarioFromAC0_k_le_pow
-    (params := params) (F := F) (hF := hF) 
-  have hbound := ThirdPartyFacts.ac0DepthBound_le_strong params
-  have hpow :=
-    Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound
-  exact hweak.trans hpow
+  exact scenarioFromAC0_k_le_pow
+    (params := params) (F := F) (hF := hF)
 
 lemma scenarioFromAC0_with_bound_k_le_pow_strong
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1156,11 +1149,11 @@ lemma scenarioFromAC0_with_bound_k_le_pow_strong
     ThirdPartyFacts.certificate_from_AC0_with_bound_depth_bound
       (params := params) (F := F) (hF := hF) (hBound := hBound)
   have hpow_bound :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
-    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound_strong params := by
       have htmp := htBound
       change Core.Shrinkage.depthBound (S := S)
-          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
+          ≤ ThirdPartyFacts.ac0DepthBound_strong params at htmp
       have hrewrite := htmp
       simp [Core.Shrinkage.depthBound] at hrewrite
       exact hrewrite
@@ -1171,7 +1164,6 @@ lemma scenarioFromAC0_with_bound_k_le_pow_strong
         = (scenarioFromAC0_with_bound params F hF hBound).1 := by
     simp [scenarioFromAC0_with_bound, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
-  simp [ThirdPartyFacts.ac0DepthBound] at hfinal
   exact hfinal
 
 lemma scenarioFromAC0_with_polylog_k_le_pow_strong
@@ -1189,9 +1181,9 @@ lemma scenarioFromAC0_with_polylog_k_le_pow_strong
       (params := params) (F := F) (hF := hF) (hBound := hBound)
   simpa [scenarioFromAC0_with_polylog] using hk
 
-/--
+/-!
   Оценка на длину словаря в AC⁰-сценарии:
-  она не превосходит `2^{ac0DepthBound params}`.
+  она не превосходит `2^{ac0DepthBound_strong params}`.
 -/
 lemma scenarioFromAC0_dictLen_le_pow
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1199,7 +1191,7 @@ lemma scenarioFromAC0_dictLen_le_pow
     (hF : ThirdPartyFacts.FamilyIsAC0 params F)
     :
     Counting.dictLen (scenarioFromAC0 params F hF).2.atlas.dict
-      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
+      ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
   classical
   unfold scenarioFromAC0
   set S := ThirdPartyFacts.certificate_from_AC0 params F hF
@@ -1214,11 +1206,11 @@ lemma scenarioFromAC0_dictLen_le_pow
     ThirdPartyFacts.certificate_from_AC0_depth_bound
       (params := params) (F := F) (hF := hF) 
   have hpow_bound :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
-    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound_strong params := by
       have htmp := htBound
       change Core.Shrinkage.depthBound (S := S)
-          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
+          ≤ ThirdPartyFacts.ac0DepthBound_strong params at htmp
       have hrewrite := htmp
       simp [Core.Shrinkage.depthBound] at hrewrite
       exact hrewrite
@@ -1243,13 +1235,8 @@ lemma scenarioFromAC0_dictLen_le_pow_strong
     :
     Counting.dictLen (scenarioFromAC0 params F hF).2.atlas.dict
       ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
-  -- Используем слабую оценку и поднимаем её.
-  have hweak := scenarioFromAC0_dictLen_le_pow
-    (params := params) (F := F) (hF := hF) 
-  have hbound := ThirdPartyFacts.ac0DepthBound_le_strong params
-  have hpow :=
-    Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound
-  exact hweak.trans hpow
+  exact scenarioFromAC0_dictLen_le_pow
+    (params := params) (F := F) (hF := hF)
 
 lemma scenarioFromAC0_with_bound_dictLen_le_pow_strong
     (params : ThirdPartyFacts.AC0Parameters)
@@ -1272,11 +1259,11 @@ lemma scenarioFromAC0_with_bound_dictLen_le_pow_strong
     ThirdPartyFacts.certificate_from_AC0_with_bound_depth_bound
       (params := params) (F := F) (hF := hF) (hBound := hBound)
   have hpow_bound :
-      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) := by
-    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound params := by
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+    have hS : S.t ≤ ThirdPartyFacts.ac0DepthBound_strong params := by
       have htmp := htBound
       change Core.Shrinkage.depthBound (S := S)
-          ≤ ThirdPartyFacts.ac0DepthBound params at htmp
+          ≤ ThirdPartyFacts.ac0DepthBound_strong params at htmp
       have hrewrite := htmp
       simp [Core.Shrinkage.depthBound] at hrewrite
       exact hrewrite
@@ -1289,7 +1276,6 @@ lemma scenarioFromAC0_with_bound_dictLen_le_pow_strong
             (scenarioFromAC0_with_bound params F hF hBound).2.atlas.dict := by
     simp [scenarioFromAC0_with_bound, S]
   have hfinal := Eq.subst (motive := fun x => x ≤ _) (Eq.symm hrewrite) hresult
-  simp [ThirdPartyFacts.ac0DepthBound] at hfinal
   exact hfinal
 
 lemma scenarioFromAC0_with_polylog_dictLen_le_pow_strong
@@ -1398,7 +1384,7 @@ lemma scenarioFromAC0_completeBounds
     (F : Core.Family params.n)
     (hF : ThirdPartyFacts.FamilyIsAC0 params F)
     :
-    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
     let sc := scenarioFromAC0 params F hF
     sc.1 ≤ bound ∧
       Counting.dictLen sc.2.atlas.dict ≤ bound ∧
@@ -1554,9 +1540,9 @@ theorem exists_boundedAtlas_from_AC0
     :
     ∃ (k : Nat) (sc : BoundedAtlasScenario params.n),
       sc.family = F ∧
-      k ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) ∧
+      k ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) ∧
       Counting.dictLen sc.atlas.dict
-        ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params) ∧
+        ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) ∧
       (0 : Core.Q) ≤ sc.atlas.epsilon ∧
       sc.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
       sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
@@ -1851,7 +1837,7 @@ lemma scenarioFromAC0_stepAB_summary
     :
     let pack := scenarioFromAC0 params F hF
     let sc := pack.2
-    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound params)
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params)
     sc.family = F ∧
       sc.k ≤ bound ∧
       Counting.dictLen sc.atlas.dict ≤ bound ∧

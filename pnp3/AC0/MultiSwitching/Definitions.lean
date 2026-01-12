@@ -1,6 +1,7 @@
 import Core.BooleanBasics
 import Core.PDT
 import Core.SAL_Core
+import AC0.MultiSwitching.Duality
 import AC0.MultiSwitching.Restrictions
 
 /-!
@@ -53,6 +54,25 @@ abbrev DnfFamily (n k : Nat) := List (kDNF n k)
 /-- Перевод семейства k‑DNF в `Core.Family` булевых функций. -/
 @[simp] def evalDnfFamily (F : DnfFamily n k) : Core.Family n :=
   F.map evalDNF
+
+/-!
+### ДУАЛЬНОСТЬ: DNF → CNF
+
+Чтобы использовать CNF‑пайплайн для DNF‑формул, задаём явный
+перевод через отрицание. Это минимальный мост, который позволяет
+привязывать DNF‑интерфейсы к multi‑switching для CNF.
+-/
+
+/-- Перевод DNF‑семейства в CNF‑семейство по правилу ¬DNF → CNF. -/
+@[simp] def negDnfFamilyToCnfFamily (F : DnfFamily n k) : FormulaFamily n k :=
+  F.map DNF.negToCNF
+
+@[simp] lemma eval_negDnfFamilyToCnfFamily
+    (F : DnfFamily n k) (x : Core.BitVec n) :
+    (evalFamily (negDnfFamilyToCnfFamily F)).map (fun g => g x)
+      = (evalDnfFamily F).map (fun g => ! g x) := by
+  -- Разворачиваем определения и используем дуальность `eval_negToCNF`.
+  simp [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily, evalCNF, evalDNF]
 
 /-!
 ### Множество "плохих" рестрикций

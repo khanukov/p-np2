@@ -307,6 +307,17 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
 
+/--
+  Каноническая формулировка оценки на число листьев PDT:
+  количество листьев не превосходит `2^depth`.
+
+  Это «публичное» имя для использования во внешних модулях, где удобнее
+  явно видеть связь depth ↔ leaves, не раскрывая вспомогательную лемму.
+-/
+theorem PDT.leaves_le_pow2_depth {n : Nat} (t : PDT n) :
+    (PDT.leaves t).length ≤ Nat.pow 2 (PDT.depth t) := by
+  simpa using (PDT.leaves_length_le_pow_depth t)
+
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,
     2) объединение листьев покрывает весь рассматриваемый регион.

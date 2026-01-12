@@ -289,6 +289,33 @@ theorem stage1_4_complete_small_canonicalCCDT
   exact shrinkage_step3_2_small_canonicalCCDT (F := F) hN ht henc_small
 
 /-!
+## Stage 1–6 (малый алфавит): сразу `PartialCertificate`
+
+Этот результат завершает путь "encoding → good restriction → certificate":
+как только Stage 3.2 дал **какую-то** рестрикцию, мы можем построить
+`PartialCertificate` с `ε = 0` через точечные selectors. Здесь мы не
+используем свойство "good" явно, потому что конструкция сертификата
+не зависит от `ρ` (см. `ShrinkageFromGood.partialCertificate_from_restriction`).
+-/
+
+theorem stage1_6_complete_small_canonicalCCDT
+    {n w : Nat} (F : FormulaFamily n w)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam F.length n ≤ sParam n w)
+    (henc_small :
+      Function.Injective
+        (encodeBadFamilyDetCNF_small (F := F)
+          (s := sParam n w) (t := tParam F.length n))) :
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧ C.epsilon = 0 := by
+  -- Stage 1–3: получаем хоть какую-то рестрикцию (good restriction).
+  obtain ⟨ρ, -, -⟩ :=
+    exists_good_restriction_step3_2_small_canonicalCCDT
+      (F := F) hN ht henc_small
+  -- Stage 4–6: из любой рестрикции строим частичный сертификат (ε = 0).
+  exact partialCertificate_from_restriction (F := F) (ρ := ρ)
+
+/-!
 ## Числовая оценка для расширенной базы
 
 Если мы используем расширенный код (с фактором `2*n` и `BParam`),
@@ -329,6 +356,55 @@ lemma numerical_bound_step3_2_expanded
   simpa [hpow', Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hnumeric
 
 /-!
+## Stage 3.2 (расширенный код): wrapper без малого алфавита
+
+Этот wrapper предназначен для **расширенного** кодирования
+`FamilyTraceCodeVar`. Он ожидает готовую числовую оценку
+`hbound` с базой `(2*n)^t * (2*(w+1))^t` и переводит её в
+существование good restriction.
+
+Такой вариант полезен как промежуточный шаг, пока инъективность
+малого кодирования `AuxTraceSmall` ещё не завершена.
+-/
+
+theorem exists_good_restriction_step3_2_expanded
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ BadFamily_deterministic (F := F) t ρ := by
+  exact exists_good_restriction_cnf_family_of_bound_det_var
+    (F := F) (s := s) (t := t) hbound
+
+/-!
+## Stage 3.2 (расширенный код): переход к `BadEvent`
+
+Этот шаг зеркален малому алфавиту: мы сначала получаем good restriction
+для `BadFamily_deterministic`, а затем переводим его в `BadEvent`
+для канонического CCDT.  Единственная дополнительная гипотеза — `t > 0`,
+чтобы применить эквивалентность `BadEvent ↔ BadFamily_deterministic`.
+-/
+
+theorem exists_good_restriction_step3_2_expanded_canonicalCCDT
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (htpos : 0 < t)
+    (hbound :
+      (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s,
+      ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ := by
+  obtain ⟨ρ, hρ, hgood⟩ :=
+    exists_good_restriction_step3_2_expanded (F := F) (s := s) (t := t) hbound
+  refine ⟨ρ, hρ, ?_⟩
+  intro hbad
+  have hbad' : BadFamily_deterministic (F := F) t ρ := by
+    exact (badEvent_canonicalCCDT_iff_badFamilyDet
+      (F := F) (ρ := ρ) htpos).1 hbad
+  exact hgood hbad'
+
+/-!
 ## Wrapper: Step 3.2 (CNF family)
 
 Мы выполняем разбиение по размеру `n`:
@@ -336,6 +412,48 @@ lemma numerical_bound_step3_2_expanded
 * **малый `n`**: `sParam = 0`, тогда `BadFamily` невозможен при `t > 0`;
 * **большой `n`**: используем `numerical_inequality_3_2` и counting‑лемму.
 -/
+
+/-!
+### Малый `n`: `sParam = 0`, bad‑трасса невозможна
+
+Эта лемма закрывает **Case B** из плана Step 3.2:
+если `n < 49*(w+1)`, то `sParam = 0`, а из условия `tParam ≤ sParam`
+получаем противоречие с тем, что `tParam > 0`.
+-/
+
+theorem exists_good_restriction_small_n
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    (hN : n < 49 * (w + 1))
+    [DecidablePred (BadFamily_deterministic (F := F) (tParam m n))] :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadFamily_deterministic (F := F) (tParam m n) ρ := by
+  classical
+  subst hm
+  have hs : sParam n w = 0 := sParam_eq_zero_of_lt (n := n) (w := w) hN
+  -- Из `tParam ≤ sParam` и `sParam = 0` получаем противоречие с `tParam > 0`.
+  have htzero_le : tParam F.length n ≤ 0 := by
+    simpa [hs] using ht
+  have htpos : 0 < tParam F.length n := by
+    simp [tParam]
+  have hcontr : False := by
+    have htzero : tParam F.length n = 0 := Nat.eq_zero_of_le_zero htzero_le
+    have : (0 : Nat) < 0 := by
+      have htpos' := htpos
+      rw [htzero] at htpos'
+      exact htpos'
+    exact (Nat.lt_irrefl 0 this)
+  -- Возьмём произвольную рестрикцию из `R_s` с `s=0`.
+  have hnonempty : (R_s (n := n) 0).Nonempty := by
+    -- `R_s` непусто при `0 ≤ n`.
+    exact R_s_nonempty (n := n) (s := 0) (by omega)
+  rcases hnonempty with ⟨ρ, hρ⟩
+  refine ⟨ρ, ?_, ?_⟩
+  · simpa [hs] using hρ
+  · intro _hbad
+    -- В малом случае противоречие следует уже из числовых ограничений.
+    exact (False.elim hcontr)
 
 theorem exists_good_restriction_step3_2
     {n w : Nat} (F : FormulaFamily n w) (m : Nat)
@@ -357,32 +475,9 @@ theorem exists_good_restriction_step3_2
       (bad := BadFamily_deterministic (F := F) (tParam F.length n))
       hbad_lt
   · -- Малое `n`: `sParam = 0`, плохая трасса невозможна.
-    have hs : sParam n w = 0 := sParam_eq_zero_of_lt (n := n) (w := w)
-      (by
-        have hlt : n < 49 * (w + 1) := lt_of_not_ge hN
-        exact hlt)
-    -- Из `tParam ≤ sParam` и `sParam = 0` получаем противоречие с `tParam > 0`.
-    have htzero_le : tParam F.length n ≤ 0 := by
-      simpa [hs] using ht
-    have htpos : 0 < tParam F.length n := by
-      simp [tParam]
-    have hcontr : False := by
-      have htzero : tParam F.length n = 0 := Nat.eq_zero_of_le_zero htzero_le
-      have : (0 : Nat) < 0 := by
-        have htpos' := htpos
-        rw [htzero] at htpos'
-        exact htpos'
-      exact (Nat.lt_irrefl 0 this)
-    -- Возьмём произвольную рестрикцию из `R_s` с `s=0`.
-    have hnonempty : (R_s (n := n) 0).Nonempty := by
-      -- `R_s` непусто при `0 ≤ n`.
-      exact R_s_nonempty (n := n) (s := 0) (by omega)
-    rcases hnonempty with ⟨ρ, hρ⟩
-    refine ⟨ρ, ?_, ?_⟩
-    · simpa [hs] using hρ
-    · intro _hbad
-      -- В малом случае противоречие следует уже из числовых ограничений.
-      exact (False.elim hcontr)
+    have hlt : n < 49 * (w + 1) := lt_of_not_ge hN
+    exact exists_good_restriction_small_n
+      (F := F) (m := m) (hm := rfl) (ht := ht) hlt
 
 /-!
 ## Stage 4 (общий/расширенный вариант): Stage 3 → Shrinkage

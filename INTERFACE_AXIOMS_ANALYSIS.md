@@ -4,9 +4,9 @@
 **Дата**: 2025-10-24  
 **Обновление**: 2025-12-26 — интерфейсные аксиомы удалены, `P_subset_Ppoly_proof` и
 `P_ne_NP_of_nonuniform_separation` импортируются как теоремы из `Facts/PsubsetPpoly`.
-**Примечание (2025-12-26)**: В дереве `pnp3/` есть отдельные placeholder‑аксиомы
-для multi‑switching canonical trace encoding (`AC0/MultiSwitching/Encoding.lean`);
-они не относятся к интерфейсам и не используются в цепочке `P_ne_NP_final`.
+**Примечание (2025-12-27)**: placeholder‑аксиомы для multi‑switching encoding
+удалены; `AC0/MultiSwitching/Encoding.lean` теперь содержит конструктивные
+леммы и не вводит внешних допущений.
 **Вопрос**: Можем ли мы доказать I.3 (`P_subset_Ppoly_proof`) и I.5 (`P_ne_NP_of_nonuniform_separation`)?
 
 ---

@@ -16,6 +16,8 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
 import AC0.Formulas
+import AC0.MultiSwitching.Definitions
+import AC0.MultiSwitching.CanonicalDT
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -57,11 +59,620 @@ namespace Core
     subst hxy
     exact mem_pointSubcube_self x
 
+/-!
+### Разбиение листьев PDT
+
+Для дуальности "CNF‑shrinkage для ¬F ⇒ DNF‑shrinkage для F"
+нужно уметь брать дополнение списка листьев относительно всего дерева.
+Это корректно, если листья образуют *разбиение* пространства входов:
+для каждого `x` существует **единственный** лист, содержащий `x`.
+-/
+
+/-- Условие «листья PDT образуют разбиение»: для любого `x` ровно один лист. -/
+def LeafPartition {n : Nat} (leaves : List (Subcube n)) : Prop :=
+  ∀ x : BitVec n, ∃! β, β ∈ leaves ∧ memB β x = true
+
+/-!
+### Разбиение относительно базовой рестрикции
+
+Чтобы доказать разбиение для CCDT, удобно сначала зафиксировать
+**относительную** версию: листья покрывают все точки, согласованные
+с исходной рестрикцией `ρ`. Это ровно то, что выполняется для
+канонических деревьев, построенных из `Restriction.assign`.
+-/
+
+/-- Листья образуют разбиение **внутри** подкуба `ρ.mask`. -/
+def LeafPartitionWithin {n : Nat} (ρ : Restriction n) (leaves : List (Subcube n)) : Prop :=
+  ∀ x : BitVec n, memB ρ.mask x = true → ∃! β, β ∈ leaves ∧ memB β x = true
+
+/-- Полное разбиение следует из относительного при `ρ = free`. -/
+lemma leafPartition_of_within_free {n : Nat} (leaves : List (Subcube n)) :
+    LeafPartitionWithin (Restriction.free n) leaves → LeafPartition leaves := by
+  intro hpart x
+  have hmem : memB (Restriction.free n).mask x = true := by
+    -- `Restriction.free` — полный подкуб, он содержит любую точку.
+    have hmem' : mem (Restriction.free n).mask x := by
+      simpa [Restriction.free] using (mem_top (n := n) x)
+    simpa [mem_iff_memB] using hmem'
+  exact hpart x hmem
+
+/-!
+### Технические леммы о `Restriction.assign`
+
+Эти леммы используются, чтобы связать `memB` с ветвлением PDT
+в канонических деревьях.
+-/
+
+lemma memB_assign_iff {n : Nat} {ρ : Restriction n} {i : Fin n} {b : Bool}
+    {ρ' : Restriction n} (hassign : ρ.assign i b = some ρ') (x : BitVec n) :
+    memB ρ'.mask x = true ↔ memB ρ.mask x = true ∧ x i = b := by
+  classical
+  -- Переводим `Restriction.assign` в `Subcube.assign`.
+  have hassign' : Subcube.assign ρ.mask i b = some ρ'.mask := by
+    dsimp [Restriction.assign] at hassign
+    cases hstep : Subcube.assign ρ.mask i b with
+    | none =>
+        simp [hstep] at hassign
+    | some β =>
+        have hρ' : ρ' = ⟨β⟩ := by
+          simpa [hstep] using hassign
+        subst hρ'
+        simp [hstep]
+  -- Используем `mem_assign_iff` и переводим в `memB`.
+  have hmem := mem_assign_iff (β := ρ.mask) (γ := ρ'.mask)
+    (i := i) (b := b) hassign' x
+  constructor
+  · intro h
+    have hmemB : mem ρ'.mask x := (mem_iff_memB _ _).2 h
+    have hmem' := (hmem).1 hmemB
+    exact ⟨(mem_iff_memB _ _).1 hmem'.1, hmem'.2⟩
+  · intro h
+    have hmemB : mem ρ.mask x := (mem_iff_memB _ _).2 h.1
+    have hmem' := (hmem).2 ⟨hmemB, h.2⟩
+    exact (mem_iff_memB _ _).1 hmem'
+
+lemma subcubeRefines_of_assign {n : Nat} {ρ : Restriction n} {i : Fin n} {b : Bool}
+    {ρ' : Restriction n} (hassign : ρ.assign i b = some ρ') :
+    subcubeRefines ρ'.mask ρ.mask := by
+  intro j c hj
+  have hmask := Restriction.assign_mask_eq (ρ := ρ) (i := i) (b := b) (ρ' := ρ') hassign j
+  by_cases hji : j = i
+  · subst hji
+    -- Если `ρ.mask i` определён, то присваивание возможно только при совпадении бита.
+    cases hval : ρ.mask i with
+    | none =>
+        -- Противоречие с `hj`.
+        cases hj
+    | some bOld =>
+        have hb : bOld = b := by
+          by_contra hbneq
+          -- Тогда `assign` не мог завершиться успешно.
+          have hnone : Subcube.assign ρ.mask i b = none := by
+            simp [Subcube.assign, hval, hbneq]
+          dsimp [Restriction.assign] at hassign
+          simp [hnone] at hassign
+        -- Теперь `ρ'.mask i = some b = some c`.
+        have hc : c = bOld := by
+          have : some c = some bOld := by simpa [hval] using hj
+          exact Option.some.inj this
+        subst hc
+        simp [hmask, hb]
+  · -- В остальных координатах маска не меняется.
+    simp [hmask, hji] at *
+
+lemma memB_of_subcubeRefines {n : Nat} {β γ : Subcube n}
+    (href : subcubeRefines β γ) (x : BitVec n) :
+    memB β x = true → memB γ x = true := by
+  intro hβ
+  -- Раскрываем `memB` через `memB_eq_true_iff`.
+  have hβ' := (memB_eq_true_iff (β := β) (x := x)).1 hβ
+  apply (memB_eq_true_iff (β := γ) (x := x)).2
+  intro i b hγ
+  have hβmask : β i = some b := href i b hγ
+  exact hβ' i b hβmask
+
+/-!
+### Леммы о листьях `PDT.refine`
+
+Мы используем их, чтобы аккуратно работать с каноническим CCDT,
+который определяется через `refine`.
+-/
+
+lemma mem_leaves_refine_exists {n : Nat} {t : PDT n}
+    {tails : ∀ β, β ∈ PDT.leaves t → PDT n} {β : Subcube n} :
+    β ∈ PDT.leaves (PDT.refine t tails) →
+      ∃ β0 (hβ0 : β0 ∈ PDT.leaves t), β ∈ PDT.leaves (tails β0 hβ0) := by
+  intro hβ
+  induction t with
+  | leaf β0 =>
+      simp [PDT.refine, PDT.leaves] at hβ
+      refine ⟨β0, ?_, hβ⟩
+      simp [PDT.leaves]
+  | node i t0 t1 ih0 ih1 =>
+      -- Разбираем, в какой ветви оказался лист.
+      simp [PDT.refine, PDT.leaves] at hβ
+      cases hβ with
+      | inl hβ0 =>
+          rcases ih0 hβ0 with ⟨β0, hβ0, htail⟩
+          refine ⟨β0, ?_, htail⟩
+          exact List.mem_append.mpr (Or.inl hβ0)
+      | inr hβ1 =>
+          rcases ih1 hβ1 with ⟨β0, hβ0, htail⟩
+          refine ⟨β0, ?_, htail⟩
+          exact List.mem_append.mpr (Or.inr hβ0)
+
+lemma mem_leaves_refine_of_mem_tail_const {n : Nat} {t : PDT n}
+    (tails : Subcube n → PDT n) {β0 : Subcube n}
+    (hβ0 : β0 ∈ PDT.leaves t) {β : Subcube n}
+    (hβ : β ∈ PDT.leaves (tails β0)) :
+    β ∈ PDT.leaves (PDT.refine t (fun β _ => tails β)) := by
+  -- Индукция по `t`; `tails` не зависит от доказательства.
+  induction t with
+  | leaf βroot =>
+      simp [PDT.refine, PDT.leaves] at hβ0
+      subst hβ0
+      simpa [PDT.refine, PDT.leaves] using hβ
+  | node i t0 t1 ih0 ih1 =>
+      have hβ0' := hβ0
+      simp [PDT.leaves] at hβ0'
+      cases hβ0' with
+      | inl hleft =>
+          have hmem := ih0 (hβ0 := hleft) hβ
+          simp [PDT.refine, PDT.leaves, hmem, List.mem_append]
+      | inr hright =>
+          have hmem := ih1 (hβ0 := hright) hβ
+          simp [PDT.refine, PDT.leaves, hmem, List.mem_append]
+
+/-!
+### Разбиение листьев канонических DT/CCDT
+
+Мы доказываем два технических факта:
+1. Любой лист канонического DT/CCDT уточняет исходную рестрикцию.
+2. Листья образуют разбиение **внутри** исходной рестрикции.
+
+Из (2) сразу получаем `LeafPartition` для случая `ρ = free`.
+-/
+
+lemma leaf_refines_canonicalDT_CNF_aux
+    {n w : Nat} (F : AC0.CNF n w) :
+    ∀ fuel (ρ : Restriction n) (β : Subcube n),
+      β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ) →
+      subcubeRefines β ρ.mask
+  | 0, ρ, β, hβ => by
+      -- В листьях только `ρ.mask`.
+      simp [AC0.MultiSwitching.canonicalDT_CNF_aux, PDT.leaves] at hβ
+      subst hβ
+      exact subcubeRefines_refl _
+  | Nat.succ fuel, ρ, β, hβ => by
+      classical
+      cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          -- Без pending‑клаузы дерево — лист.
+          simp [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, PDT.leaves] at hβ
+          subst hβ
+          exact subcubeRefines_refl _
+      | some selection =>
+          -- Ветвление по свободному литералу.
+          let ℓ := AC0.MultiSwitching.chooseFreeLiteral (w := selection.witness)
+          have hmem : ℓ ∈ selection.witness.free :=
+            AC0.MultiSwitching.chooseFreeLiteral_mem (w := selection.witness)
+          have hfree :
+              ℓ.idx ∈ ρ.freeIndicesList :=
+            Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+              (ρ := ρ) (C := selection.clause) (w := selection.witness)
+              (ℓ := ℓ) hmem
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+          have hassign0 :
+              ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 :
+              ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          have href0 :
+              ∀ β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0),
+                subcubeRefines β ρ0.mask := by
+            intro β hβ
+            exact leaf_refines_canonicalDT_CNF_aux (fuel := fuel) (ρ := ρ0) (β := β) hβ
+          have href1 :
+              ∀ β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1),
+                subcubeRefines β ρ1.mask := by
+            intro β hβ
+            exact leaf_refines_canonicalDT_CNF_aux (fuel := fuel) (ρ := ρ1) (β := β) hβ
+          -- Лист принадлежит одной из ветвей.
+          have hleaves :
+              PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                ++ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1)
+                = PDT.leaves
+                    (AC0.MultiSwitching.canonicalDT_CNF_aux F (Nat.succ fuel) ρ) := by
+            simp [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves]
+          have hmem' :
+              β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                ∨ β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+            have := (List.mem_append).1 (by simpa [hleaves] using hβ)
+            exact this
+          cases hmem' with
+          | inl hβ0 =>
+              have hrefβ := href0 β hβ0
+              exact subcubeRefines_trans hrefβ (subcubeRefines_of_assign (ρ := ρ) (i := ℓ.idx)
+                (b := false) hassign0)
+          | inr hβ1 =>
+              have hrefβ := href1 β hβ1
+              exact subcubeRefines_trans hrefβ (subcubeRefines_of_assign (ρ := ρ) (i := ℓ.idx)
+                (b := true) hassign1)
+
+lemma leafPartitionWithin_canonicalDT_CNF_aux
+    {n w : Nat} (F : AC0.CNF n w) :
+    ∀ fuel (ρ : Restriction n),
+      LeafPartitionWithin ρ (PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ))
+  | 0, ρ => by
+      intro x hmem
+      -- Единственный лист — `ρ.mask`.
+      refine ⟨ρ.mask, ?_, ?_⟩
+      · simp [AC0.MultiSwitching.canonicalDT_CNF_aux, PDT.leaves]
+      · intro β hβ
+        simp [AC0.MultiSwitching.canonicalDT_CNF_aux, PDT.leaves] at hβ
+        subst hβ
+        exact rfl
+  | Nat.succ fuel, ρ => by
+      classical
+      intro x hmem
+      cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          refine ⟨ρ.mask, ?_, ?_⟩
+          · simp [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, PDT.leaves]
+          · intro β hβ
+            simp [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, PDT.leaves] at hβ
+            subst hβ
+            exact rfl
+      | some selection =>
+          let ℓ := AC0.MultiSwitching.chooseFreeLiteral (w := selection.witness)
+          have hmem_free : ℓ ∈ selection.witness.free :=
+            AC0.MultiSwitching.chooseFreeLiteral_mem (w := selection.witness)
+          have hfree :
+              ℓ.idx ∈ ρ.freeIndicesList :=
+            Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+              (ρ := ρ) (C := selection.clause) (w := selection.witness)
+              (ℓ := ℓ) hmem_free
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+          have hassign0 :
+              ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 :
+              ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          have h0 :=
+            leafPartitionWithin_canonicalDT_CNF_aux (fuel := fuel) (ρ := ρ0)
+          have h1 :=
+            leafPartitionWithin_canonicalDT_CNF_aux (fuel := fuel) (ρ := ρ1)
+          -- В зависимости от значения `x ℓ.idx` идём в нужную ветвь.
+          cases hx : x ℓ.idx with
+          | false =>
+              have hmem0 : memB ρ0.mask x = true := by
+                exact (memB_assign_iff (ρ := ρ) (i := ℓ.idx) (b := false)
+                  (ρ' := ρ0) hassign0 x).2 ⟨hmem, hx⟩
+              rcases h0 x hmem0 with ⟨β, hβ, huniq⟩
+              refine ⟨β, ?_, ?_⟩
+              · -- Переносим членство в общий список листьев.
+                have hmem' : β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0) := hβ.1
+                have hmem'' : β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                  ++ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+                  exact List.mem_append.mpr (Or.inl hmem')
+                simpa [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves]
+                  using hmem''
+              · intro β' hβ'
+                -- Разбираем, из какой ветви пришёл β'.
+                have hβ'' :
+                    β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                      ∨ β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+                  have hmem'' :
+                      β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                        ++ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+                    simpa [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves]
+                      using hβ'.1
+                  exact (List.mem_append).1 hmem''
+                cases hβ'' with
+                | inl hleft =>
+                    -- В левой ветви уникальность даёт `huniq`.
+                    exact huniq ⟨hleft, hβ'.2⟩
+                | inr hright =>
+                    -- В правой ветви невозможно: `x ℓ.idx = false`, а присваивание = true.
+                    have href :=
+                      leaf_refines_canonicalDT_CNF_aux (F := F) (fuel := fuel)
+                        (ρ := ρ1) (β := β') hright
+                    have hmem1 :
+                        memB ρ1.mask x = true := memB_of_subcubeRefines href x hβ'.2
+                    have hx' : x ℓ.idx = true := by
+                      exact (memB_assign_iff (ρ := ρ) (i := ℓ.idx) (b := true)
+                        (ρ' := ρ1) hassign1 x).1 hmem1 |>.2
+                    cases hx' ▸ hx
+          | true =>
+              have hmem1 : memB ρ1.mask x = true := by
+                exact (memB_assign_iff (ρ := ρ) (i := ℓ.idx) (b := true)
+                  (ρ' := ρ1) hassign1 x).2 ⟨hmem, hx⟩
+              rcases h1 x hmem1 with ⟨β, hβ, huniq⟩
+              refine ⟨β, ?_, ?_⟩
+              · have hmem' : β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := hβ.1
+                have hmem'' : β ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                  ++ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+                  exact List.mem_append.mpr (Or.inr hmem')
+                simpa [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves]
+                  using hmem''
+              · intro β' hβ'
+                have hβ'' :
+                    β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                      ∨ β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+                  have hmem'' :
+                      β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ0)
+                        ++ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ1) := by
+                    simpa [AC0.MultiSwitching.canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves]
+                      using hβ'.1
+                  exact (List.mem_append).1 hmem''
+                cases hβ'' with
+                | inr hright =>
+                    exact huniq ⟨hright, hβ'.2⟩
+                | inl hleft =>
+                    have href :=
+                      leaf_refines_canonicalDT_CNF_aux (F := F) (fuel := fuel)
+                        (ρ := ρ0) (β := β') hleft
+                    have hmem0 :
+                        memB ρ0.mask x = true := memB_of_subcubeRefines href x hβ'.2
+                    have hx' : x ℓ.idx = false := by
+                      exact (memB_assign_iff (ρ := ρ) (i := ℓ.idx) (b := false)
+                        (ρ' := ρ0) hassign0 x).1 hmem0 |>.2
+                    cases hx' ▸ hx
+
+lemma leaf_refines_canonicalCCDT_CNF_aux
+    {n w : Nat} :
+    ∀ (Fs : List (AC0.CNF n w)) (fuel : Nat) (ρ : Restriction n) (β : Subcube n),
+      β ∈ PDT.leaves (AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel ρ) →
+      subcubeRefines β ρ.mask
+  | [], fuel, ρ, β, hβ => by
+      simp [AC0.MultiSwitching.canonicalCCDT_CNF_aux, PDT.leaves] at hβ
+      subst hβ
+      exact subcubeRefines_refl _
+  | F :: rest, fuel, ρ, β, hβ => by
+      classical
+      -- Листья `refine` получаются из хвостов на листьях ствола.
+      have hmem :
+          ∃ β0 (hβ0 : β0 ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ)),
+            β ∈ PDT.leaves (AC0.MultiSwitching.canonicalCCDT_CNF_aux rest fuel ⟨β0⟩) := by
+        -- `refine` разворачивает листья через хвосты.
+        simpa [AC0.MultiSwitching.canonicalCCDT_CNF_aux] using
+          (mem_leaves_refine_exists (t := AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ)
+            (tails := fun β hβ => AC0.MultiSwitching.canonicalCCDT_CNF_aux rest fuel ⟨β⟩) hβ)
+      rcases hmem with ⟨β0, hβ0, hβtail⟩
+      have href0 :
+          subcubeRefines β0 ρ.mask :=
+        leaf_refines_canonicalDT_CNF_aux (F := F) (fuel := fuel) (ρ := ρ) (β := β0) hβ0
+      have hrefTail :
+          subcubeRefines β β0 := by
+        exact leaf_refines_canonicalCCDT_CNF_aux (Fs := rest) (fuel := fuel)
+          (ρ := ⟨β0⟩) (β := β) hβtail
+      exact subcubeRefines_trans hrefTail href0
+
+lemma leafPartitionWithin_canonicalCCDT_CNF_aux
+    {n w : Nat} :
+    ∀ (Fs : List (AC0.CNF n w)) (fuel : Nat) (ρ : Restriction n),
+      LeafPartitionWithin ρ (PDT.leaves (AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel ρ))
+  | [], fuel, ρ => by
+      intro x hmem
+      refine ⟨ρ.mask, ?_, ?_⟩
+      · simp [AC0.MultiSwitching.canonicalCCDT_CNF_aux, PDT.leaves]
+      · intro β hβ
+        simp [AC0.MultiSwitching.canonicalCCDT_CNF_aux, PDT.leaves] at hβ
+        subst hβ
+        exact rfl
+  | F :: rest, fuel, ρ => by
+      classical
+      intro x hmem
+      -- Разбиение ствола.
+      have htrunk :=
+        leafPartitionWithin_canonicalDT_CNF_aux (F := F) (fuel := fuel) (ρ := ρ)
+      rcases htrunk x hmem with ⟨β0, hβ0, huniq0⟩
+      -- Разбиение хвоста для `β0`.
+      have htail :=
+        leafPartitionWithin_canonicalCCDT_CNF_aux (Fs := rest) (fuel := fuel) (ρ := ⟨β0⟩)
+      have hmem0 : memB β0 x = true := hβ0.2
+      rcases htail x hmem0 with ⟨β, hβ, huniq⟩
+      refine ⟨β, ?_, ?_⟩
+      · -- Принадлежность общему списку листьев через `refine`.
+        exact mem_leaves_refine_of_mem_tail_const
+          (t := AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ)
+          (tails := fun β => AC0.MultiSwitching.canonicalCCDT_CNF_aux rest fuel ⟨β⟩)
+          (hβ0 := hβ0.1) hβ.1
+      · intro β' hβ'
+        -- Если `β'` находится в другом хвосте, то `x` не может попадать туда,
+        -- потому что листья хвоста уточняют свой `β0`.
+        have hmem' :
+            ∃ β1 ∈ PDT.leaves (AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ),
+              β' ∈ PDT.leaves (AC0.MultiSwitching.canonicalCCDT_CNF_aux rest fuel ⟨β1⟩) := by
+          -- Из членства в листьях `refine` извлекаем базовый лист `β1`.
+          rcases mem_leaves_refine_exists
+              (t := AC0.MultiSwitching.canonicalDT_CNF_aux F fuel ρ)
+              (tails := fun β hβ => AC0.MultiSwitching.canonicalCCDT_CNF_aux rest fuel ⟨β⟩)
+              hβ'.1 with ⟨β1, hβ1, hβ1tail⟩
+          exact ⟨β1, hβ1, hβ1tail⟩
+        rcases hmem' with ⟨β1, hβ1, hβ1tail⟩
+        have hβ1mem : memB β1 x = true := by
+          -- Лист `β'` уточняет `β1`, значит `x` попадает и в `β1`.
+          have href :=
+            leaf_refines_canonicalCCDT_CNF_aux (Fs := rest) (fuel := fuel)
+              (ρ := ⟨β1⟩) (β := β') hβ1tail
+          exact memB_of_subcubeRefines href x hβ'.2
+        -- Уникальность в стволе: `β1 = β0`.
+        have hβ1eq : β1 = β0 := by
+          exact huniq0 ⟨hβ1, hβ1mem⟩
+        subst hβ1eq
+        -- Теперь уникальность внутри хвоста.
+        exact huniq ⟨hβ1tail, hβ'.2⟩
+
+lemma leafPartition_canonicalCCDT_CNF_aux_free
+    {n w : Nat} (Fs : List (AC0.CNF n w)) (fuel : Nat) :
+    LeafPartition (PDT.leaves (AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel (Restriction.free n))) := by
+  apply leafPartition_of_within_free
+  exact leafPartitionWithin_canonicalCCDT_CNF_aux (Fs := Fs) (fuel := fuel) (ρ := Restriction.free n)
+
+/-- Дополнение списка листьев относительно полного набора листьев. -/
+def leafComplement {n : Nat} [DecidableEq (Subcube n)]
+    (leaves R : List (Subcube n)) : List (Subcube n) :=
+  leaves.filter (fun β => β ∉ R)
+
+@[simp] lemma mem_leafComplement {n : Nat} [DecidableEq (Subcube n)]
+    (leaves R : List (Subcube n)) (β : Subcube n) :
+    β ∈ leafComplement leaves R ↔ β ∈ leaves ∧ β ∉ R := by
+  simp [leafComplement]
+
+noncomputable def leafOf {n : Nat} {leaves : List (Subcube n)}
+    (hpart : LeafPartition leaves) (x : BitVec n) : Subcube n :=
+  Classical.choose (hpart x)
+
+lemma leafOf_spec {n : Nat} {leaves : List (Subcube n)}
+    (hpart : LeafPartition leaves) (x : BitVec n) :
+    leafOf hpart x ∈ leaves ∧ memB (leafOf hpart x) x = true := by
+  have hspec := Classical.choose_spec (hpart x)
+  exact hspec.1
+
+lemma leafOf_unique {n : Nat} {leaves : List (Subcube n)}
+    (hpart : LeafPartition leaves) (x : BitVec n) {β : Subcube n}
+    (hβ : β ∈ leaves ∧ memB β x = true) :
+    β = leafOf hpart x := by
+  have hspec := Classical.choose_spec (hpart x)
+  -- `hspec.2` утверждает единственность: любой другой лист с тем же свойством
+  -- совпадает с выбранным.
+  exact (hspec.2 β hβ)
+
+lemma coveredB_iff_leaf_mem {n : Nat} [DecidableEq (Subcube n)]
+    {leaves : List (Subcube n)} (hpart : LeafPartition leaves)
+    (R : List (Subcube n))
+    (hsub : ∀ β ∈ R, β ∈ leaves)
+    (x : BitVec n) :
+    coveredB R x = true ↔ leafOf hpart x ∈ R := by
+  constructor
+  · intro hcov
+    rcases List.any_eq_true.mp hcov with ⟨β, hβ, hmem⟩
+    have hβleaf : β ∈ leaves := hsub β hβ
+    have hβeq : β = leafOf hpart x :=
+      leafOf_unique (hpart := hpart) (x := x) ⟨hβleaf, hmem⟩
+    simpa [hβeq] using hβ
+  · intro hmem
+    -- Берём единственный лист `leafOf` и показываем, что он покрывает `x`.
+    have hspec := leafOf_spec (hpart := hpart) (x := x)
+    exact List.any_eq_true.mpr ⟨leafOf hpart x, hmem, hspec.2⟩
+
+lemma coveredB_leafComplement_eq_not {n : Nat} [DecidableEq (Subcube n)]
+    {leaves : List (Subcube n)} (hpart : LeafPartition leaves)
+    (R : List (Subcube n))
+    (hsub : ∀ β ∈ R, β ∈ leaves)
+    (x : BitVec n) :
+    coveredB (leafComplement leaves R) x = ! coveredB R x := by
+  -- Уникальный лист для `x`.
+  have hleaf := leafOf_spec (hpart := hpart) (x := x)
+  have hcovR :
+      coveredB R x = true ↔ leafOf hpart x ∈ R :=
+    coveredB_iff_leaf_mem (hpart := hpart) (R := R) (hsub := hsub) (x := x)
+  have hcovC :
+      coveredB (leafComplement leaves R) x = true ↔ leafOf hpart x ∉ R := by
+    constructor
+    · intro hcov
+      rcases List.any_eq_true.mp hcov with ⟨β, hβ, hmem⟩
+      have hβleaf : β ∈ leaves := (mem_leafComplement _ _ _).1 hβ |>.1
+      have hβeq : β = leafOf hpart x :=
+        leafOf_unique (hpart := hpart) (x := x) ⟨hβleaf, hmem⟩
+      have hnot : β ∉ R := (mem_leafComplement _ _ _).1 hβ |>.2
+      simpa [hβeq] using hnot
+    · intro hnot
+      have hmem : leafOf hpart x ∈ leafComplement leaves R := by
+        have hleafmem := leafOf_spec (hpart := hpart) (x := x)
+        exact (mem_leafComplement _ _ _).2 ⟨hleafmem.1, hnot⟩
+      exact List.any_eq_true.mpr ⟨leafOf hpart x, hmem, hleaf.2⟩
+  by_cases h : coveredB R x = true
+  · have hmem : leafOf hpart x ∈ R := (hcovR).1 h
+    have hfalse : coveredB (leafComplement leaves R) x = false := by
+      have hiff : coveredB (leafComplement leaves R) x = true ↔ False := by
+        simpa [hmem] using (hcovC)
+      -- Разбираем значение `coveredB` по случаям Bool.
+      cases hcov : coveredB (leafComplement leaves R) x with
+      | false => rfl
+      | true => exact (hiff.mp hcov).elim
+    simp [h, hfalse]
+  · have hnot : leafOf hpart x ∉ R := by
+      intro hmem
+      exact h (hcovR.mpr hmem)
+    have htrue : coveredB (leafComplement leaves R) x = true := (hcovC).2 hnot
+    have hfalse : coveredB R x = false := by
+      have hiff : coveredB R x = true ↔ False := by
+        simpa [hnot] using (hcovR)
+      cases hcov : coveredB R x with
+      | false => rfl
+      | true => exact (hiff.mp hcov).elim
+    simp [htrue, hfalse]
+
+lemma errU_neg_eq_of_partition {n : Nat} [DecidableEq (Subcube n)]
+    {leaves : List (Subcube n)} (hpart : LeafPartition leaves)
+    (R : List (Subcube n))
+    (hsub : ∀ β ∈ R, β ∈ leaves)
+    (f : BitVec n → Bool) :
+    errU (fun x => ! f x) R = errU f (leafComplement leaves R) := by
+  -- Достаточно показать равенство предикатов несогласия.
+  have hpred :
+      (fun x => (! f x) ≠ coveredB R x) =
+        (fun x => f x ≠ coveredB (leafComplement leaves R) x) := by
+    funext x
+    have hcov := coveredB_leafComplement_eq_not
+      (hpart := hpart) (R := R) (hsub := hsub) (x := x)
+    by_cases hf : f x <;> by_cases hc : coveredB R x <;>
+      simp [hf, hc, hcov]
+  classical
+  -- Сначала покажем равенство финитных множеств несогласия.
+  have hset :
+      Finset.univ.filter (fun x => (! f x) ≠ coveredB R x) =
+        Finset.univ.filter (fun x => f x ≠ coveredB (leafComplement leaves R) x) := by
+    ext x
+    -- Переход к точке `x`: равенство функций ⇒ равенство значений.
+    have hx := congrArg (fun g => g x) hpred
+    simpa using hx
+  unfold errU
+  set m1 :=
+      ((Finset.univ : Finset (BitVec n)).filter
+        (fun x => (! f x) ≠ coveredB R x)).card
+  set m2 :=
+      ((Finset.univ : Finset (BitVec n)).filter
+        (fun x => f x ≠ coveredB (leafComplement leaves R) x)).card
+  have hm : m1 = m2 := by
+    -- Равенство финитных множеств переносим на их кардиналы.
+    dsimp [m1, m2]
+    exact congrArg Finset.card hset
+  -- Подставляем равные числители.
+  simp [m1, m2, hm]
+
 end Core
 
 namespace ThirdPartyFacts
 
 open Core
+open AC0.MultiSwitching
 
 /-- Параметры класса AC⁰, которые обычно фигурируют в switching-леммах.
 
@@ -89,9 +700,9 @@ structure AC0Parameters where
   * `ac0DepthBound_strong` = `(log₂(M+2))^(d+1)` (целевая polylog‑оценка).
 
   Точка входа для пайплайна — `ac0DepthBound`, и сейчас она
-  указывает на **сильную** оценку.  Слабая оценка по-прежнему
-  доступна как `ac0DepthBound_weak` и используется там, где нужна
-  конструктивная стадия (Stage‑1).
+  указывает на **слабую** оценку.  Сильная оценка доступна как
+  `ac0DepthBound_strong` и используется там, где есть явное
+  конструктивное доказательство (Stage‑2).
 -/
 
 /-!
@@ -138,6 +749,15 @@ def ac0DepthBound (params : AC0Parameters) : Nat :=
   -/
   ac0DepthBound_weak params
 
+@[simp] lemma ac0DepthBound_eq_weak (params : AC0Parameters) :
+    ac0DepthBound params = ac0DepthBound_weak params := by
+  /-
+    Явно фиксируем, что дефолтная граница совпадает со Stage‑1.
+    Эта лемма удобна для минимизации `simp`‑шагов в downstream‑коде,
+    где важна стабильность контракта.
+  -/
+  rfl
+
 /--
   Базовое условие «малости» AC⁰‑семейства.
 
@@ -150,6 +770,96 @@ def ac0DepthBound (params : AC0Parameters) : Nat :=
 -/
 def AC0SmallEnough (params : AC0Parameters) : Prop :=
   params.M ≤ Nat.pow 2 (ac0DepthBound params)
+
+/-!
+### DNF ← CNF bridge (через отрицание)
+
+Формальный мост, переводящий shrinkage-сертификат для `¬F`
+в shrinkage-сертификат для `F`.  Для корректности дополнения
+используем условие `LeafPartition` на листьях дерева.
+-/
+
+noncomputable def shrinkage_negDnfFamily_to_dnf
+    {n k : Nat} [DecidableEq (Subcube n)]
+    (F : DnfFamily n k) (S : Shrinkage n)
+    (hfamily : S.F = evalFamily (negDnfFamilyToCnfFamily F))
+    (hpart : LeafPartition (PDT.leaves S.tree)) :
+    Shrinkage n := by
+  classical
+  let leaves := PDT.leaves S.tree
+  refine
+    { F := evalDnfFamily F
+      t := S.t
+      ε := S.ε
+      tree := S.tree
+      depth_le := S.depth_le
+      Rsel := fun f => leafComplement leaves (S.Rsel (fun x => ! f x))
+      Rsel_sub := ?_
+      err_le := ?_ }
+  · intro f hf
+    -- `leafComplement` является подсписком `leaves` по определению.
+    refine listSubset_of_mem ?_
+    intro β hβ
+    exact (mem_leafComplement _ _ _).1 hβ |>.1
+  · intro f hf
+    let g : Core.BitVec n → Bool := fun x => ! f x
+    have hmem_neg : g ∈ evalFamily (negDnfFamilyToCnfFamily F) := by
+      -- Поднимаем членство через `evalDnfFamily` и отрицание.
+      rcases List.mem_map.mp hf with ⟨F0, hF0, hf0⟩
+      -- Выражаем `g` через формулу `F0`.
+      have hg : g = fun x => ! evalDNF F0 x := by
+        funext x
+        have hf0x : evalDNF F0 x = f x := by
+          simpa using congrArg (fun h => h x) hf0
+        have hf0x' : Bool.not (evalDNF F0 x) = Bool.not (f x) := by
+          exact congrArg Bool.not hf0x
+        -- Переписывание через `hf0x` фиксирует знак отрицания.
+        simpa [g] using hf0x'.symm
+      refine List.mem_map.mpr ?_
+      -- В семействе `¬F` лежит формула `negToCNF F0`.
+      refine ⟨DNF.negToCNF F0, ?_, ?_⟩
+      · exact List.mem_map.mpr ⟨F0, hF0, rfl⟩
+      · funext x
+        -- Для `¬DNF` используем лемму дуальности.
+        simpa [evalCNF, evalDNF, hg] using (DNF.eval_negToCNF (F := F0) (x := x))
+    have hmem_neg' : g ∈ S.F := by
+      simpa [hfamily] using hmem_neg
+    have hsub : ∀ β ∈ S.Rsel g, β ∈ leaves := by
+      intro β hβ
+      exact listSubset.mem (S.Rsel_sub g hmem_neg') hβ
+    have herr := S.err_le g hmem_neg'
+    -- Используем равенство ошибок при дополнении листьев.
+    have hEq :
+        errU g (S.Rsel g) =
+          errU f (leafComplement leaves (S.Rsel g)) := by
+      have := errU_neg_eq_of_partition
+        (hpart := hpart) (R := S.Rsel g) (hsub := hsub) (f := f)
+      simpa [g, leaves] using this
+    -- Переносим bound на `f`.
+    simpa [hEq] using herr
+
+/-!
+### Устранение предпосылки `LeafPartition` для канонического CCDT
+
+Если дерево `S.tree` является каноническим CCDT, построенным от
+`Restriction.free`, то разбиение листьев следует автоматически из
+предыдущих лемм. Это позволяет использовать мост DNF←CNF без
+дополнительной гипотезы о разбиении.
+-/
+
+noncomputable def shrinkage_negDnfFamily_to_dnf_canonicalCCDT
+    {n k w : Nat} [DecidableEq (Subcube n)]
+    (F : DnfFamily n k) (S : Shrinkage n)
+    (hfamily : S.F = evalFamily (negDnfFamilyToCnfFamily F))
+    (Fs : List (AC0.CNF n w)) (fuel : Nat)
+    (hccdt : S.tree = AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel (Restriction.free n)) :
+    Shrinkage n := by
+  -- Листья канонического CCDT образуют разбиение.
+  have hpart :
+      LeafPartition (PDT.leaves S.tree) := by
+    simpa [hccdt] using
+      (leafPartition_canonicalCCDT_CNF_aux_free (Fs := Fs) (fuel := fuel))
+  exact shrinkage_negDnfFamily_to_dnf (F := F) (S := S) hfamily hpart
 
 /-- Полный подкуб (никаких фиксированных битов). -/
 @[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none
@@ -1079,8 +1789,9 @@ def localCircuitWitnessOfShrinkage
 -/
 
 /--
-Один AC⁰ (depth-2) circuit порождает точный partial shrinkage для семейства
-из одной функции. Ошибка `ε = 0`, глубина PDT не превосходит числа термов.
+Один AC⁰ (depth-2) circuit порождает partial shrinkage для семейства
+из одной функции. Ошибка `ε` оценивается как `1/(n+2)`, причём фактически
+`errU = 0`, а глубина PDT не превосходит числа термов.
 -/
 theorem partial_shrinkage_single_circuit
     {params : AC0Parameters} (h_pos : 0 < params.n)
@@ -1090,7 +1801,7 @@ theorem partial_shrinkage_single_circuit
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ = 0 ∧
       C.depthBound ≤ c.subcubes.length ∧
-      C.epsilon = 0 := by
+      C.epsilon = (1 : Q) / (params.n + 2) := by
   intro f F
   -- Берём список подкубов, соответствующий термам depth-2 DNF схемы.
   let subcubes := c.subcubes
@@ -1103,10 +1814,14 @@ theorem partial_shrinkage_single_circuit
   have h_leaves :
       ∀ β ∈ subcubes, β ∈ PDT.leaves tree := by
     simpa [tree] using buildPDTFromSubcubes_leaves_subset h_pos subcubes
+  have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
+    have hnonneg : (0 : Q) ≤ (params.n + 2) := by
+      exact_mod_cast (Nat.zero_le (params.n + 2))
+    exact div_nonneg (show (0 : Q) ≤ (1 : Q) by exact zero_le_one) hnonneg
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
     depthBound := subcubes.length
-    epsilon := 0
+    epsilon := (1 : Q) / (params.n + 2)
     -- Для ofPDT глубина ствола равна глубине исходного PDT.
     trunk_depth_le := by
       simpa [PartialDT.ofPDT] using h_depth
@@ -1125,12 +1840,13 @@ theorem partial_shrinkage_single_circuit
       simp [F] at hg
       subst hg
       simp
-      apply le_of_eq
-      apply errU_eq_zero_of_agree
-      intro x
-      -- покрытие subcubes совпадает с вычислением схемы
-      have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
-      simp [f, subcubes, hcov]
+      have herr : errU f subcubes = 0 := by
+        apply errU_eq_zero_of_agree
+        intro x
+        -- покрытие subcubes совпадает с вычислением схемы
+        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+        simp [f, subcubes, hcov]
+      simpa [herr] using hε
   }, rfl, Nat.le_refl _, rfl⟩
 
 /--
@@ -1215,7 +1931,7 @@ theorem partial_shrinkage_single_circuit_general
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ = 0 ∧
       C.depthBound ≤ c.subcubes.length ∧
-      C.epsilon = 0 := by
+      C.epsilon = (1 : Q) / (params.n + 2) := by
   classical
   intro f F
   by_cases hpos : 0 < params.n
@@ -1235,10 +1951,14 @@ theorem partial_shrinkage_single_circuit_general
       have hβ_full : β = fullSubcube params.n :=
         subcube_eq_full_of_n_zero' hzero β
       simp [tree, PDT.leaves, hβ_full]
+    have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
+      have hnonneg : (0 : Q) ≤ (params.n + 2) := by
+        exact_mod_cast (Nat.zero_le (params.n + 2))
+      exact div_nonneg (show (0 : Q) ≤ (1 : Q) by exact zero_le_one) hnonneg
     refine ⟨0, {
       witness := PartialDT.ofPDT tree
       depthBound := subcubes.length
-      epsilon := 0
+      epsilon := (1 : Q) / (params.n + 2)
       trunk_depth_le := by
         simpa [PartialDT.ofPDT] using hdepth
       selectors := fun g => if g = f then subcubes else []
@@ -1253,11 +1973,12 @@ theorem partial_shrinkage_single_circuit_general
         simp [F] at hg
         subst hg
         simp
-        apply le_of_eq
-        apply errU_eq_zero_of_agree
-        intro x
-        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
-        simp [f, subcubes, hcov]
+        have herr : errU f subcubes = 0 := by
+          apply errU_eq_zero_of_agree
+          intro x
+          have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+          simp [f, subcubes, hcov]
+        simpa [herr] using hε
     }, rfl, Nat.le_refl _, rfl⟩
 
 theorem partial_shrinkage_for_AC0_with_bound

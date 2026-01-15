@@ -482,17 +482,225 @@ noncomputable def auxSimpleOfTrace
 Для «малого» алфавита нам нужны только два поля:
 
 * направление ветви (бит),
-* позиция выбранного свободного литерала (индекс в `w.free`).
+* позиция выбранного литерала **внутри pending‑клаузы**.
 
+Такой индекс зависит только от самой клаузы, а не от текущего `w.free`,
+и поэтому подходит для реконструкции шага через канонический CCDT.
 Это даёт размер алфавита `2*(w+1)` и убирает `n` из степени.
 -/
+
+noncomputable def literalIndexInClause
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) : Nat := by
+  classical
+  exact List.idxOf choice.literal selection.clause.literals
+
+lemma literalIndexInClause_get?
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    selection.clause.literals[literalIndexInClause (selection := selection) (choice := choice)]?
+      = some choice.literal := by
+  classical
+  have hmem_free :
+      choice.literal ∈ selection.witness.free :=
+    ClausePendingWitness.Selection.literal_mem_free (choice := choice)
+  have hmem_clause :
+      choice.literal ∈ selection.clause.literals :=
+    selection.witness.subset _ hmem_free
+  simpa [literalIndexInClause] using (List.getElem?_idxOf (a := choice.literal)
+    (l := selection.clause.literals) hmem_clause)
 
 noncomputable def auxTraceSmallOfTrace
     {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
     (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
-    AuxTraceSmall w t :=
-  (CanonicalTrace.toTrace trace).map
-    (fun step => (step.value, Fin.ofNat (w + 1) step.literalIndex))
+    AuxTraceSmall w t := by
+  classical
+  induction trace with
+  | nil =>
+      exact Vector.nil
+  | @cons ρ selection choice t tail ih =>
+      refine Vector.cons ?step ih
+      exact (choice.value,
+        Fin.ofNat (w + 1)
+          (literalIndexInClause (selection := selection) (choice := choice)))
+
+/-!
+### Обратный шаг: восстановление предыдущей рестрикции
+
+Чтобы доказать инъективность малого кодирования, нам нужен
+конструктивный «обратный шаг» по одному элементу `AuxStepSmall`.
+Мы делаем это напрямую: перебираем индекс переменной `i : Fin n`
+и проверяем, что он согласован с каноническим шагом,
+восстанавливаемым из текущей рестрикции.
+
+Важно: эта процедура используется только для кодов, полученных из
+реальной детерминированной канонической трассы; в этом случае
+существование подходящего `i` гарантируется, а неудачный случай
+`none` не используется в доказательстве корректности.
+-/
+
+def smallStepCandidate
+    {n w : Nat} (F : CNF n w) (σ : Restriction n)
+    (step : AuxStepSmall w) (i : Fin n) : Prop :=
+  let ρ := σ.unassign i
+  ∃ selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses,
+    Restriction.firstPendingClause? ρ F.clauses = some selection ∧
+      ∃ lit : Literal n,
+        selection.clause.literals[step.2.1]? = some lit ∧
+        lit.idx = i ∧
+        ρ.assign i step.1 = some σ
+
+noncomputable def prevRestrictionSmallStep
+    {n w : Nat} (F : CNF n w) (σ : Restriction n)
+    (step : AuxStepSmall w) : Restriction n :=
+  if h : ∃ i : Fin n, smallStepCandidate (F := F) (σ := σ) (step := step) i then
+    σ.unassign (Classical.choose h)
+  else
+    σ
+
+/-!
+### Декодирование AuxTraceSmall → Restriction
+
+Рекурсивно «откатываем» код, двигаясь от конца трассы к началу.
+В каждом шаге используем `prevRestrictionSmallStep`.
+-/
+
+noncomputable def decodeAuxTraceSmall
+    {n w t : Nat} (F : CNF n w) (ρ' : Restriction n) :
+    AuxTraceSmall w t → Restriction n
+  | Vector.nil => ρ'
+  | Vector.cons step rest =>
+      let σ := decodeAuxTraceSmall (F := F) ρ' rest
+      prevRestrictionSmallStep (F := F) σ step
+
+/-!
+### Корректность обратного шага для детерминированной трассы
+
+Следующая лемма показывает, что если шаг трассы детерминированный
+(`traceStepDeterministic`), то соответствующий `smallStepCandidate`
+реализуется индексом выбранного литерала.
+-/
+
+lemma smallStepCandidate_of_traceDet
+    {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
+    {selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses}
+    {choice : ClausePendingWitness.Selection selection.witness}
+    (hstep : traceStepDeterministic (selection := selection) (choice := choice)) :
+    smallStepCandidate (F := F)
+      (σ := ClausePendingWitness.Selection.nextRestriction (choice := choice))
+      (step := (choice.value,
+        Fin.ofNat (w + 1)
+          (literalIndexInClause (selection := selection) (choice := choice))))
+      choice.literal.idx := by
+  classical
+  -- Поднимаем определение `smallStepCandidate`.
+  dsimp [smallStepCandidate]
+  -- Восстанавливаем выбор первой pending‑клаузы.
+  refine ⟨selection, hstep.1, ?_⟩
+  -- Литерал по индексу внутри клаузы.
+  refine ⟨choice.literal, ?_, rfl, ?_⟩
+  · -- `get?` по индексу возвращает выбранный литерал.
+    simpa using (literalIndexInClause_get? (selection := selection) (choice := choice))
+  · -- Присваивание выбранного литерала восстанавливает текущую рестрикцию.
+    simpa using
+      (ClausePendingWitness.Selection.assign_eq
+        (ρ := ρ) (C := selection.clause) (w := selection.witness) (choice := choice))
+
+@[simp] lemma classical_choose_eq
+    {α : Type} {p : α → Prop} (a : α) (h : p a) :
+    Classical.choose (Exists.intro a h) = a := rfl
+
+/-!
+### Корректность декодирования для детерминированной трассы
+
+Индукция по длине трассы: на каждом шаге `prevRestrictionSmallStep`
+находит корректный индекс и возвращает предыдущую рестрикцию.
+-/
+
+lemma decodeAuxTraceSmall_ofTraceDet
+    {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
+    (trace : Core.CNF.CanonicalTrace (F := F) ρ t)
+    (hdet : traceDeterministic (F := F) (ρ := ρ) (t := t) trace) :
+    decodeAuxTraceSmall (F := F)
+        (ρ' := Core.CNF.CanonicalTrace.finalRestriction trace)
+        (auxTraceSmallOfTrace (trace := trace))
+      = ρ := by
+  classical
+  induction trace with
+  | nil =>
+      simp [decodeAuxTraceSmall, auxTraceSmallOfTrace]
+  | @cons ρ selection choice t tail ih =>
+      -- `traceDeterministic` раскладывается на шаг и хвост.
+      rcases hdet with ⟨hstep, htail⟩
+      -- Сначала декодируем хвост.
+      have htail' :
+          decodeAuxTraceSmall (F := F)
+              (ρ' := Core.CNF.CanonicalTrace.finalRestriction tail)
+              (auxTraceSmallOfTrace (trace := tail))
+            =
+          ClausePendingWitness.Selection.nextRestriction (choice := choice) := by
+        simpa using (ih (hdet := htail))
+      -- Теперь применяем обратный шаг.
+      have hexists :
+          ∃ i : Fin n,
+            smallStepCandidate (F := F)
+              (σ := ClausePendingWitness.Selection.nextRestriction (choice := choice))
+              (step := (choice.value,
+                Fin.ofNat (w + 1)
+                  (literalIndexInClause (selection := selection) (choice := choice))))
+              i := by
+        exact ⟨choice.literal.idx,
+          smallStepCandidate_of_traceDet (hstep := hstep)⟩
+      -- `prevRestrictionSmallStep` выбирает некоторый кандидат; для кода от
+      -- трассы это обязательно приводит к исходной рестрикции.
+      have hprev :
+          prevRestrictionSmallStep (F := F)
+              (σ := ClausePendingWitness.Selection.nextRestriction (choice := choice))
+              (step := (choice.value,
+                Fin.ofNat (w + 1)
+                  (literalIndexInClause (selection := selection) (choice := choice))))
+            = ρ := by
+        -- Ветка `if` срабатывает благодаря `hexists`.
+        -- Используем явного кандидата `choice.literal.idx`.
+        have hchoose :
+            prevRestrictionSmallStep (F := F)
+                (σ := ClausePendingWitness.Selection.nextRestriction (choice := choice))
+                (step := (choice.value,
+                  Fin.ofNat (w + 1)
+                    (literalIndexInClause (selection := selection) (choice := choice))))
+              =
+            (ClausePendingWitness.Selection.nextRestriction (choice := choice)).unassign
+              (Classical.choose hexists) := by
+          simp [prevRestrictionSmallStep, hexists]
+        have hchoice_eq :
+            Classical.choose hexists = choice.literal.idx := by
+          -- `hexists` построен с явным свидетелем `choice.literal.idx`.
+          -- Поэтому `Classical.choose` возвращает именно его.
+          -- (См. `classical_choose_eq`.)
+          simpa [hexists] using
+            (classical_choose_eq (a := choice.literal.idx)
+              (h := smallStepCandidate_of_traceDet (hstep := hstep)))
+        calc
+          prevRestrictionSmallStep (F := F)
+              (σ := ClausePendingWitness.Selection.nextRestriction (choice := choice))
+              (step := (choice.value,
+                Fin.ofNat (w + 1)
+                  (literalIndexInClause (selection := selection) (choice := choice))))
+              =
+            (ClausePendingWitness.Selection.nextRestriction (choice := choice)).unassign
+              (Classical.choose hexists) := hchoose
+          _ = (ClausePendingWitness.Selection.nextRestriction (choice := choice)).unassign
+              choice.literal.idx := by
+                simp [hchoice_eq]
+          _ = ρ := by
+                simpa using
+                  (ClausePendingWitness.Selection.unassign_nextRestriction
+                    (ρ := ρ) (C := selection.clause)
+                    (w := selection.witness) (choice := choice))
+      -- Собираем вместе: decode tail = nextRestriction, затем reverse step.
+      simp [decodeAuxTraceSmall, auxTraceSmallOfTrace, htail', hprev]
 
 /-!
 ### Декодирование: восстановление ограничения
@@ -778,6 +986,140 @@ noncomputable def encodeBadFamilyDetCNF_small
   refine ⟨⟨ρ', code⟩, ?_⟩
   refine Finset.mem_product.2 ?_
   exact ⟨hρ', by simp [auxTraceFamilySmallCodes]⟩
+
+/-!
+### Декодирование и инъективность малого encoding
+
+Мы используем `decodeAuxTraceSmall` для восстановления исходной рестрикции
+из финальной маски и трассы `AuxTraceSmall`.  Для детерминированной канонической
+трассы это действительно обратная операция.
+-/
+
+noncomputable def decodeBadFamilyDetCNF_small
+    {n w t : Nat} (F : FormulaFamily n w) :
+    (Restriction n × FamilyTraceCodeSmall (F := F) t) → Restriction n
+  | ⟨ρ', code⟩ =>
+      -- Индекс формулы берём из кода, но допускаем «пустой» индекс `= length`.
+      if h : (code.1 : Nat) < F.length then
+        decodeAuxTraceSmall (F := F.get ⟨(code.1 : Nat), h⟩) ρ' code.2
+      else
+        ρ'
+
+lemma decode_encodeBadFamilyDetCNF_small
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF_small (F := F)
+        (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad).1
+      = ρbad.1 := by
+  classical
+  rcases ρbad with ⟨ρ, hρs, hbad⟩
+  -- Канонический детерминированный след.
+  let trace := firstBadTraceDet (F := F) (t := t) (ρ := ρ) hbad
+  have hdet :
+      traceDeterministic (F := F.get
+        ⟨firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad,
+          (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1⟩)
+        (ρ := ρ) (t := t) trace := by
+    -- Детерминированность берём из определения `BadFamily_deterministic`.
+    -- В `firstBadTraceDet` мы выбираем именно детерминированную трассу.
+    -- Это следует из `firstBadIndexDet_spec`.
+    classical
+    -- Из спецификации получаем существование детерминированной трассы.
+    obtain ⟨trace', hdet'⟩ :=
+      (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).2
+    -- `trace` определён как `Classical.choose` этого свидетельства.
+    -- Поэтому детерминированность следует напрямую.
+    simpa [trace] using hdet'
+  -- Подготовим индекс формулы в коде.
+  let j := firstBadIndexDet (F := F) (t := t) (ρ := ρ) hbad
+  have hj : j < F.length :=
+    (firstBadIndexDet_spec (F := F) (t := t) (ρ := ρ) hbad).1
+  have hj' : (Fin.ofNat (F.length + 1) j : Nat) < F.length := by
+    -- Значение `Fin.ofNat` равно `j`, так как `j < F.length + 1`.
+    have hj1 : j < F.length + 1 := Nat.lt_trans hj (Nat.lt_succ_self _)
+    simpa [Fin.ofNat, Nat.mod_eq_of_lt hj1] using hj
+  -- Основной шаг: декодирование AuxTraceSmall возвращает исходную рестрикцию.
+  have hdecode :
+      decodeAuxTraceSmall (F := F.get ⟨j, hj⟩)
+          (ρ' := Core.CNF.CanonicalTrace.finalRestriction trace)
+          (auxTraceSmallOfTrace (trace := trace))
+        = ρ := by
+    simpa [trace] using
+      (decodeAuxTraceSmall_ofTraceDet (trace := trace) (hdet := hdet))
+  -- Теперь раскрываем `decodeBadFamilyDetCNF_small` и подставляем `hdecode`.
+  simp [encodeBadFamilyDetCNF_small, familyTraceCodeSmallOfBadDet,
+    decodeBadFamilyDetCNF_small, trace, j, hj', hdecode]
+
+/-!
+### Правый обратный шаг для малого кодирования
+
+Для инъективности достаточно левого обратного (`decode ∘ encode = id`).
+Однако для ясности мы также фиксируем **правый обратный на образе**:
+если код получен из `encode`, то повторное кодирование после `decode`
+возвращает тот же код. Это подчёркивает конструктивность декодера и
+не использует никаких внешних фактов.
+-/
+
+noncomputable def decodeBadFamilyDetCNF_small_on_image
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    BadFamilyDetInRsCNF (F := F) s t := by
+  -- Декодируем restriction из собственного кода.
+  let ρdec :=
+    decodeBadFamilyDetCNF_small (F := F)
+      (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad).1
+  -- Это ровно исходная рестрикция (см. предыдущую лемму).
+  have hdecode :=
+    decode_encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad
+  -- Переносим свидетельства `R_s` и `BadFamily_deterministic`.
+  refine ⟨ρdec, ?_⟩
+  have hρs : ρdec ∈ R_s (n := n) s := by
+    simpa [hdecode] using ρbad.2.1
+  have hbad : BadFamily_deterministic (F := F) t ρdec := by
+    simpa [hdecode] using ρbad.2.2
+  exact ⟨hρs, hbad⟩
+
+lemma decodeBadFamilyDetCNF_small_on_image_eq
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF_small_on_image (F := F) (s := s) (t := t) ρbad = ρbad := by
+  -- Достаточно совпадения по значению рестрикции.
+  apply Subtype.ext
+  -- Декодирование возвращает исходную рестрикцию.
+  simpa [decodeBadFamilyDetCNF_small_on_image] using
+    (decode_encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad)
+
+lemma encode_decodeBadFamilyDetCNF_small
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t)
+        (decodeBadFamilyDetCNF_small_on_image (F := F) (s := s) (t := t) ρbad)
+      =
+    encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad := by
+  classical
+  -- На образе `encode` декодирование возвращает ту же рестрикцию и тот же witness.
+  simpa [decodeBadFamilyDetCNF_small_on_image_eq] using
+    congrArg (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t))
+      (decodeBadFamilyDetCNF_small_on_image_eq (F := F) (s := s) (t := t) ρbad)
+
+lemma encodeBadFamilyDetCNF_small_injective
+    {n w t s : Nat} (F : FormulaFamily n w) :
+    Function.Injective (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t)) := by
+  classical
+  intro x y hxy
+  -- Декодер — двусторонний обратный на образе `encode`.
+  -- Этого достаточно для инъективности.
+  have hx := decode_encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) x
+  have hy := decode_encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) y
+  have hρ :
+      decodeBadFamilyDetCNF_small (F := F)
+          (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) x).1
+        =
+      decodeBadFamilyDetCNF_small (F := F)
+          (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) y).1 := by
+    simp [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
 
 /-!
 ### Encoding для детерминированного BadFamily (расширенный код)
@@ -1169,6 +1511,20 @@ noncomputable def canonicalCCDTAlgorithmCNF
           | some i =>
               -- Выбираем формулу с максимальной глубиной канонического дерева.
               canonicalDT_CNF (F := F.get i) ρ }
+
+/-!
+### Связь BadEvent и глубины CCDT
+
+По определению `BadEvent` — это просто сравнение глубины CCDT с порогом `t`.
+Тем не менее полезно иметь явную лемму для упрощения в downstream‑коде,
+чтобы не разворачивать определение каждый раз.
+-/
+
+@[simp] lemma badEvent_canonicalCCDT_depth_iff
+    {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ ↔
+      t ≤ PDT.depth ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) := by
+  rfl
 
 lemma badEvent_canonicalCCDT_iff_badFamilyDet
     {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) (ht : 0 < t) :

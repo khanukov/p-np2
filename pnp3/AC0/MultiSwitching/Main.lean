@@ -30,6 +30,21 @@ open Core
 variable {n k ℓ t : Nat} {F : FormulaFamily n k}
 
 /-!
+### Эквивалентность BadEvent ↔ BadFamily_deterministic (pipeline‑уровень)
+
+Для детерминированного counting‑аргумента важно иметь явную лемму,
+связывающую "плохие" рестрикции CCDT и существование детерминированной
+канонической трассы. Мы переиспользуем результат из `Encoding.lean`
+и выводим удобную оболочку на уровне pipeline.
+-/
+
+lemma badEvent_canonicalCCDT_iff_badFamilyDet_pipeline
+    {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) (ht : 0 < t) :
+    BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ ↔
+      BadFamily_deterministic (F := F) t ρ := by
+  exact badEvent_canonicalCCDT_iff_badFamilyDet (F := F) (ρ := ρ) ht
+
+/-!
 ### Существование хорошей рестрикции
 
 Это минимальный шаг "counting → ∃".  Он будет использоваться
@@ -245,7 +260,7 @@ lemma card_bad_lt_card_all_step3_2_small_canonicalCCDT
 Stage 4 у нас реализован конструктивно через точечные selectors:
 сертификат строится из таблицы истинности и **не требует** свойства
 `GoodFamilyCNF`. Поэтому как только Stage 3 выдаёт *какую-то* рестрикцию,
-мы можем сразу получить `Shrinkage` с `ε = 0`.
+мы можем сразу получить `Shrinkage` с `ε = 1/(n+2)`.
 -/
 
 theorem shrinkage_step3_2_small_canonicalCCDT
@@ -257,7 +272,8 @@ theorem shrinkage_step3_2_small_canonicalCCDT
         (encodeBadFamilyDetCNF_small (F := F)
           (s := sParam n w) (t := tParam F.length n))) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
+        S.ε = (1 : Q) / (n + 2) := by
   obtain ⟨ρ, -, -⟩ :=
     exists_good_restriction_step3_2_small_canonicalCCDT
       (F := F) hN ht henc_small
@@ -269,7 +285,7 @@ theorem shrinkage_step3_2_small_canonicalCCDT
 
 Эта формулировка фиксирует «финишную» точку пайплайна:
 при выполнении числовых предпосылок Stage 1–3 мы получаем
-`Shrinkage`‑сертификат с `ε = 0`.
+`Shrinkage`‑сертификат с `ε = 1/(n+2)`.
 
 Лемма является удобным синонимом `shrinkage_step3_2_small_canonicalCCDT`,
 но подчеркнуто объявляет завершённость Stage 1–4.
@@ -284,7 +300,8 @@ theorem stage1_4_complete_small_canonicalCCDT
         (encodeBadFamilyDetCNF_small (F := F)
           (s := sParam n w) (t := tParam F.length n))) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
+        S.ε = (1 : Q) / (n + 2) := by
   -- Просто раскрываем синоним: все Stage 1–4 уже выполнены в предыдущей лемме.
   exact shrinkage_step3_2_small_canonicalCCDT (F := F) hN ht henc_small
 
@@ -293,7 +310,7 @@ theorem stage1_4_complete_small_canonicalCCDT
 
 Этот результат завершает путь "encoding → good restriction → certificate":
 как только Stage 3.2 дал **какую-то** рестрикцию, мы можем построить
-`PartialCertificate` с `ε = 0` через точечные selectors. Здесь мы не
+`PartialCertificate` с `ε = 1/(n+2)` через точечные selectors. Здесь мы не
 используем свойство "good" явно, потому что конструкция сертификата
 не зависит от `ρ` (см. `ShrinkageFromGood.partialCertificate_from_restriction`).
 -/
@@ -307,12 +324,13 @@ theorem stage1_6_complete_small_canonicalCCDT
         (encodeBadFamilyDetCNF_small (F := F)
           (s := sParam n w) (t := tParam F.length n))) :
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
-      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧ C.epsilon = 0 := by
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
+        C.epsilon = (1 : Q) / (n + 2) := by
   -- Stage 1–3: получаем хоть какую-то рестрикцию (good restriction).
   obtain ⟨ρ, -, -⟩ :=
     exists_good_restriction_step3_2_small_canonicalCCDT
       (F := F) hN ht henc_small
-  -- Stage 4–6: из любой рестрикции строим частичный сертификат (ε = 0).
+  -- Stage 4–6: из любой рестрикции строим частичный сертификат (ε = 1/(n+2)).
   exact partialCertificate_from_restriction (F := F) (ρ := ρ)
 
 /-!
@@ -363,8 +381,9 @@ lemma numerical_bound_step3_2_expanded
 `hbound` с базой `(2*n)^t * (2*(w+1))^t` и переводит её в
 существование good restriction.
 
-Такой вариант полезен как промежуточный шаг, пока инъективность
-малого кодирования `AuxTraceSmall` ещё не завершена.
+Такой вариант полезен как промежуточный шаг; теперь инъективность
+малого кодирования `AuxTraceSmall` доказана, но расширенная версия
+остаётся удобной для проверки численных оценок.
 -/
 
 theorem exists_good_restriction_step3_2_expanded
@@ -503,7 +522,8 @@ theorem shrinkage_step3_2
         (BadFamily_deterministic (F := F) (tParam m n))).card
         < (R_s (n := n) (sParam n w)).card) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
+        S.ε = (1 : Q) / (n + 2) := by
   -- Stage 3: получаем restriction `ρ` с `¬ BadFamily_deterministic`.
   obtain ⟨ρ, -, -⟩ :=
     exists_good_restriction_step3_2 (F := F) (m := m) hm ht hbad_lt
@@ -515,7 +535,7 @@ theorem shrinkage_step3_2
 
 Эта лемма — «финальная метка готовности» общего пайплайна:
 если Stage 1–3 дают строгую границу на количество плохих рестрикций,
-то Stage 4 конструктивно выдаёт `Shrinkage` с нулевой ошибкой.
+то Stage 4 конструктивно выдаёт `Shrinkage` с ошибкой `1/(n+2)`.
 -/
 
 theorem stage1_4_complete
@@ -528,7 +548,8 @@ theorem stage1_4_complete
         (BadFamily_deterministic (F := F) (tParam m n))).card
         < (R_s (n := n) (sParam n w)).card) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
+        S.ε = (1 : Q) / (n + 2) := by
   -- Делаем явную ссылку на обёртку Stage 4: теперь всё завершено.
   exact shrinkage_step3_2 (F := F) (m := m) hm ht hbad_lt
 

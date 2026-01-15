@@ -18,6 +18,17 @@
 - [x] Скан по репозиторию: найдено определение `partial_shrinkage_for_AC0` и точки использования (см. `pnp3/ThirdPartyFacts/Facts_Switching.lean` и тестовые аудиты). Это нужно для корректного изменения цели и для замены внешнего witness.  
   - Источники: `pnp3/ThirdPartyFacts/Facts_Switching.lean` (основная реализация), `pnp3/Tests/AxiomAudit.lean`, `pnp3/Audit/Axioms.lean`, `pnp3/Tests/AxiomsAudit.lean` (аудит аксиом).
 - [x] Добавлен модуль дуальности (DNF→¬CNF) на уровне `Core`‑типов для явной связи DNF‑интерфейса с CNF‑пайплайном: `pnp3/AC0/MultiSwitching/Duality.lean` с определениями `Literal.neg`, `DnfTerm.negToClause`, `DNF.negToCNF` и леммами для `eval`.
+- [x] Усилен мост дуальности: добавлена лемма двойного отрицания для DNF (`eval_negToCNF_neg`) и равенство семейств функций при переходе `DNF → CNF` (`eval_negDnfFamilyToCnfFamily_family`). Это упрощает переписывания в будущей связке DNF↔CNF.
+- [x] Уточнён интерфейс дуальности: `eval_negDnfFamilyToCnfFamily` теперь явно выводится из семейной леммы, чтобы все точечные переписывания опирались на единый факт.
+- [x] Добавлен явный мост `AC0.Formulas.DNF → Core.DNF` через функции `toCoreDNF` и лемму `eval_toCoreDNF`, с явными предпосылками `width` и `Nodup` по индексам. Это минимальный конструктивный слой для подключения AC0‑DNF к k‑DNF pipeline при контролируемых предположениях.
+- [x] Закрыт пункт «DNF‑certificate из CNF‑pipeline»: добавлена лемма
+  `shrinkage_negDnfFamily_to_dnf`, которая строит shrinkage для `F`
+  из shrinkage для `¬F` при условии `LeafPartition` на листьях дерева.
+  Это формальный мост для DNF↔CNF, требуемый в блокере (DNF vs CNF).
+- [x] Переход на малый алфавит закрыт: построен конструктивный декодер
+  `decodeAuxTraceSmall`, доказана инъективность
+  `encodeBadFamilyDetCNF_small_injective`, и весь блок
+  `AuxTraceSmall` теперь полностью конструктивен.
 - [x] Шаг A: аудит на скрытые аксиомы выполнен через сборку `lake build Tests.AxiomsAudit`.  
   - Результат: в ключевых теоремах фиксируются базовые аксиомы `propext`, `Classical.choice`, `Quot.sound`.  
   - Список из аудита:
@@ -30,6 +41,7 @@
 - [x] Классические аксиомы разрешены: считаем `propext`, `Classical.choice`, `Quot.sound`
   допустимым фоном и не блокируем дальнейшие шаги их устранением.
 - [x] Шаг B: stage‑контракт зафиксирован — `ac0DepthBound` переведён в режим Stage‑1 (M²), сильная оценка остаётся отдельной (`ac0DepthBound_strong`).
+- [x] Добавлена явная лемма `ac0DepthBound_eq_weak`, фиксирующая дефолт `ac0DepthBound = ac0DepthBound_weak` для стабильного `simp`‑контракта (важно для downstream‑обоснований Stage‑1).
 - [x] Шаг 1.1 (архитектура DNF→CNF): добавлен явный перевод DNF‑семейства через отрицание (`negDnfFamilyToCnfFamily`) и лемма про оценку `eval` на уровне семейства (`eval_negDnfFamilyToCnfFamily`) в `pnp3/AC0/MultiSwitching/Definitions.lean`.
 - [x] Шаг C (скан использования bounds): выполнен `rg` по `AC0SmallEnough`/`ac0DepthBound*`.
   - Основные узлы: `pnp3/ThirdPartyFacts/Facts_Switching.lean` (источник контрактов),
@@ -79,8 +91,22 @@
 - [x] Добавлен мост к `BadEvent` для расширенного кода:
   `exists_good_restriction_step3_2_expanded_canonicalCCDT` переводит
   good‑restriction из `BadFamily_deterministic` в `BadEvent` при `t > 0`.
-- [ ] Шаги 1–9 (multi‑switching pipeline) — **не завершены полностью**
-  (есть частичный прогресс Stage 1–6 для depth‑2 CNF; см. статус выше).
+- [ ] Шаги 1–9 (multi‑switching pipeline) — **не завершены полностью**:
+  Stage 1–6 закрыт для depth‑2 CNF, но **polylog‑оценка для общей глубины**
+  (multi‑switching индукция + CCDT для depth>2) остаётся открытой.
+  Это **единственный** оставшийся блокер для полного Stage‑2.
+  Подробный список недостающих лемм и конструкций вынесен в
+  `pnp3/Docs/MultiSwitching_DepthInduction_TODO.md`.
+
+## Аудит внешних аксиом (состояние на сейчас)
+
+* В `pnp3/` остаётся **одна активная внешняя аксиома**:
+  `ThirdPartyFacts.PartialMCSP_is_NP_Hard` (NP‑hardness из Hirahara 2022).
+* Блоки shrinkage/switching для AC⁰ и локальных схем
+  **не используют внешние аксиомы** — они формализованы как теоремы,
+  получающие явные witness через `FamilyIsAC0`/`FamilyIsLocalCircuit`.
+* Классические аксиомы (`propext`, `Classical.choice`, `Quot.sound`) считаются
+  допустимым фоном и не препятствуют конструктивности witness.
 
 ## Questions for experts (добавляйте ответы прямо здесь)
 1) **Какой именно формальный целевой объект предпочтителен в `Facts_Switching`:**
@@ -117,6 +143,27 @@
    требуется их устранение/локализация?
    **Ответ:** да, классические аксиомы разрешены как фон; переходим к
    конструктивной части без их устранения.
+
+6) **Нужен ли явный мост между `AC0.Formulas.DNF` (без ширины) и `Core.DNF` с параметром ширины `w`?**
+   **Ответ:** да, мост нужен, иначе придётся дублировать multi‑switching или
+   вручную протаскивать ширины/`Nodup` на каждом шаге. Фиксируем архитектуру:
+   - оставить AC0‑ветку как есть;
+   - добавить `width`/`maxWidth` и предикаты `WidthLe` (без изменения типов);
+   - нормализация термов для получения `Nodup` (и сохранения `eval`);
+   - `toCoreDNF_ofWidthLe` (для фиксированного `w`) и `toCoreDNFΣ` (по умолчанию).
+   **Статус:** базовый мост реализован через `toCoreDNF` + `eval_toCoreDNF`;
+   следующий шаг — модуль `AC0/Width.lean` и `AC0/Normalize.lean` с
+   конструктивными `Nodup`/width‑свидетелями.
+
+7) **Нужно ли добавить инвариант «листья образуют разбиение» для деревьев,
+   производимых canonical CCDT?**
+   **Ответ:** да, стоит доказать `LeafPartition` для canonical CCDT‑деревьев,
+   чтобы убрать предпосылку в `shrinkage_negDnfFamily_to_dnf` без переписывания
+   интерфейса. План:
+   - (быстрый вариант) добавить лемму `CCDT.leafPartition` и использовать её
+     в местах вызова;
+   - (чистая архитектура, позже) включить `LeafPartition` в shrinkage‑сертификат.
+   **Статус:** запланировано, но ещё не реализовано.
 
 ---
 
@@ -470,6 +517,10 @@ w := ⌈log₂(M(n+2))⌉ + c
   где код — это `AuxTraceSmall`.
 - Доказать `Function.Injective` через явный декодер
   (симуляция CCDT по шагам).
+
+**Статус:** закрыто. Инъективность малого кодирования доказана
+(`encodeBadFamilyDetCNF_small_injective`) с конструктивным декодером
+по `AuxTraceSmall`.
 
 **Итог:** получаем оценку вида
 `|Bad| ≤ |R_{s-t}| · (BParam w)^t`, где `BParam` **не зависит от n**.

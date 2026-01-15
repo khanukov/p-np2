@@ -53,7 +53,8 @@ variable {n : Nat}
 
 @[simp] lemma negToClause_width (T : DnfTerm n) :
     (negToClause T).width = T.width := by
-  rfl
+  -- Ширина — длина списка литералов; `map` длину не меняет.
+  simp [negToClause, CnfClause.width]
 
 private lemma any_neg_eq_not_all (l : List (Literal n)) (x : BitVec n) :
     l.any (fun ℓ => Literal.eval (Literal.neg ℓ) x) =
@@ -62,14 +63,31 @@ private lemma any_neg_eq_not_all (l : List (Literal n)) (x : BitVec n) :
   | nil =>
       simp
   | cons ℓ rest ih =>
-      cases hℓ : Literal.eval ℓ x <;>
-        cases hrest : rest.all (fun ℓ => Literal.eval ℓ x) <;>
-        simp [List.any, List.all, Literal.eval_neg, hℓ, hrest, ih]
+      -- Разбираем значения переменной и литерала.
+      have ih' := ih
+      simp [Literal.eval] at ih'
+      cases hx : x ℓ.idx <;>
+      cases hv : ℓ.value <;>
+      simp [List.any, List.all, Literal.eval, Literal.neg, hx, hv, ih']
+
+/-- Версия `any_neg_eq_not_all` после разворачивания `Literal.eval`. -/
+@[simp] lemma any_neg_eq_not_all_decide (l : List (Literal n)) (x : BitVec n) :
+    l.any ((fun ℓ => decide (x ℓ.idx = ℓ.value)) ∘ Literal.neg) =
+      ! l.all (fun ℓ => decide (x ℓ.idx = ℓ.value)) := by
+  -- Достаточно раскрыть `Literal.eval` и применить базовую лемму.
+  simpa [Literal.eval] using (any_neg_eq_not_all (l := l) (x := x))
+
+private lemma eval_negToClause_decide (T : DnfTerm n) (x : BitVec n) :
+    (DnfTerm.negToClause T).literals.any (fun ℓ => decide (x ℓ.idx = ℓ.value)) =
+      ! T.literals.all (fun ℓ => decide (x ℓ.idx = ℓ.value)) := by
+  -- Используем уже полученную версию через `decide`.
+  -- Здесь `simp` раскрывает `negToClause` и сводит к `any_neg_eq_not_all_decide`.
+  simp [DnfTerm.negToClause]
 
 /-- Оценка клаузы отрицания совпадает с отрицанием оценки терма. -/
 @[simp] lemma eval_negToClause (T : DnfTerm n) (x : BitVec n) :
     CnfClause.eval (negToClause T) x = ! DnfTerm.eval T x := by
-  simp [DnfTerm.eval, CnfClause.eval, negToClause, any_neg_eq_not_all]
+  simp [DnfTerm.eval, CnfClause.eval, negToClause, any_neg_eq_not_all_decide]
 
 end DnfTerm
 
@@ -78,6 +96,22 @@ end DnfTerm
 namespace DNF
 
 variable {n w : Nat}
+
+private lemma all_map {α β : Type} (l : List α) (f : α → β) (p : β → Bool) :
+    (l.map f).all p = l.all (fun a => p (f a)) := by
+  induction l with
+  | nil =>
+      simp
+  | cons a rest ih =>
+      simp [List.all, ih]
+
+private lemma any_map {α β : Type} (l : List α) (f : α → β) (p : β → Bool) :
+    (l.map f).any p = l.any (fun a => p (f a)) := by
+  induction l with
+  | nil =>
+      simp
+  | cons a rest ih =>
+      simp [List.any, ih]
 
 /-- CNF-формула, эквивалентная отрицанию DNF. -/
 @[simp] def negToCNF (F : DNF n w) : CNF n w :=
@@ -94,14 +128,53 @@ private lemma all_neg_eq_not_any (l : List (DnfTerm n)) (x : BitVec n) :
   | nil =>
       simp
   | cons T rest ih =>
-      cases hT : DnfTerm.eval T x <;>
-        cases hrest : rest.any (fun T => DnfTerm.eval T x) <;>
-        simp [List.any, List.all, hT, hrest, ih]
+      have ih' := ih
+      simp [DnfTerm.eval] at ih'
+      cases hT : T.literals.all (fun ℓ => Literal.eval ℓ x) <;>
+      cases hrest : rest.any (fun T => DnfTerm.eval T x) <;>
+      -- `hT` и `hrest` не нужны после раскрытия `DnfTerm.eval`.
+      simp [List.any, List.all, DnfTerm.eval, ih']
+
+private lemma all_neg_eq_not_any_decide (l : List (DnfTerm n)) (x : BitVec n) :
+    l.all (fun T => !T.literals.all (fun ℓ => decide (x ℓ.idx = ℓ.value))) =
+      ! l.any (fun T => T.literals.all (fun ℓ => decide (x ℓ.idx = ℓ.value))) := by
+  simpa [DnfTerm.eval, Literal.eval] using (all_neg_eq_not_any (l := l) (x := x))
 
 /-- Значение `negToCNF` — точное отрицание значения исходной DNF. -/
 @[simp] lemma eval_negToCNF (F : DNF n w) (x : BitVec n) :
     CNF.eval (negToCNF F) x = ! DNF.eval F x := by
-  simp [CNF.eval, DNF.eval, negToCNF, all_neg_eq_not_any]
+  cases F with
+  | mk terms width_le =>
+      -- После раскрытия определений ширина не влияет на оценку.
+      simp [CNF.eval, DNF.eval, negToCNF]
+      induction terms with
+      | nil =>
+          simp
+      | cons T rest ih =>
+          have width_le_rest : ∀ T ∈ rest, CnfClause.width T ≤ w := by
+            intro T hT
+            exact width_le T (by simp [hT])
+          have ih' := ih width_le_rest
+          -- После разворачивания `negToClause` и `any_neg_eq_not_all_decide`
+          -- остаётся стандартное `simp` на хвосте.
+          simp [DnfTerm.negToClause, DnfTerm.any_neg_eq_not_all_decide,
+            List.any, List.all, Function.comp, ih']
+
+end DNF
+
+/-! ### Эквивалентность с двойным отрицанием -/
+
+namespace DNF
+
+variable {n w : Nat}
+
+/-- Двойное отрицание DNF восстанавливает исходную формулу по значениям. -/
+@[simp] lemma eval_negToCNF_neg (F : DNF n w) (x : BitVec n) :
+    ! CNF.eval (negToCNF F) x = DNF.eval F x := by
+  -- Переводим `eval_negToCNF` к форме с `terms`, затем снимаем отрицание.
+  have h := eval_negToCNF (F := F) (x := x)
+  simp [CNF.eval, DNF.eval, negToCNF] at h
+  simp [h]
 
 end DNF
 

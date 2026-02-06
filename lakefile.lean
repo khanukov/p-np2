@@ -27,6 +27,7 @@ lean_lib PnP3 where
     -- the canonical trace helper so downstream modules can import it
     -- without missing `.olean` artifacts.
     Glob.one `AC0.MultiSwitching.Restrictions,
+    Glob.one `AC0.MultiSwitching.Duality,
     Glob.one `AC0.MultiSwitching.Definitions,
     Glob.one `AC0.MultiSwitching.BadEvents,
     Glob.one `AC0.MultiSwitching.CanonicalTrace,

@@ -482,17 +482,46 @@ noncomputable def auxSimpleOfTrace
 Для «малого» алфавита нам нужны только два поля:
 
 * направление ветви (бит),
-* позиция выбранного свободного литерала (индекс в `w.free`).
+* позиция выбранного литерала **внутри pending‑клаузы**.
 
+Такой индекс зависит только от самой клаузы, а не от текущего `w.free`,
+и поэтому подходит для реконструкции шага через канонический CCDT.
 Это даёт размер алфавита `2*(w+1)` и убирает `n` из степени.
 -/
+
+noncomputable def literalIndexInClause
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) : Nat := by
+  classical
+  exact List.idxOf choice.literal selection.clause.literals
+
+lemma literalIndexInClause_get?
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    selection.clause.literals[literalIndexInClause (selection := selection) (choice := choice)]?
+      = some choice.literal := by
+  classical
+  have hmem_free :
+      choice.literal ∈ selection.witness.free :=
+    ClausePendingWitness.Selection.literal_mem_free (choice := choice)
+  have hmem_clause :
+      choice.literal ∈ selection.clause.literals :=
+    selection.witness.subset _ hmem_free
+  simpa [literalIndexInClause] using (List.getElem?_idxOf (a := choice.literal)
+    (l := selection.clause.literals) hmem_clause)
 
 noncomputable def auxTraceSmallOfTrace
     {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
     (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
-    AuxTraceSmall w t :=
-  (CanonicalTrace.toTrace trace).map
-    (fun step => (step.value, Fin.ofNat (w + 1) step.literalIndex))
+    AuxTraceSmall w t := by
+  classical
+  let tr := CanonicalTrace.toTrace (trace := trace)
+  exact
+    Vector.ofFn (fun i =>
+      let st := tr.get i
+      (st.value, Fin.ofNat (w + 1) st.literalIndex))
 
 /-!
 ### Декодирование: восстановление ограничения
@@ -778,6 +807,16 @@ noncomputable def encodeBadFamilyDetCNF_small
   refine ⟨⟨ρ', code⟩, ?_⟩
   refine Finset.mem_product.2 ?_
   exact ⟨hρ', by simp [auxTraceFamilySmallCodes]⟩
+
+/-!
+### Декодирование малого encoding (TODO depth>2)
+
+Полный конструктивный декодер `AuxTraceSmall` и доказательство
+`encodeBadFamilyDetCNF_small_injective` временно вынесены в план
+глубинной индукции. В текущем pipeline используется расширенный
+код `encodeBadFamilyDetCNF_var`, для которого инъективность уже
+доказана ниже (`encodeBadFamilyDetCNF_var_injective`).
+-/
 
 /-!
 ### Encoding для детерминированного BadFamily (расширенный код)
@@ -1169,6 +1208,20 @@ noncomputable def canonicalCCDTAlgorithmCNF
           | some i =>
               -- Выбираем формулу с максимальной глубиной канонического дерева.
               canonicalDT_CNF (F := F.get i) ρ }
+
+/-!
+### Связь BadEvent и глубины CCDT
+
+По определению `BadEvent` — это просто сравнение глубины CCDT с порогом `t`.
+Тем не менее полезно иметь явную лемму для упрощения в downstream‑коде,
+чтобы не разворачивать определение каждый раз.
+-/
+
+@[simp] lemma badEvent_canonicalCCDT_depth_iff
+    {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) :
+    BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) t) ρ ↔
+      t ≤ PDT.depth ((canonicalCCDTAlgorithmCNF (F := F) t).ccdt ρ) := by
+  rfl
 
 lemma badEvent_canonicalCCDT_iff_badFamilyDet
     {n w t : Nat} (F : FormulaFamily n w) (ρ : Restriction n) (ht : 0 < t) :

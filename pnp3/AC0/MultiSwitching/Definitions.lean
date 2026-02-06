@@ -1,6 +1,7 @@
 import Core.BooleanBasics
 import Core.PDT
 import Core.SAL_Core
+import AC0.MultiSwitching.Duality
 import AC0.MultiSwitching.Restrictions
 
 /-!
@@ -53,6 +54,56 @@ abbrev DnfFamily (n k : Nat) := List (kDNF n k)
 /-- Перевод семейства k‑DNF в `Core.Family` булевых функций. -/
 @[simp] def evalDnfFamily (F : DnfFamily n k) : Core.Family n :=
   F.map evalDNF
+
+/-!
+### ДУАЛЬНОСТЬ: DNF → CNF
+
+Чтобы использовать CNF‑пайплайн для DNF‑формул, задаём явный
+перевод через отрицание. Это минимальный мост, который позволяет
+привязывать DNF‑интерфейсы к multi‑switching для CNF.
+-/
+
+/-- Перевод DNF‑семейства в CNF‑семейство по правилу ¬DNF → CNF. -/
+@[simp] def negDnfFamilyToCnfFamily (F : DnfFamily n k) : FormulaFamily n k :=
+  F.map DNF.negToCNF
+
+@[simp] lemma eval_negDnfFamilyToCnfFamily_family
+    (F : DnfFamily n k) :
+    evalFamily (negDnfFamilyToCnfFamily F)
+      = (evalDnfFamily F).map (fun g => fun x => ! g x) := by
+  -- Доказываем по индукции по списку формул.
+  induction F with
+  | nil =>
+      simp [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily]
+  | cons a rest ih =>
+      -- Для головы используем дуальность, хвост обрабатываем IH.
+      -- Явно разворачиваем списки, чтобы избежать `map_eq_map`.
+      dsimp [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily]
+      -- Сначала докажем совпадение значений на голове списка.
+      have h_head : evalCNF (DNF.negToCNF a) = fun x => ! evalDNF a x := by
+        funext x
+        simpa [evalCNF, evalDNF] using (DNF.eval_negToCNF (F := a) (x := x))
+      -- Переводим IH к форме равенства хвостов.
+      have h_tail :
+          List.map evalCNF (List.map DNF.negToCNF rest) =
+            List.map (fun g => fun x => ! g x) (List.map evalDNF rest) := by
+        simpa [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily] using ih
+      -- Собираем результат из головы и хвоста.
+      -- `simp` сводит равенство списков к равенству голов и хвостов.
+      simpa [List.map_cons, List.map_map, h_tail] using h_head
+
+@[simp] lemma eval_negDnfFamilyToCnfFamily
+    (F : DnfFamily n k) (x : Core.BitVec n) :
+    (evalFamily (negDnfFamilyToCnfFamily F)).map (fun g => g x)
+      = (evalDnfFamily F).map (fun g => ! g x) := by
+  /-
+    Это частный случай леммы семейного уровня: сначала переводим
+    `evalFamily (negDnfFamilyToCnfFamily F)` в семейство отрицаний,
+    а затем применяем отображение по значению в точке `x`.
+  -/
+  have hfamily := eval_negDnfFamilyToCnfFamily_family (F := F)
+  -- Преобразуем равенство списков функций в равенство списков значений.
+  simpa using congrArg (fun G => G.map (fun g => g x)) hfamily
 
 /-!
 ### Множество "плохих" рестрикций

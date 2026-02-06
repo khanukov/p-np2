@@ -39,11 +39,12 @@ open ThirdPartyFacts
 
   В первой итерации мы копируем структуру `SmallAC0Params`, но под `GapPartialMCSPParams`.
   Это даёт чёткую точку расширения для переноса anti-checker-а.
+  Явную гипотезу `AC0SmallEnough` убираем: в partial‑треке она заменяется
+  на будущий strong‑witness из multi‑switching.
 -/
 structure SmallAC0ParamsPartial (p : GapPartialMCSPParams) where
   ac0 : ThirdPartyFacts.AC0Parameters
   same_n : ac0.n = partialInputLen p
-  small : ThirdPartyFacts.AC0SmallEnough ac0
   union_small :
     let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong ac0)
     Counting.unionBound bound bound ≤

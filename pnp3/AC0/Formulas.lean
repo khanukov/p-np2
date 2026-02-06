@@ -35,11 +35,27 @@ namespace Literal
 
 variable {n : Nat}
 
-/-- Истинность литерала на данном входе в булевой форме.  Мы явно
-    используем `decide`, чтобы без труда подключать `List.any` и
-    `List.all`. -/
+/-- Перевод AC0-литерала в Core-литерал (совпадают по полям). -/
+@[simp] def toCore (ℓ : Literal n) : Core.Literal n :=
+  ⟨ℓ.idx, ℓ.val⟩
+
+/-! Истинность литерала на данном входе в булевой форме. -/
 @[simp] def holds (ℓ : Literal n) (x : Core.BitVec n) : Bool :=
   decide (x ℓ.idx = ℓ.val)
+
+@[simp] lemma toCore_idx (ℓ : Literal n) : (toCore ℓ).idx = ℓ.idx := by
+  rfl
+
+@[simp] lemma toCore_val (ℓ : Literal n) : (toCore ℓ).value = ℓ.val := by
+  rfl
+
+@[simp] lemma eval_toCore (ℓ : Literal n) (x : Core.BitVec n) :
+    Core.Literal.eval (toCore ℓ) x = holds ℓ x := by
+  -- В обеих версиях литерал истиннен тогда и только тогда,
+  -- когда выполняется равенство `x idx = val`.
+  by_cases h : x ℓ.idx = ℓ.val
+  · simp [toCore, holds, Core.Literal.eval, h]
+  · simp [toCore, holds, Core.Literal.eval, h]
 
 /-- Удобное представление литерала как пары `BitFix`. -/
 @[simp] def toBitFix (ℓ : Literal n) : BitFix n :=
@@ -159,9 +175,47 @@ namespace Term
 
 variable {n : Nat}
 
+@[simp] private lemma all_toCore_decide (lits : List (Literal n)) (x : Core.BitVec n) :
+    lits.all ((fun ℓ => decide (x ℓ.idx = ℓ.value)) ∘ Literal.toCore) =
+      lits.all (fun ℓ => decide (x ℓ.idx = ℓ.val)) := by
+  induction lits with
+  | nil =>
+      simp
+  | cons ℓ rest ih =>
+      simp [List.all, Literal.toCore, Function.comp, ih]
+
+/-- Ширина терма: число литералов. -/
+@[simp] def width (T : Term n) : Nat := T.lits.length
+
 /-- Значение терма на входе `x`: все литералы должны выполняться. -/
 @[simp] def eval (T : Term n) (x : Core.BitVec n) : Bool :=
   T.lits.all (fun ℓ => Literal.holds ℓ x)
+
+/--
+Перевод терма в `Core.DnfTerm`.
+
+Мы требуем `Nodup` по индексам, чтобы корректно сформировать
+`Core.CnfClause`, который используется в Core-термах.
+-/
+@[simp] def toCoreDnfTerm (T : Term n)
+    (hNodup : (T.lits.map (·.idx)).Nodup) : Core.DnfTerm n :=
+  ⟨T.lits.map Literal.toCore, by
+    -- Индексы сохраняются, поэтому `Nodup` переносится напрямую.
+    simpa [Literal.toCore, List.map_map] using hNodup⟩
+
+@[simp] lemma toCoreDnfTerm_width (T : Term n)
+    (hNodup : (T.lits.map (·.idx)).Nodup) :
+    (toCoreDnfTerm T hNodup).width = T.width := by
+  -- `width` — это длина списка литералов; маппинг не меняет длину.
+  simp [toCoreDnfTerm, width]
+
+@[simp] lemma eval_toCoreDnfTerm (T : Term n)
+    (hNodup : (T.lits.map (·.idx)).Nodup) (x : Core.BitVec n) :
+    Core.DnfTerm.eval (toCoreDnfTerm T hNodup) x = eval T x := by
+  -- Оценка терма сохраняется под поэлементным переводом литералов.
+  cases T with
+  | mk lits =>
+      simp [toCoreDnfTerm, eval, Core.DnfTerm.eval, Literal.holds, all_toCore_decide]
 
 /-- Результат ограничения терма: `satisfied` — терм стал тождественно
     истинным; `falsified` — ложным; `pending lits` — остаточный терм. -/
@@ -243,6 +297,42 @@ variable {n : Nat}
 
 @[simp] def eval (F : DNF n) (x : Core.BitVec n) : Bool :=
   F.terms.any (fun T => Term.eval T x)
+
+end DNF
+
+/-!
+### Мост к `Core.DNF` (k-DNF) с явными ограничениями
+
+Multi-switching в `Core` ожидает k-DNF, где термы имеют `Nodup` по индексам
+и явный числовой bound на ширину. Следующие определения позволяют
+переводить AC0-DNF в Core-DNF при наличии соответствующих предпосылок.
+-/
+
+namespace DNF
+
+variable {n : Nat}
+
+/-- Перевод AC0-DNF в `Core.DNF` ширины `w` при наличии ограничений. -/
+@[simp] def toCoreDNF (F : DNF n) (w : Nat)
+    (hwidth : ∀ T ∈ F.terms, Term.width T ≤ w)
+    (hNodup : ∀ T ∈ F.terms, (T.lits.map (·.idx)).Nodup) : Core.DNF n w :=
+  { terms :=
+      (F.terms.attach).map
+        (fun T => Term.toCoreDnfTerm T.1 (hNodup T.1 T.2))
+    width_le := by
+      intro T hT
+      rcases List.mem_map.mp hT with ⟨T', hT', rfl⟩
+      have hwidth' := hwidth T'.1 T'.2
+      -- Переносим оценку ширины через `toCoreDnfTerm`.
+      simpa [Term.toCoreDnfTerm_width] using hwidth' }
+
+@[simp] lemma eval_toCoreDNF (F : DNF n) (w : Nat)
+    (hwidth : ∀ T ∈ F.terms, Term.width T ≤ w)
+    (hNodup : ∀ T ∈ F.terms, (T.lits.map (·.idx)).Nodup)
+    (x : Core.BitVec n) :
+    Core.DNF.eval (toCoreDNF F w hwidth hNodup) x = eval F x := by
+  -- Переходим к поэлементному переводу и используем лемму для термов.
+  simp [toCoreDNF, Core.DNF.eval, eval]
 
 end DNF
 

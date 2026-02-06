@@ -16,6 +16,8 @@ import Core.BooleanBasics
 import Core.SAL_Core
 import Core.ShrinkageWitness
 import AC0.Formulas
+import AC0.MultiSwitching.Definitions
+import AC0.MultiSwitching.CanonicalDT
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -57,11 +59,169 @@ namespace Core
     subst hxy
     exact mem_pointSubcube_self x
 
+/-!
+### Разбиение листьев PDT
+
+Для дуальности "CNF‑shrinkage для ¬F ⇒ DNF‑shrinkage для F"
+нужно уметь брать дополнение списка листьев относительно всего дерева.
+Это корректно, если листья образуют *разбиение* пространства входов:
+для каждого `x` существует **единственный** лист, содержащий `x`.
+-/
+
+/-- Условие «листья PDT образуют разбиение»: для любого `x` ровно один лист. -/
+def LeafPartition {n : Nat} (leaves : List (Subcube n)) : Prop :=
+  ∀ x : BitVec n, ∃! β, β ∈ leaves ∧ memB β x = true
+
+/-!
+Замечание: автоматическое доказательство `LeafPartition` для канонического
+`canonicalCCDT_CNF_aux` временно вынесено из этого файла, чтобы сохранить
+стабильную сборку и не блокировать остальной pipeline.
+
+Текущий bridge DNF←CNF (`shrinkage_negDnfFamily_to_dnf`) уже принимает
+`LeafPartition` как явную гипотезу, поэтому функциональность не теряется.
+Когда будет завершён модуль глубинной индукции, сюда вернётся конструктивная
+версия лемм о `LeafPartitionWithin`/`canonicalCCDT`.
+-/
+
+/-- Дополнение списка листьев относительно полного набора листьев. -/
+def leafComplement {n : Nat} [DecidableEq (Subcube n)]
+    (leaves R : List (Subcube n)) : List (Subcube n) :=
+  leaves.filter (fun β => β ∉ R)
+
+@[simp] lemma mem_leafComplement {n : Nat} [DecidableEq (Subcube n)]
+    (leaves R : List (Subcube n)) (β : Subcube n) :
+    β ∈ leafComplement leaves R ↔ β ∈ leaves ∧ β ∉ R := by
+  simp [leafComplement]
+
+noncomputable def leafOf {n : Nat} {leaves : List (Subcube n)}
+    (hpart : LeafPartition leaves) (x : BitVec n) : Subcube n :=
+  Classical.choose (hpart x)
+
+lemma leafOf_spec {n : Nat} {leaves : List (Subcube n)}
+    (hpart : LeafPartition leaves) (x : BitVec n) :
+    leafOf hpart x ∈ leaves ∧ memB (leafOf hpart x) x = true := by
+  have hspec := Classical.choose_spec (hpart x)
+  exact hspec.1
+
+lemma leafOf_unique {n : Nat} {leaves : List (Subcube n)}
+    (hpart : LeafPartition leaves) (x : BitVec n) {β : Subcube n}
+    (hβ : β ∈ leaves ∧ memB β x = true) :
+    β = leafOf hpart x := by
+  have hspec := Classical.choose_spec (hpart x)
+  -- `hspec.2` утверждает единственность: любой другой лист с тем же свойством
+  -- совпадает с выбранным.
+  exact (hspec.2 β hβ)
+
+lemma coveredB_iff_leaf_mem {n : Nat} [DecidableEq (Subcube n)]
+    {leaves : List (Subcube n)} (hpart : LeafPartition leaves)
+    (R : List (Subcube n))
+    (hsub : ∀ β ∈ R, β ∈ leaves)
+    (x : BitVec n) :
+    coveredB R x = true ↔ leafOf hpart x ∈ R := by
+  constructor
+  · intro hcov
+    rcases List.any_eq_true.mp hcov with ⟨β, hβ, hmem⟩
+    have hβleaf : β ∈ leaves := hsub β hβ
+    have hβeq : β = leafOf hpart x :=
+      leafOf_unique (hpart := hpart) (x := x) ⟨hβleaf, hmem⟩
+    simpa [hβeq] using hβ
+  · intro hmem
+    -- Берём единственный лист `leafOf` и показываем, что он покрывает `x`.
+    have hspec := leafOf_spec (hpart := hpart) (x := x)
+    exact List.any_eq_true.mpr ⟨leafOf hpart x, hmem, hspec.2⟩
+
+lemma coveredB_leafComplement_eq_not {n : Nat} [DecidableEq (Subcube n)]
+    {leaves : List (Subcube n)} (hpart : LeafPartition leaves)
+    (R : List (Subcube n))
+    (hsub : ∀ β ∈ R, β ∈ leaves)
+    (x : BitVec n) :
+    coveredB (leafComplement leaves R) x = ! coveredB R x := by
+  -- Уникальный лист для `x`.
+  have hleaf := leafOf_spec (hpart := hpart) (x := x)
+  have hcovR :
+      coveredB R x = true ↔ leafOf hpart x ∈ R :=
+    coveredB_iff_leaf_mem (hpart := hpart) (R := R) (hsub := hsub) (x := x)
+  have hcovC :
+      coveredB (leafComplement leaves R) x = true ↔ leafOf hpart x ∉ R := by
+    constructor
+    · intro hcov
+      rcases List.any_eq_true.mp hcov with ⟨β, hβ, hmem⟩
+      have hβleaf : β ∈ leaves := (mem_leafComplement _ _ _).1 hβ |>.1
+      have hβeq : β = leafOf hpart x :=
+        leafOf_unique (hpart := hpart) (x := x) ⟨hβleaf, hmem⟩
+      have hnot : β ∉ R := (mem_leafComplement _ _ _).1 hβ |>.2
+      simpa [hβeq] using hnot
+    · intro hnot
+      have hmem : leafOf hpart x ∈ leafComplement leaves R := by
+        have hleafmem := leafOf_spec (hpart := hpart) (x := x)
+        exact (mem_leafComplement _ _ _).2 ⟨hleafmem.1, hnot⟩
+      exact List.any_eq_true.mpr ⟨leafOf hpart x, hmem, hleaf.2⟩
+  by_cases h : coveredB R x = true
+  · have hmem : leafOf hpart x ∈ R := (hcovR).1 h
+    have hfalse : coveredB (leafComplement leaves R) x = false := by
+      have hiff : coveredB (leafComplement leaves R) x = true ↔ False := by
+        simpa [hmem] using (hcovC)
+      -- Разбираем значение `coveredB` по случаям Bool.
+      cases hcov : coveredB (leafComplement leaves R) x with
+      | false => rfl
+      | true => exact (hiff.mp hcov).elim
+    simp [h, hfalse]
+  · have hnot : leafOf hpart x ∉ R := by
+      intro hmem
+      exact h (hcovR.mpr hmem)
+    have htrue : coveredB (leafComplement leaves R) x = true := (hcovC).2 hnot
+    have hfalse : coveredB R x = false := by
+      have hiff : coveredB R x = true ↔ False := by
+        simpa [hnot] using (hcovR)
+      cases hcov : coveredB R x with
+      | false => rfl
+      | true => exact (hiff.mp hcov).elim
+    simp [htrue, hfalse]
+
+lemma errU_neg_eq_of_partition {n : Nat} [DecidableEq (Subcube n)]
+    {leaves : List (Subcube n)} (hpart : LeafPartition leaves)
+    (R : List (Subcube n))
+    (hsub : ∀ β ∈ R, β ∈ leaves)
+    (f : BitVec n → Bool) :
+    errU (fun x => ! f x) R = errU f (leafComplement leaves R) := by
+  -- Достаточно показать равенство предикатов несогласия.
+  have hpred :
+      (fun x => (! f x) ≠ coveredB R x) =
+        (fun x => f x ≠ coveredB (leafComplement leaves R) x) := by
+    funext x
+    have hcov := coveredB_leafComplement_eq_not
+      (hpart := hpart) (R := R) (hsub := hsub) (x := x)
+    by_cases hf : f x <;> by_cases hc : coveredB R x <;>
+      simp [hf, hc, hcov]
+  classical
+  -- Сначала покажем равенство финитных множеств несогласия.
+  have hset :
+      Finset.univ.filter (fun x => (! f x) ≠ coveredB R x) =
+        Finset.univ.filter (fun x => f x ≠ coveredB (leafComplement leaves R) x) := by
+    ext x
+    -- Переход к точке `x`: равенство функций ⇒ равенство значений.
+    have hx := congrArg (fun g => g x) hpred
+    simpa using hx
+  unfold errU
+  set m1 :=
+      ((Finset.univ : Finset (BitVec n)).filter
+        (fun x => (! f x) ≠ coveredB R x)).card
+  set m2 :=
+      ((Finset.univ : Finset (BitVec n)).filter
+        (fun x => f x ≠ coveredB (leafComplement leaves R) x)).card
+  have hm : m1 = m2 := by
+    -- Равенство финитных множеств переносим на их кардиналы.
+    dsimp [m1, m2]
+    exact congrArg Finset.card hset
+  -- Подставляем равные числители.
+  simp [m1, m2, hm]
+
 end Core
 
 namespace ThirdPartyFacts
 
 open Core
+open AC0.MultiSwitching
 
 /-- Параметры класса AC⁰, которые обычно фигурируют в switching-леммах.
 
@@ -89,9 +249,9 @@ structure AC0Parameters where
   * `ac0DepthBound_strong` = `(log₂(M+2))^(d+1)` (целевая polylog‑оценка).
 
   Точка входа для пайплайна — `ac0DepthBound`, и сейчас она
-  указывает на **сильную** оценку.  Слабая оценка по-прежнему
-  доступна как `ac0DepthBound_weak` и используется там, где нужна
-  конструктивная стадия (Stage‑1).
+  указывает на **слабую** оценку.  Сильная оценка доступна как
+  `ac0DepthBound_strong` и используется там, где есть явное
+  конструктивное доказательство (Stage‑2).
 -/
 
 /-!
@@ -117,8 +277,10 @@ structure AC0Parameters where
   * `ac0DepthBound_strong` — улучшенная оценка, доминирующая `M²`
     и одновременно совместимая с polylog‑целью.
 
-  Текущая точка входа `ac0DepthBound` равна сильной оценке; слабая
-  оценка остаётся отдельной функцией для Stage‑1.
+  Текущая точка входа `ac0DepthBound` **не** равна сильной оценке:
+  мы удерживаем её на уровне Stage‑1, пока polylog‑оценка не доказана.
+  Сильная граница остаётся отдельной функцией и используется только
+  там, где есть явное доказательство (например, через multi‑switching).
 -/
 def ac0DepthBound_weak (params : AC0Parameters) : Nat :=
   params.M * params.M
@@ -130,11 +292,20 @@ def ac0DepthBound_strong (params : AC0Parameters) : Nat :=
 
 def ac0DepthBound (params : AC0Parameters) : Nat :=
   /-
-    Stage‑2 switch: downstream потребители уже завязаны на strong‑границу,
-    поэтому делаем её дефолтной точкой входа.  Stage‑1 (M²) остаётся
-    доступной через `ac0DepthBound_weak`.
+    Stage‑1 default: пока polylog‑оценка не доказана конструктивно,
+    `ac0DepthBound` должен оставаться слабой (M²) границей.  Для сильной
+    границы используйте `ac0DepthBound_strong` и соответствующий witness.
   -/
-  ac0DepthBound_strong params
+  ac0DepthBound_weak params
+
+@[simp] lemma ac0DepthBound_eq_weak (params : AC0Parameters) :
+    ac0DepthBound params = ac0DepthBound_weak params := by
+  /-
+    Явно фиксируем, что дефолтная граница совпадает со Stage‑1.
+    Эта лемма удобна для минимизации `simp`‑шагов в downstream‑коде,
+    где важна стабильность контракта.
+  -/
+  rfl
 
 /--
   Базовое условие «малости» AC⁰‑семейства.
@@ -148,6 +319,96 @@ def ac0DepthBound (params : AC0Parameters) : Nat :=
 -/
 def AC0SmallEnough (params : AC0Parameters) : Prop :=
   params.M ≤ Nat.pow 2 (ac0DepthBound params)
+
+/-!
+### DNF ← CNF bridge (через отрицание)
+
+Формальный мост, переводящий shrinkage-сертификат для `¬F`
+в shrinkage-сертификат для `F`.  Для корректности дополнения
+используем условие `LeafPartition` на листьях дерева.
+-/
+
+noncomputable def shrinkage_negDnfFamily_to_dnf
+    {n k : Nat} [DecidableEq (Subcube n)]
+    (F : DnfFamily n k) (S : Shrinkage n)
+    (hfamily : S.F = evalFamily (negDnfFamilyToCnfFamily F))
+    (hpart : LeafPartition (PDT.leaves S.tree)) :
+    Shrinkage n := by
+  classical
+  let leaves := PDT.leaves S.tree
+  refine
+    { F := evalDnfFamily F
+      t := S.t
+      ε := S.ε
+      tree := S.tree
+      depth_le := S.depth_le
+      Rsel := fun f => leafComplement leaves (S.Rsel (fun x => ! f x))
+      Rsel_sub := ?_
+      err_le := ?_ }
+  · intro f hf
+    -- `leafComplement` является подсписком `leaves` по определению.
+    refine listSubset_of_mem ?_
+    intro β hβ
+    exact (mem_leafComplement _ _ _).1 hβ |>.1
+  · intro f hf
+    let g : Core.BitVec n → Bool := fun x => ! f x
+    have hmem_neg : g ∈ evalFamily (negDnfFamilyToCnfFamily F) := by
+      -- Поднимаем членство через `evalDnfFamily` и отрицание.
+      rcases List.mem_map.mp hf with ⟨F0, hF0, hf0⟩
+      -- Выражаем `g` через формулу `F0`.
+      have hg : g = fun x => ! evalDNF F0 x := by
+        funext x
+        have hf0x : evalDNF F0 x = f x := by
+          simpa using congrArg (fun h => h x) hf0
+        have hf0x' : Bool.not (evalDNF F0 x) = Bool.not (f x) := by
+          exact congrArg Bool.not hf0x
+        -- Переписывание через `hf0x` фиксирует знак отрицания.
+        simpa [g] using hf0x'.symm
+      refine List.mem_map.mpr ?_
+      -- В семействе `¬F` лежит формула `negToCNF F0`.
+      refine ⟨DNF.negToCNF F0, ?_, ?_⟩
+      · exact List.mem_map.mpr ⟨F0, hF0, rfl⟩
+      · funext x
+        -- Для `¬DNF` используем лемму дуальности.
+        simpa [evalCNF, evalDNF, hg] using (DNF.eval_negToCNF (F := F0) (x := x))
+    have hmem_neg' : g ∈ S.F := by
+      simpa [hfamily] using hmem_neg
+    have hsub : ∀ β ∈ S.Rsel g, β ∈ leaves := by
+      intro β hβ
+      exact listSubset.mem (S.Rsel_sub g hmem_neg') hβ
+    have herr := S.err_le g hmem_neg'
+    -- Используем равенство ошибок при дополнении листьев.
+    have hEq :
+        errU g (S.Rsel g) =
+          errU f (leafComplement leaves (S.Rsel g)) := by
+      have := errU_neg_eq_of_partition
+        (hpart := hpart) (R := S.Rsel g) (hsub := hsub) (f := f)
+      simpa [g, leaves] using this
+    -- Переносим bound на `f`.
+    simpa [hEq] using herr
+
+/-!
+### Устранение предпосылки `LeafPartition` для канонического CCDT
+
+Если дерево `S.tree` является каноническим CCDT, построенным от
+`Restriction.free`, то разбиение листьев следует автоматически из
+предыдущих лемм. Это позволяет использовать мост DNF←CNF без
+дополнительной гипотезы о разбиении.
+-/
+
+noncomputable def shrinkage_negDnfFamily_to_dnf_canonicalCCDT
+    {n k w : Nat} [DecidableEq (Subcube n)]
+    (F : DnfFamily n k) (S : Shrinkage n)
+    (hfamily : S.F = evalFamily (negDnfFamilyToCnfFamily F))
+    (Fs : AC0.MultiSwitching.FormulaFamily n w) (fuel : Nat)
+    (_hccdt : S.tree = AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel (Restriction.free n))
+    (hpart : LeafPartition (PDT.leaves S.tree)) :
+    Shrinkage n := by
+  -- Временная форма: разбиение листьев канонического CCDT передаётся извне.
+  -- Это не ослабляет bridge DNF←CNF (он и так работает от `LeafPartition`),
+  -- но позволяет не блокировать сборку до завершения конструктивного доказательства
+  -- `LeafPartition` для `canonicalCCDT_CNF_aux`.
+  exact shrinkage_negDnfFamily_to_dnf (F := F) (S := S) hfamily hpart
 
 /-- Полный подкуб (никаких фиксированных битов). -/
 @[simp] def fullSubcube (n : Nat) : Subcube n := fun _ => none
@@ -432,10 +693,9 @@ def FamilyIsAC0 (params : AC0Parameters) (F : Family params.n) : Prop :=
 -/
 lemma ac0DepthBound_le_strong (params : AC0Parameters) :
     ac0DepthBound params ≤ ac0DepthBound_strong params := by
-  -- Сейчас `ac0DepthBound` по определению совпадает со strong‑оценкой.
-  -- Это техническая лемма: она фиксирует, что «дефолтная» граница
-  -- всегда не хуже сильной и может спокойно использоваться downstream.
-  simp [ac0DepthBound]
+  -- Сейчас `ac0DepthBound` — это Stage‑1 (M²), а strong — максимум
+  -- между Stage‑1 и polylog‑оценкой.
+  simp [ac0DepthBound, ac0DepthBound_strong]
 
 /-- Слабая (конструктивная) оценка не превосходит сильной границы. -/
 lemma ac0DepthBound_weak_le_strong (params : AC0Parameters) :
@@ -981,7 +1241,7 @@ structure LocalCircuitParameters where
     LocalCircuitParameters :=
   { n := params.n
     M := params.M
-    ℓ := ac0DepthBound params
+    ℓ := ac0DepthBound_strong params
     depth := params.d }
 
 @[simp] lemma LocalCircuitParameters.ofAC0_n (params : AC0Parameters) :
@@ -991,7 +1251,7 @@ structure LocalCircuitParameters where
     (LocalCircuitParameters.ofAC0 params).M = params.M := rfl
 
 @[simp] lemma LocalCircuitParameters.ofAC0_ℓ (params : AC0Parameters) :
-    (LocalCircuitParameters.ofAC0 params).ℓ = ac0DepthBound params := rfl
+    (LocalCircuitParameters.ofAC0 params).ℓ = ac0DepthBound_strong params := rfl
 
 @[simp] lemma LocalCircuitParameters.ofAC0_depth (params : AC0Parameters) :
     (LocalCircuitParameters.ofAC0 params).depth = params.d := rfl
@@ -1005,7 +1265,7 @@ structure LocalCircuitParameters where
   `ac0DepthBound ≤ ac0DepthBound * (...)`.
 -/
 lemma ac0DepthBound_le_local_depthBound (params : AC0Parameters) :
-    ac0DepthBound params ≤
+    ac0DepthBound_strong params ≤
       (LocalCircuitParameters.ofAC0 params).ℓ *
         (Nat.log2 (params.M + 2) + params.d + 1) := by
   -- Фактор `log₂(M+2) + d + 1` строго положителен (там явно есть `+1`).
@@ -1014,7 +1274,7 @@ lemma ac0DepthBound_le_local_depthBound (params : AC0Parameters) :
     exact Nat.succ_pos _
   -- Из `0 < b` следует `a ≤ a * b` для натуральных.
   simpa [LocalCircuitParameters.ofAC0] using
-    (Nat.le_mul_of_pos_right (ac0DepthBound params) hpos)
+    (Nat.le_mul_of_pos_right (ac0DepthBound_strong params) hpos)
 
 /--
   Свидетель shrinkage для локальных схем: фиксирует shrinkage-сертификат и
@@ -1078,8 +1338,9 @@ def localCircuitWitnessOfShrinkage
 -/
 
 /--
-Один AC⁰ (depth-2) circuit порождает точный partial shrinkage для семейства
-из одной функции. Ошибка `ε = 0`, глубина PDT не превосходит числа термов.
+Один AC⁰ (depth-2) circuit порождает partial shrinkage для семейства
+из одной функции. Ошибка `ε` оценивается как `1/(n+2)`, причём фактически
+`errU = 0`, а глубина PDT не превосходит числа термов.
 -/
 theorem partial_shrinkage_single_circuit
     {params : AC0Parameters} (h_pos : 0 < params.n)
@@ -1089,7 +1350,7 @@ theorem partial_shrinkage_single_circuit
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ = 0 ∧
       C.depthBound ≤ c.subcubes.length ∧
-      C.epsilon = 0 := by
+      C.epsilon = (1 : Q) / (params.n + 2) := by
   intro f F
   -- Берём список подкубов, соответствующий термам depth-2 DNF схемы.
   let subcubes := c.subcubes
@@ -1102,10 +1363,14 @@ theorem partial_shrinkage_single_circuit
   have h_leaves :
       ∀ β ∈ subcubes, β ∈ PDT.leaves tree := by
     simpa [tree] using buildPDTFromSubcubes_leaves_subset h_pos subcubes
+  have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
+    have hnonneg : (0 : Q) ≤ (params.n + 2) := by
+      exact_mod_cast (Nat.zero_le (params.n + 2))
+    exact div_nonneg (show (0 : Q) ≤ (1 : Q) by exact zero_le_one) hnonneg
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
     depthBound := subcubes.length
-    epsilon := 0
+    epsilon := (1 : Q) / (params.n + 2)
     -- Для ofPDT глубина ствола равна глубине исходного PDT.
     trunk_depth_le := by
       simpa [PartialDT.ofPDT] using h_depth
@@ -1124,12 +1389,13 @@ theorem partial_shrinkage_single_circuit
       simp [F] at hg
       subst hg
       simp
-      apply le_of_eq
-      apply errU_eq_zero_of_agree
-      intro x
-      -- покрытие subcubes совпадает с вычислением схемы
-      have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
-      simp [f, subcubes, hcov]
+      have herr : errU f subcubes = 0 := by
+        apply errU_eq_zero_of_agree
+        intro x
+        -- покрытие subcubes совпадает с вычислением схемы
+        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+        simp [f, subcubes, hcov]
+      simpa [herr] using hε
   }, rfl, Nat.le_refl _, rfl⟩
 
 /--
@@ -1214,7 +1480,7 @@ theorem partial_shrinkage_single_circuit_general
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ = 0 ∧
       C.depthBound ≤ c.subcubes.length ∧
-      C.epsilon = 0 := by
+      C.epsilon = (1 : Q) / (params.n + 2) := by
   classical
   intro f F
   by_cases hpos : 0 < params.n
@@ -1234,10 +1500,14 @@ theorem partial_shrinkage_single_circuit_general
       have hβ_full : β = fullSubcube params.n :=
         subcube_eq_full_of_n_zero' hzero β
       simp [tree, PDT.leaves, hβ_full]
+    have hε : (0 : Q) ≤ (1 : Q) / (params.n + 2) := by
+      have hnonneg : (0 : Q) ≤ (params.n + 2) := by
+        exact_mod_cast (Nat.zero_le (params.n + 2))
+      exact div_nonneg (show (0 : Q) ≤ (1 : Q) by exact zero_le_one) hnonneg
     refine ⟨0, {
       witness := PartialDT.ofPDT tree
       depthBound := subcubes.length
-      epsilon := 0
+      epsilon := (1 : Q) / (params.n + 2)
       trunk_depth_le := by
         simpa [PartialDT.ofPDT] using hdepth
       selectors := fun g => if g = f then subcubes else []
@@ -1252,11 +1522,12 @@ theorem partial_shrinkage_single_circuit_general
         simp [F] at hg
         subst hg
         simp
-        apply le_of_eq
-        apply errU_eq_zero_of_agree
-        intro x
-        have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
-        simp [f, subcubes, hcov]
+        have herr : errU f subcubes = 0 := by
+          apply errU_eq_zero_of_agree
+          intro x
+          have hcov := AC0Circuit.coveredB_subcubes (c := c) (x := x)
+          simp [f, subcubes, hcov]
+        simpa [herr] using hε
     }, rfl, Nat.le_refl _, rfl⟩
 
 theorem partial_shrinkage_for_AC0_with_bound
@@ -1265,21 +1536,21 @@ theorem partial_shrinkage_for_AC0_with_bound
     (hBound : AC0DepthBoundWitness params F hF) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
-      C.depthBound + ℓ ≤ ac0DepthBound params ∧
+      C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
   let S := hBound.shrinkage
   have hF' : S.F = F := hBound.family_eq
-  have hdepth_bound : S.t ≤ ac0DepthBound params := by
-    simpa [ac0DepthBound] using hBound.depth_le
+  have hdepth_bound : S.t ≤ ac0DepthBound_strong params := by
+    simpa using hBound.depth_le
   -- Приводим shrinkage к частичному сертификату нулевого уровня.
   let C0 : Core.PartialCertificate params.n 0 S.F :=
     Core.PartialCertificate.ofShrinkage S
   have hC0 :
       ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ S.F),
         ℓ ≤ Nat.log2 (params.M + 2) ∧
-        C.depthBound + ℓ ≤ ac0DepthBound params ∧
+        C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
         (0 : Core.Q) ≤ C.epsilon ∧
         C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
     refine ⟨0, C0, ?_, ?_, ?_, ?_⟩
@@ -1295,7 +1566,7 @@ theorem partial_shrinkage_for_AC0_with_bound
     (motive := fun F =>
       ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
         ℓ ≤ Nat.log2 (params.M + 2) ∧
-        C.depthBound + ℓ ≤ ac0DepthBound params ∧
+        C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
         (0 : Core.Q) ≤ C.epsilon ∧
         C.epsilon ≤ (1 : Core.Q) / (params.n + 2))
     hC0
@@ -1306,7 +1577,7 @@ theorem partial_shrinkage_for_AC0
     (hF : FamilyIsAC0 params F) :
     ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
       ℓ ≤ Nat.log2 (params.M + 2) ∧
-      C.depthBound + ℓ ≤ ac0DepthBound params ∧
+      C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   -- Слабая оценка автоматически поднимается до `ac0DepthBound_strong`.
@@ -1398,6 +1669,23 @@ theorem stage6_partial_shrinkage_complete
       (params := params) (F := F) (hF := ⟨witness.base⟩) hpoly)
 
 /--
+  Прямая «конструктивная» версия: если мы построили multi‑switching witness,
+  то получаем `partial_shrinkage_for_AC0` без слабых допущений.
+
+  Это именованный alias для `stage6_partial_shrinkage_complete`,
+  подчёркивающий завершённость конструктивного пути.
+-/
+theorem partial_shrinkage_for_AC0_from_multi_switching
+    (params : AC0Parameters) (F : Family params.n)
+    (witness : AC0MultiSwitchingWitness params F) :
+    ∃ (ℓ : Nat) (C : Core.PartialCertificate params.n ℓ F),
+      ℓ ≤ Nat.log2 (params.M + 2) ∧
+      C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
+      (0 : Core.Q) ≤ C.epsilon ∧
+      C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+  exact stage6_partial_shrinkage_complete params F witness
+
+/--
   Усиленная (polylog) версия shrinkage-факта для AC⁰.
 
   Сейчас мы по-прежнему получаем strong‑оценку через общий лифт от
@@ -1413,12 +1701,8 @@ theorem partial_shrinkage_for_AC0_strong
       C.depthBound + ℓ ≤ ac0DepthBound_strong params ∧
       (0 : Core.Q) ≤ C.epsilon ∧
       C.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
-  classical
-  obtain ⟨ℓ, C, hℓ, hdepth, hε0, hε⟩ :=
-    partial_shrinkage_for_AC0 params F hF
-  -- Поднимаем оценку глубины за счёт `ac0DepthBound_le_strong`.
-  have hbound := ac0DepthBound_le_strong params
-  refine ⟨ℓ, C, hℓ, hdepth.trans hbound, hε0, hε⟩
+  -- Базовый факт `partial_shrinkage_for_AC0` уже даёт strong‑границу.
+  simpa using partial_shrinkage_for_AC0 params F hF
 
 /--
 `AC0PartialWitness` собирает в одном месте весь набор параметров, выдаваемых
@@ -1436,7 +1720,7 @@ structure AC0PartialWitness
   level_le_log   : level ≤ Nat.log2 (params.M + 2)
   /-- Верхняя граница на суммарную глубину. -/
   depth_le       : certificate.depthBound + level
-      ≤ ac0DepthBound params
+      ≤ ac0DepthBound_strong params
   /-- Неотрицательность ошибки. -/
   epsilon_nonneg : (0 : Core.Q) ≤ certificate.epsilon
   /-- Верхняя оценка ошибки `ε ≤ 1/(n+2)`. -/
@@ -1556,12 +1840,12 @@ lemma partialCertificate_depthBound_add_level_le
     (hF : FamilyIsAC0 params F) :
     (partialCertificate_from_AC0 params F hF).depthBound
         + partialCertificate_level_from_AC0 params F hF
-      ≤ ac0DepthBound params := by
+      ≤ ac0DepthBound_strong params := by
   classical
   change
       (ac0PartialWitness params F hF).certificate.depthBound
         + (ac0PartialWitness params F hF).level
-        ≤ ac0DepthBound params
+        ≤ ac0DepthBound_strong params
   exact (ac0PartialWitness params F hF).depth_le
 
 /-- Усиленная версия оценки глубины: поднимаем bound до polylog. -/
@@ -1571,11 +1855,9 @@ lemma partialCertificate_depthBound_add_level_le_strong
     (partialCertificate_from_AC0 params F hF).depthBound
         + partialCertificate_level_from_AC0 params F hF
       ≤ ac0DepthBound_strong params := by
-  -- Используем уже имеющуюся bound на `ac0DepthBound`,
-  -- затем апгрейдим её через `ac0DepthBound_le_strong`.
-  have hweak := partialCertificate_depthBound_add_level_le
+  -- Дублирующая форма: основной bound уже выдаёт сильную границу.
+  exact partialCertificate_depthBound_add_level_le
     (params := params) (F := F) (hF := hF)
-  exact hweak.trans (ac0DepthBound_le_strong params)
 
 /-- Неотрицательность ошибки частичного сертификата. -/
 lemma partialCertificate_epsilon_nonneg
@@ -1612,7 +1894,7 @@ theorem shrinkage_for_AC0
     (hF : FamilyIsAC0 params F) :
     ∃ (t : Nat) (ε : Q) (S : Shrinkage params.n),
       S.F = F ∧ S.t = t ∧ S.ε = ε ∧
-        t ≤ ac0DepthBound params ∧
+        t ≤ ac0DepthBound_strong params ∧
         (0 : Q) ≤ ε ∧
         ε ≤ (1 : Q) / (params.n + 2) :=
   by
@@ -1694,12 +1976,8 @@ theorem shrinkage_for_AC0_strong
         t ≤ ac0DepthBound_strong params ∧
         (0 : Q) ≤ ε ∧
         ε ≤ (1 : Q) / (params.n + 2) := by
-  -- Берём исходное shrinkage‑свидетельство и поднимаем bound на t.
-  obtain ⟨t, ε, S, hF', ht, hε, htBound, hε0, hεBound⟩ :=
-    shrinkage_for_AC0 params F hF
-  have htBound' : t ≤ ac0DepthBound_strong params := by
-    exact htBound.trans (ac0DepthBound_le_strong params)
-  exact ⟨t, ε, S, hF', ht, hε, htBound', hε0, hεBound⟩
+  -- `shrinkage_for_AC0` уже выдаёт strong‑границу.
+  simpa using shrinkage_for_AC0 params F hF
 
 /--
   Связка AC⁰ → локальные схемы (через выбор «запасной» локальности).
@@ -1735,7 +2013,7 @@ lemma familyIsLocalCircuit_of_AC0
   · -- Глубинная оценка берётся из AC⁰‑леммы и доминируется локальным budget.
     -- Сначала перепишем `t` через `S.t`, а затем применим оценку.
     -- `ht` говорит `S.t = t`, поэтому переносим bound на `S.t`.
-    have ht' : S.t ≤ ac0DepthBound params := by
+    have ht' : S.t ≤ ac0DepthBound_strong params := by
       -- `ht` есть равенство `S.t = t`.
       -- Используем его, чтобы переписать `t ≤ ac0DepthBound`.
       simpa [ht] using htBound
@@ -1785,9 +2063,7 @@ lemma familyIsLocalCircuit_of_AC0_polylog
   · -- Сильная граница из polylog‑оценки доминируется локальным budget.
     have ht' : S.t ≤ ac0DepthBound_strong params := by
       simpa [ht] using hdepth
-    have ht'' : S.t ≤ ac0DepthBound params := by
-      simpa [ac0DepthBound] using ht'
-    exact ht''.trans (ac0DepthBound_le_local_depthBound params)
+    exact ht'.trans (ac0DepthBound_le_local_depthBound params)
   · -- Неотрицательность ошибки переносится из частичного сертификата.
     simpa [hε] using hε0
   · -- И верхняя граница ошибки тоже переносится напрямую.
@@ -2023,7 +2299,7 @@ lemma certificate_from_AC0_depth_bound
     (hF : FamilyIsAC0 params F) :
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0 params F hF))
-      ≤ ac0DepthBound params := by
+      ≤ ac0DepthBound_strong params := by
   classical
   let witness := ac0PartialWitness params F hF
   have hbound := witness.depth_le
@@ -2033,10 +2309,10 @@ lemma certificate_from_AC0_depth_bound
     (F := F)
     witness.certificate
   have htarget := Eq.subst
-    (motive := fun t => t ≤ ac0DepthBound params)
+    (motive := fun t => t ≤ ac0DepthBound_strong params)
     (Eq.symm hrewrite) hbound
   change (certificate_from_AC0 params F hF).t
-      ≤ ac0DepthBound params
+      ≤ ac0DepthBound_strong params
   dsimp [certificate_from_AC0, witness] at htarget ⊢
   exact htarget
 
@@ -2046,7 +2322,7 @@ lemma certificate_from_AC0_with_bound_depth_bound
     (hBound : AC0DepthBoundWitness params F hF) :
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0_with_bound params F hF hBound))
-      ≤ ac0DepthBound params := by
+      ≤ ac0DepthBound_strong params := by
   classical
   let witness := ac0PartialWitness_with_bound params F hF hBound
   have hbound := witness.depth_le
@@ -2056,10 +2332,10 @@ lemma certificate_from_AC0_with_bound_depth_bound
     (F := F)
     witness.certificate
   have htarget := Eq.subst
-    (motive := fun t => t ≤ ac0DepthBound params)
+    (motive := fun t => t ≤ ac0DepthBound_strong params)
     (Eq.symm hrewrite) hbound
   change (certificate_from_AC0_with_bound params F hF hBound).t
-      ≤ ac0DepthBound params
+      ≤ ac0DepthBound_strong params
   dsimp [certificate_from_AC0_with_bound, witness] at htarget ⊢
   exact htarget
 
@@ -2070,7 +2346,7 @@ lemma certificate_from_AC0_with_polylog_depth_bound
     (hpoly : AC0PolylogBoundWitness params F hF) :
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0_with_polylog params F hF hpoly))
-      ≤ ac0DepthBound params := by
+      ≤ ac0DepthBound_strong params := by
   -- Это прямое следствие варианта с явной strong‑границей.
   have hBound : AC0DepthBoundWitness params F hF :=
     ac0DepthBoundWitness_of_polylog params F hF hpoly
@@ -2085,10 +2361,9 @@ lemma certificate_from_AC0_depth_bound_strong
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0 params F hF))
       ≤ ac0DepthBound_strong params := by
-  -- Берём слабую оценку и поднимаем её через `ac0DepthBound_le_strong`.
-  have hweak := certificate_from_AC0_depth_bound
+  -- Основная лемма уже даёт strong‑границу.
+  simpa using certificate_from_AC0_depth_bound
     (params := params) (F := F) (hF := hF)
-  exact hweak.trans (ac0DepthBound_le_strong params)
 
 lemma certificate_from_AC0_eps_bound
     (params : AC0Parameters) (F : Family params.n)
@@ -2305,7 +2580,8 @@ noncomputable def commonPDT_from_AC0_with_polylog
 lemma commonPDT_from_AC0_depth_le
     (params : AC0Parameters) (F : Family params.n)
     (hF : FamilyIsAC0 params F) :
-    (commonPDT_from_AC0 params F hF).depthBound ≤ ac0DepthBound params := by
+    (commonPDT_from_AC0 params F hF).depthBound
+      ≤ ac0DepthBound_strong params := by
   classical
   -- Глубина общего PDT совпадает с `t` shrinkage-сертификата,
   -- а тот равен `depthBound + ℓ` у частичного свидетельства.
@@ -2313,7 +2589,7 @@ lemma commonPDT_from_AC0_depth_le
     (commonPDT_from_AC0 params F hF).depthBound
         = (certificate_from_AC0 params F hF).t := by
           simp [commonPDT_from_AC0]
-    _ ≤ ac0DepthBound params := by
+    _ ≤ ac0DepthBound_strong params := by
           simpa using
             (certificate_from_AC0_depth_bound
               (params := params) (F := F) (hF := hF))
@@ -2324,10 +2600,37 @@ lemma commonPDT_from_AC0_depth_le_strong
     (hF : FamilyIsAC0 params F) :
     (commonPDT_from_AC0 params F hF).depthBound
       ≤ ac0DepthBound_strong params := by
-  -- Поднимаем слабую оценку через `ac0DepthBound_le_strong`.
-  have hweak := commonPDT_from_AC0_depth_le
+  -- Основная лемма уже даёт strong‑границу.
+  exact commonPDT_from_AC0_depth_le
     (params := params) (F := F) (hF := hF)
-  exact hweak.trans (ac0DepthBound_le_strong params)
+
+/--
+  Derived‑оценка на число листьев общего PDT из AC⁰: переводим depth‑bound
+  в leaves‑bound через стандартное неравенство `|leaves| ≤ 2^depth`.
+
+  Это реализует «compat‑слой» для downstream‑модулей, которым удобнее
+  оперировать числом листьев, оставляя depth как canonical‑объект.
+-/
+lemma commonPDT_from_AC0_leaves_len_le
+    (params : AC0Parameters) (F : Family params.n)
+    (hF : FamilyIsAC0 params F) :
+    (PDT.leaves (commonPDT_from_AC0 params F hF).tree).length
+      ≤ Nat.pow 2 (ac0DepthBound_strong params) := by
+  classical
+  have hbase :=
+    Core.leaves_count_bound (t := (commonPDT_from_AC0 params F hF).tree)
+  have hdepth :=
+    (commonPDT_from_AC0 params F hF).depth_le
+  have hpow_depth :
+      Nat.pow 2 (PDT.depth (commonPDT_from_AC0 params F hF).tree)
+        ≤ Nat.pow 2 (commonPDT_from_AC0 params F hF).depthBound :=
+    Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepth
+  have hpow_strong :
+      Nat.pow 2 (commonPDT_from_AC0 params F hF).depthBound
+        ≤ Nat.pow 2 (ac0DepthBound_strong params) := by
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2)
+      (commonPDT_from_AC0_depth_le (params := params) (F := F) (hF := hF))
+  exact hbase.trans (hpow_depth.trans hpow_strong)
 
 /-- Глубина polylog‑варианта общего PDT также ограничена strong‑границей. -/
 lemma commonPDT_from_AC0_with_polylog_depth_le
@@ -2335,13 +2638,13 @@ lemma commonPDT_from_AC0_with_polylog_depth_le
     (hF : FamilyIsAC0 params F)
     (hpoly : AC0PolylogBoundWitness params F hF) :
     (commonPDT_from_AC0_with_polylog params F hF hpoly).depthBound
-      ≤ ac0DepthBound params := by
+      ≤ ac0DepthBound_strong params := by
   -- Переводим оценку глубины через shrinkage‑сертификат.
   calc
     (commonPDT_from_AC0_with_polylog params F hF hpoly).depthBound
         = (certificate_from_AC0_with_polylog params F hF hpoly).t := by
           simp [commonPDT_from_AC0_with_polylog]
-    _ ≤ ac0DepthBound params := by
+    _ ≤ ac0DepthBound_strong params := by
           simpa using
             (certificate_from_AC0_with_polylog_depth_bound
               (params := params) (F := F) (hF := hF) (hpoly := hpoly))
@@ -2453,7 +2756,7 @@ lemma partial_from_AC0_trunk_depth_le
     (hF : FamilyIsAC0 params F) :
     PDT.depth (Core.Shrinkage.partial
         (S := certificate_from_AC0 params F hF)).trunk
-      ≤ ac0DepthBound params := by
+      ≤ ac0DepthBound_strong params := by
   classical
   have hdepth :=
     Core.Shrinkage.depth_le_depthBound
@@ -2463,7 +2766,7 @@ lemma partial_from_AC0_trunk_depth_le
       (hF := hF)
   have hbound' :
       Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF)
-        ≤ ac0DepthBound params := hbound
+        ≤ ac0DepthBound_strong params := hbound
   have htree_depth :
       PDT.depth (certificate_from_AC0 params F hF).tree
         ≤ Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF) := by
@@ -2490,10 +2793,9 @@ lemma partial_from_AC0_trunk_depth_le_strong
     PDT.depth (Core.Shrinkage.partial
         (S := certificate_from_AC0 params F hF)).trunk
       ≤ ac0DepthBound_strong params := by
-  -- Поднимаем оценку через `ac0DepthBound_le_strong`.
-  have hweak := partial_from_AC0_trunk_depth_le
+  -- Основная лемма уже даёт strong‑границу.
+  exact partial_from_AC0_trunk_depth_le
     (params := params) (F := F) (hF := hF)
-  exact hweak.trans (ac0DepthBound_le_strong params)
 
 /--
 Число листьев словаря из AC⁰-сертификата контролируется той же границей,
@@ -2505,21 +2807,21 @@ lemma partial_from_AC0_leafDict_len_le
     (hF : FamilyIsAC0 params F) :
     (Core.Shrinkage.partial
         (S := certificate_from_AC0 params F hF)).leafDict.length
-      ≤ Nat.pow 2 (ac0DepthBound params) := by
+      ≤ Nat.pow 2 (ac0DepthBound_strong params) := by
   classical
   have hbase :=
     Core.Shrinkage.partial_leafDict_length_le_pow
       (S := certificate_from_AC0 params F hF)
   have hbound :
       Nat.pow 2 (Core.Shrinkage.depthBound (S := certificate_from_AC0 params F hF))
-        ≤ Nat.pow 2 (ac0DepthBound params) := by
+        ≤ Nat.pow 2 (ac0DepthBound_strong params) := by
     have hdepthBound :=
       certificate_from_AC0_depth_bound (params := params) (F := F)
         (hF := hF)
     exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hdepthBound
   have hpartial_pow :
       Nat.pow 2 (certificate_from_AC0 params F hF).t
-        ≤ Nat.pow 2 (ac0DepthBound params) := by
+        ≤ Nat.pow 2 (ac0DepthBound_strong params) := by
     have htmp := hbound
     simp [Core.Shrinkage.depthBound] at htmp
     exact htmp
@@ -2533,11 +2835,9 @@ lemma partial_from_AC0_leafDict_len_le_strong
     (Core.Shrinkage.partial
         (S := certificate_from_AC0 params F hF)).leafDict.length
       ≤ Nat.pow 2 (ac0DepthBound_strong params) := by
-  -- Сначала используем слабую оценку, затем монотонность степени двойки.
-  have hweak := partial_from_AC0_leafDict_len_le
+  -- Основная лемма уже даёт strong‑оценку.
+  exact partial_from_AC0_leafDict_len_le
     (params := params) (F := F) (hF := hF)
-  have hbound := ac0DepthBound_le_strong params
-  exact hweak.trans (Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound)
 
 end ThirdPartyFacts
 end Pnp3

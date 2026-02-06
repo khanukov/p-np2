@@ -1,7 +1,8 @@
 # To-Do / План завершения формализации (P≠NP pipeline)
 
 > **Status (2025-12-26)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**,
-> формализован и **не содержит аксиом** внутри цепочки A→B→C→D.
+> формализован и **не содержит аксиом** внутри цепочки A→B→C→D (кроме внешнего факта
+> NP‑трудности Partial MCSP, оформленного как отдельная аксиома).
 > Единственная условность остаётся из-за **внешних свидетельств (witnesses)** в части A
 > (shrinkage/switching), но сама цепочка построена и проверена.
 > Legacy‑ветка GapMCSP перенесена в `archive/`.
@@ -40,6 +41,8 @@
 - В `Magnification/FinalResult.lean` есть `P_ne_NP_final` (partial‑цепочка).
 - Текущая условность: гипотеза `hF_all : ∀ loc, FamilyIsLocalCircuit ...`.
 - Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
+- Внешняя аксиома NP‑трудности Partial MCSP импортируется из
+  `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
 
 ---
 
@@ -59,7 +62,13 @@
 
 3. **Финальная гипотеза `hF_all`**
    - Она исчезнет автоматически, как только будет предоставлен real witness
-     через `ExternalLocalityWitnessProvider`.
+     через `Facts.LocalityLift.ShrinkageWitness.Provider`.
+
+4. **Аксиома NP‑трудности Partial MCSP**
+   - Сейчас NP‑hardness задаётся аксиомой `PartialMCSP_is_NP_Hard`.
+   - Для полностью автономного доказательства нужен формальный перенос
+     результата Hirahara (2022) в Lean (или импорт проверенной формализации
+     как теоремы).
 
 ---
 
@@ -134,7 +143,7 @@ Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
 2. Удалить `max(M², polylog)` и вернуть чистую `ac0DepthBound_strong = polylog`.
 3. Построить реальные `AC0CircuitWitness` и `LocalCircuitWitness`
    через `Classical.choose` и `locality_lift`.
-4. Подменить `ExternalLocalityWitnessProvider` на внутренний instance.
+4. Подменить `Facts.LocalityLift.ShrinkageWitness.Provider` на внутренний instance.
 5. Удалить `hF_all` из `P_ne_NP_final` и очистить финальные теоремы.
 
 ---
@@ -147,9 +156,9 @@ Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
   - `partial_shrinkage_for_AC0_with_bound` — промежуточный артефакт Stage‑1.
   - `ac0DepthBound_weak/strong` — готовые границы, нужно сделать strong фактической.
 
-- **`archive/pnp3/ThirdPartyFacts/LocalityLift.lean`**
-  - Класс `ExternalLocalityWitnessProvider` — заменить тривиальный instance.
-  - Функции `locality_lift` / `locality_lift'` — ждут реальный witness.
+- **`pnp3/ThirdPartyFacts/PartialLocalityLift.lean`**
+  - Класс `Facts.LocalityLift.ShrinkageWitness.Provider` — заменить тривиальный instance.
+  - Мост `locality_lift` в partial‑цепочке ждёт реальный witness.
 
 - **`pnp3/Magnification/FinalResult.lean`**
   - Убрать `hF_all` после интеграции witness-провайдера.
@@ -180,7 +189,7 @@ partial‑цепочки. Их реализация не требуется дл
 - Интеграция в `Facts_Switching.lean`: заменить `max(M², polylog)` на чистую polylog‑оценку.
 
 ### Witness‑ы локальности
-- Встроить реальный `ExternalLocalityWitnessProvider` из shrinkage.
+- Встроить реальный `Facts.LocalityLift.ShrinkageWitness.Provider` из shrinkage.
 - Убрать гипотезу `hF_all` в `Magnification/FinalResult.lean`.
 
 ### Контроль соответствия комментариев и кода
@@ -232,6 +241,8 @@ partial‑цепочки. Их реализация не требуется дл
   `PartialMCSP_is_NP_Hard`.
 - [x] Обновить финальные выводы (например, `Magnification/FinalResult.lean`)
   на новую аксиому.
+- [ ] Довести NP‑hardness до формальной теоремы (перенос доказательства или
+  импорт проверенной формализации).
 
 ### Документация и аудит
 - [x] Обновить `AXIOMS_FINAL_LIST.md` и документы аудита с новой аксиомой.

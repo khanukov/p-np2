@@ -80,15 +80,16 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
 
-- **4 active axioms** in the live `pnp3/` tree (all are explicit placeholders
-  in `pnp3/AC0/MultiSwitching/Encoding.lean`)
-  (switching/shrinkage inputs are witness-backed theorems)
+- **1 active axiom** in the live `pnp3/` tree: `PartialMCSP_is_NP_Hard`
+  (`pnp3/ThirdPartyFacts/Hirahara2022.lean`)
+- **No placeholder axioms** in `pnp3/AC0/MultiSwitching/Encoding.lean`
 - **0 sorry/admit** statements in active code
-- All external inputs are **explicitly documented and categorized**
+- Switching/shrinkage inputs are **witness-backed theorems**, with witnesses
+  still supplied externally
 
 You can also run `scripts/check.sh` to rebuild, smoke-test, and verify the
-axiom inventory via `rg "^axiom " -g"*.lean" pnp3` (expected to show the
-multi-switching placeholders).
+axiom inventory via `rg "^axiom " -g"*.lean" pnp3` (expected to show only the
+Partial MCSP NP-hardness axiom).
 
 ### Q: Can I reproduce your results?
 
@@ -112,14 +113,6 @@ lean --run pnp3/Magnification/FinalResult.lean
 
 The entire development is open source and self-contained.
 
-### Q: What is the relationship to prior PNP1/PNP2 work?
-
-**A:** This repository contains three iterations:
-
-- **PNP1/PNP2**: Family Collision-Entropy (FCE) Lemma approach (archived in the legacy library)
-- **PNP3**: Current SAL-based approach (active in `pnp3/`)
-
-The shift reflects lessons learned during 2025 audit. PNP2 files remain available for historical context and reproducibility, but active development focuses on PNP3.
 
 ### Q: How can I contribute?
 

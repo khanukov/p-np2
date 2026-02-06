@@ -53,7 +53,7 @@ Part B: Counting & Capacity Bounds
     ↓
 
 Part C: Anti-Checker Construction
-  Input: Small AC⁰ solver for Partial MCSP (legacy GapMCSP chain is archived)
+  Input: Small AC⁰ solver for Partial MCSP
   Output: Large function family exceeding capacity
   Axioms: None (all anti-checker results proved in Lean)
 
@@ -132,7 +132,7 @@ pnp3/
 ├── Core/               # SAL infrastructure (subcubes, PDTs, atlases)
 ├── Counting/           # Capacity bounds (✅ fully proven)
 ├── ThirdPartyFacts/    # External inputs (switching lemma, etc.)
-├── Models/             # Partial MCSP interfaces (legacy GapMCSP archived)
+├── Models/             # Partial MCSP interfaces
 ├── LowerBounds/        # Anti-checker construction
 ├── Magnification/      # Hardness magnification triggers
 ├── Complexity/         # Complexity class interfaces
@@ -142,23 +142,13 @@ pnp3/
 
 ### Documentation
 
+- **[`STATUS.md`](STATUS.md)** - Current pipeline overview and active inputs
 - **[`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md)** - Complete axiom inventory with literature references
 - **[`CRITICAL_REANALYSIS.md`](CRITICAL_REANALYSIS.md)** - Honest assessment of proof status
-- **[`TC0_GAP_VERIFICATION.md`](TC0_GAP_VERIFICATION.md)** - Verification that no new breakthroughs needed
 - **[`AXIOM_FEASIBILITY_ANALYSIS.md`](AXIOM_FEASIBILITY_ANALYSIS.md)** - Analysis of what can be proven
-- **[`PART_D_FEASIBILITY.md`](PART_D_FEASIBILITY.md)** - Magnification formalization feasibility
-- **[`INTERFACE_AXIOMS_ANALYSIS.md`](INTERFACE_AXIOMS_ANALYSIS.md)** - Interface design analysis
+- **[`PROOF_DEPENDENCY_MAP.md`](PROOF_DEPENDENCY_MAP.md)** - Full dependency chain
+- **[`PROOF_ANALYSIS.md`](PROOF_ANALYSIS.md)** - Constructiveness analysis
 
-### Historical Material (archival library)
-
-Previous formalization based on Family Collision-Entropy (FCE) Lemma. Includes:
-- Complete proof of P ⊆ P/poly
-- Constructive cover construction
-- Historical documentation
-
-**Status**: Archived for provenance, no longer actively developed
-
----
 
 ## 🛠️ Building the Project
 
@@ -282,7 +272,7 @@ We welcome contributions in several areas:
 
 5. **Formalize External Inputs**: Supply verified witnesses for A.1/A.2 shrinkage
    (see `AXIOM_FEASIBILITY_ANALYSIS.md`)
-6. **Connect with archival proofs**: Link interface inputs to existing proofs
+6. **Connect with existing proofs**: Link interface inputs to existing proofs
 7. **Optimization**: Improve build times, reduce dependencies
 
 ### How to Contribute
@@ -300,20 +290,11 @@ We welcome contributions in several areas:
 
 - **[`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md)** - START HERE: Complete axiom inventory
 - **[`CRITICAL_REANALYSIS.md`](CRITICAL_REANALYSIS.md)** - Honest assessment of what's proven
-- **[`TC0_GAP_VERIFICATION.md`](TC0_GAP_VERIFICATION.md)** - Addresses "new breakthrough needed?" question
-
 ### Technical Analysis
 
 - **[`AXIOM_FEASIBILITY_ANALYSIS.md`](AXIOM_FEASIBILITY_ANALYSIS.md)** - Which axioms can be proven
-- **[`PART_D_FEASIBILITY.md`](PART_D_FEASIBILITY.md)** - Magnification formalization analysis
-- **[`INTERFACE_AXIOMS_ANALYSIS.md`](INTERFACE_AXIOMS_ANALYSIS.md)** - Why interface axioms exist
 - **[`PROOF_DEPENDENCY_MAP.md`](PROOF_DEPENDENCY_MAP.md)** - Full dependency chain
 - **[`PROOF_ANALYSIS.md`](PROOF_ANALYSIS.md)** - Constructiveness analysis
-
-### Historical
-
-- **[`FORMAL_PROOF_COMPLETE.md`](FORMAL_PROOF_COMPLETE.md)** - Initial completion summary
-- **`pnp3/Docs/AXIOMS.md`** - Original axiom documentation
 
 ---
 

@@ -3,14 +3,15 @@
 
 **Generated**: 2025-12-26
 **Purpose**: Confirm that documentation mirrors the current Lean codebase after
-removing legacy axioms.
+removing legacy axioms and recording the remaining external inputs.
 
 ---
 
 ## ✅ Verification Summary
 
-- ✅ There are **0** active axioms in the source tree (`pnp3/`).
-- ✅ Documentation (`pnp3/Docs/AXIOMS.md`, `AXIOMS_FINAL_LIST.md`,
+- ✅ There is **1** active axiom in the source tree (`pnp3/`):
+  `ThirdPartyFacts.PartialMCSP_is_NP_Hard`.
+- ✅ Documentation (`AXIOM_ANALYSIS_FINAL.md`, `AXIOMS_FINAL_LIST.md`,
   `AXIOM_FEASIBILITY_ANALYSIS.md`, `CRITICAL_REANALYSIS.md`) reflects the same set.
 - ✅ Interface theorems `P_subset_Ppoly_proof` and
   `P_ne_NP_of_nonuniform_separation` are imported proofs (no axioms).
@@ -24,14 +25,15 @@ removing legacy axioms.
 $ rg "^axiom " -g"*.lean" pnp3
 ```
 
-**Total**: 0 axioms (matches documentation).
+**Total**: 1 axiom (matches documentation).
 
 ### Per-Module Breakdown
 
 | File | Expected | Found | Notes |
 |------|----------|-------|-------|
+| `ThirdPartyFacts/Hirahara2022.lean` | 1 | 1 | External NP-hardness axiom |
 | `ThirdPartyFacts/Facts_Switching.lean` | 0 | 0 | Switching theorems (witness-backed) |
-| **TOTAL** | **0** | **0** | ✅|
+| **TOTAL** | **1** | **1** | ✅|
 
 Archived modules (`archive/`, `old_attempts/`) contain historical axioms but do
 not participate in the build or documentation metrics.
@@ -42,7 +44,7 @@ not participate in the build or documentation metrics.
 
 | Document | Status |
 |----------|--------|
-| `pnp3/Docs/AXIOMS.md` | ✅ Notes zero axioms, documents external witnesses |
+| `AXIOM_ANALYSIS_FINAL.md` | ✅ Notes 1 axiom, no placeholders in `pnp3/` |
 | `AXIOMS_FINAL_LIST.md` | ✅ Updated executive summary for publication |
 | `AXIOM_FEASIBILITY_ANALYSIS.md` | ✅ Feasibility reassessment for witness-backed theorems |
 | `CRITICAL_REANALYSIS.md` | ✅ Critical-path description matches code |

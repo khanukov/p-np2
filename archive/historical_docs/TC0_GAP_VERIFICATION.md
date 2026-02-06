@@ -1,6 +1,10 @@
 # Проверка "Критического Gap": Нужен ли Новый Math Прорыв?
 ## Ответ на вопрос о TC⁰ lower bounds
 
+> ℹ️ **Примечание (исторический документ):** основной активный конвейер
+> использует Partial MCSP, а GapMCSP‑материалы хранятся как legacy в `archive/`.
+> Этот файл оставлен для исторического контекста и обсуждения AC⁰ vs TC⁰.
+
 **Дата**: 2025-10-24
 **Вопрос**: Правда ли что наши external inputs требуют НОВОГО math прорыва (TC⁰ lower bounds)?
 
@@ -266,7 +270,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 
 ## 🔍 ЦИТАТЫ ИЗ НАШЕЙ ДОКУМЕНТАЦИИ
 
-### AXIOMS.md (A.1 shrinkage input):
+### AXIOMS_FINAL_LIST.md (A.1 shrinkage input):
 
 > **Primary**: Johan Håstad, "Almost optimal lower bounds for small depth circuits", **STOC 1986**
 > - Theorem 1 (Switching Lemma): Page 6-7
@@ -274,7 +278,7 @@ grep -r "TC0\|TC⁰\|threshold" pnp3/ --include="*.lean"
 
 **Комментарий**: Если бы нужен был "новый прорыв", не было бы "universally accepted result"!
 
-### AXIOMS.md (C.6 anti-checker theorem):
+### AXIOMS_FINAL_LIST.md (C.6 anti-checker theorem):
 
 > **Primary**: Oliveira, Pich, Santhanam, "Hardness Magnification Near State-Of-The-Art Lower Bounds", **CCC 2019**
 > - Lemma 4.1 (AC⁰ anti-checker): Pages 12-13

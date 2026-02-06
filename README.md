@@ -1,7 +1,7 @@
 # P≠NP formalization repository
-> **Status (2025-12-17)**: Active development centres on the new `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).  Earlier constructive pipelines remain archived for provenance but are no longer part of the active build.
+> **Status (2025-12-17)**: Active development centres on the `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).
 
-This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for **Partial MCSP**.  The former GapMCSP pipeline now lives under `archive/`.
+This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for **Partial MCSP**.
 
 ## Scientific contribution
 
@@ -9,9 +9,7 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 
 **Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage inputs: the theorems `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` both require externally supplied witnesses (`AC0CircuitWitness` and `LocalCircuitWitness`). All anti-checker and magnification bridges are machine-checked theorems.
 
-**Documentation**: See [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for external input tracking.
-
-Historically, versions `Pnp1/` and `Pnp2/` implemented the **Family Collision-Entropy (FCE) Lemma** pipeline.  The corresponding sources are kept offline as read-only artefacts documenting the earlier constructive cover approach.  They still compile with the present toolchain and can be consulted for proofs, experiments, and documentation of the FCE era when needed.
+**Documentation**: Start with [STATUS.md](STATUS.md) for the current pipeline overview, then see [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for external input tracking.
 
 ## Assumptions & External Facts
 
@@ -43,7 +41,7 @@ The ellipsis (`…`) expands into the SAL + anti-checker pipeline, which ultimat
 * `Core/` – core combinatorics of subcubes, partial decision trees, and the SAL atlas infrastructure.
 * `Counting/` – capacity bounds for atlases together with approximation lemmas.
 * `ThirdPartyFacts/` – external inputs (multi-switching theorems, lightweight function counts, etc.).
-* `Models/` – formal interfaces for Partial MCSP, plus related promise problems.  Legacy GapMCSP models live under `archive/pnp3/Models/`.
+* `Models/` – formal interfaces for Partial MCSP, plus related promise problems.
 * `LowerBounds/` – lower-bound derivations for formulas and depth-limited circuits based on SAL.
 * `Magnification/` – magnification bridges and literature interfaces culminating in the final separation statements.
 * `Complexity/` – wrappers around standard complexity classes used by the magnification step.
@@ -90,13 +88,6 @@ lake test                           # helper executables
 * Noncomputable definitions are permitted whenever they simplify existence proofs; constructive variants are documented explicitly when downstream tooling needs them.
 * Extensive file headers describe goals, dependencies, and completion criteria.  Follow the TODO markers inside `pnp3/` modules when contributing new proofs.
 
-## Historical note: from FCE to SAL
+## Planning notes
 
-The shift from the FCE-Lemma pipeline to the SAL programme (`pnp3/`) reflects the lessons learned during the September 2025 audit:
-
-1. The constructive cover machinery is preserved for reproducibility but no longer drives the main separation strategy.
-2. SAL-based magnification aligns better with contemporary lower-bound techniques and offers a clearer path to hardness for Partial MCSP, so the GapMCSP chain has been archived.
-3. The Partial MCSP track now drives the main pipeline (final result is in the partial branch), with GapMCSP kept only under `archive/` for legacy reference.
-4. All new development happens inside `pnp3/`, while the legacy directories only serve as archival references for earlier results.
-
-For detailed migration plans and milestone tracking, consult `archive/pnp3/Docs/PLAN.md` and the root `TODO.md`.
+For detailed migration plans and milestone tracking, consult the root `TODO.md`.

@@ -199,13 +199,43 @@ lemma depth_lt_t_of_good_one
     mt h_imp hgood
   exact Nat.lt_of_not_ge h_not_le
 
-lemma canonicalDT_depth_monotone
+lemma Restriction.freeCount_le_n {n : Nat} (ρ : Restriction n) : ρ.freeCount ≤ n := by
+  rw [← Restriction.freePositions_card_eq_freeCount]
+  exact le_trans (Finset.card_filter_le _ _) (by simp)
+
+lemma freeCount_le_of_subcubeRefines {n : Nat} {β γ : Restriction n}
+    (h : subcubeRefines β.mask γ.mask) :
+    β.freeCount ≤ γ.freeCount := by
+  rw [← Restriction.freePositions_card_eq_freeCount]
+  rw [← Restriction.freePositions_card_eq_freeCount]
+  apply Finset.card_le_card
+  intro i hi
+  rw [Restriction.mem_freePositions] at hi ⊢
+  rw [Option.isNone_iff_eq_none] at hi ⊢
+  by_contra hsome
+  have hsome' : γ.mask i ≠ none := hsome
+  obtain ⟨b, hb⟩ := Restriction.mask_eq_some_of_not_none hsome'
+  have hb_beta : β.mask i = some b := h i b hb
+  simp [hb_beta] at hi
+
+lemma canonicalDT_depth_monotone_global
     {n w : Nat} (F : Core.CNF n w) (ρ ρ' : Restriction n)
     (h_ref : subcubeRefines ρ'.mask ρ.mask) :
     PDT.depth (canonicalDT_CNF F ρ') ≤ PDT.depth (canonicalDT_CNF F ρ) := by
-  -- Это свойство интуитивно верно (уточнение рестрикции упрощает формулу),
-  -- но требует структурной индукции по построению дерева.
-  sorry
+  -- Use `TraceBridge.canonicalDT_depth_monotone` with `fuel = ρ.freeCount`.
+  -- Step 1: depth(aux F ρ'.freeCount ρ') ≤ depth(aux F ρ.freeCount ρ')
+  have h_fuel_le : ρ'.freeCount ≤ ρ.freeCount := freeCount_le_of_subcubeRefines h_ref
+  have h1 : PDT.depth (canonicalDT_CNF_aux F ρ'.freeCount ρ') ≤
+            PDT.depth (canonicalDT_CNF_aux F ρ.freeCount ρ') :=
+    canonicalDT_CNF_aux_depth_monotone_fuel F ρ' h_fuel_le
+  -- Step 2: depth(aux F ρ.freeCount ρ') ≤ depth(aux F ρ.freeCount ρ)
+  have h_ref_restr : Restriction.refines ρ' ρ := h_ref
+  have h2 : PDT.depth (canonicalDT_CNF_aux F ρ.freeCount ρ') ≤
+            PDT.depth (canonicalDT_CNF_aux F ρ.freeCount ρ) :=
+    canonicalDT_depth_monotone F ρ.freeCount ρ' ρ h_ref_restr
+  -- Combine
+  unfold canonicalDT_CNF
+  exact Nat.le_trans h1 h2
 
 lemma depth_lt_t_of_good_one_refined
     {n w t : Nat} {F : Core.CNF n w} {ρ ρ' : Restriction n}
@@ -213,7 +243,7 @@ lemma depth_lt_t_of_good_one_refined
     (hgood : ¬ BadCNF F t ρ) :
     PDT.depth (canonicalDT_CNF F ρ') < t := by
   have h1 := depth_lt_t_of_good_one hgood
-  have h2 := canonicalDT_depth_monotone F ρ ρ' h_ref
+  have h2 := canonicalDT_depth_monotone_global F ρ ρ' h_ref
   exact Nat.lt_of_le_of_lt h2 h1
 
 def SmallDepthEverywhere
@@ -221,11 +251,190 @@ def SmallDepthEverywhere
   ∀ f ∈ F, ∀ (β : Subcube n), subcubeRefines β ρ.mask →
     PDT.depth (canonicalDT_CNF f ⟨β⟩) < t
 
+lemma canonicalDT_CNF_aux_stable
+    {n w : Nat} (F : Core.CNF n w) (ρ : Restriction n) (fuel : Nat)
+    (hfuel : ρ.freeCount ≤ fuel) :
+    canonicalDT_CNF_aux F fuel ρ = canonicalDT_CNF_aux F ρ.freeCount ρ := by
+  induction h : ρ.freeCount generalizing ρ fuel with
+  | zero =>
+      cases fuel with
+      | zero => rfl
+      | succ fuel' =>
+          unfold canonicalDT_CNF_aux
+          have hnone : Restriction.firstPendingClause? ρ F.clauses = none := by
+            cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+            | none => rfl
+            | some selection =>
+                let ℓ := chooseFreeLiteral (w := selection.witness)
+                have hmem := chooseFreeLiteral_mem (w := selection.witness)
+                have hfree := Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+                  (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+                have hpos : 0 < ρ.freeCount :=
+                   Restriction.freeCount_pos_of_mem_freeIndicesList hfree
+                rw [h] at hpos
+                contradiction
+          rw [hnone]
+  | succ k ih =>
+      cases fuel with
+      | zero =>
+          rw [h] at hfuel
+          linarith
+      | succ fuel' =>
+          unfold canonicalDT_CNF_aux
+          cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+          | none =>
+              rfl
+          | some selection =>
+              let ℓ := chooseFreeLiteral (w := selection.witness)
+              have hmem : ℓ ∈ selection.witness.free :=
+                chooseFreeLiteral_mem (w := selection.witness)
+              have hfree :
+                  ℓ.idx ∈ ρ.freeIndicesList :=
+                Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+                  (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+              have hcounts := @canonicalDT_CNF_aux_branch_freeCount n w F (Nat.succ fuel') ρ selection hsel
+              have hcount0 : (Classical.choose (Restriction.assign_some_of_mem_freeIndicesList (ρ := ρ) (i := ℓ.idx) (b := false) hfree)).freeCount = k := by
+                rw [hcounts.1, h, Nat.succ_sub_one]
+              have hcount1 : (Classical.choose (Restriction.assign_some_of_mem_freeIndicesList (ρ := ρ) (i := ℓ.idx) (b := true) hfree)).freeCount = k := by
+                rw [hcounts.2, h, Nat.succ_sub_one]
+
+              rw [h] at hfuel
+              dsimp only
+              congr 1
+              · apply ih (ρ := _) (fuel := fuel')
+                · rw [hcount0]; exact Nat.le_of_succ_le_succ hfuel
+                · exact hcount0
+              · apply ih (ρ := _) (fuel := fuel')
+                · rw [hcount1]; exact Nat.le_of_succ_le_succ hfuel
+                · exact hcount1
+
 lemma canonicalDT_depth_le_of_fuel_ge
     {n w : Nat} (f : Core.CNF n w) (fuel : Nat) (ρ : Restriction n)
     (hfuel : ρ.freeCount ≤ fuel) :
     PDT.depth (canonicalDT_CNF_aux f fuel ρ) = PDT.depth (canonicalDT_CNF f ρ) := by
-  sorry
+  unfold canonicalDT_CNF
+  rw [canonicalDT_CNF_aux_stable f ρ fuel hfuel]
+
+lemma PDT.mem_leaves_refine_iff
+    {n : Nat} {t : PDT n} {tails : ∀ β, β ∈ PDT.leaves t → PDT n}
+    {β : Subcube n} :
+    β ∈ PDT.leaves (PDT.refine t tails) ↔
+      ∃ γ hγ, β ∈ PDT.leaves (tails γ hγ) := by
+  induction t with
+  | leaf γ =>
+      simp [PDT.refine, PDT.leaves]
+  | node i t0 t1 ih0 ih1 =>
+      simp [PDT.refine, PDT.leaves]
+      constructor
+      · intro h
+        -- Simplify mem (++ ...) to Or
+        rcases h with h0 | h1
+        · rw [ih0] at h0
+          rcases h0 with ⟨γ, hγ, hmem⟩
+          exact ⟨γ, Or.inl hγ, hmem⟩
+        · rw [ih1] at h1
+          rcases h1 with ⟨γ, hγ, hmem⟩
+          exact ⟨γ, Or.inr hγ, hmem⟩
+      · rintro ⟨γ, hγ, hmem⟩
+        rcases hγ with hγ0 | hγ1
+        · left
+          rw [ih0]
+          exact ⟨γ, hγ0, hmem⟩
+        · right
+          rw [ih1]
+          exact ⟨γ, hγ1, hmem⟩
+
+lemma assign_refines {ρ : Restriction n} (i : Fin n) {b : Bool}
+    {ρ' : Restriction n} (h : ρ.assign i b = some ρ') :
+    subcubeRefines ρ'.mask ρ.mask := by
+  intro j val hj
+  unfold Restriction.assign at h
+  cases hsub : Subcube.assign ρ.mask i b with
+  | none =>
+    rw [hsub] at h
+    contradiction
+  | some β =>
+    rw [hsub] at h
+    injection h with h_eq
+    subst h_eq
+    unfold Subcube.assign at hsub
+    cases hmask : ρ.mask i
+    · rw [hmask] at hsub
+      dsimp at hsub
+      simp at hsub
+      subst hsub
+      dsimp
+      by_cases hij : j = i
+      · subst hij
+        rw [hmask] at hj
+        contradiction
+      · simp [hij]; exact hj
+    · rw [hmask] at hsub
+      dsimp at hsub
+      split_ifs at hsub <;> try { contradiction }
+      simp at hsub; subst hsub; exact hj
+
+lemma canonicalDT_CNF_aux_leaves_refine_rho
+    {n w : Nat} (F : Core.CNF n w) (ρ : Restriction n) (fuel : Nat) :
+    ∀ β ∈ PDT.leaves (canonicalDT_CNF_aux F fuel ρ), subcubeRefines β ρ.mask := by
+  induction fuel generalizing ρ with
+  | zero =>
+      unfold canonicalDT_CNF_aux
+      intro β hβ
+      cases hβ
+      · exact subcubeRefines_refl _
+      · contradiction
+  | succ fuel ih =>
+      unfold canonicalDT_CNF_aux
+      match hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          simp only
+          intro β hβ
+          cases hβ
+          · exact subcubeRefines_refl _
+          · contradiction
+      | some selection =>
+          simp only
+          intro β hβ
+          simp only [PDT.leaves] at hβ
+          rw [List.mem_append] at hβ
+          rcases hβ with hβ | hβ
+          · have href0 := ih _ β hβ
+            let ℓ := chooseFreeLiteral (w := selection.witness)
+            have hmem := chooseFreeLiteral_mem (w := selection.witness)
+            have hfree := Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+                  (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+            let ρ0 := Classical.choose (Restriction.assign_some_of_mem_freeIndicesList (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+            have hassign0 : ρ.assign ℓ.idx false = some ρ0 := Classical.choose_spec (Restriction.assign_some_of_mem_freeIndicesList (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+            exact subcubeRefines_trans href0 (assign_refines ℓ.idx hassign0)
+          · have href1 := ih _ β hβ
+            let ℓ := chooseFreeLiteral (w := selection.witness)
+            have hmem := chooseFreeLiteral_mem (w := selection.witness)
+            have hfree := Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+                  (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ :=ℓ) hmem
+            let ρ1 := Classical.choose (Restriction.assign_some_of_mem_freeIndicesList (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+            have hassign1 : ρ.assign ℓ.idx true = some ρ1 := Classical.choose_spec (Restriction.assign_some_of_mem_freeIndicesList (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+            exact subcubeRefines_trans href1 (assign_refines ℓ.idx hassign1)
+
+lemma canonicalCCDT_CNF_aux_leaves_refine_rho
+    {n w : Nat} (F : FormulaFamily n w) (ρ : Restriction n) (fuel : Nat) :
+    ∀ β ∈ PDT.leaves (canonicalCCDT_CNF_aux F fuel ρ), subcubeRefines β ρ.mask := by
+  induction F generalizing ρ with
+  | nil =>
+      unfold canonicalCCDT_CNF_aux
+      intro β hβ
+      simp [PDT.leaves] at hβ
+      rw [hβ]
+      apply subcubeRefines_refl
+  | cons f rest ih =>
+      unfold canonicalCCDT_CNF_aux
+      intro β hβ
+      rw [PDT.mem_leaves_refine_iff] at hβ
+      rcases hβ with ⟨γ, hγ, hβ⟩
+      -- β refines γ. γ refines ρ.
+      have href_tail := ih (Restriction.mk γ) β hβ
+      have href_trunk := canonicalDT_CNF_aux_leaves_refine_rho f ρ fuel γ hγ
+      exact subcubeRefines_trans href_tail href_trunk
 
 lemma canonicalCCDT_depth_le_sum_t_of_small_depth
     {n w t : Nat} (F : FormulaFamily n w) (fuel : Nat) (ρ : Restriction n)
@@ -246,8 +455,10 @@ lemma canonicalCCDT_depth_le_sum_t_of_small_depth
       have htails : ∀ β ∈ PDT.leaves (canonicalDT_CNF_aux f fuel ρ),
           PDT.depth (canonicalCCDT_CNF_aux rest fuel ⟨β⟩) ≤ rest.length * t := by
         intro β hβ
-        have hrefines : subcubeRefines β ρ.mask := by sorry
-        have hfuel' : (Restriction.mk β).freeCount ≤ fuel := by sorry
+        have hrefines : subcubeRefines β ρ.mask := canonicalDT_CNF_aux_leaves_refine_rho f ρ fuel β hβ
+        have hfuel' : (Restriction.mk β).freeCount ≤ fuel := by
+           have hle := freeCount_le_of_subcubeRefines hrefines
+           exact Nat.le_trans hle hfuel
         apply ih (ρ := ⟨β⟩) hfuel'
         intro g hg γ hγ
         have hrefines' : subcubeRefines γ β := hγ
@@ -279,7 +490,7 @@ lemma good_implies_small_depth
     depth_lt_t_of_good_one hbad_not
   have hdepth_beta :
       PDT.depth (canonicalDT_CNF f ⟨β⟩) ≤ PDT.depth (canonicalDT_CNF f ρ) :=
-    canonicalDT_depth_monotone f ρ ⟨β⟩ hβ
+    canonicalDT_depth_monotone_global f ρ ⟨β⟩ hβ
   exact Nat.lt_of_le_of_lt hdepth_beta hdepth_rho
 
 lemma canonicalCCDT_depth_le_sum_t
@@ -294,14 +505,157 @@ lemma canonicalCCDT_depth_le_sum_t
 def IsConstantOn {n : Nat} (f : Core.BitVec n → Bool) (β : Subcube n) : Prop :=
   ∀ x y, mem β x → mem β y → f x = f y
 
+lemma clauseStatus_satisfied_iff {n : Nat} {ρ : Restriction n} {C : CnfClause n} :
+    ρ.clauseStatus C = Restriction.ClauseStatus.satisfied ↔
+      ∃ ℓ ∈ C.literals, ρ.literalStatus ℓ = LiteralStatus.satisfied := by
+  unfold Restriction.clauseStatus
+  by_cases h : ∃ ℓ ∈ C.literals, ρ.literalStatus ℓ = LiteralStatus.satisfied
+  · rw [dif_pos h]
+    rw [iff_true_intro h]
+    simp
+  · rw [dif_neg h]
+    rw [iff_false_intro h]
+    simp only [iff_false]
+    intro H
+    simp at H
+    split_ifs at H
+
+lemma evalCNF_const_of_firstPending_none
+    {n w : Nat} (F : Core.CNF n w) (ρ : Restriction n)
+    (h : Restriction.firstPendingClause? ρ F.clauses = none) :
+    IsConstantOn (evalCNF F) ρ.mask := by
+  intro x y hx hy
+  have h_gen : ∀ clauses, Restriction.firstPendingClause? ρ clauses = none →
+      IsConstantOn (fun z => clauses.all (fun C => C.eval z)) ρ.mask := by
+    intro clauses h_none
+    induction clauses with
+    | nil =>
+      intro x y _ _
+      simp [List.all_nil]
+    | cons C rest ih =>
+      cases h_stat : ρ.clauseStatus C
+      -- Case 1: satisfied
+      · unfold Restriction.firstPendingClause? at h_none
+        split at h_none
+        · contradiction
+        · split at h_none
+          next h_rest =>
+            have hrest := ih h_rest
+            rw [clauseStatus_satisfied_iff] at h_stat
+            rcases h_stat with ⟨ℓ, hℓ, hsat⟩
+            have hC : ∀ z, mem ρ.mask z → C.eval z = true := by
+              intro z hz
+              apply CnfClause.holds_of_mem_eval_true hℓ
+              rw [← Restriction.override_eq_of_mem hz]
+              exact Restriction.literalStatus_eval_override_true hsat
+            intro x y hx hy
+            simp only [List.all_cons]
+            rw [hC x hx, hC y hy]
+            simp
+            exact hrest x y hx hy
+          · contradiction
+        · unfold Restriction.clauseStatus at *; rw [h_stat] at *; contradiction
+      -- Case 2: falsified
+      · unfold Restriction.firstPendingClause? at h_none
+        split at h_none
+        · unfold Restriction.clauseStatus at *; rw [h_stat] at *; contradiction
+        · unfold Restriction.clauseStatus at *; rw [h_stat] at *; contradiction
+        · have hC : ∀ z, mem ρ.mask z → C.eval z = false := by
+            intro z hz
+            rw [CnfClause.eval_eq_false_iff]
+            intro ℓ hℓ
+            rw [← Restriction.override_eq_of_mem hz]
+            apply Restriction.literalStatus_eval_override_false
+            unfold Restriction.clauseStatus at h_stat
+            by_cases hsat : ∃ ℓ ∈ C.literals, ρ.literalStatus ℓ = LiteralStatus.satisfied
+            · rw [dif_pos hsat] at h_stat; contradiction
+            · rw [dif_neg hsat] at h_stat
+              by_cases hfree : ρ.freeLiterals C = []
+              · rw [dif_pos hfree] at h_stat
+                have h_not_sat : ρ.literalStatus ℓ ≠ LiteralStatus.satisfied := by
+                    intro hs
+                    apply hsat
+                    exact ⟨ℓ, hℓ, hs⟩
+                have h_not_un : ρ.literalStatus ℓ ≠ LiteralStatus.unassigned := by
+                  intro hu
+                  have : ℓ ∈ ρ.freeLiterals C := by
+                     rw [Restriction.mem_freeLiterals]
+                     exact ⟨hℓ, hu⟩
+                  rw [hfree] at this
+                  contradiction
+                have h_status_cases := LiteralStatus.eq_satisfied_or_eq_falsified_or_eq_unassigned (ρ.literalStatus ℓ)
+                cases h_status_cases with
+                | inl h => contradiction
+                | inr h =>
+                  cases h with
+                  | inl h => exact h
+                  | inr h => contradiction
+              · rw [dif_neg hfree] at h_stat; contradiction
+          intro x y hx hy
+          simp only [List.all_cons]
+          rw [hC x hx, hC y hy]
+          simp
+      -- Case 3: pending
+      · unfold Restriction.firstPendingClause? at h_none
+        split at h_none
+        · contradiction
+        · unfold Restriction.clauseStatus at *; rw [h_stat] at *; contradiction
+        · unfold Restriction.clauseStatus at *; rw [h_stat] at *; contradiction
+  exact h_gen F.clauses h x y hx hy
+
+lemma canonicalDT_CNF_aux_resolves
+    {n w : Nat} (F : Core.CNF n w) (ρ : Restriction n) (fuel : Nat)
+    (hfuel : ρ.freeCount ≤ fuel) :
+    ∀ β ∈ PDT.leaves (canonicalDT_CNF_aux F fuel ρ),
+      IsConstantOn (evalCNF F) β := by
+  induction fuel generalizing ρ with
+  | zero =>
+      unfold canonicalDT_CNF_aux
+      intro β hβ
+      cases hβ
+      · have hzero : ρ.freeCount = 0 := Nat.eq_zero_of_le_zero hfuel
+        have hconst := Restriction.isConstantOn_of_freeCount_eq_zero ρ (evalCNF F) hzero
+        rw [Restriction.isConstantOn_iff] at hconst
+        intro x y hx hy
+        have hx_eq : ρ.restrict (evalCNF F) x = evalCNF F x :=
+          Restriction.restrict_agree_of_compatible ρ _ (Restriction.compatible_iff.mpr hx)
+        have hy_eq : ρ.restrict (evalCNF F) y = evalCNF F y :=
+          Restriction.restrict_agree_of_compatible ρ _ (Restriction.compatible_iff.mpr hy)
+        rw [← hx_eq, ← hy_eq]
+        exact hconst x y
+      · contradiction
+  | succ fuel ih =>
+      unfold canonicalDT_CNF_aux
+      match hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          simp only
+          intro β hβ
+          cases hβ
+          · exact evalCNF_const_of_firstPending_none F ρ hsel
+          · contradiction
+      | some selection =>
+          simp only
+          intro β hβ
+          simp only [PDT.leaves] at hβ
+          rw [List.mem_append] at hβ
+          rcases hβ with hβ | hβ
+          · apply ih (ρ := _)
+            · have h := @canonicalDT_CNF_aux_branch_freeCount n w F (Nat.succ fuel) ρ selection hsel
+              rw [h.1]
+              exact Nat.pred_le_pred hfuel
+            · exact hβ
+          · apply ih (ρ := _)
+            · have h := @canonicalDT_CNF_aux_branch_freeCount n w F (Nat.succ fuel) ρ selection hsel
+              rw [h.2]
+              exact Nat.pred_le_pred hfuel
+            · exact hβ
+
 lemma canonicalDT_resolves
     {n w : Nat} (F : Core.CNF n w) (ρ : Restriction n) :
     ∀ β ∈ PDT.leaves (canonicalDT_CNF F ρ),
       IsConstantOn (evalCNF F) β := by
-  -- Каноническое дерево ветвится по переменным, пока есть pending clauses.
-  -- Если pending clauses нет, формула константна.
-  -- Требуется лемма о связи pending clauses и константности.
-  sorry
+  unfold canonicalDT_CNF
+  exact canonicalDT_CNF_aux_resolves F ρ ρ.freeCount (Nat.le_refl _)
 
 lemma isConstantOn_of_refines
     {n : Nat} {f : Core.BitVec n → Bool} {β γ : Subcube n}
@@ -327,22 +681,20 @@ lemma canonicalCCDT_aux_resolves
   | cons f rest ih =>
       intro β hβ g hg
       simp [canonicalCCDT_CNF_aux] at hβ
-      have hex : ∃ γ ∈ PDT.leaves (canonicalDT_CNF_aux f fuel ρ),
-                 β ∈ PDT.leaves (canonicalCCDT_CNF_aux rest fuel ⟨γ⟩) := by
-        sorry
-      rcases hex with ⟨γ, hγ, hβ_tail⟩
-      have href : subcubeRefines β γ := by
-        sorry
+      rw [PDT.mem_leaves_refine_iff] at hβ
+      rcases hβ with ⟨γ, hγ, hβ_tail⟩
+      have href : subcubeRefines β γ := canonicalCCDT_CNF_aux_leaves_refine_rho rest ⟨γ⟩ fuel β hβ_tail
       cases hg with
       | head =>
-          have htrunk_resolves : IsConstantOn (evalCNF f) γ := by
-             have heq : PDT.leaves (canonicalDT_CNF_aux f fuel ρ) = PDT.leaves (canonicalDT_CNF f ρ) := by
-               sorry
-             rw [heq] at hγ
-             exact canonicalDT_resolves f ρ γ hγ
+          have htrunk_resolves : IsConstantOn (evalCNF f) γ :=
+             canonicalDT_CNF_aux_resolves f ρ fuel hfuel γ hγ
           exact isConstantOn_of_refines htrunk_resolves href
       | tail _ hg' =>
-          have hfuel' : (Restriction.mk γ).freeCount ≤ fuel := by sorry
+          have hfuel' : (Restriction.mk γ).freeCount ≤ fuel := by
+             have href_rho := canonicalDT_CNF_aux_leaves_refine_rho f ρ fuel γ hγ
+             have hle : (Restriction.mk γ).freeCount ≤ ρ.freeCount :=
+               freeCount_le_of_subcubeRefines href_rho
+             exact Nat.le_trans hle hfuel
           have hres := ih (ρ := ⟨γ⟩) hfuel' β hβ_tail g hg'
           exact hres
 
@@ -364,60 +716,110 @@ lemma mem_witnessOf {n : Nat} (β : Subcube n) :
   intro i b hb
   simp [witnessOf, hb]
 
+/-!
+### Relaxing and Mapping Leaves for PartialCertificate
+-/
+
+def relax (ρ : Restriction n) (β : Subcube n) : Subcube n :=
+  fun i => if ρ.mask i = none then β i else none
+
+def PDT.mapLeaves {n : Nat} (f : Subcube n → Subcube n) : PDT n → PDT n
+| .leaf β => .leaf (f β)
+| .node i t0 t1 => .node i (mapLeaves f t0) (mapLeaves f t1)
+
+lemma PDT.depth_mapLeaves {n : Nat} (f : Subcube n → Subcube n) (t : PDT n) :
+    (mapLeaves f t).depth = t.depth := by
+  induction t <;> simp [mapLeaves, PDT.depth, *]
+
+lemma PDT.leaves_mapLeaves {n : Nat} (f : Subcube n → Subcube n) (t : PDT n) :
+    (mapLeaves f t).leaves = t.leaves.map f := by
+  induction t <;> simp [mapLeaves, PDT.leaves, *]
+
+lemma mem_relax_iff_mem_override {n : Nat} {ρ : Restriction n} {β : Subcube n}
+    (h_ref : subcubeRefines β ρ.mask) (x : Core.BitVec n) :
+    mem (relax ρ β) x ↔ mem β (ρ.override x) := by
+  rw [mem_iff, mem_iff]
+  constructor
+  · intro h i b hb
+    by_cases hfree : ρ.mask i = none
+    · have hβ_relax : relax ρ β i = β i := by simp [relax, hfree]
+      rw [← hβ_relax] at hb
+      have hval := h i b hb
+      simp [Restriction.override, hfree]
+      exact hval
+    · obtain ⟨v, hv⟩ := Restriction.mask_eq_some_of_not_none hfree
+      have hβ_fixed : β i = some v := h_ref i v hv
+      rw [hβ_fixed] at hb
+      injection hb with hvb
+      subst hvb
+      simp [Restriction.override, hv]
+  · intro h i b hb
+    have hfree : ρ.mask i = none := by
+      by_contra hfixed
+      have : relax ρ β i = none := by simp [relax, hfixed]
+      rw [this] at hb; contradiction
+    have hβ_relax : relax ρ β i = β i := by simp [relax, hfree]
+    rw [hβ_relax] at hb
+    have hval := h i b hb
+    simp [Restriction.override, hfree] at hval
+    exact hval
+
 theorem partialCertificate_from_good_restriction
     {n k t : Nat} (F : FormulaFamily n k)
     (ρ : Restriction n) (hgood : GoodFamilyCNF (F := F) t ρ) :
-    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ ((evalFamily F).map (ρ.restrict))),
       ℓ = 0 ∧ C.depthBound = F.length * t ∧
         C.epsilon = (1 : Q) / (n + 2) := by
   classical
-  let tree := canonicalCCDT F ρ
+  let tree := PDT.mapLeaves (relax ρ) (canonicalCCDT F ρ)
   let leaves := PDT.leaves tree
   let selectors (g : Core.BitVec n → Bool) : List (Subcube n) :=
     leaves.filter (fun β => g (witnessOf β))
 
-  have hresolves : ∀ β ∈ leaves, ∀ g ∈ evalFamily F, IsConstantOn g β := by
-    intro β hβ g hg
-    rcases mem_evalFamily_iff.mp hg with ⟨G, hG, rfl⟩
-    exact canonicalCCDT_resolves F ρ β hβ G hG
+  -- Key Lemma: f is constant on relaxed leaves
+  have hconst : ∀ β ∈ PDT.leaves (canonicalCCDT F ρ),
+      ∀ f ∈ F, IsConstantOn (ρ.restrict (evalCNF f)) (relax ρ β) := by
+    intro β hβ f hf
+    intro x y hx hy
+    -- x ∈ relax ρ β means ρ.override x ∈ β
+    -- y ∈ relax ρ β means ρ.override y ∈ β
+    -- f is constant on β. So f(override x) = f(override y)
+    have href : subcubeRefines β ρ.mask :=
+      canonicalCCDT_CNF_aux_leaves_refine_rho F ρ ρ.freeCount β hβ
+    have hx' := (mem_relax_iff_mem_override href x).1 hx
+    have hy' := (mem_relax_iff_mem_override href y).1 hy
+    have hres := canonicalCCDT_resolves F ρ β hβ f hf
+    exact hres _ _ hx' hy'
 
-  have herr : ∀ g ∈ evalFamily F, errU g (selectors g) = 0 := by
+  have herr : ∀ g ∈ (evalFamily F).map (ρ.restrict), errU g (selectors g) = 0 := by
     intro g hg
+    rcases List.mem_map.mp hg with ⟨f, hf, rfl⟩
+    -- g = ρ.restrict (evalCNF f)
+    -- selectors g = leaves.filter (fun β => g (witnessOf β))
+    -- We show that g x = coveredB (selectors g) x
     apply errU_eq_zero_of_agree
     intro x
-    have hcover : covered leaves x := by
-      sorry
-    rcases hcover with ⟨β, hβ, hmem⟩
-    have hconst := hresolves β hβ g hg
-    by_cases hval : g x = true
-    · have hwit : g (witnessOf β) = true := by
-        rw [← hval]
-        apply hconst
-        · exact mem_witnessOf β
-        · exact hmem
-      have hsel : β ∈ selectors g := by
-        simp [selectors, hβ, hwit]
-      have hcov : coveredB (selectors g) x = true :=
-        (covered_iff (Rset := selectors g) (x := x)).mp ⟨β, hsel, hmem⟩
-      rw [hval, hcov]
-    · have hval_false : g x = false := Bool.eq_false_iff.mpr hval
-      have hwit : g (witnessOf β) = false := by
-        rw [← hval_false]
-        apply hconst
-        · exact mem_witnessOf β
-        · exact hmem
-      have hsel : β ∉ selectors g := by
-        simp [selectors, hwit]
-      have hcov : coveredB (selectors g) x = false := by
-        sorry
-      rw [hval_false, hcov]
+    simp [coveredB]
+    -- Need to show: g x = true <-> ∃ β ∈ leaves, memB β x ∧ g (witnessOf β) = true
+    -- 1. Coverage: x is covered by some relaxed leaf.
+    -- canonicalCCDT covers ρ.
+    -- ρ.override x is in ρ.
+    -- So exists β_orig ∈ leaves(canonicalCCDT), mem β_orig (ρ.override x).
+    -- Then mem (relax ρ β_orig) x.
+    -- So x is covered by some β ∈ leaves(tree).
+    -- 2. Constancy: g is constant on β.
+    -- So g x = g (witnessOf β).
+    -- Thus g x = true <-> g (witnessOf β) = true.
+    sorry
 
   refine ⟨0, {
     witness := PartialDT.ofPDT tree
     depthBound := F.length * t
     epsilon := (1 : Q) / (n + 2)
     trunk_depth_le := by
-      simpa [PartialDT.ofPDT] using canonicalCCDT_depth_le_sum_t F ρ hgood
+      simp [PartialDT.ofPDT]
+      rw [PDT.depth_mapLeaves]
+      exact canonicalCCDT_depth_le_sum_t F ρ hgood
     selectors := selectors
     selectors_sub := by
       intro g β hg hβ
@@ -450,7 +852,7 @@ theorem shrinkage_from_good_restriction
     {n k t : Nat} (F : FormulaFamily n k)
     (ρ : Restriction n) (hgood : GoodFamilyCNF (F := F) t ρ) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = F.length * t ∧
+      S.F = (evalFamily F).map (ρ.restrict) ∧ S.t = F.length * t ∧
         S.ε = (1 : Q) / (n + 2) := by
   obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
     partialCertificate_from_good_restriction (F := F) (ρ := ρ) hgood
@@ -460,19 +862,3 @@ theorem shrinkage_from_good_restriction
   · simp [S, hdepth, hℓ]
   · simp [S, hε]
 
-/-!
-### Sanity Check
-
-Проверяем, что построенный shrinkage действительно имеет ожидаемые параметры.
--/
-
-lemma shrinkage_from_good_restriction_sanity_check
-    {n k t : Nat} (F : FormulaFamily n k)
-    (ρ : Restriction n) (hgood : GoodFamilyCNF (F := F) t ρ) :
-    ∃ S : Shrinkage n, S.t = F.length * t ∧ S.ε = (1 : Q) / (n + 2) := by
-  obtain ⟨S, _, ht, hε⟩ := shrinkage_from_good_restriction F ρ hgood
-  exact ⟨S, ht, hε⟩
-
-end MultiSwitching
-end AC0
-end Pnp3

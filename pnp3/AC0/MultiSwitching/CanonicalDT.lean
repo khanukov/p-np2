@@ -188,6 +188,53 @@ lemma canonicalDT_CNF_depth_le
   simpa [canonicalDT_CNF] using
     canonicalDT_CNF_aux_depth_le (F := F) (fuel := ρ.freeCount) (ρ := ρ)
 
+lemma canonicalDT_CNF_aux_depth_monotone_fuel
+    {n w : Nat} (F : CNF n w) (ρ : Restriction n) :
+    ∀ {fuel1 fuel2 : Nat}, fuel1 ≤ fuel2 →
+      PDT.depth (canonicalDT_CNF_aux F fuel1 ρ) ≤
+      PDT.depth (canonicalDT_CNF_aux F fuel2 ρ) := by
+  intro fuel1 fuel2 hle
+  induction fuel2 generalizing fuel1 ρ with
+  | zero =>
+      have h0 : fuel1 = 0 := Nat.eq_zero_of_le_zero hle
+      simp [h0]
+  | succ fuel2 ih =>
+      cases fuel1 with
+      | zero =>
+          simp [canonicalDT_CNF_aux, PDT.depth]
+      | succ fuel1 =>
+          -- Both > 0.
+          have hle' : fuel1 ≤ fuel2 := Nat.le_of_succ_le_succ hle
+          unfold canonicalDT_CNF_aux
+          cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+          | none =>
+              simp
+          | some selection =>
+              classical
+              let ℓ := chooseFreeLiteral (w := selection.witness)
+              have hmem : ℓ ∈ selection.witness.free :=
+                chooseFreeLiteral_mem (w := selection.witness)
+              have hfree : ℓ.idx ∈ ρ.freeIndicesList :=
+                Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+                  (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+              let ρ0 := Classical.choose
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+              let ρ1 := Classical.choose
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+              have h0 : PDT.depth (canonicalDT_CNF_aux F fuel1 ρ0) ≤
+                        PDT.depth (canonicalDT_CNF_aux F fuel2 ρ0) :=
+                  ih ρ0 hle'
+              have h1 : PDT.depth (canonicalDT_CNF_aux F fuel1 ρ1) ≤
+                        PDT.depth (canonicalDT_CNF_aux F fuel2 ρ1) :=
+                  ih ρ1 hle'
+              simp only [PDT.depth]
+              apply Nat.succ_le_succ
+              apply max_le
+              · exact Nat.le_trans h0 (Nat.le_max_left _ _)
+              · exact Nat.le_trans h1 (Nat.le_max_right _ _)
+
 /-!
 ### Каноническое DT для DNF (симметрия CNF)
 

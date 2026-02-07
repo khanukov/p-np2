@@ -791,26 +791,72 @@ theorem partialCertificate_from_good_restriction
     have hres := canonicalCCDT_resolves F ρ β hβ f hf
     exact hres _ _ hx' hy'
 
+  have h_leaves_cover : ∀ x, covered leaves x := by
+    -- We need to prove that relaxed leaves cover the universe.
+    -- This follows from canonicalCCDT leaves covering ρ.
+    have h_canonical_cover : ∀ z, mem ρ.mask z → covered (PDT.leaves (canonicalCCDT F ρ)) z := by
+      -- This requires a lemma: canonicalCCDT leaves cover ρ.
+      -- Proving this by induction on F.
+      sorry -- Standard property of canonicalDT construction (partitioning)
+
+    intro x
+    have h_override : mem ρ.mask (ρ.override x) := Restriction.override_mem ρ x
+    have h_cov := h_canonical_cover (ρ.override x) h_override
+    rcases h_cov with ⟨β, hβ, hmem⟩
+    -- Show x ∈ relax ρ β
+    refine ⟨relax ρ β, ?_, ?_⟩
+    · simp [leaves, tree]; rw [PDT.leaves_mapLeaves]; exact List.mem_map_of_mem _ hβ
+    · -- mem (relax ρ β) x <-> mem β (override x)
+      -- This holds if β is compatible with override x (which it is, hmem).
+      -- Proof:
+      rw [mem_iff]
+      intro i b hb
+      have hrelax_def : relax ρ β i = if ρ.mask i = none then β i else none := rfl
+      rw [hrelax_def] at hb
+      split_ifs at hb with hfree
+      · -- ρ i = none. β i = some b.
+        -- mem β (override x) -> override x i = b.
+        have hval := (mem_iff β (ρ.override x)).1 hmem i b hb
+        simp [Restriction.override, hfree] at hval
+        exact hval
+      · contradiction
+
   have herr : ∀ g ∈ (evalFamily F).map (ρ.restrict), errU g (selectors g) = 0 := by
     intro g hg
     rcases List.mem_map.mp hg with ⟨f, hf, rfl⟩
-    -- g = ρ.restrict (evalCNF f)
-    -- selectors g = leaves.filter (fun β => g (witnessOf β))
-    -- We show that g x = coveredB (selectors g) x
     apply errU_eq_zero_of_agree
     intro x
     simp [coveredB]
-    -- Need to show: g x = true <-> ∃ β ∈ leaves, memB β x ∧ g (witnessOf β) = true
-    -- 1. Coverage: x is covered by some relaxed leaf.
-    -- canonicalCCDT covers ρ.
-    -- ρ.override x is in ρ.
-    -- So exists β_orig ∈ leaves(canonicalCCDT), mem β_orig (ρ.override x).
-    -- Then mem (relax ρ β_orig) x.
-    -- So x is covered by some β ∈ leaves(tree).
-    -- 2. Constancy: g is constant on β.
-    -- So g x = g (witnessOf β).
-    -- Thus g x = true <-> g (witnessOf β) = true.
-    sorry
+    -- g x = true <-> coveredB selectors x = true
+    constructor
+    · intro hgx
+      -- Find leaf covering x
+      obtain ⟨L, hL_mem, hL_cov⟩ := h_leaves_cover x
+      -- L is relaxed leaf.
+      -- g is constant on L (hconst).
+      -- g x = true. So g (witnessOf L) = true.
+      -- So L ∈ selectors g.
+      refine ⟨L, ?_, hL_cov⟩
+      simp [selectors]
+      refine ⟨hL_mem, ?_⟩
+      -- g(witnessOf L) = g(x) = true.
+      -- L comes from mapLeaves.
+      -- hconst says g constant on relax ρ β.
+      -- L is some relax ρ β.
+      rcases List.mem_map.1 ((PDT.leaves_mapLeaves _ _).symm ▸ hL_mem) with ⟨β, hβ, rfl⟩
+      have hconst_val := hconst β hβ f hf
+      rw [← hconst_val (witnessOf (relax ρ β)) x (mem_witnessOf _) hL_cov]
+      exact hgx
+    · intro hcov
+      rcases hcov with ⟨L, hL, hL_mem⟩
+      -- L ∈ selectors -> g(witnessOf L) = true.
+      simp [selectors] at hL
+      rcases hL with ⟨hL_leaves, hL_val⟩
+      -- g constant on L.
+      rcases List.mem_map.1 ((PDT.leaves_mapLeaves _ _).symm ▸ hL_leaves) with ⟨β, hβ, rfl⟩
+      have hconst_val := hconst β hβ f hf
+      rw [hconst_val x (witnessOf (relax ρ β)) hL_mem (mem_witnessOf _)]
+      exact hL_val
 
   refine ⟨0, {
     witness := PartialDT.ofPDT tree

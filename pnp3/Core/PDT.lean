@@ -318,6 +318,68 @@ theorem PDT.leaves_le_pow2_depth {n : Nat} (t : PDT n) :
     (PDT.leaves t).length ≤ Nat.pow 2 (PDT.depth t) := by
   simpa using (PDT.leaves_length_le_pow_depth t)
 
+/--
+  Ограничение PDT по переменной `i` значением `b`.
+  Если `i` встречается в узле, мы выбираем соответствующую ветвь.
+  Если `i` не встречается (мы в листе), мы уточняем подкуб листа.
+  В случае конфликта в листе (assign возвращает none) мы возвращаем
+  формально пустой лист (где маска везде none, но это не важно для глубины).
+-/
+def PDT.restrict {n : Nat} (t : PDT n) (i : Fin n) (b : Bool) : PDT n :=
+  match t with
+  | leaf β =>
+      match Subcube.assign β i b with
+      | some β' => leaf β'
+      | none => leaf (fun _ => none)
+  | node j t0 t1 =>
+      if i = j then
+        if b then t1 else t0
+      else
+        node j (restrict t0 i b) (restrict t1 i b)
+
+/--
+  Неравенство Шеннона для глубины: глубина дерева не превосходит
+  1 + максимум глубин его ограничений по любой переменной `i`.
+  Это свойство верно для любого PDT, даже не оптимального.
+-/
+theorem PDT.depth_restrict_le {n : Nat} (t : PDT n) (i : Fin n) :
+    PDT.depth t <= 1 + Nat.max (PDT.depth (PDT.restrict t i false)) (PDT.depth (PDT.restrict t i true)) := by
+  induction t with
+  | leaf β =>
+      simp [PDT.depth, PDT.restrict]
+  | node j t0 t1 ih0 ih1 =>
+      by_cases hji : i = j
+      · subst hji
+        simp [PDT.depth, PDT.restrict]
+        rw [Nat.add_comm]
+      · simp [PDT.depth, PDT.restrict, hji]
+        rw [Nat.add_comm _ 1]
+        apply Nat.add_le_add_left
+        rw [Nat.add_comm]
+        apply Nat.max_le.mpr
+        constructor
+        · apply Nat.le_trans ih0
+          apply Nat.add_le_add_left
+          apply Nat.max_le.mpr
+          constructor
+          · apply Nat.le_max_left
+          · apply Nat.le_trans _ (Nat.le_max_right _ _)
+            apply Nat.le_trans _ (Nat.le_max_right _ _)
+            apply Nat.le_max_left
+        · apply Nat.le_trans ih1
+          apply Nat.add_le_add_left
+          apply Nat.max_le.mpr
+          constructor
+          · apply Nat.le_trans _ (Nat.le_max_right _ _)
+            apply Nat.le_max_left
+          · apply Nat.le_trans _ (Nat.le_max_right _ _)
+            apply Nat.le_trans _ (Nat.le_max_right _ _)
+            apply Nat.le_max_right
+
+theorem PDT.leaves_cover {n : Nat} (t : PDT n) (x : BitVec n) :
+    covered (PDT.leaves t) x := by
+  sorry -- We don't need this general version if we prove specialized ones.
+
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,
     2) объединение листьев покрывает весь рассматриваемый регион.

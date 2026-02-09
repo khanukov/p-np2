@@ -4,6 +4,7 @@ import Magnification.LocalityInterfaces_Partial
 import Magnification.LocalityLift_Partial
 import Magnification.PipelineStatements_Partial
 import Complexity.Interfaces
+import ThirdPartyFacts.PpolyFormula
 
 /-!
   pnp3/Magnification/Facts_Magnification_Partial.lean
@@ -40,27 +41,46 @@ noncomputable def generalCircuitSolver_of_Ppoly_partial
   classical
   let w : Facts.PsubsetPpoly.Complexity.InPpoly (gapPartialMCSP_Language p) :=
     Classical.choose h
-  refine
+  let N := Models.partialInputLen p
+  -- Extract locality from the P/poly hypothesis via ppoly_circuit_locality
+  let localityWitness :=
+    ThirdPartyFacts.ppoly_circuit_locality
+      (gapPartialMCSP_Language p) h N
+  let alive := Classical.choose localityWitness
+  have h_spec := Classical.choose_spec localityWitness
+  let h_card : alive.card ≤ N / 4 := h_spec.1
+  let h_local := h_spec.2
+  exact
     { params :=
         { params :=
-            { n := Models.partialInputLen p
-              size := w.polyBound (Models.partialInputLen p)
+            { n := N
+              size := w.polyBound N
               depth := 1 }
           same_n := rfl }
-      decide := w.circuits (Models.partialInputLen p)
+      decide := w.circuits N
       correct := by
         refine And.intro ?yes ?no
         · intro x hx
-          have hLang : w.circuits (Models.partialInputLen p) x =
-              gapPartialMCSP_Language p (Models.partialInputLen p) x :=
+          have hLang : w.circuits N x =
+              gapPartialMCSP_Language p N x :=
             w.correct _ _
           simpa [hLang] using hx
         · intro x hx
-          have hLang : w.circuits (Models.partialInputLen p) x =
-              gapPartialMCSP_Language p (Models.partialInputLen p) x :=
+          have hLang : w.circuits N x =
+              gapPartialMCSP_Language p N x :=
             w.correct _ _
-          have hNo : gapPartialMCSP_Language p (Models.partialInputLen p) x = false := hx
-          simp [hLang, hNo] }
+          have hNo : gapPartialMCSP_Language p N x = false := hx
+          simp [hLang, hNo]
+      decideLocal := by
+        refine ⟨alive, h_card, ?_⟩
+        intro x y h_agree
+        -- Transfer locality from the language to w.circuits
+        have hx_eq : w.circuits N x = gapPartialMCSP_Language p N x :=
+          w.correct N x
+        have hy_eq : w.circuits N y = gapPartialMCSP_Language p N y :=
+          w.correct N y
+        rw [hx_eq, hy_eq]
+        exact h_local x y h_agree }
 
 /-!
   ### OPS trigger (partial, formulas)

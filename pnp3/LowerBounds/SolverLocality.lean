@@ -5,8 +5,7 @@ import LowerBounds.AntiChecker_Partial
 
   Re-export of `solver_is_local` from `AntiChecker_Partial`.
 
-  The axiom `solver_is_local` is defined in `AntiChecker_Partial.lean`
-  (alongside the solver types it references). This file exists as a
-  convenient import target and will contain the real theorem once
-  multi-switching is complete.
+  `solver_is_local` is a trivial theorem that extracts the `decideLocal`
+  field from `SmallLocalCircuitSolver_Partial`.  The locality is provided
+  during solver construction via `ppoly_circuit_locality`.
 -/

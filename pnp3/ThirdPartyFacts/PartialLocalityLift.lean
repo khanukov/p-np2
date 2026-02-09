@@ -140,7 +140,14 @@ def locality_lift_partial
   let localSolver : LowerBounds.SmallLocalCircuitSolver_Partial p :=
     { params := localParams
       decide := solver.decide
-      correct := solver.correct }
+      correct := solver.correct
+      decideLocal := by
+        obtain ⟨alive, h_card, h_local⟩ := solver.decideLocal
+        refine ⟨alive, ?_, h_local⟩
+        · -- partialInputLen p / 4 ≤ tableLen p.n / 2
+          calc alive.card ≤ Models.partialInputLen p / 4 := h_card
+            _ ≤ Partial.tableLen p.n / 2 := by
+              simp only [Models.partialInputLen, Partial.inputLen, Partial.tableLen]; omega }
   refine ⟨(by
     simpa [Facts.LocalityLift.BitVec, Core.BitVec, inputLen_toFactsPartial,
       toFactsParamsPartial] using T),
@@ -169,7 +176,13 @@ def no_general_solver_of_no_local_partial
     let localSolver : LowerBounds.SmallLocalCircuitSolver_Partial p :=
       { params := localParams
         decide := solver.decide
-        correct := solver.correct }
+        correct := solver.correct
+        decideLocal := by
+          obtain ⟨alive, h_card, h_local⟩ := solver.decideLocal
+          refine ⟨alive, ?_, h_local⟩
+          calc alive.card ≤ Models.partialInputLen p / 4 := h_card
+            _ ≤ Partial.tableLen p.n / 2 := by
+              simp only [Models.partialInputLen, Partial.inputLen, Partial.tableLen]; omega }
     exact H localSolver
   have h := Facts.LocalityLift.no_general_solver_of_no_local (p := toFactsParamsPartial p) this
   simpa using h (toFactsGeneralSolverPartial solver)

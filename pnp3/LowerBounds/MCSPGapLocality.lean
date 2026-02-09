@@ -1,6 +1,7 @@
 import Core.BooleanBasics
 import Models.Model_PartialMCSP
 import Complexity.Promise
+import Counting.ShannonCounting
 
 /-!
   pnp3/LowerBounds/MCSPGapLocality.lean
@@ -27,9 +28,10 @@ import Complexity.Promise
   Since f depends only on alive coordinates, `f(x_yes) = f(x_no)`.
   But correctness forces `f(x_yes) = true` and `f(x_no) = false`. ⊥
 
-  ## Remaining axiom
+  ## Shannon counting (formerly an axiom, now proved)
 
-  `exists_hard_function_with_constraints` is a Shannon counting axiom:
+  `exists_hard_function_with_constraints` was formerly a Shannon counting axiom.
+  It is now a theorem proved in `Counting.ShannonCounting` via pigeonhole:
   among Boolean functions constrained to be false on ≤ 2^n/2 positions,
   at least one has circuit complexity ≥ sNO.
 -/
@@ -43,27 +45,22 @@ open ComplexityInterfaces
 open Models
 
 /-!
-  ### Shannon counting axiom
+  ### Shannon counting (proved in Counting.ShannonCounting)
+
+  `Counting.exists_hard_function_with_constraints` is now a theorem, not an axiom.
+  We re-export it here under the same name so downstream files are unaffected.
 -/
 
-/--
-  Shannon counting: there exists a total Boolean function on `p.n` variables
-  that (1) outputs `false` at every position in a given constraint set, and
-  (2) has circuit complexity ≥ `p.sNO`.
-
-  The constraint set has at most `Partial.tableLen p.n / 2` elements, leaving
-  at least `2^(p.n) / 2` free positions. The number of Boolean functions over
-  those free positions is `2^(2^(p.n)/2)`, while the number of circuits of
-  size `< p.sNO` is at most `(p.n + p.sNO)^O(p.sNO)`. For `p.n ≥ 8` and
-  small `p.sNO`, the former dwarfs the latter, so a hard function exists.
--/
-axiom exists_hard_function_with_constraints
+/-- Shannon counting: there exists a hard function consistent with constraints.
+    Proved via pigeonhole in `Counting.ShannonCounting`. -/
+theorem exists_hard_function_with_constraints
     (p : GapPartialMCSPParams)
     (constrained : Finset (Fin (Partial.tableLen p.n)))
     (h_constrained_small : constrained.card ≤ Partial.tableLen p.n / 2) :
     ∃ (g : Core.BitVec (Partial.tableLen p.n)),
       (∀ i ∈ constrained, g i = false) ∧
-      PartialMCSP_NO p (totalTableToPartial g)
+      PartialMCSP_NO p (totalTableToPartial g) :=
+  Counting.exists_hard_function_with_constraints p constrained h_constrained_small
 
 /-!
   ### Input construction helpers

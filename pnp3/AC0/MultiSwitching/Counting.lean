@@ -1,6 +1,9 @@
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Finset.Card
 import AC0.MultiSwitching.Restrictions
 import AC0.MultiSwitching.Encoding
+import AC0.MultiSwitching.EncodingCommon
+import AC0.MultiSwitching.EncodingCommon_Func
 import AC0.MultiSwitching.TraceBridge
 
 /-!
@@ -38,6 +41,11 @@ local instance instDecidableBadFamily (F : FormulaFamily n w) (t : Nat) :
 
 local instance instDecidableBadFamilyDet (F : FormulaFamily n w) (t : Nat) :
     DecidablePred (BadFamily_deterministic (F := F) t) := by
+  classical
+  exact Classical.decPred _
+
+local instance instDecidableBadFamilyDetCommon (F : FormulaFamily n w) (t : Nat) :
+    DecidablePred (BadFamily_deterministic_common (F := F) t) := by
   classical
   exact Classical.decPred _
 
@@ -598,6 +606,270 @@ lemma badRestrictions_card_le_cnf_family_aux_det_var
     _ = (R_s (n := n) (s - t)).card * (F.length + 1)
           * (2 * n) ^ t * (2 * (w + 1)) ^ t := by
           simp [haux, Nat.mul_comm, Nat.mul_assoc]
+
+/-!
+## Common‑CCDT bad (deterministic, per‑step formula index)
+-/
+
+lemma badRestrictions_card_le_common_aux_det
+    {n w s t : Nat} (F : FormulaFamily n w) :
+    (badRestrictions (n := n) s (BadFamily_deterministic_common (F := F) t)).card
+      ≤ (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+  classical
+  let codes := (R_s (n := n) (s - t)).product (auxCodes n t (w + 1) (F.length + 1))
+  have henc :
+      Function.Injective
+        (encodeBadFamilyDetCommon_aux (F := F) (s := s) (t := t)) :=
+    encodeBadFamilyDetCommon_aux_injective (F := F) (s := s) (t := t)
+  have hcard :
+      (badRestrictions (n := n) s (BadFamily_deterministic_common (F := F) t)).card
+        ≤ codes.card := by
+    have hsub :
+        {ρ // ρ ∈ badRestrictions (n := n) s
+            (BadFamily_deterministic_common (F := F) t)}
+          ↪ {c // c ∈ codes} := by
+      refine ⟨fun ρbad => ?_, ?_⟩
+      · have hmem : ρbad.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common (F := F) t)).1 ρbad.2 |>.1
+        have hbad : BadFamily_deterministic_common (F := F) t ρbad.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common (F := F) t)).1 ρbad.2 |>.2
+        exact encodeBadFamilyDetCommon_aux (F := F) (s := s) (t := t) ⟨ρbad.1, hmem, hbad⟩
+      · intro x y hxy
+        have hmemx : x.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common (F := F) t)).1 x.2 |>.1
+        have hbadx : BadFamily_deterministic_common (F := F) t x.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common (F := F) t)).1 x.2 |>.2
+        have hmemy : y.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common (F := F) t)).1 y.2 |>.1
+        have hbady : BadFamily_deterministic_common (F := F) t y.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common (F := F) t)).1 y.2 |>.2
+        have hxy' :
+            encodeBadFamilyDetCommon_aux (F := F) (s := s) (t := t) ⟨x.1, hmemx, hbadx⟩
+              = encodeBadFamilyDetCommon_aux (F := F) (s := s) (t := t) ⟨y.1, hmemy, hbady⟩ := by
+            simpa using hxy
+        have henc' := henc hxy'
+        have : x.1 = y.1 := by
+          simpa using congrArg Subtype.val henc'
+        exact Subtype.ext this
+    have hcard' := Fintype.card_le_of_injective (f := hsub) hsub.injective
+    have hbad :
+        Fintype.card
+            {ρ // ρ ∈ badRestrictions (n := n) s
+              (BadFamily_deterministic_common (F := F) t)} =
+          (badRestrictions (n := n) s
+            (BadFamily_deterministic_common (F := F) t)).card := by
+      simpa using
+        (Fintype.card_coe
+          (s := badRestrictions (n := n) s
+            (BadFamily_deterministic_common (F := F) t)))
+    have hcodes :
+        Fintype.card {c // c ∈ codes} = codes.card := by
+      simp
+    calc
+      (badRestrictions (n := n) s
+          (BadFamily_deterministic_common (F := F) t)).card
+          = Fintype.card
+              {ρ // ρ ∈ badRestrictions (n := n) s
+                (BadFamily_deterministic_common (F := F) t)} := by
+              simpa using hbad.symm
+      _ ≤ Fintype.card {c // c ∈ codes} := hcard'
+      _ = codes.card := hcodes
+  have hcodes_card :
+      codes.card =
+        (R_s (n := n) (s - t)).card * (auxCodes n t (w + 1) (F.length + 1)).card := by
+    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_assoc]
+  have haux :
+      (auxCodes n t (w + 1) (F.length + 1)).card =
+        (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+    calc
+      (auxCodes n t (w + 1) (F.length + 1)).card
+          = Fintype.card (Aux n t (w + 1) (F.length + 1)) := by
+            exact auxCodes_card (n := n) (t := t) (k := w + 1) (m := F.length + 1)
+      _ = (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+            exact card_Aux (n := n) (t := t) (k := w + 1) (m := F.length + 1)
+  calc
+    (badRestrictions (n := n) s (BadFamily_deterministic_common (F := F) t)).card
+        ≤ codes.card := hcard
+    _ = (R_s (n := n) (s - t)).card * (auxCodes n t (w + 1) (F.length + 1)).card := hcodes_card
+    _ = (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+          simp [haux, Nat.mul_comm, Nat.mul_assoc]
+
+lemma badRestrictions_card_le_common_aux
+    {n w s t : Nat} (F : FormulaFamily n w)
+    [DecidablePred (BadEvent_common (F := F) t)] :
+    (badRestrictions (n := n) s (BadEvent_common (F := F) t)).card
+      ≤ (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t := by
+  classical
+  have hEq :=
+    badRestrictions_eq_common_badFamilyDet (F := F) (s := s) (t := t)
+  -- переписываем через детерминированный common‑bad
+  have hdet :=
+    badRestrictions_card_le_common_aux_det (F := F) (s := s) (t := t)
+  rw [hEq.symm] at hdet
+  simpa using hdet
+
+lemma exists_good_restriction_common_of_bound
+    {n w s t : Nat} (F : FormulaFamily n w)
+    [DecidablePred (BadEvent_common (F := F) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ BadEvent_common (F := F) t ρ := by
+  classical
+  have hlt :
+      (badRestrictions (n := n) s (BadEvent_common (F := F) t)).card
+        < (R_s (n := n) s).card := by
+    exact lt_of_le_of_lt
+      (badRestrictions_card_le_common_aux (F := F) (s := s) (t := t)) hbound
+  exact exists_good_of_card_lt (n := n) (s := s)
+    (bad := BadEvent_common (F := F) t) hlt
+
+/-!
+## Common‑CCDT bad for atom‑CNF families
+-/
+
+lemma badRestrictions_card_le_common_aux_det_atom
+    {n s t : Nat} (Fs : List (FuncCNF n)) :
+    (badRestrictions (n := n) s (BadFamily_deterministic_common_atom (Fs := Fs) t)).card
+      ≤ (R_s (n := n) (s - t)).card
+          * (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t := by
+  classical
+  let codes := (R_s (n := n) (s - t)).product
+    (auxCodes n t (maxClauseLits Fs + 1) (Fs.length + 1))
+  have henc :
+      Function.Injective
+        (encodeBadFamilyDetCommon_aux_atom (Fs := Fs) (s := s) (t := t)) :=
+    encodeBadFamilyDetCommon_aux_atom_injective (Fs := Fs) (s := s) (t := t)
+  have hcard :
+      (badRestrictions (n := n) s (BadFamily_deterministic_common_atom (Fs := Fs) t)).card
+        ≤ codes.card := by
+    have hsub :
+        {ρ // ρ ∈ badRestrictions (n := n) s
+            (BadFamily_deterministic_common_atom (Fs := Fs) t)}
+          ↪ {c // c ∈ codes} := by
+      refine ⟨fun ρbad => ?_, ?_⟩
+      · have hmem : ρbad.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common_atom (Fs := Fs) t)).1 ρbad.2 |>.1
+        have hbad : BadFamily_deterministic_common_atom (Fs := Fs) t ρbad.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common_atom (Fs := Fs) t)).1 ρbad.2 |>.2
+        exact encodeBadFamilyDetCommon_aux_atom (Fs := Fs) (s := s) (t := t) ⟨ρbad.1, hmem, hbad⟩
+      · intro x y hxy
+        have hmemx : x.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common_atom (Fs := Fs) t)).1 x.2 |>.1
+        have hbadx : BadFamily_deterministic_common_atom (Fs := Fs) t x.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common_atom (Fs := Fs) t)).1 x.2 |>.2
+        have hmemy : y.1 ∈ R_s (n := n) s := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common_atom (Fs := Fs) t)).1 y.2 |>.1
+        have hbady : BadFamily_deterministic_common_atom (Fs := Fs) t y.1 := by
+          exact (mem_badRestrictions (n := n) (s := s)
+            (bad := BadFamily_deterministic_common_atom (Fs := Fs) t)).1 y.2 |>.2
+        have hxy' :
+            encodeBadFamilyDetCommon_aux_atom (Fs := Fs) (s := s) (t := t) ⟨x.1, hmemx, hbadx⟩
+              = encodeBadFamilyDetCommon_aux_atom (Fs := Fs) (s := s) (t := t) ⟨y.1, hmemy, hbady⟩ := by
+            simpa using hxy
+        have henc' := henc hxy'
+        have : x.1 = y.1 := by
+          simpa using congrArg Subtype.val henc'
+        exact Subtype.ext this
+    have hcard' := Fintype.card_le_of_injective (f := hsub) hsub.injective
+    have hbad :
+        Fintype.card
+            {ρ // ρ ∈ badRestrictions (n := n) s
+              (BadFamily_deterministic_common_atom (Fs := Fs) t)} =
+          (badRestrictions (n := n) s
+            (BadFamily_deterministic_common_atom (Fs := Fs) t)).card := by
+      simpa using
+        (Fintype.card_coe
+          (s := badRestrictions (n := n) s
+            (BadFamily_deterministic_common_atom (Fs := Fs) t)))
+    have hcodes :
+        Fintype.card {c // c ∈ codes} = codes.card := by
+      simp
+    calc
+      (badRestrictions (n := n) s
+          (BadFamily_deterministic_common_atom (Fs := Fs) t)).card
+          = Fintype.card
+              {ρ // ρ ∈ badRestrictions (n := n) s
+                (BadFamily_deterministic_common_atom (Fs := Fs) t)} := by
+              simpa using hbad.symm
+      _ ≤ Fintype.card {c // c ∈ codes} := hcard'
+      _ = codes.card := hcodes
+  have hcodes_card :
+      codes.card =
+        (R_s (n := n) (s - t)).card
+          * (auxCodes n t (maxClauseLits Fs + 1) (Fs.length + 1)).card := by
+    simp [codes, Finset.card_product, Nat.mul_comm, Nat.mul_assoc]
+  have haux :
+      (auxCodes n t (maxClauseLits Fs + 1) (Fs.length + 1)).card =
+        (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t := by
+    calc
+      (auxCodes n t (maxClauseLits Fs + 1) (Fs.length + 1)).card
+          = Fintype.card (Aux n t (maxClauseLits Fs + 1) (Fs.length + 1)) := by
+            exact auxCodes_card (n := n) (t := t) (k := maxClauseLits Fs + 1) (m := Fs.length + 1)
+      _ = (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t := by
+            exact card_Aux (n := n) (t := t) (k := maxClauseLits Fs + 1) (m := Fs.length + 1)
+  calc
+    (badRestrictions (n := n) s (BadFamily_deterministic_common_atom (Fs := Fs) t)).card
+        ≤ codes.card := hcard
+    _ = (R_s (n := n) (s - t)).card
+          * (auxCodes n t (maxClauseLits Fs + 1) (Fs.length + 1)).card := hcodes_card
+    _ = (R_s (n := n) (s - t)).card
+          * (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t := by
+          simp [haux, Nat.mul_comm, Nat.mul_assoc]
+
+lemma badRestrictions_card_le_common_aux_atom
+    {n s t : Nat} (Fs : List (FuncCNF n))
+    [DecidablePred (BadEvent_common_atom (Fs := Fs) t)] :
+    (badRestrictions (n := n) s (BadEvent_common_atom (Fs := Fs) t)).card
+      ≤ (R_s (n := n) (s - t)).card
+          * (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t := by
+  classical
+  have hsubset :
+      badRestrictions (n := n) s (BadEvent_common_atom (Fs := Fs) t)
+        ⊆ badRestrictions (n := n) s (BadFamily_deterministic_common_atom (Fs := Fs) t) := by
+    intro ρ hmem
+    have hmem' :
+        ρ ∈ R_s (n := n) s ∧ BadEvent_common_atom (Fs := Fs) t ρ := by
+      simpa [mem_badRestrictions] using hmem
+    rcases hmem' with ⟨hRs, hbad⟩
+    have hbad' := badEvent_common_atom_implies_badFamilyDet (Fs := Fs) (t := t) (ρ := ρ) hbad
+    exact (mem_badRestrictions).2 ⟨hRs, hbad'⟩
+  have hcard := Finset.card_le_card hsubset
+  have hdet :=
+    badRestrictions_card_le_common_aux_det_atom (Fs := Fs) (s := s) (t := t)
+  exact le_trans hcard hdet
+
+lemma exists_good_restriction_common_atom_of_bound
+    {n s t : Nat} (Fs : List (FuncCNF n))
+    [DecidablePred (BadEvent_common_atom (Fs := Fs) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ BadEvent_common_atom (Fs := Fs) t ρ := by
+  classical
+  have hlt :
+      (badRestrictions (n := n) s (BadEvent_common_atom (Fs := Fs) t)).card
+        < (R_s (n := n) s).card := by
+    exact lt_of_le_of_lt
+      (badRestrictions_card_le_common_aux_atom (Fs := Fs) (s := s) (t := t)) hbound
+  exact exists_good_of_card_lt (n := n) (s := s)
+    (bad := BadEvent_common_atom (Fs := Fs) t) hlt
 
 lemma card_bad_lt_card_all_of_cnf_family_bound_small
     {n w s t : Nat} (F : FormulaFamily n w)

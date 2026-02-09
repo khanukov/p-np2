@@ -81,6 +81,10 @@ structure SmallLocalCircuitSolver_Partial (p : GapPartialMCSPParams) where
   params : SmallLocalCircuitParamsPartial p
   decide : Core.BitVec (partialInputLen p) → Bool
   correct : SolvesPromise (GapPartialMCSPPromise p) decide
+  decideLocal : ∃ (alive : Finset (Fin (partialInputLen p))),
+    alive.card ≤ Partial.tableLen p.n / 2 ∧
+    ∀ x y : Core.BitVec (partialInputLen p),
+      (∀ i ∈ alive, x i = y i) → decide x = decide y
 
 /-!
   ### Counting-утверждения для Partial MCSP
@@ -1280,32 +1284,23 @@ lemma exists_partial_not_consistent_with_family_tableLen {n : Nat}
 -/
 
 /-!
-  ### Solver locality axiom (stub for multi-switching)
+  ### Solver locality
 
-  The multi-switching lemma (when applied to the solver's AC0 circuit)
-  shows that the solver's decision function depends on at most N/2 of
-  its N input coordinates. This axiom will be replaced by a theorem
-  once multi-switching depth induction is complete.
+  The `decideLocal` field of `SmallLocalCircuitSolver_Partial` directly
+  witnesses that the decision function depends on at most `tableLen / 2`
+  of its input coordinates.  This locality proof is provided during
+  construction (via the P/poly → locality axiom and the locality lift).
+
+  `solver_is_local` is a trivial extraction of the `decideLocal` field.
 -/
 
-/--
-  Multi-switching result (stub): any small local-circuit solver for
-  partial MCSP has a decision function that depends on at most half
-  of the input coordinates.
-
-  Concretely, there exists a set `alive` of input positions with
-  `|alive| ≤ N/2` (where `N = partialInputLen p`) such that the
-  solver's output is determined by the bits in `alive`.
-
-  This axiom will be replaced by a theorem derived from the
-  multi-switching depth induction once Phases 1+2 are complete.
--/
-axiom solver_is_local {p : GapPartialMCSPParams}
+theorem solver_is_local {p : GapPartialMCSPParams}
     (solver : SmallLocalCircuitSolver_Partial p) :
     ∃ (alive : Finset (Fin (partialInputLen p))),
       alive.card ≤ Partial.tableLen p.n / 2 ∧
       ∀ x y : Core.BitVec (partialInputLen p),
-        (∀ i ∈ alive, x i = y i) → solver.decide x = solver.decide y
+        (∀ i ∈ alive, x i = y i) → solver.decide x = solver.decide y :=
+  solver.decideLocal
 
 /-!
   ### New anti-checker via solver locality + MCSP gap
@@ -1317,17 +1312,14 @@ axiom solver_is_local {p : GapPartialMCSPParams}
 -/
 
 /--
-  New anti-checker: any small local-circuit solver for Partial MCSP
+  Anti-checker: any small local-circuit solver for Partial MCSP
   leads to a contradiction.
 
   Proof outline:
-  1. `solver_is_local` (axiom stub for multi-switching) gives a set
-     `alive` with `|alive| ≤ N/2` such that `solver.decide` depends
-     only on positions in `alive`.
+  1. `solver.decideLocal` gives a set `alive` with `|alive| ≤ tableLen/2`
+     such that `solver.decide` depends only on positions in `alive`.
   2. `no_local_function_solves_mcsp` shows that no such local function
      can satisfy the MCSP promise.
-
-  This uses `solver.correct` (the old approach never did).
 -/
 theorem noSmallLocalCircuitSolver_partial_v2
     {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :

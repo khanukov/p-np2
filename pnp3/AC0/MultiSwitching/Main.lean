@@ -531,6 +531,142 @@ theorem shrinkage_step3_2
   exact shrinkage_from_restriction (F := F) (ρ := ρ)
 
 /-!
+## Stage 4 (common‑CCDT): shrinkage для restricted‑family
+
+Этот вариант используется после того, как будет построен мост
+`GoodFamilyCNF` → `GoodFamilyCNF_common`.
+-/
+
+theorem shrinkage_from_good_common
+    {n w t : Nat} (F : FormulaFamily n w)
+    (ρ : Restriction n) (ht : 0 < t)
+    (hgood : GoodFamilyCNF_common (F := F) t ρ) :
+    ∃ (S : Shrinkage n),
+      S.F = evalFamilyRestrict (ρ := ρ) F ∧ S.t = t ∧
+        S.ε = (1 : Q) / (n + 2) := by
+  simpa using
+    (shrinkage_from_good_restriction
+      (F := F) (ρ := ρ) (t := t) ht hgood)
+
+theorem shrinkage_from_good_common_atom
+    {n t : Nat} (Fs : List (FuncCNF n))
+    (ρ : Restriction n)
+    (hgood : GoodFamily_common_atom (Fs := Fs) t ρ) :
+    ∃ (S : Shrinkage n),
+      S.F = evalFamilyRestrictFuncCNF (ρ := ρ) (Fs := Fs) ∧
+        S.t = t ∧ S.ε = (1 : Q) / (n + 2) := by
+  simpa using
+    (shrinkage_from_good_restriction_common_atom
+      (Fs := Fs) (ρ := ρ) (t := t) hgood)
+
+/-!
+## Stage 3 (common‑CCDT): bound → good restriction → shrinkage
+-/
+
+theorem shrinkage_step3_2_common
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (ht : 0 < t)
+    [DecidablePred (BadEvent_common (F := F) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ∃ (S : Shrinkage n),
+      S.F = evalFamilyRestrict (ρ := ρ) F ∧
+        S.t = t ∧ S.ε = (1 : Q) / (n + 2) := by
+  classical
+  -- Stage 3 (common): good restriction for BadEvent_common.
+  obtain ⟨ρ, hρs, hnotbad⟩ :=
+    exists_good_restriction_common_of_bound (F := F) (s := s) (t := t) hbound
+  have hgood : GoodFamilyCNF_common (F := F) t ρ := by
+    exact hnotbad
+  -- Stage 4: shrinkage on restricted family.
+  obtain ⟨S, hF, htS, hε⟩ :=
+    shrinkage_from_good_common (F := F) (ρ := ρ) (t := t) ht hgood
+  exact ⟨ρ, hρs, S, hF, htS, hε⟩
+
+theorem shrinkage_step3_2_common_atom
+    {n s t : Nat} (Fs : List (FuncCNF n))
+    [DecidablePred (BadEvent_common_atom (Fs := Fs) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ∃ (S : Shrinkage n),
+      S.F = evalFamilyRestrictFuncCNF (ρ := ρ) (Fs := Fs) ∧
+        S.t = t ∧ S.ε = (1 : Q) / (n + 2) := by
+  classical
+  obtain ⟨ρ, hρs, hnotbad⟩ :=
+    exists_good_restriction_common_atom_of_bound (Fs := Fs) (s := s) (t := t) hbound
+  have hgood : GoodFamily_common_atom (Fs := Fs) t ρ := by
+    exact hnotbad
+  obtain ⟨S, hF, htS, hε⟩ :=
+    shrinkage_from_good_common_atom (Fs := Fs) (ρ := ρ) (t := t) hgood
+  exact ⟨ρ, hρs, S, hF, htS, hε⟩
+
+/-!
+## Итог Stage 1–4 (common‑CCDT)
+
+Эта форма используется как "боевой" интерфейс: Stage‑3 даёт good‑restriction
+для common‑bad, Stage‑4 строит shrinkage для restricted‑family.
+-/
+
+theorem stage1_4_complete_common
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (ht : 0 < t)
+    [DecidablePred (BadEvent_common (F := F) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ∃ (S : Shrinkage n),
+      S.F = evalFamilyRestrict (ρ := ρ) F ∧
+        S.t = t ∧ S.ε = (1 : Q) / (n + 2) := by
+  exact shrinkage_step3_2_common (F := F) (s := s) (t := t) ht hbound
+
+/-!
+## Common‑CCDT: версия с параметрами `sParam`/`tParam`
+-/
+
+theorem exists_good_restriction_step3_2_common
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent_common (F := F) (tParam m n) ρ := by
+  classical
+  subst hm
+  exact exists_good_restriction_common_of_bound
+    (F := F) (s := sParam n w) (t := tParam F.length n) hbound
+
+theorem stage1_4_complete_common_params
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w), ∃ (S : Shrinkage n),
+      S.F = evalFamilyRestrict (ρ := ρ) F ∧
+        S.t = tParam m n ∧ S.ε = (1 : Q) / (n + 2) := by
+  classical
+  have htpos : 0 < tParam m n := by
+    -- `tParam` always positive: `log2(...) + 2`.
+    simp [tParam]
+  obtain ⟨ρ, hρs, hgood⟩ :=
+    exists_good_restriction_step3_2_common (F := F) (m := m) hm ht hbound
+  obtain ⟨S, hF, htS, hε⟩ :=
+    shrinkage_from_good_common (F := F) (ρ := ρ) (t := tParam m n) htpos hgood
+  exact ⟨ρ, hρs, S, hF, htS, hε⟩
+
+/-!
 ## Итог Stage 1–4 (общий/расширенный вариант)
 
 Эта лемма — «финальная метка готовности» общего пайплайна:

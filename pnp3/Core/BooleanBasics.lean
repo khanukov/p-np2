@@ -2860,7 +2860,7 @@ inductive ClauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n)
   | pending (w : ClausePendingWitness ρ C)
   deriving Repr
 
-@[simp] def clauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n) :
+def clauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n) :
     ClauseStatus ρ C :=
   if hsat : ∃ ℓ ∈ C.literals, ρ.literalStatus ℓ = LiteralStatus.satisfied then
     ClauseStatus.satisfied
@@ -2951,50 +2951,126 @@ structure PendingClauseSelection {n : Nat}
 фальсифицированная клауза, функция немедленно завершает поиск, поскольку формула
 уже обращается в `false`.
 -/
+private def firstPendingClause?Aux {n : Nat} (ρ : Restriction n) (C : CnfClause n)
+    (rest : List (CnfClause n)) (status : ClauseStatus ρ C)
+    (hstatus : ρ.clauseStatus C = status)
+    (rec : Option (PendingClauseSelection (ρ := ρ) rest)) :
+    Option (PendingClauseSelection (ρ := ρ) (C :: rest)) :=
+  match status with
+  | ClauseStatus.pending w =>
+      some {
+        leadingClauses := [],
+        clause := C,
+        suffix := rest,
+        witness := w,
+        leadingSatisfied := by
+          intro C' hmem
+          have : C' ∈ ([] : List (CnfClause n)) := hmem
+          cases this
+        pendingStatusEq := by
+          simpa [hstatus] using (rfl : status = ClauseStatus.pending w),
+        clausesDecomposition := rfl }
+  | ClauseStatus.satisfied =>
+      match rec with
+      | none => none
+      | some selection =>
+          some {
+            leadingClauses := C :: selection.leadingClauses,
+            clause := selection.clause,
+            suffix := selection.suffix,
+            witness := selection.witness,
+            leadingSatisfied := by
+              intro D hmem
+              obtain h | h := List.mem_cons.mp hmem
+              · subst h
+                simpa [hstatus] using (rfl : status = ClauseStatus.satisfied)
+              · exact selection.leadingSatisfied D h
+            pendingStatusEq := selection.pendingStatusEq,
+            clausesDecomposition := by
+              have hrest : rest =
+                  selection.leadingClauses ++ selection.clause :: selection.suffix :=
+                  selection.clausesDecomposition
+              have : C :: rest =
+                  (C :: selection.leadingClauses) ++ selection.clause :: selection.suffix := by
+                  simp [List.cons_append, hrest]
+              exact this }
+  | ClauseStatus.falsified => none
+
 def firstPendingClause?
     {n : Nat} (ρ : Restriction n) :
     ∀ clauses : List (CnfClause n),
       Option (PendingClauseSelection (ρ := ρ) clauses)
   | [] => none
   | C :: rest =>
-      match hstatus : ρ.clauseStatus C with
-      | ClauseStatus.pending w =>
-          some {
-            leadingClauses := [],
-            clause := C,
-            suffix := rest,
-            witness := w,
-            leadingSatisfied := by
-              intro C' hmem
-              have : C' ∈ ([] : List (CnfClause n)) := hmem
-              cases this
-            pendingStatusEq := hstatus,
-            clausesDecomposition := rfl }
-      | ClauseStatus.satisfied =>
-          match firstPendingClause? (ρ := ρ) rest with
-          | none => none
-          | some selection =>
-              some {
-                leadingClauses := C :: selection.leadingClauses,
-                clause := selection.clause,
-                suffix := selection.suffix,
-                witness := selection.witness,
-                leadingSatisfied := by
-                  intro D hmem
-                  obtain h | h := List.mem_cons.mp hmem
-                  · subst h
-                    exact hstatus
-                  · exact selection.leadingSatisfied D h
-                pendingStatusEq := selection.pendingStatusEq,
-                clausesDecomposition := by
-                  have hrest : rest =
-                      selection.leadingClauses ++ selection.clause :: selection.suffix :=
-                      selection.clausesDecomposition
-                  have : C :: rest =
-                      (C :: selection.leadingClauses) ++ selection.clause :: selection.suffix := by
-                      simp [List.cons_append, hrest]
-                  exact this }
-      | ClauseStatus.falsified => none
+      let status := ρ.clauseStatus C
+      firstPendingClause?Aux (ρ := ρ) (C := C) (rest := rest)
+        (status := status) (hstatus := rfl)
+        (rec := firstPendingClause? (ρ := ρ) rest)
+
+lemma firstPendingClause?_cons_none_iff_status {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (status : ClauseStatus ρ C) (hstatus : ρ.clauseStatus C = status) :
+  ρ.firstPendingClause? (C :: rest) = none ↔
+      (status = ClauseStatus.falsified) ∨
+      (status = ClauseStatus.satisfied ∧
+        ρ.firstPendingClause? rest = none) := by
+  classical
+  have hfp :
+      ρ.firstPendingClause? (C :: rest) =
+        firstPendingClause?Aux (ρ := ρ) (C := C) (rest := rest)
+          (status := status) (hstatus := hstatus)
+          (rec := firstPendingClause? (ρ := ρ) rest) := by
+    simp [Restriction.firstPendingClause?, hstatus]
+  cases status with
+  | pending w =>
+      simp [firstPendingClause?Aux, hfp]
+  | falsified =>
+      simp [firstPendingClause?Aux, hfp]
+  | satisfied =>
+      cases hrec : ρ.firstPendingClause? rest <;>
+        simp [firstPendingClause?Aux, hfp, hrec]
+
+lemma firstPendingClause?_cons_none_iff {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n)) :
+  ρ.firstPendingClause? (C :: rest) = none ↔
+      (ρ.clauseStatus C = ClauseStatus.falsified) ∨
+      (ρ.clauseStatus C = ClauseStatus.satisfied ∧
+        ρ.firstPendingClause? rest = none) := by
+  simpa using
+    (firstPendingClause?_cons_none_iff_status (ρ := ρ) (C := C) (rest := rest)
+      (status := ρ.clauseStatus C) (hstatus := rfl))
+
+lemma firstPendingClause?_cons_ne_none_of_pending {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (hpend : ∃ w, ρ.clauseStatus C = ClauseStatus.pending w) :
+    ρ.firstPendingClause? (C :: rest) ≠ none := by
+  intro hnone
+  have h := (firstPendingClause?_cons_none_iff ρ C rest).1 hnone
+  rcases hpend with ⟨w, hw⟩
+  simpa [hw] using h
+
+lemma firstPendingClause?_cons_satisfied_none_iff {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (hsat : ρ.clauseStatus C = ClauseStatus.satisfied) :
+    ρ.firstPendingClause? (C :: rest) = none ↔
+      ρ.firstPendingClause? rest = none := by
+  constructor
+  · intro hnone
+    have h := (firstPendingClause?_cons_none_iff ρ C rest).1 hnone
+    simpa [hsat] using h
+  · intro hnone
+    have :
+        (ρ.clauseStatus C = ClauseStatus.falsified) ∨
+          (ρ.clauseStatus C = ClauseStatus.satisfied ∧
+            ρ.firstPendingClause? rest = none) :=
+      Or.inr ⟨hsat, hnone⟩
+    exact (firstPendingClause?_cons_none_iff ρ C rest).2 this
+
+lemma firstPendingClause?_cons_eq_none_of_falsified {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (hf : ρ.clauseStatus C = ClauseStatus.falsified) :
+    ρ.firstPendingClause? (C :: rest) = none := by
+  exact (firstPendingClause?_cons_none_iff ρ C rest).2 (Or.inl hf)
 
 end Restriction
 

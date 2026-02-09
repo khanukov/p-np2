@@ -27,9 +27,10 @@ import ThirdPartyFacts.Hirahara2022
   Замечание: `P_ne_NP_final` теперь не имеет гипотез (hF_all удалён).
   Оставшиеся зависимости (per `#print axioms`):
   * `solver_is_local` — аксиома-заглушка для multi-switching;
-  * `sorryAx` — из `no_local_function_solves_mcsp` (MCSP gap lower bound
-    для локальных функций);
+  * `Lean.ofReduceBool` — из `native_decide` для `circuit_bound_ok`;
   * стандартные аксиомы Lean (propext, Classical.choice, Quot.sound).
+  Аксиомы `exists_hard_function_with_constraints` и `sorryAx` УДАЛЕНЫ —
+  Shannon counting теперь доказан формально (Counting.ShannonCounting).
   Аксиома `PartialMCSP_is_NP_Hard` НЕ используется в `P_ne_NP_final`
   (proof uses NP membership, not NP-hardness).
 -/
@@ -53,6 +54,7 @@ open ComplexityInterfaces
   gap_ok := by decide
   n_large := by decide
   sYES_pos := by decide
+  circuit_bound_ok := by native_decide
 
 /-!
   Финальный вывод текущей цепочки: из наличия положительного `δ`

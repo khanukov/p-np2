@@ -14,13 +14,9 @@ open Magnification
 
 theorem LB_GeneralFromLocal_partial
   {p : Models.GapPartialMCSPParams}
-  (solver : SmallGeneralCircuitSolver_Partial p)
-  (hF_all : ∀ loc : SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) : False := by
-  classical
-  obtain ⟨T, loc, hT, hM, hℓ, hdepth⟩ := locality_lift_partial solver
-  exact LB_LocalCircuits_core_partial (p := p) (solver := loc) (hF_all loc)
+  (solver : SmallGeneralCircuitSolver_Partial p) : False :=
+  no_general_solver_of_no_local_partial
+    (fun loc => noSmallLocalCircuitSolver_partial_v2 loc) solver
 
 end LowerBounds
 end Pnp3

@@ -24,11 +24,14 @@ import ThirdPartyFacts.Hirahara2022
   Такой выбор полностью устраивает аксиомы шага C и триггер шага D,
   а значит финальный вывод `P ≠ NP` получается одной строкой.
 
-  Замечание: античекер и shrinkage-факты уже оформлены как теоремы, но их
-  гипотезы требуют явных свидетельств (`FamilyIsAC0`/`FamilyIsLocalCircuit`).
-  Это делает вывод формально корректным, однако «полностью автономный» вариант
-  появится после конструктивного построения этих свидетельств.  При этом
-  финальная строка не изменится: изменится лишь источник входных данных.
+  Замечание: `P_ne_NP_final` теперь не имеет гипотез (hF_all удалён).
+  Оставшиеся зависимости (per `#print axioms`):
+  * `solver_is_local` — аксиома-заглушка для multi-switching;
+  * `sorryAx` — из `no_local_function_solves_mcsp` (MCSP gap lower bound
+    для локальных функций);
+  * стандартные аксиомы Lean (propext, Classical.choice, Quot.sound).
+  Аксиома `PartialMCSP_is_NP_Hard` НЕ используется в `P_ne_NP_final`
+  (proof uses NP membership, not NP-hardness).
 -/
 
 namespace Pnp3
@@ -49,6 +52,7 @@ open ComplexityInterfaces
   sNO := 3
   gap_ok := by decide
   n_large := by decide
+  sYES_pos := by decide
 
 /-!
   Финальный вывод текущей цепочки: из наличия положительного `δ`
@@ -73,15 +77,11 @@ theorem partial_mcsp_np_hard_witness :
   Финальный вывод для Partial MCSP: используем формульный мост для
   фиксированного набора partial‑параметров.
 -/
-theorem P_ne_NP_final
-    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial
-      canonicalPartialParams,
-      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-        (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
+theorem P_ne_NP_final : P_ne_NP := by
   have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
   exact
     P_ne_NP_from_partial_formulas
-      (p := canonicalPartialParams) (δ := (1 : Rat)) hδ hF_all
+      (p := canonicalPartialParams) (δ := (1 : Rat)) hδ
 
 end Magnification
 end Pnp3

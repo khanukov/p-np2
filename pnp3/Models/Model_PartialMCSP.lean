@@ -87,6 +87,8 @@ structure GapPartialMCSPParams where
   gap_ok : sYES + 1 ≤ sNO
   /-- В оценках сохраняем предположение о «достаточно большом» `n`. -/
   n_large : 8 ≤ n
+  /-- Non-degenerate YES threshold: at least Circuit.const has size 1 ≤ sYES. -/
+  sYES_pos : 1 ≤ sYES
   deriving Repr
 
 /-- Длина входа partial-MCSP: `2 * 2^n`. -/

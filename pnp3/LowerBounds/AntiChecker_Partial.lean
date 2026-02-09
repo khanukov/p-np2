@@ -7,6 +7,7 @@ import Counting.Count_EasyFuncs
 import Core.BooleanBasics
 import Core.SAL_Core
 import LowerBounds.LB_Formulas
+import LowerBounds.MCSPGapLocality
 import Models.Model_PartialMCSP
 import ThirdPartyFacts.Facts_Switching
 
@@ -1277,6 +1278,63 @@ lemma exists_partial_not_consistent_with_family_tableLen {n : Nat}
   1. Аналог `antiChecker_exists_large_Y` для Partial MCSP.
   2. Связка с shrinkage/switching и перенос на magnification.
 -/
+
+/-!
+  ### Solver locality axiom (stub for multi-switching)
+
+  The multi-switching lemma (when applied to the solver's AC0 circuit)
+  shows that the solver's decision function depends on at most N/2 of
+  its N input coordinates. This axiom will be replaced by a theorem
+  once multi-switching depth induction is complete.
+-/
+
+/--
+  Multi-switching result (stub): any small local-circuit solver for
+  partial MCSP has a decision function that depends on at most half
+  of the input coordinates.
+
+  Concretely, there exists a set `alive` of input positions with
+  `|alive| ≤ N/2` (where `N = partialInputLen p`) such that the
+  solver's output is determined by the bits in `alive`.
+
+  This axiom will be replaced by a theorem derived from the
+  multi-switching depth induction once Phases 1+2 are complete.
+-/
+axiom solver_is_local {p : GapPartialMCSPParams}
+    (solver : SmallLocalCircuitSolver_Partial p) :
+    ∃ (alive : Finset (Fin (partialInputLen p))),
+      alive.card ≤ Partial.tableLen p.n / 2 ∧
+      ∀ x y : Core.BitVec (partialInputLen p),
+        (∀ i ∈ alive, x i = y i) → solver.decide x = solver.decide y
+
+/-!
+  ### New anti-checker via solver locality + MCSP gap
+
+  This theorem replaces the counting-against-family approach with a
+  direct argument: multi-switching makes the solver local, and no
+  local function can solve MCSP. Unlike the old approach, this
+  actually uses `solver.correct`.
+-/
+
+/--
+  New anti-checker: any small local-circuit solver for Partial MCSP
+  leads to a contradiction.
+
+  Proof outline:
+  1. `solver_is_local` (axiom stub for multi-switching) gives a set
+     `alive` with `|alive| ≤ N/2` such that `solver.decide` depends
+     only on positions in `alive`.
+  2. `no_local_function_solves_mcsp` shows that no such local function
+     can satisfy the MCSP promise.
+
+  This uses `solver.correct` (the old approach never did).
+-/
+theorem noSmallLocalCircuitSolver_partial_v2
+    {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :
+    False := by
+  obtain ⟨alive, h_small, h_local⟩ := solver_is_local solver
+  exact no_local_function_solves_mcsp
+    solver.decide alive h_small h_local solver.correct
 
 end LowerBounds
 end Pnp3

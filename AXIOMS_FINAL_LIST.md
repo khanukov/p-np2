@@ -21,7 +21,7 @@ The archived multi-switching placeholders are kept out of the active
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 0 | Håstad (1986), Williams (2014) |
-| Partial MCSP NP-hardness | `ThirdPartyFacts/Hirahara2022.lean` | 1 | Hirahara (FOCS 2022) |
+| Partial MCSP NP-hardness | `ThirdPartyFacts/PpolyFormula.lean` | 1 | P/poly locality bridge |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -53,9 +53,9 @@ They are not part of the active `pnp3/` build.
 
 ### Partial MCSP — NP-hardness (external, active)
 
-- **`PartialMCSP_is_NP_Hard`** — `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+- **`ppoly_circuit_locality`** — `pnp3/ThirdPartyFacts/PpolyFormula.lean`
   - Axiom: Partial MCSP NP-hardness (logical reductions).
-  - Source: Hirahara (FOCS 2022).
+  - Source: P/poly locality bridge.
 
 ### Part C — Anti-Checker Lower Bounds (0 axioms)
 
@@ -109,7 +109,7 @@ They are excluded from the active build and from the totals above.
 - **2025-12-27** — Confirmed locality-lift and magnification bridges are fully
   proved in Lean; active axiom count remains 1.
 - **2025-12-26** — Archived the canonical trace placeholder axioms from the
-  active `pnp3/` tree, leaving `PartialMCSP_is_NP_Hard` as the only active
+  active `pnp3/` tree, leaving `ppoly_circuit_locality` as the only active
   axiom.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all
   magnification triggers remain proven.

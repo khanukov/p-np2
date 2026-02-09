@@ -67,5 +67,19 @@ axiom ppoly_circuit_locality
       ∀ x y : Core.BitVec n,
         (∀ i ∈ alive, x i = y i) → L n x = L n y
 
+/--
+Structured-interface bridge: the current external locality axiom is stated for
+`Ppoly`.  Any structured witness (`PpolyStructured`) can be downgraded to
+`Ppoly`, so we can already consume locality in the structured migration path
+without introducing new axioms.
+-/
+theorem ppolyStructured_circuit_locality
+    (L : Language) (h : PpolyStructured L) (n : Nat) :
+    ∃ (alive : Finset (Fin n)),
+      alive.card ≤ n / 4 ∧
+      ∀ x y : Core.BitVec n,
+        (∀ i ∈ alive, x i = y i) → L n x = L n y := by
+  exact ppoly_circuit_locality L (ComplexityInterfaces.Ppoly_of_PpolyStructured h) n
+
 end ThirdPartyFacts
 end Pnp3

@@ -80,8 +80,8 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
 
-- **1 active axiom** in the live `pnp3/` tree: `PartialMCSP_is_NP_Hard`
-  (`pnp3/ThirdPartyFacts/Hirahara2022.lean`)
+- **1 active axiom** in the live `pnp3/` tree: `ppoly_circuit_locality`
+  (`pnp3/ThirdPartyFacts/PpolyFormula.lean`)
 - **No placeholder axioms** in `pnp3/AC0/MultiSwitching/Encoding.lean`
 - **0 sorry/admit** statements in active code
 - Switching/shrinkage inputs are **witness-backed theorems**, with witnesses

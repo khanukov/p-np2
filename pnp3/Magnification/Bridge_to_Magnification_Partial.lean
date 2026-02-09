@@ -1,5 +1,6 @@
 import Magnification.PipelineStatements_Partial
 import Magnification.Facts_Magnification_Partial
+import Magnification.LocalityProvider_Partial
 import Complexity.Interfaces
 import Models.Model_PartialMCSP
 
@@ -24,17 +25,32 @@ open ComplexityInterfaces
 -/
 
 theorem NP_not_subset_Ppoly_from_partial_formulas
+  (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) :
   NP_not_subset_Ppoly := by
   have hHyp : FormulaLowerBoundHypothesisPartial p δ :=
     formula_hypothesis_from_pipeline_partial (p := p) (δ := δ) hδ
-  exact OPS_trigger_formulas_partial (p := p) (δ := δ) hHyp
+  exact
+    OPS_trigger_formulas_partial_of_provider
+      (hProvider := hProvider) (p := p) (δ := δ) hHyp
+
+theorem NP_not_subset_Ppoly_from_partial_formulas_default
+  {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) :
+  NP_not_subset_Ppoly := by
+  exact NP_not_subset_Ppoly_from_partial_formulas
+    (hProvider := defaultStructuredLocalityProviderPartial) (p := p) (δ := δ) hδ
 
 theorem P_ne_NP_from_partial_formulas
+  (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) : P_ne_NP := by
   have hNP : NP_not_subset_Ppoly :=
-    NP_not_subset_Ppoly_from_partial_formulas (p := p) (δ := δ) hδ
+    NP_not_subset_Ppoly_from_partial_formulas (hProvider := hProvider) (p := p) (δ := δ) hδ
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
+
+theorem P_ne_NP_from_partial_formulas_default
+  {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) : P_ne_NP := by
+  exact P_ne_NP_from_partial_formulas
+    (hProvider := defaultStructuredLocalityProviderPartial) (p := p) (δ := δ) hδ
 
 end Magnification
 end Pnp3

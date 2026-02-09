@@ -198,7 +198,7 @@ def ac0MultiSwitchingWitness_of_depthInduction
 * `partial_shrinkage_for_AC0` и `shrinkage_for_localCircuit` становятся
   внутренними теоремами;
 * вся цепочка P≠NP зависит только от **одной** внешней аксиомы:
-  `PartialMCSP_is_NP_Hard`.
+  `ppoly_circuit_locality`.
 
 Если цель — полностью безусловный статус, нужно закрыть ветку B
 (NP‑hardness PartialMCSP) в плане.

@@ -42,7 +42,7 @@
 - Текущая условность: гипотеза `hF_all : ∀ loc, FamilyIsLocalCircuit ...`.
 - Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
 - Внешняя аксиома NP‑трудности Partial MCSP импортируется из
-  `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
+  `pnp3/ThirdPartyFacts/PpolyFormula.lean`.
 
 ---
 
@@ -65,7 +65,7 @@
      через `Facts.LocalityLift.ShrinkageWitness.Provider`.
 
 4. **Аксиома NP‑трудности Partial MCSP**
-   - Сейчас NP‑hardness задаётся аксиомой `PartialMCSP_is_NP_Hard`.
+   - Сейчас NP‑hardness задаётся аксиомой `ppoly_circuit_locality`.
    - Для полностью автономного доказательства нужен формальный перенос
      результата Hirahara (2022) в Lean (или импорт проверенной формализации
      как теоремы).
@@ -236,9 +236,9 @@ partial‑цепочки. Их реализация не требуется дл
 - [x] Сделать `FinalResult` полностью partial и убрать legacy‑ветку из
   основного вывода.
 
-### NP-hardness (Hirahara 2022)
-- [x] Добавить файл `pnp3/ThirdPartyFacts/Hirahara2022.lean` с аксиомой
-  `PartialMCSP_is_NP_Hard`.
+### NP-hardness (P/poly locality bridge)
+- [x] Добавить файл `pnp3/ThirdPartyFacts/PpolyFormula.lean` с аксиомой
+  `ppoly_circuit_locality`.
 - [x] Обновить финальные выводы (например, `Magnification/FinalResult.lean`)
   на новую аксиому.
 - [ ] Довести NP‑hardness до формальной теоремы (перенос доказательства или

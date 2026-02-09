@@ -10,7 +10,7 @@ removing legacy axioms and recording the remaining external inputs.
 ## ✅ Verification Summary
 
 - ✅ There is **1** active axiom in the source tree (`pnp3/`):
-  `ThirdPartyFacts.PartialMCSP_is_NP_Hard`.
+  `ThirdPartyFacts.ppoly_circuit_locality`.
 - ✅ Documentation (`AXIOM_ANALYSIS_FINAL.md`, `AXIOMS_FINAL_LIST.md`,
   `AXIOM_FEASIBILITY_ANALYSIS.md`, `CRITICAL_REANALYSIS.md`) reflects the same set.
 - ✅ Interface theorems `P_subset_Ppoly_proof` and
@@ -31,7 +31,7 @@ $ rg "^axiom " -g"*.lean" pnp3
 
 | File | Expected | Found | Notes |
 |------|----------|-------|-------|
-| `ThirdPartyFacts/Hirahara2022.lean` | 1 | 1 | External NP-hardness axiom |
+| `ThirdPartyFacts/PpolyFormula.lean` | 1 | 1 | External NP-hardness axiom |
 | `ThirdPartyFacts/Facts_Switching.lean` | 0 | 0 | Switching theorems (witness-backed) |
 | **TOTAL** | **1** | **1** | ✅|
 

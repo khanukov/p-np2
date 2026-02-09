@@ -17,10 +17,13 @@ open Pnp3.Magnification
 
 -- Итоговые утверждения.
 #print axioms P_ne_NP_final
+#print axioms P_ne_NP_final_with_provider
 #print axioms P_ne_NP_from_partial_formulas
+#print axioms P_ne_NP_from_partial_formulas_default
 
 -- Мост от нижних оценок к `NP ⊄ P/poly`.
 #print axioms NP_not_subset_Ppoly_from_partial_formulas
+#print axioms OPS_trigger_formulas_partial_of_structured_contra
 
 -- Базовая логическая связка `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
 #print axioms P_ne_NP_of_nonuniform_separation

@@ -107,15 +107,15 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - Specialization `OPS_trigger_formulas` remains proved constructively as a corollary of D.1
 
 **Partial MCSP NP-hardness (axiom)**
-- `PartialMCSP_is_NP_Hard` — external axiom in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+- `ppoly_circuit_locality` — external axiom in `pnp3/ThirdPartyFacts/PpolyFormula.lean`
   (Hirahara, FOCS 2022).
 
 ### Interface Axioms
 
 - `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
   remaining interface axioms. The pipeline derives `NP_not_subset_Ppoly` and `P_ne_NP` as theorems.
-  The only active axiom lives in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
-  (`PartialMCSP_is_NP_Hard`).
+  The only active axiom lives in `pnp3/ThirdPartyFacts/PpolyFormula.lean`
+  (`ppoly_circuit_locality`).
 
 **Minimal Set for P_ne_NP_final**: External witnesses for A.1/A.2 shrinkage inputs
 

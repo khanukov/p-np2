@@ -48,6 +48,23 @@ abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
 /-- Класс `P/poly` из того же пакета. -/
 abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
 
+/-- Вариант `P/poly`, в котором witness хранит явный carrier и `eval`. -/
+abbrev PpolyStructured (L : Language) : Prop :=
+  Facts.PsubsetPpoly.Complexity.PpolyStructured.{0} L
+
+/--
+Совместимость: любой структурный witness сразу даёт текущий (облегчённый)
+`P/poly` интерфейс.
+-/
+theorem Ppoly_of_PpolyStructured {L : Language} :
+    PpolyStructured L → Ppoly L := by
+  exact Facts.PsubsetPpoly.Complexity.ppoly_iff_ppolyStructured.mpr
+
+/-- Обратная совместимость: текущий `Ppoly` можно поднять в структурную форму. -/
+theorem PpolyStructured_of_Ppoly {L : Language} :
+    Ppoly L → PpolyStructured L := by
+  exact Facts.PsubsetPpoly.Complexity.ppoly_iff_ppolyStructured.mp
+
 /-!
   Конструктивное определение NP через полиномиальный верификатор.
 

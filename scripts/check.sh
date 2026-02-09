@@ -6,9 +6,15 @@ lake build
 lake env lean --run scripts/smoke.lean
 
 echo "Checking active axiom inventory..."
-# One external theorem is intentionally imported as an axiom:
-# `ThirdPartyFacts.PartialMCSP_is_NP_Hard` from Hirahara (2022).
-expected_axioms=1
+# Default mode tracks the current conditional pipeline.
+# Set `UNCONDITIONAL=1` to enforce a closed proof surface.
+if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
+  expected_axioms=0
+else
+  # One external theorem is intentionally left as an axiom:
+  # `ThirdPartyFacts.ppoly_circuit_locality` (P/poly -> locality bridge).
+  expected_axioms=1
+fi
 actual_axioms=$(rg "^[[:space:]]*axiom " -g"*.lean" pnp3 | wc -l | tr -d ' ')
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."
@@ -17,3 +23,14 @@ if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   exit 1
 fi
 echo "Axiom inventory OK (${actual_axioms} axioms)."
+
+if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
+  echo "Checking unconditional witness surface..."
+  if rg -n "ppoly_circuit_locality|FamilyIsLocalCircuit|hF_all" \
+      pnp3/Magnification pnp3/LowerBounds/AntiChecker_Partial.lean >/tmp/pnp3_unconditional_gaps.txt; then
+    echo "Unconditional gate failed: remaining external witness/axiom surface detected:"
+    cat /tmp/pnp3_unconditional_gaps.txt
+    exit 1
+  fi
+  echo "Unconditional witness surface OK."
+fi

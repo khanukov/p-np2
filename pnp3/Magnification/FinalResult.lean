@@ -1,7 +1,6 @@
 import Magnification.Bridge_to_Magnification_Partial
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
-import ThirdPartyFacts.Hirahara2022
 
 /-!
   # pnp3/Magnification/FinalResult.lean
@@ -31,8 +30,6 @@ import ThirdPartyFacts.Hirahara2022
   * стандартные аксиомы Lean (propext, Classical.choice, Quot.sound).
   Аксиомы `exists_hard_function_with_constraints` и `sorryAx` УДАЛЕНЫ —
   Shannon counting теперь доказан формально (Counting.ShannonCounting).
-  Аксиома `PartialMCSP_is_NP_Hard` НЕ используется в `P_ne_NP_final`
-  (proof uses NP membership, not NP-hardness).
 -/
 
 namespace Pnp3
@@ -65,24 +62,21 @@ open ComplexityInterfaces
   мгновенно превратится в полноценное разделение `P` и `NP`.
 -/
 /--
-  В финальном файле явно фиксируем внешнюю аксиому NP-трудности Partial MCSP.
-  Это обновляет «выходной слой» проекта до новой частичной версии задачи и
-  даёт явную точку ссылки для дальнейшей интеграции в магнификационный
-  конвейер.
--/
-theorem partial_mcsp_np_hard_witness :
-    ∃ p : GapPartialMCSPParams,
-      Complexity.Is_NP_Hard (gapPartialMCSP_Language p) :=
-  ThirdPartyFacts.PartialMCSP_is_NP_Hard
-
-/--
   Финальный вывод для Partial MCSP: используем формульный мост для
   фиксированного набора partial‑параметров.
 -/
 theorem P_ne_NP_final : P_ne_NP := by
   have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
   exact
+    P_ne_NP_from_partial_formulas_default
+      (p := canonicalPartialParams) (δ := (1 : Rat)) hδ
+
+theorem P_ne_NP_final_with_provider
+  (hProvider : StructuredLocalityProviderPartial) : P_ne_NP := by
+  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
+  exact
     P_ne_NP_from_partial_formulas
+      (hProvider := hProvider)
       (p := canonicalPartialParams) (δ := (1 : Rat)) hδ
 
 end Magnification

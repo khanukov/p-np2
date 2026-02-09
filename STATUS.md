@@ -17,7 +17,7 @@ Key entry points:
 ## 🔒 External inputs (current)
 
 **Active axiom**:
-- `PartialMCSP_is_NP_Hard` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+- `ppoly_circuit_locality` in `pnp3/ThirdPartyFacts/PpolyFormula.lean`
 
 **Witness‑backed theorems** (external witnesses required, no axioms):
 - `partial_shrinkage_for_AC0`

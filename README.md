@@ -16,7 +16,7 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are imported as external facts or require explicit witnesses. This section lists the critical dependencies so the documentation matches the actual proof chain.
 
 ### External axioms / imported facts
-* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). This is the stated NP-hardness of Partial MCSP used as an external theorem in the final result.
+* `ppoly_circuit_locality` (imported from `pnp3/ThirdPartyFacts/PpolyFormula.lean`). This is the stated NP-hardness of Partial MCSP used as an external theorem in the final result.
 * `P_subset_Ppoly_proof` (imported from `pnp3/ThirdPartyFacts/PsubsetPpoly.lean`). This supplies the standard inclusion `P ⊆ P/poly` as an external proof object.
 
 ### External witnesses (required hypotheses)

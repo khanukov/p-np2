@@ -75,18 +75,19 @@ lean_lib PnP3 where
     Glob.one `Magnification.LocalityInterfaces_Partial,
     Glob.one `Magnification.Facts_Magnification_Partial,
     Glob.one `Magnification.PipelineStatements_Partial,
+    Glob.one `Magnification.LocalityProvider_Partial,
     Glob.one `Magnification.LocalityLift_Partial,
     Glob.one `Magnification.Bridge_to_Magnification_Partial,
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
-    Glob.one `ThirdPartyFacts.Hirahara2022,
     Glob.one `ThirdPartyFacts.PartialLocalityLift,
     Glob.one `ThirdPartyFacts.PpolyFormula,
     Glob.one `ThirdPartyFacts.PsubsetPpoly,
     Glob.one `ThirdPartyFacts.LeafBudget,
     Glob.one `Tests.AxiomsAudit,
     Glob.one `Tests.SmokeTests,
+    Glob.one `Tests.StructuredLocalityDemo,
     Glob.one `Tests.UnitTests
   ]
 

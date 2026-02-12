@@ -65,6 +65,7 @@ lean_lib PnP3 where
     Glob.one `ThirdPartyFacts.LeafBudget,
     Glob.one `Tests.AxiomsAudit,
     Glob.one `Tests.SmokeTests,
+    Glob.one `Tests.AsymptoticRegression,
     Glob.one `Tests.UnitTests
   ]
 

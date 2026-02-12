@@ -89,6 +89,27 @@ structure GapPartialMCSPParams where
   n_large : 8 ≤ n
   deriving Repr
 
+/--
+  Асимптотический профиль параметров Partial-MCSP.
+
+  В отличие от `GapPartialMCSPParams` (фиксированная длина), профиль задаёт
+  пороги как функции от числа переменных `m`. Это позволяет определить один
+  язык на **всех** длинах вида `2 * 2^m`.
+-/
+structure GapPartialMCSPProfile where
+  sYES : Nat → Nat
+  sNO : Nat → Nat
+  gap_ok : ∀ m, sYES m + 1 ≤ sNO m
+
+/-- Специализация профиля в обычные параметры на фиксированном `m ≥ 8`. -/
+@[simp] def GapPartialMCSPProfile.paramsAt
+    (prof : GapPartialMCSPProfile) (m : Nat) (hm : 8 ≤ m) : GapPartialMCSPParams where
+  n := m
+  sYES := prof.sYES m
+  sNO := prof.sNO m
+  gap_ok := prof.gap_ok m
+  n_large := hm
+
 /-- Длина входа partial-MCSP: `2 * 2^n`. -/
 def partialInputLen (p : GapPartialMCSPParams) : Nat := Partial.inputLen p.n
 
@@ -304,6 +325,48 @@ noncomputable def gapPartialMCSP_Language (p : GapPartialMCSPParams) : Language 
     · exact false
   · intro _
     exact false
+
+/--
+  Длина `N` поддерживается асимптотическим языком Partial-MCSP,
+  если `N = 2 * 2^m` для некоторого `m`.
+
+  Мы используем чисто логическое (`Prop`) описание формы длины; это удобно
+  в текущем слое, где язык и так определён как `noncomputable`.
+-/
+def isPartialInputLength (N : Nat) : Prop :=
+  ∃ m : Nat, N = Partial.inputLen m
+
+/--
+  Асимптотическая версия языка gapPartialMCSP.
+
+  Поведение:
+  * если длина входа не имеет вида `2 * 2^m`, возвращаем `false`;
+  * если имеет, выбираем соответствующие параметры профиля на этом `m`
+    и проверяем YES-условие на декодированной частичной таблице.
+
+  Это устраняет «фиксированную длину» из финального слоя: язык становится
+  бесконечным (редким по длинам, но корректно асимптотическим).
+-/
+noncomputable def gapPartialMCSP_Language_profile
+    (prof : GapPartialMCSPProfile) : Language := by
+  classical
+  intro N x
+  by_cases hLen : isPartialInputLength N
+  · let m : Nat := Classical.choose hLen
+    have hlenEq : N = Partial.inputLen m := Classical.choose_spec hLen
+    -- Для малых `m` язык по определению возвращает `false` (асимптотическая зона).
+    by_cases hmLarge : 8 ≤ m
+    · let p : GapPartialMCSPParams := prof.paramsAt m hmLarge
+      have hcast : N = partialInputLen p := by
+        simpa [partialInputLen, p, GapPartialMCSPProfile.paramsAt] using hlenEq
+      let encoded : Core.BitVec (partialInputLen p) := by
+        simpa [hcast] using x
+      let T : PartialTruthTable p.n := decodePartial encoded
+      by_cases hYes : PartialMCSP_YES p T
+      · exact true
+      · exact false
+    · exact false
+  · exact false
 
 /-!
   ### Связь языка и promise-условий

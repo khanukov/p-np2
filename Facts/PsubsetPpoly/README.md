@@ -21,12 +21,11 @@ baggage.
 
 ## Using the fact in other projects
 
-Importing `Proof.Complexity.PsubsetPpoly` gives direct access to the theorem
+Importing `Proof.Complexity.Interfaces` gives direct access to the theorem
 `complexity_P_subset_Ppoly`.  All of its dependencies live inside this package,
 so downstream developments can rely on the result without pulling in unrelated
 infrastructure.  For convenience the module `FactPsubsetPpoly` re-exports both
-the constructive witness `Complexity.inPpoly_of_polyBound` and the final bridge
-theorem for one-line imports.
+the core class interface and the final bridge theorem for one-line imports.
 
 ## Building the package locally
 

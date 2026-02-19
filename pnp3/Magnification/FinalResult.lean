@@ -1,7 +1,6 @@
 import Magnification.Bridge_to_Magnification_Partial
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
-import ThirdPartyFacts.Hirahara2022
 import ThirdPartyFacts.LocalizedWitness_Partial
 
 /-!
@@ -43,14 +42,6 @@ structure MagnificationAssumptions (prof : GapPartialMCSPProfile) : Type where
   hm_large : 8 ≤ m
 
 /--
-  Явный witness внешней NP-hardness аксиомы в асимптотическом типе.
--/
-theorem partial_mcsp_profile_np_hard_witness :
-    ∃ prof : GapPartialMCSPProfile,
-      Complexity.Is_NP_Hard_rpoly (gapPartialMCSP_Language_profile prof) :=
-  ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly
-
-/--
   Главный асимптотический финальный результат:
 
   если задан профиль `prof` и выполнены `MagnificationAssumptions prof`,
@@ -67,15 +58,6 @@ theorem P_ne_NP_final_asymptotic
   exact
     P_ne_NP_from_partial_formulas
       (p := prof.paramsAt m hm_large) (δ := δ) hδ hLocalized
-
-/--
-  Legacy witness прежней fixed-length NP-hardness аксиомы.
-  Оставлен для обратной совместимости с существующими проверками.
--/
-theorem partial_mcsp_np_hard_witness :
-    ∃ p : GapPartialMCSPParams,
-      Complexity.Is_NP_Hard (gapPartialMCSP_Language p) :=
-  ThirdPartyFacts.PartialMCSP_is_NP_Hard
 
 /--
   Legacy-совместимая финальная теорема (фиксированный `n=8`) сохранена,

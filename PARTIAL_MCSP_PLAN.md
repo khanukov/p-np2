@@ -181,26 +181,17 @@ theorem restriction_preserves_type
 
 ---
 
-## 4) NP-трудность Partial MCSP (аксиомы Hirahara 2022)
 
 ### 4.1. Смысл
-Нужны внешние аксиомы: профильная NP-hardness и NP-hardness Partial MCSP под
-рандомизированными редукциями.
+Этот шаг снят с активного proof path.
 
 ### 4.2. Новый файл
-`pnp3/ThirdPartyFacts/Hirahara2022.lean`
-```lean
-axiom PartialMCSP_is_NP_Hard :
-  ∃ (p : GapPartialMCSPParams), Is_NP_Hard (gapPartialMCSP_Language p)
-```
-
-И также:
-```lean
-axiom PartialMCSP_profile_is_NP_Hard_rpoly : ...
-```
+Ранее здесь планировалась интеграция внешних NP-hardness аксиом, но в текущем
+активном дереве эти ссылки удалены как неиспользуемые в конусе `P_ne_NP_final`.
 
 ### 4.3. Использование
-В `Magnification/FinalResult.lean` заменить старую гипотезу на новую.
+Текущий внешний gap финального конуса централизован в одном месте:
+`ThirdPartyFacts.localizedFamilyWitness_partial`.
 
 ---
 
@@ -292,7 +283,6 @@ axiom PartialMCSP_profile_is_NP_Hard_rpoly : ...
 21. Есть ли набор команд/скриптов, которыми обычно проверяют корректность
     модификаций в `pnp3` (например, `lake build` конкретного модуля)?
 22. Встроена ли CI-проверка на отсутствие неиспользуемых аксиом?
-23. Нужно ли обновить `AXIOMS_FINAL_LIST.md` после добавления Hirahara 2022?
 
 ---
 
@@ -303,8 +293,6 @@ axiom PartialMCSP_profile_is_NP_Hard_rpoly : ...
 - [ ] Реализовать `gapPartialMCSP_Language` на основе `decodePartial`.
 - [ ] Доказать лемму `restriction_preserves_type` для Partial MCSP (без аксиом).
 - [ ] Добавить `pnp3/LowerBounds/AntiChecker_Partial.lean` и `SmallAC0Solver_Partial`.
-- [ ] Внести аксиомы `PartialMCSP_profile_is_NP_Hard_rpoly` и
-  `PartialMCSP_is_NP_Hard` (Hirahara 2022).
 - [ ] Переподключить финальный вывод `P ≠ NP` к новым аксиомам.
 - [ ] Обновить список аксиом в `AXIOMS_FINAL_LIST.md` и документы аудита.
 

@@ -13,12 +13,9 @@
 
 ### Явные аксиомы (`pnp3/`)
 
-1. `PartialMCSP_profile_is_NP_Hard_rpoly`
-2. `PartialMCSP_is_NP_Hard`
-3. `localizedFamilyWitness_partial`
+1. `localizedFamilyWitness_partial`
 
 Файлы:
-- `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 - `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
 
 ### Witness-backed теоремы (не аксиомы)
@@ -44,8 +41,7 @@
 ## Что ещё мешает безусловному результату
 
 1. Закрыть `localizedFamilyWitness_partial` конструктивным доказательством.
-2. Закрыть NP-hardness аксиомы Partial MCSP из `Hirahara2022.lean`.
-3. Довести witness-путь shrinkage (Part A) до полностью внутреннего
+2. Довести witness-путь shrinkage (Part A) до полностью внутреннего
    конструктивного провайдера.
 
 ## Проверка воспроизводимости

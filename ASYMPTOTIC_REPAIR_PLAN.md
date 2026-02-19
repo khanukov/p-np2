@@ -51,9 +51,10 @@ These tasks are engineering/formalization tasks and can be started immediately.
 - `pnp3/Complexity/Reductions.lean` (or new `ReductionsPoly.lean`)
 
 **Implementation:**
-- Keep current logical many-one definition for legacy use.
-- Add separate `PolyTimeManyOneReducibleLanguage` and derived `Is_NP_Hard_poly`.
-- Do not rewrite all old lemmas at once; add adapter lemmas where possible.
+- Keep only complexity-aware reductions in active code:
+  `PolyTimeManyOneReducibleLanguage` and `RandPolyTimeManyOneReducibleLanguage`.
+- Keep NP-hardness interfaces `Is_NP_Hard_poly` and `Is_NP_Hard_rpoly`.
+- Remove legacy purely-logical many-one layer from active modules.
 
 **Why this is safe now:**
 - Backwards-compatible layering.
@@ -120,7 +121,7 @@ These are blocking choices where multiple mathematically valid directions exist.
 - Decision: include randomized reduction type now (`Is_NP_Hard_rpoly`) or keep deterministic shell with explicit assumption bridge.
 
 **Why needed:**
-- Hirahara-style statements are randomized-polytime many-one; encoding them as deterministic without annotation is semantically misleading.
+- Randomized-polytime many-one statements should not be encoded as deterministic without explicit annotation.
 
 ### 2.3 Policy for external results: axiom vs imported theorem object
 
@@ -212,4 +213,3 @@ A PR can be considered successful when:
 2. NP-hardness type in final path is complexity-aware (polytime or randomized-polytime, explicitly named).
 3. Stage 4 shrinkage theorem cannot be proved without `hgood` and outputs explicit useful depth bound.
 4. Regression tests cover vacuity failures.
-

@@ -17,12 +17,9 @@ what is still external.
 
 Active explicit axioms in `pnp3/`:
 
-1. `ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly`
-2. `ThirdPartyFacts.PartialMCSP_is_NP_Hard`
-3. `ThirdPartyFacts.localizedFamilyWitness_partial`
+1. `ThirdPartyFacts.localizedFamilyWitness_partial`
 
 Locations:
-- `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 - `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
 
 ## Final-theorem dependency profile (audited)

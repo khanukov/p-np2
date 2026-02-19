@@ -39,7 +39,7 @@ noncomputable def generalCircuitSolver_of_Ppoly_partial
     SmallGeneralCircuitSolver_Partial p := by
   classical
   let w : Facts.PsubsetPpoly.Complexity.InPpoly (gapPartialMCSP_Language p) :=
-    Classical.choose h
+    Classical.choice h
   refine
     { params :=
         { params :=

@@ -17,9 +17,11 @@ Key entry points:
 ## 🔒 External inputs (current)
 
 **Active axioms**:
-- `PartialMCSP_profile_is_NP_Hard_rpoly` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
-- `PartialMCSP_is_NP_Hard` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 - `localizedFamilyWitness_partial` in `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
+
+**Axioms on the current `P_ne_NP_final` cone (from `pnp3/Tests/AxiomsAudit.lean`)**:
+- project-specific: `localizedFamilyWitness_partial`
+- base Lean axioms: `propext`, `Classical.choice`, `Quot.sound`
 
 **Witness‑backed theorems** (external witnesses required, no axioms):
 - `partial_shrinkage_for_AC0`

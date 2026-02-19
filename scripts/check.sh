@@ -38,12 +38,9 @@ fi
 echo "No sorry/admit placeholders in pnp3."
 
 echo "Checking active axiom inventory..."
-# Two external Hirahara (2022) results are intentionally imported as axioms:
-# `ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly`
-# `ThirdPartyFacts.PartialMCSP_is_NP_Hard`
-# Plus one explicit localized-witness scaffold for the partial general→local bridge:
+# Explicit localized-witness scaffold for the partial general→local bridge:
 # `ThirdPartyFacts.localizedFamilyWitness_partial`
-expected_axioms=3
+expected_axioms=1
 actual_axioms=$(search_regex "^[[:space:]]*axiom " pnp3 | wc -l | tr -d ' ')
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."
@@ -95,8 +92,6 @@ if [[ ! -f "${gap_doc}" ]]; then
 fi
 
 expected_gap_axioms=(
-  "ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly"
-  "ThirdPartyFacts.PartialMCSP_is_NP_Hard"
   "ThirdPartyFacts.localizedFamilyWitness_partial"
 )
 for ax in "${expected_gap_axioms[@]}"; do

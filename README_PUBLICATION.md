@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Status**: ✅ Complete Proof Architecture (2026-02-19 audit)
-**Axioms**: 3 explicit external axioms in `pnp3/` (2 NP-hardness + 1 localized witness scaffold), plus external witnesses for switching/shrinkage inputs; all other steps are Lean-proved theorems
+**Axioms**: 1 explicit external axiom in `pnp3/` (`localizedFamilyWitness_partial`), plus external witnesses for switching/shrinkage inputs
 **Lines of Code**: ~25,000 lines of Lean 4 (`pnp3/`)
 **Verification**: Fully type-checked, builds successfully
 
@@ -83,7 +83,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 External Input Inventory
 
-**Total Active Axioms**: 3
+**Total Active Axioms**: 1
 
 ### External Theorem Inputs (non-axiom)
 
@@ -106,11 +106,6 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - D.3: `CJW_sparse_trigger` ✅ **PROVEN in Lean** (sparse-language trigger)
 - Specialization `OPS_trigger_formulas` remains proved constructively as a corollary of D.1
 
-**Partial MCSP NP-hardness (axioms)**
-- `PartialMCSP_profile_is_NP_Hard_rpoly` — external axiom in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
-- `PartialMCSP_is_NP_Hard` — external axiom in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
-  (Hirahara, FOCS 2022).
-
 **Localized witness scaffold (axiom)**
 - `localizedFamilyWitness_partial` — external axiom in
   `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
@@ -120,12 +115,13 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 - `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
   remaining interface axioms. The pipeline derives `NP_not_subset_Ppoly` and `P_ne_NP` as theorems.
-  The active non-interface axioms are the two Hirahara entries in
-  `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
+- `Ppoly` interface in `Facts/PsubsetPpoly` is now non-trivial: witness `InPpoly`
+  must include an explicit polynomial bound and a polynomial-time evaluator for
+  the family predicate.
 
 **Minimal Set for `P_ne_NP_final`**:
-- 3 explicit axioms listed above;
-- external witnesses for A.1/A.2 shrinkage inputs.
+- project-specific axiom: `localizedFamilyWitness_partial`;
+- Lean base axioms: `propext`, `Classical.choice`, `Quot.sound`.
 
 **Complete Documentation**: See [`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md) for full details.
 

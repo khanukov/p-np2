@@ -41,17 +41,9 @@ So the only project-specific external gap on the final theorem cone is:
 - `ThirdPartyFacts.localizedFamilyWitness_partial`
   (`pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`)
 
-## External axioms present in `pnp3/` but outside current final-theorem cone
+## External axioms outside current final-theorem cone
 
-- `ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly`
-- `ThirdPartyFacts.PartialMCSP_is_NP_Hard`
-
-Location:
-- `pnp3/ThirdPartyFacts/Hirahara2022.lean`
-
-These remain active project axioms and are still tracked in the global axiom
-inventory, but they do not appear in the current dependency cone of
-`P_ne_NP_final` according to `#print axioms`.
+None in the active `pnp3/` tree.
 
 ## Witness-backed (non-axiom) external inputs
 

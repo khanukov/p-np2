@@ -43,7 +43,7 @@ abbrev Language := Complexity.Language
 abbrev Bitstring := Complexity.Bitstring
 
 /-- Класс `P` из лёгкой формализации внешнего пакета. -/
-abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
+abbrev P : Language → Prop := Facts.PsubsetPpoly.P
 
 /-- Класс `P/poly` из того же пакета. -/
 abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
@@ -141,7 +141,7 @@ def NP_not_subset_Ppoly : Prop := ∃ L, NP L ∧ ¬ Ppoly L
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
 def P_subset_Ppoly : Prop :=
-  ∀ L, Facts.PsubsetPpoly.P.{0} L → Facts.PsubsetPpoly.Ppoly L
+  ∀ L, Facts.PsubsetPpoly.P L → Facts.PsubsetPpoly.Ppoly L
 
 /--
   Доказательство включения `P ⊆ P/poly`, предоставленное внешним модулем.
@@ -153,7 +153,7 @@ def P_subset_Ppoly : Prop :=
   exact (ThirdPartyFacts.P_subset_Ppoly_proof (L := L) hL)
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
-def P_ne_NP : Prop := Facts.PsubsetPpoly.P.{0} ≠ NP
+def P_ne_NP : Prop := Facts.PsubsetPpoly.P ≠ NP
 
 /-!
 ### Логический вывод `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`
@@ -175,9 +175,9 @@ theorem P_ne_NP_of_nonuniform_separation_concrete
   classical
   -- Предположим противное и выведем противоречие с `hNP`.
   refine fun hEq => ?_
-  have hNP_subset_P : ∀ {L : Language}, NP L → Facts.PsubsetPpoly.P.{0} L := by
+  have hNP_subset_P : ∀ {L : Language}, NP L → Facts.PsubsetPpoly.P L := by
     intro L hL
-    have hEq_pointwise : Facts.PsubsetPpoly.P.{0} L = NP L := congrArg (fun f => f L) hEq
+    have hEq_pointwise : Facts.PsubsetPpoly.P L = NP L := congrArg (fun f => f L) hEq
     exact hEq_pointwise.symm ▸ hL
   have hNP_subset_Ppoly : ∀ {L : Language}, NP L → Ppoly L := by
     intro L hL

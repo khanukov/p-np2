@@ -17,8 +17,6 @@ For publication-facing audit guarantees, see [PUBLICATION_GAPS_AND_GUARANTEES.md
 The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are imported as external facts or require explicit witnesses. This section lists the critical dependencies so the documentation matches the actual proof chain.
 
 ### External axioms / imported facts
-* `PartialMCSP_profile_is_NP_Hard_rpoly` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`).
-* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). Together these are active NP-hardness inputs tracked in the project inventory.
 * `localizedFamilyWitness_partial` (imported from `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`), an explicit scaffold for the remaining partial general→local witness gap.
 * `P_subset_Ppoly_proof` (imported from `pnp3/ThirdPartyFacts/PsubsetPpoly.lean`). This supplies the standard inclusion `P ⊆ P/poly` as an external proof object.
 

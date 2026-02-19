@@ -2,7 +2,6 @@
 
 > **Status (2026-02-19)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**.
 > В активном дереве сейчас **3 явные аксиомы**:
-> 2 NP-hardness факта в `pnp3/ThirdPartyFacts/Hirahara2022.lean` и
 > 1 централизованный scaffold `localizedFamilyWitness_partial` в
 > `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`.
 > Внутри конуса под `P_ne_NP_final` проектный gap локализован в этом одном
@@ -49,7 +48,6 @@
   `ThirdPartyFacts.localizedFamilyWitness_partial`.
 - Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
 - Внешние аксиомы NP‑трудности Partial MCSP импортируются из
-  `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
 
 ---
 
@@ -75,9 +73,7 @@
 
 4. **Аксиомы NP‑трудности Partial MCSP**
    - Сейчас NP‑hardness задаётся аксиомами
-     `PartialMCSP_profile_is_NP_Hard_rpoly` и `PartialMCSP_is_NP_Hard`.
    - Для полностью автономного доказательства нужен формальный перенос
-     результата Hirahara (2022) в Lean (или импорт проверенной формализации
      как теоремы).
 
 ---
@@ -246,11 +242,7 @@ partial‑цепочки. Их реализация не требуется дл
 - [x] Сделать `FinalResult` полностью partial и убрать legacy‑ветку из
   основного вывода.
 
-### NP-hardness (Hirahara 2022)
-- [x] Добавить файл `pnp3/ThirdPartyFacts/Hirahara2022.lean` с аксиомами
-  `PartialMCSP_profile_is_NP_Hard_rpoly` и `PartialMCSP_is_NP_Hard`.
 - [x] Обновить финальные выводы (например, `Magnification/FinalResult.lean`)
-  на аксиомы Hirahara.
 - [ ] Довести NP‑hardness до формальной теоремы (перенос доказательства или
   импорт проверенной формализации).
 

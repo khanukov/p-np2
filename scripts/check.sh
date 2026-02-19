@@ -2,11 +2,36 @@
 # Full project compilation, smoke test, and axiom inventory check.
 set -euo pipefail
 
+have_rg=0
+if command -v rg >/dev/null 2>&1; then
+  have_rg=1
+fi
+
+search_regex() {
+  local pattern="$1"
+  shift
+  if [[ "${have_rg}" -eq 1 ]]; then
+    rg "$pattern" "$@"
+  else
+    grep -R -n -E --include='*.lean' "$pattern" "$@"
+  fi
+}
+
+search_fixed_quiet() {
+  local needle="$1"
+  local file="$2"
+  if [[ "${have_rg}" -eq 1 ]]; then
+    rg -Fq "$needle" "$file"
+  else
+    grep -Fq "$needle" "$file"
+  fi
+}
+
 lake build
 lake env lean --run scripts/smoke.lean
 
 echo "Checking that pnp3 contains no sorry/admit placeholders..."
-if rg -n --pcre2 "^\s*(sorry|admit)\b|:=\s*by\s*(sorry|admit)\b" -g"*.lean" pnp3; then
+if search_regex "^[[:space:]]*(sorry|admit)\\>|:=[[:space:]]*by[[:space:]]*(sorry|admit)\\>" pnp3; then
   echo "Found forbidden placeholders (sorry/admit) in pnp3/*.lean."
   exit 1
 fi
@@ -19,11 +44,11 @@ echo "Checking active axiom inventory..."
 # Plus one explicit localized-witness scaffold for the partial general→local bridge:
 # `ThirdPartyFacts.localizedFamilyWitness_partial`
 expected_axioms=3
-actual_axioms=$(rg "^[[:space:]]*axiom " -g"*.lean" pnp3 | wc -l | tr -d ' ')
+actual_axioms=$(search_regex "^[[:space:]]*axiom " pnp3 | wc -l | tr -d ' ')
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."
   echo "Listing active axioms:"
-  rg "^[[:space:]]*axiom " -g"*.lean" pnp3
+  search_regex "^[[:space:]]*axiom " pnp3
   exit 1
 fi
 echo "Axiom inventory OK (${actual_axioms} axioms)."
@@ -75,15 +100,15 @@ expected_gap_axioms=(
   "ThirdPartyFacts.localizedFamilyWitness_partial"
 )
 for ax in "${expected_gap_axioms[@]}"; do
-  if ! rg -Fq "${ax}" "${gap_doc}"; then
+  if ! search_fixed_quiet "${ax}" "${gap_doc}"; then
     echo "Publication gap doc is missing axiom name: ${ax}"
     exit 1
   fi
 done
 
-actual_axiom_names="$(rg "^[[:space:]]*axiom " -g"*.lean" pnp3 | sed -E 's/.*axiom[[:space:]]+([A-Za-z0-9_]+).*/\1/' | sort -u)"
+actual_axiom_names="$(search_regex "^[[:space:]]*axiom " pnp3 | sed -E 's/.*axiom[[:space:]]+([A-Za-z0-9_]+).*/\1/' | sort -u)"
 for name in ${actual_axiom_names}; do
-  if ! rg -Fq "${name}" "${gap_doc}"; then
+  if ! search_fixed_quiet "${name}" "${gap_doc}"; then
     echo "Publication gap doc does not mention active axiom: ${name}"
     exit 1
   fi

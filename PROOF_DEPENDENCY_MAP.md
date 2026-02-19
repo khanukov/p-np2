@@ -1,125 +1,69 @@
-# Полная карта зависимостей доказательства P≠NP
-## От аксиом к финальной теореме
+# Proof Dependency Map (Active `pnp3/` Tree)
 
 Last updated: 2026-02-19
 
----
-
-## 🎯 ФИНАЛЬНАЯ ЦЕЛЬ
+## Final theorem path (current)
 
 ```lean
-theorem P_ne_NP_final : P_ne_NP := ...
-```
-**Location**: `pnp3/Magnification/FinalResult.lean:57`
-
----
-
-## 📊 ПОЛНАЯ ЦЕПОЧКА ЗАВИСИМОСТЕЙ
-
-### Уровень 5: ФИНАЛЬНАЯ ТЕОРЕМА
-```
 P_ne_NP_final
-  └─→ P_ne_NP_from_pipeline_kit_formulas
+  -> P_ne_NP_final_asymptotic
+  -> P_ne_NP_from_partial_formulas
+  -> NP_not_subset_Ppoly_from_partial_formulas
+  -> OPS_trigger_formulas_partial
+  -> OPS_trigger_general_contra_partial
+  -> LB_GeneralFromLocal_partial
+  -> LB_LocalCircuits_core_partial
+  -> antiChecker_exists_testset_local_partial
+  -> no_bounded_atlas_on_testset_of_large_family
 ```
 
-### Уровень 4: МОСТ К P≠NP
+`P_ne_NP_from_partial_formulas` then combines:
+- `NP_not_subset_Ppoly_from_partial_formulas`
+- `P_ne_NP_of_nonuniform_separation`
+- `P_subset_Ppoly_proof`
+
+## External gaps actually on the final theorem cone
+
+From `pnp3/Tests/AxiomsAudit.lean`:
+- `P_ne_NP_final` depends on
+  `[propext, Classical.choice, Quot.sound, ThirdPartyFacts.localizedFamilyWitness_partial]`.
+- `P_ne_NP_final_asymptotic` depends on the same list.
+- Intermediate nodes (`P_ne_NP_from_partial_formulas`,
+  `NP_not_subset_Ppoly_from_partial_formulas`,
+  `OPS_trigger_formulas_partial`,
+  `OPS_trigger_general_contra_partial`,
+  `LB_GeneralFromLocal_partial`,
+  `LB_LocalCircuits_core_partial`,
+  `LB_Formulas_core_partial`) depend only on
+  `[propext, Classical.choice, Quot.sound]`.
+
+So the only project-specific external gap on the final theorem cone is:
+- `ThirdPartyFacts.localizedFamilyWitness_partial`
+  (`pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`)
+
+## External axioms present in `pnp3/` but outside current final-theorem cone
+
+- `ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly`
+- `ThirdPartyFacts.PartialMCSP_is_NP_Hard`
+
+Location:
+- `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+
+These remain active project axioms and are still tracked in the global axiom
+inventory, but they do not appear in the current dependency cone of
+`P_ne_NP_final` according to `#print axioms`.
+
+## Witness-backed (non-axiom) external inputs
+
+- `ThirdPartyFacts.partial_shrinkage_for_AC0`
+- `ThirdPartyFacts.shrinkage_for_localCircuit`
+
+Both are theorems requiring external witness objects (`FamilyIsAC0` /
+`FamilyIsLocalCircuit`) and are tracked separately from explicit axioms.
+
+## Reproducible audit commands
+
+```bash
+lake env lean pnp3/Tests/AxiomsAudit.lean
+bash scripts/check.sh
 ```
-P_ne_NP_from_pipeline_kit_formulas
-  ├─→ bridge_from_pipeline_kit_formulas → NP_not_subset_Ppoly
-  ├─→ P_ne_NP_of_nonuniform_separation (theorem)
-  └─→ P_subset_Ppoly_proof (theorem)
-```
-
-### Уровень 3: МАГНИФИКАЦИЯ (Part D)
-```
-bridge_from_pipeline_kit_formulas
-  ├─→ kit.formula_hypothesis → FormulaLowerBoundHypothesis
-  ├─→ OPS_trigger_formulas (proved; specialization of OPS_trigger_general)
-  └─→ NP_not_subset_Ppoly_of_contra (logic wrapper)
-
-bridge_from_sparse_statement / bridge_from_sparse_kit
-  ├─→ SparseLowerBoundHypothesis (разреженные языки)
-  └─→ CJW_sparse_trigger (proved; явный малый sparse solver)
-
-bridge_from_LB_Local / bridge_from_pipeline_kit_local
-  ├─→ LocalLowerBoundHypothesis
-  └─→ Locality_trigger (proved via locality_lift)
-```
-
-### Уровень 2: PIPELINE KIT (Интеграция Parts A+B+C)
-```
-PipelineBridgeKit = pipelineBridgeKit
-  ├─→ ac0_statement_from_pipeline → AC0Statement
-  ├─→ local_statement_from_pipeline → LocalStatement
-  ├─→ general_statement_from_locality → GeneralCircuitStatement
-  ├─→ formula_hypothesis_from_pipeline → FormulaLowerBoundHypothesis
-  ├─→ local_hypothesis_from_pipeline → LocalLowerBoundHypothesis
-  ├─→ general_hypothesis_from_pipeline
-  └─→ general_hypothesis_from_locality
-```
-
-### Уровень 1: LOWER BOUNDS (Part C)
-```
-formula_hypothesis_from_pipeline
-  └─→ LB_Formulas_statement
-      └─→ LB_Formulas_core
-          ├─→ antiChecker_exists_testset (PROVEN, relies on internal `noSmallAC0Solver`)
-          └─→ no_bounded_atlas_on_testset_of_large_family
-              └─→ approxOnTestset_subset_card_le (Part B)
-```
-```
-ac0_statement_from_pipeline
-  └─→ LB_Formulas_core
-      └─→ antiChecker_exists_testset (PROVEN, relies on internal `noSmallAC0Solver`)
-```
-```
-local_statement_from_pipeline
-  └─→ LB_LocalCircuits_core
-      └─→ antiChecker_exists_testset_local (PROVEN, relies on internal `noSmallLocalCircuitSolver`)
-```
-
-### Уровень 0: CORE INFRASTRUCTURE (Parts A+B)
-
-**Part B: Counting/Capacity**
-```
-no_bounded_atlas_on_testset_of_large_family
-  └─→ approxOnTestset_subset_card_le
-      └─→ approxOnTestset_card_le
-          └─→ approxOnTestsetWitness_injective (PROVEN)
-```
-
-**Part A: SAL Core**
-```
-scenarioFromAC0
-  ├─→ ac0PartialWitness
-  │   └─→ partial_shrinkage_for_AC0 [THEOREM A.1 + witness]
-  └─→ PDT → Atlas construction (PROVEN)
-
-locality_lift
-  └─→ shrinkage_for_localCircuit [THEOREM A.2 + witness]
-```
-
----
-
-## 🔴 ВНЕШНИЕ ВХОДЫ (минимальный набор)
-
-Всего: **2** активные аксиомы (в `ThirdPartyFacts/Hirahara2022.lean`) +
-witness-backed теоремы Part A; Parts C/D целиком доказаны.
-
-Аксиомы:
-1. `PartialMCSP_profile_is_NP_Hard_rpoly`
-2. `PartialMCSP_is_NP_Hard`
-
-### Part A — Switching/Shrinkage (witness-backed theorems)
-1. `partial_shrinkage_for_AC0` — Håstad (1986), Servedio–Tan (2019).
-2. `shrinkage_for_localCircuit` — Williams (2014), Chen–Oliveira–Santhanam (2022).
-
-Интерфейсные леммы `P_subset_Ppoly_proof` и `P_ne_NP_of_nonuniform_separation`
-импортированы как теоремы и не считаются аксиомами.
-
----
-
-## 📌 СТАТУС PART D
-
-- Все триггеры (`OPS_trigger_general`, `OPS_trigger_formulas`, `Locality_trigger`, `CJW_sparse_trigger`) доказаны в `pnp3/Magnification/Facts_Magnification.lean`.
-- Мосты (`Bridge_to_Magnification.lean`) используют только доказанные триггеры и witness-backed факты Parts A/C; в блоке D нет незакрытых допущений.

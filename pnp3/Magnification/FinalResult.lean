@@ -2,6 +2,7 @@ import Magnification.Bridge_to_Magnification_Partial
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
 import ThirdPartyFacts.Hirahara2022
+import ThirdPartyFacts.LocalizedWitness_Partial
 
 /-!
   # pnp3/Magnification/FinalResult.lean
@@ -39,11 +40,7 @@ structure MagnificationAssumptions (prof : GapPartialMCSPProfile) : Type where
   /-- Положительный параметр триггера. -/
   δ : Rat
   hδ : (0 : Rat) < δ
-  /-- Локальность для всех малых решателей на фиксированном `m`. -/
   hm_large : 8 ≤ m
-  hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial (prof.paramsAt m hm_large),
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)
 
 /--
   Явный witness внешней NP-hardness аксиомы в асимптотическом типе.
@@ -63,10 +60,13 @@ theorem P_ne_NP_final_asymptotic
     (prof : GapPartialMCSPProfile)
     (hA : MagnificationAssumptions prof) :
     P_ne_NP := by
-  rcases hA with ⟨m, δ, hδ, hm_large, hF_all⟩
+  rcases hA with ⟨m, δ, hδ, hm_large⟩
+  have hLocalized :
+      LowerBounds.LocalizedFamilyWitnessHypothesis_partial (prof.paramsAt m hm_large) :=
+    ThirdPartyFacts.localizedFamilyWitness_partial (prof.paramsAt m hm_large)
   exact
     P_ne_NP_from_partial_formulas
-      (p := prof.paramsAt m hm_large) (δ := δ) hδ hF_all
+      (p := prof.paramsAt m hm_large) (δ := δ) hδ hLocalized
 
 /--
   Legacy witness прежней fixed-length NP-hardness аксиомы.
@@ -103,17 +103,12 @@ lemma canonicalProfile_paramsAt_8 :
   продолжили компилироваться без изменений.
 -/
 theorem P_ne_NP_final
-    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial
-      canonicalPartialParams,
-      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-        (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
+    : P_ne_NP := by
   let hA : MagnificationAssumptions canonicalProfile :=
     { m := 8
       δ := (1 : Rat)
       hδ := zero_lt_one
-      hm_large := by decide
-      hF_all := by
-        simpa [canonicalProfile_paramsAt_8] using hF_all }
+      hm_large := by decide }
   simpa [canonicalProfile_paramsAt_8] using
     (P_ne_NP_final_asymptotic canonicalProfile hA)
 

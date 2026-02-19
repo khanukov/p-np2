@@ -19,6 +19,7 @@ Key entry points:
 **Active axioms**:
 - `PartialMCSP_profile_is_NP_Hard_rpoly` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 - `PartialMCSP_is_NP_Hard` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
+- `localizedFamilyWitness_partial` in `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
 
 **Witness‑backed theorems** (external witnesses required, no axioms):
 - `partial_shrinkage_for_AC0`

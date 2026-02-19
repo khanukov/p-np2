@@ -103,7 +103,7 @@ lemma coveredB_selectorsOfFunction
         exact this.symm
       subst hx
       have : False := by
-        simpa [hfx'] using hy
+        simp [hfx'] at hy
       exact this.elim
     · have hcovB' : coveredB (selectorsOfFunction (f := f)) x = false := by
         cases hval : coveredB (selectorsOfFunction (f := f)) x with
@@ -229,7 +229,7 @@ theorem shrinkage_from_restriction
   -- Переходим к Shrinkage через `PartialCertificate.toShrinkage`.
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
+  · simp [S]
   · simp [S, hℓ, hdepth]
   · simp [S, hε]
 
@@ -312,7 +312,7 @@ theorem shrinkage_depth2_cnf_of_bound
     partialCertificate_depth2_cnf_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
+  · simp [S]
   · simp [S, hℓ, hdepth]
   · simp [S, hε]
 
@@ -347,7 +347,7 @@ theorem shrinkage_depth2_cnf_family_of_bound
     partialCertificate_depth2_cnf_family_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
+  · simp [S]
   · simp [S, hℓ, hdepth]
   · simp [S, hε]
 
@@ -400,7 +400,7 @@ theorem shrinkage_from_restriction_trivial
     partialCertificate_from_restriction_trivial (F := F) (ρ := ρ)
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
-  · simp [S, hℓ]
+  · simp [S]
   · simp [S, hℓ, hdepth]
   · simp [S, hε]
 

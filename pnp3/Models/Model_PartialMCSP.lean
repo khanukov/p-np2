@@ -895,7 +895,7 @@ lemma runConfig_scan_prefix (p : GapPartialMCSPParams)
           rw [hstate0]
           simpa [tm] using step_scan_lt (p := p) (i := ⟨k, hki⟩)
             (buf := prefixBuffer p y k) (b := c0.tape c0.head) hklt
-        simp [Facts.PsubsetPpoly.TM.stepConfig, hstep]
+        simp [hstep]
         simpa [write_self_tape (c := c0)] using htape0
 
 lemma accepts_target_iff_yes_inputPrefix (p : GapPartialMCSPParams)
@@ -910,13 +910,11 @@ lemma accepts_target_iff_yes_inputPrefix (p : GapPartialMCSPParams)
   have hstate0' : c0.state = State.scan ⟨targetLen p, hki⟩ (prefixBuffer p y (targetLen p)) := hstate0
   have hrt :
       (tm p).runTime (targetLen p + certLen (targetLen p)) = targetLen p + certLen (targetLen p) := by
-    simpa [tm] using runTime_target p
+    exact runTime_target p
   have hstep :
       Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) (targetLen p + certLen (targetLen p)) =
         Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0 := by
     simpa [targetTotalLen_eq, c0] using runConfig_succ (p := p) (y := y) (targetLen p)
-  have hnotlt : ¬ ((⟨targetLen p, hki⟩ : Fin (targetLen p + 1)) : Nat) < targetLen p := by
-    simpa using (Nat.lt_irrefl (targetLen p))
   have hstate_final :
       (Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0).state =
         if PartialMCSP_YES p (decodePartial (inputPrefix p y)) then State.accept else State.reject := by
@@ -928,8 +926,8 @@ lemma accepts_target_iff_yes_inputPrefix (p : GapPartialMCSPParams)
       simpa [targetLen] using hbuf
     rw [hbuf]
     by_cases hYes : PartialMCSP_YES p (decodePartial (inputPrefix p y))
-    · simp [tm, step, hnotlt, hYes]
-    · simp [tm, step, hnotlt, hYes]
+    · simp [tm, step, hYes]
+    · simp [tm, step, hYes]
   unfold Facts.PsubsetPpoly.TM.accepts Facts.PsubsetPpoly.TM.run
   rw [hrt, hstep, hstate_final]
   by_cases hYes : PartialMCSP_YES p (decodePartial (inputPrefix p y))
@@ -981,9 +979,9 @@ theorem gapPartialMCSP_in_NP_TM (p : GapPartialMCSPParams) :
           simpa [targetLen] using hn
         have hFalseLang : gapPartialMCSP_Language p n x = false := by
           simp [gapPartialMCSP_Language, hneq]
-        have hContr : false = true := by
-          simpa [hFalseLang] using hLang
-        exact Bool.false_ne_true hContr
+        have hContr : False := by
+          simp [hFalseLang] at hLang
+        exact False.elim hContr
       · intro hExists
         rcases hExists with ⟨w, hAcc⟩
         have hneqTotal :
@@ -1000,9 +998,9 @@ theorem gapPartialMCSP_in_NP_TM (p : GapPartialMCSPParams) :
               (concatBitstring x w) = false :=
           accepts_nontarget_false (p := p) (m := n + certificateLength n 0) hneqTotal (concatBitstring x w)
         exfalso
-        have hContr : false = true := by
-          simpa [hFalse] using hAcc
-        exact Bool.false_ne_true hContr
+        have hContr : False := by
+          simp [hFalse] at hAcc
+        exact False.elim hContr
 
 
 end StrictNP

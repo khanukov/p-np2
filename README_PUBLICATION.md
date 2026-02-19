@@ -6,8 +6,8 @@
 [![mathlib4](https://img.shields.io/badge/mathlib4-v4.22.0--rc2-blue)](https://github.com/leanprover-community/mathlib4)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Status**: ✅ Complete Proof Architecture (2025-10-24)
-**Axioms**: 2 external axioms (Partial MCSP NP-hardness/profile hardness) plus external witnesses for switching/shrinkage inputs; all other steps are Lean-proved theorems
+**Status**: ✅ Complete Proof Architecture (2026-02-19 audit)
+**Axioms**: 3 explicit external axioms in `pnp3/` (2 NP-hardness + 1 localized witness scaffold), plus external witnesses for switching/shrinkage inputs; all other steps are Lean-proved theorems
 **Lines of Code**: ~25,000 lines of Lean 4 (`pnp3/`)
 **Verification**: Fully type-checked, builds successfully
 
@@ -83,7 +83,7 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 
 ## 📝 External Input Inventory
 
-**Total Axioms**: 2 (both in `pnp3/ThirdPartyFacts/Hirahara2022.lean`)
+**Total Active Axioms**: 3
 
 ### External Theorem Inputs (non-axiom)
 
@@ -111,6 +111,11 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
 - `PartialMCSP_is_NP_Hard` — external axiom in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
   (Hirahara, FOCS 2022).
 
+**Localized witness scaffold (axiom)**
+- `localizedFamilyWitness_partial` — external axiom in
+  `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
+  (centralized placeholder for the remaining partial general→local witness gap).
+
 ### Interface Axioms
 
 - `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` — ✅ **PROVEN**; no
@@ -118,7 +123,9 @@ This theorem **compiles and type-checks**, verifying the entire proof architectu
   The active non-interface axioms are the two Hirahara entries in
   `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
 
-**Minimal Set for P_ne_NP_final**: External witnesses for A.1/A.2 shrinkage inputs
+**Minimal Set for `P_ne_NP_final`**:
+- 3 explicit axioms listed above;
+- external witnesses for A.1/A.2 shrinkage inputs.
 
 **Complete Documentation**: See [`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md) for full details.
 
@@ -145,6 +152,7 @@ pnp3/
 
 - **[`STATUS.md`](STATUS.md)** - Current pipeline overview and active inputs
 - **[`AXIOMS_FINAL_LIST.md`](AXIOMS_FINAL_LIST.md)** - Complete axiom inventory with literature references
+- **[`PUBLICATION_GAPS_AND_GUARANTEES.md`](PUBLICATION_GAPS_AND_GUARANTEES.md)** - publication-facing machine-check contract
 - **[`PROOF_DEPENDENCY_MAP.md`](PROOF_DEPENDENCY_MAP.md)** - Full dependency chain
 - **[`PROOF_ANALYSIS.md`](PROOF_ANALYSIS.md)** - Honest assessment and constructiveness analysis
 - **[`AXIOM_FEASIBILITY_ANALYSIS.md`](AXIOM_FEASIBILITY_ANALYSIS.md)** - Analysis of what can be proven

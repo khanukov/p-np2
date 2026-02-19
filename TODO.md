@@ -1,11 +1,12 @@
 # To-Do / План завершения формализации (P≠NP pipeline)
 
-> **Status (2025-12-26)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**,
-> формализован и **не содержит аксиом** внутри цепочки A→B→C→D (кроме двух внешних
-> фактов NP‑трудности Partial MCSP, оформленных как отдельные аксиомы в
-> `pnp3/ThirdPartyFacts/Hirahara2022.lean`).
-> Единственная условность остаётся из-за **внешних свидетельств (witnesses)** в части A
-> (shrinkage/switching), но сама цепочка построена и проверена.
+> **Status (2026-02-19)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**.
+> В активном дереве сейчас **3 явные аксиомы**:
+> 2 NP-hardness факта в `pnp3/ThirdPartyFacts/Hirahara2022.lean` и
+> 1 централизованный scaffold `localizedFamilyWitness_partial` в
+> `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`.
+> Внутри конуса под `P_ne_NP_final` проектный gap локализован в этом одном
+> scaffold-узле; остальная цепочка A→B→C→D формально проверена.
 > Legacy‑ветка GapMCSP перенесена в `archive/`.
 >
 > Этот файл фиксирует **что именно сделано** и какие дополнительные
@@ -44,7 +45,8 @@
 
 **Финальный вывод (P ≠ NP)**
 - В `Magnification/FinalResult.lean` есть `P_ne_NP_final` (partial‑цепочка).
-- Текущая условность: гипотеза `hF_all : ∀ loc, FamilyIsLocalCircuit ...`.
+- Текущая явная условность финального слоя:
+  `ThirdPartyFacts.localizedFamilyWitness_partial`.
 - Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
 - Внешние аксиомы NP‑трудности Partial MCSP импортируются из
   `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
@@ -65,9 +67,11 @@
    - Нужно заменить доказательство на полноценную multi-switching лемму и
      вернуть определение `ac0DepthBound_strong = polylog`.
 
-3. **Финальная гипотеза `hF_all`**
-   - Она исчезнет автоматически, как только будет предоставлен real witness
-     через `Facts.LocalityLift.ShrinkageWitness.Provider`.
+3. **Локализованный scaffold-геп шага D**
+   - Сейчас финальный слой использует явный scaffold
+     `ThirdPartyFacts.localizedFamilyWitness_partial`.
+   - Для безусловности его нужно заменить конструктивным доказательством
+     `LocalizedFamilyWitnessHypothesis_partial`.
 
 4. **Аксиомы NP‑трудности Partial MCSP**
    - Сейчас NP‑hardness задаётся аксиомами
@@ -150,7 +154,7 @@ Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
 3. Построить реальные `AC0CircuitWitness` и `LocalCircuitWitness`
    через `Classical.choose` и `locality_lift`.
 4. Подменить `Facts.LocalityLift.ShrinkageWitness.Provider` на внутренний instance.
-5. Удалить `hF_all` из `P_ne_NP_final` и очистить финальные теоремы.
+5. Удалить `localizedFamilyWitness_partial` из `P_ne_NP_final` и заменить на theorem.
 
 ---
 
@@ -167,7 +171,7 @@ Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
   - Мост `locality_lift` в partial‑цепочке ждёт реальный witness.
 
 - **`pnp3/Magnification/FinalResult.lean`**
-  - Убрать `hF_all` после интеграции witness-провайдера.
+  - Заменить использование `localizedFamilyWitness_partial` на внутренний theorem.
 
 ---
 
@@ -196,7 +200,7 @@ partial‑цепочки. Их реализация не требуется дл
 
 ### Witness‑ы локальности
 - Встроить реальный `Facts.LocalityLift.ShrinkageWitness.Provider` из shrinkage.
-- Убрать гипотезу `hF_all` в `Magnification/FinalResult.lean`.
+- Убрать scaffold `localizedFamilyWitness_partial` в `Magnification/FinalResult.lean`.
 
 ### Контроль соответствия комментариев и кода
 - Проверить, что все комментарии в `AC0/MultiSwitching/*` соответствуют

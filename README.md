@@ -10,6 +10,7 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 **Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage inputs: the theorems `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` both require externally supplied witnesses (`AC0CircuitWitness` and `LocalCircuitWitness`). All anti-checker and magnification bridges are machine-checked theorems.
 
 **Documentation**: Start with [STATUS.md](STATUS.md) for the current pipeline overview, then see [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOMS_FINAL_LIST.md](AXIOMS_FINAL_LIST.md) for external input tracking.
+For publication-facing audit guarantees, see [PUBLICATION_GAPS_AND_GUARANTEES.md](PUBLICATION_GAPS_AND_GUARANTEES.md).
 
 ## Assumptions & External Facts
 
@@ -17,7 +18,8 @@ The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs,
 
 ### External axioms / imported facts
 * `PartialMCSP_profile_is_NP_Hard_rpoly` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`).
-* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). Together these are the active NP-hardness inputs used in the final result chain.
+* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). Together these are active NP-hardness inputs tracked in the project inventory.
+* `localizedFamilyWitness_partial` (imported from `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`), an explicit scaffold for the remaining partial general→local witness gap.
 * `P_subset_Ppoly_proof` (imported from `pnp3/ThirdPartyFacts/PsubsetPpoly.lean`). This supplies the standard inclusion `P ⊆ P/poly` as an external proof object.
 
 ### External witnesses (required hypotheses)

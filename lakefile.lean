@@ -60,10 +60,12 @@ lean_lib PnP3 where
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.Hirahara2022,
+    Glob.one `ThirdPartyFacts.LocalizedWitness_Partial,
     Glob.one `ThirdPartyFacts.PartialLocalityLift,
     Glob.one `ThirdPartyFacts.PsubsetPpoly,
     Glob.one `ThirdPartyFacts.LeafBudget,
     Glob.one `Tests.AxiomsAudit,
+    Glob.one `Tests.CoreConeAxiomsAudit,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.AsymptoticRegression,
     Glob.one `Tests.UnitTests

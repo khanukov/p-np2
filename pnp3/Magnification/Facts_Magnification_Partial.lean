@@ -68,9 +68,7 @@ noncomputable def generalCircuitSolver_of_Ppoly_partial
 
 theorem OPS_trigger_general_contra_partial
   {p : GapPartialMCSPParams} {ε : Rat} (statement : Prop)
-  (hF_all : ∀ loc : SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) :
+  (hLocalized : LowerBounds.LocalizedFamilyWitnessHypothesis_partial p) :
   GeneralLowerBoundHypothesisPartial p ε statement →
     ((∀ L : ComplexityInterfaces.Language,
       ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) := by
@@ -79,13 +77,13 @@ theorem OPS_trigger_general_contra_partial
     hAll _ (Models.gapPartialMCSP_in_NP p)
   have solver : SmallGeneralCircuitSolver_Partial p :=
     generalCircuitSolver_of_Ppoly_partial (p := p) hPpoly
-  exact LowerBounds.LB_GeneralFromLocal_partial (p := p) (solver := solver) hF_all
+  exact
+    LowerBounds.LB_GeneralFromLocal_partial
+      (p := p) (solver := solver) hLocalized
 
 theorem OPS_trigger_formulas_contra_partial
   {p : GapPartialMCSPParams} {δ : Rat}
-  (hF_all : ∀ loc : SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) :
+  (hLocalized : LowerBounds.LocalizedFamilyWitnessHypothesis_partial p) :
   FormulaLowerBoundHypothesisPartial p δ →
     ((∀ L : ComplexityInterfaces.Language,
       ComplexityInterfaces.NP L → ComplexityInterfaces.Ppoly L) → False) := by
@@ -96,16 +94,15 @@ theorem OPS_trigger_formulas_contra_partial
     simpa [FormulaLowerBoundHypothesisPartial, GeneralLowerBoundHypothesisPartial] using hHyp
   exact OPS_trigger_general_contra_partial (p := p) (ε := δ)
     (statement := AC0BoundedStatementPartial p δ)
-    hF_all hGeneral hAll
+    hLocalized hGeneral hAll
 
 theorem OPS_trigger_formulas_partial
   {p : GapPartialMCSPParams} {δ : Rat}
-  (hF_all : ∀ loc : SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) :
+  (hLocalized : LowerBounds.LocalizedFamilyWitnessHypothesis_partial p) :
   FormulaLowerBoundHypothesisPartial p δ → NP_not_subset_Ppoly := by
   intro hHyp
-  have hContra := OPS_trigger_formulas_contra_partial (p := p) (δ := δ) hF_all hHyp
+  have hContra :=
+    OPS_trigger_formulas_contra_partial (p := p) (δ := δ) hLocalized hHyp
   exact ComplexityInterfaces.NP_not_subset_Ppoly_of_contra hContra
 
 end Magnification

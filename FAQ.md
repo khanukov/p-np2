@@ -80,17 +80,18 @@ For a result as significant as P ≠ NP, even conditionally, this level of rigor
 
 **A:** See `AXIOMS_FINAL_LIST.md` for detailed breakdown. Summary:
 
-- **2 active axioms** in the live `pnp3/` tree (both in
-  `pnp3/ThirdPartyFacts/Hirahara2022.lean`):
+- **3 active axioms** in the live `pnp3/` tree:
   `PartialMCSP_profile_is_NP_Hard_rpoly` and `PartialMCSP_is_NP_Hard`
+  (in `pnp3/ThirdPartyFacts/Hirahara2022.lean`), plus
+  `localizedFamilyWitness_partial`
+  (in `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`)
 - **No placeholder axioms** in `pnp3/AC0/MultiSwitching/Encoding.lean`
 - **0 sorry/admit** statements in active code
 - Switching/shrinkage inputs are **witness-backed theorems**, with witnesses
   still supplied externally
 
 You can also run `scripts/check.sh` to rebuild and smoke-test. For raw axiom
-inventory use `rg "^axiom " -g"*.lean" pnp3` (currently expected to show 2 lines
-in `ThirdPartyFacts/Hirahara2022.lean`).
+inventory use `rg "^axiom " -g"*.lean" pnp3` (currently expected to show 3 lines).
 
 ### Q: Can I reproduce your results?
 

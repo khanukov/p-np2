@@ -134,7 +134,7 @@
 4) **Минимальный набор downstream‑файлов, где допустимы изменения интерфейса** (если целевой объект меняется):
    - `pnp3/LowerBounds/LB_Formulas.lean`?
    - `pnp3/LowerBounds/AntiChecker.lean`?
-   - `pnp3/Magnification/Facts_Magnification.lean`?
+   - `pnp3/Magnification/Facts_Magnification_Partial.lean`?
    **Ответ:** по возможности вообще не менять downstream и закрыть всё в
    `Facts_Switching` через derived‑леммы. Если изменения неизбежны, то
    допускаются правки в `LB_Formulas` и `AntiChecker`, а `Facts_Magnification`
@@ -897,7 +897,7 @@ lake build
 - `pnp3/ThirdPartyFacts/Facts_Switching.lean` — depth‑2 AC⁰ и shrinkage.
 - `pnp3/LowerBounds/LB_Formulas.lean` — downstream bounds (k, dictLen).
 - `pnp3/LowerBounds/AntiChecker.lean` — bounds в anti‑checker.
-- `pnp3/Magnification/Facts_Magnification.lean` — параметры magnification.
+- `pnp3/Magnification/Facts_Magnification_Partial.lean` — параметры magnification.
 - `AC0_SHRINKAGE_PLAN.md` — главный маршрут и приоритеты.
 
 ## Важные принципы (чтобы не забыть)

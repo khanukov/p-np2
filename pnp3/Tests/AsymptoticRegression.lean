@@ -40,15 +40,10 @@ example (hA : MagnificationAssumptions regressionProfile) : ComplexityInterfaces
   P_ne_NP_final_asymptotic regressionProfile hA
 
 /--
-  Legacy-совместимость: из прежней гипотезы `hF_all` по `canonicalPartialParams`
-  получаем старую финальную теорему с тем же именем `P_ne_NP_final`.
+  Legacy-совместимость: `P_ne_NP_final` по-прежнему имеет то же имя и
+  теперь использует centralized ThirdParty witness-gap без явного аргумента.
 -/
-example
-    (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial canonicalPartialParams,
-      ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-        (Counting.allFunctionsFamily loc.params.params.n)) :
-    ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final hF_all
+example : ComplexityInterfaces.P_ne_NP := P_ne_NP_final
 
 /--
   Stage 4 regression: `shrinkage_from_good_restriction` по-прежнему требует

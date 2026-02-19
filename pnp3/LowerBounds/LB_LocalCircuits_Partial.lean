@@ -19,27 +19,29 @@ theorem LB_LocalCircuits_core_partial
   (hF_all : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
     (Counting.allFunctionsFamily solver.params.params.n)) : False := by
   classical
-  obtain ⟨F, Y, T, hWitness⟩ :=
-    antiChecker_exists_testset_local_partial (p := p) solver hF_all
-  classical
-  dsimp only at hWitness
-  set Fsolver : Core.Family solver.params.params.n := solver.params.same_n.symm ▸ F
-  obtain ⟨hF, hrest⟩ := hWitness
-  set scWitness :=
-    (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
-  set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
-    solver.params.same_n.symm ▸ Y
-  set Tsolver : Finset (Core.BitVec solver.params.params.n) :=
-    solver.params.same_n.symm ▸ T
-  rcases hrest with
-    ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
-  refine
-    no_bounded_atlas_on_testset_of_large_family
-      (sc := scWitness) (T := Tsolver) (Y := Ysolver)
-      ?subset ?approx ?large
-  · exact hYsubset
-  · exact hApprox
-  · exact hTestLarge
+  rcases antiChecker_largeY_certificate_local_partial (solver := solver) hF_all with
+    ⟨sc, Y, hYsubset, hYlarge⟩
+  exact no_bounded_atlas_of_large_family (sc := sc) (Y := Y) hYsubset hYlarge
+
+/--
+  Witness-first local-circuits core theorem.
+-/
+theorem LB_LocalCircuits_core_partial_witness
+  {p : Models.GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
+  (wF_all : ThirdPartyFacts.LocalCircuitWitness solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) : False := by
+  exact noSmallLocalCircuitSolver_partial_witness (solver := solver) wF_all
+
+/--
+  Realized variant of `LB_LocalCircuits_core_partial`.
+  The contradiction still follows from the existing anti-checker core, while
+  carrying an explicit circuit implementation in the solver wrapper.
+-/
+theorem LB_LocalCircuits_core_partial_realized
+  {p : Models.GapPartialMCSPParams} (solver : RealizedSmallLocalCircuitSolver_Partial p)
+  (wF_all : ThirdPartyFacts.LocalCircuitWitness solver.base.params.params
+    (Counting.allFunctionsFamily solver.base.params.params.n)) : False := by
+  exact LB_LocalCircuits_core_partial_witness (p := p) (solver := solver.base) wF_all
 
 end LowerBounds
 end Pnp3

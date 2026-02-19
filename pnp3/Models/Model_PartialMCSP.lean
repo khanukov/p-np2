@@ -63,6 +63,109 @@ def Circuit.eval {n : Nat} : Circuit n → Core.BitVec n → Bool
   | Circuit.and c₁ c₂ => fun x => Circuit.eval c₁ x && Circuit.eval c₂ x
   | Circuit.or c₁ c₂ => fun x => Circuit.eval c₁ x || Circuit.eval c₂ x
 
+namespace Circuit
+
+/-- Reindex a circuit from `n` inputs to `n+1` inputs by skipping index `0`. -/
+def weaken {n : Nat} : Circuit n → Circuit (n + 1)
+  | input i => input i.succ
+  | const b => const b
+  | not c => not (weaken c)
+  | and c₁ c₂ => and (weaken c₁) (weaken c₂)
+  | or c₁ c₂ => or (weaken c₁) (weaken c₂)
+
+/-- Drop the first input bit. -/
+def tail {n : Nat} (x : Core.BitVec (n + 1)) : Core.BitVec n :=
+  fun i => x i.succ
+
+@[simp] lemma eval_weaken {n : Nat} (c : Circuit n) (x : Core.BitVec (n + 1)) :
+    Circuit.eval (weaken c) x = Circuit.eval c (tail x) := by
+  induction c with
+  | input i =>
+      simp [weaken, tail, Circuit.eval]
+  | const b =>
+      simp [weaken, Circuit.eval]
+  | not c ih =>
+      simp [weaken, Circuit.eval, ih]
+  | and c₁ c₂ ih₁ ih₂ =>
+      simp [weaken, Circuit.eval, ih₁, ih₂]
+  | or c₁ c₂ ih₁ ih₂ =>
+      simp [weaken, Circuit.eval, ih₁, ih₂]
+
+/-- Canonical decomposition of a bit-vector into head and tail. -/
+lemma cons_head_tail {n : Nat} (x : Core.BitVec (n + 1)) :
+    Fin.cons (x ⟨0, Nat.succ_pos n⟩) (tail x) = x := by
+  funext i
+  refine Fin.cases ?h0 ?hs i
+  · rfl
+  · intro j
+    rfl
+
+/--
+  Constructive synthesis of a Boolean function into a circuit.
+
+  This is a Shannon-style expansion on the first input variable.
+-/
+def ofFunction : (n : Nat) → (Core.BitVec n → Bool) → Circuit n
+  | 0, f => Circuit.const (f (fun i => False.elim ((Nat.not_lt_zero i.1) i.2)))
+  | n + 1, f =>
+      let f0 : Core.BitVec n → Bool := fun t => f (Fin.cons false t)
+      let f1 : Core.BitVec n → Bool := fun t => f (Fin.cons true t)
+      let c0 := ofFunction n f0
+      let c1 := ofFunction n f1
+      let x0 : Circuit (n + 1) := Circuit.input ⟨0, Nat.succ_pos n⟩
+      Circuit.or
+        (Circuit.and x0 (weaken c1))
+        (Circuit.and (Circuit.not x0) (weaken c0))
+
+theorem eval_ofFunction :
+    ∀ {n : Nat} (f : Core.BitVec n → Bool) (x : Core.BitVec n),
+      Circuit.eval (ofFunction n f) x = f x
+  | 0, f, x => by
+      have hx : x = (fun i => False.elim ((Nat.not_lt_zero i.1) i.2)) := by
+        funext i
+        exact False.elim ((Nat.not_lt_zero i.1) i.2)
+      subst hx
+      rfl
+  | n + 1, f, x => by
+      let i0 : Fin (n + 1) := ⟨0, Nat.succ_pos n⟩
+      let t : Core.BitVec n := tail x
+      let f0 : Core.BitVec n → Bool := fun u => f (Fin.cons false u)
+      let f1 : Core.BitVec n → Bool := fun u => f (Fin.cons true u)
+      have h1 : Circuit.eval (ofFunction n f1) t = f1 t := eval_ofFunction f1 t
+      have h0 : Circuit.eval (ofFunction n f0) t = f0 t := eval_ofFunction f0 t
+      have hx :
+          x = Fin.cons (x i0) t := by
+        simpa [i0, t] using (cons_head_tail x).symm
+      cases hbit : x i0 with
+      | false =>
+          have hx' : x = Fin.cons false t := by simpa [hbit] using hx
+          calc
+            Circuit.eval (ofFunction (n + 1) f) x
+                = ((x i0 && Circuit.eval (weaken (ofFunction n f1)) x) ||
+                  (!x i0 && Circuit.eval (weaken (ofFunction n f0)) x)) := by
+                    simp [ofFunction, f0, f1, i0, Circuit.eval]
+            _ = Circuit.eval (weaken (ofFunction n f0)) x := by simp [hbit]
+            _ = Circuit.eval (ofFunction n f0) t := by
+                  simpa [t] using (eval_weaken (ofFunction n f0) x)
+            _ = f0 t := h0
+            _ = f (Fin.cons false t) := rfl
+            _ = f x := by simpa [hx']
+      | true =>
+          have hx' : x = Fin.cons true t := by simpa [hbit] using hx
+          calc
+            Circuit.eval (ofFunction (n + 1) f) x
+                = ((x i0 && Circuit.eval (weaken (ofFunction n f1)) x) ||
+                  (!x i0 && Circuit.eval (weaken (ofFunction n f0)) x)) := by
+                    simp [ofFunction, f0, f1, i0, Circuit.eval]
+            _ = Circuit.eval (weaken (ofFunction n f1)) x := by simp [hbit]
+            _ = Circuit.eval (ofFunction n f1) t := by
+                  simpa [t] using (eval_weaken (ofFunction n f1) x)
+            _ = f1 t := h1
+            _ = f (Fin.cons true t) := rfl
+            _ = f x := by simpa [hx']
+
+end Circuit
+
 /-!
   ### Вспомогательная кодировка BitVec → Nat
 
@@ -88,6 +191,27 @@ structure GapPartialMCSPParams where
   /-- В оценках сохраняем предположение о «достаточно большом» `n`. -/
   n_large : 8 ≤ n
   deriving Repr
+
+/--
+  Асимптотический профиль параметров Partial-MCSP.
+
+  В отличие от `GapPartialMCSPParams` (фиксированная длина), профиль задаёт
+  пороги как функции от числа переменных `m`. Это позволяет определить один
+  язык на **всех** длинах вида `2 * 2^m`.
+-/
+structure GapPartialMCSPProfile where
+  sYES : Nat → Nat
+  sNO : Nat → Nat
+  gap_ok : ∀ m, sYES m + 1 ≤ sNO m
+
+/-- Специализация профиля в обычные параметры на фиксированном `m ≥ 8`. -/
+@[simp] def GapPartialMCSPProfile.paramsAt
+    (prof : GapPartialMCSPProfile) (m : Nat) (hm : 8 ≤ m) : GapPartialMCSPParams where
+  n := m
+  sYES := prof.sYES m
+  sNO := prof.sNO m
+  gap_ok := prof.gap_ok m
+  n_large := hm
 
 /-- Длина входа partial-MCSP: `2 * 2^n`. -/
 def partialInputLen (p : GapPartialMCSPParams) : Nat := Partial.inputLen p.n
@@ -305,6 +429,48 @@ noncomputable def gapPartialMCSP_Language (p : GapPartialMCSPParams) : Language 
   · intro _
     exact false
 
+/--
+  Длина `N` поддерживается асимптотическим языком Partial-MCSP,
+  если `N = 2 * 2^m` для некоторого `m`.
+
+  Мы используем чисто логическое (`Prop`) описание формы длины; это удобно
+  в текущем слое, где язык и так определён как `noncomputable`.
+-/
+def isPartialInputLength (N : Nat) : Prop :=
+  ∃ m : Nat, N = Partial.inputLen m
+
+/--
+  Асимптотическая версия языка gapPartialMCSP.
+
+  Поведение:
+  * если длина входа не имеет вида `2 * 2^m`, возвращаем `false`;
+  * если имеет, выбираем соответствующие параметры профиля на этом `m`
+    и проверяем YES-условие на декодированной частичной таблице.
+
+  Это устраняет «фиксированную длину» из финального слоя: язык становится
+  бесконечным (редким по длинам, но корректно асимптотическим).
+-/
+noncomputable def gapPartialMCSP_Language_profile
+    (prof : GapPartialMCSPProfile) : Language := by
+  classical
+  intro N x
+  by_cases hLen : isPartialInputLength N
+  · let m : Nat := Classical.choose hLen
+    have hlenEq : N = Partial.inputLen m := Classical.choose_spec hLen
+    -- Для малых `m` язык по определению возвращает `false` (асимптотическая зона).
+    by_cases hmLarge : 8 ≤ m
+    · let p : GapPartialMCSPParams := prof.paramsAt m hmLarge
+      have hcast : N = partialInputLen p := by
+        simpa [partialInputLen, p, GapPartialMCSPProfile.paramsAt] using hlenEq
+      let encoded : Core.BitVec (partialInputLen p) := by
+        simpa [hcast] using x
+      let T : PartialTruthTable p.n := decodePartial encoded
+      by_cases hYes : PartialMCSP_YES p T
+      · exact true
+      · exact false
+    · exact false
+  · exact false
+
 /-!
   ### Связь языка и promise-условий
 
@@ -435,20 +601,520 @@ lemma gapPartialMCSP_verify_eq_language
     · simp [gapPartialMCSP_verify, gapPartialMCSP_Language, hYes]
   · simp [gapPartialMCSP_verify, gapPartialMCSP_Language, h]
 
-theorem gapPartialMCSP_in_NP (p : GapPartialMCSPParams) :
-    NP (gapPartialMCSP_Language p) := by
+/-!
+  ### Strict NP-membership scaffold (machine-first)
+
+  Этот блок готовит явный TM-свидетель для `NP_strict`.  Мы оставляем текущую
+  `NP`-теорему выше для обратной совместимости и постепенно усиливаем её до
+  machine-first варианта.
+-/
+
+namespace StrictNP
+
+open Facts.PsubsetPpoly
+
+/-- Фиксированная длина «настоящего» входа языка `gapPartialMCSP_Language p`. -/
+@[simp] def targetLen (p : GapPartialMCSPParams) : Nat := partialInputLen p
+
+/-- В strict-NP используем `k = 0`, поэтому длина сертификата равна `1`. -/
+@[simp] def certLen (_n : Nat) : Nat := certificateLength _n 0
+
+@[simp] lemma certLen_eq_one (n : Nat) : certLen n = 1 := by
+  simp [certLen, certificateLength]
+
+/--
+Состояние машины strict-верификатора:
+* `scan i buf` — считаны первые `i` бит входа `x` (где `x` имеет длину `targetLen`);
+* `accept` / `reject` — финальные поглощающие состояния.
+-/
+inductive State (p : GapPartialMCSPParams) where
+  | scan : Fin (targetLen p + 1) → ComplexityInterfaces.Bitstring (targetLen p) → State p
+  | accept : State p
+  | reject : State p
+  deriving DecidableEq, Fintype
+
+/-- Нулевой буфер (все биты `false`) для фазы сканирования входа. -/
+def zeroBuffer (p : GapPartialMCSPParams) : ComplexityInterfaces.Bitstring (targetLen p) :=
+  fun _ => false
+
+/-- Точечное обновление буфера на позиции `i`. -/
+def writeBit {n : Nat} (buf : ComplexityInterfaces.Bitstring n)
+    (i : Fin n) (b : Bool) : ComplexityInterfaces.Bitstring n :=
+  fun j => if j = i then b else buf j
+
+@[simp] lemma writeBit_self {n : Nat} (buf : ComplexityInterfaces.Bitstring n)
+    (i : Fin n) (b : Bool) :
+    writeBit buf i b i = b := by
+  simp [writeBit]
+
+@[simp] lemma writeBit_other {n : Nat} (buf : ComplexityInterfaces.Bitstring n)
+    (i j : Fin n) (b : Bool)
+    (h : j ≠ i) : writeBit buf i b j = buf j := by
+  simp [writeBit, h]
+
+/-- Переход `i ↦ i+1` внутри диапазона `Fin (targetLen p + 1)`. -/
+def nextIndex {p : GapPartialMCSPParams}
+    (i : Fin (targetLen p + 1)) (h : (i : Nat) < targetLen p) :
+    Fin (targetLen p + 1) := by
+  refine ⟨(i : Nat) + 1, ?_⟩
+  exact Nat.succ_lt_succ h
+
+/-- Шаговый переход strict-машины. -/
+noncomputable def step (p : GapPartialMCSPParams) :
+    State p → Bool → State p × Bool × Facts.PsubsetPpoly.Move := by
   classical
-  refine ⟨2, 2, (fun t => t ^ 2 + 2), gapPartialMCSP_verify p, ?_, ?_⟩
+  intro s b
+  cases s with
+  | accept =>
+      exact (State.accept, b, Facts.PsubsetPpoly.Move.stay)
+  | reject =>
+      exact (State.reject, b, Facts.PsubsetPpoly.Move.stay)
+  | scan i buf =>
+      by_cases h : (i : Nat) < targetLen p
+      · let j : Fin (targetLen p) := ⟨(i : Nat), h⟩
+        let buf' := writeBit buf j b
+        exact (State.scan (nextIndex i h) buf', b, Facts.PsubsetPpoly.Move.right)
+      · by_cases hYes : PartialMCSP_YES p (decodePartial buf)
+        · exact (State.accept, b, Facts.PsubsetPpoly.Move.stay)
+        · exact (State.reject, b, Facts.PsubsetPpoly.Move.stay)
+
+/--
+  Время работы strict-машины:
+  * ровно `targetLen p + certLen (targetLen p)` шагов на целевой длине;
+  * `0` шагов на остальных длинах.
+-/
+@[simp] def runTime (p : GapPartialMCSPParams) (m : Nat) : Nat :=
+  if _h : m = targetLen p + certLen (targetLen p) then targetLen p + certLen (targetLen p) else 0
+
+/-- Явная TM-машина для strict-верификации fixed-length слоя Partial MCSP. -/
+noncomputable def tm (p : GapPartialMCSPParams) : Facts.PsubsetPpoly.TM where
+  state := State p
+  stateFintype := inferInstance
+  stateDecEq := inferInstance
+  start := State.scan ⟨0, Nat.succ_pos _⟩ (zeroBuffer p)
+  accept := State.accept
+  step := step p
+  runTime := runTime p
+
+@[simp] lemma runTime_target (p : GapPartialMCSPParams) :
+    runTime p (targetLen p + certLen (targetLen p)) = targetLen p + certLen (targetLen p) := by
+  simp [runTime]
+
+@[simp] lemma runTime_nontarget (p : GapPartialMCSPParams) {m : Nat}
+    (h : m ≠ targetLen p + certLen (targetLen p)) :
+    runTime p m = 0 := by
+  unfold runTime
+  split_ifs with hEq
+  · exact (h hEq).elim
+  · rfl
+
+/-- Грубая полиномиальная оценка времени strict-машины. -/
+lemma runTime_poly_bound (p : GapPartialMCSPParams) :
+    ∀ n, (tm p).runTime n ≤ n ^ (targetLen p + 1) + (targetLen p + 1) := by
+  intro n
+  by_cases hTarget : n = targetLen p + certLen (targetLen p)
+  · subst hTarget
+    have hle_add :
+        targetLen p + certLen (targetLen p) ≤
+          (targetLen p + certLen (targetLen p)) ^ (targetLen p + 1) + (targetLen p + 1) := by
+      have hle_rhs : targetLen p + certLen (targetLen p) ≤ targetLen p + 1 := by
+        simp [certLen, certificateLength]
+      exact le_trans hle_rhs (Nat.le_add_left _ _)
+    simpa [tm, runTime_target] using hle_add
+  · have hrt : (tm p).runTime n = 0 := by
+      simpa [tm] using runTime_nontarget (p := p) hTarget
+    rw [hrt]
+    exact Nat.zero_le _
+
+/--
+  На нецелевых длинах strict-машина делает `0` шагов и остаётся в стартовом
+  состоянии, поэтому `accepts = false`.
+-/
+lemma accepts_nontarget_false (p : GapPartialMCSPParams) {m : Nat}
+    (h : m ≠ targetLen p + certLen (targetLen p))
+    (y : ComplexityInterfaces.Bitstring m) :
+    Facts.PsubsetPpoly.TM.accepts (M := tm p) (n := m) y = false := by
+  classical
+  have hrtm :
+      (if m = targetLen p + certLen (targetLen p)
+        then targetLen p + certLen (targetLen p) else 0) = 0 := by
+    exact if_neg h
+  have hrt : (tm p).runTime m = 0 := by
+    simpa [tm, runTime] using hrtm
+  unfold Facts.PsubsetPpoly.TM.accepts Facts.PsubsetPpoly.TM.run
+  rw [hrt]
+  simp [Facts.PsubsetPpoly.TM.runConfig, tm]
+
+/-- Индекс `i : Fin (targetLen p)` как индекс в строке длины `targetLen p + certLen ...`. -/
+def liftInputIdx (p : GapPartialMCSPParams) (i : Fin (targetLen p)) :
+    Fin (targetLen p + certLen (targetLen p)) := by
+  refine ⟨(i : Nat), ?_⟩
+  have hi : (i : Nat) < targetLen p + 1 := Nat.lt_trans i.isLt (Nat.lt_succ_self _)
+  simpa [certLen, certificateLength] using hi
+
+/-- Последний (сертификатный) индекс в строке длины `targetLen p + certLen ...`. -/
+def certIdx (p : GapPartialMCSPParams) : Fin (targetLen p + certLen (targetLen p)) := by
+  refine ⟨targetLen p, ?_⟩
+  simp [certLen, certificateLength]
+
+/-- Префикс длины `targetLen p` из объединённой строки `x ++ w`. -/
+def inputPrefix (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p))) :
+    ComplexityInterfaces.Bitstring (targetLen p) :=
+  fun i => y (liftInputIdx p i)
+
+lemma inputPrefix_concat (p : GapPartialMCSPParams)
+    (x : ComplexityInterfaces.Bitstring (targetLen p))
+    (w : ComplexityInterfaces.Bitstring (certLen (targetLen p))) :
+    inputPrefix p (concatBitstring x w) = x := by
+  funext i
+  simp [inputPrefix, liftInputIdx, concatBitstring]
+
+/-- Буфер после чтения первых `k` входных битов: прочитанные позиции фиксируются, остальные `false`. -/
+def prefixBuffer (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p)))
+    (k : Nat) : ComplexityInterfaces.Bitstring (targetLen p) :=
+  fun j => if (j : Nat) < k then inputPrefix p y j else false
+
+@[simp] lemma prefixBuffer_zero (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p))) :
+    prefixBuffer p y 0 = zeroBuffer p := by
+  funext j
+  simp [prefixBuffer, zeroBuffer]
+
+lemma prefixBuffer_succ_of_lt (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p)))
+    {k : Nat} (hk : k < targetLen p) :
+    prefixBuffer p y (k + 1) =
+      writeBit (prefixBuffer p y k) ⟨k, hk⟩ (inputPrefix p y ⟨k, hk⟩) := by
+  funext j
+  by_cases hEq : j = ⟨k, hk⟩
+  · subst hEq
+    simp [prefixBuffer, writeBit]
+  · have hj_ne : (j : Nat) ≠ k := by
+      intro hj_eq
+      apply hEq
+      exact Fin.ext hj_eq
+    by_cases hlt : (j : Nat) < k
+    · have hlt_succ : (j : Nat) < k + 1 := Nat.lt_succ_of_lt hlt
+      simp [prefixBuffer, writeBit, hEq, hlt, hlt_succ]
+    · have hge : k ≤ (j : Nat) := Nat.le_of_not_gt hlt
+      have hnot_succ : ¬ (j : Nat) < k + 1 := by
+        intro hjlt
+        have hjle : (j : Nat) ≤ k := Nat.lt_succ_iff.mp hjlt
+        exact hj_ne (Nat.le_antisymm hjle hge)
+      simp [prefixBuffer, writeBit, hEq, hlt, hnot_succ]
+
+@[simp] lemma targetTotalLen_eq (p : GapPartialMCSPParams) :
+    targetLen p + certLen (targetLen p) = targetLen p + 1 := by
+  simp [certLen, certificateLength]
+
+lemma target_lt_tapeLength (p : GapPartialMCSPParams) :
+    targetLen p + 1 < (tm p).tapeLength (targetLen p + certLen (targetLen p)) := by
+  have hbase :
+      targetLen p + 1 <
+        targetLen p + certLen (targetLen p) +
+          (tm p).runTime (targetLen p + certLen (targetLen p)) + 1 := by
+    have hcert : 1 ≤ certLen (targetLen p) := by
+      simp [certLen, certificateLength]
+    have hle1 : targetLen p + 1 ≤ targetLen p + certLen (targetLen p) :=
+      Nat.add_le_add_left hcert _
+    have hle2 :
+        targetLen p + certLen (targetLen p) ≤
+          targetLen p + certLen (targetLen p) +
+            (tm p).runTime (targetLen p + certLen (targetLen p)) :=
+      Nat.le_add_right _ _
+    exact Nat.lt_of_le_of_lt (le_trans hle1 hle2) (Nat.lt_succ_self _)
+  simpa [Facts.PsubsetPpoly.TM.tapeLength, Nat.add_assoc] using hbase
+
+def tapeIdx (p : GapPartialMCSPParams) (k : Nat) (hk : k ≤ targetLen p) :
+    Fin ((tm p).tapeLength (targetLen p + certLen (targetLen p))) := by
+  refine ⟨k, ?_⟩
+  have hklt : k < targetLen p + certLen (targetLen p) := by
+    have : k < targetLen p + 1 := Nat.lt_succ_of_le hk
+    simpa [targetTotalLen_eq] using this
+  exact Nat.lt_trans hklt (target_lt_tapeLength p)
+
+lemma inputPrefix_eq_at (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p)))
+    (k : Nat) (hk : k < targetLen p) :
+    inputPrefix p y ⟨k, hk⟩ = y ⟨k, by simpa [targetTotalLen_eq] using Nat.lt_succ_of_lt hk⟩ := by
+  simp [inputPrefix, liftInputIdx, certLen, certificateLength]
+
+lemma prefixBuffer_target_eq_inputPrefix (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p))) :
+    prefixBuffer p y (targetLen p) = inputPrefix p y := by
+  funext j
+  simp [prefixBuffer]
+
+lemma runConfig_succ (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p)))
+    (k : Nat) :
+    Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) (k + 1) =
+      Facts.PsubsetPpoly.TM.stepConfig (M := tm p)
+        (Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) k) := by
+  simpa [Facts.PsubsetPpoly.TM.runConfig] using
+    (Function.iterate_succ_apply'
+      (f := Facts.PsubsetPpoly.TM.stepConfig (M := tm p))
+      k ((tm p).initialConfig y))
+
+lemma initial_tape_at_inputIdx (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p)))
+    (k : Nat) (hk : k < targetLen p + certLen (targetLen p)) :
+    ((tm p).initialConfig y).tape
+      ⟨k, Nat.lt_trans hk (target_lt_tapeLength p)⟩ = y ⟨k, hk⟩ := by
+  simpa using
+    (Facts.PsubsetPpoly.TM.initial_tape_input
+      (M := tm p) (x := y)
+      (i := ⟨k, Nat.lt_trans hk (target_lt_tapeLength p)⟩)
+      (hi := hk))
+
+lemma step_scan_lt (p : GapPartialMCSPParams)
+    (i : Fin (targetLen p + 1))
+    (buf : ComplexityInterfaces.Bitstring (targetLen p))
+    (b : Bool)
+    (h : (i : Nat) < targetLen p) :
+    step p (State.scan i buf) b =
+      (State.scan (nextIndex i h) (writeBit buf ⟨(i : Nat), h⟩ b), b, Facts.PsubsetPpoly.Move.right) := by
+  cases i with
+  | mk iv ih =>
+      dsimp at h
+      simp [step, h]
+
+lemma stepConfig_scan_lt (p : GapPartialMCSPParams)
+    (c : Facts.PsubsetPpoly.TM.Configuration (M := tm p) (targetLen p + certLen (targetLen p)))
+    (i : Fin (targetLen p + 1))
+    (buf : ComplexityInterfaces.Bitstring (targetLen p))
+    (hstate : c.state = State.scan i buf)
+    (h : (i : Nat) < targetLen p) :
+    (Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c).state =
+      State.scan (nextIndex i h) (writeBit buf ⟨(i : Nat), h⟩ (c.tape c.head)) := by
+  unfold Facts.PsubsetPpoly.TM.stepConfig
+  rw [hstate]
+  have hstep := step_scan_lt (p := p) (i := i) (buf := buf) (b := c.tape c.head) h
+  simpa [tm] using congrArg Prod.fst hstep
+
+lemma stepConfig_head_right (p : GapPartialMCSPParams)
+    (c : Facts.PsubsetPpoly.TM.Configuration (M := tm p) (targetLen p + certLen (targetLen p)))
+    (i : Nat)
+    (hhead : (c.head : Nat) = i)
+    (hmove : i + 1 < (tm p).tapeLength (targetLen p + certLen (targetLen p))) :
+    (Facts.PsubsetPpoly.TM.Configuration.moveHead
+      (M := tm p) (c := c) Facts.PsubsetPpoly.Move.right : Nat) = i + 1 := by
+  have hmove' : i + 1 <
+      (tm p).tapeLength (partialInputLen p + certificateLength (partialInputLen p) 0) := by
+    simpa [targetLen, certLen] using hmove
+  simp [Facts.PsubsetPpoly.TM.Configuration.moveHead, hmove', hhead]
+
+lemma write_self_tape {p : GapPartialMCSPParams}
+    (c : Facts.PsubsetPpoly.TM.Configuration (M := tm p) (targetLen p + certLen (targetLen p))) :
+    Facts.PsubsetPpoly.TM.Configuration.write (M := tm p) c c.head (c.tape c.head) = c.tape := by
+  funext j
+  by_cases h : j = c.head
+  · subst h
+    simp [Facts.PsubsetPpoly.TM.Configuration.write]
+  · simp [Facts.PsubsetPpoly.TM.Configuration.write, h]
+
+lemma runConfig_scan_prefix (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p))) :
+    ∀ k, k ≤ targetLen p →
+      let c := Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) k
+      (∃ hki : k < targetLen p + 1,
+        c.state = State.scan ⟨k, hki⟩ (prefixBuffer p y k)) ∧
+      (c.head : Nat) = k ∧
+      c.tape = ((tm p).initialConfig y).tape := by
+  intro k hk
+  induction k with
+  | zero =>
+      dsimp [Facts.PsubsetPpoly.TM.runConfig]
+      refine ⟨?_, ?_, ?_⟩
+      · refine ⟨Nat.succ_pos _, ?_⟩
+        simp [tm, prefixBuffer_zero]
+      · simp [tm, Facts.PsubsetPpoly.TM.tapeLength]
+      · rfl
+  | succ k ih =>
+      have hkSucc : k + 1 ≤ targetLen p := hk
+      have hk0 : k ≤ targetLen p := Nat.le_trans (Nat.le_succ k) hkSucc
+      have hklt : k < targetLen p := Nat.lt_of_lt_of_le (Nat.lt_succ_self k) hkSucc
+      let c0 : Facts.PsubsetPpoly.TM.Configuration (M := tm p)
+          (targetLen p + certLen (targetLen p)) :=
+        Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) k
+      have hprev := ih hk0
+      rcases hprev.1 with ⟨hki, hstate0⟩
+      have hhead0 : (c0.head : Nat) = k := hprev.2.1
+      have htape0 : c0.tape = ((tm p).initialConfig y).tape := hprev.2.2
+      have hkN : k < targetLen p + certLen (targetLen p) := by
+        simpa [targetTotalLen_eq] using Nat.lt_succ_of_lt hklt
+      have hcfg :
+          Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) (k + 1) =
+            Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0 := by
+        simpa [c0] using runConfig_succ (p := p) (y := y) k
+      rw [hcfg]
+      refine ⟨?_, ?_, ?_⟩
+      · refine ⟨Nat.lt_succ_of_le hkSucc, ?_⟩
+        have hstate1 :
+            (Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0).state =
+              State.scan (nextIndex ⟨k, hki⟩ hklt)
+                (writeBit (prefixBuffer p y k) ⟨k, hklt⟩ (c0.tape c0.head)) := by
+          exact stepConfig_scan_lt (p := p) (c := c0) (i := ⟨k, hki⟩)
+            (buf := prefixBuffer p y k) hstate0 hklt
+        have hsym : c0.tape c0.head = inputPrefix p y ⟨k, hklt⟩ := by
+          have hhead_eq :
+              c0.head = ⟨k, Nat.lt_trans hkN (target_lt_tapeLength p)⟩ := by
+            apply Fin.ext
+            simpa using hhead0
+          rw [htape0, hhead_eq]
+          have hinit := initial_tape_at_inputIdx (p := p) (y := y) (k := k) hkN
+          simpa [inputPrefix_eq_at (p := p) (y := y) (k := k) hklt] using hinit
+        have hnext :
+            nextIndex (p := p) ⟨k, hki⟩ hklt = ⟨k + 1, Nat.lt_succ_of_le hkSucc⟩ := by
+          apply Fin.ext
+          rfl
+        rw [hstate1, hnext, hsym]
+        simp [prefixBuffer_succ_of_lt (p := p) (y := y) hklt]
+      · have hmove :
+            k + 1 < (tm p).tapeLength (targetLen p + certLen (targetLen p)) := by
+          have hle : k + 1 ≤ targetLen p + 1 := Nat.succ_le_succ (Nat.le_of_lt hklt)
+          exact lt_of_le_of_lt hle (target_lt_tapeLength p)
+        have hhead1 :
+            ((Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0).head : Nat) = k + 1 := by
+          have hstep :
+              (tm p).step c0.state (c0.tape c0.head) =
+                (State.scan (nextIndex ⟨k, hki⟩ hklt)
+                    (writeBit (prefixBuffer p y k) ⟨k, hklt⟩ (c0.tape c0.head)),
+                 c0.tape c0.head, Facts.PsubsetPpoly.Move.right) := by
+            rw [hstate0]
+            simpa [tm] using step_scan_lt (p := p) (i := ⟨k, hki⟩)
+              (buf := prefixBuffer p y k) (b := c0.tape c0.head) hklt
+          simp [Facts.PsubsetPpoly.TM.stepConfig, hstep]
+          exact stepConfig_head_right (p := p) (c := c0) (i := k) hhead0 hmove
+        exact hhead1
+      · unfold Facts.PsubsetPpoly.TM.stepConfig
+        have hstep :
+            (tm p).step c0.state (c0.tape c0.head) =
+              (State.scan (nextIndex ⟨k, hki⟩ hklt)
+                  (writeBit (prefixBuffer p y k) ⟨k, hklt⟩ (c0.tape c0.head)),
+               c0.tape c0.head, Facts.PsubsetPpoly.Move.right) := by
+          rw [hstate0]
+          simpa [tm] using step_scan_lt (p := p) (i := ⟨k, hki⟩)
+            (buf := prefixBuffer p y k) (b := c0.tape c0.head) hklt
+        simp [hstep]
+        simpa [write_self_tape (c := c0)] using htape0
+
+lemma accepts_target_iff_yes_inputPrefix (p : GapPartialMCSPParams)
+    (y : ComplexityInterfaces.Bitstring (targetLen p + certLen (targetLen p))) :
+    Facts.PsubsetPpoly.TM.accepts (M := tm p) (n := targetLen p + certLen (targetLen p)) y = true ↔
+      PartialMCSP_YES p (decodePartial (inputPrefix p y)) := by
+  classical
+  let c0 : Facts.PsubsetPpoly.TM.Configuration (M := tm p) (targetLen p + certLen (targetLen p)) :=
+    Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) (targetLen p)
+  have hscan := runConfig_scan_prefix (p := p) (y := y) (k := targetLen p) (le_rfl)
+  rcases hscan.1 with ⟨hki, hstate0⟩
+  have hstate0' : c0.state = State.scan ⟨targetLen p, hki⟩ (prefixBuffer p y (targetLen p)) := hstate0
+  have hrt :
+      (tm p).runTime (targetLen p + certLen (targetLen p)) = targetLen p + certLen (targetLen p) := by
+    exact runTime_target p
+  have hstep :
+      Facts.PsubsetPpoly.TM.runConfig (M := tm p) ((tm p).initialConfig y) (targetLen p + certLen (targetLen p)) =
+        Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0 := by
+    simpa [targetTotalLen_eq, c0] using runConfig_succ (p := p) (y := y) (targetLen p)
+  have hstate_final :
+      (Facts.PsubsetPpoly.TM.stepConfig (M := tm p) c0).state =
+        if PartialMCSP_YES p (decodePartial (inputPrefix p y)) then State.accept else State.reject := by
+    unfold Facts.PsubsetPpoly.TM.stepConfig
+    rw [hstate0']
+    have hbuf : prefixBuffer p y (targetLen p) = inputPrefix p y :=
+      prefixBuffer_target_eq_inputPrefix (p := p) (y := y)
+    have hbuf' : prefixBuffer p y (partialInputLen p) = inputPrefix p y := by
+      simpa [targetLen] using hbuf
+    rw [hbuf]
+    by_cases hYes : PartialMCSP_YES p (decodePartial (inputPrefix p y))
+    · simp [tm, step, hYes]
+    · simp [tm, step, hYes]
+  unfold Facts.PsubsetPpoly.TM.accepts Facts.PsubsetPpoly.TM.run
+  rw [hrt, hstep, hstate_final]
+  by_cases hYes : PartialMCSP_YES p (decodePartial (inputPrefix p y))
+  · simp [tm, hYes]
+  · simp [tm, hYes]
+
+theorem gapPartialMCSP_in_NP_TM (p : GapPartialMCSPParams) :
+    NP_TM (gapPartialMCSP_Language p) := by
+  classical
+  refine ⟨tm p, targetLen p + 1, 0, ?_, ?_⟩
   · intro n
-    simp
+    simpa [tm, certLen, certificateLength, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      (runTime_poly_bound (p := p) (n := n + certificateLength n 0))
   · intro n x
-    constructor
-    · intro hLang
-      refine ⟨(fun _ => false), ?_⟩
-      simpa [gapPartialMCSP_verify_eq_language (p := p) (x := x)] using hLang
-    · intro hExists
-      rcases hExists with ⟨w, hVerify⟩
-      simpa [gapPartialMCSP_verify_eq_language (p := p) (x := x)] using hVerify
+    by_cases hn : n = targetLen p
+    · subst hn
+      constructor
+      · intro hLang
+        have hYes : PartialMCSP_YES p (decodePartial x) :=
+          (gapPartialMCSP_language_true_iff_yes p x).1 hLang
+        let w0 : ComplexityInterfaces.Bitstring (certLen (targetLen p)) := fun _ => false
+        refine ⟨(fun _ => false), ?_⟩
+        have hAccYes :
+            Facts.PsubsetPpoly.TM.accepts (M := tm p)
+              (n := targetLen p + certLen (targetLen p))
+              (concatBitstring x w0) = true := by
+          have hpref :
+              inputPrefix p
+                (concatBitstring x w0) = x := inputPrefix_concat (p := p) (x := x) (w := w0)
+          have hYes' : PartialMCSP_YES p
+              (decodePartial (inputPrefix p (concatBitstring x w0))) := by
+            simpa [hpref] using hYes
+          exact (accepts_target_iff_yes_inputPrefix (p := p)
+            (y := concatBitstring x w0)).2 hYes'
+        simpa [certLen, certificateLength, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hAccYes
+      · intro hExists
+        rcases hExists with ⟨w, hAcc⟩
+        have hYes' : PartialMCSP_YES p
+            (decodePartial (inputPrefix p (concatBitstring x w))) :=
+          (accepts_target_iff_yes_inputPrefix (p := p) (y := concatBitstring x w)).1 (by
+            simpa [certLen, certificateLength, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hAcc)
+        have hYes : PartialMCSP_YES p (decodePartial x) := by
+          simpa [inputPrefix_concat (p := p) (x := x) (w := w)] using hYes'
+        exact (gapPartialMCSP_language_true_iff_yes p x).2 hYes
+    · constructor
+      · intro hLang
+        exfalso
+        have hneq : n ≠ partialInputLen p := by
+          simpa [targetLen] using hn
+        have hFalseLang : gapPartialMCSP_Language p n x = false := by
+          simp [gapPartialMCSP_Language, hneq]
+        have hContr : False := by
+          simp [hFalseLang] at hLang
+        exact False.elim hContr
+      · intro hExists
+        rcases hExists with ⟨w, hAcc⟩
+        have hneqTotal :
+            n + certificateLength n 0 ≠ targetLen p + certLen (targetLen p) := by
+          intro hEq
+          have : n = targetLen p := by
+            have hs : n + 1 = targetLen p + 1 := by
+              simpa [certLen, certificateLength, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hEq
+            exact Nat.succ.inj hs
+          exact hn this
+        have hFalse :
+            Facts.PsubsetPpoly.TM.accepts (M := tm p)
+              (n := n + certificateLength n 0)
+              (concatBitstring x w) = false :=
+          accepts_nontarget_false (p := p) (m := n + certificateLength n 0) hneqTotal (concatBitstring x w)
+        exfalso
+        have hContr : False := by
+          simp [hFalse] at hAcc
+        exact False.elim hContr
+
+
+end StrictNP
+
+theorem gapPartialMCSP_in_NP_strict (p : GapPartialMCSPParams) :
+    NP_strict (gapPartialMCSP_Language p) :=
+  StrictNP.gapPartialMCSP_in_NP_TM p
+
+theorem gapPartialMCSP_in_NP (p : GapPartialMCSPParams) :
+    NP (gapPartialMCSP_Language p) :=
+  NP_of_NP_TM (StrictNP.gapPartialMCSP_in_NP_TM p)
 
 end Models
 end Pnp3

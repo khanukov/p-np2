@@ -1,8 +1,6 @@
 import Proof.Bitstring
 import Proof.Turing.Encoding
 
-universe u
-
 /-!
 # Complexity interfaces for the `P ⊆ P/poly` fact
 
@@ -44,41 +42,48 @@ one-tape Turing machine that decides `L` within a polynomial time bound
 `n ↦ n^c + c`.
 -/
 def polyTimeDecider (L : Language) : Prop :=
-  ∃ (M : TM.{u}) (c : ℕ),
+  ∃ (M : TM.{0}) (c : ℕ),
     (∀ n, M.runTime n ≤ n ^ c + c) ∧
     (∀ n (x : Bitstring n), TM.accepts (M := M) (n := n) x = L n x)
 
 /-- The class `P` of polynomial-time decidable languages. -/
-def P (L : Language) : Prop := polyTimeDecider.{u} L
+def P (L : Language) : Prop := polyTimeDecider L
+
+/--
+`f` is polynomially bounded if there exists `k` such that
+`f n ≤ n^k + k` for all input lengths `n`.
+-/
+def IsPolyBound (f : Nat → Nat) : Prop :=
+  ∃ k : Nat, ∀ n, f n ≤ n ^ k + k
 
 /--
 Witness that a language belongs to `P/poly`.  We keep this interface deliberately
-minimal: the circuits are represented abstractly as Boolean functions, while the
-polynomial bound is stored as a proof token.  This is sufficient for downstream
-code that only needs a named inclusion theorem.
+minimal but non-trivial: besides a polynomial size bound we require a single
+polynomial-time evaluator machine that computes each non-uniform circuit
+predicate `circuits n`.
 -/
 structure InPpoly (L : Language) where
   /-- Upper bound on the size of the non-uniform circuit family. -/
-  polyBound : Nat → Nat := fun _ => (0 : Nat)
+  polyBound : Nat → Nat
   /-- `polyBound` grows at most polynomially. -/
-  polyBound_poly : True := trivial
-  /-- Circuit for each input length. -/
-  circuits : ∀ n, Bitstring n → Bool := fun _ _ => false
+  polyBound_poly : IsPolyBound polyBound
+  /-- Non-uniform family predicate for each input length. -/
+  circuits : ∀ n, Bitstring n → Bool
+  /-- The family is uniformly evaluable by a machine within `polyBound`. -/
+  eval_poly : ∃ (E : TM.{0}),
+      (∀ n, E.runTime n ≤ polyBound n) ∧
+      (∀ n (x : Bitstring n), TM.accepts (M := E) (n := n) x = circuits n x)
   /-- Correctness of the circuit family with respect to the language. -/
-  correct : ∀ n (x : Bitstring n), circuits n x = L n x := by
-    intro n x
-    rfl
+  correct : ∀ n (x : Bitstring n), circuits n x = L n x
 
 /-- The non-uniform class `P/poly`. -/
-def Ppoly (L : Language) : Prop := ∃ _ : InPpoly L, True
+def Ppoly (L : Language) : Prop := Nonempty (InPpoly L)
 
 end Complexity
 
 /-!
-The proof of `P ⊆ P/poly` is short once the classes are defined: the decider
-itself can serve as the circuit family because we treat circuits abstractly.
-This keeps the statement constructive without importing the full simulation
-machinery.
+The proof of `P ⊆ P/poly` is short once the classes are defined: a `P`-decider
+itself can be used as the evaluator for the `P/poly` witness.
 -/
 namespace Proof
 
@@ -89,11 +94,16 @@ theorem complexity_P_subset_Ppoly : ∀ {L}, P L → Ppoly L := by
   intro L hL
   rcases hL with ⟨M, c, hRun, hCorrect⟩
   refine ⟨{ polyBound := fun n => n ^ c + c
-            polyBound_poly := trivial
+            polyBound_poly := ?poly
             circuits := fun n x => TM.accepts (M := M) (n := n) x
-            correct := ?_ }, trivial⟩
-  intro n x
-  exact hCorrect n x
+            eval_poly := ?eval
+            correct := ?corr }⟩
+  · refine ⟨c, ?_⟩
+    intro n
+    exact Nat.le_refl _
+  · exact ⟨M, hRun, by intro n x; rfl⟩
+  · intro n x
+    exact hCorrect n x
 
 end Proof
 

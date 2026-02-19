@@ -27,11 +27,5 @@ open LowerBounds
         loc.params.params.depth ≤ solver.params.params.depth :=
   ThirdPartyFacts.locality_lift_partial (p := p) (solver := solver)
 
-@[inline] def no_general_solver_of_no_local_partial
-  {p : Models.GapPartialMCSPParams}
-  (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver_Partial p, False) :
-  ∀ _solver : SmallGeneralCircuitSolver_Partial p, False :=
-  ThirdPartyFacts.no_general_solver_of_no_local_partial (p := p) H
-
 end Magnification
 end Pnp3

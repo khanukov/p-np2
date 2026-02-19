@@ -155,24 +155,5 @@ def locality_lift_partial
   · simpa [localParams, localSolver, fromFactsLocalParamsPartial]
       using hdepth
 
-def no_general_solver_of_no_local_partial
-  {p : Models.GapPartialMCSPParams}
-  (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver_Partial p, False) :
-  ∀ _solver : Magnification.SmallGeneralCircuitSolver_Partial p, False := by
-  classical
-  intro solver
-  have : ∀ solver' : Facts.LocalityLift.SmallLocalCircuitSolver (toFactsParamsPartial p),
-      False := by
-    intro solver'
-    let localParams : LowerBounds.SmallLocalCircuitParamsPartial p :=
-      fromFactsLocalParamsPartial (p := p) solver'
-    let localSolver : LowerBounds.SmallLocalCircuitSolver_Partial p :=
-      { params := localParams
-        decide := solver.decide
-        correct := solver.correct }
-    exact H localSolver
-  have h := Facts.LocalityLift.no_general_solver_of_no_local (p := toFactsParamsPartial p) this
-  simpa using h (toFactsGeneralSolverPartial solver)
-
 end ThirdPartyFacts
 end Pnp3

@@ -23,23 +23,28 @@ open ComplexityInterfaces
   ### Partial MCSP bridge for formulas
 -/
 
-theorem NP_not_subset_Ppoly_from_partial_formulas
+/--
+  Realized variant of `NP_not_subset_Ppoly_from_partial_formulas`.
+-/
+theorem NP_not_subset_Ppoly_from_partial_formulas_realized
   {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ)
-  (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) :
+  (hLocalized : LowerBounds.LocalizedFamilyWitnessHypothesis_partial_realized p) :
   NP_not_subset_Ppoly := by
   have hHyp : FormulaLowerBoundHypothesisPartial p δ :=
     formula_hypothesis_from_pipeline_partial (p := p) (δ := δ) hδ
-  exact OPS_trigger_formulas_partial (p := p) (δ := δ) hF_all hHyp
+  exact
+    OPS_trigger_formulas_partial_realized
+      (p := p) (δ := δ) hLocalized hHyp
 
-theorem P_ne_NP_from_partial_formulas
+/--
+  Realized variant of `P_ne_NP_from_partial_formulas`.
+-/
+theorem P_ne_NP_from_partial_formulas_realized
   {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ)
-  (hF_all : ∀ loc : LowerBounds.SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) : P_ne_NP := by
+  (hLocalized : LowerBounds.LocalizedFamilyWitnessHypothesis_partial_realized p) : P_ne_NP := by
   have hNP : NP_not_subset_Ppoly :=
-    NP_not_subset_Ppoly_from_partial_formulas (p := p) (δ := δ) hδ hF_all
+    NP_not_subset_Ppoly_from_partial_formulas_realized
+      (p := p) (δ := δ) hδ hLocalized
   exact P_ne_NP_of_nonuniform_separation hNP P_subset_Ppoly_proof
 
 end Magnification

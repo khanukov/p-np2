@@ -2,18 +2,153 @@
 # Full project compilation, smoke test, and axiom inventory check.
 set -euo pipefail
 
+have_rg=0
+if command -v rg >/dev/null 2>&1; then
+  have_rg=1
+fi
+
+search_regex() {
+  local pattern="$1"
+  shift
+  if [[ "${have_rg}" -eq 1 ]]; then
+    rg "$pattern" "$@"
+  else
+    grep -R -n -E --include='*.lean' "$pattern" "$@"
+  fi
+}
+
+search_fixed_quiet() {
+  local needle="$1"
+  local file="$2"
+  if [[ "${have_rg}" -eq 1 ]]; then
+    rg -Fq "$needle" "$file"
+  else
+    grep -Fq "$needle" "$file"
+  fi
+}
+
 lake build
 lake env lean --run scripts/smoke.lean
 
+echo "Checking that pnp3 contains no sorry/admit placeholders..."
+if search_regex "^[[:space:]]*(sorry|admit)\\>|:=[[:space:]]*by[[:space:]]*(sorry|admit)\\>" pnp3; then
+  echo "Found forbidden placeholders (sorry/admit) in pnp3/*.lean."
+  exit 1
+fi
+echo "No sorry/admit placeholders in pnp3."
+
+echo "Checking proof-cone isolation from experimental modules..."
+# Experimental modules are allowed in tests/sandbox files only.
+# Guardrail goal: prevent accidental imports into the active P≠NP proof cone.
+exp_import_hits="$(search_regex "^[[:space:]]*import[[:space:]]+(AC0\\.MultiSwitching\\.(ShrinkageFromGood|Main)|ThirdPartyFacts\\.ConstructiveSwitching)\\b" pnp3 || true)"
+if [[ -n "${exp_import_hits}" ]]; then
+  exp_import_violations="$(printf '%s\n' "${exp_import_hits}" | awk -F: '
+    {
+      file = $1
+      ok = 0
+      if (file ~ /^pnp3\/Tests\//) ok = 1
+      if (file == "pnp3/AC0/MultiSwitching/Main.lean") ok = 1
+      if (file == "pnp3/AC0/MultiSwitching/ShrinkageFromGood.lean") ok = 1
+      if (file == "pnp3/ThirdPartyFacts/Depth2_Constructive.lean") ok = 1
+      if (!ok) print $0
+    }')"
+  if [[ -n "${exp_import_violations}" ]]; then
+    echo "Forbidden import of experimental modules outside allowed files."
+    echo "Violations:"
+    printf '%s\n' "${exp_import_violations}"
+    exit 1
+  fi
+fi
+echo "Experimental-module isolation OK."
+
 echo "Checking active axiom inventory..."
-# One external theorem is intentionally imported as an axiom:
-# `ThirdPartyFacts.PartialMCSP_is_NP_Hard` from Hirahara (2022).
-expected_axioms=1
-actual_axioms=$(rg "^[[:space:]]*axiom " -g"*.lean" pnp3 | wc -l | tr -d ' ')
+expected_axioms=0
+actual_axioms="$( (search_regex "^[[:space:]]*axiom " pnp3 || true) | wc -l | tr -d ' ' )"
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."
   echo "Listing active axioms:"
-  rg "^[[:space:]]*axiom " -g"*.lean" pnp3
+  search_regex "^[[:space:]]*axiom " pnp3
   exit 1
 fi
 echo "Axiom inventory OK (${actual_axioms} axioms)."
+
+echo "Checking final-theorem axiom dependencies (AxiomsAudit)..."
+audit_output="$(lake env lean pnp3/Tests/AxiomsAudit.lean 2>&1)"
+normalized_output="$(printf '%s\n' "${audit_output}" | tr '\n' ' ' | tr -s ' ')"
+expected_count=11
+total_lines_count="$(printf '%s\n' "${normalized_output}" | grep -o "depends on axioms: \[" | wc -l | tr -d ' ')"
+allowed_base_count="$(printf '%s\n' "${normalized_output}" | (grep -o "depends on axioms: \[propext, Classical.choice, Quot.sound\]" || true) | wc -l | tr -d ' ')"
+if [[ "${total_lines_count}" -ne "${expected_count}" || "${allowed_base_count}" -ne "${expected_count}" ]]; then
+  echo "Unexpected axiom dependencies in pnp3/Tests/AxiomsAudit.lean."
+  echo "Expected exactly ${expected_count} lines with: [propext, Classical.choice, Quot.sound]"
+  echo
+  printf '%s\n' "${audit_output}"
+  exit 1
+fi
+echo "AxiomsAudit OK (${expected_count} target theorems; no project-specific axioms)."
+
+echo "Checking core-cone axiom dependencies (CoreConeAxiomsAudit)..."
+core_audit_output="$(lake env lean pnp3/Tests/CoreConeAxiomsAudit.lean 2>&1)"
+core_normalized_output="$(printf '%s\n' "${core_audit_output}" | tr '\n' ' ' | tr -s ' ')"
+core_expected_count=8
+core_total_lines_count="$(printf '%s\n' "${core_normalized_output}" | grep -o "depends on axioms: \[" | wc -l | tr -d ' ')"
+core_allowed_base_count="$(printf '%s\n' "${core_normalized_output}" | grep -o "depends on axioms: \[propext, Classical.choice, Quot.sound\]" | wc -l | tr -d ' ')"
+if [[ "${core_total_lines_count}" -ne "${core_expected_count}" || "${core_allowed_base_count}" -ne "${core_expected_count}" ]]; then
+  echo "Unexpected axiom dependencies in pnp3/Tests/CoreConeAxiomsAudit.lean."
+  echo "Expected exactly ${core_expected_count} lines with: [propext, Classical.choice, Quot.sound]"
+  echo
+  printf '%s\n' "${core_audit_output}"
+  exit 1
+fi
+echo "CoreConeAxiomsAudit OK (${core_expected_count} theorems; no project-specific axioms)."
+
+echo "Checking anti-checker cone axiom dependencies (AntiCheckerConeAxiomsAudit)..."
+anti_output="$(lake env lean pnp3/Tests/AntiCheckerConeAxiomsAudit.lean 2>&1)"
+anti_normalized_output="$(printf '%s\n' "${anti_output}" | tr '\n' ' ' | tr -s ' ')"
+anti_expected_count=6
+anti_total_lines_count="$(printf '%s\n' "${anti_normalized_output}" | grep -o "depends on axioms: \[" | wc -l | tr -d ' ')"
+anti_allowed_base_count="$(printf '%s\n' "${anti_normalized_output}" | grep -o "depends on axioms: \[propext, Classical.choice, Quot.sound\]" | wc -l | tr -d ' ')"
+if [[ "${anti_total_lines_count}" -ne "${anti_expected_count}" || "${anti_allowed_base_count}" -ne "${anti_expected_count}" ]]; then
+  echo "Unexpected axiom dependencies in pnp3/Tests/AntiCheckerConeAxiomsAudit.lean."
+  echo "Expected exactly ${anti_expected_count} lines with: [propext, Classical.choice, Quot.sound]"
+  echo
+  printf '%s\n' "${anti_output}"
+  exit 1
+fi
+echo "AntiCheckerConeAxiomsAudit OK (${anti_expected_count} theorems; no project-specific axioms)."
+
+echo "Checking that critical anti-checker files contain no False.elim..."
+critical_files=(
+  "pnp3/LowerBounds/AntiChecker_Partial.lean"
+  "pnp3/LowerBounds/LB_Formulas_Core_Partial.lean"
+  "pnp3/LowerBounds/LB_LocalCircuits_Partial.lean"
+)
+if search_regex "False\\.elim" "${critical_files[@]}"; then
+  echo "Found forbidden False.elim in critical anti-checker files."
+  exit 1
+fi
+echo "No False.elim in critical anti-checker files."
+
+echo "Checking publication gap list consistency..."
+gap_doc="docs/Publication.md"
+if [[ ! -f "${gap_doc}" ]]; then
+  echo "Missing ${gap_doc}."
+  exit 1
+fi
+
+expected_gap_axioms=()
+for ax in "${expected_gap_axioms[@]}"; do
+  if ! search_fixed_quiet "${ax}" "${gap_doc}"; then
+    echo "Publication gap doc is missing axiom name: ${ax}"
+    exit 1
+  fi
+done
+
+actual_axiom_names="$(search_regex "^[[:space:]]*axiom " pnp3 | sed -E 's/.*axiom[[:space:]]+([A-Za-z0-9_]+).*/\1/' | sort -u || true)"
+for name in ${actual_axiom_names}; do
+  if ! search_fixed_quiet "${name}" "${gap_doc}"; then
+    echo "Publication gap doc does not mention active axiom: ${name}"
+    exit 1
+  fi
+done
+echo "Publication gap list is consistent with active axioms."

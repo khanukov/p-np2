@@ -26,7 +26,7 @@ def main : IO Unit := do
   IO.println "✓ Counting module bounds accessible"
   IO.println "✓ Lower bounds construction verified"
   IO.println "✓ Magnification pipeline present"
-  IO.println "✓ Final theorem P_ne_NP_final compiled"
+  IO.println "✓ Final theorem P_ne_NP_final_asymptotic compiled"
   IO.println ""
 
   IO.println "Running Unit Tests..."

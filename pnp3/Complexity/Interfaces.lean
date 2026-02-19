@@ -43,7 +43,7 @@ abbrev Language := Complexity.Language
 abbrev Bitstring := Complexity.Bitstring
 
 /-- Класс `P` из лёгкой формализации внешнего пакета. -/
-abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
+abbrev P : Language → Prop := Facts.PsubsetPpoly.P
 
 /-- Класс `P/poly` из того же пакета. -/
 abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
@@ -88,32 +88,8 @@ noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m
         exact (Nat.add_lt_add_iff_left).1 this
       exact w ⟨t, ht_lt⟩
 
-/--
-Класс `NP` через полиномиальный верификатор: язык `L` принадлежит `NP`,
-если существует TM, которая за полиномиальное время проверяет сертификат
-полиномиальной длины, принимая ровно те пары `(x, w)`, где `w` подтверждает
-принадлежность `x` языку `L`.
--/
-def NP (L : Language) : Prop :=
-  ∃ (c k : Nat)
-    (runTime : Nat → Nat)
-    (verify : ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool),
-    (∀ n,
-      runTime (n + certificateLength n k) ≤
-        (n + certificateLength n k) ^ c + c) ∧
-    (∀ n (x : Bitstring n),
-      L n x = true ↔
-        ∃ w : Bitstring (certificateLength n k),
-          verify n x w = true)
-
 /-!
-### TM-мост для `NP`
-
-Иногда удобнее иметь формулировку NP прямо через Turing-машины из
-внешнего пакета `Facts.PsubsetPpoly`. Ниже мы добавляем определение
-`NP_TM` и лемму, которая переводит такое TM-свидетельство в абстрактное
-`NP`-свидетельство. Это именно «мост»: он не меняет базовое определение
-`NP`, но позволяет использовать TM-инфраструктуру при необходимости.
+### Машинная формализация `NP`
 -/
 
 /--
@@ -136,24 +112,25 @@ def NP_TM (L : Language) : Prop :=
               (n := n + certificateLength n k)
               (concatBitstring x w) = true)
 
-/--
-TM-верификатор порождает абстрактный верификатор: просто берём
-`verify := TM.accepts` на склеенном входе, а временной бюджет
-копируем из `M.runTime`.
--/
+/-- В active-пайплайне `NP` определяется machine-first формой `NP_TM`. -/
+abbrev NP (L : Language) : Prop := NP_TM L
+
 theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
-  intro hTM
-  rcases hTM with ⟨M, c, k, hRun, hCorrect⟩
-  refine ⟨c, k, M.runTime, ?verify, ?hRun', ?hCorrect'⟩
-  · intro n x w
-    exact Facts.PsubsetPpoly.TM.accepts
-      (M := M)
-      (n := n + certificateLength n k)
-      (concatBitstring x w)
-  · intro n
-    exact hRun n
-  · intro n x
-    simpa using hCorrect n x
+  intro h
+  exact h
+
+/-!
+### Strict NP
+
+`NP_strict` совпадает с machine-first формой `NP_TM`.
+-/
+
+/-- Строгая интерфейсная версия класса `NP` (machine-first). -/
+abbrev NP_strict (L : Language) : Prop := NP_TM L
+
+/-- Любой strict-NP witness автоматически даёт witness в текущем `NP`. -/
+theorem NP_of_NP_strict {L : Language} : NP_strict L → NP L :=
+  fun h => h
 
 /-!
 ### Формулировки целевых утверждений
@@ -164,7 +141,7 @@ def NP_not_subset_Ppoly : Prop := ∃ L, NP L ∧ ¬ Ppoly L
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
 def P_subset_Ppoly : Prop :=
-  ∀ L, Facts.PsubsetPpoly.P.{0} L → Facts.PsubsetPpoly.Ppoly L
+  ∀ L, Facts.PsubsetPpoly.P L → Facts.PsubsetPpoly.Ppoly L
 
 /--
   Доказательство включения `P ⊆ P/poly`, предоставленное внешним модулем.
@@ -176,7 +153,7 @@ def P_subset_Ppoly : Prop :=
   exact (ThirdPartyFacts.P_subset_Ppoly_proof (L := L) hL)
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
-def P_ne_NP : Prop := Facts.PsubsetPpoly.P.{0} ≠ NP
+def P_ne_NP : Prop := Facts.PsubsetPpoly.P ≠ NP
 
 /-!
 ### Логический вывод `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`
@@ -198,9 +175,9 @@ theorem P_ne_NP_of_nonuniform_separation_concrete
   classical
   -- Предположим противное и выведем противоречие с `hNP`.
   refine fun hEq => ?_
-  have hNP_subset_P : ∀ {L : Language}, NP L → Facts.PsubsetPpoly.P.{0} L := by
+  have hNP_subset_P : ∀ {L : Language}, NP L → Facts.PsubsetPpoly.P L := by
     intro L hL
-    have hEq_pointwise : Facts.PsubsetPpoly.P.{0} L = NP L := congrArg (fun f => f L) hEq
+    have hEq_pointwise : Facts.PsubsetPpoly.P L = NP L := congrArg (fun f => f L) hEq
     exact hEq_pointwise.symm ▸ hL
   have hNP_subset_Ppoly : ∀ {L : Language}, NP L → Ppoly L := by
     intro L hL

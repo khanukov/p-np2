@@ -1,14 +1,27 @@
-# Проект PNP3: конвейер SAL → магнификация
+# `pnp3/`: Active Proof Tree
 
-Этот каталог содержит новую итерацию программы доказательства, построенную вокруг Switching-Atlas Lemma (SAL) и мостов к триггерам hardness magnification. Структура каталога следует шагам из пошагового плана:
+`pnp3/` is the active Lean formalization tree used by the current project result.
+It implements the pipeline:
 
-- `Core/` — определения подкубов, частичных решающих деревьев и словарей-атласов, а также комбинаторное ядро SAL.
-- `Counting/` — результаты о счёте ёмкости словаря и аппроксимаций.
-- `ThirdPartyFacts/` — внешние факты (multi-switching, счёт лёгких функций и пр.).
-- `Models/` — формализация языков (Gap)MCSP и связанных параметров.
-- `LowerBounds/` — выводы нижних оценок для формул и локальных схем.
-- `Magnification/` — внешние факты из литературы и мосты к итоговому разделению.
-- `Tests/` — Lean-проверки и негативные/положительные регрессионные тесты (паритет, smoke-тесты и т.п.).
-- `Docs/` — текстовые заметки, контрольные списки и ссылки на источники.
+`Part A (Shrinkage/SAL) -> Part B (Counting) -> Part C (Anti-checker) -> Part D (Magnification)`
 
-Каждый Lean-файл сейчас содержит подробные комментарии-шаблоны с перечислением целей, зависимостей и критериев готовности. По мере реализации пункты будут заменяться доказательствами или импортами фактов.
+## Main entry points
+- `Magnification/FinalResult.lean` - final theorem name (`P_ne_NP_final_asymptotic`)
+- `Tests/AxiomsAudit.lean` - final-cone axiom dependency printout
+- `Tests/CoreConeAxiomsAudit.lean` - core-cone axiom dependency printout
+- `Tests/AntiCheckerConeAxiomsAudit.lean` - anti-checker-cone axiom dependency printout
+
+## Directory map
+- `Core/` - subcubes, partial decision trees, atlas/SAL core.
+- `Counting/` - capacity and approximation bounds.
+- `Models/` - Partial MCSP model/language definitions.
+- `LowerBounds/` - Part C lower-bound kernels and anti-checker machinery.
+- `Magnification/` - Part D bridges and final assembly.
+- `ThirdPartyFacts/` - external interfaces/scaffolding and imported bridges.
+- `Complexity/` - complexity-class/reduction interfaces used by magnification.
+- `Tests/` - regression and audit Lean files.
+- `Docs/` - module-local technical notes.
+
+## Documentation policy
+Global project status/planning docs are centralized in `docs/` at repository root.
+Module-local deep technical notes stay under `pnp3/Docs/`.

@@ -53,11 +53,6 @@ lemma constTrue_correct :
   intro n x
   simp [constTrueLanguage, constTrueTM, TM.accepts, TM.run, TM.runConfig]
 
-/-- Witness that the constant-true language belongs to `P/poly`. -/
-noncomputable def constTrue_inPpoly : InPpoly constTrueLanguage :=
-  inPpoly_of_polyBound (M := constTrueTM) (c := 0)
-    constTrue_runTime constTrue_correct
-
 lemma constTrue_in_Ppoly_via_theorem : constTrueLanguage ∈ Ppoly := by
   have hP : constTrueLanguage ∈ P := by
     refine ⟨constTrueTM, 0, constTrue_runTime, constTrue_correct⟩
@@ -141,11 +136,6 @@ lemma firstBit_correct :
       simp [TM.accepts, hRun, TM.stepConfig, firstBitTM, hState, hSymbol,
         TM.Configuration.moveHead, TM.Configuration.write]
     simp [firstBitLanguage, hpos, hAccept]
-
-/-- Witness showing the first-bit language is in `P/poly`. -/
-noncomputable def firstBit_inPpoly : InPpoly firstBitLanguage :=
-  inPpoly_of_polyBound (M := firstBitTM) (c := 1)
-    firstBit_runTime firstBit_correct
 
 lemma firstBit_in_Ppoly_via_theorem : firstBitLanguage ∈ Ppoly := by
   have hP : firstBitLanguage ∈ P := by

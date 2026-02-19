@@ -1,0 +1,23 @@
+✖ [2918/2934] Building Models.Model_PartialMCSP
+trace: .> LEAN_PATH=/root/p-np2/.lake/packages/Cli/.lake/build/lib/lean:/root/p-np2/.lake/packages/batteries/.lake/build/lib/lean:/root/p-np2/.lake/packages/Qq/.lake/build/lib/lean:/root/p-np2/.lake/packages/aesop/.lake/build/lib/lean:/root/p-np2/.lake/packages/proofwidgets/.lake/build/lib/lean:/root/p-np2/.lake/packages/importGraph/.lake/build/lib/lean:/root/p-np2/.lake/packages/LeanSearchClient/.lake/build/lib/lean:/root/p-np2/.lake/packages/plausible/.lake/build/lib/lean:/root/p-np2/.lake/packages/mathlib/.lake/build/lib/lean:/root/p-np2/Facts/PsubsetPpoly/.lake/build/lib/lean:/root/p-np2/Facts/LocalityLift/.lake/build/lib/lean:/root/p-np2/Facts/Sunflower/.lake/build/lib/lean:/root/p-np2/.lake/build/lib/lean /root/.elan/toolchains/leanprover--lean4---v4.22.0-rc2/bin/lean /root/p-np2/pnp3/Models/Model_PartialMCSP.lean -o /root/p-np2/.lake/build/lib/lean/Models/Model_PartialMCSP.olean -i /root/p-np2/.lake/build/lib/lean/Models/Model_PartialMCSP.ilean -c /root/p-np2/.lake/build/ir/Models/Model_PartialMCSP.c --setup /root/p-np2/.lake/build/ir/Models/Model_PartialMCSP.setup.json --json
+error: pnp3/Models/Model_PartialMCSP.lean:140:14: unsolved goals
+case false.calc.step
+n : ℕ
+f : Core.BitVec (n + 1) → Bool
+x : Core.BitVec (n + 1)
+i0 : Fin (n + 1) := ⟨0, ⋯⟩
+t : Core.BitVec n := tail x
+f0 : Core.BitVec n → Bool := fun u => f (Fin.cons false u)
+f1 : Core.BitVec n → Bool := fun u => f (Fin.cons true u)
+h1 : (ofFunction n f1).eval t = f1 t
+h0 : (ofFunction n f0).eval t = f0 t
+hx : x = Fin.cons (x i0) t
+hbit : x i0 = false
+hx' : x = Fin.cons false t
+⊢ (ofFunction n f0).eval t = f x
+error: pnp3/Models/Model_PartialMCSP.lean:139:6: Alternative 'true' has not been provided
+error: pnp3/Models/Model_PartialMCSP.lean:149:27: unexpected token 'using'; expected command
+error: Lean exited with code 1
+Some required builds logged failures:
+- Models.Model_PartialMCSP
+error: build failed

@@ -191,14 +191,14 @@ def ac0MultiSwitchingWitness_of_depthInduction
 
 ## 9) Итоговый критерий успеха (для фиксации DoD)
 
-Когда пункты A0–A8 из `AC0_SHRINKAGE_PLAN.md` закрыты, то:
+Когда основные пункты multi-switching из `docs/Roadmap.md` и
+`pnp3/Docs/MultiSwitching_NextStep.md` закрыты, то:
 
 * `AC0MultiSwitchingWitness` / `AC0PolylogBoundWitness` строятся
   **внутри проекта**, без внешних фактов;
 * `partial_shrinkage_for_AC0` и `shrinkage_for_localCircuit` становятся
   внутренними теоремами;
 * вся цепочка P≠NP зависит только от **одной** внешней аксиомы:
-  `PartialMCSP_is_NP_Hard`.
 
 Если цель — полностью безусловный статус, нужно закрыть ветку B
 (NP‑hardness PartialMCSP) в плане.

@@ -13,8 +13,7 @@ import AC0.MultiSwitching.Counting
   Шаг 4.2: из "good restriction" → PartialCertificate.
 
   В этой версии мы сразу строим **реальные selectors** и добиваемся
-  точности `ε = 1/(n+2)` (а фактически `errU = 0`). Для этого мы используем
-  «точечные» подкубы
+  точности `ε = 0`.  Для этого мы используем «точечные» подкубы
   (one-point subcubes) и берём список всех входов, на которых функция
   равна `true`.
 
@@ -32,15 +31,13 @@ open Core
 open ThirdPartyFacts
 
 /-!
-### Точечные selectors и точность ε = 1/(n+2)
+### Точечные selectors и точность ε = 0
 
 Для любой функции `f` мы можем взять все точки, на которых `f = true`,
 и представить их как список точечных подкубов. Тогда покрытие `coveredB`
 совпадает с `f`, и ошибка `errU` равна нулю.
 
-Эта конструкция полностью детерминирована и не требует аксиом. Поскольку
-ошибка `errU` равна нулю, мы можем ослабить оценку до `1/(n+2)` — это
-совместимо с числовой частью Stage‑3/Stage‑4.
+Эта конструкция полностью детерминирована и не требует аксиом.
 -/
 
 noncomputable def allPointSubcubes (n : Nat) : List (Subcube n) :=
@@ -106,8 +103,7 @@ lemma coveredB_selectorsOfFunction
         exact this.symm
       subst hx
       have : False := by
-        have hfalse : false = true := hfx'.symm.trans hy
-        exact Bool.false_ne_true hfalse
+        simp [hfx'] at hy
       exact this.elim
     · have hcovB' : coveredB (selectorsOfFunction (f := f)) x = false := by
         cases hval : coveredB (selectorsOfFunction (f := f)) x with
@@ -132,7 +128,7 @@ lemma selectorsOfFunction_sub_leaves
   exact ThirdPartyFacts.buildPDTFromSubcubes_leaves_subset hpos (allPointSubcubes n) β hβ'
 
 /-!
-### PartialCertificate из restriction (ε = 1/(n+2))
+### PartialCertificate из restriction (ε = 0)
 
 Важно: для точечных selectors условие "good restriction" **не нужно**.
 Мы строим сертификат напрямую из таблицы истинности, поэтому корректность
@@ -145,22 +141,17 @@ theorem partialCertificate_from_restriction
     {n k : Nat} (F : FormulaFamily n k)
     (ρ : Restriction n) :
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
-      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
-        C.epsilon = (1 : Q) / (n + 2) := by
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧ C.epsilon = 0 := by
   classical
   -- Важно: конструкция точечных selectors **не зависит** от restriction `ρ`.
   -- Явно отмечаем это, чтобы избежать предупреждений о неиспользуемой переменной.
   have _ := ρ
   by_cases hpos : 0 < n
   · let tree := ThirdPartyFacts.buildPDTFromSubcubes hpos (allPointSubcubes n)
-    have hε : (0 : Q) ≤ (1 : Q) / (n + 2) := by
-      have hnonneg : (0 : Q) ≤ (n + 2) := by
-        exact_mod_cast (Nat.zero_le (n + 2))
-      exact div_nonneg (show (0 : Q) ≤ (1 : Q) by exact zero_le_one) hnonneg
     refine ⟨0, {
       witness := PartialDT.ofPDT tree
       depthBound := (allPointSubcubes n).length
-      epsilon := (1 : Q) / (n + 2)
+      epsilon := 0
       trunk_depth_le := by
         simpa [PartialDT.ofPDT] using
           (ThirdPartyFacts.buildPDTFromSubcubes_depth hpos (allPointSubcubes n))
@@ -174,23 +165,17 @@ theorem partialCertificate_from_restriction
         simpa [PartialDT.realize_ofPDT] using hleaf
       err_le := by
         intro f hf
-        have herr : errU f (selectorsOfFunction (f := f)) = 0 := by
-          apply errU_eq_zero_of_agree
-          intro x
-          simpa [eq_comm] using coveredB_selectorsOfFunction (f := f) (x := x)
-        -- Ошибка 0 ≤ 1/(n+2).
-        simpa [herr] using hε
+        apply le_of_eq
+        apply errU_eq_zero_of_agree
+        intro x
+        simpa [eq_comm] using coveredB_selectorsOfFunction (f := f) (x := x)
     }, rfl, rfl, rfl⟩
   · have hzero : n = 0 := Nat.eq_zero_of_not_pos hpos
     let tree : PDT n := PDT.leaf (fullSubcube n)
-    have hε : (0 : Q) ≤ (1 : Q) / (n + 2) := by
-      have hnonneg : (0 : Q) ≤ (n + 2) := by
-        exact_mod_cast (Nat.zero_le (n + 2))
-      exact div_nonneg (show (0 : Q) ≤ (1 : Q) by exact zero_le_one) hnonneg
     refine ⟨0, {
       witness := PartialDT.ofPDT tree
       depthBound := (allPointSubcubes n).length
-      epsilon := (1 : Q) / (n + 2)
+      epsilon := 0
       trunk_depth_le := by
         have : PDT.depth tree = 0 := by
           simp [tree, PDT.depth]
@@ -204,15 +189,14 @@ theorem partialCertificate_from_restriction
         simp [PartialDT.realize_ofPDT, tree, PDT.leaves, hfull]
       err_le := by
         intro f hf
-        have herr : errU f (selectorsOfFunction (f := f)) = 0 := by
-          apply errU_eq_zero_of_agree
-          intro x
-          simpa [eq_comm] using coveredB_selectorsOfFunction (f := f) (x := x)
-        simpa [herr] using hε
+        apply le_of_eq
+        apply errU_eq_zero_of_agree
+        intro x
+        simpa [eq_comm] using coveredB_selectorsOfFunction (f := f) (x := x)
     }, rfl, rfl, rfl⟩
 
 /-!
-### PartialCertificate из good restriction (ε = 1/(n+2))
+### PartialCertificate из good restriction (ε = 0)
 
 Это тонкая обёртка над `partialCertificate_from_restriction`,
 оставляемая для логической читабельности Stage 4.
@@ -222,8 +206,7 @@ theorem partialCertificate_from_good_restriction
     {n k t : Nat} (F : FormulaFamily n k)
     (ρ : Restriction n) (hgood : GoodFamilyCNF (F := F) t ρ) :
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
-      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
-        C.epsilon = (1 : Q) / (n + 2) := by
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧ C.epsilon = 0 := by
   -- В этой версии `hgood` не используется: точечные selectors корректны всегда.
   -- Явно отмечаем использование, чтобы избежать предупреждения линтера.
   have _ := hgood
@@ -240,26 +223,40 @@ theorem shrinkage_from_restriction
     {n k : Nat} (F : FormulaFamily n k)
     (ρ : Restriction n) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
-        S.ε = (1 : Q) / (n + 2) := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
   obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
     partialCertificate_from_restriction (F := F) (ρ := ρ)
   -- Переходим к Shrinkage через `PartialCertificate.toShrinkage`.
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
   · simp [S]
-  · simp [S, hdepth, hℓ]
+  · simp [S, hℓ, hdepth]
   · simp [S, hε]
 
 theorem shrinkage_from_good_restriction
     {n k t : Nat} (F : FormulaFamily n k)
     (ρ : Restriction n) (hgood : GoodFamilyCNF (F := F) t ρ) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
-        S.ε = (1 : Q) / (n + 2) := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
   -- Обёртка над `shrinkage_from_restriction`: good restriction не требуется.
   have _ := hgood
   simpa using (shrinkage_from_restriction (F := F) (ρ := ρ))
+
+
+/--
+  Усиленная версия API: помимо shrinkage-данных, явно возвращаем факт
+  `GoodFamilyCNF ...` обратно в результат. Это фиксирует proof-relevant
+  зависимость от `hgood` в сигнатуре без изменения конструктивной части
+  сертификата.
+-/
+theorem shrinkage_from_good_restriction_with_depth
+    {n k t : Nat} (F : FormulaFamily n k)
+    (ρ : Restriction n) (hgood : GoodFamilyCNF (F := F) t ρ) :
+    ∃ (S : Shrinkage n),
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 ∧
+      GoodFamilyCNF (F := F) t ρ := by
+  rcases shrinkage_from_good_restriction (F := F) (ρ := ρ) hgood with ⟨S, hF, ht, hε⟩
+  exact ⟨S, hF, ht, hε, hgood⟩
 
 /-!
 ### Depth‑2 CNF: полный шаг "counting → good → certificate"
@@ -280,8 +277,7 @@ theorem partialCertificate_depth2_cnf_of_bound
       (R_s (n := n) (s - t)).card * (2 * n) ^ t
         < (R_s (n := n) s).card) :
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily ([F] : FormulaFamily n w))),
-      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
-        C.epsilon = (1 : Q) / (n + 2) := by
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧ C.epsilon = 0 := by
   -- Шаг 1: существует good restriction для одной формулы.
   obtain ⟨ρ, hρs, hnotbad⟩ :=
     exists_good_restriction_cnf_of_bound (F := F) (s := s) (t := t) hbound
@@ -311,13 +307,13 @@ theorem shrinkage_depth2_cnf_of_bound
         < (R_s (n := n) s).card) :
     ∃ (S : Shrinkage n),
       S.F = evalFamily ([F] : FormulaFamily n w) ∧
-        S.t = (allPointSubcubes n).length ∧ S.ε = (1 : Q) / (n + 2) := by
+        S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
   obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
     partialCertificate_depth2_cnf_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
   · simp [S]
-  · simp [S, hdepth, hℓ]
+  · simp [S, hℓ, hdepth]
   · simp [S, hε]
 
 /-!
@@ -333,8 +329,7 @@ theorem partialCertificate_depth2_cnf_family_of_bound
       (R_s (n := n) (s - t)).card * (F.length + 1) * (2 * n) ^ t
         < (R_s (n := n) s).card) :
     ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
-      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
-        C.epsilon = (1 : Q) / (n + 2) := by
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧ C.epsilon = 0 := by
   obtain ⟨ρ, hρs, hnotbad⟩ :=
     exists_good_restriction_cnf_family_of_bound_small (F := F) (s := s) (t := t) hbound
   have hgood : GoodFamilyCNF (F := F) t ρ := by
@@ -347,14 +342,66 @@ theorem shrinkage_depth2_cnf_family_of_bound
       (R_s (n := n) (s - t)).card * (F.length + 1) * (2 * n) ^ t
         < (R_s (n := n) s).card) :
     ∃ (S : Shrinkage n),
-      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
-        S.ε = (1 : Q) / (n + 2) := by
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧ S.ε = 0 := by
   obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
     partialCertificate_depth2_cnf_family_of_bound (F := F) (s := s) (t := t) hbound
   let S := C.toShrinkage
   refine ⟨S, ?_, ?_, ?_⟩
   · simp [S]
-  · simp [S, hdepth, hℓ]
+  · simp [S, hℓ, hdepth]
+  · simp [S, hε]
+
+
+/-!
+### Compatibility wrappers for Stage 1–4 API (`ε = 1/(n+2)`)
+
+`Main.lean` использует исторические имена `*_trivial` с фиксированным
+значением `ε = 1/(n+2)`. Ниже мы получаем их из конструктивных
+сертификатов с `ε = 0` через монотонность неравенства ошибки.
+-/
+
+theorem partialCertificate_from_restriction_trivial
+    {n k : Nat} (F : FormulaFamily n k)
+    (ρ : Restriction n) :
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
+        C.epsilon = (1 : Q) / (n + 2) := by
+  classical
+  obtain ⟨ℓ, C0, hℓ, hdepth, hε0⟩ :=
+    partialCertificate_from_restriction (F := F) (ρ := ρ)
+  subst hℓ
+  have hnonneg : (0 : Q) ≤ (1 : Q) / (n + 2) := by
+    have h1 : (0 : Q) ≤ (1 : Q) := by exact zero_le_one
+    have h2 : (0 : Q) ≤ (n : Q) + 2 := by positivity
+    exact div_nonneg h1 h2
+  let C : PartialCertificate n 0 (evalFamily F) :=
+    { witness := C0.witness
+      depthBound := C0.depthBound
+      epsilon := (1 : Q) / (n + 2)
+      trunk_depth_le := C0.trunk_depth_le
+      selectors := C0.selectors
+      selectors_sub := C0.selectors_sub
+      err_le := by
+        intro g hg
+        have h0 : errU g (C0.selectors g) ≤ C0.epsilon := C0.err_le hg
+        -- Переписываем `C0.epsilon = 0`.
+        have h0' : errU g (C0.selectors g) ≤ 0 := by simpa [hε0] using h0
+        exact le_trans h0' hnonneg }
+  refine ⟨0, C, rfl, ?_, rfl⟩
+  simpa [C] using hdepth
+
+theorem shrinkage_from_restriction_trivial
+    {n k : Nat} (F : FormulaFamily n k)
+    (ρ : Restriction n) :
+    ∃ (S : Shrinkage n),
+      S.F = evalFamily F ∧ S.t = (allPointSubcubes n).length ∧
+        S.ε = (1 : Q) / (n + 2) := by
+  obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
+    partialCertificate_from_restriction_trivial (F := F) (ρ := ρ)
+  let S := C.toShrinkage
+  refine ⟨S, ?_, ?_, ?_⟩
+  · simp [S]
+  · simp [S, hℓ, hdepth]
   · simp [S, hε]
 
 end MultiSwitching

@@ -278,7 +278,7 @@ theorem shrinkage_step3_2_small_canonicalCCDT
     exists_good_restriction_step3_2_small_canonicalCCDT
       (F := F) hN ht henc_small
   -- Stage 4: строим Shrinkage из произвольной рестрикции.
-  exact shrinkage_from_restriction (F := F) (ρ := ρ)
+  exact shrinkage_from_restriction_trivial (F := F) (ρ := ρ)
 
 /-!
 ## Итог Stage 1–4 (малый алфавит)
@@ -331,7 +331,7 @@ theorem stage1_6_complete_small_canonicalCCDT
     exists_good_restriction_step3_2_small_canonicalCCDT
       (F := F) hN ht henc_small
   -- Stage 4–6: из любой рестрикции строим частичный сертификат (ε = 1/(n+2)).
-  exact partialCertificate_from_restriction (F := F) (ρ := ρ)
+  exact partialCertificate_from_restriction_trivial (F := F) (ρ := ρ)
 
 /-!
 ## Числовая оценка для расширенной базы
@@ -528,7 +528,7 @@ theorem shrinkage_step3_2
   obtain ⟨ρ, -, -⟩ :=
     exists_good_restriction_step3_2 (F := F) (m := m) hm ht hbad_lt
   -- Stage 4: строим Shrinkage из произвольной restriction.
-  exact shrinkage_from_restriction (F := F) (ρ := ρ)
+  exact shrinkage_from_restriction_trivial (F := F) (ρ := ρ)
 
 /-!
 ## Итог Stage 1–4 (общий/расширенный вариант)

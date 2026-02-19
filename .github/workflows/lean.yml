@@ -15,7 +15,5 @@ jobs:
           default-toolchain: leanprover/lean4:v4.22.0-rc2
       - name: Get mathlib cache
         run: lake exe cache get
-      - name: Build project
-        run: lake build
-      - name: Run smoke test
-        run: lake env lean --run scripts/smoke.lean
+      - name: Run project checks
+        run: bash scripts/check.sh

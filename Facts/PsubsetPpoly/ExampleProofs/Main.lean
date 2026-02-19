@@ -45,7 +45,9 @@ def runConstTrueChecks : IO Unit := do
     (constTrueLanguage 2 bit10) true
   logProof "non-uniform circuit agrees with the language on a sample"
     (by
-      have h := constTrue_inPpoly.correct (n := 2) (x := bit10)
+      let w : InPpoly constTrueLanguage :=
+        Classical.choice constTrue_in_Ppoly_via_theorem
+      have h := w.correct (n := 2) (x := bit10)
       simpa [constTrueLanguage_eval] using h)
 
 /--
@@ -61,7 +63,9 @@ def runFirstBitChecks : IO Unit := do
     (TM.accepts (M := firstBitTM) (n := 2) bit01) false
   logProof "circuits reproduce the machine on a positive example"
     (by
-      have h := firstBit_inPpoly.correct (n := 2) (x := bit10)
+      let w : InPpoly firstBitLanguage :=
+        Classical.choice firstBit_in_Ppoly_via_theorem
+      have h := w.correct (n := 2) (x := bit10)
       have hPos : 0 < 2 := by decide
       simpa [firstBitLanguage, bit10, bitstring₂, hPos]
         using h)

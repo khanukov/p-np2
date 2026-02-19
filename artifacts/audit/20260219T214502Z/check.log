@@ -1,0 +1,60 @@
+⚠ [2901/2934] Replayed Models.Model_PartialMCSP
+warning: pnp3/Models/Model_PartialMCSP.lean:149:18: try 'simp' instead of 'simpa'
+
+Note: This linter can be disabled with `set_option linter.unnecessarySimpa false`
+warning: pnp3/Models/Model_PartialMCSP.lean:152:26: try 'simp' instead of 'simpa'
+
+Note: This linter can be disabled with `set_option linter.unnecessarySimpa false`
+warning: pnp3/Models/Model_PartialMCSP.lean:162:18: try 'simp' instead of 'simpa'
+
+Note: This linter can be disabled with `set_option linter.unnecessarySimpa false`
+warning: pnp3/Models/Model_PartialMCSP.lean:165:26: try 'simp' instead of 'simpa'
+
+Note: This linter can be disabled with `set_option linter.unnecessarySimpa false`
+ℹ [2929/2934] Replayed Tests.AxiomsAudit
+info: pnp3/Tests/AxiomsAudit.lean:19:0: 'Pnp3.Magnification.P_ne_NP_final_asymptotic' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:20:0: 'Pnp3.Magnification.P_ne_NP_from_partial_formulas_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:23:0: 'Pnp3.Magnification.NP_not_subset_Ppoly_from_partial_formulas_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:24:0: 'Pnp3.Magnification.OPS_trigger_formulas_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:25:0: 'Pnp3.Magnification.OPS_trigger_general_contra_partial_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:28:0: 'Pnp3.LowerBounds.LB_GeneralFromLocal_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:29:0: 'Pnp3.LowerBounds.LB_LocalCircuits_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:30:0: 'Pnp3.LowerBounds.LB_Formulas_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:33:0: 'Pnp3.ComplexityInterfaces.P_ne_NP_of_nonuniform_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:37:0: 'Pnp3.ThirdPartyFacts.partial_shrinkage_for_AC0' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/AxiomsAudit.lean:38:0: 'Pnp3.ThirdPartyFacts.shrinkage_for_localCircuit' depends on axioms: [propext, Classical.choice, Quot.sound]
+ℹ [2930/2934] Replayed Tests.CoreConeAxiomsAudit
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:22:0: 'Pnp3.Magnification.P_ne_NP_from_partial_formulas_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:23:0: 'Pnp3.Magnification.NP_not_subset_Ppoly_from_partial_formulas_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:24:0: 'Pnp3.Magnification.OPS_trigger_formulas_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:25:0: 'Pnp3.Magnification.OPS_trigger_general_contra_partial_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:26:0: 'Pnp3.LowerBounds.LB_GeneralFromLocal_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:27:0: 'Pnp3.LowerBounds.LB_LocalCircuits_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:28:0: 'Pnp3.LowerBounds.LB_Formulas_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: pnp3/Tests/CoreConeAxiomsAudit.lean:29:0: 'Pnp3.ComplexityInterfaces.P_ne_NP_of_nonuniform_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
+Build completed successfully.
+Pnp3 core modules are available and basic definitions type-check.
+Checking that pnp3 contains no sorry/admit placeholders...
+No sorry/admit placeholders in pnp3.
+Checking proof-cone isolation from experimental modules...
+Experimental-module isolation OK.
+Checking active axiom inventory...
+Axiom inventory OK (0 axioms).
+Checking final-theorem axiom dependencies (AxiomsAudit)...
+AxiomsAudit OK (11 target theorems; no project-specific axioms).
+Checking core-cone axiom dependencies (CoreConeAxiomsAudit)...
+CoreConeAxiomsAudit OK (8 theorems; no project-specific axioms).
+Checking anti-checker cone axiom dependencies (AntiCheckerConeAxiomsAudit)...
+AntiCheckerConeAxiomsAudit OK (6 theorems; no project-specific axioms).
+Checking that critical anti-checker files contain no False.elim...
+No False.elim in critical anti-checker files.
+Checking publication gap list consistency...
+Publication gap list is consistent with active axioms.

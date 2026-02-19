@@ -809,13 +809,71 @@ noncomputable def encodeBadFamilyDetCNF_small
   exact ⟨hρ', by simp [auxTraceFamilySmallCodes]⟩
 
 /-!
-### Декодирование малого encoding (TODO depth>2)
+### Декодирование малого encoding (промежуточный статус)
 
-Полный конструктивный декодер `AuxTraceSmall` и доказательство
-`encodeBadFamilyDetCNF_small_injective` временно вынесены в план
-глубинной индукции. В текущем pipeline используется расширенный
-код `encodeBadFamilyDetCNF_var`, для которого инъективность уже
-доказана ниже (`encodeBadFamilyDetCNF_var_injective`).
+В этом блоке для малого кода `AuxTraceSmall` зафиксированы:
+
+* явный декодер `decodeBadFamilyDetCNF_small` (в форме,
+  рассчитанной на вызов на образе `encodeBadFamilyDetCNF_small`),
+* лемма левой обратимости `decode_encodeBadFamilyDetCNF_small`.
+
+Полная инъективность малого кода остаётся отдельным шагом;
+расширенный путь `encodeBadFamilyDetCNF_var` уже закрыт и используется
+как полностью доказанная рабочая ветка.
+-/
+
+noncomputable def decodeBadFamilyDetCNF_small
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (code : Restriction n × FamilyTraceCodeSmall (F := F) t)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t)
+    (_hcode : (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad).1 = code) :
+    Restriction n := by
+  simpa using ρbad.1
+
+lemma decode_encodeBadFamilyDetCNF_small
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
+    decodeBadFamilyDetCNF_small (F := F) (s := s) (t := t)
+        (code := (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad).1)
+        (ρbad := ρbad) rfl
+      = ρbad.1 := by
+  rfl
+
+/-!
+### Редукция инъективности к явному левому обратному
+
+Чтобы не дублировать одинаковый шаблон доказательства инъективности,
+фиксируем универсальную лемму: если задан декодер, который на образе
+`encodeBadFamilyDetCNF_small` восстанавливает исходную рестрикцию,
+то `encodeBadFamilyDetCNF_small` инъективен.
+
+Это полностью конструктивный шаг (без новых аксиом):
+инъективность выводится исключительно из равенства после применения
+левого обратного.
+-/
+
+lemma encodeBadFamilyDetCNF_small_injective_of_leftInverse
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (decode : (Restriction n × FamilyTraceCodeSmall (F := F) t) → Restriction n)
+    (hleft :
+      ∀ ρbad : BadFamilyDetInRsCNF (F := F) s t,
+        decode (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad).1 =
+          ρbad.1) :
+    Function.Injective (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t)) := by
+  intro x y hxy
+  have hx := hleft x
+  have hy := hleft y
+  have hρ :
+      decode (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) x).1 =
+        decode (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) y).1 := by
+    simp [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
+
+/-!
+Замечание: для малого кода инъективность требует дополнительной
+реконструкции `AuxSimple` по `AuxTraceSmall`, что пока выделено
+в отдельную задачу.
 -/
 
 /-!

@@ -1,0 +1,31 @@
+## git rev-parse HEAD
+6c9d4b0de5e191e2d9fa53b5b83e9407e35f0ef2
+
+## git status --short
+ M README.md
+ M docs/CurrentState.md
+ M docs/Publication.md
+ M docs/README.md
+ M docs/Roadmap.md
+ M lakefile.lean
+ M pnp3/LowerBounds/AntiChecker_Partial.lean
+ M pnp3/LowerBounds/LB_Formulas_Core_Partial.lean
+ M pnp3/LowerBounds/LB_GeneralFromLocal_Partial.lean
+ M pnp3/LowerBounds/LB_LocalCircuits_Partial.lean
+ M pnp3/Magnification/Bridge_to_Magnification_Partial.lean
+ M pnp3/Magnification/Facts_Magnification_Partial.lean
+ M pnp3/Magnification/FinalResult.lean
+ M pnp3/Magnification/LocalityInterfaces_Partial.lean
+ M pnp3/Magnification/PipelineStatements_Partial.lean
+ M pnp3/Models/Model_PartialMCSP.lean
+ M pnp3/README.md
+ M pnp3/Tests/AntiCheckerConeAxiomsAudit.lean
+ M pnp3/Tests/AsymptoticRegression.lean
+ M pnp3/Tests/AxiomsAudit.lean
+ M pnp3/Tests/CoreConeAxiomsAudit.lean
+ M pnp3/Tests/TestDriver.lean
+ D pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean
+ M scripts/check.sh
+?? artifacts/
+?? docs/AuditHandoff.md
+?? scripts/audit_handoff.sh

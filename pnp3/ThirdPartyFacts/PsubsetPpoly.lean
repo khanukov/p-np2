@@ -9,8 +9,6 @@
 
 import FactPsubsetPpoly
 
-universe u
-
 namespace Pnp3
 namespace ThirdPartyFacts
 namespace PsubsetPpoly
@@ -24,7 +22,7 @@ open Facts.PsubsetPpoly
   включение классов: для любого языка `L`, если он лежит в `P`, то он лежит в
   `P/poly`.
 -/
-def statement : Prop := ∀ L, Complexity.P.{u} L → Complexity.Ppoly L
+def statement : Prop := ∀ L, Complexity.P L → Complexity.Ppoly L
 
 /--
   Доказательство включения `P ⊆ P/poly`, предоставленное модулем
@@ -38,7 +36,7 @@ theorem proof : statement := by
 end PsubsetPpoly
 
 /-- Утверждение «`P ⊆ P/poly`», используемое внутри `pnp3`. -/
-abbrev P_subset_Ppoly : Prop := PsubsetPpoly.statement.{u}
+abbrev P_subset_Ppoly : Prop := PsubsetPpoly.statement
 
 /-- Доказательство включения `P ⊆ P/poly`, предоставленное внешним пакетом. -/
 @[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly :=

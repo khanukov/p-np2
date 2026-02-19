@@ -16,11 +16,18 @@ open Pnp3.ComplexityInterfaces
 open Pnp3.Magnification
 
 -- Итоговые утверждения.
-#print axioms P_ne_NP_final
-#print axioms P_ne_NP_from_partial_formulas
+#print axioms P_ne_NP_final_asymptotic
+#print axioms P_ne_NP_from_partial_formulas_realized
 
 -- Мост от нижних оценок к `NP ⊄ P/poly`.
-#print axioms NP_not_subset_Ppoly_from_partial_formulas
+#print axioms NP_not_subset_Ppoly_from_partial_formulas_realized
+#print axioms OPS_trigger_formulas_partial_realized
+#print axioms OPS_trigger_general_contra_partial_realized
+
+-- Шаг C/D bridge и ядро lower bounds.
+#print axioms LowerBounds.LB_GeneralFromLocal_partial_realized
+#print axioms LowerBounds.LB_LocalCircuits_core_partial_realized
+#print axioms LowerBounds.LB_Formulas_core_partial_realized
 
 -- Базовая логическая связка `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
 #print axioms P_ne_NP_of_nonuniform_separation

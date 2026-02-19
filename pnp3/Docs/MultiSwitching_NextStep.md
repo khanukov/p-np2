@@ -45,7 +45,9 @@
 ## Что делаем прямо сейчас (старт выполнения)
 
 1. **Фиксируем аудитный файл** (Done в этом PR):
-   * `pnp3/Audit/Axioms.lean` — единая точка, где видно список текущих аксиом.
+   * `pnp3/Tests/AxiomsAudit.lean` — итоговый аудит финального конуса.
+   * `pnp3/Tests/CoreConeAxiomsAudit.lean` — аудит внутреннего core-конуса.
+   * `pnp3/Tests/AntiCheckerConeAxiomsAudit.lean` — аудит C-части (anti-checker).
 
 2. **Step‑2 (Done в этом PR):**
    * В `pnp3/AC0/MultiSwitching/Encoding.lean` подключён реальный encoding для
@@ -63,8 +65,8 @@
 
 ## Definition of Done (для текущего старта)
 
-* `pnp3/Audit/Axioms.lean` собирается и выводит именно ожидаемые аксиомы,
-  которые мы хотим устранить.
+* `pnp3/Tests/AxiomsAudit.lean` и `pnp3/Tests/CoreConeAxiomsAudit.lean`
+  собираются и выводят именно ожидаемые аксиомы, которые мы хотим устранить.
 
 ## Definition of Done (для блока multi-switching depth-2)
 

@@ -9,14 +9,15 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 
 **Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage inputs: the theorems `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` both require externally supplied witnesses (`AC0CircuitWitness` and `LocalCircuitWitness`). All anti-checker and magnification bridges are machine-checked theorems.
 
-**Documentation**: Start with [STATUS.md](STATUS.md) for the current pipeline overview, then see [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for external input tracking.
+**Documentation**: Start with [STATUS.md](STATUS.md) for the current pipeline overview, then see [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOMS_FINAL_LIST.md](AXIOMS_FINAL_LIST.md) for external input tracking.
 
 ## Assumptions & External Facts
 
 The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are imported as external facts or require explicit witnesses. This section lists the critical dependencies so the documentation matches the actual proof chain.
 
 ### External axioms / imported facts
-* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). This is the stated NP-hardness of Partial MCSP used as an external theorem in the final result.
+* `PartialMCSP_profile_is_NP_Hard_rpoly` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`).
+* `PartialMCSP_is_NP_Hard` (imported from `pnp3/ThirdPartyFacts/Hirahara2022.lean`). Together these are the active NP-hardness inputs used in the final result chain.
 * `P_subset_Ppoly_proof` (imported from `pnp3/ThirdPartyFacts/PsubsetPpoly.lean`). This supplies the standard inclusion `P ⊆ P/poly` as an external proof object.
 
 ### External witnesses (required hypotheses)

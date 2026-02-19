@@ -6,9 +6,10 @@ lake build
 lake env lean --run scripts/smoke.lean
 
 echo "Checking active axiom inventory..."
-# One external theorem is intentionally imported as an axiom:
-# `ThirdPartyFacts.PartialMCSP_is_NP_Hard` from Hirahara (2022).
-expected_axioms=1
+# Two external Hirahara (2022) results are intentionally imported as axioms:
+# `ThirdPartyFacts.PartialMCSP_profile_is_NP_Hard_rpoly`
+# `ThirdPartyFacts.PartialMCSP_is_NP_Hard`
+expected_axioms=2
 actual_axioms=$(rg "^[[:space:]]*axiom " -g"*.lean" pnp3 | wc -l | tr -d ' ')
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."

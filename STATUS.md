@@ -16,7 +16,8 @@ Key entry points:
 
 ## 🔒 External inputs (current)
 
-**Active axiom**:
+**Active axioms**:
+- `PartialMCSP_profile_is_NP_Hard_rpoly` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 - `PartialMCSP_is_NP_Hard` in `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 
 **Witness‑backed theorems** (external witnesses required, no axioms):
@@ -30,5 +31,5 @@ All downstream glue and magnification theorems are Lean‑checked.
 Start with:
 - `README.md` — project overview and build instructions
 - `TECHNICAL_CLAIMS.md` — what is proven vs conditional
-- `AXIOM_ANALYSIS_FINAL.md` — explicit axiom/witness inventory
+- `AXIOMS_FINAL_LIST.md` — explicit axiom/witness inventory
 - `TODO.md` — active plan and remaining technical tasks

@@ -181,16 +181,22 @@ theorem restriction_preserves_type
 
 ---
 
-## 4) NP-трудность Partial MCSP (аксиома Hirahara 2022)
+## 4) NP-трудность Partial MCSP (аксиомы Hirahara 2022)
 
 ### 4.1. Смысл
-Нужна внешняя аксиома: Partial MCSP NP-hard под рандомизированными редукциями.
+Нужны внешние аксиомы: профильная NP-hardness и NP-hardness Partial MCSP под
+рандомизированными редукциями.
 
 ### 4.2. Новый файл
 `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 ```lean
 axiom PartialMCSP_is_NP_Hard :
   ∃ (p : GapPartialMCSPParams), Is_NP_Hard (gapPartialMCSP_Language p)
+```
+
+И также:
+```lean
+axiom PartialMCSP_profile_is_NP_Hard_rpoly : ...
 ```
 
 ### 4.3. Использование
@@ -297,8 +303,9 @@ axiom PartialMCSP_is_NP_Hard :
 - [ ] Реализовать `gapPartialMCSP_Language` на основе `decodePartial`.
 - [ ] Доказать лемму `restriction_preserves_type` для Partial MCSP (без аксиом).
 - [ ] Добавить `pnp3/LowerBounds/AntiChecker_Partial.lean` и `SmallAC0Solver_Partial`.
-- [ ] Внести аксиому `PartialMCSP_is_NP_Hard` (Hirahara 2022).
-- [ ] Переподключить финальный вывод `P ≠ NP` к новой аксиоме.
+- [ ] Внести аксиомы `PartialMCSP_profile_is_NP_Hard_rpoly` и
+  `PartialMCSP_is_NP_Hard` (Hirahara 2022).
+- [ ] Переподключить финальный вывод `P ≠ NP` к новым аксиомам.
 - [ ] Обновить список аксиом в `AXIOMS_FINAL_LIST.md` и документы аудита.
 
 ---

@@ -1,7 +1,7 @@
 # Полная карта зависимостей доказательства P≠NP
 ## От аксиом к финальной теореме
 
-Last updated: 2025-12-25
+Last updated: 2026-02-19
 
 ---
 
@@ -103,7 +103,12 @@ locality_lift
 
 ## 🔴 ВНЕШНИЕ ВХОДЫ (минимальный набор)
 
-Всего: **0** активных аксиом (Part A uses witness-backed theorems; Parts C/D целиком доказаны).
+Всего: **2** активные аксиомы (в `ThirdPartyFacts/Hirahara2022.lean`) +
+witness-backed теоремы Part A; Parts C/D целиком доказаны.
+
+Аксиомы:
+1. `PartialMCSP_profile_is_NP_Hard_rpoly`
+2. `PartialMCSP_is_NP_Hard`
 
 ### Part A — Switching/Shrinkage (witness-backed theorems)
 1. `partial_shrinkage_for_AC0` — Håstad (1986), Servedio–Tan (2019).

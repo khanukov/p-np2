@@ -1,8 +1,9 @@
 # To-Do / План завершения формализации (P≠NP pipeline)
 
 > **Status (2025-12-26)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**,
-> формализован и **не содержит аксиом** внутри цепочки A→B→C→D (кроме внешнего факта
-> NP‑трудности Partial MCSP, оформленного как отдельная аксиома).
+> формализован и **не содержит аксиом** внутри цепочки A→B→C→D (кроме двух внешних
+> фактов NP‑трудности Partial MCSP, оформленных как отдельные аксиомы в
+> `pnp3/ThirdPartyFacts/Hirahara2022.lean`).
 > Единственная условность остаётся из-за **внешних свидетельств (witnesses)** в части A
 > (shrinkage/switching), но сама цепочка построена и проверена.
 > Legacy‑ветка GapMCSP перенесена в `archive/`.
@@ -45,7 +46,7 @@
 - В `Magnification/FinalResult.lean` есть `P_ne_NP_final` (partial‑цепочка).
 - Текущая условность: гипотеза `hF_all : ∀ loc, FamilyIsLocalCircuit ...`.
 - Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
-- Внешняя аксиома NP‑трудности Partial MCSP импортируется из
+- Внешние аксиомы NP‑трудности Partial MCSP импортируются из
   `pnp3/ThirdPartyFacts/Hirahara2022.lean`.
 
 ---
@@ -68,8 +69,9 @@
    - Она исчезнет автоматически, как только будет предоставлен real witness
      через `Facts.LocalityLift.ShrinkageWitness.Provider`.
 
-4. **Аксиома NP‑трудности Partial MCSP**
-   - Сейчас NP‑hardness задаётся аксиомой `PartialMCSP_is_NP_Hard`.
+4. **Аксиомы NP‑трудности Partial MCSP**
+   - Сейчас NP‑hardness задаётся аксиомами
+     `PartialMCSP_profile_is_NP_Hard_rpoly` и `PartialMCSP_is_NP_Hard`.
    - Для полностью автономного доказательства нужен формальный перенос
      результата Hirahara (2022) в Lean (или импорт проверенной формализации
      как теоремы).
@@ -241,15 +243,15 @@ partial‑цепочки. Их реализация не требуется дл
   основного вывода.
 
 ### NP-hardness (Hirahara 2022)
-- [x] Добавить файл `pnp3/ThirdPartyFacts/Hirahara2022.lean` с аксиомой
-  `PartialMCSP_is_NP_Hard`.
+- [x] Добавить файл `pnp3/ThirdPartyFacts/Hirahara2022.lean` с аксиомами
+  `PartialMCSP_profile_is_NP_Hard_rpoly` и `PartialMCSP_is_NP_Hard`.
 - [x] Обновить финальные выводы (например, `Magnification/FinalResult.lean`)
-  на новую аксиому.
+  на аксиомы Hirahara.
 - [ ] Довести NP‑hardness до формальной теоремы (перенос доказательства или
   импорт проверенной формализации).
 
 ### Документация и аудит
-- [x] Обновить `AXIOMS_FINAL_LIST.md` и документы аудита с новой аксиомой.
+- [x] Обновить `AXIOMS_FINAL_LIST.md` и документы аудита с текущим списком аксиом.
 - [x] Убедиться, что в README/FAQ нет устаревших ссылок на GapMCSP в контексте
   «барьера локальности».
 

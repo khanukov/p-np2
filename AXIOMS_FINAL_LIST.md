@@ -3,15 +3,15 @@
 
 **Project**: Formal Proof Architecture for P≠NP in Lean 4
 **Revision Date**: 2025-12-26
-**Total Active Axioms (`pnp3/`)**: 1
+**Total Active Axioms (`pnp3/`)**: 2
 **Complexity Interface Axioms**: 0 (replaced by imported theorems)
 
 ---
 
 ## Executive Summary
 
-The active `pnp3/` proof development uses a single external NP‑hardness axiom
-to anchor Partial MCSP. All other former placeholders have been moved to the
+The active `pnp3/` proof development uses two external NP‑hardness axioms
+to anchor Partial MCSP/profile hardness. All other former placeholders have been moved to the
 `archive/` tree and are no longer part of the active build.
 
 The archived multi-switching placeholders are kept out of the active
@@ -21,7 +21,7 @@ The archived multi-switching placeholders are kept out of the active
 | Category | Files | Axioms | Literature Anchor |
 |----------|-------|--------|--------------------|
 | Part A — Switching/Shrinkage | `ThirdPartyFacts/Facts_Switching.lean` | 0 | Håstad (1986), Williams (2014) |
-| Partial MCSP NP-hardness | `ThirdPartyFacts/Hirahara2022.lean` | 1 | Hirahara (FOCS 2022) |
+| Partial MCSP NP-hardness | `ThirdPartyFacts/Hirahara2022.lean` | 2 | Hirahara (FOCS 2022) |
 
 Every interface lemma in `pnp3/Complexity/Interfaces.lean` is now a theorem:
 `P_subset_Ppoly_proof` and `P_ne_NP_of_nonuniform_separation` import concrete
@@ -53,6 +53,7 @@ They are not part of the active `pnp3/` build.
 
 ### Partial MCSP — NP-hardness (external, active)
 
+- **`PartialMCSP_profile_is_NP_Hard_rpoly`** — `pnp3/ThirdPartyFacts/Hirahara2022.lean`
 - **`PartialMCSP_is_NP_Hard`** — `pnp3/ThirdPartyFacts/Hirahara2022.lean`
   - Axiom: Partial MCSP NP-hardness (logical reductions).
   - Source: Hirahara (FOCS 2022).
@@ -106,12 +107,11 @@ They are excluded from the active build and from the totals above.
 
 ## Change Log
 
+- **2026-02-19** — Re-audited active tree: two external axioms are present in
+  `ThirdPartyFacts/Hirahara2022.lean` and documentation was synchronized.
 - **2025-12-27** — Confirmed locality-lift and magnification bridges are fully
-  proved in Lean; active axiom count remains 1.
-- **2025-12-26** — Archived the canonical trace placeholder axioms from the
-  active `pnp3/` tree, leaving `PartialMCSP_is_NP_Hard` as the only active
-  axiom.
+  proved in Lean.
 - **2025-12-16** — Synced documentation after re-verifying Part D: all
   magnification triggers remain proven.
 - **2025-10-25** — Historical update: interface axioms replaced by theorems and
-  magnification triggers proven (superseded by the 1-axiom count above).
+  magnification triggers proven.

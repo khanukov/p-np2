@@ -31,20 +31,6 @@ def LocalizedFamilyWitnessHypothesis_partial
       ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
         (Counting.allFunctionsFamily loc.params.params.n)
 
-/--
-  Переход от legacy‑гипотезы `∀ loc, ...` к узкому контракту
-  `LocalizedFamilyWitnessHypothesis_partial`.
--/
-lemma localizedFamilyWitnessHypothesis_of_hF_all
-  {p : Models.GapPartialMCSPParams}
-  (hF_all : ∀ loc : SmallLocalCircuitSolver_Partial p,
-    ThirdPartyFacts.FamilyIsLocalCircuit loc.params.params
-      (Counting.allFunctionsFamily loc.params.params.n)) :
-  LocalizedFamilyWitnessHypothesis_partial p := by
-  intro solver
-  obtain ⟨T, loc, hT, hM, hℓ, hdepth⟩ := locality_lift_partial solver
-  exact ⟨T, loc, hT, hM, hℓ, hdepth, hF_all loc⟩
-
 theorem LB_GeneralFromLocal_partial
   {p : Models.GapPartialMCSPParams}
   (solver : SmallGeneralCircuitSolver_Partial p)

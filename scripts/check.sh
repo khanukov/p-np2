@@ -84,8 +84,35 @@ if [[ "${core_total_lines_count}" -ne "${core_expected_count}" || "${core_allowe
 fi
 echo "CoreConeAxiomsAudit OK (${core_expected_count} theorems; no project-specific axioms)."
 
+echo "Checking anti-checker cone axiom dependencies (AntiCheckerConeAxiomsAudit)..."
+anti_output="$(lake env lean pnp3/Tests/AntiCheckerConeAxiomsAudit.lean 2>&1)"
+anti_normalized_output="$(printf '%s\n' "${anti_output}" | tr '\n' ' ' | tr -s ' ')"
+anti_expected_count=6
+anti_total_lines_count="$(printf '%s\n' "${anti_normalized_output}" | grep -o "depends on axioms: \[" | wc -l | tr -d ' ')"
+anti_allowed_base_count="$(printf '%s\n' "${anti_normalized_output}" | grep -o "depends on axioms: \[propext, Classical.choice, Quot.sound\]" | wc -l | tr -d ' ')"
+if [[ "${anti_total_lines_count}" -ne "${anti_expected_count}" || "${anti_allowed_base_count}" -ne "${anti_expected_count}" ]]; then
+  echo "Unexpected axiom dependencies in pnp3/Tests/AntiCheckerConeAxiomsAudit.lean."
+  echo "Expected exactly ${anti_expected_count} lines with: [propext, Classical.choice, Quot.sound]"
+  echo
+  printf '%s\n' "${anti_output}"
+  exit 1
+fi
+echo "AntiCheckerConeAxiomsAudit OK (${anti_expected_count} theorems; no project-specific axioms)."
+
+echo "Checking that critical anti-checker files contain no False.elim..."
+critical_files=(
+  "pnp3/LowerBounds/AntiChecker_Partial.lean"
+  "pnp3/LowerBounds/LB_Formulas_Core_Partial.lean"
+  "pnp3/LowerBounds/LB_LocalCircuits_Partial.lean"
+)
+if search_regex "False\\.elim" "${critical_files[@]}"; then
+  echo "Found forbidden False.elim in critical anti-checker files."
+  exit 1
+fi
+echo "No False.elim in critical anti-checker files."
+
 echo "Checking publication gap list consistency..."
-gap_doc="PUBLICATION_GAPS_AND_GUARANTEES.md"
+gap_doc="docs/Publication.md"
 if [[ ! -f "${gap_doc}" ]]; then
   echo "Missing ${gap_doc}."
   exit 1

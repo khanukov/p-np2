@@ -19,27 +19,9 @@ theorem LB_LocalCircuits_core_partial
   (hF_all : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
     (Counting.allFunctionsFamily solver.params.params.n)) : False := by
   classical
-  obtain ⟨F, Y, T, hWitness⟩ :=
-    antiChecker_exists_testset_local_partial (p := p) solver hF_all
-  classical
-  dsimp only at hWitness
-  set Fsolver : Core.Family solver.params.params.n := solver.params.same_n.symm ▸ F
-  obtain ⟨hF, hrest⟩ := hWitness
-  set scWitness :=
-    (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
-  set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
-    solver.params.same_n.symm ▸ Y
-  set Tsolver : Finset (Core.BitVec solver.params.params.n) :=
-    solver.params.same_n.symm ▸ T
-  rcases hrest with
-    ⟨hYsubset, _hScenarioLarge, _hTBound, hApprox, hTestLarge⟩
-  refine
-    no_bounded_atlas_on_testset_of_large_family
-      (sc := scWitness) (T := Tsolver) (Y := Ysolver)
-      ?subset ?approx ?large
-  · exact hYsubset
-  · exact hApprox
-  · exact hTestLarge
+  rcases antiChecker_largeY_certificate_local_partial (solver := solver) hF_all with
+    ⟨sc, Y, hYsubset, hYlarge⟩
+  exact no_bounded_atlas_of_large_family (sc := sc) (Y := Y) hYsubset hYlarge
 
 end LowerBounds
 end Pnp3

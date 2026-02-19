@@ -16,7 +16,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
   * `FormulaLowerBoundHypothesisPartial` — упаковка гипотезы для OPS.
 
   Локальные/общие схемы будут добавлены после интеграции partial‑версии
-  locality‑lift (см. `PARTIAL_MCSP_PLAN.md`, шаг 5).
+  locality‑lift (см. `docs/Roadmap.md`).
 -/
 
 namespace Pnp3

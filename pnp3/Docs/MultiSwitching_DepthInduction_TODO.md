@@ -191,7 +191,8 @@ def ac0MultiSwitchingWitness_of_depthInduction
 
 ## 9) Итоговый критерий успеха (для фиксации DoD)
 
-Когда пункты A0–A8 из `AC0_SHRINKAGE_PLAN.md` закрыты, то:
+Когда основные пункты multi-switching из `docs/Roadmap.md` и
+`pnp3/Docs/MultiSwitching_NextStep.md` закрыты, то:
 
 * `AC0MultiSwitchingWitness` / `AC0PolylogBoundWitness` строятся
   **внутри проекта**, без внешних фактов;

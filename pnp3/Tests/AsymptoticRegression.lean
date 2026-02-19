@@ -40,12 +40,6 @@ example (hA : MagnificationAssumptions regressionProfile) : ComplexityInterfaces
   P_ne_NP_final_asymptotic regressionProfile hA
 
 /--
-  Legacy-совместимость: `P_ne_NP_final` по-прежнему имеет то же имя и
-  теперь использует centralized ThirdParty witness-gap без явного аргумента.
--/
-example : ComplexityInterfaces.P_ne_NP := P_ne_NP_final
-
-/--
   Stage 4 regression: `shrinkage_from_good_restriction` по-прежнему требует
   *явную* гипотезу `hgood` в сигнатуре.
 -/

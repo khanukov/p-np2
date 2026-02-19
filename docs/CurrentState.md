@@ -27,18 +27,18 @@ Key theorem anchors:
   - `pnp3/Magnification/Bridge_to_Magnification_Partial.lean`
 
 Final theorem entry points:
-- `pnp3/Magnification/FinalResult.lean` (`P_ne_NP_final_asymptotic`, `P_ne_NP_final`)
+- `pnp3/Magnification/FinalResult.lean` (`P_ne_NP_final_asymptotic`)
 
 ## Conditional vs unconditional status
-The final theorem is currently **conditional** on one project-specific axiom:
-- `localizedFamilyWitness_partial`
-  - file: `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
-
+The active `pnp3/` tree currently has **zero project-specific axioms**.
 This is automatically enforced by `scripts/check.sh` and `pnp3/Tests/AxiomsAudit.lean`.
 
+The final theorem remains conditional at the theorem-interface level via
+explicit hypotheses in `MagnificationAssumptions` (not axioms), primarily:
+- `LowerBounds.LocalizedFamilyWitnessHypothesis_partial_realized`
+
 ## Active axiom inventory
-Current expected project axioms in `pnp3/`: exactly 1
-- `ThirdPartyFacts.localizedFamilyWitness_partial`
+Current expected project axioms in `pnp3/`: exactly 0
 
 Automated check:
 - `scripts/check.sh` validates axiom count and exact final-cone dependencies.
@@ -56,18 +56,18 @@ These are not axioms, but they remain substantive external obligations until ful
 ## Proof-cone map (current)
 - `FinalResult` -> `Bridge_to_Magnification_Partial`
 - `Bridge_to_Magnification_Partial` -> `Facts_Magnification_Partial`
-- `Facts_Magnification_Partial` -> `LB_GeneralFromLocal_partial`
-- `LB_GeneralFromLocal_partial` -> `LB_LocalCircuits_core_partial`
-- `LB_LocalCircuits_core_partial` and `LB_Formulas_core_partial` -> `AntiChecker_Partial` + `LB_Formulas`
+- `Facts_Magnification_Partial` -> `LB_GeneralFromLocal_partial_realized`
+- `LB_GeneralFromLocal_partial_realized` -> `LB_LocalCircuits_core_partial_realized`
+- `LB_LocalCircuits_core_partial_realized` and `LB_Formulas_core_partial_realized` -> `AntiChecker_Partial` + `LB_Formulas`
 
 Operationally for final theorem:
 - `P_ne_NP_final_asymptotic`
-  -> `P_ne_NP_from_partial_formulas`
-  -> `NP_not_subset_Ppoly_from_partial_formulas`
-  -> `OPS_trigger_formulas_partial`
-  -> `OPS_trigger_general_contra_partial`
-  -> `LB_GeneralFromLocal_partial`
-  -> `LB_LocalCircuits_core_partial`.
+  -> `P_ne_NP_from_partial_formulas_realized`
+  -> `NP_not_subset_Ppoly_from_partial_formulas_realized`
+  -> `OPS_trigger_formulas_partial_realized`
+  -> `OPS_trigger_general_contra_partial_realized`
+  -> `LB_GeneralFromLocal_partial_realized`
+  -> `LB_LocalCircuits_core_partial_realized`.
 
 ## What was recently cleaned up
 - Removed duplicate audit docs and dead wrappers from active cone.
@@ -77,9 +77,11 @@ Operationally for final theorem:
 ## How to verify locally
 1. `lake build`
 2. `bash scripts/check.sh`
+3. `bash scripts/audit_handoff.sh` (optional: generate timestamped audit artifacts)
 
 `check.sh` validates:
 - no `sorry`/`admit` in `pnp3/`
+- isolation of experimental modules from the active proof cone
 - exact project axiom count
 - exact final/core/anti-checker axiom dependency signatures
 - no `False.elim` in critical anti-checker partial files

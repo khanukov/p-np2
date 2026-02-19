@@ -12,9 +12,9 @@ import LowerBounds.LB_LocalCircuits_Partial
 open Pnp3
 open Pnp3.LowerBounds
 
-#print axioms antiChecker_largeY_certificate_partial
-#print axioms antiChecker_largeY_certificate_local_partial
-#print axioms noSmallAC0Solver_partial
-#print axioms noSmallLocalCircuitSolver_partial
-#print axioms LB_Formulas_core_partial
-#print axioms LB_LocalCircuits_core_partial
+#print axioms antiChecker_largeY_certificate_partial_witness
+#print axioms antiChecker_largeY_certificate_local_partial_witness
+#print axioms noSmallAC0Solver_partial_witness
+#print axioms noSmallLocalCircuitSolver_partial_witness
+#print axioms LB_Formulas_core_partial_witness
+#print axioms LB_LocalCircuits_core_partial_witness

@@ -58,7 +58,6 @@ lean_lib PnP3 where
     Glob.one `Magnification.Bridge_to_Magnification_Partial,
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
-    Glob.one `ThirdPartyFacts.LocalizedWitness_Partial,
     Glob.one `ThirdPartyFacts.PartialLocalityLift,
     Glob.one `ThirdPartyFacts.PsubsetPpoly,
     Glob.one `ThirdPartyFacts.LeafBudget,

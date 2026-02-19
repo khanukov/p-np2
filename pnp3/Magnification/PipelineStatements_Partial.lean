@@ -35,7 +35,7 @@ open LowerBounds
 -/
 def AC0StatementPartial (p : GapPartialMCSPParams) : Prop :=
   ∀ _solver : SmallAC0Solver_Partial p,
-    ThirdPartyFacts.FamilyIsAC0 _solver.params.ac0
+    ThirdPartyFacts.AC0FamilyWitness _solver.params.ac0
       (Counting.allFunctionsFamily _solver.params.ac0.n) → False
 
 /--
@@ -54,7 +54,7 @@ def ac0SizeBoundPartial (p : GapPartialMCSPParams) (ε : Rat)
 def AC0BoundedStatementPartial (p : GapPartialMCSPParams) (ε : Rat) : Prop :=
   ∀ solver : SmallAC0Solver_Partial p,
     ac0SizeBoundPartial p ε solver →
-    ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+    ThirdPartyFacts.AC0FamilyWitness solver.params.ac0
       (Counting.allFunctionsFamily solver.params.ac0.n) → False
 
 /--
@@ -75,7 +75,7 @@ def FormulaLowerBoundHypothesisPartial
 lemma ac0_statement_from_pipeline_partial
     (p : GapPartialMCSPParams) : AC0StatementPartial p := by
   intro solver hF
-  exact LB_Formulas_core_partial (solver := solver) hF
+  exact LB_Formulas_core_partial_witness (solver := solver) hF
 
 /--
   Из `AC0StatementPartial` немедленно получаем `AC0BoundedStatementPartial`.

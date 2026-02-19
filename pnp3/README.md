@@ -6,7 +6,7 @@ It implements the pipeline:
 `Part A (Shrinkage/SAL) -> Part B (Counting) -> Part C (Anti-checker) -> Part D (Magnification)`
 
 ## Main entry points
-- `Magnification/FinalResult.lean` - final theorem names (`P_ne_NP_final_asymptotic`, `P_ne_NP_final`)
+- `Magnification/FinalResult.lean` - final theorem name (`P_ne_NP_final_asymptotic`)
 - `Tests/AxiomsAudit.lean` - final-cone axiom dependency printout
 - `Tests/CoreConeAxiomsAudit.lean` - core-cone axiom dependency printout
 - `Tests/AntiCheckerConeAxiomsAudit.lean` - anti-checker-cone axiom dependency printout

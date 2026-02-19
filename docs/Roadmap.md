@@ -16,26 +16,21 @@ Last updated: 2026-02-19
 
 ## In progress / next (priority order)
 
-### P0: Remove final-cone axiom
-- Replace `localizedFamilyWitness_partial` with an internal theorem/derivation.
-- Target file currently importing scaffold:
-  - `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
-- Target consumers:
-  - `pnp3/Magnification/FinalResult.lean`
-  - `pnp3/LowerBounds/LB_GeneralFromLocal_Partial.lean`
+### P0: Keep zero-axiom status in active cone
+- Preserve `rg "^axiom " pnp3` = 0 as a hard gate.
+- Keep `P_ne_NP_final_asymptotic` dependencies at
+  `[propext, Classical.choice, Quot.sound]`.
+- Prevent reintroduction of scaffold files for localized witness.
 
-Acceptance:
-- `rg "^axiom " pnp3` returns zero project-specific axioms.
-- `P_ne_NP_final` depends only on Lean base axioms expected by the project.
-
-### P1: Internalize witness production path
+### P1: Internalize witness production path (remove conditional hypotheses)
 - Construct/internalize required witness flow for:
-  - `FamilyIsAC0`
   - `FamilyIsLocalCircuit`
+- Reduce or eliminate explicit `MagnificationAssumptions` hypotheses by replacing
+  them with derived internal theorems where possible.
 - Remove reliance on ad hoc external witness packaging where feasible.
 
 Acceptance:
-- Reduced witness hypotheses on key theorems in A/B/C bridge.
+- Reduced witness hypotheses on key theorems in B/C/D bridge.
 - Updated axiom audit remains stable.
 
 ### P2: Strengthen constructive artifacts in Part C

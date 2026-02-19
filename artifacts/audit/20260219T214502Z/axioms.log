@@ -1,0 +1,42 @@
+## pnp3/Tests/AxiomsAudit.lean
+'Pnp3.Magnification.P_ne_NP_final_asymptotic' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.Magnification.P_ne_NP_from_partial_formulas_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.Magnification.NP_not_subset_Ppoly_from_partial_formulas_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Pnp3.Magnification.OPS_trigger_formulas_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.Magnification.OPS_trigger_general_contra_partial_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Pnp3.LowerBounds.LB_GeneralFromLocal_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.LB_LocalCircuits_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.LB_Formulas_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.ComplexityInterfaces.P_ne_NP_of_nonuniform_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.ThirdPartyFacts.partial_shrinkage_for_AC0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.ThirdPartyFacts.shrinkage_for_localCircuit' depends on axioms: [propext, Classical.choice, Quot.sound]
+
+## pnp3/Tests/CoreConeAxiomsAudit.lean
+'Pnp3.Magnification.P_ne_NP_from_partial_formulas_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.Magnification.NP_not_subset_Ppoly_from_partial_formulas_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Pnp3.Magnification.OPS_trigger_formulas_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.Magnification.OPS_trigger_general_contra_partial_realized' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Pnp3.LowerBounds.LB_GeneralFromLocal_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.LB_LocalCircuits_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.LB_Formulas_core_partial_realized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.ComplexityInterfaces.P_ne_NP_of_nonuniform_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
+
+## pnp3/Tests/AntiCheckerConeAxiomsAudit.lean
+'Pnp3.LowerBounds.antiChecker_largeY_certificate_partial_witness' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Pnp3.LowerBounds.antiChecker_largeY_certificate_local_partial_witness' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Pnp3.LowerBounds.noSmallAC0Solver_partial_witness' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.noSmallLocalCircuitSolver_partial_witness' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.LB_Formulas_core_partial_witness' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Pnp3.LowerBounds.LB_LocalCircuits_core_partial_witness' depends on axioms: [propext, Classical.choice, Quot.sound]

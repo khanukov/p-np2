@@ -14,21 +14,22 @@ This file defines what can be claimed from the active, machine-checked developme
 - Core and anti-checker cones are audited for project-specific axiom absence.
 
 Canonical theorem chain used in publication-facing statements:
-- `P_ne_NP_final` / `P_ne_NP_final_asymptotic`
-- `P_ne_NP_from_partial_formulas`
-- `NP_not_subset_Ppoly_from_partial_formulas`
-- `OPS_trigger_formulas_partial`
-- `OPS_trigger_general_contra_partial`
-- `LB_GeneralFromLocal_partial`
-- `LB_LocalCircuits_core_partial`
+- `P_ne_NP_final_asymptotic`
+- `P_ne_NP_from_partial_formulas_realized`
+- `NP_not_subset_Ppoly_from_partial_formulas_realized`
+- `OPS_trigger_formulas_partial_realized`
+- `OPS_trigger_general_contra_partial_realized`
+- `LB_GeneralFromLocal_partial_realized`
+- `LB_LocalCircuits_core_partial_realized`
 
 ## What is conditional
-The final theorem cone (`P_ne_NP_final`) currently depends on one explicit project scaffold:
-- `ThirdPartyFacts.localizedFamilyWitness_partial`
-  - file: `pnp3/ThirdPartyFacts/LocalizedWitness_Partial.lean`
+There are currently no project-specific axioms in `pnp3/`.
 
-Therefore, current final claim is:
-- machine-checked conditional separation result, not an unconditional internal proof.
+The final theorem cone (`P_ne_NP_final_asymptotic`) is still conditional through explicit
+hypotheses in theorem statements (for example
+`LocalizedFamilyWitnessHypothesis_partial_realized` inside
+`MagnificationAssumptions`), so the claim remains conditional rather than
+an unconditional internal proof.
 
 ## External imports
 - `P ⊆ P/poly` is imported through `ThirdPartyFacts.PsubsetPpoly` from `Facts/PsubsetPpoly`.
@@ -47,10 +48,11 @@ Do not claim any of the following unless P0 in `docs/Roadmap.md` is complete:
 Before publishing any status update, run:
 1. `lake build`
 2. `bash scripts/check.sh`
+3. `bash scripts/audit_handoff.sh` (for attachable audit logs)
 
 The release note must include:
 - exact axiom inventory reported by `check.sh`
-- whether `localizedFamilyWitness_partial` is still present
+- whether project-specific axioms are present in `pnp3/`
 - hash/date of the run
 
 ## Documentation quality gate

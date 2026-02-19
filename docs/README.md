@@ -6,6 +6,7 @@ This directory is the single entry point for project documentation.
 - `docs/CurrentState.md` - exact current proof status, active axiom/witness dependencies, and dependency cone.
 - `docs/Roadmap.md` - prioritized execution plan (what is done, what is next, what blocks unconditionality).
 - `docs/Publication.md` - publication-facing claims, guarantees, and limitations.
+- `docs/AuditHandoff.md` - auditor-facing handoff protocol, reproducibility commands, and expected artifacts.
 
 ## Source-of-truth checks
 - `scripts/check.sh` is the canonical automated documentation/proof-consistency guard.

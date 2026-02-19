@@ -63,6 +63,109 @@ def Circuit.eval {n : Nat} : Circuit n → Core.BitVec n → Bool
   | Circuit.and c₁ c₂ => fun x => Circuit.eval c₁ x && Circuit.eval c₂ x
   | Circuit.or c₁ c₂ => fun x => Circuit.eval c₁ x || Circuit.eval c₂ x
 
+namespace Circuit
+
+/-- Reindex a circuit from `n` inputs to `n+1` inputs by skipping index `0`. -/
+def weaken {n : Nat} : Circuit n → Circuit (n + 1)
+  | input i => input i.succ
+  | const b => const b
+  | not c => not (weaken c)
+  | and c₁ c₂ => and (weaken c₁) (weaken c₂)
+  | or c₁ c₂ => or (weaken c₁) (weaken c₂)
+
+/-- Drop the first input bit. -/
+def tail {n : Nat} (x : Core.BitVec (n + 1)) : Core.BitVec n :=
+  fun i => x i.succ
+
+@[simp] lemma eval_weaken {n : Nat} (c : Circuit n) (x : Core.BitVec (n + 1)) :
+    Circuit.eval (weaken c) x = Circuit.eval c (tail x) := by
+  induction c with
+  | input i =>
+      simp [weaken, tail, Circuit.eval]
+  | const b =>
+      simp [weaken, Circuit.eval]
+  | not c ih =>
+      simp [weaken, Circuit.eval, ih]
+  | and c₁ c₂ ih₁ ih₂ =>
+      simp [weaken, Circuit.eval, ih₁, ih₂]
+  | or c₁ c₂ ih₁ ih₂ =>
+      simp [weaken, Circuit.eval, ih₁, ih₂]
+
+/-- Canonical decomposition of a bit-vector into head and tail. -/
+lemma cons_head_tail {n : Nat} (x : Core.BitVec (n + 1)) :
+    Fin.cons (x ⟨0, Nat.succ_pos n⟩) (tail x) = x := by
+  funext i
+  refine Fin.cases ?h0 ?hs i
+  · rfl
+  · intro j
+    rfl
+
+/--
+  Constructive synthesis of a Boolean function into a circuit.
+
+  This is a Shannon-style expansion on the first input variable.
+-/
+def ofFunction : (n : Nat) → (Core.BitVec n → Bool) → Circuit n
+  | 0, f => Circuit.const (f (fun i => False.elim ((Nat.not_lt_zero i.1) i.2)))
+  | n + 1, f =>
+      let f0 : Core.BitVec n → Bool := fun t => f (Fin.cons false t)
+      let f1 : Core.BitVec n → Bool := fun t => f (Fin.cons true t)
+      let c0 := ofFunction n f0
+      let c1 := ofFunction n f1
+      let x0 : Circuit (n + 1) := Circuit.input ⟨0, Nat.succ_pos n⟩
+      Circuit.or
+        (Circuit.and x0 (weaken c1))
+        (Circuit.and (Circuit.not x0) (weaken c0))
+
+theorem eval_ofFunction :
+    ∀ {n : Nat} (f : Core.BitVec n → Bool) (x : Core.BitVec n),
+      Circuit.eval (ofFunction n f) x = f x
+  | 0, f, x => by
+      have hx : x = (fun i => False.elim ((Nat.not_lt_zero i.1) i.2)) := by
+        funext i
+        exact False.elim ((Nat.not_lt_zero i.1) i.2)
+      subst hx
+      rfl
+  | n + 1, f, x => by
+      let i0 : Fin (n + 1) := ⟨0, Nat.succ_pos n⟩
+      let t : Core.BitVec n := tail x
+      let f0 : Core.BitVec n → Bool := fun u => f (Fin.cons false u)
+      let f1 : Core.BitVec n → Bool := fun u => f (Fin.cons true u)
+      have h1 : Circuit.eval (ofFunction n f1) t = f1 t := eval_ofFunction f1 t
+      have h0 : Circuit.eval (ofFunction n f0) t = f0 t := eval_ofFunction f0 t
+      have hx :
+          x = Fin.cons (x i0) t := by
+        simpa [i0, t] using (cons_head_tail x).symm
+      cases hbit : x i0 with
+      | false =>
+          have hx' : x = Fin.cons false t := by simpa [hbit] using hx
+          calc
+            Circuit.eval (ofFunction (n + 1) f) x
+                = ((x i0 && Circuit.eval (weaken (ofFunction n f1)) x) ||
+                  (!x i0 && Circuit.eval (weaken (ofFunction n f0)) x)) := by
+                    simp [ofFunction, f0, f1, i0, Circuit.eval]
+            _ = Circuit.eval (weaken (ofFunction n f0)) x := by simp [hbit]
+            _ = Circuit.eval (ofFunction n f0) t := by
+                  simpa [t] using (eval_weaken (ofFunction n f0) x)
+            _ = f0 t := h0
+            _ = f (Fin.cons false t) := rfl
+            _ = f x := by simpa [hx']
+      | true =>
+          have hx' : x = Fin.cons true t := by simpa [hbit] using hx
+          calc
+            Circuit.eval (ofFunction (n + 1) f) x
+                = ((x i0 && Circuit.eval (weaken (ofFunction n f1)) x) ||
+                  (!x i0 && Circuit.eval (weaken (ofFunction n f0)) x)) := by
+                    simp [ofFunction, f0, f1, i0, Circuit.eval]
+            _ = Circuit.eval (weaken (ofFunction n f1)) x := by simp [hbit]
+            _ = Circuit.eval (ofFunction n f1) t := by
+                  simpa [t] using (eval_weaken (ofFunction n f1) x)
+            _ = f1 t := h1
+            _ = f (Fin.cons true t) := rfl
+            _ = f x := by simpa [hx']
+
+end Circuit
+
 /-!
   ### Вспомогательная кодировка BitVec → Nat
 

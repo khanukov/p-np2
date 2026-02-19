@@ -62,6 +62,15 @@ structure SmallAC0Solver_Partial (p : GapPartialMCSPParams) where
   decide : Core.BitVec (partialInputLen p) → Bool
   correct : SolvesPromise (GapPartialMCSPPromise p) decide
 
+/--
+  Stronger semantic wrapper for an AC⁰ solver: `decide` is tied to an explicit
+  circuit object.
+-/
+structure RealizedSmallAC0Solver_Partial (p : GapPartialMCSPParams) where
+  base : SmallAC0Solver_Partial p
+  impl : Models.Circuit (partialInputLen p)
+  decide_eq_impl : ∀ x, base.decide x = Models.Circuit.eval impl x
+
 /-!
   ### Локальные схемы (partial‑трек)
 
@@ -80,6 +89,15 @@ structure SmallLocalCircuitSolver_Partial (p : GapPartialMCSPParams) where
   params : SmallLocalCircuitParamsPartial p
   decide : Core.BitVec (partialInputLen p) → Bool
   correct : SolvesPromise (GapPartialMCSPPromise p) decide
+
+/--
+  Stronger semantic wrapper for a local-circuit solver: `decide` is tied to an
+  explicit circuit object.
+-/
+structure RealizedSmallLocalCircuitSolver_Partial (p : GapPartialMCSPParams) where
+  base : SmallLocalCircuitSolver_Partial p
+  impl : Models.Circuit (partialInputLen p)
+  decide_eq_impl : ∀ x, base.decide x = Models.Circuit.eval impl x
 
 /-!
   ### Counting-утверждения для Partial MCSP
@@ -934,6 +952,17 @@ noncomputable def antiChecker_largeY_certificate_partial
       hYlarge := hScenarioLarge }
 
 /--
+  Witness-first variant of `antiChecker_largeY_certificate_partial`.
+-/
+noncomputable def antiChecker_largeY_certificate_partial_witness
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (wF : ThirdPartyFacts.AC0FamilyWitness solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) :
+    AntiCheckerLargeYCertificate solver.params.ac0.n := by
+  exact antiChecker_largeY_certificate_partial
+    (solver := solver) ⟨wF⟩
+
+/--
   Основное противоречие: если существует малый AC⁰-решатель Partial MCSP,
   то это нарушает ограничение ёмкости SAL-сценария.
 -/
@@ -944,6 +973,18 @@ theorem noSmallAC0Solver_partial
   classical
   rcases antiChecker_largeY_certificate_partial (solver := solver) hF with
     ⟨sc, Y, hYsubset, hYlarge⟩
+  exact no_bounded_atlas_of_large_family (sc := sc) (Y := Y) hYsubset hYlarge
+
+/--
+  Witness-first variant of `noSmallAC0Solver_partial`.
+-/
+theorem noSmallAC0Solver_partial_witness
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (wF : ThirdPartyFacts.AC0FamilyWitness solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
+  classical
+  rcases antiChecker_largeY_certificate_partial_witness
+      (solver := solver) wF with ⟨sc, Y, hYsubset, hYlarge⟩
   exact no_bounded_atlas_of_large_family (sc := sc) (Y := Y) hYsubset hYlarge
 
 /-!
@@ -1066,6 +1107,18 @@ noncomputable def antiChecker_largeY_certificate_local_partial
       hYsubset := by intro f hf; exact hf
       hYlarge := hScenarioLarge }
 
+/--
+  Witness-first variant of `antiChecker_largeY_certificate_local_partial`.
+  This avoids `Nonempty`-style interface at the call site.
+-/
+noncomputable def antiChecker_largeY_certificate_local_partial_witness
+    {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
+    (wF : ThirdPartyFacts.LocalCircuitWitness solver.params.params
+      (Counting.allFunctionsFamily solver.params.params.n)) :
+    AntiCheckerLargeYCertificate solver.params.params.n := by
+  exact antiChecker_largeY_certificate_local_partial
+    (solver := solver) ⟨wF⟩
+
 theorem noSmallLocalCircuitSolver_partial
     {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
     (hF : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
@@ -1073,6 +1126,18 @@ theorem noSmallLocalCircuitSolver_partial
   classical
   rcases antiChecker_largeY_certificate_local_partial (solver := solver) hF with
     ⟨sc, Y, hYsubset, hYlarge⟩
+  exact no_bounded_atlas_of_large_family (sc := sc) (Y := Y) hYsubset hYlarge
+
+/--
+  Witness-first variant of `noSmallLocalCircuitSolver_partial`.
+-/
+theorem noSmallLocalCircuitSolver_partial_witness
+    {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
+    (wF : ThirdPartyFacts.LocalCircuitWitness solver.params.params
+      (Counting.allFunctionsFamily solver.params.params.n)) : False := by
+  classical
+  rcases antiChecker_largeY_certificate_local_partial_witness
+      (solver := solver) wF with ⟨sc, Y, hYsubset, hYlarge⟩
   exact no_bounded_atlas_of_large_family (sc := sc) (Y := Y) hYsubset hYlarge
 
 /-!

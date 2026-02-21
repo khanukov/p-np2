@@ -52,6 +52,94 @@ abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
 abbrev PpolyStructured (L : Language) : Prop :=
   Facts.PsubsetPpoly.Complexity.PpolyStructured.{0} L
 
+/-!
+### Non-trivial structured circuit interface
+
+`PpolyStructured` above is a migration shim from the external package and keeps
+an arbitrary evaluator in the witness.  For switching-based arguments we need a
+fixed circuit syntax with fixed semantics, otherwise locality claims become
+vacuous.  The declarations below provide that stricter interface.
+-/
+
+/-- Fixed Boolean circuit syntax used in the strict structured interface. -/
+inductive FormulaCircuit : Nat → Type
+  | const  {n : Nat} : Bool → FormulaCircuit n
+  | input  {n : Nat} : Fin n → FormulaCircuit n
+  | not    {n : Nat} : FormulaCircuit n → FormulaCircuit n
+  | and    {n : Nat} : FormulaCircuit n → FormulaCircuit n → FormulaCircuit n
+  | or     {n : Nat} : FormulaCircuit n → FormulaCircuit n → FormulaCircuit n
+
+namespace FormulaCircuit
+
+/-- Semantics of `FormulaCircuit`. -/
+def eval {n : Nat} : FormulaCircuit n → Bitstring n → Bool
+  | const b, _ => b
+  | input i, x => x i
+  | not c, x => !(eval c x)
+  | and c₁ c₂, x => eval c₁ x && eval c₂ x
+  | or c₁ c₂, x => eval c₁ x || eval c₂ x
+
+/-- Syntactic size of `FormulaCircuit`. -/
+def size {n : Nat} : FormulaCircuit n → Nat
+  | const _ => 1
+  | input _ => 1
+  | not c => size c + 1
+  | and c₁ c₂ => size c₁ + size c₂ + 1
+  | or c₁ c₂ => size c₁ + size c₂ + 1
+
+end FormulaCircuit
+
+/-- Strict non-uniform witness with fixed circuit syntax/semantics. -/
+structure InPpolyFormula (L : Language) where
+  polyBound : Nat → Nat
+  polyBound_poly : ∃ c : Nat, ∀ n, polyBound n ≤ n ^ c + c
+  family : ∀ n, FormulaCircuit n
+  family_size_le : ∀ n, FormulaCircuit.size (family n) ≤ polyBound n
+  correct : ∀ n (x : Bitstring n), FormulaCircuit.eval (family n) x = L n x
+
+/-- Strict structured class: polynomial-size fixed-syntax formula families. -/
+def PpolyFormula (L : Language) : Prop := ∃ _ : InPpolyFormula L, True
+
+/--
+Non-trivial non-uniform witness used by the active magnification bridge.
+
+Unlike the lightweight imported `InPpoly`, this interface fixes concrete
+syntax/semantics (`FormulaCircuit.eval`) and concrete size
+(`FormulaCircuit.size`) rather than allowing a witness-defined evaluator.
+-/
+structure InPpolyReal (L : Language) where
+  polyBound : Nat → Nat
+  polyBound_poly : ∃ c : Nat, ∀ n, polyBound n ≤ n ^ c + c
+  family : ∀ n, FormulaCircuit n
+  family_size_le : ∀ n, FormulaCircuit.size (family n) ≤ polyBound n
+  correct : ∀ n (x : Bitstring n), FormulaCircuit.eval (family n) x = L n x
+
+/-- Non-trivial non-uniform class used in place of lightweight `Ppoly`. -/
+def PpolyReal (L : Language) : Prop := ∃ _ : InPpolyReal L, True
+
+/-- Any strict formula witness is a `PpolyReal` witness. -/
+theorem PpolyReal_of_PpolyFormula {L : Language} :
+    PpolyFormula L → PpolyReal L := by
+  intro h
+  rcases h with ⟨w, _⟩
+  exact ⟨{ polyBound := w.polyBound
+           polyBound_poly := w.polyBound_poly
+           family := w.family
+           family_size_le := w.family_size_le
+           correct := w.correct }, trivial⟩
+
+/-- Any strict formula witness yields a lightweight `P/poly` witness. -/
+theorem Ppoly_of_PpolyFormula {L : Language} :
+    PpolyFormula L → Ppoly L := by
+  intro h
+  rcases h with ⟨w, _⟩
+  refine ⟨{ polyBound := w.polyBound
+            polyBound_poly := trivial
+            circuits := fun n x => FormulaCircuit.eval (w.family n) x
+            correct := ?_ }, trivial⟩
+  intro n x
+  exact w.correct n x
+
 /--
 Совместимость: любой структурный witness сразу даёт текущий (облегчённый)
 `P/poly` интерфейс.
@@ -179,6 +267,12 @@ theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
 /-- Интерпретация утверждения «`NP ⊄ P/poly`» через существование языка. -/
 def NP_not_subset_Ppoly : Prop := ∃ L, NP L ∧ ¬ Ppoly L
 
+/-- Strict structured separation: there exists `L ∈ NP` with `L ∉ PpolyFormula`. -/
+def NP_not_subset_PpolyFormula : Prop := ∃ L, NP L ∧ ¬ PpolyFormula L
+
+/-- Separation against the non-trivial non-uniform class `PpolyReal`. -/
+def NP_not_subset_PpolyReal : Prop := ∃ L, NP L ∧ ¬ PpolyReal L
+
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
 def P_subset_Ppoly : Prop :=
   ∀ L, Facts.PsubsetPpoly.P.{0} L → Facts.PsubsetPpoly.Ppoly L
@@ -264,6 +358,61 @@ theorem NP_not_subset_Ppoly_of_contra
       exact hPpoly
     exact hNotImp hImp
   exact ⟨L, hNP, hNotPpoly⟩
+
+/-- Contra form for the strict structured class `PpolyFormula`. -/
+theorem NP_not_subset_PpolyFormula_of_contra
+    (hContra : (∀ L : Language, NP L → PpolyFormula L) → False) :
+    NP_not_subset_PpolyFormula := by
+  classical
+  have hNotAll : ¬ (∀ L : Language, NP L → PpolyFormula L) := by
+    intro hAll
+    exact hContra hAll
+  rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+  have hNP : NP L := by
+    by_contra hNP
+    have hImp : NP L → PpolyFormula L := by
+      intro hL
+      exact (hNP hL).elim
+    exact hNotImp hImp
+  have hNotPpolyFormula : ¬ PpolyFormula L := by
+    intro hPpolyFormula
+    have hImp : NP L → PpolyFormula L := by
+      intro _hL
+      exact hPpolyFormula
+    exact hNotImp hImp
+  exact ⟨L, hNP, hNotPpolyFormula⟩
+
+/-- Contra form for `PpolyReal`. -/
+theorem NP_not_subset_PpolyReal_of_contra
+    (hContra : (∀ L : Language, NP L → PpolyReal L) → False) :
+    NP_not_subset_PpolyReal := by
+  classical
+  have hNotAll : ¬ (∀ L : Language, NP L → PpolyReal L) := by
+    intro hAll
+    exact hContra hAll
+  rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+  have hNP : NP L := by
+    by_contra hNP
+    have hImp : NP L → PpolyReal L := by
+      intro hL
+      exact (hNP hL).elim
+    exact hNotImp hImp
+  have hNotPpolyReal : ¬ PpolyReal L := by
+    intro hPpolyReal
+    have hImp : NP L → PpolyReal L := by
+      intro _hL
+      exact hPpolyReal
+    exact hNotImp hImp
+  exact ⟨L, hNP, hNotPpolyReal⟩
+
+/-- `NP ⊄ PpolyReal` immediately yields `NP ⊄ PpolyFormula`. -/
+theorem NP_not_subset_PpolyFormula_of_PpolyReal
+    (hSep : NP_not_subset_PpolyReal) :
+    NP_not_subset_PpolyFormula := by
+  rcases hSep with ⟨L, hNP, hNotReal⟩
+  refine ⟨L, hNP, ?_⟩
+  intro hFormula
+  exact hNotReal (PpolyReal_of_PpolyFormula hFormula)
 
 /-- Эквивалентная форма `NP_not_subset_Ppoly` через отрицание включения. -/
 theorem NP_not_subset_Ppoly_iff_not_forall :

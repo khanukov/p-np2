@@ -20,8 +20,8 @@
   ## Current approach
 
   The locality is now provided as a field (`decideLocal`) of the solver
-  types, populated by the axiom `ppoly_circuit_locality` in
-  `ThirdPartyFacts/PpolyFormula.lean`.  This axiom encapsulates the
+  types, populated by a locality witness produced during solver construction.
+  This witness encapsulates the
   entire chain: P/poly → circuit → literal formula → multi-switching →
   locality, without going through the overly-general `AC0Formula` type.
 
@@ -30,6 +30,6 @@
   To prove locality from first principles:
   1. Define `AC0LitFormula` with literal atoms (var/negVar)
   2. Prove multi-switching for `AC0LitFormula`
-  3. Have `ppoly_circuit_locality` produce `AC0LitFormula`
+  3. Have the solver-locality witness produce `AC0LitFormula`
   4. Derive locality as a theorem
 -/

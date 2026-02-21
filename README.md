@@ -1,39 +1,44 @@
 # P≠NP formalization repository
-> **Status (2025-12-17)**: Active development centres on the `pnp3/` pipeline (Switching-Atlas Lemma → hardness magnification → circuit lower bounds).
+> **Status (2026-02-20)**: `pnp3/` builds successfully and provides a machine-checked **conditional** partial-pipeline result (`NP ⊄ PpolyFormula`) with explicit external hypotheses.
 
-This repository hosts the third major iteration of our Lean 4 formalisation effort aimed at the separation `P ≠ NP`.  The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and the downstream magnification bridges needed to transfer SAL-based lower bounds into hardness for **Partial MCSP**.
+This repository hosts the third major iteration of our Lean 4 formalisation effort for complexity lower bounds around **Partial MCSP**. The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and downstream magnification bridges.
 
 ## Scientific contribution
 
-We introduce and Lean-verify a constructive bridge from shrinkage to a uniform atlas of subcubes for whole families of Boolean functions (Switching-Atlas Lemma, SAL) and prove a general Covering-Power capacity bound. **To the best of our knowledge**, this SAL packaging and its end-to-end Lean verification are new contributions to both formal methods and complexity theory.
+We introduce and Lean-verify a constructive bridge from shrinkage to a uniform atlas of subcubes for whole families of Boolean functions (Switching-Atlas Lemma, SAL) and prove a general Covering-Power capacity bound. **To the best of our knowledge**, this SAL packaging and its Lean verification are new contributions to both formal methods and complexity theory.
 
-**Current status**: The development provides a **conditional derivation** of P ≠ NP, contingent on external switching/shrinkage inputs: the theorems `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` both require externally supplied witnesses (`AC0CircuitWitness` and `LocalCircuitWitness`). All anti-checker and magnification bridges are machine-checked theorems.
+**Current status**: The development provides a conditional, machine-checked derivation of `NP ⊄ PpolyFormula` via the partial pipeline. The active final chain is parameterized by explicit locality/certificate assumptions. Shrinkage/switching inputs are still witness-backed external inputs.
 
-**Documentation**: Start with [STATUS.md](STATUS.md) for the current pipeline overview, then see [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md) for detailed claims, [FAQ.md](FAQ.md) for common questions, and [AXIOM_ANALYSIS_FINAL.md](AXIOM_ANALYSIS_FINAL.md) for external input tracking.
+**Documentation**: Start with [STATUS.md](STATUS.md), then [TODO.md](TODO.md), [AXIOMS_FINAL_LIST.md](AXIOMS_FINAL_LIST.md), [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md), and [FAQ.md](FAQ.md).
 
 ## Assumptions & External Facts
 
-The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are imported as external facts or require explicit witnesses. This section lists the critical dependencies so the documentation matches the actual proof chain.
+The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are still explicit hypotheses.
 
-### External axioms / imported facts
-* `ppoly_circuit_locality` (imported from `pnp3/ThirdPartyFacts/PpolyFormula.lean`). This is the stated NP-hardness of Partial MCSP used as an external theorem in the final result.
-* `P_subset_Ppoly_proof` (imported from `pnp3/ThirdPartyFacts/PsubsetPpoly.lean`). This supplies the standard inclusion `P ⊆ P/poly` as an external proof object.
+### External assumptions / imported facts
+* Goal-shaped bridge assumptions in `pnp3/ThirdPartyFacts/PpolyFormula.lean`:
+  * `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
 
-### External witnesses (required hypotheses)
-* `AC0CircuitWitness` and `LocalCircuitWitness` are required to instantiate the shrinkage facts used by the SAL pipeline; these witnesses are supplied externally, while the downstream derivations are Lean-checked.
-* `FamilyIsLocalCircuit` witnesses are required in the magnification bridge for partial formulas (`P_ne_NP_from_partial_formulas`) to trigger the non-uniform separation step. In the current codebase this is still an external hypothesis: it is defined as a `Nonempty` wrapper around `LocalCircuitWitness`, and no global constructor is provided yet.
+### External witnesses / providers (required hypotheses)
+* `AC0CircuitWitness` and `LocalCircuitWitness` are required to instantiate shrinkage facts in Part A.
+* Locality-lift on the partial bridge requires explicit stability/provider data:
+  * `hStable` (restriction stability), or
+  * certificate path via `ShrinkageCertificate.Provider` + bound `hCardHalf`.
+* Magnification still assumes a structured locality provider:
+  * `StructuredLocalityProviderPartial`.
 
 ### What is Lean-checked vs. external
-* Lean-checked: the logical pipeline from shrinkage/anti-checker assumptions to `NP ⊄ P/poly`, and the classical implication `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
-* External: NP-hardness of Partial MCSP, the `P ⊆ P/poly` proof object, and the shrinkage/locality witnesses needed to instantiate the SAL-based machinery.
+* Lean-checked: anti-checker core, locality-lift bridge plumbing, magnification glue, and contrapositive triggers for formula separation.
+* External: `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`, shrinkage witnesses, and constructive closure of certificate cardinality obligations (`hCardHalf`) in partial locality-lift usage.
+* Constructive entrypoint for the embed gap: `GapPartialMCSPFormulaizer` in `pnp3/ThirdPartyFacts/PpolyFormula.lean`.
 
 ## Proof pipeline
 
-The current (conditional) proof chain used by the final result follows:
+The current (conditional) proof chain used by the active final result follows:
 
-`FinalResult → P_ne_NP_from_partial_formulas → NP_not_subset_Ppoly_from_partial_formulas → OPS_trigger_formulas_partial → …`
+`FinalResult → NP_not_subset_PpolyFormula_from_partial_formulas → OPS_trigger_formulas_partial_of_provider_formula_separation → ...`
 
-The ellipsis (`…`) expands into the SAL + anti-checker pipeline, which ultimately depends on external shrinkage/locality witnesses.
+The ellipsis expands into the SAL + anti-checker pipeline, which ultimately depends on external shrinkage/locality witnesses and bridge/provider hypotheses.
 
 ## Repository layout
 

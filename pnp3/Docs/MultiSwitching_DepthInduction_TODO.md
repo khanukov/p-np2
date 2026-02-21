@@ -197,8 +197,9 @@ def ac0MultiSwitchingWitness_of_depthInduction
   **внутри проекта**, без внешних фактов;
 * `partial_shrinkage_for_AC0` и `shrinkage_for_localCircuit` становятся
   внутренними теоремами;
-* вся цепочка P≠NP зависит только от **одной** внешней аксиомы:
-  `ppoly_circuit_locality`.
+* внешняя зависимость от witness-backed switching/shrinkage фактов
+  снимается в активной формульной цепочке.
 
-Если цель — полностью безусловный статус, нужно закрыть ветку B
-(NP‑hardness PartialMCSP) в плане.
+Если цель — полностью конструктивный статус активной цепочки, нужно
+дополнительно закрыть ветку B (локализованный bridge/NP-hardness слой)
+в плане.

@@ -81,6 +81,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
+    Glob.one `ThirdPartyFacts.PartialTransport,
     Glob.one `ThirdPartyFacts.PartialLocalityLift,
     Glob.one `ThirdPartyFacts.PpolyFormula,
     Glob.one `ThirdPartyFacts.PsubsetPpoly,

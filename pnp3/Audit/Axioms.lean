@@ -24,9 +24,6 @@ open Pnp3.Magnification
 #print axioms ThirdPartyFacts.partial_shrinkage_for_AC0
 #print axioms ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
 
--- Итоговые утверждения пайплайна.
-#print axioms P_ne_NP_final
-#print axioms P_ne_NP_from_partial_formulas
-
--- Базовая связка для P ≠ NP.
-#print axioms P_ne_NP_of_nonuniform_separation
+-- Итоговые утверждения пайплайна (активный формульный выход).
+#print axioms NP_not_subset_PpolyFormula_final
+#print axioms NP_not_subset_PpolyFormula_from_partial_formulas

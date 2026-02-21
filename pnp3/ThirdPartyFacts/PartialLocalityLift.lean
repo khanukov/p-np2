@@ -3,6 +3,7 @@ import Facts.LocalityLift.Exports
 import Models.Model_PartialMCSP
 import LowerBounds.AntiChecker_Partial
 import ThirdPartyFacts.Facts_Switching
+import ThirdPartyFacts.PartialTransport
 import Core.BooleanBasics
 import Magnification.LocalityInterfaces_Partial
 
@@ -50,11 +51,6 @@ open Magnification
       Models.polylogBudget (Models.partialInputLen p) := by
   simpa [toFactsParamsPartial] using polylogBudget_toFactsPartial p
 
-@[simp] lemma card_cast {α β : Type} (h : α = β) (s : Finset α) :
-    (cast (congrArg Finset h) s).card = s.card := by
-  cases h
-  rfl
-
 @[simp] def toFactsGeneralSolverPartial
     {p : Models.GapPartialMCSPParams}
     (solver : Magnification.SmallGeneralCircuitSolver_Partial p) :
@@ -72,6 +68,13 @@ open Magnification
         Nat.mul_left_comm, Nat.mul_assoc]
         using solver.params.same_n
   }
+
+/-- `solver.decide` viewed on the `Facts.LocalityLift.BitVec` domain. -/
+@[simp] def solverDecideFacts
+    {p : Models.GapPartialMCSPParams}
+    (solver : Magnification.SmallGeneralCircuitSolver_Partial p) :
+    Facts.LocalityLift.BitVec (Facts.LocalityLift.inputLen (toFactsParamsPartial p)) → Bool :=
+  fun x => solver.decide (castBitVec (inputLen_toFactsPartial p) x)
 
 @[simp] def fromFactsLocalParametersPartial
     (params : Facts.LocalityLift.LocalCircuitParameters) :
@@ -123,9 +126,89 @@ open Magnification
         using solver.params.small
   }
 
+/--
+Bridge lemma: stability under a restriction implies locality (`decideLocal`)
+for the same alive set.
+-/
+theorem decideLocal_of_stable_restriction
+    {p : Models.GapPartialMCSPParams}
+    (decide : Core.BitVec (Models.partialInputLen p) → Bool)
+    (hStable :
+      ∃ (r : Facts.LocalityLift.Restriction (Models.partialInputLen p)),
+        r.alive.card ≤ Partial.tableLen p.n / 2 ∧
+        ∀ x : Core.BitVec (Models.partialInputLen p),
+          decide (r.apply x) = decide x) :
+    ∃ (alive : Finset (Fin (Models.partialInputLen p))),
+      alive.card ≤ Partial.tableLen p.n / 2 ∧
+      ∀ x y : Core.BitVec (Models.partialInputLen p),
+        (∀ i ∈ alive, x i = y i) → decide x = decide y := by
+  obtain ⟨r, h_card, h_stable⟩ := hStable
+  refine ⟨r.alive, h_card, ?_⟩
+  exact Facts.LocalityLift.Restriction.localizedOn_of_stable
+    (r := r) (f := decide) h_stable
+
+/--
+Extract a stability witness on `partialInputLen p` from a provided
+`ShrinkageCertificate` for the corresponding Facts-side solver.
+
+The only extra assumption is the target locality bound `|alive| ≤ tableLen/2`
+for the certificate restriction.
+-/
+theorem stableRestriction_of_certificate
+    {p : Models.GapPartialMCSPParams}
+    (solver : Magnification.SmallGeneralCircuitSolver_Partial p)
+    [hCert :
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+        (p := toFactsParamsPartial p)
+        (toFactsGeneralSolverPartial solver)
+        (solverDecideFacts (p := p) solver)]
+    (hCardHalf :
+      (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+          (p := toFactsParamsPartial p)
+          (general := toFactsGeneralSolverPartial solver)
+          (generalEval := solverDecideFacts (p := p) solver)).restriction.alive.card
+        ≤ Partial.tableLen p.n / 2) :
+    ∃ (r : Facts.LocalityLift.Restriction (Models.partialInputLen p)),
+      r.alive.card ≤ Partial.tableLen p.n / 2 ∧
+      ∀ x : Core.BitVec (Models.partialInputLen p),
+        solver.decide (r.apply x) = solver.decide x := by
+  classical
+  let cert :=
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+      (p := toFactsParamsPartial p)
+      (general := toFactsGeneralSolverPartial solver)
+      (generalEval := solverDecideFacts (p := p) solver)
+  let hlen : Facts.LocalityLift.inputLen (toFactsParamsPartial p) = Models.partialInputLen p :=
+    inputLen_toFactsPartial p
+  let r : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    castRestriction hlen cert.restriction
+  refine ⟨r, ?_, ?_⟩
+  · simpa [r, cert] using hCardHalf
+  · intro x
+    have hstable_cast :
+        ∀ x0 : Core.BitVec (Facts.LocalityLift.inputLen (toFactsParamsPartial p)),
+          solver.decide (castBitVec hlen (cert.restriction.apply x0)) =
+            solver.decide (castBitVec hlen x0) := by
+      intro x0
+      simpa [cert, solverDecideFacts, hlen] using cert.stable x0
+    have hstable :=
+      stable_of_stable_cast
+        (h := hlen) (decide := solver.decide)
+        (r := cert.restriction) hstable_cast
+    simpa [r] using hstable x
+
 def locality_lift_partial
   {p : Models.GapPartialMCSPParams}
-  (solver : Magnification.SmallGeneralCircuitSolver_Partial p) :
+  (solver : Magnification.SmallGeneralCircuitSolver_Partial p)
+  (hStable :
+    ∃ (r : Facts.LocalityLift.Restriction (Models.partialInputLen p)),
+      r.alive.card ≤ Partial.tableLen p.n / 2 ∧
+      ∀ x : Core.BitVec (Models.partialInputLen p),
+        solver.decide (r.apply x) = solver.decide x)
+  (hProvider :
+    Facts.LocalityLift.ShrinkageWitness.Provider
+      (p := toFactsParamsPartial p)
+      (toFactsGeneralSolverPartial solver)) :
     ∃ (T : Finset (Core.BitVec (Models.partialInputLen p)))
       (loc : LowerBounds.SmallLocalCircuitSolver_Partial p),
         T.card ≤ Models.polylogBudget (Models.partialInputLen p) ∧
@@ -133,6 +216,10 @@ def locality_lift_partial
         loc.params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p) ∧
         loc.params.params.depth ≤ solver.params.params.depth := by
   classical
+  letI :
+      Facts.LocalityLift.ShrinkageWitness.Provider
+        (p := toFactsParamsPartial p)
+        (toFactsGeneralSolverPartial solver) := hProvider
   obtain ⟨T, locFacts, hT, hM, hℓ, hdepth⟩ :=
     Facts.LocalityLift.locality_lift (toFactsGeneralSolverPartial solver)
   let localParams : LowerBounds.SmallLocalCircuitParamsPartial p :=
@@ -142,12 +229,7 @@ def locality_lift_partial
       decide := solver.decide
       correct := solver.correct
       decideLocal := by
-        obtain ⟨alive, h_card, h_local⟩ := solver.decideLocal
-        refine ⟨alive, ?_, h_local⟩
-        · -- partialInputLen p / 4 ≤ tableLen p.n / 2
-          calc alive.card ≤ Models.partialInputLen p / 4 := h_card
-            _ ≤ Partial.tableLen p.n / 2 := by
-              simp only [Models.partialInputLen, Partial.inputLen, Partial.tableLen]; omega }
+        exact decideLocal_of_stable_restriction (p := p) solver.decide hStable }
   refine ⟨(by
     simpa [Facts.LocalityLift.BitVec, Core.BitVec, inputLen_toFactsPartial,
       toFactsParamsPartial] using T),
@@ -162,12 +244,66 @@ def locality_lift_partial
   · simpa [localParams, localSolver, fromFactsLocalParamsPartial]
       using hdepth
 
+/--
+Certificate-driven wrapper: obtain the required stability witness from
+`ShrinkageCertificate.Provider` and run `locality_lift_partial`.
+-/
+def locality_lift_partial_of_certificate
+  {p : Models.GapPartialMCSPParams}
+  (solver : Magnification.SmallGeneralCircuitSolver_Partial p)
+  [hCert :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := toFactsParamsPartial p)
+      (toFactsGeneralSolverPartial solver)
+      (solverDecideFacts (p := p) solver)]
+  (hCardHalf :
+    (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+        (p := toFactsParamsPartial p)
+        (general := toFactsGeneralSolverPartial solver)
+        (generalEval := solverDecideFacts (p := p) solver)).restriction.alive.card
+      ≤ Partial.tableLen p.n / 2) :
+    ∃ (T : Finset (Core.BitVec (Models.partialInputLen p)))
+      (loc : LowerBounds.SmallLocalCircuitSolver_Partial p),
+        T.card ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.M ≤ solver.params.params.size * (T.card.succ) ∧
+        loc.params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.depth ≤ solver.params.params.depth := by
+  classical
+  let cert :=
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+      (p := toFactsParamsPartial p)
+      (general := toFactsGeneralSolverPartial solver)
+      (generalEval := solverDecideFacts (p := p) solver)
+  let hProvider :
+      Facts.LocalityLift.ShrinkageWitness.Provider
+        (p := toFactsParamsPartial p)
+        (toFactsGeneralSolverPartial solver) :=
+    ⟨cert.toShrinkageWitness⟩
+  have hStable := stableRestriction_of_certificate (p := p) solver hCardHalf
+  exact locality_lift_partial (p := p) solver hStable hProvider
+
 def no_general_solver_of_no_local_partial
   {p : Models.GapPartialMCSPParams}
-  (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver_Partial p, False) :
+  (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver_Partial p, False)
+  (hGeneralStable :
+    ∀ solver : Magnification.SmallGeneralCircuitSolver_Partial p,
+      ∃ (r : Facts.LocalityLift.Restriction (Models.partialInputLen p)),
+        r.alive.card ≤ Partial.tableLen p.n / 2 ∧
+        ∀ x : Core.BitVec (Models.partialInputLen p),
+          solver.decide (r.apply x) = solver.decide x)
+  (hProvider :
+    ∀ solver : Magnification.SmallGeneralCircuitSolver_Partial p,
+      Facts.LocalityLift.ShrinkageWitness.Provider
+        (p := toFactsParamsPartial p)
+        (toFactsGeneralSolverPartial solver)) :
   ∀ _solver : Magnification.SmallGeneralCircuitSolver_Partial p, False := by
   classical
   intro solver
+  have hStable := hGeneralStable solver
+  letI :
+      Facts.LocalityLift.ShrinkageWitness.Provider
+        (p := toFactsParamsPartial p)
+        (toFactsGeneralSolverPartial solver) := hProvider solver
   have : ∀ solver' : Facts.LocalityLift.SmallLocalCircuitSolver (toFactsParamsPartial p),
       False := by
     intro solver'
@@ -178,11 +314,7 @@ def no_general_solver_of_no_local_partial
         decide := solver.decide
         correct := solver.correct
         decideLocal := by
-          obtain ⟨alive, h_card, h_local⟩ := solver.decideLocal
-          refine ⟨alive, ?_, h_local⟩
-          calc alive.card ≤ Models.partialInputLen p / 4 := h_card
-            _ ≤ Partial.tableLen p.n / 2 := by
-              simp only [Models.partialInputLen, Partial.inputLen, Partial.tableLen]; omega }
+          exact decideLocal_of_stable_restriction (p := p) solver.decide hStable }
     exact H localSolver
   have h := Facts.LocalityLift.no_general_solver_of_no_local (p := toFactsParamsPartial p) this
   simpa using h (toFactsGeneralSolverPartial solver)

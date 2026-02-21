@@ -8,4 +8,4 @@ open Pnp3.Magnification
 -- Если здесь всплывают проектные axioms, это сигнал, что цепочка ещё условная.
 #print axioms ThirdPartyFacts.partial_shrinkage_for_AC0
 #print axioms ThirdPartyFacts.shrinkage_for_localCircuit
-#print axioms P_ne_NP_final
+#print axioms NP_not_subset_PpolyFormula_final

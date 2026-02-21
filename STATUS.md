@@ -1,34 +1,67 @@
 # Project Status (current)
 
-This document is the **single source of truth** for the active state of the
-repository.
+This file is the single source of truth for the active state of the repository.
 
-## ✅ Active pipeline
+## Active pipeline
 
-**Pipeline**: PNP3 (Switching‑Atlas Lemma → Covering‑Power → anti‑checker → magnification)  
-**Target**: **Partial MCSP**
+- Pipeline: `PNP3` (SAL -> Covering-Power -> anti-checker -> magnification)
+- Target language: `gapPartialMCSP_Language`
+- Final entrypoint: `pnp3/Magnification/FinalResult.lean`
 
-Key entry points:
-- `pnp3/Magnification/FinalResult.lean` — final conditional statement `P_ne_NP_final`.
-- `pnp3/Magnification/Bridge_to_Magnification_Partial.lean` — partial‑pipeline bridge.
-- `pnp3/LowerBounds/` — anti‑checker and lower‑bound core.
-- `pnp3/AC0/MultiSwitching/` — switching/encoding infrastructure (constructive).
+Current active result family:
 
-## 🔒 External inputs (current)
+- `NP_not_subset_PpolyFormula` (conditional)
 
-**Active axiom**:
-- `ppoly_circuit_locality` in `pnp3/ThirdPartyFacts/PpolyFormula.lean`
+The current final theorem family is parameterized by explicit assumptions:
 
-**Witness‑backed theorems** (external witnesses required, no axioms):
-- `partial_shrinkage_for_AC0`
-- `shrinkage_for_localCircuit`
+1. `StructuredLocalityProviderPartial`
+2. localized bridge goal(s) from `ThirdPartyFacts/PpolyFormula.lean`
 
-All downstream glue and magnification theorems are Lean‑checked.
+## External inputs (active)
 
-## 🧭 Where to start
+Current `axiom` declarations in `pnp3/`: none (`rg "^axiom " -g"*.lean" pnp3` is empty).
 
-Start with:
-- `README.md` — project overview and build instructions
-- `TECHNICAL_CLAIMS.md` — what is proven vs conditional
-- `AXIOM_ANALYSIS_FINAL.md` — explicit axiom/witness inventory
-- `TODO.md` — active plan and remaining technical tasks
+External dependencies represented as explicit goal hypotheses:
+
+1. `GapPartialMCSPPpolyRealToPpolyFormulaGoal p` (optional localized bridge layer)
+
+in `pnp3/ThirdPartyFacts/PpolyFormula.lean`.
+
+Additionally, Part A still depends on externally provided shrinkage witnesses
+(`partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`).
+
+For partial locality-lift plumbing:
+
+- explicit `hStable` restriction witness, or
+- certificate path via `ShrinkageCertificate.Provider` together with
+  `hCardHalf` on the certificate restriction alive set.
+
+## What is already internal
+
+- Anti-checker core and local contradiction are proved in Lean.
+- Locality-lift bridge plumbing is proved in Lean (including certificate-to-stability wrapper).
+- Magnification glue and OPS-style triggers are proved in Lean.
+- Classical bridge `NP ⊄ P/poly` + `P ⊆ P/poly` -> `P ≠ NP` is proved in Lean,
+  but is not the active final route until the non-uniform interface is upgraded.
+
+## Immediate constructive target
+
+Two immediate constructive milestones:
+
+1. Close localized embed:
+
+- `ThirdPartyFacts.GapPartialMCSPFormulaizer p`
+
+2. Close certificate cardinality obligation for partial locality-lift instances
+   (discharge `hCardHalf` constructively in the intended provider path).
+
+From (1), we get:
+
+- `GapPartialMCSPFormulaRealization p`
+- localized embed for `gapPartialMCSP_Language p`
+- final theorem variants `..._with_formulaizer`.
+
+## Next docs
+
+- `TODO.md` for the concrete execution plan.
+- `AXIOMS_FINAL_LIST.md` for the external input inventory.

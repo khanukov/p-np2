@@ -23,14 +23,16 @@ Classical switching lemmas provide depth shrinkage for individual formulas. SAL 
 
 **Current status:**
 - Anti-checker and magnification interfaces are **proved in Lean**
-- The remaining external inputs are **switching/shrinkage** witnesses (Part A)
-- Roadmap: Formalize the witness constructions to remove external inputs
+- The remaining external inputs are switching/shrinkage witnesses (Part A), localized bridge goals, and certificate-cardinality obligations in the partial locality bridge
+- Roadmap: formalize witness constructions and close bridge/cardinality goals
 
 ### Q: Why is this a "conditional" result?
 
-**A:** The derivation P ≠ NP currently relies on external switching/shrinkage results that are represented as witness-backed theorems in Lean:
+**A:** The active derivation (`NP ⊄ PpolyFormula`) currently relies on external switching/shrinkage results represented as witness-backed theorems in Lean:
 
-1. **Multi-switching/shrinkage lemmas** for AC⁰ and local circuits (Håstad-style)
+1. Multi-switching/shrinkage inputs for AC⁰ and local circuits (witness-backed)
+2. Localized bridge goal `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
+3. Partial locality-lift cardinality obligations (`hCardHalf`) on certificate restrictions
 
 These results are well-established in the literature but not yet formalized in Lean. Our contribution is the **verified infrastructure** that connects these pieces.
 
@@ -74,22 +76,24 @@ This is analogous to how subcube-partition complexity differs from decision-tree
 3. **Modularity**: Clear interfaces between components
 4. **Transparency**: All assumptions are explicitly tracked as external inputs
 
-For a result as significant as P ≠ NP, even conditionally, this level of rigor is appropriate.
+For claims at this level, this rigor is appropriate.
 
 ### Q: What is the current axiom count?
 
-**A:** See `AXIOM_ANALYSIS_FINAL.md` for detailed breakdown. Summary:
+**A:** See `AXIOMS_FINAL_LIST.md` for detailed breakdown. Summary:
 
-- **1 active axiom** in the live `pnp3/` tree: `ppoly_circuit_locality`
-  (`pnp3/ThirdPartyFacts/PpolyFormula.lean`)
+- **0 active `axiom` declarations** in the live `pnp3/` tree.
+- Remaining external dependencies are explicit hypotheses/goals (not global axioms):
+  - `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
+  - witness-backed shrinkage inputs
+  - `hCardHalf`-style certificate-cardinality obligations in partial locality-lift
 - **No placeholder axioms** in `pnp3/AC0/MultiSwitching/Encoding.lean`
 - **0 sorry/admit** statements in active code
 - Switching/shrinkage inputs are **witness-backed theorems**, with witnesses
   still supplied externally
 
 You can also run `scripts/check.sh` to rebuild, smoke-test, and verify the
-axiom inventory via `rg "^axiom " -g"*.lean" pnp3` (expected to show only the
-Partial MCSP NP-hardness axiom).
+axiom inventory via `rg "^axiom " -g"*.lean" pnp3`.
 
 ### Q: Can I reproduce your results?
 

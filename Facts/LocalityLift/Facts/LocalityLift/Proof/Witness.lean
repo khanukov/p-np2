@@ -94,9 +94,9 @@ def localityWitnessOfShrinkage
 
 /--
 Текущий свидетель locality lift извлекается из shrinkage-свидетеля,
-предоставленного через типкласс `ShrinkageWitness.Provider`.  По умолчанию
-используется канонический свидетель, но его можно заменить, не меняя
-интерфейса `locality_lift`.
+предоставленного через типкласс `ShrinkageWitness.Provider`.
+Глобального инстанса по умолчанию нет: вызывающая сторона должна передать
+конкретный `Provider`, что делает зависимость от shrinkage-свидетеля явной.
 -/
 def localityWitness
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)

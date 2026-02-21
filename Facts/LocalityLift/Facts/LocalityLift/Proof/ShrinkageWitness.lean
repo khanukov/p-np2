@@ -286,11 +286,8 @@ def provided
     [Provider (p := p) general] : ShrinkageWitness general :=
   Provider.witness
 
-/-- Канонический источник shrinkage-свидетеля (используется по умолчанию). -/
-instance (priority := 100) canonicalProvider
-    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    Provider (p := p) general :=
-  ⟨canonical (p := p) general⟩
+/- No default global provider is installed; callers must supply an explicit
+   `Provider` instance. -/
 
 /-!
 ## Certificates with semantic data

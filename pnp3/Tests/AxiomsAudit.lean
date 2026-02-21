@@ -15,18 +15,16 @@ open Pnp3
 open Pnp3.ComplexityInterfaces
 open Pnp3.Magnification
 
--- Итоговые утверждения.
-#print axioms P_ne_NP_final
-#print axioms P_ne_NP_final_with_provider
-#print axioms P_ne_NP_from_partial_formulas
-#print axioms P_ne_NP_from_partial_formulas_default
+-- Итоговые утверждения (формульная сепарация).
+#print axioms NP_not_subset_PpolyFormula_final
+#print axioms NP_not_subset_PpolyFormula_final_with_provider
+#print axioms NP_not_subset_PpolyFormula_from_partial_formulas
+#print axioms NP_not_subset_PpolyFormula_from_partial_formulas_default
 
--- Мост от нижних оценок к `NP ⊄ P/poly`.
-#print axioms NP_not_subset_Ppoly_from_partial_formulas
-#print axioms OPS_trigger_formulas_partial_of_structured_contra
-
--- Базовая логическая связка `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`.
-#print axioms P_ne_NP_of_nonuniform_separation
+-- Мост от нижних оценок к `NP ⊄ PpolyFormula`.
+#print axioms NP_not_subset_PpolyFormula_from_partial_formulas_with_formulaizer
+#print axioms OPS_trigger_formulas_partial_of_provider
+#print axioms NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
 
 -- Проверяем, что ключевые shrinkage-леммы не тянут лишних аксиом.
 -- Это именно те утверждения, которые в TODO помечены для перепроверки.

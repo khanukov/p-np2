@@ -28,7 +28,8 @@ downstream code in `pnp3` can adopt the final proof with zero churn.
 -- Restatement of the witness in the traditional tuple form.
 theorem locality_lift
   {p : GapMCSPParams}
-  (general : SmallGeneralCircuitSolver p) :
+  (general : SmallGeneralCircuitSolver p)
+  [ShrinkageWitness.Provider (p := p) general] :
     ∃ (T : Finset (BitVec (inputLen p)))
       (loc : SmallLocalCircuitSolver p),
         T.card ≤ polylogBudget (inputLen p) ∧
@@ -48,9 +49,9 @@ out local solvers, this lemma forbids a general solver with matching parameters.
 -/
 theorem no_general_solver_of_no_local
   {p : GapMCSPParams}
-  (H : ∀ _solver : SmallLocalCircuitSolver p, False) :
-  ∀ _general : SmallGeneralCircuitSolver p, False := by
-  intro general
+  (H : ∀ _solver : SmallLocalCircuitSolver p, False)
+  (general : SmallGeneralCircuitSolver p)
+  [ShrinkageWitness.Provider (p := p) general] : False := by
   obtain ⟨T, loc, -, -, -, -⟩ := locality_lift (p := p) general
   exact H loc
 

@@ -41,18 +41,4 @@ theorem constFalse_locality_no_axiom (n : Nat) :
   · intro x y hAgree
     simp [constFalseLanguage]
 
-/--
-The same locality shape can be obtained through the current structured bridge.
-This theorem is here only to show interface compatibility with the active
-pipeline signatures.
--/
-theorem constFalse_locality_via_bridge (n : Nat) :
-    ∃ (alive : Finset (Fin n)),
-      alive.card ≤ n / 4 ∧
-      ∀ x y : Core.BitVec n,
-        (∀ i ∈ alive, x i = y i) → constFalseLanguage n x = constFalseLanguage n y := by
-  exact
-    ThirdPartyFacts.ppolyStructured_circuit_locality
-      constFalseLanguage constFalse_inPpolyStructured n
-
 end Pnp3.Tests

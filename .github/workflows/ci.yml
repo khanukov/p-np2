@@ -15,27 +15,26 @@ jobs:
         with:
           default-toolchain: leanprover/lean4:v4.22.0-rc2
 
-      # 3. Update mathlib и подтягиваем его кеш
-      - name: lake update mathlib
-        run: lake update mathlib
-
-      - name: Get prebuilt mathlib cache
-        run: lake exe cache get
-
-      # 4. Кешируем .lake между прогонками
+      # 3. Restore cached .lake artifacts from previous runs
       - uses: actions/cache@v3
         with:
           path: .lake
           key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-
 
-      # 5. Сборка проекта
+      # 4. Download prebuilt mathlib cache
+      - name: Get prebuilt mathlib cache
+        run: lake exe cache get
+
+      # 5. Build project
       - name: Build project
         run: lake build
 
-      # 6. Запуск smoke‐теста
+      # 6. Run smoke test
       - name: Run smoke test
         run: lake env lean --run scripts/smoke.lean
 
-      # 7. Запуск всех тестов
+      # 7. Run all tests
       - name: Run all tests
         run: lake test

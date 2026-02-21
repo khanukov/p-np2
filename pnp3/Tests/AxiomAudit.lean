@@ -1,5 +1,5 @@
-import pnp3.Magnification.FinalResult
-import pnp3.ThirdPartyFacts.Facts_Switching
+import Magnification.FinalResult
+import ThirdPartyFacts.Facts_Switching
 
 open Pnp3
 open Pnp3.Magnification

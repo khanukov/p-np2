@@ -7,7 +7,7 @@ import Core.ShrinkageWitness
   Composition helpers for partial trees/certificates.
   These are the glue for depth-induction: a trunk and leaf-wise tails
   combine into a deeper partial tree.
--/-
+-/
 
 namespace Pnp3
 namespace AC0

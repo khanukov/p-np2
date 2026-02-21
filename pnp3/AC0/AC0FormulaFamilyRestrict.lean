@@ -6,7 +6,7 @@ import Core.BooleanBasics
   pnp3/AC0/AC0FormulaFamilyRestrict.lean
 
   Restriction-aware operations for families of AC0 formulas.
--/-
+-/
 
 namespace Pnp3
 namespace AC0

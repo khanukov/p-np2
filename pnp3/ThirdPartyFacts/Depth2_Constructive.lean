@@ -1,6 +1,5 @@
 import Core.BooleanBasics
 import Core.PDT
-import Core.PDTSugar
 import Core.ShrinkageWitness
 import ThirdPartyFacts.Facts_Switching
 import ThirdPartyFacts.ConstructiveSwitching

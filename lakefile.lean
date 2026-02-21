@@ -28,6 +28,9 @@ lean_lib PnP3 where
     Glob.one `AC0.AC0FormulaFamily,
     Glob.one `AC0.AC0FormulaWitness,
     Glob.one `AC0.AC0FormulaRestrict,
+    -- Restriction-aware family operations and formula residualization.
+    Glob.one `AC0.AC0FormulaFamilyRestrict,
+    Glob.one `AC0.AC0FormulaResidual,
     Glob.one `AC0.Formulas,
     -- Multi-switching core: include the shared restriction model plus
     -- the canonical trace helper so downstream modules can import it
@@ -53,6 +56,10 @@ lean_lib PnP3 where
     Glob.one `AC0.MultiSwitching.FuncCNF,
     Glob.one `AC0.MultiSwitching.DecidesAtoms,
     Glob.one `AC0.MultiSwitching.AC0FormulaAtom,
+    -- Depth-induction scaffolding and truncation helpers (WIP: foundation for depth > 2).
+    Glob.one `AC0.MultiSwitching.Truncation,
+    Glob.one `AC0.MultiSwitching.Compose,
+    Glob.one `AC0.MultiSwitching.DepthInduction,
     Glob.one `AC0.MultiSwitching.CommonCCDT_Func,
     Glob.one `AC0.MultiSwitching.CommonCCDT,
     Glob.one `AC0.MultiSwitching.Counting,
@@ -80,13 +87,20 @@ lean_lib PnP3 where
     Glob.one `Magnification.Bridge_to_Magnification_Partial,
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
+    -- Constructive depth-2 switching proofs (0 sorry, 0 axioms).
+    Glob.one `ThirdPartyFacts.ConstructiveSwitching,
+    Glob.one `ThirdPartyFacts.Depth2_Helpers,
+    Glob.one `ThirdPartyFacts.Depth2_Constructive,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,
     Glob.one `ThirdPartyFacts.PartialLocalityLift,
     Glob.one `ThirdPartyFacts.PpolyFormula,
     Glob.one `ThirdPartyFacts.PsubsetPpoly,
     Glob.one `ThirdPartyFacts.LeafBudget,
+    -- Axiom audit entry points (for #print axioms inspection).
+    Glob.one `Audit.Axioms,
     Glob.one `Tests.AxiomsAudit,
+    Glob.one `Tests.AxiomAudit,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.StructuredLocalityDemo,
     Glob.one `Tests.UnitTests

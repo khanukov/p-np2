@@ -9,7 +9,7 @@ import AC0.AC0FormulaFamilyRestrict
   through `Restriction.override`. This is the stable foundation for
   depth-induction; depth reduction will be handled by the switching
   step (CCDT) rather than by this definition.
--/-
+-/
 
 namespace Pnp3
 namespace AC0

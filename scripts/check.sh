@@ -6,16 +6,9 @@ lake build
 lake env lean --run scripts/smoke.lean
 
 echo "Checking active axiom inventory..."
-# Default mode tracks the current conditional pipeline.
-# Set `UNCONDITIONAL=1` to enforce a closed proof surface.
-if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
-  expected_axioms=0
-else
-  # One external theorem is intentionally left as an axiom:
-  # `ThirdPartyFacts.ppoly_circuit_locality` (P/poly -> locality bridge).
-  expected_axioms=1
-fi
-actual_axioms=$(rg "^[[:space:]]*axiom " -g"*.lean" pnp3 | wc -l | tr -d ' ')
+# Default and CI both enforce a closed proof surface.
+expected_axioms=0
+actual_axioms=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
 if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
   echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."
   echo "Listing active axioms:"

@@ -110,5 +110,24 @@ theorem NP_not_subset_PpolyReal_final_with_formulaizer
       (hF := hF)
       (δ := (1 : Rat)) hδ
 
+/--
+Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
+final statement plus an explicit bridge from formula separation to
+lightweight non-uniform separation.
+-/
+theorem P_ne_NP_final
+  (hProvider : StructuredLocalityProviderPartial)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
+    NP_not_subset_PpolyFormula_final hProvider
+  have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
+    hFormulaToPpoly hNPFormula
+  exact
+    ComplexityInterfaces.P_ne_NP_of_nonuniform_separation
+      hNP ComplexityInterfaces.P_subset_Ppoly_proof
+
 end Magnification
 end Pnp3

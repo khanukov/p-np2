@@ -1,6 +1,7 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Complexity.Promise
+import Complexity.Interfaces
 import Counting.Atlas_to_LB_Core
 import Counting.CapacityGap
 import Counting.Count_EasyFuncs
@@ -60,8 +61,23 @@ structure SmallAC0ParamsPartial (p : GapPartialMCSPParams) where
 -/
 structure SmallAC0Solver_Partial (p : GapPartialMCSPParams) where
   params : SmallAC0ParamsPartial p
-  decide : Core.BitVec (partialInputLen p) → Bool
-  correct : SolvesPromise (GapPartialMCSPPromise p) decide
+  sem : ComplexityInterfaces.SemanticDecider (partialInputLen p)
+  witness : sem.Carrier
+  correct : SolvesPromise (GapPartialMCSPPromise p) (fun x => sem.eval witness x)
+
+/-- Evaluator induced by the semantic witness of an AC0 solver. -/
+@[simp] def SmallAC0Solver_Partial.decide
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) :
+    Core.BitVec (partialInputLen p) → Bool :=
+  fun x => solver.sem.eval solver.witness x
+
+/-- Convenience view of `correct` through `solver.decide`. -/
+lemma SmallAC0Solver_Partial.correct_decide
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) :
+    SolvesPromise (GapPartialMCSPPromise p) solver.decide := by
+  simpa [SmallAC0Solver_Partial.decide] using solver.correct
 
 /-!
   ### Локальные схемы (partial‑трек)
@@ -79,12 +95,41 @@ structure SmallLocalCircuitParamsPartial (p : GapPartialMCSPParams) where
 
 structure SmallLocalCircuitSolver_Partial (p : GapPartialMCSPParams) where
   params : SmallLocalCircuitParamsPartial p
-  decide : Core.BitVec (partialInputLen p) → Bool
-  correct : SolvesPromise (GapPartialMCSPPromise p) decide
+  sem : ComplexityInterfaces.SemanticDecider (partialInputLen p)
+  witness : sem.Carrier
+  correct : SolvesPromise (GapPartialMCSPPromise p) (fun x => sem.eval witness x)
   decideLocal : ∃ (alive : Finset (Fin (partialInputLen p))),
     alive.card ≤ Partial.tableLen p.n / 2 ∧
     ∀ x y : Core.BitVec (partialInputLen p),
-      (∀ i ∈ alive, x i = y i) → decide x = decide y
+      (∀ i ∈ alive, x i = y i) →
+        sem.eval witness x = sem.eval witness y
+
+/-- Evaluator induced by the semantic witness of a local solver. -/
+@[simp] def SmallLocalCircuitSolver_Partial.decide
+    {p : GapPartialMCSPParams}
+    (solver : SmallLocalCircuitSolver_Partial p) :
+    Core.BitVec (partialInputLen p) → Bool :=
+  fun x => solver.sem.eval solver.witness x
+
+/-- Convenience view of `correct` through `solver.decide`. -/
+lemma SmallLocalCircuitSolver_Partial.correct_decide
+    {p : GapPartialMCSPParams}
+    (solver : SmallLocalCircuitSolver_Partial p) :
+    SolvesPromise (GapPartialMCSPPromise p) solver.decide := by
+  simpa [SmallLocalCircuitSolver_Partial.decide] using solver.correct
+
+/-- Convenience view of `decideLocal` through `solver.decide`. -/
+lemma SmallLocalCircuitSolver_Partial.decideLocal_decide
+    {p : GapPartialMCSPParams}
+    (solver : SmallLocalCircuitSolver_Partial p) :
+    ∃ (alive : Finset (Fin (partialInputLen p))),
+      alive.card ≤ Partial.tableLen p.n / 2 ∧
+      ∀ x y : Core.BitVec (partialInputLen p),
+        (∀ i ∈ alive, x i = y i) → solver.decide x = solver.decide y := by
+  rcases solver.decideLocal with ⟨alive, hcard, hloc⟩
+  refine ⟨alive, hcard, ?_⟩
+  intro x y hxy
+  simpa [SmallLocalCircuitSolver_Partial.decide] using hloc x y hxy
 
 /-!
   ### Counting-утверждения для Partial MCSP

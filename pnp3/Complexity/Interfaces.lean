@@ -1,5 +1,6 @@
 import ThirdPartyFacts.PsubsetPpoly
 import Proof.Turing.Encoding
+import Mathlib.Data.Finset.Card
 /-!
   pnp3/Complexity/Interfaces.lean
 
@@ -41,6 +42,26 @@ abbrev Language := Complexity.Language
 
 /-- Битовые строки фиксированной длины из внешнего пакета. -/
 abbrev Bitstring := Complexity.Bitstring
+
+/--
+Semantic decider model for fixed input length `n`.
+
+`Carrier` is an explicit computational witness type, `eval` is its semantics.
+Using this wrapper prevents solver interfaces from depending on a bare opaque
+`Bitstring n → Bool` field only.
+-/
+structure SemanticDecider (n : Nat) where
+  Carrier : Type
+  eval : Carrier → Bitstring n → Bool
+
+namespace SemanticDecider
+
+/-- Canonical semantic model where the witness is the function itself. -/
+@[simp] def ofFunction (n : Nat) : SemanticDecider n where
+  Carrier := Bitstring n → Bool
+  eval := fun f x => f x
+
+end SemanticDecider
 
 /-- Класс `P` из лёгкой формализации внешнего пакета. -/
 abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
@@ -86,6 +107,75 @@ def size {n : Nat} : FormulaCircuit n → Nat
   | not c => size c + 1
   | and c₁ c₂ => size c₁ + size c₂ + 1
   | or c₁ c₂ => size c₁ + size c₂ + 1
+
+/-- Set of input coordinates that syntactically occur in the formula. -/
+def support {n : Nat} : FormulaCircuit n → Finset (Fin n)
+  | const _ => ∅
+  | input i => {i}
+  | not c => support c
+  | and c₁ c₂ => support c₁ ∪ support c₂
+  | or c₁ c₂ => support c₁ ∪ support c₂
+
+/--
+If two inputs agree on all coordinates from `support c`, then `c` evaluates
+to the same value on both.
+-/
+lemma eval_eq_of_eq_on_support
+    {n : Nat} (c : FormulaCircuit n) {x y : Bitstring n}
+    (hxy : ∀ i ∈ support c, x i = y i) :
+    eval c x = eval c y := by
+  induction c with
+  | const b =>
+      simp [eval]
+  | input i =>
+      have hEq : x i = y i := hxy i (by simp [support])
+      simpa [eval] using hEq
+  | not c ih =>
+      have hEq : eval c x = eval c y := ih hxy
+      simp [eval, hEq]
+  | and c₁ c₂ ih₁ ih₂ =>
+      have hEq₁ : eval c₁ x = eval c₁ y := ih₁ (by
+        intro i hi
+        exact hxy i (by simp [support, hi]))
+      have hEq₂ : eval c₂ x = eval c₂ y := ih₂ (by
+        intro i hi
+        exact hxy i (by simp [support, hi]))
+      simp [eval, hEq₁, hEq₂]
+  | or c₁ c₂ ih₁ ih₂ =>
+      have hEq₁ : eval c₁ x = eval c₁ y := ih₁ (by
+        intro i hi
+        exact hxy i (by simp [support, hi]))
+      have hEq₂ : eval c₂ x = eval c₂ y := ih₂ (by
+        intro i hi
+        exact hxy i (by simp [support, hi]))
+      simp [eval, hEq₁, hEq₂]
+
+/-- The number of support coordinates is bounded by formula size. -/
+lemma support_card_le_size {n : Nat} (c : FormulaCircuit n) :
+    (support c).card ≤ size c := by
+  induction c with
+  | const b =>
+      simp [support, size]
+  | input i =>
+      simp [support, size]
+  | not c ih =>
+      simpa [support, size] using Nat.le_trans ih (Nat.le_add_right _ _)
+  | and c₁ c₂ ih₁ ih₂ =>
+      calc
+        (support (FormulaCircuit.and c₁ c₂)).card
+            = (support c₁ ∪ support c₂).card := by simp [support]
+        _ ≤ (support c₁).card + (support c₂).card :=
+          Finset.card_union_le (support c₁) (support c₂)
+        _ ≤ size c₁ + size c₂ := Nat.add_le_add ih₁ ih₂
+        _ ≤ size (FormulaCircuit.and c₁ c₂) := by simp [size]
+  | or c₁ c₂ ih₁ ih₂ =>
+      calc
+        (support (FormulaCircuit.or c₁ c₂)).card
+            = (support c₁ ∪ support c₂).card := by simp [support]
+        _ ≤ (support c₁).card + (support c₂).card :=
+          Finset.card_union_le (support c₁) (support c₂)
+        _ ≤ size c₁ + size c₂ := Nat.add_le_add ih₁ ih₂
+        _ ≤ size (FormulaCircuit.or c₁ c₂) := by simp [size]
 
 end FormulaCircuit
 
@@ -261,6 +351,26 @@ theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
     simpa using hCorrect n x
 
 /-!
+### Strict NP track (TM-faithful)
+
+`NP` above remains a lightweight verifier interface for compatibility.
+For runtime-faithful developments we expose `NP_strict := NP_TM` and bridges
+to existing separation statements.
+-/
+
+/-- Runtime-faithful NP track, defined directly via verifier TMs. -/
+abbrev NP_strict (L : Language) : Prop := NP_TM L
+
+/-- Strict-track counterpart of `NP ⊄ Ppoly`. -/
+def NP_strict_not_subset_Ppoly : Prop := ∃ L, NP_strict L ∧ ¬ Ppoly L
+
+/-- Strict-track counterpart of `NP ⊄ PpolyFormula`. -/
+def NP_strict_not_subset_PpolyFormula : Prop := ∃ L, NP_strict L ∧ ¬ PpolyFormula L
+
+/-- Strict-track counterpart of `NP ⊄ PpolyReal`. -/
+def NP_strict_not_subset_PpolyReal : Prop := ∃ L, NP_strict L ∧ ¬ PpolyReal L
+
+/-!
 ### Формулировки целевых утверждений
 -/
 
@@ -272,6 +382,28 @@ def NP_not_subset_PpolyFormula : Prop := ∃ L, NP L ∧ ¬ PpolyFormula L
 
 /-- Separation against the non-trivial non-uniform class `PpolyReal`. -/
 def NP_not_subset_PpolyReal : Prop := ∃ L, NP L ∧ ¬ PpolyReal L
+
+/-- Any strict-track separation implies the corresponding lightweight one. -/
+theorem NP_not_subset_Ppoly_of_NP_strict_not_subset_Ppoly :
+    NP_strict_not_subset_Ppoly → NP_not_subset_Ppoly := by
+  intro h
+  rcases h with ⟨L, hNPs, hNot⟩
+  exact ⟨L, NP_of_NP_TM hNPs, hNot⟩
+
+/-- Any strict-track formula separation implies lightweight formula separation. -/
+theorem NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula :
+    NP_strict_not_subset_PpolyFormula → NP_not_subset_PpolyFormula := by
+  intro h
+  rcases h with ⟨L, hNPs, hNot⟩
+  exact ⟨L, NP_of_NP_TM hNPs, hNot⟩
+
+/-- Any strict-track `PpolyReal` separation implies lightweight one. -/
+theorem NP_not_subset_PpolyReal_of_NP_strict_not_subset_PpolyReal :
+    NP_strict_not_subset_PpolyReal → NP_not_subset_PpolyReal := by
+  intro h
+  rcases h with ⟨L, hNPs, hNot⟩
+  exact ⟨L, NP_of_NP_TM hNPs, hNot⟩
+
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
 def P_subset_Ppoly : Prop :=
@@ -324,6 +456,42 @@ theorem P_ne_NP_of_nonuniform_separation
     (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) :
     P_ne_NP :=
   P_ne_NP_of_nonuniform_separation_concrete hNP hP
+
+/-- Strict-track non-uniform separation implies `P ≠ NP` (via lightweight bridge). -/
+theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
+    (hStrict : NP_strict_not_subset_Ppoly)
+    (hP : P_subset_Ppoly := P_subset_Ppoly_proof) :
+    P_ne_NP := by
+  exact P_ne_NP_of_nonuniform_separation
+    (NP_not_subset_Ppoly_of_NP_strict_not_subset_Ppoly hStrict) hP
+
+/--
+Strict formula-track separation implies `P ≠ NP` once we provide the same
+bridge used in the lightweight path (`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`).
+-/
+theorem P_ne_NP_of_NP_strict_not_subset_PpolyFormula
+    (hStrict : NP_strict_not_subset_PpolyFormula)
+    (hFormulaToPpoly :
+      NP_not_subset_PpolyFormula → NP_not_subset_Ppoly)
+    (hP : P_subset_Ppoly := P_subset_Ppoly_proof) :
+    P_ne_NP := by
+  have hLight : NP_not_subset_PpolyFormula :=
+    NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula hStrict
+  exact P_ne_NP_of_nonuniform_separation (hFormulaToPpoly hLight) hP
+
+/--
+Strict `PpolyReal`-track separation implies `P ≠ NP` once we provide a bridge
+from `NP_not_subset_PpolyReal` to `NP_not_subset_Ppoly`.
+-/
+theorem P_ne_NP_of_NP_strict_not_subset_PpolyReal
+    (hStrict : NP_strict_not_subset_PpolyReal)
+    (hRealToPpoly :
+      NP_not_subset_PpolyReal → NP_not_subset_Ppoly)
+    (hP : P_subset_Ppoly := P_subset_Ppoly_proof) :
+    P_ne_NP := by
+  have hLight : NP_not_subset_PpolyReal :=
+    NP_not_subset_PpolyReal_of_NP_strict_not_subset_PpolyReal hStrict
+  exact P_ne_NP_of_nonuniform_separation (hRealToPpoly hLight) hP
 
 /--
   Удобная форма для работы от противного: если из предположения
@@ -425,6 +593,77 @@ theorem NP_not_subset_Ppoly_iff_not_forall :
     exact NP_not_subset_Ppoly_of_contra (by
       intro hAll
       exact hNotAll hAll)
+
+/-! ### Strict-track contra forms -/
+
+/-- Contra form for strict non-uniform separation (`NP_TM ⊄ Ppoly`). -/
+theorem NP_strict_not_subset_Ppoly_of_contra
+    (hContra : (∀ L : Language, NP_strict L → Ppoly L) → False) :
+    NP_strict_not_subset_Ppoly := by
+  classical
+  have hNotAll : ¬ (∀ L : Language, NP_strict L → Ppoly L) := by
+    intro hAll
+    exact hContra hAll
+  rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+  have hNP : NP_strict L := by
+    by_contra hNP
+    have hImp : NP_strict L → Ppoly L := by
+      intro hL
+      exact (hNP hL).elim
+    exact hNotImp hImp
+  have hNotPpoly : ¬ Ppoly L := by
+    intro hPpoly
+    have hImp : NP_strict L → Ppoly L := by
+      intro _hL
+      exact hPpoly
+    exact hNotImp hImp
+  exact ⟨L, hNP, hNotPpoly⟩
+
+/-- Contra form for strict formula separation (`NP_TM ⊄ PpolyFormula`). -/
+theorem NP_strict_not_subset_PpolyFormula_of_contra
+    (hContra : (∀ L : Language, NP_strict L → PpolyFormula L) → False) :
+    NP_strict_not_subset_PpolyFormula := by
+  classical
+  have hNotAll : ¬ (∀ L : Language, NP_strict L → PpolyFormula L) := by
+    intro hAll
+    exact hContra hAll
+  rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+  have hNP : NP_strict L := by
+    by_contra hNP
+    have hImp : NP_strict L → PpolyFormula L := by
+      intro hL
+      exact (hNP hL).elim
+    exact hNotImp hImp
+  have hNotPpolyFormula : ¬ PpolyFormula L := by
+    intro hPpolyFormula
+    have hImp : NP_strict L → PpolyFormula L := by
+      intro _hL
+      exact hPpolyFormula
+    exact hNotImp hImp
+  exact ⟨L, hNP, hNotPpolyFormula⟩
+
+/-- Contra form for strict `PpolyReal` separation (`NP_TM ⊄ PpolyReal`). -/
+theorem NP_strict_not_subset_PpolyReal_of_contra
+    (hContra : (∀ L : Language, NP_strict L → PpolyReal L) → False) :
+    NP_strict_not_subset_PpolyReal := by
+  classical
+  have hNotAll : ¬ (∀ L : Language, NP_strict L → PpolyReal L) := by
+    intro hAll
+    exact hContra hAll
+  rcases Classical.not_forall.mp hNotAll with ⟨L, hNotImp⟩
+  have hNP : NP_strict L := by
+    by_contra hNP
+    have hImp : NP_strict L → PpolyReal L := by
+      intro hL
+      exact (hNP hL).elim
+    exact hNotImp hImp
+  have hNotPpolyReal : ¬ PpolyReal L := by
+    intro hPpolyReal
+    have hImp : NP_strict L → PpolyReal L := by
+      intro _hL
+      exact hPpolyReal
+    exact hNotImp hImp
+  exact ⟨L, hNP, hNotPpolyReal⟩
 
 end ComplexityInterfaces
 end Pnp3

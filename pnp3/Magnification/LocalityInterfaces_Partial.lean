@@ -1,5 +1,6 @@
 import Mathlib.Data.Finset.Basic
 import Complexity.Promise
+import Complexity.Interfaces
 import Core.BooleanBasics
 import Models.Model_PartialMCSP
 
@@ -19,6 +20,7 @@ namespace Magnification
 
 open Models
 open Complexity
+open ComplexityInterfaces
 
 structure GeneralCircuitParametersPartial where
   n     : Nat
@@ -33,8 +35,23 @@ structure SmallGeneralCircuitParamsPartial (p : Models.GapPartialMCSPParams) whe
 
 structure SmallGeneralCircuitSolver_Partial (p : Models.GapPartialMCSPParams) where
   params : SmallGeneralCircuitParamsPartial p
-  decide : Core.BitVec (Models.partialInputLen p) → Bool
-  correct : SolvesPromise (Models.GapPartialMCSPPromise p) decide
+  sem : ComplexityInterfaces.SemanticDecider (Models.partialInputLen p)
+  witness : sem.Carrier
+  correct : SolvesPromise (Models.GapPartialMCSPPromise p) (fun x => sem.eval witness x)
+
+/-- Evaluator induced by the semantic witness of a general solver. -/
+@[simp] def SmallGeneralCircuitSolver_Partial.decide
+    {p : Models.GapPartialMCSPParams}
+    (solver : SmallGeneralCircuitSolver_Partial p) :
+    Core.BitVec (Models.partialInputLen p) → Bool :=
+  fun x => solver.sem.eval solver.witness x
+
+/-- Convenience view of `correct` through `solver.decide`. -/
+lemma SmallGeneralCircuitSolver_Partial.correct_decide
+    {p : Models.GapPartialMCSPParams}
+    (solver : SmallGeneralCircuitSolver_Partial p) :
+    SolvesPromise (Models.GapPartialMCSPPromise p) solver.decide := by
+  simpa [SmallGeneralCircuitSolver_Partial.decide] using solver.correct
 
 end Magnification
 end Pnp3

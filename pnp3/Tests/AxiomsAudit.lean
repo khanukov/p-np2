@@ -1,6 +1,4 @@
 import Magnification.FinalResult
-import Magnification.Bridge_to_Magnification_Partial
-import Complexity.Interfaces
 import ThirdPartyFacts.Facts_Switching
 
 /-!
@@ -17,13 +15,14 @@ open Pnp3.Magnification
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms NP_not_subset_PpolyFormula_final
-#print axioms NP_not_subset_PpolyFormula_final_with_provider
+#print axioms NP_not_subset_PpolyFormula_final_legacy
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas_default
 
 -- Мост от нижних оценок к `NP ⊄ PpolyFormula`.
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas_with_formulaizer
 #print axioms OPS_trigger_formulas_partial_of_provider
+#print axioms OPS_trigger_formulas_partial_of_provider_formula_separation_strict
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
 
 -- Проверяем, что ключевые shrinkage-леммы не тянут лишних аксиом.

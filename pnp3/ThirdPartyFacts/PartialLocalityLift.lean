@@ -226,8 +226,9 @@ def locality_lift_partial
     fromFactsLocalParamsPartial (p := p) locFacts
   let localSolver : LowerBounds.SmallLocalCircuitSolver_Partial p :=
     { params := localParams
-      decide := solver.decide
-      correct := solver.correct
+      sem := solver.sem
+      witness := solver.witness
+      correct := solver.correct_decide
       decideLocal := by
         exact decideLocal_of_stable_restriction (p := p) solver.decide hStable }
   refine ⟨(by
@@ -282,6 +283,45 @@ def locality_lift_partial_of_certificate
   have hStable := stableRestriction_of_certificate (p := p) solver hCardHalf
   exact locality_lift_partial (p := p) solver hStable hProvider
 
+/--
+Typeclass wrapper for the half-table cardinality side-condition used by
+`stableRestriction_of_certificate`.
+-/
+class HalfTableCertificateBound
+  {p : Models.GapPartialMCSPParams}
+  (solver : Magnification.SmallGeneralCircuitSolver_Partial p)
+  [Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+    (p := toFactsParamsPartial p)
+    (toFactsGeneralSolverPartial solver)
+    (solverDecideFacts (p := p) solver)] : Prop where
+  half_bound :
+    (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+        (p := toFactsParamsPartial p)
+        (general := toFactsGeneralSolverPartial solver)
+        (generalEval := solverDecideFacts (p := p) solver)).restriction.alive.card
+      ≤ Partial.tableLen p.n / 2
+
+/--
+Certificate-driven locality lift without a manual `hCardHalf` argument.
+The bound is supplied via the `HalfTableCertificateBound` typeclass.
+-/
+def locality_lift_partial_of_certificate_auto
+  {p : Models.GapPartialMCSPParams}
+  (solver : Magnification.SmallGeneralCircuitSolver_Partial p)
+  [hCert :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := toFactsParamsPartial p)
+      (toFactsGeneralSolverPartial solver)
+      (solverDecideFacts (p := p) solver)]
+  [hHalf : HalfTableCertificateBound (p := p) solver] :
+    ∃ (T : Finset (Core.BitVec (Models.partialInputLen p)))
+      (loc : LowerBounds.SmallLocalCircuitSolver_Partial p),
+        T.card ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.M ≤ solver.params.params.size * (T.card.succ) ∧
+        loc.params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.depth ≤ solver.params.params.depth := by
+  exact locality_lift_partial_of_certificate (p := p) solver hHalf.half_bound
+
 def no_general_solver_of_no_local_partial
   {p : Models.GapPartialMCSPParams}
   (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver_Partial p, False)
@@ -311,8 +351,9 @@ def no_general_solver_of_no_local_partial
       fromFactsLocalParamsPartial (p := p) solver'
     let localSolver : LowerBounds.SmallLocalCircuitSolver_Partial p :=
       { params := localParams
-        decide := solver.decide
-        correct := solver.correct
+        sem := solver.sem
+        witness := solver.witness
+        correct := solver.correct_decide
         decideLocal := by
           exact decideLocal_of_stable_restriction (p := p) solver.decide hStable }
     exact H localSolver

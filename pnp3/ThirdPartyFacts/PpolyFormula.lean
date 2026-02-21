@@ -107,23 +107,5 @@ theorem gapPartialMCSP_realization_of_formulaizer
   · intro n x
     exact hF.familyCorrect w n x
 
-/--
-  Localized external goal used by the partial magnification pipeline:
-  if `gapPartialMCSP_Language p` lies in `P/poly`, then it also lies in the
-  strict structured class `PpolyFormula`.
--/
-def GapPartialMCSPPpolyRealToPpolyFormulaGoal (p : GapPartialMCSPParams) : Prop :=
-  GapPartialMCSPFormulaRealization p
-
-/--
-  If the localized embedding goal is available, we obtain the bridge used in
-  the partial magnification pipeline.
--/
-theorem gapPartialMCSP_ppoly_to_ppolyFormula_of_goal
-    (p : GapPartialMCSPParams)
-    (hGoal : GapPartialMCSPPpolyRealToPpolyFormulaGoal p) :
-    GapPartialMCSPFormulaRealization p :=
-  hGoal
-
 end ThirdPartyFacts
 end Pnp3

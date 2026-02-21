@@ -65,7 +65,8 @@ theorem OPS_trigger_general_contra_structured_with_provider_partial
   intro hHyp hAll
   have hPpolyFormula :
       ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
-    hAll _ (Models.gapPartialMCSP_in_NP p)
+    hAll _ (Models.gapPartialMCSP_in_NP_of_certLengthPolicy p
+      Models.gapPartialMCSP_certLengthPolicy_holds)
   obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
   exact noSmallLocalCircuitSolver_partial_v2 loc
 
@@ -94,7 +95,8 @@ theorem OPS_trigger_formulas_partial_of_provider
         ComplexityInterfaces.NP L → ComplexityInterfaces.PpolyReal L) → False := by
     intro hAll
     have hPpoly : ComplexityInterfaces.PpolyReal (gapPartialMCSP_Language p) :=
-      hAll _ (Models.gapPartialMCSP_in_NP p)
+      hAll _ (Models.gapPartialMCSP_in_NP_of_certLengthPolicy p
+        Models.gapPartialMCSP_certLengthPolicy_holds)
     have hPpolyFormula :
         ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
       hGapEmbed hPpoly
@@ -126,6 +128,31 @@ theorem OPS_trigger_formulas_partial_of_provider_formula_separation
     OPS_trigger_formulas_contra_structured_with_provider_partial
       (hProvider := hProvider) (p := p) (δ := δ) hHyp
   exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_contra hContraStructured
+
+/--
+TM-strict counterpart of the formula-track trigger.
+
+This variant avoids the lightweight `NP` interface in the contra step and
+works directly with `NP_strict = NP_TM`, provided by an explicit witness for
+the target language.
+-/
+theorem OPS_trigger_formulas_partial_of_provider_formula_separation_strict
+  (hProvider : StructuredLocalityProviderPartial)
+  {p : GapPartialMCSPParams} {δ : Rat}
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
+  FormulaLowerBoundHypothesisPartial p δ →
+    ComplexityInterfaces.NP_strict_not_subset_PpolyFormula := by
+  intro hHyp
+  have hContraStructured :
+      (∀ L : ComplexityInterfaces.Language,
+        ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyFormula L) → False := by
+    intro hAll
+    have hPpolyFormula :
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
+      hAll _ hNPstrict
+    obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
+    exact noSmallLocalCircuitSolver_partial_v2 loc
+  exact ComplexityInterfaces.NP_strict_not_subset_PpolyFormula_of_contra hContraStructured
 
 end Magnification
 end Pnp3

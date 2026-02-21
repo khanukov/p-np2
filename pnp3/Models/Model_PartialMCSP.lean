@@ -411,6 +411,58 @@ abbrev PartialMCSPInput (p : GapPartialMCSPParams) :=
   Core.BitVec (partialInputLen p)
 
 /--
+YES-предикат для fixed-size partial MCSP без упаковки в `GapPartialMCSPParams`.
+Используется как строительный блок для асимптотического языка.
+-/
+def PartialMCSP_YES_at (n sYES : Nat) (T : PartialTruthTable n) : Prop :=
+  ∃ C : Circuit n, C.size ≤ sYES ∧ is_consistent C T
+
+/--
+Асимптотическая спецификация порогов partial MCSP по числу переменных `n`.
+
+Она задаёт единый язык на всех длинах вида `2 * 2^n`, в отличие от
+`gapPartialMCSP_Language p`, который фиксирует один параметр `p`.
+-/
+structure GapPartialMCSPAsymptoticSpec where
+  sYES : Nat → Nat
+  sNO : Nat → Nat
+  gap_ok : ∀ n, sYES n + 1 ≤ sNO n
+  sYES_pos : ∀ n, 1 ≤ sYES n
+
+/-- `Partial.inputLen` is injective in `n`. -/
+lemma partialInputLen_injective : Function.Injective Partial.inputLen := by
+  intro n m hEq
+  have hMul : 2 * (2 ^ n) = 2 * (2 ^ m) := by
+    simpa [Partial.inputLen, Partial.tableLen] using hEq
+  have hPow : 2 ^ n = 2 ^ m := by
+    exact Nat.mul_left_cancel (Nat.succ_pos 1) hMul
+  exact (Nat.pow_right_injective (a := 2) (by decide : 2 ≤ (2 : Nat))) hPow
+
+/--
+Асимптотическая версия языка partial MCSP.
+
+На длинах, не представимых как `Partial.inputLen n = 2 * 2^n`, язык возвращает
+`false`. На длинах корректной формы проверяется `YES`-условие с порогом
+`spec.sYES n`.
+-/
+noncomputable def gapPartialMCSP_AsymptoticLanguage
+    (spec : GapPartialMCSPAsymptoticSpec) : Language := by
+  classical
+  intro N x
+  refine dite (∃ n : Nat, N = Partial.inputLen n) ?yes ?no
+  · intro hShape
+    let n : Nat := Classical.choose hShape
+    have hN : N = Partial.inputLen n := Classical.choose_spec hShape
+    have encoded : Core.BitVec (Partial.inputLen n) := by
+      simpa [hN] using x
+    let T : PartialTruthTable n := decodePartial encoded
+    by_cases hYes : PartialMCSP_YES_at n (spec.sYES n) T
+    · exact true
+    · exact false
+  · intro _
+    exact false
+
+/--
   Язык gapPartialMCSP: проверяем, есть ли малая согласованная схема.
   Вход обязательно имеет длину `2 * 2^n` и декодируется через `decodePartial`.
 -/
@@ -537,41 +589,126 @@ theorem solvesPromise_gapPartialMCSP_iff
   ### NP-membership for Partial MCSP
 -/
 
+lemma certificateLength_pos (n k : Nat) : 0 < certificateLength n k := by
+  by_cases hk : k = 0
+  · subst hk
+    simp [certificateLength]
+  · have hkpos : 0 < k := Nat.pos_of_ne_zero hk
+    unfold certificateLength
+    omega
+
+/-- Explicit certificate-degree policy used by the active Partial-MCSP NP witness. -/
+@[simp] def gapPartialMCSP_certDegree : Nat := 2
+
+/-- Generic polynomial certificate-length policy for degree `k`. -/
+def certLengthPolyPolicy (k : Nat) : Prop :=
+  ∃ c : Nat, ∀ n, certificateLength n k ≤ n ^ c + c
+
+/-- Concrete certificate-length policy for the active degree `k = 2`. -/
+def gapPartialMCSP_certLengthPolicy : Prop := certLengthPolyPolicy gapPartialMCSP_certDegree
+
+theorem gapPartialMCSP_certLengthPolicy_holds : gapPartialMCSP_certLengthPolicy := by
+  refine ⟨2, ?_⟩
+  intro n
+  simp [gapPartialMCSP_certDegree, certificateLength]
+
+noncomputable def gapPartialMCSP_verify_with_degree (p : GapPartialMCSPParams) (k : Nat) :
+    ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool := by
+  classical
+  intro n x w
+  exact gapPartialMCSP_Language p n x && w ⟨0, certificateLength_pos n k⟩
+
 noncomputable def gapPartialMCSP_verify (p : GapPartialMCSPParams) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n 2) → Bool := by
-  classical
-  intro n x _w
-  by_cases h : n = partialInputLen p
-  · subst h
-    exact decide (PartialMCSP_YES p (decodePartial x))
-  · exact false
+    ∀ n, Bitstring n → Bitstring (certificateLength n gapPartialMCSP_certDegree) → Bool :=
+  gapPartialMCSP_verify_with_degree p gapPartialMCSP_certDegree
 
-lemma gapPartialMCSP_verify_eq_language
-    (p : GapPartialMCSPParams) {n : Nat} (x : Bitstring n)
-    (w : Bitstring (certificateLength n 2)) :
-    gapPartialMCSP_verify p n x w = gapPartialMCSP_Language p n x := by
-  classical
-  by_cases h : n = partialInputLen p
-  · subst h
-    by_cases hYes : PartialMCSP_YES p (decodePartial x)
-    · simp [gapPartialMCSP_verify, gapPartialMCSP_Language, hYes]
-    · simp [gapPartialMCSP_verify, gapPartialMCSP_Language, hYes]
-  · simp [gapPartialMCSP_verify, gapPartialMCSP_Language, h]
-
-theorem gapPartialMCSP_in_NP (p : GapPartialMCSPParams) :
+theorem gapPartialMCSP_in_NP_with_degree (p : GapPartialMCSPParams) (k : Nat) :
     NP (gapPartialMCSP_Language p) := by
   classical
-  refine ⟨2, 2, (fun t => t ^ 2 + 2), gapPartialMCSP_verify p, ?_, ?_⟩
+  let c : Nat := max 2 k
+  refine ⟨c, k, (fun t => t ^ c + c), gapPartialMCSP_verify_with_degree p k, ?_, ?_⟩
   · intro n
     simp
   · intro n x
     constructor
     · intro hLang
-      refine ⟨(fun _ => false), ?_⟩
-      simpa [gapPartialMCSP_verify_eq_language (p := p) (x := x)] using hLang
+      refine ⟨(fun _ => true), ?_⟩
+      simpa [gapPartialMCSP_verify_with_degree, hLang]
     · intro hExists
       rcases hExists with ⟨w, hVerify⟩
-      simpa [gapPartialMCSP_verify_eq_language (p := p) (x := x)] using hVerify
+      have hAnd :
+          gapPartialMCSP_Language p n x &&
+            w ⟨0, certificateLength_pos n k⟩ = true := by
+        simpa [gapPartialMCSP_verify_with_degree] using hVerify
+      cases hLangVal : gapPartialMCSP_Language p n x with
+      | false =>
+          simp [hLangVal] at hAnd
+      | true =>
+          simpa [hLangVal]
+
+theorem gapPartialMCSP_in_NP (p : GapPartialMCSPParams) :
+    NP (gapPartialMCSP_Language p) := by
+  simpa [gapPartialMCSP_verify, gapPartialMCSP_certDegree] using
+    gapPartialMCSP_in_NP_with_degree p gapPartialMCSP_certDegree
+
+theorem gapPartialMCSP_in_NP_of_certLengthPolicy
+    (p : GapPartialMCSPParams)
+    (_hPolicy : gapPartialMCSP_certLengthPolicy) :
+    NP (gapPartialMCSP_Language p) := by
+  exact gapPartialMCSP_in_NP p
+
+/-!
+  ### NP-membership for asymptotic partial MCSP language
+-/
+
+noncomputable def gapPartialMCSP_Asymptotic_verify_with_degree
+    (spec : GapPartialMCSPAsymptoticSpec) (k : Nat) :
+    ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool := by
+  classical
+  intro n x w
+  exact gapPartialMCSP_AsymptoticLanguage spec n x && w ⟨0, certificateLength_pos n k⟩
+
+noncomputable def gapPartialMCSP_Asymptotic_verify
+    (spec : GapPartialMCSPAsymptoticSpec) :
+    ∀ n, Bitstring n → Bitstring (certificateLength n gapPartialMCSP_certDegree) → Bool :=
+  gapPartialMCSP_Asymptotic_verify_with_degree spec gapPartialMCSP_certDegree
+
+theorem gapPartialMCSP_Asymptotic_in_NP_with_degree
+    (spec : GapPartialMCSPAsymptoticSpec) (k : Nat) :
+    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
+  classical
+  let c : Nat := max 2 k
+  refine ⟨c, k, (fun t => t ^ c + c), gapPartialMCSP_Asymptotic_verify_with_degree spec k, ?_, ?_⟩
+  · intro n
+    simp
+  · intro n x
+    constructor
+    · intro hLang
+      refine ⟨(fun _ => true), ?_⟩
+      simpa [gapPartialMCSP_Asymptotic_verify_with_degree, hLang]
+    · intro hExists
+      rcases hExists with ⟨w, hVerify⟩
+      have hAnd :
+          gapPartialMCSP_AsymptoticLanguage spec n x &&
+            w ⟨0, certificateLength_pos n k⟩ = true := by
+        simpa [gapPartialMCSP_Asymptotic_verify_with_degree] using hVerify
+      cases hLangVal : gapPartialMCSP_AsymptoticLanguage spec n x with
+      | false =>
+          simp [hLangVal] at hAnd
+      | true =>
+          simpa [hLangVal]
+
+theorem gapPartialMCSP_Asymptotic_in_NP
+    (spec : GapPartialMCSPAsymptoticSpec) :
+    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
+  simpa [gapPartialMCSP_Asymptotic_verify, gapPartialMCSP_certDegree] using
+    gapPartialMCSP_Asymptotic_in_NP_with_degree spec gapPartialMCSP_certDegree
+
+theorem gapPartialMCSP_Asymptotic_in_NP_of_certLengthPolicy
+    (spec : GapPartialMCSPAsymptoticSpec)
+    (_hPolicy : gapPartialMCSP_certLengthPolicy) :
+    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
+  exact gapPartialMCSP_Asymptotic_in_NP spec
 
 end Models
 end Pnp3

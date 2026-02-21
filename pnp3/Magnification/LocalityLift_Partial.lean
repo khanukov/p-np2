@@ -60,6 +60,24 @@ open LowerBounds
   ThirdPartyFacts.locality_lift_partial_of_certificate
     (p := p) (solver := solver) hCardHalf
 
+@[inline] def locality_lift_partial_of_certificate_auto
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallGeneralCircuitSolver_Partial p)
+  [hCert :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+      (ThirdPartyFacts.solverDecideFacts (p := p) solver)]
+  [hHalf : Pnp3.ThirdPartyFacts.HalfTableCertificateBound (p := p) solver] :
+    ∃ (T : Finset (Core.BitVec (Models.partialInputLen p)))
+      (loc : LowerBounds.SmallLocalCircuitSolver_Partial p),
+        T.card ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.M ≤ solver.params.params.size * (T.card.succ) ∧
+        loc.params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.depth ≤ solver.params.params.depth :=
+  ThirdPartyFacts.locality_lift_partial_of_certificate_auto
+    (p := p) (solver := solver)
+
 @[inline] def no_general_solver_of_no_local_partial
   {p : Models.GapPartialMCSPParams}
   (H : ∀ _solver : LowerBounds.SmallLocalCircuitSolver_Partial p, False)

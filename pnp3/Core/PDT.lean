@@ -214,8 +214,8 @@ theorem PDT.depth_refine_ge {n : Nat}
       have hmem : β ∈ PDT.leaves (PDT.leaf β) := by
         simp [PDT.leaves]
       have hrefine : PDT.refine (PDT.leaf β) tails = tails β hmem := rfl
-      have hnonneg : 0 ≤ PDT.depth (tails β hmem) := Nat.zero_le _
-      simpa [PDT.depth, hrefine] using hnonneg
+      -- После раскрытия глубины в листе остаётся показать неотрицательность.
+      simp [PDT.depth, hrefine]
   | node i t0 t1 ih0 ih1 =>
       -- Для узла применяем И.П. к обеим ветвям.
       let tails0 : ∀ β, β ∈ PDT.leaves t0 → PDT n := fun β hβ =>
@@ -306,6 +306,17 @@ theorem PDT.leaves_length_le_pow_depth {n : Nat} :
     simpa [Nat.pow_succ, Nat.mul_comm, Nat.succ_eq_add_one] using haux
   simpa [PDT.leaves, PDT.depth, hd0, hd1, Nat.add_comm,
     Nat.add_left_comm, Nat.add_assoc, Nat.succ_eq_add_one] using hsimp
+
+/--
+  Каноническая формулировка оценки на число листьев PDT:
+  количество листьев не превосходит `2^depth`.
+
+  Это «публичное» имя для использования во внешних модулях, где удобнее
+  явно видеть связь depth ↔ leaves, не раскрывая вспомогательную лемму.
+-/
+theorem PDT.leaves_le_pow2_depth {n : Nat} (t : PDT n) :
+    (PDT.leaves t).length ≤ Nat.pow 2 (PDT.depth t) := by
+  simpa using (PDT.leaves_length_le_pow_depth t)
 
 /-- Инварианты «хорошего» дерева (пока как булевы проверки/пропозиции, при необходимости усилим):
     1) листья попарно не пересекаются,

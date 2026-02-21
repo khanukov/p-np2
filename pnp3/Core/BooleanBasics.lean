@@ -512,14 +512,14 @@ lemma coveredB_eq_of_mem_equiv {n : Nat}
         · have hx := (covered_iff (Rset := R₁) x).mpr hb
           exact (hcov hx).elim
         · cases hcase : coveredB R₁ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       have hfalse₂ : coveredB R₂ x = false := by
         by_cases hb : coveredB R₂ x = true
         · have hx := (covered_iff (Rset := R₂) x).mpr hb
           exact (hcov' hx).elim
         · cases hcase : coveredB R₂ x with
-          | false => simp [hcase]
+          | false => simp
           | true => cases hb hcase
       simp [hfalse₁, hfalse₂]
 
@@ -714,17 +714,20 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     -- Вспомогательные леммы: удобно сворачивать определение `decodeFun`.
     have decode_eval_none (f : FreeIndex → Bool) (i : Fin n)
         (h : β i = none) : decodeFun f i = f ⟨i, h⟩ := by
+      -- После подстановки `h` декодер возвращает соответствующий бит.
       simp [decodeFun, h]
     have decode_eval_some (f : FreeIndex → Bool) (i : Fin n)
         {b : Bool} (h : β i = some b) : decodeFun f i = b := by
       have hne : β i ≠ none := by
         intro hnone; simp [hnone] at h
-      have hspec := Classical.choose_spec (exists_of_ne_none (i := i) hne)
       have hval : Classical.choose (exists_of_ne_none (i := i) hne) = b := by
         have : some (Classical.choose (exists_of_ne_none (i := i) hne)) = some b := by
-          simp [h, hspec]
+          -- `simp` по `h` уже раскрывает нужное равенство; дополнительных фактов не нужно.
+          simp [h]
         exact Option.some.inj this
-      simp [decodeFun, h, hne, hval]
+      -- После подстановки `h` остаётся заменить выбранный элемент на `b`.
+      -- `simp` сводит цель к равенству выбранного значения с `b`.
+      simp [decodeFun, h]
     let decode : (FreeIndex → Bool) → {x : BitVec n // mem β x} :=
       fun f =>
         let g := decodeFun f
@@ -780,7 +783,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
     have hfun_card :
         Fintype.card (FreeIndex → Bool)
           = 2 ^ Fintype.card FreeIndex := by
-      simp [Fintype.card_fun]
+      simp
     have hfreeIndex_card : Fintype.card FreeIndex = n - t := by
       simp [hfree_card, hfree_count]
     have hfinal :
@@ -789,7 +792,7 @@ theorem subcube_card_pow {n : Nat} (β : Subcube n) :
         Fintype.card {x : BitVec n // mem β x}
             = Fintype.card (FreeIndex → Bool) := hcube_card
         _ = 2 ^ Fintype.card FreeIndex := hfun_card
-        _ = 2 ^ (n - t) := by simp [hfreeIndex_card, Fintype.card_bool]
+        _ = 2 ^ (n - t) := by simp [hfreeIndex_card]
 
     exact ⟨t, ht_le, hfinal⟩
 
@@ -829,7 +832,9 @@ structure Literal (n : Nat) where
 namespace Literal
 
 @[simp] lemma mk_eta {n : Nat} (ℓ : Literal n) :
-    Literal.mk ℓ.idx ℓ.value = ℓ := by cases ℓ <;> rfl
+    Literal.mk ℓ.idx ℓ.value = ℓ := by
+  cases ℓ
+  rfl
 
 /-- Булева оценка литерала на точке `x`. -/
 @[simp] def eval {n : Nat} (ℓ : Literal n) (x : BitVec n) : Bool :=
@@ -1087,8 +1092,8 @@ lemma card_restriction (n : Nat) : Fintype.card (Restriction n) = 3 ^ n := by
       right_inv := by intro mask; rfl }
   -- Кардинал функции равен `|Option Bool|^n = 3^n`.
   have hcard : Fintype.card (Subcube n) = 3 ^ n := by
-    simpa [Subcube, Fintype.card_fun, Fintype.card_bool] using
-      (Fintype.card_fun (α := Fin n) (β := Option Bool))
+    -- `simp` разворачивает `Subcube` в пространство функций и считает кардинал.
+    simp [Subcube]
   simpa [hcard] using (Fintype.card_congr e)
 
 
@@ -1228,9 +1233,11 @@ noncomputable def restrictionOfFreeEquiv
       · -- На фиксированной части извлекаем значение из `ρ`.
         cases h : ρ.1.mask i with
         | none =>
-            have hmem' : i ∈ ρ.1.freePositions := by
-              have hnone : (ρ.1.mask i).isNone := by simpa [h]
-              exact (Restriction.mem_freePositions (ρ := ρ.1) (i := i)).2 hnone
+            have hnone : (ρ.1.mask i).isNone := by
+              -- Уточняем `isNone` через значение маски.
+              simp [h]
+            have hmem' : i ∈ ρ.1.freePositions :=
+              (Restriction.mem_freePositions (ρ := ρ.1) (i := i)).2 hnone
             have hmem'' : i ∈ free := by
               exact (Eq.ndrec (motive := fun s => i ∈ s) hmem' ρ.2)
             exact (hmem hmem'').elim
@@ -1254,7 +1261,8 @@ lemma restrictions_with_freePositions_card
   have hfun :
       Fintype.card ({i : Fin n // i ∉ free} → Bool)
         = 2 ^ Fintype.card {i : Fin n // i ∉ free} := by
-    simp [Fintype.card_fun]
+    -- `simp` умеет считать кардинал функции в `Bool`.
+    simp
   have hcomp :
       Fintype.card {i : Fin n // i ∉ free} = n - free.card := by
     -- Переписываем через кардинал комплемента `free` в `Fin n`.
@@ -1270,17 +1278,22 @@ lemma restrictions_with_freePositions_card
         (Finset.univ \ free).card = (Finset.univ : Finset (Fin n)).card - free.card := by
       exact Finset.card_sdiff (by simp)
     have huniv : (Finset.univ : Finset (Fin n)).card = n := by
-      simpa using (Finset.card_univ (α := Fin n))
+      -- `simp` раскрывает кардинал универсального множества `Fin n`.
+      simp
     calc
       Fintype.card {i : Fin n // i ∉ free}
           = (Finset.univ \ free).card := by simpa [hfilter] using hsub
       _ = (Finset.univ : Finset (Fin n)).card - free.card := hsdiff
-      _ = n - free.card := by simpa [huniv]
+      _ = n - free.card := by
+          -- Подстановка `huniv` и упрощение.
+          simp [huniv]
   calc
     Fintype.card {ρ : Restriction n // ρ.freePositions = free}
         = Fintype.card ({i : Fin n // i ∉ free} → Bool) := hcard
     _ = 2 ^ Fintype.card {i : Fin n // i ∉ free} := hfun
-    _ = 2 ^ (n - free.card) := by simp [hcomp, Fintype.card_bool]
+    _ = 2 ^ (n - free.card) := by
+        -- После подстановки `hcomp` достаточно обычного `simp`.
+        simp [hcomp]
 
 /--
 Оценка сверху: число зафиксированных координат не превосходит `n`.
@@ -1298,7 +1311,8 @@ lemma fixedCount_le (ρ : Restriction n) : ρ.fixedCount ≤ n := by
         (p := fun i => (ρ.mask i).isSome))
   -- У универсума кардинал равен `n`.
   have huniv : (Finset.univ : Finset (Fin n)).card = n := by
-    simpa using (Finset.card_univ (α := Fin n))
+    -- Кардинал `Fin n` равен `n`.
+    simp
   simpa [fixedCount, huniv] using hcard
 
 /-- Применение ограничения к вектору: зафиксированные координаты затираются. -/
@@ -1322,12 +1336,17 @@ lemma override_mem (ρ : Restriction n) (x : BitVec n) :
   intro i b hβ
   unfold override
   cases hρ : ρ.mask i with
-  | none => simpa [hρ] using hβ
+  | none =>
+      -- При `none` гипотеза `hβ` невозможна.
+      have : False := by
+        simp [hρ] at hβ
+      cases this
   | some b' =>
       have hb : b' = b := by
-        have hsome : some b' = some b := by simpa [hρ] using hβ
-        exact Option.some.inj hsome
-      simp [hρ, hb]
+        simp [hρ] at hβ
+        exact hβ
+      -- В ветви `some` достаточно заменить `b'` на `b`.
+      simp [hb]
 
 /-- Если `x` удовлетворяет ограничению, `override` не меняет вектор. -/
 lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
@@ -1338,9 +1357,9 @@ lemma override_eq_of_mem {ρ : Restriction n} {x : BitVec n}
   cases hρ : ρ.mask i with
   | none => rfl
   | some b =>
-      have hx := (mem_iff (β := ρ.mask) (x := x)).1 h i b ?_
-      · simpa [hρ, hx]
-      · simpa [hρ]
+      -- Передаём явное значение маски, чтобы избежать лишних `simp`.
+      have hx := (mem_iff (β := ρ.mask) (x := x)).1 h i b hρ
+      simp [hx]
 
 /-- Совместимость эквивалентна тождественности `override`. -/
 lemma compatible_iff_override_eq {ρ : Restriction n} {x : BitVec n} :
@@ -1348,6 +1367,7 @@ lemma compatible_iff_override_eq {ρ : Restriction n} {x : BitVec n} :
   constructor
   · intro hcompat
     have hmem : mem ρ.mask x := hcompat
+    -- Подставляем доказательство совместимости и упрощаем.
     simpa using ρ.override_eq_of_mem hmem
   · intro hover
     have hmem : mem ρ.mask (ρ.override x) := ρ.override_mem x
@@ -1466,10 +1486,11 @@ lemma unassign_assign_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
   by_cases hj : j = i
   · cases hj
     have hβ : mask' i = some b := by
-      simpa [if_pos rfl] using hmask_j
+      simp at hmask_j
+      exact hmask_j
     have hgoal : (if i = i then none else mask' i) = mask i := by
       have hmask_i_free : mask i = none := hmask_i
-      simp [hβ, hmask_i_free]
+      simp [hmask_i_free]
     exact hgoal
   · have hβ : mask' j = mask j := by
       have hIf : (if j = i then some b else mask j) = mask j := by
@@ -1482,7 +1503,7 @@ lemma unassign_assign_of_free {ρ : Restriction n} {i : Fin n} {b : Bool}
 lemma mask_eq_some_of_not_none {ρ : Restriction n} {i : Fin n}
     (h : ρ.mask i ≠ none) : ∃ b : Bool, ρ.mask i = some b := by
   cases hmask : ρ.mask i with
-  | none => cases h <| by simpa [hmask]
+  | none => cases h <| by simp [hmask]
   | some b => exact ⟨b, rfl⟩
 
 /-- Список свободных координат (там, где маска равна `none`). -/
@@ -1629,16 +1650,14 @@ lemma restrictions_with_freeCount_card
   have hsum :
       Fintype.card (Σ free : FreeSet, {ρ : Restriction n // ρ.freePositions = free.1})
         = ∑ free : FreeSet, Fintype.card {ρ : Restriction n // ρ.freePositions = free.1} := by
-    simpa using (Fintype.card_sigma (α := FreeSet)
-      (β := fun free => {ρ : Restriction n // ρ.freePositions = free.1}))
+    simp
   -- Число множеств размера `s` равно биному.
   have hfree_card :
       Fintype.card FreeSet = Nat.choose n s := by
     have hcard :
         Fintype.card FreeSet
           = (Finset.univ.filter fun free : Finset (Fin n) => free.card = s).card := by
-      simpa [FreeSet] using
-        (Fintype.card_subtype (p := fun free : Finset (Fin n) => free.card = s))
+      simp [FreeSet]
     have hfilter :
         (Finset.univ.filter fun free : Finset (Fin n) => free.card = s)
           = (Finset.univ : Finset (Fin n)).powersetCard s := by
@@ -1647,10 +1666,9 @@ lemma restrictions_with_freeCount_card
     calc
       Fintype.card FreeSet
           = (Finset.univ.filter fun free : Finset (Fin n) => free.card = s).card := hcard
-      _ = ((Finset.univ : Finset (Fin n)).powersetCard s).card := by simpa [hfilter]
+      _ = ((Finset.univ : Finset (Fin n)).powersetCard s).card := by simp [hfilter]
       _ = Nat.choose n s := by
-          simpa [Finset.card_univ] using
-            (Finset.card_powersetCard (n := s) (s := (Finset.univ : Finset (Fin n))))
+          simp [Finset.card_univ]
   -- Теперь собираем всё вместе.
   calc
     Fintype.card {ρ : Restriction n // ρ.freeCount = s}
@@ -1665,9 +1683,9 @@ lemma restrictions_with_freeCount_card
               = 2 ^ (n - free.1.card) := restrictions_with_freePositions_card (free := free.1)
           simpa [free.2] using hcard
     _ = Fintype.card FreeSet * 2 ^ (n - s) := by
-          simpa using (Finset.sum_const (2 ^ (n - s)) (s := (Finset.univ : Finset FreeSet)))
+          simp
     _ = Nat.choose n s * 2 ^ (n - s) := by
-          simpa [hfree_card]
+          simp [hfree_card]
 
 /--
 Финитное множество рестрикций с ровно `s` свободными координатами.
@@ -1745,7 +1763,8 @@ lemma exists_not_mem_of_subset_card_lt {α : Type} [DecidableEq α]
     apply le_antisymm
     · simpa using (Finset.card_le_card hsub)
     · exact hcard_le
-  have : s.card < s.card := by simpa [hcard_eq] using hcard
+  have : s.card < s.card := by
+    simp [hcard_eq] at hcard
   exact (lt_irrefl _ this)
 
 lemma fixedPositions_disjoint_freePositions (ρ : Restriction n) :
@@ -1759,12 +1778,12 @@ lemma fixedPositions_disjoint_freePositions (ρ : Restriction n) :
   | none =>
       -- `isSome` противоречит `mask i = none`.
       have : False := by
-        simpa [Option.isSome, Option.isNone, h] using hs
+        simp [Option.isSome, h] at hs
       exact this
   | some b =>
       -- `isNone` противоречит `mask i = some b`.
       have : False := by
-        simpa [Option.isSome, Option.isNone, h] using hn
+        simp [Option.isNone, h] at hn
       exact this
 
 lemma fixed_union_free (ρ : Restriction n) :
@@ -1778,7 +1797,7 @@ lemma fixed_union_free (ρ : Restriction n) :
       | none =>
           cases h (by simp [hmask])
       | some b =>
-          simp [hmask]
+          simp
     simp [fixedPositions, freePositions, h, hs]
 
 /--
@@ -1815,10 +1834,10 @@ lemma fixedCount_add_freeCount (ρ : Restriction n) :
   rw [hfixed, hneg] at hcard'
   -- Приводим к `fixedCount` и `freePositions.card`.
   have hcard'' : ρ.fixedCount + ρ.freePositions.card = (Finset.univ : Finset (Fin n)).card := by
-    simpa [fixedCount] using hcard'
+    simpa using hcard'
   -- Кардинал `Finset.univ` равен `n` для `Fin n`.
   have huniv : (Finset.univ : Finset (Fin n)).card = n := by
-    simpa using (Finset.card_univ (α := Fin n))
+    simp
   have hcard_final : ρ.fixedCount + ρ.freePositions.card = n := hcard''.trans huniv
   simpa [freePositions_card_eq_freeCount] using hcard_final
 
@@ -1895,8 +1914,7 @@ lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
     unfold Restriction.freeCount Restriction.freeIndicesList
     set L := (List.finRange n).filter (fun j => decide (σ.mask j = none)) with hL
     have hsub : L.Sublist (List.finRange n) := by
-      simpa [hL] using List.filter_sublist
-        (l := List.finRange n) (p := fun j => decide (σ.mask j = none))
+      simp [hL]
     have hnodup : L.Nodup :=
       List.Sublist.nodup hsub (List.nodup_finRange n)
     have hcard := List.card_toFinset L
@@ -1913,7 +1931,7 @@ lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
     have hfinset_card :
         L.toFinset =
           (Finset.univ.filter fun j => σ.mask j = none) := by
-      simpa [hL, hfilter_toFinset, hfinrange]
+      simp [hL, hfilter_toFinset, hfinrange]
     have hlen :=
       calc
         L.length = L.toFinset.card := hlen_to_card
@@ -1926,7 +1944,7 @@ lemma freeCount_assign_of_mem {ρ : Restriction n} {i : Fin n}
   have hcount_eq' := hcount_formula ρ'
   have hsucc_eq : Nat.succ ρ'.freeCount = ρ.freeCount := by
     have htmp := hcard_eq
-    simp [Nat.succ_eq_add_one, hcount_eq, hcount_eq'] at htmp
+    simp at htmp
     exact htmp
   have hpred := congrArg Nat.pred hsucc_eq
   have hfinal := hpred
@@ -1973,7 +1991,7 @@ lemma restrict_agree_of_compatible (ρ : Restriction n)
     ρ.restrict f x = f x := by
   unfold restrict
   have hover := (ρ.compatible_iff_override_eq).mp h
-  simpa [hover]
+  simp [hover]
 
 lemma restrict_override (ρ : Restriction n) (f : BitVec n → Bool)
     (x : BitVec n) : ρ.restrict f (ρ.override x) = f (ρ.override x) := by
@@ -1989,8 +2007,7 @@ lemma isConstantOn_iff {ρ : Restriction n} {f : BitVec n → Bool} :
       (∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y) := by
   classical
   unfold isConstantOn
-  simpa using (decide_eq_true_iff
-    (p := ∀ x y : BitVec n, ρ.restrict f x = ρ.restrict f y))
+  simp
 
 lemma isConstantOn_of_no_free (ρ : Restriction n) (f : BitVec n → Bool)
     (hfree : ∀ i : Fin n, ρ.mask i ≠ none) : ρ.isConstantOn f = true := by
@@ -2078,7 +2095,7 @@ lemma weight_unassign_mul (ρ : Restriction n) (i : Fin n) (p : Q)
     intro j hj
     obtain ⟨hji, _⟩ := Finset.mem_erase.mp hj
     have hneq : j ≠ i := hji
-    simp [Restriction.unassign_mask, hneq]
+    simp [hneq]
   have htail :
       (∏ j ∈ Finset.univ.erase i,
         F ((ρ.unassign i).mask j))
@@ -2136,13 +2153,13 @@ lemma weight_unassign_mul (ρ : Restriction n) (i : Fin n) (p : Q)
       = p * ∏ j ∈ Finset.univ.erase i,
           F (ρ.mask j) := by
     have htmp := hmain_F
-    simp [← hρ_weight, mul_left_comm, mul_assoc] at htmp
+    simp [← hρ_weight] at htmp
     exact htmp
   have hunassign_mask : (ρ.unassign i).mask i = none := by simp
   have hstep1 : F ((ρ.unassign i).mask i)
       * ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j)
         = p * ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j) := by
-    simp [F, hunassign_mask]
+    simp [F]
   have hstep2 : ∏ j ∈ Finset.univ.erase i, F ((ρ.unassign i).mask j)
       = ∏ j ∈ Finset.univ.erase i, F (ρ.mask j) := htail
   calc
@@ -2167,9 +2184,9 @@ lemma weight_cons (choice : Option Bool) (ρ : Restriction n) (p : Q) :
   classical
   cases choice with
   | none =>
-      simp [weight, Fin.prod_univ_succ, cons_mask_zero, cons_mask_succ]
+      simp [weight, Fin.prod_univ_succ]
   | some b =>
-      simp [weight, Fin.prod_univ_succ, cons_mask_zero, cons_mask_succ]
+      simp [weight, Fin.prod_univ_succ]
 
 /--
 Вес ограничения всегда неотрицателен при условии `0 ≤ p ≤ 1`.  В каждой точке
@@ -2185,7 +2202,7 @@ lemma weight_nonneg (ρ : Restriction n) {p : Q}
   intro i _
   cases hmask : ρ.mask i with
   | none =>
-      simpa [hmask, hp₀]
+      simp [hp₀]
   | some _ =>
       have hsub : 0 ≤ (1 - p) := sub_nonneg.mpr hp₁
       have : 0 ≤ (1 - p) / 2 := by
@@ -2233,9 +2250,9 @@ lemma weight_cons_sum (ρ : Restriction n) (p : Q) :
     _ = (p + ((1 - p) / 2 + (1 - p) / 2)) * w := by
             ring
     _ = (p + (1 - p)) * w := by
-            simpa [hhalves]
+            simp [hhalves]
     _ = (p + (1 - p)) * ρ.weight p := by
-            simpa [w]
+            simp [w]
 
 /-- Полный список всех ограничений размера `n`. -/
 @[simp] def enumerate : (n : Nat) → List (Restriction n)
@@ -2257,9 +2274,7 @@ lemma sum_map_const_nat {α : Type _} (c : Nat) :
   | [] => by simp
   | _ :: L => by
       -- На шаге индукции приводим сумму к `c + c * |L|`.
-      simp [sum_map_const_nat c L, Nat.mul_add, Nat.add_mul, Nat.add_comm,
-        Nat.add_left_comm, Nat.add_assoc, Nat.mul_comm, Nat.mul_left_comm,
-        Nat.mul_assoc]
+      simp [Nat.mul_add, Nat.add_comm, Nat.mul_comm]
 
 /--
 Число всех ограничений размера `n` равно `3^n`.
@@ -2284,7 +2299,7 @@ lemma enumerate_length : ∀ n, (Restriction.enumerate n).length = 3 ^ n
                 -- Каждая маска даёт ровно три продолжения.
                 simp [Restriction.enumerate, List.length_flatMap]
         _ = 3 * (Restriction.enumerate n).length := hsum
-        _ = 3 * 3 ^ n := by simpa [ih]
+        _ = 3 * 3 ^ n := by simp [ih]
         _ = 3 ^ (Nat.succ n) := by
               simp [pow_succ, Nat.mul_comm]
 
@@ -2338,8 +2353,7 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
         (((ρ :: L').flatMap g).map (fun τ => τ.weight p)).sum
           = ((g ρ).map (fun τ => τ.weight p)).sum
               + ((L'.flatMap g).map (fun τ => τ.weight p)).sum := by
-      simp [List.flatMap_cons, List.map_append, List.sum_append, List.map_cons, List.sum_cons,
-        add_comm, add_left_comm, add_assoc]
+      simp [List.flatMap_cons, List.map_append, List.sum_append]
     have hsum_left :
         ((g ρ).map (fun τ => τ.weight p)).sum
             + ((L'.flatMap g).map (fun τ => τ.weight p)).sum
@@ -2371,7 +2385,7 @@ lemma sum_weights_flatMap_g (p : Q) (g : Restriction n → List (Restriction (n+
       _ = (p + (1 - p)) *
               (ρ.weight p + (L'.map fun ρ => ρ.weight p).sum) := hsum_factor
       _ = (p + (1 - p)) * ((ρ :: L').map (fun ρ => ρ.weight p)).sum := by
-                simpa [hmap_cons, add_comm]
+                simp
 
 lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p = (p + (1 - p)) * totalWeight n p := by
@@ -2387,8 +2401,7 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
         = (Restriction.cons none ρ).weight p
           + (Restriction.cons (some false) ρ).weight p
           + (Restriction.cons (some true) ρ).weight p := by
-      simp [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_comm, add_left_comm,
-        add_assoc]
+      simp [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_comm, add_assoc]
     calc
       ((g ρ).map (fun τ => τ.weight p)).sum
           = (Restriction.cons none ρ).weight p
@@ -2403,7 +2416,7 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
     totalWeight (Nat.succ n) p
         = ((enumerate (Nat.succ n)).map (fun ρ => ρ.weight p)).sum := rfl
     _ = (((enumerate n).flatMap g).map (fun τ => τ.weight p)).sum := by
-          simp [totalWeight, enumerate, g, List.flatMap_singleton_eq_map]
+          simp [enumerate, g]
     _ = (p + (1 - p)) * ((enumerate n).map (fun ρ => ρ.weight p)).sum := haux
     _ = (p + (1 - p)) * totalWeight n p := by
           simp [totalWeight]
@@ -2413,7 +2426,7 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
       totalWeight n p = (p + (1 - p)) ^ n := by
   induction n with
   | zero =>
-      simp [totalWeight_zero]
+      simp
   | succ n ih =>
       calc
         totalWeight (Nat.succ n) p
@@ -2422,16 +2435,16 @@ lemma totalWeight_succ (n : Nat) (p : Q) :
         _ = (p + (1 - p)) * (p + (1 - p)) ^ n := by
                 rw [ih]
         _ = (p + (1 - p)) ^ n * (p + (1 - p)) := by
-                simpa [mul_comm]
+                simp
         _ = (p + (1 - p)) ^ Nat.succ n := by
-                simpa [pow_succ] using (pow_succ (p + (1 - p)) n).symm
+                simp [pow_succ]
 
 /-- Полная масса распределения равна 1: `𝓡_p` корректно нормирована. -/
 lemma totalWeight_eq_one (n : Nat) (p : Q) : totalWeight n p = 1 := by
   have hnorm : p + (1 - p) = (1 : Q) := by ring
   have hclosed := totalWeight_closed_form n p
   have hone : (p + (1 - p)) ^ n = 1 := by
-    simpa [hnorm] using (one_pow n : (1 : Q) ^ n = 1)
+    simp [hnorm]
   exact hclosed.trans hone
 
 /--
@@ -2474,7 +2487,7 @@ lemma sum_weights_mask_none_zero (n : Nat) (p : Q) :
                     simp [List.filter_append]
             _ = [cons none ρ]
                   ++ List.filter P (L.flatMap g) := by
-                    simpa [hhead]
+                    simp [hhead]
             _ = cons none ρ :: List.filter P (L.flatMap g) := by
                     simp
             _ = cons none ρ :: L.map (cons none) := by
@@ -2502,7 +2515,7 @@ lemma sum_weights_mask_none_zero (n : Nat) (p : Q) :
           (fun ρ => (cons none ρ).weight p)).sum
         = ((enumerate n).map fun ρ => p * ρ.weight p).sum := by
     induction enumerate n with
-    | nil => simp [hweight]
+    | nil => simp
     | cons ρ L ih =>
         have hw := hweight ρ
         calc
@@ -2568,14 +2581,14 @@ lemma sum_weights_mask_none (n : Nat) :
       cases i using Fin.cases with
       | zero =>
           -- Единственный индекс — нулевой, используем предыдущую лемму.
-          simpa using sum_weights_mask_none_zero (n := 0) (p := p)
+          exact sum_weights_mask_none_zero (n := 0) (p := p)
       | succ j => exact False.elim (Fin.elim0 j)
   | succ n ih =>
       intro i p
       cases i using Fin.cases with
       | zero =>
           -- Нулевая координата сведена к исходному утверждению.
-          simpa using sum_weights_mask_none_zero (n := Nat.succ n) (p := p)
+          exact sum_weights_mask_none_zero (n := Nat.succ n) (p := p)
       | succ i' =>
         -- Рассматриваем ограничение вида `cons choice ρ` и изучаем фильтр.
         let P : Restriction (Nat.succ (Nat.succ n)) → Prop :=
@@ -2598,11 +2611,11 @@ lemma sum_weights_mask_none (n : Nat) :
           classical
           by_cases hnone : Q ρ
           · have hmask : ρ.mask i' = none := hnone
-            simp [g, P, Q, hmask, Restriction.cons_mask_succ, hnone]
+            simp [g, P, Q, hmask]
           · have hmask : ρ.mask i' ≠ none := hnone
             obtain ⟨b, hb⟩ := Restriction.mask_eq_some_of_not_none
               (ρ := ρ) (i := i') hmask
-            simp [g, P, Q, Restriction.cons_mask_succ, hb, hnone]
+            simp [g, P, Q, hb, hnone]
         -- Переносим фильтрацию с расширенного списка на исходный.
         have hfiltered :
             List.filter P (enumerate (Nat.succ (Nat.succ n)))
@@ -2618,8 +2631,7 @@ lemma sum_weights_mask_none (n : Nat) :
               = (Restriction.cons none ρ).weight p
                 + (Restriction.cons (some false) ρ).weight p
                 + (Restriction.cons (some true) ρ).weight p := by
-            simp [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_comm, add_left_comm,
-              add_assoc]
+            simp [g, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_comm, add_assoc]
           calc
             ((g ρ).map (fun τ => τ.weight p)).sum
                 = (Restriction.cons none ρ).weight p
@@ -2640,7 +2652,7 @@ lemma sum_weights_mask_none (n : Nat) :
                   have hIH := ih i' p
                   simpa [Q] using hIH
           _ = p * ((p + (1 - p)) * totalWeight n p) := by
-                  simp [mul_assoc, mul_comm, mul_left_comm]
+                  simp [mul_left_comm]
           _ = p * totalWeight (Nat.succ n) p := by
                   rw [totalWeight_succ n p]
 /- Если на каждом элементе списка `f x ≤ g x`, то и суммы `map f` и `map g`
@@ -2657,7 +2669,7 @@ lemma sum_map_le_sum_map {α : Type _} (L : List α)
         intro y hy
         exact h y (by simp [hy])
       have ih' := ih hxs
-      simpa [List.map_cons, List.sum_cons, add_comm, add_left_comm, add_assoc]
+      simpa [List.map_cons, List.sum_cons, add_assoc]
         using add_le_add hx ih'
 
 lemma foldl_select_sum_aux {α : Type _} (L : List α) (f : α → Q)
@@ -2670,7 +2682,7 @@ lemma foldl_select_sum_aux {α : Type _} (L : List α) (f : α → Q)
   | cons x xs ih =>
       by_cases hx : P x
       · have := ih (acc := acc + f x)
-        simp [hx, ih, add_comm, add_left_comm, add_assoc]
+        simp [hx, ih, add_assoc]
       · have := ih (acc := acc)
         simp [hx, ih]
 
@@ -2716,12 +2728,12 @@ lemma literalStatus_eq_satisfied {n : Nat} {ρ : Restriction n}
   classical
   unfold literalStatus
   cases hmask : ρ.mask ℓ.idx with
-  | none => simp [hmask]
+  | none => simp
   | some b =>
       by_cases hb : b = ℓ.value
-      · subst hb; simp [hmask]
+      · subst hb; simp
       · have hb' : b ≠ ℓ.value := hb
-        simp [hmask, hb, hb']
+        simp [hb]
 
 lemma literalStatus_eq_unassigned {n : Nat} {ρ : Restriction n}
     {ℓ : Literal n} :
@@ -2729,11 +2741,11 @@ lemma literalStatus_eq_unassigned {n : Nat} {ρ : Restriction n}
   classical
   unfold literalStatus
   cases hmask : ρ.mask ℓ.idx with
-  | none => simp [hmask]
+  | none => simp
   | some b =>
       by_cases hb : b = ℓ.value
-      · simp [hmask, hb]
-      · simp [hmask, hb]
+      · simp [hb]
+      · simp [hb]
 
 lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
     {ℓ : Literal n} :
@@ -2742,10 +2754,10 @@ lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
   classical
   unfold literalStatus
   cases hmask : ρ.mask ℓ.idx with
-  | none => simp [hmask]
+  | none => simp
   | some b =>
       by_cases hb : b = ℓ.value
-      · simp [hmask, hb]
+      · simp [hb]
       · constructor
         · intro _
           exact ⟨b, rfl, hb⟩
@@ -2755,7 +2767,7 @@ lemma literalStatus_eq_falsified {n : Nat} {ρ : Restriction n}
           have hb_eq : b = b' := Option.some.inj hb_eq'
           have hbne : b ≠ ℓ.value := by
             simpa [hb_eq] using hbneq
-          simpa [hmask, hbne]
+          simp [hbne]
 
 /--
 Если ограничение объявило литерал удовлетворённым, то после `override` он
@@ -2824,7 +2836,7 @@ lemma freeLiterals_eq_nil_iff {n : Nat} {ρ : Restriction n}
   · intro hnone
     classical
     cases hfree : ρ.freeLiterals C with
-    | nil => simpa [hfree]
+    | nil => simp
     | cons ℓ₀ free =>
         have heq := congrArg (fun l => ℓ₀ ∈ l) hfree.symm
         have hmem : ℓ₀ ∈ ρ.freeLiterals C :=
@@ -2848,7 +2860,7 @@ inductive ClauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n)
   | pending (w : ClausePendingWitness ρ C)
   deriving Repr
 
-@[simp] def clauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n) :
+def clauseStatus {n : Nat} (ρ : Restriction n) (C : CnfClause n) :
     ClauseStatus ρ C :=
   if hsat : ∃ ℓ ∈ C.literals, ρ.literalStatus ℓ = LiteralStatus.satisfied then
     ClauseStatus.satisfied
@@ -2939,50 +2951,126 @@ structure PendingClauseSelection {n : Nat}
 фальсифицированная клауза, функция немедленно завершает поиск, поскольку формула
 уже обращается в `false`.
 -/
+private def firstPendingClause?Aux {n : Nat} (ρ : Restriction n) (C : CnfClause n)
+    (rest : List (CnfClause n)) (status : ClauseStatus ρ C)
+    (hstatus : ρ.clauseStatus C = status)
+    (rec : Option (PendingClauseSelection (ρ := ρ) rest)) :
+    Option (PendingClauseSelection (ρ := ρ) (C :: rest)) :=
+  match status with
+  | ClauseStatus.pending w =>
+      some {
+        leadingClauses := [],
+        clause := C,
+        suffix := rest,
+        witness := w,
+        leadingSatisfied := by
+          intro C' hmem
+          have : C' ∈ ([] : List (CnfClause n)) := hmem
+          cases this
+        pendingStatusEq := by
+          simpa [hstatus] using (rfl : status = ClauseStatus.pending w),
+        clausesDecomposition := rfl }
+  | ClauseStatus.satisfied =>
+      match rec with
+      | none => none
+      | some selection =>
+          some {
+            leadingClauses := C :: selection.leadingClauses,
+            clause := selection.clause,
+            suffix := selection.suffix,
+            witness := selection.witness,
+            leadingSatisfied := by
+              intro D hmem
+              obtain h | h := List.mem_cons.mp hmem
+              · subst h
+                simpa [hstatus] using (rfl : status = ClauseStatus.satisfied)
+              · exact selection.leadingSatisfied D h
+            pendingStatusEq := selection.pendingStatusEq,
+            clausesDecomposition := by
+              have hrest : rest =
+                  selection.leadingClauses ++ selection.clause :: selection.suffix :=
+                  selection.clausesDecomposition
+              have : C :: rest =
+                  (C :: selection.leadingClauses) ++ selection.clause :: selection.suffix := by
+                  simp [List.cons_append, hrest]
+              exact this }
+  | ClauseStatus.falsified => none
+
 def firstPendingClause?
     {n : Nat} (ρ : Restriction n) :
     ∀ clauses : List (CnfClause n),
       Option (PendingClauseSelection (ρ := ρ) clauses)
   | [] => none
   | C :: rest =>
-      match hstatus : ρ.clauseStatus C with
-      | ClauseStatus.pending w =>
-          some {
-            leadingClauses := [],
-            clause := C,
-            suffix := rest,
-            witness := w,
-            leadingSatisfied := by
-              intro C' hmem
-              have : C' ∈ ([] : List (CnfClause n)) := hmem
-              cases this
-            pendingStatusEq := hstatus,
-            clausesDecomposition := rfl }
-      | ClauseStatus.satisfied =>
-          match firstPendingClause? (ρ := ρ) rest with
-          | none => none
-          | some selection =>
-              some {
-                leadingClauses := C :: selection.leadingClauses,
-                clause := selection.clause,
-                suffix := selection.suffix,
-                witness := selection.witness,
-                leadingSatisfied := by
-                  intro D hmem
-                  obtain h | h := List.mem_cons.mp hmem
-                  · subst h
-                    exact hstatus
-                  · exact selection.leadingSatisfied D h
-                pendingStatusEq := selection.pendingStatusEq,
-                clausesDecomposition := by
-                  have hrest : rest =
-                      selection.leadingClauses ++ selection.clause :: selection.suffix :=
-                      selection.clausesDecomposition
-                  have : C :: rest =
-                      (C :: selection.leadingClauses) ++ selection.clause :: selection.suffix := by
-                      simp [List.cons_append, hrest]
-                  exact this }
-      | ClauseStatus.falsified => none
+      let status := ρ.clauseStatus C
+      firstPendingClause?Aux (ρ := ρ) (C := C) (rest := rest)
+        (status := status) (hstatus := rfl)
+        (rec := firstPendingClause? (ρ := ρ) rest)
+
+lemma firstPendingClause?_cons_none_iff_status {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (status : ClauseStatus ρ C) (hstatus : ρ.clauseStatus C = status) :
+  ρ.firstPendingClause? (C :: rest) = none ↔
+      (status = ClauseStatus.falsified) ∨
+      (status = ClauseStatus.satisfied ∧
+        ρ.firstPendingClause? rest = none) := by
+  classical
+  have hfp :
+      ρ.firstPendingClause? (C :: rest) =
+        firstPendingClause?Aux (ρ := ρ) (C := C) (rest := rest)
+          (status := status) (hstatus := hstatus)
+          (rec := firstPendingClause? (ρ := ρ) rest) := by
+    simp [Restriction.firstPendingClause?, hstatus]
+  cases status with
+  | pending w =>
+      simp [firstPendingClause?Aux, hfp]
+  | falsified =>
+      simp [firstPendingClause?Aux, hfp]
+  | satisfied =>
+      cases hrec : ρ.firstPendingClause? rest <;>
+        simp [firstPendingClause?Aux, hfp, hrec]
+
+lemma firstPendingClause?_cons_none_iff {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n)) :
+  ρ.firstPendingClause? (C :: rest) = none ↔
+      (ρ.clauseStatus C = ClauseStatus.falsified) ∨
+      (ρ.clauseStatus C = ClauseStatus.satisfied ∧
+        ρ.firstPendingClause? rest = none) := by
+  simpa using
+    (firstPendingClause?_cons_none_iff_status (ρ := ρ) (C := C) (rest := rest)
+      (status := ρ.clauseStatus C) (hstatus := rfl))
+
+lemma firstPendingClause?_cons_ne_none_of_pending {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (hpend : ∃ w, ρ.clauseStatus C = ClauseStatus.pending w) :
+    ρ.firstPendingClause? (C :: rest) ≠ none := by
+  intro hnone
+  have h := (firstPendingClause?_cons_none_iff ρ C rest).1 hnone
+  rcases hpend with ⟨w, hw⟩
+  simpa [hw] using h
+
+lemma firstPendingClause?_cons_satisfied_none_iff {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (hsat : ρ.clauseStatus C = ClauseStatus.satisfied) :
+    ρ.firstPendingClause? (C :: rest) = none ↔
+      ρ.firstPendingClause? rest = none := by
+  constructor
+  · intro hnone
+    have h := (firstPendingClause?_cons_none_iff ρ C rest).1 hnone
+    simpa [hsat] using h
+  · intro hnone
+    have :
+        (ρ.clauseStatus C = ClauseStatus.falsified) ∨
+          (ρ.clauseStatus C = ClauseStatus.satisfied ∧
+            ρ.firstPendingClause? rest = none) :=
+      Or.inr ⟨hsat, hnone⟩
+    exact (firstPendingClause?_cons_none_iff ρ C rest).2 this
+
+lemma firstPendingClause?_cons_eq_none_of_falsified {n : Nat} (ρ : Restriction n)
+    (C : CnfClause n) (rest : List (CnfClause n))
+    (hf : ρ.clauseStatus C = ClauseStatus.falsified) :
+    ρ.firstPendingClause? (C :: rest) = none := by
+  exact (firstPendingClause?_cons_none_iff ρ C rest).2 (Or.inl hf)
 
 end Restriction
 
@@ -3359,7 +3447,7 @@ lemma weight_eq_branchFactor_pow {ρ : Restriction n} {t : Nat}
           (choice := choice)
       have hmaskσ : σ.mask choice.literal.idx = some choice.value := by
         have htmp := hmask_raw
-        simp [σ] at htmp
+        simp at htmp
         exact htmp
       have hmul_raw :
           Restriction.weight
@@ -3385,7 +3473,7 @@ lemma weight_eq_branchFactor_pow {ρ : Restriction n} {t : Nat}
               = branchFactor p * Restriction.weight (ρ := σ) (p := p) := by
           change ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
               = ((2 * p) / (1 - p)) * Restriction.weight (ρ := σ) (p := p)
-          simp [branchFactor]
+          simp
         exact hratio_raw.trans hrewrite
       -- Индуктивное выражение для веса `σ`.
       have hrec_raw := ih
@@ -3393,7 +3481,7 @@ lemma weight_eq_branchFactor_pow {ρ : Restriction n} {t : Nat}
           = (branchFactor p) ^ t
             * Restriction.weight (ρ := finalRestriction rest) (p := p) := by
         have htmp := hrec_raw
-        simp [σ] at htmp
+        simp at htmp
         exact htmp
       -- Преобразуем результирующую формулу.
       have hfinal :
@@ -3542,7 +3630,7 @@ noncomputable def finalRestriction :
     {ρ : Restriction n} → {t : Nat} →
       CanonicalTrace (F := F) ρ t → Restriction n
   | ρ, _, CanonicalTrace.nil => ρ
-  | ρ, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
+  | _, _, CanonicalTrace.cons _ _ tail => finalRestriction tail
 
 /--
 Список индексов переменных, которые фиксируются вдоль пути, в том порядке, в
@@ -3755,7 +3843,7 @@ lemma failureProbability_eq_failureSet_sum
               (fun ρ => ρ.weight p)).sum := by
             simpa using hfilter
     _ = ((F.failureSet t).map fun ρ => ρ.weight p).sum := by
-            simpa [failureSet]
+            simp [failureSet]
 
 /--
 Вероятность неудачи не превосходит полной массы распределения случайных

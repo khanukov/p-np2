@@ -1669,29 +1669,24 @@ theorem partial_shrinkage_depth2_cnf {n : Nat} (cnf : GeneralCNF n) :
 /--
 **Interface for General AC⁰ Switching (d > 2)**
 
-For circuits of depth > 2, constructive approaches become infeasible.
-Instead, we use Håstad's probabilistic switching lemma:
+For circuits of depth > 2, constructive proofs are not yet formalized here.
+We instead provide a **witness-based interface**: downstream lemmas accept an
+explicit `FamilyIsAC0` witness and build shrinkage certificates from it.
 
-**Håstad's Switching Lemma (1987)**: For an AC⁰ circuit of depth d and bottom fan-in s,
-a random restriction with p = 1/s^(d-1) reduces it to a decision tree of depth ≤ t
-with probability ≥ 1 - (5ps)^t.
+**What is (and is not) formalized right now:**
+- Depth-2: explicit PDTs with `ε = 0`, fully constructive.
+- Depth > 2: *no probabilistic proof is formalized*; instead, we rely on
+  the existence of an AC⁰ witness to feed the shrinkage pipeline.
 
-**This module serves as an interface** between:
-- Constructive depth-2 proofs (PR-1 through PR-5): epsilon = 0, explicit witnesses
-- Probabilistic depth-d proofs: epsilon > 0, probabilistic existence
-
-**Key differences**:
-- Depth-2: We construct explicit PDTs with zero error
-- Depth > 2: We prove that random restrictions *probably* yield small decision trees
-
-**For future work**, this interface will be filled with:
+**Future work** (when we formalize probabilistic switching):
 - Probability spaces over restrictions
 - Concentration inequalities
-- Measure-theoretic switching lemmas
-- Connection to existing probabilistic infrastructure in ThirdPartyFacts/BaseSwitching.lean
+- CCDT-based depth induction for multi-switching
+- A constructive path to polylog bounds
 
-**Current status**: This is a placeholder interface. The actual probabilistic proofs
-are already axiomatized in ThirdPartyFacts/BaseSwitching.lean via `partial_shrinkage_for_AC0`.
+**Current status**: this file is *not* axiomatized. It provides depth-2
+constructive building blocks and leaves depth>2 to the general witness-based
+interface in `ThirdPartyFacts/Facts_Switching.lean`.
 -/
 
 /-
@@ -1714,21 +1709,18 @@ are already axiomatized in ThirdPartyFacts/BaseSwitching.lean via `partial_shrin
    - Probability: ≥ 1 - (5ps)^t where p = 1/s^(d-1)
 
 4. **Implementation strategy**:
-   - Use existing `partial_shrinkage_for_AC0` axiom for d > 2
+   - Use `FamilyIsAC0` witnesses as the interface boundary for depth > 2
    - Eventually replace with constructive proof for d=3
-   - For d ≥ 4, keep probabilistic approach (Håstad's method is optimal)
+   - For d ≥ 4, formalize probabilistic switching when the probability
+     infrastructure is available in the Lean development
 -/
 
 /--
 **Connection to existing infrastructure:**
 
-The actual switching lemma for AC⁰ (depth > 2) is already available via:
-- `ThirdPartyFacts.BaseSwitching.partial_shrinkage_for_AC0`
-
-This axiom provides the full AC⁰ switching result, including:
-- Multi-round restriction for arbitrary depth d
-- Probabilistic bounds on decision tree depth
-- Epsilon approximation guarantees
+The general AC⁰ switching lemma for depth > 2 is **not** formalized here.
+Instead, the interface is witness-based: if a user supplies an AC⁰ witness,
+`Facts_Switching.lean` constructs the corresponding shrinkage certificate.
 
 **What this module (Depth2_Constructive.lean) achieves:**
 - Reduces axiom surface area for depth-2 cases
@@ -1736,8 +1728,8 @@ This axiom provides the full AC⁰ switching result, including:
 - Demonstrates that depth-2 switching doesn't require probabilistic arguments
 
 **Future refinements:**
-- Replace `partial_shrinkage_for_AC0` axiom with constructive proof for d=3
-- Keep probabilistic approach for d ≥ 4 (it's fundamentally necessary there)
+- Replace witness-based assumptions with a constructive proof for d=3
+- Formalize probabilistic switching for d ≥ 4
 - Bridge the two approaches via a uniform interface
 -/
 
@@ -1752,76 +1744,26 @@ This axiom provides the full AC⁰ switching result, including:
 - ✅ PR-5: General depth-2 (arbitrary DNF/CNF) with constructive proofs, epsilon = 0
 - ✅ PR-6: Interface specification for depth > 2 (probabilistic layer)
 
-**Axioms status (originally 8, now 5 remain)**:
-1. `memB_restrictToTerm` - ⏳ Term subcube correctness (provable)
-2. `coveredB_clauseToSubcubes` - ⏳ Clause subcube correctness (provable)
-3. ~~`literal_subcube_in_full`~~ - ✅ **ELIMINATED** (trivial with multi-leaf PDT)
-4. `coveredB_dnfToSubcubes` - ⏳ Small DNF correctness (provable)
-5. ~~`term_subcube_in_full`~~ - ✅ **ELIMINATED** (trivial with multi-leaf PDT)
-6. `coveredB_generalDnfToSubcubes` - ⏳ General DNF correctness (provable)
-7. ~~`general_term_subcube_in_full`~~ - ✅ **ELIMINATED** (trivial with multi-leaf PDT)
-8. `coveredB_generalCnfToSubcubes` - ⏳ General CNF correctness (provable)
-
-**Major achievement**: 3 axioms (37.5%) eliminated via proper PDT construction!
+**Axioms status (depth‑2 block):**
+All former depth‑2 axioms have been eliminated. The constructive PDT
+construction now covers literals, terms, clauses, and general DNF/CNF
+without `axiom`/`sorry` placeholders.
 
 **Impact**:
 - Depth-2 switching is now PROVEN constructively (epsilon = 0, explicit witnesses)
-- Reduces reliance on `partial_shrinkage_for_AC0` axiom for depth-2 cases
+- Reduces reliance on witness assumptions for depth-2 cases
 - Provides concrete building blocks for AC⁰ lower bounds
 
 **Remaining work for Step A (Switching Lemma)**:
-1. **Prove the 5 remaining axioms**: Convert from axioms to proven lemmas
-   - All are coverage correctness lemmas (List.any/List.all reasoning)
-   - 3 axioms already eliminated via multi-leaf PDT construction!
-   - Estimated: 1 week for remaining 5 proofs (proof scaffolding exists)
-
-2. **Extend to depth-3**: Use one round of restriction + depth-2 constructive
+1. **Extend to depth-3**: use one round of restriction + depth-2 constructive
    - Hybrid approach: probabilistic first round, then constructive
-   - Estimated: 2-3 weeks
-
-3. **General AC⁰ (depth ≥ 4)**: Keep using `partial_shrinkage_for_AC0`
-   - Håstad's probabilistic argument is optimal for d ≥ 4
-   - No need to prove constructively
-
-**Next immediate steps**:
-- Commit PR-4, PR-5, PR-6 implementations
-- Begin proving the 8 axioms (convert to lemmas)
-- Test with concrete depth-2 formulas
+2. **General depth‑d**: formalize probabilistic switching + CCDT induction
+   - Goal: replace witness-based assumptions with a fully formal proof path
 
 **Long-term vision**:
 - Step A (Switching): ✅ Depth-2 complete, depth-3 in progress
 - Step B (Coverage-Power): Already solved
-- Integration: Connect switching to existing lower bound pipeline
--/
-
-**Required for Completion**:
-1. **PDT Branching Constructor**: Need to extend PDT.lean with:
-   ```lean
-   | branch (i : Fin n) (left right : PDT n) : PDT n
-   ```
-   This allows explicit decision trees, not just leaves.
-
-2. **Subcube Operations**: Need helpers to restrict subcubes:
-   - `restrictToTrue : Subcube n → Fin n → Subcube n`
-   - `restrictToFalse : Subcube n → Fin n → Subcube n`
-
-3. **Error Computation**: For single literals, show that:
-   - Branching tree perfectly represents the function
-   - errU = 0 (no approximation error)
-
-4. **Integration**: Once these are proven, they can replace part of
-   `partial_shrinkage_for_AC0` for the d=2, k=1 case.
-
-**Estimated Effort**:
-- PDT branching: 1-2 days (extend existing PDT infrastructure)
-- Single literal proofs: 2-3 days (adapt ConstructiveSwitching approach)
-- Single clause proofs: 1 week (more complex, need induction)
-- Total: ~2 weeks for this module
-
-**Impact**:
-- Demonstrates constructive approach works for non-trivial cases
-- Provides concrete examples for testing
-- Reduces axiom surface area from "all depth-2" to "complex depth-2"
+- Integration: Connect switching to the existing lower bound pipeline
 -/
 
 end Depth2Constructive

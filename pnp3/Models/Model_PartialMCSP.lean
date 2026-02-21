@@ -45,7 +45,7 @@ inductive Circuit (n : Nat) where
   | not : Circuit n → Circuit n
   | and : Circuit n → Circuit n → Circuit n
   | or : Circuit n → Circuit n → Circuit n
-  deriving Repr
+  deriving DecidableEq, Repr
 
 /-- Размер схемы как число вентилей (каждая вершина считается за 1). -/
 def Circuit.size {n : Nat} : Circuit n → Nat
@@ -77,6 +77,21 @@ def bitVecToNat {n : Nat} (x : Core.BitVec n) : Nat :=
     0
 
 /--
+  Upper bound on the cardinality of the Finset of tree-shaped circuits
+  of size ≤ `s` over `n` input variables. The recurrence overapproximates
+  by closing under NOT/AND/OR at every level.
+
+  f(0) = 0
+  f(s+1) ≤ 2·f(s)² + 2·f(s) + n + 2
+-/
+def circuitCountBound (n s : Nat) : Nat :=
+  match s with
+  | 0 => 0
+  | s + 1 =>
+    let prev := circuitCountBound n s
+    2 * prev ^ 2 + 2 * prev + n + 2
+
+/--
   Параметры Partial MCSP. Структурно повторяют параметры total‑MCSP,
   но семантика относится к частичным функциям.
 -/
@@ -87,6 +102,10 @@ structure GapPartialMCSPParams where
   gap_ok : sYES + 1 ≤ sNO
   /-- В оценках сохраняем предположение о «достаточно большом» `n`. -/
   n_large : 8 ≤ n
+  /-- Non-degenerate YES threshold: at least Circuit.const has size 1 ≤ sYES. -/
+  sYES_pos : 1 ≤ sYES
+  /-- Shannon counting: the circuit-count bound fits below 2^(tableLen/2). -/
+  circuit_bound_ok : circuitCountBound n (sNO - 1) < 2 ^ (Partial.tableLen n / 2)
   deriving Repr
 
 /-- Длина входа partial-MCSP: `2 * 2^n`. -/
@@ -110,9 +129,115 @@ def polylogBudget (N : Nat) : Nat :=
 def assignmentIndex {n : Nat} (x : Core.BitVec n) : Fin (Partial.tableLen n) := by
   have hpos : 0 < Partial.tableLen n := by
     have hbase : 0 < (2 : Nat) := by decide
-    simpa [Partial.tableLen] using (Nat.pow_pos hbase n)
+    -- Раскрываем `tableLen` прямо, чтобы избежать лишних симп-этапов.
+    dsimp [Partial.tableLen]
+    exact Nat.pow_pos hbase
   let _ : NeZero (Partial.tableLen n) := ⟨Nat.ne_of_gt hpos⟩
   exact Fin.ofNat (n := Partial.tableLen n) (bitVecToNat x)
+
+/-! ### Binary encoding round-trip -/
+
+private lemma foldl_add_eq_init_add_sum {α : Type*} (f : α → Nat) :
+    ∀ (init : Nat) (L : List α),
+      L.foldl (fun acc a => acc + f a) init = init + (L.map f).sum
+  | _, [] => by simp
+  | init, a :: L => by
+    simp only [List.foldl_cons, List.map_cons, List.sum_cons]
+    rw [foldl_add_eq_init_add_sum f _ L]
+    omega
+
+private lemma bitVecToNat_eq_list_sum {n : Nat} (x : Core.BitVec n) :
+    bitVecToNat x = ((List.finRange n).map
+      (fun i : Fin n => if x i then 2 ^ (i : Nat) else 0)).sum := by
+  unfold bitVecToNat
+  rw [foldl_add_eq_init_add_sum]
+  simp
+
+/-- Sum with doubled exponents equals double the sum. -/
+private lemma sum_map_pow_succ {n : Nat} (x : Core.BitVec (n + 1))
+    (L : List (Fin n)) :
+    (L.map (fun j => if x (Fin.succ j) then Nat.pow 2 (Fin.succ j).val else 0)).sum =
+    2 * (L.map (fun j => if x (Fin.succ j) then Nat.pow 2 j.val else 0)).sum := by
+  induction L with
+  | nil => simp
+  | cons a L ih =>
+    simp only [List.map_cons, List.sum_cons, ih]
+    have key : Nat.pow 2 (Fin.succ a).val = 2 * Nat.pow 2 a.val := by
+      show (2 : Nat) ^ (Fin.succ a).val = 2 * 2 ^ a.val
+      rw [Fin.val_succ, pow_succ]; ring
+    cases x (Fin.succ a)
+    · simp
+    · simp only [ite_true, key, Nat.mul_add]
+
+/-- Helper: foldl with shifted function and factored constant. -/
+private lemma foldl_shift_factor {n : Nat}
+    (x : Core.BitVec (n + 1)) (init : Nat) :
+    (List.finRange n).foldl
+      (fun acc j => acc + (if x (Fin.succ j) then Nat.pow 2 (Fin.succ j).val else 0)) init =
+    init + 2 * (List.finRange n).foldl
+      (fun acc j => acc + (if x (Fin.succ j) then Nat.pow 2 j.val else 0)) 0 := by
+  rw [foldl_add_eq_init_add_sum, foldl_add_eq_init_add_sum, Nat.zero_add]
+  congr 1
+  exact sum_map_pow_succ x _
+
+/-- Recursive characterization of bitVecToNat. -/
+private lemma bitVecToNat_succ {n : Nat} (x : Core.BitVec (n + 1)) :
+    bitVecToNat x = (if x ⟨0, Nat.zero_lt_succ n⟩ then 1 else 0) +
+      2 * bitVecToNat (fun i : Fin n => x (Fin.succ i)) := by
+  unfold bitVecToNat
+  rw [List.finRange_succ_eq_map, List.foldl_cons, List.foldl_map]
+  rw [foldl_shift_factor]
+  simp
+
+/-- Round-trip: bitVecToNat ∘ vecOfNat = id for values below 2^n. -/
+lemma bitVecToNat_vecOfNat {n m : Nat} (hm : m < 2 ^ n) :
+    bitVecToNat (Core.vecOfNat n m) = m := by
+  induction n generalizing m with
+  | zero =>
+    simp only [bitVecToNat_eq_list_sum, List.finRange_zero, List.map_nil, List.sum_nil, pow_zero]
+      at hm ⊢
+    omega
+  | succ n ih =>
+    rw [bitVecToNat_succ]
+    -- Don't simp vecOfNat yet; first rewrite the shifted function
+    have h_shift : (fun i : Fin n => Core.vecOfNat (n + 1) m (Fin.succ i)) =
+        Core.vecOfNat n (m / 2) := by
+      funext i; simp [Core.vecOfNat, Fin.val_succ, Nat.testBit_succ]
+    rw [h_shift, ih (by omega)]
+    -- Goal: (if vecOfNat (n+1) m ⟨0,_⟩ then 1 else 0) + 2 * (m / 2) = m
+    -- vecOfNat (n+1) m ⟨0,_⟩ = testBit m 0 = (m % 2 != 0)
+    show (if Core.vecOfNat (n + 1) m ⟨0, Nat.zero_lt_succ n⟩ then 1 else 0) + 2 * (m / 2) = m
+    simp only [Core.vecOfNat, Nat.testBit_zero]
+    -- Goal: (if decide (m % 2 = 1) then 1 else 0) + 2 * (m / 2) = m
+    rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h] <;> omega
+
+/-- bitVecToNat stays below 2^n. -/
+lemma bitVecToNat_lt {n : Nat} (x : Core.BitVec n) :
+    bitVecToNat x < Partial.tableLen n := by
+  suffices h : bitVecToNat x < 2 ^ n by simpa [Partial.tableLen] using h
+  induction n with
+  | zero =>
+    simp only [bitVecToNat_eq_list_sum, List.finRange_zero, List.map_nil, List.sum_nil, pow_zero]
+    omega
+  | succ n ih =>
+    rw [bitVecToNat_succ]
+    have h_inner := ih (fun i : Fin n => x (Fin.succ i))
+    have h_head : (if x ⟨0, Nat.zero_lt_succ n⟩ then 1 else 0) ≤ 1 := by split <;> omega
+    linarith [pow_succ 2 n]
+
+/-- assignmentIndex is surjective. -/
+theorem assignmentIndex_surjective {n : Nat} :
+    Function.Surjective (@assignmentIndex n) := by
+  intro j
+  refine ⟨Core.vecOfNat n j.val, ?_⟩
+  have hj : j.val < 2 ^ n := by simpa [Partial.tableLen] using j.isLt
+  have h_eq := bitVecToNat_vecOfNat hj
+  -- assignmentIndex uses Fin.ofNat which is val % tableLen
+  -- Since bitVecToNat result = j.val < 2^n = tableLen, the mod is a no-op
+  ext
+  show (bitVecToNat (Core.vecOfNat n j.val)) % Partial.tableLen n = j.val
+  rw [h_eq, Nat.mod_eq_of_lt]
+  simpa [Partial.tableLen] using hj
 
 /--
   Преобразуем таблицу истинности в функцию на `n` битах.
@@ -123,7 +248,9 @@ def truthTableFunction {n : Nat} (table : Core.BitVec (Partial.tableLen n)) :
   by
     have hpos : 0 < Partial.tableLen n := by
       have hbase : 0 < (2 : Nat) := by decide
-      simpa [Partial.tableLen] using (Nat.pow_pos hbase n)
+      -- Аналогично для определения тотальной функции из таблицы.
+      dsimp [Partial.tableLen]
+      exact Nat.pow_pos hbase
     let _ : NeZero (Partial.tableLen n) := ⟨Nat.ne_of_gt hpos⟩
     exact table (Fin.ofNat (n := Partial.tableLen n) (bitVecToNat x))
 
@@ -241,7 +368,7 @@ theorem restriction_preserves_type_partial {p : GapPartialMCSPParams}
     ∃ (T' : PartialTruthTable p.n),
       T' = applyRestrictionToTable (decodePartial x) ρ := by
   exact ⟨restrictTable (p := p) x ρ, by
-    simpa [restrictTable_eq_applyRestriction]⟩
+    simp [restrictTable_eq_applyRestriction]⟩
 
 /-!
   ### Базовые леммы про согласованность
@@ -256,7 +383,7 @@ lemma is_consistent_forget {n : Nat} (C : Circuit n) (T : PartialTruthTable n)
     is_consistent C T → is_consistent C (forget T S) := by
   intro h x
   by_cases hmem : assignmentIndex x ∈ S
-  · simp [is_consistent, forget, hmem]
+  · simp [forget, hmem]
   · simpa [is_consistent, forget, hmem] using h x
 
 /-- Согласованность с двумя таблицами даёт согласованность с их объединением. -/

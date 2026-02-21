@@ -19,6 +19,29 @@ namespace ConstructiveSwitching
 
 open Core
 
+/-! ## Канонические селекторы через точечные подкубы -/
+
+/-- Список всех точечных подкубов (по всем входам `BitVec n`). -/
+noncomputable def allPointSubcubes (n : Nat) : List (Subcube n) :=
+  (Finset.univ : Finset (BitVec n)).toList.map pointSubcube
+
+lemma pointSubcube_mem_allPointSubcubes {n : Nat} (x : BitVec n) :
+    pointSubcube x ∈ allPointSubcubes n := by
+  classical
+  unfold allPointSubcubes
+  refine List.mem_map.mpr ?_
+  refine ⟨x, ?_, rfl⟩
+  have hx : x ∈ (Finset.univ : Finset (BitVec n)) := by
+    simp
+  exact Finset.mem_toList.mpr hx
+
+/-- Любая точка покрыта объединением всех точечных подкубов. -/
+lemma coveredB_allPointSubcubes {n : Nat} (x : BitVec n) :
+    coveredB (allPointSubcubes n) x = true := by
+  apply (covered_iff (Rset := allPointSubcubes n) (x := x)).1
+  refine ⟨pointSubcube x, pointSubcube_mem_allPointSubcubes x, ?_⟩
+  exact mem_pointSubcube_self x
+
 /-! ## Конструктивные доказательства для пустого семейства -/
 
 /--
@@ -179,6 +202,108 @@ theorem partial_shrinkage_constant {n : Nat} (c : Bool) :
         exact le_of_eq errU_false_nil
   }, rfl, rfl, rfl, ?_⟩
   norm_num
+
+/-!
+Более сильная (каноническая) версия для константной функции: используем
+PDT, построенное из всех точечных подкубов, и получаем `ε = 0`.
+-/
+theorem partial_shrinkage_constant_canonical {n : Nat} (c : Bool) :
+    let f : Core.BitVec n → Bool := fun _ => c
+    let F : Family n := [f]
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ F),
+      ℓ = 0 ∧
+      C.epsilon = 0 ∧
+      C.epsilon ≤ (1 : Q) / (n + 2) := by
+  intro f F
+  classical
+  by_cases hpos : 0 < n
+  · let subcubes := allPointSubcubes n
+    let tree := buildPDTFromSubcubes hpos subcubes
+    refine ⟨0, {
+      witness := PartialDT.ofPDT tree
+      depthBound := subcubes.length
+      epsilon := 0
+      trunk_depth_le := by
+        simpa [PartialDT.ofPDT] using
+          (buildPDTFromSubcubes_depth hpos subcubes)
+      selectors := fun g => if g = f then (if c then subcubes else []) else []
+      selectors_sub := by
+        intro g β hg hβ
+        simp [F] at hg
+        subst hg
+        by_cases hc : c
+        · simp [hc] at hβ
+          exact buildPDTFromSubcubes_leaves_subset hpos subcubes β hβ
+        · simp [hc] at hβ
+      err_le := by
+        intro g hg
+        simp [F] at hg
+        subst hg
+        by_cases hc : c
+        · simp [hc]
+          apply le_of_eq
+          apply errU_eq_zero_of_agree
+          intro x
+          have hcover := coveredB_allPointSubcubes (n := n) (x := x)
+          simp [f, hc, subcubes, hcover]
+        · simp [hc]
+          have : f = (fun (_ : Core.BitVec n) => false) := by
+            funext x
+            simp [f, hc]
+          rw [this]
+          exact le_of_eq errU_false_nil
+    }, rfl, rfl, ?_⟩
+    apply div_nonneg
+    · norm_num
+    ·
+      have : (0 : Nat) ≤ n + 2 := by omega
+      exact_mod_cast this
+  · have hzero : n = 0 := Nat.eq_zero_of_not_pos hpos
+    let subcubes := allPointSubcubes n
+    let tree : PDT n := PDT.leaf (fullSubcube n)
+    refine ⟨0, {
+      witness := PartialDT.ofPDT tree
+      depthBound := subcubes.length
+      epsilon := 0
+      trunk_depth_le := by
+        have : PDT.depth tree = 0 := by
+          simp [tree, PDT.depth]
+        simp [PartialDT.ofPDT, this]
+      selectors := fun g => if g = f then (if c then subcubes else []) else []
+      selectors_sub := by
+        intro g β hg hβ
+        simp [F] at hg
+        subst hg
+        by_cases hc : c
+        · simp [hc] at hβ
+          rcases List.mem_map.mp hβ with ⟨x, hx, rfl⟩
+          have hβ_full : pointSubcube x = fullSubcube n :=
+            subcube_eq_full_of_n_zero' hzero (pointSubcube x)
+          simp [tree, PDT.leaves, hβ_full]
+        · simp [hc] at hβ
+      err_le := by
+        intro g hg
+        simp [F] at hg
+        subst hg
+        by_cases hc : c
+        · simp [hc]
+          apply le_of_eq
+          apply errU_eq_zero_of_agree
+          intro x
+          have hcover := coveredB_allPointSubcubes (n := n) (x := x)
+          simp [f, hc, subcubes, hcover]
+        · simp [hc]
+          have : f = (fun (_ : Core.BitVec n) => false) := by
+            funext x
+            simp [f, hc]
+          rw [this]
+          exact le_of_eq errU_false_nil
+    }, rfl, rfl, ?_⟩
+    apply div_nonneg
+    · norm_num
+    ·
+      have : (0 : Nat) ≤ n + 2 := by omega
+      exact_mod_cast this
 
 /--
 Применение к AC0Parameters: константная функция удовлетворяет

@@ -28,7 +28,7 @@ lemma log2_succ_le_base (N : Nat) : 1 ≤ Nat.log2 (N + 1) + 1 := by
 -/
 private lemma pow_ge_one (a k : Nat) (ha : 1 ≤ a) : 1 ≤ a ^ k := by
   induction k with
-  | zero => simpa [Nat.pow_zero]
+  | zero => simp [Nat.pow_zero]
   | succ k ih =>
       have hmul : 1 ≤ a * a ^ k := by
         simpa [Nat.mul_comm, Nat.mul_one, Nat.one_mul]

@@ -69,8 +69,85 @@ structure InPpoly (L : Language) where
     intro n x
     rfl
 
+/--
+Structured non-uniform witness.  Unlike `InPpoly`, this record keeps an
+explicit carrier `Circuit n` and an evaluator `eval`, so downstream developments
+can refine the representation to real circuit syntax without changing the
+`Ppoly` API in one step.
+-/
+structure InPpolyStructured (L : Language) where
+  /-- Circuit carrier at each input length. -/
+  Circuit : Nat → Type u
+  /-- Chosen circuit for each input length. -/
+  family : ∀ n, Circuit n
+  /-- Evaluator for the circuit carrier. -/
+  eval : ∀ n, Circuit n → Bitstring n → Bool
+  /-- Upper bound on circuit size. -/
+  polyBound : Nat → Nat := fun _ => (0 : Nat)
+  /-- Size measure for the carrier. -/
+  size : ∀ n, Circuit n → Nat := fun _ _ => 0
+  /-- Polynomial-growth token for the bound. -/
+  polyBound_poly : True := trivial
+  /-- The chosen family is bounded by `polyBound`. -/
+  family_size_le : ∀ n, size n (family n) ≤ polyBound n := by
+    intro n
+    exact Nat.zero_le _
+  /-- Correctness of the chosen family with respect to the language. -/
+  correct : ∀ n (x : Bitstring n), eval n (family n) x = L n x
+
+/-- Forget structural data and recover the lightweight `InPpoly` witness. -/
+def InPpolyStructured.toInPpoly {L : Language}
+    (h : InPpolyStructured L) : InPpoly L where
+  polyBound := h.polyBound
+  polyBound_poly := h.polyBound_poly
+  circuits := fun n x => h.eval n (h.family n) x
+  correct := h.correct
+
+/--
+Promote the lightweight witness to a structured one by taking circuits
+themselves as the carrier.  This keeps migration fully backward-compatible:
+existing `InPpoly` witnesses can be reused verbatim.
+-/
+def InPpoly.toStructured {L : Language} (h : InPpoly L) :
+    InPpolyStructured L where
+  Circuit := fun n => ULift (Bitstring n → Bool)
+  family := fun n => ⟨h.circuits n⟩
+  eval := fun _ c x => c.down x
+  polyBound := h.polyBound
+  polyBound_poly := h.polyBound_poly
+  size := fun _ _ => 0
+  family_size_le := by
+    intro n
+    exact Nat.zero_le _
+  correct := h.correct
+
 /-- The non-uniform class `P/poly`. -/
 def Ppoly (L : Language) : Prop := ∃ _ : InPpoly L, True
+
+/-- Structured variant of `P/poly` used during interface migration. -/
+def PpolyStructured (L : Language) : Prop := ∃ _ : InPpolyStructured.{u} L, True
+
+/-- Structured witnesses imply membership in the lightweight non-uniform class. -/
+theorem ppoly_of_structured {L : Language} :
+    InPpolyStructured L → Ppoly L := by
+  intro h
+  exact ⟨h.toInPpoly, trivial⟩
+
+/-- Lightweight witnesses are also structured (via the degenerate carrier). -/
+theorem structured_of_ppoly {L : Language} :
+    Ppoly L → PpolyStructured L := by
+  intro h
+  rcases h with ⟨w, _⟩
+  exact ⟨w.toStructured, trivial⟩
+
+/-- The two `P/poly` views are definitionally interchangeable for clients. -/
+theorem ppoly_iff_ppolyStructured {L : Language} :
+    Ppoly L ↔ PpolyStructured L := by
+  constructor
+  · exact structured_of_ppoly
+  · intro h
+    rcases h with ⟨w, _⟩
+    exact ppoly_of_structured w
 
 end Complexity
 

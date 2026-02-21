@@ -1,249 +1,92 @@
-# To-Do / План завершения формализации (P≠NP pipeline)
+# TODO / Roadmap (constructive closure)
 
-> **Status (2025-12-26)**: активный `pnp3/` конвейер полностью переведён на **Partial MCSP**,
-> формализован и **не содержит аксиом** внутри цепочки A→B→C→D.
-> Единственная условность остаётся из-за **внешних свидетельств (witnesses)** в части A
-> (shrinkage/switching), но сама цепочка построена и проверена.
-> Legacy‑ветка GapMCSP перенесена в `archive/`.
->
-> Этот файл фиксирует **что именно сделано** и какие дополнительные
-> исследовательские задачи остаются вне активного конвейера.
+Updated to match the current code state in `pnp3/`.
 
----
+## Current checkpoint
 
-## Краткий анализ текущего состояния (A → B → C → D)
+- Active final chain is conditional and machine-checked.
+- Bridge is localized to `gapPartialMCSP_Language p`.
+- New constructive target interfaces are in place:
+  - `GapPartialMCSPFormulaReifier`
+  - `GapPartialMCSPFormulaizer`
+  - `..._with_formulaizer` theorem family in bridge/final modules.
+- Partial locality-lift now has a certificate-driven wrapper:
+  - `stableRestriction_of_certificate`
+  - `locality_lift_partial_of_certificate`
+  (still requires explicit bound `hCardHalf`).
 
-**Часть A (Switching/Atlas, shrinkage)**
-- Реализованы теоремы:
-  - `partial_shrinkage_for_AC0` (теорема без доп. гипотез о малости).
-  - `shrinkage_for_localCircuit` (теорема, но зависит от `FamilyIsLocalCircuit` witness).
-- AC⁰ пока фактически реализуется как глубина 2 (DNF), с **слабой оценкой глубины** `M^2`.
-- В интерфейсах уже подготовлены параметры глубины `d` и сильная цель `polylog`.
-- Введены структуры:
-  - `FamilyIsAC0` / `AC0CircuitWitness` — свидетельства принадлежности семьи AC⁰.
-  - `FamilyIsLocalCircuit` / `LocalCircuitWitness` — свидетельства локальности.
+## Priority A (highest): close localized embed constructively
 
-**Часть B (Covering-Power, ёмкостные оценки)**
-- Леммы мощности покрываемых атласом семей доказаны без аксиом.
-- Ключевая лемма: `approxOnTestsetWitness_injective` и цепочка следствий — все in Lean.
+Goal: replace external localized embed goal hypothesis
 
-**Часть C (Античекер)**
-- Полностью доказано: существование большого `Y` и тест-набора, на котором малые схемы
-  ошибаются. Теоремы: `antiChecker_exists_large_Y`, `antiChecker_exists_testset`.
-- Не использует внешних допущений — лишь части A и B.
+`GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
 
-**Часть D (Magnification)**
-- Все триггеры (OPS, CJW, локальность) формализованы как **теоремы** в partial‑треке.
-- Мост к финальному выводу собран в `Bridge_to_Magnification_Partial.lean`.
+with a theorem obtained from:
 
-**Финальный вывод (P ≠ NP)**
-- В `Magnification/FinalResult.lean` есть `P_ne_NP_final` (partial‑цепочка).
-- Текущая условность: гипотеза `hF_all : ∀ loc, FamilyIsLocalCircuit ...`.
-- Внешняя теорема `P ⊆ P/poly` импортируется из `Facts/PsubsetPpoly`.
+`GapPartialMCSPFormulaizer p`.
 
----
+### A1. Build explicit formula family
 
-## Что мешает безусловному доказательству (вне активного конвейера)
+- Implement `familyOf` for an `InPpoly` witness of `gapPartialMCSP_Language p`.
+- Avoid ad-hoc semantics: target `ComplexityInterfaces.FormulaCircuit`.
 
-1. **Нет внутренних конструкций свидетелей shrinkage**
-   - В `partial_shrinkage_for_AC0` требуется `FamilyIsAC0` (witness для AC⁰).
-   - В `shrinkage_for_localCircuit` требуется `FamilyIsLocalCircuit` (witness для локальных схем).
-   - Сейчас это **внешние входы**, а не автоматически построенные структуры.
+### A2. Prove semantic correctness
 
-2. **Слабая глубинная оценка (Stage‑1: `M^2`)**
-   - Условие `AC0SmallEnough` удалено, но `ac0DepthBound_strong` теперь равна
-     `max(M², polylog)`. Это сохраняет корректность, однако не даёт чистой
-     polylog‑оценки без запаса.
-   - Нужно заменить доказательство на полноценную multi-switching лемму и
-     вернуть определение `ac0DepthBound_strong = polylog`.
+- Prove `familyCorrect` pointwise:
+  `FormulaCircuit.eval (familyOf w n) x = gapPartialMCSP_Language p n x`.
 
-3. **Финальная гипотеза `hF_all`**
-   - Она исчезнет автоматически, как только будет предоставлен real witness
-     через `ExternalLocalityWitnessProvider`.
+### A3. Prove polynomial size bound
 
----
+- Prove `familyPoly`:
+  `FormulaCircuit.size (familyOf w n) <= n^c + c` for some global `c`.
 
-## Обновлённый план (multi-switching + индукция по глубине AC⁰)
+### A4. Wire into active final chain
 
-Ниже — актуализированный план работ, основанный на multi-switching лемме и
-индукции по глубине схем AC⁰. Он заменяет прежний «Stage‑1» подход и детально
-указывает, какие математические шаги и интерфейсы должны быть реализованы в Lean.
+- Instantiate `NP_not_subset_PpolyFormula_final_with_formulaizer`.
+- Remove dependence on `GapPartialMCSPPpolyRealToPpolyFormulaGoal` from the active path.
 
-### 1) Теоретическая база — multi-switching lemma
-**Цель:** заменить слабую оценку `M²` на реальную полилог‑оценку, построенную на
-обобщении switching‑леммы Хастада к семействам формул.
+## Priority B: replace restriction provider hypothesis by constructive theorem
 
-**Ключевые идеи:**
-- Одиночная switching‑лемма: при случайной `p`‑рестрикции `k`‑CNF/`k`‑DNF
-  превращается в дерево решений глубины `t` с вероятностью
-  `≥ 1 - (C·p·k)^t`.
-- **Multi‑switching:** для семейства из `S` формул одной рестрикцией можно
-  одновременно упростить их все. Вероятность неудачи оценивается как
-  `S^{⌈t/ℓ⌉} · (C·p·k)^t`, где `ℓ` — длина ствола частичного дерева решений.
+Current provider interface in active path:
 
-**Литературная база:**
-Impagliazzo–Matthews–Paturi (2012), Servedio–Tan (2019), Håstad (1986).
+`StructuredLocalityProviderPartial` (restriction-style witness).
 
----
+### B1. Construct provider from switching/shrinkage witnesses
 
-### 2) Индукция по глубине `d` (AC⁰)
-**Цель:** получить общий полилог‑сертификат глубины `t` для схем глубины `d`.
+- Produce `RestrictionLocalityPartial p` from strict structured `PpolyFormula` witness.
+- Keep bounds (`polylogBudget`) aligned with the current solver interfaces.
+- Route through certificate API where possible:
+  `ShrinkageCertificate.Provider` -> `stableRestriction_of_certificate` -> locality lift.
 
-**База `d=2` (DNF/CNF):**
-- Сразу применяем multi‑switching к множеству термов ширины `k`.
-- При параметрах `p = Θ(1/k)` и `ℓ = Θ(log M)` получаем частичный сертификат
-  глубины `O(log M)`; на листьях формула сводится к константе или литере.
+### B1.1 Discharge `hCardHalf` constructively
 
-**Переход `d → d+1`:**
-- Рассматриваем нижний слой формул (CNF/DNF) и применяем multi‑switching
-  ко всему семейству.
-- Получаем общий ствол глубины `ℓ`, на листьях которого исходная схема
-  превращается в подсхему глубины `d` размера `M' = M^{O(1)}`.
-- По индукции строим хвостовые деревья и «склеиваем» со стволом.
-- Итоговая глубина: `t = ℓ + t₂`, где `t₂` — полилог от `M'`.
-  Следовательно, `t` остаётся полилогом от `M`.
+- Prove/derive the half-table bound for certificate restrictions in the target provider path:
+  `restriction.alive.card ≤ Partial.tableLen p.n / 2`.
+- Remove ad hoc/manual passing of this bound for the main path.
 
----
+### B2. Remove provider hypothesis from external variants
 
-### 3) Вероятностный аргумент → детерминированное существование
-**Цель:** превратить «с высокой вероятностью» в «существует конкретная рестрикция».
+- Replace `..._external` usage with constructive provider theorem.
 
-**Инструмент:**
-- Использовать `Classical.choose` для извлечения свидетеля из факта
-  существования (следует из положительной вероятности).
-- Дерандомизация не требуется, так как цель — существование сертификата.
+## Priority C: close Part A witness externality
 
----
+External witness-backed facts still required:
 
-### 4) Сертификаты shrinkage и оценка числа подкубов
-**Цель:** формализовать `PartialCertificate` и оценить размер покрытия.
+- `partial_shrinkage_for_AC0`
+- `shrinkage_for_localCircuit`
 
-**Ключевые факты:**
-- Сертификат состоит из ствола (ℓ ограничений) и хвостов (деревья глубины `≤ t₂`).
-- Общая глубина `t` даёт число листьев `≤ 2^t` через
-  `PDT.leaves_length_le_pow_depth`.
-- Подставляя `t = polylog(M)`, получаем квазиполиномиальную оценку числа подкубов.
+### C1. Formalize witness constructors
 
----
+- Internal constructors for `AC0CircuitWitness`.
+- Internal constructors for `LocalCircuitWitness`.
 
-### 5) Интеграция в AC0PolylogBoundWitness и снятие аксиом
-**Цель:** заменить аксиому multi‑switching реальным доказательством.
+### C2. Integrate with locality provider
 
-**Шаги:**
-1. Доказать `partial_shrinkage_for_AC0` без аксиом и без `AC0SmallEnough`.
-2. Удалить `max(M², polylog)` и вернуть чистую `ac0DepthBound_strong = polylog`.
-3. Построить реальные `AC0CircuitWitness` и `LocalCircuitWitness`
-   через `Classical.choose` и `locality_lift`.
-4. Подменить `ExternalLocalityWitnessProvider` на внутренний instance.
-5. Удалить `hF_all` из `P_ne_NP_final` и очистить финальные теоремы.
+- Use internal shrinkage constructors to derive B1 constructively.
 
----
+## Completion criteria (100% constructive target)
 
-## Конкретные точки правки (кодовые якоря)
-
-- **`pnp3/ThirdPartyFacts/Facts_Switching.lean`**
-  - `partial_shrinkage_for_AC0` — сильная граница строится через `max(M², polylog)`;
-    нужно заменить на чистую polylog‑оценку после multi-switching.
-  - `partial_shrinkage_for_AC0_with_bound` — промежуточный артефакт Stage‑1.
-  - `ac0DepthBound_weak/strong` — готовые границы, нужно сделать strong фактической.
-
-- **`archive/pnp3/ThirdPartyFacts/LocalityLift.lean`**
-  - Класс `ExternalLocalityWitnessProvider` — заменить тривиальный instance.
-  - Функции `locality_lift` / `locality_lift'` — ждут реальный witness.
-
-- **`pnp3/Magnification/FinalResult.lean`**
-  - Убрать `hF_all` после интеграции witness-провайдера.
-
----
-
-## Чеклист активного конвейера (выполнено)
-
-- [x] Partial‑модель и язык: `PartialTruthTable`, `Model_PartialMCSP`.
-- [x] Барьер локальности обойдён: рестрикции сохраняют тип в `Model_PartialMCSP`
-  (`restriction_preserves_type` и связанный `restrictTable_eq_applyRestriction`).
-- [x] Anti‑checker и локальные lower bounds для Partial MCSP.
-- [x] Partial‑pipeline statements и magnification bridge.
-- [x] FinalResult переведён на Partial MCSP.
-- [x] GapMCSP‑ветка перенесена в `archive/`.
-- [x] Документация и тесты ориентированы на partial‑конвейер.
-
----
-
-## Архив/исследовательский backlog (не блокирует активный конвейер)
-
-Эти задачи описывают возможные усиления/улучшения, но не нужны для текущей
-partial‑цепочки. Их реализация не требуется для воспроизведения `P_ne_NP_final`.
-
-### Multi‑switching (усиление оценок)
-- Реальная конструкция CCDT/encoding (канонический DT, явная инъекция).
-- Оценка мощности множества кодов и доказательство `codes.card < (R_s s).card`.
-- Интеграция в `Facts_Switching.lean`: заменить `max(M², polylog)` на чистую polylog‑оценку.
-
-### Witness‑ы локальности
-- Встроить реальный `ExternalLocalityWitnessProvider` из shrinkage.
-- Убрать гипотезу `hF_all` в `Magnification/FinalResult.lean`.
-
-### Контроль соответствия комментариев и кода
-- Проверить, что все комментарии в `AC0/MultiSwitching/*` соответствуют
-  фактическим определениям (особенно вокруг `BadEvent`, `EncodingWitness`, `R_s`).
-- Сверить описания в `Facts_Switching.lean` с реальными параметрами и границами.
-
----
-
-## Partial MCSP: переход на частичные функции (локальность/рестрикции)
-
-Ниже — актуальный список задач по переходу на Partial MCSP. Подробности и
-обоснования см. в `PARTIAL_MCSP_PLAN.md`.
-
-### Модель и язык
-- [x] Добавить `pnp3/Models/PartialTruthTable.lean` (decode, mask/values, утилиты).
-- [x] Добавить `pnp3/Models/Model_PartialMCSP.lean` с `PartialFunction`
-  (канонический тип), `PartialTruthTable` (алиас), `GapPartialMCSPParams`,
-  `is_consistent`, `PartialMCSP_YES/NO` и `gapPartialMCSP_Language`.
-- [x] Зафиксировать кодирование входа `mask ++ values` для `Option Bool`
-  (`BitVec (2 * 2^n)`).
-- [x] Переместить `Models/Model_GapMCSP.lean` в архив как legacy‑ветку.
-
-### Рестрикции и замкнутость
-- [x] Доказать (не аксиоматизировать) лемму `restriction_preserves_type`
-  для Partial MCSP.
-- [x] Явно задокументировать проекцию индексов при уменьшении числа переменных.
-- [x] Добавить утилиты рестрикции на уровне входов (`applyRestrictionToAssignment`)
-  для использования в доказательствах согласованности.
-
-### Anti-checker и lower bounds
-- [x] Добавить `pnp3/LowerBounds/AntiChecker_Partial.lean` под Partial MCSP
-  (старый файл оставить как legacy).
-- [x] Добавить вероятностную лемму: случайная частичная функция (с α-определённостью)
-  с высокой вероятностью не имеет малой согласованной схемы.
-- [x] Добавить partial‑версию ядра шага C (`LB_Formulas_Core_Partial.lean`)
-  на базе anti-checker.
-- [x] Добавить partial‑версию формулировок шага C
-  (`Magnification/PipelineStatements_Partial.lean`).
-- [x] Подключить partial‑ядро шага C в магнификационный конвейер
-  (partial‑версия `Bridge_to_Magnification_Partial` и wiring в `FinalResult`).
-- [x] Портировать locality‑lift на Partial MCSP и удалить временную аксиому
-  `OPS_trigger_formulas_partial`.
-- [x] Сделать `FinalResult` полностью partial и убрать legacy‑ветку из
-  основного вывода.
-
-### NP-hardness (Hirahara 2022)
-- [x] Добавить файл `pnp3/ThirdPartyFacts/Hirahara2022.lean` с аксиомой
-  `PartialMCSP_is_NP_Hard`.
-- [x] Обновить финальные выводы (например, `Magnification/FinalResult.lean`)
-  на новую аксиому.
-
-### Документация и аудит
-- [x] Обновить `AXIOMS_FINAL_LIST.md` и документы аудита с новой аксиомой.
-- [x] Убедиться, что в README/FAQ нет устаревших ссылок на GapMCSP в контексте
-  «барьера локальности».
-
----
-
-## Примечания
-
-- **Классическая логика (`Classical.choose`, `noncomputable`) не снижает строгости** —
-  это допустимая методология Lean, используемая в формальных доказательствах.
-- Все части B, C, D считаются завершёнными и не требуют доработки.
-- Единственная «реальная» математика, остающаяся за пределами Lean, — это
-  multi-switching lemma и конструкция witness-ов shrinkage.
+1. `rg "^axiom " -g"*.lean" pnp3` remains empty.
+2. `NP_not_subset_PpolyFormula_final` no longer needs external bridge/provider assumptions.
+3. After non-uniform interface upgrade (`PpolyReal`), restore a sound `P ≠ NP` final bridge.
+4. `lake build` and `scripts/check.sh` pass with no conditional gates.

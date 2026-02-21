@@ -10,11 +10,13 @@ We introduce and Lean-verify a constructive bridge from shrinkage to a uniform a
 
 ### How this closes the loop (conditionally)
 
-Plugging SAL + Covering-Power into standard anti-checker and magnification frameworks (e.g., OPS'21, Chen-Williams-Jin) produces a Lean-verified **conditional derivation** of NP ⊈ P/poly and hence P ≠ NP, assuming the external switching/shrinkage results are available as witness-backed theorems:
+Plugging SAL + Covering-Power into standard anti-checker and magnification frameworks (e.g., OPS'21, Chen-Williams-Jin) produces a Lean-verified **conditional derivation** of partial-track formula separation (`NP ⊄ PpolyFormula`) and downstream bridge variants, assuming external inputs are supplied:
 
 - Multi-switching / shrinkage lemmas for AC⁰ and local circuits
+- Localized strict-bridge goals (`PpolyReal -> PpolyFormula` on the target language)
+- Locality-provider/cardinality obligations in the partial locality bridge
 
-The entire glue and all internal combinatorics are machine-checked; the only active axioms are **explicit placeholders** for the in-progress multi-switching canonical trace encoding (`AC0/MultiSwitching/Encoding.lean`). External witnesses are still required for the shrinkage theorems. See the OPS'21 ToC paper and magnification surveys for the surrounding framework.
+The entire glue and all internal combinatorics are machine-checked; the multi-switching canonical trace encoding in `AC0/MultiSwitching/Encoding.lean` is implemented constructively in the current tree, so there are **no active placeholder axioms** there. External witnesses are still required for the shrinkage theorems. See the OPS'21 ToC paper and magnification surveys for the surrounding framework.
 
 Our proof avoids the Natural Proofs barrier because the combinatorial property (incompressibility by SAL-atlases) is established only against weak classes ($AC^0$ and local circuits). The extension to $NP \not\subseteq P/poly$ is achieved via Hardness Magnification, which relies on the specific structural properties of MCSP, not on extending the natural property to $P/poly$.
 
@@ -38,7 +40,8 @@ We are not aware of prior works that:
 
 ### Conditional final result
 
-From the external switching facts (Part A), the derivation NP ⊈ P/poly ⇒ P ≠ NP follows. All "stitching" is formally verified.
+From the external inputs above, the active partial pipeline derives
+`NP ⊄ PpolyFormula` conditionally. All internal stitching is formally verified.
 
 ### Novelty
 

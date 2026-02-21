@@ -165,7 +165,7 @@ def ofRestriction
   have hleft : w.summary.testSet = testSetOfAlive w.alive := by
     simpa [w.summary_alive] using w.summary.testSet_eq
   have hright : w.restriction.testSet = testSetOfAlive w.alive := by
-    simpa [Restriction.testSet, w.restriction_alive]
+    simp [Restriction.testSet, w.restriction_alive]
   exact hleft.trans hright.symm
 
 @[simp] lemma restriction_testSet_eq
@@ -200,7 +200,7 @@ lemma restriction_testSet_card_le
   classical
   -- Переводим утверждение к тест-набору из числовой сводки.
   have hsummary : w.testSet.card ≤ polylogBudget (inputLen p) := by
-    simpa using w.summary.testSet_card_le
+    exact w.summary.testSet_card_le
   -- Поля `testSet` сводки и рестрикции совпадают.
   calc
     w.restriction.testSet.card = w.testSet.card := by
@@ -256,7 +256,7 @@ def canonical
             (zeroVector (inputLen p))
       , restriction_alive := by
           -- `summary.alive` сводки равняется `canonicalAlive`, поэтому условие тривиально.
-          simpa [canonicalSummary_alive] }
+          simp [canonicalSummary_alive] }
 
 lemma canonical_multiplexerBudget_linear
     {params : GapMCSPParams} (general : SmallGeneralCircuitSolver params) :
@@ -286,11 +286,8 @@ def provided
     [Provider (p := p) general] : ShrinkageWitness general :=
   Provider.witness
 
-/-- Канонический источник shrinkage-свидетеля (используется по умолчанию). -/
-instance (priority := 100) canonicalProvider
-    {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p) :
-    Provider (p := p) general :=
-  ⟨canonical (p := p) general⟩
+/- No default global provider is installed; callers must supply an explicit
+   `Provider` instance. -/
 
 /-!
 ## Certificates with semantic data

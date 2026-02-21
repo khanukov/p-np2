@@ -94,9 +94,9 @@ def localityWitnessOfShrinkage
 
 /--
 Текущий свидетель locality lift извлекается из shrinkage-свидетеля,
-предоставленного через типкласс `ShrinkageWitness.Provider`.  По умолчанию
-используется канонический свидетель, но его можно заменить, не меняя
-интерфейса `locality_lift`.
+предоставленного через типкласс `ShrinkageWitness.Provider`.
+Глобального инстанса по умолчанию нет: вызывающая сторона должна передать
+конкретный `Provider`, что делает зависимость от shrinkage-свидетеля явной.
 -/
 def localityWitness
     {p : GapMCSPParams} (general : SmallGeneralCircuitSolver p)
@@ -204,7 +204,7 @@ lemma localityWitness_testSet_eq_testSetOfAlive_provided
   have hcanon :=
     ShrinkageWitness.testSet_eq_testSetOfAlive
       (w := ShrinkageWitness.provided (p := p) general)
-  simpa [htest] using hcanon
+  exact htest.trans hcanon
 
 /-- Удобная оболочка: тест-набор `localityWitness` удовлетворяет polylog-границе. -/
 lemma localityWitness_testSet_card_le_provided

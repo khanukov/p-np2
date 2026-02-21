@@ -1,3 +1,4 @@
+import Mathlib.Data.Finset.Basic
 import Complexity.Promise
 import Core.BooleanBasics
 import Models.Model_PartialMCSP
@@ -7,6 +8,10 @@ import Models.Model_PartialMCSP
 
   We keep only numeric parameters (input length, size, depth) and a solver
   wrapper with correctness for the Partial MCSP promise.
+
+  This wrapper intentionally stores only global-solver data
+  (input length/size/depth + correctness).  Any locality information must be
+  provided separately by a locality-lift witness, not baked into the solver.
 -/
 
 namespace Pnp3

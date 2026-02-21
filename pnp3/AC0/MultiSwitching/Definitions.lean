@@ -1,8 +1,8 @@
 import Core.BooleanBasics
 import Core.PDT
 import Core.SAL_Core
+import AC0.MultiSwitching.Duality
 import AC0.MultiSwitching.Restrictions
-import AC0.MultiSwitching.Counting
 
 /-!
   pnp3/AC0/MultiSwitching/Definitions.lean
@@ -56,80 +56,148 @@ abbrev DnfFamily (n k : Nat) := List (kDNF n k)
   F.map evalDNF
 
 /-!
-### Lean‑friendly параметры для multi‑switching
+### ДУАЛЬНОСТЬ: DNF → CNF
 
-В литературе часто пишут параметры как `ℓ = ⌈log₂(2M)⌉` и
-`t = ⌈log₂(M (n+2))⌉ + O(1)`.  В Lean удобнее фиксировать
-более простые выражения через `Nat.log2`, добавляя небольшой запас.
-
-Эти определения **не являются** частью доказательства switching‑леммы:
-они служат "контрактом" для downstream‑кода (в частности, в
-`Facts_Switching.lean`), чтобы имена параметров оставались стабильны.
+Чтобы использовать CNF‑пайплайн для DNF‑формул, задаём явный
+перевод через отрицание. Это минимальный мост, который позволяет
+привязывать DNF‑интерфейсы к multi‑switching для CNF.
 -/
 
-/--
-`ℓParam M` — удобная версия `⌈log₂(2M)⌉` с запасом на округление.
+/-- Перевод DNF‑семейства в CNF‑семейство по правилу ¬DNF → CNF. -/
+@[simp] def negDnfFamilyToCnfFamily (F : DnfFamily n k) : FormulaFamily n k :=
+  F.map DNF.negToCNF
 
-Лемма `pow_two_le` (ниже) позволит доказывать `2^(ℓParam M) ≥ 2M`
-без разборов случаев `M=0`.
--/
-def ℓParam (M : Nat) : Nat :=
-  Nat.log2 (2 * M + 1) + 1
+@[simp] lemma eval_negDnfFamilyToCnfFamily_family
+    (F : DnfFamily n k) :
+    evalFamily (negDnfFamilyToCnfFamily F)
+      = (evalDnfFamily F).map (fun g => fun x => ! g x) := by
+  -- Доказываем по индукции по списку формул.
+  induction F with
+  | nil =>
+      simp [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily]
+  | cons a rest ih =>
+      -- Для головы используем дуальность, хвост обрабатываем IH.
+      -- Явно разворачиваем списки, чтобы избежать `map_eq_map`.
+      dsimp [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily]
+      -- Сначала докажем совпадение значений на голове списка.
+      have h_head : evalCNF (DNF.negToCNF a) = fun x => ! evalDNF a x := by
+        funext x
+        simpa [evalCNF, evalDNF] using (DNF.eval_negToCNF (F := a) (x := x))
+      -- Переводим IH к форме равенства хвостов.
+      have h_tail :
+          List.map evalCNF (List.map DNF.negToCNF rest) =
+            List.map (fun g => fun x => ! g x) (List.map evalDNF rest) := by
+        simpa [negDnfFamilyToCnfFamily, evalFamily, evalDnfFamily] using ih
+      -- Собираем результат из головы и хвоста.
+      -- `simp` сводит равенство списков к равенству голов и хвостов.
+      simpa [List.map_cons, List.map_map, h_tail] using h_head
 
-/--
-`tParam M n` — безопасный вариант `⌈log₂(M (n+2))⌉ + O(1)`.
-
-Добавка `+2` даёт запас, который обычно нужен при переходе от
-`log2` (с округлением вниз) к оценкам вида `2^t ≥ M(n+2)`.
--/
-def tParam (M n : Nat) : Nat :=
-  Nat.log2 (M * (n + 2) + 1) + 2
+@[simp] lemma eval_negDnfFamilyToCnfFamily
+    (F : DnfFamily n k) (x : Core.BitVec n) :
+    (evalFamily (negDnfFamilyToCnfFamily F)).map (fun g => g x)
+      = (evalDnfFamily F).map (fun g => ! g x) := by
+  /-
+    Это частный случай леммы семейного уровня: сначала переводим
+    `evalFamily (negDnfFamilyToCnfFamily F)` в семейство отрицаний,
+    а затем применяем отображение по значению в точке `x`.
+  -/
+  have hfamily := eval_negDnfFamilyToCnfFamily_family (F := F)
+  -- Преобразуем равенство списков функций в равенство списков значений.
+  simpa using congrArg (fun G => G.map (fun g => g x)) hfamily
 
 /-!
-### Минимальные арифметические факты о параметрах
+### Множество "плохих" рестрикций
 
-Мы добавляем несколько простых лемм, чтобы downstream‑код мог
-использовать их "как есть" без ручного переписывания.
-Конкретная форма этих лемм подобрана так, чтобы последующие
-неравенства в оценках встречались в точности в нужном виде.
+Базовая обёртка над `R_s`: фильтруем по вычислимому предикату.
+Это используется как в encoding, так и в оценках кардиналов.
 -/
 
-lemma pow_two_le_ℓParam (M : Nat) :
-    2 ^ (ℓParam M) ≥ 2 * M := by
-  -- Ключевой факт: `x < 2^(log2 x + 1)`.
-  have hlt : 2 * M + 1 < 2 ^ (Nat.log2 (2 * M + 1) + 1) := by
-    -- Используем общую лемму `lt_pow_succ_log_self` для `log 2`.
-    have hlog :
-        2 * M + 1 <
-          2 ^ (Nat.log 2 (2 * M + 1)).succ := by
-      exact Nat.lt_pow_succ_log_self Nat.one_lt_two (2 * M + 1)
-    -- Переписываем `log 2` как `log2`.
-    simpa [Nat.log2_eq_log_two, Nat.succ_eq_add_one] using hlog
-  -- Теперь ослабляем строгую оценку до `≤` и убираем `+1`.
-  have hle : 2 * M ≤ 2 ^ (Nat.log2 (2 * M + 1) + 1) := by
-    exact Nat.le_of_lt (Nat.lt_trans (Nat.lt_succ_self (2 * M)) hlt)
-  -- Подстановка определения `ℓParam`.
-  simpa [ℓParam] using hle
+variable {n : Nat}
 
-lemma pow_two_le_tParam (M n : Nat) :
-    2 ^ (tParam M n) ≥ M * (n + 2) := by
-  -- Аналогично `pow_two_le_ℓParam`, но для `M*(n+2)`.
-  have hlt : M * (n + 2) + 1 < 2 ^ (Nat.log2 (M * (n + 2) + 1) + 1) := by
-    have hlog :
-        M * (n + 2) + 1 <
-          2 ^ (Nat.log 2 (M * (n + 2) + 1)).succ := by
-      exact Nat.lt_pow_succ_log_self Nat.one_lt_two (M * (n + 2) + 1)
-    simpa [Nat.log2_eq_log_two, Nat.succ_eq_add_one] using hlog
-  have hle : M * (n + 2) ≤ 2 ^ (Nat.log2 (M * (n + 2) + 1) + 1) := by
-    exact Nat.le_of_lt (Nat.lt_trans (Nat.lt_succ_self (M * (n + 2))) hlt)
-  -- `tParam` имеет дополнительный запас `+2`, так что достаточно ослабить.
-  have hmono :
-      2 ^ (Nat.log2 (M * (n + 2) + 1) + 1)
-        ≤ 2 ^ (Nat.log2 (M * (n + 2) + 1) + 2) := by
-    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) (Nat.le_succ _)
-  have hle' : M * (n + 2) ≤ 2 ^ (Nat.log2 (M * (n + 2) + 1) + 2) := by
-    exact Nat.le_trans hle hmono
-  simpa [tParam] using hle'
+/--
+Множество "плохих" рестрикций внутри `R_s`: это просто фильтр по предикату
+`bad`. По умолчанию используется `DecidablePred bad`, чтобы лемма была
+применима к любому вычислимому условию.
+-/
+@[simp] def badRestrictions (s : Nat) (bad : Restriction n → Prop)
+    [DecidablePred bad] : Finset (Restriction n) :=
+  (R_s (n := n) s).filter bad
+
+/-!
+  Простейшие свойства `badRestrictions`.
+
+  Эти леммы почти тривиальны, но они избавляют от повторения
+  однотипных аргументов `simp`/`filter` в будущих модулях.
+-/
+
+/-- Подмножество: `badRestrictions` лежит внутри `R_s`. -/
+lemma badRestrictions_subset {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] :
+    badRestrictions (n := n) s bad
+      ⊆ R_s (n := n) s := by
+  intro ρ hmem
+  have hmem' : ρ ∈ R_s (n := n) s ∧ bad ρ := by
+    simpa [badRestrictions] using hmem
+  exact hmem'.1
+
+/--
+Кардинал `badRestrictions` никогда не превосходит кардинал `R_s`.
+
+Это базовая оценка, которая в паре с *строгим* неравенством
+даёт существование "хорошей" рестрикции.
+-/
+lemma badRestrictions_card_le {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] :
+    (badRestrictions (n := n) s bad).card
+      ≤ (R_s (n := n) s).card := by
+  classical
+  -- `filter` всегда уменьшает кардинал.
+  simpa [badRestrictions] using
+    (Finset.card_filter_le (s := R_s (n := n) s)
+      (p := bad))
+
+@[simp] lemma mem_badRestrictions {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] {ρ : Restriction n} :
+    ρ ∈ badRestrictions (n := n) s bad
+      ↔ ρ ∈ R_s (n := n) s ∧ bad ρ := by
+  classical
+  simp [badRestrictions]
+
+/--
+Если "плохих" рестрикций строго меньше, чем всего `R_s`,
+то существует "хорошая" рестрикция в `R_s`.
+
+Это целевой комбинаторный шаг, который в дальнейшем будет
+применяться после доказательства оценки на `card (badRestrictions ...)`.
+-/
+lemma exists_good_of_card_lt {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad]
+    (hcard :
+      (badRestrictions (n := n) s bad).card
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ¬ bad ρ := by
+  classical
+  have hsubset :
+      badRestrictions (n := n) s bad
+        ⊆ R_s (n := n) s := by
+    exact badRestrictions_subset (n := n) (s := s) (bad := bad)
+  rcases Restriction.exists_not_mem_of_subset_card_lt
+      (s := badRestrictions (n := n) s bad)
+      (t := R_s (n := n) s)
+      hsubset hcard with ⟨ρ, hρt, hρs⟩
+  refine ⟨ρ, hρt, ?_⟩
+  intro hbad
+  have : ρ ∈ badRestrictions (n := n) s bad := by
+    exact (mem_badRestrictions (n := n) (s := s) (bad := bad)).2 ⟨hρt, hbad⟩
+  exact hρs this
+
+/-!
+### Lean‑friendly параметры для multi‑switching
+
+Определения параметров перенесены в `AC0.MultiSwitching.Params`.  Они не
+являются частью доказательства, а служат стабильным контрактом для
+downstream‑кода (например, для шага 3.2).
+-/
 
 /-!
 ### Refinement relation between subcubes

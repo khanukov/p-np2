@@ -1,5 +1,10 @@
 # Archiving Report - Streamlining Critical Proof Path
 
+> ℹ️ **Historical snapshot:** this report captures the state of the archive/migration
+> work at the time it was written. Axiom counts in this file refer to the legacy
+> branch being archived, not the current active `pnp3/` tree. For the current
+> axiom inventory, see `AXIOM_ANALYSIS_FINAL.md`.
+
 **Date**: 2025-10-24
 **Action**: Moved non-critical files to `archive/` directory
 **Goal**: Focus `pnp3/` on minimal necessary code for P≠NP proof

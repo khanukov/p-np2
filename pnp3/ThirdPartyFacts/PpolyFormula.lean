@@ -107,5 +107,33 @@ theorem gapPartialMCSP_realization_of_formulaizer
   · intro n x
     exact hF.familyCorrect w n x
 
+/--
+Trivial constructive formulaizer for the current `InPpolyReal` interface:
+reuse the witness family directly as a strict formula family.
+-/
+noncomputable def trivialFormulaizer (p : GapPartialMCSPParams) :
+    GapPartialMCSPFormulaizer p := by
+  classical
+  refine
+    { familyOf := fun w n => w.family n
+      familyCorrect := ?_
+      familyPoly := ?_ }
+  · intro w n x
+    exact w.correct n x
+  · intro w
+    rcases w.polyBound_poly with ⟨c, hc⟩
+    refine ⟨c, ?_⟩
+    intro n
+    exact le_trans (w.family_size_le n) (hc n)
+
+/--
+Localized `PpolyReal -> PpolyFormula` realization obtained from the trivial
+formulaizer for the current witness format.
+-/
+theorem gapPartialMCSP_realization_trivial
+    (p : GapPartialMCSPParams) :
+    GapPartialMCSPFormulaRealization p :=
+  gapPartialMCSP_realization_of_formulaizer p (trivialFormulaizer p)
+
 end ThirdPartyFacts
 end Pnp3

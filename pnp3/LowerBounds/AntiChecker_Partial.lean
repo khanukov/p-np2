@@ -54,6 +54,39 @@ structure SmallAC0ParamsPartial (p : GapPartialMCSPParams) where
   deriving Repr
 
 /--
+Default constructive package for the AC0 all-functions family:
+provides a concrete multi-switching witness.
+-/
+class AllFunctionsAC0MultiSwitchingWitness
+    (params : ThirdPartyFacts.AC0Parameters) : Type where
+  witness :
+    ThirdPartyFacts.AC0MultiSwitchingWitness params
+      (Counting.allFunctionsFamily params.n)
+
+/-- Bridge: default all-functions package provides the generic provider class. -/
+instance allFunctions_multiSwitchingProvider
+    (params : ThirdPartyFacts.AC0Parameters)
+    [h : AllFunctionsAC0MultiSwitchingWitness params] :
+    ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
+      params
+      (Counting.allFunctionsFamily params.n) where
+  witness := h.witness
+
+/--
+Reverse bridge: a specialized generic provider for `allFunctionsFamily`
+can be used as the default all-functions multi-switching package.
+-/
+def allFunctions_multiSwitchingPackage_of_provider
+    (params : ThirdPartyFacts.AC0Parameters)
+    [h :
+      ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
+        params
+        (Counting.allFunctionsFamily params.n)] :
+    AllFunctionsAC0MultiSwitchingWitness params :=
+  ⟨h.witness⟩
+
+
+/--
   Корректный AC⁰-решатель Partial MCSP.
 
   Здесь фиксируем только интерфейс: функция `decide` и доказательство
@@ -840,7 +873,7 @@ lemma decide_ac0_eq_language
 -/
 theorem noSmallAC0Solver_partial
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-    (hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
       (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
   classical
   -- Фиксируем «полное» семейство всех булевых функций.
@@ -995,13 +1028,47 @@ theorem noSmallAC0Solver_partial
     simp [hcard] at hcontr
   exact hcontr'
 
+/--
+Constructive variant: contradiction from an explicit multi-switching witness
+for the all-functions family.
+-/
+theorem noSmallAC0Solver_partial_of_multiSwitching
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (hMS :
+      ThirdPartyFacts.AC0MultiSwitchingWitness solver.params.ac0
+        (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
+  exact
+    noSmallAC0Solver_partial (solver := solver)
+      (hF := ⟨hMS.base⟩)
+
+/--
+Typeclass-driven constructive variant: witness is supplied by instance search.
+-/
+theorem noSmallAC0Solver_partial_of_multiSwitching_provider
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    [hMS :
+      ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
+        solver.params.ac0
+        (Counting.allFunctionsFamily solver.params.ac0.n)] : False := by
+  exact noSmallAC0Solver_partial_of_multiSwitching
+    (solver := solver) hMS.witness
+
+/--
+Default constructive variant specialized to all-functions witness packages.
+-/
+theorem noSmallAC0Solver_partial_of_default_multiSwitching
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    [hMS : AllFunctionsAC0MultiSwitchingWitness solver.params.ac0] : False := by
+  exact noSmallAC0Solver_partial_of_multiSwitching
+    (solver := solver) hMS.witness
+
 /-- Обратное направление: любое противоречие даёт нужных свидетелей. -/
 theorem antiChecker_exists_large_Y_partial_of_false
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p) (hFalse : False) :
     ∃ (F : Family (partialInputLen p))
       (Y : Finset (Core.BitVec (partialInputLen p) → Bool)),
         let Fsolver : Family solver.params.ac0.n := (solver.params.same_n.symm ▸ F)
-        ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+        ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 Fsolver,
           let scWitness :=
             (scenarioFromAC0
                 (params := solver.params.ac0) (F := Fsolver) (hF := hF)).2
@@ -1019,13 +1086,13 @@ theorem antiChecker_exists_large_Y_partial_of_false
 -/
 theorem antiChecker_exists_large_Y_partial
   {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+  (hAll : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
     (Counting.allFunctionsFamily solver.params.ac0.n)) :
   ∃ (F : Family (partialInputLen p))
     (Y : Finset (Core.BitVec (partialInputLen p) → Bool)),
       let Fsolver : Family solver.params.ac0.n :=
         (solver.params.same_n.symm ▸ F)
-      ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+      ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 Fsolver,
         let scWitness :=
           (scenarioFromAC0
               (params := solver.params.ac0) (F := Fsolver) (hF := hF)
@@ -1035,7 +1102,7 @@ theorem antiChecker_exists_large_Y_partial
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
           scenarioCapacity (sc := scWitness) < Ysolver.card := by
   exact antiChecker_exists_large_Y_partial_of_false (solver := solver)
-    (noSmallAC0Solver_partial (solver := solver) (hF := hF_all))
+    (noSmallAC0Solver_partial (solver := solver) (hF := hAll))
 
 /--
   Укреплённая версия: anti-checker с тестовым множеством `T` для Partial MCSP.
@@ -1043,14 +1110,14 @@ theorem antiChecker_exists_large_Y_partial
 -/
 theorem antiChecker_exists_testset_partial
   {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+  (hAll : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
     (Counting.allFunctionsFamily solver.params.ac0.n)) :
   ∃ (F : Family (partialInputLen p))
     (Y : Finset (Core.BitVec (partialInputLen p) → Bool))
     (T : Finset (Core.BitVec (partialInputLen p))),
       let Fsolver : Family solver.params.ac0.n :=
         (solver.params.same_n.symm ▸ F)
-      ∃ hF : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0 Fsolver,
+      ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 Fsolver,
         let scWitness :=
           (scenarioFromAC0
               (params := solver.params.ac0) (F := Fsolver) (hF := hF)
@@ -1071,7 +1138,7 @@ theorem antiChecker_exists_testset_partial
               * 2 ^ Tsolver.card
             < Ysolver.card := by
   classical
-  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_partial (solver := solver) hF_all
+  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_partial (solver := solver) hAll
   -- Дальше совпадает с legacy‑доказательством: `False.elim` даёт нужные данные.
   dsimp at hBase
   set Fsolver : Family solver.params.ac0.n := solver.params.same_n.symm ▸ F
@@ -1097,7 +1164,7 @@ theorem antiChecker_exists_testset_partial
 
 theorem noSmallLocalCircuitSolver_partial
     {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
-    (hF : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
+    (hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
       (Counting.allFunctionsFamily solver.params.params.n)) : False := by
   classical
   let F : Family solver.params.params.n :=
@@ -1208,12 +1275,23 @@ theorem noSmallLocalCircuitSolver_partial
     simp [hcard] at hcontr
   exact hcontr'
 
+/--
+Constructive variant: direct contradiction from solver locality, with no
+family-witness assumption.
+-/
+theorem noSmallLocalCircuitSolver_partial_constructive
+    {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :
+    False := by
+  obtain ⟨alive, h_small, h_local⟩ := solver.decideLocal
+  exact no_local_function_solves_mcsp
+    solver.decide alive h_small h_local solver.correct
+
 theorem antiChecker_exists_large_Y_local_partial_of_false
     {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) (hFalse : False) :
     ∃ (F : Family (partialInputLen p))
       (Y : Finset (Core.BitVec (partialInputLen p) → Bool)),
         let Fsolver : Family solver.params.params.n := (solver.params.same_n.symm ▸ F)
-        ∃ hF : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params Fsolver,
+        ∃ hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params Fsolver,
           let scWitness :=
             (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
           let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
@@ -1224,13 +1302,13 @@ theorem antiChecker_exists_large_Y_local_partial_of_false
 
 theorem antiChecker_exists_large_Y_local_partial
   {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
-  (hF_all : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
+  (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
     (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (partialInputLen p))
     (Y : Finset (Core.BitVec (partialInputLen p) → Bool)),
       let Fsolver : Family solver.params.params.n :=
         (solver.params.same_n.symm ▸ F)
-      ∃ hF : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params Fsolver,
+      ∃ hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params Fsolver,
         let scWitness :=
           (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
         let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
@@ -1238,18 +1316,38 @@ theorem antiChecker_exists_large_Y_local_partial
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
           scenarioCapacity (sc := scWitness) < Ysolver.card := by
   exact antiChecker_exists_large_Y_local_partial_of_false (solver := solver)
-    (noSmallLocalCircuitSolver_partial (solver := solver) (hF := hF_all))
+    (noSmallLocalCircuitSolver_partial (solver := solver) (hF := hAll))
+
+/--
+Constructive variant with no external witness assumptions: uses solver
+locality contradiction directly.
+-/
+theorem antiChecker_exists_large_Y_local_partial_constructive
+  {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :
+  ∃ (F : Family (partialInputLen p))
+    (Y : Finset (Core.BitVec (partialInputLen p) → Bool)),
+      let Fsolver : Family solver.params.params.n :=
+        (solver.params.same_n.symm ▸ F)
+      ∃ hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params Fsolver,
+        let scWitness :=
+          (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card := by
+  exact antiChecker_exists_large_Y_local_partial_of_false (solver := solver)
+    (noSmallLocalCircuitSolver_partial_constructive (solver := solver))
 
 theorem antiChecker_exists_testset_local_partial
   {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
-  (hF_all : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params
+  (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
     (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (partialInputLen p))
     (Y : Finset (Core.BitVec (partialInputLen p) → Bool))
     (T : Finset (Core.BitVec (partialInputLen p))),
       let Fsolver : Family solver.params.params.n :=
         (solver.params.same_n.symm ▸ F)
-      ∃ hF : ThirdPartyFacts.FamilyIsLocalCircuit solver.params.params Fsolver,
+      ∃ hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params Fsolver,
         let scWitness :=
           (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
         let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
@@ -1268,7 +1366,56 @@ theorem antiChecker_exists_testset_local_partial
               * 2 ^ Tsolver.card
             < Ysolver.card := by
   classical
-  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_local_partial (solver := solver) hF_all
+  obtain ⟨F, Y, hBase⟩ := antiChecker_exists_large_Y_local_partial (solver := solver) hAll
+  dsimp at hBase
+  set Fsolver : Family solver.params.params.n := solver.params.same_n.symm ▸ F
+  obtain ⟨hF, hBase'⟩ := hBase
+  set scWitness : BoundedAtlasScenario solver.params.params.n :=
+    (scenarioFromLocalCircuit
+        (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+  set Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+    solver.params.same_n.symm ▸ Y
+  have hSubset : Ysolver ⊆ familyFinset (sc := scWitness) := by
+    simpa [Fsolver, scWitness, Ysolver] using hBase'.1
+  have hCapacity : scenarioCapacity (sc := scWitness) < Ysolver.card := by
+    simpa [Fsolver, scWitness, Ysolver] using hBase'.2
+  have hFalse : False :=
+    no_bounded_atlas_of_large_family
+      (sc := scWitness) (Y := Ysolver) hSubset hCapacity
+  exact False.elim hFalse
+
+/--
+Constructive variant with no external witness assumptions: uses the
+constructive large-`Y` local anti-checker.
+-/
+theorem antiChecker_exists_testset_local_partial_constructive
+  {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :
+  ∃ (F : Family (partialInputLen p))
+    (Y : Finset (Core.BitVec (partialInputLen p) → Bool))
+    (T : Finset (Core.BitVec (partialInputLen p))),
+      let Fsolver : Family solver.params.params.n :=
+        (solver.params.same_n.symm ▸ F)
+      ∃ hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params Fsolver,
+        let scWitness :=
+          (scenarioFromLocalCircuit (params := solver.params.params) (F := Fsolver) (hF := hF)).2
+        let Ysolver : Finset (Core.BitVec solver.params.params.n → Bool) :=
+          (solver.params.same_n.symm ▸ Y)
+        let Tsolver : Finset (Core.BitVec solver.params.params.n) :=
+          (solver.params.same_n.symm ▸ T)
+        Ysolver ⊆ familyFinset (sc := scWitness) ∧
+          scenarioCapacity (sc := scWitness) < Ysolver.card ∧
+          Tsolver.card ≤ Models.polylogBudget solver.params.params.n ∧
+          (∀ f ∈ Ysolver,
+            f ∈ Counting.ApproxOnTestset
+              (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) ∧
+          Counting.unionBound
+              (Counting.dictLen scWitness.atlas.dict)
+              scWitness.k
+              * 2 ^ Tsolver.card
+            < Ysolver.card := by
+  classical
+  obtain ⟨F, Y, hBase⟩ :=
+    antiChecker_exists_large_Y_local_partial_constructive (solver := solver)
   dsimp at hBase
   set Fsolver : Family solver.params.params.n := solver.params.same_n.symm ▸ F
   obtain ⟨hF, hBase'⟩ := hBase

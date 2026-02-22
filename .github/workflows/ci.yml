@@ -39,3 +39,7 @@ jobs:
       # 7. Запуск всех тестов
       - name: Run all tests
         run: lake test
+
+      # 8. Аудит поверхности аксиом и базовых гейтов
+      - name: Run audit check script
+        run: ./scripts/check.sh

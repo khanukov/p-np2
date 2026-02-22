@@ -1,0 +1,20 @@
+name: Nightly Unconditional Audit
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  unconditional-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup elan
+        uses: Julian/setup-lean@v1
+        with:
+          default-toolchain: leanprover/lean4:v4.22.0-rc2
+      - name: Get mathlib cache
+        run: lake exe cache get
+      - name: Run unconditional gate
+        run: UNCONDITIONAL=1 ./scripts/check.sh

@@ -1,98 +1,83 @@
-# P≠NP formalization repository
-> **Status (2026-02-20)**: `pnp3/` builds successfully and provides a machine-checked **conditional** partial-pipeline result (`NP ⊄ PpolyFormula`) with explicit external hypotheses.
+# P!=NP formalization repository
 
-This repository hosts the third major iteration of our Lean 4 formalisation effort for complexity lower bounds around **Partial MCSP**. The current roadmap, nicknamed **PNP3**, revolves around the **Switching-Atlas Lemma (SAL)** and downstream magnification bridges.
+> **Status (2026-02-22):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, and provides a machine-checked **conditional** formula-track pipeline.
 
-## Scientific contribution
+This repository contains the Lean 4 formalization around the PNP3 pipeline:
 
-We introduce and Lean-verify a constructive bridge from shrinkage to a uniform atlas of subcubes for whole families of Boolean functions (Switching-Atlas Lemma, SAL) and prove a general Covering-Power capacity bound. **To the best of our knowledge**, this SAL packaging and its Lean verification are new contributions to both formal methods and complexity theory.
+`SAL -> Covering-Power -> anti-checker -> magnification`
 
-**Current status**: The development provides a conditional, machine-checked derivation of `NP ⊄ PpolyFormula` via the partial pipeline. The active final chain is parameterized by explicit locality/certificate assumptions. Shrinkage/switching inputs are still witness-backed external inputs.
+## Current proved surface
 
-**Documentation**: Start with [STATUS.md](STATUS.md), then [TODO.md](TODO.md), [AXIOMS_FINAL_LIST.md](AXIOMS_FINAL_LIST.md), [TECHNICAL_CLAIMS.md](TECHNICAL_CLAIMS.md), and [FAQ.md](FAQ.md).
+- Active final formula-track endpoint: `NP_not_subset_PpolyFormula` (conditional).
+- Asymptotic entrypoints are present in `pnp3/Magnification/FinalResult.lean`.
+- Localized bridge `PpolyReal -> PpolyFormula` for `gapPartialMCSP_Language p` is internalized via:
+  - `trivialFormulaizer`
+  - `gapPartialMCSP_realization_trivial`
 
-## Assumptions & External Facts
+## Remaining external inputs (non-axiomatic)
 
-The current PNP3 pipeline is **conditional**: Lean checks all downstream proofs, but some inputs are still explicit hypotheses.
+1. Witness-backed shrinkage inputs / multi-switching packages for target solver families.
+2. Provider-level certificate packages for formula-extracted general solvers
+   (`FormulaCertificateProviderPartial`) or equivalent default availability.
+3. Formula-to-`P/poly` bridge for final `P != NP` wrapper
+   (`hFormulaToPpoly` in `FinalResult.lean`).
 
-### External assumptions / imported facts
-* Goal-shaped bridge assumptions in `pnp3/ThirdPartyFacts/PpolyFormula.lean`:
-  * `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
+## Important scope note
 
-### External witnesses / providers (required hypotheses)
-* `AC0CircuitWitness` and `LocalCircuitWitness` are required to instantiate shrinkage facts in Part A.
-* Locality-lift on the partial bridge requires explicit stability/provider data:
-  * `hStable` (restriction stability), or
-  * certificate path via `ShrinkageCertificate.Provider` + bound `hCardHalf`.
-* Magnification still assumes a structured locality provider:
-  * `StructuredLocalityProviderPartial`.
+- `NP_not_subset_PpolyFormula` is the current active separation target.
+- `P != NP` wrappers exist, but remain conditional on the explicit bridge
+  `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
 
-### What is Lean-checked vs. external
-* Lean-checked: anti-checker core, locality-lift bridge plumbing, magnification glue, and contrapositive triggers for formula separation.
-* External: `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`, shrinkage witnesses, and constructive closure of certificate cardinality obligations (`hCardHalf`) in partial locality-lift usage.
-* Constructive entrypoint for the embed gap: `GapPartialMCSPFormulaizer` in `pnp3/ThirdPartyFacts/PpolyFormula.lean`.
+## What Is Still Needed For An Unconditional Final Claim
 
-## Proof pipeline
+This section is intended for external researchers who want to push this project
+to a mathematically final state.
 
-The current (conditional) proof chain used by the active final result follows:
+### Code-level closure criteria (inside this repository)
 
-`FinalResult → NP_not_subset_PpolyFormula_from_partial_formulas → OPS_trigger_formulas_partial_of_provider_formula_separation → ...`
+1. Close I-4 (real multi-switching/shrinkage instances).
+- Build internal, provider-grade instances used by the active chain, not only
+  interface wrappers.
+- Target modules: `pnp3/ThirdPartyFacts/Facts_Switching.lean`,
+  `pnp3/LowerBounds/AntiChecker_Partial.lean`,
+  `pnp3/Magnification/PipelineStatements_Partial.lean`.
 
-The ellipsis expands into the SAL + anti-checker pipeline, which ultimately depends on external shrinkage/locality witnesses and bridge/provider hypotheses.
+2. Close I-2 (default constructive provider path).
+- Derive `hasDefaultStructuredLocalityProviderPartial` from internal certificate
+  providers for formula-extracted solvers.
+- Target module: `pnp3/Magnification/LocalityProvider_Partial.lean`.
 
-## Repository layout
+3. Close I-5 (formula-track to `P/poly` bridge).
+- Internalize a sound theorem of shape:
+  `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+- Remove the external bridge argument `hFormulaToPpoly` from
+  `P_ne_NP_final*` wrappers in `pnp3/Magnification/FinalResult.lean`.
 
-### Core PNP3 development (`pnp3/`)
-* `Core/` – core combinatorics of subcubes, partial decision trees, and the SAL atlas infrastructure.
-* `Counting/` – capacity bounds for atlases together with approximation lemmas.
-* `ThirdPartyFacts/` – external inputs (multi-switching theorems, lightweight function counts, etc.).
-* `Models/` – formal interfaces for Partial MCSP, plus related promise problems.
-* `LowerBounds/` – lower-bound derivations for formulas and depth-limited circuits based on SAL.
-* `Magnification/` – magnification bridges and literature interfaces culminating in the final separation statements.
-* `Complexity/` – wrappers around standard complexity classes used by the magnification step.
-* `Tests/` – executable Lean regression tests (parity sanity checks, smoke tests, etc.).
-* `Docs/` – textual notes, milestone checklists, and bibliographic references for the SAL pipeline.
+### Minimal acceptance check for an internal unconditional status
 
-### Supporting material
-* `experiments/` – Python tooling for enumerating small Boolean circuits, computing entropy statistics, and replaying classic experiments.  The scripts double as sanity checks for analytic bounds derived in `pnp3/`.
-* `scripts/` – helper shell/Lean scripts (`scripts/check.sh`, smoke tests, cache warmers).
-* `TODO.md` – current task tracking and migration checklists.
+1. `./scripts/check.sh` passes with no new external gates.
+2. Active final theorem for `P != NP` no longer requires `hFormulaToPpoly`.
+3. `STATUS.md`, `AXIOMS_FINAL_LIST.md`, and `TODO.md` reflect that closure
+   without conditional wording for the final claim.
 
+### External scientific recognition (outside code)
 
-## Toolchain and build
+Even after full in-repo closure, official recognition still requires the
+standard research process: public write-up, independent expert review,
+replication, and broad community acceptance.
 
-The project targets **Lean 4** together with **mathlib4** ≥ 4.22.0-rc2.  Install `elan` (which also provides the `lake` tool) and run
+## Docs to use
 
-```bash
-elan toolchain install $(cat lean-toolchain)
-```
+- `STATUS.md` (single source of truth)
+- `TODO.md` (current execution order)
+- `AXIOMS_FINAL_LIST.md` (external input inventory)
+- `FAQ.md`
 
-to fetch the compiler.  Afterwards build the project with
+## Build
 
 ```bash
 lake exe cache get
 lake build
+lake test
+./scripts/check.sh
 ```
-
-If the cache download is blocked, rerun `lake build` to compile mathlib from source.
-
-### Smoke tests
-
-```bash
-lean --run pnp3/Tests/Smoke.lean    # PNP3 regression tests
-lake env lean --run scripts/smoke.lean
-lake test                           # helper executables
-./scripts/check.sh                  # full build + smoke test
-```
-
-
-
-## Development conventions
-
-* Classical reasoning is freely available (we routinely open `Classical`).
-* Noncomputable definitions are permitted whenever they simplify existence proofs; constructive variants are documented explicitly when downstream tooling needs them.
-* Extensive file headers describe goals, dependencies, and completion criteria.  Follow the TODO markers inside `pnp3/` modules when contributing new proofs.
-
-## Planning notes
-
-For detailed migration plans and milestone tracking, consult the root `TODO.md`.

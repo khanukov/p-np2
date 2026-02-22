@@ -302,6 +302,50 @@ class HalfTableCertificateBound
       ≤ Partial.tableLen p.n / 2
 
 /--
+Length arithmetic bridge used to transport certificate-side quarter-input
+bounds into the Partial-side half-table bounds.
+-/
+@[simp] lemma inputLen_div4_to_partial_table_half (p : Models.GapPartialMCSPParams) :
+    Facts.LocalityLift.inputLen (toFactsParamsPartial p) / 4 =
+      Partial.tableLen p.n / 2 := by
+  have htwo : 0 < (2 : Nat) := by decide
+  calc
+    Facts.LocalityLift.inputLen (toFactsParamsPartial p) / 4
+        = (2 * 2 ^ p.n) / (2 * 2) := by
+          simp [toFactsParamsPartial, Facts.LocalityLift.inputLen, Nat.pow_succ, Nat.mul_comm]
+    _ = 2 ^ p.n / 2 := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
+        (Nat.mul_div_mul_left (m := 2) (2 ^ p.n) 2 htwo)
+    _ = Partial.tableLen p.n / 2 := by
+      simp [Partial.tableLen]
+
+/--
+Canonical extraction: any provided shrinkage certificate already carries the
+cardinality bound needed by `HalfTableCertificateBound`.
+-/
+instance halfTableCertificateBound_of_certificate
+  {p : Models.GapPartialMCSPParams}
+  (solver : Magnification.SmallGeneralCircuitSolver_Partial p)
+  [hCert :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := toFactsParamsPartial p)
+      (toFactsGeneralSolverPartial solver)
+      (solverDecideFacts (p := p) solver)] :
+  HalfTableCertificateBound (p := p) solver where
+  half_bound := by
+    classical
+    let cert :=
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+        (p := toFactsParamsPartial p)
+        (general := toFactsGeneralSolverPartial solver)
+        (generalEval := solverDecideFacts (p := p) solver)
+    calc
+      cert.restriction.alive.card
+          ≤ Facts.LocalityLift.inputLen (toFactsParamsPartial p) / 4 :=
+        cert.half_input_bound
+      _ = Partial.tableLen p.n / 2 := inputLen_div4_to_partial_table_half p
+
+/--
 Certificate-driven locality lift without a manual `hCardHalf` argument.
 The bound is supplied via the `HalfTableCertificateBound` typeclass.
 -/

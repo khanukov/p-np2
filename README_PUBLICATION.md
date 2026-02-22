@@ -1,40 +1,46 @@
-# PNP3: Formal Complexity Pipeline in Lean 4
+# PNP3: Publication-facing Status Snapshot
 
-> **Public-facing status (2026-02-20):** this repository contains a machine-checked,
-> but conditional, partial-track pipeline. The active output is
-> `NP_not_subset_PpolyFormula` under explicit hypotheses.
+> **Updated:** 2026-02-22
 
-## What is verified
+This repository currently provides a machine-checked, conditional partial-track
+pipeline in Lean 4.
 
-- SAL/atlas/capacity infrastructure in Lean.
-- Anti-checker and magnification glue in Lean.
-- Partial locality-lift bridge plumbing in Lean, including a certificate-driven
-  wrapper (`stableRestriction_of_certificate`, `locality_lift_partial_of_certificate`).
+## Verified now
 
-## What is still external
+- Active `axiom` declarations in `pnp3/`: 0.
+- Active `sorry/admit` in `pnp3/`: 0.
+- Build and audit scripts pass.
+- Localized bridge for `gapPartialMCSP_Language p` is internalized via
+  `trivialFormulaizer`.
+- Certificate-cardinality plumbing is automated in the main certificate route
+  (`HalfTableCertificateBound`, `..._of_certificate_auto`).
 
-1. Localized bridge goals in `pnp3/ThirdPartyFacts/PpolyFormula.lean`
-   (`GapPartialMCSPPpolyRealToPpolyFormulaGoal p`).
-2. Witness-backed shrinkage inputs in `pnp3/ThirdPartyFacts/Facts_Switching.lean`.
-3. Certificate cardinality obligations (`hCardHalf`-style) in
-   `pnp3/ThirdPartyFacts/PartialLocalityLift.lean` for the constructive provider path.
+## Still external
 
-## Axiom status
+1. Multi-switching/shrinkage witness construction for target solver families.
+2. Provider-level certificate packages (`FormulaCertificateProviderPartial`) or
+   equivalent default instances.
+3. Formula-separation to non-uniform bridge (`hFormulaToPpoly`) for `P != NP`.
 
-- Active `axiom` declarations in `pnp3/`: **0**.
-- Remaining dependencies are explicit hypotheses/goals, not global axioms.
+## Current scientific claim level
 
-## Source-of-truth documents
+- Active final target: conditional `NP_not_subset_PpolyFormula`.
+- `P != NP` wrappers are present but explicitly conditional on item (3).
 
-- `STATUS.md`
-- `TODO.md`
-- `AXIOMS_FINAL_LIST.md`
-- `AXIOM_ANALYSIS_FINAL.md`
+## What External Researchers Need To Close
 
-## Reproducibility
+To turn the repository into an unconditional in-repo `P != NP` claim, the
+remaining closure items are:
 
-```bash
-lake build
-```
+1. Internalize real multi-switching/shrinkage provider-grade instances (I-4).
+2. Internalize default constructive structured-provider availability from those
+   instances (I-2).
+3. Internalize the bridge
+   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` and remove
+   `hFormulaToPpoly` from final wrappers (I-5).
 
-The project currently builds successfully with the status above.
+Minimal in-repo completion check:
+- `./scripts/check.sh` passes.
+- Final `P != NP` theorem family no longer requires external bridge arguments.
+
+For full technical status, use `STATUS.md` and `AXIOMS_FINAL_LIST.md`.

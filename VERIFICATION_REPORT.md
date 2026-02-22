@@ -1,35 +1,31 @@
-# Verification Report - PNP3 Documentation vs Code
+# Verification Report - Docs vs Code
 
-**Generated**: 2026-02-20
+**Generated:** 2026-02-22
 
 ## Summary
 
 - Active `axiom` declarations in `pnp3/`: **0**
 - Active `sorry`/`admit` in `pnp3/`: **0**
-- Build status: `lake build` passes
-- Documentation updated to match current code state:
-  - conditional partial-track result (`NP ⊄ PpolyFormula`)
-  - explicit external goals/hypotheses
-  - no claim of unconditional final `P ≠ NP`
+- `lake build`: pass
+- `./scripts/check.sh`: pass
+
+## Key alignment updates applied
+
+1. Documentation no longer treats the old localized bridge placeholder
+   `GapPartialMCSPPpolyRealToPpolyFormulaGoal p` as an active dependency.
+2. Locality-lift docs now reflect certificate auto-route
+   (`HalfTableCertificateBound` / `..._of_certificate_auto`).
+3. Final-result docs now consistently distinguish:
+   - conditional active formula-track separation,
+   - conditional `P != NP` wrappers requiring `hFormulaToPpoly`.
 
 ## Remaining external inputs (non-axiomatic)
 
-1. `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
-2. Witness-backed shrinkage inputs (`FamilyIsAC0` / `FamilyIsLocalCircuit`)
-3. `hCardHalf`-style cardinality obligations for certificate-driven partial locality-lift
+1. Real multi-switching/shrinkage witness/provider instances (I-4).
+2. Default constructive locality-provider internalization via those instances (I-2).
+3. Formula-to-`P/poly` bridge for unconditional `P != NP` wrapper closure (I-5).
 
-## Checked documents
+## Scope note
 
-- `README.md`
-- `STATUS.md`
-- `TODO.md`
-- `AXIOMS_FINAL_LIST.md`
-- `AXIOM_ANALYSIS_FINAL.md`
-- `TECHNICAL_CLAIMS.md`
-- `FAQ.md`
-- `LOCALITY_PROVIDER_HANDOFF.md`
-
-## Note
-
-This report tracks alignment between docs and code state; it is not a claim of
-unconditional problem resolution.
+This report validates documentation consistency with the current codebase.
+It is not a claim of unconditional `P != NP` resolution.

@@ -87,6 +87,7 @@ lean_lib PnP3 where
     Glob.one `ThirdPartyFacts.PsubsetPpoly,
     Glob.one `ThirdPartyFacts.LeafBudget,
     Glob.one `Tests.AxiomsAudit,
+    Glob.one `Tests.BridgeLocalityRegression,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.StructuredLocalityDemo,
     Glob.one `Tests.UnitTests

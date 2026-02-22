@@ -138,7 +138,26 @@ structure FormulaToGeneralLocalityDataPartial where
       ∃ (r : Facts.LocalityLift.Restriction (Models.partialInputLen p)),
         r.alive.card ≤ Models.Partial.tableLen p.n / 2 ∧
         ∀ x : Core.BitVec (Models.partialInputLen p),
-          solver.decide (r.apply x) = solver.decide x
+        solver.decide (r.apply x) = solver.decide x
+
+/--
+Certificate-first provider data for the fixed extraction
+`generalSolverOfFormula`.
+
+This is the I-4 target interface at the magnification boundary: once
+multi-switching/depth-induction can construct these certificates for formula
+witnesses, the structured locality provider is obtained without half-size
+assumptions.
+-/
+structure FormulaCertificateProviderPartial where
+  cert :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver)
 
 /--
 Uniform half-size condition for extracted strict formula witnesses at the
@@ -218,6 +237,60 @@ noncomputable def constructiveLocalityEnginePartial_of_formulaData
       (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)⟩
 
 /--
+Build a constructive locality engine from certificate-first provider data.
+
+This route is the intended constructive endpoint after I-4: stability is
+extracted from the certificate itself (via
+`stableRestriction_of_certificate`), and shrinkage witness provider is derived
+from the same certificate.
+-/
+noncomputable def constructiveLocalityEnginePartial_of_formulaCertificate
+    (hCert : FormulaCertificateProviderPartial) :
+    ConstructiveLocalityEnginePartial where
+  generalOfFormula := by
+    intro p hFormula
+    exact generalSolverOfFormula hFormula
+  stable := by
+    intro p hFormula
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    let cert :
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver) :=
+      hCert.cert hFormula
+    letI :
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver) := ⟨cert⟩
+    have hHalf :
+        (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+            (p := ThirdPartyFacts.toFactsParamsPartial p)
+            (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+            (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)).restriction.alive.card
+          ≤ Models.Partial.tableLen p.n / 2 :=
+      (inferInstance :
+        ThirdPartyFacts.HalfTableCertificateBound (p := p) solver).half_bound
+    have hStable :=
+      ThirdPartyFacts.stableRestriction_of_certificate
+        (p := p) solver hHalf
+    simpa [solver] using hStable
+  provider := by
+    intro p hFormula
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    let cert :
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver) :=
+      hCert.cert hFormula
+    change Facts.LocalityLift.ShrinkageWitness.Provider
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+    exact ⟨cert.toShrinkageWitness⟩
+
+/--
 Any constructive locality engine yields the structured locality provider
 required by the magnification bridge.
 -/
@@ -260,6 +333,32 @@ theorem hasDefaultStructuredLocalityProviderPartial_of_formulaData
     (D : FormulaToGeneralLocalityDataPartial) :
     hasDefaultStructuredLocalityProviderPartial :=
   ⟨constructiveLocalityEnginePartial_of_formulaData D⟩
+
+/-- Default-engine flag from a certificate-first provider package. -/
+theorem hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate
+    (hCert : FormulaCertificateProviderPartial) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  ⟨constructiveLocalityEnginePartial_of_formulaCertificate hCert⟩
+
+/-- Default-availability flag for a formula-certificate provider package. -/
+def hasDefaultFormulaCertificateProviderPartial : Prop :=
+  Nonempty FormulaCertificateProviderPartial
+
+/-- Extract a concrete formula-certificate provider from its default flag. -/
+noncomputable def defaultFormulaCertificateProviderPartial
+    (h : hasDefaultFormulaCertificateProviderPartial) :
+    FormulaCertificateProviderPartial := by
+  exact Classical.choice h
+
+/--
+Default structured-provider flag from the default formula-certificate
+provider flag.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificate
+    (h : hasDefaultFormulaCertificateProviderPartial) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate
+    (defaultFormulaCertificateProviderPartial h)
 
 /--
 Default-engine flag from a uniform half-size condition.

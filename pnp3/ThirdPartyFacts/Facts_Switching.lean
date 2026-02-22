@@ -685,6 +685,10 @@ structure AC0MultiSwitchingWitness (params : AC0Parameters) (F : Family params.n
 def FamilyIsAC0 (params : AC0Parameters) (F : Family params.n) : Prop :=
   Nonempty (AC0FamilyWitness params F)
 
+/-- Alias used by downstream modules to avoid hard-coding witness internals. -/
+abbrev AC0FamilyWitnessProp (params : AC0Parameters) (F : Family params.n) : Prop :=
+  FamilyIsAC0 params F
+
 /--
   Удобная форма: текущая «точка входа» не превосходит сильной оценки.
 
@@ -1406,6 +1410,26 @@ theorem partial_shrinkage_single_circuit
 def FamilyIsLocalCircuit
     (params : LocalCircuitParameters) (F : Family params.n) : Prop :=
   Nonempty (LocalCircuitWitness params F)
+
+/-- Alias used by downstream modules to avoid hard-coding witness internals. -/
+abbrev LocalCircuitFamilyWitnessProp
+    (params : LocalCircuitParameters) (F : Family params.n) : Prop :=
+  FamilyIsLocalCircuit params F
+
+/-- Typeclass package for an AC0 family witness. -/
+class AC0FamilyWitnessProvider
+    (params : AC0Parameters) (F : Family params.n) : Prop where
+  witness : AC0FamilyWitnessProp params F
+
+/-- Typeclass package for a local-circuit family witness. -/
+class LocalCircuitFamilyWitnessProvider
+    (params : LocalCircuitParameters) (F : Family params.n) : Prop where
+  witness : LocalCircuitFamilyWitnessProp params F
+
+/-- Typeclass package for a concrete multi-switching witness. -/
+class AC0MultiSwitchingWitnessProvider
+    (params : AC0Parameters) (F : Family params.n) where
+  witness : AC0MultiSwitchingWitness params F
 
 /--
   `FamilyIsLocalCircuit` в текущем виде означает наличие shrinkage-сертификата

@@ -1,62 +1,32 @@
-# Handoff: Structured Locality Provider (updated)
+# Handoff: Structured Locality Provider (current)
 
-This document supersedes the older handoff that targeted
-`LanguageLocalityPartial` (global junta form). The active pipeline now uses a
-restriction-style provider witness.
+Updated: 2026-02-22
 
-## Current provider target
+## Current target
 
-File: `pnp3/Magnification/Facts_Magnification_Partial.lean`
+File: `pnp3/Magnification/LocalityProvider_Partial.lean`
 
-`StructuredLocalityProviderPartial` now requires:
+Active proof surface uses `StructuredLocalityProviderPartial` with
+`RestrictionLocalityPartial p` outputs.
 
-- input: `PpolyFormula (gapPartialMCSP_Language p)`
-- output: `RestrictionLocalityPartial p`
+## What is already wired
 
-where `RestrictionLocalityPartial p` packages:
+- Formula extraction route: `generalSolverOfFormula`.
+- Certificate-driven stability route: `stableRestriction_of_certificate`.
+- Auto cardinality discharge in main route:
+  `HalfTableCertificateBound` + `locality_lift_partial_of_certificate_auto`.
+- Engine-to-provider bridge:
+  `constructiveLocalityEnginePartial_of_formulaCertificate` and
+  `structuredLocalityProviderPartial_of_engine`.
 
-- a test set `T`,
-- a local solver `SmallLocalCircuitSolver_Partial p`,
-- polylog bounds on `T.card` and locality parameter `ℓ`.
+## What is still missing
 
-The partial locality bridge now also exposes certificate-driven plumbing:
+- Real certificate providers for target formula-extracted solver families
+  (`FormulaCertificateProviderPartial` instances/default availability).
 
-- `stableRestriction_of_certificate`
-- `locality_lift_partial_of_certificate`
+This is the practical remaining I-2/I-4 handoff boundary.
 
-with explicit hypothesis `hCardHalf` for the certificate restriction.
+## Non-goal clarification
 
-## Why this changed
-
-The old target (`LanguageLocalityPartial`) encoded a global junta property for
-the whole language and is not the active proof surface anymore. The current
-pipeline consumes local solver witnesses directly.
-
-## Required deliverable
-
-Provide a constructive theorem:
-
-`provider_constructive : StructuredLocalityProviderPartial`
-
-with no new axioms, using the strict structured class `PpolyFormula`.
-
-In the current code state, the concrete blocker is explicit:
-
-- discharge `hCardHalf` constructively in the intended provider path
-  (`restriction.alive.card ≤ Partial.tableLen p.n / 2`).
-
-## Integration points
-
-- `OPS_trigger_formulas_partial_of_provider`
-- `NP_not_subset_PpolyFormula_from_partial_formulas_with_formulaizer`
-- `NP_not_subset_PpolyFormula_final_with_formulaizer`
-
-All are already in place; replacing the provider hypothesis is a drop-in step.
-
-## Adjacent constructive goal
-
-In parallel, close the localized embed gap via:
-
-`GapPartialMCSPFormulaizer p`
-
-from `pnp3/ThirdPartyFacts/PpolyFormula.lean`.
+`FormulaHalfSizeBoundPartial` remains available as an alternative route,
+but it is no longer required for the certificate-first main plumbing.

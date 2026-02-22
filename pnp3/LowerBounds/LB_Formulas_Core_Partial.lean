@@ -25,7 +25,7 @@ open Models
 -/
 theorem LB_Formulas_core_partial
   {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  (hF_all : ThirdPartyFacts.FamilyIsAC0 solver.params.ac0
+  (hF_all : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
     (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
   classical
   obtain ⟨F, Y, T, hWitness⟩ :=
@@ -55,6 +55,32 @@ theorem LB_Formulas_core_partial
     exact hApprox
   · -- Мощность `Y` превосходит тестовую ёмкость, поэтому покрытие невозможно.
     exact hTestLarge
+
+/--
+Constructive variant of the core AC0 lower-bound step:
+an explicit multi-switching witness for the all-functions family is sufficient.
+-/
+theorem LB_Formulas_core_partial_of_multiSwitching
+  {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+  (hMS :
+    ThirdPartyFacts.AC0MultiSwitchingWitness solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
+  exact LB_Formulas_core_partial (solver := solver) (hF_all := ⟨hMS.base⟩)
+
+/-- Typeclass-driven constructive core step via multi-switching provider. -/
+theorem LB_Formulas_core_partial_of_multiSwitching_provider
+  {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+  [hMS :
+    ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
+      solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)] : False := by
+  exact LB_Formulas_core_partial_of_multiSwitching (solver := solver) hMS.witness
+
+/-- Default constructive core step via all-functions multi-switching package. -/
+theorem LB_Formulas_core_partial_of_default_multiSwitching
+  {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+  [hMS : AllFunctionsAC0MultiSwitchingWitness solver.params.ac0] : False := by
+  exact LB_Formulas_core_partial_of_multiSwitching (solver := solver) hMS.witness
 
 end LowerBounds
 end Pnp3

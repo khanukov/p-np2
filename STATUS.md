@@ -1,67 +1,60 @@
 # Project Status (current)
 
-This file is the single source of truth for the active state of the repository.
+This file is the authoritative status snapshot.
 
-## Active pipeline
+## Date
 
-- Pipeline: `PNP3` (SAL -> Covering-Power -> anti-checker -> magnification)
-- Target language: `gapPartialMCSP_Language`
-- Final entrypoint: `pnp3/Magnification/FinalResult.lean`
+- 2026-02-22
 
-Current active result family:
+## Active result
 
-- `NP_not_subset_PpolyFormula` (conditional)
+- Pipeline: `PNP3` (`SAL -> Covering-Power -> anti-checker -> magnification`)
+- Active separation target: `NP_not_subset_PpolyFormula` (conditional)
+- Main final module: `pnp3/Magnification/FinalResult.lean`
 
-The current final theorem family is parameterized by explicit assumptions:
+## Verified code hygiene
 
-1. `StructuredLocalityProviderPartial`
-2. localized bridge goal(s) from `ThirdPartyFacts/PpolyFormula.lean`
+- Active `axiom` declarations in `pnp3/`: **0**
+- Active `sorry`/`admit` in `pnp3/`: **0**
+- `lake build` and `./scripts/check.sh` pass on current tree
 
-## External inputs (active)
+## Closed items
 
-Current `axiom` declarations in `pnp3/`: none (`rg "^axiom " -g"*.lean" pnp3` is empty).
+1. I-1 closed (localized bridge)
+- `pnp3/ThirdPartyFacts/PpolyFormula.lean` now has `trivialFormulaizer` and
+  `gapPartialMCSP_realization_trivial`.
+- Bridge usage is wired through trivial realization variants in
+  `pnp3/Magnification/Bridge_to_Magnification_Partial.lean`.
 
-External dependencies represented as explicit goal hypotheses:
+2. I-3 closed at contract/automation layer
+- `HalfTableCertificateBound` is wired from certificate providers.
+- Auto wrapper exists: `locality_lift_partial_of_certificate_auto`.
+- Main certificate route no longer needs manually threaded `hCardHalf`.
 
-1. `GapPartialMCSPPpolyRealToPpolyFormulaGoal p` (optional localized bridge layer)
+## Still external (non-axiomatic)
 
-in `pnp3/ThirdPartyFacts/PpolyFormula.lean`.
+1. I-4 not closed
+- Real multi-switching/shrinkage constructions for target families are still
+  external witness/provider inputs.
+- Current code has constructive interfaces and wrappers, but not fully internal
+  global instances.
 
-Additionally, Part A still depends on externally provided shrinkage witnesses
-(`partial_shrinkage_for_AC0`, `shrinkage_for_localCircuit`).
+2. I-2 not closed
+- Structured locality provider can be built from explicit certificate packages,
+  but default unconditional provider availability is not internally proved.
 
-For partial locality-lift plumbing:
+3. I-5 not closed
+- `P != NP` wrappers still require explicit bridge:
+  `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` (`hFormulaToPpoly`).
 
-- explicit `hStable` restriction witness, or
-- certificate path via `ShrinkageCertificate.Provider` together with
-  `hCardHalf` on the certificate restriction alive set.
+## Final theorem interpretation
 
-## What is already internal
+- Current fully machine-checked active claim: conditional
+  `NP_not_subset_PpolyFormula`.
+- `P != NP` remains conditional until the `hFormulaToPpoly` bridge is internalized.
 
-- Anti-checker core and local contradiction are proved in Lean.
-- Locality-lift bridge plumbing is proved in Lean (including certificate-to-stability wrapper).
-- Magnification glue and OPS-style triggers are proved in Lean.
-- Classical bridge `NP ⊄ P/poly` + `P ⊆ P/poly` -> `P ≠ NP` is proved in Lean,
-  but is not the active final route until the non-uniform interface is upgraded.
+## Next priority order
 
-## Immediate constructive target
-
-Two immediate constructive milestones:
-
-1. Close localized embed:
-
-- `ThirdPartyFacts.GapPartialMCSPFormulaizer p`
-
-2. Close certificate cardinality obligation for partial locality-lift instances
-   (discharge `hCardHalf` constructively in the intended provider path).
-
-From (1), we get:
-
-- `GapPartialMCSPFormulaRealization p`
-- localized embed for `gapPartialMCSP_Language p`
-- final theorem variants `..._with_formulaizer`.
-
-## Next docs
-
-- `TODO.md` for the concrete execution plan.
-- `AXIOMS_FINAL_LIST.md` for the external input inventory.
+1. Finish I-4: construct real certificate providers / multi-switching instances.
+2. Use I-4 artifacts to internalize default structured provider path (I-2).
+3. Keep `P != NP` as explicitly conditional until I-5 is mathematically closed.

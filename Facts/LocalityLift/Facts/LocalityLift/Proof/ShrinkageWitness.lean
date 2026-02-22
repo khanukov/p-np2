@@ -306,6 +306,8 @@ structure ShrinkageCertificate
     (generalEval : BitVec (inputLen p) → Bool) : Type extends ShrinkageWitness general where
   /-- Применение рестрикции не меняет значение функции общего решателя. -/
   stable : ∀ x, generalEval (restriction.apply x) = generalEval x
+  /-- Усиленный кардинальный контракт: живых координат не больше четверти входа. -/
+  half_input_bound : restriction.alive.card ≤ inputLen p / 4
 
 namespace ShrinkageCertificate
 
@@ -321,6 +323,7 @@ def ofRestriction
           , M := general.params.size * restriction.alive.card.succ
           , ℓ := restriction.alive.card
           , depth := general.params.depth })
+    (half_input_bound : restriction.alive.card ≤ inputLen p / 4)
     (stable : ∀ x, generalEval (restriction.apply x) = generalEval x) :
     ShrinkageCertificate (p := p) general generalEval := by
   classical
@@ -329,6 +332,7 @@ def ofRestriction
     { toShrinkageSummary := w.toShrinkageSummary
       , restriction := restriction
       , restriction_alive := rfl
+      , half_input_bound := half_input_bound
       , stable := stable }
 
 /-- Поле `restriction` в `ofRestriction` совпадает с переданным объектом. -/
@@ -343,9 +347,10 @@ def ofRestriction
           , M := general.params.size * restriction.alive.card.succ
           , ℓ := restriction.alive.card
           , depth := general.params.depth })
+    (half_input_bound : restriction.alive.card ≤ inputLen p / 4)
     (stable : ∀ x, generalEval (restriction.apply x) = generalEval x) :
     (ofRestriction (p := p) general generalEval restriction
-        alive_card_le smallEnough stable).restriction = restriction := by
+        alive_card_le smallEnough half_input_bound stable).restriction = restriction := by
   rfl
 
 /-- Любой шринкаж-сертификат даёт локализационный сертификат: значение функции
@@ -392,6 +397,8 @@ def canonicalCertificate
     { toShrinkageSummary := w.toShrinkageSummary
       , restriction := w.restriction
       , restriction_alive := w.restriction_alive
+      , half_input_bound := by
+          simpa [w, canonical, card_canonicalAlive] using (Nat.zero_le (inputLen p / 4))
       , stable := ?_ }
   intro x
   simp

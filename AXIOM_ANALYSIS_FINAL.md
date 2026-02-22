@@ -1,35 +1,28 @@
 # Final Axiom Analysis (PNP3)
 
-**Updated**: 2026-02-20
+**Updated:** 2026-02-22
 
-## 1. Active axiom count
+## Active counts
 
-- Active `axiom` declarations in `pnp3/`: **0**
-- `sorry`/`admit` in active `pnp3/`: **0**
+- Active `axiom` in `pnp3/`: **0**
+- Active `sorry`/`admit` in `pnp3/`: **0**
 
-## 2. What is still external (but non-axiomatic)
+## Remaining external dependencies (non-axiomatic)
 
-1. Localized bridge goals in `pnp3/ThirdPartyFacts/PpolyFormula.lean`:
-   - `GapPartialMCSPPpolyRealToPpolyFormulaGoal p`
-2. Witness-backed shrinkage inputs in `pnp3/ThirdPartyFacts/Facts_Switching.lean`
-   (through `FamilyIsAC0` / `FamilyIsLocalCircuit`).
-3. Partial locality-lift card bounds (`hCardHalf`-style) in
-   `pnp3/ThirdPartyFacts/PartialLocalityLift.lean` for certificate-driven flow.
+1. Witness-backed multi-switching/shrinkage inputs for target solver families.
+2. Formula-certificate provider package availability for default constructive
+   locality-provider wiring (`FormulaCertificateProviderPartial`).
+3. Final bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+   (`hFormulaToPpoly`) for `P != NP` wrappers.
 
-## 3. Important correction
+## Corrections vs older docs
 
-The active result should be described as a **conditional partial-track
-separation** (`NP ⊄ PpolyFormula` under explicit hypotheses), not as an
-unconditional final `P ≠ NP` theorem.
+- Localized bridge placeholder
+  `GapPartialMCSPPpolyRealToPpolyFormulaGoal p` is no longer active.
+- `hCardHalf` is no longer a manual argument in the main certificate route;
+  automation is provided through certificate contracts/typeclass export.
 
-## 4. Current constructive blockers
+## Conclusion
 
-- Constructive localized bridge (`GapPartialMCSPFormulaizer p` path).
-- Constructive provider path that discharges `hCardHalf` automatically.
-- Full internalization of Part A witness construction.
-
-## 5. Conclusion
-
-The repository is in a clean formal state (0 active axioms), with explicit and
-narrowly-scoped remaining hypotheses documented in `STATUS.md`, `TODO.md`, and
-`AXIOMS_FINAL_LIST.md`.
+The tree is axiom-clean, but the full constructive closure is still conditional
+on explicit external witness/provider/bridge inputs listed above.

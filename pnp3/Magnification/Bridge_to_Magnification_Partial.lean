@@ -74,6 +74,30 @@ theorem NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
     (hReal := ThirdPartyFacts.gapPartialMCSP_realization_of_formulaizer p hF)
     (δ := δ) hδ
 
+theorem NP_not_subset_PpolyReal_from_partial_formulas_trivial
+  (hProvider : StructuredLocalityProviderPartial)
+  {p : GapPartialMCSPParams}
+  {δ : Rat} (hδ : (0 : Rat) < δ) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact NP_not_subset_PpolyReal_from_partial_formulas_with_realization
+    (hProvider := hProvider)
+    (p := p)
+    (hReal := ThirdPartyFacts.gapPartialMCSP_realization_trivial p)
+    (δ := δ) hδ
+
+/--
+Preferred localized `PpolyReal` separation route: uses the internal trivial
+realization bridge, so no explicit realization/reifier/formulaizer argument is
+required from callers.
+-/
+theorem NP_not_subset_PpolyReal_from_partial_formulas
+  (hProvider : StructuredLocalityProviderPartial)
+  {p : GapPartialMCSPParams}
+  {δ : Rat} (hδ : (0 : Rat) < δ) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact NP_not_subset_PpolyReal_from_partial_formulas_trivial
+    (hProvider := hProvider) (p := p) (δ := δ) hδ
+
 theorem NP_not_subset_PpolyFormula_from_partial_formulas_with_realization
   (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams}
@@ -103,6 +127,15 @@ theorem NP_not_subset_PpolyFormula_from_partial_formulas_with_formulaizer
   exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_PpolyReal
     (NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
       (hProvider := hProvider) (p := p) (hF := hF) (δ := δ) hδ)
+
+theorem NP_not_subset_PpolyFormula_from_partial_formulas_trivial
+  (hProvider : StructuredLocalityProviderPartial)
+  {p : GapPartialMCSPParams}
+  {δ : Rat} (hδ : (0 : Rat) < δ) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_PpolyReal
+    (NP_not_subset_PpolyReal_from_partial_formulas_trivial
+      (hProvider := hProvider) (p := p) (δ := δ) hδ)
 
 end Magnification
 end Pnp3

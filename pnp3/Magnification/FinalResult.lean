@@ -22,6 +22,39 @@ structure AsymptoticFormulaTrackHypothesis where
   pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
   pAt_hyp : ∀ n (hn : N0 ≤ n), FormulaLowerBoundHypothesisPartial (pAt n hn) (1 : Rat)
 
+/--
+Constructive asymptotic hypothesis for the AC0 lower-bound side:
+for each size, all small AC0 solvers at that parameter have a default
+all-functions multi-switching package.
+-/
+structure AsymptoticDefaultMultiSwitchingHypothesis where
+  N0 : Nat
+  pAt : ∀ n : Nat, N0 ≤ n → GapPartialMCSPParams
+  pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
+  msAt :
+    ∀ n (hn : N0 ≤ n) (solver : SmallAC0Solver_Partial (pAt n hn)),
+      AllFunctionsAC0MultiSwitchingWitness solver.params.ac0
+
+/--
+Bridge from constructive default multi-switching data to the standard
+asymptotic formula-track hypothesis.
+-/
+def asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
+  AsymptoticFormulaTrackHypothesis := by
+  refine
+    { N0 := hMS.N0
+      pAt := hMS.pAt
+      pAt_n := hMS.pAt_n
+      pAt_hyp := ?_ }
+  intro n hn
+  exact
+    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
+      (p := hMS.pAt n hn)
+      (δ := (1 : Rat))
+      (hδ := zero_lt_one)
+      (hMS := hMS.msAt n hn)
+
 /-- Local witness extracted from the asymptotic formula-track hypothesis at size `n`. -/
 def AsymptoticFormulaTrackWitnessAt (n : Nat) : Prop :=
   ∃ p : GapPartialMCSPParams, p.n = n ∧ FormulaLowerBoundHypothesisPartial p (1 : Rat)
@@ -61,6 +94,20 @@ theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
   exact
     OPS_trigger_formulas_partial_of_provider_formula_separation
       (hProvider := hProvider) (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
+
+/--
+Asymptotic wrapper using constructive default multi-switching data.
+This closes the AC0-side lower-bound premise without external AC0 witness
+arguments; locality/provider obligations are still handled separately.
+-/
+theorem NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
+  (hProvider : StructuredLocalityProviderPartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
+      (hProvider := hProvider)
+      (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
 
 /--
 Bridge from a concrete asymptotic witness at one size to formula separation.
@@ -497,6 +544,19 @@ theorem NP_not_subset_PpolyFormula_final_default_provider
   exact NP_not_subset_PpolyFormula_final hDefaultProvider hAsym
 
 /--
+Final formula-separation wrapper using constructive default multi-switching
+asymptotic data plus the default locality provider.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_default_multiSwitching
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final
+      (hDefaultProvider := hDefaultProvider)
+      (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+
+/--
 Automatic provider wiring from the uniform half-size condition.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_halfSize
@@ -522,6 +582,31 @@ theorem NP_not_subset_PpolyFormula_final_of_default_halfSize
       (hAsym := hAsym)
 
 /--
+Certificate-first provider wiring from an explicit formula-certificate package.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_formulaCertificate
+  (hCert : FormulaCertificateProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate hCert)
+      (hAsym := hAsym)
+
+/--
+Certificate-first provider wiring from the default formula-certificate flag.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
+  (hCert : hasDefaultFormulaCertificateProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_of_formulaCertificate
+      (hCert := defaultFormulaCertificateProviderPartial hCert)
+      (hAsym := hAsym)
+
+/--
 Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
 final statement plus an explicit bridge from formula separation to
 lightweight non-uniform separation.
@@ -542,10 +627,10 @@ theorem P_ne_NP_final_with_provider
       hNP ComplexityInterfaces.P_subset_Ppoly_proof
 
 /--
-Active final theorem.
+Active conditional final `P ≠ NP` wrapper.
 
-This default-engine form removes direct provider arguments from the active
-final theorem interface.
+This default-engine form removes direct provider arguments from the interface,
+but still depends on the explicit bridge `hFormulaToPpoly`.
 -/
 theorem P_ne_NP_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
@@ -569,6 +654,23 @@ theorem P_ne_NP_final_default_provider
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final hDefaultProvider hAsym hFormulaToPpoly
+
+/--
+`P ≠ NP` wrapper through the default multi-switching asymptotic track.
+This remains conditional on the explicit formula-to-P/poly bridge.
+-/
+theorem P_ne_NP_final_of_default_multiSwitching
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider := hDefaultProvider)
+      (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+      (hFormulaToPpoly := hFormulaToPpoly)
 
 /--
 Automatic final `P ≠ NP` wiring from the uniform half-size condition.
@@ -600,6 +702,41 @@ theorem P_ne_NP_final_of_default_halfSize
     P_ne_NP_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_halfSize hHalf)
+      (hAsym := hAsym)
+      hFormulaToPpoly
+
+/--
+Certificate-first final `P ≠ NP` wiring from an explicit formula-certificate
+package.
+-/
+theorem P_ne_NP_final_of_formulaCertificate
+  (hCert : FormulaCertificateProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate hCert)
+      (hAsym := hAsym)
+      hFormulaToPpoly
+
+/--
+Certificate-first final `P ≠ NP` wiring from the default
+formula-certificate flag.
+-/
+theorem P_ne_NP_final_of_default_formulaCertificate
+  (hCert : hasDefaultFormulaCertificateProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_of_formulaCertificate
+      (hCert := defaultFormulaCertificateProviderPartial hCert)
       (hAsym := hAsym)
       hFormulaToPpoly
 

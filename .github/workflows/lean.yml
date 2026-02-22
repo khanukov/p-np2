@@ -19,3 +19,7 @@ jobs:
         run: lake build
       - name: Run smoke test
         run: lake env lean --run scripts/smoke.lean
+      - name: Run tests
+        run: lake test
+      - name: Run audit check script
+        run: ./scripts/check.sh

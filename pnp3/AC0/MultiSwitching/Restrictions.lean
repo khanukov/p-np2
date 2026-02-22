@@ -29,10 +29,70 @@ variable {n : Nat}
 @[simp] abbrev R_s (n s : Nat) : Finset (Restriction n) :=
   Restriction.restrictionsWithFreeCount (n := n) s
 
+/--
+`R_le n s` — срез рестрикций с не более чем `s` свободными координатами.
+Нужен для block-wise шагов, где за один шаг может убираться >1 звезды.
+-/
+@[simp] def R_le (n s : Nat) : Finset (Restriction n) :=
+  (Finset.univ : Finset (Restriction n)).filter (fun ρ => ρ.freeCount ≤ s)
+
+/--
+`R_exact n L` — точный комбинаторный срез: рестрикции с ровно `L` звёздами
+(`freeCount = L`). Это синоним `R_s`, выделенный для теорем существования.
+-/
+@[simp] abbrev R_exact (n L : Nat) : Finset (Restriction n) := R_s (n := n) L
+
 /-- Характеризация принадлежности `R_s`. -/
 @[simp] lemma mem_R_s {ρ : Restriction n} {s : Nat} :
     ρ ∈ R_s (n := n) s ↔ ρ.freeCount = s := by
   simp [R_s]
+
+@[simp] lemma mem_R_le {ρ : Restriction n} {s : Nat} :
+    ρ ∈ R_le (n := n) s ↔ ρ.freeCount ≤ s := by
+  simp [R_le]
+
+lemma R_s_subset_R_le {s : Nat} :
+    R_s (n := n) s ⊆ R_le (n := n) s := by
+  intro ρ hρ
+  have hEq : ρ.freeCount = s :=
+    (mem_R_s (n := n) (ρ := ρ) (s := s)).1 hρ
+  exact (mem_R_le (n := n) (ρ := ρ) (s := s)).2
+    (le_of_eq hEq)
+
+lemma card_R_s_le_card_R_le (s : Nat) :
+    (R_s (n := n) s).card ≤ (R_le (n := n) s).card := by
+  exact Finset.card_le_card (R_s_subset_R_le (n := n) (s := s))
+
+/--
+В строгом срезе `R_s` число свободных координат фиксировано,
+поэтому любые верхние оценки на `s` автоматически переносятся на `ρ.freeCount`.
+-/
+lemma freeCount_le_of_mem_R_s {ρ : Restriction n} {s b : Nat}
+    (hρ : ρ ∈ R_s (n := n) s) (hsb : s ≤ b) :
+    ρ.freeCount ≤ b := by
+  have hcount : ρ.freeCount = s := (mem_R_s (n := n) (ρ := ρ) (s := s)).1 hρ
+  have hcount' : ρ.freeIndicesList.length = s := by
+    simpa [Restriction.freeCount] using hcount
+  simpa [Restriction.freeCount, hcount'] using hsb
+
+/--
+Специализация для I-4: если работаем в срезе `R_s` с `s ≤ n/4`,
+то требование `freeCount ≤ n/4` выполняется по построению.
+-/
+lemma freeCount_le_quarter_of_mem_R_s {ρ : Restriction n} {s : Nat}
+    (hρ : ρ ∈ R_s (n := n) s) (hs : s ≤ n / 4) :
+    ρ.freeCount ≤ n / 4 :=
+  freeCount_le_of_mem_R_s (n := n) hρ hs
+
+lemma freeCount_le_of_mem_R_le {ρ : Restriction n} {s : Nat}
+    (hρ : ρ ∈ R_le (n := n) s) :
+    ρ.freeCount ≤ s :=
+  (mem_R_le (n := n) (ρ := ρ) (s := s)).1 hρ
+
+lemma freeCount_le_quarter_of_mem_R_le {ρ : Restriction n} {s : Nat}
+    (hρ : ρ ∈ R_le (n := n) s) (hs : s ≤ n / 4) :
+    ρ.freeCount ≤ n / 4 :=
+  le_trans (freeCount_le_of_mem_R_le (n := n) hρ) hs
 
 /-!
 ### Кардинальные оценки
@@ -46,6 +106,10 @@ lemma card_R_s (n s : Nat) :
     (R_s (n := n) s).card = Nat.choose n s * 2 ^ (n - s) := by
   simpa [R_s] using
     (Restriction.restrictionsWithFreeCount_card (n := n) (s := s))
+
+@[simp] lemma card_R_exact (n L : Nat) :
+    (R_exact n L).card = Nat.choose n L * 2 ^ (n - L) := by
+  simpa [R_exact] using card_R_s (n := n) (s := L)
 
 /-- Кардинал `R_s` положителен при `s ≤ n`. -/
 lemma card_R_s_pos {s : Nat} (hs : s ≤ n) :

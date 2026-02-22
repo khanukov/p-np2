@@ -14,12 +14,18 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
   - `trivialFormulaizer`
   - `gapPartialMCSP_realization_trivial`
 
+## I-4 status (release note)
+
+- I-4 is constructively closed for the explicit AC0/CNF route (Path A).
+- Entry module: `pnp3/Magnification/AC0LocalityBridge.lean`.
+- The project intentionally does **not** claim a general conversion
+  `PpolyFormula -> AC0`.
+
 ## Remaining external inputs (non-axiomatic)
 
-1. Witness-backed shrinkage inputs / multi-switching packages for target solver families.
-2. Provider-level certificate packages for formula-extracted general solvers
+1. Provider-level certificate packages for formula-extracted general solvers
    (`FormulaCertificateProviderPartial`) or equivalent default availability.
-3. Formula-to-`P/poly` bridge for final `P != NP` wrapper
+2. Formula-to-`P/poly` bridge for final `P != NP` wrapper
    (`hFormulaToPpoly` in `FinalResult.lean`).
 
 ## Important scope note
@@ -35,19 +41,12 @@ to a mathematically final state.
 
 ### Code-level closure criteria (inside this repository)
 
-1. Close I-4 (real multi-switching/shrinkage instances).
-- Build internal, provider-grade instances used by the active chain, not only
-  interface wrappers.
-- Target modules: `pnp3/ThirdPartyFacts/Facts_Switching.lean`,
-  `pnp3/LowerBounds/AntiChecker_Partial.lean`,
-  `pnp3/Magnification/PipelineStatements_Partial.lean`.
-
-2. Close I-2 (default constructive provider path).
+1. Close I-2 (default constructive provider path).
 - Derive `hasDefaultStructuredLocalityProviderPartial` from internal certificate
   providers for formula-extracted solvers.
 - Target module: `pnp3/Magnification/LocalityProvider_Partial.lean`.
 
-3. Close I-5 (formula-track to `P/poly` bridge).
+2. Close I-5 (formula-track to `P/poly` bridge).
 - Internalize a sound theorem of shape:
   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
 - Remove the external bridge argument `hFormulaToPpoly` from

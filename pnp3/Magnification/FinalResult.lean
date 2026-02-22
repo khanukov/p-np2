@@ -607,6 +607,59 @@ theorem NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
       (hAsym := hAsym)
 
 /--
+Certificate-first provider wiring from explicit restriction-level certificate
+data.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_restrictionData
+  (D : FormulaRestrictionCertificateDataPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_restrictionData D)
+      (hAsym := hAsym)
+
+/--
+Certificate-first provider wiring from default restriction-level certificate data.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_default_restrictionData
+  (hD : hasDefaultFormulaRestrictionCertificateDataPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_default_restrictionData hD)
+      (hAsym := hAsym)
+
+/--
+Certificate-first provider wiring from support-based restriction bounds.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_supportBounds
+  (hB : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_supportBounds hB)
+      (hAsym := hAsym)
+
+/--
+Certificate-first provider wiring from default support-bounds flag.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_default_supportBounds
+  (hB : hasDefaultFormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds hB)
+      (hAsym := hAsym)
+
+/--
 Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
 final statement plus an explicit bridge from formula separation to
 lightweight non-uniform separation.
@@ -737,6 +790,76 @@ theorem P_ne_NP_final_of_default_formulaCertificate
   exact
     P_ne_NP_final_of_formulaCertificate
       (hCert := defaultFormulaCertificateProviderPartial hCert)
+      (hAsym := hAsym)
+      hFormulaToPpoly
+
+/--
+Certificate-first final `P ≠ NP` wiring from explicit restriction-level
+certificate data.
+-/
+theorem P_ne_NP_final_of_restrictionData
+  (D : FormulaRestrictionCertificateDataPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_restrictionData D)
+      (hAsym := hAsym)
+      hFormulaToPpoly
+
+/--
+Certificate-first final `P ≠ NP` wiring from default restriction-level
+certificate data.
+-/
+theorem P_ne_NP_final_of_default_restrictionData
+  (hD : hasDefaultFormulaRestrictionCertificateDataPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_default_restrictionData hD)
+      (hAsym := hAsym)
+      hFormulaToPpoly
+
+/--
+Certificate-first final `P ≠ NP` wiring from support-based restriction bounds.
+-/
+theorem P_ne_NP_final_of_supportBounds
+  (hB : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_supportBounds hB)
+      (hAsym := hAsym)
+      hFormulaToPpoly
+
+/--
+Certificate-first final `P ≠ NP` wiring from default support-bounds flag.
+-/
+theorem P_ne_NP_final_of_default_supportBounds
+  (hB : hasDefaultFormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider :=
+        hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds hB)
       (hAsym := hAsym)
       hFormulaToPpoly
 

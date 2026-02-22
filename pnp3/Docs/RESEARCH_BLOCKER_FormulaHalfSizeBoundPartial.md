@@ -25,5 +25,6 @@ construction, proving `FormulaHalfSizeBoundPartial` would still be useful.
 
 ## Not required for current main constructive plumbing
 
-The main remaining blocker is I-4: constructing real certificate providers /
-multi-switching instances for target families.
+I-4 is now closed for the explicit AC0/CNF path (Path A).  Remaining core
+work is provider-default closure (I-2) and the final formula-to-`P/poly`
+bridge layer (I-5).

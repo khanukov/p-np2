@@ -17,14 +17,17 @@ Remaining dependencies are explicit hypotheses/providers, not axioms.
 
 ## External inputs still required (non-axiomatic)
 
-1. Real multi-switching/shrinkage witness/provider instances for target
-   solver families.
-2. Formula-certificate provider availability for default constructive locality
+1. Formula-certificate provider availability for default constructive locality
    provider wiring (`FormulaCertificateProviderPartial`).
-3. Formula-to-`P/poly` bridge used by `P != NP` wrappers:
+2. Formula-to-`P/poly` bridge used by `P != NP` wrappers:
    `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+3. Optional broader non-AC0 bridges, if desired, as separate explicit layers.
 
 ## Scope note
 
 This document tracks only global axioms. It does not claim unconditional
 `P != NP`.
+
+I-4 note:
+- Constructive I-4 core is closed on explicit AC0/CNF inputs (Path A);
+  this is not a claim about a general `PpolyFormula -> AC0` conversion.

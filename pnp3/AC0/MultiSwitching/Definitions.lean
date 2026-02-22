@@ -123,6 +123,14 @@ variable {n : Nat}
     [DecidablePred bad] : Finset (Restriction n) :=
   (R_s (n := n) s).filter bad
 
+/--
+Вариант для нестрогого среза `R_le`: полезен для block-wise encoding,
+где после `t` шагов число свободных координат уменьшается не ровно на `t`.
+-/
+@[simp] def badRestrictionsLe (s : Nat) (bad : Restriction n → Prop)
+    [DecidablePred bad] : Finset (Restriction n) :=
+  (R_le (n := n) s).filter bad
+
 /-!
   Простейшие свойства `badRestrictions`.
 
@@ -156,12 +164,37 @@ lemma badRestrictions_card_le {s : Nat} {bad : Restriction n → Prop}
     (Finset.card_filter_le (s := R_s (n := n) s)
       (p := bad))
 
+/-- Подмножество: `badRestrictionsLe` лежит внутри `R_le`. -/
+lemma badRestrictionsLe_subset {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] :
+    badRestrictionsLe (n := n) s bad
+      ⊆ R_le (n := n) s := by
+  intro ρ hmem
+  have hmem' : ρ ∈ R_le (n := n) s ∧ bad ρ := by
+    simpa [badRestrictionsLe] using hmem
+  exact hmem'.1
+
+lemma badRestrictionsLe_card_le {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] :
+    (badRestrictionsLe (n := n) s bad).card
+      ≤ (R_le (n := n) s).card := by
+  classical
+  simpa [badRestrictionsLe] using
+    (Finset.card_filter_le (s := R_le (n := n) s) (p := bad))
+
 @[simp] lemma mem_badRestrictions {s : Nat} {bad : Restriction n → Prop}
     [DecidablePred bad] {ρ : Restriction n} :
     ρ ∈ badRestrictions (n := n) s bad
       ↔ ρ ∈ R_s (n := n) s ∧ bad ρ := by
   classical
   simp [badRestrictions]
+
+@[simp] lemma mem_badRestrictionsLe {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad] {ρ : Restriction n} :
+    ρ ∈ badRestrictionsLe (n := n) s bad
+      ↔ ρ ∈ R_le (n := n) s ∧ bad ρ := by
+  classical
+  simp [badRestrictionsLe]
 
 /--
 Если "плохих" рестрикций строго меньше, чем всего `R_s`,
@@ -189,6 +222,31 @@ lemma exists_good_of_card_lt {s : Nat} {bad : Restriction n → Prop}
   intro hbad
   have : ρ ∈ badRestrictions (n := n) s bad := by
     exact (mem_badRestrictions (n := n) (s := s) (bad := bad)).2 ⟨hρt, hbad⟩
+  exact hρs this
+
+/--
+Комбинаторный шаг существования на нестрогом срезе `R_le`.
+-/
+lemma exists_good_of_card_lt_le {s : Nat} {bad : Restriction n → Prop}
+    [DecidablePred bad]
+    (hcard :
+      (badRestrictionsLe (n := n) s bad).card
+        < (R_le (n := n) s).card) :
+    ∃ ρ ∈ R_le (n := n) s, ¬ bad ρ := by
+  classical
+  have hsubset :
+      badRestrictionsLe (n := n) s bad
+        ⊆ R_le (n := n) s := by
+    intro ρ hmem
+    exact (mem_badRestrictionsLe (n := n) (s := s) (bad := bad)).1 hmem |>.1
+  rcases Restriction.exists_not_mem_of_subset_card_lt
+      (s := badRestrictionsLe (n := n) s bad)
+      (t := R_le (n := n) s)
+      hsubset hcard with ⟨ρ, hρt, hρs⟩
+  refine ⟨ρ, hρt, ?_⟩
+  intro hbad
+  have : ρ ∈ badRestrictionsLe (n := n) s bad := by
+    exact (mem_badRestrictionsLe (n := n) (s := s) (bad := bad)).2 ⟨hρt, hbad⟩
   exact hρs this
 
 /-!

@@ -14,10 +14,12 @@ pipeline in Lean 4.
   `trivialFormulaizer`.
 - Certificate-cardinality plumbing is automated in the main certificate route
   (`HalfTableCertificateBound`, `..._of_certificate_auto`).
+- I-4 is constructively closed for explicit AC0/CNF inputs (Path A) via
+  `pnp3/Magnification/AC0LocalityBridge.lean`.
 
 ## Still external
 
-1. Multi-switching/shrinkage witness construction for target solver families.
+1. General `PpolyFormula -> AC0` bridge (intentionally not claimed).
 2. Provider-level certificate packages (`FormulaCertificateProviderPartial`) or
    equivalent default instances.
 3. Formula-separation to non-uniform bridge (`hFormulaToPpoly`) for `P != NP`.
@@ -32,12 +34,15 @@ pipeline in Lean 4.
 To turn the repository into an unconditional in-repo `P != NP` claim, the
 remaining closure items are:
 
-1. Internalize real multi-switching/shrinkage provider-grade instances (I-4).
-2. Internalize default constructive structured-provider availability from those
-   instances (I-2).
-3. Internalize the bridge
+1. Internalize default constructive structured-provider availability from
+   existing AC0 I-4 artifacts (I-2).
+2. Internalize the bridge
    `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` and remove
    `hFormulaToPpoly` from final wrappers (I-5).
+
+Optional (separate layer, not required for I-4):
+3. Add explicit stronger bridge assumptions/modules (Option-C style) for
+   broader non-AC0 fronts.
 
 Minimal in-repo completion check:
 - `./scripts/check.sh` passes.

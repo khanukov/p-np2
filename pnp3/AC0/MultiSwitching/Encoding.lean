@@ -5,6 +5,7 @@ import AC0.MultiSwitching.CanonicalTrace
 import AC0.MultiSwitching.CanonicalDT
 import AC0.MultiSwitching.Trace
 import AC0.MultiSwitching.TraceBridge
+import AC0.MultiSwitching.Decides
 
 /-!
   pnp3/AC0/MultiSwitching/Encoding.lean
@@ -271,6 +272,73 @@ abbrev AuxStepSmall (w : Nat) : Type :=
 abbrev AuxTraceSmall (w t : Nat) : Type :=
   Vector (AuxStepSmall w) t
 
+/-!
+Явный тип подсказки для «малого» алфавита (совет/trace):
+на каждом шаге фиксируем направление ветви и позицию литерала.
+
+Это структурированная форма `AuxTraceSmall`, удобная для формулировок
+кодирования/декодирования в стиле Razborov–Beame.
+-/
+
+structure TraceAdviceStep (w : Nat) where
+  branchValue : Bool
+  literalPos : Fin (w + 1)
+  deriving Repr, DecidableEq, Fintype
+
+abbrev TraceAdvice (w t : Nat) : Type :=
+  Vector (TraceAdviceStep w) t
+
+@[simp] def traceAdviceStepToAux {w : Nat} (s : TraceAdviceStep w) : AuxStepSmall w :=
+  (s.branchValue, s.literalPos)
+
+@[simp] def traceAdviceStepOfAux {w : Nat} (s : AuxStepSmall w) : TraceAdviceStep w :=
+  { branchValue := s.1, literalPos := s.2 }
+
+@[simp] lemma traceAdviceStep_roundtrip_toAux {w : Nat} (s : TraceAdviceStep w) :
+    traceAdviceStepOfAux (traceAdviceStepToAux s) = s := by
+  cases s
+  rfl
+
+@[simp] lemma traceAdviceStep_roundtrip_ofAux {w : Nat} (s : AuxStepSmall w) :
+    traceAdviceStepToAux (traceAdviceStepOfAux s) = s := by
+  cases s
+  rfl
+
+@[simp] def traceAdviceToAuxTraceSmall {w t : Nat} (tr : TraceAdvice w t) :
+    AuxTraceSmall w t :=
+  tr.map traceAdviceStepToAux
+
+@[simp] def traceAdviceOfAuxTraceSmall {w t : Nat} (tr : AuxTraceSmall w t) :
+    TraceAdvice w t :=
+  tr.map traceAdviceStepOfAux
+
+@[simp] lemma traceAdvice_roundtrip_toAux {w t : Nat} (tr : TraceAdvice w t) :
+    traceAdviceOfAuxTraceSmall (traceAdviceToAuxTraceSmall tr) = tr := by
+  apply Vector.ext
+  intro i
+  simp
+
+@[simp] lemma traceAdvice_roundtrip_ofAux {w t : Nat} (tr : AuxTraceSmall w t) :
+    traceAdviceToAuxTraceSmall (traceAdviceOfAuxTraceSmall tr) = tr := by
+  apply Vector.ext
+  intro i
+  simp
+
+lemma card_TraceAdvice (w t : Nat) :
+    Fintype.card (TraceAdvice w t) = (2 * (w + 1)) ^ t := by
+  classical
+  let e : TraceAdvice w t ≃ AuxTraceSmall w t :=
+    { toFun := traceAdviceToAuxTraceSmall
+      invFun := traceAdviceOfAuxTraceSmall
+      left_inv := traceAdvice_roundtrip_toAux
+      right_inv := traceAdvice_roundtrip_ofAux }
+  calc
+    Fintype.card (TraceAdvice w t) = Fintype.card (AuxTraceSmall w t) :=
+      Fintype.card_congr e
+    _ = (2 * (w + 1)) ^ t := by
+      simp [AuxTraceSmall, AuxStepSmall, card_Vector, Fintype.card_prod,
+        Fintype.card_bool, Fintype.card_fin, Nat.mul_comm]
+
 lemma card_AuxTraceSmall (w t : Nat) :
     Fintype.card (AuxTraceSmall w t) = (2 * (w + 1)) ^ t := by
   classical
@@ -512,16 +580,110 @@ lemma literalIndexInClause_get?
   simpa [literalIndexInClause] using (List.getElem?_idxOf (a := choice.literal)
     (l := selection.clause.literals) hmem_clause)
 
+lemma literalPos_eq_choice
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    selection.clause.literals[
+      literalIndexInClause (selection := selection) (choice := choice)]? =
+      some choice.literal := by
+  simpa using (literalIndexInClause_get? (selection := selection) (choice := choice))
+
+lemma literalIndexInClause_lt_clauseWidth
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    literalIndexInClause (selection := selection) (choice := choice)
+      < selection.clause.width := by
+  classical
+  have hmem_free :
+      choice.literal ∈ selection.witness.free :=
+    ClausePendingWitness.Selection.literal_mem_free (choice := choice)
+  have hmem_clause :
+      choice.literal ∈ selection.clause.literals :=
+    selection.witness.subset _ hmem_free
+  simpa [literalIndexInClause, Core.CnfClause.width] using
+    (List.idxOf_lt_length_iff.2 hmem_clause)
+
+lemma selection_clause_mem_formula
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses) :
+    selection.clause ∈ F.clauses := by
+  have hmem :
+      selection.clause ∈ selection.leadingClauses ++ selection.clause :: selection.suffix := by
+    simp
+  simpa [selection.clausesDecomposition] using hmem
+
+lemma literalIndexInClause_lt_wSucc
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    literalIndexInClause (selection := selection) (choice := choice) < w + 1 := by
+  have hlt_clause :
+      literalIndexInClause (selection := selection) (choice := choice)
+        < selection.clause.width :=
+    literalIndexInClause_lt_clauseWidth (selection := selection) (choice := choice)
+  have hwidth_le : selection.clause.width ≤ w :=
+    F.width_le _ (selection_clause_mem_formula (selection := selection))
+  exact lt_trans hlt_clause (Nat.lt_succ_of_le hwidth_le)
+
+/-- Позиция выбранного литерала в клаузе как точный `Fin (w+1)` без `mod`. -/
+noncomputable def literalIndexInClauseFin
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    Fin (w + 1) :=
+  ⟨literalIndexInClause (selection := selection) (choice := choice),
+    literalIndexInClause_lt_wSucc (selection := selection) (choice := choice)⟩
+
+@[simp] lemma literalIndexInClauseFin_val
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (choice : ClausePendingWitness.Selection selection.witness) :
+    (literalIndexInClauseFin (selection := selection) (choice := choice)).1
+      = literalIndexInClause (selection := selection) (choice := choice) := rfl
+
+/--
+Список шагов для `AuxTraceSmall`, где позиция литерала кодируется
+относительно `clause.literals` (а не `witness.free`).
+-/
+noncomputable def auxTraceSmallStepsList
+    {n w : Nat} {F : CNF n w} :
+    {ρ : Restriction n} → {t : Nat} →
+      Core.CNF.CanonicalTrace (F := F) ρ t → List (AuxStepSmall w)
+  | _, _, Core.CNF.CanonicalTrace.nil => []
+  | _, _, Core.CNF.CanonicalTrace.cons selection choice tail =>
+      (choice.value,
+        literalIndexInClauseFin (selection := selection) (choice := choice))
+        :: auxTraceSmallStepsList tail
+
+lemma auxTraceSmallStepsList_length
+    {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
+    (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
+    (auxTraceSmallStepsList trace).length = t := by
+  classical
+  induction trace with
+  | nil =>
+    simp [auxTraceSmallStepsList]
+  | cons selection choice tail ih =>
+    simp [auxTraceSmallStepsList, ih]
+
 noncomputable def auxTraceSmallOfTrace
     {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
     (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
     AuxTraceSmall w t := by
   classical
-  let tr := CanonicalTrace.toTrace (trace := trace)
   exact
-    Vector.ofFn (fun i =>
-      let st := tr.get i
-      (st.value, Fin.ofNat (w + 1) st.literalIndex))
+    ⟨(auxTraceSmallStepsList trace).toArray, by
+      simpa [List.size_toArray] using
+        (auxTraceSmallStepsList_length (trace := trace))⟩
+
+
+noncomputable def traceAdviceOfTrace
+    {n w t : Nat} {F : CNF n w} {ρ : Restriction n}
+    (trace : Core.CNF.CanonicalTrace (F := F) ρ t) :
+    TraceAdvice w t :=
+  traceAdviceOfAuxTraceSmall (auxTraceSmallOfTrace (trace := trace))
 
 /-!
 ### Декодирование: восстановление ограничения
@@ -748,6 +910,219 @@ noncomputable def decodeBadFamilyDetCNF
     (Restriction n × (Fin (F.length + 1) × AuxSimple n t)) → Restriction n
   | ⟨ρ', aux⟩ => decodeAuxSimple (ρ' := ρ') (aux := aux.2)
 
+/-!
+### Отношение "продолжения по звёздам" и монотонность фальсификации
+
+Это локальный слой для малого декодера: `ρ'` продолжает `ρ`, если все уже
+зафиксированные координаты в `ρ` сохраняются в `ρ'`.
+-/
+
+def extends_stars {n : Nat} (ρ ρ' : Restriction n) : Prop :=
+  ∀ i, ρ.mask i ≠ none → ρ'.mask i = ρ.mask i
+
+lemma extends_stars_refl {n : Nat} (ρ : Restriction n) :
+    extends_stars ρ ρ := by
+  intro i hi
+  rfl
+
+lemma extends_stars_trans {n : Nat} {ρ₀ ρ₁ ρ₂ : Restriction n}
+    (h01 : extends_stars ρ₀ ρ₁) (h12 : extends_stars ρ₁ ρ₂) :
+    extends_stars ρ₀ ρ₂ := by
+  intro i hi0
+  have hmask01 : ρ₁.mask i = ρ₀.mask i := h01 i hi0
+  have hi1 : ρ₁.mask i ≠ none := by
+    intro hnone1
+    have : ρ₀.mask i = none := by simpa [hmask01] using hnone1
+    exact hi0 this
+  have hmask12 : ρ₂.mask i = ρ₁.mask i := h12 i hi1
+  simpa [hmask01] using hmask12
+
+lemma literal_falsified_monotone_of_extends
+    {n : Nat} {ρ ρ' : Restriction n} {ℓ : Literal n}
+    (hext : extends_stars ρ ρ')
+    (hf : ρ.literalStatus ℓ = LiteralStatus.falsified) :
+    ρ'.literalStatus ℓ = LiteralStatus.falsified := by
+  rcases (Restriction.literalStatus_eq_falsified (ρ := ρ) (ℓ := ℓ)).1 hf with
+    ⟨b, hbmask, hbneq⟩
+  have hneqnone : ρ.mask ℓ.idx ≠ none := by
+    intro hnone
+    have : (some b : Option Bool) = none := by simpa [hbmask] using hnone.symm
+    exact Option.noConfusion this
+  have hmask' : ρ'.mask ℓ.idx = some b := by
+    calc
+      ρ'.mask ℓ.idx = ρ.mask ℓ.idx := hext ℓ.idx hneqnone
+      _ = some b := hbmask
+  exact (Restriction.literalStatus_eq_falsified (ρ := ρ') (ℓ := ℓ)).2
+    ⟨b, hmask', hbneq⟩
+
+lemma literal_satisfied_monotone_of_extends
+    {n : Nat} {ρ ρ' : Restriction n} {ℓ : Literal n}
+    (hext : extends_stars ρ ρ')
+    (hs : ρ.literalStatus ℓ = LiteralStatus.satisfied) :
+    ρ'.literalStatus ℓ = LiteralStatus.satisfied := by
+  rcases (Restriction.literalStatus_eq_satisfied (ρ := ρ) (ℓ := ℓ)).1 hs with
+    hbmask
+  have hneqnone : ρ.mask ℓ.idx ≠ none := by
+    intro hnone
+    have : (some ℓ.value : Option Bool) = none := by simpa [hbmask] using hnone.symm
+    exact Option.noConfusion this
+  have hmask' : ρ'.mask ℓ.idx = some ℓ.value := by
+    calc
+      ρ'.mask ℓ.idx = ρ.mask ℓ.idx := hext ℓ.idx hneqnone
+      _ = some ℓ.value := hbmask
+  exact (Restriction.literalStatus_eq_satisfied (ρ := ρ') (ℓ := ℓ)).2 hmask'
+
+lemma first_falsified_clause_invariant
+    {n w : Nat} {F : CNF n w}
+    {ρ ρ' : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    (hext : extends_stars ρ ρ')
+    (h_sel_falsified :
+      ρ'.clauseStatus selection.clause = Restriction.ClauseStatus.falsified) :
+    (∀ C ∈ selection.leadingClauses,
+      ρ'.clauseStatus C ≠ Restriction.ClauseStatus.falsified)
+      ∧
+    ρ'.clauseStatus selection.clause = Restriction.ClauseStatus.falsified := by
+  constructor
+  · intro C hC hfC
+    have hsC : ρ.clauseStatus C = Restriction.ClauseStatus.satisfied :=
+      selection.leadingSatisfied C hC
+    rcases clauseStatus_satisfied_exists_literal (ρ := ρ) (C := C) hsC with
+      ⟨ℓ, hℓ, hsℓ⟩
+    have hsℓ' : ρ'.literalStatus ℓ = LiteralStatus.satisfied :=
+      literal_satisfied_monotone_of_extends (hext := hext) (hs := hsℓ)
+    have hfall := clauseStatus_falsified_all_literals_falsified (ρ := ρ') (C := C) hfC
+    have hfℓ : ρ'.literalStatus ℓ = LiteralStatus.falsified := hfall ℓ hℓ
+    have hcontra : LiteralStatus.satisfied = LiteralStatus.falsified := by
+      exact hsℓ'.symm.trans hfℓ
+    cases hcontra
+  · exact h_sel_falsified
+
+def find_first_falsified_clause
+    {n w : Nat} (F : CNF n w) (ρ : Restriction n) : Option (CnfClause n) :=
+  F.clauses.find? (fun C =>
+    match ρ.clauseStatus C with
+    | Restriction.ClauseStatus.falsified => true
+    | _ => false)
+
+private lemma find?_some_mem {α : Type _} (p : α → Bool) (xs : List α) (a : α) :
+    xs.find? p = some a → p a = true ∧ a ∈ xs := by
+  induction xs with
+  | nil =>
+      intro h
+      simp [List.find?] at h
+  | cons x xs ih =>
+      intro h
+      simp [List.find?] at h
+      by_cases hpx : p x = true
+      · simp [hpx] at h
+        rcases h with rfl
+        exact ⟨hpx, by simp⟩
+      · simp [hpx] at h
+        rcases ih h with ⟨hp, hmem⟩
+        exact ⟨hp, by simp [hmem]⟩
+
+lemma find_first_falsified_clause_spec_some
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n} {C : CnfClause n}
+    (hfind : find_first_falsified_clause F ρ = some C) :
+    ρ.clauseStatus C = Restriction.ClauseStatus.falsified ∧ C ∈ F.clauses := by
+  classical
+  let p : CnfClause n → Bool := fun D =>
+    match ρ.clauseStatus D with
+    | Restriction.ClauseStatus.falsified => true
+    | _ => false
+  have hmem := find?_some_mem p F.clauses C (by simpa [find_first_falsified_clause, p] using hfind)
+  constructor
+  · have hp : p C = true := hmem.1
+    have hf : ρ.clauseStatus C = Restriction.ClauseStatus.falsified := by
+      cases hst : ρ.clauseStatus C <;> simp [p, hst] at hp
+      · rfl
+    exact hf
+  · exact hmem.2
+
+private lemma find?_append_cons_eq_some
+    {α : Type _} (p : α → Bool) :
+    ∀ (xs ys : List α) (a : α),
+      (∀ x ∈ xs, p x = false) →
+      p a = true →
+      (xs ++ a :: ys).find? p = some a
+  | [], ys, a, _, ha => by simpa [List.find?, ha]
+  | x :: xs, ys, a, hxs, ha => by
+      have hx : p x = false := hxs x (by simp)
+      have htail : ∀ z ∈ xs, p z = false := by
+        intro z hz
+        exact hxs z (by simp [hz])
+      simp [List.find?, hx, find?_append_cons_eq_some p xs ys a htail ha]
+
+private lemma find?_none_forall {α : Type _} (p : α → Bool) :
+    ∀ (xs : List α),
+      xs.find? p = none → ∀ x ∈ xs, p x = false
+  | [], hnone => by
+      intro x hx
+      cases hx
+  | y :: ys, hnone => by
+      intro x hx
+      cases hpy : p y with
+      | true =>
+          simp [List.find?, hpy] at hnone
+      | false =>
+          have hnone' : ys.find? p = none := by
+            simpa [List.find?, hpy] using hnone
+          rcases List.mem_cons.1 hx with rfl | hxys
+          · simpa [hpy]
+          · exact find?_none_forall p ys hnone' x hxys
+
+lemma find_first_falsified_clause_eq_of_selection
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses)
+    {ρ' : Restriction n}
+    (hlead :
+      ∀ C ∈ selection.leadingClauses,
+        ρ'.clauseStatus C ≠ Restriction.ClauseStatus.falsified)
+    (hsel :
+      ρ'.clauseStatus selection.clause = Restriction.ClauseStatus.falsified) :
+    find_first_falsified_clause F ρ' = some selection.clause := by
+  classical
+  let p : CnfClause n → Bool := fun D =>
+    match ρ'.clauseStatus D with
+    | Restriction.ClauseStatus.falsified => true
+    | _ => false
+  have hprefix_false : ∀ C ∈ selection.leadingClauses, p C = false := by
+    intro C hC
+    have hnf : ρ'.clauseStatus C ≠ Restriction.ClauseStatus.falsified := hlead C hC
+    by_cases hf : ρ'.clauseStatus C = Restriction.ClauseStatus.falsified
+    · exact (hnf hf).elim
+    · dsimp [p]
+      simp [hf]
+  have hsel_true : p selection.clause = true := by
+    dsimp [p]
+    simpa [hsel]
+  have hfind_list :
+      (selection.leadingClauses ++ selection.clause :: selection.suffix).find? p =
+        some selection.clause :=
+    find?_append_cons_eq_some p selection.leadingClauses selection.suffix selection.clause
+      hprefix_false hsel_true
+  simpa [find_first_falsified_clause, p, selection.clausesDecomposition] using hfind_list
+
+lemma find_first_falsified_clause_spec_none
+    {n w : Nat} {F : CNF n w} {ρ : Restriction n}
+    (hfind : find_first_falsified_clause F ρ = none) :
+    ∀ C ∈ F.clauses, ρ.clauseStatus C ≠ Restriction.ClauseStatus.falsified := by
+  classical
+  let p : CnfClause n → Bool := fun D =>
+    match ρ.clauseStatus D with
+    | Restriction.ClauseStatus.falsified => true
+    | _ => false
+  have hnone_all : ∀ C ∈ F.clauses, p C = false := by
+    exact find?_none_forall p F.clauses (by simpa [find_first_falsified_clause, p] using hfind)
+  intro C hC hf
+  have hp : p C = false := hnone_all C hC
+  have hp' : p C = true := by
+    dsimp [p]
+    simp [hf]
+  have hpf : p C ≠ true := by simpa [hp]
+  exact hpf hp'
+
 lemma decode_encodeBadFamilyDetCNF
     {n w t s : Nat} (F : FormulaFamily n w)
     (ρbad : BadFamilyDetInRsCNF (F := F) s t) :
@@ -808,14 +1183,182 @@ noncomputable def encodeBadFamilyDetCNF_small
   refine Finset.mem_product.2 ?_
   exact ⟨hρ', by simp [auxTraceFamilySmallCodes]⟩
 
+lemma encodeBadFamilyDetCNF_small_injective_of_decode
+    {n w t s : Nat} (F : FormulaFamily n w)
+    (decodeSmall :
+      (Restriction n × FamilyTraceCodeSmall (F := F) t) → Restriction n)
+    (hdecode :
+      ∀ ρbad : BadFamilyDetInRsCNF (F := F) s t,
+        decodeSmall
+            (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) ρbad).1
+          = ρbad.1) :
+    Function.Injective (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t)) := by
+  classical
+  intro x y hxy
+  have hx := hdecode x
+  have hy := hdecode y
+  have hρ :
+      decodeSmall (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) x).1
+        =
+      decodeSmall (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) y).1 := by
+    simpa [hxy]
+  have : x.1 = y.1 := by simpa [hx, hy] using hρ
+  exact Subtype.ext this
+
+/-!
+### Малый конструктивный декодер
+
+Декодер использует индекс формулы и позиции литералов из `AuxTraceSmall`.
+Мы идём в обратном порядке шагов и делаем `unassign` для найденной переменной.
+-/
+
+noncomputable def decode_small_step
+    {n w : Nat} (F : FormulaFamily n w)
+    (j : Fin (F.length + 1)) (σ : Restriction n) (st : AuxStepSmall w) :
+    Restriction n := by
+  classical
+  by_cases hj : j.1 < F.length
+  · let Fj : CNF n w := F.get ⟨j.1, hj⟩
+    match find_first_falsified_clause Fj σ with
+    | none => exact σ
+    | some C =>
+        match C.literals[st.2.1]? with
+        | none => exact σ
+        | some ℓ =>
+            match σ.mask ℓ.idx with
+            | some b =>
+                if b = st.1 then exact σ.unassign ℓ.idx else exact σ
+            | none => exact σ
+  · exact σ
+
+noncomputable def decode_small
+    {n w t : Nat} (F : FormulaFamily n w) :
+    (Restriction n × FamilyTraceCodeSmall (F := F) t) → Restriction n
+  | ⟨ρ', code⟩ =>
+      code.2.toList.reverse.foldl (decode_small_step (F := F) code.1) ρ'
+
+lemma decode_small_step_inverse_of_find_selection
+    {n w : Nat} (F : FormulaFamily n w)
+    (j : Fin (F.length + 1)) (hj : j.1 < F.length)
+    {ρ : Restriction n}
+    (selection :
+      Restriction.PendingClauseSelection
+        (ρ := ρ) (F.get ⟨j.1, hj⟩).clauses)
+    (choice : ClausePendingWitness.Selection selection.witness)
+    (hfind :
+      find_first_falsified_clause (F.get ⟨j.1, hj⟩)
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice))
+        = some selection.clause) :
+    decode_small_step (F := F) j
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice))
+        (choice.value,
+          literalIndexInClauseFin (selection := selection) (choice := choice))
+      = ρ := by
+  classical
+  have hget :
+      selection.clause.literals[
+        (literalIndexInClauseFin (selection := selection) (choice := choice)).1]? =
+        some choice.literal := by
+    simpa [literalIndexInClauseFin_val] using
+      (literalIndexInClause_get? (selection := selection) (choice := choice))
+  have hgetNat :
+      selection.clause.literals[
+        literalIndexInClause (selection := selection) (choice := choice)]? =
+        some choice.literal := by
+    simpa [literalIndexInClauseFin_val] using hget
+  have hmask :
+      (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+        choice.literal.idx = some choice.value := by
+    simpa using
+      (ClausePendingWitness.Selection.mask_idx_eq_some (choice := choice))
+  have hmask' :
+      (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+        selection.witness.free[↑choice.index].idx = some choice.value := by
+    simpa [ClausePendingWitness.Selection.literal] using hmask
+  have hmaskNat :
+      (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+        selection.witness.free[↑choice.index].idx = some choice.value := by
+    simpa using hmask'
+  unfold decode_small_step
+  by_cases hcase : j.1 < F.length
+  · have hfind' :
+      find_first_falsified_clause F[j.1]
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice))
+        = some selection.clause := by
+      simpa [hcase] using hfind
+    simp [hcase, hfind']
+    rw [hgetNat]
+    simp
+    have hmaskGoal :
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+          selection.witness.free[↑choice.index].idx = some choice.value := by
+      simpa using hmaskNat
+    cases hσ :
+      (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+        (selection.witness.free[↑choice.index].idx) with
+    | none =>
+        exfalso
+        have hmaskCase :
+            (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+              selection.witness.free[choice.index].idx = some choice.value := by
+          simpa using hmaskGoal
+        have hnone : (none : Option Bool) = some choice.value := by
+          exact Eq.trans (Eq.symm hσ) hmaskCase
+        cases hnone
+    | some b =>
+        have hmaskCase :
+            (ClausePendingWitness.Selection.nextRestriction (choice := choice)).mask
+              selection.witness.free[choice.index].idx = some choice.value := by
+          simpa using hmaskGoal
+        have hsome : (some b : Option Bool) = some choice.value := by
+          exact Eq.trans (Eq.symm hσ) hmaskCase
+        have hb : b = choice.value := Option.some.inj hsome
+        simp [hσ, hb]
+        have hidx : selection.witness.free[↑choice.index].idx = choice.literal.idx := by
+          simp [ClausePendingWitness.Selection.literal]
+        simpa [hidx] using
+          (ClausePendingWitness.Selection.unassign_nextRestriction (choice := choice))
+  · exact (False.elim (hcase hj))
+
+lemma decode_small_step_inverse_of_selection_invariant
+    {n w : Nat} (F : FormulaFamily n w)
+    (j : Fin (F.length + 1)) (hj : j.1 < F.length)
+    {ρ : Restriction n}
+    (selection :
+      Restriction.PendingClauseSelection
+        (ρ := ρ) (F.get ⟨j.1, hj⟩).clauses)
+    (choice : ClausePendingWitness.Selection selection.witness)
+    (hlead :
+      ∀ C ∈ selection.leadingClauses,
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice)).clauseStatus C
+          ≠ Restriction.ClauseStatus.falsified)
+    (hsel :
+      (ClausePendingWitness.Selection.nextRestriction (choice := choice)).clauseStatus
+        selection.clause = Restriction.ClauseStatus.falsified) :
+    decode_small_step (F := F) j
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice))
+        (choice.value,
+          literalIndexInClauseFin (selection := selection) (choice := choice))
+      = ρ := by
+  classical
+  have hfind :
+      find_first_falsified_clause (F.get ⟨j.1, hj⟩)
+        (ClausePendingWitness.Selection.nextRestriction (choice := choice))
+        = some selection.clause := by
+    exact find_first_falsified_clause_eq_of_selection
+      (selection := selection) (ρ' := ClausePendingWitness.Selection.nextRestriction (choice := choice))
+      hlead hsel
+  exact decode_small_step_inverse_of_find_selection
+    (F := F) (j := j) (hj := hj) (selection := selection) (choice := choice) hfind
+
 /-!
 ### Декодирование малого encoding (TODO depth>2)
 
 Полный конструктивный декодер `AuxTraceSmall` и доказательство
-`encodeBadFamilyDetCNF_small_injective` временно вынесены в план
-глубинной индукции. В текущем pipeline используется расширенный
-код `encodeBadFamilyDetCNF_var`, для которого инъективность уже
-доказана ниже (`encodeBadFamilyDetCNF_var_injective`).
+`encodeBadFamilyDetCNF_small_injective` остаются отдельным шагом.
+Ниже сохранены вспомогательные леммы для `decode_small_step` и
+инъективные расширенные кодировки (`*_var`, `*_aux`) как резервный
+counting-инструментарий.
 -/
 
 /-!
@@ -1547,6 +2090,20 @@ structure EncodingWitness
   /-- Инъективность кодирования. -/
   inj : Function.Injective encode
 
+/--
+Аналог `EncodingWitness` для нестрогого среза `R_le`.
+Используется в block-wise пайплайне, где число свободных координат
+после шага уменьшается не обязательно на 1.
+-/
+structure EncodingWitnessLe
+    (A : CCDTAlgorithm n k ℓ t F) (s : Nat)
+    (codes : Finset α)
+    [DecidablePred (BadEvent (A := A))] : Type where
+  encode :
+    {ρ // ρ ∈ badRestrictionsLe (n := n) s (BadEvent (A := A))}
+      → {c // c ∈ codes}
+  inj : Function.Injective encode
+
 /-!
 ### EncodingWitness для канонического CCDT (CNF)
 
@@ -1599,6 +2156,36 @@ lemma badRestrictions_card_le_of_encoding
     _ = codes.card := by
           exact hcodes
 
+lemma badRestrictionsLe_card_le_of_encoding
+    {F : FormulaFamily n k}
+    (A : CCDTAlgorithm n k ℓ t F) (s : Nat)
+    (codes : Finset α)
+    [DecidablePred (BadEvent (A := A))]
+    (witness : EncodingWitnessLe (A := A) (s := s) codes) :
+    (badRestrictionsLe (n := n) s (BadEvent (A := A))).card ≤ codes.card := by
+  classical
+  have hcard :
+      Fintype.card {ρ // ρ ∈ badRestrictionsLe (n := n) s (BadEvent (A := A))}
+        ≤ Fintype.card {c // c ∈ codes} := by
+    exact Fintype.card_le_of_injective witness.encode witness.inj
+  have hbad :
+      Fintype.card {ρ // ρ ∈ badRestrictionsLe (n := n) s (BadEvent (A := A))} =
+        (badRestrictionsLe (n := n) s (BadEvent (A := A))).card := by
+    classical
+    exact Fintype.card_coe (s := badRestrictionsLe (n := n) s (BadEvent (A := A)))
+  have hcodes :
+      Fintype.card {c // c ∈ codes} = codes.card := by
+    classical
+    exact Fintype.card_coe (s := codes)
+  calc
+    (badRestrictionsLe (n := n) s (BadEvent (A := A))).card
+        = Fintype.card {ρ // ρ ∈ badRestrictionsLe (n := n) s (BadEvent (A := A))} := by
+            exact hbad.symm
+    _ ≤ Fintype.card {c // c ∈ codes} := by
+          exact hcard
+    _ = codes.card := by
+          exact hcodes
+
 lemma exists_good_restriction_of_encoding
     (A : CCDTAlgorithm n k ℓ t F) (s : Nat)
     (codes : Finset α)
@@ -1615,6 +2202,25 @@ lemma exists_good_restriction_of_encoding
         (R_s (n := n) s).card := by
     exact lt_of_le_of_lt hbad hcodes
   exact exists_good_of_card_lt (n := n) (s := s)
+    (bad := BadEvent (A := A)) hlt
+
+lemma exists_good_restriction_of_encoding_le
+    (A : CCDTAlgorithm n k ℓ t F) (s : Nat)
+    (codes : Finset α)
+    [DecidablePred (BadEvent (A := A))]
+    (witness : EncodingWitnessLe (A := A) (s := s) codes)
+    (hcodes : codes.card < (R_le (n := n) s).card) :
+    ∃ ρ ∈ R_le (n := n) s, ¬ BadEvent (A := A) ρ := by
+  classical
+  have hbad :
+      (badRestrictionsLe (n := n) s (BadEvent (A := A))).card ≤ codes.card := by
+    exact badRestrictionsLe_card_le_of_encoding
+      (A := A) (s := s) (codes := codes) witness
+  have hlt :
+      (badRestrictionsLe (n := n) s (BadEvent (A := A))).card <
+        (R_le (n := n) s).card := by
+    exact lt_of_le_of_lt hbad hcodes
+  exact exists_good_of_card_lt_le (n := n) (s := s)
     (bad := BadEvent (A := A)) hlt
 
 /-!
@@ -1640,6 +2246,20 @@ lemma badRestrictions_card_le_of_encoding_product
   -- `card_product` даёт ровно произведение кардиналов.
   simpa [Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
 
+lemma badRestrictionsLe_card_le_of_encoding_product
+    {α : Type} [DecidableEq α]
+    (A : CCDTAlgorithm n k ℓ t F) (s t' : Nat)
+    (codes : Finset α)
+    (witness :
+      EncodingWitnessLe (A := A) (s := s)
+        (codes := (R_le (n := n) t').product codes)) :
+    (badRestrictionsLe (n := n) s (BadEvent (A := A))).card
+      ≤ (R_le (n := n) t').card * codes.card := by
+  classical
+  have h := badRestrictionsLe_card_le_of_encoding
+    (A := A) (s := s) (codes := (R_le (n := n) t').product codes) witness
+  simpa [Finset.card_product, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
+
 /-!
 ### Специализация для `Aux`
 
@@ -1661,6 +2281,19 @@ lemma badRestrictions_card_le_of_aux_encoding
   -- Разворачиваем кардинал `auxCodes` и используем формулу для `Aux`.
   simpa [auxCodes_card, card_Aux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
 
+lemma badRestrictionsLe_card_le_of_aux_encoding
+    (A : CCDTAlgorithm n k ℓ t F) (s t' k' m : Nat)
+    (witness :
+      EncodingWitnessLe (A := A) (s := s)
+        (codes := (R_le (n := n) t').product (auxCodes n t k' m))) :
+    (badRestrictionsLe (n := n) s (BadEvent (A := A))).card
+      ≤ (R_le (n := n) t').card * (2 * n * k' * m) ^ t := by
+  classical
+  have h :=
+    badRestrictionsLe_card_le_of_encoding_product
+      (A := A) (s := s) (t' := t') (codes := auxCodes n t k' m) witness
+  simpa [auxCodes_card, card_Aux, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
+
 /-!
 ### Специализация для `AuxBound`
 
@@ -1679,6 +2312,19 @@ lemma badRestrictions_card_le_of_auxBound_encoding
     badRestrictions_card_le_of_encoding_product
       (A := A) (s := s) (t' := t') (codes := auxBoundCodes B t) witness
   -- Разворачиваем кардинал `AuxBound`.
+  simpa [auxBoundCodes_card, card_AuxBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
+
+lemma badRestrictionsLe_card_le_of_auxBound_encoding
+    (A : CCDTAlgorithm n k ℓ t F) (s t' B : Nat)
+    (witness :
+      EncodingWitnessLe (A := A) (s := s)
+        (codes := (R_le (n := n) t').product (auxBoundCodes B t))) :
+    (badRestrictionsLe (n := n) s (BadEvent (A := A))).card
+      ≤ (R_le (n := n) t').card * B ^ t := by
+  classical
+  have h :=
+    badRestrictionsLe_card_le_of_encoding_product
+      (A := A) (s := s) (t' := t') (codes := auxBoundCodes B t) witness
   simpa [auxBoundCodes_card, card_AuxBound, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
 
 /-!
@@ -1709,6 +2355,26 @@ lemma exists_good_restriction_of_aux_encoding
   exact exists_good_restriction_of_encoding
     (A := A) (s := s)
     (codes := (R_s (n := n) t').product (auxCodes n t k' m))
+    witness hcodes'
+
+lemma exists_good_restriction_of_aux_encoding_le
+    (A : CCDTAlgorithm n k ℓ t F) (s t' k' m : Nat)
+    (witness :
+      EncodingWitnessLe (A := A) (s := s)
+        (codes := (R_le (n := n) t').product (auxCodes n t k' m)))
+    (hcodes :
+      (R_le (n := n) t').card * (2 * n * k' * m) ^ t
+        < (R_le (n := n) s).card) :
+    ∃ ρ ∈ R_le (n := n) s, ¬ BadEvent (A := A) ρ := by
+  classical
+  have hcodes' :
+      ((R_le (n := n) t').product (auxCodes n t k' m)).card
+        < (R_le (n := n) s).card := by
+    simpa [Finset.card_product, auxCodes_card, card_Aux,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hcodes
+  exact exists_good_restriction_of_encoding_le
+    (A := A) (s := s)
+    (codes := (R_le (n := n) t').product (auxCodes n t k' m))
     witness hcodes'
 
 end MultiSwitching

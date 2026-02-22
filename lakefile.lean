@@ -79,6 +79,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.LocalityInterfaces_Partial,
     Glob.one `Magnification.Facts_Magnification_Partial,
     Glob.one `Magnification.PipelineStatements_Partial,
+    Glob.one `Magnification.AC0LocalityBridge,
     Glob.one `Magnification.LocalityProvider_Partial,
     Glob.one `Magnification.LocalityLift_Partial,
     Glob.one `Magnification.Bridge_to_Magnification_Partial,

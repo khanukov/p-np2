@@ -31,13 +31,21 @@ This file is the authoritative status snapshot.
 - Auto wrapper exists: `locality_lift_partial_of_certificate_auto`.
 - Main certificate route no longer needs manually threaded `hCardHalf`.
 
+3. I-4 closed on explicit AC0 path (Path A)
+- Constructive common-CCDT multi-switching chain is wired end-to-end for
+  explicit CNF/AC0 families (`stage1_6_complete_*_common*`).
+- New bridge module:
+  `pnp3/Magnification/AC0LocalityBridge.lean`.
+- This closes I-4 as an internal constructive engine for AC0-witness inputs
+  (no external `henc_small` hypotheses in the active common route).
+
 ## Still external (non-axiomatic)
 
-1. I-4 not closed
-- Real multi-switching/shrinkage constructions for target families are still
-  external witness/provider inputs.
-- Current code has constructive interfaces and wrappers, but not fully internal
-  global instances.
+1. Ppoly->AC0 bridge not closed (by design)
+- We do **not** claim a general conversion from arbitrary `PpolyFormula`
+  witnesses to AC0/CNF families.
+- The AC0 bridge is explicit-input only (Path A), which is the mathematically
+  correct boundary for I-4.
 
 2. I-2 not closed
 - Structured locality provider can be built from explicit certificate packages,
@@ -55,6 +63,7 @@ This file is the authoritative status snapshot.
 
 ## Next priority order
 
-1. Finish I-4: construct real certificate providers / multi-switching instances.
-2. Use I-4 artifacts to internalize default structured provider path (I-2).
-3. Keep `P != NP` as explicitly conditional until I-5 is mathematically closed.
+1. Use AC0 I-4 artifacts to internalize default structured provider path (I-2).
+2. Keep `P != NP` as explicitly conditional until I-5 is mathematically closed.
+3. Add optional stronger bridge assumptions/modules (Option C style) only as
+   separate, explicitly-labeled layers.

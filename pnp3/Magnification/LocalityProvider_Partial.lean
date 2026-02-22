@@ -137,8 +137,228 @@ structure FormulaToGeneralLocalityDataPartial where
       let solver := generalSolverOfFormula hFormula
       ∃ (r : Facts.LocalityLift.Restriction (Models.partialInputLen p)),
         r.alive.card ≤ Models.Partial.tableLen p.n / 2 ∧
-        ∀ x : Core.BitVec (Models.partialInputLen p),
+      ∀ x : Core.BitVec (Models.partialInputLen p),
         solver.decide (r.apply x) = solver.decide x
+
+/--
+Constructive data package sufficient to build `FormulaCertificateProviderPartial`.
+
+For each extracted formula solver we assume an explicit stabilizing restriction,
+plus the numeric side-conditions required by
+`Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.ofRestriction`.
+-/
+structure FormulaRestrictionCertificateDataPartial where
+  restrictionData :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let solver := generalSolverOfFormula hFormula
+      ∃ (r : Facts.LocalityLift.Restriction
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))),
+        r.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * r.alive.card.succ
+            , ℓ := r.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+        r.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x
+
+/--
+Support-based numeric assumptions sufficient to construct
+`FormulaRestrictionCertificateDataPartial` for formula-extracted solvers.
+
+For each strict formula witness at length `partialInputLen p`, we require:
+1) polylog bound on syntactic support,
+2) `LocalCircuitSmallEnough` for the induced locality parameters,
+3) half-table bound on support size.
+-/
+def FormulaSupportRestrictionBoundsPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let solver := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/--
+Named closure hook for I-4:
+once multi-switching/counting establishes support-based bounds, this theorem is
+the exact bridge expected by the magnification interface.
+-/
+theorem formula_support_bounds_from_multiswitching
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportRestrictionBoundsPartial :=
+  hBounds
+
+/--
+Default-flag wrapper for `formula_support_bounds_from_multiswitching`.
+-/
+theorem hasDefaultFormulaSupportRestrictionBoundsPartial_from_multiswitching
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    Nonempty FormulaSupportRestrictionBoundsPartial :=
+  ⟨formula_support_bounds_from_multiswitching hBounds⟩
+
+/--
+Constructive support-based builder of `FormulaRestrictionCertificateDataPartial`.
+-/
+noncomputable def formulaRestrictionCertificateData_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaRestrictionCertificateDataPartial where
+  restrictionData := by
+    intro p hFormula
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive : Finset (Fin (Models.partialInputLen p)) :=
+      ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    have hB :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+          Facts.LocalityLift.LocalCircuitSmallEnough
+            { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+              , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                  * rFacts.alive.card.succ
+              , ℓ := rFacts.alive.card
+              , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+          rFacts.alive.card ≤
+            Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+      simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+        hBounds (p := p) hFormula
+    have hpoly :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) := hB.1
+    have hsmall :
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * rFacts.alive.card.succ
+            , ℓ := rFacts.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } := hB.2.1
+    have hhalf :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := hB.2.2
+    have hstablePartial :
+        ∀ x : Core.BitVec (Models.partialInputLen p),
+          solver.decide (rPartial.apply x) = solver.decide x := by
+      intro x
+      change
+        ComplexityInterfaces.FormulaCircuit.eval c (rPartial.apply x) =
+          ComplexityInterfaces.FormulaCircuit.eval c x
+      apply ComplexityInterfaces.FormulaCircuit.eval_eq_of_eq_on_support
+      intro i hi
+      exact Facts.LocalityLift.Restriction.apply_alive rPartial x hi
+    have hstableFacts :
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (rFacts.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+      have hstableCast :
+          ∀ x0 : Core.BitVec (Models.partialInputLen p),
+            ThirdPartyFacts.solverDecideFacts (p := p) solver
+                (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0)) =
+              ThirdPartyFacts.solverDecideFacts (p := p) solver
+                (ThirdPartyFacts.castBitVec hlen.symm x0) := by
+        intro x0
+        change
+          solver.decide
+              (ThirdPartyFacts.castBitVec hlen
+                (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0))) =
+            solver.decide
+              (ThirdPartyFacts.castBitVec hlen
+                (ThirdPartyFacts.castBitVec hlen.symm x0))
+        simpa [ThirdPartyFacts.castBitVec_castBitVec_symm] using hstablePartial x0
+      have hstableRaw :=
+        ThirdPartyFacts.stable_of_stable_cast
+          (h := hlen.symm)
+          (decide := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+          (r := rPartial)
+          hstableCast
+      intro x
+      simpa [rFacts] using hstableRaw x
+    refine ⟨rFacts, ?_, ?_, ?_, hstableFacts⟩
+    · exact hpoly
+    · exact hsmall
+    · exact hhalf
+
+/-- Default-availability flag for restriction-level certificate data. -/
+def hasDefaultFormulaRestrictionCertificateDataPartial : Prop :=
+  Nonempty FormulaRestrictionCertificateDataPartial
+
+/-- Extract concrete restriction-level data from its default flag. -/
+noncomputable def defaultFormulaRestrictionCertificateDataPartial
+    (h : hasDefaultFormulaRestrictionCertificateDataPartial) :
+    FormulaRestrictionCertificateDataPartial := by
+  exact Classical.choice h
+
+/--
+Default restriction-level data from support-based numeric assumptions.
+-/
+theorem hasDefaultFormulaRestrictionCertificateDataPartial_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    hasDefaultFormulaRestrictionCertificateDataPartial :=
+  ⟨formulaRestrictionCertificateData_of_supportBounds hBounds⟩
+
+/-- Default support-bounds flag for the support-based restriction route. -/
+def hasDefaultFormulaSupportRestrictionBoundsPartial : Prop :=
+  Nonempty FormulaSupportRestrictionBoundsPartial
+
+/-- Extract concrete support-based bounds from their default flag. -/
+theorem defaultFormulaSupportRestrictionBoundsPartial
+    (h : hasDefaultFormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportRestrictionBoundsPartial := by
+  rcases h with ⟨hB⟩
+  exact hB
+
+/--
+Default restriction-level data from the default support-bounds flag.
+-/
+theorem hasDefaultFormulaRestrictionCertificateDataPartial_of_default_supportBounds
+    (h : hasDefaultFormulaSupportRestrictionBoundsPartial) :
+    hasDefaultFormulaRestrictionCertificateDataPartial :=
+  hasDefaultFormulaRestrictionCertificateDataPartial_of_supportBounds
+    (defaultFormulaSupportRestrictionBoundsPartial h)
 
 /--
 Certificate-first provider data for the fixed extraction
@@ -158,6 +378,76 @@ structure FormulaCertificateProviderPartial where
         (p := ThirdPartyFacts.toFactsParamsPartial p)
         (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
         (ThirdPartyFacts.solverDecideFacts (p := p) solver)
+
+/--
+Build a formula-certificate provider from explicit restriction-level data.
+
+This is a constructive bridge:
+`restrictionData` gives stability + numeric bounds on the Partial side, and we
+transport them to the Facts-side certificate expected by the locality-lift API.
+-/
+noncomputable def formulaCertificateProvider_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    FormulaCertificateProviderPartial where
+  cert := by
+    intro p hFormula
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    have hData :
+        ∃ (r : Facts.LocalityLift.Restriction
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))),
+          r.alive.card ≤
+            Facts.LocalityLift.polylogBudget
+              (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+          Facts.LocalityLift.LocalCircuitSmallEnough
+            { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+              , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                  * r.alive.card.succ
+              , ℓ := r.alive.card
+              , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+          r.alive.card ≤
+            Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+          ∀ x : Facts.LocalityLift.BitVec
+              (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+            ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+              ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+      simpa [solver] using D.restrictionData (p := p) hFormula
+    let r : Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      Classical.choose hData
+    have hDataSpec := Classical.choose_spec hData
+    have hpoly :
+        r.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      hDataSpec.1
+    have hsmall :
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * r.alive.card.succ
+            , ℓ := r.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } :=
+      hDataSpec.2.1
+    have hhalf :
+        r.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 :=
+      hDataSpec.2.2.1
+    have hstable :
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x :=
+      hDataSpec.2.2.2
+    exact
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.ofRestriction
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+        (restriction := r)
+        hpoly
+        hsmall
+        hhalf
+        hstable
 
 /--
 Uniform half-size condition for extracted strict formula witnesses at the
@@ -351,6 +641,42 @@ noncomputable def defaultFormulaCertificateProviderPartial
   exact Classical.choice h
 
 /--
+Any explicit restriction-level certificate data package yields a default
+formula-certificate provider.
+-/
+theorem hasDefaultFormulaCertificateProviderPartial_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    hasDefaultFormulaCertificateProviderPartial :=
+  ⟨formulaCertificateProvider_of_restrictionData D⟩
+
+/--
+Default formula-certificate provider from default restriction-level data.
+-/
+theorem hasDefaultFormulaCertificateProviderPartial_of_default_restrictionData
+    (h : hasDefaultFormulaRestrictionCertificateDataPartial) :
+    hasDefaultFormulaCertificateProviderPartial :=
+  hasDefaultFormulaCertificateProviderPartial_of_restrictionData
+    (defaultFormulaRestrictionCertificateDataPartial h)
+
+/--
+Default formula-certificate provider from support-based numeric assumptions.
+-/
+theorem hasDefaultFormulaCertificateProviderPartial_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    hasDefaultFormulaCertificateProviderPartial :=
+  hasDefaultFormulaCertificateProviderPartial_of_restrictionData
+    (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
+Default formula-certificate provider from default support-based assumptions.
+-/
+theorem hasDefaultFormulaCertificateProviderPartial_of_default_supportBounds
+    (h : hasDefaultFormulaSupportRestrictionBoundsPartial) :
+    hasDefaultFormulaCertificateProviderPartial :=
+  hasDefaultFormulaCertificateProviderPartial_of_default_restrictionData
+    (hasDefaultFormulaRestrictionCertificateDataPartial_of_default_supportBounds h)
+
+/--
 Default structured-provider flag from the default formula-certificate
 provider flag.
 -/
@@ -359,6 +685,43 @@ theorem hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificat
     hasDefaultStructuredLocalityProviderPartial :=
   hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate
     (defaultFormulaCertificateProviderPartial h)
+
+/--
+Default structured-provider flag from explicit restriction-level
+certificate data.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificate
+    (hasDefaultFormulaCertificateProviderPartial_of_restrictionData D)
+
+/--
+Default structured-provider flag from default restriction-level certificate data.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_default_restrictionData
+    (h : hasDefaultFormulaRestrictionCertificateDataPartial) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificate
+    (hasDefaultFormulaCertificateProviderPartial_of_default_restrictionData h)
+
+/--
+Default structured-provider flag from support-based numeric assumptions.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificate
+    (hasDefaultFormulaCertificateProviderPartial_of_supportBounds hBounds)
+
+/--
+Default structured-provider flag from default support-based assumptions.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds
+    (h : hasDefaultFormulaSupportRestrictionBoundsPartial) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificate
+    (hasDefaultFormulaCertificateProviderPartial_of_default_supportBounds h)
 
 /--
 Default-engine flag from a uniform half-size condition.

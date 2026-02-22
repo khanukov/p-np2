@@ -25,34 +25,32 @@ This roadmap reflects the **actual** current code state.
 
 ## Open blockers
 
-1. I-4 (primary)
-- Build real multi-switching/shrinkage instances for target solver families.
-- Deliver concrete provider-grade artifacts consumed by:
-  - `AC0MultiSwitchingWitnessProvider` paths,
-  - `FormulaCertificateProviderPartial` paths.
+1. I-2 (primary)
+- Internalize default structured locality provider availability from existing
+  constructive artifacts (including AC0 Path-A I-4 bridge), without extra
+  external provider assumptions.
 
-2. I-2 (depends on I-4)
-- Internalize default structured locality provider availability from real
-  certificate providers, not from external assumptions.
-
-3. I-5 (research-level)
+2. I-5 (research-level)
 - Close bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
   or keep `P != NP` explicitly conditional.
 
+3. Optional broader bridges (separate layer)
+- Any non-AC0 front (e.g., stronger Ppoly-side bridge assumptions) should stay
+  explicitly separated from the AC0-closed I-4 core.
+
 ## Execution order
 
-1. Finish I-4 artifacts for concrete families and parameters.
-2. Wire those artifacts into default constructive provider path (I-2).
-3. Maintain explicit conditional labeling for `P != NP` until I-5 is solved.
+1. Wire existing constructive artifacts into default provider path (I-2).
+2. Maintain explicit conditional labeling for `P != NP` until I-5 is solved.
+3. Keep optional stronger bridges in separate, clearly-labeled modules.
 
 ## Definition of done per open item
 
-### I-4 DoD
+### I-4 (closed scope note)
 
-- At least one nontrivial target-family instance is internalized and consumed by
-  provider-level theorems (not only interface wrappers).
-- End-to-end constructive formula-track theorem compiles from these instances
-  without introducing new external assumptions.
+- I-4 is considered closed for explicit AC0/CNF inputs (Path A).
+- Reference module: `pnp3/Magnification/AC0LocalityBridge.lean`.
+- General `PpolyFormula -> AC0` conversion is intentionally out of scope.
 
 ### I-2 DoD
 

@@ -64,6 +64,23 @@ lemma exists_good_restriction_of_aux_encoding_main
     (A := A) (s := s) (t' := t') (k' := k') (m := m) witness hcodes
 
 /-!
+### Exact-slice existence bridge (`R_exact`)
+
+Комбинаторная форма probabilistic method:
+если "плохих" рестрикций меньше, чем всего рестрикций в точном срезе `R_exact`,
+то существует хорошая рестрикция в этом же срезе.
+-/
+
+lemma exists_good_restriction_exact
+    {n : Nat} (L : Nat) (bad : Restriction n → Prop)
+    [DecidablePred bad]
+    (hcard :
+      (badRestrictions (n := n) L bad).card
+        < (R_s (n := n) L).card) :
+    ∃ ρ ∈ R_s (n := n) L, ¬ bad ρ := by
+  exact exists_good_of_card_lt (n := n) (s := L) (bad := bad) hcard
+
+/-!
 ### CNF family + Aux‑encoding ⇒ существование хорошей рестрикции
 
 Это прямое применение Stage‑2 для детерминированного `BadFamily`:
@@ -334,6 +351,75 @@ theorem stage1_6_complete_small_canonicalCCDT
   exact partialCertificate_from_restriction (F := F) (ρ := ρ)
 
 /-!
+## Stage 3/6 (малый алфавит) с параметрами `sParam`/`tParam`
+
+Это основной параметрический маршрут I-4:
+`small encoding + counting + canonical CCDT`.
+Expanded-леммы ниже оставлены только как legacy-обёртки.
+-/
+
+theorem exists_good_restriction_step3_2_small_canonicalCCDT_params
+    {n w : Nat} (F : FormulaFamily n w)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam F.length n ≤ sParam n w)
+    (henc_small :
+      Function.Injective
+        (encodeBadFamilyDetCNF_small (F := F)
+          (s := sParam n w) (t := tParam F.length n))) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) (tParam F.length n)) ρ := by
+  exact exists_good_restriction_step3_2_small_canonicalCCDT
+    (F := F) hN ht henc_small
+
+theorem stage1_6_complete_small_canonicalCCDT_params
+    {n w : Nat} (F : FormulaFamily n w)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam F.length n ≤ sParam n w)
+    (henc_small :
+      Function.Injective
+        (encodeBadFamilyDetCNF_small (F := F)
+          (s := sParam n w) (t := tParam F.length n))) :
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
+        C.epsilon = (1 : Q) / (n + 2) := by
+  exact stage1_6_complete_small_canonicalCCDT
+    (F := F) hN ht henc_small
+
+/-!
+## Default Stage 3/6 exports (canonical CCDT params)
+
+По умолчанию основной параметрический путь I-4 проходит через `small`-encoding.
+`expanded`-обёртки ниже оставлены только как legacy-совместимость.
+-/
+
+theorem exists_good_restriction_step3_2_canonicalCCDT_params
+    {n w : Nat} (F : FormulaFamily n w)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam F.length n ≤ sParam n w)
+    (henc_small :
+      Function.Injective
+        (encodeBadFamilyDetCNF_small (F := F)
+          (s := sParam n w) (t := tParam F.length n))) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) (tParam F.length n)) ρ := by
+  exact exists_good_restriction_step3_2_small_canonicalCCDT_params
+    (F := F) hN ht henc_small
+
+theorem stage1_6_complete_canonicalCCDT_params
+    {n w : Nat} (F : FormulaFamily n w)
+    (hN : 49 * (w + 1) ≤ n)
+    (ht : tParam F.length n ≤ sParam n w)
+    (henc_small :
+      Function.Injective
+        (encodeBadFamilyDetCNF_small (F := F)
+          (s := sParam n w) (t := tParam F.length n))) :
+    ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+      ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
+        C.epsilon = (1 : Q) / (n + 2) := by
+  exact stage1_6_complete_small_canonicalCCDT_params
+    (F := F) hN ht henc_small
+
+/-!
 ## Числовая оценка для расширенной базы
 
 Если мы используем расширенный код (с фактором `2*n` и `BParam`),
@@ -422,6 +508,90 @@ theorem exists_good_restriction_step3_2_expanded_canonicalCCDT
     exact (badEvent_canonicalCCDT_iff_badFamilyDet
       (F := F) (ρ := ρ) htpos).1 hbad
   exact hgood hbad'
+
+/-!
+## Stage 1–4 (expanded/aux path): canonical CCDT → Shrinkage
+
+Legacy-вариант для совместимости:
+мы используем уже закрытый expanded/aux counting‑маршрут и сразу
+строим `Shrinkage` из найденной good‑рестрикции.
+-/
+
+theorem shrinkage_step3_2_expanded_canonicalCCDT
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (htpos : 0 < t)
+    (hbound :
+      (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s, ∃ (S : Shrinkage n),
+      S.F = evalFamily F ∧
+        S.t = (allPointSubcubes n).length ∧
+        S.ε = (1 : Q) / (n + 2) := by
+  obtain ⟨ρ, hρs, _hgood⟩ :=
+    exists_good_restriction_step3_2_expanded_canonicalCCDT
+      (F := F) (s := s) (t := t) htpos hbound
+  obtain ⟨S, hF, htS, hε⟩ := shrinkage_from_restriction (F := F) (ρ := ρ)
+  exact ⟨ρ, hρs, S, hF, htS, hε⟩
+
+/-!
+## Stage 1–6 (expanded/aux path): canonical CCDT → PartialCertificate
+
+Прямой certificate‑вариант expanded‑маршрута: после Stage 3 получаем
+ограничение и сразу упаковываем его в `PartialCertificate`.
+-/
+
+theorem stage1_6_complete_expanded_canonicalCCDT
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (htpos : 0 < t)
+    (hbound :
+      (R_s (n := n) (s - t)).card * (F.length + 1)
+          * (2 * n) ^ t * (2 * (w + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s,
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+        ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  obtain ⟨ρ, hρs, _hgood⟩ :=
+    exists_good_restriction_step3_2_expanded_canonicalCCDT
+      (F := F) (s := s) (t := t) htpos hbound
+  obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
+    partialCertificate_from_restriction (F := F) (ρ := ρ)
+  exact ⟨ρ, hρs, ℓ, C, hℓ, hdepth, hε⟩
+
+/-!
+## Stage 3/6 (expanded/aux path) с параметрами `sParam`/`tParam`
+
+Эти обёртки фиксируют тот же маршрут, что и выше, но прямо в
+параметризации Step 3.2. Важный момент: здесь не требуется гипотеза
+об инъективности малого encoding.
+-/
+
+theorem exists_good_restriction_step3_2_expanded_canonicalCCDT_params
+    {n w : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam F.length n)).card * (F.length + 1)
+          * (2 * n) ^ (tParam F.length n) * (2 * (w + 1)) ^ (tParam F.length n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent (A := canonicalCCDTAlgorithmCNF (F := F) (tParam F.length n)) ρ := by
+  have htpos : 0 < tParam F.length n := by simp [tParam]
+  exact exists_good_restriction_step3_2_expanded_canonicalCCDT
+    (F := F) (s := sParam n w) (t := tParam F.length n) htpos hbound
+
+theorem stage1_6_complete_expanded_canonicalCCDT_params
+    {n w : Nat} (F : FormulaFamily n w)
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam F.length n)).card * (F.length + 1)
+          * (2 * n) ^ (tParam F.length n) * (2 * (w + 1)) ^ (tParam F.length n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamily F)),
+        ℓ = 0 ∧ C.depthBound = (allPointSubcubes n).length ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  have htpos : 0 < tParam F.length n := by simp [tParam]
+  exact stage1_6_complete_expanded_canonicalCCDT
+    (F := F) (s := sParam n w) (t := tParam F.length n) htpos hbound
 
 /-!
 ## Wrapper: Step 3.2 (CNF family)
@@ -621,8 +791,55 @@ theorem stage1_4_complete_common
         < (R_s (n := n) s).card) :
     ∃ ρ ∈ R_s (n := n) s, ∃ (S : Shrinkage n),
       S.F = evalFamilyRestrict (ρ := ρ) F ∧
-        S.t = t ∧ S.ε = (1 : Q) / (n + 2) := by
+      S.t = t ∧ S.ε = (1 : Q) / (n + 2) := by
   exact shrinkage_step3_2_common (F := F) (s := s) (t := t) ht hbound
+
+/-!
+## Stage 1–6 (common‑CCDT): сразу `PartialCertificate`
+
+Здесь фиксируем прямой выход в `PartialCertificate` для restricted‑family:
+из Stage‑3 (good restriction для `BadEvent_common`) и Stage‑4/6
+получаем глубину ствола ровно `t`.
+-/
+
+theorem stage1_6_complete_common
+    {n w s t : Nat} (F : FormulaFamily n w)
+    (ht : 0 < t)
+    [DecidablePred (BadEvent_common (F := F) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s,
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamilyRestrict (ρ := ρ) F)),
+        ℓ = 0 ∧ C.depthBound = t ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  classical
+  obtain ⟨ρ, hρs, hgood⟩ :=
+    exists_good_restriction_common_of_bound (F := F) (s := s) (t := t) hbound
+  obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
+    partialCertificate_from_good_restriction_common
+      (F := F) (ρ := ρ) (t := t) ht hgood
+  exact ⟨ρ, hρs, ℓ, C, hℓ, hdepth, hε⟩
+
+theorem stage1_6_complete_common_atom
+    {n s t : Nat} (Fs : List (FuncCNF n))
+    [DecidablePred (BadEvent_common_atom (Fs := Fs) t)]
+    (hbound :
+      (R_s (n := n) (s - t)).card
+          * (2 * n * (maxClauseLits Fs + 1) * (Fs.length + 1)) ^ t
+        < (R_s (n := n) s).card) :
+    ∃ ρ ∈ R_s (n := n) s,
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamilyRestrictFuncCNF (ρ := ρ) (Fs := Fs))),
+        ℓ = 0 ∧ C.depthBound = t ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  classical
+  obtain ⟨ρ, hρs, hgood⟩ :=
+    exists_good_restriction_common_atom_of_bound (Fs := Fs) (s := s) (t := t) hbound
+  obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
+    partialCertificate_from_good_restriction_common_atom
+      (Fs := Fs) (ρ := ρ) (t := t) hgood
+  exact ⟨ρ, hρs, ℓ, C, hℓ, hdepth, hε⟩
 
 /-!
 ## Common‑CCDT: версия с параметрами `sParam`/`tParam`
@@ -665,6 +882,143 @@ theorem stage1_4_complete_common_params
   obtain ⟨S, hF, htS, hε⟩ :=
     shrinkage_from_good_common (F := F) (ρ := ρ) (t := tParam m n) htpos hgood
   exact ⟨ρ, hρs, S, hF, htS, hε⟩
+
+/-!
+## Stage 1–6 (common‑CCDT, params): сразу `PartialCertificate`
+
+Этот результат фиксирует нетривиальный сертификат для restricted‑family:
+
+* Stage 3: получаем `ρ` с `¬ BadEvent_common`;
+* Stage 4–6: через `partialCertificate_from_good_restriction_common`
+  получаем `depthBound = tParam m n` и `ε = 1/(n+2)`.
+-/
+
+theorem stage1_6_complete_common_params
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamilyRestrict (ρ := ρ) F)),
+        ℓ = 0 ∧ C.depthBound = tParam m n ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  classical
+  have htpos : 0 < tParam m n := by
+    -- `tParam = log2(...) + 2` всегда положителен.
+    simp [tParam]
+  obtain ⟨ρ, hρs, hgood⟩ :=
+    exists_good_restriction_step3_2_common (F := F) (m := m) hm ht hbound
+  obtain ⟨ℓ, C, hℓ, hdepth, hε⟩ :=
+    partialCertificate_from_good_restriction_common
+      (F := F) (ρ := ρ) (t := tParam m n) htpos hgood
+  exact ⟨ρ, hρs, ℓ, C, hℓ, hdepth, hε⟩
+
+/-!
+## Default constructive exports (common CCDT, params)
+
+Эти обёртки фиксируют основной конструктивный путь без `expanded`-ветки:
+`common`-bad event → good restriction → нетривиальный PartialCertificate.
+-/
+
+theorem exists_good_restriction_step3_2_default_params
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent_common (F := F) (tParam m n) ρ := by
+  exact exists_good_restriction_step3_2_common
+    (F := F) (m := m) hm ht hbound
+
+theorem stage1_6_complete_default_params
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamilyRestrict (ρ := ρ) F)),
+        ℓ = 0 ∧ C.depthBound = tParam m n ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  exact stage1_6_complete_common_params
+    (F := F) (m := m) hm ht hbound
+
+theorem exists_good_restriction_step3_2_params
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent_common (F := F) (tParam m n) ρ := by
+  exact exists_good_restriction_step3_2_default_params
+    (F := F) (m := m) hm ht hbound
+
+theorem stage1_6_complete_params
+    {n w : Nat} (F : FormulaFamily n w) (m : Nat)
+    (hm : m = F.length)
+    (ht : tParam m n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam m n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam m n)).card
+          * (2 * n * (w + 1) * (m + 1)) ^ (tParam m n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamilyRestrict (ρ := ρ) F)),
+        ℓ = 0 ∧ C.depthBound = tParam m n ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  exact stage1_6_complete_default_params
+    (F := F) (m := m) hm ht hbound
+
+/-!
+## Canonical params exports (common route, без `henc_small`)
+
+Эти теоремы фиксируют рекомендуемый конструктивный путь I-4:
+через `common`-маршрут с числовым bound, без внешней гипотезы
+инъективности малого энкодинга.
+-/
+
+theorem exists_good_restriction_step3_2_canonicalCCDT_params_common
+    {n w : Nat} (F : FormulaFamily n w)
+    (ht : tParam F.length n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam F.length n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam F.length n)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ (tParam F.length n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ¬ BadEvent_common (F := F) (tParam F.length n) ρ := by
+  exact exists_good_restriction_step3_2_params
+    (F := F) (m := F.length) (hm := rfl) ht hbound
+
+theorem stage1_6_complete_canonicalCCDT_params_common
+    {n w : Nat} (F : FormulaFamily n w)
+    (ht : tParam F.length n ≤ sParam n w)
+    [DecidablePred (BadEvent_common (F := F) (tParam F.length n))]
+    (hbound :
+      (R_s (n := n) (sParam n w - tParam F.length n)).card
+          * (2 * n * (w + 1) * (F.length + 1)) ^ (tParam F.length n)
+        < (R_s (n := n) (sParam n w)).card) :
+    ∃ ρ ∈ R_s (n := n) (sParam n w),
+      ∃ (ℓ : Nat) (C : PartialCertificate n ℓ (evalFamilyRestrict (ρ := ρ) F)),
+        ℓ = 0 ∧ C.depthBound = tParam F.length n ∧
+          C.epsilon = (1 : Q) / (n + 2) := by
+  exact stage1_6_complete_params
+    (F := F) (m := F.length) (hm := rfl) ht hbound
 
 /-!
 ## Итог Stage 1–4 (общий/расширенный вариант)

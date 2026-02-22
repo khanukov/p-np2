@@ -36,6 +36,18 @@ def castBitVec {n m : Nat} (h : n = m) (x : Core.BitVec n) : Core.BitVec m := by
 @[simp] lemma castBitVec_rfl {n : Nat} (x : Core.BitVec n) :
     castBitVec (rfl : n = n) x = x := rfl
 
+@[simp] lemma castBitVec_symm_castBitVec {n m : Nat}
+    (h : n = m) (x : Core.BitVec n) :
+    castBitVec h.symm (castBitVec h x) = x := by
+  cases h
+  rfl
+
+@[simp] lemma castBitVec_castBitVec_symm {n m : Nat}
+    (h : n = m) (x : Core.BitVec m) :
+    castBitVec h (castBitVec h.symm x) = x := by
+  cases h
+  rfl
+
 @[simp] lemma castRestriction_rfl {n : Nat} (r : Facts.LocalityLift.Restriction n) :
     castRestriction (rfl : n = n) r = r := rfl
 

@@ -72,6 +72,7 @@ replication, and broad community acceptance.
 - `TODO.md` (current execution order)
 - `AXIOMS_FINAL_LIST.md` (external input inventory)
 - `FAQ.md`
+- `BARRIER_AUDIT.md` (explicit barrier-status matrix)
 
 ## Build
 

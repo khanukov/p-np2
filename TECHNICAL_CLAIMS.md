@@ -6,18 +6,24 @@ The repository contributes a Lean-verified combinatorial pipeline around SAL and
 capacity-style lower-bound infrastructure, plus machine-checked bridge plumbing
 into anti-checker/magnification interfaces.
 
-## Current claim level (2026-02-22)
+## Current claim level (2026-02-23)
 
-- Active machine-checked separation target: conditional
-  `NP_not_subset_PpolyFormula`.
+- Active machine-checked strategic target: AC0-focused separation route.
+- Final AC0 hooks are present in `pnp3/Magnification/FinalResult.lean`:
+  `NP_not_subset_AC0_final`,
+  `NP_not_subset_AC0_final_with_provider`,
+  `NP_not_subset_AC0_final_of_engine`,
+  `NP_not_subset_AC0_at_param_with_provider`,
+  `NP_not_subset_AC0_at_param_of_engine`.
 - No active global axioms in `pnp3/`.
 - No active `sorry/admit` in `pnp3/`.
 
 ## Explicitly external parts
 
-1. Multi-switching/shrinkage witness construction for target families.
-2. Provider-level certificate packages needed for default constructive locality
-   provider instantiation.
+1. Multi-switching/provider witness packaging is still explicit at theorem
+   interfaces.
+2. Default-provider packaging (`hasDefaultStructuredLocalityProviderPartial`)
+   remains an explicit dependency for wrapper-level entrypoints.
 3. Bridge from formula-track separation to non-uniform separation
    (`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`) used by `P != NP`
    wrappers.
@@ -25,7 +31,7 @@ into anti-checker/magnification interfaces.
 ## What is not claimed
 
 - No claim that `P != NP` is unconditional in the current repository state.
-- No claim that I-4 is fully closed with internal real instances.
+- No claim of a global `PpolyFormula -> AC0` conversion.
 
 ## Positioning
 

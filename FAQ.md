@@ -2,8 +2,15 @@
 
 ## Q: What is the current formal result?
 
-**A:** The active machine-checked result is a **conditional** formula-track
-separation (`NP_not_subset_PpolyFormula`) in `pnp3/Magnification/FinalResult.lean`.
+**A:** The active machine-checked target is AC0-focused separation in
+`pnp3/Magnification/FinalResult.lean`, with hooks:
+
+- `NP_not_subset_AC0_final`
+- `NP_not_subset_AC0_final_with_provider`
+- `NP_not_subset_AC0_final_of_engine`
+- fixed-parameter strict hooks:
+  `NP_not_subset_AC0_at_param_with_provider`,
+  `NP_not_subset_AC0_at_param_of_engine`
 
 ## Q: Are there active axioms or sorries in `pnp3/`?
 
@@ -35,9 +42,10 @@ bridge wrappers.
 
 ## Q: What is still external?
 
-**A:** Three areas remain:
+**A:** Two main areas remain:
 
-1. I-2: default structured locality provider internalization.
+1. Default/global provider packaging in some wrappers
+   (`hasDefaultStructuredLocalityProviderPartial` route).
 2. I-5: bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` for final
    `P != NP` wrappers.
 3. Optional stronger bridge layers (kept explicit and separate).
@@ -56,6 +64,11 @@ rather than verifier-function stubs.
 
 **A:** No. `P != NP` wrappers are conditional on an explicit bridge
 `hFormulaToPpoly` in `FinalResult.lean`.
+
+## Q: Is a global conversion `PpolyFormula -> AC0` claimed?
+
+**A:** No. This repository intentionally does not make that claim; the active
+formalization is scoped to AC0-target lower-bound routes.
 
 ## Q: What should reviewers verify first?
 

@@ -1,6 +1,6 @@
 # P!=NP formalization repository
 
-> **Status (2026-02-22):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, and provides a machine-checked **conditional** formula-track pipeline.
+> **Status (2026-02-23):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, with AC0-focused machine-checked separation hooks.
 
 This repository contains the Lean 4 formalization around the PNP3 pipeline:
 
@@ -8,8 +8,14 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
 
 ## Current proved surface
 
-- Active final formula-track endpoint: `NP_not_subset_PpolyFormula` (conditional).
-- Asymptotic entrypoints are present in `pnp3/Magnification/FinalResult.lean`.
+- Strategic target class: `AC^0`.
+- AC0-oriented final hooks are present in `pnp3/Magnification/FinalResult.lean`:
+  - `NP_not_subset_AC0_final`
+  - `NP_not_subset_AC0_final_with_provider`
+  - `NP_not_subset_AC0_final_of_engine`
+  - fixed-parameter strict hooks:
+    `NP_not_subset_AC0_at_param_with_provider`,
+    `NP_not_subset_AC0_at_param_of_engine`
 - Localized bridge `PpolyReal -> PpolyFormula` for `gapPartialMCSP_Language p` is internalized via:
   - `trivialFormulaizer`
   - `gapPartialMCSP_realization_trivial`
@@ -35,15 +41,16 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
 
 ## Remaining external inputs (non-axiomatic)
 
-1. Provider-level certificate packages for formula-extracted general solvers
-   (`FormulaCertificateProviderPartial`) or equivalent default availability.
+1. Default/global provider packaging remains explicit in some wrappers
+   (`hasDefaultStructuredLocalityProviderPartial` style inputs).
 2. Formula-to-`P/poly` bridge for final `P != NP` wrapper
    (`hFormulaToPpoly` in `FinalResult.lean`).
 
 ## Important scope note
 
-- `NP_not_subset_PpolyFormula` is the current active separation target.
-- `P != NP` wrappers exist, but remain conditional on the explicit bridge
+- AC0-core separation route is the active target and is fully axiom-clean.
+- No claim is made about a global `PpolyFormula -> AC0` conversion.
+- `P != NP` wrappers remain conditional on the explicit bridge
   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
 
 ## What Is Still Needed For An Unconditional Final Claim

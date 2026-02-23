@@ -1,6 +1,6 @@
 # Final Axiom Analysis (PNP3)
 
-**Updated:** 2026-02-22
+**Updated:** 2026-02-23
 
 ## Active counts
 
@@ -9,9 +9,9 @@
 
 ## Remaining external dependencies (non-axiomatic)
 
-1. Witness-backed multi-switching/shrinkage inputs for target solver families.
-2. Formula-certificate provider package availability for default constructive
-   locality-provider wiring (`FormulaCertificateProviderPartial`).
+1. Witness-backed multi-switching/provider inputs for target solver families.
+2. Default-provider packaging remains explicit for wrapper-style entrypoints
+   (`hasDefaultStructuredLocalityProviderPartial`).
 3. Final bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
    (`hFormulaToPpoly`) for `P != NP` wrappers.
 
@@ -26,3 +26,6 @@
 
 The tree is axiom-clean, but the full constructive closure is still conditional
 on explicit external witness/provider/bridge inputs listed above.
+
+AC0-focused final hooks now exist directly in `FinalResult.lean`:
+`NP_not_subset_AC0_final*` and fixed-parameter `NP_not_subset_AC0_at_param*`.

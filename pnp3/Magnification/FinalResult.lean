@@ -1,4 +1,5 @@
 import Magnification.Bridge_to_Magnification_Partial
+import Magnification.AC0LocalityBridge
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Models.Model_PartialMCSP
@@ -15,6 +16,16 @@ open ComplexityInterfaces
 def StrictGapNPFamily : Prop :=
   ∀ p : GapPartialMCSPParams,
     ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)
+
+/--
+Constructive bridge: explicit TM witnesses for each fixed parameter imply the
+global strict NP-family hypothesis.
+-/
+theorem strictGapNPFamily_of_tmWitnesses
+  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+  StrictGapNPFamily := by
+  intro p
+  exact gapPartialMCSP_in_NP_TM_of_witness p (hW p)
 
 /--
 Asymptotic entry hypothesis for the partial formula track:
@@ -583,6 +594,111 @@ theorem NP_not_subset_PpolyFormula_final_of_default_multiSwitching
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider := hDefaultProvider)
       (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+      (hNPfam := hNPfam)
+
+/--
+AC0-target final theorem with an explicit structured locality provider.
+
+Compared to the default-flag wrappers, this variant is more constructive at
+the interface level: no `Nonempty` default provider extraction is used.
+-/
+theorem NP_not_subset_AC0_final_with_provider
+  (hProvider : StructuredLocalityProviderPartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
+      (hProvider := hProvider)
+      (hMS := hMS)
+      (hNPstrict :=
+        hNPfam
+          ((asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).pAt
+            (asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).N0
+            (le_rfl)))
+
+/--
+AC0-target fixed-parameter theorem without asymptotic packaging.
+
+This is the strict local hook: one concrete `p`, one strict NP witness for
+`gapPartialMCSP_Language p`, and one default multi-switching package for
+all small AC0 solvers at this same `p`.
+-/
+theorem NP_not_subset_AC0_at_param_with_provider
+  (hProvider : StructuredLocalityProviderPartial)
+  (p : GapPartialMCSPParams)
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p))
+  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
+    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
+    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
+      (p := p)
+      (δ := (1 : Rat))
+      (hδ := zero_lt_one)
+      (hMS := hMSp)
+  exact
+    OPS_trigger_formulas_partial_of_provider_formula_separation
+      (hProvider := hProvider)
+      (hNPstrict := hNPstrict)
+      (p := p)
+      (δ := (1 : Rat))
+      hHyp
+
+/--
+Engine-based fixed-parameter AC0 theorem.
+
+Same statement as `NP_not_subset_AC0_at_param_with_provider`, but consumes an
+explicit constructive locality engine and derives the provider internally.
+-/
+theorem NP_not_subset_AC0_at_param_of_engine
+  (E : ConstructiveLocalityEnginePartial)
+  (p : GapPartialMCSPParams)
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p))
+  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
+    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_at_param_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_engine E)
+      (p := p)
+      (hNPstrict := hNPstrict)
+      (hMSp := hMSp)
+
+/--
+AC0-target final theorem with an explicit constructive locality engine.
+
+This removes default-provider existential packaging from the theorem input by
+consuming a concrete `ConstructiveLocalityEnginePartial`.
+-/
+theorem NP_not_subset_AC0_final_of_engine
+  (E : ConstructiveLocalityEnginePartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_engine E)
+      (hMS := hMS)
+      (hNPfam := hNPfam)
+
+/--
+AC0-target final theorem.
+
+This theorem is unconditional with respect to the old
+`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` bridge and stays entirely
+inside the AC0 constructive route (multi-switching/locality) used by
+`AC0LocalityBridge`.
+-/
+theorem NP_not_subset_AC0_final
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_final_with_provider
+      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
+      (hMS := hMS)
       (hNPfam := hNPfam)
 
 /--

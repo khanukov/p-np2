@@ -47,9 +47,10 @@ Final formula-track wrapper with explicit barrier obligations.
 theorem NP_not_subset_PpolyFormula_final_with_barriers
     (hProvider : StructuredLocalityProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily)
     (hBarriers : BarrierBypassPackage) :
     NP_not_subset_PpolyFormula ∧ BarrierBypassPackage := by
-  refine ⟨NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym, hBarriers⟩
+  refine ⟨NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym hNPfam, hBarriers⟩
 
 /--
 Final `P ≠ NP` wrapper with explicit barrier obligations.
@@ -60,11 +61,12 @@ bridge and `P ⊆ P/poly`.
 theorem P_ne_NP_final_with_barriers
     (hProvider : StructuredLocalityProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily)
     (hFormulaToPpoly :
       NP_not_subset_PpolyFormula → NP_not_subset_Ppoly)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
-  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hFormulaToPpoly, hBarriers⟩
+  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hNPfam hFormulaToPpoly, hBarriers⟩
 
 end Barrier
 end Pnp3

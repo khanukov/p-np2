@@ -14,6 +14,18 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
   - `trivialFormulaizer`
   - `gapPartialMCSP_realization_trivial`
 
+## Complexity-interface status (TM-faithful NP)
+
+- Canonical NP interface is now TM-based: `NP := NP_TM` and `NP_strict := NP_TM`
+  in `pnp3/Complexity/Interfaces.lean`.
+- For Partial-MCSP we intentionally keep only TM-strict NP obligations and
+  explicit witness packages:
+  - `GapPartialMCSP_TMWitness`
+  - `GapPartialMCSP_Asymptotic_TMWitness`
+- Lean-level verifier stubs (`gapPartialMCSP_verify*`) and policy-only aliases
+  were removed from `pnp3/Models/Model_PartialMCSP.lean` to avoid any
+  non-TM/vacuous reading of NP-membership.
+
 ## I-4 status (release note)
 
 - I-4 is constructively closed for the explicit AC0/CNF route (Path A).

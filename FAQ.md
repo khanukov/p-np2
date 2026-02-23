@@ -37,10 +37,20 @@ bridge wrappers.
 
 **A:** Three areas remain:
 
-1. I-4: real multi-switching/shrinkage instances for target families.
-2. I-2: default structured locality provider internalization (depends on I-4).
-3. I-5: bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` for final
+1. I-2: default structured locality provider internalization.
+2. I-5: bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` for final
    `P != NP` wrappers.
+3. Optional stronger bridge layers (kept explicit and separate).
+
+## Q: Is NP encoded via arbitrary Lean verifiers?
+
+**A:** No. The canonical interface is TM-faithful:
+
+- `NP := NP_TM`
+- `NP_strict := NP_TM`
+
+For Partial-MCSP, NP evidence is carried by explicit TM witness packages
+rather than verifier-function stubs.
 
 ## Q: Is `P != NP` already unconditional in this repository?
 

@@ -283,32 +283,13 @@ noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m
         exact (Nat.add_lt_add_iff_left).1 this
       exact w ⟨t, ht_lt⟩
 
-/--
-Класс `NP` через полиномиальный верификатор: язык `L` принадлежит `NP`,
-если существует TM, которая за полиномиальное время проверяет сертификат
-полиномиальной длины, принимая ровно те пары `(x, w)`, где `w` подтверждает
-принадлежность `x` языку `L`.
--/
-def NP (L : Language) : Prop :=
-  ∃ (c k : Nat)
-    (runTime : Nat → Nat)
-    (verify : ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool),
-    (∀ n,
-      runTime (n + certificateLength n k) ≤
-        (n + certificateLength n k) ^ c + c) ∧
-    (∀ n (x : Bitstring n),
-      L n x = true ↔
-        ∃ w : Bitstring (certificateLength n k),
-          verify n x w = true)
-
 /-!
 ### TM-мост для `NP`
 
 Иногда удобнее иметь формулировку NP прямо через Turing-машины из
 внешнего пакета `Facts.PsubsetPpoly`. Ниже мы добавляем определение
 `NP_TM` и лемму, которая переводит такое TM-свидетельство в абстрактное
-`NP`-свидетельство. Это именно «мост»: он не меняет базовое определение
-`NP`, но позволяет использовать TM-инфраструктуру при необходимости.
+`NP`-свидетельство в TM-терминах.
 -/
 
 /--
@@ -331,35 +312,22 @@ def NP_TM (L : Language) : Prop :=
               (n := n + certificateLength n k)
               (concatBitstring x w) = true)
 
-/--
-TM-верификатор порождает абстрактный верификатор: просто берём
-`verify := TM.accepts` на склеенном входе, а временной бюджет
-копируем из `M.runTime`.
--/
-theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
-  intro hTM
-  rcases hTM with ⟨M, c, k, hRun, hCorrect⟩
-  refine ⟨c, k, M.runTime, ?verify, ?hRun', ?hCorrect'⟩
-  · intro n x w
-    exact Facts.PsubsetPpoly.TM.accepts
-      (M := M)
-      (n := n + certificateLength n k)
-      (concatBitstring x w)
-  · intro n
-    exact hRun n
-  · intro n x
-    simpa using hCorrect n x
-
 /-!
-### Strict NP track (TM-faithful)
+### Canonical NP track (TM-faithful)
 
-`NP` above remains a lightweight verifier interface for compatibility.
-For runtime-faithful developments we expose `NP_strict := NP_TM` and bridges
-to existing separation statements.
+From this point onward we expose canonical `NP := NP_TM`.
 -/
+
+/-- Canonical NP class: TM verifier with polynomial runtime. -/
+abbrev NP (L : Language) : Prop := NP_TM L
 
 /-- Runtime-faithful NP track, defined directly via verifier TMs. -/
 abbrev NP_strict (L : Language) : Prop := NP_TM L
+
+/-- Backward-compatible alias kept for older imports. -/
+theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
+  intro h
+  exact h
 
 /-- Strict-track counterpart of `NP ⊄ Ppoly`. -/
 def NP_strict_not_subset_Ppoly : Prop := ∃ L, NP_strict L ∧ ¬ Ppoly L
@@ -388,21 +356,21 @@ theorem NP_not_subset_Ppoly_of_NP_strict_not_subset_Ppoly :
     NP_strict_not_subset_Ppoly → NP_not_subset_Ppoly := by
   intro h
   rcases h with ⟨L, hNPs, hNot⟩
-  exact ⟨L, NP_of_NP_TM hNPs, hNot⟩
+  exact ⟨L, hNPs, hNot⟩
 
 /-- Any strict-track formula separation implies lightweight formula separation. -/
 theorem NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula :
     NP_strict_not_subset_PpolyFormula → NP_not_subset_PpolyFormula := by
   intro h
   rcases h with ⟨L, hNPs, hNot⟩
-  exact ⟨L, NP_of_NP_TM hNPs, hNot⟩
+  exact ⟨L, hNPs, hNot⟩
 
 /-- Any strict-track `PpolyReal` separation implies lightweight one. -/
 theorem NP_not_subset_PpolyReal_of_NP_strict_not_subset_PpolyReal :
     NP_strict_not_subset_PpolyReal → NP_not_subset_PpolyReal := by
   intro h
   rcases h with ⟨L, hNPs, hNot⟩
-  exact ⟨L, NP_of_NP_TM hNPs, hNot⟩
+  exact ⟨L, hNPs, hNot⟩
 
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/

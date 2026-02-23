@@ -30,11 +30,12 @@ theorem i1_trivial_realization_available
 theorem i1_trivial_ppolyreal_route_no_manual_embed
     (hProvider : StructuredLocalityProviderPartial)
     {p : GapPartialMCSPParams} {δ : Rat}
+    (hNPstrict : NP_strict (gapPartialMCSP_Language p))
     (hδ : (0 : Rat) < δ) :
     NP_not_subset_PpolyReal := by
   simpa using
     NP_not_subset_PpolyReal_from_partial_formulas
-      (hProvider := hProvider) (p := p) (δ := δ) hδ
+      (hProvider := hProvider) (p := p) (δ := δ) hδ hNPstrict
 
 theorem i3_certificate_auto_no_manual_hCardHalf
     {p : GapPartialMCSPParams}
@@ -56,18 +57,20 @@ theorem i3_certificate_auto_no_manual_hCardHalf
 
 theorem i4_final_wiring_of_formulaCertificate
     (hCert : FormulaCertificateProviderPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis) :
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily) :
     NP_not_subset_PpolyFormula := by
   simpa using
     (NP_not_subset_PpolyFormula_final_of_formulaCertificate
-      (hCert := hCert) (hAsym := hAsym))
+      (hCert := hCert) (hAsym := hAsym) (hNPfam := hNPfam))
 
 theorem i4_final_wiring_of_default_formulaCertificate
     (hCert : hasDefaultFormulaCertificateProviderPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis) :
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily) :
     NP_not_subset_PpolyFormula := by
   simpa using
     (NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
-      (hCert := hCert) (hAsym := hAsym))
+      (hCert := hCert) (hAsym := hAsym) (hNPfam := hNPfam))
 
 end Pnp3.Tests

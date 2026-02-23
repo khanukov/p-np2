@@ -329,6 +329,91 @@ def PartialMCSP_YES (p : GapPartialMCSPParams) (T : PartialTruthTable p.n) : Pro
 def PartialMCSP_NO (p : GapPartialMCSPParams) (T : PartialTruthTable p.n) : Prop :=
   ∀ (C : Circuit p.n), is_consistent C T → p.sNO ≤ C.size
 
+
+/--
+`assignmentIndex` on canonical vectors `vecOfNat` returns the original index.
+This is the key lookup lemma for table-based exhaustive verification.
+-/
+lemma assignmentIndex_vecOfNat_eq {n : Nat} (i : Fin (Partial.tableLen n)) :
+    assignmentIndex (Core.vecOfNat n i.val) = i := by
+  ext
+  have hi : i.val < 2 ^ n := by simpa [Partial.tableLen] using i.isLt
+  have h_eq : bitVecToNat (Core.vecOfNat n i.val) = i.val := bitVecToNat_vecOfNat hi
+  show (bitVecToNat (Core.vecOfNat n i.val)) % Partial.tableLen n = i.val
+  rw [h_eq, Nat.mod_eq_of_lt]
+  simpa [Partial.tableLen] using hi
+
+/--
+Boolean exhaustive consistency check:
+for every assignment index `i : Fin (2^n)`, if table value is fixed (`some b`),
+then the circuit must output `b` on the canonical input `vecOfNat n i`.
+
+This is the standard NP-style local check for certificate `C`, specialized to
+partial truth tables.
+-/
+def is_consistent_bool {n : Nat} (C : Circuit n) (T : PartialTruthTable n) : Bool :=
+  (List.finRange (Partial.tableLen n)).all (fun i =>
+    match T i with
+    | none => true
+    | some b => Circuit.eval C (Core.vecOfNat n i.val) == b)
+
+/--
+Soundness of the boolean exhaustive checker with respect to `is_consistent`.
+
+(Only the forward direction is needed to build a standard verifier artifact:
+if semantic consistency holds, exhaustive check returns `true`.)
+-/
+lemma is_consistent_bool_of_is_consistent {n : Nat} (C : Circuit n) (T : PartialTruthTable n) :
+    is_consistent C T → is_consistent_bool C T = true := by
+  intro hCons
+  unfold is_consistent_bool
+  refine List.all_eq_true.mpr ?_
+  intro i hi
+  cases hTi : T i with
+  | none => simp [hTi]
+  | some b =>
+      have hAt := hCons (Core.vecOfNat n i.val)
+      have hIdx : assignmentIndex (Core.vecOfNat n i.val) = i := assignmentIndex_vecOfNat_eq i
+      have hEval : Circuit.eval C (Core.vecOfNat n i.val) = b := by
+        have hAt' := hAt
+        simpa [is_consistent, hIdx, hTi] using hAt'
+      simp [hTi, hEval]
+
+/--
+Standard (semantic) verifier for fixed-parameter GapPartialMCSP.
+
+- input `x` encodes a partial table as `mask ++ values`;
+- certificate is a circuit `C` on `p.n` inputs;
+- checks:
+  1. size bound `C.size ≤ sYES`;
+  2. exhaustive agreement with all constrained table entries.
+
+Importantly, this verifier does **not** call `gapPartialMCSP_Language`.
+-/
+def gapPartialMCSP_standardVerifier
+    (p : GapPartialMCSPParams)
+    (x : Core.BitVec (partialInputLen p))
+    (C : Circuit p.n) : Bool :=
+  decide (C.size ≤ p.sYES) && is_consistent_bool C (decodePartial x)
+
+/--
+If a table is YES, then there exists a certificate accepted by
+`gapPartialMCSP_standardVerifier`.
+-/
+lemma gapPartialMCSP_standardVerifier_accepts_of_yes
+    (p : GapPartialMCSPParams)
+    (x : Core.BitVec (partialInputLen p))
+    (hYes : PartialMCSP_YES p (decodePartial x)) :
+    ∃ C : Circuit p.n, gapPartialMCSP_standardVerifier p x C = true := by
+  rcases hYes with ⟨C, hSize, hCons⟩
+  refine ⟨C, ?_⟩
+  unfold gapPartialMCSP_standardVerifier
+  have hSizeB : decide (C.size ≤ p.sYES) = true := by
+    exact decide_eq_true hSize
+  have hConsB : is_consistent_bool C (decodePartial x) = true :=
+    is_consistent_bool_of_is_consistent C (decodePartial x) hCons
+  simp [hSizeB, hConsB]
+
 /-!
   ### Рестрикции на уровне входа
 
@@ -589,126 +674,93 @@ theorem solvesPromise_gapPartialMCSP_iff
   ### NP-membership for Partial MCSP
 -/
 
-lemma certificateLength_pos (n k : Nat) : 0 < certificateLength n k := by
-  by_cases hk : k = 0
-  · subst hk
-    simp [certificateLength]
-  · have hkpos : 0 < k := Nat.pos_of_ne_zero hk
-    unfold certificateLength
-    omega
+/-- TM-strict NP target for fixed-parameter partial MCSP. -/
+abbrev gapPartialMCSP_in_NP (p : GapPartialMCSPParams) : Prop :=
+  NP_TM (gapPartialMCSP_Language p)
 
-/-- Explicit certificate-degree policy used by the active Partial-MCSP NP witness. -/
-@[simp] def gapPartialMCSP_certDegree : Nat := 2
+/-- TM-strict NP witness for the fixed-parameter language (to be supplied externally). -/
+abbrev gapPartialMCSP_in_NP_TM (p : GapPartialMCSPParams) : Prop := gapPartialMCSP_in_NP p
 
-/-- Generic polynomial certificate-length policy for degree `k`. -/
-def certLengthPolyPolicy (k : Nat) : Prop :=
-  ∃ c : Nat, ∀ n, certificateLength n k ≤ n ^ c + c
+/--
+Concrete TM witness package for fixed-parameter partial MCSP.
 
-/-- Concrete certificate-length policy for the active degree `k = 2`. -/
-def gapPartialMCSP_certLengthPolicy : Prop := certLengthPolyPolicy gapPartialMCSP_certDegree
+Keeping this as an explicit structure (instead of a bare `Prop`) makes the
+constructive obligations visible to callers: a concrete machine, a polynomial
+runtime bound and a correctness equivalence for verifier certificates.
+-/
+structure GapPartialMCSP_TMWitness (p : GapPartialMCSPParams) where
+  M : Facts.PsubsetPpoly.TM.{0}
+  c : Nat
+  k : Nat
+  runTime_poly : ∀ n,
+    M.runTime (n + certificateLength n k) ≤ (n + certificateLength n k) ^ c + c
+  correct : ∀ n (x : Bitstring n),
+    gapPartialMCSP_Language p n x = true ↔
+      ∃ w : Bitstring (certificateLength n k),
+        Facts.PsubsetPpoly.TM.accepts
+          (M := M)
+          (n := n + certificateLength n k)
+          (concatBitstring x w) = true
 
-theorem gapPartialMCSP_certLengthPolicy_holds : gapPartialMCSP_certLengthPolicy := by
-  refine ⟨2, ?_⟩
-  intro n
-  simp [gapPartialMCSP_certDegree, certificateLength]
-
-noncomputable def gapPartialMCSP_verify_with_degree (p : GapPartialMCSPParams) (k : Nat) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool := by
-  classical
-  intro n x w
-  exact gapPartialMCSP_Language p n x && w ⟨0, certificateLength_pos n k⟩
-
-noncomputable def gapPartialMCSP_verify (p : GapPartialMCSPParams) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n gapPartialMCSP_certDegree) → Bool :=
-  gapPartialMCSP_verify_with_degree p gapPartialMCSP_certDegree
-
-theorem gapPartialMCSP_in_NP_with_degree (p : GapPartialMCSPParams) (k : Nat) :
-    NP (gapPartialMCSP_Language p) := by
-  classical
-  let c : Nat := max 2 k
-  refine ⟨c, k, (fun t => t ^ c + c), gapPartialMCSP_verify_with_degree p k, ?_, ?_⟩
-  · intro n
-    simp
-  · intro n x
-    constructor
-    · intro hLang
-      refine ⟨(fun _ => true), ?_⟩
-      simpa [gapPartialMCSP_verify_with_degree, hLang]
-    · intro hExists
-      rcases hExists with ⟨w, hVerify⟩
-      have hAnd :
-          gapPartialMCSP_Language p n x &&
-            w ⟨0, certificateLength_pos n k⟩ = true := by
-        simpa [gapPartialMCSP_verify_with_degree] using hVerify
-      cases hLangVal : gapPartialMCSP_Language p n x with
-      | false =>
-          simp [hLangVal] at hAnd
-      | true =>
-          simpa [hLangVal]
-
-theorem gapPartialMCSP_in_NP (p : GapPartialMCSPParams) :
-    NP (gapPartialMCSP_Language p) := by
-  simpa [gapPartialMCSP_verify, gapPartialMCSP_certDegree] using
-    gapPartialMCSP_in_NP_with_degree p gapPartialMCSP_certDegree
-
-theorem gapPartialMCSP_in_NP_of_certLengthPolicy
+/-- Any concrete witness package yields strict NP membership. -/
+theorem gapPartialMCSP_in_NP_TM_of_witness
     (p : GapPartialMCSPParams)
-    (_hPolicy : gapPartialMCSP_certLengthPolicy) :
-    NP (gapPartialMCSP_Language p) := by
-  exact gapPartialMCSP_in_NP p
+    (W : GapPartialMCSP_TMWitness p) :
+    gapPartialMCSP_in_NP_TM p := by
+  exact ⟨W.M, W.c, W.k, W.runTime_poly, W.correct⟩
+
+/-- Canonical NP membership follows directly from a strict TM witness. -/
+theorem gapPartialMCSP_in_NP_of_TM
+    (p : GapPartialMCSPParams) :
+    gapPartialMCSP_in_NP_TM p → NP (gapPartialMCSP_Language p) := by
+  intro hTM
+  exact hTM
 
 /-!
   ### NP-membership for asymptotic partial MCSP language
 -/
 
-noncomputable def gapPartialMCSP_Asymptotic_verify_with_degree
-    (spec : GapPartialMCSPAsymptoticSpec) (k : Nat) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool := by
-  classical
-  intro n x w
-  exact gapPartialMCSP_AsymptoticLanguage spec n x && w ⟨0, certificateLength_pos n k⟩
+/-- TM-strict NP target for asymptotic partial MCSP language. -/
+abbrev gapPartialMCSP_Asymptotic_in_NP
+    (spec : GapPartialMCSPAsymptoticSpec) : Prop :=
+  NP_TM (gapPartialMCSP_AsymptoticLanguage spec)
 
-noncomputable def gapPartialMCSP_Asymptotic_verify
-    (spec : GapPartialMCSPAsymptoticSpec) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n gapPartialMCSP_certDegree) → Bool :=
-  gapPartialMCSP_Asymptotic_verify_with_degree spec gapPartialMCSP_certDegree
+/-- TM-strict NP witness for the asymptotic language (to be supplied externally). -/
+abbrev gapPartialMCSP_Asymptotic_in_NP_TM (spec : GapPartialMCSPAsymptoticSpec) : Prop :=
+  gapPartialMCSP_Asymptotic_in_NP spec
 
-theorem gapPartialMCSP_Asymptotic_in_NP_with_degree
-    (spec : GapPartialMCSPAsymptoticSpec) (k : Nat) :
-    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
-  classical
-  let c : Nat := max 2 k
-  refine ⟨c, k, (fun t => t ^ c + c), gapPartialMCSP_Asymptotic_verify_with_degree spec k, ?_, ?_⟩
-  · intro n
-    simp
-  · intro n x
-    constructor
-    · intro hLang
-      refine ⟨(fun _ => true), ?_⟩
-      simpa [gapPartialMCSP_Asymptotic_verify_with_degree, hLang]
-    · intro hExists
-      rcases hExists with ⟨w, hVerify⟩
-      have hAnd :
-          gapPartialMCSP_AsymptoticLanguage spec n x &&
-            w ⟨0, certificateLength_pos n k⟩ = true := by
-        simpa [gapPartialMCSP_Asymptotic_verify_with_degree] using hVerify
-      cases hLangVal : gapPartialMCSP_AsymptoticLanguage spec n x with
-      | false =>
-          simp [hLangVal] at hAnd
-      | true =>
-          simpa [hLangVal]
+/--
+Concrete TM witness package for the asymptotic partial-MCSP language.
 
-theorem gapPartialMCSP_Asymptotic_in_NP
-    (spec : GapPartialMCSPAsymptoticSpec) :
-    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
-  simpa [gapPartialMCSP_Asymptotic_verify, gapPartialMCSP_certDegree] using
-    gapPartialMCSP_Asymptotic_in_NP_with_degree spec gapPartialMCSP_certDegree
+This mirrors `GapPartialMCSP_TMWitness` but for the global asymptotic language.
+-/
+structure GapPartialMCSP_Asymptotic_TMWitness (spec : GapPartialMCSPAsymptoticSpec) where
+  M : Facts.PsubsetPpoly.TM.{0}
+  c : Nat
+  k : Nat
+  runTime_poly : ∀ n,
+    M.runTime (n + certificateLength n k) ≤ (n + certificateLength n k) ^ c + c
+  correct : ∀ n (x : Bitstring n),
+    gapPartialMCSP_AsymptoticLanguage spec n x = true ↔
+      ∃ w : Bitstring (certificateLength n k),
+        Facts.PsubsetPpoly.TM.accepts
+          (M := M)
+          (n := n + certificateLength n k)
+          (concatBitstring x w) = true
 
-theorem gapPartialMCSP_Asymptotic_in_NP_of_certLengthPolicy
+/-- Any concrete asymptotic witness package yields strict NP membership. -/
+theorem gapPartialMCSP_Asymptotic_in_NP_TM_of_witness
     (spec : GapPartialMCSPAsymptoticSpec)
-    (_hPolicy : gapPartialMCSP_certLengthPolicy) :
-    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
-  exact gapPartialMCSP_Asymptotic_in_NP spec
+    (W : GapPartialMCSP_Asymptotic_TMWitness spec) :
+    gapPartialMCSP_Asymptotic_in_NP_TM spec := by
+  exact ⟨W.M, W.c, W.k, W.runTime_poly, W.correct⟩
+
+/-- Canonical NP membership for the asymptotic language from a strict TM witness. -/
+theorem gapPartialMCSP_Asymptotic_in_NP_of_TM
+    (spec : GapPartialMCSPAsymptoticSpec) :
+    gapPartialMCSP_Asymptotic_in_NP_TM spec → NP (gapPartialMCSP_AsymptoticLanguage spec) := by
+  intro hTM
+  exact hTM
 
 end Models
 end Pnp3

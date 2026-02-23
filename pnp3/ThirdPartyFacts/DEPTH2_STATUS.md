@@ -12,5 +12,5 @@ For current proof-state and blocker tracking, use:
 
 Scope note:
 - Depth-2 local progress does not by itself close global I-4.
-- I-4 remains open until provider-grade multi-switching/shrinkage instances are
-  internalized for the target families used in the active final chain.
+- Historical caveat in this file predates current AC0-path closure statements.
+  For the active project status of I-4, always use top-level `STATUS.md`.

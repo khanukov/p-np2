@@ -47,10 +47,12 @@ This file is the authoritative status snapshot.
   explicit CNF/AC0 families (`stage1_6_complete_*_common*`).
 - New bridge module:
   `pnp3/Magnification/AC0LocalityBridge.lean`.
-- **Барьер I-4 (Multi-Switching и Locality Provider) ПОЛНОСТЬЮ И
-  БЕЗУСЛОВНО ЗАКРЫТ конструктивным кодом для класса AC0 через модуль
-  AC0LocalityBridge**.
+- **I-4 (Multi-Switching + Locality Provider) конструктивно закрыт в текущем
+  AC0-scope через модуль `AC0LocalityBridge`**.
 - Active common route has no external `henc_small` hypotheses.
+- Partial anti-checker cleanup: legacy `..._of_false` wrappers were removed;
+  active `large-Y` and testset interfaces no longer extract witnesses via
+  `False.elim`.
 
 ## Complexity-interface integrity (updated)
 
@@ -81,6 +83,24 @@ This file is the authoritative status snapshot.
 
 - AC0-focused fully machine-checked claim is the active target.
 - We intentionally do not claim a global `P/poly -> AC0` transport theorem.
+- Final `P != NP` wrappers are conditional and require an explicit bridge
+  `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+- Naming rule: theorem names containing `...PpolyFormula_final...` in
+  `pnp3/Magnification/FinalResult.lean` denote AC0-route
+  formula-separation wrappers, not standalone global non-uniform claims.
+
+## Conditional Final Contract (`P != NP`)
+
+- Canonical assumption bundle in code:
+  `pnp3/Magnification/FinalResult.lean`:
+  `ConditionalPneNpFinalContract`.
+- Required fields are:
+  1. `hasDefaultStructuredLocalityProviderPartial`
+  2. `AsymptoticFormulaTrackHypothesis`
+  3. `StrictGapNPFamily`
+  4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+- Contract-based theorem:
+  `P_ne_NP_final_of_contract`.
 
 ## Next priority order
 

@@ -4,6 +4,7 @@
 
 This repository currently provides an AC0-focused machine-checked partial-track
 pipeline in Lean 4.
+Final `P != NP` wrappers are currently conditional on an explicit formula-to-`P/poly` bridge.
 
 ## Verified now
 
@@ -23,6 +24,10 @@ pipeline in Lean 4.
   - fixed-parameter hooks:
     `NP_not_subset_AC0_at_param_with_provider`,
     `NP_not_subset_AC0_at_param_of_engine`
+- Naming note:
+  `...PpolyFormula_final...` theorems in `FinalResult.lean` should be read as
+  AC0-route formula-separation wrappers, not as standalone global non-uniform
+  separation claims.
 - Bridge from explicit TM witness families to strict NP-family input:
   `strictGapNPFamily_of_tmWitnesses`.
 
@@ -44,6 +49,8 @@ pipeline in Lean 4.
 
 - Active strategic target: AC0-side separation route.
 - `P != NP` wrappers are present but explicitly conditional on item (3).
+- The assumption bundle is exposed in code as
+  `ConditionalPneNpFinalContract` (`pnp3/Magnification/FinalResult.lean`).
 
 ## What External Researchers Need To Close
 

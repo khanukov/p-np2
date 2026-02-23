@@ -17,6 +17,11 @@
   `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`,
   `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
 
+Interpretation note:
+names containing `...PpolyFormula_final...` in the same module are route-level
+formula-separation wrappers for the AC0 pipeline, not standalone global
+non-uniform separation claims.
+
 ## Q: Are there active axioms or sorries in `pnp3/`?
 
 **A:** No.

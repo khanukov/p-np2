@@ -535,7 +535,7 @@ theorem P_ne_NP_final_of_asymptotic_hypothesis
   sYES_pos := by decide
   circuit_bound_ok := by native_decide
 
-/-- Canonical (legacy) fixed-parameter final statement. -/
+/-- Canonical fixed-parameter compatibility statement. -/
 theorem NP_not_subset_PpolyFormula_final_legacy
   (hProvider : StructuredLocalityProviderPartial)
   (hNPfam : StrictGapNPFamily) :
@@ -546,6 +546,10 @@ theorem NP_not_subset_PpolyFormula_final_legacy
 /--
 Primary final statement (asymptotic entry): from the structured provider and
 asymptotic formula-track hypothesis we derive `NP ⊄ PpolyFormula`.
+
+Scope note:
+this theorem is a formula-separation endpoint of the AC0-target magnification
+route; it is not a standalone global non-uniform separation claim.
 -/
 theorem NP_not_subset_PpolyFormula_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
@@ -560,6 +564,10 @@ Primary asymptotic final formula-separation statement.
 
 This default-engine form removes direct provider arguments from the active
 final theorem interface.
+
+Scope note:
+despite the `PpolyFormula` codomain, this interface is still tied to the AC0
+pipeline assumptions (`AsymptoticFormulaTrackHypothesis` + provider packaging).
 -/
 theorem NP_not_subset_PpolyFormula_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
@@ -583,6 +591,9 @@ theorem NP_not_subset_PpolyFormula_final_default_provider
 /--
 Final formula-separation wrapper using constructive default multi-switching
 asymptotic data plus the default locality provider.
+
+Scope note:
+this remains an AC0-side route wrapper and should be reported as such.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_default_multiSwitching
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
@@ -753,10 +764,13 @@ theorem NP_not_subset_AC0_final_of_engine_of_tmWitnesses
 /--
 AC0-target final theorem.
 
-This theorem is unconditional with respect to the old
-`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` bridge and stays entirely
-inside the AC0 constructive route (multi-switching/locality) used by
-`AC0LocalityBridge`.
+This theorem stays inside the AC0 constructive route
+(multi-switching/locality) used by `AC0LocalityBridge` and does not require
+the old bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+
+Scope note:
+this is an AC0-route formula-separation endpoint; it is not the global
+`P ≠ NP` statement.
 -/
 theorem NP_not_subset_AC0_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
@@ -892,6 +906,10 @@ theorem NP_not_subset_PpolyFormula_final_of_default_supportBounds
 Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
 final statement plus an explicit bridge from formula separation to
 lightweight non-uniform separation.
+
+Scope note:
+this is a conditional wrapper over the AC0-side formula-separation route; it is
+not an unconditional in-repo `P ≠ NP` theorem.
 -/
 theorem P_ne_NP_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
@@ -910,10 +928,41 @@ theorem P_ne_NP_final_with_provider
       hNP ComplexityInterfaces.P_subset_Ppoly_proof
 
 /--
+Single contract that captures all external inputs currently required by the
+active final `P ≠ NP` wrapper family.
+
+This keeps the conditional nature of the final claim explicit in one place.
+-/
+structure ConditionalPneNpFinalContract where
+  defaultProvider : hasDefaultStructuredLocalityProviderPartial
+  asymptotic : AsymptoticFormulaTrackHypothesis
+  npFamily : StrictGapNPFamily
+  formulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+      ComplexityInterfaces.NP_not_subset_Ppoly
+
+/--
+Contract-based entrypoint for the active conditional final theorem.
+-/
+theorem P_ne_NP_final_of_contract
+  (h : ConditionalPneNpFinalContract) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_with_provider
+      (hProvider := defaultStructuredLocalityProviderPartial h.defaultProvider)
+      (hAsym := h.asymptotic)
+      (hNPfam := h.npFamily)
+      h.formulaToPpoly
+
+/--
 Active conditional final `P ≠ NP` wrapper.
 
 This default-engine form removes direct provider arguments from the interface,
 but still depends on the explicit bridge `hFormulaToPpoly`.
+
+Scope note:
+the route is AC0-centric up to `NP_not_subset_PpolyFormula`; the last step to
+`NP_not_subset_Ppoly` is externalized by design.
 -/
 theorem P_ne_NP_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
@@ -1114,7 +1163,7 @@ theorem P_ne_NP_final_of_default_supportBounds
       (hNPfam := hNPfam)
       hFormulaToPpoly
 
-/-- Canonical (legacy) fixed-parameter wrapper for compatibility. -/
+/-- Canonical fixed-parameter compatibility wrapper. -/
 theorem P_ne_NP_final_legacy
   (hProvider : StructuredLocalityProviderPartial)
   (hNPfam : StrictGapNPFamily)

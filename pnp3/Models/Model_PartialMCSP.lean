@@ -329,6 +329,91 @@ def PartialMCSP_YES (p : GapPartialMCSPParams) (T : PartialTruthTable p.n) : Pro
 def PartialMCSP_NO (p : GapPartialMCSPParams) (T : PartialTruthTable p.n) : Prop :=
   ∀ (C : Circuit p.n), is_consistent C T → p.sNO ≤ C.size
 
+
+/--
+`assignmentIndex` on canonical vectors `vecOfNat` returns the original index.
+This is the key lookup lemma for table-based exhaustive verification.
+-/
+lemma assignmentIndex_vecOfNat_eq {n : Nat} (i : Fin (Partial.tableLen n)) :
+    assignmentIndex (Core.vecOfNat n i.val) = i := by
+  ext
+  have hi : i.val < 2 ^ n := by simpa [Partial.tableLen] using i.isLt
+  have h_eq : bitVecToNat (Core.vecOfNat n i.val) = i.val := bitVecToNat_vecOfNat hi
+  show (bitVecToNat (Core.vecOfNat n i.val)) % Partial.tableLen n = i.val
+  rw [h_eq, Nat.mod_eq_of_lt]
+  simpa [Partial.tableLen] using hi
+
+/--
+Boolean exhaustive consistency check:
+for every assignment index `i : Fin (2^n)`, if table value is fixed (`some b`),
+then the circuit must output `b` on the canonical input `vecOfNat n i`.
+
+This is the standard NP-style local check for certificate `C`, specialized to
+partial truth tables.
+-/
+def is_consistent_bool {n : Nat} (C : Circuit n) (T : PartialTruthTable n) : Bool :=
+  (List.finRange (Partial.tableLen n)).all (fun i =>
+    match T i with
+    | none => true
+    | some b => Circuit.eval C (Core.vecOfNat n i.val) == b)
+
+/--
+Soundness of the boolean exhaustive checker with respect to `is_consistent`.
+
+(Only the forward direction is needed to build a standard verifier artifact:
+if semantic consistency holds, exhaustive check returns `true`.)
+-/
+lemma is_consistent_bool_of_is_consistent {n : Nat} (C : Circuit n) (T : PartialTruthTable n) :
+    is_consistent C T → is_consistent_bool C T = true := by
+  intro hCons
+  unfold is_consistent_bool
+  refine List.all_eq_true.mpr ?_
+  intro i hi
+  cases hTi : T i with
+  | none => simp [hTi]
+  | some b =>
+      have hAt := hCons (Core.vecOfNat n i.val)
+      have hIdx : assignmentIndex (Core.vecOfNat n i.val) = i := assignmentIndex_vecOfNat_eq i
+      have hEval : Circuit.eval C (Core.vecOfNat n i.val) = b := by
+        have hAt' := hAt
+        simpa [is_consistent, hIdx, hTi] using hAt'
+      simp [hTi, hEval]
+
+/--
+Standard (semantic) verifier for fixed-parameter GapPartialMCSP.
+
+- input `x` encodes a partial table as `mask ++ values`;
+- certificate is a circuit `C` on `p.n` inputs;
+- checks:
+  1. size bound `C.size ≤ sYES`;
+  2. exhaustive agreement with all constrained table entries.
+
+Importantly, this verifier does **not** call `gapPartialMCSP_Language`.
+-/
+def gapPartialMCSP_standardVerifier
+    (p : GapPartialMCSPParams)
+    (x : Core.BitVec (partialInputLen p))
+    (C : Circuit p.n) : Bool :=
+  decide (C.size ≤ p.sYES) && is_consistent_bool C (decodePartial x)
+
+/--
+If a table is YES, then there exists a certificate accepted by
+`gapPartialMCSP_standardVerifier`.
+-/
+lemma gapPartialMCSP_standardVerifier_accepts_of_yes
+    (p : GapPartialMCSPParams)
+    (x : Core.BitVec (partialInputLen p))
+    (hYes : PartialMCSP_YES p (decodePartial x)) :
+    ∃ C : Circuit p.n, gapPartialMCSP_standardVerifier p x C = true := by
+  rcases hYes with ⟨C, hSize, hCons⟩
+  refine ⟨C, ?_⟩
+  unfold gapPartialMCSP_standardVerifier
+  have hSizeB : decide (C.size ≤ p.sYES) = true := by
+    exact decide_eq_true hSize
+  have hConsB : is_consistent_bool C (decodePartial x) = true :=
+    is_consistent_bool_of_is_consistent C (decodePartial x) hCons
+  simp [hSizeB, hConsB]
+
 /-!
   ### Рестрикции на уровне входа
 

@@ -283,23 +283,17 @@ noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m
         exact (Nat.add_lt_add_iff_left).1 this
       exact w ⟨t, ht_lt⟩
 
-/--
-Класс `NP` через полиномиальный верификатор: язык `L` принадлежит `NP`,
-если существует TM, которая за полиномиальное время проверяет сертификат
-полиномиальной длины, принимая ровно те пары `(x, w)`, где `w` подтверждает
-принадлежность `x` языку `L`.
+/-
+NOTE [NP is TM-faithful]
+
+Исторически в этом проекте было облегчённое определение `NP` через абстрактную
+функцию `verify` без требования вычислимости на машине Тьюринга. Это допускало
+некорректные «магические» верификаторы, которые могли напрямую обращаться к
+самому языку.
+
+Чтобы соответствовать стандартному математическому определению, фиксируем
+`NP` напрямую как `NP_TM`: существование полиномиального TM-верификатора.
 -/
-def NP (L : Language) : Prop :=
-  ∃ (c k : Nat)
-    (runTime : Nat → Nat)
-    (verify : ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool),
-    (∀ n,
-      runTime (n + certificateLength n k) ≤
-        (n + certificateLength n k) ^ c + c) ∧
-    (∀ n (x : Bitstring n),
-      L n x = true ↔
-        ∃ w : Bitstring (certificateLength n k),
-          verify n x w = true)
 
 /-!
 ### TM-мост для `NP`
@@ -332,23 +326,19 @@ def NP_TM (L : Language) : Prop :=
               (concatBitstring x w) = true)
 
 /--
+Класс `NP` в стандартном (TM-faithful) виде: через полиномиальный
+верификатор на машине Тьюринга.
+-/
+abbrev NP (L : Language) : Prop := NP_TM L
+
+/--
 TM-верификатор порождает абстрактный верификатор: просто берём
 `verify := TM.accepts` на склеенном входе, а временной бюджет
 копируем из `M.runTime`.
 -/
 theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
   intro hTM
-  rcases hTM with ⟨M, c, k, hRun, hCorrect⟩
-  refine ⟨c, k, M.runTime, ?verify, ?hRun', ?hCorrect'⟩
-  · intro n x w
-    exact Facts.PsubsetPpoly.TM.accepts
-      (M := M)
-      (n := n + certificateLength n k)
-      (concatBitstring x w)
-  · intro n
-    exact hRun n
-  · intro n x
-    simpa using hCorrect n x
+  simpa [NP] using hTM
 
 /-!
 ### Strict NP track (TM-faithful)

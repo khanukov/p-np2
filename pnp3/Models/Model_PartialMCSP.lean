@@ -612,103 +612,38 @@ theorem gapPartialMCSP_certLengthPolicy_holds : gapPartialMCSP_certLengthPolicy 
   intro n
   simp [gapPartialMCSP_certDegree, certificateLength]
 
-noncomputable def gapPartialMCSP_verify_with_degree (p : GapPartialMCSPParams) (k : Nat) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool := by
-  classical
-  intro n x w
-  exact gapPartialMCSP_Language p n x && w ⟨0, certificateLength_pos n k⟩
-
-noncomputable def gapPartialMCSP_verify (p : GapPartialMCSPParams) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n gapPartialMCSP_certDegree) → Bool :=
-  gapPartialMCSP_verify_with_degree p gapPartialMCSP_certDegree
-
-theorem gapPartialMCSP_in_NP_with_degree (p : GapPartialMCSPParams) (k : Nat) :
+theorem gapPartialMCSP_in_NP_of_TM
+    (p : GapPartialMCSPParams)
+    (hTM : NP_TM (gapPartialMCSP_Language p)) :
     NP (gapPartialMCSP_Language p) := by
-  classical
-  let c : Nat := max 2 k
-  refine ⟨c, k, (fun t => t ^ c + c), gapPartialMCSP_verify_with_degree p k, ?_, ?_⟩
-  · intro n
-    simp
-  · intro n x
-    constructor
-    · intro hLang
-      refine ⟨(fun _ => true), ?_⟩
-      simpa [gapPartialMCSP_verify_with_degree, hLang]
-    · intro hExists
-      rcases hExists with ⟨w, hVerify⟩
-      have hAnd :
-          gapPartialMCSP_Language p n x &&
-            w ⟨0, certificateLength_pos n k⟩ = true := by
-        simpa [gapPartialMCSP_verify_with_degree] using hVerify
-      cases hLangVal : gapPartialMCSP_Language p n x with
-      | false =>
-          simp [hLangVal] at hAnd
-      | true =>
-          simpa [hLangVal]
-
-theorem gapPartialMCSP_in_NP (p : GapPartialMCSPParams) :
-    NP (gapPartialMCSP_Language p) := by
-  simpa [gapPartialMCSP_verify, gapPartialMCSP_certDegree] using
-    gapPartialMCSP_in_NP_with_degree p gapPartialMCSP_certDegree
+  exact NP_of_NP_TM hTM
 
 theorem gapPartialMCSP_in_NP_of_certLengthPolicy
     (p : GapPartialMCSPParams)
-    (_hPolicy : gapPartialMCSP_certLengthPolicy) :
+    (_hPolicy : gapPartialMCSP_certLengthPolicy)
+    (hTM : NP_TM (gapPartialMCSP_Language p)) :
     NP (gapPartialMCSP_Language p) := by
-  exact gapPartialMCSP_in_NP p
+  exact gapPartialMCSP_in_NP_of_TM p hTM
 
 /-!
   ### NP-membership for asymptotic partial MCSP language
+
+  Здесь также используем строгое TM-определение: принадлежность NP должна
+  приходить через явный TM-верификатор.
 -/
 
-noncomputable def gapPartialMCSP_Asymptotic_verify_with_degree
-    (spec : GapPartialMCSPAsymptoticSpec) (k : Nat) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n k) → Bool := by
-  classical
-  intro n x w
-  exact gapPartialMCSP_AsymptoticLanguage spec n x && w ⟨0, certificateLength_pos n k⟩
-
-noncomputable def gapPartialMCSP_Asymptotic_verify
-    (spec : GapPartialMCSPAsymptoticSpec) :
-    ∀ n, Bitstring n → Bitstring (certificateLength n gapPartialMCSP_certDegree) → Bool :=
-  gapPartialMCSP_Asymptotic_verify_with_degree spec gapPartialMCSP_certDegree
-
-theorem gapPartialMCSP_Asymptotic_in_NP_with_degree
-    (spec : GapPartialMCSPAsymptoticSpec) (k : Nat) :
+theorem gapPartialMCSP_Asymptotic_in_NP_of_TM
+    (spec : GapPartialMCSPAsymptoticSpec)
+    (hTM : NP_TM (gapPartialMCSP_AsymptoticLanguage spec)) :
     NP (gapPartialMCSP_AsymptoticLanguage spec) := by
-  classical
-  let c : Nat := max 2 k
-  refine ⟨c, k, (fun t => t ^ c + c), gapPartialMCSP_Asymptotic_verify_with_degree spec k, ?_, ?_⟩
-  · intro n
-    simp
-  · intro n x
-    constructor
-    · intro hLang
-      refine ⟨(fun _ => true), ?_⟩
-      simpa [gapPartialMCSP_Asymptotic_verify_with_degree, hLang]
-    · intro hExists
-      rcases hExists with ⟨w, hVerify⟩
-      have hAnd :
-          gapPartialMCSP_AsymptoticLanguage spec n x &&
-            w ⟨0, certificateLength_pos n k⟩ = true := by
-        simpa [gapPartialMCSP_Asymptotic_verify_with_degree] using hVerify
-      cases hLangVal : gapPartialMCSP_AsymptoticLanguage spec n x with
-      | false =>
-          simp [hLangVal] at hAnd
-      | true =>
-          simpa [hLangVal]
-
-theorem gapPartialMCSP_Asymptotic_in_NP
-    (spec : GapPartialMCSPAsymptoticSpec) :
-    NP (gapPartialMCSP_AsymptoticLanguage spec) := by
-  simpa [gapPartialMCSP_Asymptotic_verify, gapPartialMCSP_certDegree] using
-    gapPartialMCSP_Asymptotic_in_NP_with_degree spec gapPartialMCSP_certDegree
+  exact NP_of_NP_TM hTM
 
 theorem gapPartialMCSP_Asymptotic_in_NP_of_certLengthPolicy
     (spec : GapPartialMCSPAsymptoticSpec)
-    (_hPolicy : gapPartialMCSP_certLengthPolicy) :
+    (_hPolicy : gapPartialMCSP_certLengthPolicy)
+    (hTM : NP_TM (gapPartialMCSP_AsymptoticLanguage spec)) :
     NP (gapPartialMCSP_AsymptoticLanguage spec) := by
-  exact gapPartialMCSP_Asymptotic_in_NP spec
+  exact gapPartialMCSP_Asymptotic_in_NP_of_TM spec hTM
 
 end Models
 end Pnp3

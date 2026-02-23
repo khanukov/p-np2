@@ -42,13 +42,14 @@ Equivalent contra statement used by OPS trigger (spelled out for audit).
 theorem locality_contra_np_to_formula
     (hProvider : StructuredLocalityProviderPartial)
     {p : GapPartialMCSPParams} {δ : Rat}
+    (hNP_TM : NP_TM (gapPartialMCSP_Language p))
     (hHyp : FormulaLowerBoundHypothesisPartial p δ) :
     ((∀ L : Language, NP L → PpolyFormula L) → False) := by
   intro hAll
   have hFormula :
       PpolyFormula (gapPartialMCSP_Language p) :=
     hAll _ (Models.gapPartialMCSP_in_NP_of_certLengthPolicy p
-      Models.gapPartialMCSP_certLengthPolicy_holds)
+      Models.gapPartialMCSP_certLengthPolicy_holds hNP_TM)
   exact locality_contradiction_from_provider_witness
     hProvider hHyp hFormula
 

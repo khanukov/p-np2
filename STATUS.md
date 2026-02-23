@@ -39,6 +39,18 @@ This file is the authoritative status snapshot.
 - This closes I-4 as an internal constructive engine for AC0-witness inputs
   (no external `henc_small` hypotheses in the active common route).
 
+## Complexity-interface integrity (updated)
+
+- Canonical NP is TM-faithful in code:
+  - `NP := NP_TM`
+  - `NP_strict := NP_TM`
+- Partial-MCSP NP API is TM-only and constructive-by-witness:
+  - `gapPartialMCSP_in_NP` / `gapPartialMCSP_Asymptotic_in_NP` are aliases to `NP_TM`
+  - explicit witness packages are required (`GapPartialMCSP_TMWitness`,
+    `GapPartialMCSP_Asymptotic_TMWitness`)
+- Legacy Lean-level verifier scaffolding for NP evidence is removed in
+  `Model_PartialMCSP` to prevent vacuous NP interpretations.
+
 ## Still external (non-axiomatic)
 
 1. Ppoly->AC0 bridge not closed (by design)

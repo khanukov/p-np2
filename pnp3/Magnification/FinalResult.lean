@@ -11,6 +11,11 @@ open Models
 open LowerBounds
 open ComplexityInterfaces
 
+/-- Global strict NP witness family for fixed-parameter partial-MCSP languages. -/
+def StrictGapNPFamily : Prop :=
+  ∀ p : GapPartialMCSPParams,
+    ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)
+
 /--
 Asymptotic entry hypothesis for the partial formula track:
 explicitly provides parameters and lower-bound hypotheses at all
@@ -72,14 +77,15 @@ This is the primary non-canonical entrypoint.
 -/
 theorem NP_not_subset_PpolyFormula_from_params
   (hProvider : StructuredLocalityProviderPartial)
-  (p : GapPartialMCSPParams) :
+  (p : GapPartialMCSPParams)
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
   exact
     NP_not_subset_PpolyFormula_from_partial_formulas
       (hProvider := hProvider)
       (p := p)
-      (δ := (1 : Rat)) hδ
+      (δ := (1 : Rat)) hδ hNPstrict
 
 /--
 Asymptotic wrapper: if the partial pipeline lower bound is available at all
@@ -87,13 +93,17 @@ sufficiently large sizes, we can instantiate the bridge at any such size.
 -/
 theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
   (hProvider : StructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPstrict : ComplexityInterfaces.NP_strict
+    (gapPartialMCSP_Language (hAsym.pAt hAsym.N0 (le_rfl)))) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   have hHyp : FormulaLowerBoundHypothesisPartial (hAsym.pAt hAsym.N0 (le_rfl)) (1 : Rat) :=
     hAsym.pAt_hyp hAsym.N0 (le_rfl)
   exact
     OPS_trigger_formulas_partial_of_provider_formula_separation
-      (hProvider := hProvider) (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
+      (hProvider := hProvider)
+      (hNPstrict := hNPstrict)
+      (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
 
 /--
 Asymptotic wrapper using constructive default multi-switching data.
@@ -102,12 +112,17 @@ arguments; locality/provider obligations are still handled separately.
 -/
 theorem NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
   (hProvider : StructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hNPstrict : ComplexityInterfaces.NP_strict
+    (gapPartialMCSP_Language
+      ((asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).pAt
+        (asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).N0 (le_rfl)))) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
       (hProvider := hProvider)
       (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+      (hNPstrict := hNPstrict)
 
 /--
 Bridge from a concrete asymptotic witness at one size to formula separation.
@@ -116,12 +131,14 @@ This is the direct trigger-facing entrypoint without any hardcoded canonical siz
 theorem NP_not_subset_PpolyFormula_of_witness_at
   (hProvider : StructuredLocalityProviderPartial)
   {n : Nat}
-  (hW : AsymptoticFormulaTrackWitnessAt n) :
+  (hW : AsymptoticFormulaTrackWitnessAt n)
+  (hNPstrict : ∀ p : GapPartialMCSPParams, p.n = n →
+    ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   obtain ⟨p, hpN, hHyp⟩ := hW
   exact
     OPS_trigger_formulas_partial_of_provider_formula_separation
-      (hProvider := hProvider) (p := p) (δ := (1 : Rat)) hHyp
+      (hProvider := hProvider) (hNPstrict := hNPstrict p hpN) (p := p) (δ := (1 : Rat)) hHyp
 
 /--
 Generic entrypoint: derive `NP ⊄ PpolyFormula` from one language-level collapse
@@ -129,12 +146,14 @@ witness (`L ∈ NP` together with `PpolyFormula L -> False`).
 -/
 theorem NP_not_subset_PpolyFormula_of_language
   (L : ComplexityInterfaces.Language)
-  (hNP : ComplexityInterfaces.NP L)
+  (hNPstrict : ComplexityInterfaces.NP_strict L)
   (hCollapse : ComplexityInterfaces.PpolyFormula L → False) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  refine ComplexityInterfaces.NP_not_subset_PpolyFormula_of_contra ?_
-  intro hAll
-  exact hCollapse (hAll L hNP)
+  have hStrict : ComplexityInterfaces.NP_strict_not_subset_PpolyFormula :=
+    ComplexityInterfaces.NP_strict_not_subset_PpolyFormula_of_contra (by
+      intro hAllStrict
+      exact hCollapse (hAllStrict L hNPstrict))
+  exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula hStrict
 
 /--
 Asymptotic-language entrypoint: this is the direct hook for
@@ -142,14 +161,14 @@ Asymptotic-language entrypoint: this is the direct hook for
 -/
 theorem NP_not_subset_PpolyFormula_of_asymptotic_language
   (spec : GapPartialMCSPAsymptoticSpec)
-  (hNP : ComplexityInterfaces.NP (gapPartialMCSP_AsymptoticLanguage spec))
+  (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec))
   (hCollapse :
     ComplexityInterfaces.PpolyFormula (gapPartialMCSP_AsymptoticLanguage spec) → False) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_of_language
       (L := gapPartialMCSP_AsymptoticLanguage spec)
-      hNP hCollapse
+      hNP_TM hCollapse
 
 /--
 TM-strict entrypoint: same as `NP_not_subset_PpolyFormula_of_asymptotic_language`,
@@ -161,11 +180,7 @@ theorem NP_not_subset_PpolyFormula_of_asymptotic_language_TM
   (hCollapse :
     ComplexityInterfaces.PpolyFormula (gapPartialMCSP_AsymptoticLanguage spec) → False) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_of_asymptotic_language
-      (spec := spec)
-      (hNP := ComplexityInterfaces.NP_of_NP_TM hNP_TM)
-      (hCollapse := hCollapse)
+  exact NP_not_subset_PpolyFormula_of_asymptotic_language spec hNP_TM hCollapse
 
 /--
 Transfer interface: to collapse `PpolyFormula` for the asymptotic language,
@@ -331,19 +346,20 @@ theorem collapse_asymptotic_language_of_transfer
 
 /--
 Asymptotic-language formula separation from:
-* native NP-membership (`gapPartialMCSP_Asymptotic_in_NP`),
+* strict TM NP-membership witness (`NP_TM` input),
 * provider, and
 * explicit transfer interface.
 -/
 theorem NP_not_subset_PpolyFormula_of_asymptotic_language_with_transfer
   (spec : GapPartialMCSPAsymptoticSpec)
   (hProvider : StructuredLocalityProviderPartial)
-  (hTransfer : AsymptoticLanguageCollapseTransfer spec) :
+  (hTransfer : AsymptoticLanguageCollapseTransfer spec)
+  (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec)) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_of_asymptotic_language
       (spec := spec)
-      (hNP := Models.gapPartialMCSP_Asymptotic_in_NP spec)
+      (hNP_TM := hNP_TM)
       (hCollapse := collapse_asymptotic_language_of_transfer spec hProvider hTransfer)
 
 /--
@@ -355,11 +371,8 @@ theorem NP_not_subset_PpolyFormula_of_asymptotic_language_with_transfer_TM
   (hTransfer : AsymptoticLanguageCollapseTransfer spec)
   (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec)) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_of_asymptotic_language_TM
-      (spec := spec)
-      (hNP_TM := hNP_TM)
-      (hCollapse := collapse_asymptotic_language_of_transfer spec hProvider hTransfer)
+  exact NP_not_subset_PpolyFormula_of_asymptotic_language_with_transfer
+    spec hProvider hTransfer hNP_TM
 
 /--
 Direct `P ≠ NP` bridge from an asymptotic-language collapse witness.
@@ -369,7 +382,7 @@ language-level final hook for the asymptotic path.
 -/
 theorem P_ne_NP_of_asymptotic_language
   (spec : GapPartialMCSPAsymptoticSpec)
-  (hNP : ComplexityInterfaces.NP (gapPartialMCSP_AsymptoticLanguage spec))
+  (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec))
   (hCollapse :
     ComplexityInterfaces.PpolyFormula (gapPartialMCSP_AsymptoticLanguage spec) → False)
   (hFormulaToPpoly :
@@ -378,7 +391,7 @@ theorem P_ne_NP_of_asymptotic_language
   ComplexityInterfaces.P_ne_NP := by
   have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
     NP_not_subset_PpolyFormula_of_asymptotic_language
-      (spec := spec) (hNP := hNP) (hCollapse := hCollapse)
+      (spec := spec) (hNP_TM := hNP_TM) (hCollapse := hCollapse)
   have hNPsep : ComplexityInterfaces.NP_not_subset_Ppoly :=
     hFormulaToPpoly hNPFormula
   exact
@@ -392,13 +405,14 @@ theorem P_ne_NP_of_asymptotic_language_with_transfer
   (spec : GapPartialMCSPAsymptoticSpec)
   (hProvider : StructuredLocalityProviderPartial)
   (hTransfer : AsymptoticLanguageCollapseTransfer spec)
+  (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec))
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
     NP_not_subset_PpolyFormula_of_asymptotic_language_with_transfer
-      spec hProvider hTransfer
+      spec hProvider hTransfer hNP_TM
   have hNPsep : ComplexityInterfaces.NP_not_subset_Ppoly :=
     hFormulaToPpoly hNPFormula
   exact
@@ -432,11 +446,12 @@ Default-transfer variant of asymptotic-language formula separation.
 theorem NP_not_subset_PpolyFormula_of_asymptotic_language_with_default_transfer
   (spec : GapPartialMCSPAsymptoticSpec)
   (hProvider : StructuredLocalityProviderPartial)
-  (hDefaultTransfer : hasDefaultAsymptoticLanguageCollapseTransfer spec) :
+  (hDefaultTransfer : hasDefaultAsymptoticLanguageCollapseTransfer spec)
+  (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec)) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_of_asymptotic_language_with_transfer
-      spec hProvider (defaultAsymptoticLanguageCollapseTransfer spec hDefaultTransfer)
+      spec hProvider (defaultAsymptoticLanguageCollapseTransfer spec hDefaultTransfer) hNP_TM
 
 /--
 Default-transfer variant of asymptotic-language `P ≠ NP` bridge.
@@ -445,6 +460,7 @@ theorem P_ne_NP_of_asymptotic_language_with_default_transfer
   (spec : GapPartialMCSPAsymptoticSpec)
   (hProvider : StructuredLocalityProviderPartial)
   (hDefaultTransfer : hasDefaultAsymptoticLanguageCollapseTransfer spec)
+  (hNP_TM : ComplexityInterfaces.NP_TM (gapPartialMCSP_AsymptoticLanguage spec))
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -453,6 +469,7 @@ theorem P_ne_NP_of_asymptotic_language_with_default_transfer
     P_ne_NP_of_asymptotic_language_with_transfer
       spec hProvider
       (defaultAsymptoticLanguageCollapseTransfer spec hDefaultTransfer)
+      hNP_TM
       hFormulaToPpoly
 
 /--
@@ -483,12 +500,14 @@ Asymptotic compatibility wrapper for the final `P ≠ NP` bridge.
 theorem P_ne_NP_final_of_asymptotic_hypothesis
   (hProvider : StructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
-    NP_not_subset_PpolyFormula_of_asymptotic_hypothesis hProvider hAsym
+    NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
+      hProvider hAsym (hNPfam (hAsym.pAt hAsym.N0 (le_rfl)))
   have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
     hFormulaToPpoly hNPFormula
   exact
@@ -507,9 +526,11 @@ theorem P_ne_NP_final_of_asymptotic_hypothesis
 
 /-- Canonical (legacy) fixed-parameter final statement. -/
 theorem NP_not_subset_PpolyFormula_final_legacy
-  (hProvider : StructuredLocalityProviderPartial) :
+  (hProvider : StructuredLocalityProviderPartial)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact NP_not_subset_PpolyFormula_from_params hProvider canonicalPartialParams
+  exact NP_not_subset_PpolyFormula_from_params
+    hProvider canonicalPartialParams (hNPfam canonicalPartialParams)
 
 /--
 Primary final statement (asymptotic entry): from the structured provider and
@@ -517,9 +538,11 @@ asymptotic formula-track hypothesis we derive `NP ⊄ PpolyFormula`.
 -/
 theorem NP_not_subset_PpolyFormula_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact NP_not_subset_PpolyFormula_of_asymptotic_hypothesis hProvider hAsym
+  exact NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
+    hProvider hAsym (hNPfam (hAsym.pAt hAsym.N0 (le_rfl)))
 
 /--
 Primary asymptotic final formula-separation statement.
@@ -529,19 +552,22 @@ final theorem interface.
 -/
 theorem NP_not_subset_PpolyFormula_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final_with_provider
       (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /-- Compatibility alias for callers already using the old default-provider name. -/
 theorem NP_not_subset_PpolyFormula_final_default_provider
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact NP_not_subset_PpolyFormula_final hDefaultProvider hAsym
+  exact NP_not_subset_PpolyFormula_final hDefaultProvider hAsym hNPfam
 
 /--
 Final formula-separation wrapper using constructive default multi-switching
@@ -550,61 +576,72 @@ asymptotic data plus the default locality provider.
 theorem NP_not_subset_PpolyFormula_final_of_default_multiSwitching
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
   (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
+  (hNPfam : StrictGapNPFamily) →
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  intro hNPfam
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider := hDefaultProvider)
       (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+      (hNPfam := hNPfam)
 
 /--
 Automatic provider wiring from the uniform half-size condition.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_halfSize
   (hHalf : FormulaHalfSizeBoundPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider := hasDefaultStructuredLocalityProviderPartial_of_halfSize hHalf)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Automatic provider wiring from the default half-size flag.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_default_halfSize
   (hHalf : hasDefaultFormulaHalfSizeBoundPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_halfSize hHalf)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Certificate-first provider wiring from an explicit formula-certificate package.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_formulaCertificate
   (hCert : FormulaCertificateProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate hCert)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Certificate-first provider wiring from the default formula-certificate flag.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
   (hCert : hasDefaultFormulaCertificateProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final_of_formulaCertificate
       (hCert := defaultFormulaCertificateProviderPartial hCert)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Certificate-first provider wiring from explicit restriction-level certificate
@@ -612,52 +649,60 @@ data.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_restrictionData
   (D : FormulaRestrictionCertificateDataPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_restrictionData D)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Certificate-first provider wiring from default restriction-level certificate data.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_default_restrictionData
   (hD : hasDefaultFormulaRestrictionCertificateDataPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_restrictionData hD)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Certificate-first provider wiring from support-based restriction bounds.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_supportBounds
   (hB : FormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_supportBounds hB)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Certificate-first provider wiring from default support-bounds flag.
 -/
 theorem NP_not_subset_PpolyFormula_final_of_default_supportBounds
   (hB : hasDefaultFormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis) :
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds hB)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
 
 /--
 Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
@@ -667,12 +712,13 @@ lightweight non-uniform separation.
 theorem P_ne_NP_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
-    NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym
+    NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym hNPfam
   have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
     hFormulaToPpoly hNPFormula
   exact
@@ -688,6 +734,7 @@ but still depends on the explicit bridge `hFormulaToPpoly`.
 theorem P_ne_NP_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -696,17 +743,19 @@ theorem P_ne_NP_final
     P_ne_NP_final_with_provider
       (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /-- Compatibility alias for callers already using the old default-provider name. -/
 theorem P_ne_NP_final_default_provider
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
-  exact P_ne_NP_final hDefaultProvider hAsym hFormulaToPpoly
+  exact P_ne_NP_final hDefaultProvider hAsym hNPfam hFormulaToPpoly
 
 /--
 `P ≠ NP` wrapper through the default multi-switching asymptotic track.
@@ -715,6 +764,7 @@ This remains conditional on the explicit formula-to-P/poly bridge.
 theorem P_ne_NP_final_of_default_multiSwitching
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
   (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -723,6 +773,7 @@ theorem P_ne_NP_final_of_default_multiSwitching
     P_ne_NP_final
       (hDefaultProvider := hDefaultProvider)
       (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+      (hNPfam := hNPfam)
       (hFormulaToPpoly := hFormulaToPpoly)
 
 /--
@@ -731,6 +782,7 @@ Automatic final `P ≠ NP` wiring from the uniform half-size condition.
 theorem P_ne_NP_final_of_halfSize
   (hHalf : FormulaHalfSizeBoundPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -739,6 +791,7 @@ theorem P_ne_NP_final_of_halfSize
     P_ne_NP_final
       (hDefaultProvider := hasDefaultStructuredLocalityProviderPartial_of_halfSize hHalf)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -747,6 +800,7 @@ Automatic final `P ≠ NP` wiring from the default half-size flag.
 theorem P_ne_NP_final_of_default_halfSize
   (hHalf : hasDefaultFormulaHalfSizeBoundPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -756,6 +810,7 @@ theorem P_ne_NP_final_of_default_halfSize
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_halfSize hHalf)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -765,6 +820,7 @@ package.
 theorem P_ne_NP_final_of_formulaCertificate
   (hCert : FormulaCertificateProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -774,6 +830,7 @@ theorem P_ne_NP_final_of_formulaCertificate
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate hCert)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -783,6 +840,7 @@ formula-certificate flag.
 theorem P_ne_NP_final_of_default_formulaCertificate
   (hCert : hasDefaultFormulaCertificateProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -791,6 +849,7 @@ theorem P_ne_NP_final_of_default_formulaCertificate
     P_ne_NP_final_of_formulaCertificate
       (hCert := defaultFormulaCertificateProviderPartial hCert)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -800,6 +859,7 @@ certificate data.
 theorem P_ne_NP_final_of_restrictionData
   (D : FormulaRestrictionCertificateDataPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -809,6 +869,7 @@ theorem P_ne_NP_final_of_restrictionData
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_restrictionData D)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -818,6 +879,7 @@ certificate data.
 theorem P_ne_NP_final_of_default_restrictionData
   (hD : hasDefaultFormulaRestrictionCertificateDataPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -827,6 +889,7 @@ theorem P_ne_NP_final_of_default_restrictionData
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_restrictionData hD)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -835,6 +898,7 @@ Certificate-first final `P ≠ NP` wiring from support-based restriction bounds.
 theorem P_ne_NP_final_of_supportBounds
   (hB : FormulaSupportRestrictionBoundsPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -844,6 +908,7 @@ theorem P_ne_NP_final_of_supportBounds
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_supportBounds hB)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /--
@@ -852,6 +917,7 @@ Certificate-first final `P ≠ NP` wiring from default support-bounds flag.
 theorem P_ne_NP_final_of_default_supportBounds
   (hB : hasDefaultFormulaSupportRestrictionBoundsPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
@@ -861,17 +927,19 @@ theorem P_ne_NP_final_of_default_supportBounds
       (hDefaultProvider :=
         hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds hB)
       (hAsym := hAsym)
+      (hNPfam := hNPfam)
       hFormulaToPpoly
 
 /-- Canonical (legacy) fixed-parameter wrapper for compatibility. -/
 theorem P_ne_NP_final_legacy
   (hProvider : StructuredLocalityProviderPartial)
+  (hNPfam : StrictGapNPFamily)
   (hFormulaToPpoly :
     ComplexityInterfaces.NP_not_subset_PpolyFormula →
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
-    NP_not_subset_PpolyFormula_final_legacy hProvider
+    NP_not_subset_PpolyFormula_final_legacy hProvider hNPfam
   have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
     hFormulaToPpoly hNPFormula
   exact

@@ -17,6 +17,14 @@ pipeline in Lean 4.
 - I-4 is constructively closed for explicit AC0/CNF inputs (Path A) via
   `pnp3/Magnification/AC0LocalityBridge.lean`.
 
+## Complexity interface note (TM-faithful NP)
+
+- Canonical `NP` in this repo is TM-based (`NP := NP_TM`, `NP_strict := NP_TM`).
+- Partial-MCSP NP side is intentionally TM-only: no Lean-level verifier stubs are
+  used as NP evidence.
+- Constructive obligations are exposed through explicit witness packages
+  (`GapPartialMCSP_TMWitness`, `GapPartialMCSP_Asymptotic_TMWitness`).
+
 ## Still external
 
 1. General `PpolyFormula -> AC0` bridge (intentionally not claimed).

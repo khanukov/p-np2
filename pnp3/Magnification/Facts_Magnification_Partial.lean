@@ -59,30 +59,32 @@ def StructuredLocalityProviderPartial : Prop :=
 theorem OPS_trigger_general_contra_structured_with_provider_partial
   (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams} {δ : Rat} :
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
   FormulaLowerBoundHypothesisPartial p δ →
     ((∀ L : ComplexityInterfaces.Language,
-      ComplexityInterfaces.NP L → ComplexityInterfaces.PpolyFormula L) → False) := by
-  intro hHyp hAll
+      ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyFormula L) → False) := by
+  intro hNPstrict hHyp hAll
   have hPpolyFormula :
       ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
-    hAll _ (Models.gapPartialMCSP_in_NP_of_certLengthPolicy p
-      Models.gapPartialMCSP_certLengthPolicy_holds)
+    hAll _ hNPstrict
   obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
   exact noSmallLocalCircuitSolver_partial_v2 loc
 
 theorem OPS_trigger_formulas_contra_structured_with_provider_partial
   (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams} {δ : Rat} :
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
   FormulaLowerBoundHypothesisPartial p δ →
     ((∀ L : ComplexityInterfaces.Language,
-      ComplexityInterfaces.NP L → ComplexityInterfaces.PpolyFormula L) → False) := by
-  intro hHyp hAll
+      ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyFormula L) → False) := by
+  intro hNPstrict hHyp hAll
   exact OPS_trigger_general_contra_structured_with_provider_partial
-    (hProvider := hProvider) (p := p) (δ := δ) hHyp hAll
+    (hProvider := hProvider) (hNPstrict := hNPstrict) (p := p) (δ := δ) hHyp hAll
 
 theorem OPS_trigger_formulas_partial_of_provider
   (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams}
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p))
   (hGapEmbed :
     ComplexityInterfaces.PpolyReal (gapPartialMCSP_Language p) →
       ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
@@ -92,42 +94,47 @@ theorem OPS_trigger_formulas_partial_of_provider
   intro hHyp
   have hContra :
       (∀ L : ComplexityInterfaces.Language,
-        ComplexityInterfaces.NP L → ComplexityInterfaces.PpolyReal L) → False := by
+        ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyReal L) → False := by
     intro hAll
     have hPpoly : ComplexityInterfaces.PpolyReal (gapPartialMCSP_Language p) :=
-      hAll _ (Models.gapPartialMCSP_in_NP_of_certLengthPolicy p
-        Models.gapPartialMCSP_certLengthPolicy_holds)
+      hAll _ hNPstrict
     have hPpolyFormula :
         ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
       hGapEmbed hPpoly
     obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
     exact noSmallLocalCircuitSolver_partial_v2 loc
-  exact ComplexityInterfaces.NP_not_subset_PpolyReal_of_contra hContra
+  exact ComplexityInterfaces.NP_not_subset_PpolyReal_of_NP_strict_not_subset_PpolyReal
+    (ComplexityInterfaces.NP_strict_not_subset_PpolyReal_of_contra hContra)
 
 theorem OPS_trigger_formulas_partial_of_provider_global_embed
   (hProvider : StructuredLocalityProviderPartial)
-  (hEmbed : ∀ L : ComplexityInterfaces.Language,
-    ComplexityInterfaces.PpolyReal L → ComplexityInterfaces.PpolyFormula L)
   {p : GapPartialMCSPParams} {δ : Rat} :
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
+  (hEmbed : ∀ L : ComplexityInterfaces.Language,
+    ComplexityInterfaces.PpolyReal L → ComplexityInterfaces.PpolyFormula L) →
   FormulaLowerBoundHypothesisPartial p δ →
     NP_not_subset_PpolyReal := by
+  intro hNPstrict hEmbed
   exact OPS_trigger_formulas_partial_of_provider
     (hProvider := hProvider)
+    (hNPstrict := hNPstrict)
     (p := p)
     (hGapEmbed := hEmbed (gapPartialMCSP_Language p))
 
 theorem OPS_trigger_formulas_partial_of_provider_formula_separation
   (hProvider : StructuredLocalityProviderPartial)
   {p : GapPartialMCSPParams} {δ : Rat} :
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
   FormulaLowerBoundHypothesisPartial p δ →
     ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  intro hHyp
+  intro hNPstrict hHyp
   have hContraStructured :
       (∀ L : ComplexityInterfaces.Language,
-        ComplexityInterfaces.NP L → ComplexityInterfaces.PpolyFormula L) → False :=
+        ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyFormula L) → False :=
     OPS_trigger_formulas_contra_structured_with_provider_partial
-      (hProvider := hProvider) (p := p) (δ := δ) hHyp
-  exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_contra hContraStructured
+      (hProvider := hProvider) (hNPstrict := hNPstrict) (p := p) (δ := δ) hHyp
+  exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula
+    (ComplexityInterfaces.NP_strict_not_subset_PpolyFormula_of_contra hContraStructured)
 
 /--
 TM-strict counterpart of the formula-track trigger.

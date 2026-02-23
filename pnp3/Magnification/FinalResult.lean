@@ -646,6 +646,26 @@ theorem NP_not_subset_AC0_at_param_with_provider
       hHyp
 
 /--
+Fixed-parameter AC0 theorem with explicit TM witness for NP-membership.
+
+This removes the separate `hNPstrict` argument by deriving it from
+`GapPartialMCSP_TMWitness`.
+-/
+theorem NP_not_subset_AC0_at_param_with_provider_of_tmWitness
+  (hProvider : StructuredLocalityProviderPartial)
+  (p : GapPartialMCSPParams)
+  (hW : GapPartialMCSP_TMWitness p)
+  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
+    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_at_param_with_provider
+      (hProvider := hProvider)
+      (p := p)
+      (hNPstrict := gapPartialMCSP_in_NP_TM_of_witness p hW)
+      (hMSp := hMSp)
+
+/--
 Engine-based fixed-parameter AC0 theorem.
 
 Same statement as `NP_not_subset_AC0_at_param_with_provider`, but consumes an
@@ -666,6 +686,23 @@ theorem NP_not_subset_AC0_at_param_of_engine
       (hMSp := hMSp)
 
 /--
+Engine-based fixed-parameter AC0 theorem from an explicit TM witness.
+-/
+theorem NP_not_subset_AC0_at_param_of_engine_of_tmWitness
+  (E : ConstructiveLocalityEnginePartial)
+  (p : GapPartialMCSPParams)
+  (hW : GapPartialMCSP_TMWitness p)
+  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
+    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_at_param_of_engine
+      (E := E)
+      (p := p)
+      (hNPstrict := gapPartialMCSP_in_NP_TM_of_witness p hW)
+      (hMSp := hMSp)
+
+/--
 AC0-target final theorem with an explicit constructive locality engine.
 
 This removes default-provider existential packaging from the theorem input by
@@ -681,6 +718,37 @@ theorem NP_not_subset_AC0_final_of_engine
       (hProvider := structuredLocalityProviderPartial_of_engine E)
       (hMS := hMS)
       (hNPfam := hNPfam)
+
+/--
+AC0-target asymptotic final theorem from explicit TM witnesses and provider.
+
+This removes `StrictGapNPFamily` from inputs via
+`strictGapNPFamily_of_tmWitnesses`.
+-/
+theorem NP_not_subset_AC0_final_with_provider_of_tmWitnesses
+  (hProvider : StructuredLocalityProviderPartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_final_with_provider
+      (hProvider := hProvider)
+      (hMS := hMS)
+      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
+
+/--
+AC0-target asymptotic final theorem from explicit TM witnesses and engine.
+-/
+theorem NP_not_subset_AC0_final_of_engine_of_tmWitnesses
+  (E : ConstructiveLocalityEnginePartial)
+  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_AC0_final_of_engine
+      (E := E)
+      (hMS := hMS)
+      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
 
 /--
 AC0-target final theorem.

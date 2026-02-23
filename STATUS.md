@@ -15,8 +15,12 @@ This file is the authoritative status snapshot.
   - `NP_not_subset_AC0_final`
   - `NP_not_subset_AC0_final_with_provider`
   - `NP_not_subset_AC0_final_of_engine`
+  - `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`
+  - `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
   - `NP_not_subset_AC0_at_param_with_provider`
   - `NP_not_subset_AC0_at_param_of_engine`
+  - `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`
+  - `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
   - `strictGapNPFamily_of_tmWitnesses`
 
 ## Verified code hygiene

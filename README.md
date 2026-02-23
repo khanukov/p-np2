@@ -13,9 +13,15 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
   - `NP_not_subset_AC0_final`
   - `NP_not_subset_AC0_final_with_provider`
   - `NP_not_subset_AC0_final_of_engine`
+  - TM-witness variants:
+    `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`,
+    `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
   - fixed-parameter strict hooks:
     `NP_not_subset_AC0_at_param_with_provider`,
     `NP_not_subset_AC0_at_param_of_engine`
+  - fixed-parameter TM-witness variants:
+    `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`,
+    `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
 - Localized bridge `PpolyReal -> PpolyFormula` for `gapPartialMCSP_Language p` is internalized via:
   - `trivialFormulaizer`
   - `gapPartialMCSP_realization_trivial`
@@ -52,6 +58,19 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
 - No claim is made about a global `PpolyFormula -> AC0` conversion.
 - `P != NP` wrappers remain conditional on the explicit bridge
   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+
+## Recommended Theorem Ladder
+
+Most constructive practical route:
+
+1. Provide explicit `GapPartialMCSP_TMWitness` data (fixed-`p` or family).
+2. Use explicit `ConstructiveLocalityEnginePartial` (avoid default `Nonempty` wrappers).
+3. Use fixed-parameter theorem
+   `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
+   when you work at one concrete `p`.
+4. Use asymptotic theorem
+   `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
+   when you have full witness family data.
 
 ## What Is Still Needed For An Unconditional Final Claim
 

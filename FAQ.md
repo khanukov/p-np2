@@ -8,9 +8,14 @@
 - `NP_not_subset_AC0_final`
 - `NP_not_subset_AC0_final_with_provider`
 - `NP_not_subset_AC0_final_of_engine`
+- `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`
+- `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
 - fixed-parameter strict hooks:
   `NP_not_subset_AC0_at_param_with_provider`,
   `NP_not_subset_AC0_at_param_of_engine`
+  and TM-witness variants:
+  `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`,
+  `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
 
 ## Q: Are there active axioms or sorries in `pnp3/`?
 
@@ -79,6 +84,15 @@ formalization is scoped to AC0-target lower-bound routes.
 3. `AXIOMS_FINAL_LIST.md`
 4. `pnp3/Magnification/FinalResult.lean`
 5. `pnp3/Tests/AxiomsAudit.lean`
+
+## Q: What is the most constructive entrypoint right now?
+
+**A:** Prefer explicit TM-witness + explicit engine routes:
+
+1. Fixed parameter `p`:
+   `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`.
+2. Asymptotic/family route:
+   `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`.
 
 ## Q: Minimal reproducibility commands?
 

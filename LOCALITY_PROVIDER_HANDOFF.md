@@ -1,6 +1,6 @@
 # Handoff: Structured Locality Provider (current)
 
-Updated: 2026-02-22
+Updated: 2026-02-23
 
 ## Current target
 
@@ -24,7 +24,7 @@ Active proof surface uses `StructuredLocalityProviderPartial` with
 - Real certificate providers for target formula-extracted solver families
   (`FormulaCertificateProviderPartial` instances/default availability).
 
-This is the practical remaining I-2/I-4 handoff boundary.
+This is the practical remaining I-2 boundary (I-4 AC0 core is closed).
 
 ## Non-goal clarification
 

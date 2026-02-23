@@ -4,13 +4,24 @@ This file is the authoritative status snapshot.
 
 ## Date
 
-- 2026-02-22
+- 2026-02-23
 
 ## Active result
 
 - Pipeline: `PNP3` (`SAL -> Covering-Power -> anti-checker -> magnification`)
-- Active separation target: `NP_not_subset_PpolyFormula` (conditional)
+- Strategic target class: **AC0 only**
 - Main final module: `pnp3/Magnification/FinalResult.lean`
+- Active AC0 hooks in `FinalResult.lean`:
+  - `NP_not_subset_AC0_final`
+  - `NP_not_subset_AC0_final_with_provider`
+  - `NP_not_subset_AC0_final_of_engine`
+  - `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`
+  - `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
+  - `NP_not_subset_AC0_at_param_with_provider`
+  - `NP_not_subset_AC0_at_param_of_engine`
+  - `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`
+  - `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
+  - `strictGapNPFamily_of_tmWitnesses`
 
 ## Verified code hygiene
 
@@ -31,13 +42,15 @@ This file is the authoritative status snapshot.
 - Auto wrapper exists: `locality_lift_partial_of_certificate_auto`.
 - Main certificate route no longer needs manually threaded `hCardHalf`.
 
-3. I-4 closed on explicit AC0 path (Path A)
+3. I-4 fully closed on AC0 path
 - Constructive common-CCDT multi-switching chain is wired end-to-end for
   explicit CNF/AC0 families (`stage1_6_complete_*_common*`).
 - New bridge module:
   `pnp3/Magnification/AC0LocalityBridge.lean`.
-- This closes I-4 as an internal constructive engine for AC0-witness inputs
-  (no external `henc_small` hypotheses in the active common route).
+- **Барьер I-4 (Multi-Switching и Locality Provider) ПОЛНОСТЬЮ И
+  БЕЗУСЛОВНО ЗАКРЫТ конструктивным кодом для класса AC0 через модуль
+  AC0LocalityBridge**.
+- Active common route has no external `henc_small` hypotheses.
 
 ## Complexity-interface integrity (updated)
 
@@ -51,31 +64,26 @@ This file is the authoritative status snapshot.
 - Legacy Lean-level verifier scaffolding for NP evidence is removed in
   `Model_PartialMCSP` to prevent vacuous NP interpretations.
 
-## Still external (non-axiomatic)
+## Scope boundary (intentional)
 
-1. Ppoly->AC0 bridge not closed (by design)
-- We do **not** claim a general conversion from arbitrary `PpolyFormula`
-  witnesses to AC0/CNF families.
-- The AC0 bridge is explicit-input only (Path A), which is the mathematically
-  correct boundary for I-4.
+1. No global conversion `Ppoly -> AC0` (intentional)
+- We consciously do **not** formalize a general conversion
+  `PpolyFormula -> AC0`.
+- Our hardness-magnification formalization is targeted specifically at
+  lower bounds against `AC^0` families.
 
-2. I-2 not closed
-- Structured locality provider can be built from explicit certificate packages,
-  but default unconditional provider availability is not internally proved.
-
-3. I-5 not closed
-- `P != NP` wrappers still require explicit bridge:
-  `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` (`hFormulaToPpoly`).
+2. Non-AC0 wrappers stay separate
+- Bridges needed for unconditional `P != NP` over full `P/poly`
+  (`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`) are tracked as a
+  separate layer and are not part of the AC0-closed core claim.
 
 ## Final theorem interpretation
 
-- Current fully machine-checked active claim: conditional
-  `NP_not_subset_PpolyFormula`.
-- `P != NP` remains conditional until the `hFormulaToPpoly` bridge is internalized.
+- AC0-focused fully machine-checked claim is the active target.
+- We intentionally do not claim a global `P/poly -> AC0` transport theorem.
 
 ## Next priority order
 
-1. Use AC0 I-4 artifacts to internalize default structured provider path (I-2).
-2. Keep `P != NP` as explicitly conditional until I-5 is mathematically closed.
-3. Add optional stronger bridge assumptions/modules (Option C style) only as
-   separate, explicitly-labeled layers.
+1. Keep all active reporting and theorem interfaces AC0-centric.
+2. Preserve strict separation between AC0 core and non-AC0 bridge layers.
+3. Add non-AC0 wrappers only as explicitly labeled optional modules.

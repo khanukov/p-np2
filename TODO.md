@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-02-22
+Updated: 2026-02-23
 
 This roadmap reflects the **actual** current code state.
 
@@ -8,7 +8,14 @@ This roadmap reflects the **actual** current code state.
 
 - Active `axiom` in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- Active final target: conditional `NP_not_subset_PpolyFormula`
+- Active strategic target: AC0-focused separation route
+- AC0 final hooks available:
+  - `NP_not_subset_AC0_final`
+  - `NP_not_subset_AC0_final_with_provider`
+  - `NP_not_subset_AC0_final_of_engine`
+  - `NP_not_subset_AC0_at_param_with_provider`
+  - `NP_not_subset_AC0_at_param_of_engine`
+- TM-witness bridge available: `strictGapNPFamily_of_tmWitnesses`
 - `P != NP` wrappers remain conditional on `hFormulaToPpoly`
 
 ## Completed

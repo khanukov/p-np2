@@ -1,7 +1,7 @@
 # Complete Axiom Inventory - PNP3
 ## Official list for current `pnp3/` tree
 
-**Revision Date**: 2026-02-22
+**Revision Date**: 2026-02-23
 **Total Active Axioms (`pnp3/`)**: 0
 
 ## Executive summary
@@ -17,8 +17,8 @@ Remaining dependencies are explicit hypotheses/providers, not axioms.
 
 ## External inputs still required (non-axiomatic)
 
-1. Formula-certificate provider availability for default constructive locality
-   provider wiring (`FormulaCertificateProviderPartial`).
+1. Default-provider packaging for wrapper-level entrypoints
+   (`hasDefaultStructuredLocalityProviderPartial`) remains explicit.
 2. Formula-to-`P/poly` bridge used by `P != NP` wrappers:
    `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
 3. Optional broader non-AC0 bridges, if desired, as separate explicit layers.
@@ -31,3 +31,8 @@ This document tracks only global axioms. It does not claim unconditional
 I-4 note:
 - Constructive I-4 core is closed on explicit AC0/CNF inputs (Path A);
   this is not a claim about a general `PpolyFormula -> AC0` conversion.
+
+AC0 final-hook note:
+- `pnp3/Magnification/FinalResult.lean` includes AC0-focused final hooks
+  (`NP_not_subset_AC0_final*`) and fixed-parameter strict hooks
+  (`NP_not_subset_AC0_at_param*`).

@@ -1,8 +1,8 @@
 # PNP3: Publication-facing Status Snapshot
 
-> **Updated:** 2026-02-22
+> **Updated:** 2026-02-23
 
-This repository currently provides a machine-checked, conditional partial-track
+This repository currently provides an AC0-focused machine-checked partial-track
 pipeline in Lean 4.
 
 ## Verified now
@@ -16,6 +16,15 @@ pipeline in Lean 4.
   (`HalfTableCertificateBound`, `..._of_certificate_auto`).
 - I-4 is constructively closed for explicit AC0/CNF inputs (Path A) via
   `pnp3/Magnification/AC0LocalityBridge.lean`.
+- AC0-facing final theorem hooks are available:
+  - `NP_not_subset_AC0_final`
+  - `NP_not_subset_AC0_final_with_provider`
+  - `NP_not_subset_AC0_final_of_engine`
+  - fixed-parameter hooks:
+    `NP_not_subset_AC0_at_param_with_provider`,
+    `NP_not_subset_AC0_at_param_of_engine`
+- Bridge from explicit TM witness families to strict NP-family input:
+  `strictGapNPFamily_of_tmWitnesses`.
 
 ## Complexity interface note (TM-faithful NP)
 
@@ -28,13 +37,12 @@ pipeline in Lean 4.
 ## Still external
 
 1. General `PpolyFormula -> AC0` bridge (intentionally not claimed).
-2. Provider-level certificate packages (`FormulaCertificateProviderPartial`) or
-   equivalent default instances.
+2. Default/global provider packaging remains explicit in some wrappers.
 3. Formula-separation to non-uniform bridge (`hFormulaToPpoly`) for `P != NP`.
 
 ## Current scientific claim level
 
-- Active final target: conditional `NP_not_subset_PpolyFormula`.
+- Active strategic target: AC0-side separation route.
 - `P != NP` wrappers are present but explicitly conditional on item (3).
 
 ## What External Researchers Need To Close

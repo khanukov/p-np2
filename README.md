@@ -1,6 +1,7 @@
 # P!=NP formalization repository
 
 > **Status (2026-02-23):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, with AC0-focused machine-checked separation hooks.
+> Final `P != NP` wrappers in `FinalResult.lean` are currently conditional on an explicit non-AC0 bridge.
 
 This repository contains the Lean 4 formalization around the PNP3 pipeline:
 
@@ -22,6 +23,10 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
   - fixed-parameter TM-witness variants:
     `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`,
     `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
+- Naming note:
+  theorem names with `...PpolyFormula_final...` in `FinalResult.lean` are
+  AC0-route formula-separation wrappers, not standalone global non-uniform
+  separation claims.
 - Localized bridge `PpolyReal -> PpolyFormula` for `gapPartialMCSP_Language p` is internalized via:
   - `trivialFormulaizer`
   - `gapPartialMCSP_realization_trivial`
@@ -58,6 +63,8 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
 - No claim is made about a global `PpolyFormula -> AC0` conversion.
 - `P != NP` wrappers remain conditional on the explicit bridge
   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+- A single bundled interface for those assumptions is available as
+  `ConditionalPneNpFinalContract` in `pnp3/Magnification/FinalResult.lean`.
 
 ## Recommended Theorem Ladder
 
@@ -109,7 +116,6 @@ replication, and broad community acceptance.
 - `TODO.md` (current execution order)
 - `AXIOMS_FINAL_LIST.md` (external input inventory)
 - `FAQ.md`
-- `BARRIER_AUDIT.md` (explicit barrier-status matrix)
 
 ## Build
 

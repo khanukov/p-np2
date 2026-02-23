@@ -19,8 +19,8 @@ previous revision of this file.
    the namespaced modules, so a normal build suffices:
 
    ```bash
-   cd /workspace/p-np2
-   lake build PnP3
+   cd /root/p-np2
+   lake build
    ```
 
    The build now succeeds; see the lint warnings emitted by the unrelated

@@ -16,9 +16,9 @@
    `GapPartialMCSPPpolyRealToPpolyFormulaGoal p` as an active dependency.
 2. Locality-lift docs now reflect certificate auto-route
    (`HalfTableCertificateBound` / `..._of_certificate_auto`).
-3. I-4 status is now explicit and unconditional in AC0 scope:
+3. I-4 status is now explicit as constructively closed in AC0 scope:
    - **Барьер I-4 (Multi-Switching и Locality Provider) ПОЛНОСТЬЮ И
-     БЕЗУСЛОВНО ЗАКРЫТ конструктивным кодом для класса AC0 через модуль
+     КОНСТРУКТИВНО ЗАКРЫТ кодом для класса AC0 через модуль
      AC0LocalityBridge**.
 4. Documentation now explicitly states the intentional scope boundary:
    - no global conversion `Ppoly -> AC0`,

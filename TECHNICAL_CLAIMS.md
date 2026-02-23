@@ -33,6 +33,14 @@ into anti-checker/magnification interfaces.
 - No claim that `P != NP` is unconditional in the current repository state.
 - No claim of a global `PpolyFormula -> AC0` conversion.
 
+## Naming interpretation
+
+- In `pnp3/Magnification/FinalResult.lean`, theorem names containing
+  `..._PpolyFormula_final...` should be read as AC0-route formula-separation
+  wrappers, not as standalone global non-uniform separation claims.
+- The preferred public-facing endpoints for this scope are the explicit AC0
+  names (`NP_not_subset_AC0_*`).
+
 ## Positioning
 
 The project is a formalized infrastructure and conditional pipeline with clear,

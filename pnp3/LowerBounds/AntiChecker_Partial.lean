@@ -1062,6 +1062,103 @@ theorem noSmallAC0Solver_partial_of_default_multiSwitching
   exact noSmallAC0Solver_partial_of_multiSwitching
     (solver := solver) hMS.witness
 
+/--
+Constructive large-`Y` witness on AC0 input length (`ac0.n`).
+
+This theorem builds the witness package directly from the SAL scenario and
+capacity-gap estimates, without extracting data from `False.elim`.
+-/
+theorem antiChecker_exists_large_Y_partial_core
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) :
+    ∃ (F : Family solver.params.ac0.n)
+      (Y : Finset (Core.BitVec solver.params.ac0.n → Bool)),
+      ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F,
+        let sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2
+        Y ⊆ familyFinset (sc := sc) ∧ scenarioCapacity (sc := sc) < Y.card := by
+  classical
+  let F : Family solver.params.ac0.n := Counting.allFunctionsFamily solver.params.ac0.n
+  let pack := scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hAll)
+  let sc := pack.2
+  refine ⟨F, familyFinset sc, hAll, ?_⟩
+  constructor
+  · intro f hf
+    exact hf
+  ·
+    let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong solver.params.ac0)
+    have hsummary :=
+      scenarioFromAC0_stepAB_summary_strong
+        (params := solver.params.ac0) (F := F) (hF := hAll)
+    dsimp [pack, sc, bound] at hsummary
+    rcases hsummary with ⟨hfamily, hk, hdict, _hε0, _hε1, hεInv, hcap_le⟩
+    set N := Nat.pow 2 solver.params.ac0.n
+    set t := N / (solver.params.ac0.n + 2)
+    have hU :
+        Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k ≤ Nat.pow 2 t := by
+      have hmono_left :
+          Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k ≤
+            Counting.unionBound bound sc.k :=
+        Counting.unionBound_mono_left (k := sc.k) hdict
+      have hmono_right :
+          Counting.unionBound bound sc.k ≤ Counting.unionBound bound bound :=
+        Counting.unionBound_mono_right (D := bound) hk
+      have hchain := le_trans hmono_left hmono_right
+      simpa [t] using (le_trans hchain solver.params.union_small)
+    have hε0' : (0 : Rat) ≤ (1 : Rat) / (solver.params.ac0.n + 2) := by
+      have hden : (0 : Rat) ≤ solver.params.ac0.n + 2 := by nlinarith
+      exact one_div_nonneg.mpr hden
+    have hε1' : (1 : Rat) / (solver.params.ac0.n + 2) ≤ (1 : Rat) / 2 := by
+      have hden : (2 : Rat) ≤ solver.params.ac0.n + 2 := by nlinarith
+      have hpos : (0 : Rat) < (2 : Rat) := by nlinarith
+      exact one_div_le_one_div_of_le hpos hden
+    have hcap_le' :
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          sc.atlas.epsilon sc.hε0 sc.hε1
+          ≤ Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+              ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
+      exact Counting.capacityBound_mono
+        (h0 := sc.hε0) (h1 := sc.hε1)
+        (h0' := hε0') (h1' := hε1')
+        (hD := le_rfl) (hk := le_rfl) hεInv
+    have hcap_lt :
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' < Nat.pow 2 N := by
+      have hn : 8 ≤ solver.params.ac0.n := by
+        have hpow := Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+        have hpow' : Nat.pow 2 8 ≤ partialInputLen p := by
+          have hmul : Nat.pow 2 8 ≤ Nat.pow 2 p.n * 2 := by
+            exact le_trans hpow (Nat.le_mul_of_pos_right _ (by decide))
+          simpa [Partial.inputLen, Partial.tableLen, Nat.mul_comm, Nat.mul_left_comm,
+            Nat.mul_assoc] using hmul
+        have h8 : 8 ≤ Nat.pow 2 8 := by decide
+        have h8' : 8 ≤ partialInputLen p := le_trans h8 hpow'
+        simpa [solver.params.same_n] using h8'
+      simpa [N, t] using
+        (Counting.capacityBound_twoPow_lt_twoPowPow
+          (n := solver.params.ac0.n)
+          (D := Counting.dictLen sc.atlas.dict)
+          (k := sc.k)
+          (hn := hn)
+          (hε0 := hε0') (hε1 := hε1')
+          (hU := hU))
+    have hcard : (familyFinset sc).card = Nat.pow 2 N := by
+      have hfinset : familyFinset sc = Counting.allFunctionsFinset solver.params.ac0.n := by
+        calc
+          familyFinset sc = sc.family.toFinset := rfl
+          _ = F.toFinset := by rw [hfamily]
+          _ = Counting.allFunctionsFinset solver.params.ac0.n := by simp [F]
+      simp [N, hfinset]
+    have hScLe :
+        scenarioCapacity (sc := sc) ≤
+          Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+            ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
+      simpa [scenarioCapacity, N] using hcap_le'
+    have hltPow : scenarioCapacity (sc := sc) < Nat.pow 2 N :=
+      lt_of_le_of_lt hScLe hcap_lt
+    rw [hcard]
+    exact hltPow
+
 /-- Обратное направление: любое противоречие даёт нужных свидетелей. -/
 theorem antiChecker_exists_large_Y_partial_of_false
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p) (hFalse : False) :
@@ -1103,6 +1200,12 @@ theorem antiChecker_exists_large_Y_partial
           scenarioCapacity (sc := scWitness) < Ysolver.card := by
   exact antiChecker_exists_large_Y_partial_of_false (solver := solver)
     (noSmallAC0Solver_partial (solver := solver) (hF := hAll))
+
+
+attribute [deprecated antiChecker_exists_large_Y_partial
+  "Compatibility wrapper; prefer antiChecker_exists_large_Y_partial."
+  (since := "2026-02-23")]
+  antiChecker_exists_large_Y_partial_of_false
 
 /--
   Укреплённая версия: anti-checker с тестовым множеством `T` для Partial MCSP.
@@ -1286,6 +1389,128 @@ theorem noSmallLocalCircuitSolver_partial_constructive
   exact no_local_function_solves_mcsp
     solver.decide alive h_small h_local solver.correct
 
+/--
+Constructive large-`Y` witness on local-solver input length (`params.n`).
+
+This local analogue avoids `False.elim` by constructing witnesses directly
+from the scenario/capacity chain used in `noSmallLocalCircuitSolver_partial`.
+-/
+theorem antiChecker_exists_large_Y_local_partial_core
+    {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
+    (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
+      (Counting.allFunctionsFamily solver.params.params.n)) :
+    ∃ (F : Family solver.params.params.n)
+      (Y : Finset (Core.BitVec solver.params.params.n → Bool)),
+      ∃ hF : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params F,
+        let sc := (scenarioFromLocalCircuit (params := solver.params.params) (F := F) (hF := hF)).2
+        Y ⊆ familyFinset (sc := sc) ∧ scenarioCapacity (sc := sc) < Y.card := by
+  classical
+  let F : Family solver.params.params.n := Counting.allFunctionsFamily solver.params.params.n
+  let pack := scenarioFromLocalCircuit (params := solver.params.params) (F := F) (hF := hAll)
+  let sc := pack.2
+  refine ⟨F, familyFinset sc, hAll, ?_⟩
+  constructor
+  · intro f hf
+    exact hf
+  ·
+    let bound := Nat.pow 2
+      (solver.params.params.ℓ *
+        (Nat.log2 (solver.params.params.M + 2) + solver.params.params.depth + 1))
+    have hsummary :=
+      scenarioFromLocalCircuit_stepAB_summary
+        (params := solver.params.params) (F := F) (hF := hAll)
+    dsimp [pack, sc, bound] at hsummary
+    rcases hsummary with ⟨hfamily, hk, hdict, _hε0, _hε1, hεInv, hcap_le⟩
+    set N := Nat.pow 2 solver.params.params.n
+    set t := N / (solver.params.params.n + 2)
+    have hbound_le_half : bound ≤ Nat.pow 2 (solver.params.params.n / 2) := by
+      exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) solver.params.small
+    have hU :
+        Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k ≤ Nat.pow 2 t := by
+      have hmono_left :
+          Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k ≤
+            Counting.unionBound bound sc.k :=
+        Counting.unionBound_mono_left (k := sc.k) hdict
+      have hmono_right :
+          Counting.unionBound bound sc.k ≤ Counting.unionBound bound bound :=
+        Counting.unionBound_mono_right (D := bound) hk
+      have hchain := le_trans hmono_left hmono_right
+      have hpow_union : Counting.unionBound bound bound ≤ Nat.pow 2 bound :=
+        Counting.unionBound_le_pow bound bound
+      have hchain' := le_trans hchain hpow_union
+      have h16 : 16 ≤ solver.params.params.n := by
+        have hpow := Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+        have hpow' : Nat.pow 2 8 ≤ solver.params.params.n := by
+          have hmul : Nat.pow 2 8 ≤ Nat.pow 2 p.n * 2 := by
+            exact le_trans hpow (Nat.le_mul_of_pos_right _ (by decide))
+          simpa [Partial.inputLen, Partial.tableLen, solver.params.same_n, Nat.mul_comm,
+            Nat.mul_left_comm, Nat.mul_assoc] using hmul
+        have h16' : 16 ≤ Nat.pow 2 8 := by decide
+        exact le_trans h16' hpow'
+      have hhalf_le :
+          Nat.pow 2 (solver.params.params.n / 2) ≤
+            Nat.pow 2 solver.params.params.n / (solver.params.params.n + 2) :=
+        twoPow_half_le_div solver.params.params.n h16
+      have hbound_le :
+          bound ≤ Nat.pow 2 solver.params.params.n / (solver.params.params.n + 2) :=
+        le_trans hbound_le_half hhalf_le
+      have hpow_le :
+          Nat.pow 2 bound ≤
+            Nat.pow 2 (Nat.pow 2 solver.params.params.n / (solver.params.params.n + 2)) :=
+        Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) hbound_le
+      simpa [t] using (le_trans hchain' hpow_le)
+    have hε0' : (0 : Rat) ≤ (1 : Rat) / (solver.params.params.n + 2) := by
+      nlinarith
+    have hε1' : (1 : Rat) / (solver.params.params.n + 2) ≤ (1 : Rat) / 2 := by
+      have hden : (2 : Rat) ≤ solver.params.params.n + 2 := by nlinarith
+      have hpos : (0 : Rat) < (2 : Rat) := by nlinarith
+      exact one_div_le_one_div_of_le hpos hden
+    have hcap_le' :
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          sc.atlas.epsilon sc.hε0 sc.hε1
+          ≤ Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+            ((1 : Rat) / (solver.params.params.n + 2)) hε0' hε1' := by
+      exact Counting.capacityBound_mono
+        (h0 := sc.hε0) (h1 := sc.hε1)
+        (h0' := hε0') (h1' := hε1')
+        (hD := le_rfl) (hk := le_rfl) hεInv
+    have hcap_lt :
+        Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+          ((1 : Rat) / (solver.params.params.n + 2)) hε0' hε1' < Nat.pow 2 N := by
+      have h8 : 8 ≤ solver.params.params.n := by
+        have hpow := Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
+        have hpow' : Nat.pow 2 8 ≤ solver.params.params.n := by
+          have hmul : Nat.pow 2 8 ≤ Nat.pow 2 p.n * 2 := by
+            exact le_trans hpow (Nat.le_mul_of_pos_right _ (by decide))
+          simpa [Partial.inputLen, Partial.tableLen, solver.params.same_n, Nat.mul_comm,
+            Nat.mul_left_comm, Nat.mul_assoc] using hmul
+        have h8' : 8 ≤ Nat.pow 2 8 := by decide
+        exact le_trans h8' hpow'
+      simpa [N, t] using
+        (Counting.capacityBound_twoPow_lt_twoPowPow
+          (n := solver.params.params.n)
+          (D := Counting.dictLen sc.atlas.dict)
+          (k := sc.k)
+          (hn := h8)
+          (hε0 := hε0') (hε1 := hε1')
+          (hU := hU))
+    have hcard : (familyFinset sc).card = Nat.pow 2 N := by
+      have hfinset : familyFinset sc = Counting.allFunctionsFinset solver.params.params.n := by
+        calc
+          familyFinset sc = sc.family.toFinset := rfl
+          _ = F.toFinset := by rw [hfamily]
+          _ = Counting.allFunctionsFinset solver.params.params.n := by simp [F]
+      simp [N, hfinset]
+    have hScLe :
+        scenarioCapacity (sc := sc) ≤
+          Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+            ((1 : Rat) / (solver.params.params.n + 2)) hε0' hε1' := by
+      simpa [scenarioCapacity, N] using hcap_le'
+    have hltPow : scenarioCapacity (sc := sc) < Nat.pow 2 N :=
+      lt_of_le_of_lt hScLe hcap_lt
+    rw [hcard]
+    exact hltPow
+
 theorem antiChecker_exists_large_Y_local_partial_of_false
     {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) (hFalse : False) :
     ∃ (F : Family (partialInputLen p))
@@ -1318,12 +1543,20 @@ theorem antiChecker_exists_large_Y_local_partial
   exact antiChecker_exists_large_Y_local_partial_of_false (solver := solver)
     (noSmallLocalCircuitSolver_partial (solver := solver) (hF := hAll))
 
+
+attribute [deprecated antiChecker_exists_large_Y_local_partial
+  "Compatibility wrapper; prefer antiChecker_exists_large_Y_local_partial."
+  (since := "2026-02-23")]
+  antiChecker_exists_large_Y_local_partial_of_false
+
 /--
 Constructive variant with no external witness assumptions: uses solver
 locality contradiction directly.
 -/
 theorem antiChecker_exists_large_Y_local_partial_constructive
-  {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :
+  {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
+  (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (partialInputLen p))
     (Y : Finset (Core.BitVec (partialInputLen p) → Bool)),
       let Fsolver : Family solver.params.params.n :=
@@ -1335,8 +1568,7 @@ theorem antiChecker_exists_large_Y_local_partial_constructive
           (solver.params.same_n.symm ▸ Y)
         Ysolver ⊆ familyFinset (sc := scWitness) ∧
           scenarioCapacity (sc := scWitness) < Ysolver.card := by
-  exact antiChecker_exists_large_Y_local_partial_of_false (solver := solver)
-    (noSmallLocalCircuitSolver_partial_constructive (solver := solver))
+  exact antiChecker_exists_large_Y_local_partial (solver := solver) hAll
 
 theorem antiChecker_exists_testset_local_partial
   {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
@@ -1389,7 +1621,9 @@ Constructive variant with no external witness assumptions: uses the
 constructive large-`Y` local anti-checker.
 -/
 theorem antiChecker_exists_testset_local_partial_constructive
-  {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p) :
+  {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
+  (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
+    (Counting.allFunctionsFamily solver.params.params.n)) :
   ∃ (F : Family (partialInputLen p))
     (Y : Finset (Core.BitVec (partialInputLen p) → Bool))
     (T : Finset (Core.BitVec (partialInputLen p))),
@@ -1415,7 +1649,7 @@ theorem antiChecker_exists_testset_local_partial_constructive
             < Ysolver.card := by
   classical
   obtain ⟨F, Y, hBase⟩ :=
-    antiChecker_exists_large_Y_local_partial_constructive (solver := solver)
+    antiChecker_exists_large_Y_local_partial_constructive (solver := solver) hAll
   dsimp at hBase
   set Fsolver : Family solver.params.params.n := solver.params.same_n.symm ▸ F
   obtain ⟨hF, hBase'⟩ := hBase

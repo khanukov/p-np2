@@ -108,6 +108,14 @@ def size {n : Nat} : FormulaCircuit n → Nat
   | and c₁ c₂ => size c₁ + size c₂ + 1
   | or c₁ c₂ => size c₁ + size c₂ + 1
 
+/-- Syntactic depth of `FormulaCircuit` (gate layers). -/
+def depth {n : Nat} : FormulaCircuit n → Nat
+  | const _ => 0
+  | input _ => 0
+  | not c => depth c + 1
+  | and c₁ c₂ => Nat.max (depth c₁) (depth c₂) + 1
+  | or c₁ c₂ => Nat.max (depth c₁) (depth c₂) + 1
+
 /-- Set of input coordinates that syntactically occur in the formula. -/
 def support {n : Nat} : FormulaCircuit n → Finset (Fin n)
   | const _ => ∅
@@ -191,6 +199,19 @@ structure InPpolyFormula (L : Language) where
 def PpolyFormula (L : Language) : Prop := ∃ _ : InPpolyFormula L, True
 
 /--
+Depth-bounded strict formula witness.
+
+`d` is a global depth cap for every family member `witness.family n`.
+-/
+structure InPpolyFormulaDepth (L : Language) (d : Nat) where
+  witness : InPpolyFormula L
+  family_depth_le : ∀ n, FormulaCircuit.depth (witness.family n) ≤ d
+
+/-- Strict structured class with explicit global depth bound `d`. -/
+def PpolyFormulaDepth (L : Language) (d : Nat) : Prop :=
+  ∃ _ : InPpolyFormulaDepth L d, True
+
+/--
 Non-trivial non-uniform witness used by the active magnification bridge.
 
 Unlike the lightweight imported `InPpoly`, this interface fixes concrete
@@ -217,6 +238,13 @@ theorem PpolyReal_of_PpolyFormula {L : Language} :
            family := w.family
            family_size_le := w.family_size_le
            correct := w.correct }, trivial⟩
+
+/-- Any depth-bounded strict formula witness is a strict formula witness. -/
+theorem PpolyFormula_of_PpolyFormulaDepth {L : Language} {d : Nat} :
+    PpolyFormulaDepth L d → PpolyFormula L := by
+  intro h
+  rcases h with ⟨wd, _⟩
+  exact ⟨wd.witness, trivial⟩
 
 /-- Any strict formula witness yields a lightweight `P/poly` witness. -/
 theorem Ppoly_of_PpolyFormula {L : Language} :
@@ -335,6 +363,13 @@ def NP_strict_not_subset_Ppoly : Prop := ∃ L, NP_strict L ∧ ¬ Ppoly L
 /-- Strict-track counterpart of `NP ⊄ PpolyFormula`. -/
 def NP_strict_not_subset_PpolyFormula : Prop := ∃ L, NP_strict L ∧ ¬ PpolyFormula L
 
+/--
+Strict-track counterpart of depth-bounded formula separation:
+`NP_TM ⊄ PpolyFormulaDepth d`.
+-/
+def NP_strict_not_subset_PpolyFormulaDepth (d : Nat) : Prop :=
+  ∃ L, NP_strict L ∧ ¬ PpolyFormulaDepth L d
+
 /-- Strict-track counterpart of `NP ⊄ PpolyReal`. -/
 def NP_strict_not_subset_PpolyReal : Prop := ∃ L, NP_strict L ∧ ¬ PpolyReal L
 
@@ -347,6 +382,21 @@ def NP_not_subset_Ppoly : Prop := ∃ L, NP L ∧ ¬ Ppoly L
 
 /-- Strict structured separation: there exists `L ∈ NP` with `L ∉ PpolyFormula`. -/
 def NP_not_subset_PpolyFormula : Prop := ∃ L, NP L ∧ ¬ PpolyFormula L
+
+/--
+Depth-bounded strict structured separation:
+there exists `L ∈ NP` with `L ∉ PpolyFormulaDepth d`.
+-/
+def NP_not_subset_PpolyFormulaDepth (d : Nat) : Prop :=
+  ∃ L, NP L ∧ ¬ PpolyFormulaDepth L d
+
+/--
+Constructive-style bridge contract for depth-bounded formulas:
+every lightweight non-uniform witness can be reified into a strict
+depth-bounded formula witness with global depth cap `d`.
+-/
+def Ppoly_to_PpolyFormulaDepth (d : Nat) : Prop :=
+  ∀ L : Language, Ppoly L → PpolyFormulaDepth L d
 
 /-- Separation against the non-trivial non-uniform class `PpolyReal`. -/
 def NP_not_subset_PpolyReal : Prop := ∃ L, NP L ∧ ¬ PpolyReal L
@@ -361,6 +411,18 @@ theorem NP_not_subset_Ppoly_of_NP_strict_not_subset_Ppoly :
 /-- Any strict-track formula separation implies lightweight formula separation. -/
 theorem NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula :
     NP_strict_not_subset_PpolyFormula → NP_not_subset_PpolyFormula := by
+  intro h
+  rcases h with ⟨L, hNPs, hNot⟩
+  exact ⟨L, hNPs, hNot⟩
+
+/--
+Any strict-track depth-bounded formula separation implies lightweight
+depth-bounded formula separation.
+-/
+theorem NP_not_subset_PpolyFormulaDepth_of_NP_strict_not_subset_PpolyFormulaDepth
+    {d : Nat} :
+    NP_strict_not_subset_PpolyFormulaDepth d →
+      NP_not_subset_PpolyFormulaDepth d := by
   intro h
   rcases h with ⟨L, hNPs, hNot⟩
   exact ⟨L, hNPs, hNot⟩
@@ -446,6 +508,36 @@ theorem P_ne_NP_of_NP_strict_not_subset_PpolyFormula
   have hLight : NP_not_subset_PpolyFormula :=
     NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula hStrict
   exact P_ne_NP_of_nonuniform_separation (hFormulaToPpoly hLight) hP
+
+/--
+Depth-bounded strict formula-track separation implies `P ≠ NP` once we provide
+the corresponding depth-bounded bridge
+`NP_not_subset_PpolyFormulaDepth d -> NP_not_subset_Ppoly`.
+-/
+theorem P_ne_NP_of_NP_strict_not_subset_PpolyFormulaDepth
+    {d : Nat}
+    (hStrict : NP_strict_not_subset_PpolyFormulaDepth d)
+    (hFormulaDepthToPpoly :
+      NP_not_subset_PpolyFormulaDepth d → NP_not_subset_Ppoly)
+    (hP : P_subset_Ppoly := P_subset_Ppoly_proof) :
+    P_ne_NP := by
+  have hLight : NP_not_subset_PpolyFormulaDepth d :=
+    NP_not_subset_PpolyFormulaDepth_of_NP_strict_not_subset_PpolyFormulaDepth hStrict
+  exact P_ne_NP_of_nonuniform_separation (hFormulaDepthToPpoly hLight) hP
+
+/--
+From a constructive bridge `Ppoly -> PpolyFormulaDepth d`, any depth-bounded
+formula separation immediately yields non-uniform separation.
+-/
+theorem NP_not_subset_Ppoly_of_Ppoly_to_PpolyFormulaDepth
+    {d : Nat}
+    (hBridge : Ppoly_to_PpolyFormulaDepth d) :
+    NP_not_subset_PpolyFormulaDepth d → NP_not_subset_Ppoly := by
+  intro hSepDepth
+  rcases hSepDepth with ⟨L, hNP, hNotDepth⟩
+  refine ⟨L, hNP, ?_⟩
+  intro hPpoly
+  exact hNotDepth (hBridge L hPpoly)
 
 /--
 Strict `PpolyReal`-track separation implies `P ≠ NP` once we provide a bridge
@@ -549,6 +641,19 @@ theorem NP_not_subset_PpolyFormula_of_PpolyReal
   refine ⟨L, hNP, ?_⟩
   intro hFormula
   exact hNotReal (PpolyReal_of_PpolyFormula hFormula)
+
+/--
+Separation against the larger class `PpolyFormula` implies separation against
+every depth-bounded subclass `PpolyFormulaDepth d`.
+-/
+theorem NP_not_subset_PpolyFormulaDepth_of_NP_not_subset_PpolyFormula
+    {d : Nat}
+    (hSep : NP_not_subset_PpolyFormula) :
+    NP_not_subset_PpolyFormulaDepth d := by
+  rcases hSep with ⟨L, hNP, hNotFormula⟩
+  refine ⟨L, hNP, ?_⟩
+  intro hDepth
+  exact hNotFormula (PpolyFormula_of_PpolyFormulaDepth hDepth)
 
 /-- Эквивалентная форма `NP_not_subset_Ppoly` через отрицание включения. -/
 theorem NP_not_subset_Ppoly_iff_not_forall :

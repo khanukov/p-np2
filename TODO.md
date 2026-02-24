@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-02-23
+Updated: 2026-02-24
 
 This roadmap reflects the **actual** current code state.
 
@@ -9,12 +9,12 @@ This roadmap reflects the **actual** current code state.
 - Active `axiom` in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
 - Active strategic target: AC0-focused separation route
-- AC0 final hooks available:
-  - `NP_not_subset_AC0_final`
-  - `NP_not_subset_AC0_final_with_provider`
-  - `NP_not_subset_AC0_final_of_engine`
-  - `NP_not_subset_AC0_at_param_with_provider`
-  - `NP_not_subset_AC0_at_param_of_engine`
+- Active semantic final hooks available:
+  - `NP_not_subset_PpolyFormula_from_params_semantic`
+  - `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`
+  - `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`
+  - `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`
+  - `NP_not_subset_PpolyFormula_final`
 - TM-witness bridge available: `strictGapNPFamily_of_tmWitnesses`
 - `P != NP` wrappers remain conditional on `hFormulaToPpoly`
 
@@ -40,10 +40,33 @@ This roadmap reflects the **actual** current code state.
 2. I-5 (research-level)
 - Close bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
   or keep `P != NP` explicitly conditional.
+- New active subtrack: depth-aware bridge contract
+  `NP_not_subset_PpolyFormulaDepth d -> NP_not_subset_Ppoly`
+  with explicit lift
+  `NP_not_subset_PpolyFormula -> NP_not_subset_PpolyFormulaDepth d`
+  to keep the bridge aligned with AC0-style bounded depth.
 
 3. Optional broader bridges (separate layer)
 - Any non-AC0 front (e.g., stronger Ppoly-side bridge assumptions) should stay
   explicitly separated from the AC0-closed I-4 core.
+
+4. Step-C semantics migration (new, immediate)
+- New semantic API exists (`*_semantic`) with solver-local witnesses.
+- Progress done:
+  - active bridge entrypoints no longer auto-build Step-C from
+    `allFunctionsFamily`; they require explicit lower-bound hypotheses;
+  - legacy `allFunctions/default_multiSwitching` public final entrypoints were
+    removed from `FinalResult.lean`;
+  - semantic provider/bridge/final wrappers added (`*_semantic`) to run
+    non-vacuous Step-C assumptions through OPS to formula separation.
+- Remaining work:
+  - migrate default multi-switching constructors to solver-local semantic
+    witnesses end-to-end;
+  - connect semantic Step-C to constructive multi-switching providers
+    in family-level easy-data form (instead of all-functions form).
+  - instantiate `AC0EasyFamilyDataPartial` with a mathematically justified
+    `AC0EasyFamily` (not just wrappers), including a proved cardinal lower
+    premise actually used by the counting contradiction.
 
 ## Execution order
 

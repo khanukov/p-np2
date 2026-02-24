@@ -2,20 +2,18 @@
 
 ## Q: What is the current formal result?
 
-**A:** The active machine-checked target is AC0-focused separation in
-`pnp3/Magnification/FinalResult.lean`, with hooks:
+**A:** The active machine-checked target is the semantic AC0-focused
+formula-separation route in `pnp3/Magnification/FinalResult.lean`, with hooks:
 
-- `NP_not_subset_AC0_final`
-- `NP_not_subset_AC0_final_with_provider`
-- `NP_not_subset_AC0_final_of_engine`
-- `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`
-- `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
-- fixed-parameter strict hooks:
-  `NP_not_subset_AC0_at_param_with_provider`,
-  `NP_not_subset_AC0_at_param_of_engine`
-  and TM-witness variants:
-  `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`,
-  `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
+- fixed-parameter semantic hooks:
+  `NP_not_subset_PpolyFormula_from_params_semantic`,
+  `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`
+- asymptotic semantic hooks:
+  `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`,
+  `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`
+- final wrappers:
+  `NP_not_subset_PpolyFormula_final`,
+  `P_ne_NP_final`
 
 Interpretation note:
 names containing `...PpolyFormula_final...` in the same module are route-level
@@ -92,12 +90,12 @@ formalization is scoped to AC0-target lower-bound routes.
 
 ## Q: What is the most constructive entrypoint right now?
 
-**A:** Prefer explicit TM-witness + explicit engine routes:
+**A:** Prefer semantic/syntactic-easy routes:
 
 1. Fixed parameter `p`:
-   `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`.
+   `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`.
 2. Asymptotic/family route:
-   `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`.
+   `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`.
 
 ## Q: Minimal reproducibility commands?
 

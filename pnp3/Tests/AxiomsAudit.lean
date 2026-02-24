@@ -18,7 +18,6 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyFormula_final
 #print axioms NP_not_subset_PpolyFormula_final_of_formulaCertificate
 #print axioms NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
-#print axioms NP_not_subset_PpolyFormula_final_legacy
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas_default
 
@@ -31,9 +30,6 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
 #print axioms P_ne_NP_final_of_formulaCertificate
 #print axioms P_ne_NP_final_of_default_formulaCertificate
-#print axioms NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
-#print axioms NP_not_subset_PpolyFormula_final_of_default_multiSwitching
-#print axioms P_ne_NP_final_of_default_multiSwitching
 
 -- Regression checks for I-1 / I-3 readiness.
 #print axioms Tests.i1_trivial_realization_available
@@ -52,11 +48,5 @@ open Pnp3.Magnification
 #print axioms LowerBounds.noSmallAC0Solver_partial_of_multiSwitching_provider
 #print axioms LowerBounds.LB_Formulas_core_partial_of_multiSwitching
 #print axioms LowerBounds.LB_Formulas_core_partial_of_multiSwitching_provider
-#print axioms Magnification.ac0_statement_from_pipeline_partial_of_multiSwitching
-#print axioms Magnification.ac0_statement_from_pipeline_partial_of_multiSwitching_provider
-#print axioms LowerBounds.noSmallAC0Solver_partial_of_default_multiSwitching
-#print axioms LowerBounds.LB_Formulas_core_partial_of_default_multiSwitching
-#print axioms Magnification.ac0_statement_from_pipeline_partial_of_default_multiSwitching
-#print axioms Magnification.formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
 #print axioms LowerBounds.noSmallLocalCircuitSolver_partial_constructive
 #print axioms LowerBounds.antiChecker_exists_testset_local_partial_constructive

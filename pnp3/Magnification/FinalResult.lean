@@ -1,5 +1,4 @@
 import Magnification.Bridge_to_Magnification_Partial
-import Magnification.AC0LocalityBridge
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Models.Model_PartialMCSP
@@ -39,37 +38,52 @@ structure AsymptoticFormulaTrackHypothesis where
   pAt_hyp : ∀ n (hn : N0 ≤ n), FormulaLowerBoundHypothesisPartial (pAt n hn) (1 : Rat)
 
 /--
-Constructive asymptotic hypothesis for the AC0 lower-bound side:
-for each size, all small AC0 solvers at that parameter have a default
-all-functions multi-switching package.
+Asymptotic entry hypothesis for the semantic (non-vacuous) Step-C route.
 -/
-structure AsymptoticDefaultMultiSwitchingHypothesis where
+structure AsymptoticFormulaTrackHypothesis_semantic where
   N0 : Nat
   pAt : ∀ n : Nat, N0 ≤ n → GapPartialMCSPParams
   pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
-  msAt :
-    ∀ n (hn : N0 ≤ n) (solver : SmallAC0Solver_Partial (pAt n hn)),
-      AllFunctionsAC0MultiSwitchingWitness solver.params.ac0
+  pAt_hyp :
+    ∀ n (hn : N0 ≤ n),
+      FormulaLowerBoundHypothesisPartial_semantic (pAt n hn) (1 : Rat)
 
 /--
-Bridge from constructive default multi-switching data to the standard
-asymptotic formula-track hypothesis.
+Asymptotic constructive Step-C hypothesis directly on syntactic AC0 easy families:
+for each sufficiently large size and each solver, provide AC0 realizability of
+`AC0EasyFamily` together with the compression-hypothesis lower bound.
 -/
-def asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
-  AsymptoticFormulaTrackHypothesis := by
+structure AsymptoticSyntacticEasyHypothesis where
+  N0 : Nat
+  pAt : ∀ n : Nat, N0 ≤ n → GapPartialMCSPParams
+  pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
+  easyAt :
+    ∀ n (hn : N0 ≤ n) (solver : SmallAC0Solver_Partial (pAt n hn)),
+      ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+        (AC0EasyFamily solver.params.ac0)
+  compressionAt :
+    ∀ n (hn : N0 ≤ n), AC0CompressionHypothesis (pAt n hn)
+
+/--
+Build semantic asymptotic formula-track data from direct syntactic easy-family
+assumptions.
+-/
+def asymptoticFormulaTrackHypothesis_semantic_of_syntacticEasy
+  (hEasy : AsymptoticSyntacticEasyHypothesis) :
+  AsymptoticFormulaTrackHypothesis_semantic := by
   refine
-    { N0 := hMS.N0
-      pAt := hMS.pAt
-      pAt_n := hMS.pAt_n
+    { N0 := hEasy.N0
+      pAt := hEasy.pAt
+      pAt_n := hEasy.pAt_n
       pAt_hyp := ?_ }
   intro n hn
   exact
-    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
-      (p := hMS.pAt n hn)
+    formula_hypothesis_from_syntacticEasy_partial
+      (p := hEasy.pAt n hn)
       (δ := (1 : Rat))
       (hδ := zero_lt_one)
-      (hMS := hMS.msAt n hn)
+      (hEasy := hEasy.easyAt n hn)
+      (hComp := hEasy.compressionAt n hn)
 
 /-- Local witness extracted from the asymptotic formula-track hypothesis at size `n`. -/
 def AsymptoticFormulaTrackWitnessAt (n : Nat) : Prop :=
@@ -89,14 +103,62 @@ This is the primary non-canonical entrypoint.
 theorem NP_not_subset_PpolyFormula_from_params
   (hProvider : StructuredLocalityProviderPartial)
   (p : GapPartialMCSPParams)
+  (hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat))
   (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
   exact
     NP_not_subset_PpolyFormula_from_partial_formulas
       (hProvider := hProvider)
       (p := p)
-      (δ := (1 : Rat)) hδ hNPstrict
+      (δ := (1 : Rat)) hHyp hNPstrict
+
+/-- Semantic fixed-parameter entrypoint. -/
+theorem NP_not_subset_PpolyFormula_from_params_semantic
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  (p : GapPartialMCSPParams)
+  (hHyp : FormulaLowerBoundHypothesisPartial_semantic p (1 : Rat))
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_from_partial_formulas_semantic
+      (hProvider := hProvider)
+      (p := p)
+      (δ := (1 : Rat)) hHyp hNPstrict
+
+/-- Semantic fixed-parameter entrypoint with auto Step-C hypothesis. -/
+theorem NP_not_subset_PpolyFormula_from_params_semantic_auto
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  (p : GapPartialMCSPParams)
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
+  have hHyp : FormulaLowerBoundHypothesisPartial_semantic p (1 : Rat) :=
+    formula_hypothesis_from_pipeline_partial_constructive
+      (p := p) (δ := (1 : Rat)) hδ
+  exact
+    NP_not_subset_PpolyFormula_from_params_semantic
+      (hProvider := hProvider) (p := p) (hHyp := hHyp) hNPstrict
+
+/--
+Preferred semantic fixed-parameter entrypoint from direct syntactic easy-family
+assumptions.
+-/
+theorem NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  (p : GapPartialMCSPParams)
+  (hEasy : ∀ solver : SmallAC0Solver_Partial p,
+    ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+      (AC0EasyFamily solver.params.ac0))
+  (hComp : AC0CompressionHypothesis p)
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
+  exact
+    NP_not_subset_PpolyFormula_from_partial_formulas_semantic_of_syntacticEasy
+      (hProvider := hProvider)
+      (p := p)
+      (δ := (1 : Rat))
+      hδ hEasy hComp hNPstrict
 
 /--
 Asymptotic wrapper: if the partial pipeline lower bound is available at all
@@ -116,23 +178,39 @@ theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
       (hNPstrict := hNPstrict)
       (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
 
+/-- Asymptotic semantic wrapper for formula separation. -/
+theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  (hAsym : AsymptoticFormulaTrackHypothesis_semantic)
+  (hNPstrict : ComplexityInterfaces.NP_strict
+    (gapPartialMCSP_Language (hAsym.pAt hAsym.N0 (le_rfl)))) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  have hHyp :
+      FormulaLowerBoundHypothesisPartial_semantic
+        (hAsym.pAt hAsym.N0 (le_rfl)) (1 : Rat) :=
+    hAsym.pAt_hyp hAsym.N0 (le_rfl)
+  exact
+    OPS_trigger_formulas_partial_of_provider_formula_separation_semantic
+      (hProvider := hProvider)
+      (hNPstrict := hNPstrict)
+      (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
+
 /--
-Asymptotic wrapper using constructive default multi-switching data.
-This closes the AC0-side lower-bound premise without external AC0 witness
-arguments; locality/provider obligations are still handled separately.
+Preferred asymptotic semantic wrapper from direct syntactic easy-family data.
 -/
-theorem NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
-  (hProvider : StructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
+theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  (hEasy : AsymptoticSyntacticEasyHypothesis)
   (hNPstrict : ComplexityInterfaces.NP_strict
     (gapPartialMCSP_Language
-      ((asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).pAt
-        (asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).N0 (le_rfl)))) :
+      ((asymptoticFormulaTrackHypothesis_semantic_of_syntacticEasy hEasy).pAt
+        (asymptoticFormulaTrackHypothesis_semantic_of_syntacticEasy hEasy).N0
+        (le_rfl)))) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
+    NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic
       (hProvider := hProvider)
-      (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
+      (hAsym := asymptoticFormulaTrackHypothesis_semantic_of_syntacticEasy hEasy)
       (hNPstrict := hNPstrict)
 
 /--
@@ -535,14 +613,6 @@ theorem P_ne_NP_final_of_asymptotic_hypothesis
   sYES_pos := by decide
   circuit_bound_ok := by native_decide
 
-/-- Canonical fixed-parameter compatibility statement. -/
-theorem NP_not_subset_PpolyFormula_final_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact NP_not_subset_PpolyFormula_from_params
-    hProvider canonicalPartialParams (hNPfam canonicalPartialParams)
-
 /--
 Primary final statement (asymptotic entry): from the structured provider and
 asymptotic formula-track hypothesis we derive `NP ⊄ PpolyFormula`.
@@ -587,201 +657,6 @@ theorem NP_not_subset_PpolyFormula_final_default_provider
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact NP_not_subset_PpolyFormula_final hDefaultProvider hAsym hNPfam
-
-/--
-Final formula-separation wrapper using constructive default multi-switching
-asymptotic data plus the default locality provider.
-
-Scope note:
-this remains an AC0-side route wrapper and should be reported as such.
--/
-theorem NP_not_subset_PpolyFormula_final_of_default_multiSwitching
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis) :
-  (hNPfam : StrictGapNPFamily) →
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  intro hNPfam
-  exact
-    NP_not_subset_PpolyFormula_final
-      (hDefaultProvider := hDefaultProvider)
-      (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
-      (hNPfam := hNPfam)
-
-/--
-AC0-target final theorem with an explicit structured locality provider.
-
-Compared to the default-flag wrappers, this variant is more constructive at
-the interface level: no `Nonempty` default provider extraction is used.
--/
-theorem NP_not_subset_AC0_final_with_provider
-  (hProvider : StructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
-      (hProvider := hProvider)
-      (hMS := hMS)
-      (hNPstrict :=
-        hNPfam
-          ((asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).pAt
-            (asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS).N0
-            (le_rfl)))
-
-/--
-AC0-target fixed-parameter theorem without asymptotic packaging.
-
-This is the strict local hook: one concrete `p`, one strict NP witness for
-`gapPartialMCSP_Language p`, and one default multi-switching package for
-all small AC0 solvers at this same `p`.
--/
-theorem NP_not_subset_AC0_at_param_with_provider
-  (hProvider : StructuredLocalityProviderPartial)
-  (p : GapPartialMCSPParams)
-  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p))
-  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
-    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
-    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
-      (p := p)
-      (δ := (1 : Rat))
-      (hδ := zero_lt_one)
-      (hMS := hMSp)
-  exact
-    OPS_trigger_formulas_partial_of_provider_formula_separation
-      (hProvider := hProvider)
-      (hNPstrict := hNPstrict)
-      (p := p)
-      (δ := (1 : Rat))
-      hHyp
-
-/--
-Fixed-parameter AC0 theorem with explicit TM witness for NP-membership.
-
-This removes the separate `hNPstrict` argument by deriving it from
-`GapPartialMCSP_TMWitness`.
--/
-theorem NP_not_subset_AC0_at_param_with_provider_of_tmWitness
-  (hProvider : StructuredLocalityProviderPartial)
-  (p : GapPartialMCSPParams)
-  (hW : GapPartialMCSP_TMWitness p)
-  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
-    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_at_param_with_provider
-      (hProvider := hProvider)
-      (p := p)
-      (hNPstrict := gapPartialMCSP_in_NP_TM_of_witness p hW)
-      (hMSp := hMSp)
-
-/--
-Engine-based fixed-parameter AC0 theorem.
-
-Same statement as `NP_not_subset_AC0_at_param_with_provider`, but consumes an
-explicit constructive locality engine and derives the provider internally.
--/
-theorem NP_not_subset_AC0_at_param_of_engine
-  (E : ConstructiveLocalityEnginePartial)
-  (p : GapPartialMCSPParams)
-  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p))
-  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
-    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_at_param_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_engine E)
-      (p := p)
-      (hNPstrict := hNPstrict)
-      (hMSp := hMSp)
-
-/--
-Engine-based fixed-parameter AC0 theorem from an explicit TM witness.
--/
-theorem NP_not_subset_AC0_at_param_of_engine_of_tmWitness
-  (E : ConstructiveLocalityEnginePartial)
-  (p : GapPartialMCSPParams)
-  (hW : GapPartialMCSP_TMWitness p)
-  (hMSp : ∀ solver : SmallAC0Solver_Partial p,
-    AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_at_param_of_engine
-      (E := E)
-      (p := p)
-      (hNPstrict := gapPartialMCSP_in_NP_TM_of_witness p hW)
-      (hMSp := hMSp)
-
-/--
-AC0-target final theorem with an explicit constructive locality engine.
-
-This removes default-provider existential packaging from the theorem input by
-consuming a concrete `ConstructiveLocalityEnginePartial`.
--/
-theorem NP_not_subset_AC0_final_of_engine
-  (E : ConstructiveLocalityEnginePartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_engine E)
-      (hMS := hMS)
-      (hNPfam := hNPfam)
-
-/--
-AC0-target asymptotic final theorem from explicit TM witnesses and provider.
-
-This removes `StrictGapNPFamily` from inputs via
-`strictGapNPFamily_of_tmWitnesses`.
--/
-theorem NP_not_subset_AC0_final_with_provider_of_tmWitnesses
-  (hProvider : StructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
-  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_final_with_provider
-      (hProvider := hProvider)
-      (hMS := hMS)
-      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-
-/--
-AC0-target asymptotic final theorem from explicit TM witnesses and engine.
--/
-theorem NP_not_subset_AC0_final_of_engine_of_tmWitnesses
-  (E : ConstructiveLocalityEnginePartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
-  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_final_of_engine
-      (E := E)
-      (hMS := hMS)
-      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-
-/--
-AC0-target final theorem.
-
-This theorem stays inside the AC0 constructive route
-(multi-switching/locality) used by `AC0LocalityBridge` and does not require
-the old bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
-
-Scope note:
-this is an AC0-route formula-separation endpoint; it is not the global
-`P ≠ NP` statement.
--/
-theorem NP_not_subset_AC0_final
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_AC0_final_with_provider
-      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
-      (hMS := hMS)
-      (hNPfam := hNPfam)
 
 /--
 Automatic provider wiring from the uniform half-size condition.
@@ -928,6 +803,60 @@ theorem P_ne_NP_final_with_provider
       hNP ComplexityInterfaces.P_subset_Ppoly_proof
 
 /--
+Depth-aware conditional wrapper.
+
+Compared to `P_ne_NP_final_with_provider`, the last bridge to `P/poly`
+is required only for the depth-bounded class `PpolyFormulaDepth d`.
+We additionally ask for an explicit lifting step from the active formula-track
+separation endpoint to this depth-bounded separation statement.
+-/
+theorem P_ne_NP_final_depth_with_provider
+  (d : Nat)
+  (hProvider : StructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (formulaLiftToDepth :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+      ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d)
+  (formulaDepthToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d →
+      ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
+    NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym hNPfam
+  have hNPDepth : ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d :=
+    formulaLiftToDepth hNPFormula
+  have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
+    formulaDepthToPpoly hNPDepth
+  exact
+    ComplexityInterfaces.P_ne_NP_of_nonuniform_separation
+      hNP ComplexityInterfaces.P_subset_Ppoly_proof
+
+/--
+Depth-aware wrapper with canonical lift:
+`NP_not_subset_PpolyFormula -> NP_not_subset_PpolyFormulaDepth d`
+is taken from `ComplexityInterfaces` automatically.
+-/
+theorem P_ne_NP_final_depth_with_provider_of_bridge
+  (d : Nat)
+  (hProvider : StructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (formulaDepthToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d →
+      ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_depth_with_provider
+      (d := d)
+      (hProvider := hProvider)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      (formulaLiftToDepth :=
+        ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth_of_NP_not_subset_PpolyFormula)
+      (formulaDepthToPpoly := formulaDepthToPpoly)
+
+/--
 Single contract that captures all external inputs currently required by the
 active final `P ≠ NP` wrapper family.
 
@@ -942,6 +871,38 @@ structure ConditionalPneNpFinalContract where
       ComplexityInterfaces.NP_not_subset_Ppoly
 
 /--
+Depth-aware version of the final conditional contract.
+
+This is the AC0-oriented interface for I-5: the non-uniform bridge is tracked
+at fixed depth `d` rather than over unrestricted formulas.
+-/
+structure ConditionalPneNpDepthFinalContract where
+  depth : Nat
+  defaultProvider : hasDefaultStructuredLocalityProviderPartial
+  asymptotic : AsymptoticFormulaTrackHypothesis
+  npFamily : StrictGapNPFamily
+  formulaLiftToDepth :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+      ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth depth
+  formulaDepthToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth depth →
+      ComplexityInterfaces.NP_not_subset_Ppoly
+
+/--
+Depth-aware contract with canonical formula-to-depth lift.
+
+Callers only provide the depth-bounded bridge to `P/poly`.
+-/
+structure ConditionalPneNpDepthBridgeFinalContract where
+  depth : Nat
+  defaultProvider : hasDefaultStructuredLocalityProviderPartial
+  asymptotic : AsymptoticFormulaTrackHypothesis
+  npFamily : StrictGapNPFamily
+  formulaDepthToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth depth →
+      ComplexityInterfaces.NP_not_subset_Ppoly
+
+/--
 Contract-based entrypoint for the active conditional final theorem.
 -/
 theorem P_ne_NP_final_of_contract
@@ -953,6 +914,35 @@ theorem P_ne_NP_final_of_contract
       (hAsym := h.asymptotic)
       (hNPfam := h.npFamily)
       h.formulaToPpoly
+
+/--
+Contract-based entrypoint for the depth-aware conditional final theorem.
+-/
+theorem P_ne_NP_final_of_depth_contract
+  (h : ConditionalPneNpDepthFinalContract) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_depth_with_provider
+      (d := h.depth)
+      (hProvider := defaultStructuredLocalityProviderPartial h.defaultProvider)
+      (hAsym := h.asymptotic)
+      (hNPfam := h.npFamily)
+      (formulaLiftToDepth := h.formulaLiftToDepth)
+      (formulaDepthToPpoly := h.formulaDepthToPpoly)
+
+/--
+Contract-based entrypoint for the canonical-lift depth-aware theorem.
+-/
+theorem P_ne_NP_final_of_depth_bridge_contract
+  (h : ConditionalPneNpDepthBridgeFinalContract) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_depth_with_provider_of_bridge
+      (d := h.depth)
+      (hProvider := defaultStructuredLocalityProviderPartial h.defaultProvider)
+      (hAsym := h.asymptotic)
+      (hNPfam := h.npFamily)
+      (formulaDepthToPpoly := h.formulaDepthToPpoly)
 
 /--
 Active conditional final `P ≠ NP` wrapper.
@@ -979,6 +969,53 @@ theorem P_ne_NP_final
       (hNPfam := hNPfam)
       hFormulaToPpoly
 
+/--
+Default-provider depth-aware final wrapper.
+
+This keeps the AC0-side pipeline unchanged and only refines the final bridge
+interface to the depth-bounded class `PpolyFormulaDepth d`.
+-/
+theorem P_ne_NP_final_depth
+  (d : Nat)
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (formulaLiftToDepth :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+      ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d)
+  (formulaDepthToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d →
+      ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_depth_with_provider
+      (d := d)
+      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      (formulaLiftToDepth := formulaLiftToDepth)
+      (formulaDepthToPpoly := formulaDepthToPpoly)
+
+/--
+Default-provider depth-aware wrapper with canonical formula-to-depth lift.
+-/
+theorem P_ne_NP_final_depth_of_bridge
+  (d : Nat)
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (formulaDepthToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormulaDepth d →
+      ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_depth_with_provider_of_bridge
+      (d := d)
+      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      (formulaDepthToPpoly := formulaDepthToPpoly)
+
 /-- Compatibility alias for callers already using the old default-provider name. -/
 theorem P_ne_NP_final_default_provider
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
@@ -989,25 +1026,6 @@ theorem P_ne_NP_final_default_provider
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final hDefaultProvider hAsym hNPfam hFormulaToPpoly
-
-/--
-`P ≠ NP` wrapper through the default multi-switching asymptotic track.
-This remains conditional on the explicit formula-to-P/poly bridge.
--/
-theorem P_ne_NP_final_of_default_multiSwitching
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hMS : AsymptoticDefaultMultiSwitchingHypothesis)
-  (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final
-      (hDefaultProvider := hDefaultProvider)
-      (hAsym := asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching hMS)
-      (hNPfam := hNPfam)
-      (hFormulaToPpoly := hFormulaToPpoly)
 
 /--
 Automatic final `P ≠ NP` wiring from the uniform half-size condition.
@@ -1162,22 +1180,6 @@ theorem P_ne_NP_final_of_default_supportBounds
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       hFormulaToPpoly
-
-/-- Canonical fixed-parameter compatibility wrapper. -/
-theorem P_ne_NP_final_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
-  ComplexityInterfaces.P_ne_NP := by
-  have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
-    NP_not_subset_PpolyFormula_final_legacy hProvider hNPfam
-  have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
-    hFormulaToPpoly hNPFormula
-  exact
-    ComplexityInterfaces.P_ne_NP_of_nonuniform_separation
-      hNP ComplexityInterfaces.P_subset_Ppoly_proof
 
 end Magnification
 end Pnp3

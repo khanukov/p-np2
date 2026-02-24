@@ -32,7 +32,9 @@ I-4 note:
 - Constructive I-4 core is closed on explicit AC0/CNF inputs (Path A);
   this is not a claim about a general `PpolyFormula -> AC0` conversion.
 
-AC0 final-hook note:
-- `pnp3/Magnification/FinalResult.lean` includes AC0-focused final hooks
-  (`NP_not_subset_AC0_final*`) and fixed-parameter strict hooks
-  (`NP_not_subset_AC0_at_param*`).
+Final-hook note:
+- `pnp3/Magnification/FinalResult.lean` public surface is semantic-first:
+  fixed-parameter/asymptotic `..._semantic...` entrypoints together with
+  `NP_not_subset_PpolyFormula_final` and conditional `P_ne_NP_final`.
+- The legacy all-functions/default-multiSwitching route is retained only in
+  lower-level compatibility modules, not as public final entrypoints.

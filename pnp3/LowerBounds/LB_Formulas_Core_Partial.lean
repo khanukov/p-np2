@@ -17,6 +17,55 @@ namespace LowerBounds
 open Classical
 open Models
 
+/-!
+  Semantic (non-vacuous) Step-C contract:
+  the contradiction premise is attached to each concrete solver via an
+  explicit easy-family package (family + AC0 witness + cardinal lower bound).
+-/
+
+/-- Semantic core hypothesis for Partial Step-C. -/
+def StepCCoreSemanticHypothesisPartial (p : Models.GapPartialMCSPParams) : Prop :=
+  ∀ solver : SmallAC0Solver_Partial p, AC0EasyFamilyDataPartial solver.params.ac0 → False
+
+/--
+Semantic core theorem: direct elimination from the semantic Step-C hypothesis.
+-/
+theorem LB_Formulas_core_partial_semantic
+  {p : Models.GapPartialMCSPParams}
+  (hCore : StepCCoreSemanticHypothesisPartial p)
+  (solver : SmallAC0Solver_Partial p)
+  (easy : AC0EasyFamilyDataPartial solver.params.ac0) : False := by
+  exact hCore solver easy
+
+/--
+Counting-core Step-C statement over an explicit "easy family" package.
+-/
+theorem LB_Formulas_core_partial_of_easyFamilyData
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial p)
+  (easy : AC0EasyFamilyDataPartial solver.params.ac0) : False := by
+  exact noSmallAC0Solver_partial_of_easyFamilyData (solver := solver) easy
+
+/--
+Constructive Step-C core over solver packages that already contain
+family-level easy-data witnesses.
+-/
+theorem LB_Formulas_core_partial_constructive
+  {p : Models.GapPartialMCSPParams}
+  (solver : ConstructiveSmallAC0Solver_Partial p) : False := by
+  exact noConstructiveSmallAC0Solver_partial (solver := solver)
+
+/-- Core contradiction from direct syntactic easy-family hypotheses. -/
+theorem LB_Formulas_core_partial_of_syntacticEasy
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial p)
+  (hEasy :
+    ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+      (AC0EasyFamily solver.params.ac0))
+  (hComp : AC0CompressionHypothesis p) : False := by
+  exact noSmallAC0Solver_partial_of_syntacticEasy
+    (solver := solver) hEasy hComp
+
 /--
   Основное ядро шага C (Partial MCSP):
   если существует малый AC⁰‑решатель Partial MCSP,

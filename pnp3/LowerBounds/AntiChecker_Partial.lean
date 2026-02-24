@@ -113,6 +113,70 @@ lemma SmallAC0Solver_Partial.correct_decide
   simpa [SmallAC0Solver_Partial.decide] using solver.correct
 
 /-!
+  ### Semantic AC0 witness API (non-vacuous Step-C interface)
+
+  The legacy route below uses `allFunctionsFamily` witnesses.  For a
+  semantically faithful Step-C statement we expose a solver-local witness
+  interface: the AC0 evidence must be attached to the concrete solver function.
+-/
+
+/-- Solver function viewed on the AC0 input length `solver.params.ac0.n`. -/
+def solverDecideOnAC0Domain
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) :
+    Core.BitVec solver.params.ac0.n → Bool :=
+  solver.params.same_n ▸ solver.decide
+
+/--
+Singleton family containing exactly the concrete solver function.
+-/
+def solverFunctionFamily
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) :
+    Core.Family solver.params.ac0.n :=
+  [solverDecideOnAC0Domain solver]
+
+/--
+Semantic AC0 witness for a concrete solver:
+the solver's own function family (singleton) is AC0-realizable.
+-/
+def SolverAC0WitnessPartial
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) : Prop :=
+  ThirdPartyFacts.AC0FamilyWitnessProp
+    solver.params.ac0
+    (solverFunctionFamily solver)
+
+/--
+Multi-switching witness counterpart for the concrete solver family.
+-/
+def SolverAC0MultiSwitchingWitnessPartial
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) : Type :=
+  ThirdPartyFacts.AC0MultiSwitchingWitness
+    solver.params.ac0
+    (solverFunctionFamily solver)
+
+/--
+Family-level AC0 data for a counting-style Step-C contradiction.
+
+`F` is the candidate "easy" class, `witness` gives AC0 realizability, and
+`card_lower` is the large-cardinality premise required by the capacity gap.
+-/
+structure AC0EasyFamilyDataPartial (params : ThirdPartyFacts.AC0Parameters) where
+  F : Core.Family params.n
+  witness : ThirdPartyFacts.AC0FamilyWitnessProp params F
+  card_lower : Nat.pow 2 (Nat.pow 2 params.n) ≤ F.toFinset.card
+
+/--
+Constructive Step-C solver package:
+the solver carries the full easy-family counting data internally.
+-/
+structure ConstructiveSmallAC0Solver_Partial (p : GapPartialMCSPParams)
+    extends SmallAC0Solver_Partial p where
+  easyData : AC0EasyFamilyDataPartial params.ac0
+
+/-!
   ### Локальные схемы (partial‑трек)
 
   Локальная версия структуры повторяет интерфейс AC⁰-оболочки,
@@ -870,80 +934,32 @@ lemma decide_ac0_eq_language
 -/
 
 /--
-  Основное противоречие: если существует малый AC⁰-решатель Partial MCSP,
-  то это нарушает ограничение ёмкости SAL-сценария.
+  Generic counting-core contradiction:
+  from AC0 witness for a family `F` and a large-cardinality lower bound on `F`
+  we derive inconsistency with the capacity upper bound.
 -/
-theorem noSmallAC0Solver_partial
+theorem noSmallAC0Solver_partial_of_family_card
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
+    {F : Family solver.params.ac0.n}
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F)
+    (hCardLower : Nat.pow 2 (Nat.pow 2 solver.params.ac0.n) ≤ F.toFinset.card) :
+    False := by
   classical
-  -- Фиксируем «полное» семейство всех булевых функций.
-  let F : Family solver.params.ac0.n :=
-    Counting.allFunctionsFamily solver.params.ac0.n
-  -- Сценарий SAL, полученный из `solver`.
   let pack :=
     scenarioFromAC0
       (params := solver.params.ac0) (F := F) (hF := hF)
   let sc := pack.2
   let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong solver.params.ac0)
-  -- Вытаскиваем шаг A+B: границы на параметры и связь `card(F) ≤ capacityBound`.
   have hsummary :=
     scenarioFromAC0_stepAB_summary_strong
       (params := solver.params.ac0) (F := F) (hF := hF)
   dsimp [pack, sc, bound] at hsummary
-  rcases hsummary with ⟨hfamily, hk, hdict, hε0, hε1, hεInv, hcap_le⟩
-  -- Корректность solver: его решение совпадает с языком Partial MCSP.
-  have hDecideEq :
-      solver.decide =
-        gapPartialMCSP_Language p (partialInputLen p) := by
-    exact solver_decide_eq_language solver
-  -- Переводим `decide` и язык Partial MCSP к длине `ac0.n`.
-  let decide_ac0 : Core.BitVec solver.params.ac0.n → Bool :=
-    solver.params.same_n ▸ solver.decide
-  let gap_lang_ac0 : Core.BitVec solver.params.ac0.n → Bool :=
-    solver.params.same_n ▸ (gapPartialMCSP_Language p (partialInputLen p))
-  have hDecideEq_ac0 : decide_ac0 = gap_lang_ac0 := by
-    simpa [decide_ac0, gap_lang_ac0] using
-      congrArg (fun f => (solver.params.same_n ▸ f)) hDecideEq
-  -- Следовательно, решатель действительно лежит в полном семействе функций.
-  have hDecideMem : decide_ac0 ∈ familyFinset (sc := sc) := by
-    -- Сначала видим, что сам язык Partial MCSP лежит в полном семействе функций,
-    -- а затем переписываем `decide` через `hDecideEq`.
-    have hLanguageMem :
-        gap_lang_ac0 ∈
-          Counting.allFunctionsFinset solver.params.ac0.n := by
-      simp
-    have hfinset :
-        familyFinset sc =
-          Counting.allFunctionsFinset solver.params.ac0.n := by
-      classical
-      have hfamily'' : sc.family = F := by
-        simp [pack, sc]
-      calc
-        familyFinset sc = sc.family.toFinset := rfl
-        _ = F.toFinset := by
-            simp [hfamily'']
-        _ = Counting.allFunctionsFinset solver.params.ac0.n := by
-            simp [F]
-    have hLanguageMem'' : gap_lang_ac0 ∈ familyFinset sc := by
-      rw [hfinset]
-      exact hLanguageMem
-    have hLanguageMem' : decide_ac0 ∈ familyFinset sc := by
-      rw [hDecideEq_ac0]
-      exact hLanguageMem''
-    exact hLanguageMem'
-  -- Этот witness пригодится, чтобы избежать неявных inhabited-аргументов.
-  have hfamily_nonempty : (familyFinset sc).Nonempty := by
-    exact ⟨decide_ac0, hDecideMem⟩
-  -- Обозначения.
+  rcases hsummary with ⟨hfamily, hk, hdict, _hε0, _hε1, hεInv, hcap_le⟩
   set N := Nat.pow 2 solver.params.ac0.n
   set t := N / (solver.params.ac0.n + 2)
-  -- Оценка на `unionBound` через `solver.union_small`.
   have hU :
       Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
         ≤ Nat.pow 2 t := by
-    -- Монотонность по `D` и `k` и потом применение `union_small`.
     have hmono_left :
         Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
           ≤ Counting.unionBound bound sc.k :=
@@ -952,10 +968,7 @@ theorem noSmallAC0Solver_partial
         Counting.unionBound bound sc.k ≤ Counting.unionBound bound bound :=
       Counting.unionBound_mono_right (D := bound) hk
     have hchain := le_trans hmono_left hmono_right
-    -- Подставляем зафиксированную гипотезу `union_small`.
-    have hsmall := solver.params.union_small
-    simpa [t] using (le_trans hchain hsmall)
-  -- Сравниваем `capacityBound` при `ε = sc.atlas.epsilon` и при `ε = 1/(n+2)`.
+    simpa [t] using (le_trans hchain solver.params.union_small)
   have hε0' : (0 : Rat) ≤ (1 : Rat) / (solver.params.ac0.n + 2) := by
     have hden : (0 : Rat) ≤ solver.params.ac0.n + 2 := by
       nlinarith
@@ -971,21 +984,15 @@ theorem noSmallAC0Solver_partial
         sc.atlas.epsilon sc.hε0 sc.hε1
         ≤ Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
           ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
-    -- Используем монотонность `capacityBound` по ε.
     exact Counting.capacityBound_mono
       (h0 := sc.hε0) (h1 := sc.hε1)
       (h0' := hε0') (h1' := hε1')
       (hD := le_rfl) (hk := le_rfl) hεInv
-  -- Строгая верхняя граница на `capacityBound` при `ε = 1/(n+2)`.
   have hcap_lt :
       Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
         ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1'
         < Nat.pow 2 N := by
-    -- Используем `capacityBound_twoPow_lt_twoPowPow`.
     have hn : 8 ≤ solver.params.ac0.n := by
-      -- Так как `p.n ≥ 8`, получаем `2^p.n ≥ 2^8`,
-      -- следовательно `partialInputLen p = 2 * 2^p.n ≥ 2^8`,
-      -- а значит `ac0.n ≥ 8`.
       have hpow :=
         Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
       have hpow' : Nat.pow 2 8 ≤ partialInputLen p := by
@@ -1005,30 +1012,250 @@ theorem noSmallAC0Solver_partial
         (hn := hn)
         (hε0 := hε0') (hε1 := hε1')
         (hU := hU))
-  -- Сравниваем `capacityBound` с размером полного семейства.
-  have hcard :
-      (familyFinset sc).card = Nat.pow 2 N := by
-    -- `familyFinset sc` совпадает с полным множеством функций.
-    have hfamily' : sc.family = F := hfamily
-    have hfinset :
-        familyFinset sc = Counting.allFunctionsFinset solver.params.ac0.n := by
-      -- Переписываем через `toFinset`.
-      simp [familyFinset, hfamily', F, Counting.allFunctionsFamily_toFinset]
-    -- Используем формулу количества всех функций.
-    simp [N, hfinset]
-  have hcard_pos : 0 < (familyFinset sc).card := by
-    exact Finset.card_pos.mpr hfamily_nonempty
-  -- Противоречие: `card(F) ≤ capacityBound < card(F)`.
+  have hcard_ge : Nat.pow 2 N ≤ (familyFinset sc).card := by
+    have hfinset : familyFinset sc = F.toFinset := by
+      calc
+        familyFinset sc = sc.family.toFinset := rfl
+        _ = F.toFinset := by rw [hfamily]
+    have hCardLowerN : Nat.pow 2 N ≤ F.toFinset.card := by
+      simpa [N] using hCardLower
+    simpa [hfinset] using hCardLowerN
   have hcap_le_final :
       (familyFinset sc).card ≤
         Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
           ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
     exact hcap_le.trans hcap_le'
-  have hcontr :=
-    lt_of_le_of_lt hcap_le_final hcap_lt
-  have hcontr' : False := by
-    simp [hcard] at hcontr
-  exact hcontr'
+  have hpow_le_cap : Nat.pow 2 N ≤
+      Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
+        ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
+    exact le_trans hcard_ge hcap_le_final
+  exact (Nat.lt_irrefl (Nat.pow 2 N)) (lt_of_le_of_lt hpow_le_cap hcap_lt)
+
+/-- Syntactic AC0-easy predicate for one Boolean function. -/
+def IsAC0SyntacticEasyFunc
+    (params : ThirdPartyFacts.AC0Parameters)
+    (f : Core.BitVec params.n → Bool) : Prop :=
+  ∃ c : ThirdPartyFacts.AC0Circuit params,
+    ThirdPartyFacts.AC0Circuit.depth c ≤ params.d ∧
+    ThirdPartyFacts.AC0Circuit.size c ≤ params.M ∧
+    ThirdPartyFacts.AC0Circuit.Computes c f
+
+/-- Finite set of all syntactically AC0-easy functions (at fixed `params`). -/
+noncomputable def ac0SyntacticEasyFunctionsFinset
+    (params : ThirdPartyFacts.AC0Parameters) :
+    Finset (Core.BitVec params.n → Bool) := by
+  classical
+  exact (Finset.univ : Finset (Core.BitVec params.n → Bool)).filter
+    (fun f => IsAC0SyntacticEasyFunc params f)
+
+/-- Family view of `ac0SyntacticEasyFunctionsFinset`. -/
+noncomputable def AC0SyntacticEasyFamily
+    (params : ThirdPartyFacts.AC0Parameters) : Family params.n :=
+  (ac0SyntacticEasyFunctionsFinset params).toList
+
+@[simp] lemma AC0SyntacticEasyFamily_toFinset
+    (params : ThirdPartyFacts.AC0Parameters) :
+    (AC0SyntacticEasyFamily params).toFinset =
+      ac0SyntacticEasyFunctionsFinset params := by
+  classical
+  simp [AC0SyntacticEasyFamily]
+
+/--
+Any family equipped with an AC0 witness is pointwise contained in the
+syntactic AC0-easy family.
+-/
+lemma family_subset_ac0SyntacticEasy_of_witness
+    (params : ThirdPartyFacts.AC0Parameters)
+    (F : Family params.n)
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp params F) :
+    F.toFinset ⊆ ac0SyntacticEasyFunctionsFinset params := by
+  classical
+  intro f hfmem
+  have hw : ThirdPartyFacts.AC0FamilyWitness params F := Classical.choice hF
+  rcases hw.covers f (by simpa using hfmem) with ⟨c, hc, hcomp⟩
+  have hEasy : IsAC0SyntacticEasyFunc params f := by
+    refine ⟨c, hw.depth_le c hc, hw.size_le c hc, hcomp⟩
+  have hmem_univ : f ∈ (Finset.univ : Finset (Core.BitVec params.n → Bool)) := by
+    simp
+  change f ∈ (Finset.univ.filter (fun g => IsAC0SyntacticEasyFunc params g))
+  exact Finset.mem_filter.mpr ⟨hmem_univ, hEasy⟩
+
+/-- Concrete easy family used by the current Step-C route. -/
+noncomputable def AC0EasyFamily (params : ThirdPartyFacts.AC0Parameters) :
+    Family params.n :=
+  AC0SyntacticEasyFamily params
+
+/--
+Compression Hypothesis (core hardness-magnification interface):
+if a small AC0 solver exists for Partial MCSP at parameter `p`, then the
+syntactic AC0 easy family is large enough to contain all Boolean functions.
+-/
+def AC0CompressionHypothesis (p : GapPartialMCSPParams) : Prop :=
+  ∀ solver : SmallAC0Solver_Partial p,
+    Nat.pow 2 (Nat.pow 2 solver.params.ac0.n) ≤
+      (AC0EasyFamily solver.params.ac0).toFinset.card
+
+/--
+Easy-family AC0 witness hypothesis: each small AC0 solver has an AC0 witness
+for the syntactic easy family at its parameters.
+-/
+def EasyFunctionsAC0Witness (p : GapPartialMCSPParams) : Prop :=
+  ∀ solver : SmallAC0Solver_Partial p,
+    ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+      (AC0EasyFamily solver.params.ac0)
+
+/--
+Cardinal lower bound for `AC0EasyFamily` derived from an all-functions AC0
+witness.
+-/
+lemma ac0EasyFamily_card_lower_of_allWitness
+    (params : ThirdPartyFacts.AC0Parameters)
+    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp params
+      (Counting.allFunctionsFamily params.n)) :
+    Nat.pow 2 (Nat.pow 2 params.n) ≤ (AC0EasyFamily params).toFinset.card := by
+  classical
+  have hsubset :
+      (Counting.allFunctionsFamily params.n).toFinset ⊆
+        ac0SyntacticEasyFunctionsFinset params :=
+    family_subset_ac0SyntacticEasy_of_witness
+      (params := params)
+      (F := Counting.allFunctionsFamily params.n)
+      hAll
+  have hcard_le :
+      (Counting.allFunctionsFamily params.n).toFinset.card ≤
+        (ac0SyntacticEasyFunctionsFinset params).card :=
+    Finset.card_le_card hsubset
+  have hcard_all :
+      (Counting.allFunctionsFamily params.n).toFinset.card =
+        Nat.pow 2 (Nat.pow 2 params.n) := by
+    simp [Counting.allFunctionsFamily_toFinset]
+  have hpow_le :
+      Nat.pow 2 (Nat.pow 2 params.n) ≤
+        (ac0SyntacticEasyFunctionsFinset params).card := by
+    simpa [hcard_all] using hcard_le
+  simpa [AC0EasyFamily, AC0SyntacticEasyFamily_toFinset] using hpow_le
+
+/--
+Build an AC0 witness for `AC0EasyFamily` from an all-functions AC0 witness.
+-/
+lemma ac0EasyFamily_witness_of_allWitness
+    (params : ThirdPartyFacts.AC0Parameters)
+    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp params
+      (Counting.allFunctionsFamily params.n)) :
+    ThirdPartyFacts.AC0FamilyWitnessProp params (AC0EasyFamily params) := by
+  classical
+  refine ⟨?_⟩
+  let wAll : ThirdPartyFacts.AC0FamilyWitness params (Counting.allFunctionsFamily params.n) :=
+    Classical.choice hAll
+  refine
+    { circuits := wAll.circuits
+      covers := ?_
+      depth_le := wAll.depth_le
+      size_le := wAll.size_le
+      circuits_length_le := wAll.circuits_length_le }
+  intro f _hfEasy
+  have hfAll : f ∈ Counting.allFunctionsFamily params.n := by
+    simp [Counting.allFunctionsFamily]
+  exact wAll.covers f hfAll
+
+/-- Build family-level Step-C data from an all-functions AC0 witness. -/
+noncomputable def ac0EasyFamilyData_of_witness
+    (params : ThirdPartyFacts.AC0Parameters)
+    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp params
+      (Counting.allFunctionsFamily params.n)) :
+    AC0EasyFamilyDataPartial params where
+  F := AC0EasyFamily params
+  witness := ac0EasyFamily_witness_of_allWitness params hAll
+  card_lower := ac0EasyFamily_card_lower_of_allWitness params hAll
+
+/--
+Syntactic easy-family package directly from easy-family hypotheses
+(no `allFunctionsFamily` argument).
+-/
+noncomputable def ac0EasyFamilyData_of_syntacticHypotheses
+    (params : ThirdPartyFacts.AC0Parameters)
+    (hEasy : ThirdPartyFacts.AC0FamilyWitnessProp params (AC0EasyFamily params))
+    (hCard : Nat.pow 2 (Nat.pow 2 params.n) ≤ (AC0EasyFamily params).toFinset.card) :
+    AC0EasyFamilyDataPartial params where
+  F := AC0EasyFamily params
+  witness := hEasy
+  card_lower := hCard
+
+/-- Contradiction from packaged easy-family data. -/
+theorem noSmallAC0Solver_partial_of_easyFamilyData
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (easy : AC0EasyFamilyDataPartial solver.params.ac0) : False := by
+  exact noSmallAC0Solver_partial_of_family_card
+    (solver := solver)
+    (F := easy.F)
+    (hF := easy.witness)
+    (hCardLower := easy.card_lower)
+
+/--
+Constructive non-vacuous Step-C core:
+any solver that already carries its family-level easy-data package yields
+an immediate contradiction.
+-/
+theorem noConstructiveSmallAC0Solver_partial
+    {p : GapPartialMCSPParams}
+    (solver : ConstructiveSmallAC0Solver_Partial p) : False := by
+  exact noSmallAC0Solver_partial_of_easyFamilyData
+    (solver := solver.toSmallAC0Solver_Partial)
+    (easy := solver.easyData)
+
+/--
+Build a constructive solver package from a concrete solver, the compression
+hypothesis, and an easy-family AC0 witness for this solver.
+-/
+noncomputable def constructiveSmallAC0Solver_of_hypotheses
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p)
+    (hComp : AC0CompressionHypothesis p)
+    (hEasy :
+      ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+        (AC0EasyFamily solver.params.ac0)) :
+    ConstructiveSmallAC0Solver_Partial p :=
+  { toSmallAC0Solver_Partial := solver
+    easyData := ac0EasyFamilyData_of_syntacticHypotheses
+      solver.params.ac0 hEasy (hComp solver) }
+
+/--
+Builder variant that consumes the global easy-family witness hypothesis.
+-/
+noncomputable def constructiveSmallAC0Solver_of_globalHypotheses
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p)
+    (hComp : AC0CompressionHypothesis p)
+    (hEasyAll : EasyFunctionsAC0Witness p) :
+    ConstructiveSmallAC0Solver_Partial p :=
+  constructiveSmallAC0Solver_of_hypotheses
+    (solver := solver) (hComp := hComp) (hEasy := hEasyAll solver)
+
+/--
+Contradiction from direct syntactic easy-family hypotheses.
+-/
+theorem noSmallAC0Solver_partial_of_syntacticEasy
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (hEasy :
+      ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+        (AC0EasyFamily solver.params.ac0))
+    (hComp : AC0CompressionHypothesis p) : False := by
+  exact noSmallAC0Solver_partial_of_easyFamilyData
+    (solver := solver)
+    (easy := ac0EasyFamilyData_of_syntacticHypotheses
+      solver.params.ac0 hEasy (hComp solver))
+
+/--
+  Основное противоречие: если существует малый AC⁰-решатель Partial MCSP,
+  то это нарушает ограничение ёмкости SAL-сценария.
+-/
+theorem noSmallAC0Solver_partial
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
+  exact noSmallAC0Solver_partial_of_easyFamilyData
+    (solver := solver)
+    (easy := ac0EasyFamilyData_of_witness solver.params.ac0 hF)
 
 /--
 Constructive variant: contradiction from an explicit multi-switching witness

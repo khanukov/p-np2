@@ -168,37 +168,6 @@ theorem NP_not_subset_PpolyFormula_from_partial_formulas_trivial
     (NP_not_subset_PpolyReal_from_partial_formulas_trivial
       (hProvider := hProvider) (p := p) (δ := δ) hHyp hNPstrict)
 
-/-! Legacy auto-hypothesis wrappers (allFunctions route). -/
-
-namespace Compatibility
-
-theorem NP_not_subset_PpolyFormula_from_partial_formulas_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  {p : GapPartialMCSPParams} {δ : Rat} (hδ : (0 : Rat) < δ) :
-  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  intro hNPstrict
-  have hHyp : FormulaLowerBoundHypothesisPartial p δ :=
-    Compatibility.formula_hypothesis_from_pipeline_partial_legacy (p := p) (δ := δ) hδ
-  exact
-    NP_not_subset_PpolyFormula_from_partial_formulas
-      (hProvider := hProvider) (p := p) (δ := δ) hHyp hNPstrict
-
-theorem NP_not_subset_PpolyReal_from_partial_formulas_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  {p : GapPartialMCSPParams}
-  {δ : Rat} (hδ : (0 : Rat) < δ) :
-  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  intro hNPstrict
-  have hHyp : FormulaLowerBoundHypothesisPartial p δ :=
-    Compatibility.formula_hypothesis_from_pipeline_partial_legacy (p := p) (δ := δ) hδ
-  exact
-    NP_not_subset_PpolyReal_from_partial_formulas
-      (hProvider := hProvider) (p := p) (δ := δ) hHyp hNPstrict
-
-end Compatibility
-
 /-!
   Semantic bridge entrypoints (non-vacuous Step-C route).
 -/

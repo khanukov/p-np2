@@ -28,13 +28,13 @@ theorem i1_trivial_realization_available
   gapPartialMCSP_realization_trivial p
 
 theorem i1_trivial_ppolyreal_route_no_manual_embed
-    (hProvider : StructuredLocalityProviderPartial)
+    (hProvider : StructuredLocalityProviderPartial_semantic)
     {p : GapPartialMCSPParams} {δ : Rat}
     (hNPstrict : NP_strict (gapPartialMCSP_Language p))
-  (hδ : (0 : Rat) < δ) :
+    (hδ : (0 : Rat) < δ) :
     NP_not_subset_PpolyReal := by
   simpa using
-    Compatibility.NP_not_subset_PpolyReal_from_partial_formulas_legacy
+    NP_not_subset_PpolyReal_from_partial_formulas_semantic_auto
       (hProvider := hProvider) (p := p) (δ := δ) hδ hNPstrict
 
 theorem i3_certificate_auto_no_manual_hCardHalf

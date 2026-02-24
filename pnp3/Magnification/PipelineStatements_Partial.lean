@@ -208,19 +208,6 @@ lemma formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
   intro solver _hBound _hF
   exact ac0_statement_from_pipeline_partial_of_default_multiSwitching p solver (hMS solver)
 
-namespace Compatibility
-
-/--
-Legacy helper: derives the formula hypothesis through the
-`allFunctionsFamily` Step-C route.
--/
-lemma formula_hypothesis_from_pipeline_partial_legacy
-    (p : GapPartialMCSPParams) (δ : Rat) (hδ : (0 : Rat) < δ) :
-    FormulaLowerBoundHypothesisPartial p δ := by
-  refine ⟨hδ, ac0_bounded_statement_from_pipeline_partial p δ⟩
-
-end Compatibility
-
 /--
 Build the semantic formula lower-bound hypothesis from an explicit semantic
 bounded Step-C statement.

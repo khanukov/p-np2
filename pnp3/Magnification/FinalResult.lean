@@ -174,23 +174,6 @@ theorem NP_not_subset_PpolyFormula_from_params_semantic_auto
       (hProvider := hProvider) (p := p) (hHyp := hHyp) hNPstrict
 
 /--
-Semantic fixed-parameter entrypoint with auto Step-C hypothesis produced
-from the constructive (solver-packaged) Step-C API.
--/
-theorem NP_not_subset_PpolyFormula_from_params_semantic_constructive_auto
-  (hProvider : StructuredLocalityProviderPartial_semantic)
-  (p : GapPartialMCSPParams)
-  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
-  have hHyp : FormulaLowerBoundHypothesisPartial_semantic p (1 : Rat) :=
-    formula_hypothesis_from_pipeline_partial_constructive
-      (p := p) (δ := (1 : Rat)) hδ
-  exact
-    NP_not_subset_PpolyFormula_from_params_semantic
-      (hProvider := hProvider) (p := p) (hHyp := hHyp) hNPstrict
-
-/--
 Preferred semantic fixed-parameter entrypoint from direct syntactic easy-family
 assumptions.
 -/
@@ -210,23 +193,6 @@ theorem NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy
       (p := p)
       (δ := (1 : Rat))
       hδ hEasy hComp hNPstrict
-
-namespace Compatibility
-
-/-- Legacy fixed-parameter entrypoint with auto-generated Step-C hypothesis. -/
-theorem NP_not_subset_PpolyFormula_from_params_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  (p : GapPartialMCSPParams)
-  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  have hδ : (0 : Rat) < (1 : Rat) := zero_lt_one
-  exact
-    Compatibility.NP_not_subset_PpolyFormula_from_partial_formulas_legacy
-      (hProvider := hProvider)
-      (p := p)
-      (δ := (1 : Rat)) hδ hNPstrict
-
-end Compatibility
 
 /--
 Asymptotic wrapper: if the partial pipeline lower bound is available at all
@@ -699,18 +665,6 @@ theorem P_ne_NP_final_of_asymptotic_hypothesis
   n_large := by decide
   sYES_pos := by decide
   circuit_bound_ok := by native_decide
-
-namespace Compatibility
-
-/-- Canonical fixed-parameter compatibility statement. -/
-theorem NP_not_subset_PpolyFormula_final_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact Compatibility.NP_not_subset_PpolyFormula_from_params_legacy
-    hProvider canonicalPartialParams (hNPfam canonicalPartialParams)
-
-end Compatibility
 
 /--
 Primary final statement (asymptotic entry): from the structured provider and
@@ -2051,26 +2005,6 @@ theorem P_ne_NP_final_of_default_supportBounds
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       hFormulaToPpoly
-
-namespace Compatibility
-
-/-- Canonical fixed-parameter compatibility wrapper. -/
-theorem P_ne_NP_final_legacy
-  (hProvider : StructuredLocalityProviderPartial)
-  (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
-  ComplexityInterfaces.P_ne_NP := by
-  have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
-    Compatibility.NP_not_subset_PpolyFormula_final_legacy hProvider hNPfam
-  have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
-    hFormulaToPpoly hNPFormula
-  exact
-    ComplexityInterfaces.P_ne_NP_of_nonuniform_separation
-      hNP ComplexityInterfaces.P_subset_Ppoly_proof
-
-end Compatibility
 
 end Magnification
 end Pnp3

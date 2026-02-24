@@ -6,15 +6,16 @@ The repository contributes a Lean-verified combinatorial pipeline around SAL and
 capacity-style lower-bound infrastructure, plus machine-checked bridge plumbing
 into anti-checker/magnification interfaces.
 
-## Current claim level (2026-02-23)
+## Current claim level (2026-02-24)
 
 - Active machine-checked strategic target: AC0-focused separation route.
-- Final AC0 hooks are present in `pnp3/Magnification/FinalResult.lean`:
-  `NP_not_subset_AC0_final`,
-  `NP_not_subset_AC0_final_with_provider`,
-  `NP_not_subset_AC0_final_of_engine`,
-  `NP_not_subset_AC0_at_param_with_provider`,
-  `NP_not_subset_AC0_at_param_of_engine`.
+- Final public hooks in `pnp3/Magnification/FinalResult.lean` are semantic-first:
+  `NP_not_subset_PpolyFormula_from_params_semantic`,
+  `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`,
+  `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`,
+  `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`,
+  `NP_not_subset_PpolyFormula_final`,
+  `P_ne_NP_final`.
 - No active global axioms in `pnp3/`.
 - No active `sorry/admit` in `pnp3/`.
 
@@ -38,8 +39,8 @@ into anti-checker/magnification interfaces.
 - In `pnp3/Magnification/FinalResult.lean`, theorem names containing
   `..._PpolyFormula_final...` should be read as AC0-route formula-separation
   wrappers, not as standalone global non-uniform separation claims.
-- The preferred public-facing endpoints for this scope are the explicit AC0
-  names (`NP_not_subset_AC0_*`).
+- The preferred public-facing endpoints for this scope are the semantic
+  theorem names (`..._semantic...`) and `NP_not_subset_PpolyFormula_final`.
 
 ## Positioning
 

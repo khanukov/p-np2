@@ -1,6 +1,6 @@
 # PNP3: Publication-facing Status Snapshot
 
-> **Updated:** 2026-02-23
+> **Updated:** 2026-02-24
 
 This repository currently provides an AC0-focused machine-checked partial-track
 pipeline in Lean 4.
@@ -17,13 +17,15 @@ Final `P != NP` wrappers are currently conditional on an explicit formula-to-`P/
   (`HalfTableCertificateBound`, `..._of_certificate_auto`).
 - I-4 is constructively closed for explicit AC0/CNF inputs (Path A) via
   `pnp3/Magnification/AC0LocalityBridge.lean`.
-- AC0-facing final theorem hooks are available:
-  - `NP_not_subset_AC0_final`
-  - `NP_not_subset_AC0_final_with_provider`
-  - `NP_not_subset_AC0_final_of_engine`
-  - fixed-parameter hooks:
-    `NP_not_subset_AC0_at_param_with_provider`,
-    `NP_not_subset_AC0_at_param_of_engine`
+- Semantic final theorem hooks are available:
+  - fixed-parameter:
+    `NP_not_subset_PpolyFormula_from_params_semantic`,
+    `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`
+  - asymptotic:
+    `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`,
+    `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`
+  - final wrappers:
+    `NP_not_subset_PpolyFormula_final`, `P_ne_NP_final`
 - Naming note:
   `...PpolyFormula_final...` theorems in `FinalResult.lean` should be read as
   AC0-route formula-separation wrappers, not as standalone global non-uniform

@@ -1,6 +1,6 @@
 # P!=NP formalization repository
 
-> **Status (2026-02-23):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, with AC0-focused machine-checked separation hooks.
+> **Status (2026-02-24):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, with AC0-focused machine-checked separation hooks.
 > Final `P != NP` wrappers in `FinalResult.lean` are currently conditional on an explicit non-AC0 bridge.
 
 This repository contains the Lean 4 formalization around the PNP3 pipeline:

@@ -4,7 +4,7 @@ This file is the authoritative status snapshot.
 
 ## Date
 
-- 2026-02-23
+- 2026-02-24
 
 ## Active result
 
@@ -168,11 +168,10 @@ This file is the authoritative status snapshot.
   it from the legacy `allFunctionsFamily` route:
   - `NP_not_subset_PpolyFormula_from_partial_formulas`
   - `NP_not_subset_PpolyReal_from_partial_formulas`
-- Legacy auto-derivation is isolated under explicit `_legacy` names:
-  - `formula_hypothesis_from_pipeline_partial_legacy`
-  - `NP_not_subset_PpolyFormula_from_partial_formulas_legacy`
-  - `NP_not_subset_PpolyReal_from_partial_formulas_legacy`
-  - `NP_not_subset_PpolyFormula_from_params_legacy`
+- Legacy `allFunctions/default_multiSwitching` public final entrypoints were
+  removed from `pnp3/Magnification/FinalResult.lean`.
+- Lower-level compatibility definitions remain in `AntiChecker_Partial` /
+  `LB_Formulas_Core_Partial` as a temporary safety layer.
 - Added end-to-end semantic bridge/final route (no `allFunctionsFamily` in the
   new contracts):
   - `StructuredLocalityProviderPartial_semantic`

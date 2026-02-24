@@ -28,6 +28,20 @@ theorem strictGapNPFamily_of_tmWitnesses
   exact gapPartialMCSP_in_NP_TM_of_witness p (hW p)
 
 /--
+Local helper retained for the remaining default-multiSwitching wrappers
+inside this file.
+-/
+private lemma formula_hypothesis_from_default_multiSwitching_local
+    (p : GapPartialMCSPParams) (δ : Rat) (hδ : (0 : Rat) < δ)
+    (hMS : ∀ solver : SmallAC0Solver_Partial p,
+      AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
+    FormulaLowerBoundHypothesisPartial p δ := by
+  refine ⟨hδ, ?_⟩
+  intro solver _hBound _hF
+  exact LB_Formulas_core_partial_of_default_multiSwitching
+    (solver := solver) (hMS := hMS solver)
+
+/--
 Asymptotic entry hypothesis for the partial formula track:
 explicitly provides parameters and lower-bound hypotheses at all
 sizes above a threshold `N0`.
@@ -92,7 +106,7 @@ def asymptoticFormulaTrackHypothesis_of_defaultMultiSwitching
       pAt_hyp := ?_ }
   intro n hn
   exact
-    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
+    formula_hypothesis_from_default_multiSwitching_local
       (p := hMS.pAt n hn)
       (δ := (1 : Rat))
       (hδ := zero_lt_one)
@@ -766,7 +780,7 @@ theorem NP_not_subset_AC0_at_param_with_provider
     AllFunctionsAC0MultiSwitchingWitness solver.params.ac0) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
-    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
+    formula_hypothesis_from_default_multiSwitching_local
       (p := p)
       (δ := (1 : Rat))
       (hδ := zero_lt_one)
@@ -1476,7 +1490,7 @@ theorem NP_not_subset_Ppoly_at_param_AC0_of_viaAC0Bridge_with_provider
   (hBridge : ThirdPartyFacts.GapPartialMCSPPpolyToDepthViaAC0 p) :
   ComplexityInterfaces.NP_not_subset_Ppoly := by
   have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
-    formula_hypothesis_from_pipeline_partial_of_default_multiSwitching
+    formula_hypothesis_from_default_multiSwitching_local
       (p := p)
       (δ := (1 : Rat))
       (hδ := zero_lt_one)

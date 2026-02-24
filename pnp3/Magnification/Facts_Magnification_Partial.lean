@@ -52,6 +52,17 @@ def StructuredLocalityProviderPartial : Prop :=
     ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) →
       RestrictionLocalityPartial p
 
+/--
+Semantic structured provider counterpart:
+same locality payload, but consumes the non-vacuous semantic lower-bound
+hypothesis.
+-/
+def StructuredLocalityProviderPartial_semantic : Prop :=
+  ∀ (p : GapPartialMCSPParams) (δ : Rat),
+    FormulaLowerBoundHypothesisPartial_semantic p δ →
+    ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) →
+      RestrictionLocalityPartial p
+
 /-!
   ### OPS trigger (partial, formulas)
 -/
@@ -160,6 +171,64 @@ theorem OPS_trigger_formulas_partial_of_provider_formula_separation_strict
     obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
     exact noSmallLocalCircuitSolver_partial_v2 loc
   exact ComplexityInterfaces.NP_strict_not_subset_PpolyFormula_of_contra hContraStructured
+
+/-!
+  ### OPS trigger (partial, formulas, semantic lower-bound hypothesis)
+-/
+
+theorem OPS_trigger_general_contra_structured_with_provider_partial_semantic
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  {p : GapPartialMCSPParams} {δ : Rat} :
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
+  FormulaLowerBoundHypothesisPartial_semantic p δ →
+    ((∀ L : ComplexityInterfaces.Language,
+      ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyFormula L) → False) := by
+  intro hNPstrict hHyp hAll
+  have hPpolyFormula :
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
+    hAll _ hNPstrict
+  obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
+  exact noSmallLocalCircuitSolver_partial_v2 loc
+
+theorem OPS_trigger_formulas_partial_of_provider_formula_separation_semantic
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  {p : GapPartialMCSPParams} {δ : Rat} :
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p)) →
+  FormulaLowerBoundHypothesisPartial_semantic p δ →
+    ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  intro hNPstrict hHyp
+  have hContraStructured :
+      (∀ L : ComplexityInterfaces.Language,
+        ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyFormula L) → False :=
+    OPS_trigger_general_contra_structured_with_provider_partial_semantic
+      (hProvider := hProvider) (hNPstrict := hNPstrict) (p := p) (δ := δ) hHyp
+  exact ComplexityInterfaces.NP_not_subset_PpolyFormula_of_NP_strict_not_subset_PpolyFormula
+    (ComplexityInterfaces.NP_strict_not_subset_PpolyFormula_of_contra hContraStructured)
+
+theorem OPS_trigger_formulas_partial_of_provider_semantic
+  (hProvider : StructuredLocalityProviderPartial_semantic)
+  {p : GapPartialMCSPParams}
+  (hNPstrict : ComplexityInterfaces.NP_strict (gapPartialMCSP_Language p))
+  (hGapEmbed :
+    ComplexityInterfaces.PpolyReal (gapPartialMCSP_Language p) →
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+  {δ : Rat} :
+  FormulaLowerBoundHypothesisPartial_semantic p δ →
+    NP_not_subset_PpolyReal := by
+  intro hHyp
+  have hContra :
+      (∀ L : ComplexityInterfaces.Language,
+        ComplexityInterfaces.NP_strict L → ComplexityInterfaces.PpolyReal L) → False := by
+    intro hAll
+    have hPpoly : ComplexityInterfaces.PpolyReal (gapPartialMCSP_Language p) :=
+      hAll _ hNPstrict
+    have hPpolyFormula :
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
+      hGapEmbed hPpoly
+    obtain ⟨T, loc, hT, hℓ⟩ := hProvider p δ hHyp hPpolyFormula
+    exact noSmallLocalCircuitSolver_partial_v2 loc
+  exact ComplexityInterfaces.NP_not_subset_PpolyReal_of_NP_strict_not_subset_PpolyReal
+    (ComplexityInterfaces.NP_strict_not_subset_PpolyReal_of_contra hContra)
 
 end Magnification
 end Pnp3

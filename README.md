@@ -10,19 +10,16 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
 ## Current proved surface
 
 - Strategic target class: `AC^0`.
-- AC0-oriented final hooks are present in `pnp3/Magnification/FinalResult.lean`:
-  - `NP_not_subset_AC0_final`
-  - `NP_not_subset_AC0_final_with_provider`
-  - `NP_not_subset_AC0_final_of_engine`
-  - TM-witness variants:
-    `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`,
-    `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
-  - fixed-parameter strict hooks:
-    `NP_not_subset_AC0_at_param_with_provider`,
-    `NP_not_subset_AC0_at_param_of_engine`
-  - fixed-parameter TM-witness variants:
-    `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`,
-    `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
+- Active constructive-semantic hooks are present in `pnp3/Magnification/FinalResult.lean`:
+  - fixed-parameter semantic entrypoints:
+    `NP_not_subset_PpolyFormula_from_params_semantic`,
+    `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`
+  - asymptotic semantic entrypoints:
+    `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`,
+    `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`
+  - final wrappers:
+    `NP_not_subset_PpolyFormula_final`,
+    `P_ne_NP_final`
 - Naming note:
   theorem names with `...PpolyFormula_final...` in `FinalResult.lean` are
   AC0-route formula-separation wrappers, not standalone global non-uniform
@@ -72,12 +69,11 @@ Most constructive practical route:
 
 1. Provide explicit `GapPartialMCSP_TMWitness` data (fixed-`p` or family).
 2. Use explicit `ConstructiveLocalityEnginePartial` (avoid default `Nonempty` wrappers).
-3. Use fixed-parameter theorem
-   `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
-   when you work at one concrete `p`.
-4. Use asymptotic theorem
-   `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
-   when you have full witness family data.
+3. Build semantic Step-C at fixed parameter via
+   `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`.
+4. Lift to asymptotic via
+   `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`
+   and then to `P_ne_NP_final` (still with explicit non-AC0 bridge).
 
 ## What Is Still Needed For An Unconditional Final Claim
 

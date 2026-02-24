@@ -11,16 +11,13 @@ This file is the authoritative status snapshot.
 - Pipeline: `PNP3` (`SAL -> Covering-Power -> anti-checker -> magnification`)
 - Strategic target class: **AC0 only**
 - Main final module: `pnp3/Magnification/FinalResult.lean`
-- Active AC0 hooks in `FinalResult.lean`:
-  - `NP_not_subset_AC0_final`
-  - `NP_not_subset_AC0_final_with_provider`
-  - `NP_not_subset_AC0_final_of_engine`
-  - `NP_not_subset_AC0_final_with_provider_of_tmWitnesses`
-  - `NP_not_subset_AC0_final_of_engine_of_tmWitnesses`
-  - `NP_not_subset_AC0_at_param_with_provider`
-  - `NP_not_subset_AC0_at_param_of_engine`
-  - `NP_not_subset_AC0_at_param_with_provider_of_tmWitness`
-  - `NP_not_subset_AC0_at_param_of_engine_of_tmWitness`
+- Active constructive-semantic hooks in `FinalResult.lean`:
+  - `NP_not_subset_PpolyFormula_from_params_semantic`
+  - `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`
+  - `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`
+  - `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`
+  - `NP_not_subset_PpolyFormula_final`
+  - `P_ne_NP_final`
   - `strictGapNPFamily_of_tmWitnesses`
 
 ## Verified code hygiene
@@ -108,65 +105,20 @@ This file is the authoritative status snapshot.
   - `P_ne_NP_final_depth_with_provider_of_bridge` (canonical lift)
   - `P_ne_NP_final_depth`
   - `P_ne_NP_final_depth_of_bridge` (canonical lift)
-  - `P_ne_NP_final_depth_of_default_multiSwitching_bridge`
-    (AC0 asymptotic wrapper)
-  - `P_ne_NP_at_param_AC0_depth_with_provider`
-    (fixed-parameter AC0 wrapper)
-  - `P_ne_NP_at_param_AC0_depth_of_engine`
-    (fixed-parameter AC0 wrapper via engine)
-  - `ConditionalPneNpAC0DepthFinalContract`
-    + `P_ne_NP_final_AC0_depth_of_contract`
-  - `ConditionalPneNpAC0AtParamDepthContract`
-    + `P_ne_NP_at_param_AC0_depth_of_contract`
-  - constructive-bridge wrappers/contracts:
-    - `P_ne_NP_final_depth_of_default_multiSwitching_ppolyBridge`
-    - `ConditionalPneNpAC0DepthPpolyBridgeFinalContract`
-    - `P_ne_NP_final_AC0_depth_of_ppolyBridge_contract`
-    - `P_ne_NP_at_param_AC0_depth_with_provider_of_ppolyBridge`
-    - `P_ne_NP_at_param_AC0_depth_of_engine_of_ppolyBridge`
-    - `ConditionalPneNpAC0AtParamDepthPpolyBridgeContract`
-    - `P_ne_NP_at_param_AC0_depth_of_ppolyBridge_contract`
   - `ConditionalPneNpDepthFinalContract`
   - `ConditionalPneNpDepthBridgeFinalContract` (canonical lift contract)
   - `P_ne_NP_final_of_depth_contract`
   - `P_ne_NP_final_of_depth_bridge_contract`
 
-## AC0-slice constructive bridge progress
+## Legacy cleanup (2026-02-24)
 
-- Added localized AC0-depth bridge packaging in
-  `pnp3/ThirdPartyFacts/PpolyFormula.lean`:
-  - `GapPartialMCSPPpolyToDepthAt`
-  - `GapPartialMCSPPpolyToDepthViaAC0` (depth taken from `ac0.d`)
-  - `GapPartialMCSPPpolyDepthReifierViaAC0`
-    + `gapPartialMCSP_ppoly_to_depth_viaAC0_of_reifier`
-  - `gapPartialMCSP_ppoly_to_depth_of_viaAC0`
-  - default flag + extractor:
-    `hasDefaultGapPartialMCSPPpolyToDepthViaAC0`,
-    `defaultGapPartialMCSPPpolyToDepthViaAC0`
-  - default reifier flag + extractor:
-    `hasDefaultGapPartialMCSPPpolyDepthReifierViaAC0`,
-    `defaultGapPartialMCSPPpolyDepthReifierViaAC0`
-- Added direct AC0-slice constructive endpoints in
-  `pnp3/Magnification/FinalResult.lean`:
-  - `NP_not_subset_Ppoly_at_param_AC0_of_viaAC0Bridge_with_provider`
-  - `P_ne_NP_at_param_AC0_of_viaAC0Bridge_with_provider`
-  - `P_ne_NP_at_param_AC0_of_viaAC0Bridge_of_engine`
-  - `P_ne_NP_final_AC0_of_viaAC0Bridge`
-  - default-flag wrappers:
-    - `NP_not_subset_Ppoly_at_param_AC0_of_default_viaAC0Bridge_with_provider`
-    - `P_ne_NP_at_param_AC0_of_default_viaAC0Bridge_with_provider`
-    - `P_ne_NP_final_AC0_of_default_viaAC0Bridge`
-  - reifier-based wrappers:
-    - `NP_not_subset_Ppoly_at_param_AC0_of_reifier_with_provider`
-    - `P_ne_NP_at_param_AC0_of_reifier_with_provider`
-    - `P_ne_NP_final_AC0_of_reifier`
-    - `P_ne_NP_final_AC0_of_default_reifier`
-- Interpretation:
-  this removes the need for a global `∀ L` bridge in the AC0 route; remaining
-  constructive work is to instantiate `GapPartialMCSPPpolyToDepthViaAC0`
-  from concrete AC0 realizers.
-- Status: this is an interface-level refactor for bounded-depth bridge
-  assumptions; it does **not** yet provide an internal proof of the bridge.
+- Removed legacy `allFunctions/default_multiSwitching` public entrypoints from
+  `pnp3/Magnification/FinalResult.lean`.
+- Active final API is now centered on semantic/syntactic-easy hypotheses and
+  constructive provider wiring.
+- Legacy all-functions witness layer remains only in lower-level compatibility
+  modules (`AntiChecker_Partial` / `LB_Formulas_Core_Partial`) and is no longer
+  the public final-route surface.
 
 ## Final theorem interpretation
 

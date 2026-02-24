@@ -31,10 +31,10 @@ theorem i1_trivial_ppolyreal_route_no_manual_embed
     (hProvider : StructuredLocalityProviderPartial)
     {p : GapPartialMCSPParams} {δ : Rat}
     (hNPstrict : NP_strict (gapPartialMCSP_Language p))
-    (hδ : (0 : Rat) < δ) :
+  (hδ : (0 : Rat) < δ) :
     NP_not_subset_PpolyReal := by
   simpa using
-    NP_not_subset_PpolyReal_from_partial_formulas
+    Compatibility.NP_not_subset_PpolyReal_from_partial_formulas_legacy
       (hProvider := hProvider) (p := p) (δ := δ) hδ hNPstrict
 
 theorem i3_certificate_auto_no_manual_hCardHalf

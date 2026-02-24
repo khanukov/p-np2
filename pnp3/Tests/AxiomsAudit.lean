@@ -18,7 +18,7 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyFormula_final
 #print axioms NP_not_subset_PpolyFormula_final_of_formulaCertificate
 #print axioms NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
-#print axioms NP_not_subset_PpolyFormula_final_legacy
+#print axioms Compatibility.NP_not_subset_PpolyFormula_final_legacy
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas_default
 
@@ -34,6 +34,7 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyFormula_of_defaultMultiSwitching_hypothesis
 #print axioms NP_not_subset_PpolyFormula_final_of_default_multiSwitching
 #print axioms P_ne_NP_final_of_default_multiSwitching
+#print axioms Compatibility.P_ne_NP_final_legacy
 
 -- Regression checks for I-1 / I-3 readiness.
 #print axioms Tests.i1_trivial_realization_available

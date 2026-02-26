@@ -634,6 +634,36 @@ theorem structuredLocalityProviderPartial_of_supportBounds
     (formulaRestrictionCertificateData_of_supportBounds hBounds)
 
 /--
+I-2 direct closure contract: explicit certificate-first data sufficient to
+construct a structured locality provider without default `Nonempty` wrappers.
+-/
+structure DirectStructuredLocalityProviderContract where
+  certificateProvider : FormulaCertificateProviderPartial
+
+/-- Build a structured locality provider from the direct I-2 contract. -/
+theorem structuredLocalityProviderPartial_of_contract
+    (h : DirectStructuredLocalityProviderContract) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_formulaCertificate h.certificateProvider
+
+/--
+Build the direct I-2 contract from explicit restriction-level certificate data.
+-/
+noncomputable def directStructuredLocalityProviderContract_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    DirectStructuredLocalityProviderContract :=
+  ⟨formulaCertificateProvider_of_restrictionData D⟩
+
+/--
+Build the direct I-2 contract from support-based numeric assumptions.
+-/
+noncomputable def directStructuredLocalityProviderContract_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    DirectStructuredLocalityProviderContract :=
+  directStructuredLocalityProviderContract_of_restrictionData
+    (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
 Default-availability flag for a constructive locality engine.
 -/
 def hasDefaultStructuredLocalityProviderPartial : Prop :=

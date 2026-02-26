@@ -603,6 +603,52 @@ theorem P_ne_NP_final_of_asymptotic_hypothesis
     ComplexityInterfaces.P_ne_NP_of_nonuniform_separation
       hNP ComplexityInterfaces.P_subset_Ppoly_proof
 
+/--
+I-2 closure contract for formula separation:
+provider-side closure is supplied directly (certificate-first route),
+without default `Nonempty` wrappers.
+-/
+structure I2FormulaSeparationFinalContract where
+  provider : DirectStructuredLocalityProviderContract
+  asymptotic : AsymptoticFormulaTrackHypothesis
+  npFamily : StrictGapNPFamily
+
+/--
+Contract-based formula-separation entrypoint for the direct I-2 route.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_i2_contract
+  (h : I2FormulaSeparationFinalContract) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
+      (hProvider := structuredLocalityProviderPartial_of_contract h.provider)
+      (hAsym := h.asymptotic)
+      (hNPstrict := h.npFamily (h.asymptotic.pAt h.asymptotic.N0 (le_rfl)))
+
+/--
+I-2 closure contract for the conditional final `P ≠ NP` wrapper.
+-/
+structure I2PneNpFinalContract where
+  provider : DirectStructuredLocalityProviderContract
+  asymptotic : AsymptoticFormulaTrackHypothesis
+  npFamily : StrictGapNPFamily
+  formulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+      ComplexityInterfaces.NP_not_subset_Ppoly
+
+/--
+Contract-based conditional final `P ≠ NP` entrypoint for the direct I-2 route.
+-/
+theorem P_ne_NP_final_of_i2_contract
+  (h : I2PneNpFinalContract) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_of_asymptotic_hypothesis
+      (hProvider := structuredLocalityProviderPartial_of_contract h.provider)
+      (hAsym := h.asymptotic)
+      (hNPfam := h.npFamily)
+      h.formulaToPpoly
+
 /-- Canonical Partial MCSP parameters used in the final bridge. -/
 @[simp] def canonicalPartialParams : GapPartialMCSPParams where
   n := 8

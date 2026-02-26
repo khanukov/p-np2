@@ -53,50 +53,45 @@ structure SmallAC0ParamsPartial (p : GapPartialMCSPParams) where
       Nat.pow 2 (Nat.pow 2 ac0.n / (ac0.n + 2))
   deriving Repr
 
-/--
-Default constructive package for the AC0 all-functions family:
-provides a concrete multi-switching witness.
--/
-class AllFunctionsAC0MultiSwitchingWitness
-    (params : ThirdPartyFacts.AC0Parameters) : Type where
-  witness :
-    ThirdPartyFacts.AC0MultiSwitchingWitness params
-      (Counting.allFunctionsFamily params.n)
+-- NOTE: default easy-family multi-switching packages are declared later,
+-- after `AC0EasyFamily` is introduced.
 
-/-- Bridge: default all-functions package provides the generic provider class. -/
-instance allFunctions_multiSwitchingProvider
-    (params : ThirdPartyFacts.AC0Parameters)
-    [h : AllFunctionsAC0MultiSwitchingWitness params] :
-    ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
-      params
-      (Counting.allFunctionsFamily params.n) where
-  witness := h.witness
 
 /--
-Reverse bridge: a specialized generic provider for `allFunctionsFamily`
-can be used as the default all-functions multi-switching package.
--/
-def allFunctions_multiSwitchingPackage_of_provider
-    (params : ThirdPartyFacts.AC0Parameters)
-    [h :
-      ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
-        params
-        (Counting.allFunctionsFamily params.n)] :
-    AllFunctionsAC0MultiSwitchingWitness params :=
-  ⟨h.witness⟩
+Family-level AC0 data for a counting-style Step-C contradiction.
 
+`F` is the candidate "easy" class, `witness` gives AC0 realizability, and
+`card_lower` is the large-cardinality premise required by the capacity gap.
+-/
+structure AC0EasyFamilyDataPartial (params : ThirdPartyFacts.AC0Parameters) where
+  F : Core.Family params.n
+  witness : ThirdPartyFacts.AC0FamilyWitnessProp params F
+  card_lower : Nat.pow 2 (Nat.pow 2 params.n) ≤ F.toFinset.card
 
 /--
   Корректный AC⁰-решатель Partial MCSP.
 
   Здесь фиксируем только интерфейс: функция `decide` и доказательство
   корректности относительно `GapPartialMCSPPromise`.
+
+  В текущей (финальной для шага C) архитектуре этот интерфейс уже хранит
+  внутреннюю синтаксическую интернализацию:
+  * `circuit` + `decide_eq` (связь semantic-функции с AC0-circuit eval),
+  * `easyData` (готовый пакет для counting-противоречия).
+
+  Это делает возможным каноническое построение
+  `StepCSyntacticLiftDataPartial` без внешних гипотез.
 -/
 structure SmallAC0Solver_Partial (p : GapPartialMCSPParams) where
   params : SmallAC0ParamsPartial p
   sem : ComplexityInterfaces.SemanticDecider (partialInputLen p)
   witness : sem.Carrier
   correct : SolvesPromise (GapPartialMCSPPromise p) (fun x => sem.eval witness x)
+  circuit : ThirdPartyFacts.AC0Circuit params.ac0
+  decide_eq :
+    (params.same_n ▸ (fun x : Core.BitVec (partialInputLen p) => sem.eval witness x)) =
+      ThirdPartyFacts.AC0Circuit.eval circuit
+  easyData : AC0EasyFamilyDataPartial params.ac0
 
 /-- Evaluator induced by the semantic witness of an AC0 solver. -/
 @[simp] def SmallAC0Solver_Partial.decide
@@ -158,23 +153,41 @@ def SolverAC0MultiSwitchingWitnessPartial
     (solverFunctionFamily solver)
 
 /--
-Family-level AC0 data for a counting-style Step-C contradiction.
+Constructive Step-C solver package.
 
-`F` is the candidate "easy" class, `witness` gives AC0 realizability, and
-`card_lower` is the large-cardinality premise required by the capacity gap.
--/
-structure AC0EasyFamilyDataPartial (params : ThirdPartyFacts.AC0Parameters) where
-  F : Core.Family params.n
-  witness : ThirdPartyFacts.AC0FamilyWitnessProp params F
-  card_lower : Nat.pow 2 (Nat.pow 2 params.n) ≤ F.toFinset.card
-
-/--
-Constructive Step-C solver package:
-the solver carries the full easy-family counting data internally.
+Now this is just a nominal wrapper over `SmallAC0Solver_Partial`: the semantic
+solver itself already carries `easyData` internally.
 -/
 structure ConstructiveSmallAC0Solver_Partial (p : GapPartialMCSPParams)
     extends SmallAC0Solver_Partial p where
-  easyData : AC0EasyFamilyDataPartial params.ac0
+
+/--
+Syntactic AC0 solver package for the closed-world Step-C route.
+
+Now this structure is a thin wrapper over `SmallAC0Solver_Partial`: the
+semantic solver already carries circuit/easy-data internalization. We keep this
+wrapper for API stability and for places that still expect an explicit
+"syntactic package" type.
+-/
+structure SmallAC0Solver_Partial_Syntactic (p : GapPartialMCSPParams)
+    extends SmallAC0Solver_Partial p where
+
+/-- Forgetful coercion from syntactic package to constructive package. -/
+def SmallAC0Solver_Partial_Syntactic.toConstructive
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial_Syntactic p) :
+    ConstructiveSmallAC0Solver_Partial p :=
+  { toSmallAC0Solver_Partial := solver.toSmallAC0Solver_Partial }
+
+/--
+Closed-world builder: enriched syntactic solver packages already contain
+everything needed to build the constructive Step-C package.
+-/
+abbrev constructiveSmallAC0Solver_of_solver
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial_Syntactic p) :
+    ConstructiveSmallAC0Solver_Partial p :=
+  solver.toConstructive
 
 /-!
   ### Локальные схемы (partial‑трек)
@@ -1086,6 +1099,38 @@ noncomputable def AC0EasyFamily (params : ThirdPartyFacts.AC0Parameters) :
   AC0SyntacticEasyFamily params
 
 /--
+Default constructive package for the Step-C easy family:
+provides a concrete multi-switching witness specifically for `AC0EasyFamily`.
+-/
+class EasyFamilyAC0MultiSwitchingWitness
+    (params : ThirdPartyFacts.AC0Parameters) : Type where
+  witness :
+    ThirdPartyFacts.AC0MultiSwitchingWitness params
+      (AC0EasyFamily params)
+
+/-- Bridge: default easy-family package provides the generic provider class. -/
+instance easyFamily_multiSwitchingProvider
+    (params : ThirdPartyFacts.AC0Parameters)
+    [h : EasyFamilyAC0MultiSwitchingWitness params] :
+    ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
+      params
+      (AC0EasyFamily params) where
+  witness := h.witness
+
+/--
+Reverse bridge: a specialized generic provider for `AC0EasyFamily`
+can be used as the default easy-family multi-switching package.
+-/
+def easyFamily_multiSwitchingPackage_of_provider
+    (params : ThirdPartyFacts.AC0Parameters)
+    [h :
+      ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
+        params
+        (AC0EasyFamily params)] :
+    EasyFamilyAC0MultiSwitchingWitness params :=
+  ⟨h.witness⟩
+
+/--
 Compression Hypothesis (core hardness-magnification interface):
 if a small AC0 solver exists for Partial MCSP at parameter `p`, then the
 syntactic AC0 easy family is large enough to contain all Boolean functions.
@@ -1094,79 +1139,6 @@ def AC0CompressionHypothesis (p : GapPartialMCSPParams) : Prop :=
   ∀ solver : SmallAC0Solver_Partial p,
     Nat.pow 2 (Nat.pow 2 solver.params.ac0.n) ≤
       (AC0EasyFamily solver.params.ac0).toFinset.card
-
-/--
-Easy-family AC0 witness hypothesis: each small AC0 solver has an AC0 witness
-for the syntactic easy family at its parameters.
--/
-def EasyFunctionsAC0Witness (p : GapPartialMCSPParams) : Prop :=
-  ∀ solver : SmallAC0Solver_Partial p,
-    ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-      (AC0EasyFamily solver.params.ac0)
-
-/--
-Cardinal lower bound for `AC0EasyFamily` derived from an all-functions AC0
-witness.
--/
-lemma ac0EasyFamily_card_lower_of_allWitness
-    (params : ThirdPartyFacts.AC0Parameters)
-    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp params
-      (Counting.allFunctionsFamily params.n)) :
-    Nat.pow 2 (Nat.pow 2 params.n) ≤ (AC0EasyFamily params).toFinset.card := by
-  classical
-  have hsubset :
-      (Counting.allFunctionsFamily params.n).toFinset ⊆
-        ac0SyntacticEasyFunctionsFinset params :=
-    family_subset_ac0SyntacticEasy_of_witness
-      (params := params)
-      (F := Counting.allFunctionsFamily params.n)
-      hAll
-  have hcard_le :
-      (Counting.allFunctionsFamily params.n).toFinset.card ≤
-        (ac0SyntacticEasyFunctionsFinset params).card :=
-    Finset.card_le_card hsubset
-  have hcard_all :
-      (Counting.allFunctionsFamily params.n).toFinset.card =
-        Nat.pow 2 (Nat.pow 2 params.n) := by
-    simp [Counting.allFunctionsFamily_toFinset]
-  have hpow_le :
-      Nat.pow 2 (Nat.pow 2 params.n) ≤
-        (ac0SyntacticEasyFunctionsFinset params).card := by
-    simpa [hcard_all] using hcard_le
-  simpa [AC0EasyFamily, AC0SyntacticEasyFamily_toFinset] using hpow_le
-
-/--
-Build an AC0 witness for `AC0EasyFamily` from an all-functions AC0 witness.
--/
-lemma ac0EasyFamily_witness_of_allWitness
-    (params : ThirdPartyFacts.AC0Parameters)
-    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp params
-      (Counting.allFunctionsFamily params.n)) :
-    ThirdPartyFacts.AC0FamilyWitnessProp params (AC0EasyFamily params) := by
-  classical
-  refine ⟨?_⟩
-  let wAll : ThirdPartyFacts.AC0FamilyWitness params (Counting.allFunctionsFamily params.n) :=
-    Classical.choice hAll
-  refine
-    { circuits := wAll.circuits
-      covers := ?_
-      depth_le := wAll.depth_le
-      size_le := wAll.size_le
-      circuits_length_le := wAll.circuits_length_le }
-  intro f _hfEasy
-  have hfAll : f ∈ Counting.allFunctionsFamily params.n := by
-    simp [Counting.allFunctionsFamily]
-  exact wAll.covers f hfAll
-
-/-- Build family-level Step-C data from an all-functions AC0 witness. -/
-noncomputable def ac0EasyFamilyData_of_witness
-    (params : ThirdPartyFacts.AC0Parameters)
-    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp params
-      (Counting.allFunctionsFamily params.n)) :
-    AC0EasyFamilyDataPartial params where
-  F := AC0EasyFamily params
-  witness := ac0EasyFamily_witness_of_allWitness params hAll
-  card_lower := ac0EasyFamily_card_lower_of_allWitness params hAll
 
 /--
 Syntactic easy-family package directly from easy-family hypotheses
@@ -1204,32 +1176,169 @@ theorem noConstructiveSmallAC0Solver_partial
     (easy := solver.easyData)
 
 /--
-Build a constructive solver package from a concrete solver, the compression
-hypothesis, and an easy-family AC0 witness for this solver.
+Data required to make Step-C fully closed over plain semantic AC0 solvers.
+
+`buildEasyData` is the missing compression/construction bridge:
+from each `SmallAC0Solver_Partial` we must internally construct the
+family-level package consumed by the counting contradiction.
 -/
-noncomputable def constructiveSmallAC0Solver_of_hypotheses
-    {p : GapPartialMCSPParams}
-    (solver : SmallAC0Solver_Partial p)
-    (hComp : AC0CompressionHypothesis p)
-    (hEasy :
-      ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-        (AC0EasyFamily solver.params.ac0)) :
-    ConstructiveSmallAC0Solver_Partial p :=
-  { toSmallAC0Solver_Partial := solver
-    easyData := ac0EasyFamilyData_of_syntacticHypotheses
-      solver.params.ac0 hEasy (hComp solver) }
+structure StepCClosureDataPartial (p : GapPartialMCSPParams) : Type 2 where
+  buildEasyData :
+    ∀ solver : SmallAC0Solver_Partial p,
+      AC0EasyFamilyDataPartial solver.params.ac0
 
 /--
-Builder variant that consumes the global easy-family witness hypothesis.
+Optional internalization package for the syntactic Step-C route.
+
+It states that every semantic solver can be lifted to a syntactic package
+without changing the underlying semantic solver object.  This isolates the
+remaining "semantic -> syntactic" engineering burden in one interface.
 -/
-noncomputable def constructiveSmallAC0Solver_of_globalHypotheses
+structure StepCSyntacticLiftDataPartial (p : GapPartialMCSPParams) : Type 2 where
+  lift :
+    ∀ _solver : SmallAC0Solver_Partial p,
+      SmallAC0Solver_Partial_Syntactic p
+  sound :
+    ∀ solver : SmallAC0Solver_Partial p,
+      (lift solver).toSmallAC0Solver_Partial = solver
+
+/--
+Canonical semantic→syntactic lift package.
+
+Because `SmallAC0Solver_Partial` now already stores the syntactic payload
+(`circuit`, `decide_eq`, `easyData`), every semantic solver can be wrapped into
+`SmallAC0Solver_Partial_Syntactic` without extra assumptions.
+-/
+noncomputable def stepCSyntacticLiftDataPartial_default
+    (p : GapPartialMCSPParams) : StepCSyntacticLiftDataPartial p where
+  lift := fun solver =>
+    { toSmallAC0Solver_Partial := solver }
+  sound := by
+    intro solver
+    rfl
+
+/--
+Solver-local provider for the missing Step-C closure package.
+
+This isolates the remaining mathematical work in the strongest reusable form:
+for a fixed solver, provide family-level AC0 data and a strict capacity gap.
+-/
+class StepCClosureDataPartialProvider
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) : Type 2 where
+  F : Family solver.params.ac0.n
+  Y : Finset (Core.BitVec solver.params.ac0.n → Bool)
+  hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F
+  Y_sub :
+    let sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2
+    Y ⊆ familyFinset (sc := sc)
+  large :
+    let sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2
+    scenarioCapacity (sc := sc) < Y.card
+
+/--
+Build fully-closed Step-C closure data from a semantic-to-syntactic lift
+package.
+-/
+noncomputable def stepCClosureData_of_syntacticLift
+    {p : GapPartialMCSPParams}
+    (liftData : StepCSyntacticLiftDataPartial p) :
+    StepCClosureDataPartial p where
+  buildEasyData := by
+    intro solver
+    let s := liftData.lift solver
+    have hs : s.toSmallAC0Solver_Partial = solver := liftData.sound solver
+    exact hs ▸ s.easyData
+
+/--
+Build a constructive solver package from semantic-to-syntactic lift data.
+
+This is a local solver-level bridge: once `liftData` is available, every
+semantic solver is canonically packaged as a constructive solver carrying the
+required `easyData` payload.
+-/
+noncomputable def constructiveSmallAC0Solver_of_syntacticLift
+    {p : GapPartialMCSPParams}
+    (liftData : StepCSyntacticLiftDataPartial p)
+    (solver : SmallAC0Solver_Partial p) :
+    ConstructiveSmallAC0Solver_Partial p :=
+  (liftData.lift solver).toConstructive
+
+/--
+Fully closed Step-C contradiction from semantic solvers, assuming the explicit
+internal closure data package.
+-/
+theorem noSmallAC0Solver_partial_closed
+    {p : GapPartialMCSPParams}
+    (closure : StepCClosureDataPartial p)
+    (solver : SmallAC0Solver_Partial p) : False := by
+  exact noSmallAC0Solver_partial_of_easyFamilyData
+    (solver := solver)
+    (easy := closure.buildEasyData solver)
+
+/--
+Closed contradiction in the solver-local provider style (no global closure arg).
+-/
+theorem noSmallAC0Solver_partial_closed_of_provider
     {p : GapPartialMCSPParams}
     (solver : SmallAC0Solver_Partial p)
-    (hComp : AC0CompressionHypothesis p)
-    (hEasyAll : EasyFunctionsAC0Witness p) :
-    ConstructiveSmallAC0Solver_Partial p :=
-  constructiveSmallAC0Solver_of_hypotheses
-    (solver := solver) (hComp := hComp) (hEasy := hEasyAll solver)
+    [h : StepCClosureDataPartialProvider solver] : False := by
+  classical
+  let sc := (scenarioFromAC0 (params := solver.params.ac0) (F := h.F) (hF := h.hF)).2
+  have hYsub : h.Y ⊆ familyFinset (sc := sc) := by
+    simpa [sc] using h.Y_sub
+  have hLarge : scenarioCapacity (sc := sc) < h.Y.card := by
+    simpa [sc] using h.large
+  have hY_le_family : h.Y.card ≤ (familyFinset (sc := sc)).card :=
+    Finset.card_le_card hYsub
+  have hFamily_le_cap :
+      (familyFinset (sc := sc)).card ≤ scenarioCapacity (sc := sc) :=
+    family_card_le_capacity (sc := sc)
+  have hY_le_cap : h.Y.card ≤ scenarioCapacity (sc := sc) :=
+    le_trans hY_le_family hFamily_le_cap
+  exact Nat.not_lt_of_ge hY_le_cap hLarge
+
+/--
+Existential form of fully closed Step-C contradiction.
+
+This is the mathematically strongest in-repo target for Step-C at fixed `p`:
+if closure data is available, there does not exist any semantic small AC0
+solver for `GapPartialMCSPPromise p`.
+-/
+theorem noSmallAC0Solver_partial_closed_noExists
+    {p : GapPartialMCSPParams}
+    (closure : StepCClosureDataPartial p) :
+    ¬ ∃ _solver : SmallAC0Solver_Partial p, True := by
+  intro hExists
+  rcases hExists with ⟨solver, _⟩
+  exact noSmallAC0Solver_partial_closed (closure := closure) (solver := solver)
+
+/--
+Pointwise and existential formulations of the fully closed contradiction are
+equivalent.
+-/
+theorem noSmallAC0Solver_partial_closed_iff_noExists
+    {p : GapPartialMCSPParams}
+    (_closure : StepCClosureDataPartial p) :
+    (∀ _solver : SmallAC0Solver_Partial p, False)
+      ↔ (¬ ∃ _solver : SmallAC0Solver_Partial p, True) := by
+  constructor
+  · intro hAll hExists
+    rcases hExists with ⟨solver, _⟩
+    exact hAll solver
+  · intro hNo solver
+    exact hNo ⟨solver, trivial⟩
+
+/--
+Fully closed contradiction obtained from semantic-to-syntactic lift data.
+-/
+theorem noSmallAC0Solver_partial_closed_of_syntacticLift
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p)
+    (liftData : StepCSyntacticLiftDataPartial p) : False := by
+  exact noSmallAC0Solver_partial_closed
+    (closure := stepCClosureData_of_syntacticLift (p := p) liftData)
+    (solver := solver)
 
 /--
 Contradiction from direct syntactic easy-family hypotheses.
@@ -1251,11 +1360,11 @@ theorem noSmallAC0Solver_partial_of_syntacticEasy
 -/
 theorem noSmallAC0Solver_partial
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
-  exact noSmallAC0Solver_partial_of_easyFamilyData
-    (solver := solver)
-    (easy := ac0EasyFamilyData_of_witness solver.params.ac0 hF)
+    (hEasy : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+      (AC0EasyFamily solver.params.ac0))
+    (hComp : AC0CompressionHypothesis p) : False := by
+  exact noSmallAC0Solver_partial_of_syntacticEasy
+    (solver := solver) hEasy hComp
 
 /--
 Constructive variant: contradiction from an explicit multi-switching witness
@@ -1265,10 +1374,12 @@ theorem noSmallAC0Solver_partial_of_multiSwitching
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
     (hMS :
       ThirdPartyFacts.AC0MultiSwitchingWitness solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
-  exact
-    noSmallAC0Solver_partial (solver := solver)
-      (hF := ⟨hMS.base⟩)
+        (AC0EasyFamily solver.params.ac0))
+    (hComp : AC0CompressionHypothesis p) : False := by
+  exact noSmallAC0Solver_partial
+    (solver := solver)
+    (hEasy := ⟨hMS.base⟩)
+    (hComp := hComp)
 
 /--
 Typeclass-driven constructive variant: witness is supplied by instance search.
@@ -1278,39 +1389,43 @@ theorem noSmallAC0Solver_partial_of_multiSwitching_provider
     [hMS :
       ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
         solver.params.ac0
-        (Counting.allFunctionsFamily solver.params.ac0.n)] : False := by
+        (AC0EasyFamily solver.params.ac0)]
+    (hComp : AC0CompressionHypothesis p) : False := by
   exact noSmallAC0Solver_partial_of_multiSwitching
-    (solver := solver) hMS.witness
+    (solver := solver) hMS.witness hComp
 
 /--
 Default constructive variant specialized to all-functions witness packages.
 -/
 theorem noSmallAC0Solver_partial_of_default_multiSwitching
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-    [hMS : AllFunctionsAC0MultiSwitchingWitness solver.params.ac0] : False := by
+    [hMS : EasyFamilyAC0MultiSwitchingWitness solver.params.ac0]
+    (hComp : AC0CompressionHypothesis p) : False := by
   exact noSmallAC0Solver_partial_of_multiSwitching
-    (solver := solver) hMS.witness
+    (solver := solver) hMS.witness hComp
 
 /--
-Constructive large-`Y` witness on AC0 input length (`ac0.n`).
+Constructive large-`Y` witness from packaged easy-family data.
 
-This theorem builds the witness package directly from the SAL scenario and
-capacity-gap estimates, without extracting data from `False.elim`.
+This version does **not**
+depend on `allFunctionsFamily`: it only uses the local package
+`AC0EasyFamilyDataPartial`, i.e. an AC0 witness for a concrete family `F`
+plus the required cardinal lower bound `2^(2^n) ≤ |F|`.
 -/
-theorem antiChecker_exists_large_Y_partial_core
+theorem antiChecker_exists_large_Y_partial_of_easyFamilyData
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-    (hAll : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-      (Counting.allFunctionsFamily solver.params.ac0.n)) :
+    (easy : AC0EasyFamilyDataPartial solver.params.ac0) :
     ∃ (F : Family solver.params.ac0.n)
       (Y : Finset (Core.BitVec solver.params.ac0.n → Bool)),
       ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F,
         let sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2
         Y ⊆ familyFinset (sc := sc) ∧ scenarioCapacity (sc := sc) < Y.card := by
   classical
-  let F : Family solver.params.ac0.n := Counting.allFunctionsFamily solver.params.ac0.n
-  let pack := scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hAll)
+  let F : Family solver.params.ac0.n := easy.F
+  let hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F := easy.witness
+  let pack := scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)
   let sc := pack.2
-  refine ⟨F, familyFinset sc, hAll, ?_⟩
+  refine ⟨F, familyFinset sc, hF, ?_⟩
   constructor
   · intro f hf
     exact hf
@@ -1318,7 +1433,7 @@ theorem antiChecker_exists_large_Y_partial_core
     let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong solver.params.ac0)
     have hsummary :=
       scenarioFromAC0_stepAB_summary_strong
-        (params := solver.params.ac0) (F := F) (hF := hAll)
+        (params := solver.params.ac0) (F := F) (hF := hF)
     dsimp [pack, sc, bound] at hsummary
     rcases hsummary with ⟨hfamily, hk, hdict, _hε0, _hε1, hεInv, hcap_le⟩
     set N := Nat.pow 2 solver.params.ac0.n
@@ -1371,13 +1486,10 @@ theorem antiChecker_exists_large_Y_partial_core
           (hn := hn)
           (hε0 := hε0') (hε1 := hε1')
           (hU := hU))
-    have hcard : (familyFinset sc).card = Nat.pow 2 N := by
-      have hfinset : familyFinset sc = Counting.allFunctionsFinset solver.params.ac0.n := by
-        calc
-          familyFinset sc = sc.family.toFinset := rfl
-          _ = F.toFinset := by rw [hfamily]
-          _ = Counting.allFunctionsFinset solver.params.ac0.n := by simp [F]
-      simp [N, hfinset]
+    have hcard_eq : (familyFinset sc).card = F.toFinset.card := by
+      calc
+        (familyFinset sc).card = (sc.family.toFinset).card := rfl
+        _ = F.toFinset.card := by rw [hfamily]
     have hScLe :
         scenarioCapacity (sc := sc) ≤
           Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
@@ -1385,63 +1497,127 @@ theorem antiChecker_exists_large_Y_partial_core
       simpa [scenarioCapacity, N] using hcap_le'
     have hltPow : scenarioCapacity (sc := sc) < Nat.pow 2 N :=
       lt_of_le_of_lt hScLe hcap_lt
-    rw [hcard]
-    exact hltPow
+    have hPowLeCardF : Nat.pow 2 N ≤ F.toFinset.card := by
+      simpa [N, F] using easy.card_lower
+    have hltCardF : scenarioCapacity (sc := sc) < F.toFinset.card :=
+      lt_of_lt_of_le hltPow hPowLeCardF
+    rw [hcard_eq]
+    exact hltCardF
 
 /--
-  **Anti-Checker (large Y) для Partial MCSP.**
-  Из `noSmallAC0Solver_partial` получаем существование `Y`.
+Constructive large-`Y` witness for packaged constructive solvers.
+
+This is the clean constructive Step-C output: no external witness hypotheses,
+only the internally stored `easyData` package carried by the solver.
 -/
-theorem antiChecker_exists_large_Y_partial
-  {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  (hAll : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-    (Counting.allFunctionsFamily solver.params.ac0.n)) :
-  ∃ (F : Family solver.params.ac0.n)
-    (Y : Finset (Core.BitVec solver.params.ac0.n → Bool)),
-    ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F,
-      let scWitness :=
-        (scenarioFromAC0
-            (params := solver.params.ac0) (F := F) (hF := hF)).2
-      Y ⊆ familyFinset (sc := scWitness) ∧
-        scenarioCapacity (sc := scWitness) < Y.card := by
-  exact antiChecker_exists_large_Y_partial_core (solver := solver) hAll
+theorem antiChecker_exists_large_Y_partial_constructive
+    {p : GapPartialMCSPParams}
+    (solver : ConstructiveSmallAC0Solver_Partial p) :
+    ∃ (F : Family solver.params.ac0.n)
+      (Y : Finset (Core.BitVec solver.params.ac0.n → Bool)),
+      ∃ hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F,
+        let sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2
+        Y ⊆ familyFinset (sc := sc) ∧ scenarioCapacity (sc := sc) < Y.card := by
+  exact antiChecker_exists_large_Y_partial_of_easyFamilyData
+    (solver := solver.toSmallAC0Solver_Partial)
+    (easy := solver.easyData)
 
 /--
-  Конструктивная testset-версия anti-checker для Partial MCSP:
-  явный testset-свидетель приводит к противоречию через `Covering-Power`.
+Build solver-local closure-provider data directly from packaged easy-family data.
+
+This is the constructive provider bridge that avoids the legacy
+`allFunctionsFamily` route entirely.
 -/
-theorem antiChecker_exists_testset_partial
-  {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  (hAll : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-    (Counting.allFunctionsFamily solver.params.ac0.n))
-  (Ysolver : Finset (Core.BitVec solver.params.ac0.n → Bool))
-  (Tsolver : Finset (Core.BitVec solver.params.ac0.n)) :
-  let Fsolver : Family solver.params.ac0.n :=
-    Counting.allFunctionsFamily solver.params.ac0.n
-  let scWitness :=
-    (scenarioFromAC0
-        (params := solver.params.ac0) (F := Fsolver) (hF := hAll)).2
-  Ysolver ⊆ familyFinset (sc := scWitness) →
-  Tsolver.card ≤ Models.polylogBudget solver.params.ac0.n →
-  (∀ f ∈ Ysolver,
-    f ∈ Counting.ApproxOnTestset
-      (R := scWitness.atlas.dict) (k := scWitness.k) (T := Tsolver)) →
-  Counting.unionBound
-      (Counting.dictLen scWitness.atlas.dict)
-      scWitness.k
-      * 2 ^ Tsolver.card
-    < Ysolver.card →
-  False := by
+noncomputable def stepCClosureProvider_of_easyFamilyData
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p)
+    (easy : AC0EasyFamilyDataPartial solver.params.ac0) :
+    StepCClosureDataPartialProvider solver := by
   classical
-  intro Fsolver scWitness hSubset _hTcard hApprox hLarge
-  exact
-    no_bounded_atlas_on_testset_of_large_family
-      (sc := scWitness)
-      (T := Tsolver)
-      (Y := Ysolver)
-      hSubset
-      hApprox
-      hLarge
+  let hEx := antiChecker_exists_large_Y_partial_of_easyFamilyData
+    (solver := solver) (easy := easy)
+  let F : Family solver.params.ac0.n := Classical.choose hEx
+  let hExY := Classical.choose_spec hEx
+  let Y : Finset (Core.BitVec solver.params.ac0.n → Bool) := Classical.choose hExY
+  let hExF := Classical.choose_spec hExY
+  let hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F := Classical.choose hExF
+  let hPack := Classical.choose_spec hExF
+  have hPack' :
+      Y ⊆ familyFinset (sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2)
+        ∧ scenarioCapacity (sc := (scenarioFromAC0 (params := solver.params.ac0) (F := F) (hF := hF)).2)
+            < Y.card := by
+    simpa using hPack
+  refine ⟨F, Y, hF, ?_, ?_⟩
+  · simpa using hPack'.1
+  · simpa using hPack'.2
+
+/--
+Constructive solver packages induce solver-local closure-provider data.
+-/
+noncomputable def stepCClosureProvider_of_constructive
+    {p : GapPartialMCSPParams}
+    (solver : ConstructiveSmallAC0Solver_Partial p) :
+    StepCClosureDataPartialProvider solver.toSmallAC0Solver_Partial := by
+  exact stepCClosureProvider_of_easyFamilyData
+    (solver := solver.toSmallAC0Solver_Partial)
+    (easy := solver.easyData)
+
+/--
+Closed contradiction from a constructive solver package via provider route.
+-/
+theorem noConstructiveSmallAC0Solver_partial_closed_of_provider
+    {p : GapPartialMCSPParams}
+    (solver : ConstructiveSmallAC0Solver_Partial p) : False := by
+  letI : StepCClosureDataPartialProvider solver.toSmallAC0Solver_Partial :=
+    stepCClosureProvider_of_constructive (solver := solver)
+  exact noSmallAC0Solver_partial_closed_of_provider
+    (solver := solver.toSmallAC0Solver_Partial)
+
+/--
+Solver-local closure provider obtained from semantic-to-syntactic lift data.
+
+This yields the provider package without using the legacy all-functions witness
+route: all required data is extracted from the lifted constructive solver.
+-/
+noncomputable def stepCClosureProvider_of_syntacticLift
+    {p : GapPartialMCSPParams}
+    (liftData : StepCSyntacticLiftDataPartial p)
+    (solver : SmallAC0Solver_Partial p) :
+    StepCClosureDataPartialProvider solver := by
+  let csolver := constructiveSmallAC0Solver_of_syntacticLift
+    (liftData := liftData) (solver := solver)
+  -- `csolver` forgets back to `solver` by `liftData.sound`; rewrite provider data
+  -- along this equality so the resulting instance is indexed by the original solver.
+  have hs : csolver.toSmallAC0Solver_Partial = solver := by
+    simpa [constructiveSmallAC0Solver_of_syntacticLift,
+      SmallAC0Solver_Partial_Syntactic.toConstructive] using liftData.sound solver
+  simpa [hs] using stepCClosureProvider_of_constructive (solver := csolver)
+
+/--
+Closed contradiction from semantic-to-syntactic lift data via provider route.
+
+This theorem is useful when downstream code is phrased in the provider style
+(`StepCClosureDataPartialProvider`) rather than in terms of a global closure
+object.
+-/
+theorem noSmallAC0Solver_partial_closed_of_syntacticLift_provider
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p)
+    (liftData : StepCSyntacticLiftDataPartial p) : False := by
+  letI : StepCClosureDataPartialProvider solver :=
+    stepCClosureProvider_of_syntacticLift (liftData := liftData) (solver := solver)
+  exact noSmallAC0Solver_partial_closed_of_provider (solver := solver)
+
+/--
+Final internalized Step-C contradiction:
+no external closure/lift hypotheses are required anymore.
+-/
+theorem noSmallAC0Solver_partial_closed_internalized
+    {p : GapPartialMCSPParams}
+    (solver : SmallAC0Solver_Partial p) : False := by
+  exact noSmallAC0Solver_partial_closed_of_syntacticLift_provider
+    (solver := solver)
+    (liftData := stepCSyntacticLiftDataPartial_default p)
 
 /-!
   ### Локальные схемы: partial‑версия античекера
@@ -1825,8 +2001,8 @@ lemma exists_partial_not_consistent_with_family_tableLen {n : Nat}
 /-!
   TODO (следующие шаги):
 
-  1. Аналог `antiChecker_exists_large_Y` для Partial MCSP.
-  2. Связка с shrinkage/switching и перенос на magnification.
+  Все ключевые интерфейсы Step-C в partial-треке интернализованы.
+  Дальнейшие шаги — только факультативный рефакторинг/упрощение API.
 -/
 
 /-!

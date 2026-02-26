@@ -696,9 +696,8 @@ theorem NP_not_subset_PpolyFormula_final_of_formulaCertificate
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final
-      (hDefaultProvider :=
-        hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate hCert)
+    NP_not_subset_PpolyFormula_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
 
@@ -726,9 +725,8 @@ theorem NP_not_subset_PpolyFormula_final_of_restrictionData
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final
-      (hDefaultProvider :=
-        hasDefaultStructuredLocalityProviderPartial_of_restrictionData D)
+    NP_not_subset_PpolyFormula_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_restrictionData D)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
 
@@ -756,9 +754,8 @@ theorem NP_not_subset_PpolyFormula_final_of_supportBounds
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final
-      (hDefaultProvider :=
-        hasDefaultStructuredLocalityProviderPartial_of_supportBounds hB)
+    NP_not_subset_PpolyFormula_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_supportBounds hB)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
 
@@ -1077,9 +1074,8 @@ theorem P_ne_NP_final_of_formulaCertificate
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   exact
-    P_ne_NP_final
-      (hDefaultProvider :=
-        hasDefaultStructuredLocalityProviderPartial_of_formulaCertificate hCert)
+    P_ne_NP_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       hFormulaToPpoly
@@ -1116,9 +1112,8 @@ theorem P_ne_NP_final_of_restrictionData
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   exact
-    P_ne_NP_final
-      (hDefaultProvider :=
-        hasDefaultStructuredLocalityProviderPartial_of_restrictionData D)
+    P_ne_NP_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_restrictionData D)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       hFormulaToPpoly
@@ -1155,9 +1150,8 @@ theorem P_ne_NP_final_of_supportBounds
     ComplexityInterfaces.NP_not_subset_Ppoly) :
   ComplexityInterfaces.P_ne_NP := by
   exact
-    P_ne_NP_final
-      (hDefaultProvider :=
-        hasDefaultStructuredLocalityProviderPartial_of_supportBounds hB)
+    P_ne_NP_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_supportBounds hB)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       hFormulaToPpoly

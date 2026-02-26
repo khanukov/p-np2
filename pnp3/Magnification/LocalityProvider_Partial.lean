@@ -1,5 +1,6 @@
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityLift_Partial
+import Magnification.AC0LocalityBridge
 import ThirdPartyFacts.PartialLocalityLift
 
 namespace Pnp3
@@ -215,17 +216,41 @@ once multi-switching/counting establishes support-based bounds, this theorem is
 the exact bridge expected by the magnification interface.
 -/
 theorem formula_support_bounds_from_multiswitching
-    (hBounds : FormulaSupportRestrictionBoundsPartial) :
-    FormulaSupportRestrictionBoundsPartial :=
-  hBounds
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaSupportRestrictionBoundsPartial := by
+  classical
+  intro p hFormula
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  obtain ⟨ac0, F, hsame, hFam, hMSw, hpoly, hsmall0, hhalf⟩ :=
+    hMS.package (p := p) hFormula
+  let _ := hsame
+  let _ := hFam
+  let _ := hMSw
+  refine ⟨hpoly, ?_, hhalf⟩
+  simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
 
 /--
 Default-flag wrapper for `formula_support_bounds_from_multiswitching`.
 -/
 theorem hasDefaultFormulaSupportRestrictionBoundsPartial_from_multiswitching
-    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
     Nonempty FormulaSupportRestrictionBoundsPartial :=
-  ⟨formula_support_bounds_from_multiswitching hBounds⟩
+  ⟨formula_support_bounds_from_multiswitching hMS⟩
 
 /--
 Constructive support-based builder of `FormulaRestrictionCertificateDataPartial`.

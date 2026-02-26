@@ -808,6 +808,16 @@ theorem hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds
     (hasDefaultFormulaCertificateProviderPartial_of_default_supportBounds h)
 
 /--
+End-to-end I-2 wiring: a multi-switching support-bounds contract provides
+default structured locality-provider availability.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_supportBounds
+    (formula_support_bounds_from_multiswitching hMS)
+
+/--
 Default-engine flag from a uniform half-size condition.
 -/
 theorem hasDefaultStructuredLocalityProviderPartial_of_halfSize

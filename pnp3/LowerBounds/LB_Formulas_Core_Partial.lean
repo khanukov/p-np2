@@ -55,6 +55,104 @@ theorem LB_Formulas_core_partial_constructive
   (solver : ConstructiveSmallAC0Solver_Partial p) : False := by
   exact noConstructiveSmallAC0Solver_partial (solver := solver)
 
+/--
+Closed-world constructive Step-C core:
+the syntactic solver package already contains explicit circuit data and
+family-level easy-data, so no external `hEasy/hComp` inputs are required.
+-/
+theorem LB_Formulas_core_partial_closed
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial_Syntactic p) : False := by
+  exact LB_Formulas_core_partial_constructive
+    (solver := constructiveSmallAC0Solver_of_solver solver)
+
+/--
+Fully closed semantic Step-C core:
+once the repository provides internal closure data (`StepCClosureDataPartial`),
+every plain semantic solver is refuted with no external Step-C hypotheses.
+-/
+theorem LB_Formulas_core_partial_fully_closed
+  {p : Models.GapPartialMCSPParams}
+  (closure : StepCClosureDataPartial p)
+  (solver : SmallAC0Solver_Partial p) : False := by
+  exact noSmallAC0Solver_partial_closed
+    (closure := closure)
+    (solver := solver)
+
+/--
+Existential closed-world formulation of the fully closed Step-C core.
+-/
+theorem LB_Formulas_core_partial_fully_closed_noExists
+  {p : Models.GapPartialMCSPParams}
+  (closure : StepCClosureDataPartial p) :
+  ¬ ∃ _solver : SmallAC0Solver_Partial p, True := by
+  exact noSmallAC0Solver_partial_closed_noExists (closure := closure)
+
+/--
+Fully closed semantic Step-C core instantiated from semantic-to-syntactic lift
+data.
+-/
+theorem LB_Formulas_core_partial_fully_closed_of_syntacticLift
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial p)
+  (liftData : StepCSyntacticLiftDataPartial p) : False := by
+  exact noSmallAC0Solver_partial_closed_of_syntacticLift
+    (solver := solver)
+    (liftData := liftData)
+
+/--
+Existential no-solver formulation from semantic-to-syntactic lift data.
+-/
+theorem LB_Formulas_core_partial_fully_closed_noExists_of_syntacticLift
+  {p : Models.GapPartialMCSPParams}
+  (liftData : StepCSyntacticLiftDataPartial p) :
+  ¬ ∃ _solver : SmallAC0Solver_Partial p, True := by
+  exact LB_Formulas_core_partial_fully_closed_noExists
+    (closure := stepCClosureData_of_syntacticLift (p := p) liftData)
+
+/--
+Core-level equivalence between pointwise and existential formulations of the
+fully closed Step-C contradiction.
+-/
+theorem LB_Formulas_core_partial_fully_closed_iff_noExists
+  {p : Models.GapPartialMCSPParams}
+  (closure : StepCClosureDataPartial p) :
+  (∀ _solver : SmallAC0Solver_Partial p, False)
+    ↔ (¬ ∃ _solver : SmallAC0Solver_Partial p, True) := by
+  exact noSmallAC0Solver_partial_closed_iff_noExists closure
+
+/-- Core closed contradiction from solver-local closure-provider data. -/
+theorem LB_Formulas_core_partial_closed_of_provider
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial p)
+  [StepCClosureDataPartialProvider solver] : False := by
+  exact noSmallAC0Solver_partial_closed_of_provider (solver := solver)
+
+/-- Core final internalized closed contradiction (no extra hypotheses). -/
+theorem LB_Formulas_core_partial_closed_internalized
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial p) : False := by
+  exact noSmallAC0Solver_partial_closed_internalized (solver := solver)
+
+/-- Core closed contradiction from syntactic-lift data via provider route. -/
+theorem LB_Formulas_core_partial_closed_of_syntacticLift_provider
+  {p : Models.GapPartialMCSPParams}
+  (solver : SmallAC0Solver_Partial p)
+  (liftData : StepCSyntacticLiftDataPartial p) : False := by
+  exact noSmallAC0Solver_partial_closed_of_syntacticLift_provider
+    (solver := solver) (liftData := liftData)
+
+/--
+Core constructive closed contradiction via the provider route.
+
+This uses only the constructive solver package (`easyData` inside the solver),
+with no external `allFunctionsFamily` witness assumptions.
+-/
+theorem LB_Formulas_core_partial_constructive_closed_of_provider
+  {p : Models.GapPartialMCSPParams}
+  (solver : ConstructiveSmallAC0Solver_Partial p) : False := by
+  exact noConstructiveSmallAC0Solver_partial_closed_of_provider (solver := solver)
+
 /-- Core contradiction from direct syntactic easy-family hypotheses. -/
 theorem LB_Formulas_core_partial_of_syntacticEasy
   {p : Models.GapPartialMCSPParams}
@@ -82,9 +180,11 @@ theorem LB_Formulas_core_partial_of_syntacticEasy
 -/
 theorem LB_Formulas_core_partial
   {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  (hF_all : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-    (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
-  exact noSmallAC0Solver_partial (solver := solver) (hF := hF_all)
+  (hEasy : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
+    (AC0EasyFamily solver.params.ac0))
+  (hComp : AC0CompressionHypothesis p) : False := by
+  exact noSmallAC0Solver_partial
+    (solver := solver) (hEasy := hEasy) (hComp := hComp)
 
 /--
 Constructive variant of the core AC0 lower-bound step:
@@ -94,8 +194,10 @@ theorem LB_Formulas_core_partial_of_multiSwitching
   {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
   (hMS :
     ThirdPartyFacts.AC0MultiSwitchingWitness solver.params.ac0
-      (Counting.allFunctionsFamily solver.params.ac0.n)) : False := by
-  exact LB_Formulas_core_partial (solver := solver) (hF_all := ⟨hMS.base⟩)
+      (AC0EasyFamily solver.params.ac0))
+  (hComp : AC0CompressionHypothesis p) : False := by
+  exact LB_Formulas_core_partial
+    (solver := solver) (hEasy := ⟨hMS.base⟩) (hComp := hComp)
 
 /-- Typeclass-driven constructive core step via multi-switching provider. -/
 theorem LB_Formulas_core_partial_of_multiSwitching_provider
@@ -103,14 +205,18 @@ theorem LB_Formulas_core_partial_of_multiSwitching_provider
   [hMS :
     ThirdPartyFacts.AC0MultiSwitchingWitnessProvider
       solver.params.ac0
-      (Counting.allFunctionsFamily solver.params.ac0.n)] : False := by
-  exact LB_Formulas_core_partial_of_multiSwitching (solver := solver) hMS.witness
+      (AC0EasyFamily solver.params.ac0)]
+  (hComp : AC0CompressionHypothesis p) : False := by
+  exact LB_Formulas_core_partial_of_multiSwitching
+    (solver := solver) hMS.witness hComp
 
 /-- Default constructive core step via all-functions multi-switching package. -/
 theorem LB_Formulas_core_partial_of_default_multiSwitching
   {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-  [hMS : AllFunctionsAC0MultiSwitchingWitness solver.params.ac0] : False := by
-  exact LB_Formulas_core_partial_of_multiSwitching (solver := solver) hMS.witness
+  [hMS : EasyFamilyAC0MultiSwitchingWitness solver.params.ac0]
+  (hComp : AC0CompressionHypothesis p) : False := by
+  exact LB_Formulas_core_partial_of_multiSwitching
+    (solver := solver) hMS.witness hComp
 
 end LowerBounds
 end Pnp3

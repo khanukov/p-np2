@@ -4,7 +4,7 @@ This file is the authoritative status snapshot.
 
 ## Date
 
-- 2026-02-24
+- 2026-02-26
 
 ## Active result
 
@@ -59,9 +59,9 @@ This file is the authoritative status snapshot.
   `pnp3/LowerBounds/AntiChecker_Partial.lean`.
 - `syntacticEasy` routes no longer thread ad-hoc `hCard/cardAt`; they now
   consume the compression hypothesis directly.
-- Added constructive builder from
-  `SmallAC0Solver_Partial + AC0CompressionHypothesis + EasyFunctionsAC0Witness`
-  to `ConstructiveSmallAC0Solver_Partial`.
+- Final Step-C internalization now stores syntactic payload directly in
+  `SmallAC0Solver_Partial` (`circuit`, `decide_eq`, `easyData`), so closed
+  contradiction routes no longer depend on legacy `..._of_hypotheses` bridges.
 
 ## Complexity-interface integrity (updated)
 
@@ -110,7 +110,7 @@ This file is the authoritative status snapshot.
   - `P_ne_NP_final_of_depth_contract`
   - `P_ne_NP_final_of_depth_bridge_contract`
 
-## Legacy cleanup (2026-02-24)
+## Legacy cleanup (2026-02-26)
 
 - Removed legacy `allFunctions/default_multiSwitching` public entrypoints from
   `pnp3/Magnification/FinalResult.lean`.
@@ -149,7 +149,7 @@ This file is the authoritative status snapshot.
 2. Preserve strict separation between AC0 core and non-AC0 bridge layers.
 3. Add non-AC0 wrappers only as explicitly labeled optional modules.
 
-## Step-C semantic API (2026-02-24)
+## Step-C semantic API (2026-02-26)
 
 - Added a non-vacuous semantic API in parallel to legacy Step-C interfaces:
   - `solverFunctionFamily`, `SolverAC0WitnessPartial`,
@@ -181,7 +181,7 @@ This file is the authoritative status snapshot.
   - `AsymptoticFormulaTrackHypothesis_semantic`
   - `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`
 
-## Step-C counting kernel hardening (2026-02-24)
+## Step-C counting kernel hardening (2026-02-26)
 
 - Added explicit family-level counting core in
   `pnp3/LowerBounds/AntiChecker_Partial.lean`:
@@ -189,7 +189,6 @@ This file is the authoritative status snapshot.
   - `noSmallAC0Solver_partial_of_family_card`
   - `AC0EasyFamily`
   - `ac0EasyFamily_card_lower`
-  - `ac0EasyFamilyData_of_witness`
   - `noSmallAC0Solver_partial_of_easyFamilyData`
 - Added corresponding core wrapper in
   `pnp3/LowerBounds/LB_Formulas_Core_Partial.lean`:

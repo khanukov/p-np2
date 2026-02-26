@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-02-24
+Updated: 2026-02-26
 
 This roadmap reflects the **actual** current code state.
 
@@ -50,23 +50,15 @@ This roadmap reflects the **actual** current code state.
 - Any non-AC0 front (e.g., stronger Ppoly-side bridge assumptions) should stay
   explicitly separated from the AC0-closed I-4 core.
 
-4. Step-C semantics migration (new, immediate)
-- New semantic API exists (`*_semantic`) with solver-local witnesses.
-- Progress done:
-  - active bridge entrypoints no longer auto-build Step-C from
-    `allFunctionsFamily`; they require explicit lower-bound hypotheses;
-  - legacy `allFunctions/default_multiSwitching` public final entrypoints were
-    removed from `FinalResult.lean`;
-  - semantic provider/bridge/final wrappers added (`*_semantic`) to run
-    non-vacuous Step-C assumptions through OPS to formula separation.
-- Remaining work:
-  - migrate default multi-switching constructors to solver-local semantic
-    witnesses end-to-end;
-  - connect semantic Step-C to constructive multi-switching providers
-    in family-level easy-data form (instead of all-functions form).
-  - instantiate `AC0EasyFamilyDataPartial` with a mathematically justified
-    `AC0EasyFamily` (not just wrappers), including a proved cardinal lower
-    premise actually used by the counting contradiction.
+4. Step-C legacy cleanup (status)
+- Step-C partial route is now internalized and machine-checked through
+  solver-local payloads (`circuit`, `decide_eq`, `easyData`) plus
+  `stepCSyntacticLiftDataPartial_default`.
+- Legacy hypothesis-bridge wrappers (`..._of_hypotheses`,
+  all-functions-based helper wrappers) were removed from active
+  `AntiChecker_Partial` / core / pipeline APIs.
+- Remaining Step-C work is optional refactoring/documentation hygiene,
+  not proof-blocking for the internalized constructive route.
 
 ## Execution order
 

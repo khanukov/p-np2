@@ -605,6 +605,35 @@ theorem structuredLocalityProviderPartial_of_engine
   exact ⟨T, loc, hT, hℓ⟩
 
 /--
+Direct structured-provider constructor from an explicit formula-certificate
+provider package.
+-/
+theorem structuredLocalityProviderPartial_of_formulaCertificate
+    (hCert : FormulaCertificateProviderPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_engine
+    (constructiveLocalityEnginePartial_of_formulaCertificate hCert)
+
+/--
+Direct structured-provider constructor from explicit restriction-level
+certificate data.
+-/
+theorem structuredLocalityProviderPartial_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_formulaCertificate
+    (formulaCertificateProvider_of_restrictionData D)
+
+/--
+Direct structured-provider constructor from support-based numeric assumptions.
+-/
+theorem structuredLocalityProviderPartial_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_restrictionData
+    (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
 Default-availability flag for a constructive locality engine.
 -/
 def hasDefaultStructuredLocalityProviderPartial : Prop :=

@@ -17,6 +17,8 @@ open Pnp3.Magnification
 -- Итоговые утверждения (формульная сепарация).
 #print axioms NP_not_subset_PpolyFormula_final
 #print axioms NP_not_subset_PpolyFormula_final_of_formulaCertificate
+#print axioms NP_not_subset_PpolyFormula_final_constructive
+#print axioms NP_not_subset_PpolyFormula_final_constructive_of_tmWitnesses
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas_default
 
@@ -28,6 +30,8 @@ open Pnp3.Magnification
 #print axioms OPS_trigger_formulas_partial_of_provider_formula_separation_strict
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
 #print axioms P_ne_NP_final_of_formulaCertificate
+#print axioms P_ne_NP_final_constructive
+#print axioms P_ne_NP_final_constructive_of_tmWitnesses
 
 -- Regression checks for I-1 / I-3 readiness.
 #print axioms Tests.i1_trivial_realization_available

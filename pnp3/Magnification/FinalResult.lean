@@ -77,7 +77,37 @@ theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
   exact
     ComplexityInterfaces.P_ne_NP_of_NP_strict_not_subset_Ppoly hStrict
 
+/-- Explicit evaluation of the concrete counting bound used by canonical parameters. -/
+lemma circuitCountBound_8_2 : Models.circuitCountBound 8 2 = 230 := by
+  simp [Models.circuitCountBound]
+
 /-- Canonical Partial MCSP parameters used in the final bridge. -/
+lemma circuit_bound_ok_canonical :
+  Models.circuitCountBound 8 (3 - 1) < 2 ^ (Partial.tableLen 8 / 2) := by
+  /-
+    Делаем доказательство максимально прозрачным:
+    1) вычисляем левую часть точно: `circuitCountBound 8 2 = 230`;
+    2) показываем `230 < 2^8`;
+    3) поднимаем границу до `2^(tableLen 8 / 2)` по монотонности степени.
+  -/
+  have hleft : Models.circuitCountBound 8 (3 - 1) = 230 := by
+    simpa using circuitCountBound_8_2
+  have hsmall : (230 : Nat) < 2 ^ 8 := by
+    decide
+  have hexp : (2 : Nat) ^ 8 ≤ 2 ^ (Partial.tableLen 8 / 2) := by
+    have hidx : 8 ≤ Partial.tableLen 8 / 2 := by
+      decide
+    exact Nat.pow_le_pow_right (by decide : 0 < (2 : Nat)) hidx
+  have hmain : (230 : Nat) < 2 ^ (Partial.tableLen 8 / 2) :=
+    Nat.lt_of_lt_of_le hsmall hexp
+  simpa [hleft] using hmain
+
+/-
+  Канонический набор параметров для финального моста.
+
+  `circuit_bound_ok` подаётся через отдельную явную арифметическую лемму
+  `circuit_bound_ok_canonical`.
+-/
 @[simp] def canonicalPartialParams : GapPartialMCSPParams where
   n := 8
   sYES := 1
@@ -85,7 +115,8 @@ theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
   gap_ok := by decide
   n_large := by decide
   sYES_pos := by decide
-  circuit_bound_ok := by native_decide
+  circuit_bound_ok := by
+    simpa using circuit_bound_ok_canonical
 
 /--
 Primary final statement (asymptotic entry): from the structured provider and
@@ -165,6 +196,25 @@ theorem NP_not_subset_PpolyFormula_final_constructive
   exact
     NP_not_subset_PpolyFormula_final_of_multiswitching_contract
       (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam)
+
+/--
+Constructive final formula-separation route from explicit TM witnesses
+for each fixed-parameter gap-language instance.
+
+This wrapper internalizes the conversion
+`(∀ p, GapPartialMCSP_TMWitness p) → StrictGapNPFamily` via
+`strictGapNPFamily_of_tmWitnesses`.
+-/
+theorem NP_not_subset_PpolyFormula_final_constructive_of_tmWitnesses
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_constructive
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
 
 /--
 Constructive final formula-separation route from support-based bounds.
@@ -300,6 +350,28 @@ theorem P_ne_NP_final_constructive
       (hMS := hMS)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
+      hFormulaToPpoly
+
+/--
+Constructive final `P ≠ NP` route from explicit TM witnesses and
+an explicit formula-to-`P/poly` bridge.
+
+This internalizes strictness of the gap language family using
+`strictGapNPFamily_of_tmWitnesses`.
+-/
+theorem P_ne_NP_final_constructive_of_tmWitnesses
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_constructive
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
       hFormulaToPpoly
 
 /--

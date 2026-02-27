@@ -225,7 +225,7 @@ theorem commonTrace_of_depth_ge
             simp [commonCCDT_CNF_aux, hsel, PDT.depth]
           have hcontr : False := by
             have h' : Nat.succ t ≤ 0 := by
-              simpa [this] using hdepth
+              simp [this] at hdepth
             exact (Nat.not_succ_le_zero _ h').elim
           exact hcontr.elim
       | some sel =>

@@ -1,5 +1,8 @@
 # Depth-2 Status (Historical)
 
+Canonical blocker checklist:
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 This file is a historical progress report for a local depth-2 subtrack.
 It is not the source of truth for current global project status.
 

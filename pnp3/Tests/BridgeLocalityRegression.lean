@@ -64,28 +64,4 @@ theorem i4_final_wiring_of_formulaCertificate
     (NP_not_subset_PpolyFormula_final_of_formulaCertificate
       (hCert := hCert) (hAsym := hAsym) (hNPfam := hNPfam))
 
-theorem i4_final_wiring_of_default_formulaCertificate
-    (hCert : hasDefaultFormulaCertificateProviderPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
-    NP_not_subset_PpolyFormula := by
-  simpa using
-    (NP_not_subset_PpolyFormula_final_of_default_formulaCertificate
-      (hCert := hCert) (hAsym := hAsym) (hNPfam := hNPfam))
-
-theorem i2_default_provider_from_multiswitching_contract
-    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
-    hasDefaultStructuredLocalityProviderPartial := by
-  simpa using
-    (hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract hMS)
-
-theorem i2_final_wiring_of_multiswitching_contract
-    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
-    NP_not_subset_PpolyFormula := by
-  simpa using
-    (NP_not_subset_PpolyFormula_final_of_multiswitching_contract
-      (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam))
-
 end Pnp3.Tests

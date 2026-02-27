@@ -1,5 +1,8 @@
 # Fact: classical sunflower lemma
 
+Repository-level proof-status checklist (outside this standalone fact package):
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 This directory packages the classical Erdős–Rado sunflower lemma as a
 self-contained Lake project.  The development mirrors the original
 formalisation from the archival boolean complexity prototype but is

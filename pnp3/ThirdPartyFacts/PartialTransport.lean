@@ -14,7 +14,7 @@ namespace ThirdPartyFacts
 
 @[simp] lemma partialInputLen_nf (n : Nat) :
     Models.Partial.inputLen n = 2 * 2 ^ n := by
-  simp [Models.Partial.inputLen, Models.Partial.tableLen, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm]
+  simp [Models.Partial.inputLen, Models.Partial.tableLen]
 
 @[simp] lemma card_cast {α β : Type} (h : α = β) (s : Finset α) :
     (cast (congrArg Finset h) s).card = s.card := by

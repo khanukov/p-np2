@@ -1,5 +1,8 @@
 # Fact: `P ⊆ P/poly`
 
+Repository-level proof-status checklist (outside this standalone fact package):
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 This directory is a standalone Lake package exposing only the definitions and
 lemmas necessary to formalise the classical inclusion of polynomial-time
 languages into non-uniform polynomial size.  The development is self-contained

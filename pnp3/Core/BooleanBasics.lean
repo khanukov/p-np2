@@ -2968,7 +2968,7 @@ private def firstPendingClause?Aux {n : Nat} (ρ : Restriction n) (C : CnfClause
           have : C' ∈ ([] : List (CnfClause n)) := hmem
           cases this
         pendingStatusEq := by
-          simpa [hstatus] using (rfl : status = ClauseStatus.pending w),
+          simp [hstatus],
         clausesDecomposition := rfl }
   | ClauseStatus.satisfied =>
       match rec with
@@ -2983,7 +2983,7 @@ private def firstPendingClause?Aux {n : Nat} (ρ : Restriction n) (C : CnfClause
               intro D hmem
               obtain h | h := List.mem_cons.mp hmem
               · subst h
-                simpa [hstatus] using (rfl : status = ClauseStatus.satisfied)
+                simp [hstatus]
               · exact selection.leadingSatisfied D h
             pendingStatusEq := selection.pendingStatusEq,
             clausesDecomposition := by
@@ -3047,7 +3047,7 @@ lemma firstPendingClause?_cons_ne_none_of_pending {n : Nat} (ρ : Restriction n)
   intro hnone
   have h := (firstPendingClause?_cons_none_iff ρ C rest).1 hnone
   rcases hpend with ⟨w, hw⟩
-  simpa [hw] using h
+  simp [hw] at h
 
 lemma firstPendingClause?_cons_satisfied_none_iff {n : Nat} (ρ : Restriction n)
     (C : CnfClause n) (rest : List (CnfClause n))

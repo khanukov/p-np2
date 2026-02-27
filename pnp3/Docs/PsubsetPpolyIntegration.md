@@ -1,5 +1,9 @@
 # Integrating the standalone `P ⊆ P/poly` proof
 
+Scope note:
+this document is integration-only. For unconditional `P ≠ NP` blockers use
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 This note documents how the standalone proof in `Facts/PsubsetPpoly` is now
 imported into `pnp3` after resolving the namespace collisions described in the
 previous revision of this file.

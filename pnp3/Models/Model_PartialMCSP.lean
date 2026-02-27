@@ -230,14 +230,17 @@ theorem assignmentIndex_surjective {n : Nat} :
     Function.Surjective (@assignmentIndex n) := by
   intro j
   refine ⟨Core.vecOfNat n j.val, ?_⟩
-  have hj : j.val < 2 ^ n := by simpa [Partial.tableLen] using j.isLt
+  have hj : j.val < 2 ^ n := by
+    show j.val < Partial.tableLen n
+    exact j.isLt
   have h_eq := bitVecToNat_vecOfNat hj
   -- assignmentIndex uses Fin.ofNat which is val % tableLen
   -- Since bitVecToNat result = j.val < 2^n = tableLen, the mod is a no-op
   ext
   show (bitVecToNat (Core.vecOfNat n j.val)) % Partial.tableLen n = j.val
   rw [h_eq, Nat.mod_eq_of_lt]
-  simpa [Partial.tableLen] using hj
+  show j.val < Partial.tableLen n
+  exact j.isLt
 
 /--
   Преобразуем таблицу истинности в функцию на `n` битах.
@@ -337,11 +340,14 @@ This is the key lookup lemma for table-based exhaustive verification.
 lemma assignmentIndex_vecOfNat_eq {n : Nat} (i : Fin (Partial.tableLen n)) :
     assignmentIndex (Core.vecOfNat n i.val) = i := by
   ext
-  have hi : i.val < 2 ^ n := by simpa [Partial.tableLen] using i.isLt
+  have hi : i.val < 2 ^ n := by
+    show i.val < Partial.tableLen n
+    exact i.isLt
   have h_eq : bitVecToNat (Core.vecOfNat n i.val) = i.val := bitVecToNat_vecOfNat hi
   show (bitVecToNat (Core.vecOfNat n i.val)) % Partial.tableLen n = i.val
   rw [h_eq, Nat.mod_eq_of_lt]
-  simpa [Partial.tableLen] using hi
+  show i.val < Partial.tableLen n
+  exact i.isLt
 
 /--
 Boolean exhaustive consistency check:
@@ -370,14 +376,14 @@ lemma is_consistent_bool_of_is_consistent {n : Nat} (C : Circuit n) (T : Partial
   refine List.all_eq_true.mpr ?_
   intro i hi
   cases hTi : T i with
-  | none => simp [hTi]
+  | none => simp
   | some b =>
       have hAt := hCons (Core.vecOfNat n i.val)
       have hIdx : assignmentIndex (Core.vecOfNat n i.val) = i := assignmentIndex_vecOfNat_eq i
       have hEval : Circuit.eval C (Core.vecOfNat n i.val) = b := by
         have hAt' := hAt
         simpa [is_consistent, hIdx, hTi] using hAt'
-      simp [hTi, hEval]
+      simp [hEval]
 
 /--
 Standard (semantic) verifier for fixed-parameter GapPartialMCSP.

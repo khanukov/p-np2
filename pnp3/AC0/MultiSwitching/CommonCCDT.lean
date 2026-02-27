@@ -50,7 +50,7 @@ lemma find?_none_forall {α : Type _} (p : α → Bool) (xs : List α) :
       by_cases hpx : p x = true
       · -- `find?` не мог быть `none`.
         have : False := by
-          simpa [List.find?, hpx] using hnone
+          simp [List.find?, hpx] at hnone
         exact this.elim
       · -- `find?` продолжает поиск в хвосте.
         have hrest : xs.find? p = none := by
@@ -112,7 +112,7 @@ lemma firstPendingFormula?_none_iff_index_none
         have hne :
             Restriction.firstPendingClause? (ρ := ρ) (F.get i).clauses ≠ none := by
           intro hnone
-          simpa [hsel] using hnone
+          simp [hsel] at hnone
         let f :
             Restriction.PendingClauseSelection (ρ := ρ) (F.get i).clauses →
               Sigma fun j : Fin F.length =>
@@ -130,11 +130,11 @@ lemma firstPendingFormula?_none_iff_index_none
   · intro h
     cases hidx : firstPendingIndex? (F := F) (ρ := ρ) with
     | none =>
-        simpa [firstPendingFormula?, hidx]
+        simp [firstPendingFormula?, hidx]
     | some i =>
         -- противоречие с `h`
         have : False := by
-          simpa [hidx] using h
+          simp [hidx] at h
         exact this.elim
 
 /-- Общий CCDT: ветвимся, пока есть pending‑формула. -/
@@ -145,7 +145,7 @@ noncomputable def commonCCDT_CNF_aux
   | Nat.succ fuel, ρ =>
       match firstPendingFormula? (F := F) (ρ := ρ) with
       | none => PDT.leaf ρ.mask
-      | some ⟨i, selection⟩ =>
+      | some ⟨_, selection⟩ =>
           let ℓ := chooseFreeLiteral (w := selection.witness)
           have hmem : ℓ ∈ selection.witness.free :=
             chooseFreeLiteral_mem (w := selection.witness)
@@ -322,7 +322,7 @@ lemma subcubeRefines_of_assign_some
   intro j
   cases hmask : ρ.mask j with
   | none =>
-      simp [hmask]
+      simp
   | some b0 =>
       have hne : j ≠ i := by
         intro hji
@@ -436,7 +436,7 @@ lemma mem_of_assign_some_of_mem
       have : some b' = some b := by
         simpa [hmask_eq'] using hmask_eq
       exact Option.some.inj this
-    simpa [hb', hxi]
+    simp [hb', hxi]
   · -- На остальных координатах маска совпадает с исходной.
     have hmask'': ρ.mask j = some b' := by
       -- из `hmask` и `hji` следует `ρ'.mask j = ρ.mask j`
@@ -508,8 +508,12 @@ lemma commonCCDT_leaf_of_compatible
                   exact List.mem_append.mpr (Or.inl hβ)
                 simpa [commonCCDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves] using hmem'
               · have hbit' : x ℓ.idx = true := by
-                  cases hx : x ℓ.idx <;> simp [hx] at hbit
-                  simpa using hx
+                  cases hx : x ℓ.idx with
+                  | false =>
+                      exfalso
+                      exact hbit (by simp [hx])
+                  | true =>
+                      simp
                 have hmem1 : mem ρ1.mask x := by
                   exact mem_of_assign_some_of_mem
                     (hassign := hassign1)
@@ -543,7 +547,7 @@ def GoodFamilyCNF_common (F : FormulaFamily n w) (t : Nat) (ρ : Restriction n) 
 
 theorem depth_lt_of_good_commonCCDT
     {F : FormulaFamily n w} {t : Nat} {ρ : Restriction n}
-    (ht : 0 < t)
+    (_ht : 0 < t)
     (hgood : GoodFamilyCNF_common (F := F) t ρ) :
     PDT.depth (commonCCDT_CNF_aux (F := F) t ρ) < t := by
   -- По определению good — это ¬(t ≤ depth).

@@ -329,7 +329,7 @@ lemma coveredB_false_of_not_compatible
     have hβleaf : β ∈ PDT.leaves t := selectorsFromLeaves_sub (t := t) (f := _) hβ
     have hcomp := compatible_of_refines (href := href_leaves β hβleaf) (hmem := hmem)
     exact (hnot hcomp).elim
-  · simpa [hcov] using hcov
+  · simp [hcov]
 
 theorem partialCertificate_from_depth_lt_common
     {n w t : Nat} (F : FormulaFamily n w)
@@ -499,7 +499,7 @@ theorem partialCertificate_from_depth_lt_common
                 -- contradiction with incompatible case
                 exact (hcomp (by simpa [hcx])).elim
             | false =>
-                simp [hcx]
+                simp
           by_cases hcov' :
               coveredB (selectorsFromLeaves (t := tree)
                 (f := restrictFun ρ (evalCNF (n := n) (k := w) G))) x = true

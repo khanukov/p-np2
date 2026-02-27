@@ -73,8 +73,8 @@ lemma clauseStatus_satisfied_exists_literal
     · have h' := h
       have h'' : (ClauseStatus.falsified (ρ := ρ) (C := C)) =
           (ClauseStatus.satisfied (ρ := ρ) (C := C)) := by
-        simpa [Restriction.clauseStatus, hsat, hfree,
-          -Restriction.literalStatus, -Restriction.freeLiterals] using h'
+        simp [Restriction.clauseStatus, hsat, hfree,
+          -Restriction.literalStatus, -Restriction.freeLiterals] at h'
       cases h''
 
 /-- Если клауза удовлетворена, то она истинна на всех `ρ.override x`. -/
@@ -111,8 +111,8 @@ lemma clauseStatus_falsified_all_literals_falsified
     by_contra hfree
     have h' := h
     have : False := by
-      simpa [Restriction.clauseStatus, hsat, hfree,
-        -Restriction.literalStatus, -Restriction.freeLiterals] using h'
+      simp [Restriction.clauseStatus, hsat, hfree,
+        -Restriction.literalStatus, -Restriction.freeLiterals] at h'
     exact this.elim
   -- Из `free = []` получаем отсутствие `unassigned`.
   have hno_unassigned :

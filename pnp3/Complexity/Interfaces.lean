@@ -324,8 +324,8 @@ noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m
 `NP_TM`: версия `NP`, сформулированная через верификатор-TM из внешнего
 пакета. Машина читает вход и сертификат, склеенные в одну строку.
 
-Эта формулировка является усилением: из неё всегда можно получить
-`NP` в абстрактном смысле (см. `NP_of_NP_TM`).
+Эта формулировка является канонической: далее в файле мы фиксируем
+`NP := NP_TM`.
 -/
 def NP_TM (L : Language) : Prop :=
   ∃ (M : Facts.PsubsetPpoly.TM.{0}) (c k : Nat),
@@ -351,11 +351,6 @@ abbrev NP (L : Language) : Prop := NP_TM L
 
 /-- Runtime-faithful NP track, defined directly via verifier TMs. -/
 abbrev NP_strict (L : Language) : Prop := NP_TM L
-
-/-- Backward-compatible alias kept for older imports. -/
-theorem NP_of_NP_TM {L : Language} : NP_TM L → NP L := by
-  intro h
-  exact h
 
 /-- Strict-track counterpart of `NP ⊄ Ppoly`. -/
 def NP_strict_not_subset_Ppoly : Prop := ∃ L, NP_strict L ∧ ¬ Ppoly L

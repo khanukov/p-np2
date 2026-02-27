@@ -136,7 +136,7 @@ lemma reconstruct_eq_original_atom
               (ρ := CommonTraceAtom.finalRestriction rest)
               (CommonTraceAtom.assignedBitFixes rest)).unassign i
               = ((ρ.assign i b).getD ρ).unassign i := by
-                  simpa [hih]
+                  simp [hih]
           _ = ρ := hunassign'
       exact Eq.trans hstep hunassign
 
@@ -222,7 +222,7 @@ theorem commonTrace_of_depth_ge_atom
             simp [commonCCDT_Family_atom, hsel, PDT.depth]
           have hcontr : False := by
             have h' : Nat.succ t ≤ 0 := by
-              simpa [this] using hdepth
+              simp [this] at hdepth
             exact (Nat.not_succ_le_zero _ h').elim
           exact hcontr.elim
       | some F =>
@@ -232,7 +232,7 @@ theorem commonTrace_of_depth_ge_atom
                 simp [commonCCDT_Family_atom, hsel, hselC, PDT.depth]
               have hcontr : False := by
                 have h' : Nat.succ t ≤ 0 := by
-                  simpa [this] using hdepth
+                  simp [this] at hdepth
                 exact (Nat.not_succ_le_zero _ h').elim
               exact hcontr.elim
           | some C =>
@@ -242,7 +242,7 @@ theorem commonTrace_of_depth_ge_atom
                     simp [commonCCDT_Family_atom, hsel, hselC, hselL, PDT.depth]
                   have hcontr : False := by
                     have h' : Nat.succ t ≤ 0 := by
-                      simpa [this] using hdepth
+                      simp [this] at hdepth
                     exact (Nat.not_succ_le_zero _ h').elim
                   exact hcontr.elim
               | some ℓ =>

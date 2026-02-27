@@ -77,18 +77,24 @@ lemma structSize_lt_cons (n d : Nat) (f : AC0Formula n d) (fs : AC0FormulaList n
     exact Nat.le_add_right _ _
   have h' : structSize n d f < structSize n d f + structSizeList n d fs + 1 := by
     exact Nat.lt_succ_of_le h
-  simpa [structSizeList, Nat.add_assoc] using h'
+  calc
+    structSize n d f < structSize n d f + structSizeList n d fs + 1 := h'
+    _ = structSizeList n d (AC0FormulaList.cons f fs) + 1 := by
+      simp [structSizeList, Nat.add_assoc]
 
 /-- Helper: tail size plus one is strictly below size of cons list (plus one). -/
 lemma structSizeList_tail_lt_cons (n d : Nat) (f : AC0Formula n d) (fs : AC0FormulaList n d) :
     structSizeList n d fs + 1 < structSizeList n d (AC0FormulaList.cons f fs) + 1 := by
   have hpos : 0 < structSize n d f := by
-    cases f <;> simp [structSize, structSizeList]
+    cases f <;> simp [structSize]
   have h : structSizeList n d fs < structSize n d f + structSizeList n d fs := by
     exact Nat.lt_add_of_pos_left hpos
   have h' : structSizeList n d fs + 1 < structSize n d f + structSizeList n d fs + 1 := by
     exact Nat.add_lt_add_right h 1
-  simpa [structSizeList, Nat.add_assoc] using h'
+  calc
+    structSizeList n d fs + 1 < structSize n d f + structSizeList n d fs + 1 := h'
+    _ = structSizeList n d (AC0FormulaList.cons f fs) + 1 := by
+      simp [structSizeList, Nat.add_assoc]
 
 lemma structSize_lt_cons_forall (n d : Nat) (fs : AC0FormulaList n d) :
     ∀ f : AC0Formula n d,
@@ -118,7 +124,7 @@ lemma structSizeList_tail_lt_cons_forall (n d : Nat) (fs : AC0FormulaList n d) :
     structSizeList n d (AC0FormulaList.cons f fs) = structSize n d f + structSizeList n d fs := by rfl
 
 lemma structSize_pos (f : AC0Formula n d) : 0 < structSize n d f := by
-  cases f <;> simp [structSize, structSizeList]
+  cases f <;> simp [structSize]
 
 inductive EvalArg (n : Nat) : Type
   | form : {d : Nat} → AC0Formula n d → EvalArg n
@@ -206,7 +212,6 @@ decreasing_by
       | simpa using (evalMeasure_form_lt_all_cons n _ f fs)
       | simpa using (evalMeasure_form_lt_any_cons n _ f fs)
       | simpa using (evalMeasure_all_lt_all_cons n _ f fs)
-      | simpa using (evalMeasure_any_lt_any_cons n _ f fs)
 
 /-- Вычисление значения формулы. -/
 def eval (n : Nat) (d : Nat) (f : AC0Formula n d) : Core.BitVec n → Bool :=

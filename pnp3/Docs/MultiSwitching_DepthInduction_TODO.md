@@ -1,5 +1,9 @@
 # Multi‑switching depth>2: что нужно формализовать для polylog‑bound
 
+Глобальный чеклист до безусловного `P ≠ NP`:
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+Этот файл покрывает только локальный подпроцесс multi-switching/depth.
+
 Статус файла: рабочий TODO/roadmap по подпроцесcу depth>2.
 Этот файл не является источником глобального статуса по проекту; для общего
 состояния используйте `STATUS.md` и `TODO.md`.

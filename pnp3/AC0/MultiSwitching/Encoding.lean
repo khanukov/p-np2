@@ -1046,13 +1046,13 @@ private lemma find?_append_cons_eq_some
       (∀ x ∈ xs, p x = false) →
       p a = true →
       (xs ++ a :: ys).find? p = some a
-  | [], ys, a, _, ha => by simpa [List.find?, ha]
+  | [], ys, a, _, ha => by simp [ha]
   | x :: xs, ys, a, hxs, ha => by
       have hx : p x = false := hxs x (by simp)
       have htail : ∀ z ∈ xs, p z = false := by
         intro z hz
         exact hxs z (by simp [hz])
-      simp [List.find?, hx, find?_append_cons_eq_some p xs ys a htail ha]
+      simp [hx, find?_append_cons_eq_some p xs ys a htail ha]
 
 private lemma find?_none_forall {α : Type _} (p : α → Bool) :
     ∀ (xs : List α),
@@ -1069,7 +1069,7 @@ private lemma find?_none_forall {α : Type _} (p : α → Bool) :
           have hnone' : ys.find? p = none := by
             simpa [List.find?, hpy] using hnone
           rcases List.mem_cons.1 hx with rfl | hxys
-          · simpa [hpy]
+          · simp [hpy]
           · exact find?_none_forall p ys hnone' x hxys
 
 lemma find_first_falsified_clause_eq_of_selection
@@ -1092,11 +1092,10 @@ lemma find_first_falsified_clause_eq_of_selection
     have hnf : ρ'.clauseStatus C ≠ Restriction.ClauseStatus.falsified := hlead C hC
     by_cases hf : ρ'.clauseStatus C = Restriction.ClauseStatus.falsified
     · exact (hnf hf).elim
-    · dsimp [p]
-      simp [hf]
+    · cases hst : ρ'.clauseStatus C <;> simp [p, hst] at hf ⊢
   have hsel_true : p selection.clause = true := by
     dsimp [p]
-    simpa [hsel]
+    simp [hsel]
   have hfind_list :
       (selection.leadingClauses ++ selection.clause :: selection.suffix).find? p =
         some selection.clause :=
@@ -1120,7 +1119,7 @@ lemma find_first_falsified_clause_spec_none
   have hp' : p C = true := by
     dsimp [p]
     simp [hf]
-  have hpf : p C ≠ true := by simpa [hp]
+  have hpf : p C ≠ true := by simp [hp]
   exact hpf hp'
 
 lemma decode_encodeBadFamilyDetCNF
@@ -1201,7 +1200,7 @@ lemma encodeBadFamilyDetCNF_small_injective_of_decode
       decodeSmall (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) x).1
         =
       decodeSmall (encodeBadFamilyDetCNF_small (F := F) (s := s) (t := t) y).1 := by
-    simpa [hxy]
+    simp [hxy]
   have : x.1 = y.1 := by simpa [hx, hy] using hρ
   exact Subtype.ext this
 
@@ -1313,7 +1312,7 @@ lemma decode_small_step_inverse_of_find_selection
         have hsome : (some b : Option Bool) = some choice.value := by
           exact Eq.trans (Eq.symm hσ) hmaskCase
         have hb : b = choice.value := Option.some.inj hsome
-        simp [hσ, hb]
+        simp [hb]
         have hidx : selection.witness.free[↑choice.index].idx = choice.literal.idx := by
           simp [ClausePendingWitness.Selection.literal]
         simpa [hidx] using

@@ -1,5 +1,8 @@
 # Research Note: `FormulaHalfSizeBoundPartial`
 
+Global blocker checklist:
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 Date: 2026-02-22
 Status: Open research note (optional route)
 

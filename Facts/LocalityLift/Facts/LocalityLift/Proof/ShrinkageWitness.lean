@@ -398,7 +398,8 @@ def canonicalCertificate
       , restriction := w.restriction
       , restriction_alive := w.restriction_alive
       , half_input_bound := by
-          simpa [w, canonical, card_canonicalAlive] using (Nat.zero_le (inputLen p / 4))
+          change (canonicalAlive p).card ≤ inputLen p / 4
+          simp [card_canonicalAlive]
       , stable := ?_ }
   intro x
   simp

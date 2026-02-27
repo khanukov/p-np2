@@ -1,5 +1,8 @@
 # MultiSwitching Next Step (Archived)
 
+Canonical checklist for unconditional status:
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 This note is historical and contains an older execution log.
 
 For current I-4 planning and blockers, use:

@@ -164,7 +164,7 @@ lemma nextVarFromTree_free {n : Nat} (t : PDT n) {ρ : Restriction n} {i : Fin n
       | none =>
           simp [nextVarFromTree, hmask] at h
           cases h
-          simpa [hmask]
+          simp [hmask]
       | some b =>
           cases b with
           | false =>

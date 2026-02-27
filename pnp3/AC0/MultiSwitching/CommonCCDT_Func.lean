@@ -449,7 +449,7 @@ lemma decidesFamilyOnAtom_of_firstPendingFormula_atom?_none
     | some C =>
         have : (firstPendingClause? (ρ := ρ) F).isSome = true := by
           simp [h]
-        simpa [this] using hpred
+        simp [this] at hpred
   exact decidesCNFOnAtom_of_firstPendingClause?_none (ρ := ρ) (F := F) hnoneClause
 
 theorem leaf_decidesFamily_of_depth_lt_atom

@@ -1,47 +1,23 @@
 # Technical Claims and Scope
 
-## Verified contribution scope
+Updated: 2026-02-27
 
-The repository contributes a Lean-verified combinatorial pipeline around SAL and
-capacity-style lower-bound infrastructure, plus machine-checked bridge plumbing
-into anti-checker/magnification interfaces.
+Canonical unconditional-checklist:
+`CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
-## Current claim level (2026-02-26)
+## Verified claim level
 
-- Active machine-checked strategic target: AC0-focused separation route.
-- Final public hooks in `pnp3/Magnification/FinalResult.lean` are semantic-first:
-  `NP_not_subset_PpolyFormula_from_params_semantic`,
-  `NP_not_subset_PpolyFormula_from_params_semantic_of_syntacticEasy`,
-  `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic`,
-  `NP_not_subset_PpolyFormula_of_asymptotic_hypothesis_semantic_of_syntacticEasy`,
-  `NP_not_subset_PpolyFormula_final`,
-  `P_ne_NP_final`.
-- No active global axioms in `pnp3/`.
-- No active `sorry/admit` in `pnp3/`.
+1. Active `pnp3/` tree is axiom-clean (`axiom = 0`, `sorry/admit = 0`).
+2. Final theorem surface compiles in `pnp3/Magnification/FinalResult.lean`.
+3. Active final wrappers for `P ≠ NP` remain conditional on explicit hypotheses.
 
-## Explicitly external parts
+## Not currently claimed
 
-1. Multi-switching/provider witness packaging remains explicit as a contract
-   boundary (`FormulaSupportBoundsFromMultiSwitchingContract`).
-2. Bridge from formula-track separation to non-uniform separation
-   (`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`) used by `P != NP`
-   wrappers.
+1. No unconditional in-repo theorem `P ≠ NP`.
+2. No claim that formula-separation endpoint alone closes full non-uniform
+   separation without the explicit bridge assumption.
 
-## What is not claimed
+## Rule for public wording
 
-- No claim that `P != NP` is unconditional in the current repository state.
-- No claim of a global `PpolyFormula -> AC0` conversion.
-
-## Naming interpretation
-
-- In `pnp3/Magnification/FinalResult.lean`, theorem names containing
-  `..._PpolyFormula_final...` should be read as AC0-route formula-separation
-  wrappers, not as standalone global non-uniform separation claims.
-- The preferred public-facing endpoints for this scope are the semantic
-  theorem names (`..._semantic...`) and `NP_not_subset_PpolyFormula_final`.
-
-## Positioning
-
-The project is a formalized infrastructure and conditional pipeline with clear,
-explicit dependency boundaries. Closing the remaining boundaries is ongoing
-research/engineering work tracked in `TODO.md` and `STATUS.md`.
+Any statement of `P ≠ NP` must mention conditional assumptions until the
+checklist in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md` is fully closed.

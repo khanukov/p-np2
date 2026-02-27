@@ -1,5 +1,8 @@
 # Facts/LocalityLift
 
+Repository-level unconditional-status checklist:
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 This directory hosts the stand-alone package that will eventually replace the
 axiomatic treatment of the locality-lift lemma (axiom D.5) inside the `pnp3`
 project.  The goal is to provide a reusable, well-documented Lean component that

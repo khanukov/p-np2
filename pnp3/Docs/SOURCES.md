@@ -1,5 +1,8 @@
 # Ссылки и внешние факты
 
+Для текущего статуса доказательства и блокеров безусловного `P ≠ NP`:
+`/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+
 - Håstad. *Computational limitations of small-depth circuits*. MIT Press, 1987.
 - Håstad. *The shrinkage exponent of De Morgan formulas is 2*. SIAM Journal on Computing, 1998.
 - Håstad. *On the correlation of parity and small-depth circuits*. Journal of the ACM, 2014.

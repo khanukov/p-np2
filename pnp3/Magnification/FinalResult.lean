@@ -78,6 +78,21 @@ theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
     ComplexityInterfaces.P_ne_NP_of_NP_strict_not_subset_Ppoly hStrict
 
 /-- Canonical Partial MCSP parameters used in the final bridge. -/
+lemma circuit_bound_ok_canonical :
+  Models.circuitCountBound 8 (3 - 1) < 2 ^ (Partial.tableLen 8 / 2) := by
+  /-
+    Конструктивная арифметическая проверка для канонических параметров.
+    Важно: используем `decide` (вычисление в ядре Lean), а не `native_decide`,
+    чтобы не добавлять зависимость финального конуса от `Lean.ofReduceBool`.
+  -/
+  decide
+
+/-
+  Канонический набор параметров для финального моста.
+
+  `circuit_bound_ok` теперь подаётся через отдельную лемму
+  `circuit_bound_ok_canonical`, доказанную без `native_decide`.
+-/
 @[simp] def canonicalPartialParams : GapPartialMCSPParams where
   n := 8
   sYES := 1
@@ -85,7 +100,8 @@ theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
   gap_ok := by decide
   n_large := by decide
   sYES_pos := by decide
-  circuit_bound_ok := by native_decide
+  circuit_bound_ok := by
+    simpa using circuit_bound_ok_canonical
 
 /--
 Primary final statement (asymptotic entry): from the structured provider and

@@ -50,13 +50,16 @@ bridge wrappers.
 
 ## Q: What is still external?
 
-**A:** Two main areas remain:
+**A:** Main remaining external area:
 
-1. Default/global provider packaging in some wrappers
-   (`hasDefaultStructuredLocalityProviderPartial` route).
-2. I-5: bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` for final
+1. I-5: bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` for final
    `P != NP` wrappers.
-3. Optional stronger bridge layers (kept explicit and separate).
+2. Optional stronger bridge layers (kept explicit and separate).
+
+I-2 note:
+- Provider-default wiring is already closed constructively in a contract-scoped
+  way (`..._of_multiswitching_contract` route in `FinalResult.lean` and
+  `LocalityProvider_Partial.lean`).
 
 ## Q: Is NP encoded via arbitrary Lean verifiers?
 

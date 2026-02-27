@@ -1,6 +1,6 @@
 # PNP3: Publication-facing Status Snapshot
 
-> **Updated:** 2026-02-24
+> **Updated:** 2026-02-26
 
 This repository currently provides an AC0-focused machine-checked partial-track
 pipeline in Lean 4.
@@ -17,6 +17,11 @@ Final `P != NP` wrappers are currently conditional on an explicit formula-to-`P/
   (`HalfTableCertificateBound`, `..._of_certificate_auto`).
 - I-4 is constructively closed for explicit AC0/CNF inputs (Path A) via
   `pnp3/Magnification/AC0LocalityBridge.lean`.
+- I-2 constructive provider-default wiring is closed in a contract-scoped form
+  via:
+  `hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract`,
+  `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`,
+  `P_ne_NP_final_of_multiswitching_contract`.
 - Semantic final theorem hooks are available:
   - fixed-parameter:
     `NP_not_subset_PpolyFormula_from_params_semantic`,
@@ -44,8 +49,7 @@ Final `P != NP` wrappers are currently conditional on an explicit formula-to-`P/
 ## Still external
 
 1. General `PpolyFormula -> AC0` bridge (intentionally not claimed).
-2. Default/global provider packaging remains explicit in some wrappers.
-3. Formula-separation to non-uniform bridge (`hFormulaToPpoly`) for `P != NP`.
+2. Formula-separation to non-uniform bridge (`hFormulaToPpoly`) for `P != NP`.
 
 ## Current scientific claim level
 
@@ -59,9 +63,7 @@ Final `P != NP` wrappers are currently conditional on an explicit formula-to-`P/
 To turn the repository into an unconditional in-repo `P != NP` claim, the
 remaining closure items are:
 
-1. Internalize default constructive structured-provider availability from
-   existing AC0 I-4 artifacts (I-2).
-2. Internalize the bridge
+1. Internalize the bridge
    `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` and remove
    `hFormulaToPpoly` from final wrappers (I-5).
 

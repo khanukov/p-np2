@@ -39,7 +39,7 @@ This file is the authoritative status snapshot.
 - Auto wrapper exists: `locality_lift_partial_of_certificate_auto`.
 - Main certificate route no longer needs manually threaded `hCardHalf`.
 
-3. I-2 closed (provider-default wiring)
+3. I-2 closed (provider-default wiring, contract-scoped)
 - Added direct provider constructors in
   `pnp3/Magnification/LocalityProvider_Partial.lean`:
   - `structuredLocalityProviderPartial_of_formulaCertificate`
@@ -54,6 +54,10 @@ This file is the authoritative status snapshot.
   - `hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract`
   - `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`
   - `P_ne_NP_final_of_multiswitching_contract`
+- Scope clarification:
+  - this closes I-2 constructively/verifiably at the wiring layer;
+  - it is not an unconditional theorem because the route is parameterized by
+    `AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract`.
 
 4. I-4 fully closed on AC0 path
 - Constructive common-CCDT multi-switching chain is wired end-to-end for
@@ -142,6 +146,8 @@ This file is the authoritative status snapshot.
 - We intentionally do not claim a global `P/poly -> AC0` transport theorem.
 - Final `P != NP` wrappers are conditional and require an explicit bridge
   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
+- Therefore, current in-repo status is: constructive AC0-route closure with
+  explicit contracts, but no unconditional `P != NP` theorem.
 - Naming rule: theorem names containing `...PpolyFormula_final...` in
   `pnp3/Magnification/FinalResult.lean` denote AC0-route
   formula-separation wrappers, not standalone global non-uniform claims.

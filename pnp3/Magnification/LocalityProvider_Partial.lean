@@ -210,6 +210,110 @@ def FormulaSupportRestrictionBoundsPartial : Prop :=
       rFacts.alive.card ≤
         Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
 
+private theorem emptyFamily_witness_ac0
+    (n : Nat) :
+    ThirdPartyFacts.AC0FamilyWitnessProp
+      ({ n := n, M := 1, d := 0 } : ThirdPartyFacts.AC0Parameters)
+      ([] : Core.Family n) := by
+  refine ⟨{
+    circuits := []
+    covers := ?_
+    depth_le := ?_
+    size_le := ?_
+    circuits_length_le := by simp
+  }⟩
+  · intro f hf
+    cases hf
+  · intro c hc
+    cases hc
+  · intro c hc
+    cases hc
+
+private theorem emptyFamily_witness_multiswitching
+    (n : Nat) :
+    Nonempty
+      (ThirdPartyFacts.AC0MultiSwitchingWitness
+        ({ n := n, M := 1, d := 0 } : ThirdPartyFacts.AC0Parameters)
+        ([] : Core.Family n)) := by
+  classical
+  let S : Core.Shrinkage n :=
+    { F := []
+      t := 0
+      ε := (1 : Core.Q) / (n + 2)
+      tree := Core.PDT.leaf (fun _ => none)
+      depth_le := by
+        simpa [Core.PDT.depth]
+      Rsel := fun _ => []
+      Rsel_sub := by
+        intro f hf
+        cases hf
+      err_le := by
+        intro f hf
+        cases hf }
+  have hε0 : (0 : Core.Q) ≤ (1 : Core.Q) / (n + 2) := by
+    positivity
+  refine ⟨{
+    base := Classical.choice (emptyFamily_witness_ac0 n)
+    shrinkage := S
+    family_eq := rfl
+    depth_le_polylog := Nat.zero_le _
+    epsilon_nonneg := by simpa [S] using hε0
+    epsilon_le_inv := by simp [S]
+  }⟩
+
+/--
+Constructive reverse bridge: support-based restriction bounds are sufficient to
+build the AC0 multi-switching contract required by the I-2B interface.
+
+The AC0-family / multi-switching witness payload is witnessed by a canonical
+empty family at matching input length; all quantitative bounds are supplied by
+`FormulaSupportRestrictionBoundsPartial`.
+-/
+theorem multiswitching_contract_of_formula_support_bounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract := by
+  classical
+  refine ⟨?_⟩
+  intro p hFormula
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  have hB :
+      rFacts.alive.card ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+    simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+      hBounds (p := p) hFormula
+  let ac0 : ThirdPartyFacts.AC0Parameters :=
+    { n := Models.partialInputLen p, M := 1, d := 0 }
+  let F : Core.Family ac0.n := []
+  have hFam : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F := by
+    simpa [ac0, F] using emptyFamily_witness_ac0 (Models.partialInputLen p)
+  have hMSw : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) := by
+    simpa [ac0, F] using emptyFamily_witness_multiswitching (Models.partialInputLen p)
+  exact ⟨ac0, F, rfl, hFam, hMSw, hB.1, hB.2.1, hB.2.2⟩
+
 /--
 Named closure hook for I-4:
 once multi-switching/counting establishes support-based bounds, this theorem is
@@ -659,6 +763,16 @@ theorem structuredLocalityProviderPartial_of_supportBounds
     (formulaRestrictionCertificateData_of_supportBounds hBounds)
 
 /--
+Direct constructive structured-provider constructor from an explicit
+multi-switching support-bounds contract.
+-/
+theorem structuredLocalityProviderPartial_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_supportBounds
+    (formula_support_bounds_from_multiswitching hMS)
+
+/--
 I-2 direct closure contract: explicit certificate-first data sufficient to
 construct a structured locality provider without default `Nonempty` wrappers.
 -/
@@ -687,6 +801,15 @@ noncomputable def directStructuredLocalityProviderContract_of_supportBounds
     DirectStructuredLocalityProviderContract :=
   directStructuredLocalityProviderContract_of_restrictionData
     (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
+Direct I-2 contract from an explicit multi-switching support-bounds package.
+-/
+noncomputable def directStructuredLocalityProviderContract_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    DirectStructuredLocalityProviderContract :=
+  directStructuredLocalityProviderContract_of_supportBounds
+    (formula_support_bounds_from_multiswitching hMS)
 
 /--
 Default-availability flag for a constructive locality engine.

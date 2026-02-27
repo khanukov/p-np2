@@ -19,19 +19,23 @@ Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
 ## What still blocks unconditional `P ≠ NP`
 
-Track these four items directly from `P_ne_NP_final` assumptions:
+Track these four items on the active constructive final route
+`P_ne_NP_final_of_default_supportBounds`:
 
-1. `hasDefaultStructuredLocalityProviderPartial`
+1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
 4. `hFormulaToPpoly`:
    `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
 
+Explicit constructive route `P_ne_NP_final_of_supportBounds` is also available.
+
 ## Execution order
 
 1. Keep docs honest: no unconditional claim while the four blockers remain.
 2. Continue removing dead branches only if final API + tests still pass.
-3. Prioritize internalizing item (4), then eliminate remaining assumptions.
+3. Prioritize internalizing item (1) and item (4), then eliminate remaining
+   asymptotic/NP-family assumptions.
 
 ## Done criteria
 

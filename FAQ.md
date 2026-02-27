@@ -12,9 +12,11 @@ The active final surface is in `pnp3/Magnification/FinalResult.lean`:
 - `NP_not_subset_PpolyFormula_final_with_provider`
 - `NP_not_subset_PpolyFormula_final`
 - `NP_not_subset_PpolyFormula_final_of_formulaCertificate`
+- `NP_not_subset_PpolyFormula_final_of_default_supportBounds`
 - `P_ne_NP_final_with_provider`
 - `P_ne_NP_final`
 - `P_ne_NP_final_of_formulaCertificate`
+- `P_ne_NP_final_of_default_supportBounds`
 
 These are machine-checked and compile on current tree.
 
@@ -24,12 +26,15 @@ No. Current `P_ne_NP_final` is conditional.
 
 ## Conditional on what exactly?
 
-`P_ne_NP_final` still requires four assumptions:
+Legacy `P_ne_NP_final` still requires four assumptions:
 
 1. `hasDefaultStructuredLocalityProviderPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
 4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+
+Active constructive endpoint `P_ne_NP_final_of_default_supportBounds` replaces
+item (1) with `hasDefaultFormulaSupportRestrictionBoundsPartial`.
 
 ## Why is `P_ne_NP_final` still meaningful for auditors?
 

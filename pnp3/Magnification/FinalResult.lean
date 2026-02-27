@@ -139,6 +139,63 @@ theorem NP_not_subset_PpolyFormula_final_of_formulaCertificate
       (hNPfam := hNPfam)
 
 /--
+Constructive final formula-separation endpoint from an explicit multi-switching
+support-bounds contract.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_multiswitching_contract
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Canonical constructive final formula-separation route:
+explicit multi-switching contract, no default-provider `Nonempty` flag.
+-/
+theorem NP_not_subset_PpolyFormula_final_constructive
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_of_multiswitching_contract
+      (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam)
+
+/--
+Constructive final formula-separation route from support-based bounds.
+-/
+theorem NP_not_subset_PpolyFormula_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_of_multiswitching_contract
+      (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Constructive final formula-separation route from default support-bounds
+availability (`Nonempty` wrapper).
+-/
+theorem NP_not_subset_PpolyFormula_final_of_default_supportBounds
+  (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_of_supportBounds
+      (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
 Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
 final statement plus an explicit bridge from formula separation to
 lightweight non-uniform separation.
@@ -203,6 +260,81 @@ theorem P_ne_NP_final_of_formulaCertificate
   exact
     P_ne_NP_final_with_provider
       (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      hFormulaToPpoly
+
+/--
+Constructive final `P ≠ NP` wrapper from an explicit multi-switching
+support-bounds contract.
+-/
+theorem P_ne_NP_final_of_multiswitching_contract
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      hFormulaToPpoly
+
+/--
+Canonical constructive final `P ≠ NP` route:
+explicit multi-switching contract, no default-provider `Nonempty` flag.
+-/
+theorem P_ne_NP_final_constructive
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_of_multiswitching_contract
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      hFormulaToPpoly
+
+/--
+Constructive final `P ≠ NP` route from support-based bounds.
+-/
+theorem P_ne_NP_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_of_multiswitching_contract
+      (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      hFormulaToPpoly
+
+/--
+Constructive final `P ≠ NP` route from default support-bounds availability
+(`Nonempty` wrapper).
+-/
+theorem P_ne_NP_final_of_default_supportBounds
+  (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (hFormulaToPpoly :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula →
+    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_of_supportBounds
+      (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       hFormulaToPpoly

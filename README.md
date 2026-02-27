@@ -31,9 +31,13 @@ Bottom line today: there is no unconditional in-repo theorem `P ≠ NP`.
 - `NP_not_subset_PpolyFormula_final_with_provider`
 - `NP_not_subset_PpolyFormula_final`
 - `NP_not_subset_PpolyFormula_final_of_formulaCertificate`
+- `NP_not_subset_PpolyFormula_final_of_default_supportBounds`
+- `NP_not_subset_PpolyFormula_final_of_supportBounds`
 - `P_ne_NP_final_with_provider`
 - `P_ne_NP_final`
 - `P_ne_NP_final_of_formulaCertificate`
+- `P_ne_NP_final_of_default_supportBounds`
+- `P_ne_NP_final_of_supportBounds`
 
 ## Main Solution Route in Current Code
 
@@ -49,15 +53,23 @@ Bottom line today: there is no unconditional in-repo theorem `P ≠ NP`.
 
 ## What Remains Open
 
-`P_ne_NP_final` still depends on 4 external hypotheses:
+Legacy wrapper `P_ne_NP_final` still depends on 4 external hypotheses:
 
 1. `hasDefaultStructuredLocalityProviderPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
 4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
 
-Until these 4 items are internalized in-repo, any `P ≠ NP` statement here is
-necessarily conditional.
+Active constructive wrapper `P_ne_NP_final_of_default_supportBounds` replaces
+item (1) with:
+
+1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
+2. `AsymptoticFormulaTrackHypothesis`
+3. `StrictGapNPFamily`
+4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+
+Until this constructive blocker set is internalized in-repo, any `P ≠ NP`
+statement here is necessarily conditional.
 
 ## Core Difficulty
 

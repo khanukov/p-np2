@@ -30,6 +30,13 @@ Main route in `FinalResult.lean`:
 7. `P_ne_NP_final_with_provider`
 8. `P_ne_NP_final`
 
+Constructive route in `FinalResult.lean`:
+
+1. `NP_not_subset_PpolyFormula_final_of_supportBounds`
+2. `NP_not_subset_PpolyFormula_final_of_default_supportBounds`
+3. `P_ne_NP_final_of_supportBounds`
+4. `P_ne_NP_final_of_default_supportBounds`
+
 Certificate-first variants:
 
 - `NP_not_subset_PpolyFormula_final_of_formulaCertificate`
@@ -49,6 +56,14 @@ Certificate-first variants:
      `strictGapNPFamily_of_tmWitnesses`
 4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
    - external bridge assumption on the final step.
+
+`P_ne_NP_final_of_default_supportBounds` assumptions:
+
+1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
+   - source: `pnp3/Magnification/LocalityProvider_Partial.lean`
+2. `AsymptoticFormulaTrackHypothesis`
+3. `StrictGapNPFamily`
+4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
 
 ## 4) Core constructive components
 

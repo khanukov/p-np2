@@ -12,22 +12,39 @@ File: `pnp3/Magnification/FinalResult.lean`
 - `NP_not_subset_PpolyFormula_final_with_provider`
 - `NP_not_subset_PpolyFormula_final`
 - `NP_not_subset_PpolyFormula_final_of_formulaCertificate`
+- `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`
+- `NP_not_subset_PpolyFormula_final_constructive`
+- `NP_not_subset_PpolyFormula_final_of_supportBounds`
 - `P_ne_NP_final_with_provider`
 - `P_ne_NP_final`
 - `P_ne_NP_final_of_formulaCertificate`
+- `P_ne_NP_final_of_multiswitching_contract`
+- `P_ne_NP_final_constructive`
+- `P_ne_NP_final_of_supportBounds`
 - helper: `strictGapNPFamily_of_tmWitnesses`
 
 ## Unconditional blockers (must be internalized)
 
-`P_ne_NP_final` still requires four external hypotheses:
+Legacy wrapper `P_ne_NP_final` still requires:
 
 1. `hasDefaultStructuredLocalityProviderPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
 4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` (`hFormulaToPpoly`)
 
-Until all four are discharged internally, the repository does **not** contain an
-unconditional theorem `P ≠ NP`.
+Active constructive endpoint `P_ne_NP_final_of_default_supportBounds` now
+tracks this blocker set:
+
+1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
+2. `AsymptoticFormulaTrackHypothesis`
+3. `StrictGapNPFamily`
+4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` (`hFormulaToPpoly`)
+
+Explicit variant: `P_ne_NP_final_of_supportBounds`
+(`FormulaSupportRestrictionBoundsPartial` as direct input).
+
+Until the constructive blocker set is fully discharged internally, the
+repository does **not** contain an unconditional theorem `P ≠ NP`.
 
 ## Proof-quality safety checks
 

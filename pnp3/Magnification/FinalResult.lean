@@ -77,21 +77,36 @@ theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
   exact
     ComplexityInterfaces.P_ne_NP_of_NP_strict_not_subset_Ppoly hStrict
 
+/-- Explicit evaluation of the concrete counting bound used by canonical parameters. -/
+lemma circuitCountBound_8_2 : Models.circuitCountBound 8 2 = 230 := by
+  simp [Models.circuitCountBound]
+
 /-- Canonical Partial MCSP parameters used in the final bridge. -/
 lemma circuit_bound_ok_canonical :
   Models.circuitCountBound 8 (3 - 1) < 2 ^ (Partial.tableLen 8 / 2) := by
   /-
-    Конструктивная арифметическая проверка для канонических параметров.
-    Важно: используем `decide` (вычисление в ядре Lean), а не `native_decide`,
-    чтобы не добавлять зависимость финального конуса от `Lean.ofReduceBool`.
+    Делаем доказательство максимально прозрачным:
+    1) вычисляем левую часть точно: `circuitCountBound 8 2 = 230`;
+    2) показываем `230 < 2^8`;
+    3) поднимаем границу до `2^(tableLen 8 / 2)` по монотонности степени.
   -/
-  decide
+  have hleft : Models.circuitCountBound 8 (3 - 1) = 230 := by
+    simpa using circuitCountBound_8_2
+  have hsmall : (230 : Nat) < 2 ^ 8 := by
+    decide
+  have hexp : (2 : Nat) ^ 8 ≤ 2 ^ (Partial.tableLen 8 / 2) := by
+    have hidx : 8 ≤ Partial.tableLen 8 / 2 := by
+      decide
+    exact Nat.pow_le_pow_right (by decide : 0 < (2 : Nat)) hidx
+  have hmain : (230 : Nat) < 2 ^ (Partial.tableLen 8 / 2) :=
+    Nat.lt_of_lt_of_le hsmall hexp
+  simpa [hleft] using hmain
 
 /-
   Канонический набор параметров для финального моста.
 
-  `circuit_bound_ok` теперь подаётся через отдельную лемму
-  `circuit_bound_ok_canonical`, доказанную без `native_decide`.
+  `circuit_bound_ok` подаётся через отдельную явную арифметическую лемму
+  `circuit_bound_ok_canonical`.
 -/
 @[simp] def canonicalPartialParams : GapPartialMCSPParams where
   n := 8

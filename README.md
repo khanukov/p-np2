@@ -1,6 +1,6 @@
 # P!=NP formalization repository
 
-> **Status (2026-02-24):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, with AC0-focused machine-checked separation hooks.
+> **Status (2026-02-26):** `pnp3/` builds, has **0 active `axiom`** and **0 `sorry/admit`**, with AC0-focused machine-checked separation hooks.
 > Final `P != NP` wrappers in `FinalResult.lean` are currently conditional on an explicit non-AC0 bridge.
 
 This repository contains the Lean 4 formalization around the PNP3 pipeline:
@@ -49,10 +49,9 @@ This repository contains the Lean 4 formalization around the PNP3 pipeline:
 
 ## Remaining external inputs (non-axiomatic)
 
-1. Default/global provider packaging remains explicit in some wrappers
-   (`hasDefaultStructuredLocalityProviderPartial` style inputs).
-2. Formula-to-`P/poly` bridge for final `P != NP` wrapper
+1. Formula-to-`P/poly` bridge for final `P != NP` wrapper
    (`hFormulaToPpoly` in `FinalResult.lean`).
+2. Optional broader non-AC0 bridge layers (kept separate by design).
 
 ## Important scope note
 
@@ -82,16 +81,17 @@ to a mathematically final state.
 
 ### Code-level closure criteria (inside this repository)
 
-1. Close I-2 (default constructive provider path).
-- Derive `hasDefaultStructuredLocalityProviderPartial` from internal certificate
-  providers for formula-extracted solvers.
-- Target module: `pnp3/Magnification/LocalityProvider_Partial.lean`.
-
-2. Close I-5 (formula-track to `P/poly` bridge).
+1. Close I-5 (formula-track to `P/poly` bridge).
 - Internalize a sound theorem of shape:
   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
 - Remove the external bridge argument `hFormulaToPpoly` from
   `P_ne_NP_final*` wrappers in `pnp3/Magnification/FinalResult.lean`.
+
+I-2 note:
+- I-2 constructive wiring is closed in a contract-scoped way via:
+  `hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract`,
+  `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`,
+  `P_ne_NP_final_of_multiswitching_contract`.
 
 ### Minimal acceptance check for an internal unconditional status
 

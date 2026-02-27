@@ -1,7 +1,7 @@
 # Complete Axiom Inventory - PNP3
 ## Official list for current `pnp3/` tree
 
-**Revision Date**: 2026-02-23
+**Revision Date**: 2026-02-26
 **Total Active Axioms (`pnp3/`)**: 0
 
 ## Executive summary
@@ -17,8 +17,9 @@ Remaining dependencies are explicit hypotheses/providers, not axioms.
 
 ## External inputs still required (non-axiomatic)
 
-1. Default-provider packaging for wrapper-level entrypoints
-   (`hasDefaultStructuredLocalityProviderPartial`) remains explicit.
+1. Provider-default wiring is contract-scoped:
+   `hasDefaultStructuredLocalityProviderPartial` is available from
+   `FormulaSupportBoundsFromMultiSwitchingContract` on the I-2 route.
 2. Formula-to-`P/poly` bridge used by `P != NP` wrappers:
    `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`.
 3. Optional broader non-AC0 bridges, if desired, as separate explicit layers.

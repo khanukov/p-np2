@@ -1,5 +1,6 @@
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityLift_Partial
+import Magnification.AC0LocalityBridge
 import ThirdPartyFacts.PartialLocalityLift
 
 namespace Pnp3
@@ -215,17 +216,41 @@ once multi-switching/counting establishes support-based bounds, this theorem is
 the exact bridge expected by the magnification interface.
 -/
 theorem formula_support_bounds_from_multiswitching
-    (hBounds : FormulaSupportRestrictionBoundsPartial) :
-    FormulaSupportRestrictionBoundsPartial :=
-  hBounds
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaSupportRestrictionBoundsPartial := by
+  classical
+  intro p hFormula
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  obtain ⟨ac0, F, hsame, hFam, hMSw, hpoly, hsmall0, hhalf⟩ :=
+    hMS.package (p := p) hFormula
+  let _ := hsame
+  let _ := hFam
+  let _ := hMSw
+  refine ⟨hpoly, ?_, hhalf⟩
+  simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
 
 /--
 Default-flag wrapper for `formula_support_bounds_from_multiswitching`.
 -/
 theorem hasDefaultFormulaSupportRestrictionBoundsPartial_from_multiswitching
-    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
     Nonempty FormulaSupportRestrictionBoundsPartial :=
-  ⟨formula_support_bounds_from_multiswitching hBounds⟩
+  ⟨formula_support_bounds_from_multiswitching hMS⟩
 
 /--
 Constructive support-based builder of `FormulaRestrictionCertificateDataPartial`.
@@ -605,6 +630,65 @@ theorem structuredLocalityProviderPartial_of_engine
   exact ⟨T, loc, hT, hℓ⟩
 
 /--
+Direct structured-provider constructor from an explicit formula-certificate
+provider package.
+-/
+theorem structuredLocalityProviderPartial_of_formulaCertificate
+    (hCert : FormulaCertificateProviderPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_engine
+    (constructiveLocalityEnginePartial_of_formulaCertificate hCert)
+
+/--
+Direct structured-provider constructor from explicit restriction-level
+certificate data.
+-/
+theorem structuredLocalityProviderPartial_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_formulaCertificate
+    (formulaCertificateProvider_of_restrictionData D)
+
+/--
+Direct structured-provider constructor from support-based numeric assumptions.
+-/
+theorem structuredLocalityProviderPartial_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_restrictionData
+    (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
+I-2 direct closure contract: explicit certificate-first data sufficient to
+construct a structured locality provider without default `Nonempty` wrappers.
+-/
+structure DirectStructuredLocalityProviderContract where
+  certificateProvider : FormulaCertificateProviderPartial
+
+/-- Build a structured locality provider from the direct I-2 contract. -/
+theorem structuredLocalityProviderPartial_of_contract
+    (h : DirectStructuredLocalityProviderContract) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_formulaCertificate h.certificateProvider
+
+/--
+Build the direct I-2 contract from explicit restriction-level certificate data.
+-/
+noncomputable def directStructuredLocalityProviderContract_of_restrictionData
+    (D : FormulaRestrictionCertificateDataPartial) :
+    DirectStructuredLocalityProviderContract :=
+  ⟨formulaCertificateProvider_of_restrictionData D⟩
+
+/--
+Build the direct I-2 contract from support-based numeric assumptions.
+-/
+noncomputable def directStructuredLocalityProviderContract_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    DirectStructuredLocalityProviderContract :=
+  directStructuredLocalityProviderContract_of_restrictionData
+    (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
 Default-availability flag for a constructive locality engine.
 -/
 def hasDefaultStructuredLocalityProviderPartial : Prop :=
@@ -722,6 +806,16 @@ theorem hasDefaultStructuredLocalityProviderPartial_of_default_supportBounds
     hasDefaultStructuredLocalityProviderPartial :=
   hasDefaultStructuredLocalityProviderPartial_of_default_formulaCertificate
     (hasDefaultFormulaCertificateProviderPartial_of_default_supportBounds h)
+
+/--
+End-to-end I-2 wiring: a multi-switching support-bounds contract provides
+default structured locality-provider availability.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_supportBounds
+    (formula_support_bounds_from_multiswitching hMS)
 
 /--
 Default-engine flag from a uniform half-size condition.

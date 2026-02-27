@@ -30,14 +30,19 @@ This roadmap reflects the **actual** current code state.
 - Main certificate locality-lift path has auto wrapper;
   no manual `hCardHalf` threading in the main route.
 
+3. I-2 closed (constructive wiring, contract-scoped)
+- End-to-end route is wired through:
+  - `hasDefaultStructuredLocalityProviderPartial_of_multiswitching_contract`
+  - `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`
+  - `P_ne_NP_final_of_multiswitching_contract`
+- Compile-time regression checks are present in
+  `pnp3/Tests/BridgeLocalityRegression.lean`.
+- Scope note: this is not an unconditional closure, because the route requires
+  `AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract`.
+
 ## Open blockers
 
-1. I-2 (primary)
-- Internalize default structured locality provider availability from existing
-  constructive artifacts (including AC0 Path-A I-4 bridge), without extra
-  external provider assumptions.
-
-2. I-5 (research-level)
+1. I-5 (research-level)
 - Close bridge `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
   or keep `P != NP` explicitly conditional.
 - New active subtrack: depth-aware bridge contract
@@ -46,25 +51,33 @@ This roadmap reflects the **actual** current code state.
   `NP_not_subset_PpolyFormula -> NP_not_subset_PpolyFormulaDepth d`
   to keep the bridge aligned with AC0-style bounded depth.
 
-3. Optional broader bridges (separate layer)
+2. Optional broader bridges (separate layer)
 - Any non-AC0 front (e.g., stronger Ppoly-side bridge assumptions) should stay
   explicitly separated from the AC0-closed I-4 core.
 
-4. Step-C legacy cleanup (status)
-- Step-C partial route is now internalized and machine-checked through
-  solver-local payloads (`circuit`, `decide_eq`, `easyData`) plus
-  `stepCSyntacticLiftDataPartial_default`.
-- Legacy hypothesis-bridge wrappers (`..._of_hypotheses`,
-  all-functions-based helper wrappers) were removed from active
-  `AntiChecker_Partial` / core / pipeline APIs.
-- Remaining Step-C work is optional refactoring/documentation hygiene,
-  not proof-blocking for the internalized constructive route.
+3. Step-C semantics migration (new, immediate)
+- New semantic API exists (`*_semantic`) with solver-local witnesses.
+- Progress done:
+  - active bridge entrypoints no longer auto-build Step-C from
+    `allFunctionsFamily`; they require explicit lower-bound hypotheses;
+  - legacy `allFunctions/default_multiSwitching` public final entrypoints were
+    removed from `FinalResult.lean`;
+  - semantic provider/bridge/final wrappers added (`*_semantic`) to run
+    non-vacuous Step-C assumptions through OPS to formula separation.
+- Remaining work:
+  - migrate default multi-switching constructors to solver-local semantic
+    witnesses end-to-end;
+  - connect semantic Step-C to constructive multi-switching providers
+    in family-level easy-data form (instead of all-functions form).
+  - instantiate `AC0EasyFamilyDataPartial` with a mathematically justified
+    `AC0EasyFamily` (not just wrappers), including a proved cardinal lower
+    premise actually used by the counting contradiction.
 
 ## Execution order
 
-1. Wire existing constructive artifacts into default provider path (I-2).
-2. Maintain explicit conditional labeling for `P != NP` until I-5 is solved.
-3. Keep optional stronger bridges in separate, clearly-labeled modules.
+1. Maintain explicit conditional labeling for `P != NP` until I-5 is solved.
+2. Keep optional stronger bridges in separate, clearly-labeled modules.
+3. Continue semantic Step-C migration to remove legacy compatibility surface.
 
 ## Definition of done per open item
 
@@ -73,11 +86,6 @@ This roadmap reflects the **actual** current code state.
 - I-4 is considered closed for explicit AC0/CNF inputs (Path A).
 - Reference module: `pnp3/Magnification/AC0LocalityBridge.lean`.
 - General `PpolyFormula -> AC0` conversion is intentionally out of scope.
-
-### I-2 DoD
-
-- `hasDefaultStructuredLocalityProviderPartial` obtained from internal
-  certificate providers in the default route.
 
 ### I-5 DoD
 

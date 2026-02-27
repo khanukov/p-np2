@@ -6,7 +6,7 @@ The repository contributes a Lean-verified combinatorial pipeline around SAL and
 capacity-style lower-bound infrastructure, plus machine-checked bridge plumbing
 into anti-checker/magnification interfaces.
 
-## Current claim level (2026-02-24)
+## Current claim level (2026-02-26)
 
 - Active machine-checked strategic target: AC0-focused separation route.
 - Final public hooks in `pnp3/Magnification/FinalResult.lean` are semantic-first:
@@ -21,11 +21,9 @@ into anti-checker/magnification interfaces.
 
 ## Explicitly external parts
 
-1. Multi-switching/provider witness packaging is still explicit at theorem
-   interfaces.
-2. Default-provider packaging (`hasDefaultStructuredLocalityProviderPartial`)
-   remains an explicit dependency for wrapper-level entrypoints.
-3. Bridge from formula-track separation to non-uniform separation
+1. Multi-switching/provider witness packaging remains explicit as a contract
+   boundary (`FormulaSupportBoundsFromMultiSwitchingContract`).
+2. Bridge from formula-track separation to non-uniform separation
    (`NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`) used by `P != NP`
    wrappers.
 

@@ -2,6 +2,7 @@ import Barrier.Relativization
 import Barrier.NaturalProofs
 import Barrier.Algebrization
 import Magnification.FinalResult
+import Complexity.Simulation.Circuit_Compiler
 
 /-!
   pnp3/Barrier/Bypass.lean
@@ -56,17 +57,18 @@ theorem NP_not_subset_PpolyFormula_final_with_barriers
 Final `P ≠ NP` wrapper with explicit barrier obligations.
 
 As in `P_ne_NP_final`, this remains conditional on explicit DAG-track
-separation/inclusion assumptions.
+separation and a concrete TM-to-circuit compiler contract.
 -/
 theorem P_ne_NP_final_with_barriers
     (hProvider : StructuredLocalityProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)
     (hNPfam : StrictGapNPFamily)
     (hNPDag : NP_not_subset_PpolyDAG)
-    (hPsubsetDag : P_subset_PpolyDAG)
+    (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+    (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
-  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hNPfam hNPDag hPsubsetDag, hBarriers⟩
+  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hNPfam hNPDag hCompiler hEvalAgree, hBarriers⟩
 
 end Barrier
 end Pnp3

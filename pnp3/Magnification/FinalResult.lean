@@ -3,6 +3,8 @@ import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
+import Complexity.PsubsetPpolyDAG_Internal
+import Complexity.Simulation.Circuit_Compiler
 
 namespace Pnp3
 namespace Magnification
@@ -365,9 +367,13 @@ theorem P_ne_NP_final_with_provider
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
-  exact ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation hNPDag hPsubsetDag
+  exact
+    ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
+      hNPDag
+      (Complexity.Simulation.dagInclusion_from_compiler hCompiler hEvalAgree)
 
 /--
 Active conditional final `P ≠ NP` wrapper.
@@ -383,15 +389,17 @@ theorem P_ne_NP_final
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
       (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 /--
 Certificate-first final `P ≠ NP` wiring from an explicit formula-certificate
@@ -402,15 +410,17 @@ theorem P_ne_NP_final_of_formulaCertificate
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
       (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 /--
 Constructive final `P ≠ NP` wrapper from an explicit multi-switching
@@ -421,15 +431,17 @@ theorem P_ne_NP_final_of_multiswitching_contract
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
       (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 /--
 Canonical constructive final `P ≠ NP` route:
@@ -440,15 +452,17 @@ theorem P_ne_NP_final_constructive
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
       (hMS := hMS)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 /--
 Constructive final `P ≠ NP` route from explicit TM witnesses and
@@ -462,15 +476,17 @@ theorem P_ne_NP_final_constructive_of_tmWitnesses
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_constructive
       (hMS := hMS)
       (hAsym := hAsym)
       (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 /--
 Constructive final `P ≠ NP` route from support-based bounds.
@@ -480,15 +496,17 @@ theorem P_ne_NP_final_of_supportBounds
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
       (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 /--
 Constructive final `P ≠ NP` route from default support-bounds availability
@@ -499,15 +517,40 @@ theorem P_ne_NP_final_of_default_supportBounds
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_supportBounds
       (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hNPDag
-      hPsubsetDag
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
+
+/--
+Legacy straight-line inclusion variant of the final wrapper.
+
+This allows closing the inclusion side via an internalized `LegacyStraight`
+compiler, then reducing it to the canonical DAG inclusion target.
+-/
+theorem P_ne_NP_final_of_straightLineInclusion
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily)
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
+  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final
+      (hDefaultProvider := hDefaultProvider)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+      (hNPDag := hNPDag)
+      (hCompiler := hCompiler)
+      (hEvalAgree := hEvalAgree)
 
 end Magnification
 end Pnp3

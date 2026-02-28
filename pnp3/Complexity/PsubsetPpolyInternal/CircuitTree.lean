@@ -30,7 +30,7 @@ inductive Circuit (n : ℕ) where
   | not   : Circuit n → Circuit n
   | and   : Circuit n → Circuit n → Circuit n
   | or    : Circuit n → Circuit n → Circuit n
-  deriving DecidableEq
+  deriving DecidableEq, Inhabited
 
 namespace Circuit
 

@@ -15,7 +15,8 @@ the larger codebase.  The standalone proof remains independent, but once
 imported into the big project its names are guaranteed to stay distinct.
 -/
 
-namespace Facts
+namespace Pnp3
+namespace Internal
 namespace PsubsetPpoly
 
 namespace Boolcube
@@ -29,4 +30,5 @@ abbrev Bitstring (n : ℕ) := Point n
 end Boolcube
 
 end PsubsetPpoly
-end Facts
+end Internal
+end Pnp3

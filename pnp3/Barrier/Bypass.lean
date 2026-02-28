@@ -55,18 +55,18 @@ theorem NP_not_subset_PpolyFormula_final_with_barriers
 /--
 Final `P ≠ NP` wrapper with explicit barrier obligations.
 
-As in `P_ne_NP_final`, this remains conditional on the formula-to-`P/poly`
-bridge and `P ⊆ P/poly`.
+As in `P_ne_NP_final`, this remains conditional on explicit DAG-track
+separation/inclusion assumptions.
 -/
 theorem P_ne_NP_final_with_barriers
     (hProvider : StructuredLocalityProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)
     (hNPfam : StrictGapNPFamily)
-    (hFormulaToPpoly :
-      NP_not_subset_PpolyFormula → NP_not_subset_Ppoly)
+    (hNPDag : NP_not_subset_PpolyDAG)
+    (hPsubsetDag : P_subset_PpolyDAG)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
-  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hNPfam hFormulaToPpoly, hBarriers⟩
+  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hNPfam hNPDag hPsubsetDag, hBarriers⟩
 
 end Barrier
 end Pnp3

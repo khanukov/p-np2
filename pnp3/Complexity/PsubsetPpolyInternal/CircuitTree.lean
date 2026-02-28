@@ -1,4 +1,4 @@
-import Proof.Bitstring
+import Complexity.PsubsetPpolyInternal.Bitstring
 
 /-!
 # Minimal Boolean-circuit interface
@@ -12,7 +12,8 @@ As part of the collision clean-up we nest the whole development under
 `Facts.PsubsetPpoly` so the exported symbols remain distinct from their counterparts from the broader development.
 -/
 
-namespace Facts
+namespace Pnp3
+namespace Internal
 namespace PsubsetPpoly
 
 namespace Boolcube
@@ -50,4 +51,5 @@ end Circuit
 end Boolcube
 
 end PsubsetPpoly
-end Facts
+end Internal
+end Pnp3

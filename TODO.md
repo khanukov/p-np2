@@ -25,8 +25,8 @@ Track these four items on the active constructive final route
 1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
-4. `hFormulaToPpoly`:
-   `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+4. `hPsubsetReal`:
+   `P_subset_PpolyReal`
 
 Explicit constructive route `P_ne_NP_final_of_supportBounds` is also available.
 

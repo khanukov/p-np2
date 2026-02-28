@@ -68,10 +68,27 @@ lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
 echo "[check] Step 6/6: unconditional witness gate (optional)"
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Checking unconditional witness surface..."
+  # Legacy witness surface markers (historical blockers).
   if rg -n "ppoly_circuit_locality|FamilyIsLocalCircuit|hF_all" \
-      pnp3/Magnification pnp3/LowerBounds/AntiChecker_Partial.lean >/tmp/pnp3_unconditional_gaps.txt; then
+      pnp3/Magnification pnp3/LowerBounds/AntiChecker_Partial.lean >/tmp/pnp3_unconditional_gaps_legacy.txt; then
     echo "Unconditional gate failed: remaining external witness/axiom surface detected:"
-    cat /tmp/pnp3_unconditional_gaps.txt
+    cat /tmp/pnp3_unconditional_gaps_legacy.txt
+    exit 1
+  fi
+
+  # Final-cone blockers that must be internalized for unconditional status.
+  if rg -n "hFormulaToPpoly|hRealToPpoly|FormulaSeparationToNonuniformBridge|RealSeparationToNonuniformBridge|hPsubsetReal|P_subset_PpolyReal|hFormulaInclusion|P_subset_PpolyFormula|hPsubsetDag|P_subset_PpolyDAG" \
+      pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean >/tmp/pnp3_unconditional_gaps_bridge.txt; then
+    echo "Unconditional gate failed: final route still depends on an external non-uniform inclusion/bridge assumption:"
+    cat /tmp/pnp3_unconditional_gaps_bridge.txt
+    exit 1
+  fi
+
+  # Guardrail: no lightweight-Ppoly aliases in final theorem cone once migrated.
+  if rg -n "PpolyLite" \
+      pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean >/tmp/pnp3_unconditional_gaps_lite.txt; then
+    echo "Unconditional gate failed: lightweight Ppoly alias leaked into final cone:"
+    cat /tmp/pnp3_unconditional_gaps_lite.txt
     exit 1
   fi
   echo "Unconditional witness surface OK."

@@ -4,7 +4,6 @@ open Lake DSL
 package pnp3
 
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.22.0-rc2"
-require fact_psubset_ppoly from "./Facts/PsubsetPpoly"
 require fact_locality_lift from "./Facts/LocalityLift"
 require fact_sunflower from "./Facts/Sunflower"
 
@@ -62,6 +61,11 @@ lean_lib PnP3 where
     Glob.one `AC0.MultiSwitching.FullSwitching,
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
+    Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,
+    Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
+    Glob.one `Complexity.PsubsetPpolyInternal.ComplexityInterfaces,
+    Glob.one `Complexity.PpolyReal_from_Simulation,
     Glob.one `Complexity.Reductions,
     Glob.one `Barrier.Relativization,
     Glob.one `Barrier.NaturalProofs,
@@ -89,12 +93,12 @@ lean_lib PnP3 where
     Glob.one `ThirdPartyFacts.PartialTransport,
     Glob.one `ThirdPartyFacts.PartialLocalityLift,
     Glob.one `ThirdPartyFacts.PpolyFormula,
-    Glob.one `ThirdPartyFacts.PsubsetPpoly,
     Glob.one `ThirdPartyFacts.LeafBudget,
     Glob.one `Tests.BarrierAudit,
     Glob.one `Tests.BarrierBypassAudit,
     Glob.one `Tests.AxiomsAudit,
     Glob.one `Tests.BridgeLocalityRegression,
+    Glob.one `Tests.PpolySanity,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.StructuredLocalityDemo,
     Glob.one `Tests.UnitTests

@@ -15,6 +15,12 @@ File: `pnp3/Magnification/FinalResult.lean`
 - `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`
 - `NP_not_subset_PpolyFormula_final_constructive`
 - `NP_not_subset_PpolyFormula_final_of_supportBounds`
+- `NP_not_subset_PpolyReal_final_with_provider`
+- `NP_not_subset_PpolyReal_final`
+- `NP_not_subset_PpolyReal_final_of_formulaCertificate`
+- `NP_not_subset_PpolyReal_final_of_multiswitching_contract`
+- `NP_not_subset_PpolyReal_final_constructive`
+- `NP_not_subset_PpolyReal_final_of_supportBounds`
 - `P_ne_NP_final_with_provider`
 - `P_ne_NP_final`
 - `P_ne_NP_final_of_formulaCertificate`
@@ -30,7 +36,7 @@ Legacy wrapper `P_ne_NP_final` still requires:
 1. `hasDefaultStructuredLocalityProviderPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
-4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` (`hFormulaToPpoly`)
+4. `P_subset_PpolyReal` (`hPsubsetReal`)
 
 Active constructive endpoint `P_ne_NP_final_of_default_supportBounds` now
 tracks this blocker set:
@@ -38,7 +44,7 @@ tracks this blocker set:
 1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
 2. `AsymptoticFormulaTrackHypothesis`
 3. `StrictGapNPFamily`
-4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly` (`hFormulaToPpoly`)
+4. `P_subset_PpolyReal` (`hPsubsetReal`)
 
 Explicit variant: `P_ne_NP_final_of_supportBounds`
 (`FormulaSupportRestrictionBoundsPartial` as direct input).
@@ -60,7 +66,7 @@ Before deleting lemmas/routes, confirm:
 All of the following must hold at once:
 
 1. A theorem `P_ne_NP` is derivable without external bridge/provider hypotheses.
-2. `P_ne_NP_final*` wrappers no longer require `hFormulaToPpoly`.
+2. `P_ne_NP_final*` wrappers no longer require external non-uniform inclusion assumptions.
 3. Remaining final route assumptions are either proved in-repo or eliminated.
 4. `README.md`, `STATUS.md`, `TODO.md`, `AXIOMS_FINAL_LIST.md` are updated to
    state unconditional status explicitly and consistently.

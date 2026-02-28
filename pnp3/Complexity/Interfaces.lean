@@ -1,5 +1,4 @@
-import ThirdPartyFacts.PsubsetPpoly
-import Proof.Turing.Encoding
+import Complexity.PsubsetPpolyInternal.ComplexityInterfaces
 import Mathlib.Data.Finset.Card
 /-!
   pnp3/Complexity/Interfaces.lean
@@ -7,23 +6,20 @@ import Mathlib.Data.Finset.Card
   Интерфейс к «классической» части доказательства.  Здесь мы не повторяем
   полную формализацию классов `P`, `NP` и `P/poly`,
   а лишь фиксируем их последствия в виде именованных утверждений.  Это
-  позволяет шагу D ссылаться на внешний факт `P ⊆ P/poly`
+  позволяет шагу D ссылаться на внутренний факт `P ⊆ P/poly`
   и на целевое утверждение `P ≠ NP` без дублирования кода.
 
   * `NP_not_subset_Ppoly` — сокращённая запись утверждения `NP ⊄ P/poly`.
-  * `P_subset_Ppoly` — конкретное утверждение «`P ⊆ P/poly`», предоставленное
-    внешним пакетом (см. `ThirdPartyFacts/PsubsetPpoly.lean`).
+  * `P_subset_Ppoly` — конкретное утверждение «`P ⊆ P/poly`»,
+    предоставленное внутренним модулем `PsubsetPpolyInternal`.
   * `P_ne_NP` — целевое утверждение `P ≠ NP`.
   * `P_ne_NP_of_nonuniform_separation` — классический вывод из двух пунктов
     выше.  В ранней библиотеке проекта эта теорема доказана напрямую (см. `NP_separation.lean`).
 
   На уровне текущего каталога `pnp3/` мы используем эти утверждения как
-  внешние факты.  Включение `P ⊆ P/poly` импортируется из модуля
-  `ThirdPartyFacts/PsubsetPpoly.lean`, который напрямую переиспользует
-  доказательство из пакета `Facts/PsubsetPpoly`.
+  внутренние факты.  Включение `P ⊆ P/poly` импортируется из модуля
+  `Complexity/PsubsetPpolyInternal/*`.
 -/
-
-open Facts.PsubsetPpoly
 
 namespace Pnp3
 namespace ComplexityInterfaces
@@ -31,17 +27,16 @@ namespace ComplexityInterfaces
 /-!
 ### Базовые определения
 
-Мы переиспользуем минимальные структуры из внешнего пакета `P ⊆ P/poly`.
-Это гарантирует совместимость с импортируемым утверждением `P ⊆ P/poly`
-и позволяет безболезненно расширять интерфейс при необходимости
-добавления новых сведений о классах сложности.
+Мы переиспользуем минимальные структуры из внутреннего модуля
+`P ⊆ P/poly`. Это сохраняет совместимость интерфейса и позволяет
+безболезненно расширять его при необходимости.
 -/
 
-/-- Тип языков, используемый во внешнем пакете. -/
-abbrev Language := Complexity.Language
+/-- Тип языков внутреннего модуля `P ⊆ P/poly`. -/
+abbrev Language := Internal.PsubsetPpoly.Complexity.Language
 
-/-- Битовые строки фиксированной длины из внешнего пакета. -/
-abbrev Bitstring := Complexity.Bitstring
+/-- Битовые строки фиксированной длины внутреннего модуля. -/
+abbrev Bitstring := Internal.PsubsetPpoly.Complexity.Bitstring
 
 /--
 Semantic decider model for fixed input length `n`.
@@ -63,15 +58,24 @@ namespace SemanticDecider
 
 end SemanticDecider
 
-/-- Класс `P` из лёгкой формализации внешнего пакета. -/
-abbrev P : Language → Prop := Facts.PsubsetPpoly.P.{0}
+/-- Класс `P` из внутренней формализации. -/
+abbrev P : Language → Prop := Internal.PsubsetPpoly.Complexity.P.{0}
 
-/-- Класс `P/poly` из того же пакета. -/
-abbrev Ppoly : Language → Prop := Facts.PsubsetPpoly.Ppoly
+/-- Lightweight `P/poly` class из внутренней формализации. -/
+abbrev PpolyLite : Language → Prop := Internal.PsubsetPpoly.Complexity.Ppoly
+
+/--
+Current compatibility alias for `P/poly`.
+
+`Ppoly` still points to the lightweight imported interface to avoid breaking
+the existing API surface. The strict/nontrivial non-uniform track in this repo
+is `PpolyReal`.
+-/
+abbrev Ppoly : Language → Prop := PpolyLite
 
 /-- Вариант `P/poly`, в котором witness хранит явный carrier и `eval`. -/
 abbrev PpolyStructured (L : Language) : Prop :=
-  Facts.PsubsetPpoly.Complexity.PpolyStructured.{0} L
+  Internal.PsubsetPpoly.Complexity.PpolyStructured.{0} L
 
 /-!
 ### Non-trivial structured circuit interface
@@ -187,6 +191,53 @@ lemma support_card_le_size {n : Nat} (c : FormulaCircuit n) :
 
 end FormulaCircuit
 
+/-- Input-or-gate wire in a DAG circuit with `n` inputs and `k` internal gates. -/
+inductive DagWire (n k : Nat) : Type
+  | input : Fin n → DagWire n k
+  | gate : Fin k → DagWire n k
+
+/-- Gate operation using wires from a previously built prefix of the DAG. -/
+inductive DagGate (n k : Nat) : Type
+  | const : Bool → DagGate n k
+  | not : DagWire n k → DagGate n k
+  | and : DagWire n k → DagWire n k → DagGate n k
+  | or : DagWire n k → DagWire n k → DagGate n k
+
+/--
+Acyclic DAG circuit with `n` inputs.
+
+`gate i` may only reference input wires and earlier gates (`< i`), enforced by
+the dependent index in `DagGate n i.1`.
+-/
+structure DagCircuit (n : Nat) where
+  gates : Nat
+  gate : (i : Fin gates) → DagGate n i.1
+  output : DagWire n gates
+
+namespace DagCircuit
+
+/-- Syntactic DAG size (gate count plus one for output accounting). -/
+def size {n : Nat} (C : DagCircuit n) : Nat := C.gates + 1
+
+/-- Semantics of an acyclic DAG circuit. -/
+def eval {n : Nat} (C : DagCircuit n) (x : Bitstring n) : Bool :=
+  let rec evalGateAt (i : Nat) (hi : i < C.gates) : Bool :=
+    let evalWire : DagWire n i → Bool := fun w =>
+      match w with
+      | .input j => x j
+      | .gate j => evalGateAt j.1 (Nat.lt_trans j.2 hi)
+    match C.gate ⟨i, hi⟩ with
+    | .const b => b
+    | .not w => !(evalWire w)
+    | .and w1 w2 => evalWire w1 && evalWire w2
+    | .or w1 w2 => evalWire w1 || evalWire w2
+  termination_by i
+  match C.output with
+  | .input j => x j
+  | .gate j => evalGateAt j.1 j.2
+
+end DagCircuit
+
 /-- Strict non-uniform witness with fixed circuit syntax/semantics. -/
 structure InPpolyFormula (L : Language) where
   polyBound : Nat → Nat
@@ -210,6 +261,22 @@ structure InPpolyFormulaDepth (L : Language) (d : Nat) where
 /-- Strict structured class with explicit global depth bound `d`. -/
 def PpolyFormulaDepth (L : Language) (d : Nat) : Prop :=
   ∃ _ : InPpolyFormulaDepth L d, True
+
+/--
+Strict non-uniform witness with fixed acyclic DAG syntax/semantics.
+
+This is the canonical in-repo target corresponding to standard non-uniform
+circuits (`P/poly`-style DAG families), as opposed to tree formulas.
+-/
+structure InPpolyDAG (L : Language) where
+  polyBound : Nat → Nat
+  polyBound_poly : ∃ c : Nat, ∀ n, polyBound n ≤ n ^ c + c
+  family : ∀ n, DagCircuit n
+  family_size_le : ∀ n, DagCircuit.size (family n) ≤ polyBound n
+  correct : ∀ n (x : Bitstring n), DagCircuit.eval (family n) x = L n x
+
+/-- Strict DAG-based non-uniform class. -/
+def PpolyDAG (L : Language) : Prop := ∃ _ : InPpolyDAG L, True
 
 /--
 Non-trivial non-uniform witness used by the active magnification bridge.
@@ -239,6 +306,33 @@ theorem PpolyReal_of_PpolyFormula {L : Language} :
            family_size_le := w.family_size_le
            correct := w.correct }, trivial⟩
 
+/--
+Any `PpolyReal` witness is already a strict formula witness in the current
+interface, because both classes share the same concrete carrier
+(`FormulaCircuit`) and size semantics.
+-/
+theorem PpolyFormula_of_PpolyReal {L : Language} :
+    PpolyReal L → PpolyFormula L := by
+  intro h
+  rcases h with ⟨w, _⟩
+  exact ⟨{ polyBound := w.polyBound
+           polyBound_poly := w.polyBound_poly
+           family := w.family
+           family_size_le := w.family_size_le
+           correct := w.correct }, trivial⟩
+
+/--
+Current-interface equivalence: `PpolyReal` and `PpolyFormula` coincide.
+
+This theorem is intentionally explicit to keep downstream obligations honest:
+closing `P_subset_PpolyReal` currently means closing `P_subset_PpolyFormula`.
+-/
+theorem ppolyReal_iff_ppolyFormula {L : Language} :
+    PpolyReal L ↔ PpolyFormula L := by
+  constructor
+  · exact PpolyFormula_of_PpolyReal
+  · exact PpolyReal_of_PpolyFormula
+
 /-- Any depth-bounded strict formula witness is a strict formula witness. -/
 theorem PpolyFormula_of_PpolyFormulaDepth {L : Language} {d : Nat} :
     PpolyFormulaDepth L d → PpolyFormula L := by
@@ -264,12 +358,12 @@ theorem Ppoly_of_PpolyFormula {L : Language} :
 -/
 theorem Ppoly_of_PpolyStructured {L : Language} :
     PpolyStructured L → Ppoly L := by
-  exact Facts.PsubsetPpoly.Complexity.ppoly_iff_ppolyStructured.mpr
+  exact Internal.PsubsetPpoly.Complexity.ppoly_iff_ppolyStructured.mpr
 
 /-- Обратная совместимость: текущий `Ppoly` можно поднять в структурную форму. -/
 theorem PpolyStructured_of_Ppoly {L : Language} :
     Ppoly L → PpolyStructured L := by
-  exact Facts.PsubsetPpoly.Complexity.ppoly_iff_ppolyStructured.mp
+  exact Internal.PsubsetPpoly.Complexity.ppoly_iff_ppolyStructured.mp
 
 /-!
   Конструктивное определение NP через полиномиальный верификатор.
@@ -315,7 +409,7 @@ noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m
 ### TM-мост для `NP`
 
 Иногда удобнее иметь формулировку NP прямо через Turing-машины из
-внешнего пакета `Facts.PsubsetPpoly`. Ниже мы добавляем определение
+внутреннего модуля `PsubsetPpolyInternal`. Ниже мы добавляем определение
 `NP_TM` и лемму, которая переводит такое TM-свидетельство в абстрактное
 `NP`-свидетельство в TM-терминах.
 -/
@@ -328,14 +422,14 @@ noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m
 `NP := NP_TM`.
 -/
 def NP_TM (L : Language) : Prop :=
-  ∃ (M : Facts.PsubsetPpoly.TM.{0}) (c k : Nat),
+  ∃ (M : Internal.PsubsetPpoly.TM.{0}) (c k : Nat),
     (∀ n,
       M.runTime (n + certificateLength n k) ≤
         (n + certificateLength n k) ^ c + c) ∧
     (∀ n (x : Bitstring n),
       L n x = true ↔
         ∃ w : Bitstring (certificateLength n k),
-          Facts.PsubsetPpoly.TM.accepts
+          Internal.PsubsetPpoly.TM.accepts
               (M := M)
               (n := n + certificateLength n k)
               (concatBitstring x w) = true)
@@ -396,6 +490,24 @@ def Ppoly_to_PpolyFormulaDepth (d : Nat) : Prop :=
 /-- Separation against the non-trivial non-uniform class `PpolyReal`. -/
 def NP_not_subset_PpolyReal : Prop := ∃ L, NP L ∧ ¬ PpolyReal L
 
+/-- Separation against strict DAG non-uniform class. -/
+def NP_not_subset_PpolyDAG : Prop := ∃ L, NP L ∧ ¬ PpolyDAG L
+
+/-- Bridge contract from formula-separation to non-uniform separation. -/
+abbrev FormulaSeparationToNonuniformBridge : Prop :=
+  NP_not_subset_PpolyFormula → NP_not_subset_Ppoly
+
+/-- Bridge contract from `PpolyReal`-separation to non-uniform separation. -/
+abbrev RealSeparationToNonuniformBridge : Prop :=
+  NP_not_subset_PpolyReal → NP_not_subset_Ppoly
+
+/--
+Upgrade contract: every lightweight non-uniform witness can be promoted to the
+nontrivial strict witness class `PpolyReal`.
+-/
+abbrev LightweightToRealBridge : Prop :=
+  ∀ L : Language, Ppoly L → PpolyReal L
+
 /-- Any strict-track separation implies the corresponding lightweight one. -/
 theorem NP_not_subset_Ppoly_of_NP_strict_not_subset_Ppoly :
     NP_strict_not_subset_Ppoly → NP_not_subset_Ppoly := by
@@ -432,19 +544,45 @@ theorem NP_not_subset_PpolyReal_of_NP_strict_not_subset_PpolyReal :
 
 /-- Утверждение «`P ⊆ P/poly`», предоставленное внешним пакетом. -/
 def P_subset_Ppoly : Prop :=
-  ∀ L, Facts.PsubsetPpoly.P.{0} L → Facts.PsubsetPpoly.Ppoly L
+  ∀ L : Language, P L → Ppoly L
+
+/-- Strict non-uniform inclusion target: `P ⊆ PpolyReal`. -/
+def P_subset_PpolyReal : Prop :=
+  ∀ L : Language, P L → PpolyReal L
+
+/-- Strict DAG non-uniform inclusion target: `P ⊆ PpolyDAG`. -/
+def P_subset_PpolyDAG : Prop :=
+  ∀ L : Language, P L → PpolyDAG L
+
+/-- Strict formula-track inclusion target: `P ⊆ PpolyFormula`. -/
+def P_subset_PpolyFormula : Prop :=
+  ∀ L : Language, P L → PpolyFormula L
 
 /--
-  Доказательство включения `P ⊆ P/poly`, предоставленное внешним модулем.
-  Когда появится реальное доказательство, его достаточно связать с
-  `ThirdPartyFacts.PsubsetPpoly.proof`.
+In the current interface, proving `P ⊆ PpolyReal` is equivalent to proving
+`P ⊆ PpolyFormula`.
 -/
+theorem P_subset_PpolyFormula_of_P_subset_PpolyReal :
+    P_subset_PpolyReal → P_subset_PpolyFormula := by
+  intro hReal L hPL
+  exact (ppolyReal_iff_ppolyFormula).mp (hReal L hPL)
+
+/--
+Conversely, `P ⊆ PpolyFormula` implies `P ⊆ PpolyReal` in the current
+interface.
+-/
+theorem P_subset_PpolyReal_of_P_subset_PpolyFormula :
+    P_subset_PpolyFormula → P_subset_PpolyReal := by
+  intro hFormula L hPL
+  exact (ppolyReal_iff_ppolyFormula).mpr (hFormula L hPL)
+
+/-- Внутреннее конструктивное доказательство включения `P ⊆ P/poly`. -/
 @[simp] theorem P_subset_Ppoly_proof : P_subset_Ppoly := by
   intro L hL
-  exact (ThirdPartyFacts.P_subset_Ppoly_proof (L := L) hL)
+  exact Internal.PsubsetPpoly.Proof.complexity_P_subset_Ppoly hL
 
 /-- Итоговое целевое утверждение `P ≠ NP`. -/
-def P_ne_NP : Prop := Facts.PsubsetPpoly.P.{0} ≠ NP
+def P_ne_NP : Prop := P ≠ NP
 
 /-!
 ### Логический вывод `NP ⊄ P/poly` + `P ⊆ P/poly` ⇒ `P ≠ NP`
@@ -466,9 +604,9 @@ theorem P_ne_NP_of_nonuniform_separation_concrete
   classical
   -- Предположим противное и выведем противоречие с `hNP`.
   refine fun hEq => ?_
-  have hNP_subset_P : ∀ {L : Language}, NP L → Facts.PsubsetPpoly.P.{0} L := by
+  have hNP_subset_P : ∀ {L : Language}, NP L → P L := by
     intro L hL
-    have hEq_pointwise : Facts.PsubsetPpoly.P.{0} L = NP L := congrArg (fun f => f L) hEq
+    have hEq_pointwise : P L = NP L := congrArg (fun f => f L) hEq
     exact hEq_pointwise.symm ▸ hL
   have hNP_subset_Ppoly : ∀ {L : Language}, NP L → Ppoly L := by
     intro L hL
@@ -481,6 +619,62 @@ theorem P_ne_NP_of_nonuniform_separation
     (hNP : NP_not_subset_Ppoly) (hP : P_subset_Ppoly) :
     P_ne_NP :=
   P_ne_NP_of_nonuniform_separation_concrete hNP hP
+
+/--
+Concrete real-track version:
+if some `NP` language is outside `PpolyReal` and `P ⊆ PpolyReal`, then `P ≠ NP`.
+-/
+theorem P_ne_NP_of_nonuniform_real_separation_concrete
+    (hNP : NP_not_subset_PpolyReal) (hP : P_subset_PpolyReal) :
+    P_ne_NP := by
+  classical
+  refine fun hEq => ?_
+  have hNP_subset_P : ∀ {L : Language}, NP L → P L := by
+    intro L hL
+    have hEq_pointwise : P L = NP L := congrArg (fun f => f L) hEq
+    exact hEq_pointwise.symm ▸ hL
+  rcases hNP with ⟨L₀, hL₀_NP, hL₀_not_PpolyReal⟩
+  exact hL₀_not_PpolyReal (hP L₀ (hNP_subset_P hL₀_NP))
+
+/-- Compatibility wrapper for the strict real-track non-uniform route. -/
+theorem P_ne_NP_of_nonuniform_real_separation
+    (hNP : NP_not_subset_PpolyReal) (hP : P_subset_PpolyReal) :
+    P_ne_NP :=
+  P_ne_NP_of_nonuniform_real_separation_concrete hNP hP
+
+/--
+Concrete DAG-track version:
+if some `NP` language is outside `PpolyDAG` and `P ⊆ PpolyDAG`, then `P ≠ NP`.
+-/
+theorem P_ne_NP_of_nonuniform_dag_separation_concrete
+    (hNP : NP_not_subset_PpolyDAG) (hP : P_subset_PpolyDAG) :
+    P_ne_NP := by
+  classical
+  refine fun hEq => ?_
+  have hNP_subset_P : ∀ {L : Language}, NP L → P L := by
+    intro L hL
+    have hEq_pointwise : P L = NP L := congrArg (fun f => f L) hEq
+    exact hEq_pointwise.symm ▸ hL
+  rcases hNP with ⟨L₀, hL₀_NP, hL₀_notPpolyDAG⟩
+  exact hL₀_notPpolyDAG (hP L₀ (hNP_subset_P hL₀_NP))
+
+/-- Compatibility wrapper for the strict DAG-track non-uniform route. -/
+theorem P_ne_NP_of_nonuniform_dag_separation
+    (hNP : NP_not_subset_PpolyDAG) (hP : P_subset_PpolyDAG) :
+    P_ne_NP :=
+  P_ne_NP_of_nonuniform_dag_separation_concrete hNP hP
+
+/--
+Convenience wrapper for the current interface state:
+`NP ⊄ PpolyReal` plus `P ⊆ PpolyFormula` implies `P ≠ NP`.
+-/
+theorem P_ne_NP_of_real_separation_and_formula_inclusion
+    (hNP : NP_not_subset_PpolyReal)
+    (hFormulaInclusion : P_subset_PpolyFormula) :
+    P_ne_NP := by
+  exact P_ne_NP_of_nonuniform_real_separation
+    hNP
+    (P_subset_PpolyReal_of_P_subset_PpolyFormula hFormulaInclusion)
 
 /-- Strict-track non-uniform separation implies `P ≠ NP` (via lightweight bridge). -/
 theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
@@ -533,6 +727,20 @@ theorem NP_not_subset_Ppoly_of_Ppoly_to_PpolyFormulaDepth
   refine ⟨L, hNP, ?_⟩
   intro hPpoly
   exact hNotDepth (hBridge L hPpoly)
+
+/--
+If lightweight non-uniform witnesses can be promoted to strict
+`PpolyReal` witnesses, then any strict-real separation implies
+lightweight non-uniform separation.
+-/
+theorem NP_not_subset_Ppoly_of_lightweightToRealBridge
+    (hLift : LightweightToRealBridge) :
+    RealSeparationToNonuniformBridge := by
+  intro hSepReal
+  rcases hSepReal with ⟨L, hNP, hNotReal⟩
+  refine ⟨L, hNP, ?_⟩
+  intro hPpoly
+  exact hNotReal (hLift L hPpoly)
 
 /--
 Strict `PpolyReal`-track separation implies `P ≠ NP` once we provide a bridge

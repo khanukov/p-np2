@@ -15,7 +15,7 @@ Structured `P/poly` witness for `constFalseLanguage`: a single trivial carrier
 whose evaluator always returns `false`.
 -/
 noncomputable def constFalseStructuredWitness :
-    Facts.PsubsetPpoly.Complexity.InPpolyStructured.{0} constFalseLanguage where
+    Internal.PsubsetPpoly.Complexity.InPpolyStructured.{0} constFalseLanguage where
   Circuit := fun _ => PUnit
   family := fun _ => PUnit.unit
   eval := fun _ _ _ => false

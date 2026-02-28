@@ -695,7 +695,7 @@ constructive obligations visible to callers: a concrete machine, a polynomial
 runtime bound and a correctness equivalence for verifier certificates.
 -/
 structure GapPartialMCSP_TMWitness (p : GapPartialMCSPParams) where
-  M : Facts.PsubsetPpoly.TM.{0}
+  M : Internal.PsubsetPpoly.TM.{0}
   c : Nat
   k : Nat
   runTime_poly : ∀ n,
@@ -703,7 +703,7 @@ structure GapPartialMCSP_TMWitness (p : GapPartialMCSPParams) where
   correct : ∀ n (x : Bitstring n),
     gapPartialMCSP_Language p n x = true ↔
       ∃ w : Bitstring (certificateLength n k),
-        Facts.PsubsetPpoly.TM.accepts
+        Internal.PsubsetPpoly.TM.accepts
           (M := M)
           (n := n + certificateLength n k)
           (concatBitstring x w) = true
@@ -741,7 +741,7 @@ Concrete TM witness package for the asymptotic partial-MCSP language.
 This mirrors `GapPartialMCSP_TMWitness` but for the global asymptotic language.
 -/
 structure GapPartialMCSP_Asymptotic_TMWitness (spec : GapPartialMCSPAsymptoticSpec) where
-  M : Facts.PsubsetPpoly.TM.{0}
+  M : Internal.PsubsetPpoly.TM.{0}
   c : Nat
   k : Nat
   runTime_poly : ∀ n,
@@ -749,7 +749,7 @@ structure GapPartialMCSP_Asymptotic_TMWitness (spec : GapPartialMCSPAsymptoticSp
   correct : ∀ n (x : Bitstring n),
     gapPartialMCSP_AsymptoticLanguage spec n x = true ↔
       ∃ w : Bitstring (certificateLength n k),
-        Facts.PsubsetPpoly.TM.accepts
+        Internal.PsubsetPpoly.TM.accepts
           (M := M)
           (n := n + certificateLength n k)
           (concatBitstring x w) = true

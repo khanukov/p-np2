@@ -1,4 +1,4 @@
-import Proof.Bitstring
+import Complexity.PsubsetPpolyInternal.Bitstring
 import Mathlib.Data.Fintype.Basic
 
 universe u
@@ -17,7 +17,8 @@ the Turing machine library shipped with the main repository while preserving the
 this proof bundle.
 -/
 
-namespace Facts
+namespace Pnp3
+namespace Internal
 namespace PsubsetPpoly
 
 /--
@@ -185,4 +186,5 @@ def accepts (n : ℕ) (x : Boolcube.Point n) : Bool :=
 end TM
 
 end PsubsetPpoly
-end Facts
+end Internal
+end Pnp3

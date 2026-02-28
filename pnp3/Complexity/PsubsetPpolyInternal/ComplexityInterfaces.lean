@@ -1,5 +1,5 @@
-import Proof.Bitstring
-import Proof.Turing.Encoding
+import Complexity.PsubsetPpolyInternal.Bitstring
+import Complexity.PsubsetPpolyInternal.TuringEncoding
 
 universe u
 
@@ -18,7 +18,8 @@ mirrors the structure of the standalone repository and prevents name clashes
 with the `PnP3` definitions.
 -/
 
-namespace Facts
+namespace Pnp3
+namespace Internal
 namespace PsubsetPpoly
 
 -- Namespace collecting the lightweight complexity-theoretic objects
@@ -175,4 +176,5 @@ theorem complexity_P_subset_Ppoly : ∀ {L}, P L → Ppoly L := by
 end Proof
 
 end PsubsetPpoly
-end Facts
+end Internal
+end Pnp3

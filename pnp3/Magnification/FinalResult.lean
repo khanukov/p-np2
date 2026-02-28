@@ -56,19 +56,6 @@ theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
       (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
 
 /--
-Strict-track final hook: from strict formula separation obtain `P ≠ NP`.
--/
-theorem P_ne_NP_of_NP_strict_not_subset_PpolyFormula
-  (hStrict : ComplexityInterfaces.NP_strict_not_subset_PpolyFormula)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    ComplexityInterfaces.P_ne_NP_of_NP_strict_not_subset_PpolyFormula
-      hStrict hFormulaToPpoly
-
-/--
 Strict-track final hook: from strict non-uniform separation obtain `P ≠ NP`.
 -/
 theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
@@ -246,54 +233,165 @@ theorem NP_not_subset_PpolyFormula_final_of_default_supportBounds
       (hNPfam := hNPfam)
 
 /--
-Compatible final wrapper: deduce `P ≠ NP` from the active formula-track
-final statement plus an explicit bridge from formula separation to
-lightweight non-uniform separation.
+Primary final statement on the nontrivial non-uniform class `PpolyReal`.
 
-Scope note:
-this is a conditional wrapper over the AC0-side formula-separation route; it is
-not an unconditional in-repo `P ≠ NP` theorem.
+Unlike `...PpolyFormula...` wrappers, this endpoint does not require any
+formula-to-lightweight-`P/poly` bridge assumption.
+-/
+theorem NP_not_subset_PpolyReal_final_with_provider
+  (hProvider : StructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  have hHyp : FormulaLowerBoundHypothesisPartial (hAsym.pAt hAsym.N0 (le_rfl)) (1 : Rat) :=
+    hAsym.pAt_hyp hAsym.N0 (le_rfl)
+  exact
+    NP_not_subset_PpolyReal_from_partial_formulas
+      (hProvider := hProvider)
+      (p := hAsym.pAt hAsym.N0 (le_rfl))
+      (δ := (1 : Rat))
+      hHyp
+      (hNPfam (hAsym.pAt hAsym.N0 (le_rfl)))
+
+/--
+Primary asymptotic final `PpolyReal`-separation statement.
+-/
+theorem NP_not_subset_PpolyReal_final
+  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_with_provider
+      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Certificate-first provider wiring for final `PpolyReal` separation.
+-/
+theorem NP_not_subset_PpolyReal_final_of_formulaCertificate
+  (hCert : FormulaCertificateProviderPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Constructive final `PpolyReal`-separation endpoint from an explicit
+multi-switching support-bounds contract.
+-/
+theorem NP_not_subset_PpolyReal_final_of_multiswitching_contract
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Canonical constructive final `PpolyReal`-separation route:
+explicit multi-switching contract, no default-provider `Nonempty` flag.
+-/
+theorem NP_not_subset_PpolyReal_final_constructive
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_of_multiswitching_contract
+      (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam)
+
+/--
+Constructive final `PpolyReal`-separation route from explicit TM witnesses.
+-/
+theorem NP_not_subset_PpolyReal_final_constructive_of_tmWitnesses
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_constructive
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
+
+/--
+Constructive final `PpolyReal`-separation route from support-based bounds.
+-/
+theorem NP_not_subset_PpolyReal_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_of_multiswitching_contract
+      (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Constructive final `PpolyReal`-separation route from default support-bounds
+availability (`Nonempty` wrapper).
+-/
+theorem NP_not_subset_PpolyReal_final_of_default_supportBounds
+  (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPfam : StrictGapNPFamily) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_of_supportBounds
+      (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
+      (hAsym := hAsym)
+      (hNPfam := hNPfam)
+
+/--
+Compatible DAG-track final wrapper.
+
+This route targets the canonical non-uniform class (`PpolyDAG`) and therefore
+uses explicit assumptions:
+1) `NP ⊄ PpolyDAG`
+2) `P ⊆ PpolyDAG`.
 -/
 theorem P_ne_NP_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
-  have hNPFormula : ComplexityInterfaces.NP_not_subset_PpolyFormula :=
-    NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym hNPfam
-  have hNP : ComplexityInterfaces.NP_not_subset_Ppoly :=
-    hFormulaToPpoly hNPFormula
-  exact
-    ComplexityInterfaces.P_ne_NP_of_nonuniform_separation
-      hNP ComplexityInterfaces.P_subset_Ppoly_proof
+  exact ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation hNPDag hPsubsetDag
 
 /--
 Active conditional final `P ≠ NP` wrapper.
 
 This default-engine form removes direct provider arguments from the interface,
-but still depends on the explicit bridge `hFormulaToPpoly`.
+but still depends on explicit DAG-track assumptions.
 
 Scope note:
-the route is AC0-centric up to `NP_not_subset_PpolyFormula`; the last step to
-`NP_not_subset_Ppoly` is externalized by design.
+the AC0 side and DAG side are not yet internally connected in this wrapper.
 -/
 theorem P_ne_NP_final
   (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
       (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 /--
 Certificate-first final `P ≠ NP` wiring from an explicit formula-certificate
@@ -303,16 +401,16 @@ theorem P_ne_NP_final_of_formulaCertificate
   (hCert : FormulaCertificateProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
       (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 /--
 Constructive final `P ≠ NP` wrapper from an explicit multi-switching
@@ -322,16 +420,16 @@ theorem P_ne_NP_final_of_multiswitching_contract
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
       (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 /--
 Canonical constructive final `P ≠ NP` route:
@@ -341,20 +439,20 @@ theorem P_ne_NP_final_constructive
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
       (hMS := hMS)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 /--
 Constructive final `P ≠ NP` route from explicit TM witnesses and
-an explicit formula-to-`P/poly` bridge.
+an explicit real-track non-uniform inclusion assumption.
 
 This internalizes strictness of the gap language family using
 `strictGapNPFamily_of_tmWitnesses`.
@@ -363,16 +461,16 @@ theorem P_ne_NP_final_constructive_of_tmWitnesses
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_constructive
       (hMS := hMS)
       (hAsym := hAsym)
       (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 /--
 Constructive final `P ≠ NP` route from support-based bounds.
@@ -381,16 +479,16 @@ theorem P_ne_NP_final_of_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
       (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 /--
 Constructive final `P ≠ NP` route from default support-bounds availability
@@ -400,16 +498,16 @@ theorem P_ne_NP_final_of_default_supportBounds
   (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hFormulaToPpoly :
-    ComplexityInterfaces.NP_not_subset_PpolyFormula →
-    ComplexityInterfaces.NP_not_subset_Ppoly) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPsubsetDag : ComplexityInterfaces.P_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_supportBounds
       (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
       (hAsym := hAsym)
       (hNPfam := hNPfam)
-      hFormulaToPpoly
+      hNPDag
+      hPsubsetDag
 
 end Magnification
 end Pnp3

@@ -688,6 +688,20 @@ extensionally equal but non-definitional `≤` witnesses.
   cases proof_irrel_heq h₁ h₂
   rfl
 
+/--
+`evalWireAux` at budget `g` is definitionally the same computation as
+`evalWireOf` instantiated with `evalGateAux` as recursive payload.
+-/
+lemma evalWireAux_eq_evalWireOf
+    {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
+    {g : Nat} (hg : g < C.gates) (w : Fin (n + g)) :
+    evalWireAux C x g (Nat.le_of_lt hg) w =
+      evalWireOf C x hg w (fun j _ hj' => evalGateAux C x hj') := by
+  unfold evalWireAux evalWireOf
+  by_cases hw : (w : Nat) < n
+  · simp [hw]
+  · simp [hw, evalGateAux]
+
 mutual
   lemma evalWireAux_append_left (C₁ C₂ : Circuit n) (x : Boolcube.Point n) :
       ∀ {g : Nat} (hg : g ≤ C₁.gates) (i : Fin (n + g)),

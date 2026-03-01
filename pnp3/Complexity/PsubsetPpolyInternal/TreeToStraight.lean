@@ -635,6 +635,80 @@ lemma append_gate_right_finIdx_eq
   apply Fin.ext
   simp [append_right_sub_add_cancel (C₁ := C₁) (C₂ := C₂) (j := j) hj]
 
+/-- Generic HEq for circuit gates when `Fin` indices are propositionally equal. -/
+lemma Circuit.gate_heq {n : Nat} (C : Circuit n) {i j : Fin C.gates} (h : i = j) :
+    HEq (C.gate i) (C.gate j) := by
+  subst h
+  rfl
+
+/--
+Eliminate dependent cast around `liftOpIntoAppend` when the base operations are
+related by `HEq`.
+-/
+lemma cast_liftOp_eq
+    {n g₁ j k : Nat} {hnorm : n + (g₁ + k) = n + (g₁ + j)}
+    (h_eq : k = j)
+    (op : GateOp (n + k)) (op' : GateOp (n + j))
+    (h_op : HEq op op') :
+    cast (congrArg GateOp hnorm) (liftOpIntoAppend (n := n) (g₁ := g₁) (g := k) op) =
+      liftOpIntoAppend (n := n) (g₁ := g₁) (g := j) op' := by
+  subst h_eq
+  cases h_op
+  cases hnorm
+  rfl
+
+lemma append_gate_right_eq_lift
+    {n : Nat} {C₁ C₂ : Circuit n} {j : Nat}
+    (hj : j < C₂.gates) :
+    (appendCircuit C₁ C₂).gate
+      ⟨C₁.gates + j, append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj⟩ =
+      liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := j)
+        (C₂.gate ⟨j, hj⟩) := by
+  have hraw := append_gate_right_eq_add (C₁ := C₁) (C₂ := C₂) (j := j) hj
+  have hidx :
+      (⟨(C₁.gates + j) - C₁.gates,
+        cast_gateIdx_append_right
+          (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+          (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)⟩ :
+        Fin C₂.gates) = ⟨j, hj⟩ := by
+    exact append_gate_right_finIdx_eq (C₁ := C₁) (C₂ := C₂) (j := j) hj
+  have h_op_heq :
+      HEq
+        (C₂.gate
+          ⟨(C₁.gates + j) - C₁.gates,
+            cast_gateIdx_append_right
+              (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+              (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)⟩)
+        (C₂.gate ⟨j, hj⟩) := by
+    exact Circuit.gate_heq C₂ hidx
+  have h_eq : (C₁.gates + j) - C₁.gates = j := by
+    simpa using append_right_sub_add_cancel (C₁ := C₁) (C₂ := C₂) (j := j) hj
+  have hnorm : n + (C₁.gates + ((C₁.gates + j) - C₁.gates)) = n + (C₁.gates + j) := by
+    omega
+  have h_clean :
+      cast (congrArg GateOp hnorm)
+        (liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := ((C₁.gates + j) - C₁.gates))
+          (C₂.gate
+            ⟨(C₁.gates + j) - C₁.gates,
+              cast_gateIdx_append_right
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+                (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)⟩))
+      =
+      liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := j) (C₂.gate ⟨j, hj⟩) := by
+    exact cast_liftOp_eq (hnorm := hnorm) (h_eq := h_eq) _ _ h_op_heq
+  have hraw' :
+      (appendCircuit C₁ C₂).gate
+        ⟨C₁.gates + j, append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj⟩ =
+      cast (congrArg GateOp hnorm)
+        (liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := ((C₁.gates + j) - C₁.gates))
+          (C₂.gate
+            ⟨(C₁.gates + j) - C₁.gates,
+              cast_gateIdx_append_right
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+                (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)⟩)) := by
+    simpa using hraw
+  exact hraw'.trans h_clean
+
 /--
 Cast-eliminator for `evalWireOf`: once the domain-size equality is rewritten by
 `subst`, both sides are definitionally equal.
@@ -755,6 +829,215 @@ mutual
               (g := g) (hg := Nat.le_of_lt hg) v
             simpa [evalGateAux, hgate, hOp, hu, hv]
 end
+
+/--
+Right-branch gate semantics for `appendCircuit`, proved by strong induction on
+the suffix gate index.
+-/
+lemma evalGateAux_append_right
+    {n : Nat} (C₁ C₂ : Circuit n) (x : Boolcube.Point n) :
+    ∀ {g : Nat} (hg : g < C₂.gates),
+      evalGateAux (appendCircuit C₁ C₂) x
+        (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg) =
+      evalGateAux C₂ x hg := by
+  intro g
+  refine Nat.strong_induction_on g ?_
+  intro g ih hg
+  have hgate :
+      (appendCircuit C₁ C₂).gate
+        ⟨C₁.gates + g, append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg⟩ =
+        liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := g) (C₂.gate ⟨g, hg⟩) := by
+    exact append_gate_right_eq_lift (C₁ := C₁) (C₂ := C₂) (j := g) hg
+  cases hOp : C₂.gate ⟨g, hg⟩ with
+  | const b =>
+      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend]
+  | not u =>
+      have huW :
+          evalWireOf (appendCircuit C₁ C₂) x
+            (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+            (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') =
+          evalWireOf C₂ x hg u (fun j _ hj' => evalGateAux C₂ x hj') := by
+        refine evalWireOf_liftWire_right C₁ C₂ x hg u
+          (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj')
+          (fun j _ hj' => evalGateAux C₂ x hj') ?_
+        intro hw
+        have hSub : (u : Nat) - n < g := wire_sub_lt_of_not_input (w := u) hw
+        have hSubGate : (u : Nat) - n < C₂.gates := Nat.lt_trans hSub hg
+        simpa using ih ((u : Nat) - n) hSub hSubGate
+      have hu :
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+            (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u) =
+          evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
+        calc
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+              (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+              (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+            =
+              evalWireOf (appendCircuit C₁ C₂) x
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+                (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') := by
+                  simpa using
+                    evalWireAux_eq_evalWireOf (C := appendCircuit C₁ C₂) (x := x)
+                      (hg := append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                      (w := liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+          _ = evalWireOf C₂ x hg u (fun j _ hj' => evalGateAux C₂ x hj') := huW
+          _ = evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
+                simpa using
+                  (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := u)).symm
+      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend, hu]
+  | and u v =>
+      have huW :
+          evalWireOf (appendCircuit C₁ C₂) x
+            (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+            (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') =
+          evalWireOf C₂ x hg u (fun j _ hj' => evalGateAux C₂ x hj') := by
+        refine evalWireOf_liftWire_right C₁ C₂ x hg u
+          (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj')
+          (fun j _ hj' => evalGateAux C₂ x hj') ?_
+        intro hw
+        have hSub : (u : Nat) - n < g := wire_sub_lt_of_not_input (w := u) hw
+        have hSubGate : (u : Nat) - n < C₂.gates := Nat.lt_trans hSub hg
+        simpa using ih ((u : Nat) - n) hSub hSubGate
+      have hvW :
+          evalWireOf (appendCircuit C₁ C₂) x
+            (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+            (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') =
+          evalWireOf C₂ x hg v (fun j _ hj' => evalGateAux C₂ x hj') := by
+        refine evalWireOf_liftWire_right C₁ C₂ x hg v
+          (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj')
+          (fun j _ hj' => evalGateAux C₂ x hj') ?_
+        intro hw
+        have hSub : (v : Nat) - n < g := wire_sub_lt_of_not_input (w := v) hw
+        have hSubGate : (v : Nat) - n < C₂.gates := Nat.lt_trans hSub hg
+        simpa using ih ((v : Nat) - n) hSub hSubGate
+      have hu :
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+            (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u) =
+          evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
+        calc
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+              (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+              (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+            =
+              evalWireOf (appendCircuit C₁ C₂) x
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+                (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') := by
+                  simpa using
+                    evalWireAux_eq_evalWireOf (C := appendCircuit C₁ C₂) (x := x)
+                      (hg := append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                      (w := liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+          _ = evalWireOf C₂ x hg u (fun j _ hj' => evalGateAux C₂ x hj') := huW
+          _ = evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
+                simpa using
+                  (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := u)).symm
+      have hv :
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+            (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v) =
+          evalWireAux C₂ x g (Nat.le_of_lt hg) v := by
+        calc
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+              (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+              (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+            =
+              evalWireOf (appendCircuit C₁ C₂) x
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+                (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') := by
+                  simpa using
+                    evalWireAux_eq_evalWireOf (C := appendCircuit C₁ C₂) (x := x)
+                      (hg := append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                      (w := liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+          _ = evalWireOf C₂ x hg v (fun j _ hj' => evalGateAux C₂ x hj') := hvW
+          _ = evalWireAux C₂ x g (Nat.le_of_lt hg) v := by
+                simpa using
+                  (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := v)).symm
+      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend, hu, hv]
+  | or u v =>
+      have huW :
+          evalWireOf (appendCircuit C₁ C₂) x
+            (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+            (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') =
+          evalWireOf C₂ x hg u (fun j _ hj' => evalGateAux C₂ x hj') := by
+        refine evalWireOf_liftWire_right C₁ C₂ x hg u
+          (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj')
+          (fun j _ hj' => evalGateAux C₂ x hj') ?_
+        intro hw
+        have hSub : (u : Nat) - n < g := wire_sub_lt_of_not_input (w := u) hw
+        have hSubGate : (u : Nat) - n < C₂.gates := Nat.lt_trans hSub hg
+        simpa using ih ((u : Nat) - n) hSub hSubGate
+      have hvW :
+          evalWireOf (appendCircuit C₁ C₂) x
+            (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+            (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') =
+          evalWireOf C₂ x hg v (fun j _ hj' => evalGateAux C₂ x hj') := by
+        refine evalWireOf_liftWire_right C₁ C₂ x hg v
+          (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj')
+          (fun j _ hj' => evalGateAux C₂ x hj') ?_
+        intro hw
+        have hSub : (v : Nat) - n < g := wire_sub_lt_of_not_input (w := v) hw
+        have hSubGate : (v : Nat) - n < C₂.gates := Nat.lt_trans hSub hg
+        simpa using ih ((v : Nat) - n) hSub hSubGate
+      have hu :
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+            (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u) =
+          evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
+        calc
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+              (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+              (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+            =
+              evalWireOf (appendCircuit C₁ C₂) x
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+                (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') := by
+                  simpa using
+                    evalWireAux_eq_evalWireOf (C := appendCircuit C₁ C₂) (x := x)
+                      (hg := append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                      (w := liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) u)
+          _ = evalWireOf C₂ x hg u (fun j _ hj' => evalGateAux C₂ x hj') := huW
+          _ = evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
+                simpa using
+                  (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := u)).symm
+      have hv :
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+            (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+            (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v) =
+          evalWireAux C₂ x g (Nat.le_of_lt hg) v := by
+        calc
+          evalWireAux (appendCircuit C₁ C₂) x (C₁.gates + g)
+              (Nat.le_of_lt (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg))
+              (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+            =
+              evalWireOf (appendCircuit C₁ C₂) x
+                (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                (liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+                (fun j _ hj' => evalGateAux (appendCircuit C₁ C₂) x hj') := by
+                  simpa using
+                    evalWireAux_eq_evalWireOf (C := appendCircuit C₁ C₂) (x := x)
+                      (hg := append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := g) hg)
+                      (w := liftWireIntoAppend (n := n) (g₁ := C₁.gates) (g₂ := g) v)
+          _ = evalWireOf C₂ x hg v (fun j _ hj' => evalGateAux C₂ x hj') := hvW
+          _ = evalWireAux C₂ x g (Nat.le_of_lt hg) v := by
+                simpa using
+                  (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := v)).symm
+      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend, hu, hv]
+
+/-- Closed right-branch gate contract (no external assumptions). -/
+theorem appendGateRightSemantics :
+    AppendGateRightSemantics := by
+  intro n C₁ C₂ x j hj
+  exact evalGateAux_append_right (C₁ := C₁) (C₂ := C₂) (x := x) (g := j) hj
 
 lemma appendWireSemantics_left :
     ∀ {n : Nat} (C₁ C₂ : Circuit n) (x : Boolcube.Point n) (i : Fin (n + C₁.gates)),

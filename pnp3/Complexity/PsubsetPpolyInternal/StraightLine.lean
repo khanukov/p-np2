@@ -78,6 +78,64 @@ def evalGateAux {n : Nat} (C : Circuit n) (x : Boolcube.Point n) :
           evalWireAux (C := C) (x := x) g (Nat.le_of_lt hg) i ||
             evalWireAux (C := C) (x := x) g (Nat.le_of_lt hg) j
 
+/--
+Read one wire while rebuilding a gate into a tree circuit.
+
+This helper keeps the `Fin (n + g)`-dependent split localized and makes
+inductive gate proofs more robust against simplifier loops.
+-/
+noncomputable def toCircuitWireOf {n : Nat} (C : Circuit n)
+    {g : Nat} (hg : g < C.gates) (i : Fin (n + g))
+    (rec : ∀ j : Nat, j < g → j < C.gates → Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit n) :
+    Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit n :=
+  if h : (i : Nat) < n then
+    Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.var ⟨i, h⟩
+  else
+    let j : Nat := (i : Nat) - n
+    have hj : j < g := by
+      have hi : (i : Nat) < n + g := i.isLt
+      dsimp [j]
+      omega
+    have hj' : j < C.gates := Nat.lt_trans hj hg
+    rec j hj hj'
+
+/--
+Read one wire while evaluating a gate under a fixed gate budget.
+
+This is the boolean counterpart of `toCircuitWireOf`.
+-/
+def evalWireOf {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
+    {g : Nat} (hg : g < C.gates) (i : Fin (n + g))
+    (rec : ∀ j : Nat, j < g → j < C.gates → Bool) : Bool :=
+  if h : (i : Nat) < n then
+    x ⟨i, h⟩
+  else
+    let j : Nat := (i : Nat) - n
+    have hj : j < g := by
+      have hi : (i : Nat) < n + g := i.isLt
+      dsimp [j]
+      omega
+    have hj' : j < C.gates := Nat.lt_trans hj hg
+    rec j hj hj'
+
+/--
+Bridge lemma: if recursive payloads agree pointwise, the extracted wire values
+agree as well (`toCircuitWireOf` vs `evalWireOf`).
+-/
+lemma wireOf_eq {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
+    {g : Nat} (hg : g < C.gates) (i : Fin (n + g))
+    (recTree : ∀ j : Nat, j < g → j < C.gates → Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit n)
+    (recEval : ∀ j : Nat, j < g → j < C.gates → Bool)
+    (hRec : ∀ (j : Nat) (hj : j < g) (hj' : j < C.gates),
+      Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.eval (recTree j hj hj') x = recEval j hj hj') :
+    Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.eval (toCircuitWireOf C hg i recTree) x =
+      evalWireOf C x hg i recEval := by
+  unfold toCircuitWireOf evalWireOf
+  by_cases h : (i : Nat) < n
+  · simp [h, Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.eval]
+  · simp [h]
+    exact hRec _ _ _
+
 /-- Internal whole-circuit semantics. -/
 def evalInternal {n : Nat} (C : Circuit n) (x : Boolcube.Point n) : Bool :=
   if h : (C.output : Nat) < n then

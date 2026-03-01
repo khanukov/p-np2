@@ -73,51 +73,6 @@ theorem runtimeSpecProvider_of_stepSpec
   exact StraightConfig.runtimeConfig_spec_of_step_spec (M := M) (n := n)
     (hStep := hStep M n)
 
-/--
-Alternative blocker contract on the `stepCompiled` branch:
-wire-level one-step semantics for `stepCompiled` imply runtime simulation spec.
--/
-def StepCompiledSemanticsProvider : Prop :=
-  ∀ (M : TM) (n : Nat), StraightConfig.StepCompiledSemantics M n
-
-theorem runtimeSpec_of_stepCompiledSemantics
-    (hSem : StepCompiledSemanticsProvider) :
-    ∀ (M : TM) (n : Nat),
-      StraightConfig.Spec
-        (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
-          (StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) := by
-  intro M n
-  exact StraightConfig.runtime_spec_of_stepCompiledProvider (M := M) (n := n) (hSem := hSem M n)
-
-/-- Low-level contracts currently needed to instantiate `StepCompiledSemanticsProvider`. -/
-def StepCompiledContracts : Prop :=
-  Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics ∧
-  Pnp3.Internal.PsubsetPpoly.StraightLine.AppendWireSemantics
-
-theorem stepCompiledSemanticsProvider_of_contracts
-    (hContracts : StepCompiledContracts) :
-    StepCompiledSemanticsProvider := by
-  rcases hContracts with ⟨hCompile, hAppend⟩
-  intro M n
-  exact StraightConfig.stepCompiled_semantics_of_core_contracts hCompile hAppend M n
-
-theorem runtimeSpec_of_stepCompiledContracts
-    (hContracts : StepCompiledContracts) :
-    ∀ (M : TM) (n : Nat),
-      StraightConfig.Spec
-        (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
-          (StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) := by
-  exact runtimeSpec_of_stepCompiledSemantics
-    (stepCompiledSemanticsProvider_of_contracts hContracts)
-
-/-- Pending internal semantic blocker: `eval` compatibility of two interfaces. -/
-def EvalAgreement : Prop :=
-  ∀ {n : Nat} (C : StraightLineCircuit n) (x : Bitstring n),
-    ArchiveStraightLineAdapter.eval C x =
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval C x
-
 theorem degree_bound_main_term (c n : Nat) :
     n ^ (c + 4) ≤ n ^ (c + 5) := by
   cases n with
@@ -127,12 +82,13 @@ theorem degree_bound_main_term (c n : Nat) :
       exact Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
 
 /--
-Compiler assembly from the two remaining internal blockers.
+Assemble a compiler once the runtime straight simulation contract is available.
 
-This definition is axiom-free; all assumptions are explicit local hypotheses.
+This packaging is independent from how `RuntimeSpecProvider` is obtained
+(direct `step` proof, `stepCompiled` proof, or any future internal route).
 -/
-noncomputable def polyTMToStraightLineCompiler_of_blocks
-    (hStep : StepSpecProvider) :
+noncomputable def polyTMToStraightLineCompiler_of_runtimeSpec
+    (hRuntime : RuntimeSpecProvider) :
     PolyTMToStraightLineCompiler where
   degree := fun _ c => c + 5
   compile := fun M c hRun n => StraightConfig.acceptCircuit M n
@@ -161,8 +117,132 @@ noncomputable def polyTMToStraightLineCompiler_of_blocks
     have hSpec :
         StraightConfig.Spec (sc := StraightConfig.runtimeConfig M n)
           (f := fun y => M.run (n := n) y) :=
-      runtimeSpecProvider_of_stepSpec hStep M n
+      hRuntime M n
     exact StraightConfig.straightAcceptCircuit_spec (M := M) (n := n) hSpec x
+
+/--
+Alternative blocker contract on the `stepCompiled` branch:
+wire-level one-step semantics for `stepCompiled` imply runtime simulation spec.
+-/
+def StepCompiledSemanticsProvider : Prop :=
+  ∀ (M : TM) (n : Nat), StraightConfig.StepCompiledSemantics M n
+
+theorem runtimeSpec_of_stepCompiledSemantics
+    (hSem : StepCompiledSemanticsProvider) :
+    ∀ (M : TM) (n : Nat),
+      StraightConfig.Spec
+        (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
+          (StraightConfig.initialStraightConfig M n))
+        (f := fun x => M.run (n := n) x) := by
+  intro M n
+  exact StraightConfig.runtime_spec_of_stepCompiledProvider (M := M) (n := n) (hSem := hSem M n)
+
+/-- Low-level contracts currently needed to instantiate `StepCompiledSemanticsProvider`. -/
+def StepCompiledContracts : Prop :=
+  Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics ∧
+  Pnp3.Internal.PsubsetPpoly.StraightLine.AppendWireSemantics
+
+/--
+Split variant of `StepCompiledContracts` that isolates the hard append-right
+obligation at gate level.
+
+This mirrors the refactoring in `TreeToStraight`: `AppendWireSemantics` can be
+assembled from `appendWireSemantics_left` and `AppendGateRightSemantics`.
+-/
+def StepCompiledContractsSplit : Prop :=
+  Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics ∧
+  Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics
+
+theorem stepCompiledContracts_of_split
+    (hSplit : StepCompiledContractsSplit) :
+    StepCompiledContracts := by
+  rcases hSplit with ⟨hCompile, hAppendGateRight⟩
+  refine ⟨hCompile, ?_⟩
+  exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics_of_gateContracts
+    hAppendGateRight
+
+/--
+Internal assembly helper: recover `StepCompiledContracts` from only the
+gate-level append-right contract.
+
+This packages the theorem `compileTreeWireSemantics_of_gateContracts` from
+`TreeToStraight` together with `appendWireSemantics_of_gateContracts`.
+-/
+theorem stepCompiledContracts_of_appendGateRight
+    (hAppendGateRight : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics) :
+    StepCompiledContracts := by
+  refine ⟨?_, ?_⟩
+  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.compileTreeWireSemantics_of_gateContracts
+      hAppendGateRight
+  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics_of_gateContracts
+      hAppendGateRight
+
+theorem stepCompiledSemanticsProvider_of_contracts
+    (hContracts : StepCompiledContracts) :
+    StepCompiledSemanticsProvider := by
+  rcases hContracts with ⟨hCompile, hAppend⟩
+  intro M n
+  exact StraightConfig.stepCompiled_semantics_of_core_contracts hCompile hAppend M n
+
+theorem stepCompiledSemanticsProvider_of_splitContracts
+    (hSplit : StepCompiledContractsSplit) :
+    StepCompiledSemanticsProvider :=
+  stepCompiledSemanticsProvider_of_contracts
+    (stepCompiledContracts_of_split hSplit)
+
+theorem runtimeSpec_of_stepCompiledContracts
+    (hContracts : StepCompiledContracts) :
+    ∀ (M : TM) (n : Nat),
+      StraightConfig.Spec
+        (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
+          (StraightConfig.initialStraightConfig M n))
+        (f := fun x => M.run (n := n) x) := by
+  exact runtimeSpec_of_stepCompiledSemantics
+    (stepCompiledSemanticsProvider_of_contracts hContracts)
+
+/--
+Split-contract variant of `runtimeSpec_of_stepCompiledContracts`.
+
+This theorem closes the runtime-spec assembly point directly from the split
+contract surface (`CompileTreeWireSemantics ∧ AppendGateRightSemantics`).
+-/
+theorem runtimeSpec_of_splitContracts
+    (hSplit : StepCompiledContractsSplit) :
+    ∀ (M : TM) (n : Nat),
+      StraightConfig.Spec
+        (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
+          (StraightConfig.initialStraightConfig M n))
+        (f := fun x => M.run (n := n) x) :=
+  runtimeSpec_of_stepCompiledSemantics
+    (stepCompiledSemanticsProvider_of_splitContracts hSplit)
+
+/-- Pending internal semantic blocker: `eval` compatibility of two interfaces. -/
+def EvalAgreement : Prop :=
+  ∀ {n : Nat} (C : StraightLineCircuit n) (x : Bitstring n),
+    ArchiveStraightLineAdapter.eval C x =
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval C x
+
+/--
+Compiler assembly from the two remaining internal blockers.
+
+This definition is axiom-free; all assumptions are explicit local hypotheses.
+-/
+noncomputable def polyTMToStraightLineCompiler_of_blocks
+    (hStep : StepSpecProvider) :
+    PolyTMToStraightLineCompiler :=
+  polyTMToStraightLineCompiler_of_runtimeSpec
+    (runtimeSpecProvider_of_stepSpec hStep)
+
+/--
+Step-10 target shape: internal compiler assembled from a pure runtime contract.
+
+As soon as `RuntimeSpecProvider` is proved inside `pnp3` without extra
+parameters, this definition becomes the final closed compiler constant.
+-/
+noncomputable def polyTMToStraightLineCompiler_internal
+    (hRuntime : RuntimeSpecProvider) :
+    PolyTMToStraightLineCompiler :=
+  polyTMToStraightLineCompiler_of_runtimeSpec hRuntime
 
 end InternalCompiler
 
@@ -203,6 +283,81 @@ theorem P_subset_PpolyDAG_of_compiler
     P_subset_PpolyDAG :=
   P_subset_PpolyDAG_of_P_subset_PpolyStraightLine
     (P_subset_PpolyStraightLine_of_compiler compiler hEvalAgree)
+
+/--
+Step-11 pre-assembly from runtime-spec closure + evaluation agreement.
+
+This theorem is fully constructive modulo the two explicitly tracked internal
+blockers and removes all packaging boilerplate at call-sites.
+-/
+theorem P_subset_PpolyDAG_of_runtimeSpec
+    (hRuntime : InternalCompiler.RuntimeSpecProvider)
+    (hEvalAgree : InternalCompiler.EvalAgreement) :
+    P_subset_PpolyDAG :=
+  P_subset_PpolyDAG_of_compiler
+    (compiler := InternalCompiler.polyTMToStraightLineCompiler_internal hRuntime)
+    hEvalAgree
+
+/-- Step-11 pre-assembly from one-step `step` simulation + eval agreement. -/
+theorem P_subset_PpolyDAG_of_stepSpec
+    (hStep : InternalCompiler.StepSpecProvider)
+    (hEvalAgree : InternalCompiler.EvalAgreement) :
+    P_subset_PpolyDAG :=
+  P_subset_PpolyDAG_of_runtimeSpec
+    (hRuntime := InternalCompiler.runtimeSpecProvider_of_stepSpec hStep)
+    hEvalAgree
+
+/--
+Public re-export of the split-contract runtime statement.
+
+This theorem keeps downstream modules in the `Complexity.Simulation` namespace
+without requiring them to depend directly on `InternalCompiler` internals.
+-/
+theorem runtimeSpec_iterated_of_splitContracts
+    (hSplit : InternalCompiler.StepCompiledContractsSplit) :
+    ∀ (M : TM) (n : Nat),
+      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
+        (sc := Nat.iterate (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M)
+          (M.runTime n) (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
+        (f := fun x => M.run (n := n) x) := by
+  exact InternalCompiler.runtimeSpec_of_splitContracts hSplit
+
+/--
+Public bridge: from gate-level append-right contract to the full
+`StepCompiledContracts` package.
+
+This theorem re-exports the internal assembly helper so downstream modules can
+depend on a stable namespace (`Complexity.Simulation`) without opening
+`InternalCompiler` internals.
+-/
+theorem stepCompiledContracts_of_appendGateRight
+    (hAppendGateRight : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics) :
+    InternalCompiler.StepCompiledContracts :=
+  InternalCompiler.stepCompiledContracts_of_appendGateRight hAppendGateRight
+
+/--
+Public bridge: derive `StepCompiledSemanticsProvider` from gate-level append
+contract.
+-/
+theorem stepCompiledSemanticsProvider_of_appendGateRight
+    (hAppendGateRight : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics) :
+    InternalCompiler.StepCompiledSemanticsProvider :=
+  InternalCompiler.stepCompiledSemanticsProvider_of_contracts
+    (stepCompiledContracts_of_appendGateRight hAppendGateRight)
+
+/-- Minimal contract bundle that closes the internal `P ⊆ P/poly` route. -/
+def PsubsetPpolyInternalContracts : Prop :=
+  InternalCompiler.RuntimeSpecProvider ∧ InternalCompiler.EvalAgreement
+
+/--
+Step-11 contract closure theorem: once the two remaining internal contracts are
+available, `P_subset_PpolyDAG` follows immediately.
+-/
+theorem proved_P_subset_PpolyDAG_of_contracts
+    (hContracts : PsubsetPpolyInternalContracts) :
+    P_subset_PpolyDAG := by
+  rcases hContracts with ⟨hRuntime, hEvalAgree⟩
+  exact P_subset_PpolyDAG_of_runtimeSpec hRuntime hEvalAgree
 
 /-- Short alias used by final wrappers to avoid carrying inclusion hypotheses. -/
 theorem dagInclusion_from_compiler

@@ -206,6 +206,52 @@ lemma evalWireAux_full_eq_evalWireInternal (C : Circuit n) (x : Point n)
     unfold evalGateAux
     simp [h, hj, hj_lt]
 
+@[simp] lemma evalWire_snoc_last (C : Circuit n)
+    (op : GateOp (n + C.gates)) (x : Point n) :
+    evalWire (snoc C op) x (Fin.last (n + C.gates)) =
+      match op with
+      | .const b => b
+      | .not u => !(evalWire C x u)
+      | .and u v => (evalWire C x u) && (evalWire C x v)
+      | .or u v => (evalWire C x u) || (evalWire C x v) := by
+  classical
+  have hj : C.gates < (snoc C op).gates := by simp [snoc]
+  have hWire :
+      evalWire (snoc C op) x (Fin.last (n + C.gates)) =
+        evalGateAux (snoc C op) x hj := by
+    simpa [evalWire, snoc] using
+      (evalWireInternal_gate (C := snoc C op) (x := x) (j := C.gates) hj)
+  have hGate : (snoc C op).gate ⟨C.gates, hj⟩ = op := by simp [snoc]
+  cases op with
+  | const b =>
+      simp [hWire, evalGateAux, hGate]
+  | not u =>
+      have hu := evalWireAux_snoc_old (C := C) (op := .not u) (x := x)
+        (g := C.gates) (hg := le_rfl) u
+      have hu' : evalWireAux C x C.gates le_rfl u = evalWireInternal C x u :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) u
+      simp [hWire, evalGateAux, hGate, hu, hu', evalWire]
+  | and u v =>
+      have hu := evalWireAux_snoc_old (C := C) (op := .and u v) (x := x)
+        (g := C.gates) (hg := le_rfl) u
+      have hv := evalWireAux_snoc_old (C := C) (op := .and u v) (x := x)
+        (g := C.gates) (hg := le_rfl) v
+      have hu' : evalWireAux C x C.gates le_rfl u = evalWireInternal C x u :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) u
+      have hv' : evalWireAux C x C.gates le_rfl v = evalWireInternal C x v :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) v
+      simp [hWire, evalGateAux, hGate, hu, hv, hu', hv', evalWire]
+  | or u v =>
+      have hu := evalWireAux_snoc_old (C := C) (op := .or u v) (x := x)
+        (g := C.gates) (hg := le_rfl) u
+      have hv := evalWireAux_snoc_old (C := C) (op := .or u v) (x := x)
+        (g := C.gates) (hg := le_rfl) v
+      have hu' : evalWireAux C x C.gates le_rfl u = evalWireInternal C x u :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) u
+      have hv' : evalWireAux C x C.gates le_rfl v = evalWireInternal C x v :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) v
+      simp [hWire, evalGateAux, hGate, hu, hv, hu', hv', evalWire]
+
 @[simp] lemma eval_toCircuitWire (C : Circuit n) (x : Point n)
     (i : Fin (n + C.gates)) :
     Circuit.eval (toCircuitWire (C := C) i) x =

@@ -130,6 +130,22 @@ lemma liftWire_val_gate
   simp [h]
   omega
 
+/--
+Right-branch normal form for lifted wire values.
+
+This is the concrete pointwise normalization used in append-right proofs:
+the lifted wire value is either unchanged (input branch) or shifted by
+`g₁` (gate branch).
+-/
+lemma liftWire_val_right
+    {n g₁ g₂ : Nat} (w : Fin (n + g₂)) :
+    ((liftWireIntoAppend (n := n) (g₁ := g₁) (g₂ := g₂) w :
+      Fin (n + (g₁ + g₂))) : Nat) =
+      if (w : Nat) < n then (w : Nat) else (w : Nat) + g₁ := by
+  by_cases hw : (w : Nat) < n
+  · simp [liftWire_val_input (n := n) (g₁ := g₁) (g₂ := g₂) (w := w) hw, hw]
+  · simp [liftWire_val_gate (n := n) (g₁ := g₁) (g₂ := g₂) (w := w) hw, hw]
+
 
 /--
 Arithmetic normal form for the non-input branch of `liftWireIntoAppend`:
@@ -575,6 +591,33 @@ lemma append_gate_right_eq_normalized
         (liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := (g - C₁.gates))
           (C₂.gate ⟨g - C₁.gates, cast_gateIdx_append_right hg h_not_left⟩)) := by
   simpa using append_gate_right_eq (C₁ := C₁) (C₂ := C₂) (g := g) hg h_not_left
+
+/--
+Specialized right-branch gate normalization at the concrete shifted index
+`C₁.gates + j`.
+
+The statement is intentionally value-normalized (`(C₁.gates + j) - C₁.gates`)
+to expose the exact subtraction term that appears in dependent goals.
+-/
+lemma append_gate_right_eq_add
+    {n : Nat} {C₁ C₂ : Circuit n} {j : Nat}
+    (hj : j < C₂.gates) :
+    (appendCircuit C₁ C₂).gate
+      ⟨C₁.gates + j, append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj⟩ =
+      cast (by
+        have hnorm : C₁.gates + ((C₁.gates + j) - C₁.gates) = C₁.gates + j := by
+          omega
+        simp [hnorm])
+      (liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := ((C₁.gates + j) - C₁.gates))
+        (C₂.gate
+          ⟨(C₁.gates + j) - C₁.gates,
+            cast_gateIdx_append_right
+              (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+              (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)⟩)) := by
+  exact append_gate_right_eq
+    (C₁ := C₁) (C₂ := C₂) (g := C₁.gates + j)
+    (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+    (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)
 
 /--
 Cast-eliminator for `evalWireOf`: once the domain-size equality is rewritten by

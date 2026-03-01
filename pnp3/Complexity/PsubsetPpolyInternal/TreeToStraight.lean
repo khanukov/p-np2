@@ -665,6 +665,29 @@ proofs in append/right branches.
   subst hEq
   rfl
 
+/--
+`evalWireAux` is proof-irrelevant in its bound proof argument.
+
+This helper removes dependent noise when arithmetic normalizations produce
+extensionally equal but non-definitional `≤` witnesses.
+-/
+@[simp] lemma evalWireAux_proof_irrel
+    {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
+    {g : Nat} (h₁ h₂ : g ≤ C.gates) (i : Fin (n + g)) :
+    evalWireAux C x g h₁ i = evalWireAux C x g h₂ i := by
+  cases proof_irrel_heq h₁ h₂
+  rfl
+
+/--
+`evalGateAux` is proof-irrelevant in its gate-bound witness.
+-/
+@[simp] lemma evalGateAux_proof_irrel
+    {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
+    {g : Nat} (h₁ h₂ : g < C.gates) :
+    evalGateAux C x h₁ = evalGateAux C x h₂ := by
+  cases proof_irrel_heq h₁ h₂
+  rfl
+
 mutual
   lemma evalWireAux_append_left (C₁ C₂ : Circuit n) (x : Boolcube.Point n) :
       ∀ {g : Nat} (hg : g ≤ C₁.gates) (i : Fin (n + g)),

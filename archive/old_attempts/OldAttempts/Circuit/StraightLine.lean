@@ -1,5 +1,5 @@
 import OldAttempts.Boolcube
-import Utils.Nat
+import Mathlib/Data/Nat/Basic
 
 /-!
 `OldAttempts.Circuit.StraightLine` introduces a DAG-style representation of Boolean
@@ -19,6 +19,23 @@ appearing in the `P ⊆ P/poly` formalisation.
 open Boolcube
 
 namespace Boolcube
+
+namespace Nat
+
+/--
+Legacy helper used by the archived straight-line development: if `b ≤ a` and
+`a < b + c`, then the leftover part `a - b` is strictly smaller than `c`.
+
+We keep this theorem in the `Nat` namespace with its historical name so that
+archived files continue to compile after removing the old top-level `Utils/`
+folder.
+-/
+lemma sub_lt_of_le_of_lt {a b c : ℕ} (hb : b ≤ a) (h : a < b + c) : a - b < c := by
+  have hrewrite : a = b + (a - b) := Nat.add_sub_of_le hb
+  have hbound : b + (a - b) < b + c := by simpa [hrewrite] using h
+  exact (Nat.add_lt_add_iff_left _).1 hbound
+
+end Nat
 
 /--
 Primitive operations allowed in our straight-line circuits.  The parameter
@@ -1266,4 +1283,3 @@ end Builder
 
 end StraightLineCircuit
 end Boolcube
-

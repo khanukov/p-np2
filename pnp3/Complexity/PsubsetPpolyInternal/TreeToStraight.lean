@@ -620,6 +620,22 @@ lemma append_gate_right_eq_add
     (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)
 
 /--
+Normalized suffix gate index in `Fin C₂.gates` for the concrete shifted index
+`C₁.gates + j`.
+-/
+lemma append_gate_right_finIdx_eq
+    {n : Nat} {C₁ C₂ : Circuit n} {j : Nat}
+    (hj : j < C₂.gates) :
+    (⟨(C₁.gates + j) - C₁.gates,
+      cast_gateIdx_append_right
+        (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
+        (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)⟩ :
+      Fin C₂.gates) =
+    ⟨j, hj⟩ := by
+  apply Fin.ext
+  simp [append_right_sub_add_cancel (C₁ := C₁) (C₂ := C₂) (j := j) hj]
+
+/--
 Cast-eliminator for `evalWireOf`: once the domain-size equality is rewritten by
 `subst`, both sides are definitionally equal.
 

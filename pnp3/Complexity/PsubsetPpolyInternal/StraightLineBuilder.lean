@@ -1,4 +1,5 @@
 import Complexity.PsubsetPpolyInternal.StraightLine
+import Complexity.PsubsetPpolyInternal.StraightLineSemantics
 
 namespace Pnp3
 namespace Internal
@@ -160,15 +161,56 @@ def appendWith (b : EvalBuildCtx n base)
     eval_liftBase := ?_
   }, r.snd⟩
   intro x i
-  have hLift :
-      BuildCtx.appendFin_lift (b := b.ctx) (op := op) (b.ctx.liftBase i) =
-        r.fst.liftBase i := by
-    ext
-    simp [r, BuildCtx.appendFin_lift, BuildCtx.liftBase, liftWire,
-      BuildCtx.appendFin_gate_eq, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+  change
+    evalWire (C := snoc b.circuit op) (x := x)
+        (BuildCtx.appendFin_lift (b := b.ctx) (op := op) (b.ctx.liftBase i)) =
+      evalWire (C := base) (x := x) i
   have hOld := b.eval_liftBase x i
   have hPres' := hPres x (b.ctx.liftBase i)
-  simpa [r, circuit, liftBase, hLift] using hPres'.trans hOld
+  have hPresLift :
+      evalWire (C := snoc b.circuit op) (x := x)
+          (BuildCtx.appendFin_lift (b := b.ctx) (op := op) (b.ctx.liftBase i)) =
+        evalWire (C := b.circuit) (x := x) (b.ctx.liftBase i) := by
+    simpa [BuildCtx.appendFin_lift, BuildCtx.liftBase, liftWire,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hPres'
+  exact hPresLift.trans hOld
+
+/--
+Append a gate using the canonical snoc-preservation lemma.
+
+This is the default append primitive for builder code that only needs to
+preserve old-wire semantics.
+-/
+def appendOp (b : EvalBuildCtx n base)
+    (op : Op (n + b.circuit.gates)) :
+    EvalBuildCtx n base × Fin (n + (snoc b.circuit op).gates) :=
+  b.appendWith op (by
+    intro x w
+    simpa [circuit] using
+      (Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire_snoc_lift
+        (C := b.circuit) (op := op) (x := x) (i := w)))
+
+/-- Append a constant gate and return its output wire. -/
+def appendConst (b : EvalBuildCtx n base) (val : Bool) :
+    EvalBuildCtx n base × Fin (n + (snoc b.circuit (.const val)).gates) :=
+  b.appendOp (.const val)
+
+/-- Append a negation gate and return its output wire. -/
+def appendNot (b : EvalBuildCtx n base) (w : Fin (n + b.circuit.gates)) :
+    EvalBuildCtx n base × Fin (n + (snoc b.circuit (.not w)).gates) :=
+  b.appendOp (.not w)
+
+/-- Append a conjunction gate and return its output wire. -/
+def appendAnd (b : EvalBuildCtx n base)
+    (u v : Fin (n + b.circuit.gates)) :
+    EvalBuildCtx n base × Fin (n + (snoc b.circuit (.and u v)).gates) :=
+  b.appendOp (.and u v)
+
+/-- Append a disjunction gate and return its output wire. -/
+def appendOr (b : EvalBuildCtx n base)
+    (u v : Fin (n + b.circuit.gates)) :
+    EvalBuildCtx n base × Fin (n + (snoc b.circuit (.or u v)).gates) :=
+  b.appendOp (.or u v)
 
 end EvalBuildCtx
 

@@ -64,7 +64,7 @@ theorem P_ne_NP_final_with_barriers
     (hAsym : AsymptoticFormulaTrackHypothesis)
     (hNPfam : StrictGapNPFamily)
     (hNPDag : NP_not_subset_PpolyDAG)
-    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyInternalContracts)
+    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
   -- Keep the AC0-track assumptions explicit in the interface (for the barrier
@@ -93,24 +93,73 @@ theorem P_ne_NP_final_with_barriers_iterated
   refine ⟨P_ne_NP_final_with_iteratedProvider hNPDag hPpolyContracts, hBarriers⟩
 
 /--
-Internal-source default barrier wrapper using the iterated-bridged DAG route.
+Final `P ≠ NP` wrapper with explicit barrier obligations via iterated
+runtime-only contracts and compiled-runtime residual bundle.
+-/
+theorem P_ne_NP_final_with_barriers_iterated_runtimeOnly
+    (hProvider : StructuredLocalityProviderPartial)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily)
+    (hNPDag : NP_not_subset_PpolyDAG)
+    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyInternalContractsIteratedRuntimeOnly)
+    (hBarriers : BarrierBypassPackage) :
+    P_ne_NP ∧ BarrierBypassPackage := by
+  let _ := hProvider
+  let _ := hAsym
+  let _ := hNPfam
+  refine ⟨P_ne_NP_final_with_iteratedRuntimeOnlyProvider hNPDag hPpolyContracts, hBarriers⟩
+
+/--
+Canonical barrier wrapper for the iterated internal DAG route.
+-/
+theorem P_ne_NP_final_with_barriers_iterated_internal
+    (hProvider : StructuredLocalityProviderPartial)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily)
+    (hNPDag : NP_not_subset_PpolyDAG)
+    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical)
+    (hBarriers : BarrierBypassPackage) :
+    P_ne_NP ∧ BarrierBypassPackage := by
+  let _ := hProvider
+  let _ := hAsym
+  let _ := hNPfam
+  refine ⟨P_ne_NP_final_with_iteratedProvider_internal hNPDag hPpolyContracts, hBarriers⟩
+
+/--
+Final `P ≠ NP` wrapper with explicit barrier obligations via compiled-runtime
+residual contracts.
+-/
+theorem P_ne_NP_final_with_barriers_compiledRuntime
+    (hProvider : StructuredLocalityProviderPartial)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily)
+    (hNPDag : NP_not_subset_PpolyDAG)
+    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyCompiledRuntimeContracts)
+    (hBarriers : BarrierBypassPackage) :
+    P_ne_NP ∧ BarrierBypassPackage := by
+  let _ := hProvider
+  let _ := hAsym
+  let _ := hNPfam
+  refine ⟨P_ne_NP_final_with_compiledRuntimeProvider hNPDag hPpolyContracts, hBarriers⟩
+
+/--
+Internal-source default barrier wrapper using the runtime-only DAG route.
 -/
 theorem P_ne_NP_final_with_barriers_internal_source
     (hProvider : StructuredLocalityProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)
     (hNPfam : StrictGapNPFamily)
     (hNPDag : NP_not_subset_PpolyDAG)
-    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyInternalContractsIteratedBridged)
+    (hPpolyContracts : Complexity.Simulation.InternalCompiler.RuntimeSpecProvider)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
+  let _ := hProvider
+  let _ := hAsym
+  let _ := hNPfam
+  have hPDag : P_subset_PpolyDAG :=
+    Complexity.Simulation.proved_P_subset_PpolyDAG_of_runtimeOnly hPpolyContracts
   exact
-    P_ne_NP_final_with_barriers_iterated
-      (hProvider := hProvider)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
-      (hBarriers := hBarriers)
+    ⟨P_ne_NP_of_nonuniform_dag_separation hNPDag hPDag, hBarriers⟩
 
 end Barrier
 end Pnp3

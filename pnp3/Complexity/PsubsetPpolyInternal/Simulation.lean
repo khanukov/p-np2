@@ -437,11 +437,32 @@ noncomputable def nextStateCircuit (M : TM) {n : Nat}
   Boolcube.Circuit.truthTableCircuit (fun x =>
     stateIndicator M (TM.stepConfig (M := M) (decodedConfig cc x)) q)
 
-noncomputable def stepCircuits (M : TM) {n : Nat}
+noncomputable def stepCircuitsTruthTable (M : TM) {n : Nat}
     (cc : ConfigCircuits M n) : ConfigCircuits M n where
   tape := fun i => nextTapeCircuit M cc i
   head := fun j => nextHeadCircuit M cc j
   state := fun q => nextStateCircuit M cc q
+
+/--
+Linear-step switch-point for `ConfigCircuits`.
+
+Currently aliased to the truth-table implementation and intended to be replaced
+by the constructive DAG-preserving assembly.
+-/
+noncomputable abbrev stepCircuitsLinear (M : TM) {n : Nat}
+    (cc : ConfigCircuits M n) : ConfigCircuits M n :=
+  stepCircuitsTruthTable M cc
+
+/--
+Current `ConfigCircuits` one-step implementation.
+
+Kept as a stable name for downstream code; this alias currently points to the
+truth-table implementation and is the designated switch-point for the upcoming
+constructive (DAG-preserving) refactor.
+-/
+noncomputable abbrev stepCircuits (M : TM) {n : Nat}
+    (cc : ConfigCircuits M n) : ConfigCircuits M n :=
+  stepCircuitsLinear M cc
 
 lemma step_spec
     (M : TM) {n : Nat}
@@ -569,6 +590,482 @@ def startEvalBuilder (sc : StraightConfig M n) :
 
 @[simp] lemma startEvalBuilder_circuit (sc : StraightConfig M n) :
     (startEvalBuilder (M := M) (n := n) sc).circuit = sc.circuit := rfl
+
+/--
+Builder state carrying a distinguished output wire over a fixed base circuit.
+
+This is the core dependent payload used by append-only straight-line assembly.
+-/
+structure BuiltWire (base : StraightLineCircuit n) where
+  ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n base
+  out : Fin (n + ctx.circuit.gates)
+
+namespace BuiltWire
+
+variable {base : StraightLineCircuit n}
+
+/-- Head index update as a pure function of current index and movement. -/
+def moveIndex (i : Fin (M.tapeLength n)) (m : Move) : Fin (M.tapeLength n) :=
+  match m with
+  | Move.left =>
+      if h0 : (i : Nat) = 0 then
+        i
+      else
+        ⟨(i : Nat) - 1, by
+          have hlt := i.isLt
+          exact lt_of_le_of_lt (Nat.sub_le _ _) hlt⟩
+  | Move.stay => i
+  | Move.right =>
+      if h : (i : Nat) + 1 < M.tapeLength n then
+        ⟨(i : Nat) + 1, h⟩
+      else
+        i
+
+/-- Enumerate all `(head-index, state-symbol)` transition branches. -/
+noncomputable def headStateSymbolPairsAux (M : TM) (n : Nat) :
+    List (Fin (M.tapeLength n)) → List (Fin (M.tapeLength n) × (M.state × Bool))
+  | [] => []
+  | i :: t => ((stateSymbolPairs M).map fun qs => (i, qs)) ++ headStateSymbolPairsAux M n t
+
+/-- Enumerate all `(head-index, state-symbol)` transition branches. -/
+noncomputable def headStateSymbolPairs (M : TM) (n : Nat) :
+    List (Fin (M.tapeLength n) × (M.state × Bool)) :=
+  headStateSymbolPairsAux M n (tapeIndexList M n)
+
+/-- Base gate-count monotonicity inherited from the builder context. -/
+lemma base_le (bw : BuiltWire (n := n) base) :
+    base.gates ≤ bw.ctx.circuit.gates :=
+  bw.ctx.ctx.base_le
+
+/-- Start from the base circuit and append a constant-`false` wire. -/
+noncomputable def initFalse (sc : StraightConfig M n) :
+    BuiltWire (n := n) sc.circuit := by
+  let r := (startEvalBuilder (M := M) (n := n) sc).appendConst false
+  exact ⟨r.1, r.2⟩
+
+/-- Append `not` over the current circuit and track the new output wire. -/
+noncomputable def appendConstCurrent (bw : BuiltWire (n := n) base)
+    (val : Bool) :
+    BuiltWire (n := n) base := by
+  let r := bw.ctx.appendConst val
+  exact ⟨r.1, r.2⟩
+
+/-- Append `not` over the current circuit and track the new output wire. -/
+noncomputable def appendNotCurrent (bw : BuiltWire (n := n) base)
+    (w : Fin (n + bw.ctx.circuit.gates)) :
+    BuiltWire (n := n) base := by
+  let r := bw.ctx.appendNot w
+  exact ⟨r.1, r.2⟩
+
+/-- Append `and` over current wires and track the new output wire. -/
+noncomputable def appendAndCurrent (bw : BuiltWire (n := n) base)
+    (u v : Fin (n + bw.ctx.circuit.gates)) :
+    BuiltWire (n := n) base := by
+  let r := bw.ctx.appendAnd u v
+  exact ⟨r.1, r.2⟩
+
+/-- Append `or` over current wires and track the new output wire. -/
+noncomputable def appendOrCurrent (bw : BuiltWire (n := n) base)
+    (u v : Fin (n + bw.ctx.circuit.gates)) :
+    BuiltWire (n := n) base := by
+  let r := bw.ctx.appendOr u v
+  exact ⟨r.1, r.2⟩
+
+/--
+Append `and` over two base wires (lifted into the current builder context).
+-/
+noncomputable def appendAndBase (bw : BuiltWire (n := n) base)
+    (u v : Fin (n + base.gates)) :
+    BuiltWire (n := n) base :=
+  appendAndCurrent (bw := bw) (bw.ctx.liftBase u) (bw.ctx.liftBase v)
+
+/--
+Append `or` over two base wires (lifted into the current builder context).
+-/
+noncomputable def appendOrBase (bw : BuiltWire (n := n) base)
+    (u v : Fin (n + base.gates)) :
+    BuiltWire (n := n) base :=
+  appendOrCurrent (bw := bw) (bw.ctx.liftBase u) (bw.ctx.liftBase v)
+
+/--
+Build the scanned symbol wire `OR_i (head_i ∧ tape_i)` by append-only
+assembly over base wires.
+-/
+noncomputable def buildSymbolAux (sc : StraightConfig M n) :
+    List (Fin (M.tapeLength n)) → BuiltWire (n := n) sc.circuit →
+      BuiltWire (n := n) sc.circuit
+  | [], bw => bw
+  | i :: is, bw =>
+      let bwAnd := appendAndBase (bw := bw) (sc.head i) (sc.tape i)
+      let oldOutLift : Fin (n + bwAnd.ctx.circuit.gates) :=
+        Pnp3.Internal.PsubsetPpoly.StraightLine.liftWire bw.ctx.circuit bw.out
+      let bwOr := appendOrCurrent (bw := bwAnd) oldOutLift bwAnd.out
+      buildSymbolAux sc is bwOr
+
+/-- Append-only scanned-symbol wire over the current straight configuration. -/
+noncomputable def buildSymbol (sc : StraightConfig M n) :
+    BuiltWire (n := n) sc.circuit :=
+  buildSymbolAux (sc := sc) (tapeIndexList M n) (initFalse (M := M) (n := n) sc)
+
+/--
+Append-only guard wire for scanned symbol value `b`.
+
+`true` uses the symbol wire itself; `false` uses its negation.
+-/
+noncomputable def buildGuardSymbol (sc : StraightConfig M n) (b : Bool) :
+    BuiltWire (n := n) sc.circuit :=
+  if b then
+    buildSymbol (M := M) (n := n) sc
+  else
+    let bwSym := buildSymbol (M := M) (n := n) sc
+    appendNotCurrent (bw := bwSym) bwSym.out
+
+/--
+Append-only branch-indicator wire for transition branch `(q, b)`.
+-/
+noncomputable def buildBranchIndicator (sc : StraightConfig M n)
+    (qs : M.state × Bool) :
+    BuiltWire (n := n) sc.circuit := by
+  let bwGuard := buildGuardSymbol (M := M) (n := n) sc qs.2
+  let wState : Fin (n + bwGuard.ctx.circuit.gates) := bwGuard.ctx.liftBase (sc.state qs.1)
+  exact appendAndCurrent (bw := bwGuard) wState bwGuard.out
+
+/--
+Append-only write-term wire for transition branch `(q, b)`.
+
+When the machine writes `false`, this term is constant `false`.
+-/
+noncomputable def buildWriteTerm (sc : StraightConfig M n)
+    (qs : M.state × Bool) :
+    BuiltWire (n := n) sc.circuit :=
+  match M.step qs.1 qs.2 with
+  | ⟨_, write, _⟩ =>
+      if write then
+        buildBranchIndicator (M := M) (n := n) sc qs
+      else
+        initFalse (M := M) (n := n) sc
+
+/--
+Builder payload carrying an extra distinguished wire through append operations.
+
+`carry` is typically used for transporting a previously-built accumulator wire
+while constructing the next term.
+-/
+structure BuiltCarry (base : StraightLineCircuit n) where
+  bw : BuiltWire (n := n) base
+  carry : Fin (n + bw.ctx.circuit.gates)
+
+/-- Initialize carry with the current output wire. -/
+noncomputable def BuiltCarry.init (bw : BuiltWire (n := n) base) :
+    BuiltCarry (n := n) base :=
+  ⟨bw, bw.out⟩
+
+/-- Append `const` while transporting `carry`. -/
+noncomputable def BuiltCarry.appendConst (bc : BuiltCarry (n := n) base) (val : Bool) :
+    BuiltCarry (n := n) base := by
+  let op : LegacyStraightOp (n + bc.bw.ctx.circuit.gates) := .const val
+  let carry' :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bc.bw.ctx.ctx) (op := op) bc.carry
+  let r := bc.bw.ctx.appendConst val
+  let bw' : BuiltWire (n := n) base := ⟨r.1, r.2⟩
+  exact ⟨bw', carry'⟩
+
+/-- Append `not` while transporting `carry`. -/
+noncomputable def BuiltCarry.appendNot (bc : BuiltCarry (n := n) base)
+    (w : Fin (n + bc.bw.ctx.circuit.gates)) :
+    BuiltCarry (n := n) base := by
+  let op : LegacyStraightOp (n + bc.bw.ctx.circuit.gates) := .not w
+  let carry' :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bc.bw.ctx.ctx) (op := op) bc.carry
+  let r := bc.bw.ctx.appendNot w
+  let bw' : BuiltWire (n := n) base := ⟨r.1, r.2⟩
+  exact ⟨bw', carry'⟩
+
+/-- Append `and` while transporting `carry`. -/
+noncomputable def BuiltCarry.appendAnd (bc : BuiltCarry (n := n) base)
+    (u v : Fin (n + bc.bw.ctx.circuit.gates)) :
+    BuiltCarry (n := n) base := by
+  let op : LegacyStraightOp (n + bc.bw.ctx.circuit.gates) := .and u v
+  let carry' :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bc.bw.ctx.ctx) (op := op) bc.carry
+  let r := bc.bw.ctx.appendAnd u v
+  let bw' : BuiltWire (n := n) base := ⟨r.1, r.2⟩
+  exact ⟨bw', carry'⟩
+
+/-- Append `or` while transporting `carry`. -/
+noncomputable def BuiltCarry.appendOr (bc : BuiltCarry (n := n) base)
+    (u v : Fin (n + bc.bw.ctx.circuit.gates)) :
+    BuiltCarry (n := n) base := by
+  let op : LegacyStraightOp (n + bc.bw.ctx.circuit.gates) := .or u v
+  let carry' :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bc.bw.ctx.ctx) (op := op) bc.carry
+  let r := bc.bw.ctx.appendOr u v
+  let bw' : BuiltWire (n := n) base := ⟨r.1, r.2⟩
+  exact ⟨bw', carry'⟩
+
+/--
+Transport-aware symbol builder from an arbitrary carry state.
+
+The resulting output wire computes `symbol`; `carry` is transported through all
+added gates.
+-/
+noncomputable def buildSymbolFromCarry (sc : StraightConfig M n) :
+    List (Fin (M.tapeLength n)) → BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit
+  | [], bc => bc
+  | i :: is, bc =>
+      let u : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.head i)
+      let v : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.tape i)
+      let opAnd : LegacyStraightOp (n + bc.bw.ctx.circuit.gates) := .and u v
+      let symLiftAnd :=
+        Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+          (b := bc.bw.ctx.ctx) (op := opAnd) bc.bw.out
+      let bcAnd := BuiltCarry.appendAnd (bc := bc) u v
+      let bcOr := BuiltCarry.appendOr (bc := bcAnd) symLiftAnd bcAnd.bw.out
+      buildSymbolFromCarry sc is bcOr
+
+/-- Build branch indicator from a carry state; output wire becomes the branch. -/
+noncomputable def buildBranchFromCarry (sc : StraightConfig M n)
+    (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit) :
+    BuiltCarry (n := n) sc.circuit := by
+  let bcStart := BuiltCarry.appendConst (bc := bc) false
+  let bcSym := buildSymbolFromCarry (M := M) (n := n) sc (tapeIndexList M n) bcStart
+  let bcGuard :=
+    if qs.2 then bcSym else BuiltCarry.appendNot (bc := bcSym) bcSym.bw.out
+  let wState : Fin (n + bcGuard.bw.ctx.circuit.gates) := bcGuard.bw.ctx.liftBase (sc.state qs.1)
+  exact BuiltCarry.appendAnd (bc := bcGuard) wState bcGuard.bw.out
+
+/-- Build write-term from a carry state; output wire becomes the term. -/
+noncomputable def buildWriteTermFromCarry (sc : StraightConfig M n)
+    (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit) :
+    BuiltCarry (n := n) sc.circuit :=
+  match M.step qs.1 qs.2 with
+  | ⟨_, write, _⟩ =>
+      if write then
+        buildBranchFromCarry (M := M) (n := n) sc qs bc
+      else
+        BuiltCarry.appendConst (bc := bc) false
+
+/--
+Append-only write-bit wire:
+`OR_(q,b) writeTerm(q,b)`, transported over one shared straight-line circuit.
+-/
+noncomputable def buildWriteBitAux (sc : StraightConfig M n) :
+    List (M.state × Bool) → BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit
+  | [], bc => bc
+  | qs :: t, bc =>
+      let bcTerm := buildWriteTermFromCarry (M := M) (n := n) sc qs bc
+      let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      buildWriteBitAux sc t bcNext
+
+/-- Build one state-branch term from carry; output wire is the branch term. -/
+noncomputable def buildStateTermFromCarry (sc : StraightConfig M n)
+    (qTarget : M.state) (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit) :
+    BuiltCarry (n := n) sc.circuit :=
+  match M.step qs.1 qs.2 with
+  | ⟨qNext, _, _⟩ =>
+      if qNext = qTarget then
+        buildBranchFromCarry (M := M) (n := n) sc qs bc
+      else
+        BuiltCarry.appendConst (bc := bc) false
+
+/--
+Append-only next-state indicator wire:
+`OR_(q,b : step(q,b).state = qTarget) branchIndicator(q,b)`.
+-/
+noncomputable def buildNextStateAux (sc : StraightConfig M n) (qTarget : M.state) :
+    List (M.state × Bool) → BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit
+  | [], bc => bc
+  | qs :: t, bc =>
+      let bcTerm := buildStateTermFromCarry (M := M) (n := n) sc qTarget qs bc
+      let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      buildNextStateAux sc qTarget t bcNext
+
+/-- Append-only next-state indicator wire for target state `qTarget`. -/
+noncomputable def buildNextState (sc : StraightConfig M n) (qTarget : M.state) :
+    BuiltWire (n := n) sc.circuit := by
+  let bw0 := initFalse (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bw0, bw0.out⟩
+  let bc := buildNextStateAux (M := M) (n := n) sc qTarget (stateSymbolPairs M) bc0
+  exact bc.bw
+
+/-- Build one head-branch term from carry; output wire is the branch term. -/
+noncomputable def buildHeadTermFromCarry (sc : StraightConfig M n)
+    (j : Fin (M.tapeLength n))
+    (iqs : Fin (M.tapeLength n) × (M.state × Bool))
+    (bc : BuiltCarry (n := n) sc.circuit) :
+    BuiltCarry (n := n) sc.circuit :=
+  match M.step iqs.2.1 iqs.2.2 with
+  | ⟨_, _, mv⟩ =>
+      if moveIndex (M := M) (n := n) iqs.1 mv = j then
+        let bcBranch := buildBranchFromCarry (M := M) (n := n) sc iqs.2 bc
+        let wHead : Fin (n + bcBranch.bw.ctx.circuit.gates) := bcBranch.bw.ctx.liftBase (sc.head iqs.1)
+        BuiltCarry.appendAnd (bc := bcBranch) wHead bcBranch.bw.out
+      else
+        BuiltCarry.appendConst (bc := bc) false
+
+/--
+Append-only next-head indicator wire for target head index `j`.
+
+This is an OR over all transition branches `(i, q, b)` that move from `i` to
+`j`, conjoined with the branch predicate and `head_i`.
+-/
+noncomputable def buildNextHeadAux (sc : StraightConfig M n)
+    (j : Fin (M.tapeLength n)) :
+    List (Fin (M.tapeLength n) × (M.state × Bool)) →
+      BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit
+  | [], bc => bc
+  | iqs :: t, bc =>
+      let bcTerm := buildHeadTermFromCarry (M := M) (n := n) sc j iqs bc
+      let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      buildNextHeadAux sc j t bcNext
+
+/-- Append-only next-head indicator wire for target index `j`. -/
+noncomputable def buildNextHead (sc : StraightConfig M n)
+    (j : Fin (M.tapeLength n)) :
+    BuiltWire (n := n) sc.circuit := by
+  let bw0 := initFalse (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bw0, bw0.out⟩
+  let bc := buildNextHeadAux (M := M) (n := n) sc j
+    (headStateSymbolPairs M n) bc0
+  exact bc.bw
+
+/--
+Build next-tape bit for cell `i` from a carry state where `carry` is the
+already-built `writeBit` wire.
+
+Resulting output is:
+`(head_i ∧ writeBit) ∨ (¬head_i ∧ tape_i)`.
+Carry is transported unchanged through the appended gates.
+-/
+noncomputable def buildNextTapeFromCarry (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) (bc : BuiltCarry (n := n) sc.circuit) :
+    BuiltCarry (n := n) sc.circuit := by
+  let wHead0 : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.head i)
+  let bcWrite := BuiltCarry.appendAnd (bc := bc) wHead0 bc.carry
+  let wHead1 : Fin (n + bcWrite.bw.ctx.circuit.gates) := bcWrite.bw.ctx.liftBase (sc.head i)
+  let opNot : LegacyStraightOp (n + bcWrite.bw.ctx.circuit.gates) := .not wHead1
+  let writeLiftNot :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bcWrite.bw.ctx.ctx) (op := opNot) bcWrite.bw.out
+  let bcNot := BuiltCarry.appendNot (bc := bcWrite) wHead1
+  let wTape2 : Fin (n + bcNot.bw.ctx.circuit.gates) := bcNot.bw.ctx.liftBase (sc.tape i)
+  let opAnd : LegacyStraightOp (n + bcNot.bw.ctx.circuit.gates) := .and bcNot.bw.out wTape2
+  let writeLiftAnd :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bcNot.bw.ctx.ctx) (op := opAnd) writeLiftNot
+  let bcKeep := BuiltCarry.appendAnd (bc := bcNot) bcNot.bw.out wTape2
+  exact BuiltCarry.appendOr (bc := bcKeep) writeLiftAnd bcKeep.bw.out
+
+/-- Append-only write-bit wire over the current straight configuration. -/
+noncomputable def buildWriteBit (sc : StraightConfig M n) :
+    BuiltWire (n := n) sc.circuit := by
+  let bw0 := initFalse (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bw0, bw0.out⟩
+  let bc := buildWriteBitAux (M := M) (n := n) sc (stateSymbolPairs M) bc0
+  exact bc.bw
+
+/-- Append-only next-tape bit wire for target tape index `i`. -/
+noncomputable def buildNextTape (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) :
+    BuiltWire (n := n) sc.circuit := by
+  let bwWrite := buildWriteBit (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bwWrite, bwWrite.out⟩
+  let bc := buildNextTapeFromCarry (M := M) (n := n) sc i bc0
+  exact bc.bw
+
+/--
+Blueprint of the constructive linear one-step assembly over a fixed base
+configuration circuit.
+
+All components are expressed as append-only builders rooted at `sc.circuit`.
+This structure is a staging contract for replacing `stepCompiledLinear`.
+-/
+structure LinearStepBlueprint (sc : StraightConfig M n) where
+  writeBit : BuiltWire (n := n) sc.circuit
+  nextTape : Fin (M.tapeLength n) → BuiltWire (n := n) sc.circuit
+  nextHead : Fin (M.tapeLength n) → BuiltWire (n := n) sc.circuit
+  nextState : M.state → BuiltWire (n := n) sc.circuit
+
+/-- Constructive blueprint instance populated by current append-only builders. -/
+noncomputable def linearStepBlueprint (sc : StraightConfig M n) :
+    LinearStepBlueprint (M := M) (n := n) sc where
+  writeBit := buildWriteBit (M := M) (n := n) sc
+  nextTape := fun i => buildNextTape (M := M) (n := n) sc i
+  nextHead := fun j => buildNextHead (M := M) (n := n) sc j
+  nextState := fun q => buildNextState (M := M) (n := n) sc q
+
+/--
+Linear-step candidate building block: append-only write-bit wire extracted from
+the current straight configuration.
+-/
+noncomputable def linearWriteBitWire (sc : StraightConfig M n) :
+    Fin (n + (BuiltWire.buildWriteBit (M := M) (n := n) sc).ctx.circuit.gates) :=
+  (BuiltWire.buildWriteBit (M := M) (n := n) sc).out
+
+/--
+Linear-step candidate building block: append-only next-state wire for a fixed
+target state.
+-/
+noncomputable def linearNextStateWire (sc : StraightConfig M n) (qTarget : M.state) :
+    Fin (n + (BuiltWire.buildNextState (M := M) (n := n) sc qTarget).ctx.circuit.gates) :=
+  (BuiltWire.buildNextState (M := M) (n := n) sc qTarget).out
+
+/--
+Linear-step candidate building block: append-only next-head wire for a fixed
+target head index.
+-/
+noncomputable def linearNextHeadWire (sc : StraightConfig M n)
+    (j : Fin (M.tapeLength n)) :
+    Fin (n + (BuiltWire.buildNextHead (M := M) (n := n) sc j).ctx.circuit.gates) :=
+  (BuiltWire.buildNextHead (M := M) (n := n) sc j).out
+
+/--
+Linear-step candidate building block: append-only next-tape wire for a fixed
+target tape index.
+-/
+noncomputable def linearNextTapeWire (sc : StraightConfig M n)
+    (i : Fin (M.tapeLength n)) :
+    Fin (n + (BuiltWire.buildNextTape (M := M) (n := n) sc i).ctx.circuit.gates) :=
+  (BuiltWire.buildNextTape (M := M) (n := n) sc i).out
+
+/--
+Readiness witness: the constructive linear-step blueprint is available for any
+straight configuration.
+-/
+theorem linearStepBlueprint_ready (sc : StraightConfig M n) :
+    Nonempty (LinearStepBlueprint (M := M) (n := n) sc) :=
+  ⟨linearStepBlueprint (M := M) (n := n) sc⟩
+
+/--
+Audit helper: every component in the constructive linear-step blueprint is an
+extension of the same base circuit `sc.circuit` (append-only monotonicity).
+-/
+theorem linearStepBlueprint_base_le (sc : StraightConfig M n) :
+    sc.circuit.gates ≤ (linearStepBlueprint (M := M) (n := n) sc).writeBit.ctx.circuit.gates ∧
+    (∀ i, sc.circuit.gates ≤ ((linearStepBlueprint (M := M) (n := n) sc).nextTape i).ctx.circuit.gates) ∧
+    (∀ j, sc.circuit.gates ≤ ((linearStepBlueprint (M := M) (n := n) sc).nextHead j).ctx.circuit.gates) ∧
+    (∀ q, sc.circuit.gates ≤ ((linearStepBlueprint (M := M) (n := n) sc).nextState q).ctx.circuit.gates) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact (linearStepBlueprint (M := M) (n := n) sc).writeBit.base_le
+  · intro i
+    exact ((linearStepBlueprint (M := M) (n := n) sc).nextTape i).base_le
+  · intro j
+    exact ((linearStepBlueprint (M := M) (n := n) sc).nextHead j).base_le
+  · intro q
+    exact ((linearStepBlueprint (M := M) (n := n) sc).nextState q).base_le
+
+end BuiltWire
 
 /-- Evaluate the tape projection of a straight-line configuration. -/
 def evalTape (sc : StraightConfig M n) (x : Point n) :
@@ -738,6 +1235,29 @@ lemma constBase_evalWire_true (n : Nat) (x : Point n) :
   simpa [Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire,
     Pnp3.Internal.PsubsetPpoly.StraightLine.evalGateAux, constBaseCircuit] using hgate
 
+lemma constBase_archive_eval_false (n : Nat) (x : Point n) :
+    Pnp3.Complexity.ArchiveStraightLineAdapter.eval (constBaseCircuit n) x = false := by
+  unfold Pnp3.Complexity.ArchiveStraightLineAdapter.eval
+    Pnp3.Complexity.ArchiveStraightLineAdapter.toDag
+  simp [Pnp3.Complexity.ArchiveStraightLineAdapter.toDagWire,
+    Pnp3.Complexity.ArchiveStraightLineAdapter.toDagOp,
+    constBaseCircuit, ComplexityInterfaces.DagCircuit.eval,
+    ComplexityInterfaces.DagCircuit.eval.evalGateAt]
+
+lemma constBase_archive_eval_true (n : Nat) (x : Point n) :
+    Pnp3.Complexity.ArchiveStraightLineAdapter.eval
+      (Pnp3.Complexity.ArchiveStraightLineAdapter.withOutput (constBaseCircuit n)
+        ⟨n + 1, by
+          have : n + 1 < n + 2 := by omega
+          simpa [constBaseCircuit] using this⟩) x = true := by
+  unfold Pnp3.Complexity.ArchiveStraightLineAdapter.eval
+    Pnp3.Complexity.ArchiveStraightLineAdapter.toDag
+    Pnp3.Complexity.ArchiveStraightLineAdapter.withOutput
+  simp [Pnp3.Complexity.ArchiveStraightLineAdapter.toDagWire,
+    Pnp3.Complexity.ArchiveStraightLineAdapter.toDagOp,
+    constBaseCircuit, ComplexityInterfaces.DagCircuit.eval,
+    ComplexityInterfaces.DagCircuit.eval.evalGateAt]
+
 lemma initialStraightConfig_spec (M : TM) (n : Nat) :
     StraightConfig.Spec (sc := initialStraightConfig M n)
       (f := fun x => M.initialConfig x) := by
@@ -787,7 +1307,7 @@ One straight-line simulation step.
 Current implementation keeps the shared circuit/wire layout stable; semantic
 alignment with `ConfigCircuits.stepCircuits` is established in step 8.
 -/
-noncomputable def stepCompiled (M : TM) {n : Nat} (sc : StraightConfig M n) :
+noncomputable def stepCompiledTruthTable (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n := by
   classical
   let ccStep : ConfigCircuits M n :=
@@ -828,6 +1348,26 @@ noncomputable def stepCompiled (M : TM) {n : Nat} (sc : StraightConfig M n) :
         (n := n) (g₁ := c01.gates) (g₂ := statePack.ckt.gates)
         (statePack.out (stateEquiv M q))
     exact wState0
+
+/--
+Linear-step switch-point for `StraightConfig`.
+
+Currently aliased to the truth-table-based assembly and intended to be replaced
+by append-only constructive assembly.
+-/
+noncomputable abbrev stepCompiledLinear (M : TM) {n : Nat} (sc : StraightConfig M n) :
+    StraightConfig M n :=
+  stepCompiledTruthTable M sc
+
+/--
+Current one-step compiled simulator.
+
+Kept as stable public name and currently aliased to the truth-table assembly.
+This is the switch-point for the upcoming linear/DAG-preserving step builder.
+-/
+noncomputable abbrev stepCompiled (M : TM) {n : Nat} (sc : StraightConfig M n) :
+    StraightConfig M n :=
+  stepCompiledLinear M sc
 
 noncomputable def step (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n :=
@@ -1186,6 +1726,13 @@ lemma runtime_spec_of_step_spec
 noncomputable def runtimeConfig (M : TM) (n : Nat) : StraightConfig M n :=
   runConfig M (initialStraightConfig M n) (M.runTime n)
 
+/--
+Compiled-runtime straight configuration: iterate `stepCompiled` for exactly
+`runTime n` steps from the initial straight configuration.
+-/
+noncomputable def runtimeConfigCompiled (M : TM) (n : Nat) : StraightConfig M n :=
+  Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)
+
 lemma runtimeConfig_spec_of_step_spec
     (M : TM) (n : Nat)
     (hStep :
@@ -1202,6 +1749,14 @@ lemma runtimeConfig_spec_of_step_spec
   simp [runtimeConfig, runConfig_eq]
 
 /--
+Acceptance extraction from an arbitrary straight configuration by redirecting
+output to the accepting-state wire.
+-/
+noncomputable def acceptCircuitOf (M : TM) {n : Nat}
+    (sc : StraightConfig M n) : StraightLineCircuit n :=
+  withOutput sc.circuit (sc.state M.accept)
+
+/--
 Acceptance circuit extracted from the runtime straight configuration by
 redirecting output to the accepting-state wire.
 -/
@@ -1209,10 +1764,21 @@ noncomputable def acceptCircuit (M : TM) (n : Nat) : StraightLineCircuit n :=
   let cfg := runtimeConfig M n
   withOutput cfg.circuit (cfg.state M.accept)
 
+/--
+Acceptance circuit extracted from the compiled-runtime straight configuration.
+-/
+noncomputable def acceptCircuitCompiled (M : TM) (n : Nat) : StraightLineCircuit n :=
+  acceptCircuitOf M (runtimeConfigCompiled M n)
+
 /-- Gate count is preserved when only output redirection is applied. -/
 lemma acceptCircuit_gates (M : TM) (n : Nat) :
     (acceptCircuit M n).gates = (runtimeConfig M n).circuit.gates := by
   simp [acceptCircuit, runtimeConfig, withOutput]
+
+/-- Gate count is preserved for compiled-runtime acceptance extraction. -/
+lemma acceptCircuitCompiled_gates (M : TM) (n : Nat) :
+    (acceptCircuitCompiled M n).gates = (runtimeConfigCompiled M n).circuit.gates := by
+  simp [acceptCircuitCompiled, acceptCircuitOf, runtimeConfigCompiled, withOutput]
 
 /-- In the current straight layer, acceptance extraction keeps the base gate count. -/
 @[simp] lemma straightAcceptCircuit_gates (M : TM) (n : Nat) :
@@ -1254,27 +1820,52 @@ lemma gatePolyBound_poly (M : TM) (c : Nat) :
 Straight-line acceptance extraction is correct under a runtime configuration
 specification.
 -/
-lemma acceptCircuit_spec_of_runSpec (M : TM) (n : Nat)
-    (hRun : Spec (sc := runtimeConfig M n) (f := fun x => M.run (n := n) x)) :
+lemma acceptCircuitOf_spec_of_runSpec (M : TM) (n : Nat)
+    (sc : StraightConfig M n)
+    (hRun : Spec (sc := sc) (f := fun x => M.run (n := n) x)) :
     ∀ x,
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x =
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuitOf M sc) x =
         TM.accepts (M := M) (n := n) x := by
   intro x
-  let cfg := runtimeConfig M n
   have hEval :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x =
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire cfg.circuit x (cfg.state M.accept) := by
-    simpa [acceptCircuit, cfg, runtimeConfig, runConfig] using
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuitOf M sc) x =
+        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire sc.circuit x (sc.state M.accept) := by
+    simpa [acceptCircuitOf] using
       (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_withOutput_eq_evalWire
-        (C := cfg.circuit) (out := cfg.state M.accept) (x := x))
+        (C := sc.circuit) (out := sc.state M.accept) (x := x))
   have hState :
-      evalState cfg x M.accept = stateIndicator M (M.run (n := n) x) M.accept :=
+      evalState sc x M.accept = stateIndicator M (M.run (n := n) x) M.accept :=
     hRun.state_eq x M.accept
   have hIndicator :
       stateIndicator M (M.run (n := n) x) M.accept =
         TM.accepts (M := M) (n := n) x := by
     simp [TM.accepts, stateIndicator]
-  simpa [StraightConfig.evalState, cfg] using hEval.trans (hState.trans hIndicator)
+  simpa [StraightConfig.evalState] using hEval.trans (hState.trans hIndicator)
+
+/--
+Straight-line acceptance extraction is correct under a runtime configuration
+specification.
+-/
+lemma acceptCircuit_spec_of_runSpec (M : TM) (n : Nat)
+    (hRun : Spec (sc := runtimeConfig M n) (f := fun x => M.run (n := n) x)) :
+    ∀ x,
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x =
+        TM.accepts (M := M) (n := n) x := by
+  simpa [acceptCircuit, acceptCircuitOf, -runtimeConfig_eq_initial] using
+    (acceptCircuitOf_spec_of_runSpec (M := M) (n := n)
+      (sc := runtimeConfig M n) hRun)
+
+/--
+Compiled-runtime acceptance extraction is correct under compiled run-spec.
+-/
+lemma acceptCircuitCompiled_spec_of_runSpec (M : TM) (n : Nat)
+    (hRun : Spec (sc := runtimeConfigCompiled M n) (f := fun x => M.run (n := n) x)) :
+    ∀ x,
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuitCompiled M n) x =
+        TM.accepts (M := M) (n := n) x := by
+  simpa [acceptCircuitCompiled] using
+    (acceptCircuitOf_spec_of_runSpec (M := M) (n := n)
+      (sc := runtimeConfigCompiled M n) hRun)
 
 /-- Alias with the expected final naming in the straight-line block. -/
 lemma straightAcceptCircuit_spec (M : TM) (n : Nat)
@@ -1283,6 +1874,59 @@ lemma straightAcceptCircuit_spec (M : TM) (n : Nat)
       Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x =
         TM.accepts (M := M) (n := n) x :=
   acceptCircuit_spec_of_runSpec M n hRun
+
+/--
+Specialized evaluator agreement on the acceptance-circuit shape used by the
+current internal compiler route.
+-/
+lemma acceptCircuit_archive_eval_eq_internal (M : TM) (n : Nat) (x : Point n) :
+    Pnp3.Complexity.ArchiveStraightLineAdapter.eval (acceptCircuit M n) x =
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x := by
+  unfold acceptCircuit
+  rw [runtimeConfig_eq_initial]
+  by_cases hs : M.accept = M.start
+  · let idxT : Fin (n + (constBaseCircuit n).gates) := ⟨n + 1, by
+        have : n + 1 < n + 2 := by omega
+        simpa [constBaseCircuit] using this⟩
+    have hArch :
+        Pnp3.Complexity.ArchiveStraightLineAdapter.eval
+          (withOutput (constBaseCircuit n) idxT) x = true := by
+      simpa [idxT] using constBase_archive_eval_true n x
+    have hInt :
+        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
+          (withOutput (constBaseCircuit n) idxT) x = true := by
+      calc
+        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
+            (withOutput (constBaseCircuit n) idxT) x
+            = Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+                (constBaseCircuit n) x idxT := by
+                  simpa [idxT] using
+                    (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_withOutput_eq_evalWire
+                      (C := constBaseCircuit n) (out := idxT) (x := x))
+        _ = true := by
+              simpa [idxT] using constBase_evalWire_true n x
+    simpa [initialStraightConfig, hs, idxT] using hArch.trans hInt.symm
+  · let idxF : Fin (n + (constBaseCircuit n).gates) := ⟨n, by
+        have : n < n + 2 := by omega
+        simpa [constBaseCircuit] using this⟩
+    have hArch :
+        Pnp3.Complexity.ArchiveStraightLineAdapter.eval
+          (withOutput (constBaseCircuit n) idxF) x = false := by
+      simpa [idxF] using constBase_archive_eval_false n x
+    have hInt :
+        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
+          (withOutput (constBaseCircuit n) idxF) x = false := by
+      calc
+        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
+            (withOutput (constBaseCircuit n) idxF) x
+            = Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+                (constBaseCircuit n) x idxF := by
+                  simpa [idxF] using
+                    (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_withOutput_eq_evalWire
+                      (C := constBaseCircuit n) (out := idxF) (x := x))
+        _ = false := by
+              simpa [idxF] using constBase_evalWire_false n x
+    simpa [initialStraightConfig, hs, idxF] using hArch.trans hInt.symm
 
 end StraightConfig
 

@@ -4,6 +4,45 @@
 где финальный DAG-трек опирается только на внутренние доказанные узлы,
 а не на временные контрактные гипотезы.
 
+Рабочий deep-dive runbook по закрытию legacy bridge-узлов:
+`pnp3/Docs/PsubsetPpolyDAG_Closure_Strategy.md`.
+
+Runbook по закрытию compiled-runtime size блока:
+`pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`.
+
+## Update (2026-03-02): verified current blocker
+
+- Default DAG-route уже переведён на runtime-only контракт:
+  `PsubsetPpolyInternalContracts = RuntimeSpecProvider`.
+- Global `EvalAgreement` и `RuntimeConfigEqStepCompiled` больше не блокируют
+  default-route; они остались только в legacy/bridged ветках.
+- Главный оставшийся блокер для fully no-arg closure:
+  нет закрытого `RuntimeSpecProvider` в текущей `runtimeConfig`-форме.
+  Формально это видно по тому, что `runtimeConfig` сейчас сводится к
+  `initialStraightConfig` (через `step = id`), тогда как целевая спецификация
+  требует соответствие `TM.run`.
+- Для полного закрытия без внешних входов нужен runtime-layer refactor:
+  canonical runtime через iterated `stepCompiled` + совместимый polynomial
+  size-bound route для acceptance circuit.
+- В код уже добавлен промежуточный compiled-runtime маршрут:
+  `P_subset_PpolyDAG_of_compiledRuntimeContracts`, который сводит остаток к
+  двум контрактам минимальной поверхности:
+  `CompiledAcceptCircuitEvalAgreement` и `CompiledAcceptCircuitSizeBound`.
+- Добавлен публичный bundle-слой для этого маршрута:
+  `PsubsetPpolyCompiledRuntimeContracts` +
+  `proved_P_subset_PpolyDAG_of_compiledRuntimeContracts`,
+  а также интерфейсный endpoint
+  `P_subset_PpolyDAG_internal_source_compiledRuntime`.
+- Обновлён iterated runtime-only маршрут: `RuntimeConfigEqStepCompiled` убран
+  из активного contract surface. Теперь
+  `PsubsetPpolyInternalContractsIteratedRuntimeOnly`
+  сводится к `(CompiledAcceptOutputWireAgreement ∧ CompiledRuntimeCircuitSizeBound)`.
+  Мост `RuntimeConfigEqStepCompiled` остался только в legacy/bridged API.
+- Критический size-аудит: текущая форма `stepCompiled` (через
+  `toTreeWire -> compileTree/packFin`) с `ConfigCircuits.stepCircuits`
+  на базе `truthTableCircuit` не даёт замкнуть внутренний polynomial witness
+  для `CompiledRuntimeCircuitSizeBound` без рефактора шага.
+
 ## Краткий статус: что уже закрыли и что по плану осталось
 
 Чтобы не терять нить, фиксируем состояние в самом коротком формате.
@@ -24,6 +63,9 @@
   декомпозицию, но и финальным безусловным доказательством).
 - ⏳ Довести до конца `compileTreeWireSemantics`.
 - ⏳ Собрать безусловный witness `StepCompiledContracts`.
+- ⏳ Провести size-архитектурный рефактор compiled-runtime шага
+  (`stepCompiledLinear`, DAG-preserving append-only assembly) и закрыть
+  `CompiledRuntimeCircuitSizeBound` внутренним witness.
 - ⏳ Получить закрытый `runtimeSpecProvider_internal` и затем
   безпараметрический `polyTMToStraightLineCompiler_internal`.
 - ⏳ Финально переключить интерфейсный default-route на internal source как

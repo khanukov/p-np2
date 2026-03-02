@@ -57,6 +57,37 @@ def RuntimeSpecProvider : Prop :=
     StraightConfig.Spec (sc := StraightConfig.runtimeConfig M n)
       (f := fun x => M.run (n := n) x)
 
+/--
+Iterated-runtime variant of the straight runtime contract.
+
+This shape is produced naturally by `stepCompiled` semantics.
+-/
+def RuntimeSpecProviderIterated : Prop :=
+  ∀ (M : TM) (n : Nat),
+    StraightConfig.Spec
+      (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
+        (StraightConfig.initialStraightConfig M n))
+      (f := fun x => M.run (n := n) x)
+
+/-- Bridge contract identifying `runtimeConfig` with iterated `stepCompiled`. -/
+def RuntimeConfigEqStepCompiled : Prop :=
+  ∀ (M : TM) (n : Nat),
+    StraightConfig.runtimeConfig M n =
+      Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
+        (StraightConfig.initialStraightConfig M n)
+
+/--
+Bridge from iterated-runtime form to `RuntimeSpecProvider`, assuming
+configuration equality at `runTime`.
+-/
+theorem runtimeSpecProvider_of_iterated_eq
+    (hIter : RuntimeSpecProviderIterated)
+    (hCfgEq : RuntimeConfigEqStepCompiled) :
+    RuntimeSpecProvider := by
+  intro M n
+  have hEq := hCfgEq M n
+  simpa only [hEq] using hIter M n
+
 /-- Stronger internal blocker: one-step straight simulation spec. -/
 def StepSpecProvider : Prop :=
   ∀ (M : TM) (n : Nat)
@@ -137,6 +168,12 @@ theorem runtimeSpec_of_stepCompiledSemantics
   intro M n
   exact StraightConfig.runtime_spec_of_stepCompiledProvider (M := M) (n := n) (hSem := hSem M n)
 
+/-- The same theorem packaged in `RuntimeSpecProviderIterated` form. -/
+theorem runtimeSpecProviderIterated_of_stepCompiledSemantics
+    (hSem : StepCompiledSemanticsProvider) :
+    RuntimeSpecProviderIterated :=
+  runtimeSpec_of_stepCompiledSemantics hSem
+
 /-- Low-level contracts currently needed to instantiate `StepCompiledSemanticsProvider`. -/
 def StepCompiledContracts : Prop :=
   Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics ∧
@@ -177,12 +214,26 @@ theorem stepCompiledContracts_of_appendGateRight
   · exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics_of_gateContracts
       hAppendGateRight
 
+/--
+Closed internal witness for one-step compiled contracts.
+
+This is the assumption-free package needed by the `stepCompiled` assembly path.
+-/
+theorem stepCompiledContracts_internal : StepCompiledContracts := by
+  refine ⟨?_, ?_⟩
+  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.compileTreeWireSemantics
+  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics
+
 theorem stepCompiledSemanticsProvider_of_contracts
     (hContracts : StepCompiledContracts) :
     StepCompiledSemanticsProvider := by
   rcases hContracts with ⟨hCompile, hAppend⟩
   intro M n
   exact StraightConfig.stepCompiled_semantics_of_core_contracts hCompile hAppend M n
+
+/-- Closed internal witness for step-compiled semantic provider. -/
+theorem stepCompiledSemanticsProvider_internal : StepCompiledSemanticsProvider :=
+  stepCompiledSemanticsProvider_of_contracts stepCompiledContracts_internal
 
 theorem stepCompiledSemanticsProvider_of_splitContracts
     (hSplit : StepCompiledContractsSplit) :
@@ -199,6 +250,38 @@ theorem runtimeSpec_of_stepCompiledContracts
         (f := fun x => M.run (n := n) x) := by
   exact runtimeSpec_of_stepCompiledSemantics
     (stepCompiledSemanticsProvider_of_contracts hContracts)
+
+/-- Closed internal iterated runtime spec on the `stepCompiled` path. -/
+theorem runtimeSpec_iterated_internal :
+    ∀ (M : TM) (n : Nat),
+      StraightConfig.Spec
+        (sc := Nat.iterate (StraightConfig.stepCompiled M) (M.runTime n)
+          (StraightConfig.initialStraightConfig M n))
+        (f := fun x => M.run (n := n) x) :=
+  runtimeSpec_of_stepCompiledContracts stepCompiledContracts_internal
+
+/--
+Closed iterated-runtime witness in bundled form.
+-/
+theorem runtimeSpecProviderIterated_internal :
+    RuntimeSpecProviderIterated :=
+  runtimeSpec_iterated_internal
+
+/--
+Bridge helper: closes `RuntimeSpecProvider` from internal iterated witness once
+the runtime-config equality bridge is provided.
+-/
+theorem runtimeSpecProvider_internal_of_runtimeEq
+    (hCfgEq : RuntimeConfigEqStepCompiled) :
+    RuntimeSpecProvider :=
+  runtimeSpecProvider_of_iterated_eq runtimeSpecProviderIterated_internal hCfgEq
+
+/--
+Closed internal runtime witness in canonical iterated form.
+-/
+theorem runtimeSpecProvider_internal_iterated :
+    RuntimeSpecProviderIterated :=
+  runtimeSpecProviderIterated_internal
 
 /--
 Split-contract variant of `runtimeSpec_of_stepCompiledContracts`.
@@ -243,6 +326,16 @@ noncomputable def polyTMToStraightLineCompiler_internal
     (hRuntime : RuntimeSpecProvider) :
     PolyTMToStraightLineCompiler :=
   polyTMToStraightLineCompiler_of_runtimeSpec hRuntime
+
+/--
+Bridge variant of the internal compiler assembled from iterated runtime closure
+plus the configuration-equality bridge.
+-/
+noncomputable def polyTMToStraightLineCompiler_internal_of_runtimeEq
+    (hCfgEq : RuntimeConfigEqStepCompiled) :
+    PolyTMToStraightLineCompiler :=
+  polyTMToStraightLineCompiler_of_runtimeSpec
+    (runtimeSpecProvider_internal_of_runtimeEq hCfgEq)
 
 end InternalCompiler
 
@@ -298,6 +391,19 @@ theorem P_subset_PpolyDAG_of_runtimeSpec
     (compiler := InternalCompiler.polyTMToStraightLineCompiler_internal hRuntime)
     hEvalAgree
 
+/--
+Step-11 bridge: derive `P ⊆ PpolyDAG` from iterated runtime closure and
+runtime-config equality bridge.
+-/
+theorem P_subset_PpolyDAG_of_iteratedRuntime
+    (hRuntimeIter : InternalCompiler.RuntimeSpecProviderIterated)
+    (hCfgEq : InternalCompiler.RuntimeConfigEqStepCompiled)
+    (hEvalAgree : InternalCompiler.EvalAgreement) :
+    P_subset_PpolyDAG :=
+  P_subset_PpolyDAG_of_runtimeSpec
+    (hRuntime := InternalCompiler.runtimeSpecProvider_of_iterated_eq hRuntimeIter hCfgEq)
+    hEvalAgree
+
 /-- Step-11 pre-assembly from one-step `step` simulation + eval agreement. -/
 theorem P_subset_PpolyDAG_of_stepSpec
     (hStep : InternalCompiler.StepSpecProvider)
@@ -336,6 +442,13 @@ theorem stepCompiledContracts_of_appendGateRight
   InternalCompiler.stepCompiledContracts_of_appendGateRight hAppendGateRight
 
 /--
+Public closed witness for one-step compiled contracts.
+-/
+theorem stepCompiledContracts_internal :
+    InternalCompiler.StepCompiledContracts :=
+  InternalCompiler.stepCompiledContracts_internal
+
+/--
 Public bridge: derive `StepCompiledSemanticsProvider` from gate-level append
 contract.
 -/
@@ -345,9 +458,36 @@ theorem stepCompiledSemanticsProvider_of_appendGateRight
   InternalCompiler.stepCompiledSemanticsProvider_of_contracts
     (stepCompiledContracts_of_appendGateRight hAppendGateRight)
 
+/--
+Public closed iterated runtime-spec witness on the `stepCompiled` path.
+-/
+theorem runtimeSpec_iterated_internal :
+    ∀ (M : TM) (n : Nat),
+      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
+        (sc := Nat.iterate (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M)
+          (M.runTime n) (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
+        (f := fun x => M.run (n := n) x) :=
+  InternalCompiler.runtimeSpec_iterated_internal
+
 /-- Minimal contract bundle that closes the internal `P ⊆ P/poly` route. -/
 def PsubsetPpolyInternalContracts : Prop :=
   InternalCompiler.RuntimeSpecProvider ∧ InternalCompiler.EvalAgreement
+
+/--
+Iterated-runtime variant of the minimal internal contract bundle.
+
+This is the constructive shape produced by the closed `stepCompiled` path.
+-/
+def PsubsetPpolyInternalContractsIterated : Prop :=
+  InternalCompiler.RuntimeSpecProviderIterated ∧ InternalCompiler.EvalAgreement
+
+/--
+Iterated-contract bundle augmented with the runtime-config equality bridge.
+-/
+def PsubsetPpolyInternalContractsIteratedBridged : Prop :=
+  InternalCompiler.RuntimeSpecProviderIterated ∧
+  InternalCompiler.RuntimeConfigEqStepCompiled ∧
+  InternalCompiler.EvalAgreement
 
 /--
 Step-11 contract closure theorem: once the two remaining internal contracts are
@@ -358,6 +498,29 @@ theorem proved_P_subset_PpolyDAG_of_contracts
     P_subset_PpolyDAG := by
   rcases hContracts with ⟨hRuntime, hEvalAgree⟩
   exact P_subset_PpolyDAG_of_runtimeSpec hRuntime hEvalAgree
+
+/--
+Iterated-contract closure route. The only additional bridge required to recover
+the current compiler theorem is equality between `runtimeConfig` and the
+iterated `stepCompiled` configuration.
+-/
+theorem proved_P_subset_PpolyDAG_of_iteratedContracts
+    (hContracts : PsubsetPpolyInternalContractsIterated)
+    (hCfgEq : InternalCompiler.RuntimeConfigEqStepCompiled) :
+    P_subset_PpolyDAG := by
+  rcases hContracts with ⟨hRuntimeIter, hEvalAgree⟩
+  have hRuntime : InternalCompiler.RuntimeSpecProvider :=
+    InternalCompiler.runtimeSpecProvider_of_iterated_eq hRuntimeIter hCfgEq
+  exact P_subset_PpolyDAG_of_runtimeSpec hRuntime hEvalAgree
+
+/--
+Contract closure theorem for the bridged iterated bundle (no extra arguments).
+-/
+theorem proved_P_subset_PpolyDAG_of_iteratedContractsBridged
+    (hContracts : PsubsetPpolyInternalContractsIteratedBridged) :
+    P_subset_PpolyDAG := by
+  rcases hContracts with ⟨hRuntimeIter, hCfgEq, hEvalAgree⟩
+  exact P_subset_PpolyDAG_of_iteratedRuntime hRuntimeIter hCfgEq hEvalAgree
 
 /-- Short alias used by final wrappers to avoid carrying inclusion hypotheses. -/
 theorem dagInclusion_from_compiler

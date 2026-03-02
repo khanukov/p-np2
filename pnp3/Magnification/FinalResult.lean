@@ -378,6 +378,23 @@ theorem P_ne_NP_final_with_provider
       hPDag
 
 /--
+Compatible DAG-track final wrapper via iterated internal runtime contracts
+plus runtime-config bridge.
+-/
+theorem P_ne_NP_final_with_iteratedProvider
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPpolyContracts :
+    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedBridged) :
+  ComplexityInterfaces.P_ne_NP := by
+  have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
+    Complexity.Simulation.proved_P_subset_PpolyDAG_of_iteratedContractsBridged
+      hPpolyContracts
+  exact
+    ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
+      hNPDag
+      hPDag
+
+/--
 Active conditional final `P ≠ NP` wrapper.
 
 This default-engine form removes direct provider arguments from the interface,
@@ -392,6 +409,20 @@ theorem P_ne_NP_final
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_with_provider
+      (hNPDag := hNPDag)
+      (hPpolyContracts := hPpolyContracts)
+
+/--
+Internal-source default route (iterated runtime contracts + runtime-config
+bridge), kept alongside the legacy contract route for compatibility.
+-/
+theorem P_ne_NP_final_internal_source
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
+  (hPpolyContracts :
+    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedBridged) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact
+    P_ne_NP_final_with_iteratedProvider
       (hNPDag := hNPDag)
       (hPpolyContracts := hPpolyContracts)
 

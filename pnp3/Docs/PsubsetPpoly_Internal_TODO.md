@@ -178,9 +178,9 @@
 ## 5) Короткий операционный чек-лист (copy/paste)
 
 - [ ] `lake build`
-- [ ] Закрыт `AppendWireSemantics.right`
-- [ ] Закрыт `CompileTreeWireSemantics`
-- [ ] Получен `stepCompiledContracts_internal`
+- [x] Закрыт `AppendWireSemantics.right`
+- [x] Закрыт `CompileTreeWireSemantics`
+- [x] Получен `stepCompiledContracts_internal`
 - [ ] Получен `runtimeSpecProvider_internal`
 - [ ] Получен безпараметрический `polyTMToStraightLineCompiler_internal`
 - [ ] Получен `proved_P_subset_PpolyDAG_internal`
@@ -199,38 +199,50 @@ Run date: 2026-03-01 (agent pass)
 Audit handoff snapshot: `pnp3/Docs/PsubsetPpoly_AUDIT_HANDOFF.md`.
 
 Checklist from active task:
-- [ ] **A1** `appendWireSemantics_right + appendWireSemantics`
+- [x] **A1** `appendWireSemantics_right + appendWireSemantics`
 - [x] **A1.1** декомпозиция правой ветки на gate-level контракт (`AppendGateRightSemantics`) + сборка (`appendWireSemantics_of_gateContracts`)
-- [x] **A2.partial** собран bridge `compileTreeWireSemantics_of_append` и
-      `compileTreeWireSemantics_of_gateContracts` (через gate-контракт)
-- [x] **A3.partial** добавлен bridge `stepCompiledContracts_of_appendGateRight`
-      (сборка full `StepCompiledContracts` из gate-контракта)
-- [ ] **B1** `runtimeSpecProvider_internal` (closed)
+- [x] **A1.2** закрыт transport-heavy узел правой gate-ветки:
+      `evalGateAux_append_right` через нормальные формы + `HEq/cast`-леммы
+- [x] **A2** `compileTreeWireSemantics` закрыт (безусловная теорема)
+- [x] **A3** закрыт: собран `stepCompiledContracts_internal`
+      (без входных контрактов)
+- [ ] **B1** `runtimeSpecProvider_internal` (not closed)
+- [x] **B1.iterated** `runtimeSpecProvider_internal_iterated` (closed)
 - [x] **B1.1** runtime-spec сборка из split-контрактов:
       `runtimeSpec_of_splitContracts`
 - [x] **B1.2.partial** добавлен публичный bridge
       `stepCompiledSemanticsProvider_of_appendGateRight`
+- [x] **B1.3** добавлен формальный мост
+      `runtimeSpecProvider_of_iterated_eq` + internal iterator witness
+      `runtimeSpecProviderIterated_internal`
 - [ ] **B2** `polyTMToStraightLineCompiler_internal` без аргументов + `proved_P_subset_PpolyDAG`
-- [ ] **C1** `Interfaces.P_subset_Ppoly_proof -> internal source`
+- [x] **B2.iterated-bridged** добавлен closure-route:
+      `proved_P_subset_PpolyDAG_of_iteratedContractsBridged`
+- [x] **C1** internal-source интерфейсный слой закрыт через
+      `Complexity/Interfaces_InternalSource.lean` (без циклов импортов)
+- [x] **C1.partial** добавлены iterated-bridged финальные wrapper’ы
+      в `Magnification.FinalResult` и `Barrier.Bypass`
+- [x] **C1.1** добавлены explicit internal-source endpoints:
+      `P_ne_NP_final_internal_source`,
+      `P_ne_NP_final_with_barriers_internal_source`
 - [x] **D1** `lake build + scripts/check.sh + targeted builds`
 - [x] TODO обновлён по факту
 
 ### Короткий отчёт по пунктам (текущий проход)
 Сделано:
-1. Добавлен публичный мост
-   `stepCompiledSemanticsProvider_of_appendGateRight` в
-   `Complexity/Simulation/Circuit_Compiler.lean`.
-2. Добавлен публичный re-export
-   `runtimeSpec_iterated_of_splitContracts` для итерационной runtime-spec
-   формулировки из split-контрактов.
-3. Подтверждена сборка `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`.
+1. В `TreeToStraight.lean` добавлены транспортные леммы для зависимых cast:
+   `Circuit.gate_heq`, `cast_liftOp_eq`, `append_gate_right_eq_lift`.
+2. Закрыт узел `evalGateAux_append_right` (локальные переписывания вместо
+   глобального `simp` в проблемных местах с `Fin`-индексами).
+3. Закрыт контракт `appendGateRightSemantics`.
+4. Подтверждена сборка:
+   `lake build pnp3/Complexity/PsubsetPpolyInternal/TreeToStraight.lean`.
 
 Осталось:
-1. Полностью закрыть A1 (без контрактной подпорки) — прямое доказательство
-   `appendWireSemantics.right`.
-2. Закрыть B1/B2 в безусловной форме: получить `RuntimeSpecProvider` и
+1. Закрыть B1/B2 в безусловной форме: получить `RuntimeSpecProvider` и
    `polyTMToStraightLineCompiler_internal` без входных гипотез.
-3. Довести C1: переключение интерфейсов на internal source как default-route.
+2. (опц.) унифицировать naming/exports между `Complexity.Interfaces` и
+   `Complexity.Interfaces_InternalSource` (технический polish, не блокер).
 
 ### Что реально подтверждено в этом проходе
 1. Полный CI-скрипт прошёл: `./scripts/check.sh` (включая full build, smoke, hygiene, audits).
@@ -245,74 +257,65 @@ Checklist from active task:
    итерации `stepCompiled`.
 
 
-### Диагностика последней попытки «закрыть right-ветку полностью»
+### Диагностика и статус блокера по right-ветке
 
-Ниже фиксируем, почему попытка прямого закрытия `appendWireSemantics.right`
-в одном проходе не прошла (по факту вывода Lean), чтобы не терять контекст:
+Блокер на уровне `evalGateAux_append_right` закрыт в этом проходе:
 
-- Не закрылась база индукции для нового `evalWireAux_append_right`:
-  цель сводится к равенству входного чтения `x ⟨↑(liftWireIntoAppend i), _⟩ = x i`,
-  где нужны дополнительные transport-леммы по `Fin.ext` для `g = 0`.
-- При раскрытии `evalWireAux` в succ-шаге `simp` зацикливается
-  (`Possibly looping simp theorem: evalWireAux.eq_1`).
-- В gate-части возникает типовой разрыв между
-  `C₂.gate ⟨C₁.gates + j - C₁.gates, _⟩` и `C₂.gate ⟨j, hj⟩`:
-  арифметика по Nat закрывается, но зависимый cast по `Fin` остаётся
-  в форме, неудобной для автоматического `simpa`.
-- Для `const/not/and/or`-веток после `cases hOp` нужны отдельные
-  специализированные леммы развёртки `evalGateAux` через `cast`-перенос
-  (иначе остаётся mismatch между «сырой» формой `match` и ожидаемой формой
-  `evalGateAux ... = ...`).
+- устранён разрыв между
+  `C₂.gate ⟨C₁.gates + j - C₁.gates, _⟩` и `C₂.gate ⟨j, hj⟩`
+  через `HEq`-транспорт (`Circuit.gate_heq`) и cast-элиминацию (`cast_liftOp_eq`);
+- нормализация правой gate-ветки зафиксирована в `append_gate_right_eq_lift`;
+- после этого `evalGateAux_append_right` и `appendGateRightSemantics` собираются без `sorry`.
 
-Вывод: для полного закрытия right-ветки нужен отдельный небольшой слой
-transport-лемм (gate-index + wire-index), а затем доказательство через
-точечные `rw`/`conv` вместо глобального `simp`.
+Оставшийся blocker сместился на assembly B1/B2:
+- A1 и A2 закрыты безусловными теоремами в `TreeToStraight.lean`;
+- A3 закрыт: добавлен `stepCompiledContracts_internal` в `Circuit_Compiler.lean`;
+- следующий линейный шаг: мост от `runtimeSpec_iterated_internal` к форме
+  `RuntimeSpecProvider` (т.е. к `StraightConfig.runtimeConfig`) через лемму
+  равенства конфигураций
+  `runtimeConfig M n = Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)`,
+  затем безпараметрический компилятор.
 
-### Почему A1/A2/B1/B2/C1 пока не закрыты
-Серьёзный технический блокер в зависимых индексах (`Fin (n + g)`) для правой ветки append:
-- при попытке прямого закрытия `appendWireSemantics_right` возникают недоопределённые cast-цели
-  в `TreeToStraight.lean` на уровне равенства gate-индексов после арифметической нормализации;
-- это тянет за собой незакрытость `compileTreeWireSemantics`, затем `StepCompiledContracts`,
-  а значит нельзя корректно объявить закрытые `runtimeSpecProvider_internal`/безпараметрический
-  `polyTMToStraightLineCompiler_internal` без временных гипотез.
-
-Практическая трактовка: шаг D1 закрыт полностью, но для A/B/C нужен отдельный
-proof-refactor раунд в `TreeToStraight.lean` (с дополнительными transport/cast-леммами).
+Практический статус:
+- конструктивно закрыт рабочий runtime-контракт в iterated-форме
+  (`RuntimeSpecProviderIterated`);
+- legacy-форма `RuntimeSpecProvider` остаётся открытой только из-за
+  bridge-леммы равенства конфигураций.
+- добавлен bundled iterated-bridged DAG closure:
+  `PsubsetPpolyInternalContractsIteratedBridged ->
+   proved_P_subset_PpolyDAG_of_iteratedContractsBridged`.
+- финальные слои уже имеют internal-source wrapper’ы; оставшийся кусок C1 —
+  закрыт отдельным интерфейсным модулем без нарушения import-графа.
 
 
 
-### Attempt log: focused A1/A2 transport refactor (latest)
+### Attempt log: focused A1 transport refactor (resolved for gate-level)
 
-Что пробовали в `TreeToStraight.lean`:
-- добавляли transport/cast-леммы для правой ветки `liftWireIntoAppend`;
-- пытались закрыть `evalGateAux_append_right` через эти cast-леммы;
-- на базе этого пытались закрыть `appendWireSemantics_right` и затем `compileTreeWireSemantics`.
+Что сделано в `TreeToStraight.lean`:
+- добавлен слой transport/cast-лемм для зависимых индексов;
+- через этот слой закрыт `evalGateAux_append_right`;
+- закрыт `appendGateRightSemantics`;
+- добавлены безусловные сборки:
+  `appendWireSemantics` и `compileTreeWireSemantics`;
+- файл собирается локально без `sorry`.
 
-Точный блокер (воспроизводимо):
-- при раскрытии `appendCircuit.gate` во второй ветке (`g \ge C₁.gates`) возникают
-  transport-цели по зависимым индексам `Fin` вида
-  `cast ... (liftOpIntoAppend (... ⟨C₁.gates + g - C₁.gates, ...⟩)) = ... ⟨g, hg⟩`;
-- `simp`/`omega` закрывают арифметику по Nat, но не закрывают зависимые `cast`/`HEq`
-  между индексированными `Fin`-термами в нужной форме;
-- из-за этого прямой proof-path `evalGateAux_append_right -> appendWireSemantics_right`
-  остаётся незакрытым без дополнительного слоя специализированных transport-лемм
-  (отдельно для gate-индекса и для wire-индексов внутри `liftOpIntoAppend`).
+Что дополнительно сделано в `Circuit_Compiler.lean`:
+- добавлен `stepCompiledContracts_internal : StepCompiledContracts`;
+- добавлен `stepCompiledSemanticsProvider_internal : StepCompiledSemanticsProvider`;
+- добавлен `runtimeSpec_iterated_internal` (закрытая iterated-формулировка runtime-spec).
 
 Решение для следующего прохода:
-1. Явно ввести леммы семейства `cast_gateIdx_append_right_*` и
-   `cast_wireIdx_liftWireIntoAppend_*` (в терминах `Fin.ext` + `Nat.add_sub_cancel_left`).
-2. Переписать `evalGateAux_append_right` без глобального `simp`, а через локальные
-   `have`-шаги с точечным `rw` по этим cast-леммам.
-3. После закрытия right-ветки собрать `appendWireSemantics` и повторить индукцию
-   для `compileTreeWireSemantics`.
+1. Сформировать `stepCompiledContracts_internal` из уже закрытых
+   `compileTreeWireSemantics` и `appendWireSemantics`.
+2. Поднять его до `runtimeSpecProvider_internal`.
+3. Закрыть безпараметрический `polyTMToStraightLineCompiler_internal`.
 
 
 ### Следующий технический под-план (точечно)
-1. Вынести отдельные леммы вида `cast_gateIndex_append_right` для устранения transport-шумов.
-2. После этого закрыть `evalGateAux_append_right`, затем `appendWireSemantics_right`.
-3. На базе `appendWireSemantics` закрыть `compileTreeWireSemantics`.
-4. Сразу собрать closed witness `StepCompiledContracts` и только затем продвигаться в B1/B2.
+1. Собрать closed witness `StepCompiledContracts` (без входных контрактов).
+2. Поднять до closed `runtimeSpecProvider_internal`.
+3. Перейти к закрытию B2 и C1.
 
 ### Commit refs
-- Current documentation sync commit: `TBD (filled in commit message/PR)`
-- Baseline feature commit under review: `eac3110`
+- Gate-right closure commit: `4f3b6ec`
+- Earlier prep commits: `a0708cf`, `2de8a37`, `59b02af`, `2a5a942`

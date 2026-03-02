@@ -1196,6 +1196,18 @@ theorem compileTreeWireSemantics_of_gateContracts
     CompileTreeWireSemantics :=
   compileTreeWireSemantics_of_append (appendWireSemantics_of_gateContracts hGate)
 
+/--
+Closed append-wire semantics assembled from the internal gate-level right-branch theorem.
+-/
+theorem appendWireSemantics : AppendWireSemantics :=
+  appendWireSemantics_of_gateContracts appendGateRightSemantics
+
+/--
+Closed compile-tree wire semantics assembled from internal append-right closure.
+-/
+theorem compileTreeWireSemantics : CompileTreeWireSemantics :=
+  compileTreeWireSemantics_of_gateContracts appendGateRightSemantics
+
 
 theorem packFinWireSemantics_of_contracts
     (hCompile : CompileTreeWireSemantics)

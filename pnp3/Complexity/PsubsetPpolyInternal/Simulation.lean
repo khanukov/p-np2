@@ -1521,6 +1521,281 @@ theorem linearStepBlueprint_gates_le_budget (sc : StraightConfig M n) :
       simp [linearStepBlueprint, linearStepBudget, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
         Nat.le_max_left])
 
+/--
+Append-only tape-stage assembly over one growing builder context.
+
+The input carry is the transported `writeBit` wire. For each tape index we
+append the `nextTape` gadget and record its output as a `Nat` wire index in the
+current final circuit.
+-/
+noncomputable def buildNextTapeAllAux (sc : StraightConfig M n) :
+    List (Fin (M.tapeLength n)) →
+      BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit × List (Fin (M.tapeLength n) × Nat)
+  | [], bc => (bc, [])
+  | i :: is, bc =>
+      let bcNext := buildNextTapeFromCarry (M := M) (n := n) sc i bc
+      let rest := buildNextTapeAllAux sc is bcNext
+      (rest.1, (i, (bcNext.bw.out : Nat)) :: rest.2)
+
+lemma buildNextTapeAllAux_gates_le
+    (sc : StraightConfig M n) :
+    ∀ (is : List (Fin (M.tapeLength n))) (bc : BuiltCarry (n := n) sc.circuit),
+      (buildNextTapeAllAux (M := M) (n := n) sc is bc).1.bw.ctx.circuit.gates ≤
+        bc.bw.ctx.circuit.gates + 4 * is.length := by
+  intro is
+  induction is with
+  | nil =>
+      intro bc
+      simp [buildNextTapeAllAux]
+  | cons i is ih =>
+      intro bc
+      let bcNext := buildNextTapeFromCarry (M := M) (n := n) sc i bc
+      have hStep :
+          bcNext.bw.ctx.circuit.gates = bc.bw.ctx.circuit.gates + 4 := by
+        simpa [bcNext] using buildNextTapeFromCarry_gates_eq (M := M) (n := n) sc i bc
+      have hRest :
+          (buildNextTapeAllAux (M := M) (n := n) sc is bcNext).1.bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates + 4 * is.length :=
+        ih bcNext
+      have hMain :
+          (buildNextTapeAllAux (M := M) (n := n) sc (i :: is) bc).1.bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates + 4 * is.length := by
+        simpa [buildNextTapeAllAux, bcNext] using hRest
+      calc
+        (buildNextTapeAllAux (M := M) (n := n) sc (i :: is) bc).1.bw.ctx.circuit.gates
+            ≤ bcNext.bw.ctx.circuit.gates + 4 * is.length := hMain
+        _ = bc.bw.ctx.circuit.gates + 4 + 4 * is.length := by simpa [hStep]
+        _ = bc.bw.ctx.circuit.gates + 4 * (List.length (i :: is)) := by
+              simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+/--
+Tape-stage builder started from `writeBit` in the same shared context.
+-/
+noncomputable def buildNextTapeAll (sc : StraightConfig M n) :
+    BuiltCarry (n := n) sc.circuit × List (Fin (M.tapeLength n) × Nat) := by
+  let bwWrite := buildWriteBit (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bwWrite, bwWrite.out⟩
+  exact buildNextTapeAllAux (M := M) (n := n) sc (tapeIndexList M n) bc0
+
+lemma buildNextTapeAll_gates_le
+    (sc : StraightConfig M n) :
+    (buildNextTapeAll (M := M) (n := n) sc).1.bw.ctx.circuit.gates ≤
+      sc.circuit.gates +
+        ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+        4 * (M.tapeLength n) := by
+  unfold buildNextTapeAll
+  let bwWrite := buildWriteBit (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bwWrite, bwWrite.out⟩
+  have hTape :
+      (buildNextTapeAllAux (M := M) (n := n) sc (tapeIndexList M n) bc0).1.bw.ctx.circuit.gates ≤
+        bc0.bw.ctx.circuit.gates + 4 * (tapeIndexList M n).length :=
+    buildNextTapeAllAux_gates_le (M := M) (n := n) sc (tapeIndexList M n) bc0
+  have hWrite :
+      bwWrite.ctx.circuit.gates ≤
+        sc.circuit.gates + ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) :=
+    buildWriteBit_gates_le (M := M) (n := n) sc
+  have hLen : (tapeIndexList M n).length = M.tapeLength n := by
+    simp [tapeIndexList]
+  calc
+    (buildNextTapeAllAux (M := M) (n := n) sc (tapeIndexList M n) bc0).1.bw.ctx.circuit.gates
+        ≤ bc0.bw.ctx.circuit.gates + 4 * (tapeIndexList M n).length := hTape
+    _ = bwWrite.ctx.circuit.gates + 4 * (tapeIndexList M n).length := by
+          simp [bc0]
+    _ ≤ sc.circuit.gates + ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+          4 * (tapeIndexList M n).length := by omega
+    _ = sc.circuit.gates + ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+          4 * (M.tapeLength n) := by simp [hLen]
+
+/--
+Append-only head-stage assembly over one growing builder context.
+
+For each target head index we append the full `nextHead` gadget from the
+current context and record its output wire index.
+-/
+noncomputable def buildNextHeadAllAux (sc : StraightConfig M n) :
+    List (Fin (M.tapeLength n)) →
+      BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit × List (Fin (M.tapeLength n) × Nat)
+  | [], bc => (bc, [])
+  | j :: js, bc =>
+      let bcHead := buildNextHeadAux (M := M) (n := n) sc j (headStateSymbolPairs M n) bc
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcHead.bw, bcHead.bw.out⟩
+      let rest := buildNextHeadAllAux sc js bcNext
+      (rest.1, (j, (bcHead.bw.out : Nat)) :: rest.2)
+
+lemma buildNextHeadAllAux_gates_le
+    (sc : StraightConfig M n) :
+    ∀ (js : List (Fin (M.tapeLength n))) (bc : BuiltCarry (n := n) sc.circuit),
+      (buildNextHeadAllAux (M := M) (n := n) sc js bc).1.bw.ctx.circuit.gates ≤
+        bc.bw.ctx.circuit.gates +
+          ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * js.length := by
+  intro js
+  induction js with
+  | nil =>
+      intro bc
+      simp [buildNextHeadAllAux]
+  | cons j js ih =>
+      intro bc
+      let bcHead := buildNextHeadAux (M := M) (n := n) sc j (headStateSymbolPairs M n) bc
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcHead.bw, bcHead.bw.out⟩
+      have hHeadStep :
+          bcHead.bw.ctx.circuit.gates ≤
+            bc.bw.ctx.circuit.gates +
+              (2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M)) := by
+        have hRaw := buildNextHeadAux_gates_le (M := M) (n := n) (sc := sc) (j := j)
+            (iqs := headStateSymbolPairs M n) (bc := bc)
+        have hLen : (headStateSymbolPairs M n).length = (M.tapeLength n) * (2 * stateCard M) :=
+          length_headStateSymbolPairs (M := M) (n := n)
+        simpa [hLen] using hRaw
+      have hRest :
+          (buildNextHeadAllAux (M := M) (n := n) sc js bcNext).1.bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * js.length :=
+        ih bcNext
+      have hMain :
+          (buildNextHeadAllAux (M := M) (n := n) sc (j :: js) bc).1.bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * js.length := by
+        simpa [buildNextHeadAllAux, bcHead, bcNext] using hRest
+      calc
+        (buildNextHeadAllAux (M := M) (n := n) sc (j :: js) bc).1.bw.ctx.circuit.gates
+            ≤ bcNext.bw.ctx.circuit.gates +
+                ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * js.length := hMain
+        _ = bcHead.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * js.length := by
+              simp [bcNext]
+        _ ≤ bc.bw.ctx.circuit.gates +
+              (2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M)) +
+              ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * js.length := by
+              omega
+        _ = bc.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (List.length (j :: js)) := by
+              simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+/--
+Append-only state-stage assembly over one growing builder context.
+-/
+noncomputable def buildNextStateAllAux (sc : StraightConfig M n) :
+    List M.state →
+      BuiltCarry (n := n) sc.circuit →
+      BuiltCarry (n := n) sc.circuit × List (M.state × Nat)
+  | [], bc => (bc, [])
+  | q :: qs, bc =>
+      let bcState := buildNextStateAux (M := M) (n := n) sc q (stateSymbolPairs M) bc
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcState.bw, bcState.bw.out⟩
+      let rest := buildNextStateAllAux sc qs bcNext
+      (rest.1, (q, (bcState.bw.out : Nat)) :: rest.2)
+
+lemma buildNextStateAllAux_gates_le
+    (sc : StraightConfig M n) :
+    ∀ (qs : List M.state) (bc : BuiltCarry (n := n) sc.circuit),
+      (buildNextStateAllAux (M := M) (n := n) sc qs bc).1.bw.ctx.circuit.gates ≤
+        bc.bw.ctx.circuit.gates +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * qs.length := by
+  intro qs
+  induction qs with
+  | nil =>
+      intro bc
+      simp [buildNextStateAllAux]
+  | cons q qs ih =>
+      intro bc
+      let bcState := buildNextStateAux (M := M) (n := n) sc q (stateSymbolPairs M) bc
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcState.bw, bcState.bw.out⟩
+      have hStateStep :
+          bcState.bw.ctx.circuit.gates ≤
+            bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) := by
+        have hRaw := buildNextStateAux_gates_le (M := M) (n := n) (sc := sc) (qTarget := q)
+            (qs := stateSymbolPairs M) (bc := bc)
+        have hLen : (stateSymbolPairs M).length = 2 * stateCard M := length_stateSymbolPairs M
+        simpa [hLen] using hRaw
+      have hRest :
+          (buildNextStateAllAux (M := M) (n := n) sc qs bcNext).1.bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * qs.length :=
+        ih bcNext
+      have hMain :
+          (buildNextStateAllAux (M := M) (n := n) sc (q :: qs) bc).1.bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * qs.length := by
+        simpa [buildNextStateAllAux, bcState, bcNext] using hRest
+      calc
+        (buildNextStateAllAux (M := M) (n := n) sc (q :: qs) bc).1.bw.ctx.circuit.gates
+            ≤ bcNext.bw.ctx.circuit.gates +
+                ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * qs.length := hMain
+        _ = bcState.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * qs.length := by
+              simp [bcNext]
+        _ ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) +
+              ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * qs.length := by
+              omega
+        _ = bc.bw.ctx.circuit.gates +
+              ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (List.length (q :: qs)) := by
+              simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+/--
+Gate bound for running tape/head/state stages sequentially in one shared
+append-only context.
+-/
+lemma buildLinearStages_gates_le
+    (sc : StraightConfig M n) :
+    let tapeRes := buildNextTapeAll (M := M) (n := n) sc
+    let bcTape := tapeRes.1
+    let headRes := buildNextHeadAllAux (M := M) (n := n) sc (tapeIndexList M n) bcTape
+    let bcHead := headRes.1
+    let stateRes := buildNextStateAllAux (M := M) (n := n) sc (stateList M) bcHead
+    stateRes.1.bw.ctx.circuit.gates ≤
+      sc.circuit.gates +
+        ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+        4 * (M.tapeLength n) +
+        ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (M.tapeLength n) +
+        ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (stateCard M) := by
+  classical
+  dsimp
+  let tapeRes := buildNextTapeAll (M := M) (n := n) sc
+  let bcTape := tapeRes.1
+  let headRes := buildNextHeadAllAux (M := M) (n := n) sc (tapeIndexList M n) bcTape
+  let bcHead := headRes.1
+  let stateRes := buildNextStateAllAux (M := M) (n := n) sc (stateList M) bcHead
+  have hTape :
+      bcTape.bw.ctx.circuit.gates ≤
+        sc.circuit.gates +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+          4 * (M.tapeLength n) := by
+    simpa [tapeRes, bcTape] using buildNextTapeAll_gates_le (M := M) (n := n) sc
+  have hHead :
+      bcHead.bw.ctx.circuit.gates ≤
+        bcTape.bw.ctx.circuit.gates +
+          ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (M.tapeLength n) := by
+    have hRaw := buildNextHeadAllAux_gates_le (M := M) (n := n) sc
+      (js := tapeIndexList M n) (bc := bcTape)
+    have hLen : (tapeIndexList M n).length = M.tapeLength n := by
+      simp [tapeIndexList]
+    simpa [headRes, bcHead, hLen] using hRaw
+  have hState :
+      stateRes.1.bw.ctx.circuit.gates ≤
+        bcHead.bw.ctx.circuit.gates +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (stateCard M) := by
+    have hRaw := buildNextStateAllAux_gates_le (M := M) (n := n) sc
+      (qs := stateList M) (bc := bcHead)
+    have hLen : (stateList M).length = stateCard M := length_stateList M
+    simpa [stateRes, hLen] using hRaw
+  have hState' :
+      stateRes.1.bw.ctx.circuit.gates ≤
+        bcTape.bw.ctx.circuit.gates +
+          ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (M.tapeLength n) +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (stateCard M) := by
+    omega
+  have hFinal :
+      stateRes.1.bw.ctx.circuit.gates ≤
+        sc.circuit.gates +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+          4 * (M.tapeLength n) +
+          ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (M.tapeLength n) +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (stateCard M) := by
+    omega
+  exact hFinal
+
 end BuiltWire
 
 /-- Evaluate the tape projection of a straight-line configuration. -/

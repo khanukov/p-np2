@@ -563,9 +563,10 @@ circuit family.
 -/
 def CompiledAcceptCircuitSizeBound : Prop :=
   ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
-    (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n)).size ≤
-      n ^ (c + 5) + (c + 5)
+    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+    ∃ k, ∀ n,
+      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n)).size ≤
+        n ^ k + k
 
 /--
 Narrower evaluator-agreement contract: only the acceptance output wire of the
@@ -599,9 +600,10 @@ base circuit (before output redirection).
 -/
 def CompiledRuntimeCircuitSizeBound : Prop :=
   ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
-    (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-      n ^ (c + 5) + (c + 5)
+    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+    ∃ k, ∀ n,
+      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
+        n ^ k + k
 
 /--
 Relaxed size-bound variant (one-degree slack). Useful as an intermediate
@@ -609,9 +611,10 @@ target when proving tight size bounds is inconvenient.
 -/
 def CompiledRuntimeCircuitSizeBoundLoose : Prop :=
   ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
-    (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-      n ^ (c + 6) + (c + 6)
+    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+    ∃ k, ∀ n,
+      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
+        n ^ k + k
 
 theorem compiledAcceptOutputWireAgreement_of_runtimeWireEvalAgreement
     (hWire : CompiledRuntimeWireEvalAgreement) :
@@ -623,14 +626,8 @@ theorem compiledAcceptOutputWireAgreement_of_runtimeWireEvalAgreement
 theorem compiledRuntimeCircuitSizeBoundLoose_of_strict
     (hSize : CompiledRuntimeCircuitSizeBound) :
     CompiledRuntimeCircuitSizeBoundLoose := by
-  intro M c hRun n
-  have hBase : (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-      n ^ (c + 5) + (c + 5) :=
-    hSize M c hRun n
-  have hPow : n ^ (c + 5) ≤ n ^ (c + 6) := InternalCompiler.degree_bound_main_term (c + 1) n
-  have hAdd : n ^ (c + 5) + (c + 5) ≤ n ^ (c + 6) + (c + 6) := by
-    omega
-  exact Nat.le_trans hBase hAdd
+  intro M c hRun
+  exact hSize M c hRun
 
 theorem compiledAcceptEvalAgreement_of_outputWireAgreement
     (hOut : CompiledAcceptOutputWireAgreement) :
@@ -681,11 +678,14 @@ theorem compiledAcceptOutputWireAgreement_of_compiledAcceptEvalAgreement
 theorem compiledAcceptSizeBound_of_runtimeCircuitSizeBound
     (hSize : CompiledRuntimeCircuitSizeBound) :
     CompiledAcceptCircuitSizeBound := by
-  intro M c hRun n
+  intro M c hRun
+  rcases hSize M c hRun with ⟨k, hk⟩
+  refine ⟨k, ?_⟩
+  intro n
   have hBase :
       (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-        n ^ (c + 5) + (c + 5) :=
-    hSize M c hRun n
+        n ^ k + k :=
+    hk n
   simpa [size_toDag,
     Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled_gates]
     using hBase
@@ -735,7 +735,9 @@ theorem compiledRuntimeCircuitGateBound_of_linearBudget
 theorem compiledRuntimeCircuitSizeBound_of_gateBound
     (hGate : CompiledRuntimeCircuitGateBound) :
     CompiledRuntimeCircuitSizeBound := by
-  intro M c hRun n
+  intro M c hRun
+  refine ⟨c + 5, ?_⟩
+  intro n
   have hGates :
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
         n ^ (c + 5) + (c + 4) :=
@@ -831,15 +833,16 @@ theorem P_subset_PpolyDAG_of_compiledRuntimeContracts
   refine P_subset_PpolyDAG_of_P_subset_PpolyStraightLine ?_
   intro L hPL
   rcases exists_poly_tm_for_P (L := L) hPL with ⟨M, c, hRun, hCorrect⟩
+  rcases hSize M c hRun with ⟨k, hk⟩
   refine ⟨({
-    polyBound := fun n => n ^ (c + 5) + (c + 5)
-    polyBound_poly := ⟨c + 5, by
+    polyBound := fun n => n ^ k + k
+    polyBound_poly := ⟨k, by
       intro n
       exact Nat.le_refl _⟩
     family := fun n => Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n
     family_size_le := by
       intro n
-      exact hSize M c hRun n
+      exact hk n
     correct := by
       intro n x
       calc

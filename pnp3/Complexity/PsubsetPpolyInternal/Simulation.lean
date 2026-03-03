@@ -1234,6 +1234,15 @@ def castWireLe {n g g' : Nat} (h : g ≤ g') (w : Fin (n + g)) : Fin (n + g') :=
     (h : g ≤ g') (w : Fin (n + g)) :
     ((castWireLe (n := n) (g := g) (g' := g') h w : Fin (n + g')) : Nat) = w := rfl
 
+@[simp] lemma castWireLe_trans {n g₁ g₂ g₃ : Nat}
+    (h₁₂ : g₁ ≤ g₂) (h₂₃ : g₂ ≤ g₃)
+    (w : Fin (n + g₁)) :
+    castWireLe (n := n) (g := g₂) (g' := g₃) h₂₃
+      (castWireLe (n := n) (g := g₁) (g' := g₂) h₁₂ w) =
+    castWireLe (n := n) (g := g₁) (g' := g₃) (Nat.le_trans h₁₂ h₂₃) w := by
+  ext
+  simp [castWireLe]
+
 @[simp] lemma evalWire_castWireLe_snoc
     {n : Nat} (C : StraightLine.Circuit n)
     (op : LegacyStraightOp (n + C.gates))
@@ -1320,6 +1329,91 @@ def castWireLe {n g g' : Nat} (h : g ≤ g') (w : Fin (n + g)) : Fin (n + g') :=
   simpa [BuiltCarry.appendOr, castWireLe, BuiltCarry_appendOr_bw_gates] using
     (evalWire_castWireLe_snoc (C := bc.bw.ctx.circuit)
       (op := LegacyStraightOp.or u v) (x := x) (w := w))
+
+lemma buildSymbolFromCarry_step_preserves_old_eval
+    (sc : StraightConfig M n)
+    (bc : BuiltCarry (n := n) sc.circuit)
+    (i : Fin (M.tapeLength n))
+    (x : Boolcube.Point n)
+    (w : Fin (n + bc.bw.ctx.circuit.gates)) :
+    let u : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.head i)
+    let v : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.tape i)
+    let bcAnd : BuiltCarry (n := n) sc.circuit := BuiltCarry.appendAnd (bc := bc) u v
+    let symLiftAnd :=
+      Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+        (b := bc.bw.ctx.ctx) (op := LegacyStraightOp.and u v) bc.bw.out
+    let bcOr : BuiltCarry (n := n) sc.circuit := BuiltCarry.appendOr (bc := bcAnd) symLiftAnd bcAnd.bw.out
+    Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := bcOr.bw.ctx.circuit) (x := x)
+        (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+          (g' := bcOr.bw.ctx.circuit.gates)
+          (by
+            have hAnd : bc.bw.ctx.circuit.gates ≤ bcAnd.bw.ctx.circuit.gates := by simp [bcAnd]
+            have hOr : bcAnd.bw.ctx.circuit.gates ≤ bcOr.bw.ctx.circuit.gates := by simp [bcOr]
+            exact Nat.le_trans hAnd hOr) w)
+      =
+        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bc.bw.ctx.circuit) (x := x) w := by
+  dsimp
+  set u : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.head i)
+  set v : Fin (n + bc.bw.ctx.circuit.gates) := bc.bw.ctx.liftBase (sc.tape i)
+  set bcAnd : BuiltCarry (n := n) sc.circuit := BuiltCarry.appendAnd (bc := bc) u v
+  set symLiftAnd :=
+    Pnp3.Internal.PsubsetPpoly.StraightLine.BuildCtx.appendFin_lift
+      (b := bc.bw.ctx.ctx) (op := LegacyStraightOp.and u v) bc.bw.out
+  set bcOr : BuiltCarry (n := n) sc.circuit := BuiltCarry.appendOr (bc := bcAnd) symLiftAnd bcAnd.bw.out
+  have hAndG : bc.bw.ctx.circuit.gates ≤ bcAnd.bw.ctx.circuit.gates := by
+    simp [bcAnd]
+  have hOrG : bcAnd.bw.ctx.circuit.gates ≤ bcOr.bw.ctx.circuit.gates := by
+    simp [bcOr]
+  have hAnd :
+      Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bcAnd.bw.ctx.circuit) (x := x)
+          (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+            (g' := bcAnd.bw.ctx.circuit.gates) hAndG w)
+        =
+          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+            (C := bc.bw.ctx.circuit) (x := x) w := by
+    simpa [bcAnd] using
+      (BuiltCarry_appendAnd_preserves_old_eval (bc := bc) (u := u) (v := v) (x := x) (w := w))
+  have hOr :
+      Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bcOr.bw.ctx.circuit) (x := x)
+          (castWireLe (n := n) (g := bcAnd.bw.ctx.circuit.gates)
+            (g' := bcOr.bw.ctx.circuit.gates) hOrG
+            (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+              (g' := bcAnd.bw.ctx.circuit.gates) hAndG w))
+        =
+          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+            (C := bcAnd.bw.ctx.circuit) (x := x)
+            (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+              (g' := bcAnd.bw.ctx.circuit.gates) hAndG w) := by
+    simpa [bcOr] using
+      (BuiltCarry_appendOr_preserves_old_eval
+        (bc := bcAnd) (u := symLiftAnd) (v := bcAnd.bw.out) (x := x)
+        (w := castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+          (g' := bcAnd.bw.ctx.circuit.gates) hAndG w))
+  calc
+    Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := bcOr.bw.ctx.circuit) (x := x)
+        (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+          (g' := bcOr.bw.ctx.circuit.gates)
+          (Nat.le_trans hAndG hOrG) w)
+      =
+        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bcOr.bw.ctx.circuit) (x := x)
+          (castWireLe (n := n) (g := bcAnd.bw.ctx.circuit.gates)
+            (g' := bcOr.bw.ctx.circuit.gates) hOrG
+            (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+              (g' := bcAnd.bw.ctx.circuit.gates) hAndG w)) := by
+            simp [castWireLe_trans]
+    _ =
+        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bcAnd.bw.ctx.circuit) (x := x)
+          (castWireLe (n := n) (g := bc.bw.ctx.circuit.gates)
+            (g' := bcAnd.bw.ctx.circuit.gates) hAndG w) := hOr
+    _ = Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bc.bw.ctx.circuit) (x := x) w := hAnd
 
 @[simp] lemma buildNextTapeFromCarry_out_eval
     (sc : StraightConfig M n) (i : Fin (M.tapeLength n))

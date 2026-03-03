@@ -590,6 +590,18 @@ def CompiledAcceptCircuitEvalAgreement : Prop :=
         (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x
 
 /--
+Evaluator-agreement contract for the linear compiled-runtime acceptance family.
+-/
+def CompiledAcceptCircuitEvalAgreementLinear : Prop :=
+  ∀ (M : TM) (n : Nat) (x : Bitstring n),
+    ArchiveStraightLineAdapter.eval
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)) x =
+      Pnp3.Internal.PsubsetPpoly.StraightLine.eval
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
+          (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)) x
+
+/--
 Residual size-bound contract restricted to the compiled-runtime acceptance
 circuit family.
 -/
@@ -795,6 +807,16 @@ def CompiledRuntimeCircuitSizeBoundLinear : Prop :=
       (toDag
         (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit).size ≤
         n ^ k + k
+
+/--
+Residual correctness contract restricted to the linear compiled-runtime family.
+-/
+def CompiledRuntimeAcceptCorrectnessLinear : Prop :=
+  ∀ (M : TM) (n : Nat) (x : Bitstring n),
+    Pnp3.Internal.PsubsetPpoly.StraightLine.eval
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)) x =
+      TM.accepts M n x
 
 /--
 Residual polynomial-domination obligation for accumulated runtime budget:
@@ -1531,6 +1553,17 @@ def PsubsetPpolyCompiledRuntimeContracts : Prop :=
     CompiledRuntimeAcceptCorrectness
 
 /--
+Linear compiled-runtime contract bundle.
+
+This isolates the remaining linear-route semantic obligations from size closure:
+size is already closed internally (`CompiledRuntimeCircuitSizeBoundLinear_internal`).
+-/
+def PsubsetPpolyCompiledRuntimeLinearContracts : Prop :=
+  CompiledAcceptCircuitEvalAgreementLinear ∧
+    CompiledRuntimeCircuitSizeBoundLinear ∧
+    CompiledRuntimeAcceptCorrectnessLinear
+
+/--
 Step-11 contract closure theorem: once the two remaining internal contracts are
 available, `P_subset_PpolyDAG` follows immediately.
 -/
@@ -1649,6 +1682,53 @@ theorem proved_P_subset_PpolyDAG_of_compiledRuntimeContracts
     P_subset_PpolyDAG := by
   rcases hContracts with ⟨hEval, hSize, hCorrectCompiled⟩
   exact P_subset_PpolyDAG_of_compiledRuntimeContracts hEval hSize hCorrectCompiled
+
+/--
+Linear compiled-runtime DAG route with the same evaluator agreement contract and
+linear-specific size/correctness contracts.
+-/
+theorem P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
+    (hEval : CompiledAcceptCircuitEvalAgreementLinear)
+    (hSize : CompiledRuntimeCircuitSizeBoundLinear)
+    (hCorrectLinear : CompiledRuntimeAcceptCorrectnessLinear) :
+    P_subset_PpolyDAG := by
+  refine P_subset_PpolyDAG_of_P_subset_PpolyStraightLine ?_
+  intro L hPL
+  rcases exists_poly_tm_for_P (L := L) hPL with ⟨M, c, hRun, hLangCorrect⟩
+  rcases hSize M c hRun with ⟨k, hk⟩
+  refine ⟨({
+    polyBound := fun n => n ^ k + k
+    polyBound_poly := ⟨k, by
+      intro n
+      exact Nat.le_refl _⟩
+    family := fun n =>
+      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
+    family_size_le := by
+      intro n
+      have hSizeBase :
+          (toDag
+            (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit).size ≤
+              n ^ k + k := hk n
+      simpa [size_toDag, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf] using hSizeBase
+    correct := by
+      intro n x
+      let Cacc : StraightLineCircuit n :=
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
+          (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
+      calc
+        eval Cacc x =
+            Pnp3.Internal.PsubsetPpoly.StraightLine.eval Cacc x := hEval M n x
+        _ = TM.accepts M n x := by simpa [Cacc] using hCorrectLinear M n x
+        _ = L n x := hLangCorrect n x
+  } : InPpolyStraightLine L), trivial⟩
+
+theorem proved_P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
+    (hContracts : PsubsetPpolyCompiledRuntimeLinearContracts) :
+    P_subset_PpolyDAG := by
+  rcases hContracts with ⟨hEval, hSize, hCorrectLinear⟩
+  exact P_subset_PpolyDAG_of_compiledRuntimeLinearContracts hEval hSize hCorrectLinear
 
 /-- Short alias used by final wrappers to avoid carrying inclusion hypotheses. -/
 theorem dagInclusion_from_compiler

@@ -4,6 +4,43 @@
 Цель: зафиксировать, что уже собрано, что является реальным блокером,
 и какие минимальные действия нужны, чтобы продолжить без потери контекста.
 
+## Update (2026-03-03): handoff freeze for external audit
+
+Ниже — актуализация относительно старого baseline в этом файле.
+Дальнейшее продвижение доказательства в этом проходе остановлено по запросу
+на внешний аудит.
+
+### Новые коммиты с момента прошлого среза
+
+- `21dfd13` — `feat: add linear-runtime DAG closure contract track`
+- `a6313f1` — `feat: bridge eval agreement for linear compiled-runtime route`
+- `f3df23b` — `feat: add linear-semantics to DAG inclusion bridge`
+
+### Что добавлено в `Complexity/Simulation/Circuit_Compiler.lean`
+
+- linear-контрактная поверхность:
+  - `CompiledAcceptCircuitEvalAgreementLinear`
+  - `CompiledRuntimeAcceptCorrectnessLinear`
+  - `PsubsetPpolyCompiledRuntimeLinearContracts`
+- linear DAG-route:
+  - `P_subset_PpolyDAG_of_compiledRuntimeLinearContracts`
+  - `proved_P_subset_PpolyDAG_of_compiledRuntimeLinearContracts`
+- мосты:
+  - `compiledAcceptEvalAgreementLinear_of_evalAgreement`
+  - `proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear`
+  - `compiledRuntimeAcceptCorrectnessLinear_of_linearSemantics`
+  - `proved_P_subset_PpolyDAG_of_evalAgreementAndLinearSemantics`
+
+### Актуальный остаточный барьер
+
+Главный содержательный blocker сейчас:
+- доказать `StepCompiledLinearCandidateSemantics` (или эквивалентный
+  one-step `Spec` для linear switch-point в `Simulation.lean`).
+
+После этого:
+- linear-route уже подготовлен, size-часть закрыта, мосты до `P_subset_PpolyDAG`
+  добавлены.
+
 ---
 
 ## 1) Snapshot (заморозка текущей стадии)
@@ -155,4 +192,3 @@ lake build pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean
 1. Сначала читает **этот файл**.
 2. Потом читает `PsubsetPpoly_Internal_TODO.md` (раздел Execution status).
 3. Только после этого идёт в `TreeToStraight.lean` на direct closure B0.
-

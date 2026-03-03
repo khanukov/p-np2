@@ -10,6 +10,48 @@
 Runbook по закрытию compiled-runtime size блока:
 `pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`.
 
+## Update (2026-03-03): external-audit freeze (proof paused)
+
+Этот документ обновлён как freeze-point перед внешним аудитом.
+Дальнейшее продвижение доказательства в этом проходе остановлено намеренно.
+
+### Что зафиксировано новым кодом (последние коммиты)
+
+- `21dfd13` — `feat: add linear-runtime DAG closure contract track`
+  - добавлены linear-контракты:
+    - `CompiledAcceptCircuitEvalAgreementLinear`
+    - `CompiledRuntimeAcceptCorrectnessLinear`
+    - `PsubsetPpolyCompiledRuntimeLinearContracts`
+  - добавлен linear DAG-route:
+    - `P_subset_PpolyDAG_of_compiledRuntimeLinearContracts`
+    - `proved_P_subset_PpolyDAG_of_compiledRuntimeLinearContracts`
+
+- `a6313f1` — `feat: bridge eval agreement for linear compiled-runtime route`
+  - добавлен мост:
+    - `compiledAcceptEvalAgreementLinear_of_evalAgreement`
+    - `proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear`
+
+- `f3df23b` — `feat: add linear-semantics to DAG inclusion bridge`
+  - добавлен мост от one-step linear semantics:
+    - `compiledRuntimeAcceptCorrectnessLinear_of_linearSemantics`
+    - `proved_P_subset_PpolyDAG_of_evalAgreementAndLinearSemantics`
+
+### Что это значит по блокерам
+
+- `CompiledRuntimeCircuitSizeBoundLinear_internal` закрыт и используется.
+- Архитектурно route теперь сводится к содержательной семантической точке:
+  - доказать `StepCompiledLinearCandidateSemantics` (или эквивалентный
+    one-step `Spec` для linear switch-point).
+- После этого линейный DAG-route замыкается почти механически через уже
+  добавленные мосты.
+
+### Текущее решение: не продолжать proof до внешнего аудита
+
+- В этом проходе сознательно **не** продолжали закрывать
+  `StepCompiledLinearCandidateSemantics`.
+- Цель: отдать аудиторам точный срез и получить независимую верификацию
+  выбранной стратегии дожатия.
+
 ## Update (2026-03-02): verified current blocker
 
 - Default DAG-route уже переведён на runtime-only контракт:

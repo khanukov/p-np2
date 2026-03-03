@@ -700,6 +700,38 @@ def CompiledRuntimeCircuitGateBound : Prop :=
     (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
       n ^ (c + 5) + (c + 4)
 
+/--
+Reduction of `CompiledRuntimeCircuitGateBound` to two local obligations:
+1. one-step gate increment by `linearStepBudget`;
+2. polynomial domination of accumulated runtime budget.
+
+This isolates the remaining nontrivial closure work in a single theorem shape.
+-/
+theorem compiledRuntimeCircuitGateBound_of_linearBudget
+    (hStepInc :
+      ∀ (M : TM) (n : Nat)
+        (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc).circuit.gates ≤
+          sc.circuit.gates +
+            Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n)
+    (hBudgetPoly :
+      ∀ (M : TM) (c : Nat)
+        (_hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
+        2 + M.runTime n *
+            Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n ≤
+          n ^ (c + 5) + (c + 4)) :
+    CompiledRuntimeCircuitGateBound := by
+  intro M c hRun n
+  have hIter :
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
+        2 + M.runTime n *
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n :=
+    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled_gates_le_of_stepCompiled_inc'
+      (M := M) (n := n)
+      (inc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n)
+      (hStepInc := hStepInc M n)
+  exact Nat.le_trans hIter (hBudgetPoly M c hRun n)
+
 theorem compiledRuntimeCircuitSizeBound_of_gateBound
     (hGate : CompiledRuntimeCircuitGateBound) :
     CompiledRuntimeCircuitSizeBound := by

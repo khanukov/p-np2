@@ -2164,6 +2164,58 @@ lemma iterate_spec_of_next
         hPrev
       simpa [Function.iterate_succ_apply', Function.comp] using hN
 
+lemma iterate_gates_le_of_next_gates_le
+    (M : TM) {n : Nat}
+    (next : StraightConfig M n → StraightConfig M n)
+    (inc : Nat)
+    (hNextGates : ∀ sc, (next sc).circuit.gates ≤ sc.circuit.gates + inc) :
+    ∀ (t : Nat) (sc : StraightConfig M n),
+      (Nat.iterate next t sc).circuit.gates ≤ sc.circuit.gates + t * inc := by
+  intro t sc
+  induction t generalizing sc with
+  | zero =>
+      simp
+  | succ t ih =>
+      have h1 :
+          (Nat.iterate next (t + 1) sc).circuit.gates ≤
+            (Nat.iterate next t sc).circuit.gates + inc := by
+        simpa [Function.iterate_succ_apply'] using hNextGates (Nat.iterate next t sc)
+      have h2 :
+          (Nat.iterate next t sc).circuit.gates ≤ sc.circuit.gates + t * inc :=
+        ih sc
+      calc
+        (Nat.iterate next (t + 1) sc).circuit.gates
+            ≤ (Nat.iterate next t sc).circuit.gates + inc := h1
+        _ ≤ sc.circuit.gates + t * inc + inc := by omega
+        _ = sc.circuit.gates + (t + 1) * inc := by
+              simp [Nat.succ_mul, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+lemma iterated_stepCompiled_gates_le_of_stepCompiled_inc
+    (M : TM) (n inc : Nat)
+    (hStepInc : ∀ sc : StraightConfig M n,
+      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
+    (Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
+      (initialStraightConfig M n).circuit.gates + (M.runTime n) * inc := by
+  exact
+    iterate_gates_le_of_next_gates_le
+      (M := M) (n := n) (next := stepCompiled M) (inc := inc) hStepInc
+      (t := M.runTime n) (sc := initialStraightConfig M n)
+
+lemma iterated_stepCompiled_gates_le_of_stepCompiled_inc'
+    (M : TM) (n inc : Nat)
+    (hStepInc : ∀ sc : StraightConfig M n,
+      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
+    (Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
+      2 + (M.runTime n) * inc := by
+  have hBase :
+      (Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
+        (initialStraightConfig M n).circuit.gates + (M.runTime n) * inc :=
+    iterated_stepCompiled_gates_le_of_stepCompiled_inc
+      (M := M) (n := n) (inc := inc) hStepInc
+  have hInit : (initialStraightConfig M n).circuit.gates = 2 := by
+    simp [initialStraightConfig, constBaseCircuit]
+  simpa [hInit] using hBase
+
 lemma runtime_spec_of_next
     (M : TM) (n : Nat)
     (next : StraightConfig M n → StraightConfig M n)
@@ -2244,6 +2296,25 @@ Compiled-runtime straight configuration: iterate `stepCompiled` for exactly
 -/
 noncomputable def runtimeConfigCompiled (M : TM) (n : Nat) : StraightConfig M n :=
   Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)
+
+lemma runtimeConfigCompiled_gates_le_of_stepCompiled_inc
+    (M : TM) (n inc : Nat)
+    (hStepInc : ∀ sc : StraightConfig M n,
+      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
+    (runtimeConfigCompiled M n).circuit.gates ≤
+      (initialStraightConfig M n).circuit.gates + (M.runTime n) * inc := by
+  simpa [runtimeConfigCompiled] using
+    iterated_stepCompiled_gates_le_of_stepCompiled_inc
+      (M := M) (n := n) (inc := inc) hStepInc
+
+lemma runtimeConfigCompiled_gates_le_of_stepCompiled_inc'
+    (M : TM) (n inc : Nat)
+    (hStepInc : ∀ sc : StraightConfig M n,
+      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
+    (runtimeConfigCompiled M n).circuit.gates ≤ 2 + (M.runTime n) * inc := by
+  simpa [runtimeConfigCompiled] using
+    iterated_stepCompiled_gates_le_of_stepCompiled_inc'
+      (M := M) (n := n) (inc := inc) hStepInc
 
 lemma runtimeConfig_spec_of_step_spec
     (M : TM) (n : Nat)

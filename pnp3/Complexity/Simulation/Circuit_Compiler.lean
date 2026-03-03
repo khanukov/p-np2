@@ -703,25 +703,25 @@ def CompiledRuntimeCircuitGateBound : Prop :=
 
 /--
 Residual one-step increment obligation for the compiled runtime route:
-`stepCompiled` must increase gate count by at most `linearStepBudget`.
+`stepCompiled` must increase gate count by at most `linearStepBudgetExpanded`.
 -/
 def CompiledRuntimeStepIncrementBound : Prop :=
   ∀ (M : TM) (n : Nat)
     (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
     (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc).circuit.gates ≤
       sc.circuit.gates +
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n
 
 /--
 Residual polynomial-domination obligation for accumulated runtime budget:
-`2 + runTime * linearStepBudget` must be polynomially bounded.
+`2 + runTime * linearStepBudgetExpanded` must be polynomially bounded.
 -/
 def CompiledRuntimeBudgetPolyBound : Prop :=
   ∀ (M : TM) (c : Nat)
     (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
     ∃ k, ∀ n,
       2 + M.runTime n *
-          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n ≤
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n ≤
         n ^ k + k
 
 /--
@@ -733,7 +733,7 @@ def CompiledRuntimeGateClosureContracts : Prop :=
 
 /--
 Reduction of `CompiledRuntimeCircuitGateBound` to two local obligations:
-1. one-step gate increment by `linearStepBudget`;
+1. one-step gate increment by `linearStepBudgetExpanded`;
 2. polynomial domination of accumulated runtime budget.
 
 This isolates the remaining nontrivial closure work in a single theorem shape.
@@ -749,10 +749,10 @@ theorem compiledRuntimeCircuitGateBound_of_linearBudget
   have hIter :
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
         2 + M.runTime n *
-          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n :=
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n :=
     Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled_gates_le_of_stepCompiled_inc'
       (M := M) (n := n)
-      (inc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n)
+      (inc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n)
       (hStepInc := hStepInc M n)
   exact Nat.le_trans hIter (hk n)
 

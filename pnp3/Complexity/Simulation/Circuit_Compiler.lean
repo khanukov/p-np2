@@ -765,6 +765,114 @@ def CompiledRuntimeBudgetPolyBound : Prop :=
           Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n ≤
         n ^ k + k
 
+/-- Any natural constant is bounded by `n^const` once `n ≥ 2`. -/
+private lemma const_le_pow_of_two_le
+    {n : Nat} (hn2 : 2 ≤ n) (m : Nat) :
+    m ≤ n ^ m := by
+  cases m with
+  | zero =>
+      simp
+  | succ m =>
+      have hlt : Nat.succ m < 2 ^ Nat.succ m := Nat.lt_two_pow_self
+      have hpow : 2 ^ Nat.succ m ≤ n ^ Nat.succ m := Nat.pow_le_pow_left hn2 _
+      exact Nat.le_trans (Nat.le_of_lt hlt) hpow
+
+/--
+If `a ≤ n^A` and `b ≤ n^B` (with `n ≥ 2`), then `a + b` is bounded by a
+single power of `n` with one extra additive exponent slack.
+-/
+private lemma add_le_pow_of_le_pow
+    {n a b A B : Nat}
+    (hn2 : 2 ≤ n)
+    (ha : a ≤ n ^ A)
+    (hb : b ≤ n ^ B) :
+    a + b ≤ n ^ (A + B + 1) := by
+  have hn1 : 1 ≤ n := Nat.le_trans (by decide : 1 ≤ 2) hn2
+  have ha' : a ≤ n ^ (A + B) := by
+    exact Nat.le_trans ha (Nat.pow_le_pow_right hn1 (Nat.le_add_right A B))
+  have hb' : b ≤ n ^ (A + B) := by
+    have hB : B ≤ A + B := Nat.le_add_left B A
+    exact Nat.le_trans hb (Nat.pow_le_pow_right hn1 hB)
+  have hsum : a + b ≤ n ^ (A + B) + n ^ (A + B) := Nat.add_le_add ha' hb'
+  have hstep : n ^ (A + B) + n ^ (A + B) ≤ n * n ^ (A + B) := by
+    calc
+      n ^ (A + B) + n ^ (A + B) = 2 * n ^ (A + B) := by omega
+      _ ≤ n * n ^ (A + B) := Nat.mul_le_mul_right _ hn2
+  calc
+    a + b ≤ n ^ (A + B) + n ^ (A + B) := hsum
+    _ ≤ n * n ^ (A + B) := hstep
+    _ = n ^ (A + B + 1) := by
+          simp [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+/-- Multiplicative closure of `≤ n^k` bounds. -/
+private lemma mul_le_pow_of_le_pow
+    {n a b A B : Nat}
+    (ha : a ≤ n ^ A)
+    (hb : b ≤ n ^ B) :
+    a * b ≤ n ^ (A + B) := by
+  calc
+    a * b ≤ n ^ A * n ^ B := Nat.mul_le_mul ha hb
+    _ = n ^ (A + B) := by
+          simp [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+/--
+For `n ≥ 2`, a polytime bound `runTime n ≤ n^c + c` collapses to
+`runTime n ≤ n^(c+1)`.
+-/
+private lemma runTime_le_pow_succ_of_poly
+    (M : TM) (c n : Nat)
+    (hn2 : 2 ≤ n)
+    (hRun : M.runTime n ≤ n ^ c + c) :
+    M.runTime n ≤ n ^ (c + 1) := by
+  have hc : c ≤ n ^ c := const_le_pow_of_two_le hn2 c
+  have h1 : n ^ c + c ≤ n ^ c + n ^ c := Nat.add_le_add_left hc (n ^ c)
+  have h2 : n ^ c + n ^ c = 2 * n ^ c := by omega
+  have h3 : 2 * n ^ c ≤ n * n ^ c := Nat.mul_le_mul_right _ hn2
+  calc
+    M.runTime n ≤ n ^ c + c := hRun
+    _ ≤ n ^ c + n ^ c := h1
+    _ = 2 * n ^ c := h2
+    _ ≤ n * n ^ c := h3
+    _ = n ^ (c + 1) := by
+          simp [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+/--
+For `n ≥ 2`, tape length is bounded by a polynomial power `n^(c+3)` under the
+same polytime assumption.
+-/
+private lemma tapeLength_le_pow_of_poly
+    (M : TM) (c n : Nat)
+    (hn2 : 2 ≤ n)
+    (hRun : M.runTime n ≤ n ^ c + c) :
+    M.tapeLength n ≤ n ^ (c + 3) := by
+  have hn1 : 1 ≤ n := Nat.le_trans (by decide : 1 ≤ 2) hn2
+  have hrt : M.runTime n ≤ n ^ (c + 1) :=
+    runTime_le_pow_succ_of_poly (M := M) (c := c) (n := n) hn2 hRun
+  have hn : n ≤ n ^ (c + 1) := Nat.le_self_pow (Nat.succ_ne_zero c) n
+  have hOne : 1 ≤ n ^ (c + 1) := Nat.le_trans hn1 hn
+  have hsum :
+      n + M.runTime n + 1 ≤ n ^ (c + 1) + n ^ (c + 1) + n ^ (c + 1) := by
+    omega
+  have hthree : n ^ (c + 1) + n ^ (c + 1) + n ^ (c + 1) = 3 * n ^ (c + 1) := by omega
+  have h3le : 3 ≤ n ^ 2 := by
+    have h4 : 4 ≤ n * n := Nat.mul_le_mul hn2 hn2
+    exact Nat.le_trans (by decide : 3 ≤ 4) (by simpa [pow_two] using h4)
+  have hmul : 3 * n ^ (c + 1) ≤ n ^ 2 * n ^ (c + 1) := Nat.mul_le_mul_right _ h3le
+  have hpow : n ^ 2 * n ^ (c + 1) = n ^ (c + 3) := by
+    calc
+      n ^ 2 * n ^ (c + 1) = n ^ (2 + (c + 1)) := by
+        simpa [Nat.pow_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      _ = n ^ (c + 3) := by
+        simp [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+  have htape : M.tapeLength n = n + M.runTime n + 1 := by
+    rfl
+  calc
+    M.tapeLength n = n + M.runTime n + 1 := htape
+    _ ≤ n ^ (c + 1) + n ^ (c + 1) + n ^ (c + 1) := hsum
+    _ = 3 * n ^ (c + 1) := hthree
+    _ ≤ n ^ 2 * n ^ (c + 1) := hmul
+    _ = n ^ (c + 3) := hpow
+
 /--
 Linear-route reduction of `CompiledRuntimeCircuitGateBoundLinear`:
 the one-step increment side is closed internally (`stepCompiledLinear`), so only

@@ -1412,6 +1412,15 @@ theorem compiledRuntimeWireEvalAgreement_of_evalAgreement
         (C := Cbase) (out := i) (x := x))
   exact hArch.symm.trans (hC.trans hInt)
 
+theorem compiledAcceptEvalAgreementLinear_of_evalAgreement
+    (hEval : InternalCompiler.EvalAgreement) :
+    CompiledAcceptCircuitEvalAgreementLinear := by
+  intro M n x
+  exact hEval
+    (C := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n))
+    (x := x)
+
 theorem compiledAcceptContracts_of_outputAndRuntimeSize
     (hOut : CompiledAcceptOutputWireAgreement)
     (hSize : CompiledRuntimeCircuitSizeBound) :
@@ -1729,6 +1738,16 @@ theorem proved_P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
     P_subset_PpolyDAG := by
   rcases hContracts with ⟨hEval, hSize, hCorrectLinear⟩
   exact P_subset_PpolyDAG_of_compiledRuntimeLinearContracts hEval hSize hCorrectLinear
+
+theorem proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
+    (hEval : InternalCompiler.EvalAgreement)
+    (hSize : CompiledRuntimeCircuitSizeBoundLinear)
+    (hCorrectLinear : CompiledRuntimeAcceptCorrectnessLinear) :
+    P_subset_PpolyDAG :=
+  P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
+    (compiledAcceptEvalAgreementLinear_of_evalAgreement hEval)
+    hSize
+    hCorrectLinear
 
 /-- Short alias used by final wrappers to avoid carrying inclusion hypotheses. -/
 theorem dagInclusion_from_compiler

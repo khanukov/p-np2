@@ -1538,12 +1538,68 @@ def evalState (sc : StraightConfig M n) (x : Point n) :
     M.state → Bool :=
   fun q => Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire sc.circuit x (sc.state q)
 
+/--
+Lift a straight configuration through an evaluation-preserving builder context.
+
+All observable wires are reindexed with `ctx.liftBase`, so this is a pure
+embedding of the old configuration into the extended circuit.
+-/
+noncomputable def liftConfig
+    (sc : StraightConfig M n)
+    (ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n sc.circuit) :
+    StraightConfig M n where
+  circuit := ctx.circuit
+  tape := fun i => ctx.liftBase (sc.tape i)
+  head := fun i => ctx.liftBase (sc.head i)
+  state := fun q => ctx.liftBase (sc.state q)
+
+/--
+`liftConfig` preserves all observable evaluations pointwise.
+-/
+lemma evalTape_liftConfig
+    (sc : StraightConfig M n)
+    (ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n sc.circuit)
+    (x : Point n) (i : Fin (M.tapeLength n)) :
+    evalTape (liftConfig (M := M) (n := n) sc ctx) x i = evalTape sc x i := by
+  unfold evalTape liftConfig
+  simpa using ctx.eval_liftBase x (sc.tape i)
+
+lemma evalHead_liftConfig
+    (sc : StraightConfig M n)
+    (ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n sc.circuit)
+    (x : Point n) (i : Fin (M.tapeLength n)) :
+    evalHead (liftConfig (M := M) (n := n) sc ctx) x i = evalHead sc x i := by
+  unfold evalHead liftConfig
+  simpa using ctx.eval_liftBase x (sc.head i)
+
+lemma evalState_liftConfig
+    (sc : StraightConfig M n)
+    (ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n sc.circuit)
+    (x : Point n) (q : M.state) :
+    evalState (liftConfig (M := M) (n := n) sc ctx) x q = evalState sc x q := by
+  unfold evalState liftConfig
+  simpa using ctx.eval_liftBase x (sc.state q)
+
 /-- Straight-line correctness spec for an abstract configuration family. -/
 structure Spec (sc : StraightConfig M n)
     (f : Point n → TM.Configuration (M := M) n) : Prop where
   tape_eq : ∀ x i, evalTape sc x i = (f x).tape i
   head_eq : ∀ x i, evalHead sc x i = headIndicator (f x) i
   state_eq : ∀ x q, evalState sc x q = stateIndicator M (f x) q
+
+lemma spec_liftConfig
+    (sc : StraightConfig M n)
+    (ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n sc.circuit)
+    (f : Point n → TM.Configuration (M := M) n)
+    (hsc : Spec (sc := sc) (f := f)) :
+    Spec (sc := liftConfig (M := M) (n := n) sc ctx) (f := f) := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro x i
+    exact (evalTape_liftConfig (M := M) (n := n) sc ctx x i).trans (hsc.tape_eq x i)
+  · intro x i
+    exact (evalHead_liftConfig (M := M) (n := n) sc ctx x i).trans (hsc.head_eq x i)
+  · intro x q
+    exact (evalState_liftConfig (M := M) (n := n) sc ctx x q).trans (hsc.state_eq x q)
 
 /-- Tree-circuit interpretation of every wire of a straight-line circuit. -/
 noncomputable def toTreeWire (C : StraightLineCircuit n) :

@@ -101,6 +101,18 @@ def appendFin_lift (b : BuildCtx n base) (op : Op (n + b.circuit.gates)) :
     appendFin_gate_eq (b := b) (op := op)
   simpa [hg, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using (liftWire (C := b.circuit) w)
 
+@[simp] lemma evalWire_appendFin_lift (b : BuildCtx n base)
+    (op : Op (n + b.circuit.gates)) (x : Boolcube.Point n)
+    (w : Fin (n + b.circuit.gates)) :
+    evalWire (C := (b.appendFin op).fst.circuit) (x := x) (b.appendFin_lift op w) =
+      evalWire (C := b.circuit) (x := x) w := by
+  have hg : (b.appendFin op).fst.circuit.gates = b.circuit.gates + 1 :=
+    appendFin_gate_eq (b := b) (op := op)
+  simpa [appendFin_lift, hg, appendFin, append, append_fst_circuit,
+    Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+    (Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire_snoc_lift
+      (C := b.circuit) (op := op) (x := x) (i := w))
+
 def appendConstFin (b : BuildCtx n base) (val : Bool) :
     BuildCtx n base × Fin (n + (snoc b.circuit (.const val)).gates) :=
   b.appendFin (.const val)

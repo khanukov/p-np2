@@ -1472,6 +1472,55 @@ theorem linearStepBlueprint_base_le (sc : StraightConfig M n) :
   · intro q
     exact ((linearStepBlueprint (M := M) (n := n) sc).nextState q).base_le
 
+/--
+Unified gate-budget candidate for one linear step over a fixed base circuit.
+
+This keeps all component bounds in one place and avoids repeating arithmetic
+normalization downstream.
+-/
+def linearStepBudget (M : TM) (n : Nat) : Nat :=
+  max
+    ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5)
+    ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M)) + 1)
+
+theorem linearStepBlueprint_gates_le_budget (sc : StraightConfig M n) :
+    ((linearStepBlueprint (M := M) (n := n) sc).writeBit.ctx.circuit.gates ≤
+      sc.circuit.gates + linearStepBudget M n) ∧
+    (∀ i, ((linearStepBlueprint (M := M) (n := n) sc).nextTape i).ctx.circuit.gates ≤
+      sc.circuit.gates + linearStepBudget M n) ∧
+    (∀ j, ((linearStepBlueprint (M := M) (n := n) sc).nextHead j).ctx.circuit.gates ≤
+      sc.circuit.gates + linearStepBudget M n) ∧
+    (∀ q, ((linearStepBlueprint (M := M) (n := n) sc).nextState q).ctx.circuit.gates ≤
+      sc.circuit.gates + linearStepBudget M n) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · have hWrite :
+      (buildWriteBit (M := M) (n := n) sc).ctx.circuit.gates ≤
+        sc.circuit.gates + ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5) := by
+      have hWrite' := buildWriteBit_gates_le (M := M) (n := n) sc
+      exact le_trans hWrite' (by omega)
+    exact le_trans hWrite (by
+      simp [linearStepBlueprint, linearStepBudget, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+        Nat.le_max_left])
+  · intro i
+    have hTape := buildNextTape_gates_le (M := M) (n := n) sc i
+    exact le_trans hTape (by
+      simp [linearStepBlueprint, linearStepBudget, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+        Nat.le_max_left])
+  · intro j
+    have hHead := buildNextHead_gates_le (M := M) (n := n) sc j
+    exact le_trans hHead (by
+      simp [linearStepBlueprint, linearStepBudget, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+        Nat.le_max_right])
+  · intro q
+    have hState' := buildNextState_gates_le (M := M) (n := n) sc q
+    have hState :
+      (buildNextState (M := M) (n := n) sc q).ctx.circuit.gates ≤
+        sc.circuit.gates + ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5) := by
+      exact le_trans hState' (by omega)
+    exact le_trans hState (by
+      simp [linearStepBlueprint, linearStepBudget, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+        Nat.le_max_left])
+
 end BuiltWire
 
 /-- Evaluate the tape projection of a straight-line configuration. -/

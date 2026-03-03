@@ -2622,6 +2622,13 @@ Compiled-runtime straight configuration: iterate `stepCompiled` for exactly
 noncomputable def runtimeConfigCompiled (M : TM) (n : Nat) : StraightConfig M n :=
   Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)
 
+/--
+Linear compiled-runtime straight configuration: iterate `stepCompiledLinear`
+for exactly `runTime n` steps from the initial straight configuration.
+-/
+noncomputable def runtimeConfigCompiledLinear (M : TM) (n : Nat) : StraightConfig M n :=
+  Nat.iterate (stepCompiledLinear M) (M.runTime n) (initialStraightConfig M n)
+
 lemma runtimeConfigCompiled_gates_le_of_stepCompiled_inc
     (M : TM) (n inc : Nat)
     (hStepInc : ∀ sc : StraightConfig M n,
@@ -2640,6 +2647,26 @@ lemma runtimeConfigCompiled_gates_le_of_stepCompiled_inc'
   simpa [runtimeConfigCompiled] using
     iterated_stepCompiled_gates_le_of_stepCompiled_inc'
       (M := M) (n := n) (inc := inc) hStepInc
+
+lemma runtimeConfigCompiledLinear_gates_le_budgetExpanded
+    (M : TM) (n : Nat) :
+    (runtimeConfigCompiledLinear M n).circuit.gates ≤
+      2 + (M.runTime n) * BuiltWire.linearStepBudgetExpanded M n := by
+  have hIter :
+      (Nat.iterate (stepCompiledLinear M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
+        (initialStraightConfig M n).circuit.gates +
+          (M.runTime n) * BuiltWire.linearStepBudgetExpanded M n :=
+    iterate_gates_le_of_next_gates_le
+      (M := M) (n := n)
+      (next := stepCompiledLinear M)
+      (inc := BuiltWire.linearStepBudgetExpanded M n)
+      (hNextGates := by
+        intro sc
+        exact stepCompiledLinear_gates_le_budgetExpanded (M := M) (sc := sc))
+      (t := M.runTime n) (sc := initialStraightConfig M n)
+  have hInit : (initialStraightConfig M n).circuit.gates = 2 := by
+    simp [initialStraightConfig, constBaseCircuit]
+  simpa [runtimeConfigCompiledLinear, hInit] using hIter
 
 lemma runtimeConfig_spec_of_step_spec
     (M : TM) (n : Nat)

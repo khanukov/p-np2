@@ -732,6 +732,28 @@ theorem compiledRuntimeStepIncrementBoundLinear_internal :
       (M := M) (sc := sc)
 
 /--
+Linear-runtime gate-count contract: same polynomial shape as the canonical
+compiled-runtime gate contract, but for `runtimeConfigCompiledLinear`.
+-/
+def CompiledRuntimeCircuitGateBoundLinear : Prop :=
+  ∀ (M : TM) (c : Nat)
+    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+    ∃ k, ∀ n,
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit.gates ≤
+        n ^ k + k
+
+/--
+Linear-runtime size contract derived from `CompiledRuntimeCircuitGateBoundLinear`.
+-/
+def CompiledRuntimeCircuitSizeBoundLinear : Prop :=
+  ∀ (M : TM) (c : Nat)
+    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+    ∃ k, ∀ n,
+      (toDag
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit).size ≤
+        n ^ k + k
+
+/--
 Residual polynomial-domination obligation for accumulated runtime budget:
 `2 + runTime * linearStepBudgetExpanded` must be polynomially bounded.
 -/
@@ -742,6 +764,26 @@ def CompiledRuntimeBudgetPolyBound : Prop :=
       2 + M.runTime n *
           Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n ≤
         n ^ k + k
+
+/--
+Linear-route reduction of `CompiledRuntimeCircuitGateBoundLinear`:
+the one-step increment side is closed internally (`stepCompiledLinear`), so only
+the residual polynomial-domination obligation remains explicit.
+-/
+theorem compiledRuntimeCircuitGateBoundLinear_of_budgetPoly
+    (hBudgetPoly : CompiledRuntimeBudgetPolyBound) :
+    CompiledRuntimeCircuitGateBoundLinear := by
+  intro M c hRun
+  rcases hBudgetPoly M c hRun with ⟨k, hk⟩
+  refine ⟨k, ?_⟩
+  intro n
+  have hIter :
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit.gates ≤
+        2 + M.runTime n *
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n :=
+    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear_gates_le_budgetExpanded
+      (M := M) (n := n)
+  exact Nat.le_trans hIter (hk n)
 
 /--
 Bundle of the two remaining local obligations needed to close compiled-runtime
@@ -788,6 +830,39 @@ theorem compiledRuntimeCircuitSizeBound_of_gateBound
     hk n
   have hSize :
       (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
+        (n ^ k + k) + 1 := by
+    simpa [size_toDag, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      Nat.add_le_add_right hGates 1
+  have hTarget :
+      (n ^ k + k) + 1 ≤ n ^ (k + 2) + (k + 2) := by
+    by_cases hn : n = 0
+    · subst hn
+      cases k with
+      | zero =>
+          simp
+      | succ k' =>
+          simp
+    · have hpow : n ^ k ≤ n ^ (k + 2) := by
+        have h1 : 1 ≤ n := Nat.succ_le_of_lt (Nat.pos_of_ne_zero hn)
+        simpa [Nat.add_assoc] using Nat.pow_le_pow_right h1 (Nat.le_add_right k 2)
+      have hk1 : k + 1 ≤ k + 2 := Nat.le_succ (k + 1)
+      simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using Nat.add_le_add hpow hk1
+  exact le_trans hSize hTarget
+
+theorem compiledRuntimeCircuitSizeBoundLinear_of_gateBound
+    (hGate : CompiledRuntimeCircuitGateBoundLinear) :
+    CompiledRuntimeCircuitSizeBoundLinear := by
+  intro M c hRun
+  rcases hGate M c hRun with ⟨k, hk⟩
+  refine ⟨k + 2, ?_⟩
+  intro n
+  have hGates :
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit.gates ≤
+        n ^ k + k :=
+    hk n
+  have hSize :
+      (toDag
+        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit).size ≤
         (n ^ k + k) + 1 := by
     simpa [size_toDag, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
       Nat.add_le_add_right hGates 1

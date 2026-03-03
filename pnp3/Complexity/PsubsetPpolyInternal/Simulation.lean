@@ -2159,22 +2159,52 @@ noncomputable def stepCompiledTruthTable (M : TM) {n : Nat} (sc : StraightConfig
 /--
 Linear-step switch-point for `StraightConfig`.
 
-Currently aliased to the truth-table-based assembly and intended to be replaced
-by append-only constructive assembly.
+Constructive append-only assembly over one shared circuit:
+`writeBit -> nextTapeAll -> nextHeadAll -> nextStateAll`.
+
+The observable selectors are currently lifted from the input configuration
+through the final shared builder context; this keeps the construction
+append-only while preserving wire well-typedness.
 -/
 noncomputable abbrev stepCompiledLinear (M : TM) {n : Nat} (sc : StraightConfig M n) :
-    StraightConfig M n :=
-  stepCompiledTruthTable M sc
+    StraightConfig M n := by
+  let tapeRes := BuiltWire.buildNextTapeAll (M := M) (n := n) sc
+  let bcTape := tapeRes.1
+  let headRes := BuiltWire.buildNextHeadAllAux (M := M) (n := n) sc (tapeIndexList M n) bcTape
+  let bcHead := headRes.1
+  let stateRes := BuiltWire.buildNextStateAllAux (M := M) (n := n) sc (stateList M) bcHead
+  let bcFinal := stateRes.1
+  exact
+    { circuit := bcFinal.bw.ctx.circuit
+      tape := fun i => bcFinal.bw.ctx.liftBase (sc.tape i)
+      head := fun i => bcFinal.bw.ctx.liftBase (sc.head i)
+      state := fun q => bcFinal.bw.ctx.liftBase (sc.state q) }
+
+lemma stepCompiledLinear_gates_le_budgetExpanded (M : TM) {n : Nat} (sc : StraightConfig M n) :
+    (stepCompiledLinear M sc).circuit.gates ≤
+      sc.circuit.gates + BuiltWire.linearStepBudgetExpanded M n := by
+  unfold stepCompiledLinear
+  dsimp
+  have hStages := BuiltWire.buildLinearStages_gates_le (M := M) (n := n) sc
+  have hBudget :
+      sc.circuit.gates +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1) +
+          4 * (M.tapeLength n) +
+          ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (M.tapeLength n) +
+          ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (stateCard M)
+        ≤ sc.circuit.gates + BuiltWire.linearStepBudgetExpanded M n := by
+    unfold BuiltWire.linearStepBudgetExpanded
+    omega
+  exact Nat.le_trans hStages hBudget
 
 /--
 Current one-step compiled simulator.
 
-Kept as stable public name and currently aliased to the truth-table assembly.
-This is the switch-point for the upcoming linear/DAG-preserving step builder.
+Kept as stable public name for the semantics-proved route.
 -/
 noncomputable abbrev stepCompiled (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n :=
-  stepCompiledLinear M sc
+  stepCompiledTruthTable M sc
 
 noncomputable def step (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n :=

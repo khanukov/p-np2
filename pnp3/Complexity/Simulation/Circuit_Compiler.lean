@@ -1317,6 +1317,33 @@ theorem compiledRuntimeCircuitSizeBoundLinear_internal :
   compiledRuntimeCircuitSizeBoundLinear_of_gateBound
     compiledRuntimeCircuitGateBoundLinear_internal
 
+theorem compiledRuntimeAcceptCorrectnessLinear_of_linearSemantics
+    (hSemLinear :
+      ∀ (M : TM) (n : Nat),
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.StepCompiledLinearCandidateSemantics M n) :
+    CompiledRuntimeAcceptCorrectnessLinear := by
+  intro M n x
+  have hRun :
+      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
+        (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
+        (f := fun y => M.run (n := n) y) := by
+    have hRunRaw :
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
+          (sc := Nat.iterate
+            (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M)
+            (M.runTime n)
+            (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
+          (f := fun y => M.run (n := n) y) :=
+      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtime_spec_of_stepCompiledLinearCandidateProvider
+        (M := M) (n := n) (hSem := hSemLinear M n)
+    simpa [Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear,
+      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinear] using hRunRaw
+  exact
+    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf_spec_of_runSpec
+      (M := M) (n := n)
+      (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
+      hRun x
+
 /--
 One-shot closure theorem for the compiled-runtime size contract from the two
 local residual obligations.
@@ -1748,6 +1775,17 @@ theorem proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
     (compiledAcceptEvalAgreementLinear_of_evalAgreement hEval)
     hSize
     hCorrectLinear
+
+theorem proved_P_subset_PpolyDAG_of_evalAgreementAndLinearSemantics
+    (hEval : InternalCompiler.EvalAgreement)
+    (hSemLinear :
+      ∀ (M : TM) (n : Nat),
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.StepCompiledLinearCandidateSemantics M n) :
+    P_subset_PpolyDAG :=
+  proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
+    hEval
+    compiledRuntimeCircuitSizeBoundLinear_internal
+    (compiledRuntimeAcceptCorrectnessLinear_of_linearSemantics hSemLinear)
 
 /-- Short alias used by final wrappers to avoid carrying inclusion hypotheses. -/
 theorem dagInclusion_from_compiler

@@ -1776,6 +1776,28 @@ lemma buildHeadTermFromCarry_out_eval
                     (buildBranchFromCarry (M := M) (n := n) sc iqs.2 bc).bw.out)
                 (e := BuiltCarry.appendConst (bc := bc) false))
 
+lemma buildStateTermFromCarry_carry_eval
+    (sc : StraightConfig M n) (qTarget : M.state)
+    (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit)
+    (x : Boolcube.Point n) :
+    Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := (buildStateTermFromCarry (M := M) (n := n) sc qTarget qs bc).bw.ctx.circuit) (x := x)
+        (buildStateTermFromCarry (M := M) (n := n) sc qTarget qs bc).carry
+      =
+        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+          (C := bc.bw.ctx.circuit) (x := x) bc.carry := by
+  unfold buildStateTermFromCarry
+  cases hstep : M.step qs.1 qs.2 with
+  | mk qn bm =>
+      cases bm with
+      | mk wr mv =>
+          simp
+          by_cases hq : qn = qTarget
+          · rw [if_pos hq]
+            exact buildBranchFromCarry_carry_eval (M := M) (n := n) sc qs bc x
+          · rw [if_neg hq]
+            exact BuiltCarry_appendConst_carry_eval (bc := bc) (val := false) (x := x)
+
 lemma buildWriteTermFromCarry_out_eval
     (sc : StraightConfig M n)
     (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit)
@@ -1796,7 +1818,7 @@ lemma buildWriteTermFromCarry_out_eval
   | mk qn bm =>
       cases bm with
       | mk wr mv =>
-          cases wr <;> simp [hstep]
+          cases wr <;> simp
 
 noncomputable def buildWriteBitAuxEval
     (sc : StraightConfig M n)
@@ -3412,6 +3434,97 @@ lemma buildStateTermFromCarry_out_eval_eq_branchIndicator
                 (buildBranchFromCarry_out_eval_eq_branchIndicator (M := M) (n := n) sc qs bc x)
           · simp [hStep, hq] at h ⊢
             simpa using h
+
+/-- Boolean evaluator for one `stateTerm` branch against `toConfigCircuits sc`. -/
+noncomputable def stateTermEval
+    (sc : StraightConfig M n) (qTarget : M.state)
+    (x : Point n) (qs : M.state × Bool) : Bool :=
+  match M.step qs.1 qs.2 with
+  | ⟨qNext, _, _⟩ =>
+      if qNext = qTarget then
+        Boolcube.Circuit.eval
+          (ConfigCircuits.branchIndicator M (toConfigCircuits sc) qs) x
+      else false
+
+lemma buildStateTermFromCarry_out_eval_eq_stateTerm
+    (sc : StraightConfig M n) (qTarget : M.state)
+    (qs : M.state × Bool) (bc : BuiltWire.BuiltCarry (n := n) sc.circuit)
+    (x : Point n) :
+    Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := (BuiltWire.buildStateTermFromCarry (M := M) (n := n) sc qTarget qs bc).bw.ctx.circuit) (x := x)
+        (BuiltWire.buildStateTermFromCarry (M := M) (n := n) sc qTarget qs bc).bw.out
+      =
+        stateTermEval (M := M) (n := n) sc qTarget x qs := by
+  unfold stateTermEval
+  simpa using
+    buildStateTermFromCarry_out_eval_eq_branchIndicator
+      (M := M) (n := n) sc qTarget qs bc x
+
+noncomputable def stateTermAnyEval
+    (sc : StraightConfig M n) (qTarget : M.state)
+    (x : Point n) (qs : List (M.state × Bool)) : Bool :=
+  List.any qs (fun p => stateTermEval (M := M) (n := n) sc qTarget x p)
+
+lemma buildNextStateAuxEval_eq_any
+    (sc : StraightConfig M n) (qTarget : M.state)
+    (qs : List (M.state × Bool))
+    (bc : BuiltWire.BuiltCarry (n := n) sc.circuit)
+    (x : Point n)
+    (hCarry :
+      Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := bc.bw.ctx.circuit) (x := x) bc.carry =
+      Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := bc.bw.ctx.circuit) (x := x) bc.bw.out) :
+    BuiltWire.buildNextStateAuxEval (M := M) (n := n) sc qTarget x qs bc =
+      (Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+        (C := bc.bw.ctx.circuit) (x := x) bc.bw.out ||
+        stateTermAnyEval (M := M) (n := n) sc qTarget x qs) := by
+  induction qs generalizing bc with
+  | nil =>
+      simp [BuiltWire.buildNextStateAuxEval, stateTermAnyEval]
+  | cons qs0 qs ih =>
+      let bcTerm := BuiltWire.buildStateTermFromCarry (M := M) (n := n) sc qTarget qs0 bc
+      let bcOr := BuiltWire.BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltWire.BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      have hOr :
+          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+              (C := bcOr.bw.ctx.circuit) (x := x) bcOr.bw.out
+            =
+              (Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+                  (C := bcTerm.bw.ctx.circuit) (x := x) bcTerm.carry ||
+                Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+                  (C := bcTerm.bw.ctx.circuit) (x := x) bcTerm.bw.out) := by
+        simpa [bcOr] using
+          (BuiltWire.BuiltCarry_appendOr_out_eval (bc := bcTerm)
+            (u := bcTerm.carry) (v := bcTerm.bw.out) (x := x))
+      have hTermCarry :
+          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+              (C := bcTerm.bw.ctx.circuit) (x := x) bcTerm.carry
+            =
+              Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+                (C := bc.bw.ctx.circuit) (x := x) bc.carry := by
+        simpa [bcTerm] using
+          (BuiltWire.buildStateTermFromCarry_carry_eval
+            (M := M) (n := n) sc qTarget qs0 bc x)
+      have hTermOut :
+          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+              (C := bcTerm.bw.ctx.circuit) (x := x) bcTerm.bw.out
+            =
+              stateTermEval (M := M) (n := n) sc qTarget x qs0 := by
+        simpa [bcTerm] using
+          (buildStateTermFromCarry_out_eval_eq_stateTerm
+            (M := M) (n := n) sc qTarget qs0 bc x)
+      have hCarryNext :
+          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+              (C := bcNext.bw.ctx.circuit) (x := x) bcNext.carry
+            =
+              Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
+                (C := bcNext.bw.ctx.circuit) (x := x) bcNext.bw.out := by
+        rfl
+      have hIH := ih bcNext hCarryNext
+      simp [BuiltWire.buildNextStateAuxEval, stateTermAnyEval, bcTerm, bcOr, bcNext,
+        hOr, hTermCarry, hTermOut, hCarry, Bool.or_assoc, Bool.or_left_comm, Bool.or_comm] at hIH ⊢
+      exact hIH
 
 lemma buildWriteTermFromCarry_out_eval_eq_branchIndicator
     (sc : StraightConfig M n)

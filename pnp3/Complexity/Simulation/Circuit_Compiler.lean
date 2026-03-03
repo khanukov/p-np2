@@ -1624,6 +1624,24 @@ theorem proved_P_subset_PpolyDAG_of_stepCompiled_eq_linear
   exact proved_P_subset_PpolyDAG_of_iteratedCanonicalContracts hContracts
 
 /--
+Convenience closure route from global eval agreement plus switch-point equality.
+
+This discharges the output-wire agreement contract internally and leaves only
+the semantic switch-point hypothesis explicit.
+-/
+theorem proved_P_subset_PpolyDAG_of_evalAgreement_and_stepCompiled_eq_linear
+    (hEval : InternalCompiler.EvalAgreement)
+    (hEq :
+      ∀ (M : TM) (n : Nat)
+        (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc =
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M sc) :
+    P_subset_PpolyDAG := by
+  have hOut : CompiledAcceptOutputWireAgreement :=
+    compiledAcceptOutputWireAgreement_of_evalAgreement hEval
+  exact proved_P_subset_PpolyDAG_of_stepCompiled_eq_linear hOut hEq
+
+/--
 Compiled-runtime closure route from the minimized residual contract bundle.
 -/
 theorem proved_P_subset_PpolyDAG_of_compiledRuntimeContracts

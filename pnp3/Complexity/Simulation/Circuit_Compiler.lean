@@ -1318,6 +1318,25 @@ theorem compiledRuntimeCircuitSizeBound_internal_of_stepCompiled_eq_linear
     compiledRuntimeBudgetPolyBound_internal
   exact compiledRuntimeCircuitSizeBound_of_gateClosureContracts ⟨hStepInc, hBudget⟩
 
+/--
+Internal runtime-only contract bundle closed from a single semantic switch-point
+hypothesis (`stepCompiled = stepCompiledLinearCandidate`).
+-/
+theorem iteratedRuntimeOnlyContracts_internal_of_stepCompiled_eq_linear
+    (hOut : CompiledAcceptOutputWireAgreement)
+    (hEq :
+      ∀ (M : TM) (n : Nat)
+        (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc =
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M sc) :
+    CompiledAcceptOutputWireAgreement ∧
+      CompiledRuntimeCircuitSizeBound ∧
+      CompiledRuntimeAcceptCorrectness := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact hOut
+  · exact compiledRuntimeCircuitSizeBound_internal_of_stepCompiled_eq_linear hEq
+  · exact compiledRuntimeAcceptCorrectness_internal
+
 theorem compiledAcceptOutputWireAgreement_of_evalAgreement
     (hEval : InternalCompiler.EvalAgreement) :
     CompiledAcceptOutputWireAgreement := by
@@ -1585,6 +1604,24 @@ theorem proved_P_subset_PpolyDAG_of_iteratedCanonicalContracts
     (hContracts : PsubsetPpolyInternalContractsIteratedCanonical) :
     P_subset_PpolyDAG :=
   proved_P_subset_PpolyDAG_of_iteratedRuntimeOnlyContracts hContracts
+
+/--
+Near-final internal closure route from a single switch-point hypothesis.
+
+Once `stepCompiled` is identified with `stepCompiledLinearCandidate`, the
+runtime-only canonical bundle is closed internally and yields `P_subset_PpolyDAG`.
+-/
+theorem proved_P_subset_PpolyDAG_of_stepCompiled_eq_linear
+    (hOut : CompiledAcceptOutputWireAgreement)
+    (hEq :
+      ∀ (M : TM) (n : Nat)
+        (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc =
+          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M sc) :
+    P_subset_PpolyDAG := by
+  have hContracts : PsubsetPpolyInternalContractsIteratedCanonical :=
+    iteratedRuntimeOnlyContracts_internal_of_stepCompiled_eq_linear hOut hEq
+  exact proved_P_subset_PpolyDAG_of_iteratedCanonicalContracts hContracts
 
 /--
 Compiled-runtime closure route from the minimized residual contract bundle.

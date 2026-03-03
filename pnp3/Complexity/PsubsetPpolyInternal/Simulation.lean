@@ -687,6 +687,62 @@ noncomputable def appendOrBase (bw : BuiltWire (n := n) base)
     BuiltWire (n := n) base :=
   appendOrCurrent (bw := bw) (bw.ctx.liftBase u) (bw.ctx.liftBase v)
 
+@[simp] lemma appendConstCurrent_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bw : BuiltWire (n := n) base) (val : Bool) :
+    (appendConstCurrent (bw := bw) val).ctx.circuit.gates = bw.ctx.circuit.gates + 1 := by
+  simp [appendConstCurrent,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendConst,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma appendNotCurrent_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bw : BuiltWire (n := n) base) (w : Fin (n + bw.ctx.circuit.gates)) :
+    (appendNotCurrent (bw := bw) w).ctx.circuit.gates = bw.ctx.circuit.gates + 1 := by
+  simp [appendNotCurrent,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendNot,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma appendAndCurrent_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bw : BuiltWire (n := n) base)
+    (u v : Fin (n + bw.ctx.circuit.gates)) :
+    (appendAndCurrent (bw := bw) u v).ctx.circuit.gates = bw.ctx.circuit.gates + 1 := by
+  simp [appendAndCurrent,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendAnd,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma appendOrCurrent_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bw : BuiltWire (n := n) base)
+    (u v : Fin (n + bw.ctx.circuit.gates)) :
+    (appendOrCurrent (bw := bw) u v).ctx.circuit.gates = bw.ctx.circuit.gates + 1 := by
+  simp [appendOrCurrent,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOr,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma appendAndBase_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bw : BuiltWire (n := n) base) (u v : Fin (n + base.gates)) :
+    (appendAndBase (bw := bw) u v).ctx.circuit.gates = bw.ctx.circuit.gates + 1 := by
+  simp [appendAndBase]
+
+@[simp] lemma appendOrBase_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bw : BuiltWire (n := n) base) (u v : Fin (n + base.gates)) :
+    (appendOrBase (bw := bw) u v).ctx.circuit.gates = bw.ctx.circuit.gates + 1 := by
+  simp [appendOrBase]
+
+@[simp] lemma initFalse_gates {M : TM} {n : Nat} (sc : StraightConfig M n) :
+    (initFalse (M := M) (n := n) sc).ctx.circuit.gates = sc.circuit.gates + 1 := by
+  simp [initFalse, StraightConfig.startEvalBuilder,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendConst,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
 /--
 Build the scanned symbol wire `OR_i (head_i ∧ tape_i)` by append-only
 assembly over base wires.
@@ -706,6 +762,28 @@ noncomputable def buildSymbolAux (sc : StraightConfig M n) :
 noncomputable def buildSymbol (sc : StraightConfig M n) :
     BuiltWire (n := n) sc.circuit :=
   buildSymbolAux (sc := sc) (tapeIndexList M n) (initFalse (M := M) (n := n) sc)
+
+lemma buildSymbolAux_gates (sc : StraightConfig M n) :
+    ∀ (is : List (Fin (M.tapeLength n))) (bw : BuiltWire (n := n) sc.circuit),
+      (buildSymbolAux (M := M) (n := n) sc is bw).ctx.circuit.gates =
+        bw.ctx.circuit.gates + 2 * is.length := by
+  intro is
+  induction is with
+  | nil =>
+      intro bw
+      simp [buildSymbolAux]
+  | cons i is ih =>
+      intro bw
+      simp [buildSymbolAux, ih]
+      omega
+
+@[simp] lemma buildSymbol_gates (sc : StraightConfig M n) :
+    (buildSymbol (M := M) (n := n) sc).ctx.circuit.gates =
+      sc.circuit.gates + (2 * (M.tapeLength n) + 1) := by
+  have hAux := buildSymbolAux_gates (M := M) (n := n) (sc := sc)
+      (is := tapeIndexList M n) (bw := initFalse (M := M) (n := n) sc)
+  simpa [buildSymbol, tapeIndexList, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+    Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hAux
 
 /--
 Append-only guard wire for scanned symbol value `b`.
@@ -975,6 +1053,141 @@ noncomputable def buildWriteBit (sc : StraightConfig M n) :
   let bc := buildWriteBitAux (M := M) (n := n) sc (stateSymbolPairs M) bc0
   exact bc.bw
 
+@[simp] lemma BuiltCarry_appendConst_bw_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bc : BuiltCarry (n := n) base) (val : Bool) :
+    (BuiltCarry.appendConst (bc := bc) val).bw.ctx.circuit.gates = bc.bw.ctx.circuit.gates + 1 := by
+  simp [BuiltCarry.appendConst,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendConst,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma BuiltCarry_appendAnd_bw_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bc : BuiltCarry (n := n) base)
+    (u v : Fin (n + bc.bw.ctx.circuit.gates)) :
+    (BuiltCarry.appendAnd (bc := bc) u v).bw.ctx.circuit.gates = bc.bw.ctx.circuit.gates + 1 := by
+  simp [BuiltCarry.appendAnd,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendAnd,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma BuiltCarry_appendOr_bw_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bc : BuiltCarry (n := n) base)
+    (u v : Fin (n + bc.bw.ctx.circuit.gates)) :
+    (BuiltCarry.appendOr (bc := bc) u v).bw.ctx.circuit.gates = bc.bw.ctx.circuit.gates + 1 := by
+  simp [BuiltCarry.appendOr,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOr,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+@[simp] lemma BuiltCarry_appendNot_bw_gates {n : Nat} {base : StraightLine.Circuit n}
+    (bc : BuiltCarry (n := n) base)
+    (w : Fin (n + bc.bw.ctx.circuit.gates)) :
+    (BuiltCarry.appendNot (bc := bc) w).bw.ctx.circuit.gates = bc.bw.ctx.circuit.gates + 1 := by
+  simp [BuiltCarry.appendNot,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendNot,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendOp,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.appendWith,
+    Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx.circuit]
+
+lemma buildSymbolFromCarry_gates (sc : StraightConfig M n) :
+    ∀ (is : List (Fin (M.tapeLength n))) (bc : BuiltCarry (n := n) sc.circuit),
+      (buildSymbolFromCarry (M := M) (n := n) sc is bc).bw.ctx.circuit.gates =
+        bc.bw.ctx.circuit.gates + 2 * is.length := by
+  intro is
+  induction is with
+  | nil =>
+      intro bc
+      simp [buildSymbolFromCarry]
+  | cons i is ih =>
+      intro bc
+      simp [buildSymbolFromCarry, ih]
+      omega
+
+lemma buildBranchFromCarry_gates_le
+    (sc : StraightConfig M n) (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit) :
+    (buildBranchFromCarry (M := M) (n := n) sc qs bc).bw.ctx.circuit.gates ≤
+      bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 3) := by
+  have hSym' :
+      (buildSymbolFromCarry (M := M) (n := n) sc (tapeIndexList M n)
+        (BuiltCarry.appendConst (bc := bc) false)).bw.ctx.circuit.gates =
+      bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 1) := by
+    have hAux := buildSymbolFromCarry_gates (M := M) (n := n) (sc := sc)
+      (is := tapeIndexList M n) (bc := BuiltCarry.appendConst (bc := bc) false)
+    simpa [tapeIndexList, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+      Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hAux
+  by_cases hb : qs.2
+  · simp [buildBranchFromCarry, hb, hSym']
+    omega
+  · simp [buildBranchFromCarry, hb, hSym']
+    omega
+
+lemma buildWriteTermFromCarry_gates_le
+    (sc : StraightConfig M n) (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit) :
+    (buildWriteTermFromCarry (M := M) (n := n) sc qs bc).bw.ctx.circuit.gates ≤
+      bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 3) := by
+  unfold buildWriteTermFromCarry
+  cases hstep : M.step qs.1 qs.2 with
+  | mk qn bm =>
+      cases bm with
+      | mk wr mv =>
+          by_cases hwr : wr
+          · simpa [hwr] using buildBranchFromCarry_gates_le (M := M) (n := n) sc qs bc
+          · simp [hwr]
+
+lemma buildWriteBitAux_gates_le (sc : StraightConfig M n) :
+    ∀ (qs : List (M.state × Bool)) (bc : BuiltCarry (n := n) sc.circuit),
+      (buildWriteBitAux (M := M) (n := n) sc qs bc).bw.ctx.circuit.gates ≤
+        bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length := by
+  intro qs
+  induction qs with
+  | nil =>
+      intro bc
+      simp [buildWriteBitAux]
+  | cons qs0 qs ih =>
+      intro bc
+      let bcTerm := buildWriteTermFromCarry (M := M) (n := n) sc qs0 bc
+      have hTerm :
+          bcTerm.bw.ctx.circuit.gates ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 3) :=
+        buildWriteTermFromCarry_gates_le (M := M) (n := n) sc qs0 bc
+      let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      have hOr :
+          bcOr.bw.ctx.circuit.gates ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) := by
+        have hOrEq : bcOr.bw.ctx.circuit.gates = bcTerm.bw.ctx.circuit.gates + 1 := by
+          simp [bcOr]
+        omega
+      have hRest :
+          (buildWriteBitAux (M := M) (n := n) sc qs bcNext).bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length :=
+        ih bcNext
+      have hStep :
+          (buildWriteBitAux (M := M) (n := n) sc (qs0 :: qs) bc).bw.ctx.circuit.gates ≤
+            bcOr.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length := by
+        simpa [buildWriteBitAux, bcTerm, bcOr, bcNext] using hRest
+      calc
+        (buildWriteBitAux (M := M) (n := n) sc (qs0 :: qs) bc).bw.ctx.circuit.gates
+            ≤ bcOr.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length := hStep
+        _ ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) +
+              (2 * (M.tapeLength n) + 4) * qs.length := by omega
+        _ = bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * (List.length (qs0 :: qs)) := by
+            simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+@[simp] lemma buildWriteBit_gates_le (sc : StraightConfig M n) :
+    (buildWriteBit (M := M) (n := n) sc).ctx.circuit.gates ≤
+      sc.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1 := by
+  have hAux := buildWriteBitAux_gates_le (M := M) (n := n) (sc := sc)
+      (qs := stateSymbolPairs M) (bc := ⟨initFalse (M := M) (n := n) sc, (initFalse (M := M) (n := n) sc).out⟩)
+  have hInit :
+      (⟨initFalse (M := M) (n := n) sc, (initFalse (M := M) (n := n) sc).out⟩ :
+        BuiltCarry (n := n) sc.circuit).bw.ctx.circuit.gates = sc.circuit.gates + 1 := by
+    simp
+  have hLen : (stateSymbolPairs M).length = 2 * stateCard M := length_stateSymbolPairs M
+  simpa [buildWriteBit, hInit, hLen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+    Nat.mul_assoc, Nat.mul_add, Nat.add_mul] using hAux
+
 /-- Append-only next-tape bit wire for target tape index `i`. -/
 noncomputable def buildNextTape (sc : StraightConfig M n)
     (i : Fin (M.tapeLength n)) :
@@ -983,6 +1196,200 @@ noncomputable def buildNextTape (sc : StraightConfig M n)
   let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bwWrite, bwWrite.out⟩
   let bc := buildNextTapeFromCarry (M := M) (n := n) sc i bc0
   exact bc.bw
+
+lemma buildNextTapeFromCarry_gates_eq
+    (sc : StraightConfig M n) (i : Fin (M.tapeLength n))
+    (bc : BuiltCarry (n := n) sc.circuit) :
+    (buildNextTapeFromCarry (M := M) (n := n) sc i bc).bw.ctx.circuit.gates =
+      bc.bw.ctx.circuit.gates + 4 := by
+  unfold buildNextTapeFromCarry
+  simp
+
+lemma buildNextTape_gates_le
+    (sc : StraightConfig M n) (i : Fin (M.tapeLength n)) :
+    (buildNextTape (M := M) (n := n) sc i).ctx.circuit.gates ≤
+      sc.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5 := by
+  unfold buildNextTape
+  let bwWrite := buildWriteBit (M := M) (n := n) sc
+  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bwWrite, bwWrite.out⟩
+  have hWrite :
+      bwWrite.ctx.circuit.gates ≤ sc.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1 :=
+    buildWriteBit_gates_le (M := M) (n := n) sc
+  have hNext :
+      (buildNextTapeFromCarry (M := M) (n := n) sc i bc0).bw.ctx.circuit.gates =
+        bwWrite.ctx.circuit.gates + 4 := by
+    simpa [bc0] using buildNextTapeFromCarry_gates_eq (M := M) (n := n) sc i bc0
+  calc
+    (buildNextTapeFromCarry (M := M) (n := n) sc i bc0).bw.ctx.circuit.gates = bwWrite.ctx.circuit.gates + 4 := hNext
+    _ ≤ sc.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1 + 4 := by omega
+    _ = sc.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5 := by omega
+
+lemma buildStateTermFromCarry_gates_le
+    (sc : StraightConfig M n) (qTarget : M.state)
+    (qs : M.state × Bool) (bc : BuiltCarry (n := n) sc.circuit) :
+    (buildStateTermFromCarry (M := M) (n := n) sc qTarget qs bc).bw.ctx.circuit.gates ≤
+      bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 3) := by
+  unfold buildStateTermFromCarry
+  cases hstep : M.step qs.1 qs.2 with
+  | mk qn bm =>
+      cases bm with
+      | mk wr mv =>
+          by_cases hq : qn = qTarget
+          · simpa [hq] using buildBranchFromCarry_gates_le (M := M) (n := n) sc qs bc
+          · simp [hq]
+
+lemma buildNextStateAux_gates_le (sc : StraightConfig M n) (qTarget : M.state) :
+    ∀ (qs : List (M.state × Bool)) (bc : BuiltCarry (n := n) sc.circuit),
+      (buildNextStateAux (M := M) (n := n) sc qTarget qs bc).bw.ctx.circuit.gates ≤
+        bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length := by
+  intro qs
+  induction qs with
+  | nil =>
+      intro bc
+      simp [buildNextStateAux]
+  | cons qs0 qs ih =>
+      intro bc
+      let bcTerm := buildStateTermFromCarry (M := M) (n := n) sc qTarget qs0 bc
+      let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      have hTerm :
+          bcTerm.bw.ctx.circuit.gates ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 3) :=
+        buildStateTermFromCarry_gates_le (M := M) (n := n) sc qTarget qs0 bc
+      have hRest :
+          (buildNextStateAux (M := M) (n := n) sc qTarget qs bcNext).bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length :=
+        ih bcNext
+      have hStep :
+          (buildNextStateAux (M := M) (n := n) sc qTarget (qs0 :: qs) bc).bw.ctx.circuit.gates ≤
+            bcOr.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length := by
+        simpa [buildNextStateAux, bcTerm, bcOr, bcNext] using hRest
+      have hOr :
+          bcOr.bw.ctx.circuit.gates ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) := by
+        have hOrEq : bcOr.bw.ctx.circuit.gates = bcTerm.bw.ctx.circuit.gates + 1 := by simp [bcOr]
+        omega
+      calc
+        (buildNextStateAux (M := M) (n := n) sc qTarget (qs0 :: qs) bc).bw.ctx.circuit.gates
+            ≤ bcOr.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * qs.length := hStep
+        _ ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) +
+              (2 * (M.tapeLength n) + 4) * qs.length := by omega
+        _ = bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) * (List.length (qs0 :: qs)) := by
+            simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+lemma buildNextState_gates_le
+    (sc : StraightConfig M n) (qTarget : M.state) :
+    (buildNextState (M := M) (n := n) sc qTarget).ctx.circuit.gates ≤
+      sc.circuit.gates + (2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 1 := by
+  have hAux := buildNextStateAux_gates_le (M := M) (n := n) (sc := sc) (qTarget := qTarget)
+      (qs := stateSymbolPairs M) (bc := ⟨initFalse (M := M) (n := n) sc, (initFalse (M := M) (n := n) sc).out⟩)
+  have hInit :
+      (⟨initFalse (M := M) (n := n) sc, (initFalse (M := M) (n := n) sc).out⟩ :
+        BuiltCarry (n := n) sc.circuit).bw.ctx.circuit.gates = sc.circuit.gates + 1 := by
+    simp
+  have hLen : (stateSymbolPairs M).length = 2 * stateCard M := length_stateSymbolPairs M
+  simpa [buildNextState, hInit, hLen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+    Nat.mul_assoc, Nat.mul_add, Nat.add_mul] using hAux
+
+lemma length_headStateSymbolPairsAux :
+    ∀ (l : List (Fin (M.tapeLength n))),
+      (headStateSymbolPairsAux M n l).length = l.length * (stateSymbolPairs M).length := by
+  intro l
+  induction l with
+  | nil =>
+      simp [headStateSymbolPairsAux]
+  | cons i t ih =>
+      have hmul :
+          (stateSymbolPairs M).length + t.length * (stateSymbolPairs M).length =
+            (t.length + 1) * (stateSymbolPairs M).length := by
+        calc
+          (stateSymbolPairs M).length + t.length * (stateSymbolPairs M).length
+              = t.length * (stateSymbolPairs M).length + (stateSymbolPairs M).length := by
+                  rw [Nat.add_comm]
+          _ = t.length * (stateSymbolPairs M).length + 1 * (stateSymbolPairs M).length := by
+                simp
+          _ = (t.length + 1) * (stateSymbolPairs M).length := by
+                simpa [Nat.add_mul]
+      simpa [headStateSymbolPairsAux, ih] using hmul
+
+lemma length_headStateSymbolPairs :
+    (headStateSymbolPairs M n).length = (M.tapeLength n) * (2 * stateCard M) := by
+  simpa [headStateSymbolPairs, tapeIndexList, length_stateSymbolPairs,
+    Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
+    (length_headStateSymbolPairsAux (M := M) (n := n) (l := tapeIndexList M n))
+
+lemma buildHeadTermFromCarry_gates_le
+    (sc : StraightConfig M n) (j : Fin (M.tapeLength n))
+    (iqs : Fin (M.tapeLength n) × (M.state × Bool))
+    (bc : BuiltCarry (n := n) sc.circuit) :
+    (buildHeadTermFromCarry (M := M) (n := n) sc j iqs bc).bw.ctx.circuit.gates ≤
+      bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) := by
+  unfold buildHeadTermFromCarry
+  cases hstep : M.step iqs.2.1 iqs.2.2 with
+  | mk qn bm =>
+      cases bm with
+      | mk wr mv =>
+          by_cases hmv : moveIndex (M := M) (n := n) iqs.1 mv = j
+          · simp [hmv]
+            have hBr :
+                (buildBranchFromCarry (M := M) (n := n) sc iqs.2 bc).bw.ctx.circuit.gates ≤
+                  bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 3) :=
+              buildBranchFromCarry_gates_le (M := M) (n := n) sc iqs.2 bc
+            omega
+          · simp [hmv]
+
+lemma buildNextHeadAux_gates_le
+    (sc : StraightConfig M n) (j : Fin (M.tapeLength n)) :
+    ∀ (iqs : List (Fin (M.tapeLength n) × (M.state × Bool)))
+      (bc : BuiltCarry (n := n) sc.circuit),
+      (buildNextHeadAux (M := M) (n := n) sc j iqs bc).bw.ctx.circuit.gates ≤
+        bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) * iqs.length := by
+  intro iqs
+  induction iqs with
+  | nil =>
+      intro bc
+      simp [buildNextHeadAux]
+  | cons iqs0 iqs ih =>
+      intro bc
+      let bcTerm := buildHeadTermFromCarry (M := M) (n := n) sc j iqs0 bc
+      let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
+      let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
+      have hTerm :
+          bcTerm.bw.ctx.circuit.gates ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 4) :=
+        buildHeadTermFromCarry_gates_le (M := M) (n := n) sc j iqs0 bc
+      have hRest :
+          (buildNextHeadAux (M := M) (n := n) sc j iqs bcNext).bw.ctx.circuit.gates ≤
+            bcNext.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) * iqs.length :=
+        ih bcNext
+      have hStep :
+          (buildNextHeadAux (M := M) (n := n) sc j (iqs0 :: iqs) bc).bw.ctx.circuit.gates ≤
+            bcOr.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) * iqs.length := by
+        simpa [buildNextHeadAux, bcTerm, bcOr, bcNext] using hRest
+      have hOr :
+          bcOr.bw.ctx.circuit.gates ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) := by
+        have hOrEq : bcOr.bw.ctx.circuit.gates = bcTerm.bw.ctx.circuit.gates + 1 := by
+          simp [bcOr]
+        omega
+      calc
+        (buildNextHeadAux (M := M) (n := n) sc j (iqs0 :: iqs) bc).bw.ctx.circuit.gates
+            ≤ bcOr.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) * iqs.length := hStep
+        _ ≤ bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) +
+              (2 * (M.tapeLength n) + 5) * iqs.length := by omega
+        _ = bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) * (List.length (iqs0 :: iqs)) := by
+            simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+lemma buildNextHead_gates_le
+    (sc : StraightConfig M n) (j : Fin (M.tapeLength n)) :
+    (buildNextHead (M := M) (n := n) sc j).ctx.circuit.gates ≤
+      sc.circuit.gates + (2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M)) + 1 := by
+  have hAux := buildNextHeadAux_gates_le (M := M) (n := n) (sc := sc) (j := j)
+      (iqs := headStateSymbolPairs M n) (bc := ⟨initFalse (M := M) (n := n) sc, (initFalse (M := M) (n := n) sc).out⟩)
+  have hInit :
+      (⟨initFalse (M := M) (n := n) sc, (initFalse (M := M) (n := n) sc).out⟩ :
+        BuiltCarry (n := n) sc.circuit).bw.ctx.circuit.gates = sc.circuit.gates + 1 := by
+    simp
+  have hLen : (headStateSymbolPairs M n).length = (M.tapeLength n) * (2 * stateCard M) :=
+    length_headStateSymbolPairs (M := M) (n := n)
+  simpa [buildNextHead, hInit, hLen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+    Nat.mul_assoc, Nat.mul_add, Nat.add_mul] using hAux
 
 /--
 Blueprint of the constructive linear one-step assembly over a fixed base

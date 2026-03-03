@@ -692,13 +692,14 @@ theorem compiledAcceptSizeBound_of_runtimeCircuitSizeBound
 
 /--
 Gate-count upper bound for compiled runtime circuits with the canonical
-`n^(c+5)+(c+5)` shape used downstream.
+polynomial shape used downstream.
 -/
 def CompiledRuntimeCircuitGateBound : Prop :=
   ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
-    (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
-      n ^ (c + 5) + (c + 4)
+    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+    ∃ k, ∀ n,
+      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
+        n ^ k + k
 
 /--
 Reduction of `CompiledRuntimeCircuitGateBound` to two local obligations:
@@ -716,12 +717,16 @@ theorem compiledRuntimeCircuitGateBound_of_linearBudget
             Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n)
     (hBudgetPoly :
       ∀ (M : TM) (c : Nat)
-        (_hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
-        2 + M.runTime n *
-            Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n ≤
-          n ^ (c + 5) + (c + 4)) :
+        (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
+        ∃ k, ∀ n,
+          2 + M.runTime n *
+              Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n ≤
+            n ^ k + k) :
     CompiledRuntimeCircuitGateBound := by
-  intro M c hRun n
+  intro M c hRun
+  rcases hBudgetPoly M c hRun with ⟨k, hk⟩
+  refine ⟨k, ?_⟩
+  intro n
   have hIter :
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
         2 + M.runTime n *
@@ -730,26 +735,38 @@ theorem compiledRuntimeCircuitGateBound_of_linearBudget
       (M := M) (n := n)
       (inc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudget M n)
       (hStepInc := hStepInc M n)
-  exact Nat.le_trans hIter (hBudgetPoly M c hRun n)
+  exact Nat.le_trans hIter (hk n)
 
 theorem compiledRuntimeCircuitSizeBound_of_gateBound
     (hGate : CompiledRuntimeCircuitGateBound) :
     CompiledRuntimeCircuitSizeBound := by
   intro M c hRun
-  refine ⟨c + 5, ?_⟩
+  rcases hGate M c hRun with ⟨k, hk⟩
+  refine ⟨k + 2, ?_⟩
   intro n
   have hGates :
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
-        n ^ (c + 5) + (c + 4) :=
-    hGate M c hRun n
+        n ^ k + k :=
+    hk n
   have hSize :
       (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-        (n ^ (c + 5) + (c + 4)) + 1 := by
+        (n ^ k + k) + 1 := by
     simpa [size_toDag, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
       Nat.add_le_add_right hGates 1
   have hTarget :
-      (n ^ (c + 5) + (c + 4)) + 1 ≤ n ^ (c + 5) + (c + 5) := by
-    omega
+      (n ^ k + k) + 1 ≤ n ^ (k + 2) + (k + 2) := by
+    by_cases hn : n = 0
+    · subst hn
+      cases k with
+      | zero =>
+          simp
+      | succ k' =>
+          simp
+    · have hpow : n ^ k ≤ n ^ (k + 2) := by
+        have h1 : 1 ≤ n := Nat.succ_le_of_lt (Nat.pos_of_ne_zero hn)
+        simpa [Nat.add_assoc] using Nat.pow_le_pow_right h1 (Nat.le_add_right k 2)
+      have hk1 : k + 1 ≤ k + 2 := Nat.le_succ (k + 1)
+      simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using Nat.add_le_add hpow hk1
   exact le_trans hSize hTarget
 
 theorem compiledAcceptOutputWireAgreement_of_evalAgreement

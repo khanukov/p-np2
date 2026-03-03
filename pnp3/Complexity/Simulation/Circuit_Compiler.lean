@@ -713,6 +713,25 @@ def CompiledRuntimeStepIncrementBound : Prop :=
         Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n
 
 /--
+Linear-step variant of the one-step increment obligation.
+
+This contract is already closed internally via the append-only builder route.
+-/
+def CompiledRuntimeStepIncrementBoundLinear : Prop :=
+  ∀ (M : TM) (n : Nat)
+    (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
+    (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinear M sc).circuit.gates ≤
+      sc.circuit.gates +
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n
+
+theorem compiledRuntimeStepIncrementBoundLinear_internal :
+    CompiledRuntimeStepIncrementBoundLinear := by
+  intro M n sc
+  exact
+    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinear_gates_le_budgetExpanded
+      (M := M) (sc := sc)
+
+/--
 Residual polynomial-domination obligation for accumulated runtime budget:
 `2 + runTime * linearStepBudgetExpanded` must be polynomially bounded.
 -/

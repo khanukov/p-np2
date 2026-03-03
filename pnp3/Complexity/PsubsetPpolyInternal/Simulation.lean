@@ -1483,6 +1483,26 @@ def linearStepBudget (M : TM) (n : Nat) : Nat :=
     ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5)
     ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M)) + 1)
 
+/--
+Expanded one-step budget aligned with `buildLinearStages_gates_le`.
+
+Unlike `linearStepBudget` (which uses `max`), this form is purely additive and
+is easier to use in polynomial domination lemmas.
+-/
+def linearStepBudgetExpanded (M : TM) (n : Nat) : Nat :=
+  ((2 * (M.tapeLength n) + 4) * (2 * stateCard M) + 5) +
+  ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M)) + 1) +
+  4 * (M.tapeLength n) +
+  ((2 * (M.tapeLength n) + 5) * ((M.tapeLength n) * (2 * stateCard M))) * (M.tapeLength n) +
+  ((2 * (M.tapeLength n) + 4) * (2 * stateCard M)) * (stateCard M)
+
+lemma linearStepBudget_le_expanded (M : TM) (n : Nat) :
+    linearStepBudget M n ≤ linearStepBudgetExpanded M n := by
+  unfold linearStepBudget linearStepBudgetExpanded
+  refine max_le ?_ ?_
+  · omega
+  · omega
+
 theorem linearStepBlueprint_gates_le_budget (sc : StraightConfig M n) :
     ((linearStepBlueprint (M := M) (n := n) sc).writeBit.ctx.circuit.gates ≤
       sc.circuit.gates + linearStepBudget M n) ∧

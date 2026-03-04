@@ -139,6 +139,10 @@ structure EvalBuildCtx (n : Nat) (base : Ckt n) where
     ∀ (x : Boolcube.Point n) (i : Fin (n + base.gates)),
       evalWire (C := ctx.circuit) (x := x) (ctx.liftBase i) =
         evalWire (C := base) (x := x) i
+  gate_agree :
+    ∀ (j : Nat) (hj : j < base.gates),
+      ctx.circuit.gate ⟨j, Nat.lt_of_lt_of_le hj ctx.base_le⟩ =
+        base.gate ⟨j, hj⟩
 
 namespace EvalBuildCtx
 
@@ -148,6 +152,9 @@ variable {base : Ckt n}
   ctx := BuildCtx.init base
   eval_liftBase := by
     intro x i
+    rfl
+  gate_agree := by
+    intro j hj
     rfl
 
 def circuit (b : EvalBuildCtx n base) : Ckt n := b.ctx.circuit
@@ -171,21 +178,28 @@ def appendWith (b : EvalBuildCtx n base)
   refine ⟨{
     ctx := r.fst
     eval_liftBase := ?_
+    gate_agree := ?_
   }, r.snd⟩
-  intro x i
-  change
-    evalWire (C := snoc b.circuit op) (x := x)
-        (BuildCtx.appendFin_lift (b := b.ctx) (op := op) (b.ctx.liftBase i)) =
-      evalWire (C := base) (x := x) i
-  have hOld := b.eval_liftBase x i
-  have hPres' := hPres x (b.ctx.liftBase i)
-  have hPresLift :
+  · intro x i
+    change
       evalWire (C := snoc b.circuit op) (x := x)
           (BuildCtx.appendFin_lift (b := b.ctx) (op := op) (b.ctx.liftBase i)) =
-        evalWire (C := b.circuit) (x := x) (b.ctx.liftBase i) := by
-    simpa [BuildCtx.appendFin_lift, BuildCtx.liftBase, liftWire,
-      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hPres'
-  exact hPresLift.trans hOld
+        evalWire (C := base) (x := x) i
+    have hOld := b.eval_liftBase x i
+    have hPres' := hPres x (b.ctx.liftBase i)
+    have hPresLift :
+        evalWire (C := snoc b.circuit op) (x := x)
+            (BuildCtx.appendFin_lift (b := b.ctx) (op := op) (b.ctx.liftBase i)) =
+          evalWire (C := b.circuit) (x := x) (b.ctx.liftBase i) := by
+      simpa [BuildCtx.appendFin_lift, BuildCtx.liftBase, liftWire,
+        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hPres'
+    exact hPresLift.trans hOld
+  · intro j hj
+    have hj_ckt : j < b.ctx.circuit.gates := Nat.lt_of_lt_of_le hj b.ctx.base_le
+    have hSnoc : (snoc b.circuit op).gate ⟨j, Nat.lt_of_lt_of_le hj_ckt (Nat.le_succ _)⟩ =
+        b.ctx.circuit.gate ⟨j, hj_ckt⟩ := by
+      simp [snoc, hj_ckt]
+    exact hSnoc.trans (b.gate_agree j hj)
 
 /--
 Append a gate using the canonical snoc-preservation lemma.
@@ -223,6 +237,17 @@ def appendOr (b : EvalBuildCtx n base)
     (u v : Fin (n + b.circuit.gates)) :
     EvalBuildCtx n base × Fin (n + (snoc b.circuit (.or u v)).gates) :=
   b.appendOp (.or u v)
+
+/--
+Evaluate any wire from `base` in the builder's extended circuit.
+This combines `gate_agree` with `evalWire_prefix`.
+-/
+lemma evalWire_base (b : EvalBuildCtx n base)
+    (x : Boolcube.Point n) (i : Fin (n + base.gates)) :
+    evalWire (C := b.circuit) (x := x)
+      ⟨i, Nat.lt_of_lt_of_le i.isLt (Nat.add_le_add_left b.ctx.base_le n)⟩ =
+      evalWire (C := base) (x := x) i :=
+  evalWire_prefix x b.ctx.base_le b.gate_agree i
 
 end EvalBuildCtx
 

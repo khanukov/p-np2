@@ -269,6 +269,248 @@ lemma evalWireAux_full_eq_evalWireInternal (C : Circuit n) (x : Point n)
   simpa [toCircuit, eval_eq_evalWire, toCircuitWire]
     using eval_toCircuitWire (C := C) (x := x) C.output
 
+/-!
+## Eval agreement: archive (DAG) semantics = internal straight-line semantics
+
+The archive layer evaluates via `DagCircuit.eval (toDag C) x`, while the
+internal layer uses `evalInternal C x` (= `evalGateAux`-based recursion).
+Both are structurally recursive on gate index and agree pointwise.
+-/
+
+section EvalAgreement
+
+open Pnp3.Complexity.ComplexityInterfaces
+open Pnp3.Complexity.ArchiveStraightLineAdapter
+
+/--
+Key lemma: `toDagWire` on an input-range index produces `.input`.
+-/
+private lemma toDagWire_input {n g : Nat} (i : Fin (n + g)) (h : (i : Nat) < n) :
+    toDagWire (n := n) (g := g) i = DagWire.input ⟨i, h⟩ := by
+  unfold toDagWire
+  simp [h]
+
+/--
+Key lemma: `toDagWire` on a gate-range index produces `.gate`.
+-/
+private lemma toDagWire_gate {n g : Nat} (i : Fin (n + g)) (h : ¬ (i : Nat) < n) :
+    toDagWire (n := n) (g := g) i =
+      DagWire.gate ⟨(i : Nat) - n, by omega⟩ := by
+  unfold toDagWire
+  simp [h]
+
+/--
+Auxiliary: for all gate indices below bound `G`, DAG evalGateAt and
+internal evalGateAux agree.  Standard Nat induction encoding strong induction.
+-/
+private theorem dagEvalGateAt_eq_aux (C : Circuit n) (x : Point n) :
+    ∀ (G : Nat) (g : Nat), g < G →
+      ∀ (hgDag : g < (toDag C).gates) (hg : g < C.gates),
+        DagCircuit.eval.evalGateAt (toDag C) x g hgDag =
+          evalGateAux C x hg := by
+  intro G
+  induction G with
+  | zero => intro g hgG; exact absurd hgG (Nat.not_lt_zero g)
+  | succ G ih =>
+    intro g hgG hgDag hg
+    have ih' : ∀ j, j < g →
+        ∀ (hjDag : j < (toDag C).gates) (hj : j < C.gates),
+          DagCircuit.eval.evalGateAt (toDag C) x j hjDag =
+            evalGateAux C x hj := by
+      intro j hjg hjDag hj
+      exact ih j (Nat.lt_of_lt_of_le hjg (Nat.lt_succ_iff.mp hgG)) hjDag hj
+    -- Case split on the gate operation
+    cases hOp : C.gate ⟨g, hg⟩ with
+    | const b =>
+      simp [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+    | not u =>
+      simp only [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      congr 1
+      by_cases hu : (u : Nat) < n
+      · simp [toDagWire_input u hu]; rfl
+      · have huGate := toDagWire_gate (n := n) (g := g) u hu
+        simp [huGate]
+        have hlt : (u : Nat) - n < g := by omega
+        have hlt' : (u : Nat) - n < C.gates := by omega
+        have hltDag : (u : Nat) - n < (toDag C).gates := by
+          simpa [toDag] using hlt'
+        rw [ih' _ hlt hltDag hlt']
+        unfold evalWireAux; simp [hu]
+    | and u v =>
+      simp only [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      congr 1
+      · by_cases hu : (u : Nat) < n
+        · simp [toDagWire_input u hu]; rfl
+        · have huGate := toDagWire_gate (n := n) (g := g) u hu
+          simp [huGate]
+          have hlt : (u : Nat) - n < g := by omega
+          have hlt' : (u : Nat) - n < C.gates := by omega
+          have hltDag : (u : Nat) - n < (toDag C).gates := by
+            simpa [toDag] using hlt'
+          rw [ih' _ hlt hltDag hlt']
+          unfold evalWireAux; simp [hu]
+      · by_cases hv : (v : Nat) < n
+        · simp [toDagWire_input v hv]; rfl
+        · have hvGate := toDagWire_gate (n := n) (g := g) v hv
+          simp [hvGate]
+          have hlt : (v : Nat) - n < g := by omega
+          have hlt' : (v : Nat) - n < C.gates := by omega
+          have hltDag : (v : Nat) - n < (toDag C).gates := by
+            simpa [toDag] using hlt'
+          rw [ih' _ hlt hltDag hlt']
+          unfold evalWireAux; simp [hv]
+    | or u v =>
+      simp only [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      congr 1
+      · by_cases hu : (u : Nat) < n
+        · simp [toDagWire_input u hu]; rfl
+        · have huGate := toDagWire_gate (n := n) (g := g) u hu
+          simp [huGate]
+          have hlt : (u : Nat) - n < g := by omega
+          have hlt' : (u : Nat) - n < C.gates := by omega
+          have hltDag : (u : Nat) - n < (toDag C).gates := by
+            simpa [toDag] using hlt'
+          rw [ih' _ hlt hltDag hlt']
+          unfold evalWireAux; simp [hu]
+      · by_cases hv : (v : Nat) < n
+        · simp [toDagWire_input v hv]; rfl
+        · have hvGate := toDagWire_gate (n := n) (g := g) v hv
+          simp [hvGate]
+          have hlt : (v : Nat) - n < g := by omega
+          have hlt' : (v : Nat) - n < C.gates := by omega
+          have hltDag : (v : Nat) - n < (toDag C).gates := by
+            simpa [toDag] using hlt'
+          rw [ih' _ hlt hltDag hlt']
+          unfold evalWireAux; simp [hv]
+
+/--
+Gate-level agreement between DAG evalGateAt and internal evalGateAux.
+-/
+private theorem dagEvalGateAt_eq_evalGateAux (C : Circuit n) (x : Point n)
+    (g : Nat) (hgDag : g < (toDag C).gates) (hg : g < C.gates) :
+    DagCircuit.eval.evalGateAt (toDag C) x g hgDag =
+      evalGateAux C x hg :=
+  dagEvalGateAt_eq_aux C x (g + 1) g (Nat.lt_succ_self g) hgDag hg
+
+/--
+Archive DAG evaluation agrees with internal straight-line evaluation for
+any `StraightLineCircuit`.
+
+This is the universal `EvalAgreement` statement needed by the compiler
+assembly route.
+-/
+theorem archive_eval_eq_internal (C : Circuit n) (x : Point n) :
+    ArchiveStraightLineAdapter.eval C x = StraightLine.eval C x := by
+  unfold ArchiveStraightLineAdapter.eval StraightLine.eval evalInternal
+  -- Unfold the DAG evaluation
+  show DagCircuit.eval (toDag C) x = _
+  unfold DagCircuit.eval
+  -- Case split on output wire
+  by_cases hOut : (C.output : Nat) < n
+  · -- Output is an input wire
+    have hOutDag : (toDag C).output = DagWire.input ⟨C.output, hOut⟩ := by
+      simp [toDag, toDagWire, hOut]
+    simp [hOutDag]
+  · -- Output is a gate wire
+    have hOutDag : (toDag C).output =
+        DagWire.gate ⟨(C.output : Nat) - n, by
+          have := C.output.isLt; omega⟩ := by
+      simp [toDag, toDagWire, hOut]
+    simp [hOutDag]
+    have hj : (C.output : Nat) - n < C.gates := by
+      have := C.output.isLt; omega
+    exact dagEvalGateAt_eq_evalGateAux C x _ _ hj
+
+end EvalAgreement
+
+/-!
+## Prefix preservation: evaluating old wires in an extended circuit
+
+When `C'` extends `C` by appending gates (i.e. `C.gates ≤ C'.gates` and the
+shared prefix of gates agrees), evaluating a wire from `C` in `C'` gives the
+same result. This is the multi-gate generalisation of `evalWire_snoc_lift`.
+-/
+
+section PrefixPreservation
+
+/-- Gate at index `j` in `snoc C op` agrees with `C` when `j < C.gates`. -/
+@[simp] lemma snoc_gate_old {n : Nat} (C : Circuit n)
+    (op : GateOp (n + C.gates)) (j : Nat) (hj : j < C.gates) :
+    (snoc C op).gate ⟨j, Nat.lt_of_lt_of_le hj (Nat.le_succ _)⟩ =
+      C.gate ⟨j, hj⟩ := by
+  simp [snoc, hj]
+
+mutual
+  theorem evalWireAux_prefix {n : Nat} {C C' : Circuit n} (x : Boolcube.Point n)
+      (hGates : C.gates ≤ C'.gates)
+      (hGate : ∀ (j : Nat) (hj : j < C.gates),
+        C'.gate ⟨j, Nat.lt_of_lt_of_le hj hGates⟩ = C.gate ⟨j, hj⟩) :
+      ∀ (g : Nat) (hg : g ≤ C.gates) (i : Fin (n + g)),
+        evalWireAux C' x g (Nat.le_trans hg hGates) i = evalWireAux C x g hg i
+    | 0, _, i => by simp [evalWireAux]
+    | Nat.succ g, hg, i => by
+        by_cases hInput : (i : Nat) < n
+        · simp [evalWireAux, hInput]
+        · set j : Nat := (i : Nat) - n
+          have hj_lt : j < Nat.succ g := by dsimp [j]; omega
+          have hj_gate : j < C.gates := Nat.lt_of_lt_of_le hj_lt hg
+          have ihGate := evalGateAux_prefix (C := C) (C' := C') x hGates hGate hj_gate
+          unfold evalWireAux
+          simp only [hInput, ↓reduceDIte]
+          exact ihGate
+
+  theorem evalGateAux_prefix {n : Nat} {C C' : Circuit n} (x : Boolcube.Point n)
+      (hGates : C.gates ≤ C'.gates)
+      (hGate : ∀ (j : Nat) (hj : j < C.gates),
+        C'.gate ⟨j, Nat.lt_of_lt_of_le hj hGates⟩ = C.gate ⟨j, hj⟩) :
+      ∀ {g : Nat} (hg : g < C.gates),
+        evalGateAux C' x (Nat.lt_of_lt_of_le hg hGates) = evalGateAux C x hg
+    | g, hg => by
+        have hgate_eq :
+            C'.gate ⟨g, Nat.lt_of_lt_of_le hg hGates⟩ = C.gate ⟨g, hg⟩ :=
+          hGate g hg
+        cases hOp : C.gate ⟨g, hg⟩ with
+        | const b =>
+            simp [evalGateAux, hgate_eq, hOp]
+        | not u =>
+            have hu := evalWireAux_prefix (C := C) (C' := C') x hGates hGate
+              g (Nat.le_of_lt hg) u
+            simpa [evalGateAux, hgate_eq, hOp] using congrArg (fun t => !t) hu
+        | and u v =>
+            have hu := evalWireAux_prefix (C := C) (C' := C') x hGates hGate
+              g (Nat.le_of_lt hg) u
+            have hv := evalWireAux_prefix (C := C) (C' := C') x hGates hGate
+              g (Nat.le_of_lt hg) v
+            simpa [evalGateAux, hgate_eq, hOp, hu, hv]
+        | or u v =>
+            have hu := evalWireAux_prefix (C := C) (C' := C') x hGates hGate
+              g (Nat.le_of_lt hg) u
+            have hv := evalWireAux_prefix (C := C) (C' := C') x hGates hGate
+              g (Nat.le_of_lt hg) v
+            simpa [evalGateAux, hgate_eq, hOp, hu, hv]
+end
+
+/--
+General prefix preservation: evaluating a wire from `C` in the extended
+circuit `C'` gives the same value, provided the two circuits agree on all
+gates below `C.gates`.
+-/
+theorem evalWire_prefix {n : Nat} {C C' : Circuit n} (x : Boolcube.Point n)
+    (hGates : C.gates ≤ C'.gates)
+    (hGate : ∀ (j : Nat) (hj : j < C.gates),
+      C'.gate ⟨j, Nat.lt_of_lt_of_le hj hGates⟩ = C.gate ⟨j, hj⟩)
+    (i : Fin (n + C.gates)) :
+    evalWire C' x ⟨i, Nat.lt_of_lt_of_le i.isLt (Nat.add_le_add_left hGates n)⟩ =
+      evalWire C x i := by
+  unfold evalWire evalWireInternal
+  by_cases hIn : (i : Nat) < n
+  · simp [hIn]
+  · simp only [hIn, ↓reduceDIte]
+    have hj : (i : Nat) - n < C.gates := by omega
+    exact evalGateAux_prefix x hGates hGate hj
+
+end PrefixPreservation
+
 end StraightLine
 end PsubsetPpoly
 end Internal

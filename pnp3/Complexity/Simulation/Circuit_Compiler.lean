@@ -1799,6 +1799,20 @@ abbrev P_subset_PpolyLegacyStraight_of_compiler :=
 
 abbrev PolyTMToLegacyCompiler := PolyTMToStraightLineCompiler
 
+/--
+Unconditional `P ⊆ P/poly` (DAG circuits).
+
+All three ingredients are proved internally:
+1. `EvalAgreement` — from `archive_eval_eq_internal` in `StraightLineSemantics.lean`
+2. `CompiledRuntimeCircuitSizeBoundLinear` — from `compiledRuntimeCircuitSizeBoundLinear_internal`
+3. `CompiledRuntimeAcceptCorrectnessLinear` — from `compiledRuntimeAcceptCorrectnessLinear_internal`
+-/
+theorem P_subset_PpolyDAG_proved : Pnp3.Complexity.ComplexityInterfaces.P_subset_PpolyDAG :=
+  proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
+    (fun C x => Pnp3.Internal.PsubsetPpoly.StraightLine.archive_eval_eq_internal C x)
+    compiledRuntimeCircuitSizeBoundLinear_internal
+    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.compiledRuntimeAcceptCorrectnessLinear_internal
+
 end Simulation
 end Complexity
 end Pnp3

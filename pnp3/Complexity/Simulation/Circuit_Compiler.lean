@@ -1807,7 +1807,7 @@ All three ingredients are proved internally:
 2. `CompiledRuntimeCircuitSizeBoundLinear` — from `compiledRuntimeCircuitSizeBoundLinear_internal`
 3. `CompiledRuntimeAcceptCorrectnessLinear` — from `compiledRuntimeAcceptCorrectnessLinear_internal`
 -/
-theorem P_subset_PpolyDAG_proved : Pnp3.Complexity.ComplexityInterfaces.P_subset_PpolyDAG :=
+theorem P_subset_PpolyDAG_proved : P_subset_PpolyDAG :=
   proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
     (fun C x => Pnp3.Internal.PsubsetPpoly.StraightLine.archive_eval_eq_internal C x)
     compiledRuntimeCircuitSizeBoundLinear_internal

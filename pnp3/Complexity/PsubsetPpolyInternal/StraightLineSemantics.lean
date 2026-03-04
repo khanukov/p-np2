@@ -279,7 +279,7 @@ Both are structurally recursive on gate index and agree pointwise.
 
 section EvalAgreement
 
-open Pnp3.Complexity.ComplexityInterfaces
+open Pnp3.ComplexityInterfaces
 open Pnp3.Complexity.ArchiveStraightLineAdapter
 
 /--
@@ -320,11 +320,17 @@ private theorem dagEvalGateAt_eq_aux (C : Circuit n) (x : Point n) :
       intro j hjg hjDag hj
       exact ih j (Nat.lt_of_lt_of_le hjg (Nat.lt_succ_iff.mp hgG)) hjDag hj
     -- Case split on the gate operation
+    -- The key step: unfold both DagCircuit.eval.evalGateAt and evalGateAux
+    -- one level, then match on the gate operation.
+    have hGateDag : (toDag C).gate ⟨g, hgDag⟩ = toDagOp (C.gate ⟨g, hg⟩) := by
+      simp [toDag]
     cases hOp : C.gate ⟨g, hg⟩ with
     | const b =>
-      simp [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      unfold DagCircuit.eval.evalGateAt evalGateAux
+      simp [hGateDag, hOp, toDagOp]
     | not u =>
-      simp only [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      unfold DagCircuit.eval.evalGateAt evalGateAux
+      simp only [hGateDag, hOp, toDagOp]
       congr 1
       by_cases hu : (u : Nat) < n
       · simp [toDagWire_input u hu]; rfl
@@ -337,7 +343,8 @@ private theorem dagEvalGateAt_eq_aux (C : Circuit n) (x : Point n) :
         rw [ih' _ hlt hltDag hlt']
         unfold evalWireAux; simp [hu]
     | and u v =>
-      simp only [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      unfold DagCircuit.eval.evalGateAt evalGateAux
+      simp only [hGateDag, hOp, toDagOp]
       congr 1
       · by_cases hu : (u : Nat) < n
         · simp [toDagWire_input u hu]; rfl
@@ -360,7 +367,8 @@ private theorem dagEvalGateAt_eq_aux (C : Circuit n) (x : Point n) :
           rw [ih' _ hlt hltDag hlt']
           unfold evalWireAux; simp [hv]
     | or u v =>
-      simp only [DagCircuit.eval.evalGateAt, toDag, toDagOp, hOp, evalGateAux]
+      unfold DagCircuit.eval.evalGateAt evalGateAux
+      simp only [hGateDag, hOp, toDagOp]
       congr 1
       · by_cases hu : (u : Nat) < n
         · simp [toDagWire_input u hu]; rfl

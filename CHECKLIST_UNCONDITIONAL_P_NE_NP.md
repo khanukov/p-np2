@@ -1,6 +1,6 @@
 # Checklist: Unconditional Constructive `P ≠ NP`
 
-Updated: 2026-02-27
+Updated: 2026-03-04
 
 This is the canonical checklist for what blocks an unconditional in-repo
 constructive theorem `P ≠ NP`.
@@ -31,25 +31,19 @@ File: `pnp3/Magnification/FinalResult.lean`
 
 ## Unconditional blockers (must be internalized)
 
-Legacy wrapper `P_ne_NP_final` still requires:
+Active DAG endpoint `P_ne_NP_final` currently requires:
 
-1. `hasDefaultStructuredLocalityProviderPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `P_subset_PpolyReal` (`hPsubsetReal`)
+1. `NP_not_subset_PpolyDAG` (`hNPDag`)
+2. `PsubsetPpolyInternalContractsIteratedCanonical` (`hPpolyContracts`)
 
-Active constructive endpoint `P_ne_NP_final_of_default_supportBounds` now
-tracks this blocker set:
+Constructive compatibility endpoint `P_ne_NP_final_of_default_supportBounds`
+adds:
 
 1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `P_subset_PpolyReal` (`hPsubsetReal`)
 
-Explicit variant: `P_ne_NP_final_of_supportBounds`
-(`FormulaSupportRestrictionBoundsPartial` as direct input).
+but the contradiction step to `P ≠ NP` still depends on (1)-(2) above.
 
-Until the constructive blocker set is fully discharged internally, the
+Until this DAG blocker set is fully discharged internally, the
 repository does **not** contain an unconditional theorem `P ≠ NP`.
 
 ## Proof-quality safety checks
@@ -66,7 +60,9 @@ Before deleting lemmas/routes, confirm:
 All of the following must hold at once:
 
 1. A theorem `P_ne_NP` is derivable without external bridge/provider hypotheses.
-2. `P_ne_NP_final*` wrappers no longer require external non-uniform inclusion assumptions.
-3. Remaining final route assumptions are either proved in-repo or eliminated.
+2. `P_ne_NP_final*` wrappers no longer require external
+   `NP_not_subset_PpolyDAG` / `PsubsetPpolyInternalContracts*` inputs.
+3. Remaining final-route compatibility assumptions are either proved in-repo
+   or eliminated from default endpoints.
 4. `README.md`, `STATUS.md`, `TODO.md`, `AXIOMS_FINAL_LIST.md` are updated to
    state unconditional status explicitly and consistently.

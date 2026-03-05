@@ -84,26 +84,36 @@
 - `PsubsetPpolyInternalContracts`
 - `proved_P_subset_PpolyDAG_of_contracts`
 
-Это уже достаточная «платформа склейки» для аудита связности маршрута,
-даже при том, что финальный безусловный right-proof ещё не закрыт.
+Это уже достаточная «платформа склейки» для аудита связности маршрута.
+Ключевой remaining blocker теперь в runtime-модели, а не в append-right proof.
+Примечание: active final wrappers в `FinalResult` используют
+`PsubsetPpolyInternalContractsIteratedCanonical`; список выше — это
+inclusion-layer default closure и совместимые маршруты.
 
 ---
 
 ## 3) Что НЕ закрыто (главные блокеры)
 
-### B0 (математический ядро-блокер)
+### B0 (архитектурный ядро-блокер)
 
-Не закрыто полностью внутреннее безусловное доказательство
-`appendWireSemantics.right` без внешней контрактной подпорки.
+Главный blocker сейчас не в append-right (этот слой уже закрыт), а в
+несовпадении runtime-моделей:
 
-Это главный remaining blocker: пока он не закрыт, нельзя честно считать,
-что internal route завершён в «безусловной» форме.
+1. `runtimeConfig` строится через итерацию `step`.
+2. `step` в текущем коде identity (`sc`), поэтому `runtimeConfig_eq_initial`.
+3. inclusion/runtime closure на compiled-track использует `stepCompiledTruthTable`.
+
+Отсюда: контракт `RuntimeConfigEqStepCompiled` не превращается в theorem
+локальной правкой; нужен runtime-route refactor.
 
 ### B1 (assembly closure blocker)
 
 Нет закрытого (без входных гипотез) `RuntimeSpecProvider` в форме,
 которую можно напрямую подать в
 `polyTMToStraightLineCompiler_internal` без параметров.
+
+Это и есть ближайшая причина, почему `P_subset_PpolyDAG` не закрыт в no-arg
+форме.
 
 ### B2 (endpoint closure blocker)
 
@@ -133,19 +143,18 @@
 
 ## 5) Минимальный план продолжения (для следующего инженера)
 
-### Шаг P1 — закрыть right-ветку напрямую
+### Шаг P1 — runtime-route refactor
 
-В `TreeToStraight.lean`:
+В `Simulation.lean` / `Circuit_Compiler.lean`:
 
-- довести прямой proof-path для `appendWireSemantics.right`;
-- избегать глобального `simp` в transport-heavy местах;
-- использовать локальные `rw`/`simpa` после явных index-normalization шагов.
+- зафиксировать canonical runtime на iterated `stepCompiledTruthTable`;
+- убрать зависимость default closure от bridge-контракта
+  `RuntimeConfigEqStepCompiled`.
 
-### Шаг P2 — собрать безусловный StepCompiled/runtime provider
+### Шаг P2 — собрать no-arg runtime provider
 
 После P1:
 
-- собрать closed witness, который убирает последнюю внешнюю контрактную подпорку;
 - получить `RuntimeSpecProvider` без входных гипотез.
 
 ### Шаг P3 — финализировать endpoint
@@ -179,7 +188,7 @@ lake build pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean
 ## 7) Риски и замечания
 
 - Основной риск — «ложное ощущение закрытия»: assembly-мосты уже есть,
-  но ядровой right-proof ещё контрактный.
+  но canonical no-arg runtime-provider ещё не закрыт.
 - Второй риск — расползание статуса в документах.
   При каждом proof-pass синхронизировать этот файл и
   `PsubsetPpoly_Internal_TODO.md`.
@@ -191,4 +200,4 @@ lake build pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean
 Если следующий инженер начинает с нуля контекста:
 1. Сначала читает **этот файл**.
 2. Потом читает `PsubsetPpoly_Internal_TODO.md` (раздел Execution status).
-3. Только после этого идёт в `TreeToStraight.lean` на direct closure B0.
+3. Только после этого идёт в `Circuit_Compiler`/`Simulation` на closure B0.

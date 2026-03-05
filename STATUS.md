@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-02-27
+Updated: 2026-03-04
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
@@ -46,25 +46,23 @@ File: `pnp3/Magnification/FinalResult.lean`
 
 ## Remaining blockers to unconditional status
 
-Legacy wrapper `P_ne_NP_final` still has four external assumptions:
+Active DAG final wrapper `P_ne_NP_final` requires two external inputs:
 
-1. `hasDefaultStructuredLocalityProviderPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `P_subset_PpolyReal` (`hPsubsetReal`)
+1. `NP_not_subset_PpolyDAG` (`hNPDag`)
+2. `PsubsetPpolyInternalContractsIteratedCanonical` (`hPpolyContracts`)
 
-Active constructive route (`P_ne_NP_final_of_default_supportBounds`) removes
-the default-provider blocker. Remaining assumptions on this route:
+Constructive compatibility wrapper `P_ne_NP_final_of_default_supportBounds`
+keeps `hasDefaultFormulaSupportRestrictionBoundsPartial` in its signature,
+but the DAG-final contradiction still depends on the same two inputs above.
 
-1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `P_subset_PpolyReal` (`hPsubsetReal`)
+Interpretation of current blocker surface:
 
-Also available: explicit variant `P_ne_NP_final_of_supportBounds` with direct
-`FormulaSupportRestrictionBoundsPartial`.
+1. AC0/formula-side separation is not yet internally connected to
+   `NP_not_subset_PpolyDAG`.
+2. Inclusion side `P ⊆ PpolyDAG` is available through explicit contract bundles,
+   but not yet as a no-input closed theorem on the active final route.
 
 ## Documentation policy
 
-Any file claiming unconditional `P ≠ NP` before these four items are discharged
+Any file claiming unconditional `P ≠ NP` before these blockers are discharged
 is incorrect and must be treated as outdated.

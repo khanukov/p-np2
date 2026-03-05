@@ -72,6 +72,16 @@
 
 Поэтому это не «дописать одну лемму», а вопрос архитектурного выравнивания маршрута.
 
+Техническая фиксация причины (по текущему коду):
+
+1. `runConfig`/`runtimeConfig` опираются на итерацию `step`.
+2. `step` сейчас identity, поэтому `runtimeConfig_eq_initial`.
+3. `stepCompiled` определяется отдельно (`stepCompiledTruthTable`) и не
+   совпадает с identity-шагом.
+
+Следствие: bridge `RuntimeConfigEqStepCompiled` не закрывается без изменения
+runtime-модели; это напрямую блокирует no-arg closure для inclusion-route.
+
 ### B3. `CompiledRuntimeCircuitSizeBound` (архитектурный блокер)
 
 Для compiled-runtime route текущий one-step assembly идёт через
@@ -132,6 +142,12 @@
    - `EvalAgreement`.
 2. Для старого API оставить обёртку через bridge-форму, но не как default source.
 3. Финальные wrappers (`FinalResult`, `Barrier.Bypass`) перевести на новый default bundle.
+
+Критерий прохождения шага C:
+
+1. Появился no-arg `RuntimeSpecProvider` (без `RuntimeConfigEqStepCompiled`).
+2. Появился no-arg endpoint `proved_P_subset_PpolyDAG_internal`.
+3. Default DAG-route больше не требует inclusion-контрактного аргумента.
 
 ## Шаг D: cleanup интерфейса
 

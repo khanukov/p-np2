@@ -52,12 +52,48 @@ Runbook по закрытию compiled-runtime size блока:
 - Цель: отдать аудиторам точный срез и получить независимую верификацию
   выбранной стратегии дожатия.
 
+## Update (2026-03-04): confirmed hard blocker for unconditional `P ⊆ PpolyDAG`
+
+Этот апдейт фиксирует результат прямой проверки кода (не только historical notes).
+
+### Что именно мешает безусловности сейчас
+
+1. В `Simulation.lean` базовый шаг `step` остаётся identity:
+   `step M sc = sc`.
+2. `runtimeConfig` построен через итерацию `step`, поэтому
+   `runtimeConfig = initialStraightConfig` (`runtimeConfig_eq_initial`).
+3. При этом compiled-runtime маршрут использует другой шаг:
+   `stepCompiled = stepCompiledTruthTable`.
+4. Из пунктов (1)-(3) следует, что bridge-контракт
+   `RuntimeConfigEqStepCompiled` не закрывается "короткой леммой":
+   это архитектурное несоответствие двух runtime-моделей.
+
+### Почему это блокирует именно безусловный `P ⊆ PpolyDAG`
+
+- Без закрытого `RuntimeConfigEqStepCompiled` не получается собрать
+  no-arg `RuntimeSpecProvider` в canonical (`runtimeConfig`) форме.
+- Без no-arg `RuntimeSpecProvider` нет no-arg endpoint-а
+  `proved_P_subset_PpolyDAG_internal`.
+- Значит inclusion-сторона остаётся контрактной в active DAG route.
+
+### Минимальный план исправления (зафиксированный)
+
+1. Сделать iterated `stepCompiledTruthTable` канонической runtime-формой
+   для internal closure (или явно перепривязать `runtimeConfig` к ней).
+2. Вывести no-arg `RuntimeSpecProvider` из уже закрытого
+   `runtimeSpecProviderIterated_internal` без bridge-контракта.
+3. Добавить no-arg theorem:
+   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+4. Перевести default final wrappers на no-contract inclusion endpoint,
+   оставив legacy/bridged маршруты только как compatibility.
+
 ## Update (2026-03-02): verified current blocker
 
-- Default DAG-route уже переведён на runtime-only контракт:
+- Inclusion-layer default closure (`proved_P_subset_PpolyDAG_of_contracts`)
+  уже переведён на runtime-only контракт:
   `PsubsetPpolyInternalContracts = RuntimeSpecProvider`.
 - Global `EvalAgreement` и `RuntimeConfigEqStepCompiled` больше не блокируют
-  default-route; они остались только в legacy/bridged ветках.
+  inclusion-layer default closure; они остались только в legacy/bridged ветках.
 - Главный оставшийся блокер для fully no-arg closure:
   нет закрытого `RuntimeSpecProvider` в текущей `runtimeConfig`-форме.
   Формально это видно по тому, что `runtimeConfig` сейчас сводится к
@@ -101,10 +137,9 @@ Runbook по закрытию compiled-runtime size блока:
   по `Fin`/cast в `StraightLine` и `TreeToStraight`.
 
 ### Осталось по плану (критический минимум)
-- ⏳ Полностью закрыть `appendWireSemantics.right` (не только через контрактную
-  декомпозицию, но и финальным безусловным доказательством).
-- ⏳ Довести до конца `compileTreeWireSemantics`.
-- ⏳ Собрать безусловный witness `StepCompiledContracts`.
+- ✅ `appendWireSemantics.right` закрыт.
+- ✅ `compileTreeWireSemantics` закрыт.
+- ✅ `stepCompiledContracts_internal` закрыт.
 - ⏳ Провести size-архитектурный рефактор compiled-runtime шага
   (`stepCompiledLinear`, DAG-preserving append-only assembly) и закрыть
   `CompiledRuntimeCircuitSizeBound` внутренним witness.
@@ -119,8 +154,9 @@ Runbook по закрытию compiled-runtime size блока:
 
 ### ✅ Финальный слой уже переведён на bundle-контракт (без `hCompiler`)
 - В `Magnification/FinalResult.lean` финальные DAG-wrapper’ы используют
-  `hPpolyContracts : PsubsetPpolyInternalContracts`, а включение `P ⊆ PpolyDAG`
-  берётся через `proved_P_subset_PpolyDAG_of_contracts`.
+  `hPpolyContracts : PsubsetPpolyInternalContractsIteratedCanonical`, а
+  включение `P ⊆ PpolyDAG` берётся через
+  `proved_P_subset_PpolyDAG_of_iteratedCanonicalContracts`.
 - В `Barrier/Bypass.lean` `P_ne_NP_final_with_barriers` тоже принимает
   `hPpolyContracts` и не принимает `hCompiler`.
 
@@ -141,12 +177,13 @@ Runbook по закрытию compiled-runtime size блока:
 
 ## 2) Что ещё НЕ закрыто (реальные блокеры)
 
-### 🔴 Блокер A: нет внутреннего безусловного witness для `StepCompiledContracts`
-Сейчас `StepCompiledContracts` определён, но в TODO-цепочке всё ещё требуется
-внутреннее (без внешних гипотез) построение:
-- `AppendWireSemantics` (особенно `right` ветка),
-- `CompileTreeWireSemantics`,
-- затем их упаковка в `StepCompiledContracts`.
+### 🔴 Блокер A: runtime-модель (`runtimeConfig` vs `stepCompiledTruthTable`)
+`StepCompiledContracts` уже закрыт (`stepCompiledContracts_internal`), но
+безусловный `RuntimeSpecProvider` всё ещё не собран в canonical-форме
+`runtimeConfig` из-за архитектурного разрыва:
+- `step` identity;
+- `runtimeConfig` сводится к `initialStraightConfig`;
+- compiled-runtime side идёт через `stepCompiledTruthTable`.
 
 ### 🔴 Блокер B: `polyTMToStraightLineCompiler_internal` всё ещё параметризован
 Сейчас это:
@@ -170,43 +207,30 @@ Runbook по закрытию compiled-runtime size блока:
 1. `lake build`
 2. Зафиксировать, что текущее состояние зелёное по build (warnings допустимы).
 
-### Шаг 1. Закрыть `AppendWireSemantics.right` в `TreeToStraight.lean`
-1. Добавить локальные леммы для `liftWireIntoAppend` на уровне `evalWireAux`/`evalGateAux`.
-2. Доказать правую ветку append-семантики.
-3. Собрать финальный theorem:
-   - `appendWireSemantics : AppendWireSemantics := ⟨left, right⟩`
-4. Проверка:
-   - `lake build pnp3/Complexity/PsubsetPpolyInternal/TreeToStraight.lean`
+### Шаг 1. Runtime-route refactor к iterated `stepCompiledTruthTable`
+1. Зафиксировать canonical runtime-форму через
+   `Nat.iterate (stepCompiledTruthTable M) (M.runTime n) (initialStraightConfig M n)`.
+2. Либо перепривязать `runtimeConfig`, либо ввести новый canonical provider route
+   и перевести default closure на него.
+3. Проверка:
+   - `lake build pnp3/Complexity/PsubsetPpolyInternal/Simulation.lean`
 
-### Шаг 2. Закрыть `CompileTreeWireSemantics`
-1. Довести структурную индукцию по `Boolcube.Circuit`.
-2. Использовать уже существующие helper’ы:
-   - `toCircuitWireOf`, `evalWireOf`, `wireOf_eq`,
-   - sematics-леммы для `snoc`/append.
-3. Получить theorem:
-   - `compileTreeWireSemantics : CompileTreeWireSemantics`
-4. Проверка:
-   - `lake build pnp3/Complexity/PsubsetPpolyInternal/StraightLineSemantics.lean`
-   - `lake build pnp3/Complexity/PsubsetPpolyInternal/TreeToStraight.lean`
-
-### Шаг 3. Закрыть внутренний witness `StepCompiledContracts`
-1. В `Simulation/Circuit_Compiler.lean` (или ближайшем internal-модуле)
-   собрать безусловный witness:
-   - `stepCompiledContracts_internal : StepCompiledContracts`
-   из `compileTreeWireSemantics` + `appendWireSemantics`.
-2. Проверка:
-   - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`
-
-### Шаг 4. Закрыть `RuntimeSpecProvider` из внутренних контрактов
-1. Использовать уже готовые:
-   - `stepCompiledSemanticsProvider_of_contracts`,
-   - `runtimeSpec_of_stepCompiledSemantics` / `runtimeSpec_of_stepCompiledContracts`.
-2. Получить безусловный:
-   - `runtimeSpecProvider_internal : RuntimeSpecProvider`
+### Шаг 2. Собрать no-arg `RuntimeSpecProvider`
+1. Поднять уже закрытый iterated witness
+   (`runtimeSpecProviderIterated_internal`) до no-arg формы runtime-provider.
+2. Исключить зависимость от bridge-контракта `RuntimeConfigEqStepCompiled`
+   в default closure route.
 3. Проверка:
    - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`
 
-### Шаг 5. Сделать безпараметрический компилятор
+### Шаг 3. Закрыть no-arg inclusion endpoint
+1. Добавить theorem:
+   - `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+2. Реализация: через no-arg runtime-provider route.
+3. Проверка:
+   - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`
+
+### Шаг 4. Сделать безпараметрический компилятор
 1. Ввести финальный символ:
    - `polyTMToStraightLineCompiler_internal : PolyTMToStraightLineCompiler`
    без входного `hRuntime`.
@@ -215,26 +239,16 @@ Runbook по закрытию compiled-runtime size блока:
 3. Проверка:
    - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`
 
-### Шаг 6. Закрыть внутреннее `P_subset_PpolyDAG` без контрактных аргументов
-1. Добавить theorem:
-   - `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`
-2. Реализация: через
-   `P_subset_PpolyDAG_of_compiler polyTMToStraightLineCompiler_internal` + `EvalAgreement`.
-3. Если `EvalAgreement` ещё параметризован — аналогично закрыть его внутренним witness’ом
-   (или отдельным подшагом 6.a перед 6).
-4. Проверка:
-   - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`
-
-### Шаг 7. Переключить финальные wrapper’ы на внутренний theorem (опционально в том же PR)
+### Шаг 5. Переключить финальные wrapper’ы на внутренний theorem (опционально в том же PR)
 1. В `FinalResult.lean` и `Barrier/Bypass.lean` заменить контрактный вход
-   там, где политика проекта уже разрешает, на внутренний theorem из шага 6.
+   там, где политика проекта уже разрешает, на внутренний theorem из шага 3.
 2. Если проект пока хочет держать контрактный API для обратной совместимости:
    - оставить публичный API,
    - добавить внутренние overload/theorem без параметров.
 3. Проверка:
    - `lake build Magnification.FinalResult Barrier.Bypass`
 
-### Шаг 8. Финальный аудит «одним запуском»
+### Шаг 6. Финальный аудит «одним запуском»
 1. `lake build`
 2. `./scripts/check.sh` (если скрипт присутствует и исполняем)
 3. Проверить аксиомный аудит модулей (`Tests/AxiomsAudit.lean`, `Tests/BarrierAudit.lean`)

@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-02-27
+Updated: 2026-03-04
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
@@ -19,23 +19,23 @@ Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
 ## What still blocks unconditional `P ≠ NP`
 
-Track these four items on the active constructive final route
-`P_ne_NP_final_of_default_supportBounds`:
+Track these two core items on the active DAG final route `P_ne_NP_final`:
 
-1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `hPsubsetReal`:
-   `P_subset_PpolyReal`
+1. Internalize `hNPDag`:
+   `NP_not_subset_PpolyDAG`
+2. Internalize `hPpolyContracts`:
+   `PsubsetPpolyInternalContractsIteratedCanonical`
 
-Explicit constructive route `P_ne_NP_final_of_supportBounds` is also available.
+Compatibility route `P_ne_NP_final_of_default_supportBounds` still carries
+`hasDefaultFormulaSupportRestrictionBoundsPartial` in its signature, but the
+DAG contradiction step is blocked by the same two core items above.
 
 ## Execution order
 
-1. Keep docs honest: no unconditional claim while the four blockers remain.
+1. Keep docs honest: no unconditional claim while the DAG blockers remain.
 2. Continue removing dead branches only if final API + tests still pass.
-3. Prioritize internalizing item (1) and item (4), then eliminate remaining
-   asymptotic/NP-family assumptions.
+3. Prioritize internalizing item (2), then close item (1) via an in-repo DAG
+   separation route from the AC0/formula side.
 
 ## Done criteria
 

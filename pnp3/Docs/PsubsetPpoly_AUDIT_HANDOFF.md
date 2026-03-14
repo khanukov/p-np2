@@ -15,8 +15,11 @@ Machine-check:
 ## 2) Активная цепочка доказательства
 
 1. `proved_P_subset_PpolyDAG_internal`
-2. `proved_P_subset_PpolyDAG_of_linearOutputAgreementAndLinearStepProvider`
-3. `P_subset_PpolyDAG_of_compiledRuntimeLinearContracts`
+2. `proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts`
+3. internal trio:
+   `compiledAcceptOutputWireAgreementLinear_internal`,
+   `compiledRuntimeCircuitSizeBoundLinear_internal`,
+   `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
 В финальном default wiring:
 - `pnp3/Magnification/FinalResult.lean` использует

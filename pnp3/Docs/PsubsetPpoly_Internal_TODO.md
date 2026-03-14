@@ -9,8 +9,11 @@
 
 Фактическая активная цепочка закрытия:
 1. `proved_P_subset_PpolyDAG_internal`
-2. `proved_P_subset_PpolyDAG_of_linearOutputAgreementAndLinearStepProvider`
-3. `P_subset_PpolyDAG_of_compiledRuntimeLinearContracts`
+2. `proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts`
+3. internal trio:
+   `compiledAcceptOutputWireAgreementLinear_internal`,
+   `compiledRuntimeCircuitSizeBoundLinear_internal`,
+   `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
 Именно этот endpoint используется финальным слоем:
 - `pnp3/Magnification/FinalResult.lean` (default route)
@@ -25,9 +28,8 @@
 - `step = id` ветка (`step`, `runConfig`, `runtimeConfig`, `runtimeConfig_eq_initial`)
 - legacy bridge-контракты между `runtimeConfig` и `stepCompiled` в closure path
 
-Оставшийся truth-table маршрут в `Circuit_Compiler.lean`:
-- сохранён только как compatibility API для explicit-contract wiring
-- не используется no-arg endpoint'ом `proved_P_subset_PpolyDAG_internal`
+В `Circuit_Compiler.lean` больше нет отдельного compatibility-слоя
+`InternalCompiler/*` и `EvalAgreement`-ветки: active surface сведён к linear-route.
 
 ## Residual blocker (outside P ⊆ PpolyDAG closure)
 

@@ -184,7 +184,7 @@ lemma point_eval_eq_of_val_eq
     (hval : (i : Nat) = (j : Nat)) :
     x i = x j := by
   have hij : i = j := Fin.ext hval
-  simpa [hij]
+  simp [hij]
 
 /--
 Input-case specialization for `liftWireIntoAppend`: the corresponding input
@@ -335,9 +335,7 @@ lemma evalWireOf_liftWire_right
 def constCircuit (n : Nat) (b : Bool) : Circuit n where
   gates := 1
   gate := fun _ => .const b
-  output := ⟨n, by
-    have : n < n + 1 := Nat.lt_succ_self n
-    simpa [Nat.add_comm] using this⟩
+  output := ⟨n, by omega⟩
 
 /-- One-gate circuit with irrelevant dummy output, used as input carrier. -/
 def inputCarrier (n : Nat) : Circuit n :=
@@ -354,9 +352,8 @@ noncomputable def compileTree : Boolcube.Circuit n → Compiled n
   | .const b =>
       { ckt := constCircuit n b
         out := ⟨n, by
-          have : n < n + (constCircuit n b).gates := by
-            simpa [constCircuit] using Nat.lt_succ_self n
-          exact this⟩ }
+          change n < n + 1
+          exact Nat.lt_succ_self n⟩ }
   | .not c =>
       let cc := compileTree c
       let ckt' := snoc cc.ckt (.not cc.out)
@@ -605,9 +602,7 @@ lemma append_gate_right_eq_add
     (appendCircuit C₁ C₂).gate
       ⟨C₁.gates + j, append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj⟩ =
       cast (by
-        have hnorm : C₁.gates + ((C₁.gates + j) - C₁.gates) = C₁.gates + j := by
-          omega
-        simp [hnorm])
+        simp)
       (liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := ((C₁.gates + j) - C₁.gates))
         (C₂.gate
           ⟨(C₁.gates + j) - C₁.gates,
@@ -682,7 +677,7 @@ lemma append_gate_right_eq_lift
         (C₂.gate ⟨j, hj⟩) := by
     exact Circuit.gate_heq C₂ hidx
   have h_eq : (C₁.gates + j) - C₁.gates = j := by
-    simpa using append_right_sub_add_cancel (C₁ := C₁) (C₂ := C₂) (j := j) hj
+    exact append_right_sub_add_cancel (C₁ := C₁) (C₂ := C₂) (j := j) hj
   have hnorm : n + (C₁.gates + ((C₁.gates + j) - C₁.gates)) = n + (C₁.gates + j) := by
     omega
   have h_clean :
@@ -721,9 +716,9 @@ proofs in append/right branches.
     {g : Nat} (hg : g < C.gates)
     (m : Nat) (hEq : m = n + g) (i : Fin m) :
     evalWireOf C x hg (Fin.cast hEq i)
-      (fun j _ hj' => evalGateAux C x hj') =
-    evalWireOf C x hg (Fin.cast (by simpa [hEq]) i)
-      (fun j _ hj' => evalGateAux C x hj') := by
+      (fun _ _ hj' => evalGateAux C x hj') =
+    evalWireOf C x hg (Fin.cast (by simp [hEq]) i)
+      (fun _ _ hj' => evalGateAux C x hj') := by
   subst hEq
   rfl
 
@@ -733,9 +728,9 @@ proofs in append/right branches.
     {g : Nat} (hg : g < C.gates)
     (m : Nat) (hEq : m = n + g) (i : Fin m) :
     toCircuitWireOf C hg (Fin.cast hEq i)
-      (fun j _ hj' => toCircuitGateAux C hj') =
-    toCircuitWireOf C hg (Fin.cast (by simpa [hEq]) i)
-      (fun j _ hj' => toCircuitGateAux C hj') := by
+      (fun _ _ hj' => toCircuitGateAux C hj') =
+    toCircuitWireOf C hg (Fin.cast (by simp [hEq]) i)
+      (fun _ _ hj' => toCircuitGateAux C hj') := by
   subst hEq
   rfl
 
@@ -766,11 +761,11 @@ extensionally equal but non-definitional `≤` witnesses.
 `evalWireAux` at budget `g` is definitionally the same computation as
 `evalWireOf` instantiated with `evalGateAux` as recursive payload.
 -/
-lemma evalWireAux_eq_evalWireOf
+  lemma evalWireAux_eq_evalWireOf
     {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
     {g : Nat} (hg : g < C.gates) (w : Fin (n + g)) :
     evalWireAux C x g (Nat.le_of_lt hg) w =
-      evalWireOf C x hg w (fun j _ hj' => evalGateAux C x hj') := by
+      evalWireOf C x hg w (fun _ _ hj' => evalGateAux C x hj') := by
   unfold evalWireAux evalWireOf
   by_cases hw : (w : Nat) < n
   · simp [hw]
@@ -821,13 +816,13 @@ mutual
               (g := g) (hg := Nat.le_of_lt hg) u
             have hv := evalWireAux_append_left C₁ C₂ x
               (g := g) (hg := Nat.le_of_lt hg) v
-            simpa [evalGateAux, hgate, hOp, hu, hv]
+            simp [evalGateAux, hgate, hOp, hu, hv]
         | or u v =>
             have hu := evalWireAux_append_left C₁ C₂ x
               (g := g) (hg := Nat.le_of_lt hg) u
             have hv := evalWireAux_append_left C₁ C₂ x
               (g := g) (hg := Nat.le_of_lt hg) v
-            simpa [evalGateAux, hgate, hOp, hu, hv]
+            simp [evalGateAux, hgate, hOp, hu, hv]
 end
 
 /--
@@ -850,7 +845,7 @@ lemma evalGateAux_append_right
     exact append_gate_right_eq_lift (C₁ := C₁) (C₂ := C₂) (j := g) hg
   cases hOp : C₂.gate ⟨g, hg⟩ with
   | const b =>
-      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend]
+      simp [evalGateAux, hgate, hOp, liftOpIntoAppend]
   | not u =>
       have huW :
           evalWireOf (appendCircuit C₁ C₂) x
@@ -887,7 +882,7 @@ lemma evalGateAux_append_right
           _ = evalWireAux C₂ x g (Nat.le_of_lt hg) u := by
                 simpa using
                   (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := u)).symm
-      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend, hu]
+      simp [evalGateAux, hgate, hOp, liftOpIntoAppend, hu]
   | and u v =>
       have huW :
           evalWireOf (appendCircuit C₁ C₂) x
@@ -959,7 +954,7 @@ lemma evalGateAux_append_right
           _ = evalWireAux C₂ x g (Nat.le_of_lt hg) v := by
                 simpa using
                   (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := v)).symm
-      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend, hu, hv]
+      simp [evalGateAux, hgate, hOp, liftOpIntoAppend, hu, hv]
   | or u v =>
       have huW :
           evalWireOf (appendCircuit C₁ C₂) x
@@ -1031,7 +1026,7 @@ lemma evalGateAux_append_right
           _ = evalWireAux C₂ x g (Nat.le_of_lt hg) v := by
                 simpa using
                   (evalWireAux_eq_evalWireOf (C := C₂) (x := x) (hg := hg) (w := v)).symm
-      simpa [evalGateAux, hgate, hOp, liftOpIntoAppend, hu, hv]
+      simp [evalGateAux, hgate, hOp, liftOpIntoAppend, hu, hv]
 
 /-- Closed right-branch gate contract (no external assumptions). -/
 theorem appendGateRightSemantics :
@@ -1047,11 +1042,11 @@ lemma appendWireSemantics_left :
   unfold evalWire evalWireInternal
   have hval :
       ((leftWireInAppend C₁ C₂ i : Fin (n + (C₁.gates + C₂.gates))) : Nat) = i := by
-    simpa using leftWireInAppend_val (C₁ := C₁) (C₂ := C₂) i
+    exact leftWireInAppend_val (C₁ := C₁) (C₂ := C₂) i
   by_cases hIn : (i : Nat) < n
   · have hInL : ((leftWireInAppend C₁ C₂ i : Fin (n + (C₁.gates + C₂.gates))) : Nat) < n := by
       simpa [hval] using hIn
-    simp [hIn, hInL]
+    simp [hIn]
   · have hInL : ¬ ((leftWireInAppend C₁ C₂ i : Fin (n + (C₁.gates + C₂.gates))) : Nat) < n := by
       simpa [hval] using hIn
     let j : Nat := (i : Nat) - n
@@ -1064,7 +1059,7 @@ lemma appendWireSemantics_left :
     have hGate :
         evalGateAux (appendCircuit C₁ C₂) x hjL = evalGateAux C₁ x hj := by
       exact evalGateAux_append_left C₁ C₂ x (g := j) hj
-    simp [hIn, hInL, hval, j, hj, hjL, hGate]
+    simp [hIn, j, hGate]
 
 /--
 Right append semantics reduced to a gate-level contract on suffix gates.
@@ -1141,16 +1136,21 @@ theorem compileTreeWireSemantics_of_append
   induction c with
   | var i =>
       intro x
-      simpa [Boolcube.Circuit.eval] using evalWire_compileTree_var (i := i) (x := x)
+      change evalWire (C := (compileTree (Boolcube.Circuit.var i)).ckt) (x := x)
+          (compileTree (Boolcube.Circuit.var i)).out = x i
+      exact evalWire_compileTree_var (i := i) (x := x)
   | const b =>
       intro x
-      simpa [Boolcube.Circuit.eval] using evalWire_compileTree_const (b := b) (x := x)
+      change evalWire (C := (compileTree (Boolcube.Circuit.const b)).ckt) (x := x)
+          (compileTree (Boolcube.Circuit.const b)).out = b
+      exact evalWire_compileTree_const (b := b) (x := x)
   | not c ih =>
       intro x
       dsimp [compileTree]
       have hLast := evalWire_snoc_last
         (C := (compileTree c).ckt) (op := .not (compileTree c).out) (x := x)
-      simpa [Boolcube.Circuit.eval, ih x] using hLast
+      rw [Boolcube.Circuit.eval, ← ih x]
+      exact hLast
   | and c1 c2 ih1 ih2 =>
       intro x
       rcases hAppend with ⟨hLeft, hRight⟩
@@ -1166,7 +1166,8 @@ theorem compileTreeWireSemantics_of_append
       have hR : evalWire (C := merged) (x := x) out2 = evalWire (C := cc2.ckt) (x := x) cc2.out := by
         simpa [merged, out2] using hRight cc1.ckt cc2.ckt x cc2.out
       have hLast := evalWire_snoc_last (C := merged) (op := .and out1 out2) (x := x)
-      simpa [Boolcube.Circuit.eval, cc1, cc2, merged, out1, out2, ih1 x, ih2 x, hL, hR] using hLast
+      rw [Boolcube.Circuit.eval, ← ih1 x, ← ih2 x, ← hL, ← hR]
+      exact hLast
   | or c1 c2 ih1 ih2 =>
       intro x
       rcases hAppend with ⟨hLeft, hRight⟩
@@ -1182,7 +1183,8 @@ theorem compileTreeWireSemantics_of_append
       have hR : evalWire (C := merged) (x := x) out2 = evalWire (C := cc2.ckt) (x := x) cc2.out := by
         simpa [merged, out2] using hRight cc1.ckt cc2.ckt x cc2.out
       have hLast := evalWire_snoc_last (C := merged) (op := .or out1 out2) (x := x)
-      simpa [Boolcube.Circuit.eval, cc1, cc2, merged, out1, out2, ih1 x, ih2 x, hL, hR] using hLast
+      rw [Boolcube.Circuit.eval, ← ih1 x, ← ih2 x, ← hL, ← hR]
+      exact hLast
 
 /--
 Compile-tree semantics from the gate-level append-right contract.
@@ -1233,7 +1235,7 @@ theorem packFinWireSemantics_of_contracts
           intro j
           exact ih fPref j
       unfold packFin
-      simp [fPref, pref, lastCompiled, merged, lastOut]
+      simp
       by_cases hi : (i : Nat) < m
       · let i' : Fin m := ⟨i, hi⟩
         let iUp : Fin (m + 1) := Fin.castLT i' (Nat.lt_trans i'.isLt (Nat.lt_succ_self m))
@@ -1262,7 +1264,7 @@ theorem packFinWireSemantics_of_contracts
           hCompile (f (Fin.last m)) x
         have hiFin : i = Fin.last m := by
           ext
-          simpa [hiEq]
+          simp [hiEq]
         simpa [hi, hiEq, hiFin] using hR.trans hC
 
 end StraightLine

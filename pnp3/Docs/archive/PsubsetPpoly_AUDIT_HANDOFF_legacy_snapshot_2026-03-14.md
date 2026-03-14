@@ -3,6 +3,10 @@
 Дата актуализации: 2026-03-14.
 Статус: current.
 
+Этот файл содержит только актуальный handoff-срез для релизного прохода.
+Исторический freeze-handoff сохранён в:
+`pnp3/Docs/archive/PsubsetPpoly_AUDIT_HANDOFF_legacy_snapshot_2026-03-14.md`.
+
 ## 1) Текущий итог по inclusion-side
 
 `P ⊆ PpolyDAG` закрыт на active no-arg endpoint:
@@ -32,9 +36,6 @@ Machine-check:
 2. legacy bridge-шина `runtimeConfig ↔ stepCompiled` в default closure path.
 3. legacy/iterated compatibility chain из активных wrapper-маршрутов.
 4. legacy aliases в `PsubsetPpolyDAG_Internal.lean`.
-5. direct legacy naming в active conversion route:
-   активный вход — `Complexity.PpolyDAG_from_StraightLine` +
-   `StraightLineAdapter`.
 
 ## 4) Остаток, который не блокирует inclusion
 
@@ -51,6 +52,6 @@ Machine-check:
 
 Ключевая дополнительная проверка conversion-слоя:
 - `#print axioms` для
-  `StraightLineAdapter.ppolyDAG_of_straightLine_family`,
+  `ArchiveStraightLineAdapter.ppolyDAG_of_straightLine_family`,
   `ppolyDAG_of_ppolyStraightLine`,
   `P_subset_PpolyDAG_of_P_subset_PpolyStraightLine`.

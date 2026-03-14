@@ -3,6 +3,12 @@
 Дата: 2026-03-02  
 Статус: active
 
+> Release note (2026-03-14):
+> этот runbook сохранён как архитектурная трассировка.
+> Для текущего release-статуса и active-route используйте:
+> `pnp3/Docs/PsubsetPpoly_Internal_TODO.md` и
+> `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`.
+
 ## Update (2026-03-13): post-recheck note
 
 Проверки на текущем дереве:

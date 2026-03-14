@@ -4,7 +4,7 @@ import Complexity.PsubsetPpolyInternal.StraightLine
 import Complexity.PsubsetPpolyInternal.StraightLineSemantics
 import Complexity.PsubsetPpolyInternal.StraightLineBuilder
 import Complexity.PsubsetPpolyInternal.TreeToStraight
-import Complexity.PpolyDAG_from_ArchiveStraightLine
+import Complexity.PpolyDAG_from_StraightLine
 import Mathlib.Tactic
 
 namespace Pnp3
@@ -14,7 +14,7 @@ namespace Simulation
 
 open Boolcube
 open TM
-open Pnp3.Complexity.ArchiveStraightLineAdapter
+open Pnp3.Complexity.StraightLineAdapter
 
 /-- Cardinality of TM control states (compile-time constant for fixed `M`). -/
 def stateCard (M : TM) : Nat := Fintype.card M.state
@@ -7847,26 +7847,26 @@ lemma constBase_evalWire_true (n : Nat) (x : Point n) :
   simpa [Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire,
     Pnp3.Internal.PsubsetPpoly.StraightLine.evalGateAux, constBaseCircuit] using hgate
 
-lemma constBase_archive_eval_false (n : Nat) (x : Point n) :
-    Pnp3.Complexity.ArchiveStraightLineAdapter.eval (constBaseCircuit n) x = false := by
-  unfold Pnp3.Complexity.ArchiveStraightLineAdapter.eval
-    Pnp3.Complexity.ArchiveStraightLineAdapter.toDag
-  simp [Pnp3.Complexity.ArchiveStraightLineAdapter.toDagWire,
-    Pnp3.Complexity.ArchiveStraightLineAdapter.toDagOp,
+lemma constBase_adapter_eval_false (n : Nat) (x : Point n) :
+    Pnp3.Complexity.StraightLineAdapter.eval (constBaseCircuit n) x = false := by
+  unfold Pnp3.Complexity.StraightLineAdapter.eval
+    Pnp3.Complexity.StraightLineAdapter.toDag
+  simp [Pnp3.Complexity.StraightLineAdapter.toDagWire,
+    Pnp3.Complexity.StraightLineAdapter.toDagOp,
     constBaseCircuit, ComplexityInterfaces.DagCircuit.eval,
     ComplexityInterfaces.DagCircuit.eval.evalGateAt]
 
-lemma constBase_archive_eval_true (n : Nat) (x : Point n) :
-    Pnp3.Complexity.ArchiveStraightLineAdapter.eval
-      (Pnp3.Complexity.ArchiveStraightLineAdapter.withOutput (constBaseCircuit n)
+lemma constBase_adapter_eval_true (n : Nat) (x : Point n) :
+    Pnp3.Complexity.StraightLineAdapter.eval
+      (Pnp3.Complexity.StraightLineAdapter.withOutput (constBaseCircuit n)
         ⟨n + 1, by
           have : n + 1 < n + 2 := by omega
           simpa [constBaseCircuit] using this⟩) x = true := by
-  unfold Pnp3.Complexity.ArchiveStraightLineAdapter.eval
-    Pnp3.Complexity.ArchiveStraightLineAdapter.toDag
-    Pnp3.Complexity.ArchiveStraightLineAdapter.withOutput
-  simp [Pnp3.Complexity.ArchiveStraightLineAdapter.toDagWire,
-    Pnp3.Complexity.ArchiveStraightLineAdapter.toDagOp,
+  unfold Pnp3.Complexity.StraightLineAdapter.eval
+    Pnp3.Complexity.StraightLineAdapter.toDag
+    Pnp3.Complexity.StraightLineAdapter.withOutput
+  simp [Pnp3.Complexity.StraightLineAdapter.toDagWire,
+    Pnp3.Complexity.StraightLineAdapter.toDagOp,
     constBaseCircuit, ComplexityInterfaces.DagCircuit.eval,
     ComplexityInterfaces.DagCircuit.eval.evalGateAt]
 
@@ -8606,10 +8606,6 @@ noncomputable abbrev stepCompiled (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n :=
   stepCompiledTruthTable M sc
 
-noncomputable def step (M : TM) {n : Nat} (sc : StraightConfig M n) :
-    StraightConfig M n :=
-  sc
-
 lemma stepCompiled_spec_of_semantics
     (M : TM) {n : Nat}
     (sc : StraightConfig M n)
@@ -8889,33 +8885,6 @@ theorem stepCompiledLinearCandidateStepSpecProvider_internal
     (hHead := stepCompiledLinearCandidateHead_spec_internal (M := M))
     (hState := stepCompiledLinearCandidateState_spec_internal (M := M))
 
-lemma iterate_spec_of_step_spec
-    (M : TM) {n : Nat}
-    (hStep :
-      ∀ (sc : StraightConfig M n)
-        (f : Point n → TM.Configuration (M := M) n),
-        Spec (sc := sc) (f := f) →
-        Spec (sc := step M sc) (f := fun x => TM.stepConfig (M := M) (f x))) :
-    ∀ (sc : StraightConfig M n)
-      (f : Point n → TM.Configuration (M := M) n),
-      Spec (sc := sc) (f := f) →
-      ∀ t,
-        Spec (sc := Nat.iterate (step M) t sc)
-          (f := fun x => Nat.iterate (TM.stepConfig (M := M)) t (f x)) := by
-  intro sc f hsc t
-  induction t with
-  | zero =>
-      simpa using hsc
-  | succ t ih =>
-      have hPrev :
-          Spec (sc := Nat.iterate (step M) t sc)
-            (f := fun x => Nat.iterate (TM.stepConfig (M := M)) t (f x)) := ih
-      have hNext := hStep
-        (Nat.iterate (step M) t sc)
-        (fun x => Nat.iterate (TM.stepConfig (M := M)) t (f x))
-        hPrev
-      simpa [Function.iterate_succ_apply', Function.comp] using hNext
-
 lemma iterate_spec_of_next
     (M : TM) {n : Nat}
     (next : StraightConfig M n → StraightConfig M n)
@@ -9040,43 +9009,6 @@ lemma runtime_spec_of_stepCompiledLinearCandidateStepSpecProvider
   intro sc f hsc
   exact hStep sc f hsc
 
-/-- Iterate `step` exactly `t` times starting from `sc`. -/
-noncomputable def runConfig (M : TM) {n : Nat}
-    (sc : StraightConfig M n) (t : Nat) : StraightConfig M n :=
-  Nat.iterate (step M) t sc
-
-/-- With the current straight layer (`step = id`), iteration is stable. -/
-@[simp] lemma runConfig_eq (M : TM) {n : Nat}
-    (sc : StraightConfig M n) (t : Nat) :
-    runConfig M sc t = sc := by
-  induction t with
-  | zero =>
-      simp [runConfig]
-  | succ t ih =>
-      simpa [runConfig, step, Nat.iterate, ih]
-
-lemma runtime_spec_of_step_spec
-    (M : TM) (n : Nat)
-    (hStep :
-      ∀ (sc : StraightConfig M n)
-        (f : Point n → TM.Configuration (M := M) n),
-        Spec (sc := sc) (f := f) →
-        Spec (sc := step M sc) (f := fun x => TM.stepConfig (M := M) (f x))) :
-    Spec (sc := runConfig M (initialStraightConfig M n) (M.runTime n))
-      (f := fun x => M.run (n := n) x) := by
-  have hInit : Spec (sc := initialStraightConfig M n) (f := fun x => M.initialConfig x) :=
-    initialStraightConfig_spec M n
-  have hIter := iterate_spec_of_step_spec (M := M) (n := n) hStep
-    (sc := initialStraightConfig M n)
-    (f := fun x => M.initialConfig x)
-    hInit
-    (M.runTime n)
-  simpa [runConfig, TM.run, TM.runConfig] using hIter
-
-/-- Straight-line configuration after simulating for `runTime n` steps. -/
-noncomputable def runtimeConfig (M : TM) (n : Nat) : StraightConfig M n :=
-  runConfig M (initialStraightConfig M n) (M.runTime n)
-
 /--
 Compiled-runtime straight configuration: iterate `stepCompiled` for exactly
 `runTime n` steps from the initial straight configuration.
@@ -9131,21 +9063,6 @@ lemma runtimeConfigCompiledLinear_gates_le_budgetExpanded
     simp [initialStraightConfig, constBaseCircuit]
   simpa [runtimeConfigCompiledLinear, hInit] using hIter
 
-lemma runtimeConfig_spec_of_step_spec
-    (M : TM) (n : Nat)
-    (hStep :
-      ∀ (sc : StraightConfig M n)
-        (f : Point n → TM.Configuration (M := M) n),
-        Spec (sc := sc) (f := f) →
-        Spec (sc := step M sc) (f := fun x => TM.stepConfig (M := M) (f x))) :
-    Spec (sc := runtimeConfig M n) (f := fun x => M.run (n := n) x) := by
-  simpa [runtimeConfig] using runtime_spec_of_step_spec (M := M) (n := n) hStep
-
-/-- Runtime straight configuration is currently the initial straight config. -/
-@[simp] lemma runtimeConfig_eq_initial (M : TM) (n : Nat) :
-    runtimeConfig M n = initialStraightConfig M n := by
-  simp [runtimeConfig, runConfig_eq]
-
 /--
 Acceptance extraction from an arbitrary straight configuration by redirecting
 output to the accepting-state wire.
@@ -9155,64 +9072,15 @@ noncomputable def acceptCircuitOf (M : TM) {n : Nat}
   withOutput sc.circuit (sc.state M.accept)
 
 /--
-Acceptance circuit extracted from the runtime straight configuration by
-redirecting output to the accepting-state wire.
--/
-noncomputable def acceptCircuit (M : TM) (n : Nat) : StraightLineCircuit n :=
-  let cfg := runtimeConfig M n
-  withOutput cfg.circuit (cfg.state M.accept)
-
-/--
 Acceptance circuit extracted from the compiled-runtime straight configuration.
 -/
 noncomputable def acceptCircuitCompiled (M : TM) (n : Nat) : StraightLineCircuit n :=
   acceptCircuitOf M (runtimeConfigCompiled M n)
 
-/-- Gate count is preserved when only output redirection is applied. -/
-lemma acceptCircuit_gates (M : TM) (n : Nat) :
-    (acceptCircuit M n).gates = (runtimeConfig M n).circuit.gates := by
-  simp [acceptCircuit, runtimeConfig, withOutput]
-
 /-- Gate count is preserved for compiled-runtime acceptance extraction. -/
 lemma acceptCircuitCompiled_gates (M : TM) (n : Nat) :
     (acceptCircuitCompiled M n).gates = (runtimeConfigCompiled M n).circuit.gates := by
   simp [acceptCircuitCompiled, acceptCircuitOf, runtimeConfigCompiled, withOutput]
-
-/-- In the current straight layer, acceptance extraction keeps the base gate count. -/
-@[simp] lemma straightAcceptCircuit_gates (M : TM) (n : Nat) :
-    (acceptCircuit M n).gates = 2 := by
-  simp [acceptCircuit_gates, runtimeConfig_eq_initial, initialStraightConfig, constBaseCircuit]
-
-/--
-Polynomial gate bound used by the straight-line compiler packaging.
-The shape is intentionally normalized to `n^k + k`.
--/
-def gatePolyBound (_M : TM) (c n : Nat) : Nat :=
-  n ^ (c + 4) + (c + 4)
-
-/--
-Gate count of the straight acceptance circuit is polynomially bounded.
-`hRun` is carried for interface compatibility with the final compiler API.
--/
-lemma straightAcceptCircuit_le_gatePolyBound
-    (M : TM) (c : Nat)
-    (_hRun : ∀ m, M.runTime m ≤ m ^ c + c) (n : Nat) :
-    (acceptCircuit M n).gates ≤ gatePolyBound M c n := by
-  have h2 : 2 ≤ c + 4 := by omega
-  have hLift : c + 4 ≤ n ^ (c + 4) + (c + 4) := by
-    exact Nat.le_add_left (c + 4) (n ^ (c + 4))
-  calc
-    (acceptCircuit M n).gates = 2 := straightAcceptCircuit_gates M n
-    _ ≤ c + 4 := h2
-    _ ≤ n ^ (c + 4) + (c + 4) := hLift
-    _ = gatePolyBound M c n := rfl
-
-/-- The packaged straight gate bound is itself of the form `n^k + k`. -/
-lemma gatePolyBound_poly (M : TM) (c : Nat) :
-    ∃ k, ∀ n, gatePolyBound M c n ≤ n ^ k + k := by
-  refine ⟨c + 4, ?_⟩
-  intro n
-  simp [gatePolyBound]
 
 /--
 Straight-line acceptance extraction is correct under a runtime configuration
@@ -9241,19 +9109,6 @@ lemma acceptCircuitOf_spec_of_runSpec (M : TM) (n : Nat)
   simpa [StraightConfig.evalState] using hEval.trans (hState.trans hIndicator)
 
 /--
-Straight-line acceptance extraction is correct under a runtime configuration
-specification.
--/
-lemma acceptCircuit_spec_of_runSpec (M : TM) (n : Nat)
-    (hRun : Spec (sc := runtimeConfig M n) (f := fun x => M.run (n := n) x)) :
-    ∀ x,
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x =
-        TM.accepts (M := M) (n := n) x := by
-  simpa [acceptCircuit, acceptCircuitOf, -runtimeConfig_eq_initial] using
-    (acceptCircuitOf_spec_of_runSpec (M := M) (n := n)
-      (sc := runtimeConfig M n) hRun)
-
-/--
 Compiled-runtime acceptance extraction is correct under compiled run-spec.
 -/
 lemma acceptCircuitCompiled_spec_of_runSpec (M : TM) (n : Nat)
@@ -9264,67 +9119,6 @@ lemma acceptCircuitCompiled_spec_of_runSpec (M : TM) (n : Nat)
   simpa [acceptCircuitCompiled] using
     (acceptCircuitOf_spec_of_runSpec (M := M) (n := n)
       (sc := runtimeConfigCompiled M n) hRun)
-
-/-- Alias with the expected final naming in the straight-line block. -/
-lemma straightAcceptCircuit_spec (M : TM) (n : Nat)
-    (hRun : Spec (sc := runtimeConfig M n) (f := fun x => M.run (n := n) x)) :
-    ∀ x,
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x =
-        TM.accepts (M := M) (n := n) x :=
-  acceptCircuit_spec_of_runSpec M n hRun
-
-/--
-Specialized evaluator agreement on the acceptance-circuit shape used by the
-current internal compiler route.
--/
-lemma acceptCircuit_archive_eval_eq_internal (M : TM) (n : Nat) (x : Point n) :
-    Pnp3.Complexity.ArchiveStraightLineAdapter.eval (acceptCircuit M n) x =
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuit M n) x := by
-  unfold acceptCircuit
-  rw [runtimeConfig_eq_initial]
-  by_cases hs : M.accept = M.start
-  · let idxT : Fin (n + (constBaseCircuit n).gates) := ⟨n + 1, by
-        have : n + 1 < n + 2 := by omega
-        simpa [constBaseCircuit] using this⟩
-    have hArch :
-        Pnp3.Complexity.ArchiveStraightLineAdapter.eval
-          (withOutput (constBaseCircuit n) idxT) x = true := by
-      simpa [idxT] using constBase_archive_eval_true n x
-    have hInt :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-          (withOutput (constBaseCircuit n) idxT) x = true := by
-      calc
-        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-            (withOutput (constBaseCircuit n) idxT) x
-            = Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-                (constBaseCircuit n) x idxT := by
-                  simpa [idxT] using
-                    (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_withOutput_eq_evalWire
-                      (C := constBaseCircuit n) (out := idxT) (x := x))
-        _ = true := by
-              simpa [idxT] using constBase_evalWire_true n x
-    simpa [initialStraightConfig, hs, idxT] using hArch.trans hInt.symm
-  · let idxF : Fin (n + (constBaseCircuit n).gates) := ⟨n, by
-        have : n < n + 2 := by omega
-        simpa [constBaseCircuit] using this⟩
-    have hArch :
-        Pnp3.Complexity.ArchiveStraightLineAdapter.eval
-          (withOutput (constBaseCircuit n) idxF) x = false := by
-      simpa [idxF] using constBase_archive_eval_false n x
-    have hInt :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-          (withOutput (constBaseCircuit n) idxF) x = false := by
-      calc
-        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-            (withOutput (constBaseCircuit n) idxF) x
-            = Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-                (constBaseCircuit n) x idxF := by
-                  simpa [idxF] using
-                    (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_withOutput_eq_evalWire
-                      (C := constBaseCircuit n) (out := idxF) (x := x))
-        _ = false := by
-              simpa [idxF] using constBase_evalWire_false n x
-    simpa [initialStraightConfig, hs, idxF] using hArch.trans hInt.symm
 
 end StraightConfig
 

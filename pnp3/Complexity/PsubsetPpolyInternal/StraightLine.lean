@@ -1,5 +1,5 @@
 import Complexity.PsubsetPpolyInternal.CircuitTree
-import Complexity.PpolyDAG_from_ArchiveStraightLine
+import Complexity.PpolyDAG_from_StraightLine
 import Mathlib.Tactic
 
 namespace Pnp3
@@ -8,7 +8,7 @@ namespace PsubsetPpoly
 namespace StraightLine
 
 open Pnp3.Complexity
-open Pnp3.Complexity.ArchiveStraightLineAdapter
+open Pnp3.Complexity.StraightLineAdapter
 
 abbrev GateOp := LegacyStraightOp
 abbrev Circuit (n : Nat) := StraightLineCircuit n
@@ -22,8 +22,7 @@ def liftWire {n : Nat} (C : Circuit n) :
     ⟨i, by
       have h₁ : (i : Nat) < n + C.gates := i.isLt
       have h₂ : n + C.gates < n + (C.gates + 1) := by
-        have := Nat.lt_succ_self (n + C.gates)
-        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using this
+        omega
       exact Nat.lt_trans h₁ h₂⟩
 
 /-- Append one gate to a straight-line circuit. -/
@@ -34,7 +33,7 @@ def snoc {n : Nat} (C : Circuit n) (op : GateOp (n + C.gates)) : Circuit n where
       by simpa using (C.gate ⟨g, h⟩)
     else
       by
-        have hle : (g : Nat) ≤ C.gates := Nat.lt_succ_iff.mp (by simpa using g.isLt)
+        have hle : (g : Nat) ≤ C.gates := Nat.lt_succ_iff.mp g.isLt
         have hge : C.gates ≤ (g : Nat) := Nat.le_of_not_gt h
         have hg : (g : Nat) = C.gates := Nat.le_antisymm hle hge
         simpa [hg] using (show GateOp (n + C.gates) from op)
@@ -179,7 +178,7 @@ abbrev evalWire {n : Nat} (C : Circuit n) (x : Boolcube.Point n) :
 @[simp] lemma eval_eq_evalWire
     {n : Nat} (C : Circuit n) (x : Boolcube.Point n) :
     eval C x = evalWire C x C.output := by
-  simpa [eval, evalWire] using evalInternal_eq_evalWireInternal (C := C) (x := x)
+  simp [eval, evalWire, evalInternal_eq_evalWireInternal]
 
 /-- Translate a wire to a tree circuit under a visible gate budget `g`. -/
 noncomputable def toCircuitWireAux {n : Nat} (C : Circuit n) :

@@ -331,15 +331,15 @@ Compatible DAG-track final wrapper.
 This route targets the canonical non-uniform class (`PpolyDAG`) and therefore
 uses explicit assumptions:
 1) `NP ⊄ PpolyDAG`
-2) `P ⊆ PpolyDAG`.
+2) linear-route internal `P ⊆ PpolyDAG` closure contracts.
 -/
 theorem P_ne_NP_final_with_provider
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
   (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+    Complexity.Simulation.PsubsetPpolyCompiledRuntimeLinearOutputContracts) :
   ComplexityInterfaces.P_ne_NP := by
   have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
-    Complexity.Simulation.proved_P_subset_PpolyDAG_of_iteratedCanonicalContracts
+    Complexity.Simulation.proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts
       hPpolyContracts
   exact
     ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation

@@ -61,7 +61,7 @@ audit-facing wrapper keeps explicit DAG-track separation and explicit internal
 theorem P_ne_NP_final_with_barriers
     (hMag : MagnificationAssumptions)
     (hNPDag : NP_not_subset_PpolyDAG)
-    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical)
+    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyCompiledRuntimeLinearOutputContracts)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
   let _ := hMag

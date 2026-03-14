@@ -1,26 +1,33 @@
 import Complexity.Interfaces
 import Mathlib.Tactic
 
+/-!
+Core adapter from straight-line circuits to the canonical DAG interface.
+
+This is the canonical, non-legacy entrypoint for straight-line-to-DAG
+translation used by the active `P ⊆ PpolyDAG` route.
+-/
+
 namespace Pnp3
 namespace Complexity
-namespace ArchiveStraightLineAdapter
+namespace StraightLineAdapter
 
 open ComplexityInterfaces
 
-/-- Legacy straight-line gate operations used as adapter input format. -/
+/-- Straight-line gate operations used by the adapter input format. -/
 inductive LegacyStraightOp : Nat → Type
   | const {m : Nat} : Bool → LegacyStraightOp m
   | not {m : Nat} : Fin m → LegacyStraightOp m
   | and {m : Nat} : Fin m → Fin m → LegacyStraightOp m
   | or {m : Nat} : Fin m → Fin m → LegacyStraightOp m
 
-/-- Internal straight-line/DAG-with-sharing format (legacy-compatible). -/
+/-- Straight-line / DAG-with-sharing circuit format. -/
 structure LegacyStraightLineCircuit (n : Nat) where
   gates : Nat
   gate : (g : Fin gates) → LegacyStraightOp (n + g.1)
   output : Fin (n + gates)
 
-/-- Neutral name used by the in-repo simulation layer. -/
+/-- Neutral name used by simulation and compiler layers. -/
 abbrev StraightLineCircuit := LegacyStraightLineCircuit
 
 /--
@@ -38,14 +45,14 @@ def toDagWire {n g : Nat} (i : Fin (n + g)) : DagWire n g := by
       omega
     exact .gate ⟨j, hj⟩
 
-/-- Translate an archive gate operation into a `DagGate`. -/
+/-- Translate a straight-line gate operation into a `DagGate`. -/
 def toDagOp {n g : Nat} : LegacyStraightOp (n + g) → DagGate n g
   | .const b => .const b
   | .not i => .not (toDagWire (n := n) (g := g) i)
   | .and i j => .and (toDagWire (n := n) (g := g) i) (toDagWire (n := n) (g := g) j)
   | .or i j => .or (toDagWire (n := n) (g := g) i) (toDagWire (n := n) (g := g) j)
 
-/-- Translate an archive straight-line circuit into the canonical `DagCircuit`. -/
+/-- Translate a straight-line circuit into the canonical `DagCircuit`. -/
 def toDag {n : Nat} (C : LegacyStraightLineCircuit n) : DagCircuit n where
   gates := C.gates
   gate := fun g => toDagOp (n := n) (g := g.1) (C.gate g)
@@ -59,11 +66,7 @@ def withOutput {n : Nat} (C : LegacyStraightLineCircuit n)
   output := out
 
 /--
-Archive semantics exported through the canonical DAG evaluator.
-
-This definition intentionally delegates execution to `DagCircuit.eval`, so once
-the translator is fixed, downstream correctness goals can be stated against a
-single semantics.
+Straight-line semantics exported through the canonical DAG evaluator.
 -/
 def eval {n : Nat} (C : LegacyStraightLineCircuit n) (x : Bitstring n) : Bool :=
   DagCircuit.eval (toDag C) x
@@ -84,8 +87,8 @@ def evalWire {n : Nat} (C : LegacyStraightLineCircuit n) (x : Bitstring n) :
     eval C x = evalWire C x C.output := rfl
 
 /--
-Generic lifting lemma: any polynomially bounded archive straight-line family
-gives membership in `PpolyDAG`.
+Generic lifting lemma: any polynomially bounded straight-line family gives
+membership in `PpolyDAG`.
 -/
 theorem ppolyDAG_of_straightLine_family
     {L : Language}
@@ -105,16 +108,6 @@ theorem ppolyDAG_of_straightLine_family
   intro n x
   exact correct n x
 
-theorem ppolyDAG_of_archive_family
-    {L : Language}
-    (polyBound : Nat → Nat)
-    (polyBound_poly : ∃ c : Nat, ∀ n, polyBound n ≤ n ^ c + c)
-    (family : ∀ n, LegacyStraightLineCircuit n)
-    (family_size_le : ∀ n, (toDag (family n)).size ≤ polyBound n)
-    (correct : ∀ n (x : Bitstring n), eval (family n) x = L n x) :
-    PpolyDAG L :=
-  ppolyDAG_of_straightLine_family polyBound polyBound_poly family family_size_le correct
-
-end ArchiveStraightLineAdapter
+end StraightLineAdapter
 end Complexity
 end Pnp3

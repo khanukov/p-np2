@@ -4,6 +4,14 @@
 Основа: deep-dive по ветке `khanukov/continue-step-10-in-psubsetppoly_internal_todo.md`
 Статус: active runbook
 
+> Release note (2026-03-14):
+> этот документ фиксирует стратегический и исторический deep-dive слой.
+> Для актуального release-среза (active-route, проверенные endpoints, audit checks)
+> используйте:
+> `pnp3/Docs/PsubsetPpoly_Internal_TODO.md`,
+> `pnp3/Docs/PsubsetPpoly_AUDIT_HANDOFF.md`,
+> `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`.
+
 Дополнение (2026-03-02):
 - отдельный runbook для size-closure:
   `pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`.
@@ -82,7 +90,7 @@ DAG-separation blocker (`NP_not_subset_PpolyDAG`) на final маршруте.
 
 Смысл: согласовать семантику
 
-- `ArchiveStraightLineAdapter.eval`
+- `StraightLineAdapter.eval`
 - `Internal.PsubsetPpoly.StraightLine.eval`.
 
 Это локальная задача склейки семантик, без ломки архитектуры шага симуляции.
@@ -158,7 +166,7 @@ runtime-модели; это напрямую блокирует no-arg closure 
 ## Шаг B: закрыть `EvalAgreement`
 
 1. Добавить bridge-леммы sem→sem:
-   - из `ArchiveStraightLineAdapter.eval C x` к `DagCircuit.eval (toDag C) x` (уже rfl-side),
+   - из `StraightLineAdapter.eval C x` к `DagCircuit.eval (toDag C) x` (уже rfl-side),
    - из internal `StraightLine.eval` к той же нормальной форме (через `toDag` или эквивалентный intermediate).
 2. Свести обе стороны к одной нормальной форме и закрыть theorem:
    - `evalAgreement_internal : InternalCompiler.EvalAgreement`.

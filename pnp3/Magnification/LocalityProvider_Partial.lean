@@ -242,7 +242,7 @@ private theorem emptyFamily_witness_multiswitching
       ε := (1 : Core.Q) / (n + 2)
       tree := Core.PDT.leaf (fun _ => none)
       depth_le := by
-        simpa [Core.PDT.depth]
+        simp [Core.PDT.depth]
       Rsel := fun _ => []
       Rsel_sub := by
         intro f hf

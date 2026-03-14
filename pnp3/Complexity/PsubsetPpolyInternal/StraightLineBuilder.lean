@@ -25,7 +25,7 @@ namespace Wire
 def ofFin {n g : Nat} (w : Fin (n + g)) : Wire n where
   idx := w
   bound := g
-  bound_lt := by simpa using w.isLt
+  bound_lt := w.isLt
 
 def toFin {n : Nat} (w : Wire n) {g : Nat} (hg : w.bound ≤ g) : Fin (n + g) :=
   ⟨w.idx, by
@@ -72,8 +72,10 @@ def append (b : BuildCtx n base) (op : Op (n + b.circuit.gates)) :
   let idx := n + b.circuit.gates
   let bound := C'.gates
   have hlt : idx < n + bound := by
-    have : n + b.circuit.gates < n + (b.circuit.gates + 1) := Nat.lt_succ_self _
-    simpa [idx, bound, C', snoc, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using this
+    have hbase : n + b.circuit.gates < n + (b.circuit.gates + 1) := Nat.lt_succ_self _
+    have hbound : n + bound = n + (b.circuit.gates + 1) := by
+      simp [bound, C', snoc]
+    exact hbound ▸ hbase
   (b', { idx := idx, bound := bound, bound_lt := hlt })
 
 @[simp] lemma append_fst_circuit (b : BuildCtx n base)
@@ -106,12 +108,7 @@ def appendFin_lift (b : BuildCtx n base) (op : Op (n + b.circuit.gates)) :
     (w : Fin (n + b.circuit.gates)) :
     evalWire (C := (b.appendFin op).fst.circuit) (x := x) (b.appendFin_lift op w) =
       evalWire (C := b.circuit) (x := x) w := by
-  have hg : (b.appendFin op).fst.circuit.gates = b.circuit.gates + 1 :=
-    appendFin_gate_eq (b := b) (op := op)
-  simpa [appendFin_lift, hg, appendFin, append, append_fst_circuit,
-    Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-    (Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire_snoc_lift
-      (C := b.circuit) (op := op) (x := x) (i := w))
+  simp [appendFin_lift, appendFin, append]
 
 def appendConstFin (b : BuildCtx n base) (val : Bool) :
     BuildCtx n base × Fin (n + (snoc b.circuit (.const val)).gates) :=
@@ -198,9 +195,9 @@ def appendOp (b : EvalBuildCtx n base)
     EvalBuildCtx n base × Fin (n + (snoc b.circuit op).gates) :=
   b.appendWith op (by
     intro x w
-    simpa [circuit] using
-      (Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire_snoc_lift
-        (C := b.circuit) (op := op) (x := x) (i := w)))
+    exact
+      Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire_snoc_lift
+        (C := b.circuit) (op := op) (x := x) (i := w))
 
 /-- Append a constant gate and return its output wire. -/
 def appendConst (b : EvalBuildCtx n base) (val : Bool) :

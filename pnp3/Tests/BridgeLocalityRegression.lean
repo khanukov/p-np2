@@ -58,28 +58,43 @@ theorem i3_certificate_auto_no_manual_hCardHalf
 theorem i4_final_wiring_of_formulaCertificate
     (hCert : FormulaCertificateProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
+    (hNPbridge : AsymptoticNPPullback hAsym)
+    (n : Nat) (hn : hAsym.N0 ≤ n) :
     NP_not_subset_PpolyFormula := by
   simpa using
     (NP_not_subset_PpolyFormula_final_of_formulaCertificate
-      (hCert := hCert) (hAsym := hAsym) (hNPfam := hNPfam))
+      (hCert := hCert)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn))
 
 theorem i4_final_wiring_of_multiswitching_contract
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
     (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
+    (hNPbridge : AsymptoticNPPullback hAsym)
+    (n : Nat) (hn : hAsym.N0 ≤ n) :
     NP_not_subset_PpolyFormula := by
   simpa using
     (NP_not_subset_PpolyFormula_final_of_multiswitching_contract
-      (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam))
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn))
 
 theorem i4_final_wiring_constructive_alias
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
     (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
+    (hNPbridge : AsymptoticNPPullback hAsym)
+    (n : Nat) (hn : hAsym.N0 ≤ n) :
     NP_not_subset_PpolyFormula := by
   simpa using
     (NP_not_subset_PpolyFormula_final_constructive
-      (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam))
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn))
 
 end Pnp3.Tests

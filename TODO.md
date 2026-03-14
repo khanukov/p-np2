@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-03-13
+Updated: 2026-03-14
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release checklist/w wording guardrail: `RELEASE_RC.md`.
@@ -34,6 +34,32 @@ Inclusion-side status:
    `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
 3. Default `P_ne_NP_final*` wiring already consumes this no-arg
    inclusion endpoint.
+
+## A3 + A4 milestone (closed in active route)
+
+Status: closed on 2026-03-14 in active `Magnification.FinalResult` API.
+
+What was changed:
+
+1. Removed hidden pointwise-at-`N0` use from active final endpoints:
+   `NP_not_subset_PpolyFormula_final*` and `NP_not_subset_PpolyReal_final*`
+   now take explicit `(n, hn : N0 ≤ n)`.
+2. Replaced fixed-parameter NP-family wrapper with asymptotic NP bridge package:
+   `AsymptoticNPPullback` carries
+   `NP_strict (gapPartialMCSP_AsymptoticLanguage spec)` and per-`n` strict NP
+   witnesses for `gapPartialMCSP_Language (pAt n hn)`.
+3. Removed now-obsolete intermediate wrappers:
+   old `StrictGapNPFamily` / `GapPartialMCSPTMWitnessFamily` path is deleted.
+4. Constructive TM route no longer requires an external NP pullback function:
+   `toFixed` is internalized from explicit TM-witness streams.
+5. Barrier wrapper no longer hardcodes `N0`; it now takes explicit `(n, hn)`.
+
+Verification:
+
+1. `lake build` passes.
+2. `lake build 2>&1 | rg "warning:"` is empty.
+3. Regression/audit tests compile with the new signatures
+   (`Tests/BridgeLocalityRegression`, `Tests/AxiomsAudit`, barrier audits).
 
 ## Execution order
 

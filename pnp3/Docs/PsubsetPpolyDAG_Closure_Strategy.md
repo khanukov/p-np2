@@ -28,7 +28,9 @@
 Проверено на текущем дереве:
 
 - `./scripts/check.sh` проходит.
-- `lake env lean pnp3/Tests/Step10*.lean` проходит.
+- актуальные audit/regression тесты компилируются
+  (`AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
+  `BridgeLocalityRegression`).
 - Targeted сборки `Simulation/Circuit_Compiler/FinalResult/Bypass` проходят.
 
 Что изменилось относительно baseline этого runbook:
@@ -244,10 +246,10 @@ graph TD
 
 Когда появится безаргументный endpoint, добавить hard-gate:
 
-1. `pnp3/Tests/Step10NoContracts.lean` с проверкой наличия:
-   - `#check proved_P_subset_PpolyDAG_internal`
+1. `pnp3/Tests/AxiomsAudit.lean` с проверкой наличия:
+   - `#print axioms proved_P_subset_PpolyDAG_internal`
 2. build-gate в CI:
-   - `lake env lean pnp3/Tests/Step10NoContracts.lean`
+   - `lake env lean pnp3/Tests/AxiomsAudit.lean`
 3. axiom-surface audit:
    - `#print axioms proved_P_subset_PpolyDAG_internal`
    и проверка на неожиданные зависимости.

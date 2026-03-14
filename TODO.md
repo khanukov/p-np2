@@ -9,7 +9,7 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 
 - Active `axiom` in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- Baseline checks: `./scripts/check.sh` and `pnp3/Tests/Step10*.lean` pass
+- Baseline checks: `./scripts/check.sh` and current audit tests pass
 - Final API remains conditional (`pnp3/Magnification/FinalResult.lean`)
 
 ## What is already closed
@@ -70,5 +70,5 @@ Verification:
 ## Done criteria
 
 1. Final route no longer needs external DAG separation input.
-2. `./scripts/check.sh` and Step10 route tests pass unchanged.
+2. `./scripts/check.sh` and current audit tests pass unchanged.
 3. Top-level docs report unconditional status consistently.

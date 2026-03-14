@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Updated: 2026-03-13
+Updated: 2026-03-14
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -32,9 +32,6 @@ Current default final DAG endpoint requires:
 
 1. `NP_not_subset_PpolyDAG`
 
-Constructive compatibility wrapper `P_ne_NP_final_of_default_supportBounds`
-additionally requires `hasDefaultFormulaSupportRestrictionBoundsPartial`.
-
 ## What is the current inclusion-side blocker?
 
 For inclusion itself, no-arg closure is present and already wired into default
@@ -55,10 +52,15 @@ Use:
 ./scripts/check.sh
 ```
 
-## How to quickly verify current Step10 closure surface?
+## How to quickly verify current audit surface?
 
 ```bash
-for f in pnp3/Tests/Step10*.lean; do lake env lean "$f"; done
+for f in pnp3/Tests/AxiomsAudit.lean \
+         pnp3/Tests/BarrierAudit.lean \
+         pnp3/Tests/BarrierBypassAudit.lean \
+         pnp3/Tests/BridgeLocalityRegression.lean; do
+  lake env lean "$f"
+done
 ```
 
 ## Where is the longer route map?

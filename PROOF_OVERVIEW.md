@@ -1,6 +1,6 @@
 # Proof Overview (Auditor Guide)
 
-Updated: 2026-03-13
+Updated: 2026-03-14
 
 This file is an auditor-oriented map of the active proof route in the current
 repository state.
@@ -22,7 +22,7 @@ Final theorem interface is centralized in `pnp3/Magnification/FinalResult.lean`.
 
 Key active ladder:
 
-1. `strictGapNPFamily_of_tmWitnesses`
+1. `asymptoticNPPullback_of_tmWitness`
 2. `NP_not_subset_PpolyFormula_final*`
 3. `NP_not_subset_PpolyReal_final*`
 4. `P_ne_NP_final*`
@@ -32,11 +32,6 @@ Key active ladder:
 Default final endpoint `P_ne_NP_final` requires:
 
 1. `NP_not_subset_PpolyDAG`
-
-Constructive compatibility endpoint `P_ne_NP_final_of_default_supportBounds`
-additionally carries:
-
-1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
 
 ## 4) Inclusion-side closure status (`P ⊆ PpolyDAG`)
 
@@ -54,7 +49,7 @@ Closed:
 
 1. Buildable active route and final wrappers.
 2. Axiom/sorry hygiene for active `pnp3/`.
-3. Step10 contract-surface tests for inclusion routes.
+3. Active audit/regression test suite compiles.
 
 Open for unconditional in-repo `P ≠ NP`:
 
@@ -65,7 +60,12 @@ Open for unconditional in-repo `P ≠ NP`:
 
 ```bash
 ./scripts/check.sh
-for f in pnp3/Tests/Step10*.lean; do lake env lean "$f"; done
+for f in pnp3/Tests/AxiomsAudit.lean \
+         pnp3/Tests/BarrierAudit.lean \
+         pnp3/Tests/BarrierBypassAudit.lean \
+         pnp3/Tests/BridgeLocalityRegression.lean; do
+  lake env lean "$f"
+done
 rg -n "^theorem P_ne_NP_final|^theorem NP_not_subset_PpolyReal_final|^theorem NP_not_subset_PpolyFormula_final" \
   pnp3/Magnification/FinalResult.lean
 ```

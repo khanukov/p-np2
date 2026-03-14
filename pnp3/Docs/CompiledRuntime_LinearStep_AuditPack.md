@@ -8,7 +8,9 @@
 После повторной проверки на текущем дереве:
 
 - `./scripts/check.sh` проходит,
-- `pnp3/Tests/Step10*.lean` проходят.
+- актуальные audit/regression тесты проходят
+  (`AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
+  `BridgeLocalityRegression`).
 
 Состояние относительно checkpoint-а ниже:
 

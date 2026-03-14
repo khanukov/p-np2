@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-03-13
+Updated: 2026-03-14
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Release positioning for current tree: `RELEASE_RC.md`.
@@ -9,8 +9,10 @@ Release positioning for current tree: `RELEASE_RC.md`.
 
 - Active `axiom` declarations in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- `./scripts/check.sh` passes (rechecked on 2026-03-13)
-- `pnp3/Tests/Step10*.lean` pass (rechecked on 2026-03-13)
+- `./scripts/check.sh` passes (rechecked on 2026-03-14)
+- Current audit/regression tests pass (rechecked on 2026-03-14):
+  `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
+  `BridgeLocalityRegression`
 
 ## Active final theorem surface
 
@@ -19,7 +21,9 @@ File: `pnp3/Magnification/FinalResult.lean`
 - `NP_not_subset_PpolyFormula_final*`
 - `NP_not_subset_PpolyReal_final*`
 - `P_ne_NP_final*`
-- helper: `strictGapNPFamily_of_tmWitnesses`
+- asymptotic NP bridge helpers:
+  `AsymptoticNPPullback`,
+  `asymptoticNPPullback_of_tmWitness`
 
 ## Interpretation
 

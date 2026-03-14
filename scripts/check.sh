@@ -5,8 +5,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
+if ! command -v rg >/dev/null 2>&1; then
+  echo "Missing required dependency: rg (ripgrep). Install ripgrep and rerun." >&2
+  exit 127
+fi
+
+build_log="/tmp/pnp3_full_build.log"
 echo "[check] Step 1/6: full Lean build"
-lake build
+if ! lake build 2>&1 | tee "${build_log}"; then
+  echo "Full build failed; see ${build_log} for details."
+  exit 1
+fi
 
 echo "[check] Step 2/6: smoke execution"
 lake env lean --run scripts/smoke.lean
@@ -200,8 +209,11 @@ echo "Magnification assumptions policy OK (package-based finals enforced)."
 
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
-# This file contains many `#print axioms` commands; compiling it emits theorem dependency traces.
-lake env lean pnp3/Tests/AxiomsAudit.lean > "${axiom_surface_log}" 2>&1
+if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
+    "${build_log}" >"${axiom_surface_log}"; then
+  # Fallback for environments where replayed info lines are suppressed.
+  lake env lean pnp3/Tests/AxiomsAudit.lean > "${axiom_surface_log}" 2>&1
+fi
 
 # Hard-fail if trusted compiler reduction axioms show up in audited theorem cone.
 if rg -n "Lean\.ofReduceBool|Lean\.trustCompiler" "${axiom_surface_log}" >/tmp/pnp3_trust_hits.log; then
@@ -221,8 +233,10 @@ echo "  Classical.choice occurrences: ${classical_count}"
 echo "  Quot.sound occurrences: ${quot_count}"
 
 echo "[check] Step 5/6: run barrier audit module"
-# Keep this explicit so regressions in barrier-facing final statements are visible.
-lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
+if ! rg -n "pnp3/Tests/BarrierAudit\\.lean" "${build_log}" >/tmp/pnp3_barrier_audit.log; then
+  # Keep this explicit so regressions in barrier-facing final statements are visible.
+  lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
+fi
 
 echo "[check] Step 6/6: unconditional witness gate (optional)"
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then

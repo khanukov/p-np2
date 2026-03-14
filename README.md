@@ -1,6 +1,6 @@
 # P vs NP: Lean Formalization (Honest Status)
 
-Status date: 2026-03-13.
+Status date: 2026-03-14.
 
 Canonical checklist for unconditional readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -58,7 +58,12 @@ Still open for unconditional final route:
 
 ```bash
 ./scripts/check.sh
-for f in pnp3/Tests/Step10*.lean; do lake env lean "$f"; done
+for f in pnp3/Tests/AxiomsAudit.lean \
+         pnp3/Tests/BarrierAudit.lean \
+         pnp3/Tests/BarrierBypassAudit.lean \
+         pnp3/Tests/BridgeLocalityRegression.lean; do
+  lake env lean "$f"
+done
 ```
 
 ## Primary Documents

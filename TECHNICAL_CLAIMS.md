@@ -1,6 +1,6 @@
 # Technical Claims and Scope
 
-Updated: 2026-03-13
+Updated: 2026-03-14
 
 Canonical unconditional-checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -11,7 +11,9 @@ Current milestone release guardrail:
 
 1. Active `pnp3/` tree is axiom-clean (`axiom = 0`, `sorry/admit = 0`).
 2. `./scripts/check.sh` passes on current tree.
-3. `pnp3/Tests/Step10*.lean` pass on current tree.
+3. Current audit/regression tests pass on current tree
+   (`AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
+   `BridgeLocalityRegression`).
 4. Active final wrappers for `P ≠ NP` remain conditional on explicit DAG-side
    hypotheses.
 5. Internal no-arg inclusion theorem exists:

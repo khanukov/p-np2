@@ -1,6 +1,6 @@
 # Checklist: Unconditional Constructive `P ≠ NP`
 
-Updated: 2026-03-13
+Updated: 2026-03-14
 
 This is the canonical checklist for what blocks an unconditional in-repo
 constructive theorem `P ≠ NP`.
@@ -15,18 +15,15 @@ File: `pnp3/Magnification/FinalResult.lean`
 - `NP_not_subset_PpolyFormula_final*`
 - `NP_not_subset_PpolyReal_final*`
 - `P_ne_NP_final*`
-- helper: `strictGapNPFamily_of_tmWitnesses`
+- asymptotic NP bridge helpers:
+  `AsymptoticNPPullback`,
+  `asymptoticNPPullback_of_tmWitness`
 
 ## Unconditional blockers (must be internalized)
 
 Active DAG endpoint `P_ne_NP_final` currently requires:
 
 1. `NP_not_subset_PpolyDAG` (`hNPDag`)
-
-Constructive compatibility endpoint `P_ne_NP_final_of_default_supportBounds`
-adds:
-
-1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
 
 Default contradiction step to `P ≠ NP` still depends on (1) above.
 
@@ -56,7 +53,11 @@ Before deleting routes/assumptions, confirm:
 
 1. `./scripts/check.sh` passes.
 2. `pnp3/Tests/AxiomsAudit.lean` remains in expected shape.
-3. `pnp3/Tests/Step10*.lean` pass.
+3. Current audit/regression tests pass:
+   `pnp3/Tests/AxiomsAudit.lean`,
+   `pnp3/Tests/BarrierAudit.lean`,
+   `pnp3/Tests/BarrierBypassAudit.lean`,
+   `pnp3/Tests/BridgeLocalityRegression.lean`.
 4. Final endpoints above still compile and are reachable.
 5. No document claims unconditional `P ≠ NP` prematurely.
 

@@ -40,13 +40,18 @@ Run and archive outputs for:
 
 ```bash
 ./scripts/check.sh
-for f in pnp3/Tests/Step10*.lean; do lake env lean "$f"; done
+for f in pnp3/Tests/AxiomsAudit.lean \
+         pnp3/Tests/BarrierAudit.lean \
+         pnp3/Tests/BarrierBypassAudit.lean \
+         pnp3/Tests/BridgeLocalityRegression.lean; do
+  lake env lean "$f"
+done
 ```
 
 Confirm signatures in:
 
 - `pnp3/Magnification/FinalResult.lean`
-- `pnp3/Tests/Step10NoRuntimeBridge.lean`
+- `pnp3/Tests/BridgeLocalityRegression.lean`
 
 Confirm docs are aligned:
 

@@ -24,15 +24,11 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyReal_final_constructive
 #print axioms NP_not_subset_PpolyReal_final_constructive_of_tmWitnesses
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
-#print axioms NP_not_subset_PpolyFormula_from_partial_formulas_default
 
 -- Мост от нижних оценок к `NP ⊄ PpolyFormula`.
-#print axioms NP_not_subset_PpolyFormula_from_partial_formulas_with_formulaizer
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas
-#print axioms NP_not_subset_PpolyReal_from_partial_formulas_trivial
 #print axioms OPS_trigger_formulas_partial_of_provider
 #print axioms OPS_trigger_formulas_partial_of_provider_formula_separation_strict
-#print axioms NP_not_subset_PpolyReal_from_partial_formulas_with_formulaizer
 #print axioms P_ne_NP_final_of_formulaCertificate
 #print axioms P_ne_NP_final_constructive
 #print axioms P_ne_NP_final_constructive_of_tmWitnesses
@@ -74,4 +70,4 @@ open Pnp3.Magnification
 #print axioms Magnification.ac0_statement_exists_false_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_fully_closed_iff_noExists
 #print axioms LowerBounds.noSmallLocalCircuitSolver_partial_constructive
-#print axioms LowerBounds.antiChecker_exists_testset_local_partial_constructive
+#print axioms LowerBounds.antiChecker_testset_incompatibility_local_partial_constructive

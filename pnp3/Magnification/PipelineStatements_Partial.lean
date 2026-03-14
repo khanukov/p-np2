@@ -133,27 +133,12 @@ abbrev FormulaLowerBoundHypothesisPartial_semantic
 -/
 
 /--
-Build the semantic formula lower-bound hypothesis from an explicit semantic
-bounded Step-C statement.
--/
-lemma formula_hypothesis_from_semantic_stepC_partial
-    (p : GapPartialMCSPParams) (δ : Rat) (hδ : (0 : Rat) < δ)
-    (hStepC : AC0BoundedStatementPartial_semantic p δ) :
-    FormulaLowerBoundHypothesisPartial_semantic p δ := by
-  exact ⟨hδ, hStepC⟩
-
-/--
 Semantic AC0 statement from the family-level counting core.
 -/
 lemma ac0_statement_from_pipeline_partial_semantic
     (p : GapPartialMCSPParams) : AC0StatementPartial_semantic p := by
   intro solver easy
   exact LB_Formulas_core_partial_of_easyFamilyData (solver := solver) easy
-
-/-- Main non-vacuous Step-C statement from the pipeline core. -/
-lemma ac0_statement_from_pipeline_partial
-    (p : GapPartialMCSPParams) : AC0StatementPartial p :=
-  ac0_statement_from_pipeline_partial_semantic p
 
 /--
 Constructive Step-C statement from the family-level counting core.
@@ -259,26 +244,6 @@ lemma ac0_statement_fully_closed_iff_noExists
   · intro h closure
     exact (noSmallAC0Solver_partial_closed_iff_noExists closure).2 (h closure)
 
-/-- Closed-world constructive Step-C implies package-based constructive Step-C. -/
-lemma ac0_statement_constructive_of_closed
-    (p : GapPartialMCSPParams)
-    (_hClosed : AC0StatementPartial_closed p) :
-    AC0StatementPartial_constructive p := by
-  intro solver
-  -- The closed route is stronger, but to keep this implication definitional and
-  -- non-axiomatic we reuse the already-internal core contradiction on
-  -- constructive packages.
-  exact LB_Formulas_core_partial_constructive (solver := solver)
-
-/--
-Bounded semantic AC0 statement from the family-level counting core.
--/
-lemma ac0_bounded_statement_from_pipeline_partial_semantic
-    (p : GapPartialMCSPParams) (ε : Rat) :
-    AC0BoundedStatementPartial_semantic p ε := by
-  intro solver _hBound easy
-  exact ac0_statement_from_pipeline_partial_semantic p solver easy
-
 /-- Bounded constructive Step-C statement from the core contradiction. -/
 lemma ac0_bounded_statement_from_pipeline_partial_constructive
     (p : GapPartialMCSPParams) (ε : Rat) :
@@ -316,47 +281,6 @@ lemma formula_hypothesis_from_pipeline_partial_semantic
   exact ac0_bounded_statement_semantic_of_constructive
     (p := p) (ε := δ)
     (hC := ac0_bounded_statement_from_pipeline_partial_constructive p δ)
-
-/--
-Semantic formula-track hypothesis obtained via the constructive Step-C API.
--/
-lemma formula_hypothesis_from_pipeline_partial_constructive
-    (p : GapPartialMCSPParams) (δ : Rat) (hδ : (0 : Rat) < δ) :
-    FormulaLowerBoundHypothesisPartial_semantic p δ := by
-  refine ⟨hδ, ?_⟩
-  exact ac0_bounded_statement_semantic_of_constructive
-    (p := p) (ε := δ)
-    (hC := ac0_bounded_statement_from_pipeline_partial_constructive p δ)
-
-/--
-Bounded semantic statement from direct syntactic easy-family hypotheses.
--/
-lemma ac0_bounded_statement_from_syntacticEasy_partial
-    (p : GapPartialMCSPParams) (ε : Rat)
-    (hEasy : ∀ solver : SmallAC0Solver_Partial p,
-      ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-        (AC0EasyFamily solver.params.ac0))
-    (hComp : AC0CompressionHypothesis p) :
-    AC0BoundedStatementPartial_semantic p ε := by
-  intro solver _hBound _easy
-  exact LB_Formulas_core_partial_of_syntacticEasy
-    (solver := solver) (hEasy solver) hComp
-
-/--
-Semantic formula lower-bound hypothesis from direct syntactic easy-family
-hypotheses.
--/
-lemma formula_hypothesis_from_syntacticEasy_partial
-    (p : GapPartialMCSPParams) (δ : Rat) (hδ : (0 : Rat) < δ)
-    (hEasy : ∀ solver : SmallAC0Solver_Partial p,
-      ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0
-        (AC0EasyFamily solver.params.ac0))
-    (hComp : AC0CompressionHypothesis p) :
-    FormulaLowerBoundHypothesisPartial_semantic p δ := by
-  refine ⟨hδ, ?_⟩
-  intro solver hBound _easy
-  exact LB_Formulas_core_partial_of_syntacticEasy
-    (solver := solver) (hEasy solver) hComp
 
 end Magnification
 end Pnp3

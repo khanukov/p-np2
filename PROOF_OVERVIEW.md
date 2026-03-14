@@ -22,7 +22,7 @@ Final theorem interface is centralized in `pnp3/Magnification/FinalResult.lean`.
 
 Key active ladder:
 
-1. `asymptoticNPPullback_of_tmWitness`
+1. `AsymptoticNPPullback`
 2. `NP_not_subset_PpolyFormula_final*`
 3. `NP_not_subset_PpolyReal_final*`
 4. `P_ne_NP_final*`

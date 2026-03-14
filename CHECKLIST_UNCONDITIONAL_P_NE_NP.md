@@ -16,8 +16,7 @@ File: `pnp3/Magnification/FinalResult.lean`
 - `NP_not_subset_PpolyReal_final*`
 - `P_ne_NP_final*`
 - asymptotic NP bridge helpers:
-  `AsymptoticNPPullback`,
-  `asymptoticNPPullback_of_tmWitness`
+  `AsymptoticNPPullback`
 
 ## Unconditional blockers (must be internalized)
 

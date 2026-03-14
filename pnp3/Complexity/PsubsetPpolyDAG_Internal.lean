@@ -1,14 +1,13 @@
-import Complexity.PpolyDAG_from_ArchiveStraightLine
+import Complexity.PpolyDAG_from_StraightLine
 
 namespace Pnp3
 namespace Complexity
 
 open ComplexityInterfaces
-open ArchiveStraightLineAdapter
+open StraightLineAdapter
 
 /--
 Constructive packaging of a straight-line non-uniform family for a language.
-This is the exact input required by `ppolyDAG_of_straightLine_family`.
 -/
 structure InPpolyStraightLine (L : Language) where
   polyBound : Nat → Nat
@@ -21,17 +20,25 @@ structure InPpolyStraightLine (L : Language) where
 def PpolyStraightLine (L : Language) : Prop :=
   ∃ _ : InPpolyStraightLine L, True
 
-/-- Any straight-line witness induces a canonical DAG witness. -/
+/--
+Any straight-line witness induces a canonical DAG witness.
+
+The proof is transparent: it directly repackages the witness through `toDag`
+and does not rely on an additional black-box reduction lemma.
+-/
 theorem ppolyDAG_of_ppolyStraightLine {L : Language} :
     PpolyStraightLine L → PpolyDAG L := by
   intro h
   rcases h with ⟨w, _⟩
-  exact ppolyDAG_of_straightLine_family
-    (polyBound := w.polyBound)
-    (polyBound_poly := w.polyBound_poly)
-    (family := w.family)
-    (family_size_le := w.family_size_le)
-    (correct := w.correct)
+  refine ⟨{
+    polyBound := w.polyBound
+    polyBound_poly := w.polyBound_poly
+    family := fun n => toDag (w.family n)
+    family_size_le := w.family_size_le
+    correct := ?_
+  }, trivial⟩
+  intro n x
+  exact w.correct n x
 
 /-- Inclusion target for the straight-line class. -/
 def P_subset_PpolyStraightLine : Prop :=
@@ -45,17 +52,6 @@ theorem P_subset_PpolyDAG_of_P_subset_PpolyStraightLine :
     P_subset_PpolyStraightLine → P_subset_PpolyDAG := by
   intro hSL L hPL
   exact ppolyDAG_of_ppolyStraightLine (hSL L hPL)
-
-/- Backward-compatibility aliases during migration. -/
-abbrev InPpolyLegacyStraight := InPpolyStraightLine
-abbrev PpolyLegacyStraight := PpolyStraightLine
-abbrev P_subset_PpolyLegacyStraight := P_subset_PpolyStraightLine
-theorem ppolyDAG_of_ppolyLegacyStraight {L : Language} :
-    PpolyLegacyStraight L → PpolyDAG L :=
-  ppolyDAG_of_ppolyStraightLine
-theorem P_subset_PpolyDAG_of_P_subset_PpolyLegacyStraight :
-    P_subset_PpolyLegacyStraight → P_subset_PpolyDAG :=
-  P_subset_PpolyDAG_of_P_subset_PpolyStraightLine
 
 end Complexity
 end Pnp3

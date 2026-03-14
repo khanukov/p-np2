@@ -1,21 +1,27 @@
 # Technical Claims and Scope
 
-Updated: 2026-02-27
+Updated: 2026-03-13
 
 Canonical unconditional-checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+Current milestone release guardrail:
+`RELEASE_RC.md`.
 
 ## Verified claim level
 
 1. Active `pnp3/` tree is axiom-clean (`axiom = 0`, `sorry/admit = 0`).
-2. Final theorem surface compiles in `pnp3/Magnification/FinalResult.lean`.
-3. Active final wrappers for `P ≠ NP` remain conditional on explicit hypotheses.
+2. `./scripts/check.sh` passes on current tree.
+3. `pnp3/Tests/Step10*.lean` pass on current tree.
+4. Active final wrappers for `P ≠ NP` remain conditional on explicit DAG-side
+   hypotheses.
+5. Internal no-arg inclusion theorem exists:
+   `Simulation.proved_P_subset_PpolyDAG_internal`.
 
 ## Not currently claimed
 
 1. No unconditional in-repo theorem `P ≠ NP`.
-2. No claim that formula-separation endpoint alone closes full non-uniform
-   separation without the explicit bridge assumption.
+2. No unconditional default final wrapper `P_ne_NP_final` (still expects
+   external DAG-separation assumption `NP_not_subset_PpolyDAG`).
 
 ## Rule for public wording
 

@@ -15,6 +15,9 @@ jobs:
         with:
           default-toolchain: leanprover/lean4:v4.22.0-rc2
 
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
       # 3. Update mathlib и подтягиваем его кеш
       - name: lake update mathlib
         run: lake update mathlib

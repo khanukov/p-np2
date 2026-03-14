@@ -1884,8 +1884,8 @@ theorem antiChecker_exists_large_Y_local_partial
   exact antiChecker_exists_large_Y_local_partial_core (solver := solver) hAll
 
 /--
-Constructive variant with no external witness assumptions: uses solver
-locality contradiction directly.
+Constructive wrapper for the local large-`Y` statement under the same
+`hAll` witness assumption as `antiChecker_exists_large_Y_local_partial`.
 -/
 theorem antiChecker_exists_large_Y_local_partial_constructive
   {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
@@ -1901,7 +1901,14 @@ theorem antiChecker_exists_large_Y_local_partial_constructive
         scenarioCapacity (sc := scWitness) < Y.card := by
   exact antiChecker_exists_large_Y_local_partial (solver := solver) hAll
 
-theorem antiChecker_exists_testset_local_partial
+/--
+Test-set incompatibility lemma (local partial track).
+
+Despite legacy naming in older drafts, this theorem does not construct a
+testset. It proves inconsistency from explicitly provided `Ysolver`, `Tsolver`
+and the approximation/cardinality premises.
+-/
+theorem antiChecker_testset_incompatibility_local_partial
   {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
   (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
     (Counting.allFunctionsFamily solver.params.params.n))
@@ -1935,10 +1942,10 @@ theorem antiChecker_exists_testset_local_partial
       hLarge
 
 /--
-Constructive variant with no external witness assumptions: uses the
-constructive large-`Y` local anti-checker.
+Constructive compatibility wrapper for test-set incompatibility under the same
+explicit `hAll`, `Ysolver`, and `Tsolver` premises.
 -/
-theorem antiChecker_exists_testset_local_partial_constructive
+theorem antiChecker_testset_incompatibility_local_partial_constructive
   {p : GapPartialMCSPParams} (solver : SmallLocalCircuitSolver_Partial p)
   (hAll : ThirdPartyFacts.LocalCircuitFamilyWitnessProp solver.params.params
     (Counting.allFunctionsFamily solver.params.params.n))
@@ -1961,7 +1968,7 @@ theorem antiChecker_exists_testset_local_partial_constructive
     < Ysolver.card →
   False := by
   intro
-  exact antiChecker_exists_testset_local_partial (solver := solver) hAll Ysolver Tsolver
+  exact antiChecker_testset_incompatibility_local_partial (solver := solver) hAll Ysolver Tsolver
 
 /-!
   ### Комбинаторная версия «случайной» леммы

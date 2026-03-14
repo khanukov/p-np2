@@ -82,22 +82,4 @@ theorem i4_final_wiring_constructive_alias
     (NP_not_subset_PpolyFormula_final_constructive
       (hMS := hMS) (hAsym := hAsym) (hNPfam := hNPfam))
 
-theorem i4_final_wiring_of_supportBounds
-    (hBounds : FormulaSupportRestrictionBoundsPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
-    NP_not_subset_PpolyFormula := by
-  simpa using
-    (NP_not_subset_PpolyFormula_final_of_supportBounds
-      (hBounds := hBounds) (hAsym := hAsym) (hNPfam := hNPfam))
-
-theorem i4_final_wiring_of_default_supportBounds
-    (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily) :
-    NP_not_subset_PpolyFormula := by
-  simpa using
-    (NP_not_subset_PpolyFormula_final_of_default_supportBounds
-      (hDefaultBounds := hDefaultBounds) (hAsym := hAsym) (hNPfam := hNPfam))
-
 end Pnp3.Tests

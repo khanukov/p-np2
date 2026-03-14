@@ -1,15 +1,17 @@
 # Проект PNP3: активный Lean-код
 
-Обновлено: 2026-02-27
+Обновлено: 2026-03-13
 
 Канонический чеклист до безусловного `P ≠ NP`:
 `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+Текущий релизный режим (RC) и правила формулировок:
+`/root/p-np2/RELEASE_RC.md`.
 
 ## Что здесь
 
 Каталог `pnp3/` содержит активный конвейер:
 
-`SAL -> Covering-Power -> anti-checker -> magnification`
+`SAL -> Covering-Power -> anti-checker -> magnification -> DAG-final wrappers`
 
 ## Источник статуса
 

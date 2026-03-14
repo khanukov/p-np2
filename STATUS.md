@@ -1,70 +1,51 @@
 # Project Status (current)
 
-Updated: 2026-02-27
+Updated: 2026-03-13
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+Release positioning for current tree: `RELEASE_RC.md`.
 
 ## Current verified state
 
 - Active `axiom` declarations in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- `lake build` / `./scripts/check.sh` pass on current tree
+- `./scripts/check.sh` passes (rechecked on 2026-03-13)
+- `pnp3/Tests/Step10*.lean` pass (rechecked on 2026-03-13)
 
 ## Active final theorem surface
 
 File: `pnp3/Magnification/FinalResult.lean`
 
-- `StrictGapNPFamily`
-- `strictGapNPFamily_of_tmWitnesses`
-- `AsymptoticFormulaTrackHypothesis`
-- `NP_not_subset_PpolyFormula_final_with_provider`
-- `NP_not_subset_PpolyFormula_final`
-- `NP_not_subset_PpolyFormula_final_of_formulaCertificate`
-- `NP_not_subset_PpolyFormula_final_of_multiswitching_contract`
-- `NP_not_subset_PpolyFormula_final_constructive`
-- `NP_not_subset_PpolyFormula_final_of_supportBounds`
-- `NP_not_subset_PpolyReal_final_with_provider`
-- `NP_not_subset_PpolyReal_final`
-- `NP_not_subset_PpolyReal_final_of_formulaCertificate`
-- `NP_not_subset_PpolyReal_final_of_multiswitching_contract`
-- `NP_not_subset_PpolyReal_final_constructive`
-- `NP_not_subset_PpolyReal_final_of_supportBounds`
-- `P_ne_NP_final_with_provider`
-- `P_ne_NP_final`
-- `P_ne_NP_final_of_formulaCertificate`
-- `P_ne_NP_final_of_multiswitching_contract`
-- `P_ne_NP_final_constructive`
-- `P_ne_NP_final_of_supportBounds`
+- `NP_not_subset_PpolyFormula_final*`
+- `NP_not_subset_PpolyReal_final*`
+- `P_ne_NP_final*`
+- helper: `strictGapNPFamily_of_tmWitnesses`
 
 ## Interpretation
 
 - The repository currently formalizes a constructive, axiom-clean,
-  AC0-route formula-separation pipeline.
+  AC0/formula pipeline plus conditional DAG final wrappers.
 - Final `P ≠ NP` wrappers are conditional.
-- The project does **not** currently contain an unconditional in-repo theorem
+- The project does not currently contain an unconditional in-repo theorem
   `P ≠ NP`.
 
 ## Remaining blockers to unconditional status
 
-Legacy wrapper `P_ne_NP_final` still has four external assumptions:
+Active DAG final wrapper `P_ne_NP_final` requires one external input:
 
-1. `hasDefaultStructuredLocalityProviderPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `P_subset_PpolyReal` (`hPsubsetReal`)
+1. `NP_not_subset_PpolyDAG` (`hNPDag`)
 
-Active constructive route (`P_ne_NP_final_of_default_supportBounds`) removes
-the default-provider blocker. Remaining assumptions on this route:
+Current inclusion-side status:
 
-1. `hasDefaultFormulaSupportRestrictionBoundsPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `P_subset_PpolyReal` (`hPsubsetReal`)
-
-Also available: explicit variant `P_ne_NP_final_of_supportBounds` with direct
-`FormulaSupportRestrictionBoundsPartial`.
+- No-arg linear output-wire witness is closed:
+  `compiledAcceptOutputWireAgreementLinear_internal`.
+- No-arg inclusion endpoint is closed:
+  `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+- `RuntimeConfigEqStepCompiled` remains open only for legacy bridge routes
+  (`runtimeConfig` path with `step = id`), not for the active no-arg linear
+  closure.
 
 ## Documentation policy
 
-Any file claiming unconditional `P ≠ NP` before these four items are discharged
+Any file claiming unconditional `P ≠ NP` before these blockers are discharged
 is incorrect and must be treated as outdated.

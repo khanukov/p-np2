@@ -609,10 +609,7 @@ lemma selection_clause_mem_formula
     {n w : Nat} {F : CNF n w} {ρ : Restriction n}
     (selection : Restriction.PendingClauseSelection (ρ := ρ) F.clauses) :
     selection.clause ∈ F.clauses := by
-  have hmem :
-      selection.clause ∈ selection.leadingClauses ++ selection.clause :: selection.suffix := by
-    simp
-  simpa [selection.clausesDecomposition] using hmem
+  simp [selection.clausesDecomposition]
 
 lemma literalIndexInClause_lt_wSucc
     {n w : Nat} {F : CNF n w} {ρ : Restriction n}

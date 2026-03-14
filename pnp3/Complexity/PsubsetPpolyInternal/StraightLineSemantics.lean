@@ -6,7 +6,7 @@ namespace PsubsetPpoly
 namespace StraightLine
 
 open Pnp3.Complexity
-open Pnp3.Complexity.ArchiveStraightLineAdapter
+open Pnp3.Complexity.StraightLineAdapter
 open Boolcube
 
 variable {n : Nat}
@@ -20,7 +20,7 @@ mutual
         classical
         by_cases h : (i : Nat) < n
         · have hi : (⟨(i : Nat), h⟩ : Fin n) = ⟨i, h⟩ := rfl
-          simpa [toCircuitWireAux, h, evalWireAux, hi, Circuit.eval]
+          simp [toCircuitWireAux, h, evalWireAux, hi, Circuit.eval]
         · set j : Nat := (i : Nat) - n with hj
           have hInputs : n ≤ (i : Nat) := Nat.le_of_not_gt h
           have hj_lt : j < g := by
@@ -30,7 +30,7 @@ mutual
           have hj_total : j < C.gates := Nat.lt_of_lt_of_le hj_lt hg
           have hGate := eval_toCircuitGateAux (C := C) (g := j) (hg := hj_total) (x := x)
           unfold toCircuitWireAux evalWireAux
-          simp [h, hj, hInputs, hj_lt]
+          simp [h]
           exact hGate
 
   theorem eval_toCircuitGateAux (C : Circuit n) :
@@ -49,11 +49,11 @@ mutual
         | and i j =>
             have hi := eval_toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) (i := i) (x := x)
             have hj := eval_toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) (i := j) (x := x)
-            simpa [toCircuitGateAux, hOp, evalGateAux, Circuit.eval, hi, hj]
+            simp [toCircuitGateAux, hOp, evalGateAux, Circuit.eval, hi, hj]
         | or i j =>
             have hi := eval_toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) (i := i) (x := x)
             have hj := eval_toCircuitWireAux (C := C) (g := g) (hg := Nat.le_of_lt hg) (i := j) (x := x)
-            simpa [toCircuitGateAux, hOp, evalGateAux, Circuit.eval, hi, hj]
+            simp [toCircuitGateAux, hOp, evalGateAux, Circuit.eval, hi, hj]
 end
 
 mutual
@@ -75,7 +75,7 @@ mutual
           have hGate := evalGateAux_withOutput (C := C) (out := out)
             (g := j) (hg := hj_total) (x := x)
           unfold evalWireAux
-          simp [h, hj, hInputs, hj_lt]
+          simp [h]
           exact hGate
 
   theorem evalGateAux_withOutput (C : Circuit n) (out : Fin (n + C.gates)) :
@@ -146,11 +146,11 @@ mutual
         | and u v =>
             have hu := evalWireAux_snoc_old C op x (g := g) (hg := Nat.le_of_lt hg) u
             have hv := evalWireAux_snoc_old C op x (g := g) (hg := Nat.le_of_lt hg) v
-            simpa [evalGateAux, hgate, hOp, hu, hv]
+            simp [evalGateAux, hgate, hOp, hu, hv]
         | or u v =>
             have hu := evalWireAux_snoc_old C op x (g := g) (hg := Nat.le_of_lt hg) u
             have hv := evalWireAux_snoc_old C op x (g := g) (hg := Nat.le_of_lt hg) v
-            simpa [evalGateAux, hgate, hOp, hu, hv]
+            simp [evalGateAux, hgate, hOp, hu, hv]
 end
 
 @[simp] lemma evalWire_snoc_lift (C : Circuit n)
@@ -161,7 +161,7 @@ end
   by_cases hIn : (i : Nat) < n
   · have hInLift : ((liftWire C i : Fin (n + (C.gates + 1))) : Nat) < n := by
       simpa [liftWire] using hIn
-    simp [hIn, hInLift, liftWire]
+    simp [hIn, liftWire]
   · have hInLift : ¬ ((liftWire C i : Fin (n + (C.gates + 1))) : Nat) < n := by
       simpa [liftWire] using hIn
     let j : Nat := (i : Nat) - n
@@ -174,7 +174,7 @@ end
     have hGate :
         evalGateAux (snoc C op) x hjSucc = evalGateAux C x hj := by
       exact evalGateAux_snoc_old C op x (g := j) hj
-    simp [hIn, hInLift, liftWire, j, hj, hjSucc, hGate]
+    simp [hIn, liftWire, j, hGate]
 
 @[simp] lemma eval_withOutput_eq_evalWire (C : Circuit n)
     (out : Fin (n + C.gates)) (x : Point n) :
@@ -204,7 +204,53 @@ lemma evalWireAux_full_eq_evalWireInternal (C : Circuit n) (x : Point n)
       omega
     unfold evalWireAux evalWireInternal
     unfold evalGateAux
-    simp [h, hj, hj_lt]
+    simp [h]
+
+@[simp] lemma evalWire_snoc_last (C : Circuit n)
+    (op : GateOp (n + C.gates)) (x : Point n) :
+    evalWire (snoc C op) x (Fin.last (n + C.gates)) =
+      match op with
+      | .const b => b
+      | .not u => !(evalWire C x u)
+      | .and u v => (evalWire C x u) && (evalWire C x v)
+      | .or u v => (evalWire C x u) || (evalWire C x v) := by
+  classical
+  have hj : C.gates < (snoc C op).gates := by simp [snoc]
+  have hWire :
+      evalWire (snoc C op) x (Fin.last (n + C.gates)) =
+        evalGateAux (snoc C op) x hj := by
+    simpa [evalWire, snoc] using
+      (evalWireInternal_gate (C := snoc C op) (x := x) (j := C.gates) hj)
+  have hGate : (snoc C op).gate ⟨C.gates, hj⟩ = op := by simp [snoc]
+  cases op with
+  | const b =>
+      simp [hWire, evalGateAux, hGate]
+  | not u =>
+      have hu := evalWireAux_snoc_old (C := C) (op := .not u) (x := x)
+        (g := C.gates) (hg := le_rfl) u
+      have hu' : evalWireAux C x C.gates le_rfl u = evalWireInternal C x u :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) u
+      simp [hWire, evalGateAux, hGate, hu, hu', evalWire]
+  | and u v =>
+      have hu := evalWireAux_snoc_old (C := C) (op := .and u v) (x := x)
+        (g := C.gates) (hg := le_rfl) u
+      have hv := evalWireAux_snoc_old (C := C) (op := .and u v) (x := x)
+        (g := C.gates) (hg := le_rfl) v
+      have hu' : evalWireAux C x C.gates le_rfl u = evalWireInternal C x u :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) u
+      have hv' : evalWireAux C x C.gates le_rfl v = evalWireInternal C x v :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) v
+      simp [hWire, evalGateAux, hGate, hu, hv, hu', hv', evalWire]
+  | or u v =>
+      have hu := evalWireAux_snoc_old (C := C) (op := .or u v) (x := x)
+        (g := C.gates) (hg := le_rfl) u
+      have hv := evalWireAux_snoc_old (C := C) (op := .or u v) (x := x)
+        (g := C.gates) (hg := le_rfl) v
+      have hu' : evalWireAux C x C.gates le_rfl u = evalWireInternal C x u :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) u
+      have hv' : evalWireAux C x C.gates le_rfl v = evalWireInternal C x v :=
+        evalWireAux_full_eq_evalWireInternal (C := C) (x := x) v
+      simp [hWire, evalGateAux, hGate, hu, hv, hu', hv', evalWire]
 
 @[simp] lemma eval_toCircuitWire (C : Circuit n) (x : Point n)
     (i : Fin (n + C.gates)) :
@@ -222,6 +268,117 @@ lemma evalWireAux_full_eq_evalWireInternal (C : Circuit n) (x : Point n)
     Circuit.eval (toCircuit (C := C)) x = eval C x := by
   simpa [toCircuit, eval_eq_evalWire, toCircuitWire]
     using eval_toCircuitWire (C := C) (x := x) C.output
+
+/--
+Gate-level semantic bridge: DAG evaluation of `toDag` agrees with internal
+straight-line gate evaluation.
+-/
+theorem dag_evalGateAt_eq_evalGateAux
+    (C : Circuit n)
+    (x : Point n)
+    (out : ComplexityInterfaces.DagWire n C.gates) :
+    ∀ (g : Nat) (hg : g < C.gates),
+      ComplexityInterfaces.DagCircuit.eval.evalGateAt
+        { gates := C.gates
+          gate := fun i =>
+            StraightLineAdapter.toDagOp (n := n) (g := i.1) (C.gate i)
+          output := out }
+        x g hg
+      = evalGateAux C x hg := by
+  intro g
+  induction g using Nat.strong_induction_on with
+  | h g ih =>
+      intro hg
+      have hWire :
+          ∀ (i : Fin (n + g)),
+            (match StraightLineAdapter.toDagWire (n := n) (g := g) i with
+            | ComplexityInterfaces.DagWire.input j => x j
+            | ComplexityInterfaces.DagWire.gate j =>
+                ComplexityInterfaces.DagCircuit.eval.evalGateAt
+                  { gates := C.gates
+                    gate := fun k =>
+                      StraightLineAdapter.toDagOp (n := n) (g := k.1) (C.gate k)
+                    output := out }
+                  x j.1 (Nat.lt_trans j.2 hg))
+            = evalWireAux C x g (Nat.le_of_lt hg) i := by
+        intro i
+        by_cases hIn : (i : Nat) < n
+        · simp [StraightLineAdapter.toDagWire, hIn, evalWireAux]
+        · let jNat : Nat := (i : Nat) - n
+          have hjNat : jNat < g := by
+            have hiLt : (i : Nat) < n + g := i.isLt
+            dsimp [jNat]
+            omega
+          have hrec := ih jNat hjNat (Nat.lt_trans hjNat hg)
+          unfold evalWireAux
+          simp [StraightLineAdapter.toDagWire, hIn]
+          simpa [evalGateAux] using hrec
+      cases hOp : C.gate ⟨g, hg⟩ with
+      | const b =>
+          unfold ComplexityInterfaces.DagCircuit.eval.evalGateAt evalGateAux
+          simp [StraightLineAdapter.toDagOp, hOp]
+      | not u =>
+          have hu := hWire u
+          unfold ComplexityInterfaces.DagCircuit.eval.evalGateAt evalGateAux
+          simpa [StraightLineAdapter.toDagOp, hOp] using
+            congrArg (fun t => !t) hu
+      | and u v =>
+          have hu := hWire u
+          have hv := hWire v
+          unfold ComplexityInterfaces.DagCircuit.eval.evalGateAt evalGateAux
+          simpa [StraightLineAdapter.toDagOp, hOp] using
+            congrArg₂ (fun a b => a && b) hu hv
+      | or u v =>
+          have hu := hWire u
+          have hv := hWire v
+          unfold ComplexityInterfaces.DagCircuit.eval.evalGateAt evalGateAux
+          simpa [StraightLineAdapter.toDagOp, hOp] using
+            congrArg₂ (fun a b => a || b) hu hv
+
+/--
+Global semantic bridge for straight-line circuits:
+DAG-backed adapter evaluator and internal evaluator coincide.
+-/
+theorem adapter_eval_eq_eval (C : Circuit n) (x : Point n) :
+    StraightLineAdapter.eval C x = eval C x := by
+  unfold StraightLineAdapter.eval
+  unfold eval
+  unfold evalInternal
+  by_cases hOut : (C.output : Nat) < n
+  · simp [StraightLineAdapter.toDag, StraightLineAdapter.toDagWire, hOut,
+      ComplexityInterfaces.DagCircuit.eval]
+  ·
+      let j : Nat := (C.output : Nat) - n
+      have hj : j < C.gates := by
+        have hout : (C.output : Nat) < n + C.gates := C.output.isLt
+        dsimp [j]
+        omega
+      have hGate := dag_evalGateAt_eq_evalGateAux
+        (C := C)
+        (x := x)
+        (out := ComplexityInterfaces.DagWire.gate ⟨j, hj⟩)
+        j hj
+      simp [StraightLineAdapter.toDag, StraightLineAdapter.toDagWire,
+        hOut, ComplexityInterfaces.DagCircuit.eval]
+      simpa [j] using hGate
+
+/--
+Wire-level semantic bridge for straight-line circuits:
+adapter and internal evaluators coincide on every wire.
+-/
+theorem adapter_evalWire_eq_evalWire
+    (C : Circuit n) (x : Point n) (i : Fin (n + C.gates)) :
+    StraightLineAdapter.evalWire C x i = evalWire C x i := by
+  unfold StraightLineAdapter.evalWire
+  calc
+    StraightLineAdapter.eval
+        (StraightLineAdapter.withOutput C i) x =
+      eval (StraightLineAdapter.withOutput C i) x :=
+      adapter_eval_eq_eval
+        (C := StraightLineAdapter.withOutput C i)
+        (x := x)
+    _ = evalWire C x i := by
+      simpa using (eval_withOutput_eq_evalWire (C := C) (out := i) (x := x))
 
 end StraightLine
 end PsubsetPpoly

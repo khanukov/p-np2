@@ -46,29 +46,26 @@ theorem NP_not_subset_PpolyFormula_with_barriers
 Final formula-track wrapper with explicit barrier obligations.
 -/
 theorem NP_not_subset_PpolyFormula_final_with_barriers
-    (hProvider : StructuredLocalityProviderPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily)
+    (hMag : MagnificationAssumptions)
     (hBarriers : BarrierBypassPackage) :
     NP_not_subset_PpolyFormula ∧ BarrierBypassPackage := by
-  refine ⟨NP_not_subset_PpolyFormula_final_with_provider hProvider hAsym hNPfam, hBarriers⟩
+  refine ⟨NP_not_subset_PpolyFormula_final hMag, hBarriers⟩
 
 /--
 Final `P ≠ NP` wrapper with explicit barrier obligations.
 
-As in `P_ne_NP_final`, this remains conditional on explicit DAG-track
-separation and a concrete TM-to-circuit compiler contract.
+Unlike default `P_ne_NP_final` (which internalizes the inclusion side), this
+audit-facing wrapper keeps explicit DAG-track separation and explicit internal
+`P ⊆ P/poly` closure contracts.
 -/
 theorem P_ne_NP_final_with_barriers
-    (hProvider : StructuredLocalityProviderPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPfam : StrictGapNPFamily)
+    (hMag : MagnificationAssumptions)
     (hNPDag : NP_not_subset_PpolyDAG)
-    (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-    (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement)
+    (hPpolyContracts : Complexity.Simulation.PsubsetPpolyCompiledRuntimeLinearOutputContracts)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
-  refine ⟨P_ne_NP_final_with_provider hProvider hAsym hNPfam hNPDag hCompiler hEvalAgree, hBarriers⟩
+  let _ := hMag
+  refine ⟨P_ne_NP_final_with_provider hNPDag hPpolyContracts, hBarriers⟩
 
 end Barrier
 end Pnp3

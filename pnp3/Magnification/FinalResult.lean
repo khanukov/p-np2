@@ -40,6 +40,105 @@ structure AsymptoticFormulaTrackHypothesis where
   pAt_hyp : ∀ n (hn : N0 ≤ n), FormulaLowerBoundHypothesisPartial (pAt n hn) (1 : Rat)
 
 /--
+Explicit assumptions package for the switching/shrinkage side:
+it provides the structured locality provider consumed by the bridge.
+-/
+structure SwitchingAssumptions : Type where
+  provider : StructuredLocalityProviderPartial
+
+/--
+Explicit assumptions package for the anti-checker side of the final route.
+-/
+structure AntiCheckerAssumptions : Type where
+  asymptotic : AsymptoticFormulaTrackHypothesis
+  strictNPFamily : StrictGapNPFamily
+
+/--
+Top-level explicit assumptions package for the magnification final statements.
+
+This keeps imported assumptions grouped and auditable at theorem boundaries.
+-/
+structure MagnificationAssumptions : Type where
+  switching : SwitchingAssumptions
+  antiChecker : AntiCheckerAssumptions
+
+/-- Build switching assumptions from an explicit provider. -/
+def switchingAssumptions_of_provider
+    (hProvider : StructuredLocalityProviderPartial) :
+    SwitchingAssumptions := ⟨hProvider⟩
+
+/-- Build switching assumptions from a formula-certificate provider. -/
+def switchingAssumptions_of_formulaCertificate
+    (hCert : FormulaCertificateProviderPartial) :
+    SwitchingAssumptions :=
+  switchingAssumptions_of_provider
+    (structuredLocalityProviderPartial_of_formulaCertificate hCert)
+
+/-- Build switching assumptions from an explicit multi-switching contract. -/
+def switchingAssumptions_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    SwitchingAssumptions :=
+  switchingAssumptions_of_provider
+    (structuredLocalityProviderPartial_of_multiswitching_contract hMS)
+
+/-- Build anti-checker assumptions from explicit asymptotic and NP-family data. -/
+def antiCheckerAssumptions_mk
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily) :
+    AntiCheckerAssumptions :=
+  ⟨hAsym, hNPfam⟩
+
+/--
+Build anti-checker assumptions from explicit asymptotic data and
+TM witnesses for each fixed-parameter gap-language instance.
+-/
+def antiCheckerAssumptions_of_tmWitnesses
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+    AntiCheckerAssumptions :=
+  antiCheckerAssumptions_mk hAsym (strictGapNPFamily_of_tmWitnesses hW)
+
+/-- Merge switching and anti-checker packages into magnification assumptions. -/
+def magnificationAssumptions_mk
+    (hSwitch : SwitchingAssumptions)
+    (hAnti : AntiCheckerAssumptions) :
+    MagnificationAssumptions :=
+  ⟨hSwitch, hAnti⟩
+
+/-- Build magnification assumptions from a formula-certificate provider package. -/
+def magnificationAssumptions_of_formulaCertificate
+    (hCert : FormulaCertificateProviderPartial)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily) :
+    MagnificationAssumptions :=
+  magnificationAssumptions_mk
+    (switchingAssumptions_of_formulaCertificate hCert)
+    (antiCheckerAssumptions_mk hAsym hNPfam)
+
+/-- Build magnification assumptions from an explicit multi-switching contract. -/
+def magnificationAssumptions_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPfam : StrictGapNPFamily) :
+    MagnificationAssumptions :=
+  magnificationAssumptions_mk
+    (switchingAssumptions_of_multiswitching_contract hMS)
+    (antiCheckerAssumptions_mk hAsym hNPfam)
+
+/--
+Build magnification assumptions from an explicit multi-switching contract plus
+TM witnesses for each fixed-parameter gap-language instance.
+-/
+def magnificationAssumptions_of_tmWitnesses
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
+    MagnificationAssumptions :=
+  magnificationAssumptions_mk
+    (switchingAssumptions_of_multiswitching_contract hMS)
+    (antiCheckerAssumptions_of_tmWitnesses hAsym hW)
+
+/--
 Asymptotic wrapper: if the partial pipeline lower bound is available at all
 sufficiently large sizes, we can instantiate the bridge at any such size.
 -/
@@ -56,56 +155,6 @@ theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
       (hProvider := hProvider)
       (hNPstrict := hNPstrict)
       (p := hAsym.pAt hAsym.N0 (le_rfl)) (δ := (1 : Rat)) hHyp
-
-/--
-Strict-track final hook: from strict non-uniform separation obtain `P ≠ NP`.
--/
-theorem P_ne_NP_of_NP_strict_not_subset_Ppoly
-  (hStrict : ComplexityInterfaces.NP_strict_not_subset_Ppoly) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    ComplexityInterfaces.P_ne_NP_of_NP_strict_not_subset_Ppoly hStrict
-
-/-- Explicit evaluation of the concrete counting bound used by canonical parameters. -/
-lemma circuitCountBound_8_2 : Models.circuitCountBound 8 2 = 230 := by
-  simp [Models.circuitCountBound]
-
-/-- Canonical Partial MCSP parameters used in the final bridge. -/
-lemma circuit_bound_ok_canonical :
-  Models.circuitCountBound 8 (3 - 1) < 2 ^ (Partial.tableLen 8 / 2) := by
-  /-
-    Делаем доказательство максимально прозрачным:
-    1) вычисляем левую часть точно: `circuitCountBound 8 2 = 230`;
-    2) показываем `230 < 2^8`;
-    3) поднимаем границу до `2^(tableLen 8 / 2)` по монотонности степени.
-  -/
-  have hleft : Models.circuitCountBound 8 (3 - 1) = 230 := by
-    simpa using circuitCountBound_8_2
-  have hsmall : (230 : Nat) < 2 ^ 8 := by
-    decide
-  have hexp : (2 : Nat) ^ 8 ≤ 2 ^ (Partial.tableLen 8 / 2) := by
-    have hidx : 8 ≤ Partial.tableLen 8 / 2 := by
-      decide
-    exact Nat.pow_le_pow_right (by decide : 0 < (2 : Nat)) hidx
-  have hmain : (230 : Nat) < 2 ^ (Partial.tableLen 8 / 2) :=
-    Nat.lt_of_lt_of_le hsmall hexp
-  simpa [hleft] using hmain
-
-/-
-  Канонический набор параметров для финального моста.
-
-  `circuit_bound_ok` подаётся через отдельную явную арифметическую лемму
-  `circuit_bound_ok_canonical`.
--/
-@[simp] def canonicalPartialParams : GapPartialMCSPParams where
-  n := 8
-  sYES := 1
-  sNO := 3
-  gap_ok := by decide
-  n_large := by decide
-  sYES_pos := by decide
-  circuit_bound_ok := by
-    simpa using circuit_bound_ok_canonical
 
 /--
 Primary final statement (asymptotic entry): from the structured provider and
@@ -126,23 +175,17 @@ theorem NP_not_subset_PpolyFormula_final_with_provider
 /--
 Primary asymptotic final formula-separation statement.
 
-This default-engine form removes direct provider arguments from the active
-final theorem interface.
-
-Scope note:
-despite the `PpolyFormula` codomain, this interface is still tied to the AC0
-pipeline assumptions (`AsymptoticFormulaTrackHypothesis` + provider packaging).
+This is the active audit-facing entrypoint: all external assumptions are passed
+explicitly via `MagnificationAssumptions`.
 -/
 theorem NP_not_subset_PpolyFormula_final
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily) :
+  (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
     NP_not_subset_PpolyFormula_final_with_provider
-      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+      (hProvider := hMag.switching.provider)
+      (hAsym := hMag.antiChecker.asymptotic)
+      (hNPfam := hMag.antiChecker.strictNPFamily)
 
 /--
 Certificate-first provider wiring from an explicit formula-certificate package.
@@ -153,10 +196,8 @@ theorem NP_not_subset_PpolyFormula_final_of_formulaCertificate
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+    NP_not_subset_PpolyFormula_final
+      (hMag := magnificationAssumptions_of_formulaCertificate hCert hAsym hNPfam)
 
 /--
 Constructive final formula-separation endpoint from an explicit multi-switching
@@ -168,10 +209,8 @@ theorem NP_not_subset_PpolyFormula_final_of_multiswitching_contract
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+    NP_not_subset_PpolyFormula_final
+      (hMag := magnificationAssumptions_of_multiswitching_contract hMS hAsym hNPfam)
 
 /--
 Canonical constructive final formula-separation route:
@@ -200,39 +239,8 @@ theorem NP_not_subset_PpolyFormula_final_constructive_of_tmWitnesses
   (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final_constructive
-      (hMS := hMS)
-      (hAsym := hAsym)
-      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-
-/--
-Constructive final formula-separation route from support-based bounds.
--/
-theorem NP_not_subset_PpolyFormula_final_of_supportBounds
-  (hBounds : FormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_final_of_multiswitching_contract
-      (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-
-/--
-Constructive final formula-separation route from default support-bounds
-availability (`Nonempty` wrapper).
--/
-theorem NP_not_subset_PpolyFormula_final_of_default_supportBounds
-  (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_final_of_supportBounds
-      (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+    NP_not_subset_PpolyFormula_final
+      (hMag := magnificationAssumptions_of_tmWitnesses hMS hAsym hW)
 
 /--
 Primary final statement on the nontrivial non-uniform class `PpolyReal`.
@@ -259,15 +267,13 @@ theorem NP_not_subset_PpolyReal_final_with_provider
 Primary asymptotic final `PpolyReal`-separation statement.
 -/
 theorem NP_not_subset_PpolyReal_final
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily) :
+  (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
     NP_not_subset_PpolyReal_final_with_provider
-      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+      (hProvider := hMag.switching.provider)
+      (hAsym := hMag.antiChecker.asymptotic)
+      (hNPfam := hMag.antiChecker.strictNPFamily)
 
 /--
 Certificate-first provider wiring for final `PpolyReal` separation.
@@ -278,10 +284,8 @@ theorem NP_not_subset_PpolyReal_final_of_formulaCertificate
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
-    NP_not_subset_PpolyReal_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+    NP_not_subset_PpolyReal_final
+      (hMag := magnificationAssumptions_of_formulaCertificate hCert hAsym hNPfam)
 
 /--
 Constructive final `PpolyReal`-separation endpoint from an explicit
@@ -293,10 +297,8 @@ theorem NP_not_subset_PpolyReal_final_of_multiswitching_contract
   (hNPfam : StrictGapNPFamily) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
-    NP_not_subset_PpolyReal_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+    NP_not_subset_PpolyReal_final
+      (hMag := magnificationAssumptions_of_multiswitching_contract hMS hAsym hNPfam)
 
 /--
 Canonical constructive final `PpolyReal`-separation route:
@@ -320,39 +322,8 @@ theorem NP_not_subset_PpolyReal_final_constructive_of_tmWitnesses
   (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
-    NP_not_subset_PpolyReal_final_constructive
-      (hMS := hMS)
-      (hAsym := hAsym)
-      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-
-/--
-Constructive final `PpolyReal`-separation route from support-based bounds.
--/
-theorem NP_not_subset_PpolyReal_final_of_supportBounds
-  (hBounds : FormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  exact
-    NP_not_subset_PpolyReal_final_of_multiswitching_contract
-      (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-
-/--
-Constructive final `PpolyReal`-separation route from default support-bounds
-availability (`Nonempty` wrapper).
--/
-theorem NP_not_subset_PpolyReal_final_of_default_supportBounds
-  (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily) :
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  exact
-    NP_not_subset_PpolyReal_final_of_supportBounds
-      (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
+    NP_not_subset_PpolyReal_final
+      (hMag := magnificationAssumptions_of_tmWitnesses hMS hAsym hW)
 
 /--
 Compatible DAG-track final wrapper.
@@ -360,46 +331,41 @@ Compatible DAG-track final wrapper.
 This route targets the canonical non-uniform class (`PpolyDAG`) and therefore
 uses explicit assumptions:
 1) `NP ⊄ PpolyDAG`
-2) `P ⊆ PpolyDAG`.
+2) linear-route internal `P ⊆ PpolyDAG` closure contracts.
 -/
 theorem P_ne_NP_final_with_provider
-  (hProvider : StructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  (hPpolyContracts :
+    Complexity.Simulation.PsubsetPpolyCompiledRuntimeLinearOutputContracts) :
   ComplexityInterfaces.P_ne_NP := by
+  have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
+    Complexity.Simulation.proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts
+      hPpolyContracts
   exact
     ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
       hNPDag
-      (Complexity.Simulation.dagInclusion_from_compiler hCompiler hEvalAgree)
+      hPDag
 
 /--
 Active conditional final `P ≠ NP` wrapper.
 
-This default-engine form removes direct provider arguments from the interface,
-but still depends on explicit DAG-track assumptions.
-
-Scope note:
-the AC0 side and DAG side are not yet internally connected in this wrapper.
+This is the audit-facing endpoint:
+`MagnificationAssumptions` carries the imported AC0-side assumptions explicitly,
+while the DAG-side separation assumption remains a separate argument.
 -/
 theorem P_ne_NP_final
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  (hMag : MagnificationAssumptions)
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
+  -- Keep AC0-side imports explicit at the final theorem boundary even though
+  -- the current DAG endpoint consumes only `hNPDag` on the separation side.
+  let _ := hMag
+  have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
+    Complexity.Simulation.proved_P_subset_PpolyDAG_internal
   exact
-    P_ne_NP_final_with_provider
-      (hProvider := defaultStructuredLocalityProviderPartial hDefaultProvider)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
+    ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
+      hNPDag
+      hPDag
 
 /--
 Certificate-first final `P ≠ NP` wiring from an explicit formula-certificate
@@ -409,18 +375,12 @@ theorem P_ne_NP_final_of_formulaCertificate
   (hCert : FormulaCertificateProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
-    P_ne_NP_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_formulaCertificate hCert)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
+    P_ne_NP_final
+      (hMag := magnificationAssumptions_of_formulaCertificate hCert hAsym hNPfam)
+      hNPDag
 
 /--
 Constructive final `P ≠ NP` wrapper from an explicit multi-switching
@@ -430,18 +390,12 @@ theorem P_ne_NP_final_of_multiswitching_contract
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
-    P_ne_NP_final_with_provider
-      (hProvider := structuredLocalityProviderPartial_of_multiswitching_contract hMS)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
+    P_ne_NP_final
+      (hMag := magnificationAssumptions_of_multiswitching_contract hMS hAsym hNPfam)
+      hNPDag
 
 /--
 Canonical constructive final `P ≠ NP` route:
@@ -451,9 +405,7 @@ theorem P_ne_NP_final_constructive
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
@@ -461,8 +413,6 @@ theorem P_ne_NP_final_constructive
       (hAsym := hAsym)
       (hNPfam := hNPfam)
       (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
 
 /--
 Constructive final `P ≠ NP` route from explicit TM witnesses and
@@ -475,82 +425,12 @@ theorem P_ne_NP_final_constructive_of_tmWitnesses
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final_constructive
-      (hMS := hMS)
-      (hAsym := hAsym)
-      (hNPfam := strictGapNPFamily_of_tmWitnesses hW)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
-
-/--
-Constructive final `P ≠ NP` route from support-based bounds.
--/
-theorem P_ne_NP_final_of_supportBounds
-  (hBounds : FormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final_of_multiswitching_contract
-      (hMS := multiswitching_contract_of_formula_support_bounds hBounds)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
-
-/--
-Constructive final `P ≠ NP` route from default support-bounds availability
-(`Nonempty` wrapper).
--/
-theorem P_ne_NP_final_of_default_supportBounds
-  (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final_of_supportBounds
-      (hBounds := defaultFormulaSupportRestrictionBoundsPartial hDefaultBounds)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
-
-/--
-Legacy straight-line inclusion variant of the final wrapper.
-
-This allows closing the inclusion side via an internalized `LegacyStraight`
-compiler, then reducing it to the canonical DAG inclusion target.
--/
-theorem P_ne_NP_final_of_straightLineInclusion
-  (hDefaultProvider : hasDefaultStructuredLocalityProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPfam : StrictGapNPFamily)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hCompiler : Complexity.Simulation.PolyTMToStraightLineCompiler)
-  (hEvalAgree : Complexity.Simulation.InternalCompiler.EvalAgreement) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final
-      (hDefaultProvider := hDefaultProvider)
-      (hAsym := hAsym)
-      (hNPfam := hNPfam)
-      (hNPDag := hNPDag)
-      (hCompiler := hCompiler)
-      (hEvalAgree := hEvalAgree)
+      (hMag := magnificationAssumptions_of_tmWitnesses hMS hAsym hW)
+      hNPDag
 
 end Magnification
 end Pnp3

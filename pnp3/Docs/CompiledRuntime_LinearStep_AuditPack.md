@@ -14,14 +14,15 @@
 
 1. Закрыт internal one-step provider:
    `stepCompiledLinearCandidateStepSpecProvider_internal`.
-2. Закрыт internal linear correctness:
-   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+2. Линейная correctness-ветка закрывается через
+   `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider`
+   с internal provider
+   `stepCompiledLinearCandidateStepSpecProvider_internal`.
 3. Линейный route по размеру остаётся закрытым
    (`CompiledRuntimeCircuitSizeBoundLinear_internal`).
 
-Актуальный остаток до no-arg `P ⊆ PpolyDAG` сместился на внутренний
-evaluator/output-wire agreement witness
-(`CompiledAcceptOutputWireAgreementLinear` / `InternalCompiler.EvalAgreement`).
+Актуальный active-route до no-arg `P ⊆ PpolyDAG` опирается на внутренний
+output-wire witness `CompiledAcceptOutputWireAgreementLinear`.
 
 Остальной текст файла ниже — исторический инженерный checkpoint.
 

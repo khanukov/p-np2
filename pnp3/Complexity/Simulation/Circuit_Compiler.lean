@@ -10,347 +10,12 @@ namespace Simulation
 open ComplexityInterfaces
 open StraightLineAdapter
 
-/--
-Constructive contract for a compiler from polynomial-time TMs to
-`StraightLineCircuit` families.
-
-`compile M c hRun n` must produce an `n`-input circuit computing `M.accepts` on
-length-`n` inputs, with a global polynomial size bound depending only on `c`.
--/
-structure PolyTMToStraightLineCompiler where
-  degree : TM → Nat → Nat
-  compile :
-    (M : TM) →
-    (c : Nat) →
-    (hRun : ∀ n, M.runTime n ≤ n ^ c + c) →
-    (n : Nat) →
-    StraightLineCircuit n
-  size_bound :
-    ∀ (M : TM) (c : Nat)
-      (hRun : ∀ n, M.runTime n ≤ n ^ c + c) (n : Nat),
-      (toDag (compile M c hRun n)).size ≤ n ^ (degree M c) + degree M c
-  correct :
-    ∀ (M : TM) (c : Nat)
-      (hRun : ∀ n, M.runTime n ≤ n ^ c + c)
-      (n : Nat) (x : Bitstring n),
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (compile M c hRun n) x =
-        TM.accepts M n x
-
-namespace InternalCompiler
-
-open Pnp3.Internal.PsubsetPpoly
-open Pnp3.Internal.PsubsetPpoly.Simulation
-
 /-!
-Compatibility truth-table track.
+Active inclusion route for `P_subset_PpolyDAG`.
 
-This section keeps a compiled-runtime compatibility route based on
-`stepCompiledTruthTable`. The active no-arg closure endpoint is the linear
-compiled-runtime route at the bottom of this file and does not depend on these
-compatibility wrappers.
+This file keeps only the linear compiled-runtime closure path used by
+`proved_P_subset_PpolyDAG_internal`.
 -/
-
-/--
-Iterated-runtime contract used by compiled-runtime routes.
-
-This shape is produced naturally by `stepCompiled` semantics.
--/
-def RuntimeSpecProviderIterated : Prop :=
-  ∀ (M : TM) (n : Nat),
-    StraightConfig.Spec
-      (sc := Nat.iterate (StraightConfig.stepCompiledTruthTable M) (M.runTime n)
-        (StraightConfig.initialStraightConfig M n))
-      (f := fun x => M.run (n := n) x)
-
-/--
-Alternative blocker contract on the `stepCompiled` branch:
-wire-level one-step semantics for `stepCompiled` imply runtime simulation spec.
--/
-def StepCompiledSemanticsProvider : Prop :=
-  ∀ (M : TM) (n : Nat), StraightConfig.StepCompiledSemantics M n
-
-theorem runtimeSpec_of_stepCompiledSemantics
-    (hSem : StepCompiledSemanticsProvider) :
-    ∀ (M : TM) (n : Nat),
-      StraightConfig.Spec
-        (sc := Nat.iterate (StraightConfig.stepCompiledTruthTable M) (M.runTime n)
-          (StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) := by
-  intro M n
-  exact StraightConfig.runtime_spec_of_stepCompiledProvider (M := M) (n := n) (hSem := hSem M n)
-
-/-- Low-level contracts currently needed to instantiate `StepCompiledSemanticsProvider`. -/
-def StepCompiledContracts : Prop :=
-  Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics ∧
-  Pnp3.Internal.PsubsetPpoly.StraightLine.AppendWireSemantics
-
-/--
-Split variant of `StepCompiledContracts` that isolates the hard append-right
-obligation at gate level.
-
-This mirrors the refactoring in `TreeToStraight`: `AppendWireSemantics` can be
-assembled from `appendWireSemantics_left` and `AppendGateRightSemantics`.
--/
-def StepCompiledContractsSplit : Prop :=
-  Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics ∧
-  Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics
-
-theorem stepCompiledContracts_of_split
-    (hSplit : StepCompiledContractsSplit) :
-    StepCompiledContracts := by
-  rcases hSplit with ⟨hCompile, hAppendGateRight⟩
-  refine ⟨hCompile, ?_⟩
-  exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics_of_gateContracts
-    hAppendGateRight
-
-/--
-Internal assembly helper: recover `StepCompiledContracts` from only the
-gate-level append-right contract.
-
-This packages the theorem `compileTreeWireSemantics_of_gateContracts` from
-`TreeToStraight` together with `appendWireSemantics_of_gateContracts`.
--/
-theorem stepCompiledContracts_of_appendGateRight
-    (hAppendGateRight : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics) :
-    StepCompiledContracts := by
-  refine ⟨?_, ?_⟩
-  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.compileTreeWireSemantics_of_gateContracts
-      hAppendGateRight
-  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics_of_gateContracts
-      hAppendGateRight
-
-/--
-Closed internal witness for one-step compiled contracts.
-
-This is the assumption-free package needed by the `stepCompiled` assembly path.
--/
-theorem stepCompiledContracts_internal : StepCompiledContracts := by
-  refine ⟨?_, ?_⟩
-  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.compileTreeWireSemantics
-  · exact Pnp3.Internal.PsubsetPpoly.StraightLine.appendWireSemantics
-
-theorem stepCompiledSemanticsProvider_of_contracts
-    (hContracts : StepCompiledContracts) :
-    StepCompiledSemanticsProvider := by
-  rcases hContracts with ⟨hCompile, hAppend⟩
-  intro M n
-  exact StraightConfig.stepCompiled_semantics_of_core_contracts hCompile hAppend M n
-
-/-- Closed internal witness for step-compiled semantic provider. -/
-theorem stepCompiledSemanticsProvider_internal : StepCompiledSemanticsProvider :=
-  stepCompiledSemanticsProvider_of_contracts stepCompiledContracts_internal
-
-theorem stepCompiledSemanticsProvider_of_splitContracts
-    (hSplit : StepCompiledContractsSplit) :
-    StepCompiledSemanticsProvider :=
-  stepCompiledSemanticsProvider_of_contracts
-    (stepCompiledContracts_of_split hSplit)
-
-theorem runtimeSpec_of_stepCompiledContracts
-    (hContracts : StepCompiledContracts) :
-    ∀ (M : TM) (n : Nat),
-      StraightConfig.Spec
-        (sc := Nat.iterate (StraightConfig.stepCompiledTruthTable M) (M.runTime n)
-          (StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) := by
-  exact runtimeSpec_of_stepCompiledSemantics
-    (stepCompiledSemanticsProvider_of_contracts hContracts)
-
-/-- Closed internal iterated runtime spec on the `stepCompiled` path. -/
-theorem runtimeSpec_iterated_internal :
-    ∀ (M : TM) (n : Nat),
-      StraightConfig.Spec
-        (sc := Nat.iterate (StraightConfig.stepCompiledTruthTable M) (M.runTime n)
-          (StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) :=
-  runtimeSpec_of_stepCompiledContracts stepCompiledContracts_internal
-
-/--
-Closed iterated-runtime witness in bundled form.
--/
-theorem runtimeSpecProviderIterated_internal :
-    RuntimeSpecProviderIterated :=
-  runtimeSpec_iterated_internal
-
-/--
-Split-contract variant of `runtimeSpec_of_stepCompiledContracts`.
-
-This theorem closes the runtime-spec assembly point directly from the split
-contract surface (`CompileTreeWireSemantics ∧ AppendGateRightSemantics`).
--/
-theorem runtimeSpec_of_splitContracts
-    (hSplit : StepCompiledContractsSplit) :
-    ∀ (M : TM) (n : Nat),
-      StraightConfig.Spec
-        (sc := Nat.iterate (StraightConfig.stepCompiledTruthTable M) (M.runTime n)
-          (StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) :=
-  runtimeSpec_of_stepCompiledSemantics
-    (stepCompiledSemanticsProvider_of_splitContracts hSplit)
-
-/-- Pending internal semantic blocker: `eval` compatibility of two interfaces. -/
-def EvalAgreement : Prop :=
-  ∀ {n : Nat} (C : StraightLineCircuit n) (x : Bitstring n),
-    StraightLineAdapter.eval C x =
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval C x
-
-end InternalCompiler
-
-/--
-Main reduction theorem: a constructive TM→straight-line compiler closes
-`P_subset_PpolyStraightLine`.
--/
-theorem P_subset_PpolyStraightLine_of_compiler
-    (compiler : PolyTMToStraightLineCompiler)
-    (hEvalAgree : InternalCompiler.EvalAgreement) :
-    P_subset_PpolyStraightLine := by
-  intro L hPL
-  rcases exists_poly_tm_for_P (L := L) hPL with ⟨M, c, hRun, hCorrect⟩
-  refine ⟨({
-    polyBound := fun n => n ^ (compiler.degree M c) + compiler.degree M c
-    polyBound_poly := ⟨compiler.degree M c, by
-      intro n
-      exact Nat.le_refl _⟩
-    family := fun n => compiler.compile M c hRun n
-    family_size_le := by
-      intro n
-      exact compiler.size_bound M c hRun n
-    correct := by
-      intro n x
-      calc
-        eval (compiler.compile M c hRun n) x =
-            Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-              (compiler.compile M c hRun n) x :=
-          hEvalAgree (C := compiler.compile M c hRun n) (x := x)
-        _ = TM.accepts M n x := compiler.correct M c hRun n x
-        _ = L n x := hCorrect n x
-  } : InPpolyStraightLine L), trivial⟩
-
-/-- Canonical DAG inclusion obtained from a constructive TM compiler. -/
-theorem P_subset_PpolyDAG_of_compiler
-    (compiler : PolyTMToStraightLineCompiler)
-    (hEvalAgree : InternalCompiler.EvalAgreement) :
-    P_subset_PpolyDAG :=
-  P_subset_PpolyDAG_of_P_subset_PpolyStraightLine
-    (P_subset_PpolyStraightLine_of_compiler compiler hEvalAgree)
-
-/--
-Public re-export of the split-contract runtime statement.
-
-This theorem keeps downstream modules in the `Complexity.Simulation` namespace
-without requiring them to depend directly on `InternalCompiler` internals.
--/
-theorem runtimeSpec_iterated_of_splitContracts
-    (hSplit : InternalCompiler.StepCompiledContractsSplit) :
-    ∀ (M : TM) (n : Nat),
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-        (sc := Nat.iterate (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledTruthTable M)
-          (M.runTime n) (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) := by
-  exact InternalCompiler.runtimeSpec_of_splitContracts hSplit
-
-/--
-Public bridge: from gate-level append-right contract to the full
-`StepCompiledContracts` package.
-
-This theorem re-exports the internal assembly helper so downstream modules can
-depend on a stable namespace (`Complexity.Simulation`) without opening
-`InternalCompiler` internals.
--/
-theorem stepCompiledContracts_of_appendGateRight
-    (hAppendGateRight : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics) :
-    InternalCompiler.StepCompiledContracts :=
-  InternalCompiler.stepCompiledContracts_of_appendGateRight hAppendGateRight
-
-/--
-Public closed witness for one-step compiled contracts.
--/
-theorem stepCompiledContracts_internal :
-    InternalCompiler.StepCompiledContracts :=
-  InternalCompiler.stepCompiledContracts_internal
-
-/--
-Public bridge: derive `StepCompiledSemanticsProvider` from gate-level append
-contract.
--/
-theorem stepCompiledSemanticsProvider_of_appendGateRight
-    (hAppendGateRight : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendGateRightSemantics) :
-    InternalCompiler.StepCompiledSemanticsProvider :=
-  InternalCompiler.stepCompiledSemanticsProvider_of_contracts
-    (stepCompiledContracts_of_appendGateRight hAppendGateRight)
-
-/--
-Public closed iterated runtime-spec witness on the `stepCompiled` path.
--/
-theorem runtimeSpec_iterated_internal :
-    ∀ (M : TM) (n : Nat),
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-        (sc := Nat.iterate (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledTruthTable M)
-          (M.runTime n) (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
-        (f := fun x => M.run (n := n) x) :=
-  InternalCompiler.runtimeSpec_iterated_internal
-
-/--
-Closed correctness statement for acceptance circuits built from the compiled
-runtime configuration (`stepCompiled`-iterated path).
--/
-theorem acceptCircuitCompiled_correct_internal :
-    ∀ (M : TM) (n : Nat),
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-        (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n)
-        (f := fun y => M.run (n := n) y) →
-      ∀ (x : Bitstring n),
-        Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-          (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x =
-          TM.accepts M n x := by
-  intro M n hRun x
-  exact
-    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled_spec_of_runSpec
-      (M := M) (n := n) hRun x
-
-/--
-Residual correctness contract for acceptance circuits extracted from
-`runtimeConfigCompiled`.
--/
-def CompiledRuntimeAcceptCorrectness : Prop :=
-  ∀ (M : TM) (n : Nat) (x : Bitstring n),
-    Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x =
-      TM.accepts M n x
-
-/--
-Closed internal correctness witness for acceptance circuits extracted from
-`runtimeConfigCompiled`.
--/
-theorem compiledRuntimeAcceptCorrectness_internal :
-    CompiledRuntimeAcceptCorrectness := by
-  intro M n x
-  have hRunIter :
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-        (sc := Nat.iterate
-          (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledTruthTable M)
-          (M.runTime n)
-          (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
-        (f := fun y => M.run (n := n) y) :=
-    runtimeSpec_iterated_internal M n
-  have hRun :
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-        (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n)
-        (f := fun y => M.run (n := n) y) := by
-    simpa [Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled,
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled] using hRunIter
-  exact acceptCircuitCompiled_correct_internal M n hRun x
-
-/--
-Residual evaluator-agreement contract restricted to the compiled-runtime
-acceptance-circuit family.
--/
-def CompiledAcceptCircuitEvalAgreement : Prop :=
-  ∀ (M : TM) (n : Nat) (x : Bitstring n),
-    StraightLineAdapter.eval
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x =
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x
 
 /--
 Evaluator-agreement contract for the linear compiled-runtime acceptance family.
@@ -377,95 +42,6 @@ def CompiledAcceptOutputWireAgreementLinear : Prop :=
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit x
       ((Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).state M.accept)
 
-/--
-Residual size-bound contract restricted to the compiled-runtime acceptance
-circuit family.
--/
-def CompiledAcceptCircuitSizeBound : Prop :=
-  ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
-    ∃ k, ∀ n,
-      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n)).size ≤
-        n ^ k + k
-
-/--
-Narrower evaluator-agreement contract: only the acceptance output wire of the
-compiled runtime circuit needs agreement between adapter and internal
-semantics.
--/
-def CompiledAcceptOutputWireAgreement : Prop :=
-  ∀ (M : TM) (n : Nat) (x : Bitstring n),
-    StraightLineAdapter.evalWire
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit x
-      ((Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).state M.accept) =
-    Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit x
-      ((Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).state M.accept)
-
-/--
-Wire-level adapter/internal evaluator agreement for the whole compiled runtime
-circuit. This is stronger than what is needed for acceptance output only.
--/
-def CompiledRuntimeWireEvalAgreement : Prop :=
-  ∀ (M : TM) (n : Nat) (x : Bitstring n)
-    (i : Fin (n + (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates)),
-    StraightLineAdapter.evalWire
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit x i =
-    Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit x i
-
-/--
-Narrower size contract: polynomial DAG-size bound for the compiled runtime
-base circuit (before output redirection).
--/
-def CompiledRuntimeCircuitSizeBound : Prop :=
-  ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
-    ∃ k, ∀ n,
-      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-        n ^ k + k
-
-/--
-Relaxed size-bound variant (one-degree slack). Useful as an intermediate
-target when proving tight size bounds is inconvenient.
--/
-def CompiledRuntimeCircuitSizeBoundLoose : Prop :=
-  ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
-    ∃ k, ∀ n,
-      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-        n ^ k + k
-
-theorem compiledAcceptOutputWireAgreement_of_runtimeWireEvalAgreement
-    (hWire : CompiledRuntimeWireEvalAgreement) :
-    CompiledAcceptOutputWireAgreement := by
-  intro M n x
-  exact hWire M n x
-    ((Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).state M.accept)
-
-theorem compiledAcceptEvalAgreement_of_outputWireAgreement
-    (hOut : CompiledAcceptOutputWireAgreement) :
-    CompiledAcceptCircuitEvalAgreement := by
-  intro M n x
-  let sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n
-  have hArch :
-      StraightLineAdapter.eval
-        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x =
-      StraightLineAdapter.evalWire sc.circuit x (sc.state M.accept) := by
-    change StraightLineAdapter.eval
-      (StraightLineAdapter.withOutput sc.circuit (sc.state M.accept)) x =
-      StraightLineAdapter.evalWire sc.circuit x (sc.state M.accept)
-    rfl
-  have hInt :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval
-        (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled M n) x =
-      Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire sc.circuit x (sc.state M.accept) := by
-    simpa [Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled,
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf, sc] using
-      (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_withOutput_eq_evalWire
-        (C := sc.circuit) (out := sc.state M.accept) (x := x))
-  exact hArch.trans ((hOut M n x).trans hInt.symm)
-
 theorem compiledAcceptEvalAgreementLinear_of_outputWireAgreement
     (hOut : CompiledAcceptOutputWireAgreementLinear) :
     CompiledAcceptCircuitEvalAgreementLinear := by
@@ -488,86 +64,8 @@ theorem compiledAcceptEvalAgreementLinear_of_outputWireAgreement
         (C := sc.circuit) (out := sc.state M.accept) (x := x))
   exact hArch.trans ((hOut M n x).trans hInt.symm)
 
-theorem compiledAcceptSizeBound_of_runtimeCircuitSizeBound
-    (hSize : CompiledRuntimeCircuitSizeBound) :
-    CompiledAcceptCircuitSizeBound := by
-  intro M c hRun
-  rcases hSize M c hRun with ⟨k, hk⟩
-  refine ⟨k, ?_⟩
-  intro n
-  have hBase :
-      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-        n ^ k + k :=
-    hk n
-  simpa [size_toDag,
-    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitCompiled_gates]
-    using hBase
-
 /--
-Gate-count upper bound for compiled runtime circuits with the canonical
-polynomial shape used downstream.
--/
-def CompiledRuntimeCircuitGateBound : Prop :=
-  ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
-    ∃ k, ∀ n,
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
-        n ^ k + k
-
-/--
-Residual one-step increment obligation for the compiled runtime route:
-`stepCompiled` must increase gate count by at most `linearStepBudgetExpanded`.
--/
-def CompiledRuntimeStepIncrementBound : Prop :=
-  ∀ (M : TM) (n : Nat)
-    (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
-    (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc).circuit.gates ≤
-      sc.circuit.gates +
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n
-
-/--
-Linear-step variant of the one-step increment obligation.
-
-This contract is already closed internally via the append-only builder route.
--/
-def CompiledRuntimeStepIncrementBoundLinear : Prop :=
-  ∀ (M : TM) (n : Nat)
-    (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
-    (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M sc).circuit.gates ≤
-      sc.circuit.gates +
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n
-
-theorem compiledRuntimeStepIncrementBoundLinear_internal :
-    CompiledRuntimeStepIncrementBoundLinear := by
-  intro M n sc
-  exact
-    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate_gates_le_budgetExpanded
-      (M := M) (sc := sc)
-
-theorem compiledRuntimeStepIncrementBound_of_stepCompiled_eq_linear
-    (hEq :
-      ∀ (M : TM) (n : Nat)
-        (sc : Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig M n),
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiled M sc =
-          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M sc) :
-    CompiledRuntimeStepIncrementBound := by
-  intro M n sc
-  simpa [hEq M n sc] using
-    (compiledRuntimeStepIncrementBoundLinear_internal M n sc)
-
-/--
-Linear-runtime gate-count contract: same polynomial shape as the canonical
-compiled-runtime gate contract, but for `runtimeConfigCompiledLinear`.
--/
-def CompiledRuntimeCircuitGateBoundLinear : Prop :=
-  ∀ (M : TM) (c : Nat)
-    (_hRun : ∀ n, M.runTime n ≤ n ^ c + c),
-    ∃ k, ∀ n,
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit.gates ≤
-        n ^ k + k
-
-/--
-Linear-runtime size contract derived from `CompiledRuntimeCircuitGateBoundLinear`.
+Linear-runtime size contract.
 
 `Linear` in this name refers to the linear-step builder route, not to an
 `O(n)` bound; the contract shape is still polynomial (`n^k + k`).
@@ -963,17 +461,11 @@ theorem compiledRuntimeBudgetPolyBound_internal :
         Nat.pow_le_pow_right hnPos hkCore
       exact Nat.le_trans hMain (Nat.le_trans hPowLift (Nat.le_add_right _ _))
 
-/--
-Linear-route reduction of `CompiledRuntimeCircuitGateBoundLinear`:
-the one-step increment side is closed internally (`stepCompiledLinear`), so only
-the residual polynomial-domination obligation remains explicit.
--/
-theorem compiledRuntimeCircuitGateBoundLinear_of_budgetPoly
-    (hBudgetPoly : CompiledRuntimeBudgetPolyBound) :
-    CompiledRuntimeCircuitGateBoundLinear := by
+theorem compiledRuntimeCircuitSizeBoundLinear_internal :
+    CompiledRuntimeCircuitSizeBoundLinear := by
   intro M c hRun
-  rcases hBudgetPoly M c hRun with ⟨k, hk⟩
-  refine ⟨k, ?_⟩
+  rcases compiledRuntimeBudgetPolyBound_internal M c hRun with ⟨k, hk⟩
+  refine ⟨k + 2, ?_⟩
   intro n
   have hIter :
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit.gates ≤
@@ -981,88 +473,9 @@ theorem compiledRuntimeCircuitGateBoundLinear_of_budgetPoly
           Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n :=
     Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear_gates_le_budgetExpanded
       (M := M) (n := n)
-  exact Nat.le_trans hIter (hk n)
-
-theorem compiledRuntimeCircuitGateBoundLinear_internal :
-    CompiledRuntimeCircuitGateBoundLinear :=
-  compiledRuntimeCircuitGateBoundLinear_of_budgetPoly
-    compiledRuntimeBudgetPolyBound_internal
-
-/--
-Bundle of the two remaining local obligations needed to close compiled-runtime
-size bounds.
--/
-def CompiledRuntimeGateClosureContracts : Prop :=
-  CompiledRuntimeStepIncrementBound ∧ CompiledRuntimeBudgetPolyBound
-
-/--
-Reduction of `CompiledRuntimeCircuitGateBound` to two local obligations:
-1. one-step gate increment by `linearStepBudgetExpanded`;
-2. polynomial domination of accumulated runtime budget.
-
-This isolates the remaining nontrivial closure work in a single theorem shape.
--/
-theorem compiledRuntimeCircuitGateBound_of_linearBudget
-    (hStepInc : CompiledRuntimeStepIncrementBound)
-    (hBudgetPoly : CompiledRuntimeBudgetPolyBound) :
-    CompiledRuntimeCircuitGateBound := by
-  intro M c hRun
-  rcases hBudgetPoly M c hRun with ⟨k, hk⟩
-  refine ⟨k, ?_⟩
-  intro n
-  have hIter :
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
-        2 + M.runTime n *
-          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n :=
-    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled_gates_le_of_stepCompiled_inc'
-      (M := M) (n := n)
-      (inc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.BuiltWire.linearStepBudgetExpanded M n)
-      (hStepInc := hStepInc M n)
-  exact Nat.le_trans hIter (hk n)
-
-theorem compiledRuntimeCircuitSizeBound_of_gateBound
-    (hGate : CompiledRuntimeCircuitGateBound) :
-    CompiledRuntimeCircuitSizeBound := by
-  intro M c hRun
-  rcases hGate M c hRun with ⟨k, hk⟩
-  refine ⟨k + 2, ?_⟩
-  intro n
-  have hGates :
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit.gates ≤
-        n ^ k + k :=
-    hk n
-  have hSize :
-      (toDag (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiled M n).circuit).size ≤
-        (n ^ k + k) + 1 := by
-    simpa [size_toDag, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-      Nat.add_le_add_right hGates 1
-  have hTarget :
-      (n ^ k + k) + 1 ≤ n ^ (k + 2) + (k + 2) := by
-    by_cases hn : n = 0
-    · subst hn
-      cases k with
-      | zero =>
-          simp
-      | succ k' =>
-          simp
-    · have hpow : n ^ k ≤ n ^ (k + 2) := by
-        have h1 : 1 ≤ n := Nat.succ_le_of_lt (Nat.pos_of_ne_zero hn)
-        simpa [Nat.add_assoc] using Nat.pow_le_pow_right h1 (Nat.le_add_right k 2)
-      have hk1 : k + 1 ≤ k + 2 := Nat.le_succ (k + 1)
-      simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using Nat.add_le_add hpow hk1
-  exact le_trans hSize hTarget
-
-theorem compiledRuntimeCircuitSizeBoundLinear_of_gateBound
-    (hGate : CompiledRuntimeCircuitGateBoundLinear) :
-    CompiledRuntimeCircuitSizeBoundLinear := by
-  intro M c hRun
-  rcases hGate M c hRun with ⟨k, hk⟩
-  refine ⟨k + 2, ?_⟩
-  intro n
   have hGates :
       (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit.gates ≤
-        n ^ k + k :=
-    hk n
+        n ^ k + k := Nat.le_trans hIter (hk n)
   have hSize :
       (toDag
         (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n).circuit).size ≤
@@ -1084,38 +497,6 @@ theorem compiledRuntimeCircuitSizeBoundLinear_of_gateBound
       have hk1 : k + 1 ≤ k + 2 := Nat.le_succ (k + 1)
       simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using Nat.add_le_add hpow hk1
   exact le_trans hSize hTarget
-
-theorem compiledRuntimeCircuitSizeBoundLinear_internal :
-    CompiledRuntimeCircuitSizeBoundLinear :=
-  compiledRuntimeCircuitSizeBoundLinear_of_gateBound
-    compiledRuntimeCircuitGateBoundLinear_internal
-
-theorem compiledRuntimeAcceptCorrectnessLinear_of_linearSemantics
-    (hSemLinear :
-      ∀ (M : TM) (n : Nat),
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.StepCompiledLinearCandidateSemantics M n) :
-    CompiledRuntimeAcceptCorrectnessLinear := by
-  intro M n x
-  have hRun :
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-        (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
-        (f := fun y => M.run (n := n) y) := by
-    have hRunRaw :
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.Spec
-          (sc := Nat.iterate
-            (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidate M)
-            (M.runTime n)
-            (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.initialStraightConfig M n))
-          (f := fun y => M.run (n := n) y) :=
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtime_spec_of_stepCompiledLinearCandidateProvider
-        (M := M) (n := n) (hSem := hSemLinear M n)
-    simpa [Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear,
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinear] using hRunRaw
-  exact
-    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf_spec_of_runSpec
-      (M := M) (n := n)
-      (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
-      hRun x
 
 theorem compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider
     (hStepLinear :
@@ -1144,21 +525,6 @@ theorem compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider
       (sc := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n)
       hRun x
 
-theorem compiledRuntimeAcceptCorrectnessLinear_internal :
-    CompiledRuntimeAcceptCorrectnessLinear := by
-  exact compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider
-    Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidateStepSpecProvider_internal
-
-/--
-One-shot closure theorem for the compiled-runtime size contract from the two
-local residual obligations.
--/
-theorem compiledRuntimeCircuitSizeBound_of_gateClosureContracts
-    (hContracts : CompiledRuntimeGateClosureContracts) :
-    CompiledRuntimeCircuitSizeBound :=
-  compiledRuntimeCircuitSizeBound_of_gateBound
-    (compiledRuntimeCircuitGateBound_of_linearBudget hContracts.1 hContracts.2)
-
 /--
 Closed internal witness for linear-route output-wire evaluator agreement.
 -/
@@ -1172,26 +538,6 @@ theorem compiledAcceptOutputWireAgreementLinear_internal :
       (x := x)
       (i := sc.state M.accept))
 
-theorem compiledAcceptEvalAgreementLinear_of_evalAgreement
-    (hEval : InternalCompiler.EvalAgreement) :
-    CompiledAcceptCircuitEvalAgreementLinear := by
-  intro M n x
-  exact hEval
-    (C := Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.acceptCircuitOf M
-      (Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.runtimeConfigCompiledLinear M n))
-    (x := x)
-
-/--
-Linear compiled-runtime contract bundle.
-
-This isolates the remaining linear-route semantic obligations from size closure:
-size is already closed internally (`CompiledRuntimeCircuitSizeBoundLinear_internal`).
--/
-def PsubsetPpolyCompiledRuntimeLinearContracts : Prop :=
-  CompiledAcceptCircuitEvalAgreementLinear ∧
-    CompiledRuntimeCircuitSizeBoundLinear ∧
-    CompiledRuntimeAcceptCorrectnessLinear
-
 /--
 Linear compiled-runtime contract bundle with the narrower output-wire
 agreement surface.
@@ -1201,11 +547,7 @@ def PsubsetPpolyCompiledRuntimeLinearOutputContracts : Prop :=
     CompiledRuntimeCircuitSizeBoundLinear ∧
     CompiledRuntimeAcceptCorrectnessLinear
 
-/--
-Linear compiled-runtime DAG route with the same evaluator agreement contract and
-linear-specific size/correctness contracts.
--/
-theorem P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
+private theorem p_subset_PpolyDAG_of_compiledRuntimeLinearContracts
     (hEval : CompiledAcceptCircuitEvalAgreementLinear)
     (hSize : CompiledRuntimeCircuitSizeBoundLinear)
     (hCorrectLinear : CompiledRuntimeAcceptCorrectnessLinear) :
@@ -1242,62 +584,25 @@ theorem P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
         _ = L n x := hLangCorrect n x
   } : InPpolyStraightLine L), trivial⟩
 
-theorem proved_P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
-    (hContracts : PsubsetPpolyCompiledRuntimeLinearContracts) :
-    P_subset_PpolyDAG := by
-  rcases hContracts with ⟨hEval, hSize, hCorrectLinear⟩
-  exact P_subset_PpolyDAG_of_compiledRuntimeLinearContracts hEval hSize hCorrectLinear
-
 theorem proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts
     (hContracts : PsubsetPpolyCompiledRuntimeLinearOutputContracts) :
     P_subset_PpolyDAG := by
   rcases hContracts with ⟨hOut, hSize, hCorrectLinear⟩
-  exact P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
+  exact p_subset_PpolyDAG_of_compiledRuntimeLinearContracts
     (compiledAcceptEvalAgreementLinear_of_outputWireAgreement hOut)
     hSize
     hCorrectLinear
-
-theorem proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
-    (hEval : InternalCompiler.EvalAgreement)
-    (hSize : CompiledRuntimeCircuitSizeBoundLinear)
-    (hCorrectLinear : CompiledRuntimeAcceptCorrectnessLinear) :
-    P_subset_PpolyDAG :=
-  P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
-    (compiledAcceptEvalAgreementLinear_of_evalAgreement hEval)
-    hSize
-    hCorrectLinear
-
-theorem proved_P_subset_PpolyDAG_of_evalAgreementAndLinearSemantics
-    (hEval : InternalCompiler.EvalAgreement)
-    (hSemLinear :
-      ∀ (M : TM) (n : Nat),
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.StepCompiledLinearCandidateSemantics M n) :
-    P_subset_PpolyDAG :=
-  proved_P_subset_PpolyDAG_of_evalAgreementAndCompiledRuntimeLinear
-    hEval
-    compiledRuntimeCircuitSizeBoundLinear_internal
-    (compiledRuntimeAcceptCorrectnessLinear_of_linearSemantics hSemLinear)
-
-theorem proved_P_subset_PpolyDAG_of_linearOutputAgreementAndLinearStepProvider
-    (hOutLinear : CompiledAcceptOutputWireAgreementLinear)
-    (hStepLinear :
-      ∀ (M : TM) (n : Nat),
-        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.StepCompiledLinearCandidateStepSpecProvider M n) :
-    P_subset_PpolyDAG :=
-  proved_P_subset_PpolyDAG_of_compiledRuntimeLinearContracts
-    ⟨ compiledAcceptEvalAgreementLinear_of_outputWireAgreement hOutLinear
-    , compiledRuntimeCircuitSizeBoundLinear_internal
-    , compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider hStepLinear ⟩
 
 /--
 No-arg internal closure endpoint for the active linear compiled-runtime route.
 -/
 theorem proved_P_subset_PpolyDAG_internal :
     P_subset_PpolyDAG := by
-  exact proved_P_subset_PpolyDAG_of_linearOutputAgreementAndLinearStepProvider
-    (hOutLinear := compiledAcceptOutputWireAgreementLinear_internal)
-    (hStepLinear :=
-      Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidateStepSpecProvider_internal)
+  exact proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts
+    ⟨ compiledAcceptOutputWireAgreementLinear_internal
+    , compiledRuntimeCircuitSizeBoundLinear_internal
+    , compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider
+        Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidateStepSpecProvider_internal ⟩
 
 /--
 Audit helper: the no-arg endpoint is definitionally the linear output/step
@@ -1305,10 +610,11 @@ provider closure route.
 -/
 theorem proved_P_subset_PpolyDAG_internal_defeq_linear :
     proved_P_subset_PpolyDAG_internal =
-      proved_P_subset_PpolyDAG_of_linearOutputAgreementAndLinearStepProvider
-        (hOutLinear := compiledAcceptOutputWireAgreementLinear_internal)
-        (hStepLinear :=
-          Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidateStepSpecProvider_internal) :=
+      proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts
+        ⟨ compiledAcceptOutputWireAgreementLinear_internal
+        , compiledRuntimeCircuitSizeBoundLinear_internal
+        , compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider
+            Pnp3.Internal.PsubsetPpoly.Simulation.StraightConfig.stepCompiledLinearCandidateStepSpecProvider_internal ⟩ :=
   rfl
 
 end Simulation

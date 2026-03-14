@@ -39,6 +39,10 @@ open Pnp3.Magnification
 #print axioms Tests.i3_certificate_auto_no_manual_hCardHalf
 #print axioms Tests.i4_final_wiring_of_formulaCertificate
 
+-- Активный inclusion endpoint: no-arg, без внешнего `EvalAgreement`-контракта.
+#print axioms Complexity.Simulation.proved_P_subset_PpolyDAG_internal
+#print axioms Complexity.Simulation.proved_P_subset_PpolyDAG_internal_defeq_linear
+
 -- Проверяем, что ключевые shrinkage-леммы не тянут лишних аксиом.
 -- Это именно те утверждения, которые в TODO помечены для перепроверки.
 #print axioms ThirdPartyFacts.partial_shrinkage_for_AC0

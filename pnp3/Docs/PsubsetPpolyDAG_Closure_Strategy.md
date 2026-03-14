@@ -11,6 +11,11 @@
 > `pnp3/Docs/PsubsetPpoly_Internal_TODO.md`,
 > `pnp3/Docs/PsubsetPpoly_AUDIT_HANDOFF.md`,
 > `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`.
+>
+> Update (2026-03-14 cleanup):
+> compatibility-слой `InternalCompiler/*` и ветка `EvalAgreement`
+> удалены из active `Circuit_Compiler.lean`; упоминания этих узлов ниже
+> являются историческими.
 
 Дополнение (2026-03-02):
 - отдельный runbook для size-closure:

@@ -20,8 +20,9 @@
 
 1. Линейный size-route закрыт internal witness-ом
    `CompiledRuntimeCircuitSizeBoundLinear_internal`.
-2. Для linear route закрыт internal correctness witness
-   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+2. Для linear route correctness закрывается через
+   `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider`
+   с internal step-spec provider.
 3. Остаточный inclusion-блокер теперь не size-часть, а no-arg
    evaluator/output-wire agreement witness для сборки
    `proved_P_subset_PpolyDAG_internal`.

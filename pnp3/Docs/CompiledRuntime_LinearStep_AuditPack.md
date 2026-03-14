@@ -3,6 +3,28 @@
 Дата: 2026-03-02  
 Статус: ready-for-audit (engineering checkpoint)
 
+## Update (2026-03-13): checkpoint superseded
+
+После повторной проверки на текущем дереве:
+
+- `./scripts/check.sh` проходит,
+- `pnp3/Tests/Step10*.lean` проходят.
+
+Состояние относительно checkpoint-а ниже:
+
+1. Закрыт internal one-step provider:
+   `stepCompiledLinearCandidateStepSpecProvider_internal`.
+2. Закрыт internal linear correctness:
+   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+3. Линейный route по размеру остаётся закрытым
+   (`CompiledRuntimeCircuitSizeBoundLinear_internal`).
+
+Актуальный остаток до no-arg `P ⊆ PpolyDAG` сместился на внутренний
+evaluator/output-wire agreement witness
+(`CompiledAcceptOutputWireAgreementLinear` / `InternalCompiler.EvalAgreement`).
+
+Остальной текст файла ниже — исторический инженерный checkpoint.
+
 ## 1. Что именно уже сделано конструктивно
 
 В `Simulation.lean` собран append-only каркас линейного one-step без

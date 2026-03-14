@@ -10,6 +10,41 @@
 Runbook по закрытию compiled-runtime size блока:
 `pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`.
 
+## Update (2026-03-13): recheck after linear Step10 push
+
+Проверка на текущем дереве:
+
+- `./scripts/check.sh` — проходит.
+- `lake env lean pnp3/Tests/Step10*.lean` — проходит.
+- `lake build` целевых модулей (`Simulation`, `Circuit_Compiler`,
+  `FinalResult`, `Barrier/Bypass`) — проходит.
+
+Что фактически закрыто по сравнению с freeze-заметками ниже:
+
+1. Закрыт internal one-step provider для linear-candidate route:
+   `stepCompiledLinearCandidateStepSpecProvider_internal`.
+2. Закрыта linear correctness без внешних контрактов:
+   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+3. Линейный DAG-route сведён к более узкому контракту по output-wire:
+   `CompiledAcceptOutputWireAgreementLinear` + закрытые internal
+   `CompiledRuntimeCircuitSizeBoundLinear_internal` и
+   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+4. Закрыт no-arg witness для evaluator/output-wire agreement:
+   `compiledAcceptOutputWireAgreementLinear_internal`.
+5. Добавлен no-arg endpoint:
+   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+
+Текущий остаток теперь не математический inclusion-blocker и не endpoint wiring
+для inclusion-side:
+
+1. Default `P_ne_NP_final*` уже переключены на no-arg inclusion route.
+2. Открытым остаётся internalization DAG-separation входа
+   `NP_not_subset_PpolyDAG`.
+
+Примечание:
+разделы ниже с датами `2026-03-03` / `2026-03-04` сохраняются как
+исторический журнал freeze-прохода и не являются самым свежим статусом.
+
 ## Update (2026-03-03): external-audit freeze (proof paused)
 
 Этот документ обновлён как freeze-point перед внешним аудитом.
@@ -126,8 +161,11 @@ Runbook по закрытию compiled-runtime size блока:
 Чтобы не терять нить, фиксируем состояние в самом коротком формате.
 
 ### Закрыли в этой ветке
-- ✅ Финальный слой (`Magnification/FinalResult.lean`, `Barrier/Bypass.lean`) переключён
-  на bundle-контракт `hPpolyContracts`, без прямого `hCompiler`/`hEvalAgree`.
+- ✅ Дефолтный финальный слой (`Magnification/FinalResult.lean`) переключён
+  на no-arg inclusion endpoint `proved_P_subset_PpolyDAG_internal`.
+- ✅ Compatibility-wrapper слой (`with_provider`, `Barrier/Bypass`) продолжает
+  поддерживать bundle-контракт `hPpolyContracts`, без прямого
+  `hCompiler`/`hEvalAgree`.
 - ✅ Добавлен и используется пакет внутренних контрактов
   (`PsubsetPpolyInternalContracts`) и мостики до `P_subset_PpolyDAG`.
 - ✅ Разбита append-right обязанность на более управляемый уровень:
@@ -152,13 +190,12 @@ Runbook по закрытию compiled-runtime size блока:
 
 ## 1) Что уже сделано (перепроверено по коду)
 
-### ✅ Финальный слой уже переведён на bundle-контракт (без `hCompiler`)
-- В `Magnification/FinalResult.lean` финальные DAG-wrapper’ы используют
-  `hPpolyContracts : PsubsetPpolyInternalContractsIteratedCanonical`, а
-  включение `P ⊆ PpolyDAG` берётся через
-  `proved_P_subset_PpolyDAG_of_iteratedCanonicalContracts`.
-- В `Barrier/Bypass.lean` `P_ne_NP_final_with_barriers` тоже принимает
-  `hPpolyContracts` и не принимает `hCompiler`.
+### ✅ Финальный слой разделён на default и compatibility
+- В `Magnification/FinalResult.lean` default `P_ne_NP_final*` больше не
+  принимают `hPpolyContracts`; включение `P ⊆ PpolyDAG` берётся через
+  `proved_P_subset_PpolyDAG_internal`.
+- В `Barrier/Bypass.lean` и compatibility-wrapper’ах сохраняется контрактный
+  API (`hPpolyContracts`) без прямого `hCompiler`.
 
 ### ✅ В `StraightLine` добавлены анти-`Fin` helper’ы
 - Есть `toCircuitWireOf`, `evalWireOf`, `wireOf_eq` — это уже правильный паттерн
@@ -281,8 +318,8 @@ Runbook по закрытию compiled-runtime size блока:
 - [x] Получен `stepCompiledContracts_internal`
 - [ ] Получен `runtimeSpecProvider_internal`
 - [ ] Получен безпараметрический `polyTMToStraightLineCompiler_internal`
-- [ ] Получен `proved_P_subset_PpolyDAG_internal`
-- [ ] `lake build Magnification.FinalResult Barrier.Bypass`
+- [x] Получен `proved_P_subset_PpolyDAG_internal`
+- [x] `lake build Magnification.FinalResult Barrier.Bypass`
 - [ ] `lake build`
 - [ ] (опц.) `./scripts/check.sh`
 - [ ] Статусы в этом файле обновлены до фактических

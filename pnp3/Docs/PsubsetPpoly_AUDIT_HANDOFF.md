@@ -4,6 +4,29 @@
 Цель: зафиксировать, что уже собрано, что является реальным блокером,
 и какие минимальные действия нужны, чтобы продолжить без потери контекста.
 
+## Update (2026-03-13): post-freeze recheck
+
+Этот файл изначально фиксировал freeze-срез на внешнюю проверку.
+После повторного прогона на текущем дереве:
+
+- `./scripts/check.sh` проходит;
+- `Step10`-тесты (`pnp3/Tests/Step10*.lean`) проходят;
+- линейный one-step provider и linear correctness уже закрыты внутренне.
+
+Что важно для handoff сейчас:
+
+1. Блокер `StepCompiledLinearCandidateSemantics` как обязательный следующий шаг
+   больше не актуален в прежней форме: в коде есть
+   `stepCompiledLinearCandidateStepSpecProvider_internal`.
+2. Закрыт no-arg internal witness на evaluator/output-wire agreement:
+   `compiledAcceptOutputWireAgreementLinear_internal`.
+3. Добавлен no-arg endpoint:
+   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+4. Финальный wiring дефолтных `P_ne_NP_final*` переключён на no-arg inclusion;
+   текущий handoff-task смещён на internalization `NP_not_subset_PpolyDAG`.
+
+Остальная часть файла сохраняется как исторический handoff baseline.
+
 ## Update (2026-03-03): handoff freeze for external audit
 
 Ниже — актуализация относительно старого baseline в этом файле.

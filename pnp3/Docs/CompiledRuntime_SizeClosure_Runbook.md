@@ -3,6 +3,25 @@
 Дата: 2026-03-02  
 Статус: active
 
+## Update (2026-03-13): post-recheck note
+
+Проверки на текущем дереве:
+
+- `./scripts/check.sh` проходит;
+- `pnp3/Tests/Step10*.lean` проходят.
+
+Что изменилось с момента фиксации этого runbook:
+
+1. Линейный size-route закрыт internal witness-ом
+   `CompiledRuntimeCircuitSizeBoundLinear_internal`.
+2. Для linear route закрыт internal correctness witness
+   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+3. Остаточный inclusion-блокер теперь не size-часть, а no-arg
+   evaluator/output-wire agreement witness для сборки
+   `proved_P_subset_PpolyDAG_internal`.
+
+Разделы ниже сохраняются как архитектурная трассировка решений.
+
 ## 1. Executive decision
 
 Текущий маршрут закрытия `CompiledRuntimeCircuitSizeBound` через существующий

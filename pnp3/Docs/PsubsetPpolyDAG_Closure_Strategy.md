@@ -10,6 +10,35 @@
 - текущая truth-table/tree-recompile форма `stepCompiled` признана
   архитектурным блокером для внутреннего polynomial size witness.
 
+## Update (2026-03-13): status after full recheck
+
+Проверено на текущем дереве:
+
+- `./scripts/check.sh` проходит.
+- `lake env lean pnp3/Tests/Step10*.lean` проходит.
+- Targeted сборки `Simulation/Circuit_Compiler/FinalResult/Bypass` проходят.
+
+Что изменилось относительно baseline этого runbook:
+
+1. Закрыт internal one-step provider на linear-candidate ветке:
+   `stepCompiledLinearCandidateStepSpecProvider_internal`.
+2. Закрыт internal linear correctness witness:
+   `compiledRuntimeAcceptCorrectnessLinear_internal`.
+3. В compiled-runtime route убран контракт
+   `CompiledRuntimeAcceptCorrectness` из минимального residual surface
+   (корректность теперь закрывается internal теоремой).
+4. Закрыт no-arg output-wire witness:
+   `compiledAcceptOutputWireAgreementLinear_internal`.
+5. Собран no-arg endpoint:
+   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+
+Текущий остаток после этого этапа: не inclusion-wiring, а отдельный
+DAG-separation blocker (`NP_not_subset_PpolyDAG`) на final маршруте.
+
+Примечание:
+таблица и шаги ниже остаются полезными как детальный журнал архитектуры,
+но актуальный blocker summary определяется этим апдейтом.
+
 ## 1. Цель
 
 Довести текущий DAG-маршрут

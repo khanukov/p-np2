@@ -1,6 +1,6 @@
 # Complete Axiom Inventory - PNP3
 
-Updated: 2026-02-27
+Updated: 2026-03-13
 
 - Active global `axiom` declarations in `pnp3/`: **0**
 - Active `sorry/admit` in `pnp3/`: **0**
@@ -13,11 +13,13 @@ Canonical unconditional-checklist:
 This file tracks only axiom/sorry hygiene.
 It does not by itself imply unconditional `P ≠ NP`.
 
-## External assumptions still present in final wrapper route
+## External assumptions still present in active final DAG route
 
 These are explicit hypotheses, not axioms:
 
-1. `hasDefaultStructuredLocalityProviderPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+1. `NP_not_subset_PpolyDAG`
+2. (`default-supportBounds` compatibility wrapper only)
+   `hasDefaultFormulaSupportRestrictionBoundsPartial`
+
+Compatibility DAG wrappers (non-default API) still expose explicit inclusion
+contract bundles such as `PsubsetPpolyInternalContractsIteratedCanonical`.

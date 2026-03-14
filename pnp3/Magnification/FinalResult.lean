@@ -439,20 +439,22 @@ theorem P_ne_NP_final_with_compiledRuntimeProvider
 Active conditional final `P ≠ NP` wrapper.
 
 This default-engine form removes direct provider arguments from the interface,
-but still depends on explicit DAG-track assumptions.
+and closes the inclusion side (`P ⊆ PpolyDAG`) from internal simulation
+contracts.
 
 Scope note:
-the AC0 side and DAG side are not yet internally connected in this wrapper.
+the AC0 side and DAG-separation side are not yet internally connected in this
+wrapper.
 -/
 theorem P_ne_NP_final
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
+  have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
+    Complexity.Simulation.proved_P_subset_PpolyDAG_internal
   exact
-    P_ne_NP_final_with_provider
-      (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
+    ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
+      hNPDag
+      hPDag
 
 /--
 Internal-source default route (runtime-only internal compiler contract),
@@ -475,42 +477,29 @@ Certificate-first final `P ≠ NP` wiring from an explicit formula-certificate
 package.
 -/
 theorem P_ne_NP_final_of_formulaCertificate
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final_with_provider
-      (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
+  exact P_ne_NP_final hNPDag
 
 /--
 Constructive final `P ≠ NP` wrapper from an explicit multi-switching
 support-bounds contract.
 -/
 theorem P_ne_NP_final_of_multiswitching_contract
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final_with_provider
-      (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
+  exact P_ne_NP_final hNPDag
 
 /--
 Canonical constructive final `P ≠ NP` route:
 explicit multi-switching contract, no default-provider `Nonempty` flag.
 -/
 theorem P_ne_NP_final_constructive
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
       (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
 
 /--
 Constructive final `P ≠ NP` route from explicit TM witnesses and
@@ -521,29 +510,23 @@ This internalizes strictness of the gap language family using
 -/
 theorem P_ne_NP_final_constructive_of_tmWitnesses
   (hW : ∀ p : GapPartialMCSPParams, GapPartialMCSP_TMWitness p)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   -- `hW` оставляем в интерфейсе как конструктивный witness-пакет;
   -- он фиксирует «канонический constructive route» на стороне NP-фамилии,
-  -- даже если текущий DAG-финал зависит только от `hNPDag` + `hPpolyContracts`.
+  -- даже если текущий DAG-финал зависит только от `hNPDag`.
   have _hNPfam : StrictGapNPFamily := strictGapNPFamily_of_tmWitnesses hW
-  exact
-    P_ne_NP_final_constructive (hNPDag := hNPDag) (hPpolyContracts := hPpolyContracts)
+  exact P_ne_NP_final_constructive (hNPDag := hNPDag)
 
 /--
 Constructive final `P ≠ NP` route from support-based bounds.
 -/
 theorem P_ne_NP_final_of_supportBounds
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   exact
     P_ne_NP_final_of_multiswitching_contract
       (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
 
 /--
 Constructive final `P ≠ NP` route from default support-bounds availability
@@ -551,9 +534,7 @@ Constructive final `P ≠ NP` route from default support-bounds availability
 -/
 theorem P_ne_NP_final_of_default_supportBounds
   (hDefaultBounds : hasDefaultFormulaSupportRestrictionBoundsPartial)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   -- `hDefaultBounds` intentionally remains in the signature to preserve the
   -- constructive API shape aligned with the formula-track wrappers.
@@ -562,23 +543,6 @@ theorem P_ne_NP_final_of_default_supportBounds
   exact
     P_ne_NP_final_of_supportBounds
       (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
-
-/--
-Legacy straight-line inclusion variant of the final wrapper.
-
-This allows closing the inclusion side via an internalized `LegacyStraight`
-compiler, then reducing it to the canonical DAG inclusion target.
--/
-theorem P_ne_NP_final_of_straightLineInclusion
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG)
-  (hPpolyContracts :
-    Complexity.Simulation.PsubsetPpolyInternalContractsIteratedCanonical) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final
-      (hNPDag := hNPDag)
-      (hPpolyContracts := hPpolyContracts)
 
 end Magnification
 end Pnp3

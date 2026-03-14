@@ -1,65 +1,46 @@
 # Frequently Asked Questions
 
-Updated: 2026-02-27
+Updated: 2026-03-13
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+Current milestone release checklist:
+`RELEASE_RC.md`.
 
 ## What is currently proved in code?
 
-The active final surface is in `pnp3/Magnification/FinalResult.lean`:
+Active final surface is in `pnp3/Magnification/FinalResult.lean`:
 
-- `NP_not_subset_PpolyFormula_final_with_provider`
-- `NP_not_subset_PpolyFormula_final`
-- `NP_not_subset_PpolyFormula_final_of_formulaCertificate`
-- `NP_not_subset_PpolyFormula_final_of_default_supportBounds`
-- `P_ne_NP_final_with_provider`
-- `P_ne_NP_final`
-- `P_ne_NP_final_of_formulaCertificate`
-- `P_ne_NP_final_of_default_supportBounds`
+- `NP_not_subset_PpolyFormula_final*`
+- `NP_not_subset_PpolyReal_final*`
+- `P_ne_NP_final*`
 
-These are machine-checked and compile on current tree.
+These compile on the current tree.
 
 ## Is unconditional `P ≠ NP` proved here?
 
 No. Current `P_ne_NP_final` is conditional.
 
+## Можно ли релизить сейчас, а полный путь закрыть потом?
+
+Да, как промежуточный `RC/milestone` релиз.
+Правила формулировок и checklist зафиксированы в `RELEASE_RC.md`.
+
 ## Conditional on what exactly?
 
-Legacy `P_ne_NP_final` still requires four assumptions:
+Current default final DAG endpoint requires:
 
-1. `hasDefaultStructuredLocalityProviderPartial`
-2. `AsymptoticFormulaTrackHypothesis`
-3. `StrictGapNPFamily`
-4. `NP_not_subset_PpolyFormula -> NP_not_subset_Ppoly`
+1. `NP_not_subset_PpolyDAG`
 
-Active constructive endpoint `P_ne_NP_final_of_default_supportBounds` replaces
-item (1) with `hasDefaultFormulaSupportRestrictionBoundsPartial`.
+Constructive compatibility wrapper `P_ne_NP_final_of_default_supportBounds`
+additionally requires `hasDefaultFormulaSupportRestrictionBoundsPartial`.
 
-## Why is `P_ne_NP_final` still meaningful for auditors?
+## What is the current inclusion-side blocker?
 
-It is a clean contract boundary:
-
-- the AC0/formula-track route is explicit and type-checked;
-- all remaining non-closed parts are isolated as named assumptions;
-- removal of obsolete branches reduced ambiguity of which route is active.
-
-## What is the constructive path auditors should trace first?
-
-1. `pnp3/Models/Model_PartialMCSP.lean`:
-   TM witness objects and NP-membership bridge.
-2. `pnp3/Magnification/LocalityProvider_Partial.lean`:
-   provider/certificate wiring.
-3. `pnp3/Magnification/Bridge_to_Magnification_Partial.lean`:
-   bridge from lower-bound statements to separation interface.
-4. `pnp3/Magnification/FinalResult.lean`:
-   final theorem wrappers and assumption boundary.
-
-## Where are anti-checker and lower-bound cores?
-
-- `pnp3/LowerBounds/AntiChecker_Partial.lean`
-- `pnp3/LowerBounds/LB_Formulas_Core_Partial.lean`
-- `pnp3/Magnification/PipelineStatements_Partial.lean`
+For inclusion itself, no-arg closure is present and already wired into default
+final wrappers:
+`proved_P_subset_PpolyDAG_internal`.
+Remaining work is DAG-separation internalization (`NP_not_subset_PpolyDAG`).
 
 ## Is axiom/sorry hygiene clean?
 
@@ -74,23 +55,12 @@ Use:
 ./scripts/check.sh
 ```
 
-## What changed in the recent cleanup?
+## How to quickly verify current Step10 closure surface?
 
-- Removed dead theorem wrappers and compatibility aliases that were no longer
-  referenced by active final route.
-- Kept active final API stable.
-- Kept build and audit checks passing.
+```bash
+for f in pnp3/Tests/Step10*.lean; do lake env lean "$f"; done
+```
 
-## How do we verify nothing important was deleted?
-
-Use this safety sequence:
-
-1. Build/audit: `./scripts/check.sh`.
-2. Confirm final API symbols in `FinalResult.lean`.
-3. Confirm blockers in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md` still match final
-   theorem signatures.
-4. Confirm no document claims unconditional status.
-
-## Where is a longer narrative proof map?
+## Where is the longer route map?
 
 See `PROOF_OVERVIEW.md`.

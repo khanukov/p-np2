@@ -22,8 +22,7 @@ open Pnp3.Magnification
 #check
   (P_ne_NP_final :
     ComplexityInterfaces.NP_not_subset_PpolyDAG →
-      Simulation.PsubsetPpolyInternalContractsIteratedCanonical →
-        ComplexityInterfaces.P_ne_NP)
+      ComplexityInterfaces.P_ne_NP)
 
 example :
     Simulation.PsubsetPpolyInternalContractsIteratedRuntimeOnly ↔

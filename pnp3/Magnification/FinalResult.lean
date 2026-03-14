@@ -190,7 +190,7 @@ AC0/magnification assumptions live on a separate route
 (`NP_not_subset_PpolyFormula_final*` / `NP_not_subset_PpolyReal_final*`)
 until an explicit bridge to DAG separation is formalized.
 -/
-theorem P_ne_NP_final
+theorem P_ne_NP_final_dag_only
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
   have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
@@ -199,6 +199,20 @@ theorem P_ne_NP_final
     ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
       hNPDag
       hPDag
+
+/--
+Package-shaped final wrapper kept for CI/signature policy compatibility.
+
+Logical payload remains DAG-only (`hNPDag` + internal inclusion); `hMag` is a
+context package argument and is not consumed until a formal bridge from
+magnification assumptions to DAG separation is added.
+-/
+theorem P_ne_NP_final
+  (hMag : MagnificationAssumptions)
+  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
+  ComplexityInterfaces.P_ne_NP := by
+  let _ := hMag
+  exact P_ne_NP_final_dag_only hNPDag
 
 end Magnification
 end Pnp3

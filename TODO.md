@@ -61,6 +61,40 @@ Verification:
 3. Regression/audit tests compile with the new signatures
    (`Tests/BridgeLocalityRegression`, `Tests/AxiomsAudit`, barrier audits).
 
+## A9 milestone (closed end-to-end in active route)
+
+Status: closed on 2026-03-14 in `Magnification.AC0LocalityBridge`.
+
+What was changed:
+
+1. `FormulaSupportBoundsFromMultiSwitchingContract` now requires an explicit
+   semantic link: some `f ∈ F` extensionally equals the extracted formula
+   semantics `FormulaCircuit.eval c` (after length cast).
+2. Removed the vacuous reverse constructor
+   `multiswitching_contract_of_formula_support_bounds` that previously built
+   the contract via an unrelated empty AC0 family.
+3. Added audit helper theorem `AC0LocalityBridge.package_semantic_link` and
+   wired it into `Tests/AxiomsAudit`.
+4. Added `formula_support_bounds_and_semantic_link_from_multiswitching` so the
+   active locality bridge exports both numeric bounds and semantic linkage in
+   one theorem (link no longer disappears at the projection boundary).
+5. Added a split-constructor path:
+   `multiswitching_contract_of_semantic_provider_and_support_bounds` builds the
+   full strengthened A9 contract from two independent inputs:
+   semantic AC0/multi-switching provenance + numeric support bounds.
+6. Added an internal constructive semantic provider:
+   `formulaSemanticMultiSwitchingProvider_internal`.
+7. Added a fully internalized constructor:
+   `multiswitching_contract_internalized_of_support_bounds` derives the
+   strengthened A9 contract directly from support-bounds assumptions.
+
+Interpretation:
+
+1. The contract can no longer be satisfied by a completely irrelevant AC0
+   family payload.
+2. Semantic linkage is now constructive in-repo (internal provider exists),
+   while numeric obligations remain exactly the explicit support-bounds inputs.
+
 ## Execution order
 
 1. Keep docs honest: no unconditional claim while DAG blockers remain.

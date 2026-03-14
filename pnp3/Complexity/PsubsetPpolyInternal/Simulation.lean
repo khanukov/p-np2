@@ -7,6 +7,14 @@ import Complexity.PsubsetPpolyInternal.TreeToStraight
 import Complexity.PpolyDAG_from_StraightLine
 import Mathlib.Tactic
 
+-- Compatibility/proof-engineering module with legacy tactic style.
+-- Keep baseline builds warning-clean while this file is gradually refactored.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedSimpArgs false
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
+set_option linter.unusedVariables false
+
 namespace Pnp3
 namespace Internal
 namespace PsubsetPpoly

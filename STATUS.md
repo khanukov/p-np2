@@ -48,6 +48,27 @@ Current inclusion-side status:
   (`runtimeConfig` path with `step = id`), not for the active no-arg linear
   closure.
 
+## Contract hardening updates
+
+- A9 interface hardening is closed:
+  `FormulaSupportBoundsFromMultiSwitchingContract` now includes an explicit
+  semantic linkage field from AC0-family payload to the extracted strict formula.
+- The vacuous empty-family constructor for this contract was removed from
+  `Magnification/LocalityProvider_Partial.lean`.
+- The active locality bridge now exposes a combined theorem
+  `formula_support_bounds_and_semantic_link_from_multiswitching`, so the
+  semantic linkage is preserved at the API level (alongside numeric bounds).
+- Added split constructor
+  `multiswitching_contract_of_semantic_provider_and_support_bounds`:
+  full A9 contract is now assembled from
+  `FormulaSemanticMultiSwitchingProvider` + `FormulaSupportRestrictionBoundsPartial`.
+- Added internal constructive provider
+  `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal` and
+  internalized constructor
+  `multiswitching_contract_internalized_of_support_bounds`, so semantic
+  AC0/multi-switching linkage is now in-repo constructive (no external semantic
+  provider input needed for contract assembly).
+
 ## Documentation policy
 
 Any file claiming unconditional `P ≠ NP` before these blockers are discharged

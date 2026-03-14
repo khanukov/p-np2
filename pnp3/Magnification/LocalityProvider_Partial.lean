@@ -210,66 +210,17 @@ def FormulaSupportRestrictionBoundsPartial : Prop :=
       rFacts.alive.card ≤
         Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
 
-private theorem emptyFamily_witness_ac0
-    (n : Nat) :
-    ThirdPartyFacts.AC0FamilyWitnessProp
-      ({ n := n, M := 1, d := 0 } : ThirdPartyFacts.AC0Parameters)
-      ([] : Core.Family n) := by
-  refine ⟨{
-    circuits := []
-    covers := ?_
-    depth_le := ?_
-    size_le := ?_
-    circuits_length_le := by simp
-  }⟩
-  · intro f hf
-    cases hf
-  · intro c hc
-    cases hc
-  · intro c hc
-    cases hc
-
-private theorem emptyFamily_witness_multiswitching
-    (n : Nat) :
-    Nonempty
-      (ThirdPartyFacts.AC0MultiSwitchingWitness
-        ({ n := n, M := 1, d := 0 } : ThirdPartyFacts.AC0Parameters)
-        ([] : Core.Family n)) := by
-  classical
-  let S : Core.Shrinkage n :=
-    { F := []
-      t := 0
-      ε := (1 : Core.Q) / (n + 2)
-      tree := Core.PDT.leaf (fun _ => none)
-      depth_le := by
-        simp [Core.PDT.depth]
-      Rsel := fun _ => []
-      Rsel_sub := by
-        intro f hf
-        cases hf
-      err_le := by
-        intro f hf
-        cases hf }
-  have hε0 : (0 : Core.Q) ≤ (1 : Core.Q) / (n + 2) := by
-    positivity
-  refine ⟨{
-    base := Classical.choice (emptyFamily_witness_ac0 n)
-    shrinkage := S
-    family_eq := rfl
-    depth_le_polylog := Nat.zero_le _
-    epsilon_nonneg := by simpa [S] using hε0
-    epsilon_le_inv := by simp [S]
-  }⟩
-
 /--
-Constructive reverse bridge: support-based restriction bounds are sufficient to
-build the AC0 multi-switching contract required by the I-2B interface.
+Construct the strengthened I-2B contract from two independent ingredients:
+1) semantic AC0/multi-switching provenance for extracted formulas;
+2) numeric support-based locality bounds.
 
-The AC0-family / multi-switching witness payload is witnessed by a canonical
-empty family at matching input length; all quantitative bounds are supplied by
-`FormulaSupportRestrictionBoundsPartial`.
+This isolates the remaining constructive target to semantic provisioning
+(`FormulaSemanticMultiSwitchingProvider`), while keeping numeric bounds in the
+existing support-bounds route.
 -/
-theorem multiswitching_contract_of_formula_support_bounds
+theorem multiswitching_contract_of_semantic_provider_and_support_bounds
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
     (hBounds : FormulaSupportRestrictionBoundsPartial) :
     AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract := by
   classical
@@ -305,19 +256,18 @@ theorem multiswitching_contract_of_formula_support_bounds
         Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
     simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
       hBounds (p := p) hFormula
-  let ac0 : ThirdPartyFacts.AC0Parameters :=
-    { n := Models.partialInputLen p, M := 1, d := 0 }
-  let F : Core.Family ac0.n := []
-  have hFam : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F := by
-    simpa [ac0, F] using emptyFamily_witness_ac0 (Models.partialInputLen p)
-  have hMSw : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) := by
-    simpa [ac0, F] using emptyFamily_witness_multiswitching (Models.partialInputLen p)
-  exact ⟨ac0, F, rfl, hFam, hMSw, hB.1, hB.2.1, hB.2.2⟩
+  obtain ⟨ac0, F, hsame, hFam, hMSw, hLink⟩ :=
+    hSem.package (p := p) hFormula
+  exact ⟨ac0, F, hsame, hFam, hMSw, hLink, hB.1, hB.2.1, hB.2.2⟩
 
 /--
 Named closure hook for I-4:
 once multi-switching/counting establishes support-based bounds, this theorem is
 the exact bridge expected by the magnification interface.
+
+The strengthened I-2B contract also carries semantic linkage data (`F` contains
+a function extensionally equal to the extracted strict formula).  This theorem
+projects the numeric support-bounds fragment consumed by the locality route.
 -/
 theorem formula_support_bounds_from_multiswitching
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
@@ -340,13 +290,95 @@ theorem formula_support_bounds_from_multiswitching
     Facts.LocalityLift.Restriction
       (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
     ThirdPartyFacts.castRestriction hlen.symm rPartial
-  obtain ⟨ac0, F, hsame, hFam, hMSw, hpoly, hsmall0, hhalf⟩ :=
+  obtain ⟨_, _, _, _, _, _, hpoly, hsmall0, hhalf⟩ :=
     hMS.package (p := p) hFormula
-  let _ := hsame
-  let _ := hFam
-  let _ := hMSw
   refine ⟨hpoly, ?_, hhalf⟩
   simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
+
+/--
+Combined projection for the strengthened multi-switching contract:
+it yields both the numeric support-bounds fragment used by locality lifting
+and the semantic link tying the AC0-family payload to the extracted formula.
+-/
+theorem formula_support_bounds_and_semantic_link_from_multiswitching
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaSupportRestrictionBoundsPartial ∧
+    (∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      ∃ (ac0 : ThirdPartyFacts.AC0Parameters) (F : Core.Family ac0.n)
+        (hsame : ac0.n = Models.partialInputLen p),
+        ∃ f : Core.BitVec ac0.n → Bool,
+          f ∈ F ∧
+          ∀ x : Core.BitVec ac0.n,
+            f x = ComplexityInterfaces.FormulaCircuit.eval c
+              (ThirdPartyFacts.castBitVec hsame x)) := by
+  refine ⟨formula_support_bounds_from_multiswitching hMS, ?_⟩
+  intro p hFormula
+  simpa using AC0LocalityBridge.package_semantic_link hMS (p := p) hFormula
+
+/--
+Convenient combined projection from split A9 inputs
+(`semantic provider` + `support bounds`) to the active locality-facing API.
+-/
+theorem formula_support_bounds_and_semantic_link_of_semantic_provider_and_support_bounds
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportRestrictionBoundsPartial ∧
+    (∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      ∃ (ac0 : ThirdPartyFacts.AC0Parameters) (F : Core.Family ac0.n)
+        (hsame : ac0.n = Models.partialInputLen p),
+        ∃ f : Core.BitVec ac0.n → Bool,
+          f ∈ F ∧
+          ∀ x : Core.BitVec ac0.n,
+            f x = ComplexityInterfaces.FormulaCircuit.eval c
+              (ThirdPartyFacts.castBitVec hsame x)) := by
+  exact
+    formula_support_bounds_and_semantic_link_from_multiswitching
+      (multiswitching_contract_of_semantic_provider_and_support_bounds
+        hSem hBounds)
+
+/--
+Internalized A9 constructor:
+the strengthened multi-switching contract is derivable from support-bounds
+assumptions alone via the internal semantic provider.
+-/
+theorem multiswitching_contract_internalized_of_support_bounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract := by
+  exact multiswitching_contract_of_semantic_provider_and_support_bounds
+    AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal
+    hBounds
+
+/--
+Internalized combined A9 projection from support-bounds assumptions:
+returns both numeric locality bounds and semantic linkage with no external
+semantic-provider input.
+-/
+theorem formula_support_bounds_and_semantic_link_of_support_bounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportRestrictionBoundsPartial ∧
+    (∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      ∃ (ac0 : ThirdPartyFacts.AC0Parameters) (F : Core.Family ac0.n)
+        (hsame : ac0.n = Models.partialInputLen p),
+        ∃ f : Core.BitVec ac0.n → Bool,
+          f ∈ F ∧
+          ∀ x : Core.BitVec ac0.n,
+            f x = ComplexityInterfaces.FormulaCircuit.eval c
+              (ThirdPartyFacts.castBitVec hsame x)) := by
+  exact
+    formula_support_bounds_and_semantic_link_from_multiswitching
+      (multiswitching_contract_internalized_of_support_bounds hBounds)
 
 /--
 Default-flag wrapper for `formula_support_bounds_from_multiswitching`.

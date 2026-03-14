@@ -16,22 +16,17 @@ open Pnp3.Magnification
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms NP_not_subset_PpolyFormula_final
-#print axioms NP_not_subset_PpolyFormula_final_of_formulaCertificate
-#print axioms NP_not_subset_PpolyFormula_final_constructive
-#print axioms NP_not_subset_PpolyFormula_final_constructive_of_tmWitnesses
+#print axioms NP_not_subset_PpolyFormula_final_with_provider
 #print axioms NP_not_subset_PpolyReal_final
-#print axioms NP_not_subset_PpolyReal_final_of_formulaCertificate
-#print axioms NP_not_subset_PpolyReal_final_constructive
-#print axioms NP_not_subset_PpolyReal_final_constructive_of_tmWitnesses
+#print axioms NP_not_subset_PpolyReal_final_with_provider
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
 
 -- Мост от нижних оценок к `NP ⊄ PpolyFormula`.
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas
 #print axioms OPS_trigger_formulas_partial_of_provider
 #print axioms OPS_trigger_formulas_partial_of_provider_formula_separation_strict
-#print axioms P_ne_NP_final_of_formulaCertificate
-#print axioms P_ne_NP_final_constructive
-#print axioms P_ne_NP_final_constructive_of_tmWitnesses
+#print axioms P_ne_NP_final_with_provider
+#print axioms P_ne_NP_final
 
 -- Regression checks for I-1 / I-3 readiness.
 #print axioms Tests.i1_trivial_realization_available

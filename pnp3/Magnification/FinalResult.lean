@@ -39,21 +39,6 @@ structure AsymptoticNPPullback (hAsym : AsymptoticFormulaTrackHypothesis) : Type
       ComplexityInterfaces.NP_strict
         (gapPartialMCSP_Language (hAsym.pAt n hn))
 
-/-- Concrete TM-witness stream for fixed-parameter languages along `pAt`. -/
-def GapPartialMCSPFixedTMWitnessFamily
-    (hAsym : AsymptoticFormulaTrackHypothesis) : Type 1 :=
-  ∀ n (hn : hAsym.N0 ≤ n), GapPartialMCSP_TMWitness (hAsym.pAt n hn)
-
-/-- Build an asymptotic NP bridge from a strict asymptotic TM witness. -/
-def asymptoticNPPullback_of_tmWitness
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hWAsym : GapPartialMCSP_Asymptotic_TMWitness hAsym.spec)
-    (hWFixed : GapPartialMCSPFixedTMWitnessFamily hAsym) :
-    AsymptoticNPPullback hAsym :=
-  { strictAsymptotic := gapPartialMCSP_Asymptotic_in_NP_TM_of_witness hAsym.spec hWAsym
-    strictFixed := fun n hn =>
-      gapPartialMCSP_in_NP_TM_of_witness (hAsym.pAt n hn) (hWFixed n hn) }
-
 /--
 Explicit assumptions package for the switching/shrinkage side:
 it provides the structured locality provider consumed by the bridge.
@@ -76,86 +61,6 @@ This keeps imported assumptions grouped and auditable at theorem boundaries.
 structure MagnificationAssumptions : Type where
   switching : SwitchingAssumptions
   antiChecker : AntiCheckerAssumptions
-
-/-- Build switching assumptions from an explicit provider. -/
-def switchingAssumptions_of_provider
-    (hProvider : StructuredLocalityProviderPartial) :
-    SwitchingAssumptions := ⟨hProvider⟩
-
-/-- Build switching assumptions from a formula-certificate provider. -/
-def switchingAssumptions_of_formulaCertificate
-    (hCert : FormulaCertificateProviderPartial) :
-    SwitchingAssumptions :=
-  switchingAssumptions_of_provider
-    (structuredLocalityProviderPartial_of_formulaCertificate hCert)
-
-/-- Build switching assumptions from an explicit multi-switching contract. -/
-def switchingAssumptions_of_multiswitching_contract
-    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
-    SwitchingAssumptions :=
-  switchingAssumptions_of_provider
-    (structuredLocalityProviderPartial_of_multiswitching_contract hMS)
-
-/-- Build anti-checker assumptions from explicit asymptotic and NP-bridge data. -/
-def antiCheckerAssumptions_mk
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPbridge : AsymptoticNPPullback hAsym) :
-    AntiCheckerAssumptions :=
-  ⟨hAsym, hNPbridge⟩
-
-/--
-Build anti-checker assumptions from explicit asymptotic data and
-a concrete fixed-parameter TM-witness stream along `pAt`.
--/
-def antiCheckerAssumptions_of_tmWitnesses
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hWAsym : GapPartialMCSP_Asymptotic_TMWitness hAsym.spec)
-    (hWFixed : GapPartialMCSPFixedTMWitnessFamily hAsym) :
-    AntiCheckerAssumptions :=
-  antiCheckerAssumptions_mk hAsym
-    (asymptoticNPPullback_of_tmWitness hAsym hWAsym hWFixed)
-
-/-- Merge switching and anti-checker packages into magnification assumptions. -/
-def magnificationAssumptions_mk
-    (hSwitch : SwitchingAssumptions)
-    (hAnti : AntiCheckerAssumptions) :
-    MagnificationAssumptions :=
-  ⟨hSwitch, hAnti⟩
-
-/-- Build magnification assumptions from a formula-certificate provider package. -/
-def magnificationAssumptions_of_formulaCertificate
-    (hCert : FormulaCertificateProviderPartial)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPbridge : AsymptoticNPPullback hAsym) :
-    MagnificationAssumptions :=
-  magnificationAssumptions_mk
-    (switchingAssumptions_of_formulaCertificate hCert)
-    (antiCheckerAssumptions_mk hAsym hNPbridge)
-
-/-- Build magnification assumptions from an explicit multi-switching contract. -/
-def magnificationAssumptions_of_multiswitching_contract
-    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hNPbridge : AsymptoticNPPullback hAsym) :
-    MagnificationAssumptions :=
-  magnificationAssumptions_mk
-    (switchingAssumptions_of_multiswitching_contract hMS)
-    (antiCheckerAssumptions_mk hAsym hNPbridge)
-
-/--
-Build magnification assumptions from an explicit multi-switching contract plus
-an explicit asymptotic TM witness plus a concrete fixed-parameter
-TM-witness stream along `pAt`.
--/
-def magnificationAssumptions_of_tmWitnesses
-    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-    (hAsym : AsymptoticFormulaTrackHypothesis)
-    (hWAsym : GapPartialMCSP_Asymptotic_TMWitness hAsym.spec)
-    (hWFixed : GapPartialMCSPFixedTMWitnessFamily hAsym) :
-    MagnificationAssumptions :=
-  magnificationAssumptions_mk
-    (switchingAssumptions_of_multiswitching_contract hMS)
-    (antiCheckerAssumptions_of_tmWitnesses hAsym hWAsym hWFixed)
 
 /--
 Asymptotic wrapper: if the partial pipeline lower bound is available at all
@@ -215,71 +120,9 @@ theorem NP_not_subset_PpolyFormula_final
       (hn := hn)
 
 /--
-Certificate-first provider wiring from an explicit formula-certificate package.
--/
-theorem NP_not_subset_PpolyFormula_final_of_formulaCertificate
-  (hCert : FormulaCertificateProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_final
-      (hMag := magnificationAssumptions_of_formulaCertificate hCert hAsym hNPbridge)
-      (n := n)
-      (hn := hn)
-
-/--
-Constructive final formula-separation endpoint from an explicit multi-switching
-support-bounds contract.
--/
-theorem NP_not_subset_PpolyFormula_final_of_multiswitching_contract
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_final
-      (hMag := magnificationAssumptions_of_multiswitching_contract hMS hAsym hNPbridge)
-      (n := n)
-      (hn := hn)
-
-/--
-Canonical constructive final formula-separation route:
-explicit multi-switching contract, no default-provider `Nonempty` flag.
--/
-theorem NP_not_subset_PpolyFormula_final_constructive
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_final_of_multiswitching_contract
-      (hMS := hMS) (hAsym := hAsym) (hNPbridge := hNPbridge) (n := n) (hn := hn)
-
-/--
-Constructive final formula-separation route from an explicit asymptotic TM
-witness plus a concrete fixed-parameter TM-witness stream along `pAt`.
--/
-theorem NP_not_subset_PpolyFormula_final_constructive_of_tmWitnesses
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hWAsym : GapPartialMCSP_Asymptotic_TMWitness hAsym.spec)
-  (hWFixed : GapPartialMCSPFixedTMWitnessFamily hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  exact
-    NP_not_subset_PpolyFormula_final
-      (hMag := magnificationAssumptions_of_tmWitnesses hMS hAsym hWAsym hWFixed)
-      (n := n)
-      (hn := hn)
-
-/--
 Primary final statement on the nontrivial non-uniform class `PpolyReal`.
 
-Unlike `...PpolyFormula...` wrappers, this endpoint does not require any
+Unlike the formula-separation route, this endpoint does not require any
 formula-to-lightweight-`P/poly` bridge assumption.
 -/
 theorem NP_not_subset_PpolyReal_final_with_provider
@@ -317,68 +160,6 @@ theorem NP_not_subset_PpolyReal_final
       (hn := hn)
 
 /--
-Certificate-first provider wiring for final `PpolyReal` separation.
--/
-theorem NP_not_subset_PpolyReal_final_of_formulaCertificate
-  (hCert : FormulaCertificateProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  exact
-    NP_not_subset_PpolyReal_final
-      (hMag := magnificationAssumptions_of_formulaCertificate hCert hAsym hNPbridge)
-      (n := n)
-      (hn := hn)
-
-/--
-Constructive final `PpolyReal`-separation endpoint from an explicit
-multi-switching support-bounds contract.
--/
-theorem NP_not_subset_PpolyReal_final_of_multiswitching_contract
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  exact
-    NP_not_subset_PpolyReal_final
-      (hMag := magnificationAssumptions_of_multiswitching_contract hMS hAsym hNPbridge)
-      (n := n)
-      (hn := hn)
-
-/--
-Canonical constructive final `PpolyReal`-separation route:
-explicit multi-switching contract, no default-provider `Nonempty` flag.
--/
-theorem NP_not_subset_PpolyReal_final_constructive
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  exact
-    NP_not_subset_PpolyReal_final_of_multiswitching_contract
-      (hMS := hMS) (hAsym := hAsym) (hNPbridge := hNPbridge) (n := n) (hn := hn)
-
-/--
-Constructive final `PpolyReal`-separation route from an explicit asymptotic TM
-witness plus a concrete fixed-parameter TM-witness stream along `pAt`.
--/
-theorem NP_not_subset_PpolyReal_final_constructive_of_tmWitnesses
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hWAsym : GapPartialMCSP_Asymptotic_TMWitness hAsym.spec)
-  (hWFixed : GapPartialMCSPFixedTMWitnessFamily hAsym)
-  (n : Nat) (hn : hAsym.N0 ≤ n) :
-  ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  exact
-    NP_not_subset_PpolyReal_final
-      (hMag := magnificationAssumptions_of_tmWitnesses hMS hAsym hWAsym hWFixed)
-      (n := n)
-      (hn := hn)
-
-/--
 Compatible DAG-track final wrapper.
 
 This route targets the canonical non-uniform class (`PpolyDAG`) and therefore
@@ -402,86 +183,22 @@ theorem P_ne_NP_final_with_provider
 /--
 Active conditional final `P ≠ NP` wrapper.
 
-This is the audit-facing endpoint:
-`MagnificationAssumptions` carries the imported AC0-side assumptions explicitly,
-while the DAG-side separation assumption remains a separate argument.
+This is the honest DAG-track endpoint:
+it uses only DAG-side separation plus the internalized inclusion theorem.
+
+AC0/magnification assumptions live on a separate route
+(`NP_not_subset_PpolyFormula_final*` / `NP_not_subset_PpolyReal_final*`)
+until an explicit bridge to DAG separation is formalized.
 -/
 theorem P_ne_NP_final
-  (hMag : MagnificationAssumptions)
   (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
   ComplexityInterfaces.P_ne_NP := by
-  -- Keep AC0-side imports explicit at the final theorem boundary even though
-  -- the current DAG endpoint consumes only `hNPDag` on the separation side.
-  let _ := hMag
   have hPDag : ComplexityInterfaces.P_subset_PpolyDAG :=
     Complexity.Simulation.proved_P_subset_PpolyDAG_internal
   exact
     ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
       hNPDag
       hPDag
-
-/--
-Certificate-first final `P ≠ NP` wiring from an explicit formula-certificate
-package.
--/
-theorem P_ne_NP_final_of_formulaCertificate
-  (hCert : FormulaCertificateProviderPartial)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final
-      (hMag := magnificationAssumptions_of_formulaCertificate hCert hAsym hNPbridge)
-      hNPDag
-
-/--
-Constructive final `P ≠ NP` wrapper from an explicit multi-switching
-support-bounds contract.
--/
-theorem P_ne_NP_final_of_multiswitching_contract
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final
-      (hMag := magnificationAssumptions_of_multiswitching_contract hMS hAsym hNPbridge)
-      hNPDag
-
-/--
-Canonical constructive final `P ≠ NP` route:
-explicit multi-switching contract, no default-provider `Nonempty` flag.
--/
-theorem P_ne_NP_final_constructive
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final_of_multiswitching_contract
-      (hMS := hMS)
-      (hAsym := hAsym)
-      (hNPbridge := hNPbridge)
-      (hNPDag := hNPDag)
-
-/--
-Constructive final `P ≠ NP` route from an explicit asymptotic TM witness and
-a concrete fixed-parameter TM-witness stream along `pAt`.
--/
-theorem P_ne_NP_final_constructive_of_tmWitnesses
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hWAsym : GapPartialMCSP_Asymptotic_TMWitness hAsym.spec)
-  (hWFixed : GapPartialMCSPFixedTMWitnessFamily hAsym)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
-  ComplexityInterfaces.P_ne_NP := by
-  exact
-    P_ne_NP_final
-      (hMag := magnificationAssumptions_of_tmWitnesses hMS hAsym hWAsym hWFixed)
-      hNPDag
 
 end Magnification
 end Pnp3

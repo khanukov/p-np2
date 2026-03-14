@@ -1,6 +1,3 @@
-import Barrier.Relativization
-import Barrier.NaturalProofs
-import Barrier.Algebrization
 import Magnification.FinalResult
 import Complexity.Simulation.Circuit_Compiler
 
@@ -26,11 +23,6 @@ structure BarrierBypassAssumptions : Type where
 
 /-- Proposition-level wrapper used by final theorem signatures. -/
 def BarrierBypassPackage : Prop := Nonempty BarrierBypassAssumptions
-
-/-- Convenience constructor for the bypass package. -/
-theorem barrierBypassPackage_mk
-    (hRel : Prop) (hNat : Prop) (hAlg : Prop) :
-    BarrierBypassPackage := ⟨⟨hRel, hNat, hAlg⟩⟩
 
 /--
 Attach explicit barrier obligations to an already obtained formula-track
@@ -60,12 +52,10 @@ audit-facing wrapper keeps explicit DAG-track separation and explicit internal
 `P ⊆ P/poly` closure contracts.
 -/
 theorem P_ne_NP_final_with_barriers
-    (hMag : MagnificationAssumptions)
     (hNPDag : NP_not_subset_PpolyDAG)
     (hPpolyContracts : Complexity.Simulation.PsubsetPpolyCompiledRuntimeLinearOutputContracts)
     (hBarriers : BarrierBypassPackage) :
     P_ne_NP ∧ BarrierBypassPackage := by
-  let _ := hMag
   refine ⟨P_ne_NP_final_with_provider hNPDag hPpolyContracts, hBarriers⟩
 
 end Barrier

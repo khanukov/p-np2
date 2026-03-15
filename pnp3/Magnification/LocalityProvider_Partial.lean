@@ -565,6 +565,105 @@ def WeakRestrictedBehaviorDecisionPreservationOnPromisePartial : Prop :=
             (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)
 
 /--
+Provenance-aware weak core: the extracted weak restriction is bundled together
+with the promise-preservation fact that is actually needed downstream.
+-/
+structure PromisePreservingWeakGenericExtractedLocalCorePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  core : WeakGenericExtractedLocalCorePartial hFormula
+  preserveOnPromise :
+    ∀ x : Core.BitVec (Models.partialInputLen p),
+      x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+        x ∈ (Models.GapPartialMCSPPromise p).No →
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) (generalSolverOfFormula hFormula)
+          (core.rFacts.apply
+            (ThirdPartyFacts.castBitVec
+              (ThirdPartyFacts.inputLen_toFactsPartial p).symm x))
+      =
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) (generalSolverOfFormula hFormula)
+          (ThirdPartyFacts.castBitVec
+            (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)
+
+/--
+Provider interface for provenance-aware weak cores.
+-/
+def FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (PromisePreservingWeakGenericExtractedLocalCorePartial hFormula)
+
+namespace PromisePreservingWeakGenericExtractedLocalCorePartial
+
+/--
+Any strong generic core yields a provenance-aware weak core: `stableFacts`
+implies preservation on the promise partition.
+-/
+def ofGeneric
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (core : GenericExtractedLocalCorePartial hFormula) :
+    PromisePreservingWeakGenericExtractedLocalCorePartial hFormula where
+  core := WeakGenericExtractedLocalCorePartial.ofGeneric core
+  preserveOnPromise := by
+    intro x _hxPromise
+    exact core.stableFacts
+      (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)
+
+/--
+Package an externally supplied weak-preservation theorem with a weak core.
+-/
+def ofWeakCoreAndPreservation
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (core : WeakGenericExtractedLocalCorePartial hFormula)
+    (hPres :
+      ∀ x : Core.BitVec (Models.partialInputLen p),
+        x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+          x ∈ (Models.GapPartialMCSPPromise p).No →
+        ThirdPartyFacts.solverDecideFacts
+            (p := p) (generalSolverOfFormula hFormula)
+            (core.rFacts.apply
+              (ThirdPartyFacts.castBitVec
+                (ThirdPartyFacts.inputLen_toFactsPartial p).symm x))
+        =
+        ThirdPartyFacts.solverDecideFacts
+            (p := p) (generalSolverOfFormula hFormula)
+            (ThirdPartyFacts.castBitVec
+              (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)) :
+    PromisePreservingWeakGenericExtractedLocalCorePartial hFormula where
+  core := core
+  preserveOnPromise := hPres
+
+end PromisePreservingWeakGenericExtractedLocalCorePartial
+
+/--
+Any strong generic-core provider yields a provenance-aware weak-core provider.
+-/
+theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_generic
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial) :
+    FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial := by
+  intro p hFormula
+  rcases hCore (p := p) hFormula with ⟨core⟩
+  exact ⟨PromisePreservingWeakGenericExtractedLocalCorePartial.ofGeneric core⟩
+
+/--
+An externally supplied weak preservation theorem can be bundled with a weak-core
+provider to obtain a provenance-aware weak-core provider.
+-/
+theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_weak_provider_and_preservation
+    (hCore : FormulaWeakGenericExtractedLocalCoreProviderPartial)
+    (hPres : WeakRestrictedBehaviorDecisionPreservationOnPromisePartial) :
+    FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial := by
+  intro p hFormula
+  rcases hCore (p := p) hFormula with ⟨core⟩
+  exact ⟨
+    PromisePreservingWeakGenericExtractedLocalCorePartial.ofWeakCoreAndPreservation
+      core (hPres (p := p) (hFormula := hFormula) core)⟩
+
+/--
 Assemble the new restricted-behavior provider from:
 1) a generic extracted-core provider, and
 2) the restricted-behavior transport theorem.
@@ -917,6 +1016,73 @@ theorem globalization_probe_of_weak_decision_preservation
     (hPres : WeakRestrictedBehaviorDecisionPreservationOnPromisePartial) :
     WeakGlobalizeRestrictedLocalBehaviorPartial :=
   globalization_of_decision_preservation_on_promise_weak hPres
+
+/--
+Per-core globalization for provenance-aware weak cores: this is the honest form
+of globalization once preservation is treated as part of the extracted object
+rather than as a global theorem about all weak cores.
+-/
+theorem solvesPromise_of_promisePreservingWeakGenericExtractedLocalCore
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pcore : PromisePreservingWeakGenericExtractedLocalCorePartial hFormula)
+    (rloc : RestrictedLocalBehaviorSolver_Partial hFormula pcore.core.rFacts) :
+    Complexity.SolvesPromise (Models.GapPartialMCSPPromise p) rloc.decide := by
+  refine (Models.solvesPromise_gapPartialMCSP_iff (p := p)).2 ?_
+  intro x
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  have hRestricted :
+      rloc.decide x =
+        ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (pcore.core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) := by
+    simpa [RestrictedLocalBehaviorSolver_Partial.decide, restrictedBehaviorSem,
+      restrictedBehaviorWitness, solver, hlen,
+      ThirdPartyFacts.castBitVec_castBitVec_symm] using
+      rloc.restrictedCorrect (x := ThirdPartyFacts.castBitVec hlen.symm x)
+  have hPromise :
+      x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+        x ∈ (Models.GapPartialMCSPPromise p).No := by
+    cases hlang : Models.gapPartialMCSP_Language p (Models.partialInputLen p) x
+    · right
+      simpa [Models.GapPartialMCSPPromise, hlang]
+    · left
+      simpa [Models.GapPartialMCSPPromise, hlang]
+  have hPreserve :
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (pcore.core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x))
+      =
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (ThirdPartyFacts.castBitVec hlen.symm x) :=
+    pcore.preserveOnPromise x hPromise
+  have hCorrect :
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (ThirdPartyFacts.castBitVec hlen.symm x)
+      =
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+    have hsolver :
+        solver.decide x =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) x :=
+      (Models.solvesPromise_gapPartialMCSP_iff (p := p)).1 solver.correct_decide x
+    simpa [solver, ThirdPartyFacts.solverDecideFacts, hlen,
+      ThirdPartyFacts.castBitVec_castBitVec_symm] using hsolver
+  calc
+    rloc.decide x =
+      ThirdPartyFacts.solverDecideFacts
+        (p := p) solver
+        (pcore.core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) := hRestricted
+    _ =
+      ThirdPartyFacts.solverDecideFacts
+        (p := p) solver
+        (ThirdPartyFacts.castBitVec hlen.symm x) := hPreserve
+    _ = Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := hCorrect
 
 /--
 Restriction-aware local certificate below the old `stableFacts` interface.
@@ -2131,6 +2297,23 @@ theorem structuredLocalityProviderPartial_of_weak_generic_restricted_behavior_pr
     simpa [loc] using cert.rloc.localityPolylog⟩
 
 /--
+Provenance-aware weak route: once a weak extracted core is bundled with its own
+promise-preservation fact, no global weak-preservation theorem is needed.
+-/
+theorem structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider_and_behavior_transport
+    (hCore : FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial)
+    (hTransport : WeakGenericRestrictedLocalBehaviorTransportPartial) :
+    StructuredLocalityProviderPartial := by
+  intro p δ hHyp hFormula
+  rcases hCore (p := p) hFormula with ⟨pcore⟩
+  rcases hTransport (p := p) hFormula pcore.core with ⟨rloc⟩
+  let loc : LowerBounds.SmallLocalCircuitSolver_Partial p :=
+    rloc.toSmallLocalCircuitSolver_Partial
+      (solvesPromise_of_promisePreservingWeakGenericExtractedLocalCore pcore rloc)
+  exact ⟨rloc.T, loc, rloc.testSetPolylog, by
+    simpa [loc] using rloc.localityPolylog⟩
+
+/--
 Composed weak route: a generic extracted-core provider suffices for
 `StructuredLocalityProviderPartial` once the remaining restricted-behavior
 transport theorem is available.
@@ -2182,6 +2365,17 @@ theorem structuredLocalityProviderPartial_of_weak_generic_extracted_local_core_p
     (weakGenericRestrictedBehaviorProvider_of_weak_generic_extracted_local_core_provider_and_transport
       hCore hTransport)
     hGlobalize
+
+/--
+Current strong generic cores already induce a provenance-aware weak-core
+provider, so the provenance-aware weak route is internally available.
+-/
+theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provider_via_promisePreservingWeakCore
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider_and_behavior_transport
+    (promisePreservingWeakGenericExtractedLocalCoreProvider_of_generic hCore)
+    genericRestrictedLocalBehaviorTransport_of_weak_core
 
 /--
 New core-facing bridge: extracted local-core provider implies structured

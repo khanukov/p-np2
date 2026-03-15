@@ -509,6 +509,9 @@ def GlobalizeRestrictedLocalBehaviorPartial : Prop :=
 /--
 Weak globalization contract: the same promise correctness target, but for the
 weakened generic extracted core.
+
+Compatibility layer only: the provenance-aware weak-core route below avoids
+requiring a theorem that quantifies over all weak cores.
 -/
 def WeakGlobalizeRestrictedLocalBehaviorPartial : Prop :=
   ∀ {p : GapPartialMCSPParams}
@@ -545,6 +548,10 @@ def RestrictedBehaviorDecisionPreservationOnPromisePartial : Prop :=
 /--
 Weak semantic preservation contract on the promise partition for the weakened
 generic extracted core.
+
+Compatibility layer only: the real frontier should be phrased via a
+provenance-aware weak-core provider rather than as a global theorem about all
+weak cores.
 -/
 def WeakRestrictedBehaviorDecisionPreservationOnPromisePartial : Prop :=
   ∀ {p : GapPartialMCSPParams}
@@ -2312,6 +2319,17 @@ theorem structuredLocalityProviderPartial_of_promisePreservingWeakGenericCorePro
       (solvesPromise_of_promisePreservingWeakGenericExtractedLocalCore pcore rloc)
   exact ⟨rloc.T, loc, rloc.testSetPolylog, by
     simpa [loc] using rloc.localityPolylog⟩
+
+/--
+Convenience wrapper: the restricted-behavior transport for weak cores is already
+internal, so a provenance-aware weak-core provider alone suffices.
+-/
+theorem structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider
+    (hCore : FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider_and_behavior_transport
+    hCore
+    genericRestrictedLocalBehaviorTransport_of_weak_core
 
 /--
 Composed weak route: a generic extracted-core provider suffices for

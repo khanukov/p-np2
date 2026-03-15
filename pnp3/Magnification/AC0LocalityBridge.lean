@@ -610,6 +610,33 @@ admits the empty selector list as a valid `WorksFor` witness for the
 formula-linked function. This is enough to rule out any derivation of a chosen
 selector `β` from the current theorem layer alone.
 -/
+def CurrentSingletonRouteWitnessProp
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) : Prop :=
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+    fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+  let params := semanticParams f
+  let F : Core.Family params.n := [f]
+  let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+    simpa [params, F] using semanticFamilyWitnessProp f
+  let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+    simpa [params, F] using
+      ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+        params F (semanticMultiSwitchingWitness f)
+  let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+  ∃ Rf : List (Core.Subcube params.n),
+    Core.listSubset Rf (Core.CommonPDT.toAtlas C).dict ∧
+    Core.errU f Rf ≤ (Core.CommonPDT.toAtlas C).epsilon
+
+/--
+Under an explicit comparison hypothesis, the current singleton source route
+admits the empty selector list as a valid `WorksFor` witness for the
+formula-linked function. This is enough to rule out any derivation of a chosen
+selector `β` from the current theorem layer alone.
+-/
 theorem empty_witness_admissible_for_current_singleton_route
     {p : GapPartialMCSPParams}
     (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
@@ -617,24 +644,9 @@ theorem empty_witness_admissible_for_current_singleton_route
       (Models.circuitCountBound p.n p.sYES : Core.Q) *
         ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n
       ≤ (1 : Core.Q) / (Models.partialInputLen p + 2)) :
-    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
-      Classical.choose hFormula
-    let c := wf.family (Models.partialInputLen p)
-    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
-      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
-    let params := semanticParams f
-    let F : Core.Family params.n := [f]
-    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
-      simpa [params, F] using semanticFamilyWitnessProp f
-    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
-      simpa [params, F] using
-        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
-          params F (semanticMultiSwitchingWitness f)
-    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
-    ∃ Rf : List (Core.Subcube params.n),
-      Core.listSubset Rf (Core.CommonPDT.toAtlas C).dict ∧
-      Core.errU f Rf ≤ (Core.CommonPDT.toAtlas C).epsilon := by
+    CurrentSingletonRouteWitnessProp hFormula := by
   classical
+  unfold CurrentSingletonRouteWitnessProp
   intro wf c f params F hF hpoly C
   have hDensity :
       ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
@@ -726,23 +738,7 @@ theorem empty_witness_admissible_for_current_singleton_route_of_nat_cmp
         3 ^ Models.Partial.tableLen p.n *
         (Models.partialInputLen p + 2)
       ≤ 4 ^ Models.Partial.tableLen p.n) :
-    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
-      Classical.choose hFormula
-    let c := wf.family (Models.partialInputLen p)
-    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
-      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
-    let params := semanticParams f
-    let F : Core.Family params.n := [f]
-    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
-      simpa [params, F] using semanticFamilyWitnessProp f
-    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
-      simpa [params, F] using
-        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
-          params F (semanticMultiSwitchingWitness f)
-    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
-    ∃ Rf : List (Core.Subcube params.n),
-      Core.listSubset Rf (Core.CommonPDT.toAtlas C).dict ∧
-      Core.errU f Rf ≤ (Core.CommonPDT.toAtlas C).epsilon := by
+    CurrentSingletonRouteWitnessProp hFormula := by
   exact empty_witness_admissible_for_current_singleton_route
     hFormula
     (comparison_hypothesis_of_nat_crossmul p h)

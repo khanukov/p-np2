@@ -25,6 +25,7 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyReal_final_with_supportBounds
 #print axioms NP_not_subset_PpolyReal_final_with_multiswitching
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
+#print axioms empty_witness_admissible_for_asymptotic_slice_of_nat_cmp
 
 -- Мост от нижних оценок к `NP ⊄ PpolyFormula`.
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas

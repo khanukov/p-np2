@@ -73,6 +73,32 @@ structure MagnificationAssumptions : Type where
   antiChecker : AntiCheckerAssumptions
 
 /--
+Family-specific entrypoint for the singleton `β`-route decision layer.
+
+This theorem does not prove the comparison inequality on its own. It packages
+the exact arithmetic hypothesis currently missing from the generic asymptotic
+API and feeds it into the current singleton-source decision theorem on the
+chosen fixed slice `pAt n hn`.
+-/
+theorem empty_witness_admissible_for_asymptotic_slice_of_nat_cmp
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (n : Nat) (hn : hAsym.N0 ≤ n)
+  (hFormula : ComplexityInterfaces.PpolyFormula
+    (gapPartialMCSP_Language (hAsym.pAt n hn)))
+  (hCmp :
+    Models.circuitCountBound (hAsym.pAt n hn).n (hAsym.pAt n hn).sYES *
+      3 ^ Models.Partial.tableLen (hAsym.pAt n hn).n *
+      (Models.partialInputLen (hAsym.pAt n hn) + 2)
+    ≤
+      4 ^ Models.Partial.tableLen (hAsym.pAt n hn).n) :
+  AC0LocalityBridge.CurrentSingletonRouteWitnessProp hFormula := by
+  exact
+    AC0LocalityBridge.empty_witness_admissible_for_current_singleton_route_of_nat_cmp
+      (p := hAsym.pAt n hn)
+      hFormula
+      hCmp
+
+/--
 Asymptotic formula collapse, routed through a fixed-slice bridge.
 
 This theorem is the active bridge-shaped entrypoint in `codex-refactoring`:

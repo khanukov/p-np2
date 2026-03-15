@@ -299,6 +299,61 @@ def FormulaGenericExtractedLocalCoreProviderPartial : Prop :=
     Nonempty (GenericExtractedLocalCorePartial hFormula)
 
 /--
+Weakened generic extracted local core: keeps only the numeric/locality data and
+does not carry any semantic `stableFacts` field.
+-/
+structure WeakGenericExtractedLocalCorePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))
+  polylogAlive :
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))
+  smallEnough :
+    Facts.LocalityLift.LocalCircuitSmallEnough
+      { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+        , M := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfFormula hFormula)).params.size * rFacts.alive.card.succ
+        , ℓ := rFacts.alive.card
+        , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfFormula hFormula)).params.depth }
+  quarterAlive :
+    rFacts.alive.card ≤
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/-- Provider interface for weakened generic extracted local cores. -/
+def FormulaWeakGenericExtractedLocalCoreProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (WeakGenericExtractedLocalCorePartial hFormula)
+
+namespace WeakGenericExtractedLocalCorePartial
+
+/-- Forget the semantic `stableFacts` payload of the stronger generic core. -/
+def ofGeneric
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (core : GenericExtractedLocalCorePartial hFormula) :
+    WeakGenericExtractedLocalCorePartial hFormula where
+  rFacts := core.rFacts
+  polylogAlive := core.polylogAlive
+  smallEnough := core.smallEnough
+  quarterAlive := core.quarterAlive
+
+end WeakGenericExtractedLocalCorePartial
+
+/-- Any strong generic-core provider yields a weak generic-core provider. -/
+theorem weakGenericExtractedLocalCoreProvider_of_generic
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial) :
+    FormulaWeakGenericExtractedLocalCoreProviderPartial := by
+  intro p hFormula
+  rcases hCore (p := p) hFormula with ⟨core⟩
+  exact ⟨WeakGenericExtractedLocalCorePartial.ofGeneric core⟩
+
+/--
 Restricted local solver for the behavior of the extracted general solver after
 applying a specific restriction `rFacts`.
 
@@ -404,6 +459,22 @@ def FormulaGenericRestrictedBehaviorProviderPartial : Prop :=
     Nonempty (GenericRestrictedBehaviorCertificatePartial hFormula)
 
 /--
+Weak restriction-aware behavior certificate: same downstream payload, but based
+on the weakened generic core without `stableFacts`.
+-/
+structure WeakGenericRestrictedBehaviorCertificatePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  core : WeakGenericExtractedLocalCorePartial hFormula
+  rloc : RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts
+
+/-- Provider interface for weak restricted-behavior certificates. -/
+def FormulaWeakGenericRestrictedBehaviorProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (WeakGenericRestrictedBehaviorCertificatePartial hFormula)
+
+/--
 Next theorem target for the switching route: from a generic extracted core,
 produce a local solver for the *restricted* behavior only.
 -/
@@ -411,6 +482,16 @@ def GenericRestrictedLocalBehaviorTransportPartial : Prop :=
   ∀ {p : GapPartialMCSPParams}
     (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
     (core : GenericExtractedLocalCorePartial hFormula),
+    Nonempty (RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts)
+
+/--
+Weak transport target: same restricted-behavior solver, but starting only from
+the weak generic extracted core.
+-/
+def WeakGenericRestrictedLocalBehaviorTransportPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (core : WeakGenericExtractedLocalCorePartial hFormula),
     Nonempty (RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts)
 
 /--
@@ -426,6 +507,64 @@ def GlobalizeRestrictedLocalBehaviorPartial : Prop :=
       Complexity.SolvesPromise (Models.GapPartialMCSPPromise p) rloc.decide
 
 /--
+Weak globalization contract: the same promise correctness target, but for the
+weakened generic extracted core.
+-/
+def WeakGlobalizeRestrictedLocalBehaviorPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    {core : WeakGenericExtractedLocalCorePartial hFormula},
+    (rloc : RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts) →
+      Complexity.SolvesPromise (Models.GapPartialMCSPPromise p) rloc.decide
+
+/--
+Weak semantic preservation contract needed for globalization.
+
+It asks only that, on inputs lying in the promise partition, the extracted
+restriction does not change the decision of the formula-derived general solver.
+This is strictly weaker than the old global `stableFacts` condition.
+-/
+def RestrictedBehaviorDecisionPreservationOnPromisePartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (core : GenericExtractedLocalCorePartial hFormula)
+    (x : Core.BitVec (Models.partialInputLen p)),
+      x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+        x ∈ (Models.GapPartialMCSPPromise p).No →
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) (generalSolverOfFormula hFormula)
+          (core.rFacts.apply
+            (ThirdPartyFacts.castBitVec
+              (ThirdPartyFacts.inputLen_toFactsPartial p).symm x))
+      =
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) (generalSolverOfFormula hFormula)
+          (ThirdPartyFacts.castBitVec
+            (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)
+
+/--
+Weak semantic preservation contract on the promise partition for the weakened
+generic extracted core.
+-/
+def WeakRestrictedBehaviorDecisionPreservationOnPromisePartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (core : WeakGenericExtractedLocalCorePartial hFormula)
+    (x : Core.BitVec (Models.partialInputLen p)),
+      x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+        x ∈ (Models.GapPartialMCSPPromise p).No →
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) (generalSolverOfFormula hFormula)
+          (core.rFacts.apply
+            (ThirdPartyFacts.castBitVec
+              (ThirdPartyFacts.inputLen_toFactsPartial p).symm x))
+      =
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) (generalSolverOfFormula hFormula)
+          (ThirdPartyFacts.castBitVec
+            (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)
+
+/--
 Assemble the new restricted-behavior provider from:
 1) a generic extracted-core provider, and
 2) the restricted-behavior transport theorem.
@@ -435,6 +574,21 @@ noncomputable def
     (hCore : FormulaGenericExtractedLocalCoreProviderPartial)
     (hTransport : GenericRestrictedLocalBehaviorTransportPartial) :
     FormulaGenericRestrictedBehaviorProviderPartial := by
+  intro p hFormula
+  rcases hCore (p := p) hFormula with ⟨core⟩
+  rcases hTransport (p := p) hFormula core with ⟨rloc⟩
+  exact ⟨{ core := core, rloc := rloc }⟩
+
+/--
+Assemble the weak restricted-behavior provider from:
+1) a weak generic extracted-core provider, and
+2) the restricted-behavior transport theorem for that weak core.
+-/
+noncomputable def
+    weakGenericRestrictedBehaviorProvider_of_weak_generic_extracted_local_core_provider_and_transport
+    (hCore : FormulaWeakGenericExtractedLocalCoreProviderPartial)
+    (hTransport : WeakGenericRestrictedLocalBehaviorTransportPartial) :
+    FormulaWeakGenericRestrictedBehaviorProviderPartial := by
   intro p hFormula
   rcases hCore (p := p) hFormula with ⟨core⟩
   rcases hTransport (p := p) hFormula core with ⟨rloc⟩
@@ -532,6 +686,237 @@ theorem genericRestrictedLocalBehaviorTransport_of_core :
         exact congrArg (ThirdPartyFacts.solverDecideFacts (p := p) solver) happlyFacts
       simpa [RestrictedLocalBehaviorSolver_Partial.decide, restrictedBehaviorSem,
         restrictedBehaviorWitness] using hdec
+
+/--
+The same restricted-behavior transport is derivable from the weakened generic
+extracted core: no semantic field is used in the construction.
+-/
+theorem genericRestrictedLocalBehaviorTransport_of_weak_core :
+    WeakGenericRestrictedLocalBehaviorTransportPartial := by
+  intro p hFormula core
+  classical
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    ThirdPartyFacts.castRestriction hlen core.rFacts
+  let params : LowerBounds.SmallLocalCircuitParamsPartial p :=
+    { params :=
+        { n := Models.partialInputLen p
+          M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size *
+            core.rFacts.alive.card.succ
+          ℓ := core.rFacts.alive.card
+          depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth }
+      same_n := rfl
+      small := by
+        simpa [solver, ThirdPartyFacts.LocalCircuitSmallEnough] using core.smallEnough }
+  refine ⟨
+    { T := ∅
+      params := params
+      sem := restrictedBehaviorSem hFormula core.rFacts
+      witness := restrictedBehaviorWitness hFormula core.rFacts
+      testSetPolylog := by simp [Models.polylogBudget]
+      localityPolylog := by
+        simpa [params, solver, ThirdPartyFacts.polylogBudget_toFactsPartial] using
+          core.polylogAlive
+      restrictedCorrect := ?_
+      decideLocal := ?_ }⟩
+  · intro x
+    simp [restrictedBehaviorSem,
+      restrictedBehaviorWitness, ThirdPartyFacts.castBitVec_symm_castBitVec]
+  · refine ⟨rPartial.alive, ?_, ?_⟩
+    · have hquarter :
+          rPartial.alive.card ≤ Models.partialInputLen p / 4 := by
+        simpa [rPartial, hlen] using core.quarterAlive
+      exact ThirdPartyFacts.quarterAlive_to_decideLocal_bound (p := p) hquarter
+    · intro x y hxy
+      have happly :
+          rPartial.apply x = rPartial.apply y := by
+        exact Facts.LocalityLift.Restriction.apply_eq_of_eq_on_alive rPartial hxy
+      have happlyFacts :
+          core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x) =
+            core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm y) := by
+        have hcast :
+            ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x) =
+              ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply y) :=
+          congrArg (ThirdPartyFacts.castBitVec hlen.symm) happly
+        simpa [rPartial, ThirdPartyFacts.castRestriction_apply_castBitVec] using hcast
+      have hdec :
+          ThirdPartyFacts.solverDecideFacts (p := p) solver
+            (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) =
+          ThirdPartyFacts.solverDecideFacts (p := p) solver
+            (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm y)) := by
+        exact congrArg (ThirdPartyFacts.solverDecideFacts (p := p) solver) happlyFacts
+      simpa [RestrictedLocalBehaviorSolver_Partial.decide, restrictedBehaviorSem,
+        restrictedBehaviorWitness] using hdec
+
+/--
+Globalization follows from restricted-behavior agreement together with
+decision preservation on the promise partition.
+-/
+theorem globalization_of_decision_preservation_on_promise
+    (hPres : RestrictedBehaviorDecisionPreservationOnPromisePartial) :
+    GlobalizeRestrictedLocalBehaviorPartial := by
+  intro p hFormula core rloc
+  refine (Models.solvesPromise_gapPartialMCSP_iff (p := p)).2 ?_
+  intro x
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  have hRestricted :
+      rloc.decide x =
+        ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) := by
+    simpa [RestrictedLocalBehaviorSolver_Partial.decide, restrictedBehaviorSem,
+      restrictedBehaviorWitness, solver, hlen,
+      ThirdPartyFacts.castBitVec_castBitVec_symm] using
+      rloc.restrictedCorrect (x := ThirdPartyFacts.castBitVec hlen.symm x)
+  have hPromise :
+      x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+        x ∈ (Models.GapPartialMCSPPromise p).No := by
+    cases hlang : Models.gapPartialMCSP_Language p (Models.partialInputLen p) x
+    · right
+      simpa [Models.GapPartialMCSPPromise, hlang]
+    · left
+      simpa [Models.GapPartialMCSPPromise, hlang]
+  have hPreserve :
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x))
+      =
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (ThirdPartyFacts.castBitVec hlen.symm x) :=
+    hPres (p := p) (hFormula := hFormula) core x hPromise
+  have hCorrect :
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (ThirdPartyFacts.castBitVec hlen.symm x)
+      =
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+    have hsolver :
+        solver.decide x =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) x :=
+      (Models.solvesPromise_gapPartialMCSP_iff (p := p)).1 solver.correct_decide x
+    simpa [solver, ThirdPartyFacts.solverDecideFacts, hlen,
+      ThirdPartyFacts.castBitVec_castBitVec_symm] using hsolver
+  calc
+    rloc.decide x =
+      ThirdPartyFacts.solverDecideFacts
+        (p := p) solver
+        (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) := hRestricted
+    _ =
+      ThirdPartyFacts.solverDecideFacts
+        (p := p) solver
+        (ThirdPartyFacts.castBitVec hlen.symm x) := hPreserve
+    _ = Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := hCorrect
+
+/--
+Probe wrapper: once decision preservation on the promise partition is supplied,
+globalization is immediate.
+-/
+theorem globalization_probe_of_decision_preservation
+    (hPres : RestrictedBehaviorDecisionPreservationOnPromisePartial) :
+    GlobalizeRestrictedLocalBehaviorPartial :=
+  globalization_of_decision_preservation_on_promise hPres
+
+/--
+The current generic extracted-core interface is still semantically stronger than
+the new weak preservation contract: its `stableFacts` field already implies
+decision preservation on the promise partition.
+-/
+theorem restrictedBehaviorDecisionPreservationOnPromise_of_generic_extracted_local_core :
+    RestrictedBehaviorDecisionPreservationOnPromisePartial := by
+  intro p hFormula core x _hxPromise
+  exact core.stableFacts
+    (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p).symm x)
+
+/--
+As long as `GenericExtractedLocalCorePartial` carries `stableFacts`, the
+globalization step is internally closed.
+-/
+theorem globalization_of_generic_extracted_local_core :
+    GlobalizeRestrictedLocalBehaviorPartial :=
+  globalization_of_decision_preservation_on_promise
+    restrictedBehaviorDecisionPreservationOnPromise_of_generic_extracted_local_core
+
+/--
+Weak globalization follows from weak decision preservation on the promise
+partition.
+-/
+theorem globalization_of_decision_preservation_on_promise_weak
+    (hPres : WeakRestrictedBehaviorDecisionPreservationOnPromisePartial) :
+    WeakGlobalizeRestrictedLocalBehaviorPartial := by
+  intro p hFormula core rloc
+  refine (Models.solvesPromise_gapPartialMCSP_iff (p := p)).2 ?_
+  intro x
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  have hRestricted :
+      rloc.decide x =
+        ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) := by
+    simpa [RestrictedLocalBehaviorSolver_Partial.decide, restrictedBehaviorSem,
+      restrictedBehaviorWitness, solver, hlen,
+      ThirdPartyFacts.castBitVec_castBitVec_symm] using
+      rloc.restrictedCorrect (x := ThirdPartyFacts.castBitVec hlen.symm x)
+  have hPromise :
+      x ∈ (Models.GapPartialMCSPPromise p).Yes ∨
+        x ∈ (Models.GapPartialMCSPPromise p).No := by
+    cases hlang : Models.gapPartialMCSP_Language p (Models.partialInputLen p) x
+    · right
+      simpa [Models.GapPartialMCSPPromise, hlang]
+    · left
+      simpa [Models.GapPartialMCSPPromise, hlang]
+  have hPreserve :
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x))
+      =
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (ThirdPartyFacts.castBitVec hlen.symm x) :=
+    hPres (p := p) (hFormula := hFormula) core x hPromise
+  have hCorrect :
+      ThirdPartyFacts.solverDecideFacts
+          (p := p) solver
+          (ThirdPartyFacts.castBitVec hlen.symm x)
+      =
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+    have hsolver :
+        solver.decide x =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) x :=
+      (Models.solvesPromise_gapPartialMCSP_iff (p := p)).1 solver.correct_decide x
+    simpa [solver, ThirdPartyFacts.solverDecideFacts, hlen,
+      ThirdPartyFacts.castBitVec_castBitVec_symm] using hsolver
+  calc
+    rloc.decide x =
+      ThirdPartyFacts.solverDecideFacts
+        (p := p) solver
+        (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) := hRestricted
+    _ =
+      ThirdPartyFacts.solverDecideFacts
+        (p := p) solver
+        (ThirdPartyFacts.castBitVec hlen.symm x) := hPreserve
+    _ = Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := hCorrect
+
+/--
+Weak probe wrapper: once decision preservation on the promise partition is
+supplied for weak cores, globalization is immediate.
+-/
+theorem globalization_probe_of_weak_decision_preservation
+    (hPres : WeakRestrictedBehaviorDecisionPreservationOnPromisePartial) :
+    WeakGlobalizeRestrictedLocalBehaviorPartial :=
+  globalization_of_decision_preservation_on_promise_weak hPres
 
 /--
 Restriction-aware local certificate below the old `stableFacts` interface.
@@ -1730,6 +2115,22 @@ theorem structuredLocalityProviderPartial_of_generic_restricted_behavior_provide
     simpa [loc] using cert.rloc.localityPolylog⟩
 
 /--
+Weak direct structured-provider constructor from the weaker restricted-behavior
+provider, assuming only weak globalization.
+-/
+theorem structuredLocalityProviderPartial_of_weak_generic_restricted_behavior_provider_and_globalize
+    (hRestr : FormulaWeakGenericRestrictedBehaviorProviderPartial)
+    (hGlobalize : WeakGlobalizeRestrictedLocalBehaviorPartial) :
+    StructuredLocalityProviderPartial := by
+  intro p δ hHyp hFormula
+  rcases hRestr (p := p) hFormula with ⟨cert⟩
+  let loc : LowerBounds.SmallLocalCircuitSolver_Partial p :=
+    cert.rloc.toSmallLocalCircuitSolver_Partial
+      (hGlobalize (p := p) (hFormula := hFormula) (core := cert.core) cert.rloc)
+  exact ⟨cert.rloc.T, loc, cert.rloc.testSetPolylog, by
+    simpa [loc] using cert.rloc.localityPolylog⟩
+
+/--
 Composed weak route: a generic extracted-core provider suffices for
 `StructuredLocalityProviderPartial` once the remaining restricted-behavior
 transport theorem is available.
@@ -1754,6 +2155,31 @@ theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provid
     StructuredLocalityProviderPartial :=
   structuredLocalityProviderPartial_of_generic_restricted_behavior_provider_and_globalize
     (genericRestrictedBehaviorProvider_of_generic_extracted_local_core_provider_and_transport
+      hCore hTransport)
+    hGlobalize
+
+/--
+With the current generic extracted-core interface, restricted-behavior transport
+already suffices: globalization follows from `core.stableFacts`.
+-/
+theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provider_and_behavior_transport
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial)
+    (hTransport : GenericRestrictedLocalBehaviorTransportPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_generic_extracted_local_core_provider_and_behavior_transport_and_globalize
+    hCore hTransport globalization_of_generic_extracted_local_core
+
+/--
+Honest weakest route on the weakened generic core: the remaining semantic
+question is now entirely isolated in weak globalization.
+-/
+theorem structuredLocalityProviderPartial_of_weak_generic_extracted_local_core_provider_and_behavior_transport_and_globalize
+    (hCore : FormulaWeakGenericExtractedLocalCoreProviderPartial)
+    (hTransport : WeakGenericRestrictedLocalBehaviorTransportPartial)
+    (hGlobalize : WeakGlobalizeRestrictedLocalBehaviorPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_weak_generic_restricted_behavior_provider_and_globalize
+    (weakGenericRestrictedBehaviorProvider_of_weak_generic_extracted_local_core_provider_and_transport
       hCore hTransport)
     hGlobalize
 

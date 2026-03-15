@@ -354,6 +354,80 @@ theorem weakGenericExtractedLocalCoreProvider_of_generic
   exact ⟨WeakGenericExtractedLocalCorePartial.ofGeneric core⟩
 
 /--
+Source-layer frontier after the mid-layer cleanup:
+from one semantic switching certificate, extract some restriction object
+carrying the numeric locality bounds needed by the weak-core route.
+
+This contract is intentionally phrased using existence of `rFacts`, without any
+support-based canonicality requirement.
+-/
+def SemanticSwitchingRestrictionCoreExtractionPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (_cert : AC0LocalityBridge.SemanticSwitchingCertificatePartial hFormula),
+    ∃ rFacts :
+        Facts.LocalityLift.Restriction
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+      rFacts.alive.card ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial
+              (generalSolverOfFormula hFormula)).params.size * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial
+              (generalSolverOfFormula hFormula)).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/--
+Turn one semantic switching certificate plus a restriction-extraction contract
+into one weak extracted local core.
+-/
+theorem weakGenericExtractedLocalCore_of_semantic_switching_certificate_and_extraction
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (cert : AC0LocalityBridge.SemanticSwitchingCertificatePartial hFormula)
+    (hExtract : SemanticSwitchingRestrictionCoreExtractionPartial) :
+    Nonempty (WeakGenericExtractedLocalCorePartial hFormula) := by
+  rcases hExtract cert with ⟨rFacts, hPoly, hSmall, hQuarter⟩
+  exact ⟨{
+    rFacts := rFacts
+    polylogAlive := hPoly
+    smallEnough := hSmall
+    quarterAlive := hQuarter
+  }⟩
+
+/--
+Provider-level bridge from the new source-side certificate layer to the weak
+generic extracted-core interface.
+-/
+theorem weakGenericExtractedLocalCoreProvider_of_semantic_switching_certificate_provider_and_extraction
+    (hCert :
+      AC0LocalityBridge.SemanticSwitchingCertificateProviderPartial)
+    (hExtract : SemanticSwitchingRestrictionCoreExtractionPartial) :
+    FormulaWeakGenericExtractedLocalCoreProviderPartial := by
+  intro p hFormula
+  rcases hCert (p := p) hFormula with ⟨cert⟩
+  exact weakGenericExtractedLocalCore_of_semantic_switching_certificate_and_extraction
+    cert hExtract
+
+/--
+Direct source-layer entry point:
+semantic multi-switching provider + restriction extraction for its certificate
+yield a weak extracted-core provider.
+-/
+theorem weakGenericExtractedLocalCoreProvider_of_semantic_provider_and_extraction
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hExtract : SemanticSwitchingRestrictionCoreExtractionPartial) :
+    FormulaWeakGenericExtractedLocalCoreProviderPartial := by
+  exact
+    weakGenericExtractedLocalCoreProvider_of_semantic_switching_certificate_provider_and_extraction
+      (AC0LocalityBridge.semanticSwitchingCertificateProvider_of_provider hSem)
+      hExtract
+
+/--
 Restricted local solver for the behavior of the extracted general solver after
 applying a specific restriction `rFacts`.
 

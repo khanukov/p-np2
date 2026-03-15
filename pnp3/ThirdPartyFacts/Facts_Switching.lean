@@ -18,6 +18,7 @@ import Core.ShrinkageWitness
 import AC0.Formulas
 import AC0.MultiSwitching.Definitions
 import AC0.MultiSwitching.CanonicalDT
+import AC0.MultiSwitching.CommonCCDT
 
 /-!
   В дополнение к основному shrinkage-факту нам понадобится ещё одна
@@ -73,14 +74,9 @@ def LeafPartition {n : Nat} (leaves : List (Subcube n)) : Prop :=
   ∀ x : BitVec n, ∃! β, β ∈ leaves ∧ memB β x = true
 
 /-!
-Замечание: автоматическое доказательство `LeafPartition` для канонического
-`canonicalCCDT_CNF_aux` временно вынесено из этого файла, чтобы сохранить
-стабильную сборку и не блокировать остальной pipeline.
-
-Текущий bridge DNF←CNF (`shrinkage_negDnfFamily_to_dnf`) уже принимает
-`LeafPartition` как явную гипотезу, поэтому функциональность не теряется.
-Когда будет завершён модуль глубинной индукции, сюда вернётся конструктивная
-версия лемм о `LeafPartitionWithin`/`canonicalCCDT`.
+Для канонического `canonicalCCDT_CNF_aux` ниже реализована конструктивная
+версия `LeafPartitionWithin`/`LeafPartition`, поэтому bridge DNF←CNF может
+использовать канонический CCDT без внешней гипотезы о разбиении листьев.
 -/
 
 /-- Дополнение списка листьев относительно полного набора листьев. -/
@@ -396,18 +392,496 @@ noncomputable def shrinkage_negDnfFamily_to_dnf
 дополнительной гипотезы о разбиении.
 -/
 
+/--
+`LeafPartitionWithin ρ leaves`: листья образуют разбиение на пространстве
+точек, совместимых с ограничением `ρ`.
+-/
+def LeafPartitionWithin {n : Nat} (ρ : Restriction n) (leaves : List (Subcube n)) : Prop :=
+  ∀ x : Core.BitVec n, mem ρ.mask x → ∃! β, β ∈ leaves ∧ mem β x
+
+lemma mem_of_refines {n : Nat} {β γ : Subcube n}
+    (href : subcubeRefines β γ) {x : Core.BitVec n}
+    (hmem : mem β x) :
+    mem γ x := by
+  apply (mem_iff (β := γ) (x := x)).2
+  intro i b hγ
+  have hβ : β i = some b := href i b hγ
+  exact (mem_iff (β := β) (x := x)).1 hmem i b hβ
+
+lemma leafPartition_of_within_free {n : Nat} {leaves : List (Subcube n)}
+    (hwithin : LeafPartitionWithin (Restriction.free n) leaves) :
+    LeafPartition leaves := by
+  intro x
+  have hmemFree : mem (Restriction.free n).mask x := by
+    simp [Restriction.free]
+  exact hwithin x hmemFree
+
+private def refineWithTail {n : Nat} (t : PDT n)
+    (tail : Subcube n → PDT n) : PDT n :=
+  match t with
+  | .leaf β => tail β
+  | .node i t0 t1 => PDT.node i (refineWithTail t0 tail) (refineWithTail t1 tail)
+
+private lemma refineWithTail_eq_refine {n : Nat} (t : PDT n)
+    (tail : Subcube n → PDT n) :
+    refineWithTail t tail = PDT.refine t (fun β _ => tail β) := by
+  induction t with
+  | leaf β =>
+      simp [refineWithTail, PDT.refine]
+  | node i t0 t1 ih0 ih1 =>
+      simp [refineWithTail, PDT.refine, ih0, ih1]
+
+private lemma mem_leaves_refineWithTail_iff {n : Nat}
+    (t : PDT n) (tail : Subcube n → PDT n) (β : Subcube n) :
+    β ∈ PDT.leaves (refineWithTail t tail) ↔
+      ∃ γ, γ ∈ PDT.leaves t ∧ β ∈ PDT.leaves (tail γ) := by
+  induction t generalizing β with
+  | leaf γ =>
+      simp [refineWithTail, PDT.leaves]
+  | node i t0 t1 ih0 ih1 =>
+      constructor
+      · intro hβ
+        have hβ' :
+            β ∈ PDT.leaves (refineWithTail t0 tail) ∨
+              β ∈ PDT.leaves (refineWithTail t1 tail) := by
+          simpa [refineWithTail, PDT.leaves] using (List.mem_append.mp hβ)
+        cases hβ' with
+        | inl hleft =>
+            rcases (ih0 β).1 hleft with ⟨γ, hγ, hβγ⟩
+            exact ⟨γ, by simp [PDT.leaves, hγ], hβγ⟩
+        | inr hright =>
+            rcases (ih1 β).1 hright with ⟨γ, hγ, hβγ⟩
+            exact ⟨γ, by simp [PDT.leaves, hγ], hβγ⟩
+      · intro hβ
+        rcases hβ with ⟨γ, hγ, hβγ⟩
+        have hγ' : γ ∈ PDT.leaves t0 ∨ γ ∈ PDT.leaves t1 := by
+          simpa [PDT.leaves] using hγ
+        cases hγ' with
+        | inl hleft =>
+            have hmemLeft : β ∈ PDT.leaves (refineWithTail t0 tail) := (ih0 β).2 ⟨γ, hleft, hβγ⟩
+            exact List.mem_append.mpr (Or.inl hmemLeft)
+        | inr hright =>
+            have hmemRight : β ∈ PDT.leaves (refineWithTail t1 tail) := (ih1 β).2 ⟨γ, hright, hβγ⟩
+            exact List.mem_append.mpr (Or.inr hmemRight)
+
+lemma canonicalDT_CNF_aux_leaves_refine_root
+    {n w : Nat} (F : CNF n w) :
+    ∀ fuel (ρ : Restriction n) (β : Subcube n),
+      β ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ) →
+      subcubeRefines β ρ.mask
+  | 0, ρ, β, hβ => by
+      rcases List.mem_singleton.mp (by
+        simpa [canonicalDT_CNF_aux, PDT.leaves] using hβ) with rfl
+      exact subcubeRefines_refl (β := ρ.mask)
+  | Nat.succ fuel, ρ, β, hβ => by
+      classical
+      cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          rcases List.mem_singleton.mp (by
+            simpa [canonicalDT_CNF_aux, hsel, PDT.leaves] using hβ) with rfl
+          exact subcubeRefines_refl (β := ρ.mask)
+      | some selection =>
+          let ℓ := chooseFreeLiteral (w := selection.witness)
+          have hmem : ℓ ∈ selection.witness.free :=
+            chooseFreeLiteral_mem (w := selection.witness)
+          have hfree :
+              ℓ.idx ∈ ρ.freeIndicesList :=
+            Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+              (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+          have hassign0 : ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 : ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          have hfree_mask : ρ.mask ℓ.idx = none := by
+            exact (Restriction.mem_freeIndicesList (ρ := ρ) (i := ℓ.idx)).1 hfree
+          have href0 :
+              subcubeRefines ρ0.mask ρ.mask :=
+            subcubeRefines_of_assign_some (hassign := hassign0) (hfree := hfree_mask)
+          have href1 :
+              subcubeRefines ρ1.mask ρ.mask :=
+            subcubeRefines_of_assign_some (hassign := hassign1) (hfree := hfree_mask)
+          have hmemLeaves :
+              β ∈
+                (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0)) ++
+                  (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+            have : β ∈
+                PDT.leaves
+                  (PDT.node ℓ.idx
+                    (canonicalDT_CNF_aux (F := F) fuel ρ0)
+                    (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+              simpa [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1] using hβ
+            simpa [PDT.leaves] using this
+          cases (List.mem_append.mp hmemLeaves) with
+          | inl hβ0 =>
+              have hβ0' :=
+                canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ0 β hβ0
+              exact subcubeRefines_trans hβ0' href0
+          | inr hβ1 =>
+              have hβ1' :=
+                canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ1 β hβ1
+              exact subcubeRefines_trans hβ1' href1
+
+lemma canonicalDT_CNF_aux_leaf_of_compatible
+    {n w : Nat} (F : CNF n w) :
+    ∀ fuel (ρ : Restriction n) (x : Core.BitVec n),
+      ρ.compatible x = true →
+      ∃ β ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ), mem β x
+  | 0, ρ, x, hcomp => by
+      have hmem : mem ρ.mask x := (Restriction.compatible_iff (ρ := ρ) (x := x)).1 hcomp
+      refine ⟨ρ.mask, ?_, hmem⟩
+      simp [canonicalDT_CNF_aux, PDT.leaves]
+  | Nat.succ fuel, ρ, x, hcomp => by
+      classical
+      cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          have hmem : mem ρ.mask x := (Restriction.compatible_iff (ρ := ρ) (x := x)).1 hcomp
+          refine ⟨ρ.mask, ?_, hmem⟩
+          simp [canonicalDT_CNF_aux, hsel, PDT.leaves]
+      | some selection =>
+          let ℓ := chooseFreeLiteral (w := selection.witness)
+          have hmem : ℓ ∈ selection.witness.free :=
+            chooseFreeLiteral_mem (w := selection.witness)
+          have hfree :
+              ℓ.idx ∈ ρ.freeIndicesList :=
+            Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+              (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+          have hassign0 : ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 : ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          by_cases hbit : x ℓ.idx = false
+          · have hmem0 : mem ρ0.mask x := by
+              exact mem_of_assign_some_of_mem
+                (hassign := hassign0)
+                (hmem := (Restriction.compatible_iff (ρ := ρ) (x := x)).1 hcomp)
+                (hxi := hbit)
+            have hcomp0 : ρ0.compatible x = true :=
+              (Restriction.compatible_iff (ρ := ρ0) (x := x)).2 hmem0
+            obtain ⟨β, hβ, hmemβ⟩ :=
+              canonicalDT_CNF_aux_leaf_of_compatible (F := F) fuel ρ0 x hcomp0
+            refine ⟨β, ?_, hmemβ⟩
+            have hmem' :
+                β ∈
+                  (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0)) ++
+                    (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+              exact List.mem_append.mpr (Or.inl hβ)
+            simpa [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves] using hmem'
+          · have hbit' : x ℓ.idx = true := by
+              cases hx : x ℓ.idx with
+              | false =>
+                  exfalso
+                  exact hbit (by simp [hx])
+              | true =>
+                  simp
+            have hmem1 : mem ρ1.mask x := by
+              exact mem_of_assign_some_of_mem
+                (hassign := hassign1)
+                (hmem := (Restriction.compatible_iff (ρ := ρ) (x := x)).1 hcomp)
+                (hxi := hbit')
+            have hcomp1 : ρ1.compatible x = true :=
+              (Restriction.compatible_iff (ρ := ρ1) (x := x)).2 hmem1
+            obtain ⟨β, hβ, hmemβ⟩ :=
+              canonicalDT_CNF_aux_leaf_of_compatible (F := F) fuel ρ1 x hcomp1
+            refine ⟨β, ?_, hmemβ⟩
+            have hmem' :
+                β ∈
+                  (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0)) ++
+                    (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+              exact List.mem_append.mpr (Or.inr hβ)
+            simpa [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1, PDT.leaves] using hmem'
+
+lemma canonicalDT_CNF_aux_leaf_unique_of_compatible
+    {n w : Nat} (F : CNF n w) :
+    ∀ fuel (ρ : Restriction n) (x : Core.BitVec n) (β0 β1 : Subcube n),
+      ρ.compatible x = true →
+      β0 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ) →
+      β1 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ) →
+      mem β0 x →
+      mem β1 x →
+      β0 = β1
+  | 0, ρ, x, β0, β1, _hcomp, hβ0, hβ1, _hmem0, _hmem1 => by
+      rcases List.mem_singleton.mp (by
+        simpa [canonicalDT_CNF_aux, PDT.leaves] using hβ0) with h0
+      rcases List.mem_singleton.mp (by
+        simpa [canonicalDT_CNF_aux, PDT.leaves] using hβ1) with h1
+      simp [h0, h1]
+  | Nat.succ fuel, ρ, x, β0, β1, hcomp, hβ0, hβ1, hmem0, hmem1 => by
+      classical
+      cases hsel : Restriction.firstPendingClause? ρ F.clauses with
+      | none =>
+          rcases List.mem_singleton.mp (by
+            simpa [canonicalDT_CNF_aux, hsel, PDT.leaves] using hβ0) with h0
+          rcases List.mem_singleton.mp (by
+            simpa [canonicalDT_CNF_aux, hsel, PDT.leaves] using hβ1) with h1
+          simp [h0, h1]
+      | some selection =>
+          let ℓ := chooseFreeLiteral (w := selection.witness)
+          have hmem : ℓ ∈ selection.witness.free :=
+            chooseFreeLiteral_mem (w := selection.witness)
+          have hfree :
+              ℓ.idx ∈ ρ.freeIndicesList :=
+            Restriction.ClausePendingWitness.literal_idx_mem_freeIndicesList
+              (ρ := ρ) (C := selection.clause) (w := selection.witness) (ℓ := ℓ) hmem
+          let ρ0 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := false) hfree)
+          let ρ1 := Classical.choose
+            (Restriction.assign_some_of_mem_freeIndicesList
+              (ρ := ρ) (i := ℓ.idx) (b := true) hfree)
+          have hassign0 : ρ.assign ℓ.idx false = some ρ0 := by
+            simpa [ρ0] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := false) hfree))
+          have hassign1 : ρ.assign ℓ.idx true = some ρ1 := by
+            simpa [ρ1] using
+              (Classical.choose_spec
+                (Restriction.assign_some_of_mem_freeIndicesList
+                  (ρ := ρ) (i := ℓ.idx) (b := true) hfree))
+          have hβ0Split :
+              β0 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0) ∨
+                β0 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
+            have hmem0' :
+                β0 ∈
+                  (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0)) ++
+                    (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+              have : β0 ∈
+                  PDT.leaves
+                    (PDT.node ℓ.idx
+                      (canonicalDT_CNF_aux (F := F) fuel ρ0)
+                      (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+                simpa [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1] using hβ0
+              simpa [PDT.leaves] using this
+            exact List.mem_append.mp hmem0'
+          have hβ1Split :
+              β1 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0) ∨
+                β1 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
+            have hmem1' :
+                β1 ∈
+                  (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0)) ++
+                    (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+              have : β1 ∈
+                  PDT.leaves
+                    (PDT.node ℓ.idx
+                      (canonicalDT_CNF_aux (F := F) fuel ρ0)
+                      (canonicalDT_CNF_aux (F := F) fuel ρ1)) := by
+                simpa [canonicalDT_CNF_aux, hsel, ℓ, ρ0, ρ1] using hβ1
+              simpa [PDT.leaves] using this
+            exact List.mem_append.mp hmem1'
+          by_cases hbit : x ℓ.idx = false
+          · have hmask1 : ρ1.mask ℓ.idx = some true := by
+              simpa using
+                (Restriction.assign_mask_eq
+                  (ρ := ρ) (ρ' := ρ1) (i := ℓ.idx) (b := true) hassign1 ℓ.idx)
+            have hβ0Left : β0 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0) := by
+              cases hβ0Split with
+              | inl hleft => exact hleft
+              | inr hright =>
+                  have hrefβ0 : subcubeRefines β0 ρ1.mask :=
+                    canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ1 β0 hright
+                  have hβ0Mask : β0 ℓ.idx = some true := hrefβ0 _ _ hmask1
+                  have hxi : x ℓ.idx = true :=
+                    (mem_iff (β := β0) (x := x)).1 hmem0 _ _ hβ0Mask
+                  have hcontra : false = true := hbit.symm.trans hxi
+                  exact (False.elim (Bool.false_ne_true hcontra))
+            have hβ1Left : β1 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ0) := by
+              cases hβ1Split with
+              | inl hleft => exact hleft
+              | inr hright =>
+                  have hrefβ1 : subcubeRefines β1 ρ1.mask :=
+                    canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ1 β1 hright
+                  have hβ1Mask : β1 ℓ.idx = some true := hrefβ1 _ _ hmask1
+                  have hxi : x ℓ.idx = true :=
+                    (mem_iff (β := β1) (x := x)).1 hmem1 _ _ hβ1Mask
+                  have hcontra : false = true := hbit.symm.trans hxi
+                  exact (False.elim (Bool.false_ne_true hcontra))
+            have hmemRoot : mem ρ.mask x := (Restriction.compatible_iff (ρ := ρ) (x := x)).1 hcomp
+            have hmem0Root : mem ρ0.mask x := by
+              exact mem_of_assign_some_of_mem
+                (hassign := hassign0)
+                (hmem := hmemRoot)
+                (hxi := hbit)
+            have hcomp0 : ρ0.compatible x = true :=
+              (Restriction.compatible_iff (ρ := ρ0) (x := x)).2 hmem0Root
+            exact canonicalDT_CNF_aux_leaf_unique_of_compatible
+              (F := F) fuel ρ0 x β0 β1 hcomp0 hβ0Left hβ1Left hmem0 hmem1
+          · have hbit' : x ℓ.idx = true := by
+              cases hx : x ℓ.idx with
+              | false =>
+                  exfalso
+                  exact hbit (by simp [hx])
+              | true =>
+                  simp
+            have hmask0 : ρ0.mask ℓ.idx = some false := by
+              simpa using
+                (Restriction.assign_mask_eq
+                  (ρ := ρ) (ρ' := ρ0) (i := ℓ.idx) (b := false) hassign0 ℓ.idx)
+            have hβ0Right : β0 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
+              cases hβ0Split with
+              | inr hright => exact hright
+              | inl hleft =>
+                  have hrefβ0 : subcubeRefines β0 ρ0.mask :=
+                    canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ0 β0 hleft
+                  have hβ0Mask : β0 ℓ.idx = some false := hrefβ0 _ _ hmask0
+                  have hxi : x ℓ.idx = false :=
+                    (mem_iff (β := β0) (x := x)).1 hmem0 _ _ hβ0Mask
+                  have hcontra : true = false := hbit'.symm.trans hxi
+                  exact (False.elim (Bool.false_ne_true hcontra.symm))
+            have hβ1Right : β1 ∈ PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ1) := by
+              cases hβ1Split with
+              | inr hright => exact hright
+              | inl hleft =>
+                  have hrefβ1 : subcubeRefines β1 ρ0.mask :=
+                    canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ0 β1 hleft
+                  have hβ1Mask : β1 ℓ.idx = some false := hrefβ1 _ _ hmask0
+                  have hxi : x ℓ.idx = false :=
+                    (mem_iff (β := β1) (x := x)).1 hmem1 _ _ hβ1Mask
+                  have hcontra : true = false := hbit'.symm.trans hxi
+                  exact (False.elim (Bool.false_ne_true hcontra.symm))
+            have hmemRoot : mem ρ.mask x := (Restriction.compatible_iff (ρ := ρ) (x := x)).1 hcomp
+            have hmem1Root : mem ρ1.mask x := by
+              exact mem_of_assign_some_of_mem
+                (hassign := hassign1)
+                (hmem := hmemRoot)
+                (hxi := hbit')
+            have hcomp1 : ρ1.compatible x = true :=
+              (Restriction.compatible_iff (ρ := ρ1) (x := x)).2 hmem1Root
+            exact canonicalDT_CNF_aux_leaf_unique_of_compatible
+              (F := F) fuel ρ1 x β0 β1 hcomp1 hβ0Right hβ1Right hmem0 hmem1
+
+lemma canonicalDT_CNF_aux_leafPartitionWithin
+    {n w : Nat} (F : CNF n w) :
+    ∀ fuel (ρ : Restriction n),
+      LeafPartitionWithin ρ (PDT.leaves (canonicalDT_CNF_aux (F := F) fuel ρ))
+  | fuel, ρ => by
+      intro x hmem
+      have hcomp : ρ.compatible x = true :=
+        (Restriction.compatible_iff (ρ := ρ) (x := x)).2 hmem
+      rcases canonicalDT_CNF_aux_leaf_of_compatible (F := F) fuel ρ x hcomp with ⟨β, hβleaf, hβmem⟩
+      refine ⟨β, ⟨hβleaf, hβmem⟩, ?_⟩
+      intro β' hβ'
+      exact canonicalDT_CNF_aux_leaf_unique_of_compatible
+        (F := F) fuel ρ x β' β hcomp hβ'.1 hβleaf hβ'.2 hβmem
+
+lemma canonicalCCDT_CNF_aux_leaves_refine_root
+    {n w : Nat} :
+    ∀ (Fs : List (CNF n w)) (fuel : Nat) (ρ : Restriction n) (β : Subcube n),
+      β ∈ PDT.leaves (canonicalCCDT_CNF_aux Fs fuel ρ) →
+      subcubeRefines β ρ.mask
+  | [], _fuel, ρ, β, hβ => by
+      rcases List.mem_singleton.mp (by
+        simpa [canonicalCCDT_CNF_aux, PDT.leaves] using hβ) with rfl
+      exact subcubeRefines_refl (β := ρ.mask)
+  | F :: rest, fuel, ρ, β, hβ => by
+      let trunk := canonicalDT_CNF_aux (F := F) fuel ρ
+      let tail : Subcube n → PDT n := fun γ => canonicalCCDT_CNF_aux rest fuel ⟨γ⟩
+      have hβRefine :
+          β ∈ PDT.leaves (PDT.refine trunk (fun γ _ => tail γ)) := by
+        simpa [canonicalCCDT_CNF_aux, trunk, tail] using hβ
+      have hre := refineWithTail_eq_refine (t := trunk) (tail := tail)
+      have hβTail : β ∈ PDT.leaves (refineWithTail trunk tail) := by
+        simpa [hre] using hβRefine
+      rcases (mem_leaves_refineWithTail_iff trunk tail β).1 hβTail with ⟨γ, hγleaf, hβγtail⟩
+      have hrefTail : subcubeRefines β γ := by
+        simpa using
+          canonicalCCDT_CNF_aux_leaves_refine_root rest fuel (⟨γ⟩ : Restriction n) β hβγtail
+      have hrefTrunk : subcubeRefines γ ρ.mask :=
+        canonicalDT_CNF_aux_leaves_refine_root (F := F) fuel ρ γ hγleaf
+      exact subcubeRefines_trans hrefTail hrefTrunk
+
+lemma canonicalCCDT_CNF_aux_leafPartitionWithin
+    {n w : Nat} :
+    ∀ (Fs : List (CNF n w)) (fuel : Nat) (ρ : Restriction n),
+      LeafPartitionWithin ρ (PDT.leaves (canonicalCCDT_CNF_aux Fs fuel ρ))
+  | [], _fuel, ρ => by
+      intro x hmem
+      refine ⟨ρ.mask, ?_, ?_⟩
+      · exact ⟨by simp [canonicalCCDT_CNF_aux, PDT.leaves], hmem⟩
+      · intro β hβ
+        rcases List.mem_singleton.mp (by
+          simpa [canonicalCCDT_CNF_aux, PDT.leaves] using hβ.1) with rfl
+        rfl
+  | F :: rest, fuel, ρ => by
+      intro x hmemρ
+      let trunk := canonicalDT_CNF_aux (F := F) fuel ρ
+      let tail : Subcube n → PDT n := fun γ => canonicalCCDT_CNF_aux rest fuel ⟨γ⟩
+      have hTrunkPart :
+          LeafPartitionWithin ρ (PDT.leaves trunk) :=
+        canonicalDT_CNF_aux_leafPartitionWithin (F := F) fuel ρ
+      rcases hTrunkPart x hmemρ with ⟨γ, hγspec, hγuniq⟩
+      have hmemγ : mem γ x := hγspec.2
+      have hTailPart :
+          LeafPartitionWithin (⟨γ⟩ : Restriction n) (PDT.leaves (tail γ)) := by
+        simpa [tail] using
+          canonicalCCDT_CNF_aux_leafPartitionWithin rest fuel (⟨γ⟩ : Restriction n)
+      rcases hTailPart x hmemγ with ⟨β, hβspec, hβuniq⟩
+      have hβRefTail : β ∈ PDT.leaves (refineWithTail trunk tail) := by
+        exact (mem_leaves_refineWithTail_iff trunk tail β).2 ⟨γ, hγspec.1, hβspec.1⟩
+      have hre := refineWithTail_eq_refine (t := trunk) (tail := tail)
+      have hβRefine : β ∈ PDT.leaves (PDT.refine trunk (fun γ _ => tail γ)) := by
+        simpa [hre] using hβRefTail
+      have hβCanonical : β ∈ PDT.leaves (canonicalCCDT_CNF_aux (F :: rest) fuel ρ) := by
+        simpa [canonicalCCDT_CNF_aux, trunk, tail] using hβRefine
+      refine ⟨β, ⟨hβCanonical, hβspec.2⟩, ?_⟩
+      intro β' hβ'
+      have hβ'Refine :
+          β' ∈ PDT.leaves (PDT.refine trunk (fun γ _ => tail γ)) := by
+        simpa [canonicalCCDT_CNF_aux, trunk, tail] using hβ'.1
+      have hβ'RefTail : β' ∈ PDT.leaves (refineWithTail trunk tail) := by
+        simpa [hre] using hβ'Refine
+      rcases (mem_leaves_refineWithTail_iff trunk tail β').1 hβ'RefTail with ⟨γ', hγ'leaf, hβ'tail⟩
+      have hrefβ' : subcubeRefines β' γ' := by
+        simpa using
+          canonicalCCDT_CNF_aux_leaves_refine_root rest fuel (⟨γ'⟩ : Restriction n) β' hβ'tail
+      have hmemγ' : mem γ' x := mem_of_refines hrefβ' hβ'.2
+      have hγeq : γ' = γ := hγuniq γ' ⟨hγ'leaf, hmemγ'⟩
+      have hβ'tail' : β' ∈ PDT.leaves (tail γ) := by
+        simpa [hγeq] using hβ'tail
+      exact hβuniq β' ⟨hβ'tail', hβ'.2⟩
+
+lemma canonicalCCDT_CNF_aux_leafPartition_free
+    {n w : Nat} (Fs : List (CNF n w)) (fuel : Nat) :
+    LeafPartition (PDT.leaves (canonicalCCDT_CNF_aux Fs fuel (Restriction.free n))) := by
+  apply leafPartition_of_within_free
+  simpa using canonicalCCDT_CNF_aux_leafPartitionWithin Fs fuel (Restriction.free n)
+
 noncomputable def shrinkage_negDnfFamily_to_dnf_canonicalCCDT
     {n k w : Nat} [DecidableEq (Subcube n)]
     (F : DnfFamily n k) (S : Shrinkage n)
     (hfamily : S.F = evalFamily (negDnfFamilyToCnfFamily F))
     (Fs : AC0.MultiSwitching.FormulaFamily n w) (fuel : Nat)
-    (_hccdt : S.tree = AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel (Restriction.free n))
-    (hpart : LeafPartition (PDT.leaves S.tree)) :
+    (hccdt : S.tree = AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel (Restriction.free n)) :
     Shrinkage n := by
-  -- Временная форма: разбиение листьев канонического CCDT передаётся извне.
-  -- Это не ослабляет bridge DNF←CNF (он и так работает от `LeafPartition`),
-  -- но позволяет не блокировать сборку до завершения конструктивного доказательства
-  -- `LeafPartition` для `canonicalCCDT_CNF_aux`.
+  have hpartCanonical :
+      LeafPartition
+        (PDT.leaves (AC0.MultiSwitching.canonicalCCDT_CNF_aux Fs fuel (Restriction.free n))) :=
+    canonicalCCDT_CNF_aux_leafPartition_free Fs fuel
+  have hpart : LeafPartition (PDT.leaves S.tree) := by
+    simpa [hccdt] using hpartCanonical
   exact shrinkage_negDnfFamily_to_dnf (F := F) (S := S) hfamily hpart
 
 /-- Полный подкуб (никаких фиксированных битов). -/

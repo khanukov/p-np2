@@ -69,4 +69,32 @@ theorem i4_final_wiring_of_formulaCertificate
       (n := n)
       (hn := hn))
 
+theorem i4_final_wiring_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPbridge : AsymptoticNPPullback hAsym)
+    (n : Nat) (hn : hAsym.N0 ≤ n) :
+    NP_not_subset_PpolyFormula := by
+  simpa using
+    (NP_not_subset_PpolyFormula_final_with_supportBounds
+      (hBounds := hBounds)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn))
+
+theorem i4_final_wiring_of_multiswitching
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPbridge : AsymptoticNPPullback hAsym)
+    (n : Nat) (hn : hAsym.N0 ≤ n) :
+    NP_not_subset_PpolyFormula := by
+  simpa using
+    (NP_not_subset_PpolyFormula_final_with_multiswitching
+      (hMS := hMS)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn))
+
 end Pnp3.Tests

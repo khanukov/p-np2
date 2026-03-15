@@ -299,6 +299,82 @@ def FormulaGenericExtractedLocalCoreProviderPartial : Prop :=
     Nonempty (GenericExtractedLocalCorePartial hFormula)
 
 /--
+Restriction-aware local certificate below the old `stableFacts` interface.
+
+Unlike `FormulaRestrictionCertificateDataPartial`, this object does not claim
+that the extracted restriction leaves the original solver globally invariant.
+Instead it records a local solver for the *restricted* behavior together with
+the test-set/locality bounds needed by `StructuredLocalityProviderPartial`.
+-/
+structure GenericRestrictedLocalCertificatePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  core : GenericExtractedLocalCorePartial hFormula
+  T : Finset (Core.BitVec (Models.partialInputLen p))
+  loc : LowerBounds.SmallLocalCircuitSolver_Partial p
+  testSetPolylog :
+    T.card ≤ Models.polylogBudget (Models.partialInputLen p)
+  localityPolylog :
+    loc.params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p)
+  restrictedCorrect :
+    ∀ x : Facts.LocalityLift.BitVec
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+      loc.decide (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p) x) =
+        ThirdPartyFacts.solverDecideFacts (p := p) (generalSolverOfFormula hFormula)
+          (core.rFacts.apply x)
+
+/--
+Provider interface for restriction-aware local certificates.
+-/
+def FormulaGenericRestrictedLocalCertificateProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (GenericRestrictedLocalCertificatePartial hFormula)
+
+/--
+Exact remaining transport obligation below the new generic extracted-core layer.
+
+This is the first theorem target that is not just re-packaging the old
+`stableFacts` route: given a restriction core, produce a local solver for the
+restricted behavior of the extracted general solver.
+-/
+def GenericRestrictedLocalCertificateTransportPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (core : GenericExtractedLocalCorePartial hFormula),
+    ∃ (T : Finset (Core.BitVec (Models.partialInputLen p)))
+      (loc : LowerBounds.SmallLocalCircuitSolver_Partial p),
+        T.card ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        loc.params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p) ∧
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          loc.decide (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p) x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) (generalSolverOfFormula hFormula)
+              (core.rFacts.apply x)
+
+/--
+Assemble the new restriction-aware certificate provider from:
+1) a generic extracted-core provider, and
+2) a transport theorem producing a local solver for restricted behavior.
+-/
+noncomputable def
+    genericRestrictedLocalCertificateProvider_of_generic_extracted_local_core_provider_and_transport
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial)
+    (hTransport : GenericRestrictedLocalCertificateTransportPartial) :
+    FormulaGenericRestrictedLocalCertificateProviderPartial := by
+  intro p hFormula
+  rcases hCore (p := p) hFormula with ⟨core⟩
+  rcases hTransport (p := p) hFormula core with
+    ⟨T, loc, hT, hℓ, hrestricted⟩
+  exact ⟨
+    { core := core
+      T := T
+      loc := loc
+      testSetPolylog := hT
+      localityPolylog := hℓ
+      restrictedCorrect := hrestricted }⟩
+
+/--
 Bridge: extracted local-core provider is sufficient to recover the existing
 support-bounds interface consumed by the locality chain.
 -/
@@ -1387,6 +1463,33 @@ theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provid
     StructuredLocalityProviderPartial :=
   structuredLocalityProviderPartial_of_restrictionData
     (formulaRestrictionCertificateData_of_generic_extracted_local_core_provider hCore)
+
+/--
+Direct structured-provider constructor from restriction-aware local
+certificates.
+
+This route bypasses the old `FormulaRestrictionCertificateDataPartial` layer and
+therefore does not use `stableFacts`.
+-/
+theorem structuredLocalityProviderPartial_of_generic_restricted_local_certificate_provider
+    (hCert : FormulaGenericRestrictedLocalCertificateProviderPartial) :
+    StructuredLocalityProviderPartial := by
+  intro p δ hHyp hFormula
+  rcases hCert (p := p) hFormula with ⟨cert⟩
+  exact ⟨cert.T, cert.loc, cert.testSetPolylog, cert.localityPolylog⟩
+
+/--
+Composed weak route: a generic extracted-core provider suffices for
+`StructuredLocalityProviderPartial` once the remaining restricted-behavior
+transport theorem is available.
+-/
+theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provider_and_transport
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial)
+    (hTransport : GenericRestrictedLocalCertificateTransportPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_generic_restricted_local_certificate_provider
+    (genericRestrictedLocalCertificateProvider_of_generic_extracted_local_core_provider_and_transport
+      hCore hTransport)
 
 /--
 New core-facing bridge: extracted local-core provider implies structured

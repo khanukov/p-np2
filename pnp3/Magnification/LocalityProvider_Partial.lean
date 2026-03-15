@@ -354,6 +354,63 @@ theorem weakGenericExtractedLocalCoreProvider_of_generic
   exact ⟨WeakGenericExtractedLocalCorePartial.ofGeneric core⟩
 
 /--
+Default bit-vector assignment attached to a source-side subcube:
+fixed coordinates use the prescribed bit, free coordinates default to `false`.
+
+This is enough to build a facts-side restriction because `Restriction.apply`
+ignores `assignment` on alive coordinates.
+-/
+noncomputable def factsAssignmentOfSubcube {n : Nat}
+    (β : Core.Subcube n) : Facts.LocalityLift.BitVec n :=
+  fun i => (β i).getD false
+
+/--
+Turn a source-side subcube into a facts-side restriction by keeping exactly the
+free coordinates alive.
+-/
+noncomputable def factsRestrictionOfSubcube {n : Nat}
+    (β : Core.Subcube n) : Facts.LocalityLift.Restriction n :=
+  Facts.LocalityLift.Restriction.ofVector
+    ((⟨β⟩ : Core.Restriction n).freePositions)
+    (factsAssignmentOfSubcube β)
+
+@[simp] lemma factsRestrictionOfSubcube_alive {n : Nat}
+    (β : Core.Subcube n) :
+    (factsRestrictionOfSubcube β).alive = ((⟨β⟩ : Core.Restriction n).freePositions) := by
+  simp [factsRestrictionOfSubcube]
+
+/--
+Source-aware relation: `rFacts` is realized by a semantic switching certificate
+if it comes from one of the selector subcubes attached to the function `f`
+linked back to the extracted strict formula witness.
+-/
+def RestrictionRealizesSemanticSwitchingCertificatePartial
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (cert : AC0LocalityBridge.SemanticSwitchingCertificatePartial hFormula)
+    (rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))) : Prop :=
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let C :=
+    ThirdPartyFacts.commonPDT_from_AC0_with_polylog
+      cert.ac0 cert.F cert.hFam cert.hpolyW
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) = cert.ac0.n :=
+    (ThirdPartyFacts.inputLen_toFactsPartial p).trans cert.hsame.symm
+  ∃ f : Core.BitVec cert.ac0.n → Bool,
+    f ∈ cert.F ∧
+    (∀ x : Core.BitVec cert.ac0.n,
+      f x = ComplexityInterfaces.FormulaCircuit.eval c
+        (ThirdPartyFacts.castBitVec cert.hsame x)) ∧
+    ∃ β : Core.Subcube cert.ac0.n,
+      β ∈ C.selectors f ∧
+      rFacts = ThirdPartyFacts.castRestriction hlen.symm
+        (factsRestrictionOfSubcube β)
+
+/--
 Source-layer frontier after the mid-layer cleanup:
 from one semantic switching certificate, extract some restriction object
 carrying the numeric locality bounds needed by the weak-core route.

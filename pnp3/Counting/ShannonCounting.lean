@@ -197,6 +197,36 @@ theorem card_yesInputSet_le_circuitCountBound_mul_three_pow
     _ ≤ circuitCountBound p.n p.sYES * 3 ^ Partial.tableLen p.n := by
           exact Nat.mul_le_mul_right _ (card_easyFunctions_le p.n p.sYES)
 
+/-- Raw YES-density is bounded by `circuitCountBound * (3/4)^(2^n)`. -/
+theorem yesDensity_yesInputSet_le_circuitCountBound_mul_three_quarters_pow
+    (p : GapPartialMCSPParams) :
+    ((yesInputSet p).card : Rat) / (4 ^ Partial.tableLen p.n : Nat)
+      ≤
+    (circuitCountBound p.n p.sYES : Rat) *
+      ((3 : Rat) / 4) ^ Partial.tableLen p.n := by
+  let N := Partial.tableLen p.n
+  have hcardNat := card_yesInputSet_le_circuitCountBound_mul_three_pow p
+  have hcard :
+      ((yesInputSet p).card : Rat) ≤
+        ((circuitCountBound p.n p.sYES * 3 ^ N : Nat) : Rat) := by
+    exact_mod_cast hcardNat
+  have hden_nonneg : (0 : Rat) ≤ (4 ^ N : Nat) := by
+    norm_num
+  have hdiv :
+      ((yesInputSet p).card : Rat) / (4 ^ N : Nat) ≤
+        (((circuitCountBound p.n p.sYES * 3 ^ N : Nat) : Rat) / (4 ^ N : Nat)) := by
+    exact div_le_div_of_nonneg_right hcard hden_nonneg
+  calc
+    ((yesInputSet p).card : Rat) / (4 ^ N : Nat)
+        ≤ (((circuitCountBound p.n p.sYES * 3 ^ N : Nat) : Rat) / (4 ^ N : Nat)) := hdiv
+    _ = (circuitCountBound p.n p.sYES : Rat) *
+          (((3 ^ N : Nat) : Rat) / ((4 ^ N : Nat) : Rat)) := by
+            rw [Nat.cast_mul, mul_div_assoc]
+    _ = (circuitCountBound p.n p.sYES : Rat) * (((3 : Rat) / 4) ^ N) := by
+          rw [show (((3 ^ N : Nat) : Rat) / ((4 ^ N : Nat) : Rat)) =
+              (((3 : Rat) ^ N) / ((4 : Rat) ^ N)) by norm_num]
+          simp [div_pow]
+
 /-- The set of consistent total functions as a Finset. -/
 noncomputable def consistentFinset {n : Nat} (T : PartialFunction n) :
     Finset (TotalFunction n) :=

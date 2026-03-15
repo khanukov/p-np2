@@ -194,6 +194,18 @@ def WorksFor {n : Nat}
       listSubset Rf A.dict ∧
       errU f Rf ≤ A.epsilon
 
+/-- If the YES-density of `f` is at most `ε`, the empty witness list is admissible. -/
+theorem worksFor_empty_of_yesDensity_le_epsilon
+    {n : Nat} {f : BitVec n → Bool}
+    {dict : List (Subcube n)} {ε : Q}
+    (h :
+      ((Finset.univ.filter (fun x => f x = true)).card : Q) / (2 ^ n) ≤ ε) :
+    ∃ (Rf : List (Subcube n)),
+      listSubset Rf dict ∧
+      errU f Rf ≤ ε := by
+  refine ⟨[], listSubset_nil _, ?_⟩
+  simpa [errU_nil_eq_yes_density] using h
+
 /-- Атлас, построенный из PDT: словарь = листья PDT. -/
 def Atlas.ofPDT {n : Nat} (t : PDT n) (ε : Q) : Atlas n :=
   { dict := PDT.leaves t, epsilon := ε }

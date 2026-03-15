@@ -563,6 +563,12 @@ def errU {n : Nat} (f : BitVec n → Bool) (Rset : List (Subcube n)) : Q :=
       (fun x => f x ≠ coveredB Rset x)).card
   ((mismatches : Nat) : Q) / ((Nat.pow 2 n : Nat) : Q)
 
+/-- Для пустого набора подкубов `errU` равна плотности единиц функции `f`. -/
+theorem errU_nil_eq_yes_density {n : Nat} (f : BitVec n → Bool) :
+    errU f ([] : List (Subcube n)) =
+      ((Finset.univ.filter (fun x => f x = true)).card : Q) / (2 ^ n) := by
+  simp [errU]
+
 /-- Ошибка аппроксимации не меняется при удалении дубликатов подкубов. -/
 lemma errU_dedup {n : Nat} [DecidableEq (Subcube n)]
     (f : BitVec n → Bool) (R : List (Subcube n)) :

@@ -260,6 +260,45 @@ def FormulaExtractedLocalCoreProviderPartial : Prop :=
     Nonempty (ExtractedLocalCorePartial hFormula)
 
 /--
+Generic extracted local-core object (no canonical-support bridge).
+-/
+structure GenericExtractedLocalCorePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))
+  polylogAlive :
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))
+  smallEnough :
+    Facts.LocalityLift.LocalCircuitSmallEnough
+      { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+        , M := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfFormula hFormula)).params.size * rFacts.alive.card.succ
+        , ℓ := rFacts.alive.card
+        , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfFormula hFormula)).params.depth }
+  quarterAlive :
+    rFacts.alive.card ≤
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+  stableFacts :
+    ∀ x : Facts.LocalityLift.BitVec
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+      ThirdPartyFacts.solverDecideFacts (p := p) (generalSolverOfFormula hFormula)
+        (rFacts.apply x) =
+        ThirdPartyFacts.solverDecideFacts (p := p) (generalSolverOfFormula hFormula) x
+
+/--
+Provider interface for generic extracted local cores.
+-/
+def FormulaGenericExtractedLocalCoreProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (GenericExtractedLocalCorePartial hFormula)
+
+/--
 Bridge: extracted local-core provider is sufficient to recover the existing
 support-bounds interface consumed by the locality chain.
 -/
@@ -755,6 +794,80 @@ theorem extracted_local_core_provider_of_multiswitching_contract
   }⟩
 
 /--
+Generic extracted-core provider obtained from the strengthened multi-switching
+contract.  This route does not expose canonical-support equations at the
+interface boundary.
+-/
+theorem generic_extracted_local_core_provider_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaGenericExtractedLocalCoreProviderPartial := by
+  intro p hFormula
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  obtain ⟨_, _, _, _, _, _, hpoly, hsmall0, hhalf⟩ :=
+    hMS.package (p := p) hFormula
+  have hstablePartial :
+      ∀ x : Core.BitVec (Models.partialInputLen p),
+        solver.decide (rPartial.apply x) = solver.decide x := by
+    intro x
+    change
+      ComplexityInterfaces.FormulaCircuit.eval c (rPartial.apply x) =
+        ComplexityInterfaces.FormulaCircuit.eval c x
+    apply ComplexityInterfaces.FormulaCircuit.eval_eq_of_eq_on_support
+    intro i hi
+    exact Facts.LocalityLift.Restriction.apply_alive rPartial x hi
+  have hstableFacts :
+      ∀ x : Facts.LocalityLift.BitVec
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+        ThirdPartyFacts.solverDecideFacts (p := p) solver (rFacts.apply x) =
+          ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+    have hstableCast :
+        ∀ x0 : Core.BitVec (Models.partialInputLen p),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver
+              (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0)) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver
+              (ThirdPartyFacts.castBitVec hlen.symm x0) := by
+      intro x0
+      change
+        solver.decide
+            (ThirdPartyFacts.castBitVec hlen
+              (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0))) =
+          solver.decide
+            (ThirdPartyFacts.castBitVec hlen
+              (ThirdPartyFacts.castBitVec hlen.symm x0))
+      simpa [ThirdPartyFacts.castBitVec_castBitVec_symm] using hstablePartial x0
+    have hstableRaw :=
+      ThirdPartyFacts.stable_of_stable_cast
+        (h := hlen.symm)
+        (decide := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+        (r := rPartial)
+        hstableCast
+    intro x
+    simpa [rFacts] using hstableRaw x
+  refine ⟨{
+    rFacts := rFacts
+    polylogAlive := hpoly
+    smallEnough := by
+      simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
+    quarterAlive := hhalf
+    stableFacts := hstableFacts
+  }⟩
+
+/--
 Combined projection for the strengthened multi-switching contract:
 it yields both the numeric support-bounds fragment used by locality lifting
 and the semantic link tying the AC0-family payload to the extracted formula.
@@ -846,6 +959,18 @@ theorem hasDefaultFormulaSupportRestrictionBoundsPartial_from_multiswitching
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
     Nonempty FormulaSupportRestrictionBoundsPartial :=
   ⟨formula_support_bounds_from_multiswitching hMS⟩
+
+/--
+Constructive builder of `FormulaRestrictionCertificateDataPartial` from the new
+generic extracted-core provider interface.
+-/
+noncomputable def formulaRestrictionCertificateData_of_generic_extracted_local_core_provider
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial) :
+    FormulaRestrictionCertificateDataPartial where
+  restrictionData := by
+    intro p hFormula
+    rcases hCore (p := p) hFormula with ⟨core⟩
+    exact ⟨core.rFacts, core.polylogAlive, core.smallEnough, core.quarterAlive, core.stableFacts⟩
 
 /--
 Constructive support-based builder of `FormulaRestrictionCertificateDataPartial`.
@@ -1254,6 +1379,16 @@ theorem structuredLocalityProviderPartial_of_supportBounds
     (formulaRestrictionCertificateData_of_supportBounds hBounds)
 
 /--
+Direct structured-provider constructor from the generic extracted local-core
+interface (no canonical `support c` requirement in the interface itself).
+-/
+theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provider
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_restrictionData
+    (formulaRestrictionCertificateData_of_generic_extracted_local_core_provider hCore)
+
+/--
 New core-facing bridge: extracted local-core provider implies structured
 locality provider through the existing support-bounds pipeline.
 -/
@@ -1282,6 +1417,16 @@ theorem structuredLocalityProviderPartial_of_multiswitching_contract_via_extract
     StructuredLocalityProviderPartial :=
   structuredLocalityProviderPartial_of_extracted_local_core_provider
     (extracted_local_core_provider_of_multiswitching_contract hMS)
+
+/--
+Same endpoint as `structuredLocalityProviderPartial_of_multiswitching_contract`,
+but routed through the generic extracted local-core interface.
+-/
+theorem structuredLocalityProviderPartial_of_multiswitching_contract_via_generic_extracted_local_core
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_generic_extracted_local_core_provider
+    (generic_extracted_local_core_provider_of_multiswitching_contract hMS)
 
 /--
 I-2 direct closure contract: explicit certificate-first data sufficient to

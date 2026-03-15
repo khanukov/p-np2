@@ -667,6 +667,87 @@ theorem empty_witness_admissible_for_current_singleton_route
     hEmpty'
 
 /--
+A convenient sufficient condition for the singleton comparison step, expressed
+as a purely natural-number inequality after cross-multiplying denominators.
+-/
+theorem comparison_hypothesis_of_nat_crossmul
+    (p : GapPartialMCSPParams)
+    (h :
+      Models.circuitCountBound p.n p.sYES *
+        3 ^ Models.Partial.tableLen p.n *
+        (Models.partialInputLen p + 2)
+      ≤ 4 ^ Models.Partial.tableLen p.n) :
+    (Models.circuitCountBound p.n p.sYES : Core.Q) *
+      ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n
+      ≤
+    (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+  let M := Models.circuitCountBound p.n p.sYES
+  let N := Models.Partial.tableLen p.n
+  let L := Models.partialInputLen p
+  have hRat :
+      ((M * 3 ^ N * (L + 2) : Nat) : Core.Q)
+        ≤ ((4 ^ N : Nat) : Core.Q) := by
+    exact_mod_cast h
+  have hDiv :
+      (((M * 3 ^ N * (L + 2) : Nat) : Core.Q) / ((4 ^ N : Nat) : Core.Q))
+        ≤ (1 : Core.Q) := by
+    have hDenPos : (0 : Core.Q) < ((4 ^ N : Nat) : Core.Q) := by
+      positivity
+    exact (div_le_iff₀ hDenPos).2 (by simpa using hRat)
+  have hRewrite :
+      ((M : Core.Q) * ((3 : Core.Q) / 4) ^ N) * (L + 2)
+        =
+      (((M * 3 ^ N * (L + 2) : Nat) : Core.Q) / ((4 ^ N : Nat) : Core.Q)) := by
+    rw [div_pow]
+    field_simp
+  have hMain :
+      ((M : Core.Q) * ((3 : Core.Q) / 4) ^ N) * (L + 2)
+        ≤ (1 : Core.Q) := by
+    rw [hRewrite]
+    exact hDiv
+  have hLPos : (0 : Core.Q) < (L + 2 : Nat) := by
+    positivity
+  have hDen :
+      (((L + 2 : Nat) : Core.Q)) = (L : Core.Q) + 2 := by
+    norm_num
+  rw [← hDen]
+  refine (le_div_iff₀ hLPos).2 ?_
+  simpa [mul_assoc, mul_left_comm, mul_comm] using hMain
+
+/--
+Nat-crossmul wrapper for the current singleton route: if the natural
+comparison inequality holds, the empty selector witness is already admissible.
+-/
+theorem empty_witness_admissible_for_current_singleton_route_of_nat_cmp
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (h :
+      Models.circuitCountBound p.n p.sYES *
+        3 ^ Models.Partial.tableLen p.n *
+        (Models.partialInputLen p + 2)
+      ≤ 4 ^ Models.Partial.tableLen p.n) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+      simpa [params, F] using semanticFamilyWitnessProp f
+    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+      simpa [params, F] using
+        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+          params F (semanticMultiSwitchingWitness f)
+    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+    ∃ Rf : List (Core.Subcube params.n),
+      Core.listSubset Rf (Core.CommonPDT.toAtlas C).dict ∧
+      Core.errU f Rf ≤ (Core.CommonPDT.toAtlas C).epsilon := by
+  exact empty_witness_admissible_for_current_singleton_route
+    hFormula
+    (comparison_hypothesis_of_nat_crossmul p h)
+
+/--
 Internal constructive semantic provider for A9:
 for every extracted strict formula witness, it constructs AC0 provenance
 (`ac0`, `F`, AC0 witness, multi-switching witness) and a direct semantic link.

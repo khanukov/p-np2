@@ -85,6 +85,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.LocalityProvider_Partial,
     Glob.one `Magnification.LocalityLift_Partial,
     Glob.one `Magnification.Bridge_to_Magnification_Partial,
+    Glob.one `Magnification.AsymptoticFormulaCollapse,
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.

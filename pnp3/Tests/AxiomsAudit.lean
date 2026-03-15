@@ -17,14 +17,25 @@ open Pnp3.Magnification
 -- Итоговые утверждения (формульная сепарация).
 #print axioms NP_not_subset_PpolyFormula_final
 #print axioms NP_not_subset_PpolyFormula_final_with_provider
+#print axioms NP_not_subset_PpolyFormula_final_with_supportBounds
+#print axioms NP_not_subset_PpolyFormula_final_with_multiswitching
+#print axioms asymptotic_formula_collapse
 #print axioms NP_not_subset_PpolyReal_final
 #print axioms NP_not_subset_PpolyReal_final_with_provider
+#print axioms NP_not_subset_PpolyReal_final_with_supportBounds
+#print axioms NP_not_subset_PpolyReal_final_with_multiswitching
 #print axioms NP_not_subset_PpolyFormula_from_partial_formulas
 
 -- Мост от нижних оценок к `NP ⊄ PpolyFormula`.
 #print axioms NP_not_subset_PpolyReal_from_partial_formulas
 #print axioms OPS_trigger_formulas_partial_of_provider
 #print axioms OPS_trigger_formulas_partial_of_provider_formula_separation_strict
+#print axioms fixed_formula_collapse_of_provider
+#print axioms asymptotic_formula_collapse_of_slice_bridge
+#print axioms ppolyFormula_fixed_of_asymptotic_slice
+#print axioms asymptotic_formula_collapse_of_slice_agreement
+#print axioms NP_not_subset_PpolyFormula_of_fixed_formula_collapse
+#print axioms NP_not_subset_PpolyFormula_of_asymptotic_formula_collapse
 #print axioms P_ne_NP_final_with_provider
 #print axioms P_ne_NP_final
 
@@ -33,6 +44,8 @@ open Pnp3.Magnification
 #print axioms Tests.i1_trivial_ppolyreal_route_no_manual_embed
 #print axioms Tests.i3_certificate_auto_no_manual_hCardHalf
 #print axioms Tests.i4_final_wiring_of_formulaCertificate
+#print axioms Tests.i4_final_wiring_of_supportBounds
+#print axioms Tests.i4_final_wiring_of_multiswitching
 
 -- Активный inclusion endpoint: no-arg, без внешнего `EvalAgreement`-контракта.
 #print axioms Complexity.Simulation.proved_P_subset_PpolyDAG_internal
@@ -42,6 +55,8 @@ open Pnp3.Magnification
 -- Это именно те утверждения, которые в TODO помечены для перепроверки.
 #print axioms ThirdPartyFacts.partial_shrinkage_for_AC0
 #print axioms ThirdPartyFacts.shrinkage_for_localCircuit
+#print axioms ThirdPartyFacts.canonicalCCDT_CNF_aux_leafPartition_free
+#print axioms ThirdPartyFacts.shrinkage_negDnfFamily_to_dnf_canonicalCCDT
 
 -- Проверяем новый constructive I-4 трек через явный multi-switching witness.
 #print axioms LowerBounds.noSmallAC0Solver_partial_of_multiSwitching

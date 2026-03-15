@@ -1,4 +1,5 @@
 import Magnification.Bridge_to_Magnification_Partial
+import Magnification.AsymptoticFormulaCollapse
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Models.Model_PartialMCSP
@@ -24,6 +25,13 @@ structure AsymptoticFormulaTrackHypothesis where
   pAt : ∀ n : Nat, N0 ≤ n → GapPartialMCSPParams
   pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
   pAt_hyp : ∀ n (hn : N0 ≤ n), FormulaLowerBoundHypothesisPartial (pAt n hn) (1 : Rat)
+  sliceEq :
+    ∀ n (hn : N0 ≤ n),
+      ∀ x : Core.BitVec (Models.partialInputLen (pAt n hn)),
+        gapPartialMCSP_AsymptoticLanguage spec
+            (Models.partialInputLen (pAt n hn)) x =
+          gapPartialMCSP_Language (pAt n hn)
+            (Models.partialInputLen (pAt n hn)) x
 
 /--
 Asymptotic NP bridge package:
@@ -41,10 +49,12 @@ structure AsymptoticNPPullback (hAsym : AsymptoticFormulaTrackHypothesis) : Type
 
 /--
 Explicit assumptions package for the switching/shrinkage side:
-it provides the structured locality provider consumed by the bridge.
+it carries the strengthened A9 multi-switching contract (including semantic
+linkage), from which support-bounds and the structured provider are derived
+internally.
 -/
 structure SwitchingAssumptions : Type where
-  provider : StructuredLocalityProviderPartial
+  multiswitching : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract
 
 /--
 Explicit assumptions package for the anti-checker side of the final route.
@@ -63,23 +73,29 @@ structure MagnificationAssumptions : Type where
   antiChecker : AntiCheckerAssumptions
 
 /--
-Asymptotic wrapper: if the partial pipeline lower bound is available at all
-sufficiently large sizes, we can instantiate the bridge at any such size.
+Asymptotic formula collapse, routed through a fixed-slice bridge.
+
+This theorem is the active bridge-shaped entrypoint in `codex-refactoring`:
+the fixed-slice collapse side is internalized from provider + lower-bound data,
+while the asymptotic-to-slice conversion remains an explicit bridge parameter.
 -/
-theorem NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
+theorem asymptotic_formula_collapse
   (hProvider : StructuredLocalityProviderPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
-  (n : Nat) (hn : hAsym.N0 ≤ n)
-  (hNPstrict : ComplexityInterfaces.NP_strict
-    (gapPartialMCSP_Language (hAsym.pAt n hn))) :
-  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  have hHyp : FormulaLowerBoundHypothesisPartial (hAsym.pAt n hn) (1 : Rat) :=
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.PpolyFormula (gapPartialMCSP_AsymptoticLanguage hAsym.spec) → False := by
+  let p : GapPartialMCSPParams := hAsym.pAt n hn
+  have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
     hAsym.pAt_hyp n hn
+  have hFixedCollapse :
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) → False :=
+    fixed_formula_collapse_of_provider (hProvider := hProvider) (p := p) (δ := (1 : Rat)) hHyp
   exact
-    OPS_trigger_formulas_partial_of_provider_formula_separation
-      (hProvider := hProvider)
-      (hNPstrict := hNPstrict)
-      (p := hAsym.pAt n hn) (δ := (1 : Rat)) hHyp
+    asymptotic_formula_collapse_of_slice_agreement
+      (spec := hAsym.spec)
+      (p := p)
+      hFixedCollapse
+      (hAsym.sliceEq n hn)
 
 /--
 Primary final statement (asymptotic entry): from the structured provider and
@@ -95,11 +111,52 @@ theorem NP_not_subset_PpolyFormula_final_with_provider
   (hNPbridge : AsymptoticNPPullback hAsym)
   (n : Nat) (hn : hAsym.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
-  have hNPstrict : ComplexityInterfaces.NP_strict
-      (gapPartialMCSP_Language (hAsym.pAt n hn)) :=
-    hNPbridge.strictFixed n hn
-  exact NP_not_subset_PpolyFormula_of_asymptotic_hypothesis
-    hProvider hAsym n hn hNPstrict
+  have hCollapse :
+      ComplexityInterfaces.PpolyFormula
+        (gapPartialMCSP_AsymptoticLanguage hAsym.spec) → False :=
+    asymptotic_formula_collapse hProvider hAsym n hn
+  exact
+    NP_not_subset_PpolyFormula_of_asymptotic_formula_collapse
+      (spec := hAsym.spec)
+      (hNPstrict := hNPbridge.strictAsymptotic)
+      hCollapse
+
+/--
+Provider-free wrapper at the formula endpoint boundary:
+derive the structured locality provider internally from support-based bounds.
+-/
+theorem NP_not_subset_PpolyFormula_final_with_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_supportBounds hBounds)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn)
+
+/--
+Provider-free wrapper at the formula endpoint boundary:
+derive support-bounds and the structured locality provider internally from the
+strengthened A9 multi-switching contract.
+-/
+theorem NP_not_subset_PpolyFormula_final_with_multiswitching
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  exact
+    NP_not_subset_PpolyFormula_final_with_supportBounds
+      (hBounds := formula_support_bounds_from_multiswitching hMS)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn)
 
 /--
 Primary asymptotic final formula-separation statement.
@@ -112,8 +169,8 @@ theorem NP_not_subset_PpolyFormula_final
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final_with_provider
-      (hProvider := hMag.switching.provider)
+    NP_not_subset_PpolyFormula_final_with_multiswitching
+      (hMS := hMag.switching.multiswitching)
       (hAsym := hMag.antiChecker.asymptotic)
       (hNPbridge := hMag.antiChecker.npBridge)
       (n := n)
@@ -145,6 +202,43 @@ theorem NP_not_subset_PpolyReal_final_with_provider
       hNPstrict
 
 /--
+Provider-free wrapper at the `PpolyReal` endpoint boundary:
+derive the structured locality provider internally from support-based bounds.
+-/
+theorem NP_not_subset_PpolyReal_final_with_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_with_provider
+      (hProvider := structuredLocalityProviderPartial_of_supportBounds hBounds)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn)
+
+/--
+Provider-free wrapper at the `PpolyReal` endpoint boundary:
+derive support-bounds and the structured locality provider internally from the
+strengthened A9 multi-switching contract.
+-/
+theorem NP_not_subset_PpolyReal_final_with_multiswitching
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal := by
+  exact
+    NP_not_subset_PpolyReal_final_with_supportBounds
+      (hBounds := formula_support_bounds_from_multiswitching hMS)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn)
+
+/--
 Primary asymptotic final `PpolyReal`-separation statement.
 -/
 theorem NP_not_subset_PpolyReal_final
@@ -152,8 +246,8 @@ theorem NP_not_subset_PpolyReal_final
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
-    NP_not_subset_PpolyReal_final_with_provider
-      (hProvider := hMag.switching.provider)
+    NP_not_subset_PpolyReal_final_with_multiswitching
+      (hMS := hMag.switching.multiswitching)
       (hAsym := hMag.antiChecker.asymptotic)
       (hNPbridge := hMag.antiChecker.npBridge)
       (n := n)

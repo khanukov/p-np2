@@ -24,6 +24,21 @@ File: `pnp3/Magnification/FinalResult.lean`
 - asymptotic NP bridge helpers:
   `AsymptoticNPPullback`
 
+Formula-route progress note (2026-03-15):
+
+- Active formula final wiring now consumes asymptotic NP witness directly:
+  `NP_not_subset_PpolyFormula_final_with_provider` is routed through
+  `strictAsymptotic` + `asymptotic_formula_collapse`.
+- `AsymptoticFormulaTrackHypothesis` now carries explicit `sliceEq`, and
+  `asymptotic_formula_collapse` consumes it from the hypothesis package.
+- Fixed-slice witnesses remain as auxiliary support (`strictFixed`) for
+  helper/localized routes (not as the primary formula-final endpoint input).
+- `MagnificationAssumptions.switching` now carries
+  `FormulaSupportBoundsFromMultiSwitchingContract` (strengthened A9 boundary),
+  and active formula/real finals derive support-bounds and provider internally
+  via `formula_support_bounds_from_multiswitching` and
+  `structuredLocalityProviderPartial_of_supportBounds`.
+
 ## Interpretation
 
 - The repository currently formalizes a constructive, axiom-clean,
@@ -68,6 +83,18 @@ Current inclusion-side status:
   `multiswitching_contract_internalized_of_support_bounds`, so semantic
   AC0/multi-switching linkage is now in-repo constructive (no external semantic
   provider input needed for contract assembly).
+
+## Canonical CCDT bridge updates
+
+- A8 closure is now integrated in `ThirdPartyFacts/Facts_Switching.lean`.
+- Added constructive leaf-partition machinery for canonical CNF DT/CCDT:
+  `LeafPartitionWithin`,
+  `canonicalDT_CNF_aux_leaf_of_compatible`,
+  `canonicalDT_CNF_aux_leaf_unique_of_compatible`,
+  `canonicalCCDT_CNF_aux_leafPartition_free`.
+- Removed external `LeafPartition` hypothesis from
+  `shrinkage_negDnfFamily_to_dnf_canonicalCCDT`; canonical partition is now
+  derived internally from `canonicalCCDT_CNF_aux`.
 
 ## Documentation policy
 

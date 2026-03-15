@@ -211,6 +211,297 @@ def FormulaSupportRestrictionBoundsPartial : Prop :=
         Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
 
 /--
+Semantic-link payload produced by the A9 semantic provider for one strict
+formula witness.
+-/
+def FormulaSemanticLinkPartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) : Prop :=
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  ∃ (ac0 : ThirdPartyFacts.AC0Parameters) (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p),
+    ∃ f : Core.BitVec ac0.n → Bool,
+      f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)
+
+/--
+Extract the semantic link directly from `FormulaSemanticMultiSwitchingProvider`.
+-/
+theorem formulaSemanticLinkPartial_of_provider
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    FormulaSemanticLinkPartial hFormula := by
+  classical
+  simpa [FormulaSemanticLinkPartial] using
+    AC0LocalityBridge.semantic_provider_semantic_link hSem (p := p) hFormula
+
+/--
+Core A9 obligations separated from wrapper-level plumbing.
+
+These are the three red obligations that remain after projecting semantic
+multi-switching payload to the strict formula witness:
+1) polylog-size bound for the extracted formula object,
+2) `LocalCircuitSmallEnough` for the induced restriction-local parameters,
+3) quarter-alive bound for the induced restriction.
+-/
+structure FormulaSupportCoreSteps
+    : Prop where
+  formula_witness_yields_small_local_core :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      FormulaSemanticLinkPartial hFormula →
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      ComplexityInterfaces.FormulaCircuit.size c ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))
+  small_local_core_shrinks_under_restrictions :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      FormulaSemanticLinkPartial hFormula →
+      let solver := generalSolverOfFormula hFormula
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      let alive := ComplexityInterfaces.FormulaCircuit.support c
+      let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+        Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+      let hlen :
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+          Models.partialInputLen p :=
+        ThirdPartyFacts.inputLen_toFactsPartial p
+      let rFacts :
+        Facts.LocalityLift.Restriction
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+        ThirdPartyFacts.castRestriction hlen.symm rPartial
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth }
+  alive_card_quarter_bound :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      FormulaSemanticLinkPartial hFormula →
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      let alive := ComplexityInterfaces.FormulaCircuit.support c
+      let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+        Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+      let hlen :
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+          Models.partialInputLen p :=
+        ThirdPartyFacts.inputLen_toFactsPartial p
+      let rFacts :
+        Facts.LocalityLift.Restriction
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+        ThirdPartyFacts.castRestriction hlen.symm rPartial
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/--
+Core step (2): `LocalCircuitSmallEnough` is directly projectable from the
+strengthened multi-switching contract.
+-/
+theorem small_local_core_shrinks_under_restrictions_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (_hLink : FormulaSemanticLinkPartial hFormula) :
+    let solver := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    Facts.LocalityLift.LocalCircuitSmallEnough
+      { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+        , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+            * rFacts.alive.card.succ
+        , ℓ := rFacts.alive.card
+        , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } := by
+  classical
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  obtain ⟨_, _, _, _, _, _, _, hsmall0, _⟩ := hMS.package (p := p) hFormula
+  simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
+
+/--
+Core step (3): quarter-alive bound is directly projectable from the
+strengthened multi-switching contract.
+-/
+theorem alive_card_quarter_bound_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (_hLink : FormulaSemanticLinkPartial hFormula) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    rFacts.alive.card ≤
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+  classical
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  obtain ⟨_, _, _, _, _, _, _, _, hhalf⟩ := hMS.package (p := p) hFormula
+  simpa [wf, c, alive, rPartial, hlen, rFacts] using hhalf
+
+/--
+From the strengthened multi-switching contract, core steps (2) and (3) are
+already available.  The only additional ingredient required to obtain the full
+`FormulaSupportCoreSteps` package is core step (1): polylog-size for the
+extracted strict formula witness.
+-/
+theorem formula_support_core_steps_of_multiswitching_contract_and_size_step
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    (hSizeStep :
+      ∀ {p : GapPartialMCSPParams}
+        (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+        FormulaSemanticLinkPartial hFormula →
+        let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+          Classical.choose hFormula
+        let c := wf.family (Models.partialInputLen p)
+        ComplexityInterfaces.FormulaCircuit.size c ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))) :
+    FormulaSupportCoreSteps := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro p hFormula hLink
+    exact hSizeStep (p := p) hFormula hLink
+  · intro p hFormula hLink
+    exact small_local_core_shrinks_under_restrictions_of_multiswitching_contract
+      (hMS := hMS) (p := p) hFormula hLink
+  · intro p hFormula hLink
+    exact alive_card_quarter_bound_of_multiswitching_contract
+      (hMS := hMS) (p := p) hFormula hLink
+
+/--
+Core assembly theorem for A9.
+
+If the three core obligations are available from semantic multi-switching
+payload, then the support-bounds interface used by the locality route follows.
+-/
+theorem formula_support_bounds_internal_of_core_steps
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hCore : FormulaSupportCoreSteps) :
+    FormulaSupportRestrictionBoundsPartial := by
+  classical
+  intro p hFormula
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  have hLink : FormulaSemanticLinkPartial hFormula :=
+    formulaSemanticLinkPartial_of_provider hSem (p := p) hFormula
+  have hSize :
+      ComplexityInterfaces.FormulaCircuit.size c ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) := by
+    simpa [wf, c] using
+      hCore.formula_witness_yields_small_local_core (p := p) hFormula hLink
+  have hPoly :
+      rFacts.alive.card ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) := by
+    have hSupportCard : alive.card ≤ ComplexityInterfaces.FormulaCircuit.size c :=
+      ComplexityInterfaces.FormulaCircuit.support_card_le_size c
+    have hCastCard : rFacts.alive.card = alive.card := by
+      dsimp [rFacts]
+      calc
+        (ThirdPartyFacts.castRestriction hlen.symm rPartial).alive.card = rPartial.alive.card :=
+          ThirdPartyFacts.castRestriction_alive_card hlen.symm rPartial
+        _ = alive.card := rfl
+    have hAlivePoly :
+        alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      le_trans hSupportCard hSize
+    simpa [hCastCard] using hAlivePoly
+  have hSmall :
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } := by
+    simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+      hCore.small_local_core_shrinks_under_restrictions
+        (p := p) hFormula hLink
+  have hQuarter :
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+    simpa [wf, c, alive, rPartial, hlen, rFacts] using
+      hCore.alive_card_quarter_bound (p := p) hFormula hLink
+  exact ⟨hPoly, hSmall, hQuarter⟩
+
+/--
 Construct the strengthened I-2B contract from two independent ingredients:
 1) semantic AC0/multi-switching provenance for extracted formulas;
 2) numeric support-based locality bounds.
@@ -259,6 +550,17 @@ theorem multiswitching_contract_of_semantic_provider_and_support_bounds
   obtain ⟨ac0, F, hsame, hFam, hMSw, hLink⟩ :=
     hSem.package (p := p) hFormula
   exact ⟨ac0, F, hsame, hFam, hMSw, hLink, hB.1, hB.2.1, hB.2.2⟩
+
+/--
+Derived A9 contract builder through the core-step decomposition:
+semantic provider + core obligations -> full strengthened contract.
+-/
+theorem multiswitching_contract_of_semantic_provider_and_core_steps
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hCore : FormulaSupportCoreSteps) :
+    AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract := by
+  exact multiswitching_contract_of_semantic_provider_and_support_bounds
+    hSem (formula_support_bounds_internal_of_core_steps hSem hCore)
 
 /--
 Named closure hook for I-4:

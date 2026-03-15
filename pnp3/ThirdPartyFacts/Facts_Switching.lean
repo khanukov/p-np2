@@ -2788,9 +2788,7 @@ noncomputable def certificate_from_AC0_with_polylog
     (hF : FamilyIsAC0 params F)
     (hpoly : AC0PolylogBoundWitness params F hF) :
     Core.Shrinkage params.n :=
-  let hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  certificate_from_AC0_with_bound params F hF hBound
+  hpoly.shrinkage
 
 lemma certificate_from_AC0_depth_bound
     (params : AC0Parameters) (F : Family params.n)
@@ -2845,12 +2843,7 @@ lemma certificate_from_AC0_with_polylog_depth_bound
     (Core.Shrinkage.depthBound
       (S := certificate_from_AC0_with_polylog params F hF hpoly))
       ≤ ac0DepthBound_strong params := by
-  -- Это прямое следствие варианта с явной strong‑границей.
-  have hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [certificate_from_AC0_with_polylog] using
-    (certificate_from_AC0_with_bound_depth_bound
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  exact hpoly.depth_le_polylog.trans (ac0DepthBound_polylog_le_strong params)
 
 /-- Та же оценка глубины shrinkage‑сертификата, но уже в сильной форме. -/
 lemma certificate_from_AC0_depth_bound_strong
@@ -2916,11 +2909,7 @@ lemma certificate_from_AC0_with_polylog_eps_bound
     Core.Shrinkage.errorBound
       (S := certificate_from_AC0_with_polylog params F hF hpoly)
       ≤ (1 : Core.Q) / (params.n + 2) := by
-  have hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [certificate_from_AC0_with_polylog] using
-    (certificate_from_AC0_with_bound_eps_bound
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  simpa [certificate_from_AC0_with_polylog] using hpoly.epsilon_le_inv
 
 /-- Семейство в сертификате AC⁰ совпадает с исходным списком `F`. -/
 lemma certificate_from_AC0_family
@@ -2961,11 +2950,7 @@ lemma certificate_from_AC0_with_polylog_family
     (hF : FamilyIsAC0 params F)
     (hpoly : AC0PolylogBoundWitness params F hF) :
     (certificate_from_AC0_with_polylog params F hF hpoly).F = F := by
-  have hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [certificate_from_AC0_with_polylog] using
-    (certificate_from_AC0_with_bound_family
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  simpa [certificate_from_AC0_with_polylog] using hpoly.family_eq
 
 /-- Ошибка сертификата AC⁰ неотрицательна.  Это важное условие для части B. -/
 lemma certificate_from_AC0_eps_nonneg
@@ -3017,11 +3002,7 @@ lemma certificate_from_AC0_with_polylog_eps_nonneg
     (hpoly : AC0PolylogBoundWitness params F hF) :
     (0 : Core.Q) ≤ Core.Shrinkage.errorBound
       (S := certificate_from_AC0_with_polylog params F hF hpoly) := by
-  have hBound : AC0DepthBoundWitness params F hF :=
-    ac0DepthBoundWitness_of_polylog params F hF hpoly
-  simpa [certificate_from_AC0_with_polylog] using
-    (certificate_from_AC0_with_bound_eps_nonneg
-      (params := params) (F := F) (hF := hF) (hBound := hBound))
+  simpa [certificate_from_AC0_with_polylog] using hpoly.epsilon_nonneg
 
 /-- Из внешней границы `ε ≤ 1/(n+2)` выводим привычное условие `ε ≤ 1/2`. -/
 lemma certificate_from_AC0_eps_le_half
@@ -3062,6 +3043,20 @@ noncomputable def commonPDT_from_AC0
   -- общий PDT через `Shrinkage.commonPDT`.
   exact (certificate_from_AC0 params F hF).commonPDT
 
+@[simp] private lemma cast_commonPDT_depthBound
+    {n : Nat} [DecidableEq (Core.Subcube n)]
+    {F G : Core.Family n} (h : F = G) (C : Core.CommonPDT n F) :
+    (cast (congrArg (fun F' => Core.CommonPDT n F') h) C).depthBound = C.depthBound := by
+  cases h
+  rfl
+
+@[simp] private lemma cast_commonPDT_epsilon
+    {n : Nat} [DecidableEq (Core.Subcube n)]
+    {F G : Core.Family n} (h : F = G) (C : Core.CommonPDT n F) :
+    (cast (congrArg (fun F' => Core.CommonPDT n F') h) C).epsilon = C.epsilon := by
+  cases h
+  rfl
+
 /--
   Polylog‑вариант общего PDT: строим его из shrinkage‑сертификата,
   полученного по polylog‑свидетелю.
@@ -3072,7 +3067,11 @@ noncomputable def commonPDT_from_AC0_with_polylog
     (hpoly : AC0PolylogBoundWitness params F hF) :
     Core.CommonPDT params.n F := by
   classical
-  exact (certificate_from_AC0_with_polylog params F hF hpoly).commonPDT
+  exact cast
+    (congrArg (fun F' => Core.CommonPDT params.n F')
+      (certificate_from_AC0_with_polylog_family
+        (params := params) (F := F) (hF := hF) (hpoly := hpoly)))
+    (certificate_from_AC0_with_polylog params F hF hpoly).commonPDT
 
 /-- Глубина общего PDT, полученного из AC⁰, ограничена стандартной оценкой. -/
 lemma commonPDT_from_AC0_depth_le
@@ -3137,15 +3136,14 @@ lemma commonPDT_from_AC0_with_polylog_depth_le
     (hpoly : AC0PolylogBoundWitness params F hF) :
     (commonPDT_from_AC0_with_polylog params F hF hpoly).depthBound
       ≤ ac0DepthBound_strong params := by
-  -- Переводим оценку глубины через shrinkage‑сертификат.
-  calc
-    (commonPDT_from_AC0_with_polylog params F hF hpoly).depthBound
-        = (certificate_from_AC0_with_polylog params F hF hpoly).t := by
-          simp [commonPDT_from_AC0_with_polylog]
-    _ ≤ ac0DepthBound_strong params := by
-          simpa using
-            (certificate_from_AC0_with_polylog_depth_bound
-              (params := params) (F := F) (hF := hF) (hpoly := hpoly))
+  have hdepthEq :
+      (commonPDT_from_AC0_with_polylog params F hF hpoly).depthBound =
+        (certificate_from_AC0_with_polylog params F hF hpoly).t := by
+    unfold commonPDT_from_AC0_with_polylog
+    simp [certificate_from_AC0_with_polylog_family]
+  rw [hdepthEq]
+  exact certificate_from_AC0_with_polylog_depth_bound
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
 
 /-- Ошибка общего PDT неотрицательна. -/
 lemma commonPDT_from_AC0_epsilon_nonneg
@@ -3165,7 +3163,13 @@ lemma commonPDT_from_AC0_with_polylog_epsilon_nonneg
     (0 : Core.Q) ≤ (commonPDT_from_AC0_with_polylog params F hF hpoly).epsilon := by
   have hε := certificate_from_AC0_with_polylog_eps_nonneg
     (params := params) (F := F) (hF := hF) (hpoly := hpoly)
-  simpa [commonPDT_from_AC0_with_polylog] using hε
+  have hEq :
+      (commonPDT_from_AC0_with_polylog params F hF hpoly).epsilon =
+        (certificate_from_AC0_with_polylog params F hF hpoly).ε := by
+    unfold commonPDT_from_AC0_with_polylog
+    simp [certificate_from_AC0_with_polylog_family]
+  rw [hEq]
+  exact hε
 
 /-- Ошибка общего PDT ограничена `1 / (n + 2)`. -/
 lemma commonPDT_from_AC0_epsilon_le_inv
@@ -3186,7 +3190,13 @@ lemma commonPDT_from_AC0_with_polylog_epsilon_le_inv
       ≤ (1 : Core.Q) / (params.n + 2) := by
   have hε := certificate_from_AC0_with_polylog_eps_bound
     (params := params) (F := F) (hF := hF) (hpoly := hpoly)
-  simpa [commonPDT_from_AC0_with_polylog] using hε
+  have hEq :
+      (commonPDT_from_AC0_with_polylog params F hF hpoly).epsilon =
+        (certificate_from_AC0_with_polylog params F hF hpoly).ε := by
+    unfold commonPDT_from_AC0_with_polylog
+    simp [certificate_from_AC0_with_polylog_family]
+  rw [hEq]
+  exact hε
 
 /-- Общий PDT, полученный из AC⁰ shrinkage, задаёт рабочий атлас. -/
 theorem commonPDT_from_AC0_works

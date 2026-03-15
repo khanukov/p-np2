@@ -849,7 +849,9 @@ noncomputable def scenarioFromAC0_with_bound
 
 /--
   Polylog‑вариант `scenarioFromAC0`: принимает polylog‑свидетель и
-  переиспользует strong‑сценарий через bridge `ac0DepthBoundWitness_of_polylog`.
+  использует ровно тот shrinkage‑сертификат, который хранится в
+  polylog‑свидетеле. Это сохраняет точную ошибку `ε` вместо её повторной
+  реконструкции через strong‑bound route.
 -/
 noncomputable def scenarioFromAC0_with_polylog
     (params : ThirdPartyFacts.AC0Parameters)
@@ -858,9 +860,34 @@ noncomputable def scenarioFromAC0_with_polylog
     (hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF) :
     Σ' _ : Nat, BoundedAtlasScenario params.n := by
   classical
-  let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
-    ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  exact scenarioFromAC0_with_bound params F hF hBound
+  let S := ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly
+  let hε0 := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hεinv := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_bound
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  let hε1 : S.ε ≤ (1 : Core.Q) / 2 :=
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2 params.n hεinv
+  let base := scenarioFromShrinkage (n := params.n) (S := S) hε0 hε1
+  have hFamily : base.2.family = S.F :=
+    scenarioFromShrinkage_family_eq
+      (n := params.n) (S := S) hε0 hε1
+  have hSF : S.F = F :=
+    ThirdPartyFacts.certificate_from_AC0_with_polylog_family
+      (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  refine ⟨base.1, { base.2 with family := F, works := ?_, bounded := ?_ }⟩
+  ·
+    have hworksS : WorksFor base.2.atlas S.F :=
+      Eq.subst (motive := fun fam => WorksFor base.2.atlas fam)
+        (Eq.symm hFamily) base.2.works
+    exact Eq.subst (motive := fun fam => WorksFor base.2.atlas fam)
+      hSF hworksS
+  ·
+    intro f hf
+    have hfS : f ∈ S.F :=
+      Eq.subst (motive := fun fam => f ∈ fam) (Eq.symm hSF) hf
+    have hfBase : f ∈ base.2.family :=
+      Eq.subst (motive := fun fam => f ∈ fam) (Eq.symm hFamily) hfS
+    exact base.2.bounded f hfBase
 
 /--
   Первая компонента пары `scenarioFromAC0` совпадает с параметром `k` внутри
@@ -1174,12 +1201,22 @@ lemma scenarioFromAC0_with_polylog_k_le_pow_strong
     (scenarioFromAC0_with_polylog params F hF hpoly).1
       ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
   classical
-  let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
-    ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  have hk :=
-    scenarioFromAC0_with_bound_k_le_pow_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound)
-  simpa [scenarioFromAC0_with_polylog] using hk
+  unfold scenarioFromAC0_with_polylog
+  set S := ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hεinv := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_bound
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  set hε1 : S.ε ≤ (1 : Core.Q) / 2 :=
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2 params.n hεinv
+  have hk_base :=
+    scenarioFromShrinkage_k_le_pow (n := params.n) S hε0 hε1
+  have hpow_bound :
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2)
+      (ThirdPartyFacts.certificate_from_AC0_with_polylog_depth_bound
+        (params := params) (F := F) (hF := hF) (hpoly := hpoly))
+  exact hk_base.trans hpow_bound
 
 /-!
   Оценка на длину словаря в AC⁰-сценарии:
@@ -1286,12 +1323,22 @@ lemma scenarioFromAC0_with_polylog_dictLen_le_pow_strong
     Counting.dictLen (scenarioFromAC0_with_polylog params F hF hpoly).2.atlas.dict
       ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
   classical
-  let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
-    ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  have hdict :=
-    scenarioFromAC0_with_bound_dictLen_le_pow_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound)
-  simpa [scenarioFromAC0_with_polylog] using hdict
+  unfold scenarioFromAC0_with_polylog
+  set S := ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hεinv := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_bound
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  set hε1 : S.ε ≤ (1 : Core.Q) / 2 :=
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2 params.n hεinv
+  have hdict_base :=
+    scenarioFromShrinkage_dictLen_le_pow (n := params.n) S hε0 hε1
+  have hpow_bound :
+      Nat.pow 2 S.t ≤ Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params) := by
+    exact Nat.pow_le_pow_right (by decide : (0 : Nat) < 2)
+      (ThirdPartyFacts.certificate_from_AC0_with_polylog_depth_bound
+        (params := params) (F := F) (hF := hF) (hpoly := hpoly))
+  exact hdict_base.trans hpow_bound
 
 /--
   Полезное переписывание: погрешность атласа в `scenarioFromAC0` совпадает
@@ -1360,13 +1407,24 @@ lemma scenarioFromAC0_with_polylog_epsilon_eq
     (scenarioFromAC0_with_polylog params F hF hpoly).2.atlas.epsilon
       = (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε := by
   classical
-  let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
-    ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  have heps :=
-    scenarioFromAC0_with_bound_epsilon_eq
-      (params := params) (F := F) (hF := hF) (hBound := hBound)
-  dsimp [scenarioFromAC0_with_polylog, ThirdPartyFacts.certificate_from_AC0_with_polylog]
-  exact heps
+  unfold scenarioFromAC0_with_polylog
+  set S := ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly
+  set hε0 := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_nonneg
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hεinv := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_bound
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  set hε1 : S.ε ≤ (1 : Core.Q) / 2 :=
+    ThirdPartyFacts.eps_le_half_of_eps_le_inv_nplus2 params.n hεinv
+  set base := scenarioFromShrinkage (n := params.n) S hε0 hε1
+  have hbase : base.2.atlas.epsilon = S.ε :=
+    scenarioFromShrinkage_epsilon_eq
+      (n := params.n) (S := S) (hε0 := hε0) (hε1 := hε1)
+  have hsc :
+      (scenarioFromAC0_with_polylog params F hF hpoly).2.atlas.epsilon =
+        base.2.atlas.epsilon := by
+    unfold scenarioFromAC0_with_polylog
+    simp [S, base]
+  exact hsc.trans hbase
 
 /--
   Совокупное описание ограниченного сценария из `scenarioFromAC0`.
@@ -1521,12 +1579,30 @@ lemma scenarioFromAC0_with_polylog_completeBounds_strong
       sc.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
       sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
   classical
-  let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
-    ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  have hbounds :=
-    scenarioFromAC0_with_bound_completeBounds_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound)
-  simpa [scenarioFromAC0_with_polylog] using hbounds
+  intro bound sc
+  have hk := scenarioFromAC0_with_polylog_k_le_pow_strong
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hdict := scenarioFromAC0_with_polylog_dictLen_le_pow_strong
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hε0 := sc.2.hε0
+  have hε1 := sc.2.hε1
+  have heq := scenarioFromAC0_with_polylog_epsilon_eq
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hεInv := ThirdPartyFacts.certificate_from_AC0_with_polylog_eps_bound
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hεInv' : sc.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    have hrewrite :
+        sc.2.atlas.epsilon =
+          (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε := by
+      exact heq
+    exact Eq.subst
+      (motive := fun ε => ε ≤ (1 : Core.Q) / (params.n + 2))
+      (Eq.symm hrewrite) hεInv
+  refine And.intro ?_ (And.intro ?_ (And.intro hε0 (And.intro hε1 hεInv')))
+  · change sc.1 ≤ bound
+    exact hk
+  · change Counting.dictLen sc.2.atlas.dict ≤ bound
+    exact hdict
 
 /--
   Сводное существование ограниченного атласа из AC⁰-свидетельства.  Мы упаковываем
@@ -2006,12 +2082,38 @@ lemma scenarioFromAC0_with_polylog_stepAB_summary_strong
         Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k
           (Nat.pow 2 params.n) sc.atlas.epsilon sc.hε0 sc.hε1 := by
   classical
-  let hBound : ThirdPartyFacts.AC0DepthBoundWitness params F hF :=
-    ThirdPartyFacts.ac0DepthBoundWitness_of_polylog params F hF hpoly
-  have hsummary :=
-    scenarioFromAC0_with_bound_stepAB_summary_strong
-      (params := params) (F := F) (hF := hF) (hBound := hBound)
-  simpa [scenarioFromAC0_with_polylog] using hsummary
+  intro pack sc bound
+  have hbounds_raw := scenarioFromAC0_with_polylog_completeBounds_strong
+    (params := params) (F := F) (hF := hF) (hpoly := hpoly)
+  have hbounds :
+      pack.1 ≤ bound ∧
+        Counting.dictLen pack.2.atlas.dict ≤ bound ∧
+        (0 : Core.Q) ≤ pack.2.atlas.epsilon ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / 2 ∧
+        pack.2.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    simpa [pack, bound] using hbounds_raw
+  have hfamily' : sc.family = F := by
+    simp [pack, sc]
+  rcases hbounds with ⟨hk_base, hrest⟩
+  rcases hrest with ⟨hdict_base, hrest⟩
+  rcases hrest with ⟨hε0_base, hrest⟩
+  rcases hrest with ⟨hε1_base, hεInv_base⟩
+  have hkEq' : sc.k = pack.1 := by
+    simp [pack, sc]
+  have hk' : sc.k ≤ bound := by
+    simpa [hkEq'] using hk_base
+  have hdict' : Counting.dictLen sc.atlas.dict ≤ bound := by
+    simpa [pack, sc] using hdict_base
+  have hε0' : (0 : Core.Q) ≤ sc.atlas.epsilon := by
+    simpa [pack, sc] using hε0_base
+  have hε1' : sc.atlas.epsilon ≤ (1 : Core.Q) / 2 := by
+    simpa [pack, sc] using hε1_base
+  have hεInv' : sc.atlas.epsilon ≤ (1 : Core.Q) / (params.n + 2) := by
+    simpa [pack, sc] using hεInv_base
+  have hcap := family_card_le_capacity (sc := sc)
+  refine And.intro hfamily' (And.intro hk' (And.intro hdict'
+    (And.intro hε0' (And.intro hε1' (And.intro hεInv' ?_)))))
+  exact hcap
 
 /--
   Локальные схемы обладают той же структурой: сценарий шага A автоматически

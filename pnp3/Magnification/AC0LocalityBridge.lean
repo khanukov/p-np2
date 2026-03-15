@@ -427,6 +427,38 @@ private theorem semanticMultiSwitchingWitness_nonempty {n : Nat}
   }⟩
 
 /--
+For the current singleton semantic route, there exists a working atlas whose
+error is exactly `1 / (n + 2)`.
+
+This is stronger than the generic polylog API, which only exposes the upper
+bound `ε ≤ 1 / (n + 2)`.
+-/
+theorem semanticSingletonAtlas_exact_epsilon {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    ∃ A : Core.Atlas params.n,
+      Core.WorksFor A F ∧
+      A.epsilon = (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro params F
+  obtain ⟨ℓ, C, _hℓ0, _hdepth, hε⟩ :=
+    ThirdPartyFacts.partial_shrinkage_single_circuit_general params (semanticCircuit f)
+  let S : Core.Shrinkage params.n := C.toShrinkage
+  let A : Core.Atlas params.n := Core.Atlas.ofPDT S.tree S.ε
+  have hEvalEq : ThirdPartyFacts.AC0Circuit.eval (semanticCircuit f) = f := by
+    funext x
+    exact semanticCircuit_computes f x
+  refine ⟨A, ?_, ?_⟩
+  · have hWorks :
+        Core.WorksFor A ([ThirdPartyFacts.AC0Circuit.eval (semanticCircuit f)] : Core.Family params.n) := by
+          simpa [A, S, Core.Atlas.ofPDT] using (Core.SAL_from_Shrinkage S)
+    simpa [A, F, hEvalEq] using hWorks
+  · have hSε : S.ε = C.epsilon := by
+      simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
+    simpa [A, Core.Atlas.ofPDT, hSε] using hε
+
+/--
 Internal constructive semantic provider for A9:
 for every extracted strict formula witness, it constructs AC0 provenance
 (`ac0`, `F`, AC0 witness, multi-switching witness) and a direct semantic link.

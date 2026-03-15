@@ -1,5 +1,6 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 import Core.BooleanBasics
 import Facts.LocalityLift.Exports
 import Models.Model_PartialMCSP
@@ -15,6 +16,18 @@ namespace ThirdPartyFacts
 @[simp] lemma partialInputLen_nf (n : Nat) :
     Models.Partial.inputLen n = 2 * 2 ^ n := by
   simp [Models.Partial.inputLen, Models.Partial.tableLen]
+
+@[simp] lemma partialInputLen_div4_eq_tableLen_div2
+    (p : Models.GapPartialMCSPParams) :
+    Models.partialInputLen p / 4 = Models.Partial.tableLen p.n / 2 := by
+  simp [Models.partialInputLen, Models.Partial.inputLen, Models.Partial.tableLen]
+  omega
+
+lemma quarterAlive_to_decideLocal_bound
+    {p : Models.GapPartialMCSPParams} {k : Nat}
+    (h : k ≤ Models.partialInputLen p / 4) :
+    k ≤ Models.Partial.tableLen p.n / 2 := by
+  simpa [partialInputLen_div4_eq_tableLen_div2 p] using h
 
 @[simp] lemma card_cast {α β : Type} (h : α = β) (s : Finset α) :
     (cast (congrArg Finset h) s).card = s.card := by
@@ -54,6 +67,14 @@ def castBitVec {n m : Nat} (h : n = m) (x : Core.BitVec n) : Core.BitVec m := by
 @[simp] lemma castRestriction_alive_card {n m : Nat}
     (h : n = m) (r : Facts.LocalityLift.Restriction n) :
     (castRestriction h r).alive.card = r.alive.card := by
+  cases h
+  rfl
+
+@[simp] lemma castRestriction_apply_castBitVec
+    {n m : Nat} (h : n = m)
+    (r : Facts.LocalityLift.Restriction n) (x : Core.BitVec m) :
+    castBitVec h.symm ((castRestriction h r).apply x) =
+      r.apply (castBitVec h.symm x) := by
   cases h
   rfl
 

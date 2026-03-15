@@ -469,6 +469,71 @@ noncomputable def restrictedBehaviorWitness
         (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p).symm y))
 
 /--
+The restricted-behavior transport is already derivable from the extracted core:
+no AC0/multi-switching input is needed at this stage.
+-/
+theorem genericRestrictedLocalBehaviorTransport_of_core :
+    GenericRestrictedLocalBehaviorTransportPartial := by
+  intro p hFormula core
+  classical
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    ThirdPartyFacts.castRestriction hlen core.rFacts
+  let params : LowerBounds.SmallLocalCircuitParamsPartial p :=
+    { params :=
+        { n := Models.partialInputLen p
+          M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size *
+            core.rFacts.alive.card.succ
+          ℓ := core.rFacts.alive.card
+          depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth }
+      same_n := rfl
+      small := by
+        simpa [solver, ThirdPartyFacts.LocalCircuitSmallEnough] using core.smallEnough }
+  refine ⟨
+    { T := ∅
+      params := params
+      sem := restrictedBehaviorSem hFormula core.rFacts
+      witness := restrictedBehaviorWitness hFormula core.rFacts
+      testSetPolylog := by simp [Models.polylogBudget]
+      localityPolylog := by
+        simpa [params, solver, ThirdPartyFacts.polylogBudget_toFactsPartial] using
+          core.polylogAlive
+      restrictedCorrect := ?_
+      decideLocal := ?_ }⟩
+  · intro x
+    simp [restrictedBehaviorSem,
+      restrictedBehaviorWitness, ThirdPartyFacts.castBitVec_symm_castBitVec]
+  · refine ⟨rPartial.alive, ?_, ?_⟩
+    · have hquarter :
+          rPartial.alive.card ≤ Models.partialInputLen p / 4 := by
+        simpa [rPartial, hlen] using core.quarterAlive
+      exact ThirdPartyFacts.quarterAlive_to_decideLocal_bound (p := p) hquarter
+    · intro x y hxy
+      have happly :
+          rPartial.apply x = rPartial.apply y := by
+        exact Facts.LocalityLift.Restriction.apply_eq_of_eq_on_alive rPartial hxy
+      have happlyFacts :
+          core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x) =
+            core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm y) := by
+        have hcast :
+            ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x) =
+              ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply y) :=
+          congrArg (ThirdPartyFacts.castBitVec hlen.symm) happly
+        simpa [rPartial, ThirdPartyFacts.castRestriction_apply_castBitVec] using hcast
+      have hdec :
+          ThirdPartyFacts.solverDecideFacts (p := p) solver
+            (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x)) =
+          ThirdPartyFacts.solverDecideFacts (p := p) solver
+            (core.rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm y)) := by
+        exact congrArg (ThirdPartyFacts.solverDecideFacts (p := p) solver) happlyFacts
+      simpa [RestrictedLocalBehaviorSolver_Partial.decide, restrictedBehaviorSem,
+        restrictedBehaviorWitness] using hdec
+
+/--
 Restriction-aware local certificate below the old `stableFacts` interface.
 
 Unlike `FormulaRestrictionCertificateDataPartial`, this object does not claim

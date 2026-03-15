@@ -1818,14 +1818,17 @@ theorem solverDecideFacts_stable_of_current_extracted_restriction
     hstableRaw (ThirdPartyFacts.castBitVec hlen.symm x)
 
 /--
-Current extraction route promoted to a provenance-aware weak-core provider.
+Current support-bounds assumptions already suffice to construct a
+provenance-aware weak-core provider for the canonical support-based extraction.
 
-This theorem does not use the stronger generic-core interface: it attaches the
-needed promise-preservation fact directly to the weak core produced by the
-current support-based extraction.
+This theorem makes explicit that the remaining weak-core route no longer
+depends on the stronger multi-switching package: only the numeric
+`FormulaSupportRestrictionBoundsPartial` fragment is used here, while
+promise-preservation is supplied by
+`solverDecideFacts_stable_of_current_extracted_restriction`.
 -/
-theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching_contract
-    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_supportBounds
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
     FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial := by
   intro p hFormula
   let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
@@ -1844,15 +1847,26 @@ theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching
     Facts.LocalityLift.Restriction
       (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
     ThirdPartyFacts.castRestriction hlen.symm rPartial
-  obtain ⟨_, _, _, _, _, _, hpoly, hsmall0, hhalf⟩ :=
-    hMS.package (p := p) hFormula
+  have hB :
+      rFacts.alive.card ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+    simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+      hBounds (p := p) hFormula
   refine ⟨{
     core := {
       rFacts := rFacts
-      polylogAlive := hpoly
-      smallEnough := by
-        simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
-      quarterAlive := hhalf
+      polylogAlive := hB.1
+      smallEnough := hB.2.1
+      quarterAlive := hB.2.2
     }
     preserveOnPromise := ?_
   }⟩
@@ -1860,6 +1874,19 @@ theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching
   simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
     solverDecideFacts_stable_of_current_extracted_restriction
       (p := p) hFormula x
+
+/--
+Current extraction route promoted to a provenance-aware weak-core provider.
+
+This theorem does not use the stronger generic-core interface: it attaches the
+needed promise-preservation fact directly to the weak core produced by the
+current support-based extraction.
+-/
+theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial :=
+  promisePreservingWeakGenericExtractedLocalCoreProvider_of_supportBounds
+    (formula_support_bounds_from_multiswitching hMS)
 
 /--
 Combined projection for the strengthened multi-switching contract:
@@ -2457,6 +2484,19 @@ theorem structuredLocalityProviderPartial_of_promisePreservingWeakGenericCorePro
     genericRestrictedLocalBehaviorTransport_of_weak_core
 
 /--
+Support-bounds assumptions already imply the provenance-aware weak-core route.
+
+This makes explicit that the weak-core plumbing no longer depends on the
+stronger multi-switching contract once the numeric support-bounds fragment has
+been isolated.
+-/
+theorem structuredLocalityProviderPartial_of_supportBounds_via_promisePreservingWeakCore
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider
+    (promisePreservingWeakGenericExtractedLocalCoreProvider_of_supportBounds hBounds)
+
+/--
 Composed weak route: a generic extracted-core provider suffices for
 `StructuredLocalityProviderPartial` once the remaining restricted-behavior
 transport theorem is available.
@@ -2568,8 +2608,8 @@ current support-based restriction.
 theorem structuredLocalityProviderPartial_of_multiswitching_contract_via_promisePreservingWeakCore
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
     StructuredLocalityProviderPartial :=
-  structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider
-    (promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching_contract hMS)
+  structuredLocalityProviderPartial_of_supportBounds_via_promisePreservingWeakCore
+    (formula_support_bounds_from_multiswitching hMS)
 
 /--
 I-2 direct closure contract: explicit certificate-first data sufficient to

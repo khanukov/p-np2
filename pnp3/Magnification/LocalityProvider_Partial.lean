@@ -299,6 +299,176 @@ def FormulaGenericExtractedLocalCoreProviderPartial : Prop :=
     Nonempty (GenericExtractedLocalCorePartial hFormula)
 
 /--
+Restricted local solver for the behavior of the extracted general solver after
+applying a specific restriction `rFacts`.
+
+This is intentionally weaker than `SmallLocalCircuitSolver_Partial`: it carries
+local-circuit parameters, locality, and agreement with the *restricted*
+behavior, but does not claim global correctness for the original promise
+language.
+-/
+structure RestrictedLocalBehaviorSolver_Partial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))) where
+  T : Finset (Core.BitVec (Models.partialInputLen p))
+  params : LowerBounds.SmallLocalCircuitParamsPartial p
+  sem : ComplexityInterfaces.SemanticDecider (Models.partialInputLen p)
+  witness : sem.Carrier
+  testSetPolylog :
+    T.card ≤ Models.polylogBudget (Models.partialInputLen p)
+  localityPolylog :
+    params.params.ℓ ≤ Models.polylogBudget (Models.partialInputLen p)
+  restrictedCorrect :
+    ∀ x : Facts.LocalityLift.BitVec
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+      sem.eval witness
+          (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p) x) =
+        ThirdPartyFacts.solverDecideFacts (p := p) (generalSolverOfFormula hFormula)
+          (rFacts.apply x)
+  decideLocal :
+    ∃ (alive : Finset (Fin (Models.partialInputLen p))),
+      alive.card ≤ Models.Partial.tableLen p.n / 2 ∧
+      ∀ x y : Core.BitVec (Models.partialInputLen p),
+        (∀ i ∈ alive, x i = y i) →
+          sem.eval witness x = sem.eval witness y
+
+/-- Evaluator induced by the semantic witness of a restricted local solver. -/
+@[simp] def RestrictedLocalBehaviorSolver_Partial.decide
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    {rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))}
+    (solver : RestrictedLocalBehaviorSolver_Partial hFormula rFacts) :
+    Core.BitVec (Models.partialInputLen p) → Bool :=
+  fun x => solver.sem.eval solver.witness x
+
+/-- Convenience view of `decideLocal` through `solver.decide`. -/
+lemma RestrictedLocalBehaviorSolver_Partial.decideLocal_decide
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    {rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))}
+    (solver : RestrictedLocalBehaviorSolver_Partial hFormula rFacts) :
+    ∃ (alive : Finset (Fin (Models.partialInputLen p))),
+      alive.card ≤ Models.Partial.tableLen p.n / 2 ∧
+      ∀ x y : Core.BitVec (Models.partialInputLen p),
+        (∀ i ∈ alive, x i = y i) →
+          solver.decide x = solver.decide y := by
+  rcases solver.decideLocal with ⟨alive, hcard, hloc⟩
+  refine ⟨alive, hcard, ?_⟩
+  intro x y hxy
+  simpa [RestrictedLocalBehaviorSolver_Partial.decide] using hloc x y hxy
+
+/--
+Upgrade a restricted-behavior local solver to a global `SmallLocalCircuitSolver`
+once correctness for the original promise language has been provided
+separately.
+-/
+def RestrictedLocalBehaviorSolver_Partial.toSmallLocalCircuitSolver_Partial
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    {rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))}
+    (solver : RestrictedLocalBehaviorSolver_Partial hFormula rFacts)
+    (hCorrect : Complexity.SolvesPromise (Models.GapPartialMCSPPromise p) solver.decide) :
+    LowerBounds.SmallLocalCircuitSolver_Partial p :=
+  { params := solver.params
+    sem := solver.sem
+    witness := solver.witness
+    correct := by
+      simpa [RestrictedLocalBehaviorSolver_Partial.decide] using hCorrect
+    decideLocal := solver.decideLocal }
+
+/--
+Generic restriction-aware behavior certificate: an extracted core plus a local
+solver for the corresponding restricted behavior.
+-/
+structure GenericRestrictedBehaviorCertificatePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  core : GenericExtractedLocalCorePartial hFormula
+  rloc : RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts
+
+/--
+Provider interface for restricted-behavior certificates.
+-/
+def FormulaGenericRestrictedBehaviorProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (GenericRestrictedBehaviorCertificatePartial hFormula)
+
+/--
+Next theorem target for the switching route: from a generic extracted core,
+produce a local solver for the *restricted* behavior only.
+-/
+def GenericRestrictedLocalBehaviorTransportPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (core : GenericExtractedLocalCorePartial hFormula),
+    Nonempty (RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts)
+
+/--
+Separate globalization step: once a restricted-behavior local solver is known,
+this contract asks only for correctness with respect to the original promise
+language.
+-/
+def GlobalizeRestrictedLocalBehaviorPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    {core : GenericExtractedLocalCorePartial hFormula},
+    (rloc : RestrictedLocalBehaviorSolver_Partial hFormula core.rFacts) →
+      Complexity.SolvesPromise (Models.GapPartialMCSPPromise p) rloc.decide
+
+/--
+Assemble the new restricted-behavior provider from:
+1) a generic extracted-core provider, and
+2) the restricted-behavior transport theorem.
+-/
+noncomputable def
+    genericRestrictedBehaviorProvider_of_generic_extracted_local_core_provider_and_transport
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial)
+    (hTransport : GenericRestrictedLocalBehaviorTransportPartial) :
+    FormulaGenericRestrictedBehaviorProviderPartial := by
+  intro p hFormula
+  rcases hCore (p := p) hFormula with ⟨core⟩
+  rcases hTransport (p := p) hFormula core with ⟨rloc⟩
+  exact ⟨{ core := core, rloc := rloc }⟩
+
+/--
+Canonical semantic model for the restricted behavior induced by `rFacts`.
+-/
+noncomputable def restrictedBehaviorSem
+    {p : GapPartialMCSPParams}
+    (_hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (_rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))) :
+    ComplexityInterfaces.SemanticDecider (Models.partialInputLen p) :=
+  ComplexityInterfaces.SemanticDecider.ofFunction (Models.partialInputLen p)
+
+/--
+Canonical witness for `restrictedBehaviorSem`: evaluate the extracted general
+solver after first applying the restriction `rFacts`.
+-/
+noncomputable def restrictedBehaviorWitness
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))) :
+    (restrictedBehaviorSem hFormula rFacts).Carrier :=
+  fun y =>
+    ThirdPartyFacts.solverDecideFacts (p := p) (generalSolverOfFormula hFormula)
+      (rFacts.apply
+        (ThirdPartyFacts.castBitVec (ThirdPartyFacts.inputLen_toFactsPartial p).symm y))
+
+/--
 Restriction-aware local certificate below the old `stableFacts` interface.
 
 Unlike `FormulaRestrictionCertificateDataPartial`, this object does not claim
@@ -1479,6 +1649,22 @@ theorem structuredLocalityProviderPartial_of_generic_restricted_local_certificat
   exact ⟨cert.T, cert.loc, cert.testSetPolylog, cert.localityPolylog⟩
 
 /--
+Direct structured-provider constructor from the weaker restricted-behavior
+provider, assuming a separate globalization theorem.
+-/
+theorem structuredLocalityProviderPartial_of_generic_restricted_behavior_provider_and_globalize
+    (hRestr : FormulaGenericRestrictedBehaviorProviderPartial)
+    (hGlobalize : GlobalizeRestrictedLocalBehaviorPartial) :
+    StructuredLocalityProviderPartial := by
+  intro p δ hHyp hFormula
+  rcases hRestr (p := p) hFormula with ⟨cert⟩
+  let loc : LowerBounds.SmallLocalCircuitSolver_Partial p :=
+    cert.rloc.toSmallLocalCircuitSolver_Partial
+      (hGlobalize (p := p) (hFormula := hFormula) (core := cert.core) cert.rloc)
+  exact ⟨cert.rloc.T, loc, cert.rloc.testSetPolylog, by
+    simpa [loc] using cert.rloc.localityPolylog⟩
+
+/--
 Composed weak route: a generic extracted-core provider suffices for
 `StructuredLocalityProviderPartial` once the remaining restricted-behavior
 transport theorem is available.
@@ -1490,6 +1676,21 @@ theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provid
   structuredLocalityProviderPartial_of_generic_restricted_local_certificate_provider
     (genericRestrictedLocalCertificateProvider_of_generic_extracted_local_core_provider_and_transport
       hCore hTransport)
+
+/--
+New weakest route:
+generic extracted cores + restricted-behavior transport + globalization are
+sufficient for `StructuredLocalityProviderPartial`.
+-/
+theorem structuredLocalityProviderPartial_of_generic_extracted_local_core_provider_and_behavior_transport_and_globalize
+    (hCore : FormulaGenericExtractedLocalCoreProviderPartial)
+    (hTransport : GenericRestrictedLocalBehaviorTransportPartial)
+    (hGlobalize : GlobalizeRestrictedLocalBehaviorPartial) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_generic_restricted_behavior_provider_and_globalize
+    (genericRestrictedBehaviorProvider_of_generic_extracted_local_core_provider_and_transport
+      hCore hTransport)
+    hGlobalize
 
 /--
 New core-facing bridge: extracted local-core provider implies structured

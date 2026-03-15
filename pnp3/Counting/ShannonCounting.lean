@@ -105,6 +105,98 @@ lemma card_easyFunctions_le (n s : Nat) :
     (easyFunctions n s).card ≤ circuitCountBound n s :=
   le_trans Finset.card_image_le (card_circuitsOfSizeAtMost_le n s)
 
+/-!
+  ### Raw YES-input counting
+
+  On the full input cube `BitVec (partialInputLen p)`, a YES-input is any raw
+  encoding whose decoded partial table is consistent with some easy total
+  function.
+-/
+
+/-- Raw YES-inputs on the fixed slice `partialInputLen p`. -/
+noncomputable def yesInputSet (p : GapPartialMCSPParams) :
+    Finset (Core.BitVec (partialInputLen p)) :=
+  @Finset.filter _ (fun x => gapPartialMCSP_Language p (partialInputLen p) x = true)
+    (Classical.decPred _) Finset.univ
+
+/-- Union of raw encodings consistent with some easy total function. -/
+noncomputable def easyRawEncodingUnion (p : GapPartialMCSPParams) :
+    Finset (Core.BitVec (partialInputLen p)) :=
+  (easyFunctions p.n p.sYES).biUnion fun g =>
+    rawEncodingsConsistentWithTotal g
+
+private lemma consistentWith_circuitToTable_of_is_consistent
+    {p : GapPartialMCSPParams}
+    {x : Core.BitVec (partialInputLen p)}
+    {C : Circuit p.n}
+    (hCons : is_consistent C (decodePartial x)) :
+    consistentWithTotal (decodePartial x) (circuitToTable C) := by
+  intro i
+  let a : Core.BitVec p.n := (assignmentIndex_surjective i).choose
+  have ha : assignmentIndex a = i := (assignmentIndex_surjective i).choose_spec
+  have hAt := hCons a
+  rw [ha] at hAt
+  cases hTi : decodePartial x i with
+  | none =>
+      trivial
+  | some b =>
+      have hEval : C.eval a = b := by
+        simpa [hTi] using hAt
+      show b = circuitToTable C i
+      simpa [circuitToTable, a] using hEval.symm
+
+/-- Every raw YES-input is covered by some easy total function. -/
+lemma yesInputSet_subset_easyRawEncodingUnion (p : GapPartialMCSPParams) :
+    yesInputSet p ⊆ easyRawEncodingUnion p := by
+  classical
+  intro x hx
+  have hLang : gapPartialMCSP_Language p (partialInputLen p) x = true := by
+    simpa [yesInputSet] using hx
+  have hYes : PartialMCSP_YES p (decodePartial x) :=
+    (gapPartialMCSP_language_true_iff_yes p x).1 hLang
+  rcases hYes with ⟨C, hSize, hCons⟩
+  have hmemC : C ∈ circuitsOfSizeAtMost p.n p.sYES :=
+    mem_circuitsOfSizeAtMost C p.sYES hSize
+  have hmemG : circuitToTable C ∈ easyFunctions p.n p.sYES :=
+    Finset.mem_image.mpr ⟨C, hmemC, rfl⟩
+  change x ∈ (easyFunctions p.n p.sYES).biUnion
+      (fun g => rawEncodingsConsistentWithTotal g)
+  refine Finset.mem_biUnion.mpr ⟨circuitToTable C, hmemG, ?_⟩
+  simpa [rawEncodingsConsistentWithTotal] using
+    (consistentWith_circuitToTable_of_is_consistent (x := x) hCons)
+
+/-- Raw YES-inputs are bounded by easy functions times `3^(2^n)`. -/
+theorem card_yesInputSet_le_easyFunctions_mul_three_pow
+    (p : GapPartialMCSPParams) :
+    (yesInputSet p).card ≤
+      (easyFunctions p.n p.sYES).card * 3 ^ Partial.tableLen p.n := by
+  classical
+  have hsubset := yesInputSet_subset_easyRawEncodingUnion p
+  refine le_trans (Finset.card_le_card hsubset) ?_
+  calc
+    (easyRawEncodingUnion p).card
+        ≤ ∑ g ∈ easyFunctions p.n p.sYES,
+            (rawEncodingsConsistentWithTotal g).card := by
+              exact Finset.card_biUnion_le
+    _ = ∑ g ∈ easyFunctions p.n p.sYES, 3 ^ Partial.tableLen p.n := by
+          refine Finset.sum_congr rfl ?_
+          intro g hg
+          simp [card_rawEncodingsConsistentWithTotal_eq_three_pow]
+    _ = (easyFunctions p.n p.sYES).card * 3 ^ Partial.tableLen p.n := by
+          simp
+
+/-- Raw YES-inputs are bounded by `circuitCountBound * 3^(2^n)`. -/
+theorem card_yesInputSet_le_circuitCountBound_mul_three_pow
+    (p : GapPartialMCSPParams) :
+    (yesInputSet p).card ≤
+      circuitCountBound p.n p.sYES * 3 ^ Partial.tableLen p.n := by
+  calc
+    (yesInputSet p).card
+        ≤ (easyFunctions p.n p.sYES).card * 3 ^ Partial.tableLen p.n :=
+          card_yesInputSet_le_easyFunctions_mul_three_pow p
+    _ ≤ circuitCountBound p.n p.sYES * 3 ^ Partial.tableLen p.n := by
+          exact Nat.mul_le_mul_right _ (card_easyFunctions_le p.n p.sYES)
+
 /-- The set of consistent total functions as a Finset. -/
 noncomputable def consistentFinset {n : Nat} (T : PartialFunction n) :
     Finset (TotalFunction n) :=

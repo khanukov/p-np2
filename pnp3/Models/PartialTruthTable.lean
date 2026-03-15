@@ -766,6 +766,205 @@ theorem card_consistentPartial_withTotal {n : Nat} (f : TotalFunction n) :
   simpa [hmask] using hEquiv.symm
 
 /-!
+  ### Raw encodings consistent with a fixed total function
+
+  `decodePartial` forgets one bit of information at positions where the mask is
+  `false`: the value bit becomes semantically irrelevant.  For a fixed total
+  function `f`, each truth-table index therefore has exactly three admissible
+  raw states:
+
+  * `mask = true`, `value = f(i)`;
+  * `mask = false`, `value = false`;
+  * `mask = false`, `value = true`.
+
+  The next equivalence makes this counting fact explicit and yields the exact
+  cardinality `3^(2^n)` for raw encodings whose decoded partial table is
+  consistent with `f`.
+-/
+
+/-- Re-encode a partial table as a raw input consistent with the total function `f`. -/
+private def rawEncodingOfConsistentPartial {n : Nat} (f : TotalFunction n)
+    (T : PartialFunction n) : Core.BitVec (Partial.inputLen n) :=
+  fun j =>
+    if hj : (j : Nat) < Partial.tableLen n then
+      let i : Fin (Partial.tableLen n) := ⟨j, hj⟩
+      !(T i).isSome
+    else
+      let kNat := (j : Nat) - Partial.tableLen n
+      have hlt : kNat < Partial.tableLen n := by
+        have hlt' : (j : Nat) < Partial.tableLen n + Partial.tableLen n := by
+          simpa [Partial.inputLen, two_mul] using j.2
+        have hge : Partial.tableLen n ≤ (j : Nat) := Nat.le_of_not_gt hj
+        have hlt_decomp :
+            (j : Nat) - Partial.tableLen n + Partial.tableLen n <
+              Partial.tableLen n + Partial.tableLen n := by
+          simpa [Nat.sub_add_cancel hge] using hlt'
+        exact lt_of_add_lt_add_right hlt_decomp
+      let i : Fin (Partial.tableLen n) := ⟨kNat, hlt⟩
+      (T i).getD (f i)
+
+/-- Forget the distinguished `f`-value on masked positions. -/
+private def partialOfRawEncoding {n : Nat}
+    (x : Core.BitVec (Partial.inputLen n)) : PartialFunction n :=
+  fun i => if Partial.maskPart x i then none else some (Partial.valPart x i)
+
+private lemma rawEncodingOfConsistentPartial_maskIndex {n : Nat}
+    (f : TotalFunction n) (T : PartialFunction n) (i : Fin (Partial.tableLen n)) :
+    rawEncodingOfConsistentPartial f T (Partial.maskIndex i) = !(T i).isSome := by
+  simp [rawEncodingOfConsistentPartial, Partial.maskIndex, maskIndex_lt_tableLen]
+
+private lemma rawEncodingOfConsistentPartial_valIndex {n : Nat}
+    (f : TotalFunction n) (T : PartialFunction n) (i : Fin (Partial.tableLen n)) :
+    rawEncodingOfConsistentPartial f T (Partial.valIndex i) = (T i).getD (f i) := by
+  have hlt : ¬ ((Partial.valIndex i : Fin (Partial.inputLen n)).1 < Partial.tableLen n) := by
+    exact valIndex_not_lt_tableLen i
+  have hjNat :
+      ((Partial.valIndex i : Fin (Partial.inputLen n)).1 - Partial.tableLen n) = i.1 := by
+    simp [Partial.valIndex]
+  simp [rawEncodingOfConsistentPartial, hlt, hjNat, Partial.valIndex]
+
+private lemma consistentWithTotal_decode_rawEncodingOfConsistentPartial {n : Nat}
+    (f : TotalFunction n) (T : PartialFunction n) :
+    consistentWithTotal (decodePartial (rawEncodingOfConsistentPartial f T)) f := by
+  intro i
+  cases hTi : T i with
+  | none =>
+      have hmask : Partial.maskPart (rawEncodingOfConsistentPartial f T) i = true := by
+        simp [Partial.maskPart, rawEncodingOfConsistentPartial_maskIndex, hTi]
+      have hval : Partial.valPart (rawEncodingOfConsistentPartial f T) i = f i := by
+        simp [Partial.valPart, rawEncodingOfConsistentPartial_valIndex, hTi]
+      simp [decodePartial, hmask, hval]
+  | some b =>
+      have hmask : Partial.maskPart (rawEncodingOfConsistentPartial f T) i = false := by
+        simp [Partial.maskPart, rawEncodingOfConsistentPartial_maskIndex, hTi]
+      simp [decodePartial, hmask]
+
+private lemma partialOfRawEncoding_rawEncodingOfConsistentPartial {n : Nat}
+    (f : TotalFunction n) (T : PartialFunction n) :
+    partialOfRawEncoding (rawEncodingOfConsistentPartial f T) = T := by
+  funext i
+  cases hTi : T i with
+  | none =>
+      simp [partialOfRawEncoding, Partial.maskPart, Partial.valPart,
+        rawEncodingOfConsistentPartial_maskIndex, rawEncodingOfConsistentPartial_valIndex, hTi]
+  | some b =>
+      simp [partialOfRawEncoding, Partial.maskPart, Partial.valPart,
+        rawEncodingOfConsistentPartial_maskIndex, rawEncodingOfConsistentPartial_valIndex, hTi]
+
+private lemma rawEncodingOfConsistentPartial_partialOfRawEncoding {n : Nat}
+    (f : TotalFunction n)
+    (x : {x : Core.BitVec (Partial.inputLen n) // consistentWithTotal (decodePartial x) f}) :
+    rawEncodingOfConsistentPartial f (partialOfRawEncoding x.1) = x.1 := by
+  funext j
+  by_cases hj : (j : Nat) < Partial.tableLen n
+  · let i : Fin (Partial.tableLen n) := ⟨j, hj⟩
+    have hji : Partial.maskIndex i = j := by
+      apply Fin.ext
+      rfl
+    by_cases hxj : x.1 j
+    · simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, Partial.maskPart, hji, hj, i, hxj]
+    · simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, Partial.maskPart, hji, hj, i, hxj]
+  · let kNat := (j : Nat) - Partial.tableLen n
+    have hlt : kNat < Partial.tableLen n := by
+      have hlt' : (j : Nat) < Partial.tableLen n + Partial.tableLen n := by
+        simpa [Partial.inputLen, two_mul] using j.2
+      have hge : Partial.tableLen n ≤ (j : Nat) := Nat.le_of_not_gt hj
+      have hlt_decomp :
+          (j : Nat) - Partial.tableLen n + Partial.tableLen n <
+            Partial.tableLen n + Partial.tableLen n := by
+        simpa [Nat.sub_add_cancel hge] using hlt'
+      exact lt_of_add_lt_add_right hlt_decomp
+    let i : Fin (Partial.tableLen n) := ⟨kNat, hlt⟩
+    have hji : Partial.valIndex i = j := by
+      apply Fin.ext
+      simpa [Nat.add_comm] using (Nat.sub_add_cancel (Nat.le_of_not_gt hj))
+    have hi_eq :
+        (⟨(j : Nat) - Partial.tableLen n, by
+            have hlt' : (j : Nat) < Partial.tableLen n + Partial.tableLen n := by
+              simpa [Partial.inputLen, two_mul] using j.2
+            have hge : Partial.tableLen n ≤ (j : Nat) := Nat.le_of_not_gt hj
+            have hlt_decomp :
+                (j : Nat) - Partial.tableLen n + Partial.tableLen n <
+                  Partial.tableLen n + Partial.tableLen n := by
+              simpa [Nat.sub_add_cancel hge] using hlt'
+            exact lt_of_add_lt_add_right hlt_decomp⟩ :
+          Fin (Partial.tableLen n)) = i := by
+      apply Fin.ext
+      rfl
+    by_cases hmask : Partial.maskPart x.1 i
+    · have hval : Partial.valPart x.1 i = f i := by
+        have hmask' : x.1 (Partial.maskIndex i) = true := by
+          simpa [Partial.maskPart] using hmask
+        have hx := x.2 i
+        simpa [decodePartial, Partial.maskPart, Partial.valPart, hmask'] using hx
+      calc
+        rawEncodingOfConsistentPartial f (partialOfRawEncoding x.1) j
+            = f i := by
+                simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, hji, hj, i, hi_eq, hmask]
+        _ = Partial.valPart x.1 i := hval.symm
+        _ = x.1 (Partial.valIndex i) := rfl
+        _ = x.1 j := by simpa [hji]
+    · calc
+        rawEncodingOfConsistentPartial f (partialOfRawEncoding x.1) j
+            = Partial.valPart x.1 i := by
+                simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, hji, hj, i, hi_eq, hmask]
+        _ = x.1 (Partial.valIndex i) := rfl
+        _ = x.1 j := by simpa [hji]
+
+/-- Raw encodings consistent with `f` are equivalent to partial tables. -/
+private noncomputable def rawEncodingConsistentEquivPartial {n : Nat}
+    (f : TotalFunction n) :
+    PartialFunction n ≃ {x : Core.BitVec (Partial.inputLen n) //
+      consistentWithTotal (decodePartial x) f} where
+  toFun T := ⟨rawEncodingOfConsistentPartial f T,
+    consistentWithTotal_decode_rawEncodingOfConsistentPartial f T⟩
+  invFun x := partialOfRawEncoding x.1
+  left_inv := partialOfRawEncoding_rawEncodingOfConsistentPartial f
+  right_inv := by
+    intro x
+    apply Subtype.ext
+    exact rawEncodingOfConsistentPartial_partialOfRawEncoding f x
+
+/-- Exact count of raw encodings whose decoded table is consistent with `f`. -/
+noncomputable instance rawEncodingConsistentFintype {n : Nat} (f : TotalFunction n) :
+    Fintype {x : Core.BitVec (Partial.inputLen n) //
+      consistentWithTotal (decodePartial x) f} := by
+  classical
+  infer_instance
+
+theorem card_rawEncodings_consistentWithTotal_eq_three_pow {n : Nat}
+    (f : TotalFunction n) :
+    Fintype.card {x : Core.BitVec (Partial.inputLen n) //
+      consistentWithTotal (decodePartial x) f} =
+      3 ^ Partial.tableLen n := by
+  classical
+  have hEquiv := Fintype.card_congr (rawEncodingConsistentEquivPartial (f := f))
+  simpa [card_partialTables] using hEquiv.symm
+
+/-- Raw encodings whose decoded partial table is consistent with `f`. -/
+noncomputable def rawEncodingsConsistentWithTotal {n : Nat}
+    (f : TotalFunction n) : Finset (Core.BitVec (Partial.inputLen n)) :=
+  @Finset.filter _ (fun x => consistentWithTotal (decodePartial x) f)
+    (Classical.decPred _) Finset.univ
+
+/-- Finset version of `card_rawEncodings_consistentWithTotal_eq_three_pow`. -/
+theorem card_rawEncodingsConsistentWithTotal_eq_three_pow {n : Nat}
+    (f : TotalFunction n) :
+    (rawEncodingsConsistentWithTotal f).card =
+      3 ^ Partial.tableLen n := by
+  classical
+  have hcard :=
+    card_rawEncodings_consistentWithTotal_eq_three_pow (f := f)
+  rw [← hcard]
+  exact (Fintype.card_of_subtype
+    (α := Core.BitVec (Partial.inputLen n))
+    (p := fun x => consistentWithTotal (decodePartial x) f)
+    (rawEncodingsConsistentWithTotal f)
+    (by
+      intro x
+      simpa [rawEncodingsConsistentWithTotal])).symm
+
+/-!
   ### Согласованные тотальные функции
 
   Эти определения и леммы дают количественную оценку числа тотальных функций,

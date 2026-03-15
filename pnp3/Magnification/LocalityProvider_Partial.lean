@@ -1737,6 +1737,131 @@ theorem generic_extracted_local_core_provider_of_multiswitching_contract
   }⟩
 
 /--
+The current support-based extraction is semantically stable for the formula
+derived general solver: restricting outside `FormulaCircuit.support` does not
+change the solver decision.
+-/
+theorem solverDecideFacts_stable_of_current_extracted_restriction
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (x : Core.BitVec (Models.partialInputLen p)) :
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive : Finset (Fin (Models.partialInputLen p)) :=
+      ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    ThirdPartyFacts.solverDecideFacts (p := p) solver
+      (rFacts.apply (ThirdPartyFacts.castBitVec hlen.symm x))
+    =
+    ThirdPartyFacts.solverDecideFacts (p := p) solver
+      (ThirdPartyFacts.castBitVec hlen.symm x) := by
+  classical
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  have hstablePartial :
+      ∀ y : Core.BitVec (Models.partialInputLen p),
+        solver.decide (rPartial.apply y) = solver.decide y := by
+    intro y
+    change
+      ComplexityInterfaces.FormulaCircuit.eval c (rPartial.apply y) =
+        ComplexityInterfaces.FormulaCircuit.eval c y
+    apply ComplexityInterfaces.FormulaCircuit.eval_eq_of_eq_on_support
+    intro i hi
+    exact Facts.LocalityLift.Restriction.apply_alive rPartial y hi
+  have hstableCast :
+      ∀ y : Core.BitVec (Models.partialInputLen p),
+        ThirdPartyFacts.solverDecideFacts (p := p) solver
+            (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply y)) =
+          ThirdPartyFacts.solverDecideFacts (p := p) solver
+            (ThirdPartyFacts.castBitVec hlen.symm y) := by
+    intro y
+    change
+      solver.decide
+          (ThirdPartyFacts.castBitVec hlen
+            (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply y))) =
+        solver.decide
+          (ThirdPartyFacts.castBitVec hlen
+            (ThirdPartyFacts.castBitVec hlen.symm y))
+    simpa [ThirdPartyFacts.castBitVec_castBitVec_symm] using hstablePartial y
+  have hstableRaw :=
+    ThirdPartyFacts.stable_of_stable_cast
+      (h := hlen.symm)
+      (decide := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+      (r := rPartial)
+      hstableCast
+  simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+    hstableRaw (ThirdPartyFacts.castBitVec hlen.symm x)
+
+/--
+Current extraction route promoted to a provenance-aware weak-core provider.
+
+This theorem does not use the stronger generic-core interface: it attaches the
+needed promise-preservation fact directly to the weak core produced by the
+current support-based extraction.
+-/
+theorem promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching_contract
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaPromisePreservingWeakGenericExtractedLocalCoreProviderPartial := by
+  intro p hFormula
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) :=
+    ComplexityInterfaces.FormulaCircuit.support c
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  let hlen :
+    Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+      Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rFacts :
+    Facts.LocalityLift.Restriction
+      (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+    ThirdPartyFacts.castRestriction hlen.symm rPartial
+  obtain ⟨_, _, _, _, _, _, hpoly, hsmall0, hhalf⟩ :=
+    hMS.package (p := p) hFormula
+  refine ⟨{
+    core := {
+      rFacts := rFacts
+      polylogAlive := hpoly
+      smallEnough := by
+        simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using hsmall0
+      quarterAlive := hhalf
+    }
+    preserveOnPromise := ?_
+  }⟩
+  intro x _hxPromise
+  simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+    solverDecideFacts_stable_of_current_extracted_restriction
+      (p := p) hFormula x
+
+/--
 Combined projection for the strengthened multi-switching contract:
 it yields both the numeric support-bounds fragment used by locality lifting
 and the semantic link tying the AC0-family payload to the extracted formula.
@@ -2434,6 +2559,17 @@ theorem structuredLocalityProviderPartial_of_multiswitching_contract_via_generic
     StructuredLocalityProviderPartial :=
   structuredLocalityProviderPartial_of_generic_extracted_local_core_provider
     (generic_extracted_local_core_provider_of_multiswitching_contract hMS)
+
+/--
+Same endpoint as `structuredLocalityProviderPartial_of_multiswitching_contract`,
+but routed through the provenance-aware weak-core provider extracted from the
+current support-based restriction.
+-/
+theorem structuredLocalityProviderPartial_of_multiswitching_contract_via_promisePreservingWeakCore
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    StructuredLocalityProviderPartial :=
+  structuredLocalityProviderPartial_of_promisePreservingWeakGenericCoreProvider
+    (promisePreservingWeakGenericExtractedLocalCoreProvider_of_multiswitching_contract hMS)
 
 /--
 I-2 direct closure contract: explicit certificate-first data sufficient to

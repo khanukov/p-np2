@@ -96,6 +96,46 @@ structure FormulaSemanticMultiSwitchingProvider where
               (ThirdPartyFacts.castBitVec hsame x))
 
 /--
+Intermediate source-side certificate for one extracted strict formula witness.
+
+This packages exactly the objects that are naturally produced by the current
+semantic multi-switching layer:
+1) AC0-family provenance,
+2) a concrete multi-switching witness,
+3) the derived polylog witness,
+4) the semantic link back to the extracted strict formula.
+
+Importantly, this certificate still does *not* choose any
+`Facts.LocalityLift.Restriction`; that remains the next constructive frontier.
+-/
+structure SemanticSwitchingCertificatePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  ac0 : ThirdPartyFacts.AC0Parameters
+  F : Core.Family ac0.n
+  hsame : ac0.n = Models.partialInputLen p
+  hFam : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F
+  w : ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F
+  hpolyW : ThirdPartyFacts.AC0PolylogBoundWitness ac0 F hFam
+  hLink :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ f : Core.BitVec ac0.n → Bool,
+      f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)
+
+/--
+Provider interface for the intermediate source-side switching certificate.
+-/
+def SemanticSwitchingCertificateProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (SemanticSwitchingCertificatePartial hFormula)
+
+/--
 Point-assignments list for `x`: one bit-fix `(i, x i)` for every input index.
 -/
 private noncomputable def pointAssignments {n : Nat}
@@ -412,6 +452,40 @@ noncomputable def formulaSemanticMultiSwitchingProvider_internal :
   refine ⟨f, by simp [F], ?_⟩
   intro x
   simp [f, c, wf]
+
+/--
+Package the current semantic multi-switching provider into the explicit
+source-side certificate layer.
+-/
+theorem semanticSwitchingCertificate_of_provider
+    (hSem : FormulaSemanticMultiSwitchingProvider)
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    Nonempty (SemanticSwitchingCertificatePartial hFormula) := by
+  classical
+  obtain ⟨ac0, F, hsame, hFam, hMSw, hLink⟩ :=
+    hSem.package (p := p) hFormula
+  obtain ⟨w⟩ := hMSw
+  have hpolyW : ThirdPartyFacts.AC0PolylogBoundWitness ac0 F hFam := by
+    simpa using ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching ac0 F w
+  exact ⟨{
+    ac0 := ac0
+    F := F
+    hsame := hsame
+    hFam := hFam
+    w := w
+    hpolyW := hpolyW
+    hLink := hLink
+  }⟩
+
+/--
+Provider-level version of `semanticSwitchingCertificate_of_provider`.
+-/
+theorem semanticSwitchingCertificateProvider_of_provider
+    (hSem : FormulaSemanticMultiSwitchingProvider) :
+    SemanticSwitchingCertificateProviderPartial := by
+  intro p hFormula
+  exact semanticSwitchingCertificate_of_provider hSem (p := p) hFormula
 
 /--
 Audit helper: the semantic provider carries an explicit semantic link from some

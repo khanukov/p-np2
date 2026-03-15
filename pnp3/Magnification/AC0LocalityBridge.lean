@@ -1,4 +1,7 @@
 import AC0.MultiSwitching.Main
+import Counting.ShannonCounting
+import Core.Atlas
+import Core.BooleanBasics
 import Core.ShrinkageWitness
 import Complexity.Interfaces
 import Models.Model_PartialMCSP
@@ -385,38 +388,71 @@ private lemma semanticParams_weak_le_polylog {n : Nat}
     (Nat.max 2 (truthTableDNF f).terms.length)
     (Nat.le_max_left 2 (truthTableDNF f).terms.length)
 
-private theorem semanticMultiSwitchingWitness_nonempty {n : Nat}
+private noncomputable def semanticMultiSwitchingWitness {n : Nat}
     (f : Core.BitVec n → Bool) :
-    Nonempty
-      (ThirdPartyFacts.AC0MultiSwitchingWitness
-        (semanticParams f)
-        ([f] : Core.Family n)) := by
+    ThirdPartyFacts.AC0MultiSwitchingWitness
+      (semanticParams f)
+      ([f] : Core.Family n) := by
   classical
   let params := semanticParams f
   let F : Core.Family params.n := [f]
   have hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
     simpa [params, F] using semanticFamilyWitnessProp f
-  obtain ⟨t, ε, S, hFamilyEq, ht, hε, htStrong, hε0, hεInv⟩ :=
-    ThirdPartyFacts.shrinkage_for_AC0 params F hF
-  have hWeakLePolylog :
-      ThirdPartyFacts.ac0DepthBound_weak params ≤
-        Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-    simpa [params] using semanticParams_weak_le_polylog f
-  have hStrongEqPolylog :
-      ThirdPartyFacts.ac0DepthBound_strong params =
-        Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-    unfold ThirdPartyFacts.ac0DepthBound_strong
-    exact max_eq_right hWeakLePolylog
+  let hSingle :=
+    ThirdPartyFacts.partial_shrinkage_single_circuit_general params (semanticCircuit f)
+  let ℓ := Classical.choose hSingle
+  let rest := Classical.choose_spec hSingle
+  let C := Classical.choose rest
+  have hprop := Classical.choose_spec rest
+  have hℓ0 : ℓ = 0 := hprop.1
+  have hDepthC : C.depthBound ≤ (semanticCircuit f).subcubes.length := hprop.2.1
+  have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := hprop.2.2
+  let S : Core.Shrinkage params.n := C.toShrinkage
+  have hEvalEq : ThirdPartyFacts.AC0Circuit.eval (semanticCircuit f) = f := by
+    funext x
+    exact semanticCircuit_computes f x
+  have hFamilyEq :
+      S.F = F := by
+    simpa [S, F, hEvalEq] using (Core.PartialCertificate.toShrinkage_family C)
+  have hDepthSubcubes :
+      S.t ≤ (semanticCircuit f).subcubes.length := by
+    have hDepthS : S.t = C.depthBound + ℓ := by
+      rfl
+    rw [hDepthS, hℓ0]
+    simpa using hDepthC
+  have hDepthSize :
+      S.t ≤ ThirdPartyFacts.AC0Circuit.size (semanticCircuit f) := by
+    simpa [ThirdPartyFacts.AC0Circuit.size] using
+      (hDepthSubcubes.trans_eq (ThirdPartyFacts.AC0Circuit.subcubes_length (semanticCircuit f)))
+  have hDepthM : S.t ≤ params.M := by
+    exact hDepthSize.trans (by simpa [params] using semanticCircuit_size_le f)
+  have hM2 : 2 ≤ params.M := by
+    simpa [params] using semanticParams_M_ge_two f
+  have hM1 : 1 ≤ params.M := by
+    exact le_trans (by decide : 1 ≤ 2) hM2
+  have hMleWeak : params.M ≤ ThirdPartyFacts.ac0DepthBound_weak params := by
+    unfold ThirdPartyFacts.ac0DepthBound_weak
+    have hMul : params.M * 1 ≤ params.M * params.M := by
+      exact Nat.mul_le_mul_left _ hM1
+    simpa using hMul
   have hDepthPolylog :
       S.t ≤ Nat.pow (Nat.log2 (params.M + 2)) (params.d + 1) := by
-    have hDepthStrong : S.t ≤ ThirdPartyFacts.ac0DepthBound_strong params := by
-      simpa [ht] using htStrong
-    simpa [hStrongEqPolylog] using hDepthStrong
+    exact hDepthM.trans <| hMleWeak.trans <| by
+      simpa [params] using semanticParams_weak_le_polylog f
   have hEpsNonneg : (0 : Core.Q) ≤ S.ε := by
-    simpa [hε] using hε0
+    have hRewrite : S.ε = C.epsilon := by
+      simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
+    rw [hRewrite, hε]
+    apply div_nonneg
+    · norm_num
+    ·
+      have : (0 : Nat) ≤ params.n + 2 := by omega
+      exact_mod_cast this
   have hEpsLeInv : S.ε ≤ (1 : Core.Q) / (params.n + 2) := by
-    simpa [hε] using hεInv
-  refine ⟨{
+    have hRewrite : S.ε = C.epsilon := by
+      simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
+    rw [hRewrite, hε]
+  refine {
     base := by
       simpa [params, F] using (Classical.choice hF)
     shrinkage := S
@@ -424,7 +460,33 @@ private theorem semanticMultiSwitchingWitness_nonempty {n : Nat}
     depth_le_polylog := hDepthPolylog
     epsilon_nonneg := hEpsNonneg
     epsilon_le_inv := hEpsLeInv
-  }⟩
+  }
+
+private theorem semanticMultiSwitchingWitness_nonempty {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    Nonempty
+      (ThirdPartyFacts.AC0MultiSwitchingWitness
+        (semanticParams f)
+        ([f] : Core.Family n)) := by
+  exact ⟨semanticMultiSwitchingWitness f⟩
+
+@[simp] private theorem semanticMultiSwitchingWitness_exact_epsilon {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    (semanticMultiSwitchingWitness f).shrinkage.ε =
+      (1 : Core.Q) / ((semanticParams f).n + 2) := by
+  classical
+  let params := semanticParams f
+  let hSingle :=
+    ThirdPartyFacts.partial_shrinkage_single_circuit_general params (semanticCircuit f)
+  let ℓ := Classical.choose hSingle
+  let rest := Classical.choose_spec hSingle
+  let C := Classical.choose rest
+  have hprop := Classical.choose_spec rest
+  have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := hprop.2.2
+  have hRewrite :
+      (semanticMultiSwitchingWitness f).shrinkage.ε = C.epsilon := by
+    simp [semanticMultiSwitchingWitness, params, hSingle, ℓ, rest, C]
+  exact hRewrite.trans hε
 
 /--
 For the current singleton semantic route, there exists a working atlas whose
@@ -457,6 +519,152 @@ theorem semanticSingletonAtlas_exact_epsilon {n : Nat}
   · have hSε : S.ε = C.epsilon := by
       simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
     simpa [A, Core.Atlas.ofPDT, hSε] using hε
+
+@[simp] private lemma two_pow_partialInputLen_eq_four_pow_tableLen
+    (p : GapPartialMCSPParams) :
+    (2 ^ Models.partialInputLen p : Nat) = 4 ^ Models.Partial.tableLen p.n := by
+  simp [Models.partialInputLen, Models.Partial.inputLen, Models.Partial.tableLen, pow_mul]
+
+/--
+For the direct singleton route induced by a formula witness on the fixed slice,
+the linked function density is exactly the raw YES-density on that slice.
+-/
+theorem current_singleton_yesDensity_eq_yesInputSet_density
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
+        (2 ^ Models.partialInputLen p : Nat)
+      =
+    ((Counting.yesInputSet p).card : Core.Q) /
+        (4 ^ Models.Partial.tableLen p.n : Nat) := by
+  classical
+  intro wf c f
+  have hset :
+      (Finset.univ.filter (fun x => f x = true)) = Counting.yesInputSet p := by
+    ext x
+    have hcorrect := wf.correct (Models.partialInputLen p) x
+    simpa [Counting.yesInputSet, f, hcorrect]
+  rw [hset, two_pow_partialInputLen_eq_four_pow_tableLen]
+
+theorem current_singleton_yesDensity_le_circuitCountBound_mul_three_quarters_pow
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
+        (2 ^ Models.partialInputLen p : Nat)
+      ≤
+    (Models.circuitCountBound p.n p.sYES : Core.Q) *
+      ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n := by
+  intro wf c f
+  rw [current_singleton_yesDensity_eq_yesInputSet_density hFormula]
+  exact Counting.yesDensity_yesInputSet_le_circuitCountBound_mul_three_quarters_pow p
+
+/--
+For the direct singleton semantic route used by the internal provider, the
+polylog common-PDT carries the exact singleton error `1 / (n + 2)`.
+-/
+theorem current_singleton_commonPDT_exact_epsilon {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+      simpa [params, F] using semanticFamilyWitnessProp f
+    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+      simpa [params, F] using
+        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+          params F (semanticMultiSwitchingWitness f)
+    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+    (Core.CommonPDT.toAtlas C).epsilon = (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro params F hF hpoly C
+  have hε :
+      (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε
+        = (1 : Core.Q) / (params.n + 2) := by
+    change hpoly.shrinkage.ε = (1 : Core.Q) / (params.n + 2)
+    simpa [hpoly,
+      ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching,
+      ThirdPartyFacts.ac0PolylogBoundWitness_by_depth,
+      semanticMultiSwitchingWitness] using semanticMultiSwitchingWitness_exact_epsilon f
+  calc
+    (Core.CommonPDT.toAtlas C).epsilon
+        = C.epsilon := by
+          rfl
+    _ = (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε := by
+          unfold C
+          simp [ThirdPartyFacts.commonPDT_from_AC0_with_polylog,
+            ThirdPartyFacts.certificate_from_AC0_with_polylog_family]
+    _ = (1 : Core.Q) / (params.n + 2) := hε
+
+/--
+Under an explicit comparison hypothesis, the current singleton source route
+admits the empty selector list as a valid `WorksFor` witness for the
+formula-linked function. This is enough to rule out any derivation of a chosen
+selector `β` from the current theorem layer alone.
+-/
+theorem empty_witness_admissible_for_current_singleton_route
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (hCmp :
+      (Models.circuitCountBound p.n p.sYES : Core.Q) *
+        ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n
+      ≤ (1 : Core.Q) / (Models.partialInputLen p + 2)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+      simpa [params, F] using semanticFamilyWitnessProp f
+    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+      simpa [params, F] using
+        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+          params F (semanticMultiSwitchingWitness f)
+    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+    ∃ Rf : List (Core.Subcube params.n),
+      Core.listSubset Rf (Core.CommonPDT.toAtlas C).dict ∧
+      Core.errU f Rf ≤ (Core.CommonPDT.toAtlas C).epsilon := by
+  classical
+  intro wf c f params F hF hpoly C
+  have hDensity :
+      ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
+        (2 ^ Models.partialInputLen p : Nat)
+        ≤
+      (Models.circuitCountBound p.n p.sYES : Core.Q) *
+        ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n := by
+    exact current_singleton_yesDensity_le_circuitCountBound_mul_three_quarters_pow hFormula
+  have hDensity' :
+      ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
+        (2 ^ Models.partialInputLen p : Nat)
+        ≤ (1 : Core.Q) / (Models.partialInputLen p + 2) := hDensity.trans hCmp
+  have hEps :
+      (Core.CommonPDT.toAtlas C).epsilon = (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+    simpa [C] using current_singleton_commonPDT_exact_epsilon f
+  have hEmpty :
+      ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
+        (2 ^ Models.partialInputLen p : Nat)
+        ≤ (Core.CommonPDT.toAtlas C).epsilon := by
+    rw [hEps]
+    exact hDensity'
+  have hEmpty' :
+      ((Finset.univ.filter (fun x => f x = true)).card : Core.Q) /
+        (2 ^ Models.partialInputLen p) ≤ (Core.CommonPDT.toAtlas C).epsilon := by
+    simpa [-two_pow_partialInputLen_eq_four_pow_tableLen] using hEmpty
+  exact Core.worksFor_empty_of_yesDensity_le_epsilon
+    (dict := (Core.CommonPDT.toAtlas C).dict)
+    (ε := (Core.CommonPDT.toAtlas C).epsilon)
+    (f := f)
+    hEmpty'
 
 /--
 Internal constructive semantic provider for A9:

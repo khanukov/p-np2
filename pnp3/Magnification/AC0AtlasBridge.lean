@@ -106,6 +106,66 @@ theorem semanticSwitchingScenarioBudget_no_large_gap
   exact LowerBounds.no_large_subset_of_boundedAtlasScenario pack.pack.scenario
 
 /--
+The current source-side scenario budget yields a concrete linked function `f`
+and a natural testset `T = mismatchSet (coveredB S) f` whose size is controlled
+by the atlas error bound.
+
+This is the exact singleton-compatible payload extracted from the current
+`WorksFor` witness before any attempt to force `T` to be polylogarithmically
+small.
+-/
+theorem linked_testset_of_semanticSwitchingScenarioBudget
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pack : SemanticSwitchingScenarioBudgetPartial hFormula) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ f : Core.BitVec pack.cert.ac0.n → Bool,
+      f ∈ pack.cert.F ∧
+      (∀ x : Core.BitVec pack.cert.ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec pack.cert.hsame x)) ∧
+      ∃ T : Finset (Core.BitVec pack.cert.ac0.n),
+        f ∈ Counting.ApproxOnTestset
+          (R := pack.pack.scenario.atlas.dict)
+          (k := pack.pack.scenario.k)
+          (T := T) ∧
+        ((T.card : Core.Q)
+          ≤ (1 : Core.Q) / (pack.cert.ac0.n + 2) *
+              ((Nat.pow 2 pack.cert.ac0.n : Nat) : Core.Q)) := by
+  classical
+  intro wf c
+  rcases pack.cert.hLink with ⟨f, hfF, hfEval⟩
+  have hfSc : f ∈ pack.pack.scenario.family := by
+    simpa [pack.pack.family_eq] using hfF
+  rcases pack.pack.scenario.bounded f hfSc with ⟨S, hlen, hsub, herr⟩
+  let T : Finset (Core.BitVec pack.cert.ac0.n) :=
+    Counting.mismatchSet (fun x => Core.coveredB S x) f
+  have hApprox :
+      f ∈ Counting.ApproxOnTestset
+        (R := pack.pack.scenario.atlas.dict)
+        (k := pack.pack.scenario.k)
+        (T := T) := by
+    exact Counting.approxOnTestset_of_mismatchSet hlen hsub
+  have hCardErr :
+      ((T.card : Core.Q)
+        ≤ pack.pack.scenario.atlas.epsilon *
+            ((Nat.pow 2 pack.cert.ac0.n : Nat) : Core.Q)) := by
+    exact Counting.mismatchSet_card_le_of_errU_le f S
+      pack.pack.scenario.atlas.epsilon herr
+  have hPowNonneg :
+      (0 : Core.Q) ≤ ((Nat.pow 2 pack.cert.ac0.n : Nat) : Core.Q) := by
+    positivity
+  have hCard :
+      ((T.card : Core.Q)
+        ≤ (1 : Core.Q) / (pack.cert.ac0.n + 2) *
+            ((Nat.pow 2 pack.cert.ac0.n : Nat) : Core.Q)) := by
+    exact le_trans hCardErr <|
+      mul_le_mul_of_nonneg_right pack.pack.epsilon_le_inv hPowNonneg
+  refine ⟨f, hfF, hfEval, T, hApprox, hCard⟩
+
+/--
 Lift the atlas bridge to the provider level.
 -/
 theorem boundedAtlasScenarioProvider_of_semanticSwitchingCertificateProvider

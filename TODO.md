@@ -12,6 +12,21 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 - Baseline checks: `./scripts/check.sh` and current audit tests pass
 - Final API remains conditional (`pnp3/Magnification/FinalResult.lean`)
 
+## Current frontier (2026-03-15)
+
+1. The current singleton `β`-route is now only a decision layer:
+   `CurrentSingletonRouteWitnessProp` records when the theorem layer already
+   admits the empty selector witness. Without a family-specific nat comparison
+   theorem, this route remains nongeneric.
+2. The source semantic certificate now has a named atlas/downstream bridge:
+   `pnp3/Magnification/AC0AtlasBridge.lean` exposes
+   `SemanticSwitchingCertificatePartial -> BoundedAtlasScenario/ScenarioBudget`.
+3. The next constructive frontier is no longer locality plumbing. It is the
+   family/cardinality bridge from source semantic family data (`cert.F`,
+   scenario budget, atlas package) to the easy-family contradiction payload
+   used in `LowerBounds/AntiChecker_Partial.lean`, or a stronger source theorem
+   that supplies such data directly.
+
 ## What is already closed
 
 1. AC0/formula separation wiring is present and compiles.
@@ -120,9 +135,10 @@ Verification:
 2. `lake build` passes.
 3. `./scripts/check.sh` passes.
 
-## Active next step: asymptotic formula-collapse (current focus)
+## Formula-track milestone context
 
-Status: in progress on 2026-03-15 for active `codex-refactoring` route.
+Status: infrastructure substantially internalized on 2026-03-15 for active
+`codex-refactoring` route.
 
 Scope:
 
@@ -191,14 +207,14 @@ Progress (2026-03-15):
 
 Remaining for this milestone:
 
-1. Internalize
-   `formula_support_bounds_internal : FormulaSupportRestrictionBoundsPartial`.
-2. Build provider construction from that internal theorem in the core route,
-   so the asymptotic collapse no longer depends on externally passed
-   `StructuredLocalityProviderPartial`.
-3. Promote a direct theorem surface
-   `PpolyFormula (gapPartialMCSP_AsymptoticLanguage spec) → False`
-   without external provider parameters.
+1. Decide whether the active lower-bound route should proceed through the new
+   atlas/scenario-budget bridge or through a stronger source theorem that
+   supplies easy-family/cardinality data directly.
+2. If a concrete intended asymptotic family is introduced, add a family-
+   specific nat comparison theorem for the singleton decision layer; otherwise
+   treat the chosen-`β` route as nongeneric.
+3. Only after (1)-(2), decide whether an additional internalization step is
+   still needed for the asymptotic formula-collapse endpoint.
 
 Acceptance criteria for this milestone:
 

@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-03-14
+Updated: 2026-03-15
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Release positioning for current tree: `RELEASE_RC.md`.
@@ -13,6 +13,24 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - Current audit/regression tests pass (rechecked on 2026-03-14):
   `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`
+
+## Current frontier (2026-03-15)
+
+- The current singleton `β`-route is no longer an open plumbing problem.
+  It has been reduced to a decision layer:
+  `CurrentSingletonRouteWitnessProp` plus the nat-crossmul comparison wrapper.
+- This route is currently nongeneric: without a family-specific comparison
+  theorem controlling `sYES`, the repository neither proves nor refutes a
+  chosen selector witness from the current singleton theorem layer.
+- Atlas/Rf compatibility is now promoted from scratch to named API:
+  `pnp3/Magnification/AC0AtlasBridge.lean` exposes bridges from
+  `SemanticSwitchingCertificatePartial` to
+  `BoundedAtlasScenario` and `ScenarioBudget`.
+- The next blocker is now family/cardinality packaging:
+  bridging source semantic family data (`cert.F`) to the
+  easy-family/large-cardinality contradiction payload in
+  `LowerBounds/AntiChecker_Partial.lean`, or replacing that need with a
+  stronger source theorem.
 
 ## Active final theorem surface
 
@@ -38,6 +56,10 @@ Formula-route progress note (2026-03-15):
   and active formula/real finals derive support-bounds and provider internally
   via `formula_support_bounds_from_multiswitching` and
   `structuredLocalityProviderPartial_of_supportBounds`.
+- Exact singleton `epsilon`, raw YES-density bounds, and the current singleton
+  empty-witness decision layer are now formalized in-repo.
+- Source semantic certificates now compose directly with atlas/downstream
+  scenario objects through `Magnification.AC0AtlasBridge`.
 
 ## Interpretation
 

@@ -609,6 +609,9 @@ Under an explicit comparison hypothesis, the current singleton source route
 admits the empty selector list as a valid `WorksFor` witness for the
 formula-linked function. This is enough to rule out any derivation of a chosen
 selector `β` from the current theorem layer alone.
+
+This is a decision-layer witness only. It does not encode or imply any chosen
+selector/subcube witness.
 -/
 def CurrentSingletonRouteWitnessProp
     {p : GapPartialMCSPParams}

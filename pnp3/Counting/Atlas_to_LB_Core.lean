@@ -157,6 +157,14 @@ Precomposition of a Boolean function by a coordinate permutation.
 def permuteFun {m : Nat} (π : Equiv.Perm (Fin m)) (f : Domain m → Bool) : Domain m → Bool :=
   fun x => f (permuteVec π x)
 
+/--
+A dictionary is stabilized by `π` if transporting every subcube by `π.symm`
+returns the same dictionary list.
+-/
+def DictStabilizes {m : Nat}
+    (R : List (Subcube m)) (π : Equiv.Perm (Fin m)) : Prop :=
+  R.map (permuteSubcube π.symm) = R
+
 lemma memB_perm {m : Nat}
     (π : Equiv.Perm (Fin m)) (β : Subcube m) (x : Domain m) :
     memB (permuteSubcube π β) (permuteVec π x) = memB β x := by
@@ -231,6 +239,15 @@ lemma unionClass_perm {m : Nat}
     exact List.mem_map.mpr ⟨β0, hsub hβ0, rfl⟩
   · exact permute_coveredB π S
 
+lemma unionClass_perm_fixed {m : Nat}
+    (π : Equiv.Perm (Fin m))
+    {R : List (Subcube m)} {k : Nat} {g : Domain m → Bool}
+    (hstab : DictStabilizes R π)
+    (hg : g ∈ UnionClass R k) :
+    permuteFun π g ∈ UnionClass R k := by
+  rw [← hstab]
+  exact unionClass_perm (π := π) (R := R) (k := k) (g := g) hg
+
 lemma approxClass_perm {m : Nat}
     (π : Equiv.Perm (Fin m))
     {R : List (Subcube m)} {k : Nat} {ε : Q} {f : Domain m → Bool}
@@ -240,6 +257,15 @@ lemma approxClass_perm {m : Nat}
   rcases hf with ⟨g, hgUnion, herr⟩
   refine ⟨permuteFun π g, unionClass_perm π hgUnion, ?_⟩
   simpa [distU_perm] using herr
+
+lemma approxClass_perm_fixed {m : Nat}
+    (π : Equiv.Perm (Fin m))
+    {R : List (Subcube m)} {k : Nat} {ε : Q} {f : Domain m → Bool}
+    (hstab : DictStabilizes R π)
+    (hf : f ∈ ApproxClass (R := R) (k := k) (ε := ε)) :
+    permuteFun π f ∈ ApproxClass (R := R) (k := k) (ε := ε) := by
+  rw [← hstab]
+  exact approxClass_perm (π := π) (R := R) (k := k) (ε := ε) (f := f) hf
 
 /-- Нулевая ошибка на расстоянии соответствует точному совпадению функций. -/
 lemma distU_eq_zero_of_eq

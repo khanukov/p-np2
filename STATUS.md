@@ -50,6 +50,10 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - More sharply: the current symmetry/orbit idea is blocked not by
   `ApproxClass` closure itself, but by the need for one common fixed
   dictionary/union budget for all members of `Y`.
+- The exact scratch frontier is now explicit:
+  for a source-produced scenario dictionary `R = scenario.atlas.dict`, the
+  next red goal is to exhibit a nontrivial permutation `π` with
+  `R.map (permuteSubcube π.symm) = R`.
 
 ## Active final theorem surface
 

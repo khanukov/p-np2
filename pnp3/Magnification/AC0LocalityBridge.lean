@@ -1,4 +1,5 @@
 import AC0.MultiSwitching.Main
+import Counting.Atlas_to_LB_Core
 import Counting.ShannonCounting
 import Core.Atlas
 import Core.BooleanBasics
@@ -603,6 +604,49 @@ theorem current_singleton_commonPDT_exact_epsilon {n : Nat}
           simp [ThirdPartyFacts.commonPDT_from_AC0_with_polylog,
             ThirdPartyFacts.certificate_from_AC0_with_polylog_family]
     _ = (1 : Core.Q) / (params.n + 2) := hε
+
+/--
+The direct singleton semantic route already yields an explicit `ApproxClass`
+witness for the linked function, with exact error `1 / (n + 2)`.
+-/
+theorem current_singleton_linked_function_in_approxClass
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    ∃ (R : List (Core.Subcube (Models.partialInputLen p))) (k : Nat) (ε : Core.Q),
+      f ∈ Counting.ApproxClass (R := R) (k := k) (ε := ε) ∧
+      ε = (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+  classical
+  intro wf c f
+  let params := semanticParams f
+  let F : Core.Family params.n := [f]
+  let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+    simpa [params, F] using semanticFamilyWitnessProp f
+  let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+    simpa [params, F] using
+      ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+        params F (semanticMultiSwitchingWitness f)
+  let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+  have hWorks : Core.WorksFor (Core.CommonPDT.toAtlas C) F := by
+    exact Core.CommonPDT.worksFor C
+  have hfF : f ∈ F := by
+    simp [F]
+  rcases hWorks f hfF with ⟨S, hsub, herr⟩
+  refine
+    ⟨(Core.CommonPDT.toAtlas C).dict, S.length,
+      (Core.CommonPDT.toAtlas C).epsilon, ?_, ?_⟩
+  · exact
+      Counting.approx_mem_of_errU_le
+        (R := (Core.CommonPDT.toAtlas C).dict)
+        (k := S.length)
+        (ε := (Core.CommonPDT.toAtlas C).epsilon)
+        (f := f)
+        ⟨S, le_rfl, hsub, herr⟩
+  · simpa [params, C] using current_singleton_commonPDT_exact_epsilon f
 
 /--
 Under an explicit comparison hypothesis, the current singleton source route

@@ -21,11 +21,15 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 2. The source semantic certificate now has a named atlas/downstream bridge:
    `pnp3/Magnification/AC0AtlasBridge.lean` exposes
    `SemanticSwitchingCertificatePartial -> BoundedAtlasScenario/ScenarioBudget`.
-3. The next constructive frontier is no longer locality plumbing. It is the
-   family/cardinality bridge from source semantic family data (`cert.F`,
-   scenario budget, atlas package) to the easy-family contradiction payload
-   used in `LowerBounds/AntiChecker_Partial.lean`, or a stronger source theorem
-   that supplies such data directly.
+3. Two generic downstream routes are now formally closed:
+   `ScenarioBudget -> strict large-family gap` and
+   `ApproxClass -> small mismatch`.
+4. The active exact source-side frontier is now the provenance-aware package
+   `SemanticSwitchingSmallMismatchPackagePartial` / provider
+   `SemanticSwitchingSmallMismatchProviderPartial`.
+5. The next substantive choice is no longer locality plumbing:
+   either prove this stronger source theorem, or build a new contradiction
+   endpoint that consumes density/`ApproxClass` data directly.
 
 ## What is already closed
 
@@ -207,13 +211,16 @@ Progress (2026-03-15):
 
 Remaining for this milestone:
 
-1. Decide whether the active lower-bound route should proceed through the new
-   atlas/scenario-budget bridge or through a stronger source theorem that
-   supplies easy-family/cardinality data directly.
-2. If a concrete intended asymptotic family is introduced, add a family-
+1. Decide whether to pursue the stronger-source branch
+   (`SemanticSwitchingSmallMismatchProviderPartial`) or a new
+   density/`ApproxClass` contradiction endpoint.
+2. If the stronger-source branch is chosen, probe construction of the
+   provenance-aware small-mismatch package and localize the first red goal in
+   the witness `S` with polylog-small mismatch set.
+3. If a concrete intended asymptotic family is introduced, add a family-
    specific nat comparison theorem for the singleton decision layer; otherwise
    treat the chosen-`β` route as nongeneric.
-3. Only after (1)-(2), decide whether an additional internalization step is
+4. Only after (1)-(3), decide whether an additional internalization step is
    still needed for the asymptotic formula-collapse endpoint.
 
 Acceptance criteria for this milestone:

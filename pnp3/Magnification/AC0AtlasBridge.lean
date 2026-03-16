@@ -7,10 +7,14 @@ import LowerBounds.LB_Formulas
   Named bridges from source-side semantic switching certificates to the
   atlas/scenario-budget objects already consumed by the lower-bound layer.
 
-  This module intentionally stops on the atlas/SAL side. It does not attempt
-  to recover a chosen restriction witness or the easy-family/cardinality
-  contradiction payload from `AntiChecker_Partial`; that remains the next
-  constructive frontier.
+  This module intentionally stops before contradiction.
+  In the current tree it does three things:
+  1) packages source certificates into atlas/scenario-budget objects;
+  2) records no-go results for the false downstream routes
+     (`ScenarioBudget -> strict large-family gap`,
+      `ApproxClass -> generic small mismatch`);
+  3) exposes the provenance-aware stronger-source frontier
+     (`SemanticSwitchingSmallMismatchPackagePartial`).
 -/
 
 namespace Pnp3

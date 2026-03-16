@@ -9,8 +9,8 @@ Release positioning for current tree: `RELEASE_RC.md`.
 
 - Active `axiom` declarations in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- `./scripts/check.sh` passes (rechecked on 2026-03-14)
-- Current audit/regression tests pass (rechecked on 2026-03-14):
+- `./scripts/check.sh` passes (rechecked on 2026-03-15)
+- Current audit/regression tests pass (rechecked on 2026-03-15):
   `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`
 
@@ -26,11 +26,18 @@ Release positioning for current tree: `RELEASE_RC.md`.
   `pnp3/Magnification/AC0AtlasBridge.lean` exposes bridges from
   `SemanticSwitchingCertificatePartial` to
   `BoundedAtlasScenario` and `ScenarioBudget`.
-- The next blocker is now family/cardinality packaging:
-  bridging source semantic family data (`cert.F`) to the
-  easy-family/large-cardinality contradiction payload in
-  `LowerBounds/AntiChecker_Partial.lean`, or replacing that need with a
-  stronger source theorem.
+- Two false downstream routes are now formally ruled out:
+  `ScenarioBudget -> strict large-family gap` and
+  `ApproxClass -> small mismatch`.
+- The active exact source-side frontier is now the provenance-aware package
+  `SemanticSwitchingSmallMismatchPackagePartial` / provider
+  `SemanticSwitchingSmallMismatchProviderPartial`.
+- This package would recover the linked polylog-small testset layer, but does
+  not by itself close the current contradiction endpoint. The remaining choice
+  is:
+  1) stronger source theorem producing such a package, or
+  2) a new contradiction endpoint that consumes density/`ApproxClass`
+     information directly.
 
 ## Active final theorem surface
 
@@ -60,11 +67,15 @@ Formula-route progress note (2026-03-15):
   empty-witness decision layer are now formalized in-repo.
 - Source semantic certificates now compose directly with atlas/downstream
   scenario objects through `Magnification.AC0AtlasBridge`.
+- The small-mismatch frontier is now packaged in provenance-aware form, with a
+  thin bridge from that package to linked polylog-small testsets.
 
 ## Interpretation
 
 - The repository currently formalizes a constructive, axiom-clean,
   AC0/formula pipeline plus conditional DAG final wrappers.
+- Recent work has mainly eliminated false routes and localized the remaining
+  mathematical barriers; it has not yet discharged the DAG-side blocker below.
 - Final `P ≠ NP` wrappers are conditional.
 - The project does not currently contain an unconditional in-repo theorem
   `P ≠ NP`.

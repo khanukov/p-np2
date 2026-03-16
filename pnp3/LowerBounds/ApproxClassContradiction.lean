@@ -11,6 +11,9 @@ import Magnification.AC0AtlasBridge
   This module intentionally does not try to derive a contradiction yet. It
   only packages the current source output in the form naturally suited for a
   future single-function approximation endpoint.
+
+  In the current tree this layer is known to be insufficient by itself for the
+  small-mismatch route; see `LowerBounds.ApproxClassNoGo`.
 -/
 
 namespace Pnp3

@@ -54,6 +54,11 @@ Release positioning for current tree: `RELEASE_RC.md`.
   for a source-produced scenario dictionary `R = scenario.atlas.dict`, the
   next red goal is to exhibit a nontrivial permutation `π` with
   `R.map (permuteSubcube π.symm) = R`.
+- Provenance-specific unfolding sharpens this further:
+  `scenarioFromAC0_with_polylog` and `commonPDT_from_AC0_with_polylog` do not
+  construct a new canonical tree. They simply repackage
+  `hpoly.shrinkage.commonPDT`, so the current orbit/stabilizer branch has no
+  generic canonical `PDT` shape to exploit.
 
 ## Active final theorem surface
 

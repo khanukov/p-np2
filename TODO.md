@@ -96,12 +96,20 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     just for the current formula source line, but already at the abstract
     scenario level. This is the first singleton-density no-go that appears
     plausibly reusable on a future DAG-side route.
-22. The singleton small-mismatch package/provider remains in the codebase as a
-    stronger-source side branch. The singleton density endpoint is now the
-    staging layer for a genuinely new contradiction route that consumes
-    singleton provenance plus density/error data directly, without exact
-    polylog-small mismatch cardinality and without the old testset-capacity
-    endpoint.
+22. A new formula-free consumer layer now factors the active internal route
+    through `LowerBounds.AbstractSingletonDensityPayload`, carrying only
+    scenario-level data:
+    `sc`, `f ∈ sc.family`, bounded witness `S`, `errU ≤ ε`, and
+    `ε ≤ 1 / (n + 2)`.
+23. This abstract payload already rederives the natural mismatch testset,
+    `ApproxOnTestset` membership, density bounds, and the abstract no-go for
+    `testsetCapacity < 1` without referring to formula-specific source
+    constructors.
+24. The singleton small-mismatch package/provider remains in the codebase as a
+    stronger-source side branch. The active positive frontier is now a new
+    contradiction theorem that consumes `AbstractSingletonDensityPayload`
+    directly, without exact polylog-small mismatch cardinality and without the
+    dead `testsetCapacity < 1` endpoint.
 
 ## What is already closed
 

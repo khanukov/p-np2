@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-03-15
+Updated: 2026-03-16
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release checklist/w wording guardrail: `RELEASE_RC.md`.
@@ -12,7 +12,7 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 - Baseline checks: `./scripts/check.sh` and current audit tests pass
 - Final API remains conditional (`pnp3/Magnification/FinalResult.lean`)
 
-## Current frontier (2026-03-15)
+## Current frontier (2026-03-16)
 
 1. The current singleton `β`-route is now only a decision layer:
    `CurrentSingletonRouteWitnessProp` records when the theorem layer already
@@ -24,12 +24,15 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 3. Two generic downstream routes are now formally closed:
    `ScenarioBudget -> strict large-family gap` and
    `ApproxClass -> small mismatch`.
-4. The active exact source-side frontier is now the provenance-aware package
-   `SemanticSwitchingSmallMismatchPackagePartial` / provider
-   `SemanticSwitchingSmallMismatchProviderPartial`.
-5. The next substantive choice is no longer locality plumbing:
-   either prove this stronger source theorem, or build a new contradiction
-   endpoint that consumes density/`ApproxClass` data directly.
+4. The recommended active contradiction route is now the family-level package
+   `SemanticSwitchingApproxFamilyPackagePartial` / provider
+   `SemanticSwitchingApproxFamilyProviderPartial` in
+   `pnp3/Magnification/AC0ApproxFamilyBridge.lean`.
+5. This route feeds the already formalized counting contradiction
+   `Counting.incompatibility` directly, bypassing the dead
+   `ScenarioBudget -> AntiChecker` branch.
+6. The singleton small-mismatch package/provider remains in the codebase as a
+   stronger-source side branch, not as the primary contradiction route.
 
 ## What is already closed
 
@@ -211,12 +214,12 @@ Progress (2026-03-15):
 
 Remaining for this milestone:
 
-1. Decide whether to pursue the stronger-source branch
-   (`SemanticSwitchingSmallMismatchProviderPartial`) or a new
-   density/`ApproxClass` contradiction endpoint.
-2. If the stronger-source branch is chosen, probe construction of the
-   provenance-aware small-mismatch package and localize the first red goal in
-   the witness `S` with polylog-small mismatch set.
+1. Probe construction of the family-level direct contradiction package
+   `SemanticSwitchingApproxFamilyProviderPartial` and localize the first red
+   goal in the large finite family `Y`.
+2. Keep the singleton small-mismatch branch as a secondary stronger-source
+   program only if the family-level route stalls for clearly source-side
+   reasons.
 3. If a concrete intended asymptotic family is introduced, add a family-
    specific nat comparison theorem for the singleton decision layer; otherwise
    treat the chosen-`β` route as nongeneric.

@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-03-15
+Updated: 2026-03-16
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Release positioning for current tree: `RELEASE_RC.md`.
@@ -9,12 +9,12 @@ Release positioning for current tree: `RELEASE_RC.md`.
 
 - Active `axiom` declarations in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- `./scripts/check.sh` passes (rechecked on 2026-03-15)
-- Current audit/regression tests pass (rechecked on 2026-03-15):
+- `./scripts/check.sh` passes (rechecked on 2026-03-16)
+- Current audit/regression tests pass (rechecked on 2026-03-16):
   `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`
 
-## Current frontier (2026-03-15)
+## Current frontier (2026-03-16)
 
 - The current singleton `β`-route is no longer an open plumbing problem.
   It has been reduced to a decision layer:
@@ -29,15 +29,20 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - Two false downstream routes are now formally ruled out:
   `ScenarioBudget -> strict large-family gap` and
   `ApproxClass -> small mismatch`.
-- The active exact source-side frontier is now the provenance-aware package
-  `SemanticSwitchingSmallMismatchPackagePartial` / provider
-  `SemanticSwitchingSmallMismatchProviderPartial`.
-- This package would recover the linked polylog-small testset layer, but does
-  not by itself close the current contradiction endpoint. The remaining choice
-  is:
-  1) stronger source theorem producing such a package, or
-  2) a new contradiction endpoint that consumes density/`ApproxClass`
-     information directly.
+- The recommended active contradiction route is now the family-level package
+  `SemanticSwitchingApproxFamilyPackagePartial` / provider
+  `SemanticSwitchingApproxFamilyProviderPartial` in
+  `pnp3/Magnification/AC0ApproxFamilyBridge.lean`.
+- This route targets the existing counting contradiction
+  `Counting.incompatibility` directly, instead of trying to re-enter the old
+  `AntiChecker_Partial` large-family-gap endpoint.
+- The older provenance-aware singleton package
+  `SemanticSwitchingSmallMismatchPackagePartial` remains as a stronger-source
+  side branch: it would recover linked polylog-small testsets, but it is no
+  longer the primary contradiction route.
+- The remaining source-side mathematical question is now:
+  can semantic switching produce one large finite family `Y` lying in a common
+  `ApproxClass`, with `Y.card` above the counting capacity bound?
 
 ## Active final theorem surface
 
@@ -67,8 +72,11 @@ Formula-route progress note (2026-03-15):
   empty-witness decision layer are now formalized in-repo.
 - Source semantic certificates now compose directly with atlas/downstream
   scenario objects through `Magnification.AC0AtlasBridge`.
-- The small-mismatch frontier is now packaged in provenance-aware form, with a
-  thin bridge from that package to linked polylog-small testsets.
+- The direct family-level `ApproxClass` route is now explicit in
+  `Magnification.AC0ApproxFamilyBridge`, with a contradiction theorem that
+  reuses the existing counting endpoint.
+- The singleton small-mismatch frontier remains formalized as a stronger-source
+  side branch, with a thin bridge to linked polylog-small testsets.
 
 ## Interpretation
 

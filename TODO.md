@@ -44,7 +44,11 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
    `hpoly.shrinkage.commonPDT`. The current source theorem therefore does not
    expose a canonical tree shape that would make a generic stabilizer theorem
    plausible.
-9. The singleton small-mismatch package/provider remains in the codebase as a
+9. The explicit current internal route is singleton before counting:
+   `LowerBounds.current_source_route_no_two_point_family` rules out a direct
+   two-point family lift from the already packaged singleton `ApproxClass`
+   witness.
+10. The singleton small-mismatch package/provider remains in the codebase as a
    stronger-source side branch, not as the primary contradiction route.
 
 ## What is already closed
@@ -238,16 +242,19 @@ Remaining for this milestone:
    strengthen the source theorem to expose a canonical shrinkage/PDT witness,
    or abandon the orbit route in favor of a family lift not based on tree
    symmetries.
-4. Decide whether the next research branch is:
+4. Since the current explicit singleton route cannot even produce two distinct
+   functions, any fixed-dictionary family lift must come from a richer
+   source theorem than the currently packaged singleton witness.
+5. Decide whether the next research branch is:
    a family lift inside one fixed atlas dictionary, or a revised counting
    endpoint that can tolerate transported dictionaries.
-5. Keep the singleton small-mismatch branch as a secondary stronger-source
+6. Keep the singleton small-mismatch branch as a secondary stronger-source
    program only if the family-level route stalls for clearly source-side
    reasons.
-6. If a concrete intended asymptotic family is introduced, add a family-
+7. If a concrete intended asymptotic family is introduced, add a family-
    specific nat comparison theorem for the singleton decision layer; otherwise
    treat the chosen-`β` route as nongeneric.
-7. Only after (1)-(6), decide whether an additional internalization step is
+8. Only after (1)-(7), decide whether an additional internalization step is
    still needed for the asymptotic formula-collapse endpoint.
 
 Acceptance criteria for this milestone:

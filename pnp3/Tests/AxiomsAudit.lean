@@ -95,6 +95,7 @@ open Pnp3.Magnification
 #print axioms Counting.approxClass_perm
 #print axioms LowerBounds.linked_function_in_approxClass_of_semanticSwitchingScenarioBudget
 #print axioms LowerBounds.current_source_route_gives_singleton_approxClass
+#print axioms LowerBounds.current_source_route_no_two_point_family
 #print axioms LowerBounds.mismatchSet_false_indicator_eq
 #print axioms LowerBounds.approxClass_does_not_imply_small_mismatch
 #print axioms AC0AtlasBridge.boundedAtlasScenarioProvider_of_semanticSwitchingCertificateProvider

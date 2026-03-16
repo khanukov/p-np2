@@ -59,6 +59,11 @@ Release positioning for current tree: `RELEASE_RC.md`.
   construct a new canonical tree. They simply repackage
   `hpoly.shrinkage.commonPDT`, so the current orbit/stabilizer branch has no
   generic canonical `PDT` shape to exploit.
+- Independently of the tree-symmetry issue, the explicit current internal
+  source route is singleton before counting starts:
+  `LowerBounds.current_source_route_no_two_point_family` shows that the route
+  used by `current_source_route_gives_singleton_approxClass` cannot directly
+  supply even a two-point family.
 
 ## Active final theorem surface
 

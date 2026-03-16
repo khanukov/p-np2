@@ -44,12 +44,17 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
    `hpoly.shrinkage.commonPDT`. The current source theorem therefore does not
    expose a canonical tree shape that would make a generic stabilizer theorem
    plausible.
-9. The explicit current internal route is singleton before counting:
+9. The earliest exported current internal semantic package is already
+   singleton:
+   `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_singleton_family`
+   shows that `formulaSemanticMultiSwitchingProvider_internal` exports
+   family payload `[f]`.
+10. The explicit current internal route remains singleton before counting:
    `LowerBounds.current_source_route_no_two_point_family` rules out a direct
    two-point family lift from the already packaged singleton `ApproxClass`
    witness.
-10. The singleton small-mismatch package/provider remains in the codebase as a
-   stronger-source side branch, not as the primary contradiction route.
+11. The singleton small-mismatch package/provider remains in the codebase as a
+    stronger-source side branch, not as the primary contradiction route.
 
 ## What is already closed
 

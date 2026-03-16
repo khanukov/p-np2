@@ -16,9 +16,10 @@ import LowerBounds.SingletonDensityEndpoint
   * one numerical estimate `sc.atlas.epsilon ≤ 1 / (n + 2)`.
 
   The purpose of this module is to make the next positive frontier explicit in
-  a DAG-robust form. Any future singleton-density contradiction theorem should
-  target `AbstractSingletonDensityPayload`, not the formula-specific packaging
-  of the current source line.
+  a DAG-robust form. The raw scenario-level payload is intentionally weak
+  enough to be consistent on trivial examples, so any future contradiction
+  theorem must consume a stronger, still formula-free, linked variant rather
+  than the formula-specific packaging of the current source line.
 -/
 
 namespace Pnp3
@@ -42,6 +43,62 @@ structure AbstractSingletonDensityPayload (n : Nat) where
   hEpsLeInv : sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2)
 
 /--
+The raw abstract singleton-density payload is consistent: the empty dictionary
+with the constant-zero function satisfies all fields.
+-/
+theorem nonempty_abstractSingletonDensityPayload_false
+    (n : Nat) :
+    Nonempty (AbstractSingletonDensityPayload n) := by
+  classical
+  let f : Core.BitVec n → Bool := fun _ => false
+  let A : Core.Atlas n := { dict := [], epsilon := 0 }
+  let sc : BoundedAtlasScenario n := {
+    atlas := A
+    family := [f]
+    k := 0
+    hε0 := by norm_num
+    hε1 := by norm_num
+    works := by
+      intro g hg
+      have hgEq : g = f := by
+        simpa [f] using hg
+      subst hgEq
+      refine ⟨[], Core.listSubset_nil _, ?_⟩
+      simpa [A, f] using (Core.errU_false_nil (n := n))
+    bounded := by
+      intro g hg
+      have hgEq : g = f := by
+        simpa [f] using hg
+      subst hgEq
+      refine ⟨[], by simp, Core.listSubset_nil _, ?_⟩
+      simpa [A, f] using (Core.errU_false_nil (n := n))
+  }
+  have hInv :
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2) := by
+    have hNonneg : (0 : Core.Q) ≤ (1 : Core.Q) / (n + 2) := by
+      positivity
+    simpa [sc, A] using hNonneg
+  exact ⟨{
+    sc := sc
+    f := f
+    hf := by simp [sc, f]
+    S := []
+    hlen := by simp [sc]
+    hsub := Core.listSubset_nil _
+    herr := by simpa [sc, A, f] using (Core.errU_false_nil (n := n))
+    hEpsLeInv := hInv
+  }⟩
+
+/--
+Formula-free strengthening of the abstract singleton-density payload by an
+explicit link to some target Boolean function.
+-/
+structure AbstractLinkedSingletonDensityPayload (n : Nat) where
+  base : AbstractSingletonDensityPayload n
+  target : Core.BitVec n → Bool
+  hLink : base.f = target
+
+/--
 The current concrete singleton-density package factors through the abstract
 scenario-level payload.
 -/
@@ -63,6 +120,25 @@ def abstractSingletonDensityPayload_of_singletonDensityPackage
   hsub := pkg.hsub
   herr := pkg.herr
   hEpsLeInv := pkg.hEpsLeInv
+
+/--
+The current singleton-density package also yields the minimally strengthened
+formula-free payload: an abstract singleton-density object together with an
+explicit target-link witness.
+-/
+noncomputable def abstractLinkedSingletonDensityPayload_of_singletonDensityPackage
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pkg : SemanticSwitchingSingletonDensityPackagePartial hFormula) :
+    AbstractLinkedSingletonDensityPayload pkg.prov.pack.cert.ac0.n where
+  base := abstractSingletonDensityPayload_of_singletonDensityPackage pkg
+  target := fun x =>
+    ComplexityInterfaces.FormulaCircuit.eval
+      ((Classical.choose hFormula).family (Models.partialInputLen p))
+      (ThirdPartyFacts.castBitVec pkg.prov.pack.cert.hsame x)
+  hLink := by
+    funext x
+    exact pkg.prov.hEval x
 
 /--
 The natural mismatch testset attached to an abstract singleton-density payload.
@@ -205,6 +281,19 @@ theorem abstractSingletonDensityPayload_of_internal_provider
   classical
   intro pkg
   exact ⟨abstractSingletonDensityPayload_of_singletonDensityPackage pkg⟩
+
+/--
+Current internal route reaches the minimally strengthened abstract linked
+singleton-density payload as well.
+-/
+theorem abstractLinkedSingletonDensityPayload_of_internal_provider
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let pkg := Classical.choice (singletonDensityPackage_of_internal_provider hFormula)
+    Nonempty (AbstractLinkedSingletonDensityPayload pkg.prov.pack.cert.ac0.n) := by
+  classical
+  intro pkg
+  exact ⟨abstractLinkedSingletonDensityPayload_of_singletonDensityPackage pkg⟩
 
 end LowerBounds
 end Pnp3

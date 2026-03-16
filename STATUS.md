@@ -131,9 +131,16 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - This abstraction already rederives all natural mismatch consequences without
   referencing formula-specific source constructors and therefore marks the
   first genuinely positive DAG-relevant staging layer on the singleton route.
-- The next honest positive frontier is now:
-  can one prove a contradiction theorem from
-  `AbstractSingletonDensityPayload` alone, using only scenario/density data?
+- The raw abstract payload is now also known to be consistent on a trivial
+  empty-dictionary / constant-zero scenario, so a contradiction theorem from
+  `AbstractSingletonDensityPayload` alone is the wrong target.
+- The minimally strengthened abstract object is now
+  `LowerBounds.AbstractLinkedSingletonDensityPayload`: the same scenario-level
+  density data together with an explicit link from the distinguished function
+  to a target Boolean slice.
+- The next honest positive frontier is now a contradiction theorem from this
+  linked abstract payload, or another equally formula-free strengthening,
+  without pulling formula-specific constructors back into the consumer.
 
 ## Active final theorem surface
 

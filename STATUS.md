@@ -102,11 +102,21 @@ Release positioning for current tree: `RELEASE_RC.md`.
   now makes the frontier exact: the singleton/provenance layer already
   supplies every field needed for the stronger small-mismatch package except
   the one missing mismatch-cardinality bound.
-- The first honest red goal for the next endpoint probe is now explicit:
-  from the source-produced bounded witness `S` one still needs
-  `|(mismatchSet (coveredB S) f)| ≤ polylogBudget`.
-  In other words, singleton provenance plus `ApproxClass` membership still do
-  not by themselves recover the stronger small-mismatch package.
+- A new density-oriented singleton endpoint layer is now present in
+  `pnp3/LowerBounds/SingletonDensityEndpoint.lean`.
+  It packages the same singleton provenance object together with the exact
+  source-produced bounded witness `S`, the inherited error bound
+  `errU f S ≤ ε`, and the numerical estimate `ε ≤ 1 / (n + 2)`.
+- This layer also exposes the natural testset
+  `T = mismatchSet (coveredB S) f`, proves that `f` lies in
+  `ApproxOnTestset ... T`, and bounds the density of `T` by `1 / (n + 2)`.
+- The old testset-capacity endpoint is now reduced to one exact missing input
+  on this singleton density branch:
+  `testsetCapacity (sc := scenario) (T := mismatchSet (coveredB S) f) < 1`.
+- This is now the active exact frontier on the singleton route.
+  If it cannot be proved from the current source theorem, the next meaningful
+  endpoint must consume singleton provenance plus density/error data directly,
+  rather than exact polylog-small mismatch cardinality.
 
 ## Active final theorem surface
 
@@ -141,8 +151,9 @@ Formula-route progress note (2026-03-15):
   reuses the existing counting endpoint.
 - The singleton small-mismatch frontier remains formalized as a stronger-source
   side branch, with a thin bridge to linked polylog-small testsets; the new
-  singleton/provenance endpoint isolates exactly why the current source line
-  does not yet reach that branch.
+  singleton/provenance and singleton-density endpoints isolate exactly why the
+  current source line does not yet reach that branch or the old testset
+  endpoint.
 
 ## Interpretation
 

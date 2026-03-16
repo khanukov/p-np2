@@ -36,6 +36,10 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - This route targets the existing counting contradiction
   `Counting.incompatibility` directly, instead of trying to re-enter the old
   `AntiChecker_Partial` large-family-gap endpoint.
+- A symmetry-transport layer is now formalized for `UnionClass` and
+  `ApproxClass`: coordinate permutations preserve approximation quality, but
+  they transport the dictionary to `R.map (permuteSubcube π.symm)` rather than
+  keeping a single fixed `R`.
 - The older provenance-aware singleton package
   `SemanticSwitchingSmallMismatchPackagePartial` remains as a stronger-source
   side branch: it would recover linked polylog-small testsets, but it is no
@@ -43,6 +47,9 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - The remaining source-side mathematical question is now:
   can semantic switching produce one large finite family `Y` lying in a common
   `ApproxClass`, with `Y.card` above the counting capacity bound?
+- More sharply: the current symmetry/orbit idea is blocked not by
+  `ApproxClass` closure itself, but by the need for one common fixed
+  dictionary/union budget for all members of `Y`.
 
 ## Active final theorem surface
 

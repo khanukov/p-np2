@@ -138,6 +138,109 @@ def ApproxClass {m : Nat}
   { f | ∃ g, g ∈ UnionClass R k ∧
         (distU f g : Q) ≤ ε * ((Nat.pow 2 m : Nat) : Q) }
 
+/--
+Coordinate permutation on the ambient hypercube.
+-/
+def permuteVec {m : Nat} (π : Equiv.Perm (Fin m)) (x : Domain m) : Domain m :=
+  fun i => x (π i)
+
+/--
+Coordinate permutation on subcubes; fixed/free bits follow the same coordinate
+renaming as ambient points.
+-/
+def permuteSubcube {m : Nat} (π : Equiv.Perm (Fin m)) (β : Subcube m) : Subcube m :=
+  fun i => β (π i)
+
+/--
+Precomposition of a Boolean function by a coordinate permutation.
+-/
+def permuteFun {m : Nat} (π : Equiv.Perm (Fin m)) (f : Domain m → Bool) : Domain m → Bool :=
+  fun x => f (permuteVec π x)
+
+lemma memB_perm {m : Nat}
+    (π : Equiv.Perm (Fin m)) (β : Subcube m) (x : Domain m) :
+    memB (permuteSubcube π β) (permuteVec π x) = memB β x := by
+  apply Bool.eq_iff_iff.mpr
+  rw [memB_eq_true_iff, memB_eq_true_iff]
+  constructor <;> intro h i b hib
+  · simpa [permuteSubcube, permuteVec] using
+      h (π.symm i) b (by simpa [permuteSubcube] using hib)
+  · simpa [permuteSubcube, permuteVec] using
+      h (π i) b (by simpa [permuteSubcube] using hib)
+
+lemma coveredB_perm {m : Nat}
+    (π : Equiv.Perm (Fin m)) (S : List (Subcube m)) (x : Domain m) :
+    coveredB (S.map (permuteSubcube π)) (permuteVec π x) = coveredB S x := by
+  induction S with
+  | nil =>
+      simp [coveredB_nil]
+  | cons β S ih =>
+      simp [coveredB_cons, memB_perm, ih]
+
+private lemma permuteVec_injective {m : Nat} (π : Equiv.Perm (Fin m)) :
+    Function.Injective (permuteVec π : Domain m → Domain m) := by
+  intro x y h
+  funext i
+  have := congrArg (fun z => z (π.symm i)) h
+  simpa [permuteVec] using this
+
+private lemma permuteVec_left_inv {m : Nat}
+    (π : Equiv.Perm (Fin m)) (x : Domain m) :
+    permuteVec π (permuteVec π.symm x) = x := by
+  funext i
+  simp [permuteVec]
+
+private lemma permuteVec_right_inv {m : Nat}
+    (π : Equiv.Perm (Fin m)) (x : Domain m) :
+    permuteVec π.symm (permuteVec π x) = x := by
+  funext i
+  simp [permuteVec]
+
+lemma distU_perm {m : Nat}
+    (π : Equiv.Perm (Fin m)) (f g : Domain m → Bool) :
+    distU (permuteFun π f) (permuteFun π g) = distU f g := by
+  classical
+  unfold distU
+  refine Finset.card_bij (fun x _ => permuteVec π x) ?_ ?_ ?_
+  · intro x hx
+    simp [permuteFun] at hx ⊢
+    exact hx
+  · intro x₁ x₂ _ _ h
+    exact permuteVec_injective π h
+  · intro y hy
+    refine ⟨permuteVec π.symm y, ?_, permuteVec_left_inv π y⟩
+    simpa [permuteFun, permuteVec_left_inv] using hy
+
+lemma permute_coveredB {m : Nat}
+    (π : Equiv.Perm (Fin m)) (S : List (Subcube m)) :
+    permuteFun π (fun x => coveredB S x) =
+      fun x => coveredB (S.map (permuteSubcube π.symm)) x := by
+  funext x
+  have h := coveredB_perm (m := m) π.symm S (permuteVec π x)
+  simpa [permuteFun, permuteVec_right_inv] using h.symm
+
+lemma unionClass_perm {m : Nat}
+    (π : Equiv.Perm (Fin m))
+    {R : List (Subcube m)} {k : Nat} {g : Domain m → Bool}
+    (hg : g ∈ UnionClass R k) :
+    permuteFun π g ∈ UnionClass (R.map (permuteSubcube π.symm)) k := by
+  rcases hg with ⟨S, hlen, hsub, rfl⟩
+  refine ⟨S.map (permuteSubcube π.symm), by simpa using hlen, ?_, ?_⟩
+  · intro β hβ
+    rcases List.mem_map.mp hβ with ⟨β0, hβ0, rfl⟩
+    exact List.mem_map.mpr ⟨β0, hsub hβ0, rfl⟩
+  · exact permute_coveredB π S
+
+lemma approxClass_perm {m : Nat}
+    (π : Equiv.Perm (Fin m))
+    {R : List (Subcube m)} {k : Nat} {ε : Q} {f : Domain m → Bool}
+    (hf : f ∈ ApproxClass (R := R) (k := k) (ε := ε)) :
+    permuteFun π f ∈ ApproxClass
+      (R := R.map (permuteSubcube π.symm)) (k := k) (ε := ε) := by
+  rcases hf with ⟨g, hgUnion, herr⟩
+  refine ⟨permuteFun π g, unionClass_perm π hgUnion, ?_⟩
+  simpa [distU_perm] using herr
+
 /-- Нулевая ошибка на расстоянии соответствует точному совпадению функций. -/
 lemma distU_eq_zero_of_eq
     {m : Nat} {f g : Domain m → Bool} (h : f = g) :

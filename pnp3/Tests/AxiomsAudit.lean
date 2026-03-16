@@ -86,6 +86,9 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyFormula_of_semanticSwitchingApproxFamilyProvider
 #print axioms Counting.exists_small_testset_for_fixed_approximant_iff
 #print axioms Counting.exists_small_testset_iff_exists_small_mismatch_approximant
+#print axioms Counting.distU_perm
+#print axioms Counting.unionClass_perm
+#print axioms Counting.approxClass_perm
 #print axioms LowerBounds.linked_function_in_approxClass_of_semanticSwitchingScenarioBudget
 #print axioms LowerBounds.current_source_route_gives_singleton_approxClass
 #print axioms LowerBounds.mismatchSet_false_indicator_eq

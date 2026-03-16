@@ -110,13 +110,18 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - This layer also exposes the natural testset
   `T = mismatchSet (coveredB S) f`, proves that `f` lies in
   `ApproxOnTestset ... T`, and bounds the density of `T` by `1 / (n + 2)`.
-- The old testset-capacity endpoint is now reduced to one exact missing input
-  on this singleton density branch:
-  `testsetCapacity (sc := scenario) (T := mismatchSet (coveredB S) f) < 1`.
-- This is now the active exact frontier on the singleton route.
-  If it cannot be proved from the current source theorem, the next meaningful
-  endpoint must consume singleton provenance plus density/error data directly,
-  rather than exact polylog-small mismatch cardinality.
+- A decisive abstract probe on the old testset-capacity endpoint now closes
+  negatively: `testsetCapacity < 1` is impossible already for every
+  `BoundedAtlasScenario`, because `testsetCapacity` is a natural number
+  bounded below by `1`.
+- Consequently, the old testset-capacity contradiction route is formally dead
+  even on the singleton density branch:
+  `LowerBounds.naturalMismatchTestset_not_testsetCapacity_lt_one_of_singletonDensityPackage`
+  rules it out without using any formula-specific internals.
+- This is the first genuinely DAG-robust no-go extracted from the current
+  singleton density layer. The next meaningful endpoint must consume singleton
+  provenance plus density/error data directly; it cannot be another wrapper
+  around the old `testsetCapacity < 1` endpoint.
 
 ## Active final theorem surface
 

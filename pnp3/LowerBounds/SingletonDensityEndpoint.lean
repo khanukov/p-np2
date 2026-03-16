@@ -252,5 +252,22 @@ theorem old_testset_endpoint_of_singletonDensityPackage_of_testsetCapacity_lt_on
       hApprox
       hLarge
 
+/--
+The old testset-capacity endpoint is not merely unproved on this route: its
+remaining hypothesis is impossible already at the abstract scenario level.
+-/
+theorem naturalMismatchTestset_not_testsetCapacity_lt_one_of_singletonDensityPackage
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pkg : SemanticSwitchingSingletonDensityPackagePartial hFormula) :
+    ¬ LowerBounds.testsetCapacity
+          (sc := pkg.prov.pack.scenario)
+          (T := naturalMismatchTestsetOfSingletonDensityPackage pkg)
+        < 1 := by
+  exact
+    LowerBounds.not_testsetCapacity_lt_one
+      (sc := pkg.prov.pack.scenario)
+      (T := naturalMismatchTestsetOfSingletonDensityPackage pkg)
+
 end LowerBounds
 end Pnp3

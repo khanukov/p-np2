@@ -145,6 +145,33 @@ def testsetCapacity {n : Nat} (sc : BoundedAtlasScenario n)
   Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k * 2 ^ T.card
 
 /--
+Testset capacity is never below `1`: even the empty union contributes one
+candidate approximant, and `2 ^ T.card` is always positive.
+-/
+lemma one_le_testsetCapacity
+    {n : Nat} (sc : BoundedAtlasScenario n)
+    (T : Finset (Core.BitVec n)) :
+    1 ≤ testsetCapacity (sc := sc) (T := T) := by
+  unfold testsetCapacity
+  have hUnion : 1 ≤ Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k :=
+    Counting.one_le_unionBound _ _
+  have hUnionPos : 0 < Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k := by
+    exact lt_of_lt_of_le (by decide : 0 < 1) hUnion
+  have hPowPos : 0 < 2 ^ T.card := by
+    positivity
+  exact Nat.succ_le_of_lt (Nat.mul_pos hUnionPos hPowPos)
+
+/--
+Consequently, the strict inequality `testsetCapacity < 1` is impossible for
+every bounded atlas scenario.
+-/
+lemma not_testsetCapacity_lt_one
+    {n : Nat} (sc : BoundedAtlasScenario n)
+    (T : Finset (Core.BitVec n)) :
+    ¬ testsetCapacity (sc := sc) (T := T) < 1 := by
+  exact not_lt_of_ge (one_le_testsetCapacity (sc := sc) (T := T))
+
+/--
   Если множество `Y` функций содержится в семействе, обслуживаемом
   атласом, и при этом его размер превышает ёмкость, то получаем
   противоречие.  Именно так в части C будут извлекаться нижние оценки.

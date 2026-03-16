@@ -172,6 +172,22 @@ lemma sum_choose_le_mul_pow
 noncomputable def unionBound (D k : Nat) : Nat :=
   ∑ i ∈ Finset.range (k.succ), Nat.choose D i
 
+/--
+`unionBound` is never zero: the empty union is always one admissible choice,
+contributing the `i = 0` term `choose D 0 = 1`.
+-/
+lemma one_le_unionBound (D k : Nat) : 1 ≤ unionBound D k := by
+  classical
+  unfold unionBound
+  have hmem : 0 ∈ Finset.range (k.succ) := by simp
+  have hsingle :
+      Nat.choose D 0 ≤ ∑ i ∈ Finset.range (k.succ), Nat.choose D i := by
+    exact
+      Finset.single_le_sum
+        (fun i _ => Nat.zero_le (Nat.choose D i))
+        hmem
+  simpa using hsingle
+
 /-- Свойство, сопровождающее `unionBound`: извлечённая сумма ограничена числом `2^D`. -/
 theorem unionBound_le_pow (D k : Nat) : unionBound D k ≤ 2 ^ D :=
   sum_choose_le_pow D k

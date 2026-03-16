@@ -88,14 +88,20 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     `T = mismatchSet (coveredB S) f`, shows
     `f ∈ ApproxOnTestset ... T`, and proves the density bound
     `|T| / 2^n ≤ 1 / (n + 2)`.
-20. The old testset-capacity endpoint is now reduced to one explicit missing
-    hypothesis on the active singleton density route:
-    `testsetCapacity (sc := scenario) (T := mismatchSet (coveredB S) f) < 1`.
-21. The singleton small-mismatch package/provider remains in the codebase as a
+20. A decisive abstract probe on the old singleton-density endpoint is now
+    closed negatively: `testsetCapacity < 1` is impossible for every
+    `BoundedAtlasScenario`, since `testsetCapacity` is a natural number with
+    a general lower bound `1 ≤ testsetCapacity`.
+21. Therefore the old `testsetCapacity < 1` contradiction route is dead not
+    just for the current formula source line, but already at the abstract
+    scenario level. This is the first singleton-density no-go that appears
+    plausibly reusable on a future DAG-side route.
+22. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The singleton density endpoint is now the
-    staging layer for any new contradiction route that consumes singleton
-    provenance plus density/error data without requiring exact
-    polylog-small mismatch cardinality.
+    staging layer for a genuinely new contradiction route that consumes
+    singleton provenance plus density/error data directly, without exact
+    polylog-small mismatch cardinality and without the old testset-capacity
+    endpoint.
 
 ## What is already closed
 

@@ -101,6 +101,7 @@ open Pnp3.Magnification
 #print axioms Counting.approxClass_perm_fixed
 #print axioms Counting.approxClass_perm_fixed_of_perm
 #print axioms Counting.approxClass_perm
+#print axioms Counting.one_le_unionBound
 #print axioms LowerBounds.linked_function_in_approxClass_of_semanticSwitchingScenarioBudget
 #print axioms LowerBounds.current_source_route_gives_singleton_approxClass
 #print axioms LowerBounds.current_source_route_no_two_point_family
@@ -115,6 +116,9 @@ open Pnp3.Magnification
 #print axioms LowerBounds.naturalMismatchTestset_card_le_inv_mul_pow_of_singletonDensityPackage
 #print axioms LowerBounds.linked_natural_testset_density_of_internal_provider
 #print axioms LowerBounds.old_testset_endpoint_of_singletonDensityPackage_of_testsetCapacity_lt_one
+#print axioms LowerBounds.one_le_testsetCapacity
+#print axioms LowerBounds.not_testsetCapacity_lt_one
+#print axioms LowerBounds.naturalMismatchTestset_not_testsetCapacity_lt_one_of_singletonDensityPackage
 #print axioms LowerBounds.mismatchSet_false_indicator_eq
 #print axioms LowerBounds.approxClass_does_not_imply_small_mismatch
 #print axioms AC0AtlasBridge.boundedAtlasScenarioProvider_of_semanticSwitchingCertificateProvider

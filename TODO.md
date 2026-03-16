@@ -35,7 +35,11 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
    it transports the dictionary together with the function. The current
    orbit-lift barrier is therefore not `ApproxClass` closure; it is the need
    for one large finite family `Y` living in one common fixed dictionary.
-7. The singleton small-mismatch package/provider remains in the codebase as a
+7. The immediate fixed-dictionary probe is now explicit: for the current
+   source-produced `scenario.atlas.dict`, find a nontrivial `π` with
+   `dict.map (permuteSubcube π.symm) = dict`, or conclude that the stabilizer
+   is too small to support the orbit route.
+8. The singleton small-mismatch package/provider remains in the codebase as a
    stronger-source side branch, not as the primary contradiction route.
 
 ## What is already closed
@@ -222,16 +226,19 @@ Remaining for this milestone:
    `SemanticSwitchingApproxFamilyProviderPartial` and localize the first red
    goal in the large finite family `Y`, with special attention to the new
    common-dictionary barrier exposed by symmetry transport.
-2. Decide whether the next research branch is:
+2. Concretely probe the fixed-dictionary stabilizer:
+   try to produce a nontrivial `π` with
+   `scenario.atlas.dict.map (permuteSubcube π.symm) = scenario.atlas.dict`.
+3. Decide whether the next research branch is:
    a family lift inside one fixed atlas dictionary, or a revised counting
    endpoint that can tolerate transported dictionaries.
-3. Keep the singleton small-mismatch branch as a secondary stronger-source
+4. Keep the singleton small-mismatch branch as a secondary stronger-source
    program only if the family-level route stalls for clearly source-side
    reasons.
-4. If a concrete intended asymptotic family is introduced, add a family-
+5. If a concrete intended asymptotic family is introduced, add a family-
    specific nat comparison theorem for the singleton decision layer; otherwise
    treat the chosen-`β` route as nongeneric.
-5. Only after (1)-(4), decide whether an additional internalization step is
+6. Only after (1)-(5), decide whether an additional internalization step is
    still needed for the asymptotic formula-collapse endpoint.
 
 Acceptance criteria for this milestone:

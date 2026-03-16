@@ -802,6 +802,54 @@ lemma approxOnTestset_of_mismatchSet
   · exact ⟨S, hlen, hsub, rfl⟩
   · simpa using (subset_rfl : mismatchSet (fun x => coveredB S x) f ⊆ mismatchSet (fun x => coveredB S x) f)
 
+/--
+For a fixed approximant `g`, asking for some small testset containing the full
+mismatch set is equivalent to asking that the mismatch set itself be small.
+-/
+lemma exists_small_testset_for_fixed_approximant_iff
+    {m : Nat} {g f : Domain m → Bool} {B : Nat} :
+    (∃ T : Finset (Domain m),
+        T.card ≤ B ∧ mismatchSet (m := m) g f ⊆ T)
+      ↔
+    (mismatchSet (m := m) g f).card ≤ B := by
+  constructor
+  · intro h
+    rcases h with ⟨T, hcard, hsub⟩
+    exact le_trans (Finset.card_le_card hsub) hcard
+  · intro hcard
+    exact ⟨mismatchSet (m := m) g f, hcard, subset_rfl⟩
+
+/--
+Existence of a small testset for `ApproxOnTestset` is equivalent to existence
+of one bounded union-of-subcubes approximant whose full mismatch set is small.
+-/
+theorem exists_small_testset_iff_exists_small_mismatch_approximant
+    {m : Nat} {R : List (Subcube m)} {k B : Nat} {f : Domain m → Bool} :
+    (∃ T : Finset (Domain m),
+        T.card ≤ B ∧
+        f ∈ ApproxOnTestset (R := R) (k := k) (T := T))
+      ↔
+    ∃ S : List (Subcube m),
+      S.length ≤ k ∧
+      listSubset S R ∧
+      (mismatchSet (fun x => coveredB S x) f).card ≤ B := by
+  constructor
+  · intro h
+    rcases h with ⟨T, hcardT, hfT⟩
+    rcases hfT with ⟨g, hgUnion, hmis⟩
+    rcases hgUnion with ⟨S, hlen, hsub, hgEq⟩
+    refine ⟨S, hlen, hsub, ?_⟩
+    have hmis' : mismatchSet (fun x => coveredB S x) f ⊆ T := by
+      simpa [hgEq] using hmis
+    exact
+      (exists_small_testset_for_fixed_approximant_iff
+        (m := m) (g := fun x => coveredB S x) (f := f) (B := B)).mp
+        ⟨T, hcardT, hmis'⟩
+  · intro h
+    rcases h with ⟨S, hlen, hsub, hcard⟩
+    refine ⟨mismatchSet (fun x => coveredB S x) f, hcard, ?_⟩
+    exact approxOnTestset_of_mismatchSet hlen hsub
+
 /-- Полезный синоним для подтипа функций, удовлетворяющих условию тест-набора. -/
 abbrev ApproxOnTestsetSubtype
     {m : Nat} (R : List (Subcube m)) (k : Nat)

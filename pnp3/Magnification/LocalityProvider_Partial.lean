@@ -411,12 +411,14 @@ def RestrictionRealizesSemanticSwitchingCertificatePartial
         (factsRestrictionOfSubcube β)
 
 /--
-Source-layer frontier after the mid-layer cleanup:
+Historical source-side extraction frontier for the weak-core route.
+
+This is kept as a compatibility layer for the older restriction-based route:
 from one semantic switching certificate, extract some restriction object
 carrying the numeric locality bounds needed by the weak-core route.
 
-This contract is intentionally phrased using existence of `rFacts`, without any
-support-based canonicality requirement.
+The active source-side frontier has since moved to the atlas/small-mismatch
+packages in `Magnification.AC0AtlasBridge`.
 -/
 def SemanticSwitchingRestrictionCoreExtractionPartial : Prop :=
   ∀ {p : GapPartialMCSPParams}

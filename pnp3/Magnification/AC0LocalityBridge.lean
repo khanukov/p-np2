@@ -110,7 +110,10 @@ semantic multi-switching layer:
 4) the semantic link back to the extracted strict formula.
 
 Importantly, this certificate still does *not* choose any
-`Facts.LocalityLift.Restriction`; that remains the next constructive frontier.
+`Facts.LocalityLift.Restriction`.
+That is no longer the active frontier: current downstream work first routes
+through atlas/scenario-budget packaging, while exact restriction- or
+small-mismatch extraction is formulated later as a stronger source theorem.
 -/
 structure SemanticSwitchingCertificatePartial
     {p : GapPartialMCSPParams}

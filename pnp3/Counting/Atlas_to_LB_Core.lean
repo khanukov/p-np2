@@ -165,6 +165,14 @@ def DictStabilizes {m : Nat}
     (R : List (Subcube m)) (π : Equiv.Perm (Fin m)) : Prop :=
   R.map (permuteSubcube π.symm) = R
 
+/--
+Order-insensitive dictionary stabilizer: the transported dictionary contains
+the same subcubes up to list permutation.
+-/
+def DictStabilizesPerm {m : Nat}
+    (R : List (Subcube m)) (π : Equiv.Perm (Fin m)) : Prop :=
+  List.Perm (R.map (permuteSubcube π.symm)) R
+
 lemma memB_perm {m : Nat}
     (π : Equiv.Perm (Fin m)) (β : Subcube m) (x : Domain m) :
     memB (permuteSubcube π β) (permuteVec π x) = memB β x := by
@@ -248,6 +256,24 @@ lemma unionClass_perm_fixed {m : Nat}
   rw [← hstab]
   exact unionClass_perm (π := π) (R := R) (k := k) (g := g) hg
 
+lemma unionClass_perm_fixed_of_perm {m : Nat}
+    (π : Equiv.Perm (Fin m))
+    {R : List (Subcube m)} {k : Nat} {g : Domain m → Bool}
+    (hstab : DictStabilizesPerm R π)
+    (hg : g ∈ UnionClass R k) :
+    permuteFun π g ∈ UnionClass R k := by
+  rcases hg with ⟨S, hlen, hsub, hgEq⟩
+  refine ⟨S.map (permuteSubcube π.symm), by simpa using hlen, ?_, ?_⟩
+  · intro β hβ
+    rcases List.mem_map.mp hβ with ⟨β0, hβ0, hEq⟩
+    have hβ0' : permuteSubcube π.symm β0 ∈ R.map (permuteSubcube π.symm) :=
+      List.mem_map.mpr ⟨β0, hsub hβ0, rfl⟩
+    simpa [hEq] using hstab.subset hβ0'
+  · calc
+      permuteFun π g = permuteFun π (fun x => coveredB S x) := by simpa [hgEq]
+      _ = fun x => coveredB (List.map (permuteSubcube π.symm) S) x :=
+        permute_coveredB π S
+
 lemma approxClass_perm {m : Nat}
     (π : Equiv.Perm (Fin m))
     {R : List (Subcube m)} {k : Nat} {ε : Q} {f : Domain m → Bool}
@@ -266,6 +292,16 @@ lemma approxClass_perm_fixed {m : Nat}
     permuteFun π f ∈ ApproxClass (R := R) (k := k) (ε := ε) := by
   rw [← hstab]
   exact approxClass_perm (π := π) (R := R) (k := k) (ε := ε) (f := f) hf
+
+lemma approxClass_perm_fixed_of_perm {m : Nat}
+    (π : Equiv.Perm (Fin m))
+    {R : List (Subcube m)} {k : Nat} {ε : Q} {f : Domain m → Bool}
+    (hstab : DictStabilizesPerm R π)
+    (hf : f ∈ ApproxClass (R := R) (k := k) (ε := ε)) :
+    permuteFun π f ∈ ApproxClass (R := R) (k := k) (ε := ε) := by
+  rcases hf with ⟨g, hgUnion, herr⟩
+  exact ⟨permuteFun π g, unionClass_perm_fixed_of_perm π hstab hgUnion, by
+    simpa [distU_perm] using herr⟩
 
 /-- Нулевая ошибка на расстоянии соответствует точному совпадению функций. -/
 lemma distU_eq_zero_of_eq

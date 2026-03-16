@@ -57,10 +57,44 @@ def SemanticSwitchingScenarioBudgetProviderPartial : Prop :=
     Nonempty (SemanticSwitchingScenarioBudgetPartial hFormula)
 
 /--
-Exact source-side frontier for the current atlas route:
-from one bounded atlas scenario package, extract a linked witness whose full
-mismatch set against one bounded union-of-subcubes approximant is already
+Provenance-aware stronger source package for the current atlas route.
+
+This asks only for one source-produced bounded atlas package together with one
+linked bounded-union witness whose full mismatch set is already
 polylogarithmically small.
+-/
+structure SemanticSwitchingSmallMismatchPackagePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  pack : SemanticSwitchingBoundedAtlasScenarioPartial hFormula
+  f : Core.BitVec pack.cert.ac0.n → Bool
+  hfF : f ∈ pack.cert.F
+  hfEval :
+    ∀ x : Core.BitVec pack.cert.ac0.n,
+      f x = ComplexityInterfaces.FormulaCircuit.eval
+        ((Classical.choose hFormula).family (Models.partialInputLen p))
+        (ThirdPartyFacts.castBitVec pack.cert.hsame x)
+  S : List (Core.Subcube pack.cert.ac0.n)
+  hlen : S.length ≤ pack.k
+  hsub : Core.listSubset S pack.scenario.atlas.dict
+  hsmall :
+    (Counting.mismatchSet (fun x => Core.coveredB S x) f).card
+      ≤ Models.polylogBudget pack.cert.ac0.n
+
+/--
+Provider-level version of the stronger small-mismatch source package.
+-/
+def SemanticSwitchingSmallMismatchProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (SemanticSwitchingSmallMismatchPackagePartial hFormula)
+
+/--
+Compatibility-only global form of the stronger source target.
+
+This is stronger than the provenance-aware package/provider formulation above,
+because it quantifies over every bounded atlas package, not just the one
+actually produced by the source route.
 
 This is strictly stronger than the currently available density control
 `errU ≤ ε`. It is the precise additional input needed to recover the small
@@ -233,6 +267,102 @@ theorem linked_small_testset_of_boundedAtlasScenario
         (B := Models.polylogBudget pack.cert.ac0.n)
         (f := f)).2
         ⟨S, hlen, hsub, hcard⟩
+
+/--
+Compatibility bridge: a global extraction theorem on all bounded atlas
+packages yields a provenance-aware source package for each such package.
+-/
+theorem semanticSwitchingSmallMismatchPackage_of_extraction
+    (hExtract : SemanticSwitchingSmallMismatchExtractionPartial)
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pack : SemanticSwitchingBoundedAtlasScenarioPartial hFormula) :
+    Nonempty (SemanticSwitchingSmallMismatchPackagePartial hFormula) := by
+  classical
+  rcases hExtract pack with ⟨f, hfF, hfEval, S, hlen, hsub, hsmall⟩
+  exact ⟨{
+    pack := pack
+    f := f
+    hfF := hfF
+    hfEval := hfEval
+    S := S
+    hlen := hlen
+    hsub := hsub
+    hsmall := hsmall
+  }⟩
+
+/--
+One provenance-aware small-mismatch package immediately yields one linked
+polylog-small testset for the current atlas route.
+-/
+theorem linked_small_testset_of_semanticSwitchingSmallMismatchPackage
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (smallPack : SemanticSwitchingSmallMismatchPackagePartial hFormula) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ f : Core.BitVec smallPack.pack.cert.ac0.n → Bool,
+      f ∈ smallPack.pack.cert.F ∧
+      (∀ x : Core.BitVec smallPack.pack.cert.ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec smallPack.pack.cert.hsame x)) ∧
+      ∃ T : Finset (Core.BitVec smallPack.pack.cert.ac0.n),
+        T.card ≤ Models.polylogBudget smallPack.pack.cert.ac0.n ∧
+        f ∈ Counting.ApproxOnTestset
+          (R := smallPack.pack.scenario.atlas.dict)
+          (k := smallPack.pack.k)
+          (T := T) := by
+  classical
+  intro wf c
+  refine ⟨smallPack.f, smallPack.hfF, smallPack.hfEval, ?_⟩
+  exact
+    (Counting.exists_small_testset_iff_exists_small_mismatch_approximant
+      (R := smallPack.pack.scenario.atlas.dict)
+      (k := smallPack.pack.k)
+      (B := Models.polylogBudget smallPack.pack.cert.ac0.n)
+      (f := smallPack.f)).2
+      ⟨smallPack.S, smallPack.hlen, smallPack.hsub, smallPack.hsmall⟩
+
+/--
+Provider-level bridge from provenance-aware small-mismatch packages to the
+linked polylog-small testset layer.
+-/
+theorem linked_small_testset_provider_of_semanticSwitchingSmallMismatchProvider
+    (hSmall : SemanticSwitchingSmallMismatchProviderPartial)
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let smallPack := Classical.choice (hSmall hFormula)
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ f : Core.BitVec smallPack.pack.cert.ac0.n → Bool,
+      f ∈ smallPack.pack.cert.F ∧
+      (∀ x : Core.BitVec smallPack.pack.cert.ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec smallPack.pack.cert.hsame x)) ∧
+      ∃ T : Finset (Core.BitVec smallPack.pack.cert.ac0.n),
+        T.card ≤ Models.polylogBudget smallPack.pack.cert.ac0.n ∧
+        f ∈ Counting.ApproxOnTestset
+          (R := smallPack.pack.scenario.atlas.dict)
+          (k := smallPack.pack.k)
+          (T := T) := by
+  classical
+  let smallPack := Classical.choice (hSmall hFormula)
+  simpa [smallPack] using
+    linked_small_testset_of_semanticSwitchingSmallMismatchPackage smallPack
+
+/--
+Compatibility bridge: a bounded-atlas provider plus the old global extraction
+target yields the provenance-aware small-mismatch provider.
+-/
+theorem semanticSwitchingSmallMismatchProvider_of_boundedAtlasScenarioProvider_and_extraction
+    (hPack : SemanticSwitchingBoundedAtlasScenarioProviderPartial)
+    (hExtract : SemanticSwitchingSmallMismatchExtractionPartial) :
+    SemanticSwitchingSmallMismatchProviderPartial := by
+  intro p hFormula
+  rcases hPack (p := p) hFormula with ⟨pack⟩
+  exact semanticSwitchingSmallMismatchPackage_of_extraction hExtract pack
 
 /--
 Lift the atlas bridge to the provider level.

@@ -164,6 +164,21 @@ theorem no_bounded_atlas_of_large_family
     exact (Nat.lt_irrefl _ hcontr)
 
 /--
+Negative existential form of `no_bounded_atlas_of_large_family`.
+
+This is the convenient no-go statement for bridge layers: a bounded atlas
+scenario can never by itself witness a strict large-family gap on subsets of
+its own serviced family.
+-/
+theorem no_large_subset_of_boundedAtlasScenario
+    {n : Nat} (sc : BoundedAtlasScenario n) :
+    ¬ ∃ Y : Finset (Core.BitVec n → Bool),
+        Y ⊆ familyFinset sc ∧ scenarioCapacity (sc := sc) < Y.card := by
+  intro h
+  rcases h with ⟨Y, hYsubset, hLarge⟩
+  exact no_bounded_atlas_of_large_family (sc := sc) Y hYsubset hLarge
+
+/--
   Версия критерия с тест-набором: если все функции из `Y` совпадают с объединением
   словаря за пределами `T`, а мощность `Y` превосходит тестовую ёмкость, то атлас
   не может покрыть такое семейство.  Граница `testsetCapacity` напрямую использует

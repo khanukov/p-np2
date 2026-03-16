@@ -92,6 +92,20 @@ theorem scenarioBudget_of_semanticSwitchingCertificate
   }⟩
 
 /--
+No-go corollary for the current atlas route:
+the packaged scenario budget cannot by itself produce the strict large-family
+gap required by the current `AntiChecker_Partial` contradiction endpoint.
+-/
+theorem semanticSwitchingScenarioBudget_no_large_gap
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pack : SemanticSwitchingScenarioBudgetPartial hFormula) :
+    ¬ ∃ Y : Finset (Core.BitVec pack.cert.ac0.n → Bool),
+        Y ⊆ LowerBounds.familyFinset (sc := pack.pack.scenario) ∧
+        LowerBounds.scenarioCapacity (sc := pack.pack.scenario) < Y.card := by
+  exact LowerBounds.no_large_subset_of_boundedAtlasScenario pack.pack.scenario
+
+/--
 Lift the atlas bridge to the provider level.
 -/
 theorem boundedAtlasScenarioProvider_of_semanticSwitchingCertificateProvider

@@ -785,6 +785,23 @@ def ApproxOnTestset
     Set (Domain m → Bool) :=
   { f | ∃ g, g ∈ UnionClass R k ∧ mismatchSet (m := m) g f ⊆ T }
 
+/--
+The most direct testset attached to an approximant `coveredB S` is its full
+mismatch set with `f`.
+-/
+lemma approxOnTestset_of_mismatchSet
+    {m : Nat} {R : List (Subcube m)} {k : Nat}
+    {f : Domain m → Bool} {S : List (Subcube m)}
+    (hlen : S.length ≤ k)
+    (hsub : listSubset S R) :
+    f ∈ ApproxOnTestset
+      (R := R)
+      (k := k)
+      (T := mismatchSet (fun x => coveredB S x) f) := by
+  refine ⟨fun x => coveredB S x, ?_, ?_⟩
+  · exact ⟨S, hlen, hsub, rfl⟩
+  · simpa using (subset_rfl : mismatchSet (fun x => coveredB S x) f ⊆ mismatchSet (fun x => coveredB S x) f)
+
 /-- Полезный синоним для подтипа функций, удовлетворяющих условию тест-набора. -/
 abbrev ApproxOnTestsetSubtype
     {m : Nat} (R : List (Subcube m)) (k : Nat)
@@ -957,6 +974,28 @@ theorem incompatibility_on_testset
         (Y := Y) hY
     have hcontr := Nat.lt_of_le_of_lt h_le hLarge
     exact Nat.lt_irrefl _ hcontr
+
+/--
+`errU ≤ ε` controls the density of the natural mismatch testset.
+-/
+lemma mismatchSet_density_le_of_errU_le
+    {m : Nat} (f : Domain m → Bool) (S : List (Subcube m))
+    (ε : Q) (h : errU f S ≤ ε) :
+    (((mismatchSet (fun x => coveredB S x) f).card : Nat) : Q) /
+        ((Nat.pow 2 m : Nat) : Q)
+      ≤ ε := by
+  simpa [errU_eq_distU_div_pow, distU_card_mismatch] using h
+
+/--
+Nat-crossmul form of `mismatchSet_density_le_of_errU_le`.
+-/
+lemma mismatchSet_card_le_of_errU_le
+    {m : Nat} (f : Domain m → Bool) (S : List (Subcube m))
+    (ε : Q) (h : errU f S ≤ ε) :
+    (((mismatchSet (fun x => coveredB S x) f).card : Nat) : Q)
+      ≤ ε * ((Nat.pow 2 m : Nat) : Q) := by
+  simpa [distU_card_mismatch] using
+    distU_le_of_errU_le (f := f) (S := S) (ε := ε) h
 
 /--
   Удобная переформулировка: если заранее известно, что словарь имеет

@@ -80,14 +80,22 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     `LowerBounds.smallMismatchPackage_of_singletonProvenancePackage_of_mismatch_card_le`
     now shows that the singleton/provenance layer is missing only one extra
     input before it reaches the stronger small-mismatch branch.
-18. The new exact probe frontier is no longer family size. It is the missing
-    singleton invariant
-    `|(mismatchSet (coveredB S) f)| ≤ polylogBudget`
-    for the bounded witness `S` coming from the source-produced atlas scenario.
-19. The singleton small-mismatch package/provider remains in the codebase as a
-    stronger-source side branch. The new singleton/provenance endpoint is the
-    staging layer for probing what extra invariant, beyond `ApproxClass`, would
-    recover it on the active internal route.
+18. A new density-oriented singleton endpoint now packages the exact current
+    internal route output more faithfully:
+    source-produced singleton provenance, bounded witness `S`,
+    `errU f S ≤ ε`, and `ε ≤ 1 / (n + 2)`.
+19. This density layer produces the natural mismatch testset
+    `T = mismatchSet (coveredB S) f`, shows
+    `f ∈ ApproxOnTestset ... T`, and proves the density bound
+    `|T| / 2^n ≤ 1 / (n + 2)`.
+20. The old testset-capacity endpoint is now reduced to one explicit missing
+    hypothesis on the active singleton density route:
+    `testsetCapacity (sc := scenario) (T := mismatchSet (coveredB S) f) < 1`.
+21. The singleton small-mismatch package/provider remains in the codebase as a
+    stronger-source side branch. The singleton density endpoint is now the
+    staging layer for any new contradiction route that consumes singleton
+    provenance plus density/error data without requiring exact
+    polylog-small mismatch cardinality.
 
 ## What is already closed
 

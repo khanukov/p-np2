@@ -908,6 +908,64 @@ theorem formulaSemanticMultiSwitchingProvider_internal_singleton_family
   simp [f]
 
 /--
+Explicit source-side certificate produced by the current internal semantic
+provider. This avoids `Classical.choice` noise when reasoning about the active
+singleton route.
+-/
+noncomputable def semanticSwitchingCertificate_internal
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    SemanticSwitchingCertificatePartial hFormula := by
+  classical
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+    fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+  let ac0 : ThirdPartyFacts.AC0Parameters := semanticParams f
+  let F : Core.Family ac0.n := [f]
+  have hsame : ac0.n = Models.partialInputLen p := rfl
+  have hFam : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F := by
+    simpa [ac0, F, f] using semanticFamilyWitnessProp f
+  let w : ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F := semanticMultiSwitchingWitness f
+  have hpolyW : ThirdPartyFacts.AC0PolylogBoundWitness ac0 F hFam := by
+    simpa [w] using ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching ac0 F w
+  refine {
+    ac0 := ac0
+    F := F
+    hsame := hsame
+    hFam := hFam
+    w := w
+    hpolyW := hpolyW
+    hLink := ?_
+  }
+  refine ⟨f, by simp [F], ?_⟩
+  intro x
+  simp [f, c, wf]
+
+/--
+The explicit certificate carried by the current internal provider has singleton
+family payload.
+-/
+theorem formulaSemanticMultiSwitchingProvider_internal_cert_length_eq_one
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    (semanticSwitchingCertificate_internal hFormula).F.length = 1 := by
+  classical
+  simp [semanticSwitchingCertificate_internal]
+
+/--
+The current internal provider cannot satisfy the minimal nontrivial-family
+frontier: its explicit certificate already has `F.length = 1`.
+-/
+theorem formulaSemanticMultiSwitchingProvider_internal_not_nontrivial_family
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    ¬ 2 ≤ (semanticSwitchingCertificate_internal hFormula).F.length := by
+  rw [formulaSemanticMultiSwitchingProvider_internal_cert_length_eq_one hFormula]
+  omega
+
+/--
 Package the current semantic multi-switching provider into the explicit
 source-side certificate layer.
 -/

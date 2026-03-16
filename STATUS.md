@@ -69,6 +69,13 @@ Release positioning for current tree: `RELEASE_RC.md`.
   `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_singleton_family`
   shows that the earliest exported semantic package already has family payload
   `[f]`.
+- This is now also fixed directly on the certificate layer:
+  `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_cert_length_eq_one`
+  and
+  `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_not_nontrivial_family`
+  show that the explicit internal certificate already has `F.length = 1`, so
+  the minimal nontrivial-family source frontier is not realized by the current
+  active internal source line.
 - Independently of the tree-symmetry issue, the explicit current internal
   source route remains singleton all the way through the later contradiction
   entry layer:

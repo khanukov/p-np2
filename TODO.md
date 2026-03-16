@@ -64,8 +64,23 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
    `LowerBounds.current_source_route_no_two_point_family` rules out a direct
    two-point family lift from the already packaged singleton `ApproxClass`
    witness.
-13. The singleton small-mismatch package/provider remains in the codebase as a
-    stronger-source side branch, not as the primary contradiction route.
+13. The current source-family branch should now be treated as locally closed:
+    the active internal provider is singleton at package, certificate, and
+    downstream `ApproxClass` entry layers.
+14. The new active endpoint probe is now singleton/provenance-based:
+    `LowerBounds.SemanticSwitchingSingletonProvenancePackagePartial`
+    packages one source-produced bounded atlas scenario, one linked function,
+    and the explicit identity `pack.cert.F = [f]`.
+15. This package is realized by the current internal route through
+    `LowerBounds.singletonProvenancePackage_of_internal_provider`.
+16. The new exact probe frontier is no longer family size. It is the missing
+    singleton invariant
+    `|(mismatchSet (coveredB S) f)| ≤ polylogBudget`
+    for the bounded witness `S` coming from the source-produced atlas scenario.
+17. The singleton small-mismatch package/provider remains in the codebase as a
+    stronger-source side branch. The new singleton/provenance endpoint is the
+    staging layer for probing what extra invariant, beyond `ApproxClass`, would
+    recover it on the active internal route.
 
 ## What is already closed
 

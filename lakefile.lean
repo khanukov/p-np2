@@ -77,6 +77,7 @@ lean_lib PnP3 where
     Glob.one `LowerBounds.LB_Formulas,
     Glob.one `LowerBounds.ApproxClassContradiction,
     Glob.one `LowerBounds.ApproxClassNoGo,
+    Glob.one `LowerBounds.SingletonProvenanceEndpoint,
     Glob.one `LowerBounds.MCSPGapLocality,
     Glob.one `LowerBounds.AntiChecker_Partial,
     Glob.one `LowerBounds.LB_Formulas_Core_Partial,

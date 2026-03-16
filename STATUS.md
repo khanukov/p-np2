@@ -122,6 +122,18 @@ Release positioning for current tree: `RELEASE_RC.md`.
   singleton density layer. The next meaningful endpoint must consume singleton
   provenance plus density/error data directly; it cannot be another wrapper
   around the old `testsetCapacity < 1` endpoint.
+- A new formula-free consumer layer now exists in
+  `pnp3/LowerBounds/SingletonDensityContradiction.lean`.
+  It factors the current singleton-density package through the abstract
+  scenario-level payload `AbstractSingletonDensityPayload`, carrying only:
+  `sc`, `f ∈ sc.family`, bounded witness `S`, `errU ≤ ε`, and
+  `ε ≤ 1 / (n + 2)`.
+- This abstraction already rederives all natural mismatch consequences without
+  referencing formula-specific source constructors and therefore marks the
+  first genuinely positive DAG-relevant staging layer on the singleton route.
+- The next honest positive frontier is now:
+  can one prove a contradiction theorem from
+  `AbstractSingletonDensityPayload` alone, using only scenario/density data?
 
 ## Active final theorem surface
 

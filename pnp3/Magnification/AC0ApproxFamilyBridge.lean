@@ -16,6 +16,12 @@ import Magnification.AC0AtlasBridge
   route does not ask for a polylog-small exact mismatch set. Instead it targets
   the already formalized contradiction theorem `Counting.incompatibility`
   directly.
+
+  Current frontier note: the main obstacle is no longer `ApproxClass`
+  membership itself. A symmetry-transport layer now shows that `ApproxClass`
+  is stable under coordinate permutations, but at the cost of transporting the
+  dictionary. The remaining issue is to build one genuinely large finite family
+  inside one common fixed dictionary.
 -/
 
 namespace Pnp3

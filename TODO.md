@@ -31,7 +31,11 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 5. This route feeds the already formalized counting contradiction
    `Counting.incompatibility` directly, bypassing the dead
    `ScenarioBudget -> AntiChecker` branch.
-6. The singleton small-mismatch package/provider remains in the codebase as a
+6. A symmetry-transport layer now exists for `UnionClass`/`ApproxClass`, but
+   it transports the dictionary together with the function. The current
+   orbit-lift barrier is therefore not `ApproxClass` closure; it is the need
+   for one large finite family `Y` living in one common fixed dictionary.
+7. The singleton small-mismatch package/provider remains in the codebase as a
    stronger-source side branch, not as the primary contradiction route.
 
 ## What is already closed
@@ -216,14 +220,18 @@ Remaining for this milestone:
 
 1. Probe construction of the family-level direct contradiction package
    `SemanticSwitchingApproxFamilyProviderPartial` and localize the first red
-   goal in the large finite family `Y`.
-2. Keep the singleton small-mismatch branch as a secondary stronger-source
+   goal in the large finite family `Y`, with special attention to the new
+   common-dictionary barrier exposed by symmetry transport.
+2. Decide whether the next research branch is:
+   a family lift inside one fixed atlas dictionary, or a revised counting
+   endpoint that can tolerate transported dictionaries.
+3. Keep the singleton small-mismatch branch as a secondary stronger-source
    program only if the family-level route stalls for clearly source-side
    reasons.
-3. If a concrete intended asymptotic family is introduced, add a family-
+4. If a concrete intended asymptotic family is introduced, add a family-
    specific nat comparison theorem for the singleton decision layer; otherwise
    treat the chosen-`β` route as nongeneric.
-4. Only after (1)-(3), decide whether an additional internalization step is
+5. Only after (1)-(4), decide whether an additional internalization step is
    still needed for the asymptotic formula-collapse endpoint.
 
 Acceptance criteria for this milestone:

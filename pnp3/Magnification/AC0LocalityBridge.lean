@@ -821,6 +821,41 @@ noncomputable def formulaSemanticMultiSwitchingProvider_internal :
   simp [f, c, wf]
 
 /--
+The current internal semantic provider is already singleton at the earliest
+source-facing package boundary: it exports the linked function as a one-element
+family `[f]`, not as a richer family payload.
+-/
+theorem formulaSemanticMultiSwitchingProvider_internal_singleton_family
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ (ac0 : ThirdPartyFacts.AC0Parameters) (F : Core.Family ac0.n)
+      (hsame : ac0.n = Models.partialInputLen p),
+      ThirdPartyFacts.AC0FamilyWitnessProp ac0 F ∧
+      Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) ∧
+      ∃ f : Core.BitVec ac0.n → Bool,
+        F = [f] ∧
+        ∀ x : Core.BitVec ac0.n,
+          f x = ComplexityInterfaces.FormulaCircuit.eval c
+            (ThirdPartyFacts.castBitVec hsame x) := by
+  classical
+  intro wf c
+  let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+    fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+  let ac0 : ThirdPartyFacts.AC0Parameters := semanticParams f
+  let F : Core.Family ac0.n := [f]
+  have hsame : ac0.n = Models.partialInputLen p := rfl
+  have hFam : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F := by
+    simpa [ac0, F, f] using semanticFamilyWitnessProp f
+  have hMSw : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) := by
+    simpa [ac0, F, f] using semanticMultiSwitchingWitness_nonempty f
+  refine ⟨ac0, F, hsame, hFam, hMSw, f, rfl, ?_⟩
+  intro x
+  simp [f]
+
+/--
 Package the current semantic multi-switching provider into the explicit
 source-side certificate layer.
 -/

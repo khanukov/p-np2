@@ -61,6 +61,12 @@ Release positioning for current tree: `RELEASE_RC.md`.
   generic canonical `PDT` shape to exploit.
 - Independently of the tree-symmetry issue, the explicit current internal
   source route is singleton before counting starts:
+  `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_singleton_family`
+  shows that the earliest exported semantic package already has family payload
+  `[f]`.
+- Independently of the tree-symmetry issue, the explicit current internal
+  source route remains singleton all the way through the later contradiction
+  entry layer:
   `LowerBounds.current_source_route_no_two_point_family` shows that the route
   used by `current_source_route_gives_singleton_approxClass` cannot directly
   supply even a two-point family.

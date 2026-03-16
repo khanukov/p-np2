@@ -49,11 +49,15 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
    `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_singleton_family`
    shows that `formulaSemanticMultiSwitchingProvider_internal` exports
    family payload `[f]`.
-10. The explicit current internal route remains singleton before counting:
+10. The next minimal stronger-source target is now explicit:
+   `AC0LocalityBridge.SemanticSwitchingNontrivialFamilyPackagePartial` asks
+   only for one source-produced certificate with `2 ≤ F.length`.
+   This is the first meaningful frontier above the current singleton provider.
+11. The explicit current internal route remains singleton before counting:
    `LowerBounds.current_source_route_no_two_point_family` rules out a direct
    two-point family lift from the already packaged singleton `ApproxClass`
    witness.
-11. The singleton small-mismatch package/provider remains in the codebase as a
+12. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch, not as the primary contradiction route.
 
 ## What is already closed

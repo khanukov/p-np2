@@ -15,6 +15,10 @@ import LowerBounds.LB_Formulas
       `ApproxClass -> generic small mismatch`);
   3) exposes the provenance-aware stronger-source frontier
      (`SemanticSwitchingSmallMismatchPackagePartial`).
+
+  The currently recommended direct contradiction route now lives in
+  `Magnification.AC0ApproxFamilyBridge`: it asks for a large finite family in a
+  common `ApproxClass` and reuses `Counting.incompatibility` directly.
 -/
 
 namespace Pnp3

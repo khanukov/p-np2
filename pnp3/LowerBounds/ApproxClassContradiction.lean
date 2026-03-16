@@ -79,5 +79,29 @@ theorem current_source_route_gives_singleton_approxClass
       ε = (1 : Core.Q) / (Models.partialInputLen p + 2) := by
   simpa using Magnification.AC0LocalityBridge.current_singleton_linked_function_in_approxClass hFormula
 
+/--
+The current internal source route is genuinely singleton before any counting
+argument starts: its explicit family payload is `[f]`, so it cannot directly
+yield even a two-point family.
+-/
+theorem current_source_route_no_two_point_family
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    ¬ ∃ f₁ f₂ : Core.BitVec (Models.partialInputLen p) → Bool,
+        f₁ ∈ ([f] : Core.Family (Models.partialInputLen p)) ∧
+        f₂ ∈ ([f] : Core.Family (Models.partialInputLen p)) ∧
+        f₁ ≠ f₂ := by
+  intro wf c f
+  intro h
+  rcases h with ⟨f₁, f₂, hf₁, hf₂, hne⟩
+  have hf₁eq : f₁ = f := by simpa using hf₁
+  have hf₂eq : f₂ = f := by simpa using hf₂
+  exact hne (hf₁eq.trans hf₂eq.symm)
+
 end LowerBounds
 end Pnp3

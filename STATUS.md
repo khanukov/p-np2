@@ -92,8 +92,16 @@ Release positioning for current tree: `RELEASE_RC.md`.
   explicit identity `pack.cert.F = [f]`.
 - This package is realized directly by the current internal provider via
   `LowerBounds.singletonProvenancePackage_of_internal_provider`.
+- The singleton package now also extracts the exact bounded witness already
+  carried by the source-produced scenario:
+  `LowerBounds.singletonProvenance_boundedWitness`.
 - The package also re-derives the already-known approximation fact:
   `LowerBounds.linked_function_in_approxClass_of_singletonProvenancePackage`.
+- The bridge
+  `LowerBounds.smallMismatchPackage_of_singletonProvenancePackage_of_mismatch_card_le`
+  now makes the frontier exact: the singleton/provenance layer already
+  supplies every field needed for the stronger small-mismatch package except
+  the one missing mismatch-cardinality bound.
 - The first honest red goal for the next endpoint probe is now explicit:
   from the source-produced bounded witness `S` one still needs
   `|(mismatchSet (coveredB S) f)| ≤ polylogBudget`.

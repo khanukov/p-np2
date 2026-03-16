@@ -73,11 +73,18 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     and the explicit identity `pack.cert.F = [f]`.
 15. This package is realized by the current internal route through
     `LowerBounds.singletonProvenancePackage_of_internal_provider`.
-16. The new exact probe frontier is no longer family size. It is the missing
+16. The singleton package also exposes the exact bounded witness already
+    supplied by the source-produced scenario:
+    `LowerBounds.singletonProvenance_boundedWitness`.
+17. The bridge
+    `LowerBounds.smallMismatchPackage_of_singletonProvenancePackage_of_mismatch_card_le`
+    now shows that the singleton/provenance layer is missing only one extra
+    input before it reaches the stronger small-mismatch branch.
+18. The new exact probe frontier is no longer family size. It is the missing
     singleton invariant
     `|(mismatchSet (coveredB S) f)| ≤ polylogBudget`
     for the bounded witness `S` coming from the source-produced atlas scenario.
-17. The singleton small-mismatch package/provider remains in the codebase as a
+19. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The new singleton/provenance endpoint is the
     staging layer for probing what extra invariant, beyond `ApproxClass`, would
     recover it on the active internal route.

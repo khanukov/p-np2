@@ -82,6 +82,23 @@ Release positioning for current tree: `RELEASE_RC.md`.
   `LowerBounds.current_source_route_no_two_point_family` shows that the route
   used by `current_source_route_gives_singleton_approxClass` cannot directly
   supply even a two-point family.
+- The current source-family branch should now be treated as locally exhausted:
+  the active internal semantic route is singleton at package, certificate, and
+  downstream `ApproxClass` entry layers.
+- A new singleton/provenance endpoint layer is now present in
+  `pnp3/LowerBounds/SingletonProvenanceEndpoint.lean`:
+  `SemanticSwitchingSingletonProvenancePackagePartial` packages one
+  source-produced bounded atlas scenario, one linked function `f`, and the
+  explicit identity `pack.cert.F = [f]`.
+- This package is realized directly by the current internal provider via
+  `LowerBounds.singletonProvenancePackage_of_internal_provider`.
+- The package also re-derives the already-known approximation fact:
+  `LowerBounds.linked_function_in_approxClass_of_singletonProvenancePackage`.
+- The first honest red goal for the next endpoint probe is now explicit:
+  from the source-produced bounded witness `S` one still needs
+  `|(mismatchSet (coveredB S) f)| ≤ polylogBudget`.
+  In other words, singleton provenance plus `ApproxClass` membership still do
+  not by themselves recover the stronger small-mismatch package.
 
 ## Active final theorem surface
 
@@ -115,7 +132,9 @@ Formula-route progress note (2026-03-15):
   `Magnification.AC0ApproxFamilyBridge`, with a contradiction theorem that
   reuses the existing counting endpoint.
 - The singleton small-mismatch frontier remains formalized as a stronger-source
-  side branch, with a thin bridge to linked polylog-small testsets.
+  side branch, with a thin bridge to linked polylog-small testsets; the new
+  singleton/provenance endpoint isolates exactly why the current source line
+  does not yet reach that branch.
 
 ## Interpretation
 

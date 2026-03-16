@@ -3,6 +3,7 @@ import Magnification.AC0AtlasBridge
 import Magnification.AC0ApproxFamilyBridge
 import LowerBounds.ApproxClassContradiction
 import LowerBounds.ApproxClassNoGo
+import LowerBounds.SingletonProvenanceEndpoint
 import Tests.BridgeLocalityRegression
 import ThirdPartyFacts.Facts_Switching
 
@@ -102,6 +103,8 @@ open Pnp3.Magnification
 #print axioms LowerBounds.linked_function_in_approxClass_of_semanticSwitchingScenarioBudget
 #print axioms LowerBounds.current_source_route_gives_singleton_approxClass
 #print axioms LowerBounds.current_source_route_no_two_point_family
+#print axioms LowerBounds.singletonProvenancePackage_of_internal_provider
+#print axioms LowerBounds.linked_function_in_approxClass_of_singletonProvenancePackage
 #print axioms LowerBounds.mismatchSet_false_indicator_eq
 #print axioms LowerBounds.approxClass_does_not_imply_small_mismatch
 #print axioms AC0AtlasBridge.boundedAtlasScenarioProvider_of_semanticSwitchingCertificateProvider

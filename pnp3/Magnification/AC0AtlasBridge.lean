@@ -57,6 +57,34 @@ def SemanticSwitchingScenarioBudgetProviderPartial : Prop :=
     Nonempty (SemanticSwitchingScenarioBudgetPartial hFormula)
 
 /--
+Exact source-side frontier for the current atlas route:
+from one bounded atlas scenario package, extract a linked witness whose full
+mismatch set against one bounded union-of-subcubes approximant is already
+polylogarithmically small.
+
+This is strictly stronger than the currently available density control
+`errU ≤ ε`. It is the precise additional input needed to recover the small
+testset route from the existing atlas package.
+-/
+def SemanticSwitchingSmallMismatchExtractionPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pack : SemanticSwitchingBoundedAtlasScenarioPartial hFormula),
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ f : Core.BitVec pack.cert.ac0.n → Bool,
+      f ∈ pack.cert.F ∧
+      (∀ x : Core.BitVec pack.cert.ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec pack.cert.hsame x)) ∧
+      ∃ S : List (Core.Subcube pack.cert.ac0.n),
+        S.length ≤ pack.k ∧
+        Core.listSubset S pack.scenario.atlas.dict ∧
+        (Counting.mismatchSet (fun x => Core.coveredB S x) f).card
+          ≤ Models.polylogBudget pack.cert.ac0.n
+
+/--
 Named bridge: one semantic switching certificate yields one bounded atlas
 scenario through the existing polylog AC0-to-atlas route.
 -/
@@ -164,6 +192,47 @@ theorem linked_testset_of_semanticSwitchingScenarioBudget
     exact le_trans hCardErr <|
       mul_le_mul_of_nonneg_right pack.pack.epsilon_le_inv hPowNonneg
   refine ⟨f, hfF, hfEval, T, hApprox, hCard⟩
+
+/--
+If a source-side bounded atlas package additionally comes with a bounded-union
+witness whose mismatch set is already polylogarithmically small, then the
+current small-testset layer is recovered immediately.
+
+This is the exact downstream reuse point for any future stronger source
+theorem. It still does **not** bypass the separate large-family obstruction in
+the current `AntiChecker_Partial` endpoint.
+-/
+theorem linked_small_testset_of_boundedAtlasScenario
+    (hExtract : SemanticSwitchingSmallMismatchExtractionPartial)
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pack : SemanticSwitchingBoundedAtlasScenarioPartial hFormula) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    ∃ f : Core.BitVec pack.cert.ac0.n → Bool,
+      f ∈ pack.cert.F ∧
+      (∀ x : Core.BitVec pack.cert.ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec pack.cert.hsame x)) ∧
+      ∃ T : Finset (Core.BitVec pack.cert.ac0.n),
+        T.card ≤ Models.polylogBudget pack.cert.ac0.n ∧
+        f ∈ Counting.ApproxOnTestset
+          (R := pack.scenario.atlas.dict)
+          (k := pack.k)
+          (T := T) := by
+  classical
+  intro wf c
+  rcases hExtract pack with ⟨f, hfF, hfEval, S, hlen, hsub, hcard⟩
+  refine ⟨f, hfF, ?_, ?_⟩
+  · simpa using hfEval
+  · exact
+      (Counting.exists_small_testset_iff_exists_small_mismatch_approximant
+        (R := pack.scenario.atlas.dict)
+        (k := pack.k)
+        (B := Models.polylogBudget pack.cert.ac0.n)
+        (f := f)).2
+        ⟨S, hlen, hsub, hcard⟩
 
 /--
 Lift the atlas bridge to the provider level.

@@ -1,6 +1,7 @@
 import Magnification.FinalResult
 import Magnification.AC0AtlasBridge
 import LowerBounds.ApproxClassContradiction
+import LowerBounds.ApproxClassNoGo
 import Tests.BridgeLocalityRegression
 import ThirdPartyFacts.Facts_Switching
 
@@ -77,6 +78,8 @@ open Pnp3.Magnification
 #print axioms Counting.exists_small_testset_iff_exists_small_mismatch_approximant
 #print axioms LowerBounds.linked_function_in_approxClass_of_semanticSwitchingScenarioBudget
 #print axioms LowerBounds.current_source_route_gives_singleton_approxClass
+#print axioms LowerBounds.mismatchSet_false_indicator_eq
+#print axioms LowerBounds.approxClass_does_not_imply_small_mismatch
 #print axioms AC0AtlasBridge.boundedAtlasScenarioProvider_of_semanticSwitchingCertificateProvider
 #print axioms AC0AtlasBridge.scenarioBudgetProvider_of_semanticSwitchingCertificateProvider
 #print axioms AC0AtlasBridge.boundedAtlasScenarioProvider_of_formulaSemanticMultiSwitchingProvider_internal

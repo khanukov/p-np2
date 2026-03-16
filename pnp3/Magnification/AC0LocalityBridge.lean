@@ -143,6 +143,58 @@ def SemanticSwitchingCertificateProviderPartial : Prop :=
     Nonempty (SemanticSwitchingCertificatePartial hFormula)
 
 /--
+Minimal stronger source-side frontier above the current singleton route:
+the source theorem should still produce a semantic switching certificate, but
+now with a genuinely nontrivial family payload.
+
+This is intentionally weaker than any family-level counting package. It only
+asks for `2 ≤ F.length`, isolating the first place where the current internal
+provider collapses to `[f]`.
+-/
+structure SemanticSwitchingNontrivialFamilyPackagePartial
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  cert : SemanticSwitchingCertificatePartial hFormula
+  hNontrivial : 2 ≤ cert.F.length
+
+/--
+Provider-level version of the minimal nontrivial-family source frontier.
+-/
+def SemanticSwitchingNontrivialFamilyProviderPartial : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    Nonempty (SemanticSwitchingNontrivialFamilyPackagePartial hFormula)
+
+/--
+Compatibility helper: a source certificate plus an explicit lower bound on
+`F.length` already packages into the minimal nontrivial-family frontier.
+-/
+def semanticSwitchingNontrivialFamilyPackage_of_certificate
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (cert : SemanticSwitchingCertificatePartial hFormula)
+    (hNontrivial : 2 ≤ cert.F.length) :
+    SemanticSwitchingNontrivialFamilyPackagePartial hFormula :=
+  ⟨cert, hNontrivial⟩
+
+/--
+If a source layer can already produce certificates and separately prove that
+their family payloads have length at least `2`, then it realizes the minimal
+nontrivial-family frontier.
+-/
+theorem semanticSwitchingNontrivialFamilyProvider_of_certificateProvider_and_length
+    (hCert : SemanticSwitchingCertificateProviderPartial)
+    (hLen :
+      ∀ {p : GapPartialMCSPParams}
+        (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+        let cert := Classical.choice (hCert (p := p) hFormula)
+        2 ≤ cert.F.length) :
+    SemanticSwitchingNontrivialFamilyProviderPartial := by
+  intro p hFormula
+  let cert := Classical.choice (hCert (p := p) hFormula)
+  exact ⟨semanticSwitchingNontrivialFamilyPackage_of_certificate cert (hLen hFormula)⟩
+
+/--
 Point-assignments list for `x`: one bit-fix `(i, x i)` for every input index.
 -/
 private noncomputable def pointAssignments {n : Nat}

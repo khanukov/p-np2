@@ -59,6 +59,11 @@ Release positioning for current tree: `RELEASE_RC.md`.
   construct a new canonical tree. They simply repackage
   `hpoly.shrinkage.commonPDT`, so the current orbit/stabilizer branch has no
   generic canonical `PDT` shape to exploit.
+- The next minimal stronger-source frontier is now explicit at the source
+  layer:
+  `AC0LocalityBridge.SemanticSwitchingNontrivialFamilyPackagePartial` /
+  provider ask only for one semantic switching certificate whose family payload
+  already satisfies `2 ≤ F.length`.
 - Independently of the tree-symmetry issue, the explicit current internal
   source route is singleton before counting starts:
   `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_singleton_family`

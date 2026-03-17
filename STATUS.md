@@ -135,12 +135,16 @@ Release positioning for current tree: `RELEASE_RC.md`.
   empty-dictionary / constant-zero scenario, so a contradiction theorem from
   `AbstractSingletonDensityPayload` alone is the wrong target.
 - The minimally strengthened abstract object is now
-  `LowerBounds.AbstractLinkedSingletonDensityPayload`: the same scenario-level
-  density data together with an explicit link from the distinguished function
-  to a target Boolean slice.
+  `LowerBounds.AbstractLinkedSingletonDensityPayload`, but this wrapper is now
+  also known to be vacuous: any raw payload can choose `target := f` and obtain
+  it for free.
+- The first non-vacuous abstract strengthening is now
+  `LowerBounds.AbstractTargetedSingletonDensityPayload`, where the target is
+  fixed externally rather than chosen from inside the payload.
 - The next honest positive frontier is now a contradiction theorem from this
-  linked abstract payload, or another equally formula-free strengthening,
-  without pulling formula-specific constructors back into the consumer.
+  externally targeted abstract payload, or another equally formula-free
+  strengthening, without pulling formula-specific constructors back into the
+  consumer.
 
 ## Active final theorem surface
 

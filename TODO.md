@@ -122,7 +122,10 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     realization and a strict DAG-side realization. The active missing piece is
     therefore no longer a source package for this target, but a consumer /
     contradiction theorem from that common payload.
-29. The singleton small-mismatch package/provider remains in the codebase as a
+29. The DAG-facing route is now formally reduced to a single missing theorem:
+    a contradiction consumer from
+    `LowerBounds.AbstractGapTargetedSingletonDensityPayload`.
+30. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

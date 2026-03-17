@@ -128,7 +128,17 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 30. The cheapest consumer subroute is now explicit in code: the empty-witness
     route reduces to proving the formula-free numeric inequality
     `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
-31. The singleton small-mismatch package/provider remains in the codebase as a
+31. The empty-witness subroute is now known to be too weak: even when that
+    numeric inequality closes, it yields only admissibility of `Rf = []`, not
+    contradiction.
+32. The next consumer-facing strengthening is now
+    `LowerBounds.AbstractGapWitnessedPayload`, which adds one explicit
+    non-empty bounded witness `Rf` over the same fixed gap-target payload.
+33. The strongest purely witness-level consequence currently extracted from
+    that new payload is just `∃ x, coveredB Rf x = true`. The next honest
+    consumer probe must therefore use target semantics more deeply than
+    witness existence and density alone.
+34. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

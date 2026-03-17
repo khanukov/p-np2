@@ -155,10 +155,20 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - The cheapest consumer subroute is now formalized as an empty-witness route.
   It reduces to a purely formula-free Shannon-style numeric condition:
   `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
+- That empty-witness subroute is now known to be too weak for contradiction:
+  even when the Shannon inequality makes `Rf = []` admissible, the old
+  contradiction still collapses to the impossible requirement
+  `testsetCapacity < 1`.
+- The next abstract strengthening now lives one level higher, as a non-empty
+  witness payload
+  `LowerBounds.AbstractGapWitnessedPayload`. It adds one explicit non-empty
+  bounded witness `Rf` inside the same fixed gap-target scenario and already
+  yields the strongest purely witness-level consequence available without new
+  target semantics: some input is covered by `Rf`.
 - The next honest positive frontier is now a contradiction theorem from this
-  semantically fixed gap-target payload, or another equally formula-free
-  strengthening, without pulling formula-specific constructors back into the
-  consumer.
+  semantically fixed gap-target payload plus non-empty witness data, or
+  another equally formula-free strengthening, without pulling formula-specific
+  constructors back into the consumer.
 
 ## Active final theorem surface
 

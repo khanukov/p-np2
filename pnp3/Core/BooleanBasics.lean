@@ -187,6 +187,17 @@ lemma mem_iff {n : Nat} (β : Subcube n) (x : BitVec n) :
   change memB β x = true ↔ ∀ i : Fin n, ∀ b : Bool, β i = some b → x i = b
   exact memB_eq_true_iff (β := β) (x := x)
 
+/--
+Every subcube contains at least one point: assign each fixed coordinate its
+prescribed bit and send every free coordinate to `false`.
+-/
+lemma exists_mem_subcube {n : Nat} (β : Subcube n) :
+    ∃ x : BitVec n, mem β x := by
+  refine ⟨fun i => match β i with | some b => b | none => false, ?_⟩
+  refine (mem_iff (β := β) (x := fun i => match β i with | some b => b | none => false)).2 ?_
+  intro i b hib
+  simp [hib]
+
 /-- Тривиальный подкуб, у которого все координаты свободны, содержит любую точку. -/
 @[simp] lemma mem_top {n : Nat} (x : BitVec n) :
     mem (fun _ : Fin n => (none : Option Bool)) x := by

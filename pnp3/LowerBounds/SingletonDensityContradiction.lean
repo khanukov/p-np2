@@ -25,6 +25,11 @@ import Counting.ShannonCounting
   the distinguished function itself. Even an externally targeted payload is
   still too weak when the target is arbitrary; the first semantically fixed
   frontier is therefore the gap-slice-targeted payload introduced below.
+  The current consumer-side strengthening after the empty-witness no-go is a
+  non-empty witness payload over that same fixed target. Even there, the
+  strongest purely witness-level consequence is only existence of a covered
+  point, so any future contradiction will have to use target semantics more
+  deeply than witness admissibility alone.
 -/
 
 namespace Pnp3
@@ -203,6 +208,64 @@ structure AbstractGapTargetedSingletonDensityPayload
     base.f = fun x =>
       Models.gapPartialMCSP_Language p (Models.partialInputLen p)
         (ThirdPartyFacts.castBitVec hsame x)
+
+/--
+Abstract non-empty witness strengthening of the fixed gap-target payload.
+
+This is the next consumer-facing strengthening after the empty-witness branch
+has been isolated as too weak: instead of asking only for admissibility of the
+empty list, we assume one explicit non-empty bounded witness inside the same
+scenario dictionary.
+-/
+structure AbstractGapWitnessedPayload
+    (p : GapPartialMCSPParams) where
+  base : AbstractGapTargetedSingletonDensityPayload p
+  Rf : List (Core.Subcube base.n)
+  hRf_ne : Rf ≠ []
+  hRf_len : Rf.length ≤ base.base.sc.k
+  hRf_sub : Core.listSubset Rf base.base.sc.atlas.dict
+  hRf_err : Core.errU base.base.f Rf ≤ base.base.sc.atlas.epsilon
+
+/--
+Thin packaging lemma: once one has an explicit non-empty bounded witness for
+the fixed gap-target payload, it can be reified as an `AbstractGapWitnessedPayload`.
+-/
+noncomputable def abstractGapWitnessedPayload_of_exists_nonemptyWitness
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hWitness :
+      ∃ Rf : List (Core.Subcube pkg.n),
+        Rf ≠ [] ∧
+        Rf.length ≤ pkg.base.sc.k ∧
+        Core.listSubset Rf pkg.base.sc.atlas.dict ∧
+        Core.errU pkg.base.f Rf ≤ pkg.base.sc.atlas.epsilon) :
+    AbstractGapWitnessedPayload p := by
+  classical
+  let Rf := Classical.choose hWitness
+  have hRf := Classical.choose_spec hWitness
+  exact
+    { base := pkg
+      Rf := Rf
+      hRf_ne := hRf.1
+      hRf_len := hRf.2.1
+      hRf_sub := hRf.2.2.1
+      hRf_err := hRf.2.2.2 }
+
+/--
+Any non-empty witness list covers at least one point. This is the strongest
+purely witness-level consequence available without using any target semantics.
+-/
+theorem exists_covered_point_of_abstractGapWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p) :
+    ∃ x : Core.BitVec pkg.base.n, Core.coveredB pkg.Rf x = true := by
+  rcases List.exists_cons_of_ne_nil pkg.hRf_ne with ⟨β, rest, hEq⟩
+  rcases Core.exists_mem_subcube β with ⟨x, hx⟩
+  refine ⟨x, ?_⟩
+  have hxB : Core.memB β x = true := hx
+  have hxCov : Core.coveredB (β :: rest) x = true := by
+    simpa [Core.coveredB_cons, hxB]
+  simpa [hEq] using hxCov
 
 /--
 The current concrete singleton-density package factors through the abstract

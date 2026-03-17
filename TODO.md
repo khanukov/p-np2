@@ -138,7 +138,16 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     that new payload is just `∃ x, coveredB Rf x = true`. The next honest
     consumer probe must therefore use target semantics more deeply than
     witness existence and density alone.
-34. The singleton small-mismatch package/provider remains in the codebase as a
+34. The first such semantic strengthening is now
+    `LowerBounds.AbstractGapCubeSoundWitnessPayload`, which assumes every
+    point in every witness cube is a YES-point of the fixed gap target.
+35. This semantic strengthening already closes the previous red goal
+    `f x = true` on covered points and yields existence of a YES-input for the
+    fixed gap slice.
+36. That is still too weak for contradiction, so the next honest frontier is
+    no longer pointwise YES-soundness but some negative/local incompatibility
+    theorem for non-empty YES-sound witness regions.
+37. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

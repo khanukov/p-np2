@@ -112,11 +112,15 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     `LowerBounds.AbstractLinkedSingletonDensityPayload` is now explicitly known
     to be vacuous: any raw payload can realize it by choosing `target := f`.
 26. The first non-vacuous abstract strengthening is now
-    `LowerBounds.AbstractTargetedSingletonDensityPayload`, where the target is
-    fixed externally rather than packaged existentially inside the payload.
-27. The singleton small-mismatch package/provider remains in the codebase as a
+    `LowerBounds.AbstractTargetedSingletonDensityPayload`, but this generic
+    target class is still too weak because it remains consistent for trivial
+    externally fixed targets such as the constant-zero function.
+27. The new semantically fixed frontier is now
+    `LowerBounds.AbstractGapTargetedSingletonDensityPayload`, where the target
+    is pinned to the gap-PartialMCSP slice itself rather than chosen freely.
+28. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
-    contradiction theorem that consumes the externally targeted abstract
+    contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing
     formula-specific source constructors into the consumer.
     directly, without exact polylog-small mismatch cardinality and without the

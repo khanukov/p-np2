@@ -125,7 +125,10 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 29. The DAG-facing route is now formally reduced to a single missing theorem:
     a contradiction consumer from
     `LowerBounds.AbstractGapTargetedSingletonDensityPayload`.
-30. The singleton small-mismatch package/provider remains in the codebase as a
+30. The cheapest consumer subroute is now explicit in code: the empty-witness
+    route reduces to proving the formula-free numeric inequality
+    `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
+31. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

@@ -342,6 +342,29 @@ theorem exists_yes_input_of_abstractGapCubeSoundWitnessPayload
     (ThirdPartyFacts.castBitVec pkg.base.base.hsame x)).1 hx
 
 /--
+If every witness cube is YES-sound and every witness cube also contains some
+NO-point of the same fixed gap target, the non-empty witness route collapses to
+an immediate contradiction.
+-/
+theorem contradiction_of_abstractGapCubeSoundWitnessPayload_of_cubeRefute
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapCubeSoundWitnessPayload p)
+    (hCubeRefute :
+      ∀ β, β ∈ pkg.base.Rf →
+        ∃ x : Core.BitVec pkg.base.base.n,
+          Core.mem β x ∧
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+            (ThirdPartyFacts.castBitVec pkg.base.base.hsame x) = false) :
+    False := by
+  rcases List.exists_cons_of_ne_nil pkg.base.hRf_ne with ⟨β, rest, hEq⟩
+  have hβ : β ∈ pkg.base.Rf := by
+    simpa [hEq]
+  rcases hCubeRefute β hβ with ⟨x, hxmem, hxfalse⟩
+  have hxtrue :=
+    pkg.hCubeSound β hβ x hxmem
+  cases (hxtrue.symm.trans hxfalse)
+
+/--
 The current concrete singleton-density package factors through the abstract
 scenario-level payload.
 -/

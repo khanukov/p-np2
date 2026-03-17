@@ -171,10 +171,12 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - This closes the previous consumer-side red goal
   `f x = true` on covered points and upgrades the route to an existential
   YES-input statement for the fixed gap slice.
-- But this still does not yield contradiction: existence of one YES-input is
-  compatible with the target language. The next missing ingredient is now a
-  negative/local incompatibility theorem about non-empty YES-sound witness
-  regions, not merely pointwise YES-soundness.
+- There is now a thin contradiction theorem showing that YES-soundness would be
+  enough if each witness cube also contained at least one NO-point of the same
+  fixed gap target.
+- So the active semantic barrier is no longer pointwise YES-soundness itself,
+  but a negative/local invariant of the form "every non-empty witness cube
+  contains a NO-point."
 - The next honest positive frontier is now a contradiction theorem from this
   semantically fixed gap-target payload plus a stronger negative semantic
   invariant on non-empty witnesses, or another equally formula-free

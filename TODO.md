@@ -144,10 +144,13 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 35. This semantic strengthening already closes the previous red goal
     `f x = true` on covered points and yields existence of a YES-input for the
     fixed gap slice.
-36. That is still too weak for contradiction, so the next honest frontier is
-    no longer pointwise YES-soundness but some negative/local incompatibility
-    theorem for non-empty YES-sound witness regions.
-37. The singleton small-mismatch package/provider remains in the codebase as a
+36. A thin contradiction theorem is now available: YES-sound witness cubes
+    would already be inconsistent if one could also show that every witness
+    cube contains some NO-point of the fixed gap target.
+37. So the next honest frontier is no longer pointwise YES-soundness but the
+    negative/local invariant "every non-empty witness cube contains a
+    NO-point."
+38. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

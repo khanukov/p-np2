@@ -149,6 +149,9 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - This fixed semantic payload is now realized from both active source lines:
   the current formula-side singleton-density route and a strict `PpolyDAG`
   witness for the same slice.
+- Consequently, the DAG-facing route is now reduced to one abstract missing
+  theorem: a contradiction consumer from
+  `LowerBounds.AbstractGapTargetedSingletonDensityPayload`.
 - The next honest positive frontier is now a contradiction theorem from this
   semantically fixed gap-target payload, or another equally formula-free
   strengthening, without pulling formula-specific constructors back into the

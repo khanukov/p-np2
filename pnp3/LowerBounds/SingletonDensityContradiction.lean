@@ -362,6 +362,44 @@ theorem abstractGapTargetedSingletonDensityPayload_of_dag
   }⟩
 
 /--
+An abstract consumer ruling out the semantically fixed gap-target payload
+already yields DAG non-uniform separation for the same fixed slice.
+-/
+theorem not_ppolyDAG_of_abstractGapTargeted_consumer
+    {p : GapPartialMCSPParams}
+    (hConsumer : ¬ Nonempty (AbstractGapTargetedSingletonDensityPayload p)) :
+    ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  intro hDag
+  exact hConsumer (abstractGapTargetedSingletonDensityPayload_of_dag hDag)
+
+/--
+Fixed-slice NP plus the abstract gap-target consumer already imply strict DAG
+non-uniform separation.
+-/
+theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer
+    {p : GapPartialMCSPParams}
+    (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
+    (hConsumer : ¬ Nonempty (AbstractGapTargetedSingletonDensityPayload p)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
+  exact not_ppolyDAG_of_abstractGapTargeted_consumer hConsumer
+
+/--
+TM-witness packaging version of the same reduction to DAG non-uniform
+separation.
+-/
+theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer_TM
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hConsumer : ¬ Nonempty (AbstractGapTargetedSingletonDensityPayload p)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer
+  exact
+    Models.gapPartialMCSP_in_NP_of_TM p
+      (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
+  exact hConsumer
+
+/--
 The natural mismatch testset attached to an abstract singleton-density payload.
 -/
 noncomputable def naturalMismatchTestsetOfAbstractSingletonDensityPayload

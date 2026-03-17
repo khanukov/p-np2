@@ -139,10 +139,15 @@ Release positioning for current tree: `RELEASE_RC.md`.
   also known to be vacuous: any raw payload can choose `target := f` and obtain
   it for free.
 - The first non-vacuous abstract strengthening is now
-  `LowerBounds.AbstractTargetedSingletonDensityPayload`, where the target is
-  fixed externally rather than chosen from inside the payload.
+  `LowerBounds.AbstractTargetedSingletonDensityPayload`, but this generic
+  target class is still too weak: it remains consistent for trivial externally
+  chosen targets such as the constant-zero function.
+- The semantically fixed gap-slice target is now isolated as
+  `LowerBounds.AbstractGapTargetedSingletonDensityPayload`, where the target is
+  no longer chosen freely but pinned to `gapPartialMCSP_Language p` on the
+  relevant slice.
 - The next honest positive frontier is now a contradiction theorem from this
-  externally targeted abstract payload, or another equally formula-free
+  semantically fixed gap-target payload, or another equally formula-free
   strengthening, without pulling formula-specific constructors back into the
   consumer.
 

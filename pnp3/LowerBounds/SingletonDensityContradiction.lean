@@ -21,7 +21,9 @@ import LowerBounds.SingletonDensityEndpoint
   theorem must consume a stronger formula-free target. The intermediate
   `AbstractLinkedSingletonDensityPayload` remains available as a compatibility
   wrapper, but it is too weak by itself because its target can be chosen to be
-  the distinguished function itself.
+  the distinguished function itself. Even an externally targeted payload is
+  still too weak when the target is arbitrary; the first semantically fixed
+  frontier is therefore the gap-slice-targeted payload introduced below.
 -/
 
 namespace Pnp3
@@ -135,6 +137,73 @@ structure AbstractTargetedSingletonDensityPayload
   hLink : base.f = target
 
 /--
+Even the externally targeted payload is consistent for trivial targets such as
+the constant-zero function.
+-/
+theorem nonempty_abstractTargetedSingletonDensityPayload_false
+    (n : Nat) :
+    Nonempty (AbstractTargetedSingletonDensityPayload n (fun _ => false)) := by
+  classical
+  let f : Core.BitVec n → Bool := fun _ => false
+  let A : Core.Atlas n := { dict := [], epsilon := 0 }
+  let sc : BoundedAtlasScenario n := {
+    atlas := A
+    family := [f]
+    k := 0
+    hε0 := by norm_num
+    hε1 := by norm_num
+    works := by
+      intro g hg
+      have hgEq : g = f := by
+        simpa [f] using hg
+      subst hgEq
+      refine ⟨[], Core.listSubset_nil _, ?_⟩
+      simpa [A, f] using (Core.errU_false_nil (n := n))
+    bounded := by
+      intro g hg
+      have hgEq : g = f := by
+        simpa [f] using hg
+      subst hgEq
+      refine ⟨[], by simp, Core.listSubset_nil _, ?_⟩
+      simpa [A, f] using (Core.errU_false_nil (n := n))
+  }
+  have hInv :
+      sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2) := by
+    have hNonneg : (0 : Core.Q) ≤ (1 : Core.Q) / (n + 2) := by
+      positivity
+    simpa [sc, A] using hNonneg
+  refine ⟨{
+    base := {
+      sc := sc
+      f := f
+      hf := by simp [sc, f]
+      S := []
+      hlen := by simp [sc]
+      hsub := Core.listSubset_nil _
+      herr := by simpa [sc, A, f] using (Core.errU_false_nil (n := n))
+      hEpsLeInv := hInv
+    }
+    hLink := by
+      funext x
+      rfl
+  }⟩
+
+/--
+Semantically fixed singleton-density payload for the concrete gap-PartialMCSP
+slice. This is the first non-vacuous target that does not let the consumer
+choose the target function internally.
+-/
+structure AbstractGapTargetedSingletonDensityPayload
+    (p : GapPartialMCSPParams) where
+  n : Nat
+  hsame : n = Models.partialInputLen p
+  base : AbstractSingletonDensityPayload n
+  hLink :
+    base.f = fun x =>
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec hsame x)
+
+/--
 The current concrete singleton-density package factors through the abstract
 scenario-level payload.
 -/
@@ -194,6 +263,39 @@ noncomputable def abstractTargetedSingletonDensityPayload_of_singletonDensityPac
   hLink := by
     funext x
     exact pkg.prov.hEval x
+
+/--
+Current internal formula route also reaches the semantically fixed gap-target
+payload.
+-/
+noncomputable def abstractGapTargetedSingletonDensityPayload_of_singletonDensityPackage
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pkg : SemanticSwitchingSingletonDensityPackagePartial hFormula) :
+    AbstractGapTargetedSingletonDensityPayload p where
+  n := pkg.prov.pack.cert.ac0.n
+  hsame := pkg.prov.pack.cert.hsame
+  base := abstractSingletonDensityPayload_of_singletonDensityPackage pkg
+  hLink := by
+    funext x
+    have hEval := pkg.prov.hEval x
+    have hCorrect :=
+      (Classical.choose hFormula).correct
+        (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec pkg.prov.pack.cert.hsame x)
+    exact hEval.trans hCorrect
+
+/--
+Current internal formula route also reaches the semantically fixed gap-target
+payload.
+-/
+theorem abstractGapTargetedSingletonDensityPayload_of_internal_provider
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    Nonempty (AbstractGapTargetedSingletonDensityPayload p) := by
+  classical
+  let pkg := Classical.choice (singletonDensityPackage_of_internal_provider hFormula)
+  exact ⟨abstractGapTargetedSingletonDensityPayload_of_singletonDensityPackage pkg⟩
 
 /--
 The natural mismatch testset attached to an abstract singleton-density payload.

@@ -146,6 +146,9 @@ Release positioning for current tree: `RELEASE_RC.md`.
   `LowerBounds.AbstractGapTargetedSingletonDensityPayload`, where the target is
   no longer chosen freely but pinned to `gapPartialMCSP_Language p` on the
   relevant slice.
+- This fixed semantic payload is now realized from both active source lines:
+  the current formula-side singleton-density route and a strict `PpolyDAG`
+  witness for the same slice.
 - The next honest positive frontier is now a contradiction theorem from this
   semantically fixed gap-target payload, or another equally formula-free
   strengthening, without pulling formula-specific constructors back into the

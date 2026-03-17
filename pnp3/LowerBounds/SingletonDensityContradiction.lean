@@ -298,6 +298,70 @@ theorem abstractGapTargetedSingletonDensityPayload_of_internal_provider
   exact ⟨abstractGapTargetedSingletonDensityPayload_of_singletonDensityPackage pkg⟩
 
 /--
+The strict DAG witness for the same gap slice also realizes the semantically
+fixed gap-target payload. This is the first source-side bridge that is shared
+by both the formula route and the DAG route.
+-/
+theorem abstractGapTargetedSingletonDensityPayload_of_dag
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    Nonempty (AbstractGapTargetedSingletonDensityPayload p) := by
+  classical
+  rcases hDag with ⟨wf, _⟩
+  let n := Models.partialInputLen p
+  let f : Core.BitVec n → Bool := fun x =>
+    ComplexityInterfaces.DagCircuit.eval (wf.family n) x
+  obtain ⟨A, hWorks, hεeq⟩ :=
+    Magnification.AC0LocalityBridge.semanticSingletonAtlas_exact_epsilon f
+  have hfF : f ∈ ([f] : Core.Family n) := by
+    simp [f]
+  rcases hWorks f hfF with ⟨S, hsub, herr⟩
+  have hε0 : (0 : Core.Q) ≤ A.epsilon := by
+    rw [hεeq]
+    positivity
+  have hε1 : A.epsilon ≤ (1 : Core.Q) / 2 := by
+    rw [hεeq]
+    have hpos : (0 : Core.Q) < (2 : Core.Q) := by norm_num
+    have hNat : (2 : Core.Q) ≤ (n + 2 : Core.Q) := by
+      norm_num
+    exact one_div_le_one_div_of_le (a := (2 : Core.Q)) (b := (n + 2 : Core.Q)) hpos hNat
+  let sc : BoundedAtlasScenario n := {
+    atlas := A
+    family := [f]
+    k := S.length
+    hε0 := hε0
+    hε1 := hε1
+    works := hWorks
+    bounded := by
+      intro g hg
+      have hgEq : g = f := by
+        simpa [f] using hg
+      subst hgEq
+      exact ⟨S, le_rfl, hsub, herr⟩
+  }
+  have hEpsLeInv : sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2) := by
+    rw [hεeq]
+    change (1 : Core.Q) / (n + 2) ≤ (1 : Core.Q) / (n + 2)
+    rfl
+  refine ⟨{
+    n := n
+    hsame := rfl
+    base := {
+      sc := sc
+      f := f
+      hf := by simp [sc, f]
+      S := S
+      hlen := by simp [sc]
+      hsub := hsub
+      herr := herr
+      hEpsLeInv := hEpsLeInv
+    }
+    hLink := by
+      funext x
+      simpa [n, f] using (wf.correct n x)
+  }⟩
+
+/--
 The natural mismatch testset attached to an abstract singleton-density payload.
 -/
 noncomputable def naturalMismatchTestsetOfAbstractSingletonDensityPayload

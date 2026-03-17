@@ -118,7 +118,11 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 27. The new semantically fixed frontier is now
     `LowerBounds.AbstractGapTargetedSingletonDensityPayload`, where the target
     is pinned to the gap-PartialMCSP slice itself rather than chosen freely.
-28. The singleton small-mismatch package/provider remains in the codebase as a
+28. This semantically fixed payload is now known to admit both a formula-side
+    realization and a strict DAG-side realization. The active missing piece is
+    therefore no longer a source package for this target, but a consumer /
+    contradiction theorem from that common payload.
+29. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

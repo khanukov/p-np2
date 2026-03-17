@@ -28,8 +28,10 @@ import Counting.ShannonCounting
   The current consumer-side strengthening after the empty-witness no-go is a
   non-empty witness payload over that same fixed target. Even there, the
   strongest purely witness-level consequence is only existence of a covered
-  point, so any future contradiction will have to use target semantics more
-  deeply than witness admissibility alone.
+  point. The next semantic strengthening records one-sided YES-soundness of
+  witness cubes; even that only yields existence of a YES-point / YES-input,
+  so any future contradiction will have to use target semantics more deeply
+  than witness admissibility and pointwise YES-soundness alone.
 -/
 
 namespace Pnp3
@@ -266,6 +268,78 @@ theorem exists_covered_point_of_abstractGapWitnessedPayload
   have hxCov : Core.coveredB (β :: rest) x = true := by
     simpa [Core.coveredB_cons, hxB]
   simpa [hEq] using hxCov
+
+/--
+First genuinely semantic strengthening of the non-empty witness route: every
+point covered by every witness cube is already a YES-point of the fixed gap
+target.
+-/
+structure AbstractGapCubeSoundWitnessPayload
+    (p : GapPartialMCSPParams) where
+  base : AbstractGapWitnessedPayload p
+  hCubeSound :
+    ∀ β, β ∈ base.Rf →
+      ∀ x : Core.BitVec base.base.n, Core.mem β x →
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+          (ThirdPartyFacts.castBitVec base.base.hsame x) = true
+
+/--
+Thin packaging helper for the first semantic witness strengthening.
+-/
+def abstractGapCubeSoundWitnessPayload_of_cubeSound
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p)
+    (hCubeSound :
+      ∀ β, β ∈ pkg.Rf →
+        ∀ x : Core.BitVec pkg.base.n, Core.mem β x →
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+            (ThirdPartyFacts.castBitVec pkg.base.hsame x) = true) :
+    AbstractGapCubeSoundWitnessPayload p where
+  base := pkg
+  hCubeSound := hCubeSound
+
+/--
+Cube-soundness already closes the first semantic red goal: any covered point
+is a YES-point of the fixed gap target.
+-/
+theorem gapTarget_true_of_covered_of_abstractGapCubeSoundWitnessPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapCubeSoundWitnessPayload p)
+    {x : Core.BitVec pkg.base.base.n}
+    (hx : Core.coveredB pkg.base.Rf x = true) :
+    Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+      (ThirdPartyFacts.castBitVec pkg.base.base.hsame x) = true := by
+  have hcov : Core.covered pkg.base.Rf x := (Core.covered_iff (Rset := pkg.base.Rf) x).2 hx
+  rcases hcov with ⟨β, hβ, hmem⟩
+  exact pkg.hCubeSound β hβ x hmem
+
+/--
+Consequently, the semantically strengthened non-empty witness route already
+forces the existence of one YES-point for the fixed gap target.
+-/
+theorem exists_yes_point_of_abstractGapCubeSoundWitnessPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapCubeSoundWitnessPayload p) :
+    ∃ x : Core.BitVec pkg.base.base.n,
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec pkg.base.base.hsame x) = true := by
+  rcases exists_covered_point_of_abstractGapWitnessedPayload pkg.base with ⟨x, hx⟩
+  exact ⟨x, gapTarget_true_of_covered_of_abstractGapCubeSoundWitnessPayload pkg hx⟩
+
+/--
+Semantic rephrasing of the same conclusion at the level of the PartialMCSP YES
+predicate.
+-/
+theorem exists_yes_input_of_abstractGapCubeSoundWitnessPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapCubeSoundWitnessPayload p) :
+    ∃ x : Core.BitVec pkg.base.base.n,
+      Models.PartialMCSP_YES p
+        (Models.decodePartial (ThirdPartyFacts.castBitVec pkg.base.base.hsame x)) := by
+  rcases exists_yes_point_of_abstractGapCubeSoundWitnessPayload pkg with ⟨x, hx⟩
+  refine ⟨x, ?_⟩
+  exact (Models.gapPartialMCSP_language_true_iff_yes p
+    (ThirdPartyFacts.castBitVec pkg.base.base.hsame x)).1 hx
 
 /--
 The current concrete singleton-density package factors through the abstract

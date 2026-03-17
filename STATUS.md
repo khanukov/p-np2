@@ -165,10 +165,21 @@ Release positioning for current tree: `RELEASE_RC.md`.
   bounded witness `Rf` inside the same fixed gap-target scenario and already
   yields the strongest purely witness-level consequence available without new
   target semantics: some input is covered by `Rf`.
+- The first semantic strengthening on top of this is now
+  `LowerBounds.AbstractGapCubeSoundWitnessPayload`: every point lying in a
+  witness cube is forced to be a YES-point of the fixed gap target.
+- This closes the previous consumer-side red goal
+  `f x = true` on covered points and upgrades the route to an existential
+  YES-input statement for the fixed gap slice.
+- But this still does not yield contradiction: existence of one YES-input is
+  compatible with the target language. The next missing ingredient is now a
+  negative/local incompatibility theorem about non-empty YES-sound witness
+  regions, not merely pointwise YES-soundness.
 - The next honest positive frontier is now a contradiction theorem from this
-  semantically fixed gap-target payload plus non-empty witness data, or
-  another equally formula-free strengthening, without pulling formula-specific
-  constructors back into the consumer.
+  semantically fixed gap-target payload plus a stronger negative semantic
+  invariant on non-empty witnesses, or another equally formula-free
+  strengthening, without pulling formula-specific constructors back into the
+  consumer.
 
 ## Active final theorem surface
 

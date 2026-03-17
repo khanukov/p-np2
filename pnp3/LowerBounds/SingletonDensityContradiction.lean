@@ -18,8 +18,10 @@ import LowerBounds.SingletonDensityEndpoint
   The purpose of this module is to make the next positive frontier explicit in
   a DAG-robust form. The raw scenario-level payload is intentionally weak
   enough to be consistent on trivial examples, so any future contradiction
-  theorem must consume a stronger, still formula-free, linked variant rather
-  than the formula-specific packaging of the current source line.
+  theorem must consume a stronger formula-free target. The intermediate
+  `AbstractLinkedSingletonDensityPayload` remains available as a compatibility
+  wrapper, but it is too weak by itself because its target can be chosen to be
+  the distinguished function itself.
 -/
 
 namespace Pnp3
@@ -90,12 +92,46 @@ theorem nonempty_abstractSingletonDensityPayload_false
   }⟩
 
 /--
-Formula-free strengthening of the abstract singleton-density payload by an
-explicit link to some target Boolean function.
+Compatibility wrapper around the abstract singleton-density payload with an
+explicit target field. This is not yet a meaningful positive frontier, because
+`target` can always be chosen to be `base.f`.
 -/
 structure AbstractLinkedSingletonDensityPayload (n : Nat) where
   base : AbstractSingletonDensityPayload n
   target : Core.BitVec n → Bool
+  hLink : base.f = target
+
+/--
+The compatibility wrapper is vacuous: any abstract singleton-density payload
+trivially yields a linked payload by choosing `target := f`.
+-/
+def abstractLinkedSingletonDensityPayload_of_abstract
+    {n : Nat}
+    (pkg : AbstractSingletonDensityPayload n) :
+    AbstractLinkedSingletonDensityPayload n where
+  base := pkg
+  target := pkg.f
+  hLink := rfl
+
+/--
+Consequently, the current linked wrapper is itself consistent on a trivial
+scenario.
+-/
+theorem nonempty_abstractLinkedSingletonDensityPayload_false
+    (n : Nat) :
+    Nonempty (AbstractLinkedSingletonDensityPayload n) := by
+  rcases nonempty_abstractSingletonDensityPayload_false n with ⟨pkg⟩
+  exact ⟨abstractLinkedSingletonDensityPayload_of_abstract pkg⟩
+
+/--
+Externally targeted abstract singleton-density payload. Unlike the compatibility
+wrapper above, this object is parameterized by a fixed target supplied from
+outside the payload itself.
+-/
+structure AbstractTargetedSingletonDensityPayload
+    (n : Nat)
+    (target : Core.BitVec n → Bool) where
+  base : AbstractSingletonDensityPayload n
   hLink : base.f = target
 
 /--
@@ -136,6 +172,25 @@ noncomputable def abstractLinkedSingletonDensityPayload_of_singletonDensityPacka
     ComplexityInterfaces.FormulaCircuit.eval
       ((Classical.choose hFormula).family (Models.partialInputLen p))
       (ThirdPartyFacts.castBitVec pkg.prov.pack.cert.hsame x)
+  hLink := by
+    funext x
+    exact pkg.prov.hEval x
+
+/--
+The current singleton-density package also yields the externally targeted
+abstract payload, with the target fixed by the formula witness.
+-/
+noncomputable def abstractTargetedSingletonDensityPayload_of_singletonDensityPackage
+    {p : GapPartialMCSPParams}
+    {hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)}
+    (pkg : SemanticSwitchingSingletonDensityPackagePartial hFormula) :
+    AbstractTargetedSingletonDensityPayload
+      pkg.prov.pack.cert.ac0.n
+      (fun x =>
+        ComplexityInterfaces.FormulaCircuit.eval
+          ((Classical.choose hFormula).family (Models.partialInputLen p))
+          (ThirdPartyFacts.castBitVec pkg.prov.pack.cert.hsame x)) where
+  base := abstractSingletonDensityPayload_of_singletonDensityPackage pkg
   hLink := by
     funext x
     exact pkg.prov.hEval x
@@ -294,6 +349,24 @@ theorem abstractLinkedSingletonDensityPayload_of_internal_provider
   classical
   intro pkg
   exact ⟨abstractLinkedSingletonDensityPayload_of_singletonDensityPackage pkg⟩
+
+/--
+Current internal route also reaches the externally targeted abstract payload.
+-/
+theorem abstractTargetedSingletonDensityPayload_of_internal_provider
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let pkg := Classical.choice (singletonDensityPackage_of_internal_provider hFormula)
+    Nonempty (
+      AbstractTargetedSingletonDensityPayload
+        pkg.prov.pack.cert.ac0.n
+        (fun x =>
+          ComplexityInterfaces.FormulaCircuit.eval
+            ((Classical.choose hFormula).family (Models.partialInputLen p))
+            (ThirdPartyFacts.castBitVec pkg.prov.pack.cert.hsame x))) := by
+  classical
+  intro pkg
+  exact ⟨abstractTargetedSingletonDensityPayload_of_singletonDensityPackage pkg⟩
 
 end LowerBounds
 end Pnp3

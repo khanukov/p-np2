@@ -108,14 +108,17 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 24. The raw abstract singleton-density payload is now explicitly known to be
     consistent on a trivial empty-dictionary / constant-zero scenario, so
     `AbstractSingletonDensityPayload -> False` is not the right target.
-25. The next minimal abstract strengthening is now
-    `LowerBounds.AbstractLinkedSingletonDensityPayload`, which adds only an
-    explicit target-link witness to the scenario-level density payload.
-26. The singleton small-mismatch package/provider remains in the codebase as a
+25. The compatibility wrapper
+    `LowerBounds.AbstractLinkedSingletonDensityPayload` is now explicitly known
+    to be vacuous: any raw payload can realize it by choosing `target := f`.
+26. The first non-vacuous abstract strengthening is now
+    `LowerBounds.AbstractTargetedSingletonDensityPayload`, where the target is
+    fixed externally rather than packaged existentially inside the payload.
+27. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
-    contradiction theorem that consumes the linked abstract payload, or some
-    equally formula-free strengthening, without reintroducing formula-specific
-    source constructors into the consumer.
+    contradiction theorem that consumes the externally targeted abstract
+    payload, or some equally formula-free strengthening, without reintroducing
+    formula-specific source constructors into the consumer.
     directly, without exact polylog-small mismatch cardinality and without the
     dead `testsetCapacity < 1` endpoint.
 

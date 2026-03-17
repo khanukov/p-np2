@@ -1,4 +1,5 @@
 import LowerBounds.SingletonDensityEndpoint
+import Counting.ShannonCounting
 
 /-!
   pnp3/LowerBounds/SingletonDensityContradiction.lean
@@ -398,6 +399,70 @@ theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer_TM
     Models.gapPartialMCSP_in_NP_of_TM p
       (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
   exact hConsumer
+
+/--
+For the semantically fixed gap target, the YES-density of the distinguished
+function is exactly the YES-density of the concrete `gapPartialMCSP` slice.
+-/
+theorem gapTarget_yesDensity_eq_yesInputSet_density
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) :
+    ((Finset.univ.filter (fun x => pkg.base.f x = true)).card : Core.Q) /
+        (2 ^ pkg.n : Nat)
+      =
+    ((Counting.yesInputSet p).card : Core.Q) /
+        (4 ^ Models.Partial.tableLen p.n : Nat) := by
+  rcases pkg with ⟨n, hsame, base, hLink⟩
+  subst hsame
+  have hset :
+      (Finset.univ.filter (fun x => base.f x = true)) = Counting.yesInputSet p := by
+    ext x
+    simp [Counting.yesInputSet, hLink]
+  rw [hset]
+  have hpow : (2 ^ Models.partialInputLen p : Nat) = 4 ^ Models.Partial.tableLen p.n := by
+    simp [Models.partialInputLen, Models.Partial.inputLen, Models.Partial.tableLen, pow_mul]
+  rw [hpow]
+
+/--
+Consequently, the YES-density of the semantically fixed gap target is bounded
+by the Shannon counting estimate already available for the YES-input set.
+-/
+theorem gapTarget_yesDensity_le_circuitCountBound_mul_three_quarters_pow
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) :
+    ((Finset.univ.filter (fun x => pkg.base.f x = true)).card : Core.Q) /
+        (2 ^ pkg.n : Nat)
+      ≤
+    (Models.circuitCountBound p.n p.sYES : Core.Q) *
+      ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n := by
+  rw [gapTarget_yesDensity_eq_yesInputSet_density pkg]
+  exact Counting.yesDensity_yesInputSet_le_circuitCountBound_mul_three_quarters_pow p
+
+/--
+Cheapest empty-witness consumer subroute: if the Shannon upper bound already
+fits under the scenario error budget, then the empty witness list is
+admissible for the fixed gap target.
+-/
+theorem empty_witness_admissible_of_gapTargetedSingletonDensityPayload_of_shannon_bound
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hBound :
+      (Models.circuitCountBound p.n p.sYES : Core.Q) *
+        ((3 : Core.Q) / 4) ^ Models.Partial.tableLen p.n
+          ≤ pkg.base.sc.atlas.epsilon) :
+    ∃ Rf : List (Core.Subcube pkg.n),
+      Rf = [] ∧
+      Core.listSubset Rf pkg.base.sc.atlas.dict ∧
+      Core.errU pkg.base.f Rf ≤ pkg.base.sc.atlas.epsilon := by
+  refine ⟨[], rfl, Core.listSubset_nil _, ?_⟩
+  have hYesLe :
+      ((Finset.univ.filter (fun x => pkg.base.f x = true)).card : Core.Q) /
+        (2 ^ pkg.n : Nat)
+        ≤ pkg.base.sc.atlas.epsilon := by
+    exact le_trans
+      (gapTarget_yesDensity_le_circuitCountBound_mul_three_quarters_pow pkg)
+      hBound
+  simpa [Core.errU_nil_eq_yes_density] using hYesLe
 
 /--
 The natural mismatch testset attached to an abstract singleton-density payload.

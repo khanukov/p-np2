@@ -152,6 +152,9 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - Consequently, the DAG-facing route is now reduced to one abstract missing
   theorem: a contradiction consumer from
   `LowerBounds.AbstractGapTargetedSingletonDensityPayload`.
+- The cheapest consumer subroute is now formalized as an empty-witness route.
+  It reduces to a purely formula-free Shannon-style numeric condition:
+  `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
 - The next honest positive frontier is now a contradiction theorem from this
   semantically fixed gap-target payload, or another equally formula-free
   strengthening, without pulling formula-specific constructors back into the

@@ -365,6 +365,57 @@ private lemma semanticCircuit_computes {n : Nat}
   intro x
   simpa [ThirdPartyFacts.AC0Circuit.eval, semanticCircuit] using truthTableDNF_eval f x
 
+/--
+Concrete selector list used by the singleton semantic route.
+
+Although `semanticSingletonAtlas_exact_epsilon` only states existence of a
+working atlas, the underlying construction is completely explicit: it uses the
+subcube list coming from the truth-table DNF for `f`.
+-/
+noncomputable def semanticSingletonWitness {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    List (Core.Subcube n) :=
+  (semanticCircuit f).subcubes
+
+/--
+The concrete singleton witness computes `f` exactly by coverage.
+
+This is the key provenance fact behind the structural DAG route: the witness is
+not an arbitrary `Classical.choice`, but the explicit selector list extracted
+from the truth-table DNF of the target function.
+-/
+theorem coveredB_semanticSingletonWitness {n : Nat}
+    (f : Core.BitVec n → Bool)
+    (x : Core.BitVec n) :
+    Core.coveredB (semanticSingletonWitness f) x = f x := by
+  simpa [semanticSingletonWitness] using
+    (ThirdPartyFacts.AC0Circuit.coveredB_subcubes (c := semanticCircuit f) x).trans
+      (semanticCircuit_computes f x)
+
+/--
+Consequently, the explicit singleton witness has zero error.
+-/
+theorem semanticSingletonWitness_err_zero {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    Core.errU f (semanticSingletonWitness f) = 0 := by
+  apply Core.errU_eq_zero_of_agree
+  intro x
+  simpa using (coveredB_semanticSingletonWitness f x).symm
+
+/--
+If the target function is true somewhere, the explicit singleton witness cannot
+be empty.
+-/
+theorem semanticSingletonWitness_nonempty_of_exists_true {n : Nat}
+    (f : Core.BitVec n → Bool)
+    (hTrue : ∃ x, f x = true) :
+    semanticSingletonWitness f ≠ [] := by
+  intro hNil
+  rcases hTrue with ⟨x, hx⟩
+  have hCover : Core.coveredB (semanticSingletonWitness f) x = true := by
+    simpa [hx] using coveredB_semanticSingletonWitness f x
+  simpa [hNil] using hCover
+
 private lemma semanticParams_M_ge_two {n : Nat}
     (f : Core.BitVec n → Bool) :
     2 ≤ (semanticParams f).M := by
@@ -575,6 +626,43 @@ theorem semanticSingletonAtlas_exact_epsilon {n : Nat}
   · have hSε : S.ε = C.epsilon := by
       simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
     simpa [A, Core.Atlas.ofPDT, hSε] using hε
+
+/--
+Explicit witness version of `semanticSingletonAtlas_exact_epsilon`.
+
+Besides the working atlas and the exact epsilon value, this theorem keeps the
+concrete witness list used by the construction: `semanticSingletonWitness f`.
+-/
+theorem semanticSingletonAtlas_exact_epsilon_with_witness {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    ∃ A : Core.Atlas params.n,
+      Core.WorksFor A F ∧
+      A.epsilon = (1 : Core.Q) / (params.n + 2) ∧
+      Core.listSubset (semanticSingletonWitness f) A.dict ∧
+      Core.errU f (semanticSingletonWitness f) ≤ A.epsilon := by
+  classical
+  intro params F
+  let A : Core.Atlas params.n := {
+    dict := semanticSingletonWitness f
+    epsilon := (1 : Core.Q) / (params.n + 2)
+  }
+  refine ⟨A, ?_, rfl, ?_, ?_⟩
+  · intro g hg
+    have hgEq : g = f := by
+      simp [F] at hg
+      simpa using hg
+    refine ⟨semanticSingletonWitness f, ?_, ?_⟩
+    · intro β hβ
+      exact hβ
+    · have hεnonneg : (0 : Core.Q) ≤ A.epsilon := by
+        positivity
+      simpa [A, hgEq, semanticSingletonWitness_err_zero] using hεnonneg
+  · intro β hβ
+    exact hβ
+  · rw [semanticSingletonWitness_err_zero]
+    positivity
 
 @[simp] private lemma two_pow_partialInputLen_eq_four_pow_tableLen
     (p : GapPartialMCSPParams) :

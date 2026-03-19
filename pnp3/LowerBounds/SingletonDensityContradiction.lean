@@ -1,4 +1,5 @@
 import LowerBounds.SingletonDensityEndpoint
+import LowerBounds.MCSPGapLocality
 import Counting.ShannonCounting
 
 /-!
@@ -254,6 +255,120 @@ noncomputable def abstractGapWitnessedPayload_of_exists_nonemptyWitness
       hRf_err := hRf.2.2.2 }
 
 /--
+Targeted producer-side probe for the non-empty witness lift.
+
+This marks the exact missing bridge from the fixed gap-target payload to the
+stronger non-empty witness payload layer.
+-/
+def nonemptyWitnessGoal_of_abstractGapTargetedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) : Prop :=
+  ∃ Rf : List (Core.Subcube pkg.n),
+    Rf ≠ [] ∧
+    Rf.length ≤ pkg.base.sc.k ∧
+    Core.listSubset Rf pkg.base.sc.atlas.dict ∧
+    Core.errU pkg.base.f Rf ≤ pkg.base.sc.atlas.epsilon
+
+/--
+Probe equivalence for the missing non-empty witness producer bridge.
+
+This theorem makes explicit that deriving `AbstractGapWitnessedPayload` over a
+fixed base payload is equivalent to proving one concrete non-empty witness
+existence goal.
+-/
+theorem nonemptyWitnessGoal_iff_exists_witnessed_package_with_base
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) :
+    nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg ↔
+      ∃ q : AbstractGapWitnessedPayload p, q.base = pkg := by
+  constructor
+  · intro h
+    refine ⟨abstractGapWitnessedPayload_of_exists_nonemptyWitness pkg h, rfl⟩
+  · intro h
+    rcases h with ⟨q, hq⟩
+    subst hq
+    exact ⟨q.Rf, q.hRf_ne, q.hRf_len, q.hRf_sub, q.hRf_err⟩
+
+
+/--
+Any non-empty witness bridge for a fixed payload forces a positive witness
+budget `k` in that payload's scenario.
+
+This is a first concrete mathematical obstruction for the earliest missing
+bridge: if one can derive `k = 0` for a concrete payload, then
+`nonemptyWitnessGoal_of_abstractGapTargetedPayload` is impossible for that
+payload.
+-/
+theorem one_le_k_of_nonemptyWitnessGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hW : nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg) :
+    1 ≤ pkg.base.sc.k := by
+  rcases hW with ⟨Rf, hRf_ne, hRf_len, -, -⟩
+  have hRf_len_pos : 1 ≤ Rf.length := Nat.succ_le_of_lt (List.length_pos_iff.2 hRf_ne)
+  exact le_trans hRf_len_pos hRf_len
+
+/--
+Equivalent strict form of the same obstruction: the witness budget must be
+non-zero whenever the non-empty witness bridge holds.
+-/
+theorem k_ne_zero_of_nonemptyWitnessGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hW : nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg) :
+    pkg.base.sc.k ≠ 0 := by
+  have hk : 1 ≤ pkg.base.sc.k := one_le_k_of_nonemptyWitnessGoal pkg hW
+  exact Nat.ne_of_gt (lt_of_lt_of_le (by decide : 0 < 1) hk)
+
+/--
+Conversely, if a concrete fixed payload has witness budget `k = 0`, then the
+non-empty witness bridge is impossible for that payload.
+
+This theorem is useful as a no-go probe target on concrete DAG-produced
+payloads: deriving `k = 0` immediately refutes the earliest bridge.
+-/
+theorem not_nonemptyWitnessGoal_of_k_eq_zero
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hk0 : pkg.base.sc.k = 0) :
+    ¬ nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg := by
+  intro hW
+  exact (k_ne_zero_of_nonemptyWitnessGoal pkg hW) hk0
+
+
+/--
+If the distinguished stored witness `base.S` is already non-empty, then the
+earliest bridge goal is immediate by reusing exactly that witness.
+
+This is a concrete mathematical step (not wiring): it turns the bridge into a
+simple property check on the existing payload witness.
+-/
+theorem nonemptyWitnessGoal_of_baseWitness_nonempty
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hS : pkg.base.S ≠ []) :
+    nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg := by
+  refine ⟨pkg.base.S, hS, pkg.base.hlen, pkg.base.hsub, ?_⟩
+  simpa [pkg.hLink] using pkg.base.herr
+
+/--
+If a payload satisfies `k = S.length` and `S = []`, then the earliest bridge is
+impossible.
+
+This is the exact no-go branch used in the empty/non-empty case split on the
+stored witness.
+-/
+theorem not_nonemptyWitnessGoal_of_baseWitness_nil_of_k_eq_baseWitnessLen
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hkLen : pkg.base.sc.k = pkg.base.S.length)
+    (hS : pkg.base.S = []) :
+    ¬ nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg := by
+  have hk0 : pkg.base.sc.k = 0 := by
+    simpa [hS] using hkLen
+  exact not_nonemptyWitnessGoal_of_k_eq_zero pkg hk0
+
+/--
 Any non-empty witness list covers at least one point. This is the strongest
 purely witness-level consequence available without using any target semantics.
 -/
@@ -297,6 +412,165 @@ def abstractGapCubeSoundWitnessPayload_of_cubeSound
     AbstractGapCubeSoundWitnessPayload p where
   base := pkg
   hCubeSound := hCubeSound
+
+/--
+`AbstractGapWitnessedPayload` by itself does not contain the semantic
+cube-soundness invariant. This equivalence isolates the exact additional
+obligation needed to upgrade the current fixed-witness payload to the next
+semantic frontier.
+
+The shape is intentionally "probe-friendly":
+
+* the left side asks for a cube-sound package whose `base` is exactly `pkg`;
+* the right side is the concrete local theorem goal that has to be proved
+  from whatever stronger hypotheses become available later.
+-/
+theorem exists_cubeSound_package_with_base_iff
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p) :
+    (∃ q : AbstractGapCubeSoundWitnessPayload p, q.base = pkg) ↔
+      (∀ β, β ∈ pkg.Rf →
+        ∀ x : Core.BitVec pkg.base.n, Core.mem β x →
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+            (ThirdPartyFacts.castBitVec pkg.base.hsame x) = true) := by
+  constructor
+  · intro h
+    rcases h with ⟨q, hq⟩
+    subst hq
+    exact q.hCubeSound
+  · intro h
+    refine ⟨abstractGapCubeSoundWitnessPayload_of_cubeSound pkg h, rfl⟩
+
+/--
+Targeted proof-probe wrapper for the next semantic red goal.
+
+This is the exact theorem shape recommended for follow-up work: proving this
+`hYes` cube-local property from `AbstractGapWitnessedPayload` is equivalent to
+constructing the next semantic payload layer.
+-/
+def cubeYesGoal_of_abstractGapWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p) : Prop :=
+  ∀ β, β ∈ pkg.Rf →
+    ∀ x : Core.BitVec pkg.base.n, Core.mem β x →
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec pkg.base.hsame x) = true
+
+/--
+Probe equivalence in the exact `hYes` shape: this is the closest local target
+to test when checking whether cube-soundness is derivable from the fixed
+non-empty witness payload.
+-/
+theorem cubeYesGoal_iff_exists_cubeSound_package_with_base
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p) :
+    cubeYesGoal_of_abstractGapWitnessedPayload pkg ↔
+      ∃ q : AbstractGapCubeSoundWitnessPayload p, q.base = pkg := by
+  simpa [cubeYesGoal_of_abstractGapWitnessedPayload] using
+    (exists_cubeSound_package_with_base_iff (pkg := pkg)).symm
+
+/--
+Consumer form without extra wrappers: once both cube-local semantic halves are
+given over the same non-empty witness payload, contradiction is immediate.
+
+This theorem is intentionally kept close to the eventual probing workflow: one
+can try to derive `hYes` and `hNo` separately from `pkg` and then close the
+branch directly here.
+-/
+theorem false_of_abstractGapWitnessedPayload_of_cubeYes_and_cubeNo
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p)
+    (hYes : cubeYesGoal_of_abstractGapWitnessedPayload pkg)
+    (hNo :
+      ∀ β, β ∈ pkg.Rf →
+        ∃ x : Core.BitVec pkg.base.n,
+          Core.mem β x ∧
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+            (ThirdPartyFacts.castBitVec pkg.base.hsame x) = false) :
+    False := by
+  rcases List.exists_cons_of_ne_nil pkg.hRf_ne with ⟨β, rest, hEq⟩
+  have hβ : β ∈ pkg.Rf := by
+    simpa [hEq]
+  rcases hNo β hβ with ⟨x, hxmem, hxfalse⟩
+  have hxtrue := hYes β hβ x hxmem
+  cases (hxtrue.symm.trans hxfalse)
+
+/--
+Complementary local semantic red goal (`hNo`) for the non-empty witness layer.
+-/
+def cubeNoGoal_of_abstractGapWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p) : Prop :=
+  ∀ β, β ∈ pkg.Rf →
+    ∃ x : Core.BitVec pkg.base.n,
+      Core.mem β x ∧
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec pkg.base.hsame x) = false
+
+/--
+Unified local semantic target over one fixed non-empty witness payload.
+
+This states explicitly that the contradiction route currently needs two
+independent cube-local semantic halves: `hYes` and `hNo`.
+-/
+def cubeSeparatedGoal_of_abstractGapWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p) : Prop :=
+  cubeYesGoal_of_abstractGapWitnessedPayload pkg ∧
+    cubeNoGoal_of_abstractGapWitnessedPayload pkg
+
+/--
+Direct closure from the unified local semantic target on one payload.
+-/
+theorem false_of_abstractGapWitnessedPayload_of_cubeSeparatedGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapWitnessedPayload p)
+    (hSep : cubeSeparatedGoal_of_abstractGapWitnessedPayload pkg) :
+    False := by
+  exact false_of_abstractGapWitnessedPayload_of_cubeYes_and_cubeNo
+    pkg hSep.1 hSep.2
+
+/--
+End-to-end local contradiction route over a fixed gap-target payload, factored
+through the earliest missing bridge.
+
+This theorem makes the current dependency chain explicit:
+
+1. first produce a non-empty witness package over `pkg`;
+2. then establish both cube-local semantic halves on that same witness package.
+
+Only then can contradiction be closed.
+-/
+theorem false_of_abstractGapTargetedPayload_of_exists_witnessed_cubeSeparatedGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hWitnessed : ∃ q : AbstractGapWitnessedPayload p, q.base = pkg)
+    (hSeparated :
+      ∀ q : AbstractGapWitnessedPayload p, q.base = pkg →
+        cubeSeparatedGoal_of_abstractGapWitnessedPayload q) :
+    False := by
+  rcases hWitnessed with ⟨q, hq⟩
+  exact false_of_abstractGapWitnessedPayload_of_cubeSeparatedGoal
+    q (hSeparated q hq)
+
+/--
+Variant of the same route where the first bridge is supplied in the probe form
+`nonemptyWitnessGoal_of_abstractGapTargetedPayload`.
+-/
+theorem false_of_abstractGapTargetedPayload_of_nonemptyWitnessGoal_and_cubeSeparated
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hW : nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg)
+    (hSeparated :
+      ∀ q : AbstractGapWitnessedPayload p, q.base = pkg →
+        cubeSeparatedGoal_of_abstractGapWitnessedPayload q) :
+    False := by
+  have hWitnessed : ∃ q : AbstractGapWitnessedPayload p, q.base = pkg :=
+    (nonemptyWitnessGoal_iff_exists_witnessed_package_with_base (pkg := pkg)).1 hW
+  exact false_of_abstractGapTargetedPayload_of_exists_witnessed_cubeSeparatedGoal
+    pkg hWitnessed hSeparated
+
+
 
 /--
 Cube-soundness already closes the first semantic red goal: any covered point
@@ -363,6 +637,46 @@ theorem contradiction_of_abstractGapCubeSoundWitnessPayload_of_cubeRefute
   have hxtrue :=
     pkg.hCubeSound β hβ x hxmem
   cases (hxtrue.symm.trans hxfalse)
+
+/--
+Unified consumer frontier for the non-empty witness route.
+
+This packages both cube-local semantic halves explicitly:
+
+* `hYes`: every point inside every selected witness cube is a YES-point;
+* `hNo`: every selected witness cube contains at least one NO-point.
+
+With both halves present simultaneously, contradiction is immediate.
+-/
+structure AbstractGapCubeSeparatedWitnessPayload
+    (p : GapPartialMCSPParams) where
+  base : AbstractGapWitnessedPayload p
+  hYes :
+    ∀ β, β ∈ base.Rf →
+      ∀ x : Core.BitVec base.base.n, Core.mem β x →
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+          (ThirdPartyFacts.castBitVec base.base.hsame x) = true
+  hNo :
+    ∀ β, β ∈ base.Rf →
+      ∃ x : Core.BitVec base.base.n,
+        Core.mem β x ∧
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+          (ThirdPartyFacts.castBitVec base.base.hsame x) = false
+
+/--
+The unified cube-separated witness payload is already inconsistent.
+
+Proof idea: package `hYes` as a cube-sound payload and then apply the existing
+`cube-sound + cube-refute => False` thin consumer.
+-/
+theorem false_of_abstractGapCubeSeparatedWitnessPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapCubeSeparatedWitnessPayload p) :
+    False := by
+  let pkgSound : AbstractGapCubeSoundWitnessPayload p :=
+    abstractGapCubeSoundWitnessPayload_of_cubeSound pkg.base pkg.hYes
+  exact contradiction_of_abstractGapCubeSoundWitnessPayload_of_cubeRefute
+    pkgSound pkg.hNo
 
 /--
 The current concrete singleton-density package factors through the abstract
@@ -523,6 +837,289 @@ theorem abstractGapTargetedSingletonDensityPayload_of_dag
   }⟩
 
 /--
+The fixed `gapPartialMCSP` slice always has at least one YES input: the fully
+undefined partial table is consistent with the constant-false circuit.
+-/
+theorem gapPartialMCSP_exists_yes_input
+    (p : GapPartialMCSPParams) :
+    ∃ x : Core.BitVec (Models.partialInputLen p),
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p) x = true := by
+  let T : Models.PartialTruthTable p.n := fun _ => none
+  let x : Core.BitVec (Models.partialInputLen p) := Models.encodePartial T
+  refine ⟨x, ?_⟩
+  rw [Models.gapPartialMCSP_language_true_iff_yes]
+  have hdecode : Models.decodePartial x = T := by
+    simpa [x, T] using (Models.decodePartial_encodePartial T)
+  rw [hdecode]
+  refine ⟨Models.Circuit.const false, ?_, ?_⟩
+  · simp [Models.Circuit.size]
+    exact p.sYES_pos
+  · simpa [T] using
+      (LowerBounds.const_false_consistent_of_vals_false (n := p.n) T
+        (h := by intro j; exact Or.inl rfl))
+
+/--
+DAG-side strengthened producer with explicit provenance for the stored witness.
+
+In addition to `k = S.length`, this version records that the witness is exactly
+the concrete singleton selector list produced by the semantic truth-table DNF
+construction.
+-/
+theorem abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ∃ pkg : AbstractGapTargetedSingletonDensityPayload p,
+      pkg.base.sc.k = pkg.base.S.length ∧
+      pkg.base.S =
+        Magnification.AC0LocalityBridge.semanticSingletonWitness pkg.base.f := by
+  classical
+  rcases hDag with ⟨wf, _⟩
+  let n := Models.partialInputLen p
+  let f : Core.BitVec n → Bool := fun x =>
+    ComplexityInterfaces.DagCircuit.eval (wf.family n) x
+  let S := Magnification.AC0LocalityBridge.semanticSingletonWitness f
+  obtain ⟨A, hWorks, hεeq, hsub, herr⟩ :=
+    Magnification.AC0LocalityBridge.semanticSingletonAtlas_exact_epsilon_with_witness f
+  have hε0 : (0 : Core.Q) ≤ A.epsilon := by
+    rw [hεeq]
+    positivity
+  have hε1 : A.epsilon ≤ (1 : Core.Q) / 2 := by
+    rw [hεeq]
+    have hpos : (0 : Core.Q) < (2 : Core.Q) := by norm_num
+    have hNat : (2 : Core.Q) ≤ (n + 2 : Core.Q) := by
+      norm_num
+    exact one_div_le_one_div_of_le (a := (2 : Core.Q)) (b := (n + 2 : Core.Q)) hpos hNat
+  let sc : BoundedAtlasScenario n := {
+    atlas := A
+    family := [f]
+    k := S.length
+    hε0 := hε0
+    hε1 := hε1
+    works := hWorks
+    bounded := by
+      intro g hg
+      have hgEq : g = f := by
+        simpa [f] using hg
+      subst hgEq
+      exact ⟨S, le_rfl, hsub, herr⟩
+  }
+  have hEpsLeInv : sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2) := by
+    rw [hεeq]
+    change (1 : Core.Q) / (n + 2) ≤ (1 : Core.Q) / (n + 2)
+    rfl
+  refine ⟨{
+    n := n
+    hsame := rfl
+    base := {
+      sc := sc
+      f := f
+      hf := by simp [sc, f]
+      S := S
+      hlen := by simp [sc]
+      hsub := hsub
+      herr := herr
+      hEpsLeInv := hEpsLeInv
+    }
+    hLink := by
+      funext x
+      simpa [n, f] using (wf.correct n x)
+  }, by simp [sc, S], rfl⟩
+
+
+/--
+DAG-side strengthened producer: besides returning a fixed gap-target payload,
+it records the concrete identity `k = S.length` of the stored witness budget.
+
+This identity is what makes the earliest bridge split mathematically sharp:
+empty `S` implies `k = 0`, while non-empty `S` gives an immediate witness.
+-/
+theorem abstractGapTargetedSingletonDensityPayload_of_dag_with_k_eq_baseWitnessLen
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ∃ pkg : AbstractGapTargetedSingletonDensityPayload p,
+      pkg.base.sc.k = pkg.base.S.length := by
+  rcases abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance
+      (p := p) hDag with ⟨pkg, hk, _hProv⟩
+  exact ⟨pkg, hk⟩
+
+/--
+Mathematical case split for the earliest bridge on a DAG-produced payload.
+
+For the concrete payload returned by the strengthened DAG producer:
+
+* if `S ≠ []`, the bridge holds immediately by taking `Rf := S`;
+* if `S = []`, then `k = 0` and the bridge is impossible.
+-/
+theorem dag_payload_nonemptyWitness_bridge_split
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ∃ pkg : AbstractGapTargetedSingletonDensityPayload p,
+      (pkg.base.S ≠ [] ∧ nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg) ∨
+      (pkg.base.S = [] ∧ ¬ nonemptyWitnessGoal_of_abstractGapTargetedPayload pkg) := by
+  rcases abstractGapTargetedSingletonDensityPayload_of_dag_with_k_eq_baseWitnessLen (p := p) hDag with
+      ⟨pkg, hkLen⟩
+  by_cases hS : pkg.base.S = []
+  · refine ⟨pkg, Or.inr ?_⟩
+    exact ⟨hS, not_nonemptyWitnessGoal_of_baseWitness_nil_of_k_eq_baseWitnessLen pkg hkLen hS⟩
+  · refine ⟨pkg, Or.inl ?_⟩
+    exact ⟨hS, nonemptyWitnessGoal_of_baseWitness_nonempty pkg hS⟩
+
+
+/--
+Canonical fixed payload chosen from the strengthened DAG producer that also
+records the concrete identity `k = S.length`.
+
+Using a dedicated name avoids the normalization mismatch between different
+`Classical.choice` representatives of DAG-produced payloads.
+-/
+noncomputable def dagCanonicalPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    AbstractGapTargetedSingletonDensityPayload p :=
+  Classical.choose
+    (abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance (p := p) hDag)
+
+/--
+The canonical DAG-produced payload remembers exactly that its witness budget is
+its stored witness length.
+-/
+theorem dagCanonicalPayload_k_eq_baseWitnessLen
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagCanonicalPayload hDag).base.sc.k = (dagCanonicalPayload hDag).base.S.length := by
+  exact (Classical.choose_spec
+    (abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance (p := p) hDag)).1
+
+/--
+The canonical DAG payload stores the explicit singleton selector list coming
+from the semantic truth-table DNF construction.
+-/
+theorem dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagCanonicalPayload hDag).base.S =
+      Magnification.AC0LocalityBridge.semanticSingletonWitness (dagCanonicalPayload hDag).base.f := by
+  exact (Classical.choose_spec
+    (abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance (p := p) hDag)).2
+
+/--
+For the canonical DAG-produced payload, the earliest bridge is equivalent to
+plain non-emptiness of the already stored witness `S`.
+
+This is the exact normalization step needed before attacking the first genuine
+mathematical target: proving `S ≠ []` for the concrete DAG payload.
+-/
+theorem nonemptyWitnessGoal_iff_baseWitness_nonempty_of_dagCanonicalPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    nonemptyWitnessGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag) ↔
+      (dagCanonicalPayload hDag).base.S ≠ [] := by
+  constructor
+  · intro hW
+    intro hS
+    exact (not_nonemptyWitnessGoal_of_baseWitness_nil_of_k_eq_baseWitnessLen
+      (dagCanonicalPayload hDag)
+      (dagCanonicalPayload_k_eq_baseWitnessLen hDag) hS) hW
+  · intro hS
+    exact nonemptyWitnessGoal_of_baseWitness_nonempty (dagCanonicalPayload hDag) hS
+
+/--
+Canonical-form theorem target for the next real proof step on the DAG route:
+show that the stored witness inside the concrete DAG-produced payload is
+non-empty.
+-/
+def dag_payload_baseWitness_nonempty
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+    (dagCanonicalPayload hDag).base.S ≠ []
+
+/--
+The structural DAG witness target is in fact provable: the canonical stored
+witness is the explicit truth-table-DNF selector list for the gap language, and
+that list is non-empty because the gap slice has a concrete YES input.
+-/
+theorem dag_payload_baseWitness_nonempty_holds
+    (p : GapPartialMCSPParams) :
+    dag_payload_baseWitness_nonempty p := by
+  intro hDag
+  have hYes : ∃ x : Core.BitVec (dagCanonicalPayload hDag).n,
+      (dagCanonicalPayload hDag).base.f x = true := by
+    rcases gapPartialMCSP_exists_yes_input p with ⟨x0, hx0⟩
+    let x : Core.BitVec (dagCanonicalPayload hDag).n :=
+      ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame.symm x0
+    refine ⟨x, ?_⟩
+    have hLinkAt :=
+      congrArg (fun g => g x) (dagCanonicalPayload hDag).hLink
+    have hLinkAt' :
+        (dagCanonicalPayload hDag).base.f x =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) x0 := by
+      simpa [x] using hLinkAt
+    exact hLinkAt'.trans hx0
+  rw [dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness hDag]
+  exact Magnification.AC0LocalityBridge.semanticSingletonWitness_nonempty_of_exists_true
+    ((dagCanonicalPayload hDag).base.f) hYes
+
+/--
+Earliest DAG-facing probe target: for each concrete DAG-produced fixed payload,
+one can derive the non-empty witness bridge goal.
+
+This packages the exact next theorem shape suggested by the current frontier
+analysis, but keeps it abstract and non-committal: no claim is made here that
+this probe is already provable.
+-/
+def dagNonemptyWitnessGoalProbe
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+    nonemptyWitnessGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)
+
+/--
+Equivalent DAG-facing packaging of the same earliest bridge, expressed directly
+as existence of a witnessed payload over the concrete DAG-produced fixed
+payload.
+-/
+theorem dagNonemptyWitnessGoalProbe_iff_exists_witnessed_on_dag_payload
+    (p : GapPartialMCSPParams) :
+    dagNonemptyWitnessGoalProbe p ↔
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        ∃ q : AbstractGapWitnessedPayload p, q.base = dagCanonicalPayload hDag := by
+  constructor
+  · intro h
+    intro hDag
+    exact (nonemptyWitnessGoal_iff_exists_witnessed_package_with_base
+      (pkg := dagCanonicalPayload hDag)).1 (h hDag)
+  · intro h
+    intro hDag
+    exact (nonemptyWitnessGoal_iff_exists_witnessed_package_with_base
+      (pkg := dagCanonicalPayload hDag)).2 (h hDag)
+
+
+/--
+After normalization to the canonical DAG payload, the earliest bridge probe is
+exactly equivalent to non-emptiness of the stored witness `S`.
+-/
+theorem dagNonemptyWitnessGoalProbe_iff_baseWitness_nonempty
+    (p : GapPartialMCSPParams) :
+    dagNonemptyWitnessGoalProbe p ↔ dag_payload_baseWitness_nonempty p := by
+  constructor
+  · intro h
+    intro hDag
+    exact (nonemptyWitnessGoal_iff_baseWitness_nonempty_of_dagCanonicalPayload hDag).1 (h hDag)
+  · intro h
+    intro hDag
+    exact (nonemptyWitnessGoal_iff_baseWitness_nonempty_of_dagCanonicalPayload hDag).2 (h hDag)
+
+/--
+The normalized earliest DAG-facing bridge now really holds: the canonical
+payload always carries a non-empty stored witness, hence the non-empty witness
+goal itself is available on every DAG-produced payload.
+-/
+theorem dagNonemptyWitnessGoalProbe_holds
+    (p : GapPartialMCSPParams) :
+    dagNonemptyWitnessGoalProbe p := by
+  exact (dagNonemptyWitnessGoalProbe_iff_baseWitness_nonempty p).2
+    (dag_payload_baseWitness_nonempty_holds p)
+
+/--
 An abstract consumer ruling out the semantically fixed gap-target payload
 already yields DAG non-uniform separation for the same fixed slice.
 -/
@@ -582,6 +1179,81 @@ theorem gapTarget_yesDensity_eq_yesInputSet_density
   have hpow : (2 ^ Models.partialInputLen p : Nat) = 4 ^ Models.Partial.tableLen p.n := by
     simp [Models.partialInputLen, Models.Partial.inputLen, Models.Partial.tableLen, pow_mul]
   rw [hpow]
+
+/--
+If the stored witness on a fixed gap-target payload is empty, then the payload
+already forces the concrete YES-density of the `gapPartialMCSP` slice under the
+scenario budget `1 / (partialInputLen + 2)`.
+
+This is the first honest mathematical consequence of the case `S = []`: the
+abstract error guarantee collapses to the raw YES-density through
+`Core.errU_nil_eq_yes_density`, and the inherited scenario budget finishes the
+bound.
+-/
+theorem yesDensity_le_inv_of_abstractGapTargetedPayload_of_baseWitness_nil
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hS : pkg.base.S = []) :
+    ((Counting.yesInputSet p).card : Core.Q) /
+        (4 ^ Models.Partial.tableLen p.n : Nat)
+      ≤
+    (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+  have hErrNil : Core.errU pkg.base.f [] ≤ pkg.base.sc.atlas.epsilon := by
+    simpa [hS] using pkg.base.herr
+  have hGapYesLe :
+      ((Finset.univ.filter (fun x => pkg.base.f x = true)).card : Core.Q) /
+          (2 ^ pkg.n : Nat)
+        ≤ pkg.base.sc.atlas.epsilon := by
+    simpa [Core.errU_nil_eq_yes_density] using hErrNil
+  have hGapYesLeInv :
+      ((Finset.univ.filter (fun x => pkg.base.f x = true)).card : Core.Q) /
+          (2 ^ pkg.n : Nat)
+        ≤ (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+    simpa [pkg.hsame] using le_trans hGapYesLe pkg.base.hEpsLeInv
+  rw [← gapTarget_yesDensity_eq_yesInputSet_density pkg]
+  exact hGapYesLeInv
+
+/--
+Specialized `S = []` reduction for the canonical DAG-produced payload.
+
+This is the canonical form of the empty-witness branch on the DAG route: if the
+stored witness list were empty, then the concrete YES-density of the target
+slice would already have to lie below `1 / (partialInputLen + 2)`.
+-/
+theorem yesDensity_le_inv_of_dagCanonicalPayload_of_baseWitness_nil
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (hS : (dagCanonicalPayload hDag).base.S = []) :
+    ((Counting.yesInputSet p).card : Core.Q) /
+        (4 ^ Models.Partial.tableLen p.n : Nat)
+      ≤
+    (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+  exact
+    yesDensity_le_inv_of_abstractGapTargetedPayload_of_baseWitness_nil
+      (pkg := dagCanonicalPayload hDag) hS
+
+/--
+Contrapositive wrapper for the canonical DAG route: any strict lower bound on
+the concrete YES-density beyond `1 / (partialInputLen + 2)` rules out the empty
+stored witness case for every DAG-produced canonical payload.
+
+This theorem isolates exactly what remains to prove in order to close the
+earliest DAG-facing bridge: a density lower bound strong enough to contradict
+the empty-witness consequence above.
+-/
+theorem dag_payload_baseWitness_nonempty_of_yesDensity_gt_inv
+    {p : GapPartialMCSPParams}
+    (hLower :
+      (1 : Core.Q) / (Models.partialInputLen p + 2) <
+        ((Counting.yesInputSet p).card : Core.Q) /
+          (4 ^ Models.Partial.tableLen p.n : Nat)) :
+    dag_payload_baseWitness_nonempty p := by
+  intro hDag
+  intro hS
+  have hLe :=
+    yesDensity_le_inv_of_dagCanonicalPayload_of_baseWitness_nil
+      (p := p) hDag hS
+  exact (lt_irrefl _) (lt_of_lt_of_le hLower hLe)
 
 /--
 Consequently, the YES-density of the semantically fixed gap target is bounded

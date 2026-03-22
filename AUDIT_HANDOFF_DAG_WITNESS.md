@@ -1,5 +1,10 @@
 # Handoff for audit
 
+> Historical note: this file freezes the older DAG non-empty witness milestone.
+> For the current post-witness route status (stable-restriction/locality layer,
+> live formula producer, and exact remaining DAG blockers), see
+> `pnp3/Docs/GapTarget_StableRestriction_Route.md`.
+
 > Note: the review request referenced frozen commit `1495c55`, but that commit is
 > not present in this checkout. This handoff therefore freezes the currently
 > available DAG-witness milestone at `aa3484b`, which already contains the

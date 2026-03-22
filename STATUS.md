@@ -149,9 +149,22 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - This fixed semantic payload is now realized from both active source lines:
   the current formula-side singleton-density route and a strict `PpolyDAG`
   witness for the same slice.
-- Consequently, the DAG-facing route is now reduced to one abstract missing
-  theorem: a contradiction consumer from
-  `LowerBounds.AbstractGapTargetedSingletonDensityPayload`.
+- The consumer-side gap-target route is no longer a single undifferentiated
+  "missing contradiction theorem": it now has an explicit
+  stable-restriction/locality stack
+  (`AbstractGapStableRestrictionPayload`,
+  `AbstractGapLocalityPayload`,
+  `stableRestrictionGoal_of_abstractGapTargetedPayload`,
+  `localityGoal_of_abstractGapTargetedPayload`)
+  plus contradiction theorems reducing this stack to
+  `MCSPGapLocality.no_local_function_solves_mcsp`.
+- The first real producer into that new stack is already present on the formula
+  side: the support-bounds / restriction-data / certificate route now factors
+  through
+  `stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds`.
+- Therefore the honest remaining source-side blocker is now specifically the
+  DAG/leaves side: no strict DAG theorem yet produces a stable restriction (or
+  an equivalent locality payload) for the canonical gap-target payload.
 - The cheapest consumer subroute is now formalized as an empty-witness route.
   It reduces to a purely formula-free Shannon-style numeric condition:
   `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
@@ -177,11 +190,13 @@ Release positioning for current tree: `RELEASE_RC.md`.
 - So the active semantic barrier is no longer pointwise YES-soundness itself,
   but a negative/local invariant of the form "every non-empty witness cube
   contains a NO-point."
-- The next honest positive frontier is now a contradiction theorem from this
-  semantically fixed gap-target payload plus a stronger negative semantic
-  invariant on non-empty witnesses, or another equally formula-free
-  strengthening, without pulling formula-specific constructors back into the
-  consumer.
+- The DAG-facing route is therefore split into two clearly documented open
+  fronts:
+  1) restriction route: produce a small stable restriction from DAG/leaves data;
+  2) witness/selector route: strengthen the existing cube/selector semantics to
+     a contradiction-strength invariant.
+- See `pnp3/Docs/GapTarget_StableRestriction_Route.md` for the current
+  route-level handoff and exact remaining targets.
 
 ## Active final theorem surface
 

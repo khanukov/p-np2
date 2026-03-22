@@ -664,6 +664,44 @@ theorem semanticSingletonAtlas_exact_epsilon_with_witness {n : Nat}
   · rw [semanticSingletonWitness_err_zero]
     positivity
 
+/--
+Stronger witness version of `semanticSingletonAtlas_exact_epsilon_with_witness`.
+
+Besides the existing fields, this records that the atlas dictionary is exactly
+the semantic singleton witness itself.
+-/
+theorem semanticSingletonAtlas_exact_epsilon_with_dict_eq_witness {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    ∃ A : Core.Atlas params.n,
+      A.dict = semanticSingletonWitness f ∧
+      Core.WorksFor A F ∧
+      A.epsilon = (1 : Core.Q) / (params.n + 2) ∧
+      Core.listSubset (semanticSingletonWitness f) A.dict ∧
+      Core.errU f (semanticSingletonWitness f) ≤ A.epsilon := by
+  classical
+  intro params F
+  let A : Core.Atlas params.n := {
+    dict := semanticSingletonWitness f
+    epsilon := (1 : Core.Q) / (params.n + 2)
+  }
+  refine ⟨A, rfl, ?_, rfl, ?_, ?_⟩
+  · intro g hg
+    have hgEq : g = f := by
+      simp [F] at hg
+      simpa using hg
+    refine ⟨semanticSingletonWitness f, ?_, ?_⟩
+    · intro β hβ
+      exact hβ
+    · have hεnonneg : (0 : Core.Q) ≤ A.epsilon := by
+        positivity
+      simpa [A, hgEq, semanticSingletonWitness_err_zero] using hεnonneg
+  · intro β hβ
+    exact hβ
+  · rw [semanticSingletonWitness_err_zero]
+    positivity
+
 @[simp] private lemma two_pow_partialInputLen_eq_four_pow_tableLen
     (p : GapPartialMCSPParams) :
     (2 ^ Models.partialInputLen p : Nat) = 4 ^ Models.Partial.tableLen p.n := by

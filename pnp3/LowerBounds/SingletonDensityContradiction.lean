@@ -1,6 +1,7 @@
 import LowerBounds.SingletonDensityEndpoint
 import LowerBounds.MCSPGapLocality
 import Counting.ShannonCounting
+import Magnification.LocalityProvider_Partial
 
 /-!
   pnp3/LowerBounds/SingletonDensityContradiction.lean
@@ -211,6 +212,353 @@ structure AbstractGapTargetedSingletonDensityPayload
     base.f = fun x =>
       Models.gapPartialMCSP_Language p (Models.partialInputLen p)
         (ThirdPartyFacts.castBitVec hsame x)
+
+/--
+Intermediate restriction-level contract for the fixed gap-target payload.
+
+This is the next architectural layer above witness/selector provenance and
+below the already-established alive-set locality contradiction. The intended
+flow is
+
+* source-side producer (leaf / selector / local-core / formula support),
+* stable restriction witness,
+* alive-set locality witness,
+* contradiction via `MCSPGapLocality.no_local_function_solves_mcsp`.
+
+Keeping this payload explicit lets future producers target the restriction API
+from `ThirdPartyFacts.PartialLocalityLift` without committing to any specific
+source-side geometry.
+-/
+structure AbstractGapStableRestrictionPayload
+    (p : GapPartialMCSPParams) where
+  base : AbstractGapTargetedSingletonDensityPayload p
+  r : Facts.LocalityLift.Restriction (Models.partialInputLen p)
+  hAliveSmall : r.alive.card ≤ Models.Partial.tableLen p.n / 2
+  hStable :
+    ∀ x : Core.BitVec (Models.partialInputLen p),
+      base.base.f (ThirdPartyFacts.castBitVec base.hsame.symm (r.apply x)) =
+        base.base.f (ThirdPartyFacts.castBitVec base.hsame.symm x)
+
+/--
+Abstract locality strengthening of the fixed gap-target payload.
+
+This is deliberately higher-level than the singleton witness / selector route:
+it keeps only the locality data needed by `MCSPGapLocality.no_local_function_solves_mcsp`.
+Future leaves/restriction/local-core payloads should factor through this
+contract, instead of re-proving the same locality contradiction ad hoc.
+-/
+structure AbstractGapLocalityPayload
+    (p : GapPartialMCSPParams) where
+  base : AbstractGapTargetedSingletonDensityPayload p
+  alive : Finset (Fin (Models.partialInputLen p))
+  hAliveSmall : alive.card ≤ Models.Partial.tableLen p.n / 2
+  hLocal :
+    ∀ x y : Core.BitVec (Models.partialInputLen p),
+      (∀ i ∈ alive, x i = y i) →
+        base.base.f (ThirdPartyFacts.castBitVec base.hsame.symm x) =
+          base.base.f (ThirdPartyFacts.castBitVec base.hsame.symm y)
+
+/--
+Probe form of the alive-set locality strengthening.
+
+This mirrors the earlier witness-oriented probes: downstream routes can first
+try to establish `localityGoal_of_abstractGapTargetedPayload` and only later
+package the witness into a structured payload.
+-/
+def localityGoal_of_abstractGapTargetedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) : Prop :=
+  ∃ alive : Finset (Fin (Models.partialInputLen p)),
+    alive.card ≤ Models.Partial.tableLen p.n / 2 ∧
+    ∀ x y : Core.BitVec (Models.partialInputLen p),
+      (∀ i ∈ alive, x i = y i) →
+        pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x) =
+          pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm y)
+
+/--
+Restriction-level locality goal for the same payload.
+
+This is the direct consumer-facing target for future producers: prove that the
+fixed gap-target function is stable under a small restriction, and the generic
+Facts-side bridge will manufacture the alive-set locality witness.
+-/
+def stableRestrictionGoal_of_abstractGapTargetedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) : Prop :=
+  ∃ r : Facts.LocalityLift.Restriction (Models.partialInputLen p),
+    r.alive.card ≤ Models.Partial.tableLen p.n / 2 ∧
+    ∀ x : Core.BitVec (Models.partialInputLen p),
+      pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm (r.apply x)) =
+        pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x)
+
+/--
+Thin packaging helper turning the probe-form locality witness into the new
+abstract locality payload.
+-/
+noncomputable def abstractGapLocalityPayload_of_exists_locality
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hLoc : localityGoal_of_abstractGapTargetedPayload pkg) :
+    AbstractGapLocalityPayload p := by
+  classical
+  let alive := Classical.choose hLoc
+  have hAlive := Classical.choose_spec hLoc
+  exact
+    { base := pkg
+      alive := alive
+      hAliveSmall := hAlive.1
+      hLocal := hAlive.2 }
+
+/--
+Thin packaging helper for the new restriction-level contract.
+-/
+noncomputable def abstractGapStableRestrictionPayload_of_exists_stableRestriction
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hStable : stableRestrictionGoal_of_abstractGapTargetedPayload pkg) :
+    AbstractGapStableRestrictionPayload p := by
+  classical
+  let r := Classical.choose hStable
+  have hr := Classical.choose_spec hStable
+  exact
+    { base := pkg
+      r := r
+      hAliveSmall := hr.1
+      hStable := hr.2 }
+
+/--
+Packaging equivalence for the locality route.
+-/
+theorem localityGoal_iff_exists_locality_package_with_base
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) :
+    localityGoal_of_abstractGapTargetedPayload pkg ↔
+      ∃ q : AbstractGapLocalityPayload p, q.base = pkg := by
+  constructor
+  · intro h
+    refine ⟨abstractGapLocalityPayload_of_exists_locality pkg h, ?_⟩
+    rfl
+  · intro h
+    rcases h with ⟨q, rfl⟩
+    exact ⟨q.alive, q.hAliveSmall, q.hLocal⟩
+
+/--
+Packaging equivalence for the stable-restriction route.
+-/
+theorem stableRestrictionGoal_iff_exists_stableRestriction_package_with_base
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) :
+    stableRestrictionGoal_of_abstractGapTargetedPayload pkg ↔
+      ∃ q : AbstractGapStableRestrictionPayload p, q.base = pkg := by
+  constructor
+  · intro h
+    refine ⟨abstractGapStableRestrictionPayload_of_exists_stableRestriction pkg h, ?_⟩
+    rfl
+  · intro h
+    rcases h with ⟨q, rfl⟩
+    exact ⟨q.r, q.hAliveSmall, q.hStable⟩
+
+/--
+A stable restriction immediately induces the older alive-set locality goal.
+
+This is intentionally just a thin wrapper around
+`ThirdPartyFacts.decideLocal_of_stable_restriction`: the point of the new layer
+is to let future producers stay in restriction form until the last possible
+moment.
+-/
+theorem localityGoal_of_abstractGapStableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapStableRestrictionPayload p) :
+    localityGoal_of_abstractGapTargetedPayload pkg.base := by
+  let decide : Core.BitVec (Models.partialInputLen p) → Bool :=
+    fun x => pkg.base.base.f (ThirdPartyFacts.castBitVec pkg.base.hsame.symm x)
+  have hLocal :=
+    ThirdPartyFacts.decideLocal_of_stable_restriction
+      (p := p) decide ⟨pkg.r, pkg.hAliveSmall, pkg.hStable⟩
+  simpa [decide] using hLocal
+
+/--
+Every fixed gap-target payload computes the promise language exactly, after
+transporting its distinguished function across the stored length equality.
+-/
+theorem solvesPromise_of_abstractGapTargetedPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p) :
+    Complexity.SolvesPromise (GapPartialMCSPPromise p)
+      (fun x => pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x)) := by
+  constructor
+  · intro x hxYes
+    have hLinkAt :=
+      congrArg (fun g => g (ThirdPartyFacts.castBitVec pkg.hsame.symm x)) pkg.hLink
+    have hLinkAt' :
+        pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x) =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+      simpa using hLinkAt
+    exact hLinkAt'.trans hxYes
+  · intro x hxNo
+    have hLinkAt :=
+      congrArg (fun g => g (ThirdPartyFacts.castBitVec pkg.hsame.symm x)) pkg.hLink
+    have hLinkAt' :
+        pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x) =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+      simpa using hLinkAt
+    exact hLinkAt'.trans hxNo
+
+/--
+Any abstract locality payload is already impossible by the MCSP gap locality
+lower bound.
+
+This is the first theorem in the new "post-singleton" route: once a future
+leaves/restriction/local-core package can be shown to imply this locality
+contract, contradiction follows without revisiting the singleton selector
+machinery.
+-/
+theorem false_of_abstractGapLocalityPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapLocalityPayload p) :
+    False := by
+  exact LowerBounds.no_local_function_solves_mcsp
+    (f := fun x => pkg.base.base.f (ThirdPartyFacts.castBitVec pkg.base.hsame.symm x))
+    (alive := pkg.alive)
+    pkg.hAliveSmall
+    pkg.hLocal
+    (solvesPromise_of_abstractGapTargetedPayload pkg.base)
+
+/--
+Any abstract stable-restriction payload collapses to contradiction by first
+passing through the alive-set locality payload.
+
+This is the main consumer for the new restriction-level bridge: producers only
+need to supply a small restriction and a stability proof; the remaining route is
+shared infrastructure.
+-/
+theorem false_of_abstractGapStableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapStableRestrictionPayload p) :
+    False := by
+  exact false_of_abstractGapLocalityPayload
+    (abstractGapLocalityPayload_of_exists_locality pkg.base
+      (localityGoal_of_abstractGapStableRestrictionPayload pkg))
+
+/--
+Probe-form corollary of the same locality contradiction.
+-/
+theorem false_of_abstractGapTargetedPayload_of_localityGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hLoc : localityGoal_of_abstractGapTargetedPayload pkg) :
+    False := by
+  exact false_of_abstractGapLocalityPayload
+    (abstractGapLocalityPayload_of_exists_locality pkg hLoc)
+
+/--
+First live producer into the new stable-restriction bridge.
+
+This theorem does not build a new consumer: instead, it shows that any
+certificate-first formula route already provides exactly the data needed by
+`stableRestrictionGoal_of_abstractGapTargetedPayload`. The only payload-specific
+work is to transport the certificate-derived stability statement from the
+formula solver's `decide` function to the fixed gap-target function stored in
+`pkg`.
+-/
+theorem stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hCert : Magnification.FormulaCertificateProviderPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    stableRestrictionGoal_of_abstractGapTargetedPayload pkg := by
+  classical
+  let solver : Magnification.SmallGeneralCircuitSolver_Partial p :=
+    Magnification.generalSolverOfFormula hFormula
+  let cert :
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver) :=
+    hCert.cert hFormula
+  letI :
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver) := ⟨cert⟩
+  have hHalf :
+      (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+          (p := ThirdPartyFacts.toFactsParamsPartial p)
+          (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+          (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)).restriction.alive.card
+        ≤ Models.Partial.tableLen p.n / 2 :=
+    (inferInstance :
+      ThirdPartyFacts.HalfTableCertificateBound (p := p) solver).half_bound
+  rcases ThirdPartyFacts.stableRestriction_of_certificate
+      (p := p) solver hHalf with ⟨r, hAliveSmall, hStableSolver⟩
+  refine ⟨r, hAliveSmall, ?_⟩
+  intro x
+  have hSolverEq :
+      ∀ y : Core.BitVec (Models.partialInputLen p),
+        solver.decide y =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) y := by
+    exact (Models.solvesPromise_gapPartialMCSP_iff (p := p)).1 solver.correct_decide
+  have hPkgAt_apply :
+      pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm (r.apply x)) =
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p) (r.apply x) := by
+    simpa using congrArg
+      (fun g => g (ThirdPartyFacts.castBitVec pkg.hsame.symm (r.apply x)))
+      pkg.hLink
+  have hPkgAt_x :
+      pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x) =
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+    simpa using congrArg
+      (fun g => g (ThirdPartyFacts.castBitVec pkg.hsame.symm x))
+      pkg.hLink
+  calc
+    pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm (r.apply x))
+        = Models.gapPartialMCSP_Language p (Models.partialInputLen p) (r.apply x) :=
+          hPkgAt_apply
+    _ = solver.decide (r.apply x) := (hSolverEq (r.apply x)).symm
+    _ = solver.decide x := hStableSolver x
+    _ = Models.gapPartialMCSP_Language p (Models.partialInputLen p) x :=
+          hSolverEq x
+    _ = pkg.base.f (ThirdPartyFacts.castBitVec pkg.hsame.symm x) :=
+          hPkgAt_x.symm
+
+/--
+Restriction-data-first specialization of the same bridge.
+
+This is the most literal realization of the intended architecture:
+
+* source route supplies `FormulaRestrictionCertificateDataPartial`,
+* that data is upgraded to a certificate provider,
+* the certificate provider yields a stable restriction,
+* the stable restriction is packaged as a goal for the fixed payload.
+-/
+theorem stableRestrictionGoal_of_abstractGapTargetedPayload_of_restrictionData
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (D : Magnification.FormulaRestrictionCertificateDataPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    stableRestrictionGoal_of_abstractGapTargetedPayload pkg :=
+  stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
+    pkg
+    (Magnification.formulaCertificateProvider_of_restrictionData D)
+    hFormula
+
+/--
+First concrete producer theorem for the already-existing support-bounds route.
+
+This closes the loop requested by the stable-restriction refactor: the new
+payload layer is no longer merely architectural, because the live
+formula/support-bounds pipeline now factors through it directly.
+-/
+theorem stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    stableRestrictionGoal_of_abstractGapTargetedPayload pkg :=
+  stableRestrictionGoal_of_abstractGapTargetedPayload_of_restrictionData
+    pkg
+    (Magnification.formulaRestrictionCertificateData_of_supportBounds hBounds)
+    hFormula
 
 /--
 Abstract non-empty witness strengthening of the fixed gap-target payload.
@@ -639,6 +987,163 @@ theorem contradiction_of_abstractGapCubeSoundWitnessPayload_of_cubeRefute
   cases (hxtrue.symm.trans hxfalse)
 
 /--
+Consumer-facing provenance strengthening for the cube-sound witness layer.
+
+The earlier payloads only expose semantic consequences of the chosen witness
+family `Rf`. For the next unconditional route, consumers need to know that
+this witness is not an arbitrary bounded family: it is exactly the canonical
+singleton-selector family, and the scenario dictionary itself is that same
+family.
+
+Packaging these equalities explicitly avoids repeatedly reconstructing them
+from producer-specific DAG lemmas or from ad hoc `Classical.choose_spec`
+normalization.
+-/
+structure AbstractGapSelectorProvenancePayload
+    (p : GapPartialMCSPParams) where
+  base : AbstractGapCubeSoundWitnessPayload p
+  hRf_eq_baseWitness :
+    base.base.Rf = base.base.base.base.S
+  hBaseWitness_eq_semanticSingletonWitness :
+    base.base.base.base.S =
+      Magnification.AC0LocalityBridge.semanticSingletonWitness
+        base.base.base.base.f
+  hDict_eq_baseWitness :
+    base.base.base.base.sc.atlas.dict = base.base.base.base.S
+
+/--
+Thin packaging helper for the selector-provenance strengthening.
+-/
+def abstractGapSelectorProvenancePayload_of_equalities
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapCubeSoundWitnessPayload p)
+    (hRf_eq_baseWitness :
+      pkg.base.Rf = pkg.base.base.base.S)
+    (hBaseWitness_eq_semanticSingletonWitness :
+      pkg.base.base.base.S =
+        Magnification.AC0LocalityBridge.semanticSingletonWitness
+          pkg.base.base.base.f)
+    (hDict_eq_baseWitness :
+      pkg.base.base.base.sc.atlas.dict = pkg.base.base.base.S) :
+    AbstractGapSelectorProvenancePayload p where
+  base := pkg
+  hRf_eq_baseWitness := hRf_eq_baseWitness
+  hBaseWitness_eq_semanticSingletonWitness :=
+    hBaseWitness_eq_semanticSingletonWitness
+  hDict_eq_baseWitness := hDict_eq_baseWitness
+
+/--
+The scenario dictionary is exactly the selected witness family `Rf`.
+
+This is the consumer-facing equality that makes the old `base.S`/`sc.bounded`
+split unnecessary once selector provenance has been packaged explicitly.
+-/
+theorem dict_eq_Rf_of_abstractGapSelectorProvenancePayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p) :
+    pkg.base.base.base.base.sc.atlas.dict = pkg.base.base.Rf := by
+  rw [pkg.hRf_eq_baseWitness, pkg.hDict_eq_baseWitness]
+
+/--
+The selected witness family `Rf` is exactly the semantic singleton witness of
+the linked distinguished function.
+-/
+theorem Rf_eq_semanticSingletonWitness_of_abstractGapSelectorProvenancePayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p) :
+    pkg.base.base.Rf =
+      Magnification.AC0LocalityBridge.semanticSingletonWitness
+        pkg.base.base.base.base.f := by
+  rw [pkg.hRf_eq_baseWitness, pkg.hBaseWitness_eq_semanticSingletonWitness]
+
+/--
+Consequently, coverage by the selected witness family computes the linked
+distinguished function exactly.
+-/
+theorem coveredB_eq_f_of_abstractGapSelectorProvenancePayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p)
+    (x : Core.BitVec pkg.base.base.base.n) :
+    Core.coveredB pkg.base.base.Rf x = pkg.base.base.base.base.f x := by
+  rw [Rf_eq_semanticSingletonWitness_of_abstractGapSelectorProvenancePayload pkg]
+  simpa using
+    (Magnification.AC0LocalityBridge.coveredB_semanticSingletonWitness
+      (pkg.base.base.base.base.f) x)
+
+/--
+In particular, coverage by `Rf` computes the fixed gap target itself.
+
+This is the main consumer-side payoff of the provenance contract: one can now
+reason with `coveredB pkg.base.Rf` directly, without repeatedly descending into
+the producer-side witness bookkeeping.
+-/
+theorem coveredB_eq_gapTarget_of_abstractGapSelectorProvenancePayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p)
+    (x : Core.BitVec pkg.base.base.base.n) :
+    Core.coveredB pkg.base.base.Rf x =
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec pkg.base.base.base.hsame x) := by
+  rw [coveredB_eq_f_of_abstractGapSelectorProvenancePayload pkg x]
+  simpa using congrArg (fun g => g x) pkg.base.base.base.hLink
+
+/--
+The selector-provenance invariant already forces the full cube-YES goal.
+
+This proof deliberately uses the stronger `coveredB Rf = gapTarget` interface:
+membership of `x` in any selected cube yields coverage by `Rf`, and coverage is
+identified with the fixed gap target pointwise.
+-/
+theorem cubeYesGoal_of_selectorProvenancePayload
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p) :
+    cubeYesGoal_of_abstractGapWitnessedPayload pkg.base.base := by
+  intro β hβ x hxmem
+  have hcov : Core.coveredB pkg.base.base.Rf x = true := by
+    exact List.any_eq_true.mpr ⟨β, hβ, hxmem⟩
+  rw [coveredB_eq_gapTarget_of_abstractGapSelectorProvenancePayload pkg x] at hcov
+  exact hcov
+
+/--
+As a consequence, a selector-provenance payload can never satisfy the abstract
+cube-NO goal.
+-/
+theorem not_cubeNoGoal_of_selectorProvenance
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p) :
+    ¬ cubeNoGoal_of_abstractGapWitnessedPayload pkg.base.base := by
+  intro hNo
+  exact false_of_abstractGapWitnessedPayload_of_cubeYes_and_cubeNo
+    pkg.base.base
+    (cubeYesGoal_of_selectorProvenancePayload pkg)
+    hNo
+
+/--
+Therefore the stronger cube-separated goal is impossible as well for every
+selector-provenance payload.
+-/
+theorem not_cubeSeparatedGoal_of_selectorProvenance
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p) :
+    ¬ cubeSeparatedGoal_of_abstractGapWitnessedPayload pkg.base.base := by
+  intro hSep
+  exact not_cubeNoGoal_of_selectorProvenance pkg hSep.2
+
+/--
+Equivalent consumer form stated directly for cube-refuting hypotheses over the
+cube-sound base of a selector-provenance payload.
+-/
+theorem not_cubeRefute_of_selectorProvenanceCubeSound
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapSelectorProvenancePayload p) :
+    ¬ (∀ β, β ∈ pkg.base.base.Rf →
+        ∃ x : Core.BitVec pkg.base.base.base.n,
+          Core.mem β x ∧
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+            (ThirdPartyFacts.castBitVec pkg.base.base.base.hsame x) = false) := by
+  exact not_cubeNoGoal_of_selectorProvenance pkg
+
+/--
 Unified consumer frontier for the non-empty witness route.
 
 This packages both cube-local semantic halves explicitly:
@@ -871,15 +1376,16 @@ theorem abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_prove
     ∃ pkg : AbstractGapTargetedSingletonDensityPayload p,
       pkg.base.sc.k = pkg.base.S.length ∧
       pkg.base.S =
-        Magnification.AC0LocalityBridge.semanticSingletonWitness pkg.base.f := by
+        Magnification.AC0LocalityBridge.semanticSingletonWitness pkg.base.f ∧
+      pkg.base.sc.atlas.dict = pkg.base.S := by
   classical
   rcases hDag with ⟨wf, _⟩
   let n := Models.partialInputLen p
   let f : Core.BitVec n → Bool := fun x =>
     ComplexityInterfaces.DagCircuit.eval (wf.family n) x
   let S := Magnification.AC0LocalityBridge.semanticSingletonWitness f
-  obtain ⟨A, hWorks, hεeq, hsub, herr⟩ :=
-    Magnification.AC0LocalityBridge.semanticSingletonAtlas_exact_epsilon_with_witness f
+  obtain ⟨A, hdict, hWorks, hεeq, hsub, herr⟩ :=
+    Magnification.AC0LocalityBridge.semanticSingletonAtlas_exact_epsilon_with_dict_eq_witness f
   have hε0 : (0 : Core.Q) ≤ A.epsilon := by
     rw [hεeq]
     positivity
@@ -923,7 +1429,10 @@ theorem abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_prove
     hLink := by
       funext x
       simpa [n, f] using (wf.correct n x)
-  }, by simp [sc, S], rfl⟩
+  }, ?_⟩
+  refine ⟨by simp [sc, S], ?_⟩
+  refine ⟨rfl, ?_⟩
+  simpa [sc] using hdict
 
 
 /--
@@ -939,7 +1448,7 @@ theorem abstractGapTargetedSingletonDensityPayload_of_dag_with_k_eq_baseWitnessL
     ∃ pkg : AbstractGapTargetedSingletonDensityPayload p,
       pkg.base.sc.k = pkg.base.S.length := by
   rcases abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance
-      (p := p) hDag with ⟨pkg, hk, _hProv⟩
+      (p := p) hDag with ⟨pkg, hk, _hProv, _hdict⟩
   exact ⟨pkg, hk⟩
 
 /--
@@ -1000,7 +1509,131 @@ theorem dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness
     (dagCanonicalPayload hDag).base.S =
       Magnification.AC0LocalityBridge.semanticSingletonWitness (dagCanonicalPayload hDag).base.f := by
   exact (Classical.choose_spec
-    (abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance (p := p) hDag)).2
+    (abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance (p := p) hDag)).2.1
+
+/--
+The canonical DAG payload dictionary is exactly the canonical stored witness.
+-/
+theorem dagCanonicalPayload_dict_eq_baseWitness
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagCanonicalPayload hDag).base.sc.atlas.dict = (dagCanonicalPayload hDag).base.S := by
+  exact (Classical.choose_spec
+    (abstractGapTargetedSingletonDensityPayload_of_dag_with_baseWitness_provenance (p := p) hDag)).2.2
+
+/--
+Alternative witness candidate extracted from the scenario-level `bounded`
+field of the canonical DAG payload.
+
+Unlike `dagWitnessedPayload`, this does not assume any non-emptiness; it only
+exposes the exact witness chosen by the scenario contract.
+-/
+noncomputable def dagScenarioWitness
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    List (Core.Subcube (dagCanonicalPayload hDag).n) :=
+  Classical.choose
+    ((dagCanonicalPayload hDag).base.sc.bounded
+      (dagCanonicalPayload hDag).base.f
+      (dagCanonicalPayload hDag).base.hf)
+
+/--
+The scenario witness obeys the scenario budget `k`.
+-/
+theorem dagScenarioWitness_len
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagScenarioWitness hDag).length ≤ (dagCanonicalPayload hDag).base.sc.k := by
+  exact (Classical.choose_spec
+    ((dagCanonicalPayload hDag).base.sc.bounded
+      (dagCanonicalPayload hDag).base.f
+      (dagCanonicalPayload hDag).base.hf)).1
+
+/--
+The scenario witness lives inside the canonical DAG dictionary.
+-/
+theorem dagScenarioWitness_sub
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    Core.listSubset
+      (dagScenarioWitness hDag)
+      (dagCanonicalPayload hDag).base.sc.atlas.dict := by
+  exact (Classical.choose_spec
+    ((dagCanonicalPayload hDag).base.sc.bounded
+      (dagCanonicalPayload hDag).base.f
+      (dagCanonicalPayload hDag).base.hf)).2.1
+
+/--
+The scenario witness inherits the scenario error bound.
+-/
+theorem dagScenarioWitness_err
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    Core.errU (dagCanonicalPayload hDag).base.f (dagScenarioWitness hDag) ≤
+      (dagCanonicalPayload hDag).base.sc.atlas.epsilon := by
+  exact (Classical.choose_spec
+    ((dagCanonicalPayload hDag).base.sc.bounded
+      (dagCanonicalPayload hDag).base.f
+      (dagCanonicalPayload hDag).base.hf)).2.2
+
+/--
+Because the canonical DAG dictionary equals the canonical stored witness, the
+scenario witness is still a subfamily of that same stored witness.
+-/
+theorem dagScenarioWitness_sub_baseWitness
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    Core.listSubset
+      (dagScenarioWitness hDag)
+      (dagCanonicalPayload hDag).base.S := by
+  rw [← dagCanonicalPayload_dict_eq_baseWitness hDag]
+  exact dagScenarioWitness_sub hDag
+
+/--
+Every cube selected by the scenario witness is already YES-sound for the fixed
+gap target, because it lies inside the canonical stored witness family.
+-/
+theorem dagScenarioWitness_cubeYes
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ∀ β, β ∈ dagScenarioWitness hDag →
+      ∀ x : Core.BitVec (dagCanonicalPayload hDag).n, Core.mem β x →
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+          (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame x) = true := by
+  intro β hβ x hxmem
+  have hβS : β ∈ (dagCanonicalPayload hDag).base.S :=
+    dagScenarioWitness_sub_baseWitness hDag hβ
+  have hcovS :
+      Core.coveredB (dagCanonicalPayload hDag).base.S x = true := by
+    exact List.any_eq_true.mpr ⟨β, hβS, hxmem⟩
+  have hftrue : (dagCanonicalPayload hDag).base.f x = true := by
+    rw [dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness hDag] at hcovS
+    simpa [Magnification.AC0LocalityBridge.coveredB_semanticSingletonWitness
+      ((dagCanonicalPayload hDag).base.f) x] using hcovS
+  have hLinkAt :=
+    congrArg (fun g => g x) (dagCanonicalPayload hDag).hLink
+  have hLinkAt' :
+      (dagCanonicalPayload hDag).base.f x =
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+          (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame x) := by
+    simpa using hLinkAt
+  exact hLinkAt'.symm.trans hftrue
+
+/--
+So the scenario witness still cannot provide a cube containing a NO-point.
+-/
+theorem dagScenarioWitness_not_cubeNo
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ∀ β, β ∈ dagScenarioWitness hDag →
+      ¬ ∃ x : Core.BitVec (dagCanonicalPayload hDag).n,
+        Core.mem β x ∧
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+          (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame x) = false := by
+  intro β hβ hFalse
+  rcases hFalse with ⟨x, hxmem, hxfalse⟩
+  have hxtrue := dagScenarioWitness_cubeYes hDag β hβ x hxmem
+  cases (hxtrue.symm.trans hxfalse)
 
 /--
 For the canonical DAG-produced payload, the earliest bridge is equivalent to
@@ -1118,6 +1751,191 @@ theorem dagNonemptyWitnessGoalProbe_holds
     dagNonemptyWitnessGoalProbe p := by
   exact (dagNonemptyWitnessGoalProbe_iff_baseWitness_nonempty p).2
     (dag_payload_baseWitness_nonempty_holds p)
+
+/--
+Explicit witnessed payload on the DAG route obtained by reusing the canonical
+stored witness `S`.
+
+This avoids the existential packaging of `dagNonemptyWitnessGoalProbe` and makes
+the concrete late witness family available for further inspection.
+-/
+noncomputable def dagWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    AbstractGapWitnessedPayload p where
+  base := dagCanonicalPayload hDag
+  Rf := (dagCanonicalPayload hDag).base.S
+  hRf_ne := dag_payload_baseWitness_nonempty_holds p hDag
+  hRf_len := (dagCanonicalPayload hDag).base.hlen
+  hRf_sub := (dagCanonicalPayload hDag).base.hsub
+  hRf_err := (dagCanonicalPayload hDag).base.herr
+
+/--
+The explicit DAG witnessed payload sits over the canonical DAG base payload.
+-/
+@[simp] theorem dagWitnessedPayload_base_eq
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagWitnessedPayload hDag).base = dagCanonicalPayload hDag := rfl
+
+/--
+The selected witness family of `dagWitnessedPayload` is exactly the canonical
+stored witness `S`.
+-/
+@[simp] theorem dagWitnessedPayload_Rf_eq_baseWitness
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagWitnessedPayload hDag).Rf = (dagCanonicalPayload hDag).base.S := rfl
+
+/--
+The explicit DAG witnessed payload already satisfies the cube-YES goal.
+
+Reason: every selected cube comes from the canonical stored witness `S`, and
+`S = semanticSingletonWitness f` computes the target function exactly by
+coverage.
+-/
+theorem cubeYesGoal_of_dagWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    cubeYesGoal_of_abstractGapWitnessedPayload (dagWitnessedPayload hDag) := by
+  intro β hβ x hxmem
+  have hcovS :
+      Core.coveredB (dagCanonicalPayload hDag).base.S x = true := by
+    rw [← dagWitnessedPayload_Rf_eq_baseWitness hDag]
+    exact List.any_eq_true.mpr ⟨β, hβ, hxmem⟩
+  have hftrue : (dagCanonicalPayload hDag).base.f x = true := by
+    rw [dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness hDag] at hcovS
+    simpa [Magnification.AC0LocalityBridge.coveredB_semanticSingletonWitness
+      ((dagCanonicalPayload hDag).base.f) x] using hcovS
+  have hLinkAt :=
+    congrArg (fun g => g x) (dagCanonicalPayload hDag).hLink
+  exact hLinkAt.symm.trans hftrue
+
+/--
+Explicit cube-sound payload on the DAG route obtained from the explicit
+witnessed payload above.
+-/
+noncomputable def dagCubeSoundWitnessPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    AbstractGapCubeSoundWitnessPayload p :=
+  abstractGapCubeSoundWitnessPayload_of_cubeSound
+    (dagWitnessedPayload hDag)
+    (cubeYesGoal_of_dagWitnessedPayload hDag)
+
+/--
+The explicit cube-sound DAG payload is built over `dagWitnessedPayload`.
+-/
+@[simp] theorem dagCubeSoundWitnessPayload_base_eq
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagCubeSoundWitnessPayload hDag).base = dagWitnessedPayload hDag := rfl
+
+/--
+Canonical selector-provenance payload on the DAG route.
+
+This is the new consumer-facing contract: it keeps the cube-sound witness data
+while also remembering that the chosen witness family is exactly the canonical
+singleton-selector list and that the scenario dictionary is that same list.
+-/
+noncomputable def dagSelectorProvenancePayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    AbstractGapSelectorProvenancePayload p :=
+  abstractGapSelectorProvenancePayload_of_equalities
+    (dagCubeSoundWitnessPayload hDag)
+    (dagWitnessedPayload_Rf_eq_baseWitness hDag)
+    (dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness hDag)
+    (dagCanonicalPayload_dict_eq_baseWitness hDag)
+
+/--
+The provenance payload is built over the canonical DAG cube-sound payload.
+-/
+@[simp] theorem dagSelectorProvenancePayload_base_eq
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagSelectorProvenancePayload hDag).base = dagCubeSoundWitnessPayload hDag := rfl
+
+/--
+Inside the provenance payload, the selected witness family is exactly the
+semantic singleton witness of the linked DAG function.
+-/
+theorem dagSelectorProvenancePayload_Rf_eq_semanticSingletonWitness
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagSelectorProvenancePayload hDag).base.base.Rf =
+      Magnification.AC0LocalityBridge.semanticSingletonWitness
+        (dagCanonicalPayload hDag).base.f := by
+  simpa using
+    Rf_eq_semanticSingletonWitness_of_abstractGapSelectorProvenancePayload
+      (dagSelectorProvenancePayload hDag)
+
+/--
+Inside the provenance payload, the scenario dictionary is exactly the selected
+canonical witness family.
+-/
+theorem dagSelectorProvenancePayload_dict_eq_Rf
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    (dagSelectorProvenancePayload hDag).base.base.base.base.sc.atlas.dict =
+      (dagSelectorProvenancePayload hDag).base.base.Rf := by
+  simpa using
+    dict_eq_Rf_of_abstractGapSelectorProvenancePayload
+      (dagSelectorProvenancePayload hDag)
+
+/--
+Most importantly for downstream consumers, coverage by the selected DAG witness
+family computes the fixed gap target exactly.
+-/
+theorem dagSelectorProvenancePayload_coveredB_eq_gapTarget
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (x : Core.BitVec (dagCanonicalPayload hDag).n) :
+    Core.coveredB (dagSelectorProvenancePayload hDag).base.base.Rf x =
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+        (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame x) := by
+  simpa using
+    coveredB_eq_gapTarget_of_abstractGapSelectorProvenancePayload
+      (dagSelectorProvenancePayload hDag) x
+
+/--
+For the explicit DAG witnessed payload, the complementary cube-NO goal is
+already impossible: the same witness family is uniformly YES-sound.
+-/
+theorem not_cubeNoGoal_of_dagWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ¬ cubeNoGoal_of_abstractGapWitnessedPayload (dagWitnessedPayload hDag) := by
+  simpa [dagSelectorProvenancePayload_base_eq, dagCubeSoundWitnessPayload_base_eq] using
+    (not_cubeNoGoal_of_selectorProvenance (dagSelectorProvenancePayload hDag))
+
+/--
+Consequently, the unified cube-separated goal cannot hold for the explicit DAG
+witnessed payload built from the canonical stored witness `S`.
+-/
+theorem not_cubeSeparatedGoal_of_dagWitnessedPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ¬ cubeSeparatedGoal_of_abstractGapWitnessedPayload (dagWitnessedPayload hDag) := by
+  simpa [dagSelectorProvenancePayload_base_eq, dagCubeSoundWitnessPayload_base_eq] using
+    (not_cubeSeparatedGoal_of_selectorProvenance (dagSelectorProvenancePayload hDag))
+
+/--
+The existing `cubeRefute` hypothesis is inconsistent with the explicit
+cube-sound DAG payload built from the canonical stored witness.
+-/
+theorem not_cubeRefute_of_dagCubeSoundWitnessPayload
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ¬ (∀ β, β ∈ (dagCubeSoundWitnessPayload hDag).base.Rf →
+        ∃ x : Core.BitVec (dagCubeSoundWitnessPayload hDag).base.base.n,
+          Core.mem β x ∧
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+            (ThirdPartyFacts.castBitVec
+              (dagCubeSoundWitnessPayload hDag).base.base.hsame x) = false) := by
+  simpa [dagSelectorProvenancePayload_base_eq] using
+    (not_cubeRefute_of_selectorProvenanceCubeSound
+      (dagSelectorProvenancePayload hDag))
 
 /--
 An abstract consumer ruling out the semantically fixed gap-target payload

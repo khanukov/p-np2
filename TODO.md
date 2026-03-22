@@ -119,38 +119,48 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
     `LowerBounds.AbstractGapTargetedSingletonDensityPayload`, where the target
     is pinned to the gap-PartialMCSP slice itself rather than chosen freely.
 28. This semantically fixed payload is now known to admit both a formula-side
-    realization and a strict DAG-side realization. The active missing piece is
-    therefore no longer a source package for this target, but a consumer /
-    contradiction theorem from that common payload.
-29. The DAG-facing route is now formally reduced to a single missing theorem:
-    a contradiction consumer from
-    `LowerBounds.AbstractGapTargetedSingletonDensityPayload`.
-30. The cheapest consumer subroute is now explicit in code: the empty-witness
+    realization and a strict DAG-side realization.
+29. The route has since been split more honestly:
+    there is now an explicit stable-restriction/locality consumer stack
+    (`AbstractGapStableRestrictionPayload`,
+    `stableRestrictionGoal_of_abstractGapTargetedPayload`,
+    `AbstractGapLocalityPayload`,
+    `localityGoal_of_abstractGapTargetedPayload`)
+    with contradiction theorems already proved.
+30. The first live producer into that stack is already connected on the formula
+    side:
+    `stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate`,
+    `_of_restrictionData`,
+    `_of_supportBounds`.
+31. Therefore the active missing piece is now **not** "some consumer from the
+    gap-target payload" in the abstract, but a **DAG/leaves-side producer into
+    the stable-restriction goal**, or an equally strong equivalent bridge.
+32. The cheapest consumer subroute is now explicit in code: the empty-witness
     route reduces to proving the formula-free numeric inequality
     `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
-31. The empty-witness subroute is now known to be too weak: even when that
+33. The empty-witness subroute is now known to be too weak: even when that
     numeric inequality closes, it yields only admissibility of `Rf = []`, not
     contradiction.
-32. The next consumer-facing strengthening is now
+34. The next consumer-facing strengthening is now
     `LowerBounds.AbstractGapWitnessedPayload`, which adds one explicit
     non-empty bounded witness `Rf` over the same fixed gap-target payload.
-33. The strongest purely witness-level consequence currently extracted from
+35. The strongest purely witness-level consequence currently extracted from
     that new payload is just `∃ x, coveredB Rf x = true`. The next honest
     consumer probe must therefore use target semantics more deeply than
     witness existence and density alone.
-34. The first such semantic strengthening is now
+36. The first such semantic strengthening is now
     `LowerBounds.AbstractGapCubeSoundWitnessPayload`, which assumes every
     point in every witness cube is a YES-point of the fixed gap target.
-35. This semantic strengthening already closes the previous red goal
+37. This semantic strengthening already closes the previous red goal
     `f x = true` on covered points and yields existence of a YES-input for the
     fixed gap slice.
-36. A thin contradiction theorem is now available: YES-sound witness cubes
+38. A thin contradiction theorem is now available: YES-sound witness cubes
     would already be inconsistent if one could also show that every witness
     cube contains some NO-point of the fixed gap target.
-37. So the next honest frontier is no longer pointwise YES-soundness but the
+39. So the next honest frontier is no longer pointwise YES-soundness but the
     negative/local invariant "every non-empty witness cube contains a
     NO-point."
-38. The singleton small-mismatch package/provider remains in the codebase as a
+40. The singleton small-mismatch package/provider remains in the codebase as a
     stronger-source side branch. The active positive frontier is now a new
     contradiction theorem that consumes the semantically fixed gap-target
     payload, or some equally formula-free strengthening, without reintroducing

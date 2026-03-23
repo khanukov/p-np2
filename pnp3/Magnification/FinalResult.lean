@@ -2,6 +2,7 @@ import Magnification.Bridge_to_Magnification_Partial
 import Magnification.AsymptoticFormulaCollapse
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
+import LowerBounds.SingletonDensityContradiction
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
 import Complexity.PsubsetPpolyDAG_Internal
@@ -319,6 +320,82 @@ theorem P_ne_NP_final_dag_only
     ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
       hNPDag
       hPDag
+
+/--
+Final DAG-separation wrapper specialized to the packaged stable-restriction
+route.
+
+This is the payload-shaped companion to the probe-form wrapper below. It lets a
+future producer theorem land directly in
+`LowerBounds.AbstractGapStableRestrictionPayload`.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestrictionPayload_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hStable :
+    ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      LowerBounds.AbstractGapStableRestrictionPayload p)
+  (hBase :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      (hStable hDag).base = LowerBounds.dagCanonicalPayload hDag) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload_TM
+      W hStable hBase
+
+/--
+Final DAG-separation wrapper specialized to the stable-restriction route.
+
+This theorem packages the current endgame precisely: if one can prove that
+every DAG solver for the fixed `gapPartialMCSP` slice yields a small stable
+restriction for the canonical DAG payload, then the lower-bound layer already
+produces `NP ⊄ PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hStable :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      LowerBounds.stableRestrictionGoal_of_abstractGapTargetedPayload
+        (LowerBounds.dagCanonicalPayload hDag)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM W hStable
+
+/--
+End-to-end `P ≠ NP` wrapper specialized to the packaged DAG stable-restriction
+producer obligation.
+-/
+theorem P_ne_NP_final_of_dag_stableRestrictionPayload_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hStable :
+    ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      LowerBounds.AbstractGapStableRestrictionPayload p)
+  (hBase :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      (hStable hDag).base = LowerBounds.dagCanonicalPayload hDag) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_dag_stableRestrictionPayload_TM
+      W hStable hBase)
+
+/--
+End-to-end `P ≠ NP` wrapper specialized to the same DAG stable-restriction
+producer obligation.
+
+After this theorem, the only missing mathematical content for the DAG final
+route is the producer-side proof of `hStable`.
+-/
+theorem P_ne_NP_final_of_dag_stableRestriction_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hStable :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      LowerBounds.stableRestrictionGoal_of_abstractGapTargetedPayload
+        (LowerBounds.dagCanonicalPayload hDag)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W hStable)
 
 /--
 Package-shaped final wrapper kept for CI/signature policy compatibility.

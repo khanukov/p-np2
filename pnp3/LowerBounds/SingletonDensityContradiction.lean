@@ -452,6 +452,21 @@ theorem false_of_abstractGapTargetedPayload_of_localityGoal
     (abstractGapLocalityPayload_of_exists_locality pkg hLoc)
 
 /--
+Probe-form corollary for the stable-restriction route.
+
+This is the direct "restriction witness ⇒ contradiction" consumer that future
+producer theorems should target when they naturally produce stability under a
+small restriction instead of an already-packaged locality witness.
+-/
+theorem false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hStable : stableRestrictionGoal_of_abstractGapTargetedPayload pkg) :
+    False := by
+  exact false_of_abstractGapStableRestrictionPayload
+    (abstractGapStableRestrictionPayload_of_exists_stableRestriction pkg hStable)
+
+/--
 First live producer into the new stable-restriction bridge.
 
 This theorem does not build a new consumer: instead, it shows that any
@@ -559,6 +574,62 @@ theorem stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
     pkg
     (Magnification.formulaRestrictionCertificateData_of_supportBounds hBounds)
     hFormula
+
+/--
+One-shot contradiction corollary for the certificate-first formula route.
+
+This theorem is intentionally tiny: it records that once a source-side argument
+has produced a formula certificate for the fixed gap target, the new
+restriction-level bridge is already sufficient to derive contradiction.
+-/
+theorem false_of_abstractGapTargetedPayload_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hCert : Magnification.FormulaCertificateProviderPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    pkg
+    (stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
+      pkg hCert hFormula)
+
+/--
+One-shot contradiction corollary for the restriction-data-first producer.
+
+This is the most convenient consumer-facing form when an upstream route has
+already extracted explicit restriction certificate data.
+-/
+theorem false_of_abstractGapTargetedPayload_of_restrictionData
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (D : Magnification.FormulaRestrictionCertificateDataPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    pkg
+    (stableRestrictionGoal_of_abstractGapTargetedPayload_of_restrictionData
+      pkg D hFormula)
+
+/--
+One-shot contradiction corollary for the support-bounds producer route.
+
+This closes the intended ergonomic loop of the refactor:
+
+* support bounds,
+* restriction data,
+* stable restriction,
+* locality contradiction.
+-/
+theorem false_of_abstractGapTargetedPayload_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    pkg
+    (stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
+      pkg hBounds hFormula)
 
 /--
 Abstract non-empty witness strengthening of the fixed gap-target payload.
@@ -1949,6 +2020,46 @@ theorem not_ppolyDAG_of_abstractGapTargeted_consumer
   exact hConsumer (abstractGapTargetedSingletonDensityPayload_of_dag hDag)
 
 /--
+Specialized DAG consumer for the stable-restriction route in packaged form.
+
+This is the most producer-friendly version for future DAG-side extraction
+results: it allows the producer to return the structured payload directly,
+without re-unpacking it back into the probe form first.
+-/
+theorem not_ppolyDAG_of_dag_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  intro hDag
+  let _ := hBase hDag
+  exact false_of_abstractGapStableRestrictionPayload (hStable hDag)
+
+/--
+Specialized DAG consumer for the stable-restriction route.
+
+This theorem isolates the exact remaining producer-side obligation on the DAG
+track. Once one can show that every canonical DAG payload carries a small
+stable restriction, the generic restriction/locality contradiction immediately
+rules out `PpolyDAG` on the fixed `gapPartialMCSP` slice.
+-/
+theorem not_ppolyDAG_of_dag_stableRestriction
+    {p : GapPartialMCSPParams}
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  intro hDag
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    (dagCanonicalPayload hDag)
+    (hStable hDag)
+
+/--
 Fixed-slice NP plus the abstract gap-target consumer already imply strict DAG
 non-uniform separation.
 -/
@@ -1959,6 +2070,47 @@ theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
   exact not_ppolyDAG_of_abstractGapTargeted_consumer hConsumer
+
+/--
+Fixed-slice NP plus a packaged DAG stable-restriction producer already imply
+strict DAG non-uniform separation.
+
+This is the payload-shaped version of the same endgame. It is useful when a
+future producer theorem naturally returns `AbstractGapStableRestrictionPayload`
+rather than the raw existential probe.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
+  exact not_ppolyDAG_of_dag_stableRestrictionPayload hStable hBase
+
+/--
+Fixed-slice NP plus a DAG-to-stable-restriction producer already imply strict
+DAG non-uniform separation.
+
+This is the theorem that the current development is really aiming at on the DAG
+side: the only missing hypothesis is now a producer proving
+`stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`
+for every DAG solver of the fixed gap target.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction
+    {p : GapPartialMCSPParams}
+    (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
+  exact not_ppolyDAG_of_dag_stableRestriction hStable
 
 /--
 TM-witness packaging version of the same reduction to DAG non-uniform
@@ -1974,6 +2126,46 @@ theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer_TM
     Models.gapPartialMCSP_in_NP_of_TM p
       (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
   exact hConsumer
+
+/--
+TM-witness packaging version of the packaged DAG stable-restriction route.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload_TM
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload
+      (Models.gapPartialMCSP_in_NP_of_TM p
+        (Models.gapPartialMCSP_in_NP_TM_of_witness p W))
+      hStable
+      hBase
+
+/--
+TM-witness packaging version of the specialized DAG stable-restriction route.
+
+This is the final reduction theorem that should become directly usable once the
+repository gains a concrete DAG producer into the stable-restriction layer.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_of_dag_stableRestriction
+  exact
+    Models.gapPartialMCSP_in_NP_of_TM p
+      (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
+  exact hStable
 
 /--
 For the semantically fixed gap target, the YES-density of the distinguished

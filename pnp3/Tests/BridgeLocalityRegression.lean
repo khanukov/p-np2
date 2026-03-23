@@ -1,6 +1,7 @@
 import Magnification.Bridge_to_Magnification_Partial
 import Magnification.FinalResult
 import Magnification.LocalityLift_Partial
+import LowerBounds.SingletonDensityContradiction
 import ThirdPartyFacts.PpolyFormula
 import ThirdPartyFacts.PartialLocalityLift
 
@@ -82,6 +83,124 @@ theorem i4_final_wiring_of_supportBounds
       (hNPbridge := hNPbridge)
       (n := n)
       (hn := hn))
+
+theorem i4_gap_targeted_payload_contradiction_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (pkg : Pnp3.LowerBounds.AbstractGapTargetedSingletonDensityPayload p)
+    (hCert : FormulaCertificateProviderPartial)
+    (hFormula : PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact Pnp3.LowerBounds.false_of_abstractGapTargetedPayload_of_formulaCertificate
+    pkg hCert hFormula
+
+theorem i4_gap_targeted_payload_contradiction_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (pkg : Pnp3.LowerBounds.AbstractGapTargetedSingletonDensityPayload p)
+    (hBounds : FormulaSupportRestrictionBoundsPartial)
+    (hFormula : PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact Pnp3.LowerBounds.false_of_abstractGapTargetedPayload_of_supportBounds
+    pkg hBounds hFormula
+
+theorem i4_dag_candidateRestriction_alive_small_of_freePositions_small
+    {p : GapPartialMCSPParams}
+    (hDag : PpolyDAG (gapPartialMCSP_Language p))
+    (β : Core.Subcube (Pnp3.LowerBounds.dagCanonicalPayload hDag).n)
+    (hSmall :
+      ((⟨β⟩ : Core.Restriction (Pnp3.LowerBounds.dagCanonicalPayload hDag).n).freePositions.card) ≤
+        Models.Partial.tableLen p.n / 2) :
+    (Pnp3.LowerBounds.dagCandidateRestrictionOfSubcube hDag β).alive.card ≤
+      Models.Partial.tableLen p.n / 2 := by
+  exact
+    Pnp3.LowerBounds.dagCandidateRestrictionOfSubcube_alive_small_of_freePositions_small
+      hDag β hSmall
+
+theorem i4_dag_candidateRestriction_of_scenarioWitness_forces_yes
+    {p : GapPartialMCSPParams}
+    (hDag : PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (Pnp3.LowerBounds.dagCanonicalPayload hDag).n}
+    (hβ : β ∈ Pnp3.LowerBounds.dagScenarioWitness hDag)
+    (x : Core.BitVec (Models.partialInputLen p)) :
+    gapPartialMCSP_Language p (Models.partialInputLen p)
+      ((Pnp3.LowerBounds.dagCandidateRestrictionOfSubcube hDag β).apply x) = true := by
+  exact
+    Pnp3.LowerBounds.dagCandidateRestrictionOfScenarioWitness_forces_yes
+      hDag hβ x
+
+theorem i4_dagScenarioWitness_freePositions_card_eq_zero
+    {p : GapPartialMCSPParams}
+    (hDag : PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (Pnp3.LowerBounds.dagCanonicalPayload hDag).n}
+    (hβ : β ∈ Pnp3.LowerBounds.dagScenarioWitness hDag) :
+    ((⟨β⟩ : Core.Restriction (Pnp3.LowerBounds.dagCanonicalPayload hDag).n).freePositions.card) = 0 := by
+  exact Pnp3.LowerBounds.dagScenarioWitness_freePositions_card_eq_zero hDag hβ
+
+theorem i4_dagCandidateRestriction_of_scenarioWitness_alive_card_eq_zero
+    {p : GapPartialMCSPParams}
+    (hDag : PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (Pnp3.LowerBounds.dagCanonicalPayload hDag).n}
+    (hβ : β ∈ Pnp3.LowerBounds.dagScenarioWitness hDag) :
+    (Pnp3.LowerBounds.dagCandidateRestrictionOfSubcube hDag β).alive.card = 0 := by
+  exact Pnp3.LowerBounds.dagCandidateRestrictionOfScenarioWitness_alive_card_eq_zero hDag hβ
+
+theorem i4_current_singleton_preSingleton_selector_witness
+    {p : GapPartialMCSPParams}
+    (hFormula : PpolyFormula (gapPartialMCSP_Language p)) :
+    True := by
+  have h :=
+    Pnp3.Magnification.AC0LocalityBridge.current_singleton_preSingleton_selector_witness
+      hFormula
+  exact True.intro
+
+theorem i4_np_not_subset_ppolyDAG_of_dag_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ _ : PpolyDAG (gapPartialMCSP_Language p),
+        Pnp3.LowerBounds.AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = Pnp3.LowerBounds.dagCanonicalPayload hDag) :
+    NP_not_subset_PpolyDAG := by
+  exact
+    Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload_TM
+      W hStable hBase
+
+theorem i4_np_not_subset_ppolyDAG_of_dag_stableRestriction
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ hDag : PpolyDAG (gapPartialMCSP_Language p),
+        Pnp3.LowerBounds.stableRestrictionGoal_of_abstractGapTargetedPayload
+          (Pnp3.LowerBounds.dagCanonicalPayload hDag)) :
+    NP_not_subset_PpolyDAG := by
+  exact Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
+    W hStable
+
+theorem i4_p_ne_np_final_of_dag_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ _ : PpolyDAG (gapPartialMCSP_Language p),
+        Pnp3.LowerBounds.AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = Pnp3.LowerBounds.dagCanonicalPayload hDag) :
+    P_ne_NP := by
+  exact
+    Pnp3.Magnification.P_ne_NP_final_of_dag_stableRestrictionPayload_TM
+      W hStable hBase
+
+theorem i4_p_ne_np_final_of_dag_stableRestriction
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ hDag : PpolyDAG (gapPartialMCSP_Language p),
+        Pnp3.LowerBounds.stableRestrictionGoal_of_abstractGapTargetedPayload
+          (Pnp3.LowerBounds.dagCanonicalPayload hDag)) :
+    P_ne_NP := by
+  exact Pnp3.Magnification.P_ne_NP_final_of_dag_stableRestriction_TM
+    W hStable
 
 theorem i4_final_wiring_of_multiswitching
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)

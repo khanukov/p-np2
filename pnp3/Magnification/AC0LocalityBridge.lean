@@ -416,6 +416,65 @@ theorem semanticSingletonWitness_nonempty_of_exists_true {n : Nat}
     simpa [hx] using coveredB_semanticSingletonWitness f x
   simpa [hNil] using hCover
 
+private theorem chosenSubcube_pointTerm_eq_pointSubcube {n : Nat}
+    (x : Core.BitVec n) :
+    Classical.choose (pointTerm_consistent x) = Core.pointSubcube x := by
+  let β := Classical.choose (pointTerm_consistent x)
+  change β = Core.pointSubcube x
+  have hβ : ThirdPartyFacts.AC0Depth2.termToSubcube (pointTerm x) = some β :=
+    Classical.choose_spec (pointTerm_consistent x)
+  funext i
+  change β i = Core.pointSubcube x i
+  have hmemx : Core.mem β x := by
+    unfold Core.mem
+    rw [ThirdPartyFacts.AC0Depth2.memB_termToSubcube hβ]
+    exact (pointTerm_eval_true_iff_eq x x).2 rfl
+  have hxprop := (Core.mem_iff (β := β) (x := x)).1 hmemx
+  cases hβi : β i with
+  | none =>
+      let y : Core.BitVec n := fun j => if j = i then !(x j) else x j
+      have hymem : Core.mem β y := by
+        refine (Core.mem_iff (β := β) (x := y)).2 ?_
+        intro j b hj
+        by_cases hji : j = i
+        · subst hji
+          simp [hβi] at hj
+        · simpa [y, hji] using hxprop j b hj
+      have hEvalTrue : AC0.Term.eval (pointTerm x) y = true := by
+        have hmemBy : Core.memB β y = true := hymem
+        have hmemEq := ThirdPartyFacts.AC0Depth2.memB_termToSubcube hβ y
+        exact hmemEq.symm.trans hmemBy
+      have hyEq : y = x := (pointTerm_eval_true_iff_eq x y).1 hEvalTrue
+      have hyAt := congrArg (fun z => z i) hyEq
+      have hfalse : False := by
+        cases hxi : x i <;> simp [y, hxi] at hyAt
+      exact False.elim hfalse
+  | some b =>
+      have hb : x i = b := hxprop i b hβi
+      simp [Core.pointSubcube, hβi, hb]
+
+/--
+Every subcube appearing in the current singleton semantic witness is already a
+point subcube.
+
+This is the key diagnosis showing that the present singleton route is still a
+point-case source: any future nontrivial DAG restriction producer must switch
+to an earlier geometric source (selectors / leaves / PDT), not reuse the
+current singleton witness directly.
+-/
+theorem semanticSingletonWitness_eq_pointSubcube_of_mem {n : Nat}
+    {f : Core.BitVec n → Bool}
+    {β : Core.Subcube n}
+    (hβ : β ∈ semanticSingletonWitness f) :
+    ∃ x : Core.BitVec n, f x = true ∧ β = Core.pointSubcube x := by
+  classical
+  rw [semanticSingletonWitness, ThirdPartyFacts.AC0Circuit.subcubes,
+    ThirdPartyFacts.AC0Depth2.dnfToSubcubes] at hβ
+  rcases List.mem_pmap.1 hβ with ⟨t, ht, hEq⟩
+  rcases List.mem_map.1 ht with ⟨x, hxmem, rfl⟩
+  refine ⟨x, (List.mem_filter.1 hxmem).2, ?_⟩
+  exact hEq.symm.trans (chosenSubcube_pointTerm_eq_pointSubcube x)
+
 private lemma semanticParams_M_ge_two {n : Nat}
     (f : Core.BitVec n → Bool) :
     2 ≤ (semanticParams f).M := by
@@ -828,6 +887,51 @@ theorem current_singleton_linked_function_in_approxClass
         (f := f)
         ⟨S, le_rfl, hsub, herr⟩
   · simpa [params, C] using current_singleton_commonPDT_exact_epsilon f
+
+/--
+The current singleton semantic route already exposes a genuine pre-singleton
+selector witness from the constructed `CommonPDT`.
+
+Unlike `semanticSingletonWitness`, this list comes directly from the
+multi-switching/common-PDT pipeline: it is a subfamily of the tree leaves and
+it satisfies the exact common-PDT error guarantee. This theorem isolates the
+best currently available selectors/leaves-side data before the downstream code
+collapses back to point subcubes.
+-/
+theorem current_singleton_preSingleton_selector_witness
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+      fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+      simpa [params, F] using semanticFamilyWitnessProp f
+    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+      simpa [params, F] using
+        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+          params F (semanticMultiSwitchingWitness f)
+    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+    ∃ Rf : List (Core.Subcube params.n),
+      Rf = C.selectors f ∧
+      Core.listSubset Rf (Core.PDT.leaves C.tree) ∧
+      Core.errU f Rf ≤ C.epsilon ∧
+      C.epsilon = (1 : Core.Q) / (params.n + 2) := by
+  classical
+  intro wf c f params F hF hpoly C
+  have hfF : f ∈ F := by
+    simp [F]
+  refine ⟨C.selectors f, rfl, ?_, ?_, ?_⟩
+  · intro β hβ
+    exact C.selectors_sub hfF hβ
+  · exact C.err_le hfF
+  · have hAtlas :
+        (Core.CommonPDT.toAtlas C).epsilon = (1 : Core.Q) / (params.n + 2) := by
+      simpa [params, C] using current_singleton_commonPDT_exact_epsilon f
+    simpa using hAtlas
 
 /--
 Under an explicit comparison hypothesis, the current singleton source route

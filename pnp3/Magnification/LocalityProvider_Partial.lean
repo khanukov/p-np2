@@ -380,6 +380,32 @@ noncomputable def factsRestrictionOfSubcube {n : Nat}
   simp [factsRestrictionOfSubcube]
 
 /--
+Applying `factsRestrictionOfSubcube β` always lands back inside the same source
+subcube `β`.
+
+This is the most basic sanity property of the subcube-to-restriction converter:
+it freezes every fixed coordinate of `β` to the prescribed bit and leaves the
+free coordinates untouched.
+-/
+theorem mem_of_apply_factsRestrictionOfSubcube {n : Nat}
+    (β : Core.Subcube n)
+    (x : Core.BitVec n) :
+    Core.mem β ((factsRestrictionOfSubcube β).apply x) := by
+  refine (Core.mem_iff (β := β) (x := (factsRestrictionOfSubcube β).apply x)).2 ?_
+  intro i b hβi
+  have hnotFree : i ∉ ((⟨β⟩ : Core.Restriction n).freePositions) := by
+    intro hi
+    have hisNone :=
+      (Core.Restriction.mem_freePositions
+        (ρ := (⟨β⟩ : Core.Restriction n)) (i := i)).1 hi
+    simp [hβi] at hisNone
+  have hnotAlive : i ∉ (factsRestrictionOfSubcube β).alive := by
+    simpa [factsRestrictionOfSubcube_alive] using hnotFree
+  have happly := Facts.LocalityLift.Restriction.apply_not_alive
+    (factsRestrictionOfSubcube β) x hnotAlive
+  simpa [factsRestrictionOfSubcube, factsAssignmentOfSubcube, hβi] using happly
+
+/--
 Source-aware relation: `rFacts` is realized by a semantic switching certificate
 if it comes from one of the selector subcubes attached to the function `f`
 linked back to the extracted strict formula witness.

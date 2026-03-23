@@ -452,6 +452,21 @@ theorem false_of_abstractGapTargetedPayload_of_localityGoal
     (abstractGapLocalityPayload_of_exists_locality pkg hLoc)
 
 /--
+Probe-form corollary for the stable-restriction route.
+
+This is the direct "restriction witness ⇒ contradiction" consumer that future
+producer theorems should target when they naturally produce stability under a
+small restriction instead of an already-packaged locality witness.
+-/
+theorem false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hStable : stableRestrictionGoal_of_abstractGapTargetedPayload pkg) :
+    False := by
+  exact false_of_abstractGapStableRestrictionPayload
+    (abstractGapStableRestrictionPayload_of_exists_stableRestriction pkg hStable)
+
+/--
 First live producer into the new stable-restriction bridge.
 
 This theorem does not build a new consumer: instead, it shows that any
@@ -559,6 +574,62 @@ theorem stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
     pkg
     (Magnification.formulaRestrictionCertificateData_of_supportBounds hBounds)
     hFormula
+
+/--
+One-shot contradiction corollary for the certificate-first formula route.
+
+This theorem is intentionally tiny: it records that once a source-side argument
+has produced a formula certificate for the fixed gap target, the new
+restriction-level bridge is already sufficient to derive contradiction.
+-/
+theorem false_of_abstractGapTargetedPayload_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hCert : Magnification.FormulaCertificateProviderPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    pkg
+    (stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
+      pkg hCert hFormula)
+
+/--
+One-shot contradiction corollary for the restriction-data-first producer.
+
+This is the most convenient consumer-facing form when an upstream route has
+already extracted explicit restriction certificate data.
+-/
+theorem false_of_abstractGapTargetedPayload_of_restrictionData
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (D : Magnification.FormulaRestrictionCertificateDataPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    pkg
+    (stableRestrictionGoal_of_abstractGapTargetedPayload_of_restrictionData
+      pkg D hFormula)
+
+/--
+One-shot contradiction corollary for the support-bounds producer route.
+
+This closes the intended ergonomic loop of the refactor:
+
+* support bounds,
+* restriction data,
+* stable restriction,
+* locality contradiction.
+-/
+theorem false_of_abstractGapTargetedPayload_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (pkg : AbstractGapTargetedSingletonDensityPayload p)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    False := by
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    pkg
+    (stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
+      pkg hBounds hFormula)
 
 /--
 Abstract non-empty witness strengthening of the fixed gap-target payload.
@@ -1938,6 +2009,155 @@ theorem not_cubeRefute_of_dagCubeSoundWitnessPayload
       (dagSelectorProvenancePayload hDag))
 
 /--
+Candidate facts-side restriction obtained by transporting one source-side DAG
+subcube into the fixed `gapPartialMCSP` coordinate system.
+
+This is deliberately only an experimental producer-side object: it packages the
+most natural restriction one can extract from the current DAG selector data,
+but it does not by itself prove the full stable-restriction goal.
+-/
+noncomputable def dagCandidateRestrictionOfSubcube
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (β : Core.Subcube (dagCanonicalPayload hDag).n) :
+    Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+  ThirdPartyFacts.castRestriction (dagCanonicalPayload hDag).hsame
+    (Magnification.factsRestrictionOfSubcube β)
+
+/--
+The alive-set size of the DAG candidate restriction is exactly the number of
+free coordinates of the source subcube.
+
+So any eventual smallness proof for this candidate must come from a genuine
+bound on the selector subcube itself, not from hidden shrinkage in the
+transport step.
+-/
+theorem dagCandidateRestrictionOfSubcube_alive_card
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (β : Core.Subcube (dagCanonicalPayload hDag).n) :
+    (dagCandidateRestrictionOfSubcube hDag β).alive.card =
+      ((⟨β⟩ : Core.Restriction (dagCanonicalPayload hDag).n).freePositions.card) := by
+  simp [dagCandidateRestrictionOfSubcube, Magnification.factsRestrictionOfSubcube_alive]
+
+/--
+If the source-side selector subcube already has a small free set, then the DAG
+candidate restriction automatically satisfies the consumer-side alive-set bound.
+
+This isolates one half of the remaining producer problem: the current code can
+transport smallness, but it does not yet prove that the canonical DAG route
+actually supplies a selector with small free set.
+-/
+theorem dagCandidateRestrictionOfSubcube_alive_small_of_freePositions_small
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (β : Core.Subcube (dagCanonicalPayload hDag).n)
+    (hSmall :
+      ((⟨β⟩ : Core.Restriction (dagCanonicalPayload hDag).n).freePositions.card) ≤
+        Models.Partial.tableLen p.n / 2) :
+    (dagCandidateRestrictionOfSubcube hDag β).alive.card ≤ Models.Partial.tableLen p.n / 2 := by
+  simpa [dagCandidateRestrictionOfSubcube_alive_card] using hSmall
+
+/--
+Applying the DAG candidate restriction always lands inside the chosen source
+subcube.
+
+This is the direct bridge from the facts-side restriction action back to the
+source-side selector geometry.
+-/
+theorem mem_of_apply_dagCandidateRestrictionOfSubcube
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (β : Core.Subcube (dagCanonicalPayload hDag).n)
+    (x : Core.BitVec (Models.partialInputLen p)) :
+    Core.mem β
+      (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame.symm
+        ((dagCandidateRestrictionOfSubcube hDag β).apply x)) := by
+  simpa [dagCandidateRestrictionOfSubcube] using
+    Magnification.mem_of_apply_factsRestrictionOfSubcube β
+      (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame.symm x)
+
+/--
+For any selector subcube taken from the current DAG scenario witness, the DAG
+candidate restriction forces the fixed gap target to evaluate to `true` after
+restriction application.
+
+This is a useful sanity check, but it is still weaker than the full stability
+obligation: it controls the value on `r.apply x`, not yet the comparison with
+`x` itself.
+-/
+theorem dagCandidateRestrictionOfScenarioWitness_forces_yes
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (dagCanonicalPayload hDag).n}
+    (hβ : β ∈ dagScenarioWitness hDag)
+    (x : Core.BitVec (Models.partialInputLen p)) :
+    Models.gapPartialMCSP_Language p (Models.partialInputLen p)
+      ((dagCandidateRestrictionOfSubcube hDag β).apply x) = true := by
+  have hmem :
+      Core.mem β
+        (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame.symm
+          ((dagCandidateRestrictionOfSubcube hDag β).apply x)) :=
+    mem_of_apply_dagCandidateRestrictionOfSubcube hDag β x
+  have hyes :=
+    dagScenarioWitness_cubeYes hDag β hβ
+      (ThirdPartyFacts.castBitVec (dagCanonicalPayload hDag).hsame.symm
+        ((dagCandidateRestrictionOfSubcube hDag β).apply x))
+      hmem
+  simpa using hyes
+
+/--
+Every subcube in the current DAG scenario witness is already point-like.
+
+This formally records an important producer-side diagnosis: because the current
+scenario witness still lives inside `semanticSingletonWitness`, it has not yet
+escaped the singleton/point-case frontier.
+-/
+theorem dagScenarioWitness_eq_pointSubcube_of_mem
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (dagCanonicalPayload hDag).n}
+    (hβ : β ∈ dagScenarioWitness hDag) :
+    ∃ x : Core.BitVec (dagCanonicalPayload hDag).n,
+      β = Core.pointSubcube x := by
+  have hβS : β ∈ (dagCanonicalPayload hDag).base.S :=
+    dagScenarioWitness_sub_baseWitness hDag hβ
+  rw [dagCanonicalPayload_baseWitness_eq_semanticSingletonWitness hDag] at hβS
+  rcases Magnification.AC0LocalityBridge.semanticSingletonWitness_eq_pointSubcube_of_mem hβS with
+    ⟨x, _hxTrue, hPoint⟩
+  exact ⟨x, hPoint⟩
+
+/--
+Consequently, every current DAG scenario-witness subcube has zero free
+coordinates.
+-/
+theorem dagScenarioWitness_freePositions_card_eq_zero
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (dagCanonicalPayload hDag).n}
+    (hβ : β ∈ dagScenarioWitness hDag) :
+    ((⟨β⟩ : Core.Restriction (dagCanonicalPayload hDag).n).freePositions.card) = 0 := by
+  rcases dagScenarioWitness_eq_pointSubcube_of_mem hDag hβ with ⟨x, rfl⟩
+  simp [Core.pointSubcube]
+
+/--
+So the current scenario-witness candidate restriction is automatically a
+zero-alive restriction.
+
+This is useful as a diagnostic result: it confirms that the current candidate
+route is still a disguised point-case branch and should not be mistaken for the
+future nontrivial selector/leaf route.
+-/
+theorem dagCandidateRestrictionOfScenarioWitness_alive_card_eq_zero
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    {β : Core.Subcube (dagCanonicalPayload hDag).n}
+    (hβ : β ∈ dagScenarioWitness hDag) :
+    (dagCandidateRestrictionOfSubcube hDag β).alive.card = 0 := by
+  rw [dagCandidateRestrictionOfSubcube_alive_card]
+  exact dagScenarioWitness_freePositions_card_eq_zero hDag hβ
+
+/--
 An abstract consumer ruling out the semantically fixed gap-target payload
 already yields DAG non-uniform separation for the same fixed slice.
 -/
@@ -1947,6 +2167,51 @@ theorem not_ppolyDAG_of_abstractGapTargeted_consumer
     ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
   intro hDag
   exact hConsumer (abstractGapTargetedSingletonDensityPayload_of_dag hDag)
+
+/--
+Probe-form stable-restriction producer extracted from a packaged DAG producer.
+
+This lemma is the key normalization step ensuring that the packaged DAG route
+really is just a thin wrapper around the probe route: future producers may
+return a structured `AbstractGapStableRestrictionPayload`, but all downstream
+consumers should continue to reuse the single probe-based contradiction stack.
+-/
+theorem dag_stableRestrictionGoal_of_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      stableRestrictionGoal_of_abstractGapTargetedPayload
+        (dagCanonicalPayload hDag) := by
+  intro hDag
+  refine
+    (stableRestrictionGoal_iff_exists_stableRestriction_package_with_base
+      (dagCanonicalPayload hDag)).2 ?_
+  exact ⟨hStable hDag, hBase hDag⟩
+
+/--
+Specialized DAG consumer for the stable-restriction route.
+
+This theorem isolates the exact remaining producer-side obligation on the DAG
+track. Once one can show that every canonical DAG payload carries a small
+stable restriction, the generic restriction/locality contradiction immediately
+rules out `PpolyDAG` on the fixed `gapPartialMCSP` slice.
+-/
+theorem not_ppolyDAG_of_dag_stableRestriction
+    {p : GapPartialMCSPParams}
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  intro hDag
+  exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
+    (dagCanonicalPayload hDag)
+    (hStable hDag)
 
 /--
 Fixed-slice NP plus the abstract gap-target consumer already imply strict DAG
@@ -1959,6 +2224,26 @@ theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
   exact not_ppolyDAG_of_abstractGapTargeted_consumer hConsumer
+
+/--
+Fixed-slice NP plus a DAG-to-stable-restriction producer already imply strict
+DAG non-uniform separation.
+
+This is the theorem that the current development is really aiming at on the DAG
+side: the only missing hypothesis is now a producer proving
+`stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`
+for every DAG solver of the fixed gap target.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction
+    {p : GapPartialMCSPParams}
+    (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
+  exact not_ppolyDAG_of_dag_stableRestriction hStable
 
 /--
 TM-witness packaging version of the same reduction to DAG non-uniform
@@ -1974,6 +2259,88 @@ theorem NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer_TM
     Models.gapPartialMCSP_in_NP_of_TM p
       (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
   exact hConsumer
+
+/--
+TM-witness packaging version of the specialized DAG stable-restriction route.
+
+This is the final reduction theorem that should become directly usable once the
+repository gains a concrete DAG producer into the stable-restriction layer.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_of_dag_stableRestriction
+  exact
+    Models.gapPartialMCSP_in_NP_of_TM p
+      (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
+  exact hStable
+
+
+/--
+Specialized DAG consumer for the stable-restriction route in packaged form.
+
+This theorem is intentionally only a thin corollary of the probe-form route:
+packaged producers are first normalized to
+`stableRestrictionGoal_of_abstractGapTargetedPayload`, and then the existing
+probe-based contradiction theorem is reused unchanged.
+-/
+theorem not_ppolyDAG_of_dag_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  exact not_ppolyDAG_of_dag_stableRestriction
+    (dag_stableRestrictionGoal_of_stableRestrictionPayload hStable hBase)
+
+
+/--
+Fixed-slice NP plus a packaged DAG stable-restriction producer already imply
+strict DAG non-uniform separation.
+
+Again this is only a thin corollary: the packaged producer is normalized to the
+probe obligation and then fed to the existing probe-route theorem.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload
+    {p : GapPartialMCSPParams}
+    (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact NP_not_subset_PpolyDAG_of_dag_stableRestriction hNP
+    (dag_stableRestrictionGoal_of_stableRestrictionPayload hStable hBase)
+
+
+/--
+TM-witness packaging version of the packaged DAG stable-restriction route.
+
+This remains a thin wrapper around the probe-route TM theorem.
+-/
+theorem NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload_TM
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hStable :
+      ∀ _ : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        AbstractGapStableRestrictionPayload p)
+    (hBase :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        (hStable hDag).base = dagCanonicalPayload hDag) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM W
+    (dag_stableRestrictionGoal_of_stableRestrictionPayload hStable hBase)
+
 
 /--
 For the semantically fixed gap target, the YES-density of the distinguished

@@ -379,6 +379,46 @@ noncomputable def factsRestrictionOfSubcube {n : Nat}
     (factsRestrictionOfSubcube β).alive = ((⟨β⟩ : Core.Restriction n).freePositions) := by
   simp [factsRestrictionOfSubcube]
 
+@[simp] lemma factsRestrictionOfSubcube_alive_card {n : Nat}
+    (β : Core.Subcube n) :
+    (factsRestrictionOfSubcube β).alive.card =
+      ((⟨β⟩ : Core.Restriction n).freePositions).card := by
+  simp [factsRestrictionOfSubcube_alive]
+
+/--
+Applying the facts-side restriction extracted from a subcube always lands back
+inside that same subcube.
+
+Intuition:
+* alive coordinates are exactly the free coordinates of `β`, so membership in
+  `β` imposes no condition there;
+* fixed coordinates are rewritten to the fixed values stored in `β`.
+-/
+theorem mem_of_apply_factsRestrictionOfSubcube {n : Nat}
+    (β : Core.Subcube n)
+    (x : Core.BitVec n) :
+    Core.mem β ((factsRestrictionOfSubcube β).apply x) := by
+  rw [Core.mem_iff_memB]
+  apply (Core.memB_eq_true_iff β ((factsRestrictionOfSubcube β).apply x)).2
+  intro i b hib
+  by_cases hi : i ∈ ((⟨β⟩ : Core.Restriction n).freePositions)
+  · have hnone : β i = none := by
+      exact Option.isNone_iff_eq_none.mp
+        ((Core.Restriction.mem_freePositions
+          (ρ := (⟨β⟩ : Core.Restriction n)) (i := i)).1 hi)
+    rw [hnone] at hib
+    cases hib
+  · have hi' : i ∉ (factsRestrictionOfSubcube β).alive := by
+      simpa [factsRestrictionOfSubcube_alive] using hi
+    have hfixed : β i ≠ none := by
+      simp [hib]
+    calc
+      (factsRestrictionOfSubcube β).apply x i
+          = factsAssignmentOfSubcube β i := by
+              simp [Facts.LocalityLift.Restriction.apply, factsRestrictionOfSubcube, hfixed]
+      _ = b := by
+            simp [factsAssignmentOfSubcube, hib]
+
 /--
 Source-aware relation: `rFacts` is realized by a semantic switching certificate
 if it comes from one of the selector subcubes attached to the function `f`

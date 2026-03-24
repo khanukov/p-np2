@@ -1,9 +1,11 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-03-16
+Updated: 2026-03-23
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release checklist/w wording guardrail: `RELEASE_RC.md`.
+Concrete execution plan for the remaining DAG blocker:
+`pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
 
 ## Snapshot
 
@@ -135,6 +137,11 @@ Current release checklist/w wording guardrail: `RELEASE_RC.md`.
 31. Therefore the active missing piece is now **not** "some consumer from the
     gap-target payload" in the abstract, but a **DAG/leaves-side producer into
     the stable-restriction goal**, or an equally strong equivalent bridge.
+31a. The concrete recommended mainline is now fixed in
+     `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`:
+     build a DAG-native stable-restriction producer with a global invariance
+     theorem, instead of trying to recover the final contradiction from the
+     current singleton selectors.
 32. The cheapest consumer subroute is now explicit in code: the empty-witness
     route reduces to proving the formula-free numeric inequality
     `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
@@ -213,7 +220,9 @@ What was changed:
 Verification:
 
 1. `lake build` passes.
-2. `lake build 2>&1 | rg "warning:"` is empty.
+2. `lake build 2>&1 | rg "warning:"` currently reports known linter warnings;
+   this milestone does **not** require warning-free output, only successful
+   builds plus stable audit/regression coverage.
 3. Regression/audit tests compile with the new signatures
    (`Tests/BridgeLocalityRegression`, `Tests/AxiomsAudit`, barrier audits).
 

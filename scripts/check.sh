@@ -141,45 +141,48 @@ if rg -n -U "^[[:space:]]*(def|abbrev)[[:space:]]+NP([[:space:]_(]|$)[^\n]*\n?[[
 fi
 
 # Magnification assumptions policy guardrails:
-# - assumption bundles must be present;
-# - package-style signatures are required for the canonical public finals
-#   (`NP_not_subset_PpolyFormula_final`, `NP_not_subset_PpolyReal_final`,
-#    `P_ne_NP_final`);
-# - old default-provider signatures for active finals are forbidden.
-if ! rg -n "^[[:space:]]*structure[[:space:]]+SwitchingAssumptions\\b" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_switching_assumptions_hits.log; then
-  echo "Missing required assumptions package: SwitchingAssumptions"
-  exit 1
-fi
+# - in the default RC/milestone mode, assumption bundles must be present and
+#   package-style signatures remain required for the canonical public finals;
+# - in `UNCONDITIONAL=1` mode, those package-signature requirements are
+#   intentionally suspended because the public finals are expected to become
+#   assumption-free (the dedicated unconditional gate below checks that state);
+# - old default-provider signatures for active finals are forbidden in all modes.
+if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
+  if ! rg -n "^[[:space:]]*structure[[:space:]]+SwitchingAssumptions\\b" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_switching_assumptions_hits.log; then
+    echo "Missing required assumptions package: SwitchingAssumptions"
+    exit 1
+  fi
 
-if ! rg -n "^[[:space:]]*structure[[:space:]]+AntiCheckerAssumptions\\b" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_antichecker_assumptions_hits.log; then
-  echo "Missing required assumptions package: AntiCheckerAssumptions"
-  exit 1
-fi
+  if ! rg -n "^[[:space:]]*structure[[:space:]]+AntiCheckerAssumptions\\b" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_antichecker_assumptions_hits.log; then
+    echo "Missing required assumptions package: AntiCheckerAssumptions"
+    exit 1
+  fi
 
-if ! rg -n "^[[:space:]]*structure[[:space:]]+MagnificationAssumptions\\b" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_magnification_assumptions_hits.log; then
-  echo "Missing required assumptions package: MagnificationAssumptions"
-  exit 1
-fi
+  if ! rg -n "^[[:space:]]*structure[[:space:]]+MagnificationAssumptions\\b" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_magnification_assumptions_hits.log; then
+    echo "Missing required assumptions package: MagnificationAssumptions"
+    exit 1
+  fi
 
-if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_formula_final_pkg_sig_hits.log; then
-  echo "Detected non-package signature for NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
-  exit 1
-fi
+  if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_formula_final_pkg_sig_hits.log; then
+    echo "Detected non-package signature for NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
+    exit 1
+  fi
 
-if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_real_final_pkg_sig_hits.log; then
-  echo "Detected non-package signature for NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
-  exit 1
-fi
+  if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_real_final_pkg_sig_hits.log; then
+    echo "Detected non-package signature for NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
+    exit 1
+  fi
 
-if ! rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_pnenp_final_pkg_sig_hits.log; then
-  echo "Detected non-package signature for P_ne_NP_final (expected hMag : MagnificationAssumptions)."
-  exit 1
+  if ! rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_pnenp_final_pkg_sig_hits.log; then
+    echo "Detected non-package signature for P_ne_NP_final (expected hMag : MagnificationAssumptions)."
+    exit 1
+  fi
 fi
 
 if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hDefaultProvider[[:space:]]*:[[:space:]]*hasDefaultStructuredLocalityProviderPartial\\)" \
@@ -196,18 +199,24 @@ if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(h
   exit 1
 fi
 
-if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.NP_not_subset_PpolyDAG\\)" \
-    pnp3/Magnification/FinalResult.lean >/tmp/pnp3_pnenp_final_legacy_sig_hits.log; then
-  echo "Detected forbidden legacy signature for P_ne_NP_final (missing MagnificationAssumptions):"
-  cat /tmp/pnp3_pnenp_final_legacy_sig_hits.log
-  exit 1
+if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
+  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.NP_not_subset_PpolyDAG\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_pnenp_final_legacy_sig_hits.log; then
+    echo "Detected forbidden legacy signature for P_ne_NP_final (missing MagnificationAssumptions):"
+    cat /tmp/pnp3_pnenp_final_legacy_sig_hits.log
+    exit 1
+  fi
 fi
 
 echo "Axiom inventory OK (${actual_axioms} axioms)."
 echo "Proof hole scan OK (no sorry/admit)."
 echo "native_decide scan OK (no occurrences)."
 echo "Interface naming policy OK (legacy aliases/modules blocked; strict interface enforced)."
-echo "Magnification assumptions policy OK (package-based finals enforced)."
+if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
+  echo "Magnification assumptions policy OK (unconditional mode: package-signature requirements suspended)."
+else
+  echo "Magnification assumptions policy OK (package-based finals enforced)."
+fi
 
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
@@ -268,6 +277,39 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
       pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean >/tmp/pnp3_unconditional_gaps_lite.txt; then
     echo "Unconditional gate failed: lightweight Ppoly alias leaked into final cone:"
     cat /tmp/pnp3_unconditional_gaps_lite.txt
+    exit 1
+  fi
+
+  # Canonical public finals must themselves become assumption-free before the
+  # tree can be described as unconditionally closed. We intentionally scope
+  # this to the public endpoints, not the specialized compatibility wrappers
+  # (`*_of_*`, `*_TM`, barrier/audit helpers), which may remain conditional as
+  # long as they are documented as non-default routes.
+  if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_unconditional_formula_pkg_hits.log; then
+    echo "Unconditional gate failed: canonical formula final still depends on MagnificationAssumptions:"
+    cat /tmp/pnp3_unconditional_formula_pkg_hits.log
+    exit 1
+  fi
+
+  if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_unconditional_real_pkg_hits.log; then
+    echo "Unconditional gate failed: canonical PpolyReal final still depends on MagnificationAssumptions:"
+    cat /tmp/pnp3_unconditional_real_pkg_hits.log
+    exit 1
+  fi
+
+  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_unconditional_pnenp_pkg_hits.log; then
+    echo "Unconditional gate failed: canonical P_ne_NP final still depends on MagnificationAssumptions:"
+    cat /tmp/pnp3_unconditional_pnenp_pkg_hits.log
+    exit 1
+  fi
+
+  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n(?:[[:space:]]*\\([^\\n]*\\)\\n)*[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*(?:ComplexityInterfaces\\.)?NP_not_subset_PpolyDAG\\)" \
+      pnp3/Magnification/FinalResult.lean >/tmp/pnp3_unconditional_pnenp_dag_hits.log; then
+    echo "Unconditional gate failed: canonical P_ne_NP final still depends on NP_not_subset_PpolyDAG:"
+    cat /tmp/pnp3_unconditional_pnenp_dag_hits.log
     exit 1
   fi
   echo "Unconditional witness surface OK."

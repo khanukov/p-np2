@@ -22,6 +22,8 @@ constructively formalized now, and what assumptions are still explicit.
 - `pnp3/` builds; `./scripts/check.sh` passes.
 - Active `axiom` declarations in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
+- Audited theorem surface still uses standard Lean assumptions
+  `propext`, `Classical.choice`, `Quot.sound` (but no project-local axioms).
 - Final entrypoints are in `pnp3/Magnification/FinalResult.lean`.
 - Final `P ≠ NP` wrappers are conditional (including the new
   support-bounds + `DAG → Formula` TM wrappers on the DAG side).

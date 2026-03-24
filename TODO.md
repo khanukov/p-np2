@@ -208,9 +208,9 @@ What was changed:
    `NP_not_subset_PpolyFormula_final*` and `NP_not_subset_PpolyReal_final*`
    now take explicit `(n, hn : N0 ≤ n)`.
 2. Replaced fixed-parameter NP-family wrapper with asymptotic NP bridge package:
-   `AsymptoticNPPullback` carries
-   `NP_strict (gapPartialMCSP_AsymptoticLanguage spec)` and per-`n` strict NP
-   witnesses for `gapPartialMCSP_Language (pAt n hn)`.
+   active final wiring now only needs the global witness
+   `NP_strict (gapPartialMCSP_AsymptoticLanguage spec)` carried by
+   `AsymptoticNPPullback`.
 3. Removed now-obsolete intermediate wrappers:
    old `StrictGapNPFamily` / `GapPartialMCSPTMWitnessFamily` path is deleted.
 4. Constructive TM route no longer requires an external NP pullback function:
@@ -317,9 +317,9 @@ Implementation plan:
    `Nonempty` wrappers in the core proof path.
 4. Rewire `FinalResult.lean` so active formula finals are grounded in the new
    asymptotic collapse theorem; keep fixed-slice route only as supporting lemmas.
-5. Resolve `strictAsymptotic`/`strictFixed` mismatch:
-   ensure the active proof path consumes the asymptotic witness directly and
-   keeps slice witnesses auxiliary.
+5. Keep the active proof path on the asymptotic witness only:
+   formula and `PpolyReal` finals should both consume the same
+   `strictAsymptotic`-based route.
 6. Add audit/regression checks so formula-final regressions cannot silently
    reintroduce external provider-style assumptions in the core theorem.
 
@@ -334,21 +334,23 @@ Progress (2026-03-15):
    `NP_not_subset_PpolyFormula_of_asymptotic_formula_collapse`.
 3. Rewired `FinalResult.lean` so
    `NP_not_subset_PpolyFormula_final_with_provider` now consumes
-   `hNPbridge.strictAsymptotic` on the active path (instead of relying on
-   `strictFixed` as the endpoint input).
+   `hNPbridge.strictAsymptotic` on the active path.
 4. Added explicit `sliceEq` to `AsymptoticFormulaTrackHypothesis`; active
    `asymptotic_formula_collapse` now obtains slice agreement from this package
    directly (no extra theorem argument at call sites).
 5. Removed obsolete intermediate formula-final wrapper that duplicated the old
    fixed-slice endpoint route.
-6. Moved active `MagnificationAssumptions.switching` payload from a raw
+6. Rewired `NP_not_subset_PpolyReal_final_with_provider` to reuse the same
+   asymptotic formula-separation path and derive `NP ⊄ PpolyReal` through the
+   current strict-interface equivalence `PpolyFormula -> PpolyReal`.
+7. Moved active `MagnificationAssumptions.switching` payload from a raw
    `StructuredLocalityProviderPartial` field to
    `FormulaSupportRestrictionBoundsPartial`; provider is now derived internally
    at formula/real final wrappers.
-7. Added provider-free formula/real final wrappers:
+8. Added provider-free formula/real final wrappers:
    `NP_not_subset_PpolyFormula_final_with_supportBounds`,
    `NP_not_subset_PpolyReal_final_with_supportBounds`.
-8. Raised final switching boundary to the strengthened A9 contract:
+9. Raised final switching boundary to the strengthened A9 contract:
    `MagnificationAssumptions.switching` now carries
    `FormulaSupportBoundsFromMultiSwitchingContract`, and active
    `NP_not_subset_PpolyFormula_final` / `NP_not_subset_PpolyReal_final`

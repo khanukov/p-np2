@@ -219,10 +219,11 @@ Formula-route progress note (2026-03-15):
 - Active formula final wiring now consumes asymptotic NP witness directly:
   `NP_not_subset_PpolyFormula_final_with_provider` is routed through
   `strictAsymptotic` + `asymptotic_formula_collapse`.
+- Active `PpolyReal` final wiring is now routed through the same asymptotic
+  formula-separation path, then converted by the current-interface equivalence
+  `PpolyFormula -> PpolyReal`.
 - `AsymptoticFormulaTrackHypothesis` now carries explicit `sliceEq`, and
   `asymptotic_formula_collapse` consumes it from the hypothesis package.
-- Fixed-slice witnesses remain as auxiliary support (`strictFixed`) for
-  helper/localized routes (not as the primary formula-final endpoint input).
 - `MagnificationAssumptions.switching` now carries
   `FormulaSupportBoundsFromMultiSwitchingContract` (strengthened A9 boundary),
   and active formula/real finals derive support-bounds and provider internally

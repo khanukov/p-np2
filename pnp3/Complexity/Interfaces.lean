@@ -582,6 +582,15 @@ theorem NP_not_subset_PpolyReal_of_contra
     exact hNotImp hImp
   exact ⟨L, hNP, hNotPpolyReal⟩
 
+/-- `NP ⊄ PpolyFormula` immediately yields `NP ⊄ PpolyReal`. -/
+theorem NP_not_subset_PpolyReal_of_PpolyFormula
+    (hSep : NP_not_subset_PpolyFormula) :
+    NP_not_subset_PpolyReal := by
+  rcases hSep with ⟨L, hNP, hNotFormula⟩
+  refine ⟨L, hNP, ?_⟩
+  intro hReal
+  exact hNotFormula (PpolyFormula_of_PpolyReal hReal)
+
 /-- `NP ⊄ PpolyReal` immediately yields `NP ⊄ PpolyFormula`. -/
 theorem NP_not_subset_PpolyFormula_of_PpolyReal
     (hSep : NP_not_subset_PpolyReal) :

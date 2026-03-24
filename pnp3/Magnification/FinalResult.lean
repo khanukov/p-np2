@@ -36,17 +36,12 @@ structure AsymptoticFormulaTrackHypothesis where
 
 /--
 Asymptotic NP bridge package:
-1) strict NP witness for the global asymptotic language;
-2) fixed-parameter strict NP witness stream along `pAt`.
+strict NP witness for the global asymptotic language.
 -/
 structure AsymptoticNPPullback (hAsym : AsymptoticFormulaTrackHypothesis) : Type where
   strictAsymptotic :
     ComplexityInterfaces.NP_strict
       (gapPartialMCSP_AsymptoticLanguage hAsym.spec)
-  strictFixed :
-    ∀ n (hn : hAsym.N0 ≤ n),
-      ComplexityInterfaces.NP_strict
-        (gapPartialMCSP_Language (hAsym.pAt n hn))
 
 /--
 Explicit assumptions package for the switching/shrinkage side:
@@ -207,8 +202,9 @@ theorem NP_not_subset_PpolyFormula_final
 /--
 Primary final statement on the nontrivial non-uniform class `PpolyReal`.
 
-Unlike the formula-separation route, this endpoint does not require any
-formula-to-lightweight-`P/poly` bridge assumption.
+In the current strict interface this endpoint is a thin corollary of the
+formula-separation route, because `PpolyReal` and `PpolyFormula` share the same
+concrete witness model.
 -/
 theorem NP_not_subset_PpolyReal_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
@@ -216,19 +212,14 @@ theorem NP_not_subset_PpolyReal_final_with_provider
   (hNPbridge : AsymptoticNPPullback hAsym)
   (n : Nat) (hn : hAsym.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  have hHyp : FormulaLowerBoundHypothesisPartial (hAsym.pAt n hn) (1 : Rat) :=
-    formula_hypothesis_from_pipeline_partial_semantic
-      (p := hAsym.pAt n hn) (δ := (1 : Rat)) (hδ := by norm_num)
-  have hNPstrict : ComplexityInterfaces.NP_strict
-      (gapPartialMCSP_Language (hAsym.pAt n hn)) :=
-    hNPbridge.strictFixed n hn
   exact
-    NP_not_subset_PpolyReal_from_partial_formulas
-      (hProvider := hProvider)
-      (p := hAsym.pAt n hn)
-      (δ := (1 : Rat))
-      hHyp
-      hNPstrict
+    ComplexityInterfaces.NP_not_subset_PpolyReal_of_PpolyFormula
+      (NP_not_subset_PpolyFormula_final_with_provider
+        (hProvider := hProvider)
+        (hAsym := hAsym)
+        (hNPbridge := hNPbridge)
+        (n := n)
+        (hn := hn))
 
 /--
 Provider-free wrapper at the `PpolyReal` endpoint boundary:

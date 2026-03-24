@@ -1,6 +1,6 @@
 # P vs NP: Lean Formalization (Honest Status)
 
-Status date: 2026-03-14.
+Status date: 2026-03-24.
 
 Canonical checklist for unconditional readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -23,7 +23,8 @@ constructively formalized now, and what assumptions are still explicit.
 - Active `axiom` declarations in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
 - Final entrypoints are in `pnp3/Magnification/FinalResult.lean`.
-- Final `P ≠ NP` wrappers are conditional.
+- Final `P ≠ NP` wrappers are conditional (including the new
+  support-bounds + `DAG → Formula` TM wrappers on the DAG side).
 
 Bottom line today: there is no unconditional in-repo theorem `P ≠ NP`.
 

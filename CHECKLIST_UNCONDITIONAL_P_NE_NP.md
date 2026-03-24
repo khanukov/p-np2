@@ -1,12 +1,15 @@
 # Checklist: Unconditional Constructive `P ≠ NP`
 
-Updated: 2026-03-14
+Updated: 2026-03-24
 
 This is the canonical checklist for what blocks an unconditional in-repo
 constructive theorem `P ≠ NP`.
 
 For the current interim release posture (what can be shipped now without
 overclaiming), see `RELEASE_RC.md`.
+
+Concrete execution plan for the remaining DAG blocker:
+`pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
 
 ## Current final API (actual code)
 
@@ -22,7 +25,10 @@ File: `pnp3/Magnification/FinalResult.lean`
 
 Active DAG endpoint `P_ne_NP_final` currently requires:
 
-1. `NP_not_subset_PpolyDAG` (`hNPDag`)
+1. `NP_not_subset_PpolyDAG` (`hNPDag`) on the default DAG-only endpoint.
+2. Support-bounds + `DAG → Formula` wrappers are available, but still
+   conditional on the bridge assumption and therefore do not close
+   unconditional status by themselves.
 
 Default contradiction step to `P ≠ NP` still depends on (1) above.
 

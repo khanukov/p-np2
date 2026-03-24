@@ -1,6 +1,6 @@
 # PNP3: Publication-facing status snapshot
 
-Updated: 2026-03-14
+Updated: 2026-03-24
 
 Canonical checklist for unconditional claim readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -12,7 +12,8 @@ Release wording/checklist for the current milestone:
 1. Active formalization is axiom-clean in `pnp3/`.
 2. Final route compiles in `pnp3/Magnification/FinalResult.lean`.
 3. `./scripts/check.sh` and current audit tests pass on current tree.
-4. Final `P ≠ NP` wrappers are conditional on explicit assumptions.
+4. Final `P ≠ NP` wrappers are conditional on explicit assumptions
+   (including DAG-side support-bounds + `DAG → Formula` bridge wrappers).
 
 ## Public statement rule
 

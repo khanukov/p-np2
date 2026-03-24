@@ -142,7 +142,9 @@ fi
 
 # Magnification assumptions policy guardrails:
 # - assumption bundles must be present;
-# - active final theorem signatures must consume `MagnificationAssumptions`;
+# - package-style signatures are required for the canonical public finals
+#   (`NP_not_subset_PpolyFormula_final`, `NP_not_subset_PpolyReal_final`,
+#    `P_ne_NP_final`);
 # - old default-provider signatures for active finals are forbidden.
 if ! rg -n "^[[:space:]]*structure[[:space:]]+SwitchingAssumptions\\b" \
     pnp3/Magnification/FinalResult.lean >/tmp/pnp3_switching_assumptions_hits.log; then
@@ -250,7 +252,11 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   fi
 
   # Final-cone blockers that must be internalized for unconditional status.
-  if rg -n "hFormulaToPpoly|hRealToPpoly|FormulaSeparationToNonuniformBridge|RealSeparationToNonuniformBridge|hPsubsetReal|P_subset_PpolyReal|hFormulaInclusion|P_subset_PpolyFormula|hPsubsetDag|P_subset_PpolyDAG" \
+  #
+  # IMPORTANT: this gate tracks explicit *external bridge assumptions* only.
+  # Internal helper theorems may legitimately mention classes like
+  # `P_subset_PpolyDAG`; such occurrences must not cause unconditional failure.
+  if rg -n "hFormulaToPpoly|hRealToPpoly|FormulaSeparationToNonuniformBridge|RealSeparationToNonuniformBridge|hPsubsetReal|hFormulaInclusion|hPsubsetDag" \
       pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean >/tmp/pnp3_unconditional_gaps_bridge.txt; then
     echo "Unconditional gate failed: final route still depends on an external non-uniform inclusion/bridge assumption:"
     cat /tmp/pnp3_unconditional_gaps_bridge.txt

@@ -357,6 +357,40 @@ theorem P_ne_NP_final_of_dag_stableRestriction_TM
   exact P_ne_NP_final_dag_only
     (NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W hStable)
 
+/--
+Final DAG-separation wrapper specialized to the support-bounds + DAG→formula
+bridge route.
+
+This is intentionally a thin endpoint around the new lower-bound closure lemma:
+it does not add new assumptions beyond the support-bounds package and the
+functional DAG→formula bridge.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_supportBounds_and_dagToFormula_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+  (hDagToFormula :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula_TM
+    W hBounds hDagToFormula
+
+/--
+Companion `P ≠ NP` endpoint for the same support-bounds + DAG→formula route.
+-/
+theorem P_ne_NP_final_of_supportBounds_and_dagToFormula_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+  (hDagToFormula :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_supportBounds_and_dagToFormula_TM
+      W hBounds hDagToFormula)
+
 
 /--
 Final DAG-separation wrapper specialized to the packaged stable-restriction

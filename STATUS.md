@@ -1,16 +1,18 @@
 # Project Status (current)
 
-Updated: 2026-03-16
+Updated: 2026-03-24
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Release positioning for current tree: `RELEASE_RC.md`.
+Detailed execution plan for the remaining DAG blocker:
+`pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
 
 ## Current verified state
 
 - Active `axiom` declarations in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- `./scripts/check.sh` passes (rechecked on 2026-03-16)
-- Current audit/regression tests pass (rechecked on 2026-03-16):
+- `./scripts/check.sh` passes (rechecked on 2026-03-24)
+- Current audit/regression tests pass (rechecked on 2026-03-24):
   `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`
 
@@ -197,6 +199,10 @@ Release positioning for current tree: `RELEASE_RC.md`.
      a contradiction-strength invariant.
 - See `pnp3/Docs/GapTarget_StableRestriction_Route.md` for the current
   route-level handoff and exact remaining targets.
+- A new implementation-facing plan now fixes the recommended mainline: build a
+  DAG-native stable-restriction producer rather than trying to strengthen the
+  current singleton selectors in place. See
+  `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
 
 ## Active final theorem surface
 

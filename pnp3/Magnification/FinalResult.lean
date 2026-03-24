@@ -2,6 +2,7 @@ import Magnification.Bridge_to_Magnification_Partial
 import Magnification.AsymptoticFormulaCollapse
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
+import Magnification.PipelineStatements_Partial
 import LowerBounds.SingletonDensityContradiction
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
@@ -25,7 +26,6 @@ structure AsymptoticFormulaTrackHypothesis where
   N0 : Nat
   pAt : ∀ n : Nat, N0 ≤ n → GapPartialMCSPParams
   pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
-  pAt_hyp : ∀ n (hn : N0 ≤ n), FormulaLowerBoundHypothesisPartial (pAt n hn) (1 : Rat)
   sliceEq :
     ∀ n (hn : N0 ≤ n),
       ∀ x : Core.BitVec (Models.partialInputLen (pAt n hn)),
@@ -113,7 +113,8 @@ theorem asymptotic_formula_collapse
   ComplexityInterfaces.PpolyFormula (gapPartialMCSP_AsymptoticLanguage hAsym.spec) → False := by
   let p : GapPartialMCSPParams := hAsym.pAt n hn
   have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
-    hAsym.pAt_hyp n hn
+    formula_hypothesis_from_pipeline_partial_semantic
+      (p := p) (δ := (1 : Rat)) (hδ := by norm_num)
   have hFixedCollapse :
       ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) → False :=
     fixed_formula_collapse_of_provider (hProvider := hProvider) (p := p) (δ := (1 : Rat)) hHyp
@@ -216,7 +217,8 @@ theorem NP_not_subset_PpolyReal_final_with_provider
   (n : Nat) (hn : hAsym.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   have hHyp : FormulaLowerBoundHypothesisPartial (hAsym.pAt n hn) (1 : Rat) :=
-    hAsym.pAt_hyp n hn
+    formula_hypothesis_from_pipeline_partial_semantic
+      (p := hAsym.pAt n hn) (δ := (1 : Rat)) (hδ := by norm_num)
   have hNPstrict : ComplexityInterfaces.NP_strict
       (gapPartialMCSP_Language (hAsym.pAt n hn)) :=
     hNPbridge.strictFixed n hn

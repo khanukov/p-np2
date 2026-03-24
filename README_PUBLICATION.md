@@ -9,10 +9,12 @@ Release wording/checklist for the current milestone:
 
 ## Current claim level
 
-1. Active formalization is axiom-clean in `pnp3/`.
+1. Active `pnp3/` formalization has no project-local axioms.
 2. Final route compiles in `pnp3/Magnification/FinalResult.lean`.
 3. `./scripts/check.sh` and current audit tests pass on current tree.
-4. Final `P ≠ NP` wrappers are conditional on explicit assumptions
+4. Audited theorem surface still uses standard Lean assumptions
+   `propext`, `Classical.choice`, `Quot.sound` (but no project-local axioms).
+5. Final `P ≠ NP` wrappers are conditional on explicit assumptions
    (including DAG-side support-bounds + `DAG → Formula` bridge wrappers).
 
 ## Public statement rule

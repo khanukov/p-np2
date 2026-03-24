@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Updated: 2026-03-14
+Updated: 2026-03-24
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -20,6 +20,12 @@ These compile on the current tree.
 ## Is unconditional `P ≠ NP` proved here?
 
 No. Current `P_ne_NP_final` is conditional.
+
+## Is the active tree axiom-free in the strictest sense?
+
+No. Active `pnp3/` has no project-local `axiom` and no `sorry/admit`, but the
+audited theorem surface still uses standard Lean assumptions:
+`propext`, `Classical.choice`, `Quot.sound`.
 
 ## Можно ли релизить сейчас, а полный путь закрыть потом?
 

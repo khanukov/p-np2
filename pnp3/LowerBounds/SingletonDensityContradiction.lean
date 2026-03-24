@@ -2194,6 +2194,153 @@ theorem dag_stableRestrictionGoal_of_stableRestrictionPayload
   exact ⟨hStable hDag, hBase hDag⟩
 
 /--
+Certificate-to-DAG specialization on the canonical payload.
+
+This is the first genuinely mathematical producer-side reduction for the DAG
+track (beyond packaging): if for the fixed slice we can attach a strict-formula
+solver to a concrete DAG solver, then the already-proved certificate pipeline
+immediately yields a stable-restriction witness for the canonical DAG payload.
+
+In other words, the remaining DAG-side work is now sharply isolated to building
+`hFormula` from DAG/pre-singleton geometry (leaf expansion, selector
+de-singletonization, or another concrete extraction route), not re-proving the
+stable-restriction consumer stack.
+-/
+theorem dag_stableRestrictionGoal_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (hCert : Magnification.FormulaCertificateProviderPartial)
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    stableRestrictionGoal_of_abstractGapTargetedPayload
+      (dagCanonicalPayload hDag) := by
+  exact
+    stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
+      (dagCanonicalPayload hDag) hCert hFormula
+
+/--
+Global DAG producer from certificate data plus a DAG→formula bridge.
+
+This theorem intentionally captures the exact "real mathematics" frontier for
+Route-B:
+
+* the certificate machinery already supplies stable restrictions once a formula
+  witness is available;
+* therefore, for unconditional DAG separation, it is enough to derive
+  `PpolyFormula` on the fixed slice from each candidate DAG solver.
+
+The intended sources for this bridge are precisely the pre-singleton geometry
+and leaf/certificate extraction layers currently under development.
+-/
+theorem dag_stableRestriction_producer_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (hCert : Magnification.FormulaCertificateProviderPartial)
+    (hDagToFormula :
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      stableRestrictionGoal_of_abstractGapTargetedPayload
+        (dagCanonicalPayload hDag) := by
+  intro hDag
+  exact dag_stableRestrictionGoal_of_formulaCertificate hCert hDag
+    (hDagToFormula hDag)
+
+/--
+Support-bounds specialization on the canonical DAG payload.
+
+This theorem isolates the exact hand-off requested by the DAG route:
+once DAG-side analysis can provide the standard support-bounds contract and a
+formula witness on the fixed slice, the already-established
+`supportBounds -> restrictionData -> formulaCertificate -> stableRestriction`
+pipeline discharges the canonical DAG stable-restriction goal.
+-/
+theorem dag_stableRestrictionGoal_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    stableRestrictionGoal_of_abstractGapTargetedPayload
+      (dagCanonicalPayload hDag) := by
+  exact
+    stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
+      (dagCanonicalPayload hDag) hBounds hFormula
+
+/--
+Global producer reduction through the support-bounds bridge.
+
+Compared with `dag_stableRestriction_producer_of_formulaCertificate`, this
+theorem is even closer to the intended endgame: it states that DAG-side data
+only needs to establish two reusable bridge inputs
+
+* a fixed support-bounds package (`hBounds`), and
+* per-DAG conversion to a formula witness (`hDagToFormula`).
+
+All downstream stable-restriction machinery is then automatic.
+-/
+theorem dag_stableRestriction_producer_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hDagToFormula :
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      stableRestrictionGoal_of_abstractGapTargetedPayload
+        (dagCanonicalPayload hDag) := by
+  intro hDag
+  exact dag_stableRestrictionGoal_of_supportBounds hBounds hDag
+    (hDagToFormula hDag)
+
+/--
+Canonical Route-B producer signature on the DAG track.
+
+This names the exact remaining obligation for an unconditional DAG endpoint:
+for every DAG solver on the fixed gap-target slice, produce a stable-restriction
+goal witness for the canonical DAG payload.
+-/
+abbrev dag_stableRestriction_producer
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+    stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)
+
+/--
+Definitional bridge: the named Route-B producer alias is exactly the existing
+probe-form hypothesis shape.
+-/
+theorem dag_stableRestriction_producer_iff
+    {p : GapPartialMCSPParams}
+    (hStable :
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload
+          (dagCanonicalPayload hDag)) :
+    dag_stableRestriction_producer p := by
+  simpa [dag_stableRestriction_producer] using hStable
+
+/--
+Alias-form restatement of `dag_stableRestriction_producer_of_formulaCertificate`.
+-/
+theorem dag_stableRestriction_producer_alias_of_formulaCertificate
+    {p : GapPartialMCSPParams}
+    (hCert : Magnification.FormulaCertificateProviderPartial)
+    (hDagToFormula :
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    dag_stableRestriction_producer p := by
+  exact dag_stableRestriction_producer_iff
+    (dag_stableRestriction_producer_of_formulaCertificate hCert hDagToFormula)
+
+/--
+Alias-form restatement of `dag_stableRestriction_producer_of_supportBounds`.
+-/
+theorem dag_stableRestriction_producer_alias_of_supportBounds
+    {p : GapPartialMCSPParams}
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hDagToFormula :
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    dag_stableRestriction_producer p := by
+  exact dag_stableRestriction_producer_iff
+    (dag_stableRestriction_producer_of_supportBounds hBounds hDagToFormula)
+
+/--
 Specialized DAG consumer for the stable-restriction route.
 
 This theorem isolates the exact remaining producer-side obligation on the DAG
@@ -2203,10 +2350,7 @@ rules out `PpolyDAG` on the fixed `gapPartialMCSP` slice.
 -/
 theorem not_ppolyDAG_of_dag_stableRestriction
     {p : GapPartialMCSPParams}
-    (hStable :
-      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
-        stableRestrictionGoal_of_abstractGapTargetedPayload
-          (dagCanonicalPayload hDag)) :
+    (hStable : dag_stableRestriction_producer p) :
     ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
   intro hDag
   exact false_of_abstractGapTargetedPayload_of_stableRestrictionGoal
@@ -2237,13 +2381,33 @@ for every DAG solver of the fixed gap target.
 theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction
     {p : GapPartialMCSPParams}
     (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
-    (hStable :
-      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
-        stableRestrictionGoal_of_abstractGapTargetedPayload
-          (dagCanonicalPayload hDag)) :
+    (hStable : dag_stableRestriction_producer p) :
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine ⟨gapPartialMCSP_Language p, hNP, ?_⟩
   exact not_ppolyDAG_of_dag_stableRestriction hStable
+
+/--
+Concrete closure lemma through the support-bounds bridge.
+
+This is a direct mathematical progress step toward the unconditional DAG
+endpoint: if DAG-side work can provide
+
+* one fixed support-bounds package, and
+* a per-DAG conversion into a formula witness on the fixed slice,
+
+then the stable-restriction producer is automatic and the existing contradiction
+consumer yields `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula
+    {p : GapPartialMCSPParams}
+    (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hDagToFormula :
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact NP_not_subset_PpolyDAG_of_dag_stableRestriction hNP
+    (dag_stableRestriction_producer_alias_of_supportBounds hBounds hDagToFormula)
 
 /--
 TM-witness packaging version of the same reduction to DAG non-uniform
@@ -2269,16 +2433,32 @@ repository gains a concrete DAG producer into the stable-restriction layer.
 theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
     {p : GapPartialMCSPParams}
     (W : Models.GapPartialMCSP_TMWitness p)
-    (hStable :
-      ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
-        stableRestrictionGoal_of_abstractGapTargetedPayload
-          (dagCanonicalPayload hDag)) :
+    (hStable : dag_stableRestriction_producer p) :
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   apply NP_not_subset_PpolyDAG_of_dag_stableRestriction
   exact
     Models.gapPartialMCSP_in_NP_of_TM p
       (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
   exact hStable
+
+/--
+TM-packaged version of
+`NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula`.
+-/
+theorem NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula_TM
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+    (hDagToFormula :
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+        ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula
+  exact
+    Models.gapPartialMCSP_in_NP_of_TM p
+      (Models.gapPartialMCSP_in_NP_TM_of_witness p W)
+  exact hBounds
+  exact hDagToFormula
 
 
 /--

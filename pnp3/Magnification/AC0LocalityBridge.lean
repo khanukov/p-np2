@@ -554,6 +554,104 @@ private lemma semanticParams_weak_le_polylog {n : Nat}
     (Nat.max 2 (truthTableDNF f).terms.length)
     (Nat.le_max_left 2 (truthTableDNF f).terms.length)
 
+/--
+Explicit singleton partial-certificate helper for the semantic route.
+
+This isolates the single-circuit constructive certificate used downstream by the
+current multi-switching/common-PDT bridge.  The important point is that the
+singleton function's selector list is not hidden behind an existential witness:
+for the unique family member `f`, the helper records exactly the concrete list
+`semanticSingletonWitness f = (semanticCircuit f).subcubes`.
+-/
+private noncomputable def semanticSingletonPartialCertificate {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    Core.PartialCertificate (semanticParams f).n 0 ([f] : Core.Family n) := by
+  classical
+  let params := semanticParams f
+  let subcubes := (semanticCircuit f).subcubes
+  by_cases hpos : 0 < params.n
+  · let tree := ThirdPartyFacts.buildPDTFromSubcubes hpos subcubes
+    refine
+      { witness := Core.PartialDT.ofPDT tree
+        depthBound := subcubes.length
+        epsilon := (1 : Core.Q) / (params.n + 2)
+        trunk_depth_le := by
+          simpa [tree, Core.PartialDT.ofPDT] using
+            (ThirdPartyFacts.buildPDTFromSubcubes_depth hpos subcubes)
+        selectors := fun g => if g = f then subcubes else []
+        selectors_sub := by
+          intro g β hg hβ
+          have hβsub : β ∈ subcubes := by
+            have hgEq : g = f := by simpa using hg
+            simpa [hgEq] using hβ
+          simpa [tree] using
+            (ThirdPartyFacts.buildPDTFromSubcubes_leaves_subset hpos subcubes β hβsub)
+        err_le := by
+          intro g hg
+          have hg' : g = f := by simpa using hg
+          have herr0 : Core.errU f subcubes = 0 := by
+            apply Core.errU_eq_zero_of_agree
+            intro x
+            simpa [subcubes, semanticSingletonWitness, eq_comm] using
+              (ThirdPartyFacts.AC0Circuit.coveredB_subcubes (c := semanticCircuit f) x).trans
+                (semanticCircuit_computes f x)
+          have hεnonneg : (0 : Core.Q) ≤ (1 : Core.Q) / (params.n + 2) := by
+            positivity
+          simpa [hg', herr0] using hεnonneg }
+  · have hzero : params.n = 0 := Nat.eq_zero_of_not_pos hpos
+    let tree : Core.PDT params.n := Core.PDT.leaf (ThirdPartyFacts.fullSubcube params.n)
+    refine
+      { witness := Core.PartialDT.ofPDT tree
+        depthBound := subcubes.length
+        epsilon := (1 : Core.Q) / (params.n + 2)
+        trunk_depth_le := by
+          have : Core.PDT.depth tree = 0 := by simp [tree, Core.PDT.depth]
+          simpa [this, Core.PartialDT.ofPDT]
+        selectors := fun g => if g = f then subcubes else []
+        selectors_sub := by
+          intro g β hg hβ
+          have hgEq : g = f := by simpa using hg
+          have hβfull : β = ThirdPartyFacts.fullSubcube params.n :=
+            ThirdPartyFacts.subcube_eq_full_of_n_zero' hzero β
+          simpa [hgEq, tree, Core.PDT.leaves, hβfull] using hβ
+        err_le := by
+          intro g hg
+          have hg' : g = f := by simpa using hg
+          have herr0 : Core.errU f subcubes = 0 := by
+            apply Core.errU_eq_zero_of_agree
+            intro x
+            simpa [subcubes, semanticSingletonWitness, eq_comm] using
+              (ThirdPartyFacts.AC0Circuit.coveredB_subcubes (c := semanticCircuit f) x).trans
+                (semanticCircuit_computes f x)
+          have hεnonneg : (0 : Core.Q) ≤ (1 : Core.Q) / (params.n + 2) := by
+            positivity
+          simpa [hg', herr0] using hεnonneg }
+
+@[simp] private theorem semanticSingletonPartialCertificate_selectors_eq {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    (semanticSingletonPartialCertificate f).selectors f = semanticSingletonWitness f := by
+  classical
+  unfold semanticSingletonPartialCertificate
+  by_cases hpos : 0 < (semanticParams f).n
+  · simp [hpos, semanticSingletonWitness]
+  · simp [hpos, semanticSingletonWitness]
+
+@[simp] private theorem semanticSingletonPartialCertificate_depth_eq {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    (semanticSingletonPartialCertificate f).depthBound =
+      (semanticCircuit f).subcubes.length := by
+  classical
+  unfold semanticSingletonPartialCertificate
+  by_cases hpos : 0 < (semanticParams f).n <;> simp [hpos]
+
+@[simp] private theorem semanticSingletonPartialCertificate_exact_epsilon {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    (semanticSingletonPartialCertificate f).epsilon =
+      (1 : Core.Q) / ((semanticParams f).n + 2) := by
+  classical
+  unfold semanticSingletonPartialCertificate
+  by_cases hpos : 0 < (semanticParams f).n <;> simp [hpos]
+
 private noncomputable def semanticMultiSwitchingWitness {n : Nat}
     (f : Core.BitVec n → Bool) :
     ThirdPartyFacts.AC0MultiSwitchingWitness
@@ -562,17 +660,11 @@ private noncomputable def semanticMultiSwitchingWitness {n : Nat}
   classical
   let params := semanticParams f
   let F : Core.Family params.n := [f]
-  have hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
-    simpa [params, F] using semanticFamilyWitnessProp f
-  let hSingle :=
-    ThirdPartyFacts.partial_shrinkage_single_circuit_general params (semanticCircuit f)
-  let ℓ := Classical.choose hSingle
-  let rest := Classical.choose_spec hSingle
-  let C := Classical.choose rest
-  have hprop := Classical.choose_spec rest
-  have hℓ0 : ℓ = 0 := hprop.1
-  have hDepthC : C.depthBound ≤ (semanticCircuit f).subcubes.length := hprop.2.1
-  have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := hprop.2.2
+  let C := semanticSingletonPartialCertificate f
+  have hDepthC : C.depthBound ≤ (semanticCircuit f).subcubes.length := by
+    simpa [C] using le_of_eq (semanticSingletonPartialCertificate_depth_eq f)
+  have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := by
+    simpa [params, C] using semanticSingletonPartialCertificate_exact_epsilon f
   let S : Core.Shrinkage params.n := C.toShrinkage
   have hEvalEq : ThirdPartyFacts.AC0Circuit.eval (semanticCircuit f) = f := by
     funext x
@@ -582,9 +674,9 @@ private noncomputable def semanticMultiSwitchingWitness {n : Nat}
     simpa [S, F, hEvalEq] using (Core.PartialCertificate.toShrinkage_family C)
   have hDepthSubcubes :
       S.t ≤ (semanticCircuit f).subcubes.length := by
-    have hDepthS : S.t = C.depthBound + ℓ := by
+    have hDepthS : S.t = C.depthBound + 0 := by
       rfl
-    rw [hDepthS, hℓ0]
+    rw [hDepthS]
     simpa using hDepthC
   have hDepthSize :
       S.t ≤ ThirdPartyFacts.AC0Circuit.size (semanticCircuit f) := by
@@ -620,7 +712,7 @@ private noncomputable def semanticMultiSwitchingWitness {n : Nat}
     rw [hRewrite, hε]
   refine {
     base := by
-      simpa [params, F] using (Classical.choice hF)
+      simpa [params, F] using semanticFamilyWitness f
     shrinkage := S
     family_eq := hFamilyEq
     depth_le_polylog := hDepthPolylog
@@ -642,17 +734,45 @@ private theorem semanticMultiSwitchingWitness_nonempty {n : Nat}
       (1 : Core.Q) / ((semanticParams f).n + 2) := by
   classical
   let params := semanticParams f
-  let hSingle :=
-    ThirdPartyFacts.partial_shrinkage_single_circuit_general params (semanticCircuit f)
-  let ℓ := Classical.choose hSingle
-  let rest := Classical.choose_spec hSingle
-  let C := Classical.choose rest
-  have hprop := Classical.choose_spec rest
-  have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := hprop.2.2
+  let C := semanticSingletonPartialCertificate f
+  have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := by
+    simpa [params, C] using semanticSingletonPartialCertificate_exact_epsilon f
   have hRewrite :
       (semanticMultiSwitchingWitness f).shrinkage.ε = C.epsilon := by
-    simp [semanticMultiSwitchingWitness, params, hSingle, ℓ, rest, C]
+    simp [semanticMultiSwitchingWitness, params, C]
   exact hRewrite.trans hε
+
+/--
+For the current singleton semantic route, the pre-singleton common-PDT selector
+family does not escape the singleton witness: it is exactly
+`semanticSingletonWitness f`.
+
+This is the key diagnostic fact for the current formula-side route.  It shows
+that even before downstream DAG packaging, the exported selector family is still
+the truth-table singleton family rather than a genuinely richer geometric
+object.
+-/
+theorem current_singleton_commonPDT_selectors_eq_semanticSingletonWitness {n : Nat}
+    (f : Core.BitVec n → Bool) :
+    let params := semanticParams f
+    let F : Core.Family params.n := [f]
+    let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+      simpa [params, F] using semanticFamilyWitnessProp f
+    let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+      simpa [params, F] using
+        ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+          params F (semanticMultiSwitchingWitness f)
+    let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+    C.selectors f = semanticSingletonWitness f := by
+  classical
+  intro params F hF hpoly C
+  simp [C, hpoly,
+    ThirdPartyFacts.commonPDT_from_AC0_with_polylog,
+    ThirdPartyFacts.certificate_from_AC0_with_polylog,
+    ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching,
+    ThirdPartyFacts.ac0PolylogBoundWitness_by_depth,
+    semanticMultiSwitchingWitness,
+    semanticSingletonPartialCertificate_selectors_eq]
 
 /--
 For the current singleton semantic route, there exists a working atlas whose
@@ -831,10 +951,11 @@ theorem current_singleton_commonPDT_exact_epsilon {n : Nat}
       (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε
         = (1 : Core.Q) / (params.n + 2) := by
     change hpoly.shrinkage.ε = (1 : Core.Q) / (params.n + 2)
-    simpa [hpoly,
+    simpa [params, hpoly,
+      ThirdPartyFacts.certificate_from_AC0_with_polylog,
       ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching,
-      ThirdPartyFacts.ac0PolylogBoundWitness_by_depth,
-      semanticMultiSwitchingWitness] using semanticMultiSwitchingWitness_exact_epsilon f
+      ThirdPartyFacts.ac0PolylogBoundWitness_by_depth] using
+      semanticMultiSwitchingWitness_exact_epsilon f
   calc
     (Core.CommonPDT.toAtlas C).epsilon
         = C.epsilon := by
@@ -932,6 +1053,150 @@ theorem current_singleton_preSingleton_selector_witness
         (Core.CommonPDT.toAtlas C).epsilon = (1 : Core.Q) / (params.n + 2) := by
       simpa [params, C] using current_singleton_commonPDT_exact_epsilon f
     simpa using hAtlas
+
+/--
+Public package exposing exactly the selector-family data that the current
+pre-singleton route really exports downstream.
+
+This avoids repeating the long `let`-bound theorem statement in downstream
+diagnostic code.  Importantly, the package is intentionally weak: it records the
+linked function, one concrete selector family, and the inherited uniform error
+bound, but it does **not** pretend to contain geometric facts that the current
+API has not yet proved.
+-/
+structure CurrentSingletonPreSingletonSelectorPackage
+    (p : GapPartialMCSPParams) where
+  f : Core.BitVec (Models.partialInputLen p) → Bool
+  Rf : List (Core.Subcube (Models.partialInputLen p))
+  hRf_err :
+    Core.errU f Rf ≤ (1 : Core.Q) / (Models.partialInputLen p + 2)
+
+/--
+The current pre-singleton route canonically produces a public selector package.
+
+This theorem does **not** solve the point-like/non-point-like diagnostic by
+itself.  What it does is expose the exact selector family currently available
+from the formula-side semantic route in a reusable shape, so that future
+diagnostic lemmas can target one named package instead of re-expanding the long
+`let`-based theorem every time.
+-/
+noncomputable def current_singleton_preSingleton_selector_package
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    CurrentSingletonPreSingletonSelectorPackage p := by
+  classical
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+    fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+  let params := semanticParams f
+  let F : Core.Family params.n := [f]
+  let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+    simpa [params, F] using semanticFamilyWitnessProp f
+  let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+    simpa [params, F] using
+      ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+        params F (semanticMultiSwitchingWitness f)
+  let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+  have hWitness :
+      ∃ Rf : List (Core.Subcube params.n),
+        Rf = C.selectors f ∧
+        Core.listSubset Rf (Core.PDT.leaves C.tree) ∧
+        Core.errU f Rf ≤ C.epsilon ∧
+        C.epsilon = (1 : Core.Q) / (params.n + 2) := by
+    simpa [wf, c, f, params, F, hF, hpoly, C] using
+      current_singleton_preSingleton_selector_witness hFormula
+  let Rf := Classical.choose hWitness
+  have hRf := Classical.choose_spec hWitness
+  exact
+    { f := f
+      Rf := Rf
+      hRf_err := by
+        calc
+          Core.errU f Rf ≤ C.epsilon := hRf.2.2.1
+          _ = (1 : Core.Q) / (Models.partialInputLen p + 2) := by
+            simpa [params] using hRf.2.2.2 }
+
+/--
+The selector family exported by the current pre-singleton formula route is
+exactly the semantic singleton witness.
+
+So although the route is phrased through the common-PDT selector interface, the
+current exported selector family is still the point-subcube family coming from
+the truth-table DNF of the linked function.
+-/
+theorem current_singleton_preSingleton_selector_package_Rf_eq_semanticSingletonWitness
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+    (current_singleton_preSingleton_selector_package hFormula).Rf =
+      semanticSingletonWitness
+        (current_singleton_preSingleton_selector_package hFormula).f := by
+  classical
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  let c := wf.family (Models.partialInputLen p)
+  let f : Core.BitVec (Models.partialInputLen p) → Bool :=
+    fun x => ComplexityInterfaces.FormulaCircuit.eval c x
+  let params := semanticParams f
+  let F : Core.Family params.n := [f]
+  let hF : ThirdPartyFacts.AC0FamilyWitnessProp params F := by
+    simpa [params, F] using semanticFamilyWitnessProp f
+  let hpoly : ThirdPartyFacts.AC0PolylogBoundWitness params F hF := by
+    simpa [params, F] using
+      ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching
+        params F (semanticMultiSwitchingWitness f)
+  let C := ThirdPartyFacts.commonPDT_from_AC0_with_polylog params F hF hpoly
+  have hWitness :
+      ∃ Rf : List (Core.Subcube params.n),
+        Rf = C.selectors f ∧
+        Core.listSubset Rf (Core.PDT.leaves C.tree) ∧
+        Core.errU f Rf ≤ C.epsilon ∧
+        C.epsilon = (1 : Core.Q) / (params.n + 2) := by
+    simpa [wf, c, f, params, F, hF, hpoly, C] using
+      current_singleton_preSingleton_selector_witness hFormula
+  let Rf := Classical.choose hWitness
+  have hRf : Rf = C.selectors f := (Classical.choose_spec hWitness).1
+  change Rf = semanticSingletonWitness f
+  calc
+    Rf = C.selectors f := hRf
+    _ = semanticSingletonWitness f := by
+      simpa [params, F, hF, hpoly, C] using
+        current_singleton_commonPDT_selectors_eq_semanticSingletonWitness f
+
+/--
+Every selector exported by the current pre-singleton formula route is already a
+point subcube.
+
+This is the bridge-level degeneration diagnosis: the route is now packaged and
+inspectable, but it still collapses to the singleton witness rather than
+producing genuinely richer geometric selectors.
+-/
+theorem current_singleton_preSingleton_selector_eq_pointSubcube_of_mem
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    {β : Core.Subcube (Models.partialInputLen p)}
+    (hβ : β ∈ (current_singleton_preSingleton_selector_package hFormula).Rf) :
+    ∃ x : Core.BitVec (Models.partialInputLen p),
+      (current_singleton_preSingleton_selector_package hFormula).f x = true ∧
+      β = Core.pointSubcube x := by
+  rw [current_singleton_preSingleton_selector_package_Rf_eq_semanticSingletonWitness hFormula] at hβ
+  exact semanticSingletonWitness_eq_pointSubcube_of_mem hβ
+
+/--
+Consequently, every selector exported by the current pre-singleton formula
+route has zero free coordinates.
+-/
+theorem current_singleton_preSingleton_selector_freePositions_card_eq_zero
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    {β : Core.Subcube (Models.partialInputLen p)}
+    (hβ : β ∈ (current_singleton_preSingleton_selector_package hFormula).Rf) :
+    ((⟨β⟩ : Core.Restriction (Models.partialInputLen p)).freePositions.card) = 0 := by
+  rcases current_singleton_preSingleton_selector_eq_pointSubcube_of_mem hFormula hβ with
+    ⟨x, _hxTrue, hPoint⟩
+  rw [hPoint]
+  simp [Core.pointSubcube]
 
 /--
 Under an explicit comparison hypothesis, the current singleton source route

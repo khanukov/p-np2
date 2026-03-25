@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-03-24
+Updated: 2026-03-25
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Release positioning for current tree: `RELEASE_RC.md`.
@@ -15,6 +15,28 @@ Detailed execution plan for the remaining DAG blocker:
 - Current audit/regression tests pass (rechecked on 2026-03-24):
   `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`
+
+## Route-B DAG update (2026-03-25)
+
+- New dedicated source file:
+  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`.
+- New DAG-native source contracts are now explicit and compiled:
+  `DAGStableRestrictionCertificate`,
+  `DAGStableRestrictionInvariantPackage`,
+  `dagStableRestrictionCertificateProvider`,
+  `dagStableRestrictionInvariantProvider`.
+- New thin final wrappers are now exposed in
+  `pnp3/Magnification/FinalResult.lean`:
+  `NP_not_subset_PpolyDAG_final_of_certificateProvider_TM`,
+  `P_ne_NP_final_of_certificateProvider_TM`,
+  `NP_not_subset_PpolyDAG_final_of_invariantProvider_TM`,
+  `P_ne_NP_final_of_invariantProvider_TM`.
+- `Tests/BridgeLocalityRegression` and `Tests/AxiomsAudit` now pin this
+  invariant-provider route in both compile-time regression and `#print axioms`
+  audit surfaces.
+- Next blocker is unchanged but now stated in project docs explicitly:
+  construct `dagStableRestrictionInvariantProvider p` from strict DAG semantics
+  (without extra bridge hypotheses).
 
 ## Current frontier (2026-03-16)
 

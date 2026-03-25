@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-03-23
+Updated: 2026-03-25
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release checklist/w wording guardrail: `RELEASE_RC.md`.

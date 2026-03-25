@@ -1,6 +1,6 @@
 # Checklist: Unconditional Constructive `P ≠ NP`
 
-Updated: 2026-03-24
+Updated: 2026-03-25
 
 This is the canonical checklist for what blocks an unconditional in-repo
 constructive theorem `P ≠ NP`.
@@ -29,6 +29,9 @@ Active DAG endpoint `P_ne_NP_final` currently requires:
 2. Support-bounds + `DAG → Formula` wrappers are available, but still
    conditional on the bridge assumption and therefore do not close
    unconditional status by themselves.
+3. DAG-native Route-B provider surfaces are now exposed
+   (`certificateProvider` / `invariantProvider` routes), but the source-side
+   generator from strict DAG semantics is still open.
 
 Default contradiction step to `P ≠ NP` still depends on (1) above.
 

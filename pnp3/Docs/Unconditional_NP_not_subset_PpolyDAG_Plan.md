@@ -7,6 +7,21 @@ It is intentionally stricter than a generic research memo: every milestone
 below is phrased so that we can tell, from the codebase alone, whether the
 step is done or still open.
 
+## Progress snapshot (2026-03-25)
+
+The repository now includes the planned dedicated source file
+`pnp3/LowerBounds/DAGStableRestrictionProducer.lean` with:
+
+1. DAG-native certificate/invariant source contracts;
+2. conversion into `dag_stableRestriction_producer`;
+3. TM-level closure theorem for the invariant-provider route;
+4. thin final wrappers and regression/audit wiring.
+
+So the current mathematical blocker is exactly the source generator itself:
+
+> construct `dagStableRestrictionInvariantProvider p` from strict DAG semantics
+> (without additional bridge assumptions).
+
 ---
 
 ## 1. Exact end goal

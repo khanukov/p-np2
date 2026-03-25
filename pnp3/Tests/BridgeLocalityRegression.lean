@@ -1,6 +1,7 @@
 import Magnification.Bridge_to_Magnification_Partial
 import Magnification.FinalResult
 import Magnification.LocalityLift_Partial
+import LowerBounds.DAGStableRestrictionProducer
 import LowerBounds.SingletonDensityContradiction
 import ThirdPartyFacts.PpolyFormula
 import ThirdPartyFacts.PartialLocalityLift
@@ -196,6 +197,34 @@ theorem i4_np_not_subset_ppolyDAG_of_dag_stableRestriction
     NP_not_subset_PpolyDAG := by
   exact Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
     W hStable
+
+theorem i4_np_not_subset_ppolyDAG_of_certificateProvider
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hCert : Pnp3.LowerBounds.dagStableRestrictionCertificateProvider p) :
+    NP_not_subset_PpolyDAG := by
+  exact Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_certificateProvider_TM W hCert
+
+theorem i4_np_not_subset_ppolyDAG_of_invariantProvider
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hInv : Pnp3.LowerBounds.dagStableRestrictionInvariantProvider p) :
+    NP_not_subset_PpolyDAG := by
+  exact Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_invariantProvider_TM W hInv
+
+theorem i4_np_not_subset_ppolyDAG_final_of_invariantProvider
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hInv : Pnp3.LowerBounds.dagStableRestrictionInvariantProvider p) :
+    NP_not_subset_PpolyDAG := by
+  exact Pnp3.Magnification.NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv
+
+theorem i4_p_ne_np_final_of_invariantProvider
+    {p : GapPartialMCSPParams}
+    (W : Models.GapPartialMCSP_TMWitness p)
+    (hInv : Pnp3.LowerBounds.dagStableRestrictionInvariantProvider p) :
+    P_ne_NP := by
+  exact Pnp3.Magnification.P_ne_NP_final_of_invariantProvider_TM W hInv
 
 theorem i4_np_not_subset_ppolyDAG_of_formulaCertificate_and_dagToFormula
     {p : GapPartialMCSPParams}

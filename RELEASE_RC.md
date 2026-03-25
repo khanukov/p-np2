@@ -1,4 +1,4 @@
-# Release Plan (RC): 2026-03-24
+# Release Plan (RC): 2026-03-25
 
 This document defines the recommended release posture for the current state.
 
@@ -16,6 +16,9 @@ This document defines the recommended release posture for the current state.
 4. Active tree remains axiom-clean (`axiom = 0`, `sorry/admit = 0` in `pnp3/`).
 5. Additional DAG wrappers via support-bounds + `DAG → Formula` are exposed,
    but remain conditional bridge endpoints.
+6. Additional DAG-native Route-B wrappers are exposed for
+   `certificateProvider` / `invariantProvider` source contracts; they remain
+   conditional until the strict DAG semantics generator is internalized.
 
 ## What is not included
 

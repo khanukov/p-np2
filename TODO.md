@@ -188,6 +188,9 @@ Concrete execution plan for the remaining DAG blocker:
 ## What still blocks unconditional `P ≠ NP`
 
 1. Internalize `hNPDag`: `NP_not_subset_PpolyDAG`.
+2. Next blocker (Route-B, DAG side): construct
+   `dagStableRestrictionInvariantProvider p` from strict DAG semantics
+   (without extra bridge hypotheses).
 
 Inclusion-side status:
 

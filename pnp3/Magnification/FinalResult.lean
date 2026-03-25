@@ -3,7 +3,7 @@ import Magnification.AsymptoticFormulaCollapse
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Magnification.PipelineStatements_Partial
-import LowerBounds.SingletonDensityContradiction
+import LowerBounds.DAGStableRestrictionProducer
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
 import Complexity.PsubsetPpolyDAG_Internal
@@ -36,17 +36,12 @@ structure AsymptoticFormulaTrackHypothesis where
 
 /--
 Asymptotic NP bridge package:
-1) strict NP witness for the global asymptotic language;
-2) fixed-parameter strict NP witness stream along `pAt`.
+strict NP witness for the global asymptotic language.
 -/
 structure AsymptoticNPPullback (hAsym : AsymptoticFormulaTrackHypothesis) : Type where
   strictAsymptotic :
     ComplexityInterfaces.NP_strict
       (gapPartialMCSP_AsymptoticLanguage hAsym.spec)
-  strictFixed :
-    ∀ n (hn : hAsym.N0 ≤ n),
-      ComplexityInterfaces.NP_strict
-        (gapPartialMCSP_Language (hAsym.pAt n hn))
 
 /--
 Explicit assumptions package for the switching/shrinkage side:
@@ -207,8 +202,9 @@ theorem NP_not_subset_PpolyFormula_final
 /--
 Primary final statement on the nontrivial non-uniform class `PpolyReal`.
 
-Unlike the formula-separation route, this endpoint does not require any
-formula-to-lightweight-`P/poly` bridge assumption.
+In the current strict interface this endpoint is a thin corollary of the
+formula-separation route, because `PpolyReal` and `PpolyFormula` share the same
+concrete witness model.
 -/
 theorem NP_not_subset_PpolyReal_final_with_provider
   (hProvider : StructuredLocalityProviderPartial)
@@ -216,19 +212,14 @@ theorem NP_not_subset_PpolyReal_final_with_provider
   (hNPbridge : AsymptoticNPPullback hAsym)
   (n : Nat) (hn : hAsym.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
-  have hHyp : FormulaLowerBoundHypothesisPartial (hAsym.pAt n hn) (1 : Rat) :=
-    formula_hypothesis_from_pipeline_partial_semantic
-      (p := hAsym.pAt n hn) (δ := (1 : Rat)) (hδ := by norm_num)
-  have hNPstrict : ComplexityInterfaces.NP_strict
-      (gapPartialMCSP_Language (hAsym.pAt n hn)) :=
-    hNPbridge.strictFixed n hn
   exact
-    NP_not_subset_PpolyReal_from_partial_formulas
-      (hProvider := hProvider)
-      (p := hAsym.pAt n hn)
-      (δ := (1 : Rat))
-      hHyp
-      hNPstrict
+    ComplexityInterfaces.NP_not_subset_PpolyReal_of_PpolyFormula
+      (NP_not_subset_PpolyFormula_final_with_provider
+        (hProvider := hProvider)
+        (hAsym := hAsym)
+        (hNPbridge := hNPbridge)
+        (n := n)
+        (hn := hn))
 
 /--
 Provider-free wrapper at the `PpolyReal` endpoint boundary:
@@ -342,6 +333,21 @@ theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
   exact LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM W hStable
 
 /--
+Final DAG-separation wrapper specialized to the new DAG-native Route-B
+certificate provider.
+
+Compared with `NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM`, this
+form packages the source-side obligation as explicit per-DAG certificates
+(`DAGStableRestrictionCertificate`) instead of raw probe witnesses.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hCert : LowerBounds.dagStableRestrictionCertificateProvider p) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_certificateProvider_TM W hCert
+
+/--
 End-to-end `P ≠ NP` wrapper specialized to the same DAG stable-restriction
 producer obligation.
 
@@ -358,6 +364,40 @@ theorem P_ne_NP_final_of_dag_stableRestriction_TM
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
     (NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W hStable)
+
+/--
+End-to-end `P ≠ NP` wrapper specialized to the DAG-native Route-B certificate
+provider.
+-/
+theorem P_ne_NP_final_of_certificateProvider_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hCert : LowerBounds.dagStableRestrictionCertificateProvider p) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_certificateProvider_TM W hCert)
+
+/--
+Final DAG-separation wrapper specialized to a DAG-side locality-invariant
+provider (the stronger Route-B source contract).
+-/
+theorem NP_not_subset_PpolyDAG_final_of_invariantProvider_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hInv : LowerBounds.dagStableRestrictionInvariantProvider p) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_invariantProvider_TM W hInv
+
+/--
+End-to-end `P ≠ NP` wrapper for the same DAG-side locality-invariant provider.
+-/
+theorem P_ne_NP_final_of_invariantProvider_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hInv : LowerBounds.dagStableRestrictionInvariantProvider p) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv)
 
 /--
 Final DAG-separation wrapper specialized to the support-bounds + DAG→formula

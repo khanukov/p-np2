@@ -243,7 +243,10 @@ for the probe theorem:
 
 * `base : AbstractGapTargetedSingletonDensityPayload p`;
 * `r : Facts.LocalityLift.Restriction (Models.partialInputLen p)`;
-* `hAliveSmall : r.alive.card <= Models.Partial.tableLen p.n / 2`;
+* **preferred** slack field
+  `hSlack : circuitCountBound p.n (p.sNO - 1) < 2^(Partial.tableLen p.n - r.alive.card)`;
+* (legacy compatibility only) optional half-table field
+  `hAliveSmall : r.alive.card <= Models.Partial.tableLen p.n / 2`;
 * `hStableDecide : ∀ x, decide (r.apply x) = decide x` for the source solver;
 * `hLink : decide = gap target` in the same transported coordinate system.
 
@@ -285,7 +288,9 @@ A good implementation pattern is:
 1. define a source-side notion of “surviving support” or “relevant coordinates”
    for the DAG under a restriction;
 2. prove that evaluation depends only on those coordinates;
-3. prove the support is at most half the table length;
+3. prove a counting-slack inequality
+   `circuitCountBound < 2^(tableLen - |alive|)` (half-table only as legacy
+   fallback);
 4. turn that support into the alive set of a facts-side restriction.
 
 The exact combinatorial definition may vary, but the invariant shape must stay
@@ -316,16 +321,16 @@ should no longer drive the main source object.
 **Done criterion:** the main producer theorem no longer unfolds through
 `semanticSingletonWitness` or point-subcube lemmas.
 
-### Phase 4. Build the half-table bound on the same source object
+### Phase 4. Build the counting-slack bound on the same source object
 
-The source object from Phase 3 must carry, or imply, a cardinality bound:
+The source object from Phase 3 must carry, or imply, a quantitative slack bound:
 
 ```text
-alive.card <= Models.Partial.tableLen p.n / 2.
+circuitCountBound p.n (p.sNO - 1) < 2^(Models.Partial.tableLen p.n - alive.card).
 ```
 
 This should be proved on the same representation that yields global stability.
-It is a mistake to prove smallness on one object and stability on another with
+It is a mistake to prove slack/smallness on one object and stability on another with
 no tight bridge between them.
 
 Concretely, the implementation should avoid the pattern:

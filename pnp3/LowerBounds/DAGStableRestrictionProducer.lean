@@ -1,4 +1,5 @@
 import LowerBounds.SingletonDensityContradiction
+import LowerBounds.AsymptoticDAGBarrier
 
 namespace Pnp3
 namespace LowerBounds
@@ -212,6 +213,156 @@ theorem NP_not_subset_PpolyDAG_of_invariantProvider_TM
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   exact NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM W
     (dag_stableRestriction_producer_of_invariantProvider hInv)
+
+/--
+Quantitative anti-locality payload for the DAG route.
+
+`hSlack` is the corrected counting-style criterion:
+the number of coordinates ignored by the restriction (`tableLen - |alive|`)
+must be large enough so that the extension cube beats the number of small
+circuits (`circuitCountBound` in the current finite-size model).
+
+This is intentionally weaker (and more realistic) than a hard-coded
+half-table bound.  It captures the mathematically relevant target discussed in
+the DAG barrier notes:
+
+`2^(N - |S|) > M(N, T)`.
+-/
+structure DAGStableRestrictionSlackPackage
+    {p : GapPartialMCSPParams}
+    (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) where
+  /-- Restriction candidate from DAG-side analysis. -/
+  r : Facts.LocalityLift.Restriction (Models.partialInputLen p)
+  /--
+  Counting slack: the ignored-coordinate cube is larger than the current
+  finite-size upper bound on small circuits.
+  -/
+  hSlack :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ (Models.Partial.tableLen p.n - r.alive.card)
+  /--
+  DAG-side locality invariant for the fixed target on the alive coordinates.
+  -/
+  hLocalInvariant :
+    ∀ x y : Core.BitVec (Models.partialInputLen p),
+      (∀ i ∈ r.alive, x i = y i) →
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p) x =
+          Models.gapPartialMCSP_Language p (Models.partialInputLen p) y
+
+/--
+Provider form for the slack-based DAG package.
+-/
+abbrev dagStableRestrictionSlackProvider
+    (p : GapPartialMCSPParams) : Type :=
+  ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+    DAGStableRestrictionSlackPackage hDag
+
+/--
+Slice-indexed (`n,β`) version of the slack provider.
+
+This is the bridge-ready source object: for every slice-parameter pair and for
+every DAG witness of the corresponding slice language, we can produce a
+`DAGStableRestrictionSlackPackage`.
+-/
+abbrev dagStableRestrictionSlackProviderOnSlices
+    (paramsOf : Nat → Rat → GapPartialMCSPParams) : Type :=
+  ∀ n : Nat, ∀ β : Rat,
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language (paramsOf n β)),
+      DAGStableRestrictionSlackPackage hDag
+
+/--
+Bridge from slice-indexed DAG slack packages to the asymptotic barrier module.
+
+The target is language-level slice locality (`SliceLanguageLocalityStatement`)
+with explicit counting parameters `T(n,β)` and `M_n(T)`.  Equalities `hT` and
+`hM` connect those abstract interfaces to the current concrete finite-size
+objects `sNO - 1` and `circuitCountBound`.
+-/
+theorem sliceLanguageLocality_of_dagSlackProviderOnSlices
+    (F : GapSliceFamily)
+    (hDagFamily :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language (F.paramsOf n β)))
+    (hPkg : dagStableRestrictionSlackProviderOnSlices F.paramsOf) :
+    SliceLanguageLocalityStatement F := by
+  intro n β
+  let cert := hPkg n β (hDagFamily n β)
+  refine ⟨cert.r.alive, ?_, ?_⟩
+  · calc
+      F.Mof n (F.Tof n β)
+          = Models.circuitCountBound (F.paramsOf n β).n (F.Tof n β) := by
+              simp [F.hM, F.hIndex]
+      _ = Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) := by
+            simp [F.hT]
+      _ < 2 ^ (Models.Partial.tableLen (F.paramsOf n β).n - cert.r.alive.card) := cert.hSlack
+  · intro x y hAgree
+    exact cert.hLocalInvariant x y hAgree
+
+/--
+Concrete small-DAG witness on one fixed slice `(p, ε)`.
+-/
+structure SmallDAGWitnessOnSlice
+    (p : GapPartialMCSPParams)
+    (SizeBound : Rat → Nat → Prop)
+    (ε : Rat) where
+  C : DagCircuit (Models.partialInputLen p)
+  hSize : SizeBound ε (DagCircuit.size C)
+  hCorrect : CorrectOnPromiseSlice C (gapSliceOfParams p)
+
+/--
+DAG slack package indexed by a concrete small solver witness (instead of a
+global `PpolyDAG` witness on a fixed-slice language).
+-/
+structure DAGStableRestrictionSlackPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) where
+  r : Facts.LocalityLift.Restriction (Models.partialInputLen p)
+  hSlack :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ (Models.Partial.tableLen p.n - r.alive.card)
+  hLocal :
+    ∀ x y : Core.BitVec (Models.partialInputLen p),
+      (∀ i ∈ r.alive, x i = y i) →
+        DagCircuit.eval W.C x = DagCircuit.eval W.C y
+
+/--
+Slice-family provider for witness-indexed DAG slack packages.
+-/
+abbrev dagStableRestrictionSlackPackageAtProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      DAGStableRestrictionSlackPackageAt W
+
+/--
+Bridge from witness-indexed DAG slack packages directly to Layer B with small
+size condition:
+
+`SmallDAGImpliesCoordinateLocalityStatement F SizeBound`.
+-/
+theorem smallDAGLocalityStatement_of_dagSlackPackageAtProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : dagStableRestrictionSlackPackageAtProviderOnSlices F SizeBound) :
+    SmallDAGImpliesCoordinateLocalityStatement F SizeBound := by
+  intro n β ε C hSize hCorrect
+  let W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε := {
+    C := C
+    hSize := hSize
+    hCorrect := hCorrect
+  }
+  let cert := hPkg n β ε W
+  refine ⟨cert.r.alive, ?_, ?_⟩
+  · calc
+      F.Mof n (F.Tof n β)
+          = Models.circuitCountBound (F.paramsOf n β).n (F.Tof n β) := by
+              simp [F.hM, F.hIndex]
+      _ = Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) := by
+            simp [F.hT]
+      _ < 2 ^ (Models.Partial.tableLen (F.paramsOf n β).n - cert.r.alive.card) := cert.hSlack
+  · intro x y hAgree
+    exact cert.hLocal x y hAgree
 
 end LowerBounds
 end Pnp3

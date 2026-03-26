@@ -1,413 +1,573 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-03-25
+Updated: 2026-03-26
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
-Current release checklist/w wording guardrail: `RELEASE_RC.md`.
-Concrete execution plan for the remaining DAG blocker:
-`pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
+Current release wording guardrail: `RELEASE_RC.md`.
+Current DAG plan notes:
+- `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`
+- `pnp3/Docs/GapTarget_StableRestriction_Route.md`
+- `pnp3/Docs/AsymptoticDAGBarrier_Status.md`
 
 ## Snapshot
 
 - Active `axiom` in `pnp3/`: 0
 - Active `sorry/admit` in `pnp3/`: 0
-- Baseline checks: `./scripts/check.sh` and current audit tests pass
-- Final API remains conditional (`pnp3/Magnification/FinalResult.lean`)
+- `./scripts/check.sh` passes
+- Final API remains conditional in `pnp3/Magnification/FinalResult.lean`
+- Inclusion side is already internalized:
+  `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`
+- Main remaining blocker is still DAG-side separation:
+  internalize `NP_not_subset_PpolyDAG`
 
-## Current frontier (2026-03-16)
+---
 
-1. The current singleton `β`-route is now only a decision layer:
-   `CurrentSingletonRouteWitnessProp` records when the theorem layer already
-   admits the empty selector witness. Without a family-specific nat comparison
-   theorem, this route remains nongeneric.
-2. The source semantic certificate now has a named atlas/downstream bridge:
-   `pnp3/Magnification/AC0AtlasBridge.lean` exposes
-   `SemanticSwitchingCertificatePartial -> BoundedAtlasScenario/ScenarioBudget`.
-3. Two generic downstream routes are now formally closed:
-   `ScenarioBudget -> strict large-family gap` and
-   `ApproxClass -> small mismatch`.
-4. The recommended active contradiction route is now the family-level package
-   `SemanticSwitchingApproxFamilyPackagePartial` / provider
-   `SemanticSwitchingApproxFamilyProviderPartial` in
-   `pnp3/Magnification/AC0ApproxFamilyBridge.lean`.
-5. This route feeds the already formalized counting contradiction
-   `Counting.incompatibility` directly, bypassing the dead
-   `ScenarioBudget -> AntiChecker` branch.
-6. A symmetry-transport layer now exists for `UnionClass`/`ApproxClass`, but
-   it transports the dictionary together with the function. The current
-   orbit-lift barrier is therefore not `ApproxClass` closure; it is the need
-   for one large finite family `Y` living in one common fixed dictionary.
-7. The immediate fixed-dictionary probe is now explicit: for the current
-   source-produced `scenario.atlas.dict`, find a nontrivial `π` with
-   `dict.map (permuteSubcube π.symm) = dict`, or conclude that the stabilizer
-   is too small to support the orbit route.
-8. Provenance-specific unfolding shows that
-   `commonPDT_from_AC0_with_polylog` is only a cast/repackaging of
-   `hpoly.shrinkage.commonPDT`. The current source theorem therefore does not
-   expose a canonical tree shape that would make a generic stabilizer theorem
-   plausible.
-9. The earliest exported current internal semantic package is already
-   singleton:
-   `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_singleton_family`
-   shows that `formulaSemanticMultiSwitchingProvider_internal` exports
-   family payload `[f]`.
-10. The next minimal stronger-source target is now explicit:
-   `AC0LocalityBridge.SemanticSwitchingNontrivialFamilyPackagePartial` asks
-   only for one source-produced certificate with `2 ≤ F.length`.
-   This is the first meaningful frontier above the current singleton provider.
-11. The current active internal source line does not realize even this minimal
-    frontier:
-    `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_cert_length_eq_one`
-    and
-    `AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal_not_nontrivial_family`
-    show that its explicit certificate already has `F.length = 1`.
-    Treat the current source-family branch as locally exhausted.
-12. The explicit current internal route remains singleton before counting:
-   `LowerBounds.current_source_route_no_two_point_family` rules out a direct
-   two-point family lift from the already packaged singleton `ApproxClass`
-   witness.
-13. The current source-family branch should now be treated as locally closed:
-    the active internal provider is singleton at package, certificate, and
-    downstream `ApproxClass` entry layers.
-14. The new active endpoint probe is now singleton/provenance-based:
-    `LowerBounds.SemanticSwitchingSingletonProvenancePackagePartial`
-    packages one source-produced bounded atlas scenario, one linked function,
-    and the explicit identity `pack.cert.F = [f]`.
-15. This package is realized by the current internal route through
-    `LowerBounds.singletonProvenancePackage_of_internal_provider`.
-16. The singleton package also exposes the exact bounded witness already
-    supplied by the source-produced scenario:
-    `LowerBounds.singletonProvenance_boundedWitness`.
-17. The bridge
-    `LowerBounds.smallMismatchPackage_of_singletonProvenancePackage_of_mismatch_card_le`
-    now shows that the singleton/provenance layer is missing only one extra
-    input before it reaches the stronger small-mismatch branch.
-18. A new density-oriented singleton endpoint now packages the exact current
-    internal route output more faithfully:
-    source-produced singleton provenance, bounded witness `S`,
-    `errU f S ≤ ε`, and `ε ≤ 1 / (n + 2)`.
-19. This density layer produces the natural mismatch testset
-    `T = mismatchSet (coveredB S) f`, shows
-    `f ∈ ApproxOnTestset ... T`, and proves the density bound
-    `|T| / 2^n ≤ 1 / (n + 2)`.
-20. A decisive abstract probe on the old singleton-density endpoint is now
-    closed negatively: `testsetCapacity < 1` is impossible for every
-    `BoundedAtlasScenario`, since `testsetCapacity` is a natural number with
-    a general lower bound `1 ≤ testsetCapacity`.
-21. Therefore the old `testsetCapacity < 1` contradiction route is dead not
-    just for the current formula source line, but already at the abstract
-    scenario level. This is the first singleton-density no-go that appears
-    plausibly reusable on a future DAG-side route.
-22. A new formula-free consumer layer now factors the active internal route
-    through `LowerBounds.AbstractSingletonDensityPayload`, carrying only
-    scenario-level data:
-    `sc`, `f ∈ sc.family`, bounded witness `S`, `errU ≤ ε`, and
-    `ε ≤ 1 / (n + 2)`.
-23. This abstract payload already rederives the natural mismatch testset,
-    `ApproxOnTestset` membership, density bounds, and the abstract no-go for
-    `testsetCapacity < 1` without referring to formula-specific source
-    constructors.
-24. The raw abstract singleton-density payload is now explicitly known to be
-    consistent on a trivial empty-dictionary / constant-zero scenario, so
-    `AbstractSingletonDensityPayload -> False` is not the right target.
-25. The compatibility wrapper
-    `LowerBounds.AbstractLinkedSingletonDensityPayload` is now explicitly known
-    to be vacuous: any raw payload can realize it by choosing `target := f`.
-26. The first non-vacuous abstract strengthening is now
-    `LowerBounds.AbstractTargetedSingletonDensityPayload`, but this generic
-    target class is still too weak because it remains consistent for trivial
-    externally fixed targets such as the constant-zero function.
-27. The new semantically fixed frontier is now
-    `LowerBounds.AbstractGapTargetedSingletonDensityPayload`, where the target
-    is pinned to the gap-PartialMCSP slice itself rather than chosen freely.
-28. This semantically fixed payload is now known to admit both a formula-side
-    realization and a strict DAG-side realization.
-29. The route has since been split more honestly:
-    there is now an explicit stable-restriction/locality consumer stack
-    (`AbstractGapStableRestrictionPayload`,
-    `stableRestrictionGoal_of_abstractGapTargetedPayload`,
-    `AbstractGapLocalityPayload`,
-    `localityGoal_of_abstractGapTargetedPayload`)
-    with contradiction theorems already proved.
-30. The first live producer into that stack is already connected on the formula
-    side:
-    `stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate`,
-    `_of_restrictionData`,
-    `_of_supportBounds`.
-31. Therefore the active missing piece is now **not** "some consumer from the
-    gap-target payload" in the abstract, but a **DAG/leaves-side producer into
-    the stable-restriction goal**, or an equally strong equivalent bridge.
-31a. The concrete recommended mainline is now fixed in
-     `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`:
-     build a DAG-native stable-restriction producer with a global invariance
-     theorem, instead of trying to recover the final contradiction from the
-     current singleton selectors.
-32. The cheapest consumer subroute is now explicit in code: the empty-witness
-    route reduces to proving the formula-free numeric inequality
-    `circuitCountBound * (3/4)^tableLen ≤ sc.atlas.epsilon`.
-33. The empty-witness subroute is now known to be too weak: even when that
-    numeric inequality closes, it yields only admissibility of `Rf = []`, not
-    contradiction.
-34. The next consumer-facing strengthening is now
-    `LowerBounds.AbstractGapWitnessedPayload`, which adds one explicit
-    non-empty bounded witness `Rf` over the same fixed gap-target payload.
-35. The strongest purely witness-level consequence currently extracted from
-    that new payload is just `∃ x, coveredB Rf x = true`. The next honest
-    consumer probe must therefore use target semantics more deeply than
-    witness existence and density alone.
-36. The first such semantic strengthening is now
-    `LowerBounds.AbstractGapCubeSoundWitnessPayload`, which assumes every
-    point in every witness cube is a YES-point of the fixed gap target.
-37. This semantic strengthening already closes the previous red goal
-    `f x = true` on covered points and yields existence of a YES-input for the
-    fixed gap slice.
-38. A thin contradiction theorem is now available: YES-sound witness cubes
-    would already be inconsistent if one could also show that every witness
-    cube contains some NO-point of the fixed gap target.
-39. So the next honest frontier is no longer pointwise YES-soundness but the
-    negative/local invariant "every non-empty witness cube contains a
-    NO-point."
-40. The singleton small-mismatch package/provider remains in the codebase as a
-    stronger-source side branch. The active positive frontier is now a new
-    contradiction theorem that consumes the semantically fixed gap-target
-    payload, or some equally formula-free strengthening, without reintroducing
-    formula-specific source constructors into the consumer.
-    directly, without exact polylog-small mismatch cardinality and without the
-    dead `testsetCapacity < 1` endpoint.
+## Current honest target
+
+The right near-term goal is **not** “claim unconditional `P ≠ NP` soon”.
+The right goal is:
+
+> reduce the repository to one minimal honest open theorem-level blocker,
+> with all other glue, counting, API shape, and asymptotic routing already
+> internalized.
+
+In particular, the repository should aim to be:
+
+1. axiom/sorry clean in CI;
+2. free of temporary bridge assumptions in the build-critical lower-bound path;
+3. asymptotic at the final separation surface;
+4. centered on one **weakest sufficient** DAG-side endpoint, not on a stronger
+  -than-necessary global invariant;
+5. equipped with one secondary/backup endpoint for an alternative
+   magnification route.
+
+---
 
 ## What is already closed
 
-1. AC0/formula separation wiring is present and compiles.
-2. Internal linear step-spec provider is closed:
-   `stepCompiledLinearCandidateStepSpecProvider_internal`.
-3. Linear route has closed internal size and correctness witnesses:
-   `compiledRuntimeCircuitSizeBoundLinear_internal`,
-   `compiledRuntimeAcceptCorrectnessLinear_internal`.
-4. Axiom/sorry hygiene is clean in active `pnp3/`.
+1. AC0/formula separation wiring compiles and has active asymptotic wrappers.
+2. Internal inclusion theorem is closed:
+   `proved_P_subset_PpolyDAG_internal`.
+3. DAG stable-restriction consumer stack exists:
+   `stableRestrictionGoal_of_abstractGapTargetedPayload` and downstream
+   contradiction lemmas are already formalized.
+4. Build/audit hygiene is clean for project-local assumptions:
+   no active `axiom`, `sorry`, or `admit` in `pnp3/`.
+5. Counting slack core is now direct:
+   `Counting.exists_hard_function_with_constraints_of_countingSlack` is proved,
+   and build-critical lower-bound wrappers no longer require `hSlackToHalf`.
+
+---
 
 ## What still blocks unconditional `P ≠ NP`
 
-1. Internalize `hNPDag`: `NP_not_subset_PpolyDAG`.
-2. Next blocker (Route-B, DAG side): construct
-   `dagStableRestrictionInvariantProvider p` from strict DAG semantics
-   (without extra bridge hypotheses).
+1. Internalize `NP_not_subset_PpolyDAG`.
+2. Remove the final external DAG-separation hypothesis
+   `hNPDag : NP_not_subset_PpolyDAG` from `P_ne_NP_final*`.
+3. Replace the current too-strong DAG-side “final blocker” with a weaker,
+   theorem-minimal endpoint that matches what the counting contradiction really
+   consumes.
+4. Keep the final theorem surface asymptotic; fixed-slice theorems remain only
+   as internal building blocks.
 
-Inclusion-side status:
+---
 
-1. Closed no-arg evaluator/output-wire agreement:
-   `compiledAcceptOutputWireAgreementLinear_internal`.
-2. Closed no-arg inclusion endpoint:
-   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
-3. Default `P_ne_NP_final*` wiring already consumes this no-arg
-   inclusion endpoint.
+## Main design correction for the DAG route
 
-## A3 + A4 milestone (closed in active route)
+The repository should **not** treat the current strongest route
+`dagStableRestrictionInvariantProvider` as the canonical final blocker.
+That route remains a valid **strong sufficient condition**, but it is too
+strong to be the default “one theorem away” target.
 
-Status: closed on 2026-03-14 in active `Magnification.FinalResult` API.
+The preferred primary blocker is now:
 
-What was changed:
+> a one-sided, promise-aware, value-coordinate certificate stating that a small
+> solver accepts an exponentially large completion set around one YES instance,
+> with enough counting slack to force a NO completion.
 
-1. Removed hidden pointwise-at-`N0` use from active final endpoints:
-   `NP_not_subset_PpolyFormula_final*` and `NP_not_subset_PpolyReal_final*`
-   now take explicit `(n, hn : N0 ≤ n)`.
-2. Replaced fixed-parameter NP-family wrapper with asymptotic NP bridge package:
-   active final wiring now only needs the global witness
-   `NP_strict (gapPartialMCSP_AsymptoticLanguage spec)` carried by
-   `AsymptoticNPPullback`.
-3. Removed now-obsolete intermediate wrappers:
-   old `StrictGapNPFamily` / `GapPartialMCSPTMWitnessFamily` path is deleted.
-4. Constructive TM route no longer requires an external NP pullback function:
-   `toFixed` is internalized from explicit TM-witness streams.
-5. Barrier wrapper no longer hardcodes `N0`; it now takes explicit `(n, hn)`.
+Working name for the new primary endpoint:
 
-Verification:
+- `YesSubcubeCertificate`, or
+- `PromiseValueLocalityCertificate`.
 
-1. `lake build` passes.
-2. `lake build 2>&1 | rg "warning:"` currently reports known linter warnings;
-   this milestone does **not** require warning-free output, only successful
-   builds plus stable audit/regression coverage.
-3. Regression/audit tests compile with the new signatures
-   (`Tests/BridgeLocalityRegression`, `Tests/AxiomsAudit`, barrier audits).
+The current stable-restriction route should remain in the codebase as an
+optional stronger route, not the main open target.
 
-## A9 milestone (closed end-to-end in active route)
+### Literature-driven caution
 
-Status: closed on 2026-03-14 in `Magnification.AC0LocalityBridge`.
+Recent hardness-magnification literature should affect how this endpoint is
+judged:
 
-What was changed:
+1. **Locality barrier / localizability is an active constraint, not background
+   commentary.** New endpoint candidates must be screened for whether they are
+   likely to localize to circuits with small-fanin oracle gates.
+2. **Distinguisher-based magnification is now a serious parallel route**, not
+   just a speculative backup. The 2025 distinguisher-based general
+   magnification work suggests a path that may sidestep the localization
+   barrier.
+3. **Restricted-model progress matters**: lower bounds obtained from shrinkage
+   for models such as comparator circuits are relevant not only as side
+   results, but as probes for the right invariant/endpoints.
+4. **Variant hygiene matters**: recent results distinguish sharply between
+   MCSP, Partial-MCSP, Gap-MCSP, oracle-MCSP, uniform vs nonuniform
+   consequences, and formula vs general-circuit thresholds. No theorem or
+   roadmap step should silently transfer a result across these variant
+   boundaries without an explicit bridge theorem.
+5. **Learning/witnessing interpretations are relevant side signals**:
+   distinguisher/witness-finding frameworks connected to learning-from-lower-
+   bounds may provide endpoint ideas or proof diagnostics even when they do not
+   immediately yield the main DAG theorem.
 
-1. `FormulaSupportBoundsFromMultiSwitchingContract` now requires an explicit
-   semantic link: some `f ∈ F` extensionally equals the extracted formula
-   semantics `FormulaCircuit.eval c` (after length cast).
-2. Removed the vacuous reverse constructor
-   `multiswitching_contract_of_formula_support_bounds` that previously built
-   the contract via an unrelated empty AC0 family.
-3. Added audit helper theorem `AC0LocalityBridge.package_semantic_link` and
-   wired it into `Tests/AxiomsAudit`.
-4. Added `formula_support_bounds_and_semantic_link_from_multiswitching` so the
-   active locality bridge exports both numeric bounds and semantic linkage in
-   one theorem (link no longer disappears at the projection boundary).
-5. Added a split-constructor path:
-   `multiswitching_contract_of_semantic_provider_and_support_bounds` builds the
-   full strengthened A9 contract from two independent inputs:
-   semantic AC0/multi-switching provenance + numeric support bounds.
-6. Added an internal constructive semantic provider:
-   `formulaSemanticMultiSwitchingProvider_internal`.
-7. Added a fully internalized constructor:
-   `multiswitching_contract_internalized_of_support_bounds` derives the
-   strengthened A9 contract directly from support-bounds assumptions.
+---
 
-Interpretation:
+## Concrete execution plan
 
-1. The contract can no longer be satisfied by a completely irrelevant AC0
-   family payload.
-2. Semantic linkage is now constructive in-repo (internal provider exists),
-   while numeric obligations remain exactly the explicit support-bounds inputs.
+The tasks below are the active implementation order.
 
-## A8 milestone (closed in canonical CCDT bridge)
+### Task 0. Freeze the public statement of the remaining blocker
 
-Status: closed on 2026-03-14 in `ThirdPartyFacts.Facts_Switching`.
+**Goal:** all docs and code comments use the same story.
 
-What was changed:
+**Status:** closed on 2026-03-26.
 
-1. Added constructive `LeafPartitionWithin` framework for canonical trees.
-2. Proved canonical CNF DT leaf completeness/uniqueness on compatible inputs:
-   `canonicalDT_CNF_aux_leaf_of_compatible`,
-   `canonicalDT_CNF_aux_leaf_unique_of_compatible`.
-3. Proved leaf refinement-to-root for both canonical DT and canonical CCDT:
-   `canonicalDT_CNF_aux_leaves_refine_root`,
-   `canonicalCCDT_CNF_aux_leaves_refine_root`.
-4. Proved canonical CCDT leaf partition at free root:
-   `canonicalCCDT_CNF_aux_leafPartition_free`.
-5. Removed external `hpart : LeafPartition ...` argument from
-   `shrinkage_negDnfFamily_to_dnf_canonicalCCDT`; partition is now derived
-   internally from canonical CCDT structure.
+Do:
+1. Treat the active remaining blocker as a theorem-level endpoint, not as vague
+   “DAG-side work”.
+2. Distinguish explicitly between:
+   - primary nonuniform endpoint: one-sided promise/value locality;
+   - stronger optional endpoint: global stable restriction;
+   - parallel endpoint: distinguisher/uniform route.
+3. Add an explicit variant ledger for each endpoint:
+   - MCSP vs Partial-/Gap-MCSP,
+   - valid-encoding vs arbitrary encoded input,
+   - fixed-slice vs asymptotic,
+   - formula vs DAG/general-circuit consequence,
+   - uniform vs nonuniform conclusion.
+4. Keep all top-level wording conditional until Task 8 is done.
 
-Verification:
+Done when:
+- `TODO.md`, `STATUS.md`, and `FinalResult.lean` are mutually consistent about
+  what is open and what is only a stronger optional route;
+- each planned endpoint has an explicit variant/signature boundary.
 
-1. `lake build pnp3/ThirdPartyFacts/Facts_Switching.lean` passes.
-2. `lake build` passes.
-3. `./scripts/check.sh` passes.
+### Task 1. Remove the temporary counting bridge `hSlackToHalf`
 
-## Formula-track milestone context
+**Priority:** critical.
 
-Status: infrastructure substantially internalized on 2026-03-15 for active
-`codex-refactoring` route.
+**Status:** closed on 2026-03-26.
 
-Scope:
+Result:
+1. `pnp3/Counting/ShannonCounting.lean` now contains the direct-slack theorem
 
-1. Primary target is formula-track only:
-   unconditional `NP_not_subset_PpolyFormula` via asymptotic language collapse.
-2. This does not close unconditional `P ≠ NP`; DAG blocker
-   `NP_not_subset_PpolyDAG` remains independent.
-3. Fixed-slice (`gapPartialMCSP_Language p`) theorems stay as helper lemmas, not
-   the final claim surface for this milestone.
+   ```text
+   exists_hard_function_with_constraints_of_countingSlack
+   ```
 
-Main theorem target:
+   consuming
 
-1. Add a direct asymptotic collapse theorem (no external provider/transfer
-   assumptions in theorem statement):
-   `asymptotic_formula_collapse (spec) :
-      PpolyFormula (gapPartialMCSP_AsymptoticLanguage spec) → False`.
+   ```text
+   circuitCountBound ... < 2^(tableLen - constrained.card)
+   ```
 
-Implementation plan:
+   without converting first to `constrained.card ≤ tableLen / 2`.
+2. `pnp3/LowerBounds/MCSPGapLocality.lean` wrappers
+   - `exists_hard_function_with_constraints_of_countingSlack`
+   - `exists_yes_no_agreeing_on_alive_of_countingSlack`
 
-1. Add `pnp3/Magnification/AsymptoticFormulaCollapse.lean` and keep the collapse
-   proof there as the single source of truth for formula-target finalization.
-2. Internalize support-bounds extraction as a constructive theorem:
-   `formula_support_bounds_internal : FormulaSupportRestrictionBoundsPartial`.
-3. Build `StructuredLocalityProviderPartial` internally from support bounds
-   (through existing certificate/engine constructors), without default
-   `Nonempty` wrappers in the core proof path.
-4. Rewire `FinalResult.lean` so active formula finals are grounded in the new
-   asymptotic collapse theorem; keep fixed-slice route only as supporting lemmas.
-5. Keep the active proof path on the asymptotic witness only:
-   formula and `PpolyReal` finals should both consume the same
-   `strictAsymptotic`-based route.
-6. Add audit/regression checks so formula-final regressions cannot silently
-   reintroduce external provider-style assumptions in the core theorem.
+   no longer require `hSlackToHalf`.
+3. Build-critical lower-bound theorems now consume counting slack directly.
 
-Progress (2026-03-15):
+Done when:
+- `hSlackToHalf` disappears from build-critical lower-bound theorems.
+- Layer A consumes only counting slack.
 
-1. Added `pnp3/Magnification/AsymptoticFormulaCollapse.lean` as the dedicated
-   collapse module for this milestone.
-2. Added explicit constructive bridge helpers in that module:
-   `ppolyFormula_fixed_of_asymptotic_slice`,
-   `asymptotic_formula_collapse_of_slice_agreement`,
-   and strict-NP wrapper
-   `NP_not_subset_PpolyFormula_of_asymptotic_formula_collapse`.
-3. Rewired `FinalResult.lean` so
-   `NP_not_subset_PpolyFormula_final_with_provider` now consumes
-   `hNPbridge.strictAsymptotic` on the active path.
-4. Added explicit `sliceEq` to `AsymptoticFormulaTrackHypothesis`; active
-   `asymptotic_formula_collapse` now obtains slice agreement from this package
-   directly (no extra theorem argument at call sites).
-5. Removed obsolete intermediate formula-final wrapper that duplicated the old
-   fixed-slice endpoint route.
-6. Rewired `NP_not_subset_PpolyReal_final_with_provider` to reuse the same
-   asymptotic formula-separation path and derive `NP ⊄ PpolyReal` through the
-   current strict-interface equivalence `PpolyFormula -> PpolyReal`.
-7. Moved active `MagnificationAssumptions.switching` payload from a raw
-   `StructuredLocalityProviderPartial` field to
-   `FormulaSupportRestrictionBoundsPartial`; provider is now derived internally
-   at formula/real final wrappers.
-8. Added provider-free formula/real final wrappers:
-   `NP_not_subset_PpolyFormula_final_with_supportBounds`,
-   `NP_not_subset_PpolyReal_final_with_supportBounds`.
-9. Raised final switching boundary to the strengthened A9 contract:
-   `MagnificationAssumptions.switching` now carries
-   `FormulaSupportBoundsFromMultiSwitchingContract`, and active
-   `NP_not_subset_PpolyFormula_final` / `NP_not_subset_PpolyReal_final`
-   derive support-bounds internally via
-   `formula_support_bounds_from_multiswitching`.
+### Task 2. Introduce value-only / promise-only locality interfaces
 
-Remaining for this milestone:
+**Priority:** critical.
 
-1. Probe construction of the family-level direct contradiction package
-   `SemanticSwitchingApproxFamilyProviderPartial` and localize the first red
-   goal in the large finite family `Y`, with special attention to the new
-   common-dictionary barrier exposed by symmetry transport.
-2. Concretely probe the fixed-dictionary stabilizer:
-   try to produce a nontrivial `π` with
-   `scenario.atlas.dict.map (permuteSubcube π.symm) = scenario.atlas.dict`.
-3. If this fails generically, decide whether to:
-   strengthen the source theorem to expose a canonical shrinkage/PDT witness,
-   or abandon the orbit route in favor of a family lift not based on tree
-   symmetries.
-4. Since the current explicit singleton route cannot even produce two distinct
-   functions, any fixed-dictionary family lift must come from a richer
-   source theorem than the currently packaged singleton witness.
-5. Decide whether the next research branch is:
-   a family lift inside one fixed atlas dictionary, or a revised counting
-   endpoint that can tolerate transported dictionaries.
-6. Keep the singleton small-mismatch branch as a secondary stronger-source
-   program only if the family-level route stalls for clearly source-side
-   reasons.
-7. If a concrete intended asymptotic family is introduced, add a family-
-   specific nat comparison theorem for the singleton decision layer; otherwise
-   treat the chosen-`β` route as nongeneric.
-8. Only after (1)-(7), decide whether an additional internalization step is
-   still needed for the asymptotic formula-collapse endpoint.
+Current issue:
+- much of the current barrier API speaks about agreement on encoded-input
+  coordinates (`mask ++ values`), while the counting contradiction really lives
+  on truth-table value coordinates.
 
-Acceptance criteria for this milestone:
+Progress update (2026-03-26):
+- `pnp3/LowerBounds/MCSPGapLocality.lean` now defines
+  `ValueCoordinateSet`, `AgreeOnValues`, `ValidEncoding`, and the new
+  promise/value consumer
+  `no_value_local_function_solves_mcsp_of_countingSlack`.
+- `pnp3/LowerBounds/AsymptoticDAGBarrier.lean` now exposes the corresponding
+  small-solver interface
+  `SmallDAGImpliesPromiseValueLocalityAt`
+  together with `no_dag_solver_of_promise_value_locality_at`.
+- `pnp3/LowerBounds/DAGStableRestrictionProducer.lean` now also contains a
+  native source-side package for this route:
+  `PromiseValueLocalityPackageAt` and
+  `smallDAGPromiseValueLocalityStatement_of_packageProvider`.
+- The codebase now also contains the first one-sided weak-route surface:
+  `exists_no_completion_agreeing_on_values_of_countingSlack`,
+  `no_one_sided_value_local_function_solves_mcsp_of_countingSlack`,
+  `YesSubcubeCertificateAt`,
+  `no_small_dag_solver_of_yesSubcubeCertificateAt`.
+- The remaining gap is now narrower: not a missing consumer or missing source
+  API, but the missing theorem that actual DAG semantics produce a one-sided
+  YES-centered certificate on slices.
 
-1. A direct theorem of the shape
-   `PpolyFormula (gapPartialMCSP_AsymptoticLanguage spec) → False` compiles in
-   active code.
-2. Active formula-separation final endpoint is derived from this theorem.
-3. `./scripts/check.sh` and existing audits remain green.
-4. Documentation explicitly distinguishes:
-   formula-track unconditional target vs DAG-side `P ≠ NP` blocker.
+Do:
+1. Add value-level agreement notions, e.g.:
+   - `AgreeOnValues`
+   - `ValueCoordinateSet`
+   - `valueSlack`
+2. Separate semantic value bits from encoding artifacts (mask bits and general
+   encoded-input garbage).
+3. Add validity/promise-aware interfaces so locality is only required on:
+   - valid table encodings;
+   - and ideally only on the promise domain.
+4. Rephrase the anti-locality consumer so it can consume value-only locality.
 
-## Execution order
+Done when:
+- the final contradiction does not require locality on arbitrary encoded
+  bitstrings;
+- the final open endpoint is stated over semantic truth-table/value data.
 
-1. Keep docs honest: no unconditional claim while DAG blockers remain.
-2. Complete asymptotic formula-collapse milestone above.
-3. Then continue DAG-side work (`NP_not_subset_PpolyDAG`) for unconditional
-   `P ≠ NP`.
-4. Only after (3), switch global wording to unconditional.
+### Task 3. Prove a new weaker sufficient endpoint
+
+**Priority:** critical.
+
+Current issue:
+- global stable restriction is stronger than what the contradiction actually
+  needs.
+
+Progress update (2026-03-26):
+- the one-sided weak-route endpoint is now formalized in code as
+  `YesSubcubeCertificateAt`;
+- the direct contradiction theorem already exists:
+  `no_small_dag_solver_of_yesSubcubeCertificateAt`;
+- the slice-family provider surface also exists:
+  `yesSubcubeCertificateAtProviderOnSlices`;
+- the stronger encoded-coordinate fallback is now reduced all the way to an
+  explicit semantic/numeric stack via
+  `generalSolverOfSmallDAGWitnessOnSlice`,
+  `SmallDAGWitnessSemanticConeCertificateAt`,
+  `SmallDAGWitnessRestrictionExtractionAt`,
+  `SmallDAGWitnessRestrictionNumericDataAt`,
+  `SmallDAGWitnessRestrictionCertificateDataAt`,
+  `smallDAGWitnessShrinkageCertificateAt_of_restrictionData`,
+  `dagStableRestrictionSlackPackageAt_of_shrinkageCertificate`,
+  `smallDAGLocalityStatement_of_semanticConeAndNumericProvider`, and
+  `smallDAGLocalityStatement_of_restrictionDataProvider`;
+- therefore the remaining work in Task 3 is no longer "invent the endpoint
+  shape" or "finish the downstream contradiction": it is to prove that small
+  DAG semantics on slices actually produce a one-sided YES-centered certificate
+  such as `YesSubcubeCertificateAt`.
+
+Do:
+1. Keep `YesSubcubeCertificateAt` as the canonical theorem-minimal weak-route
+   target.
+2. Prove a source theorem of the form:
+
+   ```text
+   SmallDAGWitnessOnSlice -> YesSubcubeCertificateAt
+   ```
+
+   or an equivalent one-sided YES-centered promise/value package that still
+   feeds `no_small_dag_solver_of_yesSubcubeCertificateAt`.
+3. Make explicit which semantic invariant is expected to yield this theorem:
+   YES-centered stability around one valid promise instance, not pairwise
+   locality as the primary target.
+4. Add a **minimality benchmark subtask**: compare this endpoint against what is
+   already enough in known magnification results (especially sparse-problem /
+   formula thresholds) so we do not accidentally choose an endpoint stronger
+   than the literature suggests is necessary.
+5. Add a **barrier-screen subtask** before promoting this endpoint:
+   test whether the endpoint/proof idea appears localizable in the sense
+   highlighted by the hardness-magnification locality literature.
+6. Only after the source theorem, minimality benchmark, and barrier-screen pass
+   are in place, promote the new endpoint to the main blocker.
+
+Done when:
+- there is a proved theorem in Lean showing that actual DAG semantics on slices
+  yield the one-sided certificate used by the weak route;
+- the theorem is genuinely weaker than the current global stable-restriction
+  route;
+- the endpoint has been explicitly reviewed against locality-barrier concerns;
+- we have written down why this endpoint is plausibly close to theorem-minimal
+  relative to current literature.
+
+### Task 4. Keep the current stable-restriction route as a stronger optional path
+
+**Priority:** medium.
+
+Progress update (2026-03-26):
+- `pnp3/LowerBounds/DAGStableRestrictionProducer.lean` now contains an explicit
+  witness-indexed `semantic-cone / restriction-extraction / numeric /
+  restrictionData` stack for slice DAG solvers:
+  `SmallDAGWitnessSemanticConeCertificateAt`,
+  `SmallDAGWitnessRestrictionExtractionAt`,
+  `SmallDAGWitnessRestrictionNumericDataAt`,
+  `SmallDAGWitnessRestrictionCertificateDataAt`,
+  `smallDAGWitnessShrinkageCertificateAt_of_restrictionData`,
+  `smallDAGWitnessShrinkageCertificateProviderOnSlices_of_restrictionDataProvider`,
+  `smallDAGWitnessRestrictionExtractionAt_of_semanticConeCertificate`,
+  `smallDAGWitnessRestrictionExtractionProviderOnSlices_of_semanticConeProvider`,
+  `smallDAGLocalityStatement_of_semanticConeAndNumericProvider`,
+  `smallDAGLocalityStatement_of_restrictionExtractionAndNumericProvider`.
+- Concretely, the chain
+
+  ```text
+  SmallDAGWitnessOnSlice
+    -> generalSolverOfSmallDAGWitnessOnSlice
+    -> SmallDAGWitnessSemanticConeCertificateAt
+    -> SmallDAGWitnessRestrictionExtractionAt
+    -> SmallDAGWitnessRestrictionNumericDataAt
+    -> SmallDAGWitnessRestrictionCertificateDataAt
+    -> SmallDAGWitnessShrinkageCertificateAt
+    -> DAGStableRestrictionSlackPackageAt
+    -> SmallDAGImpliesCoordinateLocalityStatement
+  ```
+
+  is now compiled.
+- So the stronger fallback blocker is no longer "build some DAG stable
+  restriction package", and no longer "produce a shrinkage certificate" as a
+  black-box object. The more precise source theorem is now split into two
+  levels:
+  first produce a semantic surviving-cone / forcing style certificate for the
+  DAG-derived general solver on slices, then reduce it to semantic restriction
+  extraction, then separately prove the numeric side conditions upgrading that
+  extraction to `SmallDAGWitnessRestrictionCertificateDataAt`.
+- Repo scan result: the current tree already contains formula-side analogues
+  (`stableWitness_of_formula_supportBound`,
+  `stableWitness_of_formula_sizeBound`) and certificate-driven downstream
+  bridges (`PartialLocalityLift`, `ShrinkageCertificate.ofRestriction`), but no
+  existing DAG-side theorem extracting a stabilizing restriction from a
+  `SmallDAGWitnessOnSlice`.
+
+Do:
+1. Retain:
+   - `DAGStableRestrictionCertificate`
+   - `DAGStableRestrictionInvariantPackage`
+   - `dagStableRestrictionInvariantProvider`
+2. Reclassify them as stronger sufficient conditions, not as the canonical last
+   blocker.
+3. If helpful, add bridge lemmas:
+
+   ```text
+   strong stable restriction -> YesSubcubeCertificate
+   ```
+
+   or the analogous new weak endpoint.
+
+Done when:
+- the codebase has one primary endpoint and one stronger fallback endpoint,
+  instead of presenting the stronger endpoint as mandatory.
+
+### Task 5. Lift the DAG route to the asymptotic final surface
+
+**Priority:** critical.
+
+Current issue:
+- many DAG closure lemmas are still naturally phrased at one fixed slice `p`.
+
+Do:
+1. Keep fixed-slice theorems as local building blocks only.
+2. Add an asymptotic DAG endpoint matching the formula-side asymptotic shape.
+3. Ensure the final theorem surface needed for `NP_not_subset_PpolyDAG` is over
+   one asymptotic language/specification, not over one fixed finite slice.
+4. Rewire `FinalResult.lean` so the default final DAG path is asymptotic in the
+   same sense that the formula route already is.
+
+Done when:
+- the final default route to `NP_not_subset_PpolyDAG` / `P_ne_NP` no longer
+  semantically depends on a single fixed `p`.
+
+### Task 6. Replace the current DAG blocker in `FinalResult.lean`
+
+**Priority:** medium after Tasks 1–5.
+
+Do:
+1. Add thin final wrappers from the new weak endpoint to:
+   - `NP_not_subset_PpolyDAG`
+   - `P_ne_NP`
+2. Keep the older wrappers from stable-restriction and support-bounds routes for
+   compatibility/audit.
+3. Make the new weak endpoint the canonical remaining blocker in comments and
+   theorem naming.
+
+Done when:
+- `FinalResult.lean` exposes the new primary endpoint and treats the old one as
+  stronger/optional.
+
+### Task 7. Add the parallel endpoint for a distinguisher/uniform route
+
+**Priority:** strategic parallel track, but no longer optional background work.
+
+Motivation from literature:
+- recent distinguisher-based general magnification work suggests a route that
+  may sidestep the localization barrier;
+- therefore this track should be treated as a real parallel mainline, not just
+  a speculative backup.
+
+Do:
+1. Add a separate endpoint interface for the alternative magnification route.
+2. Keep it logically independent from the nonuniform DAG-route endpoint.
+3. Record the exact theorem surface needed for a distinguisher/uniform closure
+   of MCSP-style magnification.
+4. Record explicitly which conclusion this route targets first:
+   uniform MCSP consequence, nonuniform formula consequence, or full DAG/
+   `P ≠ NP` consequence. Do not conflate these levels.
+5. Add a note on adjacent learning/witness-finding formulations that may help
+   specify the interface or provide constructive subgoals.
+6. Do not let this route distort the correctness story of the current DAG
+   route; it is a parallel path, not a post hoc gloss.
+
+Done when:
+- the repository contains a named secondary endpoint that could be used by a
+  distinguisher-based proof line without reworking the main DAG consumer stack;
+- docs treat this route as a real parallel program rather than an afterthought;
+- the targeted consequence level of this route is stated explicitly.
+
+### Task 8. Close the final external hypothesis and update wording
+
+**Only after Tasks 1–7 are complete and one endpoint is actually proved.**
+
+Do:
+1. Internalize `NP_not_subset_PpolyDAG`.
+2. Remove external `hNPDag` from `P_ne_NP_final*` wrappers.
+3. Re-run:
+   - `./scripts/check.sh`
+   - `pnp3/Tests/AxiomsAudit.lean`
+   - `pnp3/Tests/BarrierAudit.lean`
+   - `pnp3/Tests/BarrierBypassAudit.lean`
+   - `pnp3/Tests/BridgeLocalityRegression.lean`
+4. Then update README/status docs to state unconditional status consistently.
+
+Done when:
+- `P_ne_NP_final*` no longer require external DAG-separation input.
+
+---
+
+## Concrete theorem-level subgoals to implement next
+
+These are the most immediate Lean-facing tasks.
+
+### Near-term theorem tasks
+
+1. **Counting slack core**
+   - closed on 2026-03-26:
+     Shannon-counting now accepts slack directly and wrapper signatures no
+     longer mention `hSlackToHalf`.
+
+2. **Variant/validity layer**
+   - define canonical validity objects for the endpoint layer;
+   - separate truth-table objects, valid encodings, and arbitrary encoded
+     inputs;
+   - record explicit bridge lemmas between these worlds.
+   - partial progress:
+     `ValidEncoding` is now present and consumed by the new promise/value
+     consumer and barrier route.
+
+3. **Value/promise abstractions**
+   - define `AgreeOnValues`;
+   - define validity/promise-aware agreement predicates;
+   - define value-level slack on truth-table coordinates.
+   - partial progress:
+     these are now present in code and exposed through the new
+     promise/value source and consumer path.
+
+4. **Weak endpoint certificate**
+   - define `YesSubcubeCertificate` / `PromiseValueLocalityCertificate`.
+
+5. **Weak endpoint consumer**
+   - prove `no_small_dag_solver_of_yesSubcubeCertificate`.
+
+6. **Bridge from existing strong route**
+   - if easy, prove strong stable restriction implies the weak endpoint.
+
+7. **Asymptotic DAG wrapper**
+   - add an asymptotic `NP_not_subset_PpolyDAG` wrapper consuming the new
+     weak endpoint.
+
+8. **Distinguisher endpoint spec**
+   - define the exact target consequence and signature for the parallel
+     distinguisher/uniform route.
+
+9. **Final result rewiring**
+   - expose default thin wrappers in `pnp3/Magnification/FinalResult.lean`.
+
+---
+
+## Research-order recommendation
+
+### Engineering track (should go first)
+
+1. Task 2: value-only / promise-only interfaces.
+2. Task 3: prove the weak endpoint is sufficient.
+3. Task 5: asymptotic DAG final surface.
+4. Task 6: `FinalResult` rewiring.
+
+### Theory track A (main nonuniform mathematical risk)
+
+After the weak endpoint is formally sufficient, attack the remaining theorem:
+
+> small DAG solvers for asymptotic Gap-MCSP admit one-sided accepting
+> value-subcube stability around some YES instance, with enough slack to force a
+> NO completion.
+
+This track should be continuously filtered through a locality-barrier test:
+if a candidate proof idea appears to localize to small-fanin oracle-gate
+extensions, it should be downgraded or abandoned early.
+
+### Theory track B (parallel distinguisher mainline)
+
+In parallel, build the alternative distinguisher/uniform endpoint so the whole
+project is not bottlenecked on one localization-sensitive nonuniform route.
+Treat this as a real parallel research program, not merely a backup note.
+
+Use this track with explicit scope control:
+- do not silently upgrade a uniform MCSP consequence into a nonuniform DAG or
+  `P ≠ NP` consequence;
+- but do use recent distinguisher-based results to calibrate how weak the
+  endpoint interface can plausibly be.
+
+### Restricted-model ladder
+
+Use bounded/structured circuit classes (for example comparator circuits and
+other shrinkage-friendly models) as a discovery tool for the right invariant.
+This track is not just for intermediate publications; it is a probe for which
+endpoint statements are mathematically realistic beyond the current singleton
+collapse.
+
+---
+
+## Non-goals / avoid
+
+1. Do **not** present the current strong
+   `dagStableRestrictionInvariantProvider` as the only honest remaining
+   theorem-level blocker.
+2. Do **not** keep the final contradiction dependent on `hSlackToHalf`.
+3. Do **not** formulate the final open endpoint over arbitrary encoded-input
+   locality if value-only/promise-only locality suffices.
+4. Do **not** rely on a fixed-slice theorem as the final separation surface.
+5. Do **not** route the mainline through DAG→Formula conversion unless that
+   bridge becomes genuinely easier than the new weak endpoint.
+6. Do **not** adopt a new endpoint or proof paradigm without checking whether it
+   is plausibly localizable in the sense highlighted by the hardness-
+   magnification locality literature.
+7. Do **not** treat the distinguisher-based route as mere documentation garnish;
+   if kept, it should remain a concrete parallel theorem-development track.
+8. Do **not** transfer claims across MCSP variants (MCSP / Partial-MCSP /
+   Gap-MCSP / oracle-MCSP) or across consequence levels (uniform / nonuniform /
+   formula / DAG / `P ≠ NP`) without an explicit bridge theorem in the repo.
+
+---
 
 ## Done criteria
 
-1. Final route no longer needs external DAG separation input.
-2. `./scripts/check.sh` and current audit tests pass unchanged.
-3. Top-level docs report unconditional status consistently.
+All of the following must hold simultaneously before the repository can claim
+unconditional `P ≠ NP`.
+
+1. `NP_not_subset_PpolyDAG` is proved in-repo with no external DAG hypothesis.
+2. Default final wrappers no longer take `hNPDag`.
+3. Build-critical counting/locality path uses real slack and no temporary
+   bridge assumptions.
+4. Final theorem surface is asymptotic.
+5. Docs report unconditional status consistently.

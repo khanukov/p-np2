@@ -1,11 +1,14 @@
 import Complexity.Interfaces
+import Complexity.Promise
 import Models.Model_PartialMCSP
+import LowerBounds.MCSPGapLocality
 import Mathlib.Data.Finset.Card
 
 namespace Pnp3
 namespace LowerBounds
 
 open ComplexityInterfaces
+open Complexity
 open Models
 
 /-- Canonical asymptotic Gap-PartialMCSP language used by magnification layer. -/
@@ -113,6 +116,36 @@ def SmallDAGImpliesCoordinateLocalityAt
         ∀ x y : Bitstring (GapSliceFamily.encodedLen F n β),
           AgreeOn S x y → DagCircuit.eval C x = DagCircuit.eval C y
 
+/--
+Promise/value version of Layer B at one concrete slice `(n,β)`.
+
+This interface only asks for locality on canonical encoded inputs lying on the
+promise domain, and only with respect to semantic truth-table value bits.
+-/
+def SmallDAGImpliesPromiseValueLocalityAt
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat) : Prop :=
+  let p := F.paramsOf n β
+  ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+    SizeBound n β ε (DagCircuit.size C) →
+    CorrectOnPromiseSlice C (gapSliceOfParams p) →
+      ∃ S : Finset (Fin (GapSliceFamily.tableLen F n β)),
+        F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableLen F n β - S.card) ∧
+        ∀ x y : Bitstring (GapSliceFamily.encodedLen F n β),
+          x ∈ (gapSliceOfParams p).Yes →
+          y ∈ (gapSliceOfParams p).No →
+          ValidEncoding p x →
+          ValidEncoding p y →
+          AgreeOnValues (p := p) S x y →
+            DagCircuit.eval C x = DagCircuit.eval C y
+
+/-- Promise/value version of Layer B for the whole family. -/
+def SmallDAGImpliesPromiseValueLocalityStatement
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat, SmallDAGImpliesPromiseValueLocalityAt F SizeBound n β ε
+
 /-- Layer B for the whole family. -/
 def SmallDAGImpliesCoordinateLocalityStatement
     (F : GapSliceFamily)
@@ -213,6 +246,51 @@ theorem no_dag_solver_of_two_layer_at
   have hx : DagCircuit.eval C x = false := hCorrect.2 x hxNo
   rw [hx, hy] at hEq
   exact Bool.false_ne_true hEq
+
+/--
+Single-slice composition using the promise/value locality interface.
+-/
+theorem no_dag_solver_of_promise_value_locality_at
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat)
+    (hLoc : SmallDAGImpliesPromiseValueLocalityAt F SizeBound n β ε) :
+    ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro hExists
+  rcases hExists with ⟨C, hSize, hCorrect⟩
+  rcases hLoc C hSize hCorrect with ⟨S, hSlack, hValueLocal⟩
+  let p := F.paramsOf n β
+  have hSlack' :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Models.Partial.tableLen p.n - S.card) := by
+    calc
+      Models.circuitCountBound p.n (p.sNO - 1)
+          = F.Mof n (F.Tof n β) := by
+              simp [p, F.hM, F.hT, F.hIndex]
+      _ < 2 ^ (GapSliceFamily.tableLen F n β - S.card) := hSlack
+      _ = 2 ^ (Models.Partial.tableLen p.n - S.card) := by
+            simp [GapSliceFamily.tableLen, p, F.hIndex]
+  have hCorrectPromise :
+      SolvesPromise (GapPartialMCSPPromise p) (DagCircuit.eval C) := by
+    constructor
+    · intro x hx
+      exact hCorrect.1 x (by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hx)
+    · intro x hx
+      exact hCorrect.2 x (by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hx)
+  exact
+    LowerBounds.no_value_local_function_solves_mcsp_of_countingSlack
+      (p := p)
+      (f := DagCircuit.eval C)
+      (S := S)
+      hSlack'
+      (fun x y hxYes hyNo hxValid hyValid hAgree =>
+        hValueLocal x y
+          (by simpa [gapSliceOfParams, p] using hxYes)
+          (by simpa [gapSliceOfParams, p] using hyNo)
+          hxValid
+          hyValid
+          hAgree)
+      hCorrectPromise
 
 /--
 Primary endpoint schema (magnification-style quantifiers):

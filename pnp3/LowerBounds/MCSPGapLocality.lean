@@ -67,25 +67,19 @@ Counting-slack wrapper for constrained hardness.
 
 This theorem isolates the exact future target hypothesis
 
-`circuitCountBound < 2^(tableLen - |constrained|)`,
-
-while keeping an explicit temporary bridge assumption
-`hSlackToHalf` needed by the current Shannon-counting implementation.
+`circuitCountBound < 2^(tableLen - |constrained|)`.
 -/
 theorem exists_hard_function_with_constraints_of_countingSlack
     (p : GapPartialMCSPParams)
     (constrained : Finset (Fin (Partial.tableLen p.n)))
     (hSlack :
       Models.circuitCountBound p.n (p.sNO - 1) <
-        2 ^ (Partial.tableLen p.n - constrained.card))
-    (hSlackToHalf :
-      Models.circuitCountBound p.n (p.sNO - 1) <
-        2 ^ (Partial.tableLen p.n - constrained.card) →
-          constrained.card ≤ Partial.tableLen p.n / 2) :
+        2 ^ (Partial.tableLen p.n - constrained.card)) :
     ∃ (g : Core.BitVec (Partial.tableLen p.n)),
       (∀ i ∈ constrained, g i = false) ∧
       PartialMCSP_NO p (totalTableToPartial g) := by
-  exact exists_hard_function_with_constraints p constrained (hSlackToHalf hSlack)
+  exact Counting.exists_hard_function_with_constraints_of_countingSlack
+    p constrained hSlack
 
 /-!
   ### Input construction helpers
@@ -144,6 +138,43 @@ lemma tableValPos_injective {n : Nat} : Function.Injective (@tableValPos n) := b
   intro a b h
   simp [tableValPos, Partial.valIndex, Fin.ext_iff] at h
   exact Fin.ext (by omega)
+
+/-!
+  ### Value-coordinate interfaces
+-/
+
+/-- Semantic truth-table coordinate sets for the value-only locality route. -/
+abbrev ValueCoordinateSet (p : GapPartialMCSPParams) :=
+  Finset (Fin (Partial.tableLen p.n))
+
+/-- Agreement of two encoded inputs on semantic value coordinates only. -/
+def AgreeOnValues {p : GapPartialMCSPParams}
+    (S : ValueCoordinateSet p)
+    (x y : Core.BitVec (partialInputLen p)) : Prop :=
+  ∀ i ∈ S, Partial.valPart x i = Partial.valPart y i
+
+/--
+Canonical encoded inputs are treated as the valid representatives of their
+decoded partial tables.
+-/
+def ValidEncoding (p : GapPartialMCSPParams)
+    (x : Core.BitVec (partialInputLen p)) : Prop :=
+  x = encodePartial (decodePartial x)
+
+/-- Every canonical `encodePartial` output is a valid encoded input. -/
+lemma validEncoding_encodePartial
+    (p : GapPartialMCSPParams)
+    (T : PartialTruthTable p.n) :
+    ValidEncoding p (encodePartial T) := by
+  simp [ValidEncoding, decodePartial_encodePartial]
+
+/-- Total-table encodings are valid encoded inputs. -/
+lemma validEncoding_encodeTotalAsPartial
+    (p : GapPartialMCSPParams)
+    (table : Core.BitVec (Partial.tableLen p.n)) :
+    ValidEncoding p (encodeTotalAsPartial table) := by
+  simpa [encodeTotalAsPartial] using
+    validEncoding_encodePartial p (totalTableToPartial table)
 
 /-!
   ### Helper lemmas for the YES case
@@ -301,21 +332,17 @@ theorem exists_yes_no_agreeing_on_alive_of_constrainedHardness
 /--
 Counting-slack instantiation of the generalized YES/NO construction.
 
-As with `exists_hard_function_with_constraints_of_countingSlack`, this theorem
-keeps an explicit bridge assumption `hSlackToHalf` as a temporary adapter to
-the currently available Shannon-counting backend.
+This is the direct-slack instantiation of the generalized constrained-hardness
+consumer: locality on `alive` yields monotone slack for every constrained value
+coordinate subset of `alive`, and Shannon counting is consumed without any
+half-table adapter.
 -/
 theorem exists_yes_no_agreeing_on_alive_of_countingSlack
     (p : GapPartialMCSPParams)
     (alive : Finset (Fin (partialInputLen p)))
     (hSlackAlive :
       Models.circuitCountBound p.n (p.sNO - 1) <
-        2 ^ (Partial.tableLen p.n - alive.card))
-    (hSlackToHalf :
-      ∀ constrained : Finset (Fin (Partial.tableLen p.n)),
-        Models.circuitCountBound p.n (p.sNO - 1) <
-          2 ^ (Partial.tableLen p.n - constrained.card) →
-            constrained.card ≤ Partial.tableLen p.n / 2) :
+        2 ^ (Partial.tableLen p.n - alive.card)) :
     ∃ (x_yes x_no : Core.BitVec (partialInputLen p)),
       (∀ i ∈ alive, x_yes i = x_no i) ∧
       x_yes ∈ (GapPartialMCSPPromise p).Yes ∧
@@ -330,7 +357,94 @@ theorem exists_yes_no_agreeing_on_alive_of_countingSlack
       exact Nat.sub_le_sub_left h_constrained_le_alive (Partial.tableLen p.n)
     exact lt_of_lt_of_le hSlackAlive (Nat.pow_le_pow_right (by decide : 0 < 2) hExpMono)
   exact exists_hard_function_with_constraints_of_countingSlack p constrained
-    hSlackConstrained (hSlackToHalf constrained)
+    hSlackConstrained
+
+/--
+Promise-valid YES/NO pair construction using only value-coordinate agreement.
+
+The produced witnesses are canonical encodings, live on the promise domain, and
+agree only on semantic truth-table values indexed by `S`.
+-/
+theorem exists_yes_no_agreeing_on_values_of_countingSlack
+    (p : GapPartialMCSPParams)
+    (S : ValueCoordinateSet p)
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - S.card)) :
+    ∃ (x_yes x_no : Core.BitVec (partialInputLen p)),
+      AgreeOnValues S x_yes x_no ∧
+      ValidEncoding p x_yes ∧
+      ValidEncoding p x_no ∧
+      x_yes ∈ (GapPartialMCSPPromise p).Yes ∧
+      x_no ∈ (GapPartialMCSPPromise p).No := by
+  obtain ⟨g, hg_false, hg_no⟩ :=
+    exists_hard_function_with_constraints_of_countingSlack p S hSlack
+  let T_yes : PartialTruthTable p.n :=
+    fun i => if i ∈ S then some false else none
+  let x_yes : Core.BitVec (partialInputLen p) := encodePartial T_yes
+  let x_no : Core.BitVec (partialInputLen p) := encodeTotalAsPartial g
+  refine ⟨x_yes, x_no, ?_, ?_, ?_, ?_, ?_⟩
+  · intro i hi
+    have h_yes_val : Partial.valPart x_yes i = false := by
+      simp [x_yes, T_yes, Partial.valPart, encodePartial, Partial.valIndex, hi]
+    have h_no_val : Partial.valPart x_no i = g i := by
+      simp [x_no, encodeTotalAsPartial, totalTableToPartial,
+        Partial.valPart, encodePartial, Partial.valIndex]
+    rw [h_yes_val, h_no_val, hg_false i hi]
+  · exact validEncoding_encodePartial p T_yes
+  · exact validEncoding_encodeTotalAsPartial p g
+  · show gapPartialMCSP_Language p (partialInputLen p) x_yes = true
+    rw [gapPartialMCSP_language_true_iff_yes]
+    rw [show decodePartial x_yes = T_yes from by
+      simp [x_yes, decodePartial_encodePartial]]
+    refine ⟨Circuit.const false, ?_, ?_⟩
+    · simp [Circuit.size]
+      exact p.sYES_pos
+    · apply const_false_consistent_of_vals_false
+      intro i
+      by_cases hi : i ∈ S
+      · right
+        simp [T_yes, hi]
+      · left
+        simp [T_yes, hi]
+  · show gapPartialMCSP_Language p (partialInputLen p) x_no = false
+    apply gapPartialMCSP_language_false_of_no
+    rw [show decodePartial x_no = totalTableToPartial g from by
+      simp [x_no, decodePartial_encodeTotal]]
+    exact hg_no
+
+/--
+Given a valid center and semantic coordinates `S`, counting slack yields a
+valid NO-completion agreeing with the center on the value coordinates in `S`.
+-/
+theorem exists_no_completion_agreeing_on_values_of_countingSlack
+    (p : GapPartialMCSPParams)
+    (x_center : Core.BitVec (partialInputLen p))
+    (S : ValueCoordinateSet p)
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - S.card)) :
+    ∃ x_no : Core.BitVec (partialInputLen p),
+      AgreeOnValues S x_center x_no ∧
+      ValidEncoding p x_no ∧
+      x_no ∈ (GapPartialMCSPPromise p).No := by
+  let centerValues : Core.BitVec (Partial.tableLen p.n) := Partial.valPart x_center
+  obtain ⟨g, hg_match, hg_no⟩ :=
+    Counting.exists_hard_function_with_value_constraints_of_countingSlack
+      p S centerValues hSlack
+  let x_no : Core.BitVec (partialInputLen p) := encodeTotalAsPartial g
+  refine ⟨x_no, ?_, ?_, ?_⟩
+  · intro i hi
+    have h_no_val : Partial.valPart x_no i = g i := by
+      simp [x_no, encodeTotalAsPartial, totalTableToPartial,
+        Partial.valPart, encodePartial, Partial.valIndex]
+    calc
+      Partial.valPart x_center i = centerValues i := by rfl
+      _ = g i := by symm; exact hg_match i hi
+      _ = Partial.valPart x_no i := h_no_val.symm
+  · exact validEncoding_encodeTotalAsPartial p g
+  · apply gapPartialMCSP_no_of_large
+    simpa [x_no, decodePartial_encodeTotal] using hg_no
 
 /--
   For any alive set with |alive| ≤ tableLen/2, there exist a YES instance and
@@ -377,6 +491,74 @@ theorem no_local_function_solves_mcsp {p : GapPartialMCSPParams}
   -- Contradiction: true = false
   rw [h_true] at h_eq
   exact absurd h_eq (by rw [h_false]; decide)
+
+/--
+Value-only / promise-only anti-locality consumer.
+
+This version asks for locality only on canonical encoded inputs lying on the
+promise domain, and only with respect to semantic truth-table value
+coordinates.
+-/
+theorem no_value_local_function_solves_mcsp_of_countingSlack
+    {p : GapPartialMCSPParams}
+    (f : Core.BitVec (partialInputLen p) → Bool)
+    (S : ValueCoordinateSet p)
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - S.card))
+    (hLocal :
+      ∀ x y : Core.BitVec (partialInputLen p),
+        x ∈ (GapPartialMCSPPromise p).Yes →
+        y ∈ (GapPartialMCSPPromise p).No →
+        ValidEncoding p x →
+        ValidEncoding p y →
+        AgreeOnValues S x y →
+        f x = f y)
+    (hCorrect : SolvesPromise (GapPartialMCSPPromise p) f) :
+    False := by
+  obtain ⟨x_yes, x_no, hAgree, hValidYes, hValidNo, hInYes, hInNo⟩ :=
+    exists_yes_no_agreeing_on_values_of_countingSlack p S hSlack
+  have h_eq : f x_yes = f x_no :=
+    hLocal x_yes x_no hInYes hInNo hValidYes hValidNo hAgree
+  have h_true : f x_yes = true := hCorrect.1 x_yes hInYes
+  have h_false : f x_no = false := hCorrect.2 x_no hInNo
+  rw [h_true] at h_eq
+  exact absurd h_eq (by rw [h_false]; decide)
+
+/--
+One-sided value/promise consumer.
+
+This is the certificate shape closer to the theorem-minimal route: choose one
+valid YES center `x_yes`, one semantic coordinate set `S`, and prove that every
+valid promise-relevant completion agreeing with `x_yes` on `S` is accepted.
+Counting then manufactures a NO-completion inside the same value subcube.
+-/
+theorem no_one_sided_value_local_function_solves_mcsp_of_countingSlack
+    {p : GapPartialMCSPParams}
+    (f : Core.BitVec (partialInputLen p) → Bool)
+    (x_yes : Core.BitVec (partialInputLen p))
+    (S : ValueCoordinateSet p)
+    (hYes : x_yes ∈ (GapPartialMCSPPromise p).Yes)
+    (hValidYes : ValidEncoding p x_yes)
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - S.card))
+    (hStable :
+      ∀ z : Core.BitVec (partialInputLen p),
+        (z ∈ (GapPartialMCSPPromise p).Yes ∨ z ∈ (GapPartialMCSPPromise p).No) →
+        ValidEncoding p z →
+        AgreeOnValues S x_yes z →
+        f z = true)
+    (hCorrect : SolvesPromise (GapPartialMCSPPromise p) f) :
+    False := by
+  let _ := hYes
+  let _ := hValidYes
+  obtain ⟨x_no, hAgree, hValidNo, hInNo⟩ :=
+    exists_no_completion_agreeing_on_values_of_countingSlack p x_yes S hSlack
+  have h_accepts_no : f x_no = true :=
+    hStable x_no (Or.inr hInNo) hValidNo hAgree
+  have h_rejects_no : f x_no = false := hCorrect.2 x_no hInNo
+  exact Bool.false_ne_true (h_rejects_no.symm.trans h_accepts_no)
 
 end LowerBounds
 end Pnp3

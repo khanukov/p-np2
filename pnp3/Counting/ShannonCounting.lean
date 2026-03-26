@@ -29,6 +29,13 @@ def constrainedPartial {n : Nat} (constrained : Finset (Fin (Partial.tableLen n)
     PartialFunction n :=
   fun i => if i ∈ constrained then some false else none
 
+/-- Partial table with prescribed values on constrained positions. -/
+def prescribedPartial {n : Nat}
+    (constrained : Finset (Fin (Partial.tableLen n)))
+    (values : TotalFunction n) :
+    PartialFunction n :=
+  fun i => if i ∈ constrained then some (values i) else none
+
 /-- The undefined positions of constrainedPartial are exactly the complement. -/
 lemma undefinedPositions_constrainedPartial {n : Nat}
     (constrained : Finset (Fin (Partial.tableLen n))) :
@@ -45,12 +52,39 @@ lemma undefinedPositions_constrainedPartial {n : Nat}
     simp only [undefinedPositions, Finset.mem_filter, Finset.mem_univ, true_and]
     simp [constrainedPartial, hi]
 
+/-- The undefined positions of prescribedPartial are exactly the complement. -/
+lemma undefinedPositions_prescribedPartial {n : Nat}
+    (constrained : Finset (Fin (Partial.tableLen n)))
+    (values : TotalFunction n) :
+    undefinedPositions (prescribedPartial constrained values) = Finset.univ \ constrained := by
+  ext i
+  constructor
+  · intro hi
+    simp only [undefinedPositions, Finset.mem_filter, Finset.mem_univ, true_and] at hi
+    simp only [Finset.mem_sdiff, Finset.mem_univ, true_and]
+    intro hmem
+    simp [prescribedPartial, hmem] at hi
+  · intro hi
+    simp only [Finset.mem_sdiff, Finset.mem_univ, true_and] at hi
+    simp only [undefinedPositions, Finset.mem_filter, Finset.mem_univ, true_and]
+    simp [prescribedPartial, hi]
+
 /-- The number of undefined positions in constrainedPartial. -/
 lemma undefinedCount_constrainedPartial {n : Nat}
     (constrained : Finset (Fin (Partial.tableLen n))) :
     undefinedCount (constrainedPartial constrained) =
       Partial.tableLen n - constrained.card := by
   simp only [undefinedCount, undefinedPositions_constrainedPartial]
+  rw [Finset.card_sdiff (Finset.subset_univ _)]
+  simp
+
+/-- The number of undefined positions in prescribedPartial. -/
+lemma undefinedCount_prescribedPartial {n : Nat}
+    (constrained : Finset (Fin (Partial.tableLen n)))
+    (values : TotalFunction n) :
+    undefinedCount (prescribedPartial constrained values) =
+      Partial.tableLen n - constrained.card := by
+  simp only [undefinedCount, undefinedPositions_prescribedPartial]
   rw [Finset.card_sdiff (Finset.subset_univ _)]
   simp
 
@@ -63,6 +97,18 @@ lemma consistentTotal_constrainedPartial_false {n : Nat}
   intro i hi
   have := hf i
   simp [constrainedPartial, hi] at this
+  exact this
+
+/-- A consistent total function respects prescribed values on constrained positions. -/
+lemma consistentTotal_prescribedPartial_eq {n : Nat}
+    {constrained : Finset (Fin (Partial.tableLen n))}
+    {values : TotalFunction n}
+    {f : TotalFunction n}
+    (hf : consistentTotal (prescribedPartial constrained values) f) :
+    ∀ i ∈ constrained, f i = values i := by
+  intro i hi
+  have := hf i
+  simp [prescribedPartial, hi] at this
   exact this
 
 /-!
@@ -263,30 +309,36 @@ lemma partialMCSP_NO_iff_no_small_circuit (p : GapPartialMCSPParams)
   ### Main theorem
 -/
 
-/-- Shannon counting: there exists a hard function consistent with constraints. -/
-theorem exists_hard_function_with_constraints
+/-- Shannon counting from direct slack with arbitrary prescribed values. -/
+theorem exists_hard_function_with_value_constraints_of_countingSlack
     (p : GapPartialMCSPParams)
     (constrained : Finset (Fin (Partial.tableLen p.n)))
-    (h_constrained_small : constrained.card ≤ Partial.tableLen p.n / 2) :
+    (values : TotalFunction p.n)
+    (hSlack :
+      circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - constrained.card)) :
     ∃ (g : Core.BitVec (Partial.tableLen p.n)),
-      (∀ i ∈ constrained, g i = false) ∧
+      (∀ i ∈ constrained, g i = values i) ∧
       PartialMCSP_NO p (totalTableToPartial g) := by
   classical
-  let T := constrainedPartial constrained
+  let T := prescribedPartial constrained values
   have h_undef : undefinedCount T = Partial.tableLen p.n - constrained.card :=
-    undefinedCount_constrainedPartial constrained
-  have h_half_le : Partial.tableLen p.n / 2 ≤ undefinedCount T := by
-    rw [h_undef]; exact half_le_sub_of_le_half h_constrained_small
+    undefinedCount_prescribedPartial constrained values
   have h_cons_card : (consistentFinset T).card = 2 ^ undefinedCount T :=
     card_consistentFinset T
+  have h_cons_card_slack :
+      2 ^ (Partial.tableLen p.n - constrained.card) = (consistentFinset T).card := by
+    calc
+      2 ^ (Partial.tableLen p.n - constrained.card)
+          = 2 ^ undefinedCount T := by rw [h_undef]
+      _ = (consistentFinset T).card := h_cons_card.symm
   have h_easy_card : (easyFunctions p.n (p.sNO - 1)).card ≤ circuitCountBound p.n (p.sNO - 1) :=
     card_easyFunctions_le p.n (p.sNO - 1)
+  have h_bound_count :
+      circuitCountBound p.n (p.sNO - 1) < (consistentFinset T).card := by
+    exact lt_of_lt_of_eq hSlack h_cons_card_slack
   have h_bound : (easyFunctions p.n (p.sNO - 1)).card < (consistentFinset T).card := by
-    calc (easyFunctions p.n (p.sNO - 1)).card
-        ≤ circuitCountBound p.n (p.sNO - 1) := h_easy_card
-      _ < 2 ^ (Partial.tableLen p.n / 2) := p.circuit_bound_ok
-      _ ≤ 2 ^ undefinedCount T := Nat.pow_le_pow_right (by norm_num) h_half_le
-      _ = (consistentFinset T).card := h_cons_card.symm
+    exact lt_of_le_of_lt h_easy_card h_bound_count
   have h_not_sub : ¬(consistentFinset T ⊆ easyFunctions p.n (p.sNO - 1)) := by
     intro hsub
     exact absurd (Finset.card_le_card hsub) (not_le.mpr h_bound)
@@ -296,9 +348,9 @@ theorem exists_hard_function_with_constraints
     unfold consistentFinset at hf_cons
     simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hf_cons
     exact hf_cons
-  have hf_false : ∀ i ∈ constrained, f i = false :=
-    consistentTotal_constrainedPartial_false hf_consistent
-  refine ⟨f, hf_false, ?_⟩
+  have hf_values : ∀ i ∈ constrained, f i = values i :=
+    consistentTotal_prescribedPartial_eq hf_consistent
+  refine ⟨f, hf_values, ?_⟩
   rw [partialMCSP_NO_iff_no_small_circuit]
   intro C hcomp
   by_contra h_small
@@ -308,6 +360,37 @@ theorem exists_hard_function_with_constraints
     mem_circuitsOfSizeAtMost C (p.sNO - 1) h_le
   have heq := circuitComputes_eq_circuitToTable C f hcomp
   exact hf_not_easy (Finset.mem_image.mpr ⟨C, hmem, heq.symm⟩)
+
+/-- Shannon counting from direct slack: there exists a hard constrained function. -/
+theorem exists_hard_function_with_constraints_of_countingSlack
+    (p : GapPartialMCSPParams)
+    (constrained : Finset (Fin (Partial.tableLen p.n)))
+    (hSlack :
+      circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - constrained.card)) :
+    ∃ (g : Core.BitVec (Partial.tableLen p.n)),
+      (∀ i ∈ constrained, g i = false) ∧
+      PartialMCSP_NO p (totalTableToPartial g) := by
+  simpa using
+    exists_hard_function_with_value_constraints_of_countingSlack
+      p constrained (fun _ => false) hSlack
+
+/-- Shannon counting: there exists a hard function consistent with constraints. -/
+theorem exists_hard_function_with_constraints
+    (p : GapPartialMCSPParams)
+    (constrained : Finset (Fin (Partial.tableLen p.n)))
+    (h_constrained_small : constrained.card ≤ Partial.tableLen p.n / 2) :
+    ∃ (g : Core.BitVec (Partial.tableLen p.n)),
+      (∀ i ∈ constrained, g i = false) ∧
+      PartialMCSP_NO p (totalTableToPartial g) := by
+  have h_half_le : Partial.tableLen p.n / 2 ≤ Partial.tableLen p.n - constrained.card := by
+    exact half_le_sub_of_le_half h_constrained_small
+  have hSlack :
+      circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - constrained.card) := by
+    exact lt_of_lt_of_le p.circuit_bound_ok
+      (Nat.pow_le_pow_right (by norm_num) h_half_le)
+  exact exists_hard_function_with_constraints_of_countingSlack p constrained hSlack
 
 end Counting
 end Pnp3

@@ -314,10 +314,26 @@ theorem P_ne_NP_final_dag_only
       hNPDag
       hPDag
 
-/--
-Final DAG-separation wrapper specialized to the stable-restriction route.
+/-!
+Current DAG endpoint ledger for this file:
 
-This theorem packages the current endgame precisely: if one can prove that
+- `P_ne_NP_final` remains conditional on explicit DAG separation
+  `hNPDag : NP_not_subset_PpolyDAG`.
+- The stable-restriction, certificate-provider, invariant-provider, and
+  support-bounds wrappers below are compiled stronger sufficient routes and
+  compatibility/audit surfaces.
+- The roadmap's intended primary open blocker is the already formalized weaker
+  one-sided YES-centered promise/value endpoint (`YesSubcubeCertificateAt` at
+  the slice level), but this file does not yet expose final wrappers consuming
+  that route.
+-/
+
+/--
+Final DAG-separation wrapper specialized to the stronger stable-restriction
+route.
+
+This wrapper is kept as a compiled sufficient condition and audit surface: if
+one can prove that
 every DAG solver for the fixed `gapPartialMCSP` slice yields a small stable
 restriction for the canonical DAG payload, then the lower-bound layer already
 produces `NP ⊄ PpolyDAG`.
@@ -338,7 +354,8 @@ certificate provider.
 
 Compared with `NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM`, this
 form packages the source-side obligation as explicit per-DAG certificates
-(`DAGStableRestrictionCertificate`) instead of raw probe witnesses.
+(`DAGStableRestrictionCertificate`) instead of raw probe witnesses. It remains
+a stronger optional route rather than the intended theorem-minimal blocker.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
   {p : GapPartialMCSPParams}
@@ -351,8 +368,9 @@ theorem NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
 End-to-end `P ≠ NP` wrapper specialized to the same DAG stable-restriction
 producer obligation.
 
-After this theorem, the only missing mathematical content for the DAG final
-route is the producer-side proof of `hStable`.
+This remains a stronger compatibility wrapper. The roadmap does not treat the
+producer-side proof of `hStable` as the only honest remaining theorem-level
+blocker.
 -/
 theorem P_ne_NP_final_of_dag_stableRestriction_TM
   {p : GapPartialMCSPParams}

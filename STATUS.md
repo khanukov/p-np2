@@ -16,6 +16,32 @@ Detailed execution plan for the remaining DAG blocker:
   `AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`
 
+## Current honest target
+
+The near-term engineering target is not an unconditional headline claim.
+It is to reduce the repository to one minimal honest open theorem-level blocker,
+with counting glue, endpoint shape, and final-surface routing already cleaned
+up around it.
+
+Current endpoint ledger:
+
+- Primary planned nonuniform endpoint:
+  the now-formalized one-sided YES-centered promise/value certificate surface
+  `YesSubcubeCertificateAt` (with equivalent package variants allowed only if
+  they still feed the same weak-route contradiction).
+- Stronger optional nonuniform endpoints already exposed in code:
+  stable-restriction / certificate-provider / invariant-provider routes,
+  plus the new semantic-cone / restriction-extraction / numeric fallback stack.
+- Parallel endpoint to specify separately:
+  distinguisher/uniform route.
+
+Variant boundary policy for these endpoints:
+
+- do not silently conflate MCSP / Partial-MCSP / Gap-MCSP / oracle variants;
+- do not silently upgrade fixed-slice statements into asymptotic finals;
+- do not silently upgrade formula or uniform consequences into DAG or
+  `P ≠ NP` consequences.
+
 ## Route-B DAG update (2026-03-25)
 
 - New dedicated source file:
@@ -34,9 +60,11 @@ Detailed execution plan for the remaining DAG blocker:
 - `Tests/BridgeLocalityRegression` and `Tests/AxiomsAudit` now pin this
   invariant-provider route in both compile-time regression and `#print axioms`
   audit surfaces.
-- Next blocker is unchanged but now stated in project docs explicitly:
-  construct `dagStableRestrictionInvariantProvider p` from strict DAG semantics
-  (without extra bridge hypotheses).
+- These Route-B contracts remain compiled stronger sufficient conditions and
+  audit surfaces, but they are no longer treated as the canonical last blocker.
+- Current roadmap intent is to replace them as the primary open endpoint with a
+  weaker one-sided promise/value certificate; invariant-provider stays as a
+  stronger fallback route.
 
 ## Asymptotic DAG-barrier update (2026-03-26)
 
@@ -57,9 +85,62 @@ Detailed execution plan for the remaining DAG blocker:
 - Added counting-slack wrappers in `pnp3/LowerBounds/MCSPGapLocality.lean`:
   `exists_hard_function_with_constraints_of_countingSlack`,
   `exists_yes_no_agreeing_on_alive_of_countingSlack`.
-  These wrappers currently keep an explicit temporary bridge assumption
-  (`hSlackToHalf`), documenting the remaining mathematical gap from legacy
-  half-table counting to pure slack counting.
+- The Shannon backend is now also strengthened to direct slack:
+  `Counting.exists_hard_function_with_constraints_of_countingSlack`.
+- Build-critical lower-bound wrappers no longer require the temporary bridge
+  assumption `hSlackToHalf`.
+- Added initial value-only / promise-only locality interfaces:
+  `ValueCoordinateSet`, `AgreeOnValues`, `ValidEncoding`,
+  `exists_yes_no_agreeing_on_values_of_countingSlack`,
+  `no_value_local_function_solves_mcsp_of_countingSlack`.
+- Added an asymptotic/barrier-facing small-solver interface for the same route:
+  `SmallDAGImpliesPromiseValueLocalityAt`,
+  `SmallDAGImpliesPromiseValueLocalityStatement`,
+  `no_dag_solver_of_promise_value_locality_at`.
+- Added a native source-side producer package for this route in
+  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`:
+  `PromiseValueLocalityPackageAt`,
+  `promiseValueLocalityPackageAtProviderOnSlices`,
+  `smallDAGPromiseValueLocalityStatement_of_packageProvider`.
+- Added the first one-sided weak-route certificate surface:
+  `exists_no_completion_agreeing_on_values_of_countingSlack`,
+  `no_one_sided_value_local_function_solves_mcsp_of_countingSlack`,
+  `YesSubcubeCertificateAt`,
+  `no_small_dag_solver_of_yesSubcubeCertificateAt`,
+  `yesSubcubeCertificateAtProviderOnSlices`,
+  `noSmallDAG_of_yesSubcubeCertificateAtProviderOnSlices`.
+- Added a compiled strong fallback reduction from slice DAG witnesses viewed as
+  generic solvers:
+  `generalSolverOfSmallDAGWitnessOnSlice`,
+  `SmallDAGWitnessSemanticConeCertificateAt`,
+  `SmallDAGWitnessRestrictionExtractionAt`,
+  `SmallDAGWitnessRestrictionNumericDataAt`,
+  `SmallDAGWitnessRestrictionCertificateDataAt`,
+  `smallDAGWitnessRestrictionExtractionAt_of_semanticConeCertificate`,
+  `smallDAGWitnessRestrictionExtractionProviderOnSlices_of_semanticConeProvider`,
+  `smallDAGWitnessShrinkageCertificateAt_of_restrictionData`,
+  `smallDAGWitnessShrinkageCertificateProviderOnSlices_of_restrictionDataProvider`,
+  `SmallDAGWitnessShrinkageCertificateAt`,
+  `dagStableRestrictionSlackPackageAt_of_shrinkageCertificate`,
+  `dagStableRestrictionSlackPackageAtProviderOnSlices_of_shrinkageCertificateProvider`,
+  `smallDAGLocalityStatement_of_shrinkageCertificateProvider`,
+  `smallDAGLocalityStatement_of_restrictionDataProvider`,
+  `smallDAGLocalityStatement_of_semanticConeAndNumericProvider`,
+  `smallDAGLocalityStatement_of_restrictionExtractionAndNumericProvider`.
+- Current remaining gap for this route is now the actual source theorem:
+  derive `YesSubcubeCertificateAt` (or an equivalent one-sided YES-centered
+  package) from DAG semantics on slices. Older encoded-coordinate packages
+  remain fallback surfaces rather than the canonical source API.
+- On the strong fallback side, the remaining source target is now split more
+  honestly as well:
+  first produce `SmallDAGWitnessSemanticConeCertificateAt` for the DAG-derived
+  general solver on slices, then reduce it to semantic restriction extraction,
+  then separately prove the numeric side conditions upgrading that extraction
+  to `SmallDAGWitnessRestrictionCertificateDataAt`.
+- A repo scan confirms that the existing tree already has formula-side
+  analogues and downstream restriction/certificate bridges, but no existing
+  DAG-side theorem producing either `YesSubcubeCertificateAt` or
+  `SmallDAGWitnessSemanticConeCertificateAt` from a `SmallDAGWitnessOnSlice`.
 
 ## Current frontier (2026-03-16)
 
@@ -299,9 +380,20 @@ Formula-route progress note (2026-03-15):
 
 ## Remaining blockers to unconditional status
 
-Active DAG final wrapper `P_ne_NP_final` requires one external input:
+Active DAG final wrapper `P_ne_NP_final` still requires one external input:
 
 1. `NP_not_subset_PpolyDAG` (`hNPDag`)
+
+What remains open around that input is now split more explicitly:
+
+1. Primary planned blocker:
+   formalize and prove a weaker one-sided promise/value DAG endpoint that is
+   sufficient for `NP_not_subset_PpolyDAG`.
+2. Stronger optional fallback already present:
+   stable-restriction / certificate-provider / invariant-provider routes.
+3. Final-surface cleanup still pending:
+   finish routing the DAG endpoint through an asymptotic surface rather than
+   one fixed slice.
 
 Current inclusion-side status:
 

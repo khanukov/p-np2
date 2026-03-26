@@ -1,6 +1,7 @@
 import Complexity.Interfaces
 import Complexity.Promise
 import Models.Model_PartialMCSP
+import LowerBounds.AcceptedFamilyBarrier
 import LowerBounds.MCSPGapLocality
 import Mathlib.Data.Finset.Card
 
@@ -145,6 +146,63 @@ def SmallDAGImpliesPromiseValueLocalityStatement
     (F : GapSliceFamily)
     (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
   ∀ n : Nat, ∀ β ε : Rat, SmallDAGImpliesPromiseValueLocalityAt F SizeBound n β ε
+
+/--
+One-sided YES-centered promise/value version of Layer B at one concrete slice
+`(n,β)`.
+
+This is the nearest-term weak-route source theorem target: instead of demanding
+pairwise locality across YES/NO pairs, the solver only needs to accept every
+valid promise-relevant completion around one concrete YES center on a small
+semantic coordinate set.
+-/
+def SmallDAGImpliesPromiseYesSubcubeAt
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat) : Prop :=
+  let p := F.paramsOf n β
+  ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+    SizeBound n β ε (DagCircuit.size C) →
+    CorrectOnPromiseSlice C (gapSliceOfParams p) →
+      ∃ yYes : Bitstring (GapSliceFamily.encodedLen F n β),
+        yYes ∈ (gapSliceOfParams p).Yes ∧
+        ValidEncoding p yYes ∧
+        ∃ S : Finset (Fin (GapSliceFamily.tableLen F n β)),
+          F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableLen F n β - S.card) ∧
+          ∀ z : Bitstring (GapSliceFamily.encodedLen F n β),
+            (z ∈ (gapSliceOfParams p).Yes ∨ z ∈ (gapSliceOfParams p).No) →
+            ValidEncoding p z →
+            AgreeOnValues (p := p) S yYes z →
+              DagCircuit.eval C z = true
+
+/-- One-sided YES-centered promise/value version of Layer B for the whole family. -/
+def SmallDAGImpliesPromiseYesSubcubeStatement
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat, SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε
+
+/--
+Accepted-family version of Layer B at one concrete slice `(n,β)`.
+
+This is the new theorem-minimal weak endpoint: a small correct DAG solver on
+the current slice must come with some accepted family of valid truth tables
+whose size already exceeds the counting capacity threshold.
+-/
+def SmallDAGImpliesAcceptedFamilyAt
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat) : Prop :=
+  let p := F.paramsOf n β
+  ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+    SizeBound n β ε (DagCircuit.size C) →
+    CorrectOnPromiseSlice C (gapSliceOfParams p) →
+      Nonempty (AcceptedFamilyCertificate (p := p) (DagCircuit.eval C))
+
+/-- Accepted-family version of Layer B for the whole family. -/
+def SmallDAGImpliesAcceptedFamilyStatement
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat, SmallDAGImpliesAcceptedFamilyAt F SizeBound n β ε
 
 /-- Layer B for the whole family. -/
 def SmallDAGImpliesCoordinateLocalityStatement
@@ -293,6 +351,106 @@ theorem no_dag_solver_of_promise_value_locality_at
       hCorrectPromise
 
 /--
+Single-slice closure using the one-sided YES-centered promise/value endpoint.
+-/
+theorem no_dag_solver_of_promise_yes_subcube_at
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat)
+    (hYes : SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε) :
+    ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro hExists
+  rcases hExists with ⟨C, hSize, hCorrect⟩
+  let p := F.paramsOf n β
+  rcases hYes C hSize hCorrect with ⟨yYes, hyYes, hyValidYes, S, hSlack, hAccept⟩
+  have hSlack' :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Models.Partial.tableLen p.n - S.card) := by
+    calc
+      Models.circuitCountBound p.n (p.sNO - 1)
+          = F.Mof n (F.Tof n β) := by
+              simp [p, F.hM, F.hT, F.hIndex]
+      _ < 2 ^ (GapSliceFamily.tableLen F n β - S.card) := hSlack
+      _ = 2 ^ (Models.Partial.tableLen p.n - S.card) := by
+            simp [GapSliceFamily.tableLen, p, F.hIndex]
+  have hCorrectPromise :
+      SolvesPromise (GapPartialMCSPPromise p) (DagCircuit.eval C) := by
+    constructor
+    · intro x hx
+      exact hCorrect.1 x (by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hx)
+    · intro x hx
+      exact hCorrect.2 x (by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hx)
+  exact
+    LowerBounds.no_one_sided_value_local_function_solves_mcsp_of_countingSlack
+      (p := p)
+      (f := DagCircuit.eval C)
+      (x_yes := yYes)
+      (S := S)
+      (hYes := by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hyYes)
+      (hValidYes := hyValidYes)
+      hSlack'
+      (fun z hzPromise hzValid hAgree =>
+        hAccept z
+          ((by
+            cases hzPromise with
+            | inl hzYes =>
+                exact Or.inl (by simpa [gapSliceOfParams, p] using hzYes)
+            | inr hzNo =>
+                exact Or.inr (by simpa [gapSliceOfParams, p] using hzNo)))
+          hzValid
+          hAgree)
+      hCorrectPromise
+
+/--
+Single-slice closure using the generic accepted-family weak endpoint.
+-/
+theorem no_dag_solver_of_acceptedFamily_at
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat)
+    (hAccepted : SmallDAGImpliesAcceptedFamilyAt F SizeBound n β ε) :
+    ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro hExists
+  rcases hExists with ⟨C, hSize, hCorrect⟩
+  let p := F.paramsOf n β
+  rcases hAccepted C hSize hCorrect with ⟨cert⟩
+  have hCorrectPromise :
+      SolvesPromise (GapPartialMCSPPromise p) (DagCircuit.eval C) := by
+    constructor
+    · intro x hx
+      exact hCorrect.1 x (by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hx)
+    · intro x hx
+      exact hCorrect.2 x (by simpa [GapPartialMCSPPromise, gapSliceOfParams, p] using hx)
+  exact
+    no_function_solves_mcsp_of_acceptedFamilyCertificate
+      (p := p)
+      (f := DagCircuit.eval C)
+      cert
+      hCorrectPromise
+
+/--
+Family-level closure using the generic accepted-family weak endpoint.
+-/
+theorem no_dag_solver_of_acceptedFamily
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hAccepted : SmallDAGImpliesAcceptedFamilyStatement F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro n β ε
+  exact no_dag_solver_of_acceptedFamily_at F SizeBound n β ε (hAccepted n β ε)
+
+/--
+Family-level closure using the one-sided YES-centered promise/value endpoint.
+-/
+theorem no_dag_solver_of_promise_yes_subcube
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hYes : SmallDAGImpliesPromiseYesSubcubeStatement F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro n β ε
+  exact no_dag_solver_of_promise_yes_subcube_at F SizeBound n β ε (hYes n β ε)
+
+/--
 Primary endpoint schema (magnification-style quantifiers):
 
 `∃ ε>0, ∃ β₀>0, ∀ β∈(0,β₀), ∃ n₀, ∀ n≥n₀, ¬ SmallDAGSolver(n,β,ε)`.
@@ -336,6 +494,56 @@ theorem magnificationStyleNoSmallDAG_of_eventually_two_layer
     exact no_dag_solver_of_two_layer_at F SizeBound n β ε (hnAnti n hnA) (hnLoc n hnL)
   intro hSolver
   exact hNoSolver hSolver
+
+/--
+Eventual magnification-style closure using the generic accepted-family weak
+endpoint directly.
+
+This is the new asymptotic weak-route schema: once the source side can produce
+accepted-family certificates eventually on all sufficiently large slices for a
+fixed `(β, ε)`, the magnification-style no-small-DAG conclusion follows
+without routing through coordinate-locality geometry.
+-/
+theorem magnificationStyleNoSmallDAG_of_eventually_acceptedFamily
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hEventuallyAccepted :
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ nAcc : Nat, ∀ n ≥ nAcc, SmallDAGImpliesAcceptedFamilyAt F SizeBound n β ε) :
+    MagnificationStyleNoSmallDAG (SmallDAGSolver F SizeBound) := by
+  refine ⟨ε, hε, β0, hβ0, ?_⟩
+  intro β hβpos hβlt
+  rcases hEventuallyAccepted β hβpos hβlt with ⟨nAcc, hnAcc⟩
+  refine ⟨nAcc, ?_⟩
+  intro n hn
+  exact no_dag_solver_of_acceptedFamily_at F SizeBound n β ε (hnAcc n hn)
+
+/--
+Eventual magnification-style closure using the nearer-term one-sided
+YES-centered promise/value endpoint directly.
+
+This statement isolates the currently chosen mainline theorem target before the
+final reduction to generic accepted families.
+-/
+theorem magnificationStyleNoSmallDAG_of_eventually_promiseYesSubcube
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hEventuallyYes :
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ nYes : Nat, ∀ n ≥ nYes, SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε) :
+    MagnificationStyleNoSmallDAG (SmallDAGSolver F SizeBound) := by
+  refine ⟨ε, hε, β0, hβ0, ?_⟩
+  intro β hβpos hβlt
+  rcases hEventuallyYes β hβpos hβlt with ⟨nYes, hnYes⟩
+  refine ⟨nYes, ?_⟩
+  intro n hn
+  exact no_dag_solver_of_promise_yes_subcube_at F SizeBound n β ε (hnYes n hn)
 
 end LowerBounds
 end Pnp3

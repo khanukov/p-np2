@@ -305,6 +305,41 @@ lemma partialMCSP_NO_iff_no_small_circuit (p : GapPartialMCSPParams)
   · intro h C hcomp; exact h C ((is_consistent_total_iff C g).mpr hcomp)
   · intro h C hcons; exact h C ((is_consistent_total_iff C g).mp hcons)
 
+/--
+Any finite family of total truth tables larger than the counting capacity
+`circuitCountBound n (sNO - 1)` contains a NO-instance.
+
+This is the generic counting consumer behind accepted-family barrier routes:
+once a solver is shown to accept a family larger than the number of all
+truth tables computable by circuits of size `≤ sNO - 1`, some accepted member
+must cross the NO threshold.
+-/
+theorem exists_hard_function_of_large_family
+    (p : GapPartialMCSPParams)
+    (F : Finset (TotalFunction p.n))
+    (hLarge : circuitCountBound p.n (p.sNO - 1) < F.card) :
+    ∃ g ∈ F, PartialMCSP_NO p (totalTableToPartial g) := by
+  classical
+  by_contra hNoHard
+  push_neg at hNoHard
+  have hsubset : F ⊆ easyFunctions p.n (p.sNO - 1) := by
+    intro g hg
+    have hgNotNo : ¬ PartialMCSP_NO p (totalTableToPartial g) := hNoHard g hg
+    rw [partialMCSP_NO_iff_no_small_circuit] at hgNotNo
+    push_neg at hgNotNo
+    obtain ⟨C, hComp, hNotGe⟩ := hgNotNo
+    have hLe : C.size ≤ p.sNO - 1 := by
+      omega
+    have hMem : C ∈ circuitsOfSizeAtMost p.n (p.sNO - 1) :=
+      mem_circuitsOfSizeAtMost C (p.sNO - 1) hLe
+    have hEq : g = circuitToTable C :=
+      circuitComputes_eq_circuitToTable C g hComp
+    exact Finset.mem_image.mpr ⟨C, hMem, hEq.symm⟩
+  have hCard :
+      F.card ≤ circuitCountBound p.n (p.sNO - 1) := by
+    exact le_trans (Finset.card_le_card hsubset) (card_easyFunctions_le p.n (p.sNO - 1))
+  exact (not_le_of_gt hLarge) hCard
+
 /-!
   ### Main theorem
 -/

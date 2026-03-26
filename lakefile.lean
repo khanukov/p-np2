@@ -80,6 +80,7 @@ lean_lib PnP3 where
     Glob.one `LowerBounds.SingletonProvenanceEndpoint,
     Glob.one `LowerBounds.SingletonDensityEndpoint,
     Glob.one `LowerBounds.SingletonDensityContradiction,
+    Glob.one `LowerBounds.AcceptedFamilyBarrier,
     Glob.one `LowerBounds.DAGStableRestrictionProducer,
     Glob.one `LowerBounds.AsymptoticDAGBarrier,
     Glob.one `LowerBounds.MCSPGapLocality,

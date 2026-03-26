@@ -194,6 +194,29 @@ namespace DagCircuit
 /-- Syntactic DAG size (gate count plus one for output accounting). -/
 def size {n : Nat} (C : DagCircuit n) : Nat := C.gates + 1
 
+/--
+Input-support of one internal gate, computed recursively through the DAG
+dependencies.
+-/
+def supportAt {n : Nat} (C : DagCircuit n) (i : Nat) (hi : i < C.gates) :
+    Finset (Fin n) :=
+  let wireSupport : DagWire n i → Finset (Fin n) := fun w =>
+    match w with
+    | .input j => {j}
+    | .gate j => supportAt C j.1 (Nat.lt_trans j.2 hi)
+  match C.gate ⟨i, hi⟩ with
+  | .const _ => ∅
+  | .not w => wireSupport w
+  | .and w₁ w₂ => wireSupport w₁ ∪ wireSupport w₂
+  | .or w₁ w₂ => wireSupport w₁ ∪ wireSupport w₂
+termination_by i
+
+/-- Syntactic input-support of the DAG output wire. -/
+def support {n : Nat} (C : DagCircuit n) : Finset (Fin n) :=
+  match C.output with
+  | .input j => {j}
+  | .gate j => supportAt C j.1 j.2
+
 /-- Semantics of an acyclic DAG circuit. -/
 def eval {n : Nat} (C : DagCircuit n) (x : Bitstring n) : Bool :=
   let rec evalGateAt (i : Nat) (hi : i < C.gates) : Bool :=
@@ -210,6 +233,177 @@ def eval {n : Nat} (C : DagCircuit n) (x : Bitstring n) : Bool :=
   match C.output with
   | .input j => x j
   | .gate j => evalGateAt j.1 j.2
+
+/--
+If two inputs agree on all coordinates from the support of one gate, that gate
+evaluates to the same value on both.
+-/
+theorem evalGateAt_eq_of_eq_on_supportAt
+    {n : Nat} (C : DagCircuit n) :
+    ∀ {i : Nat} (hi : i < C.gates) {x y : Bitstring n},
+      (∀ j ∈ supportAt C i hi, x j = y j) →
+        DagCircuit.eval.evalGateAt (C := C) (x := x) i hi =
+          DagCircuit.eval.evalGateAt (C := C) (x := y) i hi
+  | i, hi, x, y, hxy => by
+      classical
+      cases hOp : C.gate ⟨i, hi⟩ with
+      | const b =>
+          simpa only [DagCircuit.eval.evalGateAt, hOp]
+      | not w =>
+          cases w with
+          | input j =>
+              have hj : j ∈ supportAt C i hi := by
+                rw [supportAt, hOp]
+                simp
+              have hEq : x j = y j := hxy j hj
+              rw [DagCircuit.eval.evalGateAt, hOp]
+              rw [DagCircuit.eval.evalGateAt, hOp]
+              simp only [hEq]
+          | gate j =>
+              have hSub :
+                  ∀ k ∈ supportAt C j.1 (Nat.lt_trans j.2 hi), x k = y k := by
+                intro k hk
+                have hk' : k ∈ supportAt C i hi := by
+                  rw [supportAt, hOp]
+                  exact hk
+                exact hxy k hk'
+              have ih :=
+                evalGateAt_eq_of_eq_on_supportAt (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hSub
+              rw [DagCircuit.eval.evalGateAt, hOp]
+              rw [DagCircuit.eval.evalGateAt, hOp]
+              exact congrArg (! ·) ih
+      | and w₁ w₂ =>
+          have hEq₁ :
+              match w₁ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₁ with
+            | input j =>
+                have hj : j ∈ supportAt C i hi := by
+                  rw [supportAt, hOp]
+                  exact Finset.mem_union.mpr <| Or.inl (by simp)
+                exact hxy j hj
+            | gate j =>
+                have hSub :
+                    ∀ k ∈ supportAt C j.1 (Nat.lt_trans j.2 hi), x k = y k := by
+                  intro k hk
+                  have hk' : k ∈ supportAt C i hi := by
+                    rw [supportAt, hOp]
+                    exact Finset.mem_union.mpr <| Or.inl hk
+                  exact hxy k hk'
+                exact evalGateAt_eq_of_eq_on_supportAt (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hSub
+          have hEq₂ :
+              match w₂ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₂ with
+            | input j =>
+                have hj : j ∈ supportAt C i hi := by
+                  rw [supportAt, hOp]
+                  exact Finset.mem_union.mpr <| Or.inr (by simp)
+                exact hxy j hj
+            | gate j =>
+                have hSub :
+                    ∀ k ∈ supportAt C j.1 (Nat.lt_trans j.2 hi), x k = y k := by
+                  intro k hk
+                  have hk' : k ∈ supportAt C i hi := by
+                    rw [supportAt, hOp]
+                    exact Finset.mem_union.mpr <| Or.inr hk
+                  exact hxy k hk'
+                exact evalGateAt_eq_of_eq_on_supportAt (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hSub
+          cases w₁ <;> cases w₂
+          all_goals
+            rw [DagCircuit.eval.evalGateAt, hOp]
+            rw [DagCircuit.eval.evalGateAt, hOp]
+            simp only [hEq₁, hEq₂]
+      | or w₁ w₂ =>
+          have hEq₁ :
+              match w₁ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₁ with
+            | input j =>
+                have hj : j ∈ supportAt C i hi := by
+                  rw [supportAt, hOp]
+                  exact Finset.mem_union.mpr <| Or.inl (by simp)
+                exact hxy j hj
+            | gate j =>
+                have hSub :
+                    ∀ k ∈ supportAt C j.1 (Nat.lt_trans j.2 hi), x k = y k := by
+                  intro k hk
+                  have hk' : k ∈ supportAt C i hi := by
+                    rw [supportAt, hOp]
+                    exact Finset.mem_union.mpr <| Or.inl hk
+                  exact hxy k hk'
+                exact evalGateAt_eq_of_eq_on_supportAt (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hSub
+          have hEq₂ :
+              match w₂ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₂ with
+            | input j =>
+                have hj : j ∈ supportAt C i hi := by
+                  rw [supportAt, hOp]
+                  exact Finset.mem_union.mpr <| Or.inr (by simp)
+                exact hxy j hj
+            | gate j =>
+                have hSub :
+                    ∀ k ∈ supportAt C j.1 (Nat.lt_trans j.2 hi), x k = y k := by
+                  intro k hk
+                  have hk' : k ∈ supportAt C i hi := by
+                    rw [supportAt, hOp]
+                    exact Finset.mem_union.mpr <| Or.inr hk
+                  exact hxy k hk'
+                exact evalGateAt_eq_of_eq_on_supportAt (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hSub
+          cases w₁ <;> cases w₂
+          all_goals
+            rw [DagCircuit.eval.evalGateAt, hOp]
+            rw [DagCircuit.eval.evalGateAt, hOp]
+            simp only [hEq₁, hEq₂]
+
+/--
+If two inputs agree on all coordinates from `support C`, the DAG evaluates to
+the same value on both.
+-/
+theorem eval_eq_of_eq_on_support
+    {n : Nat} (C : DagCircuit n) {x y : Bitstring n}
+    (hxy : ∀ i ∈ support C, x i = y i) :
+    eval C x = eval C y := by
+  classical
+  cases hOut : C.output with
+  | input j =>
+      have hj : j ∈ support C := by
+        rw [support, hOut]
+        simp
+      have hEq : x j = y j := hxy j hj
+      rw [eval, hOut]
+      rw [eval, hOut]
+      simpa only [hEq]
+  | gate j =>
+      have hSub : ∀ k ∈ supportAt C j.1 j.2, x k = y k := by
+        intro k hk
+        have hk' : k ∈ support C := by
+          rw [support, hOut]
+          exact hk
+        exact hxy k hk'
+      rw [eval, hOut]
+      rw [eval, hOut]
+      simpa only using
+        evalGateAt_eq_of_eq_on_supportAt (C := C)
+          (hi := j.2) (x := x) (y := y) hSub
 
 end DagCircuit
 

@@ -322,10 +322,19 @@ Current DAG endpoint ledger for this file:
 - The stable-restriction, certificate-provider, invariant-provider, and
   support-bounds wrappers below are compiled stronger sufficient routes and
   compatibility/audit surfaces.
-- The roadmap's intended primary open blocker is the already formalized weaker
-  one-sided YES-centered promise/value endpoint (`YesSubcubeCertificateAt` at
-  the slice level), but this file does not yet expose final wrappers consuming
+- The generic accepted-family weak endpoint is now already formalized at the
+  slice level (`AcceptedFamilyCertificateAt`) and at the asymptotic barrier
+  schema level (`SmallDAGImpliesAcceptedFamilyAt` /
+  `SmallDAGImpliesAcceptedFamilyStatement`); the nearer-term chosen mainline
+  theorem target is the one-sided promise-aware schema
+  `SmallDAGImpliesPromiseYesSubcubeAt` /
+  `SmallDAGImpliesPromiseYesSubcubeStatement`, and
+  `YesSubcubeCertificateAt` is wired as a stronger structured producer into
   that route.
+- This file still does not expose asymptotic final wrappers consuming that weak
+  route directly; the remaining open step is the actual DAG-side source theorem
+  producing the accepted-family endpoint (or a structured producer reducing to
+  it).
 -/
 
 /--

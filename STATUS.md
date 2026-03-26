@@ -26,14 +26,33 @@ up around it.
 Current endpoint ledger:
 
 - Primary planned nonuniform endpoint:
-  the now-formalized one-sided YES-centered promise/value certificate surface
-  `YesSubcubeCertificateAt` (with equivalent package variants allowed only if
-  they still feed the same weak-route contradiction).
+  a generic accepted-family weak endpoint, with working final consumer name
+  `AcceptedFamilyCertificateAt`.
+- Structured producer routes into that endpoint already present or planned:
+  `YesSubcubeCertificateAt`, future `PRGImageAcceptanceAt`, and other injective
+  accepted-family packages.
 - Stronger optional nonuniform endpoints already exposed in code:
   stable-restriction / certificate-provider / invariant-provider routes,
   plus the new semantic-cone / restriction-extraction / numeric fallback stack.
 - Parallel endpoint to specify separately:
   distinguisher/uniform route.
+
+Current research-order policy:
+
+- Infrastructure phase is now mostly complete for the weak route:
+  the repository already contains the generic accepted-family consumer,
+  structured producer adapters, and the asymptotic barrier-level accepted-
+  family schema.
+- The active source-theorem targets for the weak mainline are now
+  the promise-aware YES-centered route
+  `PromiseYesSubcubeCertificateAt` as the nearest theorem target,
+  plus the stronger all-valid / accepted-family producer routes
+  `YesSubcubeCertificateAt` and `PRGImageAcceptanceAt`.
+- The semantic-cone / restriction-extraction / shrinkage stack remains a
+  stronger fallback and restricted-model diagnostic route, not the default
+  unconditional engine.
+- Thin final DAG wrappers remain downstream work; they should not be treated as
+  the next main task until a viable weak-route source theorem is clearer.
 
 Variant boundary policy for these endpoints:
 
@@ -102,13 +121,137 @@ Variant boundary policy for these endpoints:
   `PromiseValueLocalityPackageAt`,
   `promiseValueLocalityPackageAtProviderOnSlices`,
   `smallDAGPromiseValueLocalityStatement_of_packageProvider`.
-- Added the first one-sided weak-route certificate surface:
+- Added the first one-sided structured weak-route certificate surface:
   `exists_no_completion_agreeing_on_values_of_countingSlack`,
   `no_one_sided_value_local_function_solves_mcsp_of_countingSlack`,
   `YesSubcubeCertificateAt`,
   `no_small_dag_solver_of_yesSubcubeCertificateAt`,
   `yesSubcubeCertificateAtProviderOnSlices`,
   `noSmallDAG_of_yesSubcubeCertificateAtProviderOnSlices`.
+- Design correction after the latest architecture/literature audit:
+  `YesSubcubeCertificateAt` should now be treated as a strong structured
+  producer target rather than the most general final consumer; the canonical
+  weak-route consumer should be a generic accepted-family endpoint such as
+  `AcceptedFamilyCertificateAt`.
+- The generic accepted-family weak consumer is now formalized in code:
+  `pnp3/LowerBounds/AcceptedFamilyBarrier.lean` exposes
+  `AcceptedFamilyCertificate` and
+  `no_function_solves_mcsp_of_acceptedFamilyCertificate`.
+- The slice-level DAG-facing endpoint is now also compiled:
+  `AcceptedFamilyCertificateAt`,
+  `acceptedFamilyCertificateAtProviderOnSlices`,
+  `no_small_dag_solver_of_acceptedFamilyCertificateAt`,
+  `noSmallDAG_of_acceptedFamilyCertificateAtProviderOnSlices`.
+- The asymptotic barrier module now exposes the same weak endpoint as a native
+  Layer-B schema:
+  `SmallDAGImpliesAcceptedFamilyAt`,
+  `SmallDAGImpliesAcceptedFamilyStatement`,
+  `no_dag_solver_of_acceptedFamily_at`,
+  `no_dag_solver_of_acceptedFamily`,
+  `magnificationStyleNoSmallDAG_of_eventually_acceptedFamily`.
+- `YesSubcubeCertificateAt` is now connected as a structured producer for that
+  generic consumer via
+  `acceptedFamilyCertificateAt_of_yesSubcubeCertificateAt` and
+  `acceptedFamilyCertificateAtProviderOnSlices_of_yesSubcubeCertificateProvider`.
+- The nearer-term one-sided source target is now also explicit in code:
+  `PromiseYesSubcubeCertificateAt`,
+  `no_small_dag_solver_of_promiseYesSubcubeCertificateAt`,
+  `promiseYesSubcubeCertificateAtProviderOnSlices`,
+  `noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices`,
+  and the reductions
+  `promiseYesSubcubeCertificateAt_of_yesSubcubeCertificateAt`,
+  `promiseYesSubcubeCertificateAt_of_promiseValueLocalityPackageAt`,
+  `promiseYesSubcubeCertificateAtProviderOnSlices_of_promiseValueLocalityPackageProvider`,
+  `noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices`.
+- The asymptotic/barrier layer now also exposes that nearer-term chosen
+  mainline target directly:
+  `SmallDAGImpliesPromiseYesSubcubeAt`,
+  `SmallDAGImpliesPromiseYesSubcubeStatement`,
+  `no_dag_solver_of_promise_yes_subcube_at`,
+  `no_dag_solver_of_promise_yes_subcube`,
+  `magnificationStyleNoSmallDAG_of_eventually_promiseYesSubcube`,
+  together with the compiled witness-indexed bridges
+  `smallDAGPromiseYesSubcubeStatement_of_certificateProvider`,
+  `smallDAGPromiseYesSubcubeStatement_of_packageProvider`,
+  `smallDAGPromiseYesSubcubeStatement_of_yesSubcubeCertificateProvider`.
+- The semantic heart of that route is now isolated explicitly as
+  `PromiseYesAcceptanceInvariantAt`; the weak-route contradiction target now
+  factors as:
+  semantic YES-centered invariant
+  -> numeric slack upgrade
+  -> `PromiseYesSubcubeCertificateAt`.
+- The currently chosen candidate proof mechanism for that semantic route is now
+  explicit in code as `PromiseYesDecisionCertificateAt`: on valid promise
+  inputs, agreement with one YES center on `S` already forces the solver
+  decision.  This reduces mechanically to
+  `PromiseYesAcceptanceInvariantAt`.
+- Critical correction after formal sanity check:
+  `PromiseYesDecisionCertificateAt` by itself is too weak to be the main
+  blocker.  The theorem
+  `promiseYesDecisionCertificateAt_fullValueCoordinates` shows that every
+  correct small DAG witness already has such a certificate with the full value
+  coordinate set.
+- Therefore the honest remaining weak-route blocker is quantitative, not merely
+  semantic existence: extract a YES-centered certificate with sufficiently
+  small `S` (or direct counting slack), i.e. essentially
+  `PromiseYesSubcubeCertificateAt` or an equivalent quantitative variant.
+- That operational equivalence is now reflected directly in code via
+  `promiseYesSubcubeCertificateAt_of_decisionCertificate`:
+  the real quantitative theorem target can be read either as
+  `PromiseYesSubcubeCertificateAt`
+  or as
+  `PromiseYesDecisionCertificateAt + hSlack`.
+- The stronger encoded-coordinate fallback now also has a precise partial
+  bridge into that weak mainline:
+  `promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPackageAt_valueSupported`
+  and
+  `promiseYesSubcubeCertificateAt_of_dagStableRestrictionSlackPackageAt_valueSupported`
+  show that any slack restriction package whose surviving `alive` set is
+  supported only on semantic value coordinates already yields the chosen
+  one-sided YES-centered route.
+- More importantly for the terminal weak consumer, the stronger
+  encoded-coordinate slack package no longer needs any extra value-support
+  hypothesis at all:
+  `acceptedFamilyCertificateAt_of_dagStableRestrictionSlackPackageAt`
+  and
+  `no_small_dag_solver_of_dagStableRestrictionSlackPackageAt_via_acceptedFamily`
+  show that the generic accepted-family endpoint is already weak enough to
+  absorb the strong fallback route directly by working only with total
+  truth-table encodings.
+- This strong-fallback absorption is now also compiled at provider/barrier
+  level via
+  `acceptedFamilyCertificateAtProviderOnSlices_of_dagStableRestrictionSlackPackageAtProvider`,
+  `smallDAGAcceptedFamilyStatement_of_dagStableRestrictionSlackPackageAtProvider`,
+  `smallDAGAcceptedFamilyStatement_of_shrinkageCertificateProvider`,
+  `smallDAGAcceptedFamilyStatement_of_restrictionDataProvider`,
+  and the direct closures
+  `noSmallDAG_of_dagStableRestrictionSlackPackageAtProviderOnSlices_via_acceptedFamily`,
+  `noSmallDAG_of_shrinkageCertificateProviderOnSlices_via_acceptedFamily`,
+  `noSmallDAG_of_restrictionDataProviderOnSlices_via_acceptedFamily`.
+- The strong sprint target is now also slightly narrower on the source side:
+  `dagStableRestrictionSlackPackageAt_of_restrictionExtractionAndHalfBound`
+  and
+  `dagStableRestrictionSlackPackageAt_of_restrictionExtractionAndNumeric`
+  show that one does not need the full shrinkage-certificate route to reach the
+  encoded-coordinate slack package; semantic restriction extraction plus a
+  quarter/half alive bound already suffice.
+- The strong sprint also now has a first genuinely closed restricted-model
+  theorem: `smallDAGWitnessRestrictionExtractionAt_of_support` extracts a
+  stabilizing restriction directly from `DagCircuit.support`, and
+  `dagStableRestrictionSlackPackageAt_of_supportHalfBound` together with
+  `no_small_dag_solver_of_supportHalfBound_via_acceptedFamily` closes the
+  route for any slice-DAG whose output support is at most half the truth-table
+  length.
+- A second non-subcube structured producer route is now also compiled:
+  `PRGImageAcceptanceAt`,
+  `acceptedFamilyCertificateAt_of_prgImageAcceptanceAt`,
+  `acceptedFamilyCertificateAtProviderOnSlices_of_prgImageAcceptanceProvider`,
+  `noSmallDAG_of_prgImageAcceptanceAtProviderOnSlices`.
+- The witness-indexed producer layer now compiles directly into the asymptotic
+  accepted-family barrier interface via
+  `smallDAGAcceptedFamilyStatement_of_certificateProvider`,
+  `smallDAGAcceptedFamilyStatement_of_yesSubcubeCertificateProvider`, and
+  `smallDAGAcceptedFamilyStatement_of_prgImageAcceptanceProvider`.
 - Added a compiled strong fallback reduction from slice DAG witnesses viewed as
   generic solvers:
   `generalSolverOfSmallDAGWitnessOnSlice`,
@@ -127,10 +270,13 @@ Variant boundary policy for these endpoints:
   `smallDAGLocalityStatement_of_restrictionDataProvider`,
   `smallDAGLocalityStatement_of_semanticConeAndNumericProvider`,
   `smallDAGLocalityStatement_of_restrictionExtractionAndNumericProvider`.
-- Current remaining gap for this route is now the actual source theorem:
-  derive `YesSubcubeCertificateAt` (or an equivalent one-sided YES-centered
-  package) from DAG semantics on slices. Older encoded-coordinate packages
-  remain fallback surfaces rather than the canonical source API.
+- Current remaining gap for the weak route is now the actual source theorem:
+  derive a generic accepted-family weak certificate (working name:
+  `AcceptedFamilyCertificateAt`) from DAG semantics on slices, or derive a
+  structured producer such as `YesSubcubeCertificateAt` /
+  `PRGImageAcceptanceAt` and reduce it to that generic consumer. Older
+  encoded-coordinate packages remain fallback surfaces rather than the
+  canonical source API.
 - On the strong fallback side, the remaining source target is now split more
   honestly as well:
   first produce `SmallDAGWitnessSemanticConeCertificateAt` for the DAG-derived
@@ -139,8 +285,9 @@ Variant boundary policy for these endpoints:
   to `SmallDAGWitnessRestrictionCertificateDataAt`.
 - A repo scan confirms that the existing tree already has formula-side
   analogues and downstream restriction/certificate bridges, but no existing
-  DAG-side theorem producing either `YesSubcubeCertificateAt` or
-  `SmallDAGWitnessSemanticConeCertificateAt` from a `SmallDAGWitnessOnSlice`.
+  DAG-side theorem producing a generic accepted-family weak certificate,
+  `YesSubcubeCertificateAt`, or `SmallDAGWitnessSemanticConeCertificateAt`
+  from a `SmallDAGWitnessOnSlice`.
 
 ## Current frontier (2026-03-16)
 

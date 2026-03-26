@@ -1,6 +1,6 @@
 # Проект PNP3: активный Lean-код
 
-Обновлено: 2026-03-23
+Обновлено: 2026-03-26
 
 Канонический чеклист до безусловного `P ≠ NP`:
 `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -14,6 +14,15 @@
 Каталог `pnp3/` содержит активный конвейер:
 
 `SAL -> Covering-Power -> anti-checker -> magnification -> DAG-final wrappers`
+
+Текущая DAG-граница формализована через
+`pnp3/LowerBounds/AsymptoticDAGBarrier.lean`:
+
+- `GapSliceFamily` (единый пакет `paramsOf/Tof/Mof` + coherence-поля);
+- Layer A: `GapAntiLocalityAt/Statement`;
+- Layer B: `SmallDAGImpliesCoordinateLocalityAt/Statement` с явным
+  `SizeBound` и параметром `ε`;
+- endpoint: `MagnificationStyleNoSmallDAG`.
 
 ## Источник статуса
 

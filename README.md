@@ -1,6 +1,6 @@
 # P vs NP: Lean Formalization (Honest Status)
 
-Status date: 2026-03-25.
+Status date: 2026-03-26.
 
 Canonical checklist for unconditional readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -27,12 +27,21 @@ constructively formalized now, and what assumptions are still explicit.
 - Final entrypoints are in `pnp3/Magnification/FinalResult.lean`.
 - Final `P ≠ NP` wrappers are conditional (including the new
   support-bounds + `DAG → Formula` TM wrappers on the DAG side).
-- DAG Route-B now has explicit source-side APIs in
-  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`:
-  certificate-provider and invariant-provider routes, plus thin final wrappers
-  in `pnp3/Magnification/FinalResult.lean`.
-- These new DAG-native wrappers remain conditional on producing
-  `dagStableRestrictionInvariantProvider p` (or equivalent source witness).
+- DAG barrier layer is now split into an explicit theorem-level asymptotic
+  module `pnp3/LowerBounds/AsymptoticDAGBarrier.lean` with
+  `GapSliceFamily`, per-slice anti-locality/locality contracts, and the
+  magnification-style endpoint
+  `MagnificationStyleNoSmallDAG`.
+- Layer B is now small-solver aware: locality contracts quantify over circuits
+  satisfying an explicit size predicate
+  `SizeBound n β ε (DagCircuit.size C)`, not over arbitrary correct circuits.
+- DAG Route-B source code now has both legacy language-level slack bridge and
+  witness-indexed bridge in
+  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
+  (`SmallDAGWitnessOnSlice`, `DAGStableRestrictionSlackPackageAt`,
+  `smallDAGLocalityStatement_of_dagSlackPackageAtProvider`).
+- The route remains conditional on proving the slice-level small-DAG locality
+  mathematics (no unconditional `P ≠ NP` theorem yet).
 
 Bottom line today: there is no unconditional in-repo theorem `P ≠ NP`.
 

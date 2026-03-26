@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-03-25
+Updated: 2026-03-26
 
 Authoritative checklist: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Release positioning for current tree: `RELEASE_RC.md`.
@@ -37,6 +37,29 @@ Detailed execution plan for the remaining DAG blocker:
 - Next blocker is unchanged but now stated in project docs explicitly:
   construct `dagStableRestrictionInvariantProvider p` from strict DAG semantics
   (without extra bridge hypotheses).
+
+## Asymptotic DAG-barrier update (2026-03-26)
+
+- Added theorem-level module
+  `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`.
+- Added `GapSliceFamily` so slice coherence data is carried by one object
+  (`paramsOf`, `Tof`, `Mof`, `hIndex`, `hT`, `hM`) instead of free theorem
+  arguments.
+- Layer B is now correctly small-solver scoped:
+  `SmallDAGImpliesCoordinateLocalityAt` includes explicit size premise
+  `SizeBound n β ε (DagCircuit.size C)`.
+- Added family/eventual glue theorem
+  `magnificationStyleNoSmallDAG_of_eventually_two_layer`.
+- Added witness-indexed DAG-source bridge in
+  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`:
+  `SmallDAGWitnessOnSlice`, `DAGStableRestrictionSlackPackageAt`,
+  `smallDAGLocalityStatement_of_dagSlackPackageAtProvider`.
+- Added counting-slack wrappers in `pnp3/LowerBounds/MCSPGapLocality.lean`:
+  `exists_hard_function_with_constraints_of_countingSlack`,
+  `exists_yes_no_agreeing_on_alive_of_countingSlack`.
+  These wrappers currently keep an explicit temporary bridge assumption
+  (`hSlackToHalf`), documenting the remaining mathematical gap from legacy
+  half-table counting to pure slack counting.
 
 ## Current frontier (2026-03-16)
 

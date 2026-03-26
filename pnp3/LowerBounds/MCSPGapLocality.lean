@@ -62,6 +62,31 @@ theorem exists_hard_function_with_constraints
       PartialMCSP_NO p (totalTableToPartial g) :=
   Counting.exists_hard_function_with_constraints p constrained h_constrained_small
 
+/--
+Counting-slack wrapper for constrained hardness.
+
+This theorem isolates the exact future target hypothesis
+
+`circuitCountBound < 2^(tableLen - |constrained|)`,
+
+while keeping an explicit temporary bridge assumption
+`hSlackToHalf` needed by the current Shannon-counting implementation.
+-/
+theorem exists_hard_function_with_constraints_of_countingSlack
+    (p : GapPartialMCSPParams)
+    (constrained : Finset (Fin (Partial.tableLen p.n)))
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - constrained.card))
+    (hSlackToHalf :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - constrained.card) →
+          constrained.card ≤ Partial.tableLen p.n / 2) :
+    ∃ (g : Core.BitVec (Partial.tableLen p.n)),
+      (∀ i ∈ constrained, g i = false) ∧
+      PartialMCSP_NO p (totalTableToPartial g) := by
+  exact exists_hard_function_with_constraints p constrained (hSlackToHalf hSlack)
+
 /-!
   ### Input construction helpers
 -/
@@ -149,27 +174,28 @@ lemma const_false_consistent_of_vals_false {n : Nat}
 -/
 
 /--
-  For any alive set with |alive| ≤ tableLen/2, there exist a YES instance and
-  a NO instance that agree on all alive coordinates.
+  Generalized YES/NO pair construction from a *constrained-hardness oracle*.
 
-  Construction:
-  - x_yes: mask[j] = true iff mask position j ∈ alive, values = false
-    → partial function undefined at free mask positions
-    → Circuit.const false is consistent at all defined positions (all false)
-    → YES (since `p.sYES ≥ 1`)
+  This statement isolates the mathematically essential object for the
+  anti-locality contradiction:
+  for every constrained set of table coordinates with cardinality at most
+  `|alive|`, there exists a hard function `g` that is forced to be `false` on
+  those coordinates and still lands in the NO side.
 
-  - x_no: mask[j] = true for all j, values = hard function g
-    → fully defined function = g
-    → g has high circuit complexity → NO
-
-  Agreement: at alive mask positions, both have mask = true; at alive value
-  positions, x_yes has value = false and x_no has g[j] = false (constrained
-  by Shannon counting on table indices whose value position is alive).
+  Compared with `exists_yes_no_agreeing_on_alive`, this theorem does **not**
+  assume any fixed fraction bound such as `|alive| ≤ tableLen/2`; that
+  quantitative hypothesis is only one sufficient way to instantiate the oracle
+  (via Shannon counting in the previous theorem).
 -/
-theorem exists_yes_no_agreeing_on_alive
+theorem exists_yes_no_agreeing_on_alive_of_constrainedHardness
     (p : GapPartialMCSPParams)
     (alive : Finset (Fin (partialInputLen p)))
-    (h_small : alive.card ≤ Partial.tableLen p.n / 2) :
+    (hHard :
+      ∀ constrained : Finset (Fin (Partial.tableLen p.n)),
+        constrained.card ≤ alive.card →
+          ∃ (g : Core.BitVec (Partial.tableLen p.n)),
+            (∀ i ∈ constrained, g i = false) ∧
+            PartialMCSP_NO p (totalTableToPartial g)) :
     ∃ (x_yes x_no : Core.BitVec (partialInputLen p)),
       (∀ i ∈ alive, x_yes i = x_no i) ∧
       x_yes ∈ (GapPartialMCSPPromise p).Yes ∧
@@ -181,24 +207,23 @@ theorem exists_yes_no_agreeing_on_alive
     Finset.univ.filter (fun j => tableValPos j ∈ alive)
   -- Bound: |constrained| ≤ |alive| ≤ tableLen / 2
   -- (tableValPos is injective, so the image in alive has size ≤ |alive|)
-  have h_constrained_small : constrained.card ≤ Partial.tableLen p.n / 2 := by
-    calc constrained.card
-        ≤ alive.card := by
-          -- The image of constrained under tableValPos is a subset of alive
-          have h_img_sub : Finset.image tableValPos constrained ⊆ alive := by
-            intro i hi
-            simp only [constrained, Finset.mem_image, Finset.mem_filter, Finset.mem_univ,
-              true_and] at hi
-            obtain ⟨j, hj, rfl⟩ := hi
-            exact hj
-          calc constrained.card
-            = (Finset.image tableValPos constrained).card := by
-                rw [Finset.card_image_of_injective constrained tableValPos_injective]
-            _ ≤ alive.card := Finset.card_le_card h_img_sub
-      _ ≤ Partial.tableLen p.n / 2 := h_small
-  -- Get a hard function g that is false on all constrained positions
-  obtain ⟨g, hg_false, hg_no⟩ :=
-    exists_hard_function_with_constraints p constrained h_constrained_small
+  have h_constrained_le_alive : constrained.card ≤ alive.card := by
+    -- The image of constrained under tableValPos is a subset of alive.
+    have h_img_sub : Finset.image tableValPos constrained ⊆ alive := by
+      intro i hi
+      simp only [constrained, Finset.mem_image, Finset.mem_filter, Finset.mem_univ,
+        true_and] at hi
+      obtain ⟨j, hj, rfl⟩ := hi
+      exact hj
+    have h_card_img :
+        constrained.card = (Finset.image tableValPos constrained).card := by
+      rw [Finset.card_image_of_injective constrained tableValPos_injective]
+    calc
+      constrained.card = (Finset.image tableValPos constrained).card := h_card_img
+      _ ≤ alive.card := Finset.card_le_card h_img_sub
+  -- Get a hard function g that is false on all constrained positions using the
+  -- external constrained-hardness oracle.
+  obtain ⟨g, hg_false, hg_no⟩ := hHard constrained h_constrained_le_alive
   -- Define mask for x_yes: true only at alive mask positions
   let mask_yes : Core.BitVec (Partial.tableLen p.n) :=
     fun j => if tableMaskPos j ∈ alive then true else false
@@ -208,8 +233,8 @@ theorem exists_yes_no_agreeing_on_alive
   -- x_no: mask = all true, values = g
   let x_no : Core.BitVec (partialInputLen p) :=
     buildInput (fun _ => true) g
-  refine ⟨x_yes, x_no, ?agree, ?yes_mem, ?no_mem⟩
-  case agree =>
+  refine ⟨x_yes, x_no, ?_, ?_, ?_⟩
+  ·
     -- Show x_yes and x_no agree on all alive positions
     intro i hi
     -- Position i is either a mask position (i < tableLen) or value position (i ≥ tableLen)
@@ -245,7 +270,7 @@ theorem exists_yes_no_agreeing_on_alive
         hg_false _ h_j_in_constrained
       -- Now both sides should evaluate to the same value
       simp [h_gj_false]
-  case yes_mem =>
+  ·
     -- x_yes is a YES instance
     show gapPartialMCSP_Language p (partialInputLen p) x_yes = true
     rw [gapPartialMCSP_language_true_iff_yes]
@@ -264,7 +289,7 @@ theorem exists_yes_no_agreeing_on_alive
       by_cases hm : mask_yes j
       · right; simp [hm]
       · left; simp [hm]
-  case no_mem =>
+  ·
     -- x_no is a NO instance
     show gapPartialMCSP_Language p (partialInputLen p) x_no = false
     apply gapPartialMCSP_language_false_of_no
@@ -272,6 +297,60 @@ theorem exists_yes_no_agreeing_on_alive
     rw [show decodePartial x_no = totalTableToPartial g from by
       simp [x_no, decodePartial_buildInput_allTrue]]
     exact hg_no
+
+/--
+Counting-slack instantiation of the generalized YES/NO construction.
+
+As with `exists_hard_function_with_constraints_of_countingSlack`, this theorem
+keeps an explicit bridge assumption `hSlackToHalf` as a temporary adapter to
+the currently available Shannon-counting backend.
+-/
+theorem exists_yes_no_agreeing_on_alive_of_countingSlack
+    (p : GapPartialMCSPParams)
+    (alive : Finset (Fin (partialInputLen p)))
+    (hSlackAlive :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - alive.card))
+    (hSlackToHalf :
+      ∀ constrained : Finset (Fin (Partial.tableLen p.n)),
+        Models.circuitCountBound p.n (p.sNO - 1) <
+          2 ^ (Partial.tableLen p.n - constrained.card) →
+            constrained.card ≤ Partial.tableLen p.n / 2) :
+    ∃ (x_yes x_no : Core.BitVec (partialInputLen p)),
+      (∀ i ∈ alive, x_yes i = x_no i) ∧
+      x_yes ∈ (GapPartialMCSPPromise p).Yes ∧
+      x_no ∈ (GapPartialMCSPPromise p).No := by
+  apply exists_yes_no_agreeing_on_alive_of_constrainedHardness p alive
+  intro constrained h_constrained_le_alive
+  have hSlackConstrained :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - constrained.card) := by
+    have hExpMono :
+        Partial.tableLen p.n - alive.card ≤ Partial.tableLen p.n - constrained.card := by
+      exact Nat.sub_le_sub_left h_constrained_le_alive (Partial.tableLen p.n)
+    exact lt_of_lt_of_le hSlackAlive (Nat.pow_le_pow_right (by decide : 0 < 2) hExpMono)
+  exact exists_hard_function_with_constraints_of_countingSlack p constrained
+    hSlackConstrained (hSlackToHalf constrained)
+
+/--
+  For any alive set with |alive| ≤ tableLen/2, there exist a YES instance and
+  a NO instance that agree on all alive coordinates.
+
+  This is the Shannon-counting instantiation of the generalized constrained
+  hardness theorem `exists_yes_no_agreeing_on_alive_of_constrainedHardness`.
+-/
+theorem exists_yes_no_agreeing_on_alive
+    (p : GapPartialMCSPParams)
+    (alive : Finset (Fin (partialInputLen p)))
+    (h_small : alive.card ≤ Partial.tableLen p.n / 2) :
+    ∃ (x_yes x_no : Core.BitVec (partialInputLen p)),
+      (∀ i ∈ alive, x_yes i = x_no i) ∧
+      x_yes ∈ (GapPartialMCSPPromise p).Yes ∧
+      x_no ∈ (GapPartialMCSPPromise p).No := by
+  apply exists_yes_no_agreeing_on_alive_of_constrainedHardness p alive
+  intro constrained h_constrained_le_alive
+  exact exists_hard_function_with_constraints p constrained
+    (le_trans h_constrained_le_alive h_small)
 
 /--
   No local function can solve the Gap Partial MCSP promise problem.

@@ -1,0 +1,263 @@
+import Complexity.Interfaces
+import Models.Model_PartialMCSP
+import Mathlib.Data.Finset.Card
+
+namespace Pnp3
+namespace LowerBounds
+
+open ComplexityInterfaces
+open Models
+
+/-- Canonical asymptotic Gap-PartialMCSP language used by magnification layer. -/
+noncomputable abbrev AsymptoticGapLanguage := gapPartialMCSP_AsymptoticLanguage
+
+/-- Agreement of two inputs on a coordinate set `S`. -/
+def AgreeOn {N : Nat} (S : Finset (Fin N)) (x y : Bitstring N) : Prop :=
+  ∀ i ∈ S, x i = y i
+
+/-- Promise slice at one concrete encoded input length `N`. -/
+structure GapSlice (N : Nat) where
+  Yes : Set (Bitstring N)
+  No : Set (Bitstring N)
+
+/-- Semantic correctness of a DAG circuit on one promise slice. -/
+def CorrectOnPromiseSlice {N : Nat} (C : DagCircuit N) (P : GapSlice N) : Prop :=
+  (∀ x, x ∈ P.Yes → DagCircuit.eval C x = true) ∧
+  (∀ x, x ∈ P.No → DagCircuit.eval C x = false)
+
+/-- Slice extracted from fixed `GapPartialMCSPParams`. -/
+def gapSliceOfParams (p : GapPartialMCSPParams) : GapSlice (partialInputLen p) where
+  Yes := {x | gapPartialMCSP_Language p (partialInputLen p) x = true}
+  No := {x | gapPartialMCSP_Language p (partialInputLen p) x = false}
+
+/-- Auxiliary guard-rail only (not the primary endpoint schema). -/
+def InfinitelyOftenNontrivial (L : Language) : Prop :=
+  ∀ N0 : Nat, ∃ n ≥ N0, ∃ x y : Bitstring n, L n x ≠ L n y
+
+/--
+Structured `(n,β)` slice family used by all theorem-level barrier statements.
+
+`hIndex`, `hT`, `hM` are intentional *coherence fields* packed into one object,
+so downstream theorems consume a single argument `F` instead of transport data
+spread across theorem signatures.
+-/
+structure GapSliceFamily where
+  paramsOf : Nat → Rat → GapPartialMCSPParams
+  Tof : Nat → Rat → Nat
+  Mof : Nat → Nat → Nat
+  hIndex : ∀ n : Nat, ∀ β : Rat, (paramsOf n β).n = n
+  hT : ∀ n : Nat, ∀ β : Rat, Tof n β = (paramsOf n β).sNO - 1
+  hM : ∀ n : Nat, ∀ T : Nat, Mof n T = Models.circuitCountBound n T
+
+namespace GapSliceFamily
+
+/-- Encoded-input coordinate length (`mask ++ values`) for slice `(n,β)`. -/
+def encodedLen (F : GapSliceFamily) (n : Nat) (β : Rat) : Nat :=
+  partialInputLen (F.paramsOf n β)
+
+/-- Truth-table coordinate length for slice `(n,β)`. -/
+def tableLen (F : GapSliceFamily) (n : Nat) (β : Rat) : Nat :=
+  Partial.tableLen (F.paramsOf n β).n
+
+/--
+Counting slack used in certificates.
+
+Important note (to avoid future confusion):
+* `S` lives on encoded-input coordinates (`encodedLen = 2 * 2^n`),
+* exponent uses truth-table length (`tableLen = 2^n`).
+
+So this is a deliberately strong condition comparing table-level entropy budget
+against alive encoded coordinates.
+-/
+def tableSlack (F : GapSliceFamily) (n : Nat) (β : Rat)
+    (S : Finset (Fin (encodedLen F n β))) : Nat :=
+  tableLen F n β - S.card
+
+end GapSliceFamily
+
+/-- Layer A (counting anti-locality) at one concrete slice `(n,β)`. -/
+def GapAntiLocalityAt (F : GapSliceFamily) (n : Nat) (β : Rat) : Prop :=
+  ∀ S : Finset (Fin (GapSliceFamily.encodedLen F n β)),
+    F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableSlack F n β S) →
+      ∃ x y : Bitstring (GapSliceFamily.encodedLen F n β),
+        AgreeOn S x y ∧ y ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∧
+        x ∈ (gapSliceOfParams (F.paramsOf n β)).No
+
+/-- Layer A for the whole family. -/
+def GapAntiLocalityStatement (F : GapSliceFamily) : Prop :=
+  ∀ n : Nat, ∀ β : Rat, GapAntiLocalityAt F n β
+
+/-- Language-level locality at one concrete slice `(n,β)`. -/
+def SliceLanguageLocalityAt (F : GapSliceFamily) (n : Nat) (β : Rat) : Prop :=
+  ∃ S : Finset (Fin (GapSliceFamily.encodedLen F n β)),
+    F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableSlack F n β S) ∧
+    ∀ x y : Bitstring (GapSliceFamily.encodedLen F n β),
+      AgreeOn S x y →
+        gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) x =
+        gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) y
+
+/-- Language-level locality for all slices. -/
+def SliceLanguageLocalityStatement (F : GapSliceFamily) : Prop :=
+  ∀ n : Nat, ∀ β : Rat, SliceLanguageLocalityAt F n β
+
+/-- Layer B (solver-level locality) at one concrete slice `(n,β)`. -/
+def SmallDAGImpliesCoordinateLocalityAt
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat) : Prop :=
+  ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+    SizeBound n β ε (DagCircuit.size C) →
+    CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) →
+      ∃ S : Finset (Fin (GapSliceFamily.encodedLen F n β)),
+        F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableSlack F n β S) ∧
+        ∀ x y : Bitstring (GapSliceFamily.encodedLen F n β),
+          AgreeOn S x y → DagCircuit.eval C x = DagCircuit.eval C y
+
+/-- Layer B for the whole family. -/
+def SmallDAGImpliesCoordinateLocalityStatement
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat, SmallDAGImpliesCoordinateLocalityAt F SizeBound n β ε
+
+/--
+Convert language-locality to solver-locality for `gapSliceOfParams`.
+-/
+theorem smallDAG_locality_of_sliceLanguageLocality
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hLang : SliceLanguageLocalityStatement F) :
+    SmallDAGImpliesCoordinateLocalityStatement F SizeBound := by
+  intro n β ε C _hSize hCorrect
+  rcases hLang n β with ⟨S, hSlack, hLocalLang⟩
+  refine ⟨S, hSlack, ?_⟩
+  intro x y hAgree
+  have hxLang : DagCircuit.eval C x =
+      gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) x := by
+    have hxCases :
+        gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) x = true
+        ∨ gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) x = false := by
+      cases h : gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) x <;> simp
+    cases hxCases with
+    | inl hxTrue =>
+        have hxYes : x ∈ (gapSliceOfParams (F.paramsOf n β)).Yes := by
+          simpa [gapSliceOfParams, GapSliceFamily.encodedLen] using hxTrue
+        exact (hCorrect.1 x hxYes).trans hxTrue.symm
+    | inr hxFalse =>
+        have hxNo : x ∈ (gapSliceOfParams (F.paramsOf n β)).No := by
+          simpa [gapSliceOfParams, GapSliceFamily.encodedLen] using hxFalse
+        exact (hCorrect.2 x hxNo).trans hxFalse.symm
+  have hyLang : DagCircuit.eval C y =
+      gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) y := by
+    have hyCases :
+        gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) y = true
+        ∨ gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) y = false := by
+      cases h : gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) y <;> simp
+    cases hyCases with
+    | inl hyTrue =>
+        have hyYes : y ∈ (gapSliceOfParams (F.paramsOf n β)).Yes := by
+          simpa [gapSliceOfParams, GapSliceFamily.encodedLen] using hyTrue
+        exact (hCorrect.1 y hyYes).trans hyTrue.symm
+    | inr hyFalse =>
+        have hyNo : y ∈ (gapSliceOfParams (F.paramsOf n β)).No := by
+          simpa [gapSliceOfParams, GapSliceFamily.encodedLen] using hyFalse
+        exact (hCorrect.2 y hyNo).trans hyFalse.symm
+  calc
+    DagCircuit.eval C x
+        = gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) x := hxLang
+    _ = gapPartialMCSP_Language (F.paramsOf n β) (GapSliceFamily.encodedLen F n β) y :=
+      hLocalLang x y hAgree
+    _ = DagCircuit.eval C y := hyLang.symm
+
+/--
+Auxiliary notion of a size-bounded solver used by the final ε/β theorem.
+-/
+def SmallDAGSolver
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat) : Prop :=
+  ∃ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+    SizeBound n β ε (DagCircuit.size C) ∧
+      CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β))
+
+/-- Single-slice composition: Layer A + Layer B imply no correct DAG solver. -/
+theorem no_dag_solver_of_two_layer
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hAnti : GapAntiLocalityStatement F)
+    (hLoc : SmallDAGImpliesCoordinateLocalityStatement F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro n β ε hExists
+  rcases hExists with ⟨C, hSize, hCorrect⟩
+  rcases hLoc n β ε C hSize hCorrect with ⟨S, hSlack, hInv⟩
+  rcases hAnti n β S hSlack with ⟨x, y, hAgree, hyYes, hxNo⟩
+  have hEq : DagCircuit.eval C x = DagCircuit.eval C y := hInv x y hAgree
+  have hy : DagCircuit.eval C y = true := hCorrect.1 y hyYes
+  have hx : DagCircuit.eval C x = false := hCorrect.2 x hxNo
+  rw [hx, hy] at hEq
+  exact Bool.false_ne_true hEq
+
+/-- Single-slice local composition helper (fixed `n,β`). -/
+theorem no_dag_solver_of_two_layer_at
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat)
+    (hAnti : GapAntiLocalityAt F n β)
+    (hLoc : SmallDAGImpliesCoordinateLocalityAt F SizeBound n β ε) :
+    ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro hExists
+  rcases hExists with ⟨C, hSize, hCorrect⟩
+  rcases hLoc C hSize hCorrect with ⟨S, hSlack, hInv⟩
+  rcases hAnti S hSlack with ⟨x, y, hAgree, hyYes, hxNo⟩
+  have hEq : DagCircuit.eval C x = DagCircuit.eval C y := hInv x y hAgree
+  have hy : DagCircuit.eval C y = true := hCorrect.1 y hyYes
+  have hx : DagCircuit.eval C x = false := hCorrect.2 x hxNo
+  rw [hx, hy] at hEq
+  exact Bool.false_ne_true hEq
+
+/--
+Primary endpoint schema (magnification-style quantifiers):
+
+`∃ ε>0, ∃ β₀>0, ∀ β∈(0,β₀), ∃ n₀, ∀ n≥n₀, ¬ SmallDAGSolver(n,β,ε)`.
+-/
+def MagnificationStyleNoSmallDAG
+    (SmallSolver : Nat → Rat → Rat → Prop) : Prop :=
+  ∃ ε : Rat, 0 < ε ∧
+    ∃ β0 : Rat, 0 < β0 ∧
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ n0 : Nat, ∀ n ≥ n0, ¬ SmallSolver n β ε
+
+/--
+Family/eventual glue theorem requested by the barrier plan.
+
+If both layers are available eventually for every sufficiently small β, then
+we obtain the full magnification-style no-small-DAG statement.
+-/
+theorem magnificationStyleNoSmallDAG_of_eventually_two_layer
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hEventuallyAnti :
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ nAnti : Nat, ∀ n ≥ nAnti, GapAntiLocalityAt F n β)
+    (hEventuallyLoc :
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ nLoc : Nat, ∀ n ≥ nLoc, SmallDAGImpliesCoordinateLocalityAt F SizeBound n β ε) :
+    MagnificationStyleNoSmallDAG (SmallDAGSolver F SizeBound) := by
+  refine ⟨ε, hε, β0, hβ0, ?_⟩
+  intro β hβpos hβlt
+  rcases hEventuallyAnti β hβpos hβlt with ⟨nAnti, hnAnti⟩
+  rcases hEventuallyLoc β hβpos hβlt with ⟨nLoc, hnLoc⟩
+  refine ⟨max nAnti nLoc, ?_⟩
+  intro n hn
+  have hnA : n ≥ nAnti := le_trans (Nat.le_max_left _ _) hn
+  have hnL : n ≥ nLoc := le_trans (Nat.le_max_right _ _) hn
+  have hNoSolver :
+      ¬ SmallDAGSolver F SizeBound n β ε := by
+    exact no_dag_solver_of_two_layer_at F SizeBound n β ε (hnAnti n hnA) (hnLoc n hnL)
+  intro hSolver
+  exact hNoSolver hSolver
+
+end LowerBounds
+end Pnp3

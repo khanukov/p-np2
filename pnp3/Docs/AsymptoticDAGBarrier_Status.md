@@ -143,6 +143,10 @@ Implemented routes:
      `smallDAGWitnessRestrictionExtractionAt_of_support`,
      `dagStableRestrictionSlackPackageAt_of_supportHalfBound`,
      `no_small_dag_solver_of_supportHalfBound_via_acceptedFamily`
+   - first quantitative restricted-model foothold on the chosen weak route:
+     `promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported`,
+     `promiseYesSubcubeCertificateAt_of_supportHalfBound_valueSupported`,
+     `no_small_dag_solver_of_supportHalfBound_valueSupported`
    - conclusion from the sanity check:
      the real open problem is quantitative extraction of a small/slack-bearing
      YES-centered certificate, not mere existence of a one-sided decision

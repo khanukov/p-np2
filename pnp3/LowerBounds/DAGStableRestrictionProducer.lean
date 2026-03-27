@@ -1034,6 +1034,56 @@ noncomputable def promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPack
     exact hAgree j (by simp [S, hi])
 
 /--
+Restricted-model weak-route foothold: if the DAG output support is both
+value-supported and at most half the truth-table length, then it already
+yields the promise/value locality package.
+
+This is stronger than the accepted-family contradiction produced by the strong
+support sprint: it lands directly in the chosen weak-route producer API.
+-/
+noncomputable def promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε)
+    (hSupportHalf :
+      (DagCircuit.support W.C).card ≤ Models.Partial.tableLen p.n / 2)
+    (hValueSupport :
+      ∀ i ∈ DagCircuit.support W.C,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    PromiseValueLocalityPackageAt W := by
+  classical
+  let S : ValueCoordinateSet p :=
+    Finset.univ.filter (fun j => tableValPos j ∈ DagCircuit.support W.C)
+  have hSCard :
+      S.card ≤ (DagCircuit.support W.C).card := by
+    have hImgSub : Finset.image tableValPos S ⊆ DagCircuit.support W.C := by
+      intro i hi
+      simp only [S, Finset.mem_image, Finset.mem_filter, Finset.mem_univ, true_and] at hi
+      obtain ⟨j, hj, rfl⟩ := hi
+      exact hj
+    have hCardImage :
+        S.card = (Finset.image tableValPos S).card := by
+      rw [Finset.card_image_of_injective S tableValPos_injective]
+    calc
+      S.card = (Finset.image tableValPos S).card := hCardImage
+      _ ≤ (DagCircuit.support W.C).card := Finset.card_le_card hImgSub
+  refine
+    { S := S
+      hSlack := ?_
+      hLocal := ?_ }
+  · have hExpMono :
+        Models.Partial.tableLen p.n / 2 ≤ Models.Partial.tableLen p.n - S.card := by
+      omega
+    exact lt_of_lt_of_le p.circuit_bound_ok
+      (Nat.pow_le_pow_right (by decide : 0 < 2) hExpMono)
+  · intro x y _hxYes _hyNo _hxValid _hyValid hAgree
+    apply DagCircuit.eval_eq_of_eq_on_support
+    intro i hi
+    obtain ⟨j, rfl⟩ := hValueSupport i hi
+    exact hAgree j (by simp [S, hi])
+
+/--
 Primary weak-route consumer at one fixed slice witness.
 
 This is the theorem-minimal accepted-family endpoint: a finite family of total
@@ -1681,6 +1731,26 @@ noncomputable def promiseYesSubcubeCertificateAt_of_dagStableRestrictionSlackPac
       cert hValueAlive)
 
 /--
+Restricted-model quantitative weak-route closure:
+small value-supported output support already yields the chosen one-sided
+`PromiseYesSubcubeCertificateAt`.
+-/
+noncomputable def promiseYesSubcubeCertificateAt_of_supportHalfBound_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε)
+    (hSupportHalf :
+      (DagCircuit.support W.C).card ≤ Models.Partial.tableLen p.n / 2)
+    (hValueSupport :
+      ∀ i ∈ DagCircuit.support W.C,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    PromiseYesSubcubeCertificateAt W := by
+  exact promiseYesSubcubeCertificateAt_of_promiseValueLocalityPackageAt
+    (promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported
+      W hSupportHalf hValueSupport)
+
+/--
 Direct contradiction from the promise-aware one-sided YES-centered weak route.
 -/
 theorem no_small_dag_solver_of_promiseYesSubcubeCertificateAt
@@ -1707,6 +1777,26 @@ theorem no_small_dag_solver_of_promiseYesSubcubeCertificateAt
       cert.hSlack
       cert.hAccept
       hCorrectPromise
+
+/--
+Restricted-model contradiction on the weak mainline:
+if the DAG output depends only on at most half of the value coordinates, then
+the chosen quantitative YES-centered route already rules out correctness.
+-/
+theorem no_small_dag_solver_of_supportHalfBound_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε)
+    (hSupportHalf :
+      (DagCircuit.support W.C).card ≤ Models.Partial.tableLen p.n / 2)
+    (hValueSupport :
+      ∀ i ∈ DagCircuit.support W.C,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    False := by
+  exact no_small_dag_solver_of_promiseYesSubcubeCertificateAt W
+    (promiseYesSubcubeCertificateAt_of_supportHalfBound_valueSupported
+      W hSupportHalf hValueSupport)
 
 /--
 Slice-family provider for promise-aware one-sided YES-subcube certificates.

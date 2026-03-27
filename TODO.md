@@ -413,6 +413,14 @@ Do:
    show that any slice-DAG whose output support is at most half the truth-table
    length already contradicts correctness through the strong accepted-family
    route.
+   On the chosen weak mainline there is now a first quantitative restricted-model
+   foothold as well:
+   `promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported`,
+   `promiseYesSubcubeCertificateAt_of_supportHalfBound_valueSupported`,
+   and
+   `no_small_dag_solver_of_supportHalfBound_valueSupported`
+   show that if the output support is both small and already confined to value
+   coordinates, then the quantitative YES-centered route closes directly.
 3. Add a **minimality benchmark subtask**: compare this endpoint against what is
    already enough in known magnification results (especially sparse-problem /
    formula thresholds) so we do not accidentally choose an endpoint stronger

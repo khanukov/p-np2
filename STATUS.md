@@ -242,6 +242,12 @@ Variant boundary policy for these endpoints:
   `no_small_dag_solver_of_supportHalfBound_via_acceptedFamily` closes the
   route for any slice-DAG whose output support is at most half the truth-table
   length.
+- The weak mainline now also has a first quantitative restricted-model foothold:
+  `promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported`,
+  `promiseYesSubcubeCertificateAt_of_supportHalfBound_valueSupported`,
+  and `no_small_dag_solver_of_supportHalfBound_valueSupported`
+  show that if the output support is both small and already confined to value
+  coordinates, then the chosen YES-centered route closes directly.
 - A second non-subcube structured producer route is now also compiled:
   `PRGImageAcceptanceAt`,
   `acceptedFamilyCertificateAt_of_prgImageAcceptanceAt`,

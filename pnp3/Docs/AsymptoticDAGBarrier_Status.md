@@ -1,7 +1,206 @@
-# Asymptotic DAG Barrier Status (2026-03-26)
+# Asymptotic DAG Barrier Status (2026-03-28)
 
 This note documents the **current** theorem-level DAG barrier API after the
 latest refactor.
+
+## Plan execution matrix (what is still not implemented)
+
+Below is the short status map against the current weak-mainline plan.
+
+- ✅ **Done (infrastructure / endpoint surface):**
+  - weak terminal consumer fixed at `AcceptedFamilyCertificateAt`;
+  - mainline source target surface fixed at `PromiseYesSubcube*`;
+  - backup producer `PRGImageAcceptanceAt` wired to accepted-family closure;
+  - strong fallback restriction stack is compiled through weak consumer;
+  - thin final wrappers exposed in `Magnification/FinalResult.lean` for
+    accepted-family, promise-YES, PRG-image backup, fallback extraction+numeric,
+    and eventual magnification-style no-small-DAG closure.
+
+- 🟡 **Partially done (parallel theorem tracks):**
+  - restricted-model ladder has first footholds (`supportHalfBound*`,
+    `valueSupported` variants), but not yet a broad ladder with multiple model
+    classes and source-theorem extraction results.
+
+- ❌ **Not done (the real blocker):**
+  - no internal theorem proving either
+    `SmallDAGWitnessOnSlice -> PromiseYesSubcubeCertificateAt`
+    **or**
+    `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`
+    on the full target model;
+  - therefore no internal unconditional proof of
+    `ComplexityInterfaces.NP_not_subset_PpolyDAG`;
+  - final `P_ne_NP_final*` wrappers still require an external DAG-separation
+    hypothesis `hNPDag`.
+
+- ❌ **Not done (publication/completion criteria):**
+  - asymptotic final layer still not fed by an internalized `NP_not_subset_PpolyDAG`;
+  - docs/release claims cannot yet state unconditional `P ≠ NP`.
+
+## Concrete next work plan (execution-ready)
+
+This section is the immediate patch plan for the next theorem sprints.
+Each item has:
+- concrete deliverable,
+- target files,
+- minimal acceptance check.
+
+### A. Main blocker theorem split: semantic forcing vs quantitative slack
+
+**Goal:** progress on
+`SmallDAGWitnessOnSlice -> PromiseYesSubcubeCertificateAt`.
+
+1. **Semantic half (one-sided forcing):**
+   - deliverable: a theorem that constructs a YES center `yYes` and a value-set
+     `S` with one-sided acceptance forcing on valid promise inputs;
+   - target files:
+     - `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
+     - (if needed) `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`;
+   - acceptance check:
+     - theorem lands in the shape of `PromiseYesAcceptanceInvariantAt` or a
+       direct constructor path to `PromiseYesSubcubeCertificateAt` (without yet
+       requiring final slack strength).
+
+2. **Quantitative half (same-set slack):**
+   - deliverable: bound/slack theorem for the **same** `S` produced above;
+   - target files:
+     - `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
+     - `pnp3/LowerBounds/AcceptedFamilyBarrier.lean` (only if additional
+       counting adapter is required);
+   - acceptance check:
+     - theorem composes directly with semantic half and yields
+       `PromiseYesSubcubeCertificateAt` without introducing new endpoint layers.
+
+Current implementation note:
+- decomposition API is now explicit in code via
+  `PromiseYesSourceDecompositionAt`,
+  `promiseYesSubcubeCertificateAt_of_sourceDecomposition`,
+  provider-level split interfaces
+  `promiseYesAcceptanceInvariantAtProviderOnSlices` /
+  `promiseYesSlackOnInvariantProviderOnSlices`,
+  and compiled closure
+  `noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices`;
+- pairwise package providers now also reduce explicitly into that split API via
+  `promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider`
+  and
+  `promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider`,
+  with closure theorem
+  `noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices_viaSemanticAndSlack`;
+- what remains open is proving those providers from strict DAG semantics.
+
+### B. Backup producer track: PRG-image route
+
+**Goal:** progress on
+`SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`.
+
+1. **Structured image extraction theorem:**
+   - deliverable: witness-indexed theorem that extracts an accepted structured
+     image family from small-DAG semantics;
+   - target file:
+     - `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`;
+   - acceptance check:
+     - theorem feeds existing bridge
+       `acceptedFamilyCertificateAt_of_prgImageAcceptanceAt` and then
+       `no_small_dag_solver_of_acceptedFamilyCertificateAt` without new API.
+
+### C. Restriction fallback as diagnostic (not main endpoint)
+
+**Goal:** use fallback to mine invariants for the weak route.
+
+1. **Value-supported extraction pass:**
+   - deliverable: theorem(s) showing when restriction data implies
+     value-supported conditions needed by promise-value / promise-YES route;
+   - target file:
+     - `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`;
+   - acceptance check:
+     - compiles via existing reductions
+       `promiseValueLocalityPackageAt_of_*` and then
+       `promiseYesSubcubeCertificateAt_of_*`.
+
+### D. FinalResult boundary discipline
+
+**Goal:** keep `FinalResult` as surface-only file.
+
+1. **Boundary rule for new additions:**
+   - only add wrappers to:
+     - `¬ SmallDAGSolver ...` and/or
+     - `MagnificationStyleNoSmallDAG ...`,
+     - and eventually `NP_not_subset_PpolyDAG` / `P_ne_NP` once the real bridge
+       exists;
+   - do **not** add source-level internal reductions here.
+   - target file:
+     - `pnp3/Magnification/FinalResult.lean`;
+   - acceptance check:
+     - source-side technical reductions remain in lower-bounds producer/barrier
+       modules.
+
+### E. Bridge to internalized DAG separation (critical integration milestone)
+
+**Goal:** remove external `hNPDag` eventually.
+
+1. **Asymptotic bridge theorem skeleton:**
+   - deliverable: theorem statement (and first supporting lemmas) that maps a
+     global `ComplexityInterfaces.PpolyDAG` witness to the asymptotic
+     `SmallDAGSolver`/`SizeBound` surface consumed by current magnification-style
+     no-small-DAG theorems;
+   - target files:
+     - `pnp3/Magnification/FinalResult.lean` (surface theorem statement),
+     - `pnp3/LowerBounds/AsymptoticDAGBarrier.lean` (quantifier plumbing),
+     - optional bridge helper near `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`;
+   - acceptance check:
+     - one explicit theorem-level dependency edge appears:
+       `PpolyDAG witness -> asymptotic SmallDAGSolver family`.
+
+Progress update (implemented):
+
+- Added witness-level bridge in `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`:
+  - `ppolyDAGSizeBoundOnSlices`
+  - `smallDAGSolver_of_inPpolyDAGFamilyOnSlices`
+- Added membership-level adapter/bridge:
+  - `inPpolyDAGFamilyOnSlices_of_PpolyDAG`
+  - `smallDAGSolver_of_PpolyDAGOnSlices`
+- Added eventual-surface bridge layer:
+  - `EventuallyInPpolyDAGWitnessFamily`
+  - `EventuallyPpolyDAGWitnessFamily`
+  - `EventuallySmallDAGSolverSurface`
+  - `eventuallySmallDAGSolverSurface_of_eventuallyInPpolyDAGWitnessFamily`
+  - `eventuallySmallDAGSolverSurface_of_eventuallyPpolyDAGWitnessFamily`
+- Added single-global witness packaging bridge:
+  - `AsymptoticDAGLanguageBridge`
+  - `ppolyDAGOnSlices_of_globalWitness`
+  - `eventuallySmallDAGSolverSurface_of_globalPpolyDAGWitness`
+- Added bridge-local contradiction schema:
+  - `not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies`
+- Added concrete weak-route instantiations:
+  - `not_globalPpolyDAG_of_acceptedFamilyWeakRoute`
+  - `not_globalPpolyDAG_of_promiseYesWeakRoute`
+  - `NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute`
+  - `NP_not_subset_PpolyDAG_of_promiseYesWeakRoute`
+- Added thin final-surface route reuse without new bridge plumbing:
+  - `not_globalPpolyDAG_surface_of_prgImageAcceptanceWeakRoute`
+  - `NP_not_subset_PpolyDAG_surface_of_prgImageAcceptanceWeakRoute`
+  - `not_globalPpolyDAG_surface_of_restrictionFallbackWeakRoute`
+  - `NP_not_subset_PpolyDAG_surface_of_restrictionFallbackWeakRoute`
+- Scope note:
+  - this closes the **quantifier plumbing** edge from per-slice `PpolyDAG`
+    assumptions to per-slice/eventual `SmallDAGSolver` existence, including a
+    single-global witness packaging layer;
+  - this now also includes an explicit global witness contradiction schema
+    under uniform no-small-solver assumptions for canonical witness families;
+  - this now reaches explicit class-level separation statements
+    `NP_not_subset_PpolyDAG_of_<weak-route-theorem>`;
+  - the remaining task is to internalize final `P_ne_NP` wrappers and
+    progressively remove external `hNPDag` assumptions.
+  - full theorem-level DAG separation internalization is still open.
+
+## Immediate patch queue (next 3 patches)
+
+1. **Patch Q1:** semantic half for promise-YES source theorem (no slack yet).
+2. **Patch Q2:** quantitative same-`S` slack upgrade and composition to
+   `PromiseYesSubcubeCertificateAt`.
+3. **Patch Q3:** wire
+   `NP_not_subset_PpolyDAG_of_<weak-route-theorem>`
+   into final `P_ne_NP` endpoint wrappers and retire the remaining external
+   DAG-separation parameters.
 
 ## Canonical module
 
@@ -250,8 +449,9 @@ Current policy after the accepted-family refactor:
   structured producer targets feeding the generic accepted-family consumer;
 - treat `SmallDAGWitnessSemanticConeCertificateAt` as a secondary diagnostic /
   restricted-model theorem target rather than the default unconditional engine;
-- postpone thin final DAG-wrapper work until there is a clearer source theorem
-  feeding the weak route.
+- thin final DAG-wrapper work is already in place; prioritize source-theorem
+  mathematics over additional wrapper layering unless a new bridge is required
+  by a concrete proof.
 
 Sanity policy:
 

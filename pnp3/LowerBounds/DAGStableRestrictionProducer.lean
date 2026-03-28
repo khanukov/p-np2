@@ -1577,6 +1577,44 @@ def promiseYesSubcubeCertificateAt_of_acceptanceInvariant
   hAccept := inv.hAccept
 
 /--
+Split form of the current mainline source objective at one witness:
+
+1. semantic one-sided YES-centered forcing (`inv`);
+2. quantitative slack on the **same** semantic coordinate set (`hSlackOnInvS`).
+
+This packages the Q1/Q2 theorem-sprint decomposition explicitly in the API so
+source-side proofs can target each half independently and still compose
+mechanically to `PromiseYesSubcubeCertificateAt`.
+-/
+structure PromiseYesSourceDecompositionAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) where
+  /-- Semantic one-sided forcing component (Q1 target). -/
+  inv : PromiseYesAcceptanceInvariantAt W
+  /-- Quantitative slack on the same semantic coordinates (Q2 target). -/
+  hSlackOnInvS :
+    Models.circuitCountBound p.n (p.sNO - 1) <
+      2 ^ (Models.Partial.tableLen p.n - inv.S.card)
+
+/--
+Mechanical compilation from the split Q1/Q2 source package to the operational
+promise-YES weak-route certificate used by counting closure.
+-/
+def promiseYesSubcubeCertificateAt_of_sourceDecomposition
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (src : PromiseYesSourceDecompositionAt W) :
+    PromiseYesSubcubeCertificateAt W :=
+  promiseYesSubcubeCertificateAt_of_acceptanceInvariant
+    (W := W)
+    src.inv
+    src.hSlackOnInvS
+
+/--
 Forget the slack field of a promise-aware YES-centered weak-route certificate,
 leaving just the semantic invariant.
 -/
@@ -1592,6 +1630,47 @@ def promiseYesAcceptanceInvariantAt_of_promiseYesSubcubeCertificateAt
   hValidYes := cert.hValidYes
   S := cert.S
   hAccept := cert.hAccept
+
+/--
+Slice-family provider for semantic one-sided YES-centered forcing certificates
+(Q1-level provider target).
+-/
+abbrev promiseYesAcceptanceInvariantAtProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      PromiseYesAcceptanceInvariantAt W
+
+/--
+Slice-family provider for quantitative slack on the same semantic coordinate set
+produced by a semantic provider (Q2-level provider target).
+-/
+abbrev promiseYesSlackOnInvariantProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) <
+        2 ^ (Models.Partial.tableLen (F.paramsOf n β).n - (hInv n β ε W).S.card)
+
+/--
+Compile separate semantic and quantitative source providers into the existing
+provider surface `promiseYesSubcubeCertificateAtProviderOnSlices`.
+-/
+def promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hSlack : promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+        PromiseYesSubcubeCertificateAt W := by
+  intro n β ε W
+  exact promiseYesSubcubeCertificateAt_of_sourceDecomposition
+    { inv := hInv n β ε W
+      hSlackOnInvS := hSlack n β ε W }
 
 /--
 The existing pairwise promise/value locality package already yields the more
@@ -1679,6 +1758,24 @@ def promiseYesSubcubeCertificateAt_of_decisionCertificate
     hSlack
 
 /--
+Package the decision-certificate route directly in the split Q1/Q2 form:
+semantic forcing plus slack on the same `S`.
+-/
+def promiseYesSourceDecompositionAt_of_decisionCertificate
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseYesDecisionCertificateAt W)
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Models.Partial.tableLen p.n - cert.S.card)) :
+    PromiseYesSourceDecompositionAt W where
+  inv := promiseYesAcceptanceInvariantAt_of_decisionCertificate cert
+  hSlackOnInvS := by
+    simpa [promiseYesAcceptanceInvariantAt_of_decisionCertificate] using hSlack
+
+/--
 The existing pairwise promise/value locality package already yields the
 acceptance-only semantic invariant via the more operational YES-decision
 certificate.
@@ -1711,6 +1808,21 @@ noncomputable def promiseYesSubcubeCertificateAt_of_promiseValueLocalityPackageA
   let inv : PromiseYesAcceptanceInvariantAt W :=
     promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt cert
   exact promiseYesSubcubeCertificateAt_of_acceptanceInvariant inv cert.hSlack
+
+/--
+Package the pairwise promise/value route directly in the split Q1/Q2 form.
+-/
+noncomputable def promiseYesSourceDecompositionAt_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    PromiseYesSourceDecompositionAt W := by
+  refine
+    { inv := promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt cert
+      hSlackOnInvS := ?_ }
+  simpa [promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt] using cert.hSlack
 
 /--
 Value-supported encoded-coordinate restriction packages already imply the
@@ -1809,6 +1921,49 @@ abbrev promiseYesSubcubeCertificateAtProviderOnSlices
       PromiseYesSubcubeCertificateAt W
 
 /--
+Provider reduction: pairwise promise/value packages already supply the semantic
+Q1 half (`PromiseYesAcceptanceInvariantAt`) on every slice.
+-/
+noncomputable def promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt (hPkg n β ε W)
+
+/--
+Provider reduction: pairwise promise/value packages also supply the Q2 half,
+namely counting slack on the same semantic set chosen by the Q1 provider above.
+-/
+theorem promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesSlackOnInvariantProviderOnSlices
+      F SizeBound
+      (promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+        F SizeBound hPkg) := by
+  intro n β ε W
+  simpa [promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider,
+    promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt] using (hPkg n β ε W).hSlack
+
+/--
+Provider reduction from pairwise promise/value packages to the split Q1/Q2 API.
+-/
+noncomputable def promiseYesSubcubeCertificateAtProviderOnSlices_of_promiseValueLocalityPackageProvider_viaSemanticAndSlack
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound :=
+  promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+    F SizeBound
+    (promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+    (promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+
+/--
 Provider-level reduction from the existing pairwise promise/value package route
 to the weaker promise-aware YES-centered route.
 -/
@@ -1838,6 +1993,25 @@ theorem noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices
   exact no_small_dag_solver_of_promiseYesSubcubeCertificateAt W (hCert n β ε W)
 
 /--
+Compiled closure from the explicit Q1/Q2 split provider interface:
+
+1. semantic one-sided forcing provider (`hInv`);
+2. quantitative slack-on-the-same-`S` provider (`hSlack`).
+
+This theorem is the direct provider-level counterpart of the decomposition
+package `PromiseYesSourceDecompositionAt`.
+-/
+theorem noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hSlack : promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound
+    (promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+      F SizeBound hInv hSlack)
+
+/--
 Direct closure from the existing pairwise promise/value package route through
 the nearer-term promise-aware YES-centered source theorem target.
 -/
@@ -1848,6 +2022,21 @@ theorem noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices
     ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
   exact noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound
     (promiseYesSubcubeCertificateAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+
+/--
+Same closure as `noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices`, but
+factored explicitly through the split Q1/Q2 provider interface.
+-/
+theorem noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices_viaSemanticAndSlack
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices F SizeBound
+    (promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+    (promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider
       F SizeBound hPkg)
 
 /--

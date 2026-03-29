@@ -4,6 +4,7 @@ import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Magnification.PipelineStatements_Partial
 import LowerBounds.DAGStableRestrictionProducer
+import LowerBounds.AsymptoticDAGBarrier
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
 import Complexity.PsubsetPpolyDAG_Internal
@@ -315,6 +316,350 @@ theorem P_ne_NP_final_dag_only
       hPDag
 
 /-!
+Thin DAG weak-route wrappers (active mainline surface):
+
+- source theorem target:
+  `SmallDAGImpliesPromiseYesSubcubeAt` / `SmallDAGImpliesPromiseYesSubcubeStatement`
+- weak terminal consumer:
+  `SmallDAGImpliesAcceptedFamilyAt` / `SmallDAGImpliesAcceptedFamilyStatement`
+- asymptotic no-small-DAG endpoint:
+  `MagnificationStyleNoSmallDAG (SmallDAGSolver F SizeBound)`.
+
+These wrappers intentionally keep the final file oriented to the weak accepted-family
+route without forcing the stronger restriction-provider contracts as the only
+frontier.
+-/
+
+/--
+Final-surface wrapper: global no-small-DAG closure from the weak accepted-family
+statement.
+
+This is the theorem-level bridge used by the new weak mainline:
+`AcceptedFamilyCertificateAt` is treated as terminal consumer, and the closure
+to per-slice impossibility of small DAG solvers is entirely mechanical.
+-/
+theorem noSmallDAG_surface_of_acceptedFamilyStatement
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hAccepted : LowerBounds.SmallDAGImpliesAcceptedFamilyStatement F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.no_dag_solver_of_acceptedFamily F SizeBound hAccepted
+
+/--
+Final-surface wrapper: global no-small-DAG closure from the one-sided YES-centered
+source statement.
+
+This keeps the nearest-term source target explicit in `FinalResult`:
+`SmallDAGImpliesPromiseYesSubcubeStatement` is reduced immediately to the same
+no-solver endpoint.
+-/
+theorem noSmallDAG_surface_of_promiseYesSubcubeStatement
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hYes : LowerBounds.SmallDAGImpliesPromiseYesSubcubeStatement F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.no_dag_solver_of_promise_yes_subcube F SizeBound hYes
+
+/--
+Final-surface wrapper for the parallel structured-image backup route:
+
+`PRGImageAcceptanceAt provider -> no small DAG solver`.
+
+This keeps the backup producer compiled at the same endpoint level as the
+promise-YES and accepted-family mainline wrappers.
+-/
+theorem noSmallDAG_surface_of_prgImageAcceptanceProviderOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hPrg : LowerBounds.prgImageAcceptanceAtProviderOnSlices F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.noSmallDAG_of_prgImageAcceptanceAtProviderOnSlices F SizeBound hPrg
+
+/--
+Final-surface wrapper for the strong restriction/shrinkage fallback stack.
+
+This theorem intentionally routes the stronger extraction+numerics contract into
+the same weak accepted-family terminal closure, so the fallback remains
+compatible with the weak mainline rather than reintroducing a separate endpoint.
+-/
+theorem noSmallDAG_surface_of_restrictionFallbackOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hExtract : LowerBounds.smallDAGWitnessRestrictionExtractionProviderOnSlices F SizeBound)
+  (hNumeric :
+    LowerBounds.smallDAGWitnessRestrictionNumericDataProviderOnSlices F SizeBound hExtract) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact
+    LowerBounds.noSmallDAG_of_restrictionExtractionAndNumericProviderOnSlices_via_acceptedFamily
+      F SizeBound hExtract hNumeric
+
+/--
+Asymptotic weak-route wrapper from eventual accepted-family production.
+-/
+theorem magnificationStyleNoSmallDAG_surface_of_eventuallyAcceptedFamily
+    (F : LowerBounds.GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hEventuallyAccepted :
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ nAcc : Nat, ∀ n ≥ nAcc, LowerBounds.SmallDAGImpliesAcceptedFamilyAt F SizeBound n β ε) :
+    LowerBounds.MagnificationStyleNoSmallDAG (LowerBounds.SmallDAGSolver F SizeBound) := by
+  exact LowerBounds.magnificationStyleNoSmallDAG_of_eventually_acceptedFamily
+    F SizeBound ε β0 hε hβ0 hEventuallyAccepted
+
+/--
+Asymptotic weak-route wrapper from eventual one-sided YES-subcube production.
+-/
+theorem magnificationStyleNoSmallDAG_surface_of_eventuallyPromiseYesSubcube
+    (F : LowerBounds.GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hEventuallyYes :
+      ∀ β : Rat, 0 < β → β < β0 →
+        ∃ nYes : Nat, ∀ n ≥ nYes, LowerBounds.SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε) :
+    LowerBounds.MagnificationStyleNoSmallDAG (LowerBounds.SmallDAGSolver F SizeBound) := by
+  exact LowerBounds.magnificationStyleNoSmallDAG_of_eventually_promiseYesSubcube
+    F SizeBound ε β0 hε hβ0 hEventuallyYes
+
+/--
+Thin bridge wrapper (variant-1 style): a single global `PpolyDAG` witness on an
+asymptotic language `bridge.L` implies the eventual small-solver surface for
+the chosen slice family `F`.
+
+This wrapper intentionally stops at `EventuallySmallDAGSolverSurface`; it does
+not yet claim DAG separation by itself.  Its purpose is to expose the new
+global-to-slice quantifier plumbing at the `FinalResult` boundary.
+-/
+theorem eventuallySmallDAGSolverSurface_surface_of_globalPpolyDAGWitness
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hDagGlobal : ComplexityInterfaces.PpolyDAG bridge.L) :
+    LowerBounds.EventuallySmallDAGSolverSurface F := by
+  exact LowerBounds.eventuallySmallDAGSolverSurface_of_globalPpolyDAGWitness
+    F bridge ε β0 hε hβ0 hDagGlobal
+
+/--
+Thin contradiction wrapper at the global-witness bridge boundary:
+if magnification-style no-small-solver is available uniformly for every
+canonical witness-derived size-bound family, then the bridged global language
+cannot belong to `PpolyDAG`.
+
+This theorem keeps the result bridge-local (`¬ PpolyDAG bridge.L`) and avoids
+claiming full class separation prematurely.
+-/
+theorem not_globalPpolyDAG_surface_of_noSmallCanonicalWitnessFamilies
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNoSmall :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                ¬ LowerBounds.SmallDAGSolver
+                    F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    LowerBounds.not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      F bridge hNoSmall
+
+/--
+Thin bridge-local contradiction wrapper instantiated with the weak
+accepted-family source theorem.
+-/
+theorem not_globalPpolyDAG_surface_of_acceptedFamilyWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hAcceptedWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.SmallDAGImpliesAcceptedFamilyStatement
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    LowerBounds.not_globalPpolyDAG_of_acceptedFamilyWeakRoute
+      F bridge hAcceptedWeak
+
+/--
+Thin bridge-local contradiction wrapper instantiated with the nearer-term
+promise-YES weak source theorem.
+-/
+theorem not_globalPpolyDAG_surface_of_promiseYesWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.SmallDAGImpliesPromiseYesSubcubeStatement
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    LowerBounds.not_globalPpolyDAG_of_promiseYesWeakRoute
+      F bridge hYesWeak
+
+/--
+Thin bridge-local contradiction wrapper instantiated with the PRG-image
+accepted-image route.
+
+This follows exactly the same bridge template as the accepted-family/promise-YES
+wrappers: we first collapse the stronger source-side producer to the weak
+accepted-family statement, then reuse the canonical bridge-local contradiction
+schema without adding any new quantifier plumbing.
+-/
+theorem not_globalPpolyDAG_surface_of_prgImageAcceptanceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hPrgWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.prgImageAcceptanceAtProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    LowerBounds.not_globalPpolyDAG_of_acceptedFamilyWeakRoute
+      F bridge ?_
+  intro hInDag
+  exact
+    LowerBounds.smallDAGAcceptedFamilyStatement_of_prgImageAcceptanceProvider
+      F
+      (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+      (hPrgWeak hInDag)
+
+/--
+Thin bridge-local contradiction wrapper instantiated with the stronger
+restriction-extraction+numeric fallback route.
+
+The route is intentionally wired through the same accepted-family bridge schema
+to avoid introducing another endpoint-specific contradiction theorem.
+-/
+theorem not_globalPpolyDAG_surface_of_restrictionExtractionNumericWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hFallbackWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ hExtract :
+          LowerBounds.smallDAGWitnessRestrictionExtractionProviderOnSlices
+            F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag),
+          LowerBounds.smallDAGWitnessRestrictionNumericDataProviderOnSlices
+            F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag) hExtract) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    LowerBounds.not_globalPpolyDAG_of_acceptedFamilyWeakRoute
+      F bridge ?_
+  intro hInDag
+  rcases hFallbackWeak hInDag with ⟨hExtract, hNumeric⟩
+  exact
+    LowerBounds.smallDAGAcceptedFamilyStatement_of_restrictionExtractionAndNumericProvider
+      F
+      (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+      hExtract
+      hNumeric
+
+/--
+Class-level wrapper: accepted-family weak route + explicit NP witness on
+`bridge.L` gives `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_acceptedFamilyWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hAcceptedWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.SmallDAGImpliesAcceptedFamilyStatement
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    LowerBounds.NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute
+      F bridge hNP hAcceptedWeak
+
+/--
+Class-level wrapper: promise-YES weak route + explicit NP witness on
+`bridge.L` gives `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_promiseYesWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.SmallDAGImpliesPromiseYesSubcubeStatement
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    LowerBounds.NP_not_subset_PpolyDAG_of_promiseYesWeakRoute
+      F bridge hNP hYesWeak
+
+/--
+Class-level wrapper: PRG-image accepted-image weak route + explicit NP witness
+on `bridge.L` gives `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_prgImageAcceptanceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hPrgWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.prgImageAcceptanceAtProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_prgImageAcceptanceWeakRoute
+      F bridge hPrgWeak
+
+/--
+Class-level wrapper: stronger restriction-extraction+numeric fallback route +
+explicit NP witness on `bridge.L` gives `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_restrictionExtractionNumericWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hFallbackWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ hExtract :
+          LowerBounds.smallDAGWitnessRestrictionExtractionProviderOnSlices
+            F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag),
+          LowerBounds.smallDAGWitnessRestrictionNumericDataProviderOnSlices
+            F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag) hExtract) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_restrictionExtractionNumericWeakRoute
+      F bridge hFallbackWeak
+
+/-!
 Current DAG endpoint ledger for this file:
 
 - `P_ne_NP_final` remains conditional on explicit DAG separation
@@ -331,10 +676,10 @@ Current DAG endpoint ledger for this file:
   `SmallDAGImpliesPromiseYesSubcubeStatement`, and
   `YesSubcubeCertificateAt` is wired as a stronger structured producer into
   that route.
-- This file still does not expose asymptotic final wrappers consuming that weak
-  route directly; the remaining open step is the actual DAG-side source theorem
-  producing the accepted-family endpoint (or a structured producer reducing to
-  it).
+- This file now exposes thin asymptotic weak-route wrappers (`magnificationStyle*`)
+  consuming eventual accepted-family / promise-YES-subcube statements directly.
+  The remaining open step is the actual DAG-side source theorem producing those
+  eventual statements from strict small-DAG semantics.
 -/
 
 /--

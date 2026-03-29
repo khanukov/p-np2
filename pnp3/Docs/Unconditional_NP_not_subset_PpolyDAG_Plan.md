@@ -1,26 +1,37 @@
 # Concrete plan to reach unconditional `NP ⊄ PpolyDAG`
 
-Last updated: 2026-03-23.
+Last updated: 2026-03-28.
 
 This note turns the current DAG frontier into an explicit execution plan.
 It is intentionally stricter than a generic research memo: every milestone
 below is phrased so that we can tell, from the codebase alone, whether the
 step is done or still open.
 
-## Progress snapshot (2026-03-25)
+## Progress snapshot (2026-03-28)
 
-The repository now includes the planned dedicated source file
-`pnp3/LowerBounds/DAGStableRestrictionProducer.lean` with:
+The repository has now moved beyond the initial producer-file milestone and
+already includes:
 
-1. DAG-native certificate/invariant source contracts;
-2. conversion into `dag_stableRestriction_producer`;
-3. TM-level closure theorem for the invariant-provider route;
-4. thin final wrappers and regression/audit wiring.
+1. asymptotic DAG witness plumbing from global/per-slice `PpolyDAG` hypotheses
+   into `SmallDAGSolver` surfaces;
+2. bridge-local contradiction schema and concrete weak-route instantiations
+   (`accepted-family`, `promise-YES`);
+3. final-surface weak-route wrappers (including PRG-image backup and stronger
+   restriction extraction + numeric fallback) that all reuse the same
+   accepted-family bridge template;
+4. dedicated smoke regression coverage in `Tests/WeakRouteSurfaceTests`.
 
-So the current mathematical blocker is exactly the source generator itself:
+So the blocker is no longer API/plumbing shape; it is now purely a source
+theorem issue:
 
-> construct `dagStableRestrictionInvariantProvider p` from strict DAG semantics
-> (without additional bridge assumptions).
+> semantic Q1 acceptance-invariant from strict DAG semantics is now available,
+> and the repository now also proves that same-set slack is impossible for that
+> exact full-value-set Q1 construction (`no_sameSetSlack_of_strictDAGSemantics`);
+> but we still need either
+> `SmallDAGWitnessOnSlice -> PromiseYesSubcubeCertificateAt`
+> or
+> `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`
+> on the full target model, then thread it into default final wrappers.
 
 ---
 
@@ -389,54 +400,51 @@ clearly smaller than building a native DAG support/locality theory.
 
 ---
 
-## 7. Concrete engineering tasks to schedule now
+## 7. Concrete engineering tasks (updated to current state)
 
-These are the repository tasks that should be opened immediately.
+Tasks 1–3 from the original draft are now complete as infrastructure items; the
+active queue below starts from the current branch state.
 
-### Task 1. Frontier theorem regression file
+### Branch map for the current sprint
 
-Add or strengthen a regression file that states, by type, the following public
-surfaces:
+- **A. Strengthen Q1:** construct a semantic invariant with non-full coordinate
+  set (`S ≠ Finset.univ`).
+- **B. PRG backup:** in parallel, push
+  `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`.
+- **C. Restricted-model probes:** use support-bounded / value-supported /
+  low-reuse slices to identify a transferable non-full-`S` structural invariant.
+  Current foothold: package-route probes already certify non-full `S` and lift
+  to `PromiseYesAcceptanceInvariantAtNontrivialS`; what remains is lifting this
+  nontriviality from probe models to strict target-semantics theorems.
 
-* the formula bridge theorem into stable restriction;
-* the DAG consumer `not_ppolyDAG_of_dag_stableRestriction`;
-* the final wrappers specialized to DAG stable restriction.
+### Task 1. Internal source theorem (mainline promise-YES split)
 
-The goal is to make the target signatures mechanically sticky.
+Q1 semantic existence is closed; the active remaining work is:
 
-### Task 2. New DAG producer namespace
+1. prove same-set quantitative slack (`promiseYesSlackOnInvariant*`) for the
+   semantic coordinates chosen by Q1;
+2. compose to internal `PromiseYesSubcubeCertificateAt` without adding new
+   endpoint plumbing.
 
-Create a dedicated file for the missing source theorem, for example:
+### Task 2. Internal source theorem (parallel PRG-image backup)
 
-```text
-pnp3/LowerBounds/DAGStableRestrictionProducer.lean
-```
+In parallel with Task 1, attempt a strict DAG-side construction of
+`PRGImageAcceptanceAt`; keep this route as a second independent source
+generator feeding the same accepted-family consumer.
 
-This file should contain only:
+### Task 3. Internalized final wrappers
 
-* the new source package,
-* the solver-side locality/stability lemmas,
-* the final bridge into
-  `stableRestrictionGoal_of_abstractGapTargetedPayload`.
+Once either Task 1 or Task 2 yields an internal class-level theorem, add
+default wrappers that no longer require external `hNPDag` and keep current
+conditional wrappers only as compatibility aliases (if needed).
 
-Do **not** bury the future producer inside `SingletonDensityContradiction.lean`.
-That file should stay the consumer/integration layer.
+### Task 4. Release-facing docs/audit cleanup
 
-### Task 3. Explicit no-go regression on singleton provenance
+After Task 3:
 
-Keep one regression theorem or documentation note asserting that the old
-canonical singleton-derived DAG route is point-like.  This prevents accidental
-reversion to the wrong source layer.
-
-### Task 4. Final API cleanup checklist
-
-Prepare the endpoint cleanup in advance:
-
-1. remove external `hNPDag` from default final wrappers once the producer is
-   proved;
-2. update `STATUS.md`, `TODO.md`, `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`,
-   `README.md`, and `AXIOMS_FINAL_LIST.md` in the same change;
-3. re-run the full audit/test suite.
+1. update all status/checklist/release docs to mark DAG separation as internal;
+2. refresh signature audits and smoke tests;
+3. re-run full audit/test suite before claiming unconditionality.
 
 ---
 

@@ -6,6 +6,7 @@ import ThirdPartyFacts.Facts_Switching
 import LowerBounds.AntiChecker_Partial
 import Magnification.Facts_Magnification_Partial
 import Complexity.Interfaces
+import Tests.WeakRouteSurfaceTests
 
 /-!
 # Smoke Tests for pnp3

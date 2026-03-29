@@ -270,6 +270,343 @@ def SmallDAGSolver
     SizeBound n β ε (DagCircuit.size C) ∧
       CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β))
 
+/--
+Canonical size-bound surface extracted from a slice-indexed strict `PpolyDAG`
+witness family.
+
+For each slice `(n,β)`, the bound is read from that slice witness at the
+encoded input length `GapSliceFamily.encodedLen F n β`; the `ε` parameter is
+ignored intentionally (non-uniform witnesses do not depend on approximation
+accuracy in this interface).
+-/
+def ppolyDAGSizeBoundOnSlices
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))) :
+    Nat → Rat → Rat → Nat → Prop :=
+  fun n β _ε s => s ≤ (hInDag n β).polyBound (GapSliceFamily.encodedLen F n β)
+
+/--
+Bridge lemma (witness-indexed form):
+from strict DAG witnesses on each slice language to explicit small-solver
+existence on every `(n,β,ε)`.
+
+This is the intended theorem-skeleton target for Q3-style bridge work: once a
+global route is able to provide `InPpolyDAG` witnesses for each slice language,
+the asymptotic barrier surface receives concrete `SmallDAGSolver` witnesses
+mechanically.
+-/
+theorem smallDAGSolver_of_inPpolyDAGFamilyOnSlices
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  intro n β ε
+  let w : ComplexityInterfaces.InPpolyDAG
+      (gapPartialMCSP_Language (F.paramsOf n β)) := hInDag n β
+  refine ⟨w.family (GapSliceFamily.encodedLen F n β), ?_, ?_⟩
+  · simpa [ppolyDAGSizeBoundOnSlices] using
+      w.family_size_le (GapSliceFamily.encodedLen F n β)
+  · constructor
+    · intro x hxYes
+      have hxLang :
+          gapPartialMCSP_Language (F.paramsOf n β)
+              (GapSliceFamily.encodedLen F n β) x = true := by
+        simpa [gapSliceOfParams] using hxYes
+      exact (w.correct (GapSliceFamily.encodedLen F n β) x).trans hxLang
+    · intro x hxNo
+      have hxLang :
+          gapPartialMCSP_Language (F.paramsOf n β)
+              (GapSliceFamily.encodedLen F n β) x = false := by
+        simpa [gapSliceOfParams] using hxNo
+      exact (w.correct (GapSliceFamily.encodedLen F n β) x).trans hxLang
+
+/--
+Choice-level adapter from proposition-level per-slice DAG membership
+(`PpolyDAG`) to strict witnesses (`InPpolyDAG`).
+
+This is intentionally noncomputable: `PpolyDAG` is an existential proposition,
+and the bridge extracts a concrete witness family for theorem composition.
+-/
+noncomputable def inPpolyDAGFamilyOnSlices_of_PpolyDAG
+    (F : GapSliceFamily)
+    (hDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.PpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ∀ n : Nat, ∀ β : Rat,
+      ComplexityInterfaces.InPpolyDAG
+        (gapPartialMCSP_Language (F.paramsOf n β)) := by
+  classical
+  intro n β
+  exact Classical.choose (hDag n β)
+
+/--
+Bridge lemma (membership-level form):
+if each slice language is in `PpolyDAG`, then the asymptotic barrier receives
+explicit small-solver witnesses on every `(n,β,ε)` via the canonical extracted
+size bound `ppolyDAGSizeBoundOnSlices`.
+-/
+theorem smallDAGSolver_of_PpolyDAGOnSlices
+    (F : GapSliceFamily)
+    (hDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.PpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))) :
+    let hInDag := inPpolyDAGFamilyOnSlices_of_PpolyDAG F hDag
+    ∀ n : Nat, ∀ β ε : Rat,
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  intro hInDag
+  exact smallDAGSolver_of_inPpolyDAGFamilyOnSlices F hInDag
+
+/--
+Eventual per-`β` strict witness-family hypothesis.
+
+Interpretation:
+for each sufficiently small positive `β`, there is a cutoff `n0(β)` such that
+every slice language `(n,β)` with `n ≥ n0(β)` already has a strict
+`InPpolyDAG` witness.
+-/
+abbrev EventuallyInPpolyDAGWitnessFamily
+    (F : GapSliceFamily)
+    (β0 : Rat) : Type :=
+  ∀ β : Rat, 0 < β → β < β0 →
+    Σ n0 : Nat, ∀ n ≥ n0,
+      ComplexityInterfaces.InPpolyDAG
+        (gapPartialMCSP_Language (F.paramsOf n β))
+
+/--
+Eventual per-`β` proposition-level witness-family hypothesis (`PpolyDAG` form).
+-/
+def EventuallyPpolyDAGWitnessFamily
+    (F : GapSliceFamily)
+    (β0 : Rat) : Prop :=
+  ∀ β : Rat, 0 < β → β < β0 →
+    ∃ n0 : Nat, ∀ n ≥ n0,
+      ComplexityInterfaces.PpolyDAG
+        (gapPartialMCSP_Language (F.paramsOf n β))
+
+/--
+Canonical "eventually small-solver surface" used by the bridge milestone.
+
+This keeps exactly the asymptotic quantifier shape needed downstream, but on
+the **existence** side (`SmallDAGSolver`) rather than contradiction side
+(`¬ SmallDAGSolver`): a fixed `(ε,β0)` window and eventual-in-`n` solver
+existence for each sufficiently small `β`.
+-/
+def EventuallySmallDAGSolverSurface (F : GapSliceFamily) : Prop :=
+  ∃ SizeBound : Nat → Rat → Rat → Nat → Prop,
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ β : Rat, 0 < β → β < β0 →
+          ∃ n0 : Nat, ∀ n ≥ n0, SmallDAGSolver F SizeBound n β ε
+
+/--
+Bridge theorem (strict-witness family form):
+`EventuallyInPpolyDAGWitnessFamily` implies the eventual `SmallDAGSolver`
+surface.
+
+Implementation note:
+`SizeBound := True` is intentional in this bridge layer.  The goal here is
+quantifier plumbing from witness families to solver existence; quantitative
+size refinements can be layered later without changing the asymptotic shape.
+-/
+theorem eventuallySmallDAGSolverSurface_of_eventuallyInPpolyDAGWitnessFamily
+    (F : GapSliceFamily)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hWitness : EventuallyInPpolyDAGWitnessFamily F β0) :
+    EventuallySmallDAGSolverSurface F := by
+  refine ⟨fun _n _β _ε _s => True, ε, hε, β0, hβ0, ?_⟩
+  intro β hβpos hβlt
+  rcases hWitness β hβpos hβlt with ⟨n0, hn0⟩
+  refine ⟨n0, ?_⟩
+  intro n hn
+  let w : ComplexityInterfaces.InPpolyDAG
+      (gapPartialMCSP_Language (F.paramsOf n β)) := hn0 n hn
+  refine ⟨w.family (GapSliceFamily.encodedLen F n β), trivial, ?_⟩
+  constructor
+  · intro x hxYes
+    have hxLang :
+        gapPartialMCSP_Language (F.paramsOf n β)
+            (GapSliceFamily.encodedLen F n β) x = true := by
+      simpa [gapSliceOfParams] using hxYes
+    exact (w.correct (GapSliceFamily.encodedLen F n β) x).trans hxLang
+  · intro x hxNo
+    have hxLang :
+        gapPartialMCSP_Language (F.paramsOf n β)
+            (GapSliceFamily.encodedLen F n β) x = false := by
+      simpa [gapSliceOfParams] using hxNo
+    exact (w.correct (GapSliceFamily.encodedLen F n β) x).trans hxLang
+
+/--
+Bridge theorem (proposition-level family form):
+`EventuallyPpolyDAGWitnessFamily` implies the eventual `SmallDAGSolver`
+surface by extracting strict witnesses pointwise via `Classical.choose`.
+-/
+theorem eventuallySmallDAGSolverSurface_of_eventuallyPpolyDAGWitnessFamily
+    (F : GapSliceFamily)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hWitness : EventuallyPpolyDAGWitnessFamily F β0) :
+    EventuallySmallDAGSolverSurface F := by
+  classical
+  refine eventuallySmallDAGSolverSurface_of_eventuallyInPpolyDAGWitnessFamily
+    (F := F) (ε := ε) (β0 := β0) hε hβ0 ?_
+  intro β hβpos hβlt
+  let hExists :
+      ∃ n0 : Nat, ∀ n ≥ n0,
+        ComplexityInterfaces.PpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)) :=
+    hWitness β hβpos hβlt
+  let n0 : Nat := Classical.choose hExists
+  let hn0 :
+      ∀ n ≥ n0, ComplexityInterfaces.PpolyDAG
+        (gapPartialMCSP_Language (F.paramsOf n β)) :=
+    Classical.choose_spec hExists
+  refine ⟨n0, ?_⟩
+  intro n hn
+  exact Classical.choose (hn0 n hn)
+
+/--
+Bridge package connecting one global asymptotic language `L` to all concrete
+slice languages of a fixed family `F`.
+
+This is the missing "single-global witness packaging" interface: if a theorem
+is proved for one global `L`, this structure records the extensional equality
+needed to transport that witness to each `(n,β)` slice language.
+-/
+structure AsymptoticDAGLanguageBridge (F : GapSliceFamily) : Type where
+  L : Language
+  sliceEq :
+    ∀ n : Nat, ∀ β : Rat, ∀ N : Nat, ∀ x : Bitstring N,
+      L N x = gapPartialMCSP_Language (F.paramsOf n β) N x
+
+/--
+Single-global-witness transport:
+from `PpolyDAG` on one global language `bridge.L` to `PpolyDAG` on every slice
+language of `F`.
+
+No asymptotic cutoff is needed here: transport is pointwise and exact for all
+`(n,β)` by `bridge.sliceEq`.
+-/
+theorem ppolyDAGOnSlices_of_globalWitness
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hDagGlobal : ComplexityInterfaces.PpolyDAG bridge.L) :
+    ∀ n : Nat, ∀ β : Rat,
+      ComplexityInterfaces.PpolyDAG
+        (gapPartialMCSP_Language (F.paramsOf n β)) := by
+  rcases hDagGlobal with ⟨w, -⟩
+  intro n β
+  refine ⟨{ polyBound := w.polyBound
+            polyBound_poly := w.polyBound_poly
+            family := w.family
+            family_size_le := w.family_size_le
+            correct := ?_ }, trivial⟩
+  intro N x
+  have hEvalGlobal : DagCircuit.eval (w.family N) x = bridge.L N x := w.correct N x
+  have hSlice :
+      bridge.L N x =
+        gapPartialMCSP_Language (F.paramsOf n β) N x := by
+    exact bridge.sliceEq n β N x
+  exact hEvalGlobal.trans hSlice
+
+/--
+Global-to-eventual bridge in one theorem:
+`PpolyDAG bridge.L` gives the eventual `SmallDAGSolver` surface.
+
+This theorem is intentionally phrased with explicit `(ε,β0)` parameters so it
+matches the quantifier front used by magnification-style endpoint wrappers.
+Since the transported slice witnesses hold for all `n`, the eventual cutoff can
+be chosen as `n0 = 0`.
+-/
+theorem eventuallySmallDAGSolverSurface_of_globalPpolyDAGWitness
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (ε β0 : Rat)
+    (hε : 0 < ε)
+    (hβ0 : 0 < β0)
+    (hDagGlobal : ComplexityInterfaces.PpolyDAG bridge.L) :
+    EventuallySmallDAGSolverSurface F := by
+  have hSlices :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.PpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)) :=
+    ppolyDAGOnSlices_of_globalWitness F bridge hDagGlobal
+  refine eventuallySmallDAGSolverSurface_of_eventuallyPpolyDAGWitnessFamily
+    (F := F) (ε := ε) (β0 := β0) hε hβ0 ?_
+  intro β hβpos hβlt
+  refine ⟨0, ?_⟩
+  intro n _hn
+  exact hSlices n β
+
+/--
+Global contradiction schema for the new bridge layer.
+
+Assume we have a *uniform no-small-solver barrier* for every canonical
+size-bound family produced by strict slice witnesses. Then any global
+`PpolyDAG` witness on `bridge.L` is impossible.
+
+This theorem is intentionally bridge-centric and still independent of the final
+`NP_not_subset_PpolyDAG` endpoint. It isolates the core contradiction step:
+
+`global DAG witness` + `magnification-style no-small-solver` -> `False`.
+-/
+theorem not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hNoSmall :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  intro hDagGlobal
+  have hSlices :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.PpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)) :=
+    ppolyDAGOnSlices_of_globalWitness F bridge hDagGlobal
+  let hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)) :=
+    inPpolyDAGFamilyOnSlices_of_PpolyDAG F hSlices
+  have hBarrier :
+      ∃ ε : Rat, 0 < ε ∧
+        ∃ β0 : Rat, 0 < β0 ∧
+          ∀ β : Rat, 0 < β → β < β0 →
+            ∃ n0 : Nat, ∀ n ≥ n0,
+              ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε :=
+    hNoSmall hInDag
+  rcases hBarrier with ⟨ε, hε, β0, hβ0, hEventuallyNo⟩
+  -- Choose a concrete β strictly inside the magnification window.
+  let β : Rat := β0 / 2
+  have hβpos : 0 < β := by
+    dsimp [β]
+    nlinarith [hβ0]
+  have hβlt : β < β0 := by
+    dsimp [β]
+    nlinarith [hβ0]
+  rcases hEventuallyNo β hβpos hβlt with ⟨n0, hnNo⟩
+  have hSolverAtN0 :
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n0 β ε :=
+    smallDAGSolver_of_inPpolyDAGFamilyOnSlices F hInDag n0 β ε
+  exact (hnNo n0 (le_rfl)) hSolverAtN0
+
 /-- Single-slice composition: Layer A + Layer B imply no correct DAG solver. -/
 theorem no_dag_solver_of_two_layer
     (F : GapSliceFamily)
@@ -449,6 +786,127 @@ theorem no_dag_solver_of_promise_yes_subcube
     ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
   intro n β ε
   exact no_dag_solver_of_promise_yes_subcube_at F SizeBound n β ε (hYes n β ε)
+
+/--
+Helper: convert a pointwise no-small-solver statement into the explicit
+magnification quantifier shape used by
+`not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies`.
+
+This keeps the canonical contradiction theorem generic while allowing concrete
+weak-route source theorems to plug in without restating quantifier plumbing.
+-/
+theorem noSmallQuantifierShape_of_pointwiseNoSmall
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hNo : ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε) :
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ β : Rat, 0 < β → β < β0 →
+          ∃ n0 : Nat, ∀ n ≥ n0, ¬ SmallDAGSolver F SizeBound n β ε := by
+  refine ⟨1, by norm_num, 1, by norm_num, ?_⟩
+  intro β _hβpos _hβlt
+  refine ⟨0, ?_⟩
+  intro n _hn
+  exact hNo n β 1
+
+/--
+Concrete bridge-local contradiction instantiated with the weak accepted-family
+source theorem.
+
+If the accepted-family weak route is available for every canonical witness
+size-bound family, then the bridged global language is not in `PpolyDAG`.
+-/
+theorem not_globalPpolyDAG_of_acceptedFamilyWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hAcceptedWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      (F := F) (bridge := bridge) ?_
+  intro hInDag
+  have hNoPointwise :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε :=
+    no_dag_solver_of_acceptedFamily
+      F (ppolyDAGSizeBoundOnSlices F hInDag) (hAcceptedWeak hInDag)
+  exact
+    noSmallQuantifierShape_of_pointwiseNoSmall
+      F (ppolyDAGSizeBoundOnSlices F hInDag) hNoPointwise
+
+/--
+Concrete bridge-local contradiction instantiated with the nearer-term one-sided
+promise-YES source theorem.
+-/
+theorem not_globalPpolyDAG_of_promiseYesWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesPromiseYesSubcubeStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      (F := F) (bridge := bridge) ?_
+  intro hInDag
+  have hNoPointwise :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε :=
+    no_dag_solver_of_promise_yes_subcube
+      F (ppolyDAGSizeBoundOnSlices F hInDag) (hYesWeak hInDag)
+  exact
+    noSmallQuantifierShape_of_pointwiseNoSmall
+      F (ppolyDAGSizeBoundOnSlices F hInDag) hNoPointwise
+
+/--
+Class-level closure from the weak accepted-family source theorem to
+`NP_not_subset_PpolyDAG`, parameterized by an explicit NP witness for
+`bridge.L`.
+-/
+theorem NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hAcceptedWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact not_globalPpolyDAG_of_acceptedFamilyWeakRoute F bridge hAcceptedWeak
+
+/--
+Class-level closure from the one-sided promise-YES weak source theorem to
+`NP_not_subset_PpolyDAG`, parameterized by an explicit NP witness for
+`bridge.L`.
+-/
+theorem NP_not_subset_PpolyDAG_of_promiseYesWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesPromiseYesSubcubeStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact not_globalPpolyDAG_of_promiseYesWeakRoute F bridge hYesWeak
 
 /--
 Primary endpoint schema (magnification-style quantifiers):

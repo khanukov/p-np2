@@ -982,6 +982,61 @@ abbrev promiseValueLocalityPackageAtProviderOnSlices
       PromiseValueLocalityPackageAt W
 
 /--
+Arithmetic-only target budget for Q2-style counting slack.
+
+`requiredComplementBudget p` is the **least** natural number `b` such that
+`circuitCountBound p.n (p.sNO - 1) < 2^b`.
+
+Why this helps:
+* semantic arguments only need to produce lower bounds on `tableLen - |S|`;
+* counting arithmetic is centralized in one reusable threshold;
+* "enough complement" becomes a concrete inequality target:
+  `requiredComplementBudget p ≤ tableLen - |S|`.
+-/
+theorem exists_countingSlack_budget (p : GapPartialMCSPParams) :
+    ∃ b : Nat, Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ b := by
+  let c := Models.circuitCountBound p.n (p.sNO - 1)
+  refine ⟨c + 1, ?_⟩
+  have hbase : c < 2 ^ c := by
+    simpa using (Nat.lt_two_pow_self (n := c))
+  have hmono : 2 ^ c ≤ 2 ^ (c + 1) := by
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) (Nat.le_succ c)
+  exact lt_of_lt_of_le hbase hmono
+
+/--
+Least complement budget sufficient for counting slack.
+-/
+noncomputable def requiredComplementBudget (p : GapPartialMCSPParams) : Nat :=
+  Nat.find (exists_countingSlack_budget p)
+
+/--
+By construction, `requiredComplementBudget p` already satisfies the counting
+inequality.
+-/
+theorem countingSlack_at_requiredComplementBudget (p : GapPartialMCSPParams) :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
+  Nat.find_spec (exists_countingSlack_budget p)
+
+/--
+Generic arithmetic bridge: any complement budget at least the required threshold
+implies counting slack.
+
+This theorem is intentionally semantic-agnostic: it only talks about cardinal
+arithmetic (`tableLen - |S|`) and the precomputed threshold.
+-/
+theorem countingSlack_of_complementBudget_ge
+    {p : GapPartialMCSPParams}
+    (S : ValueCoordinateSet p)
+    (hBudget : requiredComplementBudget p ≤ Models.Partial.tableLen p.n - S.card) :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ (Models.Partial.tableLen p.n - S.card) := by
+  have hReq : Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
+    countingSlack_at_requiredComplementBudget p
+  have hMono :
+      2 ^ requiredComplementBudget p ≤ 2 ^ (Models.Partial.tableLen p.n - S.card) :=
+    Nat.pow_le_pow_right (by decide : 0 < 2) hBudget
+  exact lt_of_lt_of_le hReq hMono
+
+/--
 If the stronger encoded-coordinate restriction package happens to keep only
 semantic value positions alive, then it already yields the weaker
 promise/value locality package on the induced semantic coordinate set.
@@ -1034,6 +1089,29 @@ noncomputable def promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPack
     exact hAgree j (by simp [S, hi])
 
 /--
+Restricted-model quantitative foothold (value-supported alive set):
+the induced semantic set from the strong restriction package already has
+enough complement budget for the arithmetic threshold
+`requiredComplementBudget p`.
+-/
+theorem requiredComplementBudget_le_of_dagStableRestrictionSlackPackageAt_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : DAGStableRestrictionSlackPackageAt W)
+    (hValueAlive :
+      ∀ i ∈ cert.r.alive,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    requiredComplementBudget p ≤
+      Models.Partial.tableLen p.n -
+        (promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPackageAt_valueSupported
+          cert hValueAlive).S.card := by
+  exact Nat.find_min' (exists_countingSlack_budget p)
+    (promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPackageAt_valueSupported
+      cert hValueAlive).hSlack
+
+/--
 Restricted-model weak-route foothold: if the DAG output support is both
 value-supported and at most half the truth-table length, then it already
 yields the promise/value locality package.
@@ -1082,6 +1160,29 @@ noncomputable def promiseValueLocalityPackageAt_of_supportHalfBound_valueSupport
     intro i hi
     obtain ⟨j, rfl⟩ := hValueSupport i hi
     exact hAgree j (by simp [S, hi])
+
+/--
+Restricted-model quantitative foothold (support-half + value-supported):
+the semantic set produced by this route already satisfies the stronger target
+`requiredComplementBudget p ≤ tableLen - |S|`.
+-/
+theorem requiredComplementBudget_le_of_supportHalfBound_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε)
+    (hSupportHalf :
+      (DagCircuit.support W.C).card ≤ Models.Partial.tableLen p.n / 2)
+    (hValueSupport :
+      ∀ i ∈ DagCircuit.support W.C,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    requiredComplementBudget p ≤
+      Models.Partial.tableLen p.n -
+        (promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported
+          W hSupportHalf hValueSupport).S.card := by
+  exact Nat.find_min' (exists_countingSlack_budget p)
+    (promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported
+      W hSupportHalf hValueSupport).hSlack
 
 /--
 Primary weak-route consumer at one fixed slice witness.
@@ -1518,6 +1619,23 @@ structure PromiseYesAcceptanceInvariantAt
         DagCircuit.eval W.C z = true
 
 /--
+Branch-A strengthening target for Q1:
+
+`PromiseYesAcceptanceInvariantAt` plus an explicit nontriviality witness
+`S ≠ Finset.univ`.
+
+This is the exact formal shape needed to avoid the strict-Q1 full-set collapse
+diagnosed by `no_sameSetSlack_of_strictDAGSemantics`.
+-/
+structure PromiseYesAcceptanceInvariantAtNontrivialS
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) where
+  inv : PromiseYesAcceptanceInvariantAt W
+  hS_nontrivial : inv.S ≠ Finset.univ
+
+/--
 One-sided YES-centered promise/value source certificate.
 
 This is the closest theorem target to the current counting contradiction:
@@ -1577,6 +1695,80 @@ def promiseYesSubcubeCertificateAt_of_acceptanceInvariant
   hAccept := inv.hAccept
 
 /--
+Arithmetic-to-Q2 compiler at fixed witness:
+if the semantic invariant `inv` already has enough complement budget with
+respect to `requiredComplementBudget p`, then counting slack on the same `S`
+follows automatically.
+-/
+theorem slack_on_acceptanceInvariant_of_requiredComplementBudget
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (inv : PromiseYesAcceptanceInvariantAt W)
+    (hBudget :
+      requiredComplementBudget p ≤ Models.Partial.tableLen p.n - inv.S.card) :
+    Models.circuitCountBound p.n (p.sNO - 1) <
+      2 ^ (Models.Partial.tableLen p.n - inv.S.card) :=
+  countingSlack_of_complementBudget_ge inv.S hBudget
+
+/--
+Compile semantic Q1 + required-budget inequality directly to the operational
+promise-YES certificate.
+-/
+def promiseYesSubcubeCertificateAt_of_acceptanceInvariant_and_requiredComplementBudget
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (inv : PromiseYesAcceptanceInvariantAt W)
+    (hBudget :
+      requiredComplementBudget p ≤ Models.Partial.tableLen p.n - inv.S.card) :
+    PromiseYesSubcubeCertificateAt W :=
+  promiseYesSubcubeCertificateAt_of_acceptanceInvariant
+    (W := W)
+    inv
+    (slack_on_acceptanceInvariant_of_requiredComplementBudget inv hBudget)
+
+/--
+Split form of the current mainline source objective at one witness:
+
+1. semantic one-sided YES-centered forcing (`inv`);
+2. quantitative slack on the **same** semantic coordinate set (`hSlackOnInvS`).
+
+This packages the Q1/Q2 theorem-sprint decomposition explicitly in the API so
+source-side proofs can target each half independently and still compose
+mechanically to `PromiseYesSubcubeCertificateAt`.
+-/
+structure PromiseYesSourceDecompositionAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) where
+  /-- Semantic one-sided forcing component (Q1 target). -/
+  inv : PromiseYesAcceptanceInvariantAt W
+  /-- Quantitative slack on the same semantic coordinates (Q2 target). -/
+  hSlackOnInvS :
+    Models.circuitCountBound p.n (p.sNO - 1) <
+      2 ^ (Models.Partial.tableLen p.n - inv.S.card)
+
+/--
+Mechanical compilation from the split Q1/Q2 source package to the operational
+promise-YES weak-route certificate used by counting closure.
+-/
+def promiseYesSubcubeCertificateAt_of_sourceDecomposition
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (src : PromiseYesSourceDecompositionAt W) :
+    PromiseYesSubcubeCertificateAt W :=
+  promiseYesSubcubeCertificateAt_of_acceptanceInvariant
+    (W := W)
+    src.inv
+    src.hSlackOnInvS
+
+/--
 Forget the slack field of a promise-aware YES-centered weak-route certificate,
 leaving just the semantic invariant.
 -/
@@ -1592,6 +1784,111 @@ def promiseYesAcceptanceInvariantAt_of_promiseYesSubcubeCertificateAt
   hValidYes := cert.hValidYes
   S := cert.S
   hAccept := cert.hAccept
+
+/--
+Slice-family provider for semantic one-sided YES-centered forcing certificates
+(Q1-level provider target).
+-/
+abbrev promiseYesAcceptanceInvariantAtProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      PromiseYesAcceptanceInvariantAt W
+
+/--
+Branch-A provider target: semantic acceptance invariants with an explicit
+nontrivial coordinate set (`S ≠ Finset.univ`) on every slice witness.
+-/
+abbrev promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      PromiseYesAcceptanceInvariantAtNontrivialS W
+
+/--
+Strict DAG-semantics Q1 provider on slices.
+
+Family-level lift of `promiseYesAcceptanceInvariantAt_of_strictDAGSemantics`:
+no additional source-side package assumptions are required beyond the witness
+semantics already carried by `SmallDAGWitnessOnSlice`.
+-/
+def promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound := by
+  intro n β ε W
+  let cert : PromiseYesDecisionCertificateAt W :=
+    promiseYesDecisionCertificateAt_fullValueCoordinates W
+  refine
+    { yYes := cert.yYes
+      hYes := cert.hYes
+      hValidYes := cert.hValidYes
+      S := cert.S
+      hAccept := ?_ }
+  intro z hzPromise hzValid hAgree
+  have hEq : DagCircuit.eval W.C z = DagCircuit.eval W.C cert.yYes :=
+    cert.hDecide z hzPromise hzValid hAgree
+  have hYesEval : DagCircuit.eval W.C cert.yYes = true :=
+    W.hCorrect.1 cert.yYes (by simpa [gapSliceOfParams] using cert.hYes)
+  exact hEq.trans hYesEval
+
+/--
+Slice-family provider for quantitative slack on the same semantic coordinate set
+produced by a semantic provider (Q2-level provider target).
+-/
+abbrev promiseYesSlackOnInvariantProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) <
+        2 ^ (Models.Partial.tableLen (F.paramsOf n β).n - (hInv n β ε W).S.card)
+
+/--
+Provider-level quantitative target in threshold form:
+the semantic provider's coordinate set has complement budget at least
+`requiredComplementBudget` on each witness.
+-/
+abbrev promiseYesRequiredBudgetOnInvariantProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      requiredComplementBudget (F.paramsOf n β) ≤
+        Models.Partial.tableLen (F.paramsOf n β).n - (hInv n β ε W).S.card
+
+/--
+Arithmetic compiler from threshold-budget provider to same-set slack provider.
+-/
+theorem promiseYesSlackOnInvariantProviderOnSlices_of_requiredBudgetProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hBudget : promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound hInv) :
+    promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv := by
+  intro n β ε W
+  exact countingSlack_of_complementBudget_ge (hInv n β ε W).S (hBudget n β ε W)
+
+/--
+Compile separate semantic and quantitative source providers into the existing
+provider surface `promiseYesSubcubeCertificateAtProviderOnSlices`.
+-/
+def promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hSlack : promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+        PromiseYesSubcubeCertificateAt W := by
+  intro n β ε W
+  exact promiseYesSubcubeCertificateAt_of_sourceDecomposition
+    { inv := hInv n β ε W
+      hSlackOnInvS := hSlack n β ε W }
 
 /--
 The existing pairwise promise/value locality package already yields the more
@@ -1658,6 +1955,111 @@ def promiseYesAcceptanceInvariantAt_of_decisionCertificate
   exact hEq.trans hYesEval
 
 /--
+Strict DAG-semantics Q1 closure at one witness.
+
+From only a correct small-DAG witness on one slice, we can construct the
+acceptance-only invariant `PromiseYesAcceptanceInvariantAt`.
+
+This closes the semantic-existence target (N1/Q1).  The construction is
+intentionally semantic-only and uses the full value-coordinate set via
+`promiseYesDecisionCertificateAt_fullValueCoordinates`; quantitative small-set
+slack remains a separate N2/Q2 task.
+-/
+def promiseYesAcceptanceInvariantAt_of_strictDAGSemantics
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    PromiseYesAcceptanceInvariantAt W := by
+  exact promiseYesAcceptanceInvariantAt_of_decisionCertificate
+    (promiseYesDecisionCertificateAt_fullValueCoordinates W)
+
+/--
+Arithmetic helper: for valid gap parameters, the counting upper bound at
+threshold `sNO - 1` is at least `2`.
+
+This is used to make the N2 status precise for the current strict-semantics Q1
+construction: with `S = Finset.univ`, the slack RHS is exactly `1`, so the
+required strict inequality cannot hold.
+-/
+theorem circuitCountBound_two_le_of_gapParams
+    (p : GapPartialMCSPParams) :
+    2 ≤ Models.circuitCountBound p.n (p.sNO - 1) := by
+  have hsYES1 : 2 ≤ p.sYES + 1 := by
+    exact Nat.succ_le_succ p.sYES_pos
+  have hsNO2 : 2 ≤ p.sNO := le_trans hsYES1 p.gap_ok
+  have hsPredPos : 0 < p.sNO - 1 := Nat.sub_pos_of_lt (lt_of_lt_of_le (by decide : 1 < 2) hsNO2)
+  rcases Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hsPredPos) with ⟨k, hk⟩
+  rw [hk, Models.circuitCountBound]
+  -- `f (k+1) = A + 2` for a nonnegative `A`.
+  exact Nat.le_add_left 2 (2 * (Models.circuitCountBound p.n k) ^ 2 + 2 * Models.circuitCountBound p.n k + p.n)
+
+/--
+For the strict-semantics Q1 invariant, the chosen semantic coordinate set is
+exactly the full value-coordinate set.
+-/
+private lemma strictDAGSemantics_S_eq_univ_private
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S = Finset.univ := by
+  rfl
+
+/--
+Public Branch-A diagnostic: the current strict-Q1 constructor always chooses
+`S = Finset.univ`.
+-/
+theorem strictDAGSemantics_S_eq_univ
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S = Finset.univ := by
+  exact strictDAGSemantics_S_eq_univ_private W
+
+/--
+Corollary: the strict-Q1 constructor cannot satisfy a nontrivial-set predicate
+on its own semantic coordinate set.
+-/
+theorem strictDAGSemantics_nontrivialS_false
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    ((promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S ≠ Finset.univ) → False := by
+  intro hNontrivial
+  exact hNontrivial (strictDAGSemantics_S_eq_univ W)
+
+/--
+N2 impossibility theorem for the current strict-semantics Q1 construction.
+
+The semantic invariant from `promiseYesAcceptanceInvariantAt_of_strictDAGSemantics`
+uses `S = Finset.univ`, so the quantitative RHS becomes `2^0 = 1`.  But
+`circuitCountBound p.n (p.sNO - 1) ≥ 2` for valid gap parameters, hence strict
+slack cannot hold on this same set.
+-/
+theorem no_sameSetSlack_of_strictDAGSemantics
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    ¬ Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Models.Partial.tableLen p.n - (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card) := by
+  have hS : (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card =
+      Models.Partial.tableLen p.n := by
+    simpa [strictDAGSemantics_S_eq_univ_private W]
+  have hRhs : 2 ^ (Models.Partial.tableLen p.n -
+      (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card) = 1 := by
+    simpa [hS]
+  intro hSlack
+  have hge2 : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
+    circuitCountBound_two_le_of_gapParams p
+  have hlt1 : Models.circuitCountBound p.n (p.sNO - 1) < 1 := by
+    simpa [hRhs] using hSlack
+  exact Nat.not_lt_of_ge (le_trans (by decide : 1 ≤ 2) hge2) hlt1
+
+/--
 Operational quantitative form of the current weak-route blocker.
 
 If a YES-centered decision certificate comes with a counting-slack bound on the
@@ -1679,6 +2081,24 @@ def promiseYesSubcubeCertificateAt_of_decisionCertificate
     hSlack
 
 /--
+Package the decision-certificate route directly in the split Q1/Q2 form:
+semantic forcing plus slack on the same `S`.
+-/
+def promiseYesSourceDecompositionAt_of_decisionCertificate
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseYesDecisionCertificateAt W)
+    (hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Models.Partial.tableLen p.n - cert.S.card)) :
+    PromiseYesSourceDecompositionAt W where
+  inv := promiseYesAcceptanceInvariantAt_of_decisionCertificate cert
+  hSlackOnInvS := by
+    simpa [promiseYesAcceptanceInvariantAt_of_decisionCertificate] using hSlack
+
+/--
 The existing pairwise promise/value locality package already yields the
 acceptance-only semantic invariant via the more operational YES-decision
 certificate.
@@ -1692,6 +2112,175 @@ noncomputable def promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackage
     PromiseYesAcceptanceInvariantAt W := by
   exact promiseYesAcceptanceInvariantAt_of_decisionCertificate
     (promiseYesDecisionCertificateAt_of_promiseValueLocalityPackageAt cert)
+
+/--
+Any promise/value package already forces the underlying semantic coordinate set
+to be non-full.
+
+Reason: `hSlack` would become `circuitCountBound ... < 1` at `S = Finset.univ`,
+while `circuitCountBound_two_le_of_gapParams` gives a lower bound `≥ 2`.
+-/
+theorem nontrivialS_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    cert.S ≠ Finset.univ := by
+  intro hUniv
+  have hSCard : cert.S.card = Models.Partial.tableLen p.n := by
+    simpa [hUniv]
+  have hRhs : 2 ^ (Models.Partial.tableLen p.n - cert.S.card) = 1 := by
+    simpa [hSCard]
+  have hlt1 : Models.circuitCountBound p.n (p.sNO - 1) < 1 := by
+    simpa [hRhs] using cert.hSlack
+  have hge2 : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
+    circuitCountBound_two_le_of_gapParams p
+  exact Nat.not_lt_of_ge (le_trans (by decide : 1 ≤ 2) hge2) hlt1
+
+/--
+From any package witness we can extract the genuinely useful quantitative target:
+the complement budget is at least `requiredComplementBudget p`.
+-/
+theorem requiredComplementBudget_le_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    requiredComplementBudget p ≤ Models.Partial.tableLen p.n - cert.S.card := by
+  exact Nat.find_min' (exists_countingSlack_budget p) cert.hSlack
+
+/--
+Branch-C quantitative strengthening: package-route slack already implies that
+the complement of `S` is nonempty.
+
+This is stronger than `S ≠ Finset.univ` and is directly aligned with future Q2
+goals (a positive complement budget).
+-/
+theorem complementPos_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    0 < Models.Partial.tableLen p.n - cert.S.card := by
+  have hge2 : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
+    circuitCountBound_two_le_of_gapParams p
+  have hPowGt1 : 1 < 2 ^ (Models.Partial.tableLen p.n - cert.S.card) := by
+    have hCountGt1 : 1 < Models.circuitCountBound p.n (p.sNO - 1) :=
+      lt_of_lt_of_le (by decide : 1 < 2) hge2
+    exact lt_trans hCountGt1 cert.hSlack
+  by_contra hNotPos
+  have hZero : Models.Partial.tableLen p.n - cert.S.card = 0 :=
+    Nat.eq_zero_of_not_pos hNotPos
+  have hNotPowGt1 : ¬ 1 < 2 ^ (Models.Partial.tableLen p.n - cert.S.card) := by
+    simpa [hZero]
+  exact hNotPowGt1 hPowGt1
+
+/--
+Equivalent cardinal form of `complementPos_of_promiseValueLocalityPackageAt`:
+the semantic set is strictly smaller than the full value-coordinate space.
+-/
+theorem scard_lt_tableLen_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    cert.S.card < Models.Partial.tableLen p.n := by
+  by_contra hNotLt
+  have hLe : Models.Partial.tableLen p.n ≤ cert.S.card := le_of_not_gt hNotLt
+  have hZero : Models.Partial.tableLen p.n - cert.S.card = 0 := Nat.sub_eq_zero_of_le hLe
+  have hPos : 0 < Models.Partial.tableLen p.n - cert.S.card :=
+    complementPos_of_promiseValueLocalityPackageAt cert
+  exact (Nat.lt_irrefl 0) (hZero ▸ hPos)
+
+/--
+Provider-level quantitative Branch-C probe:
+every witness produced by the package provider has positive complement budget.
+-/
+abbrev promiseValueComplementPosProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      0 < Models.Partial.tableLen (F.paramsOf n β).n - (hPkg n β ε W).S.card
+
+/--
+The package provider automatically satisfies the quantitative Branch-C probe.
+-/
+theorem promiseValueComplementPosProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseValueComplementPosProviderOnSlices F SizeBound hPkg := by
+  intro n β ε W
+  exact complementPos_of_promiseValueLocalityPackageAt (hPkg n β ε W)
+
+/--
+Provider-level quantitative target for "enough complement":
+every produced witness has complement budget at least the required threshold.
+-/
+abbrev promiseValueRequiredBudgetProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      requiredComplementBudget (F.paramsOf n β) ≤
+        Models.Partial.tableLen (F.paramsOf n β).n - (hPkg n β ε W).S.card
+
+/--
+The package provider automatically satisfies the stronger required-budget target.
+-/
+theorem promiseValueRequiredBudgetProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseValueRequiredBudgetProviderOnSlices F SizeBound hPkg := by
+  intro n β ε W
+  exact requiredComplementBudget_le_of_promiseValueLocalityPackageAt (hPkg n β ε W)
+
+/--
+Branch-C constructive bridge:
+
+from a promise/value package we can produce not only Q1 semantic acceptance, but
+also a witness that the semantic set is nontrivial (`S ≠ Finset.univ`).
+-/
+noncomputable def promiseYesAcceptanceInvariantAtNontrivialS_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    PromiseYesAcceptanceInvariantAtNontrivialS W := by
+  refine
+    { inv := promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt cert
+      hS_nontrivial := ?_ }
+  intro hInvUniv
+  have hCertUniv : cert.S = Finset.univ := by
+    simpa [promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt,
+      promiseYesAcceptanceInvariantAt_of_decisionCertificate,
+      promiseYesDecisionCertificateAt_of_promiseValueLocalityPackageAt] using hInvUniv
+  exact nontrivialS_of_promiseValueLocalityPackageAt cert hCertUniv
+
+/--
+Provider-level Branch-C bridge:
+
+`promiseValueLocalityPackageAtProviderOnSlices` already implies
+`promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices`.
+-/
+noncomputable def
+    promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact promiseYesAcceptanceInvariantAtNontrivialS_of_promiseValueLocalityPackageAt
+    (hPkg n β ε W)
 
 /--
 Any pairwise promise/value locality package already yields the weaker
@@ -1711,6 +2300,21 @@ noncomputable def promiseYesSubcubeCertificateAt_of_promiseValueLocalityPackageA
   let inv : PromiseYesAcceptanceInvariantAt W :=
     promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt cert
   exact promiseYesSubcubeCertificateAt_of_acceptanceInvariant inv cert.hSlack
+
+/--
+Package the pairwise promise/value route directly in the split Q1/Q2 form.
+-/
+noncomputable def promiseYesSourceDecompositionAt_of_promiseValueLocalityPackageAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : PromiseValueLocalityPackageAt W) :
+    PromiseYesSourceDecompositionAt W := by
+  refine
+    { inv := promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt cert
+      hSlackOnInvS := ?_ }
+  simpa [promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt] using cert.hSlack
 
 /--
 Value-supported encoded-coordinate restriction packages already imply the
@@ -1809,6 +2413,49 @@ abbrev promiseYesSubcubeCertificateAtProviderOnSlices
       PromiseYesSubcubeCertificateAt W
 
 /--
+Provider reduction: pairwise promise/value packages already supply the semantic
+Q1 half (`PromiseYesAcceptanceInvariantAt`) on every slice.
+-/
+noncomputable def promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt (hPkg n β ε W)
+
+/--
+Provider reduction: pairwise promise/value packages also supply the Q2 half,
+namely counting slack on the same semantic set chosen by the Q1 provider above.
+-/
+theorem promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesSlackOnInvariantProviderOnSlices
+      F SizeBound
+      (promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+        F SizeBound hPkg) := by
+  intro n β ε W
+  simpa [promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider,
+    promiseYesAcceptanceInvariantAt_of_promiseValueLocalityPackageAt] using (hPkg n β ε W).hSlack
+
+/--
+Provider reduction from pairwise promise/value packages to the split Q1/Q2 API.
+-/
+noncomputable def promiseYesSubcubeCertificateAtProviderOnSlices_of_promiseValueLocalityPackageProvider_viaSemanticAndSlack
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound :=
+  promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+    F SizeBound
+    (promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+    (promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+
+/--
 Provider-level reduction from the existing pairwise promise/value package route
 to the weaker promise-aware YES-centered route.
 -/
@@ -1838,6 +2485,25 @@ theorem noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices
   exact no_small_dag_solver_of_promiseYesSubcubeCertificateAt W (hCert n β ε W)
 
 /--
+Compiled closure from the explicit Q1/Q2 split provider interface:
+
+1. semantic one-sided forcing provider (`hInv`);
+2. quantitative slack-on-the-same-`S` provider (`hSlack`).
+
+This theorem is the direct provider-level counterpart of the decomposition
+package `PromiseYesSourceDecompositionAt`.
+-/
+theorem noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hSlack : promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound
+    (promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+      F SizeBound hInv hSlack)
+
+/--
 Direct closure from the existing pairwise promise/value package route through
 the nearer-term promise-aware YES-centered source theorem target.
 -/
@@ -1848,6 +2514,21 @@ theorem noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices
     ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
   exact noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound
     (promiseYesSubcubeCertificateAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+
+/--
+Same closure as `noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices`, but
+factored explicitly through the split Q1/Q2 provider interface.
+-/
+theorem noSmallDAG_of_promiseValueLocalityPackageProviderOnSlices_viaSemanticAndSlack
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPkg : promiseValueLocalityPackageAtProviderOnSlices F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices F SizeBound
+    (promiseYesAcceptanceInvariantAtProviderOnSlices_of_promiseValueLocalityPackageProvider
+      F SizeBound hPkg)
+    (promiseYesSlackOnInvariantProviderOnSlices_of_promiseValueLocalityPackageProvider
       F SizeBound hPkg)
 
 /--

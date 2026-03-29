@@ -982,6 +982,61 @@ abbrev promiseValueLocalityPackageAtProviderOnSlices
       PromiseValueLocalityPackageAt W
 
 /--
+Arithmetic-only target budget for Q2-style counting slack.
+
+`requiredComplementBudget p` is the **least** natural number `b` such that
+`circuitCountBound p.n (p.sNO - 1) < 2^b`.
+
+Why this helps:
+* semantic arguments only need to produce lower bounds on `tableLen - |S|`;
+* counting arithmetic is centralized in one reusable threshold;
+* "enough complement" becomes a concrete inequality target:
+  `requiredComplementBudget p ≤ tableLen - |S|`.
+-/
+theorem exists_countingSlack_budget (p : GapPartialMCSPParams) :
+    ∃ b : Nat, Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ b := by
+  let c := Models.circuitCountBound p.n (p.sNO - 1)
+  refine ⟨c + 1, ?_⟩
+  have hbase : c < 2 ^ c := by
+    simpa using (Nat.lt_two_pow_self (n := c))
+  have hmono : 2 ^ c ≤ 2 ^ (c + 1) := by
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) (Nat.le_succ c)
+  exact lt_of_lt_of_le hbase hmono
+
+/--
+Least complement budget sufficient for counting slack.
+-/
+noncomputable def requiredComplementBudget (p : GapPartialMCSPParams) : Nat :=
+  Nat.find (exists_countingSlack_budget p)
+
+/--
+By construction, `requiredComplementBudget p` already satisfies the counting
+inequality.
+-/
+theorem countingSlack_at_requiredComplementBudget (p : GapPartialMCSPParams) :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
+  Nat.find_spec (exists_countingSlack_budget p)
+
+/--
+Generic arithmetic bridge: any complement budget at least the required threshold
+implies counting slack.
+
+This theorem is intentionally semantic-agnostic: it only talks about cardinal
+arithmetic (`tableLen - |S|`) and the precomputed threshold.
+-/
+theorem countingSlack_of_complementBudget_ge
+    {p : GapPartialMCSPParams}
+    (S : ValueCoordinateSet p)
+    (hBudget : requiredComplementBudget p ≤ Models.Partial.tableLen p.n - S.card) :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ (Models.Partial.tableLen p.n - S.card) := by
+  have hReq : Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
+    countingSlack_at_requiredComplementBudget p
+  have hMono :
+      2 ^ requiredComplementBudget p ≤ 2 ^ (Models.Partial.tableLen p.n - S.card) :=
+    Nat.pow_le_pow_right (by decide : 0 < 2) hBudget
+  exact lt_of_lt_of_le hReq hMono
+
+/--
 If the stronger encoded-coordinate restriction package happens to keep only
 semantic value positions alive, then it already yields the weaker
 promise/value locality package on the induced semantic coordinate set.
@@ -1034,6 +1089,29 @@ noncomputable def promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPack
     exact hAgree j (by simp [S, hi])
 
 /--
+Restricted-model quantitative foothold (value-supported alive set):
+the induced semantic set from the strong restriction package already has
+enough complement budget for the arithmetic threshold
+`requiredComplementBudget p`.
+-/
+theorem requiredComplementBudget_le_of_dagStableRestrictionSlackPackageAt_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : DAGStableRestrictionSlackPackageAt W)
+    (hValueAlive :
+      ∀ i ∈ cert.r.alive,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    requiredComplementBudget p ≤
+      Models.Partial.tableLen p.n -
+        (promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPackageAt_valueSupported
+          cert hValueAlive).S.card := by
+  exact Nat.find_min' (exists_countingSlack_budget p)
+    (promiseValueLocalityPackageAt_of_dagStableRestrictionSlackPackageAt_valueSupported
+      cert hValueAlive).hSlack
+
+/--
 Restricted-model weak-route foothold: if the DAG output support is both
 value-supported and at most half the truth-table length, then it already
 yields the promise/value locality package.
@@ -1082,6 +1160,29 @@ noncomputable def promiseValueLocalityPackageAt_of_supportHalfBound_valueSupport
     intro i hi
     obtain ⟨j, rfl⟩ := hValueSupport i hi
     exact hAgree j (by simp [S, hi])
+
+/--
+Restricted-model quantitative foothold (support-half + value-supported):
+the semantic set produced by this route already satisfies the stronger target
+`requiredComplementBudget p ≤ tableLen - |S|`.
+-/
+theorem requiredComplementBudget_le_of_supportHalfBound_valueSupported
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε)
+    (hSupportHalf :
+      (DagCircuit.support W.C).card ≤ Models.Partial.tableLen p.n / 2)
+    (hValueSupport :
+      ∀ i ∈ DagCircuit.support W.C,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i) :
+    requiredComplementBudget p ≤
+      Models.Partial.tableLen p.n -
+        (promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported
+          W hSupportHalf hValueSupport).S.card := by
+  exact Nat.find_min' (exists_countingSlack_budget p)
+    (promiseValueLocalityPackageAt_of_supportHalfBound_valueSupported
+      W hSupportHalf hValueSupport).hSlack
 
 /--
 Primary weak-route consumer at one fixed slice witness.
@@ -1594,6 +1695,42 @@ def promiseYesSubcubeCertificateAt_of_acceptanceInvariant
   hAccept := inv.hAccept
 
 /--
+Arithmetic-to-Q2 compiler at fixed witness:
+if the semantic invariant `inv` already has enough complement budget with
+respect to `requiredComplementBudget p`, then counting slack on the same `S`
+follows automatically.
+-/
+theorem slack_on_acceptanceInvariant_of_requiredComplementBudget
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (inv : PromiseYesAcceptanceInvariantAt W)
+    (hBudget :
+      requiredComplementBudget p ≤ Models.Partial.tableLen p.n - inv.S.card) :
+    Models.circuitCountBound p.n (p.sNO - 1) <
+      2 ^ (Models.Partial.tableLen p.n - inv.S.card) :=
+  countingSlack_of_complementBudget_ge inv.S hBudget
+
+/--
+Compile semantic Q1 + required-budget inequality directly to the operational
+promise-YES certificate.
+-/
+def promiseYesSubcubeCertificateAt_of_acceptanceInvariant_and_requiredComplementBudget
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (inv : PromiseYesAcceptanceInvariantAt W)
+    (hBudget :
+      requiredComplementBudget p ≤ Models.Partial.tableLen p.n - inv.S.card) :
+    PromiseYesSubcubeCertificateAt W :=
+  promiseYesSubcubeCertificateAt_of_acceptanceInvariant
+    (W := W)
+    inv
+    (slack_on_acceptanceInvariant_of_requiredComplementBudget inv hBudget)
+
+/--
 Split form of the current mainline source objective at one witness:
 
 1. semantic one-sided YES-centered forcing (`inv`);
@@ -1709,6 +1846,32 @@ abbrev promiseYesSlackOnInvariantProviderOnSlices
     ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
       Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) <
         2 ^ (Models.Partial.tableLen (F.paramsOf n β).n - (hInv n β ε W).S.card)
+
+/--
+Provider-level quantitative target in threshold form:
+the semantic provider's coordinate set has complement budget at least
+`requiredComplementBudget` on each witness.
+-/
+abbrev promiseYesRequiredBudgetOnInvariantProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      requiredComplementBudget (F.paramsOf n β) ≤
+        Models.Partial.tableLen (F.paramsOf n β).n - (hInv n β ε W).S.card
+
+/--
+Arithmetic compiler from threshold-budget provider to same-set slack provider.
+-/
+theorem promiseYesSlackOnInvariantProviderOnSlices_of_requiredBudgetProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hBudget : promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound hInv) :
+    promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv := by
+  intro n β ε W
+  exact countingSlack_of_complementBudget_ge (hInv n β ε W).S (hBudget n β ε W)
 
 /--
 Compile separate semantic and quantitative source providers into the existing
@@ -1974,61 +2137,6 @@ theorem nontrivialS_of_promiseValueLocalityPackageAt
   have hge2 : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
     circuitCountBound_two_le_of_gapParams p
   exact Nat.not_lt_of_ge (le_trans (by decide : 1 ≤ 2) hge2) hlt1
-
-/--
-Arithmetic-only target budget for Q2-style counting slack.
-
-`requiredComplementBudget p` is the **least** natural number `b` such that
-`circuitCountBound p.n (p.sNO - 1) < 2^b`.
-
-Why this helps:
-* semantic arguments only need to produce lower bounds on `tableLen - |S|`;
-* counting arithmetic is centralized in one reusable threshold;
-* "enough complement" becomes a concrete inequality target:
-  `requiredComplementBudget p ≤ tableLen - |S|`.
--/
-theorem exists_countingSlack_budget (p : GapPartialMCSPParams) :
-    ∃ b : Nat, Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ b := by
-  let c := Models.circuitCountBound p.n (p.sNO - 1)
-  refine ⟨c + 1, ?_⟩
-  have hbase : c < 2 ^ c := by
-    simpa using (Nat.lt_two_pow_self (n := c))
-  have hmono : 2 ^ c ≤ 2 ^ (c + 1) := by
-    exact Nat.pow_le_pow_right (by decide : 0 < 2) (Nat.le_succ c)
-  exact lt_of_lt_of_le hbase hmono
-
-/--
-Least complement budget sufficient for counting slack.
--/
-noncomputable def requiredComplementBudget (p : GapPartialMCSPParams) : Nat :=
-  Nat.find (exists_countingSlack_budget p)
-
-/--
-By construction, `requiredComplementBudget p` already satisfies the counting
-inequality.
--/
-theorem countingSlack_at_requiredComplementBudget (p : GapPartialMCSPParams) :
-    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
-  Nat.find_spec (exists_countingSlack_budget p)
-
-/--
-Generic arithmetic bridge: any complement budget at least the required threshold
-implies counting slack.
-
-This theorem is intentionally semantic-agnostic: it only talks about cardinal
-arithmetic (`tableLen - |S|`) and the precomputed threshold.
--/
-theorem countingSlack_of_complementBudget_ge
-    {p : GapPartialMCSPParams}
-    (S : ValueCoordinateSet p)
-    (hBudget : requiredComplementBudget p ≤ Models.Partial.tableLen p.n - S.card) :
-    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ (Models.Partial.tableLen p.n - S.card) := by
-  have hReq : Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
-    countingSlack_at_requiredComplementBudget p
-  have hMono :
-      2 ^ requiredComplementBudget p ≤ 2 ^ (Models.Partial.tableLen p.n - S.card) :=
-    Nat.pow_le_pow_right (by decide : 0 < 2) hBudget
-  exact lt_of_lt_of_le hReq hMono
 
 /--
 From any package witness we can extract the genuinely useful quantitative target:

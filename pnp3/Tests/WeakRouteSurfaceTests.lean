@@ -75,6 +75,18 @@ def check_smallDAGPromiseYesSubcubeStatement_of_packageProvider :
   smallDAGPromiseYesSubcubeStatement_of_packageProvider
 
 /--
+Gate-G1 Route-B item (3) wrapper is available with the expected type:
+a DAG-native certificate provider compiles directly to the canonical
+stable-restriction goal family over `dagCanonicalPayload`.
+-/
+def check_gateG1_routeB_stableRestrictionGoal_of_certificateProvider :
+    ∀ {p : Models.GapPartialMCSPParams}
+      (_hCert : dagStableRestrictionCertificateProvider p),
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (Models.gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag) :=
+  gateG1_routeB_stableRestrictionGoal_of_certificateProvider
+
+/--
 Q1/Q2 split-provider compilation to promise-YES certificate provider is
 available with the expected type.
 -/
@@ -96,6 +108,71 @@ def check_noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices :
       promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv →
         ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
   noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices
+
+/--
+Q1 semantic provider + required-budget provider compiles directly to no-small-DAG
+with the expected type.
+-/
+def check_noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound),
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound hInv →
+        ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices
+
+/--
+Strict-semantics specialization of the required-budget closure is available with
+the expected type.
+-/
+def check_noSmallDAG_of_strictSemanticsAndRequiredBudgetProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (_hBudget :
+        promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound
+          (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+            F SizeBound)),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_of_strictSemanticsAndRequiredBudgetProviderOnSlices
+
+/--
+Canonical-surface strict-mainline blocker is available with the expected type:
+at any concrete solver index, strict required-budget provider is impossible.
+-/
+def check_not_strictRequiredBudgetProvider_onCanonicalBound_of_smallDAGSolver :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+      (n : Nat) (β ε : Rat),
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε →
+        ¬ promiseYesRequiredBudgetOnInvariantProviderOnSlices
+            F
+            (ppolyDAGSizeBoundOnSlices F hInDag)
+            (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+              F (ppolyDAGSizeBoundOnSlices F hInDag)) :=
+  not_strictRequiredBudgetProvider_onCanonicalBound_of_smallDAGSolver
+
+/--
+Pointwise contradiction wrapper for strict canonical required-budget route is
+available with expected type.
+-/
+def check_false_of_smallDAGSolver_and_strictRequiredBudgetProvider_onCanonicalBound :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+      (n : Nat) (β ε : Rat),
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε →
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices
+        F
+        (ppolyDAGSizeBoundOnSlices F hInDag)
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) →
+        False :=
+  false_of_smallDAGSolver_and_strictRequiredBudgetProvider_onCanonicalBound
 
 /--
 Package-provider -> Q1 semantic-provider reduction is available with the
@@ -131,12 +208,120 @@ def check_promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics 
   promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
 
 /--
+Route-B source constructor from a concrete strict DAG witness plus support-half
+bound is available with expected type.
+-/
+noncomputable def check_dagStableRestrictionInvariantPackage_of_inPpolyDAG_supportHalf :
+    ∀ {p : Models.GapPartialMCSPParams}
+      (w : ComplexityInterfaces.InPpolyDAG (Models.gapPartialMCSP_Language p))
+      (_hHalf :
+        (ComplexityInterfaces.DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+          Models.Partial.tableLen p.n / 2),
+      DAGStableRestrictionInvariantPackage
+        (show ComplexityInterfaces.PpolyDAG (Models.gapPartialMCSP_Language p) from ⟨w, trivial⟩) :=
+  dagStableRestrictionInvariantPackage_of_inPpolyDAG_supportHalf
+
+/--
+Route-B Task-1 reduction theorem is available with expected type:
+uniform strict-witness support-half bounds imply the invariant provider.
+-/
+noncomputable def check_dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf :
+    ∀ {p : Models.GapPartialMCSPParams}
+      (_hSupportHalf :
+        ∀ w : ComplexityInterfaces.InPpolyDAG (Models.gapPartialMCSP_Language p),
+          (ComplexityInterfaces.DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+            Models.Partial.tableLen p.n / 2),
+      dagStableRestrictionInvariantProvider p :=
+  dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf
+
+/--
 Branch-A strengthened provider target (nontrivial `S`) is exposed with the
 expected type.
 -/
 def check_promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices :
     (GapSliceFamily → (Nat → Rat → Rat → Nat → Prop) → Type) :=
   promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices
+
+/--
+Alternative positive-source route package with formula-track export hooks is
+available with the expected type.
+-/
+def check_NontrivialSAlternativeProducerRoute :
+    Type :=
+  NontrivialSAlternativeProducerRoute
+
+/--
+Projection to `FormulaSupportRestrictionBoundsPartial` is available with the
+expected type.
+-/
+def check_formulaSupportRestrictionBoundsPartial_of_nontrivialSAlternativeProducerRoute :
+    NontrivialSAlternativeProducerRoute →
+      Magnification.FormulaSupportRestrictionBoundsPartial :=
+  formulaSupportRestrictionBoundsPartial_of_nontrivialSAlternativeProducerRoute
+
+/--
+Projection to `FormulaRestrictionCertificateDataPartial` is available with the
+expected type.
+-/
+noncomputable def check_formulaRestrictionCertificateDataPartial_of_nontrivialSAlternativeProducerRoute :
+    NontrivialSAlternativeProducerRoute →
+      Magnification.FormulaRestrictionCertificateDataPartial :=
+  formulaRestrictionCertificateDataPartial_of_nontrivialSAlternativeProducerRoute
+
+/--
+First concrete inhabitant builder for the alternative route package is available
+with the expected type.
+-/
+noncomputable def check_nontrivialSAlternativeProducerRoute_of_promiseValuePackageAndSupportBounds :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.FormulaSupportRestrictionBoundsPartial →
+      NontrivialSAlternativeProducerRoute :=
+  nontrivialSAlternativeProducerRoute_of_promiseValuePackageAndSupportBounds
+
+/--
+Class-shaped export theorem to `FormulaSupportRestrictionBoundsPartial` is
+available with the expected type.
+-/
+noncomputable def check_formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.FormulaSupportRestrictionBoundsPartial →
+      Magnification.FormulaSupportRestrictionBoundsPartial :=
+  formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andSupportBounds
+
+/--
+I-2 ladder theorem from the same class-shaped source is available with the
+expected type.
+-/
+noncomputable def check_hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.FormulaSupportRestrictionBoundsPartial →
+      Magnification.hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andSupportBounds
+
+/--
+Support-bounds closure from non-full-`S` slice source plus multi-switching
+contract is available with the expected type.
+-/
+noncomputable def check_formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andMultiswitching :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract →
+      Magnification.FormulaSupportRestrictionBoundsPartial :=
+  formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andMultiswitching
+
+/--
+I-2 default structured-provider closure from the same assumptions is available
+with the expected type.
+-/
+noncomputable def check_hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andMultiswitching :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract →
+      Magnification.hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andMultiswitching
 
 /--
 Current strict-Q1 route explicitly pins `S = Finset.univ`.
@@ -457,6 +642,121 @@ def check_NP_not_subset_PpolyDAG_of_promiseYesWeakRoute :
             F (ppolyDAGSizeBoundOnSlices F hInDag)),
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_of_promiseYesWeakRoute
+
+/--
+G1 Route-A item (2) gate wrapper is available with the expected type:
+provider-family assumptions specialized to canonical `ppolyDAG` size bounds
+compile to the accepted-family source theorem schema.
+-/
+def check_gateG1_routeA2_acceptedFamily_of_providerFamily :
+    ∀ (F : GapSliceFamily)
+      (_hAccepted :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          acceptedFamilyCertificateAtProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA2_acceptedFamily_of_providerFamily
+
+/--
+G1 Route-A item (1) gate wrapper is available with the expected type:
+provider-family assumptions specialized to canonical `ppolyDAG` size bounds
+compile to the promise-YES source theorem schema.
+-/
+def check_gateG1_routeA1_promiseYes_of_providerFamily :
+    ∀ (F : GapSliceFamily)
+      (_hYes :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          promiseYesSubcubeCertificateAtProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesPromiseYesSubcubeStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA1_promiseYes_of_providerFamily
+
+/--
+Concrete Route-A.2 G1 compiler from restriction-certificate-data families is
+available with the expected type.
+-/
+def check_gateG1_routeA2_acceptedFamily_of_restrictionDataFamily :
+    ∀ (F : GapSliceFamily)
+      (_hData :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGWitnessRestrictionCertificateDataProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA2_acceptedFamily_of_restrictionDataFamily
+
+/--
+Concrete Route-A.2 G1 compiler from extraction+numeric source families is
+available with the expected type.
+-/
+def check_gateG1_routeA2_acceptedFamily_of_restrictionExtractionAndNumericFamily :
+    ∀ (F : GapSliceFamily)
+      (_hExtract :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGWitnessRestrictionExtractionProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag))
+      (_hNumeric :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGWitnessRestrictionNumericDataProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)
+            (_hExtract hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA2_acceptedFamily_of_restrictionExtractionAndNumericFamily
+
+/--
+Concrete Route-A.1 G1 compiler from promise/value package families is available
+with the expected type.
+-/
+def check_gateG1_routeA1_promiseYes_of_packageFamily :
+    ∀ (F : GapSliceFamily)
+      (_hPkg :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          promiseValueLocalityPackageAtProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesPromiseYesSubcubeStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA1_promiseYes_of_packageFamily
 
 /--
 FinalResult exports the accepted-family weak-route contradiction wrapper.

@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-03-26
+Updated: 2026-03-30
 
 Canonical blocker checklist lives in `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release wording guardrail: `RELEASE_RC.md`.
@@ -19,6 +19,27 @@ Current DAG plan notes:
   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`
 - Main remaining blocker is still DAG-side separation:
   internalize `NP_not_subset_PpolyDAG`
+
+## Branch decision (2026-03-30, locked)
+
+To prevent repeated churn on dead ends, this branch now has an explicit
+direction lock:
+
+1. **Stop strict required-budget work (Route-A1 strict branch).**
+   - no new strict required-budget lemmas;
+   - no new strict canonical wrappers;
+   - no new PR claims based on strict A1 closure attempts.
+2. **Treat strict A1 as a formal dead end in this branch state.**
+   - `S = univ` diagnostics and same-set slack failures are already sufficient
+     as blockers; further polishing there is not roadmap progress.
+3. **Route-B is now the primary source-theorem mainline.**
+   - focus only on DAG-native source production:
+     `dagStableRestrictionInvariantProvider` /
+     `dagStableRestrictionCertificateProvider`;
+   - reuse existing downstream compilers/consumers.
+4. **Route-A2 supportHalf is secondary fallback only.**
+   - allowed only if it gives direct source-theorem progress;
+   - if it re-hits non-progress barriers, return immediately to Route-B.
 
 ---
 
@@ -74,31 +95,19 @@ In particular, the repository should aim to be:
 
 ## Main design correction for the DAG route
 
-The repository should **not** treat the current strongest route
-`dagStableRestrictionInvariantProvider` as the canonical final blocker.
-That route remains a valid **strong sufficient condition**, but it is too
-strong to be the default “one theorem away” target.
+Branch lock update (2026-03-30): in this branch, the **primary** open target is
+now Route-B, i.e. DAG-native stable-restriction source production.
 
-The preferred primary blocker is now:
+Concretely, source-side progress is counted only when it advances:
 
-> a one-sided, promise-aware, value-only, promise-only **accepted-family**
-> certificate stating that a small solver accepts a sufficiently large family
-> of valid truth tables, large enough to exceed the counting capacity of all
-> circuits of size `≤ sNO - 1`.
+- `dagStableRestrictionInvariantProvider`, or
+- `dagStableRestrictionCertificateProvider`,
 
-Canonical final consumer name (working):
+and then compiles immediately into
+`stableRestrictionGoal_of_abstractGapTargetedPayload`.
 
-- `AcceptedFamilyCertificateAt`.
-
-Structured producer specializations may remain stronger routes into this final
-consumer, for example:
-
-- `YesSubcubeCertificateAt` (YES-centered value-subcube route),
-- `PRGImageAcceptanceAt` (accepted structured-image / generator route),
-- or another injective accepted-family package.
-
-The current stable-restriction route should remain in the codebase as an
-optional stronger route, not the main open target.
+Accepted-family / Promise-YES / PRG-image tracks remain as optional fallback
+research tracks, but they are not the active merge-gate mainline here.
 
 ### Literature-driven caution
 
@@ -800,3 +809,63 @@ unconditional `P ≠ NP`.
    bridge assumptions.
 4. Final theorem surface is asymptotic.
 5. Docs report unconditional status consistently.
+
+## Execution control checklist (NP ⊄ PpolyDAG gate)
+
+To avoid accidental drift into "wrapper-only" progress, use this strict
+checklist as the day-to-day control surface.
+
+### C0. Source theorem must be explicit
+
+At any point in time, the branch must declare exactly one active source theorem
+target from this set:
+
+1. `SmallDAGWitnessOnSlice -> PromiseYesSubcubeCertificateAt` (mainline),
+2. `SmallDAGWitnessOnSlice -> AcceptedFamilyCertificateAt` (direct weak
+   consumer),
+3. `hDag -> stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)` (strong fallback).
+
+If no active target is declared, do not start new endpoint work.
+
+**Current active target (locked on 2026-03-30):**
+
+3. `hDag -> stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`
+   via Route-B source production (`dagStableRestrictionInvariantProvider` /
+   `dagStableRestrictionCertificateProvider`).
+
+### C1. Mandatory no-go checks before new lemmas
+
+Before adding source-side lemmas, verify:
+
+1. the lemma is not just singleton polishing;
+2. the lemma does not introduce a new consumer endpoint;
+3. the lemma can be placed on a dependency path to one of C0 targets.
+
+If any answer is "no", defer the lemma.
+
+### C2. Quantitative lock for Promise-YES mainline
+
+For the Promise-YES route, do not mark the source theorem "in progress"
+unless both subgoals are named explicitly:
+
+1. Q1 semantic invariant with non-full `S` (or equivalent complement-budget form),
+2. Q2 same-set slack for that same `S`.
+
+The diagnostic theorem `no_sameSetSlack_of_strictDAGSemantics` means the
+existing strict-Q1 constructor does **not** satisfy C2 by itself.
+
+**Branch lock note:** C2 is currently **inactive** for mainline planning,
+because the active target is Route-B (C0 item 3). Re-activating C2 requires an
+explicit roadmap decision update in this file and in
+`pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
+
+### C3. Merge readiness for unconditional gate work
+
+A PR that claims progress on the unconditional DAG gate must include one of:
+
+1. a theorem closing one C0 source target, or
+2. a theorem that is an immediate compiler step into one C0 target
+   (with explicit reference in the PR notes).
+
+Pure wrapper/refactor/doc changes may accompany the PR, but cannot be the only
+"gate progress" content.

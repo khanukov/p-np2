@@ -105,6 +105,26 @@ theorem dag_stableRestriction_producer_of_certificateProvider
   exact stableRestrictionGoal_of_dagStableRestrictionCertificate hDag (hCert hDag)
 
 /--
+Gate-G1 (Route B / item 3) in its exact canonical shape.
+
+This theorem is intentionally simple: it records that a uniform DAG-side
+certificate provider is *exactly* what is needed to close
+
+`∀ hDag, stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`.
+
+Keeping this theorem explicit avoids roadmap drift: any future source-side work
+can target `dagStableRestrictionCertificateProvider` directly and immediately
+land in the formal G1.3 statement without introducing new wrappers.
+-/
+theorem gateG1_routeB_stableRestrictionGoal_of_certificateProvider
+    {p : GapPartialMCSPParams}
+    (hCert : dagStableRestrictionCertificateProvider p) :
+    ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
+      stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag) := by
+  intro hDag
+  exact stableRestrictionGoal_of_dagStableRestrictionCertificate hDag (hCert hDag)
+
+/--
 Route-B source package phrased in terms of a DAG-side locality invariant.
 
 Compared with `DAGStableRestrictionCertificate`, this is a slightly more
@@ -164,6 +184,148 @@ abbrev dagStableRestrictionInvariantProvider
     (p : GapPartialMCSPParams) : Type :=
   ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
     DAGStableRestrictionInvariantPackage hDag
+
+/--
+Route-B source constructor from a concrete strict DAG witness plus a direct
+half-support bound on the witness circuit at the canonical input length.
+
+This is a **source-side theorem step** (not new endpoint plumbing):
+it packages the mathematically direct argument that if the DAG output depends on
+at most half of coordinates (`DagCircuit.support` bound), then the fixed gap
+target is invariant under overwriting non-support coordinates.
+
+The construction is intentionally in terms of `InPpolyDAG` so that the concrete
+circuit family and correctness equation are available without extra unpacking.
+-/
+theorem gapPartialMCSP_eq_of_inPpolyDAG_eq_on_support
+    {p : GapPartialMCSPParams}
+    (w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p))
+    {x y : Core.BitVec (Models.partialInputLen p)}
+    (hAgree :
+      ∀ i ∈ DagCircuit.support (w.family (Models.partialInputLen p)), x i = y i) :
+    Models.gapPartialMCSP_Language p (Models.partialInputLen p) x =
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p) y := by
+  let C : DagCircuit (Models.partialInputLen p) := w.family (Models.partialInputLen p)
+  have hEval : DagCircuit.eval C x = DagCircuit.eval C y := by
+    simpa [C] using (DagCircuit.eval_eq_of_eq_on_support (C := C) (x := x) (y := y) hAgree)
+  calc
+    Models.gapPartialMCSP_Language p (Models.partialInputLen p) x
+        = DagCircuit.eval C x := by
+            simpa [C] using (w.correct (Models.partialInputLen p) x).symm
+    _ = DagCircuit.eval C y := hEval
+    _ = Models.gapPartialMCSP_Language p (Models.partialInputLen p) y := by
+          simpa [C] using (w.correct (Models.partialInputLen p) y)
+
+/--
+Canonical overwrite-stability for one strict DAG witness along the complement
+of its syntactic support at `partialInputLen p`.
+
+This is the exact sensitivity-to-locality conversion used by Route-B: once we
+freeze all non-support coordinates via `Restriction.ofVector`, the target
+language value does not change.
+-/
+theorem gapPartialMCSP_stable_under_supportRestriction_of_inPpolyDAG
+    {p : GapPartialMCSPParams}
+    (w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p)) :
+    let alive := DagCircuit.support (w.family (Models.partialInputLen p))
+    let r : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    ∀ x : Core.BitVec (Models.partialInputLen p),
+      Models.gapPartialMCSP_Language p (Models.partialInputLen p) (r.apply x) =
+        Models.gapPartialMCSP_Language p (Models.partialInputLen p) x := by
+  intro alive r x
+  apply gapPartialMCSP_eq_of_inPpolyDAG_eq_on_support (w := w)
+  intro i hi
+  simpa [r, alive] using Facts.LocalityLift.Restriction.apply_alive r x hi
+
+/--
+Exact remaining Route-B source obligation for closing
+`dagStableRestrictionInvariantProvider p` without extra wrappers.
+-/
+abbrev gapPartialMCSP_supportHalfObligation (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    (DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+      Models.Partial.tableLen p.n / 2
+
+noncomputable def dagStableRestrictionInvariantPackage_of_inPpolyDAG_supportHalf
+    {p : GapPartialMCSPParams}
+    (w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p))
+    (hHalf :
+      (DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+        Models.Partial.tableLen p.n / 2) :
+    DAGStableRestrictionInvariantPackage
+      (show ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) from ⟨w, trivial⟩) := by
+  classical
+  let C : DagCircuit (Models.partialInputLen p) := w.family (Models.partialInputLen p)
+  let alive : Finset (Fin (Models.partialInputLen p)) := DagCircuit.support C
+  let r : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+  refine
+    { r := r
+      hAliveSmall := ?_
+      hLocalInvariant := ?_ }
+  · simpa [C, alive] using hHalf
+  · intro x y hAgree
+    exact gapPartialMCSP_eq_of_inPpolyDAG_eq_on_support (w := w)
+      (x := x) (y := y) (by
+        intro i hi
+        exact hAgree i (by simpa [r, alive] using hi))
+
+/--
+Task-1 reduction theorem (Route-B mainline):
+
+If every strict DAG witness for `gapPartialMCSP_Language p` satisfies a
+canonical half-support bound at input length `partialInputLen p`, then the full
+Route-B source target `dagStableRestrictionInvariantProvider p` is closed.
+
+This is not endpoint plumbing: it isolates exactly the remaining structural
+source obligation to one uniform statement on concrete DAG witnesses.
+-/
+noncomputable def dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf
+    {p : GapPartialMCSPParams}
+    (hSupportHalf : gapPartialMCSP_supportHalfObligation p) :
+    dagStableRestrictionInvariantProvider p := by
+  classical
+  intro hDag
+  let w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p) :=
+    Classical.choose hDag
+  let hDag' : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := ⟨w, trivial⟩
+  have hEq : hDag' = hDag := Subsingleton.elim _ _
+  have inv : DAGStableRestrictionInvariantPackage hDag' :=
+    dagStableRestrictionInvariantPackage_of_inPpolyDAG_supportHalf
+      (p := p) w (hSupportHalf w)
+  simpa [hEq] using inv
+
+/--
+Route-B closure in its final "no-extra-wrappers" form: once the canonical
+support-half obligation is proved for `gapPartialMCSP_Language p`, the target
+provider is obtained mechanically.
+-/
+noncomputable def dagStableRestrictionInvariantProvider_of_supportHalfObligation
+    {p : GapPartialMCSPParams}
+    (hSupportHalf : gapPartialMCSP_supportHalfObligation p) :
+    dagStableRestrictionInvariantProvider p :=
+  dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf
+    (p := p) hSupportHalf
+
+/--
+Certificate-level Route-B closure from the same uniform strict-witness
+half-support hypothesis.
+
+This theorem lands directly in the source object consumed by
+`gateG1_routeB_stableRestrictionGoal_of_certificateProvider`.
+-/
+noncomputable def dagStableRestrictionCertificateProvider_of_inPpolyDAG_supportHalf
+    {p : GapPartialMCSPParams}
+    (hSupportHalf :
+      ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+        (DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+          Models.Partial.tableLen p.n / 2) :
+    dagStableRestrictionCertificateProvider p := by
+  intro hDag
+  exact dagStableRestrictionCertificate_of_localInvariant hDag
+    ((dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf
+      (p := p) hSupportHalf) hDag)
 
 /--
 Main Route-B source bridge requested by the DAG-side plan:
@@ -534,6 +696,19 @@ noncomputable def smallDAGWitnessRestrictionExtractionAt_of_support
     simpa [solver, generalSolverOfSmallDAGWitnessOnSlice, rFacts] using hstableRaw x
 
 /--
+Canonical extraction provider obtained directly from DAG support.
+
+This is the mainline extraction choice for Route-A2 in the current sprint:
+it needs no additional source theorem beyond the DAG witness itself.
+-/
+noncomputable def smallDAGWitnessRestrictionExtractionProviderOnSlices_of_support
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    smallDAGWitnessRestrictionExtractionProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact smallDAGWitnessRestrictionExtractionAt_of_support W
+
+/--
 Numeric side conditions upgrading a semantic restriction extraction to the full
 restriction-data package required by `ShrinkageCertificate.ofRestriction`.
 
@@ -641,6 +816,616 @@ abbrev smallDAGWitnessRestrictionNumericDataProviderOnSlices
   ∀ n : Nat, ∀ β ε : Rat,
     ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
       SmallDAGWitnessRestrictionNumericDataAt (hExtract n β ε W)
+
+/--
+Numeric side-data family specialized to the support-based extraction mainline.
+
+This isolates the only remaining Route-A2 source obligation once extraction is
+fixed as `smallDAGWitnessRestrictionExtractionAt_of_support`.
+-/
+abbrev smallDAGWitnessSupportNumericDataProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      SmallDAGWitnessRestrictionNumericDataAt
+        (smallDAGWitnessRestrictionExtractionAt_of_support W)
+
+/--
+Route-A2 component (Polylog): source-side bound specialized to the support
+extraction.
+-/
+abbrev supportAliveBoundPolylogProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen
+            (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)))
+
+/--
+Route-A2 component (Quarter): source-side quarter-input bound specialized to the
+support extraction.
+-/
+abbrev supportAliveBoundQuarterProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound ≤
+        Facts.LocalityLift.inputLen
+          (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 4
+
+/--
+Route-A2 component (SmallEnough): source-side local-parameter smallness bound
+specialized to the support extraction.
+-/
+abbrev supportSmallEnoughProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen
+            (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β))
+        , M := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+              (smallDAGWitnessRestrictionExtractionAt_of_support W).r.alive.card.succ
+        , ℓ := (smallDAGWitnessRestrictionExtractionAt_of_support W).r.alive.card
+        , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth }
+
+/--
+Arithmetic form of the Route-A2 SmallEnough component stated directly via
+`DagCircuit.support`.
+
+This is equivalent in strength to `supportSmallEnoughProviderOnSlices`, but
+often easier to target from source-side size/depth estimates before rewriting
+through `smallDAGWitnessRestrictionExtractionAt_of_support`.
+-/
+abbrev supportSmallEnoughArithmeticProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      (DagCircuit.support W.C).card *
+        (Nat.log2
+            ((ThirdPartyFacts.toFactsGeneralSolverPartial
+                (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+              ((DagCircuit.support W.C).card.succ) + 2) +
+          (ThirdPartyFacts.toFactsGeneralSolverPartial
+              (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1)
+        ≤
+        Facts.LocalityLift.inputLen
+          (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2
+
+/--
+Canonical family-level factor bound on `ppolyDAGSizeBoundOnSlices`.
+
+For witnesses constrained by the canonical `ppolyDAG` size surface, the local
+factor
+
+`log₂(M + 2) + depth + 1`
+
+is bounded by replacing witness size with the corresponding canonical
+`polyBound` (and using `depth = 0` for DAG witnesses in
+`generalSolverOfSmallDAGWitnessOnSlice`).
+-/
+theorem factorBound_onCanonicalPpolySizeSurface
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β))) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : SmallDAGWitnessOnSlice
+        (F.paramsOf n β)
+        (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+        Nat.log2
+            ((ThirdPartyFacts.toFactsGeneralSolverPartial
+                (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+              ((DagCircuit.support W.C).card.succ) + 2) +
+          (ThirdPartyFacts.toFactsGeneralSolverPartial
+              (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1
+          ≤
+        Nat.log2
+            ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+              ((DagCircuit.support W.C).card.succ) + 2) + 1 := by
+  intro n β ε W
+  have hSize :
+      DagCircuit.size W.C ≤ (hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) := by
+    simpa [ppolyDAGSizeBoundOnSlices] using W.hSize
+  have hMul :
+      DagCircuit.size W.C * (DagCircuit.support W.C).card.succ ≤
+        (hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+          (DagCircuit.support W.C).card.succ := by
+    exact Nat.mul_le_mul_right _ hSize
+  have hAdd :
+      DagCircuit.size W.C * (DagCircuit.support W.C).card.succ + 2 ≤
+        (hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+          (DagCircuit.support W.C).card.succ + 2 := by
+    exact Nat.add_le_add_right hMul 2
+  have hLogNat :
+      Nat.log 2 (DagCircuit.size W.C * (DagCircuit.support W.C).card.succ + 2) ≤
+        Nat.log 2
+          ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+            (DagCircuit.support W.C).card.succ + 2) := by
+    exact Nat.log_monotone hAdd
+  have hLog :
+      Nat.log2 (DagCircuit.size W.C * (DagCircuit.support W.C).card.succ + 2) ≤
+        Nat.log2
+          ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+            (DagCircuit.support W.C).card.succ + 2) := by
+    simpa [Nat.log2_eq_log_two] using hLogNat
+  simpa [generalSolverOfSmallDAGWitnessOnSlice, ThirdPartyFacts.toFactsGeneralSolverPartial]
+    using Nat.add_le_add_right hLog 1
+
+/--
+Canonical family-budget inequality for `ppolyDAGSizeBoundOnSlices`.
+
+This theorem closes the exact witness-indexed budget premise consumed by
+`supportSmallEnoughArithmeticProviderOnSlices_onCanonicalBound_of_factorBudget`:
+
+`support.card * (canonical-factor) ≤ inputLen/2`.
+
+It isolates the arithmetic target on the canonical size surface in one place:
+if source-side work can establish
+
+1. a support half-bound, and
+2. the canonical factor cap `≤ 1`,
+
+then the required canonical budget inequality follows uniformly for every
+witness on `ppolyDAGSizeBoundOnSlices`.
+-/
+theorem canonicalFactorBudget_onPpolyDAGSizeBoundOnSlices_of_supportHalf_and_factorOne
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2)
+    (hCanonicalFactorOne :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          Nat.log2
+              ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                ((DagCircuit.support W.C).card.succ) + 2) + 1
+            ≤ 1) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : SmallDAGWitnessOnSlice
+        (F.paramsOf n β)
+        (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card *
+            (Nat.log2
+                ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                  ((DagCircuit.support W.C).card.succ) + 2) + 1)
+            ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2 := by
+  intro n β ε W
+  have hMul :
+      (DagCircuit.support W.C).card *
+          (Nat.log2
+              ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                ((DagCircuit.support W.C).card.succ) + 2) + 1)
+        ≤
+      (DagCircuit.support W.C).card := by
+    have hMul' := Nat.mul_le_mul_left (DagCircuit.support W.C).card
+      (hCanonicalFactorOne n β ε W)
+    simpa using hMul'
+  exact le_trans hMul (hSupportHalf n β ε W)
+
+/--
+Sanity lower bound for the canonical factor term.
+
+This formalizes an important arithmetic obstruction: on natural numbers the
+canonical factor
+
+`log2 (polyBound * (support.card.succ) + 2) + 1`
+
+is always at least `2` (because the inner argument is `≥ 2`), so a hypothesis
+of the form `... ≤ 1` is inconsistent.
+-/
+theorem canonicalFactor_two_le_onPpolyDAGSizeBoundOnSlices
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β))) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : SmallDAGWitnessOnSlice
+        (F.paramsOf n β)
+        (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          2 ≤ Nat.log2
+                ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                  ((DagCircuit.support W.C).card.succ) + 2) + 1 := by
+  intro n β ε W
+  let x :=
+    (hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+      ((DagCircuit.support W.C).card.succ) + 2
+  have hx_ne_zero : x ≠ 0 := by
+    dsimp [x]
+    omega
+  have hx_two_le : 2 ≤ x := by
+    dsimp [x]
+    omega
+  have hlog_one_le : 1 ≤ Nat.log2 x := by
+    exact (Nat.le_log2 hx_ne_zero).2 (by simpa using hx_two_le)
+  have htwo_le : 1 + 1 ≤ Nat.log2 x + 1 := Nat.add_le_add_right hlog_one_le 1
+  simpa [x] using htwo_le
+
+/--
+Consistency corollary: the canonical factor cannot satisfy `≤ 1`.
+-/
+theorem not_canonicalFactorOne_onPpolyDAGSizeBoundOnSlices
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β))) :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : SmallDAGWitnessOnSlice
+        (F.paramsOf n β)
+        (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          ¬ (Nat.log2
+                ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                  ((DagCircuit.support W.C).card.succ) + 2) + 1
+                ≤ 1) := by
+  intro n β ε W hFactorOne
+  have hTwoLe :=
+    canonicalFactor_two_le_onPpolyDAGSizeBoundOnSlices F hInDag n β ε W
+  exact Nat.not_succ_le_self 1 (le_trans hTwoLe hFactorOne)
+
+/--
+Arithmetic Route-A2 closure on canonical `ppolyDAG` size surface.
+
+This theorem isolates the exact remaining source-side arithmetic target:
+prove a budget inequality against the canonical factor expression built from
+`polyBound`, then `supportSmallEnoughArithmeticProviderOnSlices` follows for all
+canonical-family witnesses.
+-/
+theorem supportSmallEnoughArithmeticProviderOnSlices_onCanonicalBound_of_factorBudget
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (hBudget :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card *
+            (Nat.log2
+                ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                  ((DagCircuit.support W.C).card.succ) + 2) + 1)
+            ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2) :
+    supportSmallEnoughArithmeticProviderOnSlices F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro n β ε W
+  have hFactor :
+      Nat.log2
+          ((ThirdPartyFacts.toFactsGeneralSolverPartial
+              (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+            ((DagCircuit.support W.C).card.succ) + 2) +
+        (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1
+        ≤
+      Nat.log2
+          ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+            ((DagCircuit.support W.C).card.succ) + 2) + 1 :=
+    factorBound_onCanonicalPpolySizeSurface F hInDag n β ε W
+  have hMul :
+      (DagCircuit.support W.C).card *
+          (Nat.log2
+              ((ThirdPartyFacts.toFactsGeneralSolverPartial
+                  (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+                ((DagCircuit.support W.C).card.succ) + 2) +
+            (ThirdPartyFacts.toFactsGeneralSolverPartial
+                (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1)
+        ≤
+      (DagCircuit.support W.C).card *
+          (Nat.log2
+              ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                ((DagCircuit.support W.C).card.succ) + 2) + 1) := by
+    exact Nat.mul_le_mul_left _ hFactor
+  exact le_trans hMul (hBudget n β ε W)
+
+/--
+Convert the direct arithmetic SmallEnough statement on support to the canonical
+`supportSmallEnoughProviderOnSlices` form.
+-/
+theorem supportSmallEnoughProviderOnSlices_of_supportArithmetic
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hArith : supportSmallEnoughArithmeticProviderOnSlices F SizeBound) :
+    supportSmallEnoughProviderOnSlices F SizeBound := by
+  intro n β ε W
+  simpa [Facts.LocalityLift.LocalCircuitSmallEnough,
+    smallDAGWitnessRestrictionExtractionAt_of_support] using hArith n β ε W
+
+/--
+Convenient sufficient condition for `supportSmallEnoughProviderOnSlices`.
+
+If source-side proofs give:
+1. a quarter bound on support cardinality, and
+2. a uniform bound `log₂(M+2) + depth + 1 ≤ 1`,
+then SmallEnough follows immediately (`ℓ * factor ≤ ℓ ≤ n/4 ≤ n/2`).
+-/
+theorem supportSmallEnoughProviderOnSlices_of_supportQuarter_and_factorOne
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hQuarter : supportAliveBoundQuarterProviderOnSlices F SizeBound)
+    (hFactorOne :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          Nat.log2
+              ((ThirdPartyFacts.toFactsGeneralSolverPartial
+                  (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+                ((DagCircuit.support W.C).card.succ) + 2) +
+            (ThirdPartyFacts.toFactsGeneralSolverPartial
+                (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1
+            ≤ 1) :
+    supportSmallEnoughProviderOnSlices F SizeBound := by
+  refine supportSmallEnoughProviderOnSlices_of_supportArithmetic F SizeBound ?_
+  intro n β ε W
+  have hq : (DagCircuit.support W.C).card ≤
+      Facts.LocalityLift.inputLen
+        (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 4 := by
+    simpa [smallDAGWitnessRestrictionExtractionAt_of_support] using hQuarter n β ε W
+  have hf := hFactorOne n β ε W
+  have hMul : (DagCircuit.support W.C).card *
+      (Nat.log2
+          ((ThirdPartyFacts.toFactsGeneralSolverPartial
+              (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+            ((DagCircuit.support W.C).card.succ) + 2) +
+        (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1)
+      ≤ (DagCircuit.support W.C).card := by
+    have hMul' := Nat.mul_le_mul_left (DagCircuit.support W.C).card hf
+    simpa using hMul'
+  have hQuarterHalf :
+      Facts.LocalityLift.inputLen
+          (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 4
+        ≤
+      Facts.LocalityLift.inputLen
+          (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2 := by
+    omega
+  exact le_trans hMul (le_trans hq hQuarterHalf)
+
+/--
+Build support-based numeric side data from the three component obligations.
+
+This theorem is the "one-by-one closure" point for the chosen Route-A2 mainline:
+once Polylog, Quarter, and SmallEnough are each proved separately, they combine
+into the exact numeric object consumed downstream.
+-/
+theorem smallDAGWitnessSupportNumericDataAt_of_components
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε)
+    (hPolylog :
+      (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)))
+    (hQuarter :
+      (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4)
+    (hSmallEnough :
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+        , M := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+              (smallDAGWitnessRestrictionExtractionAt_of_support W).r.alive.card.succ
+        , ℓ := (smallDAGWitnessRestrictionExtractionAt_of_support W).r.alive.card
+        , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth }) :
+    SmallDAGWitnessRestrictionNumericDataAt
+      (smallDAGWitnessRestrictionExtractionAt_of_support W) := by
+  exact
+    { hBoundPolylog := hPolylog
+      hBoundQuarter := hQuarter
+      hSmallEnough := hSmallEnough }
+
+/--
+Assemble the support-numeric family from the three component families.
+-/
+theorem smallDAGWitnessSupportNumericDataProviderOnSlices_of_components
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hPolylog : supportAliveBoundPolylogProviderOnSlices F SizeBound)
+    (hQuarter : supportAliveBoundQuarterProviderOnSlices F SizeBound)
+    (hSmallEnough : supportSmallEnoughProviderOnSlices F SizeBound) :
+    smallDAGWitnessSupportNumericDataProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact smallDAGWitnessSupportNumericDataAt_of_components W
+    (hPolylog n β ε W)
+    (hQuarter n β ε W)
+    (hSmallEnough n β ε W)
+
+/--
+Polylog component from a direct bound on DAG output-support cardinality.
+-/
+theorem supportAliveBoundPolylogProviderOnSlices_of_supportCardPolylog
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSupportPolylog :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.polylogBudget
+              (Facts.LocalityLift.inputLen
+                (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)))) :
+    supportAliveBoundPolylogProviderOnSlices F SizeBound := by
+  intro n β ε W
+  simpa [smallDAGWitnessRestrictionExtractionAt_of_support] using hSupportPolylog n β ε W
+
+/--
+Quarter component from a direct bound on DAG output-support cardinality.
+-/
+theorem supportAliveBoundQuarterProviderOnSlices_of_supportCardQuarter
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSupportQuarter :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 4) :
+    supportAliveBoundQuarterProviderOnSlices F SizeBound := by
+  intro n β ε W
+  simpa [smallDAGWitnessRestrictionExtractionAt_of_support] using hSupportQuarter n β ε W
+
+/--
+Canonical Route-A2 small-enough closure from the two arithmetic source inputs.
+
+This is the direct composition requested by the current sprint:
+
+`supportHalf + canonicalFactor≤1` ⇒ budget inequality
+⇒ arithmetic SmallEnough provider
+⇒ `supportSmallEnoughProviderOnSlices`.
+-/
+theorem supportSmallEnoughProviderOnSlices_onCanonicalBound_of_supportHalf_and_factorOne
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2)
+    (hCanonicalFactorOne :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          Nat.log2
+              ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                ((DagCircuit.support W.C).card.succ) + 2) + 1
+            ≤ 1) :
+    supportSmallEnoughProviderOnSlices F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  have hBudget :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card *
+            (Nat.log2
+                ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                  ((DagCircuit.support W.C).card.succ) + 2) + 1)
+            ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2 :=
+    canonicalFactorBudget_onPpolyDAGSizeBoundOnSlices_of_supportHalf_and_factorOne
+      F hInDag hSupportHalf hCanonicalFactorOne
+  have hArith :
+      supportSmallEnoughArithmeticProviderOnSlices
+        F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+    supportSmallEnoughArithmeticProviderOnSlices_onCanonicalBound_of_factorBudget
+      F hInDag hBudget
+  exact supportSmallEnoughProviderOnSlices_of_supportArithmetic
+    F (ppolyDAGSizeBoundOnSlices F hInDag) hArith
+
+/--
+Canonical support-numeric provider assembly from support bounds plus the
+`supportHalf + canonicalFactor≤1` arithmetic closure.
+
+This theorem closes the next remaining Route-A2 node in one step:
+it first derives `supportSmallEnoughProviderOnSlices` by the canonical arithmetic
+path above, then combines it with support-card Polylog/Quarter bounds into the
+full `smallDAGWitnessSupportNumericDataProviderOnSlices`.
+-/
+theorem smallDAGWitnessSupportNumericDataProviderOnSlices_onCanonicalBound_of_supportBounds_and_factorOne
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (hSupportPolylog :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.polylogBudget
+              (Facts.LocalityLift.inputLen
+                (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β))))
+    (hSupportQuarter :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 4)
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤
+            Facts.LocalityLift.inputLen
+              (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2)
+    (hCanonicalFactorOne :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β)
+          (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+          Nat.log2
+              ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                ((DagCircuit.support W.C).card.succ) + 2) + 1
+            ≤ 1) :
+    smallDAGWitnessSupportNumericDataProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  have hPolylog :
+      supportAliveBoundPolylogProviderOnSlices
+        F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+    supportAliveBoundPolylogProviderOnSlices_of_supportCardPolylog
+      F (ppolyDAGSizeBoundOnSlices F hInDag) hSupportPolylog
+  have hQuarter :
+      supportAliveBoundQuarterProviderOnSlices
+        F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+    supportAliveBoundQuarterProviderOnSlices_of_supportCardQuarter
+      F (ppolyDAGSizeBoundOnSlices F hInDag) hSupportQuarter
+  have hSmallEnough :
+      supportSmallEnoughProviderOnSlices
+        F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+    supportSmallEnoughProviderOnSlices_onCanonicalBound_of_supportHalf_and_factorOne
+      F hInDag hSupportHalf hCanonicalFactorOne
+  exact smallDAGWitnessSupportNumericDataProviderOnSlices_of_components
+    F (ppolyDAGSizeBoundOnSlices F hInDag) hPolylog hQuarter hSmallEnough
+
+/--
+Convert support-specialized numeric side data into the generic numeric-provider
+interface expected by the Route-A2 extraction+numeric compiler.
+-/
+theorem smallDAGWitnessRestrictionNumericDataProviderOnSlices_of_supportNumeric
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hNumeric : smallDAGWitnessSupportNumericDataProviderOnSlices F SizeBound) :
+    smallDAGWitnessRestrictionNumericDataProviderOnSlices F SizeBound
+      (smallDAGWitnessRestrictionExtractionProviderOnSlices_of_support F SizeBound) := by
+  intro n β ε W
+  simpa [smallDAGWitnessRestrictionExtractionProviderOnSlices_of_support] using
+    (hNumeric n β ε W)
 
 /--
 Upgrade separate semantic extraction and numeric side-condition providers into
@@ -906,6 +1691,26 @@ abbrev dagStableRestrictionSlackPackageAtProviderOnSlices
   ∀ n : Nat, ∀ β ε : Rat,
     ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
       DAGStableRestrictionSlackPackageAt W
+
+/--
+Provider lift of the support-half strong fallback.
+
+This is the family-level version of
+`dagStableRestrictionSlackPackageAt_of_supportHalfBound`: if every slice witness
+has support at most half the truth-table length, we obtain a full provider of
+encoded-coordinate slack packages.
+-/
+noncomputable def dagStableRestrictionSlackPackageAtProviderOnSlices_of_supportHalfBound
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤ Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    dagStableRestrictionSlackPackageAtProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact dagStableRestrictionSlackPackageAt_of_supportHalfBound W (hSupportHalf n β ε W)
 
 /--
 Certificate-provider reduction to the stronger encoded-coordinate slack route.
@@ -1432,6 +2237,29 @@ theorem smallDAGAcceptedFamilyStatement_of_dagStableRestrictionSlackPackageAtPro
       F SizeBound hPkg)
 
 /--
+One-hop strong-fallback compiler from support-half bounds.
+
+This theorem is the direct positive node currently available in this file:
+
+`supportHalf family`
+`→ dagStableRestrictionSlackPackageAtProviderOnSlices`
+`→ SmallDAGImpliesAcceptedFamilyStatement`.
+-/
+theorem smallDAGAcceptedFamilyStatement_of_supportHalfBound
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤ Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    SmallDAGImpliesAcceptedFamilyStatement F SizeBound := by
+  exact smallDAGAcceptedFamilyStatement_of_dagStableRestrictionSlackPackageAtProvider
+    F SizeBound
+    (dagStableRestrictionSlackPackageAtProviderOnSlices_of_supportHalfBound
+      F SizeBound hSupportHalf)
+
+/--
 Compiled strong-fallback bridge from witness-indexed shrinkage certificates to
 the canonical accepted-family version of Layer B.
 -/
@@ -1808,6 +2636,47 @@ abbrev promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices
       PromiseYesAcceptanceInvariantAtNontrivialS W
 
 /--
+Alternative positive-source route package (non-full-`S` branch) with explicit
+formula-track export hooks.
+
+This object is intentionally "bridge-shaped":
+
+1. it carries a nontrivial-`S` source provider on slices (the new positive
+   branch target);
+2. it also carries a formula support-bounds witness so this route can be wired
+   directly into the existing formula-side magnification API.
+
+The second field is not derived automatically from the first one in current
+theory; we keep both fields explicit so future source theorems can populate this
+package without changing downstream signatures.
+-/
+structure NontrivialSAlternativeProducerRoute where
+  /-- Non-full-`S` source-side provider on slices. -/
+  nontrivialSProvider :
+    ∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices F SizeBound
+  /-- Formula-track export hook for current magnification entrypoints. -/
+  supportBounds : Magnification.FormulaSupportRestrictionBoundsPartial
+
+/--
+Projection: export the route package to the existing formula support-bounds API.
+-/
+def formulaSupportRestrictionBoundsPartial_of_nontrivialSAlternativeProducerRoute
+    (route : NontrivialSAlternativeProducerRoute) :
+    Magnification.FormulaSupportRestrictionBoundsPartial :=
+  route.supportBounds
+
+/--
+Projection: export the same route package to
+`FormulaRestrictionCertificateDataPartial` through the existing constructive
+builder.
+-/
+noncomputable def formulaRestrictionCertificateDataPartial_of_nontrivialSAlternativeProducerRoute
+    (route : NontrivialSAlternativeProducerRoute) :
+    Magnification.FormulaRestrictionCertificateDataPartial :=
+  Magnification.formulaRestrictionCertificateData_of_supportBounds route.supportBounds
+
+/--
 Strict DAG-semantics Q1 provider on slices.
 
 Family-level lift of `promiseYesAcceptanceInvariantAt_of_strictDAGSemantics`:
@@ -1995,6 +2864,30 @@ theorem circuitCountBound_two_le_of_gapParams
   exact Nat.le_add_left 2 (2 * (Models.circuitCountBound p.n k) ^ 2 + 2 * Models.circuitCountBound p.n k + p.n)
 
 /--
+`requiredComplementBudget` is strictly positive for valid gap parameters.
+
+Intuition: `circuitCountBound p.n (p.sNO - 1)` is always at least `2`, while by
+definition of `requiredComplementBudget` we have strict inequality
+
+`circuitCountBound ... < 2 ^ requiredComplementBudget`.
+
+So budget `0` (RHS `= 1`) is impossible.
+-/
+theorem requiredComplementBudget_pos (p : GapPartialMCSPParams) :
+    1 ≤ requiredComplementBudget p := by
+  have hSlack :
+      Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ requiredComplementBudget p :=
+    countingSlack_at_requiredComplementBudget p
+  have hCountGeTwo : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
+    circuitCountBound_two_le_of_gapParams p
+  have hNeZero : requiredComplementBudget p ≠ 0 := by
+    intro hZero
+    have hlt1 : Models.circuitCountBound p.n (p.sNO - 1) < 1 := by
+      simpa [hZero] using hSlack
+    exact Nat.not_lt_of_ge (le_trans (by decide : 1 ≤ 2) hCountGeTwo) hlt1
+  exact Nat.succ_le_iff.mpr (Nat.pos_of_ne_zero hNeZero)
+
+/--
 For the strict-semantics Q1 invariant, the chosen semantic coordinate set is
 exactly the full value-coordinate set.
 -/
@@ -2058,6 +2951,125 @@ theorem no_sameSetSlack_of_strictDAGSemantics
   have hlt1 : Models.circuitCountBound p.n (p.sNO - 1) < 1 := by
     simpa [hRhs] using hSlack
   exact Nat.not_lt_of_ge (le_trans (by decide : 1 ≤ 2) hge2) hlt1
+
+/--
+Pointwise negation of the strict-mainline required-budget target on any witness.
+
+For `promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W` we have
+`S = univ`, hence `tableLen - S.card = 0`. But
+`requiredComplementBudget` is strictly positive, so the inequality
+
+`requiredComplementBudget ≤ tableLen - S.card`
+
+cannot hold at this witness.
+-/
+theorem not_requiredBudget_on_strictDAGSemantics_atWitness
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    ¬ (requiredComplementBudget p ≤
+        Models.Partial.tableLen p.n -
+          (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card) := by
+  have hS :
+      (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card =
+        Models.Partial.tableLen p.n := by
+    simpa [strictDAGSemantics_S_eq_univ_private W]
+  intro hBudget
+  have hReqPos : 1 ≤ requiredComplementBudget p := requiredComplementBudget_pos p
+  have hReqZero : requiredComplementBudget p ≤ 0 := by
+    simpa [hS] using hBudget
+  exact Nat.not_succ_le_zero 0 (le_trans hReqPos hReqZero)
+
+/--
+Canonical-surface specialization of
+`not_requiredBudget_on_strictDAGSemantics_atWitness`.
+
+This is the exact pointwise failure mode for the requested family target:
+at any concrete canonical witness, the strict-semantics `S` is full, so the
+required-budget inequality cannot hold.
+-/
+theorem not_requiredBudget_on_strictProvider_onCanonicalBound_atWitness
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β ε : Rat)
+    (W : SmallDAGWitnessOnSlice
+      (F.paramsOf n β)
+      (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε) :
+    ¬ (requiredComplementBudget (F.paramsOf n β) ≤
+        Models.Partial.tableLen (F.paramsOf n β).n -
+          ((promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+              F (ppolyDAGSizeBoundOnSlices F hInDag)) n β ε W).S.card) := by
+  simpa using not_requiredBudget_on_strictDAGSemantics_atWitness (W := W)
+
+/--
+Operational strict-mainline blocker on the canonical DAG-size surface.
+
+If a concrete small-DAG solver witness exists at `(n, β, ε)`, then the strict
+semantic provider cannot satisfy the required-budget target at this same index.
+
+This packages the witness-level impossibility
+`not_requiredBudget_on_strictProvider_onCanonicalBound_atWitness` in the exact
+shape used by source-side route checks.
+-/
+theorem not_strictRequiredBudgetProvider_onCanonicalBound_of_smallDAGSolver
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β ε : Rat)
+    (hSolver : SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ¬ promiseYesRequiredBudgetOnInvariantProviderOnSlices
+        F
+        (ppolyDAGSizeBoundOnSlices F hInDag)
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) := by
+  intro hBudget
+  rcases hSolver with ⟨C, hSize, hCorrect⟩
+  let W : SmallDAGWitnessOnSlice
+      (F.paramsOf n β)
+      (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε := {
+    C := C
+    hSize := hSize
+    hCorrect := hCorrect
+  }
+  exact
+    (not_requiredBudget_on_strictProvider_onCanonicalBound_atWitness
+      F hInDag n β ε W)
+      (hBudget n β ε W)
+
+/--
+Pointwise contradiction wrapper for the strict canonical Route-A1 budget target.
+
+This is the direct operational form used in roadmap checks: at a fixed index,
+you cannot simultaneously have
+
+1. a concrete small-DAG solver witness, and
+2. the strict-semantics required-budget provider assumption.
+-/
+theorem false_of_smallDAGSolver_and_strictRequiredBudgetProvider_onCanonicalBound
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β ε : Rat)
+    (hSolver : SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε)
+    (hBudget :
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices
+        F
+        (ppolyDAGSizeBoundOnSlices F hInDag)
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F (ppolyDAGSizeBoundOnSlices F hInDag))) :
+    False := by
+  exact
+    (not_strictRequiredBudgetProvider_onCanonicalBound_of_smallDAGSolver
+      F hInDag n β ε hSolver)
+      hBudget
 
 /--
 Operational quantitative form of the current weak-route blocker.
@@ -2283,6 +3295,94 @@ noncomputable def
     (hPkg n β ε W)
 
 /--
+First concrete inhabitant builder for `NontrivialSAlternativeProducerRoute`.
+
+This uses an already available non-full-`S` source constructor
+(`promiseValueLocalityPackageAtProviderOnSlices` -> nontrivial-`S` provider) and
+combines it with an explicit formula support-bounds witness.
+-/
+noncomputable def nontrivialSAlternativeProducerRoute_of_promiseValuePackageAndSupportBounds
+    (hPkg :
+      ∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+        promiseValueLocalityPackageAtProviderOnSlices F SizeBound)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
+    NontrivialSAlternativeProducerRoute where
+  nontrivialSProvider := by
+    intro F SizeBound
+    exact
+      promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices_of_promiseValueLocalityPackageProvider
+        F SizeBound (hPkg F SizeBound)
+  supportBounds := hBounds
+
+/--
+Class-shaped theorem requested by the current execution order:
+
+non-full-`S` slice source + formula-track witness -> `FormulaSupportRestrictionBoundsPartial`.
+
+Implemented via the first concrete route inhabitant to keep the dependency path
+explicit and auditable.
+-/
+theorem formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andSupportBounds
+    (hPkg :
+      ∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+        promiseValueLocalityPackageAtProviderOnSlices F SizeBound)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
+    Magnification.FormulaSupportRestrictionBoundsPartial := by
+  exact
+    formulaSupportRestrictionBoundsPartial_of_nontrivialSAlternativeProducerRoute
+      (nontrivialSAlternativeProducerRoute_of_promiseValuePackageAndSupportBounds
+        hPkg hBounds)
+
+/--
+I-2 ladder step exported directly from the same class-shaped theorem:
+`... -> FormulaSupportRestrictionBoundsPartial -> hasDefaultStructuredLocalityProviderPartial`.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andSupportBounds
+    (hPkg :
+      ∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+        promiseValueLocalityPackageAtProviderOnSlices F SizeBound)
+    (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
+    Magnification.hasDefaultStructuredLocalityProviderPartial := by
+  exact
+    Magnification.hasDefaultStructuredLocalityProviderPartial_of_supportBounds
+      (formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andSupportBounds
+        hPkg hBounds)
+
+/--
+Concrete closure of the external support-bounds witness through the existing
+multi-switching contract route.
+
+This theorem keeps the non-full-`S` slice source explicit in the signature while
+using the already-internalized magnification theorem
+`formula_support_bounds_from_multiswitching` to discharge `hBounds`.
+-/
+theorem formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andMultiswitching
+    (hPkg :
+      ∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+        promiseValueLocalityPackageAtProviderOnSlices F SizeBound)
+    (hMS : Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    Magnification.FormulaSupportRestrictionBoundsPartial := by
+  classical
+  let _ := hPkg
+  intro p hFormula
+  exact Magnification.formula_support_bounds_from_multiswitching (hMS := hMS) (p := p) hFormula
+
+/--
+I-2 ladder endpoint from non-full-`S` slice source plus multi-switching
+contract, without an external `hBounds` argument.
+-/
+theorem hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andMultiswitching
+    (hPkg :
+      ∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+        promiseValueLocalityPackageAtProviderOnSlices F SizeBound)
+    (hMS : Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    Magnification.hasDefaultStructuredLocalityProviderPartial := by
+  exact
+    Magnification.hasDefaultStructuredLocalityProviderPartial_of_supportBounds
+      (formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andMultiswitching
+        hPkg hMS)
+
+/--
 Any pairwise promise/value locality package already yields the weaker
 promise-aware one-sided YES-centered route.
 
@@ -2502,6 +3602,73 @@ theorem noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices
   exact noSmallDAG_of_promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound
     (promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
       F SizeBound hInv hSlack)
+
+/--
+Direct closure from the threshold-budget quantitative provider target.
+
+This is the exact "Q1 + required-budget" composition requested by the active
+plan: once semantic one-sided forcing is available (`hInv`) and the same-set
+complement budget reaches `requiredComplementBudget`, we compile to slack
+arithmetically and close `¬ SmallDAGSolver` via the existing promise-YES route.
+-/
+theorem noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound)
+    (hBudget : promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound hInv) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices F SizeBound
+    hInv
+    (promiseYesSlackOnInvariantProviderOnSlices_of_requiredBudgetProvider
+      F SizeBound hInv hBudget)
+
+/--
+Strict-semantics specialization of
+`noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices`.
+
+This theorem isolates the only remaining source-side quantitative obligation on
+the strict mainline:
+
+`promiseYesRequiredBudgetOnInvariantProviderOnSlices` for the strict semantic
+provider.
+-/
+theorem noSmallDAG_of_strictSemanticsAndRequiredBudgetProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hBudget :
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F SizeBound)) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices F SizeBound
+    (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+      F SizeBound)
+    hBudget
+
+/--
+Provider-level strict-mainline compiler:
+
+if strict DAG semantics supplies the semantic Q1 half (already canonical in
+`promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics`) and the
+source theorem provides the required complement-budget inequality on the same
+semantic set, then we obtain the operational witness-indexed source endpoint
+`PromiseYesSubcubeCertificateAt`.
+-/
+def promiseYesSubcubeCertificateAtProviderOnSlices_of_strictSemanticsAndRequiredBudgetProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hBudget :
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F SizeBound)) :
+    promiseYesSubcubeCertificateAtProviderOnSlices F SizeBound := by
+  let hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound :=
+    promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics F SizeBound
+  let hSlack : promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv :=
+    promiseYesSlackOnInvariantProviderOnSlices_of_requiredBudgetProvider
+      F SizeBound hInv hBudget
+  exact promiseYesSubcubeCertificateAtProviderOnSlices_of_semanticAndSlackProvider
+    F SizeBound hInv hSlack
 
 /--
 Direct closure from the existing pairwise promise/value package route through
@@ -2967,6 +4134,23 @@ theorem smallDAGPromiseYesSubcubeStatement_of_packageProvider
       F SizeBound hPkg)
 
 /--
+Statement-level strict-mainline compiler to the canonical asymptotic Route-A1
+surface.
+-/
+theorem smallDAGPromiseYesSubcubeStatement_of_strictSemanticsAndRequiredBudgetProvider
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hBudget :
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F SizeBound)) :
+    SmallDAGImpliesPromiseYesSubcubeStatement F SizeBound := by
+  exact smallDAGPromiseYesSubcubeStatement_of_certificateProvider
+    F SizeBound
+    (promiseYesSubcubeCertificateAtProviderOnSlices_of_strictSemanticsAndRequiredBudgetProvider
+      F SizeBound hBudget)
+
+/--
 Compiled route from the stronger all-valid YES-subcube producer to the
 nearer-term promise-aware YES-centered barrier endpoint.
 -/
@@ -2978,6 +4162,358 @@ theorem smallDAGPromiseYesSubcubeStatement_of_yesSubcubeCertificateProvider
   exact smallDAGPromiseYesSubcubeStatement_of_certificateProvider F SizeBound
     (promiseYesSubcubeCertificateAtProviderOnSlices_of_yesSubcubeCertificateProvider
       F SizeBound hCert)
+
+/--
+Gate-G1 (Route A / item 2) endpoint wrapper.
+
+This packages the currently preferred weak accepted-family source theorem in the
+exact asymptotic shape used by the final contradiction wrappers:
+
+`∀ hInDag, SmallDAGImpliesAcceptedFamilyStatement F (ppolyDAGSizeBoundOnSlices F hInDag)`.
+
+The theorem is intentionally thin and assumption-preserving; it exists so source
+work can be tracked as "G1-closed for route A.2" without additional API layers.
+-/
+theorem gateG1_routeA2_acceptedFamily_of_providerFamily
+    (F : GapSliceFamily)
+    (hAccepted :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        acceptedFamilyCertificateAtProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGAcceptedFamilyStatement_of_certificateProvider
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hAccepted hInDag)
+
+/--
+Canonical thin wrapper from support-half family bounds to Gate-G1 Route-A.2.
+
+This keeps the mainline focused on one real source obligation (`hSupportHalf`)
+while reusing the already closed strong-fallback bridge to the accepted-family
+endpoint.
+-/
+theorem gateG1_routeA2_acceptedFamily_of_supportHalfBoundFamily
+    (F : GapSliceFamily)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGAcceptedFamilyStatement_of_supportHalfBound
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hSupportHalf hInDag)
+
+/--
+Gate-G1 (Route A / item 1) endpoint wrapper.
+
+Same idea as `gateG1_routeA2_acceptedFamily_of_providerFamily`, but for the
+one-sided promise-YES source theorem:
+
+`∀ hInDag, SmallDAGImpliesPromiseYesSubcubeStatement F (ppolyDAGSizeBoundOnSlices F hInDag)`.
+-/
+theorem gateG1_routeA1_promiseYes_of_providerFamily
+    (F : GapSliceFamily)
+    (hYes :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        promiseYesSubcubeCertificateAtProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesPromiseYesSubcubeStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGPromiseYesSubcubeStatement_of_certificateProvider
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hYes hInDag)
+
+/--
+Gate-G1 Route-A.2 thin compiler from the PRG-image source route.
+
+This is the direct backup-route realization requested by the active plan:
+if the source theorem provides `PRGImageAcceptanceAt` providers on canonical
+families, we immediately land in the same accepted-family endpoint used by the
+default weak consumer stack.
+-/
+theorem gateG1_routeA2_acceptedFamily_of_prgImageProviderFamily
+    (F : GapSliceFamily)
+    (hPrg :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        prgImageAcceptanceAtProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGAcceptedFamilyStatement_of_prgImageAcceptanceProvider
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hPrg hInDag)
+
+/--
+Concrete Gate-G1 Route-A.2 compiler from the strong fallback source contract.
+
+If for each canonical `hInDag` family we can prove witness-indexed restriction
+certificate data on slices, then the accepted-family source theorem required by
+Gate G1 item (2) follows immediately.
+
+This theorem is mathematically stronger than the abstract provider-family gate
+wrapper above and is intended as a realistic implementation target when source
+proofs naturally produce full restriction certificate data.
+-/
+theorem gateG1_routeA2_acceptedFamily_of_restrictionDataFamily
+    (F : GapSliceFamily)
+    (hData :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessRestrictionCertificateDataProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGAcceptedFamilyStatement_of_restrictionDataProvider
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hData hInDag)
+
+/--
+Concrete Gate-G1 Route-A.2 compiler from separated extraction + numeric sources.
+
+This is the least intrusive strong-fallback route already supported by the
+current pipeline: source-side proofs may construct semantic restriction
+extraction and prove numeric side data independently, and this theorem composes
+them into the exact Gate G1 accepted-family endpoint.
+-/
+theorem gateG1_routeA2_acceptedFamily_of_restrictionExtractionAndNumericFamily
+    (F : GapSliceFamily)
+    (hExtract :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessRestrictionExtractionProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag))
+    (hNumeric :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessRestrictionNumericDataProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)
+          (hExtract hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGAcceptedFamilyStatement_of_restrictionExtractionAndNumericProvider
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hExtract hInDag) (hNumeric hInDag)
+
+/--
+Concrete Gate-G1 Route-A.1 compiler from pairwise promise/value packages.
+
+When the source theorem can uniformly provide the existing pairwise
+promise/value locality package for each canonical `hInDag` family, the required
+promise-YES Gate G1 endpoint follows through the already-compiled bridge.
+-/
+theorem gateG1_routeA1_promiseYes_of_packageFamily
+    (F : GapSliceFamily)
+    (hPkg :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        promiseValueLocalityPackageAtProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesPromiseYesSubcubeStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGPromiseYesSubcubeStatement_of_packageProvider
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hPkg hInDag)
+
+/--
+Route-A2 mainline synchronization lemma on the canonical DAG-size surface.
+
+It records that the chosen extraction family and the provided numeric family are
+indexed by the same `ppolyDAGSizeBoundOnSlices F hInDag`, so they can be fed
+together into the extraction+numeric compiler without any coercion glue.
+-/
+theorem routeA2_mainline_supportExtractionAndNumeric_synchronized_onCanonicalBound
+    (F : GapSliceFamily)
+    (hNumeric :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessSupportNumericDataProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      smallDAGWitnessRestrictionNumericDataProviderOnSlices
+        F (ppolyDAGSizeBoundOnSlices F hInDag)
+        (smallDAGWitnessRestrictionExtractionProviderOnSlices_of_support
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) := by
+  intro hInDag
+  exact smallDAGWitnessRestrictionNumericDataProviderOnSlices_of_supportNumeric
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hNumeric hInDag)
+
+/--
+Route-A2 mainline closure on the canonical DAG-size surface.
+
+This is the direct "pick one mainline and finish it" theorem for the current
+sprint:
+1. extraction family is fixed to the support-based constructor,
+2. source work supplies only the matching numeric family,
+3. closure to the exact accepted-family G1 endpoint is immediate.
+-/
+theorem routeA2_mainline_acceptedFamily_onCanonicalBound_of_supportExtractionAndNumericFamily
+    (F : GapSliceFamily)
+    (hNumeric :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessSupportNumericDataProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact
+    smallDAGAcceptedFamilyStatement_of_restrictionExtractionAndNumericProvider
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+      (smallDAGWitnessRestrictionExtractionProviderOnSlices_of_support
+        F (ppolyDAGSizeBoundOnSlices F hInDag))
+      (routeA2_mainline_supportExtractionAndNumeric_synchronized_onCanonicalBound
+        F hNumeric hInDag)
+
+/--
+Thin canonical Route-A2 closure from support-card bounds plus
+`supportHalf + canonicalFactor≤1`.
+
+This theorem deliberately avoids introducing any new endpoint shape: it builds
+the required support-numeric family through
+`smallDAGWitnessSupportNumericDataProviderOnSlices_onCanonicalBound_of_supportBounds_and_factorOne`
+and then immediately reuses the existing
+`routeA2_mainline_acceptedFamily_onCanonicalBound_of_supportExtractionAndNumericFamily`.
+-/
+theorem routeA2_mainline_acceptedFamily_onCanonicalBound_of_supportBounds_and_factorOne
+    (F : GapSliceFamily)
+    (hSupportPolylog :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Facts.LocalityLift.polylogBudget
+                (Facts.LocalityLift.inputLen
+                  (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β))))
+    (hSupportQuarter :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Facts.LocalityLift.inputLen
+                (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 4)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Facts.LocalityLift.inputLen
+                (ThirdPartyFacts.toFactsParamsPartial (F.paramsOf n β)) / 2)
+    (hCanonicalFactorOne :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            Nat.log2
+                ((hInDag n β).polyBound (GapSliceFamily.encodedLen F n β) *
+                  ((DagCircuit.support W.C).card.succ) + 2) + 1
+              ≤ 1) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  have hNumeric :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessSupportNumericDataProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+    intro hInDag
+    exact
+      smallDAGWitnessSupportNumericDataProviderOnSlices_onCanonicalBound_of_supportBounds_and_factorOne
+        F hInDag
+        (hSupportPolylog hInDag)
+        (hSupportQuarter hInDag)
+        (hSupportHalf hInDag)
+        (hCanonicalFactorOne hInDag)
+  exact routeA2_mainline_acceptedFamily_onCanonicalBound_of_supportExtractionAndNumericFamily
+    F hNumeric
 
 /--
 Direct weak-route closure from a generic accepted-family certificate provider.

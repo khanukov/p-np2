@@ -800,3 +800,52 @@ unconditional `P ≠ NP`.
    bridge assumptions.
 4. Final theorem surface is asymptotic.
 5. Docs report unconditional status consistently.
+
+## Execution control checklist (NP ⊄ PpolyDAG gate)
+
+To avoid accidental drift into "wrapper-only" progress, use this strict
+checklist as the day-to-day control surface.
+
+### C0. Source theorem must be explicit
+
+At any point in time, the branch must declare exactly one active source theorem
+target from this set:
+
+1. `SmallDAGWitnessOnSlice -> PromiseYesSubcubeCertificateAt` (mainline),
+2. `SmallDAGWitnessOnSlice -> AcceptedFamilyCertificateAt` (direct weak
+   consumer),
+3. `hDag -> stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)` (strong fallback).
+
+If no active target is declared, do not start new endpoint work.
+
+### C1. Mandatory no-go checks before new lemmas
+
+Before adding source-side lemmas, verify:
+
+1. the lemma is not just singleton polishing;
+2. the lemma does not introduce a new consumer endpoint;
+3. the lemma can be placed on a dependency path to one of C0 targets.
+
+If any answer is "no", defer the lemma.
+
+### C2. Quantitative lock for Promise-YES mainline
+
+For the Promise-YES route, do not mark the source theorem "in progress"
+unless both subgoals are named explicitly:
+
+1. Q1 semantic invariant with non-full `S` (or equivalent complement-budget form),
+2. Q2 same-set slack for that same `S`.
+
+The diagnostic theorem `no_sameSetSlack_of_strictDAGSemantics` means the
+existing strict-Q1 constructor does **not** satisfy C2 by itself.
+
+### C3. Merge readiness for unconditional gate work
+
+A PR that claims progress on the unconditional DAG gate must include one of:
+
+1. a theorem closing one C0 source target, or
+2. a theorem that is an immediate compiler step into one C0 target
+   (with explicit reference in the PR notes).
+
+Pure wrapper/refactor/doc changes may accompany the PR, but cannot be the only
+"gate progress" content.

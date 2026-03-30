@@ -1551,6 +1551,26 @@ abbrev dagStableRestrictionSlackPackageAtProviderOnSlices
       DAGStableRestrictionSlackPackageAt W
 
 /--
+Provider lift of the support-half strong fallback.
+
+This is the family-level version of
+`dagStableRestrictionSlackPackageAt_of_supportHalfBound`: if every slice witness
+has support at most half the truth-table length, we obtain a full provider of
+encoded-coordinate slack packages.
+-/
+noncomputable def dagStableRestrictionSlackPackageAtProviderOnSlices_of_supportHalfBound
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤ Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    dagStableRestrictionSlackPackageAtProviderOnSlices F SizeBound := by
+  intro n β ε W
+  exact dagStableRestrictionSlackPackageAt_of_supportHalfBound W (hSupportHalf n β ε W)
+
+/--
 Certificate-provider reduction to the stronger encoded-coordinate slack route.
 -/
 noncomputable def dagStableRestrictionSlackPackageAtProviderOnSlices_of_shrinkageCertificateProvider
@@ -2073,6 +2093,29 @@ theorem smallDAGAcceptedFamilyStatement_of_dagStableRestrictionSlackPackageAtPro
   exact smallDAGAcceptedFamilyStatement_of_certificateProvider F SizeBound
     (acceptedFamilyCertificateAtProviderOnSlices_of_dagStableRestrictionSlackPackageAtProvider
       F SizeBound hPkg)
+
+/--
+One-hop strong-fallback compiler from support-half bounds.
+
+This theorem is the direct positive node currently available in this file:
+
+`supportHalf family`
+`→ dagStableRestrictionSlackPackageAtProviderOnSlices`
+`→ SmallDAGImpliesAcceptedFamilyStatement`.
+-/
+theorem smallDAGAcceptedFamilyStatement_of_supportHalfBound
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSupportHalf :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤ Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    SmallDAGImpliesAcceptedFamilyStatement F SizeBound := by
+  exact smallDAGAcceptedFamilyStatement_of_dagStableRestrictionSlackPackageAtProvider
+    F SizeBound
+    (dagStableRestrictionSlackPackageAtProviderOnSlices_of_supportHalfBound
+      F SizeBound hSupportHalf)
 
 /--
 Compiled strong-fallback bridge from witness-indexed shrinkage certificates to
@@ -3941,6 +3984,36 @@ theorem gateG1_routeA2_acceptedFamily_of_providerFamily
   intro hInDag
   exact smallDAGAcceptedFamilyStatement_of_certificateProvider
     F (ppolyDAGSizeBoundOnSlices F hInDag) (hAccepted hInDag)
+
+/--
+Canonical thin wrapper from support-half family bounds to Gate-G1 Route-A.2.
+
+This keeps the mainline focused on one real source obligation (`hSupportHalf`)
+while reusing the already closed strong-fallback bridge to the accepted-family
+endpoint.
+-/
+theorem gateG1_routeA2_acceptedFamily_of_supportHalfBoundFamily
+    (F : GapSliceFamily)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+      SmallDAGImpliesAcceptedFamilyStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag) := by
+  intro hInDag
+  exact smallDAGAcceptedFamilyStatement_of_supportHalfBound
+    F (ppolyDAGSizeBoundOnSlices F hInDag) (hSupportHalf hInDag)
 
 /--
 Gate-G1 (Route A / item 1) endpoint wrapper.

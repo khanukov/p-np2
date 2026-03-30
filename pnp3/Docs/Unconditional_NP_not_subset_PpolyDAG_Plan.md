@@ -473,6 +473,58 @@ We should not claim success until all of the following are true at once.
 
 ---
 
+## 8.1. Execution lock (to avoid roadmap drift)
+
+The current tree already has enough wrappers to accidentally look "almost done"
+without discharging the real source theorem.  To keep work aligned, treat the
+following as **mandatory phase gates**.
+
+### Gate G1 (source theorem gate, mandatory)
+
+At least one of these must be proved internally (without external DAG lower-bound
+hypotheses):
+
+1. `∀ hInDag, SmallDAGImpliesPromiseYesSubcubeStatement F (ppolyDAGSizeBoundOnSlices F hInDag)`, or
+2. `∀ hInDag, SmallDAGImpliesAcceptedFamilyStatement F (ppolyDAGSizeBoundOnSlices F hInDag)`, or
+3. `∀ hDag, stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`.
+
+If none of (1)–(3) is closed, do **not** report progress as "closing the final
+gate".
+
+### Gate G2 (strict-semantics quantitative gate, if Promise-YES mainline is used)
+
+If route (1) above is chosen, require all of:
+
+1. strict-semantics Q1 is connected to a non-full semantic coordinate set
+   (or equivalent complement-budget witness),
+2. same-set quantitative slack is proved on that same `S`,
+3. composition to `PromiseYesSubcubeCertificateAt` uses existing compiler lemmas
+   (no new bespoke consumer endpoint).
+
+The theorem `no_sameSetSlack_of_strictDAGSemantics` must remain interpreted as a
+blocking diagnostic until this gate is discharged.
+
+### Gate G3 (final-wrapper gate)
+
+After G1 is closed:
+
+1. make a default internal theorem returning
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG` with no external DAG
+   lower-bound argument;
+2. switch default `P_ne_NP_final*` wrappers to consume that internal theorem;
+3. keep old externally-parameterized wrappers only as compatibility aliases.
+
+### Gate G4 (audit gate)
+
+Before claiming unconditional status:
+
+1. re-run `./scripts/check.sh`,
+2. ensure weak-route surface tests still compile,
+3. ensure docs (`CHECKLIST_UNCONDITIONAL_P_NE_NP.md`, `TODO.md`, `STATUS.md`)
+   all state the same blocker status.
+
+---
+
 ## 9. Short version
 
 If we compress the plan to one line, it is this:

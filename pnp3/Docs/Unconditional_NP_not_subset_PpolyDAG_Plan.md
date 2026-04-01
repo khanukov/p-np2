@@ -553,10 +553,445 @@ Before claiming unconditional status:
 
 If we compress the plan to one line, it is this:
 
-> **Stop trying to upgrade the current singleton selectors; instead build a new
-> DAG-native source package whose core theorem is a global small stable
-> restriction, then feed that theorem into the already finished
-> stable-restriction consumer stack.**
+> **Stop trying to upgrade singleton/HSG-first targets; replace the canonical
+> sampler by a non-singleton easy-description family, prove a canonical
+> easy-density source, compile density directly to transfer, and reuse the
+> existing counting/final wrappers unchanged.**
 
 That is the shortest honest route from the current branch state to an
 unconditional `NP ⊄ PpolyDAG` theorem.
+
+---
+
+## 10. Addendum: canonical easy-density pivot (analysis-first blocker rewrite)
+
+This addendum records a stricter diagnosis of the *current* final blocker in the
+Route-B stack and a safer theorem-target sequence for closing the unconditional
+endgame.
+
+### 10.1. Updated blocker diagnosis
+
+At the present point in the codebase, the downstream chain
+
+`EasyImageTransferAt -> counting contradiction -> no small solver -> final wrappers`
+
+is structurally in place. The critical remaining mathematical debt is the
+canonical source theorem layer (preferred target:
+`canonical_smallDAG_easyDensity_source_on_slices`).
+
+However, the current canonical sampler is explicitly singleton-like:
+
+* `canonicalEasySamplerSeedLen p := 0`;
+* `canonicalEasySampler` always outputs the constant-false truth table.
+
+This means the current canonical HSG target is not a robust final theorem target
+for unrestricted small DAGs.
+
+### 10.2. Why singleton canonical HSG is the wrong last debt
+
+If the sampler support is a singleton `{x0}`, small DAGs can isolate that point.
+Concretely, let `D0` accept only `x0` and reject all other total tables (size
+`O(N)` implementation by conjunction of equality checks on all value bits). Then:
+
+* `Pr_u[D0(u)=1] = 2^{-N} < 1 - ε` for any constant `ε <= 1/4` and large `N`;
+* but `D0(x0)=1`, so there is no rejecting sampled point.
+
+So singleton-supported canonical HSG cannot be the right final theorem debt.
+
+### 10.3. Recommended replacement target: canonical easy-density source
+
+Before proving canonical HSG directly, target a weaker and more natural object:
+
+*For every small DAG with noticeable uniform rejection, the DAG rejects a
+noticeable fraction of a canonical easy family.*
+
+This should be represented by a source interface with parameters:
+
+* `epsilon` (transfer slack),
+* `delta > 0` (easy-family reject density lower bound),
+* a theorem `uniform-low-acceptance -> reject-density-at-least-delta`.
+
+### 10.4. Why density should go directly to transfer in this architecture
+
+For the current endpoint interfaces, the strongest mainline is:
+
+`density -> transfer -> counting contradiction`.
+
+Reason:
+
+1. transfer is exactly what `EasyImageTransferAt` needs;
+2. with `delta > 0`, density already implies existence of a rejecting point in a
+   finite canonical easy family for a fixed DAG, so any HSG step is optional
+   compatibility;
+3. no union-bound/global-hitting-tuple argument is needed for the default
+   closure route.
+
+So `density -> HSG` can remain as a derived theorem, but should not be the
+primary path to final contradiction.
+
+### 10.5. Concrete implementation order (recommended)
+
+1. Replace singleton sampler primitive by a canonical finite family of
+   **distinct easy truth tables** (or equivalently canonical one-representative
+   descriptions per easy function).
+2. Introduce canonical transfer and/or density source statements as primary
+   debts.
+3. Add direct compiler:
+   * `density -> transfer` (mainline-critical).
+4. Optionally add compatibility compilers:
+   * `transfer -> HSG` (contraposition),
+   * `density -> HSG` (pointwise positivity on finite seed space).
+5. Keep `canonical_smallDAG_easyHSG_source_on_slices` as a **derived**
+   compatibility target, not the first theorem attacked directly.
+6. Re-point average-case/semantic-sampling upstream route to density/transfer.
+
+### 10.6. Net architectural effect
+
+The endgame becomes:
+
+`avg-hardness / semantic-sampling source`
+`-> canonical easy-density (or transfer) source`
+`-> EasyImageTransferAt`
+`-> counting contradiction`
+`-> NP ⊄ PpolyDAG`
+`-> P != NP`.
+
+This preserves all working downstream code and relocates the true mathematical
+risk to the distributional statement where existing MCSP/hardness-to-HSG
+literature is most naturally aligned.
+
+---
+
+## 11. Recheck status (2026-04-01): what is still open vs. already sufficient
+
+This section is a second-pass challenge audit after re-reading the active
+`DAGStableRestrictionProducer` chain and running the repository checks.
+
+### 11.1. What is already in place (and looks mathematically coherent)
+
+1. **Downstream closure from source objects to contradiction is present.**
+   The route from source providers to witness transfer/certificates and then to
+   `no_small_dag_solver_*_of_counting` is implemented as direct closures.
+2. **Counting-side quarter-slack plumbing is internalized.**
+   The route discharges epsilon-smallness from source `hEpsQuarter` and slice
+   counting budget assumptions.
+3. **Build/audit hygiene currently passes.**
+   Full check script passes; there are linter warnings, but no `sorry/admit`,
+   no project-local `axiom`, and no `native_decide` policy violations.
+
+Conclusion: there is no obvious downstream wiring gap left in the current Route-B
+pipeline once a valid source theorem is available.
+
+### 11.2. What is still genuinely open (the hard part)
+
+1. **Canonical source theorem is still the core unresolved debt.**
+   The primary debt should be the density/transfer form on slices
+   (`canonical_smallDAG_easyDensity_source_on_slices` as preferred target, with
+   HSG as compatibility layer).
+2. **Current canonical sampler is singleton-like.**
+   This keeps the canonical target mathematically brittle for unrestricted DAGs
+   and should be replaced before treating any canonical source theorem as the
+   final primary theorem goal.
+3. **Upstream hardness-to-source bridge is not yet discharged.**
+   Even with wrappers complete, one still needs a bona fide mathematical source
+   argument (average-case / semantic-sampling / density-transfer) to close the
+   chain unconditionally.
+
+### 11.3. Decision: “enough to finish now?” vs “still blocked?”
+
+**Still blocked mathematically.**  
+The repository appears *architecturally close* but not yet logically closed to
+unconditional `P != NP` because the critical source theorem debt is not proved
+in a non-brittle form. The right next step remains:
+
+* move to canonical easy-description family,
+* prove density/transfer source first,
+* derive canonical HSG as a compiler theorem,
+* then reuse existing downstream contradiction closures unchanged.
+
+In short: **engineering pipeline is largely sufficient; mathematics of the final
+source is not yet sufficient.**
+
+---
+
+## 12. Exact closure checklist for unconditional `P != NP` (no hand-waving)
+
+This is the concrete “what remains to prove” list, in theorem-level terms.
+
+### 12.1. What is already formally available
+
+1. **Source-to-contradiction closure exists** in `DAGStableRestrictionProducer`:
+   if a slice-wise source provider is given, `noSmallDAG_*` contradictions are
+   already proved.
+2. **Global debt layer is isolated** and should now be interpreted density-first:
+   primary debt `canonical_smallDAG_easyDensity_source_on_slices`, with
+   `canonical_smallDAG_easyHSG_source_on_slices` kept only as derived
+   compatibility route.
+3. **Final conversion to `P != NP` exists** through DAG separation final wrappers
+   once a DAG-side stable-restriction payload/provider is supplied.
+
+So the unresolved part is not the final wrappers but the missing source theorem
+content.
+
+### 12.2. Minimal mathematical obligations that are still missing
+
+To make the final theorem unconditional, the following must be proved (not
+postulated):
+
+#### (A) Non-singleton canonical easy family
+
+A canonical sampler family whose support is rich (e.g. decoded descriptions of
+all circuits of size `<= sYES`), plus the support-easy correctness theorem.
+
+Without this, singleton counterexamples keep any canonical source theorem
+artificially brittle.
+
+#### (B) Canonical density/transfer source theorem on slices
+
+For all small DAGs `D` in the ppoly-size bound:
+
+* either transfer form:
+  `(∀ z, D(gen z)=1) -> Pr_u[D(u)=1] >= 1 - epsilon`,
+* or density form:
+  `Pr_u[D(u)=1] < 1 - epsilon -> rejectDensity_easy(D) >= delta`.
+
+This is the real hard theorem debt; no existing wrapper removes this need.
+
+#### (C) Mainline compiler theorem from (B) to transfer
+
+Mainline compiler:
+
+* `density -> transfer` (direct contradiction using `delta > 0` and witness-side
+  reject-probability `= 0` on canonical easy samples).
+
+Optional compatibility compilers (not required for final closure):
+
+* `transfer -> HSG` (contraposition),
+* `density -> HSG` (finite-seed positivity: `rejectProb > 0 -> ∃ rejecting seed`).
+
+#### (D) Upstream hardness bridge proving (B)
+
+A mathematically justified bridge from an average-case / semantic-sampling /
+meta-complexity hardness statement to the canonical density/transfer source.
+
+This is the core research theorem. Without it, unconditional closure is not
+obtained.
+
+#### (E) Concrete NP witness packaging for the chosen fixed slice
+
+Final DAG endpoints are TM-witness parameterized. One needs an explicit
+`GapPartialMCSP_TMWitness p` (or equivalent NP membership package) for the
+selected target `p` used in the final theorem call.
+
+### 12.3. Binary answer to “is it already enough?”
+
+**No, not yet enough for unconditional `P != NP`.**
+
+*If* items (A)–(E) are fully proved inside the repository (especially (B)+(D)),
+then the current downstream chain is sufficient and the proof closes.
+
+Until then, the chain is a correct conditional framework, not an unconditional
+theorem.
+
+---
+
+## 13. Mainline correction: density should compile **directly** to transfer
+
+Important update to the theorem strategy:
+
+for unconditional closure, we do **not** need to route through HSG once a
+canonical easy-density source exists.
+
+### 13.1. Correct closure spine
+
+Use the following as the primary endgame:
+
+`canonical easy-density source`
+`-> EasyImageTransferAt`
+`-> counting contradiction`
+`-> no small solver`
+`-> NP ⊄ PpolyDAG`
+`-> P != NP`.
+
+`density -> HSG` remains a useful derived theorem, but is optional for final
+closure.
+
+### 13.2. Required new compiler theorem (core)
+
+Add a direct compiler:
+
+* `easyImageTransferAt_of_canonicalEasyDensitySourceAt`
+
+Proof idea should be formalized exactly as:
+
+1. `canonicalEasySampler_supportEasy` + witness correctness imply acceptance of
+   every canonical easy sample by the witness DAG.
+2. Therefore canonical reject-probability of the witness DAG is `0`.
+3. Assume uniform acceptance `< 1 - epsilon`; apply density source and obtain
+   `delta <= rejectProb = 0`, contradiction with `delta > 0`.
+4. Conclude the transfer inequality required by `EasyImageTransferAt`.
+
+This bypasses HSG entirely in the main proof spine.
+
+### 13.3. Planning consequences
+
+1. Promote `canonical_smallDAG_easyDensity_source_on_slices` to the primary
+   global debt.
+2. Keep `canonical_smallDAG_easyHSG_source_on_slices` as derived/compatibility
+   debt only.
+3. Re-point provider/surface wrappers so the default Route-B path consumes
+   density and compiles straight to transfer.
+
+### 13.4. Updated theorem-level “must prove” set
+
+After this correction, the unique research-critical blocker is:
+
+* proving `canonical_smallDAG_easyDensity_source_on_slices` for unrestricted
+  small DAGs (with a non-singleton canonical easy sampler).
+
+Everything downstream is then existing infrastructure plus the new direct
+density-to-transfer compiler.
+
+---
+
+## 14. Fact-checked execution plan: what is done, what is missing, how to close
+
+This section is a strict implementation plan based on currently present theorem
+names/interfaces (no speculative renaming).
+
+### 14.1. Current state matrix (verified against code)
+
+| Block | Status | Evidence in code | Gap to close |
+|---|---|---|---|
+| Canonical sampler | ❌ singleton | `canonicalEasySamplerSeedLen := 0`, `canonicalEasySampler = const false` | Replace with non-singleton easy-description sampler |
+| Witness transfer endpoint object | ✅ present | `EasyImageTransferAt` structure exists | none |
+| Transfer → counting contradiction | ✅ present | `no_small_dag_solver_of_easyImageTransferAt_of_counting` | none |
+| Source-provider → noSmallDAG closures | ✅ present | `noSmallDAG_of_smallDAGEasyHSGSourceProviderOnSlices`, `noSmallDAG_of_smallDAGEasyDistSourceProviderOnSlices` | add direct density-provider closure |
+| Primary canonical source debt (target) | ⚠️ migrating | currently represented via HSG-layer naming | freeze density debt as primary name/route |
+| Final DAG-separation wrappers | ✅ present | `NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM`, `P_ne_NP_final_of_dag_stableRestriction_TM` | consume new density-based producer |
+| NP witness packaging interface | ✅ present | `GapPartialMCSP_TMWitness`, `gapPartialMCSP_in_NP_of_TM` | provide concrete witness at chosen final `p` |
+
+### 14.2. Realistic closure sequence (implementation-ready)
+
+#### Phase I — Replace brittle canonical sampler (must-do first)
+
+1. Implement canonical finite family of **distinct easy truth tables**
+   (`canonicalEasyFamilyFinset`), e.g. deduplicated truth tables realized by
+   circuits of size `<= sYES`.
+2. Reprove/adjust:
+   * `canonicalEasyFamily_supportEasy`.
+3. Keep old singleton behavior only as archived diagnostic, not as primary debt
+   target.
+
+**Exit criterion:** canonical easy family is deduplicated at truth-table level
+and still formally supported on YES instances.
+
+#### Phase II — Introduce primary density source interface
+
+1. Add:
+   * `canonicalEasyRejectProb`,
+   * `CanonicalSmallDAGEasyDensitySourceAt`,
+   * `CanonicalSmallDAGEasyDensitySourceStatement`,
+   * `canonical_smallDAG_easyDensity_source_on_slices`.
+2. Ensure the statement is parameterized over the same slice-wise size-bound
+   interface pattern as existing source debts.
+
+**Exit criterion:** density source can be stated globally in one proposition,
+analogous to existing `canonical_smallDAG_*_source_on_slices`.
+
+#### Phase III — Add direct compiler `density -> transfer` (mainline-critical)
+
+1. Implement:
+   * `easyImageTransferAt_of_canonicalEasyDensitySourceAt`.
+2. Lift to slice providers:
+   * `easyImageTransferAtProviderOnSlices_of_canonicalEasyDensitySourceProviderOnSlices`.
+3. Reuse existing counting closure theorem without modifications.
+
+**Exit criterion:** a density source provider alone implies `noSmallDAG` by
+composition with existing transfer/counting route.
+
+#### Phase IV — Promote density debt to top-level default closure
+
+1. Add default surface theorems:
+   * `noSmallDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt`,
+   * `NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt`,
+   * `P_ne_NP_surface_of_canonicalSmallDAGEasyDensitySourceDebt` (or equivalent).
+2. Keep HSG-route theorems as optional derived compatibility path.
+
+**Exit criterion:** top-level route uses density debt by default, HSG not
+required for closure.
+
+#### Phase V — Close the only true research debt
+
+Prove:
+
+* `canonical_smallDAG_easyDensity_source_on_slices`.
+
+This is the unique non-plumbing theorem debt after Phases I–IV.
+
+### 14.3. Explicit “not enough yet” list (to avoid false closure claims)
+
+Unconditional `P != NP` is **not** yet obtained until all of the following are
+present simultaneously:
+
+1. canonical easy family of distinct truth tables + support theorem,
+2. direct density source theorem on slices,
+3. direct density-to-transfer compiler,
+4. top-level density-debt surface closure,
+5. concrete final TM witness packaging for the selected target parameters.
+
+If any item is missing, the repo remains a conditional framework.
+
+---
+
+## 15. Pre-coding interface freeze (must lock before Phase I)
+
+To avoid rework across Phases II–IV, lock these five decisions before writing
+new Lean definitions:
+
+1. **Debt naming freeze**
+   * Primary debt: `canonical_smallDAG_easyDensity_source_on_slices`.
+   * Derived compatibility: `canonical_smallDAG_easyHSG_source_on_slices`.
+2. **Compiler-priority freeze**
+   * Required mainline compiler: `density -> transfer`.
+   * Optional compilers: `density -> HSG`, `transfer -> HSG`.
+3. **Primary canonical object freeze**
+   * Primitive object is `canonicalEasyFamilyFinset` of distinct easy truth
+     tables.
+   * Probability is uniform over this family (not over raw descriptions).
+4. **Multiplicity-bias freeze**
+   * Do not weight functions by number of syntactic descriptions.
+   * If sampler is kept for compatibility, it must enumerate one canonical
+     representative per distinct truth table.
+5. **Density signature freeze**
+   * lock exact signatures for:
+     - `canonicalEasyFamilyFinset`,
+     - `canonicalEasyFamily_supportEasy`,
+     - `canonicalEasyRejectProb`,
+     - `CanonicalSmallDAGEasyDensitySourceAt`,
+     - `CanonicalSmallDAGEasyDensitySourceStatement`,
+     - `canonical_smallDAG_easyDensity_source_on_slices`.
+
+### 15.1. Recommended canonical reject-probability skeleton
+
+```lean
+noncomputable def canonicalEasyRejectProb
+    (p : GapPartialMCSPParams)
+    (D : DagCircuit (Models.partialInputLen p)) : Rat :=
+  acceptanceRatioOnFinset
+    (S := canonicalEasyFamilyFinset p)
+    (fun t =>
+      decide (dagAcceptsTotalTableOfCircuit p D t = false))
+```
+
+Any Bool-equivalent implementation is acceptable, but the probability space must
+remain the canonical family of distinct easy truth tables.
+
+### 15.2. Start condition
+
+Implementation should start immediately after this freeze. Do not wait for:
+
+* new simultaneous/global HSG objects,
+* union-bound hitting-tuple compilers,
+* rewrites of counting/final wrappers,
+* final TM witness packaging (needed at final theorem call, not for Phases I–IV).

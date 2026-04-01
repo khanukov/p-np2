@@ -53,6 +53,538 @@ def check_noSmallDAG_surface_of_prgImageAcceptanceProviderOnSlices :
         ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
   noSmallDAG_surface_of_prgImageAcceptanceProviderOnSlices
 
+/-- Surface wrapper check for distributional easy-image PRG weak route. -/
+def check_noSmallDAG_surface_of_easyImagePRGAtProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hEasy : easyImagePRGAtProviderOnSlices F SizeBound)
+      (hEpsSmall :
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+            (hEasy n β ε W).epsilon <
+              1 - ((Models.circuitCountBound (F.paramsOf n β).n
+                      ((F.paramsOf n β).sNO - 1) : Rat) /
+                    (2 ^ (Models.Partial.tableLen (F.paramsOf n β).n) : Rat))),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_surface_of_easyImagePRGAtProviderOnSlices
+
+/-- Surface wrapper check for source-level easy-image fooling weak route. -/
+def check_noSmallDAG_surface_of_smallDAGEasyImageFoolingSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hSource : smallDAGEasyImageFoolingSourceProviderOnSlices F SizeBound),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_surface_of_smallDAGEasyImageFoolingSourceProviderOnSlices
+
+/-- Surface wrapper check for minimal canonical distributional source route. -/
+def check_noSmallDAG_surface_of_smallDAGEasyDistSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hSource : smallDAGEasyDistSourceProviderOnSlices F SizeBound),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_surface_of_smallDAGEasyDistSourceProviderOnSlices
+
+/-- Surface wrapper check for one-sided easy-HSG source route. -/
+def check_noSmallDAG_surface_of_smallDAGEasyHSGSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hSource : smallDAGEasyHSGSourceProviderOnSlices F SizeBound),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_surface_of_smallDAGEasyHSGSourceProviderOnSlices
+
+/-- Surface wrapper check for upstream average-case/hardness source route. -/
+def check_noSmallDAG_surface_of_smallDAGAverageCaseHardnessSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hAvg : smallDAGAverageCaseHardnessSourceProviderOnSlices F SizeBound),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_surface_of_smallDAGAverageCaseHardnessSourceProviderOnSlices
+
+/-- Surface check: renamed source-first `¬ PpolyDAG` weak-route wrapper. -/
+def check_not_globalPpolyDAG_surface_of_smallDAGEasyImageFoolingSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hEasyWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGEasyDistSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_smallDAGEasyImageFoolingSourceWeakRoute
+
+/-- Surface check: renamed minimal-source weak-route wrapper. -/
+def check_not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hEasyWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGEasyDistSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+
+/-- Surface check: one-sided easy-HSG weak-route wrapper. -/
+def check_not_globalPpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hEasyHSGWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGEasyHSGSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+
+/-- Surface check: avg-hardness weak-route wrapper. -/
+def check_not_globalPpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hAvgWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGAverageCaseHardnessSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
+
+/-- Surface check: renamed source-first `NP_not_subset_PpolyDAG` wrapper. -/
+def check_NP_not_subset_PpolyDAG_surface_of_smallDAGEasyImageFoolingSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hEasyWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGEasyDistSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_smallDAGEasyImageFoolingSourceWeakRoute
+
+/-- Surface check: renamed minimal-source class-level wrapper. -/
+def check_NP_not_subset_PpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hEasyWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGEasyDistSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+
+/-- Surface check: one-sided easy-HSG class-level weak-route wrapper. -/
+def check_NP_not_subset_PpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hEasyHSGWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGEasyHSGSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+
+/-- Surface check: avg-hardness class-level wrapper. -/
+def check_NP_not_subset_PpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hAvgWeak :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGAverageCaseHardnessSourceProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
+
+/-- Surface alias check for distributional PRG providers on slices. -/
+def check_easyImagePRGAtProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      easyImagePRGAtProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface alias check for one-sided transfer providers on slices. -/
+def check_easyImageTransferAtProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      easyImageTransferAtProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface alias check for source-level easy-image fooling providers. -/
+def check_smallDAGEasyImageFoolingSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      smallDAGEasyImageFoolingSourceProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface alias check for minimal canonical distributional source providers. -/
+def check_smallDAGEasyDistSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      smallDAGEasyDistSourceProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface alias check for one-sided easy-HSG source providers. -/
+def check_smallDAGEasyHSGSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      smallDAGEasyHSGSourceProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface alias check for avg-hardness source providers. -/
+def check_smallDAGAverageCaseHardnessSourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      smallDAGAverageCaseHardnessSourceProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface check: canonical one-`hInDag` source statement alias. -/
+def check_CanonicalSmallDAGEasyImageSourceStatement :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β))),
+      Type :=
+  CanonicalSmallDAGEasyImageSourceStatement
+
+/-- Surface check: canonical avg-hardness statement alias. -/
+def check_CanonicalSmallDAGAvgHardnessSourceStatement :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β))),
+      Type :=
+  CanonicalSmallDAGAvgHardnessSourceStatement
+
+/-- Surface check: canonical easy-HSG statement alias. -/
+def check_CanonicalSmallDAGEasyHSGSourceStatement :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β))),
+      Type :=
+  CanonicalSmallDAGEasyHSGSourceStatement
+
+/-- Surface check: global canonical source debt alias. -/
+def check_canonical_smallDAG_easyImage_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_easyImage_source_on_slices
+
+/-- Surface check: global canonical avg-hardness debt alias. -/
+def check_canonical_smallDAG_avgHardness_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_avgHardness_source_on_slices
+
+/-- Surface check: global canonical easy-HSG debt alias. -/
+def check_canonical_smallDAG_easyHSG_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_easyHSG_source_on_slices
+
+/--
+Surface check: distributional PRG endpoint type at one witness.
+-/
+def check_easyImagePRGAt_surface
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound ε) :
+    Type :=
+  EasyImagePRGAt W
+
+/-- Surface check: source-level easy-image fooling object type. -/
+def check_smallDAGEasyImageFoolingSourceAt_surface
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop} :
+    Type :=
+  SmallDAGEasyImageFoolingSourceAt (p := p) SizeBound
+
+/-- Surface check: minimal canonical distributional source object type. -/
+def check_smallDAGEasyDistSourceAt_surface
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop} :
+    Type :=
+  SmallDAGEasyDistSourceAt (p := p) SizeBound
+
+/-- Surface check: one-sided easy-HSG source object type. -/
+def check_smallDAGEasyHSGSourceAt_surface
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop} :
+    Type :=
+  SmallDAGEasyHSGSourceAt (p := p) SizeBound
+
+/-- Surface check: canonical fixed-sampler easy-HSG source object type. -/
+def check_CanonicalSmallDAGEasyHSGSourceAt_surface
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop} :
+    Type :=
+  CanonicalSmallDAGEasyHSGSourceAt (p := p) SizeBound
+
+/-- Surface check: upstream avg-hardness source object type. -/
+def check_smallDAGAverageCaseHardnessSourceAt_surface
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop} :
+    Type :=
+  SmallDAGAverageCaseHardnessSourceAt (p := p) SizeBound
+
+/-- Surface check: DAG-only evaluator on total tables. -/
+def check_dagAcceptsTotalTableOfCircuit
+    (p : Models.GapPartialMCSPParams)
+    (D : ComplexityInterfaces.DagCircuit (Models.partialInputLen p)) :
+    Core.BitVec (Models.Partial.tableLen p.n) → Bool :=
+  dagAcceptsTotalTableOfCircuit p D
+
+/-- Surface check: canonical easy-sampler seed length. -/
+def check_canonicalEasySamplerSeedLen
+    (p : Models.GapPartialMCSPParams) : Nat :=
+  canonicalEasySamplerSeedLen p
+
+/-- Surface check: canonical easy sampler function. -/
+def check_canonicalEasySampler
+    (p : Models.GapPartialMCSPParams) :
+    Core.BitVec (canonicalEasySamplerSeedLen p) →
+      Core.BitVec (Models.Partial.tableLen p.n) :=
+  canonicalEasySampler p
+
+/-- Surface check: canonical sampler YES-support theorem. -/
+def check_canonicalEasySampler_supportEasy
+    (p : Models.GapPartialMCSPParams) :
+    ∀ z, Models.PartialMCSP_YES p (Models.totalTableToPartial (canonicalEasySampler p z)) :=
+  canonicalEasySampler_supportEasy p
+
+/-- Surface check: DAG-only uniform acceptance probability. -/
+noncomputable def check_dagUniformAcceptanceProbOnTotalsOfCircuit
+    (p : Models.GapPartialMCSPParams)
+    (D : ComplexityInterfaces.DagCircuit (Models.partialInputLen p)) :
+    Rat :=
+  dagUniformAcceptanceProbOnTotalsOfCircuit p D
+
+/-- Surface check: DAG-only seed acceptance probability. -/
+noncomputable def check_dagSeedAcceptanceProbOnTotalsOfCircuit
+    {seedLen : Nat}
+    (p : Models.GapPartialMCSPParams)
+    (gen : Core.BitVec seedLen → Core.BitVec (Models.Partial.tableLen p.n))
+    (D : ComplexityInterfaces.DagCircuit (Models.partialInputLen p)) :
+    Rat :=
+  dagSeedAcceptanceProbOnTotalsOfCircuit p gen D
+
+/--
+Surface check: accepted-image core extractor (without fooling fields).
+-/
+def check_easyImageCore_of_prgImageAcceptanceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε} :
+    PRGImageAcceptanceAt W → EasyImageCoreAt W :=
+  easyImageCore_of_prgImageAcceptanceAt
+
+/--
+Surface check: seed-acceptance ratio equals `1` for `EasyImageCoreAt`.
+-/
+def check_dagSeedAcceptanceProbOnTotals_eq_one_of_easyImageCoreAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice} :
+    (core : EasyImageCoreAt W) →
+      dagSeedAcceptanceProbOnTotals W core.gen = 1 :=
+  dagSeedAcceptanceProbOnTotals_eq_one_of_easyImageCoreAt
+
+/--
+Surface check: lower-transfer theorem for distributional PRG endpoint.
+-/
+def check_dagUniformAcceptanceProbOnTotals_ge_one_sub_epsilon_of_easyImagePRGAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice} :
+    (cert : EasyImagePRGAt W) →
+      1 - cert.epsilon ≤ dagUniformAcceptanceProbOnTotals W :=
+  dagUniformAcceptanceProbOnTotals_ge_one_sub_epsilon_of_easyImagePRGAt
+
+/--
+Surface check: one-shot contradiction theorem for the distributional endpoint.
+-/
+def check_no_small_dag_solver_of_easyImagePRGAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (cert : EasyImagePRGAt W)
+    (_hUpper :
+      dagUniformAcceptanceProbOnTotals W < 1 - cert.epsilon) :
+    False :=
+  no_small_dag_solver_of_easyImagePRGAt W cert _hUpper
+
+/-- Surface check: counting upper bound for witness-uniform acceptance. -/
+def check_dagUniformAcceptanceProbOnTotals_le_countRatio_of_correctWitness
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    dagUniformAcceptanceProbOnTotals W ≤
+      (Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+      (2 ^ (Models.Partial.tableLen p.n) : Rat) :=
+  dagUniformAcceptanceProbOnTotals_le_countRatio_of_correctWitness W
+
+/-- Surface check: counting-closed one-shot contradiction. -/
+def check_no_small_dag_solver_of_easyImagePRGAt_of_counting
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (cert : EasyImagePRGAt W)
+    (hEpsSmall :
+      cert.epsilon <
+        1 - ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+              (2 ^ (Models.Partial.tableLen p.n) : Rat))) :
+    False :=
+  no_small_dag_solver_of_easyImagePRGAt_of_counting W cert hEpsSmall
+
+/-- Surface check: counting-closed contradiction for one-sided transfer endpoint. -/
+def check_no_small_dag_solver_of_easyImageTransferAt_of_counting
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (tr : EasyImageTransferAt W)
+    (hEpsSmall :
+      tr.epsilon <
+        1 - ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+              (2 ^ (Models.Partial.tableLen p.n) : Rat))) :
+    False :=
+  no_small_dag_solver_of_easyImageTransferAt_of_counting W tr hEpsSmall
+
+/-- Surface check: source→endpoint compiler is available. -/
+def check_easyImagePRGAt_of_smallDAGEasyImageFoolingSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : SmallDAGEasyImageFoolingSourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImagePRGAt W :=
+  easyImagePRGAt_of_smallDAGEasyImageFoolingSourceAt source W
+
+/-- Surface check: minimal-source→endpoint compiler is available. -/
+def check_easyImagePRGAt_of_smallDAGEasyDistSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : SmallDAGEasyDistSourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImagePRGAt W :=
+  easyImagePRGAt_of_smallDAGEasyDistSourceAt source W
+
+/-- Surface check: avg-hardness→easy-dist object compiler is available. -/
+def check_smallDAGEasyDistSourceAt_of_averageCaseHardnessSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : SmallDAGAverageCaseHardnessSourceAt (p := p) SizeBound) :
+  SmallDAGEasyDistSourceAt (p := p) SizeBound :=
+  smallDAGEasyDistSourceAt_of_averageCaseHardnessSourceAt src
+
+/-- Surface check: avg-hardness→easy-HSG object compiler is available. -/
+def check_smallDAGEasyHSGSourceAt_of_averageCaseHardnessSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : SmallDAGAverageCaseHardnessSourceAt (p := p) SizeBound) :
+    SmallDAGEasyHSGSourceAt (p := p) SizeBound :=
+  smallDAGEasyHSGSourceAt_of_averageCaseHardnessSourceAt src
+
+/-- Surface check: canonical fixed-sampler source→generic easy-HSG compiler. -/
+def check_smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalSmallDAGEasyHSGSourceAt (p := p) SizeBound) :
+    SmallDAGEasyHSGSourceAt (p := p) SizeBound :=
+  smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt src
+
+/-- Surface check: one-sided source→transfer endpoint compiler is available. -/
+def check_easyImageTransferAt_of_smallDAGEasyHSGSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : SmallDAGEasyHSGSourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImageTransferAt W :=
+  easyImageTransferAt_of_smallDAGEasyHSGSourceAt source W
+
+/-- Surface check: provider-level avg-hardness→easy-dist compiler is available. -/
+def check_smallDAGEasyDistSourceProviderOnSlices_of_avgHardnessSource
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    smallDAGAverageCaseHardnessSourceProviderOnSlices F SizeBound →
+      smallDAGEasyDistSourceProviderOnSlices F SizeBound :=
+  smallDAGEasyDistSourceProviderOnSlices_of_avgHardnessSource F SizeBound
+
+/-- Surface check: one-sided source→transfer provider compiler is available. -/
+def check_easyImageTransferAtProviderOnSlices_of_smallDAGEasyHSGSourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    smallDAGEasyHSGSourceProviderOnSlices F SizeBound →
+      easyImageTransferAtProviderOnSlices F SizeBound :=
+  easyImageTransferAtProviderOnSlices_of_smallDAGEasyHSGSourceProviderOnSlices F SizeBound
+
+/--
+Surface check: canonical fixed-sampler provider→generic easy-HSG provider
+compiler is available.
+-/
+def check_smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyHSGSourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    (∀ n : Nat, ∀ β : Rat,
+      CanonicalSmallDAGEasyHSGSourceAt
+        (p := F.paramsOf n β) (fun ε' s => SizeBound n β ε' s)) →
+      smallDAGEasyHSGSourceProviderOnSlices F SizeBound :=
+  smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyHSGSourceProviderOnSlices
+    F SizeBound
+
+/-- Surface check: provider-level avg-hardness→easy-HSG compiler is available. -/
+def check_smallDAGEasyHSGSourceProviderOnSlices_of_avgHardnessSource
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    smallDAGAverageCaseHardnessSourceProviderOnSlices F SizeBound →
+      smallDAGEasyHSGSourceProviderOnSlices F SizeBound :=
+  smallDAGEasyHSGSourceProviderOnSlices_of_avgHardnessSource F SizeBound
+
+/-- Surface check: quarter slack from `circuit_bound_ok`. -/
+def check_quarter_lt_one_sub_countRatio_of_circuit_bound_ok
+    (p : Models.GapPartialMCSPParams) :
+    (1 / 4 : Rat) <
+      1 - ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+            (2 ^ (Models.Partial.tableLen p.n) : Rat)) :=
+  quarter_lt_one_sub_countRatio_of_circuit_bound_ok p
+
 /-- Surface restriction-fallback wrapper is available with the expected type. -/
 def check_noSmallDAG_surface_of_restrictionFallbackOnSlices :
     ∀ (F : GapSliceFamily)
@@ -73,6 +605,18 @@ def check_smallDAGPromiseYesSubcubeStatement_of_packageProvider :
       promiseValueLocalityPackageAtProviderOnSlices F SizeBound →
         SmallDAGImpliesPromiseYesSubcubeStatement F SizeBound :=
   smallDAGPromiseYesSubcubeStatement_of_packageProvider
+
+/--
+Gate-G1 Route-B item (3) wrapper is available with the expected type:
+a DAG-native certificate provider compiles directly to the canonical
+stable-restriction goal family over `dagCanonicalPayload`.
+-/
+def check_gateG1_routeB_stableRestrictionGoal_of_certificateProvider :
+    ∀ {p : Models.GapPartialMCSPParams}
+      (_hCert : dagStableRestrictionCertificateProvider p),
+      ∀ hDag : ComplexityInterfaces.PpolyDAG (Models.gapPartialMCSP_Language p),
+        stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag) :=
+  gateG1_routeB_stableRestrictionGoal_of_certificateProvider
 
 /--
 Q1/Q2 split-provider compilation to promise-YES certificate provider is
@@ -96,6 +640,71 @@ def check_noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices :
       promiseYesSlackOnInvariantProviderOnSlices F SizeBound hInv →
         ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
   noSmallDAG_of_promiseYesSemanticAndSlackProvidersOnSlices
+
+/--
+Q1 semantic provider + required-budget provider compiles directly to no-small-DAG
+with the expected type.
+-/
+def check_noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (hInv : promiseYesAcceptanceInvariantAtProviderOnSlices F SizeBound),
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound hInv →
+        ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_of_promiseYesRequiredBudgetProviderOnSlices
+
+/--
+Strict-semantics specialization of the required-budget closure is available with
+the expected type.
+-/
+def check_noSmallDAG_of_strictSemanticsAndRequiredBudgetProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop)
+      (_hBudget :
+        promiseYesRequiredBudgetOnInvariantProviderOnSlices F SizeBound
+          (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+            F SizeBound)),
+      ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε :=
+  noSmallDAG_of_strictSemanticsAndRequiredBudgetProviderOnSlices
+
+/--
+Canonical-surface strict-mainline blocker is available with the expected type:
+at any concrete solver index, strict required-budget provider is impossible.
+-/
+def check_not_strictRequiredBudgetProvider_onCanonicalBound_of_smallDAGSolver :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+      (n : Nat) (β ε : Rat),
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε →
+        ¬ promiseYesRequiredBudgetOnInvariantProviderOnSlices
+            F
+            (ppolyDAGSizeBoundOnSlices F hInDag)
+            (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+              F (ppolyDAGSizeBoundOnSlices F hInDag)) :=
+  not_strictRequiredBudgetProvider_onCanonicalBound_of_smallDAGSolver
+
+/--
+Pointwise contradiction wrapper for strict canonical required-budget route is
+available with expected type.
+-/
+def check_false_of_smallDAGSolver_and_strictRequiredBudgetProvider_onCanonicalBound :
+    ∀ (F : GapSliceFamily)
+      (hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)))
+      (n : Nat) (β ε : Rat),
+      SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε →
+      promiseYesRequiredBudgetOnInvariantProviderOnSlices
+        F
+        (ppolyDAGSizeBoundOnSlices F hInDag)
+        (promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
+          F (ppolyDAGSizeBoundOnSlices F hInDag)) →
+        False :=
+  false_of_smallDAGSolver_and_strictRequiredBudgetProvider_onCanonicalBound
 
 /--
 Package-provider -> Q1 semantic-provider reduction is available with the
@@ -131,12 +740,120 @@ def check_promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics 
   promiseYesAcceptanceInvariantAtProviderOnSlices_of_strictDAGSemantics
 
 /--
+Route-B source constructor from a concrete strict DAG witness plus support-half
+bound is available with expected type.
+-/
+noncomputable def check_dagStableRestrictionInvariantPackage_of_inPpolyDAG_supportHalf :
+    ∀ {p : Models.GapPartialMCSPParams}
+      (w : ComplexityInterfaces.InPpolyDAG (Models.gapPartialMCSP_Language p))
+      (_hHalf :
+        (ComplexityInterfaces.DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+          Models.Partial.tableLen p.n / 2),
+      DAGStableRestrictionInvariantPackage
+        (show ComplexityInterfaces.PpolyDAG (Models.gapPartialMCSP_Language p) from ⟨w, trivial⟩) :=
+  dagStableRestrictionInvariantPackage_of_inPpolyDAG_supportHalf
+
+/--
+Route-B Task-1 reduction theorem is available with expected type:
+uniform strict-witness support-half bounds imply the invariant provider.
+-/
+noncomputable def check_dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf :
+    ∀ {p : Models.GapPartialMCSPParams}
+      (_hSupportHalf :
+        ∀ w : ComplexityInterfaces.InPpolyDAG (Models.gapPartialMCSP_Language p),
+          (ComplexityInterfaces.DagCircuit.support (w.family (Models.partialInputLen p))).card ≤
+            Models.Partial.tableLen p.n / 2),
+      dagStableRestrictionInvariantProvider p :=
+  dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf
+
+/--
 Branch-A strengthened provider target (nontrivial `S`) is exposed with the
 expected type.
 -/
 def check_promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices :
     (GapSliceFamily → (Nat → Rat → Rat → Nat → Prop) → Type) :=
   promiseYesAcceptanceInvariantAtNontrivialSProviderOnSlices
+
+/--
+Alternative positive-source route package with formula-track export hooks is
+available with the expected type.
+-/
+def check_NontrivialSAlternativeProducerRoute :
+    Type :=
+  NontrivialSAlternativeProducerRoute
+
+/--
+Projection to `FormulaSupportRestrictionBoundsPartial` is available with the
+expected type.
+-/
+def check_formulaSupportRestrictionBoundsPartial_of_nontrivialSAlternativeProducerRoute :
+    NontrivialSAlternativeProducerRoute →
+      Magnification.FormulaSupportRestrictionBoundsPartial :=
+  formulaSupportRestrictionBoundsPartial_of_nontrivialSAlternativeProducerRoute
+
+/--
+Projection to `FormulaRestrictionCertificateDataPartial` is available with the
+expected type.
+-/
+noncomputable def check_formulaRestrictionCertificateDataPartial_of_nontrivialSAlternativeProducerRoute :
+    NontrivialSAlternativeProducerRoute →
+      Magnification.FormulaRestrictionCertificateDataPartial :=
+  formulaRestrictionCertificateDataPartial_of_nontrivialSAlternativeProducerRoute
+
+/--
+First concrete inhabitant builder for the alternative route package is available
+with the expected type.
+-/
+noncomputable def check_nontrivialSAlternativeProducerRoute_of_promiseValuePackageAndSupportBounds :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.FormulaSupportRestrictionBoundsPartial →
+      NontrivialSAlternativeProducerRoute :=
+  nontrivialSAlternativeProducerRoute_of_promiseValuePackageAndSupportBounds
+
+/--
+Class-shaped export theorem to `FormulaSupportRestrictionBoundsPartial` is
+available with the expected type.
+-/
+noncomputable def check_formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.FormulaSupportRestrictionBoundsPartial →
+      Magnification.FormulaSupportRestrictionBoundsPartial :=
+  formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andSupportBounds
+
+/--
+I-2 ladder theorem from the same class-shaped source is available with the
+expected type.
+-/
+noncomputable def check_hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.FormulaSupportRestrictionBoundsPartial →
+      Magnification.hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andSupportBounds
+
+/--
+Support-bounds closure from non-full-`S` slice source plus multi-switching
+contract is available with the expected type.
+-/
+noncomputable def check_formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andMultiswitching :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract →
+      Magnification.FormulaSupportRestrictionBoundsPartial :=
+  formulaSupportRestrictionBoundsPartial_of_nontrivialSSliceSource_andMultiswitching
+
+/--
+I-2 default structured-provider closure from the same assumptions is available
+with the expected type.
+-/
+noncomputable def check_hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andMultiswitching :
+    (∀ (F : GapSliceFamily) (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      promiseValueLocalityPackageAtProviderOnSlices F SizeBound) →
+    Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract →
+      Magnification.hasDefaultStructuredLocalityProviderPartial :=
+  hasDefaultStructuredLocalityProviderPartial_of_nontrivialSSliceSource_andMultiswitching
 
 /--
 Current strict-Q1 route explicitly pins `S = Finset.univ`.
@@ -457,6 +1174,121 @@ def check_NP_not_subset_PpolyDAG_of_promiseYesWeakRoute :
             F (ppolyDAGSizeBoundOnSlices F hInDag)),
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_of_promiseYesWeakRoute
+
+/--
+G1 Route-A item (2) gate wrapper is available with the expected type:
+provider-family assumptions specialized to canonical `ppolyDAG` size bounds
+compile to the accepted-family source theorem schema.
+-/
+def check_gateG1_routeA2_acceptedFamily_of_providerFamily :
+    ∀ (F : GapSliceFamily)
+      (_hAccepted :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          acceptedFamilyCertificateAtProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA2_acceptedFamily_of_providerFamily
+
+/--
+G1 Route-A item (1) gate wrapper is available with the expected type:
+provider-family assumptions specialized to canonical `ppolyDAG` size bounds
+compile to the promise-YES source theorem schema.
+-/
+def check_gateG1_routeA1_promiseYes_of_providerFamily :
+    ∀ (F : GapSliceFamily)
+      (_hYes :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          promiseYesSubcubeCertificateAtProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesPromiseYesSubcubeStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA1_promiseYes_of_providerFamily
+
+/--
+Concrete Route-A.2 G1 compiler from restriction-certificate-data families is
+available with the expected type.
+-/
+def check_gateG1_routeA2_acceptedFamily_of_restrictionDataFamily :
+    ∀ (F : GapSliceFamily)
+      (_hData :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGWitnessRestrictionCertificateDataProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA2_acceptedFamily_of_restrictionDataFamily
+
+/--
+Concrete Route-A.2 G1 compiler from extraction+numeric source families is
+available with the expected type.
+-/
+def check_gateG1_routeA2_acceptedFamily_of_restrictionExtractionAndNumericFamily :
+    ∀ (F : GapSliceFamily)
+      (_hExtract :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGWitnessRestrictionExtractionProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag))
+      (_hNumeric :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          smallDAGWitnessRestrictionNumericDataProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)
+            (_hExtract hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesAcceptedFamilyStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA2_acceptedFamily_of_restrictionExtractionAndNumericFamily
+
+/--
+Concrete Route-A.1 G1 compiler from promise/value package families is available
+with the expected type.
+-/
+def check_gateG1_routeA1_promiseYes_of_packageFamily :
+    ∀ (F : GapSliceFamily)
+      (_hPkg :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          promiseValueLocalityPackageAtProviderOnSlices
+            F (ppolyDAGSizeBoundOnSlices F hInDag)),
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        SmallDAGImpliesPromiseYesSubcubeStatement
+          F (ppolyDAGSizeBoundOnSlices F hInDag) :=
+  gateG1_routeA1_promiseYes_of_packageFamily
 
 /--
 FinalResult exports the accepted-family weak-route contradiction wrapper.

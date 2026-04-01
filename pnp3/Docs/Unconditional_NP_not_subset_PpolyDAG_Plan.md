@@ -1,6 +1,11 @@
 # Concrete plan to reach unconditional `NP ⊄ PpolyDAG`
 
-Last updated: 2026-03-28.
+Last updated: 2026-03-30.
+
+> Update (2026-03-30): unrestricted-DAG blocker reassessment moved the
+> recommended final blocker from locality-only Route-B endpoints toward
+> global distributional certificates.  See
+> `pnp3/Docs/UnrestrictedDAG_Blocker_Reassessment_2026-03-30.md`.
 
 This note turns the current DAG frontier into an explicit execution plan.
 It is intentionally stricter than a generic research memo: every milestone
@@ -405,42 +410,38 @@ clearly smaller than building a native DAG support/locality theory.
 Tasks 1–3 from the original draft are now complete as infrastructure items; the
 active queue below starts from the current branch state.
 
-### Branch map for the current sprint
+### Active branch map (Route-B locked mainline)
 
-- **A. Strengthen Q1:** construct a semantic invariant with non-full coordinate
-  set (`S ≠ Finset.univ`).
-- **B. PRG backup:** in parallel, push
-  `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`.
-- **C. Restricted-model probes:** use support-bounded / value-supported /
-  low-reuse slices to identify a transferable non-full-`S` structural invariant.
-  Current foothold: package-route probes already certify non-full `S` and lift
-  to `PromiseYesAcceptanceInvariantAtNontrivialS`; what remains is lifting this
-  nontriviality from probe models to strict target-semantics theorems.
+- **Mainline (required):** DAG-native source theorem for stable restriction:
+  `dagStableRestrictionInvariantProvider` or
+  `dagStableRestrictionCertificateProvider`.
+- **Fallback (optional):** supportHalf / accepted-family probes (Route-A2) only
+  if they produce immediate source-theorem progress; no strict-A1 re-entry.
 
-### Task 1. Internal source theorem (mainline promise-YES split)
+### Task 1. Close Route-B source theorem (the only active blocker)
 
-Q1 semantic existence is closed; the active remaining work is:
+Prove one of:
 
-1. prove same-set quantitative slack (`promiseYesSlackOnInvariant*`) for the
-   semantic coordinates chosen by Q1;
-2. compose to internal `PromiseYesSubcubeCertificateAt` without adding new
-   endpoint plumbing.
+1. `dagStableRestrictionInvariantProvider p`, or
+2. `dagStableRestrictionCertificateProvider p`,
 
-### Task 2. Internal source theorem (parallel PRG-image backup)
+from the DAG witness side, without introducing new consumer endpoints.
 
-In parallel with Task 1, attempt a strict DAG-side construction of
-`PRGImageAcceptanceAt`; keep this route as a second independent source
-generator feeding the same accepted-family consumer.
+Immediate expected compilation path (already in-tree):
 
-### Task 3. Internalized final wrappers
+`invariantProvider -> certificateProvider -> stableRestrictionGoal`.
 
-Once either Task 1 or Task 2 yields an internal class-level theorem, add
-default wrappers that no longer require external `hNPDag` and keep current
-conditional wrappers only as compatibility aliases (if needed).
+### Task 2. Internalize final DAG separation wrapper defaults
 
-### Task 4. Release-facing docs/audit cleanup
+After Task 1 closes:
 
-After Task 3:
+1. switch default DAG final wrappers to internal theorems with no external
+   `hNPDag`,
+2. keep older conditional wrappers only as compatibility aliases.
+
+### Task 3. Release-facing docs/audit cleanup
+
+After Task 2:
 
 1. update all status/checklist/release docs to mark DAG separation as internal;
 2. refresh signature audits and smoke tests;
@@ -470,6 +471,81 @@ We should not claim success until all of the following are true at once.
 
 6. Status documents are updated to state unconditional DAG separation
    consistently.
+
+---
+
+## 8.1. Execution lock (to avoid roadmap drift)
+
+The current tree already has enough wrappers to accidentally look "almost done"
+without discharging the real source theorem.  To keep work aligned, treat the
+following as **mandatory phase gates**.
+
+### Branch decision lock (2026-03-30)
+
+This plan now fixes the active direction to avoid returning to already-closed
+dead ends:
+
+1. **Do not continue strict Route-A1 required-budget work.**
+   - no new strict required-budget lemmas;
+   - no new strict canonical wrapper layers.
+2. **Treat strict A1 as blocked by formal diagnostics already in-tree**
+   (`S = univ` / same-set slack failure shape).
+3. **Use Route-B as the primary mainline**:
+   source-side goal is DAG-native invariant/certificate production
+   (`dagStableRestrictionInvariantProvider` /
+   `dagStableRestrictionCertificateProvider`) and immediate compilation into
+   `stableRestrictionGoal_of_abstractGapTargetedPayload`.
+4. **Keep supportHalf/A2 only as a fallback probe**, not as default mainline.
+
+### Gate G1 (source theorem gate, mandatory)
+
+At least one of these must be proved internally (without external DAG lower-bound
+hypotheses):
+
+1. `∀ hInDag, SmallDAGImpliesPromiseYesSubcubeStatement F (ppolyDAGSizeBoundOnSlices F hInDag)`, or
+2. `∀ hInDag, SmallDAGImpliesAcceptedFamilyStatement F (ppolyDAGSizeBoundOnSlices F hInDag)`, or
+3. `∀ hDag, stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`.
+
+If none of (1)–(3) is closed, do **not** report progress as "closing the final
+gate".
+
+**Active G1 target for this branch:** item (3), i.e. Route-B DAG-native source
+producer.
+
+### Gate G2 (strict-semantics quantitative gate, if Promise-YES mainline is used)
+
+If route (1) above is chosen, require all of:
+
+1. strict-semantics Q1 is connected to a non-full semantic coordinate set
+   (or equivalent complement-budget witness),
+2. same-set quantitative slack is proved on that same `S`,
+3. composition to `PromiseYesSubcubeCertificateAt` uses existing compiler lemmas
+   (no new bespoke consumer endpoint).
+
+The theorem `no_sameSetSlack_of_strictDAGSemantics` must remain interpreted as a
+blocking diagnostic until this gate is discharged.
+
+For the current branch lock (Route-B mainline), Gate G2 is non-mainline and
+must not be used to justify additional strict A1 wrapper work.
+
+### Gate G3 (final-wrapper gate)
+
+After G1 is closed:
+
+1. make a default internal theorem returning
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG` with no external DAG
+   lower-bound argument;
+2. switch default `P_ne_NP_final*` wrappers to consume that internal theorem;
+3. keep old externally-parameterized wrappers only as compatibility aliases.
+
+### Gate G4 (audit gate)
+
+Before claiming unconditional status:
+
+1. re-run `./scripts/check.sh`,
+2. ensure weak-route surface tests still compile,
+3. ensure docs (`CHECKLIST_UNCONDITIONAL_P_NE_NP.md`, `TODO.md`, `STATUS.md`)
+   all state the same blocker status.
 
 ---
 

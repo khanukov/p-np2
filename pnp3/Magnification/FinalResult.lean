@@ -376,6 +376,71 @@ theorem noSmallDAG_surface_of_prgImageAcceptanceProviderOnSlices
   exact LowerBounds.noSmallDAG_of_prgImageAcceptanceAtProviderOnSlices F SizeBound hPrg
 
 /--
+Final-surface wrapper for distributional easy-image PRG providers, with
+internal counting closure and explicit epsilon-smallness side condition.
+-/
+theorem noSmallDAG_surface_of_easyImagePRGAtProviderOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hEasy : LowerBounds.easyImagePRGAtProviderOnSlices F SizeBound)
+  (hEpsSmall :
+    ∀ n : Nat, ∀ β ε : Rat,
+      ∀ W : LowerBounds.SmallDAGWitnessOnSlice
+        (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+        (hEasy n β ε W).epsilon <
+          1 - ((Models.circuitCountBound (F.paramsOf n β).n
+                  ((F.paramsOf n β).sNO - 1) : Rat) /
+                (2 ^ (Models.Partial.tableLen (F.paramsOf n β).n) : Rat))) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.noSmallDAG_of_easyImagePRGAtProviderOnSlices
+    F SizeBound hEasy hEpsSmall
+
+/--
+Final-surface wrapper from source-level easy-image fooling providers.
+-/
+theorem noSmallDAG_surface_of_smallDAGEasyImageFoolingSourceProviderOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hSource : LowerBounds.smallDAGEasyImageFoolingSourceProviderOnSlices F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.noSmallDAG_of_smallDAGEasyImageFoolingSourceProviderOnSlices
+    F SizeBound hSource
+
+/-- Final-surface wrapper for the minimal canonical distributional source. -/
+theorem noSmallDAG_surface_of_smallDAGEasyDistSourceProviderOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hSource : LowerBounds.smallDAGEasyDistSourceProviderOnSlices F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.noSmallDAG_of_smallDAGEasyDistSourceProviderOnSlices
+    F SizeBound hSource
+
+/--
+Final-surface wrapper for one-sided easy-HSG source providers.
+
+This is the preferred weak mainline endpoint because downstream contradiction
+uses only one-sided lower transfer.
+-/
+theorem noSmallDAG_surface_of_smallDAGEasyHSGSourceProviderOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hSource : LowerBounds.smallDAGEasyHSGSourceProviderOnSlices F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.noSmallDAG_of_smallDAGEasyHSGSourceProviderOnSlices
+    F SizeBound hSource
+
+/--
+Final-surface wrapper from upstream average-case/hardness source providers.
+-/
+theorem noSmallDAG_surface_of_smallDAGAverageCaseHardnessSourceProviderOnSlices
+  (F : LowerBounds.GapSliceFamily)
+  (SizeBound : Nat → Rat → Rat → Nat → Prop)
+  (hAvg : LowerBounds.smallDAGAverageCaseHardnessSourceProviderOnSlices F SizeBound) :
+  ∀ n : Nat, ∀ β ε : Rat, ¬ LowerBounds.SmallDAGSolver F SizeBound n β ε := by
+  exact LowerBounds.noSmallDAG_of_smallDAGAverageCaseHardnessSourceProviderOnSlices
+    F SizeBound hAvg
+
+/--
 Final-surface wrapper for the strong restriction/shrinkage fallback stack.
 
 This theorem intentionally routes the stronger extraction+numerics contract into
@@ -542,6 +607,87 @@ theorem not_globalPpolyDAG_surface_of_prgImageAcceptanceWeakRoute
       (hPrgWeak hInDag)
 
 /--
+Thin bridge-local contradiction wrapper instantiated with the distributional
+easy-image PRG route (plus epsilon-smallness side condition).
+-/
+theorem not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hEasyWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyDistSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    LowerBounds.not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      F bridge ?_
+  intro hInDag
+  refine ⟨(1 / 4 : Rat), by positivity, (1 / 2 : Rat), by positivity, ?_⟩
+  intro β hβPos hβLt
+  refine ⟨0, ?_⟩
+  intro n hn
+  exact LowerBounds.noSmallDAG_of_smallDAGEasyDistSourceProviderOnSlices
+    F
+    (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+    (hEasyWeak hInDag)
+    n β (1 / 4)
+
+/--
+Thin bridge-local contradiction wrapper instantiated with the one-sided easy-HSG
+weak route.
+-/
+theorem not_globalPpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hEasyHSGWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyHSGSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    LowerBounds.not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      F bridge ?_
+  intro hInDag
+  refine ⟨(1 / 4 : Rat), by positivity, (1 / 2 : Rat), by positivity, ?_⟩
+  intro β hβPos hβLt
+  refine ⟨0, ?_⟩
+  intro n hn
+  exact LowerBounds.noSmallDAG_of_smallDAGEasyHSGSourceProviderOnSlices
+    F
+    (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+    (hEasyHSGWeak hInDag)
+    n β (1 / 4)
+
+/--
+Weak-route wrapper directly from upstream average-case/hardness sources.
+-/
+theorem not_globalPpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hAvgWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGAverageCaseHardnessSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+      F bridge
+      (fun hInDag =>
+        LowerBounds.smallDAGEasyHSGSourceProviderOnSlices_of_avgHardnessSource
+          F
+          (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+          (hAvgWeak hInDag))
+
+/--
 Thin bridge-local contradiction wrapper instantiated with the stronger
 restriction-extraction+numeric fallback route.
 
@@ -634,6 +780,179 @@ theorem NP_not_subset_PpolyDAG_surface_of_prgImageAcceptanceWeakRoute
   exact
     not_globalPpolyDAG_surface_of_prgImageAcceptanceWeakRoute
       F bridge hPrgWeak
+
+/--
+Class-level wrapper: distributional easy-image PRG weak route + explicit NP
+witness on `bridge.L` gives `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_easyImagePRGWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hEasyWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyDistSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+      F bridge hEasyWeak
+
+/--
+Backward-compatible alias (old name) to the source-first weak-route wrapper.
+-/
+theorem not_globalPpolyDAG_surface_of_easyImagePRGWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hEasyWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyDistSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+      F bridge hEasyWeak
+
+/--
+Renamed source-first class-level wrapper.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hEasyWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyDistSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_surface_of_easyImagePRGWeakRoute
+      F bridge hNP hEasyWeak
+
+/--
+Class-level wrapper from one-sided easy-HSG weak route.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hEasyHSGWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyHSGSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+      F bridge hEasyHSGWeak
+
+/--
+Class-level wrapper directly from upstream average-case/hardness weak route.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hAvgWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGAverageCaseHardnessSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+      F bridge hNP
+      (fun hInDag =>
+        LowerBounds.smallDAGEasyHSGSourceProviderOnSlices_of_avgHardnessSource
+          F
+          (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+          (hAvgWeak hInDag))
+
+/-- Backward-compatible alias under previous source-wrapper name. -/
+theorem not_globalPpolyDAG_surface_of_smallDAGEasyImageFoolingSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hEasyWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyDistSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute F bridge hEasyWeak
+
+/-- Backward-compatible alias under previous source-wrapper name. -/
+theorem NP_not_subset_PpolyDAG_surface_of_smallDAGEasyImageFoolingSourceWeakRoute
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hEasyWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        LowerBounds.smallDAGEasyDistSourceProviderOnSlices
+          F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact NP_not_subset_PpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute F bridge hNP hEasyWeak
+
+/--
+Bridge from the single canonical source-theorem debt to global non-inclusion.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyImageSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hCanonical : LowerBounds.canonical_smallDAG_easyImage_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGEasyDistSourceWeakRoute
+      F bridge hCanonical
+
+/--
+Bridge from the canonical one-sided easy-HSG source debt to global
+non-inclusion.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyHSGSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hCanonical : LowerBounds.canonical_smallDAG_easyHSG_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGEasyHSGSourceWeakRoute
+      F bridge
+      (fun hInDag =>
+        LowerBounds.smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyHSGSourceProviderOnSlices
+          F
+          (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag)
+          (hCanonical hInDag))
+
+/--
+Bridge from canonical average-case/hardness source debt to global contradiction.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGAvgHardnessSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hCanonical : LowerBounds.canonical_smallDAG_avgHardness_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
+      F bridge hCanonical
 
 /--
 Class-level wrapper: stronger restriction-extraction+numeric fallback route +

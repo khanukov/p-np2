@@ -21,6 +21,13 @@ These compile on the current tree.
 
 No. Current `P_ne_NP_final` is conditional.
 
+## Are we currently using GapMCSP or Partial MCSP in active code?
+
+Active code (`pnp3/`) uses **Partial MCSP** (`GapPartialMCSP*` objects).
+Legacy GapMCSP material is preserved under `archive/` for provenance only.
+If a document references GapMCSP, verify whether it is archival before treating
+it as a statement about the active pipeline.
+
 ## Is the active tree axiom-free in the strictest sense?
 
 No. Active `pnp3/` has no project-local `axiom` and no `sorry/admit`, but the

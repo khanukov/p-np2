@@ -15,6 +15,16 @@
 
 `SAL -> Covering-Power -> anti-checker -> magnification -> DAG-final wrappers`
 
+## Граница вариантов MCSP (важно для аудита)
+
+В активном `pnp3/` используется **только Partial MCSP**:
+
+- модель: `Models/Model_PartialMCSP.lean`;
+- язык/обещание: `gapPartialMCSP_Language`, `GapPartialMCSPPromise`.
+
+Legacy-модель **GapMCSP (total truth table)** хранится в `archive/` и не
+является источником текущего активного статуса.
+
 Текущая DAG-граница формализована через
 `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`:
 

@@ -17,6 +17,19 @@ the form:
 The active `pnp3/` branch is maintained as an auditable contract: what is
 constructively formalized now, and what assumptions are still explicit.
 
+## MCSP Variant Boundary (Audit-Critical)
+
+Active `pnp3/` development uses **Partial MCSP** (`GapPartialMCSP*` names).
+
+- Working model: `pnp3/Models/Model_PartialMCSP.lean`.
+- Active language/promise names: `gapPartialMCSP_Language`,
+  `GapPartialMCSPPromise`.
+- Legacy **GapMCSP (total-table)** material is retained only under `archive/`
+  for provenance and must not be treated as active pipeline code.
+
+When reviewing current claims, prefer `pnp3/` + top-level status docs and treat
+`archive/` as historical context only.
+
 ## Current State (No Overstatement)
 
 - `pnp3/` builds; `./scripts/check.sh` passes.

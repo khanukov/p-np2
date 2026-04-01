@@ -33,7 +33,8 @@ Restriction-style locality witness used by the partial magnification bridge.
 
 It packages:
 * a polylog test set `T`,
-* a local solver `loc` for the partial GapMCSP promise,
+* a local solver `loc` for the active partial-MCSP promise
+  (`Models.GapPartialMCSPPromise p`),
 * numerical bounds matching the locality-lift shape.
 -/
 def RestrictionLocalityPartial (p : GapPartialMCSPParams) : Prop :=

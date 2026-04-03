@@ -1404,6 +1404,94 @@ def check_P_ne_NP_final_of_blocker_TM :
   P_ne_NP_final_of_blocker_TM
 
 /--
+Asymptotic DAG-separation wrapper from one fixed-slice collapse is available
+with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      (ComplexityInterfaces.PpolyDAG
+          (Models.gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from one fixed-slice collapse is
+available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_fixedSliceCollapse :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      (ComplexityInterfaces.PpolyDAG
+          (Models.gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_fixedSliceCollapse
+
+/--
+Asymptotic DAG-separation wrapper from one fixed-slice stable-restriction
+producer is available with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      LowerBounds.dag_stableRestriction_producer
+        (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from one fixed-slice stable-restriction
+producer is available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_dag_stableRestriction :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      LowerBounds.dag_stableRestriction_producer
+        (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_dag_stableRestriction
+
+/--
+Asymptotic DAG-separation wrapper from one fixed-slice Route-B blocker is
+available with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_asymptotic_blocker :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from one fixed-slice source-closure
+package is available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_sourceClosure :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_sourceClosure
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from the same fixed-slice blocker is
+available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_blocker :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_blocker
+
+/--
 Branch-A strengthened provider target (nontrivial `S`) is exposed with the
 expected type.
 -/
@@ -1793,6 +1881,47 @@ def check_NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute :
             F (ppolyDAGSizeBoundOnSlices F hInDag)),
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute
+
+/--
+Surface check: canonical support-half family gives global non-inclusion.
+-/
+def check_not_globalPpolyDAG_surface_of_supportHalfBoundFamily :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (_hSupportHalf :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          ∀ n : Nat, ∀ β ε : Rat,
+            ∀ W : SmallDAGWitnessOnSlice
+              (F.paramsOf n β)
+              (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+              (ComplexityInterfaces.DagCircuit.support W.C).card ≤
+                Models.Partial.tableLen (F.paramsOf n β).n / 2),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_supportHalfBoundFamily
+
+/--
+Surface check: canonical support-half family gives `NP_not_subset_PpolyDAG`.
+-/
+def check_NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (_hNP : ComplexityInterfaces.NP bridge.L)
+      (_hSupportHalf :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          ∀ n : Nat, ∀ β ε : Rat,
+            ∀ W : SmallDAGWitnessOnSlice
+              (F.paramsOf n β)
+              (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+              (ComplexityInterfaces.DagCircuit.support W.C).card ≤
+                Models.Partial.tableLen (F.paramsOf n β).n / 2),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily
 
 /--
 Promise-YES weak route + NP witness closure to class-level separation is

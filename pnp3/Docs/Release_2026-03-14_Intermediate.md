@@ -1,5 +1,10 @@
 # Release Note (Intermediate) — 2026-03-14
 
+Historical note (2026-04-03):
+this file is a frozen intermediate release note for the inclusion-side closure.
+It is not the current repository-wide release posture. Use `/root/p-np2/RELEASE_RC.md`
+for current public wording.
+
 Scope: cleanup and stabilization of the internal `P ⊆ PpolyDAG` route.
 
 ## Included

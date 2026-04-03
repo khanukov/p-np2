@@ -6311,6 +6311,117 @@ structure EasyImageTransferQuarterBundleOnSlices
   hQuarter : easyImageTransferQuarterProviderOnSlices F SizeBound hTr
 
 /--
+Lift the single-slice extraction-budget constructor to a slice-family provider.
+
+This packages the exact local data needed to instantiate
+`canonicalWitnessEasyDensitySourceAt_of_extractionBudget` independently on each
+slice `(n, β)`.
+-/
+noncomputable def canonicalWitnessEasyDensitySourceProviderOnSlices_of_extractionBudget
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (epsilonOf : Nat → Rat → Rat)
+    (hardwireBudgetOf : Nat → Rat → Nat)
+    (hEpsQuarter :
+      ∀ n : Nat, ∀ β : Rat, epsilonOf n β ≤ (1 / 4 : Rat))
+    (hEpsNonneg :
+      ∀ n : Nat, ∀ β : Rat, 0 ≤ epsilonOf n β)
+    (hCoverBudget :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize (F.paramsOf n β).n (hardwireBudgetOf n β) <
+          (F.paramsOf n β).sYES)
+    (hExtract : smallDAGWitnessRestrictionExtractionProviderOnSlices F SizeBound)
+    (hBudget :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (canonicalValueAliveSet (hExtract n β ε W)).card ≤ hardwireBudgetOf n β) :
+    canonicalWitnessEasyDensitySourceProviderOnSlices F SizeBound := by
+  intro n β
+  exact canonicalWitnessEasyDensitySourceAt_of_extractionBudget
+    (p := F.paramsOf n β)
+    (SizeBound := fun ε' s => SizeBound n β ε' s)
+    (epsilonOf n β)
+    (hEpsQuarter n β)
+    (hEpsNonneg n β)
+    (hardwireBudgetOf n β)
+    (hCoverBudget n β)
+    (hExtract := fun {εslice} W => hExtract n β εslice W)
+    (hBudget := fun {εslice} W => hBudget n β εslice W)
+
+/--
+Support-budget specialization of
+`canonicalWitnessEasyDensitySourceProviderOnSlices_of_extractionBudget`.
+-/
+noncomputable def canonicalWitnessEasyDensitySourceProviderOnSlices_of_supportBudget
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (epsilonOf : Nat → Rat → Rat)
+    (hardwireBudgetOf : Nat → Rat → Nat)
+    (hEpsQuarter :
+      ∀ n : Nat, ∀ β : Rat, epsilonOf n β ≤ (1 / 4 : Rat))
+    (hEpsNonneg :
+      ∀ n : Nat, ∀ β : Rat, 0 ≤ epsilonOf n β)
+    (hCoverBudget :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize (F.paramsOf n β).n (hardwireBudgetOf n β) <
+          (F.paramsOf n β).sYES)
+    (hSupportBudget :
+      ∀ n : Nat, ∀ β ε : Rat,
+        ∀ W : SmallDAGWitnessOnSlice
+          (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+          (DagCircuit.support W.C).card ≤ hardwireBudgetOf n β) :
+    canonicalWitnessEasyDensitySourceProviderOnSlices F SizeBound := by
+  intro n β
+  exact canonicalWitnessEasyDensitySourceAt_of_supportBudget
+    (p := F.paramsOf n β)
+    (SizeBound := fun ε' s => SizeBound n β ε' s)
+    (epsilonOf n β)
+    (hEpsQuarter n β)
+    (hEpsNonneg n β)
+    (hardwireBudgetOf n β)
+    (hCoverBudget n β)
+    (hSupportBudget := fun {εslice} W => hSupportBudget n β εslice W)
+
+/--
+Provider-level compiler:
+witness-indexed canonical easy-density sources -> witness-uniform-lower
+sources.
+-/
+def witnessUniformLowerSourceProviderOnSlices_of_canonicalWitnessEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hDensity : canonicalWitnessEasyDensitySourceProviderOnSlices F SizeBound) :
+    witnessUniformLowerSourceProviderOnSlices F SizeBound := by
+  intro n β
+  exact witnessUniformLowerSourceAt_of_canonicalWitnessEasyDensitySourceAt
+    (hDensity n β)
+
+/--
+Provider-level compiler:
+witness-indexed canonical easy-density sources -> quarter-bounded witness
+transfer bundles.
+-/
+def easyImageTransferQuarterBundleOnSlices_of_canonicalWitnessEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hDensity : canonicalWitnessEasyDensitySourceProviderOnSlices F SizeBound) :
+    EasyImageTransferQuarterBundleOnSlices F SizeBound := by
+  refine
+    { hTr := ?_
+      hQuarter := ?_ }
+  · intro n β ε W
+    exact easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+      (source := hDensity n β) W
+  · intro n β ε W
+    let tr : EasyImageTransferAt W :=
+      easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+        (source := hDensity n β) W
+    have hQuarter : tr.epsilon ≤ (1 / 4 : Rat) := by
+      simpa [tr] using (hDensity n β).hEpsQuarter
+    simpa [tr] using hQuarter
+
+/--
 Slice-family provider for upstream average-case / semantic-sampling sources.
 -/
 abbrev smallDAGAverageCaseHardnessSourceProviderOnSlices
@@ -6469,6 +6580,259 @@ abbrev canonical_smallDAG_witnessTransferQuarter_source_on_slices
           (gapPartialMCSP_Language (F.paramsOf n β)),
       EasyImageTransferQuarterBundleOnSlices
         F (ppolyDAGSizeBoundOnSlices F hInDag)
+
+/--
+Canonical witness-indexed easy-density debt from extraction-budget data on the
+canonical `ppolyDAG` size surface.
+-/
+noncomputable def canonical_smallDAG_witnessEasyDensity_source_on_slices_of_extractionBudget
+    (F : GapSliceFamily)
+    (epsilonOf : Nat → Rat → Rat)
+    (hardwireBudgetOf : Nat → Rat → Nat)
+    (hEpsQuarter :
+      ∀ n : Nat, ∀ β : Rat, epsilonOf n β ≤ (1 / 4 : Rat))
+    (hEpsNonneg :
+      ∀ n : Nat, ∀ β : Rat, 0 ≤ epsilonOf n β)
+    (hCoverBudget :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize (F.paramsOf n β).n (hardwireBudgetOf n β) <
+          (F.paramsOf n β).sYES)
+    (hExtract :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        smallDAGWitnessRestrictionExtractionProviderOnSlices
+          F (ppolyDAGSizeBoundOnSlices F hInDag))
+    (hBudget :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β : Rat, ∀ ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (canonicalValueAliveSet (((hExtract hInDag) n β) ε W)).card ≤
+              hardwireBudgetOf n β) :
+    canonical_smallDAG_witnessEasyDensity_source_on_slices F := by
+  intro hInDag
+  exact canonicalWitnessEasyDensitySourceProviderOnSlices_of_extractionBudget
+    F (ppolyDAGSizeBoundOnSlices F hInDag)
+    epsilonOf hardwireBudgetOf
+    hEpsQuarter hEpsNonneg hCoverBudget
+    (hExtract hInDag)
+    (fun n β ε W => hBudget hInDag n β ε W)
+
+/--
+Canonical witness-indexed easy-density debt from support-budget data on the
+canonical `ppolyDAG` size surface.
+-/
+noncomputable def canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportBudget
+    (F : GapSliceFamily)
+    (epsilonOf : Nat → Rat → Rat)
+    (hardwireBudgetOf : Nat → Rat → Nat)
+    (hEpsQuarter :
+      ∀ n : Nat, ∀ β : Rat, epsilonOf n β ≤ (1 / 4 : Rat))
+    (hEpsNonneg :
+      ∀ n : Nat, ∀ β : Rat, 0 ≤ epsilonOf n β)
+    (hCoverBudget :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize (F.paramsOf n β).n (hardwireBudgetOf n β) <
+          (F.paramsOf n β).sYES)
+    (hSupportBudget :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β : Rat, ∀ ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤ hardwireBudgetOf n β) :
+    canonical_smallDAG_witnessEasyDensity_source_on_slices F := by
+  intro hInDag
+  exact canonicalWitnessEasyDensitySourceProviderOnSlices_of_supportBudget
+    F (ppolyDAGSizeBoundOnSlices F hInDag)
+    epsilonOf hardwireBudgetOf
+    hEpsQuarter hEpsNonneg hCoverBudget
+    (fun n β ε W => hSupportBudget hInDag n β ε W)
+
+/--
+Canonical witness-uniform-lower debt from support-budget data on the canonical
+`ppolyDAG` size surface.
+-/
+noncomputable def canonical_smallDAG_witnessUniformLower_source_on_slices_of_supportBudget
+    (F : GapSliceFamily)
+    (epsilonOf : Nat → Rat → Rat)
+    (hardwireBudgetOf : Nat → Rat → Nat)
+    (hEpsQuarter :
+      ∀ n : Nat, ∀ β : Rat, epsilonOf n β ≤ (1 / 4 : Rat))
+    (hEpsNonneg :
+      ∀ n : Nat, ∀ β : Rat, 0 ≤ epsilonOf n β)
+    (hCoverBudget :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize (F.paramsOf n β).n (hardwireBudgetOf n β) <
+          (F.paramsOf n β).sYES)
+    (hSupportBudget :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β : Rat, ∀ ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤ hardwireBudgetOf n β) :
+    canonical_smallDAG_witnessUniformLower_source_on_slices F := by
+  intro hInDag
+  exact
+    witnessUniformLowerSourceProviderOnSlices_of_canonicalWitnessEasyDensitySourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+      ((canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportBudget
+          F epsilonOf hardwireBudgetOf
+          hEpsQuarter hEpsNonneg hCoverBudget hSupportBudget) hInDag)
+
+/--
+Canonical quarter-bounded witness-transfer debt from support-budget data on the
+canonical `ppolyDAG` size surface.
+-/
+noncomputable def canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_supportBudget
+    (F : GapSliceFamily)
+    (epsilonOf : Nat → Rat → Rat)
+    (hardwireBudgetOf : Nat → Rat → Nat)
+    (hEpsQuarter :
+      ∀ n : Nat, ∀ β : Rat, epsilonOf n β ≤ (1 / 4 : Rat))
+    (hEpsNonneg :
+      ∀ n : Nat, ∀ β : Rat, 0 ≤ epsilonOf n β)
+    (hCoverBudget :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize (F.paramsOf n β).n (hardwireBudgetOf n β) <
+          (F.paramsOf n β).sYES)
+    (hSupportBudget :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β : Rat, ∀ ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤ hardwireBudgetOf n β) :
+    canonical_smallDAG_witnessTransferQuarter_source_on_slices F := by
+  intro hInDag
+  exact
+    easyImageTransferQuarterBundleOnSlices_of_canonicalWitnessEasyDensitySourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+      ((canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportBudget
+          F epsilonOf hardwireBudgetOf
+          hEpsQuarter hEpsNonneg hCoverBudget hSupportBudget) hInDag)
+
+/--
+Specialization of the witness-indexed canonical easy-density route to the
+direct support-half fallback family.
+
+This is the thin bridge from the old Route-B style source hypothesis
+
+`support ≤ tableLen/2`
+
+plus the explicit hardwire-cover arithmetic at the same budget, into the new
+witness-indexed density debt on canonical `ppolyDAG` slices.
+-/
+noncomputable def canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportHalfBoundFamily
+    (F : GapSliceFamily)
+    (hCoverBudgetHalf :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize
+            (F.paramsOf n β).n
+            (Models.Partial.tableLen (F.paramsOf n β).n / 2) <
+          (F.paramsOf n β).sYES)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    canonical_smallDAG_witnessEasyDensity_source_on_slices F :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportBudget
+    F
+    (fun _ _ => (1 / 4 : Rat))
+    (fun n β => Models.Partial.tableLen (F.paramsOf n β).n / 2)
+    (fun _ _ => le_rfl)
+    (fun _ _ => by norm_num)
+    hCoverBudgetHalf
+    hSupportHalf
+
+/--
+Specialization of the witness-uniform-lower route to the same support-half
+fallback family.
+-/
+noncomputable def canonical_smallDAG_witnessUniformLower_source_on_slices_of_supportHalfBoundFamily
+    (F : GapSliceFamily)
+    (hCoverBudgetHalf :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize
+            (F.paramsOf n β).n
+            (Models.Partial.tableLen (F.paramsOf n β).n / 2) <
+          (F.paramsOf n β).sYES)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    canonical_smallDAG_witnessUniformLower_source_on_slices F :=
+  canonical_smallDAG_witnessUniformLower_source_on_slices_of_supportBudget
+    F
+    (fun _ _ => (1 / 4 : Rat))
+    (fun n β => Models.Partial.tableLen (F.paramsOf n β).n / 2)
+    (fun _ _ => le_rfl)
+    (fun _ _ => by norm_num)
+    hCoverBudgetHalf
+    hSupportHalf
+
+/--
+Specialization of the quarter-bounded witness-transfer route to the same
+support-half fallback family.
+-/
+noncomputable def canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_supportHalfBoundFamily
+    (F : GapSliceFamily)
+    (hCoverBudgetHalf :
+      ∀ n : Nat, ∀ β : Rat,
+        hardwireCircuitSize
+            (F.paramsOf n β).n
+            (Models.Partial.tableLen (F.paramsOf n β).n / 2) <
+          (F.paramsOf n β).sYES)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    canonical_smallDAG_witnessTransferQuarter_source_on_slices F :=
+  canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_supportBudget
+    F
+    (fun _ _ => (1 / 4 : Rat))
+    (fun n β => Models.Partial.tableLen (F.paramsOf n β).n / 2)
+    (fun _ _ => le_rfl)
+    (fun _ _ => by norm_num)
+    hCoverBudgetHalf
+    hSupportHalf
 
 /--
 Global compiler:
@@ -7416,6 +7780,41 @@ theorem noSmallDAG_of_acceptedFamilyCertificateAtProviderOnSlices
     hCorrect := hCorrect
   }
   exact no_small_dag_solver_of_acceptedFamilyCertificateAt W (hCert n β ε W)
+
+/--
+Direct fallback closure from the canonical support-half family.
+
+This is the theorem-minimal accepted-family fallback on the unrestricted-DAG
+surface:
+
+`supportHalf family -> acceptedFamily weak route -> noSmallDAG`.
+-/
+theorem noSmallDAG_of_supportHalfBoundFamily
+    (F : GapSliceFamily)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+      ∀ n : Nat, ∀ β ε : Rat,
+        ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  intro hInDag n β ε
+  exact
+    no_dag_solver_of_acceptedFamily
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+      (smallDAGAcceptedFamilyStatement_of_supportHalfBound
+        F (ppolyDAGSizeBoundOnSlices F hInDag) (hSupportHalf hInDag))
+      n β ε
 
 /--
 Direct closure from the stronger encoded-coordinate slack-package provider,

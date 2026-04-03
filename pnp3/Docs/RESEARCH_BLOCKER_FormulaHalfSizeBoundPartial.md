@@ -6,6 +6,11 @@ Global blocker checklist:
 Date: 2026-02-22
 Status: Open research note (optional route)
 
+Current-scope note (2026-04-03):
+this is a local formula-side research note. It is not the current repository-
+wide blocker summary and should not be read as the active execution plan for
+the DAG/final-theorem layers.
+
 ## Scope clarification
 
 `FormulaHalfSizeBoundPartial` is still an available interface in
@@ -28,6 +33,5 @@ construction, proving `FormulaHalfSizeBoundPartial` would still be useful.
 
 ## Not required for current main constructive plumbing
 
-I-4 is now closed for the explicit AC0/CNF path (Path A).  Remaining core
-work is provider-default closure (I-2) and the final formula-to-`P/poly`
-bridge layer (I-5).
+The old milestone labels mentioned in this note are local to the formula-side
+subtrack. They are not the current top-level roadmap labels for the repository.

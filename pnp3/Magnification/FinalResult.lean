@@ -6,6 +6,7 @@ import Magnification.PipelineStatements_Partial
 import LowerBounds.DAGStableRestrictionProducer
 import LowerBounds.DAGUnconditionalBlocker
 import LowerBounds.AsymptoticDAGBarrier
+import LowerBounds.SingletonDensityContradiction
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
 import Complexity.PsubsetPpolyDAG_Internal
@@ -275,6 +276,94 @@ theorem NP_not_subset_PpolyReal_final
       (n := n)
       (hn := hn)
 
+/-- One-gate constant-false DAG used off the target asymptotic slice. -/
+private def constFalseDag (n : Nat) : ComplexityInterfaces.DagCircuit n where
+  gates := 1
+  gate := fun _ => ComplexityInterfaces.DagGate.const false
+  output := ComplexityInterfaces.DagWire.gate ⟨0, by simp⟩
+
+@[simp] private theorem constFalseDag_size {n : Nat} :
+    ComplexityInterfaces.DagCircuit.size (constFalseDag n) = 2 := by
+  simp [constFalseDag, ComplexityInterfaces.DagCircuit.size]
+
+@[simp] private theorem constFalseDag_eval {n : Nat}
+    (x : ComplexityInterfaces.Bitstring n) :
+    ComplexityInterfaces.DagCircuit.eval (constFalseDag n) x = false := by
+  simp [constFalseDag, ComplexityInterfaces.DagCircuit.eval,
+    ComplexityInterfaces.DagCircuit.eval.evalGateAt]
+
+/-- Monotone padding used to restrict an asymptotic DAG witness to one slice. -/
+private theorem dag_poly_bound_lift (n c : Nat) :
+    n ^ c + c ≤ n ^ (c + 2) + (c + 2) := by
+  by_cases hn : n = 0
+  · subst hn
+    cases c <;> simp
+  · have h1 : 1 ≤ n := Nat.succ_le_of_lt (Nat.pos_of_ne_zero hn)
+    have hpow : n ^ c ≤ n ^ (c + 2) := by
+      simpa [Nat.add_assoc] using Nat.pow_le_pow_right h1 (Nat.le_add_right c 2)
+    have hc : c ≤ c + 2 := by omega
+    exact Nat.add_le_add hpow hc
+
+/--
+Constructive asymptotic-to-fixed bridge from pointwise slice agreement at the
+target length `partialInputLen p`.
+-/
+private theorem ppolyDAG_fixed_of_asymptotic_slice
+    (spec : GapPartialMCSPAsymptoticSpec)
+    (p : GapPartialMCSPParams)
+    (hSliceEq :
+      ∀ x : Core.BitVec (partialInputLen p),
+        gapPartialMCSP_AsymptoticLanguage spec (partialInputLen p) x =
+          gapPartialMCSP_Language p (partialInputLen p) x) :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_AsymptoticLanguage spec) →
+      ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  intro hAsym
+  rcases hAsym with ⟨w, _⟩
+  rcases w.polyBound_poly with ⟨c, hc⟩
+  refine ⟨{
+    polyBound := fun n => n ^ (c + 2) + (c + 2)
+    polyBound_poly := ?_
+    family := fun m =>
+      if hm : m = partialInputLen p then
+        w.family m
+      else
+        constFalseDag m
+    family_size_le := ?_
+    correct := ?_
+  }, trivial⟩
+  · refine ⟨c + 2, ?_⟩
+    intro n
+    rfl
+  · intro m
+    by_cases hm : m = partialInputLen p
+    · have hTarget : w.polyBound m ≤ m ^ (c + 2) + (c + 2) := by
+        exact le_trans (hc m) (dag_poly_bound_lift m c)
+      exact by
+        simpa [hm] using le_trans (w.family_size_le m) hTarget
+    · have hConst :
+        ComplexityInterfaces.DagCircuit.size (constFalseDag m) ≤
+          m ^ (c + 2) + (c + 2) := by
+        rw [constFalseDag_size]
+        have hTwo : 2 ≤ c + 2 := by omega
+        exact le_trans hTwo (Nat.le_add_left (c + 2) (m ^ (c + 2)))
+      simpa [hm] using hConst
+  · intro m x
+    by_cases hm : m = partialInputLen p
+    · cases hm
+      have hAsymCorrect :
+          ComplexityInterfaces.DagCircuit.eval
+              (w.family (partialInputLen p)) x =
+            gapPartialMCSP_AsymptoticLanguage spec (partialInputLen p) x :=
+        w.correct (partialInputLen p) x
+      have hEq :
+          gapPartialMCSP_AsymptoticLanguage spec (partialInputLen p) x =
+            gapPartialMCSP_Language p (partialInputLen p) x :=
+        hSliceEq x
+      simpa using Eq.trans hAsymCorrect hEq
+    · have hFixedFalse : gapPartialMCSP_Language p m x = false := by
+        simp [gapPartialMCSP_Language, hm]
+      simp [hm, hFixedFalse]
+
 /--
 Compatible DAG-track final wrapper.
 
@@ -315,6 +404,141 @@ theorem P_ne_NP_final_dag_only
     ComplexityInterfaces.P_ne_NP_of_nonuniform_dag_separation
       hNPDag
       hPDag
+
+/--
+Collapse the asymptotic DAG language once one fixed slice is known to avoid
+`PpolyDAG`.
+
+This is the shortest honest integration route from `MagnificationAssumptions`
+to DAG separation:
+1. choose any concrete asymptotic slice `pAt n hn`,
+2. prove fixed-slice collapse there,
+3. transport it back to the asymptotic language using slice agreement.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hCollapseFixed :
+    ComplexityInterfaces.PpolyDAG
+      (gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  let p : GapPartialMCSPParams := hMag.antiChecker.asymptotic.pAt n hn
+  have hCollapseAsym :
+      ComplexityInterfaces.PpolyDAG
+        (gapPartialMCSP_AsymptoticLanguage hMag.antiChecker.asymptotic.spec) → False :=
+    fun hAsymDag =>
+      hCollapseFixed
+        (ppolyDAG_fixed_of_asymptotic_slice
+          (spec := hMag.antiChecker.asymptotic.spec)
+          (p := p)
+          (hMag.antiChecker.asymptotic.sliceEq n hn)
+          hAsymDag)
+  exact
+    ⟨gapPartialMCSP_AsymptoticLanguage hMag.antiChecker.asymptotic.spec,
+      hMag.antiChecker.npBridge.strictAsymptotic,
+      hCollapseAsym⟩
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice collapse input.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hCollapseFixed :
+    ComplexityInterfaces.PpolyDAG
+      (gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+      (hMag := hMag) (n := n) (hn := hn) hCollapseFixed)
+
+/--
+Asymptotic DAG separation from the fixed-slice stable-restriction producer.
+
+Compared with the older `_TM` wrappers, this route uses the global NP witness
+already packaged in `MagnificationAssumptions` and therefore no longer needs a
+separate fixed-slice TM witness.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hStable :
+    LowerBounds.dag_stableRestriction_producer
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+    (hMag := hMag) (n := n) (hn := hn)
+  exact LowerBounds.not_ppolyDAG_of_dag_stableRestriction hStable
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice stable-restriction
+producer.
+-/
+theorem P_ne_NP_final_of_asymptotic_dag_stableRestriction
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hStable :
+    LowerBounds.dag_stableRestriction_producer
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+      (hMag := hMag) (n := n) (hn := hn) hStable)
+
+/--
+Asymptotic DAG separation from the localized Route-B source-closure package on
+one concrete asymptotic slice.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hSrc : LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+    (hMag := hMag) (n := n) (hn := hn)
+  exact LowerBounds.dag_stableRestriction_producer_of_sourceClosure hSrc
+
+/--
+Companion `P ≠ NP` endpoint from the same asymptotic fixed-slice
+source-closure package.
+-/
+theorem P_ne_NP_final_of_asymptotic_sourceClosure
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hSrc : LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure
+      (hMag := hMag) (n := n) (hn := hn) hSrc)
+
+/--
+Asymptotic DAG separation from the named Route-B blocker on one concrete
+asymptotic slice.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hBlocker :
+    LowerBounds.dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure
+    (hMag := hMag) (n := n) (hn := hn)
+  exact
+    LowerBounds.dagRouteBSourceClosure_of_blocker
+      (p := hMag.antiChecker.asymptotic.pAt n hn) hBlocker
+
+/--
+Companion `P ≠ NP` endpoint from the same asymptotic fixed-slice blocker.
+-/
+theorem P_ne_NP_final_of_asymptotic_blocker
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hBlocker :
+    LowerBounds.dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
+      (hMag := hMag) (n := n) (hn := hn) hBlocker)
 
 /-!
 Thin DAG weak-route wrappers (active mainline surface):
@@ -740,6 +964,59 @@ theorem NP_not_subset_PpolyDAG_surface_of_acceptedFamilyWeakRoute
   exact
     LowerBounds.NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute
       F bridge hNP hAcceptedWeak
+
+/--
+Fallback class-level wrapper from the canonical support-half family.
+
+This packages the old Route-A2 accepted-family fallback into the asymptotic
+bridge endpoint without restating the accepted-family weak-route plumbing.
+-/
+theorem not_globalPpolyDAG_surface_of_supportHalfBoundFamily
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : LowerBounds.SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_acceptedFamilyWeakRoute
+      F bridge
+      (LowerBounds.gateG1_routeA2_acceptedFamily_of_supportHalfBoundFamily
+        F hSupportHalf)
+
+/--
+Fallback class-level wrapper from the canonical support-half family to
+`NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hSupportHalf :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ∀ W : LowerBounds.SmallDAGWitnessOnSlice
+            (F.paramsOf n β)
+            (fun ε' s => LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+            (DagCircuit.support W.C).card ≤
+              Models.Partial.tableLen (F.paramsOf n β).n / 2) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_surface_of_acceptedFamilyWeakRoute
+      F bridge hNP
+      (LowerBounds.gateG1_routeA2_acceptedFamily_of_supportHalfBoundFamily
+        F hSupportHalf)
 
 /--
 Class-level wrapper: promise-YES weak route + explicit NP witness on

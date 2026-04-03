@@ -3,6 +3,9 @@
 Дата: 2026-03-02  
 Статус: active
 
+> Current-scope note (2026-04-03):
+> это inclusion-side architectural runbook, не глобальный статус проекта.
+
 > Release note (2026-03-14):
 > этот runbook сохранён как архитектурная трассировка.
 > Для текущего release-статуса и active-route используйте:

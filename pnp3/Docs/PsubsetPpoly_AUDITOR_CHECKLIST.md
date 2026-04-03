@@ -1,6 +1,9 @@
 # PsubsetPpoly Auditor Checklist
 
-Дата: 2026-03-14.
+Дата: 2026-04-03.
+
+Scope note:
+этот checklist проверяет только inclusion-side `P ⊆ PpolyDAG`.
 
 Цель: быстро и машинно проверить, что default-route для
 `P ⊆ PpolyDAG` не зависит от старого legacy-хвоста.

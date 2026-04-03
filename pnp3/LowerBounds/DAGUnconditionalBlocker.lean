@@ -1,4 +1,5 @@
 import LowerBounds.DAGStableRestrictionProducer
+import LowerBounds.SingletonDensityContradiction
 
 namespace Pnp3
 namespace LowerBounds
@@ -85,6 +86,68 @@ theorem NP_not_subset_PpolyDAG_of_blocker_TM
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   exact NP_not_subset_PpolyDAG_of_sourceClosure_TM W
     (dagRouteBSourceClosure_of_blocker (p := p) hBlocker)
+
+/--
+Audit corollary (conditional form): if the fixed-slice language is already in
+`PpolyDAG`, then the stable-restriction producer cannot hold.
+
+This isolates the mathematical tension used in blocker audits:
+`dag_stableRestriction_producer p` implies `¬ PpolyDAG` on the same fixed
+language via `not_ppolyDAG_of_dag_stableRestriction`.
+-/
+theorem no_fixedSlice_stableRestriction_of_inPpolyDAG
+    {p : GapPartialMCSPParams}
+    (hIn : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ¬ dag_stableRestriction_producer p := by
+  intro hStable
+  exact (not_ppolyDAG_of_dag_stableRestriction (p := p) hStable) hIn
+
+/--
+Audit corollary (conditional form): under fixed-slice `PpolyDAG` membership,
+the Route-B source blocker is impossible.
+
+This follows by chaining the canonical blocker-to-producer map with the
+previous incompatibility lemma.
+-/
+theorem no_fixedSlice_blocker_of_inPpolyDAG
+    {p : GapPartialMCSPParams}
+    (hIn : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ¬ dagRouteBSourceBlocker p := by
+  intro hBlocker
+  exact no_fixedSlice_stableRestriction_of_inPpolyDAG (p := p) hIn
+    (dag_stableRestriction_producer_of_sourceClosure
+      (dagRouteBSourceClosure_of_blocker (p := p) hBlocker))
+
+/--
+Audit-facing restatement under the original support-half name.
+
+This is the same mathematical statement as
+`no_fixedSlice_blocker_of_inPpolyDAG`, because
+`dagRouteBSourceBlocker` is currently an abbreviation for
+`gapPartialMCSP_supportHalfObligation`.
+-/
+theorem not_gapPartialMCSP_supportHalfObligation_of_inPpolyDAG
+    {p : GapPartialMCSPParams}
+    (hIn : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+    ¬ gapPartialMCSP_supportHalfObligation p := by
+  simpa [dagRouteBSourceBlocker] using
+    (no_fixedSlice_blocker_of_inPpolyDAG (p := p) hIn)
+
+/--
+Contrapositive audit helper: proving a support-half blocker on a fixed slice
+forces `¬ PpolyDAG` for that fixed-slice language.
+
+This theorem is intentionally phrased as an implication into non-membership,
+because fixed-slice hardwiring arguments are usually easier to state as
+membership assumptions and then combined with this lemma by contradiction.
+-/
+theorem gapPartialMCSP_supportHalfObligation_implies_not_PpolyDAG
+    {p : GapPartialMCSPParams}
+    (hSupportHalf : gapPartialMCSP_supportHalfObligation p) :
+    ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) := by
+  intro hIn
+  exact (not_gapPartialMCSP_supportHalfObligation_of_inPpolyDAG
+    (p := p) hIn) hSupportHalf
 
 end LowerBounds
 end Pnp3

@@ -53,6 +53,90 @@ structure GapSliceFamily where
   hT : ∀ n : Nat, ∀ β : Rat, Tof n β = (paramsOf n β).sNO - 1
   hM : ∀ n : Nat, ∀ T : Nat, Mof n T = Models.circuitCountBound n T
 
+/--
+`GapSliceFamily` is empty in the current parameterization.
+
+Reason: the structure requires a coherent index field
+`hIndex : (paramsOf n β).n = n` for *all* natural `n`, while every
+`GapPartialMCSPParams` carries `n_large : 8 ≤ n`.  Instantiating `hIndex` at
+`n = 0` yields an element with both `(paramsOf 0 β).n = 0` and `8 ≤ (paramsOf 0 β).n`,
+hence `8 ≤ 0`, contradiction.
+-/
+theorem gapSliceFamily_isEmpty : IsEmpty GapSliceFamily := by
+  refine ⟨?_⟩
+  intro F
+  have hIdx : (F.paramsOf 0 (0 : Rat)).n = 0 := F.hIndex 0 0
+  have hLarge : 8 ≤ (F.paramsOf 0 (0 : Rat)).n := (F.paramsOf 0 (0 : Rat)).n_large
+  have hImpossible : 8 ≤ 0 := by simpa [hIdx] using hLarge
+  exact Nat.not_succ_le_zero 7 hImpossible
+
+/--
+Eventual (non-vacuous) replacement for `GapSliceFamily`.
+
+The key difference is that coherence obligations are only required on
+indices `n ≥ N0`.  This matches the asymptotic style already used in other
+parts of the development and avoids the `n = 0` contradiction that makes
+`GapSliceFamily` empty.
+-/
+structure GapSliceFamilyEventually where
+  /-- Start index of the asymptotic regime. -/
+  N0 : Nat
+  /-- Slice parameters indexed by `(n, β)`. -/
+  paramsOf : Nat → Rat → GapPartialMCSPParams
+  /-- Canonical threshold selector. -/
+  Tof : Nat → Rat → Nat
+  /-- Counting upper bound selector. -/
+  Mof : Nat → Nat → Nat
+  /--
+  Index coherence, required only eventually.
+
+  For every `n ≥ N0`, the selected parameter object is aligned with this same
+  `n`.  This is the exact field that was previously inconsistent at `n = 0`.
+  -/
+  hIndex :
+    ∀ n : Nat, N0 ≤ n → ∀ β : Rat, (paramsOf n β).n = n
+  /-- Threshold coherence, required only eventually. -/
+  hT :
+    ∀ n : Nat, N0 ≤ n → ∀ β : Rat, Tof n β = (paramsOf n β).sNO - 1
+  /-- Counting coherence, required only eventually. -/
+  hM :
+    ∀ n : Nat, N0 ≤ n → ∀ T : Nat, Mof n T = Models.circuitCountBound n T
+
+namespace GapSliceFamilyEventually
+
+/-- Encoded-input coordinate length for one eventual slice `(n,β)`. -/
+def encodedLen (F : GapSliceFamilyEventually) (n : Nat) (β : Rat) : Nat :=
+  partialInputLen (F.paramsOf n β)
+
+/-- Truth-table coordinate length for one eventual slice `(n,β)`. -/
+def tableLen (F : GapSliceFamilyEventually) (n : Nat) (β : Rat) : Nat :=
+  Partial.tableLen (F.paramsOf n β).n
+
+end GapSliceFamilyEventually
+
+/--
+Length-local bridge from one global language to eventual fixed slices.
+
+This intentionally weakens the previous all-length bridge surface:
+agreement is demanded only on the target encoded length of each slice, not on
+every input length simultaneously.
+-/
+structure AsymptoticDAGSliceBridgeAt (F : GapSliceFamilyEventually) : Type where
+  /-- One global language used by the asymptotic route. -/
+  L : Language
+  /--
+  Slice agreement on the encoded length of `(n,β)`.
+
+  This is the only equality needed to transfer a global witness to a concrete
+  slice.
+  -/
+  sliceEq :
+    ∀ n : Nat, F.N0 ≤ n → ∀ β : Rat,
+      ∀ x : Bitstring (GapSliceFamilyEventually.encodedLen F n β),
+        L (GapSliceFamilyEventually.encodedLen F n β) x =
+          gapPartialMCSP_Language (F.paramsOf n β)
+            (GapSliceFamilyEventually.encodedLen F n β) x
+
 namespace GapSliceFamily
 
 /-- Encoded-input coordinate length (`mask ++ values`) for slice `(n,β)`. -/

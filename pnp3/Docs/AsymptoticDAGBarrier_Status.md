@@ -40,7 +40,16 @@ This changes the practical picture:
 
 ## 3. Current structural limitation
 
-The current global witness bridge is still stronger than the data coming from
+Two blocker facts are now explicit in code:
+
+1. `gapSliceFamily_isEmpty : IsEmpty GapSliceFamily`;
+2. fixed-slice blocker lemmas are only usable in conditional form (they
+   expose incompatibility once fixed-slice `PpolyDAG` membership is available).
+
+So the original all-slices carrier and bridge shape are not just “hard”, but
+structurally mis-specified for the intended asymptotic route.
+
+The current global witness bridge is also stronger than the data coming from
 the public magnification package.
 
 Specifically:
@@ -53,7 +62,23 @@ Specifically:
 Therefore the all-slices barrier program remains mathematically meaningful, but
 it is not the shortest current path to cleaning up the public final theorem.
 
-## 4. Current best use of the barrier layer
+## 4.5 Concrete next refactor target (recommended)
+
+The next non-vacuous route should use the new eventual scaffolding:
+
+1. `GapSliceFamilyEventually` (index obligations only for `n ≥ N0`);
+2. `AsymptoticDAGSliceBridgeAt` (agreement only on the encoded length of each
+   target slice, not on all lengths).
+
+Concretely, the next implementation step is:
+
+- migrate theorem surfaces that currently quantify over `GapSliceFamily` to the
+  eventual family variant;
+- replace all-length bridge assumptions with length-local bridge assumptions;
+- keep fixed-slice wrappers as compatibility endpoints while rebuilding the
+  all-slices program on the eventual interfaces.
+
+## 5. Current best use of the barrier layer
 
 ### Immediate use
 
@@ -74,7 +99,7 @@ Keep the all-slices weak-route / canonical-family route as the stronger
 standalone theorem program for an internal `NP_not_subset_PpolyDAG` that does
 not depend on the current fixed-slice integration path.
 
-## 5. What the barrier layer does not yet solve by itself
+## 6. What the barrier layer does not yet solve by itself
 
 The barrier layer still does **not** by itself provide:
 
@@ -84,7 +109,7 @@ The barrier layer still does **not** by itself provide:
 
 Those require source mathematics outside the barrier layer.
 
-## 6. Recommended reading order
+## 7. Recommended reading order
 
 If you want the shortest accurate picture:
 

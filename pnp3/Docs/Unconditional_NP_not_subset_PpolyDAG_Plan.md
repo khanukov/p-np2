@@ -1,486 +1,201 @@
 # Concrete plan to reach unconditional `NP ⊄ PpolyDAG`
 
-Last updated: 2026-03-28.
+Last updated: 2026-04-03.
 
-This note turns the current DAG frontier into an explicit execution plan.
-It is intentionally stricter than a generic research memo: every milestone
-below is phrased so that we can tell, from the codebase alone, whether the
-step is done or still open.
+This file tracks the **current** DAG-side closure plan after the latest
+hardwire-coverage, support-half fallback, and asymptotic fixed-slice wrapper
+work.
 
-## Progress snapshot (2026-03-28)
+It is intentionally narrower than older roadmap notes. The main goal here is
+to state what is already done, what is still open, and what the shortest honest
+next theorem is.
 
-The repository has now moved beyond the initial producer-file milestone and
-already includes:
+## 1. Current verified state
 
-1. asymptotic DAG witness plumbing from global/per-slice `PpolyDAG` hypotheses
-   into `SmallDAGSolver` surfaces;
-2. bridge-local contradiction schema and concrete weak-route instantiations
-   (`accepted-family`, `promise-YES`);
-3. final-surface weak-route wrappers (including PRG-image backup and stronger
-   restriction extraction + numeric fallback) that all reuse the same
-   accepted-family bridge template;
-4. dedicated smoke regression coverage in `Tests/WeakRouteSurfaceTests`.
+The repository now already has:
 
-So the blocker is no longer API/plumbing shape; it is now purely a source
-theorem issue:
+1. `./scripts/check.sh` passing on the active tree.
+2. No active project-local `axiom` and no active `sorry/admit` in `pnp3/`.
+3. Route-B blocker packaging:
+   `dagRouteBSourceBlocker`,
+   `DAGRouteBSourceClosure`,
+   direct `_TM` finals from stable restriction / source closure / blocker.
+4. Asymptotic fixed-slice wrappers:
+   `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`,
+   `..._of_asymptotic_dag_stableRestriction`,
+   `..._of_asymptotic_sourceClosure`,
+   `..._of_asymptotic_blocker`,
+   plus companion `P_ne_NP_final_of_*`.
+5. Canonical witness-density hardwire coverage:
+   `canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound`.
+6. Canonical all-slices compiler glue:
+   `canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportBudget`,
+   `...witnessUniformLower...`,
+   `...witnessTransferQuarter...`,
+   and their support-half-family variants.
+7. Support-half fallback closure to class-level DAG non-inclusion:
+   `noSmallDAG_of_supportHalfBoundFamily` and
+   `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`.
 
-> semantic Q1 acceptance-invariant from strict DAG semantics is now available,
-> and the repository now also proves that same-set slack is impossible for that
-> exact full-value-set Q1 construction (`no_sameSetSlack_of_strictDAGSemantics`);
-> but we still need either
-> `SmallDAGWitnessOnSlice -> PromiseYesSubcubeCertificateAt`
-> or
-> `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`
-> on the full target model, then thread it into default final wrappers.
+Conclusion:
 
----
+> The repository is no longer blocked on DAG endpoint plumbing.
+> The remaining debt is theorem-level.
 
-## 1. Exact end goal
+## 2. What is still not closed
 
-The unconditional DAG lower-bound route is complete only when the repository
-proves, without external hypotheses,
+There is still no internal theorem
 
 ```text
 ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
-and therefore the final DAG wrappers in
-`pnp3/Magnification/FinalResult.lean` no longer need an external
-`hNPDag` argument.
-
-At the current architecture boundary, the smallest theorem that would close the
-DAG side is:
+and therefore the public default final theorem is still:
 
 ```text
-∀ hDag : PpolyDAG (gapPartialMCSP_Language p),
-  stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)
+P_ne_NP_final
+  (hMag : MagnificationAssumptions)
+  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
-because the repository already contains:
+Important split:
+
+1. `hNPDag` is the real DAG-separation blocker.
+2. `hMag` remains in the public theorem only as compatibility context and is
+   not consumed by its current implementation.
+
+So there are really two closure goals:
+
+1. remove external `hNPDag`;
+2. then remove the residual public `hMag`.
+
+## 3. Fastest current route to remove `hNPDag`
+
+The shortest honest route is now **fixed slice + asymptotic collapse**.
+
+### Step A. Pick one slice from the existing magnification package
+
+Use
 
 ```text
-hStable -> ¬ PpolyDAG (gapPartialMCSP_Language p)
+p* := hMag.antiChecker.asymptotic.pAt n hn
 ```
 
-and then the usual fixed-slice NP pullback to `NP ⊄ PpolyDAG`.
+### Step B. Prove one fixed-slice DAG source theorem on `p*`
 
-So the whole project now reduces to one producer problem:
+Preferred targets, in order:
 
-> **Build a strict DAG-side producer of a small stable restriction for the
-> canonical fixed gap payload.**
+1. `gapPartialMCSP_supportHalfObligation p*`
+2. `dagRouteBSourceBlocker p*`
+3. `dag_stableRestriction_producer p*`
 
-Everything below is organized around that statement.
+These are effectively equivalent fixed-slice entry points for the current DAG
+consumer stack.
 
----
+### Step C. Consume it through the already compiled wrappers
 
-## 2. What is already settled and must not be reopened
+Once Step B is proved, the existing theorems already close the route:
 
-### 2.1. The consumer stack is finished
+1. `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
+2. `P_ne_NP_final_of_asymptotic_blocker`
 
-The downstream contradiction stack is already the right one:
+or the corresponding stable-restriction / source-closure variants.
 
-```text
-stable restriction
-  -> alive-set locality
-  -> contradiction with gap-locality lower bound
-```
+This is the shortest current path because:
 
-Therefore new work must target the stable-restriction interface, not invent a
-parallel consumer.
+1. it uses one fixed-slice theorem rather than a full all-slices theorem;
+2. the asymptotic collapse layer already exists in code;
+3. it matches the current public API shape directly.
 
-### 2.2. The formula route is already a working model
+## 4. Fastest route to full zero-argument unconditionality
 
-The formula/support-bounds/certificate route already lands in the stable
-restriction goal.  This means the repository already has one successful example
-of the desired architecture:
+Removing `hNPDag` from the current compatibility theorem is not yet the same as
+producing a zero-argument theorem.
 
-```text
-source certificate -> stable restriction -> contradiction
-```
+The shortest credible route to a true unconditional final theorem is:
 
-This route should be treated as the reference implementation for theorem shape,
-transport lemmas, and regression tests.
+1. choose a concrete fixed slice `p*`;
+2. provide a concrete `GapPartialMCSP_TMWitness p*`;
+3. prove a fixed-slice blocker on `p*`;
+4. use the existing `_TM` finals:
+   `NP_not_subset_PpolyDAG_final_of_blocker_TM`,
+   `P_ne_NP_final_of_blocker_TM`.
 
-### 2.3. The current DAG singleton route is diagnostically exhausted
+This route bypasses `hMag` completely.
 
-The canonical DAG payload stores the witness
-`semanticSingletonWitness`, and every member of that witness is already proved
-point-like.  Hence the currently exported DAG witness family is a disguised
-point case.
+Alternative:
 
-This has two consequences:
+- internalize `MagnificationAssumptions` instead of bypassing them.
 
-1. the current scenario-witness restriction candidate already has alive card
-   `0`, so **smallness is not the blocker**;
-2. the blocker is that the current route proves only one-sided forcing-to-YES,
-   not global invariance `f (r.apply x) = f x`.
+## 5. Where the canonical all-slices route now stands
 
-Therefore we should stop treating “better leaf semantics for the current
-singleton selectors” as the main route to the final theorem.
+The repository also already contains the infrastructure for the stronger
+canonical all-slices program:
 
-### 2.4. `CommonPDT` is intentionally weak
+- `canonical_smallDAG_witnessEasyDensity_source_on_slices`
+- `canonical_smallDAG_witnessUniformLower_source_on_slices`
+- `canonical_smallDAG_witnessTransferQuarter_source_on_slices`
+- compilers from extraction/support budgets into those debts
 
-`CommonPDT` records only:
+This remains a legitimate theorem program for a standalone internal
+`NP_not_subset_PpolyDAG`.
 
-* one tree,
-* selector inclusion into leaves,
-* one approximation bound.
+However, it is **not** the shortest current route to cleaning up the existing
+public final API, because:
 
-It does **not** record semantic leaf facts like “each chosen leaf decides the
-function” or “membership in a chosen leaf forces YES”.
+1. fixed-slice asymptotic wrappers are already present;
+2. the current `AsymptoticDAGLanguageBridge` is stronger than the
+   `sliceEq` data provided by `MagnificationAssumptions`;
+3. one fixed-slice blocker is sufficient for the currently exposed asymptotic
+   final wrappers.
 
-Therefore any proof that uses stronger leaf semantics must either:
+## 6. Recommended execution order
 
-1. derive them from the provenance of the particular `CommonPDT`, or
-2. strengthen the source-side structure to store those semantics explicitly.
+### Immediate theorem target
 
----
+Prove one fixed-slice DAG source theorem, preferably
+`gapPartialMCSP_supportHalfObligation p*`.
 
-## 3. Non-goals and routes we should explicitly avoid
+### Immediate integration target
 
-These are not merely “probably unhelpful”; they are misaligned with the current
-formal interface.
+Use that theorem to construct an internal
+`NP_not_subset_PpolyDAG` route for the current `hMag`-based final interface.
 
-### 3.1. Do not aim at leaf-constancy as the main next theorem
+### Then
 
-A theorem of the form “`f` is constant on a selected leaf `β`” is too weak for
-`stableRestrictionGoal_of_abstractGapTargetedPayload`, because the latter asks
-for one global restriction `r` satisfying
+Replace the current compatibility theorem with a theorem that no longer takes
+external `hNPDag`.
 
-```text
-∀ x, f (r.apply x) = f x.
-```
+### Then
 
-Constancy on one cube does not yield this global overwrite-invariance statement.
+Finish the remaining public API cleanup and remove the residual compatibility
+`hMag` argument by either:
 
-### 3.2. Do not spend more time polishing the current singleton witness family
+1. concrete `_TM` route, or
+2. internalization of `MagnificationAssumptions`.
 
-The code already proves that the current DAG witness family lives inside the
-truth-table singleton construction.  Improving comments or adding more local
-facts about those selectors does not change the mathematical blocker.
+## 7. Non-goals right now
 
-### 3.3. Do not add another bespoke consumer endpoint
+Do not spend the next theorem sprint on:
 
-Any future DAG source theorem should be translated into the already existing
-stable-restriction goal or a packaged equivalent.  A new endpoint theorem would
-only duplicate a contradiction stack that is already formalized.
+1. adding new wrappers;
+2. rephrasing the same blocker with more endpoint names;
+3. claiming that all-slices infrastructure already closes the final theorem;
+4. claiming that removing `hNPDag` alone yields full unconditionality;
+5. using archived roadmap notes as the current branch lock.
 
----
+## 8. Acceptance criteria for “DAG side is closed”
 
-## 4. The only two mathematically coherent producer routes
+For the DAG side to be honestly called closed in this repository, all of the
+following must hold:
 
-There are exactly two routes compatible with the current architecture.
+1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is proved internally.
+2. The public final theorem no longer takes external `hNPDag`.
+3. The repository remains clean under `./scripts/check.sh`.
+4. `README.md`, `STATUS.md`, `TODO.md`, and the release/checklist docs are all
+   updated consistently.
 
-### Route A. DAG -> certificate bridge -> existing stable-restriction theorem
+For the repository to be honestly called **fully unconditional**, add:
 
-This route reuses the already proved theorem
-
-```text
-stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
-```
-
-by constructing from a strict DAG solver a certificate object that has the same
-operational content as the formula-side shrinkage certificate.
-
-To make this route real, we would need:
-
-1. a DAG-side certificate structure matching the data consumed by
-   `ThirdPartyFacts.stableRestriction_of_certificate`;
-2. a bridge from strict DAG solvers on the gap slice to that certificate;
-3. either a direct generalization of the formula theorem from
-   `FormulaCertificateProviderPartial` to a solver-agnostic certificate
-   provider, or a DAG-specific wrapper theorem with the same conclusion.
-
-**When to choose Route A:** only if the DAG interfaces already expose enough
-certificate-compatible restriction data.  If we cannot build that bridge
-without a large detour through a new circuit formalism, Route A is not the
-mainline plan.
-
-### Route B. Native DAG stable-restriction producer
-
-This route proves the missing theorem directly on the DAG side:
-
-```text
-∀ hDag,
-  stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)
-```
-
-without reducing to the formula certificate API.
-
-This route needs a new source-side object carrying:
-
-1. a restriction `r`,
-2. proof that `r.alive.card <= tableLen / 2`,
-3. proof that `decide (r.apply x) = decide x` for all `x`,
-4. a bridge transporting that statement from the solver's decision function to
-   the fixed gap target stored in `dagCanonicalPayload hDag`.
-
-**Recommended mainline:** Route B.  It matches the current strict DAG theorem
-surface directly and does not depend on an unproved DAG-to-formula collapse.
-
----
-
-## 5. Recommended execution plan (mainline = Route B)
-
-This is the concrete plan we should implement unless a clean Route A bridge is
-found almost immediately.
-
-### Phase 0. Freeze the target API
-
-Before adding any new math, create one very small DAG-frontier theorem stub in
-planning documents and tests, with the exact target shape:
-
-```text
-theorem dag_stableRestriction_producer
-  {p : GapPartialMCSPParams}
-  (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
-  stableRestrictionGoal_of_abstractGapTargetedPayload
-    (dagCanonicalPayload hDag)
-```
-
-This theorem name is just a suggestion; the important thing is that the target
-shape is frozen now.  Any intermediate work that does not obviously feed this
-statement should be treated as secondary.
-
-**Done criterion:** one canonical theorem statement is chosen and every new DAG
-proof sketch is checked against it.
-
-### Phase 1. Introduce an explicit DAG producer package
-
-Add a new source-side structure, for example
-`AbstractGapDAGStableRestrictionSource` or
-`DAGStableRestrictionCertificate`, containing exactly the upstream data needed
-for the probe theorem:
-
-* `base : AbstractGapTargetedSingletonDensityPayload p`;
-* `r : Facts.LocalityLift.Restriction (Models.partialInputLen p)`;
-* **preferred** slack field
-  `hSlack : circuitCountBound p.n (p.sNO - 1) < 2^(Partial.tableLen p.n - r.alive.card)`;
-* (legacy compatibility only) optional half-table field
-  `hAliveSmall : r.alive.card <= Models.Partial.tableLen p.n / 2`;
-* `hStableDecide : ∀ x, decide (r.apply x) = decide x` for the source solver;
-* `hLink : decide = gap target` in the same transported coordinate system.
-
-Then prove a thin packaging lemma:
-
-```text
-DAGStableRestrictionCertificate ->
-stableRestrictionGoal_of_abstractGapTargetedPayload base
-```
-
-This is important because it keeps all future heavy mathematics above a tiny,
-inspectable conversion layer.
-
-**Done criterion:** a new packaged producer object exists, and the conversion to
-`stableRestrictionGoal_of_abstractGapTargetedPayload` is fully proved.
-
-### Phase 2. Strengthen the source-side invariant to coordinate independence
-
-The next proofs must target **global coordinate independence**, not cube
-constancy.
-
-The right intermediate theorem shape is one of the following equivalent forms:
-
-```text
-∀ x y, (∀ i ∈ alive, x i = y i) -> decide x = decide y
-```
-
-or
-
-```text
-∀ x, decide (r.apply x) = decide x.
-```
-
-This should be formalized as a named DAG-side invariant so that we can test it
-independently of the final contradiction theorem.
-
-A good implementation pattern is:
-
-1. define a source-side notion of “surviving support” or “relevant coordinates”
-   for the DAG under a restriction;
-2. prove that evaluation depends only on those coordinates;
-3. prove a counting-slack inequality
-   `circuitCountBound < 2^(tableLen - |alive|)` (half-table only as legacy
-   fallback);
-4. turn that support into the alive set of a facts-side restriction.
-
-The exact combinatorial definition may vary, but the invariant shape must stay
-global.
-
-**Done criterion:** there is a theorem proving a locality/stability statement
-for the DAG solver itself, independent of `dagCanonicalPayload` packaging.
-
-### Phase 3. Replace singleton provenance by genuine DAG provenance
-
-The current canonical DAG payload is wired to
-`semanticSingletonWitness`.  That was useful for diagnostics, but it is not the
-right source object for the final stable-restriction producer.
-
-We should therefore add a **new DAG provenance layer** that does not derive its
-main witness family from truth-table singleton expansion.  The new layer should
-expose data that can plausibly control global coordinate dependence, e.g.:
-
-* a solver-derived restricted support set;
-* a canonical restricted subgraph/tree;
-* a semantic certificate extracted from the DAG computation itself;
-* a support-preservation theorem under coordinate overwriting.
-
-This phase is where the actual mathematical progress happens.  The existing
-singleton provenance theorems remain valuable as a no-go/diagnostic layer, but
-should no longer drive the main source object.
-
-**Done criterion:** the main producer theorem no longer unfolds through
-`semanticSingletonWitness` or point-subcube lemmas.
-
-### Phase 4. Build the counting-slack bound on the same source object
-
-The source object from Phase 3 must carry, or imply, a quantitative slack bound:
-
-```text
-circuitCountBound p.n (p.sNO - 1) < 2^(Models.Partial.tableLen p.n - alive.card).
-```
-
-This should be proved on the same representation that yields global stability.
-It is a mistake to prove slack/smallness on one object and stability on another with
-no tight bridge between them.
-
-Concretely, the implementation should avoid the pattern:
-
-```text
-small leaf from object A
-stable behavior from unrelated object B
-```
-
-unless there is a formally tiny equivalence theorem connecting A and B.
-
-**Done criterion:** the theorem producing stability and the theorem producing
-smallness share one common witness object.
-
-### Phase 5. Prove the exact DAG stable-restriction theorem
-
-Once Phases 1–4 are in place, prove the actual producer theorem:
-
-```text
-∀ hDag,
-  stableRestrictionGoal_of_abstractGapTargetedPayload
-    (dagCanonicalPayload hDag)
-```
-
-and immediately route it through the already existing corollaries:
-
-```text
-not_ppolyDAG_of_dag_stableRestriction
-NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
-P_ne_NP_final_of_dag_stableRestriction_TM
-```
-
-**Done criterion:** the repository derives `ComplexityInterfaces.NP_not_subset_PpolyDAG`
-and then `ComplexityInterfaces.P_ne_NP` without external DAG lower-bound input.
-
----
-
-## 6. Backup execution plan (Route A) if a certificate bridge appears viable
-
-If, during Phase 1 or Phase 2, we discover that the strict DAG interfaces
-already expose certificate-quality restriction data, then we should switch to a
-shorter route:
-
-1. define a solver-agnostic certificate provider interface (or a DAG-specific
-   analogue);
-2. generalize the formula bridge theorem from formula-only providers to the new
-   provider shape;
-3. prove that strict DAG solvers on the gap slice instantiate that provider;
-4. recover the stable restriction goal through the existing consumer theorem.
-
-This backup route is attractive only if the generalization is small and
-preserves the existing formula proofs almost unchanged.
-
-**Switch criterion:** Route A becomes mainline only if the total new code is
-clearly smaller than building a native DAG support/locality theory.
-
----
-
-## 7. Concrete engineering tasks (updated to current state)
-
-Tasks 1–3 from the original draft are now complete as infrastructure items; the
-active queue below starts from the current branch state.
-
-### Branch map for the current sprint
-
-- **A. Strengthen Q1:** construct a semantic invariant with non-full coordinate
-  set (`S ≠ Finset.univ`).
-- **B. PRG backup:** in parallel, push
-  `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`.
-- **C. Restricted-model probes:** use support-bounded / value-supported /
-  low-reuse slices to identify a transferable non-full-`S` structural invariant.
-  Current foothold: package-route probes already certify non-full `S` and lift
-  to `PromiseYesAcceptanceInvariantAtNontrivialS`; what remains is lifting this
-  nontriviality from probe models to strict target-semantics theorems.
-
-### Task 1. Internal source theorem (mainline promise-YES split)
-
-Q1 semantic existence is closed; the active remaining work is:
-
-1. prove same-set quantitative slack (`promiseYesSlackOnInvariant*`) for the
-   semantic coordinates chosen by Q1;
-2. compose to internal `PromiseYesSubcubeCertificateAt` without adding new
-   endpoint plumbing.
-
-### Task 2. Internal source theorem (parallel PRG-image backup)
-
-In parallel with Task 1, attempt a strict DAG-side construction of
-`PRGImageAcceptanceAt`; keep this route as a second independent source
-generator feeding the same accepted-family consumer.
-
-### Task 3. Internalized final wrappers
-
-Once either Task 1 or Task 2 yields an internal class-level theorem, add
-default wrappers that no longer require external `hNPDag` and keep current
-conditional wrappers only as compatibility aliases (if needed).
-
-### Task 4. Release-facing docs/audit cleanup
-
-After Task 3:
-
-1. update all status/checklist/release docs to mark DAG separation as internal;
-2. refresh signature audits and smoke tests;
-3. re-run full audit/test suite before claiming unconditionality.
-
----
-
-## 8. Acceptance criteria for “unconditional NP ⊄ PpolyDAG is done”
-
-We should not claim success until all of the following are true at once.
-
-1. There is a theorem in the repository with no external lower-bound inputs:
-
-   ```text
-   ComplexityInterfaces.NP_not_subset_PpolyDAG
-   ```
-
-2. That theorem is obtained through the existing stable-restriction consumer
-   route rather than a duplicate bespoke endpoint.
-
-3. The proof no longer unfolds through the current singleton witness family as
-   its primary mathematical source.
-
-4. `P_ne_NP_final*` default wrappers no longer require an external `hNPDag`.
-
-5. Audit/regression files pin the new public signatures.
-
-6. Status documents are updated to state unconditional DAG separation
-   consistently.
-
----
-
-## 9. Short version
-
-If we compress the plan to one line, it is this:
-
-> **Stop trying to upgrade the current singleton selectors; instead build a new
-> DAG-native source package whose core theorem is a global small stable
-> restriction, then feed that theorem into the already finished
-> stable-restriction consumer stack.**
-
-That is the shortest honest route from the current branch state to an
-unconditional `NP ⊄ PpolyDAG` theorem.
+5. the public theorem no longer exposes compatibility-only `hMag`;
+6. a zero-argument final theorem `P_ne_NP` is derivable in the active tree.

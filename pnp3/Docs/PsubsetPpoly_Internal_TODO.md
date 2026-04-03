@@ -1,6 +1,14 @@
-# PsubsetPpoly Internal Closure TODO (current status)
+# PsubsetPpoly Internal Closure TODO (current inclusion-side status)
 
-Дата актуализации: 2026-03-14.
+Дата актуализации: 2026-04-03.
+
+Scope note:
+этот файл описывает только inclusion-side (`P ⊆ PpolyDAG`) и не является
+источником общего DAG/final-blocker статуса проекта.
+Для глобального статуса используйте:
+- `/root/p-np2/STATUS.md`
+- `/root/p-np2/TODO.md`
+- `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
 
 ## Current route (machine-checked)
 

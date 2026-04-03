@@ -1,245 +1,88 @@
 # Gap-Target Stable-Restriction Route Status
 
-Last updated: 2026-03-22.
+Last updated: 2026-04-03.
 
-This note records the current state of the
-`LowerBounds.SingletonDensityContradiction` route after the following changes:
+This note records the **current** state of the fixed-slice stable-restriction /
+Route-B route after the recent blocker-packaging and fallback-closure work.
 
-1. the gap-target payload hierarchy was extended with
-   stable-restriction and locality contracts;
-2. the formula/support-bounds line was connected to that new layer via a real
-   producer theorem;
-3. the DAG line was strengthened with selector-provenance / canonical-witness
-   documentation-friendly interfaces.
+## 1. What is already finished
 
-The goal of this file is to keep the project documentation honest about:
+### Consumer side
 
-* what is already formalized;
-* which routes are merely architectural;
-* which routes are already connected to a live source pipeline;
-* what still blocks the DAG-side contradiction.
-
----
-
-## 1. Current architecture
-
-The active abstract gap-target route is now best read as the following tower:
+The fixed-slice consumer stack is already real and compiled:
 
 ```text
-raw singleton-density package
-    ↓
-AbstractGapTargetedSingletonDensityPayload
-    ↓
-  (producer side can now branch)
-
-  A. restriction/locality branch
-     stableRestrictionGoal_of_abstractGapTargetedPayload
-         ↔ AbstractGapStableRestrictionPayload
-         ↓
-     localityGoal_of_abstractGapTargetedPayload
-         ↔ AbstractGapLocalityPayload
-         ↓
-     false_of_abstractGapLocalityPayload
-     false_of_abstractGapStableRestrictionPayload
-
-  B. witness/selector/cube branch
-     AbstractGapWitnessedPayload
-         ↓
-     AbstractGapCubeSoundWitnessPayload
-         ↓
-     AbstractGapSelectorProvenancePayload
-         ↓
-     DAG canonical witness / provenance lemmas
+stable restriction
+  -> locality / accepted-family contradiction
+  -> no small DAG
+  -> class-level DAG non-inclusion surface
 ```
 
-The key point is that **the restriction/locality branch is now a real consumer
-stack**, not just a planned interface:
+This is no longer merely architectural.
 
-* it has payloads,
-* it has probe forms,
-* it has packaging equivalences,
-* it has contradiction theorems.
+### Producer-side packaging
 
----
+The Route-B gate is now normalized explicitly:
 
-## 2. What is already achieved
+- `dagRouteBSourceBlocker`
+- `DAGRouteBSourceClosure`
+- direct final wrappers from source closure / blocker
 
-### 2.1. Semantically fixed common target
+### Restricted-model fallback
 
-The route no longer argues about arbitrary externally chosen targets.
-Everything downstream of
-`AbstractGapTargetedSingletonDensityPayload`
-is pinned to the concrete gap language
-`gapPartialMCSP_Language p`.
+Support-half fallback now already closes downstream:
 
-This payload is already realized from both:
+- `noSmallDAG_of_supportHalfBoundFamily`
+- `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`
 
-* the formula-side singleton-density route;
-* the strict DAG-side route.
+So support-half is no longer just a diagnostic restricted-model note.
 
-So the remaining work is no longer "find any source package for the target" —
-that part is already done.
+## 2. What is still missing
 
-### 2.2. Stable-restriction / locality consumer stack
+What is still not done is one **actual fixed-slice source theorem**.
 
-The following abstract consumer-side objects now exist and are usable:
-
-* `AbstractGapStableRestrictionPayload`;
-* `AbstractGapLocalityPayload`;
-* `stableRestrictionGoal_of_abstractGapTargetedPayload`;
-* `localityGoal_of_abstractGapTargetedPayload`;
-* packaging helpers and packaging equivalences;
-* contradiction theorems reducing the route to
-  `MCSPGapLocality.no_local_function_solves_mcsp`.
-
-So the restriction route is now formally:
+The shortest honest target is now:
 
 ```text
-stable restriction  →  alive-set locality  →  contradiction
+gapPartialMCSP_supportHalfObligation p
 ```
 
-### 2.3. First live producer into the stable-restriction layer
+or equivalently one of:
 
-The new layer is no longer merely architectural.
+- `dagRouteBSourceBlocker p`
+- `dag_stableRestriction_producer p`
 
-The formula/certificate line now genuinely lands in
-`stableRestrictionGoal_of_abstractGapTargetedPayload`
-through the following chain:
+for the chosen fixed slice.
 
-```text
-formulaRestrictionCertificateData_of_supportBounds
-    ↓
-formulaCertificateProvider_of_restrictionData
-    ↓
-stableRestrictionGoal_of_abstractGapTargetedPayload_of_formulaCertificate
-    ↓
-stableRestrictionGoal_of_abstractGapTargetedPayload_of_restrictionData
-    ↓
-stableRestrictionGoal_of_abstractGapTargetedPayload_of_supportBounds
-```
+That theorem is the real remaining blocker on this route.
 
-This means the new restriction interface has at least one real producer already
-living in the repository.
+## 3. Why this route matters now
 
-### 2.4. DAG selector-provenance normalization
+This route has become more important, not less, because
+`Magnification/FinalResult.lean` now already contains asymptotic wrappers that
+turn one fixed-slice blocker into a class-level DAG-separation statement.
 
-The DAG line already provides a strong canonical normalization package:
+So the current practical shortest path is:
 
-* canonical DAG payload;
-* equality between stored witness, dictionary, and selector witness;
-* explicit witnessed and cube-sound DAG payloads;
-* explicit selector-provenance payloads;
-* consequences like `coveredB = gapTarget` on the chosen route.
+1. prove one fixed-slice blocker;
+2. collapse it through the asymptotic wrapper layer;
+3. remove external `hNPDag` from the current public final route.
 
-So the DAG line is **not** blocked on witness provenance anymore.
+## 4. What this route still does not give automatically
 
-### 2.5. Axioms audit coverage
+Even after the fixed-slice blocker is proved and fed through the asymptotic
+wrapper layer, that still does **not** automatically yield a zero-argument
+unconditional theorem, because the current public theorem still exposes
+`hMag : MagnificationAssumptions`.
 
-`Tests.AxiomsAudit` now includes:
+So this route is currently the best path to remove `hNPDag`, but not by itself
+the full story for removing `hMag`.
 
-* the stable-restriction payload/probe/packaging layer;
-* the contradiction theorems on that layer;
-* the formula-certificate / restriction-data / support-bounds producer theorems;
-* the selector-provenance / DAG canonical payload declarations.
+## 5. Current recommendation
 
----
+Treat this file as the status note for the **fastest current integration
+route**.
 
-## 3. What is still not achieved
-
-### 3.1. No DAG producer into the stable-restriction layer yet
-
-Although the formula/support-bounds route now factors through
-`stableRestrictionGoal_of_abstractGapTargetedPayload`,
-the strict DAG route does **not** yet provide a theorem of the form
-
-```text
-hDag → stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)
-```
-
-or an equivalent packaged theorem returning
-`AbstractGapStableRestrictionPayload`.
-
-This is the main missing bridge if we want a unified consumer architecture for
-the DAG side.
-
-### 3.2. Leaves/subcubes are not yet connected through restriction
-
-The intended architectural bridge is:
-
-```text
-leaf / subcube β
-    ↓
-factsRestrictionOfSubcube β
-    ↓
-stable restriction payload
-    ↓
-locality payload
-    ↓
-contradiction
-```
-
-The repository already has the crucial converter
-`factsRestrictionOfSubcube`,
-but the DAG/leaves side has not yet been pushed through that converter into the
-new stable-restriction goal.
-
-### 3.3. No final DAG contradiction from this branch
-
-This branch still does **not** prove:
-
-* `¬ PpolyDAG (gapPartialMCSP_Language p)`;
-* `NP_not_subset_PpolyDAG`;
-* unconditional `P ≠ NP`.
-
-So all current progress here is best understood as:
-
-* consumer cleanup,
-* producer normalization,
-* proof-search localization,
-* but not yet final DAG separation.
-
----
-
-## 4. Recommended next steps
-
-### A. Stay inside the restriction architecture
-
-The cleanest next theorem is still a DAG- or leaf-derived producer into
-`stableRestrictionGoal_of_abstractGapTargetedPayload`.
-
-The intended output should look like one of:
-
-* a direct theorem producing
-  `stableRestrictionGoal_of_abstractGapTargetedPayload (dagCanonicalPayload hDag)`;
-* or a packaged theorem producing
-  `AbstractGapStableRestrictionPayload`.
-
-### B. Prefer restriction over a new bespoke consumer
-
-The right target is **not** another leaf-only contradiction theorem.
-
-Instead, if a future route extracts a good leaf / subcube / selector object,
-it should be translated into a small restriction first, then fed to the already
-proved restriction/locality consumer stack.
-
-### C. Keep the formula route as the sanity-checked model
-
-The formula/support-bounds route now serves as the reference implementation of
-the new stable-restriction layer.
-
-Any new DAG producer should be judged against the same target interface, not
-against older endpoint-specific formulations.
-
----
-
-## 5. Practical interpretation
-
-As of this snapshot, the gap-target route has:
-
-* a common semantically fixed payload;
-* a live stable-restriction consumer stack;
-* a live formula-side producer into that stack;
-* a strong DAG witness/provenance normalization layer;
-* but no DAG-side restriction producer yet.
-
-That is the accurate frontier.
+Treat the stronger all-slices canonical witness-density / witness-transfer
+route as a parallel theorem program, not as the shortest immediate blocker for
+the public final API.

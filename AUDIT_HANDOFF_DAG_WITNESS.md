@@ -1,9 +1,14 @@
 # Handoff for audit
 
-> Historical note: this file freezes the older DAG non-empty witness milestone.
-> For the current post-witness route status (stable-restriction/locality layer,
-> live formula producer, and exact remaining DAG blockers), see
-> `pnp3/Docs/GapTarget_StableRestriction_Route.md`.
+> Historical note: this file freezes an older DAG non-empty witness milestone.
+> It is not the current status source for the repository.
+>
+> For the current route status, use:
+> - `STATUS.md`
+> - `TODO.md`
+> - `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
+> - `pnp3/Docs/GapTarget_StableRestriction_Route.md`
+> - `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`
 
 > Note: the review request referenced frozen commit `1495c55`, but that commit is
 > not present in this checkout. This handoff therefore freezes the currently

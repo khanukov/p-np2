@@ -3,6 +3,10 @@
 Дата: 2026-03-02  
 Статус: ready-for-audit (engineering checkpoint)
 
+> Current-scope note (2026-04-03):
+> это inclusion-only checkpoint. Он не является источником текущего глобального
+> статуса final DAG blocker'ов.
+
 ## Update (2026-03-13): checkpoint superseded
 
 После повторной проверки на текущем дереве:

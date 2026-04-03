@@ -72,6 +72,24 @@ if [[ -f pnp3/Complexity/Interfaces_InternalSource.lean ]]; then
   exit 1
 fi
 
+# MCSP-variant guardrails:
+# active code must stay on Partial-MCSP names; total-table GapMCSP is legacy.
+if rg -n "^[[:space:]]*import[[:space:]]+Models\\.Model_GapMCSP\\b" -g"*.lean" \
+    pnp3 >/tmp/pnp3_gapmcsp_import_hits.log; then
+  echo "Detected forbidden import of legacy total-table model Models.Model_GapMCSP in active pnp3:"
+  cat /tmp/pnp3_gapmcsp_import_hits.log
+  exit 1
+fi
+
+# Allow the token `GapMCSPParams` only in the explicit third-party interop
+# adapter where we map external naming into Partial-MCSP semantics.
+if rg -n "\\bGapMCSPParams\\b" -g"*.lean" pnp3 \
+    -g"!pnp3/ThirdPartyFacts/PartialLocalityLift.lean" >/tmp/pnp3_gapmcsp_name_hits.log; then
+  echo "Detected unexpected GapMCSPParams usage outside the dedicated Partial interop adapter:"
+  cat /tmp/pnp3_gapmcsp_name_hits.log
+  exit 1
+fi
+
 if rg -n "^[[:space:]]*import[[:space:]]+Complexity\\.Interfaces_InternalSource\\b" -g"*.lean" \
     pnp3 >/tmp/pnp3_internal_source_import_hits.log; then
   echo "Detected forbidden import of legacy internal-source interface module:"

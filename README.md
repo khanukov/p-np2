@@ -1,6 +1,6 @@
 # P vs NP: Lean Formalization (Honest Status)
 
-Status date: 2026-03-26.
+Status date: 2026-04-03.
 
 Canonical checklist for unconditional readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -9,77 +9,119 @@ Current release posture:
 
 ## What This Project Is
 
-This repository contains a machine-checked (Lean 4) formalization of a route of
-the form:
+This repository contains a Lean 4 formalization of a route of the form
 
 `SAL -> Covering/Lower Bounds -> anti-checker -> magnification -> final wrappers`.
 
-The active `pnp3/` branch is maintained as an auditable contract: what is
-constructively formalized now, and what assumptions are still explicit.
+The active code lives in `pnp3/`. Historical material under `archive/` is kept
+for provenance only and must not be treated as the status source for the
+current branch.
 
-## Current State (No Overstatement)
+## Variant Boundary
 
-- `pnp3/` builds; `./scripts/check.sh` passes.
-- Active `axiom` declarations in `pnp3/`: `0`.
+Active `pnp3/` development uses **Partial MCSP** (`GapPartialMCSP*` names).
+
+- Working model: `pnp3/Models/Model_PartialMCSP.lean`.
+- Active language/promise names: `gapPartialMCSP_Language`,
+  `GapPartialMCSPPromise`.
+- Legacy total-table / older MCSP variants are historical unless explicitly
+  linked from active status docs.
+
+## Current Verified State
+
+- `pnp3/` builds and `./scripts/check.sh` passes on the current tree.
+- Active project-local `axiom` declarations in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
-- Audited theorem surface still uses standard Lean assumptions
-  `propext`, `Classical.choice`, `Quot.sound` (but no project-local axioms).
-- Final entrypoints are in `pnp3/Magnification/FinalResult.lean`.
-- Final `P ≠ NP` wrappers are conditional (including the new
-  support-bounds + `DAG → Formula` TM wrappers on the DAG side).
-- DAG barrier layer is now split into an explicit theorem-level asymptotic
-  module `pnp3/LowerBounds/AsymptoticDAGBarrier.lean` with
-  `GapSliceFamily`, per-slice anti-locality/locality contracts, and the
-  magnification-style endpoint
-  `MagnificationStyleNoSmallDAG`.
-- Layer B is now small-solver aware: locality contracts quantify over circuits
-  satisfying an explicit size predicate
-  `SizeBound n β ε (DagCircuit.size C)`, not over arbitrary correct circuits.
-- DAG Route-B source code now has both legacy language-level slack bridge and
-  witness-indexed bridge in
-  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
-  (`SmallDAGWitnessOnSlice`, `DAGStableRestrictionSlackPackageAt`,
-  `smallDAGLocalityStatement_of_dagSlackPackageAtProvider`).
-- The route remains conditional on proving the slice-level small-DAG locality
-  mathematics (no unconditional `P ≠ NP` theorem yet).
+- Final entrypoints live in `pnp3/Magnification/FinalResult.lean`.
+- Inclusion is already internalized:
+  `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+- The DAG side now has substantially more compiled surface area:
+  asymptotic fixed-slice collapse wrappers,
+  Route-B/source-closure/blocker wrappers,
+  support-half accepted-family fallback wrappers,
+  and canonical witness-density / witness-transfer compiler infrastructure.
 
-Bottom line today: there is no unconditional in-repo theorem `P ≠ NP`.
+## What Is Not Yet Proved
 
-## Active Final DAG Boundary
+There is still **no unconditional in-repo theorem** `P ≠ NP`.
 
-Current default final endpoint `P_ne_NP_final` depends on:
+The public default final theorem is still:
 
-1. `NP_not_subset_PpolyDAG`
+```text
+P_ne_NP_final
+  (hMag : MagnificationAssumptions)
+  (hNPDag : NP_not_subset_PpolyDAG)
+```
 
-So the open work is now explicitly DAG-side, not just formula-side wording.
+Two important facts about that signature:
 
-## Inclusion-Side Progress (`P ⊆ PpolyDAG`)
+1. `hNPDag` is the real logical DAG-side blocker.
+2. `hMag` is still present as compatibility context, but the current default
+   implementation does not consume it.
 
-Already closed in code:
+So the repository is not yet unconditional either at the DAG-separation layer
+or at the final zero-argument API layer.
 
-1. internal linear one-step provider
-   `stepCompiledLinearCandidateStepSpecProvider_internal`
-2. internal linear size closure
-   `compiledRuntimeCircuitSizeBoundLinear_internal`
-3. internal linear correctness
-   `compiledRuntimeAcceptCorrectnessLinear_internal`
-4. internal no-arg linear output-wire agreement
-   `compiledAcceptOutputWireAgreementLinear_internal`
-5. no-arg inclusion theorem
-   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`
+## What Changed Recently
 
-Still open for unconditional final route:
+Recent code now exposes the following additional honest routes:
 
-1. internalize `NP_not_subset_PpolyDAG`
+- asymptotic fixed-slice DAG finals:
+  `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`,
+  `..._of_asymptotic_dag_stableRestriction`,
+  `..._of_asymptotic_sourceClosure`,
+  `..._of_asymptotic_blocker`,
+  plus companion `P_ne_NP_final_of_*` wrappers;
+- fixed-slice `_TM` finals from concrete DAG-side witnesses:
+  `NP_not_subset_PpolyDAG_final_of_blocker_TM`,
+  `P_ne_NP_final_of_blocker_TM`, and related source-closure /
+  stable-restriction wrappers;
+- support-half fallback closure:
+  `noSmallDAG_of_supportHalfBoundFamily` and
+  `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`;
+- canonical witness-density hardwire coverage and all-slices compilers in
+  `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`.
 
-## How To Verify State
+This means the repository is no longer blocked on endpoint plumbing.
+The remaining debt is theorem-level.
+
+## Current Best Next Steps
+
+There are two distinct closure goals.
+
+### Goal A: remove external `hNPDag` from the current `hMag`-based final path
+
+The fastest honest route is currently:
+
+1. choose one fixed slice
+   `p* := hMag.antiChecker.asymptotic.pAt n hn`;
+2. prove one fixed-slice DAG source theorem on `p*`, preferably
+   `gapPartialMCSP_supportHalfObligation p*`,
+   or equivalently `dagRouteBSourceBlocker p*`,
+   or otherwise `dag_stableRestriction_producer p*`;
+3. feed that theorem into the already compiled asymptotic wrappers.
+
+### Goal B: reach a truly zero-argument unconditional theorem
+
+Removing `hNPDag` is not enough by itself. Full unconditionality still requires
+eliminating the remaining public `hMag` argument too.
+
+The shortest credible ways to do that are:
+
+1. bypass `hMag` completely with a concrete fixed slice `p*`, a concrete
+   `GapPartialMCSP_TMWitness p*`, and a fixed-slice blocker fed into the
+   existing `_TM` final wrappers; or
+2. separately internalize the current magnification-assumption package.
+
+## Verification
 
 ```bash
 ./scripts/check.sh
 for f in pnp3/Tests/AxiomsAudit.lean \
          pnp3/Tests/BarrierAudit.lean \
          pnp3/Tests/BarrierBypassAudit.lean \
-         pnp3/Tests/BridgeLocalityRegression.lean; do
+         pnp3/Tests/BridgeLocalityRegression.lean \
+         pnp3/Tests/WeakRouteSurfaceTests.lean; do
   lake env lean "$f"
 done
 ```
@@ -87,14 +129,15 @@ done
 ## Primary Documents
 
 - `STATUS.md` - authoritative current snapshot.
-- `CHECKLIST_UNCONDITIONAL_P_NE_NP.md` - canonical blocker checklist.
-- `RELEASE_RC.md` - release messaging/checklist for current RC state.
-- `TODO.md` - execution order for remaining closure tasks.
-- `PROOF_OVERVIEW.md` - proof-route map for auditors.
+- `TODO.md` - remaining execution order.
+- `CHECKLIST_UNCONDITIONAL_P_NE_NP.md` - exact closure checklist.
+- `PROOF_OVERVIEW.md` - auditor-oriented route map.
+- `RELEASE_RC.md` - release posture and wording guardrail.
 - `FAQ.md` - short reviewer-facing clarifications.
-- `AXIOMS_FINAL_LIST.md` - axiom/sorry hygiene inventory only.
+- `AXIOMS_FINAL_LIST.md` - axiom/sorry hygiene only.
 
 ## Wording Policy
 
-Until the checklist is fully closed, any `P ≠ NP` statement in this repository
-must explicitly indicate that final theorems are conditional.
+Until the checklist is fully closed, any statement of `P ≠ NP` in this
+repository must explicitly say that the current final theorem surface remains
+conditional.

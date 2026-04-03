@@ -4,6 +4,10 @@
 Основа: deep-dive по ветке `khanukov/continue-step-10-in-psubsetppoly_internal_todo.md`
 Статус: active runbook
 
+> Current-scope note (2026-04-03):
+> этот файл описывает только историческую/архитектурную стратегию inclusion-side.
+> Для общего статуса репозитория используйте top-level docs.
+
 > Release note (2026-03-14):
 > этот документ фиксирует стратегический и исторический deep-dive слой.
 > Для актуального release-среза (active-route, проверенные endpoints, audit checks)

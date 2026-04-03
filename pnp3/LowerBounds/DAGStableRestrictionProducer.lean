@@ -1,3 +1,4 @@
+import Mathlib.Data.Fintype.EquivFin
 import Complexity.Promise
 import Counting.Count_EasyFuncs
 import LowerBounds.AcceptedFamilyBarrier
@@ -4382,6 +4383,353 @@ def hardwireCircuitSize (n k : Nat) : Nat :=
   (6 * n + 10) * k + 1
 
 /--
+`assignmentIndex` is injective: the canonical finite encoding of total
+assignments is a bijection between `BitVec n` and `Fin (2^n)`.
+-/
+private theorem assignmentIndex_injective {n : Nat} :
+    Function.Injective (@assignmentIndex n) := by
+  let e : Core.BitVec n ≃ Fin (Models.Partial.tableLen n) :=
+    Fintype.equivFinOfCardEq (by
+      simpa [Models.Partial.tableLen] using Counting.card_bitvec n)
+  exact (Finite.injective_iff_surjective_of_equiv e).2 assignmentIndex_surjective
+
+/--
+Canonical bitvector round-trip through `assignmentIndex`.
+-/
+private theorem vecOfNat_assignmentIndex {n : Nat} (x : Core.BitVec n) :
+    Core.vecOfNat n (assignmentIndex x).val = x := by
+  apply assignmentIndex_injective
+  simpa using assignmentIndex_vecOfNat_eq (assignmentIndex x)
+
+/-- Input literal selecting either `x_i` or `¬x_i`. -/
+private def inputLiteral {n : Nat} (i : Fin n) (b : Bool) : Circuit n :=
+  if b then Circuit.input i else Circuit.not (Circuit.input i)
+
+/-- Left-associated conjunction of a list of circuits. -/
+private def bigAnd {n : Nat} : List (Circuit n) → Circuit n
+  | [] => Circuit.const true
+  | c :: cs => Circuit.and c (bigAnd cs)
+
+/-- Left-associated disjunction of a list of circuits. -/
+private def bigOr {n : Nat} : List (Circuit n) → Circuit n
+  | [] => Circuit.const false
+  | c :: cs => Circuit.or c (bigOr cs)
+
+/-- Explicit sum of circuit sizes over a list. -/
+private def listCircuitSize {n : Nat} : List (Circuit n) → Nat
+  | [] => 0
+  | c :: cs => Circuit.size c + listCircuitSize cs
+
+@[simp] private theorem eval_inputLiteral {n : Nat}
+    (i : Fin n) (b : Bool) (x : Core.BitVec n) :
+    Circuit.eval (inputLiteral i b) x = if x i = b then true else false := by
+  cases b <;> simp [inputLiteral, Circuit.eval]
+
+@[simp] private theorem eval_inputLiteral_eq_true_iff {n : Nat}
+    (i : Fin n) (b : Bool) (x : Core.BitVec n) :
+    Circuit.eval (inputLiteral i b) x = true ↔ x i = b := by
+  cases b <;> simp [inputLiteral, Circuit.eval]
+
+@[simp] private theorem eval_bigAnd {n : Nat}
+    (cs : List (Circuit n)) (x : Core.BitVec n) :
+    Circuit.eval (bigAnd cs) x = List.all cs (fun c => Circuit.eval c x) := by
+  induction cs with
+  | nil =>
+      simp [bigAnd, Circuit.eval]
+  | cons c cs ih =>
+      simp [bigAnd, ih, Circuit.eval]
+
+@[simp] private theorem eval_bigOr {n : Nat}
+    (cs : List (Circuit n)) (x : Core.BitVec n) :
+    Circuit.eval (bigOr cs) x = List.any cs (fun c => Circuit.eval c x) := by
+  induction cs with
+  | nil =>
+      simp [bigOr, Circuit.eval]
+  | cons c cs ih =>
+      simp [bigOr, ih, Circuit.eval]
+
+private theorem bigAnd_size_le {n : Nat} :
+    ∀ cs : List (Circuit n),
+      Circuit.size (bigAnd cs) ≤ 1 + cs.length + listCircuitSize cs
+  | [] => by
+      simp [bigAnd, listCircuitSize, Circuit.size]
+  | c :: cs => by
+      have ih := bigAnd_size_le cs
+      simp [bigAnd, listCircuitSize, Circuit.size] at ih ⊢
+      omega
+
+private theorem bigOr_size_le {n : Nat} :
+    ∀ cs : List (Circuit n),
+      Circuit.size (bigOr cs) ≤ 1 + cs.length + listCircuitSize cs
+  | [] => by
+      simp [bigOr, listCircuitSize, Circuit.size]
+  | c :: cs => by
+      have ih := bigOr_size_le cs
+      simp [bigOr, listCircuitSize, Circuit.size] at ih ⊢
+      omega
+
+private theorem inputLiteral_size_le {n : Nat} (i : Fin n) (b : Bool) :
+    Circuit.size (inputLiteral i b) ≤ 2 := by
+  cases b <;> simp [inputLiteral, Circuit.size]
+
+/--
+Selector circuit for one exact truth-table coordinate `j`.
+-/
+private def pointSelectorCircuit
+    (n : Nat)
+    (j : Fin (Models.Partial.tableLen n)) : Circuit n :=
+  bigAnd ((List.finRange n).map fun i => inputLiteral i (Nat.testBit j.val i.val))
+
+private theorem listCircuitSize_pointSelectors_le
+    {n : Nat} :
+    ∀ L : List (Fin (Models.Partial.tableLen n)),
+      listCircuitSize (L.map (pointSelectorCircuit n)) ≤ (3 * n + 1) * L.length
+  | [] => by
+      simp [listCircuitSize]
+  | j :: L => by
+      have ih := listCircuitSize_pointSelectors_le L
+      have hLitAux :
+          ∀ L : List (Fin n),
+            listCircuitSize (L.map fun i => inputLiteral i (Nat.testBit j.val i.val)) ≤
+              2 * L.length := by
+        intro L
+        induction L with
+        | nil =>
+            simp [listCircuitSize]
+        | cons i L ihL =>
+            have hi : Circuit.size (inputLiteral i (Nat.testBit j.val i.val)) ≤ 2 :=
+              inputLiteral_size_le i (Nat.testBit j.val i.val)
+            simp [listCircuitSize] at ihL ⊢
+            omega
+      have hPoint : Circuit.size (pointSelectorCircuit n j) ≤ 3 * n + 1 := by
+        have hBig := bigAnd_size_le
+          ((List.finRange n).map fun i => inputLiteral i (Nat.testBit j.val i.val))
+        have hLit :
+            listCircuitSize
+                ((List.finRange n).map fun i => inputLiteral i (Nat.testBit j.val i.val))
+              ≤ 2 * n := by
+          simpa using hLitAux (List.finRange n)
+        calc
+          Circuit.size (pointSelectorCircuit n j)
+              ≤ 1 + ((List.finRange n).map fun i => inputLiteral i (Nat.testBit j.val i.val)).length +
+                  listCircuitSize
+                    ((List.finRange n).map fun i => inputLiteral i (Nat.testBit j.val i.val)) :=
+            by simpa [pointSelectorCircuit] using hBig
+          _ ≤ 1 + n + 2 * n := by
+            simp at hLit ⊢
+            omega
+          _ = 3 * n + 1 := by ring
+      calc
+        listCircuitSize ((j :: L).map (pointSelectorCircuit n))
+            = Circuit.size (pointSelectorCircuit n j) +
+                listCircuitSize (L.map (pointSelectorCircuit n)) := by
+              simp [listCircuitSize]
+        _ ≤ (3 * n + 1) + (3 * n + 1) * L.length := by
+              gcongr
+        _ = (3 * n + 1) * (L.length + 1) := by ring
+        _ = (3 * n + 1) * (List.length (j :: L)) := by simp
+
+private theorem pointSelectorCircuit_eval_true_iff
+    {n : Nat}
+    (j k : Fin (Models.Partial.tableLen n)) :
+    Circuit.eval (pointSelectorCircuit n j) (Core.vecOfNat n k.val) = true ↔ k = j := by
+  constructor
+  · intro hEval
+    have hVecEq : Core.vecOfNat n k.val = Core.vecOfNat n j.val := by
+      funext i
+      rw [pointSelectorCircuit, eval_bigAnd] at hEval
+      have hAll := List.all_eq_true.mp hEval
+      have hLit :
+          Circuit.eval (inputLiteral i (Nat.testBit j.val i.val))
+            (Core.vecOfNat n k.val) = true := by
+        apply hAll
+        exact List.mem_map.mpr ⟨i, by simp, rfl⟩
+      have hBit :
+          (Core.vecOfNat n k.val) i = Nat.testBit j.val i.val :=
+        (eval_inputLiteral_eq_true_iff
+          (i := i) (b := Nat.testBit j.val i.val)
+          (x := Core.vecOfNat n k.val)).1 hLit
+      simpa [Core.vecOfNat] using hBit
+    have hIdx : assignmentIndex (Core.vecOfNat n k.val) =
+        assignmentIndex (Core.vecOfNat n j.val) := congrArg assignmentIndex hVecEq
+    simpa [assignmentIndex_vecOfNat_eq] using hIdx
+  · intro hkj
+    subst k
+    rw [pointSelectorCircuit, eval_bigAnd]
+    apply List.all_eq_true.mpr
+    intro c hc
+    rcases List.mem_map.mp hc with ⟨i, hi, rfl⟩
+    exact (eval_inputLiteral_eq_true_iff
+      (i := i) (b := Nat.testBit j.val i.val)
+      (x := Core.vecOfNat n j.val)).2 (by simp [Core.vecOfNat])
+
+private theorem pointSelectorCircuit_eval_false_of_ne
+    {n : Nat}
+    {j k : Fin (Models.Partial.tableLen n)}
+    (hkj : k ≠ j) :
+    Circuit.eval (pointSelectorCircuit n j) (Core.vecOfNat n k.val) = false := by
+  cases hEval : Circuit.eval (pointSelectorCircuit n j) (Core.vecOfNat n k.val) with
+  | false =>
+      exact rfl
+  | true =>
+      exact (hkj ((pointSelectorCircuit_eval_true_iff j k).1 hEval)).elim
+
+/--
+Pattern hardwire circuit: OR of point selectors for those `j ∈ S` with
+`σ j = true`.
+-/
+private noncomputable def patternHardwireCircuit
+    (p : GapPartialMCSPParams)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool) :
+    Circuit p.n :=
+  bigOr (((S.filter fun j => σ j).toList).map fun j => pointSelectorCircuit p.n j)
+
+private theorem patternHardwireCircuit_correct_on_S
+    (p : GapPartialMCSPParams)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool)
+    {j : Fin (Models.Partial.tableLen p.n)}
+    (hj : j ∈ S) :
+    Circuit.eval (patternHardwireCircuit p S σ) (Core.vecOfNat p.n j.val) = σ j := by
+  let P : Finset (Fin (Models.Partial.tableLen p.n)) := S.filter fun k => σ k
+  cases hσ : σ j with
+  | false =>
+      have hAllFalse :
+          ∀ k ∈ P.toList,
+            ¬ Circuit.eval (pointSelectorCircuit p.n k) (Core.vecOfNat p.n j.val) = true := by
+        intro k hk
+        have hkP : k ∈ P := by simpa using (Finset.mem_toList.mp hk)
+        have hjne : j ≠ k := by
+          intro hjk
+          subst hjk
+          simpa [P, hj, hσ] using hkP
+        simpa [pointSelectorCircuit_eval_false_of_ne (j := k) (k := j) hjne]
+      have hAny :
+          List.any P.toList
+              (fun k =>
+                Circuit.eval (pointSelectorCircuit p.n k) (Core.vecOfNat p.n j.val)) =
+            false :=
+        List.any_eq_false.mpr hAllFalse
+      simpa [patternHardwireCircuit, P, hσ, List.any_map] using hAny
+  | true =>
+      have hjP : j ∈ P := by
+        simpa [P, hj, hσ]
+      have hAny :
+          List.any P.toList
+              (fun k =>
+                Circuit.eval (pointSelectorCircuit p.n k) (Core.vecOfNat p.n j.val)) =
+            true := by
+        apply List.any_eq_true.mpr
+        refine ⟨j, ?_, ?_⟩
+        · simpa using (Finset.mem_toList.mpr hjP)
+        · exact (pointSelectorCircuit_eval_true_iff j j).2 rfl
+      simpa [patternHardwireCircuit, P, hσ, List.any_map] using hAny
+
+private theorem patternHardwireCircuit_size_le
+    (p : GapPartialMCSPParams)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool) :
+    Circuit.size (patternHardwireCircuit p S σ) ≤ hardwireCircuitSize p.n S.card := by
+  let P : Finset (Fin (Models.Partial.tableLen p.n)) := S.filter fun j => σ j
+  have hBig :
+      Circuit.size (patternHardwireCircuit p S σ)
+        ≤ 1 + P.toList.length +
+            listCircuitSize (P.toList.map fun j => pointSelectorCircuit p.n j) := by
+    simpa [patternHardwireCircuit, P] using
+      bigOr_size_le (P.toList.map fun j => pointSelectorCircuit p.n j)
+  have hList :
+      listCircuitSize (P.toList.map fun j => pointSelectorCircuit p.n j)
+        ≤ (3 * p.n + 1) * P.toList.length := by
+    simpa using listCircuitSize_pointSelectors_le (n := p.n) P.toList
+  have hCard : P.card ≤ S.card := Finset.card_filter_le _ _
+  have hFactorPS :
+      1 + P.card + (3 * p.n + 1) * P.card ≤ 1 + S.card + (3 * p.n + 1) * S.card := by
+    calc
+      1 + P.card + (3 * p.n + 1) * P.card
+          = 1 + (3 * p.n + 2) * P.card := by ring
+      _ ≤ 1 + (3 * p.n + 2) * S.card :=
+        Nat.add_le_add_left (Nat.mul_le_mul_left (3 * p.n + 2) hCard) 1
+      _ = 1 + S.card + (3 * p.n + 1) * S.card := by ring
+  have hMain :
+      1 + S.card + (3 * p.n + 1) * S.card ≤ 1 + (6 * p.n + 10) * S.card := by
+    have hCoeff : 3 * p.n + 2 ≤ 6 * p.n + 10 := by omega
+    calc
+      1 + S.card + (3 * p.n + 1) * S.card
+          = 1 + (3 * p.n + 2) * S.card := by ring
+      _ ≤ 1 + (6 * p.n + 10) * S.card :=
+        Nat.add_le_add_left (Nat.mul_le_mul_right S.card hCoeff) 1
+  calc
+    Circuit.size (patternHardwireCircuit p S σ)
+        ≤ 1 + P.toList.length +
+            listCircuitSize (P.toList.map fun j => pointSelectorCircuit p.n j) := hBig
+    _ ≤ 1 + P.toList.length + (3 * p.n + 1) * P.toList.length := by omega
+    _ = 1 + P.card + (3 * p.n + 1) * P.card := by simp
+    _ ≤ 1 + S.card + (3 * p.n + 1) * S.card := hFactorPS
+    _ ≤ 1 + (6 * p.n + 10) * S.card := hMain
+    _ = hardwireCircuitSize p.n S.card := by
+      simp [hardwireCircuitSize, Nat.add_comm, Nat.add_left_comm]
+
+private theorem circuitComputes_circuitToTable {n : Nat} (C : Circuit n) :
+    circuitComputes C (Counting.circuitToTable C) := by
+  intro x
+  let y : Core.BitVec n := (assignmentIndex_surjective (assignmentIndex x)).choose
+  have hy : assignmentIndex y = assignmentIndex x :=
+    (assignmentIndex_surjective (assignmentIndex x)).choose_spec
+  have hyx : y = x := assignmentIndex_injective hy
+  change Circuit.eval C x = Counting.circuitToTable C (assignmentIndex x)
+  simp [Counting.circuitToTable, y, hyx]
+
+private theorem circuitToTable_apply_eq_eval_vecOfNat
+    {n : Nat}
+    (C : Circuit n)
+    (j : Fin (Models.Partial.tableLen n)) :
+    Counting.circuitToTable C j = Circuit.eval C (Core.vecOfNat n j.val) := by
+  have hComp := circuitComputes_circuitToTable C (Core.vecOfNat n j.val)
+  change Circuit.eval C (Core.vecOfNat n j.val) =
+      Counting.circuitToTable C (assignmentIndex (Core.vecOfNat n j.val)) at hComp
+  simpa [assignmentIndex_vecOfNat_eq] using hComp.symm
+
+private theorem mem_canonicalEasyFamilyFinset_of_smallCircuit
+    (p : GapPartialMCSPParams)
+    (C : Circuit p.n)
+    (hSize : Circuit.size C ≤ p.sYES) :
+    Counting.circuitToTable C ∈ canonicalEasyFamilyFinset p := by
+  classical
+  refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+  apply decide_eq_true
+  refine ⟨C, hSize, ?_⟩
+  exact (is_consistent_total_iff C (Counting.circuitToTable C)).2
+    (circuitComputes_circuitToTable C)
+
+private theorem canonicalEasyFamilyRealizesPatternOn_of_hardwire
+    (p : GapPartialMCSPParams)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool)
+    (hSize : hardwireCircuitSize p.n S.card < p.sYES) :
+    canonicalEasyFamilyRealizesPatternOn p S σ := by
+  let C := patternHardwireCircuit p S σ
+  let t := Counting.circuitToTable C
+  refine ⟨t, ?_, ?_⟩
+  · apply mem_canonicalEasyFamilyFinset_of_smallCircuit (p := p) (C := C)
+    exact le_of_lt (lt_of_le_of_lt (patternHardwireCircuit_size_le p S σ) hSize)
+  · intro j hj
+    have hTable : t j = Circuit.eval C (Core.vecOfNat p.n j.val) :=
+      circuitToTable_apply_eq_eval_vecOfNat C j
+    exact hTable.trans (patternHardwireCircuit_correct_on_S p S σ hj)
+
+/--
+Monotonicity of the coarse hardwire budget in the number of constrained
+coordinates.
+-/
+theorem hardwireCircuitSize_le_of_le
+    {n k₁ k₂ : Nat}
+    (h : k₁ ≤ k₂) :
+    hardwireCircuitSize n k₁ ≤ hardwireCircuitSize n k₂ := by
+  unfold hardwireCircuitSize
+  exact Nat.add_le_add_right (Nat.mul_le_mul_left (6 * n + 10) h) 1
+
+/--
 Coverage from explicit hardwire budget.
 
 Intended constructive proof (to be filled with helper circuits):
@@ -4397,10 +4745,9 @@ theorem canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound
     (hardwireBudget : Nat)
     (hSize : hardwireCircuitSize p.n hardwireBudget < p.sYES) :
     canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget := by
-  -- NOTE: constructive hardwire-circuit implementation is the next mandatory
-  -- source step; we intentionally expose the final theorem shape now so the
-  -- bridge can depend only on `hCoverBudget`.
-  sorry
+  intro S hSCard σ
+  apply canonicalEasyFamilyRealizesPatternOn_of_hardwire (p := p) (S := S) (σ := σ)
+  exact lt_of_le_of_lt (hardwireCircuitSize_le_of_le (n := p.n) hSCard) hSize
 
 /--
 Canonical value-only alive coordinate set extracted from a semantic restriction

@@ -69,9 +69,16 @@ So there are really two closure goals:
 1. remove external `hNPDag`;
 2. then remove the residual public `hMag`.
 
-## 3. Fastest current route to remove `hNPDag`
+## 3. Current blocker reassessment (fixed-slice route)
 
-The shortest honest route is now **fixed slice + asymptotic collapse**.
+The previous "fastest route" (prove one fixed-slice blocker and collapse) is
+no longer considered reliable as a primary theorem target.
+
+Reason in one line:
+
+> the fixed-slice support-half blocker quantifies over **all** strict DAG
+> witnesses while support is syntactic, so tautological rewiring/hardwiring
+> phenomena can invalidate the target for a fixed language.
 
 ### Step A. Pick one slice from the existing magnification package
 
@@ -81,31 +88,29 @@ Use
 p* := hMag.antiChecker.asymptotic.pAt n hn
 ```
 
-### Step B. Prove one fixed-slice DAG source theorem on `p*`
+### Step B. Do **not** prioritize fixed-slice support-half blockers as a core milestone
 
-Preferred targets, in order:
+Deprecated as a preferred route:
 
 1. `gapPartialMCSP_supportHalfObligation p*`
 2. `dagRouteBSourceBlocker p*`
 3. `dag_stableRestriction_producer p*`
 
-These are effectively equivalent fixed-slice entry points for the current DAG
-consumer stack.
+These remain useful as *interfaces* and conditional reductions, but should not
+be treated as the main source theorem debt to discharge unconditionally.
 
-### Step C. Consume it through the already compiled wrappers
+### Step C. Keep wrappers, migrate source mathematics to asymptotic/family-level debt
 
-Once Step B is proved, the existing theorems already close the route:
+The existing wrappers are still valuable plumbing:
 
 1. `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
 2. `P_ne_NP_final_of_asymptotic_blocker`
 
-or the corresponding stable-restriction / source-closure variants.
+and corresponding stable-restriction / source-closure variants.
 
-This is the shortest current path because:
-
-1. it uses one fixed-slice theorem rather than a full all-slices theorem;
-2. the asymptotic collapse layer already exists in code;
-3. it matches the current public API shape directly.
+But the source-side theorem program should now target eventual-family and
+length-local bridge statements (see Section 5), not fixed-slice universal
+support-half obligations.
 
 ## 4. Fastest route to full zero-argument unconditionality
 
@@ -116,7 +121,8 @@ The shortest credible route to a true unconditional final theorem is:
 
 1. choose a concrete fixed slice `p*`;
 2. provide a concrete `GapPartialMCSP_TMWitness p*`;
-3. prove a fixed-slice blocker on `p*`;
+3. prove a **sound** source theorem on `p*` (not relying on universal
+   fixed-slice support-half obligations);
 4. use the existing `_TM` finals:
    `NP_not_subset_PpolyDAG_final_of_blocker_TM`,
    `P_ne_NP_final_of_blocker_TM`.
@@ -137,29 +143,29 @@ canonical all-slices program:
 - `canonical_smallDAG_witnessTransferQuarter_source_on_slices`
 - compilers from extraction/support budgets into those debts
 
-This remains a legitimate theorem program for a standalone internal
-`NP_not_subset_PpolyDAG`.
+This remains the legitimate theorem program for a standalone internal
+`NP_not_subset_PpolyDAG`, after replacing vacuous carriers/bridges with
+eventual/length-local versions.
 
-However, it is **not** the shortest current route to cleaning up the existing
-public final API, because:
+Current migration requirements:
 
-1. fixed-slice asymptotic wrappers are already present;
-2. the current `AsymptoticDAGLanguageBridge` is stronger than the
-   `sliceEq` data provided by `MagnificationAssumptions`;
-3. one fixed-slice blocker is sufficient for the currently exposed asymptotic
-   final wrappers.
+1. replace `GapSliceFamily`-quantified surfaces with eventual-indexed ones
+   (`n ≥ N0`);
+2. replace all-length bridge assumptions with length-local slice agreement;
+3. keep fixed-slice wrappers as endpoint plumbing only.
 
 ## 6. Recommended execution order
 
 ### Immediate theorem target
 
-Prove one fixed-slice DAG source theorem, preferably
-`gapPartialMCSP_supportHalfObligation p*`.
+Migrate one core all-slices theorem surface from `GapSliceFamily` to
+eventual-indexed families and prove the first non-vacuous bridge lemma on that
+surface.
 
 ### Immediate integration target
 
-Use that theorem to construct an internal
-`NP_not_subset_PpolyDAG` route for the current `hMag`-based final interface.
+Reconnect the migrated surface to existing endpoint wrappers (without changing
+the wrappers themselves).
 
 ### Then
 
@@ -199,3 +205,22 @@ For the repository to be honestly called **fully unconditional**, add:
 
 5. the public theorem no longer exposes compatibility-only `hMag`;
 6. a zero-argument final theorem `P_ne_NP` is derivable in the active tree.
+
+## 9. Main technical difficulty right now (why unconditionality is still hard)
+
+The dominant difficulty is no longer endpoint wiring. It is **source-side
+mathematics**:
+
+1. Fixed-slice universal support-half blockers are not a dependable primary
+   target under syntactic-support quantification.
+2. The non-vacuous all-slices route requires migrating theorem surfaces to
+   eventual-indexed families (`n ≥ N0`) and length-local bridge assumptions.
+3. After migration, one still needs a new family-level theorem that rules out
+   polynomial DAG solvers asymptotically (or yields an equivalent contradiction
+   payload), and this theorem is not currently present in the repository.
+
+In short:
+
+> plumbing is mostly done; the missing piece is a mathematically valid and
+> formalized asymptotic source theorem strong enough to instantiate internal
+> `NP_not_subset_PpolyDAG`.

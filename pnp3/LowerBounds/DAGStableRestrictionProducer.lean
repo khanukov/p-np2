@@ -3785,6 +3785,75 @@ noncomputable def acceptedFamilyCertificateAt_of_yesSubcubeCertificateAt
       hAgree
 
 /--
+Canonical total-table family induced by a YES-centered value-subcube
+certificate.
+-/
+noncomputable def yesSubcubeFamily
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : YesSubcubeCertificateAt W) :
+    Finset (Core.BitVec (Models.Partial.tableLen p.n)) :=
+  Counting.consistentFinset
+    (Counting.prescribedPartial cert.S (Partial.valPart cert.yYes))
+
+/--
+Exact cardinality of the canonical YES-subcube family.
+-/
+theorem card_yesSubcubeFamily
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : YesSubcubeCertificateAt W) :
+    (yesSubcubeFamily cert).card = 2 ^ (Models.Partial.tableLen p.n - cert.S.card) := by
+  dsimp [yesSubcubeFamily]
+  calc
+    (Counting.consistentFinset
+      (Counting.prescribedPartial cert.S (Partial.valPart cert.yYes))).card
+        = 2 ^ undefinedCount
+            (Counting.prescribedPartial cert.S (Partial.valPart cert.yYes)) := by
+              simpa using Counting.card_consistentFinset
+                (Counting.prescribedPartial cert.S (Partial.valPart cert.yYes))
+    _ = 2 ^ (Models.Partial.tableLen p.n - cert.S.card) := by
+          simpa using Counting.undefinedCount_prescribedPartial
+            cert.S (Partial.valPart cert.yYes)
+
+/--
+Every table in `yesSubcubeFamily cert` is accepted by the witness circuit.
+-/
+theorem dagEval_true_on_yesSubcubeFamily
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {ε : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound ε}
+    (cert : YesSubcubeCertificateAt W) :
+    ∀ g ∈ yesSubcubeFamily cert,
+      DagCircuit.eval W.C (encodeTotalAsPartial g) = true := by
+  intro g hg
+  have hgCons :
+      consistentTotal
+        (Counting.prescribedPartial cert.S (Partial.valPart cert.yYes)) g := by
+    dsimp [yesSubcubeFamily] at hg
+    simpa [Counting.consistentFinset] using hg
+  have hAgree :
+      AgreeOnValues (p := p) cert.S cert.yYes (encodeTotalAsPartial g) := by
+    intro i hi
+    have hgEq : g i = Partial.valPart cert.yYes i :=
+      Counting.consistentTotal_prescribedPartial_eq hgCons i hi
+    have hVal :
+        Partial.valPart (encodeTotalAsPartial g) i = g i := by
+      simp [encodeTotalAsPartial, totalTableToPartial,
+        Partial.valPart, encodePartial, Partial.valIndex]
+    calc
+      Partial.valPart cert.yYes i = g i := by simpa using hgEq.symm
+      _ = Partial.valPart (encodeTotalAsPartial g) i := hVal.symm
+  exact cert.hAccept (encodeTotalAsPartial g)
+    (validEncoding_encodeTotalAsPartial p g)
+    hAgree
+
+/--
 Direct contradiction from the YES-centered value-subcube producer, now routed
 through the generic accepted-family weak consumer.
 -/
@@ -3921,6 +3990,36 @@ noncomputable def dagUniformAcceptanceProbOnTotalsOfCircuit
     (dagAcceptsTotalTableOfCircuit p D)
 
 /--
+If uniform acceptance on total tables is strictly below `1`, then at least one
+total table is rejected.
+-/
+theorem exists_reject_of_uniformAcceptanceProbOnTotals_lt_one
+    {p : GapPartialMCSPParams}
+    (D : DagCircuit (Models.partialInputLen p))
+    (hLtOne : dagUniformAcceptanceProbOnTotalsOfCircuit p D < 1) :
+    ∃ t : Core.BitVec (Models.Partial.tableLen p.n),
+      dagAcceptsTotalTableOfCircuit p D t = false := by
+  classical
+  by_contra hNo
+  have hAllAccept :
+      ∀ t : Core.BitVec (Models.Partial.tableLen p.n),
+        dagAcceptsTotalTableOfCircuit p D t = true := by
+    intro t
+    by_cases hFalse : dagAcceptsTotalTableOfCircuit p D t = false
+    · exact False.elim (hNo ⟨t, hFalse⟩)
+    · cases hVal : dagAcceptsTotalTableOfCircuit p D t <;> simp [hVal] at hFalse ⊢
+  have hFilter :
+      (Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))).filter
+          (fun t => dagAcceptsTotalTableOfCircuit p D t = true)
+        = (Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))) := by
+    ext t
+    simp [hAllAccept t]
+  have hProbEqOne : dagUniformAcceptanceProbOnTotalsOfCircuit p D = 1 := by
+    unfold dagUniformAcceptanceProbOnTotalsOfCircuit acceptanceRatioOnFinset
+    simp [hFilter]
+  linarith [hLtOne, hProbEqOne]
+
+/--
 Acceptance probability on generator image under uniform seed for a fixed DAG
 circuit.
 -/
@@ -3956,6 +4055,28 @@ theorem dagSeedAcceptanceProbOnTotalsOfCircuit_eq_one_of_forall_accept
   simpa [dagSeedAcceptanceProbOnTotalsOfCircuit, acceptanceRatioOnFinset, hFilter]
 
 /--
+If a fixed circuit rejects every seed image pointwise, then its seed-image
+acceptance probability is exactly `0`.
+-/
+theorem dagSeedAcceptanceProbOnTotalsOfCircuit_eq_zero_of_forall_reject
+    {p : GapPartialMCSPParams}
+    {seedLen : Nat}
+    {gen : Core.BitVec seedLen → Core.BitVec (Models.Partial.tableLen p.n)}
+    {D : DagCircuit (Models.partialInputLen p)}
+    (hReject :
+      ∀ z : Core.BitVec seedLen,
+        dagAcceptsTotalTableOfCircuit p D (gen z) = false) :
+    dagSeedAcceptanceProbOnTotalsOfCircuit p gen D = 0 := by
+  classical
+  have hFilter :
+      (Finset.univ : Finset (Core.BitVec seedLen)).filter
+          (fun z => dagAcceptsTotalTableOfCircuit p D (gen z) = true)
+        = (∅ : Finset (Core.BitVec seedLen)) := by
+    ext z
+    simp [hReject z]
+  simpa [dagSeedAcceptanceProbOnTotalsOfCircuit, acceptanceRatioOnFinset, hFilter]
+
+/--
 Canonical evaluator on total truth tables induced by a fixed witness.
 
 Distributional declarations below must use this form.
@@ -3975,6 +4096,68 @@ noncomputable def dagUniformAcceptanceProbOnTotals
     {εslice : Rat}
     (W : SmallDAGWitnessOnSlice p SizeBound εslice) : Rat :=
   dagUniformAcceptanceProbOnTotalsOfCircuit p W.C
+
+/--
+Lower bound on uniform acceptance from any explicitly accepted finite family.
+-/
+theorem dagUniformAcceptanceProbOnTotals_ge_cardRatio_of_family
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (A : Finset (Core.BitVec (Models.Partial.tableLen p.n)))
+    (hAccept : ∀ g ∈ A, witnessAcceptsTotalTable W g = true) :
+    ((A.card : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat)) ≤
+      dagUniformAcceptanceProbOnTotals W := by
+  classical
+  let accepted :
+      Finset (Core.BitVec (Models.Partial.tableLen p.n)) :=
+    (Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))).filter
+      (fun g => witnessAcceptsTotalTable W g = true)
+  have hSub : A ⊆ accepted := by
+    intro g hg
+    simp [accepted, hAccept g hg]
+  have hCardLeNat : A.card ≤ accepted.card := Finset.card_le_card hSub
+  have hCardLeRat : (A.card : Rat) ≤ (accepted.card : Rat) := by exact_mod_cast hCardLeNat
+  have hDenPos : (0 : Rat) < (2 ^ (Models.Partial.tableLen p.n) : Rat) := by positivity
+  have hDiv :
+      (A.card : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat) ≤
+        (accepted.card : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat) :=
+    div_le_div_of_nonneg_right hCardLeRat (le_of_lt hDenPos)
+  have hProb :
+      dagUniformAcceptanceProbOnTotals W =
+        ((accepted.card : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat)) := by
+    simp [dagUniformAcceptanceProbOnTotals, dagUniformAcceptanceProbOnTotalsOfCircuit,
+      acceptanceRatioOnFinset, accepted, witnessAcceptsTotalTable]
+  simpa [hProb] using hDiv
+
+/--
+Quantitative uniform-acceptance lower bound induced by a YES-centered
+value-subcube certificate.
+
+This is a concrete source-side estimate:
+the accepted canonical subcube has exactly
+`2^(tableLen - S.card)` members, so its density lower-bounds uniform acceptance.
+-/
+theorem dagUniformAcceptanceProbOnTotals_ge_subcubeRatio_of_yesSubcubeCertificateAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (cert : YesSubcubeCertificateAt W) :
+    ((2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) /
+      (2 ^ (Models.Partial.tableLen p.n) : Rat)) ≤
+        dagUniformAcceptanceProbOnTotals W := by
+  have hBase :
+      ((yesSubcubeFamily cert).card : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat) ≤
+          dagUniformAcceptanceProbOnTotals W :=
+    dagUniformAcceptanceProbOnTotals_ge_cardRatio_of_family
+      W (yesSubcubeFamily cert) (by
+        intro g hg
+        simpa [witnessAcceptsTotalTable] using
+          dagEval_true_on_yesSubcubeFamily cert g hg)
+  simpa [card_yesSubcubeFamily cert] using hBase
 
 /-- Acceptance probability on generator image under uniform seed. -/
 noncomputable def dagSeedAcceptanceProbOnTotals
@@ -4126,6 +4309,665 @@ theorem canonicalEasySampler_supportEasy
     simp [canonicalEasySampler, totalTableToPartial]
 
 /--
+Canonical family of distinct easy total truth tables.
+
+Important design choice:
+- we index directly by truth tables (not by description strings/seeds),
+- hence there is no multiplicity bias from many descriptions mapping to one
+  table.
+-/
+noncomputable def canonicalEasyFamilyFinset
+    (p : GapPartialMCSPParams) :
+    Finset (Core.BitVec (Models.Partial.tableLen p.n)) :=
+  by
+    classical
+    exact
+      (Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))).filter
+        (fun t => decide (PartialMCSP_YES p (totalTableToPartial t)))
+
+/--
+Support lemma: every table in the canonical easy family is easy/YES.
+-/
+theorem canonicalEasyFamily_supportEasy
+    (p : GapPartialMCSPParams) :
+    ∀ t ∈ canonicalEasyFamilyFinset p,
+      PartialMCSP_YES p (totalTableToPartial t) := by
+  classical
+  intro t ht
+  have hDec : decide (PartialMCSP_YES p (totalTableToPartial t)) = true :=
+    (Finset.mem_filter.mp ht).2
+  simpa using hDec
+
+/--
+Agreement predicate between a total table and a Boolean pattern on a coordinate
+set `S`.
+-/
+def agreesOnPattern
+    {p : GapPartialMCSPParams}
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (t : Core.BitVec (Models.Partial.tableLen p.n))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool) : Prop :=
+  ∀ i ∈ S, t i = σ i
+
+/--
+`canonicalEasyFamilyRealizesPatternOn p S σ` means that canonical easy family
+contains at least one table matching pattern `σ` on every coordinate in `S`.
+-/
+def canonicalEasyFamilyRealizesPatternOn
+    (p : GapPartialMCSPParams)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool) : Prop :=
+  ∃ t ∈ canonicalEasyFamilyFinset p, agreesOnPattern S t σ
+
+/--
+Coverage contract: canonical easy family realizes all patterns on any
+coordinate set of size at most `hardwireBudget`.
+-/
+def canonicalEasyFamilyRealizesAllPatternsUpTo
+    (p : GapPartialMCSPParams)
+    (hardwireBudget : Nat) : Prop :=
+  ∀ S : Finset (Fin (Models.Partial.tableLen p.n)),
+    S.card ≤ hardwireBudget →
+      ∀ σ : Fin (Models.Partial.tableLen p.n) → Bool,
+        canonicalEasyFamilyRealizesPatternOn p S σ
+
+/--
+Coarse explicit size budget for hardwiring an arbitrary Boolean pattern on up to
+`k` truth-table coordinates.
+
+The constant is intentionally non-optimized: we only need a simple linear
+budget to formulate the coverage theorem used by the normalized bridge.
+-/
+def hardwireCircuitSize (n k : Nat) : Nat :=
+  (6 * n + 10) * k + 1
+
+/--
+Coverage from explicit hardwire budget.
+
+Intended constructive proof (to be filled with helper circuits):
+* build `pointSelectorCircuit` for each coordinate,
+* OR selectors corresponding to `σ(j)=true`,
+* prove agreement on `S`,
+* bound circuit size by `hardwireCircuitSize`.
+
+This theorem is the contract that removes external `hCover` from the bridge.
+-/
+theorem canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound
+    (p : GapPartialMCSPParams)
+    (hardwireBudget : Nat)
+    (hSize : hardwireCircuitSize p.n hardwireBudget < p.sYES) :
+    canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget := by
+  -- NOTE: constructive hardwire-circuit implementation is the next mandatory
+  -- source step; we intentionally expose the final theorem shape now so the
+  -- bridge can depend only on `hCoverBudget`.
+  sorry
+
+/--
+Canonical value-only alive coordinate set extracted from a semantic restriction
+certificate.
+
+`SmallDAGWitnessRestrictionExtractionAt` stores `alive` in the
+`Facts.LocalityLift` input universe.  We first cast it to the native
+`Models.partialInputLen p` universe and then keep only value coordinates
+`tableValPos j` that survive in that alive set.
+-/
+def canonicalValueAliveSet
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice}
+    (E : SmallDAGWitnessRestrictionExtractionAt W) :
+    Finset (Fin (Models.Partial.tableLen p.n)) :=
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    ThirdPartyFacts.castRestriction hlen E.r
+  Finset.univ.filter (fun j => tableValPos j ∈ rPartial.alive)
+
+/--
+Stability on the extracted canonical value-alive set.
+
+This theorem removes one external bridge hypothesis:
+local dependence on `S(W)` now follows canonically from extraction itself.
+
+Proof idea:
+1. cast the extraction restriction into `Models.partialInputLen p`,
+2. transfer `E.hStable` to this casted restriction,
+3. invoke `Restriction.localizedOn_of_stable`,
+4. show encoded total inputs agree on all alive coordinates:
+   - mask coordinates are always `true` for total encodings,
+   - value coordinates are controlled by agreement on `canonicalValueAliveSet E`.
+-/
+theorem stableOn_canonicalValueAliveSet_of_extraction
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice}
+    (E : SmallDAGWitnessRestrictionExtractionAt W) :
+    ∀ x y : Core.BitVec (Models.Partial.tableLen p.n),
+      (∀ j ∈ canonicalValueAliveSet E, x j = y j) →
+      dagAcceptsTotalTableOfCircuit p W.C y =
+        dagAcceptsTotalTableOfCircuit p W.C x := by
+  classical
+  let solver : Magnification.SmallGeneralCircuitSolver_Partial p :=
+    generalSolverOfSmallDAGWitnessOnSlice W
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    ThirdPartyFacts.castRestriction hlen E.r
+  have hStable :
+      ∀ x0 : Core.BitVec (Models.partialInputLen p),
+        solver.decide (rPartial.apply x0) = solver.decide x0 := by
+    let hstable_cast :
+        ∀ xFacts : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          solver.decide (ThirdPartyFacts.castBitVec hlen (E.r.apply xFacts)) =
+            solver.decide (ThirdPartyFacts.castBitVec hlen xFacts) := by
+      intro xFacts
+      simpa [solver, generalSolverOfSmallDAGWitnessOnSlice,
+        Magnification.SmallGeneralCircuitSolver_Partial.decide,
+        ThirdPartyFacts.solverDecideFacts, hlen] using E.hStable xFacts
+    simpa [rPartial] using
+      (ThirdPartyFacts.stable_of_stable_cast
+        (h := hlen) (decide := solver.decide) (r := E.r) hstable_cast)
+  intro x y hAgreeOnS
+  let xPartial : Core.BitVec (Models.partialInputLen p) := encodeTotalAsPartial x
+  let yPartial : Core.BitVec (Models.partialInputLen p) := encodeTotalAsPartial y
+  have hAgreeAlive : ∀ i ∈ rPartial.alive, xPartial i = yPartial i := by
+    intro i hi
+    by_cases hMask : (i : Nat) < Models.Partial.tableLen p.n
+    · simp [xPartial, yPartial, encodeTotalAsPartial, encodePartial,
+        totalTableToPartial, hMask]
+    · have hiLt : (i : Nat) < Models.partialInputLen p := i.2
+      have hjLt :
+          (i : Nat) - Models.Partial.tableLen p.n < Models.Partial.tableLen p.n := by
+        have : (i : Nat) <
+            Models.Partial.tableLen p.n + Models.Partial.tableLen p.n := by
+          simpa [Models.Partial.inputLen, two_mul, Models.partialInputLen] using hiLt
+        omega
+      let j : Fin (Models.Partial.tableLen p.n) :=
+        ⟨(i : Nat) - Models.Partial.tableLen p.n, hjLt⟩
+      have hValPos : tableValPos j = i := by
+        apply Fin.ext
+        change
+          Models.Partial.tableLen p.n +
+              ((i : Nat) - Models.Partial.tableLen p.n) =
+            (i : Nat)
+        omega
+      have hjMemS : j ∈ canonicalValueAliveSet E := by
+        simp [canonicalValueAliveSet, rPartial, hValPos, hi]
+      have hxyAtJ : x j = y j := hAgreeOnS j hjMemS
+      have hxPart : xPartial (tableValPos j) = x j := by
+        have hxAtI : xPartial i = x j := by
+          simp [xPartial, encodeTotalAsPartial, encodePartial,
+            totalTableToPartial, hMask, j]
+        simpa [hValPos] using hxAtI
+      have hyPart : yPartial (tableValPos j) = y j := by
+        have hyAtI : yPartial i = y j := by
+          simp [yPartial, encodeTotalAsPartial, encodePartial,
+            totalTableToPartial, hMask, j]
+        simpa [hValPos] using hyAtI
+      have hPartEqAtValPos : xPartial (tableValPos j) = yPartial (tableValPos j) := by
+        exact hxPart.trans (hxyAtJ.trans hyPart.symm)
+      simpa [hValPos] using hPartEqAtValPos
+  have hLocalized :
+      solver.decide yPartial = solver.decide xPartial := by
+    exact
+      ((Facts.LocalityLift.Restriction.localizedOn_of_stable
+        (r := rPartial) (f := solver.decide) hStable) xPartial yPartial hAgreeAlive).symm
+  simpa [solver, generalSolverOfSmallDAGWitnessOnSlice,
+    Magnification.SmallGeneralCircuitSolver_Partial.decide,
+    xPartial, yPartial, dagAcceptsTotalTableOfCircuit]
+    using hLocalized
+
+/--
+Glue lemma: canonical value-alive set cardinality is bounded by the extraction
+alive bound.
+
+This lets any existing bound on `E.aliveBound` feed directly into bridge budget
+assumptions without manual repackaging.
+-/
+theorem canonicalValueAliveSet_card_le_aliveBound
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice}
+    (E : SmallDAGWitnessRestrictionExtractionAt W) :
+    (canonicalValueAliveSet E).card ≤ E.aliveBound := by
+  classical
+  let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+    ThirdPartyFacts.inputLen_toFactsPartial p
+  let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+    ThirdPartyFacts.castRestriction hlen E.r
+  have hSCardAlive :
+      (canonicalValueAliveSet E).card ≤ rPartial.alive.card := by
+    have hImgSub : Finset.image tableValPos (canonicalValueAliveSet E) ⊆ rPartial.alive := by
+      intro i hi
+      simp only [canonicalValueAliveSet, hlen, rPartial, Finset.mem_image,
+        Finset.mem_filter, Finset.mem_univ, true_and] at hi
+      obtain ⟨j, hj, rfl⟩ := hi
+      exact hj
+    have hCardImage :
+        (canonicalValueAliveSet E).card =
+          (Finset.image tableValPos (canonicalValueAliveSet E)).card := by
+      rw [Finset.card_image_of_injective (canonicalValueAliveSet E) tableValPos_injective]
+    calc
+      (canonicalValueAliveSet E).card =
+          (Finset.image tableValPos (canonicalValueAliveSet E)).card := hCardImage
+      _ ≤ rPartial.alive.card := Finset.card_le_card hImgSub
+  have hAliveEq : rPartial.alive.card = E.r.alive.card := by
+    simpa [rPartial] using ThirdPartyFacts.castRestriction_alive_card hlen E.r
+  calc
+    (canonicalValueAliveSet E).card ≤ rPartial.alive.card := hSCardAlive
+    _ = E.r.alive.card := hAliveEq
+    _ ≤ E.aliveBound := E.hAliveBound
+
+/--
+Reject density on the canonical easy family for a fixed DAG circuit.
+
+This is the primary density observable used by the witness-indexed mainline:
+`reject density ≥ δ` under low uniform acceptance.
+-/
+noncomputable def canonicalEasyRejectProbOnFamilyOfCircuit
+    (p : GapPartialMCSPParams)
+    (D : DagCircuit (Models.partialInputLen p)) : Rat :=
+  acceptanceRatioOnFinset
+    (S := canonicalEasyFamilyFinset p)
+    (fun t => dagAcceptsTotalTableOfCircuit p D t = false)
+
+/--
+Witness-specialized canonical easy-family reject density.
+-/
+noncomputable def canonicalEasyRejectProbOnFamily
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) : Rat :=
+  canonicalEasyRejectProbOnFamilyOfCircuit p W.C
+
+/--
+If a fixed circuit accepts every table in the canonical easy family, then the
+canonical easy-family reject density is `0`.
+-/
+theorem canonicalEasyRejectProbOnFamilyOfCircuit_eq_zero_of_forall_accept
+    {p : GapPartialMCSPParams}
+    (D : DagCircuit (Models.partialInputLen p))
+    (hAccept :
+      ∀ t ∈ canonicalEasyFamilyFinset p,
+        dagAcceptsTotalTableOfCircuit p D t = true) :
+    canonicalEasyRejectProbOnFamilyOfCircuit p D = 0 := by
+  classical
+  by_cases hCard : (canonicalEasyFamilyFinset p).card = 0
+  · simp [canonicalEasyRejectProbOnFamilyOfCircuit, acceptanceRatioOnFinset, hCard]
+  · have hFilter :
+        (canonicalEasyFamilyFinset p).filter
+            (fun t => dagAcceptsTotalTableOfCircuit p D t = false)
+          = (∅ : Finset (Core.BitVec (Models.Partial.tableLen p.n))) := by
+      apply Finset.eq_empty_iff_forall_not_mem.mpr
+      intro t ht
+      have htMem : t ∈ canonicalEasyFamilyFinset p := (Finset.mem_filter.mp ht).1
+      have htRej : dagAcceptsTotalTableOfCircuit p D t = false := (Finset.mem_filter.mp ht).2
+      have htAcc : dagAcceptsTotalTableOfCircuit p D t = true := hAccept t htMem
+      exact (by simpa [htAcc] using htRej)
+    simp [canonicalEasyRejectProbOnFamilyOfCircuit, acceptanceRatioOnFinset, hCard, hFilter]
+
+/--
+If at least one canonical easy-family point is rejected, then canonical-family
+reject density is at least `1 / 2^tableLen`.
+-/
+theorem canonicalEasyRejectProbOnFamilyOfCircuit_ge_one_div_twoPow_of_exists_reject
+    {p : GapPartialMCSPParams}
+    (D : DagCircuit (Models.partialInputLen p))
+    (hReject :
+      ∃ t ∈ canonicalEasyFamilyFinset p,
+        dagAcceptsTotalTableOfCircuit p D t = false) :
+    (1 : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat) ≤
+      canonicalEasyRejectProbOnFamilyOfCircuit p D := by
+  classical
+  let family := canonicalEasyFamilyFinset p
+  let rejects : Finset (Core.BitVec (Models.Partial.tableLen p.n)) :=
+    family.filter (fun t => dagAcceptsTotalTableOfCircuit p D t = false)
+  rcases hReject with ⟨t0, ht0Fam, ht0Rej⟩
+  have ht0RejMem : t0 ∈ rejects := by
+    exact Finset.mem_filter.mpr ⟨ht0Fam, ht0Rej⟩
+  have hRejectPosNat : 1 ≤ rejects.card := by
+    exact Nat.succ_le_of_lt (Finset.card_pos.mpr ⟨t0, ht0RejMem⟩)
+  have hFamPosNat : 0 < family.card := Finset.card_pos.mpr ⟨t0, ht0Fam⟩
+  have hFamNeZero : family.card ≠ 0 := Nat.ne_of_gt hFamPosNat
+  have hFamLeNat : family.card ≤ (Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))).card :=
+    Finset.card_le_card (by
+      intro x hx
+      exact Finset.mem_univ x)
+  have hUnivCard :
+      ((Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))).card : Rat) =
+        (2 ^ (Models.Partial.tableLen p.n) : Rat) := by
+    simp
+  have hFamLeRat :
+      (family.card : Rat) ≤ (2 ^ (Models.Partial.tableLen p.n) : Rat) := by
+    calc
+      (family.card : Rat) ≤ ((Finset.univ : Finset (Core.BitVec (Models.Partial.tableLen p.n))).card : Rat) := by
+        exact_mod_cast hFamLeNat
+      _ = (2 ^ (Models.Partial.tableLen p.n) : Rat) := hUnivCard
+  have hFamPosRat : (0 : Rat) < (family.card : Rat) := by exact_mod_cast hFamPosNat
+  have hStep1 :
+      (1 : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat) ≤
+        (1 : Rat) / (family.card : Rat) :=
+    one_div_le_one_div_of_le hFamPosRat hFamLeRat
+  have hRejectLe :
+      (1 : Rat) / (family.card : Rat) ≤
+        (rejects.card : Rat) / (family.card : Rat) := by
+    have hRejectPosRat : (1 : Rat) ≤ (rejects.card : Rat) := by
+      exact_mod_cast hRejectPosNat
+    exact div_le_div_of_nonneg_right hRejectPosRat (le_of_lt hFamPosRat)
+  have hMain :
+      (1 : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat) ≤
+        (rejects.card : Rat) / (family.card : Rat) :=
+    le_trans hStep1 hRejectLe
+  have hProb :
+      canonicalEasyRejectProbOnFamilyOfCircuit p D =
+        (rejects.card : Rat) / (family.card : Rat) := by
+    simp [canonicalEasyRejectProbOnFamilyOfCircuit, acceptanceRatioOnFinset,
+      family, rejects, hFamNeZero]
+  simpa [hProb]
+    using hMain
+
+/--
+Pattern-coverage bridge:
+if witness decision depends only on coordinates in `S`, and canonical family
+realizes every pattern on `S`, then any rejected table induces a rejected
+canonical-family table.
+-/
+theorem exists_reject_in_canonicalEasyFamily_of_localDependenceAndCoverage
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (hStableOnS :
+      ∀ x y : Core.BitVec (Models.Partial.tableLen p.n),
+        (∀ i ∈ S, x i = y i) →
+          dagAcceptsTotalTableOfCircuit p W.C y =
+            dagAcceptsTotalTableOfCircuit p W.C x)
+    (hCover :
+      ∀ σ : Fin (Models.Partial.tableLen p.n) → Bool,
+        canonicalEasyFamilyRealizesPatternOn p S σ)
+    (hReject :
+      ∃ x : Core.BitVec (Models.Partial.tableLen p.n),
+        dagAcceptsTotalTableOfCircuit p W.C x = false) :
+    ∃ t ∈ canonicalEasyFamilyFinset p,
+      dagAcceptsTotalTableOfCircuit p W.C t = false := by
+  rcases hReject with ⟨x, hxRej⟩
+  rcases hCover x with ⟨t, htFam, htAgree⟩
+  have hSame :
+      dagAcceptsTotalTableOfCircuit p W.C t =
+        dagAcceptsTotalTableOfCircuit p W.C x :=
+    hStableOnS x t (by
+      intro i hi
+      exact (htAgree i hi).symm)
+  refine ⟨t, htFam, ?_⟩
+  simpa [hxRej] using hSame
+
+/--
+Canonical easy-density source object (analysis-first target).
+
+Interpretation:
+- if a small DAG has noticeably low **uniform** acceptance, then its acceptance
+  probability on the canonical easy sampler image is bounded away from `1` by a
+  positive constant `delta`.
+
+This is the density/transfer-friendly replacement for treating canonical HSG as
+the primary debt.
+-/
+structure CanonicalSmallDAGEasyDensitySourceAt
+    {p : GapPartialMCSPParams}
+    (SizeBound : Rat → Nat → Prop) where
+  epsilon : Rat
+  delta : Rat
+  hEpsQuarter : epsilon ≤ (1 / 4 : Rat)
+  hDeltaPos : 0 < delta
+  hRejectDensity :
+    ∀ {εslice : Rat} (D : DagCircuit (Models.partialInputLen p)),
+      SizeBound εslice (DagCircuit.size D) →
+      dagUniformAcceptanceProbOnTotalsOfCircuit p D < 1 - epsilon →
+      dagSeedAcceptanceProbOnTotalsOfCircuit p (canonicalEasySampler p) D ≤ 1 - delta
+
+/--
+Witness-indexed (weaker) canonical easy-density source object.
+
+This variant is intentionally weaker than
+`CanonicalSmallDAGEasyDensitySourceAt`: it quantifies only over actual slice
+solver witnesses `W`, not all DAG circuits satisfying `SizeBound`.
+
+Motivation:
+- this is often closer to what strict-semantics arguments naturally provide;
+- yet it is still enough for the weak-route contradiction closure because that
+  closure only needs transfer for concrete witness circuits.
+-/
+structure CanonicalWitnessEasyDensitySourceAt
+    {p : GapPartialMCSPParams}
+    (SizeBound : Rat → Nat → Prop) where
+  epsilon : Rat
+  delta : Rat
+  hEpsQuarter : epsilon ≤ (1 / 4 : Rat)
+  hDeltaPos : 0 < delta
+  hRejectDensityWitness :
+    ∀ {εslice : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+      dagUniformAcceptanceProbOnTotals W < 1 - epsilon →
+      delta ≤ canonicalEasyRejectProbOnFamily W
+
+/--
+Research-target extraction lemma (single witness form):
+from a witness-indexed canonical easy-density source, every low-uniform witness
+must have canonical-family reject density at least `delta`.
+-/
+theorem canonicalWitnessEasyDensity_lowUniform_implies_familyRejectDensity
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound)
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (hUniformLow : dagUniformAcceptanceProbOnTotals W < 1 - src.epsilon) :
+    src.delta ≤ canonicalEasyRejectProbOnFamily W :=
+  src.hRejectDensityWitness W hUniformLow
+
+/--
+Central bridge constructor (research template):
+
+`restriction/local dependence + canonical family coverage + low-uniform witness
+counterexample`  ⟹  witness-indexed canonical family-density source.
+
+This isolates the exact remaining source debt: provide
+- small coordinate sets `S(W)`,
+- local dependence of witness acceptance on `S(W)`,
+- canonical family coverage on these sets,
+- and the low-uniform ⇒ existence-of-reject witness.
+-/
+def canonicalWitnessEasyDensitySourceAt_of_restrictionExtractionAndCoverage
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (SOf :
+      ∀ {εslice : Rat},
+        SmallDAGWitnessOnSlice p SizeBound εslice →
+          Finset (Fin (Models.Partial.tableLen p.n)))
+    (hBudget :
+      ∀ {εslice : Rat}
+        (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (SOf W).card ≤ hardwireBudget)
+    (hCover :
+      canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget)
+    (hStableOnS :
+      ∀ {εslice : Rat}
+        (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        ∀ x y : Core.BitVec (Models.Partial.tableLen p.n),
+          (∀ i ∈ SOf W, x i = y i) →
+            dagAcceptsTotalTableOfCircuit p W.C y =
+              dagAcceptsTotalTableOfCircuit p W.C x)
+    : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound := by
+  refine
+    { epsilon := epsilon
+      delta := (1 : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat)
+      hEpsQuarter := hEpsQuarter
+      hDeltaPos := by
+        have : (0 : Rat) < (2 ^ (Models.Partial.tableLen p.n) : Rat) := by positivity
+        positivity
+      hRejectDensityWitness := ?_ }
+  intro εslice W hUniformLow
+  have hUniformLtOne : dagUniformAcceptanceProbOnTotals W < 1 := by
+    have hOneSubLeOne : 1 - epsilon ≤ (1 : Rat) := by linarith
+    exact lt_of_lt_of_le hUniformLow hOneSubLeOne
+  have hReject :
+      ∃ x : Core.BitVec (Models.Partial.tableLen p.n),
+        dagAcceptsTotalTableOfCircuit p W.C x = false :=
+    exists_reject_of_uniformAcceptanceProbOnTotals_lt_one W.C
+      (by simpa [dagUniformAcceptanceProbOnTotals] using hUniformLtOne)
+  have hCoverS :
+      ∀ σ : Fin (Models.Partial.tableLen p.n) → Bool,
+        canonicalEasyFamilyRealizesPatternOn p (SOf W) σ := by
+    intro σ
+    exact hCover (SOf W) (hBudget W) σ
+  have hFamReject :
+      ∃ t ∈ canonicalEasyFamilyFinset p,
+        dagAcceptsTotalTableOfCircuit p W.C t = false :=
+    exists_reject_in_canonicalEasyFamily_of_localDependenceAndCoverage
+      (W := W) (S := SOf W) (hStableOnS := hStableOnS W) hCoverS hReject
+  simpa [canonicalEasyRejectProbOnFamily] using
+    canonicalEasyRejectProbOnFamilyOfCircuit_ge_one_div_twoPow_of_exists_reject
+      (p := p) (D := W.C) hFamReject
+
+/--
+Normalized bridge constructor:
+
+* extraction is provided witness-wise,
+* coordinate set is fixed canonically (`canonicalValueAliveSet`),
+* locality on this set is *derived* (not assumed) via
+  `stableOn_canonicalValueAliveSet_of_extraction`,
+* coverage is still passed as the remaining external contract.
+
+So this removes `hStableOnS` from the external debt surface.
+-/
+def canonicalWitnessEasyDensitySourceAt_of_extractionBudgetAndCoverage
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (hExtract :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        SmallDAGWitnessRestrictionExtractionAt W)
+    (hBudget :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (canonicalValueAliveSet (hExtract W)).card ≤ hardwireBudget)
+    (hCover :
+      canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalWitnessEasyDensitySourceAt_of_restrictionExtractionAndCoverage
+    (p := p) (SizeBound := SizeBound)
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget
+    (fun {εslice} W => canonicalValueAliveSet (hExtract W))
+    (fun {εslice} W => hBudget W)
+    hCover
+    (fun {εslice} W => stableOn_canonicalValueAliveSet_of_extraction (hExtract W))
+
+/--
+Final normalized bridge form:
+only extraction, extracted-set budget, and arithmetic hardwire budget are
+external. Coverage is now discharged from `hCoverBudget`.
+-/
+def canonicalWitnessEasyDensitySourceAt_of_extractionBudget
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (hCoverBudget :
+      hardwireCircuitSize p.n hardwireBudget < p.sYES)
+    (hExtract :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        SmallDAGWitnessRestrictionExtractionAt W)
+    (hBudget :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (canonicalValueAliveSet (hExtract W)).card ≤ hardwireBudget) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalWitnessEasyDensitySourceAt_of_extractionBudgetAndCoverage
+    (p := p) (SizeBound := SizeBound)
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget hExtract hBudget
+    (canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound
+      p hardwireBudget hCoverBudget)
+
+/--
+Support-specialized normalized bridge.
+
+This is the fastest restricted-model sanity instantiation of the new density
+mainline:
+* extraction is taken from syntactic support,
+* `hBudget` is discharged from support cardinality via
+  `canonicalValueAliveSet_card_le_aliveBound`.
+-/
+noncomputable def canonicalWitnessEasyDensitySourceAt_of_supportBudget
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (hCoverBudget : hardwireCircuitSize p.n hardwireBudget < p.sYES)
+    (hSupportBudget :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (DagCircuit.support W.C).card ≤ hardwireBudget) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound := by
+  refine canonicalWitnessEasyDensitySourceAt_of_extractionBudget
+    (p := p) (SizeBound := SizeBound)
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget hCoverBudget
+    (hExtract := fun {εslice} W => smallDAGWitnessRestrictionExtractionAt_of_support W)
+    (hBudget := ?_)
+  intro εslice W
+  have hSLeAlive :
+      (canonicalValueAliveSet (smallDAGWitnessRestrictionExtractionAt_of_support W)).card ≤
+        (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound :=
+    canonicalValueAliveSet_card_le_aliveBound
+      (smallDAGWitnessRestrictionExtractionAt_of_support W)
+  calc
+    (canonicalValueAliveSet (smallDAGWitnessRestrictionExtractionAt_of_support W)).card ≤
+        (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound := hSLeAlive
+    _ ≤ (DagCircuit.support W.C).card := by
+      simpa [smallDAGWitnessRestrictionExtractionAt_of_support]
+    _ ≤ hardwireBudget := hSupportBudget W
+
+/--
+Witness-indexed uniform-lower source object.
+
+This is a strictly stronger, often easier-to-target contract than
+`CanonicalWitnessEasyDensitySourceAt`: instead of proving a seed-density
+implication, it postulates the desired uniform lower bound directly for every
+witness.
+
+The density object is then recovered with a trivial contradiction argument
+(`uniform < 1 - ε` is impossible).
+-/
+structure WitnessUniformLowerSourceAt
+    {p : GapPartialMCSPParams}
+    (SizeBound : Rat → Nat → Prop) where
+  epsilon : Rat
+  hEpsQuarter : epsilon ≤ (1 / 4 : Rat)
+  hUniformLower :
+    ∀ {εslice : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+      1 - epsilon ≤ dagUniformAcceptanceProbOnTotals W
+
+/--
 Canonical one-sided easy-HSG source object.
 
 Difference from `SmallDAGEasyHSGSourceAt`:
@@ -4162,6 +5004,80 @@ def smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt
       hHitsLargeRejectingSets := ?_ }
   intro εslice D hSize hUniformLow
   simpa using src.hHitsLargeRejectingSets D hSize hUniformLow
+
+/--
+Compiler from canonical easy-density source to canonical one-sided easy-HSG
+source.
+
+Key point: if every canonical easy seed were accepted, then seed acceptance
+probability would be `1`, contradicting `hRejectDensity` together with
+`delta > 0`.
+-/
+def canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalSmallDAGEasyDensitySourceAt (p := p) SizeBound) :
+    CanonicalSmallDAGEasyHSGSourceAt (p := p) SizeBound := by
+  refine
+    { epsilon := src.epsilon
+      hEpsQuarter := src.hEpsQuarter
+      hHitsLargeRejectingSets := ?_ }
+  intro εslice D hSize hUniformLow
+  by_contra hNoReject
+  have hAllAccept :
+      ∀ z : Core.BitVec (canonicalEasySamplerSeedLen p),
+        dagAcceptsTotalTableOfCircuit p D (canonicalEasySampler p z) = true := by
+    intro z
+    by_cases hFalse : dagAcceptsTotalTableOfCircuit p D (canonicalEasySampler p z) = false
+    · exact False.elim (hNoReject ⟨z, hFalse⟩)
+    · cases hVal : dagAcceptsTotalTableOfCircuit p D (canonicalEasySampler p z) <;> simp [hVal] at hFalse ⊢
+  have hSeedOne :
+      dagSeedAcceptanceProbOnTotalsOfCircuit p (canonicalEasySampler p) D = 1 :=
+    dagSeedAcceptanceProbOnTotalsOfCircuit_eq_one_of_forall_accept hAllAccept
+  have hDensity :
+      dagSeedAcceptanceProbOnTotalsOfCircuit p (canonicalEasySampler p) D ≤ 1 - src.delta :=
+    src.hRejectDensity D hSize hUniformLow
+  rw [hSeedOne] at hDensity
+  have : ¬(1 ≤ 1 - src.delta) := by
+    linarith [src.hDeltaPos]
+  exact this hDensity
+
+/--
+Compiler in the opposite direction (current singleton canonical sampler):
+canonical one-sided easy-HSG source -> canonical easy-density source.
+
+Because `canonicalEasySamplerSeedLen = 0`, an existential rejecting seed forces
+the unique seed to reject, hence seed acceptance probability is exactly `0`.
+So the density inequality holds with `delta := 1`.
+-/
+def canonicalEasyDensitySourceAt_of_canonicalEasyHSGSourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalSmallDAGEasyHSGSourceAt (p := p) SizeBound) :
+    CanonicalSmallDAGEasyDensitySourceAt (p := p) SizeBound := by
+  refine
+    { epsilon := src.epsilon
+      delta := 1
+      hEpsQuarter := src.hEpsQuarter
+      hDeltaPos := by norm_num
+      hRejectDensity := ?_ }
+  intro εslice D hSize hUniformLow
+  rcases src.hHitsLargeRejectingSets D hSize hUniformLow with ⟨z0, hz0⟩
+  have hAllReject :
+      ∀ z : Core.BitVec (canonicalEasySamplerSeedLen p),
+        dagAcceptsTotalTableOfCircuit p D (canonicalEasySampler p z) = false := by
+    intro z
+    have hzEq : z = z0 := by
+      have hSub :
+          Subsingleton (Core.BitVec (canonicalEasySamplerSeedLen p)) := by
+        simpa [canonicalEasySamplerSeedLen] using
+          (inferInstance : Subsingleton (Core.BitVec 0))
+      exact hSub.elim z z0
+    simpa [hzEq] using hz0
+  have hSeedZero :
+      dagSeedAcceptanceProbOnTotalsOfCircuit p (canonicalEasySampler p) D = 0 :=
+    dagSeedAcceptanceProbOnTotalsOfCircuit_eq_zero_of_forall_reject hAllReject
+  simpa [hSeedZero]
 
 /--
 Compiler: average-case / semantic-sampling source object to canonical
@@ -4262,6 +5178,160 @@ def easyImageTransferAt_of_smallDAGEasyHSGSourceAt
       gen := source.gen
       epsilon := source.epsilon
       hUniformLower := hUniformLower }
+
+/--
+Direct compiler from canonical easy-density source to witness-level transfer.
+
+This is the density-first mainline compiler:
+
+`canonical density source -> canonical HSG source -> generic HSG source -> transfer`.
+-/
+def easyImageTransferAt_of_canonicalEasyDensitySourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : CanonicalSmallDAGEasyDensitySourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImageTransferAt W :=
+  easyImageTransferAt_of_smallDAGEasyHSGSourceAt
+    (source :=
+      smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt
+        (canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt source))
+    W
+
+/--
+Direct compiler from the weaker witness-indexed canonical easy-density source
+to witness-level transfer.
+-/
+def easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImageTransferAt W := by
+  have hAllFamilyAccept :
+      ∀ t ∈ canonicalEasyFamilyFinset p,
+        dagAcceptsTotalTableOfCircuit p W.C t = true := by
+    intro t ht
+    have hYesMem :
+        encodeTotalAsPartial t ∈ (gapSliceOfParams p).Yes := by
+      simpa [gapSliceOfParams] using
+        (gapPartialMCSP_yes_of_small p (encodeTotalAsPartial t)
+          (by
+            simpa [decodePartial_encodeTotal] using
+              canonicalEasyFamily_supportEasy p t ht))
+    exact W.hCorrect.1 _ hYesMem
+  have hUniformLower : 1 - source.epsilon ≤ dagUniformAcceptanceProbOnTotals W := by
+    by_contra hNotLower
+    have hUniformLow : dagUniformAcceptanceProbOnTotals W < 1 - source.epsilon :=
+      lt_of_not_ge hNotLower
+    have hDensity :
+        source.delta ≤ canonicalEasyRejectProbOnFamily W :=
+      source.hRejectDensityWitness W hUniformLow
+    have hRejectZero : canonicalEasyRejectProbOnFamily W = 0 := by
+      simpa [canonicalEasyRejectProbOnFamily] using
+        canonicalEasyRejectProbOnFamilyOfCircuit_eq_zero_of_forall_accept
+          (p := p) (D := W.C) hAllFamilyAccept
+    rw [hRejectZero] at hDensity
+    have : ¬ (source.delta ≤ 0) := by
+      linarith [source.hDeltaPos]
+    exact this hDensity
+  exact
+    { seedLen := canonicalEasySamplerSeedLen p
+      gen := canonicalEasySampler p
+      epsilon := source.epsilon
+      hUniformLower := hUniformLower }
+
+/--
+Compile witness-uniform-lower sources into witness-indexed canonical
+easy-density sources.
+
+Construction:
+- keep the same `epsilon`,
+- use `delta := 1`,
+- prove reject-density implication by contradiction with `hUniformLower`.
+-/
+def canonicalWitnessEasyDensitySourceAt_of_witnessUniformLowerSourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : WitnessUniformLowerSourceAt (p := p) SizeBound) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound := by
+  refine
+    { epsilon := src.epsilon
+      delta := 1
+      hEpsQuarter := src.hEpsQuarter
+      hDeltaPos := by norm_num
+      hRejectDensityWitness := ?_ }
+  intro εslice W hUniformLow
+  have hLower : 1 - src.epsilon ≤ dagUniformAcceptanceProbOnTotals W :=
+    src.hUniformLower W
+  have : False := not_lt_of_ge hLower hUniformLow
+  exact False.elim this
+
+/--
+Extract witness-uniform-lower bounds from witness-indexed canonical
+easy-density sources.
+
+Key observation:
+- canonical sampler outputs are always YES-instances (`canonicalEasySampler_supportEasy`);
+- hence every witness accepts all canonical seeds by correctness;
+- therefore seed acceptance probability is `1`, and the density implication
+  forces `uniform < 1 - ε` to be impossible.
+-/
+def witnessUniformLowerSourceAt_of_canonicalWitnessEasyDensitySourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound) :
+    WitnessUniformLowerSourceAt (p := p) SizeBound := by
+  refine
+    { epsilon := src.epsilon
+      hEpsQuarter := src.hEpsQuarter
+      hUniformLower := ?_ }
+  intro εslice W
+  by_contra hNotLower
+  have hUniformLow : dagUniformAcceptanceProbOnTotals W < 1 - src.epsilon :=
+    lt_of_not_ge hNotLower
+  have hDensity :
+      src.delta ≤ canonicalEasyRejectProbOnFamily W :=
+    src.hRejectDensityWitness W hUniformLow
+  have hAllFamilyAccept :
+      ∀ t ∈ canonicalEasyFamilyFinset p,
+        dagAcceptsTotalTableOfCircuit p W.C t = true := by
+    intro t ht
+    have hYesMem :
+        encodeTotalAsPartial t ∈ (gapSliceOfParams p).Yes := by
+      simpa [gapSliceOfParams] using
+        (gapPartialMCSP_yes_of_small p (encodeTotalAsPartial t)
+          (by
+            simpa [decodePartial_encodeTotal] using
+              canonicalEasyFamily_supportEasy p t ht))
+    exact W.hCorrect.1 _ hYesMem
+  have hRejectZero : canonicalEasyRejectProbOnFamily W = 0 := by
+    simpa [canonicalEasyRejectProbOnFamily] using
+      canonicalEasyRejectProbOnFamilyOfCircuit_eq_zero_of_forall_accept
+        (p := p) (D := W.C) hAllFamilyAccept
+  rw [hRejectZero] at hDensity
+  have : ¬ (src.delta ≤ 0) := by
+    linarith [src.hDeltaPos]
+  exact this hDensity
+
+/--
+At one slice, witness-indexed canonical easy-density and witness-uniform-lower
+contracts are equivalent.
+-/
+theorem canonicalWitnessEasyDensitySourceAt_iff_witnessUniformLowerSourceAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop} :
+    Nonempty (CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound) ↔
+      Nonempty (WitnessUniformLowerSourceAt (p := p) SizeBound) := by
+  constructor
+  · intro h
+    rcases h with ⟨src⟩
+    exact ⟨witnessUniformLowerSourceAt_of_canonicalWitnessEasyDensitySourceAt src⟩
+  · intro h
+    rcases h with ⟨src⟩
+    exact ⟨canonicalWitnessEasyDensitySourceAt_of_witnessUniformLowerSourceAt src⟩
 
 /--
 Shared \"image + easiness\" core between acceptance-only and full
@@ -4482,6 +5552,81 @@ theorem dagUniformAcceptanceProbOnTotals_le_countRatio_of_correctWitness
     div_le_div_of_nonneg_right hNumRat hDenNonneg
   simpa [dagUniformAcceptanceProbOnTotals, dagUniformAcceptanceProbOnTotalsOfCircuit,
     acceptanceRatioOnFinset, hDenCard] using hDiv
+
+/--
+Numeric separation forced by a YES-subcube certificate:
+the canonical subcube density is strictly larger than the counting upper ratio
+`circuitCountBound / 2^tableLen`.
+
+This is the pure quantitative core extracted from `cert.hSlack`.
+-/
+theorem subcubeRatio_gt_countRatio_of_yesSubcubeCertificateAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (cert : YesSubcubeCertificateAt W) :
+    ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+      (2 ^ (Models.Partial.tableLen p.n) : Rat)) <
+    ((2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) /
+      (2 ^ (Models.Partial.tableLen p.n) : Rat)) := by
+  have hNum :
+      (Models.circuitCountBound p.n (p.sNO - 1) : Rat) <
+        (2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) := by
+    exact_mod_cast cert.hSlack
+  have hDenPos : (0 : Rat) < (2 ^ (Models.Partial.tableLen p.n) : Rat) := by
+    positivity
+  exact div_lt_div_of_pos_right hNum hDenPos
+
+/--
+Quantitative upgrade: a YES-subcube certificate forces uniform acceptance to be
+strictly above the counting ratio.
+-/
+theorem dagUniformAcceptanceProbOnTotals_gt_countRatio_of_yesSubcubeCertificateAt
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (cert : YesSubcubeCertificateAt W) :
+    ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+      (2 ^ (Models.Partial.tableLen p.n) : Rat)) <
+      dagUniformAcceptanceProbOnTotals W := by
+  have hCountLtSubcube :
+      ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) <
+      ((2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) :=
+    subcubeRatio_gt_countRatio_of_yesSubcubeCertificateAt W cert
+  have hSubcubeLeUniform :
+      ((2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) ≤
+          dagUniformAcceptanceProbOnTotals W :=
+    dagUniformAcceptanceProbOnTotals_ge_subcubeRatio_of_yesSubcubeCertificateAt W cert
+  exact lt_of_lt_of_le hCountLtSubcube hSubcubeLeUniform
+
+/--
+Direct contradiction route using only quantitative bounds:
+YES-subcube gives a strict lower bound, while correctness gives a matching
+counting upper bound.
+-/
+theorem no_small_dag_solver_of_yesSubcubeCertificateAt_via_uniform_counting
+    {p : GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (cert : YesSubcubeCertificateAt W) :
+    False := by
+  have hLower :
+      ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) <
+        dagUniformAcceptanceProbOnTotals W :=
+    dagUniformAcceptanceProbOnTotals_gt_countRatio_of_yesSubcubeCertificateAt W cert
+  have hUpper :
+      dagUniformAcceptanceProbOnTotals W ≤
+        (Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat) :=
+    dagUniformAcceptanceProbOnTotals_le_countRatio_of_correctWitness W
+  exact (not_lt_of_ge hUpper) hLower
 
 /--
 Closing form of the one-shot contradiction where the required `hUpper` is
@@ -4762,6 +5907,63 @@ abbrev smallDAGEasyHSGSourceProviderOnSlices
       (fun ε' s => SizeBound n β ε' s)
 
 /--
+Slice-family provider for canonical easy-density source objects.
+-/
+abbrev canonicalSmallDAGEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β : Rat,
+    CanonicalSmallDAGEasyDensitySourceAt
+      (p := F.paramsOf n β)
+      (fun ε' s => SizeBound n β ε' s)
+
+/--
+Slice-family provider for witness-indexed canonical easy-density sources.
+-/
+abbrev canonicalWitnessEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β : Rat,
+    CanonicalWitnessEasyDensitySourceAt
+      (p := F.paramsOf n β)
+      (fun ε' s => SizeBound n β ε' s)
+
+/--
+Slice-family provider for witness-indexed uniform-lower source objects.
+-/
+abbrev witnessUniformLowerSourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) : Type :=
+  ∀ n : Nat, ∀ β : Rat,
+    WitnessUniformLowerSourceAt
+      (p := F.paramsOf n β)
+      (fun ε' s => SizeBound n β ε' s)
+
+/--
+Quarter-bounded transfer provider predicate.
+
+It packages a witness-level transfer provider together with the key quantitative
+fact needed for the uniform-lower core: all produced transfer epsilons are at
+most `1/4`.
+-/
+abbrev easyImageTransferQuarterProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hTr : easyImageTransferAtProviderOnSlices F SizeBound) : Prop :=
+  ∀ n : Nat, ∀ β ε : Rat,
+    ∀ W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε,
+      (hTr n β ε W).epsilon ≤ (1 / 4 : Rat)
+
+/--
+Packaged quarter-bounded transfer provider on slices.
+-/
+structure EasyImageTransferQuarterBundleOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) where
+  hTr : easyImageTransferAtProviderOnSlices F SizeBound
+  hQuarter : easyImageTransferQuarterProviderOnSlices F SizeBound hTr
+
+/--
 Slice-family provider for upstream average-case / semantic-sampling sources.
 -/
 abbrev smallDAGAverageCaseHardnessSourceProviderOnSlices
@@ -4830,6 +6032,21 @@ def smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyHSGSourceProviderOnSli
     smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt (hCanonical n β)
 
 /--
+Compile a canonical easy-density source provider into a generic one-sided HSG
+source provider.
+-/
+def smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hCanonicalDensity :
+      canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound) :
+    smallDAGEasyHSGSourceProviderOnSlices F SizeBound :=
+  fun n β =>
+    smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt
+      (canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt
+        (hCanonicalDensity n β))
+
+/--
 Global canonical source-theorem debt, factored as one explicit proposition.
 
 When this proposition is proved unconditionally, the downstream chain is already
@@ -4842,6 +6059,252 @@ abbrev canonical_smallDAG_easyImage_source_on_slices
         ComplexityInterfaces.InPpolyDAG
           (gapPartialMCSP_Language (F.paramsOf n β)),
     CanonicalSmallDAGEasyImageSourceStatement F hInDag
+
+/--
+Global canonical easy-density source debt (preferred primary theorem target).
+-/
+abbrev canonical_smallDAG_easyDensity_source_on_slices
+    (F : GapSliceFamily) : Type :=
+  ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+    canonicalSmallDAGEasyDensitySourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+
+/--
+Global witness-indexed canonical easy-density source debt.
+
+This is a weaker variant of
+`canonical_smallDAG_easyDensity_source_on_slices`: instead of requiring the
+density inequality for *all* size-bounded DAG circuits, it only asks for the
+inequality on concrete slice witnesses (`SmallDAGWitnessOnSlice`).
+
+Why this matters for Gate G1:
+- many DAG-side semantic/locality arguments naturally produce witness-indexed
+  bounds first;
+- the weak-route contradiction chain already consumes witness-level transfer;
+- so this debt can serve as a practically easier attack surface when the full
+  all-circuits theorem is not yet available.
+-/
+abbrev canonical_smallDAG_witnessEasyDensity_source_on_slices
+    (F : GapSliceFamily) : Type :=
+  ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+    canonicalWitnessEasyDensitySourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+
+/--
+Global witness-indexed uniform-lower source debt.
+
+This is a strong sufficient condition for
+`canonical_smallDAG_witnessEasyDensity_source_on_slices`.
+-/
+abbrev canonical_smallDAG_witnessUniformLower_source_on_slices
+    (F : GapSliceFamily) : Type :=
+  ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+    witnessUniformLowerSourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag)
+
+/--
+Global quarter-bounded witness-transfer debt at canonical `ppolyDAG` bounds.
+-/
+abbrev canonical_smallDAG_witnessTransferQuarter_source_on_slices
+    (F : GapSliceFamily) : Type :=
+  ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+      EasyImageTransferQuarterBundleOnSlices
+        F (ppolyDAGSizeBoundOnSlices F hInDag)
+
+/--
+Global compiler:
+witness-uniform-lower debt -> witness-indexed canonical easy-density debt.
+-/
+def canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower
+    (F : GapSliceFamily)
+    (hUniform : canonical_smallDAG_witnessUniformLower_source_on_slices F) :
+    canonical_smallDAG_witnessEasyDensity_source_on_slices F := by
+  intro hInDag n β
+  exact canonicalWitnessEasyDensitySourceAt_of_witnessUniformLowerSourceAt
+    ((hUniform hInDag) n β)
+
+/--
+Compile quarter-bounded witness-level transfer providers to witness-uniform-
+lower source providers.
+
+Idea:
+- each transfer witness gives `1 - tr.ε ≤ uniform`;
+- if `tr.ε ≤ 1/4`, then `1 - 1/4 ≤ 1 - tr.ε`;
+- thus `3/4 ≤ uniform`, i.e. uniform-lower with canonical `ε = 1/4`.
+-/
+def witnessUniformLowerSourceProviderOnSlices_of_easyImageTransferQuarterProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hTr : easyImageTransferAtProviderOnSlices F SizeBound)
+    (hQuarter : easyImageTransferQuarterProviderOnSlices F SizeBound hTr) :
+    witnessUniformLowerSourceProviderOnSlices F SizeBound := by
+  intro n β
+  refine
+    { epsilon := (1 / 4 : Rat)
+      hEpsQuarter := le_rfl
+      hUniformLower := ?_ }
+  intro εslice W
+  let tr : EasyImageTransferAt W := hTr n β εslice W
+  have hTrQuarter : tr.epsilon ≤ (1 / 4 : Rat) := by
+    simpa [tr] using hQuarter n β εslice W
+  have hFromTr : 1 - tr.epsilon ≤ dagUniformAcceptanceProbOnTotals W := tr.hUniformLower
+  have hBridge : 1 - (1 / 4 : Rat) ≤ 1 - tr.epsilon := by linarith
+  exact le_trans hBridge hFromTr
+
+/--
+Compile witness-uniform-lower providers to quarter-bounded witness-transfer
+bundles.
+
+This is the converse direction to
+`witnessUniformLowerSourceProviderOnSlices_of_easyImageTransferQuarterProviderOnSlices`:
+uniform-lower gives witness-easy-density (with `delta = 1`), then transfer with
+the same epsilon, and finally the quarter bound follows from `hEpsQuarter`.
+-/
+def easyImageTransferQuarterBundleOnSlices_of_witnessUniformLowerSourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hUniform : witnessUniformLowerSourceProviderOnSlices F SizeBound) :
+    EasyImageTransferQuarterBundleOnSlices F SizeBound := by
+  refine
+    { hTr := ?_
+      hQuarter := ?_ }
+  · intro n β ε W
+    exact easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+      (source :=
+        canonicalWitnessEasyDensitySourceAt_of_witnessUniformLowerSourceAt
+          (hUniform n β))
+      W
+  · intro n β ε W
+    let tr : EasyImageTransferAt W :=
+      easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+        (source :=
+          canonicalWitnessEasyDensitySourceAt_of_witnessUniformLowerSourceAt
+            (hUniform n β))
+        W
+    have hQuarter : tr.epsilon ≤ (1 / 4 : Rat) := by
+      simpa [tr] using (hUniform n β).hEpsQuarter
+    simpa [tr]
+      using hQuarter
+
+/--
+Global equivalence:
+witness-indexed canonical easy-density debt is equivalent to witness-uniform-
+lower debt.
+
+This theorem isolates the exact mathematical core of the G1 witness-indexed
+route: proving `canonical_smallDAG_witnessEasyDensity_source_on_slices` is
+precisely proving a quarter-threshold uniform acceptance lower bound object on
+all canonical slices.
+-/
+theorem canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessUniformLower
+    (F : GapSliceFamily) :
+    Nonempty (canonical_smallDAG_witnessEasyDensity_source_on_slices F) ↔
+      Nonempty (canonical_smallDAG_witnessUniformLower_source_on_slices F) := by
+  constructor
+  · intro h
+    rcases h with ⟨hDensity⟩
+    refine ⟨?_⟩
+    intro hInDag n β
+    exact witnessUniformLowerSourceAt_of_canonicalWitnessEasyDensitySourceAt
+      ((hDensity hInDag) n β)
+  · intro h
+    rcases h with ⟨hUniform⟩
+    exact ⟨canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower
+      F hUniform⟩
+
+/--
+Global compiler:
+quarter-bounded witness-transfer debt -> witness-uniform-lower debt.
+-/
+def canonical_smallDAG_witnessUniformLower_source_on_slices_of_witnessTransferQuarter
+    (F : GapSliceFamily)
+    (hQuarterTr : canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :
+    canonical_smallDAG_witnessUniformLower_source_on_slices F := by
+  intro hInDag
+  let pack := hQuarterTr hInDag
+  exact
+    witnessUniformLowerSourceProviderOnSlices_of_easyImageTransferQuarterProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag) pack.hTr pack.hQuarter
+
+/--
+Global compiler:
+witness-uniform-lower debt -> quarter-bounded witness-transfer debt.
+-/
+def canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_witnessUniformLower
+    (F : GapSliceFamily)
+    (hUniform : canonical_smallDAG_witnessUniformLower_source_on_slices F) :
+    canonical_smallDAG_witnessTransferQuarter_source_on_slices F := by
+  intro hInDag
+  exact
+    easyImageTransferQuarterBundleOnSlices_of_witnessUniformLowerSourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag) (hUniform hInDag)
+
+/--
+Global equivalence:
+witness-uniform-lower debt is equivalent to quarter-bounded witness-transfer
+debt.
+-/
+theorem canonical_smallDAG_witnessUniformLower_source_on_slices_iff_witnessTransferQuarter
+    (F : GapSliceFamily) :
+    Nonempty (canonical_smallDAG_witnessUniformLower_source_on_slices F) ↔
+      Nonempty (canonical_smallDAG_witnessTransferQuarter_source_on_slices F) := by
+  constructor
+  · intro h
+    rcases h with ⟨hUniform⟩
+    exact ⟨canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_witnessUniformLower
+      F hUniform⟩
+  · intro h
+    rcases h with ⟨hQuarterTr⟩
+    exact
+      ⟨canonical_smallDAG_witnessUniformLower_source_on_slices_of_witnessTransferQuarter
+        F hQuarterTr⟩
+
+/--
+Global equivalence (composed form):
+witness-indexed canonical easy-density debt is equivalent to quarter-bounded
+witness-transfer debt.
+-/
+theorem canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessTransferQuarter
+    (F : GapSliceFamily) :
+    Nonempty (canonical_smallDAG_witnessEasyDensity_source_on_slices F) ↔
+      Nonempty (canonical_smallDAG_witnessTransferQuarter_source_on_slices F) := by
+  constructor
+  · intro h
+    rcases (canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessUniformLower F).1 h with
+      ⟨hUniform⟩
+    exact ⟨canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_witnessUniformLower
+      F hUniform⟩
+  · intro h
+    rcases (canonical_smallDAG_witnessUniformLower_source_on_slices_iff_witnessTransferQuarter F).2 h with
+      ⟨hUniform⟩
+    exact ⟨canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower
+      F hUniform⟩
+
+/--
+Global compiler:
+quarter-bounded witness-transfer debt -> witness-indexed canonical easy-density
+debt.
+-/
+def canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessTransferQuarter
+    (F : GapSliceFamily)
+    (hQuarterTr : canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :
+    canonical_smallDAG_witnessEasyDensity_source_on_slices F :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower
+    F
+    (canonical_smallDAG_witnessUniformLower_source_on_slices_of_witnessTransferQuarter
+      F hQuarterTr)
 
 /--
 Global canonical average-case/hardness source debt (upstream of easy-dist).
@@ -4868,6 +6331,34 @@ abbrev canonical_smallDAG_easyHSG_source_on_slices
         ComplexityInterfaces.InPpolyDAG
           (gapPartialMCSP_Language (F.paramsOf n β)),
     CanonicalSmallDAGEasyHSGSourceStatement F hInDag
+
+/--
+Global compiler from canonical easy-density debt to canonical one-sided easy-HSG
+debt.
+
+This keeps the theorem-level roadmap explicit: proving the density debt is
+already sufficient to discharge the older canonical HSG debt via a thin
+internal compilation step.
+-/
+def canonical_smallDAG_easyHSG_source_on_slices_of_canonical_smallDAG_easyDensity_source_on_slices
+    (F : GapSliceFamily)
+    (hDensity : canonical_smallDAG_easyDensity_source_on_slices F) :
+    canonical_smallDAG_easyHSG_source_on_slices F := by
+  intro hInDag n β
+  exact canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt
+    ((hDensity hInDag) n β)
+
+/--
+Global compiler from canonical one-sided easy-HSG debt to canonical easy-density
+debt for the current singleton canonical sampler.
+-/
+def canonical_smallDAG_easyDensity_source_on_slices_of_canonical_smallDAG_easyHSG_source_on_slices
+    (F : GapSliceFamily)
+    (hHSG : canonical_smallDAG_easyHSG_source_on_slices F) :
+    canonical_smallDAG_easyDensity_source_on_slices F := by
+  intro hInDag n β
+  exact canonicalEasyDensitySourceAt_of_canonicalEasyHSGSourceAt
+    ((hHSG hInDag) n β)
 
 /--
 Compile source-level providers into witness-level endpoint providers.
@@ -4905,6 +6396,19 @@ def easyImageTransferAtProviderOnSlices_of_smallDAGEasyHSGSourceProviderOnSlices
     easyImageTransferAtProviderOnSlices F SizeBound :=
   fun n β ε W =>
     easyImageTransferAt_of_smallDAGEasyHSGSourceAt
+      (source := hSource n β) W
+
+/--
+Compile canonical easy-density source providers directly into witness-level
+transfer endpoint providers.
+-/
+def easyImageTransferAtProviderOnSlices_of_canonicalEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSource : canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound) :
+    easyImageTransferAtProviderOnSlices F SizeBound :=
+  fun n β ε W =>
+    easyImageTransferAt_of_canonicalEasyDensitySourceAt
       (source := hSource n β) W
 
 /--
@@ -5768,6 +7272,106 @@ theorem noSmallDAG_of_smallDAGEasyDistSourceProviderOnSlices
       simpa [cert] using (hSource n β).hEpsQuarter
     exact lt_of_le_of_lt hEpsQuarter' hQuarter
   exact no_small_dag_solver_of_easyImagePRGAt_of_counting W cert hEpsSmall
+
+/--
+Direct weak-route closure from canonical easy-density source providers.
+
+This is the density-first closure route:
+
+`canonical density source -> canonical HSG compiler -> transfer -> counting`.
+-/
+theorem noSmallDAG_of_canonicalSmallDAGEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSource : canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  exact
+    noSmallDAG_of_smallDAGEasyHSGSourceProviderOnSlices
+      F SizeBound
+      (smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyDensitySourceProviderOnSlices
+        F SizeBound hSource)
+
+/--
+Direct weak-route closure from witness-indexed canonical easy-density source
+providers.
+
+Compared with `noSmallDAG_of_canonicalSmallDAGEasyDensitySourceProviderOnSlices`
+this route avoids the intermediate all-circuits source object and compiles
+directly to transfer at witness level.
+-/
+theorem noSmallDAG_of_canonicalWitnessEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hSource : canonicalWitnessEasyDensitySourceProviderOnSlices F SizeBound) :
+    ∀ n : Nat, ∀ β ε : Rat, ¬ SmallDAGSolver F SizeBound n β ε := by
+  intro n β ε hExists
+  rcases hExists with ⟨C, hSize, hCorrect⟩
+  let W : SmallDAGWitnessOnSlice (F.paramsOf n β) (fun ε' s => SizeBound n β ε' s) ε := {
+    C := C
+    hSize := hSize
+    hCorrect := hCorrect
+  }
+  let tr : EasyImageTransferAt W :=
+    easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+      (source := hSource n β) W
+  have hEpsSmall :
+      tr.epsilon <
+        1 - ((Models.circuitCountBound (F.paramsOf n β).n
+                ((F.paramsOf n β).sNO - 1) : Rat) /
+              (2 ^ (Models.Partial.tableLen (F.paramsOf n β).n) : Rat)) := by
+    have hQuarter :
+        (1 / 4 : Rat) <
+          1 - ((Models.circuitCountBound (F.paramsOf n β).n
+                  ((F.paramsOf n β).sNO - 1) : Rat) /
+                (2 ^ (Models.Partial.tableLen (F.paramsOf n β).n) : Rat)) :=
+      quarter_lt_one_sub_countRatio_of_circuit_bound_ok (F.paramsOf n β)
+    have hEpsQuarter' : tr.epsilon ≤ (1 / 4 : Rat) := by
+      simpa [tr] using (hSource n β).hEpsQuarter
+    exact lt_of_le_of_lt hEpsQuarter' hQuarter
+  exact no_small_dag_solver_of_easyImageTransferAt_of_counting W tr hEpsSmall
+
+/--
+Weak-route closure specialized to the global witness-indexed canonical
+easy-density debt at `ppolyDAG` size bounds.
+
+This is the witness-indexed sibling of
+`noSmallDAG_of_canonical_smallDAG_easyDensity_source_on_slices`.
+-/
+theorem noSmallDAG_of_canonical_smallDAG_witnessEasyDensity_source_on_slices
+    (F : GapSliceFamily)
+    (hCanonical : canonical_smallDAG_witnessEasyDensity_source_on_slices F) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+      ∀ n : Nat, ∀ β ε : Rat,
+        ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  intro hInDag n β ε
+  exact
+    noSmallDAG_of_canonicalWitnessEasyDensitySourceProviderOnSlices
+      F (ppolyDAGSizeBoundOnSlices F hInDag) (hCanonical hInDag) n β ε
+
+/--
+Direct weak-route closure from the global quarter-bounded witness-transfer debt.
+
+This theorem is intentionally thin and composes only already-proved compilers:
+
+`witnessTransferQuarter -> witnessUniformLower -> witnessEasyDensity -> noSmallDAG`.
+-/
+theorem noSmallDAG_of_canonical_smallDAG_witnessTransferQuarter_source_on_slices
+    (F : GapSliceFamily)
+    (hQuarterTr : canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :
+    ∀ hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)),
+      ∀ n : Nat, ∀ β ε : Rat,
+        ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  exact
+    noSmallDAG_of_canonical_smallDAG_witnessEasyDensity_source_on_slices
+      F
+      (canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessTransferQuarter
+        F hQuarterTr)
 
 /--
 Direct weak-route closure from upstream average-case/hardness source providers.

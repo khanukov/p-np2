@@ -4,6 +4,7 @@ import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityProvider_Partial
 import Magnification.PipelineStatements_Partial
 import LowerBounds.DAGStableRestrictionProducer
+import LowerBounds.DAGUnconditionalBlocker
 import LowerBounds.AsymptoticDAGBarrier
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
@@ -943,6 +944,60 @@ theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyHSGSourceDebt
           (hCanonical hInDag))
 
 /--
+Bridge from canonical easy-density source debt to global non-inclusion.
+
+This is the density-first mainline wrapper: density debt is compiled to the
+canonical one-sided easy-HSG debt internally, then the existing HSG closure is
+reused unchanged.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hCanonical : LowerBounds.canonical_smallDAG_easyDensity_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyHSGSourceDebt
+      F bridge
+      (LowerBounds.canonical_smallDAG_easyHSG_source_on_slices_of_canonical_smallDAG_easyDensity_source_on_slices
+        F hCanonical)
+
+/--
+Bridge from witness-indexed canonical easy-density debt to global non-inclusion.
+
+Compared with
+`not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt`,
+this route bypasses the all-circuits density object and uses the witness-level
+transfer closure directly.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hCanonical : LowerBounds.canonical_smallDAG_witnessEasyDensity_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  have hNoSmall :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                ¬ LowerBounds.SmallDAGSolver
+                    F (LowerBounds.ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+    intro hInDag
+    refine ⟨(1 / 8 : Rat), by norm_num, (1 : Rat), by norm_num, ?_⟩
+    intro β hβ hβlt
+    refine ⟨0, ?_⟩
+    intro n hn
+    exact
+      (LowerBounds.noSmallDAG_of_canonical_smallDAG_witnessEasyDensity_source_on_slices
+        F hCanonical hInDag n β (1 / 8 : Rat))
+  exact
+    not_globalPpolyDAG_surface_of_noSmallCanonicalWitnessFamilies
+      F bridge hNoSmall
+
+/--
 Bridge from canonical average-case/hardness source debt to global contradiction.
 -/
 theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGAvgHardnessSourceDebt
@@ -953,6 +1008,98 @@ theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGAvgHardnessSourceDebt
   exact
     not_globalPpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
       F bridge hCanonical
+
+/--
+Density-first class-level wrapper:
+canonical easy-density source debt + NP witness on `bridge.L` imply
+`NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hCanonical : LowerBounds.canonical_smallDAG_easyDensity_source_on_slices F) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt
+      F bridge hCanonical
+
+/--
+Density-first class-level wrapper for the witness-indexed canonical debt:
+if we can prove witness-indexed canonical easy-density sources on all slices,
+then together with an NP witness on `bridge.L` we derive
+`NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hCanonical : LowerBounds.canonical_smallDAG_witnessEasyDensity_source_on_slices F) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt
+      F bridge hCanonical
+
+/--
+Bridge from witness-uniform-lower canonical debt to global non-inclusion.
+
+This theorem is a thin composition:
+`witnessUniformLower` debt -> witness-easy-density debt -> global contradiction.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hUniform : LowerBounds.canonical_smallDAG_witnessUniformLower_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt
+      F bridge
+      (LowerBounds.canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower
+        F hUniform)
+
+/--
+Class-level wrapper from witness-uniform-lower canonical debt.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hUniform : LowerBounds.canonical_smallDAG_witnessUniformLower_source_on_slices F) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt
+      F bridge hUniform
+
+/--
+Bridge from quarter-bounded witness-transfer debt to global non-inclusion.
+-/
+theorem not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hQuarterTr : LowerBounds.canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt
+      F bridge
+      (LowerBounds.canonical_smallDAG_witnessUniformLower_source_on_slices_of_witnessTransferQuarter
+        F hQuarterTr)
+
+/--
+Class-level wrapper from quarter-bounded witness-transfer debt.
+-/
+theorem NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt
+    (F : LowerBounds.GapSliceFamily)
+    (bridge : LowerBounds.AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hQuarterTr : LowerBounds.canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact
+    not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt
+      F bridge hQuarterTr
 
 /--
 Class-level wrapper: stronger restriction-extraction+numeric fallback route +
@@ -1089,6 +1236,56 @@ theorem P_ne_NP_final_of_invariantProvider_TM
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
     (NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv)
+
+/--
+Final DAG-separation wrapper specialized to the localized Route-B source
+closure package (`LowerBounds.DAGRouteBSourceClosure`).
+
+This keeps the endpoint surface simple: all source-side DAG work is packaged in
+one structure and consumed here without introducing additional endpoint APIs.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hSrc : LowerBounds.DAGRouteBSourceClosure p) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_sourceClosure_TM W hSrc
+
+/--
+Companion `P ≠ NP` endpoint for the same localized Route-B source closure
+package.
+-/
+theorem P_ne_NP_final_of_sourceClosure_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hSrc : LowerBounds.DAGRouteBSourceClosure p) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_sourceClosure_TM W hSrc)
+
+/--
+Direct final DAG-separation wrapper from the named Route-B blocker gate.
+
+This avoids exposing intermediate source packaging at call sites when one wants
+to state end-to-end implications in blocker-first form.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_blocker_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hBlocker : LowerBounds.dagRouteBSourceBlocker p) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_blocker_TM W hBlocker
+
+/--
+Companion `P ≠ NP` final wrapper from the same named Route-B blocker gate.
+-/
+theorem P_ne_NP_final_of_blocker_TM
+  {p : GapPartialMCSPParams}
+  (W : Models.GapPartialMCSP_TMWitness p)
+  (hBlocker : LowerBounds.dagRouteBSourceBlocker p) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_blocker_TM W hBlocker)
 
 /--
 Final DAG-separation wrapper specialized to the support-bounds + DAG→formula

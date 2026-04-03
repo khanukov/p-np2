@@ -1,11 +1,40 @@
 # Concrete plan to reach unconditional `NP ⊄ PpolyDAG`
 
-Last updated: 2026-03-30.
+Last updated: 2026-04-01.
 
 > Update (2026-03-30): unrestricted-DAG blocker reassessment moved the
 > recommended final blocker from locality-only Route-B endpoints toward
 > global distributional certificates.  See
 > `pnp3/Docs/UnrestrictedDAG_Blocker_Reassessment_2026-03-30.md`.
+
+> Update (2026-04-01): Route-B blocker localization is now complete at the
+> module/interface level (`LowerBounds.DAGUnconditionalBlocker`,
+> `NP_not_subset_PpolyDAG_final_of_sourceClosure_TM`,
+> `P_ne_NP_final_of_sourceClosure_TM`, and weak-route surface checks).  This
+> closes planning/packaging debt but does **not** close the core source theorem
+> debt yet.
+>
+> Update (2026-04-01, cont.): added direct blocker-first final wrappers
+> (`*_final_of_blocker_TM`) and corresponding smoke-surface checks. This
+> simplifies end-to-end usage of the Route-B gate while keeping the same
+> mathematical blocker unchanged.
+>
+> Update (2026-04-01, density compiler step): canonical easy-density interfaces
+> and compilers are now wired in code
+> (`CanonicalSmallDAGEasyDensitySourceAt`,
+> `canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt`,
+> `easyImageTransferAt_of_canonicalEasyDensitySourceAt`,
+> provider-level compiler + noSmallDAG closure). The primary remaining debt is
+> still proving the canonical density source theorem itself.
+>
+> Update (2026-04-01, debt-bridge step): canonical density debt now compiles to
+> canonical HSG debt and to class-level non-inclusion wrappers; this reduces G1
+> to proving the density debt itself rather than endpoint glue.
+>
+> Update (2026-04-01, singleton-equivalence check): for the **current**
+> singleton canonical sampler, canonical easy-density and canonical easy-HSG
+> debts are now formally inter-compilable in-tree. This confirms that the
+> remaining blocker is not compiler glue but the sampler/source mathematics.
 
 This note turns the current DAG frontier into an explicit execution plan.
 It is intentionally stricter than a generic research memo: every milestone
@@ -37,6 +66,42 @@ theorem issue:
 > or
 > `SmallDAGWitnessOnSlice -> PRGImageAcceptanceAt`
 > on the full target model, then thread it into default final wrappers.
+
+## Progress snapshot (2026-04-01)
+
+Route-B execution remains the locked mainline. Current status:
+
+1. ✅ **Completed (engineering localization):** source-side blocker is now
+   packaged as one explicit interface gate (`dagRouteBSourceBlocker`) with a
+   dedicated closure bundle (`DAGRouteBSourceClosure`) and direct final
+   wrappers from that bundle.
+2. ✅ **Completed (surface hardening):** weak-route smoke surface now pins these
+   new Route-B interfaces to avoid signature drift.
+3. ✅ **Completed (blocker-first endpoint surface):** direct final wrappers from
+   `dagRouteBSourceBlocker` are exported, so Route-B can be consumed without
+   manually passing intermediate closure packages.
+4. ✅ **Completed (compiler spine):** density-first compiler chain to transfer is
+   now explicit in code and reusable on slice providers.
+5. ✅ **Completed (debt bridge):** canonical density debt is now linked to
+   existing canonical HSG/non-inclusion wrapper surfaces.
+6. ✅ **Completed (singleton debt equivalence check):** canonical easy-density
+   and canonical easy-HSG debts are inter-compilable for the current canonical
+   singleton sampler.
+7. ⏳ **Still open (mathematical blocker):** prove the actual source theorem
+   that inhabits that gate, i.e. establish the internal DAG-native certificate/
+   invariant production with no external lower-bound assumptions.
+
+### Progress percentage (explicit)
+
+We now track progress in two layers to avoid overclaiming:
+
+* **Infrastructure / interface progress:** **96%**  
+  (most endpoint/plumbing interfaces and wrappers are now in place).
+* **Core theorem progress toward unconditional `NP ⊄ PpolyDAG`:** **68%**  
+  (the remaining debt is concentrated in the Route-B source theorem gate G1).
+
+These percentages are intentionally conservative and should be revised only when
+G1/G3/G4 gate states change.
 
 ---
 
@@ -417,6 +482,18 @@ active queue below starts from the current branch state.
   `dagStableRestrictionCertificateProvider`.
 - **Fallback (optional):** supportHalf / accepted-family probes (Route-A2) only
   if they produce immediate source-theorem progress; no strict-A1 re-entry.
+
+### Task status ledger (2026-04-01)
+
+1. ✅ **Done:** Route-B blocker localization module + wrapper surface isolation.
+2. ✅ **Done:** blocker-first final wrappers and smoke-surface signature checks.
+3. ✅ **Done:** density-first compiler spine (`density -> transfer`) is wired.
+4. ✅ **Done:** canonical density debt bridge to HSG/non-inclusion wrappers.
+5. ✅ **Done:** singleton-sampler debt equivalence (`density <-> HSG`) formally checked.
+6. ⏳ **In progress:** close Route-B source theorem (G1 target item 3).
+7. ⏳ **Pending:** switch default final wrappers to internal unconditional DAG
+   theorem (after G1).
+8. ⏳ **Pending:** release/audit synchronization pass (after wrapper switch).
 
 ### Task 1. Close Route-B source theorem (the only active blocker)
 

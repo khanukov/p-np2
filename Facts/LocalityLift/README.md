@@ -3,10 +3,16 @@
 Repository-level unconditional-status checklist:
 `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
-This directory hosts the stand-alone package that will eventually replace the
-axiomatic treatment of the locality-lift lemma (axiom D.5) inside the `pnp3`
-project.  The goal is to provide a reusable, well-documented Lean component that
-exports the minimal interface required by the magnification pipeline:
+Current-scope note (2026-04-03):
+this directory is a standalone fact package and is **not** the source of truth
+for the current status of the active `pnp3/` theorem pipeline.
+In particular, do not read this README as the current repository-wide blocker
+summary for `P ≠ NP`; use the top-level status/checklist docs for that.
+
+This directory hosts a stand-alone package that originated as a replacement
+track for an older axiomatic locality-lift treatment in historical branches of
+the project. The goal is to provide a reusable, well-documented Lean component
+that exports the minimal interface required by the magnification pipeline:
 
 * the data structures describing *general* and *local* GapMCSP solvers;
 * the polylogarithmic budget helper used throughout Step C;
@@ -26,11 +32,9 @@ exports the minimal interface required by the magnification pipeline:
 базовый свидетель на доказанный через локализацию и мультиплексоры вариант, не
 изменяя интерфейсов.
 
-> **Статус на момент публикации.** Работа над доказательством locality lift
-> приостановлена до появления формализованного shrinkage-свидетеля для A.2.
-> Все необходимые точки интеграции отмечены в коде и документации: возобновить
-> проект можно будет с немедленного подключения shrinkage-свидетеля без
-> дополнительной подготовки.
+> **Историко-пакетный статус.** Этот standalone-пакет сохраняет собственный
+> roadmap по locality-lift. Он не должен использоваться как описание текущего
+> глобального blocker'а активной ветки `pnp3`.
 
 ## Roadmap
 

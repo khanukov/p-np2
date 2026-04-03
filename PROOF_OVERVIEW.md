@@ -1,84 +1,119 @@
 # Proof Overview (Auditor Guide)
 
-Updated: 2026-03-14
+Updated: 2026-04-03
 
-This file is an auditor-oriented map of the active proof route in the current
-repository state.
+This file is the short auditor-oriented map of the active proof route in the
+current repository state.
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current interim release posture:
 `RELEASE_RC.md`.
 
-## 1) Pipeline shape
+## 1. Pipeline shape
 
-Active code path is:
+Active code path remains:
 
 `SAL -> Covering/Lower Bounds -> anti-checker -> magnification -> DAG final wrappers`.
 
-Final theorem interface is centralized in `pnp3/Magnification/FinalResult.lean`.
+Final theorem interfaces are centralized in
+`pnp3/Magnification/FinalResult.lean`.
 
-## 2) Final theorem ladder in code
+## 2. Final theorem ladder in code
 
-Key active ladder:
+The active ladder now has several honest DAG-facing layers.
 
-1. `AsymptoticNPPullback`
-2. `NP_not_subset_PpolyFormula_final*`
-3. `NP_not_subset_PpolyReal_final*`
-4. `P_ne_NP_final*`
+### Default compatibility surface
 
-## 3) Current explicit boundary assumptions
+1. `NP_not_subset_PpolyFormula_final*`
+2. `NP_not_subset_PpolyReal_final*`
+3. `P_ne_NP_final*`
 
-Default final endpoint `P_ne_NP_final` requires:
+### Additional fixed-slice / asymptotic DAG surfaces
 
-1. `NP_not_subset_PpolyDAG`
+1. `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`
+2. `NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction`
+3. `NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure`
+4. `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
+5. companion `P_ne_NP_final_of_*` wrappers for the same fixed-slice routes
 
-## 4) Inclusion-side closure status (`P ⊆ PpolyDAG`)
+### Concrete fixed-slice `_TM` DAG surfaces
 
-Closed internals on linear compiled route:
+1. `NP_not_subset_PpolyDAG_final_of_blocker_TM`
+2. `P_ne_NP_final_of_blocker_TM`
+3. related `_TM` wrappers from stable restriction / source closure /
+   support-bounds bridges
 
-1. `stepCompiledLinearCandidateStepSpecProvider_internal`
-2. `compiledRuntimeCircuitSizeBoundLinear_internal`
-3. `compiledRuntimeAcceptCorrectnessLinear_internal`
-4. `compiledAcceptOutputWireAgreementLinear_internal`
-5. no-arg endpoint `proved_P_subset_PpolyDAG_internal`
+## 3. Current explicit boundary assumptions
 
-## 5) What is currently closed vs open
+The public default theorem is still:
 
-Closed:
+```text
+P_ne_NP_final
+  (hMag : MagnificationAssumptions)
+  (hNPDag : NP_not_subset_PpolyDAG)
+```
 
-1. Buildable active route and final wrappers.
-2. Axiom/sorry hygiene for active `pnp3/`.
-3. Active audit/regression test suite compiles.
+Interpretation:
 
-Open for unconditional in-repo `P ≠ NP`:
+1. `hNPDag` is the real remaining DAG-separation blocker.
+2. `hMag` is currently compatibility context and is not consumed by the
+   implementation of `P_ne_NP_final`.
 
-1. internalize `NP_not_subset_PpolyDAG` endpoint;
-2. remove remaining external assumptions from default final wrappers.
+## 4. What is closed
 
-## 6) Minimal audit script
+Closed in the active tree:
+
+1. buildable active route and final wrappers;
+2. axiom/sorry hygiene for active `pnp3/`;
+3. inclusion-side internalization;
+4. asymptotic fixed-slice collapse wrappers;
+5. canonical witness-density hardwire coverage;
+6. support-half family fallback closure;
+7. current audit/regression test suite.
+
+## 5. What is open
+
+Still open:
+
+1. an internal theorem `ComplexityInterfaces.NP_not_subset_PpolyDAG`;
+2. a zero-argument public theorem `P_ne_NP`;
+3. the fixed-slice source theorem needed to feed the new asymptotic collapse
+   wrappers;
+4. or, alternatively, a standalone concrete-slice `_TM` route that bypasses
+   `hMag` entirely.
+
+## 6. Current recommended audit reading
+
+If the goal is to understand the real blocker rather than the packaging:
+
+1. `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
+2. `pnp3/LowerBounds/DAGUnconditionalBlocker.lean`
+3. `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`
+4. `pnp3/Magnification/FinalResult.lean`
+
+## 7. Minimal verification script
 
 ```bash
 ./scripts/check.sh
 for f in pnp3/Tests/AxiomsAudit.lean \
          pnp3/Tests/BarrierAudit.lean \
          pnp3/Tests/BarrierBypassAudit.lean \
-         pnp3/Tests/BridgeLocalityRegression.lean; do
+         pnp3/Tests/BridgeLocalityRegression.lean \
+         pnp3/Tests/WeakRouteSurfaceTests.lean; do
   lake env lean "$f"
 done
-rg -n "^theorem P_ne_NP_final|^theorem NP_not_subset_PpolyReal_final|^theorem NP_not_subset_PpolyFormula_final" \
+rg -n "^theorem P_ne_NP_final|^theorem NP_not_subset_PpolyDAG_final_of_|^theorem P_ne_NP_final_of_" \
   pnp3/Magnification/FinalResult.lean
 ```
 
-Then compare theorem signatures with `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
+## 8. Documentation policy
 
-## 7) Documentation policy
-
-Use these files as source of truth:
+Use these files as the active source of truth:
 
 1. `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
 2. `STATUS.md`
 3. `TODO.md`
 4. `AXIOMS_FINAL_LIST.md`
 
-Historical notes in `archive/` are non-authoritative.
+Historical notes in `archive/` remain non-authoritative.

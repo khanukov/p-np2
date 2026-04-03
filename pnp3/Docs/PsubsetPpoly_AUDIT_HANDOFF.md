@@ -1,7 +1,11 @@
 # P⊆P/poly Internal Route — Audit Handoff
 
-Дата актуализации: 2026-03-14.
-Статус: current.
+Дата актуализации: 2026-04-03.
+Статус: current for inclusion-side only.
+
+Scope note:
+это inclusion-side handoff. Он не фиксирует общий статус DAG-separation или
+финального `P ≠ NP`.
 
 ## 1) Текущий итог по inclusion-side
 

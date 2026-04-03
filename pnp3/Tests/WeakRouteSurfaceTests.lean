@@ -217,6 +217,92 @@ def check_NP_not_subset_PpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute :
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_surface_of_smallDAGAvgHardnessSourceWeakRoute
 
+/--
+Surface check: canonical easy-density debt -> global non-inclusion wrapper.
+-/
+def check_not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hCanonical : canonical_smallDAG_easyDensity_source_on_slices F),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt
+
+/--
+Surface check: canonical easy-density debt -> `NP_not_subset_PpolyDAG` wrapper.
+-/
+def check_NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hCanonical : canonical_smallDAG_easyDensity_source_on_slices F),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGEasyDensitySourceDebt
+
+/--
+Surface check: witness-indexed canonical easy-density debt -> global
+non-inclusion wrapper.
+-/
+def check_not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hCanonical : canonical_smallDAG_witnessEasyDensity_source_on_slices F),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt
+
+/--
+Surface check: witness-indexed canonical easy-density debt ->
+`NP_not_subset_PpolyDAG` wrapper.
+-/
+def check_NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hCanonical : canonical_smallDAG_witnessEasyDensity_source_on_slices F),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessEasyDensitySourceDebt
+
+/--
+Surface check: witness-uniform-lower debt -> global non-inclusion wrapper.
+-/
+def check_not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hUniform : canonical_smallDAG_witnessUniformLower_source_on_slices F),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt
+
+/--
+Surface check: witness-uniform-lower debt -> `NP_not_subset_PpolyDAG` wrapper.
+-/
+def check_NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hUniform : canonical_smallDAG_witnessUniformLower_source_on_slices F),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessUniformLowerSourceDebt
+
+/--
+Surface check: quarter-bounded witness-transfer debt -> global non-inclusion.
+-/
+def check_not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hQuarterTr : canonical_smallDAG_witnessTransferQuarter_source_on_slices F),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt
+
+/--
+Surface check: quarter-bounded witness-transfer debt -> `NP_not_subset_PpolyDAG`.
+-/
+def check_NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (hNP : ComplexityInterfaces.NP bridge.L)
+      (hQuarterTr : canonical_smallDAG_witnessTransferQuarter_source_on_slices F),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_canonicalSmallDAGWitnessTransferQuarterSourceDebt
+
 /-- Surface alias check for distributional PRG providers on slices. -/
 def check_easyImagePRGAtProviderOnSlices :
     ∀ (F : GapSliceFamily)
@@ -232,6 +318,79 @@ def check_easyImageTransferAtProviderOnSlices :
       easyImageTransferAtProviderOnSlices F SizeBound → True := by
   intro _ _ _
   trivial
+
+/--
+Surface check: accepted finite family gives lower bound on uniform acceptance.
+-/
+def check_dagUniformAcceptanceProbOnTotals_ge_cardRatio_of_family :
+    ∀ {p : Models.GapPartialMCSPParams}
+      {SizeBound : Rat → Nat → Prop}
+      {ε : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound ε)
+      (A : Finset (Core.BitVec (Models.Partial.tableLen p.n))),
+      (∀ g ∈ A, witnessAcceptsTotalTable W g = true) →
+      ((A.card : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat)) ≤
+        dagUniformAcceptanceProbOnTotals W :=
+  dagUniformAcceptanceProbOnTotals_ge_cardRatio_of_family
+
+/--
+Surface check: YES-subcube certificate gives explicit subcube-ratio lower bound
+on uniform acceptance.
+-/
+def check_dagUniformAcceptanceProbOnTotals_ge_subcubeRatio_of_yesSubcubeCertificateAt :
+    ∀ {p : Models.GapPartialMCSPParams}
+      {SizeBound : Rat → Nat → Prop}
+      {ε : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound ε)
+      (cert : YesSubcubeCertificateAt W),
+      ((2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) ≤
+          dagUniformAcceptanceProbOnTotals W :=
+  dagUniformAcceptanceProbOnTotals_ge_subcubeRatio_of_yesSubcubeCertificateAt
+
+/--
+Surface check: YES-subcube certificate numerically separates subcube density
+from the counting ratio.
+-/
+def check_subcubeRatio_gt_countRatio_of_yesSubcubeCertificateAt :
+    ∀ {p : Models.GapPartialMCSPParams}
+      {SizeBound : Rat → Nat → Prop}
+      {ε : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound ε)
+      (cert : YesSubcubeCertificateAt W),
+      ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) <
+      ((2 ^ (Models.Partial.tableLen p.n - cert.S.card) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) :=
+  subcubeRatio_gt_countRatio_of_yesSubcubeCertificateAt
+
+/--
+Surface check: YES-subcube certificate yields strict uniform lower bound above
+the counting ratio.
+-/
+def check_dagUniformAcceptanceProbOnTotals_gt_countRatio_of_yesSubcubeCertificateAt :
+    ∀ {p : Models.GapPartialMCSPParams}
+      {SizeBound : Rat → Nat → Prop}
+      {ε : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound ε)
+      (cert : YesSubcubeCertificateAt W),
+      ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+        (2 ^ (Models.Partial.tableLen p.n) : Rat)) <
+        dagUniformAcceptanceProbOnTotals W :=
+  dagUniformAcceptanceProbOnTotals_gt_countRatio_of_yesSubcubeCertificateAt
+
+/--
+Surface check: purely quantitative contradiction endpoint for YES-subcube
+certificates.
+-/
+def check_no_small_dag_solver_of_yesSubcubeCertificateAt_via_uniform_counting :
+    ∀ {p : Models.GapPartialMCSPParams}
+      {SizeBound : Rat → Nat → Prop}
+      {ε : Rat}
+      (W : SmallDAGWitnessOnSlice p SizeBound ε)
+      (cert : YesSubcubeCertificateAt W),
+      False :=
+  no_small_dag_solver_of_yesSubcubeCertificateAt_via_uniform_counting
 
 /-- Surface alias check for source-level easy-image fooling providers. -/
 def check_smallDAGEasyImageFoolingSourceProviderOnSlices :
@@ -254,6 +413,14 @@ def check_smallDAGEasyHSGSourceProviderOnSlices :
     ∀ (F : GapSliceFamily)
       (SizeBound : Nat → Rat → Rat → Nat → Prop),
       smallDAGEasyHSGSourceProviderOnSlices F SizeBound → True := by
+  intro _ _ _
+  trivial
+
+/-- Surface alias check for canonical easy-density source providers. -/
+def check_canonicalSmallDAGEasyDensitySourceProviderOnSlices :
+    ∀ (F : GapSliceFamily)
+      (SizeBound : Nat → Rat → Rat → Nat → Prop),
+      canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound → True := by
   intro _ _ _
   trivial
 
@@ -295,6 +462,26 @@ def check_CanonicalSmallDAGEasyHSGSourceStatement :
       Type :=
   CanonicalSmallDAGEasyHSGSourceStatement
 
+/-- Surface check: global canonical easy-density debt alias. -/
+def check_canonical_smallDAG_easyDensity_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_easyDensity_source_on_slices
+
+/-- Surface check: global witness-indexed canonical easy-density debt alias. -/
+def check_canonical_smallDAG_witnessEasyDensity_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices
+
+/-- Surface check: global witness-uniform-lower debt alias. -/
+def check_canonical_smallDAG_witnessUniformLower_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_witnessUniformLower_source_on_slices
+
+/-- Surface check: global witness-transfer-quarter debt alias. -/
+def check_canonical_smallDAG_witnessTransferQuarter_source_on_slices :
+    ∀ (F : GapSliceFamily), Type :=
+  canonical_smallDAG_witnessTransferQuarter_source_on_slices
+
 /-- Surface check: global canonical source debt alias. -/
 def check_canonical_smallDAG_easyImage_source_on_slices :
     ∀ (F : GapSliceFamily), Type :=
@@ -309,6 +496,124 @@ def check_canonical_smallDAG_avgHardness_source_on_slices :
 def check_canonical_smallDAG_easyHSG_source_on_slices :
     ∀ (F : GapSliceFamily), Type :=
   canonical_smallDAG_easyHSG_source_on_slices
+
+/--
+Surface check: global canonical density debt compiles to canonical HSG debt.
+-/
+def check_canonical_smallDAG_easyHSG_source_on_slices_of_canonical_smallDAG_easyDensity_source_on_slices :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_easyDensity_source_on_slices F →
+        canonical_smallDAG_easyHSG_source_on_slices F :=
+  canonical_smallDAG_easyHSG_source_on_slices_of_canonical_smallDAG_easyDensity_source_on_slices
+
+/--
+Surface check: global canonical HSG debt compiles to canonical density debt
+for the current singleton canonical sampler.
+-/
+def check_canonical_smallDAG_easyDensity_source_on_slices_of_canonical_smallDAG_easyHSG_source_on_slices :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_easyHSG_source_on_slices F →
+        canonical_smallDAG_easyDensity_source_on_slices F :=
+  canonical_smallDAG_easyDensity_source_on_slices_of_canonical_smallDAG_easyHSG_source_on_slices
+
+/--
+Surface check: witness-indexed canonical easy-density debt closes no-small-DAG
+at the `ppolyDAG` size bound family.
+-/
+def check_noSmallDAG_of_canonical_smallDAG_witnessEasyDensity_source_on_slices :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_witnessEasyDensity_source_on_slices F →
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε :=
+  noSmallDAG_of_canonical_smallDAG_witnessEasyDensity_source_on_slices
+
+/--
+Surface check: witness-uniform-lower debt compiles to witness-indexed canonical
+easy-density debt.
+-/
+def check_canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_witnessUniformLower_source_on_slices F →
+      canonical_smallDAG_witnessEasyDensity_source_on_slices F :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessUniformLower
+
+/--
+Surface check: global witness-easy-density debt iff witness-uniform-lower debt.
+-/
+def check_canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessUniformLower :
+    ∀ (F : GapSliceFamily),
+      Nonempty (canonical_smallDAG_witnessEasyDensity_source_on_slices F) ↔
+        Nonempty (canonical_smallDAG_witnessUniformLower_source_on_slices F) :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessUniformLower
+
+/--
+Surface check: quarter-bounded witness-transfer debt compiles to witness-uniform
+lower debt.
+-/
+def check_canonical_smallDAG_witnessUniformLower_source_on_slices_of_witnessTransferQuarter :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_witnessTransferQuarter_source_on_slices F →
+      canonical_smallDAG_witnessUniformLower_source_on_slices F :=
+  canonical_smallDAG_witnessUniformLower_source_on_slices_of_witnessTransferQuarter
+
+/--
+Surface check: witness-uniform-lower debt compiles to quarter-bounded
+witness-transfer debt.
+-/
+def check_canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_witnessUniformLower :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_witnessUniformLower_source_on_slices F →
+      canonical_smallDAG_witnessTransferQuarter_source_on_slices F :=
+  canonical_smallDAG_witnessTransferQuarter_source_on_slices_of_witnessUniformLower
+
+/--
+Surface check: witness-uniform-lower debt iff quarter-bounded witness-transfer
+debt.
+-/
+def check_canonical_smallDAG_witnessUniformLower_source_on_slices_iff_witnessTransferQuarter :
+    ∀ (F : GapSliceFamily),
+      Nonempty (canonical_smallDAG_witnessUniformLower_source_on_slices F) ↔
+        Nonempty (canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :=
+  canonical_smallDAG_witnessUniformLower_source_on_slices_iff_witnessTransferQuarter
+
+/--
+Surface check: witness-easy-density debt iff quarter-bounded witness-transfer
+debt.
+-/
+def check_canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessTransferQuarter :
+    ∀ (F : GapSliceFamily),
+      Nonempty (canonical_smallDAG_witnessEasyDensity_source_on_slices F) ↔
+        Nonempty (canonical_smallDAG_witnessTransferQuarter_source_on_slices F) :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices_iff_witnessTransferQuarter
+
+/--
+Surface check: quarter-bounded witness-transfer debt compiles to witness-indexed
+canonical easy-density debt.
+-/
+def check_canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessTransferQuarter :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_witnessTransferQuarter_source_on_slices F →
+      canonical_smallDAG_witnessEasyDensity_source_on_slices F :=
+  canonical_smallDAG_witnessEasyDensity_source_on_slices_of_witnessTransferQuarter
+
+/--
+Surface check: quarter-bounded witness-transfer debt closes no-small-DAG at
+canonical `ppolyDAG` bounds.
+-/
+def check_noSmallDAG_of_canonical_smallDAG_witnessTransferQuarter_source_on_slices :
+    ∀ (F : GapSliceFamily),
+      canonical_smallDAG_witnessTransferQuarter_source_on_slices F →
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+        ∀ n : Nat, ∀ β ε : Rat,
+          ¬ SmallDAGSolver F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε :=
+  noSmallDAG_of_canonical_smallDAG_witnessTransferQuarter_source_on_slices
 
 /--
 Surface check: distributional PRG endpoint type at one witness.
@@ -529,6 +834,25 @@ def check_smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt
     SmallDAGEasyHSGSourceAt (p := p) SizeBound :=
   smallDAGEasyHSGSourceAt_of_canonicalEasyHSGSourceAt src
 
+/-- Surface check: canonical density→canonical easy-HSG compiler. -/
+def check_canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalSmallDAGEasyDensitySourceAt (p := p) SizeBound) :
+    CanonicalSmallDAGEasyHSGSourceAt (p := p) SizeBound :=
+  canonicalEasyHSGSourceAt_of_canonicalEasyDensitySourceAt src
+
+/--
+Surface check: canonical easy-HSG→canonical density compiler (singleton
+canonical sampler) is available.
+-/
+def check_canonicalEasyDensitySourceAt_of_canonicalEasyHSGSourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalSmallDAGEasyHSGSourceAt (p := p) SizeBound) :
+    CanonicalSmallDAGEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalEasyDensitySourceAt_of_canonicalEasyHSGSourceAt src
+
 /-- Surface check: one-sided source→transfer endpoint compiler is available. -/
 def check_easyImageTransferAt_of_smallDAGEasyHSGSourceAt
     {p : Models.GapPartialMCSPParams}
@@ -538,6 +862,231 @@ def check_easyImageTransferAt_of_smallDAGEasyHSGSourceAt
     (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
     EasyImageTransferAt W :=
   easyImageTransferAt_of_smallDAGEasyHSGSourceAt source W
+
+/-- Surface check: canonical density→transfer endpoint compiler is available. -/
+def check_easyImageTransferAt_of_canonicalEasyDensitySourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : CanonicalSmallDAGEasyDensitySourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImageTransferAt W :=
+  easyImageTransferAt_of_canonicalEasyDensitySourceAt source W
+
+/-- Surface check: canonical easy family object is available. -/
+noncomputable def check_canonicalEasyFamilyFinset
+    (p : Models.GapPartialMCSPParams) :
+    Finset (Core.BitVec (Models.Partial.tableLen p.n)) :=
+  canonicalEasyFamilyFinset p
+
+/-- Surface check: canonical easy family support lemma is available. -/
+def check_canonicalEasyFamily_supportEasy
+    (p : Models.GapPartialMCSPParams) :
+    ∀ t ∈ canonicalEasyFamilyFinset p,
+      Models.PartialMCSP_YES p (Models.totalTableToPartial t) :=
+  canonicalEasyFamily_supportEasy p
+
+/-- Surface check: pattern-realization predicate on canonical easy family. -/
+def check_canonicalEasyFamilyRealizesPatternOn
+    (p : Models.GapPartialMCSPParams)
+    (S : Finset (Fin (Models.Partial.tableLen p.n)))
+    (σ : Fin (Models.Partial.tableLen p.n) → Bool) : Prop :=
+  canonicalEasyFamilyRealizesPatternOn p S σ
+
+/-- Surface check: all-patterns-up-to-budget canonical coverage contract. -/
+def check_canonicalEasyFamilyRealizesAllPatternsUpTo
+    (p : Models.GapPartialMCSPParams)
+    (hardwireBudget : Nat) : Prop :=
+  canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget
+
+/-- Surface check: explicit coarse hardwire size budget function. -/
+def check_hardwireCircuitSize (n k : Nat) : Nat :=
+  hardwireCircuitSize n k
+
+/-- Surface check: coverage theorem from hardwire budget is exposed. -/
+theorem check_canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound
+    (p : Models.GapPartialMCSPParams)
+    (hardwireBudget : Nat)
+    (hSize : hardwireCircuitSize p.n hardwireBudget < p.sYES) :
+    canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget :=
+  canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound p hardwireBudget hSize
+
+/-- Surface check: canonical value-only alive set extracted from restriction extraction. -/
+def check_canonicalValueAliveSet
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice}
+    (E : SmallDAGWitnessRestrictionExtractionAt W) :
+    Finset (Fin (Models.Partial.tableLen p.n)) :=
+  canonicalValueAliveSet E
+
+/-- Surface check: extraction implies stability on the canonical value-alive set. -/
+theorem check_stableOn_canonicalValueAliveSet_of_extraction
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice}
+    (E : SmallDAGWitnessRestrictionExtractionAt W) :
+    ∀ x y : Core.BitVec (Models.Partial.tableLen p.n),
+      (∀ j ∈ canonicalValueAliveSet E, x j = y j) →
+      dagAcceptsTotalTableOfCircuit p W.C y =
+        dagAcceptsTotalTableOfCircuit p W.C x :=
+  stableOn_canonicalValueAliveSet_of_extraction E
+
+/-- Surface check: canonical value-alive set inherits extraction alive bound. -/
+theorem check_canonicalValueAliveSet_card_le_aliveBound
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    {W : SmallDAGWitnessOnSlice p SizeBound εslice}
+    (E : SmallDAGWitnessRestrictionExtractionAt W) :
+    (canonicalValueAliveSet E).card ≤ E.aliveBound :=
+  canonicalValueAliveSet_card_le_aliveBound E
+
+/-- Surface check: canonical-family reject-density observable is available. -/
+noncomputable def check_canonicalEasyRejectProbOnFamilyOfCircuit
+    (p : Models.GapPartialMCSPParams)
+    (D : ComplexityInterfaces.DagCircuit (Models.partialInputLen p)) : Rat :=
+  canonicalEasyRejectProbOnFamilyOfCircuit p D
+
+/--
+Surface check: one rejected canonical-family point yields positive density lower
+bound `1 / 2^tableLen`.
+-/
+theorem check_canonicalEasyRejectProbOnFamilyOfCircuit_ge_one_div_twoPow_of_exists_reject
+    {p : Models.GapPartialMCSPParams}
+    (D : ComplexityInterfaces.DagCircuit (Models.partialInputLen p))
+    (hReject :
+      ∃ t ∈ canonicalEasyFamilyFinset p,
+        dagAcceptsTotalTableOfCircuit p D t = false) :
+    (1 : Rat) / (2 ^ (Models.Partial.tableLen p.n) : Rat) ≤
+      canonicalEasyRejectProbOnFamilyOfCircuit p D :=
+  canonicalEasyRejectProbOnFamilyOfCircuit_ge_one_div_twoPow_of_exists_reject D hReject
+
+/-- Surface check: `uniform < 1` implies existence of a rejected total table. -/
+theorem check_exists_reject_of_uniformAcceptanceProbOnTotals_lt_one
+    {p : Models.GapPartialMCSPParams}
+    (D : ComplexityInterfaces.DagCircuit (Models.partialInputLen p))
+    (hLtOne : dagUniformAcceptanceProbOnTotalsOfCircuit p D < 1) :
+    ∃ t : Core.BitVec (Models.Partial.tableLen p.n),
+      dagAcceptsTotalTableOfCircuit p D t = false :=
+  exists_reject_of_uniformAcceptanceProbOnTotals_lt_one D hLtOne
+
+/-- Surface check: witness-indexed canonical-density source→transfer compiler. -/
+def check_easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    {εslice : Rat}
+    (source : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound)
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice) :
+    EasyImageTransferAt W :=
+  easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt source W
+
+/--
+Surface check: witness-density target statement is exposed in direct
+low-uniform → canonical-family-reject-density form.
+-/
+def check_canonicalWitnessEasyDensity_lowUniform_implies_familyRejectDensity
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (src : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound)
+    {εslice : Rat}
+    (W : SmallDAGWitnessOnSlice p SizeBound εslice)
+    (hUniformLow : dagUniformAcceptanceProbOnTotals W < 1 - src.epsilon) :
+    src.delta ≤ canonicalEasyRejectProbOnFamily W :=
+  canonicalWitnessEasyDensity_lowUniform_implies_familyRejectDensity src W hUniformLow
+
+/--
+Surface check: central bridge constructor from
+restriction/local-dependence+coverage to witness family-density source.
+-/
+def check_canonicalWitnessEasyDensitySourceAt_of_restrictionExtractionAndCoverage
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (SOf :
+      ∀ {εslice : Rat},
+        SmallDAGWitnessOnSlice p SizeBound εslice →
+          Finset (Fin (Models.Partial.tableLen p.n)))
+    (hBudget :
+      ∀ {εslice : Rat}
+        (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (SOf W).card ≤ hardwireBudget)
+    (hCover :
+      canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget)
+    (hStableOnS :
+      ∀ {εslice : Rat}
+        (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        ∀ x y : Core.BitVec (Models.Partial.tableLen p.n),
+          (∀ i ∈ SOf W, x i = y i) →
+            dagAcceptsTotalTableOfCircuit p W.C y =
+              dagAcceptsTotalTableOfCircuit p W.C x)
+    : CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalWitnessEasyDensitySourceAt_of_restrictionExtractionAndCoverage
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget SOf hBudget hCover hStableOnS
+
+/--
+Surface check: normalized bridge constructor with canonical extracted coordinate
+set and derived stability.
+-/
+def check_canonicalWitnessEasyDensitySourceAt_of_extractionBudgetAndCoverage
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (hExtract :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        SmallDAGWitnessRestrictionExtractionAt W)
+    (hBudget :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (canonicalValueAliveSet (hExtract W)).card ≤ hardwireBudget)
+    (hCover :
+      canonicalEasyFamilyRealizesAllPatternsUpTo p hardwireBudget) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalWitnessEasyDensitySourceAt_of_extractionBudgetAndCoverage
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget hExtract hBudget hCover
+
+/-- Surface check: final normalized bridge (coverage discharged from budget). -/
+def check_canonicalWitnessEasyDensitySourceAt_of_extractionBudget
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (hCoverBudget :
+      hardwireCircuitSize p.n hardwireBudget < p.sYES)
+    (hExtract :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        SmallDAGWitnessRestrictionExtractionAt W)
+    (hBudget :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (canonicalValueAliveSet (hExtract W)).card ≤ hardwireBudget) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalWitnessEasyDensitySourceAt_of_extractionBudget
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget hCoverBudget hExtract hBudget
+
+/-- Surface check: support-specialized normalized bridge is available. -/
+noncomputable def check_canonicalWitnessEasyDensitySourceAt_of_supportBudget
+    {p : Models.GapPartialMCSPParams}
+    {SizeBound : Rat → Nat → Prop}
+    (epsilon : Rat)
+    (hEpsQuarter : epsilon ≤ (1 / 4 : Rat))
+    (hEpsNonneg : 0 ≤ epsilon)
+    (hardwireBudget : Nat)
+    (hCoverBudget : hardwireCircuitSize p.n hardwireBudget < p.sYES)
+    (hSupportBudget :
+      ∀ {εslice : Rat} (W : SmallDAGWitnessOnSlice p SizeBound εslice),
+        (ComplexityInterfaces.DagCircuit.support W.C).card ≤ hardwireBudget) :
+    CanonicalWitnessEasyDensitySourceAt (p := p) SizeBound :=
+  canonicalWitnessEasyDensitySourceAt_of_supportBudget
+    epsilon hEpsQuarter hEpsNonneg hardwireBudget hCoverBudget hSupportBudget
 
 /-- Surface check: provider-level avg-hardness→easy-dist compiler is available. -/
 def check_smallDAGEasyDistSourceProviderOnSlices_of_avgHardnessSource
@@ -567,6 +1116,18 @@ def check_smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyHSGSourceProvide
         (p := F.paramsOf n β) (fun ε' s => SizeBound n β ε' s)) →
       smallDAGEasyHSGSourceProviderOnSlices F SizeBound :=
   smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyHSGSourceProviderOnSlices
+    F SizeBound
+
+/--
+Surface check: canonical easy-density provider→generic one-sided easy-HSG
+provider compiler is available.
+-/
+def check_smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyDensitySourceProviderOnSlices
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop) :
+    canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound →
+      smallDAGEasyHSGSourceProviderOnSlices F SizeBound :=
+  smallDAGEasyHSGSourceProviderOnSlices_of_canonicalEasyDensitySourceProviderOnSlices
     F SizeBound
 
 /-- Surface check: provider-level avg-hardness→easy-HSG compiler is available. -/
@@ -765,6 +1326,170 @@ noncomputable def check_dagStableRestrictionInvariantProvider_of_inPpolyDAG_supp
             Models.Partial.tableLen p.n / 2),
       dagStableRestrictionInvariantProvider p :=
   dagStableRestrictionInvariantProvider_of_inPpolyDAG_supportHalf
+
+/--
+Localized Route-B blocker alias is exposed with the expected type.
+-/
+def check_dagRouteBSourceBlocker :
+    Models.GapPartialMCSPParams → Prop :=
+  dagRouteBSourceBlocker
+
+/--
+Localized Route-B closure package is exposed with the expected type.
+-/
+def check_DAGRouteBSourceClosure :
+    Models.GapPartialMCSPParams → Type :=
+  DAGRouteBSourceClosure
+
+/--
+Canonical constructor from the localized blocker to closure package is
+available with the expected type.
+-/
+noncomputable def check_dagRouteBSourceClosure_of_blocker :
+    ∀ {p : Models.GapPartialMCSPParams},
+      dagRouteBSourceBlocker p → DAGRouteBSourceClosure p :=
+  dagRouteBSourceClosure_of_blocker
+
+/--
+One-way nonempty closure packaging from the named Route-B blocker is available
+with the expected type.
+-/
+theorem check_nonempty_sourceClosure_of_dagRouteBSourceBlocker :
+    ∀ {p : Models.GapPartialMCSPParams},
+      dagRouteBSourceBlocker p → Nonempty (DAGRouteBSourceClosure p) :=
+  nonempty_sourceClosure_of_dagRouteBSourceBlocker
+
+/--
+Final wrapper from localized Route-B closure to DAG separation is available with
+the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_sourceClosure_TM :
+    ∀ {p : Models.GapPartialMCSPParams},
+      Models.GapPartialMCSP_TMWitness p →
+      DAGRouteBSourceClosure p →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
+
+/--
+Companion `P ≠ NP` final wrapper for the same localized source closure is
+available with the expected type.
+-/
+def check_P_ne_NP_final_of_sourceClosure_TM :
+    ∀ {p : Models.GapPartialMCSPParams},
+      Models.GapPartialMCSP_TMWitness p →
+      DAGRouteBSourceClosure p →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_sourceClosure_TM
+
+/--
+Direct final DAG-separation wrapper from the named Route-B blocker is available
+with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_blocker_TM :
+    ∀ {p : Models.GapPartialMCSPParams},
+      Models.GapPartialMCSP_TMWitness p →
+      dagRouteBSourceBlocker p →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_blocker_TM
+
+/--
+Companion direct `P ≠ NP` wrapper from the same Route-B blocker gate is
+available with the expected type.
+-/
+def check_P_ne_NP_final_of_blocker_TM :
+    ∀ {p : Models.GapPartialMCSPParams},
+      Models.GapPartialMCSP_TMWitness p →
+      dagRouteBSourceBlocker p →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_blocker_TM
+
+/--
+Asymptotic DAG-separation wrapper from one fixed-slice collapse is available
+with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      (ComplexityInterfaces.PpolyDAG
+          (Models.gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from one fixed-slice collapse is
+available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_fixedSliceCollapse :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      (ComplexityInterfaces.PpolyDAG
+          (Models.gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_fixedSliceCollapse
+
+/--
+Asymptotic DAG-separation wrapper from one fixed-slice stable-restriction
+producer is available with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      LowerBounds.dag_stableRestriction_producer
+        (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from one fixed-slice stable-restriction
+producer is available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_dag_stableRestriction :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      LowerBounds.dag_stableRestriction_producer
+        (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_dag_stableRestriction
+
+/--
+Asymptotic DAG-separation wrapper from one fixed-slice Route-B blocker is
+available with the expected type.
+-/
+def check_NP_not_subset_PpolyDAG_final_of_asymptotic_blocker :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from one fixed-slice source-closure
+package is available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_sourceClosure :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_sourceClosure
+
+/--
+Companion `P ≠ NP` asymptotic wrapper from the same fixed-slice blocker is
+available with the expected type.
+-/
+def check_P_ne_NP_final_of_asymptotic_blocker :
+    ∀ (hMag : MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn) →
+      ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final_of_asymptotic_blocker
 
 /--
 Branch-A strengthened provider target (nontrivial `S`) is exposed with the
@@ -1156,6 +1881,47 @@ def check_NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute :
             F (ppolyDAGSizeBoundOnSlices F hInDag)),
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute
+
+/--
+Surface check: canonical support-half family gives global non-inclusion.
+-/
+def check_not_globalPpolyDAG_surface_of_supportHalfBoundFamily :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (_hSupportHalf :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          ∀ n : Nat, ∀ β ε : Rat,
+            ∀ W : SmallDAGWitnessOnSlice
+              (F.paramsOf n β)
+              (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+              (ComplexityInterfaces.DagCircuit.support W.C).card ≤
+                Models.Partial.tableLen (F.paramsOf n β).n / 2),
+      ¬ ComplexityInterfaces.PpolyDAG bridge.L :=
+  not_globalPpolyDAG_surface_of_supportHalfBoundFamily
+
+/--
+Surface check: canonical support-half family gives `NP_not_subset_PpolyDAG`.
+-/
+def check_NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily :
+    ∀ (F : GapSliceFamily)
+      (bridge : AsymptoticDAGLanguageBridge F)
+      (_hNP : ComplexityInterfaces.NP bridge.L)
+      (_hSupportHalf :
+        ∀ hInDag :
+          ∀ n : Nat, ∀ β : Rat,
+            ComplexityInterfaces.InPpolyDAG
+              (Models.gapPartialMCSP_Language (F.paramsOf n β)),
+          ∀ n : Nat, ∀ β ε : Rat,
+            ∀ W : SmallDAGWitnessOnSlice
+              (F.paramsOf n β)
+              (fun ε' s => ppolyDAGSizeBoundOnSlices F hInDag n β ε' s) ε,
+              (ComplexityInterfaces.DagCircuit.support W.C).card ≤
+                Models.Partial.tableLen (F.paramsOf n β).n / 2),
+      ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily
 
 /--
 Promise-YES weak route + NP witness closure to class-level separation is

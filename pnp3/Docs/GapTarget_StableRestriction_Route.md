@@ -59,8 +59,9 @@ That theorem is the real remaining blocker on this route.
 ## 3. Why this route matters now
 
 This route has become more important, not less, because
-`Magnification/FinalResult.lean` now already contains asymptotic wrappers that
-turn one fixed-slice blocker into a class-level DAG-separation statement.
+`Magnification/FinalResultCore.lean` now already contains asymptotic wrappers
+that turn one fixed-slice blocker into a class-level DAG-separation statement
+(`FinalResult.lean` remains the compatibility import path).
 
 So the current practical shortest path is:
 

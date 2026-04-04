@@ -26,7 +26,7 @@ Machine-check:
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
 В финальном default wiring:
-- `pnp3/Magnification/FinalResult.lean` использует
+- `pnp3/Magnification/FinalResultCore.lean` использует
   `proved_P_subset_PpolyDAG_internal`.
 
 В explicit-wrapper wiring:

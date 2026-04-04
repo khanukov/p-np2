@@ -23,7 +23,7 @@ So the asymptotic layer is real infrastructure, not a plan stub.
 
 ## 2. What is newly important
 
-`Magnification/FinalResult.lean` now also exposes **fixed-slice asymptotic
+`Magnification/FinalResultCore.lean` now also exposes **fixed-slice asymptotic
 collapse wrappers**:
 
 - `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`
@@ -115,5 +115,5 @@ If you want the shortest accurate picture:
 
 1. `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`
 2. `pnp3/LowerBounds/DAGUnconditionalBlocker.lean`
-3. `pnp3/Magnification/FinalResult.lean`
+3. `pnp3/Magnification/FinalResultCore.lean`
 4. `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`

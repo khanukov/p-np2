@@ -32,7 +32,10 @@ Active `pnp3/` development uses **Partial MCSP** (`GapPartialMCSP*` names).
 - `pnp3/` builds and `./scripts/check.sh` passes on the current tree.
 - Active project-local `axiom` declarations in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
-- Final entrypoints live in `pnp3/Magnification/FinalResult.lean`.
+- Final compatibility entrypoint lives in `pnp3/Magnification/FinalResult.lean`,
+  while the active implementation surface is in
+  `pnp3/Magnification/FinalResultCore.lean`
+  (split into `FinalResultMainline/WeakRoutes/LegacyTM`).
 - Inclusion is already internalized:
   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
 - The DAG side now has substantially more compiled surface area:

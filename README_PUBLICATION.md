@@ -11,7 +11,9 @@ Release wording/checklist for the current milestone:
 
 1. Active `pnp3/` formalization has no project-local axioms and no
    `sorry/admit`.
-2. Final route compiles in `pnp3/Magnification/FinalResult.lean`.
+2. Final route compiles in
+   `pnp3/Magnification/FinalResultCore.lean`
+   (via compatibility import path `pnp3/Magnification/FinalResult.lean`).
 3. `./scripts/check.sh` and current audit tests pass on the current tree.
 4. Audited theorem surface still uses standard Lean assumptions
    `propext`, `Classical.choice`, `Quot.sound`.

@@ -73,7 +73,8 @@ done
 
 Confirm signatures in:
 
-- `pnp3/Magnification/FinalResult.lean`
+- `pnp3/Magnification/FinalResultCore.lean`
+- compatibility import path `pnp3/Magnification/FinalResult.lean`
 - `pnp3/Tests/WeakRouteSurfaceTests.lean`
 
 Confirm docs are aligned:

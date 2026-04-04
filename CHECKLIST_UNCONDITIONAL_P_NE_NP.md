@@ -11,7 +11,9 @@ For the current DAG route plan, see
 
 ## Current final API (actual code)
 
-File: `pnp3/Magnification/FinalResult.lean`
+Files:
+- compatibility import path: `pnp3/Magnification/FinalResult.lean`
+- active implementation surface: `pnp3/Magnification/FinalResultCore.lean`
 
 Current public default theorem:
 
@@ -99,7 +101,8 @@ Before declaring any blocker closed, confirm:
    `pnp3/Tests/BarrierBypassAudit.lean`,
    `pnp3/Tests/BridgeLocalityRegression.lean`,
    `pnp3/Tests/WeakRouteSurfaceTests.lean`.
-3. Final endpoints in `pnp3/Magnification/FinalResult.lean` still compile.
+3. Final endpoints in `pnp3/Magnification/FinalResultCore.lean`
+   (and compatibility import path `FinalResult.lean`) still compile.
 4. No document claims unconditional `P ≠ NP` prematurely.
 
 ## Definition of done

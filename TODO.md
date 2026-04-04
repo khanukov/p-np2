@@ -19,7 +19,7 @@ Current DAG plan:
 
 ## The Two Remaining Closure Targets
 
-### Target 1. Remove external `hNPDag`
+### Target 1. Replace fixed-slice blocker hunt with a sound asymptotic source theorem
 
 Current public default theorem still requires:
 
@@ -27,13 +27,19 @@ Current public default theorem still requires:
 hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
-The fastest honest route is now fixed-slice:
+The old fixed-slice route is no longer treated as the main theorem target.
+Current priority is to migrate source-side statements to non-vacuous
+asymptotic surfaces and close one family-level theorem that can feed the
+existing wrappers.
 
-1. choose
-   `p* := hMag.antiChecker.asymptotic.pAt n hn`;
-2. prove one source theorem on `p*`, ideally
-   `gapPartialMCSP_supportHalfObligation p*`;
-3. feed it through the already compiled asymptotic fixed-slice wrappers.
+Immediate shape of this target:
+
+1. move one core source statement from `GapSliceFamily` to
+   eventual-indexed form (`GapSliceFamilyEventually`);
+2. switch from all-length bridge assumptions to length-local bridges
+   (`AsymptoticDAGSliceBridgeAt`);
+3. prove one non-vacuous family-level source theorem on that migrated surface;
+4. reconnect the theorem payload to already compiled endpoint wrappers.
 
 ### Target 2. Remove remaining public `hMag`
 
@@ -42,8 +48,8 @@ The current default wrapper still takes `hMag` for compatibility.
 
 To reach a genuinely unconditional top-level theorem, we still need either:
 
-1. a concrete fixed-slice `GapPartialMCSP_TMWitness p*` plus a fixed-slice DAG
-   blocker, routed through `_TM` wrappers; or
+1. a concrete fixed-slice `GapPartialMCSP_TMWitness p*` plus a **sound**
+   fixed-slice source theorem, routed through `_TM` wrappers; or
 2. an internal proof of the current magnification-assumption package.
 
 ## Execution Order
@@ -60,20 +66,21 @@ Rule:
   and
   `produce a zero-argument final theorem`.
 
-### Task 2. Close one fixed-slice DAG source theorem
+### Task 2. Migrate one source surface to eventual/length-local form
 
 Status: active blocker.
 
-Preferred theorem targets:
+Preferred near-term theorem targets:
 
-1. `gapPartialMCSP_supportHalfObligation p*`
-2. `dagRouteBSourceBlocker p*`
-3. `dag_stableRestriction_producer p*`
+1. one migrated source statement on `GapSliceFamilyEventually`;
+2. one length-local bridge theorem via `AsymptoticDAGSliceBridgeAt`;
+3. one non-vacuous family-level contradiction payload consumable by existing
+   wrappers.
 
 Acceptance condition:
 
-- one of the asymptotic fixed-slice wrappers becomes internally callable with
-  no external DAG hypothesis.
+- at least one existing asymptotic wrapper is callable from the migrated
+  family-level theorem surface, without adding new endpoint plumbing.
 
 ### Task 3. Internalize `NP_not_subset_PpolyDAG`
 
@@ -81,12 +88,9 @@ Status: pending on Task 2.
 
 Possible routes:
 
-1. fixed-slice blocker + asymptotic collapse, if the goal is to clean up the
-   existing `hMag`-based public surface;
-2. concrete fixed slice + `_TM` wrapper, if the goal is a standalone theorem
-   with no magnification package;
-3. canonical all-slices witness-transfer route, if the goal is a stronger
-   theorem program not tied to the current fixed-slice integration path.
+1. canonical all-slices witness-transfer route (primary);
+2. concrete `_TM` route with a sound fixed-slice source theorem (secondary);
+3. internalization of the magnification package after DAG-side internalization.
 
 ### Task 4. Replace the current compatibility final theorem
 

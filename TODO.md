@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-04-03
+Updated: 2026-04-04
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -8,6 +8,8 @@ Current release wording guardrail:
 `RELEASE_RC.md`.
 Current DAG plan:
 `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
+Route policy lock:
+`pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 
 ## Snapshot
 
@@ -15,11 +17,24 @@ Current DAG plan:
 - Active `sorry/admit` in `pnp3/`: `0`.
 - `./scripts/check.sh` passes.
 - Inclusion is already internalized.
-- The remaining work is theorem-level, not endpoint plumbing.
+- Remaining debt is theorem-level source mathematics.
+
+## Hard policy update: fixed-slice branch is not an active target
+
+The fixed-slice support-half blocker branch is now treated as a closed
+historical no-go direction for unconditional closure planning.
+
+This is already reflected by dedicated failed-route modules:
+
+- `LowerBounds/FailedRoute_FixedSliceSupportHalfCore.lean`
+- `LowerBounds/FailedRoute_FixedSliceSupportHalfImpossible.lean`
+
+So roadmap execution must not prioritize proving unconditional separation from a
+literal single fixed slice.
 
 ## The Two Remaining Closure Targets
 
-### Target 1. Replace fixed-slice blocker hunt with a sound asymptotic source theorem
+### Target 1. Internalize `NP_not_subset_PpolyDAG` via asymptotic/eventual route
 
 Current public default theorem still requires:
 
@@ -27,72 +42,65 @@ Current public default theorem still requires:
 hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
-The old fixed-slice route is no longer treated as the main theorem target.
-Current priority is to migrate source-side statements to non-vacuous
-asymptotic surfaces and close one family-level theorem that can feed the
-existing wrappers.
+Active theorem route is exactly:
 
-Immediate shape of this target:
-
-1. move one core source statement from `GapSliceFamily` to
-   eventual-indexed form (`GapSliceFamilyEventually`);
-2. switch from all-length bridge assumptions to length-local bridges
-   (`AsymptoticDAGSliceBridgeAt`);
-3. prove one non-vacuous family-level source theorem on that migrated surface;
-4. reconnect the theorem payload to already compiled endpoint wrappers.
+1. prove one eventual source theorem on a non-vacuous surface;
+2. use length-local bridge assumptions (not all-length global bridge claims);
+3. close one weak-route class-level payload (`acceptedFamily` or
+   `promiseYes` family);
+4. reconnect to existing wrappers without adding new endpoint plumbing.
 
 ### Target 2. Remove remaining public `hMag`
 
-Even after `hNPDag` is internalized, the public theorem is not yet zero-arg.
-The current default wrapper still takes `hMag` for compatibility.
+Even after Target 1 is done, theorem is not yet zero-arg while it still takes
+`hMag` for compatibility.
 
-To reach a genuinely unconditional top-level theorem, we still need either:
+To reach a genuinely unconditional top-level theorem, still need either:
 
-1. a concrete fixed-slice `GapPartialMCSP_TMWitness p*` plus a **sound**
-   fixed-slice source theorem, routed through `_TM` wrappers; or
-2. an internal proof of the current magnification-assumption package.
+1. full API cleanup/internalization that removes compatibility `hMag`; or
+2. a fully internal route proving the same payload without exposing
+   magnification assumptions in the public theorem surface.
 
 ## Execution Order
 
-### Task 1. Keep docs and audit wording honest
+### Task 1. Keep docs and audit wording strict
 
-Status: done for the current snapshot.
+Status: active discipline.
 
 Rule:
 
-- do not say the repository proves unconditional `P ≠ NP`;
-- distinguish clearly between
-  `remove hNPDag from the current route`
-  and
-  `produce a zero-argument final theorem`.
+- do not claim unconditional `P ≠ NP` yet;
+- do not present fixed-slice historical branch as current closure plan;
+- keep a single canonical active route across docs.
 
-### Task 2. Migrate one source surface to eventual/length-local form
+### Task 2. Prove one eventual weak-route source theorem (main blocker)
 
 Status: active blocker.
 
-Preferred near-term theorem targets:
+Immediate theorem targets:
 
-1. one migrated source statement on `GapSliceFamilyEventually`;
-2. one length-local bridge theorem via `AsymptoticDAGSliceBridgeAt`;
-3. one non-vacuous family-level contradiction payload consumable by existing
-   wrappers.
+1. one eventual accepted-family or promise-YES theorem with explicit
+   `n ≥ n0(β)` shape;
+2. one length-local bridge theorem sufficient to push global `PpolyDAG` witness
+   down to the targeted slices;
+3. one class-level contradiction payload consumable by existing wrappers.
 
 Acceptance condition:
 
-- at least one existing asymptotic wrapper is callable from the migrated
-  family-level theorem surface, without adding new endpoint plumbing.
+- at least one existing asymptotic wrapper is callable from the new eventual
+  source theorem, without new endpoint names.
 
 ### Task 3. Internalize `NP_not_subset_PpolyDAG`
 
 Status: pending on Task 2.
 
-Possible routes:
+Delivery condition:
 
-1. canonical all-slices witness-transfer route (primary);
-2. concrete `_TM` route with a sound fixed-slice source theorem (secondary);
-3. internalization of the magnification package after DAG-side internalization.
+- produce internal theorem
+  `ComplexityInterfaces.NP_not_subset_PpolyDAG`
+  with no external DAG-separation assumption.
 
-### Task 4. Replace the current compatibility final theorem
+### Task 4. Replace compatibility final theorem surface
 
 Status: pending on Task 3.
 
@@ -106,50 +114,20 @@ P_ne_NP_final
 
 Required end state:
 
-- a zero-argument public theorem, or at minimum
-- a theorem with no external DAG separation input.
+- no external `hNPDag` and then no residual `hMag` in public endpoint.
 
-### Task 5. Preserve the all-slices research track without mistaking it for the immediate blocker
-
-Status: active as parallel theorem program, not as the shortest integration
-task.
-
-Existing infrastructure already covers:
-
-- witness easy density,
-- witness uniform lower,
-- witness transfer quarter,
-- compilers from extraction/support budgets,
-- support-half family fallback builders.
-
-The remaining debt there is source mathematics, not glue.
-
-### Task 6. Final consistency pass after theorem closure
+### Task 5. Final consistency pass
 
 Status: pending.
 
-Do after the theorem work, not before:
+After theorem closure:
 
-1. switch `README.md`, `STATUS.md`, `TODO.md`, `CHECKLIST_*`, and publication
-   docs to unconditional wording only after the public theorem is actually
-   unconditional;
-2. rerun:
-
-```bash
-./scripts/check.sh
-for f in pnp3/Tests/AxiomsAudit.lean \
-         pnp3/Tests/BarrierAudit.lean \
-         pnp3/Tests/BarrierBypassAudit.lean \
-         pnp3/Tests/BridgeLocalityRegression.lean \
-         pnp3/Tests/WeakRouteSurfaceTests.lean; do
-  lake env lean "$f"
-done
-```
+1. update `README.md`, `STATUS.md`, `TODO.md`, `CHECKLIST_*`, release docs;
+2. rerun full `./scripts/check.sh` and audit tests.
 
 ## Non-Goals Right Now
 
-- Do not add new endpoint wrappers just to create apparent progress.
-- Do not relabel the canonical all-slices route as “done” while it still lacks
-  the source theorem.
-- Do not claim that removing `hNPDag` automatically yields full
-  unconditionality while `hMag` still appears in the public theorem surface.
+- Do not add wrappers just to show apparent progress.
+- Do not reopen fixed-slice support-half as a primary theorem target.
+- Do not claim that removing only `hNPDag` yields full unconditionality while
+  `hMag` remains in public theorem.

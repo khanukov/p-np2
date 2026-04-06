@@ -244,6 +244,47 @@ else
   echo "Magnification assumptions policy OK (package-based finals enforced)."
 fi
 
+# Documentation route-policy guardrails:
+# keep canonical docs aligned on one active closure route and prevent silent
+# reintroduction of deprecated fixed-slice "fastest route" wording.
+route_docs=(
+  "STATUS.md"
+  "TODO.md"
+  "CHECKLIST_UNCONDITIONAL_P_NE_NP.md"
+  "pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md"
+  "pnp3/Docs/CLOSURE_ROUTE_POLICY.md"
+)
+
+for f in "${route_docs[@]}"; do
+  if [[ ! -f "${f}" ]]; then
+    echo "Missing required route-policy document: ${f}"
+    exit 1
+  fi
+done
+
+# Hard requirement: canonical docs must explicitly mention the fixed-slice
+# no-go status and the active asymptotic/eventual route.
+if ! rg -n "fixed-slice.*no-go|no-go.*fixed-slice" "${route_docs[@]}" >/tmp/pnp3_route_nogo_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state fixed-slice no-go status."
+  exit 1
+fi
+
+if ! rg -n "asymptotic/eventual|eventual.*length-local|length-local.*eventual" "${route_docs[@]}" >/tmp/pnp3_route_active_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state the active asymptotic/eventual route."
+  exit 1
+fi
+
+# Forbidden legacy wording: these phrases historically pointed to the deprecated
+# fixed-slice closure prioritization and should not reappear in canonical docs.
+if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem' \
+    "${route_docs[@]}" >/tmp/pnp3_route_legacy_phrase_hits.log; then
+  echo "Detected deprecated fixed-slice closure wording in canonical docs:"
+  cat /tmp/pnp3_route_legacy_phrase_hits.log
+  exit 1
+fi
+
+echo "Route policy docs OK (fixed-slice no-go + asymptotic/eventual path enforced)."
+
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \

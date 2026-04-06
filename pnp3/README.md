@@ -35,8 +35,10 @@ Legacy-модель GapMCSP и другие старые ветки в `archive/
    математику.
 3. `LowerBounds/DAGUnconditionalBlocker.lean` нормализует Route-B gate через
    `dagRouteBSourceBlocker` и `DAGRouteBSourceClosure`.
-4. `Magnification/FinalResult.lean` содержит публичные DAG wrappers, включая
+4. `Magnification/FinalResultCore.lean` содержит активные публичные DAG
+   wrappers (split в `FinalResultMainline/WeakRoutes/LegacyTM`), включая
    asymptotic fixed-slice routes и concrete `_TM` routes.
+   `Magnification/FinalResult.lean` оставлен как compatibility import path.
 
 ## Что открыто
 

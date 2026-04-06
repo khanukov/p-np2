@@ -24,7 +24,9 @@
 1. hardwire coverage proof для canonical easy family;
 2. canonical witness-density / witness-transfer compiler glue;
 3. support-half fallback closure до class-level DAG non-inclusion surface;
-4. asymptotic fixed-slice DAG wrappers в `Magnification/FinalResult.lean`.
+4. asymptotic fixed-slice DAG wrappers в
+   `Magnification/FinalResultCore.lean`
+   (`FinalResult.lean` оставлен как compatibility import path).
 
 Одновременно всё ещё не закрыты:
 

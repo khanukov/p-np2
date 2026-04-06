@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-04-03
+Updated: 2026-04-04
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -8,6 +8,8 @@ Current release posture:
 `RELEASE_RC.md`.
 Current DAG-route plan:
 `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
+Route policy lock:
+`pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 
 ## Verified State
 
@@ -39,14 +41,24 @@ Current DAG-route plan:
   `..._of_asymptotic_sourceClosure`,
   `..._of_asymptotic_blocker`,
   together with companion `P_ne_NP_final_of_*` wrappers.
-- Canonical witness-density hardwire coverage is closed, including
-  `canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound`.
-- Canonical all-slices builders now exist from extraction/support budgets into
+- Canonical all-slices builders exist from extraction/support budgets into
   witness-easy-density / witness-uniform-lower / witness-transfer-quarter
   debts.
-- Support-half fallback closure is compiled through accepted-family surfaces:
+- Support-half accepted-family fallback closure is compiled through
   `noSmallDAG_of_supportHalfBoundFamily` and
   `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`.
+
+### Fixed-slice no-go status (closed historical branch)
+
+The repository already formalizes that the historical fixed-slice support-half
+route is closed as a no-go branch under fixed-slice `PpolyDAG` membership:
+
+- `no_fixedSlice_stableRestriction_of_inPpolyDAG`
+- `no_fixedSlice_blocker_of_inPpolyDAG`
+- `not_gapPartialMCSP_supportHalfObligation_of_inPpolyDAG`
+
+Interpretation: literal fixed-slice blocker proving is **not** the active path
+for unconditional closure.
 
 ## What Is Still Open
 
@@ -70,70 +82,28 @@ P_ne_NP_final
   (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
-The important reality split is:
+Reality split:
 
 1. `hNPDag` is the real remaining DAG-separation blocker.
-2. `hMag` remains in the signature only as compatibility context; the current
-   implementation does not consume it.
+2. `hMag` remains in the signature only as compatibility context.
 
-So the repo is not yet unconditional either in the DAG theorem layer or in the
-default public final API.
+## Single active closure route (current policy)
 
-## Best Current Closure Order
+Only one route is considered active for internal DAG separation:
 
-### 1. Fastest path to remove `hNPDag` from the `hMag`-based final route
-
-Use one fixed slice
-`p* := hMag.antiChecker.asymptotic.pAt n hn`
-and prove a fixed-slice source theorem, preferably:
-
-- `gapPartialMCSP_supportHalfObligation p*`,
-- or equivalently `dagRouteBSourceBlocker p*`,
-- or otherwise `dag_stableRestriction_producer p*`.
-
-This is now the shortest honest route because the asymptotic collapse wrappers
-are already compiled.
-
-### 2. Path to full unconditionality
-
-Removing `hNPDag` from the current compatibility theorem is not the same as
-producing a zero-argument theorem.
-
-For full unconditionality, one of the following must still happen:
-
-- bypass `hMag` with a concrete fixed slice `p*`, a concrete
-  `GapPartialMCSP_TMWitness p*`, and a fixed-slice blocker fed into the `_TM`
-  wrappers; or
-- internalize the magnification-assumption package itself.
-
-## Research Tracks
-
-### Track A: fixed-slice integration route
-
-This is the practical near-term route for current public API cleanup.
-It uses the already existing asymptotic fixed-slice collapse wrappers and needs
-only one fixed-slice DAG theorem.
-
-### Track B: canonical all-slices witness route
-
-The codebase already contains:
-
-- `canonical_smallDAG_witnessEasyDensity_source_on_slices`,
-- `canonical_smallDAG_witnessUniformLower_source_on_slices`,
-- `canonical_smallDAG_witnessTransferQuarter_source_on_slices`,
-- and compilers from support/extraction budgets into those debts.
-
-This remains a legitimate theorem program for a standalone internal
-`NP_not_subset_PpolyDAG`, but it is not the shortest current path to cleaning
-up the existing final API.
-
-### Track C: restricted-model fallback
-
-Support-half and related restricted-model closures are now useful because they
-already terminate at class-level non-inclusion surfaces. They are no longer
-mere diagnostics.
+1. prove one **asymptotic/eventual** source theorem on a non-vacuous surface
+   (eventual quantification + length-local bridge assumptions),
+2. discharge one weak-route class-level theorem payload
+   (`...acceptedFamily...` or `...promiseYes...`),
+3. feed that payload through existing endpoint wrappers to internalize
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG`,
+4. then remove external `hNPDag` from the public final theorem,
+5. then remove residual `hMag` to reach zero-argument `P_ne_NP`.
 
 ## Repository-Wide Honesty Policy
 
-Any file claiming unconditional `P ≠ NP` before the DAG theorem and the final
-public API are both internalized is inaccurate.
+Any file claiming unconditional `P ≠ NP` before both of the following are
+internalized is inaccurate:
+
+1. internal DAG separation theorem;
+2. zero-argument public final API.

@@ -9,7 +9,10 @@ Current milestone release checklist:
 
 ## What is currently proved in code?
 
-Active final surface is in `pnp3/Magnification/FinalResult.lean` and includes:
+Active final surface is implemented in
+`pnp3/Magnification/FinalResultCore.lean`
+(with compatibility import path `pnp3/Magnification/FinalResult.lean`) and
+includes:
 
 - `NP_not_subset_PpolyFormula_final*`
 - `NP_not_subset_PpolyReal_final*`

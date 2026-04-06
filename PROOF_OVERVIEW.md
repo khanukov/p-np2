@@ -17,7 +17,8 @@ Active code path remains:
 `SAL -> Covering/Lower Bounds -> anti-checker -> magnification -> DAG final wrappers`.
 
 Final theorem interfaces are centralized in
-`pnp3/Magnification/FinalResult.lean`.
+`pnp3/Magnification/FinalResultCore.lean`
+(with compatibility import path `pnp3/Magnification/FinalResult.lean`).
 
 ## 2. Final theorem ladder in code
 
@@ -90,7 +91,7 @@ If the goal is to understand the real blocker rather than the packaging:
 1. `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
 2. `pnp3/LowerBounds/DAGUnconditionalBlocker.lean`
 3. `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`
-4. `pnp3/Magnification/FinalResult.lean`
+4. `pnp3/Magnification/FinalResultCore.lean`
 
 ## 7. Minimal verification script
 
@@ -104,7 +105,7 @@ for f in pnp3/Tests/AxiomsAudit.lean \
   lake env lean "$f"
 done
 rg -n "^theorem P_ne_NP_final|^theorem NP_not_subset_PpolyDAG_final_of_|^theorem P_ne_NP_final_of_" \
-  pnp3/Magnification/FinalResult.lean
+  pnp3/Magnification/FinalResultCore.lean
 ```
 
 ## 8. Documentation policy

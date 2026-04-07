@@ -777,6 +777,57 @@ theorem magnificationStyleNoSmallDAG_of_eventually_acceptedFamily
   exact no_dag_solver_of_acceptedFamily_at F SizeBound n β ε (hnAcc n hn)
 
 /--
+Canonical "eventual weak-route payload" extracted from a pointwise
+`SmallDAGImpliesPromiseYesSubcubeStatement`.
+
+This helper packages the quantifier shape required by the magnification bridge:
+we choose fixed positive constants `ε = 1/4` and `β0 = 1/2`, and use the
+pointwise statement directly with cutoff `n0 = 0` on every valid `β < β0`.
+
+The theorem is intentionally generic in `SizeBound`; in the P/poly route it is
+instantiated with `SizeBound := ppolyDAGSizeBoundOnSlices F hInDag`.
+-/
+theorem eventual_promiseYesSubcube_of_smallDAG
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hYes : SmallDAGImpliesPromiseYesSubcubeStatement F SizeBound) :
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ (β : Rat), 0 < β → β < β0 →
+          ∃ n0 : Nat, ∀ n ≥ n0,
+            SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε := by
+  refine ⟨(1 / 4 : Rat), by positivity, (1 / 2 : Rat), by positivity, ?_⟩
+  intro β hβPos hβLt
+  refine ⟨0, ?_⟩
+  intro n hn
+  simpa using hYes n β (1 / 4 : Rat)
+
+/--
+Canonical-slice specialization of `eventual_promiseYesSubcube_of_smallDAG`.
+
+This matches the Gate-G1 / bridge-facing shape where the size bound is obtained
+from a concrete global witness family via `ppolyDAGSizeBoundOnSlices`.
+The proof is purely a specialization step.
+-/
+theorem eventual_promiseYesSubcube_of_smallDAG_onCanonicalSlices
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)))
+    (hYes :
+      SmallDAGImpliesPromiseYesSubcubeStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ (β : Rat), 0 < β → β < β0 →
+          ∃ n0 : Nat, ∀ n ≥ n0,
+            SmallDAGImpliesPromiseYesSubcubeAt
+              F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  exact eventual_promiseYesSubcube_of_smallDAG
+    F (ppolyDAGSizeBoundOnSlices F hInDag) hYes
+
+/--
 Eventual magnification-style closure using the nearer-term one-sided
 YES-centered promise/value endpoint directly.
 

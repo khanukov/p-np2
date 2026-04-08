@@ -12,6 +12,10 @@
 - builder `smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt`,
 - bridge closure `not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute`,
 - class-level closure `NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute`.
+- пакетная теорема под envelope-гипотезы:
+  `eventual_promiseYesSubcube_onCanonicalSlices_of_eventualIsolationEnvelope`,
+  и финальный компоновщик
+  `NP_not_subset_PpolyDAG_of_eventuallyIsolationEnvelopeWeakRoute`.
 
 Следовательно, остаётся только source-side family-specific математика.
 

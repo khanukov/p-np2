@@ -805,6 +805,128 @@ theorem NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute
     F bridge hEventuallyYesWeak
 
 /--
+Canonical eventual promise-YES payload from an isolation+envelope source package.
+
+This theorem packages the generic reduction used in the handoff:
+if on each sufficiently large slice every small correct solver admits
+- a YES center and coordinate set `D` forcing YES on all agreeing promise-valid
+  points,
+- a cardinality bound `D.card ≤ κ n β`,
+- and a numeric envelope `M < 2^(tableLen - κ n β)`,
+then we obtain the eventual `SmallDAGImpliesPromiseYesSubcubeAt` payload on
+canonical bounds (with fixed `ε = 1`).
+-/
+theorem eventual_promiseYesSubcube_onCanonicalSlices_of_eventualIsolationEnvelope
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)))
+    (β0 : Rat)
+    (hβ0 : 0 < β0)
+    (κ : Nat → Rat → Nat)
+    (nIso : Rat → Nat)
+    (hYesValid :
+      ∀ n : Nat, ∀ β : Rat,
+        ∀ y : Bitstring (GapSliceFamily.encodedLen F n β),
+          y ∈ (gapSliceOfParams (F.paramsOf n β)).Yes →
+            ValidEncoding (F.paramsOf n β) y)
+    (hIso :
+      ∀ n : Nat, ∀ β : Rat,
+        0 < β → β < β0 → n ≥ nIso β →
+        ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+          ppolyDAGSizeBoundOnSlices F hInDag n β 1 (DagCircuit.size C) →
+          CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) →
+            ∃ yYes : Bitstring (GapSliceFamily.encodedLen F n β),
+              yYes ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∧
+              ∃ D : Finset (Fin (GapSliceFamily.tableLen F n β)),
+                D.card ≤ κ n β ∧
+                ∀ z : Bitstring (GapSliceFamily.encodedLen F n β),
+                  (z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
+                    z ∈ (gapSliceOfParams (F.paramsOf n β)).No) →
+                  ValidEncoding (F.paramsOf n β) z →
+                  AgreeOnValues (p := F.paramsOf n β) D yYes z →
+                    z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes)
+    (hSlackEnvelope :
+      ∀ n : Nat, ∀ β : Rat,
+        0 < β → β < β0 → n ≥ nIso β →
+          F.Mof n (F.Tof n β) <
+            2 ^ (GapSliceFamily.tableLen F n β - κ n β)) :
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0' : Rat, 0 < β0' ∧
+        ∀ β : Rat, 0 < β → β < β0' →
+          ∃ n0 : Nat, ∀ n ≥ n0,
+            SmallDAGImpliesPromiseYesSubcubeAt
+              F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  refine ⟨(1 : Rat), by norm_num, β0, hβ0, ?_⟩
+  intro β hβPos hβLt
+  refine ⟨nIso β, ?_⟩
+  intro n hn
+  refine smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt
+    F (ppolyDAGSizeBoundOnSlices F hInDag) n β 1 (hYesValid n β) ?_
+  intro C hSize hCorrect
+  rcases hIso n β hβPos hβLt hn C hSize hCorrect with ⟨yYes, hyYes, D, hDCard, hAllYes⟩
+  refine ⟨yYes, hyYes, D, ?_, hAllYes⟩
+  have hSub :
+      GapSliceFamily.tableLen F n β - κ n β ≤
+        GapSliceFamily.tableLen F n β - D.card :=
+    Nat.sub_le_sub_left hDCard (GapSliceFamily.tableLen F n β)
+  have hPowNat :
+      (2 ^ (GapSliceFamily.tableLen F n β - κ n β) : Nat) ≤
+        (2 ^ (GapSliceFamily.tableLen F n β - D.card) : Nat) :=
+    Nat.pow_le_pow_right (by decide : 0 < 2) hSub
+  exact lt_of_lt_of_le (hSlackEnvelope n β hβPos hβLt hn) hPowNat
+
+/--
+Class-level closure from an eventual isolation-envelope family package.
+
+This theorem is the direct code-level endpoint for the handoff contract:
+once the family provides the eventual isolation+envelope data uniformly for
+every canonical witness family, `NP_not_subset_PpolyDAG` follows mechanically.
+-/
+theorem NP_not_subset_PpolyDAG_of_eventuallyIsolationEnvelopeWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hIsoFamily :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ β0 : Rat, 0 < β0 ∧
+          ∃ κ : Nat → Rat → Nat,
+            ∃ nIso : Rat → Nat,
+              (∀ n : Nat, ∀ β : Rat,
+                ∀ y : Bitstring (GapSliceFamily.encodedLen F n β),
+                  y ∈ (gapSliceOfParams (F.paramsOf n β)).Yes →
+                    ValidEncoding (F.paramsOf n β) y) ∧
+              (∀ n : Nat, ∀ β : Rat,
+                0 < β → β < β0 → n ≥ nIso β →
+                ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+                  ppolyDAGSizeBoundOnSlices F hInDag n β 1 (DagCircuit.size C) →
+                  CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) →
+                    ∃ yYes : Bitstring (GapSliceFamily.encodedLen F n β),
+                      yYes ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∧
+                      ∃ D : Finset (Fin (GapSliceFamily.tableLen F n β)),
+                        D.card ≤ κ n β ∧
+                        ∀ z : Bitstring (GapSliceFamily.encodedLen F n β),
+                          (z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
+                            z ∈ (gapSliceOfParams (F.paramsOf n β)).No) →
+                          ValidEncoding (F.paramsOf n β) z →
+                          AgreeOnValues (p := F.paramsOf n β) D yYes z →
+                            z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes) ∧
+              (∀ n : Nat, ∀ β : Rat,
+                0 < β → β < β0 → n ≥ nIso β →
+                  F.Mof n (F.Tof n β) <
+                    2 ^ (GapSliceFamily.tableLen F n β - κ n β))) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute F bridge hNP ?_
+  intro hInDag
+  rcases hIsoFamily hInDag with ⟨β0, hβ0, κ, nIso, hYesValid, hIso, hSlackEnvelope⟩
+  exact eventual_promiseYesSubcube_onCanonicalSlices_of_eventualIsolationEnvelope
+    F hInDag β0 hβ0 κ nIso hYesValid hIso hSlackEnvelope
+
+/--
 Primary endpoint schema (magnification-style quantifiers):
 
 `∃ ε>0, ∃ β₀>0, ∀ β∈(0,β₀), ∃ n₀, ∀ n≥n₀, ¬ SmallDAGSolver(n,β,ε)`.

@@ -485,6 +485,45 @@ theorem no_dag_solver_of_promise_value_locality_at
       hCorrectPromise
 
 /--
+Builder lemma: derive `SmallDAGImpliesPromiseYesSubcubeAt` from an isolation-style
+source property that already yields:
+- a YES center `yYes`,
+- a coordinate set `S` with the required slack inequality,
+- and the fact that every promise-valid input agreeing on `S` lies in YES.
+
+This removes the need for source proofs to produce `DagCircuit.eval C z = true`
+directly; correctness on YES then finishes that field automatically.
+-/
+theorem smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (n : Nat) (β ε : Rat)
+    (hYesValid :
+      ∀ y : Bitstring (GapSliceFamily.encodedLen F n β),
+        y ∈ (gapSliceOfParams (F.paramsOf n β)).Yes →
+          ValidEncoding (F.paramsOf n β) y)
+    (hIso :
+      ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
+        SizeBound n β ε (DagCircuit.size C) →
+        CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) →
+          ∃ yYes : Bitstring (GapSliceFamily.encodedLen F n β),
+            yYes ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∧
+            ∃ S : Finset (Fin (GapSliceFamily.tableLen F n β)),
+              F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableLen F n β - S.card) ∧
+              ∀ z : Bitstring (GapSliceFamily.encodedLen F n β),
+                (z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
+                  z ∈ (gapSliceOfParams (F.paramsOf n β)).No) →
+                ValidEncoding (F.paramsOf n β) z →
+                AgreeOnValues (p := F.paramsOf n β) S yYes z →
+                  z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes) :
+    SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε := by
+  intro C hSize hCorrect
+  rcases hIso C hSize hCorrect with ⟨yYes, hyYes, S, hSlack, hAllYes⟩
+  refine ⟨yYes, hyYes, hYesValid yYes hyYes, S, hSlack, ?_⟩
+  intro z hzPromise hzValid hAgree
+  exact hCorrect.1 z (hAllYes z hzPromise hzValid hAgree)
+
+/--
 Single-slice closure using the one-sided YES-centered promise/value endpoint.
 -/
 theorem no_dag_solver_of_promise_yes_subcube_at
@@ -666,6 +705,42 @@ theorem not_globalPpolyDAG_of_promiseYesWeakRoute
       F (ppolyDAGSizeBoundOnSlices F hInDag) hNoPointwise
 
 /--
+Bridge-local contradiction instantiated with an eventual one-sided promise-YES
+payload on canonical slices.
+
+Compared with `not_globalPpolyDAG_of_promiseYesWeakRoute`, this theorem accepts
+the eventual (`∃ ε, ∃ β0, ...`) source shape directly, without first requiring
+the stronger pointwise statement `SmallDAGImpliesPromiseYesSubcubeStatement`.
+-/
+theorem not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hEventuallyYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                SmallDAGImpliesPromiseYesSubcubeAt
+                  F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      (F := F) (bridge := bridge) ?_
+  intro hInDag
+  rcases hEventuallyYesWeak hInDag with ⟨ε, hε, β0, hβ0, hEventuallyYes⟩
+  refine ⟨ε, hε, β0, hβ0, ?_⟩
+  intro β hβPos hβLt
+  rcases hEventuallyYes β hβPos hβLt with ⟨n0, hn0⟩
+  refine ⟨n0, ?_⟩
+  intro n hn
+  exact no_dag_solver_of_promise_yes_subcube_at
+    F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε (hn0 n hn)
+
+/--
 Class-level closure from the weak accepted-family source theorem to
 `NP_not_subset_PpolyDAG`, parameterized by an explicit NP witness for
 `bridge.L`.
@@ -704,6 +779,30 @@ theorem NP_not_subset_PpolyDAG_of_promiseYesWeakRoute
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine ⟨bridge.L, hNP, ?_⟩
   exact not_globalPpolyDAG_of_promiseYesWeakRoute F bridge hYesWeak
+
+/--
+Class-level closure from an eventual one-sided promise-YES payload on canonical
+slices to `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hEventuallyYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                SmallDAGImpliesPromiseYesSubcubeAt
+                  F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute
+    F bridge hEventuallyYesWeak
 
 /--
 Primary endpoint schema (magnification-style quantifiers):
@@ -775,6 +874,57 @@ theorem magnificationStyleNoSmallDAG_of_eventually_acceptedFamily
   refine ⟨nAcc, ?_⟩
   intro n hn
   exact no_dag_solver_of_acceptedFamily_at F SizeBound n β ε (hnAcc n hn)
+
+/--
+Canonical "eventual weak-route payload" extracted from a pointwise
+`SmallDAGImpliesPromiseYesSubcubeStatement`.
+
+This helper packages the quantifier shape required by the magnification bridge:
+we choose fixed positive constants `ε = 1/4` and `β0 = 1/2`, and use the
+pointwise statement directly with cutoff `n0 = 0` on every valid `β < β0`.
+
+The theorem is intentionally generic in `SizeBound`; in the P/poly route it is
+instantiated with `SizeBound := ppolyDAGSizeBoundOnSlices F hInDag`.
+-/
+theorem eventual_promiseYesSubcube_of_smallDAG
+    (F : GapSliceFamily)
+    (SizeBound : Nat → Rat → Rat → Nat → Prop)
+    (hYes : SmallDAGImpliesPromiseYesSubcubeStatement F SizeBound) :
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ (β : Rat), 0 < β → β < β0 →
+          ∃ n0 : Nat, ∀ n ≥ n0,
+            SmallDAGImpliesPromiseYesSubcubeAt F SizeBound n β ε := by
+  refine ⟨(1 / 4 : Rat), by positivity, (1 / 2 : Rat), by positivity, ?_⟩
+  intro β hβPos hβLt
+  refine ⟨0, ?_⟩
+  intro n hn
+  simpa using hYes n β (1 / 4 : Rat)
+
+/--
+Canonical-slice specialization of `eventual_promiseYesSubcube_of_smallDAG`.
+
+This matches the Gate-G1 / bridge-facing shape where the size bound is obtained
+from a concrete global witness family via `ppolyDAGSizeBoundOnSlices`.
+The proof is purely a specialization step.
+-/
+theorem eventual_promiseYesSubcube_of_smallDAG_onCanonicalSlices
+    (F : GapSliceFamily)
+    (hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)))
+    (hYes :
+      SmallDAGImpliesPromiseYesSubcubeStatement
+        F (ppolyDAGSizeBoundOnSlices F hInDag)) :
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ (β : Rat), 0 < β → β < β0 →
+          ∃ n0 : Nat, ∀ n ≥ n0,
+            SmallDAGImpliesPromiseYesSubcubeAt
+              F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε := by
+  exact eventual_promiseYesSubcube_of_smallDAG
+    F (ppolyDAGSizeBoundOnSlices F hInDag) hYes
 
 /--
 Eventual magnification-style closure using the nearer-term one-sided

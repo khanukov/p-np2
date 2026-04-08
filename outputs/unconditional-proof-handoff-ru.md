@@ -1,183 +1,189 @@
-# Оставшийся математический долг (единственный) для закрытия route до `NP_not_subset_PpolyDAG`
+# Remaining family-specific debt: exact statement and required inputs
 
 **Дата:** 2026-04-08
-**Назначение документа:** дать внешней математической группе ровно тот контекст, который нужен, чтобы доказать *оставшийся* source-step.
-**Что исключено:** исторические детали, альтернативные маршруты и уже закрытые промежуточные мосты, не влияющие на текущий долг.
+**Цель:** документ фиксирует только оставшийся математический долг и полный контекст,
+достаточный для его решения внешней группой без дополнительного bridge-контекста.
 
 ---
 
-## 1) Что уже закрыто в Lean (и больше не является долгом)
+## 1) Что уже строго закрыто (не является долгом)
 
-На стороне bridge/wrapper уже есть:
+В текущем Lean-пайплайне уже закрыто:
 
-1. переход от eventual one-sided promise-YES payload к `¬ PpolyDAG bridge.L`;
-2. переход от этого contradiction + `hNP : NP bridge.L` к `NP_not_subset_PpolyDAG`.
+1. eventual one-sided promise-YES payload `⇒ ¬ PpolyDAG bridge.L`,
+2. `¬ PpolyDAG bridge.L` + `hNP : NP bridge.L` `⇒ NP_not_subset_PpolyDAG`.
 
-Следовательно, **доказывать нужно только source-side факт**, который поставляет этот eventual payload.
-
----
-
-## 2) Точная оставшаяся цель (в математической форме)
-
-Нужно доказать (для фиксированного семейства slices `F`) следующий структурный факт:
-
-### `canonical_smallDAG_certificateIsolation_on_slices F`
-
-Для каждого канонического witness-family `hInDag`, для достаточно малых `β` и больших `n`,
-любой корректный малый DAG-решатель на соответствующем slice допускает
-one-sided isolating certificate `ρ` с тремя свойствами:
-
-1. `S_n ∩ [ρ] ≠ ∅` (non-vacuity),
-2. `S_n ∩ [ρ] ⊆ Y_n` (one-sided purity),
-3. `|dom ρ| ≤ c·β·n` (small certificate budget).
-
-Здесь `Y_n ⊆ S_n ⊆ {0,1}^n` — YES/promise-domain соответствующего канонического slice.
+Значит, оставшийся долг целиком source-side.
 
 ---
 
-## 3) Какой именно payload должен получиться на выходе source-доказательства
+## 2) В этой route нужна версия A (codim/slack), не версия B (relative-density)
 
-Именно этот формат (для каждого `hInDag`):
+По форме `SmallDAGImpliesPromiseYesSubcubeAt` downstream использует:
+
+- `yYes`,
+- координатный набор `S`,
+- inequality `hSlack`:
+
+  `F.Mof n (F.Tof n β) < 2^(GapSliceFamily.tableLen F n β - S.card)`,
+- acceptance всех promise-valid `z`, согласующихся с `yYes` на `S`.
+
+Relative-density внутри promise-domain в этой цели не требуется.
+
+---
+
+## 3) Упрощение payload: `ε` здесь фиктивен для canonical bound
+
+Для canonical bound
+
+`ppolyDAGSizeBoundOnSlices F hInDag`
+
+параметр `ε` не используется (он игнорируется в определении bound).
+
+Поэтому для source-side достаточно доказать payload в форме:
 
 ```text
-∃ ε > 0, ∃ β0 > 0,
+∃ β0 > 0,
   ∀ β, 0 < β → β < β0 →
     ∃ n0, ∀ n ≥ n0,
       SmallDAGImpliesPromiseYesSubcubeAt
-        F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε
+        F (ppolyDAGSizeBoundOnSlices F hInDag) n β 1.
 ```
 
-После этого endpoint уже закрывается существующими теоремами.
+Далее просто берётся `ε := 1`.
 
 ---
 
-## 4) Критические технические места, которые source-proof обязан покрыть
+## 4) Generic reduction (уже строгая):
+##    `certificate isolation + hSlack => SmallDAGImpliesPromiseYesSubcubeAt`
 
-### 4.1 Мост `certificate isolation -> SmallDAGImpliesPromiseYesSubcubeAt`
+Фиксируем `F, hInDag, n, β`, `p := F.paramsOf n β`, корректный solver `C` под
+каноническим bound и предположим существование частичного присваивания `ρ` на
+табличных координатах `D ⊆ Fin (GapSliceFamily.tableLen F n β)`, такого что:
 
-Из `ρ` нужно конструктивно получить witness-данные для `...PromiseYesSubcubeAt`:
+1. `((Yes ∪ No) ∩ [ρ]) ≠ ∅`,
+2. `((Yes ∪ No) ∩ [ρ]) ⊆ Yes`,
+3. `F.Mof n (F.Tof n β) < 2^(GapSliceFamily.tableLen F n β - |D|)`,
+4. `AgreeOnValues (p := p) D y z` кодирует совпадение на тех же координатах,
+   которые фиксирует `ρ`.
 
-- выбрать `yYes ∈ S_n ∩ [ρ]`,
-- положить `S := dom ρ`,
-- доказать acceptance для любого promise-valid `z`, согласующегося с `yYes` на `S`,
-  через `S_n ∩ [ρ] ⊆ Y_n` и корректность solver на promise-slice.
+Тогда
 
-### 4.2 Количественный мост в `hSlack`
+`SmallDAGImpliesPromiseYesSubcubeAt F (ppolyDAGSizeBoundOnSlices F hInDag) n β 1`
 
-Нужно явно вывести inequality в точной форме, которую ждёт API:
+выполнено.
 
-```text
-F.Mof n (F.Tof n β) < 2^(GapSliceFamily.tableLen F n β - S.card)
-```
+**Идея построения witness:**
 
-Это не «опционально»: без этого поле `hSlack` цель `...PromiseYesSubcubeAt` не соберётся.
-
-### 4.3 Нормировка density (проверить до начала доказательства)
-
-- Если downstream-предикат использует codim/ambient-density — достаточно версии A.
-- Если используется relative-density внутри `S_n` — нужна усиленная версия с lower bound на fibers.
-
-Эта развилка должна быть закрыта *до* финализации proof-пакета.
-
-### 4.4 Size-cutoff (если source-лемма в режиме `size ≤ 2^(βn)`)
-
-Если структурная лемма доказывается только под таким ограничением, нужен отдельный
-length-local переход от
-`ppolyDAGSizeBoundOnSlices F hInDag`
-к `size ≤ 2^(βn)` начиная с некоторого `n0_size(β)`.
+- выбрать `yYes` из непустого `((Yes ∪ No) ∩ [ρ])`,
+- по purity получить `yYes ∈ Yes`,
+- взять `S := D`,
+- для любого promise-valid `z`, согласующегося с `yYes` на `S`, вывести `z ∈ [ρ]`,
+  затем `z ∈ Yes`, затем по корректности `C` получить `eval C z = true`,
+- `hSlack` берётся из пункта (3).
 
 ---
 
-## 5) Минимальный self-contained словарь (встроен прямо здесь)
+## 5) Численный мост в `hSlack`: через натуральный envelope `κ(n,β)`
 
-Ниже — компактные сигнатуры в стиле Lean, чтобы математики могли работать без
-чтения репозитория.
+Для Lean-аритметики удобнее формулировать budget как
 
-### 5.1 Solver и canonical size-bound
+`|dom ρ| ≤ κ(n,β)` с `κ(n,β) : Nat` (например, `⌈cβn⌉`).
+
+Достаточно доказать:
+
+`F.Mof n (F.Tof n β) < 2^(GapSliceFamily.tableLen F n β - κ(n,β))`.
+
+Тогда из `|dom ρ| ≤ κ` и монотонности `2^m` автоматически следует нужный
+`hSlack` с `|dom ρ|`.
+
+---
+
+## 6) Эквивалентный остаточный долг (в одной формуле)
+
+Остаточный долг эквивалентен утверждению:
+
+для каждого `hInDag` существует `β0 > 0` и функция `n0(β)`, что для любого
+`0 < β < β0`, любого `n ≥ n0(β)` и любого корректного `C` под canonical bound,
+существует `ρ` с:
+
+1. non-vacuity promise-цилиндра,
+2. one-sided purity,
+3. `|dom ρ| ≤ κ(n,β)`,
+4. `F.Mof n (F.Tof n β) < 2^(GapSliceFamily.tableLen F n β - κ(n,β))`.
+
+После этого source-payload строится механически (с `ε := 1`).
+
+---
+
+## 7) Что именно сейчас отсутствует (и нужно прислать)
+
+Чтобы закрыть долг family-specific именно для вашего `F`, нужны 5 блоков данных.
+
+### (A) Конкретные определения семейства `F`
+
+Явно дать:
+
+- `F.paramsOf n β`,
+- `GapSliceFamily.tableLen F n β`,
+- `GapSliceFamily.encodedLen F n β`,
+- `F.Mof n (F.Tof n β)`,
+- комбинаторное описание
+  `Y_n := (gapSliceOfParams p).Yes`,
+  `S_n := (gapSliceOfParams p).Yes ∪ (gapSliceOfParams p).No`.
+
+### (B) Family-specific механизм построения `ρ`
+
+Нужно точное statement, например в стиле witness-coordinate presentation:
+
+- малый блок координат `J`,
+- membership в `Y_n` внутри `S_n` зависит от `x|_J`,
+- есть accepting pattern `a*`,
+- `a*` реализуем в promise-domain.
+
+### (C) Численное inequality для slack
+
+Либо готовая лемма
+
+`F.Mof n (F.Tof n β) < 2^(GapSliceFamily.tableLen F n β - κ(n,β))`,
+
+либо формулы/асимптотика, из которых это выводится.
+
+### (D) Семантика `AgreeOnValues` и `ValidEncoding`
+
+Подтвердить/дать леммы:
+
+- `AgreeOnValues (p := p) S y z` = совпадение на table-координатах из `S`,
+- `y ∈ Yes -> ValidEncoding p y`.
+
+### (E) Если source-lemma сначала в другом size-режиме
+
+Уточнить:
+
+- `size ≤ 2^(β·?)` по какой длине формулируется (`n`, `encodedLen`, `tableLen`),
+- какая лемма даёт переход от canonical bound к этому режиму (size-cutoff).
+
+---
+
+## 8) Минимальный self-contained glossary
 
 ```lean
-def SmallDAGSolver
-  (F : GapSliceFamily)
-  (SizeBound : Nat → Rat → Rat → Nat → Prop)
-  (n : Nat) (β ε : Rat) : Prop :=
-  ∃ C : DagCircuit (GapSliceFamily.encodedLen F n β),
-    SizeBound n β ε (DagCircuit.size C) ∧
-    CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β))
+SmallDAGSolver
+ppolyDAGSizeBoundOnSlices
+SmallDAGImpliesPromiseYesSubcubeAt
+AsymptoticDAGLanguageBridge
+NP bridge.L
 ```
 
-```lean
-def ppolyDAGSizeBoundOnSlices
-  (F : GapSliceFamily)
-  (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β))) :
-  Nat → Rat → Rat → Nat → Prop :=
-  fun n β _ε s => s ≤ (hInDag n β).polyBound (GapSliceFamily.encodedLen F n β)
-```
-
-### 5.2 Целевая source-цель на одном slice
-
-```lean
-def SmallDAGImpliesPromiseYesSubcubeAt
-  (F : GapSliceFamily)
-  (SizeBound : Nat → Rat → Rat → Nat → Prop)
-  (n : Nat) (β ε : Rat) : Prop :=
-  let p := F.paramsOf n β
-  ∀ C : DagCircuit (GapSliceFamily.encodedLen F n β),
-    SizeBound n β ε (DagCircuit.size C) →
-    CorrectOnPromiseSlice C (gapSliceOfParams p) →
-      ∃ yYes, yYes ∈ (gapSliceOfParams p).Yes ∧ ValidEncoding p yYes ∧
-      ∃ S : Finset (Fin (GapSliceFamily.tableLen F n β)),
-        F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamily.tableLen F n β - S.card) ∧
-        ∀ z,
-          (z ∈ (gapSliceOfParams p).Yes ∨ z ∈ (gapSliceOfParams p).No) →
-          ValidEncoding p z →
-          AgreeOnValues (p := p) S yYes z →
-          DagCircuit.eval C z = true
-```
-
-### 5.3 Bridge-объект
-
-```lean
-structure AsymptoticDAGLanguageBridge (F : GapSliceFamily) where
-  L : Language
-  sliceEq :
-    ∀ n β N x, L N x = gapPartialMCSP_Language (F.paramsOf n β) N x
-```
-
-### 5.4 Что требуется от NP-свидетеля
-
-Нужен объект `hNP : ComplexityInterfaces.NP bridge.L` в точной форме текущего
-интерфейса проекта (т.е. тот witness/verification package, который уже
-используют class-level wrappers).
+Эти пять объектов должны быть известны внешней группе в точной сигнатуре.
 
 ---
 
-## 6) Что *не* является текущим долгом
+## 9) Короткий диагноз
 
-1. Пере-доказывать contradiction wrappers и class-level closure.
-2. Пере-доказывать eventual packaging helper-ы.
-3. Пытаться закрыть «P ≠ NP в абсолютной внешней постановке» вне текущего интерфейса.
+Сейчас уже строго установлено: остаток задачи =
 
-Текущий долг ровно один: **family-specific source-step**, описанный в §2–§4.
+> family-specific существование one-sided isolating `ρ` + натуральный slack-envelope `κ(n,β)`.
 
----
-
-## 7) Формат ответа от внешней математической группы (приёмка)
-
-Ответ считается достаточным, если содержит:
-
-1. финальное statement source-леммы в кванторах (`β`, `n`, size constraints);
-2. конструкцию `ρ` и полное доказательство non-vacuity/purity/budget;
-3. отдельное доказательство моста в `hSlack` требуемой API-формы;
-4. явный size-cutoff (если нужен);
-5. явную пометку, какая нормировка используется (A или B) и почему;
-6. отсутствие неформализуемых шагов типа “очевидно существует” без извлечения witness.
-
----
-
-## 8) Итог в одном абзаце
-
-Чтобы закрыть оставшуюся часть route, нужно доказать только одно:
-для канонических slices вашего `F` малый корректный DAG всегда даёт one-sided
-isolating certificate `ρ` с контролируемым budget, и это превращается в точный
-`SmallDAGImpliesPromiseYesSubcubeAt`-payload (включая `hSlack`). Всё остальное
-в цепочке до `NP_not_subset_PpolyDAG` уже реализовано.
+После получения пунктов (A)–(E) остаётся чистое математическое доказательство
+для конкретного `F`; дополнительный bridge-контекст больше не нужен.

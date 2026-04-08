@@ -1,153 +1,156 @@
-# Handoff для математиков: финальный remaining debt для безусловного закрытия route
+# Remaining debt: строгий theorem package для family-specific closure
 
 **Дата:** 2026-04-08
-**Статус:** bridge/magnification инфраструктура уже закрыта; остался только family-specific source-step для конкретного `F`.
+**Статус:** общий редукционный шаг закрыт; осталась только инстанциация для конкретного `F`.
 
 ---
 
-## 1) Что уже закрыто в коде (не требует новых идей)
+## 1) Что уже закрыто строго
 
-### 1.1 Уже реализован generic builder
+В коде уже есть инфраструктура, достаточная для финального перехода:
 
-В коде есть теорема:
+- builder `smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt`,
+- bridge closure `not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute`,
+- class-level closure `NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute`.
 
-- `smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt`
-
-Она переводит изоляционный source-сертификат вида
-
-- YES-центр `yYes`,
-- координатный набор `S`,
-- slack inequality,
-- `AgreeOnValues -> z ∈ Yes`,
-
-в целевой predicate:
-
-- `SmallDAGImpliesPromiseYesSubcubeAt ...`.
-
-То есть source-side больше не обязан отдельно доказывать `eval C z = true` напрямую;
-это добирается из корректности solver на YES.
-
-### 1.2 Уже закрыт eventual weak-route bridge
-
-Также в коде есть:
-
-- `not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute`,
-- `NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute`.
-
-Значит, после получения нужного eventual source payload pipeline до
-`NP_not_subset_PpolyDAG` уже механический.
+Следовательно, остаётся только source-side family-specific математика.
 
 ---
 
-## 2) Что именно осталось доказать математически
+## 2) Обозначения
 
-Осталась ровно одна family-specific цель:
+Для фиксированных `F, hInDag, n, β`:
 
-## `canonical_smallDAG_certificateIsolation_on_slices F`
+- `p := F.paramsOf n β`,
+- `T := GapSliceFamily.tableLen F n β`,
+- `Y := (gapSliceOfParams p).Yes`,
+- `N := (gapSliceOfParams p).No`,
+- `P := Y ∪ N`,
+- `M := F.Mof n (F.Tof n β)`.
 
-Смысл: для канонического slice при малых `β` и больших `n`, любой корректный
-малый DAG даёт one-sided isolating certificate `ρ` на табличных координатах с
-контролируемым budget и нужным slack.
-
-Эквивалентно нужно обеспечить (для каждого `hInDag`):
-
-```text
-∃ β0 > 0,
-  ∀ β, 0 < β → β < β0 →
-    ∃ n0, ∀ n ≥ n0,
-      SmallDAGImpliesPromiseYesSubcubeAt
-        F (ppolyDAGSizeBoundOnSlices F hInDag) n β 1
-```
-
-(для canonical bound параметр `ε` можно фиксировать как `1`).
+Size-bound: `ppolyDAGSizeBoundOnSlices F hInDag`.
 
 ---
 
-## 3) Минимальный proof-contract (что математически нужно вернуть)
+## 3) Теорема 1 (strict sufficient theorem)
 
-Нужно вернуть theorem-пакет со следующими блоками.
+### Предпосылки
 
-### A. Конкретизация семейства `F`
+#### (V) YES-валидность
 
-Явно задать/указать формулы:
+`∀ y, y ∈ Y → ValidEncoding p y`.
 
-- `F.paramsOf n β`,
-- `GapSliceFamily.encodedLen F n β`,
-- `GapSliceFamily.tableLen F n β`,
-- `F.Mof n (F.Tof n β)`,
-- описание множеств `Yes` и `No` на slice.
+#### (Iso) Eventual certificate isolation
 
-### B. Конструкция изоляции `ρ`
+Существуют `β0 > 0`, функция `κ : Nat × Rat → Nat`, функция `n_iso(β)` такие, что
+для любого `β` с `0 < β < β0`, любого `n ≥ n_iso(β)`, любого корректного `C` под canonical bound,
+существуют `D ⊆ Fin(T)` и частичное присваивание `ρ` на `D` со свойствами:
 
-Для любого корректного `C` под canonical bound построить:
+1. `P ∩ [ρ] ≠ ∅`,
+2. `P ∩ [ρ] ⊆ Y`,
+3. `|D| ≤ κ(n,β)`,
+4. `M < 2^(T - κ(n,β))`,
+5. `y ∈ [ρ] ∧ ValidEncoding p z ∧ AgreeOnValues (p := p) D y z -> z ∈ [ρ]`.
 
-- `D ⊆ Fin (tableLen)` и частичное присваивание `ρ` на `D`,
+### Вывод
 
-такое что:
+`∃ β0 > 0, ∀ β, 0 < β → β < β0 → ∃ n0, ∀ n ≥ n0,`
 
-1. `(Yes ∪ No) ∩ [ρ] ≠ ∅`;
-2. `(Yes ∪ No) ∩ [ρ] ⊆ Yes`;
-3. `|D| ≤ κ(n,β)` (или более сильный budget напрямую).
+`SmallDAGImpliesPromiseYesSubcubeAt F (ppolyDAGSizeBoundOnSlices F hInDag) n β 1`.
 
-### C. Координатная семантика (`AgreeOnValues`)
+### Доказательство (идея)
 
-Нужна точная usable-лемма:
+Для фиксированных `β,n,C`:
 
-`y ∈ [ρ] ∧ ValidEncoding p z ∧ AgreeOnValues (p := p) D y z -> z ∈ [ρ]`.
+- из (1) выбираем `yYes ∈ P ∩ [ρ]`,
+- из (2) получаем `yYes ∈ Y`, из (V) — `ValidEncoding p yYes`,
+- берём `S := D`,
+- из (4) и `|D| ≤ κ` получаем `M < 2^(T - |D|)` (монотонность `2^m`),
+- для любого `z`, согласующегося с `yYes` на `S`, по (5) получаем `z ∈ [ρ]`,
+  затем `z ∈ P ∩ [ρ] ⊆ Y`,
+- по корректности `C` на YES имеем `eval C z = true`.
 
-Без неё не закрывается acceptance-шаг builder-леммы.
+Это ровно поля `SmallDAGImpliesPromiseYesSubcubeAt ... n β 1`.
 
-### D. Slack-оценка
-
-Нужно доказать:
-
-`F.Mof n (F.Tof n β) < 2^(tableLen - κ(n,β))`.
-
-Тогда через `|D| ≤ κ(n,β)` автоматически получается требуемый `hSlack`:
-
-`F.Mof n (F.Tof n β) < 2^(tableLen - |D|)`.
-
-### E. Size-cutoff (если source-лемма сначала в другом режиме)
-
-Если исходная лемма доказывается в режиме `size ≤ 2^(β·m)`, нужно добавить:
-
-- что такое `m` (`n`/`encodedLen`/`tableLen`),
-- лемму перехода от `ppolyDAGSizeBoundOnSlices` к этому режиму,
-- явный `n0_size(β)`.
+∎
 
 ---
 
-## 4) Что не нужно доказывать снова
+## 4) Теорема 2 (прямая форма, ближе к builder)
 
-1. Не нужно заново доказывать bridge-level contradiction wrappers.
-2. Не нужно заново доказывать class-level closure до `NP_not_subset_PpolyDAG`.
-3. Не нужно строить новые API-endpoint'ы: текущие достаточно мощные.
+Достаточно иметь eventual данные без явного цилиндра `[ρ]`:
 
----
+для каждого допустимого `β,n` и корректного `C` существуют
+`yYes ∈ Y`, `D ⊆ Fin(T)` такие, что
 
-## 5) Формат ответа от математиков (приёмка)
+1. `ValidEncoding p yYes`,
+2. `|D| ≤ κ(n,β)`,
+3. `M < 2^(T - κ(n,β))`,
+4. `((z ∈ Y ∨ z ∈ N) ∧ ValidEncoding p z ∧ AgreeOnValues (p := p) D yYes z) -> z ∈ Y`.
 
-Ответ считается достаточным, если в нём есть:
-
-1. Полный statement по кванторам (`β`, `n`, bounds, eventual пороги),
-2. Конструкция `ρ` + доказательства non-vacuity/purity,
-3. Координатная лемма про `AgreeOnValues`,
-4. Натуральный budget `κ(n,β)` + slack inequality,
-5. (при необходимости) size-cutoff мост,
-6. Явное указание, какие леммы обеспечивают перенос в builder
-   `smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt`.
+Тогда тот же eventual payload с `ε := 1` следует напрямую из
+`smallDAGImpliesPromiseYesSubcubeAt_of_yesIsolationAt` + численного шага `κ -> |D|`.
 
 ---
 
-## 6) Короткий итог для пересылки
+## 5) Теорема 3 (witness-coordinate presentation ⇒ Теорема 2)
 
-Всё, кроме family-specific source-step, уже закрыто в Lean.
+Если family-specific структура даёт:
 
-Чтобы полностью завершить route, математикам нужно дать только один пакет:
+- малый блок координат `J`,
+- принимающий шаблон `a*` на `J`,
+- YES-центр `y* ∈ Y` с `y*|_J = a*`,
+- `ValidEncoding p y*`,
+- `|J| ≤ κ(n,β)`,
+- `M < 2^(T - κ(n,β))`,
+- forcing: любой promise-valid `z` с `z|_J = a*` лежит в `Y`,
 
-- построение one-sided isolating certificate `ρ` на канонических slices,
-- координатную связку через `AgreeOnValues`,
-- и slack через натуральный envelope `κ(n,β)`.
+и `AgreeOnValues (p := p) J y* z` эквивалентно совпадению на `J`,
+то берём `D := J`, `yYes := y*` и получаем предпосылки Теоремы 2.
 
-После этого endpoint `NP_not_subset_PpolyDAG` собирается существующими
-теоремами без дополнительных архитектурных изменений.
+---
+
+## 6) Теорема 4 (size-cutoff bridge)
+
+Если source-лемма доказана сначала в альтернативном size-режиме
+`size(C) ≤ B_alt(n,β)`, а canonical bound даёт этот режим после `n_size(β)`,
+то всё переносится на canonical route с порогом
+
+`max(n0(β), n_size(β))`.
+
+---
+
+## 7) Финальный вывод до endpoint
+
+Если для вашего `F` выполнена гипотеза Теоремы 1 (или 2/3 + 4), равномерно по
+`hInDag`, то вместе с `hNP : NP bridge.L` автоматически получаем
+
+`NP_not_subset_PpolyDAG`
+
+через уже реализованный
+`NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute`.
+
+---
+
+## 8) Что осталось purely family-specific
+
+Нужно прислать/доказать только:
+
+1. явные определения `paramsOf / tableLen / encodedLen / Mof∘Tof` и смысл `Y,N`;
+2. точную семантику `AgreeOnValues` в терминах table-координат;
+3. family-specific construction (`ρ` или witness-coordinate форма);
+4. slack inequality через `κ(n,β)`;
+5. при необходимости размерный cutoff bridge.
+
+Больше никакой новой bridge-математики не нужно.
+
+---
+
+## 9) Короткий operational итог
+
+Оставшийся долг эквивалентен одной из двух форм:
+
+- **цилиндровая форма:** eventual one-sided isolating `ρ` + slack-envelope `κ`; или
+- **координатная форма:** eventual `(yYes, D)` с forcing-импликацией на YES.
+
+Обе формы напрямую закрывают source-предикат через уже реализованные леммы.

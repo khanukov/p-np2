@@ -666,6 +666,42 @@ theorem not_globalPpolyDAG_of_promiseYesWeakRoute
       F (ppolyDAGSizeBoundOnSlices F hInDag) hNoPointwise
 
 /--
+Bridge-local contradiction instantiated with an eventual one-sided promise-YES
+payload on canonical slices.
+
+Compared with `not_globalPpolyDAG_of_promiseYesWeakRoute`, this theorem accepts
+the eventual (`∃ ε, ∃ β0, ...`) source shape directly, without first requiring
+the stronger pointwise statement `SmallDAGImpliesPromiseYesSubcubeStatement`.
+-/
+theorem not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hEventuallyYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                SmallDAGImpliesPromiseYesSubcubeAt
+                  F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ¬ ComplexityInterfaces.PpolyDAG bridge.L := by
+  refine
+    not_globalPpolyDAG_of_noSmallForCanonicalWitnessFamilies
+      (F := F) (bridge := bridge) ?_
+  intro hInDag
+  rcases hEventuallyYesWeak hInDag with ⟨ε, hε, β0, hβ0, hEventuallyYes⟩
+  refine ⟨ε, hε, β0, hβ0, ?_⟩
+  intro β hβPos hβLt
+  rcases hEventuallyYes β hβPos hβLt with ⟨n0, hn0⟩
+  refine ⟨n0, ?_⟩
+  intro n hn
+  exact no_dag_solver_of_promise_yes_subcube_at
+    F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε (hn0 n hn)
+
+/--
 Class-level closure from the weak accepted-family source theorem to
 `NP_not_subset_PpolyDAG`, parameterized by an explicit NP witness for
 `bridge.L`.
@@ -704,6 +740,30 @@ theorem NP_not_subset_PpolyDAG_of_promiseYesWeakRoute
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine ⟨bridge.L, hNP, ?_⟩
   exact not_globalPpolyDAG_of_promiseYesWeakRoute F bridge hYesWeak
+
+/--
+Class-level closure from an eventual one-sided promise-YES payload on canonical
+slices to `NP_not_subset_PpolyDAG`.
+-/
+theorem NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute
+    (F : GapSliceFamily)
+    (bridge : AsymptoticDAGLanguageBridge F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hEventuallyYesWeak :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ ε : Rat, 0 < ε ∧
+          ∃ β0 : Rat, 0 < β0 ∧
+            ∀ β : Rat, 0 < β → β < β0 →
+              ∃ n0 : Nat, ∀ n ≥ n0,
+                SmallDAGImpliesPromiseYesSubcubeAt
+                  F (ppolyDAGSizeBoundOnSlices F hInDag) n β ε) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine ⟨bridge.L, hNP, ?_⟩
+  exact not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute
+    F bridge hEventuallyYesWeak
 
 /--
 Primary endpoint schema (magnification-style quantifiers):

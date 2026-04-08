@@ -32,6 +32,12 @@
 - из канонического source-debt в `¬ PpolyDAG bridge.L`,
 - затем (при NP-свидетеле `bridge.L`) в `NP_not_subset_PpolyDAG`.
 
+Дополнительно в `AsymptoticDAGBarrierTheorems.lean` теперь есть прямые
+wrapper-теоремы для **eventual** promise-YES payload:
+
+- `not_globalPpolyDAG_of_eventuallyPromiseYesWeakRoute`,
+- `NP_not_subset_PpolyDAG_of_eventuallyPromiseYesWeakRoute`.
+
 ### 1.3 Целевые долги в интерфейсе
 
 В `DAGStableRestrictionProducer.lean` уже заведены:

@@ -29,7 +29,7 @@ rg -n "theorem proved_P_subset_PpolyDAG_internal|theorem proved_P_subset_PpolyDA
 ## 3) Проверка, что финальный слой использует no-arg endpoint
 
 ```bash
-rg -n "proved_P_subset_PpolyDAG_internal" pnp3/Magnification/FinalResult.lean
+rg -n "proved_P_subset_PpolyDAG_internal" pnp3/Magnification/FinalResultCore.lean
 ```
 
 Ожидание: есть использование в default-route.
@@ -38,7 +38,7 @@ rg -n "proved_P_subset_PpolyDAG_internal" pnp3/Magnification/FinalResult.lean
 
 ```bash
 rg -n "PsubsetPpolyCompiledRuntimeLinearOutputContracts|proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts" \
-  pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean
+  pnp3/Magnification/FinalResultCore.lean pnp3/Barrier/Bypass.lean
 ```
 
 Ожидание: `with_provider`/`with_barriers` привязаны к linear bundle.

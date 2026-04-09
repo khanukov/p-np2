@@ -24,7 +24,8 @@ Scope note:
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
 Именно этот endpoint используется финальным слоем:
-- `pnp3/Magnification/FinalResult.lean` (default route)
+- `pnp3/Magnification/FinalResultCore.lean` (default route;
+  `FinalResult.lean` остаётся compatibility import path)
 - explicit-contract wrappers (`with_provider`, `with_barriers`) используют
   linear contract bundle
   `PsubsetPpolyCompiledRuntimeLinearOutputContracts`

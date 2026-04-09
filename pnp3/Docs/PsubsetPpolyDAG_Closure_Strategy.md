@@ -228,7 +228,7 @@ runtime-модели; это напрямую блокирует no-arg closure 
 ```bash
 lake build pnp3/Complexity/PsubsetPpolyInternal/TreeToStraight.lean
 lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean
-lake build pnp3/Magnification/FinalResult.lean pnp3/Barrier/Bypass.lean
+lake build pnp3/Magnification/FinalResultCore.lean pnp3/Barrier/Bypass.lean
 lake build
 ```
 

@@ -1,56 +1,42 @@
 # Concrete plan to reach unconditional `NP ⊄ PpolyDAG`
 
-Last updated: 2026-04-03.
+Last updated: 2026-04-04.
 
-This file tracks the **current** DAG-side closure plan after the latest
-hardwire-coverage, support-half fallback, and asymptotic fixed-slice wrapper
-work.
-
-It is intentionally narrower than older roadmap notes. The main goal here is
-to state what is already done, what is still open, and what the shortest honest
-next theorem is.
+This file is the canonical DAG-side theorem plan for the active branch.
+Hard policy reference:
+`pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 
 ## 1. Current verified state
 
-The repository now already has:
+Already true in repository:
 
-1. `./scripts/check.sh` passing on the active tree.
+1. `./scripts/check.sh` passes.
 2. No active project-local `axiom` and no active `sorry/admit` in `pnp3/`.
-3. Route-B blocker packaging:
-   `dagRouteBSourceBlocker`,
-   `DAGRouteBSourceClosure`,
-   direct `_TM` finals from stable restriction / source closure / blocker.
-4. Asymptotic fixed-slice wrappers:
-   `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`,
-   `..._of_asymptotic_dag_stableRestriction`,
-   `..._of_asymptotic_sourceClosure`,
-   `..._of_asymptotic_blocker`,
-   plus companion `P_ne_NP_final_of_*`.
-5. Canonical witness-density hardwire coverage:
-   `canonicalEasyFamilyRealizesAllPatternsUpTo_of_hardwireCircuitBound`.
-6. Canonical all-slices compiler glue:
-   `canonical_smallDAG_witnessEasyDensity_source_on_slices_of_supportBudget`,
-   `...witnessUniformLower...`,
-   `...witnessTransferQuarter...`,
-   and their support-half-family variants.
-7. Support-half fallback closure to class-level DAG non-inclusion:
-   `noSmallDAG_of_supportHalfBoundFamily` and
-   `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`.
+3. Endpoint plumbing is in place:
+   - Route-B packaging: `dagRouteBSourceBlocker`, `DAGRouteBSourceClosure`.
+   - Final wrappers: asymptotic and `_TM` surfaces in magnification finals.
+4. Weak-route class-level surfaces are implemented:
+   - `NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute`,
+   - `NP_not_subset_PpolyDAG_of_promiseYesWeakRoute`.
+5. Eventual magnification-style aggregation lemmas are implemented:
+   - `magnificationStyleNoSmallDAG_of_eventually_acceptedFamily`,
+   - `magnificationStyleNoSmallDAG_of_eventually_promiseYesSubcube`.
 
 Conclusion:
 
-> The repository is no longer blocked on DAG endpoint plumbing.
-> The remaining debt is theorem-level.
+> endpoint wiring is not the blocker; source theorem debt is the blocker.
 
 ## 2. What is still not closed
 
-There is still no internal theorem
+Still missing internal theorem:
 
 ```text
 ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
-and therefore the public default final theorem is still:
+without external DAG-separation input.
+
+Current public final theorem still has compatibility shape:
 
 ```text
 P_ne_NP_final
@@ -58,169 +44,82 @@ P_ne_NP_final
   (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
-Important split:
+So there are two closure layers:
 
-1. `hNPDag` is the real DAG-separation blocker.
-2. `hMag` remains in the public theorem only as compatibility context and is
-   not consumed by its current implementation.
+1. internalize DAG separation (`hNPDag` removal),
+2. remove residual compatibility `hMag`.
 
-So there are really two closure goals:
+## 3. Hard policy: fixed-slice branch is a closed historical no-go route
 
-1. remove external `hNPDag`;
-2. then remove the residual public `hMag`.
+The literal fixed-slice support-half branch is no longer an active target.
+This is documented in code-level no-go modules:
 
-## 3. Current blocker reassessment (fixed-slice route)
+- `LowerBounds/FailedRoute_FixedSliceSupportHalfCore.lean`
+- `LowerBounds/FailedRoute_FixedSliceSupportHalfImpossible.lean`
 
-The previous "fastest route" (prove one fixed-slice blocker and collapse) is
-no longer considered reliable as a primary theorem target.
+Interpretation for planning:
 
-Reason in one line:
+- keep fixed-slice wrappers only as endpoint compatibility plumbing,
+- do not spend theorem budget on reviving single-slice blocker hunt.
 
-> the fixed-slice support-half blocker quantifies over **all** strict DAG
-> witnesses while support is syntactic, so tautological rewiring/hardwiring
-> phenomena can invalidate the target for a fixed language.
+## 4. Single active theorem route
 
-### Step A. Pick one slice from the existing magnification package
+Only active route for internal DAG separation:
 
-Use
+1. Choose one asymptotic family surface (`GapSliceFamily` route already wired).
+2. Prove one **eventual** source theorem (for all large enough `n`) in one of
+   these forms:
+   - accepted-family route, or
+   - promise-YES route.
+3. Keep bridges **length-local**; avoid all-length global equalities as closure
+   assumptions.
+4. Use weak-route class-level theorem surface to derive
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG` internally.
+5. Feed result into existing final wrappers (no new endpoint names).
+
+## 5. Exact immediate theorem target (next merge objective)
+
+Deliver one theorem with concrete shape:
 
 ```text
-p* := hMag.antiChecker.asymptotic.pAt n hn
+∀ β, 0 < β → β < β0 → ∃ n0, ∀ n ≥ n0, SourceAt(n, β, ε)
 ```
 
-### Step B. Do **not** prioritize fixed-slice support-half blockers as a core milestone
+where `SourceAt` is either:
 
-Deprecated as a preferred route:
+1. `SmallDAGImpliesAcceptedFamilyAt ...`, or
+2. `SmallDAGImpliesPromiseYesSubcubeAt ...`.
 
-1. `gapPartialMCSP_supportHalfObligation p*`
-2. `dagRouteBSourceBlocker p*`
-3. `dag_stableRestriction_producer p*`
+Then instantiate the existing eventual closure theorem and weak-route class-level
+closure theorem to obtain a branch-local internal DAG separation theorem.
 
-These remain useful as *interfaces* and conditional reductions, but should not
-be treated as the main source theorem debt to discharge unconditionally.
+## 6. Integration order after theorem target
 
-### Step C. Keep wrappers, migrate source mathematics to asymptotic/family-level debt
-
-The existing wrappers are still valuable plumbing:
-
-1. `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
-2. `P_ne_NP_final_of_asymptotic_blocker`
-
-and corresponding stable-restriction / source-closure variants.
-
-But the source-side theorem program should now target eventual-family and
-length-local bridge statements (see Section 5), not fixed-slice universal
-support-half obligations.
-
-## 4. Fastest route to full zero-argument unconditionality
-
-Removing `hNPDag` from the current compatibility theorem is not yet the same as
-producing a zero-argument theorem.
-
-The shortest credible route to a true unconditional final theorem is:
-
-1. choose a concrete fixed slice `p*`;
-2. provide a concrete `GapPartialMCSP_TMWitness p*`;
-3. prove a **sound** source theorem on `p*` (not relying on universal
-   fixed-slice support-half obligations);
-4. use the existing `_TM` finals:
-   `NP_not_subset_PpolyDAG_final_of_blocker_TM`,
-   `P_ne_NP_final_of_blocker_TM`.
-
-This route bypasses `hMag` completely.
-
-Alternative:
-
-- internalize `MagnificationAssumptions` instead of bypassing them.
-
-## 5. Where the canonical all-slices route now stands
-
-The repository also already contains the infrastructure for the stronger
-canonical all-slices program:
-
-- `canonical_smallDAG_witnessEasyDensity_source_on_slices`
-- `canonical_smallDAG_witnessUniformLower_source_on_slices`
-- `canonical_smallDAG_witnessTransferQuarter_source_on_slices`
-- compilers from extraction/support budgets into those debts
-
-This remains the legitimate theorem program for a standalone internal
-`NP_not_subset_PpolyDAG`, after replacing vacuous carriers/bridges with
-eventual/length-local versions.
-
-Current migration requirements:
-
-1. replace `GapSliceFamily`-quantified surfaces with eventual-indexed ones
-   (`n ≥ N0`);
-2. replace all-length bridge assumptions with length-local slice agreement;
-3. keep fixed-slice wrappers as endpoint plumbing only.
-
-## 6. Recommended execution order
-
-### Immediate theorem target
-
-Migrate one core all-slices theorem surface from `GapSliceFamily` to
-eventual-indexed families and prove the first non-vacuous bridge lemma on that
-surface.
-
-### Immediate integration target
-
-Reconnect the migrated surface to existing endpoint wrappers (without changing
-the wrappers themselves).
-
-### Then
-
-Replace the current compatibility theorem with a theorem that no longer takes
-external `hNPDag`.
-
-### Then
-
-Finish the remaining public API cleanup and remove the residual compatibility
-`hMag` argument by either:
-
-1. concrete `_TM` route, or
-2. internalization of `MagnificationAssumptions`.
+1. Introduce internal theorem producing
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
+2. Switch public final API to stop requiring external `hNPDag`.
+3. Then clean residual `hMag` from public theorem surface.
 
 ## 7. Non-goals right now
 
-Do not spend the next theorem sprint on:
+Do not spend next theorem sprint on:
 
-1. adding new wrappers;
-2. rephrasing the same blocker with more endpoint names;
-3. claiming that all-slices infrastructure already closes the final theorem;
-4. claiming that removing `hNPDag` alone yields full unconditionality;
-5. using archived roadmap notes as the current branch lock.
+1. adding new wrappers,
+2. renaming existing wrappers,
+3. reopening fixed-slice blocker hunt,
+4. claiming full unconditionality before both `hNPDag` and `hMag` are removed
+   from public dependency chain.
 
-## 8. Acceptance criteria for “DAG side is closed”
+## 8. Definition of done
 
-For the DAG side to be honestly called closed in this repository, all of the
-following must hold:
+DAG side honestly closed when all hold:
 
-1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is proved internally.
-2. The public final theorem no longer takes external `hNPDag`.
-3. The repository remains clean under `./scripts/check.sh`.
-4. `README.md`, `STATUS.md`, `TODO.md`, and the release/checklist docs are all
-   updated consistently.
+1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` proved internally.
+2. Public final theorem no longer takes external `hNPDag`.
+3. Repository remains clean under `./scripts/check.sh`.
+4. `README.md`, `STATUS.md`, `TODO.md`, checklist docs are consistent.
 
-For the repository to be honestly called **fully unconditional**, add:
+Fully unconditional branch when add:
 
-5. the public theorem no longer exposes compatibility-only `hMag`;
-6. a zero-argument final theorem `P_ne_NP` is derivable in the active tree.
-
-## 9. Main technical difficulty right now (why unconditionality is still hard)
-
-The dominant difficulty is no longer endpoint wiring. It is **source-side
-mathematics**:
-
-1. Fixed-slice universal support-half blockers are not a dependable primary
-   target under syntactic-support quantification.
-2. The non-vacuous all-slices route requires migrating theorem surfaces to
-   eventual-indexed families (`n ≥ N0`) and length-local bridge assumptions.
-3. After migration, one still needs a new family-level theorem that rules out
-   polynomial DAG solvers asymptotically (or yields an equivalent contradiction
-   payload), and this theorem is not currently present in the repository.
-
-In short:
-
-> plumbing is mostly done; the missing piece is a mathematically valid and
-> formalized asymptotic source theorem strong enough to instantiate internal
-> `NP_not_subset_PpolyDAG`.
+5. Public theorem no longer exposes compatibility-only `hMag`.
+6. Zero-argument final theorem `P_ne_NP` is derivable in active tree.

@@ -45,6 +45,26 @@
    `AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths` и endpoint
    `NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths`.
 
+### 0.2) Доказана counting-обструкция для `tableForce + slack`
+
+Добавлена теорема:
+
+- `false_of_tableForceFamilyEventually_and_slack`
+
+Она формализует более сильный диагноз: при стандартной MCSP-counting семантике
+(`eventual_coherence_at` + shannon-style witness
+`exists_hard_function_with_value_constraints_of_countingSlack`) контракт
+`tableForceFamilyEventually F β0 κ nIso` несовместим с обычной slack-оценкой.
+
+Практическое следствие:
+
+1. route через `tableForce/patternForce + slack` для intended MCSP нельзя
+   инстанцировать нетривиальным семейством;
+2. `patternForceFamilyEventually` тоже отпадает, так как уже есть
+   `tableForceFamilyEventually_of_patternForceFamilyEventually`;
+3. живым кандидатом остаётся более слабая accepted-family поверхность
+   (без требования, что целый блок completion-таблиц обязан лежать в YES).
+
 ### 1) Введены eventual-объекты
 
 В `AsymptoticDAGBarrierTheorems.lean` добавлены:

@@ -2006,6 +2006,81 @@ theorem false_of_tableForceFamilyEventually_and_sliceConst
   exact Bool.noConfusion hContra
 
 /--
+Counting obstruction for the table-force source contract.
+
+This theorem is independent of `sliceConst`: it shows that, under the intended
+MCSP counting semantics (wired through `eventual_coherence_at` and the Shannon
+counting witness for prescribed constraints), `tableForceFamilyEventually`
+cannot coexist with the standard slack inequality.
+-/
+theorem false_of_tableForceFamilyEventually_and_slack
+    (F : GapSliceFamilyEventually)
+    (β0 : Rat)
+    (hβ0 : 0 < β0)
+    (κ : Nat → Rat → Nat)
+    (nIso : Rat → Nat)
+    (hTable : tableForceFamilyEventually F β0 κ nIso)
+    (hSlack :
+      ∀ n : Nat, ∀ β : Rat,
+        0 < β → β < β0 → n ≥ max F.N0 (nIso β) →
+          F.Mof n (F.Tof n β) <
+            2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β)) :
+    False := by
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    nlinarith [hβ0]
+  have hβLt : β < β0 := by
+    dsimp [β]
+    nlinarith [hβ0]
+  let n : Nat := max F.N0 (nIso β)
+  have hn : n ≥ max F.N0 (nIso β) := by
+    exact le_rfl
+  let p := F.paramsOf n β
+  rcases hTable n β hβPos hβLt hn with ⟨Ty, hTyYes, D, hDCard, hForce⟩
+  have hcoh := eventual_coherence_at F n β (le_trans (Nat.le_max_left _ _) hn)
+  rcases hcoh with ⟨hpn, hTof, hMof⟩
+  have hSub :
+      GapSliceFamilyEventually.tableLen F n β - κ n β ≤
+        GapSliceFamilyEventually.tableLen F n β - D.card :=
+    Nat.sub_le_sub_left hDCard (GapSliceFamilyEventually.tableLen F n β)
+  have hPowNat :
+      (2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β) : Nat) ≤
+        (2 ^ (GapSliceFamilyEventually.tableLen F n β - D.card) : Nat) :=
+    Nat.pow_le_pow_right (by decide : 0 < 2) hSub
+  have hSlackCount :
+      Models.circuitCountBound p.n (p.sNO - 1) <
+        2 ^ (Partial.tableLen p.n - D.card) := by
+    calc
+      Models.circuitCountBound p.n (p.sNO - 1)
+          = F.Mof n (F.Tof n β) := by
+              symm
+              simpa [p, hpn] using hMof
+      _ < 2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β) :=
+        hSlack n β hβPos hβLt hn
+      _ ≤ 2 ^ (GapSliceFamilyEventually.tableLen F n β - D.card) := hPowNat
+      _ = 2 ^ (Partial.tableLen p.n - D.card) := by
+            simp [GapSliceFamilyEventually.tableLen, p, hpn]
+  let values : Fin (Partial.tableLen p.n) → Bool :=
+    fun i => Partial.valPart (encodePartial Ty) i
+  rcases Counting.exists_hard_function_with_value_constraints_of_countingSlack
+      p D values hSlackCount with ⟨g, hgValues, hgNo⟩
+  have hAgree :
+      ∀ i ∈ D,
+        Partial.valPart (encodePartial (Models.totalTableToPartial g)) i =
+          Partial.valPart (encodePartial Ty) i := by
+    intro i hi
+    calc
+      Partial.valPart (encodePartial (Models.totalTableToPartial g)) i = g i := by
+        simp [Models.encodeTotalAsPartial, Models.totalTableToPartial,
+          Partial.valPart, encodePartial, Partial.valIndex]
+      _ = Partial.valPart (encodePartial Ty) i := by
+        simpa [values] using hgValues i hi
+  have hYesTotal : PartialMCSP_YES p (Models.totalTableToPartial g) :=
+    hForce (Models.totalTableToPartial g) hAgree
+  exact partial_no_not_yes p (Models.totalTableToPartial g) hgNo hYesTotal
+
+/--
 Canonical-length final endpoint: table-force + slack + a canonical bridge + NP
 witness imply `NP_not_subset_PpolyDAG`.
 

@@ -27,6 +27,24 @@
 То есть это именно тот «последний общий редукционный шаг», после которого
 остаётся только подстановка конкретных семейных артефактов.
 
+### 0.1) Проведён аудит convenience-route через `sliceConst`
+
+В коде добавлены строгие диагностические теоремы:
+
+- `no_membership_on_later_canonical_slice_of_sliceConst`
+- `false_of_tableForceFamilyEventually_and_sliceConst`
+- `NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths`
+
+Смысл аудита:
+
+1. Если зафиксировать глобальный язык через `canonicalGlobalLanguageEventually`
+   и потребовать all-length равенство (`sliceConstFamilyEventually`), то на
+   canonical длинах поздних slices (`n > F.N0`) язык принудительно падает в `No`.
+2. Поэтому нетривиальный `tableForceFamilyEventually` несовместим с `sliceConst`.
+3. Корректный финальный route для нетривиального семейства — через
+   `AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths` и endpoint
+   `NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths`.
+
 ### 1) Введены eventual-объекты
 
 В `AsymptoticDAGBarrierTheorems.lean` добавлены:

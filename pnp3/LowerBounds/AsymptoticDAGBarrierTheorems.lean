@@ -1911,6 +1911,134 @@ theorem NP_not_subset_PpolyDAG_of_tableForceSlackEventually_of_sliceConst
   exact isoFamily_withPromise_of_isoStrongFamilyEventually F hInDag hStrong
 
 /--
+If all eventual slices are forced equal to one fixed canonical global language
+(`sliceConstFamilyEventually`), then every strictly-later canonical slice is
+forced into the `No` side.
+
+This theorem formalizes the collapse risk of the convenience `sliceConst`
+surface: once `n > F.N0`, the canonical encoded lengths differ, so the fixed
+global language evaluates to `false` on that length by definition.
+-/
+theorem no_membership_on_later_canonical_slice_of_sliceConst
+    (F : GapSliceFamilyEventually)
+    (hSliceConst : sliceConstFamilyEventually F)
+    (n : Nat)
+    (β : Rat)
+    (hnGt : F.N0 < n)
+    (x : Bitstring (GapSliceFamilyEventually.encodedLen F n β)) :
+    x ∈ (gapSliceOfParams (F.paramsOf n β)).No := by
+  have hnGe : F.N0 ≤ n := Nat.le_of_lt hnGt
+  have hIndexN :
+      (F.paramsOf n β).n = n := (eventual_coherence_at F n β hnGe).1
+  have hIndex0 :
+      (F.paramsOf F.N0 (1 : Rat)).n = F.N0 := (eventual_coherence_at F F.N0 (1 : Rat) (le_rfl)).1
+  have hLenNe :
+      GapSliceFamilyEventually.encodedLen F n β ≠
+        GapSliceFamilyEventually.encodedLen F F.N0 (1 : Rat) := by
+    intro hEq
+    have hEqInputLen : Partial.inputLen n = Partial.inputLen F.N0 := by
+      simpa [GapSliceFamilyEventually.encodedLen, partialInputLen, hIndexN, hIndex0] using hEq
+    exact (Nat.ne_of_gt hnGt) (Models.partialInputLen_injective hEqInputLen)
+  have hCanonFalse :
+      canonicalGlobalLanguageEventually F (GapSliceFamilyEventually.encodedLen F n β) x = false := by
+    have hNe :
+        GapSliceFamilyEventually.encodedLen F n β ≠
+          partialInputLen (F.paramsOf F.N0 (1 : Rat)) := by
+      simpa [GapSliceFamilyEventually.encodedLen] using hLenNe
+    simp [canonicalGlobalLanguageEventually, gapPartialMCSP_Language, hNe]
+  have hSliceFalse :
+      gapPartialMCSP_Language (F.paramsOf n β)
+        (GapSliceFamilyEventually.encodedLen F n β) x = false := by
+    simpa [hSliceConst n β (GapSliceFamilyEventually.encodedLen F n β) x] using hCanonFalse
+  simpa [gapSliceOfParams] using hSliceFalse
+
+/--
+`tableForceFamilyEventually` and `sliceConstFamilyEventually` are incompatible
+on nontrivial eventual carriers (strictly after `F.N0`).
+
+This extracts the concrete contradiction used to audit the convenience
+`..._of_sliceConst` route.
+-/
+theorem false_of_tableForceFamilyEventually_and_sliceConst
+    (F : GapSliceFamilyEventually)
+    (β0 : Rat)
+    (hβ0 : 0 < β0)
+    (κ : Nat → Rat → Nat)
+    (nIso : Rat → Nat)
+    (hTable : tableForceFamilyEventually F β0 κ nIso)
+    (hSliceConst : sliceConstFamilyEventually F)
+    (hDecodeEncode :
+      ∀ {n : Nat} (T : PartialTruthTable n), decodePartial (encodePartial T) = T) :
+    False := by
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    nlinarith [hβ0]
+  have hβLt : β < β0 := by
+    dsimp [β]
+    nlinarith [hβ0]
+  let n : Nat := max (F.N0 + 1) (nIso β)
+  have hnGe : n ≥ max F.N0 (nIso β) := by
+    dsimp [n]
+    exact max_le (Nat.le_trans (Nat.le_add_right F.N0 1) (Nat.le_max_left _ _))
+      (Nat.le_max_right _ _)
+  have hnGt : F.N0 < n := by
+    dsimp [n]
+    exact lt_of_lt_of_le (Nat.lt_succ_self F.N0) (Nat.le_max_left _ _)
+  rcases hTable n β hβPos hβLt hnGe with ⟨Ty, hTyYes, D, hDCard, hForce⟩
+  let p := F.paramsOf n β
+  let y : Bitstring (GapSliceFamilyEventually.encodedLen F n β) := encodePartial Ty
+  have hyYes : y ∈ (gapSliceOfParams p).Yes := by
+    have hLangTrue : gapPartialMCSP_Language p (partialInputLen p) y = true :=
+      (gapPartialMCSP_language_true_iff_yes p y).2 (by
+        simpa [y, hDecodeEncode Ty] using hTyYes)
+    simpa [gapSliceOfParams, p, GapSliceFamilyEventually.encodedLen, y] using hLangTrue
+  have hyNo : y ∈ (gapSliceOfParams p).No := by
+    simpa [p] using
+      no_membership_on_later_canonical_slice_of_sliceConst F hSliceConst n β hnGt y
+  have hTrue :
+      gapPartialMCSP_Language p (GapSliceFamilyEventually.encodedLen F n β) y = true := by
+    simpa [gapSliceOfParams] using hyYes
+  have hFalse :
+      gapPartialMCSP_Language p (GapSliceFamilyEventually.encodedLen F n β) y = false := by
+    simpa [gapSliceOfParams] using hyNo
+  have hContra : true = false := by simpa [hFalse] using hTrue
+  exact Bool.noConfusion hContra
+
+/--
+Canonical-length final endpoint: table-force + slack + a canonical bridge + NP
+witness imply `NP_not_subset_PpolyDAG`.
+
+Unlike the `..._of_sliceConst` convenience route, this statement does not use
+global all-length equalities and therefore does not enforce the slice-collapse
+described above.
+-/
+theorem NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths
+    (F : GapSliceFamilyEventually)
+    (β0 : Rat)
+    (hβ0 : 0 < β0)
+    (κ : Nat → Rat → Nat)
+    (nIso : Rat → Nat)
+    (hTable : tableForceFamilyEventually F β0 κ nIso)
+    (hSlack :
+      ∀ n : Nat, ∀ β : Rat,
+        0 < β → β < β0 → n ≥ max F.N0 (nIso β) →
+          F.Mof n (F.Tof n β) <
+            2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β))
+    (bridge : AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths F)
+    (hNP : ComplexityInterfaces.NP bridge.L)
+    (hDecodeEncode :
+      ∀ {n : Nat} (T : PartialTruthTable n), decodePartial (encodePartial T) = T) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  refine NP_not_subset_PpolyDAG_of_eventuallyIsolationEnvelopeWeakRouteEventually_atCanonicalLengths
+    F bridge hNP ?_
+  intro hInDag
+  have hStrong : IsoStrongFamilyEventually F hInDag :=
+    isoStrongFamilyEventually_of_tableForceFamilyEventually
+      F β0 hβ0 κ nIso hTable hSlack hDecodeEncode hInDag
+  exact isoFamily_withPromise_of_isoStrongFamilyEventually F hInDag hStrong
+
+/--
 Primary endpoint schema (magnification-style quantifiers):
 
 `∃ ε>0, ∃ β₀>0, ∀ β∈(0,β₀), ∃ n₀, ∀ n≥n₀, ¬ SmallDAGSolver(n,β,ε)`.

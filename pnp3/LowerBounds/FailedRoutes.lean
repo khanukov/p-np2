@@ -1,6 +1,7 @@
 import LowerBounds.FailedRoute_FixedSliceSupportHalfCore
 import LowerBounds.FailedRoute_FixedSliceSupportHalfImpossible
 import LowerBounds.FailedRoute_GapSliceFamilyVacuous
+import LowerBounds.FailedRoute_EventualTableForceSlackObstruction
 
 namespace Pnp3
 namespace LowerBounds

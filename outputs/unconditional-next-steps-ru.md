@@ -1,133 +1,85 @@
-# Как довести до безусловности: актуальный путь к признанному финалу
+# Как довести до безусловности: актуальный статус и следующий рабочий трек
 
-Дата фиксации: 2026-04-03.
+Дата фиксации: 2026-04-09.
 
-## Короткий ответ
+## Короткий итог
 
-До «признанного» (внутри репозитория) безусловного финала не хватает двух вещей:
+На текущем шаге generic/plumbing-часть существенно очищена:
 
-1. **Внутренней DAG-сепарации** без внешнего аргумента `hNPDag`:
-   нужно внутренне доказать `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
-2. **Публичного нулевого интерфейса**:
-   итоговая теорема должна быть без внешних параметров (включая совместимостьный
-   `hMag`), т.е. выводиться как zero-argument `P_ne_NP`.
+- non-vacuous eventual-carrier route есть;
+- canonical-length bridge surface есть;
+- тупиковый table-force/slack путь формально изолирован в failed-routes;
+- активный continuation-path вынесен в отдельный модуль accepted-family.
 
-## Что уже закрыто
+Это означает: следующий прогресс больше не в bridge/plumbing, а в source-side
+математике accepted-family типа.
 
-- В активном дереве `pnp3/` нет `axiom`, `sorry`, `admit`.
-- Проводка endpoint/wrapper для DAG-маршрутов собрана.
-- Есть асимптотические fixed-slice collapse wrappers и `_TM`-финалы.
-- Есть fallback-поверхности через support-half на уровне class non-inclusion.
+---
 
-Вывод: сейчас узкое место — **не plumbing**, а **source-side математика**.
+## Что уже зафиксировано как закрытое/тупиковое
 
-## Почему «доказательство ещё не признано»
+### 1) Закрытый (неактивный) путь
 
-Потому что текущий публичный финал всё ещё имеет вид
-`P_ne_NP_final (hMag : MagnificationAssumptions) (hNPDag : NP_not_subset_PpolyDAG)`.
+В `LowerBounds/FailedRoute_EventualTableForceSlackObstruction.lean` зафиксированы
+диагностические теоремы:
 
-- `hNPDag` — реальный оставшийся логический блокер.
-- `hMag` — остаточный compatibility-параметр (в текущей реализации не
-  потребляется, но в сигнатуре ещё есть).
+- `failedRoute_tableForce_slack`
+- `failedRoute_tableForce_sliceConst`
 
-Следовательно, утверждение «безусловно доказано в репозитории» пока преждевременно.
+Они документируют, что соответствующий source-contract не подходит как активная
+цель инстанциации.
 
-## Актуальный путь (рекомендуемый)
+### 2) Почему это важно
 
-### Этап 1 (критический): закрыть внутренний DAG-блокер
+Мы больше не смешиваем:
 
-Сфокусироваться на **asymptotic/family-level** источнике, а не на
-fixed-slice universal support-half как основном milestone.
+- «маршрут, который математически закрыт как тупиковый», и
+- «маршрут, по которому реально нужно двигаться дальше».
 
-Практический план:
+Это снижает риск ложного прогресса и повторного возврата к dead-end контракту.
 
-1. Мигрировать хотя бы одну core all-slices поверхность из `GapSliceFamily` в
-   eventual-indexed формулировку (`n ≥ N0`).
-2. Заменить all-length bridge assumptions на length-local bridge assumptions.
-3. Доказать первый нетривиальный (невакуозный) bridge lemma в этой новой форме.
-4. Подключить его к уже существующим wrapper-эндпоинтам.
+---
 
-Цель этапа: получить внутренний `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
+## Активный continuation-route
 
-### Этап 2 (API-финал): убрать внешние аргументы из публичного финала
+В `LowerBounds/RouteNextStep_AcceptedFamily.lean` зафиксирован рабочий alias:
 
-После Этапа 1:
+- `NP_not_subset_PpolyDAG_viaAcceptedFamilyRoute`
 
-1. Удалить внешний `hNPDag` из публичного `P_ne_NP_final`.
-2. Закрыть оставшийся `hMag`:
-   - либо через concrete `_TM` route (фиксированный `p*`,
-     `GapPartialMCSP_TMWitness p*`, sound source theorem на `p*`);
-   - либо через internalization `MagnificationAssumptions`.
-3. Вывести zero-argument `P_ne_NP`.
+То есть текущий основной трек: accepted-family source surface
+(`SmallDAGImpliesAcceptedFamilyStatement`) и её инстанциация.
 
-## Что именно «не хватает до финала» (чек-лист DoD)
+---
 
-Чтобы было честно объявить финал в этой ветке, должны одновременно выполняться:
+## Что нужно сделать дальше (реально)
 
-1. Внутренне доказан `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
-2. Публичный финал не принимает внешний `hNPDag`.
-3. Публичный финал не содержит compatibility-only `hMag`.
-4. Деривируется zero-argument `P_ne_NP`.
-5. Документация (`README.md`, `STATUS.md`, `TODO.md`, checklist/release) синхронно
-   обновлена под безусловный статус.
+Нужно принести **содержательный accepted-family пакет** для выбранного семейства
+(или эквивалентную по силе source-структуру), после чего использовать active
+endpoint route.
 
-## Антипаттерны (что замедляет и создаёт ложный прогресс)
+Минимальный practical checklist:
 
-- Добавлять новые wrappers вместо закрытия source-theorem debt.
-- Считать «сняли `hNPDag`» = «полная безусловность».
-- Ставить fixed-slice support-half universal obligations как основной
-  unconditional-target.
-- Опираться на архивные roadmap-документы как на текущий branch lock.
+1. Выбрать concrete family/spec на eventual-carrier.
+2. Доказать accepted-family source-условие в форме,
+   совместимой с `SmallDAGImpliesAcceptedFamilyStatement`.
+3. Подключить это к `NP_not_subset_PpolyDAG_viaAcceptedFamilyRoute`.
+4. Проверить, что публичные финальные обёртки не требуют deprecated surfaces.
 
-## Что делать прямо сейчас (1 спринт)
+---
 
-1. Выбрать одну all-slices теорему-ядро и перевести её на eventual-indexed язык.
-2. Закрыть один length-local bridge lemma без вакуозности.
-3. Прогнать интеграцию через существующий endpoint wrapper.
-4. Зафиксировать change-log по типам допущений (какие removed/internalized).
+## Что НЕ нужно делать
 
-Если по итогам этого спринта внутренний `NP_not_subset_PpolyDAG` всё ещё не
-получается, значит блокер остаётся математическим, а не инженерным; тогда нужно
-сужать цель до минимального family-level contradiction payload и добивать именно
-его, не расширяя API-слой.
+- не расширять table-force/pattern-force dead-end контракт;
+- не возвращаться к convenience-route через `sliceConst` как к активной цели;
+- не увеличивать API-слой без нового source theorem payload.
 
-## Оценка двух предложенных вариантов (добавлено после ревью)
+---
 
-### Вердикт
+## Definition of Done для следующего этапа
 
-Лучше **вариант 2**.
+Чтобы заявить новый нетривиальный прогресс, должно быть выполнено одновременно:
 
-Почему:
-
-1. Он честно разделяет два разных результата:
-   - «закрыть ложный fixed-slice маршрут»;
-   - «доказать безусловный финал».
-2. Он корректно фиксирует, что даже после закрытия fixed-slice ветки
-   безусловный финал не получается автоматически.
-3. Он согласован с текущим `Unconditional_NP_not_subset_PpolyDAG_Plan.md`, где
-   прямо сказано, что основной долг — asymptotic/family-level theorem, а не
-   endpoint glue.
-
-### Что в варианте 1 хорошо, но где риск
-
-Сильная сторона варианта 1 — формально полезная идея про
-«hardwire + вне целевой длины false» как аргумент против fixed-slice blocker.
-
-Риск: он звучит как почти готовый «последний шаг», хотя на деле это только
-refutation старой цели. Сам по себе этот шаг не даёт внутреннего
-`NP_not_subset_PpolyDAG` и не приводит к zero-arg `P_ne_NP`.
-
-### Даёт ли вариант 2 «реальный результат»?
-
-**Да, но локальный.**
-
-Он даёт реальный и полезный результат уровня roadmap hygiene:
-
-1. формально закрывает ложную fixed-slice last-mile гипотезу;
-2. предотвращает дальнейшую трату спринтов на математически несостоятельный
-   endgame;
-3. переводит работу в единственный жизнеспособный трек:
-   eventual-indexed + length-local + новый family-level asymptotic theorem.
-
-**Нет, не даёт финальный `P ≠ NP` прямо сейчас.**
-Для финала всё ещё нужен новый нетривиальный asymptotic theorem source.
+1. Принесён конкретный accepted-family source theorem (не wrapper-only).
+2. Инстанцирован активный endpoint route без опоры на dead-end surfaces.
+3. Build проходит на соответствующих модулях.
+4. Документация синхронно обновлена (handoff + next-steps) под новый статус.

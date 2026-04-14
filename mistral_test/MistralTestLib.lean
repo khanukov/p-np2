@@ -1,8 +1,8 @@
-import SourceTheorems.CircuitBound
-import SourceTheorems.ConcreteFamily
-import SourceTheorems.ForcingProperty
-import SourceTheorems.IsoStrongMain
-import SourceTheorems.ConcreteGlobalNP
-import SourceTheorems.FinalProof
-import SourceTheorems.CircuitEncoding
-import SourceTheorems.Frontier.UnifiedFrontier
+import MistralTestLib.SourceTheorems.CircuitBound
+import MistralTestLib.SourceTheorems.ConcreteFamily
+import MistralTestLib.SourceTheorems.ForcingProperty
+import MistralTestLib.SourceTheorems.IsoStrongMain
+import MistralTestLib.SourceTheorems.ConcreteGlobalNP
+import MistralTestLib.SourceTheorems.FinalProof
+import MistralTestLib.SourceTheorems.CircuitEncoding
+import MistralTestLib.SourceTheorems.Frontier.UnifiedFrontier

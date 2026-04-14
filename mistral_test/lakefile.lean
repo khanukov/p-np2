@@ -13,8 +13,6 @@ lean_lib MistralTestLib where
     Glob.one `MistralTestLib.SourceTheorems.CircuitEncoding,
     Glob.one `MistralTestLib.SourceTheorems.ConcreteFamily,
     Glob.one `MistralTestLib.SourceTheorems.ConcreteGlobalNP,
-    Glob.one `MistralTestLib.SourceTheorems.ConcreteGlobalNP_FINAL,
-    Glob.one `MistralTestLib.SourceTheorems.ConcreteGlobalNP_New,
     Glob.one `MistralTestLib.SourceTheorems.FinalProof,
     Glob.one `MistralTestLib.SourceTheorems.ForcingProperty,
     Glob.one `MistralTestLib.SourceTheorems.IsoStrongMain,

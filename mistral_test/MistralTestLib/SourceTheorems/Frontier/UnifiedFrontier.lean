@@ -1,43 +1,33 @@
-/-
-  mistral_test/Frontier/UnifiedFrontier.lean
-  
-  Unified entry point for P ≠ NP proof.
-  
-  Provides the main entry point P_ne_NP_unified via the proven
-  weak/asymptotic route (IsoStrongFamilyEventually).
+/- 
+Unified compatibility entry points for `mistral_test`.
+
+These wrappers intentionally expose the current honest interface: the library
+can forward a supplied DAG-separation witness to `P ≠ NP`, but it does not
+manufacture an unconditional endpoint that the active `pnp3` tree does not yet
+prove.
 -/
 import MistralTestLib.SourceTheorems.FinalProof
 
 namespace MistralTestLib
 
-open Pnp3.Models Pnp3.ComplexityInterfaces Pnp3.LowerBounds Pnp3.Magnification
+open Pnp3.ComplexityInterfaces
 
-/-!
-## Direct Weak Route (COMPLETE)
+/-- DAG-separation to `P ≠ NP`, via the current `mistral_test` compatibility layer. -/
+def P_ne_NP_via_isoStrong
+    (hNPDag : NP_not_subset_PpolyDAG) :
+    P_ne_NP :=
+  my_P_ne_NP hNPDag
 
-This is the working proof of P ≠ NP via IsoStrongFamilyEventually.
--/
+/-- Primary unified compatibility entry point. -/
+def P_ne_NP_unified
+    (hNPDag : NP_not_subset_PpolyDAG) :
+    P_ne_NP :=
+  P_ne_NP_via_isoStrong hNPDag
 
-/-- Proven: P ≠ NP via IsoStrongFamilyEventually -/
-def P_ne_NP_via_isoStrong : P_ne_NP := my_P_ne_NP
-
-/-!
-## Unified Entrypoint
-
-Primary entry points for the P ≠ NP result.
--/
-
-/--
-Primary unified entry point: P ≠ NP
-
-Uses the proven weak-route (IsoStrongFamilyEventually).
--/
-def P_ne_NP_unified : P_ne_NP := P_ne_NP_via_isoStrong
-
-/--
-Primary unified entry point: NP ⊄ PpolyDAG
--/
-def NP_not_subset_PpolyDAG_unified : NP_not_subset_PpolyDAG :=
-  P_ne_NP_unified.not_subset_PpolyDAG_of_NP_not_subset_PpolyDAG
+/-- Unified `NP ⊄ PpolyDAG` entry point. -/
+def NP_not_subset_PpolyDAG_unified
+    (hNPDag : NP_not_subset_PpolyDAG) :
+    NP_not_subset_PpolyDAG :=
+  my_NP_not_subset_PpolyDAG hNPDag
 
 end MistralTestLib

@@ -7,7 +7,8 @@
   circuit_bound_ok: circuitCountBound n (sNO-1) = circuitCountBound n 1 < 2^(2^n/2)
 -/
 import MistralTestLib.SourceTheorems.CircuitBound
-import Pnp3.LowerBounds.MCSPGapLocality
+import LowerBounds.MCSPGapLocality
+import LowerBounds.AsymptoticDAGBarrierInterfaces
 
 namespace MistralTestLib
 
@@ -18,24 +19,27 @@ Minimal parameters for concrete family.
 - sYES = 1: smallest non-degenerate YES threshold (Circuit.const has size 1)
 - sNO = 2: so sYES + 1 = 2 ≤ sNO ✓
 - circuit_bound_ok: circuitCountBound n 1 < 2^(2^n/2) by circuit_bound_ok_minimal
-- n_ge = 8: starting index
+- n_large = 8: starting index
 -/
 def baseParams (n : Nat) (hn : n ≥ 8) : GapPartialMCSPParams where
   n := n
   sYES := 1
   sNO := 2
   gap_ok := by omega
-  n_ge := hn
+  n_large := hn
   sYES_pos := by norm_num
   circuit_bound_ok := CircuitBound.circuit_bound_ok_minimal n hn
 
 def concreteFamily : GapSliceFamilyEventually where
   N0 := 8
-  paramsOf n β := baseParams n (by omega)
+  paramsOf n β := baseParams (max n 8) (by omega)
   Tof n β := 1  -- = sNO - 1 = 2 - 1
   Mof n s := circuitCountBound n s
-  hIndex n hn β := by simp [baseParams]
-  hT n hn β := by simp [baseParams]; omega
-  hM n hn T := by simp [circuitCountBound]
+  hIndex n hn β := by
+    simp [baseParams, Nat.max_eq_left hn]
+  hT n hn β := by
+    simp [baseParams, Nat.max_eq_left hn]
+  hM n hn T := by
+    rfl
 
 end MistralTestLib

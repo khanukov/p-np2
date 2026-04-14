@@ -4279,7 +4279,7 @@ Current implementation keeps the sampler intentionally minimal and canonical:
 there is exactly one seed (`BitVec 0`), so all remaining hardness debt is
 concentrated in the one-sided hitting property itself (no free `gen` choice).
 -/
-def canonicalEasySamplerSeedLen (p : GapPartialMCSPParams) : Nat := 0
+def canonicalEasySamplerSeedLen (_p : GapPartialMCSPParams) : Nat := 0
 
 /--
 Canonical sampler of easy total truth tables.
@@ -5222,10 +5222,10 @@ def canonicalWitnessEasyDensitySourceAt_of_extractionBudgetAndCoverage
   canonicalWitnessEasyDensitySourceAt_of_restrictionExtractionAndCoverage
     (p := p) (SizeBound := SizeBound)
     epsilon hEpsQuarter hEpsNonneg hardwireBudget
-    (fun {εslice} W => canonicalValueAliveSet (hExtract W))
-    (fun {εslice} W => hBudget W)
+    (fun W => canonicalValueAliveSet (hExtract W))
+    (fun W => hBudget W)
     hCover
-    (fun {εslice} W => stableOn_canonicalValueAliveSet_of_extraction (hExtract W))
+    (fun W => stableOn_canonicalValueAliveSet_of_extraction (hExtract W))
 
 /--
 Final normalized bridge form:

@@ -65,6 +65,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.PsubsetPpolyInternal.ComplexityInterfaces,
     Glob.one `Complexity.PpolyDAG_StraightLineCore,
     Glob.one `Complexity.PpolyDAG_from_StraightLine,
+    Glob.one `Complexity.PpolyFormula_from_PpolyDAG_FixedSlice,
     Glob.one `Complexity.PsubsetPpolyDAG_Internal,
     Glob.one `Complexity.Simulation.TM_Encoding,
     Glob.one `Complexity.Simulation.Circuit_Compiler,
@@ -125,21 +126,6 @@ lean_lib PnP3 where
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests
-  ]
-
-@[default_target]
-lean_lib MistralTestLib where
-  srcDir := "mistral_test"
-  globs := #[
-    Glob.one `MistralTestLib,
-    Glob.one `MistralTestLib.SourceTheorems.CircuitBound,
-    Glob.one `MistralTestLib.SourceTheorems.CircuitEncoding,
-    Glob.one `MistralTestLib.SourceTheorems.ConcreteFamily,
-    Glob.one `MistralTestLib.SourceTheorems.ConcreteGlobalNP,
-    Glob.one `MistralTestLib.SourceTheorems.FinalProof,
-    Glob.one `MistralTestLib.SourceTheorems.ForcingProperty,
-    Glob.one `MistralTestLib.SourceTheorems.IsoStrongMain,
-    Glob.one `MistralTestLib.SourceTheorems.Frontier.UnifiedFrontier
   ]
 
 @[test_driver]

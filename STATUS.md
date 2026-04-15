@@ -79,31 +79,28 @@ The current default final wrapper is still
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 Reality split:
 
-1. `hNPDag` is the real remaining DAG-separation blocker.
-2. `hMag` remains in the signature only as compatibility context.
+1. External class-level DAG separation is no longer an argument of the default
+   final theorem.
+2. Internal DAG separation is now derived by `NP_not_subset_PpolyDAG_final`.
+3. `hMag` remains in the signature as compatibility context.
 
-## Single active closure route (current policy)
+## Single remaining closure route
 
-Only one route is considered active for internal DAG separation:
+Only one route is still active for true unconditionality:
 
-1. prove one **asymptotic/eventual** source theorem on a non-vacuous surface
-   (eventual quantification + length-local bridge assumptions),
-2. discharge one weak-route class-level theorem payload
-   (`...acceptedFamily...` or `...promiseYes...`),
-3. feed that payload through existing endpoint wrappers to internalize
-   `ComplexityInterfaces.NP_not_subset_PpolyDAG`,
-4. then remove external `hNPDag` from the public final theorem,
-5. then remove residual `hMag` to reach zero-argument `P_ne_NP`.
+1. keep DAG separation internalized in `NP_not_subset_PpolyDAG_final`,
+2. internalize the formula-side / magnification package exposed by
+   `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`,
+3. then remove residual `hMag` to reach zero-argument `P_ne_NP`.
 
 ## Repository-Wide Honesty Policy
 
 Any file claiming unconditional `P ≠ NP` before both of the following are
 internalized is inaccurate:
 
-1. internal DAG separation theorem;
+1. formula-side / magnification package theorem source;
 2. zero-argument public final API.

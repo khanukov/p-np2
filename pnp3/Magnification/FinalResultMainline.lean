@@ -9,6 +9,7 @@ import LowerBounds.AsymptoticDAGBarrier
 import LowerBounds.SingletonDensityContradiction
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
+import Complexity.PpolyFormula_from_PpolyDAG_FixedSlice
 import Complexity.PsubsetPpolyDAG_Internal
 import Complexity.Simulation.Circuit_Compiler
 
@@ -70,6 +71,314 @@ This keeps imported assumptions grouped and auditable at theorem boundaries.
 structure MagnificationAssumptions : Type where
   switching : SwitchingAssumptions
   antiChecker : AntiCheckerAssumptions
+
+/--
+Eventual slice family induced by the asymptotic anti-checker track.
+
+The asymptotic hypothesis is indexed only by `n`, while the eventual DAG route
+is parametrized by `(n, β)`.  This adapter keeps the same asymptotic slice on
+all `β` and uses `max n N0` to make the family total below the asymptotic
+threshold without introducing new mathematical obligations there.
+-/
+def eventualGapSliceFamily_of_asymptotic
+    (hAsym : AsymptoticFormulaTrackHypothesis) :
+    GapSliceFamilyEventually where
+  N0 := hAsym.N0
+  paramsOf n _β := hAsym.pAt (max n hAsym.N0) (Nat.le_max_right _ _)
+  Tof n β := (hAsym.pAt (max n hAsym.N0) (Nat.le_max_right _ _)).sNO - 1
+  Mof n T := Models.circuitCountBound n T
+  hIndex n hn β := by
+    simpa [Nat.max_eq_left hn] using hAsym.pAt_n n hn
+  hT n hn β := by
+    simp [Nat.max_eq_left hn]
+  hM n hn T := by
+    rfl
+
+/--
+Canonical-length bridge from the asymptotic global language to the eventual DAG
+carrier induced by `eventualGapSliceFamily_of_asymptotic`.
+-/
+noncomputable def eventualCanonicalBridge_of_asymptotic
+    (hAsym : AsymptoticFormulaTrackHypothesis) :
+    AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths
+      (eventualGapSliceFamily_of_asymptotic hAsym) where
+  L := gapPartialMCSP_AsymptoticLanguage hAsym.spec
+  sliceEq n β x := by
+    exact hAsym.sliceEq (max n hAsym.N0) (Nat.le_max_right _ _) x
+
+/--
+The asymptotic NP witness already packaged in `AsymptoticNPPullback` is exactly
+the NP witness needed by the canonical-length eventual DAG bridge.
+-/
+theorem eventualCanonicalBridge_in_NP_of_asymptotic
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hNPbridge : AsymptoticNPPullback hAsym) :
+    ComplexityInterfaces.NP
+      (eventualCanonicalBridge_of_asymptotic hAsym).L :=
+  hNPbridge.strictAsymptotic
+
+/--
+Strong eventual source contract on top of the asymptotic anti-checker track.
+
+This is the direct mainline theorem target for the non-vacuous eventual DAG
+route: once every hypothetical small-DAG slice family yields an
+`IsoStrongFamilyEventually` witness, the rest of the canonical-length closure to
+`NP_not_subset_PpolyDAG` is generic.
+-/
+def AsymptoticIsoStrongRoute
+    (hAsym : AsymptoticFormulaTrackHypothesis) : Prop :=
+  ∀ hInDag :
+    ∀ n : Nat, ∀ β : Rat,
+      ComplexityInterfaces.InPpolyDAG
+        (gapPartialMCSP_Language
+          ((eventualGapSliceFamily_of_asymptotic hAsym).paramsOf n β)),
+    IsoStrongFamilyEventually
+      (eventualGapSliceFamily_of_asymptotic hAsym)
+      hInDag
+
+/--
+Witness-indexed eventual promise-YES certificate route on the asymptotic
+anti-checker track.
+
+Compared with `AsymptoticIsoStrongRoute`, this route asks source work for the
+already-familiar object `PromiseYesSubcubeCertificateAt` on each sufficiently
+large canonical slice.  The uniform cardinality budget `κ` is then recovered
+mechanically from `requiredComplementBudget`.
+-/
+def AsymptoticPromiseYesCertificateRoute
+    (hAsym : AsymptoticFormulaTrackHypothesis) : Prop :=
+  ∀ hInDag :
+    ∀ n : Nat, ∀ β : Rat,
+      ComplexityInterfaces.InPpolyDAG
+        (gapPartialMCSP_Language
+          ((eventualGapSliceFamily_of_asymptotic hAsym).paramsOf n β)),
+    ∃ β0 : Rat, 0 < β0 ∧
+      ∃ nCert : Rat → Nat,
+        ∀ n : Nat, ∀ β : Rat,
+          0 < β → β < β0 → n ≥ max hAsym.N0 (nCert β) →
+          ∀ W : SmallDAGWitnessOnSlice
+            ((eventualGapSliceFamily_of_asymptotic hAsym).paramsOf n β)
+            (fun ε' s =>
+              ppolyDAGSizeBoundOnSlicesEventually
+                (eventualGapSliceFamily_of_asymptotic hAsym)
+                hInDag n β ε' s)
+            1,
+            Nonempty (PromiseYesSubcubeCertificateAt W)
+
+/--
+Canonical eventual weak-route source theorem shape on the asymptotic
+anti-checker track.
+
+This is the theorem-level payload already consumed directly by the non-vacuous
+eventual barrier endpoint at canonical lengths.
+-/
+def AsymptoticPromiseYesWeakRouteEventually
+    (hAsym : AsymptoticFormulaTrackHypothesis) : Prop :=
+  ∀ hInDag :
+    ∀ n : Nat, ∀ β : Rat,
+      ComplexityInterfaces.InPpolyDAG
+        (gapPartialMCSP_Language
+          ((eventualGapSliceFamily_of_asymptotic hAsym).paramsOf n β)),
+    ∃ ε : Rat, 0 < ε ∧
+      ∃ β0 : Rat, 0 < β0 ∧
+        ∀ β : Rat, 0 < β → β < β0 →
+          ∃ n0 : Nat,
+            (eventualGapSliceFamily_of_asymptotic hAsym).N0 ≤ n0 ∧
+              ∀ n ≥ n0,
+                SmallDAGImpliesPromiseYesSubcubeAtEventually
+                  (eventualGapSliceFamily_of_asymptotic hAsym)
+                  (ppolyDAGSizeBoundOnSlicesEventually
+                    (eventualGapSliceFamily_of_asymptotic hAsym) hInDag)
+                  n β ε
+
+/--
+Build a witness-indexed promise-YES certificate from the eventual weak-route
+payload at one concrete canonical slice.
+
+The source theorem may use any `ε`; the target witness here is fixed at `ε = 1`
+because `ppolyDAGSizeBoundOnSlicesEventually` ignores the epsilon parameter.
+-/
+noncomputable def promiseYesSubcubeCertificateAt_of_eventualPromiseYesWeakRoute
+    {F : GapSliceFamilyEventually}
+    {hInDag :
+      ∀ n : Nat, ∀ β : Rat,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))}
+    {n : Nat}
+    {β ε : Rat}
+    (hn0 : F.N0 ≤ n)
+    (W : SmallDAGWitnessOnSlice
+      (F.paramsOf n β)
+      (fun ε' s => ppolyDAGSizeBoundOnSlicesEventually F hInDag n β ε' s)
+      1)
+    (hYes :
+      SmallDAGImpliesPromiseYesSubcubeAtEventually
+        F (ppolyDAGSizeBoundOnSlicesEventually F hInDag) n β ε) :
+    PromiseYesSubcubeCertificateAt W := by
+  classical
+  let hExists :=
+    hYes W.C
+      (by simpa [ppolyDAGSizeBoundOnSlicesEventually] using W.hSize)
+      W.hCorrect
+  let yYes := Classical.choose hExists
+  have hySpec := Classical.choose_spec hExists
+  let S := Classical.choose hySpec.2.2
+  have hSSpec := Classical.choose_spec hySpec.2.2
+  have hcoh := eventual_coherence_at F n β hn0
+  rcases hcoh with ⟨hpn, hTof, hMof⟩
+  refine
+    { yYes := yYes
+      hYes := by
+        simpa [gapSliceOfParams, GapPartialMCSPPromise] using hySpec.1
+      hValidYes := hySpec.2.1
+      S := S
+      hSlack := by
+        calc
+          Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1)
+              = F.Mof n (F.Tof n β) := by simpa using hMof.symm
+          _ < 2 ^ (GapSliceFamilyEventually.tableLen F n β - S.card) := hSSpec.1
+          _ = 2 ^ (Models.Partial.tableLen (F.paramsOf n β).n - S.card) := by
+                simp [GapSliceFamilyEventually.tableLen, hpn]
+      hAccept := by
+        intro z hzPromise hzValid hAgree
+        exact hSSpec.2 z
+          ((by
+            cases hzPromise with
+            | inl hzYes =>
+                exact Or.inl (by simpa [gapSliceOfParams, GapPartialMCSPPromise] using hzYes)
+            | inr hzNo =>
+                exact Or.inr (by simpa [gapSliceOfParams, GapPartialMCSPPromise] using hzNo)))
+          hzValid
+          hAgree }
+
+/--
+Convert the theorem-minimal eventual weak-route payload to the stronger
+witness-indexed certificate route.
+-/
+theorem asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hRoute : AsymptoticPromiseYesWeakRouteEventually hAsym) :
+    AsymptoticPromiseYesCertificateRoute hAsym := by
+  intro hInDag
+  let F : GapSliceFamilyEventually := eventualGapSliceFamily_of_asymptotic hAsym
+  rcases hRoute hInDag with ⟨ε, hε, β0, hβ0, hEventuallyYes⟩
+  let nCert : Rat → Nat := fun β =>
+    if hβ : 0 < β ∧ β < β0 then
+      Classical.choose (hEventuallyYes β hβ.1 hβ.2)
+    else
+      F.N0
+  refine ⟨β0, hβ0, nCert, ?_⟩
+  intro n β hβPos hβLt hn W
+  have hβ : 0 < β ∧ β < β0 := ⟨hβPos, hβLt⟩
+  have hChoice :
+      F.N0 ≤ Classical.choose (hEventuallyYes β hβPos hβLt) ∧
+        ∀ m ≥ Classical.choose (hEventuallyYes β hβPos hβLt),
+          SmallDAGImpliesPromiseYesSubcubeAtEventually
+            F (ppolyDAGSizeBoundOnSlicesEventually F hInDag) m β ε :=
+    Classical.choose_spec (hEventuallyYes β hβPos hβLt)
+  have hN0Cert : F.N0 ≤ nCert β := by
+    simpa [nCert, hβ] using hChoice.1
+  have hnCert : nCert β ≤ n := by
+    have hmaxEq : max hAsym.N0 (nCert β) = nCert β := by
+      apply Nat.max_eq_right
+      simpa [F, eventualGapSliceFamily_of_asymptotic] using hN0Cert
+    simpa [hmaxEq] using hn
+  have hn0 : F.N0 ≤ n := by
+    exact le_trans hN0Cert hnCert
+  have hYesAtN :
+      SmallDAGImpliesPromiseYesSubcubeAtEventually
+        F (ppolyDAGSizeBoundOnSlicesEventually F hInDag) n β ε := by
+    have hLarge :
+        ∀ m ≥ nCert β,
+          SmallDAGImpliesPromiseYesSubcubeAtEventually
+            F (ppolyDAGSizeBoundOnSlicesEventually F hInDag) m β ε := by
+      simpa [nCert, hβ] using hChoice.2
+    exact hLarge n hnCert
+  exact
+    ⟨promiseYesSubcubeCertificateAt_of_eventualPromiseYesWeakRoute
+      (hn0 := hn0) W hYesAtN⟩
+
+/--
+Recover the stronger eventual isolation-envelope route from witness-indexed
+promise-YES certificates.
+
+This is a pure closure step.  The only arithmetic ingredient is that every
+certificate already carries counting slack on its own semantic set `S`, so the
+minimal complement threshold `requiredComplementBudget` yields a uniform
+cardinality bound `κ`.
+-/
+theorem asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (hRoute : AsymptoticPromiseYesCertificateRoute hAsym) :
+    AsymptoticIsoStrongRoute hAsym := by
+  intro hInDag
+  rcases hRoute hInDag with ⟨β0, hβ0, nCert, hCert⟩
+  let F : GapSliceFamilyEventually := eventualGapSliceFamily_of_asymptotic hAsym
+  let κ : Nat → Rat → Nat :=
+    fun n β =>
+      GapSliceFamilyEventually.tableLen F n β -
+        requiredComplementBudget (F.paramsOf n β)
+  refine ⟨β0, hβ0, κ, nCert, ?_, ?_⟩
+  · intro n β hβPos hβLt hn C hSize hCorrect
+    let p : GapPartialMCSPParams := F.paramsOf n β
+    let W : SmallDAGWitnessOnSlice p
+        (fun ε' s => ppolyDAGSizeBoundOnSlicesEventually F hInDag n β ε' s) 1 := {
+      C := C
+      hSize := hSize
+      hCorrect := hCorrect
+    }
+    let cert : PromiseYesSubcubeCertificateAt W :=
+      Classical.choice (hCert n β hβPos hβLt hn W)
+    have hBudget :
+        requiredComplementBudget p ≤ Models.Partial.tableLen p.n - cert.S.card := by
+      exact Nat.find_min' (exists_countingSlack_budget p) cert.hSlack
+    have hCardTable :
+        cert.S.card ≤ Models.Partial.tableLen p.n := by
+      simpa using Finset.card_le_univ cert.S
+    have hCardLe :
+        cert.S.card ≤ κ n β := by
+      change cert.S.card ≤ Models.Partial.tableLen p.n - requiredComplementBudget p
+      omega
+    refine ⟨cert.yYes, ?_, cert.hValidYes, cert.S, hCardLe, ?_⟩
+    · simpa [gapSliceOfParams, GapPartialMCSPPromise] using cert.hYes
+    · intro z hzValid hzAgree
+      have hzPromise :
+          z ∈ (gapSliceOfParams p).Yes ∨ z ∈ (gapSliceOfParams p).No :=
+        mem_yes_or_no_gapSliceOfParams (p := p) z
+      have hzEval : DagCircuit.eval C z = true := cert.hAccept z
+        (by simpa [gapSliceOfParams, GapPartialMCSPPromise] using hzPromise)
+        hzValid hzAgree
+      cases hzPromise with
+      | inl hzYes =>
+          exact hzYes
+      | inr hzNo =>
+          have hzFalse : DagCircuit.eval C z = false := hCorrect.2 z hzNo
+          have hContra : false = true := hzFalse.symm.trans hzEval
+          exact False.elim (Bool.false_ne_true hContra)
+  · intro n β hβPos hβLt hn
+    let p : GapPartialMCSPParams := F.paramsOf n β
+    have hcoh := eventual_coherence_at F n β (le_trans (Nat.le_max_left _ _) hn)
+    rcases hcoh with ⟨_, _, hMof⟩
+    have hReqLeHalf :
+        requiredComplementBudget p ≤ Models.Partial.tableLen p.n / 2 := by
+      exact Nat.find_min' (exists_countingSlack_budget p) p.circuit_bound_ok
+    have hReqLeTable :
+        requiredComplementBudget p ≤ GapSliceFamilyEventually.tableLen F n β := by
+      simpa [GapSliceFamilyEventually.tableLen, p] using
+        le_trans hReqLeHalf (Nat.div_le_self (Models.Partial.tableLen p.n) 2)
+    have hExpEq :
+        GapSliceFamilyEventually.tableLen F n β - κ n β =
+          requiredComplementBudget p := by
+      simpa [κ, GapSliceFamilyEventually.tableLen, p] using
+        (Nat.sub_sub_self hReqLeTable)
+    calc
+      F.Mof n (F.Tof n β)
+          = Models.circuitCountBound p.n (p.sNO - 1) := by
+              simpa [p] using hMof
+      _ < 2 ^ requiredComplementBudget p :=
+        countingSlack_at_requiredComplementBudget p
+      _ = 2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β) := by
+            simp [hExpEq]
 
 /--
 Family-specific entrypoint for the singleton `β`-route decision layer.
@@ -406,6 +715,550 @@ theorem P_ne_NP_final_dag_only
       hPDag
 
 /--
+Canonical eventual DAG route from the asymptotic anti-checker package.
+
+This theorem is the mainline integration point for the non-vacuous eventual
+carrier: all bridge and NP wiring are derived from `hAsym`, and the only
+remaining mathematical debt is the family-specific `AsymptoticIsoStrongRoute`.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (hIso : AsymptoticIsoStrongRoute hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  let F : GapSliceFamilyEventually := eventualGapSliceFamily_of_asymptotic hAsym
+  let bridge :
+      AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths F :=
+    eventualCanonicalBridge_of_asymptotic hAsym
+  have hNP : ComplexityInterfaces.NP bridge.L :=
+    eventualCanonicalBridge_in_NP_of_asymptotic hAsym hNPbridge
+  have hIsoFamily :
+      ∀ hInDag :
+        ∀ n : Nat, ∀ β : Rat,
+          ComplexityInterfaces.InPpolyDAG
+            (gapPartialMCSP_Language (F.paramsOf n β)),
+        ∃ β0 : Rat, 0 < β0 ∧
+          ∃ κ : Nat → Rat → Nat,
+            ∃ nIso : Rat → Nat,
+              (∀ n : Nat, ∀ β : Rat,
+                0 < β → β < β0 → n ≥ max F.N0 (nIso β) →
+                ∀ C : DagCircuit (GapSliceFamilyEventually.encodedLen F n β),
+                  ppolyDAGSizeBoundOnSlicesEventually F hInDag n β 1 (DagCircuit.size C) →
+                  CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) →
+                    ∃ yYes : Bitstring (GapSliceFamilyEventually.encodedLen F n β),
+                      yYes ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∧
+                      ValidEncoding (F.paramsOf n β) yYes ∧
+                      ∃ D : Finset (Fin (GapSliceFamilyEventually.tableLen F n β)),
+                        D.card ≤ κ n β ∧
+                        ∀ z : Bitstring (GapSliceFamilyEventually.encodedLen F n β),
+                          (z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
+                            z ∈ (gapSliceOfParams (F.paramsOf n β)).No) →
+                          ValidEncoding (F.paramsOf n β) z →
+                          AgreeOnValues (p := F.paramsOf n β) D yYes z →
+                            z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes) ∧
+              (∀ n : Nat, ∀ β : Rat,
+                0 < β → β < β0 → n ≥ max F.N0 (nIso β) →
+                  F.Mof n (F.Tof n β) <
+                    2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β)) := by
+    intro hInDag
+    exact isoFamily_withPromise_of_isoStrongFamilyEventually F hInDag (hIso hInDag)
+  exact
+    NP_not_subset_PpolyDAG_of_eventuallyIsolationEnvelopeWeakRouteEventually_atCanonicalLengths
+      F bridge hNP hIsoFamily
+
+/--
+Top-level explicit-assumptions wrapper for the canonical eventual DAG route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnification
+  (hMag : MagnificationAssumptions)
+  (hIso : AsymptoticIsoStrongRoute hMag.antiChecker.asymptotic) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute
+      (hAsym := hMag.antiChecker.asymptotic)
+      (hNPbridge := hMag.antiChecker.npBridge)
+      hIso
+
+/--
+Companion `P ≠ NP` endpoint from the canonical eventual DAG route.
+-/
+theorem P_ne_NP_final_of_asymptotic_isoStrongRoute
+  (hMag : MagnificationAssumptions)
+  (hIso : AsymptoticIsoStrongRoute hMag.antiChecker.asymptotic) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnification
+      (hMag := hMag) hIso)
+
+/--
+Canonical eventual DAG route from witness-indexed promise-YES certificates on
+the asymptotic anti-checker package.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (hRoute : AsymptoticPromiseYesCertificateRoute hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute
+      hAsym
+      hNPbridge
+      (asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute
+        hAsym hRoute)
+
+/--
+Top-level explicit-assumptions wrapper for the promise-YES-certificate
+eventual route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withMagnification
+  (hMag : MagnificationAssumptions)
+  (hRoute : AsymptoticPromiseYesCertificateRoute hMag.antiChecker.asymptotic) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute
+      hMag.antiChecker.asymptotic
+      hMag.antiChecker.npBridge
+      hRoute
+
+/--
+Companion `P ≠ NP` endpoint from the same eventual promise-YES-certificate
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute
+  (hMag : MagnificationAssumptions)
+  (hRoute : AsymptoticPromiseYesCertificateRoute hMag.antiChecker.asymptotic) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withMagnification
+      hMag hRoute)
+
+/--
+Concrete small-DAG witness extracted from one fixed-slice `InPpolyDAG` witness.
+
+This keeps the direct fixed-slice routes independent from the empty legacy
+`GapSliceFamily` carrier: source work can target one concrete asymptotic slice
+`pAt n hn` without re-encoding it as a whole family.
+-/
+private def fixedSliceSmallDAGWitness_of_inPpolyDAG
+    {p : GapPartialMCSPParams}
+    (w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p)) :
+    SmallDAGWitnessOnSlice p
+      (fun _ s => s ≤ w.polyBound (Models.partialInputLen p)) 1 where
+  C := w.family (Models.partialInputLen p)
+  hSize := by
+    exact w.family_size_le (Models.partialInputLen p)
+  hCorrect := by
+    constructor
+    · intro x hxYes
+      have hxLang :
+          gapPartialMCSP_Language p (Models.partialInputLen p) x = true := by
+        simpa [gapSliceOfParams] using hxYes
+      exact (w.correct (Models.partialInputLen p) x).trans hxLang
+    · intro x hxNo
+      have hxLang :
+          gapPartialMCSP_Language p (Models.partialInputLen p) x = false := by
+        simpa [gapSliceOfParams] using hxNo
+      exact (w.correct (Models.partialInputLen p) x).trans hxLang
+
+/--
+Single-slice promise-YES route on a concrete parameter object `p`.
+
+For each hypothetical small-DAG witness for `gapPartialMCSP_Language p`, source
+work only has to produce the already-standard witness-level object
+`PromiseYesSubcubeCertificateAt`.
+-/
+def FixedSlicePromiseYesCertificateRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (PromiseYesSubcubeCertificateAt
+        (fixedSliceSmallDAGWitness_of_inPpolyDAG w))
+
+/--
+Single-slice pairwise promise/value locality route on one concrete parameter
+object `p`.
+
+This is the nearest honest upstream source contract already present in the DAG
+producer code: it packages both semantic forcing and same-set counting slack in
+one witness-level object.
+-/
+def FixedSlicePromiseValueLocalityRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (PromiseValueLocalityPackageAt
+        (fixedSliceSmallDAGWitness_of_inPpolyDAG w))
+
+/--
+Single-slice witness-indexed canonical easy-density route on one concrete
+parameter object `p`.
+
+This is the fixed-slice version of the density-first source surface: the source
+theorem may work against the concrete size bound carried by one strict DAG
+witness `w`, with no slice-family transport.
+-/
+def FixedSliceWitnessEasyDensityRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (CanonicalWitnessEasyDensitySourceAt
+        (p := p)
+        (fun _ s => s ≤ w.polyBound (Models.partialInputLen p)))
+
+/--
+Single-slice witness-uniform-lower route on one concrete parameter object `p`.
+-/
+def FixedSliceWitnessUniformLowerRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (WitnessUniformLowerSourceAt
+        (p := p)
+        (fun _ s => s ≤ w.polyBound (Models.partialInputLen p)))
+
+/--
+Single-slice quarter-bounded witness-transfer route on one concrete parameter
+object `p`.
+
+This is the minimal witness-level transfer surface needed by the counting
+closure: produce `EasyImageTransferAt` together with the canonical quarter
+bound on its epsilon.
+-/
+def FixedSliceTransferQuarterRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    ∃ tr : EasyImageTransferAt (fixedSliceSmallDAGWitness_of_inPpolyDAG w),
+      tr.epsilon ≤ (1 / 4 : Rat)
+
+/--
+Restricted-model fallback route on one concrete parameter object `p`.
+
+This asks only for the direct support-half/value-supported condition on the
+concrete canonical DAG witness at the encoded slice length.
+-/
+def FixedSliceSupportHalfValueSupportedRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+    (DagCircuit.support W.C).card ≤ Models.Partial.tableLen p.n / 2 ∧
+      (∀ i ∈ DagCircuit.support W.C,
+        ∃ j : Fin (Models.Partial.tableLen p.n), tableValPos j = i)
+
+/--
+Single-slice strong-fallback slack route on one concrete parameter object `p`.
+
+This is the accepted-family-side witness object already produced by the older
+restriction/shrinkage pipeline: one encoded-coordinate restriction with direct
+counting slack and local dependence for the concrete canonical DAG witness.
+-/
+def FixedSliceDAGStableRestrictionSlackRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (DAGStableRestrictionSlackPackageAt
+        (fixedSliceSmallDAGWitness_of_inPpolyDAG w))
+
+/--
+Single-slice shrinkage-certificate route on one concrete parameter object `p`.
+
+This is a more atomic source surface than the slack package: source work only
+has to provide the shrinkage certificate for the general solver induced by the
+concrete canonical DAG witness.
+-/
+def FixedSliceShrinkageCertificateRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (SmallDAGWitnessShrinkageCertificateAt
+        (fixedSliceSmallDAGWitness_of_inPpolyDAG w))
+
+/--
+Single-slice restriction-data route on one concrete parameter object `p`.
+
+This is the most decomposed strong-fallback source package currently available
+in the DAG producer code: one restriction together with its numeric side data
+and stability proof for the concrete canonical DAG witness.
+-/
+def FixedSliceRestrictionDataRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    Nonempty
+      (SmallDAGWitnessRestrictionCertificateDataAt
+        (fixedSliceSmallDAGWitness_of_inPpolyDAG w))
+
+/--
+Single-slice support-numeric route on one concrete parameter object `p`.
+
+This fixes semantic extraction to the canonical support-based one and asks
+source work only for the numeric side-data package on top of that extraction.
+-/
+def FixedSliceSupportNumericRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+    Nonempty
+      (SmallDAGWitnessRestrictionNumericDataAt
+        (smallDAGWitnessRestrictionExtractionAt_of_support W))
+
+/--
+Single-slice support-component route on one concrete parameter object `p`.
+
+This is the most explicit live Route-A2 target currently available in the DAG
+producer stack: prove the three numeric support-side inequalities directly on
+the canonical support extraction of the concrete fixed-slice DAG witness.
+-/
+def FixedSliceSupportNumericComponentRoute
+    (p : GapPartialMCSPParams) : Prop :=
+  ∀ w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p),
+    let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+    (DagCircuit.support W.C).card ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      (DagCircuit.support W.C).card ≤
+        Facts.LocalityLift.inputLen
+          (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+      (DagCircuit.support W.C).card *
+          (Nat.log2
+              ((ThirdPartyFacts.toFactsGeneralSolverPartial
+                  (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+                ((DagCircuit.support W.C).card.succ) + 2) +
+            (ThirdPartyFacts.toFactsGeneralSolverPartial
+                (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth + 1)
+        ≤
+        Facts.LocalityLift.inputLen
+          (ThirdPartyFacts.toFactsParamsPartial p) / 2
+
+/--
+Compile the stronger fixed-slice promise/value locality route to the weaker
+fixed-slice promise-YES route.
+-/
+theorem fixedSlicePromiseYesCertificateRoute_of_fixedSlicePromiseValueLocalityRoute
+    {p : GapPartialMCSPParams}
+    (hPkg : FixedSlicePromiseValueLocalityRoute p) :
+    FixedSlicePromiseYesCertificateRoute p := by
+  intro w
+  rcases hPkg w with ⟨pkg⟩
+  exact ⟨promiseYesSubcubeCertificateAt_of_promiseValueLocalityPackageAt pkg⟩
+
+/--
+Compile the restricted-model support-half/value-supported fallback to the
+fixed-slice promise-YES route.
+-/
+theorem fixedSlicePromiseYesCertificateRoute_of_fixedSliceSupportHalfValueSupportedRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceSupportHalfValueSupportedRoute p) :
+    FixedSlicePromiseYesCertificateRoute p := by
+  intro w
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  rcases hRoute w with ⟨hHalf, hValue⟩
+  exact ⟨promiseYesSubcubeCertificateAt_of_supportHalfBound_valueSupported W hHalf hValue⟩
+
+/--
+Compile the fixed-slice restriction-data route to the corresponding
+shrinkage-certificate route.
+-/
+theorem fixedSliceShrinkageCertificateRoute_of_fixedSliceRestrictionDataRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceRestrictionDataRoute p) :
+    FixedSliceShrinkageCertificateRoute p := by
+  intro w
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  rcases hRoute w with ⟨data⟩
+  exact ⟨smallDAGWitnessShrinkageCertificateAt_of_restrictionData W data⟩
+
+/--
+Compile the fixed-slice shrinkage-certificate route to the corresponding
+strong-fallback slack route.
+-/
+theorem fixedSliceDAGStableRestrictionSlackRoute_of_fixedSliceShrinkageCertificateRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceShrinkageCertificateRoute p) :
+    FixedSliceDAGStableRestrictionSlackRoute p := by
+  intro w
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  rcases hRoute w with ⟨cert⟩
+  exact ⟨dagStableRestrictionSlackPackageAt_of_shrinkageCertificate W cert⟩
+
+/--
+Compile the fixed-slice support-numeric route to the corresponding
+restriction-data route by using the canonical support extraction.
+-/
+theorem fixedSliceRestrictionDataRoute_of_fixedSliceSupportNumericRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceSupportNumericRoute p) :
+    FixedSliceRestrictionDataRoute p := by
+  intro w
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  rcases hRoute w with ⟨num⟩
+  exact
+    ⟨smallDAGWitnessRestrictionCertificateDataAt_of_extractionAndNumeric
+      (smallDAGWitnessRestrictionExtractionAt_of_support W) num⟩
+
+/--
+Compile the explicit fixed-slice support-component route to the corresponding
+support-numeric route.
+-/
+theorem fixedSliceSupportNumericRoute_of_fixedSliceSupportNumericComponentRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceSupportNumericComponentRoute p) :
+    FixedSliceSupportNumericRoute p := by
+  intro w
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  rcases hRoute w with ⟨hPolylog, hQuarter, hArith⟩
+  have hSmallEnough :
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+        , M := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.size *
+              (smallDAGWitnessRestrictionExtractionAt_of_support W).r.alive.card.succ
+        , ℓ := (smallDAGWitnessRestrictionExtractionAt_of_support W).r.alive.card
+        , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial
+            (generalSolverOfSmallDAGWitnessOnSlice W)).params.depth } := by
+    simpa [Facts.LocalityLift.LocalCircuitSmallEnough,
+      smallDAGWitnessRestrictionExtractionAt_of_support] using hArith
+  have hPolylogAlive :
+      (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound ≤
+        Facts.LocalityLift.polylogBudget
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) := by
+    simpa [smallDAGWitnessRestrictionExtractionAt_of_support] using hPolylog
+  have hQuarterAlive :
+      (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+    simpa [smallDAGWitnessRestrictionExtractionAt_of_support] using hQuarter
+  exact
+    ⟨smallDAGWitnessSupportNumericDataAt_of_components
+      W hPolylogAlive hQuarterAlive hSmallEnough⟩
+
+/--
+Compile the stronger single-slice witness-uniform-lower route to the
+single-slice witness-indexed canonical easy-density route.
+-/
+theorem fixedSliceWitnessEasyDensityRoute_of_fixedSliceWitnessUniformLowerRoute
+    {p : GapPartialMCSPParams}
+    (hUniform : FixedSliceWitnessUniformLowerRoute p) :
+    FixedSliceWitnessEasyDensityRoute p := by
+  intro w
+  rcases hUniform w with ⟨src⟩
+  exact
+    ⟨canonicalWitnessEasyDensitySourceAt_of_witnessUniformLowerSourceAt src⟩
+
+/--
+Compile the single-slice witness-indexed canonical easy-density route to the
+single-slice quarter-bounded witness-transfer route.
+-/
+theorem fixedSliceTransferQuarterRoute_of_fixedSliceWitnessEasyDensityRoute
+    {p : GapPartialMCSPParams}
+    (hDensity : FixedSliceWitnessEasyDensityRoute p) :
+    FixedSliceTransferQuarterRoute p := by
+  intro w
+  rcases hDensity w with ⟨src⟩
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  refine ⟨easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt src W, ?_⟩
+  let tr : EasyImageTransferAt W :=
+    easyImageTransferAt_of_canonicalWitnessEasyDensitySourceAt src W
+  have hQuarter : tr.epsilon ≤ (1 / 4 : Rat) := by
+    simpa [tr] using src.hEpsQuarter
+  simpa [W, tr]
+    using hQuarter
+
+/--
+Compile the stronger single-slice witness-uniform-lower route directly to the
+single-slice quarter-bounded witness-transfer route.
+-/
+theorem fixedSliceTransferQuarterRoute_of_fixedSliceWitnessUniformLowerRoute
+    {p : GapPartialMCSPParams}
+    (hUniform : FixedSliceWitnessUniformLowerRoute p) :
+    FixedSliceTransferQuarterRoute p := by
+  exact
+    fixedSliceTransferQuarterRoute_of_fixedSliceWitnessEasyDensityRoute
+      (fixedSliceWitnessEasyDensityRoute_of_fixedSliceWitnessUniformLowerRoute
+        hUniform)
+
+/--
+Collapse one fixed slice once direct witness-level promise-YES certificates are
+available for every hypothetical `InPpolyDAG` witness on that slice.
+-/
+theorem fixedSliceCollapse_of_fixedSlicePromiseYesCertificateRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSlicePromiseYesCertificateRoute p) :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
+  intro hDag
+  let w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p) :=
+    Classical.choose hDag
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  let cert : PromiseYesSubcubeCertificateAt W :=
+    Classical.choice (hRoute w)
+  exact no_small_dag_solver_of_promiseYesSubcubeCertificateAt W cert
+
+/--
+Collapse one fixed slice once witness-level strong-fallback slack packages are
+available for every hypothetical `InPpolyDAG` witness on that slice.
+-/
+theorem fixedSliceCollapse_of_fixedSliceDAGStableRestrictionSlackRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceDAGStableRestrictionSlackRoute p) :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
+  intro hDag
+  let w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p) :=
+    Classical.choose hDag
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  let cert : DAGStableRestrictionSlackPackageAt W :=
+    Classical.choice (hRoute w)
+  exact no_small_dag_solver_of_dagStableRestrictionSlackPackageAt_via_acceptedFamily
+    W cert
+
+/--
+Collapse one fixed slice once witness-level shrinkage certificates are
+available for every hypothetical `InPpolyDAG` witness on that slice.
+-/
+theorem fixedSliceCollapse_of_fixedSliceShrinkageCertificateRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceShrinkageCertificateRoute p) :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
+  exact
+    fixedSliceCollapse_of_fixedSliceDAGStableRestrictionSlackRoute
+      (fixedSliceDAGStableRestrictionSlackRoute_of_fixedSliceShrinkageCertificateRoute
+        hRoute)
+
+/--
+Collapse one fixed slice once witness-level restriction data are available for
+every hypothetical `InPpolyDAG` witness on that slice.
+-/
+theorem fixedSliceCollapse_of_fixedSliceRestrictionDataRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceRestrictionDataRoute p) :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
+  exact
+    fixedSliceCollapse_of_fixedSliceShrinkageCertificateRoute
+      (fixedSliceShrinkageCertificateRoute_of_fixedSliceRestrictionDataRoute
+        hRoute)
+
+/--
+Collapse one fixed slice once quarter-bounded witness-level transfer is
+available for every hypothetical `InPpolyDAG` witness on that slice.
+-/
+theorem fixedSliceCollapse_of_fixedSliceTransferQuarterRoute
+    {p : GapPartialMCSPParams}
+    (hRoute : FixedSliceTransferQuarterRoute p) :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
+  intro hDag
+  let w : ComplexityInterfaces.InPpolyDAG (gapPartialMCSP_Language p) :=
+    Classical.choose hDag
+  let W := fixedSliceSmallDAGWitness_of_inPpolyDAG w
+  rcases hRoute w with ⟨tr, hQuarter⟩
+  have hQuarterCount :
+      (1 / 4 : Rat) <
+        1 - ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+              (2 ^ (Models.Partial.tableLen p.n) : Rat)) :=
+    quarter_lt_one_sub_countRatio_of_circuit_bound_ok p
+  have hEpsSmall :
+      tr.epsilon <
+        1 - ((Models.circuitCountBound p.n (p.sNO - 1) : Rat) /
+              (2 ^ (Models.Partial.tableLen p.n) : Rat)) :=
+    lt_of_le_of_lt hQuarter hQuarterCount
+  exact no_small_dag_solver_of_easyImageTransferAt_of_counting W tr hEpsSmall
+
+/--
 Collapse the asymptotic DAG language once one fixed slice is known to avoid
 `PpolyDAG`.
 
@@ -451,6 +1304,355 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse
   exact P_ne_NP_final_dag_only
     (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
       (hMag := hMag) (n := n) (hn := hn) hCollapseFixed)
+
+/--
+Asymptotic DAG separation from the direct fixed-slice promise-YES witness route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSlicePromiseYesCertificateRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+    (hMag := hMag) (n := n) (hn := hn)
+  exact fixedSliceCollapse_of_fixedSlicePromiseYesCertificateRoute hRoute
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice promise-YES witness route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSlicePromiseYesCertificateRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the direct fixed-slice promise/value locality
+route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hPkg :
+    FixedSlicePromiseValueLocalityRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSlicePromiseYesCertificateRoute_of_fixedSlicePromiseValueLocalityRoute
+        hPkg)
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice promise/value locality
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hPkg :
+    FixedSlicePromiseValueLocalityRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
+      (hMag := hMag) (n := n) (hn := hn) hPkg)
+
+/--
+Asymptotic DAG separation from the restricted-model support-half/value-supported
+fallback on one fixed slice.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceSupportHalfValueSupportedRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSlicePromiseYesCertificateRoute_of_fixedSliceSupportHalfValueSupportedRoute
+        hRoute)
+
+/--
+Companion `P ≠ NP` endpoint from the same restricted-model fixed-slice
+fallback.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceSupportHalfValueSupportedRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the fixed-slice strong-fallback slack route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceDAGStableRestrictionSlackRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+    (hMag := hMag) (n := n) (hn := hn)
+  exact fixedSliceCollapse_of_fixedSliceDAGStableRestrictionSlackRoute hRoute
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice strong-fallback slack
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceDAGStableRestrictionSlackRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the fixed-slice shrinkage-certificate route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceShrinkageCertificateRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSliceDAGStableRestrictionSlackRoute_of_fixedSliceShrinkageCertificateRoute
+        hRoute)
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice shrinkage-certificate
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceShrinkageCertificateRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the fixed-slice restriction-data route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceRestrictionDataRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSliceShrinkageCertificateRoute_of_fixedSliceRestrictionDataRoute
+        hRoute)
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice restriction-data route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceRestrictionDataRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceRestrictionDataRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the fixed-slice support-numeric route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceSupportNumericRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSliceRestrictionDataRoute_of_fixedSliceSupportNumericRoute hRoute)
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice support-numeric route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceSupportNumericRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the explicit fixed-slice support-component route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceSupportNumericComponentRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSliceSupportNumericRoute_of_fixedSliceSupportNumericComponentRoute
+        hRoute)
+
+/--
+Companion `P ≠ NP` endpoint from the same explicit fixed-slice
+support-component route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceSupportNumericComponentRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the fixed-slice quarter-bounded transfer route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceTransferQuarterRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+    (hMag := hMag) (n := n) (hn := hn)
+  exact fixedSliceCollapse_of_fixedSliceTransferQuarterRoute hRoute
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice quarter-bounded transfer
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceTransferQuarterRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hRoute :
+    FixedSliceTransferQuarterRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute
+      (hMag := hMag) (n := n) (hn := hn) hRoute)
+
+/--
+Asymptotic DAG separation from the fixed-slice witness-indexed canonical
+easy-density route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hDensity :
+    FixedSliceWitnessEasyDensityRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSliceTransferQuarterRoute_of_fixedSliceWitnessEasyDensityRoute hDensity)
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice witness-indexed canonical
+easy-density route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hDensity :
+    FixedSliceWitnessEasyDensityRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
+      (hMag := hMag) (n := n) (hn := hn) hDensity)
+
+/--
+Asymptotic DAG separation from the fixed-slice witness-uniform-lower route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hUniform :
+    FixedSliceWitnessUniformLowerRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (fixedSliceTransferQuarterRoute_of_fixedSliceWitnessUniformLowerRoute
+        hUniform)
+
+/--
+Companion `P ≠ NP` endpoint from the same fixed-slice witness-uniform-lower
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hUniform :
+    FixedSliceWitnessUniformLowerRoute
+      (hMag.antiChecker.asymptotic.pAt n hn)) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
+      (hMag := hMag) (n := n) (hn := hn) hUniform)
 
 /--
 Asymptotic DAG separation from the fixed-slice stable-restriction producer.
@@ -540,20 +1742,85 @@ theorem P_ne_NP_final_of_asymptotic_blocker
     (NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
       (hMag := hMag) (n := n) (hn := hn) hBlocker)
 
+/--
+Fixed-slice DAG collapse from formula-track support bounds plus any DAG→formula
+bridge on the same slice.
+
+This is the shortest currently closed route to an internal DAG contradiction:
+the singleton-density consumer stack already turns support bounds and a
+fixed-slice formula witness into `False`.
+-/
+theorem fixedSliceCollapse_of_supportBounds_and_dagToFormula
+  {p : GapPartialMCSPParams}
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hDagToFormula :
+    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+  ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
+  exact
+    LowerBounds.not_ppolyDAG_of_dag_stableRestriction
+      (LowerBounds.dag_stableRestriction_producer_alias_of_supportBounds
+        hBounds hDagToFormula)
+
+/--
+Asymptotic DAG separation from the fixed-slice support-bounds + DAG→formula
+bridge.
+
+This route uses the already-internalized formula-track multiswitching payload
+and needs only one fixed-slice `PpolyDAG -> PpolyFormula` bridge.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds_and_dagToFormula
+  (hMag : MagnificationAssumptions)
+  (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
+  (hDagToFormula :
+    ComplexityInterfaces.PpolyDAG
+        (gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) →
+      ComplexityInterfaces.PpolyFormula
+        (gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn))) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  apply NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+    (hMag := hMag) (n := n) (hn := hn)
+  exact
+    fixedSliceCollapse_of_supportBounds_and_dagToFormula
+      (hBounds := formula_support_bounds_from_multiswitching
+        hMag.switching.multiswitching)
+      hDagToFormula
+
+
+/--
+Canonical internal DAG-separation theorem.
+
+The remaining DAG-side route is now fully internalized: choose the threshold
+slice `n = N0`, convert any fixed-slice DAG witness to a formula witness by
+tree-unfolding that one DAG, and feed it through the already-closed
+support-bounds/stable-restriction consumer.
+-/
+theorem NP_not_subset_PpolyDAG_final
+  (hMag : MagnificationAssumptions)
+    :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  let n : Nat := hMag.antiChecker.asymptotic.N0
+  have hn : hMag.antiChecker.asymptotic.N0 ≤ n := le_rfl
+  let p : GapPartialMCSPParams := hMag.antiChecker.asymptotic.pAt n hn
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds_and_dagToFormula
+      (hMag := hMag)
+      (n := n)
+      (hn := hn)
+      (hDagToFormula :=
+        Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice p)
 
 /--
 Package-shaped final wrapper kept for CI/signature policy compatibility.
 
-Logical payload remains DAG-only (`hNPDag` + internal inclusion); `hMag` is a
-context package argument and is not consumed until a formal bridge from
-magnification assumptions to DAG separation is added.
+Class-level DAG separation is now derived internally from `hMag`; the remaining
+public blocker is only the magnification assumptions package itself.
 -/
 theorem P_ne_NP_final
-  (hMag : MagnificationAssumptions)
-  (hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG) :
+  (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.P_ne_NP := by
-  let _ := hMag
-  exact P_ne_NP_final_dag_only hNPDag
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final hMag)
 
 end Magnification
 end Pnp3

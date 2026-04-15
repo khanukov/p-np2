@@ -1,5 +1,0 @@
-import MistralTestLib
-#print axioms MistralTestLib.my_P_ne_NP
-#print axioms MistralTestLib.my_NP_not_subset_PpolyDAG
-#print axioms MistralTestLib.ConcreteGlobalNP.concreteGlobalLanguage_in_NP
-#print axioms MistralTestLib.isoStrongFamilyEventually_concreteFamily

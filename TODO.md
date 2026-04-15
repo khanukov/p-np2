@@ -36,24 +36,21 @@ literal single fixed slice.
 
 ### Target 1. Internalize `NP_not_subset_PpolyDAG` via asymptotic/eventual route
 
-Current public default theorem still requires:
+Current public default theorem is:
 
 ```text
-hNPDag : ComplexityInterfaces.NP_not_subset_PpolyDAG
+P_ne_NP_final
+  (hMag : MagnificationAssumptions)
 ```
 
-Active theorem route is exactly:
+The DAG side is already closed on this path:
 
-1. prove one eventual source theorem on a non-vacuous surface;
-2. use length-local bridge assumptions (not all-length global bridge claims);
-3. close one weak-route class-level payload (`acceptedFamily` or
-   `promiseYes` family);
-4. reconnect to existing wrappers without adding new endpoint plumbing.
+1. `NP_not_subset_PpolyDAG_final hMag` is internalized;
+2. no external DAG payload remains on the default theorem surface.
 
 ### Target 2. Remove remaining public `hMag`
 
-Even after Target 1 is done, theorem is not yet zero-arg while it still takes
-`hMag` for compatibility.
+Theorem is still not zero-arg while it takes `hMag` for compatibility.
 
 To reach a genuinely unconditional top-level theorem, still need either:
 
@@ -73,48 +70,47 @@ Rule:
 - do not present fixed-slice historical branch as current closure plan;
 - keep a single canonical active route across docs.
 
-### Task 2. Prove one eventual weak-route source theorem (main blocker)
+### Task 2. Internalize the formula-side final surface (main blocker)
 
 Status: active blocker.
 
 Immediate theorem targets:
 
-1. one eventual accepted-family or promise-YES theorem with explicit
-   `n ≥ n0(β)` shape;
-2. one length-local bridge theorem sufficient to push global `PpolyDAG` witness
-   down to the targeted slices;
-3. one class-level contradiction payload consumable by existing wrappers.
+1. an internal source for
+   `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`;
+2. equivalently, an internal source for the magnification package pieces used
+   by the formula and `PpolyReal` finals;
+3. a zero-argument wrapper that no longer exposes `hMag`.
 
 Acceptance condition:
 
-- at least one existing asymptotic wrapper is callable from the new eventual
-  source theorem, without new endpoint names.
+- `UNCONDITIONAL=1 ./scripts/check.sh` no longer reports
+  `NP_not_subset_PpolyFormula_final` as depending on
+  `MagnificationAssumptions`.
 
-### Task 3. Internalize `NP_not_subset_PpolyDAG`
+### Task 3. Keep internal DAG separation closed
 
-Status: pending on Task 2.
+Status: completed, preserve.
 
 Delivery condition:
 
-- produce internal theorem
-  `ComplexityInterfaces.NP_not_subset_PpolyDAG`
-  with no external DAG-separation assumption.
+- keep `NP_not_subset_PpolyDAG_final (hMag)` deriving class-level DAG
+  separation with no external DAG payload.
 
 ### Task 4. Replace compatibility final theorem surface
 
-Status: pending on Task 3.
+Status: pending on Task 2.
 
 Current theorem:
 
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 Required end state:
 
-- no external `hNPDag` and then no residual `hMag` in public endpoint.
+- no residual `hMag` in public endpoint.
 
 ### Task 5. Final consistency pass
 
@@ -129,5 +125,4 @@ After theorem closure:
 
 - Do not add wrappers just to show apparent progress.
 - Do not reopen fixed-slice support-half as a primary theorem target.
-- Do not claim that removing only `hNPDag` yields full unconditionality while
-  `hMag` remains in public theorem.
+- Do not claim full unconditionality while `hMag` remains in public theorem.

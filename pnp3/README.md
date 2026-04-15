@@ -47,13 +47,14 @@ Legacy-модель GapMCSP и другие старые ветки в `archive/
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 То есть:
 
-1. внутреннего theorem `NP_not_subset_PpolyDAG` в дереве пока нет;
-2. публичная zero-arg финальная формулировка пока тоже не закрыта.
+1. внутренний theorem `NP_not_subset_PpolyDAG` в дереве уже есть на
+   `hMag`-поверхности;
+2. публичная zero-arg финальная формулировка пока не закрыта, потому что
+   остаётся `hMag`.
 
 ## Источник статуса
 

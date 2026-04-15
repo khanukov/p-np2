@@ -84,5 +84,16 @@ theorem frontier_reduces_to_real_P_ne_NP :
   exact P_ne_NP_final_dag_only
     (frontier_reduces_to_real_NP_not_subset_PpolyDAG hCore)
 
+/--
+Frontier endpoint from an explicit proof of `CoreFrontierObligation`.
+
+This file now stops at the honest reduction boundary: it does not claim a
+zero-argument unconditional theorem until the frontier obligation itself is
+proved in the active tree.
+-/
+theorem P_ne_NP_of_coreFrontierObligation
+    (hCore : CoreFrontierObligation) : ComplexityInterfaces.P_ne_NP :=
+  frontier_reduces_to_real_P_ne_NP hCore
+
 end Frontier
 end Pnp3

@@ -40,44 +40,41 @@
 
 ### 3) Почему текущий default всё ещё не безусловный
 
-`P_ne_NP_final` пока принимает два аргумента:
+`P_ne_NP_final` сейчас принимает один аргумент:
 
-- `hNPDag : NP_not_subset_PpolyDAG` (реальный оставшийся логический блокер),
 - `hMag : MagnificationAssumptions` (compatibility-контекст в сигнатуре).
 
 ---
 
 ## Что именно отсутствует для безусловного `NP_not_subset_PpolyDAG`
 
-Отсутствует не endpoint, а **внутренний источник** одного из входов в эти endpoint-теоремы.
-В практических терминах сейчас не хватает theorem-level результата, который внутри репозитория
-(без внешнего `hNPDag`) построит, например, один из следующих payload:
+Для `NP_not_subset_PpolyDAG` как раз уже **не отсутствует** ничего внешнего:
+в активном дереве есть internalized theorem
+`NP_not_subset_PpolyDAG_final hMag`.
 
-- `dagRouteBSourceBlocker p*`, или
-- эквивалентную source-closure/stable-restriction нагрузку,
+Текущий DAG-side маршрут замкнут так:
 
-на sound (невакуумной) поверхности.
-
-Именно это в статусных документах обозначено как главный незакрытый DAG-side theorem debt.
+1. на пороговом canonical slice любой witness `PpolyDAG` переводится в
+   witness `PpolyFormula`,
+2. support-bounds приходят из `hMag.switching.multiswitching`,
+3. дальше срабатывает уже закрытый fixed-slice collapse consumer.
 
 ---
 
 ## Можно ли «хотя бы доказать `ComplexityInterfaces.NP_not_subset_PpolyDAG`» уже сейчас?
 
-### Да — **условно**
+### Да — **условно на `hMag`**
 
-Если у вас уже есть:
+Именно это и делает текущий default:
 
-- конкретный `W : GapPartialMCSP_TMWitness p`, и
-- `hBlocker : dagRouteBSourceBlocker p`,
-
-то `NP_not_subset_PpolyDAG_final_of_blocker_TM W hBlocker` уже даёт
-`ComplexityInterfaces.NP_not_subset_PpolyDAG`.
+- `NP_not_subset_PpolyDAG_final hMag` даёт
+  `ComplexityInterfaces.NP_not_subset_PpolyDAG`,
+- `P_ne_NP_final hMag` сразу даёт `ComplexityInterfaces.P_ne_NP`.
 
 ### Нет — **безусловно, прямо сейчас**
 
-Потому что в активном дереве нет внутренней теоремы, которая сама (без внешнего импорта
-недостающей математики) производит необходимый `hBlocker`/эквивалентный payload.
+Потому что в активном дереве всё ещё нет внутренней zero-arg теоремы,
+которая сама строит или устраняет `hMag : MagnificationAssumptions`.
 
 ---
 
@@ -87,23 +84,20 @@
 Да, общий вектор аудитора корректный: literal fixed-slice маршрут не является
 рабочим путём к безусловному закрытию и должен считаться no-go веткой.
 
-Важное уточнение по активной ветке: этот no-go уже частично зафиксирован на
-уровне специальных модулей исторического маршрута (`FailedRoute_*`), поэтому
-новая документация теперь трактует fixed-slice только как legacy plumbing, а
-единственный живой closure-route — asymptotic/eventual + length-local.
+Важное уточнение по активной ветке: no-go относится к историческому
+fixed-slice support-half / blocker hunt. Текущий замкнутый DAG-маршрут другой:
+он использует fixed-slice `DAG -> Formula` bridge на пороговом slice и не
+воскрешает старую support-half ветку.
 
 ---
 
 ## Минимальный план закрытия (практически)
 
-1. Закрыть один невакуумный source theorem на eventual/length-local поверхности
-   (это текущий приоритет roadmap).
-2. Из него получить один из существующих blocker/source-closure payload-ов.
-3. Прогнать payload через уже готовый финальный wrapper и получить внутренний
-   `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
-4. Затем убрать `hNPDag` из default финала.
-5. Отдельно убрать residual `hMag` (через concrete `_TM` bypass либо internalization
-   magnification-пакета), чтобы получить zero-arg `P_ne_NP`.
+1. Сохранить текущую internalized DAG-сепарацию как closed route.
+2. Закрыть formula-side internalization, чтобы
+   `NP_not_subset_PpolyFormula_final` больше не принимал `hMag`.
+3. Затем убрать residual `hMag` из `P_ne_NP_final`.
+4. После этого получить zero-arg `P_ne_NP`.
 
 ---
 
@@ -112,6 +106,6 @@
 Одновременно должны выполняться все пункты:
 
 1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` доказан внутри дерева без внешнего DAG-входа.
-2. Публичный финал не требует внешнего `hNPDag`.
+2. Публичный финал не требует внешнего class-level `NP_not_subset_PpolyDAG`.
 3. Публичный финал не требует `hMag`.
 4. В активной ветке выводится zero-arg теорема `P_ne_NP`.

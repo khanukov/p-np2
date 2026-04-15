@@ -53,22 +53,28 @@ The public default final theorem is still:
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 Two important facts about that signature:
 
-1. `hNPDag` is the real logical DAG-side blocker.
-2. `hMag` is still present as compatibility context, but the current default
-   implementation does not consume it.
+1. External class-level DAG separation `hNPDag` is no longer required by the
+   default final theorem.
+2. Internal DAG separation is now derived inside
+   `NP_not_subset_PpolyDAG_final`.
+3. `hMag` is still present as the remaining compatibility context.
 
-So the repository is not yet unconditional either at the DAG-separation layer
-or at the final zero-argument API layer.
+So the repository is no longer blocked at the DAG-separation layer, but it is
+still not unconditional at the final zero-argument API layer.
 
 ## What Changed Recently
 
 Recent code now exposes the following additional honest routes:
 
+- a fixed-slice DAG-to-formula bridge
+  `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`;
+- a canonical internal DAG final `NP_not_subset_PpolyDAG_final`;
+- a one-argument default final theorem
+  `P_ne_NP_final (hMag : MagnificationAssumptions)`;
 - asymptotic fixed-slice DAG finals:
   `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`,
   `..._of_asymptotic_dag_stableRestriction`,
@@ -85,36 +91,24 @@ Recent code now exposes the following additional honest routes:
 - canonical witness-density hardwire coverage and all-slices compilers in
   `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`.
 
-This means the repository is no longer blocked on endpoint plumbing.
-The remaining debt is theorem-level.
+This means the repository is no longer blocked on endpoint plumbing or on an
+external DAG payload. The remaining debt is formula-side / magnification-side
+theorem closure.
 
 ## Current Best Next Steps
 
-There are two distinct closure goals.
+There is now one remaining closure goal.
 
-### Goal A: remove external `hNPDag` from the current `hMag`-based final path
+### Goal: reach a truly zero-argument unconditional theorem
 
-The fastest honest route is currently:
-
-1. choose one fixed slice
-   `p* := hMag.antiChecker.asymptotic.pAt n hn`;
-2. prove one fixed-slice DAG source theorem on `p*`, preferably
-   `gapPartialMCSP_supportHalfObligation p*`,
-   or equivalently `dagRouteBSourceBlocker p*`,
-   or otherwise `dag_stableRestriction_producer p*`;
-3. feed that theorem into the already compiled asymptotic wrappers.
-
-### Goal B: reach a truly zero-argument unconditional theorem
-
-Removing `hNPDag` is not enough by itself. Full unconditionality still requires
-eliminating the remaining public `hMag` argument too.
+The DAG side is already internalized. Full unconditionality now requires
+eliminating the remaining public `hMag` argument.
 
 The shortest credible ways to do that are:
 
-1. bypass `hMag` completely with a concrete fixed slice `p*`, a concrete
-   `GapPartialMCSP_TMWitness p*`, and a fixed-slice blocker fed into the
-   existing `_TM` final wrappers; or
-2. separately internalize the current magnification-assumption package.
+1. separately internalize the current magnification-assumption package, so
+   `NP_not_subset_PpolyFormula_final` no longer takes `hMag`; or
+2. bypass the package-shaped public surface with a zero-argument final route.
 
 ## Verification
 
@@ -128,6 +122,16 @@ for f in pnp3/Tests/AxiomsAudit.lean \
   lake env lean "$f"
 done
 ```
+
+Also check:
+
+```bash
+UNCONDITIONAL=1 ./scripts/check.sh
+```
+
+At the current tree state this fails only because
+`NP_not_subset_PpolyFormula_final` still depends on
+`MagnificationAssumptions`.
 
 ## Primary Documents
 

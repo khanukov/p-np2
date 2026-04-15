@@ -22,7 +22,6 @@ Current public default theorem:
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 ## What is already closed
@@ -39,20 +38,13 @@ P_ne_NP_final
 
 ## Remaining unconditional blockers
 
-### Blocker A. Internal DAG separation theorem
+### Blocker. Public final API cleanup
 
-Still missing internal theorem:
+Internal DAG separation is already closed on the default path:
+`NP_not_subset_PpolyDAG_final hMag` proves
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` without an external DAG input.
 
-```text
-ComplexityInterfaces.NP_not_subset_PpolyDAG
-```
-
-without an external DAG-separation assumption.
-
-### Blocker B. Public final API cleanup
-
-Even after Blocker A, public theorem is not assumption-free while it still
-exposes:
+Public theorem is still not assumption-free while it exposes:
 
 ```text
 hMag : MagnificationAssumptions
@@ -60,22 +52,20 @@ hMag : MagnificationAssumptions
 
 Therefore full unconditionality requires both:
 
-1. internal DAG separation,
+1. internal formula-side / magnification source,
 2. zero-argument public final theorem.
 
 ## Single active practical route (policy)
 
-Use only asymptotic/eventual theorem route:
+Use the default-surface internalization route:
 
-1. prove eventual weak-route source theorem (`acceptedFamily` or `promiseYes`),
-2. prove/instantiate required length-local bridge,
-3. derive class-level contradiction payload,
-4. instantiate existing wrappers to get internal
-   `ComplexityInterfaces.NP_not_subset_PpolyDAG`,
-5. remove external `hNPDag`,
-6. remove residual `hMag`.
+1. keep the now-internal DAG separation route intact,
+2. internalize `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`,
+3. remove residual `hMag`,
+4. expose zero-argument `P_ne_NP`.
 
-Do **not** treat literal fixed-slice blocker hunt as active closure route.
+Do **not** reopen historical DAG-side support-half / blocker hunts as the main
+default-final closure route.
 
 ## Proof-quality safety checks
 
@@ -97,7 +87,7 @@ Before declaring any blocker closed, confirm:
 All of the following must hold at once:
 
 1. Repository proves `ComplexityInterfaces.NP_not_subset_PpolyDAG` internally.
-2. Public final theorem no longer requires external `hNPDag`.
+2. Public final theorem no longer requires external class-level DAG separation.
 3. Public final theorem no longer exposes compatibility-only `hMag`.
 4. Zero-argument theorem `P_ne_NP` is derivable in active tree.
 5. `README.md`, `STATUS.md`, `TODO.md`, and `AXIOMS_FINAL_LIST.md` are updated

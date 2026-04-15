@@ -1,6 +1,6 @@
 # Proof Overview (Auditor Guide)
 
-Updated: 2026-04-03
+Updated: 2026-04-15
 
 This file is the short auditor-oriented map of the active proof route in the
 current repository state.
@@ -52,14 +52,12 @@ The public default theorem is still:
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 Interpretation:
 
-1. `hNPDag` is the real remaining DAG-separation blocker.
-2. `hMag` is currently compatibility context and is not consumed by the
-   implementation of `P_ne_NP_final`.
+1. DAG separation is already internalized by `NP_not_subset_PpolyDAG_final`.
+2. `hMag` is the real remaining public blocker.
 
 ## 4. What is closed
 
@@ -77,21 +75,18 @@ Closed in the active tree:
 
 Still open:
 
-1. an internal theorem `ComplexityInterfaces.NP_not_subset_PpolyDAG`;
+1. an internal source for `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`;
 2. a zero-argument public theorem `P_ne_NP`;
-3. the fixed-slice source theorem needed to feed the new asymptotic collapse
-   wrappers;
-4. or, alternatively, a standalone concrete-slice `_TM` route that bypasses
-   `hMag` entirely.
+3. formula-side internalization of the remaining magnification package.
 
 ## 6. Current recommended audit reading
 
 If the goal is to understand the real blocker rather than the packaging:
 
-1. `pnp3/LowerBounds/DAGStableRestrictionProducer.lean`
-2. `pnp3/LowerBounds/DAGUnconditionalBlocker.lean`
-3. `pnp3/LowerBounds/AsymptoticDAGBarrier.lean`
-4. `pnp3/Magnification/FinalResultCore.lean`
+1. `pnp3/Magnification/FinalResultMainline.lean`
+2. `pnp3/Complexity/PpolyFormula_from_PpolyDAG_FixedSlice.lean`
+3. `pnp3/Magnification/AC0LocalityBridge.lean`
+4. `pnp3/Magnification/AsymptoticFormulaCollapse.lean`
 
 ## 7. Minimal verification script
 
@@ -105,7 +100,7 @@ for f in pnp3/Tests/AxiomsAudit.lean \
   lake env lean "$f"
 done
 rg -n "^theorem P_ne_NP_final|^theorem NP_not_subset_PpolyDAG_final_of_|^theorem P_ne_NP_final_of_" \
-  pnp3/Magnification/FinalResultCore.lean
+  pnp3/Magnification/FinalResultMainline.lean
 ```
 
 ## 8. Documentation policy

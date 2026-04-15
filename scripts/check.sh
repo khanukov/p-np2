@@ -245,8 +245,8 @@ else
 fi
 
 # Documentation route-policy guardrails:
-# keep canonical docs aligned on one active closure route and prevent silent
-# reintroduction of deprecated fixed-slice "fastest route" wording.
+# keep canonical docs aligned on the current blocker and prevent silent
+# reintroduction of deprecated DAG-route wording.
 route_docs=(
   "STATUS.md"
   "TODO.md"
@@ -263,27 +263,34 @@ for f in "${route_docs[@]}"; do
 done
 
 # Hard requirement: canonical docs must explicitly mention the fixed-slice
-# no-go status and the active asymptotic/eventual route.
+# no-go status, the fact that DAG separation is already internalized, and the
+# current residual `MagnificationAssumptions` blocker.
 if ! rg -n "fixed-slice.*no-go|no-go.*fixed-slice" "${route_docs[@]}" >/tmp/pnp3_route_nogo_hits.log; then
   echo "Route-policy violation: canonical docs do not explicitly state fixed-slice no-go status."
   exit 1
 fi
 
-if ! rg -n "asymptotic/eventual|eventual.*length-local|length-local.*eventual" "${route_docs[@]}" >/tmp/pnp3_route_active_hits.log; then
-  echo "Route-policy violation: canonical docs do not explicitly state the active asymptotic/eventual route."
+if ! rg -n "DAG separation.*internalized|internalized.*DAG separation|NP_not_subset_PpolyDAG_final" "${route_docs[@]}" >/tmp/pnp3_route_active_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state that DAG separation is already internalized."
   exit 1
 fi
 
-# Forbidden legacy wording: these phrases historically pointed to the deprecated
-# fixed-slice closure prioritization and should not reappear in canonical docs.
-if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem' \
+# Current blocker wording must be explicit.
+if ! rg -n "MagnificationAssumptions|NP_not_subset_PpolyFormula_final" "${route_docs[@]}" >/tmp/pnp3_route_blocker_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state the residual MagnificationAssumptions blocker."
+  exit 1
+fi
+
+# Forbidden legacy wording: these phrases historically pointed to deprecated
+# DAG-side closure prioritization and should not reappear in canonical docs.
+if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem|asymptotic/eventual source theorem' \
     "${route_docs[@]}" >/tmp/pnp3_route_legacy_phrase_hits.log; then
   echo "Detected deprecated fixed-slice closure wording in canonical docs:"
   cat /tmp/pnp3_route_legacy_phrase_hits.log
   exit 1
 fi
 
-echo "Route policy docs OK (fixed-slice no-go + asymptotic/eventual path enforced)."
+echo "Route policy docs OK (fixed-slice no-go + internalized DAG + residual hMag blocker enforced)."
 
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"

@@ -17,9 +17,8 @@ It does not by itself imply unconditional `P ≠ NP`.
 
 These are explicit hypotheses, not axioms:
 
-1. `NP_not_subset_PpolyDAG` on the current public default final theorem.
-2. `MagnificationAssumptions` on the current public default final theorem.
-3. Various fixed-slice `_TM`, source-closure, blocker, and bridge wrappers
+1. `MagnificationAssumptions` on the current public default final theorem.
+2. Various fixed-slice `_TM`, source-closure, blocker, and bridge wrappers
    continue to expose the assumptions appropriate to their theorem surfaces.
 
 ## Hygiene verification

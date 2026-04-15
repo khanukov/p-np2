@@ -32,9 +32,9 @@ This is already reflected by dedicated failed-route modules:
 So roadmap execution must not prioritize proving unconditional separation from a
 literal single fixed slice.
 
-## The Two Remaining Closure Targets
+## The Remaining Closure Targets
 
-### Target 1. Internalize `NP_not_subset_PpolyDAG` via asymptotic/eventual route
+### Target 1. Keep internal DAG separation closed
 
 Current public default theorem is:
 

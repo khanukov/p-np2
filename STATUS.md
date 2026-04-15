@@ -62,15 +62,22 @@ for unconditional closure.
 
 ## What Is Still Open
 
-### DAG-side theorem debt
+### DAG-side theorem debt (closed on the default path)
 
-There is still no internal theorem
+The historical DAG-side debt is no longer the active blocker on the default
+surface.
+
+Current mainline reality:
 
 ```text
-ComplexityInterfaces.NP_not_subset_PpolyDAG
+NP_not_subset_PpolyDAG_final
+  (hMag : MagnificationAssumptions) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
-derived without an external DAG hypothesis.
+So internal DAG separation is already derived on the package-shaped `hMag`
+surface. The remaining blocker for unconditionality is no longer a DAG theorem,
+but the residual public `hMag`.
 
 ### Final public API debt
 

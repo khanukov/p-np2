@@ -1,6 +1,6 @@
 # Technical Claims and Scope
 
-Updated: 2026-04-03
+Updated: 2026-04-15
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -25,9 +25,10 @@ Current milestone release guardrail:
 ## Not currently claimed
 
 1. No unconditional in-repo theorem `P ≠ NP`.
-2. No internal theorem `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
-3. No unconditional default public wrapper `P_ne_NP_final`; it still takes
-   `hNPDag`, and it still exposes `hMag` as compatibility context.
+2. No unconditional default public wrapper `P_ne_NP_final`; it still exposes
+   `hMag` as compatibility context.
+3. No internalized formula-side default source that removes
+   `MagnificationAssumptions` from the public final cone.
 
 ## Rule for public wording
 

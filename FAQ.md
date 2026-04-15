@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Updated: 2026-04-03
+Updated: 2026-04-15
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -34,14 +34,13 @@ The current public default theorem is:
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 Interpretation:
 
-1. `hNPDag` is the real DAG-separation blocker.
-2. `hMag` is still exposed in the public signature, even though the current
-   implementation does not consume it.
+1. DAG separation is already internalized on the default path via
+   `NP_not_subset_PpolyDAG_final hMag`.
+2. `hMag` is the real remaining public blocker.
 
 ## Are we currently using GapMCSP or Partial MCSP in active code?
 
@@ -55,21 +54,22 @@ No in the absolute metatheoretic sense. Active `pnp3/` has no project-local
 standard Lean assumptions:
 `propext`, `Classical.choice`, `Quot.sound`.
 
-## What is the current fastest path to remove `hNPDag`?
+## Is `hNPDag` still a blocker?
 
-Prove one fixed-slice DAG source theorem on
-`p* := hMag.antiChecker.asymptotic.pAt n hn`,
-preferably `gapPartialMCSP_supportHalfObligation p*`,
-and then use the already compiled asymptotic fixed-slice wrappers.
+That step is already done on the default final surface.
+
+`P_ne_NP_final` no longer takes external DAG separation.
 
 ## What is the current fastest path to a zero-argument theorem?
 
-Bypass `hMag` entirely:
+Internalize the formula-side package currently exposed by
 
-1. choose a concrete fixed slice `p*`,
-2. provide a concrete `GapPartialMCSP_TMWitness p*`,
-3. prove a blocker on that slice,
-4. use the existing `_TM` final wrappers.
+```text
+NP_not_subset_PpolyFormula_final
+  (hMag : MagnificationAssumptions)
+```
+
+and then remove residual `hMag` from `P_ne_NP_final`.
 
 ## Is axiom/sorry hygiene clean?
 

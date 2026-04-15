@@ -97,7 +97,6 @@ lean_lib PnP3 where
     Glob.one `LowerBounds.MCSPGapLocality,
     Glob.one `LowerBounds.AntiChecker_Partial,
     Glob.one `LowerBounds.LB_Formulas_Core_Partial,
-    Glob.one `Frontier.UnconditionalPneNpFrontier,
     Glob.one `Magnification.LocalityInterfaces_Partial,
     Glob.one `Magnification.Facts_Magnification_Partial,
     Glob.one `Magnification.PipelineStatements_Partial,

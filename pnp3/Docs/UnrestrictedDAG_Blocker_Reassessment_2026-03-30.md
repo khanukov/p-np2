@@ -2,7 +2,7 @@
 
 Status: research-roadmap note.
 
-Updated with current-status caveat: 2026-04-03.
+Updated with current-status caveat: 2026-04-15.
 
 ## Current-status caveat
 
@@ -11,10 +11,7 @@ unrestricted-DAG endpoint design.
 
 It is **not** the current shortest integration plan for the public final API.
 
-As of 2026-04-03, the fastest honest route to remove external `hNPDag` is:
-
-1. prove one fixed-slice DAG blocker;
-2. use the already compiled asymptotic fixed-slice collapse wrappers.
+As of 2026-04-15, DAG separation is already internalized on the default path.
 
 The all-slices/global-distributional program discussed here remains a valid
 parallel theorem track, but it is no longer the immediate blocker for cleaning
@@ -36,7 +33,6 @@ still “global distributional endpoint first”.
 
 The active branch reality is now:
 
-1. fixed-slice blocker + asymptotic collapse is the practical next closure
-   route;
-2. global/all-slices routes remain theorem programs, not the shortest current
-   integration task.
+1. the remaining public blocker is `hMag : MagnificationAssumptions`,
+2. global/all-slices unrestricted-DAG routes remain theorem programs, not the
+   shortest current integration task.

@@ -1,9 +1,14 @@
 # Gap-Target Stable-Restriction Route Status
 
-Last updated: 2026-04-03.
+Last updated: 2026-04-15.
 
 This note records the **current** state of the fixed-slice stable-restriction /
 Route-B route after the recent blocker-packaging and fallback-closure work.
+
+Current status caveat: this is now a **historical route note**, not the main
+blocker note for unconditionality. The default DAG separation is already
+internalized elsewhere via the fixed-slice `DAG -> Formula` bridge plus the
+support-bounds consumer.
 
 ## 1. What is already finished
 
@@ -37,7 +42,7 @@ Support-half fallback now already closes downstream:
 
 So support-half is no longer just a diagnostic restricted-model note.
 
-## 2. What is still missing
+## 2. What is still missing on this route
 
 What is still not done is one **actual fixed-slice source theorem**.
 
@@ -54,20 +59,17 @@ or equivalently one of:
 
 for the chosen fixed slice.
 
-That theorem is the real remaining blocker on this route.
+That theorem is the real remaining blocker on this route family.
 
-## 3. Why this route matters now
+## 3. Why this route still matters
 
-This route has become more important, not less, because
-`Magnification/FinalResultCore.lean` now already contains asymptotic wrappers
-that turn one fixed-slice blocker into a class-level DAG-separation statement
-(`FinalResult.lean` remains the compatibility import path).
+This route remains mathematically relevant because it still gives one explicit
+family of source-side witnesses for DAG contradiction theorems.
 
-So the current practical shortest path is:
+But it is no longer the current practical shortest path to the public final API.
 
-1. prove one fixed-slice blocker;
-2. collapse it through the asymptotic wrapper layer;
-3. remove external `hNPDag` from the current public final route.
+The current blocker for unconditionality is the residual
+`hMag : MagnificationAssumptions` on the formula/public final cone.
 
 ## 4. What this route still does not give automatically
 
@@ -76,14 +78,10 @@ wrapper layer, that still does **not** automatically yield a zero-argument
 unconditional theorem, because the current public theorem still exposes
 `hMag : MagnificationAssumptions`.
 
-So this route is currently the best path to remove `hNPDag`, but not by itself
-the full story for removing `hMag`.
+So this route is now a useful subroute, but not the active blocker for
+removing `hMag`.
 
 ## 5. Current recommendation
 
-Treat this file as the status note for the **fastest current integration
-route**.
-
-Treat the stronger all-slices canonical witness-density / witness-transfer
-route as a parallel theorem program, not as the shortest immediate blocker for
-the public final API.
+Treat this file as a status note for one historical DAG-source route family.
+Do not treat it as the canonical current blocker note for unconditionality.

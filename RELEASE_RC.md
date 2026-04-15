@@ -1,4 +1,4 @@
-# Release Plan (RC): 2026-04-03
+# Release Plan (RC): 2026-04-15
 
 This document defines the recommended release posture for the current state.
 
@@ -24,11 +24,13 @@ This document defines the recommended release posture for the current state.
    surface via `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`.
 6. Canonical witness-density hardwire coverage and all-slices compiler glue are
    present in code.
+7. Default DAG separation is internalized through
+   `NP_not_subset_PpolyDAG_final (hMag : MagnificationAssumptions)`.
 
 ## What is not included
 
 1. Unconditional in-repo theorem `P ≠ NP`.
-2. Internalized default source for `NP_not_subset_PpolyDAG`.
+2. Internalized default source for `NP_not_subset_PpolyFormula_final`.
 3. A zero-argument public final theorem.
 
 The public default theorem is still:
@@ -36,14 +38,12 @@ The public default theorem is still:
 ```text
 P_ne_NP_final
   (hMag : MagnificationAssumptions)
-  (hNPDag : NP_not_subset_PpolyDAG)
 ```
 
 Interpretation:
 
-1. `hNPDag` is still the logical blocker.
-2. `hMag` remains a compatibility context argument until the public final API
-   is cleaned up.
+1. DAG separation is already internalized on the default path.
+2. `hMag` remains the current public blocker until the final API is cleaned up.
 
 ## Mandatory public wording for this RC
 
@@ -87,7 +87,7 @@ Confirm docs are aligned:
 
 ## Post-RC closure plan
 
-1. Internalize `NP_not_subset_PpolyDAG`.
+1. Internalize `NP_not_subset_PpolyFormula_final`.
 2. Remove remaining external DAG-separation input from the public final route.
 3. Then remove the residual compatibility `hMag` argument from the default
    public theorem surface.

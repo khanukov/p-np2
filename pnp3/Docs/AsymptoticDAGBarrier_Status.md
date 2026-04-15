@@ -1,9 +1,9 @@
 # Asymptotic DAG Barrier Status
 
-Updated: 2026-04-03
+Updated: 2026-04-15
 
 This note records the **current** role of the asymptotic DAG barrier layer
-after the recent fixed-slice wrapper and blocker work.
+after DAG-side internalization moved the default blocker elsewhere.
 
 ## 1. What the barrier layer already provides
 
@@ -21,22 +21,14 @@ The asymptotic/barrier stack already contains:
 
 So the asymptotic layer is real infrastructure, not a plan stub.
 
-## 2. What is newly important
+## 2. Current role after DAG internalization
 
-`Magnification/FinalResultCore.lean` now also exposes **fixed-slice asymptotic
-collapse wrappers**:
+The barrier layer remains important infrastructure, but it is no longer the
+current blocker for the default final theorem.
 
-- `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`
-- `..._of_asymptotic_dag_stableRestriction`
-- `..._of_asymptotic_sourceClosure`
-- `..._of_asymptotic_blocker`
-- companion `P_ne_NP_final_of_*`
-
-This changes the practical picture:
-
-> the shortest route to remove external `hNPDag` is no longer “build a full
-> all-slices mainline theorem”, but “prove one fixed-slice blocker and collapse
-> it asymptotically”.
+Default DAG separation is already internalized in `NP_not_subset_PpolyDAG_final`
+through a different route. So the barrier layer should now be read primarily as
+research / alternative-route infrastructure.
 
 ## 3. Current structural limitation
 
@@ -60,7 +52,7 @@ Specifically:
    (`sliceEq`) at the chosen slice length.
 
 Therefore the all-slices barrier program remains mathematically meaningful, but
-it is not the shortest current path to cleaning up the public final theorem.
+it is not the current blocker for cleaning up the public final theorem.
 
 ## 4.5 Concrete next refactor target (recommended)
 
@@ -82,16 +74,11 @@ Concretely, the next implementation step is:
 
 ### Immediate use
 
-Use the asymptotic layer to collapse one fixed-slice contradiction into a
-class-level DAG separation theorem.
+Use the asymptotic layer as a theorem laboratory for alternative DAG routes and
+for stronger standalone non-uniform separation statements.
 
-Practical theorem target:
-
-1. prove one fixed-slice source theorem on
-   `p* := hMag.antiChecker.asymptotic.pAt n hn`;
-2. feed it into
-   `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
-   or a nearby asymptotic fixed-slice wrapper.
+It is no longer necessary to route the default final theorem through this layer
+before attacking the remaining unconditional blocker.
 
 ### Longer-term use
 
@@ -103,9 +90,9 @@ not depend on the current fixed-slice integration path.
 
 The barrier layer still does **not** by itself provide:
 
-1. an internal theorem `ComplexityInterfaces.NP_not_subset_PpolyDAG`;
-2. a zero-argument theorem `P_ne_NP`;
-3. a replacement for the current public compatibility argument `hMag`.
+1. a zero-argument theorem `P_ne_NP`;
+2. a replacement for the current public compatibility argument `hMag`;
+3. a formula-side internalization of the remaining public package surface.
 
 Those require source mathematics outside the barrier layer.
 

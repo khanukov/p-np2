@@ -1,21 +1,20 @@
 # Closure Route Policy (canonical)
 
-Updated: 2026-04-04.
+Updated: 2026-04-15.
 
-This file is a hard policy reference for DAG-side closure planning.
-It exists to prevent ambiguous routing language from re-entering status docs.
+This file is a hard policy reference for unconditional-closure planning.
+It exists to prevent stale DAG-route language from re-entering status docs.
 
 ## One active route
 
 Only one active route is allowed in canonical planning docs:
 
-1. asymptotic/eventual source theorem,
-2. length-local bridge assumptions,
-3. weak-route class-level payload,
-4. internal `ComplexityInterfaces.NP_not_subset_PpolyDAG`,
-5. then API cleanup (`hNPDag`, then `hMag`).
+1. preserve the now-internalized DAG separation route,
+2. internalize the formula-side package exposed by
+   `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`,
+3. then remove residual `hMag` from `P_ne_NP_final`.
 
-## Closed/no-go route
+## Closed/no-go routes
 
 Literal fixed-slice blocker hunt is a closed historical no-go route for
 unconditional closure planning.
@@ -33,7 +32,10 @@ Canonical docs (`STATUS.md`, `TODO.md`,
 must satisfy all of the following:
 
 1. explicitly mention fixed-slice no-go status,
-2. explicitly mention asymptotic/eventual + length-local active route,
-3. avoid deprecated phrasing that presents fixed-slice as the fastest route.
+2. explicitly mention that DAG separation is already internalized,
+3. explicitly mention that residual `MagnificationAssumptions` is the current
+   blocker,
+4. avoid deprecated phrasing that presents historical DAG-side fallbacks as the
+   active route.
 
 This policy is enforced in `scripts/check.sh`.

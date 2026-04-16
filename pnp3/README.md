@@ -42,19 +42,21 @@ Legacy-модель GapMCSP и другие старые ветки в `archive/
 
 ## Что открыто
 
-Текущий публичный default theorem всё ещё имеет вид:
+Текущий публичный default theorem уже **разбандлен** и имеет вид:
 
 ```text
 P_ne_NP_final
-  (hMag : MagnificationAssumptions)
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
 ```
 
 То есть:
 
-1. внутренний theorem `NP_not_subset_PpolyDAG` в дереве уже есть на
-   `hMag`-поверхности;
-2. публичная zero-arg финальная формулировка пока не закрыта, потому что
-   остаётся `hMag`.
+1. bundle-аргумент `hMag : MagnificationAssumptions` больше не обязателен на
+   default surface (`P_ne_NP_final_of_magnification` оставлен как compatibility wrapper);
+2. публичная zero-arg финальная формулировка всё ещё не закрыта, потому что
+   содержательные предпосылки (`hMS`, `hAsym`, `hNPbridge`) остаются внешними.
 
 ## Источник статуса
 

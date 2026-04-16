@@ -1,6 +1,7 @@
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityLift_Partial
 import Magnification.AC0LocalityBridge
+import LowerBounds.LB_Formulas_Core_Partial
 import ThirdPartyFacts.PartialLocalityLift
 
 namespace Pnp3
@@ -96,6 +97,212 @@ theorem stableWitness_of_formula_sizeBound
         Models.Partial.tableLen p.n / 2 := by
     exact le_trans (ComplexityInterfaces.FormulaCircuit.support_card_le_size c) hSize
   simpa [c, wf] using stableWitness_of_formula_supportBound (p := p) hFormula hSupport
+
+/--
+Bridge payload needed to turn one strict formula witness into a
+`SmallAC0Solver_Partial`.
+
+Why this payload is explicit:
+* `PpolyFormula` gives us a semantic formula family witness.
+* `SmallAC0Solver_Partial` additionally requires AC0-side syntactic data:
+  AC0 parameters, a concrete AC0 circuit, extensional equality between the
+  semantic decision function and this circuit, and packaged easy-family data.
+
+So this structure isolates the *exact* remaining obligations of the
+formula→AC0 bridge, without introducing any axioms.
+-/
+structure FormulaToAC0BridgeData
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) where
+  params : LowerBounds.SmallAC0ParamsPartial p
+  circuit : ThirdPartyFacts.AC0Circuit params.ac0
+  decide_eq :
+    (params.same_n ▸
+      (fun x : Core.BitVec (Models.partialInputLen p) =>
+        ComplexityInterfaces.FormulaCircuit.eval
+          ((Classical.choose hFormula).family (Models.partialInputLen p)) x)) =
+      ThirdPartyFacts.AC0Circuit.eval circuit
+  easyData : LowerBounds.AC0EasyFamilyDataPartial params.ac0
+
+/--
+Internal constructor bundle for the two remaining formula→AC0 bridge obligations.
+
+This keeps Stage A explicit and auditable while removing low-level per-theorem
+arguments (`hUnionSmall`, `hEasy`) from downstream bridge constructors.
+-/
+structure FormulaToAC0BridgeInternalConstructors (p : GapPartialMCSPParams) where
+  unionSmall :
+    ∀ (ac0 : ThirdPartyFacts.AC0Parameters)
+      (hsame : ac0.n = Models.partialInputLen p),
+      let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong ac0)
+      Counting.unionBound bound bound ≤
+        Nat.pow 2 (Nat.pow 2 ac0.n / (ac0.n + 2))
+  easyData :
+    ∀ (ac0 : ThirdPartyFacts.AC0Parameters)
+      (_hsame : ac0.n = Models.partialInputLen p),
+      LowerBounds.AC0EasyFamilyDataPartial ac0
+
+/--
+Compatibility adapter: package legacy per-field constructors into
+`FormulaToAC0BridgeInternalConstructors`.
+-/
+def formulaToAC0BridgeInternalConstructors_of_legacy
+    (p : GapPartialMCSPParams)
+    (hUnionSmall :
+      ∀ (ac0 : ThirdPartyFacts.AC0Parameters)
+        (hsame : ac0.n = Models.partialInputLen p),
+        let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong ac0)
+        Counting.unionBound bound bound ≤
+          Nat.pow 2 (Nat.pow 2 ac0.n / (ac0.n + 2)))
+    (hEasy :
+      ∀ (ac0 : ThirdPartyFacts.AC0Parameters)
+        (_hsame : ac0.n = Models.partialInputLen p),
+        LowerBounds.AC0EasyFamilyDataPartial ac0) :
+    FormulaToAC0BridgeInternalConstructors p where
+  unionSmall := hUnionSmall
+  easyData := hEasy
+
+/--
+Main formula→AC0 bridge constructor.
+
+Given a strict formula witness and explicit AC0 bridge payload, construct
+`SmallAC0Solver_Partial`.
+
+This is the theorem-level bridge that closes the previously observed
+type-level gap:
+`PpolyFormula (...)` can be turned into `SmallAC0Solver_Partial ...`
+once AC0-side witness obligations are supplied.
+-/
+noncomputable def formula_to_ac0_solver_bridge
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (data : FormulaToAC0BridgeData hFormula) :
+    LowerBounds.SmallAC0Solver_Partial p := by
+  classical
+  let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+    Classical.choose hFormula
+  refine
+    { params := data.params
+      sem := ComplexityInterfaces.SemanticDecider.ofFunction (Models.partialInputLen p)
+      witness := fun x =>
+        ComplexityInterfaces.FormulaCircuit.eval
+          (wf.family (Models.partialInputLen p)) x
+      correct := ?_
+      circuit := data.circuit
+      decide_eq := ?_
+      easyData := data.easyData }
+  · refine (Models.solvesPromise_gapPartialMCSP_iff (p := p)).2 ?_
+    intro x
+    simpa using wf.correct (Models.partialInputLen p) x
+  · simpa [wf] using data.decide_eq
+
+/--
+Immediate contradiction endpoint from a formula witness plus bridge payload.
+
+This is the direct consumer used in the current proof strategy: once the
+formula→AC0 bridge payload is instantiated internally, `LB_Formulas` closes
+the solver by contradiction.
+-/
+theorem false_of_formula_via_ac0_bridge
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (data : FormulaToAC0BridgeData hFormula) : False := by
+  exact
+    LowerBounds.LB_Formulas_core_partial_closed_internalized
+      (solver := formula_to_ac0_solver_bridge hFormula data)
+
+/--
+Partial internal realization of `FormulaToAC0BridgeData` from the existing
+semantic multi-switching provider.
+
+What this constructor internalizes automatically:
+1. AC0 circuit extraction from `AC0FamilyWitness.covers`,
+2. semantic linkage (`decide_eq`) from the provider's formula-link witness.
+
+What is still external (for now):
+1. `union_small` numeric side-condition for `SmallAC0ParamsPartial`,
+2. `easyData` package for the chosen AC0 parameters.
+
+So this theorem is a genuine mathematical step: it consumes the currently
+available semantic theorem payload and eliminates two bridge fields
+(`circuit`, `decide_eq`) constructively.
+-/
+theorem exists_formulaToAC0BridgeData_of_semantic_provider
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hBuild : FormulaToAC0BridgeInternalConstructors p) :
+    Nonempty (FormulaToAC0BridgeData hFormula) := by
+  classical
+  obtain ⟨ac0, F, hsame, hFam, _hMSw, hLink⟩ :=
+    hSem.package (p := p) hFormula
+  obtain ⟨f, hfF, hfEq⟩ := hLink
+  let wFam : ThirdPartyFacts.AC0FamilyWitness ac0 F := Classical.choice hFam
+  obtain ⟨c, _hcIn, hcComp⟩ := wFam.covers f hfF
+  refine ⟨{
+    params :=
+      { ac0 := ac0
+        same_n := hsame
+        union_small := hBuild.unionSmall ac0 hsame }
+    circuit := c
+    decide_eq := by
+      have htransport_aux :
+          ∀ {n m : Nat} (h : n = m) (g : Core.BitVec m → Bool),
+            (h ▸ g) = (fun x : Core.BitVec n => g (ThirdPartyFacts.castBitVec h x)) := by
+        intro n m h g
+        cases h
+        rfl
+      have htransport :
+          (hsame ▸
+            (fun x : Core.BitVec (Models.partialInputLen p) =>
+              ComplexityInterfaces.FormulaCircuit.eval
+                ((Classical.choose hFormula).family (Models.partialInputLen p)) x)) =
+            (fun x : Core.BitVec ac0.n =>
+              ComplexityInterfaces.FormulaCircuit.eval
+                ((Classical.choose hFormula).family (Models.partialInputLen p))
+                (ThirdPartyFacts.castBitVec hsame x)) :=
+        htransport_aux hsame
+          (fun x : Core.BitVec (Models.partialInputLen p) =>
+            ComplexityInterfaces.FormulaCircuit.eval
+              ((Classical.choose hFormula).family (Models.partialInputLen p)) x)
+      rw [htransport]
+      funext x
+      exact (hfEq x).symm.trans (hcComp x).symm
+    easyData := hBuild.easyData ac0 hsame }⟩
+
+/--
+Choice-based extractor from
+`exists_formulaToAC0BridgeData_of_semantic_provider`.
+-/
+noncomputable def formulaToAC0BridgeData_of_semantic_provider
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hBuild : FormulaToAC0BridgeInternalConstructors p) :
+    FormulaToAC0BridgeData hFormula :=
+  Classical.choice <|
+    exists_formulaToAC0BridgeData_of_semantic_provider
+      (hFormula := hFormula)
+      (hSem := hSem)
+      (hBuild := hBuild)
+
+/--
+Immediate contradiction route driven by the semantic multi-switching provider,
+via the partially internalized formula→AC0 bridge constructor above.
+-/
+theorem false_of_formula_via_semantic_provider_bridge
+    {p : GapPartialMCSPParams}
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p))
+    (hSem : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    (hBuild : FormulaToAC0BridgeInternalConstructors p) :
+    False := by
+  exact
+    false_of_formula_via_ac0_bridge
+      hFormula
+      (formulaToAC0BridgeData_of_semantic_provider
+        (hFormula := hFormula)
+        (hSem := hSem)
+        (hBuild := hBuild))
 
 /--
 Constructive engine for deriving a structured locality provider from

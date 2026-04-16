@@ -1795,9 +1795,8 @@ slice `n = N0`, convert any fixed-slice DAG witness to a formula witness by
 tree-unfolding that one DAG, and feed it through the already-closed
 support-bounds/stable-restriction consumer.
 -/
-theorem NP_not_subset_PpolyDAG_final
-  (hMag : MagnificationAssumptions)
-    :
+theorem NP_not_subset_PpolyDAG_final_with_magnification
+  (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   let n : Nat := hMag.antiChecker.asymptotic.N0
   have hn : hMag.antiChecker.asymptotic.N0 ≤ n := le_rfl
@@ -1811,16 +1810,97 @@ theorem NP_not_subset_PpolyDAG_final
         Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice p)
 
 /--
-Package-shaped final wrapper kept for CI/signature policy compatibility.
+Unbundled final DAG-separation API.
 
-Class-level DAG separation is now derived internally from `hMag`; the remaining
-public blocker is only the magnification assumptions package itself.
+This theorem intentionally removes the *bundled* public dependency on
+`MagnificationAssumptions` from the default endpoint signature and takes only
+the three payloads that are actually used:
+
+1. switching-side multi-switching contract,
+2. asymptotic slice-track package,
+3. NP pullback witness for that asymptotic track.
+-/
+theorem NP_not_subset_PpolyDAG_final
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  -- Repackage the three explicit inputs into the historical compatibility
+  -- bundle and reuse the already-audited internal closure proof.
+  let hMag : MagnificationAssumptions :=
+    { switching := { multiswitching := hMS }
+      antiChecker :=
+        { asymptotic := hAsym
+          npBridge := hNPbridge } }
+  exact NP_not_subset_PpolyDAG_final_with_magnification hMag
+
+/--
+Compatibility wrapper preserving the historical package-shaped DAG endpoint.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_magnification
+  (hMag : MagnificationAssumptions) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_with_magnification hMag
+
+/--
+Primary final `P ≠ NP` endpoint with unbundled arguments.
+
+Compared with the previous surface, the default theorem no longer exposes
+`hMag : MagnificationAssumptions` as a single public argument.  It now takes
+only the minimal explicit payload consumed by the closure proof.
 -/
 theorem P_ne_NP_final
-  (hMag : MagnificationAssumptions) :
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final hMag)
+    (NP_not_subset_PpolyDAG_final hMS hAsym hNPbridge)
+
+/--
+Support-bounds endpoint that removes `hMS` from the public input surface.
+
+This is a strict progress step toward assumption internalization:
+the multi-switching contract is reconstructed internally from
+`FormulaSupportRestrictionBoundsPartial` via
+`multiswitching_contract_internalized_of_support_bounds`.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final
+      (hMS := multiswitching_contract_internalized_of_support_bounds hBounds)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+
+/--
+`P ≠ NP` endpoint with support-bounds input instead of explicit `hMS`.
+
+This theorem does not make the route unconditional yet, but it closes one
+interface layer by internalizing the `hMS` construction.
+-/
+theorem P_ne_NP_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_supportBounds hBounds hAsym hNPbridge)
+
+/--
+Compatibility wrapper preserving the historical package-shaped `P ≠ NP`
+endpoint for callers that still pass `MagnificationAssumptions`.
+-/
+theorem P_ne_NP_final_of_magnification
+  (hMag : MagnificationAssumptions) :
+  ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final
+    hMag.switching.multiswitching
+    hMag.antiChecker.asymptotic
+    hMag.antiChecker.npBridge
 
 end Magnification
 end Pnp3

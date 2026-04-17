@@ -3625,6 +3625,93 @@ theorem SLProgram.eval_eq_last_evalAll {n : Nat} (p : SLProgram n)
 
 end Encoding
 
+/-!
+## Session 9e-d: `seekRightProgram` primitive
+
+`seekRightProgram Δ` is a `PhasedProgram` that moves the tape head
+right by exactly `Δ` cells, leaving the tape contents unchanged.
+It has `Δ + 1` phases: phase `i < Δ` emits `Move.right` and writes
+the scanned bit back unchanged; phase `Δ` is the accepting idle
+phase.
+
+This is the most basic TM-evaluator building block: before reading
+any specific cell, the evaluator needs to position the head.  With
+composable seek + read primitives, the full evaluator assembles
+as a chain of such phases.
+
+Correctness: starting in phase 0 with the head at position `h`,
+after `Δ` steps the head is at position `h + Δ` (assuming tape
+width allows) and the tape is unchanged.
+-/
+
+namespace SeekRight
+
+/-- The head-right-only program: `Δ` copies of the move-right
+transition, followed by an accepting idle phase. -/
+def seekRightProgram (Δ : Nat) : PhasedProgram.{0} where
+  numPhases := Δ + 1
+  phaseState := fun _ => Unit
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨Δ, by omega⟩
+  acceptState := ()
+  transition := fun i _ b =>
+    if hi : i.val < Δ then
+      (⟨⟨i.val + 1, by omega⟩, ()⟩, b, Move.right)
+    else
+      (⟨⟨Δ, by omega⟩, ()⟩, b, Move.stay)
+  timeBound := fun _ => Δ
+
+/-! ### Structural projections -/
+
+@[simp] theorem seekRightProgram_numPhases (Δ : Nat) :
+    (seekRightProgram Δ).numPhases = Δ + 1 := rfl
+
+@[simp] theorem seekRightProgram_startPhase (Δ : Nat) :
+    ((seekRightProgram Δ).startPhase : Fin (Δ + 1)).val = 0 := rfl
+
+@[simp] theorem seekRightProgram_acceptPhase (Δ : Nat) :
+    ((seekRightProgram Δ).acceptPhase : Fin (Δ + 1)).val = Δ := rfl
+
+@[simp] theorem seekRightProgram_timeBound (Δ n : Nat) :
+    (seekRightProgram Δ).timeBound n = Δ := rfl
+
+/-- `seekRightProgram` never moves left. -/
+theorem seekRightProgram_toTM_never_moves_left (Δ : Nat) :
+    TMNeverMovesLeft (seekRightProgram Δ).toTM := by
+  intro s b
+  rcases s with ⟨i, q⟩
+  show ((seekRightProgram Δ).transition i q b).snd.snd ≠ Move.left
+  by_cases hi : i.val < Δ
+  · simp [seekRightProgram, hi]
+  · simp [seekRightProgram, hi]
+
+/-- In the active phase `i < Δ` with bit `b`, the transition writes
+`b` back (tape unchanged at head) and moves right, advancing the
+phase. -/
+theorem seekRightProgram_transition_active (Δ : Nat)
+    {i : Fin ((seekRightProgram Δ).numPhases)} (hi : i.val < Δ)
+    (q : (seekRightProgram Δ).phaseState i) (b : Bool) :
+    ((seekRightProgram Δ).transition i q b).fst.fst.val = i.val + 1 ∧
+    ((seekRightProgram Δ).transition i q b).snd.fst = b ∧
+    ((seekRightProgram Δ).transition i q b).snd.snd = Move.right := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [seekRightProgram, hi]
+
+/-- In the accepting phase `i = Δ`, the transition writes the bit
+back (no change) and stays, looping on the accepting phase. -/
+theorem seekRightProgram_transition_accept (Δ : Nat)
+    {i : Fin ((seekRightProgram Δ).numPhases)} (hi : i.val = Δ)
+    (q : (seekRightProgram Δ).phaseState i) (b : Bool) :
+    ((seekRightProgram Δ).transition i q b).fst.fst.val = Δ ∧
+    ((seekRightProgram Δ).transition i q b).snd.fst = b ∧
+    ((seekRightProgram Δ).transition i q b).snd.snd = Move.stay := by
+  have hni : ¬ i.val < Δ := by omega
+  refine ⟨?_, ?_, ?_⟩ <;> simp [seekRightProgram, hni]
+
+end SeekRight
+
 end TM
 
 end PsubsetPpoly

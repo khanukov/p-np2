@@ -1594,6 +1594,213 @@ theorem incrementProgram_correct_all_ones {k : Nat} {n : Nat}
     rw [this, Nat.mod_self]
   exact this.symm
 
+/-!
+### Session 7g-d: First-zero correctness
+
+For the first-zero case at position `j < k`, the before/after
+tapes differ as follows:
+* cells `[c.head, c.head + j)`: `1 → 0` (first `j` ripple flips),
+* cell `c.head + j`: `0 → 1` (terminating write),
+* cells `[c.head + j + 1, c.head + k)`: unchanged.
+
+The arithmetic: before has value `(2^j - 1) + R` and after has
+`2^j + R`, where `R` is the contribution of cells above `j`.  The
+difference is exactly `+1`, and `after < 2^k` gives
+`(before + 1) mod 2^k = before + 1 = after`.
+
+The `counterValue_first_zero_diff` lemma packages this arithmetic
+generically — no reference to `incrementProgram` — making the
+final correctness theorem a straight plug-in.
+-/
+
+/-- Generic bit-flip arithmetic: if tape `T'` is obtained from tape `T`
+by flipping the first `j` bits of the counter window from 1 to 0,
+the bit at position `j` from 0 to 1, and leaving everything beyond
+`j` unchanged, then `counterValue T' = counterValue T + 1`. -/
+theorem counterValue_first_zero_diff {M : TM.{u}} {n : Nat}
+    (c c' : Configuration (M := M) n) (start j : Nat) :
+    ∀ k, j < k → start + k ≤ M.tapeLength n →
+    (∀ i, i < j → ∀ (hb : start + i < M.tapeLength n),
+       c.tape ⟨start + i, hb⟩ = true) →
+    (∀ (hb : start + j < M.tapeLength n),
+       c.tape ⟨start + j, hb⟩ = false) →
+    (∀ i, i < j → ∀ (hb : start + i < M.tapeLength n),
+       c'.tape ⟨start + i, hb⟩ = false) →
+    (∀ (hb : start + j < M.tapeLength n),
+       c'.tape ⟨start + j, hb⟩ = true) →
+    (∀ i, j < i → i < k → ∀ (hb : start + i < M.tapeLength n),
+       c'.tape ⟨start + i, hb⟩ = c.tape ⟨start + i, hb⟩) →
+    counterValue c' start k = counterValue c start k + 1 := by
+  intro k hjk h_bound h_ones h_bit_old h_zeros h_bit_new h_beyond
+  induction k with
+  | zero => omega
+  | succ k' ih =>
+    rw [counterValue_succ, counterValue_succ]
+    by_cases hcase : k' = j
+    · -- Base of the decomposition: k' = j, so the added bit IS the flipped one.
+      rw [hcase]
+      have h_bound_j : start + j < M.tapeLength n := by omega
+      have h_bound_j_le : start + j ≤ M.tapeLength n := by omega
+      -- Compute `counterValue c start j` and `counterValue c' start j`.
+      have h_old_lo : counterValue c start j = 2 ^ j - 1 :=
+        counterValue_of_all_true c start j h_bound_j_le h_ones
+      have h_new_lo : counterValue c' start j = 0 :=
+        counterValue_of_all_false c' start j h_zeros
+      rw [h_old_lo, h_new_lo, dif_pos h_bound_j, dif_pos h_bound_j]
+      simp [h_bit_old h_bound_j, h_bit_new h_bound_j]
+      have hpow : (1 : Nat) ≤ 2 ^ j := Nat.one_le_two_pow
+      omega
+    · -- Inductive case: k' > j.
+      have hk'_gt_j : k' > j := by omega
+      have hjk' : j < k' := hk'_gt_j
+      have h_bound' : start + k' ≤ M.tapeLength n := by omega
+      have h_beyond' : ∀ i, j < i → i < k' →
+          ∀ (hb : start + i < M.tapeLength n),
+          c'.tape ⟨start + i, hb⟩ = c.tape ⟨start + i, hb⟩ :=
+        fun i hi hik' => h_beyond i hi (by omega)
+      have ih_applied := ih hjk' h_bound' h_beyond'
+      -- Beyond position j the contribution terms are equal.
+      have h_term_eq :
+          (if hi : start + k' < M.tapeLength n then
+            (if c'.tape ⟨start + k', hi⟩ then 2 ^ k' else 0)
+          else 0) =
+          (if hi : start + k' < M.tapeLength n then
+            (if c.tape ⟨start + k', hi⟩ then 2 ^ k' else 0)
+          else 0) := by
+        by_cases hbound : start + k' < M.tapeLength n
+        · simp only [dif_pos hbound]
+          rw [h_beyond k' hk'_gt_j (by omega) hbound]
+        · simp only [dif_neg hbound]
+      rw [h_term_eq, ih_applied]
+      omega
+
+/-- First-zero correctness of `incrementProgram` at arbitrary `k`:
+when the first zero-bit lies at position `j < k` (so the counter
+is NOT all ones), after the full k+1-step execution the counter
+value increases by exactly 1 (no mod truncation). -/
+theorem incrementProgram_correct_first_zero_at {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + k + 1 ≤
+        (incrementProgram k).toTM.tapeLength n)
+    (j : Nat) (hjk : j < k)
+    (h_ones : ∀ i, i < j →
+       ∀ (hb : (c.head : ℕ) + i <
+           (incrementProgram k).toTM.tapeLength n),
+       c.tape ⟨(c.head : ℕ) + i, hb⟩ = true)
+    (h_zero_at_j : ∀ (hb : (c.head : ℕ) + j <
+        (incrementProgram k).toTM.tapeLength n),
+      c.tape ⟨(c.head : ℕ) + j, hb⟩ = false) :
+    counterValue
+        (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+        (c.head : ℕ) k =
+      (counterValue c (c.head : ℕ) k + 1) % 2 ^ k := by
+  -- Step 1: after j ripple steps, phase = j, head = c.head + j, first j
+  -- bits flipped to 0.
+  have h_ones_for_ripple : ∀ (i : Nat), i < j →
+      ∀ (hbi : (c.head : ℕ) + i < (incrementProgram k).toTM.tapeLength n),
+      c.tape ⟨(c.head : ℕ) + i, hbi⟩ = true := h_ones
+  have hj_le_k : j ≤ k := le_of_lt hjk
+  obtain ⟨rip_phase, rip_head, rip_preserve, rip_zeros⟩ :=
+    incrementProgram_ripple_after_j_steps c h_phase h_bound j hj_le_k
+      h_ones_for_ripple
+  set cj := TM.runConfig (M := (incrementProgram k).toTM) c j with hcj
+  -- Step 2: at cj, bit at head is false (same as bit at c.head+j in c).
+  have h_bit_bound : (c.head : ℕ) + j < (incrementProgram k).toTM.tapeLength n :=
+    by omega
+  have h_bit_orig : c.tape ⟨(c.head : ℕ) + j, h_bit_bound⟩ = false :=
+    h_zero_at_j h_bit_bound
+  have h_head_fin_eq :
+      cj.head = (⟨(c.head : ℕ) + j, h_bit_bound⟩ : Fin _) := by
+    apply Fin.ext; exact rip_head
+  have h_bit_cj : cj.tape cj.head = false := by
+    rw [h_head_fin_eq]
+    have hout :
+        ((⟨(c.head : ℕ) + j, h_bit_bound⟩ : Fin _) : ℕ) < (c.head : ℕ) ∨
+        (c.head : ℕ) + j ≤ ((⟨(c.head : ℕ) + j, h_bit_bound⟩ : Fin _) : ℕ) :=
+      Or.inr (by omega)
+    rw [rip_preserve _ hout]; exact h_bit_orig
+  -- Step 3: one more step at cj — phase j < k, bit false → writes 1,
+  -- jumps to phase k+1, head stays.
+  have h_phase_lt_k : cj.state.fst.val < k := by rw [rip_phase]; exact hjk
+  obtain ⟨fin_tape, fin_head, fin_phase⟩ :=
+    incrementProgram_stepConfig_phase_lt_k_bit_false cj h_phase_lt_k h_bit_cj
+  set cj1 := TM.stepConfig (M := (incrementProgram k).toTM) cj with hcj1
+  -- Step 4: runConfig c (j+1) = cj1.
+  have h_j1_eq : TM.runConfig (M := (incrementProgram k).toTM) c (j + 1) = cj1 := by
+    rw [runConfig_succ]
+  -- Step 5: remaining k - j steps idle (phase k+1 accepting).
+  have h_phase_cj1 : cj1.state.fst.val = k + 1 := fin_phase
+  -- Steps j+1..k+1: from cj1, run k - j more steps.
+  have h_k1_eq : k + 1 = (j + 1) + (k - j) := by omega
+  have h_runConfig_split :
+      TM.runConfig (M := (incrementProgram k).toTM) c (k + 1) =
+        TM.runConfig (M := (incrementProgram k).toTM) cj1 (k - j) := by
+    rw [h_k1_eq, runConfig_add, ← h_j1_eq]
+  obtain ⟨final_tape, final_head, _⟩ :=
+    incrementProgram_runConfig_in_accepting cj1 h_phase_cj1 (k - j)
+  have h_final_tape : (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1)).tape =
+      cj1.tape := by
+    rw [h_runConfig_split]; exact final_tape
+  -- Step 6: compute cj1.tape at each position via ripple zeros + write.
+  -- First j bits in cj1: same as in cj (the step at cj wrote only at cj.head).
+  have h_cj1_first_j_zero : ∀ i, i < j →
+      ∀ (hb : (c.head : ℕ) + i <
+          (incrementProgram k).toTM.tapeLength n),
+      cj1.tape ⟨(c.head : ℕ) + i, hb⟩ = false := by
+    intro i hi hb
+    rw [hcj1, fin_tape]
+    have hne : (⟨(c.head : ℕ) + i, hb⟩ : Fin _) ≠ cj.head := by
+      rw [h_head_fin_eq]; intro heq
+      have : (c.head : ℕ) + i = (c.head : ℕ) + j := congrArg Fin.val heq
+      omega
+    rw [Configuration.write_other cj hne]
+    exact rip_zeros i hi hb
+  -- Bit at position j in cj1: `true` (just written).
+  have h_cj1_bit_at_j : ∀ (hb : (c.head : ℕ) + j <
+      (incrementProgram k).toTM.tapeLength n),
+      cj1.tape ⟨(c.head : ℕ) + j, hb⟩ = true := by
+    intro hb
+    rw [hcj1, fin_tape]
+    have heq : (⟨(c.head : ℕ) + j, hb⟩ : Fin _) = cj.head := by
+      apply Fin.ext; rw [rip_head]
+    rw [heq]; exact Configuration.write_self cj cj.head true
+  -- Beyond position j: cj1.tape = c.tape (via rip_preserve + write_other).
+  have h_cj1_beyond : ∀ i, j < i → i < k →
+      ∀ (hb : (c.head : ℕ) + i <
+          (incrementProgram k).toTM.tapeLength n),
+      cj1.tape ⟨(c.head : ℕ) + i, hb⟩ = c.tape ⟨(c.head : ℕ) + i, hb⟩ := by
+    intro i hi hik hb
+    rw [hcj1, fin_tape]
+    have hne : (⟨(c.head : ℕ) + i, hb⟩ : Fin _) ≠ cj.head := by
+      rw [h_head_fin_eq]; intro heq
+      have : (c.head : ℕ) + i = (c.head : ℕ) + j := congrArg Fin.val heq
+      omega
+    rw [Configuration.write_other cj hne]
+    have hout :
+        ((⟨(c.head : ℕ) + i, hb⟩ : Fin _) : ℕ) < (c.head : ℕ) ∨
+        (c.head : ℕ) + j ≤ ((⟨(c.head : ℕ) + i, hb⟩ : Fin _) : ℕ) := by
+      right
+      show (c.head : ℕ) + j ≤ (c.head : ℕ) + i
+      omega
+    exact rip_preserve _ hout
+  -- Step 7: apply the generic bit-flip arithmetic.
+  have h_cv_eq : counterValue
+      (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1)) (c.head : ℕ) k =
+    counterValue cj1 (c.head : ℕ) k := by
+    apply counterValue_eq_of_tape_eq
+    intro p _ _
+    rw [h_final_tape]
+  rw [h_cv_eq]
+  have h_diff := counterValue_first_zero_diff c cj1 (c.head : ℕ) j k hjk
+    (by omega) h_ones h_zero_at_j h_cj1_first_j_zero h_cj1_bit_at_j h_cj1_beyond
+  rw [h_diff]
+  -- Step 8: mod doesn't truncate — counterValue c + 1 < 2^k since
+  -- counterValue cj1 < 2^k.
+  have h_new_lt := counterValue_lt_two_pow cj1 (c.head : ℕ) k
+  rw [h_diff] at h_new_lt
+  exact (Nat.mod_eq_of_lt h_new_lt).symm
+
 /-- First-bit-zero correctness for arbitrary `k ≥ 1`: when the
 scanned cell is `0`, running `incrementProgram k` for its full
 budget adds exactly `1` to the counter value (without mod

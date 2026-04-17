@@ -755,6 +755,94 @@ theorem counterValue_nonneg {M : TM.{u}} {n : Nat}
     (c : Configuration (M := M) n) (start k : Nat) :
     0 ≤ counterValue c start k := Nat.zero_le _
 
+/-!
+### Session 7b: Tape agreement ⇒ counter agreement
+
+Bridge lemma between tape-level equality (Session 5) and
+semantic-level equality (Session 7).  If two configurations have
+identical tape contents in the counter region `[start, start + k)`,
+they have identical counter values.
+
+Combined with `runConfig_tape_eq_on_region`, this lets us prove
+`counterValue` is preserved across any execution whose head avoids
+the counter region.
+-/
+
+/-- If two configurations agree on every tape cell in the region
+`[start, start + k)`, they have the same `counterValue` there.
+
+The hypothesis is stated on `p : Fin (M.tapeLength n)` rather than raw
+`Nat` offsets so that out-of-range indices are simply never mentioned
+— they are handled by the "cell out of tape bounds" branch of
+`counterValue` (contributing `0` uniformly). -/
+theorem counterValue_eq_of_tape_eq {M : TM.{u}} {n : Nat}
+    (c1 c2 : Configuration (M := M) n) (start : Nat) :
+    ∀ k : Nat,
+      (∀ p : Fin (M.tapeLength n),
+         start ≤ (p : ℕ) → (p : ℕ) < start + k →
+         c1.tape p = c2.tape p) →
+      counterValue c1 start k = counterValue c2 start k
+  | 0, _ => rfl
+  | k + 1, h => by
+    rw [counterValue_succ, counterValue_succ]
+    have h_prefix : ∀ p : Fin (M.tapeLength n),
+        start ≤ (p : ℕ) → (p : ℕ) < start + k →
+        c1.tape p = c2.tape p :=
+      fun p h1 h2 => h p h1 (by omega)
+    rw [counterValue_eq_of_tape_eq c1 c2 start k h_prefix]
+    -- Inner added-bit contributions: case on whether cell in range.
+    by_cases hbound : start + k < M.tapeLength n
+    · simp only [dif_pos hbound]
+      have hval : ((⟨start + k, hbound⟩ : Fin (M.tapeLength n)) : ℕ)
+          = start + k := rfl
+      rw [h ⟨start + k, hbound⟩ (by rw [hval]; omega) (by rw [hval]; omega)]
+    · simp only [dif_neg hbound]
+
+/-- Specialisation: if the head never enters the counter region
+`[start, start + width)` during `runConfig c steps`, the counter
+value at `start` is preserved. -/
+theorem counterValue_runConfig_eq_of_head_avoids_region
+    {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (steps start width : Nat)
+    (h : ∀ i, i < steps →
+         ¬ (start ≤ ((TM.runConfig (M := M) c i).head : ℕ) ∧
+            ((TM.runConfig (M := M) c i).head : ℕ) < start + width)) :
+    counterValue (TM.runConfig (M := M) c steps) start width =
+      counterValue c start width := by
+  apply counterValue_eq_of_tape_eq
+  intro p hge hlt
+  -- `p` lies in the counter region; by the hypothesis, the head
+  -- never equals `p` during any of the `steps` iterations, so
+  -- Session 5's `runConfig_tape_eq_on_region` preserves the cell.
+  apply runConfig_tape_eq_on_region
+    (R := fun q => start ≤ (q : ℕ) ∧ (q : ℕ) < start + width)
+  · intro i hi hR
+    exact h i hi hR
+  · exact ⟨hge, hlt⟩
+
+/-!
+### Base case: `incrementProgram 0` correctness
+
+The `k = 0` counter is degenerate — it has zero cells, so
+`counterValue _ _ 0 = 0` unconditionally.  The increment is therefore
+a no-op on the semantic level, and the correctness statement reduces
+to `0 = (0 + 1) % 1 = 0`.
+
+This is the first concrete instance of the general correctness
+theorem `incrementProgram_correct`; Session 7c will prove the
+general case via case analysis on the first-zero bit position.
+-/
+
+/-- `incrementProgram 0` trivially satisfies the correctness
+equation: both sides are `0`. -/
+theorem incrementProgram_correct_zero {n : Nat}
+    (c : Configuration (M := (incrementProgram 0).toTM) n) :
+    counterValue
+        (TM.runConfig (M := (incrementProgram 0).toTM) c 1)
+        (c.head : ℕ) 0 =
+      (counterValue c (c.head : ℕ) 0 + 1) % 2 ^ 0 := by
+  simp [counterValue_zero]
+
 end BinaryCounter
 
 /-!

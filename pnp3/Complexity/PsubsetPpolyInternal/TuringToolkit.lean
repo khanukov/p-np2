@@ -3800,6 +3800,107 @@ theorem seekRightProgram_run_Δ (Δ : Nat) {n : Nat}
 
 end SeekRight
 
+/-!
+## Session 9e-d (step 3): `writeBitProgram` primitive
+
+`writeBitProgram b` is a `PhasedProgram` that writes the Bool `b`
+at the current head position and stops (one TM step total).
+
+Combined with `seekRightProgram`, this covers both tape-read
+navigation and tape-write primitives.  Together they suffice for
+composing the gate-evaluator phases.
+-/
+
+namespace WriteBit
+
+/-- Two-phase program: phase 0 writes `b` and jumps to accepting;
+phase 1 (accepting) idles. -/
+def writeBitProgram (b : Bool) : PhasedProgram.{0} where
+  numPhases := 2
+  phaseState := fun _ => Unit
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨1, by omega⟩
+  acceptState := ()
+  transition := fun i _ _ =>
+    if i.val = 0 then
+      (⟨⟨1, by omega⟩, ()⟩, b, Move.stay)
+    else
+      (⟨⟨1, by omega⟩, ()⟩, false, Move.stay)
+  timeBound := fun _ => 1
+
+@[simp] theorem writeBitProgram_numPhases (b : Bool) :
+    (writeBitProgram b).numPhases = 2 := rfl
+
+@[simp] theorem writeBitProgram_startPhase (b : Bool) :
+    ((writeBitProgram b).startPhase : Fin 2).val = 0 := rfl
+
+@[simp] theorem writeBitProgram_acceptPhase (b : Bool) :
+    ((writeBitProgram b).acceptPhase : Fin 2).val = 1 := rfl
+
+@[simp] theorem writeBitProgram_timeBound (b : Bool) (n : Nat) :
+    (writeBitProgram b).timeBound n = 1 := rfl
+
+/-- `writeBitProgram` never moves left. -/
+theorem writeBitProgram_toTM_never_moves_left (b : Bool) :
+    TMNeverMovesLeft (writeBitProgram b).toTM := by
+  intro s scannedBit
+  rcases s with ⟨i, q⟩
+  show ((writeBitProgram b).transition i q scannedBit).snd.snd ≠ Move.left
+  by_cases hi : i.val = 0
+  · simp [writeBitProgram, hi]
+  · simp [writeBitProgram, hi]
+
+/-- Transition at start (phase 0): write `b`, stay, advance phase. -/
+theorem writeBitProgram_transition_start (b : Bool)
+    {i : Fin ((writeBitProgram b).numPhases)} (hi : i.val = 0)
+    (q : (writeBitProgram b).phaseState i) (scannedBit : Bool) :
+    ((writeBitProgram b).transition i q scannedBit).fst.fst.val = 1 ∧
+    ((writeBitProgram b).transition i q scannedBit).snd.fst = b ∧
+    ((writeBitProgram b).transition i q scannedBit).snd.snd = Move.stay := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [writeBitProgram, hi]
+
+/-- `stepConfig` from the start phase: writes `b` at the current head
+position, the head does not move, and the phase advances to 1. -/
+theorem writeBitProgram_stepConfig_start (b : Bool) {n : Nat}
+    (c : Configuration (M := (writeBitProgram b).toTM) n)
+    (h_phase : c.state.fst.val = 0) :
+    (TM.stepConfig (M := (writeBitProgram b).toTM) c).state.fst.val = 1 ∧
+    (TM.stepConfig (M := (writeBitProgram b).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (writeBitProgram b).toTM) c).tape = c.write c.head b := by
+  obtain ⟨hphase, hbit, hmove⟩ :=
+    writeBitProgram_transition_start b (i := c.state.fst) h_phase
+      c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((writeBitProgram b).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := hmove
+  have hbit_step :
+      (((writeBitProgram b).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = b := hbit
+  have hphase_step :
+      ((((writeBitProgram b).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = 1 := hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_state]; exact hphase_step
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+
+/-- After the full 1-step run from phase 0, `writeBitProgram b` has
+written `b` at the initial head position, left the head where it
+was, and entered the accepting phase. -/
+theorem writeBitProgram_run_1 (b : Bool) {n : Nat}
+    (c : Configuration (M := (writeBitProgram b).toTM) n)
+    (h_phase : c.state.fst.val = 0) :
+    (TM.runConfig (M := (writeBitProgram b).toTM) c 1).state.fst.val = 1 ∧
+    (TM.runConfig (M := (writeBitProgram b).toTM) c 1).head = c.head ∧
+    (TM.runConfig (M := (writeBitProgram b).toTM) c 1).tape = c.write c.head b := by
+  rw [runConfig_one]
+  exact writeBitProgram_stepConfig_start b c h_phase
+
+end WriteBit
+
 end TM
 
 end PsubsetPpoly

@@ -3602,6 +3602,27 @@ theorem output_matches
 
 end TapeMatches
 
+/-!
+### Bridge: `SLProgram.eval` → `evalAll`'s last element
+-/
+
+/-- `SLProgram.eval` matches the last element of `evalAll`'s result
+when evaluation succeeds on a non-empty gate list.  Uses Mathlib's
+`List.getLast?_eq_getLast_of_ne_nil` + `List.getLast_eq_getElem`. -/
+theorem SLProgram.eval_eq_last_evalAll {n : Nat} (p : SLProgram n)
+    (x : Fin n → Bool) (gateVals : List Bool)
+    (hEval : p.evalAll x = some gateVals)
+    (hNE : 0 < gateVals.length) :
+    p.eval x = some (gateVals[gateVals.length - 1]'(by omega)) := by
+  unfold SLProgram.eval
+  rw [hEval]
+  simp only [Option.bind_some]
+  have hNil : gateVals ≠ [] := by
+    intro h; rw [h] at hNE; simp at hNE
+  rw [List.getLast?_eq_getLast_of_ne_nil hNil]
+  congr 1
+  exact List.getLast_eq_getElem hNil
+
 end Encoding
 
 end TM

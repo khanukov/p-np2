@@ -3462,6 +3462,78 @@ theorem scratchPos_lt_tapeLen (L : TapeLayout n) (k : Nat)
 
 end TapeLayout
 
+/-!
+## Session 9e-b: `TapeMatches` — tape content ↔ logical view
+
+The evaluator TM's correctness will be stated relative to a
+`TapeMatches` predicate: "the tape of this configuration correctly
+encodes the input vector `x`, the SL program encoding, and the
+first `k` gate values".
+
+Reasoning about the evaluator reduces to: show `TapeMatches`
+holds initially; show each gate-step preserves the
+`TapeMatches` invariant while extending `gateVals` by one bit;
+conclude the final scratch cell matches `SLProgram.eval`.
+-/
+
+end Encoding
+
+/-- Read a tape cell by absolute position; returns `false` outside
+the tape bounds.  Helper for stating `TapeMatches` cleanly. -/
+def Configuration.tapeAt {M : TM.{0}} {n_tm : Nat}
+    (c : Configuration (M := M) n_tm) (p : Nat) : Bool :=
+  if h : p < M.tapeLength n_tm then c.tape ⟨p, h⟩ else false
+
+namespace Encoding
+
+/-- The tape correctly encodes: the input vector `x`, the circuit
+encoding bits, and the list of gate values computed so far. -/
+structure TapeMatches {M : TM.{0}} {n_tm : Nat} {n : Nat}
+    (L : TapeLayout n)
+    (c : Configuration (M := M) n_tm)
+    (x : Fin n → Bool)
+    (encoding : List Bool)
+    (gateVals : List Bool) : Prop where
+  /-- The layout's tape length fits inside the TM's. -/
+  tape_fits : L.tapeLen ≤ M.tapeLength n_tm
+  /-- Encoding fits in the circuit region. -/
+  encoding_fits : encoding.length ≤ L.circuitLen
+  /-- Gate values fit in the scratch region. -/
+  gateVals_fits : gateVals.length ≤ L.scratchLen
+  /-- Input bits are correctly placed. -/
+  input_match : ∀ i : Fin n,
+    c.tapeAt (L.inputPos i) = x i
+  /-- Circuit-encoding bits are correctly placed. -/
+  circuit_match : ∀ p : Nat, (hp : p < encoding.length) →
+    c.tapeAt (L.circuitPos p) = encoding[p]
+  /-- Gate-value bits are correctly placed. -/
+  scratch_match : ∀ k : Nat, (hk : k < gateVals.length) →
+    c.tapeAt (L.scratchPos k) = gateVals[k]
+
+namespace TapeMatches
+
+variable {M : TM.{0}} {n_tm n : Nat} {L : TapeLayout n}
+  {c : Configuration (M := M) n_tm}
+  {x : Fin n → Bool} {encoding gateVals : List Bool}
+
+/-- Empty gate-values case: `TapeMatches` is discharged with just the
+input and circuit commitments. -/
+theorem of_empty_gateVals
+    (hFit : L.tapeLen ≤ M.tapeLength n_tm)
+    (hEnc : encoding.length ≤ L.circuitLen)
+    (hIn : ∀ i : Fin n, c.tapeAt (L.inputPos i) = x i)
+    (hC : ∀ p : Nat, (hp : p < encoding.length) →
+      c.tapeAt (L.circuitPos p) = encoding[p]) :
+    TapeMatches L c x encoding [] where
+  tape_fits := hFit
+  encoding_fits := hEnc
+  gateVals_fits := Nat.zero_le _
+  input_match := hIn
+  circuit_match := hC
+  scratch_match := fun k hk => absurd hk (by simp)
+
+end TapeMatches
+
 end Encoding
 
 end TM

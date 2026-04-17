@@ -3317,6 +3317,151 @@ theorem SLProgram.decode_encode {n : Nat} (widthN widthS : Nat)
         some ((⟨g :: gs⟩ : SLProgram n), rest)
     rw [ih']
 
+/-!
+## Session 9e-a: Evaluator tape layout
+
+The MCSP evaluator TM needs a canonical tape arrangement with three
+disjoint regions: input vector, encoded SL program, scratch (for
+gate values).  `TapeLayout n` packages the offsets + length +
+ordering invariants so downstream session-9e infrastructure can
+work with symbolic addresses rather than raw tape arithmetic.
+
+Three regions (canonical ordering):
+* **Input** — positions `[0, n)`: bits of `x : Fin n → Bool`.
+* **Circuit** — positions `[circuitStart, circuitStart + circuitLen)`:
+  encoded SL program.
+* **Scratch** — positions `[scratchStart, scratchStart + scratchLen)`:
+  gate values computed so far (one bit per gate).
+
+All regions are disjoint; the layout invariants `h_inputEnd`,
+`h_circuitEnd`, and `h_scratchEnd` enforce the ordering + fit.
+-/
+
+/-- Tape-layout descriptor for the evaluator TM with `n` input bits. -/
+structure TapeLayout (n : Nat) where
+  /-- Total tape length (must be at least the right edge of scratch). -/
+  tapeLen : Nat
+  /-- First position of the circuit-encoding region. -/
+  circuitStart : Nat
+  /-- Length of the circuit-encoding region. -/
+  circuitLen : Nat
+  /-- First position of the scratch (gate-values) region. -/
+  scratchStart : Nat
+  /-- Length of the scratch region. -/
+  scratchLen : Nat
+  /-- Input sits before circuit. -/
+  h_inputEnd : n ≤ circuitStart
+  /-- Circuit sits before scratch. -/
+  h_circuitEnd : circuitStart + circuitLen ≤ scratchStart
+  /-- Scratch fits within the tape. -/
+  h_scratchEnd : scratchStart + scratchLen ≤ tapeLen
+
+namespace TapeLayout
+
+variable {n : Nat}
+
+/-- Right edge of input region. -/
+@[simp] def inputEnd (_ : TapeLayout n) : Nat := n
+
+/-- Right edge of circuit region. -/
+def circuitEnd (L : TapeLayout n) : Nat := L.circuitStart + L.circuitLen
+
+/-- Right edge of scratch region. -/
+def scratchEnd (L : TapeLayout n) : Nat := L.scratchStart + L.scratchLen
+
+/-- Predicate: tape position `p` lies in the input region. -/
+def inInput (_ : TapeLayout n) (p : Nat) : Prop := p < n
+
+/-- Predicate: tape position `p` lies in the circuit region. -/
+def inCircuit (L : TapeLayout n) (p : Nat) : Prop :=
+  L.circuitStart ≤ p ∧ p < L.circuitEnd
+
+/-- Predicate: tape position `p` lies in the scratch region. -/
+def inScratch (L : TapeLayout n) (p : Nat) : Prop :=
+  L.scratchStart ≤ p ∧ p < L.scratchEnd
+
+/-- Position of input bit `i`. -/
+def inputPos (_ : TapeLayout n) (i : Fin n) : Nat := i.val
+
+/-- Position of circuit-encoding bit `p`. -/
+def circuitPos (L : TapeLayout n) (p : Nat) : Nat := L.circuitStart + p
+
+/-- Position of scratch (gate value) cell `k`. -/
+def scratchPos (L : TapeLayout n) (k : Nat) : Nat := L.scratchStart + k
+
+/-! ### Region containment -/
+
+theorem inputPos_inInput (L : TapeLayout n) (i : Fin n) :
+    L.inInput (L.inputPos i) := i.isLt
+
+theorem circuitPos_inCircuit (L : TapeLayout n) (p : Nat)
+    (hp : p < L.circuitLen) : L.inCircuit (L.circuitPos p) := by
+  refine ⟨?_, ?_⟩
+  · show L.circuitStart ≤ L.circuitStart + p; omega
+  · show L.circuitStart + p < L.circuitEnd
+    unfold circuitEnd; omega
+
+theorem scratchPos_inScratch (L : TapeLayout n) (k : Nat)
+    (hk : k < L.scratchLen) : L.inScratch (L.scratchPos k) := by
+  refine ⟨?_, ?_⟩
+  · show L.scratchStart ≤ L.scratchStart + k; omega
+  · show L.scratchStart + k < L.scratchEnd
+    unfold scratchEnd; omega
+
+/-! ### Pairwise disjointness -/
+
+theorem inInput_not_inCircuit (L : TapeLayout n) {p : Nat}
+    (h : L.inInput p) : ¬ L.inCircuit p := by
+  intro hC
+  have h₁ : p < n := h
+  have h₂ : n ≤ L.circuitStart := L.h_inputEnd
+  have h₃ : L.circuitStart ≤ p := hC.1
+  omega
+
+theorem inCircuit_not_inScratch (L : TapeLayout n) {p : Nat}
+    (h : L.inCircuit p) : ¬ L.inScratch p := by
+  intro hS
+  have h₁ : p < L.circuitEnd := h.2
+  have h₂ : L.circuitEnd ≤ L.scratchStart := by
+    unfold circuitEnd; exact L.h_circuitEnd
+  have h₃ : L.scratchStart ≤ p := hS.1
+  omega
+
+theorem inInput_not_inScratch (L : TapeLayout n) {p : Nat}
+    (h : L.inInput p) : ¬ L.inScratch p := by
+  intro hS
+  have h₁ : p < n := h
+  have h₂ : n ≤ L.circuitStart := L.h_inputEnd
+  have h₃ : L.circuitStart + L.circuitLen ≤ L.scratchStart := L.h_circuitEnd
+  have h₄ : L.scratchStart ≤ p := hS.1
+  omega
+
+/-! ### Bounds: positions fit within `tapeLen` -/
+
+theorem inputPos_lt_tapeLen (L : TapeLayout n) (i : Fin n) :
+    L.inputPos i < L.tapeLen := by
+  have h₁ : i.val < n := i.isLt
+  have h₂ : n ≤ L.circuitStart := L.h_inputEnd
+  have h₃ : L.circuitStart + L.circuitLen ≤ L.scratchStart := L.h_circuitEnd
+  have h₄ : L.scratchStart + L.scratchLen ≤ L.tapeLen := L.h_scratchEnd
+  show i.val < L.tapeLen
+  omega
+
+theorem circuitPos_lt_tapeLen (L : TapeLayout n) (p : Nat)
+    (hp : p < L.circuitLen) : L.circuitPos p < L.tapeLen := by
+  have h₁ : L.circuitStart + L.circuitLen ≤ L.scratchStart := L.h_circuitEnd
+  have h₂ : L.scratchStart + L.scratchLen ≤ L.tapeLen := L.h_scratchEnd
+  show L.circuitStart + p < L.tapeLen
+  omega
+
+theorem scratchPos_lt_tapeLen (L : TapeLayout n) (k : Nat)
+    (hk : k < L.scratchLen) : L.scratchPos k < L.tapeLen := by
+  have h₁ : L.scratchStart + L.scratchLen ≤ L.tapeLen := L.h_scratchEnd
+  show L.scratchStart + k < L.tapeLen
+  omega
+
+end TapeLayout
+
 end Encoding
 
 end TM

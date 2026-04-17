@@ -203,6 +203,86 @@ theorem alwaysReject_rejects (n : Nat) (x : Boolcube.Point n) :
 
 end Pilot
 
+/-!
+## `runConfig` unfolding lemmas
+
+These two equations expose the inductive structure of `runConfig` for
+clean step-by-step reasoning in later sessions.  They are the only
+non-`rfl` cornerstone between raw `Nat.iterate` and the "TM ran for
+`k+1` steps" view.
+-/
+
+@[simp] theorem runConfig_zero {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    TM.runConfig (M := M) c 0 = c := rfl
+
+theorem runConfig_succ {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (k : Nat) :
+    TM.runConfig (M := M) c (k + 1) = TM.stepConfig (M := M) (TM.runConfig (M := M) c k) := by
+  unfold TM.runConfig
+  exact Function.iterate_succ_apply' (TM.stepConfig (M := M)) k c
+
+/-- Specialisation: running exactly one step from any configuration. -/
+theorem runConfig_one {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    TM.runConfig (M := M) c 1 = TM.stepConfig (M := M) c := by
+  have := runConfig_succ (M := M) (n := n) c 0
+  simpa using this
+
+/-!
+## Second-order pilot: read the first input bit
+
+`readFirstBit` is a one-step `PhasedProgram` whose local state is
+`Bool`.  It starts in state `false`, reads the bit under the head (the
+first input bit, since the initial head is at position `0`), and
+transitions to the state equal to that bit.  Acceptance is assigned to
+state `true`.
+
+Correctness (`readFirstBit_accepts`) shows:
+
+* for `n ≥ 1`, the compiled TM accepts on `x` iff `x ⟨0, _⟩ = true`,
+* for `n = 0`, it rejects (the head reads a blank `false`).
+
+This pilot is the smallest non-trivial demonstration that the
+`PhasedProgram` pipeline scales to runtimes beyond `0`.  Its proof
+relies solely on the `runConfig_*` lemmas and the `@[simp]`
+`initialConfig` lemmas from `TuringEncoding.lean`; no new axioms or
+proof holes are introduced.
+-/
+
+namespace Pilot
+
+/-- One-step program that copies the first input bit into the control
+state and accepts iff that bit is `true`. -/
+def readFirstBit : PhasedProgram.{0} where
+  numPhases := 1
+  phaseState := fun _ => Bool
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := 0
+  startState := false
+  acceptPhase := 0
+  acceptState := true
+  transition := fun _ _ b => (⟨0, b⟩, b, Move.stay)
+  timeBound := fun _ => 1
+
+/-- On `n ≥ 1`, `readFirstBit` accepts iff the first input bit is `true`. -/
+theorem readFirstBit_accepts_pos (n : Nat) (hn : 0 < n) (x : Boolcube.Point n) :
+    TM.accepts (M := readFirstBit.toTM) n x = x ⟨0, hn⟩ := by
+  unfold TM.accepts TM.run
+  rw [show readFirstBit.toTM.runTime n = 1 from rfl, runConfig_one]
+  simp [TM.stepConfig, readFirstBit, PhasedProgram.toTM, TM.initialConfig, hn]
+
+/-- On `n = 0` the machine has no input bit to read; the head cell is
+blank (`false`), so the step moves to state `⟨0, false⟩` and rejects. -/
+theorem readFirstBit_accepts_zero (x : Boolcube.Point 0) :
+    TM.accepts (M := readFirstBit.toTM) 0 x = false := by
+  unfold TM.accepts TM.run
+  rw [show readFirstBit.toTM.runTime 0 = 1 from rfl, runConfig_one]
+  simp [TM.stepConfig, readFirstBit, PhasedProgram.toTM, TM.initialConfig]
+
+end Pilot
+
 end TM
 
 end PsubsetPpoly

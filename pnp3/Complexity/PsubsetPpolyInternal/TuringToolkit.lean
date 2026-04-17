@@ -4649,6 +4649,198 @@ theorem run_after_j_right_steps (Δ : Nat) {n : Nat}
       rw [BinaryCounter.write_self_eq cj' cj'.head]
       exact ih_tape
 
+/-! ### Read-phase step + combined after-read-phase invariant -/
+
+/-- One stepConfig at phase Δ: new state.snd = scanned bit, head
+stays, tape unchanged, phase → Δ+1. -/
+theorem stepConfig_read (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (readAtOffsetProgram Δ).toTM) n)
+    (hi : c.state.fst.val = Δ) :
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).state.fst.val = Δ + 1 ∧
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).state.snd =
+        c.tape c.head ∧
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_read Δ (i := c.state.fst) hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((readAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := t_move
+  have hbit_step :
+      (((readAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((readAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).fst.val = Δ + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((readAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).snd = c.tape c.head
+    exact t_state
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+/-- After `Δ + 1` total steps: seek-right block done, read phase
+committed.  Now at phase `Δ+1`, head at `c.head + Δ`, state carries
+the bit at offset Δ, tape unchanged. -/
+theorem run_after_read_phase (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (readAtOffsetProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = false)
+    (h_bound : (c.head : ℕ) + Δ <
+        (readAtOffsetProgram Δ).toTM.tapeLength n) :
+    let cmid := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (Δ + 1)
+    cmid.state.fst.val = Δ + 1 ∧
+    cmid.state.snd = c.tape ⟨(c.head : ℕ) + Δ, h_bound⟩ ∧
+    ((cmid.head : ℕ) = (c.head : ℕ) + Δ) ∧
+    cmid.tape = c.tape := by
+  obtain ⟨right_phase, right_state, right_head, right_tape⟩ :=
+    run_after_j_right_steps Δ c h_phase h_state_snd h_bound Δ le_rfl
+  set cΔ := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c Δ with hcΔ
+  have h_phase_cΔ : cΔ.state.fst.val = Δ := right_phase
+  obtain ⟨rd_phase, rd_state, rd_head, rd_tape⟩ := stepConfig_read Δ cΔ h_phase_cΔ
+  have hrw :
+      TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (Δ + 1) =
+        TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) cΔ := by
+    rw [runConfig_succ]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [hrw]; exact rd_phase
+  · -- cmid.state.snd = cΔ.tape cΔ.head = c.tape (at position c.head + Δ).
+    rw [hrw, rd_state, right_tape]
+    have h_head_eq : cΔ.head = (⟨(c.head : ℕ) + Δ, h_bound⟩ :
+        Fin ((readAtOffsetProgram Δ).toTM.tapeLength n)) := by
+      apply Fin.ext; exact right_head
+    rw [h_head_eq]
+  · rw [hrw, rd_head, right_head]
+  · rw [hrw, rd_tape, right_tape]
+
+/-! ### Seek-left block + full correctness -/
+
+/-- One stepConfig in seek-left block of readAtOffsetProgram
+(phase Δ+1..2Δ) with head > 0: phase advances, head decrements,
+state/tape unchanged. -/
+theorem stepConfig_seeking_left (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (readAtOffsetProgram Δ).toTM) n)
+    (hi_lo : Δ < c.state.fst.val) (hi_hi : c.state.fst.val < 2 * Δ + 1)
+    (h_head_pos : 0 < (c.head : ℕ)) :
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).state.snd =
+        c.state.snd ∧
+    ((TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).head : ℕ) =
+        (c.head : ℕ) - 1 ∧
+    (TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_seeking_left Δ hi_lo hi_hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((readAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.left := t_move
+  have hbit_step :
+      (((readAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((readAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).fst.val = c.state.fst.val + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((readAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_left_val_of_pos c h_head_pos]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+/-- j-fold seek-left invariant, starting from any config at phase
+Δ+1 with head ≥ Δ. -/
+theorem run_j_seeking_left (Δ : Nat) {n : Nat}
+    (c_start : Configuration (M := (readAtOffsetProgram Δ).toTM) n)
+    (h_phase : c_start.state.fst.val = Δ + 1)
+    (h_head_ge : Δ ≤ (c_start.head : ℕ)) :
+    ∀ j, j ≤ Δ →
+    let cj := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c_start j
+    cj.state.fst.val = Δ + 1 + j ∧
+    cj.state.snd = c_start.state.snd ∧
+    ((cj.head : ℕ) = (c_start.head : ℕ) - j) ∧
+    cj.tape = c_start.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show c_start.state.fst.val = Δ + 1 + 0; rw [h_phase]
+    · rfl
+    · show (c_start.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le_Δ : j' ≤ Δ := by omega
+    have hj'_lt_Δ : j' < Δ := by omega
+    obtain ⟨ih_phase, ih_state, ih_head, ih_tape⟩ := ih hj'_le_Δ
+    set cj' := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c_start j'
+      with hcj'
+    have h_phase_lo : Δ < cj'.state.fst.val := by rw [ih_phase]; omega
+    have h_phase_hi : cj'.state.fst.val < 2 * Δ + 1 := by rw [ih_phase]; omega
+    have h_head_pos : 0 < (cj'.head : ℕ) := by rw [ih_head]; omega
+    obtain ⟨rip_phase, rip_state, rip_head, rip_tape⟩ :=
+      stepConfig_seeking_left Δ cj' h_phase_lo h_phase_hi h_head_pos
+    have hrw :
+        TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c_start (j' + 1) =
+          TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw, rip_phase, ih_phase]; omega
+    · rw [hrw, rip_state, ih_state]
+    · rw [hrw, rip_head]
+      show cj'.head.val - 1 = c_start.head.val - (j' + 1)
+      rw [ih_head]; omega
+    · rw [hrw, rip_tape, ih_tape]
+
+/-- **Full correctness of `readAtOffsetProgram`**: after the full
+`2Δ+1`-step execution from phase 0 with startState = false:
+
+* accepting phase (state.fst.val = 2Δ+1),
+* state.snd carries the bit at offset Δ from the original head,
+* head is back at c.head,
+* tape unchanged.
+
+The compiled TM's `accepts` returns the bit at offset Δ. -/
+theorem readAtOffsetProgram_run_full (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (readAtOffsetProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = false)
+    (h_bound : (c.head : ℕ) + Δ <
+        (readAtOffsetProgram Δ).toTM.tapeLength n) :
+    let cfinal := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (2 * Δ + 1)
+    cfinal.state.fst.val = 2 * Δ + 1 ∧
+    cfinal.state.snd = c.tape ⟨(c.head : ℕ) + Δ, h_bound⟩ ∧
+    cfinal.head = c.head ∧
+    cfinal.tape = c.tape := by
+  have hsplit : 2 * Δ + 1 = (Δ + 1) + Δ := by omega
+  have hcomp :
+      TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (2 * Δ + 1) =
+        TM.runConfig (M := (readAtOffsetProgram Δ).toTM)
+          (TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (Δ + 1)) Δ := by
+    rw [hsplit, runConfig_add]
+  obtain ⟨mid_phase, mid_state, mid_head, mid_tape⟩ :=
+    run_after_read_phase Δ c h_phase h_state_snd h_bound
+  set cmid := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (Δ + 1)
+    with hcmid
+  have h_phase_mid : cmid.state.fst.val = Δ + 1 := mid_phase
+  have h_head_mid : (cmid.head : ℕ) = (c.head : ℕ) + Δ := mid_head
+  have h_head_ge : Δ ≤ (cmid.head : ℕ) := by rw [h_head_mid]; omega
+  obtain ⟨left_phase, left_state, left_head, left_tape⟩ :=
+    run_j_seeking_left Δ cmid h_phase_mid h_head_ge Δ le_rfl
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [hcomp, left_phase]; omega
+  · rw [hcomp, left_state, mid_state]
+  · rw [hcomp]
+    apply Fin.ext
+    show (_ : ℕ) = (c.head : ℕ)
+    rw [left_head, h_head_mid]; omega
+  · rw [hcomp, left_tape, mid_tape]
+
 end ReadAtOffset
 
 end TM

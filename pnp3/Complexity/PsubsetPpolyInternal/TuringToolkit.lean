@@ -3590,6 +3590,16 @@ theorem extend_scratch
       rw [List.getElem_append_right (Nat.le_refl _)]
       simp
 
+/-- If the scratch cells up to `gateVals.length - 1` are committed
+by `TapeMatches`, the tape at the last scratch position equals the
+last `gateVals` element (assuming nonempty). -/
+theorem output_matches
+    (h : TapeMatches L c x encoding gateVals)
+    (hNonEmpty : 0 < gateVals.length) :
+    c.tapeAt (L.scratchPos (gateVals.length - 1)) =
+      gateVals[gateVals.length - 1]'(by omega) :=
+  h.scratch_match (gateVals.length - 1) (by omega)
+
 end TapeMatches
 
 end Encoding

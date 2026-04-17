@@ -1495,6 +1495,97 @@ theorem decodeFin_encodeFin : ∀ (w : Nat) (i : Fin (2 ^ w)),
     · have hmod0 : i.val % 2 = 0 := by omega
       simp [hmod]; omega
 
+/-!
+### Session 8c: Circuit encoding via `CircuitTree`
+
+The MCSP verifier needs to parse a circuit description off the
+witness tape.  We define a local `CircuitTree n` inductive —
+structurally identical to `Pnp3.Models.Circuit` — and a recursive
+encoder into `List Bool` using the following prefix-free tag
+scheme:
+
+* `input i`  → `[false, false, false]` ++ `encodeFin width i`
+* `const b`  → `[false, false, true, b]`
+* `not c`    → `[false, true, false]` ++ `encode c`
+* `and c1 c2`→ `[false, true, true]` ++ `encode c1` ++ `encode c2`
+* `or c1 c2` → `[true, false, false]` ++ `encode c1` ++ `encode c2`
+
+Keeping `CircuitTree` local to `Encoding` decouples the toolkit
+from MCSP-specific imports; a bridge to `Models.Circuit` can be
+supplied in a dedicated session when the MCSP assembly is wired up.
+
+Session 8c delivers the inductive + the encoder + the `size`
+measure.  Session 8d delivers the decoder and the round-trip
+theorem.
+-/
+
+/-- Local mirror of `Pnp3.Models.Circuit`: a tree of AC0-style
+Boolean gates over `n` input variables.  Kept separate so the
+toolkit stays MCSP-import-free. -/
+inductive CircuitTree (n : Nat) where
+  | input : Fin n → CircuitTree n
+  | const : Bool → CircuitTree n
+  | not : CircuitTree n → CircuitTree n
+  | and : CircuitTree n → CircuitTree n → CircuitTree n
+  | or : CircuitTree n → CircuitTree n → CircuitTree n
+
+namespace CircuitTree
+
+/-- Number of gates in the tree — each node contributes 1. -/
+def size {n : Nat} : CircuitTree n → Nat
+  | input _ => 1
+  | const _ => 1
+  | not c => c.size + 1
+  | and c1 c2 => c1.size + c2.size + 1
+  | or c1 c2 => c1.size + c2.size + 1
+
+end CircuitTree
+
+/-- Prefix-order encoding of a `CircuitTree n` as a bit list,
+assuming every `Fin n` index fits in `width` bits. -/
+def encodeCircuitTree {n : Nat} (width : Nat)
+    (h_width : n ≤ 2 ^ width) : CircuitTree n → List Bool
+  | .input i =>
+      [false, false, false] ++
+        encodeFin width ⟨i.val, lt_of_lt_of_le i.isLt h_width⟩
+  | .const b => [false, false, true, b]
+  | .not c =>
+      [false, true, false] ++ encodeCircuitTree width h_width c
+  | .and c1 c2 =>
+      [false, true, true] ++
+        encodeCircuitTree width h_width c1 ++
+        encodeCircuitTree width h_width c2
+  | .or c1 c2 =>
+      [true, false, false] ++
+        encodeCircuitTree width h_width c1 ++
+        encodeCircuitTree width h_width c2
+
+/-- Each gate contributes at least 3 tag bits, so the encoded list
+has length at least the tree size × 3.  Lower bound — useful later
+for showing that the encoded witness fits within the available
+certificate room. -/
+theorem encodeCircuitTree_length_ge {n : Nat} (width : Nat)
+    (h_width : n ≤ 2 ^ width) : ∀ (c : CircuitTree n),
+    3 * c.size ≤ (encodeCircuitTree width h_width c).length
+  | .input _ => by
+    simp [encodeCircuitTree, CircuitTree.size, encodeFin_length]
+  | .const _ => by
+    simp [encodeCircuitTree, CircuitTree.size]
+  | .not c => by
+    have ih := encodeCircuitTree_length_ge width h_width c
+    simp [encodeCircuitTree, CircuitTree.size]
+    omega
+  | .and c1 c2 => by
+    have ih1 := encodeCircuitTree_length_ge width h_width c1
+    have ih2 := encodeCircuitTree_length_ge width h_width c2
+    simp [encodeCircuitTree, CircuitTree.size]
+    omega
+  | .or c1 c2 => by
+    have ih1 := encodeCircuitTree_length_ge width h_width c1
+    have ih2 := encodeCircuitTree_length_ge width h_width c2
+    simp [encodeCircuitTree, CircuitTree.size]
+    omega
+
 end Encoding
 
 end TM

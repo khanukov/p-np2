@@ -324,6 +324,14 @@ theorem moveHead_left_val_le {M : TM.{u}} {n : Nat}
   · simp [Configuration.moveHead, h]
   · simp [Configuration.moveHead, h]
 
+/-- Exact equation: at a strictly positive head position, `Move.left`
+decrements the head value by exactly one. -/
+theorem moveHead_left_val_of_pos {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (h : 0 < (c.head : ℕ)) :
+    ((Configuration.moveHead (c := c) Move.left) : ℕ) = (c.head : ℕ) - 1 := by
+  have hne : (c.head : ℕ) ≠ 0 := by omega
+  simp [Configuration.moveHead, hne]
+
 /-- One `moveHead` step never advances the head value by more than
 one.  Applies uniformly across `Move.left`, `Move.stay`, `Move.right`,
 including the boundary-clamping cases — so it is the right lemma for
@@ -3900,6 +3908,137 @@ theorem writeBitProgram_run_1 (b : Bool) {n : Nat}
   exact writeBitProgram_stepConfig_start b c h_phase
 
 end WriteBit
+
+/-!
+## Session 9e-d (step 4): `seekLeftProgram` primitive
+
+Symmetric counterpart to `seekRightProgram`: moves the head left
+by exactly `Δ` cells, provided the initial head is far enough from
+the left edge.
+
+Correctness requires `head.val ≥ Δ` (so the leftward moves never
+clamp at position 0).  Under this precondition, each step
+decrements the head by one and the tape is unchanged.
+-/
+
+namespace SeekLeft
+
+/-- `Δ`-step left-shift PhasedProgram. -/
+def seekLeftProgram (Δ : Nat) : PhasedProgram.{0} where
+  numPhases := Δ + 1
+  phaseState := fun _ => Unit
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨Δ, by omega⟩
+  acceptState := ()
+  transition := fun i _ b =>
+    if hi : i.val < Δ then
+      (⟨⟨i.val + 1, by omega⟩, ()⟩, b, Move.left)
+    else
+      (⟨⟨Δ, by omega⟩, ()⟩, b, Move.stay)
+  timeBound := fun _ => Δ
+
+@[simp] theorem seekLeftProgram_numPhases (Δ : Nat) :
+    (seekLeftProgram Δ).numPhases = Δ + 1 := rfl
+
+@[simp] theorem seekLeftProgram_startPhase (Δ : Nat) :
+    ((seekLeftProgram Δ).startPhase : Fin (Δ + 1)).val = 0 := rfl
+
+@[simp] theorem seekLeftProgram_acceptPhase (Δ : Nat) :
+    ((seekLeftProgram Δ).acceptPhase : Fin (Δ + 1)).val = Δ := rfl
+
+@[simp] theorem seekLeftProgram_timeBound (Δ n : Nat) :
+    (seekLeftProgram Δ).timeBound n = Δ := rfl
+
+/-- In the active phase: writes bit back, `Move.left`, advances phase. -/
+theorem seekLeftProgram_transition_active (Δ : Nat)
+    {i : Fin ((seekLeftProgram Δ).numPhases)} (hi : i.val < Δ)
+    (q : (seekLeftProgram Δ).phaseState i) (b : Bool) :
+    ((seekLeftProgram Δ).transition i q b).fst.fst.val = i.val + 1 ∧
+    ((seekLeftProgram Δ).transition i q b).snd.fst = b ∧
+    ((seekLeftProgram Δ).transition i q b).snd.snd = Move.left := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [seekLeftProgram, hi]
+
+/-- One `stepConfig` in active phase, given head > 0 to avoid clamping:
+phase advances by 1, head decrements by 1, tape unchanged. -/
+theorem seekLeftProgram_stepConfig_active (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (seekLeftProgram Δ).toTM) n)
+    (hi : c.state.fst.val < Δ)
+    (h_head_pos : 0 < (c.head : ℕ)) :
+    (TM.stepConfig (M := (seekLeftProgram Δ).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    ((TM.stepConfig (M := (seekLeftProgram Δ).toTM) c).head : ℕ) =
+        (c.head : ℕ) - 1 ∧
+    (TM.stepConfig (M := (seekLeftProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨hphase, hbit, hmove⟩ :=
+    seekLeftProgram_transition_active Δ (i := c.state.fst) hi
+      c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((seekLeftProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.left := hmove
+  have hbit_step :
+      (((seekLeftProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := hbit
+  have hphase_step :
+      ((((seekLeftProgram Δ).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = c.state.fst.val + 1 := hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_state]; exact hphase_step
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_left_val_of_pos c h_head_pos]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+/-- j-fold invariant under `head.val ≥ Δ`. -/
+theorem seekLeftProgram_run_invariant (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (seekLeftProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_head_ge : Δ ≤ (c.head : ℕ)) :
+    ∀ j, j ≤ Δ →
+    let cj := TM.runConfig (M := (seekLeftProgram Δ).toTM) c j
+    cj.state.fst.val = j ∧
+    ((cj.head : ℕ) = (c.head : ℕ) - j) ∧
+    cj.tape = c.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_⟩
+    · show c.state.fst.val = 0; exact h_phase
+    · show (c.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le_Δ : j' ≤ Δ := by omega
+    have hj'_lt_Δ : j' < Δ := by omega
+    obtain ⟨ih_phase, ih_head, ih_tape⟩ := ih hj'_le_Δ
+    set cj' := TM.runConfig (M := (seekLeftProgram Δ).toTM) c j' with hcj'
+    have h_phase_cj' : cj'.state.fst.val < Δ := by rw [ih_phase]; exact hj'_lt_Δ
+    have h_head_pos : 0 < (cj'.head : ℕ) := by rw [ih_head]; omega
+    obtain ⟨rip_phase, rip_head, rip_tape⟩ :=
+      seekLeftProgram_stepConfig_active Δ cj' h_phase_cj' h_head_pos
+    have hrw : TM.runConfig (M := (seekLeftProgram Δ).toTM) c (j' + 1) =
+        TM.stepConfig (M := (seekLeftProgram Δ).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hrw, rip_phase, ih_phase]
+    · rw [hrw, rip_head, ih_head]; omega
+    · rw [hrw, rip_tape, ih_tape]
+
+/-- Full-budget result: after Δ steps, head has decreased by Δ, tape
+unchanged. -/
+theorem seekLeftProgram_run_Δ (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (seekLeftProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_head_ge : Δ ≤ (c.head : ℕ)) :
+    ((TM.runConfig (M := (seekLeftProgram Δ).toTM) c Δ).head : ℕ) =
+        (c.head : ℕ) - Δ ∧
+    (TM.runConfig (M := (seekLeftProgram Δ).toTM) c Δ).tape = c.tape :=
+  let ⟨_, h_head, h_tape⟩ :=
+    seekLeftProgram_run_invariant Δ c h_phase h_head_ge Δ le_rfl
+  ⟨h_head, h_tape⟩
+
+end SeekLeft
 
 end TM
 

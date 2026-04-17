@@ -3710,6 +3710,94 @@ theorem seekRightProgram_transition_accept (Δ : Nat)
   have hni : ¬ i.val < Δ := by omega
   refine ⟨?_, ?_, ?_⟩ <;> simp [seekRightProgram, hni]
 
+/-- `stepConfig` in the active phase: advances phase by one, head
+by one (within bounds), tape unchanged. -/
+theorem seekRightProgram_stepConfig_active (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (seekRightProgram Δ).toTM) n)
+    (hi : c.state.fst.val < Δ)
+    (hhead_bound : (c.head : ℕ) + 1 <
+        (seekRightProgram Δ).toTM.tapeLength n) :
+    (TM.stepConfig (M := (seekRightProgram Δ).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    ((TM.stepConfig (M := (seekRightProgram Δ).toTM) c).head : ℕ) =
+        (c.head : ℕ) + 1 ∧
+    (TM.stepConfig (M := (seekRightProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨hphase, hbit, hmove⟩ :=
+    seekRightProgram_transition_active Δ (i := c.state.fst) hi
+      c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((seekRightProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.right := hmove
+  have hbit_step :
+      (((seekRightProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := hbit
+  have hphase_step :
+      ((((seekRightProgram Δ).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = c.state.fst.val + 1 := hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_state]; exact hphase_step
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_right_lt (c := c) hhead_bound]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+/-! ### J-fold seek invariant
+
+After `j ≤ Δ` steps starting from phase 0, the seek program is in
+phase `j` with the head advanced by `j` and the tape unchanged.
+Proved by induction on `j`.
+-/
+
+theorem seekRightProgram_run_invariant (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (seekRightProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + Δ <
+        (seekRightProgram Δ).toTM.tapeLength n) :
+    ∀ j, j ≤ Δ →
+    let cj := TM.runConfig (M := (seekRightProgram Δ).toTM) c j
+    cj.state.fst.val = j ∧
+    ((cj.head : ℕ) = (c.head : ℕ) + j) ∧
+    cj.tape = c.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_⟩
+    · show c.state.fst.val = 0; exact h_phase
+    · show (c.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le_Δ : j' ≤ Δ := by omega
+    have hj'_lt_Δ : j' < Δ := by omega
+    obtain ⟨ih_phase, ih_head, ih_tape⟩ := ih hj'_le_Δ
+    set cj' := TM.runConfig (M := (seekRightProgram Δ).toTM) c j' with hcj'
+    have h_phase_cj' : cj'.state.fst.val < Δ := by rw [ih_phase]; exact hj'_lt_Δ
+    have h_head_advance_bound :
+        (cj'.head : ℕ) + 1 < (seekRightProgram Δ).toTM.tapeLength n := by
+      rw [ih_head]; omega
+    obtain ⟨rip_phase, rip_head, rip_tape⟩ :=
+      seekRightProgram_stepConfig_active Δ cj' h_phase_cj' h_head_advance_bound
+    have hrw : TM.runConfig (M := (seekRightProgram Δ).toTM) c (j' + 1) =
+        TM.stepConfig (M := (seekRightProgram Δ).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hrw, rip_phase, ih_phase]
+    · rw [hrw, rip_head, ih_head]; omega
+    · rw [hrw, rip_tape, ih_tape]
+
+/-- After the full `Δ`-step budget, the head has advanced by `Δ`
+and the tape is unchanged. -/
+theorem seekRightProgram_run_Δ (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (seekRightProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + Δ <
+        (seekRightProgram Δ).toTM.tapeLength n) :
+    ((TM.runConfig (M := (seekRightProgram Δ).toTM) c Δ).head : ℕ) =
+        (c.head : ℕ) + Δ ∧
+    (TM.runConfig (M := (seekRightProgram Δ).toTM) c Δ).tape = c.tape :=
+  let ⟨_, h_head, h_tape⟩ :=
+    seekRightProgram_run_invariant Δ c h_phase h_bound Δ le_rfl
+  ⟨h_head, h_tape⟩
+
 end SeekRight
 
 end TM

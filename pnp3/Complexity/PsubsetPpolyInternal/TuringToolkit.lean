@@ -982,6 +982,105 @@ theorem incrementProgram_counterValue_stable_from_accepting
   intro p _ _
   rw [hTape]
 
+/-!
+### Session 7d: Active-phase step behaviour
+
+In any active phase (`i.val < k`), the transition splits on the
+scanned bit:
+
+* `bit = false` (the counter cell is `0`) — write `1`, jump to the
+  accepting phase, `Move.stay`.  This is the "increment complete"
+  branch.
+
+* `bit = true` (the counter cell is `1`) — write `0`, advance to
+  phase `i + 1`, `Move.right`.  This is the ripple-carry branch.
+
+Both branches are characterised at the transition level and at the
+`stepConfig` level.  Together with Session 7c's accepting-phase
+stability, these four lemmas describe every possible single-step
+transition of `incrementProgram k`.
+-/
+
+/-- Transition in an active phase with bit `0`: write `1`, jump to
+phase `k + 1`, `Move.stay`. -/
+theorem incrementProgram_transition_phase_lt_k_bit_false (k : Nat)
+    {i : Fin ((incrementProgram k).numPhases)} (hi : i.val < k)
+    (q : (incrementProgram k).phaseState i) :
+    ((incrementProgram k).transition i q false).snd.snd = Move.stay ∧
+    ((incrementProgram k).transition i q false).snd.fst = true ∧
+    ((incrementProgram k).transition i q false).fst.fst.val = k + 1 := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [incrementProgram, hi]
+
+/-- Transition in an active phase with bit `1`: write `0`, advance
+to phase `i + 1`, `Move.right`. -/
+theorem incrementProgram_transition_phase_lt_k_bit_true (k : Nat)
+    {i : Fin ((incrementProgram k).numPhases)} (hi : i.val < k)
+    (q : (incrementProgram k).phaseState i) :
+    ((incrementProgram k).transition i q true).snd.snd = Move.right ∧
+    ((incrementProgram k).transition i q true).snd.fst = false ∧
+    ((incrementProgram k).transition i q true).fst.fst.val = i.val + 1 := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [incrementProgram, hi]
+
+/-- `stepConfig` in an active phase when the scanned bit is `0`:
+the cell is flipped `0 → 1`, the head stays, and the machine jumps
+to the accepting phase. -/
+theorem incrementProgram_stepConfig_phase_lt_k_bit_false {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (hi : c.state.fst.val < k) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).tape =
+        c.write c.head true ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).state.fst.val = k + 1 := by
+  obtain ⟨hmove, hbit_out, hphase⟩ :=
+    incrementProgram_transition_phase_lt_k_bit_false k
+      (i := c.state.fst) hi c.state.snd
+  -- Lift transition-level facts to step-level via defeq, using
+  -- `hbit` to rewrite `c.tape c.head` in the goal to `false`.
+  have hmove_step :
+      (((incrementProgram k).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := by rw [hbit]; exact hmove
+  have hbit_step :
+      (((incrementProgram k).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = true := by rw [hbit]; exact hbit_out
+  have hphase_step :
+      ((((incrementProgram k).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = k + 1 := by rw [hbit]; exact hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_tape, hbit_step]
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_state]; exact hphase_step
+
+/-- `stepConfig` in an active phase when the scanned bit is `1`:
+the cell is flipped `1 → 0`, the head moves right, and the machine
+advances to phase `i + 1`. -/
+theorem incrementProgram_stepConfig_phase_lt_k_bit_true {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (hi : c.state.fst.val < k) (hbit : c.tape c.head = true)
+    (hhead_bound : (c.head : ℕ) + 1 < (incrementProgram k).toTM.tapeLength n) :
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).tape =
+        c.write c.head false ∧
+    ((TM.stepConfig (M := (incrementProgram k).toTM) c).head : ℕ) =
+        (c.head : ℕ) + 1 ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).state.fst.val =
+        c.state.fst.val + 1 := by
+  obtain ⟨hmove, hbit_out, hphase⟩ :=
+    incrementProgram_transition_phase_lt_k_bit_true k
+      (i := c.state.fst) hi c.state.snd
+  have hmove_step :
+      (((incrementProgram k).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.right := by rw [hbit]; exact hmove
+  have hbit_step :
+      (((incrementProgram k).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = false := by rw [hbit]; exact hbit_out
+  have hphase_step :
+      ((((incrementProgram k).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = c.state.fst.val + 1 := by rw [hbit]; exact hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_tape, hbit_step]
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_right_lt (c := c) hhead_bound]
+  · rw [stepConfig_state]; exact hphase_step
+
 end BinaryCounter
 
 /-!

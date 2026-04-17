@@ -4393,6 +4393,119 @@ theorem run_after_write_phase (Δ : Nat) (b : Bool) {n : Nat}
     · rfl
     · rw [right_tape]
 
+/-- One stepConfig in the seek-left block (phase Δ+1..2Δ) with head
+> 0: phase advances by 1, head decrements by 1, tape unchanged. -/
+theorem stepConfig_seeking_left (Δ : Nat) (b : Bool) {n : Nat}
+    (c : Configuration (M := (writeAtOffsetProgram Δ b).toTM) n)
+    (hi_lo : Δ < c.state.fst.val) (hi_hi : c.state.fst.val < 2 * Δ + 1)
+    (h_head_pos : 0 < (c.head : ℕ)) :
+    (TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    ((TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) c).head : ℕ) =
+        (c.head : ℕ) - 1 ∧
+    (TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) c).tape = c.tape := by
+  obtain ⟨hphase, hbit, hmove⟩ :=
+    transition_seeking_left Δ b (i := c.state.fst) hi_lo hi_hi
+      c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((writeAtOffsetProgram Δ b).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.left := hmove
+  have hbit_step :
+      (((writeAtOffsetProgram Δ b).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := hbit
+  have hphase_step :
+      ((((writeAtOffsetProgram Δ b).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = c.state.fst.val + 1 := hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_state]; exact hphase_step
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_left_val_of_pos c h_head_pos]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+/-- j-fold invariant for the seek-left block, starting from any
+configuration at phase Δ+1 with head ≥ Δ. -/
+theorem run_j_seeking_left (Δ : Nat) (b : Bool) {n : Nat}
+    (c_start : Configuration (M := (writeAtOffsetProgram Δ b).toTM) n)
+    (h_phase : c_start.state.fst.val = Δ + 1)
+    (h_head_ge : Δ ≤ (c_start.head : ℕ)) :
+    ∀ j, j ≤ Δ →
+    let cj := TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c_start j
+    cj.state.fst.val = Δ + 1 + j ∧
+    ((cj.head : ℕ) = (c_start.head : ℕ) - j) ∧
+    cj.tape = c_start.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_⟩
+    · show c_start.state.fst.val = Δ + 1 + 0; rw [h_phase]
+    · show (c_start.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le_Δ : j' ≤ Δ := by omega
+    have hj'_lt_Δ : j' < Δ := by omega
+    obtain ⟨ih_phase, ih_head, ih_tape⟩ := ih hj'_le_Δ
+    set cj' := TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c_start j'
+      with hcj'
+    have h_phase_lo : Δ < cj'.state.fst.val := by rw [ih_phase]; omega
+    have h_phase_hi : cj'.state.fst.val < 2 * Δ + 1 := by rw [ih_phase]; omega
+    have h_head_pos : 0 < (cj'.head : ℕ) := by rw [ih_head]; omega
+    obtain ⟨rip_phase, rip_head, rip_tape⟩ :=
+      stepConfig_seeking_left Δ b cj' h_phase_lo h_phase_hi h_head_pos
+    have hrw :
+        TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c_start (j' + 1) =
+          TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hrw, rip_phase, ih_phase]; omega
+    · rw [hrw, rip_head, ih_head]; omega
+    · rw [hrw, rip_tape, ih_tape]
+
+/-- **Full correctness of `writeAtOffsetProgram`**: starting from
+any configuration at phase 0, after the full `2Δ+1`-step budget:
+
+* state is `2Δ+1` (accepting),
+* head is back at `c.head`,
+* the tape has bit `b` written at position `c.head + Δ`, everything
+  else unchanged.
+-/
+theorem writeAtOffsetProgram_run_full (Δ : Nat) (b : Bool) {n : Nat}
+    (c : Configuration (M := (writeAtOffsetProgram Δ b).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + Δ <
+        (writeAtOffsetProgram Δ b).toTM.tapeLength n) :
+    let cfinal := TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c (2 * Δ + 1)
+    cfinal.state.fst.val = 2 * Δ + 1 ∧
+    cfinal.head = c.head ∧
+    cfinal.tape = c.write ⟨(c.head : ℕ) + Δ, h_bound⟩ b := by
+  -- Compose: runConfig c (2Δ+1) = runConfig (runConfig c (Δ+1)) Δ.
+  have hsplit : 2 * Δ + 1 = (Δ + 1) + Δ := by omega
+  have hcomp :
+      TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c (2 * Δ + 1) =
+        TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM)
+          (TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c (Δ + 1)) Δ := by
+    rw [hsplit, runConfig_add]
+  obtain ⟨mid_phase, mid_head, mid_tape⟩ :=
+    run_after_write_phase Δ b c h_phase h_bound
+  set cmid := TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c (Δ + 1)
+    with hcmid
+  -- After write: phase = Δ+1, head = c.head + Δ, tape = c.write ⟨c.head+Δ, _⟩ b.
+  have h_phase_mid : cmid.state.fst.val = Δ + 1 := mid_phase
+  have h_head_mid : (cmid.head : ℕ) = (c.head : ℕ) + Δ := mid_head
+  have h_head_ge : Δ ≤ (cmid.head : ℕ) := by rw [h_head_mid]; omega
+  have h_tape_mid : cmid.tape = c.write ⟨(c.head : ℕ) + Δ, h_bound⟩ b :=
+    mid_tape h_bound
+  -- Apply seek-left j-fold at j = Δ.
+  obtain ⟨left_phase, left_head, left_tape⟩ :=
+    run_j_seeking_left Δ b cmid h_phase_mid h_head_ge Δ le_rfl
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hcomp, left_phase]; omega
+  · rw [hcomp]
+    apply Fin.ext
+    show (_ : ℕ) = (c.head : ℕ)
+    rw [left_head, h_head_mid]; omega
+  · rw [hcomp, left_tape, h_tape_mid]
+
 end WriteAtOffset
 
 end TM

@@ -1454,6 +1454,47 @@ theorem encodeFin_length : ∀ (w : Nat) (i : Fin (2 ^ w)),
     simp only [encodeFin, List.length_cons]
     rw [encodeFin_length w]
 
+/-- Decode a bit list as a `Fin (2^w)` value (little-endian: head of
+list = LSB).  Returns `none` if the list length mismatches `w`. -/
+def decodeFin : (w : Nat) → List Bool → Option (Fin (2 ^ w))
+  | 0, [] => some ⟨0, by simp⟩
+  | 0, _ :: _ => none
+  | _ + 1, [] => none
+  | w + 1, b :: bs =>
+    match decodeFin w bs with
+    | none => none
+    | some r =>
+      let v := (if b then 1 else 0) + 2 * r.val
+      have hv : v < 2 ^ (w + 1) := by
+        have hr := r.isLt
+        have heq : (2 : Nat) ^ (w + 1) = 2 ^ w * 2 := by rw [pow_succ]
+        have hbit_le : (if b then 1 else 0 : Nat) ≤ 1 := by
+          split_ifs <;> omega
+        omega
+      some ⟨v, hv⟩
+
+/-- Round-trip: decoding the encoding recovers the original value. -/
+theorem decodeFin_encodeFin : ∀ (w : Nat) (i : Fin (2 ^ w)),
+    decodeFin w (encodeFin w i) = some i
+  | 0, ⟨0, _⟩ => by
+    simp [encodeFin, decodeFin]
+  | 0, ⟨_ + 1, h⟩ => by
+    simp at h
+  | w + 1, i => by
+    simp only [encodeFin, decodeFin]
+    -- The recursive call at width `w` on the tail reconstructs
+    -- `⟨i.val / 2, _⟩` by IH.
+    rw [decodeFin_encodeFin w ⟨i.val / 2, _⟩]
+    apply Option.some_inj.mpr
+    apply Fin.ext
+    have hdiv_mod : 2 * (i.val / 2) + i.val % 2 = i.val :=
+      Nat.div_add_mod i.val 2
+    have hmod_lt : i.val % 2 < 2 := Nat.mod_lt i.val (by omega)
+    by_cases hmod : i.val % 2 = 1
+    · simp [hmod]; omega
+    · have hmod0 : i.val % 2 = 0 := by omega
+      simp [hmod]; omega
+
 end Encoding
 
 end TM

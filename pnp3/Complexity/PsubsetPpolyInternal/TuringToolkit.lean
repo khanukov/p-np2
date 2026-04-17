@@ -895,23 +895,24 @@ theorem incrementProgram_transition_phase_ge_k (k : Nat)
   have hi_ge : ¬ i.val < k := by omega
   refine ⟨?_, ?_, ?_⟩ <;> simp [incrementProgram, hi_ge]
 
-/-- `stepConfig` from an accepting-phase configuration leaves the
-entire configuration fixed.  More precisely:
+/-- `stepConfig` from a configuration whose phase is `≥ k` leaves
+the tape and head fixed and forces the state's phase to `k + 1`.
+This covers both the "overflow" transition (phase `= k`) and the
+"idle in accepting" case (phase `= k + 1`).
 
 * the tape is unchanged (the scanned bit is written back),
 * the head is unchanged (`Move.stay`),
-* the state's phase component stays at `k + 1`.
+* the state's phase component becomes `k + 1`.
 -/
-theorem incrementProgram_stepConfig_in_accepting {k : Nat} {n : Nat}
+theorem incrementProgram_stepConfig_phase_ge_k {k : Nat} {n : Nat}
     (c : Configuration (M := (incrementProgram k).toTM) n)
-    (h : c.state.fst.val = k + 1) :
+    (hge : k ≤ c.state.fst.val) :
     (TM.stepConfig (M := (incrementProgram k).toTM) c).tape = c.tape ∧
     (TM.stepConfig (M := (incrementProgram k).toTM) c).head = c.head ∧
     (TM.stepConfig (M := (incrementProgram k).toTM) c).state.fst.val = k + 1 := by
   -- `(toTM.step c.state b).snd.{snd, fst}` definitionally equals
   -- `(transition ...).snd.{snd, fst}`, so the transition-level
   -- hypotheses transfer to the step-level goals by rfl coercion.
-  have hge : k ≤ c.state.fst.val := by rw [h]; omega
   obtain ⟨hmove, hbit, hphase⟩ :=
     incrementProgram_transition_phase_ge_k k (i := c.state.fst) hge
       c.state.snd (c.tape c.head)
@@ -926,20 +927,23 @@ theorem incrementProgram_stepConfig_in_accepting {k : Nat} {n : Nat}
       ((((incrementProgram k).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
         = k + 1 := hphase
   refine ⟨?_, ?_, ?_⟩
-  · -- Tape: `stepConfig.tape = c.write c.head (step.snd.fst)`.  By
-    -- `hbit_step` the written bit equals `c.tape c.head`, so
-    -- `write_self_eq` collapses the write.
-    rw [stepConfig_tape, hbit_step]
+  · rw [stepConfig_tape, hbit_step]
     exact write_self_eq c c.head
-  · -- Head: `stepConfig.head = moveHead c (step.snd.snd)`.  By
-    -- `hmove_step` the move is `Move.stay`, and `moveHead_stay`
-    -- keeps the head put.
-    rw [stepConfig_head, hmove_step]
+  · rw [stepConfig_head, hmove_step]
     simp
-  · -- Phase: `stepConfig.state = (step.fst)`.  By `hphase_step`
-    -- its first component has value `k + 1`.
-    rw [stepConfig_state]
+  · rw [stepConfig_state]
     exact hphase_step
+
+/-- Specialisation at `c.state.fst.val = k + 1` — the "already in
+accepting phase" entry point.  Proof: apply
+`incrementProgram_stepConfig_phase_ge_k` with `k ≤ k + 1`. -/
+theorem incrementProgram_stepConfig_in_accepting {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h : c.state.fst.val = k + 1) :
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).tape = c.tape ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).state.fst.val = k + 1 :=
+  incrementProgram_stepConfig_phase_ge_k c (by rw [h]; omega)
 
 /-- Iterated version: starting from an accepting configuration,
 `runConfig` for any number of steps leaves the tape and head fixed
@@ -1080,6 +1084,123 @@ theorem incrementProgram_stepConfig_phase_lt_k_bit_true {k : Nat} {n : Nat}
   · rw [stepConfig_head, hmove_step,
         Configuration.moveHead_right_lt (c := c) hhead_bound]
   · rw [stepConfig_state]; exact hphase_step
+
+/-!
+### Session 7e: Correctness for `k = 1`
+
+The first fully worked-out instance of `incrementProgram_correct`.
+For a one-bit counter, the correctness equation is
+
+  `counterValue (runConfig c 2) c.head.val 1 = (counterValue c c.head.val 1 + 1) % 2`.
+
+The proof proceeds by case analysis on the scanned bit:
+
+* `c.tape c.head = false` (counter = 0): step 0 flips the cell to
+  `true` (via `stepConfig_phase_lt_k_bit_false`) and enters the
+  accepting phase; step 1 is stable (via `stepConfig_phase_ge_k`).
+  Final tape at the head reads `true`, so `counterValue = 1 =
+  (0 + 1) % 2`.
+
+* `c.tape c.head = true` (counter = 1): step 0 flips the cell to
+  `false` and advances the head one cell to the right (phase
+  becomes `k = 1`, the overflow phase); step 1 stays put in the
+  overflow branch, yielding phase `k + 1 = 2`.  Final tape at the
+  head reads `false`, so `counterValue = 0 = (1 + 1) % 2`.
+
+The hypothesis `h_phase` expresses that the caller invokes the
+program at phase `0` (the standard entry point), and `h_head`
+ensures the tape has room for the right-move in the ripple branch.
+
+This theorem validates the end-to-end machinery built across
+Sessions 1–7d.  The general case (`k ≥ 2`) follows the same
+structure but requires a parameterised induction on the position
+of the first zero bit — deferred.
+-/
+
+/-- Auxiliary rewrite: `counterValue` for width `1` is the bit at
+`start`, coerced to `Nat`. -/
+theorem counterValue_one_eq {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n)
+    (p : Fin (M.tapeLength n)) :
+    counterValue c (p : ℕ) 1 = (if c.tape p then 1 else 0) := by
+  show 0 + (if hi : (p : ℕ) + 0 < M.tapeLength n then
+              (if c.tape ⟨(p : ℕ) + 0, hi⟩ then 2 ^ 0 else 0)
+            else 0)
+        = (if c.tape p then 1 else 0)
+  have hp : (p : ℕ) + 0 < M.tapeLength n := by
+    have := p.isLt; omega
+  have hmk : (⟨(p : ℕ) + 0, hp⟩ : Fin (M.tapeLength n)) = p := by
+    apply Fin.ext; simp
+  simp [dif_pos hp, pow_zero, hmk]
+
+/-- Correctness of `incrementProgram` for `k = 1`. -/
+theorem incrementProgram_correct_one {n : Nat}
+    (c : Configuration (M := (incrementProgram 1).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_head : (c.head : ℕ) + 1 < (incrementProgram 1).toTM.tapeLength n) :
+    counterValue
+        (TM.runConfig (M := (incrementProgram 1).toTM) c 2)
+        (c.head : ℕ) 1 =
+      (counterValue c (c.head : ℕ) 1 + 1) % 2 ^ 1 := by
+  -- `runConfig c 2 = stepConfig (stepConfig c)`.
+  rw [show (2 : Nat) = 1 + 1 from rfl, runConfig_succ, runConfig_one]
+  set c0 := TM.stepConfig (M := (incrementProgram 1).toTM) c with hc0_def
+  have h_phase_lt : c.state.fst.val < 1 := by rw [h_phase]; omega
+  -- Case on the initial bit.
+  by_cases hbit : c.tape c.head = true
+  · -- bit = true path: counter was 1, after increment it's 0.
+    -- Step 0: flip to false, move right, phase 1.
+    obtain ⟨ht0, hh0, hp0⟩ :=
+      incrementProgram_stepConfig_phase_lt_k_bit_true c h_phase_lt hbit h_head
+    -- Step 1: we are in phase 1 ≥ k = 1, so stepConfig is idle.
+    have hc0_ge : 1 ≤ c0.state.fst.val := by
+      rw [hc0_def, hp0, h_phase]
+    obtain ⟨ht1, hh1, hp1⟩ :=
+      incrementProgram_stepConfig_phase_ge_k c0 hc0_ge
+    -- Final tape at head equals c.write c.head false at head = false.
+    have h_counter_new :
+        counterValue
+            (TM.stepConfig (M := (incrementProgram 1).toTM) c0)
+            (c.head : ℕ) 1 = 0 := by
+      rw [counterValue_one_eq]
+      have htape_at_head :
+          (TM.stepConfig (M := (incrementProgram 1).toTM) c0).tape c.head
+            = false := by
+        rw [ht1, hc0_def, ht0]
+        exact Configuration.write_self c c.head false
+      rw [htape_at_head]; decide
+    have h_counter_old : counterValue c (c.head : ℕ) 1 = 1 := by
+      rw [counterValue_one_eq, hbit]; decide
+    rw [h_counter_new, h_counter_old]
+    decide
+  · -- bit = false path: counter was 0, after increment it's 1.
+    have hbit_false : c.tape c.head = false := by
+      cases hval : c.tape c.head with
+      | true => exact absurd hval hbit
+      | false => rfl
+    obtain ⟨ht0, hh0, hp0⟩ :=
+      incrementProgram_stepConfig_phase_lt_k_bit_false c h_phase_lt hbit_false
+    -- After step 0: phase = k + 1 = 2 ≥ 1. Step 1 is idle.
+    have hc0_ge : 1 ≤ c0.state.fst.val := by
+      rw [hc0_def, hp0]; omega
+    obtain ⟨ht1, hh1, hp1⟩ :=
+      incrementProgram_stepConfig_phase_ge_k c0 hc0_ge
+    have h_counter_new :
+        counterValue
+            (TM.stepConfig (M := (incrementProgram 1).toTM) c0)
+            (c.head : ℕ) 1 = 1 := by
+      rw [counterValue_one_eq]
+      have htape_at_head :
+          (TM.stepConfig (M := (incrementProgram 1).toTM) c0).tape c.head
+            = true := by
+        rw [ht1, hc0_def, ht0]
+        exact Configuration.write_self c c.head true
+      rw [htape_at_head]; decide
+    have h_counter_old : counterValue c (c.head : ℕ) 1 = 0 := by
+      rw [counterValue_one_eq, hbit_false]
+      decide
+    rw [h_counter_new, h_counter_old]
+    decide
 
 end BinaryCounter
 

@@ -5396,6 +5396,172 @@ theorem transition_seek_back (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
   refine ⟨?_, ?_, ?_, ?_⟩ <;>
     simp [copyAtOffsetProgram, hn1, hn2, hn3, hn4, hi_hi]
 
+/-! ### Step lemmas -/
+
+theorem stepConfig_seek_to_src (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) n)
+    (hi : c.state.fst.val < Δsrc)
+    (h_head_bound : (c.head : ℕ) + 1 <
+        (copyAtOffsetProgram Δsrc Δdst hleq).toTM.tapeLength n) :
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.snd =
+        c.state.snd ∧
+    ((TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).head : ℕ) =
+        (c.head : ℕ) + 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_seek_to_src Δsrc Δdst hleq (i := c.state.fst) hi c.state.snd
+      (c.tape c.head)
+  have hmove_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.snd : Move) = Move.right := t_move
+  have hbit_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.fst : Bool) = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).fst.val = c.state.fst.val + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_right_lt (c := c) h_head_bound]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+theorem stepConfig_read (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) n)
+    (hi : c.state.fst.val = Δsrc) :
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.fst.val =
+        Δsrc + 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.snd =
+        c.tape c.head ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_read Δsrc Δdst hleq (i := c.state.fst) hi c.state.snd
+      (c.tape c.head)
+  have hmove_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.snd : Move) = Move.stay := t_move
+  have hbit_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.fst : Bool) = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).fst.val = Δsrc + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).snd = c.tape c.head
+    exact t_state
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+theorem stepConfig_seek_to_dst (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) n)
+    (hi_lo : Δsrc < c.state.fst.val) (hi_hi : c.state.fst.val < Δdst + 1)
+    (h_head_bound : (c.head : ℕ) + 1 <
+        (copyAtOffsetProgram Δsrc Δdst hleq).toTM.tapeLength n) :
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.snd =
+        c.state.snd ∧
+    ((TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).head : ℕ) =
+        (c.head : ℕ) + 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_seek_to_dst Δsrc Δdst hleq hi_lo hi_hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.snd : Move) = Move.right := t_move
+  have hbit_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.fst : Bool) = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).fst.val = c.state.fst.val + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_right_lt (c := c) h_head_bound]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+theorem stepConfig_write (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) n)
+    (hi : c.state.fst.val = Δdst + 1) :
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.fst.val =
+        Δdst + 2 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.snd =
+        c.state.snd ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).tape =
+        c.write c.head c.state.snd := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_write Δsrc Δdst hleq (i := c.state.fst) hi c.state.snd
+      (c.tape c.head)
+  have hmove_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.snd : Move) = Move.stay := t_move
+  have hbit_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.fst : Bool) = c.state.snd := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).fst.val = Δdst + 2
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+
+theorem stepConfig_seek_back (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) n)
+    (hi_lo : Δdst + 1 < c.state.fst.val) (hi_hi : c.state.fst.val < 2 * Δdst + 2)
+    (h_head_pos : 0 < (c.head : ℕ)) :
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).state.snd =
+        c.state.snd ∧
+    ((TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).head : ℕ) =
+        (c.head : ℕ) - 1 ∧
+    (TM.stepConfig (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_seek_back Δsrc Δdst hleq hi_lo hi_hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.snd : Move) = Move.left := t_move
+  have hbit_step :
+      (((copyAtOffsetProgram Δsrc Δdst hleq).toTM.step c.state
+          (c.tape c.head)).snd.fst : Bool) = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).fst.val = c.state.fst.val + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((copyAtOffsetProgram Δsrc Δdst hleq).transition c.state.fst
+            c.state.snd (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_left_val_of_pos c h_head_pos]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
 end CopyAtOffset
 
 end TM

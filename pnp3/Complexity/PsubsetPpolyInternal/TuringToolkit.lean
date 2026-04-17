@@ -1685,6 +1685,48 @@ theorem decode_encode_not {n : Nat} (h_pos : 0 < n) (width : Nat)
              List.append_assoc, decodeCircuitTreeAtDepth]
   rw [ih d' hd' rest]
 
+theorem decode_encode_and {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (c1 c2 : CircuitTree n) (d : Nat)
+    (hd : c1.size + c2.size + 1 ≤ d)
+    (rest : List Bool)
+    (ih1 : ∀ (d' : Nat), c1.size ≤ d' → ∀ (r : List Bool),
+      decodeCircuitTreeAtDepth h_pos width d'
+          (encodeCircuitTree width h_width c1 ++ r) = some (c1, r))
+    (ih2 : ∀ (d' : Nat), c2.size ≤ d' → ∀ (r : List Bool),
+      decodeCircuitTreeAtDepth h_pos width d'
+          (encodeCircuitTree width h_width c2 ++ r) = some (c2, r)) :
+    decodeCircuitTreeAtDepth h_pos width d
+        (encodeCircuitTree width h_width (CircuitTree.and c1 c2) ++ rest) =
+      some (CircuitTree.and c1 c2, rest) := by
+  obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
+  have hd1 : c1.size ≤ d' := by omega
+  have hd2 : c2.size ≤ d' := by omega
+  simp only [encodeCircuitTree, List.cons_append, List.nil_append,
+             List.append_assoc, decodeCircuitTreeAtDepth,
+             ih1 d' hd1 (encodeCircuitTree width h_width c2 ++ rest),
+             ih2 d' hd2 rest]
+
+theorem decode_encode_or {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (c1 c2 : CircuitTree n) (d : Nat)
+    (hd : c1.size + c2.size + 1 ≤ d)
+    (rest : List Bool)
+    (ih1 : ∀ (d' : Nat), c1.size ≤ d' → ∀ (r : List Bool),
+      decodeCircuitTreeAtDepth h_pos width d'
+          (encodeCircuitTree width h_width c1 ++ r) = some (c1, r))
+    (ih2 : ∀ (d' : Nat), c2.size ≤ d' → ∀ (r : List Bool),
+      decodeCircuitTreeAtDepth h_pos width d'
+          (encodeCircuitTree width h_width c2 ++ r) = some (c2, r)) :
+    decodeCircuitTreeAtDepth h_pos width d
+        (encodeCircuitTree width h_width (CircuitTree.or c1 c2) ++ rest) =
+      some (CircuitTree.or c1 c2, rest) := by
+  obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
+  have hd1 : c1.size ≤ d' := by omega
+  have hd2 : c2.size ≤ d' := by omega
+  simp only [encodeCircuitTree, List.cons_append, List.nil_append,
+             List.append_assoc, decodeCircuitTreeAtDepth,
+             ih1 d' hd1 (encodeCircuitTree width h_width c2 ++ rest),
+             ih2 d' hd2 rest]
+
 end Encoding
 
 end TM

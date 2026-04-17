@@ -229,6 +229,47 @@ theorem runConfig_one {M : TM.{u}} {n : Nat}
   have := runConfig_succ (M := M) (n := n) c 0
   simpa using this
 
+/-- Compositional execution: running `k + m` steps is the same as
+running `k` steps followed by `m` more.  This is the workhorse for
+breaking multi-step proofs into phase segments.  -/
+theorem runConfig_add {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (k m : Nat) :
+    TM.runConfig (M := M) c (k + m) =
+      TM.runConfig (M := M) (TM.runConfig (M := M) c k) m := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have h1 := runConfig_succ (M := M) (n := n) c (k + m)
+    have h2 := runConfig_succ (M := M) (n := n)
+      (TM.runConfig (M := M) c k) m
+    -- `k + (m+1) = (k+m) + 1`.
+    have hsucc : k + (m + 1) = (k + m) + 1 := by omega
+    rw [hsucc, h1, ih, ← h2]
+
+/-!
+### `stepConfig` on a compiled `PhasedProgram`
+
+`toTM_stepConfig_unfolded` specialises `TM.stepConfig` on `P.toTM` so
+that the resulting configuration is written in terms of `P.transition`
+directly.  Consumers can chain this with `runConfig_succ` to step
+through a phased trace without unfolding `PhasedProgram.toTM` by hand.
+-/
+
+namespace PhasedProgram
+
+theorem toTM_stepConfig_unfolded {n : Nat} (P : PhasedProgram)
+    (c : TM.Configuration (M := P.toTM) n) :
+    TM.stepConfig (M := P.toTM) c =
+      let bit := c.tape c.head
+      let result := P.transition c.state.fst c.state.snd bit
+      ({ state := result.fst
+         head := TM.Configuration.moveHead (M := P.toTM) (c := c) result.snd.snd
+         tape := c.write c.head result.snd.fst } :
+         TM.Configuration (M := P.toTM) n) := by
+  rfl
+
+end PhasedProgram
+
 /-!
 ## Second-order pilot: read the first input bit
 

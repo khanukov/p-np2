@@ -5267,6 +5267,137 @@ theorem notAtOffsetProgram_run_full (Δ : Nat) {n : Nat}
 
 end NotAtOffset
 
+/-!
+## Session 9e-d (step 9): `copyAtOffsetProgram` compound
+
+`copyAtOffsetProgram Δsrc Δdst` (with `Δsrc ≤ Δdst`): read the bit
+at offset `Δsrc` from the initial head, then write that bit at
+offset `Δdst`, then return the head.
+
+This is the cross-position analogue of `notAtOffsetProgram` and
+the first compound with SEPARATE read/write positions.  It is the
+core primitive for SL-gate evaluation where the result of reading
+one scratch cell must be written to a different scratch cell.
+
+5-block structure (assuming `Δsrc ≤ Δdst`):
+* 0..Δsrc-1: seek right to source.
+* Δsrc: read source bit into state.
+* Δsrc+1..Δdst: seek right from source to destination.
+* Δdst+1: write state bit at destination.
+* Δdst+2..2Δdst+1: seek left back to origin.
+* 2Δdst+2: accepting.
+
+Total phases: `2Δdst+3`.  runTime: `2Δdst+2`.
+-/
+
+namespace CopyAtOffset
+
+def copyAtOffsetProgram (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) :
+    PhasedProgram.{0} where
+  numPhases := 2 * Δdst + 3
+  phaseState := fun _ => Bool
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := false
+  acceptPhase := ⟨2 * Δdst + 2, by omega⟩
+  acceptState := true
+  transition := fun i q scan =>
+    if hi1 : i.val < Δsrc then
+      -- seek right to source
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.right)
+    else if hi2 : i.val = Δsrc then
+      -- read source bit into state
+      (⟨⟨Δsrc + 1, by omega⟩, scan⟩, scan, Move.stay)
+    else if hi3 : i.val < Δdst + 1 then
+      -- seek right to destination (phase Δsrc+1..Δdst)
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.right)
+    else if hi4 : i.val = Δdst + 1 then
+      -- write state bit at destination
+      (⟨⟨Δdst + 2, by omega⟩, q⟩, q, Move.stay)
+    else if hi5 : i.val < 2 * Δdst + 2 then
+      -- seek left back to origin (phase Δdst+2..2Δdst+1)
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.left)
+    else
+      -- accepting idle (phase 2Δdst+2)
+      (⟨⟨2 * Δdst + 2, by omega⟩, q⟩, scan, Move.stay)
+  timeBound := fun _ => 2 * Δdst + 2
+
+@[simp] theorem copyAtOffsetProgram_numPhases (Δsrc Δdst : Nat)
+    (hleq : Δsrc ≤ Δdst) :
+    (copyAtOffsetProgram Δsrc Δdst hleq).numPhases = 2 * Δdst + 3 := rfl
+
+@[simp] theorem copyAtOffsetProgram_timeBound (Δsrc Δdst : Nat)
+    (hleq : Δsrc ≤ Δdst) (n : Nat) :
+    (copyAtOffsetProgram Δsrc Δdst hleq).timeBound n = 2 * Δdst + 2 := rfl
+
+/-! ### Transition helpers for the 5 phase classes -/
+
+theorem transition_seek_to_src (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
+    {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)} (hi : i.val < Δsrc)
+    (q : (copyAtOffsetProgram Δsrc Δdst hleq).phaseState i) (scan : Bool) :
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = q ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = scan ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.right := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [copyAtOffsetProgram, hi]
+
+theorem transition_read (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
+    {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)} (hi : i.val = Δsrc)
+    (q : (copyAtOffsetProgram Δsrc Δdst hleq).phaseState i) (scan : Bool) :
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.fst.val = Δsrc + 1 ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = scan ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = scan ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.stay := by
+  have hni : ¬ i.val < Δsrc := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [copyAtOffsetProgram, hni, hi]
+
+theorem transition_seek_to_dst (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
+    {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)}
+    (hi_lo : Δsrc < i.val) (hi_hi : i.val < Δdst + 1)
+    (q : (copyAtOffsetProgram Δsrc Δdst hleq).phaseState i) (scan : Bool) :
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = q ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = scan ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.right := by
+  have hn1 : ¬ i.val < Δsrc := by omega
+  have hn2 : ¬ i.val = Δsrc := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;>
+    simp [copyAtOffsetProgram, hn1, hn2, hi_hi]
+
+theorem transition_write (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
+    {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)} (hi : i.val = Δdst + 1)
+    (q : (copyAtOffsetProgram Δsrc Δdst hleq).phaseState i) (scan : Bool) :
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.fst.val = Δdst + 2 ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = q ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = q ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.stay := by
+  have hn1 : ¬ i.val < Δsrc := by omega
+  have hn2 : ¬ i.val = Δsrc := by omega
+  have hn3 : ¬ i.val < Δdst + 1 := by omega
+  have hn4 : ¬ (Δdst + 1 < Δsrc) := by omega
+  have hn5 : ¬ (Δdst + 1 = Δsrc) := by omega
+  have hn6 : ¬ (Δdst + 1 < Δdst + 1) := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;>
+    simp [copyAtOffsetProgram, hn1, hn2, hn3, hn4, hn5, hn6, hi]
+
+theorem transition_seek_back (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
+    {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)}
+    (hi_lo : Δdst + 1 < i.val) (hi_hi : i.val < 2 * Δdst + 2)
+    (q : (copyAtOffsetProgram Δsrc Δdst hleq).phaseState i) (scan : Bool) :
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = q ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = scan ∧
+    ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.left := by
+  have hn1 : ¬ i.val < Δsrc := by omega
+  have hn2 : ¬ i.val = Δsrc := by omega
+  have hn3 : ¬ i.val < Δdst + 1 := by omega
+  have hn4 : ¬ i.val = Δdst + 1 := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;>
+    simp [copyAtOffsetProgram, hn1, hn2, hn3, hn4, hi_hi]
+
+end CopyAtOffset
+
 end TM
 
 end PsubsetPpoly

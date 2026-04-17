@@ -4144,6 +4144,77 @@ theorem readBitProgram_run_1 {n : Nat}
 
 end ReadBit
 
+/-!
+## Session 9e-d (step 6): `writeAtOffsetProgram` compound
+
+`writeAtOffsetProgram Δ b` is the first compound (monolithic)
+PhasedProgram in the toolkit.  It composes the effects of three
+atomic primitives into a single TM:
+
+1. seek head right by `Δ` cells,
+2. write bit `b` at the new head position,
+3. seek head back left by `Δ` cells.
+
+Resulting effect (under `head + Δ` fits + `head ≥ 0`): the tape
+has `b` written at position `head + Δ`; everything else unchanged;
+head back at its initial position.
+
+This is the canonical "write-at-scratch" primitive for the
+MCSP evaluator: given a computed gate value `b` and the scratch
+offset `Δ`, it commits the value and returns to the main cursor.
+
+Phases:
+* 0..Δ-1: seek right (`Δ` phases).
+* Δ: write `b`, stay (1 phase).
+* Δ+1..2Δ: seek left (`Δ` phases).
+* 2Δ+1: accepting idle (1 phase).
+
+Total phases: `2Δ + 2`.  runTime: `2Δ + 1`.
+-/
+
+namespace WriteAtOffset
+
+/-- Three-block compound: seek right Δ, write b, seek left Δ. -/
+def writeAtOffsetProgram (Δ : Nat) (b : Bool) : PhasedProgram.{0} where
+  numPhases := 2 * Δ + 2
+  phaseState := fun _ => Unit
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨2 * Δ + 1, by omega⟩
+  acceptState := ()
+  transition := fun i _ scan =>
+    if hi1 : i.val < Δ then
+      -- seeking right: write scan back, Move.right, advance phase.
+      (⟨⟨i.val + 1, by omega⟩, ()⟩, scan, Move.right)
+    else if hi2 : i.val = Δ then
+      -- write phase: emit bit b, stay, advance to Δ+1.
+      (⟨⟨Δ + 1, by omega⟩, ()⟩, b, Move.stay)
+    else if hi3 : i.val < 2 * Δ + 1 then
+      -- seeking left: write scan back, Move.left, advance phase.
+      (⟨⟨i.val + 1, by omega⟩, ()⟩, scan, Move.left)
+    else
+      -- accepting idle.
+      (⟨⟨2 * Δ + 1, by omega⟩, ()⟩, scan, Move.stay)
+  timeBound := fun _ => 2 * Δ + 1
+
+@[simp] theorem writeAtOffsetProgram_numPhases (Δ : Nat) (b : Bool) :
+    (writeAtOffsetProgram Δ b).numPhases = 2 * Δ + 2 := rfl
+
+@[simp] theorem writeAtOffsetProgram_startPhase (Δ : Nat) (b : Bool) :
+    ((writeAtOffsetProgram Δ b).startPhase :
+      Fin ((writeAtOffsetProgram Δ b).numPhases)).val = 0 := rfl
+
+@[simp] theorem writeAtOffsetProgram_acceptPhase (Δ : Nat) (b : Bool) :
+    ((writeAtOffsetProgram Δ b).acceptPhase :
+      Fin ((writeAtOffsetProgram Δ b).numPhases)).val = 2 * Δ + 1 := rfl
+
+@[simp] theorem writeAtOffsetProgram_timeBound (Δ : Nat) (b : Bool) (n : Nat) :
+    (writeAtOffsetProgram Δ b).timeBound n = 2 * Δ + 1 := rfl
+
+end WriteAtOffset
+
 end TM
 
 end PsubsetPpoly

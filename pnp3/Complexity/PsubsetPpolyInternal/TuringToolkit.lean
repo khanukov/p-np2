@@ -479,6 +479,63 @@ theorem runConfig_head_val_le {M : TM.{u}} {n : Nat}
     omega
 
 /-!
+### Session 6c: Head monotonicity for never-left TMs
+
+Many interesting verifier phases (including the binary counter) only
+use `Move.right` and `Move.stay` — never `Move.left`.  For such TMs,
+`stepConfig` and `runConfig` are head-monotone, giving the *lower*
+bound needed to sandwich the head between `initial` and `initial + j`.
+
+Combined with the upper bound from 6b and Session 5's
+`runConfig_tape_eq_outside_range`, this yields full tape preservation
+outside a program's designated working window.
+-/
+
+/-- Definitional equation: `stepConfig`'s head is the `moveHead` of the
+current configuration under the move returned by `M.step`. -/
+@[simp] theorem stepConfig_head {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    (TM.stepConfig (M := M) c).head =
+      Configuration.moveHead (c := c)
+        (M.step c.state (c.tape c.head)).snd.snd := rfl
+
+/-- Predicate: the TM's step function never issues `Move.left`, for
+any state and any scanned bit. -/
+def TMNeverMovesLeft (M : TM.{u}) : Prop :=
+  ∀ s b, (M.step s b).snd.snd ≠ Move.left
+
+/-- In a never-left TM, a single `stepConfig` never *decreases* the
+head value. -/
+theorem stepConfig_head_val_ge_of_never_left {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n)
+    (hM : TMNeverMovesLeft M) :
+    (c.head : ℕ) ≤ ((TM.stepConfig (M := M) c).head : ℕ) := by
+  rw [stepConfig_head]
+  have hne := hM c.state (c.tape c.head)
+  generalize (M.step c.state (c.tape c.head)).snd.snd = m at hne
+  cases m with
+  | left => exact absurd rfl hne
+  | stay => simp
+  | right =>
+    by_cases hb : (c.head : ℕ) + 1 < M.tapeLength n
+    · rw [Configuration.moveHead_right_lt _ hb]
+      simp
+    · rw [Configuration.moveHead_right_clamp _ hb]
+
+/-- Multi-step head-monotonicity for never-left TMs. -/
+theorem runConfig_head_val_ge_of_never_left {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (j : Nat)
+    (hM : TMNeverMovesLeft M) :
+    (c.head : ℕ) ≤ ((TM.runConfig (M := M) c j).head : ℕ) := by
+  induction j with
+  | zero => simp
+  | succ j ih =>
+    rw [runConfig_succ]
+    have step_ge := stepConfig_head_val_ge_of_never_left
+      (M := M) (n := n) (TM.runConfig (M := M) c j) hM
+    omega
+
+/-!
 ## Session 6a: Binary counter — increment program definition
 
 A `k`-bit binary counter is encoded as contiguous tape cells with the
@@ -557,6 +614,66 @@ def incrementProgram (k : Nat) : PhasedProgram.{0} where
 
 @[simp] theorem incrementProgram_phaseState (k : Nat) (i : Fin (k + 2)) :
     (incrementProgram k).phaseState i = Unit := rfl
+
+/-!
+### Head-position invariants for `incrementProgram`
+
+The transition function of `incrementProgram k` only returns
+`Move.right` or `Move.stay` — never `Move.left`.  Lifting this to the
+compiled TM gives `TMNeverMovesLeft` and, via Session 6c generic
+lemmas, head-monotonicity.  Combined with Session 6b's upper bound
+and Session 5's tape-invariant lemmas, we obtain full tape
+preservation outside `[initial_head, initial_head + k + 1)` — the
+counter's working window.
+-/
+
+/-- `incrementProgram k`'s transition function never issues
+`Move.left`. -/
+theorem incrementProgram_transition_never_left (k : Nat)
+    (i : Fin ((incrementProgram k).numPhases))
+    (q : (incrementProgram k).phaseState i) (b : Bool) :
+    ((incrementProgram k).transition i q b).snd.snd ≠ Move.left := by
+  -- The transition splits on `i.val < k` and (inside) `b`.  Each of
+  -- the three resulting branches emits `Move.right` or `Move.stay`.
+  by_cases hi : i.val < k
+  · by_cases hb : b = true
+    · -- `i.val < k ∧ b = true` → `Move.right`.
+      simp [incrementProgram, hi, hb]
+    · -- `i.val < k ∧ b = false` → `Move.stay`.
+      simp [incrementProgram, hi, hb]
+  · -- `¬ (i.val < k)` → `Move.stay`.
+    simp [incrementProgram, hi]
+
+/-- Lift to the compiled TM: `(incrementProgram k).toTM` is
+never-left. -/
+theorem incrementProgram_toTM_never_moves_left (k : Nat) :
+    TMNeverMovesLeft (incrementProgram k).toTM := by
+  intro s b
+  rcases s with ⟨i, q⟩
+  -- `.toTM.step ⟨i, q⟩ b`'s third component equals
+  -- `(transition i q b).snd.snd`.
+  show ((incrementProgram k).transition i q b).snd.snd ≠ Move.left
+  exact incrementProgram_transition_never_left k i q b
+
+/-- Tape-preservation corollary: after running `incrementProgram k`
+for its full `k + 1`-step budget, every tape cell *outside*
+`[c.head, c.head + k + 1)` keeps its original value. -/
+theorem incrementProgram_tape_preserved_outside {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (i : Fin ((incrementProgram k).toTM.tapeLength n))
+    (hout : (i : ℕ) < (c.head : ℕ) ∨ (c.head : ℕ) + (k + 1) ≤ (i : ℕ)) :
+    (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1)).tape i =
+      c.tape i := by
+  refine runConfig_tape_eq_outside_range
+    (c := c) (k := k + 1)
+    (a := (c.head : ℕ)) (b := (c.head : ℕ) + (k + 1))
+    ?_ i hout
+  intro j hj
+  refine ⟨?_, ?_⟩
+  · exact runConfig_head_val_ge_of_never_left c j
+      (incrementProgram_toTM_never_moves_left k)
+  · have := runConfig_head_val_le (M := (incrementProgram k).toTM) c j
+    omega
 
 end BinaryCounter
 

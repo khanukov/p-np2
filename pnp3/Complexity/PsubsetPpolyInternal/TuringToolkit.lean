@@ -1586,6 +1586,64 @@ theorem encodeCircuitTree_length_ge {n : Nat} (width : Nat)
     simp [encodeCircuitTree, CircuitTree.size]
     omega
 
+/-!
+### Session 8d: Circuit decoder + round-trip
+
+Structural recursion on a `depth` budget (rather than list length)
+gives a clean well-founded definition: each recursive subcall
+decrements `depth` by 1.  Passing `c.size` as the initial budget
+is always enough since the tree depth is bounded by its size.
+
+The round-trip theorem shows `decodeCircuitTreeAtDepth` (at depth
+`c.size`) recovers `c` and leaves any tail unchanged:
+
+  decodeCircuitTreeAtDepth (h_pos : 0 < n) width c.size
+      (encodeCircuitTree width h_width c ++ rest)
+    = some (c, rest).
+-/
+
+/-- Recursive decoder with a structural depth budget.  Returns the
+parsed tree plus the remaining bit list, or `none` on malformed
+input. -/
+def decodeCircuitTreeAtDepth {n : Nat} (h_pos : 0 < n) (width : Nat) :
+    Nat → List Bool → Option (CircuitTree n × List Bool)
+  | 0, _ => none
+  | _ + 1, [] => none
+  | _ + 1, [_] => none
+  | _ + 1, [_, _] => none
+  | _ + 1, false :: false :: false :: rest =>
+    if hrest_len : rest.length < width then none
+    else
+      let payload := rest.take width
+      let remainder := rest.drop width
+      match decodeFin width payload with
+      | none => none
+      | some i_fin =>
+        if hv : i_fin.val < n then
+          some (CircuitTree.input ⟨i_fin.val, hv⟩, remainder)
+        else none
+  | _ + 1, false :: false :: true :: b :: rest =>
+    some (CircuitTree.const b, rest)
+  | d + 1, false :: true :: false :: rest =>
+    match decodeCircuitTreeAtDepth h_pos width d rest with
+    | none => none
+    | some (c, remainder) => some (CircuitTree.not c, remainder)
+  | d + 1, false :: true :: true :: rest =>
+    match decodeCircuitTreeAtDepth h_pos width d rest with
+    | none => none
+    | some (c1, rest1) =>
+      match decodeCircuitTreeAtDepth h_pos width d rest1 with
+      | none => none
+      | some (c2, rest2) => some (CircuitTree.and c1 c2, rest2)
+  | d + 1, true :: false :: false :: rest =>
+    match decodeCircuitTreeAtDepth h_pos width d rest with
+    | none => none
+    | some (c1, rest1) =>
+      match decodeCircuitTreeAtDepth h_pos width d rest1 with
+      | none => none
+      | some (c2, rest2) => some (CircuitTree.or c1 c2, rest2)
+  | _ + 1, _ :: _ :: _ :: _ => none
+
 end Encoding
 
 end TM

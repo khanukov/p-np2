@@ -1876,6 +1876,76 @@ theorem incrementProgram_correct_first_bit_zero {k : Nat} (hk : 0 < k)
     exact h_new_lt
   rw [h_counter_new, Nat.mod_eq_of_lt h_old_lt_pow]
 
+/-!
+### Session 7g-e: Full `incrementProgram_correct`
+
+Combines the overflow case (`incrementProgram_correct_all_ones`)
+and the first-zero case (`incrementProgram_correct_first_zero_at`)
+via classical case analysis.  When the counter is NOT all 1s,
+`Nat.find` extracts the smallest position `j < k` with a 0 bit,
+and the first-zero lemma discharges the arithmetic.
+
+This theorem is the milestone closing Session 7 fully: for any
+`k`, any starting configuration with phase 0 and valid tape
+bounds, `incrementProgram k` run for `k + 1` steps increments
+the counter modulo `2^k`.
+-/
+
+theorem incrementProgram_correct {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + k + 1 ≤
+        (incrementProgram k).toTM.tapeLength n) :
+    counterValue
+        (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+        (c.head : ℕ) k =
+      (counterValue c (c.head : ℕ) k + 1) % 2 ^ k := by
+  classical
+  by_cases hall : ∀ (i : Nat), i < k →
+      ∀ (hb : (c.head : ℕ) + i < (incrementProgram k).toTM.tapeLength n),
+      c.tape ⟨(c.head : ℕ) + i, hb⟩ = true
+  · exact incrementProgram_correct_all_ones c h_phase h_bound hall
+  · -- Not all ones → there exists a zero.  Find the smallest.
+    push_neg at hall
+    obtain ⟨i₀, hi₀lt, hb_i₀, hne₀⟩ := hall
+    have h_bit_false₀ : c.tape ⟨(c.head : ℕ) + i₀, hb_i₀⟩ = false :=
+      Bool.not_eq_true _ |>.mp hne₀
+    -- Classical Nat.find
+    let P : Nat → Prop := fun i =>
+      i < k ∧ ∃ hb : (c.head : ℕ) + i <
+          (incrementProgram k).toTM.tapeLength n,
+        c.tape ⟨(c.head : ℕ) + i, hb⟩ = false
+    have hP : ∃ i, P i := ⟨i₀, hi₀lt, hb_i₀, h_bit_false₀⟩
+    let j := Nat.find hP
+    have hj_spec : P j := Nat.find_spec hP
+    have hj_min : ∀ m, m < j → ¬ P m := fun m hm => Nat.find_min hP hm
+    obtain ⟨hjk, hj_bnd, hj_false⟩ := hj_spec
+    -- All bits before `j` are 1.
+    have h_ones : ∀ i, i < j →
+        ∀ (hbi : (c.head : ℕ) + i <
+            (incrementProgram k).toTM.tapeLength n),
+        c.tape ⟨(c.head : ℕ) + i, hbi⟩ = true := by
+      intro i hij hbi
+      have hik : i < k := by omega
+      have not_P := hj_min i hij
+      by_contra h_not_true
+      apply not_P
+      refine ⟨hik, hbi, ?_⟩
+      cases hv : c.tape ⟨(c.head : ℕ) + i, hbi⟩
+      case true => exact absurd hv h_not_true
+      case false => rfl
+    -- Bit at position `j` is 0 for any bounds proof (Fin proof
+    -- irrelevance).
+    have h_zero_at_j : ∀ (hb : (c.head : ℕ) + j <
+        (incrementProgram k).toTM.tapeLength n),
+        c.tape ⟨(c.head : ℕ) + j, hb⟩ = false := by
+      intro hb
+      have : (⟨(c.head : ℕ) + j, hb⟩ : Fin _) =
+          ⟨(c.head : ℕ) + j, hj_bnd⟩ := Fin.ext rfl
+      rw [this]; exact hj_false
+    exact incrementProgram_correct_first_zero_at c h_phase h_bound
+      j hjk h_ones h_zero_at_j
+
 end BinaryCounter
 
 /-!

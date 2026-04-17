@@ -4843,6 +4843,110 @@ theorem readAtOffsetProgram_run_full (Δ : Nat) {n : Nat}
 
 end ReadAtOffset
 
+/-!
+## Session 9e-d (step 8): `notAtOffsetProgram` compound
+
+`notAtOffsetProgram Δ`: read bit at offset Δ, negate it in state,
+write the negated bit back at the same position, return head.
+
+This is the first "read + modify + write" compound — the core
+pattern for single-input gate evaluators (`.not` in SLGate).
+
+Phases:
+* 0..Δ-1: seek right (Δ phases).
+* Δ: read-negate — state.snd := !scan; stay.
+* Δ+1: write state.snd at current cell; stay.
+* Δ+2..2Δ+1: seek left (Δ phases).
+* 2Δ+2: accepting idle.
+
+Total phases: 2Δ+3.  runTime: 2Δ+2.
+-/
+
+namespace NotAtOffset
+
+def notAtOffsetProgram (Δ : Nat) : PhasedProgram.{0} where
+  numPhases := 2 * Δ + 3
+  phaseState := fun _ => Bool
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := false
+  acceptPhase := ⟨2 * Δ + 2, by omega⟩
+  acceptState := false
+  transition := fun i q scan =>
+    if hi1 : i.val < Δ then
+      -- seek right
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.right)
+    else if hi2 : i.val = Δ then
+      -- read-negate phase: state := !scan
+      (⟨⟨Δ + 1, by omega⟩, !scan⟩, scan, Move.stay)
+    else if hi3 : i.val = Δ + 1 then
+      -- write state.snd at current cell
+      (⟨⟨Δ + 2, by omega⟩, q⟩, q, Move.stay)
+    else if hi4 : i.val < 2 * Δ + 2 then
+      -- seek left
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.left)
+    else
+      -- accepting idle
+      (⟨⟨2 * Δ + 2, by omega⟩, q⟩, scan, Move.stay)
+  timeBound := fun _ => 2 * Δ + 2
+
+@[simp] theorem notAtOffsetProgram_numPhases (Δ : Nat) :
+    (notAtOffsetProgram Δ).numPhases = 2 * Δ + 3 := rfl
+
+@[simp] theorem notAtOffsetProgram_timeBound (Δ n : Nat) :
+    (notAtOffsetProgram Δ).timeBound n = 2 * Δ + 2 := rfl
+
+/-! ### Transition helpers -/
+
+theorem transition_seeking_right (Δ : Nat)
+    {i : Fin ((notAtOffsetProgram Δ).numPhases)} (hi : i.val < Δ)
+    (q : (notAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((notAtOffsetProgram Δ).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((notAtOffsetProgram Δ).transition i q scan).fst.snd = q ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.snd = Move.right := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [notAtOffsetProgram, hi]
+
+theorem transition_read_negate (Δ : Nat)
+    {i : Fin ((notAtOffsetProgram Δ).numPhases)} (hi : i.val = Δ)
+    (q : (notAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((notAtOffsetProgram Δ).transition i q scan).fst.fst.val = Δ + 1 ∧
+    ((notAtOffsetProgram Δ).transition i q scan).fst.snd = !scan ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.snd = Move.stay := by
+  have hni : ¬ i.val < Δ := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [notAtOffsetProgram, hni, hi]
+
+theorem transition_write_state (Δ : Nat)
+    {i : Fin ((notAtOffsetProgram Δ).numPhases)} (hi : i.val = Δ + 1)
+    (q : (notAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((notAtOffsetProgram Δ).transition i q scan).fst.fst.val = Δ + 2 ∧
+    ((notAtOffsetProgram Δ).transition i q scan).fst.snd = q ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.fst = q ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.snd = Move.stay := by
+  have hn1 : ¬ i.val < Δ := by omega
+  have hn2 : ¬ i.val = Δ := by omega
+  have hn3 : ¬ (Δ + 1 < Δ) := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;>
+    simp [notAtOffsetProgram, hn1, hn2, hi, hn3]
+
+theorem transition_seeking_left (Δ : Nat)
+    {i : Fin ((notAtOffsetProgram Δ).numPhases)}
+    (hi_lo : Δ + 1 < i.val) (hi_hi : i.val < 2 * Δ + 2)
+    (q : (notAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((notAtOffsetProgram Δ).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((notAtOffsetProgram Δ).transition i q scan).fst.snd = q ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
+    ((notAtOffsetProgram Δ).transition i q scan).snd.snd = Move.left := by
+  have hn1 : ¬ i.val < Δ := by omega
+  have hn2 : ¬ i.val = Δ := by omega
+  have hn3 : ¬ i.val = Δ + 1 := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;>
+    simp [notAtOffsetProgram, hn1, hn2, hn3, hi_hi]
+
+end NotAtOffset
+
 end TM
 
 end PsubsetPpoly

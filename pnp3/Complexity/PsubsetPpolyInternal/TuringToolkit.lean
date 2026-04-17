@@ -4322,6 +4322,77 @@ theorem run_after_j_right_steps (Δ : Nat) (b : Bool) {n : Nat}
     · rw [hrw, rip_head, ih_head]; omega
     · rw [hrw, rip_tape, ih_tape]
 
+/-- One stepConfig in the write phase (phase `Δ`): phase advances
+to `Δ+1`, head stays, tape has `b` written at current head. -/
+theorem stepConfig_write (Δ : Nat) (b : Bool) {n : Nat}
+    (c : Configuration (M := (writeAtOffsetProgram Δ b).toTM) n)
+    (hi : c.state.fst.val = Δ) :
+    (TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) c).state.fst.val =
+        Δ + 1 ∧
+    (TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) c).tape =
+        c.write c.head b := by
+  obtain ⟨hphase, hbit, hmove⟩ :=
+    transition_write Δ b (i := c.state.fst) hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((writeAtOffsetProgram Δ b).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := hmove
+  have hbit_step :
+      (((writeAtOffsetProgram Δ b).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = b := hbit
+  have hphase_step :
+      ((((writeAtOffsetProgram Δ b).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = Δ + 1 := hphase
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_state]; exact hphase_step
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+
+/-- After `Δ + 1` steps starting from phase 0: the seek-right block
+has advanced the head by `Δ`, the write phase has just committed
+bit `b` at the new head position, and we are now in phase `Δ + 1`
+with the head still at `c.head + Δ`. -/
+theorem run_after_write_phase (Δ : Nat) (b : Bool) {n : Nat}
+    (c : Configuration (M := (writeAtOffsetProgram Δ b).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + Δ <
+        (writeAtOffsetProgram Δ b).toTM.tapeLength n) :
+    let cmid := TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c (Δ + 1)
+    cmid.state.fst.val = Δ + 1 ∧
+    ((cmid.head : ℕ) = (c.head : ℕ) + Δ) ∧
+    (∀ (h_off_bound :
+          (c.head : ℕ) + Δ < (writeAtOffsetProgram Δ b).toTM.tapeLength n),
+        cmid.tape = c.write ⟨(c.head : ℕ) + Δ, h_off_bound⟩ b) := by
+  -- After Δ steps: right block invariant.
+  obtain ⟨right_phase, right_head, right_tape⟩ :=
+    run_after_j_right_steps Δ b c h_phase h_bound Δ le_rfl
+  set cΔ := TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c Δ with hcΔ
+  -- Write step: one more step at phase Δ produces tape = cΔ.write cΔ.head b.
+  have h_phase_cΔ : cΔ.state.fst.val = Δ := right_phase
+  obtain ⟨wr_phase, wr_head, wr_tape⟩ :=
+    stepConfig_write Δ b cΔ h_phase_cΔ
+  -- runConfig c (Δ+1) = stepConfig cΔ.
+  have hrw :
+      TM.runConfig (M := (writeAtOffsetProgram Δ b).toTM) c (Δ + 1) =
+        TM.stepConfig (M := (writeAtOffsetProgram Δ b).toTM) cΔ := by
+    rw [runConfig_succ]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hrw]; exact wr_phase
+  · rw [hrw, wr_head, right_head]
+  · intro h_off_bound
+    rw [hrw, wr_tape]
+    -- Goal: cΔ.write cΔ.head b = c.write ⟨c.head + Δ, _⟩ b
+    have h_head_eq : cΔ.head = (⟨(c.head : ℕ) + Δ, h_off_bound⟩ :
+        Fin ((writeAtOffsetProgram Δ b).toTM.tapeLength n)) := by
+      apply Fin.ext; exact right_head
+    rw [h_head_eq]
+    -- Goal: cΔ.write ⟨c.head + Δ, _⟩ b = c.write ⟨c.head + Δ, _⟩ b
+    funext j
+    unfold Configuration.write
+    split_ifs with hj
+    · rfl
+    · rw [right_tape]
+
 end WriteAtOffset
 
 end TM

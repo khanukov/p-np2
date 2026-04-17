@@ -1418,6 +1418,44 @@ theorem readFirstBit_accepts_zero (x : Boolcube.Point 0) :
 
 end Pilot
 
+/-!
+## Session 8: Bit-level encoding primitives
+
+The MCSP verifier feeds circuit descriptions to its TM phases via
+the witness tape.  Before tackling full circuit encoding, we fix a
+general-purpose bit-level primitive: `Fin (2^w)` ↔ `List Bool` of
+length `w`, in little-endian order (LSB first).
+
+This primitive is independent of any MCSP-specific content and is
+reusable for encoding gate indices, input positions, and any other
+bounded-range index that the verifier needs to read off the tape.
+-/
+
+namespace Encoding
+
+/-- Encode `i : Fin (2^w)` as a `w`-bit little-endian bit list
+(LSB first). -/
+def encodeFin : (w : Nat) → Fin (2 ^ w) → List Bool
+  | 0, _ => []
+  | w + 1, i =>
+    let b := decide (i.val % 2 = 1)
+    have hrest : i.val / 2 < 2 ^ w := by
+      have hi_lt := i.isLt
+      have heq : (2 : Nat) ^ (w + 1) = 2 ^ w * 2 := by rw [pow_succ]
+      apply (Nat.div_lt_iff_lt_mul (by omega : (0 : Nat) < 2)).mpr
+      omega
+    b :: encodeFin w ⟨i.val / 2, hrest⟩
+
+/-- The encoded bit list always has length `w`. -/
+theorem encodeFin_length : ∀ (w : Nat) (i : Fin (2 ^ w)),
+    (encodeFin w i).length = w
+  | 0, _ => by simp [encodeFin]
+  | w + 1, i => by
+    simp only [encodeFin, List.length_cons]
+    rw [encodeFin_length w]
+
+end Encoding
+
 end TM
 
 end PsubsetPpoly

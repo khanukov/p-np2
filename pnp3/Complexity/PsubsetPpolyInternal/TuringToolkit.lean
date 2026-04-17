@@ -1202,6 +1202,166 @@ theorem incrementProgram_correct_one {n : Nat}
     rw [h_counter_new, h_counter_old]
     decide
 
+/-!
+### Session 7f: First-bit-zero correctness for arbitrary `k`
+
+When the scanned cell (`c.tape c.head`) is `0`, the ripple logic
+never triggers — step 0 flips the cell to `1` and jumps straight
+to the accepting phase, and the remaining `k` steps are idle.
+
+Under this hypothesis, the counter arithmetic is clean:
+* the new counter value differs from the old one only in the LSB
+  (the cell at `c.head` itself);
+* the LSB was `0`, so `counterValue_old` is even, bounded by
+  `2^k - 2`;
+* adding `1` does not overflow, so `(old + 1) mod 2^k = old + 1`.
+
+The general `k` case (first-zero bit at arbitrary position + the
+all-ones overflow) requires tracking the ripple step-by-step; it
+is the largest remaining piece of the counter correctness proof
+and is reserved for Session 7g.
+-/
+
+/-- If only one position's bit differs between two tape functions,
+`counterValue` differs by exactly the signed contribution of that
+position.  Specialised to LSB flip `0 → 1`: new value = old + 1. -/
+theorem counterValue_of_write_head_true {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (k : Nat)
+    (h_old : c.tape c.head = false) :
+    ∀ (c' : Configuration (M := M) n),
+      c'.tape = c.write c.head true →
+      c'.head = c.head →
+      counterValue c' (c.head : ℕ) k =
+        counterValue c (c.head : ℕ) k +
+          (if (c.head : ℕ) < (c.head : ℕ) + k then 1 else 0) := by
+  induction k with
+  | zero =>
+    intro c' htape hhead
+    simp
+  | succ k ih =>
+    intro c' htape hhead
+    rw [counterValue_succ, counterValue_succ]
+    -- Inductive hypothesis at width `k`.
+    have ih_applied :=
+      ih c' htape hhead
+    -- Split on whether `c.head + k` is the LSB position (`k = 0`).
+    by_cases hk0 : k = 0
+    · subst hk0
+      -- width-1 case: direct computation.
+      simp only [counterValue_zero, Nat.zero_add]
+      have hp : (c.head : ℕ) + 0 < M.tapeLength n := by
+        have := c.head.isLt; omega
+      have hmk : (⟨(c.head : ℕ) + 0, hp⟩ : Fin (M.tapeLength n)) = c.head := by
+        apply Fin.ext; simp
+      simp [dif_pos hp, hmk, htape, h_old,
+            Configuration.write_self c c.head true]
+    · -- `k ≥ 1`.  Use IH on the prefix; the last contribution at
+      -- position `c.head + k` is unchanged because `c.head + k
+      -- ≠ c.head` (since `k ≥ 1`).
+      have hk_pos : 0 < k := Nat.pos_of_ne_zero hk0
+      have hne_kpos : (c.head : ℕ) + k ≠ (c.head : ℕ) := by omega
+      have hne_fin_pos :
+          ∀ (hi : (c.head : ℕ) + k < M.tapeLength n),
+            (⟨(c.head : ℕ) + k, hi⟩ : Fin (M.tapeLength n)) ≠ c.head := by
+        intro hi hfin_eq
+        apply hne_kpos
+        exact congrArg Fin.val hfin_eq
+      -- IH rewrites the prefix; the `if (c.head < c.head + k)`
+      -- branch is taken since `k ≥ 1`.
+      have h_lt : (c.head : ℕ) < (c.head : ℕ) + k := by omega
+      rw [ih_applied, if_pos h_lt]
+      -- Now relate the added-bit terms at position `c.head + k`.
+      have h_added_eq :
+          (if hi : (c.head : ℕ) + k < M.tapeLength n then
+            (if c'.tape ⟨(c.head : ℕ) + k, hi⟩ then 2 ^ k else 0)
+          else 0) =
+          (if hi : (c.head : ℕ) + k < M.tapeLength n then
+            (if c.tape ⟨(c.head : ℕ) + k, hi⟩ then 2 ^ k else 0)
+          else 0) := by
+        by_cases hbound : (c.head : ℕ) + k < M.tapeLength n
+        · simp only [dif_pos hbound]
+          rw [htape,
+              Configuration.write_other c (hne_fin_pos hbound) true]
+        · simp only [dif_neg hbound]
+      have h_lt' : (c.head : ℕ) < (c.head : ℕ) + (k + 1) := by omega
+      rw [h_added_eq, if_pos h_lt']
+      omega
+
+/-- First-bit-zero correctness for arbitrary `k ≥ 1`: when the
+scanned cell is `0`, running `incrementProgram k` for its full
+budget adds exactly `1` to the counter value (without mod
+truncation, because the LSB was `0`, so the value was even and
+`≤ 2^k - 2`). -/
+theorem incrementProgram_correct_first_bit_zero {k : Nat} (hk : 0 < k)
+    {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bit : c.tape c.head = false) :
+    counterValue
+        (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+        (c.head : ℕ) k =
+      (counterValue c (c.head : ℕ) k + 1) % 2 ^ k := by
+  -- Step 0: flips the head cell to `true`, enters accepting phase.
+  have h_phase_lt : c.state.fst.val < k := by rw [h_phase]; exact hk
+  obtain ⟨ht0, hh0, hp0⟩ :=
+    incrementProgram_stepConfig_phase_lt_k_bit_false c h_phase_lt h_bit
+  -- Steps 1..k: idle in accepting phase.
+  set c0 := TM.stepConfig (M := (incrementProgram k).toTM) c with hc0_def
+  -- `runConfig c (k+1) = runConfig c0 k` via `runConfig_add`.
+  have h_rewrite :
+      TM.runConfig (M := (incrementProgram k).toTM) c (k + 1) =
+        TM.runConfig (M := (incrementProgram k).toTM) c0 k := by
+    rw [show k + 1 = 1 + k from by omega, runConfig_add, runConfig_one]
+  have h_phase_accept : c0.state.fst.val = k + 1 := by rw [hc0_def]; exact hp0
+  obtain ⟨ht_final, hh_final, _⟩ :=
+    incrementProgram_runConfig_in_accepting c0 h_phase_accept k
+  -- Combine: the final tape equals `c.write c.head true`.
+  have h_final_tape :
+      (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1)).tape =
+        c.write c.head true := by
+    rw [h_rewrite, ht_final, hc0_def, ht0]
+  have h_final_head :
+      (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1)).head = c.head := by
+    rw [h_rewrite, hh_final, hc0_def, hh0]
+  -- Apply the bit-flip arithmetic lemma.
+  have h_counter_new :
+      counterValue
+          (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+          (c.head : ℕ) k =
+        counterValue c (c.head : ℕ) k + 1 := by
+    have := counterValue_of_write_head_true c k h_bit
+      (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+      h_final_tape h_final_head
+    rw [this]
+    have h_lt : (c.head : ℕ) < (c.head : ℕ) + k := by omega
+    simp [h_lt]
+  -- Prove the mod doesn't truncate:
+  -- since `c.tape c.head = false`, the LSB contribution to
+  -- `counterValue c start k` is 0, so the old value is bounded by
+  -- `2^k - 2`, hence `old + 1 < 2^k`.
+  have h_old_lt_pow : counterValue c (c.head : ℕ) k + 1 < 2 ^ k := by
+    -- Use counterValue_lt_two_pow, plus the fact that the LSB (k ≥ 1)
+    -- contributes 0, so the sum is strictly less than 2^k - 1.
+    -- Concretely: counterValue c head k - (LSB_contribution) ≤ 2^k - 2.
+    -- But this argument is subtle.  A simpler direct route:
+    -- counterValue c head k < 2^k  →  since we can bound it away from
+    -- the max by the 0-LSB observation.
+    --
+    -- For a clean proof we use: for k ≥ 1, at position `head + 0` the
+    -- bit is `false`, contributing 0 to the sum.  All other terms
+    -- together give ≤ `∑_{i=1}^{k-1} 2^i = 2^k - 2`.
+    --
+    -- We defer that tighter bound: instead, observe that
+    -- counterValue c head k has bit-0 contribution 0, so it is even
+    -- (or we note `counterValue (new) < 2^k` and conclude mod =
+    -- counterValue (new)).
+    have h_new_lt := counterValue_lt_two_pow
+      (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+      (c.head : ℕ) k
+    rw [h_counter_new] at h_new_lt
+    exact h_new_lt
+  rw [h_counter_new, Nat.mod_eq_of_lt h_old_lt_pow]
+
 end BinaryCounter
 
 /-!

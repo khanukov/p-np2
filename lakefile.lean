@@ -56,6 +56,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.Interfaces,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,

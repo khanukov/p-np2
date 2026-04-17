@@ -3532,6 +3532,64 @@ theorem of_empty_gateVals
   circuit_match := hC
   scratch_match := fun k hk => absurd hk (by simp)
 
+/-- Transfer `TapeMatches` from one configuration to another that
+agrees on every relevant cell. -/
+theorem of_tape_eq
+    {c' : Configuration (M := M) n_tm}
+    (h : TapeMatches L c x encoding gateVals)
+    (hInput : ∀ i : Fin n, c'.tapeAt (L.inputPos i) = c.tapeAt (L.inputPos i))
+    (hCircuit : ∀ p : Nat, p < encoding.length →
+      c'.tapeAt (L.circuitPos p) = c.tapeAt (L.circuitPos p))
+    (hScratch : ∀ k : Nat, k < gateVals.length →
+      c'.tapeAt (L.scratchPos k) = c.tapeAt (L.scratchPos k)) :
+    TapeMatches L c' x encoding gateVals where
+  tape_fits := h.tape_fits
+  encoding_fits := h.encoding_fits
+  gateVals_fits := h.gateVals_fits
+  input_match := fun i => by
+    rw [hInput i]; exact h.input_match i
+  circuit_match := fun p hp => by
+    rw [hCircuit p hp]; exact h.circuit_match p hp
+  scratch_match := fun k hk => by
+    rw [hScratch k hk]; exact h.scratch_match k hk
+
+/-- Extension: if the current config agrees with the old one on
+input/circuit and on the first `|gateVals|` scratch cells, AND
+writes value `v` at the *next* scratch position, then
+`TapeMatches` extends to `gateVals ++ [v]`. -/
+theorem extend_scratch
+    {c' : Configuration (M := M) n_tm} (v : Bool)
+    (h : TapeMatches L c x encoding gateVals)
+    (hInput : ∀ i : Fin n, c'.tapeAt (L.inputPos i) = c.tapeAt (L.inputPos i))
+    (hCircuit : ∀ p : Nat, p < encoding.length →
+      c'.tapeAt (L.circuitPos p) = c.tapeAt (L.circuitPos p))
+    (hScratch : ∀ k : Nat, k < gateVals.length →
+      c'.tapeAt (L.scratchPos k) = c.tapeAt (L.scratchPos k))
+    (hNew : c'.tapeAt (L.scratchPos gateVals.length) = v)
+    (hSpace : gateVals.length < L.scratchLen) :
+    TapeMatches L c' x encoding (gateVals ++ [v]) where
+  tape_fits := h.tape_fits
+  encoding_fits := h.encoding_fits
+  gateVals_fits := by
+    have := h.gateVals_fits
+    simp only [List.length_append, List.length_cons, List.length_nil]
+    omega
+  input_match := fun i => by rw [hInput i]; exact h.input_match i
+  circuit_match := fun p hp => by
+    rw [hCircuit p hp]; exact h.circuit_match p hp
+  scratch_match := fun k hk => by
+    simp only [List.length_append, List.length_cons, List.length_nil] at hk
+    rcases Nat.lt_or_ge k gateVals.length with hk_old | hk_new
+    · rw [hScratch k hk_old]
+      have := h.scratch_match k hk_old
+      rw [List.getElem_append_left hk_old]
+      exact this
+    · have hk_eq : k = gateVals.length := by omega
+      subst hk_eq
+      rw [hNew]
+      rw [List.getElem_append_right (Nat.le_refl _)]
+      simp
+
 end TapeMatches
 
 end Encoding

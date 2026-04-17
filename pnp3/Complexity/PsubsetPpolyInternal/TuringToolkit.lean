@@ -675,6 +675,86 @@ theorem incrementProgram_tape_preserved_outside {k : Nat} {n : Nat}
   · have := runConfig_head_val_le (M := (incrementProgram k).toTM) c j
     omega
 
+/-!
+### Session 7: Counter value semantics
+
+`counterValue c start k` interprets the `k` tape cells starting at
+position `start` as a little-endian binary number (LSB at position
+`start`).  Cells outside the tape contribute `0`, so the function is
+total.
+
+The recursive shape (base case `k = 0`, step adding the `k`-th bit's
+contribution `2^k`) makes induction-on-`k` the natural proof strategy
+for all downstream correctness statements.
+
+Session 7 delivers only the *definition* and a handful of structural
+and bound lemmas.  The full `incrementProgram_correct` theorem —
+"after `k+1` steps the counter value is `(prev + 1) mod 2^k`" — is
+reserved for Session 7b, where case analysis on the first-zero bit
+position discharges both the ripple-carry and overflow branches.
+-/
+
+/-- Little-endian binary interpretation of `k` tape cells starting at
+position `start`.  Cells outside the tape contribute `0`. -/
+def counterValue {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start : Nat) : Nat → Nat
+  | 0 => 0
+  | k + 1 =>
+    counterValue c start k +
+      (if hi : start + k < M.tapeLength n then
+        (if c.tape ⟨start + k, hi⟩ then 2 ^ k else 0)
+      else 0)
+
+@[simp] theorem counterValue_zero {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start : Nat) :
+    counterValue c start 0 = 0 := rfl
+
+theorem counterValue_succ {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start k : Nat) :
+    counterValue c start (k + 1) =
+      counterValue c start k +
+        (if hi : start + k < M.tapeLength n then
+          (if c.tape ⟨start + k, hi⟩ then 2 ^ k else 0)
+        else 0) := rfl
+
+/-- Each bit contributes at most `2^i` to the counter value, so the
+total is strictly less than `2^k`.  Proved by straight induction on
+`k`; the "cell out of range" branch contributes `0` (trivially
+bounded) and the "cell in range" branch contributes `0` or `2^k`. -/
+theorem counterValue_lt_two_pow {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start k : Nat) :
+    counterValue c start k < 2 ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [counterValue_succ]
+    -- Abstract the added term: the bit's contribution at position
+    -- `start + k`, which is either `0` or `2^k`.
+    set added : Nat :=
+      (if hi : start + k < M.tapeLength n then
+        (if c.tape ⟨start + k, hi⟩ then 2 ^ k else 0)
+      else 0) with hadded
+    have hadd_le : added ≤ 2 ^ k := by
+      simp only [hadded]
+      split_ifs
+      · exact le_refl _
+      · exact Nat.zero_le _
+      · exact Nat.zero_le _
+    have hpow : 2 ^ (k + 1) = 2 ^ k + 2 ^ k := by
+      rw [pow_succ]
+      omega
+    -- `counterValue + added < 2^k + added ≤ 2^k + 2^k = 2^(k+1)`.
+    -- Combined in a single `omega` on the abstract terms.
+    rw [hpow]
+    omega
+
+/-- The counter value is always non-negative (trivially, since it is
+a `Nat`).  Stated explicitly for readability when combined with
+`counterValue_lt_two_pow` as a range `[0, 2^k)`. -/
+theorem counterValue_nonneg {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start k : Nat) :
+    0 ≤ counterValue c start k := Nat.zero_le _
+
 end BinaryCounter
 
 /-!

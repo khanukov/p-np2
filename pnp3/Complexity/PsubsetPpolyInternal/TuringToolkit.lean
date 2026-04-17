@@ -1461,6 +1461,139 @@ theorem incrementProgram_ripple_after_j_steps {k : Nat} {n : Nat}
         rw [rip_preserve _ hne]
         exact ihs_zeros i hij'_lt hbi
 
+/-!
+### Session 7g-c: Overflow (all-ones) correctness
+
+For the overflow case, all `k` bits in `[c.head, c.head + k)` are
+`1`.  After the ripple invariant at `j = k`, phase is `k`, head
+is `c.head + k`, and all counter bits are `0`.  One more step at
+phase `k` goes straight to phase `k + 1` (accepting) without
+touching the counter bits.
+
+The counter value computation:
+* before: `counterValue c c.head k = 2^k - 1` (sum of 2^i for i ∈ [0, k))
+* after: `counterValue (runConfig c (k+1)) c.head k = 0`
+* `(2^k - 1 + 1) mod 2^k = 2^k mod 2^k = 0` ✓
+-/
+
+/-- If all `k` tape cells in `[start, start + k)` are `true`, the
+`counterValue` at that position is `2^k - 1`. -/
+theorem counterValue_of_all_true {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start : Nat) :
+    ∀ k, start + k ≤ M.tapeLength n →
+    (∀ i, i < k → ∀ (hb : start + i < M.tapeLength n),
+       c.tape ⟨start + i, hb⟩ = true) →
+    counterValue c start k = 2 ^ k - 1
+  | 0, _, _ => by simp
+  | k + 1, hbk, h => by
+    rw [counterValue_succ]
+    have hbk' : start + k ≤ M.tapeLength n := by omega
+    have h_prev : ∀ i, i < k → ∀ (hb : start + i < M.tapeLength n),
+        c.tape ⟨start + i, hb⟩ = true :=
+      fun i hi hb => h i (by omega) hb
+    rw [counterValue_of_all_true c start k hbk' h_prev]
+    have h_bound_k : start + k < M.tapeLength n := by omega
+    rw [dif_pos h_bound_k, h k (by omega) h_bound_k]
+    simp only [if_true]
+    have hpow : (2:Nat)^(k+1) = 2^k + 2^k := by rw [pow_succ]; omega
+    have hpow_pos : (1:Nat) ≤ 2^k := Nat.one_le_two_pow
+    omega
+
+/-- If all tape cells in `[start, start + k)` are `false`, the
+`counterValue` is `0`. -/
+theorem counterValue_of_all_false {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (start : Nat) :
+    ∀ k,
+    (∀ i, i < k → ∀ (hb : start + i < M.tapeLength n),
+       c.tape ⟨start + i, hb⟩ = false) →
+    counterValue c start k = 0
+  | 0, _ => by simp
+  | k + 1, h => by
+    rw [counterValue_succ]
+    have h_prev : ∀ i, i < k → ∀ (hb : start + i < M.tapeLength n),
+        c.tape ⟨start + i, hb⟩ = false :=
+      fun i hi hb => h i (by omega) hb
+    rw [counterValue_of_all_false c start k h_prev]
+    by_cases h_bound_k : start + k < M.tapeLength n
+    · rw [dif_pos h_bound_k, h k (by omega) h_bound_k]
+      simp
+    · rw [dif_neg h_bound_k]
+
+/-- Step in the overflow phase `j = k`: the machine writes the bit
+back unchanged, head stays, phase advances to `k + 1`. -/
+theorem incrementProgram_stepConfig_phase_eq_k {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h_phase : c.state.fst.val = k) :
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).state.fst.val = k + 1 ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).head = c.head ∧
+    ∀ (p : Fin ((incrementProgram k).toTM.tapeLength n)),
+      p ≠ c.head →
+      (TM.stepConfig (M := (incrementProgram k).toTM) c).tape p = c.tape p := by
+  have h_phase_ge : c.state.fst.val ≥ k := by omega
+  -- The `phase_ge_k` step: preserves tape at `p ≠ c.head`, writes bit
+  -- back at c.head, jumps to phase k+1, head stays.
+  obtain ⟨htape, hhead, hphase⟩ :=
+    incrementProgram_stepConfig_phase_ge_k c h_phase_ge
+  refine ⟨hphase, hhead, ?_⟩
+  intro p _hne
+  rw [htape]
+
+/-- Overflow correctness: starting from phase 0 with all k bits
+`true`, after `k + 1` steps the counter value is 0 (i.e.
+`(2^k - 1 + 1) mod 2^k`). -/
+theorem incrementProgram_correct_all_ones {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + k + 1 ≤
+        (incrementProgram k).toTM.tapeLength n)
+    (h_ones : ∀ i, i < k →
+       ∀ (hb : (c.head : ℕ) + i <
+           (incrementProgram k).toTM.tapeLength n),
+       c.tape ⟨(c.head : ℕ) + i, hb⟩ = true) :
+    counterValue
+        (TM.runConfig (M := (incrementProgram k).toTM) c (k + 1))
+        (c.head : ℕ) k =
+      (counterValue c (c.head : ℕ) k + 1) % 2 ^ k := by
+  -- Step 1: after k steps (ripple through all 1s) we are at phase k,
+  -- head c.head + k, and bits [c.head, c.head + k) are all false.
+  obtain ⟨rip_phase, rip_head, _rip_preserve, rip_zeros⟩ :=
+    incrementProgram_ripple_after_j_steps c h_phase h_bound k le_rfl h_ones
+  set ck := TM.runConfig (M := (incrementProgram k).toTM) c k with hck
+  -- Step 2: one more step advances phase k → k + 1 without touching
+  -- the counter bits.
+  obtain ⟨over_phase, over_head, over_preserve⟩ :=
+    incrementProgram_stepConfig_phase_eq_k ck rip_phase
+  have hrw : TM.runConfig (M := (incrementProgram k).toTM) c (k + 1) =
+      TM.stepConfig (M := (incrementProgram k).toTM) ck := by
+    rw [runConfig_succ]
+  -- The final tape still has all k counter bits = 0.
+  have h_final_zeros : ∀ i, i < k →
+      ∀ (hb : (c.head : ℕ) + i <
+          (incrementProgram k).toTM.tapeLength n),
+      (TM.stepConfig (M := (incrementProgram k).toTM) ck).tape
+          ⟨(c.head : ℕ) + i, hb⟩ = false := by
+    intro i hi hb
+    have hne : (⟨(c.head : ℕ) + i, hb⟩ : Fin _) ≠ ck.head := by
+      intro heq
+      have hval : (c.head : ℕ) + i = (ck.head : ℕ) := congrArg Fin.val heq
+      rw [rip_head] at hval
+      omega
+    rw [over_preserve _ hne]; exact rip_zeros i hi hb
+  rw [hrw]
+  -- Now compute the counter values.
+  have h_old : counterValue c (c.head : ℕ) k = 2 ^ k - 1 :=
+    counterValue_of_all_true c (c.head : ℕ) k (by omega) h_ones
+  have h_new : counterValue
+      (TM.stepConfig (M := (incrementProgram k).toTM) ck) (c.head : ℕ) k = 0 :=
+    counterValue_of_all_false _ (c.head : ℕ) k h_final_zeros
+  rw [h_old, h_new]
+  -- Final arithmetic: (2^k - 1 + 1) % 2^k = 2^k % 2^k = 0.
+  have hpow_pos : 1 ≤ 2 ^ k := Nat.one_le_two_pow
+  have : (2 ^ k - 1 + 1) % 2 ^ k = 0 := by
+    have : (2 ^ k - 1 + 1) = 2 ^ k := by omega
+    rw [this, Nat.mod_self]
+  exact this.symm
+
 /-- First-bit-zero correctness for arbitrary `k ≥ 1`: when the
 scanned cell is `0`, running `incrementProgram k` for its full
 budget adds exactly `1` to the counter value (without mod

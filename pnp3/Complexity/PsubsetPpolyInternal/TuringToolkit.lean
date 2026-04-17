@@ -4040,6 +4040,110 @@ theorem seekLeftProgram_run_Δ (Δ : Nat) {n : Nat}
 
 end SeekLeft
 
+/-!
+## Session 9e-d (step 5): `readBitProgram` primitive
+
+`readBitProgram` is a one-step program that reads the bit at the
+current head position *into its own state* and stops.  Acceptance:
+the compiled TM accepts iff the scanned bit was `true`.
+
+Together with `seekRightProgram` / `seekLeftProgram` / `writeBitProgram`
+this is the last of the four atomic tape operations: navigate, read,
+write, mutate.  Higher-level verifier phases (gate dispatch,
+iteration, consistency check) will compose these.
+-/
+
+namespace ReadBit
+
+/-- Two-phase program.  Phase 0 (`Bool` state, ignored): reads the
+scanned bit, moves to phase 1 carrying the bit as state, stays.
+Phase 1 (accepting): state `true` = accept, state `false` = reject. -/
+def readBitProgram : PhasedProgram.{0} where
+  numPhases := 2
+  phaseState := fun _ => Bool
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := false
+  acceptPhase := ⟨1, by omega⟩
+  acceptState := true
+  transition := fun i q b =>
+    if i.val = 0 then
+      -- Phase 0: read `b`, enter phase 1 with state = b, stay,
+      -- write bit back unchanged.
+      (⟨⟨1, by omega⟩, b⟩, b, Move.stay)
+    else
+      -- Phase 1: idle (not executed when runTime = 1).
+      (⟨⟨i.val, by omega⟩, q⟩, b, Move.stay)
+  timeBound := fun _ => 1
+
+@[simp] theorem readBitProgram_numPhases :
+    readBitProgram.numPhases = 2 := rfl
+
+@[simp] theorem readBitProgram_timeBound (n : Nat) :
+    readBitProgram.timeBound n = 1 := rfl
+
+/-- `readBitProgram` never moves left. -/
+theorem readBitProgram_toTM_never_moves_left :
+    TMNeverMovesLeft readBitProgram.toTM := by
+  intro s b
+  rcases s with ⟨i, q⟩
+  show (readBitProgram.transition i q b).snd.snd ≠ Move.left
+  by_cases hi : i.val = 0
+  · simp [readBitProgram, hi]
+  · simp [readBitProgram, hi]
+
+/-- Transition in phase 0: read bit `b`, carry it as new state,
+stay, write back. -/
+theorem readBitProgram_transition_read
+    {i : Fin readBitProgram.numPhases} (hi : i.val = 0)
+    (q : readBitProgram.phaseState i) (b : Bool) :
+    (readBitProgram.transition i q b).fst = (⟨⟨1, by decide⟩, b⟩) ∧
+    (readBitProgram.transition i q b).snd.fst = b ∧
+    (readBitProgram.transition i q b).snd.snd = Move.stay := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [readBitProgram, hi]
+
+/-- One step from the start phase: state becomes ⟨1, b⟩ where `b` is
+the bit under the head; head unchanged; tape unchanged. -/
+theorem readBitProgram_stepConfig_start {n : Nat}
+    (c : Configuration (M := readBitProgram.toTM) n)
+    (h_phase : c.state.fst.val = 0) :
+    (TM.stepConfig (M := readBitProgram.toTM) c).state =
+        (⟨⟨1, by decide⟩, c.tape c.head⟩ :
+          Σ i : Fin readBitProgram.numPhases, readBitProgram.phaseState i) ∧
+    (TM.stepConfig (M := readBitProgram.toTM) c).head = c.head ∧
+    (TM.stepConfig (M := readBitProgram.toTM) c).tape = c.tape := by
+  obtain ⟨hnext, hbit, hmove⟩ :=
+    readBitProgram_transition_read (i := c.state.fst) h_phase
+      c.state.snd (c.tape c.head)
+  have hmove_step :
+      ((readBitProgram.toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := hmove
+  have hbit_step :
+      ((readBitProgram.toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := hbit
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepConfig_state]; exact hnext
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+/-- After the full 1-step run from phase 0 on any configuration, the
+state holds `⟨1, bit⟩` where `bit` was read from head; head and tape
+are unchanged. -/
+theorem readBitProgram_run_1 {n : Nat}
+    (c : Configuration (M := readBitProgram.toTM) n)
+    (h_phase : c.state.fst.val = 0) :
+    (TM.runConfig (M := readBitProgram.toTM) c 1).state =
+        (⟨⟨1, by decide⟩, c.tape c.head⟩ :
+          Σ i : Fin readBitProgram.numPhases, readBitProgram.phaseState i) ∧
+    (TM.runConfig (M := readBitProgram.toTM) c 1).head = c.head ∧
+    (TM.runConfig (M := readBitProgram.toTM) c 1).tape = c.tape := by
+  rw [runConfig_one]
+  exact readBitProgram_stepConfig_start c h_phase
+
+end ReadBit
+
 end TM
 
 end PsubsetPpoly

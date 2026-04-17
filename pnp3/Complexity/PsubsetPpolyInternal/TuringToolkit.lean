@@ -411,6 +411,88 @@ theorem runConfig_tape_eq_outside_range {M : TM.{u}} {n : Nat}
   · exact hout
 
 /-!
+## Session 6a: Binary counter — increment program definition
+
+A `k`-bit binary counter is encoded as contiguous tape cells with the
+LSB at `initial_head` and the MSB at `initial_head + k - 1`.  The
+`incrementProgram k` below is the `PhasedProgram` that increments
+such a counter by one, modulo `2^k`.
+
+### Phase layout
+
+* Phase `i` for `i < k` — "currently at the bit at offset `i` from
+  the initial head; about to decide write/carry".
+* Phase `k` — "overflow" phase, reached only when all `k` bits were
+  `1` (counter wraps from `2^k-1` to `0`).
+* Phase `k+1` — accepting phase, reached once the increment is done.
+
+### Transition rules
+
+* Phase `i` (`i < k`) reads bit `b`:
+  - `b = 0`: write `1`, `Move.stay`, jump to phase `k+1` (accepting).
+  - `b = 1`: write `0`, `Move.right`, advance to phase `i+1`.
+* Phase `k`: write bit back unchanged, `Move.stay`, jump to phase
+  `k+1`.  This phase is entered exactly once if the counter overflows.
+* Phase `k+1` (accepting): idle — write bit back, `Move.stay`, loop.
+
+### Correctness deferred
+
+Session 6a delivers only the *definition* and structural `@[simp]`
+projections (`numPhases`, `startPhase`, `acceptPhase`, `timeBound`).
+The full "after `k+1` steps the counter value is `(prev + 1) mod
+2^k`" correctness theorem is reserved for Session 7, where induction
+on `k` using Session 5's tape-invariant lemmas closes it cleanly.
+-/
+
+namespace BinaryCounter
+
+/-- `k`-bit binary counter increment, as a `PhasedProgram`.  The head
+must start at the counter's LSB cell; after `k+1` steps the counter
+has been incremented modulo `2^k` and the machine sits in its
+accepting phase. -/
+def incrementProgram (k : Nat) : PhasedProgram.{0} where
+  numPhases := k + 2
+  phaseState := fun _ => Unit
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨k + 1, by omega⟩
+  acceptState := ()
+  transition := fun i _ b =>
+    if hi : i.val < k then
+      if b then
+        -- bit = 1: carry.  Write 0, advance to phase `i+1`, move right.
+        (⟨⟨i.val + 1, by omega⟩, ()⟩, false, Move.right)
+      else
+        -- bit = 0: increment complete.  Write 1, jump to accepting.
+        (⟨⟨k + 1, by omega⟩, ()⟩, true, Move.stay)
+    else
+      -- `i.val ≥ k`: overflow phase or accepting phase.  Preserve bit,
+      -- jump to accepting phase, no head movement.
+      (⟨⟨k + 1, by omega⟩, ()⟩, b, Move.stay)
+  timeBound := fun _ => k + 1
+
+/-! ### Transparent structural projections -/
+
+@[simp] theorem incrementProgram_numPhases (k : Nat) :
+    (incrementProgram k).numPhases = k + 2 := rfl
+
+@[simp] theorem incrementProgram_startPhase (k : Nat) :
+    ((incrementProgram k).startPhase : Fin (k + 2)).val = 0 := rfl
+
+@[simp] theorem incrementProgram_acceptPhase (k : Nat) :
+    ((incrementProgram k).acceptPhase : Fin (k + 2)).val = k + 1 := rfl
+
+@[simp] theorem incrementProgram_timeBound (k n : Nat) :
+    (incrementProgram k).timeBound n = k + 1 := rfl
+
+@[simp] theorem incrementProgram_phaseState (k : Nat) (i : Fin (k + 2)) :
+    (incrementProgram k).phaseState i = Unit := rfl
+
+end BinaryCounter
+
+/-!
 ## Second-order pilot: read the first input bit
 
 `readFirstBit` is a one-step `PhasedProgram` whose local state is

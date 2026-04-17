@@ -499,6 +499,20 @@ current configuration under the move returned by `M.step`. -/
       Configuration.moveHead (c := c)
         (M.step c.state (c.tape c.head)).snd.snd := rfl
 
+/-- Definitional equation: `stepConfig`'s tape is `c.write` at the
+head position with the bit emitted by `M.step`. -/
+@[simp] theorem stepConfig_tape {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    (TM.stepConfig (M := M) c).tape =
+      c.write c.head (M.step c.state (c.tape c.head)).snd.fst := rfl
+
+/-- Definitional equation: `stepConfig`'s new state is the first
+component of `M.step`. -/
+@[simp] theorem stepConfig_state {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    (TM.stepConfig (M := M) c).state =
+      (M.step c.state (c.tape c.head)).fst := rfl
+
 /-- Predicate: the TM's step function never issues `Move.left`, for
 any state and any scanned bit. -/
 def TMNeverMovesLeft (M : TM.{u}) : Prop :=
@@ -842,6 +856,131 @@ theorem incrementProgram_correct_zero {n : Nat}
         (c.head : ℕ) 0 =
       (counterValue c (c.head : ℕ) 0 + 1) % 2 ^ 0 := by
   simp [counterValue_zero]
+
+/-!
+### Session 7c: Stability of the accepting phase
+
+Once `incrementProgram k` reaches phase `k + 1` (the accepting
+phase), subsequent `stepConfig` calls preserve the entire
+configuration — state, head, and tape.  Reason: the transition
+function's `else` branch (`i.val ≥ k`) writes the scanned bit back
+unchanged, emits `Move.stay`, and jumps to phase `k + 1`.
+
+This stability is the "post-termination" behaviour essential for
+combining incrementProgram with downstream phases (once the counter
+has been incremented, the machine does nothing harmful while waiting
+for the budget to expire).
+-/
+
+/-- Writing the current tape bit back at the head position is a
+no-op: the resulting tape function is equal to the original. -/
+theorem write_self_eq {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (i : Fin (M.tapeLength n)) :
+    c.write i (c.tape i) = c.tape := by
+  funext j
+  unfold Configuration.write
+  split_ifs with h
+  · rw [h]
+  · rfl
+
+/-- In phase `i` with `k ≤ i.val`, the transition produces
+`(⟨k+1, ...⟩, same-bit, Move.stay)`.  Specifically the outer
+`if hi : i.val < k` takes the `else` branch. -/
+theorem incrementProgram_transition_phase_ge_k (k : Nat)
+    {i : Fin ((incrementProgram k).numPhases)} (hi : k ≤ i.val)
+    (q : (incrementProgram k).phaseState i) (b : Bool) :
+    ((incrementProgram k).transition i q b).snd.snd = Move.stay ∧
+    ((incrementProgram k).transition i q b).snd.fst = b ∧
+    ((incrementProgram k).transition i q b).fst.fst.val = k + 1 := by
+  have hi_ge : ¬ i.val < k := by omega
+  refine ⟨?_, ?_, ?_⟩ <;> simp [incrementProgram, hi_ge]
+
+/-- `stepConfig` from an accepting-phase configuration leaves the
+entire configuration fixed.  More precisely:
+
+* the tape is unchanged (the scanned bit is written back),
+* the head is unchanged (`Move.stay`),
+* the state's phase component stays at `k + 1`.
+-/
+theorem incrementProgram_stepConfig_in_accepting {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h : c.state.fst.val = k + 1) :
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).tape = c.tape ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (incrementProgram k).toTM) c).state.fst.val = k + 1 := by
+  -- `(toTM.step c.state b).snd.{snd, fst}` definitionally equals
+  -- `(transition ...).snd.{snd, fst}`, so the transition-level
+  -- hypotheses transfer to the step-level goals by rfl coercion.
+  have hge : k ≤ c.state.fst.val := by rw [h]; omega
+  obtain ⟨hmove, hbit, hphase⟩ :=
+    incrementProgram_transition_phase_ge_k k (i := c.state.fst) hge
+      c.state.snd (c.tape c.head)
+  -- Lift each of the transition-level facts to a step-level fact.
+  have hmove_step :
+      (((incrementProgram k).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := hmove
+  have hbit_step :
+      (((incrementProgram k).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := hbit
+  have hphase_step :
+      ((((incrementProgram k).toTM.step c.state (c.tape c.head)).fst).fst.val : Nat)
+        = k + 1 := hphase
+  refine ⟨?_, ?_, ?_⟩
+  · -- Tape: `stepConfig.tape = c.write c.head (step.snd.fst)`.  By
+    -- `hbit_step` the written bit equals `c.tape c.head`, so
+    -- `write_self_eq` collapses the write.
+    rw [stepConfig_tape, hbit_step]
+    exact write_self_eq c c.head
+  · -- Head: `stepConfig.head = moveHead c (step.snd.snd)`.  By
+    -- `hmove_step` the move is `Move.stay`, and `moveHead_stay`
+    -- keeps the head put.
+    rw [stepConfig_head, hmove_step]
+    simp
+  · -- Phase: `stepConfig.state = (step.fst)`.  By `hphase_step`
+    -- its first component has value `k + 1`.
+    rw [stepConfig_state]
+    exact hphase_step
+
+/-- Iterated version: starting from an accepting configuration,
+`runConfig` for any number of steps leaves the tape and head fixed
+and keeps the state's phase at `k + 1`. -/
+theorem incrementProgram_runConfig_in_accepting {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h : c.state.fst.val = k + 1) (j : Nat) :
+    (TM.runConfig (M := (incrementProgram k).toTM) c j).tape = c.tape ∧
+    (TM.runConfig (M := (incrementProgram k).toTM) c j).head = c.head ∧
+    (TM.runConfig (M := (incrementProgram k).toTM) c j).state.fst.val = k + 1 := by
+  induction j with
+  | zero =>
+    refine ⟨rfl, rfl, h⟩
+  | succ j ih =>
+    obtain ⟨hTape, hHead, hPhase⟩ := ih
+    rw [runConfig_succ]
+    -- Apply single-step preservation at `runConfig c j`.
+    obtain ⟨hT2, hH2, hP2⟩ :=
+      incrementProgram_stepConfig_in_accepting
+        (TM.runConfig (M := (incrementProgram k).toTM) c j) hPhase
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hT2, hTape]
+    · rw [hH2, hHead]
+    · exact hP2
+
+/-- Counter value is preserved once the machine enters the
+accepting phase. -/
+theorem incrementProgram_counterValue_stable_from_accepting
+    {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h : c.state.fst.val = k + 1) (j : Nat) (start width : Nat) :
+    counterValue (TM.runConfig (M := (incrementProgram k).toTM) c j)
+        start width =
+      counterValue c start width := by
+  obtain ⟨hTape, _, _⟩ :=
+    incrementProgram_runConfig_in_accepting c h j
+  -- Two configurations with identical tapes produce the same
+  -- counterValue.
+  apply counterValue_eq_of_tape_eq
+  intro p _ _
+  rw [hTape]
 
 end BinaryCounter
 

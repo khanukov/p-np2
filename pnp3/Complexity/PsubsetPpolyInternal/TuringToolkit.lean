@@ -2937,6 +2937,386 @@ theorem SLProgram.encode_length_le {n : Nat} (widthN widthS : Nat)
     rw [hsucc]
     omega
 
+/-!
+## Session 9d: SLProgram decoder + round-trip
+
+Decoder parses a bit list gate-by-gate into an `SLGate n × List Bool`
+(gate + remaining tail).  The full `SLProgram.decode` reads exactly
+the specified gate count.
+
+Round-trip holds under a well-formedness condition: gate references
+must fit in `2^widthS`.  Invalid references are clamped by the
+encoder (to 0), so without the hypothesis the round-trip would
+decode a *normalised* version of the gate rather than the original.
+-/
+
+/-- Well-formedness predicate for a single gate: references fit in the
+declared width bound. -/
+def SLGate.wellFormedUnder (widthS : Nat) {n : Nat} : SLGate n → Prop
+  | .input _ => True
+  | .const _ => True
+  | .notGate k => k < 2 ^ widthS
+  | .andGate k l => k < 2 ^ widthS ∧ l < 2 ^ widthS
+  | .orGate k l => k < 2 ^ widthS ∧ l < 2 ^ widthS
+
+/-- Well-formedness predicate for a program: every gate's
+references fit. -/
+def SLProgram.wellFormedUnder (widthS : Nat) {n : Nat} (p : SLProgram n) : Prop :=
+  ∀ g ∈ p.gates, g.wellFormedUnder widthS
+
+/-- Decode a single gate from a bit list.  On success, returns the gate
+paired with the remaining tail.  Returns `none` on malformed input. -/
+def SLGate.decode {n : Nat} (widthN widthS : Nat) (h_pos : 0 < n) :
+    List Bool → Option (SLGate n × List Bool)
+  | [] => none
+  | _ :: [] => none
+  | _ :: _ :: [] => none
+  | false :: false :: false :: rest =>
+    if hlen : rest.length < widthN then none
+    else
+      match decodeFin widthN (rest.take widthN) with
+      | none => none
+      | some i_fin =>
+        if hv : i_fin.val < n then
+          some (SLGate.input ⟨i_fin.val, hv⟩, rest.drop widthN)
+        else none
+  | false :: false :: true :: b :: rest =>
+    some (SLGate.const b, rest)
+  | false :: true :: false :: rest =>
+    if hlen : rest.length < widthS then none
+    else
+      match decodeFin widthS (rest.take widthS) with
+      | none => none
+      | some k_fin =>
+        some (SLGate.notGate k_fin.val, rest.drop widthS)
+  | false :: true :: true :: rest =>
+    if hlen : rest.length < widthS then none
+    else
+      match decodeFin widthS (rest.take widthS) with
+      | none => none
+      | some k_fin =>
+        let rest' := rest.drop widthS
+        if hlen' : rest'.length < widthS then none
+        else
+          match decodeFin widthS (rest'.take widthS) with
+          | none => none
+          | some l_fin =>
+            some (SLGate.andGate k_fin.val l_fin.val, rest'.drop widthS)
+  | true :: false :: false :: rest =>
+    if hlen : rest.length < widthS then none
+    else
+      match decodeFin widthS (rest.take widthS) with
+      | none => none
+      | some k_fin =>
+        let rest' := rest.drop widthS
+        if hlen' : rest'.length < widthS then none
+        else
+          match decodeFin widthS (rest'.take widthS) with
+          | none => none
+          | some l_fin =>
+            some (SLGate.orGate k_fin.val l_fin.val, rest'.drop widthS)
+  | _ :: _ :: _ :: _ => none
+
+/-- Decode `N` gates in sequence from a bit list.  Returns the parsed
+program and the remaining tail. -/
+def SLProgram.decode {n : Nat} (widthN widthS : Nat) (h_pos : 0 < n) :
+    Nat → List Bool → Option (SLProgram n × List Bool)
+  | 0, bs => some (⟨[]⟩, bs)
+  | N + 1, bs =>
+    match SLGate.decode widthN widthS h_pos bs with
+    | none => none
+    | some (g, rest) =>
+      match SLProgram.decode widthN widthS h_pos N rest with
+      | none => none
+      | some (⟨gs⟩, rest') =>
+        some (⟨g :: gs⟩, rest')
+
+/-!
+### Per-constructor round-trip lemmas for `SLGate.decode`
+
+Each lemma assumes the gate's references (if any) are within
+`2^widthS` so the encoder is lossless.  `.input` additionally
+relies on `n ≤ 2^widthN` (the encoder's precondition) to fit
+the index into the bit-level encoding.
+-/
+
+theorem SLGate.decode_encode_input {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN)
+    (i : Fin n) (rest : List Bool) :
+    SLGate.decode widthN widthS h_pos
+        ((SLGate.input i).encode widthN widthS h_widthN ++ rest) =
+      some (SLGate.input i, rest) := by
+  set ifin : Fin (2 ^ widthN) := ⟨i.val, lt_of_lt_of_le i.isLt h_widthN⟩ with hifin
+  simp only [SLGate.encode, List.cons_append, List.nil_append,
+             List.append_assoc, SLGate.decode]
+  have hlen_not : ¬ (encodeFin widthN ifin ++ rest).length < widthN := by
+    rw [List.length_append, encodeFin_length]; omega
+  rw [dif_neg hlen_not]
+  have htake :
+      (encodeFin widthN ifin ++ rest).take widthN = encodeFin widthN ifin := by
+    rw [List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop :
+      (encodeFin widthN ifin ++ rest).drop widthN = rest := by
+    rw [List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  show (match decodeFin widthN
+            ((encodeFin widthN ifin ++ rest).take widthN) with
+        | none => none
+        | some i_fin =>
+          if hv : i_fin.val < n then
+            some (SLGate.input ⟨i_fin.val, hv⟩,
+              (encodeFin widthN ifin ++ rest).drop widthN)
+          else none) = some (SLGate.input i, rest)
+  rw [htake, hdrop, decodeFin_encodeFin]
+  show (if hv : ifin.val < n then
+          some (SLGate.input ⟨ifin.val, hv⟩, rest)
+        else none) = some (SLGate.input i, rest)
+  have hv : ifin.val < n := by rw [hifin]; exact i.isLt
+  rw [dif_pos hv]
+
+theorem SLGate.decode_encode_const {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN)
+    (b : Bool) (rest : List Bool) :
+    SLGate.decode widthN widthS h_pos
+        ((SLGate.const b : SLGate n).encode widthN widthS h_widthN ++ rest) =
+      some (SLGate.const b, rest) := by
+  simp [SLGate.encode, SLGate.decode]
+
+theorem SLGate.decode_encode_not {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN)
+    (k : Nat) (hk : k < 2 ^ widthS) (rest : List Bool) :
+    SLGate.decode widthN widthS h_pos
+        ((SLGate.notGate k : SLGate n).encode widthN widthS h_widthN ++ rest) =
+      some (SLGate.notGate k, rest) := by
+  set kfin : Fin (2 ^ widthS) := ⟨k, hk⟩ with hkfin
+  simp only [SLGate.encode, List.cons_append, List.nil_append,
+             List.append_assoc, SLGate.decode]
+  rw [dif_pos hk]
+  have hlen_not :
+      ¬ (encodeFin widthS kfin ++ rest).length < widthS := by
+    rw [List.length_append, encodeFin_length]; omega
+  rw [dif_neg hlen_not]
+  have htake :
+      (encodeFin widthS kfin ++ rest).take widthS = encodeFin widthS kfin := by
+    rw [List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop :
+      (encodeFin widthS kfin ++ rest).drop widthS = rest := by
+    rw [List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  show (match decodeFin widthS
+            ((encodeFin widthS kfin ++ rest).take widthS) with
+        | none => none
+        | some k_fin =>
+          some (SLGate.notGate k_fin.val,
+            (encodeFin widthS kfin ++ rest).drop widthS)) =
+      some (SLGate.notGate k, rest)
+  rw [htake, hdrop, decodeFin_encodeFin]
+
+theorem SLGate.decode_encode_and {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN)
+    (k l : Nat) (hk : k < 2 ^ widthS) (hl : l < 2 ^ widthS)
+    (rest : List Bool) :
+    SLGate.decode widthN widthS h_pos
+        ((SLGate.andGate k l : SLGate n).encode widthN widthS h_widthN ++ rest) =
+      some (SLGate.andGate k l, rest) := by
+  set kfin : Fin (2 ^ widthS) := ⟨k, hk⟩ with hkfin
+  set lfin : Fin (2 ^ widthS) := ⟨l, hl⟩ with hlfin
+  simp only [SLGate.encode, List.cons_append, List.nil_append,
+             List.append_assoc, SLGate.decode]
+  rw [dif_pos hk, dif_pos hl]
+  set tail_after_k := encodeFin widthS lfin ++ rest with htail_k_def
+  have hlen_full : ¬ (encodeFin widthS kfin ++ tail_after_k).length < widthS := by
+    rw [List.length_append, encodeFin_length]; omega
+  rw [dif_neg hlen_full]
+  have htake_k :
+      (encodeFin widthS kfin ++ tail_after_k).take widthS = encodeFin widthS kfin := by
+    rw [List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop_k :
+      (encodeFin widthS kfin ++ tail_after_k).drop widthS = tail_after_k := by
+    rw [List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  show (match decodeFin widthS
+            ((encodeFin widthS kfin ++ tail_after_k).take widthS) with
+        | none => none
+        | some k_fin =>
+          let rest' := (encodeFin widthS kfin ++ tail_after_k).drop widthS
+          if hlen' : rest'.length < widthS then none
+          else
+            match decodeFin widthS (rest'.take widthS) with
+            | none => none
+            | some l_fin =>
+              some (SLGate.andGate k_fin.val l_fin.val, rest'.drop widthS)) =
+      some (SLGate.andGate k l, rest)
+  rw [htake_k, hdrop_k, decodeFin_encodeFin]
+  show (let rest' := tail_after_k
+        if hlen' : rest'.length < widthS then none
+        else
+          match decodeFin widthS (rest'.take widthS) with
+          | none => none
+          | some l_fin =>
+            some (SLGate.andGate kfin.val l_fin.val, rest'.drop widthS)) =
+      some (SLGate.andGate k l, rest)
+  have hlen_l : ¬ tail_after_k.length < widthS := by
+    rw [htail_k_def, List.length_append, encodeFin_length]; omega
+  rw [dif_neg hlen_l]
+  have htake_l :
+      tail_after_k.take widthS = encodeFin widthS lfin := by
+    rw [htail_k_def, List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop_l :
+      tail_after_k.drop widthS = rest := by
+    rw [htail_k_def, List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  show (match decodeFin widthS (tail_after_k.take widthS) with
+        | none => none
+        | some l_fin =>
+          some (SLGate.andGate kfin.val l_fin.val, tail_after_k.drop widthS)) =
+      some (SLGate.andGate k l, rest)
+  rw [htake_l, hdrop_l, decodeFin_encodeFin]
+
+theorem SLGate.decode_encode_or {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN)
+    (k l : Nat) (hk : k < 2 ^ widthS) (hl : l < 2 ^ widthS)
+    (rest : List Bool) :
+    SLGate.decode widthN widthS h_pos
+        ((SLGate.orGate k l : SLGate n).encode widthN widthS h_widthN ++ rest) =
+      some (SLGate.orGate k l, rest) := by
+  -- Symmetric to `.and`, swapping tag `011` for `100` and constructor
+  -- `andGate` for `orGate`.
+  set kfin : Fin (2 ^ widthS) := ⟨k, hk⟩ with hkfin
+  set lfin : Fin (2 ^ widthS) := ⟨l, hl⟩ with hlfin
+  simp only [SLGate.encode, List.cons_append, List.nil_append,
+             List.append_assoc, SLGate.decode]
+  rw [dif_pos hk, dif_pos hl]
+  set tail_after_k := encodeFin widthS lfin ++ rest with htail_k_def
+  have hlen_full : ¬ (encodeFin widthS kfin ++ tail_after_k).length < widthS := by
+    rw [List.length_append, encodeFin_length]; omega
+  rw [dif_neg hlen_full]
+  have htake_k :
+      (encodeFin widthS kfin ++ tail_after_k).take widthS = encodeFin widthS kfin := by
+    rw [List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop_k :
+      (encodeFin widthS kfin ++ tail_after_k).drop widthS = tail_after_k := by
+    rw [List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  show (match decodeFin widthS
+            ((encodeFin widthS kfin ++ tail_after_k).take widthS) with
+        | none => none
+        | some k_fin =>
+          let rest' := (encodeFin widthS kfin ++ tail_after_k).drop widthS
+          if hlen' : rest'.length < widthS then none
+          else
+            match decodeFin widthS (rest'.take widthS) with
+            | none => none
+            | some l_fin =>
+              some (SLGate.orGate k_fin.val l_fin.val, rest'.drop widthS)) =
+      some (SLGate.orGate k l, rest)
+  rw [htake_k, hdrop_k, decodeFin_encodeFin]
+  show (let rest' := tail_after_k
+        if hlen' : rest'.length < widthS then none
+        else
+          match decodeFin widthS (rest'.take widthS) with
+          | none => none
+          | some l_fin =>
+            some (SLGate.orGate kfin.val l_fin.val, rest'.drop widthS)) =
+      some (SLGate.orGate k l, rest)
+  have hlen_l : ¬ tail_after_k.length < widthS := by
+    rw [htail_k_def, List.length_append, encodeFin_length]; omega
+  rw [dif_neg hlen_l]
+  have htake_l :
+      tail_after_k.take widthS = encodeFin widthS lfin := by
+    rw [htail_k_def, List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop_l :
+      tail_after_k.drop widthS = rest := by
+    rw [htail_k_def, List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  show (match decodeFin widthS (tail_after_k.take widthS) with
+        | none => none
+        | some l_fin =>
+          some (SLGate.orGate kfin.val l_fin.val, tail_after_k.drop widthS)) =
+      some (SLGate.orGate k l, rest)
+  rw [htake_l, hdrop_l, decodeFin_encodeFin]
+
+/-- Combined round-trip for a single gate under well-formedness. -/
+theorem SLGate.decode_encode {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN)
+    (g : SLGate n) (hwf : g.wellFormedUnder widthS)
+    (rest : List Bool) :
+    SLGate.decode widthN widthS h_pos
+        (g.encode widthN widthS h_widthN ++ rest) = some (g, rest) := by
+  cases g with
+  | input i => exact SLGate.decode_encode_input widthN widthS h_pos h_widthN i rest
+  | const b => exact SLGate.decode_encode_const widthN widthS h_pos h_widthN b rest
+  | notGate k =>
+    have hk : k < 2 ^ widthS := hwf
+    exact SLGate.decode_encode_not widthN widthS h_pos h_widthN k hk rest
+  | andGate k l =>
+    obtain ⟨hk, hl⟩ := hwf
+    exact SLGate.decode_encode_and widthN widthS h_pos h_widthN k l hk hl rest
+  | orGate k l =>
+    obtain ⟨hk, hl⟩ := hwf
+    exact SLGate.decode_encode_or widthN widthS h_pos h_widthN k l hk hl rest
+
+/-- Full round-trip for a straight-line program under program-level
+well-formedness. -/
+theorem SLProgram.decode_encode {n : Nat} (widthN widthS : Nat)
+    (h_pos : 0 < n) (h_widthN : n ≤ 2 ^ widthN) :
+    ∀ (p : SLProgram n) (_hwf : p.wellFormedUnder widthS)
+      (rest : List Bool),
+      SLProgram.decode widthN widthS h_pos p.gates.length
+          (p.encode widthN widthS h_widthN ++ rest) = some (p, rest) := by
+  intro p
+  rcases p with ⟨gates⟩
+  induction gates with
+  | nil =>
+    intro _ rest
+    simp [SLProgram.encode, SLProgram.decode]
+  | cons g gs ih =>
+    intro hwf rest
+    have hg_wf : g.wellFormedUnder widthS := hwf g (by simp)
+    have hgs_wf : (⟨gs⟩ : SLProgram n).wellFormedUnder widthS := by
+      intro g' hg'
+      exact hwf g' (by simp [hg'])
+    have ih' := ih hgs_wf rest
+    -- encode (g :: gs) ++ rest = encode g ++ encode gs ++ rest
+    -- Unfold the concrete encode/decode forms into their step shapes.
+    have hencode :
+        (⟨g :: gs⟩ : SLProgram n).encode widthN widthS h_widthN =
+          SLGate.encode widthN widthS h_widthN g ++
+            (⟨gs⟩ : SLProgram n).encode widthN widthS h_widthN := by
+      simp [SLProgram.encode]
+    rw [show ((⟨g :: gs⟩ : SLProgram n).gates.length = gs.length + 1) from rfl,
+        hencode, List.append_assoc]
+    show (match SLGate.decode widthN widthS h_pos
+              (SLGate.encode widthN widthS h_widthN g ++
+                ((⟨gs⟩ : SLProgram n).encode widthN widthS h_widthN ++ rest)) with
+          | none => none
+          | some (g', rest') =>
+            match SLProgram.decode widthN widthS h_pos gs.length rest' with
+            | none => none
+            | some (⟨gs'⟩, rest'') =>
+              some ((⟨g' :: gs'⟩ : SLProgram n), rest'')) =
+        some ((⟨g :: gs⟩ : SLProgram n), rest)
+    rw [SLGate.decode_encode widthN widthS h_pos h_widthN g hg_wf]
+    show (match SLProgram.decode widthN widthS h_pos gs.length
+              ((⟨gs⟩ : SLProgram n).encode widthN widthS h_widthN ++ rest) with
+          | none => none
+          | some (⟨gs'⟩, rest'') =>
+            some ((⟨g :: gs'⟩ : SLProgram n), rest'')) =
+        some ((⟨g :: gs⟩ : SLProgram n), rest)
+    rw [ih']
+
 end Encoding
 
 end TM

@@ -268,7 +268,52 @@ theorem toTM_stepConfig_unfolded {n : Nat} (P : PhasedProgram)
          TM.Configuration (M := P.toTM) n) := by
   rfl
 
+/-- `tapeLength` of a compiled `PhasedProgram` reduces to the declared
+`timeBound`.  Purely definitional, but stating it lets downstream
+proofs rewrite `(P.toTM).tapeLength n` without unfolding `toTM`. -/
+@[simp] theorem toTM_tapeLength (P : PhasedProgram) (n : Nat) :
+    (P.toTM).tapeLength n = n + P.timeBound n + 1 := rfl
+
 end PhasedProgram
+
+/-!
+### Head-movement micro-API
+
+`moveHead` is a dependent `dite` on head position; simp doesn't discharge
+the bounds check automatically.  These three rewrite lemmas carve out
+the three regimes relevant to Session 4's pilots and subsequent
+verifier phases:
+
+* `moveHead_stay` — `Move.stay` leaves the head unchanged (rfl);
+* `moveHead_right_lt` — a `Move.right` within bounds advances the head
+  by one;
+* `moveHead_right_clamp` — a `Move.right` at the tape's right edge stays.
+
+All three are stated so that simp can use them when the corresponding
+numeric condition is available as a hypothesis.
+-/
+
+namespace Configuration
+
+@[simp] theorem moveHead_stay {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    Configuration.moveHead (c := c) Move.stay = c.head := rfl
+
+theorem moveHead_right_lt {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n)
+    (h : (c.head : ℕ) + 1 < M.tapeLength n) :
+    Configuration.moveHead (c := c) Move.right = ⟨(c.head : ℕ) + 1, h⟩ := by
+  unfold Configuration.moveHead
+  rw [dif_pos h]
+
+theorem moveHead_right_clamp {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n)
+    (h : ¬ ((c.head : ℕ) + 1 < M.tapeLength n)) :
+    Configuration.moveHead (c := c) Move.right = c.head := by
+  unfold Configuration.moveHead
+  rw [dif_neg h]
+
+end Configuration
 
 /-!
 ## Second-order pilot: read the first input bit

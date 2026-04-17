@@ -1727,6 +1727,79 @@ theorem decode_encode_or {n : Nat} (h_pos : 0 < n) (width : Nat)
              ih1 d' hd1 (encodeCircuitTree width h_width c2 ++ rest),
              ih2 d' hd2 rest]
 
+theorem decode_encode_input {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (i : Fin n) (d : Nat) (hd : 1 ≤ d)
+    (rest : List Bool) :
+    decodeCircuitTreeAtDepth h_pos width d
+        (encodeCircuitTree width h_width (CircuitTree.input i) ++ rest) =
+      some (CircuitTree.input i, rest) := by
+  obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
+  set ifin : Fin (2 ^ width) := ⟨i.val, lt_of_lt_of_le i.isLt h_width⟩ with hifin
+  -- Helper facts about the input's take/drop split.
+  have hlen_not :
+      ¬ (encodeFin width ifin ++ rest).length < width := by
+    rw [List.length_append, encodeFin_length]; omega
+  have htake :
+      (encodeFin width ifin ++ rest).take width = encodeFin width ifin := by
+    rw [List.take_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.take_of_length_le (by rw [encodeFin_length])]
+  have hdrop :
+      (encodeFin width ifin ++ rest).drop width = rest := by
+    rw [List.drop_append_of_le_length (by rw [encodeFin_length])]
+    rw [List.drop_of_length_le (by rw [encodeFin_length])]
+    simp
+  have hvlt : ifin.val < n := by rw [hifin]; exact i.isLt
+  -- Reduce the goal to the exposed decoder-match form.
+  show decodeCircuitTreeAtDepth h_pos width (d' + 1)
+      (false :: false :: false :: (encodeFin width ifin ++ rest)) =
+    some (CircuitTree.input i, rest)
+  unfold decodeCircuitTreeAtDepth
+  rw [dif_neg hlen_not, htake, hdrop]
+  -- Reduce the `have payload := encodeFin width ifin` binding.
+  show (match decodeFin width (encodeFin width ifin) with
+        | none => none
+        | some i_fin =>
+          if hv : i_fin.val < n then
+            some (CircuitTree.input ⟨i_fin.val, hv⟩, rest)
+          else none) = some (CircuitTree.input i, rest)
+  rw [decodeFin_encodeFin]
+  -- Reduce `match some ifin with ...` via iota.
+  show (if hv : ifin.val < n then
+          some (CircuitTree.input ⟨ifin.val, hv⟩, rest)
+        else none) = some (CircuitTree.input i, rest)
+  rw [dif_pos hvlt]
+
+/-- Full round-trip: combines all five constructor-level lemmas
+into a single induction on the circuit tree. -/
+theorem decodeCircuitTreeAtDepth_encodeCircuitTree
+    {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (c : CircuitTree n) :
+    ∀ (d : Nat), c.size ≤ d →
+    ∀ (rest : List Bool),
+      decodeCircuitTreeAtDepth h_pos width d
+          (encodeCircuitTree width h_width c ++ rest) = some (c, rest) := by
+  induction c with
+  | input i =>
+    intro d h_d rest
+    exact decode_encode_input h_pos width h_width i d
+      (by simpa [CircuitTree.size] using h_d) rest
+  | const b =>
+    intro d h_d rest
+    exact decode_encode_const h_pos width h_width b d
+      (by simpa [CircuitTree.size] using h_d) rest
+  | not c ih =>
+    intro d h_d rest
+    exact decode_encode_not h_pos width h_width c d
+      (by simpa [CircuitTree.size] using h_d) rest ih
+  | and c1 c2 ih1 ih2 =>
+    intro d h_d rest
+    exact decode_encode_and h_pos width h_width c1 c2 d
+      (by simpa [CircuitTree.size] using h_d) rest ih1 ih2
+  | or c1 c2 ih1 ih2 =>
+    intro d h_d rest
+    exact decode_encode_or h_pos width h_width c1 c2 d
+      (by simpa [CircuitTree.size] using h_d) rest ih1 ih2
+
 end Encoding
 
 end TM

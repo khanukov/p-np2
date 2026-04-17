@@ -2384,6 +2384,132 @@ theorem decodeCircuitTreeAtDepth_encodeCircuitTree
     exact decode_encode_or h_pos width h_width c1 c2 d
       (by simpa [CircuitTree.size] using h_d) rest ih1 ih2
 
+/-!
+## Session 9a: Straight-line program + pure evaluator
+
+The MCSP verifier's evaluation phase naturally matches a
+straight-line program: each gate is computed once, from already-
+computed prior values.  This is much easier to realise on a TM
+than tree-recursive evaluation of `CircuitTree`.
+
+`SLProgram` is a flat sequence of gates.  References to prior
+gates are via raw `Nat` indices; `eval` returns `Option Bool`,
+yielding `none` on malformed inputs (reference out of range).
+Well-formed programs (every reference to a prior index)
+evaluate to `some`.
+
+Session 9b will bridge from `CircuitTree` to `SLProgram` via
+post-order flattening.  Session 9c will add the bit-level
+encoder/decoder on top of Session 8's `encodeFin`.
+-/
+
+/-- Single gate in a straight-line program, with references to prior
+gates as raw `Nat` indices. -/
+inductive SLGate (n : Nat) where
+  | input : Fin n → SLGate n
+  | const : Bool → SLGate n
+  | notGate : Nat → SLGate n
+  | andGate : Nat → Nat → SLGate n
+  | orGate : Nat → Nat → SLGate n
+
+/-- Evaluate one gate given the input vector and the list of already-
+computed prior gate values.  Returns `none` on out-of-range refs. -/
+def SLGate.compute {n : Nat} (g : SLGate n) (x : Fin n → Bool)
+    (vals : List Bool) : Option Bool :=
+  match g with
+  | .input i => some (x i)
+  | .const b => some b
+  | .notGate k => (vals.get? k).map (!·)
+  | .andGate k l =>
+    match vals.get? k, vals.get? l with
+    | some a, some b => some (a && b)
+    | _, _ => none
+  | .orGate k l =>
+    match vals.get? k, vals.get? l with
+    | some a, some b => some (a || b)
+    | _, _ => none
+
+/-- A straight-line program: an ordered list of gates. -/
+structure SLProgram (n : Nat) where
+  gates : List (SLGate n)
+
+/-- Evaluate a list of gates sequentially from left to right,
+accumulating computed values.  `vals` is the initial accumulator
+(typically `[]`). -/
+def SLProgram.evalAux {n : Nat} (x : Fin n → Bool) :
+    List (SLGate n) → List Bool → Option (List Bool)
+  | [], vals => some vals
+  | g :: rest, vals =>
+    match g.compute x vals with
+    | none => none
+    | some v => SLProgram.evalAux x rest (vals ++ [v])
+
+/-- Evaluate all gates of a straight-line program, returning the full
+list of gate values on success. -/
+def SLProgram.evalAll {n : Nat} (p : SLProgram n) (x : Fin n → Bool) :
+    Option (List Bool) :=
+  SLProgram.evalAux x p.gates []
+
+/-- The output value of a straight-line program: the last gate's
+computed value (or `none` if the program is empty or malformed). -/
+def SLProgram.eval {n : Nat} (p : SLProgram n) (x : Fin n → Bool) :
+    Option Bool :=
+  (p.evalAll x).bind List.getLast?
+
+/-! ### Basic simp lemmas for `SLGate.compute` -/
+
+@[simp] theorem SLGate.compute_input {n : Nat} (i : Fin n)
+    (x : Fin n → Bool) (vals : List Bool) :
+    (SLGate.input i).compute x vals = some (x i) := rfl
+
+@[simp] theorem SLGate.compute_const {n : Nat} (b : Bool)
+    (x : Fin n → Bool) (vals : List Bool) :
+    (SLGate.const b : SLGate n).compute x vals = some b := rfl
+
+@[simp] theorem SLProgram.evalAux_nil {n : Nat} (x : Fin n → Bool)
+    (vals : List Bool) :
+    SLProgram.evalAux x [] vals = some vals := rfl
+
+theorem SLProgram.evalAux_cons {n : Nat} (x : Fin n → Bool)
+    (g : SLGate n) (rest : List (SLGate n)) (vals : List Bool) :
+    SLProgram.evalAux x (g :: rest) vals =
+      (g.compute x vals).bind
+        (fun v => SLProgram.evalAux x rest (vals ++ [v])) := by
+  cases hg : g.compute x vals with
+  | none => simp [SLProgram.evalAux, hg]
+  | some v => simp [SLProgram.evalAux, hg]
+
+/-- After processing a list of `k` gates, the value list has exactly
+`k` more entries than the starting accumulator — provided evaluation
+succeeds. -/
+theorem SLProgram.evalAux_length {n : Nat} (x : Fin n → Bool) :
+    ∀ (gates : List (SLGate n)) (vals : List Bool) (result : List Bool),
+      SLProgram.evalAux x gates vals = some result →
+      result.length = vals.length + gates.length
+  | [], vals, result, h => by
+    simp [SLProgram.evalAux] at h
+    rw [← h]; simp
+  | g :: rest, vals, result, h => by
+    rw [SLProgram.evalAux_cons] at h
+    cases hg : g.compute x vals with
+    | none => rw [hg] at h; exact absurd h (by simp)
+    | some v =>
+      rw [hg] at h
+      simp only [Option.bind_some] at h
+      have ih := SLProgram.evalAux_length x rest (vals ++ [v]) result h
+      simp only [List.length_append, List.length_cons, List.length_nil] at ih
+      show result.length = vals.length + (rest.length + 1)
+      omega
+
+/-- The full `evalAll` result has length equal to the number of gates
+(when evaluation succeeds). -/
+theorem SLProgram.evalAll_length {n : Nat} (p : SLProgram n)
+    (x : Fin n → Bool) (result : List Bool) :
+    p.evalAll x = some result → result.length = p.gates.length := by
+  intro h
+  have := SLProgram.evalAux_length x p.gates [] result h
+  simpa using this
+
 end Encoding
 
 end TM

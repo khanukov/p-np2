@@ -1644,6 +1644,47 @@ def decodeCircuitTreeAtDepth {n : Nat} (h_pos : 0 < n) (width : Nat) :
       | some (c2, rest2) => some (CircuitTree.or c1 c2, rest2)
   | _ + 1, _ :: _ :: _ :: _ => none
 
+/-!
+### Session 8e: Round-trip — per-constructor lemmas
+
+The cleanest scalable proof splits into per-constructor lemmas
+and a combining induction step.  Both the scalar `decodeFin`
+round-trip and the `List.take`/`drop` facts line up cleanly at
+the constructor level.
+
+Session 8e delivers the `const` and `not` round-trip cases.  The
+remaining three constructors (`input`, `and`, `or`) reuse the
+same machinery; the `input` case additionally threads
+`decodeFin_encodeFin` through the `take`/`drop` split.  Those
+are reserved for Session 8f so the current commit keeps its
+scope tight and its individual proofs readable.
+-/
+
+theorem decode_encode_const {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (b : Bool) (d : Nat) (hd : 1 ≤ d)
+    (rest : List Bool) :
+    decodeCircuitTreeAtDepth h_pos width d
+        (encodeCircuitTree width h_width (CircuitTree.const b) ++ rest) =
+      some (CircuitTree.const b, rest) := by
+  obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
+  simp [encodeCircuitTree, decodeCircuitTreeAtDepth]
+
+theorem decode_encode_not {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (c : CircuitTree n) (d : Nat)
+    (hd : c.size + 1 ≤ d)
+    (rest : List Bool)
+    (ih : ∀ (d' : Nat), c.size ≤ d' → ∀ (r : List Bool),
+      decodeCircuitTreeAtDepth h_pos width d'
+          (encodeCircuitTree width h_width c ++ r) = some (c, r)) :
+    decodeCircuitTreeAtDepth h_pos width d
+        (encodeCircuitTree width h_width (CircuitTree.not c) ++ rest) =
+      some (CircuitTree.not c, rest) := by
+  obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
+  have hd' : c.size ≤ d' := by omega
+  simp only [encodeCircuitTree, List.cons_append, List.nil_append,
+             List.append_assoc, decodeCircuitTreeAtDepth]
+  rw [ih d' hd' rest]
+
 end Encoding
 
 end TM

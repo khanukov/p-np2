@@ -1335,6 +1335,132 @@ theorem incrementProgram_ripple_step {k : Nat} {n : Nat}
     rw [htape_step]
     exact Configuration.write_other c hne false
 
+/-!
+### Session 7g-b: iterated ripple invariant
+
+The single-step lemma `incrementProgram_ripple_step` is iterated `j`
+times to obtain a full ripple invariant over `[0, j]`.  The
+statement captures four simultaneous facts after `j` steps when
+the first `j` bits at the counter start are all `1`:
+
+1. `state.fst.val = j`,
+2. `head.val = c.head + j`,
+3. cells outside `[c.head, c.head + j)` are preserved,
+4. cells at `[c.head, c.head + j)` are flipped to `false`.
+-/
+
+theorem incrementProgram_ripple_after_j_steps {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_bound : (c.head : ℕ) + k + 1 ≤
+        (incrementProgram k).toTM.tapeLength n) :
+    ∀ j, j ≤ k →
+    (∀ (i : Nat), i < j →
+       ∀ (hbi : (c.head : ℕ) + i < (incrementProgram k).toTM.tapeLength n),
+       c.tape ⟨(c.head : ℕ) + i, hbi⟩ = true) →
+    ((TM.runConfig (M := (incrementProgram k).toTM) c j).state.fst.val = j) ∧
+    (((TM.runConfig (M := (incrementProgram k).toTM) c j).head : ℕ) =
+        (c.head : ℕ) + j) ∧
+    (∀ (p : Fin ((incrementProgram k).toTM.tapeLength n)),
+       ((p : ℕ) < (c.head : ℕ) ∨ (c.head : ℕ) + j ≤ (p : ℕ)) →
+       (TM.runConfig (M := (incrementProgram k).toTM) c j).tape p = c.tape p) ∧
+    (∀ (i : Nat), i < j →
+       ∀ (hbi : (c.head : ℕ) + i < (incrementProgram k).toTM.tapeLength n),
+       (TM.runConfig (M := (incrementProgram k).toTM) c j).tape
+           ⟨(c.head : ℕ) + i, hbi⟩ = false) := by
+  intro j hjk hones
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show c.state.fst.val = 0; exact h_phase
+    · show (c.head : ℕ) = _; omega
+    · intros; rfl
+    · intros i h; exact absurd h (by omega)
+  | succ j' ih =>
+    have hj'_le_k : j' ≤ k := by omega
+    have hj'_lt_k : j' < k := by omega
+    have hones_prev : ∀ (i : Nat), i < j' →
+        ∀ (hbi : (c.head : ℕ) + i < (incrementProgram k).toTM.tapeLength n),
+        c.tape ⟨(c.head : ℕ) + i, hbi⟩ = true := by
+      intro i hi hbi; exact hones i (by omega) hbi
+    obtain ⟨ihs_phase, ihs_head, ihs_preserve, ihs_zeros⟩ :=
+      ih hj'_le_k hones_prev
+    -- Set up `c_j` = runConfig c j'.
+    set cj' := TM.runConfig (M := (incrementProgram k).toTM) c j' with hcj'
+    -- Apply one more step via ripple_step.
+    have h_phase_cj' : cj'.state.fst.val = j' := ihs_phase
+    have h_head_cj' : (cj'.head : ℕ) = (c.head : ℕ) + j' := ihs_head
+    -- Bit at cj'.head is true (from hones at i = j').
+    have h_bit_bound : (c.head : ℕ) + j' < (incrementProgram k).toTM.tapeLength n :=
+      by omega
+    have h_bit_orig : c.tape ⟨(c.head : ℕ) + j', h_bit_bound⟩ = true :=
+      hones j' (by omega) h_bit_bound
+    -- cj'.head as a Fin equals ⟨c.head + j', _⟩.
+    have h_head_fin_eq :
+        cj'.head = (⟨(c.head : ℕ) + j', h_bit_bound⟩ : Fin _) := by
+      apply Fin.ext; exact h_head_cj'
+    -- Thus cj'.tape at its head is true (via preserve on outside region).
+    have h_bit_cj' : cj'.tape cj'.head = true := by
+      rw [h_head_fin_eq]
+      have hout :
+          ((⟨(c.head : ℕ) + j', h_bit_bound⟩ : Fin _) : ℕ) < (c.head : ℕ) ∨
+          (c.head : ℕ) + j' ≤ ((⟨(c.head : ℕ) + j', h_bit_bound⟩ : Fin _) : ℕ) :=
+        Or.inr (by omega)
+      rw [ihs_preserve _ hout]; exact h_bit_orig
+    have h_head_advance_bound :
+        (cj'.head : ℕ) + 1 < (incrementProgram k).toTM.tapeLength n := by
+      rw [h_head_cj']; omega
+    obtain ⟨rip_phase, rip_head, rip_bit, rip_preserve⟩ :=
+      incrementProgram_ripple_step cj' j' hj'_lt_k h_phase_cj'
+        h_bit_cj' h_head_advance_bound
+    -- Now (runConfig c (j'+1)) = stepConfig cj' by runConfig_succ.
+    have hrw : TM.runConfig (M := (incrementProgram k).toTM) c (j' + 1) =
+        TM.stepConfig (M := (incrementProgram k).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw]; exact rip_phase
+    · rw [hrw, rip_head, h_head_cj']; omega
+    · intro p hout
+      rw [hrw]
+      -- Outside region check: p is not cj'.head.
+      have hne : p ≠ cj'.head := by
+        rw [h_head_fin_eq]
+        intro heq
+        rcases hout with h1 | h2
+        · exact absurd (show ((p : ℕ)) < (c.head : ℕ) from h1)
+            (by rw [show (p : ℕ) = (c.head : ℕ) + j' from
+                by rw [heq]]; omega)
+        · exact absurd (show (c.head : ℕ) + (j' + 1) ≤ (p : ℕ) from h2)
+            (by rw [show (p : ℕ) = (c.head : ℕ) + j' from
+                by rw [heq]]; omega)
+      rw [rip_preserve p hne]
+      -- Apply IH's preservation.
+      apply ihs_preserve
+      rcases hout with h1 | h2
+      · exact Or.inl h1
+      · exact Or.inr (by omega)
+    · intro i hi hbi
+      rw [hrw]
+      -- Case i = j' or i < j'.
+      by_cases hij' : i = j'
+      · -- i = j': after step, cell at c.head+j' = cj'.head was flipped to false.
+        subst hij'
+        have hpeq : (⟨(c.head : ℕ) + i, hbi⟩ : Fin _) = cj'.head := by
+          apply Fin.ext
+          show (c.head : ℕ) + i = _
+          rw [h_head_cj']
+        rw [hpeq]; exact rip_bit
+      · -- i < j': unchanged by the extra step (since position ≠ cj'.head).
+        have hij'_lt : i < j' := by omega
+        have hne : (⟨(c.head : ℕ) + i, hbi⟩ : Fin _) ≠ cj'.head := by
+          rw [h_head_fin_eq]
+          intro heq
+          apply hij'
+          have : (c.head : ℕ) + i = (c.head : ℕ) + j' := congrArg Fin.val heq
+          omega
+        rw [rip_preserve _ hne]
+        exact ihs_zeros i hij'_lt hbi
+
 /-- First-bit-zero correctness for arbitrary `k ≥ 1`: when the
 scanned cell is `0`, running `incrementProgram k` for its full
 budget adds exactly `1` to the counter value (without mod

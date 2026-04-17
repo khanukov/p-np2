@@ -316,6 +316,101 @@ theorem moveHead_right_clamp {M : TM.{u}} {n : Nat}
 end Configuration
 
 /-!
+## Session 5: Tape-invariant framework
+
+Foundation for reasoning about *what is on the tape* after `k` steps.
+The atomic observation is that `stepConfig` writes only at the current
+head position — every other cell is preserved verbatim.  Iterating this
+observation gives the compositional fact that **a cell the head never
+visits during `runConfig c k` keeps its original value**.
+
+Two versions of the compositional lemma are provided:
+
+* `runConfig_tape_eq_of_unvisited` — per-cell criterion, needed
+  whenever reasoning focuses on a specific position;
+* `runConfig_tape_eq_on_region` — region-style, needed when reasoning
+  about a whole sub-tape (e.g. "the input region is never
+  overwritten").
+
+These are the only lemmas required as the input layer to Session 6
+(binary counter on tape) and beyond.
+-/
+
+/-- One `stepConfig` leaves every tape cell other than `c.head`
+unchanged. -/
+theorem stepConfig_tape_eq_of_ne {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n)
+    {i : Fin (M.tapeLength n)} (h : i ≠ c.head) :
+    (TM.stepConfig (M := M) c).tape i = c.tape i := by
+  -- `stepConfig` sets `tape := c.write c.head b'` for some `b'`.  The
+  -- `write_other` lemma from `TuringEncoding` closes the goal because
+  -- `i ≠ c.head` witnesses the "other" branch.
+  show (c.write c.head _) i = c.tape i
+  exact Configuration.write_other c h _
+
+/-- Compositional version of `stepConfig_tape_eq_of_ne`: if a cell
+`i` is never the head position during the first `k` steps of
+`runConfig c`, the cell keeps its original value after `runConfig c k`.
+-/
+theorem runConfig_tape_eq_of_unvisited {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (k : Nat)
+    {i : Fin (M.tapeLength n)}
+    (h : ∀ j, j < k → i ≠ (TM.runConfig (M := M) c j).head) :
+    (TM.runConfig (M := M) c k).tape i = c.tape i := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [runConfig_succ]
+    have hne : i ≠ (TM.runConfig (M := M) c k).head :=
+      h k (Nat.lt_succ_self k)
+    have hstep :
+        (TM.stepConfig (M := M) (TM.runConfig (M := M) c k)).tape i =
+          (TM.runConfig (M := M) c k).tape i :=
+      stepConfig_tape_eq_of_ne _ hne
+    rw [hstep]
+    exact ih (fun j hj => h j (Nat.lt_succ_of_lt hj))
+
+/-- Region-style corollary: if the head never enters a region `R`
+during `k` steps, every cell in `R` retains its original value.
+
+The hypothesis reads as "for every intermediate step `j < k`, the head
+position does not satisfy `R`". -/
+theorem runConfig_tape_eq_on_region {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (k : Nat)
+    (R : Fin (M.tapeLength n) → Prop)
+    (h : ∀ j, j < k → ¬ R (TM.runConfig (M := M) c j).head) :
+    ∀ i, R i → (TM.runConfig (M := M) c k).tape i = c.tape i := by
+  intro i hi
+  apply runConfig_tape_eq_of_unvisited
+  intro j hj heq
+  -- `i` satisfies `R`, and `heq : i = head j` would force the head to
+  -- satisfy `R` — contradicting `h j hj`.
+  exact h j hj (heq ▸ hi)
+
+/-- Range-style specialisation of `runConfig_tape_eq_on_region`: if
+the head position stays within `[a, b)` at every intermediate step,
+every cell *outside* `[a, b)` is preserved.
+
+This is the canonical form for MCSP-verifier reasoning where each
+phase works in a contiguous tape window. -/
+theorem runConfig_tape_eq_outside_range {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (k : Nat) (a b : Nat)
+    (h : ∀ j, j < k → a ≤ ((TM.runConfig (M := M) c j).head : ℕ) ∧
+                        ((TM.runConfig (M := M) c j).head : ℕ) < b) :
+    ∀ i : Fin (M.tapeLength n),
+        ((i : ℕ) < a ∨ b ≤ (i : ℕ)) →
+        (TM.runConfig (M := M) c k).tape i = c.tape i := by
+  intro i hout
+  apply runConfig_tape_eq_on_region
+    (R := fun j => (j : ℕ) < a ∨ b ≤ (j : ℕ))
+  · intro j hj hR
+    obtain ⟨hge, hlt⟩ := h j hj
+    rcases hR with h1 | h2
+    · exact (Nat.not_lt.mpr hge) h1
+    · exact (Nat.not_le.mpr hlt) h2
+  · exact hout
+
+/-!
 ## Second-order pilot: read the first input bit
 
 `readFirstBit` is a one-step `PhasedProgram` whose local state is

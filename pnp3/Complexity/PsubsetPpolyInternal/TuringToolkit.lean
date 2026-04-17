@@ -4945,6 +4945,133 @@ theorem transition_seeking_left (Δ : Nat)
   refine ⟨?_, ?_, ?_, ?_⟩ <;>
     simp [notAtOffsetProgram, hn1, hn2, hn3, hi_hi]
 
+/-! ### Step lemmas -/
+
+theorem stepConfig_seeking_right (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (notAtOffsetProgram Δ).toTM) n)
+    (hi : c.state.fst.val < Δ)
+    (h_head_bound : (c.head : ℕ) + 1 <
+        (notAtOffsetProgram Δ).toTM.tapeLength n) :
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.snd =
+        c.state.snd ∧
+    ((TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).head : ℕ) =
+        (c.head : ℕ) + 1 ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_seeking_right Δ (i := c.state.fst) hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.right := t_move
+  have hbit_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).fst.val = c.state.fst.val + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_right_lt (c := c) h_head_bound]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+theorem stepConfig_read_negate (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (notAtOffsetProgram Δ).toTM) n)
+    (hi : c.state.fst.val = Δ) :
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.fst.val = Δ + 1 ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.snd =
+        !(c.tape c.head) ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_read_negate Δ (i := c.state.fst) hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := t_move
+  have hbit_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).fst.val = Δ + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).snd = !(c.tape c.head)
+    exact t_state
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
+theorem stepConfig_write_state (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (notAtOffsetProgram Δ).toTM) n)
+    (hi : c.state.fst.val = Δ + 1) :
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.fst.val = Δ + 2 ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.snd =
+        c.state.snd ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).head = c.head ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).tape =
+        c.write c.head c.state.snd := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_write_state Δ (i := c.state.fst) hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.stay := t_move
+  have hbit_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.state.snd := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).fst.val = Δ + 2
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step]; simp
+  · rw [stepConfig_tape, hbit_step]
+
+theorem stepConfig_seeking_left (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (notAtOffsetProgram Δ).toTM) n)
+    (hi_lo : Δ + 1 < c.state.fst.val) (hi_hi : c.state.fst.val < 2 * Δ + 2)
+    (h_head_pos : 0 < (c.head : ℕ)) :
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.fst.val =
+        c.state.fst.val + 1 ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).state.snd =
+        c.state.snd ∧
+    ((TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).head : ℕ) =
+        (c.head : ℕ) - 1 ∧
+    (TM.stepConfig (M := (notAtOffsetProgram Δ).toTM) c).tape = c.tape := by
+  obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+    transition_seeking_left Δ hi_lo hi_hi c.state.snd (c.tape c.head)
+  have hmove_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.snd : Move)
+        = Move.left := t_move
+  have hbit_step :
+      (((notAtOffsetProgram Δ).toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+        = c.tape c.head := t_bit
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).fst.val = c.state.fst.val + 1
+    exact t_phase
+  · rw [stepConfig_state]
+    show (((notAtOffsetProgram Δ).transition c.state.fst c.state.snd
+            (c.tape c.head)).fst).snd = c.state.snd
+    exact t_state
+  · rw [stepConfig_head, hmove_step,
+        Configuration.moveHead_left_val_of_pos c h_head_pos]
+  · rw [stepConfig_tape, hbit_step]
+    exact BinaryCounter.write_self_eq c c.head
+
 end NotAtOffset
 
 end TM

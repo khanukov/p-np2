@@ -4508,6 +4508,149 @@ theorem writeAtOffsetProgram_run_full (Δ : Nat) (b : Bool) {n : Nat}
 
 end WriteAtOffset
 
+/-!
+## Session 9e-d (step 7): `readAtOffsetProgram` compound
+
+`readAtOffsetProgram Δ`: seek head right by `Δ`, read the bit there
+into state, seek head back left by `Δ`.  Returns head to original
+position.  The compiled TM accepts iff the read bit is `true`.
+
+Uses `Bool` state throughout to carry the read value from the
+read phase through the return trip.
+
+Phases (analogous to writeAtOffsetProgram):
+* 0..Δ-1: seek right, propagate state.
+* Δ: read phase — new state = scanned bit.
+* Δ+1..2Δ: seek left, propagate state.
+* 2Δ+1: accepting idle (state unchanged).
+-/
+
+namespace ReadAtOffset
+
+/-- Read-at-offset compound with `Bool` state. -/
+def readAtOffsetProgram (Δ : Nat) : PhasedProgram.{0} where
+  numPhases := 2 * Δ + 2
+  phaseState := fun _ => Bool
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := ⟨0, by omega⟩
+  startState := false
+  acceptPhase := ⟨2 * Δ + 1, by omega⟩
+  acceptState := true
+  transition := fun i q scan =>
+    if hi1 : i.val < Δ then
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.right)
+    else if hi2 : i.val = Δ then
+      (⟨⟨Δ + 1, by omega⟩, scan⟩, scan, Move.stay)
+    else if hi3 : i.val < 2 * Δ + 1 then
+      (⟨⟨i.val + 1, by omega⟩, q⟩, scan, Move.left)
+    else
+      (⟨⟨2 * Δ + 1, by omega⟩, q⟩, scan, Move.stay)
+  timeBound := fun _ => 2 * Δ + 1
+
+@[simp] theorem readAtOffsetProgram_numPhases (Δ : Nat) :
+    (readAtOffsetProgram Δ).numPhases = 2 * Δ + 2 := rfl
+
+@[simp] theorem readAtOffsetProgram_timeBound (Δ n : Nat) :
+    (readAtOffsetProgram Δ).timeBound n = 2 * Δ + 1 := rfl
+
+/-! ### Transition helpers -/
+
+theorem transition_seeking_right (Δ : Nat)
+    {i : Fin ((readAtOffsetProgram Δ).numPhases)} (hi : i.val < Δ)
+    (q : (readAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((readAtOffsetProgram Δ).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((readAtOffsetProgram Δ).transition i q scan).fst.snd = q ∧
+    ((readAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
+    ((readAtOffsetProgram Δ).transition i q scan).snd.snd = Move.right := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [readAtOffsetProgram, hi]
+
+theorem transition_read (Δ : Nat)
+    {i : Fin ((readAtOffsetProgram Δ).numPhases)} (hi : i.val = Δ)
+    (q : (readAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((readAtOffsetProgram Δ).transition i q scan).fst.fst.val = Δ + 1 ∧
+    ((readAtOffsetProgram Δ).transition i q scan).fst.snd = scan ∧
+    ((readAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
+    ((readAtOffsetProgram Δ).transition i q scan).snd.snd = Move.stay := by
+  have hni : ¬ i.val < Δ := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [readAtOffsetProgram, hni, hi]
+
+theorem transition_seeking_left (Δ : Nat)
+    {i : Fin ((readAtOffsetProgram Δ).numPhases)}
+    (hi_lo : Δ < i.val) (hi_hi : i.val < 2 * Δ + 1)
+    (q : (readAtOffsetProgram Δ).phaseState i) (scan : Bool) :
+    ((readAtOffsetProgram Δ).transition i q scan).fst.fst.val = i.val + 1 ∧
+    ((readAtOffsetProgram Δ).transition i q scan).fst.snd = q ∧
+    ((readAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
+    ((readAtOffsetProgram Δ).transition i q scan).snd.snd = Move.left := by
+  have hn1 : ¬ i.val < Δ := by omega
+  have hn2 : ¬ i.val = Δ := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [readAtOffsetProgram, hn1, hn2, hi_hi]
+
+/-! ### Seek-right block invariant -/
+
+theorem run_after_j_right_steps (Δ : Nat) {n : Nat}
+    (c : Configuration (M := (readAtOffsetProgram Δ).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = false)
+    (h_bound : (c.head : ℕ) + Δ <
+        (readAtOffsetProgram Δ).toTM.tapeLength n) :
+    ∀ j, j ≤ Δ →
+    let cj := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c j
+    cj.state.fst.val = j ∧
+    cj.state.snd = false ∧
+    ((cj.head : ℕ) = (c.head : ℕ) + j) ∧
+    cj.tape = c.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show c.state.fst.val = 0; exact h_phase
+    · show c.state.snd = false; exact h_state_snd
+    · show (c.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le_Δ : j' ≤ Δ := by omega
+    have hj'_lt_Δ : j' < Δ := by omega
+    obtain ⟨ih_phase, ih_state, ih_head, ih_tape⟩ := ih hj'_le_Δ
+    set cj' := TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c j' with hcj'
+    have h_phase_cj' : cj'.state.fst.val < Δ := by rw [ih_phase]; exact hj'_lt_Δ
+    have h_head_advance_bound :
+        (cj'.head : ℕ) + 1 < (readAtOffsetProgram Δ).toTM.tapeLength n := by
+      rw [ih_head]; omega
+    -- Get transition behaviour
+    obtain ⟨t_phase, t_state, t_bit, t_move⟩ :=
+      transition_seeking_right Δ h_phase_cj' cj'.state.snd (cj'.tape cj'.head)
+    have hmove_step :
+        (((readAtOffsetProgram Δ).toTM.step cj'.state (cj'.tape cj'.head)).snd.snd :
+          Move) = Move.right := t_move
+    have hbit_step :
+        (((readAtOffsetProgram Δ).toTM.step cj'.state (cj'.tape cj'.head)).snd.fst :
+          Bool) = cj'.tape cj'.head := t_bit
+    -- Compute step results
+    have hrw :
+        TM.runConfig (M := (readAtOffsetProgram Δ).toTM) c (j' + 1) =
+          TM.stepConfig (M := (readAtOffsetProgram Δ).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw, stepConfig_state]
+      show (((readAtOffsetProgram Δ).transition cj'.state.fst cj'.state.snd
+              (cj'.tape cj'.head)).fst).fst.val = j' + 1
+      rw [t_phase, ih_phase]
+    · rw [hrw, stepConfig_state]
+      show (((readAtOffsetProgram Δ).transition cj'.state.fst cj'.state.snd
+              (cj'.tape cj'.head)).fst).snd = false
+      rw [t_state, ih_state]
+    · rw [hrw, stepConfig_head, hmove_step]
+      rw [Configuration.moveHead_right_lt (c := cj') h_head_advance_bound]
+      show cj'.head.val + 1 = c.head.val + (j' + 1)
+      omega
+    · rw [hrw, stepConfig_tape, hbit_step]
+      rw [BinaryCounter.write_self_eq cj' cj'.head]
+      exact ih_tape
+
+end ReadAtOffset
+
 end TM
 
 end PsubsetPpoly

@@ -1287,6 +1287,54 @@ theorem counterValue_of_write_head_true {M : TM.{u}} {n : Nat}
       rw [h_added_eq, if_pos h_lt']
       omega
 
+/-!
+### Session 7g (opening): ripple-invariant infrastructure
+
+The general `incrementProgram_correct` theorem — handling any
+starting bit pattern including the all-ones overflow — requires
+tracking the ripple phase-by-phase.  The key lemma is the
+**ripple invariant**: starting from phase 0 with the first `j`
+bits all `1`, after `j` steps of `incrementProgram k`:
+
+* state phase advances to `j`,
+* head moves to `c.head + j`,
+* the `j` cells at `[c.head, c.head + j)` are all flipped to `0`,
+* all other cells are preserved.
+
+Session 7g-a establishes the invariant for *one* ripple step —
+the atomic engine that Session 7g-b will iterate inductively.
+-/
+
+/-- One ripple step: if we are in phase `j < k` at head position
+`c.head = p + j`, bits `[p, p + j)` are all `0` (already
+flipped), bit at head is `1`, and head-bound allows advancing,
+then after `stepConfig` we are in phase `j + 1`, head `p + j + 1`,
+and bits `[p, p + j + 1)` are all `0`. -/
+theorem incrementProgram_ripple_step {k : Nat} {n : Nat}
+    (c : Configuration (M := (incrementProgram k).toTM) n)
+    (j : Nat) (hj : j < k)
+    (h_phase : c.state.fst.val = j)
+    (h_bit : c.tape c.head = true)
+    (h_head_bound : (c.head : ℕ) + 1 <
+        (incrementProgram k).toTM.tapeLength n) :
+    let c' := TM.stepConfig (M := (incrementProgram k).toTM) c
+    (c'.state.fst.val = j + 1) ∧
+    ((c'.head : ℕ) = (c.head : ℕ) + 1) ∧
+    (c'.tape c.head = false) ∧
+    (∀ (p : Fin ((incrementProgram k).toTM.tapeLength n)),
+       p ≠ c.head → c'.tape p = c.tape p) := by
+  have h_phase_lt : c.state.fst.val < k := by rw [h_phase]; exact hj
+  obtain ⟨htape_step, hhead_step, hphase_step⟩ :=
+    incrementProgram_stepConfig_phase_lt_k_bit_true c h_phase_lt h_bit h_head_bound
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [hphase_step, h_phase]
+  · exact hhead_step
+  · rw [htape_step]
+    exact Configuration.write_self c c.head false
+  · intro p hne
+    rw [htape_step]
+    exact Configuration.write_other c hne false
+
 /-- First-bit-zero correctness for arbitrary `k ≥ 1`: when the
 scanned cell is `0`, running `incrementProgram k` for its full
 budget adds exactly `1` to the counter value (without mod

@@ -313,6 +313,37 @@ theorem moveHead_right_clamp {M : TM.{u}} {n : Nat}
   unfold Configuration.moveHead
   rw [dif_neg h]
 
+/-- `Move.left` from any position yields a new head value no larger
+than the current one.  At head `0`, the move clamps and the position
+is unchanged; otherwise the value decreases by one.  Either way the
+bound is sharp at `≤ c.head`. -/
+theorem moveHead_left_val_le {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    ((Configuration.moveHead (c := c) Move.left) : ℕ) ≤ (c.head : ℕ) := by
+  by_cases h : (c.head : ℕ) = 0
+  · simp [Configuration.moveHead, h]
+  · simp [Configuration.moveHead, h]
+
+/-- One `moveHead` step never advances the head value by more than
+one.  Applies uniformly across `Move.left`, `Move.stay`, `Move.right`,
+including the boundary-clamping cases — so it is the right lemma for
+head-position invariants that do not want to case-split on the move
+direction or tape edge. -/
+theorem moveHead_val_le_succ {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (m : Move) :
+    ((Configuration.moveHead (c := c) m) : ℕ) ≤ (c.head : ℕ) + 1 := by
+  cases m with
+  | left =>
+    have := moveHead_left_val_le (M := M) (n := n) c
+    omega
+  | stay =>
+    simp
+  | right =>
+    by_cases h : (c.head : ℕ) + 1 < M.tapeLength n
+    · rw [moveHead_right_lt (c := c) h]
+    · rw [moveHead_right_clamp (c := c) h]
+      exact Nat.le_succ _
+
 end Configuration
 
 /-!
@@ -409,6 +440,43 @@ theorem runConfig_tape_eq_outside_range {M : TM.{u}} {n : Nat}
     · exact (Nat.not_lt.mpr hge) h1
     · exact (Nat.not_le.mpr hlt) h2
   · exact hout
+
+/-!
+### Session 6b: generic head-position bounds
+
+Before using `runConfig_tape_eq_outside_range` on a specific program
+we need a generic bound on how far the head can wander.  The
+observation is purely model-level: `stepConfig` advances the head by
+`moveHead _ m` for *some* move `m`, and `moveHead_val_le_succ` bounds
+every single-step move by `+1`.  Chained inductively, this gives a
+`+k` bound after `k` steps, regardless of TM or input.
+-/
+
+/-- Single-step head-position bound: `stepConfig`'s head value is at
+most one more than the previous head value, independent of TM state
+or tape contents. -/
+theorem stepConfig_head_val_le_succ {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) :
+    ((TM.stepConfig (M := M) c).head : ℕ) ≤ (c.head : ℕ) + 1 := by
+  -- Unfold `stepConfig`; the head field is `moveHead c m` for some
+  -- `m`.  `moveHead_val_le_succ` discharges the bound uniformly.
+  show ((Configuration.moveHead (c := c) _) : ℕ) ≤ _
+  exact Configuration.moveHead_val_le_succ c _
+
+/-- Multi-step head-position bound: after `j` executions of
+`stepConfig`, the head position is at most `c.head.val + j`.
+Completely generic across TM models; the proof is a straight
+induction on `j` using `stepConfig_head_val_le_succ`. -/
+theorem runConfig_head_val_le {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (j : Nat) :
+    ((TM.runConfig (M := M) c j).head : ℕ) ≤ (c.head : ℕ) + j := by
+  induction j with
+  | zero => simp
+  | succ j ih =>
+    rw [runConfig_succ]
+    have step_le := stepConfig_head_val_le_succ
+      (M := M) (n := n) (TM.runConfig (M := M) c j)
+    omega
 
 /-!
 ## Session 6a: Binary counter — increment program definition

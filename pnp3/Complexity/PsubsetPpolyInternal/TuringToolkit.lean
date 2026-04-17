@@ -2844,6 +2844,99 @@ theorem CircuitTree.flatten_eval {n : Nat} (c : CircuitTree n)
   rw [heval]
   simp [hlast]
 
+/-!
+## Session 9c: SLProgram bit encoding
+
+Flat bit encoding of straight-line programs using Session 8a's
+`encodeFin` primitive.  Two width parameters:
+
+* `widthN`: bits for input indices (requires `n ≤ 2^widthN`).
+* `widthS`: bits for gate references (requires caller to ensure
+  references `< 2^widthS`).
+
+Tag scheme (3 bits):
+* `000` — `.input i`     → followed by `widthN` bits for the `Fin n`.
+* `001` — `.const b`     → followed by a single bit.
+* `010` — `.notGate k`   → followed by `widthS` bits for `k`.
+* `011` — `.andGate k l` → followed by `widthS + widthS` bits.
+* `100` — `.orGate k l`  → followed by `widthS + widthS` bits.
+
+Each gate's encoding is at most `3 + max(widthN, 1, 2·widthS)` bits,
+which we simplify to the uniform upper bound `3 + widthN + 2·widthS`.
+A decoder + round-trip theorem are the natural next step; this
+session 9c delivers only the encoder + length bound, leaving the
+decoder for Session 9d.
+-/
+
+/-- Encode a single straight-line gate as a bit list.  Gate-reference
+arguments that overflow `2^widthS` are silently clamped to a
+zero-filled encoding; the encoder assumes valid refs and the
+round-trip theorem (Session 9d) will handle this formally. -/
+def SLGate.encode {n : Nat} (widthN widthS : Nat)
+    (h_widthN : n ≤ 2 ^ widthN) : SLGate n → List Bool
+  | .input i =>
+    [false, false, false] ++
+      encodeFin widthN ⟨i.val, lt_of_lt_of_le i.isLt h_widthN⟩
+  | .const b => [false, false, true, b]
+  | .notGate k =>
+    [false, true, false] ++
+      encodeFin widthS (if h : k < 2 ^ widthS then ⟨k, h⟩ else ⟨0, Nat.two_pow_pos widthS⟩)
+  | .andGate k l =>
+    [false, true, true] ++
+      encodeFin widthS (if h : k < 2 ^ widthS then ⟨k, h⟩ else ⟨0, Nat.two_pow_pos widthS⟩) ++
+      encodeFin widthS (if h : l < 2 ^ widthS then ⟨l, h⟩ else ⟨0, Nat.two_pow_pos widthS⟩)
+  | .orGate k l =>
+    [true, false, false] ++
+      encodeFin widthS (if h : k < 2 ^ widthS then ⟨k, h⟩ else ⟨0, Nat.two_pow_pos widthS⟩) ++
+      encodeFin widthS (if h : l < 2 ^ widthS then ⟨l, h⟩ else ⟨0, Nat.two_pow_pos widthS⟩)
+
+/-- Uniform upper bound on a gate's encoding length.  The constant
+4 accounts for `.const`'s 4-bit encoding (3 tag + 1 payload),
+which can otherwise exceed a tighter `3 + widthN + 2·widthS`
+bound when both widths are small. -/
+theorem SLGate.encode_length_le {n : Nat} (widthN widthS : Nat)
+    (h_widthN : n ≤ 2 ^ widthN) : ∀ (g : SLGate n),
+    (g.encode widthN widthS h_widthN).length ≤ 4 + widthN + 2 * widthS
+  | .input _ => by
+    simp [SLGate.encode, encodeFin_length]
+    omega
+  | .const _ => by
+    show (4 : Nat) ≤ 4 + widthN + 2 * widthS
+    omega
+  | .notGate _ => by
+    simp [SLGate.encode, encodeFin_length]
+    omega
+  | .andGate _ _ => by
+    simp [SLGate.encode, encodeFin_length]
+    omega
+  | .orGate _ _ => by
+    simp [SLGate.encode, encodeFin_length]
+    omega
+
+/-- Encode a straight-line program as the concatenation of its gate
+encodings. -/
+def SLProgram.encode {n : Nat} (widthN widthS : Nat)
+    (h_widthN : n ≤ 2 ^ widthN) (p : SLProgram n) : List Bool :=
+  p.gates.foldr (fun g acc => g.encode widthN widthS h_widthN ++ acc) []
+
+/-- Total encoding length is bounded by (per-gate cap) × (number of
+gates).  Used to show the witness budget suffices. -/
+theorem SLProgram.encode_length_le {n : Nat} (widthN widthS : Nat)
+    (h_widthN : n ≤ 2 ^ widthN) (p : SLProgram n) :
+    (p.encode widthN widthS h_widthN).length ≤
+      (4 + widthN + 2 * widthS) * p.gates.length := by
+  unfold SLProgram.encode
+  induction p.gates with
+  | nil => simp
+  | cons g rest ih =>
+    simp only [List.foldr_cons, List.length_append, List.length_cons]
+    have hg := SLGate.encode_length_le widthN widthS h_widthN g
+    set N : Nat := 4 + widthN + 2 * widthS
+    have hsucc : N * (rest.length + 1) = N * rest.length + N :=
+      Nat.mul_succ N rest.length
+    rw [hsucc]
+    omega
+
 end Encoding
 
 end TM

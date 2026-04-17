@@ -2510,6 +2510,340 @@ theorem SLProgram.evalAll_length {n : Nat} (p : SLProgram n)
   have := SLProgram.evalAux_length x p.gates [] result h
   simpa using this
 
+/-- Concatenating two gate lists distributes `evalAux` through
+`Option.bind`.  Useful for splitting flattened circuit evaluation. -/
+theorem SLProgram.evalAux_append {n : Nat} (x : Fin n → Bool) :
+    ∀ (gs1 gs2 : List (SLGate n)) (vals : List Bool),
+    SLProgram.evalAux x (gs1 ++ gs2) vals =
+      (SLProgram.evalAux x gs1 vals).bind
+        (fun vals' => SLProgram.evalAux x gs2 vals')
+  | [], _, _ => by simp [SLProgram.evalAux]
+  | g :: rest, gs2, vals => by
+    simp only [List.cons_append, SLProgram.evalAux_cons]
+    cases hg : g.compute x vals with
+    | none => simp [hg]
+    | some v =>
+      simp only [hg, Option.bind_some]
+      exact SLProgram.evalAux_append x rest gs2 (vals ++ [v])
+
+/-!
+## Session 9b: `CircuitTree → SLProgram` flattening
+
+Post-order flatten: each subtree emits its own gates first; the
+current node is appended at the end, referencing subtree outputs
+by their absolute positions.  The offset parameter shifts
+references so the flattened program can sit at any position within
+a larger accumulator.
+
+The semantic equivalence theorem shows that pure `evalCircuitTree`
+applied to `c` matches `SLProgram.eval` applied to the flattened
+straight-line program.
+-/
+
+/-- Pure-Lean tree evaluator for `CircuitTree` — mirrors
+`Models.Circuit.eval` but lives local to the Encoding namespace. -/
+def evalCircuitTree {n : Nat} : CircuitTree n → (Fin n → Bool) → Bool
+  | .input i, x => x i
+  | .const b, _ => b
+  | .not c, x => !(evalCircuitTree c x)
+  | .and c1 c2, x => evalCircuitTree c1 x && evalCircuitTree c2 x
+  | .or c1 c2, x => evalCircuitTree c1 x || evalCircuitTree c2 x
+
+/-- Post-order flatten with an explicit offset.  The offset tells
+`flattenAt` how many gates are already in the accumulator before it
+starts emitting its own. -/
+def CircuitTree.flattenAt {n : Nat} (offset : Nat) :
+    CircuitTree n → List (SLGate n)
+  | .input i => [SLGate.input i]
+  | .const b => [SLGate.const b]
+  | .not c =>
+    let sub := CircuitTree.flattenAt offset c
+    sub ++ [SLGate.notGate (offset + sub.length - 1)]
+  | .and c1 c2 =>
+    let sub1 := CircuitTree.flattenAt offset c1
+    let sub2 := CircuitTree.flattenAt (offset + sub1.length) c2
+    sub1 ++ sub2 ++ [SLGate.andGate
+                       (offset + sub1.length - 1)
+                       (offset + sub1.length + sub2.length - 1)]
+  | .or c1 c2 =>
+    let sub1 := CircuitTree.flattenAt offset c1
+    let sub2 := CircuitTree.flattenAt (offset + sub1.length) c2
+    sub1 ++ sub2 ++ [SLGate.orGate
+                      (offset + sub1.length - 1)
+                      (offset + sub1.length + sub2.length - 1)]
+
+/-- Convenience: flatten starting at offset 0. -/
+def CircuitTree.flatten {n : Nat} (c : CircuitTree n) : SLProgram n :=
+  ⟨CircuitTree.flattenAt 0 c⟩
+
+/-- The flattened length equals the circuit's tree size: each node
+contributes exactly one gate, independent of the offset. -/
+theorem CircuitTree.flattenAt_length {n : Nat} (offset : Nat) :
+    ∀ (c : CircuitTree n), (CircuitTree.flattenAt offset c).length = c.size
+  | .input _ => by simp [CircuitTree.flattenAt, CircuitTree.size]
+  | .const _ => by simp [CircuitTree.flattenAt, CircuitTree.size]
+  | .not c => by
+    simp only [CircuitTree.flattenAt, CircuitTree.size,
+               List.length_append, List.length_cons, List.length_nil]
+    have := CircuitTree.flattenAt_length offset c
+    omega
+  | .and c1 c2 => by
+    simp only [CircuitTree.flattenAt, CircuitTree.size,
+               List.length_append, List.length_cons, List.length_nil]
+    have h1 := CircuitTree.flattenAt_length offset c1
+    have h2 := CircuitTree.flattenAt_length
+      (offset + (CircuitTree.flattenAt offset c1).length) c2
+    omega
+  | .or c1 c2 => by
+    simp only [CircuitTree.flattenAt, CircuitTree.size,
+               List.length_append, List.length_cons, List.length_nil]
+    have h1 := CircuitTree.flattenAt_length offset c1
+    have h2 := CircuitTree.flattenAt_length
+      (offset + (CircuitTree.flattenAt offset c1).length) c2
+    omega
+
+/-- Flatten at offset 0 gives the circuit's size as the gate count. -/
+@[simp] theorem CircuitTree.flatten_length {n : Nat} (c : CircuitTree n) :
+    (CircuitTree.flatten c).gates.length = c.size := by
+  unfold CircuitTree.flatten
+  exact CircuitTree.flattenAt_length 0 c
+
+/-!
+### Flattening correctness: evaluating a flattened circuit yields
+the same bit as the tree evaluator.
+
+The core lemma `flattenAt_evalAux_spec` captures the invariant:
+when the initial accumulator has length equal to the flatten's
+offset, `evalAux` extends the accumulator by a sequence of values
+whose last entry equals `evalCircuitTree c x`.
+
+From this, `flatten_eval` (the public lemma) follows by
+specialising to offset = 0 and extracting the last entry via
+`getLast?`.
+-/
+
+/-- For any initial accumulator `vals`, flattening `c` with offset
+`vals.length` extends the accumulator by `c.size` values, whose last
+element is `evalCircuitTree c x`. -/
+theorem CircuitTree.flattenAt_evalAux_spec {n : Nat} :
+    ∀ (c : CircuitTree n) (x : Fin n → Bool) (vals : List Bool),
+      ∃ (sub_vals : List Bool),
+        sub_vals.length = c.size ∧
+        sub_vals.getLast? = some (evalCircuitTree c x) ∧
+        SLProgram.evalAux x (c.flattenAt vals.length) vals =
+          some (vals ++ sub_vals)
+  | .input i, x, vals => by
+    refine ⟨[x i], ?_, ?_, ?_⟩
+    · simp [CircuitTree.size]
+    · simp [evalCircuitTree]
+    · simp [CircuitTree.flattenAt, SLProgram.evalAux, SLGate.compute]
+  | .const b, x, vals => by
+    refine ⟨[b], ?_, ?_, ?_⟩
+    · simp [CircuitTree.size]
+    · simp [evalCircuitTree]
+    · simp [CircuitTree.flattenAt, SLProgram.evalAux, SLGate.compute]
+  | .not c, x, vals => by
+    obtain ⟨sub_c, hlen_c, hlast_c, heval_c⟩ :=
+      CircuitTree.flattenAt_evalAux_spec c x vals
+    -- The extra gate at the tail references position
+    -- `vals.length + |flattenAt vals.length c| - 1`.
+    have hlen_flat : (c.flattenAt vals.length).length = c.size :=
+      CircuitTree.flattenAt_length _ _
+    set ext_vals := vals ++ sub_c with hext
+    have hext_len : ext_vals.length = vals.length + c.size := by
+      rw [hext, List.length_append, hlen_c]
+    -- After processing `flattenAt vals.length c`, we're at
+    -- `ext_vals`.  One more gate: notGate at the last index.
+    set k : Nat := vals.length + (c.flattenAt vals.length).length - 1 with hk_def
+    have hk : k = ext_vals.length - 1 := by
+      rw [hext_len, hk_def, hlen_flat]
+    have hsize_pos : 0 < c.size := by
+      cases c <;> simp [CircuitTree.size]
+    have hlen_c_pos : 0 < sub_c.length := by rw [hlen_c]; exact hsize_pos
+    have hk_in_sub : k ≥ vals.length := by
+      rw [hk_def, hlen_flat]; omega
+    have hk_sub_val : k - vals.length = sub_c.length - 1 := by
+      rw [hk_def, hlen_flat, hlen_c]; omega
+    -- Look up at position k in ext_vals = vals ++ sub_c.
+    have hget :
+        ext_vals.get? k = sub_c.getLast? := by
+      rw [List.get?_eq_getElem?, hext,
+          List.getElem?_append_right hk_in_sub, hk_sub_val,
+          ← List.getLast?_eq_getElem?]
+    have hcompute_not :
+        (SLGate.notGate k : SLGate n).compute x ext_vals =
+          some (!(evalCircuitTree c x)) := by
+      simp only [SLGate.compute, hget, hlast_c, Option.map_some']
+    -- Assemble the result.
+    refine ⟨sub_c ++ [!(evalCircuitTree c x)], ?_, ?_, ?_⟩
+    · simp [hlen_c, CircuitTree.size]
+    · simp [evalCircuitTree]
+    · show SLProgram.evalAux x
+          ((c.flattenAt vals.length) ++ [SLGate.notGate k]) vals =
+          some (vals ++ (sub_c ++ [!(evalCircuitTree c x)]))
+      rw [SLProgram.evalAux_append, heval_c, Option.bind_some]
+      show SLProgram.evalAux x [SLGate.notGate k] ext_vals =
+          some (vals ++ (sub_c ++ [!(evalCircuitTree c x)]))
+      rw [SLProgram.evalAux_cons, hcompute_not, Option.bind_some,
+          SLProgram.evalAux_nil]
+      simp [hext]
+  | .and c1 c2, x, vals => by
+    obtain ⟨sub_c1, hlen1, hlast1, heval1⟩ :=
+      CircuitTree.flattenAt_evalAux_spec c1 x vals
+    set ext_vals1 := vals ++ sub_c1 with hext1
+    have hext1_len : ext_vals1.length = vals.length + c1.size := by
+      rw [hext1, List.length_append, hlen1]
+    obtain ⟨sub_c2, hlen2, hlast2, heval2⟩ :=
+      CircuitTree.flattenAt_evalAux_spec c2 x ext_vals1
+    set ext_vals2 := ext_vals1 ++ sub_c2 with hext2
+    have hext2_len : ext_vals2.length = vals.length + c1.size + c2.size := by
+      rw [hext2, List.length_append, hlen2, hext1_len]
+    -- Gate positions for the and gate.
+    have hlen_flat1 : (c1.flattenAt vals.length).length = c1.size :=
+      CircuitTree.flattenAt_length _ _
+    have hlen_flat2 :
+        (c2.flattenAt (vals.length + c1.size)).length = c2.size :=
+      CircuitTree.flattenAt_length _ _
+    set kL : Nat := vals.length + (c1.flattenAt vals.length).length - 1 with hkL_def
+    set kR : Nat := vals.length + (c1.flattenAt vals.length).length +
+        (c2.flattenAt (vals.length + (c1.flattenAt vals.length).length)).length - 1
+        with hkR_def
+    have hsize1_pos : 0 < c1.size := by cases c1 <;> simp [CircuitTree.size]
+    have hsize2_pos : 0 < c2.size := by cases c2 <;> simp [CircuitTree.size]
+    have hkL_ge : kL ≥ vals.length := by
+      rw [hkL_def, hlen_flat1]; omega
+    have hkL_sub : kL - vals.length = sub_c1.length - 1 := by
+      rw [hkL_def, hlen_flat1, hlen1]; omega
+    have hkR_ge : kR ≥ ext_vals1.length := by
+      rw [hkR_def, hlen_flat1, hlen_flat2, hext1_len]; omega
+    have hkR_sub : kR - ext_vals1.length = sub_c2.length - 1 := by
+      rw [hkR_def, hlen_flat1, hlen_flat2, hext1_len, hlen2]; omega
+    -- get? at kL in ext_vals2 = vals ++ sub_c1 ++ sub_c2.
+    -- Since kL is in the c1 range.
+    have hkL_lt_ext1 : kL < ext_vals1.length := by
+      rw [hext1_len, hkL_def, hlen_flat1]; omega
+    have hget_kL : ext_vals2.get? kL = sub_c1.getLast? := by
+      rw [List.get?_eq_getElem?, hext2,
+          List.getElem?_append_left hkL_lt_ext1, hext1,
+          List.getElem?_append_right hkL_ge, hkL_sub,
+          ← List.getLast?_eq_getElem?]
+    have hget_kR : ext_vals2.get? kR = sub_c2.getLast? := by
+      rw [List.get?_eq_getElem?, hext2,
+          List.getElem?_append_right hkR_ge, hkR_sub,
+          ← List.getLast?_eq_getElem?]
+    have hcompute_and :
+        (SLGate.andGate kL kR : SLGate n).compute x ext_vals2 =
+          some (evalCircuitTree c1 x && evalCircuitTree c2 x) := by
+      simp only [SLGate.compute, hget_kL, hlast1, hget_kR, hlast2]
+    refine ⟨sub_c1 ++ sub_c2 ++ [evalCircuitTree c1 x && evalCircuitTree c2 x],
+        ?_, ?_, ?_⟩
+    · simp [hlen1, hlen2, CircuitTree.size]; omega
+    · simp [evalCircuitTree]
+    · show SLProgram.evalAux x
+          ((c1.flattenAt vals.length) ++
+            (c2.flattenAt (vals.length + (c1.flattenAt vals.length).length)) ++
+            [SLGate.andGate kL kR]) vals =
+          some (vals ++ (sub_c1 ++ sub_c2 ++
+            [evalCircuitTree c1 x && evalCircuitTree c2 x]))
+      rw [SLProgram.evalAux_append, SLProgram.evalAux_append, heval1,
+          Option.bind_some]
+      show (SLProgram.evalAux x
+              (c2.flattenAt (vals.length + (c1.flattenAt vals.length).length))
+              ext_vals1).bind
+            (fun vals' => SLProgram.evalAux x [SLGate.andGate kL kR] vals') =
+          some (vals ++ (sub_c1 ++ sub_c2 ++ _))
+      rw [show vals.length + (c1.flattenAt vals.length).length = ext_vals1.length
+            from by rw [hlen_flat1, hext1_len]]
+      rw [heval2, Option.bind_some]
+      show SLProgram.evalAux x [SLGate.andGate kL kR] ext_vals2 =
+          some (vals ++ (sub_c1 ++ sub_c2 ++ _))
+      rw [SLProgram.evalAux_cons, hcompute_and, Option.bind_some,
+          SLProgram.evalAux_nil]
+      simp [hext2, hext1, List.append_assoc]
+  | .or c1 c2, x, vals => by
+    -- Symmetric to `.and`; duplicate the proof with `||` instead of `&&`.
+    obtain ⟨sub_c1, hlen1, hlast1, heval1⟩ :=
+      CircuitTree.flattenAt_evalAux_spec c1 x vals
+    set ext_vals1 := vals ++ sub_c1 with hext1
+    have hext1_len : ext_vals1.length = vals.length + c1.size := by
+      rw [hext1, List.length_append, hlen1]
+    obtain ⟨sub_c2, hlen2, hlast2, heval2⟩ :=
+      CircuitTree.flattenAt_evalAux_spec c2 x ext_vals1
+    set ext_vals2 := ext_vals1 ++ sub_c2 with hext2
+    have hext2_len : ext_vals2.length = vals.length + c1.size + c2.size := by
+      rw [hext2, List.length_append, hlen2, hext1_len]
+    have hlen_flat1 : (c1.flattenAt vals.length).length = c1.size :=
+      CircuitTree.flattenAt_length _ _
+    have hlen_flat2 :
+        (c2.flattenAt (vals.length + c1.size)).length = c2.size :=
+      CircuitTree.flattenAt_length _ _
+    set kL : Nat := vals.length + (c1.flattenAt vals.length).length - 1 with hkL_def
+    set kR : Nat := vals.length + (c1.flattenAt vals.length).length +
+        (c2.flattenAt (vals.length + (c1.flattenAt vals.length).length)).length - 1
+        with hkR_def
+    have hsize1_pos : 0 < c1.size := by cases c1 <;> simp [CircuitTree.size]
+    have hsize2_pos : 0 < c2.size := by cases c2 <;> simp [CircuitTree.size]
+    have hkL_ge : kL ≥ vals.length := by rw [hkL_def, hlen_flat1]; omega
+    have hkL_sub : kL - vals.length = sub_c1.length - 1 := by
+      rw [hkL_def, hlen_flat1, hlen1]; omega
+    have hkR_ge : kR ≥ ext_vals1.length := by
+      rw [hkR_def, hlen_flat1, hlen_flat2, hext1_len]; omega
+    have hkR_sub : kR - ext_vals1.length = sub_c2.length - 1 := by
+      rw [hkR_def, hlen_flat1, hlen_flat2, hext1_len, hlen2]; omega
+    have hkL_lt_ext1 : kL < ext_vals1.length := by
+      rw [hext1_len, hkL_def, hlen_flat1]; omega
+    have hget_kL : ext_vals2.get? kL = sub_c1.getLast? := by
+      rw [List.get?_eq_getElem?, hext2,
+          List.getElem?_append_left hkL_lt_ext1, hext1,
+          List.getElem?_append_right hkL_ge, hkL_sub,
+          ← List.getLast?_eq_getElem?]
+    have hget_kR : ext_vals2.get? kR = sub_c2.getLast? := by
+      rw [List.get?_eq_getElem?, hext2,
+          List.getElem?_append_right hkR_ge, hkR_sub,
+          ← List.getLast?_eq_getElem?]
+    have hcompute_or :
+        (SLGate.orGate kL kR : SLGate n).compute x ext_vals2 =
+          some (evalCircuitTree c1 x || evalCircuitTree c2 x) := by
+      simp only [SLGate.compute, hget_kL, hlast1, hget_kR, hlast2]
+    refine ⟨sub_c1 ++ sub_c2 ++ [evalCircuitTree c1 x || evalCircuitTree c2 x],
+        ?_, ?_, ?_⟩
+    · simp [hlen1, hlen2, CircuitTree.size]; omega
+    · simp [evalCircuitTree]
+    · show SLProgram.evalAux x
+          ((c1.flattenAt vals.length) ++
+            (c2.flattenAt (vals.length + (c1.flattenAt vals.length).length)) ++
+            [SLGate.orGate kL kR]) vals =
+          some (vals ++ (sub_c1 ++ sub_c2 ++
+            [evalCircuitTree c1 x || evalCircuitTree c2 x]))
+      rw [SLProgram.evalAux_append, SLProgram.evalAux_append, heval1,
+          Option.bind_some]
+      show (SLProgram.evalAux x
+              (c2.flattenAt (vals.length + (c1.flattenAt vals.length).length))
+              ext_vals1).bind
+            (fun vals' => SLProgram.evalAux x [SLGate.orGate kL kR] vals') =
+          some (vals ++ (sub_c1 ++ sub_c2 ++ _))
+      rw [show vals.length + (c1.flattenAt vals.length).length = ext_vals1.length
+            from by rw [hlen_flat1, hext1_len]]
+      rw [heval2, Option.bind_some]
+      show SLProgram.evalAux x [SLGate.orGate kL kR] ext_vals2 =
+          some (vals ++ (sub_c1 ++ sub_c2 ++ _))
+      rw [SLProgram.evalAux_cons, hcompute_or, Option.bind_some,
+          SLProgram.evalAux_nil]
+      simp [hext2, hext1, List.append_assoc]
+
+/-- Public form: flatten and evaluate = pure tree evaluation. -/
+theorem CircuitTree.flatten_eval {n : Nat} (c : CircuitTree n)
+    (x : Fin n → Bool) :
+    (CircuitTree.flatten c).eval x = some (evalCircuitTree c x) := by
+  obtain ⟨sub_vals, _hlen, hlast, heval⟩ :=
+    CircuitTree.flattenAt_evalAux_spec c x []
+  unfold CircuitTree.flatten SLProgram.eval SLProgram.evalAll
+  show (SLProgram.evalAux x (c.flattenAt 0) []).bind List.getLast? =
+      some (evalCircuitTree c x)
+  rw [show (0 : Nat) = ([] : List Bool).length from rfl]
+  rw [heval]
+  simp [hlast]
+
 end Encoding
 
 end TM

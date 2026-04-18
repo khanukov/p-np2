@@ -1,0 +1,242 @@
+import Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation
+
+namespace Pnp3
+namespace Internal
+namespace PsubsetPpoly
+namespace TM
+
+
+/-! ## ConstStatePhasedProgram: uniform-state phased programs
+
+A restricted form of `PhasedProgram` where every phase has the same
+local control state type `S`.  This eliminates the dependent
+`phaseState i` entirely, making sequential composition straightforward
+(no cast juggling across heterogeneous phase-state families).
+
+The MCSP verifier is expressed as a chain of `ConstStatePhasedProgram`
+pieces with `S := Bool × Bool`, composed via `seq`.  Each piece is a
+gate evaluator lifted from the underlying `combineAtOffsetProgram`. -/
+
+namespace ConstStatePhasedProgram
+
+open Pnp3.Internal.PsubsetPpoly.TM
+
+universe v
+
+/-- A phased program where all phases share a common state type `S`.
+The `toPhased` conversion drops this into the general `PhasedProgram`
+framework by setting `phaseState := fun _ => S`. -/
+structure _root_.Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
+    (S : Type v) [Fintype S] [DecidableEq S] where
+  /-- Number of phases. -/
+  numPhases : Nat
+  /-- Initial phase index. -/
+  startPhase : Fin numPhases
+  /-- Initial local state. -/
+  startState : S
+  /-- Accepting phase index. -/
+  acceptPhase : Fin numPhases
+  /-- Accepting local state. -/
+  acceptState : S
+  /-- Transition: given current phase, local state, scanned bit, return
+  next `(phase, state)`, written bit and head move. -/
+  transition : Fin numPhases → S → Bool → Fin numPhases × S × Bool × Move
+  /-- Runtime bound. -/
+  timeBound : Nat → Nat
+
+variable {S : Type v} [Fintype S] [DecidableEq S]
+
+/-- Embed a `ConstStatePhasedProgram` into the general `PhasedProgram`
+framework by taking `phaseState := fun _ => S`. -/
+def toPhased (U : ConstStatePhasedProgram S) : PhasedProgram.{v} where
+  numPhases := U.numPhases
+  phaseState := fun _ => S
+  instFin := fun _ => inferInstance
+  instDec := fun _ => inferInstance
+  startPhase := U.startPhase
+  startState := U.startState
+  acceptPhase := U.acceptPhase
+  acceptState := U.acceptState
+  transition := fun i q scan =>
+    let r := U.transition i q scan
+    (⟨r.fst, r.snd.fst⟩, r.snd.snd.fst, r.snd.snd.snd)
+  timeBound := U.timeBound
+
+@[simp] theorem toPhased_numPhases (U : ConstStatePhasedProgram S) :
+    U.toPhased.numPhases = U.numPhases := rfl
+
+@[simp] theorem toPhased_timeBound (U : ConstStatePhasedProgram S) (n : Nat) :
+    U.toPhased.timeBound n = U.timeBound n := rfl
+
+/-- Sequential composition of two uniform-state phased programs.
+
+The composed program has phases `0..P1.numPhases + P2.numPhases - 1`.
+Phases `0..P1.numPhases - 1` run `P1`'s transitions, with `P1.acceptPhase`
+redirected to `P2.startPhase + P1.numPhases` (one free handoff step
+consumed).  Phases `P1.numPhases..end` run `P2`'s transitions, shifted
+by `P1.numPhases`. -/
+def seq (P1 P2 : ConstStatePhasedProgram S) : ConstStatePhasedProgram S where
+  numPhases := P1.numPhases + P2.numPhases
+  startPhase := ⟨P1.startPhase.val, by
+    have := P1.startPhase.isLt; omega⟩
+  startState := P1.startState
+  acceptPhase := ⟨P1.numPhases + P2.acceptPhase.val, by
+    have := P2.acceptPhase.isLt; omega⟩
+  acceptState := P2.acceptState
+  transition := fun i q scan =>
+    if h1 : i.val < P1.numPhases then
+      let i1 : Fin P1.numPhases := ⟨i.val, h1⟩
+      if i1.val = P1.acceptPhase.val then
+        -- boundary: hand off to P2.startPhase (shifted) with P2.startState.
+        (⟨P1.numPhases + P2.startPhase.val, by
+            have := P2.startPhase.isLt; omega⟩,
+         P2.startState, scan, Move.stay)
+      else
+        let r := P1.transition i1 q scan
+        (⟨r.fst.val, by
+            have := r.fst.isLt; omega⟩,
+         r.snd.fst, r.snd.snd.fst, r.snd.snd.snd)
+    else
+      let i2 : Fin P2.numPhases := ⟨i.val - P1.numPhases, by
+        have := i.isLt; omega⟩
+      let r := P2.transition i2 q scan
+      (⟨P1.numPhases + r.fst.val, by
+          have := r.fst.isLt; omega⟩,
+       r.snd.fst, r.snd.snd.fst, r.snd.snd.snd)
+  timeBound := fun n => P1.timeBound n + P2.timeBound n + 1
+
+@[simp] theorem seq_numPhases (P1 P2 : ConstStatePhasedProgram S) :
+    (seq P1 P2).numPhases = P1.numPhases + P2.numPhases := rfl
+
+@[simp] theorem seq_timeBound (P1 P2 : ConstStatePhasedProgram S) (n : Nat) :
+    (seq P1 P2).timeBound n = P1.timeBound n + P2.timeBound n + 1 := rfl
+
+@[simp] theorem seq_startPhase_val (P1 P2 : ConstStatePhasedProgram S) :
+    ((seq P1 P2).startPhase : Nat) = P1.startPhase.val := rfl
+
+@[simp] theorem seq_acceptPhase_val (P1 P2 : ConstStatePhasedProgram S) :
+    ((seq P1 P2).acceptPhase : Nat) = P1.numPhases + P2.acceptPhase.val := rfl
+
+/-- Phase of the `seq` transition in the P1 region (not at P1's accept
+phase) equals P1's transition's phase. -/
+theorem seq_transition_P1_normal_phase (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (hne : i.val ≠ P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).fst.val =
+      (P1.transition ⟨i.val, h1⟩ q scan).fst.val := by
+  unfold seq
+  simp only [dif_pos h1, if_neg hne]
+
+/-- Local state result of the `seq` transition in the P1 region (not at
+accept) equals P1's. -/
+theorem seq_transition_P1_normal_state (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (hne : i.val ≠ P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.fst =
+      (P1.transition ⟨i.val, h1⟩ q scan).snd.fst := by
+  unfold seq
+  simp only [dif_pos h1, if_neg hne]
+
+/-- Bit written by the `seq` transition in the P1 region (not at accept)
+equals P1's. -/
+theorem seq_transition_P1_normal_bit (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (hne : i.val ≠ P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.snd.fst =
+      (P1.transition ⟨i.val, h1⟩ q scan).snd.snd.fst := by
+  unfold seq
+  simp only [dif_pos h1, if_neg hne]
+
+/-- Head-move of the `seq` transition in the P1 region (not at accept)
+equals P1's. -/
+theorem seq_transition_P1_normal_move (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (hne : i.val ≠ P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.snd.snd =
+      (P1.transition ⟨i.val, h1⟩ q scan).snd.snd.snd := by
+  unfold seq
+  simp only [dif_pos h1, if_neg hne]
+
+/-- Transition phase at P1's accept boundary: hands off to P2.startPhase
+(shifted by P1.numPhases). -/
+theorem seq_transition_P1_accept_phase (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (heq : i.val = P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).fst.val =
+      P1.numPhases + P2.startPhase.val := by
+  unfold seq
+  simp only [dif_pos h1, if_pos heq]
+
+/-- State at P1's accept boundary: becomes P2.startState. -/
+theorem seq_transition_P1_accept_state (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (heq : i.val = P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.fst = P2.startState := by
+  unfold seq
+  simp only [dif_pos h1, if_pos heq]
+
+/-- Bit written at the P1-accept boundary equals the scanned bit (no
+modification at handoff). -/
+theorem seq_transition_P1_accept_bit (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (heq : i.val = P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.snd.fst = scan := by
+  unfold seq
+  simp only [dif_pos h1, if_pos heq]
+
+/-- Head-move at the P1-accept boundary is `Move.stay`. -/
+theorem seq_transition_P1_accept_move (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h1 : i.val < P1.numPhases)
+    (heq : i.val = P1.acceptPhase.val) (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.snd.snd = Move.stay := by
+  unfold seq
+  simp only [dif_pos h1, if_pos heq]
+
+/-- Phase of the `seq` transition in the P2 region equals P2's phase,
+shifted up by `P1.numPhases`. -/
+theorem seq_transition_P2_phase (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h2 : P1.numPhases ≤ i.val)
+    (hi_lt : i.val - P1.numPhases < P2.numPhases)
+    (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).fst.val =
+      P1.numPhases + (P2.transition ⟨i.val - P1.numPhases, hi_lt⟩ q scan).fst.val := by
+  unfold seq
+  simp only [dif_neg (by omega : ¬ i.val < P1.numPhases)]
+
+/-- State of the `seq` transition in the P2 region equals P2's state. -/
+theorem seq_transition_P2_state (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h2 : P1.numPhases ≤ i.val)
+    (hi_lt : i.val - P1.numPhases < P2.numPhases)
+    (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.fst =
+      (P2.transition ⟨i.val - P1.numPhases, hi_lt⟩ q scan).snd.fst := by
+  unfold seq
+  simp only [dif_neg (by omega : ¬ i.val < P1.numPhases)]
+
+/-- Bit written by the `seq` transition in the P2 region equals P2's. -/
+theorem seq_transition_P2_bit (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h2 : P1.numPhases ≤ i.val)
+    (hi_lt : i.val - P1.numPhases < P2.numPhases)
+    (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.snd.fst =
+      (P2.transition ⟨i.val - P1.numPhases, hi_lt⟩ q scan).snd.snd.fst := by
+  unfold seq
+  simp only [dif_neg (by omega : ¬ i.val < P1.numPhases)]
+
+/-- Head-move of the `seq` transition in the P2 region equals P2's. -/
+theorem seq_transition_P2_move (P1 P2 : ConstStatePhasedProgram S)
+    {i : Fin (seq P1 P2).numPhases} (h2 : P1.numPhases ≤ i.val)
+    (hi_lt : i.val - P1.numPhases < P2.numPhases)
+    (q : S) (scan : Bool) :
+    ((seq P1 P2).transition i q scan).snd.snd.snd =
+      (P2.transition ⟨i.val - P1.numPhases, hi_lt⟩ q scan).snd.snd.snd := by
+  unfold seq
+  simp only [dif_neg (by omega : ¬ i.val < P1.numPhases)]
+
+end ConstStatePhasedProgram
+
+end TM
+
+end PsubsetPpoly
+end Internal
+end Pnp3

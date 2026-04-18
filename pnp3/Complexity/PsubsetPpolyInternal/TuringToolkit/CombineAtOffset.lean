@@ -919,6 +919,41 @@ def combineAtOffsetCS (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 �
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) (n : Nat) :
     (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).timeBound n = 2 * Δdst + 3 := rfl
 
+/-- `combineAtOffsetCS.toPhased`'s transition function agrees with
+`combineAtOffsetProgram`'s transition function pointwise: for every
+phase index, local state and scanned bit, they produce the same
+(Σ-wrapped phase × state, bit, move) tuple.  Follows by structural
+case analysis on the 8 phase regimes.  Uses proof irrelevance on the
+Fin bounds. -/
+theorem combineAtOffsetCS_toPhased_transition_eq (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) :
+    (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.transition =
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition := by
+  funext i q scan
+  simp only [ConstStatePhasedProgram.toPhased, combineAtOffsetCS,
+    combineAtOffsetProgram]
+  split_ifs <;> rfl
+
+/-- **Transport of compound correctness**: if a theorem is stated in
+terms of `combineAtOffsetProgram.toTM` (e.g., `combineAtOffsetProgram_\
+run_full`), it also holds after substituting `combineAtOffsetCS.\
+toPhased` for the program — because their transition functions are
+equal.  Users who work with the CS framework can thus directly invoke
+existing compound `*_run_full` theorems via a `show`-level rewrite. -/
+theorem combineAtOffsetCS_toPhased_toTM_step (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool)
+    (s : (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.state) (b : Bool) :
+    (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.step s b =
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.step s b := by
+  have htr := combineAtOffsetCS_toPhased_transition_eq Δ1 Δ2 Δdst hle12 hle2d op
+  show (let pair :=
+          (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.transition s.fst s.snd b
+        (pair.fst, pair.snd.fst, pair.snd.snd)) =
+       (let pair :=
+          (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition s.fst s.snd b
+        (pair.fst, pair.snd.fst, pair.snd.snd))
+  rw [htr]
+
 end CombineAtOffset
 
 end TM

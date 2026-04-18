@@ -6315,7 +6315,527 @@ theorem stepConfig_seek_back (Δ1 Δ2 Δdst : Nat)
   · rw [stepConfig_tape, hbit_step]
     exact BinaryCounter.write_self_eq c c.head
 
+/-! ### Block A: j-fold seek from 0 to src1 -/
+
+theorem run_after_j_seek_to_src1_steps (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n) :
+    ∀ j, j ≤ Δ1 →
+    let cj := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c j
+    cj.state.fst.val = j ∧
+    cj.state.snd = (false, false) ∧
+    ((cj.head : ℕ) = (c.head : ℕ) + j) ∧
+    cj.tape = c.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show c.state.fst.val = 0; exact h_phase
+    · exact h_state_snd
+    · show (c.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le : j' ≤ Δ1 := by omega
+    have hj'_lt : j' < Δ1 := by omega
+    obtain ⟨ih_phase, ih_state, ih_head, ih_tape⟩ := ih hj'_le
+    set cj' := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c j'
+      with hcj'
+    have h_phase_cj' : cj'.state.fst.val < Δ1 := by rw [ih_phase]; exact hj'_lt
+    have h_head_advance_bound :
+        (cj'.head : ℕ) + 1 <
+          (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by
+      rw [ih_head]; omega
+    obtain ⟨rip_phase, rip_state, rip_head, rip_tape⟩ :=
+      stepConfig_seek_to_src1 Δ1 Δ2 Δdst hle12 hle2d op cj' h_phase_cj' h_head_advance_bound
+    have hrw :
+        TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c (j' + 1) =
+          TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw, rip_phase, ih_phase]
+    · rw [hrw, rip_state, ih_state]
+    · rw [hrw, rip_head]
+      show cj'.head.val + 1 = c.head.val + (j' + 1)
+      rw [ih_head]; omega
+    · rw [hrw, rip_tape, ih_tape]
+
+/-! ### Block B: j-fold seek from src1 to src2, after read1 already fired -/
+
+theorem run_after_j_seek_to_src2_steps (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)
+    (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n) :
+    ∀ j, j ≤ Δ2 - Δ1 →
+    let ctotal := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+        (Δ1 + 1 + j)
+    ctotal.state.fst.val = Δ1 + 1 + j ∧
+    ctotal.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩, false) ∧
+    ((ctotal.head : ℕ) = (c.head : ℕ) + Δ1 + j) ∧
+    ctotal.tape = c.tape := by
+  intro j hj
+  -- Base structure: first Δ1 + 1 steps = Block A + read1.
+  obtain ⟨A_phase, A_state, A_head, A_tape⟩ :=
+    run_after_j_seek_to_src1_steps Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+      Δ1 le_rfl
+  set cA := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c Δ1
+    with hcA
+  -- One more step (read1 phase).
+  have h_phase_cA : cA.state.fst.val = Δ1 := A_phase
+  obtain ⟨rd_phase, rd_state, rd_head, rd_tape⟩ :=
+    stepConfig_read1 Δ1 Δ2 Δdst hle12 hle2d op cA h_phase_cA
+  have h_rewrite_Δ1_plus_one :
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c (Δ1 + 1) =
+        TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cA := by
+    rw [runConfig_succ]
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ1 + 1 + 0)).state.fst.val = Δ1 + 1 + 0
+      rw [show Δ1 + 1 + 0 = Δ1 + 1 from by omega, h_rewrite_Δ1_plus_one]
+      exact rd_phase
+    · show (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ1 + 1 + 0)).state.snd =
+           (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩, false)
+      rw [show Δ1 + 1 + 0 = Δ1 + 1 from by omega, h_rewrite_Δ1_plus_one, rd_state, A_tape]
+      have h_head_fin : cA.head = (⟨(c.head : ℕ) + Δ1, h_src1_bound⟩ :
+          Fin ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)) := by
+        apply Fin.ext; exact A_head
+      rw [h_head_fin]
+      congr 1
+      rw [A_state]
+    · show ((TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ1 + 1 + 0)).head : ℕ) = (c.head : ℕ) + Δ1 + 0
+      rw [show Δ1 + 1 + 0 = Δ1 + 1 from by omega, h_rewrite_Δ1_plus_one, rd_head]
+      show (cA.head : ℕ) = _
+      rw [A_head]; omega
+    · show (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ1 + 1 + 0)).tape = c.tape
+      rw [show Δ1 + 1 + 0 = Δ1 + 1 from by omega, h_rewrite_Δ1_plus_one, rd_tape, A_tape]
+  | succ j' ih =>
+    have hj'_le : j' ≤ Δ2 - Δ1 := by omega
+    have hj'_lt : j' < Δ2 - Δ1 := by omega
+    obtain ⟨ih_phase, ih_state, ih_head, ih_tape⟩ := ih hj'_le
+    set cprev := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+        (Δ1 + 1 + j')
+      with hcprev
+    have h_phase_lo : Δ1 < cprev.state.fst.val := by rw [ih_phase]; omega
+    have h_phase_hi : cprev.state.fst.val < Δ2 + 1 := by rw [ih_phase]; omega
+    have h_head_advance_bound :
+        (cprev.head : ℕ) + 1 <
+          (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by
+      rw [ih_head]; omega
+    obtain ⟨B_phase, B_state, B_head, B_tape⟩ :=
+      stepConfig_seek_to_src2 Δ1 Δ2 Δdst hle12 hle2d op cprev h_phase_lo h_phase_hi
+        h_head_advance_bound
+    have hrw :
+        TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+            (Δ1 + 1 + (j' + 1)) =
+          TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cprev := by
+      rw [show Δ1 + 1 + (j' + 1) = (Δ1 + 1 + j') + 1 from by omega,
+          runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw, B_phase, ih_phase]; omega
+    · rw [hrw, B_state, ih_state]
+    · rw [hrw, B_head]
+      show cprev.head.val + 1 = c.head.val + Δ1 + (j' + 1)
+      rw [ih_head]; omega
+    · rw [hrw, B_tape, ih_tape]
+
+/-! ### Block C: j-fold seek from src2 to dst, after read2 already fired -/
+
+theorem run_after_j_seek_to_dst_steps (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)
+    (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)
+    (h_src2_bound : (c.head : ℕ) + Δ2 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n) :
+    ∀ j, j ≤ Δdst - Δ2 →
+    let ctotal := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+        (Δ2 + 2 + j)
+    ctotal.state.fst.val = Δ2 + 2 + j ∧
+    ctotal.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                        c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) ∧
+    ((ctotal.head : ℕ) = (c.head : ℕ) + Δ2 + j) ∧
+    ctotal.tape = c.tape := by
+  intro j hj
+  -- First Δ1 + 1 + (Δ2 - Δ1) = Δ2 + 1 total steps bring us to post-read1 Block B end.
+  obtain ⟨B_phase, B_state, B_head, B_tape⟩ :=
+    run_after_j_seek_to_src2_steps Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+      h_src1_bound (Δ2 - Δ1) le_rfl
+  have h_total_B : Δ1 + 1 + (Δ2 - Δ1) = Δ2 + 1 := by omega
+  set cB := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c (Δ2 + 1)
+    with hcB
+  have h_rewrite_B :
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+          (Δ1 + 1 + (Δ2 - Δ1)) = cB := by
+    rw [h_total_B]
+  have h_phase_cB : cB.state.fst.val = Δ2 + 1 := by
+    rw [← h_rewrite_B]; show _ = Δ2 + 1
+    rw [B_phase]; omega
+  have h_state_cB : cB.state.snd =
+      (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩, false) := by
+    rw [← h_rewrite_B]; exact B_state
+  have h_head_cB : (cB.head : ℕ) = (c.head : ℕ) + Δ2 := by
+    rw [← h_rewrite_B]; show _ = _
+    rw [B_head]; omega
+  have h_tape_cB : cB.tape = c.tape := by
+    rw [← h_rewrite_B]; exact B_tape
+  -- One more step: read2 phase.
+  obtain ⟨rd_phase, rd_state, rd_head, rd_tape⟩ :=
+    stepConfig_read2 Δ1 Δ2 Δdst hle12 hle2d op cB h_phase_cB
+  have h_rewrite_Δ2_plus_two :
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c (Δ2 + 2) =
+        TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cB := by
+    rw [show Δ2 + 2 = (Δ2 + 1) + 1 from by omega, runConfig_succ]
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ2 + 2 + 0)).state.fst.val = Δ2 + 2 + 0
+      rw [show Δ2 + 2 + 0 = Δ2 + 2 from by omega, h_rewrite_Δ2_plus_two]
+      exact rd_phase
+    · show (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ2 + 2 + 0)).state.snd =
+           (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+            c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩)
+      rw [show Δ2 + 2 + 0 = Δ2 + 2 from by omega, h_rewrite_Δ2_plus_two, rd_state, h_tape_cB]
+      have h_head_fin : cB.head = (⟨(c.head : ℕ) + Δ2, h_src2_bound⟩ :
+          Fin ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)) := by
+        apply Fin.ext; exact h_head_cB
+      rw [h_head_fin, h_state_cB]
+    · show ((TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ2 + 2 + 0)).head : ℕ) = (c.head : ℕ) + Δ2 + 0
+      rw [show Δ2 + 2 + 0 = Δ2 + 2 from by omega, h_rewrite_Δ2_plus_two, rd_head]
+      show (cB.head : ℕ) = _
+      rw [h_head_cB]; omega
+    · show (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+             (Δ2 + 2 + 0)).tape = c.tape
+      rw [show Δ2 + 2 + 0 = Δ2 + 2 from by omega, h_rewrite_Δ2_plus_two, rd_tape, h_tape_cB]
+  | succ j' ih =>
+    have hj'_le : j' ≤ Δdst - Δ2 := by omega
+    have hj'_lt : j' < Δdst - Δ2 := by omega
+    obtain ⟨ih_phase, ih_state, ih_head, ih_tape⟩ := ih hj'_le
+    set cprev := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+        (Δ2 + 2 + j')
+      with hcprev
+    have h_phase_lo : Δ2 + 1 < cprev.state.fst.val := by rw [ih_phase]; omega
+    have h_phase_hi : cprev.state.fst.val < Δdst + 2 := by rw [ih_phase]; omega
+    have h_head_advance_bound :
+        (cprev.head : ℕ) + 1 <
+          (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by
+      rw [ih_head]; omega
+    obtain ⟨C_phase, C_state, C_head, C_tape⟩ :=
+      stepConfig_seek_to_dst Δ1 Δ2 Δdst hle12 hle2d op cprev h_phase_lo h_phase_hi
+        h_head_advance_bound
+    have hrw :
+        TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+            (Δ2 + 2 + (j' + 1)) =
+          TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cprev := by
+      rw [show Δ2 + 2 + (j' + 1) = (Δ2 + 2 + j') + 1 from by omega,
+          runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw, C_phase, ih_phase]; omega
+    · rw [hrw, C_state, ih_state]
+    · rw [hrw, C_head]
+      show cprev.head.val + 1 = c.head.val + Δ2 + (j' + 1)
+      rw [ih_head]; omega
+    · rw [hrw, C_tape, ih_tape]
+
+/-! ### After write phase: commits op(bit1, bit2) at dst -/
+
+theorem run_after_write_phase (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n) :
+    let cmid := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+        (Δdst + 3)
+    ∃ (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)
+      (h_src2_bound : (c.head : ℕ) + Δ2 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n),
+    cmid.state.fst.val = Δdst + 3 ∧
+    cmid.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                      c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) ∧
+    ((cmid.head : ℕ) = (c.head : ℕ) + Δdst) ∧
+    cmid.tape = c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+                  (op (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩)
+                      (c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩)) := by
+  have h_src1_bound : (c.head : ℕ) + Δ1 <
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+  have h_src2_bound : (c.head : ℕ) + Δ2 <
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+  refine ⟨h_src1_bound, h_src2_bound, ?_⟩
+  -- After Δ2 + 2 + (Δdst - Δ2) = Δdst + 2 total steps: at phase Δdst + 2,
+  -- state = (bit1, bit2), head = c.head + Δdst, tape unchanged.
+  obtain ⟨C_phase, C_state, C_head, C_tape⟩ :=
+    run_after_j_seek_to_dst_steps Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+      h_src1_bound h_src2_bound (Δdst - Δ2) le_rfl
+  have h_total : Δ2 + 2 + (Δdst - Δ2) = Δdst + 2 := by omega
+  set cpre := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+      (Δdst + 2) with hcpre
+  have h_rewrite_dst_plus_two :
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+          (Δ2 + 2 + (Δdst - Δ2)) = cpre := by
+    rw [h_total]
+  have h_phase_cpre : cpre.state.fst.val = Δdst + 2 := by
+    rw [← h_rewrite_dst_plus_two]; show _ = Δdst + 2
+    rw [C_phase]; omega
+  have h_state_cpre : cpre.state.snd =
+      (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+       c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) := by
+    rw [← h_rewrite_dst_plus_two]; exact C_state
+  have h_head_cpre : (cpre.head : ℕ) = (c.head : ℕ) + Δdst := by
+    rw [← h_rewrite_dst_plus_two]; show _ = _
+    rw [C_head]; omega
+  have h_tape_cpre : cpre.tape = c.tape := by
+    rw [← h_rewrite_dst_plus_two]; exact C_tape
+  -- One more step: write phase.
+  obtain ⟨wr_phase, wr_state, wr_head, wr_tape⟩ :=
+    stepConfig_write Δ1 Δ2 Δdst hle12 hle2d op cpre h_phase_cpre
+  have hrw_final :
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c (Δdst + 3) =
+        TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cpre := by
+    rw [show Δdst + 3 = (Δdst + 2) + 1 from by omega, runConfig_succ]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [hrw_final]; exact wr_phase
+  · rw [hrw_final, wr_state, h_state_cpre]
+  · rw [hrw_final, wr_head]
+    show (cpre.head : ℕ) = _; exact h_head_cpre
+  · rw [hrw_final, wr_tape]
+    have h_head_fin : cpre.head = (⟨(c.head : ℕ) + Δdst, h_bound⟩ :
+        Fin ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)) := by
+      apply Fin.ext; exact h_head_cpre
+    rw [h_head_fin, h_state_cpre]
+    funext j
+    unfold Configuration.write
+    split_ifs with hj
+    · rfl
+    · rw [h_tape_cpre]
+
+/-! ### Block D: j-fold seek-back invariant -/
+
+theorem run_j_seek_back (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c_start : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c_start.state.fst.val = Δdst + 3)
+    (h_head_ge : Δdst ≤ (c_start.head : ℕ)) :
+    ∀ j, j ≤ Δdst →
+    let cj := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c_start j
+    cj.state.fst.val = Δdst + 3 + j ∧
+    cj.state.snd = c_start.state.snd ∧
+    ((cj.head : ℕ) = (c_start.head : ℕ) - j) ∧
+    cj.tape = c_start.tape := by
+  intro j hjΔ
+  induction j with
+  | zero =>
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · show c_start.state.fst.val = Δdst + 3 + 0; rw [h_phase]
+    · rfl
+    · show (c_start.head : ℕ) = _; omega
+    · rfl
+  | succ j' ih =>
+    have hj'_le : j' ≤ Δdst := by omega
+    have hj'_lt : j' < Δdst := by omega
+    obtain ⟨ih_phase, ih_state, ih_head, ih_tape⟩ := ih hj'_le
+    set cj' := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c_start j'
+      with hcj'
+    have h_phase_lo : Δdst + 2 < cj'.state.fst.val := by rw [ih_phase]; omega
+    have h_phase_hi : cj'.state.fst.val < 2 * Δdst + 3 := by rw [ih_phase]; omega
+    have h_head_pos : 0 < (cj'.head : ℕ) := by rw [ih_head]; omega
+    obtain ⟨rip_phase, rip_state, rip_head, rip_tape⟩ :=
+      stepConfig_seek_back Δ1 Δ2 Δdst hle12 hle2d op cj' h_phase_lo h_phase_hi h_head_pos
+    have hrw :
+        TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c_start
+            (j' + 1) =
+          TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cj' := by
+      rw [runConfig_succ]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [hrw, rip_phase, ih_phase]; omega
+    · rw [hrw, rip_state, ih_state]
+    · rw [hrw, rip_head]
+      show cj'.head.val - 1 = c_start.head.val - (j' + 1)
+      rw [ih_head]; omega
+    · rw [hrw, rip_tape, ih_tape]
+
+/-- **Full correctness of `combineAtOffsetProgram`**: after `2*Δdst + 3` steps,
+the TM reaches its accept phase with head back at origin, state carrying
+both source bits, and the tape updated at the destination with `op` applied. -/
+theorem combineAtOffsetProgram_run_full (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n) :
+    let cfinal := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+        (2 * Δdst + 3)
+    ∃ (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)
+      (h_src2_bound : (c.head : ℕ) + Δ2 <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n),
+    cfinal.state.fst.val = 2 * Δdst + 3 ∧
+    cfinal.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                        c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) ∧
+    cfinal.head = c.head ∧
+    cfinal.tape = c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+                    (op (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩)
+                        (c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩)) := by
+  have h_src1_bound : (c.head : ℕ) + Δ1 <
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+  have h_src2_bound : (c.head : ℕ) + Δ2 <
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+  refine ⟨h_src1_bound, h_src2_bound, ?_⟩
+  have hsplit : 2 * Δdst + 3 = (Δdst + 3) + Δdst := by omega
+  have hcomp :
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+          (2 * Δdst + 3) =
+        TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM)
+          (TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+              (Δdst + 3))
+          Δdst := by
+    rw [hsplit, runConfig_add]
+  obtain ⟨h_src1_bound', h_src2_bound', mid_phase, mid_state, mid_head, mid_tape⟩ :=
+    run_after_write_phase Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+  set cmid := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+      (Δdst + 3) with hcmid
+  have h_phase_mid : cmid.state.fst.val = Δdst + 3 := mid_phase
+  have h_head_mid : (cmid.head : ℕ) = (c.head : ℕ) + Δdst := mid_head
+  have h_head_ge : Δdst ≤ (cmid.head : ℕ) := by rw [h_head_mid]; omega
+  have h_state_mid_rewritten :
+      cmid.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                        c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) := mid_state
+  obtain ⟨left_phase, left_state, left_head, left_tape⟩ :=
+    run_j_seek_back Δ1 Δ2 Δdst hle12 hle2d op cmid h_phase_mid h_head_ge Δdst le_rfl
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [hcomp, left_phase]; omega
+  · rw [hcomp, left_state]; exact h_state_mid_rewritten
+  · rw [hcomp]
+    apply Fin.ext
+    show (_ : ℕ) = (c.head : ℕ)
+    rw [left_head, h_head_mid]; omega
+  · rw [hcomp, left_tape, mid_tape]
+
 end CombineAtOffset
+
+/-! ## AndAtOffset: 2-input AND gate compound
+
+Specialization of `CombineAtOffset.combineAtOffsetProgram` to the
+boolean AND operation. -/
+
+namespace AndAtOffset
+
+open Pnp3.Internal.PsubsetPpoly.TM
+
+/-- The AND-at-offset compound: reads bits at `head + Δ1` and `head + Δ2`,
+writes their conjunction at `head + Δdst`, returns head to origin. -/
+def andAtOffsetProgram (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) : PhasedProgram.{0} :=
+  CombineAtOffset.combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d (· && ·)
+
+@[simp] theorem andAtOffsetProgram_numPhases (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) :
+    (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).numPhases = 2 * Δdst + 4 := rfl
+
+@[simp] theorem andAtOffsetProgram_timeBound (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (n : Nat) :
+    (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).timeBound n = 2 * Δdst + 3 := rfl
+
+/-- **Full correctness of `andAtOffsetProgram`**: after `2*Δdst + 3` steps,
+head returns to its origin and the destination cell holds
+`c.tape[head+Δ1] && c.tape[head+Δ2]`. -/
+theorem andAtOffsetProgram_run_full (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM.tapeLength n) :
+    let cfinal := TM.runConfig (M := (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM) c
+        (2 * Δdst + 3)
+    ∃ (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM.tapeLength n)
+      (h_src2_bound : (c.head : ℕ) + Δ2 <
+        (andAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM.tapeLength n),
+    cfinal.state.fst.val = 2 * Δdst + 3 ∧
+    cfinal.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                        c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) ∧
+    cfinal.head = c.head ∧
+    cfinal.tape = c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+                    ((c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩) &&
+                     (c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩)) :=
+  CombineAtOffset.combineAtOffsetProgram_run_full Δ1 Δ2 Δdst hle12 hle2d (· && ·)
+    c h_phase h_state_snd h_bound
+
+end AndAtOffset
+
+/-! ## OrAtOffset: 2-input OR gate compound
+
+Specialization of `CombineAtOffset.combineAtOffsetProgram` to the
+boolean OR operation. -/
+
+namespace OrAtOffset
+
+open Pnp3.Internal.PsubsetPpoly.TM
+
+/-- The OR-at-offset compound: reads bits at `head + Δ1` and `head + Δ2`,
+writes their disjunction at `head + Δdst`, returns head to origin. -/
+def orAtOffsetProgram (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) : PhasedProgram.{0} :=
+  CombineAtOffset.combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d (· || ·)
+
+@[simp] theorem orAtOffsetProgram_numPhases (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) :
+    (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).numPhases = 2 * Δdst + 4 := rfl
+
+@[simp] theorem orAtOffsetProgram_timeBound (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (n : Nat) :
+    (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).timeBound n = 2 * Δdst + 3 := rfl
+
+/-- **Full correctness of `orAtOffsetProgram`**: after `2*Δdst + 3` steps,
+head returns to its origin and the destination cell holds
+`c.tape[head+Δ1] || c.tape[head+Δ2]`. -/
+theorem orAtOffsetProgram_run_full (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) {n : Nat}
+    (c : Configuration (M := (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM.tapeLength n) :
+    let cfinal := TM.runConfig (M := (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM) c
+        (2 * Δdst + 3)
+    ∃ (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM.tapeLength n)
+      (h_src2_bound : (c.head : ℕ) + Δ2 <
+        (orAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d).toTM.tapeLength n),
+    cfinal.state.fst.val = 2 * Δdst + 3 ∧
+    cfinal.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                        c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) ∧
+    cfinal.head = c.head ∧
+    cfinal.tape = c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+                    ((c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩) ||
+                     (c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩)) :=
+  CombineAtOffset.combineAtOffsetProgram_run_full Δ1 Δ2 Δdst hle12 hle2d (· || ·)
+    c h_phase h_state_snd h_bound
+
+end OrAtOffset
 
 end TM
 

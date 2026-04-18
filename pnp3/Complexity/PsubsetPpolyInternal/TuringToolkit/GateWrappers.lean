@@ -231,6 +231,94 @@ theorem gateAndProgram_timeBound_le_uniform (Δ1 Δ2 Δdst : Nat)
 
 end GateEval
 
+/-! ## `ConstStatePhasedProgram` variants of the gate evaluators
+
+All concrete gate programs are definable as specializations of
+`combineAtOffsetCS` with the appropriate boolean operator.  This gives
+a single uniform `ConstStatePhasedProgram (Bool × Bool)` shape that
+composes cleanly via `seq`.
+
+- `.input i`     → read at `Δrowbase + i`, write at `Δdst`
+                   (copy with op = fun a _ => a).
+- `.const b`     → read-twice-write-b at `Δdst`
+                   (op = fun _ _ => b).
+- `.notGate`     → read at `Δsrc`, write `!` at `Δdst`
+                   (op = fun a _ => !a).
+- `.andGate`     → AND at `Δ1, Δ2 → Δdst`.
+- `.orGate`      → OR at `Δ1, Δ2 → Δdst`.
+
+Every wrapper has `numPhases = 2*Δdst + 4` and `timeBound = 2*Δdst + 3`,
+independent of the op. -/
+
+namespace GateEvalCS
+
+open Pnp3.Internal.PsubsetPpoly.TM
+open ConstStatePhasedProgram
+
+/-- Evaluator for `SLGate.input i` (as ConstState): copies
+`tape[head + Δrowbase + i]` into `tape[head + Δdst]`.  Built via
+`combineAtOffsetCS` with `op = fun a _ => a` and a reflexive
+Δsrc-chain. -/
+def gateInputCS {n : Nat} (i : Fin n) (Δrowbase Δdst : Nat)
+    (hle : Δrowbase + i.val ≤ Δdst) : ConstStatePhasedProgram (Bool × Bool) :=
+  CombineAtOffset.combineAtOffsetCS (Δrowbase + i.val) (Δrowbase + i.val) Δdst
+    (le_refl _) hle (fun a _ => a)
+
+/-- Evaluator for `SLGate.const b` (as ConstState): writes `b` at
+`tape[head + Δdst]`.  Built via `combineAtOffsetCS` with `op = fun _ _ => b`. -/
+def gateConstCS (b : Bool) (Δdst : Nat) : ConstStatePhasedProgram (Bool × Bool) :=
+  CombineAtOffset.combineAtOffsetCS Δdst Δdst Δdst (le_refl _) (le_refl _)
+    (fun _ _ => b)
+
+/-- Evaluator for `SLGate.notGate k` (as ConstState): reads
+`tape[head + Δsrc]`, writes its negation at `tape[head + Δdst]`.
+Built via `combineAtOffsetCS` with `op = fun a _ => !a`. -/
+def gateNotCS (Δsrc Δdst : Nat) (hle : Δsrc ≤ Δdst) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  CombineAtOffset.combineAtOffsetCS Δsrc Δsrc Δdst (le_refl _) hle
+    (fun a _ => !a)
+
+/-- Evaluator for `SLGate.andGate k l` (as ConstState). -/
+def gateAndCS (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  CombineAtOffset.combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d (· && ·)
+
+/-- Evaluator for `SLGate.orGate k l` (as ConstState). -/
+def gateOrCS (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  CombineAtOffset.combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d (· || ·)
+
+/-! ### @[simp] timeBound / numPhases identities -/
+
+@[simp] theorem gateInputCS_timeBound {n : Nat} (i : Fin n)
+    (Δrowbase Δdst : Nat) (hle : Δrowbase + i.val ≤ Δdst) (m : Nat) :
+    (gateInputCS i Δrowbase Δdst hle).timeBound m = 2 * Δdst + 3 := rfl
+
+@[simp] theorem gateConstCS_timeBound (b : Bool) (Δdst : Nat) (m : Nat) :
+    (gateConstCS b Δdst).timeBound m = 2 * Δdst + 3 := rfl
+
+@[simp] theorem gateNotCS_timeBound (Δsrc Δdst : Nat) (hle : Δsrc ≤ Δdst)
+    (m : Nat) :
+    (gateNotCS Δsrc Δdst hle).timeBound m = 2 * Δdst + 3 := rfl
+
+@[simp] theorem gateAndCS_timeBound (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (m : Nat) :
+    (gateAndCS Δ1 Δ2 Δdst hle12 hle2d).timeBound m = 2 * Δdst + 3 := rfl
+
+@[simp] theorem gateOrCS_timeBound (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (m : Nat) :
+    (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).timeBound m = 2 * Δdst + 3 := rfl
+
+/-- Uniform per-gate timeBound: every single-gate evaluator runs in
+exactly `2*Δdst + 3` steps, regardless of gate type.  Used to bound
+the total runtime of a circuit evaluator as `#gates * (2*Δdst + 3) + #boundaries`. -/
+theorem gate_eval_uniform_timeBound_le (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) (m : Nat) :
+    (CombineAtOffset.combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).timeBound m ≤
+      2 * Δdst + 3 := le_rfl
+
+end GateEvalCS
+
 end TM
 
 end PsubsetPpoly

@@ -954,6 +954,48 @@ theorem combineAtOffsetCS_toPhased_toTM_step (Δ1 Δ2 Δdst : Nat)
         (pair.fst, pair.snd.fst, pair.snd.snd))
   rw [htr]
 
+/-- State types of the CS and program TMs agree (both are
+`Σ i : Fin (2*Δdst + 4), Bool × Bool`). -/
+theorem combineAtOffsetCS_toPhased_state_eq (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) :
+    (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.state =
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.state := rfl
+
+/-- TapeLengths of the CS and program TMs agree for every input size. -/
+theorem combineAtOffsetCS_toPhased_tapeLength_eq (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) (n : Nat) :
+    (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n =
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := rfl
+
+/-- `castConfig` between the CS TM and the program TM using the above
+equalities.  A pure type-level coercion preserving all values. -/
+def castCombineConfig (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n) :
+    Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n :=
+  castConfig
+    (combineAtOffsetCS_toPhased_state_eq Δ1 Δ2 Δdst hle12 hle2d op)
+    (combineAtOffsetCS_toPhased_tapeLength_eq Δ1 Δ2 Δdst hle12 hle2d op n)
+    c
+
+/-- Since state and tapeLength equalities are `rfl`, the cast is a
+no-op on value-level fields. -/
+@[simp] theorem castCombineConfig_state (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n) :
+    (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c).state = c.state := rfl
+
+@[simp] theorem castCombineConfig_head (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n) :
+    (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c).head = c.head := rfl
+
+@[simp] theorem castCombineConfig_tape (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (i : Fin ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)) :
+    (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c).tape i = c.tape i := rfl
+
 end CombineAtOffset
 
 end TM

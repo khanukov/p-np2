@@ -592,6 +592,37 @@ The full "after `k+1` steps the counter value is `(prev + 1) mod
 on `k` using Session 5's tape-invariant lemmas closes it cleanly.
 -/
 
+/-! ### Configuration cast bridge between step-equivalent TMs
+
+When two TMs `T1` and `T2` have the same state type and tapeLength
+(they may be different Lean `TM` values but produce step-equivalent
+computations), configurations of one can be cast to the other.  The
+cast is a pure type-level coercion; the underlying state/head/tape
+values are unchanged.
+
+When step functions agree after the cast, `runConfig` commutes with
+the cast — which lets us transport correctness theorems between the
+two TMs without redoing the combinatorial work. -/
+
+/-- Cast a configuration between TMs with equal state type and
+tapeLength.  Used for transport of correctness between two TMs that
+agree step-wise (e.g., `combineAtOffsetCS.toPhased.toTM` and
+`combineAtOffsetProgram.toTM`). -/
+def castConfig {T1 T2 : TM.{u}} {n : Nat}
+    (hstate : T1.state = T2.state)
+    (htape : T1.tapeLength n = T2.tapeLength n)
+    (c : Configuration (M := T1) n) :
+    Configuration (M := T2) n :=
+  { state := hstate ▸ c.state
+    head := htape ▸ c.head
+    tape := fun i => c.tape (htape.symm ▸ i) }
+
+/-- `castConfig` is an identity when both TMs are literally the same
+(trivial `rfl` proofs of state and tapeLength equality). -/
+@[simp] theorem castConfig_rfl {T : TM.{u}} {n : Nat}
+    (c : Configuration (M := T) n) :
+    castConfig (T1 := T) (T2 := T) rfl rfl c = c := by
+  rfl
 
 end TM
 

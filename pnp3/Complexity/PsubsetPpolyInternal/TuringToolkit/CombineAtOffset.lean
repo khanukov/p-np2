@@ -996,6 +996,104 @@ no-op on value-level fields. -/
     (i : Fin ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)) :
     (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c).tape i = c.tape i := rfl
 
+/-- `moveHead` commutes through the cast — proven by `rfl` since
+tapeLengths agree reducibly. -/
+@[simp] theorem castCombineConfig_moveHead (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (m : Move) :
+    (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c).moveHead m = c.moveHead m := rfl
+
+/-- `write` commutes through the cast — proven by `rfl` since
+tapeLengths agree reducibly. -/
+@[simp] theorem castCombineConfig_write (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (i : Fin ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n))
+    (b : Bool) :
+    (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c).write i b = c.write i b := rfl
+
+/-- `stepConfig` commutes with `castCombineConfig`. -/
+theorem castCombineConfig_stepConfig (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n) :
+    castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op
+      (TM.stepConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c) =
+      TM.stepConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM)
+        (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c) := by
+  have hstep := combineAtOffsetCS_toPhased_toTM_step Δ1 Δ2 Δdst hle12 hle2d op
+                  c.state (c.tape c.head)
+  simp only [TM.stepConfig, hstep, castCombineConfig_state, castCombineConfig_head,
+    castCombineConfig_tape, castCombineConfig_moveHead, castCombineConfig_write]
+  rfl
+
+/-- `runConfig` commutes with the cast. -/
+theorem castCombineConfig_runConfig (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (t : Nat) :
+    castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op
+      (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c t) =
+      TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM)
+        (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c) t := by
+  induction t with
+  | zero => rfl
+  | succ t' ih =>
+    rw [runConfig_succ, runConfig_succ, ← ih]
+    exact castCombineConfig_stepConfig Δ1 Δ2 Δdst hle12 hle2d op _
+
+/-- **Full correctness of `combineAtOffsetCS`**, transported from
+`combineAtOffsetProgram_run_full` via `castCombineConfig` and
+`castCombineConfig_runConfig`. -/
+theorem combineAtOffsetCS_run_full (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n) :
+    let cfinal := TM.runConfig
+      (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c (2 * Δdst + 3)
+    ∃ (h_src1_bound : (c.head : ℕ) + Δ1 <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n)
+      (h_src2_bound : (c.head : ℕ) + Δ2 <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n),
+    cfinal.state.fst.val = 2 * Δdst + 3 ∧
+    cfinal.state.snd = (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩,
+                        c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩) ∧
+    cfinal.head = c.head ∧
+    cfinal.tape = c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+                    (op (c.tape ⟨(c.head : ℕ) + Δ1, h_src1_bound⟩)
+                        (c.tape ⟨(c.head : ℕ) + Δ2, h_src2_bound⟩)) := by
+  -- Cast c to a program-TM config; apply combineAtOffsetProgram_run_full;
+  -- transport back via castCombineConfig_runConfig.
+  have hrun := castCombineConfig_runConfig Δ1 Δ2 Δdst hle12 hle2d op c (2 * Δdst + 3)
+  set c' := castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c with hc'
+  have h_phase' : c'.state.fst.val = 0 := h_phase
+  have h_state_snd' : c'.state.snd = (false, false) := h_state_snd
+  have h_bound' : (c'.head : ℕ) + Δdst <
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := h_bound
+  obtain ⟨h_src1_bound', h_src2_bound', hp, hs, hh, ht⟩ :=
+    combineAtOffsetProgram_run_full Δ1 Δ2 Δdst hle12 hle2d op c' h_phase' h_state_snd' h_bound'
+  refine ⟨h_src1_bound', h_src2_bound', ?_, ?_, ?_, ?_⟩
+  · -- state.fst.val
+    show (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM)
+          c (2 * Δdst + 3))).state.fst.val = 2 * Δdst + 3
+    rw [hrun]; exact hp
+  · show (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM)
+          c (2 * Δdst + 3))).state.snd = _
+    rw [hrun]; exact hs
+  · show (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM)
+          c (2 * Δdst + 3))).head = c.head
+    rw [hrun]; exact hh
+  · show (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM)
+          c (2 * Δdst + 3))).tape = _
+    rw [hrun]; exact ht
+
 end CombineAtOffset
 
 end TM

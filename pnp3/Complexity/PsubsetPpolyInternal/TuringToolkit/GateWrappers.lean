@@ -394,6 +394,32 @@ def circuitEvaluatorCS {n : Nat} (gates : List (SLGate n))
   ConstStatePhasedProgram.seqList
     ((gates.mapIdx (fun slot g => evalOneGateCS g slot Δrowbase Δscratch hle)))
 
+/-- Generic seqList timeBound upper bound: if every program in `ps`
+has `timeBound m ≤ B`, then the composed seqList's timeBound is at
+most `ps.length * B + ps.length + 1 = ps.length * (B + 1) + 1`. -/
+theorem seqList_timeBound_le_uniform {S : Type v}
+    [Fintype S] [DecidableEq S] [Inhabited S]
+    (ps : List (ConstStatePhasedProgram S)) (B : Nat) (m : Nat)
+    (hB : ∀ p ∈ ps, p.timeBound m ≤ B) :
+    (ConstStatePhasedProgram.seqList ps).timeBound m ≤
+      ps.length * (B + 1) + 1 := by
+  induction ps with
+  | nil =>
+    rw [ConstStatePhasedProgram.seqList_timeBound_nil]
+    omega
+  | cons p rest ih =>
+    rw [ConstStatePhasedProgram.seqList_timeBound_cons]
+    have hp : p.timeBound m ≤ B := hB p (by simp)
+    have hrest : ∀ q ∈ rest, q.timeBound m ≤ B := fun q hq =>
+      hB q (by simp [hq])
+    have ih' := ih hrest
+    have hlen : (p :: rest).length = rest.length + 1 := by rfl
+    rw [hlen]
+    have hexp : (rest.length + 1) * (B + 1) + 1 =
+        rest.length * (B + 1) + (B + 1) + 1 := by
+      simp [Nat.add_mul, Nat.one_mul]
+    omega
+
 end GateEvalCS
 
 end TM

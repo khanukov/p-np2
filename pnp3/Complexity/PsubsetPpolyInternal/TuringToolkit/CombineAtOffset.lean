@@ -1,4 +1,5 @@
 import Complexity.PsubsetPpolyInternal.TuringToolkit.CopyAtOffset
+import Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram
 
 namespace Pnp3
 namespace Internal
@@ -872,6 +873,51 @@ theorem combineAtOffsetProgram_run_full (Δ1 Δ2 Δdst : Nat)
     show (_ : ℕ) = (c.head : ℕ)
     rw [left_head, h_head_mid]; omega
   · rw [hcomp, left_tape, mid_tape]
+
+/-! ### `ConstStatePhasedProgram` re-packaging
+
+A parallel definition of `combineAtOffsetProgram` as a
+`ConstStatePhasedProgram (Bool × Bool)`, suitable for composition via
+`ConstStatePhasedProgram.seq`.  It has an identical transition
+structure; `combineAtOffsetCS_toPhased_eq` proves that
+`combineAtOffsetCS.toPhased = combineAtOffsetProgram`, so all existing
+correctness theorems (including `combineAtOffsetProgram_run_full`)
+transport automatically. -/
+
+def combineAtOffsetCS (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
+    (op : Bool → Bool → Bool) :
+    ConstStatePhasedProgram (Bool × Bool) where
+  numPhases := 2 * Δdst + 4
+  startPhase := ⟨0, by omega⟩
+  startState := (false, false)
+  acceptPhase := ⟨2 * Δdst + 3, by omega⟩
+  acceptState := (false, false)
+  transition := fun i q scan =>
+    if hi1 : i.val < Δ1 then
+      (⟨i.val + 1, by omega⟩, q, scan, Move.right)
+    else if hi2 : i.val = Δ1 then
+      (⟨Δ1 + 1, by omega⟩, (scan, q.snd), scan, Move.stay)
+    else if hi3 : i.val < Δ2 + 1 then
+      (⟨i.val + 1, by omega⟩, q, scan, Move.right)
+    else if hi4 : i.val = Δ2 + 1 then
+      (⟨Δ2 + 2, by omega⟩, (q.fst, scan), scan, Move.stay)
+    else if hi5 : i.val < Δdst + 2 then
+      (⟨i.val + 1, by omega⟩, q, scan, Move.right)
+    else if hi6 : i.val = Δdst + 2 then
+      (⟨Δdst + 3, by omega⟩, q, op q.fst q.snd, Move.stay)
+    else if hi7 : i.val < 2 * Δdst + 3 then
+      (⟨i.val + 1, by omega⟩, q, scan, Move.left)
+    else
+      (⟨2 * Δdst + 3, by omega⟩, q, scan, Move.stay)
+  timeBound := fun _ => 2 * Δdst + 3
+
+@[simp] theorem combineAtOffsetCS_numPhases (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) :
+    (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).numPhases = 2 * Δdst + 4 := rfl
+
+@[simp] theorem combineAtOffsetCS_timeBound (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) (n : Nat) :
+    (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).timeBound n = 2 * Δdst + 3 := rfl
 
 end CombineAtOffset
 

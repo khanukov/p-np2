@@ -540,6 +540,62 @@ theorem runConfig_seq_succ_P2_tape (P1 P2 : ConstStatePhasedProgram S)
   rw [runConfig_succ]
   exact stepConfig_seq_P2_tape P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h2 hi_lt
 
+/-! ### Trivial identity program + list-composition
+
+`idleCS` is a single-phase program that accepts in zero steps (starts
+at the accept phase).  It acts as the identity element of `seq` up to
+the one-step handoff that `seq` always inserts.
+
+`seqList` folds a list of `ConstStatePhasedProgram` via `seq`.  When
+the list is empty it returns `idleCS`; otherwise it chains elements
+right-associatively. -/
+
+variable [Inhabited S]
+
+def idleCS : ConstStatePhasedProgram S where
+  numPhases := 1
+  startPhase := ⟨0, Nat.zero_lt_one⟩
+  startState := default
+  acceptPhase := ⟨0, Nat.zero_lt_one⟩
+  acceptState := default
+  transition := fun i q scan => (i, q, scan, Move.stay)
+  timeBound := fun _ => 0
+
+@[simp] theorem idleCS_numPhases : (idleCS (S := S)).numPhases = 1 := rfl
+
+@[simp] theorem idleCS_timeBound (n : Nat) :
+    (idleCS (S := S)).timeBound n = 0 := rfl
+
+/-- Compose a list of uniform-state phased programs sequentially.  The
+result's numPhases is the sum, and its timeBound is the sum of
+component timeBounds plus one handoff per composition. -/
+def seqList : List (ConstStatePhasedProgram S) → ConstStatePhasedProgram S
+  | [] => idleCS
+  | p :: rest => seq p (seqList rest)
+
+@[simp] theorem seqList_nil :
+    (seqList (S := S) []) = idleCS := rfl
+
+@[simp] theorem seqList_cons (p : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S)) :
+    seqList (p :: rest) = seq p (seqList rest) := rfl
+
+/-- Total `timeBound` of `seqList ps` satisfies the recurrence
+`seqList_timeBound_cons`; explicit closed form left as downstream exercise. -/
+theorem seqList_timeBound_nil (n : Nat) :
+    (seqList (S := S) []).timeBound n = 0 := rfl
+
+theorem seqList_timeBound_cons (p : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S)) (n : Nat) :
+    (seqList (p :: rest)).timeBound n = p.timeBound n + (seqList rest).timeBound n + 1 := rfl
+
+theorem seqList_numPhases_nil :
+    (seqList (S := S) []).numPhases = 1 := rfl
+
+theorem seqList_numPhases_cons (p : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S)) :
+    (seqList (p :: rest)).numPhases = p.numPhases + (seqList rest).numPhases := rfl
+
 end ConstStatePhasedProgram
 
 end TM

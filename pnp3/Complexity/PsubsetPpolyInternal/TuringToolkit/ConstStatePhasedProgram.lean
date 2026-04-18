@@ -403,6 +403,143 @@ theorem stepConfig_seq_P2_tape (P1 P2 : ConstStatePhasedProgram S)
       (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.fst) = _
   rw [seq_transition_P2_bit P1 P2 h2 hi_lt c.state.snd (c.tape c.head)]
 
+/-! ### `runConfig_succ` + stepConfig composition: derived one-step
+lemmas phrased as rewrites of `runConfig c (t+1)` via the current
+config at step `t`.
+
+These are used by downstream induction proofs (for the circuit
+evaluator and MCSP verifier) to avoid manual unfolding of
+`runConfig_succ` each step. -/
+
+theorem runConfig_seq_succ_P1_normal_phase (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h1 : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val < P1.numPhases)
+    (hne : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val ≠ P1.acceptPhase.val) :
+    ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).state.fst.val : Nat) =
+      (P1.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val, h1⟩
+          (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+          ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).fst.val := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P1_normal_phase P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 hne
+
+theorem runConfig_seq_succ_P1_normal_state (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h1 : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val < P1.numPhases)
+    (hne : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).state.snd =
+      (P1.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val, h1⟩
+          (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+          ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).snd.fst := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P1_normal_state P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 hne
+
+theorem runConfig_seq_succ_P1_normal_head (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h1 : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val < P1.numPhases)
+    (hne : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).head =
+      Configuration.moveHead (c := TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t)
+        (P1.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val, h1⟩
+            (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+            ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).snd.snd.snd := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P1_normal_head P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 hne
+
+theorem runConfig_seq_succ_P1_normal_tape (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h1 : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val < P1.numPhases)
+    (hne : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).tape =
+      (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).write (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head
+        (P1.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val, h1⟩
+            (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+            ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).snd.snd.fst := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P1_normal_tape P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 hne
+
+/-- Single boundary handoff step: after the step, phase is shifted to
+`P1.numPhases + P2.startPhase.val`, state becomes `P2.startState`,
+head and tape are unchanged. -/
+theorem runConfig_seq_succ_P1_boundary (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h1 : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val < P1.numPhases)
+    (heq : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val = P1.acceptPhase.val) :
+    ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).state.fst.val : Nat) =
+        P1.numPhases + P2.startPhase.val ∧
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).state.snd = P2.startState ∧
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).head = (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head ∧
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).tape = (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> rw [runConfig_succ]
+  · exact stepConfig_seq_P1_boundary_phase P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 heq
+  · exact stepConfig_seq_P1_boundary_state P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 heq
+  · exact stepConfig_seq_P1_boundary_head P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 heq
+  · exact stepConfig_seq_P1_boundary_tape P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h1 heq
+
+theorem runConfig_seq_succ_P2_phase (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h2 : P1.numPhases ≤ (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val)
+    (hi_lt : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases < P2.numPhases) :
+    ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).state.fst.val : Nat) =
+      P1.numPhases +
+        (P2.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases, hi_lt⟩
+            (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+            ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).fst.val := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P2_phase P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h2 hi_lt
+
+theorem runConfig_seq_succ_P2_state (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h2 : P1.numPhases ≤ (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val)
+    (hi_lt : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases < P2.numPhases) :
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).state.snd =
+      (P2.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases, hi_lt⟩
+          (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+          ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).snd.fst := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P2_state P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h2 hi_lt
+
+theorem runConfig_seq_succ_P2_head (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h2 : P1.numPhases ≤ (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val)
+    (hi_lt : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases < P2.numPhases) :
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).head =
+      Configuration.moveHead (c := TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t)
+        (P2.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases, hi_lt⟩
+            (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+            ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).snd.snd.snd := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P2_head P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h2 hi_lt
+
+theorem runConfig_seq_succ_P2_tape (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (t : Nat)
+    (h2 : P1.numPhases ≤ (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val)
+    (hi_lt : (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases < P2.numPhases) :
+    (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c (t + 1)).tape =
+      (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).write (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head
+        (P2.transition ⟨(TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.fst.val - P1.numPhases, hi_lt⟩
+            (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).state.snd
+            ((TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).tape (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t).head)).snd.snd.fst := by
+  rw [runConfig_succ]
+  exact stepConfig_seq_P2_tape P1 P2 (TM.runConfig (M := (seq P1 P2).toPhased.toTM) c t) h2 hi_lt
+
 end ConstStatePhasedProgram
 
 end TM

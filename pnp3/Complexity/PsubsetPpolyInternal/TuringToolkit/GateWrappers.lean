@@ -254,6 +254,7 @@ namespace GateEvalCS
 
 open Pnp3.Internal.PsubsetPpoly.TM
 open ConstStatePhasedProgram
+open Encoding
 
 /-- Evaluator for `SLGate.input i` (as ConstState): copies
 `tape[head + Δrowbase + i]` into `tape[head + Δdst]`.  Built via
@@ -316,6 +317,82 @@ theorem gate_eval_uniform_timeBound_le (Δ1 Δ2 Δdst : Nat)
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) (m : Nat) :
     (CombineAtOffset.combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).timeBound m ≤
       2 * Δdst + 3 := le_rfl
+
+/-! ### Per-gate evaluator dispatcher
+
+`evalOneGateCS g slot Δrowbase Δscratch hle` returns the
+`ConstStatePhasedProgram (Bool × Bool)` that evaluates gate `g` whose
+output is stored at scratch slot `slot`.  Invalid back-references
+(out-of-range `.notGate`, `.andGate`, `.orGate` indices in a
+malformed SL program) are clamped to `slot` so the result still type-
+checks.  For well-formed SL programs, clamping is a no-op. -/
+
+
+def evalOneGateCS {n : Nat} (g : SLGate n) (slot : Nat) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  match g with
+  | .input i =>
+    have hi : Δrowbase + i.val ≤ Δscratch + slot := by
+      have := i.isLt; omega
+    gateInputCS i Δrowbase (Δscratch + slot) hi
+  | .const b => gateConstCS b (Δscratch + slot)
+  | .notGate j =>
+    let j' := min j slot
+    have hj : Δscratch + j' ≤ Δscratch + slot := by
+      have : j' ≤ slot := Nat.min_le_right _ _
+      omega
+    gateNotCS (Δscratch + j') (Δscratch + slot) hj
+  | .andGate j l =>
+    let a := min (min j l) slot
+    let b := min (max j l) slot
+    have h1 : Δscratch + a ≤ Δscratch + b := by
+      show Δscratch + min (min j l) slot ≤ Δscratch + min (max j l) slot
+      have hmm : min j l ≤ max j l := by
+        rcases Nat.le_total j l with hjl | hjl
+        · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+        · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+      omega
+    have h2 : Δscratch + b ≤ Δscratch + slot := by
+      show Δscratch + min (max j l) slot ≤ Δscratch + slot
+      omega
+    gateAndCS (Δscratch + a) (Δscratch + b) (Δscratch + slot) h1 h2
+  | .orGate j l =>
+    let a := min (min j l) slot
+    let b := min (max j l) slot
+    have h1 : Δscratch + a ≤ Δscratch + b := by
+      show Δscratch + min (min j l) slot ≤ Δscratch + min (max j l) slot
+      have hmm : min j l ≤ max j l := by
+        rcases Nat.le_total j l with hjl | hjl
+        · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+        · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+      omega
+    have h2 : Δscratch + b ≤ Δscratch + slot := by
+      show Δscratch + min (max j l) slot ≤ Δscratch + slot
+      omega
+    gateOrCS (Δscratch + a) (Δscratch + b) (Δscratch + slot) h1 h2
+
+/-- Uniform timeBound: each gate evaluator runs in exactly
+`2*(Δscratch + slot) + 3` steps. -/
+
+theorem evalOneGateCS_timeBound {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) (m : Nat) :
+    (evalOneGateCS g slot Δrowbase Δscratch hle).timeBound m =
+      2 * (Δscratch + slot) + 3 := by
+  cases g <;> rfl
+
+/-! ### Whole-circuit evaluator
+
+`circuitEvaluatorCS gates Δrowbase Δscratch hle` evaluates every gate
+in `gates` in order, storing output of gate at index `i` into
+`scratch[i]`.  Uses `seqList` over the per-gate evaluators. -/
+
+
+def circuitEvaluatorCS {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  ConstStatePhasedProgram.seqList
+    ((gates.mapIdx (fun slot g => evalOneGateCS g slot Δrowbase Δscratch hle)))
 
 end GateEvalCS
 

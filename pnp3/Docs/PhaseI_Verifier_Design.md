@@ -202,6 +202,37 @@ Mostly mechanical once F–I are done.
   depend on circuit-encoding scheme in `SLProgram.encode`; may need
   size-explicit analysis.
 
+## Session 20 findings (commit `8f22b85`)
+
+Attempted `combineAtOffsetCS_run_full` via transport from
+`combineAtOffsetProgram_run_full`.  Delivered:
+
+- `combineAtOffsetCS_toPhased_transition_eq` — funext + split_ifs
+  proves the two transition functions equal.
+- `combineAtOffsetCS_toPhased_toTM_step` — lifts equality through
+  `toTM`'s step wrapper.
+
+**Reverted attempt** at full `runConfig`/`run_full` transport — hits
+Lean type mismatch: `Configuration (M := combineAtOffsetCS.toPhased.toTM)`
+and `Configuration (M := combineAtOffsetProgram.toTM)` are NOT
+definitionally equal despite having same `state`, `tapeLength`, and
+`step` (via the step-eq lemma).  They are distinct structure-types
+parameterized by distinct TMs.
+
+**Implication for Milestone F path**: the step-level transport is
+available but cannot be trivially lifted to `runConfig` transport via
+`rfl` / `rw`.  The correctness of `combineAtOffsetCS.toPhased.toTM`
+must be proven either:
+- (α) From scratch, mirroring the existing 50+ lemmas in
+  `CombineAtOffset.lean`'s run-invariant chain (~700 LOC), OR
+- (β) Via a cast-based bridge `castConfig : Configuration (M := T1) n →
+  Configuration (M := T2) n` when `T1.state = T2.state` and
+  `T1.tapeLength = T2.tapeLength`, plus a theorem that `runConfig`
+  commutes with this cast.  ~200 LOC of cast manipulation.
+
+**Recommended** for next session: attempt (β), as it's a reusable
+piece that helps Milestones E/F/G uniformly.
+
 ## Verification at each milestone
 
 1. `lake build Complexity.PsubsetPpolyInternal.TuringToolkit` — green.

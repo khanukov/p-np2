@@ -233,6 +233,176 @@ theorem seq_transition_P2_move (P1 P2 : ConstStatePhasedProgram S)
   unfold seq
   simp only [dif_neg (by omega : ¬ i.val < P1.numPhases)]
 
+/-! ### Step lemmas: lift the transition lemmas through `TM.stepConfig`
+
+The four component-level lemmas (phase / state / head / tape) are
+proved per regime (P1-internal, P1-boundary, P2-internal). -/
+
+/-- In the P1 region (not at accept), `stepConfig` of `seq` matches
+P1's transition: phase `.fst.val` equals the P1-transition-derived
+phase. -/
+theorem stepConfig_seq_P1_normal_phase (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (hne : c.state.fst.val ≠ P1.acceptPhase.val) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state.fst.val : Nat) =
+      (P1.transition ⟨c.state.fst.val, h1⟩ c.state.snd (c.tape c.head)).fst.val := by
+  rw [stepConfig_state]
+  show ((((seq P1 P2).toPhased.toTM.step c.state (c.tape c.head)).fst).fst : Nat) = _
+  show (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).fst.val : Nat) = _
+  exact seq_transition_P1_normal_phase P1 P2 h1 hne c.state.snd (c.tape c.head)
+
+theorem stepConfig_seq_P1_normal_state (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (hne : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state.snd =
+      (P1.transition ⟨c.state.fst.val, h1⟩ c.state.snd (c.tape c.head)).snd.fst := by
+  have h := seq_transition_P1_normal_state P1 P2 h1 hne c.state.snd (c.tape c.head)
+  show ((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.fst = _
+  exact h
+
+theorem stepConfig_seq_P1_normal_head (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (hne : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).head =
+      Configuration.moveHead (c := c)
+        (P1.transition ⟨c.state.fst.val, h1⟩ c.state.snd (c.tape c.head)).snd.snd.snd := by
+  rw [stepConfig_head]
+  show Configuration.moveHead (c := c)
+      ((((seq P1 P2).toPhased.toTM.step c.state (c.tape c.head)).snd.snd : Move)) = _
+  show Configuration.moveHead (c := c)
+      (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.snd) = _
+  rw [seq_transition_P1_normal_move P1 P2 h1 hne c.state.snd (c.tape c.head)]
+
+theorem stepConfig_seq_P1_normal_tape (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (hne : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).tape =
+      c.write c.head
+        (P1.transition ⟨c.state.fst.val, h1⟩ c.state.snd (c.tape c.head)).snd.snd.fst := by
+  rw [stepConfig_tape]
+  show c.write c.head
+      ((((seq P1 P2).toPhased.toTM.step c.state (c.tape c.head)).snd.fst : Bool)) = _
+  show c.write c.head
+      (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.fst) = _
+  rw [seq_transition_P1_normal_bit P1 P2 h1 hne c.state.snd (c.tape c.head)]
+
+/-- At the P1-accept boundary: phase transitions to `P1.numPhases + P2.startPhase.val`. -/
+theorem stepConfig_seq_P1_boundary_phase (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (heq : c.state.fst.val = P1.acceptPhase.val) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state.fst.val : Nat) =
+      P1.numPhases + P2.startPhase.val := by
+  rw [stepConfig_state]
+  show (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).fst.val : Nat) = _
+  exact seq_transition_P1_accept_phase P1 P2 h1 heq c.state.snd (c.tape c.head)
+
+/-- At the P1-accept boundary: state resets to `P2.startState`. -/
+theorem stepConfig_seq_P1_boundary_state (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (heq : c.state.fst.val = P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state.snd = P2.startState := by
+  have h := seq_transition_P1_accept_state P1 P2 h1 heq c.state.snd (c.tape c.head)
+  show ((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.fst = _
+  exact h
+
+/-- At the P1-accept boundary: head stays (no movement). -/
+theorem stepConfig_seq_P1_boundary_head (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (heq : c.state.fst.val = P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).head = c.head := by
+  rw [stepConfig_head]
+  show Configuration.moveHead (c := c)
+      (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.snd) = _
+  rw [seq_transition_P1_accept_move P1 P2 h1 heq c.state.snd (c.tape c.head)]
+  rfl
+
+/-- At the P1-accept boundary: tape is unchanged (boundary writes the
+current scan bit back in place). -/
+theorem stepConfig_seq_P1_boundary_tape (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h1 : c.state.fst.val < P1.numPhases)
+    (heq : c.state.fst.val = P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).tape = c.tape := by
+  rw [stepConfig_tape]
+  show c.write c.head
+      (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.fst) = _
+  rw [seq_transition_P1_accept_bit P1 P2 h1 heq c.state.snd (c.tape c.head)]
+  funext j
+  unfold Configuration.write
+  split_ifs with hj
+  · rw [hj]
+  · rfl
+
+/-- In the P2 region: `stepConfig` matches P2's transition with phase
+shifted by `P1.numPhases`. -/
+theorem stepConfig_seq_P2_phase (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h2 : P1.numPhases ≤ c.state.fst.val)
+    (hi_lt : c.state.fst.val - P1.numPhases < P2.numPhases) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state.fst.val : Nat) =
+      P1.numPhases +
+        (P2.transition ⟨c.state.fst.val - P1.numPhases, hi_lt⟩
+            c.state.snd (c.tape c.head)).fst.val := by
+  rw [stepConfig_state]
+  show (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).fst.val : Nat) = _
+  exact seq_transition_P2_phase P1 P2 h2 hi_lt c.state.snd (c.tape c.head)
+
+theorem stepConfig_seq_P2_state (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h2 : P1.numPhases ≤ c.state.fst.val)
+    (hi_lt : c.state.fst.val - P1.numPhases < P2.numPhases) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state.snd =
+      (P2.transition ⟨c.state.fst.val - P1.numPhases, hi_lt⟩
+            c.state.snd (c.tape c.head)).snd.fst := by
+  have h := seq_transition_P2_state P1 P2 h2 hi_lt c.state.snd (c.tape c.head)
+  show ((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.fst = _
+  exact h
+
+theorem stepConfig_seq_P2_head (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h2 : P1.numPhases ≤ c.state.fst.val)
+    (hi_lt : c.state.fst.val - P1.numPhases < P2.numPhases) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).head =
+      Configuration.moveHead (c := c)
+        (P2.transition ⟨c.state.fst.val - P1.numPhases, hi_lt⟩
+            c.state.snd (c.tape c.head)).snd.snd.snd := by
+  rw [stepConfig_head]
+  show Configuration.moveHead (c := c)
+      (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.snd) = _
+  rw [seq_transition_P2_move P1 P2 h2 hi_lt c.state.snd (c.tape c.head)]
+
+theorem stepConfig_seq_P2_tape (P1 P2 : ConstStatePhasedProgram S)
+    {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (h2 : P1.numPhases ≤ c.state.fst.val)
+    (hi_lt : c.state.fst.val - P1.numPhases < P2.numPhases) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).tape =
+      c.write c.head
+        (P2.transition ⟨c.state.fst.val - P1.numPhases, hi_lt⟩
+            c.state.snd (c.tape c.head)).snd.snd.fst := by
+  rw [stepConfig_tape]
+  show c.write c.head
+      (((seq P1 P2).transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.fst) = _
+  rw [seq_transition_P2_bit P1 P2 h2 hi_lt c.state.snd (c.tape c.head)]
+
 end ConstStatePhasedProgram
 
 end TM

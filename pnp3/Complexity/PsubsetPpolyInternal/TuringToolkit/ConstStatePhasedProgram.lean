@@ -757,6 +757,18 @@ theorem embedSeqConfig_moveHead_right_safe (P1 P2 : ConstStatePhasedProgram S) {
   rw [dif_pos h_safe_seq, dif_pos h_safe]
   simp [embedSeqConfig_head_val]
 
+/-- Unified head commutation: under a safety hypothesis (non-vacuous
+only for Move.right), moveHead commutes with embedSeqConfig. -/
+theorem embedSeqConfig_moveHead_val_commutes (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) (m : Move)
+    (h_safe : m = Move.right → c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    ((Configuration.moveHead (c := embedSeqConfig P1 P2 c) m : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) m : Nat) := by
+  cases m with
+  | stay => exact embedSeqConfig_moveHead_stay P1 P2 c
+  | left => exact embedSeqConfig_moveHead_left P1 P2 c
+  | right => exact embedSeqConfig_moveHead_right_safe P1 P2 c (h_safe rfl)
+
 end ConstStatePhasedProgram
 
 end TM

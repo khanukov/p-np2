@@ -1090,6 +1090,443 @@ theorem embedSeqConfig_runConfig_eq
     exact embedSeqConfig_stepConfig_eq P1 P2
       (TM.runConfig (M := P1.toPhased.toTM) c t') hinv.1 hinv.2.1 hinv.2.2
 
+/-! ### P2-region embedding: mirror of `embedSeqConfig` for the P2 side
+
+After `seq P1 P2` has completed its P1 prefix + boundary handoff, the
+remaining run takes place entirely in P2's phase range (phases
+`[P1.numPhases, P1.numPhases + P2.numPhases)`).  To reuse P2's
+standalone correctness, we need a dual of `embedSeqConfig`:
+given a P2-config `c` (of `P2.toPhased.toTM`), produce a seq-config
+with phase shifted by `P1.numPhases`, head / tape embedded as-is in
+the first `P2.tapeLength` cells, and `false` padding for the extra
+P1-slack cells.
+
+Then we prove that stepping the seq-TM on such an embedded config
+matches stepping P2 alone (when phase is in P2's range and not at
+P2-accept), yielding a multi-step commutation analogous to
+`embedSeqConfig_runConfig_eq`.  Used directly in the multi-gate
+`circuitEvaluatorCS` induction. -/
+
+theorem seq_tapeLength_ge_P2 (P1 P2 : ConstStatePhasedProgram S) (n : Nat) :
+    P2.toPhased.toTM.tapeLength n ≤ (seq P1 P2).toPhased.toTM.tapeLength n := by
+  show n + P2.timeBound n + 1 ≤ n + (P1.timeBound n + P2.timeBound n + 1) + 1
+  omega
+
+def embedSeqP2Config (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    Configuration (M := (seq P1 P2).toPhased.toTM) n where
+  state := ⟨⟨P1.numPhases + c.state.fst.val, by
+      have h2 := c.state.fst.isLt
+      simp only [toPhased_numPhases] at h2
+      show P1.numPhases + c.state.fst.val < (seq P1 P2).numPhases
+      rw [seq_numPhases]; omega⟩,
+    c.state.snd⟩
+  head := ⟨c.head.val, by
+    have := c.head.isLt
+    have := seq_tapeLength_ge_P2 P1 P2 n
+    omega⟩
+  tape := fun i =>
+    if h : i.val < P2.toPhased.toTM.tapeLength n then
+      c.tape ⟨i.val, h⟩
+    else
+      false
+
+@[simp] theorem embedSeqP2Config_state_fst_val (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    ((embedSeqP2Config P1 P2 c).state.fst : Nat) = P1.numPhases + c.state.fst.val := rfl
+
+@[simp] theorem embedSeqP2Config_state_snd (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    (embedSeqP2Config P1 P2 c).state.snd = c.state.snd := rfl
+
+@[simp] theorem embedSeqP2Config_head_val (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    ((embedSeqP2Config P1 P2 c).head : Nat) = c.head.val := rfl
+
+/-- Tape at a position within P2's tape range is unchanged by embedding. -/
+theorem embedSeqP2Config_tape_in_range (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h : i.val < P2.toPhased.toTM.tapeLength n) :
+    (embedSeqP2Config P1 P2 c).tape i = c.tape ⟨i.val, h⟩ := by
+  show (if h' : i.val < P2.toPhased.toTM.tapeLength n then _ else _) = _
+  rw [dif_pos h]
+
+/-- Tape outside P2's range (P1-slack padding) is `false`. -/
+theorem embedSeqP2Config_tape_out_of_range (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h : P2.toPhased.toTM.tapeLength n ≤ i.val) :
+    (embedSeqP2Config P1 P2 c).tape i = false := by
+  show (if h' : i.val < P2.toPhased.toTM.tapeLength n then _ else _) = _
+  rw [dif_neg (by omega)]
+
+@[simp] theorem embedSeqP2Config_tape_at_head
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    (embedSeqP2Config P1 P2 c).tape (embedSeqP2Config P1 P2 c).head = c.tape c.head := by
+  have h : (embedSeqP2Config P1 P2 c).head.val < P2.toPhased.toTM.tapeLength n := by
+    simp only [embedSeqP2Config_head_val]; exact c.head.isLt
+  rw [embedSeqP2Config_tape_in_range P1 P2 c (embedSeqP2Config P1 P2 c).head h]
+  congr 1
+
+/-! ### Single-step commutation for the P2-region embedding
+
+Under the standard run-invariants on P2's config (phase in P2's range,
+phase ≠ P2.accept, Move.right head-safe), stepping the seq TM on
+`embedSeqP2Config c` equals `embedSeqP2Config (stepConfig P2 c)`.  The
+proof structure mirrors the P1-side `embedSeqConfig_stepConfig_eq`. -/
+
+/-- Phase-value after one step of seq TM on P2-embedding equals
+`P1.numPhases + (phase after P2's step)`. -/
+theorem embedSeqP2Config_stepConfig_state_fst_val
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).state.fst.val : Nat) =
+      P1.numPhases + ((TM.stepConfig (M := P2.toPhased.toTM) c).state.fst.val : Nat) := by
+  have h2 : P1.numPhases ≤ (embedSeqP2Config P1 P2 c).state.fst.val := by
+    simp [embedSeqP2Config_state_fst_val]
+  have hi_lt : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases < P2.numPhases := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases < P2.numPhases
+    have : (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val := by omega
+    rw [this]; exact h_phase
+  rw [stepConfig_seq_P2_phase P1 P2 (embedSeqP2Config P1 P2 c) h2 hi_lt]
+  rw [embedSeqP2Config_tape_at_head]
+  have hshift : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases = c.state.fst.val := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val; omega
+  have hfin : (⟨(embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases, hi_lt⟩ :
+      Fin P2.numPhases) = c.state.fst := by
+    apply Fin.ext; exact hshift
+  -- Goal: P1.numPhases + (P2.transition ⟨shifted⟩ (embed).state.snd (c.tape c.head)).fst.val =
+  --       P1.numPhases + ((stepConfig c).state.fst.val : Nat)
+  rw [stepConfig_state]
+  show P1.numPhases + (P2.transition
+      ⟨(embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases, hi_lt⟩
+      (embedSeqP2Config P1 P2 c).state.snd (c.tape c.head)).fst.val =
+    P1.numPhases + ((P2.toPhased.toTM.step c.state (c.tape c.head)).fst.fst.val : Nat)
+  congr 1
+  rw [hfin]
+  -- (embed).state.snd = c.state.snd and P2.toPhased.toTM.step = P2.transition wrapped.
+  rfl
+
+/-- State.snd after one step on P2-embedding equals P2.stepConfig's state.snd. -/
+theorem embedSeqP2Config_stepConfig_state_snd
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).state.snd =
+      (TM.stepConfig (M := P2.toPhased.toTM) c).state.snd := by
+  have h2 : P1.numPhases ≤ (embedSeqP2Config P1 P2 c).state.fst.val := by
+    simp [embedSeqP2Config_state_fst_val]
+  have hi_lt : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases < P2.numPhases := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases < P2.numPhases
+    have : (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val := by omega
+    rw [this]; exact h_phase
+  rw [stepConfig_seq_P2_state P1 P2 (embedSeqP2Config P1 P2 c) h2 hi_lt]
+  rw [embedSeqP2Config_tape_at_head]
+  have hshift : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases = c.state.fst.val := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val; omega
+  have hfin : (⟨(embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases, hi_lt⟩ :
+      Fin P2.numPhases) = c.state.fst := Fin.ext hshift
+  rw [stepConfig_state]
+  rw [hfin]
+  -- (embedSeqP2Config P1 P2 c).state.snd = c.state.snd by rfl.
+  rfl
+
+/-- Head value after Move.stay on P2-embedded config equals original. -/
+theorem embedSeqP2Config_moveHead_stay (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    ((Configuration.moveHead (c := embedSeqP2Config P1 P2 c) Move.stay : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) Move.stay : Nat) := rfl
+
+theorem embedSeqP2Config_moveHead_left (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) :
+    ((Configuration.moveHead (c := embedSeqP2Config P1 P2 c) Move.left : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) Move.left : Nat) := by
+  show (if _ : (embedSeqP2Config P1 P2 c).head.val = 0 then _ else _ : Fin _).val =
+       (if _ : c.head.val = 0 then _ else _ : Fin _).val
+  simp only [embedSeqP2Config_head_val]
+  split_ifs with h
+  · simp [embedSeqP2Config_head_val, h]
+  · rfl
+
+theorem embedSeqP2Config_moveHead_right_safe (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_safe : c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
+    ((Configuration.moveHead (c := embedSeqP2Config P1 P2 c) Move.right : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) Move.right : Nat) := by
+  have h_safe_seq : (embedSeqP2Config P1 P2 c).head.val + 1 <
+      (seq P1 P2).toPhased.toTM.tapeLength n := by
+    simp only [embedSeqP2Config_head_val]
+    have := seq_tapeLength_ge_P2 P1 P2 n
+    omega
+  show (if _ : (embedSeqP2Config P1 P2 c).head.val + 1 <
+          (seq P1 P2).toPhased.toTM.tapeLength n then _ else _ : Fin _).val =
+       (if _ : c.head.val + 1 < P2.toPhased.toTM.tapeLength n then _ else _ : Fin _).val
+  rw [dif_pos h_safe_seq, dif_pos h_safe]
+  simp [embedSeqP2Config_head_val]
+
+theorem embedSeqP2Config_moveHead_val_commutes (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n) (m : Move)
+    (h_safe : m = Move.right → c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
+    ((Configuration.moveHead (c := embedSeqP2Config P1 P2 c) m : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) m : Nat) := by
+  cases m with
+  | stay => exact embedSeqP2Config_moveHead_stay P1 P2 c
+  | left => exact embedSeqP2Config_moveHead_left P1 P2 c
+  | right => exact embedSeqP2Config_moveHead_right_safe P1 P2 c (h_safe rfl)
+
+/-- Written bit after one step on P2-embedding equals P2's step's written bit. -/
+theorem embedSeqP2Config_stepConfig_written_bit
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases) :
+    (((seq P1 P2).toPhased.toTM.step (embedSeqP2Config P1 P2 c).state
+          ((embedSeqP2Config P1 P2 c).tape (embedSeqP2Config P1 P2 c).head)).snd.fst : Bool) =
+      ((P2.toPhased.toTM.step c.state (c.tape c.head)).snd.fst : Bool) := by
+  have h2 : P1.numPhases ≤ (embedSeqP2Config P1 P2 c).state.fst.val := by
+    simp [embedSeqP2Config_state_fst_val]
+  have hi_lt : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases < P2.numPhases := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases < P2.numPhases
+    have : (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val := by omega
+    rw [this]; exact h_phase
+  rw [embedSeqP2Config_tape_at_head]
+  show ((seq P1 P2).transition (embedSeqP2Config P1 P2 c).state.fst
+          (embedSeqP2Config P1 P2 c).state.snd (c.tape c.head)).snd.snd.fst =
+       ((P2.toPhased.toTM.step c.state (c.tape c.head)).snd.fst : Bool)
+  rw [seq_transition_P2_bit P1 P2 h2 hi_lt
+    (embedSeqP2Config P1 P2 c).state.snd (c.tape c.head)]
+  have hshift : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases = c.state.fst.val := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val; omega
+  have hfin : (⟨(embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases, hi_lt⟩ :
+      Fin P2.numPhases) = c.state.fst := Fin.ext hshift
+  rw [hfin]
+  rfl
+
+/-- Move direction after one step on P2-embedding equals P2's step's move. -/
+theorem embedSeqP2Config_stepConfig_move
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases) :
+    (((seq P1 P2).toPhased.toTM.step (embedSeqP2Config P1 P2 c).state
+          ((embedSeqP2Config P1 P2 c).tape (embedSeqP2Config P1 P2 c).head)).snd.snd : Move) =
+      ((P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd : Move) := by
+  have h2 : P1.numPhases ≤ (embedSeqP2Config P1 P2 c).state.fst.val := by
+    simp [embedSeqP2Config_state_fst_val]
+  have hi_lt : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases < P2.numPhases := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases < P2.numPhases
+    have : (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val := by omega
+    rw [this]; exact h_phase
+  rw [embedSeqP2Config_tape_at_head]
+  show ((seq P1 P2).transition (embedSeqP2Config P1 P2 c).state.fst
+          (embedSeqP2Config P1 P2 c).state.snd (c.tape c.head)).snd.snd.snd =
+       ((P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd : Move)
+  rw [seq_transition_P2_move P1 P2 h2 hi_lt
+    (embedSeqP2Config P1 P2 c).state.snd (c.tape c.head)]
+  have hshift : (embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases = c.state.fst.val := by
+    show (P1.numPhases + c.state.fst.val) - P1.numPhases = c.state.fst.val; omega
+  have hfin : (⟨(embedSeqP2Config P1 P2 c).state.fst.val - P1.numPhases, hi_lt⟩ :
+      Fin P2.numPhases) = c.state.fst := Fin.ext hshift
+  rw [hfin]
+  rfl
+
+/-- Head.val after one step commutes with P2-embedding. -/
+theorem embedSeqP2Config_stepConfig_head_val
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases)
+    (h_safe : (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).head.val : Nat) =
+      ((TM.stepConfig (M := P2.toPhased.toTM) c).head.val : Nat) := by
+  rw [stepConfig_head, stepConfig_head]
+  have hmove := embedSeqP2Config_stepConfig_move P1 P2 c h_phase
+  rw [hmove]
+  exact embedSeqP2Config_moveHead_val_commutes P1 P2 c _ h_safe
+
+/-- Tape outside P2's range remains `false` after one step on P2-embedding. -/
+theorem embedSeqP2Config_stepConfig_tape_out_of_range
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h_out : P2.toPhased.toTM.tapeLength n ≤ i.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).tape i = false := by
+  rw [stepConfig_tape]
+  have h_head_ne : i ≠ (embedSeqP2Config P1 P2 c).head := by
+    intro hEq
+    have : i.val = (embedSeqP2Config P1 P2 c).head.val := by rw [hEq]
+    rw [embedSeqP2Config_head_val] at this
+    have := c.head.isLt
+    omega
+  unfold Configuration.write
+  rw [dif_neg h_head_ne]
+  exact embedSeqP2Config_tape_out_of_range P1 P2 c i h_out
+
+/-- Tape INSIDE P2's range but not at head is unchanged after step. -/
+theorem embedSeqP2Config_stepConfig_tape_in_range_not_head
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h_in : i.val < P2.toPhased.toTM.tapeLength n)
+    (h_not_head : i.val ≠ c.head.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).tape i = c.tape ⟨i.val, h_in⟩ := by
+  rw [stepConfig_tape]
+  have h_head_ne : i ≠ (embedSeqP2Config P1 P2 c).head := by
+    intro hEq
+    have : i.val = (embedSeqP2Config P1 P2 c).head.val := by rw [hEq]
+    rw [embedSeqP2Config_head_val] at this
+    exact h_not_head this
+  unfold Configuration.write
+  rw [dif_neg h_head_ne]
+  exact embedSeqP2Config_tape_in_range P1 P2 c i h_in
+
+/-- Tape at head after step equals the bit P2 wrote. -/
+theorem embedSeqP2Config_stepConfig_tape_at_head
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).tape (embedSeqP2Config P1 P2 c).head =
+      (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.fst := by
+  rw [stepConfig_tape]
+  unfold Configuration.write
+  rw [dif_pos rfl]
+  exact embedSeqP2Config_stepConfig_written_bit P1 P2 c h_phase
+
+/-- Full tape commutation after one step on P2-embedding. -/
+theorem embedSeqP2Config_stepConfig_tape_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases)
+    (h_safe : (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).tape =
+      (embedSeqP2Config P1 P2
+        (TM.stepConfig (M := P2.toPhased.toTM) c)).tape := by
+  funext i
+  by_cases h : i.val < P2.toPhased.toTM.tapeLength n
+  · rw [embedSeqP2Config_tape_in_range P1 P2 _ i h]
+    simp only [stepConfig_tape]
+    by_cases heq : i.val = c.head.val
+    · have hLHS : i = (embedSeqP2Config P1 P2 c).head := by
+        apply Fin.ext; rw [embedSeqP2Config_head_val]; exact heq
+      have hRHS : (⟨i.val, h⟩ : Fin _) = c.head := Fin.ext heq
+      unfold Configuration.write
+      rw [dif_pos hLHS, dif_pos hRHS]
+      exact embedSeqP2Config_stepConfig_written_bit P1 P2 c h_phase
+    · have hLHS : i ≠ (embedSeqP2Config P1 P2 c).head := by
+        intro hEq
+        apply heq
+        have : i.val = (embedSeqP2Config P1 P2 c).head.val := by rw [hEq]
+        rw [embedSeqP2Config_head_val] at this; exact this
+      have hRHS : (⟨i.val, h⟩ : Fin _) ≠ c.head := by
+        intro hEq
+        apply heq
+        have : (⟨i.val, h⟩ : Fin _).val = c.head.val := by rw [hEq]
+        exact this
+      unfold Configuration.write
+      rw [dif_neg hLHS, dif_neg hRHS]
+      exact embedSeqP2Config_tape_in_range P1 P2 c i h
+  · have h_out : P2.toPhased.toTM.tapeLength n ≤ i.val := by omega
+    rw [embedSeqP2Config_stepConfig_tape_out_of_range P1 P2 c i h_out,
+        embedSeqP2Config_tape_out_of_range P1 P2 _ i h_out]
+
+/-- Full state equality after one step on P2-embedding: constructs Sigma equality from component equalities. -/
+theorem embedSeqP2Config_stepConfig_state_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).state =
+      (embedSeqP2Config P1 P2 (TM.stepConfig (M := P2.toPhased.toTM) c)).state := by
+  have hval := embedSeqP2Config_stepConfig_state_fst_val P1 P2 c h_phase
+  have hsnd := embedSeqP2Config_stepConfig_state_snd P1 P2 c h_phase
+  have hsnd_embed :
+      (embedSeqP2Config P1 P2 (TM.stepConfig (M := P2.toPhased.toTM) c)).state.snd =
+        (TM.stepConfig (M := P2.toPhased.toTM) c).state.snd := rfl
+  have hval_embed :
+      ((embedSeqP2Config P1 P2 (TM.stepConfig (M := P2.toPhased.toTM) c)).state.fst : Nat) =
+        P1.numPhases + ((TM.stepConfig (M := P2.toPhased.toTM) c).state.fst : Nat) := rfl
+  apply Sigma.ext
+  · apply Fin.ext
+    rw [hval, ← hval_embed]
+  · simp only [hsnd_embed]
+    exact heq_of_eq hsnd
+
+/-- Head.val-level equality lifted to Fin equality (strong form). -/
+theorem embedSeqP2Config_stepConfig_head_embed_val
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases)
+    (h_safe : (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqP2Config P1 P2 c)).head.val : Nat) =
+      ((embedSeqP2Config P1 P2
+        (TM.stepConfig (M := P2.toPhased.toTM) c)).head.val : Nat) := by
+  rw [embedSeqP2Config_head_val]
+  exact embedSeqP2Config_stepConfig_head_val P1 P2 c h_phase h_safe
+
+/-- **FULL stepConfig commutation on P2-embedding**. -/
+theorem embedSeqP2Config_stepConfig_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P2.numPhases)
+    (h_safe : (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
+    TM.stepConfig (M := (seq P1 P2).toPhased.toTM) (embedSeqP2Config P1 P2 c) =
+      embedSeqP2Config P1 P2 (TM.stepConfig (M := P2.toPhased.toTM) c) := by
+  have h_state := embedSeqP2Config_stepConfig_state_eq P1 P2 c h_phase
+  have h_tape := embedSeqP2Config_stepConfig_tape_eq P1 P2 c h_phase h_safe
+  have h_head_val :=
+    embedSeqP2Config_stepConfig_head_embed_val P1 P2 c h_phase h_safe
+  cases hL : (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+                (embedSeqP2Config P1 P2 c)) with
+  | mk sL hL_head tL =>
+    cases hR : (embedSeqP2Config P1 P2 (TM.stepConfig (M := P2.toPhased.toTM) c)) with
+    | mk sR hR_head tR =>
+      have hse : sL = sR := by rw [hL] at h_state; rw [hR] at h_state; exact h_state
+      have hte : tL = tR := by rw [hL] at h_tape; rw [hR] at h_tape; exact h_tape
+      have hhe : hL_head = hR_head := by
+        apply Fin.ext
+        have : (hL_head : Nat) = (hR_head : Nat) := by
+          rw [hL] at h_head_val; rw [hR] at h_head_val; exact h_head_val
+        exact this
+      subst hse
+      subst hte
+      subst hhe
+      rfl
+
+/-- **Multi-step commutation on P2-embedding** via induction. -/
+theorem embedSeqP2Config_runConfig_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P2.toPhased.toTM) n)
+    (t : Nat)
+    (h_safe_all : ∀ s < t,
+      let c_s := TM.runConfig (M := P2.toPhased.toTM) c s
+      c_s.state.fst.val < P2.numPhases ∧
+      ((P2.toPhased.toTM.step c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+        c_s.head.val + 1 < P2.toPhased.toTM.tapeLength n)) :
+    TM.runConfig (M := (seq P1 P2).toPhased.toTM) (embedSeqP2Config P1 P2 c) t =
+      embedSeqP2Config P1 P2 (TM.runConfig (M := P2.toPhased.toTM) c t) := by
+  induction t with
+  | zero => rfl
+  | succ t' ih =>
+    have ih' : TM.runConfig (M := (seq P1 P2).toPhased.toTM) (embedSeqP2Config P1 P2 c) t' =
+        embedSeqP2Config P1 P2 (TM.runConfig (M := P2.toPhased.toTM) c t') :=
+      ih (fun s hs => h_safe_all s (by omega))
+    rw [runConfig_succ, runConfig_succ, ih']
+    have hinv := h_safe_all t' (by omega)
+    exact embedSeqP2Config_stepConfig_eq P1 P2
+      (TM.runConfig (M := P2.toPhased.toTM) c t') hinv.1 hinv.2
+
 end ConstStatePhasedProgram
 
 end TM

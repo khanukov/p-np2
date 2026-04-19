@@ -891,6 +891,22 @@ theorem embedSeqConfig_stepConfig_head_val
   rw [hmove]
   exact embedSeqConfig_moveHead_val_commutes P1 P2 c _ (fun h => h_safe h)
 
+/-- Head after stepConfig — stronger lemma: the Fin-value equality
+lifts to Fin equality for positions consistent with the new head. -/
+theorem embedSeqConfig_stepConfig_head_embed_val
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).head.val : Nat) =
+      ((embedSeqConfig P1 P2
+        (TM.stepConfig (M := P1.toPhased.toTM) c)).head.val : Nat) := by
+  rw [embedSeqConfig_head_val]
+  exact embedSeqConfig_stepConfig_head_val P1 P2 c h_phase h_not_accept h_safe
+
 end ConstStatePhasedProgram
 
 end TM

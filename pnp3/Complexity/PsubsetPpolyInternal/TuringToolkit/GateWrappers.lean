@@ -523,6 +523,68 @@ theorem seqList_timeBound_le_uniform {S : Type v}
       simp [Nat.add_mul, Nat.one_mul]
     omega
 
+/-! ### Uniform writes-at-dst lemma for `evalOneGateCS`
+
+After running any `evalOneGateCS g slot Δrowbase Δscratch`, the tape
+is modified only at `head + Δscratch + slot`: some bit (depending on
+`g`) is written there.  This uniform "writes somewhere" invariant
+is used in the `circuitEvaluatorCS` correctness induction to show
+that later gates don't overwrite earlier scratch slots. -/
+
+theorem evalOneGateCS_writes_at_dst {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    ∃ (b : Bool),
+    (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c
+        (2 * (Δscratch + slot) + 3)).tape =
+      c.write ⟨(c.head : ℕ) + (Δscratch + slot), h_bound⟩ b := by
+  match g with
+  | .input i =>
+    -- evalOneGateCS = gateInputCS i Δrowbase (Δscratch + slot) ...
+    obtain ⟨h_src, ht⟩ :=
+      gateInputCS_run_full i Δrowbase (Δscratch + slot)
+        (by have := i.isLt; omega) c h_phase h_state_snd h_bound
+    exact ⟨_, ht⟩
+  | .const b =>
+    have ht := gateConstCS_run_full b (Δscratch + slot) c h_phase h_state_snd h_bound
+    exact ⟨b, ht⟩
+  | .notGate j =>
+    obtain ⟨_, ht⟩ :=
+      gateNotCS_run_full (Δscratch + min j slot) (Δscratch + slot)
+        (by have : min j slot ≤ slot := Nat.min_le_right _ _; omega)
+        c h_phase h_state_snd h_bound
+    exact ⟨_, ht⟩
+  | .andGate j l =>
+    obtain ⟨_, _, ht⟩ :=
+      gateAndCS_run_full (Δscratch + min (min j l) slot) (Δscratch + min (max j l) slot)
+        (Δscratch + slot)
+        (by
+          have hmm : min j l ≤ max j l := by
+            rcases Nat.le_total j l with hjl | hjl
+            · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+            · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+          omega)
+        (by have : min (max j l) slot ≤ slot := Nat.min_le_right _ _; omega)
+        c h_phase h_state_snd h_bound
+    exact ⟨_, ht⟩
+  | .orGate j l =>
+    obtain ⟨_, _, ht⟩ :=
+      gateOrCS_run_full (Δscratch + min (min j l) slot) (Δscratch + min (max j l) slot)
+        (Δscratch + slot)
+        (by
+          have hmm : min j l ≤ max j l := by
+            rcases Nat.le_total j l with hjl | hjl
+            · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+            · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+          omega)
+        (by have : min (max j l) slot ≤ slot := Nat.min_le_right _ _; omega)
+        c h_phase h_state_snd h_bound
+    exact ⟨_, ht⟩
+
 end GateEvalCS
 
 end TM

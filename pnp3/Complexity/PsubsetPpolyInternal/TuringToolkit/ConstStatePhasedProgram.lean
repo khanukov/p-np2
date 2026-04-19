@@ -873,6 +873,24 @@ theorem embedSeqConfig_stepConfig_state_eq
     simp only [hsnd_embed]
     exact heq_of_eq hsnd
 
+/-- Head value after one stepConfig commutes with embed, under the
+usual P1-normal-not-accept condition and Move.right safety hypothesis.
+(Value-level form; lifting to Fin equality follows by Fin.ext.) -/
+theorem embedSeqConfig_stepConfig_head_val
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).head.val : Nat) =
+      ((TM.stepConfig (M := P1.toPhased.toTM) c).head.val : Nat) := by
+  rw [stepConfig_head, stepConfig_head]
+  have hmove := embedSeqConfig_stepConfig_move P1 P2 c h_phase h_not_accept
+  rw [hmove]
+  exact embedSeqConfig_moveHead_val_commutes P1 P2 c _ (fun h => h_safe h)
+
 end ConstStatePhasedProgram
 
 end TM

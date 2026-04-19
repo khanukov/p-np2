@@ -585,6 +585,27 @@ theorem evalOneGateCS_writes_at_dst {n : Nat} (g : SLGate n) (slot : Nat)
         c h_phase h_state_snd h_bound
     exact ⟨_, ht⟩
 
+/-! ### Base case: `circuitEvaluatorCS` on an empty gate list
+
+Circuit evaluator on empty list is `seqList [] = idleCS`, which runs
+in 0 steps and preserves the configuration entirely.  This is the
+base case of the induction for the full correctness theorem. -/
+
+theorem circuitEvaluatorCS_nil_timeBound {n : Nat}
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) (m : Nat) :
+    (circuitEvaluatorCS (gates := ([] : List (SLGate n)))
+       Δrowbase Δscratch hle).timeBound m = 0 := by
+  rfl
+
+/-- Running the empty-circuit evaluator for any number of steps
+preserves the starting configuration at step 0. -/
+theorem circuitEvaluatorCS_nil_runConfig_zero {n : Nat}
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration (M := (circuitEvaluatorCS (gates := ([] : List (SLGate n)))
+        Δrowbase Δscratch hle).toPhased.toTM) N) :
+    TM.runConfig (M := (circuitEvaluatorCS (gates := ([] : List (SLGate n)))
+        Δrowbase Δscratch hle).toPhased.toTM) c 0 = c := rfl
+
 end GateEvalCS
 
 end TM

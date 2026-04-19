@@ -596,6 +596,73 @@ theorem seqList_numPhases_cons (p : ConstStatePhasedProgram S)
     (rest : List (ConstStatePhasedProgram S)) :
     (seqList (p :: rest)).numPhases = p.numPhases + (seqList rest).numPhases := rfl
 
+/-! ### Embedding from P1's TM into the composed `seq P1 P2` TM
+
+For a P1-configuration `c`, `embedSeqConfig P1 P2 c` produces the
+corresponding configuration of `(seq P1 P2).toPhased.toTM`:
+- Phase index is embedded via `Fin.castLE` (P1.numPhases ≤ P1+P2).
+- Head is embedded via `Fin.castLE` (P1.tapeLength ≤ seq.tapeLength).
+- Tape is extended with `false` padding at positions outside P1's range.
+
+Useful for transporting P1's correctness theorems to the composed TM
+during the prefix where the composed TM's phase is in P1's range. -/
+
+theorem seq_tapeLength_ge_P1 (P1 P2 : ConstStatePhasedProgram S) (n : Nat) :
+    P1.toPhased.toTM.tapeLength n ≤ (seq P1 P2).toPhased.toTM.tapeLength n := by
+  show n + P1.timeBound n + 1 ≤ n + (P1.timeBound n + P2.timeBound n + 1) + 1
+  omega
+
+def embedSeqConfig (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    Configuration (M := (seq P1 P2).toPhased.toTM) n where
+  state := ⟨⟨c.state.fst.val, by
+      have h1 := c.state.fst.isLt
+      -- `P1.toPhased.numPhases = P1.numPhases` by toPhased_numPhases
+      simp only [toPhased_numPhases] at h1
+      show c.state.fst.val < (seq P1 P2).numPhases
+      rw [seq_numPhases]
+      omega⟩,
+    c.state.snd⟩
+  head := ⟨c.head.val, by
+    have := c.head.isLt
+    have := seq_tapeLength_ge_P1 P1 P2 n
+    omega⟩
+  tape := fun i =>
+    if h : i.val < P1.toPhased.toTM.tapeLength n then
+      c.tape ⟨i.val, h⟩
+    else
+      false
+
+@[simp] theorem embedSeqConfig_state_fst_val (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    ((embedSeqConfig P1 P2 c).state.fst : Nat) = c.state.fst.val := rfl
+
+@[simp] theorem embedSeqConfig_state_snd (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    (embedSeqConfig P1 P2 c).state.snd = c.state.snd := rfl
+
+@[simp] theorem embedSeqConfig_head_val (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    ((embedSeqConfig P1 P2 c).head : Nat) = c.head.val := rfl
+
+/-- Tape at a position within P1's tape range is unchanged by embedding. -/
+theorem embedSeqConfig_tape_in_range (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h : i.val < P1.toPhased.toTM.tapeLength n) :
+    (embedSeqConfig P1 P2 c).tape i = c.tape ⟨i.val, h⟩ := by
+  show (if h' : i.val < P1.toPhased.toTM.tapeLength n then _ else _) = _
+  rw [dif_pos h]
+
+/-- Tape outside P1's range (padding region) is `false`. -/
+theorem embedSeqConfig_tape_out_of_range (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h : P1.toPhased.toTM.tapeLength n ≤ i.val) :
+    (embedSeqConfig P1 P2 c).tape i = false := by
+  show (if h' : i.val < P1.toPhased.toTM.tapeLength n then _ else _) = _
+  rw [dif_neg (by omega)]
+
 end ConstStatePhasedProgram
 
 end TM

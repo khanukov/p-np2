@@ -843,6 +843,36 @@ theorem embedSeqConfig_stepConfig_components
   · exact embedSeqConfig_stepConfig_written_bit P1 P2 c h_phase h_not_accept
   · exact embedSeqConfig_stepConfig_move P1 P2 c h_phase h_not_accept
 
+/-- Full state equality after one stepConfig: the state (as a Σ-type
+value) of `stepConfig (seq TM) (embed c)` equals the state of
+`embed (stepConfig P1 c)`.  Combines phase-index Fin.ext with state.snd
+equality. -/
+theorem embedSeqConfig_stepConfig_state_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).state =
+      (embedSeqConfig P1 P2 (TM.stepConfig (M := P1.toPhased.toTM) c)).state := by
+  -- Sigma equality: (a, b) = (a', b') iff a = a' and b = b' (up to heq).
+  have hval := embedSeqConfig_stepConfig_state_fst_val P1 P2 c h_phase h_not_accept
+  have hsnd := embedSeqConfig_stepConfig_state_snd P1 P2 c h_phase h_not_accept
+  have hsnd_embed :
+      (embedSeqConfig P1 P2 (TM.stepConfig (M := P1.toPhased.toTM) c)).state.snd =
+        (TM.stepConfig (M := P1.toPhased.toTM) c).state.snd := rfl
+  have hval_embed :
+      ((embedSeqConfig P1 P2 (TM.stepConfig (M := P1.toPhased.toTM) c)).state.fst : Nat) =
+        ((TM.stepConfig (M := P1.toPhased.toTM) c).state.fst : Nat) := rfl
+  -- Construct Sigma equality from component equalities.
+  apply Sigma.ext
+  · -- fst equality: both Fins have same Nat value
+    apply Fin.ext
+    rw [hval, ← hval_embed]
+  · -- snd equality (heterogeneous to handle the Σ type)
+    simp only [hsnd_embed]
+    exact heq_of_eq hsnd
+
 end ConstStatePhasedProgram
 
 end TM

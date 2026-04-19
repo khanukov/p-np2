@@ -907,6 +907,22 @@ theorem embedSeqConfig_stepConfig_head_embed_val
   rw [embedSeqConfig_head_val]
   exact embedSeqConfig_stepConfig_head_val P1 P2 c h_phase h_not_accept h_safe
 
+/-- After stepConfig, head moved plus-one is in P1's tape range iff
+the original head plus-one was in P1's range (via move-commutation).
+Technical helper for tape commutation. -/
+theorem embedSeqConfig_stepConfig_head_in_P1
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).head.val : Nat) <
+      P1.toPhased.toTM.tapeLength n := by
+  rw [embedSeqConfig_stepConfig_head_val P1 P2 c h_phase h_not_accept h_safe]
+  exact (TM.stepConfig (M := P1.toPhased.toTM) c).head.isLt
+
 end ConstStatePhasedProgram
 
 end TM

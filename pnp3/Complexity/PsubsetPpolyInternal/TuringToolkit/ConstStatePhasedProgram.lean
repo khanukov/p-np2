@@ -811,6 +811,38 @@ theorem embedSeqConfig_stepConfig_move
     (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)]
   rfl
 
+/-- Data-level commutation summary: all three value-level components
+(phase index, local state, written bit, move direction) of one step
+commute with embedSeqConfig under P1-normal-not-accept conditions.
+
+Packaged as a conjunction for use in downstream proofs. -/
+theorem embedSeqConfig_stepConfig_components
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    -- phase index equality
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).state.fst.val : Nat) =
+      ((TM.stepConfig (M := P1.toPhased.toTM) c).state.fst.val : Nat) ∧
+    -- local state equality
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).state.snd =
+      (TM.stepConfig (M := P1.toPhased.toTM) c).state.snd ∧
+    -- written bit equality
+    (((seq P1 P2).toPhased.toTM.step (embedSeqConfig P1 P2 c).state
+          ((embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head)).snd.fst : Bool) =
+      ((P1.toPhased.toTM.step c.state (c.tape c.head)).snd.fst : Bool) ∧
+    -- move direction equality
+    (((seq P1 P2).toPhased.toTM.step (embedSeqConfig P1 P2 c).state
+          ((embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head)).snd.snd : Move) =
+      ((P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd : Move) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact embedSeqConfig_stepConfig_state_fst_val P1 P2 c h_phase h_not_accept
+  · exact embedSeqConfig_stepConfig_state_snd P1 P2 c h_phase h_not_accept
+  · exact embedSeqConfig_stepConfig_written_bit P1 P2 c h_phase h_not_accept
+  · exact embedSeqConfig_stepConfig_move P1 P2 c h_phase h_not_accept
+
 end ConstStatePhasedProgram
 
 end TM

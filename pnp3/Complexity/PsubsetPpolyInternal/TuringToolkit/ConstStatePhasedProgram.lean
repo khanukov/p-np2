@@ -983,6 +983,52 @@ theorem embedSeqConfig_stepConfig_tape_at_head
   rw [dif_pos rfl]
   exact embedSeqConfig_stepConfig_written_bit P1 P2 c h_phase h_not_accept
 
+/-- **Full tape commutation** after one stepConfig: funext over all
+Fin positions, combining the three case lemmas (out-of-range, in-range
+not-head, in-range at-head). -/
+theorem embedSeqConfig_stepConfig_tape_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).tape =
+      (embedSeqConfig P1 P2
+        (TM.stepConfig (M := P1.toPhased.toTM) c)).tape := by
+  funext i
+  by_cases h : i.val < P1.toPhased.toTM.tapeLength n
+  · -- Inside P1 range.
+    rw [embedSeqConfig_tape_in_range P1 P2 _ i h]
+    simp only [stepConfig_tape]
+    by_cases heq : i.val = c.head.val
+    · -- At head.
+      have hLHS : i = (embedSeqConfig P1 P2 c).head := by
+        apply Fin.ext; rw [embedSeqConfig_head_val]; exact heq
+      have hRHS : (⟨i.val, h⟩ : Fin _) = c.head := Fin.ext heq
+      unfold Configuration.write
+      rw [dif_pos hLHS, dif_pos hRHS]
+      exact embedSeqConfig_stepConfig_written_bit P1 P2 c h_phase h_not_accept
+    · -- Not at head.
+      have hLHS : i ≠ (embedSeqConfig P1 P2 c).head := by
+        intro hEq
+        apply heq
+        have : i.val = (embedSeqConfig P1 P2 c).head.val := by rw [hEq]
+        rw [embedSeqConfig_head_val] at this; exact this
+      have hRHS : (⟨i.val, h⟩ : Fin _) ≠ c.head := by
+        intro hEq
+        apply heq
+        have : (⟨i.val, h⟩ : Fin _).val = c.head.val := by rw [hEq]
+        exact this
+      unfold Configuration.write
+      rw [dif_neg hLHS, dif_neg hRHS]
+      exact embedSeqConfig_tape_in_range P1 P2 c i h
+  · -- Outside P1 range.
+    have h_out : P1.toPhased.toTM.tapeLength n ≤ i.val := by omega
+    rw [embedSeqConfig_stepConfig_tape_out_of_range P1 P2 c h_phase h_not_accept h_safe i h_out,
+        embedSeqConfig_tape_out_of_range P1 P2 _ i h_out]
+
 end ConstStatePhasedProgram
 
 end TM

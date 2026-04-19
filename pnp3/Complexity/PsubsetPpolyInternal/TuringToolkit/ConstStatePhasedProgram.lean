@@ -719,6 +719,25 @@ theorem embedSeqConfig_stepConfig_state_snd
     (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)]
   rfl
 
+/-- Head value after Move.stay on embedded config equals original. -/
+theorem embedSeqConfig_moveHead_stay (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    ((Configuration.moveHead (c := embedSeqConfig P1 P2 c) Move.stay : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) Move.stay : Nat) := rfl
+
+/-- Head value after Move.left on embedded config equals original (both
+clamp at 0 identically). -/
+theorem embedSeqConfig_moveHead_left (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    ((Configuration.moveHead (c := embedSeqConfig P1 P2 c) Move.left : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) Move.left : Nat) := by
+  show (if _ : (embedSeqConfig P1 P2 c).head.val = 0 then _ else _ : Fin _).val =
+       (if _ : c.head.val = 0 then _ else _ : Fin _).val
+  simp only [embedSeqConfig_head_val]
+  split_ifs with h
+  · simp [embedSeqConfig_head_val, h]
+  · rfl
+
 end ConstStatePhasedProgram
 
 end TM

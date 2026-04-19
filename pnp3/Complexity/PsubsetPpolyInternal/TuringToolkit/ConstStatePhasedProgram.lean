@@ -738,6 +738,25 @@ theorem embedSeqConfig_moveHead_left (P1 P2 : ConstStatePhasedProgram S) {n : Na
   · simp [embedSeqConfig_head_val, h]
   · rfl
 
+/-- Head value after Move.right on embedded config equals original, when
+the head is safely within P1's tape range (head + 1 < P1.tapeLength).
+Under this safety hypothesis, neither P1 nor seq clamps. -/
+theorem embedSeqConfig_moveHead_right_safe (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_safe : c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    ((Configuration.moveHead (c := embedSeqConfig P1 P2 c) Move.right : Fin _) : Nat) =
+      (Configuration.moveHead (c := c) Move.right : Nat) := by
+  have h_safe_seq : (embedSeqConfig P1 P2 c).head.val + 1 <
+      (seq P1 P2).toPhased.toTM.tapeLength n := by
+    simp only [embedSeqConfig_head_val]
+    have := seq_tapeLength_ge_P1 P1 P2 n
+    omega
+  show (if _ : (embedSeqConfig P1 P2 c).head.val + 1 <
+          (seq P1 P2).toPhased.toTM.tapeLength n then _ else _ : Fin _).val =
+       (if _ : c.head.val + 1 < P1.toPhased.toTM.tapeLength n then _ else _ : Fin _).val
+  rw [dif_pos h_safe_seq, dif_pos h_safe]
+  simp [embedSeqConfig_head_val]
+
 end ConstStatePhasedProgram
 
 end TM

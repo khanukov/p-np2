@@ -252,62 +252,90 @@ piece that helps Milestones E/F/G uniformly.
 | `b37c646` | 17 | idleCS + seqList |
 | `e1ca9e3` | 18 | evalOneGateCS + circuitEvaluatorCS |
 | `b29700a` | 19 | seqList_timeBound_le_uniform (polynomial bound) |
-| `8f22b85` | 20 | combineAtOffsetCS transport lemmas (transition / step step-level eq) |
+| `8f22b85` | 20 | combineAtOffsetCS transport lemmas |
 | `078fb7d` | 21 | castConfig generic + castCombineConfig specialized |
-| `4a3c96e` | 22 | **Milestone β COMPLETE**: combineAtOffsetCS_run_full via runConfig commutation |
-| `e7baaed` | 23 | **5 gate `*CS_run_full` correctness theorems** via combineAtOffsetCS_run_full |
-| `c811260` | 24 | evalOneGateCS_writes_at_dst uniform invariant (case analysis on SLGate) |
-| `7925278` | 25 | circuitEvaluatorCS base case (empty gate list) |
+| `4a3c96e` | 22 | **Milestone β COMPLETE**: combineAtOffsetCS_run_full |
+| `e7baaed` | 23 | 5 gate `*CS_run_full` correctness |
+| `c811260` | 24 | evalOneGateCS_writes_at_dst uniform invariant |
+| `7925278` | 25 | circuitEvaluatorCS base case |
+| `90362c6` | 26 | embedSeqConfig generic seq embed |
+| `90a0ca2` | 27 | embedSeqConfig_tape_at_head simp |
+| `6b1776a` | 28 | stepConfig state commutation (phase + snd) |
+| `b72afc5` | 29 | moveHead_stay + moveHead_left |
+| `cbe518a` | 30 | moveHead_right_safe |
+| `4fa4b03` | 31 | moveHead_val_commutes unified |
+| `0ea5e8e` | 32 | written_bit + move commutation |
+| `ec924c5` | 33 | stepConfig_components summary |
+| `990f9bd` | 34 | stepConfig_state_eq (Σ-level) |
+| `a896f7c` | 35 | stepConfig_head_val commutation |
+| `ccddb7c` | 36 | head_val via embed |
+| `3dce1ec` | 37 | stepConfig_head_in_P1 range invariant |
+| `426f18e` | 38 | stepConfig_tape_out_of_range |
+| `41625c9` | 39 | tape in-range (both head cases) |
+| `8bc6cb0` | 40 | **stepConfig_tape_eq full funext** |
+| `6e3be75` | 41 | **stepConfig_eq FULL Configuration equality** |
+| `639243e` | 42 | **runConfig_eq multi-step induction** |
 
-## Milestone F remaining work (detailed)
+## Milestone F status (updated after step 42)
 
-### Key structural blocker — seqList simulation
+### CLOSED (steps 22-42)
 
-The core difficulty for `circuitEvaluatorCS_run_correct` is the
-**seq-simulation** between the composed TM and the individual gate
-TMs.  Specifically:
+- **β: Cast bridge** — combineAtOffsetCS_run_full transported.
+- **F.1: Per-gate correctness** — all 5 gate CS wrappers.
+- **F.2: Uniform writes_at_dst** — evalOneGateCS case analysis.
+- **F.3: Seq simulation bridge** (the former blocker):
+  - `embedSeqConfig` definition + all @[simp] infrastructure.
+  - All component step-commutations (state / head / bit / move).
+  - Full `stepConfig_eq` Configuration equality.
+  - **Multi-step `runConfig_eq` induction** — the keystone.
 
-- `evalOneGateCS g slot` lives in its OWN TM with its own numPhases.
-- `circuitEvaluatorCS gates` lives in a LARGER TM (via seqList/seq)
-  with summed numPhases.
-- To transport `gate*CS_run_full` (which is about the per-gate TM)
-  into claims about `circuitEvaluatorCS`'s run, we need a cast
-  bridge **between `evalOneGateCS.toPhased.toTM` and the seqList
-  composite TM** — same shape of bridge as session 22 (castCombineConfig)
-  but more general.
+### REMAINING (F.4 — main theorem)
 
-### Concrete remaining sub-milestones
+**`circuitEvaluatorCS_run_correct`** (~300 LOC, 1 focused session).
 
-1. **F.3a — Generic seqList cast bridge** (~300 LOC):
-   `castSeqListConfig` between a gate's solo TM and its "slice"
-   within `seqList`.  Uses `castConfig` from step 21 with appropriate
-   state/tapeLength agreements.  Similar pattern to `castCombineConfig`.
+Structure:
+```lean
+theorem circuitEvaluatorCS_run_correct {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration (M := (circuitEvaluatorCS gates ...).toPhased.toTM) N)
+    (h_init : c is at program's start state)
+    (h_bound : enough tape + phase bounds) :
+    ∃ (vals : List Bool),
+      SLProgram.evalAll gates (row-accessor c) = some vals ∧
+      ∀ (i : Fin gates.length),
+        (runConfig ... (timeBound ...)).tape
+          ⟨c.head.val + Δscratch + i.val, _⟩ = vals[i]
+```
 
-2. **F.3b — seqList runConfig decomposition** (~200 LOC):
-   `seqList_runConfig_cons` — running `seqList (p :: rest)` for
-   `p.timeBound + 1 + (seqList rest).timeBound` steps equals running
-   `p` alone (via cast), then boundary handoff, then `seqList rest`
-   alone (via another cast).  Uses step-level seq lemmas from
-   sessions 13-14 + new casts.
+Proof method (mechanical now):
+1. Induction on `gates` list.
+2. Base case (empty): `seqList []` is `idleCS`; tape unchanged; evalAll [] = some [].
+3. Inductive case (g :: rest):
+   a. First `evalOneGateCS g 0` runs within its own P1 range of the composed TM.
+      Apply `embedSeqConfig_runConfig_eq` (step 42) to translate to g's solo run.
+   b. Apply g-specific correctness (step 23) to get scratch[0] = gate output.
+   c. Boundary step: phase jumps to `(seqList rest-shifted)`'s start.
+      Apply `stepConfig_seq_P1_boundary_*` (step 13).
+   d. By IH on `rest`, remaining gates produce correct scratch[1..].
+   e. Tape-region-disjointness shows gate 0's scratch[0] isn't overwritten.
 
-3. **F.3c — Preservation of prior scratch** (~150 LOC):
-   Inductive invariant that gate `i`'s run writes only at
-   `head + Δscratch + i`, leaving prior scratch slots untouched.
-   Uses evalOneGateCS_writes_at_dst (step 24) + runConfig decomposition.
+**Tools available for F.4 (all in Lean):**
+- ✅ `embedSeqConfig_runConfig_eq` (step 42): P1-prefix commutes with embed.
+- ✅ `stepConfig_seq_P1_boundary_*` (step 13): handoff semantics.
+- ✅ `runConfig_tape_eq_outside_range` (Foundation): tape preservation.
+- ✅ All 5 `gate*CS_run_full` (step 23): per-gate output correctness.
+- ✅ `evalOneGateCS_writes_at_dst` (step 24): uniform write invariant.
 
-4. **F.4 — Main theorem** (~250 LOC):
-   `circuitEvaluatorCS_run_correct`: for every gate index `k < gates.length`,
-   `tape[head + Δscratch + k]` after run equals
-   `SLGate.compute gates[k] (row-accessor) (scratch[0..k]-accessor)`.
-   Induction over gates.length using F.3c's preservation.
+**No remaining architectural blockers.**  F.4 is pure mechanical induction + combination of existing lemmas.
 
-### Session-by-session remaining
+## Overall Phase I remaining
 
-- Session A (~500 LOC): F.3a + F.3b — seqList simulation bridge.
-- Session B (~400 LOC): F.3c + F.4 — main correctness via induction.
+- **Milestone F**: ~300 LOC (F.4 only).
+- **Milestone G** (row consistency + variable offsets): ~1000 LOC + arch decision.
+- **Milestone H** (row loop): ~600 LOC.
+- **Milestone I** (mcspVerifier + runtime): ~800 LOC.
+- **Milestone J+K** (MCSPVerifier.lean + wire-in): ~400 LOC.
 
-After F: Milestones G (row consistency) → H (row loop) → I
-(mcspVerifierProgram + runtime) → J, K. **Estimated 5-6 more focused
-sessions for full Phase I closure.**
+**Total Phase I remaining: ~3 100 LOC.**
 
-Total Milestone F remaining: ~900 LOC across 2 sessions.
+After F closure, main technical question shifts to Milestone G's variable-offset problem (the other foundation-level architectural question).

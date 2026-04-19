@@ -31,6 +31,7 @@ Time bound: `2*Δdst + 3`. -/
 namespace CombineAtOffset
 
 open Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 def combineAtOffsetProgram (Δ1 Δ2 Δdst : Nat)
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
@@ -1402,6 +1403,102 @@ theorem combineAtOffsetCS_run_invariants_in_prefix
                 exact t_move
               rw [hmove_prog] at hmove_left; cases hmove_left
     exact hhead_CS
+
+/-! ### Running `combineAtOffsetCS` embedded in `seq P1 P2` past the boundary
+
+Composing the P1-prefix commutation (`embedSeqConfig_runConfig_eq` +
+`combineAtOffsetCS_run_invariants_in_prefix`) with the boundary step
+(`stepConfig_seq_P1_boundary_*`) yields a clean "after `P1.timeBound + 1`
+steps" characterization: the seq TM has transitioned into P2's region
+with `P2.startState`, head back at the original position, and the
+gate's result bit committed at the destination.  Direct building block
+for the multi-gate `circuitEvaluatorCS` correctness induction. -/
+
+theorem combineAtOffsetCS_in_seq_run_past_boundary
+    (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
+    (op : Bool → Bool → Bool)
+    (P2 : ConstStatePhasedProgram (Bool × Bool)) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n) :
+    ((TM.runConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+      (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c)
+      (2 * Δdst + 4)).state.fst.val : Nat) =
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).numPhases + P2.startPhase.val ∧
+    (TM.runConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+      (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c)
+      (2 * Δdst + 4)).state.snd = P2.startState ∧
+    (TM.runConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+      (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c)
+      (2 * Δdst + 4)).head =
+        (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2
+          (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+            (2 * Δdst + 3))).head ∧
+    (TM.runConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+      (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c)
+      (2 * Δdst + 4)).tape =
+        (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2
+          (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+            (2 * Δdst + 3))).tape := by
+  -- Step A: run the embedded config for `2*Δdst + 3` steps, commuting with P1 alone.
+  have hprefix :
+      TM.runConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+        (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c) (2 * Δdst + 3) =
+      embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+          (2 * Δdst + 3)) :=
+    embedSeqConfig_runConfig_eq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c (2 * Δdst + 3)
+      (fun s hs => combineAtOffsetCS_run_invariants_in_prefix Δ1 Δ2 Δdst hle12 hle2d op
+        c h_phase h_state_snd h_bound s hs)
+  -- Characterize the post-P1 phase via `combineAtOffsetCS_run_full`.
+  obtain ⟨_, _, hP1_phase, _, _, _⟩ :=
+    combineAtOffsetCS_run_full Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+  -- Conditions for the boundary step lemmas.
+  have h1_cond :
+      ((embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+          (2 * Δdst + 3))).state.fst.val : Nat) <
+      (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).numPhases := by
+    show (((TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+      (2 * Δdst + 3)).state.fst.val : Nat)) <
+      (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).numPhases
+    rw [hP1_phase]
+    show (2 * Δdst + 3) < 2 * Δdst + 4
+    omega
+  have heq_cond :
+      ((embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2
+        (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+          (2 * Δdst + 3))).state.fst.val : Nat) =
+      (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).acceptPhase.val := by
+    show (((TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+      (2 * Δdst + 3)).state.fst.val : Nat)) =
+      (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).acceptPhase.val
+    rw [hP1_phase]
+    rfl
+  -- Step B: one more step triggers the boundary.
+  have hstep_decomp :
+      TM.runConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+        (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 c) (2 * Δdst + 4) =
+      TM.stepConfig (M := (seq (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2).toPhased.toTM)
+        (embedSeqConfig (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2
+          (TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c
+            (2 * Δdst + 3))) := by
+    rw [show 2 * Δdst + 4 = (2 * Δdst + 3) + 1 from by omega, runConfig_succ, hprefix]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [hstep_decomp]
+    exact stepConfig_seq_P1_boundary_phase (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 _
+      h1_cond heq_cond
+  · rw [hstep_decomp]
+    exact stepConfig_seq_P1_boundary_state (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 _
+      h1_cond heq_cond
+  · rw [hstep_decomp]
+    exact stepConfig_seq_P1_boundary_head (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 _
+      h1_cond heq_cond
+  · rw [hstep_decomp]
+    exact stepConfig_seq_P1_boundary_tape (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op) P2 _
+      h1_cond heq_cond
 
 end CombineAtOffset
 

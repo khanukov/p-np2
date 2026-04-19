@@ -663,6 +663,17 @@ theorem embedSeqConfig_tape_out_of_range (P1 P2 : ConstStatePhasedProgram S) {n 
   show (if h' : i.val < P1.toPhased.toTM.tapeLength n then _ else _) = _
   rw [dif_neg (by omega)]
 
+/-- Tape value at head position is preserved by embedding: reading at
+the embedded head returns the same bit as reading at the original head. -/
+@[simp] theorem embedSeqConfig_tape_at_head
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n) :
+    (embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head = c.tape c.head := by
+  have h : (embedSeqConfig P1 P2 c).head.val < P1.toPhased.toTM.tapeLength n := by
+    simp only [embedSeqConfig_head_val]; exact c.head.isLt
+  rw [embedSeqConfig_tape_in_range P1 P2 c (embedSeqConfig P1 P2 c).head h]
+  congr 1
+
 end ConstStatePhasedProgram
 
 end TM

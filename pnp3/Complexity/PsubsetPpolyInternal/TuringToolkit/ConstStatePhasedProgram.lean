@@ -1029,6 +1029,40 @@ theorem embedSeqConfig_stepConfig_tape_eq
     rw [embedSeqConfig_stepConfig_tape_out_of_range P1 P2 c h_phase h_not_accept h_safe i h_out,
         embedSeqConfig_tape_out_of_range P1 P2 _ i h_out]
 
+/-- **FULL stepConfig commutation**: running one step on `embedSeqConfig c`
+in the composed seq TM produces the same Configuration as embedding
+one step of P1 alone on `c`. -/
+theorem embedSeqConfig_stepConfig_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P1.toPhased.toTM.tapeLength n) :
+    TM.stepConfig (M := (seq P1 P2).toPhased.toTM) (embedSeqConfig P1 P2 c) =
+      embedSeqConfig P1 P2 (TM.stepConfig (M := P1.toPhased.toTM) c) := by
+  have h_state := embedSeqConfig_stepConfig_state_eq P1 P2 c h_phase h_not_accept
+  have h_tape := embedSeqConfig_stepConfig_tape_eq P1 P2 c h_phase h_not_accept h_safe
+  have h_head_val :=
+    embedSeqConfig_stepConfig_head_embed_val P1 P2 c h_phase h_not_accept h_safe
+  -- Construct Configuration equality via structural ext.
+  cases hL : (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+                (embedSeqConfig P1 P2 c)) with
+  | mk sL hL_head tL =>
+    cases hR : (embedSeqConfig P1 P2 (TM.stepConfig (M := P1.toPhased.toTM) c)) with
+    | mk sR hR_head tR =>
+      have hse : sL = sR := by rw [hL] at h_state; rw [hR] at h_state; exact h_state
+      have hte : tL = tR := by rw [hL] at h_tape; rw [hR] at h_tape; exact h_tape
+      have hhe : hL_head = hR_head := by
+        apply Fin.ext
+        have : (hL_head : Nat) = (hR_head : Nat) := by
+          rw [hL] at h_head_val; rw [hR] at h_head_val; exact h_head_val
+        exact this
+      subst hse
+      subst hte
+      subst hhe
+      rfl
+
 end ConstStatePhasedProgram
 
 end TM

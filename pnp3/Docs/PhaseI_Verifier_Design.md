@@ -289,9 +289,53 @@ piece that helps Milestones E/F/G uniformly.
   - Full `stepConfig_eq` Configuration equality.
   - **Multi-step `runConfig_eq` induction** — the keystone.
 
+### F.4 PROGRESS — sessions 43-45 (Chunks 1, 2, 2b)
+
+**New infrastructure (+385 LOC, 3 commits):**
+
+- **Session 43 (Chunk 1)** — invariants for prefix runs:
+  - `combineAtOffsetProgram_phase_head_at_step`: at step `s ≤ 2*Δdst+3`,
+    phase = s and head ∈ [c.head, c.head + Δdst].  Case analysis on the
+    5 phase blocks (seek-to-src1 / src2 / dst / write / seek-back).
+  - `combineAtOffsetCS_run_invariants_in_prefix`: the three run-invariants
+    (phase in range, phase ≠ accept, Move.right head-safe) at every prefix
+    step.  Transported from program-level via `castCombineConfig_runConfig`.
+  - `evalOneGateCS_run_invariants_in_prefix`: the uniform 5-variant
+    wrapper over SLGate (input / const / notGate / andGate / orGate).
+
+- **Session 44 (Chunk 2)** — past-boundary commutation:
+  - `combineAtOffsetCS_in_seq_run_past_boundary`: after `P1.timeBound + 1`
+    seq-steps (P1's prefix + 1 boundary handoff), the composed config has
+    phase = `P1.numPhases + P2.startPhase.val`, state.snd = `P2.startState`,
+    head and tape matching `embedSeqConfig P1 P2 cP1final`.
+
+- **Session 45 (Chunk 2b)** — lift to evalOneGateCS:
+  - `evalOneGateCS_in_seq_run_past_boundary`: uniform 5-gate wrapper.
+
 ### REMAINING (F.4 — main theorem)
 
-**`circuitEvaluatorCS_run_correct`** (~300 LOC, 1 focused session).
+**`circuitEvaluatorCS_run_correct`** (~300 LOC + P2-embedding ~400 LOC).
+
+Key remaining architecture question: the multi-gate induction needs a
+**P2-region multi-step commutation** (analog of `embedSeqConfig_\
+runConfig_eq` but for the post-boundary P2 phases).  The cleanest
+encoding is likely a direct "P2-region runConfig characterization"
+rather than a standalone `embedSeqP2Config` function, since P2's
+tape length differs from seq's and the seq's head at the boundary
+may be outside P2's natural range.
+
+Two options to tackle in the next F.4 session:
+
+1. **Build P2-region commutation**, ~300-400 LOC.  Direct analog of
+   the `embedSeqConfig_*` machinery (steps 28-42 from F.3) adapted to
+   the P2 phase shift.  Enables a clean multi-gate induction.
+
+2. **Single-gate F.4 first** (~100-150 LOC), using only the already-
+   built past-boundary lemma with `P2 = idleCS`.  Demonstrates end-to-
+   end F.4 for a restricted case; still leaves multi-gate for later.
+
+**All-hands verdict**: option 1 is the critical path.  Option 2 is a
+morale/validation checkpoint.
 
 Structure:
 ```lean

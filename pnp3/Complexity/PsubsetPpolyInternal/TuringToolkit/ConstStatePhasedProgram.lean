@@ -1063,6 +1063,33 @@ theorem embedSeqConfig_stepConfig_eq
       subst hhe
       rfl
 
+/-- **runConfig commutation** by induction on step count.  If the
+run-invariants hold for all intermediate steps < t, then running the
+composed seq TM on `embed c` for t steps gives the same result as
+embedding the t-step run of P1 alone. -/
+theorem embedSeqConfig_runConfig_eq
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (t : Nat)
+    (h_safe_all : ∀ s < t,
+      let c_s := TM.runConfig (M := P1.toPhased.toTM) c s
+      c_s.state.fst.val < P1.numPhases ∧
+      c_s.state.fst.val ≠ P1.acceptPhase.val ∧
+      ((P1.toPhased.toTM.step c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+        c_s.head.val + 1 < P1.toPhased.toTM.tapeLength n)) :
+    TM.runConfig (M := (seq P1 P2).toPhased.toTM) (embedSeqConfig P1 P2 c) t =
+      embedSeqConfig P1 P2 (TM.runConfig (M := P1.toPhased.toTM) c t) := by
+  induction t with
+  | zero => rfl
+  | succ t' ih =>
+    have ih' : TM.runConfig (M := (seq P1 P2).toPhased.toTM) (embedSeqConfig P1 P2 c) t' =
+        embedSeqConfig P1 P2 (TM.runConfig (M := P1.toPhased.toTM) c t') :=
+      ih (fun s hs => h_safe_all s (by omega))
+    rw [runConfig_succ, runConfig_succ, ih']
+    have hinv := h_safe_all t' (by omega)
+    exact embedSeqConfig_stepConfig_eq P1 P2
+      (TM.runConfig (M := P1.toPhased.toTM) c t') hinv.1 hinv.2.1 hinv.2.2
+
 end ConstStatePhasedProgram
 
 end TM

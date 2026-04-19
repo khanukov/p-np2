@@ -938,8 +938,6 @@ theorem embedSeqConfig_stepConfig_tape_out_of_range
     (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
         (embedSeqConfig P1 P2 c)).tape i = false := by
   rw [stepConfig_tape]
-  -- (embed c).write (embed c).head (written bit) at position i.
-  -- i is NOT (embed c).head since (embed c).head.val = c.head.val < P1.tapeLength ≤ i.val.
   have h_head_ne : i ≠ (embedSeqConfig P1 P2 c).head := by
     intro hEq
     have : i.val = (embedSeqConfig P1 P2 c).head.val := by rw [hEq]
@@ -949,6 +947,41 @@ theorem embedSeqConfig_stepConfig_tape_out_of_range
   unfold Configuration.write
   rw [dif_neg h_head_ne]
   exact embedSeqConfig_tape_out_of_range P1 P2 c i h_out
+
+/-- Tape at a position INSIDE P1's tape range that is NOT the head,
+after one stepConfig on embed(c), equals what it was on c (no change). -/
+theorem embedSeqConfig_stepConfig_tape_in_range_not_head
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h_in : i.val < P1.toPhased.toTM.tapeLength n)
+    (h_not_head : i.val ≠ c.head.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).tape i = c.tape ⟨i.val, h_in⟩ := by
+  rw [stepConfig_tape]
+  have h_head_ne : i ≠ (embedSeqConfig P1 P2 c).head := by
+    intro hEq
+    have : i.val = (embedSeqConfig P1 P2 c).head.val := by rw [hEq]
+    rw [embedSeqConfig_head_val] at this
+    exact h_not_head this
+  unfold Configuration.write
+  rw [dif_neg h_head_ne]
+  exact embedSeqConfig_tape_in_range P1 P2 c i h_in
+
+/-- Tape at the head position after one stepConfig on embed(c) equals
+the bit that P1's step would write, under P1-normal-not-accept. -/
+theorem embedSeqConfig_stepConfig_tape_at_head
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).tape (embedSeqConfig P1 P2 c).head =
+      (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.fst := by
+  rw [stepConfig_tape]
+  unfold Configuration.write
+  rw [dif_pos rfl]
+  exact embedSeqConfig_stepConfig_written_bit P1 P2 c h_phase h_not_accept
 
 end ConstStatePhasedProgram
 

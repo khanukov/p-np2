@@ -674,6 +674,51 @@ the embedded head returns the same bit as reading at the original head. -/
   rw [embedSeqConfig_tape_in_range P1 P2 c (embedSeqConfig P1 P2 c).head h]
   congr 1
 
+/-- Phase after one step of the composed seq TM on `embedSeqConfig c`
+equals the phase after one step of P1 alone on `c`, when the current
+phase is in P1's range and not at accept. -/
+theorem embedSeqConfig_stepConfig_state_fst_val
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).state.fst.val : Nat) =
+      ((TM.stepConfig (M := P1.toPhased.toTM) c).state.fst.val : Nat) := by
+  have hne : (embedSeqConfig P1 P2 c).state.fst.val ≠ P1.acceptPhase.val := h_not_accept
+  have hlt : (embedSeqConfig P1 P2 c).state.fst.val < P1.numPhases := h_phase
+  rw [stepConfig_state, stepConfig_state]
+  show (((seq P1 P2).transition (embedSeqConfig P1 P2 c).state.fst
+          (embedSeqConfig P1 P2 c).state.snd
+          ((embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head)).fst.val : Nat) =
+       ((P1.transition c.state.fst c.state.snd (c.tape c.head)).fst.val : Nat)
+  rw [embedSeqConfig_tape_at_head]
+  rw [seq_transition_P1_normal_phase P1 P2 hlt hne
+    (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)]
+  rfl
+
+/-- State `.snd` after one step of seq TM on `embedSeqConfig c` equals
+that after one step of P1 alone, under P1-normal-not-accept conditions. -/
+theorem embedSeqConfig_stepConfig_state_snd
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).state.snd =
+      (TM.stepConfig (M := P1.toPhased.toTM) c).state.snd := by
+  have hne : (embedSeqConfig P1 P2 c).state.fst.val ≠ P1.acceptPhase.val := h_not_accept
+  have hlt : (embedSeqConfig P1 P2 c).state.fst.val < P1.numPhases := h_phase
+  rw [stepConfig_state, stepConfig_state]
+  show ((seq P1 P2).transition (embedSeqConfig P1 P2 c).state.fst
+          (embedSeqConfig P1 P2 c).state.snd
+          ((embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head)).snd.fst =
+       (P1.transition c.state.fst c.state.snd (c.tape c.head)).snd.fst
+  rw [embedSeqConfig_tape_at_head]
+  rw [seq_transition_P1_normal_state P1 P2 hlt hne
+    (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)]
+  rfl
+
 end ConstStatePhasedProgram
 
 end TM

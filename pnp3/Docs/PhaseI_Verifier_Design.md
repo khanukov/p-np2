@@ -289,9 +289,9 @@ piece that helps Milestones E/F/G uniformly.
   - Full `stepConfig_eq` Configuration equality.
   - **Multi-step `runConfig_eq` induction** — the keystone.
 
-### F.4 PROGRESS — sessions 43-45 (Chunks 1, 2, 2b)
+### F.4 PROGRESS — sessions 43-46 (Chunks 1, 2, 2b, 3)
 
-**New infrastructure (+385 LOC, 3 commits):**
+**New infrastructure (+~1030 LOC, 4 commits):**
 
 - **Session 43 (Chunk 1)** — invariants for prefix runs:
   - `combineAtOffsetProgram_phase_head_at_step`: at step `s ≤ 2*Δdst+3`,
@@ -312,30 +312,34 @@ piece that helps Milestones E/F/G uniformly.
 - **Session 45 (Chunk 2b)** — lift to evalOneGateCS:
   - `evalOneGateCS_in_seq_run_past_boundary`: uniform 5-gate wrapper.
 
+- **Session 46 (Chunk 3)** — full P2-region embedding (~437 LOC):
+  - `seq_tapeLength_ge_P2`: P2's tape embedded in seq's.
+  - `embedSeqP2Config`: embed P2-config into seq-config at phase
+    `P1.numPhases + P2.phase`; head preserved; tape padded with false
+    in the extra `P1.timeBound + 1` slack cells.
+  - Basic simp lemmas (state / head / tape variants).
+  - MoveHead commutation (stay / left / right_safe / val_commutes).
+  - Per-component step commutation (phase, state.snd, written_bit,
+    move, head_val).  Notable difference from P1 side: *no* "not
+    accept" condition — seq.transition in P2 region is exactly
+    P2.transition with phase shift (no boundary special-case).
+  - Per-position tape commutation + full tape equality via funext.
+  - Sigma state equality + Fin head equality → full `stepConfig_eq`.
+  - Multi-step `embedSeqP2Config_runConfig_eq` via induction.
+
+**All architectural blockers for F.4 are now cleared.**  The main
+theorem `circuitEvaluatorCS_run_correct` can be assembled from:
+- Chunk 1 (invariants) — prove `embedSeqConfig_runConfig_eq`
+  hypotheses for the gate-0 prefix run.
+- Chunk 2 + 2b (past-boundary) — get from start-of-composed-run to
+  just-past-the-boundary of gate 0.
+- Chunk 3 (P2-embedding) — transfer the tail's standalone
+  `seqList rest.mapIdx ...` run into the seq's P2 region.
+
 ### REMAINING (F.4 — main theorem)
 
-**`circuitEvaluatorCS_run_correct`** (~300 LOC + P2-embedding ~400 LOC).
-
-Key remaining architecture question: the multi-gate induction needs a
-**P2-region multi-step commutation** (analog of `embedSeqConfig_\
-runConfig_eq` but for the post-boundary P2 phases).  The cleanest
-encoding is likely a direct "P2-region runConfig characterization"
-rather than a standalone `embedSeqP2Config` function, since P2's
-tape length differs from seq's and the seq's head at the boundary
-may be outside P2's natural range.
-
-Two options to tackle in the next F.4 session:
-
-1. **Build P2-region commutation**, ~300-400 LOC.  Direct analog of
-   the `embedSeqConfig_*` machinery (steps 28-42 from F.3) adapted to
-   the P2 phase shift.  Enables a clean multi-gate induction.
-
-2. **Single-gate F.4 first** (~100-150 LOC), using only the already-
-   built past-boundary lemma with `P2 = idleCS`.  Demonstrates end-to-
-   end F.4 for a restricted case; still leaves multi-gate for later.
-
-**All-hands verdict**: option 1 is the critical path.  Option 2 is a
-morale/validation checkpoint.
+**`circuitEvaluatorCS_run_correct`** (~200-300 LOC).  Pure mechanical
+induction on `gates` combining the above chunks.
 
 Structure:
 ```lean

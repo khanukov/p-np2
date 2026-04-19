@@ -585,6 +585,71 @@ theorem evalOneGateCS_writes_at_dst {n : Nat} (g : SLGate n) (slot : Nat)
         c h_phase h_state_snd h_bound
     exact ⟨_, ht⟩
 
+/-! ### Uniform invariants for `evalOneGateCS`
+
+All five gate-evaluator variants (`input`, `const`, `notGate`,
+`andGate`, `orGate`) are instances of `combineAtOffsetCS` with
+`Δdst = Δscratch + slot`.  This yields a unified "invariants in
+prefix" lemma: for every `s < timeBound`, the intermediate config has
+phase in range, phase ≠ accept, and any `Move.right` transition is
+head-safe.  Directly used with `embedSeqConfig_runConfig_eq` to lift
+each gate's run into the composed `seqList` TM. -/
+
+theorem evalOneGateCS_run_invariants_in_prefix {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (s : Nat) (hs : s < 2 * (Δscratch + slot) + 3) :
+    let c_s := TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c s
+    c_s.state.fst.val < (evalOneGateCS g slot Δrowbase Δscratch hle).numPhases ∧
+    c_s.state.fst.val ≠ (evalOneGateCS g slot Δrowbase Δscratch hle).acceptPhase.val ∧
+    (((evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.step
+        c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+      c_s.head.val + 1 <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) := by
+  match g with
+  | .input i =>
+    exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+      (Δrowbase + i.val) (Δrowbase + i.val) (Δscratch + slot)
+      (le_refl _) (by have := i.isLt; omega) (fun a _ => a)
+      c h_phase h_state_snd h_bound s hs
+  | .const b =>
+    exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+      (Δscratch + slot) (Δscratch + slot) (Δscratch + slot)
+      (le_refl _) (le_refl _) (fun _ _ => b)
+      c h_phase h_state_snd h_bound s hs
+  | .notGate j =>
+    exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+      (Δscratch + min j slot) (Δscratch + min j slot) (Δscratch + slot)
+      (le_refl _) (by have : min j slot ≤ slot := Nat.min_le_right _ _; omega)
+      (fun a _ => !a)
+      c h_phase h_state_snd h_bound s hs
+  | .andGate j l =>
+    exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+      (Δscratch + min (min j l) slot) (Δscratch + min (max j l) slot) (Δscratch + slot)
+      (by have hmm : min j l ≤ max j l := by
+            rcases Nat.le_total j l with hjl | hjl
+            · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+            · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+          omega)
+      (by have : min (max j l) slot ≤ slot := Nat.min_le_right _ _; omega)
+      (· && ·)
+      c h_phase h_state_snd h_bound s hs
+  | .orGate j l =>
+    exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+      (Δscratch + min (min j l) slot) (Δscratch + min (max j l) slot) (Δscratch + slot)
+      (by have hmm : min j l ≤ max j l := by
+            rcases Nat.le_total j l with hjl | hjl
+            · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+            · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+          omega)
+      (by have : min (max j l) slot ≤ slot := Nat.min_le_right _ _; omega)
+      (· || ·)
+      c h_phase h_state_snd h_bound s hs
+
 /-! ### Base case: `circuitEvaluatorCS` on an empty gate list
 
 Circuit evaluator on empty list is `seqList [] = idleCS`, which runs

@@ -1094,6 +1094,315 @@ theorem combineAtOffsetCS_run_full (Δ1 Δ2 Δdst : Nat)
           c (2 * Δdst + 3))).tape = _
     rw [hrun]; exact ht
 
+/-! ### Phase/head characterization at every intermediate step
+
+Needed for `embedSeqConfig_runConfig_eq` in the `seqList` correctness
+proof (F.4): we must know that for every `s < timeBound`, the
+intermediate config's phase is in range and not yet at the accept
+phase, and any `Move.right` transition is head-safe. -/
+
+/-- **Phase = s** at every step `s ≤ 2*Δdst + 3`, together with head
+bounds `c.head ≤ head_s ≤ c.head + Δdst`.  Proved by case analysis
+on `s`'s phase block, using the pre-existing `run_after_*` theorems.
+Program-level version; CS version follows by `castCombineConfig`
+transport. -/
+theorem combineAtOffsetProgram_phase_head_at_step (Δ1 Δ2 Δdst : Nat)
+    (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n)
+    (s : Nat) (hs : s ≤ 2 * Δdst + 3) :
+    let cs := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c s
+    cs.state.fst.val = s ∧
+    (c.head : ℕ) ≤ (cs.head : ℕ) ∧
+    (cs.head : ℕ) ≤ (c.head : ℕ) + Δdst := by
+  by_cases h1 : s ≤ Δ1
+  · -- Block A: 0 ≤ s ≤ Δ1.
+    obtain ⟨A_phase, _, A_head, _⟩ :=
+      run_after_j_seek_to_src1_steps Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound s h1
+    refine ⟨A_phase, ?_, ?_⟩
+    · rw [A_head]; omega
+    · rw [A_head]; omega
+  · push_neg at h1
+    by_cases h2 : s ≤ Δ2 + 1
+    · -- Block B: Δ1 < s ≤ Δ2 + 1.  Write s = Δ1 + 1 + j with j = s - Δ1 - 1.
+      have h_src1_bound : (c.head : ℕ) + Δ1 <
+          (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+      have hjle : s - Δ1 - 1 ≤ Δ2 - Δ1 := by omega
+      obtain ⟨B_phase, _, B_head, _⟩ :=
+        run_after_j_seek_to_src2_steps Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+          h_src1_bound (s - Δ1 - 1) hjle
+      have hrew : Δ1 + 1 + (s - Δ1 - 1) = s := by omega
+      rw [hrew] at B_phase B_head
+      refine ⟨B_phase, ?_, ?_⟩
+      · rw [B_head]; omega
+      · rw [B_head]; omega
+    · push_neg at h2
+      by_cases h3 : s ≤ Δdst + 2
+      · -- Block C: Δ2 + 1 < s ≤ Δdst + 2.  Write s = Δ2 + 2 + j.
+        have h_src1_bound : (c.head : ℕ) + Δ1 <
+            (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+        have h_src2_bound : (c.head : ℕ) + Δ2 <
+            (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+        have hjle : s - Δ2 - 2 ≤ Δdst - Δ2 := by omega
+        obtain ⟨C_phase, _, C_head, _⟩ :=
+          run_after_j_seek_to_dst_steps Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+            h_src1_bound h_src2_bound (s - Δ2 - 2) hjle
+        have hrew : Δ2 + 2 + (s - Δ2 - 2) = s := by omega
+        rw [hrew] at C_phase C_head
+        refine ⟨C_phase, ?_, ?_⟩
+        · rw [C_head]; omega
+        · rw [C_head]; omega
+      · push_neg at h3
+        -- Remaining: Δdst + 2 < s ≤ 2*Δdst + 3.  Decompose runConfig at Δdst + 3 via `run_after_write_phase`,
+        -- then seek-back for (s - Δdst - 3) more steps.
+        obtain ⟨_, _, W_phase, _, W_head, _⟩ :=
+          run_after_write_phase Δ1 Δ2 Δdst hle12 hle2d op c h_phase h_state_snd h_bound
+        set cW := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c
+            (Δdst + 3) with hcW
+        have hW_head_ge : Δdst ≤ (cW.head : ℕ) := by rw [W_head]; omega
+        have hjle : s - (Δdst + 3) ≤ Δdst := by omega
+        obtain ⟨D_phase, _, D_head, _⟩ :=
+          run_j_seek_back Δ1 Δ2 Δdst hle12 hle2d op cW W_phase hW_head_ge (s - (Δdst + 3)) hjle
+        have hsplit : s = (Δdst + 3) + (s - (Δdst + 3)) := by omega
+        have hcomp :
+            TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c s =
+              TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) cW
+                (s - (Δdst + 3)) := by
+          conv_lhs => rw [hsplit]
+          rw [runConfig_add]
+        refine ⟨?_, ?_, ?_⟩
+        · rw [hcomp, D_phase]; omega
+        · rw [hcomp, D_head, W_head]; omega
+        · rw [hcomp, D_head, W_head]; omega
+
+/-- **Transport of the CS-level invariants needed for
+`embedSeqConfig_runConfig_eq`.**  For every `s < 2*Δdst + 3`, the CS
+config after `s` steps has phase in range, phase ≠ accept, and any
+`Move.right` transition is head-safe.  These are exactly the three
+ingredients of the `h_safe_all` hypothesis. -/
+theorem combineAtOffsetCS_run_invariants_in_prefix
+    (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
+    (op : Bool → Bool → Bool) {n : Nat}
+    (c : Configuration (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) n)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n)
+    (s : Nat) (hs : s < 2 * Δdst + 3) :
+    let c_s := TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c s
+    c_s.state.fst.val < (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).numPhases ∧
+    c_s.state.fst.val ≠ (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).acceptPhase.val ∧
+    (((combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.step
+        c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+      c_s.head.val + 1 <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n) := by
+  -- Transport `c` to program level and apply the program-level characterization.
+  set c' := castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op c with hc'
+  have h_phase' : c'.state.fst.val = 0 := h_phase
+  have h_state_snd' : c'.state.snd = (false, false) := h_state_snd
+  have h_bound' : (c'.head : ℕ) + Δdst <
+      (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := h_bound
+  have hsle : s ≤ 2 * Δdst + 3 := by omega
+  obtain ⟨hphase_prog, hhead_lo, hhead_hi⟩ :=
+    combineAtOffsetProgram_phase_head_at_step Δ1 Δ2 Δdst hle12 hle2d op c'
+      h_phase' h_state_snd' h_bound' s hsle
+  -- Transport the run back to CS level.
+  have hrun := castCombineConfig_runConfig Δ1 Δ2 Δdst hle12 hle2d op c s
+  set cs_CS := TM.runConfig (M := (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM) c s
+    with hcsCS
+  set cs_prog := TM.runConfig (M := (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM) c' s
+    with hcsprog
+  -- Cast of runConfig equals runConfig of cast.
+  have hcast_eq : castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op cs_CS = cs_prog := hrun
+  -- State agreement.
+  have hstate : cs_CS.state = cs_prog.state := by
+    have := congrArg Configuration.state hcast_eq
+    show cs_CS.state = _
+    -- LHS: (castCombineConfig ... cs_CS).state; RHS: cs_prog.state.
+    -- But castCombineConfig_state gives cs_CS.state = (castCombineConfig cs_CS).state.
+    rw [← castCombineConfig_state Δ1 Δ2 Δdst hle12 hle2d op cs_CS]
+    exact this
+  have hhead : (cs_CS.head : ℕ) = (cs_prog.head : ℕ) := by
+    have : (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op cs_CS).head = cs_prog.head :=
+      congrArg Configuration.head hcast_eq
+    rw [← castCombineConfig_head Δ1 Δ2 Δdst hle12 hle2d op cs_CS]
+    exact congrArg (fun h : Fin _ => h.val) this
+  have htape : ∀ i,
+      cs_CS.tape i = cs_prog.tape i := by
+    intro i
+    have : (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op cs_CS).tape = cs_prog.tape :=
+      congrArg Configuration.tape hcast_eq
+    have hEq : cs_CS.tape i = (castCombineConfig Δ1 Δ2 Δdst hle12 hle2d op cs_CS).tape i := rfl
+    rw [hEq]; exact congrFun this i
+  -- Phase at CS level equals phase at program level = s.
+  have hphase_CS : cs_CS.state.fst.val = s := by
+    have : cs_CS.state.fst.val = cs_prog.state.fst.val := by rw [hstate]
+    rw [this]; exact hphase_prog
+  refine ⟨?_, ?_, ?_⟩
+  · -- state.fst.val < numPhases = 2*Δdst + 4.
+    rw [hphase_CS]
+    show s < (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).numPhases
+    simp [combineAtOffsetCS_numPhases]; omega
+  · -- state.fst.val ≠ acceptPhase.val = 2*Δdst + 3.
+    rw [hphase_CS]
+    show s ≠ (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).acceptPhase.val
+    show s ≠ 2 * Δdst + 3
+    omega
+  · -- Move.right safety.
+    intro hmove
+    -- The CS-level step equals program-level step via `combineAtOffsetCS_toPhased_toTM_step`.
+    have hstep := combineAtOffsetCS_toPhased_toTM_step Δ1 Δ2 Δdst hle12 hle2d op
+                    cs_CS.state (cs_CS.tape cs_CS.head)
+    -- We need: Move.right at cs_prog too.
+    -- cs_CS.state = cs_prog.state and cs_CS.tape cs_CS.head = cs_prog.tape cs_prog.head
+    -- via hstate + hhead + htape.
+    have htape_head : cs_CS.tape cs_CS.head = cs_prog.tape cs_prog.head := by
+      rw [htape cs_CS.head]
+      congr 1
+      apply Fin.ext; exact hhead
+    have hmove_prog :
+        (((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.step
+          cs_prog.state (cs_prog.tape cs_prog.head)).snd.snd : Move) = Move.right := by
+      rw [← hstate, ← htape_head, ← hstep]
+      exact hmove
+    -- Now use phase = s and head bounds to conclude.
+    -- Move.right happens iff phase s is in [0,Δ1) ∪ (Δ1,Δ2] ∪ (Δ2+1,Δdst+1].
+    -- In all these cases, head ≤ c.head + Δdst - 1 (proved case-by-case).
+    -- But we also need: hhead_hi gives head ≤ c.head + Δdst. Under h_bound
+    -- this alone gives head + 1 ≤ c.head + Δdst + 1 ≤ tapeLength. That's not strict.
+    -- So we need the stricter bound via case analysis on s.
+    -- Strategy: show the head position at step s and conclude.
+    -- At Move.right phases, the transition moves right. The transition at
+    -- s = Δ1, Δ2 + 1, Δdst + 2, or [Δdst + 3, 2*Δdst + 3] is NOT right.
+    -- Equivalently, s ∈ [0, Δ1) ∪ (Δ1, Δ2 + 1) ∪ (Δ2 + 1, Δdst + 2) ∪ ... wait
+    -- this is messy. Just show head_prog + 1 < tapeLength in all sub-cases.
+    have hhead_CS : (cs_CS.head : ℕ) + 1 <
+        (combineAtOffsetCS Δ1 Δ2 Δdst hle12 hle2d op).toPhased.toTM.tapeLength n := by
+      rw [hhead]
+      -- Need: cs_prog.head.val + 1 < tapeLength of CS TM = tapeLength of program TM.
+      show (cs_prog.head : ℕ) + 1 <
+          (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n
+      -- Case analysis on s.
+      -- s < 2*Δdst + 3 and Move.right. We'll show head.val + 1 ≤ c.head + Δdst.
+      -- By case analysis using phase_head_at_step:
+      --   - s ≤ Δ1: head_prog = c'.head + s. If s = Δ1, move is stay (read1), contradicts.
+      --     So s < Δ1 (if move right). Then head + 1 = c'.head + s + 1 ≤ c'.head + Δ1 ≤ c'.head + Δdst.
+      --   - s ∈ (Δ1, Δ2+1]: similar. If s = Δ2+1, move stay (read2), contradicts. So s ≤ Δ2.
+      --     head_prog = c'.head + (s-1). head + 1 = c'.head + s ≤ c'.head + Δ2 ≤ c'.head + Δdst.
+      --   - s ∈ (Δ2+1, Δdst+2]: similar. If s = Δdst+2, move stay (write), contradicts. So s ≤ Δdst+1.
+      --     head_prog = c'.head + (s-2). head + 1 = c'.head + (s-1) ≤ c'.head + Δdst.
+      --   - s > Δdst+2: move is left or stay. So no right move. Contradicts hmove_prog.
+      -- But expressing all this formally requires knowing the move at each phase.
+      -- Simpler: just observe that head_prog ≤ c'.head + Δdst (already have),
+      -- and c'.head + Δdst < tapeLength. So head_prog + 1 ≤ c'.head + Δdst + 1 ≤ tapeLength.
+      -- But we need strict inequality.
+      -- The case analysis is needed to get head + 1 ≤ c'.head + Δdst (NOT +1).
+      by_cases hsle1 : s ≤ Δ1
+      · -- Block A
+        obtain ⟨_, _, A_head, _⟩ :=
+          run_after_j_seek_to_src1_steps Δ1 Δ2 Δdst hle12 hle2d op c' h_phase' h_state_snd' h_bound' s hsle1
+        -- At s = Δ1, move is stay, so hmove_prog contradicts.
+        by_cases hs_eq_Δ1 : s = Δ1
+        · exfalso
+          -- Move at phase = Δ1 is stay.
+          have h_phase_cs : cs_prog.state.fst.val = Δ1 := by
+            rw [hphase_prog]; exact hs_eq_Δ1
+          have hstay := stepConfig_read1 Δ1 Δ2 Δdst hle12 hle2d op cs_prog h_phase_cs
+          -- But the step here is not stepConfig of program, it's the TM.step: let's check.
+          -- `((toTM.step ...).snd.snd : Move) = Move.stay` from the underlying transition:
+          -- Need to look at transition_read1.
+          have hmove_stay :
+              (((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.step
+                cs_prog.state (cs_prog.tape cs_prog.head)).snd.snd : Move) = Move.stay := by
+            obtain ⟨_, _, _, t_move⟩ :=
+              transition_read1 Δ1 Δ2 Δdst hle12 hle2d op (i := cs_prog.state.fst) h_phase_cs
+                cs_prog.state.snd (cs_prog.tape cs_prog.head)
+            exact t_move
+          rw [hmove_prog] at hmove_stay
+          cases hmove_stay
+        · -- s < Δ1
+          have hsltΔ1 : s < Δ1 := by omega
+          rw [A_head]
+          omega
+      · push_neg at hsle1
+        by_cases hsle2 : s ≤ Δ2 + 1
+        · -- Block B
+          have h_src1_bound : (c'.head : ℕ) + Δ1 <
+              (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+          have hjle : s - Δ1 - 1 ≤ Δ2 - Δ1 := by omega
+          obtain ⟨_, _, B_head, _⟩ :=
+            run_after_j_seek_to_src2_steps Δ1 Δ2 Δdst hle12 hle2d op c' h_phase' h_state_snd' h_bound'
+              h_src1_bound (s - Δ1 - 1) hjle
+          have hrew : Δ1 + 1 + (s - Δ1 - 1) = s := by omega
+          rw [hrew] at B_head
+          by_cases hs_eq : s = Δ2 + 1
+          · exfalso
+            have h_phase_cs : cs_prog.state.fst.val = Δ2 + 1 := by
+              rw [hphase_prog]; exact hs_eq
+            have hmove_stay :
+                (((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.step
+                  cs_prog.state (cs_prog.tape cs_prog.head)).snd.snd : Move) = Move.stay := by
+              obtain ⟨_, _, _, t_move⟩ :=
+                transition_read2 Δ1 Δ2 Δdst hle12 hle2d op (i := cs_prog.state.fst) h_phase_cs
+                  cs_prog.state.snd (cs_prog.tape cs_prog.head)
+              exact t_move
+            rw [hmove_prog] at hmove_stay; cases hmove_stay
+          · have hslt : s ≤ Δ2 := by omega
+            rw [B_head]
+            omega
+        · push_neg at hsle2
+          by_cases hsle3 : s ≤ Δdst + 2
+          · -- Block C
+            have h_src1_bound : (c'.head : ℕ) + Δ1 <
+                (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+            have h_src2_bound : (c'.head : ℕ) + Δ2 <
+                (combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.tapeLength n := by omega
+            have hjle : s - Δ2 - 2 ≤ Δdst - Δ2 := by omega
+            obtain ⟨_, _, C_head, _⟩ :=
+              run_after_j_seek_to_dst_steps Δ1 Δ2 Δdst hle12 hle2d op c' h_phase' h_state_snd' h_bound'
+                h_src1_bound h_src2_bound (s - Δ2 - 2) hjle
+            have hrew : Δ2 + 2 + (s - Δ2 - 2) = s := by omega
+            rw [hrew] at C_head
+            by_cases hs_eq : s = Δdst + 2
+            · exfalso
+              have h_phase_cs : cs_prog.state.fst.val = Δdst + 2 := by
+                rw [hphase_prog]; exact hs_eq
+              have hmove_stay :
+                  (((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.step
+                    cs_prog.state (cs_prog.tape cs_prog.head)).snd.snd : Move) = Move.stay := by
+                obtain ⟨_, _, _, t_move⟩ :=
+                  transition_write Δ1 Δ2 Δdst hle12 hle2d op (i := cs_prog.state.fst) h_phase_cs
+                    cs_prog.state.snd (cs_prog.tape cs_prog.head)
+                exact t_move
+              rw [hmove_prog] at hmove_stay; cases hmove_stay
+            · have hslt : s ≤ Δdst + 1 := by omega
+              rw [C_head]
+              omega
+          · push_neg at hsle3
+            -- s > Δdst + 2.  Here phase ≥ Δdst + 3, move is Left or Stay.  Contradiction with Move.right.
+            exfalso
+            -- phase = s.
+            by_cases hs_eq_top : s = 2 * Δdst + 3
+            · omega  -- hs < 2*Δdst+3, contradicts s = 2*Δdst+3.
+            · have hsle : s ≤ 2 * Δdst + 2 := by omega
+              have hs_lo : Δdst + 2 < s := hsle3
+              have h_phase_lo : Δdst + 2 < cs_prog.state.fst.val := by
+                rw [hphase_prog]; exact hs_lo
+              have h_phase_hi : cs_prog.state.fst.val < 2 * Δdst + 3 := by
+                rw [hphase_prog]; omega
+              have hmove_left :
+                  (((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).toTM.step
+                    cs_prog.state (cs_prog.tape cs_prog.head)).snd.snd : Move) = Move.left := by
+                obtain ⟨_, _, _, t_move⟩ :=
+                  transition_seek_back Δ1 Δ2 Δdst hle12 hle2d op h_phase_lo h_phase_hi
+                    cs_prog.state.snd (cs_prog.tape cs_prog.head)
+                exact t_move
+              rw [hmove_prog] at hmove_left; cases hmove_left
+    exact hhead_CS
+
 end CombineAtOffset
 
 end TM

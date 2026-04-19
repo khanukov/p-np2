@@ -769,6 +769,48 @@ theorem embedSeqConfig_moveHead_val_commutes (P1 P2 : ConstStatePhasedProgram S)
   | left => exact embedSeqConfig_moveHead_left P1 P2 c
   | right => exact embedSeqConfig_moveHead_right_safe P1 P2 c (h_safe rfl)
 
+/-- Bit written by the composed seq's transition on an embedded P1
+configuration equals the bit written by P1's transition, under
+P1-normal-not-accept conditions. -/
+theorem embedSeqConfig_stepConfig_written_bit
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (((seq P1 P2).toPhased.toTM.step (embedSeqConfig P1 P2 c).state
+          ((embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head)).snd.fst : Bool) =
+      ((P1.toPhased.toTM.step c.state (c.tape c.head)).snd.fst : Bool) := by
+  have hne : (embedSeqConfig P1 P2 c).state.fst.val ≠ P1.acceptPhase.val := h_not_accept
+  have hlt : (embedSeqConfig P1 P2 c).state.fst.val < P1.numPhases := h_phase
+  rw [embedSeqConfig_tape_at_head]
+  show ((seq P1 P2).transition (embedSeqConfig P1 P2 c).state.fst
+          (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)).snd.snd.fst =
+       (P1.transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.fst
+  rw [seq_transition_P1_normal_bit P1 P2 hlt hne
+    (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)]
+  rfl
+
+/-- Move direction returned by the composed seq's transition on an
+embedded P1 configuration equals that returned by P1's transition,
+under P1-normal-not-accept conditions. -/
+theorem embedSeqConfig_stepConfig_move
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val) :
+    (((seq P1 P2).toPhased.toTM.step (embedSeqConfig P1 P2 c).state
+          ((embedSeqConfig P1 P2 c).tape (embedSeqConfig P1 P2 c).head)).snd.snd : Move) =
+      ((P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd : Move) := by
+  have hne : (embedSeqConfig P1 P2 c).state.fst.val ≠ P1.acceptPhase.val := h_not_accept
+  have hlt : (embedSeqConfig P1 P2 c).state.fst.val < P1.numPhases := h_phase
+  rw [embedSeqConfig_tape_at_head]
+  show ((seq P1 P2).transition (embedSeqConfig P1 P2 c).state.fst
+          (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)).snd.snd.snd =
+       (P1.transition c.state.fst c.state.snd (c.tape c.head)).snd.snd.snd
+  rw [seq_transition_P1_normal_move P1 P2 hlt hne
+    (embedSeqConfig P1 P2 c).state.snd (c.tape c.head)]
+  rfl
+
 end ConstStatePhasedProgram
 
 end TM

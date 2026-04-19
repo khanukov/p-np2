@@ -923,6 +923,33 @@ theorem embedSeqConfig_stepConfig_head_in_P1
   rw [embedSeqConfig_stepConfig_head_val P1 P2 c h_phase h_not_accept h_safe]
   exact (TM.stepConfig (M := P1.toPhased.toTM) c).head.isLt
 
+/-- Tape at a position OUTSIDE P1's tape range, after one stepConfig
+on embed(c), remains `false`.  Useful for tape-commutation funext
+proofs at out-of-range positions. -/
+theorem embedSeqConfig_stepConfig_tape_out_of_range
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P1.toPhased.toTM) n)
+    (h_phase : c.state.fst.val < P1.numPhases)
+    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+        c.head.val + 1 < P1.toPhased.toTM.tapeLength n)
+    (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
+    (h_out : P1.toPhased.toTM.tapeLength n ≤ i.val) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
+        (embedSeqConfig P1 P2 c)).tape i = false := by
+  rw [stepConfig_tape]
+  -- (embed c).write (embed c).head (written bit) at position i.
+  -- i is NOT (embed c).head since (embed c).head.val = c.head.val < P1.tapeLength ≤ i.val.
+  have h_head_ne : i ≠ (embedSeqConfig P1 P2 c).head := by
+    intro hEq
+    have : i.val = (embedSeqConfig P1 P2 c).head.val := by rw [hEq]
+    rw [embedSeqConfig_head_val] at this
+    have := c.head.isLt
+    omega
+  unfold Configuration.write
+  rw [dif_neg h_head_ne]
+  exact embedSeqConfig_tape_out_of_range P1 P2 c i h_out
+
 end ConstStatePhasedProgram
 
 end TM

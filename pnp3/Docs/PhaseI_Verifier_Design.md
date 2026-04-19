@@ -252,3 +252,28 @@ piece that helps Milestones E/F/G uniformly.
 | `b37c646` | 17 | idleCS + seqList |
 | `e1ca9e3` | 18 | evalOneGateCS + circuitEvaluatorCS |
 | `b29700a` | 19 | seqList_timeBound_le_uniform (polynomial bound) |
+| `8f22b85` | 20 | combineAtOffsetCS transport lemmas (transition / step step-level eq) |
+| `078fb7d` | 21 | castConfig generic + castCombineConfig specialized |
+| `4a3c96e` | 22 | **Milestone β COMPLETE**: combineAtOffsetCS_run_full via runConfig commutation |
+| `e7baaed` | 23 | **5 gate `*CS_run_full` correctness theorems** via combineAtOffsetCS_run_full |
+
+## Milestone F remaining work
+
+After step 23, each per-gate evaluator has its own `*CS_run_full`
+correctness theorem.  The remaining tasks for Milestone F proper:
+
+1. **`evalOneGateCS_run_full`** (~80 LOC) — case analysis on SLGate
+   constructor, delegating each case to the corresponding
+   `gateXCS_run_full`.  Mechanical.
+
+2. **`circuitEvaluatorCS_preserves_prior_scratch`** (~200 LOC) —
+   inductive invariant: when the `i`-th gate runs, it doesn't touch
+   any scratch slot `j ≠ i`.  Requires `runConfig_tape_eq_outside_range`
+   (already in Foundation) + bounds on head movement.
+
+3. **`circuitEvaluatorCS_run_correct`** (~300 LOC) — main theorem:
+   for every gate at slot `i`, after running the whole evaluator,
+   scratch[i] = SLGate.compute (gates.get i) (row bits) (scratch bits ..< i).
+   Inductive proof using `seqList` recurrences + step 2's preservation.
+
+Total Milestone F remaining: ~580 LOC (down from original ~700 estimate).

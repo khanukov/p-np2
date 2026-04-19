@@ -310,6 +310,109 @@ def gateOrCS (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (m : Nat) :
     (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).timeBound m = 2 * Δdst + 3 := rfl
 
+/-! ### Correctness of per-gate evaluators
+
+Each gate-evaluator is a specialization of `combineAtOffsetCS` with a
+specific operator.  Its correctness theorem is a direct corollary of
+`CombineAtOffset.combineAtOffsetCS_run_full`. -/
+
+/-- Correctness of `gateInputCS`: writes `tape[head + Δrowbase + i.val]`
+at `tape[head + Δdst]`. -/
+theorem gateInputCS_run_full {n : Nat} (i : Fin n) (Δrowbase Δdst : Nat)
+    (hle : Δrowbase + i.val ≤ Δdst) {N : Nat}
+    (c : Configuration (M := (gateInputCS i Δrowbase Δdst hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (gateInputCS i Δrowbase Δdst hle).toPhased.toTM.tapeLength N) :
+    ∃ (h_src : (c.head : ℕ) + (Δrowbase + i.val) <
+        (gateInputCS i Δrowbase Δdst hle).toPhased.toTM.tapeLength N),
+    (TM.runConfig (M := (gateInputCS i Δrowbase Δdst hle).toPhased.toTM) c
+        (2 * Δdst + 3)).tape =
+      c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+        (c.tape ⟨(c.head : ℕ) + (Δrowbase + i.val), h_src⟩) := by
+  obtain ⟨h1, _, _, _, _, ht⟩ :=
+    CombineAtOffset.combineAtOffsetCS_run_full (Δrowbase + i.val) (Δrowbase + i.val) Δdst
+      (le_refl _) hle (fun a _ => a) c h_phase h_state_snd h_bound
+  exact ⟨h1, ht⟩
+
+/-- Correctness of `gateConstCS`: writes `b` at `tape[head + Δdst]`. -/
+theorem gateConstCS_run_full (b : Bool) (Δdst : Nat) {N : Nat}
+    (c : Configuration (M := (gateConstCS b Δdst).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (gateConstCS b Δdst).toPhased.toTM.tapeLength N) :
+    (TM.runConfig (M := (gateConstCS b Δdst).toPhased.toTM) c
+        (2 * Δdst + 3)).tape =
+      c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩ b := by
+  obtain ⟨_, _, _, _, _, ht⟩ :=
+    CombineAtOffset.combineAtOffsetCS_run_full Δdst Δdst Δdst (le_refl _) (le_refl _)
+      (fun _ _ => b) c h_phase h_state_snd h_bound
+  exact ht
+
+/-- Correctness of `gateNotCS`. -/
+theorem gateNotCS_run_full (Δsrc Δdst : Nat) (hle : Δsrc ≤ Δdst) {N : Nat}
+    (c : Configuration (M := (gateNotCS Δsrc Δdst hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (gateNotCS Δsrc Δdst hle).toPhased.toTM.tapeLength N) :
+    ∃ (h_src : (c.head : ℕ) + Δsrc <
+        (gateNotCS Δsrc Δdst hle).toPhased.toTM.tapeLength N),
+    (TM.runConfig (M := (gateNotCS Δsrc Δdst hle).toPhased.toTM) c
+        (2 * Δdst + 3)).tape =
+      c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+        (!(c.tape ⟨(c.head : ℕ) + Δsrc, h_src⟩)) := by
+  obtain ⟨h1, _, _, _, _, ht⟩ :=
+    CombineAtOffset.combineAtOffsetCS_run_full Δsrc Δsrc Δdst (le_refl _) hle
+      (fun a _ => !a) c h_phase h_state_snd h_bound
+  exact ⟨h1, ht⟩
+
+/-- Correctness of `gateAndCS`. -/
+theorem gateAndCS_run_full (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
+    {N : Nat}
+    (c : Configuration (M := (gateAndCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (gateAndCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM.tapeLength N) :
+    ∃ (h_src1 : (c.head : ℕ) + Δ1 <
+        (gateAndCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM.tapeLength N)
+      (h_src2 : (c.head : ℕ) + Δ2 <
+        (gateAndCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM.tapeLength N),
+    (TM.runConfig (M := (gateAndCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM) c
+        (2 * Δdst + 3)).tape =
+      c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+        ((c.tape ⟨(c.head : ℕ) + Δ1, h_src1⟩) &&
+         (c.tape ⟨(c.head : ℕ) + Δ2, h_src2⟩)) := by
+  obtain ⟨h1, h2, _, _, _, ht⟩ :=
+    CombineAtOffset.combineAtOffsetCS_run_full Δ1 Δ2 Δdst hle12 hle2d (· && ·)
+      c h_phase h_state_snd h_bound
+  exact ⟨h1, h2, ht⟩
+
+/-- Correctness of `gateOrCS`. -/
+theorem gateOrCS_run_full (Δ1 Δ2 Δdst : Nat) (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst)
+    {N : Nat}
+    (c : Configuration (M := (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + Δdst <
+        (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM.tapeLength N) :
+    ∃ (h_src1 : (c.head : ℕ) + Δ1 <
+        (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM.tapeLength N)
+      (h_src2 : (c.head : ℕ) + Δ2 <
+        (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM.tapeLength N),
+    (TM.runConfig (M := (gateOrCS Δ1 Δ2 Δdst hle12 hle2d).toPhased.toTM) c
+        (2 * Δdst + 3)).tape =
+      c.write ⟨(c.head : ℕ) + Δdst, h_bound⟩
+        ((c.tape ⟨(c.head : ℕ) + Δ1, h_src1⟩) ||
+         (c.tape ⟨(c.head : ℕ) + Δ2, h_src2⟩)) := by
+  obtain ⟨h1, h2, _, _, _, ht⟩ :=
+    CombineAtOffset.combineAtOffsetCS_run_full Δ1 Δ2 Δdst hle12 hle2d (· || ·)
+      c h_phase h_state_snd h_bound
+  exact ⟨h1, h2, ht⟩
+
 /-- Uniform per-gate timeBound: every single-gate evaluator runs in
 exactly `2*Δdst + 3` steps, regardless of gate type.  Used to bound
 the total runtime of a circuit evaluator as `#gates * (2*Δdst + 3) + #boundaries`. -/

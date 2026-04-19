@@ -650,6 +650,81 @@ theorem evalOneGateCS_run_invariants_in_prefix {n : Nat} (g : SLGate n) (slot : 
       (· || ·)
       c h_phase h_state_snd h_bound s hs
 
+/-! ### Past-boundary lemma specialized to `evalOneGateCS`
+
+Each gate evaluator is an instance of `combineAtOffsetCS` with
+`Δdst = Δscratch + slot`.  This specialization of
+`combineAtOffsetCS_in_seq_run_past_boundary` gives the matching
+characterization at the gate-evaluator level, ready for use in the
+multi-gate `circuitEvaluatorCS` correctness proof. -/
+
+theorem evalOneGateCS_in_seq_run_past_boundary {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch)
+    (P2 : ConstStatePhasedProgram (Bool × Bool)) {N : Nat}
+    (c : Configuration (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (h_bound : (c.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    ((TM.runConfig (M := (seq (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+      (embedSeqConfig (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c)
+      (2 * (Δscratch + slot) + 4)).state.fst.val : Nat) =
+        (evalOneGateCS g slot Δrowbase Δscratch hle).numPhases + P2.startPhase.val ∧
+    (TM.runConfig (M := (seq (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+      (embedSeqConfig (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c)
+      (2 * (Δscratch + slot) + 4)).state.snd = P2.startState ∧
+    (TM.runConfig (M := (seq (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+      (embedSeqConfig (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c)
+      (2 * (Δscratch + slot) + 4)).head =
+        (embedSeqConfig (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+          (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c
+            (2 * (Δscratch + slot) + 3))).head ∧
+    (TM.runConfig (M := (seq (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+      (embedSeqConfig (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c)
+      (2 * (Δscratch + slot) + 4)).tape =
+        (embedSeqConfig (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+          (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c
+            (2 * (Δscratch + slot) + 3))).tape := by
+  match g with
+  | .input i =>
+    exact CombineAtOffset.combineAtOffsetCS_in_seq_run_past_boundary
+      (Δrowbase + i.val) (Δrowbase + i.val) (Δscratch + slot)
+      (le_refl _) (by have := i.isLt; omega) (fun a _ => a)
+      P2 c h_phase h_state_snd h_bound
+  | .const b =>
+    exact CombineAtOffset.combineAtOffsetCS_in_seq_run_past_boundary
+      (Δscratch + slot) (Δscratch + slot) (Δscratch + slot)
+      (le_refl _) (le_refl _) (fun _ _ => b)
+      P2 c h_phase h_state_snd h_bound
+  | .notGate j =>
+    exact CombineAtOffset.combineAtOffsetCS_in_seq_run_past_boundary
+      (Δscratch + min j slot) (Δscratch + min j slot) (Δscratch + slot)
+      (le_refl _) (by have : min j slot ≤ slot := Nat.min_le_right _ _; omega)
+      (fun a _ => !a)
+      P2 c h_phase h_state_snd h_bound
+  | .andGate j l =>
+    exact CombineAtOffset.combineAtOffsetCS_in_seq_run_past_boundary
+      (Δscratch + min (min j l) slot) (Δscratch + min (max j l) slot) (Δscratch + slot)
+      (by have hmm : min j l ≤ max j l := by
+            rcases Nat.le_total j l with hjl | hjl
+            · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+            · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+          omega)
+      (by have : min (max j l) slot ≤ slot := Nat.min_le_right _ _; omega)
+      (· && ·)
+      P2 c h_phase h_state_snd h_bound
+  | .orGate j l =>
+    exact CombineAtOffset.combineAtOffsetCS_in_seq_run_past_boundary
+      (Δscratch + min (min j l) slot) (Δscratch + min (max j l) slot) (Δscratch + slot)
+      (by have hmm : min j l ≤ max j l := by
+            rcases Nat.le_total j l with hjl | hjl
+            · rw [min_eq_left hjl, max_eq_right hjl]; exact hjl
+            · rw [min_eq_right hjl, max_eq_left hjl]; exact hjl
+          omega)
+      (by have : min (max j l) slot ≤ slot := Nat.min_le_right _ _; omega)
+      (· || ·)
+      P2 c h_phase h_state_snd h_bound
+
 /-! ### Base case: `circuitEvaluatorCS` on an empty gate list
 
 Circuit evaluator on empty list is `seqList [] = idleCS`, which runs

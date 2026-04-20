@@ -426,6 +426,100 @@ propositional equality between two `ConstStatePhasedProgram`s.  This
 is fine — future-session invocations know their local goal shape and
 can drive the rewrite directly.
 
+### Session 47d — downstream audit + F.4 induction blueprint
+
+Audited the downstream consumers of `circuitEvaluatorCS_run_correct`
+in Phase I / MCSP verifier route to confirm the target Prop shape is
+aligned with how the theorem will actually be consumed.
+
+**Audit findings**:
+
+- Milestones G (row-consistency check) / H (row loop) / I (top-level
+  verifier program) all need the tape-slot correctness form:
+  "after running `circuitEvaluatorCS gates ...` for its full
+  `timeBound`, `scratch[i]` equals the i-th computed gate value for
+  all `i < gates.length`."
+- `AsymptoticFormulaTrackData.asymptoticNP_TM` (FinalResultMainline.lean:58–70)
+  requires a TM correctness witness that wraps an inner verifier.  The
+  MCSP verifier's correctness reduction to F.4 is documented but not
+  yet implemented (Milestones J, K).
+- The Prop shape in `CircuitEvaluatorCS_RunCorrect`
+  (GateWrappers.lean:964) matches exactly what downstream wants:
+  `∃ vals, evalAux gates row = some vals ∧ ∀ i, scratch[i] = vals[i]`.
+  *No reformulation needed.*
+
+**F.4 induction blueprint** (target for the next dedicated session,
+~400-600 LOC):
+
+1. **Strengthen `hbound`** in both `CircuitEvaluatorCS_RunCorrect` and
+   `CircuitEvaluatorCSAt_RunCorrect` from
+   `c.head.val + Δscratch + offset + gates.length ≤ composite.tapeLength N`
+   to `c.head.val + Δscratch + offset + gates.length ≤ N`.  This is
+   universally applicable (any program's `tapeLength N ≥ N + 1`) and,
+   crucially, makes the tail-run bound `c.head.val + Δscratch +
+   (offset+1) + rest.length ≤ (circuitEvaluatorCSAt rest
+   (offset+1)).tapeLength N` derivable from the cons-level hypothesis
+   — without it, the induction step can't apply IH.
+2. **Well-formedness premise**.  Add `hwf : ∃ vals, SLProgram.evalAux
+   row gates prior = some vals` (equivalently, gates reference only
+   prior slots).  Required because malformed gates make the Prop
+   trivially false (∃ vals, evalAux = some vals is impossible).  The
+   downstream MCSP verifier generates well-formed gates by construction
+   (via `SLGate.decode` + `SLGate.wellFormedUnder`), so this premise
+   is discharged at the call site.
+3. **Induction structure** (on `gates`, generalising `offset`):
+   * Base `gates = []`: already proved
+     (`circuitEvaluatorCSAt_nil_run_correct`).
+   * Step `gates = g :: rest`:
+     * Unfold via `circuitEvaluatorCSAt_cons` → `seq (evalOneGateCS g
+       offset) (circuitEvaluatorCSAt rest (offset+1))`.
+     * Split run via `runConfig_add`:
+       `timeBound = tG + tR + 1` where `tG = 2*(Δscratch+offset)+3`,
+       `tR = (circuitEvaluatorCSAt rest (offset+1)).timeBound N`.
+     * Prefix segment (`tG` steps): apply `embedSeqConfig_runConfig_eq`
+       with safety from `evalOneGateCS_run_invariants_in_prefix` to
+       reduce to a standalone `evalOneGateCS g offset` run.  Apply
+       `combineAtOffsetCS_run_full` (or `gate*CS_run_full` per-gate):
+       obtain `scratch[offset+0] = (evalGate g row)`,
+       `cfinal.head = c.head` (head returns to start), phase at
+       `evalOneGateCS.acceptPhase`.
+     * Boundary segment (1 step): apply
+       `evalOneGateCS_in_seq_run_past_boundary`.  Composite config now
+       has phase = `P1.numPhases + 0`, state.snd = `P2.startState`,
+       head = `c.head`, tape = `embedSeqConfig`-padded `P1`-run.
+     * Tail segment (`tR` steps): apply `embedSeqP2Config_runConfig_eq`.
+       **Tape alignment subtlety** — the post-boundary composite tape
+       is in `embedSeqConfig` form (P1-padded), but
+       `embedSeqP2Config_runConfig_eq` expects `embedSeqP2Config`
+       (P2-padded).  Resolution: construct a "lifted" P2-config
+       `c'` whose tape equals `c`'s tape restricted to
+       `P2.tapeLength N`; then prove the composite's post-boundary
+       tape agrees with `embedSeqP2Config P1 P2 c'` on all indices
+       relevant to the tail's head movement (which stays within
+       `P2.tapeLength N` by Milestone F safety invariants).  This
+       alignment argument is ~100 LOC and the crux of F.4's novelty.
+     * Combine: outer's `i = 0` uses gate 0's write (preserved through
+       boundary + tail since tail's head stays in
+       `[c.head+Δscratch+offset+1, c.head+Δscratch+offset+gates.length+1)`
+       — proved via `runConfig_tape_eq_outside_range`
+       (Foundation.lean:436)).  Outer's `i ≥ 1` uses IH on `rest` at
+       `offset+1`.
+4. **Specialisation** via `circuitEvaluatorCSAt_zero_eq` — rewrite
+   `circuitEvaluatorCS gates` to `circuitEvaluatorCSAt gates 0` at the
+   call site; apply the offset-generalised theorem.
+5. **Public alias** — after the induction is proved, expose
+   `theorem circuitEvaluatorCS_run_correct : ∀ gates …, hwf →
+   CircuitEvaluatorCS_RunCorrect gates …` in `GateEvalCS` namespace
+   (or a re-export in `Complexity.PsubsetPpolyInternal.TuringToolkit`).
+
+**Why this is multi-session work**: the tape-alignment argument (point
+3, tail segment) requires constructing the lifted P2-config, proving
+its equivalence to the post-boundary composite config on all
+relevant indices, and managing the dependent-type casts through
+`ConstStatePhasedProgram` propositional equalities.  Careful
+step-by-step work with iterative compilation check needed; attempting
+blind without intermediate compile passes risks unbounded regression.
+
 ### Session 47b — F.4 induction scaffold
 
 Added in the continuation of session 47 to prepare the ground for the

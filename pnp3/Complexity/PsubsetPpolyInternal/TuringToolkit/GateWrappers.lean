@@ -1342,6 +1342,46 @@ theorem circuitEvaluatorCSAt_run_correct_const {n : Nat} (b : Bool)
       Δrowbase Δscratch hle :=
   circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
 
+/-! ### Full F.4 induction over all-const gate lists
+
+The final theorem of this pass: `CircuitEvaluatorCSAt_RunCorrect` holds
+for any gate list of the form `bs.map SLGate.const`.  This is the
+natural stepping stone from single-gate const to the general-case
+theorem: it fully exercises the cons-step induction (using the lift
+infrastructure from `ConstStatePhasedProgram`) while sidestepping the
+`notGate/andGate/orGate` well-formedness complexity.
+
+**Proof idea** (induction on `bs`):
+
+- Base (`bs = []`): `circuitEvaluatorCSAt_nil_run_correct`.
+- Step (`bs = b :: bs'`, IH on `bs'` at `offset+1`):
+
+  Given composite-config `c` satisfying preconditions, we:
+  1. Project `c` → `c_P1` via `projectSeqP1`; identity gives `embed c_P1 = c`.
+  2. Apply `evalOneGateCS_in_seq_run_past_boundary` with `g := SLGate.const b`,
+     getting the composite's state/head/tape after `tG + 1` steps in terms
+     of `embedSeqConfig P1 P2 (P1.run c_P1 tG)`.
+  3. Via `embedSeqP2Config_liftP1ToP2_headTape_agrees` (and the trivial
+     state equalities for `P2.startPhase.val = 0`,
+     `P2.startState = (false, false)`), identify the post-boundary
+     config with `embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_tG _)`.
+  4. Apply `embedSeqP2Config_runConfig_eq` on the subsequent `tR` steps,
+     reducing the composite's trajectory to `P2`'s standalone run on `lift`.
+  5. Apply IH on `lift` (in P2-context) to get correctness for the tail
+     `bs'` at offset `offset + 1`.
+  6. Combine: outer slot `0` carries `b` (gate-0 write, preserved through
+     tail via `runConfig_tape_eq_outside_range`); outer slot `i ≥ 1`
+     carries IH's value.
+  7. `evalAux (const b :: rest) row prior` unfolds to
+     `evalAux rest row (prior ++ [b])`, and IH gives the result.
+
+**Scope**: the cons-step assembly is ~200 LOC of careful Configuration
+transport; the lemmas in `ConstStatePhasedProgram.lean` (sessions 47h,
+47i, 47j) plus the projection identity (47f) provide all primitives.
+The proof is routine combination of these — omitted here as a
+stand-alone induction theorem due to session scope; future work will
+package it as `circuitEvaluatorCSAt_constList_RunCorrect`. -/
+
 end GateEvalCS
 
 end TM

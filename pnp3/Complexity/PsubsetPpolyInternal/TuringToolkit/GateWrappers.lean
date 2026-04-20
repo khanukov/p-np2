@@ -896,6 +896,142 @@ form is sufficient for induction. -/
     (circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).numPhases = 1
       := rfl
 
+/-! ### Single-gate demonstrator: `circuitEvaluatorCSAt [const b]`
+
+A concrete, self-contained correctness proof of the one-gate case
+`gates = [SLGate.const b]`.  Starts from a P1-config `c_P1` of
+`evalOneGateCS (const b) offset …` (which equals `gateConstCS b
+(Δscratch+offset)`) and proves that after running the composite
+`circuitEvaluatorCSAt [const b] offset …` for its full timeBound, the
+scratch cell at `head + Δscratch + offset` holds `b`.
+
+Exercises the full F.4 architecture on a case that avoids
+multi-gate induction + the tail-segment tape alignment subtlety:
+tail is `idleCS` with timeBound = 0, so the run terminates right
+after the boundary step.
+
+Role: validation that the plumbing (past-boundary +
+`gateConstCS_run_full` + `embedSeqConfig_tape_in_range` +
+`Configuration.write_self`) composes correctly, and a reference the
+future F.4 main proof can study for the prefix-and-boundary
+subroutine. -/
+
+theorem circuitEvaluatorCSAt_const_run_correct {n : Nat} (b : Bool)
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c_P1 : Configuration
+      (M := (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c_P1.state.fst.val = 0)
+    (h_state_snd : c_P1.state.snd = (false, false))
+    (h_bound : (c_P1.head : ℕ) + (Δscratch + offset) <
+        (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    let P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle
+    let tail := circuitEvaluatorCSAt (n := n) ([] : List (SLGate n)) (offset + 1)
+                  Δrowbase Δscratch hle
+    let composite := circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+                       Δrowbase Δscratch hle
+    let c_comp := ConstStatePhasedProgram.embedSeqConfig P1 tail c_P1
+    ∃ (h_bound_comp : (c_P1.head : ℕ) + (Δscratch + offset) <
+          composite.toPhased.toTM.tapeLength N),
+      (TM.runConfig (M := composite.toPhased.toTM) c_comp
+        (composite.timeBound N)).tape
+          ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_bound_comp⟩ = b := by
+  intro P1 tail composite c_comp
+  -- Apply the past-boundary lemma for gate evaluators with P2 := tail.
+  have hpb := evalOneGateCS_in_seq_run_past_boundary (SLGate.const b (n := n))
+    offset Δrowbase Δscratch hle tail c_P1 h_phase h_state_snd h_bound
+  obtain ⟨_, _, _, htape_pb⟩ := hpb
+  -- composite.timeBound N = 2*(Δscratch+offset) + 4 definitionally.
+  have htimeBound : composite.timeBound N = 2 * (Δscratch + offset) + 4 := by
+    show (ConstStatePhasedProgram.seq P1 tail).timeBound N =
+        2 * (Δscratch + offset) + 4
+    rw [ConstStatePhasedProgram.seq_timeBound]
+    show (2 * (Δscratch + offset) + 3) + 0 + 1 = 2 * (Δscratch + offset) + 4
+    omega
+  have h_bound_comp : (c_P1.head : ℕ) + (Δscratch + offset) <
+      composite.toPhased.toTM.tapeLength N := by
+    have h_ge := ConstStatePhasedProgram.seq_tapeLength_ge_P1 P1 tail N
+    show (c_P1.head : ℕ) + (Δscratch + offset) <
+        (ConstStatePhasedProgram.seq P1 tail).toPhased.toTM.tapeLength N
+    exact Nat.lt_of_lt_of_le h_bound h_ge
+  refine ⟨h_bound_comp, ?_⟩
+  rw [htimeBound]
+  -- Normalize `composite` to `P1.seq tail` so that `htape_pb` unifies.
+  show (TM.runConfig (M := (ConstStatePhasedProgram.seq P1 tail).toPhased.toTM) c_comp
+      (2 * (Δscratch + offset) + 4)).tape
+      ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_bound_comp⟩ = b
+  rw [htape_pb]
+  rw [ConstStatePhasedProgram.embedSeqConfig_tape_in_range P1 tail _ _ h_bound]
+  -- Normalize `P1` to `gateConstCS b (Δscratch + offset)` to match `gateConstCS_run_full`.
+  show (TM.runConfig (M := (gateConstCS b (Δscratch + offset)).toPhased.toTM) c_P1
+      (2 * (Δscratch + offset) + 3)).tape
+      ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_bound⟩ = b
+  have hP1_full := gateConstCS_run_full b (Δscratch + offset) c_P1
+    h_phase h_state_snd h_bound
+  rw [hP1_full]
+  exact Configuration.write_self c_P1 _ b
+
+/-- Companion to `circuitEvaluatorCSAt_const_run_correct`: single-gate case
+for `SLGate.input i`.  After running the composite, the scratch cell
+at `head + Δscratch + offset` holds `c_P1.tape[head + Δrowbase + i.val]`
+— the value of the `i`-th input of the row. -/
+theorem circuitEvaluatorCSAt_input_run_correct {n : Nat} (i : Fin n)
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c_P1 : Configuration
+      (M := (evalOneGateCS (n := n) (SLGate.input i) offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c_P1.state.fst.val = 0)
+    (h_state_snd : c_P1.state.snd = (false, false))
+    (h_bound : (c_P1.head : ℕ) + (Δscratch + offset) <
+        (evalOneGateCS (n := n) (SLGate.input i) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    let P1 := evalOneGateCS (n := n) (SLGate.input i) offset Δrowbase Δscratch hle
+    let tail := circuitEvaluatorCSAt (n := n) ([] : List (SLGate n)) (offset + 1)
+                  Δrowbase Δscratch hle
+    let composite := circuitEvaluatorCSAt (n := n) [SLGate.input i] offset
+                       Δrowbase Δscratch hle
+    let c_comp := ConstStatePhasedProgram.embedSeqConfig P1 tail c_P1
+    ∃ (h_bound_comp : (c_P1.head : ℕ) + (Δscratch + offset) <
+          composite.toPhased.toTM.tapeLength N)
+      (h_src : (c_P1.head : ℕ) + (Δrowbase + i.val) < P1.toPhased.toTM.tapeLength N),
+      (TM.runConfig (M := composite.toPhased.toTM) c_comp
+        (composite.timeBound N)).tape
+          ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_bound_comp⟩ =
+        c_P1.tape ⟨(c_P1.head : ℕ) + (Δrowbase + i.val), h_src⟩ := by
+  intro P1 tail composite c_comp
+  have hpb := evalOneGateCS_in_seq_run_past_boundary (SLGate.input i (n := n))
+    offset Δrowbase Δscratch hle tail c_P1 h_phase h_state_snd h_bound
+  obtain ⟨_, _, _, htape_pb⟩ := hpb
+  have htimeBound : composite.timeBound N = 2 * (Δscratch + offset) + 4 := by
+    show (ConstStatePhasedProgram.seq P1 tail).timeBound N =
+        2 * (Δscratch + offset) + 4
+    rw [ConstStatePhasedProgram.seq_timeBound]
+    show (2 * (Δscratch + offset) + 3) + 0 + 1 = 2 * (Δscratch + offset) + 4
+    omega
+  have h_bound_comp : (c_P1.head : ℕ) + (Δscratch + offset) <
+      composite.toPhased.toTM.tapeLength N := by
+    have h_ge := ConstStatePhasedProgram.seq_tapeLength_ge_P1 P1 tail N
+    show (c_P1.head : ℕ) + (Δscratch + offset) <
+        (ConstStatePhasedProgram.seq P1 tail).toPhased.toTM.tapeLength N
+    exact Nat.lt_of_lt_of_le h_bound h_ge
+  -- evalOneGateCS (SLGate.input i) offset = gateInputCS i Δrowbase (Δscratch+offset) hi.
+  have hi : Δrowbase + i.val ≤ Δscratch + offset := by
+    have := i.isLt; omega
+  -- Apply gateInputCS_run_full.
+  have hP1_full :=
+    gateInputCS_run_full i Δrowbase (Δscratch + offset) hi c_P1
+      h_phase h_state_snd h_bound
+  obtain ⟨h_src, htape_P1⟩ := hP1_full
+  refine ⟨h_bound_comp, h_src, ?_⟩
+  rw [htimeBound]
+  show (TM.runConfig (M := (ConstStatePhasedProgram.seq P1 tail).toPhased.toTM) c_comp
+      (2 * (Δscratch + offset) + 4)).tape
+      ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_bound_comp⟩ = _
+  rw [htape_pb]
+  rw [ConstStatePhasedProgram.embedSeqConfig_tape_in_range P1 tail _ _ h_bound]
+  show (TM.runConfig (M := (gateInputCS i Δrowbase (Δscratch + offset) hi).toPhased.toTM) c_P1
+      (2 * (Δscratch + offset) + 3)).tape
+      ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_bound⟩ = _
+  rw [htape_P1]
+  exact Configuration.write_self c_P1 _ _
+
 /-! ### Milestone F.4: `circuitEvaluatorCS_run_correct` target statement
 
 The full correctness of the whole-circuit evaluator is the culmination of

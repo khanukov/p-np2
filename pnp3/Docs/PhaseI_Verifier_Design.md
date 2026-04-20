@@ -426,6 +426,51 @@ propositional equality between two `ConstStatePhasedProgram`s.  This
 is fine — future-session invocations know their local goal shape and
 can drive the rewrite directly.
 
+### Session 47e — single-gate case proved (concrete F.4 demonstrator)
+
+Proved the **single-gate case** of F.4 for two gate types as concrete,
+self-contained theorems in `TuringToolkit/GateWrappers.lean`:
+
+- `circuitEvaluatorCSAt_const_run_correct` — for `gates = [SLGate.const b]`.
+- `circuitEvaluatorCSAt_input_run_correct` — for `gates = [SLGate.input i]`.
+
+Both take a **P1-config** (of `evalOneGateCS g offset Δrowbase Δscratch
+hle`) rather than a composite-config, side-stepping the
+composite-arbitrary-tape issue noted in the 47d blueprint.  The proof
+pattern is identical across both:
+
+1. Apply `evalOneGateCS_in_seq_run_past_boundary` with `P2 := tail`
+   (= `circuitEvaluatorCSAt [] (offset+1) …` = `idleCS`) to evaluate
+   the composite over `tG + 1 = 2*(Δscratch+offset) + 4` steps.
+2. `composite.timeBound N = 2*(Δscratch+offset) + 4` since tail's
+   `timeBound = 0` (from `idleCS`).
+3. `embedSeqConfig_tape_in_range` reduces the embed's tape at the
+   scratch position to P1's post-run tape at that position.
+4. Apply the per-gate correctness
+   (`gateConstCS_run_full` / `gateInputCS_run_full`) → P1's tape at
+   the scratch position is `c_P1.write _ value _`; use
+   `Configuration.write_self` to read back `value`.
+
+**Why this is a genuine F.4 milestone**: validates that the entire
+prefix-and-boundary sub-proof — the `embedSeqConfig_runConfig_eq`
+(implicit inside past-boundary) + per-gate correctness +
+`embedSeqConfig_tape_in_range` + `write_self` chain — composes
+correctly.  The multi-gate induction reuses this exact pattern for
+the head gate, with the additional tail-segment handling (via
+`embedSeqP2Config_runConfig_eq`) overlaid on top.
+
+**Why the other three gate types aren't proved here**: `notGate`,
+`andGate`, `orGate` at `slot = 0` reference non-existent prior slots
+(0 values have been computed yet), so `SLProgram.evalAux` returns
+`none` — the Prop shape `∃ vals, evalAux = some vals ∧ …` is false
+for them in isolation.  These cases become valid in the multi-gate
+induction's tail where the gate's slot is ≥ 1 and prior slots are
+populated.
+
+**Scope of this milestone**: ~110 LOC added to `GateWrappers.lean`.
+All proofs axiom-clean (`{propext, Classical.choice, Quot.sound}`).
+`./scripts/check.sh` green.
+
 ### Session 47d — downstream audit + F.4 induction blueprint
 
 Audited the downstream consumers of `circuitEvaluatorCS_run_correct`

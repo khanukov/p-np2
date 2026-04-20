@@ -403,6 +403,44 @@ Delivered in this session:
    axiom inventory unchanged (`propext = 349`, `Classical.choice = 345`,
    `Quot.sound = 349`).
 
+### Session 47b — F.4 induction scaffold
+
+Added in the continuation of session 47 to prepare the ground for the
+main F.4 proof:
+
+1. **`circuitEvaluatorCS_cons`** — unfolds
+   `circuitEvaluatorCS (g :: rest) Δrowbase Δscratch hle` into
+   `seq (evalOneGateCS g 0 …) (seqList (rest.mapIdx (fun slot g' =>
+   evalOneGateCS g' (slot + 1) …)))` via the Lean stdlib's
+   `List.mapIdx_cons`.  Closes the `mapIdx`-offset unfolding caveat
+   flagged in the F.4 strategy doc-block.
+2. **`circuitEvaluatorCSAt gates offset`** — explicit-recursion variant
+   of the evaluator in which the slot offset is a visible parameter.
+   Comes with `_nil / _cons` simp lemmas, `_cons_timeBound` and
+   `_cons_numPhases` simp lemmas (arithmetic for the induction step),
+   and `circuitEvaluatorCSAt_zero_eq` which certifies
+   `circuitEvaluatorCSAt gates 0 = circuitEvaluatorCS gates`.
+3. **`circuitEvaluatorCSAt_eq_seqList_mapIdx`** — offset-generalised
+   equivalence to the `seqList (mapIdx …)` form, proven by induction
+   on `gates` using `List.mapIdx_cons` and
+   `ConstStatePhasedProgram.seqList_cons`.
+
+With this helper in place, the remaining F.4 proof can:
+
+- Induct on `gates` at the level of `circuitEvaluatorCSAt gates offset`
+  with `offset` generalised in the IH (so the shift on the tail aligns
+  automatically).
+- Transfer the final result to `circuitEvaluatorCS` via
+  `circuitEvaluatorCSAt_zero_eq`.
+
+This removes the architectural friction of `List.mapIdx` offset
+threading from the future F.4 proof, leaving only the mechanical
+application of the existing bridge lemmas (`embedSeqConfig_runConfig_eq`,
+`evalOneGateCS_in_seq_run_past_boundary`,
+`embedSeqP2Config_runConfig_eq`, `evalOneGateCS_writes_at_dst`) and the
+list-level invariants helper.  Both `./scripts/check.sh` and axiom
+inventory remain unchanged.
+
 ### Session 47 — audit: old `Simulation.lean` vs. TuringToolkit
 
 Findings:

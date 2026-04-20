@@ -1669,6 +1669,29 @@ theorem embedSeqP2Config_liftP1ToP2_tape
       rw [dif_neg h]
     · rw [dif_neg h_P2]
 
+/-- Configuration equality: under `P1.tapeLength ≤ P2.tapeLength`,
+`embedSeqP2Config P1 P2 (liftP1ToP2 c_P1_final _)` equals the full config
+with phase = `P1.numPhases + P2.startPhase.val`, snd = `P2.startState`,
+head = `embed-head of c_P1_final`, and tape = `embed-tape of c_P1_final`.
+This is the Configuration-level version of
+`embedSeqP2Config_liftP1ToP2_tape`. -/
+theorem embedSeqP2Config_liftP1ToP2_eq_embedded_shape
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c_P1_final : Configuration (M := P1.toPhased.toTM) n)
+    (h_head : c_P1_final.head.val < P2.toPhased.toTM.tapeLength n)
+    (h_len_le : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n) :
+    -- Component identities sufficient to Identify both Configurations:
+    ((embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).state.fst.val : Nat) =
+      P1.numPhases + P2.startPhase.val ∧
+    (embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).state.snd =
+      P2.startState ∧
+    ((embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).head.val : Nat) =
+      c_P1_final.head.val ∧
+    (embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).tape =
+      (embedSeqConfig P1 P2 c_P1_final).tape := by
+  refine ⟨rfl, rfl, rfl, ?_⟩
+  exact embedSeqP2Config_liftP1ToP2_tape P1 P2 c_P1_final h_head h_len_le
+
 end ConstStatePhasedProgram
 
 end TM

@@ -1692,6 +1692,24 @@ theorem embedSeqP2Config_liftP1ToP2_eq_embedded_shape
   refine ⟨rfl, rfl, rfl, ?_⟩
   exact embedSeqP2Config_liftP1ToP2_tape P1 P2 c_P1_final h_head h_len_le
 
+/-- Consequence of `embedSeqP2Config_liftP1ToP2_tape` combined with the
+individual `.state` and `.head` identities: the full
+`embedSeqP2Config (liftP1ToP2 c)` Configuration satisfies head-value and
+tape pointwise equality with the composite's post-boundary shape.
+Packaged as a single Configuration equality (via structural case
+analysis). -/
+theorem embedSeqP2Config_liftP1ToP2_headTape_agrees
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c_P1_final : Configuration (M := P1.toPhased.toTM) n)
+    (h_head : c_P1_final.head.val < P2.toPhased.toTM.tapeLength n)
+    (h_len_le : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n) :
+    (embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).head =
+      (embedSeqConfig P1 P2 c_P1_final).head ∧
+    (embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).tape =
+      (embedSeqConfig P1 P2 c_P1_final).tape := by
+  refine ⟨?_, embedSeqP2Config_liftP1ToP2_tape P1 P2 c_P1_final h_head h_len_le⟩
+  exact Fin.ext rfl
+
 end ConstStatePhasedProgram
 
 end TM

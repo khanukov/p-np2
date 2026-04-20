@@ -999,6 +999,73 @@ theorem circuitEvaluatorCS_nil_run_correct {n : Nat}
   refine ⟨[], rfl, rfl, ?_⟩
   intro i; exact i.elim0
 
+/-! ### Offset-generalised correctness Prop for `circuitEvaluatorCSAt`
+
+This is the form the full F.4 induction will work with: the scratch
+region starts at `Δscratch + offset`, and the SL evaluator's accumulator
+starts with `offset` already-computed values (which the gates of this
+sublist can reference).  Specialising to `offset = 0` and an empty
+accumulator recovers `CircuitEvaluatorCS_RunCorrect` via
+`circuitEvaluatorCSAt_zero_eq`.
+
+The inductive structure is natural: given
+`CircuitEvaluatorCSAt_RunCorrect rest (offset + 1)` as IH for the tail,
+the head gate's write at `Δscratch + offset` combines with the tail's
+writes at `Δscratch + (offset + 1) .. Δscratch + offset + gates.length`
+to cover exactly the `gates.length` slots claimed in the conclusion. -/
+def CircuitEvaluatorCSAt_RunCorrect {n : Nat} (gates : List (SLGate n))
+    (offset : Nat) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) : Prop :=
+  ∀ {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (_h_phase : c.state.fst.val = 0)
+    (_h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤
+      (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (prior : List Bool),
+    ∃ vals : List Bool,
+      vals.length = gates.length ∧
+      SLProgram.evalAux
+          (fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
+            have hi := i.isLt
+            omega⟩)
+          gates prior = some (prior ++ vals) ∧
+      ∀ i : Fin gates.length,
+        (TM.runConfig
+            (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
+            ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape
+          ⟨(c.head : ℕ) + Δscratch + offset + i.val, by
+            have hi := i.isLt
+            omega⟩ =
+        vals[i.val]?.getD false
+
+/-- Base case of the offset-generalised correctness Prop.  Empty gate
+list runs for 0 steps, the `evalAux` accumulator is preserved (`prior`
+extended by the empty witness `[]`), and the `∀ i : Fin 0` clause is
+vacuous. -/
+theorem circuitEvaluatorCSAt_nil_run_correct {n : Nat}
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect ([] : List (SLGate n)) offset
+      Δrowbase Δscratch hle := by
+  intro N c _ _ _ prior
+  refine ⟨[], rfl, ?_, ?_⟩
+  · show SLProgram.evalAux _ ([] : List (SLGate n)) prior = some (prior ++ [])
+    simp [SLProgram.evalAux]
+  · intro i; exact i.elim0
+
+/-! ### Using the offset-generalised Prop inside the future F.4 proof
+
+A future session proving F.4 by induction on `gates` (with `offset`
+generalised) will target `CircuitEvaluatorCSAt_RunCorrect gates offset`
+directly.  To specialise back to `CircuitEvaluatorCS_RunCorrect gates`,
+use `circuitEvaluatorCSAt_zero_eq gates Δrowbase Δscratch hle` at the
+point of application — it rewrites `circuitEvaluatorCS gates` to
+`circuitEvaluatorCSAt gates 0` inside the local goal / hypotheses.
+This is safer than a packaged bridge lemma because the transport of
+the `Configuration`-typed hypothesis `c` depends on its exact form at
+the call site. -/
+
 end GateEvalCS
 
 end TM

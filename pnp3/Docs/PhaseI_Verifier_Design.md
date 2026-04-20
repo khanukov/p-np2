@@ -403,6 +403,29 @@ Delivered in this session:
    axiom inventory unchanged (`propext = 349`, `Classical.choice = 345`,
    `Quot.sound = 349`).
 
+### Session 47c — offset-generalised correctness Prop
+
+Extended the F.4 scaffold with the **offset-generalised** form that
+the future induction will target directly:
+
+- `CircuitEvaluatorCSAt_RunCorrect gates offset Δrowbase Δscratch hle` —
+  offset-parameterised correctness property.  Adds an explicit `prior
+  : List Bool` accumulator (matching `SLProgram.evalAux`'s threading)
+  and puts the scratch-region index at `Δscratch + offset + i.val` so
+  the `+ 1` shift on the tail aligns with the helper's recursion.
+- `circuitEvaluatorCSAt_nil_run_correct` — base case for the
+  offset-generalised Prop: empty list, trivial evalAux (`prior ++ []`),
+  vacuous `∀ i : Fin 0`.
+
+Kept the interaction with `CircuitEvaluatorCS_RunCorrect` as an
+inline note rather than a packaged bridge lemma: the offset-zero
+specialisation is straightforward to apply at the call site via
+`rw [← circuitEvaluatorCSAt_zero_eq]`, but a generic bridge lemma
+stumbles on `Configuration`-typed hypothesis transport through a
+propositional equality between two `ConstStatePhasedProgram`s.  This
+is fine — future-session invocations know their local goal shape and
+can drive the rewrite directly.
+
 ### Session 47b — F.4 induction scaffold
 
 Added in the continuation of session 47 to prepare the ground for the

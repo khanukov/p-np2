@@ -426,6 +426,70 @@ propositional equality between two `ConstStatePhasedProgram`s.  This
 is fine — future-session invocations know their local goal shape and
 can drive the rewrite directly.
 
+### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
+
+Delivered the first fully Prop-form proof of `CircuitEvaluatorCSAt_RunCorrect`
+for a non-empty gate list.  Closes the architectural uncertainty around
+transporting P1-config-based concrete theorems to arbitrary
+composite-configs.
+
+**Infrastructure added in `ConstStatePhasedProgram.lean`**:
+
+- `projectSeqP1 P1 P2 c hphase hhead : Configuration P1 N` — the
+  inverse of `embedSeqConfig`.  Extracts the P1-config from a
+  composite-config with phase and head in P1 range.
+- `embedSeqConfig_projectSeqP1 c ... htape_outer` — identity:
+  `embedSeqConfig P1 P2 (projectSeqP1 c ...) = c` under the assumption
+  that `c`'s tape outside `P1.tapeLength` is all `false`.  Proved via
+  structural `Configuration.mk` case analysis + `Sigma.ext` on state +
+  `funext` + `dif` on tape.
+
+**Prop refinements in `GateWrappers.lean`**:
+
+- `hbound` strengthened to `c.head + Δscratch + offset + gates.length ≤ N`
+  (was: `≤ tapeLength`).  Universal form that makes the tail-run IH
+  applicable and simplifies arithmetic in the composite-to-P1 lift.
+- New `htape_clean` premise: `∀ i, N ≤ i.val → c.tape i = false`.
+  Encodes the canonical "scratch zero-initialised" form typical of
+  MCSP verifier use.  Discharge strategy at the call site: the MCSP
+  verifier constructs initial configs with tape = input bits in
+  `[0, n)` and `false` elsewhere, so positions ≥ N are trivially
+  `false`.
+
+**Theorem** (in GateWrappers.lean):
+```lean
+theorem circuitEvaluatorCSAt_const_RunCorrect (b : Bool)
+    (offset Δrowbase Δscratch hle) :
+    CircuitEvaluatorCSAt_RunCorrect [SLGate.const b] offset
+      Δrowbase Δscratch hle
+```
+
+**Proof recipe** (composite-to-P1 lift):
+1. Derive `hphase_lt : c.state.fst.val < P1.numPhases` from `h_phase = 0`.
+2. Derive `hhead_lt : c.head.val < P1.tapeLength N` from `hbound` using
+   the composite/P1 tapeLength relationship.
+3. Derive `htape_outer` (tape = `false` past `P1.tapeLength`) from
+   `htape_clean` (tape = `false` past `N`) since `P1.tapeLength ≥ N+1`.
+4. Project `c` to `c_P1` via `projectSeqP1`.
+5. Apply `embedSeqConfig_projectSeqP1` to get `embedSeqConfig P1 P2 c_P1 = c`.
+6. Apply `circuitEvaluatorCSAt_const_run_correct` (P1-config form) on `c_P1`.
+7. Transport tape result back to `c` via `hembed ▸` (propositional
+   substitution).
+8. Handle `i : Fin 1` via pattern match + `Fin.ext`-based index matching.
+
+**Public theorem aliases added**:
+- `circuitEvaluatorCS_run_correct_nil` — empty gates.
+- `circuitEvaluatorCSAt_run_correct_const` — single-gate const case in
+  the offset-generalised form.
+
+**Scope & path forward**:
+The const case is a direct stepping stone to the multi-gate induction.
+The same composite-to-P1 recipe handles the head gate in a cons case;
+the tail-segment handling (via `embedSeqP2Config_runConfig_eq`) and
+IH assembly close the remaining gap.  Extending to `[input i]` follows
+the same pattern but with an existential `h_src` to transport alongside
+the tape value.
+
 ### Session 47e — single-gate case proved (concrete F.4 demonstrator)
 
 Proved the **single-gate case** of F.4 for two gate types as concrete,

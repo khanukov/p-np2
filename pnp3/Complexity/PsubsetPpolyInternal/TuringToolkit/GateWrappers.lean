@@ -1313,6 +1313,35 @@ theorem circuitEvaluatorCSAt_const_RunCorrect {n : Nat} (b : Bool)
       have : k + 1 < 1 := h
       omega
 
+/-! ### Public theorem alias for single-gate const case
+
+Specialisation of `CircuitEvaluatorCS_RunCorrect` to the simplest
+provable case `gates = []`.  Future extensions add proofs for
+arbitrary gate lists; once the induction step is proved, this alias
+will be the entry-point for the whole theorem. -/
+
+/-- Public entry: the full correctness of `circuitEvaluatorCS` on the
+empty gate list.  Equivalent to `circuitEvaluatorCS_nil_run_correct`;
+named uniformly so downstream consumers don't have to juggle
+case-specific theorem names.  The signature `CircuitEvaluatorCS_RunCorrect`
+already encodes the correctness claim (see its docstring at
+GateWrappers.lean:1091–1100). -/
+theorem circuitEvaluatorCS_run_correct_nil {n : Nat}
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect ([] : List (SLGate n)) Δrowbase Δscratch hle :=
+  circuitEvaluatorCS_nil_run_correct Δrowbase Δscratch hle
+
+/-- Public entry: correctness of the one-gate `circuitEvaluatorCSAt` with
+a `SLGate.const b` gate.  Exposes the Prop-form result proven in
+`circuitEvaluatorCSAt_const_RunCorrect` under the public name.  A
+natural stepping stone to a full multi-gate `circuitEvaluatorCS_run_correct`
+in a future session. -/
+theorem circuitEvaluatorCSAt_run_correct_const {n : Nat} (b : Bool)
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect ([SLGate.const b] : List (SLGate n)) offset
+      Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+
 end GateEvalCS
 
 end TM

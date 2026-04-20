@@ -666,6 +666,86 @@ theorem embedSeqConfig_tape_out_of_range (P1 P2 : ConstStatePhasedProgram S) {n 
   show (if h' : i.val < P1.toPhased.toTM.tapeLength n then _ else _) = _
   rw [dif_neg (by omega)]
 
+/-! ### Projection composite → P1
+
+Inverse of `embedSeqConfig` (without the inverse identity).  The
+`projectSeqP1` projection of a composite-config `c` with phase in P1
+range and head in P1 range gives a P1-config whose state/head/tape
+pointwise agree with `c`'s pre-image.  The identity
+`embedSeqConfig P1 P2 (projectSeqP1 c) = c` under a tape-outer-zero
+premise is the cornerstone for future F.4 composite-to-P1 transport;
+its proof is deferred pending a clean handling of the
+`Configuration`/`Sigma` dependent-type decomposition (the naïve
+`congr` chain overshoots).  The projection definition alone is
+useful downstream for local reasoning. -/
+
+/-- Projection of a composite-config into a P1-config, under the
+assumptions `c.state.fst.val < P1.numPhases` and `c.head.val <
+P1.tapeLength`.  Tape is restricted to the first `P1.tapeLength` cells. -/
+def projectSeqP1 (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (hphase : c.state.fst.val < P1.numPhases)
+    (hhead : c.head.val < P1.toPhased.toTM.tapeLength n) :
+    Configuration (M := P1.toPhased.toTM) n where
+  state := ⟨⟨c.state.fst.val, by
+      simp only [toPhased_numPhases]; exact hphase⟩, c.state.snd⟩
+  head := ⟨c.head.val, hhead⟩
+  tape := fun i =>
+    c.tape ⟨i.val, Nat.lt_of_lt_of_le i.isLt (seq_tapeLength_ge_P1 P1 P2 n)⟩
+
+/-- Identity lemma: `embed ∘ project = id` under the assumption that
+`c`'s tape outside `P1.tapeLength` is all `false`.  Proved by
+structural case analysis on the `Configuration.mk` constructor on both
+sides, following the pattern of `embedSeqConfig_stepConfig_eq`. -/
+theorem embedSeqConfig_projectSeqP1 (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) n)
+    (hphase : c.state.fst.val < P1.numPhases)
+    (hhead : c.head.val < P1.toPhased.toTM.tapeLength n)
+    (htape_outer : ∀ i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n),
+      P1.toPhased.toTM.tapeLength n ≤ i.val → c.tape i = false) :
+    embedSeqConfig P1 P2 (projectSeqP1 P1 P2 c hphase hhead) = c := by
+  -- Component 1: state equality. Sigma with same .val (Fin.ext) and same .snd.
+  have hstate :
+      (embedSeqConfig P1 P2 (projectSeqP1 P1 P2 c hphase hhead)).state = c.state := by
+    have hfst : (embedSeqConfig P1 P2
+        (projectSeqP1 P1 P2 c hphase hhead)).state.fst = c.state.fst :=
+      Fin.ext rfl
+    have hsnd : (embedSeqConfig P1 P2
+        (projectSeqP1 P1 P2 c hphase hhead)).state.snd = c.state.snd := rfl
+    exact Sigma.ext hfst (by rw [hfst]; exact heq_of_eq hsnd)
+  -- Component 2: head equality via Fin.ext.
+  have hhead_eq :
+      (embedSeqConfig P1 P2 (projectSeqP1 P1 P2 c hphase hhead)).head = c.head :=
+    Fin.ext rfl
+  -- Component 3: tape equality via funext + dif case split.
+  have htape_eq :
+      (embedSeqConfig P1 P2 (projectSeqP1 P1 P2 c hphase hhead)).tape = c.tape := by
+    funext i
+    by_cases h : i.val < P1.toPhased.toTM.tapeLength n
+    · show (if h' : i.val < P1.toPhased.toTM.tapeLength n
+          then _ else false) = _
+      rw [dif_pos h]
+      rfl
+    · show (if h' : i.val < P1.toPhased.toTM.tapeLength n
+          then _ else false) = _
+      rw [dif_neg h]
+      exact (htape_outer i (Nat.not_lt.mp h)).symm
+  -- Combine via Configuration case analysis.
+  cases hL : (embedSeqConfig P1 P2 (projectSeqP1 P1 P2 c hphase hhead)) with
+  | mk sL hL_head tL =>
+    cases hR : c with
+    | mk sR hR_head tR =>
+      have hse : sL = sR := by
+        rw [hL] at hstate; rw [hR] at hstate; exact hstate
+      have hte : tL = tR := by
+        rw [hL] at htape_eq; rw [hR] at htape_eq; exact htape_eq
+      have hhe : hL_head = hR_head := by
+        rw [hL] at hhead_eq; rw [hR] at hhead_eq; exact hhead_eq
+      subst hse
+      subst hte
+      subst hhe
+      rfl
+
 /-- Tape value at head position is preserved by embedding: reading at
 the embedded head returns the same bit as reading at the original head. -/
 @[simp] theorem embedSeqConfig_tape_at_head

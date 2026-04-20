@@ -1104,14 +1104,19 @@ def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
       (M := (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM) N)
     (_h_phase : c.state.fst.val = 0)
     (_h_state_snd : c.state.snd = (false, false))
-    (hbound : (c.head : ℕ) + Δscratch + gates.length ≤
-      (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+    (hbound : (c.head : ℕ) + Δscratch + gates.length ≤ N)
+    (_htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false),
     ∃ vals : List Bool,
       vals.length = gates.length ∧
       SLProgram.evalAux
           (fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
             have hi := i.isLt
-            have hgates : (0 : ℕ) ≤ gates.length := Nat.zero_le _
+            have h_len_ge : N ≤
+                ((circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+              show N ≤ N + (circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N + 1
+              omega
             omega⟩)
           gates [] = some vals ∧
       ∀ i : Fin gates.length,
@@ -1120,6 +1125,10 @@ def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
             ((circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N)).tape
           ⟨(c.head : ℕ) + Δscratch + i.val, by
             have hi := i.isLt
+            have h_len_ge : N ≤
+                ((circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+              show N ≤ N + (circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N + 1
+              omega
             omega⟩ =
         vals[i.val]?.getD false
 
@@ -1131,7 +1140,7 @@ from `hle`), and the universal over `Fin 0` is vacuously true via
 theorem circuitEvaluatorCS_nil_run_correct {n : Nat}
     (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
     CircuitEvaluatorCS_RunCorrect ([] : List (SLGate n)) Δrowbase Δscratch hle := by
-  intro N c _ _ _
+  intro N c _ _ _ _
   refine ⟨[], rfl, rfl, ?_⟩
   intro i; exact i.elim0
 
@@ -1157,14 +1166,20 @@ def CircuitEvaluatorCSAt_RunCorrect {n : Nat} (gates : List (SLGate n))
       (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
     (_h_phase : c.state.fst.val = 0)
     (_h_state_snd : c.state.snd = (false, false))
-    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤
-      (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N)
+    (_htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false)
     (prior : List Bool),
     ∃ vals : List Bool,
       vals.length = gates.length ∧
       SLProgram.evalAux
           (fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
             have hi := i.isLt
+            have h_len_ge : N ≤
+                ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+              show N ≤ N + (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N + 1
+              omega
             omega⟩)
           gates prior = some (prior ++ vals) ∧
       ∀ i : Fin gates.length,
@@ -1173,6 +1188,10 @@ def CircuitEvaluatorCSAt_RunCorrect {n : Nat} (gates : List (SLGate n))
             ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape
           ⟨(c.head : ℕ) + Δscratch + offset + i.val, by
             have hi := i.isLt
+            have h_len_ge : N ≤
+                ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+              show N ≤ N + (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N + 1
+              omega
             omega⟩ =
         vals[i.val]?.getD false
 
@@ -1184,23 +1203,115 @@ theorem circuitEvaluatorCSAt_nil_run_correct {n : Nat}
     (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
     CircuitEvaluatorCSAt_RunCorrect ([] : List (SLGate n)) offset
       Δrowbase Δscratch hle := by
-  intro N c _ _ _ prior
+  intro N c _ _ _ _ prior
   refine ⟨[], rfl, ?_, ?_⟩
   · show SLProgram.evalAux _ ([] : List (SLGate n)) prior = some (prior ++ [])
     simp [SLProgram.evalAux]
   · intro i; exact i.elim0
 
-/-! ### Using the offset-generalised Prop inside the future F.4 proof
+/-! ### Full Prop-form single-gate correctness (const and input)
 
-A future session proving F.4 by induction on `gates` (with `offset`
-generalised) will target `CircuitEvaluatorCSAt_RunCorrect gates offset`
-directly.  To specialise back to `CircuitEvaluatorCS_RunCorrect gates`,
-use `circuitEvaluatorCSAt_zero_eq gates Δrowbase Δscratch hle` at the
-point of application — it rewrites `circuitEvaluatorCS gates` to
-`circuitEvaluatorCSAt gates 0` inside the local goal / hypotheses.
-This is safer than a packaged bridge lemma because the transport of
-the `Configuration`-typed hypothesis `c` depends on its exact form at
-the call site. -/
+Using the projection/identity lemma `embedSeqConfig_projectSeqP1`
+from `ConstStatePhasedProgram.lean`, we lift the concrete single-gate
+theorems (`circuitEvaluatorCSAt_{const,input}_run_correct`, which take
+a P1-config as input) to the full Prop form `CircuitEvaluatorCSAt_RunCorrect
+[g] offset` (which takes a composite-config plus the `htape_clean`
+premise). -/
+
+/-- Full Prop-form single-gate correctness for `SLGate.const b`. -/
+theorem circuitEvaluatorCSAt_const_RunCorrect {n : Nat} (b : Bool)
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect ([SLGate.const b] : List (SLGate n)) offset
+      Δrowbase Δscratch hle := by
+  intro N c h_phase h_state_snd hbound htape_clean prior
+  -- Local bindings matching those in `circuitEvaluatorCSAt_const_run_correct`.
+  let P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle
+  let tail := circuitEvaluatorCSAt (n := n) ([] : List (SLGate n)) (offset + 1)
+                Δrowbase Δscratch hle
+  -- Projection into a P1-config.
+  have hphase_lt : c.state.fst.val < P1.numPhases := by
+    rw [h_phase]; show 0 < 2 * (Δscratch + offset) + 4; omega
+  have hhead_lt : c.head.val < P1.toPhased.toTM.tapeLength N := by
+    have hle_tape : P1.toPhased.toTM.tapeLength N =
+        N + (2 * (Δscratch + offset) + 3) + 1 := by rfl
+    have := c.head.isLt
+    show c.head.val < N + (2 * (Δscratch + offset) + 3) + 1
+    -- From hbound: c.head + Δscratch + offset + 1 ≤ composite.tapeLength.
+    -- And composite.tapeLength = N + composite.timeBound + 1 ≥ P1.tapeLength.
+    have h_ge : P1.toPhased.toTM.tapeLength N ≤
+        (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N :=
+      ConstStatePhasedProgram.seq_tapeLength_ge_P1 P1 tail N
+    show c.head.val < N + (2 * (Δscratch + offset) + 3) + 1
+    omega
+  -- Tape-outer-zero: tape above P1.tapeLength is false (from htape_clean,
+  -- since P1.tapeLength ≥ N + 1 > N).
+  have htape_outer :
+      ∀ i : Fin ((ConstStatePhasedProgram.seq P1 tail).toPhased.toTM.tapeLength N),
+        P1.toPhased.toTM.tapeLength N ≤ i.val → c.tape i = false := by
+    intro i hi
+    -- Convert i from seq's tapeLength to composite's (same thing).
+    have hi_N : N ≤ i.val := by
+      have hP1_ge_N : N ≤ P1.toPhased.toTM.tapeLength N := by
+        show N ≤ N + (2 * (Δscratch + offset) + 3) + 1; omega
+      omega
+    exact htape_clean i hi_N
+  -- Project c to a P1-config.
+  let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 tail c hphase_lt hhead_lt
+  have hembed :
+      ConstStatePhasedProgram.embedSeqConfig P1 tail c_P1 = c :=
+    ConstStatePhasedProgram.embedSeqConfig_projectSeqP1 P1 tail c hphase_lt hhead_lt
+      htape_outer
+  -- Apply the concrete single-gate theorem to c_P1.
+  have h_P1_phase : c_P1.state.fst.val = 0 := by
+    show c.state.fst.val = 0
+    exact h_phase
+  have h_P1_state_snd : c_P1.state.snd = (false, false) := h_state_snd
+  have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) <
+      P1.toPhased.toTM.tapeLength N := by
+    show (c.head : ℕ) + (Δscratch + offset) < N + (2 * (Δscratch + offset) + 3) + 1
+    omega
+  have hconcrete :=
+    circuitEvaluatorCSAt_const_run_correct (n := n) b offset Δrowbase Δscratch hle
+      c_P1 h_P1_phase h_P1_state_snd h_P1_bound
+  -- Extract the tape at scratch[offset + 0] = b.
+  obtain ⟨h_bound_comp, htape_val⟩ := hconcrete
+  -- Assemble the Prop's ∃ vals = [b].
+  refine ⟨[b], rfl, ?_, ?_⟩
+  · -- evalAux [const b] row prior = some (prior ++ [b]).
+    show SLProgram.evalAux _ [SLGate.const b] prior = some (prior ++ [b])
+    simp [SLProgram.evalAux, SLGate.compute]
+  · -- For each i : Fin 1 (i.val = 0), tape at scratch[offset+0] = [b][0]?.getD false = b.
+    intro i
+    -- Pattern-match on `i` to get i.val = 0 concretely.
+    match i, i.isLt with
+    | ⟨0, _⟩, _ =>
+      -- Transport htape_val via hembed.
+      have htape_for_c := hembed ▸ htape_val
+      -- Extract concrete arithmetic facts for omega's later uses.
+      have hbound1 : (c.head : ℕ) + Δscratch + offset + 1 ≤ N := hbound
+      have hlen_ge : N ≤ (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+        show N ≤ N + (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+          Δrowbase Δscratch hle).timeBound N + 1
+        omega
+      show (TM.runConfig _ c _).tape ⟨(c.head : ℕ) + Δscratch + offset + 0, _⟩ = _
+      have hidx : (c.head : ℕ) + Δscratch + offset + 0 = (c.head : ℕ) + (Δscratch + offset) := by
+        omega
+      have hfin_eq :
+          (⟨(c.head : ℕ) + Δscratch + offset + 0, by
+              have := hbound1; have := hlen_ge; omega⟩ :
+            Fin ((circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+              Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)) =
+          ⟨(c.head : ℕ) + (Δscratch + offset), by
+              have := hbound1; have := hlen_ge; omega⟩ :=
+        Fin.ext hidx
+      rw [hfin_eq]
+      show _ = b
+      exact htape_for_c
+    | ⟨k+1, h⟩, _ =>
+      have : k + 1 < 1 := h
+      omega
 
 end GateEvalCS
 

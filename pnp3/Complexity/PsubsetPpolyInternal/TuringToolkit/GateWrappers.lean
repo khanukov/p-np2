@@ -520,7 +520,7 @@ theorem seqList_timeBound_le_uniform {S : Type v}
     rw [hlen]
     have hexp : (rest.length + 1) * (B + 1) + 1 =
         rest.length * (B + 1) + (B + 1) + 1 := by
-      simp [Nat.add_mul, Nat.one_mul]
+      simp [Nat.add_mul]
     omega
 
 /-! ### Uniform writes-at-dst lemma for `evalOneGateCS`
@@ -745,6 +745,109 @@ theorem circuitEvaluatorCS_nil_runConfig_zero {n : Nat}
         Δrowbase Δscratch hle).toPhased.toTM) N) :
     TM.runConfig (M := (circuitEvaluatorCS (gates := ([] : List (SLGate n)))
         Δrowbase Δscratch hle).toPhased.toTM) c 0 = c := rfl
+
+/-! ### Milestone F.4: `circuitEvaluatorCS_run_correct` target statement
+
+The full correctness of the whole-circuit evaluator is the culmination of
+Phase I infrastructure (sessions 9e-d 22–46).  We package the target
+statement as a reusable `Prop` so future work can prove it by induction
+on the gate list — all the supporting lemmas are already axiom-clean.
+
+**Statement**: starting from a canonical initial configuration
+(`phase = 0`, `state.snd = (false, false)`, enough tape for the row and
+scratch regions), running `circuitEvaluatorCS gates` for its full
+`timeBound` produces a tape whose scratch slot `i` contains the value of
+gate `i`, matching the straight-line evaluation semantics given by
+`SLProgram.evalAux` on the row-window accessor.
+
+**Proof strategy** (future session, ~200–300 LOC):
+
+*Induction on `gates`.*
+
+1. **Base** (`gates = []`): proved below by `circuitEvaluatorCS_nil_run_correct`.
+2. **Step** (`gates = g :: rest`), by `seqList_cons` unfolding
+   `circuitEvaluatorCS (g :: rest) = seq (evalOneGateCS g 0 _ _ _) (…)`:
+   * **Prefix** (`2*(Δscratch + 0) + 3` steps) — apply
+     `embedSeqConfig_runConfig_eq` using
+     `evalOneGateCS_run_invariants_in_prefix` (line 598); correctness
+     of gate 0's scratch slot via the per-gate `gate*CS_run_full`
+     theorems (lines 321–414).
+   * **Boundary step** — apply
+     `evalOneGateCS_in_seq_run_past_boundary` (line 661) to rewrite the
+     composed TM's state into `embedSeqP2Config` form.
+   * **Tail run** (remaining `(seqList rest').timeBound` steps) — apply
+     `embedSeqP2Config_runConfig_eq` (ConstStatePhasedProgram.lean:1508)
+     with the shifted evaluator of `rest` (slots `1..`); extract IH
+     bound by shifted rowbase / scratch parameters; combine gate 0's
+     value with IH gate values.
+   * Previously-computed scratch slot `0` is preserved through the tail
+     by `evalOneGateCS_writes_at_dst` (line 534) for gate 0, and
+     `runConfig_tape_eq_outside_range` (Foundation.lean:436) for the
+     tail segment whose head stays in the scratch-1..gates.length range.
+
+*Auxiliary lemma needed first* (~80 LOC): list-level version of
+`evalOneGateCS_run_invariants_in_prefix` — a
+`circuitEvaluatorCS_run_invariants_in_prefix` proving the three
+run-invariants (phase < numPhases, phase ≠ acceptPhase, Move.right
+head-safe) for every prefix step of the composed TM.  Same inductive
+split as above; both uses feed back into each other.
+
+*`List.mapIdx` unfolding* — `circuitEvaluatorCS` is defined via
+`mapIdx`, so the induction step requires either a
+`seqList_mapIdx_cons`-style unfolding lemma or a reformulation through
+an offset-parameterised helper `circuitEvaluatorCSAux gates offset`
+(rewriting `circuitEvaluatorCS gates = circuitEvaluatorCSAux gates 0`
+as an equivalence).  The offset-helper keeps slot numbering explicit
+across the induction boundary. -/
+
+/-- The packaged correctness property of `circuitEvaluatorCS`.  A
+future session will prove `gates ↦ CircuitEvaluatorCS_RunCorrect gates`
+by induction; this definition fixes the exact shape of the target.
+
+We state this as a `Prop`-valued definition rather than a theorem
+directly so that the nil case can already be proved (giving a concrete
+reference implementation of the structure) while the full multi-gate
+induction is still pending.  The bound index-proofs are packaged via
+anonymous `by omega` blocks that consume the explicit `hbound`
+hypothesis; this makes the existential clauses definitionally clean
+without any auxiliary sigma types. -/
+def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) : Prop :=
+  ∀ {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM) N)
+    (_h_phase : c.state.fst.val = 0)
+    (_h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + gates.length ≤
+      (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+    ∃ vals : List Bool,
+      vals.length = gates.length ∧
+      SLProgram.evalAux
+          (fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
+            have hi := i.isLt
+            have hgates : (0 : ℕ) ≤ gates.length := Nat.zero_le _
+            omega⟩)
+          gates [] = some vals ∧
+      ∀ i : Fin gates.length,
+        (TM.runConfig
+            (M := (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM) c
+            ((circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N)).tape
+          ⟨(c.head : ℕ) + Δscratch + i.val, by
+            have hi := i.isLt
+            omega⟩ =
+        vals[i.val]?.getD false
+
+/-- Base case: empty gate list.  `circuitEvaluatorCS []` runs for zero
+steps and returns an empty value list.  The row-accessor is still a
+valid total function (any `i : Fin n` is covered via `h_bound` derivable
+from `hle`), and the universal over `Fin 0` is vacuously true via
+`Fin.elim0`. -/
+theorem circuitEvaluatorCS_nil_run_correct {n : Nat}
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect ([] : List (SLGate n)) Δrowbase Δscratch hle := by
+  intro N c _ _ _
+  refine ⟨[], rfl, rfl, ?_⟩
+  intro i; exact i.elim0
 
 end GateEvalCS
 

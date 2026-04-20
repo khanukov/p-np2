@@ -376,6 +376,63 @@ Proof method (mechanical now):
 
 **No remaining architectural blockers.**  F.4 is pure mechanical induction + combination of existing lemmas.
 
+### Session 47 — F.4 scaffold + toolkit hygiene
+
+Delivered in this session:
+
+1. **F.4 target statement fixed** — a named `Prop` definition
+   `CircuitEvaluatorCS_RunCorrect gates Δrowbase Δscratch hle` in
+   `TuringToolkit/GateWrappers.lean` (below `circuitEvaluatorCS_nil_*`)
+   packaging the exact conclusion of F.4.  Base-case theorem
+   `circuitEvaluatorCS_nil_run_correct` is proved: the empty-gate-list
+   evaluator satisfies the property vacuously.  The tape-index bound
+   proofs inside the Prop's row-accessor and scratch-accessor closures
+   use `by omega` fed by `hle`, `hbound`, `i.isLt`, and `c.head.isLt`,
+   so no `sorry`/`admit` placeholders are needed.
+2. **Detailed proof-strategy doc-block** (~30 lines) immediately before
+   the Prop definition spells out the induction structure, the four
+   already-built bridge lemmas (with exact file paths and line
+   numbers), the auxiliary list-level invariant lemma, and the
+   `List.mapIdx` unfolding caveat with two resolution options.
+3. **Toolkit hygiene** — 64 linter warnings in
+   `TuringToolkit/*.lean` eliminated (deprecated `List.get?` →
+   `[·]?`, `Option.map_some'` → `Option.map_some`, dead
+   `have`/`simp`-arguments, unused hypotheses renamed to `_`, and the
+   `[Inhabited S]` variable scoped into a dedicated
+   `section IdleSeqList` block).  `./scripts/check.sh` remains green,
+   axiom inventory unchanged (`propext = 349`, `Classical.choice = 345`,
+   `Quot.sound = 349`).
+
+### Session 47 — audit: old `Simulation.lean` vs. TuringToolkit
+
+Findings:
+
+- The legacy `pnp3/Complexity/PsubsetPpolyInternal/Simulation.lean`
+  (~9 000 LOC) and its satellites (`StraightLine.lean`,
+  `StraightLineBuilder.lean`, `StraightLineSemantics.lean`,
+  `TreeToStraight.lean`) build a **TM → straight-line DAG circuit**
+  compilation and a non-uniform simulation theorem
+  `runtime_spec_of_stepCompiledProvider`.
+- The new `TuringToolkit/*` build **phased-program abstractions** for
+  synthesising polynomial-size MCSP-verifier components
+  (top-down from spec).
+- No cross-imports between the two hierarchies.  `Simulation.lean`
+  references neither `TuringToolkit.*`, nor vice-versa.
+- Only overlap: both define a tree-of-gates type.  Legacy:
+  `Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit` (constructors `var /
+  const / not / and / or`).  Toolkit:
+  `Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree` (constructors
+  `input / const / not / and / or`).  Structurally identical, only
+  constructor names differ (`var` vs. `input`).
+- Recommendation: **NO replacement in this session.**  The two systems
+  are **complementary**, not redundant: legacy extracts worst-case
+  circuit families bottom-up from a TM; toolkit composes verifier
+  phases top-down from spec.  The duplicate `Circuit` / `CircuitTree`
+  is the only candidate for unification, but it would require
+  constructor renaming across ~60+ call sites in legacy Simulation
+  proofs with no functional gain — deferred as pure code-hygiene
+  optimisation (not blocking Phase I).
+
 ## Overall Phase I remaining
 
 - **Milestone F**: ~300 LOC (F.4 only).

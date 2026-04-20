@@ -66,8 +66,7 @@ theorem transition_write (Δ : Nat) (b : Bool)
     ((writeAtOffsetProgram Δ b).transition i q scan).fst.fst.val = Δ + 1 ∧
     ((writeAtOffsetProgram Δ b).transition i q scan).snd.fst = b ∧
     ((writeAtOffsetProgram Δ b).transition i q scan).snd.snd = Move.stay := by
-  have hni : ¬ i.val < Δ := by omega
-  refine ⟨?_, ?_, ?_⟩ <;> simp [writeAtOffsetProgram, hni, hi]
+  refine ⟨?_, ?_, ?_⟩ <;> simp [writeAtOffsetProgram, hi]
 
 /-- Phases `Δ+1..2Δ` (seeking left): write scan back, advance phase,
 move left. -/
@@ -406,8 +405,7 @@ theorem transition_read (Δ : Nat)
     ((readAtOffsetProgram Δ).transition i q scan).fst.snd = scan ∧
     ((readAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
     ((readAtOffsetProgram Δ).transition i q scan).snd.snd = Move.stay := by
-  have hni : ¬ i.val < Δ := by omega
-  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [readAtOffsetProgram, hni, hi]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [readAtOffsetProgram, hi]
 
 theorem transition_seeking_left (Δ : Nat)
     {i : Fin ((readAtOffsetProgram Δ).numPhases)}
@@ -749,8 +747,7 @@ theorem transition_read_negate (Δ : Nat)
     ((notAtOffsetProgram Δ).transition i q scan).fst.snd = !scan ∧
     ((notAtOffsetProgram Δ).transition i q scan).snd.fst = scan ∧
     ((notAtOffsetProgram Δ).transition i q scan).snd.snd = Move.stay := by
-  have hni : ¬ i.val < Δ := by omega
-  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [notAtOffsetProgram, hni, hi]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [notAtOffsetProgram, hi]
 
 theorem transition_write_state (Δ : Nat)
     {i : Fin ((notAtOffsetProgram Δ).numPhases)} (hi : i.val = Δ + 1)
@@ -759,11 +756,9 @@ theorem transition_write_state (Δ : Nat)
     ((notAtOffsetProgram Δ).transition i q scan).fst.snd = q ∧
     ((notAtOffsetProgram Δ).transition i q scan).snd.fst = q ∧
     ((notAtOffsetProgram Δ).transition i q scan).snd.snd = Move.stay := by
-  have hn1 : ¬ i.val < Δ := by omega
-  have hn2 : ¬ i.val = Δ := by omega
   have hn3 : ¬ (Δ + 1 < Δ) := by omega
   refine ⟨?_, ?_, ?_, ?_⟩ <;>
-    simp [notAtOffsetProgram, hn1, hn2, hi, hn3]
+    simp [notAtOffsetProgram, hi, hn3]
 
 theorem transition_seeking_left (Δ : Nat)
     {i : Fin ((notAtOffsetProgram Δ).numPhases)}

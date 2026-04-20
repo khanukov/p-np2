@@ -550,6 +550,7 @@ the one-step handoff that `seq` always inserts.
 the list is empty it returns `idleCS`; otherwise it chains elements
 right-associatively. -/
 
+section IdleSeqList
 variable [Inhabited S]
 
 def idleCS : ConstStatePhasedProgram S where
@@ -595,6 +596,8 @@ theorem seqList_numPhases_nil :
 theorem seqList_numPhases_cons (p : ConstStatePhasedProgram S)
     (rest : List (ConstStatePhasedProgram S)) :
     (seqList (p :: rest)).numPhases = p.numPhases + (seqList rest).numPhases := rfl
+
+end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM
 
@@ -929,9 +932,9 @@ proofs at out-of-range positions. -/
 theorem embedSeqConfig_stepConfig_tape_out_of_range
     (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
     (c : Configuration (M := P1.toPhased.toTM) n)
-    (h_phase : c.state.fst.val < P1.numPhases)
-    (h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
-    (h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+    (_h_phase : c.state.fst.val < P1.numPhases)
+    (_h_not_accept : c.state.fst.val ≠ P1.acceptPhase.val)
+    (_h_safe : (P1.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
         c.head.val + 1 < P1.toPhased.toTM.tapeLength n)
     (i : Fin ((seq P1 P2).toPhased.toTM.tapeLength n))
     (h_out : P1.toPhased.toTM.tapeLength n ≤ i.val) :
@@ -1404,7 +1407,7 @@ theorem embedSeqP2Config_stepConfig_tape_eq
     (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
     (c : Configuration (M := P2.toPhased.toTM) n)
     (h_phase : c.state.fst.val < P2.numPhases)
-    (h_safe : (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
+    (_h_safe : (P2.toPhased.toTM.step c.state (c.tape c.head)).snd.snd = Move.right →
         c.head.val + 1 < P2.toPhased.toTM.tapeLength n) :
     (TM.stepConfig (M := (seq P1 P2).toPhased.toTM)
         (embedSeqP2Config P1 P2 c)).tape =

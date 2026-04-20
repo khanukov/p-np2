@@ -186,7 +186,7 @@ def decodeCircuitTreeAtDepth {n : Nat} (h_pos : 0 < n) (width : Nat) :
   | _ + 1, [_] => none
   | _ + 1, [_, _] => none
   | _ + 1, false :: false :: false :: rest =>
-    if hrest_len : rest.length < width then none
+    if _ : rest.length < width then none
     else
       let payload := rest.take width
       let remainder := rest.drop width
@@ -256,7 +256,7 @@ theorem decode_encode_not {n : Nat} (h_pos : 0 < n) (width : Nat)
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
   have hd' : c.size ≤ d' := by omega
   simp only [encodeCircuitTree, List.cons_append, List.nil_append,
-             List.append_assoc, decodeCircuitTreeAtDepth]
+             decodeCircuitTreeAtDepth]
   rw [ih d' hd' rest]
 
 theorem decode_encode_and {n : Nat} (h_pos : 0 < n) (width : Nat)
@@ -409,13 +409,13 @@ def SLGate.compute {n : Nat} (g : SLGate n) (x : Fin n → Bool)
   match g with
   | .input i => some (x i)
   | .const b => some b
-  | .notGate k => (vals.get? k).map (!·)
+  | .notGate k => vals[k]?.map (!·)
   | .andGate k l =>
-    match vals.get? k, vals.get? l with
+    match vals[k]?, vals[l]? with
     | some a, some b => some (a && b)
     | _, _ => none
   | .orGate k l =>
-    match vals.get? k, vals.get? l with
+    match vals[k]?, vals[l]? with
     | some a, some b => some (a || b)
     | _, _ => none
 
@@ -511,9 +511,9 @@ theorem SLProgram.evalAux_append {n : Nat} (x : Fin n → Bool) :
   | g :: rest, gs2, vals => by
     simp only [List.cons_append, SLProgram.evalAux_cons]
     cases hg : g.compute x vals with
-    | none => simp [hg]
+    | none => simp
     | some v =>
-      simp only [hg, Option.bind_some]
+      simp only [Option.bind_some]
       exact SLProgram.evalAux_append x rest gs2 (vals ++ [v])
 
 /-!
@@ -656,14 +656,13 @@ theorem CircuitTree.flattenAt_evalAux_spec {n : Nat} :
       rw [hk_def, hlen_flat, hlen_c]; omega
     -- Look up at position k in ext_vals = vals ++ sub_c.
     have hget :
-        ext_vals.get? k = sub_c.getLast? := by
-      rw [List.get?_eq_getElem?, hext,
-          List.getElem?_append_right hk_in_sub, hk_sub_val,
+        ext_vals[k]? = sub_c.getLast? := by
+      rw [hext, List.getElem?_append_right hk_in_sub, hk_sub_val,
           ← List.getLast?_eq_getElem?]
     have hcompute_not :
         (SLGate.notGate k : SLGate n).compute x ext_vals =
           some (!(evalCircuitTree c x)) := by
-      simp only [SLGate.compute, hget, hlast_c, Option.map_some']
+      simp only [SLGate.compute, hget, hlast_c, Option.map_some]
     -- Assemble the result.
     refine ⟨sub_c ++ [!(evalCircuitTree c x)], ?_, ?_, ?_⟩
     · simp [hlen_c, CircuitTree.size]
@@ -712,13 +711,13 @@ theorem CircuitTree.flattenAt_evalAux_spec {n : Nat} :
     -- Since kL is in the c1 range.
     have hkL_lt_ext1 : kL < ext_vals1.length := by
       rw [hext1_len, hkL_def, hlen_flat1]; omega
-    have hget_kL : ext_vals2.get? kL = sub_c1.getLast? := by
-      rw [List.get?_eq_getElem?, hext2,
+    have hget_kL : ext_vals2[kL]? = sub_c1.getLast? := by
+      rw [hext2,
           List.getElem?_append_left hkL_lt_ext1, hext1,
           List.getElem?_append_right hkL_ge, hkL_sub,
           ← List.getLast?_eq_getElem?]
-    have hget_kR : ext_vals2.get? kR = sub_c2.getLast? := by
-      rw [List.get?_eq_getElem?, hext2,
+    have hget_kR : ext_vals2[kR]? = sub_c2.getLast? := by
+      rw [hext2,
           List.getElem?_append_right hkR_ge, hkR_sub,
           ← List.getLast?_eq_getElem?]
     have hcompute_and :
@@ -782,13 +781,13 @@ theorem CircuitTree.flattenAt_evalAux_spec {n : Nat} :
       rw [hkR_def, hlen_flat1, hlen_flat2, hext1_len, hlen2]; omega
     have hkL_lt_ext1 : kL < ext_vals1.length := by
       rw [hext1_len, hkL_def, hlen_flat1]; omega
-    have hget_kL : ext_vals2.get? kL = sub_c1.getLast? := by
-      rw [List.get?_eq_getElem?, hext2,
+    have hget_kL : ext_vals2[kL]? = sub_c1.getLast? := by
+      rw [hext2,
           List.getElem?_append_left hkL_lt_ext1, hext1,
           List.getElem?_append_right hkL_ge, hkL_sub,
           ← List.getLast?_eq_getElem?]
-    have hget_kR : ext_vals2.get? kR = sub_c2.getLast? := by
-      rw [List.get?_eq_getElem?, hext2,
+    have hget_kR : ext_vals2[kR]? = sub_c2.getLast? := by
+      rw [hext2,
           List.getElem?_append_right hkR_ge, hkR_sub,
           ← List.getLast?_eq_getElem?]
     have hcompute_or :
@@ -956,13 +955,13 @@ def SLProgram.wellFormedUnder (widthS : Nat) {n : Nat} (p : SLProgram n) : Prop 
 
 /-- Decode a single gate from a bit list.  On success, returns the gate
 paired with the remaining tail.  Returns `none` on malformed input. -/
-def SLGate.decode {n : Nat} (widthN widthS : Nat) (h_pos : 0 < n) :
+def SLGate.decode {n : Nat} (widthN widthS : Nat) (_h_pos : 0 < n) :
     List Bool → Option (SLGate n × List Bool)
   | [] => none
   | _ :: [] => none
   | _ :: _ :: [] => none
   | false :: false :: false :: rest =>
-    if hlen : rest.length < widthN then none
+    if _ : rest.length < widthN then none
     else
       match decodeFin widthN (rest.take widthN) with
       | none => none
@@ -973,33 +972,33 @@ def SLGate.decode {n : Nat} (widthN widthS : Nat) (h_pos : 0 < n) :
   | false :: false :: true :: b :: rest =>
     some (SLGate.const b, rest)
   | false :: true :: false :: rest =>
-    if hlen : rest.length < widthS then none
+    if _ : rest.length < widthS then none
     else
       match decodeFin widthS (rest.take widthS) with
       | none => none
       | some k_fin =>
         some (SLGate.notGate k_fin.val, rest.drop widthS)
   | false :: true :: true :: rest =>
-    if hlen : rest.length < widthS then none
+    if _ : rest.length < widthS then none
     else
       match decodeFin widthS (rest.take widthS) with
       | none => none
       | some k_fin =>
         let rest' := rest.drop widthS
-        if hlen' : rest'.length < widthS then none
+        if _ : rest'.length < widthS then none
         else
           match decodeFin widthS (rest'.take widthS) with
           | none => none
           | some l_fin =>
             some (SLGate.andGate k_fin.val l_fin.val, rest'.drop widthS)
   | true :: false :: false :: rest =>
-    if hlen : rest.length < widthS then none
+    if _ : rest.length < widthS then none
     else
       match decodeFin widthS (rest.take widthS) with
       | none => none
       | some k_fin =>
         let rest' := rest.drop widthS
-        if hlen' : rest'.length < widthS then none
+        if _ : rest'.length < widthS then none
         else
           match decodeFin widthS (rest'.take widthS) with
           | none => none
@@ -1038,7 +1037,7 @@ theorem SLGate.decode_encode_input {n : Nat} (widthN widthS : Nat)
       some (SLGate.input i, rest) := by
   set ifin : Fin (2 ^ widthN) := ⟨i.val, lt_of_lt_of_le i.isLt h_widthN⟩ with hifin
   simp only [SLGate.encode, List.cons_append, List.nil_append,
-             List.append_assoc, SLGate.decode]
+             SLGate.decode]
   have hlen_not : ¬ (encodeFin widthN ifin ++ rest).length < widthN := by
     rw [List.length_append, encodeFin_length]; omega
   rw [dif_neg hlen_not]
@@ -1082,7 +1081,7 @@ theorem SLGate.decode_encode_not {n : Nat} (widthN widthS : Nat)
       some (SLGate.notGate k, rest) := by
   set kfin : Fin (2 ^ widthS) := ⟨k, hk⟩ with hkfin
   simp only [SLGate.encode, List.cons_append, List.nil_append,
-             List.append_assoc, SLGate.decode]
+             SLGate.decode]
   rw [dif_pos hk]
   have hlen_not :
       ¬ (encodeFin widthS kfin ++ rest).length < widthS := by

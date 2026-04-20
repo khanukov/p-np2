@@ -553,7 +553,7 @@ theorem counterValue_one_eq {M : TM.{u}} {n : Nat}
     have := p.isLt; omega
   have hmk : (⟨(p : ℕ) + 0, hp⟩ : Fin (M.tapeLength n)) = p := by
     apply Fin.ext; simp
-  simp [dif_pos hp, pow_zero, hmk]
+  simp [pow_zero]
 
 /-- Correctness of `incrementProgram` for `k = 1`. -/
 theorem incrementProgram_correct_one {n : Nat}
@@ -675,8 +675,7 @@ theorem counterValue_of_write_head_true {M : TM.{u}} {n : Nat}
         have := c.head.isLt; omega
       have hmk : (⟨(c.head : ℕ) + 0, hp⟩ : Fin (M.tapeLength n)) = c.head := by
         apply Fin.ext; simp
-      simp [dif_pos hp, hmk, htape, h_old,
-            Configuration.write_self c c.head true]
+      simp [htape, h_old]
     · -- `k ≥ 1`.  Use IH on the prefix; the last contribution at
       -- position `c.head + k` is unchanged because `c.head + k
       -- ≠ c.head` (since `k ≥ 1`).

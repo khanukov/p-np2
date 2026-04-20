@@ -65,8 +65,7 @@ theorem transition_read (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
     ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = scan ∧
     ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = scan ∧
     ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.stay := by
-  have hni : ¬ i.val < Δsrc := by omega
-  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [copyAtOffsetProgram, hni, hi]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [copyAtOffsetProgram, hi]
 
 theorem transition_seek_to_dst (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
     {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)}
@@ -88,14 +87,10 @@ theorem transition_write (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
     ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).fst.snd = q ∧
     ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.fst = q ∧
     ((copyAtOffsetProgram Δsrc Δdst hleq).transition i q scan).snd.snd = Move.stay := by
-  have hn1 : ¬ i.val < Δsrc := by omega
-  have hn2 : ¬ i.val = Δsrc := by omega
-  have hn3 : ¬ i.val < Δdst + 1 := by omega
   have hn4 : ¬ (Δdst + 1 < Δsrc) := by omega
   have hn5 : ¬ (Δdst + 1 = Δsrc) := by omega
-  have hn6 : ¬ (Δdst + 1 < Δdst + 1) := by omega
   refine ⟨?_, ?_, ?_, ?_⟩ <;>
-    simp [copyAtOffsetProgram, hn1, hn2, hn3, hn4, hn5, hn6, hi]
+    simp [copyAtOffsetProgram, hi, hn4, hn5]
 
 theorem transition_seek_back (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst)
     {i : Fin ((copyAtOffsetProgram Δsrc Δdst hleq).numPhases)}
@@ -329,8 +324,8 @@ theorem run_after_j_seek_to_src_steps (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δds
 
 theorem run_after_j_seek_to_dst_steps (Δsrc Δdst : Nat) (hleq : Δsrc ≤ Δdst) {n : Nat}
     (c_start : Configuration (M := (copyAtOffsetProgram Δsrc Δdst hleq).toTM) n)
-    (h_phase : c_start.state.fst.val = Δsrc + 1)
-    (h_head_start : (c_start.head : ℕ) = 0 + Δsrc) -- dummy for now, generalized below
+    (_h_phase : c_start.state.fst.val = Δsrc + 1)
+    (_h_head_start : (c_start.head : ℕ) = 0 + Δsrc) -- dummy for now, generalized below
     : True := trivial  -- placeholder: we handle B via direct composition instead.
 
 /-- Combined: `run_after_j_steps_and_read_then_seek_to_dst`.  After

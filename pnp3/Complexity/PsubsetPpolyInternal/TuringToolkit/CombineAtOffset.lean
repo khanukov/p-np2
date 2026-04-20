@@ -109,8 +109,7 @@ theorem transition_read1 (Δ1 Δ2 Δdst : Nat)
     ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition i q scan).snd.fst = scan ∧
     ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition i q scan).snd.snd =
         Move.stay := by
-  have hni : ¬ i.val < Δ1 := by omega
-  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [combineAtOffsetProgram, hni, hi]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [combineAtOffsetProgram, hi]
 
 theorem transition_seek_to_src2 (Δ1 Δ2 Δdst : Nat)
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool)
@@ -141,14 +140,10 @@ theorem transition_read2 (Δ1 Δ2 Δdst : Nat)
     ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition i q scan).snd.fst = scan ∧
     ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition i q scan).snd.snd =
         Move.stay := by
-  have hn1 : ¬ i.val < Δ1 := by omega
-  have hn2 : ¬ i.val = Δ1 := by omega
-  have hn3 : ¬ i.val < Δ2 + 1 := by omega
   have hn1' : ¬ (Δ2 + 1 : Nat) < Δ1 := by omega
   have hn2' : ¬ (Δ2 + 1 : Nat) = Δ1 := by omega
-  have hn3' : ¬ (Δ2 + 1 : Nat) < Δ2 + 1 := Nat.lt_irrefl _
   refine ⟨?_, ?_, ?_, ?_⟩ <;>
-    simp [combineAtOffsetProgram, hn1, hn2, hn3, hn1', hn2', hn3', hi]
+    simp [combineAtOffsetProgram, hi, hn1', hn2']
 
 theorem transition_seek_to_dst (Δ1 Δ2 Δdst : Nat)
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool)
@@ -181,19 +176,12 @@ theorem transition_write (Δ1 Δ2 Δdst : Nat)
         op q.fst q.snd ∧
     ((combineAtOffsetProgram Δ1 Δ2 Δdst hle12 hle2d op).transition i q scan).snd.snd =
         Move.stay := by
-  have hn1 : ¬ i.val < Δ1 := by omega
-  have hn2 : ¬ i.val = Δ1 := by omega
-  have hn3 : ¬ i.val < Δ2 + 1 := by omega
-  have hn4 : ¬ i.val = Δ2 + 1 := by omega
-  have hn5 : ¬ i.val < Δdst + 2 := by omega
   have hn1' : ¬ (Δdst + 2 : Nat) < Δ1 := by omega
   have hn2' : ¬ (Δdst + 2 : Nat) = Δ1 := by omega
   have hn3' : ¬ (Δdst + 2 : Nat) < Δ2 + 1 := by omega
   have hn4' : ¬ (Δdst + 2 : Nat) = Δ2 + 1 := by omega
-  have hn5' : ¬ (Δdst + 2 : Nat) < Δdst + 2 := Nat.lt_irrefl _
   refine ⟨?_, ?_, ?_, ?_⟩ <;>
-    simp [combineAtOffsetProgram, hn1, hn2, hn3, hn4, hn5,
-      hn1', hn2', hn3', hn4', hn5', hi]
+    simp [combineAtOffsetProgram, hi, hn1', hn2', hn3', hn4']
 
 theorem transition_seek_back (Δ1 Δ2 Δdst : Nat)
     (hle12 : Δ1 ≤ Δ2) (hle2d : Δ2 ≤ Δdst) (op : Bool → Bool → Bool)

@@ -1610,6 +1610,65 @@ theorem embedSeqP2Config_runConfig_eq
     exact embedSeqP2Config_stepConfig_eq P1 P2
       (TM.runConfig (M := P2.toPhased.toTM) c t') hinv.1 hinv.2
 
+/-! ### Lifting a P1-run to a P2-config for the boundary handoff
+
+After the boundary step in `seq P1 P2`, the composite's tape is
+`embedSeqConfig P1 P2 (P1.run c_P1 P1.timeBound)`-shaped — i.e.,
+P1-padded.  To apply `embedSeqP2Config_runConfig_eq` for the tail, we
+need a P2-config whose embed matches this shape.  `liftP1ToP2` below
+constructs such a P2-config: its tape is the P1-run's tape on
+`[0, P1.tapeLength)` and `false` elsewhere.
+
+Applies under `P1.tapeLength ≤ P2.tapeLength`, which holds in the
+multi-gate induction step whenever the tail `rest` is non-empty. -/
+
+/-- Lift the `P1.timeBound`-run of `c_P1` to a P2-initial-config. -/
+def liftP1ToP2 (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c_P1_final : Configuration (M := P1.toPhased.toTM) n)
+    (h_head : c_P1_final.head.val < P2.toPhased.toTM.tapeLength n) :
+    Configuration (M := P2.toPhased.toTM) n where
+  state := ⟨⟨P2.startPhase.val, by simp only [toPhased_numPhases]; exact P2.startPhase.isLt⟩,
+           P2.startState⟩
+  head := ⟨c_P1_final.head.val, h_head⟩
+  tape := fun i =>
+    if h : i.val < P1.toPhased.toTM.tapeLength n
+      then c_P1_final.tape ⟨i.val, h⟩
+      else false
+
+/-- The lift's embed in `seq P1 P2` has phase = P1.numPhases + P2.startPhase.val,
+snd = P2.startState, head = c_P1_final.head (value-wise), and tape equal to
+the embed of `c_P1_final` under `P1.tapeLength ≤ P2.tapeLength`. -/
+theorem embedSeqP2Config_liftP1ToP2_tape
+    (P1 P2 : ConstStatePhasedProgram S) {n : Nat}
+    (c_P1_final : Configuration (M := P1.toPhased.toTM) n)
+    (h_head : c_P1_final.head.val < P2.toPhased.toTM.tapeLength n)
+    (h_len_le : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n) :
+    (embedSeqP2Config P1 P2 (liftP1ToP2 P1 P2 c_P1_final h_head)).tape =
+    (embedSeqConfig P1 P2 c_P1_final).tape := by
+  funext i
+  by_cases h : i.val < P1.toPhased.toTM.tapeLength n
+  · have h_P2 : i.val < P2.toPhased.toTM.tapeLength n := Nat.lt_of_lt_of_le h h_len_le
+    show (if h' : i.val < P2.toPhased.toTM.tapeLength n
+              then (liftP1ToP2 P1 P2 c_P1_final h_head).tape ⟨i.val, h'⟩ else false) =
+          (if h'' : i.val < P1.toPhased.toTM.tapeLength n
+              then c_P1_final.tape ⟨i.val, h''⟩ else false)
+    rw [dif_pos h_P2, dif_pos h]
+    show (if h' : i.val < P1.toPhased.toTM.tapeLength n
+              then c_P1_final.tape ⟨i.val, h'⟩ else false) =
+          c_P1_final.tape ⟨i.val, h⟩
+    rw [dif_pos h]
+  · show (if h' : i.val < P2.toPhased.toTM.tapeLength n
+              then (liftP1ToP2 P1 P2 c_P1_final h_head).tape ⟨i.val, h'⟩ else false) =
+          (if h'' : i.val < P1.toPhased.toTM.tapeLength n
+              then c_P1_final.tape ⟨i.val, h''⟩ else false)
+    rw [dif_neg h]
+    by_cases h_P2 : i.val < P2.toPhased.toTM.tapeLength n
+    · rw [dif_pos h_P2]
+      show (if h' : i.val < P1.toPhased.toTM.tapeLength n
+              then c_P1_final.tape ⟨i.val, h'⟩ else false) = false
+      rw [dif_neg h]
+    · rw [dif_neg h_P2]
+
 end ConstStatePhasedProgram
 
 end TM

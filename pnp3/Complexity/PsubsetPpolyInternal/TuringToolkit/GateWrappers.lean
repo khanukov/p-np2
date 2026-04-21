@@ -3565,6 +3565,33 @@ theorem circuitEvaluatorCSAt_run_correct_cond_nil {n : Nat}
   · intro i; exact i.elim0
   · intro j _; rfl
 
+/-! ### Infrastructure summary for arbitrary-gate conditional correctness
+
+Sessions 49a–49g delivered all the infrastructure needed for the
+general conditional correctness theorem for arbitrary gate lists:
+
+- **Slot 0 value for any gate**: `evalOneGateCS_writes_compute_result` (49a)
+  provides the TM-write semantics for any gate g, matching `g.compute row prior`.
+  Dispatches on gate type (const/input/notGate/andGate/orGate).
+- **Head preservation**: `evalOneGateCS_run_preserves_head` (49b) ensures
+  lift.head = c.head after each gate, regardless of gate type.
+- **Arithmetic helpers**: `cons_any_P1_tapeLength_le_P2_tapeLength_nonempty` (49c)
+  and `cons_any_lift_head_plus_tR_lt_tapeLength` (49c) for tape-length safety.
+- **Decomposition**: `cons_any_nonempty_composite_run_tape_at` (49d) gives
+  composite.runConfig c T = embedSeqP2Config (P2.runConfig lift P2.timeBound)
+  for any gate with non-empty tail.
+- **Lift helpers**: `cons_any_nonempty_lift_tape_clean` (49e) and
+  `cons_any_nonempty_lift_preconditions` (49e) bundle phase/state/bound/clean.
+- **Nil case**: `circuitEvaluatorCSAt_run_correct_cond_nil` (49g) handles
+  empty gate lists trivially.
+- **Row-function abstraction**: `rowFromConfig` + `rowFromConfig_bounds` (49g)
+  avoid Fin-n type-inference issues.
+
+The final conditional theorem combining these via induction (with cases
+nil, cons g [] = single-gate, cons g (g' :: rest'') = multi-gate) is
+scheduled for session 50, along with the ∃-form wrappers for
+input/notGate/andGate/orGate families and the public CS-form wrapper. -/
+
 end GateEvalCS
 
 end TM

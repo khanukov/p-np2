@@ -3515,6 +3515,56 @@ theorem cons_any_nonempty_lift_preconditions {n : Nat}
     c h_phase h_state_snd hbound htape_clean hphase_lt hhead_lt h_tG_head
   exact ⟨h_lift_phase, h_lift_state_snd, h_lift_bound, h_lift_clean⟩
 
+/-! ### Conditional correctness Prop for arbitrary gates
+
+Parameterized by explicit `prior + vals + h_eval + h_prior_match`. -/
+
+/-- Row function derived from a config c, at c.head + Δrowbase + i.val. -/
+def rowFromConfig {n N : Nat} {M : TM}
+    (c : Configuration (M := M) N) (Δrowbase : Nat)
+    (h_row_bounds : ∀ (i : Fin n), (c.head : ℕ) + Δrowbase + i.val < M.tapeLength N) :
+    Fin n → Bool :=
+  fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, h_row_bounds i⟩
+
+/-- Helper: under the standard tapeLength bound, row function is well-defined. -/
+theorem rowFromConfig_bounds {n : Nat} (gates : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N) :
+    ∀ (i : Fin n), (c.head : ℕ) + Δrowbase + i.val <
+      (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+  intro i
+  have hi := i.isLt
+  have hlen : N ≤
+      (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+    show N ≤ N + (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N + 1
+    omega
+  omega
+
+/-- Nil case of the conditional correctness: empty gate list.
+`circuitEvaluatorCSAt []` has timeBound=0, so the tape is unchanged. -/
+theorem circuitEvaluatorCSAt_run_correct_cond_nil {n : Nat}
+    (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).toPhased.toTM) N) :
+    (∀ i : Fin ([] : List (SLGate n)).length,
+      (TM.runConfig (M := (circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).timeBound N)).tape
+        ⟨(c.head : ℕ) + Δscratch + offset + i.val, by
+          exact i.elim0⟩ = ([] : List Bool)[i.val]?.getD false) ∧
+    (∀ j : Fin
+        ((circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      (j.val < (c.head : ℕ) + Δscratch + offset ∨
+       (c.head : ℕ) + Δscratch + offset + ([] : List (SLGate n)).length ≤ j.val) →
+      (TM.runConfig (M := (circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle).timeBound N)).tape j =
+        c.tape j) := by
+  refine ⟨?_, ?_⟩
+  · intro i; exact i.elim0
+  · intro j _; rfl
+
 end GateEvalCS
 
 end TM

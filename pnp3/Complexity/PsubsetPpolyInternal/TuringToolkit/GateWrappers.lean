@@ -3924,6 +3924,36 @@ theorem circuitEvaluatorCSAt_run_correct_cond_short {n : Nat}
     have : (g :: g' :: rest'').length ≥ 2 := by simp
     omega
 
+/-! ### evalAux always succeeds for const-only and input-only lists
+
+For gates of type const and input, `SLGate.compute` never returns none
+(doesn't reference prior).  So evalAux succeeds for any prior. -/
+
+/-- evalAux on an input-only list always succeeds. -/
+theorem evalAux_inputList {n : Nat} (is : List (Fin n)) (row : Fin n → Bool)
+    (prior : List Bool) :
+    SLProgram.evalAux row (is.map (SLGate.input (n := n))) prior =
+      some (prior ++ is.map row) := by
+  induction is generalizing prior with
+  | nil =>
+    show SLProgram.evalAux row [] prior = some (prior ++ [])
+    rw [SLProgram.evalAux]
+    simp
+  | cons i is' ih =>
+    show SLProgram.evalAux row (SLGate.input i :: is'.map (SLGate.input (n := n))) prior =
+      some (prior ++ (row i :: is'.map row))
+    rw [SLProgram.evalAux_cons]
+    show ((SLGate.input i (n := n)).compute row prior).bind
+        (fun v => SLProgram.evalAux row (is'.map (SLGate.input (n := n))) (prior ++ [v])) =
+      some (prior ++ (row i :: is'.map row))
+    show (some (row i)).bind _ = some (prior ++ (row i :: is'.map row))
+    simp only [Option.bind_some]
+    rw [ih]
+    show some (prior ++ [row i] ++ is'.map row) = some (prior ++ (row i :: is'.map row))
+    congr 1
+    rw [List.append_assoc]
+    rfl
+
 end GateEvalCS
 
 end TM

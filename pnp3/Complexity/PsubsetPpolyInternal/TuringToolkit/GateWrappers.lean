@@ -1182,7 +1182,7 @@ def CircuitEvaluatorCSAt_RunCorrect {n : Nat} (gates : List (SLGate n))
               omega
             omega⟩)
           gates prior = some (prior ++ vals) ∧
-      ∀ i : Fin gates.length,
+      (∀ i : Fin gates.length,
         (TM.runConfig
             (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
             ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape
@@ -1193,7 +1193,18 @@ def CircuitEvaluatorCSAt_RunCorrect {n : Nat} (gates : List (SLGate n))
               show N ≤ N + (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N + 1
               omega
             omega⟩ =
-        vals[i.val]?.getD false
+        vals[i.val]?.getD false) ∧
+      -- Preservation outside scratch region: the tape at positions outside
+      -- [head + Δscratch + offset, head + Δscratch + offset + gates.length)
+      -- retains its initial value.  Needed for the cons-step induction.
+      (∀ j : Fin
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        (j.val < (c.head : ℕ) + Δscratch + offset ∨
+         (c.head : ℕ) + Δscratch + offset + gates.length ≤ j.val) →
+        (TM.runConfig
+            (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
+            ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape j =
+          c.tape j)
 
 /-- Base case of the offset-generalised correctness Prop.  Empty gate
 list runs for 0 steps, the `evalAux` accumulator is preserved (`prior`
@@ -1204,10 +1215,13 @@ theorem circuitEvaluatorCSAt_nil_run_correct {n : Nat}
     CircuitEvaluatorCSAt_RunCorrect ([] : List (SLGate n)) offset
       Δrowbase Δscratch hle := by
   intro N c _ _ _ _ prior
-  refine ⟨[], rfl, ?_, ?_⟩
+  refine ⟨[], rfl, ?_, ?_, ?_⟩
   · show SLProgram.evalAux _ ([] : List (SLGate n)) prior = some (prior ++ [])
     simp [SLProgram.evalAux]
   · intro i; exact i.elim0
+  · -- Preservation: empty list ⟹ 0 steps ⟹ tape unchanged.
+    intro j _
+    rfl
 
 /-! ### Full Prop-form single-gate correctness (const and input)
 
@@ -1277,7 +1291,7 @@ theorem circuitEvaluatorCSAt_const_RunCorrect {n : Nat} (b : Bool)
   -- Extract the tape at scratch[offset + 0] = b.
   obtain ⟨h_bound_comp, htape_val⟩ := hconcrete
   -- Assemble the Prop's ∃ vals = [b].
-  refine ⟨[b], rfl, ?_, ?_⟩
+  refine ⟨[b], rfl, ?_, ?_, ?_⟩
   · -- evalAux [const b] row prior = some (prior ++ [b]).
     show SLProgram.evalAux _ [SLGate.const b] prior = some (prior ++ [b])
     simp [SLProgram.evalAux, SLGate.compute]
@@ -1311,6 +1325,83 @@ theorem circuitEvaluatorCSAt_const_RunCorrect {n : Nat} (b : Bool)
       exact htape_for_c
     | ⟨k+1, h⟩, _ =>
       have : k + 1 < 1 := h
+      omega
+  · -- Preservation: for j outside [scratch[offset+0], scratch[offset+1]),
+    -- tape at j is unchanged after the composite run.
+    intro j hj
+    have hbound1 : (c.head : ℕ) + Δscratch + offset + 1 ≤ N := hbound
+    have hlen_ge : N ≤ (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+        Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+      show N ≤ N + (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+        Δrowbase Δscratch hle).timeBound N + 1
+      omega
+    -- j.val ≠ scratch[offset+0] = c.head + Δscratch + offset.
+    have hj_ne : j.val ≠ (c.head : ℕ) + Δscratch + offset := by
+      rcases hj with hlt | hge
+      · omega
+      · have : (c.head : ℕ) + Δscratch + offset + [SLGate.const b (n := n)].length ≤ j.val := hge
+        simp at this; omega
+    -- Re-apply past_boundary to get hpb_tape here (not available from hconcrete).
+    have hpb' := evalOneGateCS_in_seq_run_past_boundary (SLGate.const b (n := n))
+      offset Δrowbase Δscratch hle tail c_P1 h_P1_phase h_P1_state_snd h_P1_bound
+    obtain ⟨_, _, _, hpb'_tape⟩ := hpb'
+    -- hpb'_tape : composite.run (embed c_P1) (tG+1) .tape = (embed c_P1_tG).tape
+    have htimeBound :
+        (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+          Δrowbase Δscratch hle).timeBound N = 2 * (Δscratch + offset) + 4 := by
+      show (ConstStatePhasedProgram.seq P1 tail).timeBound N = _
+      rw [ConstStatePhasedProgram.seq_timeBound]
+      show (2 * (Δscratch + offset) + 3) + 0 + 1 = _
+      omega
+    -- Transport hpb'_tape via hembed.
+    have htape_for_c : (TM.runConfig
+          (M := (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+            Δrowbase Δscratch hle).toPhased.toTM) c
+          ((circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+            Δrowbase Δscratch hle).timeBound N)).tape =
+        (ConstStatePhasedProgram.embedSeqConfig P1 tail
+          (TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3))).tape := by
+      rw [htimeBound]
+      -- Use hembed to transport hpb'_tape.
+      show (TM.runConfig (M := (ConstStatePhasedProgram.seq P1 tail).toPhased.toTM) c _).tape = _
+      exact hembed ▸ hpb'_tape
+    have hj_eq : (TM.runConfig
+          (M := (circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+            Δrowbase Δscratch hle).toPhased.toTM) c
+          ((circuitEvaluatorCSAt (n := n) [SLGate.const b] offset
+            Δrowbase Δscratch hle).timeBound N)).tape j =
+        (ConstStatePhasedProgram.embedSeqConfig P1 tail
+          (TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3))).tape j :=
+      congrFun htape_for_c j
+    rw [hj_eq]
+    -- Now reduce (embed c_P1_tG).tape j to c_P1_tG.tape or false.
+    by_cases hj_P1 : j.val < P1.toPhased.toTM.tapeLength N
+    · rw [ConstStatePhasedProgram.embedSeqConfig_tape_in_range P1 tail _ j hj_P1]
+      have hP1_full :=
+        gateConstCS_run_full b (Δscratch + offset) c_P1
+          h_P1_phase h_P1_state_snd h_P1_bound
+      -- Normalize P1 to (gateConstCS b ...) so hP1_full applies.
+      show (TM.runConfig (M := (gateConstCS b (Δscratch + offset)).toPhased.toTM) c_P1
+          (2 * (Δscratch + offset) + 3)).tape ⟨j.val, hj_P1⟩ = c.tape j
+      rw [hP1_full]
+      have h_write_other :
+          c_P1.write ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_P1_bound⟩ b
+              ⟨j.val, hj_P1⟩ =
+            c_P1.tape ⟨j.val, hj_P1⟩ := by
+        apply Configuration.write_other
+        intro heq
+        have hval : j.val = (c_P1.head : ℕ) + (Δscratch + offset) := Fin.val_eq_of_eq heq
+        have hP1_head : (c_P1.head : ℕ) = (c.head : ℕ) := rfl
+        rw [hP1_head] at hval
+        omega
+      rw [h_write_other]
+      rfl
+    · rw [ConstStatePhasedProgram.embedSeqConfig_tape_out_of_range P1 tail _ j
+        (Nat.le_of_not_lt hj_P1)]
+      symm
+      apply htape_clean
+      have hP1len : P1.toPhased.toTM.tapeLength N = N + (2 * (Δscratch + offset) + 3) + 1 := rfl
+      have : P1.toPhased.toTM.tapeLength N ≤ j.val := Nat.le_of_not_lt hj_P1
       omega
 
 /-! ### Public theorem alias for single-gate const case

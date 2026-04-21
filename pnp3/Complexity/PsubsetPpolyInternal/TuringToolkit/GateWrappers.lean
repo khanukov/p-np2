@@ -3125,6 +3125,72 @@ theorem evalOneGateCS_writes_compute_result {n : Nat} (g : SLGate n) (slot : Nat
       rw [h_fin1_eq, h_fin2_eq]
       rw [Bool.or_comm]
 
+/-! ### Generic cons-any helpers for arbitrary gates
+
+We generalize the const-specific cons helpers from session 48 to
+arbitrary gates `g : SLGate n`, using `match g with ...` to dispatch
+to the corresponding `combineAtOffsetCS_run_full` instance. -/
+
+/-- Generic head-preservation: after running evalOneGateCS g's single-gate
+TM, the head returns to its initial value.  Dispatches on gate type. -/
+theorem evalOneGateCS_run_preserves_head {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c_P1 : Configuration (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c_P1.state.fst.val = 0)
+    (h_state_snd : c_P1.state.snd = (false, false))
+    (h_bound : (c_P1.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c_P1
+        (2 * (Δscratch + slot) + 3)).head.val = c_P1.head.val := by
+  match g with
+  | .input i =>
+    obtain ⟨_, _, _, _, hhead_eq, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full
+        (Δrowbase + i.val) (Δrowbase + i.val) (Δscratch + slot)
+        (le_refl _) (by have := i.isLt; omega) (fun a _ => a)
+        c_P1 h_phase h_state_snd h_bound
+    exact congrArg Fin.val hhead_eq
+  | .const b =>
+    obtain ⟨_, _, _, _, hhead_eq, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full
+        (Δscratch + slot) (Δscratch + slot) (Δscratch + slot)
+        (le_refl _) (le_refl _) (fun _ _ => b)
+        c_P1 h_phase h_state_snd h_bound
+    exact congrArg Fin.val hhead_eq
+  | .notGate k =>
+    obtain ⟨_, _, _, _, hhead_eq, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full
+        (Δscratch + min k slot) (Δscratch + min k slot) (Δscratch + slot)
+        (le_refl _) (by have : min k slot ≤ slot := Nat.min_le_right _ _; omega)
+        (fun a _ => !a) c_P1 h_phase h_state_snd h_bound
+    exact congrArg Fin.val hhead_eq
+  | .andGate k l =>
+    obtain ⟨_, _, _, _, hhead_eq, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full
+        (Δscratch + min (min k l) slot) (Δscratch + min (max k l) slot) (Δscratch + slot)
+        (by
+          have hmm : min k l ≤ max k l := by
+            rcases Nat.le_total k l with hkl | hkl
+            · rw [min_eq_left hkl, max_eq_right hkl]; exact hkl
+            · rw [min_eq_right hkl, max_eq_left hkl]; exact hkl
+          omega)
+        (by have : min (max k l) slot ≤ slot := Nat.min_le_right _ _; omega)
+        (· && ·) c_P1 h_phase h_state_snd h_bound
+    exact congrArg Fin.val hhead_eq
+  | .orGate k l =>
+    obtain ⟨_, _, _, _, hhead_eq, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full
+        (Δscratch + min (min k l) slot) (Δscratch + min (max k l) slot) (Δscratch + slot)
+        (by
+          have hmm : min k l ≤ max k l := by
+            rcases Nat.le_total k l with hkl | hkl
+            · rw [min_eq_left hkl, max_eq_right hkl]; exact hkl
+            · rw [min_eq_right hkl, max_eq_left hkl]; exact hkl
+          omega)
+        (by have : min (max k l) slot ≤ slot := Nat.min_le_right _ _; omega)
+        (· || ·) c_P1 h_phase h_state_snd h_bound
+    exact congrArg Fin.val hhead_eq
+
 end GateEvalCS
 
 end TM

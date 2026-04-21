@@ -2771,7 +2771,7 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_cons_nonempty {n : Nat}
     (hle : Δrowbase + n ≤ Δscratch)
     (ih : CircuitEvaluatorCSAt_RunCorrect ((b' :: bs'').map (SLGate.const (n := n)))
             (offset + 1) Δrowbase Δscratch hle) :
-    CircuitEvaluatorCSAt_RunCorrect ((b :: b' :: bs'').map (SLGate.const (n := n)) : List (SLGate n))
+    CircuitEvaluatorCSAt_RunCorrect ((b :: b' :: bs'').map (SLGate.const (n := n)))
       offset Δrowbase Δscratch hle :=
   circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts
     (b :: b' :: bs'') offset Δrowbase Δscratch hle
@@ -2781,6 +2781,47 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_cons_nonempty {n : Nat}
     (fun c h_phase h_state_snd hbound htape_clean j hj_outside =>
       cons_const_nonempty_preservation_fact b b' bs'' offset Δrowbase Δscratch hle ih
         c h_phase h_state_snd hbound htape_clean j hj_outside)
+
+/-! ### FULL unconditional induction over all-const gate lists
+
+Combines the nil case (`circuitEvaluatorCSAt_nil_run_correct`), the
+single-const case (`circuitEvaluatorCSAt_const_RunCorrect`), and the
+cons-nonempty step
+(`circuitEvaluatorCSAt_constList_RunCorrect_cons_nonempty`) into a
+single unconditional theorem for any list `bs`. -/
+
+theorem circuitEvaluatorCSAt_constList_RunCorrect_unconditional {n : Nat}
+    (bs : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect (bs.map (SLGate.const (n := n)) : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  induction bs generalizing offset with
+  | nil =>
+    show CircuitEvaluatorCSAt_RunCorrect ([] : List (SLGate n)) offset Δrowbase Δscratch hle
+    exact circuitEvaluatorCSAt_nil_run_correct offset Δrowbase Δscratch hle
+  | cons b bs' ih =>
+    match bs' with
+    | [] =>
+      show CircuitEvaluatorCSAt_RunCorrect ([SLGate.const b] : List (SLGate n))
+        offset Δrowbase Δscratch hle
+      exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+    | b' :: bs'' =>
+      -- Inline the cons-nonempty step: apply the factored theorem with
+      -- the two tape facts.
+      intro N c h_phase h_state_snd hbound htape_clean prior
+      have ih_sub : CircuitEvaluatorCSAt_RunCorrect ((b' :: bs'').map (SLGate.const (n := n)))
+          (offset + 1) Δrowbase Δscratch hle := ih (offset + 1)
+      refine ⟨b :: b' :: bs'', ?_, ?_, ?_, ?_⟩
+      · exact (constList_length _).symm
+      · show SLProgram.evalAux _ ((b :: b' :: bs'').map (SLGate.const (n := n))) prior =
+            some (prior ++ (b :: b' :: bs''))
+        exact evalAux_constList (n := n) (b :: b' :: bs'') _ prior
+      · intro i
+        exact cons_const_nonempty_tape_slot_fact b b' bs'' offset Δrowbase Δscratch hle
+          ih_sub c h_phase h_state_snd hbound htape_clean i _
+      · intro j hj
+        exact cons_const_nonempty_preservation_fact b b' bs'' offset Δrowbase Δscratch hle
+          ih_sub c h_phase h_state_snd hbound htape_clean j hj
 
 end GateEvalCS
 

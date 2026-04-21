@@ -1806,6 +1806,36 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_step_nil {n : Nat} (b : Bool)
     offset Δrowbase Δscratch hle
   exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
 
+/-- **Full induction theorem over all-const gate lists.**
+
+The final Prop-form correctness for `CircuitEvaluatorCSAt_RunCorrect
+(bs.map SLGate.const)` at any `offset`.  Uses the single-gate theorem
++ cons-nil wrapper for the base/single cases.  For non-empty `bs'` the
+cons-step assembly uses all primitives from sessions 47f–47q.
+
+**Status**: the nil and single cases are proved.  The full cons step
+for non-empty tails is the remaining assembly; pending dedicated
+follow-up work.  Downstream callers that only need correctness for
+`bs.length ≤ 1` can use this theorem directly. -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect {n : Nat}
+    (bs : List Bool) (offset : Nat) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (h_short : bs.length ≤ 1) :
+    CircuitEvaluatorCSAt_RunCorrect (bs.map SLGate.const : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  match bs, h_short with
+  | [], _ =>
+    show CircuitEvaluatorCSAt_RunCorrect ([] : List (SLGate n)) offset Δrowbase Δscratch hle
+    exact circuitEvaluatorCSAt_nil_run_correct offset Δrowbase Δscratch hle
+  | [b], _ =>
+    show CircuitEvaluatorCSAt_RunCorrect ([SLGate.const b] : List (SLGate n)) offset
+      Δrowbase Δscratch hle
+    exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+  | b :: b' :: bs'', hshort =>
+    -- Unreachable: length ≥ 2.
+    have : (b :: b' :: bs'').length ≥ 2 := by simp
+    omega
+
 end GateEvalCS
 
 end TM

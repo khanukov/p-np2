@@ -2590,6 +2590,175 @@ theorem cons_const_nonempty_preservation_fact {n : Nat}
       show N ≤ N + P2.timeBound N + 1; omega
     omega
 
+/-! ### Slot-value fact for cons-nonempty step
+
+For each slot index `i : Fin ((b :: b' :: bs'').map const).length`, the
+final tape at slot `i` equals `(b :: b' :: bs'')[i]?.getD false`.  This
+splits into:
+- `i.val = 0`: from gate P1's write (slot 0 gets `b`) + IH preservation.
+- `i.val = k+1`: from IH slot values at index `k`, mapping `vals' = b' :: bs''`. -/
+
+theorem cons_const_nonempty_tape_slot_fact {n : Nat}
+    (b b' : Bool) (bs'' : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (ih : CircuitEvaluatorCSAt_RunCorrect ((b' :: bs'').map (SLGate.const (n := n)))
+            (offset + 1) Δrowbase Δscratch hle) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset +
+      ((b :: b' :: bs'').map (SLGate.const (n := n))).length ≤ N)
+    (htape_clean : ∀ i : Fin
+      ((circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      N ≤ i.val → c.tape i = false)
+    (i : Fin ((b :: b' :: bs'').map (SLGate.const (n := n))).length)
+    (h_i_bound : (c.head : ℕ) + Δscratch + offset + i.val <
+      (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    (TM.runConfig
+      (M := (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM) c
+      ((circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).timeBound N)).tape
+      ⟨(c.head : ℕ) + Δscratch + offset + i.val, h_i_bound⟩ =
+    (b :: b' :: bs'')[i.val]?.getD false := by
+  obtain ⟨hphase_lt, hhead_lt, h_tG_head, hdecomp⟩ :=
+    cons_const_nonempty_composite_run_tape_at b b' bs'' offset Δrowbase Δscratch hle
+      c h_phase h_state_snd hbound htape_clean
+  set P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle with hP1_def
+  set P2 := circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const)
+              (offset + 1) Δrowbase Δscratch hle with hP2_def
+  set c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt with hc_P1_def
+  set c_P1_final := TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3)
+    with hc_P1_final_def
+  set lift := ConstStatePhasedProgram.liftP1ToP2 P1 P2 c_P1_final h_tG_head with hlift_def
+  -- Apply IH.
+  obtain ⟨h_lift_phase, h_lift_state_snd, h_lift_bound, h_lift_clean⟩ :=
+    cons_const_nonempty_lift_preconditions b b' bs'' offset Δrowbase Δscratch hle
+      c h_phase h_state_snd hbound htape_clean hphase_lt hhead_lt h_tG_head
+  have h_IH := ih (N := N) lift h_lift_phase h_lift_state_snd h_lift_bound h_lift_clean []
+  obtain ⟨vals', _h_vals'_len, h_vals'_eval, h_vals'_slots, h_vals'_preserve⟩ := h_IH
+  have h_vals'_eq : vals' = b' :: bs'' :=
+    cons_const_nonempty_IH_vals_eq b' bs'' vals' _ [] h_vals'_eval
+  -- lift.head = c.head value-wise.
+  have h_lift_head_val : (lift.head : ℕ) = (c.head : ℕ) := by
+    show (c_P1_final.head : ℕ) = (c.head : ℕ)
+    have hbound_seq : (c.head : ℕ) + Δscratch + offset +
+        (SLGate.const b (n := n) :: (b' :: bs'').map SLGate.const).length ≤ N := by
+      have hlen : (SLGate.const b (n := n) :: (b' :: bs'').map SLGate.const).length =
+          (b' :: bs'').length + 1 := by simp
+      have hmap : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          (b' :: bs'').length + 1 := by simp
+      omega
+    exact cons_const_lift_head_val_eq_c b ((b' :: bs'').map SLGate.const)
+      offset Δrowbase Δscratch hle c h_phase h_state_snd hbound_seq hphase_lt hhead_lt
+  -- Position in P2 is < P2.tapeLength.
+  have h_p_in_P2 : (c.head : ℕ) + Δscratch + offset + i.val < P2.toPhased.toTM.tapeLength N := by
+    have hi := i.isLt
+    have hlen : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+        bs''.length + 2 := by simp
+    show (c.head : ℕ) + Δscratch + offset + i.val < N + P2.timeBound N + 1
+    omega
+  -- Rewrite goal using decomposition.
+  rw [hdecomp]
+  rw [ConstStatePhasedProgram.embedSeqP2Config_tape_in_range P1 P2 _ _ h_p_in_P2]
+  -- Goal: (P2.runConfig lift P2.timeBound).tape ⟨c.head + Δscratch + offset + i.val, h_p_in_P2⟩ =
+  --        (b :: b' :: bs'')[i.val]?.getD false.
+  -- Case analysis on i.val.
+  rcases Nat.eq_zero_or_pos i.val with hi_eq_0 | hi_pos
+  · -- i.val = 0: slot 0 is outside P2's scratch; use IH preservation + lift definition + gate write_self.
+    have h_P2_outside : (c.head : ℕ) + Δscratch + offset + i.val <
+        (lift.head : ℕ) + Δscratch + (offset + 1) ∨
+        (lift.head : ℕ) + Δscratch + (offset + 1) +
+          ((b' :: bs'').map (SLGate.const (n := n))).length ≤
+          (c.head : ℕ) + Δscratch + offset + i.val := by
+      left
+      rw [h_lift_head_val]
+      omega
+    have h_P2_pres := h_vals'_preserve
+      ⟨(c.head : ℕ) + Δscratch + offset + i.val, h_p_in_P2⟩ h_P2_outside
+    rw [h_P2_pres]
+    -- Now lift.tape at position.
+    -- Position < P1.tapeLength.
+    have hbound0 : (c.head : ℕ) ≤ N := by
+      have hlen : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          (b' :: bs'').length + 1 := by simp
+      omega
+    have h_p_in_P1 : (c.head : ℕ) + Δscratch + offset + i.val < P1.toPhased.toTM.tapeLength N := by
+      show (c.head : ℕ) + Δscratch + offset + i.val < N + (2 * (Δscratch + offset) + 3) + 1
+      have hmap : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          (b' :: bs'').length + 1 := by simp
+      omega
+    show (if h : (c.head : ℕ) + Δscratch + offset + i.val < P1.toPhased.toTM.tapeLength N
+            then c_P1_final.tape ⟨(c.head : ℕ) + Δscratch + offset + i.val, h⟩ else false) =
+        (b :: b' :: bs'')[i.val]?.getD false
+    rw [dif_pos h_p_in_P1]
+    -- c_P1_final = c_P1.write ⟨c_P1.head + Δscratch + offset, _⟩ b.
+    have h_P1_phase : c_P1.state.fst.val = 0 := h_phase
+    have h_P1_state_snd : c_P1.state.snd = (false, false) := h_state_snd
+    have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) < P1.toPhased.toTM.tapeLength N := by
+      show (c.head : ℕ) + (Δscratch + offset) < N + (2 * (Δscratch + offset) + 3) + 1
+      omega
+    have hP1_full := gateConstCS_run_full b (Δscratch + offset) c_P1
+      h_P1_phase h_P1_state_snd h_P1_bound
+    show (TM.runConfig (M := (gateConstCS b (Δscratch + offset)).toPhased.toTM) c_P1
+        (2 * (Δscratch + offset) + 3)).tape
+        ⟨(c.head : ℕ) + Δscratch + offset + i.val, h_p_in_P1⟩ =
+      (b :: b' :: bs'')[i.val]?.getD false
+    rw [hP1_full]
+    -- Position equals write position (c_P1.head + Δscratch + offset).
+    have h_pos_eq : (⟨(c.head : ℕ) + Δscratch + offset + i.val, h_p_in_P1⟩ : Fin _) =
+        ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_P1_bound⟩ := by
+      apply Fin.ext
+      show (c.head : ℕ) + Δscratch + offset + i.val = (c_P1.head : ℕ) + (Δscratch + offset)
+      have hP1_head : (c_P1.head : ℕ) = (c.head : ℕ) := rfl
+      rw [hP1_head]
+      omega
+    rw [h_pos_eq]
+    rw [Configuration.write_self c_P1 _ b]
+    -- (b :: b' :: bs'')[0]?.getD false = b.
+    rw [hi_eq_0]
+    rfl
+  · -- i.val ≥ 1: use IH slot values.
+    -- i.val = k + 1 for some k.
+    obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.pos_iff_ne_zero.mp hi_pos)
+    -- So i.val = k + 1.
+    have hi_lt : i.val < bs''.length + 2 := by
+      have hi := i.isLt
+      have hlen : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          bs''.length + 2 := by simp
+      omega
+    have hk_lt : k < bs''.length + 1 := by omega
+    have hk_lt_map : k < ((b' :: bs'').map (SLGate.const (n := n))).length := by
+      have : ((b' :: bs'').map (SLGate.const (n := n))).length = bs''.length + 1 := by simp
+      omega
+    -- Slot k of P2 corresponds to outer slot k + 1.
+    -- Position = c.head + Δscratch + offset + (k+1) = lift.head + Δscratch + (offset+1) + k.
+    have h_p_eq : (c.head : ℕ) + Δscratch + offset + i.val =
+        (lift.head : ℕ) + Δscratch + (offset + 1) + k := by
+      rw [h_lift_head_val, hk]
+      omega
+    -- Apply IH slot value at index k.
+    have h_IH_slot := h_vals'_slots ⟨k, hk_lt_map⟩
+    -- h_IH_slot : (P2.runConfig lift P2.timeBound).tape ⟨lift.head + Δscratch + (offset+1) + k, _⟩ =
+    --             vals'[k]?.getD false.
+    -- Rewrite the Fin using h_p_eq.
+    have h_fin_eq : (⟨(c.head : ℕ) + Δscratch + offset + i.val, h_p_in_P2⟩ : Fin _) =
+        ⟨(lift.head : ℕ) + Δscratch + (offset + 1) + k, by
+          have h := h_p_in_P2
+          rw [h_p_eq] at h
+          exact h⟩ := Fin.ext h_p_eq
+    rw [h_fin_eq]
+    rw [h_IH_slot]
+    -- vals'[k]?.getD false = (b :: b' :: bs'')[i.val]?.getD false.
+    rw [h_vals'_eq]
+    -- (b' :: bs'')[k]?.getD false = (b :: b' :: bs'')[k+1]?.getD false.
+    rw [hk]
+    rfl
+
 end GateEvalCS
 
 end TM

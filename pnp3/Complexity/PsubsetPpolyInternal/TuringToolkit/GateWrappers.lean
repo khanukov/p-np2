@@ -2759,6 +2759,29 @@ theorem cons_const_nonempty_tape_slot_fact {n : Nat}
     rw [hk]
     rfl
 
+/-! ### Cons-nonempty step via factored theorem
+
+Combines `cons_const_nonempty_tape_slot_fact` (session 48f) and
+`cons_const_nonempty_preservation_fact` (session 48e) into the full
+Prop `CircuitEvaluatorCSAt_RunCorrect` for `(b :: b' :: bs'').map const`
+at any offset. -/
+
+theorem circuitEvaluatorCSAt_constList_RunCorrect_cons_nonempty {n : Nat}
+    (b b' : Bool) (bs'' : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (ih : CircuitEvaluatorCSAt_RunCorrect ((b' :: bs'').map (SLGate.const (n := n)))
+            (offset + 1) Δrowbase Δscratch hle) :
+    CircuitEvaluatorCSAt_RunCorrect ((b :: b' :: bs'').map (SLGate.const (n := n)) : List (SLGate n))
+      offset Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts
+    (b :: b' :: bs'') offset Δrowbase Δscratch hle
+    (fun c h_phase h_state_snd hbound htape_clean i h_i_bound =>
+      cons_const_nonempty_tape_slot_fact b b' bs'' offset Δrowbase Δscratch hle ih
+        c h_phase h_state_snd hbound htape_clean i h_i_bound)
+    (fun c h_phase h_state_snd hbound htape_clean j hj_outside =>
+      cons_const_nonempty_preservation_fact b b' bs'' offset Δrowbase Δscratch hle ih
+        c h_phase h_state_snd hbound htape_clean j hj_outside)
+
 end GateEvalCS
 
 end TM

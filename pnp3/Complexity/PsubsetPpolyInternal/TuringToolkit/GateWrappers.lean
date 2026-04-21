@@ -1876,6 +1876,35 @@ theorem cons_const_lift_head_val_eq_c {n : Nat} (b : Bool) (rest : List (SLGate 
   rw [hhead_eq]
   rfl
 
+/-- Pure semantic fact: `SLProgram.evalAux` on an all-const list always
+succeeds, producing the prior accumulator concatenated with `bs`.
+
+Proved by induction on `bs`.  This is independent of any TM or
+configuration — just a statement about `SLProgram.evalAux`, `SLGate.compute`
+(the `const` case), and `Option.bind`. -/
+theorem evalAux_constList {n : Nat} (bs : List Bool) (row : Fin n → Bool)
+    (prior : List Bool) :
+    SLProgram.evalAux row (bs.map (SLGate.const (n := n))) prior = some (prior ++ bs) := by
+  induction bs generalizing prior with
+  | nil =>
+    show SLProgram.evalAux row [] prior = some (prior ++ [])
+    rw [SLProgram.evalAux]
+    simp
+  | cons b bs' ih =>
+    show SLProgram.evalAux row (SLGate.const b :: bs'.map (SLGate.const (n := n))) prior =
+      some (prior ++ (b :: bs'))
+    rw [SLProgram.evalAux_cons]
+    show ((SLGate.const b (n := n)).compute row prior).bind
+        (fun v => SLProgram.evalAux row (bs'.map (SLGate.const (n := n))) (prior ++ [v])) =
+      some (prior ++ (b :: bs'))
+    show (some b).bind _ = some (prior ++ (b :: bs'))
+    simp only [Option.bind_some]
+    rw [ih]
+    show some (prior ++ [b] ++ bs') = some (prior ++ (b :: bs'))
+    congr 1
+    rw [List.append_assoc]
+    rfl
+
 end GateEvalCS
 
 end TM

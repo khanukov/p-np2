@@ -465,6 +465,67 @@ factoring DEPENDS on no ∃-complication, the cons-step proof is now a
 ∀-form induction (simpler than the original 4-conjunct ∃ form), though
 still requires careful config-lifting for the cons case.
 
+### Session 48 — FULL UNCONDITIONAL CONST-LIST CORRECTNESS PROVED
+
+Sessions 48a–48h closed F.4 for all-const lists via a sequence of
+focused compiler-driven increments.  The culminating theorem is
+
+```lean
+theorem circuitEvaluatorCSAt_constList_RunCorrect_unconditional
+    (bs : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect (bs.map SLGate.const) offset ...
+```
+
+**No `bs.length ≤ 1` or any other length restriction**.  No axioms.
+All 6 `check.sh` steps pass with axiom surface unchanged:
+propext=349, Classical.choice=345, Quot.sound=349.
+
+Proof outline:
+
+Sessions 48a–48d built arithmetic helpers:
+- **48a**: `cons_const_P1_tapeLength_le_P2_tapeLength_nonempty` and
+  `cons_const_lift_head_plus_tR_lt_tapeLength` — the two lift-safety
+  arithmetic facts for the cons-nonempty step.
+- **48b**: `cons_const_nonempty_composite_run_tape_at` — the packaged
+  decomposition:
+  `composite.runConfig c T = embedSeqP2Config P1 P2 (P2.runConfig lift P2.timeBound)`,
+  existentially quantified over the witnesses `hphase_lt`, `hhead_lt`,
+  `h_tG_head`.
+- **48c**: `cons_const_nonempty_lift_tape_clean` — lift's tape is
+  clean outside N, via gate write_other + projectSeqP1 identity.
+- **48d**: `cons_const_nonempty_lift_preconditions` — bundled
+  IH-preconditions for the lift config.
+
+Sessions 48e–48f proved the two tape facts:
+- **48e**: `cons_const_nonempty_preservation_fact`.  Four sub-cases
+  by position: j in P2's range × j in P1's range.  Uses IH
+  preservation + gate P1's write_other + projectSeqP1 identity.
+- **48f**: `cons_const_nonempty_tape_slot_fact`.  Two cases by
+  i.val: slot 0 (via gate write_self + IH preservation); slot ≥ 1
+  (via IH slots + evalAux_constList uniqueness).
+
+Session 48g combined both facts via the factored theorem
+(`circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts`) to
+give `_cons_nonempty` for `(b :: b' :: bs'').map SLGate.const`.
+
+Session 48h wired up the full induction on `bs`:
+- **nil**: `circuitEvaluatorCSAt_nil_run_correct`.
+- **[b]** (single-gate): `circuitEvaluatorCSAt_const_RunCorrect`.
+- **b :: b' :: bs''** (non-empty tail): inlines the factored
+  theorem body (`refine ⟨b :: b' :: bs'', ...⟩`) with the two tape
+  facts from 48e, 48f.
+
+Session 48i notes: the public CS-form wrapper
+`circuitEvaluatorCS_run_correct_constList` requires Eq.rec transport
+across `circuitEvaluatorCSAt_zero_eq` (dependent-type motive).  This
+mechanical transport is deferred.  Downstream callers apply
+`circuitEvaluatorCSAt_constList_RunCorrect_unconditional` at the
+desired offset (typically 0).
+
+Cumulative LOC added across 48a–48i: ~800 lines of focused proofs
+in `GateWrappers.lean`.  No sorry/admit/axiom additions.
+
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 
 Delivered the first fully Prop-form proof of `CircuitEvaluatorCSAt_RunCorrect`

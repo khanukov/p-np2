@@ -2270,6 +2270,95 @@ theorem cons_const_nonempty_composite_run_tape_at {n : Nat}
       ((ConstStatePhasedProgram.seq P1 P2).timeBound N) = _
   exact hdecomp
 
+/-! ### IH setup helper for cons-nonempty step
+
+Applies the IH on the lift configuration after validating its
+preconditions. -/
+
+/-- For the cons-nonempty step, lift satisfies the IH's preconditions and
+its tape outside N is false (via htape_clean on c plus the gate's
+write-other preservation + projectSeqP1 definition). -/
+theorem cons_const_nonempty_lift_tape_clean {n : Nat}
+    (b b' : Bool) (bs'' : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset +
+      ((b :: b' :: bs'').map (SLGate.const (n := n))).length ≤ N)
+    (htape_clean : ∀ i : Fin
+      ((circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      N ≤ i.val → c.tape i = false)
+    (hphase_lt : c.state.fst.val <
+      (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).numPhases)
+    (hhead_lt : c.head.val <
+      (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (h_tG_head :
+      (TM.runConfig
+        (M := (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM)
+        (ConstStatePhasedProgram.projectSeqP1
+          (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle)
+          (circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const) (offset + 1)
+            Δrowbase Δscratch hle) c hphase_lt hhead_lt)
+        (2 * (Δscratch + offset) + 3)).head.val <
+      (circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const) (offset + 1)
+        Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    let P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle
+    let P2 := circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const)
+                (offset + 1) Δrowbase Δscratch hle
+    let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt
+    let c_P1_final := TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3)
+    let lift := ConstStatePhasedProgram.liftP1ToP2 P1 P2 c_P1_final h_tG_head
+    ∀ (i : Fin (P2.toPhased.toTM.tapeLength N)), N ≤ i.val → lift.tape i = false := by
+  intro P1 P2 c_P1 c_P1_final lift i hi_N
+  -- lift.tape i = if i.val < P1.tapeLength then c_P1_final.tape ⟨i.val, _⟩ else false.
+  by_cases hi_P1 : i.val < P1.toPhased.toTM.tapeLength N
+  · -- i.val < P1.tapeLength.
+    show (if h : i.val < P1.toPhased.toTM.tapeLength N
+            then c_P1_final.tape ⟨i.val, h⟩ else false) = false
+    rw [dif_pos hi_P1]
+    -- Now reduce c_P1_final to gateConstCS_run_full.
+    have hbound0 : (c.head : ℕ) ≤ N := by
+      have hlen : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          (b' :: bs'').length + 1 := by simp
+      omega
+    have h_P1_phase : c_P1.state.fst.val = 0 := h_phase
+    have h_P1_state_snd : c_P1.state.snd = (false, false) := h_state_snd
+    have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) < P1.toPhased.toTM.tapeLength N := by
+      show (c.head : ℕ) + (Δscratch + offset) < N + (2 * (Δscratch + offset) + 3) + 1
+      omega
+    have hP1_full := gateConstCS_run_full b (Δscratch + offset) c_P1
+      h_P1_phase h_P1_state_snd h_P1_bound
+    show (TM.runConfig (M := (gateConstCS b (Δscratch + offset)).toPhased.toTM) c_P1
+        (2 * (Δscratch + offset) + 3)).tape ⟨i.val, hi_P1⟩ = false
+    rw [hP1_full]
+    -- c_P1.write ⟨c_P1.head + Δscratch + offset, _⟩ b at position ⟨i.val, hi_P1⟩.
+    -- i.val ≥ N ≥ c.head + Δscratch + offset + (bs''+2) > c_P1.head + Δscratch + offset.
+    -- So it's outside the write. Use write_other.
+    have h_ne : (⟨i.val, hi_P1⟩ : Fin _) ≠
+        ⟨(c_P1.head : ℕ) + (Δscratch + offset), h_P1_bound⟩ := by
+      intro heq
+      have hval : i.val = (c_P1.head : ℕ) + (Δscratch + offset) := Fin.val_eq_of_eq heq
+      have hP1_head : (c_P1.head : ℕ) = (c.head : ℕ) := rfl
+      rw [hP1_head] at hval
+      have hlen : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          (b' :: bs'').length + 1 := by simp
+      omega
+    rw [Configuration.write_other c_P1 h_ne b]
+    -- c_P1.tape at ⟨i.val, hi_P1⟩ equals c.tape ⟨i.val, ..⟩ by projectSeqP1 definition.
+    have h_i_in_seq : i.val < (ConstStatePhasedProgram.seq P1 P2).toPhased.toTM.tapeLength N := by
+      have := ConstStatePhasedProgram.seq_tapeLength_ge_P1 P1 P2 N
+      omega
+    show c.tape ⟨i.val, _⟩ = false
+    exact htape_clean ⟨i.val, h_i_in_seq⟩ hi_N
+  · -- i.val ≥ P1.tapeLength: lift.tape i = false.
+    show (if h : i.val < P1.toPhased.toTM.tapeLength N
+            then c_P1_final.tape ⟨i.val, h⟩ else false) = false
+    rw [dif_neg hi_P1]
+
 end GateEvalCS
 
 end TM

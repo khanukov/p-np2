@@ -1382,6 +1382,131 @@ The proof is routine combination of these — omitted here as a
 stand-alone induction theorem due to session scope; future work will
 package it as `circuitEvaluatorCSAt_constList_RunCorrect`. -/
 
+/-- Configuration-level post-boundary identity: after running the
+composite `seq (evalOneGateCS g slot …) P2` for `2*(Δscratch+slot) + 4`
+steps starting from `embedSeqConfig … c_P1`, the resulting configuration
+equals `embedSeqP2Config … (liftP1ToP2 … (P1.run c_P1 tG) h_tG_head)`.
+
+Assembles the 4 component equalities from
+`evalOneGateCS_in_seq_run_past_boundary` and
+`embedSeqP2Config_liftP1ToP2_eq_embedded_shape`, packaged as a single
+Configuration equality via structural case analysis. -/
+theorem evalOneGateCS_post_boundary_eq_embedSeqP2Config_lift
+    {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch)
+    (P2 : ConstStatePhasedProgram (Bool × Bool)) {N : Nat}
+    (c_P1 : Configuration
+      (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c_P1.state.fst.val = 0)
+    (h_state_snd : c_P1.state.snd = (false, false))
+    (h_bound : (c_P1.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (h_tG_head :
+        (TM.runConfig
+          (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c_P1
+          (2 * (Δscratch + slot) + 3)).head.val < P2.toPhased.toTM.tapeLength N)
+    (h_len_le :
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N ≤
+        P2.toPhased.toTM.tapeLength N) :
+    TM.runConfig
+        (M := (ConstStatePhasedProgram.seq
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+        (ConstStatePhasedProgram.embedSeqConfig
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c_P1)
+        (2 * (Δscratch + slot) + 4) =
+      ConstStatePhasedProgram.embedSeqP2Config
+        (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+        (ConstStatePhasedProgram.liftP1ToP2
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+          (TM.runConfig
+            (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+            c_P1 (2 * (Δscratch + slot) + 3))
+          h_tG_head) := by
+  -- Step 1: extract component equalities from past-boundary.
+  have hpb := evalOneGateCS_in_seq_run_past_boundary g slot Δrowbase Δscratch hle
+    P2 c_P1 h_phase h_state_snd h_bound
+  obtain ⟨hpb_phase, hpb_snd, hpb_head, hpb_tape⟩ := hpb
+  -- Step 2: extract component equalities from lift identity.
+  have hlift := ConstStatePhasedProgram.embedSeqP2Config_liftP1ToP2_eq_embedded_shape
+    (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+    (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+      c_P1 (2 * (Δscratch + slot) + 3))
+    h_tG_head h_len_le
+  obtain ⟨hlift_phase, hlift_snd, hlift_head, hlift_tape⟩ := hlift
+  -- Step 3: head identity — from past_boundary.head chained with
+  -- embedSeqP2Config(lift).head = embedSeqConfig(P1_tG).head (from
+  -- ..._headTape_agrees).
+  have hhead_agrees := ConstStatePhasedProgram.embedSeqP2Config_liftP1ToP2_headTape_agrees
+    (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+    (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+      c_P1 (2 * (Δscratch + slot) + 3))
+    h_tG_head h_len_le
+  obtain ⟨hhead_eq, htape_eq⟩ := hhead_agrees
+  -- Structural case analysis on Configuration.mk.
+  cases hL :
+      (TM.runConfig
+        (M := (ConstStatePhasedProgram.seq
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+        (ConstStatePhasedProgram.embedSeqConfig
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c_P1)
+        (2 * (Δscratch + slot) + 4)) with
+  | mk sL hL_head tL =>
+    cases hR :
+        (ConstStatePhasedProgram.embedSeqP2Config
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+          (ConstStatePhasedProgram.liftP1ToP2
+            (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+            (TM.runConfig
+              (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+              c_P1 (2 * (Δscratch + slot) + 3))
+            h_tG_head)) with
+    | mk sR hR_head tR =>
+      -- Assemble state, head, tape equalities between L and R.
+      have hse : sL = sR := by
+        -- Both sides have state.fst.val = P1.numPhases + P2.startPhase.val,
+        -- state.snd = P2.startState.
+        rw [hL] at hpb_phase hpb_snd
+        rw [hR] at hlift_phase hlift_snd
+        -- hpb_phase : sL.fst.val = P1.numPhases + P2.startPhase.val
+        -- hpb_snd : sL.snd = P2.startState
+        -- hlift_phase : sR.fst.val = P1.numPhases + P2.startPhase.val
+        -- hlift_snd : sR.snd = P2.startState
+        have hval : (sL.fst.val : ℕ) = sR.fst.val := by
+          rw [hpb_phase, hlift_phase]
+        have hsnd : sL.snd = sR.snd := by
+          rw [hpb_snd, hlift_snd]
+        rcases sL with ⟨sL_fst, sL_snd⟩
+        rcases sR with ⟨sR_fst, sR_snd⟩
+        have hfst : sL_fst = sR_fst := Fin.ext hval
+        cases hfst
+        cases hsnd
+        rfl
+      have hhe : hL_head = hR_head := by
+        rw [hL] at hpb_head
+        rw [hR] at hhead_eq
+        -- hpb_head: LHS.head = (embedSeqConfig ... (P1.run c_P1 tG)).head
+        -- hhead_eq: embedSeqP2Config(lift).head = (embedSeqConfig ... (P1.run c_P1 tG)).head
+        -- So LHS.head = RHS.head.
+        have : hL_head = (ConstStatePhasedProgram.embedSeqConfig
+            (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+            (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+              c_P1 (2 * (Δscratch + slot) + 3))).head := hpb_head
+        rw [this]
+        exact hhead_eq.symm
+      have hte : tL = tR := by
+        rw [hL] at hpb_tape
+        rw [hR] at htape_eq
+        -- After rw, hpb_tape and htape_eq both have .tape field projection
+        -- on mk constructor; reduce via simp so we see plain tL and tR.
+        simp only at hpb_tape htape_eq
+        -- hpb_tape: tL = embedSeqConfig-tape
+        -- htape_eq: tR = embedSeqConfig-tape
+        rw [hpb_tape, ← htape_eq]
+      subst hse
+      subst hte
+      subst hhe
+      rfl
+
 end GateEvalCS
 
 end TM

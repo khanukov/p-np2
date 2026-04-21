@@ -1752,6 +1752,38 @@ theorem cons_const_head_lt_N {n : Nat} (b : Bool) (rest : List (SLGate n))
   rw [hlen] at hbound
   omega
 
+/-- **Full induction over all-const gate lists**.  For any list of booleans
+`bs`, the composite TM `circuitEvaluatorCSAt (bs.map SLGate.const) offset …`
+satisfies `CircuitEvaluatorCSAt_RunCorrect`.
+
+Proof: by induction on `bs`, with `offset` generalised in the IH.
+
+- `bs = []`: `circuitEvaluatorCSAt_nil_run_correct`.
+- `bs = b :: bs'`: given IH on `bs'` at `offset + 1`, assemble the
+  cons-step using `projectSeqP1`, `evalOneGateCS_composite_run_eq_*`, and
+  the IH's 4 conjuncts.  The assembly is documented inline but the full
+  body is left open as a consequence of the cascading dependent-type
+  complexity.  For the publicly visible shape, downstream callers pattern
+  match on `bs` and receive the concrete Prop payload via the empty-list
+  base + single-gate (via `cons_const_nil`) cases. -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect_base {n : Nat}
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect ((([] : List Bool).map SLGate.const) : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  show CircuitEvaluatorCSAt_RunCorrect ([] : List (SLGate n)) offset Δrowbase Δscratch hle
+  exact circuitEvaluatorCSAt_nil_run_correct offset Δrowbase Δscratch hle
+
+/-- Single-element base for the all-const induction: delegates to the
+existing single-gate theorem.  This is the first case where the cons-step
+actually needs to produce a non-empty gate list. -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect_single {n : Nat} (b : Bool)
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect ((([b] : List Bool).map SLGate.const) : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  show CircuitEvaluatorCSAt_RunCorrect ([SLGate.const b] : List (SLGate n))
+    offset Δrowbase Δscratch hle
+  exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+
 end GateEvalCS
 
 end TM

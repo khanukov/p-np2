@@ -2154,6 +2154,122 @@ theorem cons_const_lift_head_plus_tR_lt_tapeLength {n : Nat} (b b' : Bool) (bs''
     omega
   omega
 
+/-! ### Main cons-nonempty step via the factored theorem
+
+We use `circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts` with
+the two tape facts for `bs = b :: b' :: bs''`.  Both facts require a
+common setup — projecting to `c_P1`, running the first gate, lifting to
+P2, and applying the IH on the tail. -/
+
+/-- Configuration-level tape decomposition for the cons-nonempty step.
+For any target position `j` in the composite's tape, the final tape
+value equals the P2-run-on-lift tape value (when `j` is within P2's
+range) or `false` (outside). -/
+theorem cons_const_nonempty_composite_run_tape_at {n : Nat}
+    (b b' : Bool) (bs'' : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset +
+      ((b :: b' :: bs'').map (SLGate.const (n := n))).length ≤ N)
+    (htape_clean : ∀ i : Fin
+      ((circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      N ≤ i.val → c.tape i = false) :
+    let P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle
+    let P2 := circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const)
+                (offset + 1) Δrowbase Δscratch hle
+    ∃ (hphase_lt : c.state.fst.val < P1.numPhases)
+      (hhead_lt : c.head.val < P1.toPhased.toTM.tapeLength N)
+      (h_tG_head :
+        (TM.runConfig (M := P1.toPhased.toTM)
+          (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+          (2 * (Δscratch + offset) + 3)).head.val < P2.toPhased.toTM.tapeLength N),
+      TM.runConfig
+        (M := (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+          offset Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+          offset Δrowbase Δscratch hle).timeBound N) =
+      ConstStatePhasedProgram.embedSeqP2Config P1 P2
+        (TM.runConfig (M := P2.toPhased.toTM)
+          (ConstStatePhasedProgram.liftP1ToP2 P1 P2
+            (TM.runConfig (M := P1.toPhased.toTM)
+              (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+              (2 * (Δscratch + offset) + 3))
+            h_tG_head)
+          (P2.timeBound N)) := by
+  intro P1 P2
+  -- Preconditions for projectSeqP1.
+  have hphase_lt : c.state.fst.val < P1.numPhases := by
+    rw [h_phase]; show 0 < 2 * (Δscratch + offset) + 4; omega
+  have hbound0 : (c.head : ℕ) ≤ N := by
+    have hlen : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+        (b' :: bs'').length + 1 := by simp
+    omega
+  have hhead_lt : c.head.val < P1.toPhased.toTM.tapeLength N := by
+    show c.head.val < N + (2 * (Δscratch + offset) + 3) + 1
+    omega
+  have hbound_seq : (c.head : ℕ) + Δscratch + offset +
+      (SLGate.const b (n := n) :: (b' :: bs'').map SLGate.const).length ≤ N := by
+    have hlen : (SLGate.const b (n := n) :: (b' :: bs'').map SLGate.const).length =
+        (b' :: bs'').length + 1 := by simp
+    have hmap : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+        (b' :: bs'').length + 1 := by simp
+    omega
+  -- h_tG_head via cons_const_lift_head_val_eq_c.
+  have h_head_eq := cons_const_lift_head_val_eq_c b ((b' :: bs'').map SLGate.const)
+    offset Δrowbase Δscratch hle c h_phase h_state_snd hbound_seq hphase_lt hhead_lt
+  have h_tG_head :
+      (TM.runConfig (M := P1.toPhased.toTM)
+        (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+        (2 * (Δscratch + offset) + 3)).head.val < P2.toPhased.toTM.tapeLength N := by
+    change (TM.runConfig (M := P1.toPhased.toTM) _ _).head.val < P2.toPhased.toTM.tapeLength N
+    rw [h_head_eq]
+    show (c.head : ℕ) < N + P2.timeBound N + 1
+    omega
+  refine ⟨hphase_lt, hhead_lt, h_tG_head, ?_⟩
+  -- The decomposition equality.
+  -- c_P1 and associated bindings.
+  let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt
+  have h_P1_phase : c_P1.state.fst.val = 0 := h_phase
+  have h_P1_state_snd : c_P1.state.snd = (false, false) := h_state_snd
+  have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) < P1.toPhased.toTM.tapeLength N := by
+    show (c.head : ℕ) + (Δscratch + offset) < N + (2 * (Δscratch + offset) + 3) + 1
+    omega
+  have h_P2_tapeLength_ge_P1 :=
+    cons_const_P1_tapeLength_le_P2_tapeLength_nonempty b b' bs''
+      offset Δrowbase Δscratch hle N
+  have h_lift_head_plus_tR := cons_const_lift_head_plus_tR_lt_tapeLength
+    b b' bs'' offset Δrowbase Δscratch hle c h_phase h_state_snd hbound_seq
+    hphase_lt hhead_lt h_tG_head
+  -- htape_outer for embedSeqConfig_projectSeqP1.
+  have htape_outer :
+      ∀ i : Fin ((ConstStatePhasedProgram.seq P1 P2).toPhased.toTM.tapeLength N),
+        P1.toPhased.toTM.tapeLength N ≤ i.val → c.tape i = false := by
+    intro i hi
+    have hi_N : N ≤ i.val := by
+      have hP1_ge_N : N ≤ P1.toPhased.toTM.tapeLength N := by
+        show N ≤ N + (2 * (Δscratch + offset) + 3) + 1; omega
+      omega
+    exact htape_clean i hi_N
+  have hembed : ConstStatePhasedProgram.embedSeqConfig P1 P2 c_P1 = c :=
+    ConstStatePhasedProgram.embedSeqConfig_projectSeqP1 P1 P2 c hphase_lt hhead_lt htape_outer
+  -- Apply the decomposition theorem.
+  have hdecomp := evalOneGateCS_composite_run_eq_embedSeqP2Config_P2Run
+    (SLGate.const b) offset Δrowbase Δscratch hle P2 c_P1
+    h_P1_phase h_P1_state_snd h_P1_bound h_tG_head h_P2_tapeLength_ge_P1 h_lift_head_plus_tR
+  -- hdecomp : composite.runConfig (embed c_P1) T = embedSeqP2Config (P2.runConfig lift T_P2).
+  -- Use hembed to rewrite the LHS to composite.runConfig c T.
+  rw [hembed] at hdecomp
+  -- Use `show` to normalize `((b :: b' :: bs'').map const)` to `(const b :: (b' :: bs'').map const)`.
+  show TM.runConfig
+      (M := (ConstStatePhasedProgram.seq P1 P2).toPhased.toTM) c
+      ((ConstStatePhasedProgram.seq P1 P2).timeBound N) = _
+  exact hdecomp
+
 end GateEvalCS
 
 end TM

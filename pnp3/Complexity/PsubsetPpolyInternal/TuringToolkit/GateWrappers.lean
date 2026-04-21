@@ -2849,6 +2849,282 @@ follow-up session.  The CSAt form suffices for downstream use: simply
 apply `circuitEvaluatorCSAt_constList_RunCorrect_unconditional` at the
 desired offset (typically 0). -/
 
+/-! ### Generic per-gate semantic write
+
+For any gate `g`, after running its single-gate TM program, the scratch
+slot at `Δscratch + slot` holds the value of `g.compute` on the row and
+the tape-resident prior.  This unifies the five gate types via
+`evalOneGateCS_writes_at_dst` with the semantic condition. -/
+
+theorem evalOneGateCS_writes_compute_result {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c_P1 : Configuration (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c_P1.state.fst.val = 0)
+    (h_state_snd : c_P1.state.snd = (false, false))
+    (h_bound : (c_P1.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (prior : List Bool)
+    (h_prior_len : prior.length = slot)
+    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+        (hpos : (c_P1.head : ℕ) + Δscratch + k <
+          (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        prior[k]? = some (c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + k, hpos⟩))
+    (v : Bool)
+    (h_compute : g.compute
+      (fun i => c_P1.tape ⟨(c_P1.head : ℕ) + Δrowbase + i.val, by
+        have hi := i.isLt
+        -- Δrowbase + i.val ≤ Δrowbase + n - 1 ≤ Δscratch - 1 ≤ Δscratch + slot.
+        have h1 : Δrowbase + i.val ≤ Δscratch + slot := by omega
+        omega⟩) prior = some v) :
+    (TM.runConfig (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c_P1
+        (2 * (Δscratch + slot) + 3)).tape =
+      c_P1.write ⟨(c_P1.head : ℕ) + (Δscratch + slot), h_bound⟩ v := by
+  match g with
+  | .const b =>
+    -- const compute = some b, TM writes b.
+    simp only [SLGate.compute] at h_compute
+    have hvb : v = b := (Option.some.inj h_compute).symm
+    rw [hvb]
+    exact gateConstCS_run_full b (Δscratch + slot) c_P1 h_phase h_state_snd h_bound
+  | .input i =>
+    -- input compute = some (row i), TM writes (row i).
+    simp only [SLGate.compute] at h_compute
+    have hvi : v = c_P1.tape ⟨(c_P1.head : ℕ) + Δrowbase + i.val, by
+      have hi := i.isLt
+      have h1 : Δrowbase + i.val ≤ Δscratch + slot := by omega
+      omega⟩ := (Option.some.inj h_compute).symm
+    rw [hvi]
+    obtain ⟨h_src, ht⟩ := gateInputCS_run_full i Δrowbase (Δscratch + slot)
+      (by have := i.isLt; omega) c_P1 h_phase h_state_snd h_bound
+    show (TM.runConfig (M := (gateInputCS i Δrowbase (Δscratch + slot) _).toPhased.toTM) c_P1
+        (2 * (Δscratch + slot) + 3)).tape = _
+    rw [ht]
+    have h_fin_eq : (⟨(c_P1.head : ℕ) + (Δrowbase + i.val), h_src⟩ : Fin
+        ((evalOneGateCS (SLGate.input i) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)) =
+        ⟨(c_P1.head : ℕ) + Δrowbase + i.val, by
+          have h := h_src; omega⟩ := by
+      apply Fin.ext
+      show (c_P1.head : ℕ) + (Δrowbase + i.val) = (c_P1.head : ℕ) + Δrowbase + i.val
+      omega
+    rw [h_fin_eq]
+  | .notGate k =>
+    -- notGate compute = prior[k]?.map(!·).  We need compute = some v.
+    -- So prior[k]? = some w with v = !w.
+    simp only [SLGate.compute] at h_compute
+    -- h_compute : prior[k]?.map (!·) = some v
+    obtain ⟨w, hw_eq, hwv⟩ : ∃ w, prior[k]? = some w ∧ v = !w := by
+      cases hp : prior[k]? with
+      | none => rw [hp] at h_compute; exact Option.noConfusion h_compute
+      | some w =>
+        refine ⟨w, rfl, ?_⟩
+        rw [hp] at h_compute
+        -- h_compute : some (!w) = some v
+        exact (Option.some.inj h_compute).symm
+    have hk_lt : k < prior.length := by
+      by_contra hge
+      push_neg at hge
+      have : prior[k]? = none := List.getElem?_eq_none hge
+      rw [this] at hw_eq
+      exact Option.noConfusion hw_eq
+    have hk_lt_slot : k < slot := by
+      rw [← h_prior_len]; exact hk_lt
+    have hmin : min k slot = k := Nat.min_eq_left (Nat.le_of_lt hk_lt_slot)
+    have h_pos_ok : (c_P1.head : ℕ) + Δscratch + k <
+        (evalOneGateCS (SLGate.notGate k) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+      omega
+    have h_match := h_prior_match k hk_lt h_pos_ok
+    rw [hw_eq] at h_match
+    have h_w_eq : w = c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_ok⟩ := Option.some.inj h_match
+    obtain ⟨h_src, ht⟩ := gateNotCS_run_full (Δscratch + min k slot) (Δscratch + slot)
+      (by have : min k slot ≤ slot := Nat.min_le_right _ _; omega)
+      c_P1 h_phase h_state_snd h_bound
+    show (TM.runConfig
+      (M := (gateNotCS (Δscratch + min k slot) (Δscratch + slot) _).toPhased.toTM) c_P1
+        (2 * (Δscratch + slot) + 3)).tape = _
+    rw [ht]
+    -- Goal: c_P1.write ⟨slot pos, _⟩ (!c_P1.tape ⟨... min k slot ..., h_src⟩) = c_P1.write ⟨...⟩ v
+    rw [hwv, h_w_eq]
+    -- Goal: write _ (!(tape @ min k slot)) = write _ (!(tape @ k))
+    -- Identify the Fin positions.
+    have h_fin_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min k slot), h_src⟩ : Fin
+        ((evalOneGateCS (SLGate.notGate k) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)) =
+        ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_ok⟩ := by
+      apply Fin.ext
+      show (c_P1.head : ℕ) + (Δscratch + min k slot) = (c_P1.head : ℕ) + Δscratch + k
+      rw [hmin]; omega
+    rw [h_fin_eq]
+  | .andGate k l =>
+    simp only [SLGate.compute] at h_compute
+    have ⟨ak, al, hpk, hpl, hvv⟩ : ∃ ak al, prior[k]? = some ak ∧ prior[l]? = some al ∧ v = (ak && al) := by
+      rcases hpk : prior[k]? with _ | ak
+      · rw [hpk] at h_compute; exact Option.noConfusion h_compute
+      · rcases hpl : prior[l]? with _ | al
+        · rw [hpk, hpl] at h_compute; exact Option.noConfusion h_compute
+        · refine ⟨ak, al, rfl, rfl, ?_⟩
+          rw [hpk, hpl] at h_compute
+          exact (Option.some.inj h_compute).symm
+    have hk_lt : k < prior.length := by
+      by_contra hge
+      push_neg at hge
+      have : prior[k]? = none := List.getElem?_eq_none hge
+      rw [this] at hpk
+      exact Option.noConfusion hpk
+    have hl_lt : l < prior.length := by
+      by_contra hge
+      push_neg at hge
+      have : prior[l]? = none := List.getElem?_eq_none hge
+      rw [this] at hpl
+      exact Option.noConfusion hpl
+    have hk_lt_slot : k < slot := by rw [← h_prior_len]; exact hk_lt
+    have hl_lt_slot : l < slot := by rw [← h_prior_len]; exact hl_lt
+    obtain ⟨h_src1, h_src2, ht⟩ := gateAndCS_run_full
+      (Δscratch + min (min k l) slot) (Δscratch + min (max k l) slot) (Δscratch + slot)
+      (by
+        have hmm : min k l ≤ max k l := by
+          rcases Nat.le_total k l with hkl | hkl
+          · rw [min_eq_left hkl, max_eq_right hkl]; exact hkl
+          · rw [min_eq_right hkl, max_eq_left hkl]; exact hkl
+        omega)
+      (by have : min (max k l) slot ≤ slot := Nat.min_le_right _ _; omega)
+      c_P1 h_phase h_state_snd h_bound
+    show (TM.runConfig (M := (gateAndCS _ _ _ _ _).toPhased.toTM) c_P1 _).tape = _
+    rw [ht]
+    have h_pos_k : (c_P1.head : ℕ) + Δscratch + k <
+        (evalOneGateCS (SLGate.andGate k l) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N :=
+      by omega
+    have h_pos_l : (c_P1.head : ℕ) + Δscratch + l <
+        (evalOneGateCS (SLGate.andGate k l) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N :=
+      by omega
+    have h_match_k := h_prior_match k hk_lt h_pos_k
+    have h_match_l := h_prior_match l hl_lt h_pos_l
+    rw [hpk] at h_match_k
+    rw [hpl] at h_match_l
+    have h_ak_eq : ak = c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_k⟩ :=
+      Option.some.inj h_match_k
+    have h_al_eq : al = c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + l, h_pos_l⟩ :=
+      Option.some.inj h_match_l
+    -- The TM writes (tape @ pos1) && (tape @ pos2) where
+    -- pos1 = c.head + Δscratch + min(min k l) slot, pos2 = c.head + Δscratch + min(max k l) slot.
+    -- We want write v = ak && al = tape @ k && tape @ l.
+    rw [hvv, h_ak_eq, h_al_eq]
+    rcases Nat.le_total k l with h_kl | h_kl
+    · -- k ≤ l: pos1 corresponds to k, pos2 to l.
+      have h_fin1_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (min k l) slot), h_src1⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_k⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (min k l) slot) = (c_P1.head : ℕ) + Δscratch + k
+        have : min (min k l) slot = k := by
+          rw [Nat.min_eq_left h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hk_lt_slot)
+        rw [this]; omega
+      have h_fin2_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (max k l) slot), h_src2⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + l, h_pos_l⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (max k l) slot) = (c_P1.head : ℕ) + Δscratch + l
+        have : min (max k l) slot = l := by
+          rw [Nat.max_eq_right h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hl_lt_slot)
+        rw [this]; omega
+      rw [h_fin1_eq, h_fin2_eq]
+    · -- l ≤ k: pos1 corresponds to l, pos2 to k.  AND is commutative.
+      have h_fin1_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (min k l) slot), h_src1⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + l, h_pos_l⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (min k l) slot) = (c_P1.head : ℕ) + Δscratch + l
+        have : min (min k l) slot = l := by
+          rw [Nat.min_eq_right h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hl_lt_slot)
+        rw [this]; omega
+      have h_fin2_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (max k l) slot), h_src2⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_k⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (max k l) slot) = (c_P1.head : ℕ) + Δscratch + k
+        have : min (max k l) slot = k := by
+          rw [Nat.max_eq_left h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hk_lt_slot)
+        rw [this]; omega
+      rw [h_fin1_eq, h_fin2_eq]
+      rw [Bool.and_comm]
+  | .orGate k l =>
+    simp only [SLGate.compute] at h_compute
+    have ⟨ak, al, hpk, hpl, hvv⟩ : ∃ ak al, prior[k]? = some ak ∧ prior[l]? = some al ∧ v = (ak || al) := by
+      rcases hpk : prior[k]? with _ | ak
+      · rw [hpk] at h_compute; exact Option.noConfusion h_compute
+      · rcases hpl : prior[l]? with _ | al
+        · rw [hpk, hpl] at h_compute; exact Option.noConfusion h_compute
+        · refine ⟨ak, al, rfl, rfl, ?_⟩
+          rw [hpk, hpl] at h_compute
+          exact (Option.some.inj h_compute).symm
+    have hk_lt : k < prior.length := by
+      by_contra hge
+      push_neg at hge
+      have : prior[k]? = none := List.getElem?_eq_none hge
+      rw [this] at hpk
+      exact Option.noConfusion hpk
+    have hl_lt : l < prior.length := by
+      by_contra hge
+      push_neg at hge
+      have : prior[l]? = none := List.getElem?_eq_none hge
+      rw [this] at hpl
+      exact Option.noConfusion hpl
+    have hk_lt_slot : k < slot := by rw [← h_prior_len]; exact hk_lt
+    have hl_lt_slot : l < slot := by rw [← h_prior_len]; exact hl_lt
+    obtain ⟨h_src1, h_src2, ht⟩ := gateOrCS_run_full
+      (Δscratch + min (min k l) slot) (Δscratch + min (max k l) slot) (Δscratch + slot)
+      (by
+        have hmm : min k l ≤ max k l := by
+          rcases Nat.le_total k l with hkl | hkl
+          · rw [min_eq_left hkl, max_eq_right hkl]; exact hkl
+          · rw [min_eq_right hkl, max_eq_left hkl]; exact hkl
+        omega)
+      (by have : min (max k l) slot ≤ slot := Nat.min_le_right _ _; omega)
+      c_P1 h_phase h_state_snd h_bound
+    show (TM.runConfig (M := (gateOrCS _ _ _ _ _).toPhased.toTM) c_P1 _).tape = _
+    rw [ht]
+    have h_pos_k : (c_P1.head : ℕ) + Δscratch + k <
+        (evalOneGateCS (SLGate.orGate k l) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N :=
+      by omega
+    have h_pos_l : (c_P1.head : ℕ) + Δscratch + l <
+        (evalOneGateCS (SLGate.orGate k l) slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N :=
+      by omega
+    have h_match_k := h_prior_match k hk_lt h_pos_k
+    have h_match_l := h_prior_match l hl_lt h_pos_l
+    rw [hpk] at h_match_k
+    rw [hpl] at h_match_l
+    have h_ak_eq : ak = c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_k⟩ :=
+      Option.some.inj h_match_k
+    have h_al_eq : al = c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + l, h_pos_l⟩ :=
+      Option.some.inj h_match_l
+    rw [hvv, h_ak_eq, h_al_eq]
+    rcases Nat.le_total k l with h_kl | h_kl
+    · have h_fin1_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (min k l) slot), h_src1⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_k⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (min k l) slot) = (c_P1.head : ℕ) + Δscratch + k
+        have : min (min k l) slot = k := by
+          rw [Nat.min_eq_left h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hk_lt_slot)
+        rw [this]; omega
+      have h_fin2_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (max k l) slot), h_src2⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + l, h_pos_l⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (max k l) slot) = (c_P1.head : ℕ) + Δscratch + l
+        have : min (max k l) slot = l := by
+          rw [Nat.max_eq_right h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hl_lt_slot)
+        rw [this]; omega
+      rw [h_fin1_eq, h_fin2_eq]
+    · have h_fin1_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (min k l) slot), h_src1⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + l, h_pos_l⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (min k l) slot) = (c_P1.head : ℕ) + Δscratch + l
+        have : min (min k l) slot = l := by
+          rw [Nat.min_eq_right h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hl_lt_slot)
+        rw [this]; omega
+      have h_fin2_eq : (⟨(c_P1.head : ℕ) + (Δscratch + min (max k l) slot), h_src2⟩ : Fin _) =
+          ⟨(c_P1.head : ℕ) + Δscratch + k, h_pos_k⟩ := by
+        apply Fin.ext
+        show (c_P1.head : ℕ) + (Δscratch + min (max k l) slot) = (c_P1.head : ℕ) + Δscratch + k
+        have : min (max k l) slot = k := by
+          rw [Nat.max_eq_left h_kl]; exact Nat.min_eq_left (Nat.le_of_lt hk_lt_slot)
+        rw [this]; omega
+      rw [h_fin1_eq, h_fin2_eq]
+      rw [Bool.or_comm]
+
 end GateEvalCS
 
 end TM

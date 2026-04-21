@@ -2840,12 +2840,13 @@ different structural unfoldings — `seqList ∘ mapIdx` vs `match`),
 the main theorem `circuitEvaluatorCSAt_constList_RunCorrect_unconditional`
 directly gives the correctness for the CSAt-at-offset-0 form.  The
 CS-form bridge requires transporting `Configuration (M := …).toPhased.toTM`
-across the above equality, which involves motive-level dependent-type
-rewriting.  This transport is mechanical but non-trivial in Lean; it
-is deferred to a follow-up session and documented in
-`Docs/PhaseI_Verifier_Design.md`.  The CSAt form suffices for
-downstream use: simply apply
-`circuitEvaluatorCSAt_constList_RunCorrect_unconditional` at the
+across the above equality, which hits an `Eq.rec` motive-non-type-correct
+obstruction because the Prop contains auto-generated Fin-bound proofs
+tied to the specific program.
+
+The transport is mechanical but non-trivial; it is deferred to a
+follow-up session.  The CSAt form suffices for downstream use: simply
+apply `circuitEvaluatorCSAt_constList_RunCorrect_unconditional` at the
 desired offset (typically 0). -/
 
 end GateEvalCS

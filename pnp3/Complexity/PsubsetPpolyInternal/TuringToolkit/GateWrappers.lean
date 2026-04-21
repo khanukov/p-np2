@@ -3259,6 +3259,121 @@ theorem cons_any_lift_head_plus_tR_lt_tapeLength {n : Nat}
   have hlen : (g :: g' :: rest').length = rest'.length + 2 := by simp
   omega
 
+/-- Generic decomposition: composite.runConfig c T = embedSeqP2Config (P2.runConfig lift P2.timeBound)
+for any gate g with non-empty tail g' :: rest'.  Dispatches to the unified
+head-preservation helper. -/
+theorem cons_any_nonempty_composite_run_tape_at {n : Nat}
+    (g : SLGate n) (g' : SLGate n) (rest' : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (g :: g' :: rest') offset
+        Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset + (g :: g' :: rest').length ≤ N)
+    (htape_clean : ∀ i : Fin
+      ((circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      N ≤ i.val → c.tape i = false) :
+    let P1 := evalOneGateCS g offset Δrowbase Δscratch hle
+    let P2 := circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle
+    ∃ (hphase_lt : c.state.fst.val < P1.numPhases)
+      (hhead_lt : c.head.val < P1.toPhased.toTM.tapeLength N)
+      (h_tG_head :
+        (TM.runConfig (M := P1.toPhased.toTM)
+          (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+          (2 * (Δscratch + offset) + 3)).head.val < P2.toPhased.toTM.tapeLength N),
+      TM.runConfig
+        (M := (circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).timeBound N) =
+      ConstStatePhasedProgram.embedSeqP2Config P1 P2
+        (TM.runConfig (M := P2.toPhased.toTM)
+          (ConstStatePhasedProgram.liftP1ToP2 P1 P2
+            (TM.runConfig (M := P1.toPhased.toTM)
+              (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+              (2 * (Δscratch + offset) + 3))
+            h_tG_head)
+          (P2.timeBound N)) := by
+  intro P1 P2
+  have hphase_lt : c.state.fst.val < P1.numPhases := by
+    rw [h_phase]
+    show 0 < (evalOneGateCS g offset Δrowbase Δscratch hle).numPhases
+    -- numPhases ≥ 1 always (timeBound + 2 or similar).
+    -- Actually, the combineAtOffsetCS has numPhases = 2*Δdst + 4. Always > 0.
+    have h_tb := evalOneGateCS_timeBound g offset Δrowbase Δscratch hle 0
+    -- The numPhases is always positive because combineAtOffsetCS's numPhases = 2*Δdst + 4.
+    -- We can assert numPhases ≥ 1 directly from the CombineAtOffset definition.
+    -- Actually, simpler: evalOneGateCS is ConstStatePhasedProgram which extends PhasedProgram
+    -- which has startPhase : Fin numPhases, so numPhases ≥ 1.
+    exact (evalOneGateCS g offset Δrowbase Δscratch hle).startPhase.isLt.trans_le (le_refl _) |>.trans_le (le_refl _)
+    |> fun h => by
+      have := (evalOneGateCS g offset Δrowbase Δscratch hle).startPhase.isLt
+      omega
+  have hbound0 : (c.head : ℕ) ≤ N := by
+    have hlen : (g :: g' :: rest').length = rest'.length + 2 := by simp
+    omega
+  have hhead_lt : c.head.val < P1.toPhased.toTM.tapeLength N := by
+    show c.head.val < N + (evalOneGateCS g offset Δrowbase Δscratch hle).timeBound N + 1
+    rw [evalOneGateCS_timeBound]
+    omega
+  have h_head_eq :
+      (TM.runConfig (M := P1.toPhased.toTM)
+        (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+        (2 * (Δscratch + offset) + 3)).head.val = c.head.val := by
+    have h_P1_bound : ((ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt).head : ℕ) +
+        (Δscratch + offset) < P1.toPhased.toTM.tapeLength N := by
+      show (c.head : ℕ) + (Δscratch + offset) <
+        N + (evalOneGateCS g offset Δrowbase Δscratch hle).timeBound N + 1
+      rw [evalOneGateCS_timeBound]
+      have hlen : (g :: g' :: rest').length = rest'.length + 2 := by simp
+      omega
+    have h := evalOneGateCS_run_preserves_head g offset Δrowbase Δscratch hle
+      (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+      h_phase h_state_snd h_P1_bound
+    exact h
+  have h_tG_head :
+      (TM.runConfig (M := P1.toPhased.toTM)
+        (ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt)
+        (2 * (Δscratch + offset) + 3)).head.val < P2.toPhased.toTM.tapeLength N := by
+    rw [h_head_eq]
+    show (c.head : ℕ) < N + P2.timeBound N + 1
+    omega
+  refine ⟨hphase_lt, hhead_lt, h_tG_head, ?_⟩
+  -- The decomposition.
+  let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt
+  have h_P1_phase : c_P1.state.fst.val = 0 := h_phase
+  have h_P1_state_snd : c_P1.state.snd = (false, false) := h_state_snd
+  have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) < P1.toPhased.toTM.tapeLength N := by
+    show (c.head : ℕ) + (Δscratch + offset) <
+      N + (evalOneGateCS g offset Δrowbase Δscratch hle).timeBound N + 1
+    rw [evalOneGateCS_timeBound]
+    have hlen : (g :: g' :: rest').length = rest'.length + 2 := by simp
+    omega
+  have h_P2_tapeLength_ge_P1 :=
+    cons_any_P1_tapeLength_le_P2_tapeLength_nonempty g g' rest' offset Δrowbase Δscratch hle N
+  have h_lift_head_plus_tR := cons_any_lift_head_plus_tR_lt_tapeLength
+    g g' rest' offset Δrowbase Δscratch hle c h_phase h_state_snd hbound
+    hphase_lt hhead_lt h_tG_head
+  have htape_outer :
+      ∀ i : Fin ((ConstStatePhasedProgram.seq P1 P2).toPhased.toTM.tapeLength N),
+        P1.toPhased.toTM.tapeLength N ≤ i.val → c.tape i = false := by
+    intro i hi
+    have hi_N : N ≤ i.val := by
+      have hP1_ge_N : N ≤ P1.toPhased.toTM.tapeLength N := by
+        show N ≤ N + (evalOneGateCS g offset Δrowbase Δscratch hle).timeBound N + 1
+        rw [evalOneGateCS_timeBound]; omega
+      omega
+    exact htape_clean i hi_N
+  have hembed : ConstStatePhasedProgram.embedSeqConfig P1 P2 c_P1 = c :=
+    ConstStatePhasedProgram.embedSeqConfig_projectSeqP1 P1 P2 c hphase_lt hhead_lt htape_outer
+  have hdecomp := evalOneGateCS_composite_run_eq_embedSeqP2Config_P2Run
+    g offset Δrowbase Δscratch hle P2 c_P1
+    h_P1_phase h_P1_state_snd h_P1_bound h_tG_head h_P2_tapeLength_ge_P1 h_lift_head_plus_tR
+  rw [hembed] at hdecomp
+  show TM.runConfig
+      (M := (ConstStatePhasedProgram.seq P1 P2).toPhased.toTM) c
+      ((ConstStatePhasedProgram.seq P1 P2).timeBound N) = _
+  exact hdecomp
+
 end GateEvalCS
 
 end TM

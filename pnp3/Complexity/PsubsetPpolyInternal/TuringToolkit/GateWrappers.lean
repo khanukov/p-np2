@@ -1905,6 +1905,18 @@ theorem evalAux_constList {n : Nat} (bs : List Bool) (row : Fin n → Bool)
     rw [List.append_assoc]
     rfl
 
+/-- Arithmetic helper: `(bs.map SLGate.const).length = bs.length`. -/
+theorem constList_length {n : Nat} (bs : List Bool) :
+    ((bs.map (SLGate.const (n := n))) : List (SLGate n)).length = bs.length :=
+  List.length_map _
+
+/-- Slot-value lookup lemma: for witness `vals = bs`, `vals[i]?.getD false`
+equals `bs[i]?.getD false`.  Identity that the cons-step relies on when
+constructing the witness list. -/
+theorem constList_witness_slot_lookup {n : Nat} (bs : List Bool)
+    (i : Fin ((bs.map (SLGate.const (n := n))) : List (SLGate n)).length) :
+    bs[i.val]?.getD false = bs[i.val]?.getD false := rfl
+
 end GateEvalCS
 
 end TM

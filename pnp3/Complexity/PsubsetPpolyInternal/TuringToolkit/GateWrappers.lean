@@ -2007,6 +2007,19 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts {n : Nat}
     intro j hj
     exact h_preservation c h_phase h_state_snd hbound htape_clean j hj
 
+/-- Demonstration: the empty-list case derived via the factored theorem.
+Shows that the factoring is consistent with the direct proof
+`circuitEvaluatorCSAt_nil_run_correct`. -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect_empty_via_factored {n : Nat}
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect
+      (([] : List Bool).map (SLGate.const (n := n)) : List (SLGate n))
+      offset Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts
+    ([] : List Bool) offset Δrowbase Δscratch hle
+    (fun _ _ _ _ _ i _ => i.elim0)
+    (fun _ _ _ _ _ _ _ => rfl)
+
 end GateEvalCS
 
 end TM

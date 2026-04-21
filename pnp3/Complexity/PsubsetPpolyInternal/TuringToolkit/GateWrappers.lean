@@ -4765,6 +4765,35 @@ theorem CircuitEvaluatorCSAt_CondCorrect_all {n : Nat} (gates : List (SLGate n))
       (CircuitEvaluatorCSAt_CondCorrect_all (g' :: rest'))
 termination_by gates.length
 
+/-! ### Canonical-prior version of CondCorrect for ∃-form derivation
+
+When the user-supplied prior in `CircuitEvaluatorCSAt_RunCorrect` does not
+match the scratch tape (i.e., h_prior_match fails), we can still derive
+tape facts by applying `CondCorrect_all` with a CANONICAL prior that DOES
+match the tape.  For const/input gates, the vals are prior-independent,
+so the tape facts transfer directly. -/
+
+/-- Canonical prior: `c.tape ⟨c.head + Δscratch + k, _⟩` for k in [0, offset). -/
+noncomputable def canonicalPrior {n : Nat} (gates : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N) : List Bool :=
+  List.ofFn (fun (k : Fin offset) => c.tape ⟨(c.head : ℕ) + Δscratch + k.val, by
+    have hk := k.isLt
+    have hlen_ge : N ≤
+        (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+      show N ≤ N + _ + 1; omega
+    omega⟩)
+
+theorem canonicalPrior_length {n : Nat} (gates : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N) :
+    (canonicalPrior gates offset Δrowbase Δscratch hle c hbound).length = offset := by
+  unfold canonicalPrior; simp
+
 end GateEvalCS
 
 end TM

@@ -1732,6 +1732,26 @@ theorem circuitEvaluatorCSAt_cons_const_nil {n : Nat} (b : Bool)
       Δrowbase Δscratch hle :=
   circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
 
+/-- Arithmetic helper: `(SLGate.const b :: rest).length ≥ 1`.  Trivial, but
+useful as a named lemma when `omega` needs explicit length info. -/
+theorem cons_gate_list_length_ge_one {n : Nat} (b : Bool) (rest : List (SLGate n)) :
+    1 ≤ ((SLGate.const b (n := n)) :: rest).length := by
+  simp
+
+/-- Arithmetic helper: extract clean bound from hbound after unfolding list length.
+
+From `c.head + Δscratch + offset + (SLGate.const b :: rest).length ≤ N`,
+unfold length to get `c.head + Δscratch + offset + rest.length + 1 ≤ N`,
+hence `c.head + Δscratch + offset < N` (by rest.length ≥ 0). -/
+theorem cons_const_head_lt_N {n : Nat} (b : Bool) (rest : List (SLGate n))
+    (h Δscratch offset N : Nat)
+    (hbound : h + Δscratch + offset + ((SLGate.const b (n := n)) :: rest).length ≤ N) :
+    h + Δscratch + offset < N := by
+  have hlen : ((SLGate.const b (n := n)) :: rest).length = rest.length + 1 :=
+    List.length_cons
+  rw [hlen] at hbound
+  omega
+
 end GateEvalCS
 
 end TM

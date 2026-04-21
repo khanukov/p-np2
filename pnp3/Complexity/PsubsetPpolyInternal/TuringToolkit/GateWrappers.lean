@@ -4739,6 +4739,32 @@ theorem CircuitEvaluatorCSAt_CondCorrect_cons_multi {n : Nat}
         show N ≤ N + P2.timeBound N + 1; omega
       omega
 
+/-! ### FULL UNCONDITIONAL CORRECTNESS
+
+By well-founded recursion on `gates.length`, using the three case theorems. -/
+
+/-- **Full unconditional correctness of `circuitEvaluatorCSAt` for ARBITRARY gate lists**.
+
+Combines:
+- `CircuitEvaluatorCSAt_CondCorrect_nil` (nil case)
+- `CircuitEvaluatorCSAt_CondCorrect_single` (single-gate case, any type)
+- `CircuitEvaluatorCSAt_CondCorrect_cons_multi` (multi-gate cons step)
+
+via well-founded recursion on `gates.length`.
+
+This is the complete mathematical F.4 correctness theorem: the circuit
+evaluator TM correctly simulates SLProgram.evalAux for ANY list of gates
+and ANY offset/prior configuration (assuming consistency). -/
+theorem CircuitEvaluatorCSAt_CondCorrect_all {n : Nat} (gates : List (SLGate n)) :
+    CircuitEvaluatorCSAt_CondCorrect gates := by
+  match gates with
+  | [] => exact CircuitEvaluatorCSAt_CondCorrect_nil
+  | [g] => exact CircuitEvaluatorCSAt_CondCorrect_single g
+  | g :: g' :: rest' =>
+    exact CircuitEvaluatorCSAt_CondCorrect_cons_multi g g' rest'
+      (CircuitEvaluatorCSAt_CondCorrect_all (g' :: rest'))
+termination_by gates.length
+
 end GateEvalCS
 
 end TM

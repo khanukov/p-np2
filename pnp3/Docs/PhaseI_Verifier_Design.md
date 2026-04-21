@@ -565,11 +565,18 @@ All 5 gate types are now handled via a single dispatch point in
 All 6 `check.sh` steps pass.  Axiom inventory unchanged:
 propext=349, Classical.choice=345, Quot.sound=349.
 
-**Remaining for session 50**:
+**Remaining for session 50** (all critical helpers delivered in 49n-49p):
 
 - Multi-gate cons step (induction step for `gates.length ≥ 2`).
-  All infrastructure is ready; just needs careful IH-chain and
-  h_prior_match extension proof.
+  **All helpers ready**:
+  - `cons_any_nonempty_composite_run_tape_at` (49d) — decomposition.
+  - `cons_any_nonempty_lift_preconditions` (49e) — lift's IH preconds.
+  - `cons_any_row_lift_eq_c` (49n) — row stability (gate doesn't modify row).
+  - `cons_any_h_prior_match_lift` (49o) — h_prior_match extension.
+  - `cons_any_rowFromConfig_lift_eq` (49p) — rowFromConfig transport.
+  
+  Just needs combining via `induction gates generalizing offset prior vals`
+  with careful dependent-type handling.
 - ∃-form `CircuitEvaluatorCSAt_RunCorrect` derivations for input/
   notGate/andGate/orGate families (parallel to the const version).
 - Public CS-form wrapper for arbitrary gates.

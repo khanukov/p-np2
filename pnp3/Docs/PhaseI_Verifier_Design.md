@@ -526,6 +526,54 @@ desired offset (typically 0).
 Cumulative LOC added across 48a–48i: ~800 lines of focused proofs
 in `GateWrappers.lean`.  No sorry/admit/axiom additions.
 
+### Session 49 — Generic infrastructure + conditional correctness for ANY gate type
+
+Session 49 extended the const-only framework to arbitrary gates
+(const/input/notGate/andGate/orGate) via uniform helper theorems.
+All 5 gate types are now handled via a single dispatch point in
+`evalOneGateCS_writes_compute_result` (49a).
+
+**Proved (for ANY gate type, no sorry/admit)**:
+
+- `circuitEvaluatorCSAt_run_correct_cond_nil` (49g): empty gate list.
+- `circuitEvaluatorCSAt_run_correct_cond_single` (49i): SINGLE gate
+  of any type.  ~200 LOC combining projectSeqP1, past-boundary,
+  `evalOneGateCS_writes_compute_result`, write_self, write_other.
+- `circuitEvaluatorCSAt_run_correct_cond_short` (49k): unified for
+  `gates.length ≤ 1` with any gate type.  Uses
+  `SLProgram_evalAux_cons_split` to extract v from h_eval.
+- `evalAux_inputList` (49m): pure semantic fact (analog of
+  evalAux_constList).
+
+**Infrastructure helpers (all gate-polymorphic)**:
+
+- `evalOneGateCS_writes_compute_result` (49a): uniform write
+  semantics.  For any gate g, the TM writes exactly `g.compute row prior`
+  provided prior matches the scratch tape and compute returns some.
+- `evalOneGateCS_run_preserves_head` (49b): uniform head preservation.
+- `cons_any_P1_tapeLength_le_P2_tapeLength_nonempty` (49c).
+- `cons_any_lift_head_plus_tR_lt_tapeLength` (49c).
+- `cons_any_nonempty_composite_run_tape_at` (49d): generic
+  decomposition theorem.
+- `cons_any_nonempty_lift_tape_clean` (49e).
+- `cons_any_nonempty_lift_preconditions` (49e): bundled IH preconds.
+- `SLProgram_evalAux_prior_prefix` (49j): evalAux output structure.
+- `SLProgram_evalAux_cons_split` (49j): extract v + vals_rest from h_eval.
+- `rowFromConfig` + `rowFromConfig_bounds` (49g): row function abstraction.
+
+**Cumulative session 49**: ~1400 LOC.  No sorry/admit/axiom additions.
+All 6 `check.sh` steps pass.  Axiom inventory unchanged:
+propext=349, Classical.choice=345, Quot.sound=349.
+
+**Remaining for session 50**:
+
+- Multi-gate cons step (induction step for `gates.length ≥ 2`).
+  All infrastructure is ready; just needs careful IH-chain and
+  h_prior_match extension proof.
+- ∃-form `CircuitEvaluatorCSAt_RunCorrect` derivations for input/
+  notGate/andGate/orGate families (parallel to the const version).
+- Public CS-form wrapper for arbitrary gates.
+
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 
 Delivered the first fully Prop-form proof of `CircuitEvaluatorCSAt_RunCorrect`

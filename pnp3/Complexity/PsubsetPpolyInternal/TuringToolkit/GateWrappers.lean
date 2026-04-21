@@ -3771,6 +3771,66 @@ theorem circuitEvaluatorCSAt_run_correct_cond_single {n : Nat}
         omega
       omega
 
+/-! ### evalAux prior-prefix preservation
+
+Proves the key structural fact: `evalAux row gates prior = some r` implies
+`r = prior ++ values` for some `values` with `values.length = gates.length`. -/
+
+theorem SLProgram_evalAux_prior_prefix {n : Nat} :
+    ∀ (gates : List (SLGate n)) (row : Fin n → Bool) (prior r : List Bool),
+      SLProgram.evalAux row gates prior = some r →
+      ∃ values, r = prior ++ values ∧ values.length = gates.length := by
+  intro gates
+  induction gates with
+  | nil =>
+    intro row prior r h
+    refine ⟨[], ?_, rfl⟩
+    show r = prior ++ []
+    simp [SLProgram.evalAux] at h
+    rw [← h]
+    simp
+  | cons g rest ih =>
+    intro row prior r h
+    show ∃ values, r = prior ++ values ∧ values.length = rest.length + 1
+    rw [SLProgram.evalAux] at h
+    rcases hc : g.compute row prior with _ | v
+    · rw [hc] at h; exact absurd h (by simp)
+    · rw [hc] at h
+      -- h : evalAux row rest (prior ++ [v]) = some r
+      obtain ⟨values_rest, hr, hvr_len⟩ := ih row (prior ++ [v]) r h
+      refine ⟨v :: values_rest, ?_, ?_⟩
+      · show r = prior ++ (v :: values_rest)
+        rw [hr]; simp
+      · show (v :: values_rest).length = rest.length + 1
+        simp [hvr_len]
+
+/-- Extract the cons-step structure from evalAux on `g :: rest`. -/
+theorem SLProgram_evalAux_cons_split {n : Nat} (row : Fin n → Bool)
+    (g : SLGate n) (rest : List (SLGate n)) (prior vals : List Bool)
+    (h_eval : SLProgram.evalAux row (g :: rest) prior = some (prior ++ vals))
+    (h_len : vals.length = (g :: rest).length) :
+    ∃ (v : Bool) (vals_rest : List Bool),
+      g.compute row prior = some v ∧
+      vals = v :: vals_rest ∧
+      vals_rest.length = rest.length ∧
+      SLProgram.evalAux row rest (prior ++ [v]) = some ((prior ++ [v]) ++ vals_rest) := by
+  rw [SLProgram.evalAux] at h_eval
+  rcases hc : g.compute row prior with _ | v
+  · rw [hc] at h_eval; exact absurd h_eval (by simp)
+  · rw [hc] at h_eval
+    -- h_eval : evalAux row rest (prior ++ [v]) = some (prior ++ vals)
+    obtain ⟨values_rest, hr_eq, hvr_len⟩ := SLProgram_evalAux_prior_prefix rest row
+      (prior ++ [v]) (prior ++ vals) h_eval
+    -- hr_eq : prior ++ vals = (prior ++ [v]) ++ values_rest.
+    -- Cancel prior on the left to get vals = [v] ++ values_rest = v :: values_rest.
+    have h_vals_eq : vals = v :: values_rest := by
+      have h2 : prior ++ vals = prior ++ (v :: values_rest) := by
+        rw [hr_eq]; simp
+      exact List.append_cancel_left h2
+    refine ⟨v, values_rest, rfl, h_vals_eq, hvr_len, ?_⟩
+    rw [hr_eq] at h_eval
+    exact h_eval
+
 end GateEvalCS
 
 end TM

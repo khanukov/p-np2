@@ -1832,9 +1832,49 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect {n : Nat}
       Δrowbase Δscratch hle
     exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
   | b :: b' :: bs'', hshort =>
-    -- Unreachable: length ≥ 2.
     have : (b :: b' :: bs'').length ≥ 2 := by simp
     omega
+
+/-- Helper: for the cons-step, `lift`'s head.val = `c.head.val`.  This is
+because `liftP1ToP2`'s head is defined via the P1-run-final head, and
+`combineAtOffsetCS_run_full` guarantees head returns to `c_P1.head`,
+which equals `c.head.val` by `projectSeqP1` definition. -/
+theorem cons_const_lift_head_val_eq_c {n : Nat} (b : Bool) (rest : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (SLGate.const b :: rest) offset
+        Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset + (SLGate.const b :: rest).length ≤ N)
+    (hphase_lt : c.state.fst.val <
+      (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).numPhases)
+    (hhead_lt : c.head.val <
+      (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    let P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle
+    let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1
+      (circuitEvaluatorCSAt (n := n) rest (offset + 1) Δrowbase Δscratch hle)
+      c hphase_lt hhead_lt
+    (TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3)).head.val =
+      c.head.val := by
+  intro P1 c_P1
+  have h_P1_phase : c_P1.state.fst.val = 0 := h_phase
+  have h_P1_state_snd : c_P1.state.snd = (false, false) := h_state_snd
+  have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) <
+      P1.toPhased.toTM.tapeLength N := by
+    show (c.head : ℕ) + (Δscratch + offset) < N + (2 * (Δscratch + offset) + 3) + 1
+    have hbound' := cons_const_head_lt_N b rest (c.head : ℕ) Δscratch offset N hbound
+    omega
+  have hcombine := CombineAtOffset.combineAtOffsetCS_run_full
+    (Δscratch + offset) (Δscratch + offset) (Δscratch + offset) (le_refl _) (le_refl _)
+    (fun _ _ => b) c_P1 h_P1_phase h_P1_state_snd h_P1_bound
+  obtain ⟨_, _, _, _, hhead_eq, _⟩ := hcombine
+  show (TM.runConfig (M :=
+      (CombineAtOffset.combineAtOffsetCS (Δscratch + offset) (Δscratch + offset) (Δscratch + offset)
+        (le_refl _) (le_refl _) (fun _ _ => b)).toPhased.toTM) c_P1
+      (2 * (Δscratch + offset) + 3)).head.val = c.head.val
+  rw [hhead_eq]
+  rfl
 
 end GateEvalCS
 

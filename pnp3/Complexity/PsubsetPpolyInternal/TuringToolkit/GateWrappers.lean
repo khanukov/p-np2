@@ -1507,6 +1507,37 @@ theorem evalOneGateCS_post_boundary_eq_embedSeqP2Config_lift
       subst hhe
       rfl
 
+/-- Head-bound safety: for a P2-config `c` whose head stays within tape
+bounds throughout a run of up to `t` steps, the
+`embedSeqP2Config_runConfig_eq` safety premise holds.
+
+Both conjuncts of the safety premise follow from basic facts:
+- `state.fst.val < P2.numPhases` is automatic from `Fin.isLt` (the state
+  is of type `Σ i : Fin P2.numPhases, _`).
+- `head.val + 1 < P2.tapeLength` requires `c.head.val + t ≤ P2.tapeLength`,
+  using the generic `runConfig_head_val_le` bound. -/
+theorem phased_run_safe_of_head_bound
+    (P : ConstStatePhasedProgram (Bool × Bool)) {N : Nat}
+    (c : Configuration (M := P.toPhased.toTM) N)
+    (t : Nat)
+    (h_head : (c.head : ℕ) + t < P.toPhased.toTM.tapeLength N) :
+    ∀ s < t,
+      let c_s := TM.runConfig (M := P.toPhased.toTM) c s
+      c_s.state.fst.val < P.numPhases ∧
+      ((P.toPhased.toTM.step c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+        c_s.head.val + 1 < P.toPhased.toTM.tapeLength N) := by
+  intro s hs
+  refine ⟨?_, ?_⟩
+  · -- First conjunct: state.fst.val < P.numPhases via Fin bound.
+    have h_fin := (TM.runConfig (M := P.toPhased.toTM) c s).state.fst.isLt
+    show (TM.runConfig (M := P.toPhased.toTM) c s).state.fst.val < P.numPhases
+    exact h_fin
+  · -- Second conjunct: head+1 < tapeLength via runConfig_head_val_le.
+    intro _
+    have h_le : ((TM.runConfig (M := P.toPhased.toTM) c s).head : ℕ) ≤
+        (c.head : ℕ) + s := runConfig_head_val_le c s
+    omega
+
 end GateEvalCS
 
 end TM

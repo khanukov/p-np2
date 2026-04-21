@@ -1784,6 +1784,28 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_single {n : Nat} (b : Bool)
     offset Δrowbase Δscratch hle
   exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
 
+/-- **Full induction over all-const gate lists**.
+
+By induction on `bs`.  The `nil` case delegates to
+`circuitEvaluatorCSAt_nil_run_correct`.  The `cons` case is handled
+differently for empty-rest (via `circuitEvaluatorCSAt_const_RunCorrect`)
+and non-empty rest (via the as-yet-unassembled cons-step primitives).
+
+**Status**: the induction structure is in place; the non-empty-rest
+cons-step body is left as an open assembly point deferred to a
+dedicated follow-up session.  Downstream callers that only need
+empty-list or single-const correctness can use the existing specialised
+theorems directly. -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect_step_nil {n : Nat} (b : Bool)
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch)
+    (_ih : CircuitEvaluatorCSAt_RunCorrect
+      (([] : List Bool).map SLGate.const) (offset + 1) Δrowbase Δscratch hle) :
+    CircuitEvaluatorCSAt_RunCorrect
+      (((b :: []) : List Bool).map SLGate.const) offset Δrowbase Δscratch hle := by
+  show CircuitEvaluatorCSAt_RunCorrect ([SLGate.const b] : List (SLGate n))
+    offset Δrowbase Δscratch hle
+  exact circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+
 end GateEvalCS
 
 end TM

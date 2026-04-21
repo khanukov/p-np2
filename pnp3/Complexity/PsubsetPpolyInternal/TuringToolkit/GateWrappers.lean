@@ -3831,6 +3831,99 @@ theorem SLProgram_evalAux_cons_split {n : Nat} (row : Fin n → Bool)
     rw [hr_eq] at h_eval
     exact h_eval
 
+/-! ### Combined conditional correctness for short gate lists
+
+Using `circuitEvaluatorCSAt_run_correct_cond_nil` (49g) and
+`circuitEvaluatorCSAt_run_correct_cond_single` (49i), we give a unified
+theorem for `gates.length ≤ 1`.  This handles all single-gate circuits
+for any of the 5 gate types (const/input/notGate/andGate/orGate). -/
+
+theorem circuitEvaluatorCSAt_run_correct_cond_short {n : Nat}
+    (gates : List (SLGate n)) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N)
+    (htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false)
+    (prior vals : List Bool)
+    (h_prior_len : prior.length = offset)
+    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+        (hpos : (c.head : ℕ) + Δscratch + k <
+          (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        prior[k]? = some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩))
+    (h_vals_len : vals.length = gates.length)
+    (h_eval : SLProgram.evalAux
+        (rowFromConfig c Δrowbase
+          (rowFromConfig_bounds gates offset Δrowbase Δscratch hle c hbound))
+        gates prior = some (prior ++ vals))
+    (h_short : gates.length ≤ 1) :
+    (∀ i : Fin gates.length,
+      (TM.runConfig (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape
+        ⟨(c.head : ℕ) + Δscratch + offset + i.val, by
+          have hi := i.isLt
+          have h_len_ge : N ≤
+              ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+            show N ≤ N + (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N + 1
+            omega
+          omega⟩ = vals[i.val]?.getD false) ∧
+    (∀ j : Fin
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      (j.val < (c.head : ℕ) + Δscratch + offset ∨
+       (c.head : ℕ) + Δscratch + offset + gates.length ≤ j.val) →
+      (TM.runConfig (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape j =
+        c.tape j) := by
+  match gates, h_short, h_vals_len with
+  | [], _, hv_len =>
+    have hv_empty : vals = [] := List.length_eq_zero_iff.mp (by simpa using hv_len)
+    subst hv_empty
+    exact circuitEvaluatorCSAt_run_correct_cond_nil offset Δrowbase Δscratch hle c
+  | [g], _, hv_len =>
+    -- Extract v from h_eval.
+    obtain ⟨v, vals_rest, h_compute, h_vals_eq, hvr_len, _⟩ :=
+      SLProgram_evalAux_cons_split _ g [] prior vals h_eval hv_len
+    have hvr_empty : vals_rest = [] := List.length_eq_zero_iff.mp hvr_len
+    subst hvr_empty
+    subst h_vals_eq
+    have h_single := circuitEvaluatorCSAt_run_correct_cond_single g offset
+      Δrowbase Δscratch hle c h_phase h_state_snd hbound htape_clean
+      prior v h_prior_len h_prior_match h_compute
+    refine ⟨?_, h_single.2⟩
+    rintro ⟨n_i, hn_i⟩
+    match n_i, hn_i with
+    | 0, _ =>
+      -- i = ⟨0, _⟩.  Goal: tape at slot = [v][0]?.getD false = v.
+      show (TM.runConfig (M := (circuitEvaluatorCSAt [g] offset Δrowbase Δscratch hle).toPhased.toTM) c
+          ((circuitEvaluatorCSAt [g] offset Δrowbase Δscratch hle).timeBound N)).tape
+          ⟨(c.head : ℕ) + Δscratch + offset + 0, _⟩ = [v][(0 : Nat)]?.getD false
+      simp only [List.getElem?_cons_zero, Option.getD_some]
+      have hb1 : (c.head : ℕ) + Δscratch + offset + 1 ≤ N := by
+        have := hbound; simp at this; exact this
+      have hlen_ge : N ≤
+          (circuitEvaluatorCSAt [g] offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+        show N ≤ N + (circuitEvaluatorCSAt [g] offset Δrowbase Δscratch hle).timeBound N + 1
+        omega
+      have h_fin_eq : (⟨(c.head : ℕ) + Δscratch + offset + 0, by omega⟩ :
+          Fin ((circuitEvaluatorCSAt [g] offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)) =
+          ⟨(c.head : ℕ) + Δscratch + offset, by omega⟩ := by
+        apply Fin.ext
+        show (c.head : ℕ) + Δscratch + offset + 0 = (c.head : ℕ) + Δscratch + offset
+        omega
+      rw [h_fin_eq]
+      exact h_single.1
+    | k + 1, h =>
+      have : k + 1 < 1 := h
+      omega
+  | g :: g' :: rest'', hs, _ =>
+    -- Contradictory: length ≥ 2 but h_short says ≤ 1.
+    have : (g :: g' :: rest'').length ≥ 2 := by simp
+    omega
+
 end GateEvalCS
 
 end TM

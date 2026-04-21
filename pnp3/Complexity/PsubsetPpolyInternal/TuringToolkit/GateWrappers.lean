@@ -3191,6 +3191,74 @@ theorem evalOneGateCS_run_preserves_head {n : Nat} (g : SLGate n) (slot : Nat)
         (· || ·) c_P1 h_phase h_state_snd h_bound
     exact congrArg Fin.val hhead_eq
 
+/-! ### Generic arithmetic helpers for cons-any-nonempty step -/
+
+theorem cons_any_P1_tapeLength_le_P2_tapeLength_nonempty {n : Nat}
+    (g : SLGate n) (g' : SLGate n) (rest' : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) (N : Nat) :
+    (evalOneGateCS g offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N ≤
+    (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+  show N + (evalOneGateCS g offset Δrowbase Δscratch hle).timeBound N + 1 ≤
+       N + (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).timeBound N + 1
+  rw [evalOneGateCS_timeBound]
+  have hP2 :
+      (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).timeBound N =
+      (2 * (Δscratch + (offset + 1)) + 3) +
+      (circuitEvaluatorCSAt rest' (offset + 1 + 1) Δrowbase Δscratch hle).timeBound N + 1 := by
+    rw [circuitEvaluatorCSAt_cons_timeBound]
+  rw [hP2]
+  omega
+
+/-- Generic lift-head-plus-tR-safety for cons-any-nonempty step. -/
+theorem cons_any_lift_head_plus_tR_lt_tapeLength {n : Nat}
+    (g : SLGate n) (g' : SLGate n) (rest' : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (g :: g' :: rest') offset
+        Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset + (g :: g' :: rest').length ≤ N)
+    (hphase_lt : c.state.fst.val <
+      (evalOneGateCS g offset Δrowbase Δscratch hle).numPhases)
+    (hhead_lt : c.head.val <
+      (evalOneGateCS g offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (h_tG_head :
+      (TM.runConfig
+        (M := (evalOneGateCS g offset Δrowbase Δscratch hle).toPhased.toTM)
+        (ConstStatePhasedProgram.projectSeqP1
+          (evalOneGateCS g offset Δrowbase Δscratch hle)
+          (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle)
+          c hphase_lt hhead_lt) (2 * (Δscratch + offset) + 3)).head.val <
+      (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    let P1 := evalOneGateCS g offset Δrowbase Δscratch hle
+    let P2 := circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle
+    let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt
+    ((ConstStatePhasedProgram.liftP1ToP2 P1 P2
+        (TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3))
+        h_tG_head).head : ℕ) + P2.timeBound N <
+    P2.toPhased.toTM.tapeLength N := by
+  intro P1 P2 c_P1
+  have h_lift_head :
+      ((ConstStatePhasedProgram.liftP1ToP2 P1 P2
+          (TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3))
+          h_tG_head).head : ℕ) =
+      (TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3)).head.val := rfl
+  rw [h_lift_head]
+  have h_c_P1_head : (c_P1.head : ℕ) = (c.head : ℕ) := rfl
+  have h_P1_bound : (c_P1.head : ℕ) + (Δscratch + offset) < P1.toPhased.toTM.tapeLength N := by
+    show (c_P1.head : ℕ) + (Δscratch + offset) <
+      N + (evalOneGateCS g offset Δrowbase Δscratch hle).timeBound N + 1
+    rw [evalOneGateCS_timeBound, h_c_P1_head]
+    have hlen : (g :: g' :: rest').length = rest'.length + 2 := by simp
+    omega
+  have h_head_eq := evalOneGateCS_run_preserves_head g offset Δrowbase Δscratch hle c_P1
+    h_phase h_state_snd h_P1_bound
+  rw [h_head_eq, h_c_P1_head]
+  show (c.head : ℕ) + P2.timeBound N < N + P2.timeBound N + 1
+  have hlen : (g :: g' :: rest').length = rest'.length + 2 := by simp
+  omega
+
 end GateEvalCS
 
 end TM

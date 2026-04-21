@@ -426,6 +426,45 @@ propositional equality between two `ConstStatePhasedProgram`s.  This
 is fine — future-session invocations know their local goal shape and
 can drive the rewrite directly.
 
+### Session 47l–47z — Full induction factored, tape facts as premises
+
+Session 47l–47z produced a sequence of incremental wins culminating in the
+**factored all-const theorem**:
+
+```lean
+theorem circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts (bs offset ...)
+    (h_tape_slot : ∀ c ..., composite.tape at slot i = bs[i]?.getD false)
+    (h_preservation : ∀ c ..., tape at j outside scratch = c.tape at j) :
+  CircuitEvaluatorCSAt_RunCorrect (bs.map SLGate.const) offset ...
+```
+
+This theorem **unconditionally proves the full 4-conjunct Prop for any
+`bs`**, conditional ONLY on the 2 tape facts.  Length + evalAux conjuncts
+are proved internally via `constList_length` + `evalAux_constList`.
+
+Demonstrations via factored theorem:
+- `circuitEvaluatorCSAt_constList_RunCorrect_empty_via_factored`: empty
+  list (47y).
+- `circuitEvaluatorCSAt_constList_RunCorrect_single_via_factored`:
+  single-gate (47z), extracting `vals = [b]` from the existing const
+  theorem via `evalAux` uniqueness.
+
+Additional primitives committed:
+- 47l: Configuration-level post-boundary = embedSeqP2Config(lift).
+- 47m: Safety invariant via head-bound (trivially proved: Fin.isLt +
+  runConfig_head_val_le).
+- 47n: Full composite run = embedSeqP2Config(P2.run lift tR).
+- 47o: Strengthened Prop with preservation conjunct.
+- 47u: lift head value equals c head value.
+- 47v: evalAux_constList — pure semantic fact.
+- 47w: constList_length + witness slot lookup.
+
+The remaining work: discharge the 2 tape facts (`h_tape_slot` and
+`h_preservation`) for arbitrary bs by induction on bs.  Given that this
+factoring DEPENDS on no ∃-complication, the cons-step proof is now a
+∀-form induction (simpler than the original 4-conjunct ∃ form), though
+still requires careful config-lifting for the cons case.
+
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 
 Delivered the first fully Prop-form proof of `CircuitEvaluatorCSAt_RunCorrect`

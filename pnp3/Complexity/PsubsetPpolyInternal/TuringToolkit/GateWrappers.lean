@@ -2020,6 +2020,49 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_empty_via_factored {n : Nat}
     (fun _ _ _ _ _ i _ => i.elim0)
     (fun _ _ _ _ _ _ _ => rfl)
 
+/-- **Single-gate case derived via the factored theorem.**  Demonstrates
+that the factoring extends to non-empty lists — the two tape facts are
+extracted from the existing `circuitEvaluatorCSAt_const_RunCorrect`
+(which proves the full 4-conjunct Prop directly). -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect_single_via_factored {n : Nat}
+    (b : Bool) (offset : Nat) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect
+      (([b] : List Bool).map (SLGate.const (n := n)) : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  apply circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts
+  · -- h_tape_slot.
+    intro N c h_phase h_state_snd hbound htape_clean i h_i_bound
+    have h := circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+      c h_phase h_state_snd hbound htape_clean []
+    obtain ⟨vals, _, heval, hslot, _⟩ := h
+    have hevals := evalAux_constList (n := n) [b]
+      (fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
+        have hi := i.isLt
+        have h_len_ge : N ≤
+            ((circuitEvaluatorCSAt (([b] : List Bool).map SLGate.const) offset
+              Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+          show N ≤ N +
+            (circuitEvaluatorCSAt (([b] : List Bool).map (SLGate.const (n := n)))
+              offset Δrowbase Δscratch hle).timeBound N + 1
+          omega
+        omega⟩) []
+    have heval' : SLProgram.evalAux _ (([b] : List Bool).map (SLGate.const (n := n))) [] =
+        some ([] ++ vals) := heval
+    rw [hevals] at heval'
+    have hvals_eq : vals = [b] := by
+      have := Option.some.inj heval'
+      simpa using this.symm
+    rw [hvals_eq] at hslot
+    have := hslot i
+    exact this
+  · -- h_preservation.
+    intro N c h_phase h_state_snd hbound htape_clean j hj_outside
+    have h := circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+      c h_phase h_state_snd hbound htape_clean []
+    obtain ⟨_, _, _, _, hpres⟩ := h
+    exact hpres j hj_outside
+
 end GateEvalCS
 
 end TM

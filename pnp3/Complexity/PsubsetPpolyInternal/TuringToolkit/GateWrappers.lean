@@ -2359,6 +2359,79 @@ theorem cons_const_nonempty_lift_tape_clean {n : Nat}
             then c_P1_final.tape ⟨i.val, h⟩ else false) = false
     rw [dif_neg hi_P1]
 
+/-! ### IH preconditions packaged for cons-nonempty step -/
+
+/-- Bundle of lift's preconditions for the IH, for use in cons-nonempty. -/
+theorem cons_const_nonempty_lift_preconditions {n : Nat}
+    (b b' : Bool) (bs'' : List Bool) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset +
+      ((b :: b' :: bs'').map (SLGate.const (n := n))).length ≤ N)
+    (htape_clean : ∀ i : Fin
+      ((circuitEvaluatorCSAt (((b :: b' :: bs'').map (SLGate.const (n := n))))
+        offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      N ≤ i.val → c.tape i = false)
+    (hphase_lt : c.state.fst.val <
+      (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).numPhases)
+    (hhead_lt : c.head.val <
+      (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (h_tG_head :
+      (TM.runConfig
+        (M := (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle).toPhased.toTM)
+        (ConstStatePhasedProgram.projectSeqP1
+          (evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle)
+          (circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const) (offset + 1)
+            Δrowbase Δscratch hle) c hphase_lt hhead_lt)
+        (2 * (Δscratch + offset) + 3)).head.val <
+      (circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const) (offset + 1)
+        Δrowbase Δscratch hle).toPhased.toTM.tapeLength N) :
+    let P1 := evalOneGateCS (n := n) (SLGate.const b) offset Δrowbase Δscratch hle
+    let P2 := circuitEvaluatorCSAt (n := n) ((b' :: bs'').map SLGate.const)
+                (offset + 1) Δrowbase Δscratch hle
+    let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt
+    let c_P1_final := TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3)
+    let lift := ConstStatePhasedProgram.liftP1ToP2 P1 P2 c_P1_final h_tG_head
+    lift.state.fst.val = 0 ∧
+    lift.state.snd = (false, false) ∧
+    (lift.head : ℕ) + Δscratch + (offset + 1) +
+      ((b' :: bs'').map (SLGate.const (n := n))).length ≤ N ∧
+    (∀ i : Fin (P2.toPhased.toTM.tapeLength N), N ≤ i.val → lift.tape i = false) := by
+  intro P1 P2 c_P1 c_P1_final lift
+  refine ⟨rfl, rfl, ?_, ?_⟩
+  · -- Lift bound.
+    show ((ConstStatePhasedProgram.liftP1ToP2 P1 P2 c_P1_final h_tG_head).head : ℕ) +
+      Δscratch + (offset + 1) + ((b' :: bs'').map (SLGate.const (n := n))).length ≤ N
+    have h_lift_head :
+        ((ConstStatePhasedProgram.liftP1ToP2 P1 P2 c_P1_final h_tG_head).head : ℕ) =
+        c_P1_final.head.val := rfl
+    rw [h_lift_head]
+    -- c_P1_final.head.val = c.head.val (by cons_const_lift_head_val_eq_c).
+    have hbound_seq : (c.head : ℕ) + Δscratch + offset +
+        (SLGate.const b (n := n) :: (b' :: bs'').map SLGate.const).length ≤ N := by
+      have hlen : (SLGate.const b (n := n) :: (b' :: bs'').map SLGate.const).length =
+          (b' :: bs'').length + 1 := by simp
+      have hmap : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+          (b' :: bs'').length + 1 := by simp
+      omega
+    have h_eq := cons_const_lift_head_val_eq_c b ((b' :: bs'').map SLGate.const)
+      offset Δrowbase Δscratch hle c h_phase h_state_snd hbound_seq hphase_lt hhead_lt
+    change (TM.runConfig (M := P1.toPhased.toTM) _ _).head.val + Δscratch + (offset + 1) +
+      ((b' :: bs'').map (SLGate.const (n := n))).length ≤ N
+    rw [h_eq]
+    have hmap : ((b :: b' :: bs'').map (SLGate.const (n := n))).length =
+        (b' :: bs'').length + 1 := by simp
+    have hmap2 : ((b' :: bs'').map (SLGate.const (n := n))).length =
+        (b' :: bs'').length := by simp
+    omega
+  · -- Tape clean.
+    exact cons_const_nonempty_lift_tape_clean b b' bs'' offset Δrowbase Δscratch hle
+      c h_phase h_state_snd hbound htape_clean hphase_lt hhead_lt h_tG_head
+
 end GateEvalCS
 
 end TM

@@ -1917,6 +1917,96 @@ theorem constList_witness_slot_lookup {n : Nat} (bs : List Bool)
     (i : Fin ((bs.map (SLGate.const (n := n))) : List (SLGate n)).length) :
     bs[i.val]?.getD false = bs[i.val]?.getD false := rfl
 
+/-- **Factored all-const correctness from tape facts**.
+
+Given external witnesses for:
+- `h_tape_slot`: after the composite runs, scratch slot i holds bs[i].
+- `h_preservation`: tape outside the scratch region is preserved.
+
+produces the full `CircuitEvaluatorCSAt_RunCorrect` for `bs.map const`.
+The length and `evalAux` conjuncts are discharged internally (via
+`constList_length` + `evalAux_constList`), so the user only needs to
+supply the two tape-related facts.
+
+This is the CLEANEST factoring of the cons-step assembly's "easy" vs
+"hard" parts: evalAux and length are pure computation, while slot
+values and preservation require real composite-run reasoning. -/
+theorem circuitEvaluatorCSAt_constList_RunCorrect_from_tape_facts {n : Nat}
+    (bs : List Bool) (offset : Nat) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (h_tape_slot : ∀ {N : Nat}
+      (c : Configuration
+        (M := (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM) N)
+      (_h_phase : c.state.fst.val = 0)
+      (_h_state_snd : c.state.snd = (false, false))
+      (_hbound : (c.head : ℕ) + Δscratch + offset +
+        (bs.map (SLGate.const (n := n))).length ≤ N)
+      (_htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false)
+      (i : Fin (bs.map (SLGate.const (n := n))).length)
+      (h_i_bound : (c.head : ℕ) + Δscratch + offset + i.val <
+        (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      (TM.runConfig
+        (M := (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).timeBound N)).tape
+        ⟨(c.head : ℕ) + Δscratch + offset + i.val, h_i_bound⟩ =
+        bs[i.val]?.getD false)
+    (h_preservation : ∀ {N : Nat}
+      (c : Configuration
+        (M := (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM) N)
+      (_h_phase : c.state.fst.val = 0)
+      (_h_state_snd : c.state.snd = (false, false))
+      (_hbound : (c.head : ℕ) + Δscratch + offset +
+        (bs.map (SLGate.const (n := n))).length ≤ N)
+      (_htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false)
+      (j : Fin
+        ((circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N))
+      (_hj_outside : j.val < (c.head : ℕ) + Δscratch + offset ∨
+         (c.head : ℕ) + Δscratch + offset +
+           (bs.map (SLGate.const (n := n))).length ≤ j.val),
+      (TM.runConfig
+        (M := (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM) c
+        ((circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).timeBound N)).tape j = c.tape j) :
+    CircuitEvaluatorCSAt_RunCorrect (bs.map (SLGate.const (n := n)) : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  intro N c h_phase h_state_snd hbound htape_clean prior
+  refine ⟨bs, ?_, ?_, ?_, ?_⟩
+  · -- Length.
+    exact (constList_length bs).symm
+  · -- evalAux.
+    show SLProgram.evalAux _ (bs.map (SLGate.const (n := n))) prior = some (prior ++ bs)
+    exact evalAux_constList bs _ prior
+  · -- Slot values: use h_tape_slot.
+    intro i
+    have h_i_bound : (c.head : ℕ) + Δscratch + offset + i.val <
+        (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+          Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
+      have hi := i.isLt
+      have h_len_ge : N ≤ ((circuitEvaluatorCSAt (bs.map (SLGate.const (n := n)))
+          offset Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+        show N ≤ N +
+          (circuitEvaluatorCSAt (bs.map (SLGate.const (n := n))) offset
+            Δrowbase Δscratch hle).timeBound N + 1
+        omega
+      omega
+    exact h_tape_slot c h_phase h_state_snd hbound htape_clean i h_i_bound
+  · -- Preservation.
+    intro j hj
+    exact h_preservation c h_phase h_state_snd hbound htape_clean j hj
+
 end GateEvalCS
 
 end TM

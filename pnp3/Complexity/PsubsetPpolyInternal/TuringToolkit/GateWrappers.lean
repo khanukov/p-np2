@@ -1717,6 +1717,21 @@ theorem evalOneGateCS_composite_run_eq_embedSeqP2Config_P2Run
         c_P1 (2 * (Δscratch + slot) + 3))
       h_tG_head) (P2.timeBound N) h_safe
 
+/-! ### Cons-step for all-const with empty rest.
+
+The empty-rest case of cons delegates directly to the existing single-gate
+theorem.  The non-empty-rest case is the open assembly step (see
+Docs/PhaseI_Verifier_Design.md). -/
+
+/-- Empty-rest cons-step: specialises `CircuitEvaluatorCSAt_const_RunCorrect`
+to the uniform `const b :: []` shape so the full induction's recursion
+bottom sees a consistent pattern. -/
+theorem circuitEvaluatorCSAt_cons_const_nil {n : Nat} (b : Bool)
+    (offset : Nat) (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect ((SLGate.const b :: []) : List (SLGate n)) offset
+      Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_const_RunCorrect b offset Δrowbase Δscratch hle
+
 end GateEvalCS
 
 end TM

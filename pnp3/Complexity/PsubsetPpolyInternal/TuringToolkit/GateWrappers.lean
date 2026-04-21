@@ -1538,6 +1538,94 @@ theorem phased_run_safe_of_head_bound
         (c.head : ℕ) + s := runConfig_head_val_le c s
     omega
 
+/-- Combined run equality: starting from `embedSeqConfig P1 P2 c_P1`,
+running the composite for its full `timeBound = tG + tR + 1` steps
+produces `embedSeqP2Config P1 P2 (P2.run lift P2.timeBound)`.
+
+Assembles:
+- `evalOneGateCS_post_boundary_eq_embedSeqP2Config_lift` (first tG+1 steps)
+- `embedSeqP2Config_runConfig_eq` (next tR steps, using
+  `phased_run_safe_of_head_bound` for safety)
+- `runConfig_add` (to split the composite's run into these two segments). -/
+theorem evalOneGateCS_composite_run_eq_embedSeqP2Config_P2Run
+    {n : Nat} (g : SLGate n) (slot : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch)
+    (P2 : ConstStatePhasedProgram (Bool × Bool)) {N : Nat}
+    (c_P1 : Configuration
+      (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c_P1.state.fst.val = 0)
+    (h_state_snd : c_P1.state.snd = (false, false))
+    (h_bound : (c_P1.head : ℕ) + (Δscratch + slot) <
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
+    (h_tG_head :
+        (TM.runConfig
+          (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM) c_P1
+          (2 * (Δscratch + slot) + 3)).head.val < P2.toPhased.toTM.tapeLength N)
+    (h_len_le :
+        (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N ≤
+        P2.toPhased.toTM.tapeLength N)
+    (h_lift_head_plus_tR :
+        ((ConstStatePhasedProgram.liftP1ToP2
+            (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+            (TM.runConfig
+              (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+              c_P1 (2 * (Δscratch + slot) + 3))
+            h_tG_head).head : ℕ) + P2.timeBound N <
+        P2.toPhased.toTM.tapeLength N) :
+    TM.runConfig
+        (M := (ConstStatePhasedProgram.seq
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2).toPhased.toTM)
+        (ConstStatePhasedProgram.embedSeqConfig
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2 c_P1)
+        ((ConstStatePhasedProgram.seq
+          (evalOneGateCS g slot Δrowbase Δscratch hle) P2).timeBound N) =
+      ConstStatePhasedProgram.embedSeqP2Config
+        (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+        (TM.runConfig (M := P2.toPhased.toTM)
+          (ConstStatePhasedProgram.liftP1ToP2
+            (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+            (TM.runConfig
+              (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+              c_P1 (2 * (Δscratch + slot) + 3))
+            h_tG_head)
+          (P2.timeBound N)) := by
+  -- Timings: composite.timeBound = P1.timeBound + P2.timeBound + 1 where
+  -- P1.timeBound = 2*(Δscratch+slot)+3.
+  have htB :
+      (ConstStatePhasedProgram.seq
+        (evalOneGateCS g slot Δrowbase Δscratch hle) P2).timeBound N =
+      (2 * (Δscratch + slot) + 3) + 1 + P2.timeBound N := by
+    show (evalOneGateCS g slot Δrowbase Δscratch hle).timeBound N + P2.timeBound N + 1 =
+      (2 * (Δscratch + slot) + 3) + 1 + P2.timeBound N
+    rw [evalOneGateCS_timeBound]
+    omega
+  rw [htB]
+  -- Split via runConfig_add: split (tG+1+tR) into (tG+1) then tR.
+  rw [show (2 * (Δscratch + slot) + 3) + 1 + P2.timeBound N =
+        (2 * (Δscratch + slot) + 4) + P2.timeBound N from by omega]
+  rw [runConfig_add]
+  -- After first tG+1 steps: post-boundary = embedSeqP2Config(lift).
+  rw [evalOneGateCS_post_boundary_eq_embedSeqP2Config_lift g slot Δrowbase Δscratch hle
+    P2 c_P1 h_phase h_state_snd h_bound h_tG_head h_len_le]
+  -- Now running P2 on lift via embedSeqP2Config_runConfig_eq.
+  -- Need safety from phased_run_safe_of_head_bound.
+  have h_safe := phased_run_safe_of_head_bound P2
+    (ConstStatePhasedProgram.liftP1ToP2
+      (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+      (TM.runConfig
+        (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+        c_P1 (2 * (Δscratch + slot) + 3))
+      h_tG_head)
+    (P2.timeBound N) h_lift_head_plus_tR
+  exact ConstStatePhasedProgram.embedSeqP2Config_runConfig_eq
+    (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+    (ConstStatePhasedProgram.liftP1ToP2
+      (evalOneGateCS g slot Δrowbase Δscratch hle) P2
+      (TM.runConfig
+        (M := (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM)
+        c_P1 (2 * (Δscratch + slot) + 3))
+      h_tG_head) (P2.timeBound N) h_safe
+
 end GateEvalCS
 
 end TM

@@ -425,6 +425,9 @@ theorem structuredLocalityProviderPartial_fromPipeline_of_old
   fun p δ hHyp _ac0 _F _hsame _hAC0 _hMSWit hFormula _hSem =>
     hProvider p δ hHyp hFormula
 
+-- Steps 2e/2f are defined later, after the cert-provider structure and
+-- its builder are in scope (see below around "Pipeline final chain (Steps 2e-2f)").
+
 /-! ### Step 2b scaffolding — restriction certificate data, pipeline version
 
 Parallel to `FormulaRestrictionCertificateDataPartial` (defined at line
@@ -2877,6 +2880,62 @@ noncomputable def formulaCertificateProvider_fromPipeline_of_restrictionData_fro
         hsmall
         hhalf
         hstable
+
+/-! ### Pipeline final chain (Steps 2e-2f) -/
+
+/-- **Step 2e**: pipeline-aware constructor from the pipeline
+formula-certificate provider to the pipeline structured locality
+provider.  Body parallels `structuredLocalityProviderPartial_of_engine`:
+extract cert for the specific (ac0, F, hSem) tuple, wrap in a
+ShrinkageCertificate.Provider, infer the half-bound typeclass, run
+`stableRestriction_of_certificate` and `locality_lift_partial`, return
+the resulting T + loc. -/
+noncomputable def structuredLocalityProviderPartial_fromPipeline_of_formulaCertificate_fromPipeline
+    (hCert : FormulaCertificateProviderPartial_fromPipeline) :
+    StructuredLocalityProviderPartial_fromPipeline := by
+  intro p δ _hHyp ac0 F hsame hAC0P hMSWitP hFormula _wfLet _cLet hSem
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let cert :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+      (ThirdPartyFacts.solverDecideFacts (p := p) solver) :=
+    hCert.cert ac0 F hsame hAC0P hMSWitP hFormula hSem
+  letI certProvider :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+      (ThirdPartyFacts.solverDecideFacts (p := p) solver) := ⟨cert⟩
+  have hHalf :
+      (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+          (p := ThirdPartyFacts.toFactsParamsPartial p)
+          (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+          (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)).restriction.alive.card
+        ≤ Models.Partial.tableLen p.n / 2 :=
+    (inferInstance :
+      ThirdPartyFacts.HalfTableCertificateBound (p := p) solver).half_bound
+  have hStable :=
+    ThirdPartyFacts.stableRestriction_of_certificate
+      (p := p) solver hHalf
+  let hProvider :
+    Facts.LocalityLift.ShrinkageWitness.Provider
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver) :=
+    ⟨cert.toShrinkageWitness⟩
+  obtain ⟨T, loc, hT, _hM, hℓ, _hDepth⟩ :=
+    ThirdPartyFacts.locality_lift_partial (p := p) (solver := solver)
+      (by simpa [solver] using hStable) hProvider
+  exact ⟨T, loc, hT, hℓ⟩
+
+/-- **Step 2f**: direct pipeline-aware provider from the pipeline
+support-bounds predicate.  Composition of Steps 2c, 2d, 2e. -/
+noncomputable def structuredLocalityProviderPartial_fromPipeline_of_supportBoundsFromPipeline
+    (hBoundsP : FormulaSupportBoundsPartial_fromPipeline) :
+    StructuredLocalityProviderPartial_fromPipeline :=
+  structuredLocalityProviderPartial_fromPipeline_of_formulaCertificate_fromPipeline
+    (formulaCertificateProvider_fromPipeline_of_restrictionData_fromPipeline
+      (formulaRestrictionCertificateData_fromPipeline_of_supportBoundsFromPipeline
+        hBoundsP))
 
 /--
 Uniform half-size condition for extracted strict formula witnesses at the

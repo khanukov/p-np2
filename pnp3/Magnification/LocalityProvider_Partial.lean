@@ -366,6 +366,65 @@ theorem formulaSupportBoundsPartial_fromPipeline_of_old
     FormulaSupportBoundsPartial_fromPipeline := fun _ac0 _F _hsame _hAC0 _hMSWit
     hFormula _hSem => hBounds hFormula
 
+/-! ### Migration Step 2 scaffolding — pipeline-aware structured provider
+
+`StructuredLocalityProviderPartial` (in `Facts_Magnification_Partial.lean`)
+quantifies over every `PpolyFormula` witness.  The truth-table-hardwired
+witness at `partialInputLen p` flows through that universal and into
+the OPS-trigger contradiction (`noSmallLocalCircuitSolver_partial_v2`),
+making the provider ex-falso when instantiated on such a witness.
+
+`StructuredLocalityProviderPartial_fromPipeline` below adds the same
+AC0-provenance gate as `FormulaSupportBoundsPartial_fromPipeline`:
+callers must supply AC0 parameters, an AC0 family, AC0 witnesses, and
+a semantic link between the family and the extracted formula.  Truth-
+table-hardwired witnesses cannot supply a valid `hSem` (since MCSP
+is not in AC0), so they cannot instantiate this provider.
+
+**Step 2 migration path** (multi-session, substantial):
+1. This session: introduce the new provider predicate + trivial
+   `old → new` derivation.
+2. Follow-up: parallel builder
+   `structuredLocalityProviderPartial_fromPipeline_of_supportBoundsFromPipeline`
+   from the new `FormulaSupportBoundsPartial_fromPipeline`.
+3. Follow-up: parallel `asymptotic_formula_collapse_fromPipeline`
+   consuming the new provider.
+4. Follow-up: parallel `NP_not_subset_PpolyFormula_final_with_provider_fromPipeline`.
+5. Follow-up: thread through `MagnificationAssumptions` / downstream.
+6. Final: delete old provider + old predicate + their cascades.
+-/
+
+/-- Pipeline-aware structured locality provider.  Takes AC0 provenance
+as inputs alongside each `PpolyFormula` witness.  Truth-table-hardwired
+witnesses cannot supply a valid AC0 sem-link, so they cannot
+instantiate this provider. -/
+def StructuredLocalityProviderPartial_fromPipeline : Prop :=
+  ∀ (p : GapPartialMCSPParams) (δ : Rat)
+    (_hHyp : FormulaLowerBoundHypothesisPartial p δ)
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p)
+    (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+    (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    -- Semantic link: AC0 family contains a function agreeing with the
+    -- extracted formula (after length cast).  The provenance gate.
+    (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)) →
+    RestrictionLocalityPartial p
+
+/-- Trivial `old → new` direction (ex-falso old implies anything). -/
+theorem structuredLocalityProviderPartial_fromPipeline_of_old
+    (hProvider : StructuredLocalityProviderPartial) :
+    StructuredLocalityProviderPartial_fromPipeline :=
+  fun p δ hHyp _ac0 _F _hsame _hAC0 _hMSWit hFormula _hSem =>
+    hProvider p δ hHyp hFormula
+
 /--
 Extracted local-core payload for one strict formula witness.
 

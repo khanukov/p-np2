@@ -783,7 +783,8 @@ Milestone F statement (design doc lines 38–48).
   - `circuitEvaluatorCSAt_RunCorrect_wf_unconditional`: `[propext, Classical.choice, Quot.sound]`.
   - `circuitEvaluatorCS_run_correct_wf`: `[propext, Classical.choice, Quot.sound]`.
 
-**F.4 status after session 51**: **FULLY CLOSED UNCONDITIONALLY**.
+**F.4 status after session 51**: **CLOSED UNCONDITIONALLY for well-formed
+arbitrary gate lists**.
 
 Complete deliverables:
 - Conditional correctness for arbitrary gates (session 49s, `CondCorrect_all`).
@@ -793,12 +794,113 @@ Complete deliverables:
 - **∃-form for arbitrary well-formed gates via canonical prior (session 51).**
 - **Public CS-form at offset=0 matching original Milestone F target (session 51).**
 
-The only remaining hypothesis in the final theorem is **positional
-well-formedness** (`SLProgram_wfFromOffset gates 0`) — an obvious
-correctness requirement for any circuit representation (every gate
-references must point to already-computed positions).  This is not a
-limitation of the proof; it is the minimal hypothesis under which the
-theorem can hold.
+**Two honest caveats** (noted in the session 51 review):
+
+1. *Positional well-formedness is a real hypothesis, not cosmetic.*
+   `circuitEvaluatorCS_run_correct_wf` requires
+   `hwf : SLProgram_wfFromOffset gates 0`.  This is **mathematically
+   necessary**: `SLGate.notGate k` reads `prior[k]?`, returning `none`
+   when `k ≥ prior.length`, so a malformed list (e.g., `[notGate 5]`
+   at `prior = []`) makes `evalAux` return `none` and the ∃-form
+   theorem is false.  Well-formedness = "every gate at position `i`
+   references only slots `< offset + i`" = topological order.  This is
+   the minimal requirement; eliminating it would require replacing
+   `Nat`-indexed references with `Fin (accumulator_length)` (a ~2000
+   LOC refactor of the encoding/decoding infrastructure).
+
+2. *The session 51 theorems are stated on `circuitEvaluatorCSAt gates 0`,
+   not on literal `circuitEvaluatorCS gates`.*  The two are
+   propositionally equal (via `circuitEvaluatorCSAt_zero_eq`), but at
+   session 51 they were NOT definitionally equal (different structural
+   unfoldings: `match` vs `seqList ∘ mapIdx`).  This means downstream
+   code that constructs a `Configuration` for literal `circuitEvaluatorCS
+   gates` would need a `castConfig`-based bridge or `rw` transport to
+   apply the session 51 theorem — another Eq.rec-motive hazard.
+
+Session 52 closes caveat #2 completely.  Caveat #1 is inherent to the
+`SLGate` design and remains.
+
+### Session 52 — Integration-edge closure (`circuitEvaluatorCS := circuitEvaluatorCSAt gates 0`)
+
+Session 52 eliminates the propositional-vs-definitional gap between
+`circuitEvaluatorCS gates` and `circuitEvaluatorCSAt gates 0` by
+**redefining** the former as the `offset = 0` specialisation of the
+latter.  The previous definition via `seqList ∘ mapIdx` is retained as
+the propositional-equality lemma
+`circuitEvaluatorCSAt_eq_seqList_mapIdx`.
+
+**Edit in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean`**:
+
+```lean
+-- OLD (session 47 era):
+def circuitEvaluatorCS {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  ConstStatePhasedProgram.seqList
+    ((gates.mapIdx (fun slot g => evalOneGateCS g slot Δrowbase Δscratch hle)))
+
+-- NEW (session 52):
+def circuitEvaluatorCS {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle
+```
+
+Structural file reordering: `circuitEvaluatorCSAt` (definition + two
+`@[simp]` unfolding lemmas + `_eq_seqList_mapIdx`) moved above
+`circuitEvaluatorCS` so the latter can reference the former.
+
+**Immediate consequences**:
+
+- `circuitEvaluatorCSAt_zero_eq gates Δrowbase Δscratch hle` becomes
+  provable by `rfl` (previously a ~15-line induction).
+- `Configuration (M := (circuitEvaluatorCS gates ...).toPhased.toTM) N` and
+  `Configuration (M := (circuitEvaluatorCSAt gates 0 ...).toPhased.toTM) N`
+  are **definitionally the same type**.  No `castConfig`, no `rw`
+  transport needed.
+- Every session 50–51 theorem that was stated on the CSAt-at-0 form
+  now applies directly to literal `circuitEvaluatorCS`.
+
+**Integration test** (compiled during session 52, then deleted):
+
+```lean
+example {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch)
+    (hwf : SLProgram_wfFromOffset gates 0)
+    {N : Nat}
+    (c : Configuration (M := (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0) (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + gates.length ≤ N) (htape_clean : …) :
+    ∃ vals, … :=
+  circuitEvaluatorCS_run_correct_wf gates Δrowbase Δscratch hle hwf c …
+```
+
+The `c` here has type `Configuration` over the literal
+`circuitEvaluatorCS` TM; it feeds directly into the session 51 theorem.
+
+**Minor migration** within GateWrappers.lean:
+
+- `circuitEvaluatorCS_cons` (line ~835): proof rewritten.  The old
+  `rw [List.mapIdx_cons]; rfl` depended on `circuitEvaluatorCS`'s
+  `seqList ∘ mapIdx` body; the new proof uses
+  `circuitEvaluatorCSAt_eq_seqList_mapIdx` at `offset = 1` to re-express
+  the tail.
+- `circuitEvaluatorCS_nil_timeBound` and
+  `circuitEvaluatorCS_nil_runConfig_zero` remain `rfl`-provable (nil
+  case of CSAt is also `idleCS` by match-unfolding).
+- No external files affected.
+
+**Verification** (session 52):
+- `lake build` green; `check.sh` all 6 steps pass.
+- Axiom inventory unchanged: propext=349, Classical.choice=345, Quot.sound=349.
+- Integration-edge test confirmed: session 51 theorems apply to literal
+  `circuitEvaluatorCS` configs without any cast.
+
+**F.4 status after session 52**: CLOSED UNCONDITIONALLY for well-formed
+arbitrary gate lists, on literal `circuitEvaluatorCS gates`.  Caveat #1
+(positional well-formedness is required, not a cosmetic hypothesis)
+remains by design.  Caveat #2 (CSAt-at-0 integration edge) **is
+eliminated**.
 
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 

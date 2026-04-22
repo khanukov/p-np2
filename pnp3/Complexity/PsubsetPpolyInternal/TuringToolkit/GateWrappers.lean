@@ -484,18 +484,92 @@ theorem evalOneGateCS_timeBound {n : Nat} (g : SLGate n) (slot : Nat)
       2 * (Δscratch + slot) + 3 := by
   cases g <;> rfl
 
+/-! ### Offset-parameterised evaluator (`circuitEvaluatorCSAt`)
+
+For the multi-gate induction it is cleaner to reason about an
+offset-parameterised recursion whose slots are visibly `offset, offset
++ 1, …`, rather than using `List.mapIdx` whose offset is hidden inside
+a `go` helper.  `circuitEvaluatorCSAt gates offset` explicitly threads
+the slot offset through the recursion.
+
+The offset-free `circuitEvaluatorCS gates` is then defined as the
+`offset = 0` specialisation of this primitive (below). -/
+
+/-- Explicit-recursion circuit evaluator where each gate's scratch slot
+is shifted by a constant `offset`.  At `offset = 0` this IS the public
+`circuitEvaluatorCS` (by definitional equality — see the definition of
+`circuitEvaluatorCS` below). -/
+def circuitEvaluatorCSAt {n : Nat} (gates : List (SLGate n)) (offset : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  match gates with
+  | [] => ConstStatePhasedProgram.idleCS
+  | g :: rest =>
+    ConstStatePhasedProgram.seq
+      (evalOneGateCS g offset Δrowbase Δscratch hle)
+      (circuitEvaluatorCSAt rest (offset + 1) Δrowbase Δscratch hle)
+
+@[simp] theorem circuitEvaluatorCSAt_nil {n : Nat} (offset : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle =
+      ConstStatePhasedProgram.idleCS := rfl
+
+@[simp] theorem circuitEvaluatorCSAt_cons {n : Nat} (g : SLGate n)
+    (rest : List (SLGate n)) (offset : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    circuitEvaluatorCSAt (g :: rest) offset Δrowbase Δscratch hle =
+      ConstStatePhasedProgram.seq
+        (evalOneGateCS g offset Δrowbase Δscratch hle)
+        (circuitEvaluatorCSAt rest (offset + 1) Δrowbase Δscratch hle) := rfl
+
+/-- `circuitEvaluatorCSAt` expanded as an explicit `seqList` over a
+`List.mapIdx` with offset-shifted slots.  Useful when other lemmas are
+stated over the `seqList ∘ mapIdx` form. -/
+theorem circuitEvaluatorCSAt_eq_seqList_mapIdx {n : Nat}
+    (gates : List (SLGate n)) (offset : Nat)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle =
+      ConstStatePhasedProgram.seqList
+        (gates.mapIdx
+          (fun slot g => evalOneGateCS g (slot + offset) Δrowbase Δscratch hle)) := by
+  induction gates generalizing offset with
+  | nil => rfl
+  | cons g rest ih =>
+    rw [circuitEvaluatorCSAt_cons, List.mapIdx_cons,
+        ConstStatePhasedProgram.seqList_cons]
+    congr 1
+    · show evalOneGateCS g offset Δrowbase Δscratch hle =
+          evalOneGateCS g (0 + offset) Δrowbase Δscratch hle
+      rw [Nat.zero_add]
+    · rw [ih (offset + 1)]
+      congr 1
+      apply List.mapIdx_eq_mapIdx_iff.mpr
+      intro i _
+      show evalOneGateCS rest[i] (i + (offset + 1)) Δrowbase Δscratch hle =
+          evalOneGateCS rest[i] (i + 1 + offset) Δrowbase Δscratch hle
+      congr 1
+      omega
+
 /-! ### Whole-circuit evaluator
 
 `circuitEvaluatorCS gates Δrowbase Δscratch hle` evaluates every gate
 in `gates` in order, storing output of gate at index `i` into
-`scratch[i]`.  Uses `seqList` over the per-gate evaluators. -/
+`scratch[i]`.  Defined as the `offset = 0` specialisation of
+`circuitEvaluatorCSAt`, so the two forms are DEFINITIONALLY equal —
+this is the session 52 integration-edge closure that lets downstream
+consumers use the offset-parameterised induction machinery directly on
+literal `circuitEvaluatorCS gates` without any `rw` transport or
+`castConfig` gymnastics.
+
+The classical `seqList ∘ mapIdx` shape (used by some earlier lemmas)
+is still available as a propositional equality via
+`circuitEvaluatorCSAt_eq_seqList_mapIdx` at `offset = 0`. -/
 
 
 def circuitEvaluatorCS {n : Nat} (gates : List (SLGate n))
     (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
     ConstStatePhasedProgram (Bool × Bool) :=
-  ConstStatePhasedProgram.seqList
-    ((gates.mapIdx (fun slot g => evalOneGateCS g slot Δrowbase Δscratch hle)))
+  circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle
 
 /-- Generic seqList timeBound upper bound: if every program in `ps`
 has `timeBound m ≤ B`, then the composed seqList's timeBound is at
@@ -767,93 +841,27 @@ theorem circuitEvaluatorCS_cons {n : Nat} (g : SLGate n)
         (ConstStatePhasedProgram.seqList
           (rest.mapIdx
             (fun slot g' => evalOneGateCS g' (slot + 1) Δrowbase Δscratch hle))) := by
-  show ConstStatePhasedProgram.seqList
-      ((g :: rest).mapIdx
-        (fun slot g => evalOneGateCS g slot Δrowbase Δscratch hle)) = _
-  rw [List.mapIdx_cons]
-  rfl
+  -- After session 52: `circuitEvaluatorCS = circuitEvaluatorCSAt _ 0` by def-eq.
+  -- The cons step unfolds via `circuitEvaluatorCSAt_cons` (rfl) to
+  -- `seq (evalOneGateCS g 0 ...) (circuitEvaluatorCSAt rest 1 ...)`.
+  -- The tail is then re-expressed as `seqList (rest.mapIdx (fun slot g' => … (slot + 1) …))`
+  -- via `circuitEvaluatorCSAt_eq_seqList_mapIdx` at offset = 1.
+  show ConstStatePhasedProgram.seq
+      (evalOneGateCS g 0 Δrowbase Δscratch hle)
+      (circuitEvaluatorCSAt rest 1 Δrowbase Δscratch hle) = _
+  rw [circuitEvaluatorCSAt_eq_seqList_mapIdx]
 
-/-! ### Offset-parameterised evaluator helper
+/-! ### `circuitEvaluatorCS` as the `offset = 0` specialisation
 
-For the multi-gate induction it is cleaner to reason about an
-offset-parameterised recursion whose slots are visibly `offset, offset
-+ 1, …`, rather than using `List.mapIdx` whose offset is hidden inside
-a `go` helper.  `circuitEvaluatorCSAt gates offset` explicitly threads
-the slot offset through the recursion.
-
-`circuitEvaluatorCSAt_zero_eq` shows it agrees with `circuitEvaluatorCS`
-at `offset = 0`, so any induction on `circuitEvaluatorCSAt` immediately
-yields a statement about `circuitEvaluatorCS`. -/
-
-/-- Explicit-recursion variant of `circuitEvaluatorCS` where each gate's
-slot is shifted by a constant `offset`.  At `offset = 0` this agrees
-with `circuitEvaluatorCS` (see `circuitEvaluatorCSAt_zero_eq`). -/
-def circuitEvaluatorCSAt {n : Nat} (gates : List (SLGate n)) (offset : Nat)
-    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
-    ConstStatePhasedProgram (Bool × Bool) :=
-  match gates with
-  | [] => ConstStatePhasedProgram.idleCS
-  | g :: rest =>
-    ConstStatePhasedProgram.seq
-      (evalOneGateCS g offset Δrowbase Δscratch hle)
-      (circuitEvaluatorCSAt rest (offset + 1) Δrowbase Δscratch hle)
-
-@[simp] theorem circuitEvaluatorCSAt_nil {n : Nat} (offset : Nat)
-    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
-    circuitEvaluatorCSAt ([] : List (SLGate n)) offset Δrowbase Δscratch hle =
-      ConstStatePhasedProgram.idleCS := rfl
-
-@[simp] theorem circuitEvaluatorCSAt_cons {n : Nat} (g : SLGate n)
-    (rest : List (SLGate n)) (offset : Nat)
-    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
-    circuitEvaluatorCSAt (g :: rest) offset Δrowbase Δscratch hle =
-      ConstStatePhasedProgram.seq
-        (evalOneGateCS g offset Δrowbase Δscratch hle)
-        (circuitEvaluatorCSAt rest (offset + 1) Δrowbase Δscratch hle) := rfl
-
-/-- `circuitEvaluatorCS` is the `offset = 0` specialisation of
-`circuitEvaluatorCSAt`.  Intermediate step: we show the equivalence by
-induction on `gates`, abstracted over `offset` so the `+ 1` shift on
-the tail aligns correctly with `List.mapIdx_cons`. -/
-theorem circuitEvaluatorCSAt_eq_seqList_mapIdx {n : Nat}
-    (gates : List (SLGate n)) (offset : Nat)
-    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
-    circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle =
-      ConstStatePhasedProgram.seqList
-        (gates.mapIdx
-          (fun slot g => evalOneGateCS g (slot + offset) Δrowbase Δscratch hle)) := by
-  induction gates generalizing offset with
-  | nil => rfl
-  | cons g rest ih =>
-    rw [circuitEvaluatorCSAt_cons, List.mapIdx_cons,
-        ConstStatePhasedProgram.seqList_cons]
-    congr 1
-    · show evalOneGateCS g offset Δrowbase Δscratch hle =
-          evalOneGateCS g (0 + offset) Δrowbase Δscratch hle
-      rw [Nat.zero_add]
-    · rw [ih (offset + 1)]
-      congr 1
-      apply List.mapIdx_eq_mapIdx_iff.mpr
-      intro i _
-      show evalOneGateCS rest[i] (i + (offset + 1)) Δrowbase Δscratch hle =
-          evalOneGateCS rest[i] (i + 1 + offset) Δrowbase Δscratch hle
-      congr 1
-      omega
+After session 52's integration-edge closure, `circuitEvaluatorCS gates`
+is *definitionally* `circuitEvaluatorCSAt gates 0`, so the following
+equality is a trivial `rfl` — retained as a named lemma for
+documentation and for downstream code that may rewrite through it. -/
 
 theorem circuitEvaluatorCSAt_zero_eq {n : Nat} (gates : List (SLGate n))
     (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
     circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle =
-      circuitEvaluatorCS gates Δrowbase Δscratch hle := by
-  show circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle =
-      ConstStatePhasedProgram.seqList
-        (gates.mapIdx (fun slot g => evalOneGateCS g slot Δrowbase Δscratch hle))
-  rw [circuitEvaluatorCSAt_eq_seqList_mapIdx]
-  apply congrArg
-  apply List.mapIdx_eq_mapIdx_iff.mpr
-  intro i _
-  show evalOneGateCS gates[i] (i + 0) Δrowbase Δscratch hle =
-      evalOneGateCS gates[i] i Δrowbase Δscratch hle
-  rw [Nat.add_zero]
+      circuitEvaluatorCS gates Δrowbase Δscratch hle := rfl
 
 /-! ### Cons-step arithmetic for `circuitEvaluatorCSAt`
 
@@ -1167,32 +1175,30 @@ theorem circuitEvaluatorCSAt_nil_run_correct {n : Nat}
 
 /-! ### CS-form correctness: definitional alias of the CSAt form at 0
 
-The CS-form correctness `CircuitEvaluatorCS_RunCorrect` is defined as a
-definitional alias of `CircuitEvaluatorCSAt_RunCorrect gates 0` rather
-than a standalone Prop.
+After session 52's integration-edge closure (`circuitEvaluatorCS gates`
+is now *definitionally* `circuitEvaluatorCSAt gates 0`), the CS-form
+correctness Prop is simply the CSAt form at `offset = 0`.  Configurations
+for `circuitEvaluatorCS gates` and for `circuitEvaluatorCSAt gates 0`
+have the SAME type (by def-eq through `.toPhased.toTM`), so no transport
+machinery is needed — downstream consumers can apply this correctness
+directly to configs built for literal `circuitEvaluatorCS gates`.
 
-**Why alias-through-CSAt?**  `circuitEvaluatorCS gates = circuitEvaluatorCSAt
-gates 0` is a propositional equality (see `circuitEvaluatorCSAt_zero_eq`),
-not definitional, because the two have different structural unfoldings
-(`seqList ∘ mapIdx` vs `match`).  Attempting to state a separately
-structured `CS_RunCorrect` and derive it from the CSAt form via
-`rw [← circuitEvaluatorCSAt_zero_eq]` hits an `Eq.rec`
-motive-not-type-correct obstruction: the Prop body contains
-auto-generated proof terms (from `by omega` blocks establishing Fin
-bounds) whose types depend on the specific program, so the rewrite
-motive cannot be abstracted uniformly.
+Historical note (sessions 50–51 era): before session 52, the two
+programs were only propositionally equal (different structural
+unfoldings — `seqList ∘ mapIdx` vs `match`), and `rw
+[← circuitEvaluatorCSAt_zero_eq]` on a separately-structured
+`CS_RunCorrect` Prop hit an `Eq.rec` motive-not-type-correct obstruction
+(auto-generated Fin-bound proofs in `by omega` blocks were tied to the
+specific program).  Session 50's workaround was the alias-through-CSAt
+definition below.  Session 52 eliminated the underlying prop-vs-def
+split by redefining `circuitEvaluatorCS := circuitEvaluatorCSAt gates 0`,
+making the alias a pure convenience rather than a necessity.
 
-Defining `CS_RunCorrect` as the CSAt form avoids this entirely.
-Semantically the two are equivalent: the CSAt form with `offset = 0`
-and `prior = []` degenerates to the natural 3-conjunct CS statement
-(via `Δscratch + 0 = Δscratch` and `[] ++ vals = vals`, both
+Semantically the two Props are equivalent: the CSAt form with
+`offset = 0` and `prior = []` degenerates to the natural 3-conjunct CS
+statement (via `Δscratch + 0 = Δscratch` and `[] ++ vals = vals`, both
 definitional).  The extra `prior` universal and preservation conjunct
-are conservative generalisations that do not restrict the statement.
-
-**Downstream usage**: consumers that construct a `Configuration` for
-`circuitEvaluatorCS` rewrite through `circuitEvaluatorCSAt_zero_eq`
-once at the term level (before any Fin-bound proofs are generated) to
-reach the CSAt-at-0 form, then apply this correctness. -/
+are conservative generalisations that do not restrict the statement. -/
 
 /-- The packaged correctness property of `circuitEvaluatorCS`,
 formulated as a definitional alias of `CircuitEvaluatorCSAt_RunCorrect`

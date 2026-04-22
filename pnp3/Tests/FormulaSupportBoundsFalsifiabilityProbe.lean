@@ -2,6 +2,7 @@ import Complexity.PpolyFormula_from_PpolyDAG_FixedSlice
 import LowerBounds.FailedRoute_FixedSliceSupportHalfCore
 import LowerBounds.SingletonDensityContradiction
 import Magnification.LocalityProvider_Partial
+import Magnification.FinalResultMainline
 
 /-!
 # Formula Support Bounds Falsifiability — Regression Test
@@ -288,6 +289,72 @@ theorem false_of_FormulaSupportRestrictionBoundsPartial
   rcases hPkg with ⟨pkg⟩
   exact false_of_abstractGapTargetedPayload_of_supportBounds
     pkg hBounds hFormula
+
+/-! ### Probe 4: the multi-switching contract is ALSO inconsistent
+
+The active final line `NP_not_subset_PpolyFormula_final` routes via
+`hMag.switching.multiswitching : FormulaSupportBoundsFromMultiSwitchingContract`,
+which discharges `FormulaSupportRestrictionBoundsPartial` via
+`formula_support_bounds_from_multiswitching`.  Since Probe 3 proves
+`FormulaSupportRestrictionBoundsPartial → False`, the multi-switching
+contract is ALSO inconsistent in the current formalization: any call
+site that takes `hMS` as a hypothesis is ex-falso.
+
+**Implication for migration**: replacing `FormulaSupportRestrictionBoundsPartial`
+alone is NOT sufficient.  The `FormulaSupportBoundsFromMultiSwitchingContract`
+structure ALSO quantifies universally over `hFormula` and packages the
+same false support-bounds claim.  Both must be reformulated to take
+AC0 provenance data as INPUTS rather than PROMISING AC0-like bounds
+for arbitrary formulas. -/
+
+/-- **Probe 4**: `FormulaSupportBoundsFromMultiSwitchingContract` is
+inconsistent — assuming it (without any other hypothesis) derives
+`False`.  Direct consequence of Probe 3 + the existing derivation
+`formula_support_bounds_from_multiswitching`. -/
+theorem false_of_FormulaSupportBoundsFromMultiSwitchingContract
+    (p : GapPartialMCSPParams)
+    (hMS : Magnification.AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    False :=
+  false_of_FormulaSupportRestrictionBoundsPartial p
+    (Magnification.formula_support_bounds_from_multiswitching hMS)
+
+/-- **Probe 5 — the "active final line" is ex-falso**:
+`Magnification.MagnificationAssumptions` contains an `hMS` field of
+type `FormulaSupportBoundsFromMultiSwitchingContract`, which by
+Probe 4 is already inconsistent.  Therefore the top-level
+`NP_not_subset_PpolyFormula_final` consuming `hMag : MagnificationAssumptions`
+is ex-falso: for every non-empty `GapPartialMCSPParams p`, assuming
+`hMag` yields `False`.
+
+This directly shows that the final theorem's conclusion
+`ComplexityInterfaces.NP_not_subset_PpolyFormula` is vacuous under
+the current formalization. -/
+theorem false_of_MagnificationAssumptions
+    (p : GapPartialMCSPParams)
+    (hMag : Magnification.MagnificationAssumptions) :
+    False :=
+  false_of_FormulaSupportBoundsFromMultiSwitchingContract p
+    hMag.switching.multiswitching
+
+/-- **Probe 6 — direct vacuity of the top-level final statement**:
+`NP_not_subset_PpolyFormula_final hMag n hn` is provable *by ex falso*
+given any `GapPartialMCSPParams` — the ex-falso bypass is
+`false_of_MagnificationAssumptions`.
+
+In other words, the top-level claim derives from vacuous assumptions.
+Downstream code that reads the final theorem's conclusion
+`NP_not_subset_PpolyFormula` should NOT consider it evidence toward
+unconditional `NP ⊄ P/poly` until `FormulaSupportBoundsFromMultiSwitchingContract`
+is replaced by a non-vacuous, AC0-provenance-restricted contract.
+
+The construction simply derives `False` from `hMag` (via Probe 5) and
+then uses `False.elim` to produce the conclusion. -/
+theorem NP_not_subset_PpolyFormula_final_via_ex_falso
+    (p : GapPartialMCSPParams)
+    (hMag : Magnification.MagnificationAssumptions)
+    (n : Nat) (_hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
+    ComplexityInterfaces.NP_not_subset_PpolyFormula :=
+  False.elim (false_of_MagnificationAssumptions p hMag)
 
 end FormulaSupportBoundsFalsifiabilityProbe
 end Tests

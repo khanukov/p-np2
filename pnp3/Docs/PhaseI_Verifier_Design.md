@@ -1565,6 +1565,35 @@ Formally:
    meaningful hypothesis — `False` is one `false_of_FormulaSupportRestrictionBoundsPartial`
    call away.
 
+   **Probes 4/5/6 (session 57, same file)** — walking the derivation
+   chain up to the top-level:
+
+   - `false_of_FormulaSupportBoundsFromMultiSwitchingContract p hMS : False`
+     (Probe 4).  The A9 multi-switching contract is ALSO inconsistent:
+     it universally quantifies over `∀ hFormula, ∃ ac0 F ... ∧ support
+     bounds ...`, and the truth-table hardwired hFormula violates the
+     embedded support bounds.  Direct consequence of Probe 3 via the
+     existing `formula_support_bounds_from_multiswitching`.
+
+   - `false_of_MagnificationAssumptions p hMag : False` (Probe 5).
+     `MagnificationAssumptions` contains `hMag.switching.multiswitching :
+     FormulaSupportBoundsFromMultiSwitchingContract` — ex-falso by
+     Probe 4.
+
+   - `NP_not_subset_PpolyFormula_final_via_ex_falso p hMag n hn :
+     ComplexityInterfaces.NP_not_subset_PpolyFormula` (Probe 6).
+     Directly derives the **same type** as the top-level final
+     theorem `NP_not_subset_PpolyFormula_final` via `False.elim`.  This
+     is the clearest demonstration that the top-level theorem's
+     conclusion is vacuous under the current formalization — no
+     mathematical content, just an ex-falso step.
+
+   **Implication**: the migration (steps 1–4 in session 55 entry) must
+   replace `FormulaSupportBoundsFromMultiSwitchingContract` as well,
+   not just the downstream `FormulaSupportRestrictionBoundsPartial`.
+   Both are inconsistent in the current form and both need
+   AC0-provenance-taking-input variants.
+
 2. **Prominent warning docstring** on
    `FormulaSupportRestrictionBoundsPartial` in
    `pnp3/Magnification/LocalityProvider_Partial.lean:200` (~30 lines),

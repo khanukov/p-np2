@@ -266,6 +266,106 @@ def FormulaSupportRestrictionBoundsPartial : Prop :=
       rFacts.alive.card ≤
         Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
 
+/-! ### Migration Step 1 — provenance-restricted replacement
+
+The old `FormulaSupportRestrictionBoundsPartial` quantifies universally
+over every `PpolyFormula (gapPartialMCSP_Language p)` witness.  That
+universal set includes the truth-table-hardwired formula at
+`partialInputLen p`, whose support is the full input region and thus
+violates the polylog / quarter / `LocalCircuitSmallEnough` bounds.
+The April 2026 audit formalized this as Probe 3:
+`false_of_FormulaSupportRestrictionBoundsPartial` in
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+
+The new predicate below, `FormulaSupportBoundsPartial_fromPipeline`,
+takes the AC0 provenance (parameters, family, witnesses, semantic
+link to the concrete formula) as EXPLICIT INPUTS rather than
+asserting their existence for every `hFormula` witness.  As a
+consequence:
+
+- A truth-table-hardwired `hFormula` cannot produce the required
+  `hSem` semantic link to any AC0 family `F` (unless the MCSP
+  language at `partialInputLen p` is AC0, which would break the
+  hardness argument), so the new predicate is not immediately
+  falsifiable via the audit's Probe 2/3 route.
+- Any downstream consumer that accepts the new predicate must supply
+  the AC0 provenance explicitly, preventing silent "apply to every
+  hFormula" loopholes.
+
+**Migration plan** (see `pnp3/Docs/PhaseI_Verifier_Design.md` session
+55 / 56 / 57 entries):
+- **Step 1 (this session)**: introduce the replacement predicate and
+  the trivial implication `old → new` (for backwards compatibility).
+  The reverse implication does NOT hold — `new` is strictly weaker
+  than `old` and does NOT imply the ex-falso behaviour.
+- **Steps 2-4** (follow-up sessions): migrate direct consumers
+  (`formulaRestrictionCertificateData_of_supportBounds`,
+  `false_of_abstractGapTargetedPayload_of_supportBounds`) to accept
+  `new`, propagate through ~50 call sites, then delete the old
+  predicate.
+-/
+
+/-- **Provenance-restricted support-bounds contract**.  Takes AC0
+provenance + semantic link as inputs instead of quantifying over
+arbitrary formula witnesses.  Not immediately falsifiable via
+truth-table hardwiring (unlike `FormulaSupportRestrictionBoundsPartial`). -/
+def FormulaSupportBoundsPartial_fromPipeline : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p)
+    (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+    (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let solver := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    -- Semantic link: the AC0 family contains a function that agrees
+    -- with the extracted formula (after length cast).  This IS the
+    -- provenance gate that truth-table hardwiring cannot satisfy.
+    (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)) →
+    -- Conclusion: the same three support bounds the old predicate
+    -- claimed, but only under provenance-restricted hypotheses.
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/-- **Old predicate implies new** (trivial direction: since `old` is
+ex-falso, it implies everything including `new`).
+
+This is NOT a real strengthening — it just shows the new predicate is
+a valid weakening of the old, so callers that have an `old` witness
+(even an ex-falso one) can transport it to a `new` witness.  The
+reverse direction `new → old` does NOT hold; that's precisely what
+makes `new` a genuine repair. -/
+theorem formulaSupportBoundsPartial_fromPipeline_of_old
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportBoundsPartial_fromPipeline := fun _ac0 _F _hsame _hAC0 _hMSWit
+    hFormula _hSem => hBounds hFormula
+
 /--
 Extracted local-core payload for one strict formula witness.
 

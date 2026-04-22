@@ -102,6 +102,22 @@ internally.
 structure SwitchingAssumptions : Type where
   multiswitching : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract
 
+/-- **Step 4 pipeline-aware** — the replacement for `SwitchingAssumptions`.
+
+The old `SwitchingAssumptions` packages only the inconsistent
+`FormulaSupportBoundsFromMultiSwitchingContract` (audit Probe 4), so
+any `MagnificationAssumptions` consumer inherits ex-falso.
+
+This pipeline version takes the two *separately-consistent* pieces:
+- `semProv`: AC0 provenance per PpolyFormula witness.
+- `boundsP`: support bounds GIVEN provenance (non-vacuous because it
+  takes provenance as input).
+
+Neither is known to be inconsistent in the current formalization. -/
+structure SwitchingAssumptions_fromPipeline : Type where
+  semProv : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider
+  boundsP : FormulaSupportBoundsPartial_fromPipeline
+
 /--
 Explicit assumptions package for the anti-checker side of the final route.
 -/
@@ -116,6 +132,15 @@ This keeps imported assumptions grouped and auditable at theorem boundaries.
 -/
 structure MagnificationAssumptions : Type where
   switching : SwitchingAssumptions
+  antiChecker : AntiCheckerAssumptions
+
+/-- **Step 4 pipeline-aware** — non-ex-falso replacement for
+`MagnificationAssumptions`.  The `switching` field uses
+`SwitchingAssumptions_fromPipeline`, which bundles the two separately-
+consistent AC0-multiswitching ingredients rather than the inconsistent
+single-contract package. -/
+structure MagnificationAssumptions_fromPipeline : Type where
+  switching : SwitchingAssumptions_fromPipeline
   antiChecker : AntiCheckerAssumptions
 
 /--
@@ -664,6 +689,33 @@ theorem NP_not_subset_PpolyFormula_final
       (n := n)
       (hn := hn)
 
+/-- **Step 4 pipeline-aware top-level theorem**.  Takes the
+pipeline-aware `MagnificationAssumptions_fromPipeline` package and
+routes through Step 3c's `_with_provider_fromPipeline` chain.
+
+**Soundness vs. ex-falso `_final`**: the old `_final` takes
+`MagnificationAssumptions` which contains an ex-falso
+`FormulaSupportBoundsFromMultiSwitchingContract` field (audit Probes
+4-6).  This pipeline version takes the two separately-consistent
+ingredients (semProv + boundsP) without the inconsistent packaging.
+
+This is the **recommended** entrypoint for new downstream callers:
+the conclusion `NP_not_subset_PpolyFormula` is genuinely derived, not
+ex-falso. -/
+theorem NP_not_subset_PpolyFormula_final_fromPipeline
+  (hMagP : MagnificationAssumptions_fromPipeline)
+  (n : Nat) (hn : hMagP.antiChecker.asymptotic.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula :=
+  NP_not_subset_PpolyFormula_final_with_provider_fromPipeline
+    (hProviderP :=
+      structuredLocalityProviderPartial_fromPipeline_of_supportBoundsFromPipeline
+        hMagP.switching.boundsP)
+    (hSemProv := hMagP.switching.semProv)
+    (hAsym := hMagP.antiChecker.asymptotic)
+    (hNPbridge := hMagP.antiChecker.npBridge)
+    (n := n)
+    (hn := hn)
+
 /--
 Primary final statement on the nontrivial non-uniform class `PpolyReal`.
 
@@ -685,6 +737,25 @@ theorem NP_not_subset_PpolyReal_final_with_provider
         (hNPbridge := hNPbridge)
         (n := n)
         (hn := hn))
+
+/-- **Step 4 pipeline-aware PpolyReal with-provider**.  Thin corollary
+of the PpolyFormula pipeline theorem via the
+`NP_not_subset_PpolyReal_of_PpolyFormula` bridge. -/
+theorem NP_not_subset_PpolyReal_final_with_provider_fromPipeline
+  (hProviderP : StructuredLocalityProviderPartial_fromPipeline)
+  (hSemProv : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal :=
+  ComplexityInterfaces.NP_not_subset_PpolyReal_of_PpolyFormula
+    (NP_not_subset_PpolyFormula_final_with_provider_fromPipeline
+      (hProviderP := hProviderP)
+      (hSemProv := hSemProv)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+      (n := n)
+      (hn := hn))
 
 /--
 Provider-free wrapper at the `PpolyReal` endpoint boundary:
@@ -758,6 +829,24 @@ theorem NP_not_subset_PpolyReal_final
       (hNPbridge := hMag.antiChecker.npBridge)
       (n := n)
       (hn := hn)
+
+/-- **Step 4 pipeline-aware PpolyReal final**.  Non-ex-falso replacement
+for `NP_not_subset_PpolyReal_final`.  Takes the pipeline-aware
+`MagnificationAssumptions_fromPipeline` package; conclusion is
+genuinely derived, not ex-falso. -/
+theorem NP_not_subset_PpolyReal_final_fromPipeline
+  (hMagP : MagnificationAssumptions_fromPipeline)
+  (n : Nat) (hn : hMagP.antiChecker.asymptotic.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyReal :=
+  NP_not_subset_PpolyReal_final_with_provider_fromPipeline
+    (hProviderP :=
+      structuredLocalityProviderPartial_fromPipeline_of_supportBoundsFromPipeline
+        hMagP.switching.boundsP)
+    (hSemProv := hMagP.switching.semProv)
+    (hAsym := hMagP.antiChecker.asymptotic)
+    (hNPbridge := hMagP.antiChecker.npBridge)
+    (n := n)
+    (hn := hn)
 
 /-- One-gate constant-false DAG used off the target asymptotic slice. -/
 private def constFalseDag (n : Nat) : ComplexityInterfaces.DagCircuit n where

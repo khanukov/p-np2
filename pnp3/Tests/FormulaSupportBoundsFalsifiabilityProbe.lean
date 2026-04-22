@@ -356,6 +356,31 @@ theorem NP_not_subset_PpolyFormula_final_via_ex_falso
     ComplexityInterfaces.NP_not_subset_PpolyFormula :=
   False.elim (false_of_MagnificationAssumptions p hMag)
 
+/-! ### Step 4/5 status tracker — pipeline-aware alternatives (session 66)
+
+After the migration from sessions 55-66, the project contains BOTH
+ex-falso and pipeline-aware final-line theorems side-by-side:
+
+| Ex-falso (legacy, ⚠) | Pipeline-aware (recommended) |
+|----------------------|------------------------------|
+| `NP_not_subset_PpolyFormula_final_with_supportBounds` | n/a (superseded by provider version) |
+| `NP_not_subset_PpolyFormula_final_with_multiswitching` | n/a |
+| `NP_not_subset_PpolyFormula_final_with_provider` | `NP_not_subset_PpolyFormula_final_with_provider_fromPipeline` (Step 3c) |
+| `NP_not_subset_PpolyFormula_final` | `NP_not_subset_PpolyFormula_final_fromPipeline` (Step 4) |
+| `NP_not_subset_PpolyReal_final` | `NP_not_subset_PpolyReal_final_fromPipeline` (Step 4) |
+
+The pipeline-aware theorems consume
+`MagnificationAssumptions_fromPipeline`, which packages the two
+separately-consistent AC0 ingredients (`FormulaSemanticMultiSwitchingProvider`
++ `FormulaSupportBoundsPartial_fromPipeline`) rather than the
+inconsistent `FormulaSupportBoundsFromMultiSwitchingContract`.
+
+**Step 5 note**: the old ex-falso theorems are NOT deleted — they are
+referenced from tests (`Tests/AxiomsAudit.lean`) and this regression
+probe itself.  They remain in-project, annotated with ⚠ warning
+docstrings (session 59), until a wholesale cleanup session can
+migrate all ~50 call sites and delete the cascade. -/
+
 end FormulaSupportBoundsFalsifiabilityProbe
 end Tests
 end Pnp3

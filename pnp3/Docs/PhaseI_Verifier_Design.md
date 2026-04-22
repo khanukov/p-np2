@@ -666,11 +666,139 @@ reach the CSAt-at-0 form, then apply these correctness theorems.
 6 steps pass; axiom inventory unchanged (propext=349, Classical.choice=345,
 Quot.sound=349).
 
-**F.4 status after session 50**: FULLY CLOSED.
+**F.4 status after session 50**: CS-form wrappers for const/input closed;
+arbitrary-gates ∃-form still outstanding.
 - Conditional correctness for arbitrary gates: ✓ (session 49s).
 - ∃-form for all-const lists: ✓ (session 48).
 - ∃-form for all-input lists: ✓ (session 49u).
-- Public CS-form wrappers: ✓ (session 50).
+- Public CS-form wrappers (const/input): ✓ (session 50).
+- ∃-form for arbitrary gates (incl. notGate/andGate/orGate, mixed): **remaining**.
+
+### Session 51 — F.4 FULLY CLOSED for arbitrary well-formed gate lists
+
+Session 51 closed the last F.4 gap: ∃-form unconditional correctness
+for **arbitrary well-formed gate lists** (including `.notGate`,
+`.andGate`, `.orGate`, and any mixture of gate types).
+
+**Why was this the last gap?**  The all-const and all-input ∃-form
+theorems exploit *prior-independence*: for those gate types,
+`SLGate.compute` ignores the accumulator, so `SLProgram.evalAux`
+succeeds unconditionally for any prior.  For `.notGate`/`.andGate`/
+`.orGate`, `compute` reads from the accumulator, so `evalAux` may fail
+on malformed lists.  The F.4 ∃-form for arbitrary gates therefore
+requires a **positional well-formedness** hypothesis.
+
+**New definitions** (in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean`):
+
+```lean
+def SLGate_wfAtLen {n : Nat} (L : Nat) : SLGate n → Prop
+  | .input _ => True
+  | .const _ => True
+  | .notGate k => k < L
+  | .andGate k l => k < L ∧ l < L
+  | .orGate k l => k < L ∧ l < L
+
+def SLProgram_wfFromOffset {n : Nat} : List (SLGate n) → Nat → Prop
+  | [], _ => True
+  | g :: rest, offset =>
+    SLGate_wfAtLen offset g ∧ SLProgram_wfFromOffset rest (offset + 1)
+```
+
+A gate list is well-formed starting from accumulator length `offset`
+iff each gate at position `i` has all its references in `[0, offset + i)`.
+
+**Key existence lemma** (pure SL-program statement, no TM content):
+
+```lean
+theorem evalAux_of_wf (row : Fin n → Bool) :
+    ∀ (gates : List (SLGate n)) (offset : Nat) (prior : List Bool),
+      prior.length = offset →
+      SLProgram_wfFromOffset gates offset →
+      ∃ vals : List Bool,
+        vals.length = gates.length ∧
+        SLProgram.evalAux row gates prior = some (prior ++ vals)
+```
+
+Proved by structural recursion on `gates` with case analysis over the
+5 gate constructors; `.notGate`/`.andGate`/`.orGate` cases use the
+well-formedness hypothesis to guarantee `prior[k]? = some prior[k]`
+(and similarly for `l`).
+
+**Main theorem — CSAt-form ∃-form for arbitrary gates** (via canonical prior):
+
+```lean
+theorem circuitEvaluatorCSAt_RunCorrect_wf_unconditional
+    (gates : List (SLGate n)) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (hwf : SLProgram_wfFromOffset gates offset)
+    {N : Nat} (c : Configuration ...) ... :
+    ∃ vals : List Bool,
+      vals.length = gates.length ∧
+      SLProgram.evalAux row gates (canonicalPrior gates offset ...) =
+        some (canonicalPrior gates offset ... ++ vals) ∧
+      (∀ i, (TM.runConfig c ...).tape ⟨..., _⟩ = vals[i]?.getD false) ∧
+      (∀ j, j outside write region → (TM.runConfig ...).tape j = c.tape j)
+```
+
+**Proof** (15 LOC): set canonical prior from tape, apply `evalAux_of_wf`
+to obtain `vals` + `h_eval`, invoke `CircuitEvaluatorCSAt_CondCorrect_all`
+with the canonical prior (using `canonicalPrior_length` and
+`canonicalPrior_h_prior_match` for its hypotheses) to obtain tape and
+preservation facts.
+
+**Why `canonicalPrior` rather than universally-quantified prior?**  The
+existing `CircuitEvaluatorCSAt_RunCorrect` Prop universally quantifies
+over user-supplied prior without requiring it to match the tape.  For
+prior-dependent gates (`.notGate`/`.andGate`/`.orGate`), a mismatched
+user prior would make `evalAux` compute vals *inconsistent with the
+tape* — so the Prop as written cannot hold for arbitrary gates with
+arbitrary prior.  The canonical prior (derived from the tape) sidesteps
+this tension entirely.
+
+**Public CS-form at offset = 0** — the original Milestone F target:
+
+```lean
+theorem circuitEvaluatorCS_run_correct_wf
+    (gates : List (SLGate n)) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (hwf : SLProgram_wfFromOffset gates 0)
+    {N : Nat} (c : Configuration ...) ... :
+    ∃ vals : List Bool,
+      vals.length = gates.length ∧
+      SLProgram.evalAux row gates [] = some vals ∧
+      ∀ i, (TM.runConfig c ...).tape ⟨..., _⟩ = vals[i]?.getD false
+```
+
+At `offset = 0`, the canonical prior collapses to `[]` (via
+`canonicalPrior_length = 0` and `List.length_eq_zero_iff`), the
+`prior ++ vals = vals` simplification applies, and the 4-conjunct CSAt
+conclusion reduces to the 3-conjunct CS form that matches the original
+Milestone F statement (design doc lines 38–48).
+
+**Verification** (session 51):
+- `lake build` green; `check.sh` all 6 steps pass.
+- Axiom inventory unchanged: propext=349, Classical.choice=345, Quot.sound=349.
+- New theorem axiom dependencies (via `#print axioms`):
+  - `evalAux_of_wf`: `[propext, Quot.sound]` (no `Classical.choice`).
+  - `circuitEvaluatorCSAt_RunCorrect_wf_unconditional`: `[propext, Classical.choice, Quot.sound]`.
+  - `circuitEvaluatorCS_run_correct_wf`: `[propext, Classical.choice, Quot.sound]`.
+
+**F.4 status after session 51**: **FULLY CLOSED UNCONDITIONALLY**.
+
+Complete deliverables:
+- Conditional correctness for arbitrary gates (session 49s, `CondCorrect_all`).
+- ∃-form for all-const lists (session 48).
+- ∃-form for all-input lists (session 49u).
+- Public CS-form wrappers for const/input (session 50).
+- **∃-form for arbitrary well-formed gates via canonical prior (session 51).**
+- **Public CS-form at offset=0 matching original Milestone F target (session 51).**
+
+The only remaining hypothesis in the final theorem is **positional
+well-formedness** (`SLProgram_wfFromOffset gates 0`) — an obvious
+correctness requirement for any circuit representation (every gate
+references must point to already-computed positions).  This is not a
+limitation of the proof; it is the minimal hypothesis under which the
+theorem can hold.
 
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 

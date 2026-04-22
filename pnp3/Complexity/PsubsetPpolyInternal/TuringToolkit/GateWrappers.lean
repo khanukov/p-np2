@@ -4837,6 +4837,241 @@ theorem circuitEvaluatorCS_run_correct_inputList {n : Nat} (is : List (Fin n))
       Δrowbase Δscratch hle :=
   circuitEvaluatorCSAt_inputList_RunCorrect_unconditional is 0 Δrowbase Δscratch hle
 
+/-! ### F.4 closure for ARBITRARY gate lists via positional well-formedness
+
+The all-const and all-input ∃-form theorems above exploit
+*prior-independence*: for those gate types, `SLGate.compute` ignores
+the accumulator, so `evalAux` always succeeds.  The remaining gate
+types — `.notGate`, `.andGate`, `.orGate` — read from the accumulator,
+so `evalAux` may fail on malformed lists (references out of bounds).
+
+To close F.4 for arbitrary gate lists (including `.notGate`/`.andGate`/
+`.orGate` and mixed combinations), we introduce a **positional
+well-formedness** predicate: each gate at position `i` (relative to
+accumulator length `offset + i`) must reference only indices in
+`[0, offset + i)`.
+
+Under this hypothesis, `evalAux` succeeds for any list, and the F.4
+correctness theorem extends to arbitrary gates via the canonical-prior
+construction used for the `inputList` case (session 49u). -/
+
+/-- Positional well-formedness for a single gate at accumulator length
+`L`: each of `.notGate`/`.andGate`/`.orGate`'s indices must be strictly
+less than `L`.  `.const b` and `.input i` are always well-formed. -/
+def SLGate_wfAtLen {n : Nat} (L : Nat) : SLGate n → Prop
+  | .input _ => True
+  | .const _ => True
+  | .notGate k => k < L
+  | .andGate k l => k < L ∧ l < L
+  | .orGate k l => k < L ∧ l < L
+
+/-- Positional well-formedness for a gate list starting from accumulator
+length `offset`: each gate at position `i` in the list is well-formed
+at level `offset + i`. -/
+def SLProgram_wfFromOffset {n : Nat} :
+    List (SLGate n) → Nat → Prop
+  | [], _ => True
+  | g :: rest, offset =>
+    SLGate_wfAtLen offset g ∧ SLProgram_wfFromOffset rest (offset + 1)
+
+/-- **Key existence lemma**: any well-formed gate list admits a
+successful `evalAux` computation with any prior of matching length.
+Used to build the `h_eval` hypothesis for `CondCorrect_all` in the
+arbitrary-gates ∃-form theorem below. -/
+theorem evalAux_of_wf {n : Nat} (row : Fin n → Bool) :
+    ∀ (gates : List (SLGate n)) (offset : Nat) (prior : List Bool),
+      prior.length = offset →
+      SLProgram_wfFromOffset gates offset →
+      ∃ vals : List Bool,
+        vals.length = gates.length ∧
+        SLProgram.evalAux row gates prior = some (prior ++ vals)
+  | [], _, prior, _, _ => by
+    refine ⟨[], rfl, ?_⟩
+    show SLProgram.evalAux row [] prior = some (prior ++ [])
+    simp [SLProgram.evalAux]
+  | g :: rest, offset, prior, h_len, hwf => by
+    obtain ⟨h_g_wf, h_rest_wf⟩ := hwf
+    -- For any well-formed gate, `g.compute row prior` succeeds.
+    have h_compute : ∃ v, g.compute row prior = some v := by
+      cases g with
+      | input i => exact ⟨row i, rfl⟩
+      | const b => exact ⟨b, rfl⟩
+      | notGate k =>
+        -- h_g_wf : SLGate_wfAtLen offset (.notGate k) unfolds to k < offset.
+        have h_k : k < offset := h_g_wf
+        have hk : k < prior.length := by rw [h_len]; exact h_k
+        have h_eq : prior[k]? = some prior[k] := List.getElem?_eq_getElem hk
+        refine ⟨! prior[k], ?_⟩
+        show prior[k]?.map (!·) = some (! prior[k])
+        rw [h_eq]; rfl
+      | andGate k l =>
+        obtain ⟨h_k, h_l⟩ : k < offset ∧ l < offset := h_g_wf
+        have hk : k < prior.length := by rw [h_len]; exact h_k
+        have hl : l < prior.length := by rw [h_len]; exact h_l
+        have hk_eq : prior[k]? = some prior[k] := List.getElem?_eq_getElem hk
+        have hl_eq : prior[l]? = some prior[l] := List.getElem?_eq_getElem hl
+        refine ⟨prior[k] && prior[l], ?_⟩
+        show (match prior[k]?, prior[l]? with
+              | some a, some b => some (a && b)
+              | _, _ => none) = some (prior[k] && prior[l])
+        rw [hk_eq, hl_eq]
+      | orGate k l =>
+        obtain ⟨h_k, h_l⟩ : k < offset ∧ l < offset := h_g_wf
+        have hk : k < prior.length := by rw [h_len]; exact h_k
+        have hl : l < prior.length := by rw [h_len]; exact h_l
+        have hk_eq : prior[k]? = some prior[k] := List.getElem?_eq_getElem hk
+        have hl_eq : prior[l]? = some prior[l] := List.getElem?_eq_getElem hl
+        refine ⟨prior[k] || prior[l], ?_⟩
+        show (match prior[k]?, prior[l]? with
+              | some a, some b => some (a || b)
+              | _, _ => none) = some (prior[k] || prior[l])
+        rw [hk_eq, hl_eq]
+    obtain ⟨v, hv⟩ := h_compute
+    -- Recurse on `rest` with `prior ++ [v]` at `offset + 1`.
+    have h_new_len : (prior ++ [v]).length = offset + 1 := by
+      rw [List.length_append, List.length_singleton]; omega
+    obtain ⟨vals_rest, h_rest_len, h_rest_eval⟩ :=
+      evalAux_of_wf row rest (offset + 1) (prior ++ [v]) h_new_len h_rest_wf
+    refine ⟨v :: vals_rest, ?_, ?_⟩
+    · simp [h_rest_len]
+    · rw [SLProgram.evalAux_cons, hv]
+      simp only [Option.bind_some]
+      rw [h_rest_eval]
+      -- `prior ++ [v] ++ vals_rest = prior ++ (v :: vals_rest)`.
+      rw [List.append_assoc]
+      rfl
+
+/-! ### Arbitrary-gates ∃-form correctness via canonical prior
+
+Combining `evalAux_of_wf` (existence of vals for well-formed gate lists)
+with `CircuitEvaluatorCSAt_CondCorrect_all` (conditional tape facts)
+and the canonical prior machinery yields a fully unconditional ∃-form
+correctness theorem for ARBITRARY well-formed gate lists.
+
+The theorem is stated directly (not through `CircuitEvaluatorCSAt_RunCorrect`)
+because that Prop universally quantifies over user-supplied `prior`, which
+cannot in general be reconciled with tape-dependent gates (`notGate`/`andGate`/
+`orGate`): the tape records the TM's computation based on canonical tape
+contents, not on an arbitrary user prior.  Using the canonical prior
+internally resolves this tension. -/
+
+/-- **Arbitrary-gates ∃-form correctness** (unconditional, canonical prior).
+For any well-formed gate list and any appropriate configuration, the TM
+computes values that (i) match `evalAux` applied with the canonical
+prior derived from the tape, (ii) appear at the expected scratch slots,
+and (iii) leave all tape positions outside the write region unchanged. -/
+theorem circuitEvaluatorCSAt_RunCorrect_wf_unconditional {n : Nat}
+    (gates : List (SLGate n)) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (hwf : SLProgram_wfFromOffset gates offset)
+    {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N)
+    (htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false) :
+    ∃ vals : List Bool,
+      vals.length = gates.length ∧
+      SLProgram.evalAux
+        (rowFromConfig c Δrowbase
+          (rowFromConfig_bounds gates offset Δrowbase Δscratch hle c hbound))
+        gates (canonicalPrior gates offset Δrowbase Δscratch hle c hbound) =
+        some (canonicalPrior gates offset Δrowbase Δscratch hle c hbound ++ vals) ∧
+      (∀ i : Fin gates.length,
+        (TM.runConfig
+            (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
+            ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape
+          ⟨(c.head : ℕ) + Δscratch + offset + i.val, by
+            have hi := i.isLt
+            have h_len_ge : N ≤
+                ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+              show N ≤ N + (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N + 1
+              omega
+            omega⟩ = vals[i.val]?.getD false) ∧
+      (∀ j : Fin
+          ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        (j.val < (c.head : ℕ) + Δscratch + offset ∨
+         (c.head : ℕ) + Δscratch + offset + gates.length ≤ j.val) →
+        (TM.runConfig
+            (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) c
+            ((circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).timeBound N)).tape j =
+          c.tape j) := by
+  set row := rowFromConfig c Δrowbase
+    (rowFromConfig_bounds gates offset Δrowbase Δscratch hle c hbound) with hrow_def
+  set prior_canonical := canonicalPrior gates offset Δrowbase Δscratch hle c hbound
+    with hpc_def
+  have hpc_len : prior_canonical.length = offset :=
+    canonicalPrior_length gates offset Δrowbase Δscratch hle c hbound
+  have hpc_match :=
+    canonicalPrior_h_prior_match gates offset Δrowbase Δscratch hle c hbound
+  -- Use evalAux_of_wf to get existential vals + evalAux equality.
+  obtain ⟨vals, h_vals_len, h_eval⟩ :=
+    evalAux_of_wf row gates offset prior_canonical hpc_len hwf
+  -- Apply CondCorrect_all to get tape + preservation facts.
+  have h_all := CircuitEvaluatorCSAt_CondCorrect_all gates offset Δrowbase Δscratch hle
+    c h_phase h_state_snd hbound htape_clean prior_canonical vals hpc_len hpc_match
+    h_vals_len h_eval
+  obtain ⟨h_slots, h_pres⟩ := h_all
+  exact ⟨vals, h_vals_len, h_eval, h_slots, h_pres⟩
+
+/-- **Public CS-form arbitrary-gates correctness** (unconditional).
+Specialisation to `offset = 0`, where the canonical prior collapses to
+`[]` and the `prior ++ vals = vals` simplification applies.
+
+This is the full closure of Milestone F for arbitrary gate lists: for
+any well-formed gate list (including any mix of `.input`, `.const`,
+`.notGate`, `.andGate`, `.orGate`), the `circuitEvaluatorCSAt gates 0`
+TM correctly simulates `SLProgram.evalAux row gates []`. -/
+theorem circuitEvaluatorCS_run_correct_wf {n : Nat}
+    (gates : List (SLGate n)) (Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch)
+    (hwf : SLProgram_wfFromOffset gates 0)
+    {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle).toPhased.toTM) N)
+    (h_phase : c.state.fst.val = 0)
+    (h_state_snd : c.state.snd = (false, false))
+    (hbound : (c.head : ℕ) + Δscratch + gates.length ≤ N)
+    (htape_clean : ∀ i : Fin
+        ((circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+        N ≤ i.val → c.tape i = false) :
+    ∃ vals : List Bool,
+      vals.length = gates.length ∧
+      SLProgram.evalAux
+        (rowFromConfig c Δrowbase
+          (rowFromConfig_bounds gates 0 Δrowbase Δscratch hle c (by simpa using hbound)))
+        gates [] = some vals ∧
+      ∀ i : Fin gates.length,
+        (TM.runConfig
+            (M := (circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle).toPhased.toTM) c
+            ((circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle).timeBound N)).tape
+          ⟨(c.head : ℕ) + Δscratch + i.val, by
+            have hi := i.isLt
+            have h_len_ge : N ≤
+                ((circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
+              show N ≤ N + (circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle).timeBound N + 1
+              omega
+            omega⟩ = vals[i.val]?.getD false := by
+  have hbound' : (c.head : ℕ) + Δscratch + 0 + gates.length ≤ N := by simpa using hbound
+  obtain ⟨vals, h_vals_len, h_eval, h_slots, _h_pres⟩ :=
+    circuitEvaluatorCSAt_RunCorrect_wf_unconditional gates 0 Δrowbase Δscratch hle
+      hwf c h_phase h_state_snd hbound' htape_clean
+  refine ⟨vals, h_vals_len, ?_, ?_⟩
+  · -- canonicalPrior at offset=0 is [], and `[] ++ vals = vals`.
+    have hpc_len : (canonicalPrior gates 0 Δrowbase Δscratch hle c hbound').length = 0 :=
+      canonicalPrior_length gates 0 Δrowbase Δscratch hle c hbound'
+    have hpc_nil : canonicalPrior gates 0 Δrowbase Δscratch hle c hbound' = [] :=
+      List.length_eq_zero_iff.mp hpc_len
+    rw [hpc_nil] at h_eval
+    simpa using h_eval
+  · -- Slot equality: Δscratch + 0 + i = Δscratch + i (def-eq).
+    intro i
+    have := h_slots i
+    simpa using this
+
 end GateEvalCS
 
 end TM

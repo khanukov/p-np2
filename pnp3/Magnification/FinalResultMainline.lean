@@ -2156,9 +2156,10 @@ theorem NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
   -- This is the path that audit Probe 8a formalizes.  The old
   -- predicate is then consumed by the legacy multi-switching-contract
   -- route, which Probe 4/5 show is ex-falso.  So the PROOF below
-  -- still routes through an inconsistent intermediate; the THEOREM
-  -- is valuable only to the extent that its two hypotheses are ever
-  -- realized by a legitimate external source (open research).
+  -- still routes through an inconsistent intermediate.  The THEOREM is
+  -- valuable only as a gap-exposing signature: with the current broad
+  -- `hUniformProv` shape, the pair of assumptions reconstructs the old false
+  -- predicate, so a future legitimate source must be narrower than this API.
   have hBoundsOld : FormulaSupportRestrictionBoundsPartial := by
     intro p' hFormula'
     obtain ⟨F, hsame, hAC0, hMSWit, hSem⟩ := hUniformProv (p := p') hFormula'
@@ -2170,9 +2171,9 @@ theorem NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
   --
   -- IMPORTANT: this route is exactly what Probes 3-5 showed to be
   -- inconsistent.  The placeholder-free chain below reuses the legacy
-  -- closure so that the theorem's signature makes the research gap
-  -- visible: one needs a source of hBoundsP + hUniformProv that
-  -- does not reduce to ex-falso.
+  -- closure so that the theorem's signature makes the research gap visible:
+  -- the current `hBoundsP + hUniformProv` pair is intentionally too strong and
+  -- collapses back to ex-falso.
   let hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract :=
     multiswitching_contract_of_semantic_provider_and_support_bounds
       AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal

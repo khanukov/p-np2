@@ -1,115 +1,131 @@
-# Concrete plan to reach unconditional `NP ⊄ PpolyDAG`
+# Plan Status For `NP_not_subset_PpolyDAG`
 
-Last updated: 2026-04-04.
+Last updated: 2026-04-22.
 
-This file is the canonical DAG-side theorem plan for the active branch.
+This file is the canonical DAG-side route note for the active branch.
 Hard policy reference:
 `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 
-## 1. Current verified state
+## 1. Current Verified State
 
 Already true in repository:
 
 1. `./scripts/check.sh` passes.
 2. No active project-local `axiom` and no active `sorry/admit` in `pnp3/`.
-3. Endpoint plumbing is in place:
-   - Route-B packaging: `dagRouteBSourceBlocker`, `DAGRouteBSourceClosure`.
-   - Final wrappers: asymptotic and `_TM` surfaces in magnification finals.
-4. Weak-route class-level surfaces are implemented:
-   - `NP_not_subset_PpolyDAG_of_acceptedFamilyWeakRoute`,
-   - `NP_not_subset_PpolyDAG_of_promiseYesWeakRoute`.
-5. Eventual magnification-style aggregation lemmas are implemented:
-   - `magnificationStyleNoSmallDAG_of_eventually_acceptedFamily`,
-   - `magnificationStyleNoSmallDAG_of_eventually_promiseYesSubcube`.
+3. Inclusion is internalized.
+4. DAG endpoint infrastructure is present:
+   - fixed-slice `PpolyDAG -> PpolyFormula` bridge;
+   - Route-B packaging: `dagRouteBSourceBlocker`, `DAGRouteBSourceClosure`;
+   - asymptotic and `_TM` final wrappers;
+   - support-half fallback surfaces.
 
 Conclusion:
 
-> endpoint wiring is not the blocker; source theorem debt is the blocker.
+> Endpoint wiring is not the central blocker.  The central blocker is the
+> formula-side support/locality source theorem.
 
-## 2. What is still not closed
+## 2. Refuted Historical Route
 
-Still missing internal theorem:
-
-```text
-ComplexityInterfaces.NP_not_subset_PpolyDAG
-```
-
-without external DAG-separation input.
-
-Current public final theorem has compatibility shape:
+The historical route used support bounds for arbitrary formula witnesses:
 
 ```text
-P_ne_NP_final
-  (hMag : MagnificationAssumptions)
+FormulaSupportRestrictionBoundsPartial
 ```
 
-So there is now one remaining closure layer:
+The audit proves this predicate is false.  It is refuted by fixed-slice
+truth-table hardwiring.  The associated multi-switching contract is also false:
 
-1. remove residual compatibility `hMag`.
+```text
+FormulaSupportBoundsFromMultiSwitchingContract -> False
+```
 
-## 3. Hard policy: fixed-slice branch is a closed historical no-go route
+Therefore the legacy theorem
 
-The literal fixed-slice support-half branch is no longer an active target.
-This is documented in code-level no-go modules:
+```text
+NP_not_subset_PpolyDAG_final
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+```
+
+is not an unconditional result.  Its `hMS` input is already inconsistent.
+
+## 3. Pipeline Attempt And Probe 7
+
+The first pipeline-aware replacement,
+`FormulaSupportBoundsPartial_fromPipeline`, is also formally ex-falso.
+
+Reason: the internal singleton provider can synthesize per-formula AC0
+provenance by fitting AC0 parameters to the formula's truth-table DNF.  This
+does not provide a real provenance filter.
+
+## 4. Fixed-Params Candidate
+
+The current candidate contract is:
+
+```text
+FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb
+```
+
+This fixes `ac0` externally, so the known singleton-provider attack no longer
+ports directly.  However:
+
+1. fixedParams is not a proved source theorem;
+2. fixedParams plus uniform provenance for every formula under the same `ac0`
+   reconstructs the old false predicate;
+3. the pair `fixedParams + uniformProvenance` is formally inconsistent.
+
+The theorem
+`NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance`
+exists to expose this exact gap.  It should not be read as mathematical
+progress toward an unconditional separation.
+
+The gap is isolated in
+`pnp3/Magnification/UnconditionalResearchGap.lean` as `ResearchGapWitness`.
+That file already contains the compiled bridge from the witness to `P != NP`.
+
+## 5. Fixed-Slice No-Go Status
+
+The literal fixed-slice support-half branch is not an active target.  This is
+documented in code-level no-go modules:
 
 - `LowerBounds/FailedRoute_FixedSliceSupportHalfCore.lean`
 - `LowerBounds/FailedRoute_FixedSliceSupportHalfImpossible.lean`
 
 Interpretation for planning:
 
-- keep fixed-slice wrappers only as endpoint compatibility plumbing,
-- do not spend theorem budget on reviving single-slice blocker hunt.
+- keep fixed-slice wrappers only as endpoint compatibility plumbing;
+- do not spend theorem budget on reviving a single-slice blocker hunt.
 
-## 4. Status of the DAG plan
+## 6. What Would Count As Progress
 
-This plan is now completed in the active tree.
+Real progress requires a non-vacuous formula-side theorem that:
 
-Current mainline route:
+1. does not quantify over arbitrary `PpolyFormula` witnesses;
+2. cannot be satisfied by truth-table hardwiring;
+3. cannot be satisfied by singleton per-formula AC0 provenance;
+4. uses fixed, externally meaningful AC0 parameters;
+5. does not imply the old false support-bounds predicate.
 
-1. choose the threshold slice `n = N0`,
-2. convert any fixed-slice DAG witness on that slice to a formula witness via
-   `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`,
-3. combine with formula-support bounds from `hMag.switching.multiswitching`,
-4. feed the result through the already-closed fixed-slice collapse consumer,
-5. obtain internal `NP_not_subset_PpolyDAG_final hMag`,
-6. then derive `P_ne_NP_final hMag`.
+Only after such a theorem exists should it be wired into the DAG final route.
 
-## 5. What remains after DAG closure
+## 7. Non-Goals
 
-The remaining unconditional blocker is no longer DAG separation.
-It is the residual formula-side compatibility package exposed by:
+Do not spend the next theorem sprint on:
 
-```text
-NP_not_subset_PpolyFormula_final
-  (hMag : MagnificationAssumptions)
-```
+1. adding final wrappers that hide the support-bounds source;
+2. claiming full unconditionality;
+3. presenting `fixedParams + uniformProvenance` as a solvable pair;
+4. reopening historical fixed-slice blocker hunts.
 
-## 6. Integration order after theorem target
+## 8. Definition Of Done
 
-1. DAG-side merge step is done: public final API no longer requires external
-   class-level DAG separation.
-2. Next clean residual `hMag` from the public theorem surface.
+DAG-side separation is honestly closed only when:
 
-## 7. Non-goals right now
-
-Do not spend next theorem sprint on:
-
-1. adding new wrappers,
-2. renaming existing wrappers,
-3. reopening historical DAG-side blocker hunts,
-4. claiming full unconditionality before `hMag` is removed from the
-   public dependency chain.
-
-## 8. Definition of done
-
-DAG side honestly closed when all hold:
-
-1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` proved internally.
-2. Public final theorem no longer takes external class-level DAG separation.
-3. Repository remains clean under `./scripts/check.sh`.
-4. `README.md`, `STATUS.md`, `TODO.md`, checklist docs are consistent.
-
-Fully unconditional branch when add:
-
-5. Public theorem no longer exposes compatibility-only `hMag`.
-6. Zero-argument final theorem `P_ne_NP` is derivable in active tree.
+1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is proved without false
+   support-bounds assumptions;
+2. the proof is localized as `ResearchGapWitness` in
+   `Magnification.UnconditionalResearchGap`;
+3. the formula-side source theorem has its own falsifiability audit;
+4. repository remains clean under `./scripts/check.sh`;
+5. `README.md`, `STATUS.md`, `TODO.md`, and checklist docs are consistent.

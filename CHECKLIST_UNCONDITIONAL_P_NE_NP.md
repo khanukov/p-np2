@@ -1,23 +1,21 @@
-# Checklist: Unconditional Constructive `P ≠ NP`
+# Checklist: Unconditional Constructive `P != NP`
 
-Updated: 2026-04-04
+Updated: 2026-04-22
 
 This is the canonical checklist for what still blocks an unconditional
-in-repo theorem `P ≠ NP`.
+in-repo theorem `P != NP`.
 
 For current release posture, see `RELEASE_RC.md`.
-For current DAG route plan, see
-`pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`.
-For hard route policy lock, see
-`pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
+For hard route policy lock, see `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 
-## Current final API (actual code)
+## Current Final API (actual code)
 
 Files:
+
 - compatibility import path: `pnp3/Magnification/FinalResult.lean`
 - active implementation surface: `pnp3/Magnification/FinalResultCore.lean`
 
-Current public default theorem:
+Current public provider-shaped endpoint:
 
 ```text
 P_ne_NP
@@ -33,56 +31,70 @@ P_ne_NP_final
   (hNPbridge : AsymptoticNPPullback hAsym)
 ```
 
-## What is already closed
+This is not an unconditional theorem.  The `hMS` component is part of the
+formally refuted support-bounds route.
+
+## Already Closed
 
 1. Active `pnp3/` tree is axiom-clean (`axiom = 0`, `sorry/admit = 0`).
 2. `./scripts/check.sh` passes on current tree.
 3. Inclusion is internalized via
    `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
-4. DAG endpoint wiring is closed (wrappers/source-closure plumbing in place).
-5. Historical fixed-slice support-half branch is explicitly archived as no-go
-   route modules:
+4. DAG endpoint wiring and fixed-slice `PpolyDAG -> PpolyFormula` conversion
+   are implemented.
+5. Historical fixed-slice support-half branch is archived as a no-go route:
    - `FailedRoute_FixedSliceSupportHalfCore.lean`
    - `FailedRoute_FixedSliceSupportHalfImpossible.lean`.
 
-## Remaining unconditional blockers
+## Refuted Assumption Surfaces
 
-### Blocker. Public final API cleanup
+The support-bounds audit proves that these surfaces are vacuous:
 
-Internal DAG separation is already closed on the default path:
-`NP_not_subset_PpolyDAG_final hMS hAsym hNPbridge` proves
-`ComplexityInterfaces.NP_not_subset_PpolyDAG` without an external DAG input.
+1. `FormulaSupportRestrictionBoundsPartial -> False`
+2. `FormulaSupportBoundsFromMultiSwitchingContract -> False`
+3. `MagnificationAssumptions -> False`
+4. `FormulaSupportBoundsPartial_fromPipeline -> False`
+5. `MagnificationAssumptions_fromPipeline -> False`
 
-Public zero-arg theorem is still not assumption-free while it depends on:
+Therefore, proving final statements from these assumptions is not mathematical
+progress toward unconditional `P != NP`.
+
+## Fixed-Params Candidate
+
+The active nontrivial candidate shape is:
 
 ```text
-FinalPayloadProvider
-  with payload fields hMS / hAsym / hNPbridge
+FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb
 ```
 
-Formula-side closure update:
+Current audit status:
 
-- default support-bounds source can now internalize `hMS` at the endpoint
-  boundary (`P_ne_NP_of_default_formulaSource`).
+1. fixed external `ac0` blocks the known Probe 7 singleton-provider attack;
+2. fixedParams alone is not currently refuted in-project;
+3. fixedParams plus uniform provenance for every formula witness under the
+   same `ac0` implies the old false predicate;
+4. the pair `fixedParams + uniformProvenance` is formally inconsistent.
 
-Therefore full unconditionality requires both:
+## Remaining Unconditional Blocker
 
-1. internal source for remaining asymptotic payload (`hAsym/hNPbridge`),
-2. zero-argument public final theorem.
+Full unconditionality requires a non-vacuous replacement for the false
+formula-side source.  Such a theorem must:
 
-## Single active practical route (policy)
+1. avoid universal quantification over arbitrary `PpolyFormula` witnesses;
+2. reject truth-table hardwiring and singleton provenance;
+3. use fixed, externally meaningful AC0 parameters;
+4. not imply `FormulaSupportRestrictionBoundsPartial`;
+5. connect to the existing DAG endpoint plumbing without routing through the
+   old `FormulaSupportBoundsFromMultiSwitchingContract`.
 
-Use the default-surface internalization route:
+This is a research-level lower-bound gap, not a missing wrapper.
 
-1. keep the now-internal DAG separation route intact,
-2. internalize formula-side sources still exposed by default payload,
-3. remove residual provider payload,
-4. expose zero-argument `P_ne_NP`.
+The gap is isolated in
+`pnp3/Magnification/UnconditionalResearchGap.lean`.  The file defines
+`ResearchGapWitness` and already proves
+`P_ne_NP_of_researchGap : ResearchGapWitness -> P_ne_NP`.
 
-Do **not** reopen historical DAG-side support-half / blocker hunts as the main
-default-final closure route.
-
-## Proof-quality safety checks
+## Proof-Quality Safety Checks
 
 Before declaring any blocker closed, confirm:
 
@@ -92,18 +104,22 @@ Before declaring any blocker closed, confirm:
    `pnp3/Tests/BarrierAudit.lean`,
    `pnp3/Tests/BarrierBypassAudit.lean`,
    `pnp3/Tests/BridgeLocalityRegression.lean`,
-   `pnp3/Tests/WeakRouteSurfaceTests.lean`.
-3. Final endpoints in `pnp3/Magnification/FinalResultCore.lean`
-   (and compatibility path `FinalResult.lean`) still compile.
-4. No document claims unconditional `P ≠ NP` prematurely.
+   `pnp3/Tests/WeakRouteSurfaceTests.lean`,
+   `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+3. New source assumptions have a falsifiability audit before they are used by
+   final theorem surfaces.
+4. No document claims unconditional `P != NP` prematurely.
 
-## Definition of done
+## Definition Of Done
 
 All of the following must hold at once:
 
-1. Repository proves `ComplexityInterfaces.NP_not_subset_PpolyDAG` internally.
-2. Public final theorem no longer requires external class-level DAG separation.
-3. Public final theorem no longer depends on external provider payload.
-4. Zero-argument theorem `P_ne_NP` is derivable in active tree.
-5. `README.md`, `STATUS.md`, `TODO.md`, and `AXIOMS_FINAL_LIST.md` are updated
-   consistently to unconditional wording.
+1. A non-vacuous formula-side source theorem replaces the refuted
+   support-bounds/multi-switching route.
+2. `ResearchGapWitness` is proved in
+   `pnp3/Magnification/UnconditionalResearchGap.lean`.
+3. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is derived without false or
+   externally supplied research assumptions.
+4. Public final theorem no longer depends on external provider payload.
+5. Zero-argument theorem `P_ne_NP` is derivable in the active tree.
+6. Canonical docs are updated consistently to unconditional wording.

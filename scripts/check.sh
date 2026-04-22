@@ -250,8 +250,8 @@ else
 fi
 
 # Documentation route-policy guardrails:
-# keep canonical docs aligned on the current blocker and prevent silent
-# reintroduction of deprecated DAG-route wording.
+# keep canonical docs aligned on the current falsifiability audit and prevent
+# silent reintroduction of deprecated DAG-route wording.
 route_docs=(
   "STATUS.md"
   "TODO.md"
@@ -267,35 +267,39 @@ for f in "${route_docs[@]}"; do
   fi
 done
 
-# Hard requirement: canonical docs must explicitly mention the fixed-slice
-# no-go status, the fact that DAG separation is already internalized, and the
-# current residual `MagnificationAssumptions` blocker.
+# Hard requirement: canonical docs must explicitly mention fixed-slice no-go
+# status, the refuted support-bounds/multi-switching route, and the current
+# fixed-params candidate boundary.
 if ! rg -n "fixed-slice.*no-go|no-go.*fixed-slice" "${route_docs[@]}" >/tmp/pnp3_route_nogo_hits.log; then
   echo "Route-policy violation: canonical docs do not explicitly state fixed-slice no-go status."
   exit 1
 fi
 
-if ! rg -n "DAG separation.*internalized|internalized.*DAG separation|NP_not_subset_PpolyDAG_final" "${route_docs[@]}" >/tmp/pnp3_route_active_hits.log; then
-  echo "Route-policy violation: canonical docs do not explicitly state that DAG separation is already internalized."
+if ! rg -n "FormulaSupportRestrictionBoundsPartial.*False|FormulaSupportBoundsFromMultiSwitchingContract.*False|support-bounds.*ex-falso|support-bounds.*false|refuted support-bounds" "${route_docs[@]}" >/tmp/pnp3_route_refuted_support_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state the refuted support-bounds route."
   exit 1
 fi
 
-# Current blocker wording must be explicit.
-if ! rg -n "MagnificationAssumptions|NP_not_subset_PpolyFormula_final" "${route_docs[@]}" >/tmp/pnp3_route_blocker_hits.log; then
-  echo "Route-policy violation: canonical docs do not explicitly state the residual MagnificationAssumptions blocker."
+if ! rg -n "fixedParams|FormulaSupportBoundsPartial_fromPipeline_fixedParams" "${route_docs[@]}" >/tmp/pnp3_route_fixedparams_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state the fixedParams candidate boundary."
+  exit 1
+fi
+
+if ! rg -n "fixedParams.*uniformProvenance.*inconsistent|fixedParams.*uniform provenance.*inconsistent|fixedParams \\+ uniformProvenance" "${route_docs[@]}" >/tmp/pnp3_route_fixedparams_leak_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the fixedParams + uniformProvenance leak."
   exit 1
 fi
 
 # Forbidden legacy wording: these phrases historically pointed to deprecated
 # DAG-side closure prioritization and should not reappear in canonical docs.
-if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem|asymptotic/eventual source theorem' \
+if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem|asymptotic/eventual source theorem|Only one route is still active for true unconditionality|Only API cleanup remains' \
     "${route_docs[@]}" >/tmp/pnp3_route_legacy_phrase_hits.log; then
   echo "Detected deprecated fixed-slice closure wording in canonical docs:"
   cat /tmp/pnp3_route_legacy_phrase_hits.log
   exit 1
 fi
 
-echo "Route policy docs OK (fixed-slice no-go + internalized DAG + residual hMag blocker enforced)."
+echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams boundary enforced)."
 
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"

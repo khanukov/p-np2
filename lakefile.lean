@@ -122,6 +122,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.FinalResultWeakRoutes,
     Glob.one `Magnification.FinalResultLegacyTM,
     Glob.one `Magnification.FinalResultCore,
+    Glob.one `Magnification.UnconditionalResearchGap,
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.

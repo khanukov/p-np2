@@ -1,62 +1,61 @@
-# Release Plan (RC): 2026-04-15
+# Release Plan (RC): 2026-04-22
 
 This document defines the recommended release posture for the current state.
 
-## Release type
+## Release Type
 
-`RC / milestone`, not final unconditional claim.
+`RC / framework milestone`, not a final unconditional claim.
 
-## What is included in this RC
+## What Is Included
 
 1. Default inclusion side is internalized through
    `Simulation.proved_P_subset_PpolyDAG_internal`.
 2. Active tree remains axiom-clean (`axiom = 0`, `sorry/admit = 0` in
    `pnp3/`).
-3. Additional DAG-native `_TM` wrappers are exposed from
-   stable-restriction / source-closure / blocker surfaces.
-4. Additional asymptotic fixed-slice DAG wrappers are exposed:
-   `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`,
-   `..._of_asymptotic_dag_stableRestriction`,
-   `..._of_asymptotic_sourceClosure`,
-   `..._of_asymptotic_blocker`,
-   plus companion `P_ne_NP_final_of_*` wrappers.
-5. Support-half fallback now closes downstream to a class-level separation
-   surface via `NP_not_subset_PpolyDAG_surface_of_supportHalfBoundFamily`.
-6. Canonical witness-density hardwire coverage and all-slices compiler glue are
-   present in code.
-7. Default DAG separation is internalized through
-   `NP_not_subset_PpolyDAG_final (hMag : MagnificationAssumptions)`.
+3. DAG endpoint infrastructure is present: fixed-slice DAG-to-formula bridge,
+   asymptotic wrappers, `_TM` wrappers, Route-B/source-closure/blocker
+   surfaces, and support-half fallback surfaces.
+4. The falsifiability audit is now explicit:
+   - old support-bounds route is ex-falso;
+   - old multi-switching contract is ex-falso;
+   - the first pipeline-aware replacement is ex-falso;
+   - fixedParams blocks the known singleton-provider attack but remains a
+     candidate contract, not a proved theorem.
+5. The gap-exposing theorem
+   `NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance`
+   makes the research-level assumptions explicit.
+6. The single-file frontier module
+   `pnp3/Magnification/UnconditionalResearchGap.lean` records the remaining
+   gap as `ResearchGapWitness` and provides the conditional bridge to
+   `P != NP`.
 
-## What is not included
+## What Is Not Included
 
-1. Unconditional in-repo theorem `P ≠ NP`.
-2. Internalized default source for `NP_not_subset_PpolyFormula_final`.
-3. A zero-argument public final theorem.
+1. Unconditional in-repo theorem `P != NP`.
+2. A non-vacuous proof of the formula-side support/locality source theorem.
+3. A proof that fixedParams is realizable for realistic AC0 parameters.
+4. A zero-argument final theorem with no external provider payload.
 
-The public default theorem is still:
-
-```text
-P_ne_NP_final
-  (hMag : MagnificationAssumptions)
-```
-
-Interpretation:
-
-1. DAG separation is already internalized on the default path.
-2. `hMag` remains the current public blocker until the final API is cleaned up.
-
-## Mandatory public wording for this RC
+## Mandatory Public Wording
 
 Use wording equivalent to:
 
-1. "This release internalizes the inclusion side (`P ⊆ PpolyDAG`) for default
-   final wrappers."
-2. "The repository now exposes additional honest fixed-slice/asymptotic DAG
-   wrappers and fallback DAG surfaces."
-3. "Final `P ≠ NP` remains conditional; no unconditional claim is made in this
-   release."
+1. "This release provides a Lean framework and falsifiability audit for a
+   magnification route."
+2. "The legacy support-bounds and multi-switching assumptions were found to be
+   inconsistent in the formalization."
+3. "The fixedParams contract is a candidate shape for future work, not a
+   completed lower-bound theorem."
+4. "Final `P != NP` remains conditional; no unconditional claim is made."
 
-## Release checklist
+Avoid wording that says:
+
+1. "DAG separation is fully solved" without mentioning that the current route
+   still relies on false formula-side support-bounds assumptions.
+2. "Only API cleanup remains."
+3. "The remaining work is just formalization."
+
+## Release Checklist
 
 Run and archive outputs for:
 
@@ -66,29 +65,25 @@ for f in pnp3/Tests/AxiomsAudit.lean \
          pnp3/Tests/BarrierAudit.lean \
          pnp3/Tests/BarrierBypassAudit.lean \
          pnp3/Tests/BridgeLocalityRegression.lean \
-         pnp3/Tests/WeakRouteSurfaceTests.lean; do
+         pnp3/Tests/WeakRouteSurfaceTests.lean \
+         pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean; do
   lake env lean "$f"
 done
 ```
 
-Confirm signatures in:
-
-- `pnp3/Magnification/FinalResultCore.lean`
-- compatibility import path `pnp3/Magnification/FinalResult.lean`
-- `pnp3/Tests/WeakRouteSurfaceTests.lean`
-
 Confirm docs are aligned:
 
 - `README.md`
-- `README_PUBLICATION.md`
 - `STATUS.md`
 - `TODO.md`
 - `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
+- `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`
 
-## Post-RC closure plan
+## Post-RC Research Plan
 
-1. Internalize `NP_not_subset_PpolyFormula_final`.
-2. Remove remaining external DAG-separation input from the public final route.
-3. Then remove the residual compatibility `hMag` argument from the default
-   public theorem surface.
-4. Only after that switch repository-wide wording to unconditional status.
+1. Treat `FormulaSupportBoundsPartial_fromPipeline_fixedParams` as a candidate
+   contract only.
+2. Audit every proposed replacement source against truth-table hardwiring.
+3. Do not wire a new source into final theorems until it has a falsifiability
+   probe showing it does not imply the old false predicate.
+4. Keep independent formalization milestones separate from `P != NP` claims.

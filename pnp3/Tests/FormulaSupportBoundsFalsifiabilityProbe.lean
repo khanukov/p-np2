@@ -477,16 +477,15 @@ formulas could close it, but that provider must itself be consistent
 
 The fixedParams predicate is **not trivially ex-falso** via the Probe
 7 route.  It might still be ex-falso via a DIFFERENT route not
-currently in-project.  The CLEAN next step is to formalize the DAG
-final theorem under fixedParams as the single named assumption, and
-treat "prove or refute fixedParams ac0 sb for realistic polylog-M
-ac0" as the **central research-level open problem** of the project.
+currently in-project.
 
-No new `False` probe here — Probe 8 is an **absence-of-attack**
-audit, not a positive theorem.  The absence is documented via the
-documentation block above.  Any future session that finds a probe-
-route to derive `False` from fixedParams for any specific ac0+sb
-should add it here as `false_of_FormulaSupportBoundsPartial_fromPipeline_fixedParams_specific ac0 sb ...`. -/
+Probe 8a below adds the important positive leak theorem: fixedParams
+together with uniform provenance under the same external `ac0` is
+ex-falso, because that pair reconstructs the old false support-bounds
+predicate.  Any future session that finds a route to derive `False`
+from fixedParams alone for any specific ac0+sb should add it here as
+`false_of_FormulaSupportBoundsPartial_fromPipeline_fixedParams_specific
+ac0 sb ...`. -/
 
 /-- **Probe 8a — LEAK TEST**: if a caller could synthesize matching
 AC0 provenance for every formula under a single fixed `ac0`, then
@@ -519,6 +518,36 @@ theorem fixedParams_entails_old_under_uniformProvenance
   intro p' hFormula'
   obtain ⟨F, hsame, hAC0, hMSWit, hSem⟩ := uniformProvenance (p := p') hFormula'
   exact hBoundsP (p := p') F hsame hAC0 hMSWit hFormula' hSem
+
+/-- **Probe 8a corollary — the leaked pair is inconsistent**:
+`fixedParams ac0 sb` by itself is not refuted by Probe 7, but the
+combination of `fixedParams ac0 sb` and uniform provenance for every
+formula witness under the same `ac0` is already ex-falso.
+
+This is the formal version of the session-68 diagnosis: the missing
+`uniformProvenance` source cannot be paired with the fixed-params support
+bounds as currently stated, because together they reconstruct the old
+`FormulaSupportRestrictionBoundsPartial`, and Probe 3 refutes that old
+predicate. -/
+theorem false_of_fixedParams_and_uniformProvenance
+    (p : GapPartialMCSPParams)
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (sb : Nat → Nat)
+    (uniformProvenance :
+      ∀ {p : GapPartialMCSPParams}
+        (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+        ∃ (F : Core.Family ac0.n) (hsame : ac0.n = Models.partialInputLen p),
+          ThirdPartyFacts.AC0FamilyWitnessProp ac0 F ∧
+          Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) ∧
+          (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+            ∀ x : Core.BitVec ac0.n,
+              f x = ComplexityInterfaces.FormulaCircuit.eval
+                ((Classical.choose hFormula).family (Models.partialInputLen p))
+                (ThirdPartyFacts.castBitVec hsame x)))
+    (hBoundsP : Magnification.FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb) :
+    False :=
+  false_of_FormulaSupportRestrictionBoundsPartial p
+    (fixedParams_entails_old_under_uniformProvenance ac0 sb uniformProvenance hBoundsP)
 
 /-- **Probe 8b — LEAK is not automatic**: absent a `uniformProvenance`
 hypothesis, `fixedParams` does NOT trivially reduce to the old

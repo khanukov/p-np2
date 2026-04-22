@@ -1,6 +1,7 @@
 import Magnification.Facts_Magnification_Partial
 import Magnification.LocalityLift_Partial
 import Magnification.AC0LocalityBridge
+import LowerBounds.LB_Formulas_Core_Partial
 import ThirdPartyFacts.PartialLocalityLift
 
 namespace Pnp3
@@ -96,6 +97,22 @@ theorem stableWitness_of_formula_sizeBound
         Models.Partial.tableLen p.n / 2 := by
     exact le_trans (ComplexityInterfaces.FormulaCircuit.support_card_le_size c) hSize
   simpa [c, wf] using stableWitness_of_formula_supportBound (p := p) hFormula hSupport
+
+/- 
+NOTE (active route policy):
+
+The historical Stage-A formula→AC0 bridge APIs that exposed residual payload
+(`union_small`, `easyData`) are intentionally removed from the active surface.
+
+The current default closure route goes through:
+1. support-bounds packaging (`FormulaSupportRestrictionBoundsPartial`),
+2. `StructuredLocalityProviderPartial`,
+3. fixed/asymptotic formula-collapse endpoints.
+
+This keeps the public/active theorem surface aligned with the real blocker:
+internalizing formula-side mathematics behind the support-bounds route, rather
+than propagating residual payload interfaces.
+-/
 
 /--
 Constructive engine for deriving a structured locality provider from
@@ -2072,6 +2089,33 @@ theorem formula_support_bounds_and_semantic_link_from_multiswitching
   simpa using AC0LocalityBridge.package_semantic_link hMS (p := p) hFormula
 
 /--
+Minimal formula-side A9 core payload:
+numeric support bounds + semantic link for the extracted strict formula witness.
+
+This intentionally stops before any downstream asymptotic / NP-side wiring.
+-/
+structure FormulaSupportCoreBounds where
+  bounds : FormulaSupportRestrictionBoundsPartial
+  semLink :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      FormulaSemanticLinkPartial hFormula
+
+/--
+Build the minimal formula-side core payload directly from the strengthened
+multi-switching contract.
+-/
+theorem formulaSupportCoreBounds_of_multiswitching
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaSupportCoreBounds := by
+  classical
+  rcases formula_support_bounds_and_semantic_link_from_multiswitching hMS
+    with ⟨hBounds, hSemLink⟩
+  refine ⟨hBounds, ?_⟩
+  intro p hFormula
+  simpa [FormulaSemanticLinkPartial] using hSemLink (p := p) hFormula
+
+/--
 Convenient combined projection from split A9 inputs
 (`semantic provider` + `support bounds`) to the active locality-facing API.
 -/
@@ -2557,6 +2601,37 @@ theorem structuredLocalityProviderPartial_of_supportBounds
     StructuredLocalityProviderPartial :=
   structuredLocalityProviderPartial_of_restrictionData
     (formulaRestrictionCertificateData_of_supportBounds hBounds)
+
+/--
+Assembled formula-side core package used by the active route:
+1. support-bounds core,
+2. semantic link to the extracted strict formula witness,
+3. local core-step obligations,
+4. structured locality provider.
+-/
+structure FormulaSupportCorePackage where
+  boundsData : FormulaSupportCoreBounds
+  coreSteps : FormulaSupportCoreSteps
+  provider : StructuredLocalityProviderPartial
+
+/--
+One-shot constructor for `FormulaSupportCorePackage` from the strengthened
+multi-switching contract.
+
+This is intentionally a composition theorem: no new mathematics is introduced,
+we only package already-proven formula-side core transitions in one reusable
+object.
+-/
+theorem formulaSupportCorePackage_of_multiswitching
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    FormulaSupportCorePackage := by
+  let boundsData : FormulaSupportCoreBounds :=
+    formulaSupportCoreBounds_of_multiswitching hMS
+  let coreSteps : FormulaSupportCoreSteps :=
+    formula_support_core_steps_of_multiswitching_contract hMS
+  let provider : StructuredLocalityProviderPartial :=
+    structuredLocalityProviderPartial_of_supportBounds boundsData.bounds
+  exact ⟨boundsData, coreSteps, provider⟩
 
 /--
 Direct structured-provider constructor from the generic extracted local-core

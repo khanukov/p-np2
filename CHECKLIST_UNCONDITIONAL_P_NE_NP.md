@@ -20,8 +20,17 @@ Files:
 Current public default theorem:
 
 ```text
+P_ne_NP
+  [FinalPayloadProvider]
+```
+
+Explicit payload endpoint kept for auditing:
+
+```text
 P_ne_NP_final
-  (hMag : MagnificationAssumptions)
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
 ```
 
 ## What is already closed
@@ -41,18 +50,24 @@ P_ne_NP_final
 ### Blocker. Public final API cleanup
 
 Internal DAG separation is already closed on the default path:
-`NP_not_subset_PpolyDAG_final hMag` proves
+`NP_not_subset_PpolyDAG_final hMS hAsym hNPbridge` proves
 `ComplexityInterfaces.NP_not_subset_PpolyDAG` without an external DAG input.
 
-Public theorem is still not assumption-free while it exposes:
+Public zero-arg theorem is still not assumption-free while it depends on:
 
 ```text
-hMag : MagnificationAssumptions
+FinalPayloadProvider
+  with payload fields hMS / hAsym / hNPbridge
 ```
+
+Formula-side closure update:
+
+- default support-bounds source can now internalize `hMS` at the endpoint
+  boundary (`P_ne_NP_of_default_formulaSource`).
 
 Therefore full unconditionality requires both:
 
-1. internal formula-side / magnification source,
+1. internal source for remaining asymptotic payload (`hAsym/hNPbridge`),
 2. zero-argument public final theorem.
 
 ## Single active practical route (policy)
@@ -60,8 +75,8 @@ Therefore full unconditionality requires both:
 Use the default-surface internalization route:
 
 1. keep the now-internal DAG separation route intact,
-2. internalize `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`,
-3. remove residual `hMag`,
+2. internalize formula-side sources still exposed by default payload,
+3. remove residual provider payload,
 4. expose zero-argument `P_ne_NP`.
 
 Do **not** reopen historical DAG-side support-half / blocker hunts as the main
@@ -88,7 +103,7 @@ All of the following must hold at once:
 
 1. Repository proves `ComplexityInterfaces.NP_not_subset_PpolyDAG` internally.
 2. Public final theorem no longer requires external class-level DAG separation.
-3. Public final theorem no longer exposes compatibility-only `hMag`.
+3. Public final theorem no longer depends on external provider payload.
 4. Zero-argument theorem `P_ne_NP` is derivable in active tree.
 5. `README.md`, `STATUS.md`, `TODO.md`, and `AXIOMS_FINAL_LIST.md` are updated
    consistently to unconditional wording.

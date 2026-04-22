@@ -204,9 +204,14 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
     exit 1
   fi
 
-  if ! rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
-      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_pkg_sig_hits.log; then
-    echo "Detected non-package signature for P_ne_NP_final (expected hMag : MagnificationAssumptions)."
+  # Current milestone policy (post-unbundle):
+  # the canonical default `P_ne_NP_final` must expose the explicit minimal
+  # payload (hMS/hAsym/hNPbridge), while package-style compatibility wrappers
+  # remain available separately (`*_of_magnification`).
+  if ! rg -n -U \
+      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)\\n[[:space:]]*\\(hAsym[[:space:]]*:[[:space:]]*AsymptoticFormulaTrackHypothesis\\)\\n[[:space:]]*\\(hNPbridge[[:space:]]*:[[:space:]]*AsymptoticNPPullback[[:space:]]+hAsym\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_unbundled_sig_hits.log; then
+    echo "Detected invalid signature for P_ne_NP_final (expected unbundled hMS/hAsym/hNPbridge payload)."
     exit 1
   fi
 fi

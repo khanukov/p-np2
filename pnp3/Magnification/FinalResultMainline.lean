@@ -48,6 +48,52 @@ structure AsymptoticNPPullback (hAsym : AsymptoticFormulaTrackHypothesis) : Type
       (gapPartialMCSP_AsymptoticLanguage hAsym.spec)
 
 /--
+Theorem-level constructive source package for the asymptotic track.
+
+Unlike provider classes, this structure keeps all source obligations explicit as
+ordinary fields.  It is intended for the "real internalization" step where
+`hAsym`/`hNPbridge` are derived from concrete mathematical payload, not injected
+through endpoint-level class wiring.
+-/
+structure AsymptoticFormulaTrackData where
+  spec : GapPartialMCSPAsymptoticSpec
+  N0 : Nat
+  pAt : ∀ n : Nat, N0 ≤ n → GapPartialMCSPParams
+  pAt_n : ∀ n (hn : N0 ≤ n), (pAt n hn).n = n
+  sliceEq :
+    ∀ n (hn : N0 ≤ n),
+      ∀ x : Core.BitVec (Models.partialInputLen (pAt n hn)),
+        gapPartialMCSP_AsymptoticLanguage spec
+            (Models.partialInputLen (pAt n hn)) x =
+          gapPartialMCSP_Language (pAt n hn)
+            (Models.partialInputLen (pAt n hn)) x
+  asymptoticNP_TM : Models.gapPartialMCSP_Asymptotic_in_NP_TM spec
+
+/--
+Build `AsymptoticFormulaTrackHypothesis` from constructive asymptotic source
+data.
+-/
+def asymptoticFormulaTrackHypothesis_of_data
+    (D : AsymptoticFormulaTrackData) : AsymptoticFormulaTrackHypothesis where
+  spec := D.spec
+  N0 := D.N0
+  pAt := D.pAt
+  pAt_n := D.pAt_n
+  sliceEq := D.sliceEq
+
+/--
+Build the NP pullback package from constructive asymptotic source data.
+
+The strict NP witness is obtained canonically from the asymptotic TM witness
+embedded in `AsymptoticFormulaTrackData`.
+-/
+def asymptoticNPPullback_of_data
+    (D : AsymptoticFormulaTrackData) :
+    AsymptoticNPPullback (asymptoticFormulaTrackHypothesis_of_data D) where
+  strictAsymptotic :=
+    Models.gapPartialMCSP_Asymptotic_in_NP_of_TM D.spec D.asymptoticNP_TM
+
+/--
 Explicit assumptions package for the switching/shrinkage side:
 it carries the strengthened A9 multi-switching contract (including semantic
 linkage), from which support-bounds and the structured provider are derived
@@ -1795,9 +1841,8 @@ slice `n = N0`, convert any fixed-slice DAG witness to a formula witness by
 tree-unfolding that one DAG, and feed it through the already-closed
 support-bounds/stable-restriction consumer.
 -/
-theorem NP_not_subset_PpolyDAG_final
-  (hMag : MagnificationAssumptions)
-    :
+theorem NP_not_subset_PpolyDAG_final_with_magnification
+  (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   let n : Nat := hMag.antiChecker.asymptotic.N0
   have hn : hMag.antiChecker.asymptotic.N0 ≤ n := le_rfl
@@ -1811,16 +1856,258 @@ theorem NP_not_subset_PpolyDAG_final
         Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice p)
 
 /--
-Package-shaped final wrapper kept for CI/signature policy compatibility.
+Unbundled final DAG-separation API.
 
-Class-level DAG separation is now derived internally from `hMag`; the remaining
-public blocker is only the magnification assumptions package itself.
+This theorem intentionally removes the *bundled* public dependency on
+`MagnificationAssumptions` from the default endpoint signature and takes only
+the three payloads that are actually used:
+
+1. switching-side multi-switching contract,
+2. asymptotic slice-track package,
+3. NP pullback witness for that asymptotic track.
+-/
+theorem NP_not_subset_PpolyDAG_final
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  -- Repackage the three explicit inputs into the historical compatibility
+  -- bundle and reuse the already-audited internal closure proof.
+  let hMag : MagnificationAssumptions :=
+    { switching := { multiswitching := hMS }
+      antiChecker :=
+        { asymptotic := hAsym
+          npBridge := hNPbridge } }
+  exact NP_not_subset_PpolyDAG_final_with_magnification hMag
+
+/--
+Compatibility wrapper preserving the historical package-shaped DAG endpoint.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_magnification
+  (hMag : MagnificationAssumptions) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_final_with_magnification hMag
+
+/--
+Primary final `P ≠ NP` endpoint with unbundled arguments.
+
+Compared with the previous surface, the default theorem no longer exposes
+`hMag : MagnificationAssumptions` as a single public argument.  It now takes
+only the minimal explicit payload consumed by the closure proof.
 -/
 theorem P_ne_NP_final
-  (hMag : MagnificationAssumptions) :
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final hMag)
+    (NP_not_subset_PpolyDAG_final hMS hAsym hNPbridge)
+
+/--
+Support-bounds endpoint that removes `hMS` from the public input surface.
+
+This is a strict progress step toward assumption internalization:
+the multi-switching contract is reconstructed internally from
+`FormulaSupportRestrictionBoundsPartial` via
+`multiswitching_contract_internalized_of_support_bounds`.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final
+      (hMS := multiswitching_contract_internalized_of_support_bounds hBounds)
+      (hAsym := hAsym)
+      (hNPbridge := hNPbridge)
+
+/--
+`P ≠ NP` endpoint with support-bounds input instead of explicit `hMS`.
+
+This theorem does not make the route unconditional yet, but it closes one
+interface layer by internalizing the `hMS` construction.
+-/
+theorem P_ne_NP_final_of_supportBounds
+  (hBounds : FormulaSupportRestrictionBoundsPartial)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_supportBounds hBounds hAsym hNPbridge)
+
+/--
+Compatibility wrapper preserving the historical package-shaped `P ≠ NP`
+endpoint for callers that still pass `MagnificationAssumptions`.
+-/
+theorem P_ne_NP_final_of_magnification
+  (hMag : MagnificationAssumptions) :
+  ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final
+    hMag.switching.multiswitching
+    hMag.antiChecker.asymptotic
+    hMag.antiChecker.npBridge
+
+/--
+Provider-style default payload for the zero-argument public endpoint.
+
+Important honesty note:
+this does **not** make the result unconditional by itself.  It only moves the
+remaining payload from explicit theorem arguments into one auditable provider
+interface.
+-/
+class FinalPayloadProvider : Type where
+  hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract
+  hAsym : AsymptoticFormulaTrackHypothesis
+  hNPbridge : AsymptoticNPPullback hAsym
+
+/--
+Asymptotic-side provider extracted out of `FinalPayloadProvider`.
+
+This isolates the non-formula residual payload (`hAsym/hNPbridge`) so the
+formula-side part (`hMS`) can be reconstructed internally from support-bounds
+default flags.
+-/
+class AsymptoticPayloadProvider : Type where
+  hAsym : AsymptoticFormulaTrackHypothesis
+  hNPbridge : AsymptoticNPPullback hAsym
+
+/--
+Default-availability flag for an asymptotic formula-track source.
+
+This is the asymptotic analogue of the formula-side default flags used in
+`LocalityProvider_Partial`: it lets callers provide a theorem-level default
+source via `Fact` instead of a dedicated provider class.
+-/
+def hasDefaultAsymptoticFormulaTrackHypothesis : Prop :=
+  Nonempty AsymptoticFormulaTrackHypothesis
+
+/--
+Extract the concrete asymptotic formula-track source from its default flag.
+-/
+noncomputable def defaultAsymptoticFormulaTrackHypothesis
+    (h : hasDefaultAsymptoticFormulaTrackHypothesis) :
+    AsymptoticFormulaTrackHypothesis :=
+  Classical.choice h
+
+/--
+Default-availability flag for the NP pullback corresponding to one concrete
+asymptotic formula-track source.
+-/
+def hasDefaultAsymptoticNPPullbackFor
+    (hAsym : AsymptoticFormulaTrackHypothesis) : Prop :=
+  Nonempty (AsymptoticNPPullback hAsym)
+
+/--
+Extract the concrete NP pullback from its default flag at fixed `hAsym`.
+-/
+noncomputable def defaultAsymptoticNPPullbackFor
+    (hAsym : AsymptoticFormulaTrackHypothesis)
+    (h : hasDefaultAsymptoticNPPullbackFor hAsym) :
+    AsymptoticNPPullback hAsym :=
+  Classical.choice h
+
+/--
+Build the asymptotic payload provider from default asymptotic source flags.
+
+This removes the need for an explicit `AsymptoticPayloadProvider` contract when
+the asymptotic source (`hAsym`) and its NP pullback are already available as
+default theorem-level facts.
+-/
+noncomputable instance asymptoticPayloadProvider_of_default_asymptoticSource
+    [hAsym : Fact hasDefaultAsymptoticFormulaTrackHypothesis]
+    [hNP :
+      Fact
+        (hasDefaultAsymptoticNPPullbackFor
+          (defaultAsymptoticFormulaTrackHypothesis hAsym.out))] :
+    AsymptoticPayloadProvider where
+  hAsym := defaultAsymptoticFormulaTrackHypothesis hAsym.out
+  hNPbridge :=
+    defaultAsymptoticNPPullbackFor
+      (defaultAsymptoticFormulaTrackHypothesis hAsym.out)
+      hNP.out
+
+/--
+Build the full final payload from:
+1) default formula-side support-bounds source, and
+2) asymptotic-side provider payload.
+
+This closes the formula-side source at the final endpoint boundary: callers no
+longer need to pass `hMS` explicitly (or via `FinalPayloadProvider`) when a
+default support-bounds source is available.
+-/
+instance finalPayloadProvider_of_default_supportBounds
+    [hAsymProv : AsymptoticPayloadProvider]
+    [hBounds : Fact hasDefaultFormulaSupportRestrictionBoundsPartial] :
+    FinalPayloadProvider where
+  hMS :=
+    multiswitching_contract_internalized_of_support_bounds
+      (defaultFormulaSupportRestrictionBoundsPartial hBounds.out)
+  hAsym := hAsymProv.hAsym
+  hNPbridge := hAsymProv.hNPbridge
+
+/--
+Zero-argument public endpoint (provider-backed form).
+
+This theorem removes explicit non-zero payload from the visible signature while
+keeping the mathematical payload explicit in `FinalPayloadProvider`.
+-/
+theorem P_ne_NP [payload : FinalPayloadProvider] :
+  ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_final payload.hMS payload.hAsym payload.hNPbridge
+
+/--
+Zero-argument endpoint under the default formula-side source policy.
+
+Compared to `P_ne_NP [FinalPayloadProvider]`, this variant no longer requires
+explicit/opaque `hMS`: it is reconstructed internally from
+`hasDefaultFormulaSupportRestrictionBoundsPartial`.
+-/
+theorem P_ne_NP_of_default_formulaSource
+    [AsymptoticPayloadProvider]
+    [Fact hasDefaultFormulaSupportRestrictionBoundsPartial] :
+    ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP
+
+/--
+Zero-argument endpoint under both default source policies:
+
+1) formula-side source from support-bounds defaults, and
+2) asymptotic source from theorem-level default flags.
+
+Compared to `P_ne_NP_of_default_formulaSource`, this variant no longer requires
+an explicit `AsymptoticPayloadProvider` contract.
+-/
+theorem P_ne_NP_of_default_sources
+    [Fact hasDefaultFormulaSupportRestrictionBoundsPartial]
+    [hAsym : Fact hasDefaultAsymptoticFormulaTrackHypothesis]
+    [Fact
+      (hasDefaultAsymptoticNPPullbackFor
+        (defaultAsymptoticFormulaTrackHypothesis
+          hAsym.out))] :
+    ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_of_default_formulaSource
+
+/--
+Provider-free final endpoint from explicit constructive asymptotic source data.
+
+This theorem is the direct "next step" route requested for closure work:
+`hAsym` and `hNPbridge` are not taken from provider classes.  They are built
+internally from `AsymptoticFormulaTrackData`, while formula-side `hMS` is still
+reconstructed from default support-bounds assumptions.
+-/
+theorem P_ne_NP_of_constructive_asymptoticData
+    [hBounds : Fact hasDefaultFormulaSupportRestrictionBoundsPartial]
+    (D : AsymptoticFormulaTrackData) :
+    ComplexityInterfaces.P_ne_NP := by
+  let hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract :=
+    multiswitching_contract_internalized_of_support_bounds
+      (defaultFormulaSupportRestrictionBoundsPartial hBounds.out)
+  let hAsym : AsymptoticFormulaTrackHypothesis :=
+    asymptoticFormulaTrackHypothesis_of_data D
+  let hNPbridge : AsymptoticNPPullback hAsym :=
+    asymptoticNPPullback_of_data D
+  exact P_ne_NP_final hMS hAsym hNPbridge
 
 end Magnification
 end Pnp3

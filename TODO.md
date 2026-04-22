@@ -36,27 +36,43 @@ literal single fixed slice.
 
 ### Target 1. Keep internal DAG separation closed
 
-Current public default theorem is:
+Current explicit final theorem is:
 
 ```text
 P_ne_NP_final
-  (hMag : MagnificationAssumptions)
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+```
+
+Current public zero-arg endpoint is:
+
+```text
+P_ne_NP
+  [FinalPayloadProvider]
 ```
 
 The DAG side is already closed on this path:
 
-1. `NP_not_subset_PpolyDAG_final hMag` is internalized;
+1. `NP_not_subset_PpolyDAG_final hMS hAsym hNPbridge` is internalized;
 2. no external DAG payload remains on the default theorem surface.
 
-### Target 2. Remove remaining public `hMag`
+### Target 2. Remove remaining external provider payload
 
-Theorem is still not zero-arg while it takes `hMag` for compatibility.
+Public theorem is now zero-arg syntactically, but still depends on external
+provider payload (`FinalPayloadProvider` carrying `hMS/hAsym/hNPbridge`).
+
+Formula-side progress:
+
+- `hMS` is now reconstructible from default support-bounds source
+  (`hasDefaultFormulaSupportRestrictionBoundsPartial`) via
+  `P_ne_NP_of_default_formulaSource`.
 
 To reach a genuinely unconditional top-level theorem, still need either:
 
-1. full API cleanup/internalization that removes compatibility `hMag`; or
+1. full internalization that removes remaining provider payload; or
 2. a fully internal route proving the same payload without exposing
-   magnification assumptions in the public theorem surface.
+   these assumptions in the public theorem surface.
 
 ## Execution Order
 
@@ -76,17 +92,15 @@ Status: active blocker.
 
 Immediate theorem targets:
 
-1. an internal source for
-   `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`;
-2. equivalently, an internal source for the magnification package pieces used
-   by the formula and `PpolyReal` finals;
-3. a zero-argument wrapper that no longer exposes `hMag`.
+1. preserve and harden default formula-side internal source for `hMS`;
+2. internalize the remaining asymptotic payload (`hAsym/hNPbridge`) still
+   exposed via provider classes;
+3. a zero-argument wrapper with no external provider payload.
 
 Acceptance condition:
 
-- `UNCONDITIONAL=1 ./scripts/check.sh` no longer reports
-  `NP_not_subset_PpolyFormula_final` as depending on
-  `MagnificationAssumptions`.
+- `UNCONDITIONAL=1 ./scripts/check.sh` no longer reports default finals as
+  depending on external provider payload.
 
 ### Task 3. Keep internal DAG separation closed
 
@@ -97,20 +111,22 @@ Delivery condition:
 - keep `NP_not_subset_PpolyDAG_final (hMag)` deriving class-level DAG
   separation with no external DAG payload.
 
-### Task 4. Replace compatibility final theorem surface
+### Task 4. Remove residual provider payload from public endpoint
 
 Status: pending on Task 2.
 
-Current theorem:
+Current explicit theorem:
 
 ```text
 P_ne_NP_final
-  (hMag : MagnificationAssumptions)
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
 ```
 
 Required end state:
 
-- no residual `hMag` in public endpoint.
+- public zero-arg endpoint has no residual external provider payload.
 
 ### Task 5. Final consistency pass
 
@@ -125,4 +141,6 @@ After theorem closure:
 
 - Do not add wrappers just to show apparent progress.
 - Do not reopen fixed-slice support-half as a primary theorem target.
-- Do not claim full unconditionality while `hMag` remains in public theorem.
+- Do not claim full unconditionality while public endpoint still depends on
+  external provider payload (`FinalPayloadProvider` /
+  `AsymptoticPayloadProvider`).

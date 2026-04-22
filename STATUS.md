@@ -71,21 +71,32 @@ Current mainline reality:
 
 ```text
 NP_not_subset_PpolyDAG_final
-  (hMag : MagnificationAssumptions) :
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
-So internal DAG separation is already derived on the package-shaped `hMag`
+So internal DAG separation is already derived on the unbundled explicit payload
 surface. The remaining blocker for unconditionality is no longer a DAG theorem,
-but the residual public `hMag`.
+but the residual non-zero argument payload (currently `hMS/hAsym/hNPbridge`).
 
 ### Final public API debt
 
-The current default final wrapper is still
+The repository now exposes a zero-argument public endpoint:
+
+```text
+P_ne_NP
+  [FinalPayloadProvider]
+```
+
+and keeps the explicit payload theorem
 
 ```text
 P_ne_NP_final
-  (hMag : MagnificationAssumptions)
+  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
 ```
 
 Reality split:
@@ -93,21 +104,27 @@ Reality split:
 1. External class-level DAG separation is no longer an argument of the default
    final theorem.
 2. Internal DAG separation is now derived by `NP_not_subset_PpolyDAG_final`.
-3. `hMag` remains in the signature as compatibility context.
+3. payload is no longer explicit on the public zero-arg endpoint, but remains
+   external through `FinalPayloadProvider`.
+4. `hMag` remains only in compatibility wrappers (`*_of_magnification`).
+5. formula-side payload component `hMS` can now be reconstructed internally
+   from default support-bounds source
+   (`hasDefaultFormulaSupportRestrictionBoundsPartial`) via
+   `P_ne_NP_of_default_formulaSource`.
 
 ## Single remaining closure route
 
 Only one route is still active for true unconditionality:
 
 1. keep DAG separation internalized in `NP_not_subset_PpolyDAG_final`,
-2. internalize the formula-side / magnification package exposed by
-   `NP_not_subset_PpolyFormula_final (hMag : MagnificationAssumptions)`,
-3. then remove residual `hMag` to reach zero-argument `P_ne_NP`.
+2. keep formula-side source on default-support-bounds internal route,
+3. discharge remaining asymptotic provider payload (`hAsym/hNPbridge`) to make
+   `P_ne_NP` unconditional.
 
 ## Repository-Wide Honesty Policy
 
 Any file claiming unconditional `P ≠ NP` before both of the following are
 internalized is inaccurate:
 
-1. formula-side / magnification package theorem source;
-2. zero-argument public final API.
+1. formula-side theorem source mathematics for currently external payload;
+2. zero-argument public final API with no external provider payload.

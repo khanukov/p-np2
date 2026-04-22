@@ -425,6 +425,69 @@ theorem structuredLocalityProviderPartial_fromPipeline_of_old
   fun p δ hHyp _ac0 _F _hsame _hAC0 _hMSWit hFormula _hSem =>
     hProvider p δ hHyp hFormula
 
+/-! ### Step 2b scaffolding — restriction certificate data, pipeline version
+
+Parallel to `FormulaRestrictionCertificateDataPartial` (defined at line
+168, currently an ex-falso producer when combined with the old
+support-bounds predicate).  This version threads AC0 provenance
+through the `restrictionData` field, matching the shape required by
+pipeline-aware consumers.
+
+**Migration note**: the builder
+`formulaRestrictionCertificateData_fromPipeline_of_supportBoundsFromPipeline`
+below takes `FormulaSupportBoundsPartial_fromPipeline` + the AC0
+provenance tuple and produces the restriction for the corresponding
+formula.  This is the direct pipeline-aware replacement for
+`formulaRestrictionCertificateData_of_supportBounds`.
+-/
+
+/-- Pipeline-aware restriction-certificate data.  `restrictionData`
+takes AC0 provenance inputs in addition to the formula witness,
+mirroring `FormulaSupportBoundsPartial_fromPipeline`'s shape. -/
+structure FormulaRestrictionCertificateDataPartial_fromPipeline where
+  restrictionData :
+    ∀ {p : GapPartialMCSPParams}
+      (ac0 : ThirdPartyFacts.AC0Parameters)
+      (F : Core.Family ac0.n)
+      (hsame : ac0.n = Models.partialInputLen p)
+      (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+      (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let solver := generalSolverOfFormula hFormula
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+        ∀ x : Core.BitVec ac0.n,
+          f x = ComplexityInterfaces.FormulaCircuit.eval c
+            (ThirdPartyFacts.castBitVec hsame x)) →
+      ∃ (r : Facts.LocalityLift.Restriction
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))),
+        r.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * r.alive.card.succ
+            , ℓ := r.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+        r.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x
+
+/-- Trivial `old → new` direction for the restriction-certificate data
+structure (transports the ex-falso old certificate into the pipeline
+shape; used only for backwards-compatibility transport). -/
+noncomputable def formulaRestrictionCertificateDataPartial_fromPipeline_of_old
+    (D : FormulaRestrictionCertificateDataPartial) :
+    FormulaRestrictionCertificateDataPartial_fromPipeline where
+  restrictionData := fun _ac0 _F _hsame _hAC0 _hMSWit hFormula _hSem =>
+    D.restrictionData hFormula
+
 /--
 Extracted local-core payload for one strict formula witness.
 

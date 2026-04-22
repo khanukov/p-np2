@@ -2779,6 +2779,105 @@ noncomputable def formulaCertificateProvider_of_restrictionData
         hhalf
         hstable
 
+/-! ### Pipeline-aware cert provider structure + builder (Step 2d)
+
+Mirrors `FormulaCertificateProviderPartial` with AC0 provenance threaded
+through each `cert` call.  The builder from pipeline cert-data takes
+the same body as the old `_of_restrictionData` builder with the
+restriction-data extraction adapted to the new signature. -/
+
+/-- Pipeline-aware formula-certificate provider.  Each `cert` call
+takes AC0 provenance inputs along with the formula witness. -/
+structure FormulaCertificateProviderPartial_fromPipeline where
+  cert :
+    ∀ {p : GapPartialMCSPParams}
+      (ac0 : ThirdPartyFacts.AC0Parameters)
+      (F : Core.Family ac0.n)
+      (hsame : ac0.n = Models.partialInputLen p)
+      (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+      (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+        ∀ x : Core.BitVec ac0.n,
+          f x = ComplexityInterfaces.FormulaCircuit.eval c
+            (ThirdPartyFacts.castBitVec hsame x)) →
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver)
+
+/-- Pipeline-aware builder: take pipeline restriction-cert-data, produce
+pipeline formula-certificate provider.  Body replicates
+`formulaCertificateProvider_of_restrictionData` with the extra
+AC0-provenance arguments threaded through the initial `hData`
+extraction. -/
+noncomputable def formulaCertificateProvider_fromPipeline_of_restrictionData_fromPipeline
+    (D : FormulaRestrictionCertificateDataPartial_fromPipeline) :
+    FormulaCertificateProviderPartial_fromPipeline where
+  cert := by
+    intro p ac0 F hsame hAC0P hMSWitP hFormula _solverLet _wfLet _cLet hSem
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    have hData :
+        ∃ (r : Facts.LocalityLift.Restriction
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))),
+          r.alive.card ≤
+            Facts.LocalityLift.polylogBudget
+              (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+          Facts.LocalityLift.LocalCircuitSmallEnough
+            { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+              , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                  * r.alive.card.succ
+              , ℓ := r.alive.card
+              , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+          r.alive.card ≤
+            Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+          ∀ x : Facts.LocalityLift.BitVec
+              (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+            ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+              ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+      simpa [solver] using D.restrictionData (p := p) ac0 F hsame hAC0P hMSWitP hFormula hSem
+    let r : Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      Classical.choose hData
+    have hDataSpec := Classical.choose_spec hData
+    have hpoly :
+        r.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      hDataSpec.1
+    have hsmall :
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * r.alive.card.succ
+            , ℓ := r.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } :=
+      hDataSpec.2.1
+    have hhalf :
+        r.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 :=
+      hDataSpec.2.2.1
+    have hstable :
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x :=
+      hDataSpec.2.2.2
+    exact
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.ofRestriction
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+        (restriction := r)
+        hpoly
+        hsmall
+        hhalf
+        hstable
+
 /--
 Uniform half-size condition for extracted strict formula witnesses at the
 target length `partialInputLen p`.

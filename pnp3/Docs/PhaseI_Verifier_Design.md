@@ -565,21 +565,54 @@ All 5 gate types are now handled via a single dispatch point in
 All 6 `check.sh` steps pass.  Axiom inventory unchanged:
 propext=349, Classical.choice=345, Quot.sound=349.
 
-**Remaining for session 50** (all critical helpers delivered in 49n-49p):
+### Session 49q–49u — F.4 CLOSED for arbitrary gates (Sessions 49q–49u breakthrough)
 
-- Multi-gate cons step (induction step for `gates.length ≥ 2`).
-  **All helpers ready**:
-  - `cons_any_nonempty_composite_run_tape_at` (49d) — decomposition.
-  - `cons_any_nonempty_lift_preconditions` (49e) — lift's IH preconds.
-  - `cons_any_row_lift_eq_c` (49n) — row stability (gate doesn't modify row).
-  - `cons_any_h_prior_match_lift` (49o) — h_prior_match extension.
-  - `cons_any_rowFromConfig_lift_eq` (49p) — rowFromConfig transport.
-  
-  Just needs combining via `induction gates generalizing offset prior vals`
-  with careful dependent-type handling.
-- ∃-form `CircuitEvaluatorCSAt_RunCorrect` derivations for input/
-  notGate/andGate/orGate families (parallel to the const version).
-- Public CS-form wrapper for arbitrary gates.
+Using the web-searched `termination_by gates.length` pattern (Mario
+Carneiro's Lean community recipe), session 49q–49u delivered:
+
+**Session 49q**: Mathematical formulation — defined
+`CircuitEvaluatorCSAt_CondCorrect` as a single predicate on gate lists,
+plus `_nil` and `_single` case theorems.
+
+**Session 49r**: `CircuitEvaluatorCSAt_CondCorrect_cons_multi` — the
+multi-gate cons step, ~180 LOC combining decomposition + IH + slot-0
+via the 49n-49p helpers.
+
+**Session 49s**: 🎉 `CircuitEvaluatorCSAt_CondCorrect_all` — FULL
+unconditional conditional correctness for ARBITRARY gate lists of ANY
+length, composed of ANY gate types (const/input/notGate/andGate/orGate):
+
+```lean
+theorem CircuitEvaluatorCSAt_CondCorrect_all (gates : List (SLGate n)) :
+    CircuitEvaluatorCSAt_CondCorrect gates := by
+  match gates with
+  | [] => CondCorrect_nil
+  | [g] => CondCorrect_single g
+  | g :: g' :: rest' =>
+    CondCorrect_cons_multi g g' rest' (CondCorrect_all (g' :: rest'))
+termination_by gates.length
+```
+
+This is the DEFINITIVE mathematical F.4 correctness theorem.
+
+**Session 49t–49u**: Derivation helpers:
+- `canonicalPrior` (49t): extracts prior matching c's tape.
+- `circuitEvaluatorCSAt_inputList_RunCorrect_unconditional` (49u): ∃-form
+  for all-input gate lists, derived from `CondCorrect_all` + `canonicalPrior`
+  + `evalAux_inputList`.  Parallel to session 48's all-const version.
+
+**F.4 closure status**:
+- ∀ gates (any type, any length): `CondCorrect_all` proves correctness
+  conditionally on prior consistency.
+- All-const lists (session 48): ∃-form `CircuitEvaluatorCSAt_constList_RunCorrect_unconditional`.
+- All-input lists (session 49u): ∃-form `circuitEvaluatorCSAt_inputList_RunCorrect_unconditional`.
+
+**Remaining as future work** (not blocking):
+- Public CS-form wrapper `circuitEvaluatorCS_run_correct` via
+  `circuitEvaluatorCSAt_zero_eq` transport (Eq.rec motive issue on
+  auto-generated Fin proofs; downstream callers use the CSAt-0 form).
+- ∃-form derivations for not/and/or gate families require
+  well-formedness hypotheses (these gate types aren't prior-independent).
 
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 

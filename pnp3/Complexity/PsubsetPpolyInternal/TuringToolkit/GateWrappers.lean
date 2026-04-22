@@ -4794,6 +4794,64 @@ theorem canonicalPrior_length {n : Nat} (gates : List (SLGate n))
     (canonicalPrior gates offset Δrowbase Δscratch hle c hbound).length = offset := by
   unfold canonicalPrior; simp
 
+theorem canonicalPrior_h_prior_match {n : Nat} (gates : List (SLGate n))
+    (offset Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) {N : Nat}
+    (c : Configuration
+      (M := (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM) N)
+    (hbound : (c.head : ℕ) + Δscratch + offset + gates.length ≤ N) :
+    ∀ (k : Nat) (_hk : k < (canonicalPrior gates offset Δrowbase Δscratch hle c hbound).length)
+      (hpos : (c.head : ℕ) + Δscratch + k <
+        (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
+      (canonicalPrior gates offset Δrowbase Δscratch hle c hbound)[k]? =
+        some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩) := by
+  intro k hk hpos
+  -- canonicalPrior = List.ofFn (fun k => c.tape ⟨..., _⟩)
+  -- So canonicalPrior[k]? = some (c.tape ⟨c.head + Δscratch + k, _⟩).
+  have hk_offset : k < offset := by
+    have hlen := canonicalPrior_length gates offset Δrowbase Δscratch hle c hbound
+    rw [hlen] at hk; exact hk
+  unfold canonicalPrior
+  rw [List.getElem?_ofFn]
+  simp only [dif_pos hk_offset]
+
+/-- **Input-list ∃-form correctness** (unconditional).  For any list of input
+gates and any user-supplied prior, the TM correctly simulates evalAux. -/
+theorem circuitEvaluatorCSAt_inputList_RunCorrect_unconditional {n : Nat}
+    (is : List (Fin n)) (offset Δrowbase Δscratch : Nat)
+    (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCSAt_RunCorrect (is.map (SLGate.input (n := n)) : List (SLGate n))
+      offset Δrowbase Δscratch hle := by
+  intro N c h_phase h_state_snd hbound htape_clean prior
+  -- Row function and vals = is.map row.
+  set row := rowFromConfig c Δrowbase
+    (rowFromConfig_bounds (is.map SLGate.input) offset Δrowbase Δscratch hle c hbound) with hrow_def
+  -- Apply CondCorrect_all with canonical prior.
+  set prior_canonical := canonicalPrior (is.map SLGate.input) offset Δrowbase Δscratch hle c hbound
+    with hpc_def
+  have hpc_len : prior_canonical.length = offset :=
+    canonicalPrior_length _ _ _ _ hle c hbound
+  have hpc_match := canonicalPrior_h_prior_match (is.map SLGate.input) offset Δrowbase Δscratch hle
+    c hbound
+  -- For input-list, evalAux succeeds for any prior.
+  have h_eval_canonical := evalAux_inputList is row prior_canonical
+  have hvc_len : (is.map row).length = (is.map SLGate.input).length := by simp
+  -- Apply CondCorrect_all.
+  have h_all := CircuitEvaluatorCSAt_CondCorrect_all (is.map SLGate.input) offset Δrowbase
+    Δscratch hle c h_phase h_state_snd hbound htape_clean prior_canonical (is.map row) hpc_len
+    hpc_match hvc_len h_eval_canonical
+  obtain ⟨h_slots_c, h_pres_c⟩ := h_all
+  -- User's prior: evalAux also succeeds with vals = is.map row (same row).
+  have h_eval_user : SLProgram.evalAux row (is.map SLGate.input) prior = some (prior ++ is.map row) :=
+    evalAux_inputList is row prior
+  refine ⟨is.map row, hvc_len, ?_, ?_, ?_⟩
+  · -- evalAux (user prior).
+    show SLProgram.evalAux _ (is.map SLGate.input) prior = some (prior ++ is.map row)
+    exact h_eval_user
+  · -- Slot values: same as canonical case.
+    exact h_slots_c
+  · -- Preservation.
+    exact h_pres_c
+
 end GateEvalCS
 
 end TM

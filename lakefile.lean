@@ -66,6 +66,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.CombineAtOffset,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.GateWrappers,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.RowConsistencyCheck,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,

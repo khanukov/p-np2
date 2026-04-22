@@ -1410,3 +1410,77 @@ lines 128–131 of the original design doc and remains implementable as
 This session 53 entry itself is the deliverable: no code written.
 Session 54 will begin Path 1 implementation with
 `rowConsistencyCheckCSAt_row`.
+
+---
+
+## Session 54 — Milestone G: `RowConsistencyCheck.lean` scaffold
+
+Created new file
+`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean`
+implementing Path 1 of Milestone G (see session 53 design note).
+
+**What's in the file** (~215 LOC):
+
+1. **`rowConsistencyCheckCSAt_row`** (4-step `seqList` composition): for a
+   concrete row index `i`, composes
+   - `circuitEvaluatorCS gates Δrowbase Δscratch`
+   - XOR with `value[i]` at `Δtmp`
+   - AND with `mask[i]` at `Δtmp` (in place)
+   - OR into global flag at `Δflag` (in place)
+
+   **In-place writes are verified safe** by close reading of the
+   `combineAtOffsetCS` phase layout at `CombineAtOffset.lean:19-27`:
+   phase `Δ2 + 1` reads `src2` into state before phase `Δdst + 2`
+   writes `dst`, so `Δ2 = Δdst` is safe (original value captured in
+   state).  The agent-reported "forbids Δ2 = Δdst" concern turned out
+   to be over-cautious; the `≤` constraint in the type really is `≤`,
+   not `<`.
+
+2. **`rowConsistencyCheckCSAt_row_timeBound`** — closed form:
+   `(circuit timeBound) + (2·Δtmp + 3) + (2·Δtmp + 3) + (2·Δflag + 3) + 3`.
+   Proved by unfolding `seqList` 4 times and applying
+   `combineAtOffsetCS_timeBound`.
+
+3. **`rowConsistencyCheckCSAt_row_timeBound_le`** — simplified bound:
+   `≤ (circuit timeBound) + 6·Δflag + 15`, using `Δtmp ≤ Δflag`.
+
+4. **`mcspCheckAllRows`** — the Path 1 loop-unroll:
+   ```lean
+   ConstStatePhasedProgram.seqList
+     (List.ofFn (fun i : Fin (2 ^ n) =>
+       rowConsistencyCheckCSAt_row gates ... i.val ...))
+   ```
+   For each row `i : Fin (2 ^ n)`, offsets `Δvalue + i.val`, `Δmask + i.val`
+   are concrete `Nat`s; `seqList` threads all `2 ^ n` per-row checks.
+
+5. **`mcspCheckAllRows_timeBound_le`** — aggregate bound:
+   `≤ 2^n · ((circuit timeBound) + 6·Δflag + 16) + 1`, using the
+   `seqList_timeBound_le_uniform` helper with uniform per-row bound.
+
+**What's NOT in this session**:
+
+- Per-row *semantic* correctness (the 4-step composition actually
+  computes `flag' = flag ∨ (mask[i] ∧ (circuit_output ≠ value[i]))`).
+  This requires threading `circuitEvaluatorCS_run_correct_wf` +
+  3×`combineAtOffsetCS_run_full` through the `seqList`'s transport
+  lemmas (`embedSeqConfig_runConfig_eq` etc.) — deferred to session 55.
+- Row-input writing (the `n` bits representing row index `i`).
+  Deferred to Milestone H's row-loop compound; `rowConsistencyCheckCSAt_row`
+  assumes the row input is already on the tape.
+- Tape-preservation-outside-region theorem (needed for Milestone H's
+  loop invariant) — deferred to session 55.
+
+**Verification** (session 54):
+- `lake build` green; `check.sh` all 6 steps pass.
+- Axiom inventory unchanged: propext=349, Classical.choice=345, Quot.sound=349.
+- Per-theorem `#print axioms` — all `[propext, Classical.choice, Quot.sound]`.
+
+**Files changed**:
+- `lakefile.lean` (+1 line) — added `RowConsistencyCheck` glob.
+- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean`
+  (new, ~215 LOC).
+
+**Next (session 55)**: per-row semantic correctness for
+`rowConsistencyCheckCSAt_row`.  Will compose the four correctness
+theorems (F.4 WF + 3× combineAtOffsetCS_run_full) through seqList.
+Also: tape-outside-region preservation.

@@ -1540,11 +1540,30 @@ Formally:
    future edit that silently breaks this inconsistency proof now
    triggers a `lake build` failure.
 
-   **Not ported (yet)**: Probe 2 / Probe 3 from the audit
-   (unconditional `hBounds → False` via truth-table hardwiring).  This
-   requires a fixed-slice truth-table-DNF formula constructor (~100
-   LOC); deferred to a follow-up session.  Probe 1 alone already
-   witnesses the ex-falso structure.
+   **Probe 2 + Probe 3 port** (session 56, ~150 LOC extension of
+   the same file): closed.  Added:
+   - `FormulaCircuit.rename σ c` + `eval_rename` — index relabeling.
+   - `ttFormula : (Bitstring n → Bool) → FormulaCircuit n` —
+     recursive DNF-style construction, case-splitting on input bit 0.
+   - `ttFormula_eval` — correctness via `Fin.cases_zero` / `Fin.cases_succ`.
+   - `formula_size_pos` — inlined size positivity helper.
+   - `fixedSlice_gapPartialMCSP_in_PpolyFormula` — Probe 2 (truth-table
+     hardwiring gives a `PpolyFormula` witness at
+     `partialInputLen p`).
+   - `false_of_FormulaSupportRestrictionBoundsPartial p hBounds : False` —
+     Probe 3, UNCONDITIONAL inconsistency witness for the predicate.
+
+   Axiom audit of new theorems (session 56):
+   - `ttFormula`: `[propext]`.
+   - `ttFormula_eval`: `[propext, Quot.sound]`.
+   - `fixedSlice_gapPartialMCSP_in_PpolyFormula`: `[propext, Classical.choice, Quot.sound]`.
+   - `false_of_FormulaSupportRestrictionBoundsPartial`: `[propext, Classical.choice, Quot.sound]`.
+
+   With Probe 3 now in-project as a theorem, the predicate's ex-falso
+   nature is locked as a build gate: anyone who later reintroduces the
+   predicate anywhere in the "final line" cannot pretend it's a
+   meaningful hypothesis — `False` is one `false_of_FormulaSupportRestrictionBoundsPartial`
+   call away.
 
 2. **Prominent warning docstring** on
    `FormulaSupportRestrictionBoundsPartial` in

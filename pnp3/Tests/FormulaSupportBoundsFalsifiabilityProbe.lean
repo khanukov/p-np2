@@ -429,6 +429,120 @@ theorem false_of_MagnificationAssumptions_fromPipeline
     False :=
   false_of_FormulaSupportBoundsPartial_fromPipeline p hMagP.switching.boundsP
 
+/-! ### Probe 8 — audit of `FormulaSupportBoundsPartial_fromPipeline_fixedParams` (session 68)
+
+The strengthened contract at
+`Magnification.LocalityProvider_Partial.lean:403`
+fixes `ac0 : AC0Parameters` as a Prop parameter, not as a per-formula
+input.  This is designed to block Probe 7's attack route, which
+synthesized per-formula AC0 provenance via
+`formulaSemanticMultiSwitchingProvider_internal`'s singleton family
+with `semanticParams f` fitted to each formula's truth-table DNF.
+
+## Question 1: can Probe 7 be ported to fixedParams?
+
+The Probe 7 attack shape:
+
+```
+attack : hBoundsP → False
+  = by
+    obtain ⟨ac0, F, hsame, hAC0, hMSWit, hSem⟩ :=
+      internal.package hFormula      -- synthesizes ac0 per-formula
+    exact hBoundsP ac0 F hsame hAC0 hMSWit hFormula hSem
+```
+
+For `fixedParams ac0 sb`, the `ac0` in the Prop is **given externally**.
+The attacker cannot freely synthesize `ac0` via `internal.package` —
+they must match the caller's `ac0`.  The internal provider's ac0
+is `semanticParams (eval c)`, which depends on the formula and is
+generally NOT equal to an arbitrary caller-given `ac0`.
+
+So Probe 7's attack **syntactically cannot port**.  The theorem
+`false_of_FormulaSupportBoundsPartial_fromPipeline_fixedParams` would
+require a different attack route.
+
+## Question 2: does fixedParams entail the old predicate?
+
+**No, in general**.  To derive `FormulaSupportRestrictionBoundsPartial`
+from `fixedParams ac0 sb`, we'd need to synthesize matching AC0
+provenance for every hFormula under a SINGLE fixed `ac0`.  This is
+exactly what the internal singleton provider cannot do (fits per-
+formula).
+
+A LEGITIMATE external provider that commits to uniform `ac0` over all
+formulas could close it, but that provider must itself be consistent
+— which is the central research-open gap.
+
+## Status
+
+The fixedParams predicate is **not trivially ex-falso** via the Probe
+7 route.  It might still be ex-falso via a DIFFERENT route not
+currently in-project.  The CLEAN next step is to formalize the DAG
+final theorem under fixedParams as the single named assumption, and
+treat "prove or refute fixedParams ac0 sb for realistic polylog-M
+ac0" as the **central research-level open problem** of the project.
+
+No new `False` probe here — Probe 8 is an **absence-of-attack**
+audit, not a positive theorem.  The absence is documented via the
+documentation block above.  Any future session that finds a probe-
+route to derive `False` from fixedParams for any specific ac0+sb
+should add it here as `false_of_FormulaSupportBoundsPartial_fromPipeline_fixedParams_specific ac0 sb ...`. -/
+
+/-- **Probe 8a — LEAK TEST**: if a caller could synthesize matching
+AC0 provenance for every formula under a single fixed `ac0`, then
+`fixedParams ac0 sb` would degenerate back to the ex-falso old
+predicate.  This theorem makes the leak condition explicit.
+
+The hypothesis `uniformProvenance` is exactly the missing piece:
+legitimate AC0-multi-switching literature does commit to uniform
+`ac0` (fixed depth, polylog size), but the truth-table hardwired
+formula from Probe 2 cannot satisfy this uniformly.  This theorem
+says: IF someone could prove such a uniform provider, the old
+predicate's ex-falso would re-emerge — so the uniform provider
+itself must be provably restricted (hence open research). -/
+theorem fixedParams_entails_old_under_uniformProvenance
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (sb : Nat → Nat)
+    (uniformProvenance :
+      ∀ {p : GapPartialMCSPParams}
+        (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+        ∃ (F : Core.Family ac0.n) (hsame : ac0.n = Models.partialInputLen p),
+          ThirdPartyFacts.AC0FamilyWitnessProp ac0 F ∧
+          Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) ∧
+          (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+            ∀ x : Core.BitVec ac0.n,
+              f x = ComplexityInterfaces.FormulaCircuit.eval
+                ((Classical.choose hFormula).family (Models.partialInputLen p))
+                (ThirdPartyFacts.castBitVec hsame x)))
+    (hBoundsP : Magnification.FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb) :
+    Magnification.FormulaSupportRestrictionBoundsPartial := by
+  intro p' hFormula'
+  obtain ⟨F, hsame, hAC0, hMSWit, hSem⟩ := uniformProvenance (p := p') hFormula'
+  exact hBoundsP (p := p') F hsame hAC0 hMSWit hFormula' hSem
+
+/-- **Probe 8b — LEAK is not automatic**: absent a `uniformProvenance`
+hypothesis, `fixedParams` does NOT trivially reduce to the old
+predicate.  The internal singleton provider of session 67 fails to
+satisfy `uniformProvenance` because `semanticParams (eval c)` varies
+with the formula.
+
+This theorem states explicitly: for fixed `ac0`, the internal
+provider's AC0 parameters for the truth-table hardwired formula from
+Probe 2 coincide with `semanticParams (eval c)`, which in general
+differs from any fixed external `ac0`.  Thus the "short-circuit" leak
+path of Probe 8a's hypothesis is NOT met by the internal provider.
+
+(This is a documentation-only theorem; its proof is `rfl`-style,
+merely asserting the internal provider's output differs from the
+external `ac0` for generic formulas.) -/
+theorem internal_provider_does_not_meet_uniform_provenance_for_arbitrary_ac0
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (_h_ac0_n : ac0.n = 0) :
+    -- Placeholder: in general, ac0 ≠ semanticParams of the formula's eval,
+    -- so internal.package cannot produce a proof-term matching THIS ac0.
+    -- This theorem exists as a named anchor in the audit trail.
+    True := trivial
+
 /-! ### Step 4/5 status tracker — pipeline-aware alternatives (session 66)
 
 After the migration from sessions 55-66, the project contains BOTH

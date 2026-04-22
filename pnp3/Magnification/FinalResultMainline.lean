@@ -2097,6 +2097,88 @@ theorem NP_not_subset_PpolyDAG_final
           npBridge := hNPbridge } }
   exact NP_not_subset_PpolyDAG_final_with_magnification hMag
 
+/-! ### Step 6 (session 68) — fixed-params DAG final, all assumptions explicit
+
+The legacy `NP_not_subset_PpolyDAG_final` above takes
+`FormulaSupportBoundsFromMultiSwitchingContract`, which was proven
+formally inconsistent in audit Probe 4
+(`Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:~315`).  The
+session 66 pipeline replacement was also shown ex-falso in Probe 7.
+
+Session 67 introduced the stronger
+`FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb`, which
+takes `ac0 : AC0Parameters` as a Prop parameter (not per-formula).
+Probe 8 (session 68) documents that:
+
+1. The Probe 7 singleton-provider attack does NOT syntactically port
+   to `fixedParams` (ac0 is externally given, cannot be fitted to
+   formula).
+2. `fixedParams ac0 sb → FormulaSupportRestrictionBoundsPartial` is
+   NOT derivable without an auxiliary `uniformProvenance` hypothesis
+   (Probe 8a makes the reduction conditional on uniform-ac0 provenance
+   per formula).
+
+The fixed-params DAG final below makes BOTH hypotheses explicit:
+- `hBoundsP`: the strengthened fixed-params support-bounds contract.
+- `hUniformProv`: uniform AC0 provenance for every formula witness,
+  matching the given `ac0`.
+
+**Research status**: the conjunction `hBoundsP ∧ hUniformProv` reduces
+(via Probe 8a + Probe 3) back to `False`.  So the conjunction cannot
+be established for the same `ac0, sb` simultaneously — exactly ONE of
+them must be false for realistic AC0 parameters.
+
+This theorem is **named as the single-research-level bottleneck**:
+closing it requires formalizing a version of AC0 multi-switching that
+commits to uniform parameters AND produces the polylog support bounds
+AND is consistent with known `MCSP ∉ AC⁰` intuition.  That formal
+content is the research-open gap.  **This theorem exposes the gap, it
+does not bridge it.** -/
+theorem NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
+  (ac0 : ThirdPartyFacts.AC0Parameters)
+  (sb : Nat → Nat)
+  (hBoundsP : FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb)
+  (hUniformProv :
+    ∀ {p : GapPartialMCSPParams}
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      ∃ (F : Core.Family ac0.n) (hsame : ac0.n = Models.partialInputLen p),
+        ThirdPartyFacts.AC0FamilyWitnessProp ac0 F ∧
+        Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F) ∧
+        (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+          ∀ x : Core.BitVec ac0.n,
+            f x = ComplexityInterfaces.FormulaCircuit.eval
+              ((Classical.choose hFormula).family (Models.partialInputLen p))
+              (ThirdPartyFacts.castBitVec hsame x)))
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  -- Bridge: fixedParams + uniformProvenance → old FormulaSupportRestrictionBoundsPartial.
+  -- This is the path that audit Probe 8a formalizes.  The old
+  -- predicate is then consumed by the legacy multi-switching-contract
+  -- route, which Probe 4/5 show is ex-falso.  So the PROOF below
+  -- still routes through an inconsistent intermediate; the THEOREM
+  -- is valuable only to the extent that its two hypotheses are ever
+  -- realized by a legitimate external source (open research).
+  have hBoundsOld : FormulaSupportRestrictionBoundsPartial := by
+    intro p' hFormula'
+    obtain ⟨F, hsame, hAC0, hMSWit, hSem⟩ := hUniformProv (p := p') hFormula'
+    exact hBoundsP (p := p') F hsame hAC0 hMSWit hFormula' hSem
+  -- Construct the old multi-switching contract from the old predicate
+  -- (structural: the multi-switching contract IS the ∀ form with
+  -- fitted semantics, which we can synthesize via the internal
+  -- singleton provider for SOME ac0).
+  --
+  -- IMPORTANT: this route is exactly what Probes 3-5 showed to be
+  -- inconsistent.  The placeholder-free chain below reuses the legacy
+  -- closure so that the theorem's signature makes the research gap
+  -- visible: one needs a source of hBoundsP + hUniformProv that
+  -- does not reduce to ex-falso.
+  let hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract :=
+    multiswitching_contract_of_semantic_provider_and_support_bounds
+      AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal
+      hBoundsOld
+  exact NP_not_subset_PpolyDAG_final hMS hAsym hNPbridge
+
 /--
 Compatibility wrapper preserving the historical package-shaped DAG endpoint.
 -/

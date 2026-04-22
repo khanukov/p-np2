@@ -196,6 +196,45 @@ For each strict formula witness at length `partialInputLen p`, we require:
 1) polylog bound on syntactic support,
 2) `LocalCircuitSmallEnough` for the induced locality parameters,
 3) half-table bound on support size.
+
+## ⚠ KNOWN INCONSISTENT IN THE CURRENT FORMALIZATION ⚠
+
+The formulation below quantifies over **any** strict formula witness
+`PpolyFormula (gapPartialMCSP_Language p)`.  But at the fixed input length
+`partialInputLen p`, a truth-table-hardwired formula is trivially in
+`PpolyFormula` yet violates every one of the support bounds (1)–(3) —
+its support is the entire input set.  The April 2026 audit at
+`outputs/formula-support-bounds-falsifiability-audit.md` showed
+formally that `FormulaSupportRestrictionBoundsPartial → False` via
+existing fixed-slice infrastructure.
+
+A weaker regression version of this inconsistency
+(`hBounds + PpolyDAG (gapPartialMCSP_Language p) → False`) is
+formalized as an in-project Lean theorem at
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+
+Consequences:
+- **Every theorem depending on `FormulaSupportRestrictionBoundsPartial`
+  is ex-falso and should NOT be interpreted as genuine progress toward
+  an unconditional `NP ⊄ P/poly`.**
+- The "active final line" callers in `Magnification/FinalResultMainline.lean`
+  (e.g., `NP_not_subset_PpolyFormula_final_with_supportBounds`) remain
+  type-correct but are logically vacuous.
+
+## Required repair (future session)
+
+Replace the `∀ hFormula : PpolyFormula …` quantification with a
+PIPELINE-restricted contract: the formula must come from a specific
+AC0/multi-switching extraction pipeline (e.g.,
+`AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract`)
+rather than arbitrary truth-table hardwiring.  Then propagate the
+narrower predicate through its ~50 call sites in
+`LowerBounds/DAGStableRestrictionProducer.lean`,
+`LowerBounds/SingletonDensityContradiction.lean`, and
+`Magnification/FinalResult{Mainline,LegacyTM}.lean`.
+
+See `pnp3/Docs/PhaseI_Verifier_Design.md` session 55 entry for the
+migration plan.
 -/
 def FormulaSupportRestrictionBoundsPartial : Prop :=
   ∀ {p : GapPartialMCSPParams}

@@ -1484,3 +1484,141 @@ implementing Path 1 of Milestone G (see session 53 design note).
 `rowConsistencyCheckCSAt_row`.  Will compose the four correctness
 theorems (F.4 WF + 3× combineAtOffsetCS_run_full) through seqList.
 Also: tape-outside-region preservation.
+
+---
+
+## Session 55 — `FormulaSupportRestrictionBoundsPartial` falsifiability audit: quarantine + regression probe
+
+Milestone-G implementation is paused one session while we address a
+pre-existing but previously unformalized issue in the Magnification
+surface: the predicate
+`Magnification.FormulaSupportRestrictionBoundsPartial` in
+`pnp3/Magnification/LocalityProvider_Partial.lean:200` is **formally
+inconsistent** with other already-proven parts of the project.  Any
+"final line" theorem consuming it is ex-falso rather than a genuine
+step toward unconditional `NP ⊄ P/poly`.
+
+### Finding (audit source)
+
+- Audit commit: `d8a7753`, branch `claude/check-unconditional-requirements-Dg8ZQ`.
+- Informal reports: `outputs/formula-support-bounds-falsifiability-audit.md`
+  + `outputs/formula-support-bounds-falsifiability-audit.provenance.md`.
+- External Lean probe (not committed): `/tmp/pnp3_formula_support_falsifiability_probe.lean`.
+
+The predicate universally quantifies over *every* strict formula witness
+`PpolyFormula (gapPartialMCSP_Language p)`, but the fixed-slice
+language at input length `partialInputLen p` admits a truth-table
+hardwired formula whose syntactic support is the entire input region —
+trivially violating the polylog / quarter-support / LocalCircuitSmallEnough
+bounds the predicate claims.
+
+Formally:
+- **Probe 1** (in the audit): `hBounds → ¬ PpolyDAG (gapPartialMCSP_Language p)`.
+- **Probe 2** (in the audit): truth-table hardwiring proves `PpolyFormula (gapPartialMCSP_Language p)` unconditionally.
+- **Probe 3** (in the audit): combining Probes 1 and 2 gives `hBounds → False`.
+
+### Session 55 deliverables (~90 LOC)
+
+1. **In-project regression lemma** at
+   `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`:
+   ```lean
+   theorem fixedSlice_not_PpolyDAG_of_FormulaSupportRestrictionBoundsPartial
+       {p : GapPartialMCSPParams}
+       (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
+       ¬ ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)
+
+   theorem false_of_FormulaSupportBounds_and_fixedSlice_PpolyDAG
+       {p : GapPartialMCSPParams}
+       (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
+       (hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p)) :
+       False
+   ```
+   These formalize Probe 1 of the audit using only existing
+   infrastructure (`ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`
+   + `abstractGapTargetedSingletonDensityPayload_of_dag` +
+   `false_of_abstractGapTargetedPayload_of_supportBounds`).  Any
+   future edit that silently breaks this inconsistency proof now
+   triggers a `lake build` failure.
+
+   **Not ported (yet)**: Probe 2 / Probe 3 from the audit
+   (unconditional `hBounds → False` via truth-table hardwiring).  This
+   requires a fixed-slice truth-table-DNF formula constructor (~100
+   LOC); deferred to a follow-up session.  Probe 1 alone already
+   witnesses the ex-falso structure.
+
+2. **Prominent warning docstring** on
+   `FormulaSupportRestrictionBoundsPartial` in
+   `pnp3/Magnification/LocalityProvider_Partial.lean:200` (~30 lines),
+   documenting:
+   - The inconsistency with existing infrastructure.
+   - The regression probe location.
+   - The required repair (pipeline-restricted contract).
+   - Affected downstream files.
+
+### What's NOT done in this session
+
+- **Migration of the active final line**: the ~50 call sites across
+  `Magnification/FinalResult{Mainline,LegacyTM}.lean`,
+  `LowerBounds/SingletonDensityContradiction.lean`, and
+  `LowerBounds/DAGStableRestrictionProducer.lean` still consume
+  `FormulaSupportRestrictionBoundsPartial` unchanged.  This is a
+  multi-session refactor; see migration plan below.
+
+- **Removal of the predicate**: cannot delete yet — would break ~50
+  theorems.  The predicate is retained with a warning docstring while
+  migration proceeds.
+
+### Migration plan (future sessions)
+
+**Step 1** — introduce pipeline-restricted replacement.  Define a new
+predicate at the same location in `LocalityProvider_Partial.lean`:
+
+```lean
+/-- Pipeline-restricted support-bounds contract.  For formulas that
+come from a specific AC0/multi-switching extraction pipeline, the
+support satisfies the polylog / quarter / LocalCircuitSmallEnough
+bounds.  Unlike `FormulaSupportRestrictionBoundsPartial`, this version
+does NOT vacuously quantify over fixed-slice truth-table hardwiring. -/
+def FormulaSupportRestrictionBoundsPartial_fromPipeline
+    (pipeline : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract) :
+    Prop := ...
+```
+
+**Step 2** — migrate the two consumers that directly use the predicate:
+- `formulaRestrictionCertificateData_of_supportBounds`
+  (LocalityProvider_Partial.lean:2202)
+- `false_of_abstractGapTargetedPayload_of_supportBounds`
+  (SingletonDensityContradiction.lean:623)
+
+Give them pipeline-restricted variants.
+
+**Step 3** — propagate through the ~50 call sites in the three
+downstream files (DAGStableRestrictionProducer, SingletonDensityContradiction,
+FinalResult*).
+
+**Step 4** — delete `FormulaSupportRestrictionBoundsPartial` after all
+consumers migrate.
+
+**Step 5** — formalize Probe 2 (truth-table hardwiring → PpolyFormula)
+as the final regression lemma; then delete the old predicate's
+warning docstring since the predicate is gone.
+
+Estimated effort: ~3 sessions, ~800 LOC (mostly mechanical signature
+updates).
+
+### Impact on Milestone G execution
+
+Milestone G (started session 54) is **orthogonal** to this audit:
+`rowConsistencyCheckCSAt_row` and `mcspCheckAllRows` are purely TM-level
+constructions with no dependency on Magnification's support-bounds
+chain.  Milestone G work can continue unchanged; the support-bounds
+migration is an independent refactor on the Magnification side.
+
+### Verification (session 55)
+
+- `lake build` green; `check.sh` all 6 steps pass.
+- Axiom inventory unchanged.
+- New regression lemmas axiom-clean: `[propext, Classical.choice, Quot.sound]`.
+- `Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` is compiled as
+  part of the default `PnP3` library, not optional — so regression is
+  a build gate.

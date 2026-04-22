@@ -1184,3 +1184,229 @@ Findings:
 **Total Phase I remaining: ~3 100 LOC.**
 
 After F closure, main technical question shifts to Milestone G's variable-offset problem (the other foundation-level architectural question).
+
+---
+
+## Session 53 — Milestone G architectural decision (research-only)
+
+After closing F.4 on literal `circuitEvaluatorCS` in sessions 50–52, the
+next blocker is Milestone G's variable-offset issue (design doc
+lines 87–135).  This session is a research-only investigation of
+design options, producing a concrete recommendation before committing
+to implementation in session 54+.
+
+### The problem, restated precisely
+
+MCSP-verifier row consistency check reads **four** bits per row:
+- `mask[i]` at tape position `head + Δmask + i`
+- `value[i]` at tape position `head + Δvalue + i`
+- scratch (circuit output) at `head + Δscratch + gates.length - 1`
+- global invalid flag at `head + Δflag`
+
+The row index `i` ranges `0..2^n - 1` where `n = spec.n`.  Three of the
+four positions (`Δmask + i`, `Δvalue + i`, and implicitly the scratch
+slot used by later rows) **depend on `i`**.
+
+`combineAtOffsetCS Δ1 Δ2 Δdst op` takes offsets as `Nat` parameters
+fixed at program-construction time.  Its `numPhases := 2 * Δdst + 4`
+IS parameter-dependent (see `CombineAtOffset.lean:40`), but the
+parameters must be concrete at the moment of construction — NOT
+computed from tape contents at runtime.
+
+### Options considered
+
+**Option A — Co-located circuit evaluation**:  merge circuit evaluation
+with per-row consistency check in a single pass.  Rejected: requires
+either redoing circuit evaluation for each row (2^n × gates.length
+work, multiplicative blowup over current 2^n + gates.length) or
+interleaving input/output layouts that break the existing
+`evalOneGateCS` / `circuitEvaluatorCS` scratch-region invariants.  Net
+cost ≥ 1500 LOC with substantial refactor of F.4 infrastructure.
+
+**Option B — Pre-compute circuit outputs in certificate**:  include
+2^n circuit values in the certificate; verifier just checks
+consistency.  Rejected: certificate size blows up by 2^n factor,
+violating `circuit_bound_ok : circuitCountBound n (sNO - 1) < 2 ^
+(Partial.tableLen n / 2)` in `Model_PartialMCSP.lean:27-35`.  The gap
+argument breaks.
+
+**Option C — Position-based encoding (head walks row by row)**:  use
+fixed-block tape layout `[row_0 | row_1 | … | row_{2^n-1}]` where each
+block is `blockSize` cells.  Head advances by `blockSize` between rows.
+Eliminates variable offsets, but loses flexibility if any per-row
+quantity becomes variable-size later.  ~600-800 LOC new layout lemmas.
+Moderate coupling risk.
+
+**Option D — Head = row index encoding**:  eliminate counter region
+entirely; head position IS the row index modulo blockSize.  ~400 LOC
+but brittle; locks tape layout.  Not recommended.
+
+**Option E — Non-uniform family (TM per n)**:  ruled out by the
+uniform-TM requirement in `NP_TM` at `Interfaces.lean:560-571`.
+
+**Option F — Multi-tape simulation**:  adds simulation overhead
+without solving the core variable-offset issue.  Rejected.
+
+### Main contenders: Path 1 vs Path 2
+
+**Path 1 — Loop unrolling via `List.ofFn`**:
+
+```lean
+def rowConsistencyCheckCSAt_row (spec : GapPartialMCSPParams)
+    (Δmask Δvalue Δscratch Δtmp Δflag : Nat) (i : Fin (2 ^ spec.n)) :
+    ConstStatePhasedProgram S :=
+  ConstStatePhasedProgram.seqList [
+    circuitEvaluatorCS spec.gates ... Δscratch,
+    combineAtOffsetCS (Δscratch + spec.gates.length - 1) (Δvalue + i.val)
+                      Δtmp ...  (· ≠ ·),
+    combineAtOffsetCS (Δmask + i.val) Δtmp Δtmp (· && ·),
+    combineAtOffsetCS Δtmp Δflag Δflag (· || ·)
+  ]
+
+def mcspCheckAllRows (spec : GapPartialMCSPParams) ... :
+    ConstStatePhasedProgram S :=
+  ConstStatePhasedProgram.seqList
+    (List.ofFn (fun i : Fin (2 ^ spec.n) =>
+      rowConsistencyCheckCSAt_row spec ... i))
+```
+
+For each `i : Fin (2 ^ spec.n)`, the per-row program has **fixed**
+offsets `Δvalue + i.val`, `Δmask + i.val` (concrete `Nat` values once
+`i` is fixed at construction).  The top-level
+`mcspCheckAllRows` is a `seqList` of `2 ^ spec.n` such programs — a
+`List.ofFn` over `Fin (2 ^ spec.n)`.  Total `numPhases = 2^n ·
+poly(n) = poly(N)` where `N = tableLen spec.n`.
+
+**Critical insight**: the design doc (lines 118–127) calls this a
+"foundation change" requiring `numPhases : Nat → Nat`.  **This is
+overstated.**  `PhasedProgram.numPhases` is already a `Nat` expression
+involving parameters of the construction (see `combineAtOffsetProgram`
+in `CombineAtOffset.lean:40`: `numPhases := 2 * Δdst + 4` with `Δdst`
+a constructor parameter).  For a specific `spec`, `n` is concrete, so
+`2 ^ spec.n` is a concrete `Nat` — the verifier IS a valid
+`PhasedProgram` in the current foundation, no structural change
+needed.
+
+The concern about "the verifier is a function of `N` at the Lean
+level" reflects a mis-framing: every parametric construction is a
+function from parameters to PhasedProgram.  What `PhasedProgram`
+genuinely cannot express is `numPhases` that depends on the *runtime
+input length* (i.e., on the length of the tape at runtime).  But
+MCSP's `numPhases` depends only on `spec.n`, a *construction-time
+parameter* — no foundation change required.
+
+The one genuine concern is **kernel proof-checking cost**: if we
+unfold `List.ofFn` via explicit enumeration, we get a list of `2^n`
+terms, which for `n = 20` is ~10^6 terms — infeasible.  The mitigation
+is to reason about `List.ofFn` and `seqList` **abstractly via the
+relevant induction / `getElem?` lemmas** rather than unfolding.  This
+is standard Lean 4 practice and supported by the existing
+`seqList_timeBound_le_uniform` proof.
+
+LOC estimate:
+- `rowConsistencyCheckCSAt_row` definition + per-row correctness (via F.4
+  + 3 × `combineAtOffsetProgram_run_full`): ~250 LOC.
+- `mcspCheckAllRows` composition via `seqList` over `List.ofFn` + its
+  correctness by induction on `i : Fin (2 ^ spec.n)`: ~200 LOC.
+- Arithmetic bounds (`2^n · poly(n) = poly(N)`): ~50 LOC.
+- **Total Milestone G: ~500 LOC.**
+
+**Path 2 — `seekByCounter` compound**:
+
+New primitive `seekByCounterProgram counterStart counterLen Δbase` that:
+1. Reads bits of a binary counter at `[counterStart, counterStart + counterLen)`.
+2. Computes effective offset `offset := Δbase + counter_value`.
+3. Seeks head to `head + offset`.
+
+Used in Milestone G as:
+
+```lean
+seqList [
+  seekByCounterProgram counterStart n (Δmask - counterStart),
+    -- now head is at (original_head + Δmask + counter_value)
+  combineAtOffsetCS 0 Δvalue' Δtmp' ...,
+    -- offsets relative to new head position
+  seekByCounterProgram_reverse ...,
+    -- restore head to original position
+  ...
+]
+```
+
+LOC estimate (per design doc and Explore analysis):
+- `seekByCounterProgram` definition: ~200 LOC.
+- `seekByCounterProgram_correct`: ~500 LOC (similar to
+  `incrementProgram_correct` + 50-lemma run-invariant chain).
+- Integration with Milestone G's 4-step seqList + re-alignment
+  compounds: ~300 LOC.
+- **Total Milestone G: ~1000 LOC.**
+
+### Comparison
+
+| Criterion | Path 1 (unroll via `List.ofFn`) | Path 2 (`seekByCounter`) |
+|-----------|-------------------------------|---------------------------|
+| Foundation change? | No | No (new primitive in toolkit) |
+| LOC | ~500 | ~1000 |
+| New semantics | None (reuses existing seqList + combineAtOffset) | One new primitive family |
+| Proof reuse | Maximal (leverages existing `combineAtOffsetProgram_run_full` verbatim for each row) | Partial (needs fresh run-invariant chain for seekByCounter) |
+| Downstream impact on H/I | Clean: `rowLoopProgram` becomes trivial (loop body is just index `i`) | Moderate: H must thread seekByCounter invariants through the loop |
+| Risk | Low (mechanical composition) | Medium (new semantics to verify) |
+| Time bound proof | Direct: `seqList_timeBound_le_uniform` applied to 2^n copies of same per-row bound | Indirect: need to compose seekByCounter timeBound with combineAtOffsetCS timeBound |
+
+### Recommendation: **Path 1**
+
+Path 1 is **strictly dominant**: half the LOC, no new semantics, maximal
+reuse of existing F.4 and `combineAtOffsetProgram_run_full`
+infrastructure.  The design doc's "foundation change" concern was
+overstated — no structural modification of `PhasedProgram` is needed
+because `numPhases` already accepts parameter-dependent `Nat`
+expressions (as `combineAtOffsetProgram.numPhases := 2 * Δdst + 4`
+demonstrates).
+
+The one real technical concern (proof-kernel cost of enumerating 2^n
+terms) is mitigated by reasoning about `List.ofFn` abstractly via
+existing helpers like `seqList_timeBound_le_uniform`.
+
+### Execution plan for session 54+ (Milestone G, Path 1)
+
+**Session 54** (~250 LOC): `rowConsistencyCheckCSAt_row` + per-row
+correctness.  Definition + proof that running the 4-step seqList for a
+specific `i` correctly sets the invalid flag to `(mask[i] ∧ (value[i] ≠
+circuit_output[i])) ∨ prior_invalid_flag`.  Proof pattern: chain 4
+existing lemmas (F.4 + 3 × `combineAtOffsetProgram_run_full`) via
+`seqList` composition.
+
+**Session 55** (~200 LOC): `mcspCheckAllRows` + correctness by
+induction on `i : Fin (2 ^ spec.n)`.  Show that after processing the
+first `k` rows, `invalid_flag = ⋁_{j < k} (mask[j] ∧ mismatch[j])`.
+
+**Session 56** (~50 LOC): arithmetic bound `2^n · poly(n) = poly(N)`
+for the full verifier time budget.  Uses
+`seqList_timeBound_le_uniform` applied to the List.ofFn of row
+checks.
+
+### Showstoppers to monitor
+
+1. **Kernel timeout on large `n`**: if Lean's definitional unfolding
+   hits List.ofFn enumeration, specific lemmas may need `@[irreducible]`
+   annotation to force abstract reasoning.  Mitigation: profile during
+   session 54 and add annotations as needed.
+2. **`Fin (2 ^ spec.n)` arithmetic**: working with `Fin` over
+   exponential bounds may need explicit `Nat.pow` lemmas.  Mitigation:
+   have a fallback to `List.range (2 ^ spec.n)` + bound hypothesis if
+   `Fin` proves awkward.
+3. **Scratch-region overflow between rows**: each row's scratch slots
+   must not collide with the next row's mask/value positions.
+   Mitigation: explicit offset hierarchy `Δscratch + gates.length ≤
+   Δmask`, `Δmask + 2^n ≤ Δvalue`, etc. — similar to existing
+   `hle12 : Δ1 ≤ Δ2` constraints in `combineAtOffsetProgram`.
+
+**Fallback**: if any showstopper blocks Path 1, pivot to Path 2 within
+the same sprint.  Path 2's `seekByCounter` design is documented in
+lines 128–131 of the original design doc and remains implementable as
+~1000 LOC fallback.
+
+### Deliverable
+
+This session 53 entry itself is the deliverable: no code written.
+Session 54 will begin Path 1 implementation with
+`rowConsistencyCheckCSAt_row`.

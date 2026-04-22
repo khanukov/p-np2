@@ -366,6 +366,106 @@ theorem formulaSupportBoundsPartial_fromPipeline_of_old
     FormulaSupportBoundsPartial_fromPipeline := fun _ac0 _F _hsame _hAC0 _hMSWit
     hFormula _hSem => hBounds hFormula
 
+/-! ### Step 6 (session 67) — strengthened pipeline contract
+
+Session 67 finding: `FormulaSupportBoundsPartial_fromPipeline` is
+FORMALLY ex-falso.  Probe 7 at
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:~380` shows:
+
+  ∀ p hBoundsP, False
+
+via the internal provider
+`AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal`
+which adjusts AC0 parameters per-formula (singleton-family `[f]`
+with `semanticParams f` sized to fit the truth-table DNF).
+
+**Root cause**: the per-formula AC0 parameters are NOT a real gate
+against truth-table hardwiring — the internal provider fits
+parameters to each formula, making the provenance gate vacuous.
+
+**Repair direction**: require FIXED AC0 parameters (not per-formula)
+as a parameter of the Prop.  Then internal singleton providers with
+per-formula fitted params cannot satisfy the contract. -/
+
+/-- **Strengthened pipeline contract — fixed AC0 parameters**.  Takes
+`ac0 : AC0Parameters` as a parameter of the Prop itself (not as a
+per-formula input).  This eliminates the loophole exploited by
+`formulaSemanticMultiSwitchingProvider_internal`, which fits
+parameters to each formula's truth-table DNF size.
+
+Legitimate AC0-multi-switching providers uniform-over-formulas (as in
+actual AC0 lower-bound literature) DO have fixed parameters, so this
+restriction aligns with mathematical reality.
+
+Session 67 provides this strengthening as a CONTRACT shape; an
+in-project regression showing `internal_provider`-derived AC0 params
+CANNOT satisfy it uniformly would be the next step. -/
+def FormulaSupportBoundsPartial_fromPipeline_fixedParams
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (_sizeBound : Nat → Nat) : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p)
+    (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+    (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let solver := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)) →
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/-- **Why this is stronger than the previous `_fromPipeline`**:
+`FormulaSupportBoundsPartial_fromPipeline` quantifies over `ac0` PER
+invocation — so a provider that fits ac0 to each formula (like the
+internal singleton provider) satisfies it trivially.
+
+`FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sizeBound`
+fixes `ac0` as a Prop parameter.  A provider must use the SAME
+`ac0` for every formula it's applied to — matching the uniform-over-
+formulas nature of actual AC0 lower-bound arguments.
+
+The internal singleton provider CANNOT synthesize a uniform `ac0`
+fitting every formula, because truth-table DNF sizes vary across
+formulas.  Thus Probe 7's ex-falso route is blocked for this
+strengthened predicate.
+
+**Caveat**: this is a SYNTACTIC strengthening.  A full proof that the
+predicate is actually consistent (not just harder to refute via the
+internal provider) would require showing that no provider AT ALL
+can satisfy it for truth-table hardwired formulas, which depends on
+formal AC0 lower bounds not currently in the project. -/
+theorem formulaSupportBoundsPartial_fromPipeline_fixedParams_of_old
+    (ac0 : ThirdPartyFacts.AC0Parameters) (sizeBound : Nat → Nat)
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sizeBound :=
+  fun _F _hsame _hAC0 _hMSWit hFormula _hSem => hBounds hFormula
+
 /-! ### Migration Step 2 scaffolding — pipeline-aware structured provider
 
 `StructuredLocalityProviderPartial` (in `Facts_Magnification_Partial.lean`)

@@ -3,6 +3,7 @@ import LowerBounds.FailedRoute_FixedSliceSupportHalfCore
 import LowerBounds.SingletonDensityContradiction
 import Magnification.LocalityProvider_Partial
 import Magnification.FinalResultMainline
+import Magnification.AC0LocalityBridge
 
 /-!
 # Formula Support Bounds Falsifiability — Regression Test
@@ -355,6 +356,78 @@ theorem NP_not_subset_PpolyFormula_final_via_ex_falso
     (n : Nat) (_hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
     ComplexityInterfaces.NP_not_subset_PpolyFormula :=
   False.elim (false_of_MagnificationAssumptions p hMag)
+
+/-! ### Probe 7 — pipeline-aware predicate is ALSO ex-falso (session 67)
+
+Critical finding following sessions 58-66: the pipeline-aware
+`FormulaSupportBoundsPartial_fromPipeline` predicate — introduced as
+the non-ex-falso replacement for the inconsistent
+`FormulaSupportRestrictionBoundsPartial` — is ITSELF formally
+inconsistent in the current formalization.
+
+**Reason**: the "AC0 provenance gate" in the pipeline predicate is
+not a real filter against truth-table hardwiring, because
+`AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal`
+(defined at `pnp3/Magnification/AC0LocalityBridge.lean:1348`)
+constructs a **singleton family `[f]`** for ANY extracted formula
+witness, satisfying the `∃ f ∈ F, sem-link` gate.
+
+Thus for any `hFormula : PpolyFormula (gapPartialMCSP_Language p)`:
+1. Apply `formulaSemanticMultiSwitchingProvider_internal.package` to
+   get AC0 provenance tuple (ac0, F, hsame, hAC0, hMSWit, hSem).
+2. Apply `hBoundsP` with this tuple to get the three support bounds.
+3. The support bounds are the same as in the OLD predicate, so
+   we've effectively derived the inconsistent
+   `FormulaSupportRestrictionBoundsPartial`.
+4. Probe 3 closes False.
+
+This reveals that `FormulaSupportBoundsPartial_fromPipeline` is NOT
+semantically stronger than the old predicate — only cosmetically
+restated.  A genuine repair requires a stricter provenance gate that
+`formulaSemanticMultiSwitchingProvider_internal` cannot satisfy
+(e.g., nontrivial family size, externally certified AC0 pipeline).
+
+See `outputs/formula-support-bounds-falsifiability-audit.md` follow-up
+and session 67 design note (below) for details. -/
+
+/-- **Probe 7 — pipeline predicate ex-falso via internal singleton
+provider**: `FormulaSupportBoundsPartial_fromPipeline → False`.
+
+Uses `formulaSemanticMultiSwitchingProvider_internal.package` to
+synthesize AC0 provenance for the truth-table hardwired formula from
+Probe 2.  With the provenance in hand, `hBoundsP` delivers the three
+support bounds, equivalent to the old predicate's conclusion.  Probe
+3's chain then closes False. -/
+theorem false_of_FormulaSupportBoundsPartial_fromPipeline
+    (p : GapPartialMCSPParams)
+    (hBoundsP : Magnification.FormulaSupportBoundsPartial_fromPipeline) :
+    False := by
+  classical
+  -- Construct the OLD FormulaSupportRestrictionBoundsPartial from hBoundsP
+  -- by threading the internal semantic provider for every hFormula.
+  have hBoundsOld : Magnification.FormulaSupportRestrictionBoundsPartial := by
+    intro p'' hFormula''
+    -- Synthesize AC0 provenance via the internal singleton-family provider.
+    obtain ⟨ac0, F, hsame, hAC0, hMSWit, hSem⟩ :=
+      Magnification.AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal.package
+        (p := p'') hFormula''
+    -- Apply hBoundsP with the provenance tuple.
+    exact hBoundsP (p := p'') ac0 F hsame hAC0 hMSWit hFormula'' hSem
+  -- Apply Probe 3: hBoundsOld → False.
+  exact false_of_FormulaSupportRestrictionBoundsPartial p hBoundsOld
+
+/-- **Probe 7b** — pipeline-aware `MagnificationAssumptions_fromPipeline`
+is ALSO ex-falso via Probe 7.
+
+Given `hMagP : MagnificationAssumptions_fromPipeline`, extract the
+`boundsP` field and apply Probe 7.  The conclusion: every caller of
+`NP_not_subset_PpolyFormula_final_fromPipeline` still receives an
+ex-falso package in the current formalization. -/
+theorem false_of_MagnificationAssumptions_fromPipeline
+    (p : GapPartialMCSPParams)
+    (hMagP : Magnification.MagnificationAssumptions_fromPipeline) :
+    False :=
+  false_of_FormulaSupportBoundsPartial_fromPipeline p hMagP.switching.boundsP
 
 /-! ### Step 4/5 status tracker — pipeline-aware alternatives (session 66)
 

@@ -2552,6 +2552,106 @@ noncomputable def formulaRestrictionCertificateData_of_supportBounds
     · exact hsmall
     · exact hhalf
 
+/-- **Step 2c (session 62)** — pipeline-aware builder: takes the
+provenance-restricted `FormulaSupportBoundsPartial_fromPipeline` and
+produces the matching pipeline-aware restriction certificate data.
+
+The body replicates the old `formulaRestrictionCertificateData_of_supportBounds`
+verbatim, except the bounds are obtained by applying `hBoundsP` to the
+AC0-provenance tuple the caller supplies (rather than by quantifying
+over all formula witnesses). -/
+noncomputable def formulaRestrictionCertificateData_fromPipeline_of_supportBoundsFromPipeline
+    (hBoundsP : FormulaSupportBoundsPartial_fromPipeline) :
+    FormulaRestrictionCertificateDataPartial_fromPipeline where
+  restrictionData := by
+    intro p ac0 F hsame hAC0P hMSWitP hFormula _solverLet _wfLet _cLet hSem
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive : Finset (Fin (Models.partialInputLen p)) :=
+      ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    have hB :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+          Facts.LocalityLift.LocalCircuitSmallEnough
+            { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+              , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                  * rFacts.alive.card.succ
+              , ℓ := rFacts.alive.card
+              , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+          rFacts.alive.card ≤
+            Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+      simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+        hBoundsP (p := p) ac0 F hsame hAC0P hMSWitP hFormula hSem
+    have hpoly :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) := hB.1
+    have hsmall :
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * rFacts.alive.card.succ
+            , ℓ := rFacts.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } := hB.2.1
+    have hhalf :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := hB.2.2
+    have hstablePartial :
+        ∀ x : Core.BitVec (Models.partialInputLen p),
+          solver.decide (rPartial.apply x) = solver.decide x := by
+      intro x
+      change
+        ComplexityInterfaces.FormulaCircuit.eval c (rPartial.apply x) =
+          ComplexityInterfaces.FormulaCircuit.eval c x
+      apply ComplexityInterfaces.FormulaCircuit.eval_eq_of_eq_on_support
+      intro i hi
+      exact Facts.LocalityLift.Restriction.apply_alive rPartial x hi
+    have hstableFacts :
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (rFacts.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+      have hstableCast :
+          ∀ x0 : Core.BitVec (Models.partialInputLen p),
+            ThirdPartyFacts.solverDecideFacts (p := p) solver
+                (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0)) =
+              ThirdPartyFacts.solverDecideFacts (p := p) solver
+                (ThirdPartyFacts.castBitVec hlen.symm x0) := by
+        intro x0
+        change
+          solver.decide
+              (ThirdPartyFacts.castBitVec hlen
+                (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0))) =
+            solver.decide
+              (ThirdPartyFacts.castBitVec hlen
+                (ThirdPartyFacts.castBitVec hlen.symm x0))
+        simpa [ThirdPartyFacts.castBitVec_castBitVec_symm] using hstablePartial x0
+      have hstableRaw :=
+        ThirdPartyFacts.stable_of_stable_cast
+          (h := hlen.symm)
+          (decide := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+          (r := rPartial)
+          hstableCast
+      intro x
+      simpa [rFacts] using hstableRaw x
+    refine ⟨rFacts, ?_, ?_, ?_, hstableFacts⟩
+    · exact hpoly
+    · exact hsmall
+    · exact hhalf
+
 /-- Default-availability flag for restriction-level certificate data. -/
 def hasDefaultFormulaRestrictionCertificateDataPartial : Prop :=
   Nonempty FormulaRestrictionCertificateDataPartial

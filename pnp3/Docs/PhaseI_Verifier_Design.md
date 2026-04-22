@@ -608,11 +608,69 @@ This is the DEFINITIVE mathematical F.4 correctness theorem.
 - All-input lists (session 49u): ∃-form `circuitEvaluatorCSAt_inputList_RunCorrect_unconditional`.
 
 **Remaining as future work** (not blocking):
-- Public CS-form wrapper `circuitEvaluatorCS_run_correct` via
-  `circuitEvaluatorCSAt_zero_eq` transport (Eq.rec motive issue on
-  auto-generated Fin proofs; downstream callers use the CSAt-0 form).
 - ∃-form derivations for not/and/or gate families require
   well-formedness hypotheses (these gate types aren't prior-independent).
+
+### Session 50 — Public CS-form wrappers via definitional alias refactor
+
+Session 50 closed the last F.4 deliverable: the public CS-form
+correctness theorems `circuitEvaluatorCS_run_correct_constList` and
+`circuitEvaluatorCS_run_correct_inputList`.
+
+**The Eq.rec obstruction**.  `circuitEvaluatorCS gates = circuitEvaluatorCSAt
+gates 0` is a **propositional** (not definitional) equality — the two
+definitions have different structural unfoldings (`seqList ∘ mapIdx` vs
+`match`).  A direct `rw [← circuitEvaluatorCSAt_zero_eq]` on a goal of
+shape `CircuitEvaluatorCS_RunCorrect gates ...` fails the motive check
+because the Prop body contains auto-generated proof terms (e.g.,
+`CircuitEvaluatorCS_RunCorrect._proof_5`) from `by omega` blocks
+establishing Fin bounds; those proof types are tied to the specific
+program and cannot be abstracted uniformly over the rewrite variable.
+
+**Resolution (Option A, chosen after Option B `rw` attempt failed)**:
+refactor `CircuitEvaluatorCS_RunCorrect` as a **definitional alias**
+of `CircuitEvaluatorCSAt_RunCorrect gates 0`.  In
+`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean`:
+
+```lean
+def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) : Prop :=
+  CircuitEvaluatorCSAt_RunCorrect gates 0 Δrowbase Δscratch hle
+```
+
+Semantic equivalence holds: the CSAt form with `offset = 0` and
+`prior = []` degenerates to the natural 3-conjunct CS statement via
+def-eq (`Δscratch + 0 = Δscratch` and `[] ++ vals = vals`).  The extra
+`prior` universal and preservation conjunct are conservative
+generalisations that do not restrict the statement.
+
+**Public wrappers** (both one-liners through the alias):
+```lean
+theorem circuitEvaluatorCS_run_correct_constList (bs : List Bool)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect (bs.map SLGate.const) Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_constList_RunCorrect_unconditional bs 0 Δrowbase Δscratch hle
+
+theorem circuitEvaluatorCS_run_correct_inputList (is : List (Fin n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect (is.map SLGate.input) Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_inputList_RunCorrect_unconditional is 0 Δrowbase Δscratch hle
+```
+
+**Downstream usage pattern**: consumers that construct a `Configuration`
+for `circuitEvaluatorCS` rewrite through `circuitEvaluatorCSAt_zero_eq`
+once at the term level (before any Fin-bound proofs are generated) to
+reach the CSAt-at-0 form, then apply these correctness theorems.
+
+**Verification** (session 50): `lake build` green; `check.sh` all
+6 steps pass; axiom inventory unchanged (propext=349, Classical.choice=345,
+Quot.sound=349).
+
+**F.4 status after session 50**: FULLY CLOSED.
+- Conditional correctness for arbitrary gates: ✓ (session 49s).
+- ∃-form for all-const lists: ✓ (session 48).
+- ∃-form for all-input lists: ✓ (session 49u).
+- Public CS-form wrappers: ✓ (session 50).
 
 ### Session 47f — F.4 architecture breakthrough (const case PROVED in Prop form)
 

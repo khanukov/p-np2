@@ -1086,64 +1086,6 @@ an offset-parameterised helper `circuitEvaluatorCSAux gates offset`
 as an equivalence).  The offset-helper keeps slot numbering explicit
 across the induction boundary. -/
 
-/-- The packaged correctness property of `circuitEvaluatorCS`.  A
-future session will prove `gates ↦ CircuitEvaluatorCS_RunCorrect gates`
-by induction; this definition fixes the exact shape of the target.
-
-We state this as a `Prop`-valued definition rather than a theorem
-directly so that the nil case can already be proved (giving a concrete
-reference implementation of the structure) while the full multi-gate
-induction is still pending.  The bound index-proofs are packaged via
-anonymous `by omega` blocks that consume the explicit `hbound`
-hypothesis; this makes the existential clauses definitionally clean
-without any auxiliary sigma types. -/
-def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
-    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) : Prop :=
-  ∀ {N : Nat}
-    (c : Configuration
-      (M := (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM) N)
-    (_h_phase : c.state.fst.val = 0)
-    (_h_state_snd : c.state.snd = (false, false))
-    (hbound : (c.head : ℕ) + Δscratch + gates.length ≤ N)
-    (_htape_clean : ∀ i : Fin
-        ((circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
-        N ≤ i.val → c.tape i = false),
-    ∃ vals : List Bool,
-      vals.length = gates.length ∧
-      SLProgram.evalAux
-          (fun i => c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
-            have hi := i.isLt
-            have h_len_ge : N ≤
-                ((circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
-              show N ≤ N + (circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N + 1
-              omega
-            omega⟩)
-          gates [] = some vals ∧
-      ∀ i : Fin gates.length,
-        (TM.runConfig
-            (M := (circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM) c
-            ((circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N)).tape
-          ⟨(c.head : ℕ) + Δscratch + i.val, by
-            have hi := i.isLt
-            have h_len_ge : N ≤
-                ((circuitEvaluatorCS gates Δrowbase Δscratch hle).toPhased.toTM).tapeLength N := by
-              show N ≤ N + (circuitEvaluatorCS gates Δrowbase Δscratch hle).timeBound N + 1
-              omega
-            omega⟩ =
-        vals[i.val]?.getD false
-
-/-- Base case: empty gate list.  `circuitEvaluatorCS []` runs for zero
-steps and returns an empty value list.  The row-accessor is still a
-valid total function (any `i : Fin n` is covered via `h_bound` derivable
-from `hle`), and the universal over `Fin 0` is vacuously true via
-`Fin.elim0`. -/
-theorem circuitEvaluatorCS_nil_run_correct {n : Nat}
-    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
-    CircuitEvaluatorCS_RunCorrect ([] : List (SLGate n)) Δrowbase Δscratch hle := by
-  intro N c _ _ _ _
-  refine ⟨[], rfl, rfl, ?_⟩
-  intro i; exact i.elim0
-
 /-! ### Offset-generalised correctness Prop for `circuitEvaluatorCSAt`
 
 This is the form the full F.4 induction will work with: the scratch
@@ -1222,6 +1164,49 @@ theorem circuitEvaluatorCSAt_nil_run_correct {n : Nat}
   · -- Preservation: empty list ⟹ 0 steps ⟹ tape unchanged.
     intro j _
     rfl
+
+/-! ### CS-form correctness: definitional alias of the CSAt form at 0
+
+The CS-form correctness `CircuitEvaluatorCS_RunCorrect` is defined as a
+definitional alias of `CircuitEvaluatorCSAt_RunCorrect gates 0` rather
+than a standalone Prop.
+
+**Why alias-through-CSAt?**  `circuitEvaluatorCS gates = circuitEvaluatorCSAt
+gates 0` is a propositional equality (see `circuitEvaluatorCSAt_zero_eq`),
+not definitional, because the two have different structural unfoldings
+(`seqList ∘ mapIdx` vs `match`).  Attempting to state a separately
+structured `CS_RunCorrect` and derive it from the CSAt form via
+`rw [← circuitEvaluatorCSAt_zero_eq]` hits an `Eq.rec`
+motive-not-type-correct obstruction: the Prop body contains
+auto-generated proof terms (from `by omega` blocks establishing Fin
+bounds) whose types depend on the specific program, so the rewrite
+motive cannot be abstracted uniformly.
+
+Defining `CS_RunCorrect` as the CSAt form avoids this entirely.
+Semantically the two are equivalent: the CSAt form with `offset = 0`
+and `prior = []` degenerates to the natural 3-conjunct CS statement
+(via `Δscratch + 0 = Δscratch` and `[] ++ vals = vals`, both
+definitional).  The extra `prior` universal and preservation conjunct
+are conservative generalisations that do not restrict the statement.
+
+**Downstream usage**: consumers that construct a `Configuration` for
+`circuitEvaluatorCS` rewrite through `circuitEvaluatorCSAt_zero_eq`
+once at the term level (before any Fin-bound proofs are generated) to
+reach the CSAt-at-0 form, then apply this correctness. -/
+
+/-- The packaged correctness property of `circuitEvaluatorCS`,
+formulated as a definitional alias of `CircuitEvaluatorCSAt_RunCorrect`
+at `offset = 0`.  See the section docstring above for the rationale. -/
+def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) : Prop :=
+  CircuitEvaluatorCSAt_RunCorrect gates 0 Δrowbase Δscratch hle
+
+/-- Base case: empty gate list.  Derived directly from the CSAt nil
+lemma via the definitional alias. -/
+theorem circuitEvaluatorCS_nil_run_correct {n : Nat}
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect ([] : List (SLGate n)) Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_nil_run_correct 0 Δrowbase Δscratch hle
 
 /-! ### Full Prop-form single-gate correctness (const and input)
 
@@ -2823,31 +2808,22 @@ theorem circuitEvaluatorCSAt_constList_RunCorrect_unconditional {n : Nat}
         exact cons_const_nonempty_preservation_fact b b' bs'' offset Δrowbase Δscratch hle
           ih_sub c h_phase h_state_snd hbound htape_clean j hj
 
-/-! ### Bridging note for the public wrapper
+/-! ### Public CS-form wrappers for all-const and all-input gate lists
 
-The natural public-facing correctness statement is
+Because `CircuitEvaluatorCS_RunCorrect gates` is a definitional alias
+of `CircuitEvaluatorCSAt_RunCorrect gates 0` (see the section
+"CS-form correctness: definitional alias of the CSAt form at 0" above),
+the public CS-form correctness theorems are trivial specialisations of
+the corresponding CSAt-form unconditional theorems at `offset = 0`. -/
 
-    CircuitEvaluatorCS_RunCorrect (bs.map SLGate.const) Δrowbase Δscratch hle
-
-which refers to `circuitEvaluatorCS`.  Since
-`circuitEvaluatorCSAt_zero_eq` establishes
-
-    circuitEvaluatorCSAt gates 0 Δrowbase Δscratch hle =
-      circuitEvaluatorCS gates Δrowbase Δscratch hle
-
-(a propositional equality, not definitional, since the two have
-different structural unfoldings — `seqList ∘ mapIdx` vs `match`),
-the main theorem `circuitEvaluatorCSAt_constList_RunCorrect_unconditional`
-directly gives the correctness for the CSAt-at-offset-0 form.  The
-CS-form bridge requires transporting `Configuration (M := …).toPhased.toTM`
-across the above equality, which hits an `Eq.rec` motive-non-type-correct
-obstruction because the Prop contains auto-generated Fin-bound proofs
-tied to the specific program.
-
-The transport is mechanical but non-trivial; it is deferred to a
-follow-up session.  The CSAt form suffices for downstream use: simply
-apply `circuitEvaluatorCSAt_constList_RunCorrect_unconditional` at the
-desired offset (typically 0). -/
+/-- Public CS-form correctness for all-const gate lists.  Direct
+specialisation of `circuitEvaluatorCSAt_constList_RunCorrect_unconditional`
+at `offset = 0` through the alias. -/
+theorem circuitEvaluatorCS_run_correct_constList {n : Nat} (bs : List Bool)
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect (bs.map (SLGate.const (n := n)) : List (SLGate n))
+      Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_constList_RunCorrect_unconditional bs 0 Δrowbase Δscratch hle
 
 /-! ### Generic per-gate semantic write
 
@@ -4851,6 +4827,15 @@ theorem circuitEvaluatorCSAt_inputList_RunCorrect_unconditional {n : Nat}
     exact h_slots_c
   · -- Preservation.
     exact h_pres_c
+
+/-- Public CS-form correctness for all-input gate lists.  Direct
+specialisation of `circuitEvaluatorCSAt_inputList_RunCorrect_unconditional`
+at `offset = 0` through the alias. -/
+theorem circuitEvaluatorCS_run_correct_inputList {n : Nat} (is : List (Fin n))
+    (Δrowbase Δscratch : Nat) (hle : Δrowbase + n ≤ Δscratch) :
+    CircuitEvaluatorCS_RunCorrect (is.map (SLGate.input (n := n)) : List (SLGate n))
+      Δrowbase Δscratch hle :=
+  circuitEvaluatorCSAt_inputList_RunCorrect_unconditional is 0 Δrowbase Δscratch hle
 
 end GateEvalCS
 

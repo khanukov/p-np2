@@ -505,6 +505,24 @@ theorem NP_not_subset_PpolyFormula_final_with_provider
 /--
 Provider-free wrapper at the formula endpoint boundary:
 derive the structured locality provider internally from support-based bounds.
+
+## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
+
+The hypothesis `hBounds : FormulaSupportRestrictionBoundsPartial` has
+been proven INCONSISTENT by the April 2026 falsifiability audit —
+see `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` Probe 3
+(`false_of_FormulaSupportRestrictionBoundsPartial`) for the formal
+Lean proof.  Any call site using this theorem inherits the ex-falso
+nature: the conclusion `NP_not_subset_PpolyFormula` is derivable
+directly via `False.elim` (see Probe 6).
+
+For legitimate use, migrate to `NP_not_subset_PpolyFormula_final_with_provider`
+and provide the `StructuredLocalityProviderPartial` through a
+non-ex-falso route (not yet available in this project — all current
+provider constructors ultimately route through `hBounds`).
+
+The migration plan is documented in `pnp3/Docs/PhaseI_Verifier_Design.md`
+session 55 / 57 entries.
 -/
 theorem NP_not_subset_PpolyFormula_final_with_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
@@ -524,6 +542,19 @@ theorem NP_not_subset_PpolyFormula_final_with_supportBounds
 Provider-free wrapper at the formula endpoint boundary:
 derive support-bounds and the structured locality provider internally from the
 strengthened A9 multi-switching contract.
+
+## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
+
+Same caveat as `NP_not_subset_PpolyFormula_final_with_supportBounds`:
+the hypothesis `hMS : FormulaSupportBoundsFromMultiSwitchingContract`
+is inconsistent (Probe 4 of the audit,
+`false_of_FormulaSupportBoundsFromMultiSwitchingContract`), because it
+universally quantifies over every `PpolyFormula` witness and packages
+the same false support-bounds claim.  Downstream conclusions are
+ex-falso.
+
+Migrate to `NP_not_subset_PpolyFormula_final_with_provider` with a
+non-ex-falso provider source (TBD — see session 55/57 migration plan).
 -/
 theorem NP_not_subset_PpolyFormula_final_with_multiswitching
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
@@ -544,6 +575,24 @@ Primary asymptotic final formula-separation statement.
 
 This is the active audit-facing entrypoint: all external assumptions are passed
 explicitly via `MagnificationAssumptions`.
+
+## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
+
+`MagnificationAssumptions` contains the inconsistent hypothesis
+`switching.multiswitching : FormulaSupportBoundsFromMultiSwitchingContract`,
+so this theorem's conclusion is ex-falso (Probe 5/6 of the audit,
+`false_of_MagnificationAssumptions` +
+`NP_not_subset_PpolyFormula_final_via_ex_falso`).
+
+**This theorem's current statement does NOT represent genuine progress
+toward unconditional `NP ⊄ P/poly`.**  To make this claim sound, the
+`MagnificationAssumptions` structure must be refactored to carry a
+non-inconsistent locality-provider source — see session 55/57
+migration plan in `pnp3/Docs/PhaseI_Verifier_Design.md`.
+
+Until the migration completes, callers should prefer the underlying
+`NP_not_subset_PpolyFormula_final_with_provider` directly, making
+the ex-falso-vs-legitimate distinction explicit at the call site.
 -/
 theorem NP_not_subset_PpolyFormula_final
   (hMag : MagnificationAssumptions)
@@ -582,6 +631,13 @@ theorem NP_not_subset_PpolyReal_final_with_provider
 /--
 Provider-free wrapper at the `PpolyReal` endpoint boundary:
 derive the structured locality provider internally from support-based bounds.
+
+## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
+
+See the formula-side counterpart
+`NP_not_subset_PpolyFormula_final_with_supportBounds`: the
+`hBounds : FormulaSupportRestrictionBoundsPartial` hypothesis is
+inconsistent (audit Probe 3).
 -/
 theorem NP_not_subset_PpolyReal_final_with_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
@@ -601,6 +657,13 @@ theorem NP_not_subset_PpolyReal_final_with_supportBounds
 Provider-free wrapper at the `PpolyReal` endpoint boundary:
 derive support-bounds and the structured locality provider internally from the
 strengthened A9 multi-switching contract.
+
+## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
+
+See the formula-side counterpart
+`NP_not_subset_PpolyFormula_final_with_multiswitching`: the
+`hMS : FormulaSupportBoundsFromMultiSwitchingContract` hypothesis is
+inconsistent (audit Probe 4).
 -/
 theorem NP_not_subset_PpolyReal_final_with_multiswitching
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
@@ -618,6 +681,13 @@ theorem NP_not_subset_PpolyReal_final_with_multiswitching
 
 /--
 Primary asymptotic final `PpolyReal`-separation statement.
+
+## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
+
+See formula-side counterpart `NP_not_subset_PpolyFormula_final`: the
+`hMag.switching.multiswitching` field is inconsistent (audit Probes 4–6).
+The conclusion is ex-falso and does not represent genuine progress
+toward unconditional `NP ⊄ P/poly_real`.
 -/
 theorem NP_not_subset_PpolyReal_final
   (hMag : MagnificationAssumptions)

@@ -478,6 +478,31 @@ theorem asymptotic_formula_collapse
       hFixedCollapse
       (hAsym.sliceEq n hn)
 
+/-- **Step 3b** — pipeline-aware asymptotic collapse.  Takes the
+pipeline structured provider + semantic-multi-switching provider in
+place of the ex-falso old structured provider. -/
+theorem asymptotic_formula_collapse_fromPipeline
+  (hProviderP : StructuredLocalityProviderPartial_fromPipeline)
+  (hSemProv : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.PpolyFormula (gapPartialMCSP_AsymptoticLanguage hAsym.spec) → False := by
+  let p : GapPartialMCSPParams := hAsym.pAt n hn
+  have hHyp : FormulaLowerBoundHypothesisPartial p (1 : Rat) :=
+    formula_hypothesis_from_pipeline_partial_semantic
+      (p := p) (δ := (1 : Rat)) (hδ := by norm_num)
+  have hFixedCollapse :
+      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) → False :=
+    fixed_formula_collapse_of_provider_fromPipeline
+      (hProviderP := hProviderP) (hSemProv := hSemProv)
+      (p := p) (δ := (1 : Rat)) hHyp
+  exact
+    asymptotic_formula_collapse_of_slice_agreement
+      (spec := hAsym.spec)
+      (p := p)
+      hFixedCollapse
+      (hAsym.sliceEq n hn)
+
 /--
 Primary final statement (asymptotic entry): from the structured provider and
 asymptotic formula-track hypothesis we derive `NP ⊄ PpolyFormula`.
@@ -496,6 +521,39 @@ theorem NP_not_subset_PpolyFormula_final_with_provider
       ComplexityInterfaces.PpolyFormula
         (gapPartialMCSP_AsymptoticLanguage hAsym.spec) → False :=
     asymptotic_formula_collapse hProvider hAsym n hn
+  exact
+    NP_not_subset_PpolyFormula_of_asymptotic_formula_collapse
+      (spec := hAsym.spec)
+      (hNPstrict := hNPbridge.strictAsymptotic)
+      hCollapse
+
+/-- **Step 3c — pipeline-aware final formula separation (with provider)**.
+
+Parallel to `NP_not_subset_PpolyFormula_final_with_provider`, but takes:
+- `hProviderP : StructuredLocalityProviderPartial_fromPipeline` — non-ex-falso.
+- `hSemProv : FormulaSemanticMultiSwitchingProvider` — supplies AC0 provenance per hFormula.
+
+**Soundness note**: this theorem is NOT ex-falso via the audit's
+truth-table probe, because:
+- `hProviderP` takes AC0 provenance as input (Probe 3 no longer applies).
+- `hSemProv` asserts existence of AC0 family per hFormula — potentially
+  inconsistent IF the project has MCSP-not-AC0 as a theorem, but such
+  a lower bound is not currently in-project.
+
+The pipeline migration thus SURFACES the AC0-multiswitching assumption
+explicitly in the final theorem's signature rather than hiding it in
+an ex-falso predicate. -/
+theorem NP_not_subset_PpolyFormula_final_with_provider_fromPipeline
+  (hProviderP : StructuredLocalityProviderPartial_fromPipeline)
+  (hSemProv : AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+  (hAsym : AsymptoticFormulaTrackHypothesis)
+  (hNPbridge : AsymptoticNPPullback hAsym)
+  (n : Nat) (hn : hAsym.N0 ≤ n) :
+  ComplexityInterfaces.NP_not_subset_PpolyFormula := by
+  have hCollapse :
+      ComplexityInterfaces.PpolyFormula
+        (gapPartialMCSP_AsymptoticLanguage hAsym.spec) → False :=
+    asymptotic_formula_collapse_fromPipeline hProviderP hSemProv hAsym n hn
   exact
     NP_not_subset_PpolyFormula_of_asymptotic_formula_collapse
       (spec := hAsym.spec)

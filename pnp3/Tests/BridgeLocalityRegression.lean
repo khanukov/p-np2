@@ -226,43 +226,46 @@ theorem i4_p_ne_np_final_of_invariantProvider
     P_ne_NP := by
   exact Pnp3.Magnification.P_ne_NP_final_of_invariantProvider_TM W hInv
 
-theorem i4_np_not_subset_ppolyDAG_of_formulaCertificate_and_dagToFormula
+theorem i4_np_not_subset_ppolyDAG_of_formulaCertificate
     {p : GapPartialMCSPParams}
     (W : Models.GapPartialMCSP_TMWitness p)
-    (hCert : Pnp3.Magnification.FormulaCertificateProviderPartial)
-    (hDagToFormula :
-      PpolyDAG (gapPartialMCSP_Language p) →
-        PpolyFormula (gapPartialMCSP_Language p)) :
+    (hCert : Pnp3.Magnification.FormulaCertificateProviderPartial) :
     NP_not_subset_PpolyDAG := by
   exact
     Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
       W
       (Pnp3.LowerBounds.dag_stableRestriction_producer_of_formulaCertificate
-        hCert hDagToFormula)
+        hCert)
 
-theorem i4_np_not_subset_ppolyDAG_of_supportBounds_and_dagToFormula
+theorem i4_np_not_subset_ppolyDAG_of_supportBounds
     {p : GapPartialMCSPParams}
     (W : Models.GapPartialMCSP_TMWitness p)
-    (hBounds : Pnp3.Magnification.FormulaSupportRestrictionBoundsPartial)
-    (hDagToFormula :
-      PpolyDAG (gapPartialMCSP_Language p) →
-        PpolyFormula (gapPartialMCSP_Language p)) :
+    (hBounds : Pnp3.Magnification.FormulaSupportRestrictionBoundsPartial) :
     NP_not_subset_PpolyDAG := by
   exact
-    Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula_TM
-      W hBounds hDagToFormula
+    Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_TM
+      W hBounds
 
-theorem i4_p_ne_np_final_of_supportBounds_and_dagToFormula
+theorem i4_p_ne_np_final_of_supportBounds
     {p : GapPartialMCSPParams}
     (W : Models.GapPartialMCSP_TMWitness p)
-    (hBounds : Pnp3.Magnification.FormulaSupportRestrictionBoundsPartial)
-    (hDagToFormula :
-      PpolyDAG (gapPartialMCSP_Language p) →
-        PpolyFormula (gapPartialMCSP_Language p)) :
+    (hBounds : Pnp3.Magnification.FormulaSupportRestrictionBoundsPartial) :
     P_ne_NP := by
   exact
-    Pnp3.Magnification.P_ne_NP_final_of_supportBounds_and_dagToFormula_TM
-      W hBounds hDagToFormula
+    Pnp3.Magnification.P_ne_NP_final_of_supportBounds_TM
+      W hBounds
+
+theorem i4_np_not_subset_ppolyDAG_final_of_multiswitching_data
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    (D : AsymptoticFormulaTrackData) :
+    NP_not_subset_PpolyDAG := by
+  exact Pnp3.Magnification.NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D
+
+theorem i4_p_ne_np_final_of_multiswitching_data
+    (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
+    (D : AsymptoticFormulaTrackData) :
+    P_ne_NP := by
+  exact Pnp3.Magnification.P_ne_NP_final_of_multiswitchingData hMS D
 
 theorem i4_p_ne_np_final_of_dag_stableRestrictionPayload
     {p : GapPartialMCSPParams}

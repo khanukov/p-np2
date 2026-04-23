@@ -26,9 +26,11 @@ So the asymptotic layer is real infrastructure, not a plan stub.
 The barrier layer remains important infrastructure, but it is no longer the
 current blocker for the default final theorem.
 
-Default DAG separation is already internalized in `NP_not_subset_PpolyDAG_final`
-through a different route. So the barrier layer should now be read primarily as
-research / alternative-route infrastructure.
+The public DAG final is now the explicit research-gap boundary
+`NP_not_subset_PpolyDAG_final (gap : ResearchGapWitness)`.  Older internalized
+routes live under audit/compatibility names.  So the barrier layer should now
+be read primarily as research / alternative-route infrastructure, not as the
+default final API.
 
 ## 3. Current structural limitation
 

@@ -50,13 +50,18 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
 #print axioms NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
 #print axioms NP_not_subset_PpolyDAG_final_of_invariantProvider_TM
-#print axioms NP_not_subset_PpolyDAG_final_of_supportBounds_and_dagToFormula_TM
+#print axioms NP_not_subset_PpolyDAG_final_of_supportBounds_TM
 #print axioms P_ne_NP_final_of_dag_stableRestrictionPayload_TM
 #print axioms P_ne_NP_final_of_dag_stableRestriction_TM
 #print axioms P_ne_NP_final_of_certificateProvider_TM
 #print axioms P_ne_NP_final_of_invariantProvider_TM
-#print axioms P_ne_NP_final_of_supportBounds_and_dagToFormula_TM
+#print axioms P_ne_NP_final_of_supportBounds_TM
+#print axioms NP_not_subset_PpolyDAG_final
+#print axioms NP_not_subset_PpolyDAG_final_of_multiswitchingData
+#print axioms NP_not_subset_PpolyDAG_final_of_asymptoticPullback
 #print axioms P_ne_NP_final
+#print axioms P_ne_NP_final_of_multiswitchingData
+#print axioms P_ne_NP_final_of_asymptoticPullback
 
 -- Regression checks for I-1 / I-3 readiness.
 #print axioms Tests.i1_trivial_realization_available
@@ -75,11 +80,13 @@ open Pnp3.Magnification
 #print axioms Tests.i4_np_not_subset_ppolyDAG_of_certificateProvider
 #print axioms Tests.i4_np_not_subset_ppolyDAG_of_invariantProvider
 #print axioms Tests.i4_np_not_subset_ppolyDAG_final_of_invariantProvider
-#print axioms Tests.i4_np_not_subset_ppolyDAG_of_supportBounds_and_dagToFormula
+#print axioms Tests.i4_np_not_subset_ppolyDAG_of_supportBounds
+#print axioms Tests.i4_np_not_subset_ppolyDAG_final_of_multiswitching_data
 #print axioms Tests.i4_p_ne_np_final_of_dag_stableRestrictionPayload
 #print axioms Tests.i4_p_ne_np_final_of_dag_stableRestriction
 #print axioms Tests.i4_p_ne_np_final_of_invariantProvider
-#print axioms Tests.i4_p_ne_np_final_of_supportBounds_and_dagToFormula
+#print axioms Tests.i4_p_ne_np_final_of_supportBounds
+#print axioms Tests.i4_p_ne_np_final_of_multiswitching_data
 #print axioms Tests.i4_final_wiring_of_multiswitching
 
 -- Активный inclusion endpoint: no-arg, без внешнего `EvalAgreement`-контракта.
@@ -237,11 +244,11 @@ open Pnp3.Magnification
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_certificateProvider_TM
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_invariantProvider_TM
-#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula
+#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer_TM
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload_TM
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
-#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula_TM
+#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_TM
 #print axioms Core.exists_mem_subcube
 #print axioms LowerBounds.abstractGapWitnessedPayload_of_exists_nonemptyWitness
 #print axioms LowerBounds.nonemptyWitnessGoal_of_abstractGapTargetedPayload

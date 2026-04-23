@@ -11,7 +11,7 @@ open ComplexityInterfaces
 /-!
 Current DAG endpoint ledger for this file:
 
-- `P_ne_NP_final` remains conditional on explicit DAG separation
+- `P_ne_NP_final_dag_only` remains conditional on explicit DAG separation
   `hNPDag : NP_not_subset_PpolyDAG`.
 - The stable-restriction, certificate-provider, invariant-provider, and
   support-bounds wrappers below are compiled stronger sufficient routes and
@@ -171,38 +171,28 @@ theorem P_ne_NP_final_of_blocker_TM
     (NP_not_subset_PpolyDAG_final_of_blocker_TM W hBlocker)
 
 /--
-Final DAG-separation wrapper specialized to the support-bounds + DAG→formula
-bridge route.
+Final DAG-separation wrapper specialized to the fixed-slice support-bounds route.
 
-This is intentionally a thin endpoint around the new lower-bound closure lemma:
-it does not add new assumptions beyond the support-bounds package and the
-functional DAG→formula bridge.
+The DAG-to-formula conversion is no longer a hypothesis here.  It is supplied by
+the constructive fixed-slice truth-table formula bridge.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_supportBounds_and_dagToFormula_TM
+theorem NP_not_subset_PpolyDAG_final_of_supportBounds_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
-  (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
-  (hDagToFormula :
-    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
-      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+  (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
-  exact LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula_TM
-    W hBounds hDagToFormula
+  exact LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_TM W hBounds
 
 /--
-Companion `P ≠ NP` endpoint for the same support-bounds + DAG→formula route.
+Companion `P ≠ NP` endpoint for the same fixed-slice support-bounds route.
 -/
-theorem P_ne_NP_final_of_supportBounds_and_dagToFormula_TM
+theorem P_ne_NP_final_of_supportBounds_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
-  (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial)
-  (hDagToFormula :
-    ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) →
-      ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)) :
+  (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_supportBounds_and_dagToFormula_TM
-      W hBounds hDagToFormula)
+    (NP_not_subset_PpolyDAG_final_of_supportBounds_TM W hBounds)
 
 
 /--

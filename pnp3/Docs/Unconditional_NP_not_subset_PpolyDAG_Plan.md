@@ -1,6 +1,6 @@
 # Plan Status For `NP_not_subset_PpolyDAG`
 
-Last updated: 2026-04-22.
+Last updated: 2026-04-23.
 
 This file is the canonical DAG-side route note for the active branch.
 Hard policy reference:
@@ -42,13 +42,21 @@ FormulaSupportBoundsFromMultiSwitchingContract -> False
 Therefore the legacy theorem
 
 ```text
-NP_not_subset_PpolyDAG_final
+NP_not_subset_PpolyDAG_final_of_multiswitchingData
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
+  (D : AsymptoticFormulaTrackData)
 ```
 
 is not an unconditional result.  Its `hMS` input is already inconsistent.
+The asymptotic NP pullback is no longer a separate public argument; it is
+constructed from `D.asymptoticNP_TM`.
+
+The public theorem name `NP_not_subset_PpolyDAG_final` is now reserved for the
+honest research-gap boundary:
+
+```text
+NP_not_subset_PpolyDAG_final (gap : ResearchGapWitness)
+```
 
 ## 3. Pipeline Attempt And Probe 7
 

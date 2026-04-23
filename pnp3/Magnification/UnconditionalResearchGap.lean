@@ -31,7 +31,7 @@ How to use this file for a future breakthrough:
 
 ```
 theorem P_ne_NP_unconditional : ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_of_researchGap researchGapWitness
+  P_ne_NP_final researchGapWitness
 ```
 
 No API change elsewhere should be necessary.  This file is imported by
@@ -109,6 +109,27 @@ theorem P_ne_NP_of_researchGap
     ComplexityInterfaces.P_ne_NP :=
   P_ne_NP_final_dag_only gap.dagSeparation
 
+/-- Public final DAG-separation endpoint.
+
+The name is intentionally reserved for the honest research-gap boundary.  Legacy
+support-bounds / multiswitching routes live under explicit audit-route names in
+`FinalResultMainline`.
+-/
+theorem NP_not_subset_PpolyDAG_final
+    (gap : ResearchGapWitness) :
+    ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  gap.dagSeparation
+
+/-- Public final `P != NP` endpoint.
+
+The only mathematical input is `ResearchGapWitness`, i.e. a direct proof of
+`NP_not_subset_PpolyDAG` that avoids the refuted support-bounds surfaces.
+-/
+theorem P_ne_NP_final
+    (gap : ResearchGapWitness) :
+    ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_of_researchGap gap
+
 /-!
 Future completion template, intentionally commented out.
 
@@ -121,7 +142,7 @@ noncomputable def researchGapWitness : ResearchGapWitness := by
   -- Real proof of `ComplexityInterfaces.NP_not_subset_PpolyDAG` goes here.
 
 theorem P_ne_NP_unconditional : ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_of_researchGap researchGapWitness
+  P_ne_NP_final researchGapWitness
 ```
 -/
 

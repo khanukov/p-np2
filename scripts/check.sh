@@ -171,6 +171,7 @@ final_result_surface_files=(
   "pnp3/Magnification/FinalResultMainline.lean"
   "pnp3/Magnification/FinalResultWeakRoutes.lean"
   "pnp3/Magnification/FinalResultLegacyTM.lean"
+  "pnp3/Magnification/UnconditionalResearchGap.lean"
 )
 
 if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
@@ -204,14 +205,21 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
     exit 1
   fi
 
-  # Current milestone policy (post-unbundle):
-  # the canonical default `P_ne_NP_final` must expose the explicit minimal
-  # payload (hMS/hAsym/hNPbridge), while package-style compatibility wrappers
-  # remain available separately (`*_of_magnification`).
+  # Current milestone policy:
+  # the public DAG/P != NP finals are the honest research-gap boundary.  Legacy
+  # hMS/asymptotic-pullback routes must stay under explicit audit/compatibility
+  # names such as `*_of_multiswitchingData` and `*_of_asymptoticPullback`.
   if ! rg -n -U \
-      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)\\n[[:space:]]*\\(hAsym[[:space:]]*:[[:space:]]*AsymptoticFormulaTrackHypothesis\\)\\n[[:space:]]*\\(hNPbridge[[:space:]]*:[[:space:]]*AsymptoticNPPullback[[:space:]]+hAsym\\)" \
-      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_unbundled_sig_hits.log; then
-    echo "Detected invalid signature for P_ne_NP_final (expected unbundled hMS/hAsym/hNPbridge payload)."
+      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_npdag_final_gap_sig_hits.log; then
+    echo "Detected invalid signature for NP_not_subset_PpolyDAG_final (expected gap : ResearchGapWitness)."
+    exit 1
+  fi
+
+  if ! rg -n -U \
+      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_gap_sig_hits.log; then
+    echo "Detected invalid signature for P_ne_NP_final (expected gap : ResearchGapWitness)."
     exit 1
   fi
 fi
@@ -231,6 +239,22 @@ if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(h
 fi
 
 if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
+  if rg -n -U \
+      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_npdag_final_hms_sig_hits.log; then
+    echo "Detected forbidden legacy signature for NP_not_subset_PpolyDAG_final (use *_of_multiswitchingData / *_of_asymptoticPullback):"
+    cat /tmp/pnp3_npdag_final_hms_sig_hits.log
+    exit 1
+  fi
+
+  if rg -n -U \
+      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_hms_sig_hits.log; then
+    echo "Detected forbidden legacy signature for P_ne_NP_final (use *_of_multiswitchingData / *_of_asymptoticPullback):"
+    cat /tmp/pnp3_pnenp_final_hms_sig_hits.log
+    exit 1
+  fi
+
   if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.NP_not_subset_PpolyDAG\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_legacy_sig_hits.log; then
     echo "Detected forbidden legacy signature for P_ne_NP_final (missing MagnificationAssumptions):"
@@ -246,7 +270,7 @@ echo "Interface naming policy OK (legacy aliases/modules blocked; strict interfa
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Magnification assumptions policy OK (unconditional mode: package-signature requirements suspended)."
 else
-  echo "Magnification assumptions policy OK (package-based finals enforced)."
+  echo "Magnification assumptions policy OK (package-based formula/real finals + ResearchGapWitness public P != NP final enforced)."
 fi
 
 # Documentation route-policy guardrails:
@@ -363,11 +387,11 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
     exit 1
   fi
 
-  # Canonical public finals must themselves become assumption-free before the
-  # tree can be described as unconditionally closed. We intentionally scope
-  # this to the public endpoints, not the specialized compatibility wrappers
-  # (`*_of_*`, `*_TM`, barrier/audit helpers), which may remain conditional as
-  # long as they are documented as non-default routes.
+  # Canonical formula/real finals must themselves become assumption-free before
+  # the tree can be described as unconditionally closed.  The DAG/P != NP public
+  # frontier may remain the explicit `ResearchGapWitness` boundary, but an
+  # actual unconditional completion must add the zero-argument theorem
+  # `P_ne_NP_unconditional`.
   if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_formula_pkg_hits.log; then
     echo "Unconditional gate failed: canonical formula final still depends on MagnificationAssumptions:"
@@ -393,6 +417,12 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
       "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_pnenp_dag_hits.log; then
     echo "Unconditional gate failed: canonical P_ne_NP final still depends on NP_not_subset_PpolyDAG:"
     cat /tmp/pnp3_unconditional_pnenp_dag_hits.log
+    exit 1
+  fi
+
+  if ! rg -n -U "theorem[[:space:]]+P_ne_NP_unconditional[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.P_ne_NP" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_zero_arg_hits.log; then
+    echo "Unconditional gate failed: missing zero-argument P_ne_NP_unconditional theorem."
     exit 1
   fi
   echo "Unconditional witness surface OK."

@@ -1233,9 +1233,6 @@ plus a slack envelope.
 This theorem is the last generic reduction step: it discharges the entire
 family-to-wrapper adaptation and leaves only concrete family instantiation
 (`F`, `κ`, forcing, slack, slice-constancy, NP-entry`) to the source side.
-
-`hDecodeEncode` is kept explicit to mirror the handoff contract; in the current
-development it is normally instantiated by `Models.decodePartial_encodePartial`.
 -/
 theorem isoStrongFamilyEventually_of_tableForceFamilyEventually
     (F : GapSliceFamilyEventually)
@@ -1248,9 +1245,7 @@ theorem isoStrongFamilyEventually_of_tableForceFamilyEventually
       ∀ n : Nat, ∀ β : Rat,
         0 < β → β < β0 → n ≥ max F.N0 (nIso β) →
           F.Mof n (F.Tof n β) <
-            2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β))
-    (hDecodeEncode :
-      ∀ {n : Nat} (T : PartialTruthTable n), decodePartial (encodePartial T) = T) :
+            2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β)) :
     ∀ hInDag :
       ∀ n : Nat, ∀ β : Rat,
         ComplexityInterfaces.InPpolyDAG
@@ -1266,11 +1261,11 @@ theorem isoStrongFamilyEventually_of_tableForceFamilyEventually
   let yYes : Bitstring (GapSliceFamilyEventually.encodedLen F n β) := encodePartial Ty
   have hyYesYes : yYes ∈ (gapSliceOfParams p).Yes := by
     have hLangTrue :
-        gapPartialMCSP_Language p (partialInputLen p) yYes = true := by
+      gapPartialMCSP_Language p (partialInputLen p) yYes = true := by
       -- Use the canonical-length language characterization and the explicit
-      -- decode-after-encode assumption from the theorem contract.
+      -- decode-after-encode lemma from the partial-table model.
       exact (gapPartialMCSP_language_true_iff_yes p yYes).2 (by
-        simpa [yYes, hDecodeEncode Ty] using hTyYes)
+        simpa [yYes, decodePartial_encodePartial] using hTyYes)
     simpa [gapSliceOfParams, p, GapSliceFamilyEventually.encodedLen, yYes] using hLangTrue
   have hyYesValid : ValidEncoding p yYes := by
     simpa [p, yYes] using validEncoding_encodePartial p Ty
@@ -1895,9 +1890,7 @@ theorem NP_not_subset_PpolyDAG_of_tableForceSlackEventually_of_sliceConst
           F.Mof n (F.Tof n β) <
             2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β))
     (hSliceConst : sliceConstFamilyEventually F)
-    (hNP0 : ComplexityInterfaces.NP (canonicalGlobalLanguageEventually F))
-    (hDecodeEncode :
-      ∀ {n : Nat} (T : PartialTruthTable n), decodePartial (encodePartial T) = T) :
+    (hNP0 : ComplexityInterfaces.NP (canonicalGlobalLanguageEventually F)) :
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine NP_not_subset_PpolyDAG_of_eventuallyIsolationEnvelopeWeakRouteEventually_of_sliceConst
     F hSliceConst hNP0 ?_
@@ -1905,7 +1898,7 @@ theorem NP_not_subset_PpolyDAG_of_tableForceSlackEventually_of_sliceConst
   -- 1) Build the strong forcing package from table-force + slack.
   have hStrong : IsoStrongFamilyEventually F hInDag :=
     isoStrongFamilyEventually_of_tableForceFamilyEventually
-      F β0 hβ0 κ nIso hTable hSlack hDecodeEncode hInDag
+      F β0 hβ0 κ nIso hTable hSlack hInDag
   -- 2) Adapt to the wrapper format with explicit `Yes ∨ No`.
   exact isoFamily_withPromise_of_isoStrongFamilyEventually F hInDag hStrong
 
@@ -1965,9 +1958,7 @@ theorem false_of_tableForceFamilyEventually_and_sliceConst
     (κ : Nat → Rat → Nat)
     (nIso : Rat → Nat)
     (hTable : tableForceFamilyEventually F β0 κ nIso)
-    (hSliceConst : sliceConstFamilyEventually F)
-    (hDecodeEncode :
-      ∀ {n : Nat} (T : PartialTruthTable n), decodePartial (encodePartial T) = T) :
+    (hSliceConst : sliceConstFamilyEventually F) :
     False := by
   let β : Rat := β0 / 2
   have hβPos : 0 < β := by
@@ -1990,7 +1981,7 @@ theorem false_of_tableForceFamilyEventually_and_sliceConst
   have hyYes : y ∈ (gapSliceOfParams p).Yes := by
     have hLangTrue : gapPartialMCSP_Language p (partialInputLen p) y = true :=
       (gapPartialMCSP_language_true_iff_yes p y).2 (by
-        simpa [y, hDecodeEncode Ty] using hTyYes)
+        simpa [y, decodePartial_encodePartial] using hTyYes)
     simpa [gapSliceOfParams, p, GapSliceFamilyEventually.encodedLen, y] using hLangTrue
   have hyNo : y ∈ (gapSliceOfParams p).No := by
     simpa [p] using
@@ -2080,12 +2071,13 @@ theorem false_of_tableForceFamilyEventually_and_slack
   exact partial_no_not_yes p (Models.totalTableToPartial g) hgNo hYesTotal
 
 /--
-Canonical-length final endpoint: table-force + slack + a canonical bridge + NP
-witness imply `NP_not_subset_PpolyDAG`.
+Historical canonical-length endpoint for the table-force/slack route.
 
-Unlike the `..._of_sliceConst` convenience route, this statement does not use
-global all-length equalities and therefore does not enforce the slice-collapse
-described above.
+This is retained as an audit surface, not as an active unconditional target:
+`false_of_tableForceFamilyEventually_and_slack` proves that the source package
+`tableForceFamilyEventually + hSlack` is already inconsistent for the intended
+MCSP counting semantics. The theorem is therefore only an ex-falso compatibility
+endpoint for older callers.
 -/
 theorem NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths
     (F : GapSliceFamilyEventually)
@@ -2100,16 +2092,14 @@ theorem NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths
           F.Mof n (F.Tof n β) <
             2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β))
     (bridge : AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths F)
-    (hNP : ComplexityInterfaces.NP bridge.L)
-    (hDecodeEncode :
-      ∀ {n : Nat} (T : PartialTruthTable n), decodePartial (encodePartial T) = T) :
+    (hNP : ComplexityInterfaces.NP bridge.L) :
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   refine NP_not_subset_PpolyDAG_of_eventuallyIsolationEnvelopeWeakRouteEventually_atCanonicalLengths
     F bridge hNP ?_
   intro hInDag
   have hStrong : IsoStrongFamilyEventually F hInDag :=
     isoStrongFamilyEventually_of_tableForceFamilyEventually
-      F β0 hβ0 κ nIso hTable hSlack hDecodeEncode hInDag
+      F β0 hβ0 κ nIso hTable hSlack hInDag
   exact isoFamily_withPromise_of_isoStrongFamilyEventually F hInDag hStrong
 
 /--

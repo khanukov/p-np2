@@ -20,6 +20,22 @@ open Models
 open LowerBounds
 open ComplexityInterfaces
 
+/-!
+# Final-result mainline compatibility layer
+
+This file is not the public unconditional frontier.  The active public boundary
+is `Magnification.UnconditionalResearchGap`, where `P_ne_NP_final` takes only a
+`ResearchGapWitness`.
+
+The declarations below are retained as conditional integration surfaces and
+legacy compatibility wrappers.  In particular, any route consuming
+`MagnificationAssumptions`, `FormulaSupportRestrictionBoundsPartial`, or
+`AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract` is audit-only:
+those support-bounds surfaces are refuted by the falsifiability probes.  New
+work should prefer anti-checker-only DAG routes plus an explicit, non-vacuous
+DAG-separation witness.
+-/
+
 /--
 Asymptotic entry hypothesis for the partial formula track:
 explicitly provides parameters and lower-bound hypotheses at all
@@ -129,6 +145,11 @@ structure AntiCheckerAssumptions : Type where
 Top-level explicit assumptions package for the magnification final statements.
 
 This keeps imported assumptions grouped and auditable at theorem boundaries.
+
+Legacy/audit status: the `switching` field contains
+`FormulaSupportBoundsFromMultiSwitchingContract`, a refuted support-bounds
+surface.  The active public final theorem intentionally does not consume this
+package; see `UnconditionalResearchGap.ResearchGapWitness`.
 -/
 structure MagnificationAssumptions : Type where
   switching : SwitchingAssumptions
@@ -1030,28 +1051,60 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute
       F bridge hNP hIsoFamily
 
 /--
-Top-level explicit-assumptions wrapper for the canonical eventual DAG route.
+Anti-checker-only wrapper for the canonical eventual DAG route.
+
+This avoids the legacy `MagnificationAssumptions` package and therefore does
+not require the refuted formula-side support-bounds surface.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker
+  (anti : AntiCheckerAssumptions)
+  (hIso : AsymptoticIsoStrongRoute anti.asymptotic) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute
+      (hAsym := anti.asymptotic)
+      (hNPbridge := anti.npBridge)
+      hIso
+
+/--
+Legacy package-shaped wrapper for the canonical eventual DAG route.
+
+Prefer
+`NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`.
+This wrapper is retained only for callers that still pass
+`MagnificationAssumptions`.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnification
   (hMag : MagnificationAssumptions)
   (hIso : AsymptoticIsoStrongRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   exact
-    NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute
-      (hAsym := hMag.antiChecker.asymptotic)
-      (hNPbridge := hMag.antiChecker.npBridge)
-      hIso
+    NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker
+      (anti := hMag.antiChecker) hIso
 
 /--
-Companion `P ≠ NP` endpoint from the canonical eventual DAG route.
+Companion `P ≠ NP` endpoint from the anti-checker-only canonical eventual DAG
+route.
+-/
+theorem P_ne_NP_final_of_asymptotic_isoStrongRoute_withAntiChecker
+  (anti : AntiCheckerAssumptions)
+  (hIso : AsymptoticIsoStrongRoute anti.asymptotic) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker
+      (anti := anti) hIso)
+
+/--
+Legacy package-shaped companion `P ≠ NP` endpoint from the canonical eventual
+DAG route.
 -/
 theorem P_ne_NP_final_of_asymptotic_isoStrongRoute
   (hMag : MagnificationAssumptions)
   (hIso : AsymptoticIsoStrongRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.P_ne_NP := by
-  exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnification
-      (hMag := hMag) hIso)
+  exact
+    P_ne_NP_final_of_asymptotic_isoStrongRoute_withAntiChecker
+      (anti := hMag.antiChecker) hIso
 
 /--
 Canonical eventual DAG route from witness-indexed promise-YES certificates on
@@ -1070,30 +1123,52 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute
         hAsym hRoute)
 
 /--
-Top-level explicit-assumptions wrapper for the promise-YES-certificate
-eventual route.
+Anti-checker-only wrapper for the promise-YES-certificate eventual route.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker
+  (anti : AntiCheckerAssumptions)
+  (hRoute : AsymptoticPromiseYesCertificateRoute anti.asymptotic) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  exact
+    NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute
+      anti.asymptotic
+      anti.npBridge
+      hRoute
+
+/--
+Legacy package-shaped wrapper for the promise-YES-certificate eventual route.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withMagnification
   (hMag : MagnificationAssumptions)
   (hRoute : AsymptoticPromiseYesCertificateRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   exact
-    NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute
-      hMag.antiChecker.asymptotic
-      hMag.antiChecker.npBridge
-      hRoute
+    NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker
+      (anti := hMag.antiChecker) hRoute
 
 /--
-Companion `P ≠ NP` endpoint from the same eventual promise-YES-certificate
-route.
+Companion `P ≠ NP` endpoint from the anti-checker-only eventual
+promise-YES-certificate route.
+-/
+theorem P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker
+  (anti : AntiCheckerAssumptions)
+  (hRoute : AsymptoticPromiseYesCertificateRoute anti.asymptotic) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker
+      anti hRoute)
+
+/--
+Legacy package-shaped companion `P ≠ NP` endpoint from the same eventual
+promise-YES-certificate route.
 -/
 theorem P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute
   (hMag : MagnificationAssumptions)
   (hRoute : AsymptoticPromiseYesCertificateRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.P_ne_NP := by
-  exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withMagnification
-      hMag hRoute)
+  exact
+    P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker
+      (anti := hMag.antiChecker) hRoute
 
 /--
 Concrete small-DAG witness extracted from one fixed-slice `InPpolyDAG` witness.
@@ -1525,11 +1600,36 @@ theorem fixedSliceCollapse_of_fixedSliceTransferQuarterRoute
 Collapse the asymptotic DAG language once one fixed slice is known to avoid
 `PpolyDAG`.
 
-This is the shortest honest integration route from `MagnificationAssumptions`
-to DAG separation:
+This is the shortest anti-checker-only integration route to DAG separation:
 1. choose any concrete asymptotic slice `pAt n hn`,
 2. prove fixed-slice collapse there,
 3. transport it back to the asymptotic language using slice agreement.
+-/
+theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
+  (anti : AntiCheckerAssumptions)
+  (n : Nat) (hn : anti.asymptotic.N0 ≤ n)
+  (hCollapseFixed :
+    ComplexityInterfaces.PpolyDAG
+      (gapPartialMCSP_Language (anti.asymptotic.pAt n hn)) → False) :
+  ComplexityInterfaces.NP_not_subset_PpolyDAG := by
+  let p : GapPartialMCSPParams := anti.asymptotic.pAt n hn
+  have hCollapseAsym :
+      ComplexityInterfaces.PpolyDAG
+        (gapPartialMCSP_AsymptoticLanguage anti.asymptotic.spec) → False :=
+    fun hAsymDag =>
+      hCollapseFixed
+        (ppolyDAG_fixed_of_asymptotic_slice
+          (spec := anti.asymptotic.spec)
+          (p := p)
+          (anti.asymptotic.sliceEq n hn)
+          hAsymDag)
+  exact
+    ⟨gapPartialMCSP_AsymptoticLanguage anti.asymptotic.spec,
+      anti.npBridge.strictAsymptotic,
+      hCollapseAsym⟩
+
+/--
+Legacy package-shaped wrapper for the fixed-slice collapse route.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
   (hMag : MagnificationAssumptions)
@@ -1538,24 +1638,28 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
     ComplexityInterfaces.PpolyDAG
       (gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
-  let p : GapPartialMCSPParams := hMag.antiChecker.asymptotic.pAt n hn
-  have hCollapseAsym :
-      ComplexityInterfaces.PpolyDAG
-        (gapPartialMCSP_AsymptoticLanguage hMag.antiChecker.asymptotic.spec) → False :=
-    fun hAsymDag =>
-      hCollapseFixed
-        (ppolyDAG_fixed_of_asymptotic_slice
-          (spec := hMag.antiChecker.asymptotic.spec)
-          (p := p)
-          (hMag.antiChecker.asymptotic.sliceEq n hn)
-          hAsymDag)
   exact
-    ⟨gapPartialMCSP_AsymptoticLanguage hMag.antiChecker.asymptotic.spec,
-      hMag.antiChecker.npBridge.strictAsymptotic,
-      hCollapseAsym⟩
+    NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
+      (anti := hMag.antiChecker) (n := n) (hn := hn) hCollapseFixed
 
 /--
-Companion `P ≠ NP` endpoint from the same fixed-slice collapse input.
+Companion `P ≠ NP` endpoint from the anti-checker-only fixed-slice collapse
+input.
+-/
+theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
+  (anti : AntiCheckerAssumptions)
+  (n : Nat) (hn : anti.asymptotic.N0 ≤ n)
+  (hCollapseFixed :
+    ComplexityInterfaces.PpolyDAG
+      (gapPartialMCSP_Language (anti.asymptotic.pAt n hn)) → False) :
+  ComplexityInterfaces.P_ne_NP := by
+  exact P_ne_NP_final_dag_only
+    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
+      (anti := anti) (n := n) (hn := hn) hCollapseFixed)
+
+/--
+Legacy package-shaped companion `P ≠ NP` endpoint from the same fixed-slice
+collapse input.
 -/
 theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse
   (hMag : MagnificationAssumptions)
@@ -1564,9 +1668,9 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse
     ComplexityInterfaces.PpolyDAG
       (gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) :
   ComplexityInterfaces.P_ne_NP := by
-  exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
-      (hMag := hMag) (n := n) (hn := hn) hCollapseFixed)
+  exact
+    P_ne_NP_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
+      (anti := hMag.antiChecker) (n := n) (hn := hn) hCollapseFixed
 
 /--
 Asymptotic DAG separation from the direct fixed-slice promise-YES witness route.
@@ -2012,6 +2116,10 @@ No DAG-to-formula bridge is assumed here.  On the fixed
 `gapPartialMCSP_Language p` slice, a DAG witness is constructively unfolded into
 the explicit truth-table formula supplied by
 `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
+
+Legacy/audit status: `FormulaSupportRestrictionBoundsPartial` is itself a
+refuted support-bounds surface, so this theorem is not a non-vacuous path to
+unconditional DAG separation.
 -/
 theorem fixedSliceCollapse_of_supportBounds
   {p : GapPartialMCSPParams}
@@ -2027,6 +2135,10 @@ Asymptotic DAG separation from the fixed-slice support-bounds route.
 
 This route uses the already-internalized formula-track multiswitching payload
 and the constructive fixed-slice DAG-to-formula conversion.
+
+Legacy/audit status: the support-bounds payload is refuted.  This endpoint is
+kept for compatibility with historical call sites, not as an active research
+target.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
   (hMag : MagnificationAssumptions)
@@ -2041,11 +2153,16 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
 
 
 /--
-Canonical internal DAG-separation theorem.
+Legacy support-bounds DAG-separation compatibility theorem.
 
-The remaining DAG-side route is now fully internalized: choose the threshold
-slice `n = N0` and feed the support-bounds package through the constructive
-fixed-slice DAG-to-formula bridge plus the stable-restriction consumer.
+The proof chooses the threshold slice `n = N0` and feeds the historical
+support-bounds package through the constructive fixed-slice DAG-to-formula
+bridge plus the stable-restriction consumer.
+
+Audit status: `hMag.switching.multiswitching` is a refuted support-bounds
+surface.  The public active final boundary is
+`UnconditionalResearchGap.P_ne_NP_final`, which requires `ResearchGapWitness`
+instead of this legacy package.
 -/
 theorem NP_not_subset_PpolyDAG_final_with_magnification
   (hMag : MagnificationAssumptions) :
@@ -2066,6 +2183,9 @@ so the NP pullback is constructed
 internally from a concrete TM witness.  This theorem keeps the old lower-level
 shape available for callers that still have a pre-packaged
 `AsymptoticFormulaTrackHypothesis`.
+
+Legacy/audit status: `hMS` is `FormulaSupportBoundsFromMultiSwitchingContract`,
+a refuted support-bounds surface.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_asymptoticPullback
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
@@ -2187,6 +2307,9 @@ theorem NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
 
 /--
 Compatibility wrapper preserving the historical package-shaped DAG endpoint.
+
+Legacy/audit status: this consumes `MagnificationAssumptions`, whose switching
+field carries the refuted multiswitching support-bounds contract.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_magnification
   (hMag : MagnificationAssumptions) :
@@ -2199,6 +2322,8 @@ Compatibility `P ≠ NP` endpoint with an explicit asymptotic NP pullback.
 The multiswitching-data `P != NP` endpoint below uses
 `AsymptoticFormulaTrackData`; this theorem preserves the old explicit-pullback
 shape for historical wrappers.
+
+Legacy/audit status: `hMS` is a refuted support-bounds surface.
 -/
 theorem P_ne_NP_final_of_asymptoticPullback
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
@@ -2229,10 +2354,12 @@ theorem P_ne_NP_final_of_multiswitchingData
 /--
 Support-bounds endpoint that removes `hMS` from the public input surface.
 
-This is a strict progress step toward assumption internalization:
-the multi-switching contract is reconstructed internally from
+The multi-switching contract is reconstructed internally from
 `FormulaSupportRestrictionBoundsPartial` via
 `multiswitching_contract_internalized_of_support_bounds`.
+
+Legacy/audit status: `FormulaSupportRestrictionBoundsPartial` is refuted, so
+this is an interface compatibility wrapper, not an active route.
 -/
 theorem NP_not_subset_PpolyDAG_final_of_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
@@ -2246,8 +2373,8 @@ theorem NP_not_subset_PpolyDAG_final_of_supportBounds
 /--
 `P ≠ NP` endpoint with support-bounds input instead of explicit `hMS`.
 
-This theorem does not make the route unconditional yet, but it closes one
-interface layer by internalizing the `hMS` construction.
+Legacy/audit status: the support-bounds input is refuted; this theorem only
+preserves the historical interface layer.
 -/
 theorem P_ne_NP_final_of_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
@@ -2259,6 +2386,9 @@ theorem P_ne_NP_final_of_supportBounds
 /--
 Compatibility wrapper preserving the historical package-shaped `P ≠ NP`
 endpoint for callers that still pass `MagnificationAssumptions`.
+
+Legacy/audit status: this consumes the refuted multiswitching support-bounds
+contract inside `hMag.switching`.
 -/
 theorem P_ne_NP_final_of_magnification
   (hMag : MagnificationAssumptions) :
@@ -2269,12 +2399,13 @@ theorem P_ne_NP_final_of_magnification
     hMag.antiChecker.npBridge
 
 /--
-Provider-style default payload for the zero-argument public endpoint.
+Legacy provider-style payload for the zero-argument compatibility endpoint.
 
 Important honesty note:
 this does **not** make the result unconditional by itself.  It only moves the
 remaining payload from explicit theorem arguments into one auditable provider
-interface.
+interface.  The `hMS` field is the refuted multiswitching support-bounds
+contract, so this provider surface is retained for audit/compatibility only.
 -/
 class FinalPayloadProvider : Type where
   hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract
@@ -2325,9 +2456,10 @@ Build the full final payload from:
 1) default formula-side support-bounds source, and
 2) asymptotic-side provider payload.
 
-This closes the formula-side source at the final endpoint boundary: callers no
-longer need to pass `hMS` explicitly (or via `FinalPayloadProvider`) when a
-default support-bounds source is available.
+Legacy/audit status: this reconstructs the refuted formula-side support-bounds
+source at the final endpoint boundary.  Callers no longer pass `hMS`
+explicitly, but the same refuted payload is still present through typeclass
+resolution.
 -/
 instance finalPayloadProvider_of_default_supportBounds
     [hAsymProv : AsymptoticPayloadProvider]
@@ -2339,10 +2471,12 @@ instance finalPayloadProvider_of_default_supportBounds
   data := hAsymProv.data
 
 /--
-Zero-argument public endpoint (provider-backed form).
+Legacy zero-argument provider-backed endpoint.
 
-This theorem removes explicit non-zero payload from the visible signature while
-keeping the mathematical payload explicit in `FinalPayloadProvider`.
+This theorem removes explicit non-zero payload from the visible signature, but
+the hidden `FinalPayloadProvider` still contains the refuted support-bounds
+surface.  The active public frontier is
+`UnconditionalResearchGap.P_ne_NP_final`, not this compatibility theorem.
 -/
 theorem P_ne_NP [payload : FinalPayloadProvider] :
   ComplexityInterfaces.P_ne_NP :=
@@ -2354,6 +2488,9 @@ Zero-argument endpoint under the default formula-side source policy.
 Compared to `P_ne_NP [FinalPayloadProvider]`, this variant no longer requires
 explicit/opaque `hMS`: it is reconstructed internally from
 `hasDefaultFormulaSupportRestrictionBoundsPartial`.
+
+Legacy/audit status: the default formula-side source is the refuted
+`FormulaSupportRestrictionBoundsPartial` surface.
 -/
 theorem P_ne_NP_of_default_formulaSource
     [AsymptoticPayloadProvider]
@@ -2369,6 +2506,9 @@ Zero-argument endpoint under both default source policies:
 
 Compared to `P_ne_NP_of_default_formulaSource`, this variant no longer requires
 an explicit `AsymptoticPayloadProvider` contract.
+
+Legacy/audit status: it still depends on the refuted default formula-side
+support-bounds source.
 -/
 theorem P_ne_NP_of_default_sources
     [Fact hasDefaultFormulaSupportRestrictionBoundsPartial]
@@ -2377,12 +2517,16 @@ theorem P_ne_NP_of_default_sources
   P_ne_NP_of_default_formulaSource
 
 /--
-Provider-free final endpoint from explicit constructive asymptotic source data.
+Legacy provider-free compatibility endpoint from explicit constructive
+asymptotic source data.
 
 This theorem is the direct "next step" route requested for closure work:
 `hAsym` and `hNPbridge` are not taken from provider classes.  They are built
 internally from `AsymptoticFormulaTrackData`, while formula-side `hMS` is still
 reconstructed from default support-bounds assumptions.
+
+Legacy/audit status: the formula-side default support-bounds assumptions are
+refuted, so this endpoint is not an active unconditional route.
 -/
 theorem P_ne_NP_of_constructive_asymptoticData
     [hBounds : Fact hasDefaultFormulaSupportRestrictionBoundsPartial]

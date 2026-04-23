@@ -9,7 +9,9 @@ namespace Magnification
 Compatibility aggregation module for the refactored final-result surface.
 
 `FinalResultCore` now re-exports three focused layers:
-- `FinalResultMainline`: assumptions packages + primary asymptotic/formula/real DAG route entrypoints.
+- `FinalResultMainline`: conditional integration surfaces plus legacy/audit
+  compatibility wrappers; active work should use its anti-checker-only DAG
+  routes or the separate `UnconditionalResearchGap` boundary.
 - `FinalResultWeakRoutes`: weak-route and bridge-local/class-level wrapper surface.
 - `FinalResultLegacyTM`: stronger optional `_TM` compatibility wrappers and audit routes.
 

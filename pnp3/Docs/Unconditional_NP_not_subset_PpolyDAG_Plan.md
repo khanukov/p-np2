@@ -21,8 +21,11 @@ Already true in repository:
 
 Conclusion:
 
-> Endpoint wiring is not the central blocker.  The central blocker is the
-> formula-side support/locality source theorem.
+> Endpoint wiring is not the central blocker.  The central blocker is a
+> non-vacuous proof of `ResearchGapWitness`, equivalently
+> `ComplexityInterfaces.NP_not_subset_PpolyDAG`.  A formula-side
+> support/locality theorem is useful only if it reaches that boundary without
+> the refuted support-bounds route.
 
 ## 2. Refuted Historical Route
 

@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-04-22
+Updated: 2026-04-23
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -25,16 +25,19 @@ Route policy lock:
 There is still **no unconditional in-repo theorem** `P != NP`, and the
 current blockers are sharper than the old "remove residual payload" wording.
 
-The active explicit DAG endpoint still has this shape:
+The active public DAG endpoint is now the honest research-gap boundary:
 
 ```text
 NP_not_subset_PpolyDAG_final
-  (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
-  (hAsym : AsymptoticFormulaTrackHypothesis)
-  (hNPbridge : AsymptoticNPPullback hAsym)
+  (gap : ResearchGapWitness)
+
+P_ne_NP_final
+  (gap : ResearchGapWitness)
 ```
 
-The decisive issue is `hMS`.  The falsifiability audit proves:
+The legacy `hMS`/provider/support-bounds endpoints still compile, but they are
+explicitly audit routes in `Magnification.FinalResultAuditRoutes`, not the
+public closure boundary.  The falsifiability audit proves:
 
 - `FormulaSupportRestrictionBoundsPartial -> False`
 - `FormulaSupportBoundsFromMultiSwitchingContract -> False`
@@ -69,7 +72,9 @@ The single-file boundary for future closure is
 `pnp3/Magnification/UnconditionalResearchGap.lean`.  It contains
 `ResearchGapWitness` and the compiled bridge
 `P_ne_NP_of_researchGap : ResearchGapWitness -> P_ne_NP`; a future
-unconditional proof should be localized there.
+unconditional proof should be localized there by proving
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` without using the refuted
+support-bounds surfaces.
 
 ## What Is Closed
 
@@ -98,10 +103,11 @@ fixed-slice `PpolyDAG` membership:
 ## What Is Still Open
 
 The remaining blocker is not endpoint plumbing.  It is the missing
-non-vacuous formula-side source theorem.
+non-vacuous source theorem for `ResearchGapWitness`, equivalently
+`ComplexityInterfaces.NP_not_subset_PpolyDAG`.
 
-A real unconditional route would need a support/locality theorem with a
-provenance gate that:
+A real lower-level route may still come from support/locality mathematics, but
+only if it produces DAG separation through a provenance gate that:
 
 1. does not quantify over arbitrary `PpolyFormula` witnesses;
 2. cannot be satisfied by truth-table hardwiring or singleton provenance;

@@ -93,6 +93,31 @@ def check_fixedSliceCollapse_antiChecker_surface :
         ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   Magnification.NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
 
+/--
+Fixed-slice source routes are exposed through the anti-checker package alone;
+legacy `MagnificationAssumptions` wrappers live in audit routes.
+-/
+def check_fixedSlicePromiseYes_antiChecker_surface :
+    ∀ (anti : Magnification.AntiCheckerAssumptions)
+      (n : Nat)
+      (hn : anti.asymptotic.N0 ≤ n),
+      Magnification.FixedSlicePromiseYesCertificateRoute
+        (anti.asymptotic.pAt n hn) →
+        ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  Magnification.NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute_withAntiChecker
+
+/--
+Route-B blocker integration also has an anti-checker-only surface.
+-/
+def check_blocker_antiChecker_surface :
+    ∀ (anti : Magnification.AntiCheckerAssumptions)
+      (n : Nat)
+      (hn : anti.asymptotic.N0 ≤ n),
+      LowerBounds.dagRouteBSourceBlocker
+        (anti.asymptotic.pAt n hn) →
+        ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  Magnification.NP_not_subset_PpolyDAG_final_of_asymptotic_blocker_withAntiChecker
+
 /-! ## Legacy surfaces stay explicit -/
 
 /--
@@ -113,6 +138,20 @@ def check_legacy_supportBounds_surface_is_explicitly_named :
       Magnification.AsymptoticFormulaTrackData →
         ComplexityInterfaces.P_ne_NP :=
   Magnification.P_ne_NP_final_of_supportBounds
+
+/--
+The old fixed-slice package-shaped route is retained only under its legacy
+audit name; mainline callers should use the `_withAntiChecker` variant.
+-/
+def check_legacy_fixedSlice_package_surface_is_explicitly_named :
+    ∀ (hMag : Magnification.MagnificationAssumptions)
+      (n : Nat)
+      (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
+      (ComplexityInterfaces.PpolyDAG
+          (Models.gapPartialMCSP_Language
+            (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
+        ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  Magnification.NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
 
 end RouteSurfaceAudit
 

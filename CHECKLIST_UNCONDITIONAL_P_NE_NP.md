@@ -1,6 +1,6 @@
 # Checklist: Unconditional Constructive `P != NP`
 
-Updated: 2026-04-22
+Updated: 2026-04-23
 
 This is the canonical checklist for what still blocks an unconditional
 in-repo theorem `P != NP`.
@@ -13,26 +13,36 @@ For hard route policy lock, see `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 Files:
 
 - compatibility import path: `pnp3/Magnification/FinalResult.lean`
-- active implementation surface: `pnp3/Magnification/FinalResultCore.lean`
+- active research-gap surface:
+  `pnp3/Magnification/UnconditionalResearchGap.lean`
+- legacy/audit route surface:
+  `pnp3/Magnification/FinalResultAuditRoutes.lean`
 
-Current public provider-shaped endpoint:
+Current public endpoints:
+
+```text
+NP_not_subset_PpolyDAG_final
+  (gap : ResearchGapWitness)
+
+P_ne_NP_final
+  (gap : ResearchGapWitness)
+```
+
+Provider/support-bounds endpoints are retained only as explicit audit routes,
+for example:
 
 ```text
 P_ne_NP
   [FinalPayloadProvider]
-```
 
-Explicit payload endpoint kept for auditing:
-
-```text
-P_ne_NP_final
+P_ne_NP_final_of_asymptoticPullback
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym)
 ```
 
-This is not an unconditional theorem.  The `hMS` component is part of the
-formally refuted support-bounds route.
+Those audit routes are not unconditional theorems.  The `hMS` component is
+part of the formally refuted support-bounds route.
 
 ## Already Closed
 
@@ -77,8 +87,9 @@ Current audit status:
 
 ## Remaining Unconditional Blocker
 
-Full unconditionality requires a non-vacuous replacement for the false
-formula-side source.  Such a theorem must:
+Full unconditionality requires a non-vacuous proof of `ResearchGapWitness`,
+equivalently `ComplexityInterfaces.NP_not_subset_PpolyDAG`.  Any lower-level
+support/locality theorem used to obtain it must:
 
 1. avoid universal quantification over arbitrary `PpolyFormula` witnesses;
 2. reject truth-table hardwiring and singleton provenance;

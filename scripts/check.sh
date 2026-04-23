@@ -262,6 +262,13 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
     cat /tmp/pnp3_pnenp_final_legacy_sig_hits.log
     exit 1
   fi
+
+  if rg -n -U "theorem[[:space:]]+(NP_not_subset_PpolyDAG_final|P_ne_NP_final)_of_asymptotic[^\\n]*\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResultMainline.lean >/tmp/pnp3_mainline_hmag_dag_route_hits.log; then
+    echo "Detected package-shaped DAG route in FinalResultMainline; move legacy hMag wrappers to FinalResultAuditRoutes:"
+    cat /tmp/pnp3_mainline_hmag_dag_route_hits.log
+    exit 1
+  fi
 fi
 
 echo "Axiom inventory OK (${actual_axioms} axioms)."
@@ -312,6 +319,13 @@ fi
 
 if ! rg -n "fixedParams.*uniformProvenance.*inconsistent|fixedParams.*uniform provenance.*inconsistent|fixedParams \\+ uniformProvenance" "${route_docs[@]}" >/tmp/pnp3_route_fixedparams_leak_hits.log; then
   echo "Route-policy violation: canonical docs do not state the fixedParams + uniformProvenance leak."
+  exit 1
+fi
+
+if rg -n -U "Current public provider-shaped endpoint|The active explicit DAG endpoint still has this shape|P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:" \
+    "${route_docs[@]}" >/tmp/pnp3_route_stale_public_endpoint_hits.log; then
+  echo "Detected stale public-endpoint wording in canonical docs:"
+  cat /tmp/pnp3_route_stale_public_endpoint_hits.log
   exit 1
 fi
 

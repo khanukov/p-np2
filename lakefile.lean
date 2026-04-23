@@ -119,6 +119,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.Bridge_to_Magnification_Partial,
     Glob.one `Magnification.AsymptoticFormulaCollapse,
     Glob.one `Magnification.FinalResultMainline,
+    Glob.one `Magnification.FinalResultAuditRoutes,
     Glob.one `Magnification.FinalResultWeakRoutes,
     Glob.one `Magnification.FinalResultLegacyTM,
     Glob.one `Magnification.FinalResultCore,

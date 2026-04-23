@@ -167,6 +167,7 @@ fi
 # - old default-provider signatures for active finals are forbidden in all modes.
 final_result_surface_files=(
   "pnp3/Magnification/FinalResult.lean"
+  "pnp3/Magnification/FinalResultAuditRoutes.lean"
   "pnp3/Magnification/FinalResultCore.lean"
   "pnp3/Magnification/FinalResultMainline.lean"
   "pnp3/Magnification/FinalResultWeakRoutes.lean"

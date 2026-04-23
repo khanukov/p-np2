@@ -7,8 +7,8 @@ namespace Magnification
 Compatibility aggregation module for the final magnification surface.
 
 The full theorem implementation layer (including weak-route wrappers,
-bridge-local/class-level DAG surfaces, and endpoint wrappers) now lives in
-`Magnification.FinalResultCore`.
+bridge-local/class-level DAG surfaces, audit compatibility wrappers, and
+endpoint wrappers) now lives in `Magnification.FinalResultCore`.
 
 The single-file remaining-gap boundary lives in
 `Magnification.UnconditionalResearchGap` and is re-exported here so callers can

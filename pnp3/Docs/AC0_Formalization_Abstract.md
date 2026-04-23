@@ -44,6 +44,21 @@ restricted-model theorem over the active Partial-MCSP interface, rather than
 as a new classical lower bound for standard MCSP, for which stronger `AC^0`
 and `AC^0[p]` lower bounds are already known.
 
+## Final Short Abstract
+
+We present a Lean formalization of a restricted-model AC0 lower-bound
+endpoint for the active Partial-MCSP promise problem in the `pnp3`
+repository.  Our main theorem, exposed by
+`pnp3/LowerBounds/AC0_GapMCSP.lean`, states that for every fixed parameter
+package `p : GapPartialMCSPParams`, the corresponding promise problem is not
+solved by any circuit family in the repository's `SmallAC0Solver_Partial`
+interface.  The development cleanly separates this AC0 milestone from the
+repository's still-open unconditional `P != NP` frontier and avoids the
+support-bounds assumptions previously audited as inconsistent.  We position
+the result as a machine-checked restricted-model theorem over the active
+Partial-MCSP interface, not as a new classical lower bound for standard MCSP,
+for which stronger `AC^0` and `AC^0[p]` lower bounds are already known.
+
 ## Scope Sentence for an Introduction
 
 This artifact contributes proof engineering, interface hygiene, and

@@ -18,6 +18,9 @@ Related literature positioning:
 Candidate abstract / wording:
 `pnp3/Docs/AC0_Formalization_Abstract.md`.
 
+Draft introduction / related-work paragraphs:
+`pnp3/Docs/INTRO_RELATED_WORK.md`.
+
 ## Theorem Surface
 
 For every fixed parameter package `p : GapPartialMCSPParams`, the paper-facing

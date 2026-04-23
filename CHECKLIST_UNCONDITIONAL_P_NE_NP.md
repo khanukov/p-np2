@@ -7,6 +7,10 @@ in-repo theorem `P != NP`.
 
 For current release posture, see `RELEASE_RC.md`.
 For hard route policy lock, see `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
+For the simulation complexity-leakage boundary, see
+`pnp3/Docs/Simulation_FineGrained_Status.md`.
+For the research-method boundary, see
+`pnp3/Docs/Research_Method_Boundary.md`.
 
 ## Current Final API (actual code)
 
@@ -50,9 +54,11 @@ part of the formally refuted support-bounds route.
 2. `./scripts/check.sh` passes on current tree.
 3. Inclusion is internalized via
    `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
-4. DAG endpoint wiring and fixed-slice `PpolyDAG -> PpolyFormula` conversion
+4. That inclusion is coarse polynomial-size DAG inclusion only, not a
+   fine-grained simulation adequacy theorem for hardness magnification.
+5. DAG endpoint wiring and fixed-slice `PpolyDAG -> PpolyFormula` conversion
    are implemented.
-5. Historical fixed-slice support-half branch is archived as a no-go route:
+6. Historical fixed-slice support-half branch is archived as a no-go route:
    - `FailedRoute_FixedSliceSupportHalfCore.lean`
    - `FailedRoute_FixedSliceSupportHalfImpossible.lean`.
 
@@ -100,6 +106,12 @@ support/locality theorem used to obtain it must:
 
 This is a research-level lower-bound gap, not a missing wrapper.
 
+The final `ResearchGapWitness` boundary is method-agnostic.  A future proof may
+be algebraic, spectral, finite-field, SOS, Fourier-analytic, or otherwise
+non-combinatorial.  Such a proof does not need to produce
+`AcceptedFamilyCertificateAt`, support sets, random restrictions, or AC0
+provenance if it proves `NP_not_subset_PpolyDAG` directly.
+
 The gap is isolated in
 `pnp3/Magnification/UnconditionalResearchGap.lean`.  The file defines
 `ResearchGapWitness` and already proves
@@ -119,14 +131,22 @@ Before declaring any blocker closed, confirm:
    `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
 3. New source assumptions have a falsifiability audit before they are used by
    final theorem surfaces.
-4. No document claims unconditional `P != NP` prematurely.
+4. Any source route that uses exact MCSP thresholds, Shannon slack, or
+   hardness-magnification constants has a separate fine-grained simulation
+   adequacy theorem before it is wired to `ResearchGapWitness`.
+5. New non-combinatorial source routes are not forced through AC0/locality or
+   `AcceptedFamilyCertificateAt` if they prove `ResearchGapWitness` directly.
+6. Green CI, route guards, and axiom audits are treated as hygiene checks, not
+   as mathematical evidence that the remaining lower-bound gap is closing.
+7. No document claims unconditional `P != NP` prematurely.
 
 ## Definition Of Done
 
 All of the following must hold at once:
 
 1. A non-vacuous formula-side source theorem replaces the refuted
-   support-bounds/multi-switching route.
+   support-bounds/multi-switching route, or another non-vacuous source theorem
+   proves the same `ResearchGapWitness` boundary.
 2. `ResearchGapWitness` is proved in
    `pnp3/Magnification/UnconditionalResearchGap.lean`.
 3. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is derived without false or

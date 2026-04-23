@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-04-22
+Updated: 2026-04-23
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -8,13 +8,22 @@ Current release wording guardrail:
 `RELEASE_RC.md`.
 Route policy lock:
 `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
+Simulation fine-grained boundary:
+`pnp3/Docs/Simulation_FineGrained_Status.md`.
+Research method boundary:
+`pnp3/Docs/Research_Method_Boundary.md`.
 
 ## Snapshot
 
 - Active `axiom` in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
 - `./scripts/check.sh` passes.
-- Inclusion is internalized.
+- Inclusion is internalized as coarse `P_subset_PpolyDAG`.
+- The simulation layer is not a fine-grained Cook-Levin or
+  hardness-magnification compiler adequacy theorem.
+- The final `ResearchGapWitness` port is method-agnostic; AC0/locality and
+  `AcceptedFamilyCertificateAt` routes are optional sufficient routes, not a
+  mandatory interface for every future proof.
 - DAG endpoint plumbing is substantial, but the current separation route still
   depends on formula-side support-bounds assumptions that the audit refutes.
 
@@ -89,7 +98,11 @@ Canonical docs must say:
 3. fixedParams is only a candidate contract shape;
 4. `fixedParams + uniformProvenance` is itself inconsistent as currently
    stated;
-5. the remaining gap is mathematical, not just endpoint wiring.
+5. the simulation route is coarse polynomial inclusion only, not a
+   fine-grained compiler for slack-sensitive magnification;
+6. green CI/check scripts are proof hygiene, not mathematical progress by
+   themselves;
+7. the remaining gap is mathematical, not just endpoint wiring.
 
 ## Non-Goals Right Now
 
@@ -109,5 +122,11 @@ Canonical docs must say:
    there and then expose `P_ne_NP_unconditional` from that same file.
 3. If a new support/provenance contract is proposed, first add a falsifiability
    audit before wiring it into final theorems.
-4. Optionally finish independent verifier/formalization milestones such as the
+4. If a new route depends on exact MCSP thresholds, Shannon slack, or small
+   simulation overheads, first prove a separate fine-grained simulation
+   adequacy theorem.
+5. If a new algebraic/spectral/SOS/finite-field route cannot produce
+   combinatorial support or accepted-family certificates, integrate it directly
+   at `ResearchGapWitness` rather than forcing it through AC0/locality plumbing.
+6. Optionally finish independent verifier/formalization milestones such as the
    polynomial-time MCSP verifier, but do not present them as closing `P != NP`.

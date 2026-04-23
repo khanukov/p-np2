@@ -289,6 +289,8 @@ route_docs=(
   "TODO.md"
   "CHECKLIST_UNCONDITIONAL_P_NE_NP.md"
   "pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md"
+  "pnp3/Docs/Simulation_FineGrained_Status.md"
+  "pnp3/Docs/Research_Method_Boundary.md"
   "pnp3/Docs/CLOSURE_ROUTE_POLICY.md"
 )
 
@@ -322,6 +324,21 @@ if ! rg -n "fixedParams.*uniformProvenance.*inconsistent|fixedParams.*uniform pr
   exit 1
 fi
 
+if ! rg -n "coarse.*P_subset_PpolyDAG|P_subset_PpolyDAG.*coarse|not.*fine-grained.*compiler|fine-grained.*simulation adequacy|absence of a.*fine-grained compiler" "${route_docs[@]}" >/tmp/pnp3_route_simulation_boundary_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the coarse simulation / fine-grained compiler boundary."
+  exit 1
+fi
+
+if ! rg -n "ResearchGapWitness.*method-agnostic|method-agnostic.*ResearchGapWitness|AcceptedFamilyCertificateAt.*optional|optional.*AcceptedFamilyCertificateAt" "${route_docs[@]}" >/tmp/pnp3_route_method_boundary_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the method-agnostic ResearchGapWitness / optional accepted-family boundary."
+  exit 1
+fi
+
+if ! rg -n "Green CI.*not.*mathematical progress|green CI.*not.*mathematical progress|check\\.sh.*not.*mathematical progress|proof hygiene.*not.*mathematical progress" "${route_docs[@]}" >/tmp/pnp3_route_devops_boundary_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the CI/check.sh proof-hygiene boundary."
+  exit 1
+fi
+
 if rg -n -U "Current public provider-shaped endpoint|The active explicit DAG endpoint still has this shape|P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:" \
     "${route_docs[@]}" >/tmp/pnp3_route_stale_public_endpoint_hits.log; then
   echo "Detected stale public-endpoint wording in canonical docs:"
@@ -338,7 +355,7 @@ if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-sli
   exit 1
 fi
 
-echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams boundary enforced)."
+echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams + simulation + method/DevOps boundaries enforced)."
 
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"

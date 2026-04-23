@@ -8,6 +8,10 @@ Current release posture:
 `RELEASE_RC.md`.
 Route policy lock:
 `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
+Simulation fine-grained boundary:
+`pnp3/Docs/Simulation_FineGrained_Status.md`.
+Research method boundary:
+`pnp3/Docs/Research_Method_Boundary.md`.
 
 ## Verified State
 
@@ -16,6 +20,9 @@ Route policy lock:
 - `./scripts/check.sh` passes on the current tree.
 - Inclusion is internalized via
   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
+- That inclusion theorem is coarse polynomial-size DAG inclusion only; it is
+  not a fine-grained Cook-Levin or hardness-magnification compiler adequacy
+  theorem.
 - The repository contains substantial DAG endpoint plumbing, including the
   fixed-slice DAG-to-formula bridge
   `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
@@ -76,6 +83,11 @@ unconditional proof should be localized there by proving
 `ComplexityInterfaces.NP_not_subset_PpolyDAG` without using the refuted
 support-bounds surfaces.
 
+`ResearchGapWitness` is method-agnostic.  AC0/locality/restriction/shrinkage
+routes, including `AcceptedFamilyCertificateAt`, are optional sufficient
+routes and compatibility surfaces, not the required format for a future
+algebraic, spectral, finite-field, SOS, or other non-combinatorial proof.
+
 ## What Is Closed
 
 ### Inclusion side
@@ -83,6 +95,11 @@ support-bounds surfaces.
 - Default inclusion is internalized via
   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
 - Default final wrappers no longer need external inclusion-contract bundles.
+- The simulation layer is closed only at the coarse `P_subset_PpolyDAG` level:
+  its active size contract is existential polynomial (`n^k + k`), not a
+  fine-grained overhead bound.  This is sufficient for
+  `ResearchGapWitness -> P_ne_NP_final`, but not for any future route that
+  depends on exact magnification slack.
 
 ### DAG plumbing
 
@@ -117,6 +134,11 @@ only if it produces DAG separation through a provenance gate that:
 
 That missing theorem is the research-level mathematical gap.  It should be
 treated as open, not as a Lean engineering task.
+
+Green CI and a passing `./scripts/check.sh` are formal hygiene checks, not
+mathematical progress toward `NP_not_subset_PpolyDAG` by themselves.  They
+prevent stale or vacuous route claims from re-entering the tree; they do not
+replace the missing lower-bound idea.
 
 ## Repository-Wide Honesty Policy
 

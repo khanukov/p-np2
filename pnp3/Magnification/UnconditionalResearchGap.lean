@@ -23,6 +23,12 @@ non-vacuous source theorem for `NP_not_subset_PpolyDAG`, or an equivalent
 formula/locality theorem that delivers that DAG separation without routing
 through the refuted support-bounds predicates.
 
+The frontier is method-agnostic.  A future algebraic, spectral, finite-field,
+SOS, Fourier-analytic, or other non-combinatorial proof may plug in here
+directly by proving `NP_not_subset_PpolyDAG`; it does not have to produce
+AC0 provenance, support/locality data, random restrictions, subcubes, or
+`AcceptedFamilyCertificateAt`.
+
 How to use this file for a future breakthrough:
 
 1. Prove `ResearchGapWitness` in this file, by replacing the placeholder

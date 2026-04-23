@@ -5,6 +5,10 @@ Last updated: 2026-04-23.
 This file is the canonical DAG-side route note for the active branch.
 Hard policy reference:
 `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
+Simulation fine-grained boundary:
+`pnp3/Docs/Simulation_FineGrained_Status.md`.
+Research method boundary:
+`pnp3/Docs/Research_Method_Boundary.md`.
 
 ## 1. Current Verified State
 
@@ -12,7 +16,7 @@ Already true in repository:
 
 1. `./scripts/check.sh` passes.
 2. No active project-local `axiom` and no active `sorry/admit` in `pnp3/`.
-3. Inclusion is internalized.
+3. Inclusion is internalized as coarse `P_subset_PpolyDAG`.
 4. DAG endpoint infrastructure is present:
    - fixed-slice `PpolyDAG -> PpolyFormula` bridge;
    - Route-B packaging: `dagRouteBSourceBlocker`, `DAGRouteBSourceClosure`;
@@ -26,6 +30,21 @@ Conclusion:
 > `ComplexityInterfaces.NP_not_subset_PpolyDAG`.  A formula-side
 > support/locality theorem is useful only if it reaches that boundary without
 > the refuted support-bounds route.
+
+The simulation side is not a fine-grained magnification compiler.  The active
+compiler contract only proves an existential polynomial DAG-size bound
+(`n^k + k`); it does not prove `O(T log T)`, `O(T polylog T)`, or any small
+explicit exponent suitable for slack-sensitive magnification inequalities.
+That is acceptable for the current `ResearchGapWitness` endpoint, because
+`NP_not_subset_PpolyDAG` already separates against all polynomial-size DAG
+families.
+
+The final `ResearchGapWitness` port is method-agnostic.  The AC0,
+multi-switching, restriction, shrinkage, support/locality, subcube, and
+`AcceptedFamilyCertificateAt` routes are optional sufficient routes.  A future
+algebraic, spectral, finite-field, SOS, or other non-combinatorial proof should
+be wired directly at the DAG-separation boundary if it proves
+`NP_not_subset_PpolyDAG`.
 
 ## 2. Refuted Historical Route
 
@@ -119,6 +138,11 @@ Real progress requires a non-vacuous formula-side theorem that:
 5. does not imply the old false support-bounds predicate.
 
 Only after such a theorem exists should it be wired into the DAG final route.
+
+Progress is mathematical only when it supplies a new non-vacuous source theorem
+for `ResearchGapWitness`.  Green CI, axiom audits, route-policy guards, and
+wrapper refactors are necessary repository hygiene, but they are not evidence
+that the general DAG lower-bound gap has narrowed.
 
 ## 7. Non-Goals
 

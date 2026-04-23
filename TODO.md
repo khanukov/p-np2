@@ -26,6 +26,8 @@ Research method boundary:
   mandatory interface for every future proof.
 - DAG endpoint plumbing is substantial, but the current separation route still
   depends on formula-side support-bounds assumptions that the audit refutes.
+- A separate restricted-model AC0 milestone surface now exists:
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`.
 
 ## Hard Policy Update
 
@@ -130,3 +132,8 @@ Canonical docs must say:
    at `ResearchGapWitness` rather than forcing it through AC0/locality plumbing.
 6. Optionally finish independent verifier/formalization milestones such as the
    polynomial-time MCSP verifier, but do not present them as closing `P != NP`.
+7. Package the AC0 restricted-model result around
+   `LowerBounds.AC0_GapMCSP` as a standalone formalization deliverable, with
+   paper-facing `in_AC0` / `not_in_AC0` theorem names over the active
+   `SmallAC0Solver_Partial` interface and without mixing it into the
+   `ResearchGapWitness` closure story.

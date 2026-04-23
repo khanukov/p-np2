@@ -7,6 +7,7 @@ import LowerBounds.SingletonProvenanceEndpoint
 import LowerBounds.SingletonDensityEndpoint
 import LowerBounds.SingletonDensityContradiction
 import LowerBounds.DAGStableRestrictionProducer
+import LowerBounds.AC0_GapMCSP
 import Tests.BridgeLocalityRegression
 import ThirdPartyFacts.Facts_Switching
 
@@ -388,5 +389,11 @@ open Pnp3.Magnification
 #print axioms Magnification.ac0_statement_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_exists_false_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_fully_closed_iff_noExists
+#print axioms LowerBounds.gapPartialMCSP_no_semantic_AC0_solver
+#print axioms LowerBounds.gapPartialMCSP_no_syntactic_AC0_solver
+#print axioms LowerBounds.gapPartialMCSP_no_constructive_AC0_solver
+#print axioms LowerBounds.gapPartialMCSP_not_in_AC0
+#print axioms LowerBounds.gapPartialMCSP_notInSmallAC0_of_not_in_AC0
+#print axioms LowerBounds.gapPartialMCSP_not_in_AC0_iff_notInSmallAC0
 #print axioms LowerBounds.noSmallLocalCircuitSolver_partial_constructive
 #print axioms LowerBounds.antiChecker_testset_incompatibility_local_partial_constructive

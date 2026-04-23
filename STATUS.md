@@ -26,6 +26,9 @@ Research method boundary:
 - The repository contains substantial DAG endpoint plumbing, including the
   fixed-slice DAG-to-formula bridge
   `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
+- A separate restricted-model milestone surface now exists at
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`; it exposes the paper-facing fixed-slice
+  AC0 endpoint `gapPartialMCSP_not_in_AC0`.
 
 ## Current Audit Result
 

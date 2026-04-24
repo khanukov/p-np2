@@ -97,6 +97,24 @@ def PublishedLocalPRGRouteContract.toOneSided
       (contract.fools_small n)
 
 /--
+Exact thresholded tree-MCSP language attached to the quantitative schedule in
+`spec` at truth-table length `2^n`.
+-/
+noncomputable def thresholdMCSPLanguage
+    (spec : LocalPRGHardnessSpec)
+    (n : Nat) : BitVecLanguage :=
+  exactTreeMCSPThresholdLanguage n (spec.threshold n)
+
+/--
+Pointwise lower-bound schedule attached to `spec`: only the slice `2^n` carries
+the nontrivial lower bound `spec.sizeBound n + 1`.
+-/
+def thresholdMCSPLowerBound
+    (spec : LocalPRGHardnessSpec)
+    (n : Nat) : Nat → Nat :=
+  exactTreeMCSPThresholdLowerBound n (spec.sizeBound n)
+
+/--
 Paper-facing contradiction surface for a published one-sided local-PRG route.
 
 If the published local-PRG regime applies at input length `n`, then no circuit
@@ -139,6 +157,40 @@ theorem noSmallImplementedThresholdOracle_of_publishedLocalPRGRoute
         (model.classOf n).size impl.circuit ≤ spec.sizeBound n ∧
         impl.threshold = spec.threshold n := by
   exact noSmallImplementedThresholdOracle_of_publishedOneSidedLocalPRGRoute
+    contract.toOneSided n
+
+/--
+Published one-sided local-PRG route compiled into a genuine MCSP size lower
+bound on the exact thresholded tree-MCSP language at length `2^n`.
+-/
+theorem MCSP_lower_bound_from_publishedOneSidedLocalPRGRoute
+    {model : LocalPRGTargetFamilyModel}
+    {spec : LocalPRGHardnessSpec}
+    (contract : PublishedOneSidedLocalPRGRouteContract model spec)
+    (n : Nat) :
+    SizeLowerBound
+      (model.classOf n)
+      (thresholdMCSPLanguage spec n)
+      (thresholdMCSPLowerBound spec n) := by
+  exact sizeLowerBound_exactTreeMCSPThresholdLanguage_of_localPRGTransfer
+    (prg := contract.prg n)
+    (hThreshold := contract.imageBound_le_threshold n)
+    (hFool := contract.fools_small n)
+    (hEpsSmall := spec.epsilon_small n)
+
+/--
+Two-sided published-route version of the same exact MCSP size lower bound.
+-/
+theorem MCSP_lower_bound_from_publishedLocalPRGRoute
+    {model : LocalPRGTargetFamilyModel}
+    {spec : LocalPRGHardnessSpec}
+    (contract : PublishedLocalPRGRouteContract model spec)
+    (n : Nat) :
+    SizeLowerBound
+      (model.classOf n)
+      (thresholdMCSPLanguage spec n)
+      (thresholdMCSPLowerBound spec n) := by
+  exact MCSP_lower_bound_from_publishedOneSidedLocalPRGRoute
     contract.toOneSided n
 
 /--

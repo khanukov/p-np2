@@ -154,11 +154,19 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinProblem,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReduction,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pCoinLowerBound,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReductionContract,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Quantitative,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_LocalPRG_Transfer,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRGHardnessSpec,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.FormulaCircuitTargetModel,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.FormulaCircuitPublishedLowerBound,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Final,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Theorem2Quantitative,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG,
-    Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests
+    Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
+    Glob.one `Pnp4.Tests.AxiomsAudit
   ]
 
 @[test_driver]

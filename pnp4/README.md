@@ -42,20 +42,28 @@ Current reference point for the coin-problem track:
   `AC^0[p] Lower Bounds Against MCSP via the Coin Problem`, ICALP 2019 /
   ECCC 2019.
 
-The current `pnp4` code only fixes the interface layer for that route.  It does
-not yet claim the concentration, hybrid, or `AC^0[p]` lower-bound ingredients.
+The current `pnp4` code proves reusable transfer/consequence layers for that
+route, but it still does not claim the concentration, hybrid, or concrete
+`AC^0[p]` lower-bound ingredients.  Those remain explicit published contracts.
 
 Current theorem surface status:
 
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem.
 - `MCSPCoinReduction.lean`: threshold-oracle reduction surface from MCSP to coin
   distinguishing on truth tables.
+- `MCSPCoinReductionContract.lean`: smaller theorem-facing half-vs-fair
+  reduction contract, fixing a threshold schedule and the exact MCSP slice
+  coin-solving obligation via separate low-acceptance, fair-acceptance, and
+  advantage-gap certificates.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
-- `MCSP_AC0p_Final.lean`: honest consequence layer saying that, under that
-  contract and a concrete reduction witness, the corresponding MCSP threshold
-  oracle cannot be implemented by the chosen `AC^0[p]` family model below the
-  contract size threshold.
+- `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`
+  lower-bound contract and either a concrete reduction witness or the smaller
+  reduction contract, the corresponding exact MCSP slice has the expected
+  size-lower-bound form.
+- `MCSP_AC0p_Quantitative.lean`: paper-facing quantitative shell for the
+  published `exp(N^(0.49 / d))` envelope, with explicit bias-gap and advantage
+  profile metadata for the half-vs-fair coin regime.
 - `LocalPRG.lean`: truth-table local-PRG surface with easy-image and
   pseudorandomness interfaces against size-bounded circuit classes.
 - `MCSP_LocalPRG_Transfer.lean`: proved Shannon-counting upper bound for
@@ -64,3 +72,15 @@ Current theorem surface status:
 - `LocalPRGHardnessSpec.lean`: paper-facing published-route layer packaging
   `LocalPRGHardnessSpec`, target family models, and exact-threshold exclusion
   theorems for published local-PRG regimes.
+- `FormulaCircuitTargetModel.lean`: concrete target model connecting the new
+  `pnp4` circuit-class interface to the in-repo `pnp3` formula syntax.
+- `FormulaCircuitPublishedLowerBound.lean`: theorem-facing published lower-bound
+  shortcut for already-final exact slice statements.
+- `MCSP_Formula_Final.lean` and `MCSP_Formula_Theorem2Quantitative.lean`: CKLM
+  formula-route source contracts and exact-slice consequences.  The preferred
+  mainline is now
+  `CKLMFormulaCircuitLocalPRGSourceContract → FormulaCircuitPublishedLowerBoundContract → SizeLowerBound`.
+- `FormulaCircuitAsymptotic.lean`: optional bridge from slice lower bounds to
+  `¬ PpolyFormula`, only under an explicit table-length escape hypothesis.
+- `BridgeToPpolyDAG.lean`: final bridge shell from a verified `NP` language
+  lower bound against `PpolyDAG` to the existing `pnp3` `P ≠ NP` target.

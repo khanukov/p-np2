@@ -11,29 +11,44 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 build_log="/tmp/pnp3_full_build.log"
-echo "[check] Step 1/6: full Lean build"
+echo "[check] Step 1/7: full Lean build"
 if ! lake build 2>&1 | tee "${build_log}"; then
   echo "Full build failed; see ${build_log} for details."
   exit 1
 fi
 
-echo "[check] Step 2/6: smoke execution"
+echo "[check] Step 2/7: smoke execution"
 lake env lean --run scripts/smoke.lean
 
-echo "[check] Step 3/6: source hygiene scan (axiom/sorry/native_decide/interface policy)"
+echo "[check] Step 3/7: source hygiene scan (axiom/sorry/native_decide/interface policy)"
 expected_axioms=0
-actual_axioms=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
-if [[ "${actual_axioms}" -ne "${expected_axioms}" ]]; then
-  echo "Expected ${expected_axioms} axioms, found ${actual_axioms}."
-  echo "Listing active axioms:"
+actual_axioms_pnp3=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
+if [[ "${actual_axioms_pnp3}" -ne "${expected_axioms}" ]]; then
+  echo "Expected ${expected_axioms} axioms in pnp3, found ${actual_axioms_pnp3}."
+  echo "Listing active axioms in pnp3:"
   rg "^[[:space:]]*axiom " -g"*.lean" pnp3
+  exit 1
+fi
+
+actual_axioms_pnp4=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp4 || true) | wc -l | tr -d ' ' )
+if [[ "${actual_axioms_pnp4}" -ne "${expected_axioms}" ]]; then
+  echo "Expected ${expected_axioms} axioms in pnp4, found ${actual_axioms_pnp4}."
+  echo "Listing active axioms in pnp4:"
+  rg "^[[:space:]]*axiom " -g"*.lean" pnp4
   exit 1
 fi
 
 auto_holes=$( (rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
 if [[ "${auto_holes}" -ne 0 ]]; then
-  echo "Found ${auto_holes} unfinished proof placeholders (sorry/admit):"
+  echo "Found ${auto_holes} unfinished proof placeholders (sorry/admit) in pnp3:"
   rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 || true
+  exit 1
+fi
+
+auto_holes_pnp4=$( (rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp4 || true) | wc -l | tr -d ' ' )
+if [[ "${auto_holes_pnp4}" -ne 0 ]]; then
+  echo "Found ${auto_holes_pnp4} unfinished proof placeholders (sorry/admit) in pnp4:"
+  rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp4 || true
   exit 1
 fi
 
@@ -41,6 +56,13 @@ native_decide_hits=$( (rg -n "\bnative_decide\b" -g"*.lean" pnp3 || true) | wc -
 if [[ "${native_decide_hits}" -ne 0 ]]; then
   echo "Found ${native_decide_hits} native_decide usage(s) in pnp3 (for audit strictness we fail):"
   rg -n "\bnative_decide\b" -g"*.lean" pnp3 || true
+  exit 1
+fi
+
+native_decide_hits_pnp4=$( (rg -n "\bnative_decide\b" -g"*.lean" pnp4 || true) | wc -l | tr -d ' ' )
+if [[ "${native_decide_hits_pnp4}" -ne 0 ]]; then
+  echo "Found ${native_decide_hits_pnp4} native_decide usage(s) in pnp4 (for audit strictness we fail):"
+  rg -n "\bnative_decide\b" -g"*.lean" pnp4 || true
   exit 1
 fi
 
@@ -271,9 +293,9 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   fi
 fi
 
-echo "Axiom inventory OK (${actual_axioms} axioms)."
-echo "Proof hole scan OK (no sorry/admit)."
-echo "native_decide scan OK (no occurrences)."
+echo "Axiom inventory OK (pnp3=${actual_axioms_pnp3}, pnp4=${actual_axioms_pnp4})."
+echo "Proof hole scan OK (no sorry/admit in pnp3 or pnp4)."
+echo "native_decide scan OK (no occurrences in pnp3 or pnp4)."
 echo "Interface naming policy OK (legacy aliases/modules blocked; strict interface enforced)."
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Magnification assumptions policy OK (unconditional mode: package-signature requirements suspended)."
@@ -357,7 +379,7 @@ fi
 
 echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams + simulation + method/DevOps boundaries enforced)."
 
-echo "[check] Step 4/6: explicit theorem-axiom surface dump"
+echo "[check] Step 4/7: pnp3 explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${axiom_surface_log}"; then
@@ -382,13 +404,34 @@ echo "  propext occurrences: ${propext_count}"
 echo "  Classical.choice occurrences: ${classical_count}"
 echo "  Quot.sound occurrences: ${quot_count}"
 
-echo "[check] Step 5/6: run barrier audit module"
+echo "[check] Step 5/7: pnp4 explicit theorem-axiom surface dump"
+pnp4_axiom_surface_log="/tmp/pnp4_axiom_surface.log"
+if ! rg -n -U "pnp4/Pnp4/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
+    "${build_log}" >"${pnp4_axiom_surface_log}"; then
+  lake env lean pnp4/Pnp4/Tests/AxiomsAudit.lean > "${pnp4_axiom_surface_log}" 2>&1
+fi
+
+if rg -n "Lean\.ofReduceBool|Lean\.trustCompiler" "${pnp4_axiom_surface_log}" >/tmp/pnp4_trust_hits.log; then
+  echo "Detected trusted-compiler reduction axioms in pnp4 audited theorem surface:"
+  cat /tmp/pnp4_trust_hits.log
+  exit 1
+fi
+
+pnp4_classical_count=$( (rg -n "Classical\.choice" "${pnp4_axiom_surface_log}" || true) | wc -l | tr -d ' ' )
+pnp4_propext_count=$( (rg -n "\bpropext\b" "${pnp4_axiom_surface_log}" || true) | wc -l | tr -d ' ' )
+pnp4_quot_count=$( (rg -n "Quot\.sound" "${pnp4_axiom_surface_log}" || true) | wc -l | tr -d ' ' )
+echo "Axiom surface summary (from pnp4/Pnp4/Tests/AxiomsAudit):"
+echo "  propext occurrences: ${pnp4_propext_count}"
+echo "  Classical.choice occurrences: ${pnp4_classical_count}"
+echo "  Quot.sound occurrences: ${pnp4_quot_count}"
+
+echo "[check] Step 6/7: run barrier audit module"
 if ! rg -n "pnp3/Tests/BarrierAudit\\.lean" "${build_log}" >/tmp/pnp3_barrier_audit.log; then
   # Keep this explicit so regressions in barrier-facing final statements are visible.
   lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
 fi
 
-echo "[check] Step 6/6: unconditional witness gate (optional)"
+echo "[check] Step 7/7: unconditional witness gate (optional)"
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Checking unconditional witness surface..."
   # Legacy witness surface markers (historical blockers).

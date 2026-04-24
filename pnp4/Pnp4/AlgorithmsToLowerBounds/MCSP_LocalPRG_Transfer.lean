@@ -89,6 +89,70 @@ theorem uniformTruthTableAcceptanceProbability_le_countRatio_of_treeMCSPOracle
   simpa [uniformTruthTableAcceptanceProbability, bitVecAcceptanceProbability, accepted] using hDiv
 
 /--
+Boolean single-slice MCSP language: at input length `2^n`, return the exact
+thresholded tree-MCSP predicate for `threshold`; off that slice, return `false`.
+-/
+noncomputable def exactTreeMCSPThresholdDecision
+    (n threshold : Nat) : TruthTable n → Bool := by
+  classical
+  intro tt
+  exact decide (treeMCSPPredicate n threshold tt)
+
+/-- Specification lemma for the exact Boolean thresholded tree-MCSP predicate. -/
+theorem exactTreeMCSPThresholdDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    exactTreeMCSPThresholdDecision n threshold tt = true ↔
+      treeMCSPPredicate n threshold tt := by
+  classical
+  simp [exactTreeMCSPThresholdDecision]
+
+/--
+Boolean single-slice MCSP language: at input length `2^n`, return the exact
+thresholded tree-MCSP predicate for `threshold`; off that slice, return `false`.
+-/
+noncomputable def exactTreeMCSPThresholdLanguage
+    (n threshold : Nat) : BitVecLanguage := by
+  classical
+  intro m x
+  exact if hm : m = Pnp3.Models.Partial.tableLen n then
+      exactTreeMCSPThresholdDecision n threshold
+        (cast (by simpa [TruthTable] using congrArg BitVec hm) x)
+    else
+      false
+
+/--
+Pointwise lower-bound schedule for the exact thresholded tree-MCSP slice:
+enforce the bound `maxSize + 1` only on the truth-table length `2^n`.
+-/
+def exactTreeMCSPThresholdLowerBound
+    (n maxSize : Nat) : Nat → Nat :=
+  fun m => if m = Pnp3.Models.Partial.tableLen n then maxSize + 1 else 0
+
+/--
+Package one exact circuit for the thresholded tree-MCSP language as an
+`ImplementedThresholdOracle`.
+-/
+noncomputable def implementedThresholdOracleOfCircuit
+    {C : CircuitFamilyClass}
+    {n threshold : Nat}
+    (c : C.Family (Pnp3.Models.Partial.tableLen n))
+    (hComputes :
+      ∀ tt : TruthTable n,
+        C.eval c tt = exactTreeMCSPThresholdDecision n threshold tt) :
+    ImplementedThresholdOracle C n where
+  threshold := threshold
+  decide := fun tt => C.eval c tt
+  correct := by
+    intro tt
+    rw [hComputes tt]
+    exact exactTreeMCSPThresholdDecision_spec tt
+  circuit := c
+  circuit_correct := by
+    intro tt
+    rfl
+
+/--
 Lower-transfer theorem for the local-PRG route: if a small circuit class
 implements a thresholded MCSP oracle whose threshold accepts the whole PRG
 image, and the PRG one-sided fools that class, then the oracle must accept a
@@ -214,6 +278,74 @@ theorem noSmallImplementedThresholdOracle_of_foolsLocalPRGTransfer
   exact noSmallImplementedThresholdOracle_of_localPRGTransfer
     prg
     (oneSidedFoolsBoundedTruthTableClass_of_foolsBounded hFool)
+
+/--
+Contradiction form of the local-PRG transfer theorem for one exact small
+`C`-circuit computing the thresholded tree-MCSP language.
+-/
+theorem smallCircuit_contradiction_of_localPRGTransfer
+    {C : CircuitFamilyClass}
+    {n maxSize threshold : Nat}
+    {epsilon : Rat}
+    (prg : TruthTableLocalPRG n)
+    (hThreshold : prg.imageSizeBound ≤ threshold)
+    (hFool :
+      OneSidedFoolsBoundedTruthTableClass prg C maxSize epsilon)
+    (hEpsSmall :
+      epsilon <
+        1 - ((Pnp3.Models.circuitCountBound n threshold : Rat) /
+              (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat)))
+    (c : C.Family (Pnp3.Models.Partial.tableLen n))
+    (hSize : C.size c ≤ maxSize)
+    (hComputes :
+      ∀ tt : TruthTable n,
+        C.eval c tt = exactTreeMCSPThresholdDecision n threshold tt) :
+    False := by
+  let impl := implementedThresholdOracleOfCircuit
+    (C := C) (n := n) (threshold := threshold) c hComputes
+  exact smallImplementedThresholdOracle_contradiction_of_localPRGTransfer
+    prg impl hSize hThreshold hFool hEpsSmall
+
+/--
+Size-lower-bound form of the local-PRG transfer theorem for the exact
+thresholded tree-MCSP language on the truth-table slice `2^n`.
+-/
+theorem sizeLowerBound_exactTreeMCSPThresholdLanguage_of_localPRGTransfer
+    {C : CircuitFamilyClass}
+    {n maxSize threshold : Nat}
+    {epsilon : Rat}
+    (prg : TruthTableLocalPRG n)
+    (hThreshold : prg.imageSizeBound ≤ threshold)
+    (hFool :
+      OneSidedFoolsBoundedTruthTableClass prg C maxSize epsilon)
+    (hEpsSmall :
+      epsilon <
+        1 - ((Pnp3.Models.circuitCountBound n threshold : Rat) /
+              (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat))) :
+    SizeLowerBound
+      C
+      (exactTreeMCSPThresholdLanguage n threshold)
+      (exactTreeMCSPThresholdLowerBound n maxSize) := by
+  intro m c hComp
+  by_cases hm : m = Pnp3.Models.Partial.tableLen n
+  · subst hm
+    have hExact :
+        ∀ tt : TruthTable n,
+          C.eval c tt = exactTreeMCSPThresholdDecision n threshold tt := by
+      intro tt
+      simpa [exactTreeMCSPThresholdLanguage] using hComp tt
+    by_contra hLower
+    have hLower' : ¬ maxSize + 1 ≤ C.size c := by
+      simpa [exactTreeMCSPThresholdLowerBound] using hLower
+    have hSizeLt : C.size c < maxSize + 1 := Nat.not_le.mp hLower'
+    have hSize : C.size c ≤ maxSize := Nat.lt_succ_iff.mp hSizeLt
+    exact smallCircuit_contradiction_of_localPRGTransfer
+      (prg := prg)
+      (hThreshold := hThreshold)
+      (hFool := hFool)
+      (hEpsSmall := hEpsSmall)
+      c hSize hExact
+  · simp [exactTreeMCSPThresholdLowerBound, hm]
 
 end AlgorithmsToLowerBounds
 end Pnp4

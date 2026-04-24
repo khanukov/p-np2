@@ -2,3 +2,10 @@ __pycache__/
 *.py[cod]
 .lake/
 lake-manifest.json
+
+# Local LeanDojo-v2 integration and generated artifacts.
+tools/LeanDojo-v2/
+tools/lean_dojo_raid/
+tools/lean_dojo_cache/
+tools/lean_dojo_outputs/
+tools/lean_dojo_tmp/

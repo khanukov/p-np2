@@ -167,10 +167,12 @@ fi
 # - old default-provider signatures for active finals are forbidden in all modes.
 final_result_surface_files=(
   "pnp3/Magnification/FinalResult.lean"
+  "pnp3/Magnification/FinalResultAuditRoutes.lean"
   "pnp3/Magnification/FinalResultCore.lean"
   "pnp3/Magnification/FinalResultMainline.lean"
   "pnp3/Magnification/FinalResultWeakRoutes.lean"
   "pnp3/Magnification/FinalResultLegacyTM.lean"
+  "pnp3/Magnification/UnconditionalResearchGap.lean"
 )
 
 if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
@@ -204,14 +206,21 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
     exit 1
   fi
 
-  # Current milestone policy (post-unbundle):
-  # the canonical default `P_ne_NP_final` must expose the explicit minimal
-  # payload (hMS/hAsym/hNPbridge), while package-style compatibility wrappers
-  # remain available separately (`*_of_magnification`).
+  # Current milestone policy:
+  # the public DAG/P != NP finals are the honest research-gap boundary.  Legacy
+  # hMS/asymptotic-pullback routes must stay under explicit audit/compatibility
+  # names such as `*_of_multiswitchingData` and `*_of_asymptoticPullback`.
   if ! rg -n -U \
-      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)\\n[[:space:]]*\\(hAsym[[:space:]]*:[[:space:]]*AsymptoticFormulaTrackHypothesis\\)\\n[[:space:]]*\\(hNPbridge[[:space:]]*:[[:space:]]*AsymptoticNPPullback[[:space:]]+hAsym\\)" \
-      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_unbundled_sig_hits.log; then
-    echo "Detected invalid signature for P_ne_NP_final (expected unbundled hMS/hAsym/hNPbridge payload)."
+      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_npdag_final_gap_sig_hits.log; then
+    echo "Detected invalid signature for NP_not_subset_PpolyDAG_final (expected gap : ResearchGapWitness)."
+    exit 1
+  fi
+
+  if ! rg -n -U \
+      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_gap_sig_hits.log; then
+    echo "Detected invalid signature for P_ne_NP_final (expected gap : ResearchGapWitness)."
     exit 1
   fi
 fi
@@ -231,10 +240,33 @@ if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(h
 fi
 
 if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
+  if rg -n -U \
+      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_npdag_final_hms_sig_hits.log; then
+    echo "Detected forbidden legacy signature for NP_not_subset_PpolyDAG_final (use *_of_multiswitchingData / *_of_asymptoticPullback):"
+    cat /tmp/pnp3_npdag_final_hms_sig_hits.log
+    exit 1
+  fi
+
+  if rg -n -U \
+      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
+      "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_hms_sig_hits.log; then
+    echo "Detected forbidden legacy signature for P_ne_NP_final (use *_of_multiswitchingData / *_of_asymptoticPullback):"
+    cat /tmp/pnp3_pnenp_final_hms_sig_hits.log
+    exit 1
+  fi
+
   if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.NP_not_subset_PpolyDAG\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_legacy_sig_hits.log; then
     echo "Detected forbidden legacy signature for P_ne_NP_final (missing MagnificationAssumptions):"
     cat /tmp/pnp3_pnenp_final_legacy_sig_hits.log
+    exit 1
+  fi
+
+  if rg -n -U "theorem[[:space:]]+(NP_not_subset_PpolyDAG_final|P_ne_NP_final)_of_asymptotic[^\\n]*\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+      pnp3/Magnification/FinalResultMainline.lean >/tmp/pnp3_mainline_hmag_dag_route_hits.log; then
+    echo "Detected package-shaped DAG route in FinalResultMainline; move legacy hMag wrappers to FinalResultAuditRoutes:"
+    cat /tmp/pnp3_mainline_hmag_dag_route_hits.log
     exit 1
   fi
 fi
@@ -246,17 +278,19 @@ echo "Interface naming policy OK (legacy aliases/modules blocked; strict interfa
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Magnification assumptions policy OK (unconditional mode: package-signature requirements suspended)."
 else
-  echo "Magnification assumptions policy OK (package-based finals enforced)."
+  echo "Magnification assumptions policy OK (package-based formula/real finals + ResearchGapWitness public P != NP final enforced)."
 fi
 
 # Documentation route-policy guardrails:
-# keep canonical docs aligned on the current blocker and prevent silent
-# reintroduction of deprecated DAG-route wording.
+# keep canonical docs aligned on the current falsifiability audit and prevent
+# silent reintroduction of deprecated DAG-route wording.
 route_docs=(
   "STATUS.md"
   "TODO.md"
   "CHECKLIST_UNCONDITIONAL_P_NE_NP.md"
   "pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md"
+  "pnp3/Docs/Simulation_FineGrained_Status.md"
+  "pnp3/Docs/Research_Method_Boundary.md"
   "pnp3/Docs/CLOSURE_ROUTE_POLICY.md"
 )
 
@@ -267,35 +301,61 @@ for f in "${route_docs[@]}"; do
   fi
 done
 
-# Hard requirement: canonical docs must explicitly mention the fixed-slice
-# no-go status, the fact that DAG separation is already internalized, and the
-# current residual `MagnificationAssumptions` blocker.
+# Hard requirement: canonical docs must explicitly mention fixed-slice no-go
+# status, the refuted support-bounds/multi-switching route, and the current
+# fixed-params candidate boundary.
 if ! rg -n "fixed-slice.*no-go|no-go.*fixed-slice" "${route_docs[@]}" >/tmp/pnp3_route_nogo_hits.log; then
   echo "Route-policy violation: canonical docs do not explicitly state fixed-slice no-go status."
   exit 1
 fi
 
-if ! rg -n "DAG separation.*internalized|internalized.*DAG separation|NP_not_subset_PpolyDAG_final" "${route_docs[@]}" >/tmp/pnp3_route_active_hits.log; then
-  echo "Route-policy violation: canonical docs do not explicitly state that DAG separation is already internalized."
+if ! rg -n "FormulaSupportRestrictionBoundsPartial.*False|FormulaSupportBoundsFromMultiSwitchingContract.*False|support-bounds.*ex-falso|support-bounds.*false|refuted support-bounds" "${route_docs[@]}" >/tmp/pnp3_route_refuted_support_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state the refuted support-bounds route."
   exit 1
 fi
 
-# Current blocker wording must be explicit.
-if ! rg -n "MagnificationAssumptions|NP_not_subset_PpolyFormula_final" "${route_docs[@]}" >/tmp/pnp3_route_blocker_hits.log; then
-  echo "Route-policy violation: canonical docs do not explicitly state the residual MagnificationAssumptions blocker."
+if ! rg -n "fixedParams|FormulaSupportBoundsPartial_fromPipeline_fixedParams" "${route_docs[@]}" >/tmp/pnp3_route_fixedparams_hits.log; then
+  echo "Route-policy violation: canonical docs do not explicitly state the fixedParams candidate boundary."
+  exit 1
+fi
+
+if ! rg -n "fixedParams.*uniformProvenance.*inconsistent|fixedParams.*uniform provenance.*inconsistent|fixedParams \\+ uniformProvenance" "${route_docs[@]}" >/tmp/pnp3_route_fixedparams_leak_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the fixedParams + uniformProvenance leak."
+  exit 1
+fi
+
+if ! rg -n "coarse.*P_subset_PpolyDAG|P_subset_PpolyDAG.*coarse|not.*fine-grained.*compiler|fine-grained.*simulation adequacy|absence of a.*fine-grained compiler" "${route_docs[@]}" >/tmp/pnp3_route_simulation_boundary_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the coarse simulation / fine-grained compiler boundary."
+  exit 1
+fi
+
+if ! rg -n "ResearchGapWitness.*method-agnostic|method-agnostic.*ResearchGapWitness|AcceptedFamilyCertificateAt.*optional|optional.*AcceptedFamilyCertificateAt" "${route_docs[@]}" >/tmp/pnp3_route_method_boundary_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the method-agnostic ResearchGapWitness / optional accepted-family boundary."
+  exit 1
+fi
+
+if ! rg -n "Green CI.*not.*mathematical progress|green CI.*not.*mathematical progress|check\\.sh.*not.*mathematical progress|proof hygiene.*not.*mathematical progress" "${route_docs[@]}" >/tmp/pnp3_route_devops_boundary_hits.log; then
+  echo "Route-policy violation: canonical docs do not state the CI/check.sh proof-hygiene boundary."
+  exit 1
+fi
+
+if rg -n -U "Current public provider-shaped endpoint|The active explicit DAG endpoint still has this shape|P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:" \
+    "${route_docs[@]}" >/tmp/pnp3_route_stale_public_endpoint_hits.log; then
+  echo "Detected stale public-endpoint wording in canonical docs:"
+  cat /tmp/pnp3_route_stale_public_endpoint_hits.log
   exit 1
 fi
 
 # Forbidden legacy wording: these phrases historically pointed to deprecated
 # DAG-side closure prioritization and should not reappear in canonical docs.
-if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem|asymptotic/eventual source theorem' \
+if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem|asymptotic/eventual source theorem|Only one route is still active for true unconditionality|Only API cleanup remains' \
     "${route_docs[@]}" >/tmp/pnp3_route_legacy_phrase_hits.log; then
   echo "Detected deprecated fixed-slice closure wording in canonical docs:"
   cat /tmp/pnp3_route_legacy_phrase_hits.log
   exit 1
 fi
 
-echo "Route policy docs OK (fixed-slice no-go + internalized DAG + residual hMag blocker enforced)."
+echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams + simulation + method/DevOps boundaries enforced)."
 
 echo "[check] Step 4/6: explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
@@ -359,24 +419,9 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
     exit 1
   fi
 
-  # Canonical public finals must themselves become assumption-free before the
-  # tree can be described as unconditionally closed. We intentionally scope
-  # this to the public endpoints, not the specialized compatibility wrappers
-  # (`*_of_*`, `*_TM`, barrier/audit helpers), which may remain conditional as
-  # long as they are documented as non-default routes.
-  if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
-      "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_formula_pkg_hits.log; then
-    echo "Unconditional gate failed: canonical formula final still depends on MagnificationAssumptions:"
-    cat /tmp/pnp3_unconditional_formula_pkg_hits.log
-    exit 1
-  fi
-
-  if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
-      "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_real_pkg_hits.log; then
-    echo "Unconditional gate failed: canonical PpolyReal final still depends on MagnificationAssumptions:"
-    cat /tmp/pnp3_unconditional_real_pkg_hits.log
-    exit 1
-  fi
+  # Conditional formula/real wrappers may remain available as compatibility
+  # endpoints.  The unconditional P != NP gate is the existence of a real
+  # compiled zero-argument theorem, not the removal of every conditional helper.
 
   if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_pnenp_pkg_hits.log; then
@@ -389,6 +434,17 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
       "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_pnenp_dag_hits.log; then
     echo "Unconditional gate failed: canonical P_ne_NP final still depends on NP_not_subset_PpolyDAG:"
     cat /tmp/pnp3_unconditional_pnenp_dag_hits.log
+    exit 1
+  fi
+
+  unconditional_probe="/tmp/pnp3_unconditional_probe.lean"
+  {
+    echo "import Magnification.FinalResult"
+    echo "#check Pnp3.Magnification.P_ne_NP_unconditional"
+  } >"${unconditional_probe}"
+  if ! lake env lean "${unconditional_probe}" >/tmp/pnp3_unconditional_zero_arg_hits.log 2>&1; then
+    echo "Unconditional gate failed: missing zero-argument P_ne_NP_unconditional theorem."
+    cat /tmp/pnp3_unconditional_zero_arg_hits.log
     exit 1
   fi
   echo "Unconditional witness surface OK."

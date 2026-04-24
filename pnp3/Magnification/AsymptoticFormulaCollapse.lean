@@ -1,4 +1,6 @@
 import Magnification.Facts_Magnification_Partial
+import Magnification.LocalityProvider_Partial
+import Magnification.AC0LocalityBridge
 import Models.Model_PartialMCSP
 import Complexity.Interfaces
 import Mathlib.Tactic
@@ -38,6 +40,35 @@ theorem fixed_formula_collapse_of_provider
     ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) → False := by
   intro hFormula
   obtain ⟨_T, loc, _hT, _hℓ⟩ := hProvider p δ hHyp hFormula
+  exact noSmallLocalCircuitSolver_partial_v2 loc
+
+/-- **Step 3a** — pipeline-aware fixed-slice formula collapse.
+
+Parallel to `fixed_formula_collapse_of_provider`, but takes:
+1. `hProviderP : StructuredLocalityProviderPartial_fromPipeline` — the
+   pipeline-aware structured provider (non-ex-falso).
+2. `hSemProv : FormulaSemanticMultiSwitchingProvider` — supplies AC0
+   provenance + semantic link per `PpolyFormula` witness.  Potentially
+   consistent (not known to be inconsistent via truth-table hardwiring
+   alone, though still needs formal-metatheoretic justification).
+
+The proof destructures `hSemProv.package hFormula` to extract the AC0
+provenance, then applies the pipeline provider with that provenance
+to obtain `RestrictionLocalityPartial`, and finishes via
+`noSmallLocalCircuitSolver_partial_v2`. -/
+theorem fixed_formula_collapse_of_provider_fromPipeline
+    (hProviderP : Magnification.StructuredLocalityProviderPartial_fromPipeline)
+    (hSemProv : Magnification.AC0LocalityBridge.FormulaSemanticMultiSwitchingProvider)
+    {p : GapPartialMCSPParams} {δ : Rat}
+    (hHyp : FormulaLowerBoundHypothesisPartial p δ) :
+    ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) → False := by
+  intro hFormula
+  -- Extract AC0 provenance via the semantic provider.
+  obtain ⟨ac0, F, hsame, _hAC0, hMSWit, hSemExists⟩ :=
+    hSemProv.package (p := p) hFormula
+  -- Apply pipeline provider with the provenance tuple.
+  obtain ⟨_T, loc, _hT, _hℓ⟩ :=
+    hProviderP p δ hHyp ac0 F hsame _hAC0 hMSWit hFormula hSemExists
   exact noSmallLocalCircuitSolver_partial_v2 loc
 
 /--

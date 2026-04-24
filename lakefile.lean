@@ -56,6 +56,17 @@ lean_lib PnP3 where
     Glob.one `Complexity.Interfaces,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.BinaryCounter,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.Encoding,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.AtomicPrograms,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.UnaryAtOffset,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.CopyAtOffset,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.CombineAtOffset,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.GateWrappers,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram,
+    Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.RowConsistencyCheck,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -97,6 +108,8 @@ lean_lib PnP3 where
     Glob.one `LowerBounds.MCSPGapLocality,
     Glob.one `LowerBounds.AntiChecker_Partial,
     Glob.one `LowerBounds.LB_Formulas_Core_Partial,
+    Glob.one `LowerBounds.AC0_GapMCSP_Final,
+    Glob.one `LowerBounds.AC0_GapMCSP,
     Glob.one `Magnification.LocalityInterfaces_Partial,
     Glob.one `Magnification.Facts_Magnification_Partial,
     Glob.one `Magnification.PipelineStatements_Partial,
@@ -108,9 +121,11 @@ lean_lib PnP3 where
     Glob.one `Magnification.Bridge_to_Magnification_Partial,
     Glob.one `Magnification.AsymptoticFormulaCollapse,
     Glob.one `Magnification.FinalResultMainline,
+    Glob.one `Magnification.FinalResultAuditRoutes,
     Glob.one `Magnification.FinalResultWeakRoutes,
     Glob.one `Magnification.FinalResultLegacyTM,
     Glob.one `Magnification.FinalResultCore,
+    Glob.one `Magnification.UnconditionalResearchGap,
     Glob.one `Magnification.FinalResult,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
@@ -121,10 +136,29 @@ lean_lib PnP3 where
     Glob.one `Tests.BarrierAudit,
     Glob.one `Tests.BarrierBypassAudit,
     Glob.one `Tests.AxiomsAudit,
+    Glob.one `Tests.AC0PublishableSurface,
     Glob.one `Tests.BridgeLocalityRegression,
+    Glob.one `Tests.RouteSurfaceAudit,
     Glob.one `Tests.WeakRouteSurfaceTests,
+    Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests
+  ]
+
+lean_lib Pnp4 where
+  srcDir := "pnp4"
+  globs := #[
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRG,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinProblem,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReduction,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pCoinLowerBound,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_LocalPRG_Transfer,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRGHardnessSpec,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG,
+    Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests
   ]
 
 @[test_driver]

@@ -25,6 +25,7 @@ def main : IO Unit := do
   IO.println "✓ SAL (Switching-Atlas Lemma) structure verified"
   IO.println "✓ Counting module bounds accessible"
   IO.println "✓ Lower bounds construction verified"
+  IO.println "✓ Publishable AC0 endpoint gapPartialMCSP_not_in_AC0 compiled"
   IO.println "✓ Magnification pipeline present"
   IO.println "✓ Active final bridge NP_not_subset_PpolyFormula_final compiled"
   IO.println "✓ Strict structured-interface assumptions threaded"

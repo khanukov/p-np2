@@ -15,6 +15,9 @@ Active inclusion route for `P_subset_PpolyDAG`.
 
 This file keeps only the linear compiled-runtime closure path used by
 `proved_P_subset_PpolyDAG_internal`.
+
+This is a coarse polynomial-size DAG inclusion route.  It is not a
+fine-grained Cook-Levin or hardness-magnification adequacy theorem.
 -/
 
 /--

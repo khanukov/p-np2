@@ -7,6 +7,7 @@ import LowerBounds.SingletonProvenanceEndpoint
 import LowerBounds.SingletonDensityEndpoint
 import LowerBounds.SingletonDensityContradiction
 import LowerBounds.DAGStableRestrictionProducer
+import LowerBounds.AC0_GapMCSP
 import Tests.BridgeLocalityRegression
 import ThirdPartyFacts.Facts_Switching
 
@@ -50,13 +51,18 @@ open Pnp3.Magnification
 #print axioms NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
 #print axioms NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
 #print axioms NP_not_subset_PpolyDAG_final_of_invariantProvider_TM
-#print axioms NP_not_subset_PpolyDAG_final_of_supportBounds_and_dagToFormula_TM
+#print axioms NP_not_subset_PpolyDAG_final_of_supportBounds_TM
 #print axioms P_ne_NP_final_of_dag_stableRestrictionPayload_TM
 #print axioms P_ne_NP_final_of_dag_stableRestriction_TM
 #print axioms P_ne_NP_final_of_certificateProvider_TM
 #print axioms P_ne_NP_final_of_invariantProvider_TM
-#print axioms P_ne_NP_final_of_supportBounds_and_dagToFormula_TM
+#print axioms P_ne_NP_final_of_supportBounds_TM
+#print axioms NP_not_subset_PpolyDAG_final
+#print axioms NP_not_subset_PpolyDAG_final_of_multiswitchingData
+#print axioms NP_not_subset_PpolyDAG_final_of_asymptoticPullback
 #print axioms P_ne_NP_final
+#print axioms P_ne_NP_final_of_multiswitchingData
+#print axioms P_ne_NP_final_of_asymptoticPullback
 
 -- Regression checks for I-1 / I-3 readiness.
 #print axioms Tests.i1_trivial_realization_available
@@ -75,11 +81,13 @@ open Pnp3.Magnification
 #print axioms Tests.i4_np_not_subset_ppolyDAG_of_certificateProvider
 #print axioms Tests.i4_np_not_subset_ppolyDAG_of_invariantProvider
 #print axioms Tests.i4_np_not_subset_ppolyDAG_final_of_invariantProvider
-#print axioms Tests.i4_np_not_subset_ppolyDAG_of_supportBounds_and_dagToFormula
+#print axioms Tests.i4_np_not_subset_ppolyDAG_of_supportBounds
+#print axioms Tests.i4_np_not_subset_ppolyDAG_final_of_multiswitching_data
 #print axioms Tests.i4_p_ne_np_final_of_dag_stableRestrictionPayload
 #print axioms Tests.i4_p_ne_np_final_of_dag_stableRestriction
 #print axioms Tests.i4_p_ne_np_final_of_invariantProvider
-#print axioms Tests.i4_p_ne_np_final_of_supportBounds_and_dagToFormula
+#print axioms Tests.i4_p_ne_np_final_of_supportBounds
+#print axioms Tests.i4_p_ne_np_final_of_multiswitching_data
 #print axioms Tests.i4_final_wiring_of_multiswitching
 
 -- Активный inclusion endpoint: no-arg, без внешнего `EvalAgreement`-контракта.
@@ -237,11 +245,11 @@ open Pnp3.Magnification
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_certificateProvider_TM
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_invariantProvider_TM
-#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula
+#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_abstractGapTargeted_consumer_TM
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestrictionPayload_TM
 #print axioms LowerBounds.NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
-#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_and_dagToFormula_TM
+#print axioms LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_TM
 #print axioms Core.exists_mem_subcube
 #print axioms LowerBounds.abstractGapWitnessedPayload_of_exists_nonemptyWitness
 #print axioms LowerBounds.nonemptyWitnessGoal_of_abstractGapTargetedPayload
@@ -381,5 +389,11 @@ open Pnp3.Magnification
 #print axioms Magnification.ac0_statement_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_exists_false_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_fully_closed_iff_noExists
+#print axioms LowerBounds.gapPartialMCSP_no_semantic_AC0_solver
+#print axioms LowerBounds.gapPartialMCSP_no_syntactic_AC0_solver
+#print axioms LowerBounds.gapPartialMCSP_no_constructive_AC0_solver
+#print axioms LowerBounds.gapPartialMCSP_not_in_AC0
+#print axioms LowerBounds.gapPartialMCSP_notInSmallAC0_of_not_in_AC0
+#print axioms LowerBounds.gapPartialMCSP_not_in_AC0_iff_notInSmallAC0
 #print axioms LowerBounds.noSmallLocalCircuitSolver_partial_constructive
 #print axioms LowerBounds.antiChecker_testset_incompatibility_local_partial_constructive

@@ -196,6 +196,45 @@ For each strict formula witness at length `partialInputLen p`, we require:
 1) polylog bound on syntactic support,
 2) `LocalCircuitSmallEnough` for the induced locality parameters,
 3) half-table bound on support size.
+
+## ⚠ KNOWN INCONSISTENT IN THE CURRENT FORMALIZATION ⚠
+
+The formulation below quantifies over **any** strict formula witness
+`PpolyFormula (gapPartialMCSP_Language p)`.  But at the fixed input length
+`partialInputLen p`, a truth-table-hardwired formula is trivially in
+`PpolyFormula` yet violates every one of the support bounds (1)–(3) —
+its support is the entire input set.  The April 2026 audit at
+`outputs/formula-support-bounds-falsifiability-audit.md` showed
+formally that `FormulaSupportRestrictionBoundsPartial → False` via
+existing fixed-slice infrastructure.
+
+A weaker regression version of this inconsistency
+(`hBounds + PpolyDAG (gapPartialMCSP_Language p) → False`) is
+formalized as an in-project Lean theorem at
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+
+Consequences:
+- **Every theorem depending on `FormulaSupportRestrictionBoundsPartial`
+  is ex-falso and should NOT be interpreted as genuine progress toward
+  an unconditional `NP ⊄ P/poly`.**
+- The "active final line" callers in `Magnification/FinalResultMainline.lean`
+  (e.g., `NP_not_subset_PpolyFormula_final_with_supportBounds`) remain
+  type-correct but are logically vacuous.
+
+## Required repair (future session)
+
+Replace the `∀ hFormula : PpolyFormula …` quantification with a
+PIPELINE-restricted contract: the formula must come from a specific
+AC0/multi-switching extraction pipeline (e.g.,
+`AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract`)
+rather than arbitrary truth-table hardwiring.  Then propagate the
+narrower predicate through its ~50 call sites in
+`LowerBounds/DAGStableRestrictionProducer.lean`,
+`LowerBounds/SingletonDensityContradiction.lean`, and
+`Magnification/FinalResult{Mainline,LegacyTM}.lean`.
+
+See `pnp3/Docs/PhaseI_Verifier_Design.md` session 55 entry for the
+migration plan.
 -/
 def FormulaSupportRestrictionBoundsPartial : Prop :=
   ∀ {p : GapPartialMCSPParams}
@@ -226,6 +265,331 @@ def FormulaSupportRestrictionBoundsPartial : Prop :=
           , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
       rFacts.alive.card ≤
         Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/-! ### Migration Step 1 — provenance-restricted replacement
+
+The old `FormulaSupportRestrictionBoundsPartial` quantifies universally
+over every `PpolyFormula (gapPartialMCSP_Language p)` witness.  That
+universal set includes the truth-table-hardwired formula at
+`partialInputLen p`, whose support is the full input region and thus
+violates the polylog / quarter / `LocalCircuitSmallEnough` bounds.
+The April 2026 audit formalized this as Probe 3:
+`false_of_FormulaSupportRestrictionBoundsPartial` in
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+
+The new predicate below, `FormulaSupportBoundsPartial_fromPipeline`,
+takes the AC0 provenance (parameters, family, witnesses, semantic
+link to the concrete formula) as EXPLICIT INPUTS rather than
+asserting their existence for every `hFormula` witness.  As a
+consequence:
+
+- A truth-table-hardwired `hFormula` cannot produce the required
+  `hSem` semantic link to any AC0 family `F` (unless the MCSP
+  language at `partialInputLen p` is AC0, which would break the
+  hardness argument), so the new predicate is not immediately
+  falsifiable via the audit's Probe 2/3 route.
+- Any downstream consumer that accepts the new predicate must supply
+  the AC0 provenance explicitly, preventing silent "apply to every
+  hFormula" loopholes.
+
+**Migration plan** (see `pnp3/Docs/PhaseI_Verifier_Design.md` session
+55 / 56 / 57 entries):
+- **Step 1 (this session)**: introduce the replacement predicate and
+  the trivial implication `old → new` (for backwards compatibility).
+  The reverse implication does NOT hold — `new` is strictly weaker
+  than `old` and does NOT imply the ex-falso behaviour.
+- **Steps 2-4** (follow-up sessions): migrate direct consumers
+  (`formulaRestrictionCertificateData_of_supportBounds`,
+  `false_of_abstractGapTargetedPayload_of_supportBounds`) to accept
+  `new`, propagate through ~50 call sites, then delete the old
+  predicate.
+-/
+
+/-- **Provenance-restricted support-bounds contract**.  Takes AC0
+provenance + semantic link as inputs instead of quantifying over
+arbitrary formula witnesses.  Not immediately falsifiable via
+truth-table hardwiring (unlike `FormulaSupportRestrictionBoundsPartial`). -/
+def FormulaSupportBoundsPartial_fromPipeline : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p)
+    (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+    (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let solver := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    -- Semantic link: the AC0 family contains a function that agrees
+    -- with the extracted formula (after length cast).  This IS the
+    -- provenance gate that truth-table hardwiring cannot satisfy.
+    (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)) →
+    -- Conclusion: the same three support bounds the old predicate
+    -- claimed, but only under provenance-restricted hypotheses.
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/-- **Old predicate implies new** (trivial direction: since `old` is
+ex-falso, it implies everything including `new`).
+
+This is NOT a real strengthening — it just shows the new predicate is
+a valid weakening of the old, so callers that have an `old` witness
+(even an ex-falso one) can transport it to a `new` witness.  The
+reverse direction `new → old` does NOT hold; that's precisely what
+makes `new` a genuine repair. -/
+theorem formulaSupportBoundsPartial_fromPipeline_of_old
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportBoundsPartial_fromPipeline := fun _ac0 _F _hsame _hAC0 _hMSWit
+    hFormula _hSem => hBounds hFormula
+
+/-! ### Step 6 (session 67) — strengthened pipeline contract
+
+Session 67 finding: `FormulaSupportBoundsPartial_fromPipeline` is
+FORMALLY ex-falso.  Probe 7 at
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:~380` shows:
+
+  ∀ p hBoundsP, False
+
+via the internal provider
+`AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal`
+which adjusts AC0 parameters per-formula (singleton-family `[f]`
+with `semanticParams f` sized to fit the truth-table DNF).
+
+**Root cause**: the per-formula AC0 parameters are NOT a real gate
+against truth-table hardwiring — the internal provider fits
+parameters to each formula, making the provenance gate vacuous.
+
+**Repair direction**: require FIXED AC0 parameters (not per-formula)
+as a parameter of the Prop.  Then internal singleton providers with
+per-formula fitted params cannot satisfy the contract. -/
+
+/-- **Strengthened pipeline contract — fixed AC0 parameters**.  Takes
+`ac0 : AC0Parameters` as a parameter of the Prop itself (not as a
+per-formula input).  This eliminates the loophole exploited by
+`formulaSemanticMultiSwitchingProvider_internal`, which fits
+parameters to each formula's truth-table DNF size.
+
+Legitimate AC0-multi-switching providers uniform-over-formulas (as in
+actual AC0 lower-bound literature) DO have fixed parameters, so this
+restriction aligns with mathematical reality.
+
+Session 67 provides this strengthening as a CONTRACT shape; an
+in-project regression showing `internal_provider`-derived AC0 params
+CANNOT satisfy it uniformly would be the next step. -/
+def FormulaSupportBoundsPartial_fromPipeline_fixedParams
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (_sizeBound : Nat → Nat) : Prop :=
+  ∀ {p : GapPartialMCSPParams}
+    (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p)
+    (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+    (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let solver := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive := ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)) →
+    rFacts.alive.card ≤
+      Facts.LocalityLift.polylogBudget
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+      Facts.LocalityLift.LocalCircuitSmallEnough
+        { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+          , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+              * rFacts.alive.card.succ
+          , ℓ := rFacts.alive.card
+          , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+      rFacts.alive.card ≤
+        Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4
+
+/-- **Why this is stronger than the previous `_fromPipeline`**:
+`FormulaSupportBoundsPartial_fromPipeline` quantifies over `ac0` PER
+invocation — so a provider that fits ac0 to each formula (like the
+internal singleton provider) satisfies it trivially.
+
+`FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sizeBound`
+fixes `ac0` as a Prop parameter.  A provider must use the SAME
+`ac0` for every formula it's applied to — matching the uniform-over-
+formulas nature of actual AC0 lower-bound arguments.
+
+The internal singleton provider CANNOT synthesize a uniform `ac0`
+fitting every formula, because truth-table DNF sizes vary across
+formulas.  Thus Probe 7's ex-falso route is blocked for this
+strengthened predicate.
+
+**Caveat**: this is a SYNTACTIC strengthening.  A full proof that the
+predicate is actually consistent (not just harder to refute via the
+internal provider) would require showing that no provider AT ALL
+can satisfy it for truth-table hardwired formulas, which depends on
+formal AC0 lower bounds not currently in the project. -/
+theorem formulaSupportBoundsPartial_fromPipeline_fixedParams_of_old
+    (ac0 : ThirdPartyFacts.AC0Parameters) (sizeBound : Nat → Nat)
+    (hBounds : FormulaSupportRestrictionBoundsPartial) :
+    FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sizeBound :=
+  fun _F _hsame _hAC0 _hMSWit hFormula _hSem => hBounds hFormula
+
+/-! ### Migration Step 2 scaffolding — pipeline-aware structured provider
+
+`StructuredLocalityProviderPartial` (in `Facts_Magnification_Partial.lean`)
+quantifies over every `PpolyFormula` witness.  The truth-table-hardwired
+witness at `partialInputLen p` flows through that universal and into
+the OPS-trigger contradiction (`noSmallLocalCircuitSolver_partial_v2`),
+making the provider ex-falso when instantiated on such a witness.
+
+`StructuredLocalityProviderPartial_fromPipeline` below adds the same
+AC0-provenance gate as `FormulaSupportBoundsPartial_fromPipeline`:
+callers must supply AC0 parameters, an AC0 family, AC0 witnesses, and
+a semantic link between the family and the extracted formula.  Truth-
+table-hardwired witnesses cannot supply a valid `hSem` (since MCSP
+is not in AC0), so they cannot instantiate this provider.
+
+**Step 2 migration path** (multi-session, substantial):
+1. This session: introduce the new provider predicate + trivial
+   `old → new` derivation.
+2. Follow-up: parallel builder
+   `structuredLocalityProviderPartial_fromPipeline_of_supportBoundsFromPipeline`
+   from the new `FormulaSupportBoundsPartial_fromPipeline`.
+3. Follow-up: parallel `asymptotic_formula_collapse_fromPipeline`
+   consuming the new provider.
+4. Follow-up: parallel `NP_not_subset_PpolyFormula_final_with_provider_fromPipeline`.
+5. Follow-up: thread through `MagnificationAssumptions` / downstream.
+6. Final: delete old provider + old predicate + their cascades.
+-/
+
+/-- Pipeline-aware structured locality provider.  Takes AC0 provenance
+as inputs alongside each `PpolyFormula` witness.  Truth-table-hardwired
+witnesses cannot supply a valid AC0 sem-link, so they cannot
+instantiate this provider. -/
+def StructuredLocalityProviderPartial_fromPipeline : Prop :=
+  ∀ (p : GapPartialMCSPParams) (δ : Rat)
+    (_hHyp : FormulaLowerBoundHypothesisPartial p δ)
+    (ac0 : ThirdPartyFacts.AC0Parameters)
+    (F : Core.Family ac0.n)
+    (hsame : ac0.n = Models.partialInputLen p)
+    (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+    (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+    (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    -- Semantic link: AC0 family contains a function agreeing with the
+    -- extracted formula (after length cast).  The provenance gate.
+    (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+      ∀ x : Core.BitVec ac0.n,
+        f x = ComplexityInterfaces.FormulaCircuit.eval c
+          (ThirdPartyFacts.castBitVec hsame x)) →
+    RestrictionLocalityPartial p
+
+/-- Trivial `old → new` direction (ex-falso old implies anything). -/
+theorem structuredLocalityProviderPartial_fromPipeline_of_old
+    (hProvider : StructuredLocalityProviderPartial) :
+    StructuredLocalityProviderPartial_fromPipeline :=
+  fun p δ hHyp _ac0 _F _hsame _hAC0 _hMSWit hFormula _hSem =>
+    hProvider p δ hHyp hFormula
+
+-- Steps 2e/2f are defined later, after the cert-provider structure and
+-- its builder are in scope (see below around "Pipeline final chain (Steps 2e-2f)").
+
+/-! ### Step 2b scaffolding — restriction certificate data, pipeline version
+
+Parallel to `FormulaRestrictionCertificateDataPartial` (defined at line
+168, currently an ex-falso producer when combined with the old
+support-bounds predicate).  This version threads AC0 provenance
+through the `restrictionData` field, matching the shape required by
+pipeline-aware consumers.
+
+**Migration note**: the builder
+`formulaRestrictionCertificateData_fromPipeline_of_supportBoundsFromPipeline`
+below takes `FormulaSupportBoundsPartial_fromPipeline` + the AC0
+provenance tuple and produces the restriction for the corresponding
+formula.  This is the direct pipeline-aware replacement for
+`formulaRestrictionCertificateData_of_supportBounds`.
+-/
+
+/-- Pipeline-aware restriction-certificate data.  `restrictionData`
+takes AC0 provenance inputs in addition to the formula witness,
+mirroring `FormulaSupportBoundsPartial_fromPipeline`'s shape. -/
+structure FormulaRestrictionCertificateDataPartial_fromPipeline where
+  restrictionData :
+    ∀ {p : GapPartialMCSPParams}
+      (ac0 : ThirdPartyFacts.AC0Parameters)
+      (F : Core.Family ac0.n)
+      (hsame : ac0.n = Models.partialInputLen p)
+      (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+      (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let solver := generalSolverOfFormula hFormula
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+        ∀ x : Core.BitVec ac0.n,
+          f x = ComplexityInterfaces.FormulaCircuit.eval c
+            (ThirdPartyFacts.castBitVec hsame x)) →
+      ∃ (r : Facts.LocalityLift.Restriction
+          (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))),
+        r.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * r.alive.card.succ
+            , ℓ := r.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+        r.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x
+
+/-- Trivial `old → new` direction for the restriction-certificate data
+structure (transports the ex-falso old certificate into the pipeline
+shape; used only for backwards-compatibility transport). -/
+noncomputable def formulaRestrictionCertificateDataPartial_fromPipeline_of_old
+    (D : FormulaRestrictionCertificateDataPartial) :
+    FormulaRestrictionCertificateDataPartial_fromPipeline where
+  restrictionData := fun _ac0 _F _hsame _hAC0 _hMSWit hFormula _hSem =>
+    D.restrictionData hFormula
 
 /--
 Extracted local-core payload for one strict formula witness.
@@ -2291,6 +2655,106 @@ noncomputable def formulaRestrictionCertificateData_of_supportBounds
     · exact hsmall
     · exact hhalf
 
+/-- **Step 2c (session 62)** — pipeline-aware builder: takes the
+provenance-restricted `FormulaSupportBoundsPartial_fromPipeline` and
+produces the matching pipeline-aware restriction certificate data.
+
+The body replicates the old `formulaRestrictionCertificateData_of_supportBounds`
+verbatim, except the bounds are obtained by applying `hBoundsP` to the
+AC0-provenance tuple the caller supplies (rather than by quantifying
+over all formula witnesses). -/
+noncomputable def formulaRestrictionCertificateData_fromPipeline_of_supportBoundsFromPipeline
+    (hBoundsP : FormulaSupportBoundsPartial_fromPipeline) :
+    FormulaRestrictionCertificateDataPartial_fromPipeline where
+  restrictionData := by
+    intro p ac0 F hsame hAC0P hMSWitP hFormula _solverLet _wfLet _cLet hSem
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+      Classical.choose hFormula
+    let c := wf.family (Models.partialInputLen p)
+    let alive : Finset (Fin (Models.partialInputLen p)) :=
+      ComplexityInterfaces.FormulaCircuit.support c
+    let rPartial : Facts.LocalityLift.Restriction (Models.partialInputLen p) :=
+      Facts.LocalityLift.Restriction.ofVector alive (fun _ => false)
+    let hlen :
+      Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) =
+        Models.partialInputLen p :=
+      ThirdPartyFacts.inputLen_toFactsPartial p
+    let rFacts :
+      Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      ThirdPartyFacts.castRestriction hlen.symm rPartial
+    have hB :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+          Facts.LocalityLift.LocalCircuitSmallEnough
+            { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+              , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                  * rFacts.alive.card.succ
+              , ℓ := rFacts.alive.card
+              , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+          rFacts.alive.card ≤
+            Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := by
+      simpa [solver, wf, c, alive, rPartial, hlen, rFacts] using
+        hBoundsP (p := p) ac0 F hsame hAC0P hMSWitP hFormula hSem
+    have hpoly :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) := hB.1
+    have hsmall :
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * rFacts.alive.card.succ
+            , ℓ := rFacts.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } := hB.2.1
+    have hhalf :
+        rFacts.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 := hB.2.2
+    have hstablePartial :
+        ∀ x : Core.BitVec (Models.partialInputLen p),
+          solver.decide (rPartial.apply x) = solver.decide x := by
+      intro x
+      change
+        ComplexityInterfaces.FormulaCircuit.eval c (rPartial.apply x) =
+          ComplexityInterfaces.FormulaCircuit.eval c x
+      apply ComplexityInterfaces.FormulaCircuit.eval_eq_of_eq_on_support
+      intro i hi
+      exact Facts.LocalityLift.Restriction.apply_alive rPartial x hi
+    have hstableFacts :
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (rFacts.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+      have hstableCast :
+          ∀ x0 : Core.BitVec (Models.partialInputLen p),
+            ThirdPartyFacts.solverDecideFacts (p := p) solver
+                (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0)) =
+              ThirdPartyFacts.solverDecideFacts (p := p) solver
+                (ThirdPartyFacts.castBitVec hlen.symm x0) := by
+        intro x0
+        change
+          solver.decide
+              (ThirdPartyFacts.castBitVec hlen
+                (ThirdPartyFacts.castBitVec hlen.symm (rPartial.apply x0))) =
+            solver.decide
+              (ThirdPartyFacts.castBitVec hlen
+                (ThirdPartyFacts.castBitVec hlen.symm x0))
+        simpa [ThirdPartyFacts.castBitVec_castBitVec_symm] using hstablePartial x0
+      have hstableRaw :=
+        ThirdPartyFacts.stable_of_stable_cast
+          (h := hlen.symm)
+          (decide := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+          (r := rPartial)
+          hstableCast
+      intro x
+      simpa [rFacts] using hstableRaw x
+    refine ⟨rFacts, ?_, ?_, ?_, hstableFacts⟩
+    · exact hpoly
+    · exact hsmall
+    · exact hhalf
+
 /-- Default-availability flag for restriction-level certificate data. -/
 def hasDefaultFormulaRestrictionCertificateDataPartial : Prop :=
   Nonempty FormulaRestrictionCertificateDataPartial
@@ -2417,6 +2881,161 @@ noncomputable def formulaCertificateProvider_of_restrictionData
         hsmall
         hhalf
         hstable
+
+/-! ### Pipeline-aware cert provider structure + builder (Step 2d)
+
+Mirrors `FormulaCertificateProviderPartial` with AC0 provenance threaded
+through each `cert` call.  The builder from pipeline cert-data takes
+the same body as the old `_of_restrictionData` builder with the
+restriction-data extraction adapted to the new signature. -/
+
+/-- Pipeline-aware formula-certificate provider.  Each `cert` call
+takes AC0 provenance inputs along with the formula witness. -/
+structure FormulaCertificateProviderPartial_fromPipeline where
+  cert :
+    ∀ {p : GapPartialMCSPParams}
+      (ac0 : ThirdPartyFacts.AC0Parameters)
+      (F : Core.Family ac0.n)
+      (hsame : ac0.n = Models.partialInputLen p)
+      (_hAC0 : ThirdPartyFacts.AC0FamilyWitnessProp ac0 F)
+      (_hMSWit : Nonempty (ThirdPartyFacts.AC0MultiSwitchingWitness ac0 F))
+      (hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p)),
+      let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+      let wf : ComplexityInterfaces.InPpolyFormula (gapPartialMCSP_Language p) :=
+        Classical.choose hFormula
+      let c := wf.family (Models.partialInputLen p)
+      (∃ f : Core.BitVec ac0.n → Bool, f ∈ F ∧
+        ∀ x : Core.BitVec ac0.n,
+          f x = ComplexityInterfaces.FormulaCircuit.eval c
+            (ThirdPartyFacts.castBitVec hsame x)) →
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (ThirdPartyFacts.solverDecideFacts (p := p) solver)
+
+/-- Pipeline-aware builder: take pipeline restriction-cert-data, produce
+pipeline formula-certificate provider.  Body replicates
+`formulaCertificateProvider_of_restrictionData` with the extra
+AC0-provenance arguments threaded through the initial `hData`
+extraction. -/
+noncomputable def formulaCertificateProvider_fromPipeline_of_restrictionData_fromPipeline
+    (D : FormulaRestrictionCertificateDataPartial_fromPipeline) :
+    FormulaCertificateProviderPartial_fromPipeline where
+  cert := by
+    intro p ac0 F hsame hAC0P hMSWitP hFormula _solverLet _wfLet _cLet hSem
+    let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+    have hData :
+        ∃ (r : Facts.LocalityLift.Restriction
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p))),
+          r.alive.card ≤
+            Facts.LocalityLift.polylogBudget
+              (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) ∧
+          Facts.LocalityLift.LocalCircuitSmallEnough
+            { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+              , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                  * r.alive.card.succ
+              , ℓ := r.alive.card
+              , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } ∧
+          r.alive.card ≤
+            Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 ∧
+          ∀ x : Facts.LocalityLift.BitVec
+              (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+            ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+              ThirdPartyFacts.solverDecideFacts (p := p) solver x := by
+      simpa [solver] using D.restrictionData (p := p) ac0 F hsame hAC0P hMSWitP hFormula hSem
+    let r : Facts.LocalityLift.Restriction
+        (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      Classical.choose hData
+    have hDataSpec := Classical.choose_spec hData
+    have hpoly :
+        r.alive.card ≤
+          Facts.LocalityLift.polylogBudget
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)) :=
+      hDataSpec.1
+    have hsmall :
+        Facts.LocalityLift.LocalCircuitSmallEnough
+          { n := Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)
+            , M := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.size
+                * r.alive.card.succ
+            , ℓ := r.alive.card
+            , depth := (ThirdPartyFacts.toFactsGeneralSolverPartial solver).params.depth } :=
+      hDataSpec.2.1
+    have hhalf :
+        r.alive.card ≤
+          Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p) / 4 :=
+      hDataSpec.2.2.1
+    have hstable :
+        ∀ x : Facts.LocalityLift.BitVec
+            (Facts.LocalityLift.inputLen (ThirdPartyFacts.toFactsParamsPartial p)),
+          ThirdPartyFacts.solverDecideFacts (p := p) solver (r.apply x) =
+            ThirdPartyFacts.solverDecideFacts (p := p) solver x :=
+      hDataSpec.2.2.2
+    exact
+      Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.ofRestriction
+        (p := ThirdPartyFacts.toFactsParamsPartial p)
+        (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+        (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)
+        (restriction := r)
+        hpoly
+        hsmall
+        hhalf
+        hstable
+
+/-! ### Pipeline final chain (Steps 2e-2f) -/
+
+/-- **Step 2e**: pipeline-aware constructor from the pipeline
+formula-certificate provider to the pipeline structured locality
+provider.  Body parallels `structuredLocalityProviderPartial_of_engine`:
+extract cert for the specific (ac0, F, hSem) tuple, wrap in a
+ShrinkageCertificate.Provider, infer the half-bound typeclass, run
+`stableRestriction_of_certificate` and `locality_lift_partial`, return
+the resulting T + loc. -/
+noncomputable def structuredLocalityProviderPartial_fromPipeline_of_formulaCertificate_fromPipeline
+    (hCert : FormulaCertificateProviderPartial_fromPipeline) :
+    StructuredLocalityProviderPartial_fromPipeline := by
+  intro p δ _hHyp ac0 F hsame hAC0P hMSWitP hFormula _wfLet _cLet hSem
+  let solver : SmallGeneralCircuitSolver_Partial p := generalSolverOfFormula hFormula
+  let cert :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+      (ThirdPartyFacts.solverDecideFacts (p := p) solver) :=
+    hCert.cert ac0 F hsame hAC0P hMSWitP hFormula hSem
+  letI certProvider :
+    Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.Provider
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+      (ThirdPartyFacts.solverDecideFacts (p := p) solver) := ⟨cert⟩
+  have hHalf :
+      (Facts.LocalityLift.ShrinkageWitness.ShrinkageCertificate.provided
+          (p := ThirdPartyFacts.toFactsParamsPartial p)
+          (general := ThirdPartyFacts.toFactsGeneralSolverPartial solver)
+          (generalEval := ThirdPartyFacts.solverDecideFacts (p := p) solver)).restriction.alive.card
+        ≤ Models.Partial.tableLen p.n / 2 :=
+    (inferInstance :
+      ThirdPartyFacts.HalfTableCertificateBound (p := p) solver).half_bound
+  have hStable :=
+    ThirdPartyFacts.stableRestriction_of_certificate
+      (p := p) solver hHalf
+  let hProvider :
+    Facts.LocalityLift.ShrinkageWitness.Provider
+      (p := ThirdPartyFacts.toFactsParamsPartial p)
+      (ThirdPartyFacts.toFactsGeneralSolverPartial solver) :=
+    ⟨cert.toShrinkageWitness⟩
+  obtain ⟨T, loc, hT, _hM, hℓ, _hDepth⟩ :=
+    ThirdPartyFacts.locality_lift_partial (p := p) (solver := solver)
+      (by simpa [solver] using hStable) hProvider
+  exact ⟨T, loc, hT, hℓ⟩
+
+/-- **Step 2f**: direct pipeline-aware provider from the pipeline
+support-bounds predicate.  Composition of Steps 2c, 2d, 2e. -/
+noncomputable def structuredLocalityProviderPartial_fromPipeline_of_supportBoundsFromPipeline
+    (hBoundsP : FormulaSupportBoundsPartial_fromPipeline) :
+    StructuredLocalityProviderPartial_fromPipeline :=
+  structuredLocalityProviderPartial_fromPipeline_of_formulaCertificate_fromPipeline
+    (formulaCertificateProvider_fromPipeline_of_restrictionData_fromPipeline
+      (formulaRestrictionCertificateData_fromPipeline_of_supportBoundsFromPipeline
+        hBoundsP))
 
 /--
 Uniform half-size condition for extracted strict formula witnesses at the

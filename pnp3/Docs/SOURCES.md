@@ -16,3 +16,11 @@
 - Chapman, Williams. *The Circuit-Input Game: Finding Backdoors to Circuit SAT*. ITCS, 2015.
 - Kabanets, Cai. *Circuit Minimization Problem*. ECCC TR99-045, 1999.
 - Saks, Santhanam. *Circuit Lower Bounds from NP-Hardness of MCSP under Turing Reductions*. CCC, 2020.
+- Cheraghchi, Kabanets, Lu, Myrisiotis. *Circuit Lower Bounds for MCSP from
+  Local Pseudorandom Generators*. ICALP, 2019.
+- Golovnev, Ilango, Impagliazzo, Kabanets, Kolokolova, Tal.
+  *AC^0[p] Lower Bounds Against MCSP via the Coin Problem*. ICALP, 2019.
+- Ilango. *Constant Depth Formula and Partial Function Versions of MCSP are
+  Hard*. FOCS, 2020.
+- Allender, Hellerstein, McCabe, Pitassi, Saks. *Minimizing DNF formulas and
+  AC^0 circuits given a truth table*. SIAM Journal on Computing, 2008.

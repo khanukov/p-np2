@@ -21,6 +21,10 @@ Thin DAG weak-route wrappers (active mainline surface):
 These wrappers intentionally keep the final file oriented to the weak accepted-family
 route without forcing the stronger restriction-provider contracts as the only
 frontier.
+
+They are still optional sufficient routes.  The public closure port remains
+`ResearchGapWitness`, so a non-combinatorial proof of `NP_not_subset_PpolyDAG`
+does not have to produce `AcceptedFamilyCertificateAt` or AC0/locality data.
 -/
 
 /--

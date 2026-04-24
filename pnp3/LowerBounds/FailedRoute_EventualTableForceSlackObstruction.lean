@@ -37,6 +37,31 @@ theorem failedRoute_tableForce_slack
     F β0 hβ0 κ nIso hTable hSlack
 
 /--
+Exact audit wrapper for the historical canonical-length endpoint
+`NP_not_subset_PpolyDAG_of_tableForceSlackEventually_atCanonicalLengths`.
+
+The bridge and NP-entry assumptions are irrelevant: the source side is already
+inconsistent before they are used.
+-/
+theorem failedRoute_tableForce_slack_atCanonicalLengths
+    (F : GapSliceFamilyEventually)
+    (β0 : Rat)
+    (hβ0 : 0 < β0)
+    (κ : Nat → Rat → Nat)
+    (nIso : Rat → Nat)
+    (hTable : tableForceFamilyEventually F β0 κ nIso)
+    (hSlack :
+      ∀ n : Nat, ∀ β : Rat,
+        0 < β → β < β0 → n ≥ max F.N0 (nIso β) →
+          F.Mof n (F.Tof n β) <
+            2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β))
+    (_bridge : AsymptoticDAGLanguageBridgeEventuallyAtCanonicalLengths F)
+    (_hNP : ComplexityInterfaces.NP _bridge.L) :
+    False :=
+  failedRoute_tableForce_slack
+    F β0 hβ0 κ nIso hTable hSlack
+
+/--
 Convenience wrapper: `tableForce` is also incompatible with the `sliceConst`
 convenience global-language packaging.
 -/
@@ -47,13 +72,10 @@ theorem failedRoute_tableForce_sliceConst
     (κ : Nat → Rat → Nat)
     (nIso : Rat → Nat)
     (hTable : tableForceFamilyEventually F β0 κ nIso)
-    (hSliceConst : sliceConstFamilyEventually F)
-    (hDecodeEncode :
-      ∀ {n : Nat} (T : Models.PartialTruthTable n),
-        Models.decodePartial (Models.encodePartial T) = T) :
+    (hSliceConst : sliceConstFamilyEventually F) :
     False :=
   false_of_tableForceFamilyEventually_and_sliceConst
-    F β0 hβ0 κ nIso hTable hSliceConst hDecodeEncode
+    F β0 hβ0 κ nIso hTable hSliceConst
 
 end LowerBounds
 end Pnp3

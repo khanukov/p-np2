@@ -47,7 +47,7 @@ theorem NP_not_subset_PpolyFormula_final_with_barriers
 /--
 Final `P ≠ NP` wrapper with explicit barrier obligations.
 
-Unlike default `P_ne_NP_final` (which internalizes the inclusion side), this
+Unlike `P_ne_NP_final_dag_only` (which internalizes the inclusion side), this
 audit-facing wrapper keeps explicit DAG-track separation and explicit internal
 `P ⊆ P/poly` closure contracts.
 -/

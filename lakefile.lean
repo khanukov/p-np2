@@ -145,6 +145,22 @@ lean_lib PnP3 where
     Glob.one `Tests.UnitTests
   ]
 
+lean_lib Pnp4 where
+  srcDir := "pnp4"
+  globs := #[
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRG,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinProblem,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReduction,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pCoinLowerBound,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_LocalPRG_Transfer,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRGHardnessSpec,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG,
+    Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests
+  ]
+
 @[test_driver]
 lean_exe test where
   root := `Tests.TestDriver

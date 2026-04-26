@@ -84,10 +84,14 @@ Current theorem surface status:
   bound is fixed to the Shannon-counting value `1 - treeMCSPCountRatio`; the
   remaining companion obligation is the explicit advantage-gap arithmetic.  The
   more paper-faithful route is represented separately by
-  `AdjacentBiasMCSPThresholdSeparationFacts` plus
-  `AdjacentBiasToHalfVsFairRejectionTranslationContract`, matching the
+  `AdjacentBiasMCSPThresholdSeparationFacts`, read as a generic
+  `CoinDistinguisherFamily`, plus
+  `CoinDistinguisherToHalfVsFairTranslationContract`.  This matches the
   adjacent-bias separation and translation/rescaling shape of the published
-  proof.
+  proof: translation produces a new distinguisher, not necessarily the same
+  MCSP hard-threshold predicate.  The older
+  `AdjacentBiasToHalfVsFairRejectionTranslationContract` remains only as a
+  stronger direct-translation target.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
 - `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`

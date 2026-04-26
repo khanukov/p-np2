@@ -230,6 +230,58 @@ noncomputable def SolvesCoinProblem
   adv ≤ acceptanceGap inst A
 
 /--
+Family of arbitrary Boolean distinguishers for finite coin-problem instances.
+
+This is deliberately not tied to MCSP: translation/rescaling arguments in the
+published proof may construct a new distinguisher rather than reusing the same
+threshold predicate.
+-/
+structure CoinDistinguisherFamily where
+  sampleBits : Nat → Nat
+  lowBias : Nat → Rat
+  highBias : Nat → Rat
+  low_nonneg : ∀ n : Nat, 0 ≤ lowBias n
+  high_le_one : ∀ n : Nat, highBias n ≤ 1
+  bias_gap : ∀ n : Nat, lowBias n < highBias n
+  advantage : Nat → Rat
+  algorithm : ∀ n : Nat, BitVec (sampleBits n) → Bool
+  solves :
+    ∀ n : Nat,
+      SolvesCoinProblem
+        {
+          sampleBits := sampleBits n
+          lowBias := lowBias n
+          highBias := highBias n
+          low_nonneg := low_nonneg n
+          high_le_one := high_le_one n
+          bias_gap := bias_gap n
+        }
+        (algorithm n)
+        (advantage n)
+
+/-- The concrete coin instance solved by one slice of a distinguisher family. -/
+def CoinDistinguisherFamily.instance
+    (family : CoinDistinguisherFamily)
+    (n : Nat) :
+    CoinProblemInstance where
+  sampleBits := family.sampleBits n
+  lowBias := family.lowBias n
+  highBias := family.highBias n
+  low_nonneg := family.low_nonneg n
+  high_le_one := family.high_le_one n
+  bias_gap := family.bias_gap n
+
+/-- Read back the solved-coin certificate for one slice. -/
+theorem CoinDistinguisherFamily.solves_instance
+    (family : CoinDistinguisherFamily)
+    (n : Nat) :
+    SolvesCoinProblem
+      (family.instance n)
+      (family.algorithm n)
+      (family.advantage n) := by
+  simpa [CoinDistinguisherFamily.instance] using family.solves n
+
+/--
 Non-uniform class version of the same notion: some circuit in the class solves
 the coin problem on the given input length.
 -/

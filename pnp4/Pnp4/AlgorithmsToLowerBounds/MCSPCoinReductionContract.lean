@@ -222,12 +222,73 @@ theorem AdjacentBiasMCSPThresholdSeparationFacts.toSolvesCoin
     (facts.advantage_gap n)
 
 /--
-Explicit translation contract from a paper-style adjacent-bias MCSP separator
-to the half-vs-fair corrected-polarity rejection profile.
+Read adjacent-bias MCSP threshold separation as a generic coin-distinguisher
+family.  This is the faithful interface for later translation steps: the
+translator may construct a new distinguisher instead of preserving this exact
+MCSP threshold predicate.
+-/
+noncomputable def CoinDistinguisherFamily.of_adjacentBiasMCSP
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts) :
+    CoinDistinguisherFamily where
+  sampleBits := fun n => Pnp3.Models.Partial.tableLen n
+  lowBias := facts.qLow
+  highBias := facts.qHigh
+  low_nonneg := facts.qLow_nonneg
+  high_le_one := facts.qHigh_le_one
+  bias_gap := facts.qLow_lt_qHigh
+  advantage := facts.advantage
+  algorithm := fun n => exactTreeMCSPThresholdHardDecision n (facts.threshold n)
+  solves := fun n => facts.toSolvesCoin n
 
-This is intentionally a contract: it represents the translation/rescaling
-argument from the published proof, rather than pretending the stronger direct
-half-vs-fair biased-mass statement has been proved.
+/--
+Paper-style translation contract from an arbitrary source coin distinguisher to
+the half-vs-fair coin formulation.
+
+The translated algorithm is intentionally a new Boolean function: the
+published masking/averaging argument constructs a new deterministic
+distinguisher from the old one, rather than proving that the same predicate
+works on the target biases.
+-/
+structure CoinDistinguisherToHalfVsFairTranslationContract
+    (source : CoinDistinguisherFamily)
+    (hardness : HalfVsFairTruthTableCoinHardness) where
+  translatedAlgorithm :
+    ∀ n : Nat, BitVec (hardness.instance n).sampleBits → Bool
+  solvesTarget :
+    ∀ n : Nat,
+      SolvesCoinProblem
+        (hardness.instance n)
+        (translatedAlgorithm n)
+        (hardness.advantage n)
+
+/-- Read the solved half-vs-fair coin certificate from a translation contract. -/
+theorem CoinDistinguisherToHalfVsFairTranslationContract.solvesCoin
+    {source : CoinDistinguisherFamily}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (translation :
+      CoinDistinguisherToHalfVsFairTranslationContract source hardness)
+    (n : Nat) :
+    SolvesCoinProblem
+      (hardness.instance n)
+      (translation.translatedAlgorithm n)
+      (hardness.advantage n) :=
+  translation.solvesTarget n
+
+/-- Adjacent-bias specialization of the generic half-vs-fair translation contract. -/
+abbrev AdjacentBiasToHalfVsFairCoinSolverTranslationContract
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (hardness : HalfVsFairTruthTableCoinHardness) : Type :=
+  CoinDistinguisherToHalfVsFairTranslationContract
+    (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+    hardness
+
+/--
+Strong direct translation target.
+
+This asks the same MCSP hard-threshold predicate to satisfy the half-vs-fair
+acceptance bounds.  That is stronger than the published translation argument,
+which generally constructs a translated distinguisher/circuit by randomized
+masking and averaging.
 -/
 structure AdjacentBiasToHalfVsFairRejectionTranslationContract
     (facts : AdjacentBiasMCSPThresholdSeparationFacts)

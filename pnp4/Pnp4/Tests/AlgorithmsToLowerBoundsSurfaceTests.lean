@@ -542,6 +542,59 @@ def check_adjacent_bias_mcsp_threshold_separation_solves_coin
       (facts.advantage n) :=
   facts.toSolvesCoin n
 
+def check_coin_distinguisher_family_instance
+    (family : CoinDistinguisherFamily)
+    (n : Nat) :
+    CoinProblemInstance :=
+  family.instance n
+
+def check_coin_distinguisher_family_solves_instance
+    (family : CoinDistinguisherFamily)
+    (n : Nat) :
+    SolvesCoinProblem
+      (family.instance n)
+      (family.algorithm n)
+      (family.advantage n) :=
+  family.solves_instance n
+
+noncomputable def check_coin_distinguisher_family_of_adjacentBiasMCSP
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts) :
+    CoinDistinguisherFamily :=
+  CoinDistinguisherFamily.of_adjacentBiasMCSP facts
+
+noncomputable def check_coin_distinguisher_family_of_adjacentBiasMCSP_solves
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (n : Nat) :
+    SolvesCoinProblem
+      ((CoinDistinguisherFamily.of_adjacentBiasMCSP facts).instance n)
+      ((CoinDistinguisherFamily.of_adjacentBiasMCSP facts).algorithm n)
+      ((CoinDistinguisherFamily.of_adjacentBiasMCSP facts).advantage n) :=
+  (CoinDistinguisherFamily.of_adjacentBiasMCSP facts).solves_instance n
+
+def check_coin_distinguisher_to_half_vs_fair_translation_contract
+    (source : CoinDistinguisherFamily)
+    (hardness : HalfVsFairTruthTableCoinHardness) :
+    Type :=
+  CoinDistinguisherToHalfVsFairTranslationContract source hardness
+
+def check_coin_distinguisher_to_half_vs_fair_translation_solves
+    {source : CoinDistinguisherFamily}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (translation :
+      CoinDistinguisherToHalfVsFairTranslationContract source hardness)
+    (n : Nat) :
+    SolvesCoinProblem
+      (hardness.instance n)
+      (translation.translatedAlgorithm n)
+      (hardness.advantage n) :=
+  translation.solvesCoin n
+
+noncomputable def check_adjacent_bias_to_half_vs_fair_coin_solver_translation_contract
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (hardness : HalfVsFairTruthTableCoinHardness) :
+    Type :=
+  AdjacentBiasToHalfVsFairCoinSolverTranslationContract facts hardness
+
 def check_adjacent_bias_to_half_vs_fair_rejection_translation_contract
     (facts : AdjacentBiasMCSPThresholdSeparationFacts)
     (hardness : HalfVsFairTruthTableCoinHardness) :
@@ -1434,7 +1487,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionProfile.hard_solvesCoin
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_treeMCSPPredicateBiasedLower_and_fairCounting
+#print axioms AlgorithmsToLowerBounds.CoinDistinguisherFamily.solves_instance
 #print axioms AlgorithmsToLowerBounds.AdjacentBiasMCSPThresholdSeparationFacts.toSolvesCoin
+#print axioms AlgorithmsToLowerBounds.CoinDistinguisherFamily.of_adjacentBiasMCSP
+#print axioms AlgorithmsToLowerBounds.CoinDistinguisherToHalfVsFairTranslationContract.solvesCoin
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_adjacentBiasSeparation_and_translation
 #print axioms AlgorithmsToLowerBounds.treeMCSPCountRatio_le_one_sub_self_fairLower
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_biasedLowComplexityMassFacts

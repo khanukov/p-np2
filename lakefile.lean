@@ -152,6 +152,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.AlgorithmsToLowerBounds.Growth,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.AsymptoticSizeLowerBound,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRG,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinProblem,

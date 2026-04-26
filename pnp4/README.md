@@ -36,10 +36,10 @@ Next progress target:
    transfer, not as a `PpolyFormula` asymptotic source.  The current
    `N^{2-o(1)}` envelope cannot beat every polynomial-size formula family.
 2. Use the `AC^0[p]` coin route through the weaker normalized contract
-   `QuasiPolyLower N = N ^ log2 N`.  The generic bridge from this lower bound to
-   no polynomial-size fixed-depth `AC^0[p]` families is now unconditional; the
-   next source theorem is the published coin/MCSP lower-bound contract in this
-   quasi-polynomial form.
+   `QuasiPolyLower N = N ^ log2 N`.  The pointwise and asymptotic bridges from
+   this lower bound to no polynomial-size fixed-depth `AC^0[p]` families are now
+   unconditional; the next source theorem is the published coin/MCSP lower-bound
+   contract in asymptotic quasi-polynomial form.
 3. Keep the final `PpolyDAG` bridge frozen until an explicit `NP` language lower
    bound against `PpolyDAG` is available.
 
@@ -85,6 +85,12 @@ Current theorem surface status:
   deriving `¬ InAC0p` from depthwise quasi-polynomial lower bounds.  The bridge
   is unconditional; the quasi-polynomial lower-bound contract remains the
   external published input.
+- `AsymptoticSizeLowerBound.lean`: eventual lower-bound interface matching
+  published "for sufficiently large input length" theorem statements, plus the
+  generic bridge to exclusion of polynomial-size non-uniform families.
+- `AC0pAsymptoticBridge.lean`: fixed-depth `AC0[p]` specialization for eventual
+  quasi-polynomial lower bounds and the corresponding asymptotic published
+  contract shape.
 - `LocalPRG.lean`: truth-table local-PRG surface with easy-image and
   pseudorandomness interfaces against size-bounded circuit classes.
 - `MCSP_LocalPRG_Transfer.lean`: proved Shannon-counting upper bound for

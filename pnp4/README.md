@@ -79,9 +79,15 @@ Current theorem surface status:
   direction for the half-vs-fair MCSP-side reduction.  The current
   source-facing constructor exposes the remaining biased/easy source theorem as
   `HalfVsFairBiasedLowComplexityMassFacts`: low-bias tables are low-complexity
-  with high probability.  The fair-side lower bound is fixed to the
-  Shannon-counting value `1 - treeMCSPCountRatio`; the remaining companion
-  obligation is the explicit advantage-gap arithmetic.
+  with high probability.  This is a strong direct half-vs-fair route, kept
+  explicit rather than hidden inside the final contract.  The fair-side lower
+  bound is fixed to the Shannon-counting value `1 - treeMCSPCountRatio`; the
+  remaining companion obligation is the explicit advantage-gap arithmetic.  The
+  more paper-faithful route is represented separately by
+  `AdjacentBiasMCSPThresholdSeparationFacts` plus
+  `AdjacentBiasToHalfVsFairRejectionTranslationContract`, matching the
+  adjacent-bias separation and translation/rescaling shape of the published
+  proof.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
 - `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`

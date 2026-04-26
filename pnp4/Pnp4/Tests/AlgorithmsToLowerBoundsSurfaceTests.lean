@@ -527,6 +527,37 @@ def check_half_vs_fair_biased_low_complexity_mass_facts
   lowAcceptanceUpper := lowAcceptanceUpper
   low_lowComplexity_mass_ge := low_lowComplexity_mass_ge
 
+def check_adjacent_bias_mcsp_threshold_separation_instance
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (n : Nat) :
+    CoinProblemInstance :=
+  facts.instance n
+
+def check_adjacent_bias_mcsp_threshold_separation_solves_coin
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (n : Nat) :
+    SolvesCoinProblem
+      (facts.instance n)
+      (exactTreeMCSPThresholdHardDecision n (facts.threshold n))
+      (facts.advantage n) :=
+  facts.toSolvesCoin n
+
+def check_adjacent_bias_to_half_vs_fair_rejection_translation_contract
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (hardness : HalfVsFairTruthTableCoinHardness) :
+    Type :=
+  AdjacentBiasToHalfVsFairRejectionTranslationContract facts hardness
+
+def check_half_vs_fair_mcsp_coin_rejection_contract_of_adjacentBiasSeparation_and_translation
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (translation :
+      AdjacentBiasToHalfVsFairRejectionTranslationContract facts hardness) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_adjacentBiasSeparation_and_translation
+    facts
+    translation
+
 def check_treeMCSPCountRatio_le_one_sub_self_fairLower
     (n threshold : Nat) :
     treeMCSPCountRatio n threshold ≤
@@ -1403,6 +1434,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionProfile.hard_solvesCoin
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_treeMCSPPredicateBiasedLower_and_fairCounting
+#print axioms AlgorithmsToLowerBounds.AdjacentBiasMCSPThresholdSeparationFacts.toSolvesCoin
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_adjacentBiasSeparation_and_translation
 #print axioms AlgorithmsToLowerBounds.treeMCSPCountRatio_le_one_sub_self_fairLower
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_biasedLowComplexityMassFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.hard_solvesCoin

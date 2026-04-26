@@ -157,6 +157,98 @@ structure HalfVsFairBiasedLowComplexityMassFacts
           (treeMCSPPredicateDecision n (threshold n))
 
 /--
+Published-proof-facing adjacent-bias MCSP separation source.
+
+This captures the paper-style middle layer before translating back to the
+half-vs-fair coin formulation: for each truth-table slice, a hard-table MCSP
+threshold separates two neighboring product biases `qLow n < qHigh n`.
+-/
+structure AdjacentBiasMCSPThresholdSeparationFacts where
+  qLow : Nat → Rat
+  qHigh : Nat → Rat
+  qLow_nonneg : ∀ n : Nat, 0 ≤ qLow n
+  qHigh_le_one : ∀ n : Nat, qHigh n ≤ 1
+  qLow_lt_qHigh : ∀ n : Nat, qLow n < qHigh n
+  advantage : Nat → Rat
+  threshold : Nat → Nat
+  lowHardAcceptanceUpper : Nat → Rat
+  highHardAcceptanceLower : Nat → Rat
+  low_hard_acceptance_le :
+    ∀ n : Nat,
+      acceptanceProbability (qLow n)
+          (exactTreeMCSPThresholdHardDecision n (threshold n)) ≤
+        lowHardAcceptanceUpper n
+  high_hard_acceptance_ge :
+    ∀ n : Nat,
+      highHardAcceptanceLower n ≤
+        acceptanceProbability (qHigh n)
+          (exactTreeMCSPThresholdHardDecision n (threshold n))
+  advantage_gap :
+    ∀ n : Nat,
+      advantage n + lowHardAcceptanceUpper n ≤ highHardAcceptanceLower n
+
+/-- Coin instance associated with one adjacent-bias MCSP separation slice. -/
+def AdjacentBiasMCSPThresholdSeparationFacts.instance
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (n : Nat) :
+    CoinProblemInstance :=
+  truthTableCoinInstance
+    n
+    (facts.qLow n)
+    (facts.qHigh n)
+    (facts.qLow_nonneg n)
+    (facts.qHigh_le_one n)
+    (facts.qLow_lt_qHigh n)
+
+/--
+The adjacent-bias separation facts mechanically solve their own adjacent-bias
+coin instance.
+-/
+theorem AdjacentBiasMCSPThresholdSeparationFacts.toSolvesCoin
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (n : Nat) :
+    SolvesCoinProblem
+      (facts.instance n)
+      (exactTreeMCSPThresholdHardDecision n (facts.threshold n))
+      (facts.advantage n) := by
+  exact solvesCoinProblem_of_acceptanceProbability_bounds
+    (inst := facts.instance n)
+    (A := exactTreeMCSPThresholdHardDecision n (facts.threshold n))
+    (adv := facts.advantage n)
+    (lowAcceptanceUpper := facts.lowHardAcceptanceUpper n)
+    (highAcceptanceLower := facts.highHardAcceptanceLower n)
+    (facts.low_hard_acceptance_le n)
+    (facts.high_hard_acceptance_ge n)
+    (facts.advantage_gap n)
+
+/--
+Explicit translation contract from a paper-style adjacent-bias MCSP separator
+to the half-vs-fair corrected-polarity rejection profile.
+
+This is intentionally a contract: it represents the translation/rescaling
+argument from the published proof, rather than pretending the stronger direct
+half-vs-fair biased-mass statement has been proved.
+-/
+structure AdjacentBiasToHalfVsFairRejectionTranslationContract
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (hardness : HalfVsFairTruthTableCoinHardness) where
+  lowAcceptanceUpper : Nat → Rat
+  fairAcceptanceLower : Nat → Rat
+  low_rejection_acceptance_le :
+    ∀ n : Nat,
+      acceptanceProbability (hardness.instance n).lowBias
+          (exactTreeMCSPThresholdHardDecision n (facts.threshold n)) ≤
+        lowAcceptanceUpper n
+  fair_rejection_acceptance_ge :
+    ∀ n : Nat,
+      fairAcceptanceLower n ≤
+        acceptanceProbability (hardness.instance n).highBias
+          (exactTreeMCSPThresholdHardDecision n (facts.threshold n))
+  advantage_gap :
+    ∀ n : Nat,
+      hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n
+
+/--
 Named constructor for the MCSP-side half-vs-fair reduction contract from the
 three distribution facts that remain after the exact threshold predicate is
 fixed.
@@ -503,6 +595,24 @@ noncomputable def HalfVsFairMCSPCoinRejectionContract.of_biasedLowComplexityMass
     facts.low_lowComplexity_mass_ge
     (fun n => treeMCSPCountRatio_le_one_sub_self_fairLower n (facts.threshold n))
     advantage_gap
+
+/--
+Build the corrected-polarity half-vs-fair rejection contract via the
+paper-faithful adjacent-bias source plus an explicit translation contract.
+-/
+def HalfVsFairMCSPCoinRejectionContract.of_adjacentBiasSeparation_and_translation
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (translation :
+      AdjacentBiasToHalfVsFairRejectionTranslationContract facts hardness) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_distributionFacts
+    facts.threshold
+    translation.lowAcceptanceUpper
+    translation.fairAcceptanceLower
+    translation.low_rejection_acceptance_le
+    translation.fair_rejection_acceptance_ge
+    translation.advantage_gap
 
 /--
 Recover the original monolithic coin-solving statement from the decomposed

@@ -229,6 +229,13 @@ def check_acceptanceProbability_mono
     acceptanceProbability bias A ≤ acceptanceProbability bias B :=
   acceptanceProbability_mono hBias_nonneg hBias_le_one hAB
 
+def check_acceptanceProbability_fair_eq_bitVecAcceptanceProbability
+    {m : Nat}
+    (A : AlgorithmsToLowerBounds.BitVec m → Bool) :
+    acceptanceProbability ((1 : Rat) / 2) A =
+      bitVecAcceptanceProbability A :=
+  acceptanceProbability_fair_eq_bitVecAcceptanceProbability A
+
 def check_mcspThresholdOracle_accepts_of_treeMCSPPredicate
     {n : Nat}
     (oracle : MCSPThresholdOracle n)
@@ -374,6 +381,15 @@ def check_half_vs_fair_mcsp_coin_reduction_contract_of_treeMCSPPredicateMassFact
     low_mass_le
     fair_mass_ge
     advantage_gap
+
+def check_halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (n threshold : Nat) :
+    acceptanceProbability (hardness.instance n).highBias
+        (treeMCSPPredicateDecision n threshold) ≤
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+        (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) :=
+  halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio n threshold
 
 def check_half_vs_fair_mcsp_coin_reduction_contract_solves
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -660,6 +676,26 @@ def check_treeMCSPPredicateDecision_spec
     treeMCSPPredicateDecision n threshold tt = true ↔
       treeMCSPPredicate n threshold tt :=
   treeMCSPPredicateDecision_spec tt
+
+noncomputable def check_treeMCSPPredicateOracle
+    (n threshold : Nat) :
+    MCSPThresholdOracle n :=
+  treeMCSPPredicateOracle n threshold
+
+def check_uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+    (n threshold : Nat) :
+    uniformTruthTableAcceptanceProbability (treeMCSPPredicateDecision n threshold) ≤
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+        (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) :=
+  uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+    n threshold
+
+def check_fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+    (n threshold : Nat) :
+    acceptanceProbability ((1 : Rat) / 2) (treeMCSPPredicateDecision n threshold) ≤
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+        (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) :=
+  fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio n threshold
 
 def check_exact_tree_mcsp_threshold_decision_rejects
     {n threshold : Nat}
@@ -1089,6 +1125,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_lowBias
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_highBias
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_fair_eq_bitVecAcceptanceProbability
 #print axioms AlgorithmsToLowerBounds.solvesCoinProblem_of_acceptanceProbability_bounds
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate
@@ -1098,6 +1135,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_distributionFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
 #print axioms AlgorithmsToLowerBounds.treeMCSPPredicateDecision_spec
+#print axioms AlgorithmsToLowerBounds.uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+#print axioms AlgorithmsToLowerBounds.fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+#print axioms AlgorithmsToLowerBounds.halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision

@@ -71,7 +71,9 @@ Current theorem surface status:
   reduction contract, fixing a threshold schedule and the exact MCSP slice
   coin-solving obligation via separate low-acceptance, fair-acceptance, and
   advantage-gap certificates, with a named constructor from those distribution
-  facts and a lower-level constructor from `treeMCSPPredicate` mass facts.
+  facts, a lower-level constructor from `treeMCSPPredicate` mass facts, and the
+  explicit polarity fact that the half-vs-fair `highBias` side is fair bias
+  `1 / 2`.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
 - `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`
@@ -105,7 +107,8 @@ Current theorem surface status:
   uniform acceptance of exact tree-MCSP threshold oracles and the resulting
   local-PRG transfer contradiction theorem surface, plus exact tree-MCSP
   threshold accept/reject facts and probability lifts from predicate mass to
-  exact threshold-decision acceptance.
+  exact threshold-decision acceptance.  It also proves the fair-side
+  Shannon-counting upper bound for `treeMCSPPredicateDecision`.
 - `LocalPRGHardnessSpec.lean`: paper-facing published-route layer packaging
   `LocalPRGHardnessSpec`, target family models, and exact-threshold exclusion
   theorems for published local-PRG regimes.

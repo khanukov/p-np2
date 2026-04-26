@@ -8,6 +8,61 @@ import Mathlib.Tactic
 namespace Pnp4
 namespace AlgorithmsToLowerBounds
 
+/-- At fair bias, every bit has weight `1 / 2`. -/
+theorem bernoulliBitWeight_fair
+    (b : Bool) :
+    bernoulliBitWeight ((1 : Rat) / 2) b = (1 : Rat) / 2 := by
+  cases b <;> norm_num [bernoulliBitWeight]
+
+/-- Under fair bias, every bit-vector has uniform product weight `2^-m`. -/
+theorem productBiasWeight_fair
+    {m : Nat}
+    (x : BitVec m) :
+    productBiasWeight ((1 : Rat) / 2) x =
+      (1 : Rat) / (2 ^ m : Rat) := by
+  classical
+  calc
+    productBiasWeight ((1 : Rat) / 2) x
+        = ∏ _i : Fin m, ((1 : Rat) / 2) := by
+            unfold productBiasWeight
+            apply Finset.prod_congr rfl
+            intro i _hi
+            exact bernoulliBitWeight_fair (x i)
+    _ = ((1 : Rat) / 2) ^ m := by
+            simp
+    _ = (1 : Rat) / (2 ^ m : Rat) := by
+            rw [div_pow]
+            norm_num
+
+/--
+The product distribution with bias `1 / 2` is the uniform distribution over
+bit-vectors.
+-/
+theorem acceptanceProbability_fair_eq_bitVecAcceptanceProbability
+    {m : Nat}
+    (A : BitVec m → Bool) :
+    acceptanceProbability ((1 : Rat) / 2) A =
+      bitVecAcceptanceProbability A := by
+  classical
+  let accepted : Finset (BitVec m) :=
+    (Finset.univ : Finset (BitVec m)).filter (fun x => A x = true)
+  have hSum :
+      acceptanceProbability ((1 : Rat) / 2) A =
+        ∑ x ∈ accepted, productBiasWeight ((1 : Rat) / 2) x := by
+    unfold acceptanceProbability
+    rw [← Finset.sum_filter]
+  calc
+    acceptanceProbability ((1 : Rat) / 2) A
+        = ∑ x ∈ accepted, productBiasWeight ((1 : Rat) / 2) x := hSum
+    _ = ∑ _x ∈ accepted, (1 : Rat) / (2 ^ m : Rat) := by
+          apply Finset.sum_congr rfl
+          intro x _hx
+          exact productBiasWeight_fair x
+    _ = ((accepted.card : Rat) / (2 ^ m : Rat)) := by
+          simp [Finset.sum_const, nsmul_eq_mul, div_eq_mul_inv]
+    _ = bitVecAcceptanceProbability A := by
+          simp [bitVecAcceptanceProbability, accepted]
+
 /--
 Any truth table accepted by the proof-level tree-MCSP predicate at threshold
 `s` is one of the Shannon-counting "easy functions" of size at most `s`.
@@ -126,6 +181,40 @@ theorem treeMCSPPredicateDecision_spec
       treeMCSPPredicate n threshold tt := by
   classical
   simp [treeMCSPPredicateDecision]
+
+/-- `treeMCSPPredicateDecision` packaged as a correct threshold oracle. -/
+noncomputable def treeMCSPPredicateOracle
+    (n threshold : Nat) : MCSPThresholdOracle n where
+  threshold := threshold
+  decide := treeMCSPPredicateDecision n threshold
+  correct := treeMCSPPredicateDecision_spec
+
+/--
+Uniform Shannon-counting upper bound for the mass of low-complexity truth
+tables.
+-/
+theorem uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+    (n threshold : Nat) :
+    uniformTruthTableAcceptanceProbability (treeMCSPPredicateDecision n threshold) ≤
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+        (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) := by
+  simpa [treeMCSPPredicateOracle] using
+    uniformTruthTableAcceptanceProbability_le_countRatio_of_treeMCSPOracle
+      (treeMCSPPredicateOracle n threshold)
+
+/--
+Fair product-distribution upper bound for the mass of low-complexity truth
+tables.
+-/
+theorem fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+    (n threshold : Nat) :
+    acceptanceProbability ((1 : Rat) / 2) (treeMCSPPredicateDecision n threshold) ≤
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+        (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) := by
+  rw [acceptanceProbability_fair_eq_bitVecAcceptanceProbability]
+  exact
+    uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+      n threshold
 
 /-- The exact thresholded tree-MCSP decision accepts low-complexity tables. -/
 theorem exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate

@@ -163,6 +163,39 @@ def HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
     advantage_gap
 
 /--
+In the half-vs-fair regime, `highBias` is the fair side `1 / 2`.  Therefore the
+Shannon-counting upper bound applies directly to the `highBias` mass of
+low-tree-complexity truth tables.
+-/
+theorem halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (n threshold : Nat) :
+    acceptanceProbability (hardness.instance n).highBias
+        (treeMCSPPredicateDecision n threshold) ≤
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+        (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) := by
+  simpa [HalfVsFairTruthTableCoinHardness.instance, halfVsFairCoinInstance] using
+    fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio n threshold
+
+/--
+Convenience form: if the Shannon-counting ratio is bounded by `q`, then the
+fair-side mass of low-tree-complexity truth tables is at most `q`.
+-/
+theorem halfVsFair_highBias_treeMCSPPredicateDecision_le_of_countRatio_le
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {n threshold : Nat}
+    {q : Rat}
+    (hRatio :
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤ q) :
+    acceptanceProbability (hardness.instance n).highBias
+        (treeMCSPPredicateDecision n threshold) ≤ q :=
+  le_trans
+    (halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
+      (hardness := hardness) n threshold)
+    hRatio
+
+/--
 Recover the original monolithic coin-solving statement from the decomposed
 reduction contract.
 -/

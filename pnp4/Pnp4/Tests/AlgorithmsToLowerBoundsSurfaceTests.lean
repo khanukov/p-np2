@@ -557,10 +557,57 @@ def check_coin_distinguisher_family_solves_instance
       (family.advantage n) :=
   family.solves_instance n
 
+def check_circuit_coin_distinguisher_family_solves
+    {C : CircuitFamilyClass}
+    {family : CoinDistinguisherFamily}
+    (realized : CircuitCoinDistinguisherFamily C family)
+    (n : Nat) :
+    SolvesCoinProblem
+      (family.instance n)
+      (fun x => C.eval (realized.circuit n) x)
+      (family.advantage n) :=
+  realized.solves n
+
+def check_circuit_coin_distinguisher_family_bounded_solves
+    {C : CircuitFamilyClass}
+    {family : CoinDistinguisherFamily}
+    (realized : CircuitCoinDistinguisherFamily C family)
+    (n : Nat) :
+    BoundedClassSolvesCoinProblem
+      C
+      (family.instance n)
+      (family.advantage n)
+      (realized.sizeBound n) :=
+  realized.boundedSolves n
+
 noncomputable def check_coin_distinguisher_family_of_adjacentBiasMCSP
     (facts : AdjacentBiasMCSPThresholdSeparationFacts) :
     CoinDistinguisherFamily :=
   CoinDistinguisherFamily.of_adjacentBiasMCSP facts
+
+noncomputable def check_circuit_coin_distinguisher_family_of_adjacentBiasMCSP_circuit
+    (C : CircuitFamilyClass)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (circuit :
+      ∀ n : Nat, C.Family (Pnp3.Models.Partial.tableLen n))
+    (computes :
+      ∀ n : Nat, ∀ x : AlgorithmsToLowerBounds.BitVec (Pnp3.Models.Partial.tableLen n),
+        C.eval (circuit n) x =
+          exactTreeMCSPThresholdHardDecision n (facts.threshold n) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ n : Nat,
+        C.size (circuit n) ≤ sizeBound n) :
+    CircuitCoinDistinguisherFamily
+      C
+      (CoinDistinguisherFamily.of_adjacentBiasMCSP facts) :=
+  CircuitCoinDistinguisherFamily.of_adjacentBiasMCSP_circuit
+    C
+    facts
+    circuit
+    computes
+    sizeBound
+    size_le
 
 noncomputable def check_coin_distinguisher_family_of_adjacentBiasMCSP_solves
     (facts : AdjacentBiasMCSPThresholdSeparationFacts)
@@ -577,6 +624,13 @@ def check_coin_distinguisher_to_half_vs_fair_translation_contract
     Type :=
   CoinDistinguisherToHalfVsFairTranslationContract source hardness
 
+def check_coin_translation_preserves_class
+    (C : CircuitFamilyClass)
+    (source : CoinDistinguisherFamily)
+    (hardness : HalfVsFairTruthTableCoinHardness) :
+    Type :=
+  CoinTranslationPreservesClass C source hardness
+
 def check_coin_distinguisher_to_half_vs_fair_translation_solves
     {source : CoinDistinguisherFamily}
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -588,6 +642,37 @@ def check_coin_distinguisher_to_half_vs_fair_translation_solves
       (translation.translatedAlgorithm n)
       (hardness.advantage n) :=
   translation.solvesCoin n
+
+noncomputable def check_half_vs_fair_coin_distinguisher_family
+    (hardness : HalfVsFairTruthTableCoinHardness)
+    (A : ∀ n : Nat, AlgorithmsToLowerBounds.BitVec (hardness.instance n).sampleBits → Bool)
+    (hSolves :
+      ∀ n : Nat,
+        SolvesCoinProblem
+          (hardness.instance n)
+          (A n)
+          (hardness.advantage n)) :
+    CoinDistinguisherFamily :=
+  halfVsFairCoinDistinguisherFamily hardness A hSolves
+
+noncomputable def check_circuit_coin_distinguisher_family_translate_to_halfVsFair
+    {C : CircuitFamilyClass}
+    {source : CoinDistinguisherFamily}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (realized : CircuitCoinDistinguisherFamily C source)
+    (translation : CoinTranslationPreservesClass C source hardness) :
+    CircuitCoinDistinguisherFamily
+      C
+      (halfVsFairCoinDistinguisherFamily
+        hardness
+        (fun n x =>
+          C.eval (translation.translateCircuit n (realized.circuit n)) x)
+        (fun n =>
+          translation.solvesTarget_of_solvesSource
+            n
+            (realized.circuit n)
+            (realized.solves n))) :=
+  realized.translate_to_halfVsFair translation
 
 noncomputable def check_adjacent_bias_to_half_vs_fair_coin_solver_translation_contract
     (facts : AdjacentBiasMCSPThresholdSeparationFacts)
@@ -1488,9 +1573,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_treeMCSPPredicateBiasedLower_and_fairCounting
 #print axioms AlgorithmsToLowerBounds.CoinDistinguisherFamily.solves_instance
+#print axioms AlgorithmsToLowerBounds.CircuitCoinDistinguisherFamily.solves
+#print axioms AlgorithmsToLowerBounds.CircuitCoinDistinguisherFamily.boundedSolves
 #print axioms AlgorithmsToLowerBounds.AdjacentBiasMCSPThresholdSeparationFacts.toSolvesCoin
 #print axioms AlgorithmsToLowerBounds.CoinDistinguisherFamily.of_adjacentBiasMCSP
+#print axioms AlgorithmsToLowerBounds.CircuitCoinDistinguisherFamily.of_adjacentBiasMCSP_circuit
 #print axioms AlgorithmsToLowerBounds.CoinDistinguisherToHalfVsFairTranslationContract.solvesCoin
+#print axioms AlgorithmsToLowerBounds.halfVsFairCoinDistinguisherFamily
+#print axioms AlgorithmsToLowerBounds.CircuitCoinDistinguisherFamily.translate_to_halfVsFair
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_adjacentBiasSeparation_and_translation
 #print axioms AlgorithmsToLowerBounds.treeMCSPCountRatio_le_one_sub_self_fairLower
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_biasedLowComplexityMassFacts

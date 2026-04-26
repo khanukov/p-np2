@@ -89,7 +89,11 @@ Current theorem surface status:
   `CoinDistinguisherToHalfVsFairTranslationContract`.  This matches the
   adjacent-bias separation and translation/rescaling shape of the published
   proof: translation produces a new distinguisher, not necessarily the same
-  MCSP hard-threshold predicate.  The older
+  MCSP hard-threshold predicate.  The lower-bound-facing layer adds
+  `CircuitCoinDistinguisherFamily` and `CoinTranslationPreservesClass`, making
+  explicit the required class/size preservation: a circuit-realized source
+  distinguisher translates to a circuit-realized half-vs-fair distinguisher
+  with no larger size schedule.  The older
   `AdjacentBiasToHalfVsFairRejectionTranslationContract` remains only as a
   stronger direct-translation target.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`

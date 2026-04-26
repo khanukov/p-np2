@@ -305,6 +305,26 @@ noncomputable def BoundedClassSolvesCoinProblem
     C.size c ≤ maxSize ∧
       SolvesCoinProblem inst (fun x => C.eval c x) adv
 
+/--
+Circuit realization of a semantic coin-distinguisher family by one circuit
+family class.
+
+The semantic `CoinDistinguisherFamily` records the Boolean algorithms and their
+coin-solving facts; this structure records that those algorithms are computed
+by circuits in `C`, with an explicit per-slice size schedule.
+-/
+structure CircuitCoinDistinguisherFamily
+    (C : CircuitFamilyClass)
+    (family : CoinDistinguisherFamily) where
+  circuit : ∀ n : Nat, C.Family (family.sampleBits n)
+  computes :
+    ∀ n : Nat, ∀ x : BitVec (family.sampleBits n),
+      C.eval (circuit n) x = family.algorithm n x
+  sizeBound : Nat → Nat
+  size_le :
+    ∀ n : Nat,
+      C.size (circuit n) ≤ sizeBound n
+
 /-- A size-bounded solver is in particular an unbounded class-level solver. -/
 theorem classSolvesCoinProblem_of_bounded
     {C : CircuitFamilyClass}
@@ -373,6 +393,37 @@ theorem solvesCoinProblem_congr
     (hSolve : SolvesCoinProblem inst A adv) :
     SolvesCoinProblem inst B adv := by
   simpa [SolvesCoinProblem, acceptanceGap, hAB] using hSolve
+
+/-- A circuit realization solves each coin instance extensionally. -/
+theorem CircuitCoinDistinguisherFamily.solves
+    {C : CircuitFamilyClass}
+    {family : CoinDistinguisherFamily}
+    (realized : CircuitCoinDistinguisherFamily C family)
+    (n : Nat) :
+    SolvesCoinProblem
+      (family.instance n)
+      (fun x => C.eval (realized.circuit n) x)
+      (family.advantage n) := by
+  exact solvesCoinProblem_congr
+    (inst := family.instance n)
+    (A := family.algorithm n)
+    (B := fun x => C.eval (realized.circuit n) x)
+    (adv := family.advantage n)
+    (funext fun x => (realized.computes n x).symm)
+    (family.solves_instance n)
+
+/-- A circuit realization gives a size-bounded class solver for each slice. -/
+theorem CircuitCoinDistinguisherFamily.boundedSolves
+    {C : CircuitFamilyClass}
+    {family : CoinDistinguisherFamily}
+    (realized : CircuitCoinDistinguisherFamily C family)
+    (n : Nat) :
+    BoundedClassSolvesCoinProblem
+      C
+      (family.instance n)
+      (family.advantage n)
+      (realized.sizeBound n) := by
+  exact ⟨realized.circuit n, realized.size_le n, realized.solves n⟩
 
 /--
 A reusable probability-gap criterion for solving one finite coin-problem

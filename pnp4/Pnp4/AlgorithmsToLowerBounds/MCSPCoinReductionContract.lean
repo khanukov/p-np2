@@ -241,6 +241,32 @@ noncomputable def CoinDistinguisherFamily.of_adjacentBiasMCSP
   solves := fun n => facts.toSolvesCoin n
 
 /--
+If circuits in `C` compute the adjacent-bias MCSP hard-threshold decisions,
+then they realize the corresponding generic adjacent-bias coin-distinguisher
+family.
+-/
+noncomputable def CircuitCoinDistinguisherFamily.of_adjacentBiasMCSP_circuit
+    (C : CircuitFamilyClass)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (circuit :
+      ∀ n : Nat, C.Family (Pnp3.Models.Partial.tableLen n))
+    (computes :
+      ∀ n : Nat, ∀ x : BitVec (Pnp3.Models.Partial.tableLen n),
+        C.eval (circuit n) x =
+          exactTreeMCSPThresholdHardDecision n (facts.threshold n) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ n : Nat,
+        C.size (circuit n) ≤ sizeBound n) :
+    CircuitCoinDistinguisherFamily
+      C
+      (CoinDistinguisherFamily.of_adjacentBiasMCSP facts) where
+  circuit := circuit
+  computes := computes
+  sizeBound := sizeBound
+  size_le := size_le
+
+/--
 Paper-style translation contract from an arbitrary source coin distinguisher to
 the half-vs-fair coin formulation.
 
@@ -273,6 +299,91 @@ theorem CoinDistinguisherToHalfVsFairTranslationContract.solvesCoin
       (translation.translatedAlgorithm n)
       (hardness.advantage n) :=
   translation.solvesTarget n
+
+/--
+Class/size-preserving version of the paper-style translation.
+
+This is the lower-bound-facing form of Claim 2.4: a circuit solving the source
+coin problem can be translated into a circuit in the same class solving the
+half-vs-fair target problem, without increasing size.
+-/
+structure CoinTranslationPreservesClass
+    (C : CircuitFamilyClass)
+    (source : CoinDistinguisherFamily)
+    (target : HalfVsFairTruthTableCoinHardness) where
+  translateCircuit :
+    ∀ n : Nat,
+      C.Family (source.sampleBits n) →
+        C.Family (target.instance n).sampleBits
+  size_le :
+    ∀ n : Nat, ∀ c : C.Family (source.sampleBits n),
+      C.size (translateCircuit n c) ≤ C.size c
+  solvesTarget_of_solvesSource :
+    ∀ n : Nat,
+      ∀ c : C.Family (source.sampleBits n),
+        SolvesCoinProblem
+          (source.instance n)
+          (fun x => C.eval c x)
+          (source.advantage n) →
+        SolvesCoinProblem
+          (target.instance n)
+          (fun x => C.eval (translateCircuit n c) x)
+          (target.advantage n)
+
+/--
+Coin-distinguisher family for a half-vs-fair target, parameterized by the
+actual Boolean algorithms used on each slice.
+-/
+noncomputable def halfVsFairCoinDistinguisherFamily
+    (hardness : HalfVsFairTruthTableCoinHardness)
+    (A : ∀ n : Nat, BitVec (hardness.instance n).sampleBits → Bool)
+    (hSolves :
+      ∀ n : Nat,
+        SolvesCoinProblem
+          (hardness.instance n)
+          (A n)
+          (hardness.advantage n)) :
+    CoinDistinguisherFamily where
+  sampleBits := fun n => (hardness.instance n).sampleBits
+  lowBias := fun n => (hardness.instance n).lowBias
+  highBias := fun n => (hardness.instance n).highBias
+  low_nonneg := fun n => (hardness.instance n).low_nonneg
+  high_le_one := fun n => (hardness.instance n).high_le_one
+  bias_gap := fun n => (hardness.instance n).bias_gap
+  advantage := hardness.advantage
+  algorithm := A
+  solves := fun n => hSolves n
+
+/--
+Translate a circuit-realized source coin distinguisher through a class/size
+preserving translation contract.
+-/
+noncomputable def CircuitCoinDistinguisherFamily.translate_to_halfVsFair
+    {C : CircuitFamilyClass}
+    {source : CoinDistinguisherFamily}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (realized : CircuitCoinDistinguisherFamily C source)
+    (translation : CoinTranslationPreservesClass C source hardness) :
+    CircuitCoinDistinguisherFamily
+      C
+      (halfVsFairCoinDistinguisherFamily
+        hardness
+        (fun n x =>
+          C.eval (translation.translateCircuit n (realized.circuit n)) x)
+        (fun n =>
+          translation.solvesTarget_of_solvesSource
+            n
+            (realized.circuit n)
+            (realized.solves n))) where
+  circuit := fun n => translation.translateCircuit n (realized.circuit n)
+  computes := by
+    intro n x
+    rfl
+  sizeBound := realized.sizeBound
+  size_le := fun n =>
+    le_trans
+      (translation.size_le n (realized.circuit n))
+      (realized.size_le n)
 
 /-- Adjacent-bias specialization of the generic half-vs-fair translation contract. -/
 abbrev AdjacentBiasToHalfVsFairCoinSolverTranslationContract

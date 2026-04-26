@@ -218,6 +218,17 @@ def check_solvesCoinProblem_of_acceptanceProbability_bounds
     SolvesCoinProblem inst A adv :=
   solvesCoinProblem_of_acceptanceProbability_bounds hLow hHigh hGap
 
+def check_acceptanceProbability_mono
+    {n : Nat}
+    {bias : Rat}
+    {A B : AlgorithmsToLowerBounds.BitVec n → Bool}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    (hAB :
+      ∀ x : AlgorithmsToLowerBounds.BitVec n, A x = true → B x = true) :
+    acceptanceProbability bias A ≤ acceptanceProbability bias B :=
+  acceptanceProbability_mono hBias_nonneg hBias_le_one hAB
+
 def check_mcspThresholdOracle_accepts_of_treeMCSPPredicate
     {n : Nat}
     (oracle : MCSPThresholdOracle n)
@@ -336,6 +347,32 @@ def check_half_vs_fair_mcsp_coin_reduction_contract_of_distributionFacts
     fairAcceptanceLower
     low_acceptance_le
     fair_acceptance_ge
+    advantage_gap
+
+def check_half_vs_fair_mcsp_coin_reduction_contract_of_treeMCSPPredicateMassFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_mass_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (treeMCSPPredicateDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_mass_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (treeMCSPPredicateDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinReductionContract hardness :=
+  HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    low_mass_le
+    fair_mass_ge
     advantage_gap
 
 def check_half_vs_fair_mcsp_coin_reduction_contract_solves
@@ -612,12 +649,44 @@ def check_exact_tree_mcsp_threshold_decision_accepts
     exactTreeMCSPThresholdDecision n threshold tt = true :=
   exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate hEasy
 
+noncomputable def check_treeMCSPPredicateDecision
+    (n threshold : Nat) :
+    TruthTable n → Bool :=
+  treeMCSPPredicateDecision n threshold
+
+def check_treeMCSPPredicateDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    treeMCSPPredicateDecision n threshold tt = true ↔
+      treeMCSPPredicate n threshold tt :=
+  treeMCSPPredicateDecision_spec tt
+
 def check_exact_tree_mcsp_threshold_decision_rejects
     {n threshold : Nat}
     {tt : TruthTable n}
     (hHard : ¬ treeMCSPPredicate n threshold tt) :
     exactTreeMCSPThresholdDecision n threshold tt = false :=
   exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate hHard
+
+def check_acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
+    {n threshold : Nat}
+    {bias : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1) :
+    acceptanceProbability bias (exactTreeMCSPThresholdDecision n threshold) ≤
+      acceptanceProbability bias (treeMCSPPredicateDecision n threshold) :=
+  acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
+    hBias_nonneg hBias_le_one
+
+def check_treeMCSPPredicateDecision_le_acceptanceProbability_exactTreeMCSPThresholdDecision
+    {n threshold : Nat}
+    {bias : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1) :
+    acceptanceProbability bias (treeMCSPPredicateDecision n threshold) ≤
+      acceptanceProbability bias (exactTreeMCSPThresholdDecision n threshold) :=
+  treeMCSPPredicateDecision_le_acceptanceProbability_exactTreeMCSPThresholdDecision
+    hBias_nonneg hBias_le_one
 
 def check_uniform_truth_table_acceptance_probability_le_count_ratio_of_tree_mcsp_oracle
     {n : Nat}
@@ -1017,6 +1086,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.not_depth_d_AC0p_of_eventual_quasiPoly_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_of_depthwise_eventual_quasiPoly_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_from_asymptotic_quasiPolynomial_contract
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_lowBias
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_highBias
 #print axioms AlgorithmsToLowerBounds.solvesCoinProblem_of_acceptanceProbability_bounds
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate
@@ -1024,8 +1096,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.classSolvesCoinProblem_of_bounded
 #print axioms AlgorithmsToLowerBounds.AC0pHalfVsFairCoinLowerBoundContract.excludes_small_solver
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_distributionFacts
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
+#print axioms AlgorithmsToLowerBounds.treeMCSPPredicateDecision_spec
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
+#print axioms AlgorithmsToLowerBounds.treeMCSPPredicateDecision_le_acceptanceProbability_exactTreeMCSPThresholdDecision
 #print axioms AlgorithmsToLowerBounds.noSmallImplementedThresholdOracle_of_AC0pCoinLowerBound
 #print axioms AlgorithmsToLowerBounds.sizeLowerBound_exactTreeMCSPThresholdLanguage_of_AC0pCoinLowerBound
 #print axioms AlgorithmsToLowerBounds.MCSP_lower_bound_from_AC0pCoinLowerBound

@@ -107,6 +107,26 @@ theorem exactTreeMCSPThresholdDecision_spec
   classical
   simp [exactTreeMCSPThresholdDecision]
 
+/--
+Boolean indicator for the proof-level tree-MCSP predicate.  This gives
+probability statements a name that refers to the predicate mass rather than to
+the exact MCSP decision wrapper.
+-/
+noncomputable def treeMCSPPredicateDecision
+    (n threshold : Nat) : TruthTable n → Bool := by
+  classical
+  intro tt
+  exact decide (treeMCSPPredicate n threshold tt)
+
+/-- Specification lemma for `treeMCSPPredicateDecision`. -/
+theorem treeMCSPPredicateDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    treeMCSPPredicateDecision n threshold tt = true ↔
+      treeMCSPPredicate n threshold tt := by
+  classical
+  simp [treeMCSPPredicateDecision]
+
 /-- The exact thresholded tree-MCSP decision accepts low-complexity tables. -/
 theorem exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
     {n threshold : Nat}
@@ -126,6 +146,71 @@ theorem exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
   · cases hDecision : exactTreeMCSPThresholdDecision n threshold tt
     · rfl
     · exact (hTrue hDecision).elim
+
+/--
+Upper probability lift: acceptance by the exact threshold decision is bounded
+by the probability mass of the proof-level tree-MCSP predicate.
+-/
+theorem acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
+    {n threshold : Nat}
+    {bias : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1) :
+    acceptanceProbability bias (exactTreeMCSPThresholdDecision n threshold) ≤
+      acceptanceProbability bias (treeMCSPPredicateDecision n threshold) := by
+  exact acceptanceProbability_mono hBias_nonneg hBias_le_one (fun tt hAccept =>
+    (treeMCSPPredicateDecision_spec tt).2
+      ((exactTreeMCSPThresholdDecision_spec tt).1 hAccept))
+
+/--
+Lower probability lift: the proof-level tree-MCSP predicate mass is bounded by
+acceptance of the exact threshold decision.
+-/
+theorem treeMCSPPredicateDecision_le_acceptanceProbability_exactTreeMCSPThresholdDecision
+    {n threshold : Nat}
+    {bias : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1) :
+    acceptanceProbability bias (treeMCSPPredicateDecision n threshold) ≤
+      acceptanceProbability bias (exactTreeMCSPThresholdDecision n threshold) := by
+  exact acceptanceProbability_mono hBias_nonneg hBias_le_one (fun tt hAccept =>
+    (exactTreeMCSPThresholdDecision_spec tt).2
+      ((treeMCSPPredicateDecision_spec tt).1 hAccept))
+
+/--
+One-sided upper-bound form for consuming externally supplied mass bounds on
+low-complexity truth tables.
+-/
+theorem acceptanceProbability_exactTreeMCSPThresholdDecision_le_of_treeMCSPPredicateDecision_bound
+    {n threshold : Nat}
+    {bias q : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    (hMass :
+      acceptanceProbability bias (treeMCSPPredicateDecision n threshold) ≤ q) :
+    acceptanceProbability bias (exactTreeMCSPThresholdDecision n threshold) ≤ q :=
+  le_trans
+    (acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
+      (n := n) (threshold := threshold)
+      hBias_nonneg hBias_le_one)
+    hMass
+
+/--
+One-sided lower-bound form for consuming externally supplied mass lower bounds
+on low-complexity truth tables.
+-/
+theorem treeMCSPPredicateDecision_bound_le_acceptanceProbability_exactTreeMCSPThresholdDecision
+    {n threshold : Nat}
+    {bias q : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    (hMass :
+      q ≤ acceptanceProbability bias (treeMCSPPredicateDecision n threshold)) :
+    q ≤ acceptanceProbability bias (exactTreeMCSPThresholdDecision n threshold) :=
+  le_trans hMass
+    (treeMCSPPredicateDecision_le_acceptanceProbability_exactTreeMCSPThresholdDecision
+      (n := n) (threshold := threshold)
+      hBias_nonneg hBias_le_one)
 
 /--
 Boolean single-slice MCSP language: at input length `2^n`, return the exact

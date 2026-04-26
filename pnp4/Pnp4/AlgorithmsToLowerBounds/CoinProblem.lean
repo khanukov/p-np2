@@ -28,6 +28,28 @@ noncomputable def acceptanceProbability
     (bias : Rat) {n : Nat} (A : BitVec n → Bool) : Rat :=
   ∑ x : BitVec n, if A x then productBiasWeight bias x else 0
 
+/-- A Bernoulli bit weight is nonnegative when the bias is a probability. -/
+theorem bernoulliBitWeight_nonneg
+    {bias : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    (b : Bool) :
+    0 ≤ bernoulliBitWeight bias b := by
+  cases b <;> simp [bernoulliBitWeight] <;> linarith
+
+/-- Product-distribution weights are nonnegative for valid Bernoulli biases. -/
+theorem productBiasWeight_nonneg
+    {bias : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    {n : Nat}
+    (x : BitVec n) :
+    0 ≤ productBiasWeight bias x := by
+  classical
+  unfold productBiasWeight
+  exact Finset.prod_nonneg fun i _ =>
+    bernoulliBitWeight_nonneg hBias_nonneg hBias_le_one (x i)
+
 /--
 One finite coin-problem instance: distinguish `lowBias` from `highBias` on
 sample strings of length `sampleBits`.
@@ -39,6 +61,18 @@ structure CoinProblemInstance where
   low_nonneg : 0 ≤ lowBias
   high_le_one : highBias ≤ 1
   bias_gap : lowBias < highBias
+
+/-- The low-bias side of a valid coin instance is at most one. -/
+theorem CoinProblemInstance.low_le_one
+    (inst : CoinProblemInstance) :
+    inst.lowBias ≤ 1 :=
+  le_trans (le_of_lt inst.bias_gap) inst.high_le_one
+
+/-- The high-bias side of a valid coin instance is nonnegative. -/
+theorem CoinProblemInstance.high_nonneg
+    (inst : CoinProblemInstance) :
+    0 ≤ inst.highBias :=
+  le_trans inst.low_nonneg (le_of_lt inst.bias_gap)
 
 /-- Acceptance-gap of an algorithm on a fixed coin-problem instance. -/
 noncomputable def acceptanceGap
@@ -102,6 +136,44 @@ theorem acceptanceProbability_congr
     acceptanceProbability bias A = acceptanceProbability bias B := by
   cases hAB
   rfl
+
+/-- Acceptance probability is monotone under pointwise Boolean implication. -/
+theorem acceptanceProbability_mono
+    {n : Nat}
+    {bias : Rat}
+    {A B : BitVec n → Bool}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    (hAB : ∀ x : BitVec n, A x = true → B x = true) :
+    acceptanceProbability bias A ≤ acceptanceProbability bias B := by
+  classical
+  unfold acceptanceProbability
+  refine Finset.sum_le_sum ?_
+  intro x _hx
+  cases hA : A x
+  · cases hB : B x
+    · simp
+    · simpa using productBiasWeight_nonneg hBias_nonneg hBias_le_one x
+  · have hB : B x = true := hAB x hA
+    simp [hB]
+
+/-- Low-bias specialization of `acceptanceProbability_mono`. -/
+theorem acceptanceProbability_mono_lowBias
+    {inst : CoinProblemInstance}
+    {A B : BitVec inst.sampleBits → Bool}
+    (hAB : ∀ x : BitVec inst.sampleBits, A x = true → B x = true) :
+    acceptanceProbability inst.lowBias A ≤
+      acceptanceProbability inst.lowBias B :=
+  acceptanceProbability_mono inst.low_nonneg inst.low_le_one hAB
+
+/-- High-bias specialization of `acceptanceProbability_mono`. -/
+theorem acceptanceProbability_mono_highBias
+    {inst : CoinProblemInstance}
+    {A B : BitVec inst.sampleBits → Bool}
+    (hAB : ∀ x : BitVec inst.sampleBits, A x = true → B x = true) :
+    acceptanceProbability inst.highBias A ≤
+      acceptanceProbability inst.highBias B :=
+  acceptanceProbability_mono inst.high_nonneg inst.high_le_one hAB
 
 /-- Coin-problem solvability is extensional in the underlying Boolean function. -/
 theorem solvesCoinProblem_congr

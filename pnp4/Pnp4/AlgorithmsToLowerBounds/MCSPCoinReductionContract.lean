@@ -113,6 +113,56 @@ def HalfVsFairMCSPCoinReductionContract.of_distributionFacts
   advantage_gap := advantage_gap
 
 /--
+Build the half-vs-fair reduction contract from probability-mass bounds for the
+proof-level tree-MCSP predicate itself.
+
+This is the next decomposition layer below `of_distributionFacts`: downstream
+counting or concentration arguments should now target the mass of
+`treeMCSPPredicateDecision`, not the exact decision wrapper.
+-/
+def HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_mass_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (treeMCSPPredicateDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_mass_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (treeMCSPPredicateDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinReductionContract hardness :=
+  HalfVsFairMCSPCoinReductionContract.of_distributionFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    (fun n =>
+      acceptanceProbability_exactTreeMCSPThresholdDecision_le_of_treeMCSPPredicateDecision_bound
+        (n := n)
+        (threshold := threshold n)
+        (bias := (hardness.instance n).lowBias)
+        (q := lowAcceptanceUpper n)
+        (hardness.instance n).low_nonneg
+        (hardness.instance n).low_le_one
+        (low_mass_le n))
+    (fun n =>
+      treeMCSPPredicateDecision_bound_le_acceptanceProbability_exactTreeMCSPThresholdDecision
+        (n := n)
+        (threshold := threshold n)
+        (bias := (hardness.instance n).highBias)
+        (q := fairAcceptanceLower n)
+        (hardness.instance n).high_nonneg
+        (hardness.instance n).high_le_one
+        (fair_mass_ge n))
+    advantage_gap
+
+/--
 Recover the original monolithic coin-solving statement from the decomposed
 reduction contract.
 -/
